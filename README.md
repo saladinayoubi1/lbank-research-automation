@@ -125,20 +125,37 @@ build/partitioned_market/
 
 The partitioner preserves the canonical columns and all source rows. It does not silently repair, remove, or reinterpret gaps. Integrity metrics and SHA-256 values are recorded in `_partition_manifest.json` and `_partition_manifest.md`.
 
-## Local setup
+## Dependency policy
 
 Python 3.12 is used in GitHub Actions.
+
+- `requirements.txt` defines supported direct-dependency ranges for development and planned upgrades.
+- `requirements.lock` pins the complete runtime environment used by Collector and export workflows.
+- `requirements-dev.lock` pins the runtime environment plus the test toolchain.
+- Lock updates must use a pull request and pass the complete repository test suite plus `pip check`.
+
+Install the exact runtime environment:
+
+```bash
+python -m pip install -r requirements.lock
+python -m pip check
+```
+
+Install the exact test environment:
+
+```bash
+python -m pip install -r requirements-dev.lock
+python -m pip check
+python -m pytest -q
+```
+
+For dependency-upgrade exploration only, install the supported ranges:
 
 ```bash
 python -m pip install -r requirements.txt
 ```
 
-Run the complete test suite:
-
-```bash
-python -m pip install pytest
-python -m pytest -q
-```
+## Local commands
 
 Run the Collector:
 

@@ -24,8 +24,8 @@ jobs:
           python-version: "3.12"
           cache: pip
 
-      - name: Install dependencies
-        run: python -m pip install -r requirements.txt
+      - name: Install locked dependencies
+        run: python -m pip install -r requirements.lock
 
       - name: Generate verified snapshot manifest
         run: python snapshot_manifest.py
