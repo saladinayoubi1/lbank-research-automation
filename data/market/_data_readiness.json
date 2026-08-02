@@ -1,0 +1,117 @@
+{
+  "blocked_series": [
+    {
+      "readiness_reason": "integrity_failed",
+      "symbol": "aero_usdt",
+      "timeframe": "hour1"
+    },
+    {
+      "readiness_reason": "integrity_failed",
+      "symbol": "aero_usdt",
+      "timeframe": "minute15"
+    },
+    {
+      "readiness_reason": "integrity_failed",
+      "symbol": "agt_usdt",
+      "timeframe": "hour1"
+    },
+    {
+      "readiness_reason": "integrity_failed",
+      "symbol": "agt_usdt",
+      "timeframe": "minute15"
+    },
+    {
+      "readiness_reason": "integrity_failed",
+      "symbol": "btc_usdt",
+      "timeframe": "hour1"
+    },
+    {
+      "readiness_reason": "integrity_failed",
+      "symbol": "btc_usdt",
+      "timeframe": "hour4"
+    },
+    {
+      "readiness_reason": "integrity_failed",
+      "symbol": "eth_usdt",
+      "timeframe": "hour1"
+    },
+    {
+      "readiness_reason": "integrity_failed",
+      "symbol": "eth_usdt",
+      "timeframe": "hour4"
+    },
+    {
+      "readiness_reason": "integrity_failed",
+      "symbol": "layer_usdt",
+      "timeframe": "hour1"
+    },
+    {
+      "readiness_reason": "integrity_failed",
+      "symbol": "layer_usdt",
+      "timeframe": "hour4"
+    },
+    {
+      "readiness_reason": "integrity_failed",
+      "symbol": "layer_usdt",
+      "timeframe": "minute15"
+    },
+    {
+      "readiness_reason": "integrity_failed",
+      "symbol": "pbu_usdt",
+      "timeframe": "hour1"
+    },
+    {
+      "readiness_reason": "integrity_failed",
+      "symbol": "pbu_usdt",
+      "timeframe": "hour4"
+    },
+    {
+      "readiness_reason": "integrity_failed",
+      "symbol": "pbu_usdt",
+      "timeframe": "minute15"
+    },
+    {
+      "readiness_reason": "integrity_failed",
+      "symbol": "udoge_usdt",
+      "timeframe": "hour1"
+    },
+    {
+      "readiness_reason": "integrity_failed",
+      "symbol": "udoge_usdt",
+      "timeframe": "hour4"
+    },
+    {
+      "readiness_reason": "integrity_failed",
+      "symbol": "udoge_usdt",
+      "timeframe": "minute15"
+    }
+  ],
+  "ready_series": [
+    {
+      "symbol": "aero_usdt",
+      "timeframe": "hour4"
+    },
+    {
+      "symbol": "agt_usdt",
+      "timeframe": "hour4"
+    },
+    {
+      "symbol": "btc_usdt",
+      "timeframe": "minute15"
+    },
+    {
+      "symbol": "eth_usdt",
+      "timeframe": "minute15"
+    }
+  ],
+  "summary": {
+    "all_ready": false,
+    "blocked_series": 17,
+    "ready_series": 4,
+    "reason_counts": {
+      "integrity_failed": 17,
+      "ready": 4
+    },
+    "total_series": 21
+  }
+}
