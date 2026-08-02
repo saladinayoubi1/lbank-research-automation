@@ -221,7 +221,6 @@ def collect_series(symbol: str, timeframe: str) -> None:
     LOGGER.info("Saved %s total rows to %s", total, output_path)
 
 
-
 def analyze_timestamp_integrity(
     timestamps: pd.Series,
     timeframe: str,
@@ -233,7 +232,7 @@ def analyze_timestamp_integrity(
         .reset_index(drop=True)
     )
     step_seconds = TIMEFRAME_SECONDS[timeframe]
-    step = pd.Timedelta(seconds=step_seconds)
+    step = pd.Timedelta(step_seconds, unit="s")
 
     duplicate_count = int(normalized.duplicated().sum())
     unique_ts = normalized.drop_duplicates().reset_index(drop=True)
@@ -404,4 +403,3 @@ if __name__ == "__main__":
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
     collect()
-
