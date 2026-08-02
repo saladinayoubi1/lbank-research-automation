@@ -1,0 +1,7 @@
+# Reproducible Python 3.12 test environment verified in GitHub Actions.
+-r requirements.lock
+iniconfig==2.3.0
+packaging==26.2
+pluggy==1.6.0
+Pygments==2.20.0
+pytest==9.1.1
