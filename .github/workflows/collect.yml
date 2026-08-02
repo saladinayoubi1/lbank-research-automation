@@ -33,6 +33,9 @@ jobs:
       - name: Collect public market data
         run: python main.py
 
+      - name: Repair bounded candle gaps
+        run: python gap_repair.py
+
       - name: Commit data changes
         shell: bash
         run: |
