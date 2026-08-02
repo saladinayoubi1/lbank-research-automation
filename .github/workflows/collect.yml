@@ -41,6 +41,9 @@ jobs:
       - name: Generate data readiness report
         run: python data_readiness.py
 
+      - name: Generate dataset snapshot manifest
+        run: python snapshot_manifest.py
+
       - name: Commit data changes
         shell: bash
         run: |
