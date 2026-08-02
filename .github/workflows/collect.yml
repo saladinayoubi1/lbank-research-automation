@@ -38,6 +38,9 @@ jobs:
         continue-on-error: true
         run: python gap_repair.py
 
+      - name: Generate data readiness report
+        run: python data_readiness.py
+
       - name: Commit data changes
         shell: bash
         run: |
