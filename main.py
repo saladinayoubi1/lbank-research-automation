@@ -89,12 +89,21 @@ def rows_to_frame(
     frame["symbol"] = symbol
     frame["timeframe"] = timeframe
 
-    if not (frame["high"] >= frame[["open", "close", "low"]].max(axis=1)).all():
-        raise ValueError(f"Invalid OHLC data for {symbol} {timeframe}")
-    if not (frame["low"] <= frame[["open", "close", "high"]].min(axis=1)).all():
-        raise ValueError(f"Invalid OHLC data for {symbol} {timeframe}")
-    if (frame["volume"] < 0).any():
-        raise ValueError(f"Negative volume for {symbol} {timeframe}")
+    valid_ohlc = (
+        (frame["high"] >= frame[["open", "close", "low"]].max(axis=1))
+        & (frame["low"] <= frame[["open", "close", "high"]].min(axis=1))
+        & (frame["volume"] >= 0)
+    )
+
+    invalid_count = int((~valid_ohlc).sum())
+    if invalid_count:
+        LOGGER.warning(
+            "Skipped %s invalid candle(s) for %s %s",
+            invalid_count,
+            symbol,
+            timeframe,
+        )
+        frame = frame.loc[valid_ohlc].copy()
 
     return frame.sort_values("timestamp").drop_duplicates("timestamp", keep="last")
 
@@ -142,3 +151,4 @@ if __name__ == "__main__":
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
     collect()
+    
