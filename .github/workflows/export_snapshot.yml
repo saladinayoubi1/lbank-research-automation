@@ -1,0 +1,45 @@
+name: Export dataset snapshot
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/export_snapshot.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Generate verified snapshot manifest
+        run: python snapshot_manifest.py
+
+      - name: Record source revision
+        shell: bash
+        run: |
+          printf '%s\n' "${GITHUB_SHA}" > data/market/_source_revision.txt
+
+      - name: Upload market dataset snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: lbank-market-snapshot-${{ github.sha }}
+          path: data/market
+          if-no-files-found: error
+          retention-days: 3
+          compression-level: 0
