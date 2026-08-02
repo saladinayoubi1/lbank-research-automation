@@ -35,7 +35,7 @@ def find_gap_starts(timestamps: pd.Series, timeframe: str) -> list[pd.Timestamp]
     if len(normalized) < 2:
         return []
 
-    step = pd.Timedelta(seconds=TIMEFRAME_SECONDS[timeframe])
+    step = pd.Timedelta(TIMEFRAME_SECONDS[timeframe], unit="s")
     deltas = normalized.diff()
     gap_positions = deltas[deltas > step].index
     return [normalized.iloc[position - 1] + step for position in gap_positions]
@@ -55,7 +55,7 @@ def missing_timestamp_set(
     expected = pd.date_range(
         start=normalized[0],
         end=normalized[-1],
-        freq=pd.Timedelta(seconds=TIMEFRAME_SECONDS[timeframe]),
+        freq=pd.Timedelta(TIMEFRAME_SECONDS[timeframe], unit="s"),
     )
     return set(expected.difference(normalized))
 
