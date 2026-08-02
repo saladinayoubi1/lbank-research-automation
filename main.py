@@ -221,10 +221,97 @@ def collect_series(symbol: str, timeframe: str) -> None:
     LOGGER.info("Saved %s total rows to %s", total, output_path)
 
 
+
+def write_backfill_status() -> None:
+    records: list[dict[str, object]] = []
+    target_end = pd.Timestamp.now(tz="UTC")
+
+    for symbol in SYMBOLS:
+        for timeframe in TIMEFRAMES:
+            path = OUTPUT_ROOT / symbol / f"{timeframe}.parquet"
+
+            if not path.exists():
+                records.append(
+                    {
+                        "symbol": symbol,
+                        "timeframe": timeframe,
+                        "rows": 0,
+                        "first_candle_utc": None,
+                        "last_candle_utc": None,
+                        "hours_behind_now": None,
+                        "status": "missing",
+                    }
+                )
+                continue
+
+            frame = pd.read_parquet(path, columns=["timestamp"])
+            if frame.empty:
+                records.append(
+                    {
+                        "symbol": symbol,
+                        "timeframe": timeframe,
+                        "rows": 0,
+                        "first_candle_utc": None,
+                        "last_candle_utc": None,
+                        "hours_behind_now": None,
+                        "status": "empty",
+                    }
+                )
+                continue
+
+            first_ts = pd.Timestamp(frame["timestamp"].min())
+            last_ts = pd.Timestamp(frame["timestamp"].max())
+            hours_behind = max(
+                0.0,
+                (target_end - last_ts).total_seconds() / 3600,
+            )
+
+            tolerance_hours = max(1.0, TIMEFRAME_SECONDS[timeframe] / 3600 * 2)
+            status = "current" if hours_behind <= tolerance_hours else "backfilling"
+
+            records.append(
+                {
+                    "symbol": symbol,
+                    "timeframe": timeframe,
+                    "rows": int(len(frame)),
+                    "first_candle_utc": first_ts.isoformat(),
+                    "last_candle_utc": last_ts.isoformat(),
+                    "hours_behind_now": round(hours_behind, 2),
+                    "status": status,
+                }
+            )
+
+    status_frame = pd.DataFrame(records).sort_values(["symbol", "timeframe"])
+    csv_path = OUTPUT_ROOT / "_backfill_status.csv"
+    md_path = OUTPUT_ROOT / "_backfill_status.md"
+
+    status_frame.to_csv(csv_path, index=False)
+
+    lines = [
+        "# LBank Backfill Status",
+        "",
+        f"Generated at: {target_end.isoformat()}",
+        "",
+        "| Symbol | Timeframe | Rows | First candle UTC | Last candle UTC | Hours behind | Status |",
+        "|---|---:|---:|---|---|---:|---|",
+    ]
+
+    for row in status_frame.to_dict("records"):
+        lines.append(
+            "| {symbol} | {timeframe} | {rows} | {first_candle_utc} | "
+            "{last_candle_utc} | {hours_behind_now} | {status} |".format(**row)
+        )
+
+    md_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    LOGGER.info("Wrote backfill status to %s and %s", csv_path, md_path)
+
+
 def collect() -> None:
     for symbol in SYMBOLS:
         for timeframe in TIMEFRAMES:
             collect_series(symbol, timeframe)
+
+    write_backfill_status()
 
 
 if __name__ == "__main__":
