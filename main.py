@@ -222,6 +222,63 @@ def collect_series(symbol: str, timeframe: str) -> None:
 
 
 
+def analyze_timestamp_integrity(
+    timestamps: pd.Series,
+    timeframe: str,
+) -> dict[str, int | bool]:
+    """Return continuity metrics for one candle timestamp series."""
+    normalized = (
+        pd.to_datetime(timestamps, utc=True)
+        .sort_values()
+        .reset_index(drop=True)
+    )
+    step_seconds = TIMEFRAME_SECONDS[timeframe]
+    step = pd.Timedelta(seconds=step_seconds)
+
+    duplicate_count = int(normalized.duplicated().sum())
+    unique_ts = normalized.drop_duplicates().reset_index(drop=True)
+
+    if unique_ts.empty:
+        return {
+            "expected_rows": 0,
+            "missing_candles": 0,
+            "gap_count": 0,
+            "duplicate_count": duplicate_count,
+            "off_grid_count": 0,
+            "integrity_ok": duplicate_count == 0,
+        }
+
+    deltas = unique_ts.diff().dropna()
+    gap_mask = deltas > step
+    gap_count = int(gap_mask.sum())
+    missing_candles = int(
+        ((deltas.loc[gap_mask] / step) - 1).sum()
+    )
+
+    step_nanoseconds = step_seconds * 1_000_000_000
+    off_grid_count = int(
+        (unique_ts.astype("int64") % step_nanoseconds != 0).sum()
+    )
+
+    expected_rows = int(
+        ((unique_ts.iloc[-1] - unique_ts.iloc[0]) / step) + 1
+    )
+    integrity_ok = (
+        duplicate_count == 0
+        and gap_count == 0
+        and off_grid_count == 0
+    )
+
+    return {
+        "expected_rows": expected_rows,
+        "missing_candles": missing_candles,
+        "gap_count": gap_count,
+        "duplicate_count": duplicate_count,
+        "off_grid_count": off_grid_count,
+        "integrity_ok": integrity_ok,
+    }
+
+
 def write_backfill_status() -> None:
     records: list[dict[str, object]] = []
     target_end = pd.Timestamp.now(tz="UTC")
@@ -239,6 +296,12 @@ def write_backfill_status() -> None:
                         "first_candle_utc": None,
                         "last_candle_utc": None,
                         "hours_behind_now": None,
+                        "expected_rows": 0,
+                        "missing_candles": 0,
+                        "gap_count": 0,
+                        "duplicate_count": 0,
+                        "off_grid_count": 0,
+                        "integrity_ok": False,
                         "status": "missing",
                     }
                 )
@@ -254,6 +317,12 @@ def write_backfill_status() -> None:
                         "first_candle_utc": None,
                         "last_candle_utc": None,
                         "hours_behind_now": None,
+                        "expected_rows": 0,
+                        "missing_candles": 0,
+                        "gap_count": 0,
+                        "duplicate_count": 0,
+                        "off_grid_count": 0,
+                        "integrity_ok": False,
                         "status": "empty",
                     }
                 )
@@ -266,8 +335,18 @@ def write_backfill_status() -> None:
                 (target_end - last_ts).total_seconds() / 3600,
             )
 
+            integrity = analyze_timestamp_integrity(
+                frame["timestamp"],
+                timeframe,
+            )
             tolerance_hours = max(1.0, TIMEFRAME_SECONDS[timeframe] / 3600 * 2)
-            status = "current" if hours_behind <= tolerance_hours else "backfilling"
+            status = (
+                "invalid"
+                if not integrity["integrity_ok"]
+                else "current"
+                if hours_behind <= tolerance_hours
+                else "backfilling"
+            )
 
             records.append(
                 {
@@ -277,6 +356,7 @@ def write_backfill_status() -> None:
                     "first_candle_utc": first_ts.isoformat(),
                     "last_candle_utc": last_ts.isoformat(),
                     "hours_behind_now": round(hours_behind, 2),
+                    **integrity,
                     "status": status,
                 }
             )
@@ -292,13 +372,17 @@ def write_backfill_status() -> None:
         "",
         f"Generated at: {target_end.isoformat()}",
         "",
-        "| Symbol | Timeframe | Rows | First candle UTC | Last candle UTC | Hours behind | Status |",
-        "|---|---:|---:|---|---|---:|---|",
+        "| Symbol | Timeframe | Rows | Expected rows | Missing candles | "
+        "Gaps | Duplicates | Off-grid | Integrity OK | First candle UTC | "
+        "Last candle UTC | Hours behind | Status |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---|---|---|---:|---|",
     ]
 
     for row in status_frame.to_dict("records"):
         lines.append(
-            "| {symbol} | {timeframe} | {rows} | {first_candle_utc} | "
+            "| {symbol} | {timeframe} | {rows} | {expected_rows} | "
+            "{missing_candles} | {gap_count} | {duplicate_count} | "
+            "{off_grid_count} | {integrity_ok} | {first_candle_utc} | "
             "{last_candle_utc} | {hours_behind_now} | {status} |".format(**row)
         )
 
@@ -320,3 +404,4 @@ if __name__ == "__main__":
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
     collect()
+
