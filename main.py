@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from pathlib import Path
 from typing import Any
 
@@ -19,12 +20,23 @@ SYMBOLS = [
     "udoge_usdt",
 ]
 TIMEFRAMES = ["minute15", "hour1", "hour4"]
+TIMEFRAME_SECONDS = {
+    "minute15": 15 * 60,
+    "hour1": 60 * 60,
+    "hour4": 4 * 60 * 60,
+}
+
 START_DATE_UTC = "2022-01-01T00:00:00Z"
 OUTPUT_ROOT = Path("data/market")
 REQUEST_SIZE = 2000
 TIMEOUT_SECONDS = 30
-COLUMNS = ["timestamp", "open", "high", "low", "close", "volume"]
 
+# Each scheduled run advances every symbol/timeframe by several API pages.
+# This keeps one GitHub Actions run short while gradually completing history.
+MAX_PAGES_PER_SERIES_PER_RUN = 3
+REQUEST_PAUSE_SECONDS = 0.15
+
+COLUMNS = ["timestamp", "open", "high", "low", "close", "volume"]
 LOGGER = logging.getLogger("lbank_collector")
 
 
@@ -52,7 +64,7 @@ def get_klines(
             "time": str(start_time_seconds),
         },
         timeout=TIMEOUT_SECONDS,
-        headers={"User-Agent": "lbank-research-automation/0.1"},
+        headers={"User-Agent": "lbank-research-automation/0.2"},
     )
     response.raise_for_status()
     payload = response.json()
@@ -84,13 +96,14 @@ def rows_to_frame(
     frame["timestamp"] = pd.to_datetime(frame["timestamp"], unit="s", utc=True)
 
     for column in ["open", "high", "low", "close", "volume"]:
-        frame[column] = pd.to_numeric(frame[column], errors="raise")
+        frame[column] = pd.to_numeric(frame[column], errors="coerce")
 
     frame["symbol"] = symbol
     frame["timeframe"] = timeframe
 
     valid_ohlc = (
-        (frame["high"] >= frame[["open", "close", "low"]].max(axis=1))
+        frame[COLUMNS].notna().all(axis=1)
+        & (frame["high"] >= frame[["open", "close", "low"]].max(axis=1))
         & (frame["low"] <= frame[["open", "close", "high"]].min(axis=1))
         & (frame["volume"] >= 0)
     )
@@ -105,44 +118,113 @@ def rows_to_frame(
         )
         frame = frame.loc[valid_ohlc].copy()
 
-    return frame.sort_values("timestamp").drop_duplicates("timestamp", keep="last")
-
-
-def merge_and_save(frame: pd.DataFrame, output_path: Path) -> None:
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    if output_path.exists():
-        previous = pd.read_parquet(output_path)
-        frame = pd.concat([previous, frame], ignore_index=True)
-
-    frame = (
+    return (
         frame.sort_values("timestamp")
+        .drop_duplicates("timestamp", keep="last")
+        .reset_index(drop=True)
+    )
+
+
+def read_existing(output_path: Path) -> pd.DataFrame:
+    if not output_path.exists():
+        return pd.DataFrame(columns=COLUMNS + ["symbol", "timeframe"])
+    return pd.read_parquet(output_path)
+
+
+def save_merged(
+    existing: pd.DataFrame,
+    incoming_frames: list[pd.DataFrame],
+    output_path: Path,
+) -> int:
+    usable = [existing, *[frame for frame in incoming_frames if not frame.empty]]
+    merged = pd.concat(usable, ignore_index=True)
+
+    if merged.empty:
+        return 0
+
+    merged = (
+        merged.sort_values("timestamp")
         .drop_duplicates(["symbol", "timeframe", "timestamp"], keep="last")
         .reset_index(drop=True)
     )
-    frame.to_parquet(output_path, index=False, compression="zstd")
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    merged.to_parquet(output_path, index=False, compression="zstd")
+    return len(merged)
+
+
+def initial_cursor(existing: pd.DataFrame, timeframe: str) -> int:
+    if existing.empty:
+        return int(pd.Timestamp(START_DATE_UTC).timestamp())
+
+    latest = int(pd.Timestamp(existing["timestamp"].max()).timestamp())
+    return latest + TIMEFRAME_SECONDS[timeframe]
+
+
+def collect_series(symbol: str, timeframe: str) -> None:
+    output_path = OUTPUT_ROOT / symbol / f"{timeframe}.parquet"
+    existing = read_existing(output_path)
+    cursor = initial_cursor(existing, timeframe)
+    now_seconds = int(pd.Timestamp.now(tz="UTC").timestamp())
+
+    new_frames: list[pd.DataFrame] = []
+
+    for page_number in range(1, MAX_PAGES_PER_SERIES_PER_RUN + 1):
+        if cursor >= now_seconds:
+            LOGGER.info("%s %s is up to date", symbol, timeframe)
+            break
+
+        LOGGER.info(
+            "Collecting %s %s page %s from %s",
+            symbol,
+            timeframe,
+            page_number,
+            pd.to_datetime(cursor, unit="s", utc=True),
+        )
+
+        rows = get_klines(symbol, timeframe, cursor)
+        frame = rows_to_frame(rows, symbol, timeframe)
+
+        if frame.empty:
+            LOGGER.info("No usable candles returned for %s %s", symbol, timeframe)
+            break
+
+        returned_max = int(pd.Timestamp(frame["timestamp"].max()).timestamp())
+        if returned_max < cursor:
+            LOGGER.warning(
+                "API returned only older candles for %s %s; stopping pagination",
+                symbol,
+                timeframe,
+            )
+            break
+
+        new_frames.append(frame)
+
+        next_cursor = returned_max + TIMEFRAME_SECONDS[timeframe]
+        if next_cursor <= cursor:
+            LOGGER.warning(
+                "Cursor did not advance for %s %s; stopping pagination",
+                symbol,
+                timeframe,
+            )
+            break
+
+        cursor = next_cursor
+
+        if len(rows) < REQUEST_SIZE:
+            LOGGER.info("Reached current end for %s %s", symbol, timeframe)
+            break
+
+        time.sleep(REQUEST_PAUSE_SECONDS)
+
+    total = save_merged(existing, new_frames, output_path)
+    LOGGER.info("Saved %s total rows to %s", total, output_path)
 
 
 def collect() -> None:
-    initial_timestamp = int(pd.Timestamp(START_DATE_UTC).timestamp())
-
     for symbol in SYMBOLS:
         for timeframe in TIMEFRAMES:
-            output_path = OUTPUT_ROOT / symbol / f"{timeframe}.parquet"
-            start_timestamp = initial_timestamp
-
-            if output_path.exists():
-                existing = pd.read_parquet(output_path, columns=["timestamp"])
-                if not existing.empty:
-                    start_timestamp = int(
-                        pd.Timestamp(existing["timestamp"].max()).timestamp()
-                    )
-
-            LOGGER.info("Collecting %s %s", symbol, timeframe)
-            rows = get_klines(symbol, timeframe, start_timestamp)
-            frame = rows_to_frame(rows, symbol, timeframe)
-            merge_and_save(frame, output_path)
-            LOGGER.info("Saved %s", output_path)
+            collect_series(symbol, timeframe)
 
 
 if __name__ == "__main__":
@@ -151,4 +233,3 @@ if __name__ == "__main__":
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
     collect()
-    
