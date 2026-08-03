@@ -1,4 +1,4 @@
-name: Run resumable Bybit Spot backfill pilot
+name: Verify resumable Bybit Spot backfill
 
 on:
   pull_request:
@@ -18,7 +18,7 @@ permissions:
 jobs:
   backfill:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
 
     steps:
       - name: Check out repository
@@ -36,28 +36,62 @@ jobs:
       - name: Check dependency consistency
         run: python -m pip check
 
-      - name: Run one atomic monthly backfill unit
+      - name: Process the first bounded monthly unit
         run: >-
           python bybit_spot_backfill.py
           --start-date 2022-12-01
-          --end-date 2022-12-31
+          --end-date 2023-01-31
           --state-root build/bybit_backfill_state
           --cache-root build/bybit_backfill_cache
           --max-archives-per-run 2
           --clean
 
-      - name: Enforce monthly pilot completion
+      - name: Verify the incomplete checkpoint after stage one
         run: >-
           python -c "import json, pathlib, sys;
-          p=pathlib.Path('build/bybit_backfill_state/_backfill_report.json');
-          r=json.loads(p.read_text());
-          s=r['summary'];
-          sys.exit(0 if s['backfill_complete'] and s['current_dataset_integrity_ok'] else 1)"
+          root=pathlib.Path('build/bybit_backfill_state');
+          report=json.loads((root/'_backfill_report.json').read_text());
+          checkpoint=json.loads((root/'_checkpoint.json').read_text());
+          s=report['summary'];
+          units=[u['unit_id'] for u in checkpoint['completed_units']];
+          ok=(s['plan_units']==2 and s['completed_units']==1 and
+          s['remaining_units']==1 and s['units_completed_this_run']==1 and
+          s['archives_completed_this_run']==2 and not s['backfill_complete'] and
+          s['current_dataset_integrity_ok'] and units==['monthly:2022-12']);
+          sys.exit(0 if ok else 1)"
 
-      - name: Upload resumable state snapshot
+      - name: Resume and process the second bounded monthly unit
+        run: >-
+          python bybit_spot_backfill.py
+          --start-date 2022-12-01
+          --end-date 2023-01-31
+          --state-root build/bybit_backfill_state
+          --cache-root build/bybit_backfill_cache
+          --max-archives-per-run 2
+
+      - name: Verify completion without reprocessing December
+        run: >-
+          python -c "import json, pathlib, sys;
+          root=pathlib.Path('build/bybit_backfill_state');
+          report=json.loads((root/'_backfill_report.json').read_text());
+          checkpoint=json.loads((root/'_checkpoint.json').read_text());
+          sources=json.loads((root/'_source_manifest.json').read_text());
+          s=report['summary'];
+          units=[u['unit_id'] for u in checkpoint['completed_units']];
+          source_units=[x['unit_id'] for x in sources];
+          ok=(s['plan_units']==2 and s['completed_units']==2 and
+          s['remaining_units']==0 and s['units_completed_this_run']==1 and
+          s['archives_completed_this_run']==2 and s['backfill_complete'] and
+          s['current_dataset_integrity_ok'] and
+          units==['monthly:2022-12','monthly:2023-01'] and
+          source_units.count('monthly:2022-12')==2 and
+          source_units.count('monthly:2023-01')==2);
+          sys.exit(0 if ok else 1)"
+
+      - name: Upload resumed state snapshot
         uses: actions/upload-artifact@v4
         with:
-          name: bybit-resumable-backfill-2022-12-${{ github.sha }}
+          name: bybit-resumable-backfill-2022-12-to-2023-01-${{ github.sha }}
           path: build/bybit_backfill_state
           if-no-files-found: error
           retention-days: 7
