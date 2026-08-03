@@ -9,50 +9,34 @@ on:
       - "bybit_spot_archive_collector.py"
       - "requirements.lock"
   workflow_dispatch:
-    inputs:
-      source_run_id:
-        required: true
-        default: "30790162024"
-      source_artifact_name:
-        required: true
-        default: "bybit-resumable-backfill-2022-12-to-2024-01-e4cf6861398589e29ee7a53445efd489bee669d6"
-      start_date:
-        required: true
-        default: "2022-12-01"
-      end_date:
-        required: true
-        default: "2024-05-31"
-      source_completed_units:
-        required: true
-        default: "14"
-      final_completed_units:
-        required: true
-        default: "18"
-      max_archives_per_stage:
-        required: true
-        default: "8"
-      max_stages:
-        required: true
-        default: "1"
 
 permissions:
   contents: read
   actions: read
 
 jobs:
-  backfill:
+  chunk:
+    name: chunk-${{ matrix.id }}
     runs-on: ubuntu-latest
-    timeout-minutes: 45
-    env:
-      GH_TOKEN: ${{ github.token }}
-      SOURCE_RUN_ID: ${{ github.event.inputs.source_run_id || '30790162024' }}
-      SOURCE_ARTIFACT_NAME: ${{ github.event.inputs.source_artifact_name || 'bybit-resumable-backfill-2022-12-to-2024-01-e4cf6861398589e29ee7a53445efd489bee669d6' }}
-      START_DATE: ${{ github.event.inputs.start_date || '2022-12-01' }}
-      END_DATE: ${{ github.event.inputs.end_date || '2024-05-31' }}
-      SOURCE_COMPLETED_UNITS: ${{ github.event.inputs.source_completed_units || '14' }}
-      FINAL_COMPLETED_UNITS: ${{ github.event.inputs.final_completed_units || '18' }}
-      MAX_ARCHIVES_PER_STAGE: ${{ github.event.inputs.max_archives_per_stage || '8' }}
-      MAX_STAGES: ${{ github.event.inputs.max_stages || '1' }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 13
+      matrix:
+        include:
+          - { id: "01", start: "2024-06-01", end: "2024-07-31" }
+          - { id: "02", start: "2024-08-01", end: "2024-09-30" }
+          - { id: "03", start: "2024-10-01", end: "2024-11-30" }
+          - { id: "04", start: "2024-12-01", end: "2025-01-31" }
+          - { id: "05", start: "2025-02-01", end: "2025-03-31" }
+          - { id: "06", start: "2025-04-01", end: "2025-05-31" }
+          - { id: "07", start: "2025-06-01", end: "2025-07-31" }
+          - { id: "08", start: "2025-08-01", end: "2025-09-30" }
+          - { id: "09", start: "2025-10-01", end: "2025-11-30" }
+          - { id: "10", start: "2025-12-01", end: "2026-01-31" }
+          - { id: "11", start: "2026-02-01", end: "2026-03-31" }
+          - { id: "12", start: "2026-04-01", end: "2026-05-31" }
+          - { id: "13", start: "2026-06-01", end: "2026-07-31" }
 
     steps:
       - uses: actions/checkout@v4
@@ -63,74 +47,209 @@ jobs:
       - run: python -m pip install -r requirements.lock
       - run: python -m pip check
 
-      - name: Restore verified resumable state
+      - name: Build independent verified chunk
         run: |
-          mkdir -p build/bybit_backfill_state
-          gh run download "$SOURCE_RUN_ID" --repo "$GITHUB_REPOSITORY" --name "$SOURCE_ARTIFACT_NAME" --dir build/bybit_backfill_state
+          python bybit_spot_backfill.py \
+            --start-date "${{ matrix.start }}" \
+            --end-date "${{ matrix.end }}" \
+            --state-root "build/chunk-${{ matrix.id }}" \
+            --cache-root "build/cache-${{ matrix.id }}" \
+            --max-archives-per-run 4 \
+            --clean
           python - <<'PY'
           import json, os
           from pathlib import Path
-          checkpoint = json.loads(Path("build/bybit_backfill_state/_checkpoint.json").read_text())
-          completed = checkpoint["completed_units"]
-          ids = [item["unit_id"] for item in completed]
-          expected = int(os.environ["SOURCE_COMPLETED_UNITS"])
-          if len(completed) != expected or len(ids) != len(set(ids)):
-              raise SystemExit(f"Unexpected restored checkpoint: {len(completed)} units")
+          root = Path(f"build/chunk-{os.environ['CHUNK_ID']}")
+          report = json.loads((root / "_backfill_report.json").read_text())
+          summary = report["summary"]
+          if not (
+              summary["backfill_complete"]
+              and summary["completed_units"] == 2
+              and summary["remaining_units"] == 0
+              and summary["run_failures"] == 0
+              and summary["current_dataset_integrity_ok"]
+              and len(report["statuses"]) == 6
+              and all(item["integrity_ok"] for item in report["statuses"])
+          ):
+              raise SystemExit("Chunk integrity gate failed")
           PY
+        env:
+          CHUNK_ID: ${{ matrix.id }}
 
-      - name: Run bounded continuation stages
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bybit-chunk-${{ matrix.id }}
+          path: build/chunk-${{ matrix.id }}
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 9
+
+  merge:
+    needs: chunk
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      BASE_RUN_ID: "30792279568"
+      BASE_ARTIFACT_NAME: "bybit-resumable-backfill-2022-12-to-2024-05-b7aa16451d1a4d83c2e7b6c54d9b6e79504a66c5"
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements.lock
+      - run: python -m pip check
+
+      - name: Restore verified base snapshot
         run: |
-          mkdir -p build/bybit_backfill_cache
-          completed=false
-          for stage in $(seq 1 "$MAX_STAGES"); do
-            python bybit_spot_backfill.py \
-              --start-date "$START_DATE" \
-              --end-date "$END_DATE" \
-              --state-root build/bybit_backfill_state \
-              --cache-root build/bybit_backfill_cache \
-              --max-archives-per-run "$MAX_ARCHIVES_PER_STAGE"
-            completed=$(python - <<'PY'
+          mkdir -p build/base
+          gh run download "$BASE_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$BASE_ARTIFACT_NAME" \
+            --dir build/base
+
+      - name: Download all verified chunks
+        uses: actions/download-artifact@v4
+        with:
+          pattern: bybit-chunk-*
+          path: build/chunks
+          merge-multiple: false
+
+      - name: Merge and enforce full-history integrity
+        run: |
+          python - <<'PY'
           import json
+          import shutil
           from pathlib import Path
-          summary = json.loads(Path("build/bybit_backfill_state/_backfill_report.json").read_text())["summary"]
-          if not summary["current_dataset_integrity_ok"] or summary["run_failures"]:
-              raise SystemExit(2)
-          print("true" if summary["backfill_complete"] else "false")
-          PY
-            )
-            rm -f build/bybit_backfill_cache/*.csv.gz
-            [ "$completed" = "true" ] && break
-          done
-          [ "$completed" = "true" ] || exit 1
 
-      - name: Enforce final range integrity
-        run: |
-          python - <<'PY'
-          import json, os
-          from pathlib import Path
           import pandas as pd
 
-          root = Path("build/bybit_backfill_state")
-          report = json.loads((root / "_backfill_report.json").read_text())
-          checkpoint = json.loads((root / "_checkpoint.json").read_text())
-          sources = json.loads((root / "_source_manifest.json").read_text())
-          summary = report["summary"]
-          start = pd.Timestamp(os.environ["START_DATE"])
-          end = pd.Timestamp(os.environ["END_DATE"])
-          days = int((end - start).days) + 1
-          expected_rows = {"minute15": days * 96, "hour1": days * 24, "hour4": days * 6}
-          statuses = report["statuses"]
-          completed_ids = [item["unit_id"] for item in checkpoint["completed_units"]]
-          source_units = [item["unit_id"] for item in sources]
+          import bybit_spot_archive_audit as audit
+          import bybit_spot_archive_collector as collector
+          import bybit_spot_backfill as backfill
+
+          base = Path("build/base")
+          chunks_root = Path("build/chunks")
+          final = Path("build/bybit_full_history")
+          shutil.copytree(base, final)
+
+          checkpoint = json.loads((final / backfill.CHECKPOINT_NAME).read_text())
+          source_manifest = json.loads((final / backfill.SOURCE_MANIFEST_NAME).read_text())
+          completed_ids = {item["unit_id"] for item in checkpoint["completed_units"]}
+
+          chunk_dirs = sorted(path for path in chunks_root.iterdir() if path.is_dir())
+          if len(chunk_dirs) != 13:
+              raise SystemExit(f"Expected 13 chunk artifacts, found {len(chunk_dirs)}")
+
+          for chunk in chunk_dirs:
+              report = json.loads((chunk / backfill.REPORT_NAME).read_text())
+              if not (
+                  report["summary"]["backfill_complete"]
+                  and report["summary"]["current_dataset_integrity_ok"]
+                  and report["summary"]["run_failures"] == 0
+              ):
+                  raise SystemExit(f"Invalid chunk report: {chunk.name}")
+
+              chunk_checkpoint = json.loads((chunk / backfill.CHECKPOINT_NAME).read_text())
+              chunk_sources = json.loads((chunk / backfill.SOURCE_MANIFEST_NAME).read_text())
+
+              for unit in chunk_checkpoint["completed_units"]:
+                  if unit["unit_id"] in completed_ids:
+                      raise SystemExit(f"Duplicate completed unit: {unit['unit_id']}")
+                  checkpoint["completed_units"].append(unit)
+                  completed_ids.add(unit["unit_id"])
+              checkpoint["runs"].extend(chunk_checkpoint.get("runs", []))
+              source_manifest.extend(chunk_sources)
+
+              for symbol in audit.SYMBOLS:
+                  canonical = collector.canonical_symbol(symbol)
+                  for timeframe in audit.TIMEFRAME_RULES:
+                      relative = Path("bybit_market") / canonical / f"{timeframe}.parquet"
+                      existing = backfill.load_existing_frame(final / relative)
+                      incoming = backfill.load_existing_frame(chunk / relative)
+                      merged = backfill.merge_without_overlap(existing, incoming)
+                      target = final / relative
+                      temporary = target.with_suffix(target.suffix + ".tmp")
+                      merged.to_parquet(temporary, index=False)
+                      temporary.replace(target)
+
+          checkpoint["completed_units"].sort(key=lambda item: (item["start_date"], item["unit_id"]))
+          checkpoint["failed_units"] = []
+          source_manifest.sort(key=lambda item: (item["start_date"], item["unit_id"], item["symbol"]))
+
+          statuses = backfill.compute_current_status(
+              final,
+              checkpoint["completed_units"],
+              audit.SYMBOLS,
+          )
+          status_frame = pd.DataFrame(statuses)
+          status_frame.to_csv(final / backfill.STATUS_NAME, index=False)
+
+          start_date = "2022-12-01"
+          end_date = "2026-07-31"
+          report = {
+              "generated_at_utc": pd.Timestamp.now(tz="UTC").isoformat(),
+              "configuration": {
+                  "start_date": start_date,
+                  "end_date": end_date,
+                  "symbols": list(audit.SYMBOLS),
+                  "construction": "verified base snapshot plus 13 parallel two-month chunks",
+              },
+              "summary": {
+                  "plan_units": len(checkpoint["completed_units"]),
+                  "plan_archives": len(source_manifest),
+                  "completed_units": len(checkpoint["completed_units"]),
+                  "remaining_units": 0,
+                  "units_completed_this_run": 26,
+                  "archives_completed_this_run": 52,
+                  "run_failures": 0,
+                  "backfill_complete": True,
+                  "current_dataset_integrity_ok": all(item["integrity_ok"] for item in statuses),
+              },
+              "completed_this_run": checkpoint["completed_units"][18:],
+              "sources_this_run": source_manifest[36:],
+              "run_failures": [],
+              "statuses": statuses,
+          }
+
+          plan = {
+              "generated_at_utc": report["generated_at_utc"],
+              "start_date": start_date,
+              "end_date": end_date,
+              "symbols": list(audit.SYMBOLS),
+              "total_units": len(checkpoint["completed_units"]),
+              "monthly_units": len(checkpoint["completed_units"]),
+              "daily_units": 0,
+              "total_archives": len(source_manifest),
+              "unavailable_dates": [],
+              "units": [
+                  {key: value for key, value in unit.items() if key != "completed_at_utc"}
+                  for unit in checkpoint["completed_units"]
+              ],
+          }
+
+          backfill.write_json(final / backfill.CHECKPOINT_NAME, checkpoint)
+          backfill.write_json(final / backfill.SOURCE_MANIFEST_NAME, source_manifest)
+          backfill.write_json(final / backfill.PLAN_NAME, plan)
+          backfill.write_json(final / backfill.REPORT_NAME, report)
+          (final / "_backfill_report.md").write_text(
+              backfill.render_markdown(report),
+              encoding="utf-8",
+          )
+
+          expected_rows = {"minute15": 128544, "hour1": 32136, "hour4": 8034}
+          unit_ids = [item["unit_id"] for item in checkpoint["completed_units"]]
+          source_units = [item["unit_id"] for item in source_manifest]
+          source_keys = [(item["unit_id"], item["symbol"]) for item in source_manifest]
           ok = (
-              summary["backfill_complete"]
-              and summary["completed_units"] == int(os.environ["FINAL_COMPLETED_UNITS"])
-              and summary["remaining_units"] == 0
-              and summary["current_dataset_integrity_ok"]
-              and summary["run_failures"] == 0
+              len(unit_ids) == 44
+              and len(unit_ids) == len(set(unit_ids))
+              and len(source_manifest) == 88
+              and len(source_keys) == len(set(source_keys))
+              and all(source_units.count(unit_id) == 2 for unit_id in unit_ids)
               and len(statuses) == 6
-              and len(completed_ids) == len(set(completed_ids))
-              and all(source_units.count(unit_id) == 2 for unit_id in completed_ids)
               and all(item["integrity_ok"] for item in statuses)
               and all(item["rows"] == expected_rows[item["timeframe"]] for item in statuses)
               and all(item["expected_rows"] == expected_rows[item["timeframe"]] for item in statuses)
@@ -140,13 +259,13 @@ jobs:
               and all(item["off_grid_count"] == 0 for item in statuses)
           )
           if not ok:
-              raise SystemExit("Final range integrity gate failed")
+              raise SystemExit("Final full-history integrity gate failed")
           PY
 
       - uses: actions/upload-artifact@v4
         with:
-          name: bybit-resumable-backfill-2022-12-to-2024-05-${{ github.sha }}
-          path: build/bybit_backfill_state
+          name: bybit-resumable-backfill-2022-12-to-2026-07-${{ github.sha }}
+          path: build/bybit_full_history
           if-no-files-found: error
           retention-days: 7
           compression-level: 9
