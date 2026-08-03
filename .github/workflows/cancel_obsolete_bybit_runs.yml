@@ -1,12 +1,7 @@
 name: Cancel obsolete Bybit runs
 
 on:
-  pull_request:
-    paths:
-      - ".github/workflows/cancel_obsolete_bybit_runs.yml"
-      - ".github/workflows/bybit_batch_a.yml"
-      - ".github/workflows/bybit_batch_b.yml"
-      - ".github/workflows/bybit_batch_c.yml"
+  workflow_dispatch:
 
 permissions:
   actions: write
@@ -15,16 +10,5 @@ permissions:
 jobs:
   cancel:
     runs-on: ubuntu-latest
-    env:
-      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
     steps:
-      - name: Cancel superseded branch runs
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh api "repos/$GITHUB_REPOSITORY/actions/runs?branch=${GITHUB_HEAD_REF}&per_page=100" \
-            --jq ".workflow_runs[] | select(.head_sha != \"$HEAD_SHA\" and .id != $GITHUB_RUN_ID and (.status == \"queued\" or .status == \"in_progress\")) | .id" \
-            | while read -r run_id; do
-                [ -z "$run_id" ] && continue
-                gh api --method POST "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/cancel" || true
-              done
+      - run: echo "Automatic cancellation is disabled while bounded history batches are being completed."
