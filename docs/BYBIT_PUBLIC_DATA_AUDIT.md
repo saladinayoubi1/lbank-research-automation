@@ -2,32 +2,53 @@
 
 This stage evaluates whether Bybit is a viable candidate for a full historical backfill after LBank failed the primary-venue readiness threshold.
 
-## Scope
+## Authoritative source
 
-- public V5 REST API only;
-- Spot category;
+The candidate decision uses the official public Spot trade archive at `https://public.bybit.com/spot/`.
+
+The direct V5 REST API is not used as the authoritative CI gate because Bybit restricts requests from United States IP addresses and GitHub-hosted runners may execute in a restricted region. That limitation is environmental and is not interpreted as a market-data quality failure.
+
+## Fixed audit scope
+
+- Spot market only;
 - `BTCUSDT` and `ETHUSDT`;
-- intervals `15`, `60`, and `240`;
-- 1,000 most recent fully closed candles per series;
-- two instrument-info requests and six kline requests.
+- official daily trade files for `2026-08-01`;
+- deterministic UTC aggregation into `minute15`, `hour1`, and `hour4` candles;
+- raw archive SHA-256, byte size, schema, trade count, and validation results;
+- six complete candle-series checks.
 
-The audit uses:
+Official archive schema observed and supported:
 
-- `GET /v5/market/instruments-info`
-- `GET /v5/market/kline`
+```text
+id,timestamp,price,volume,side,rpi
+```
 
 ## Candidate gate
 
-Bybit is promoted only to the full-backfill implementation stage when:
+Bybit advances to the full Spot archive-backfill implementation stage only when:
 
-- both instruments exist and report `Trading`;
-- all six kline requests complete;
-- each series contains 1,000 rows;
-- missing candles, gaps, duplicates, and off-grid timestamps are zero;
-- raw OHLC relationships are valid;
-- volume is non-negative and all fields are numeric.
+- both archives download and parse successfully;
+- all trade timestamps, prices, sizes, and sides are valid;
+- trade IDs are unique within each daily archive;
+- all trades belong to the selected UTC day;
+- each symbol produces exactly 96 fifteen-minute, 24 hourly, and 6 four-hour candles;
+- missing candles, gap groups, duplicates, off-grid timestamps, unexpected timestamps, invalid OHLC rows, and negative volumes are all zero.
 
-Passing this audit does not approve live trading. It only authorizes building a separate Bybit historical collector and then repeating the full readiness and benchmark process.
+## Verified result
+
+For `2026-08-01`:
+
+- BTCUSDT raw trades: `221,151`;
+- ETHUSDT raw trades: `89,507`;
+- archives passed: `2 / 2`;
+- candle series passed: `6 / 6`;
+- missing candles: `0`;
+- duplicate timestamps: `0`;
+- off-grid timestamps: `0`;
+- invalid OHLC candles: `0`;
+- download or parse errors: `0`.
+
+The candidate gate passed. This authorizes development of a separate Bybit Spot historical collector and full readiness evaluation. It does not approve live trading.
 
 ## Safety boundary
 
