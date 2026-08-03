@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "experiment_id": "lbank-benchmark-v1",
+  "venue": "lbank",
+  "dataset_root": "data/market",
+  "minimum_rows": 2000,
+  "series": [
+    {"symbol": "btc_usdt", "timeframe": "minute15"},
+    {"symbol": "eth_usdt", "timeframe": "minute15"},
+    {"symbol": "aero_usdt", "timeframe": "hour4"},
+    {"symbol": "agt_usdt", "timeframe": "hour4"}
+  ],
+  "strategies": [
+    {"strategy_id": "buy_and_hold", "parameters": {}},
+    {
+      "strategy_id": "sma_long_flat",
+      "parameters": {"fast_window": 50, "slow_window": 200}
+    }
+  ],
+  "execution_profiles": [
+    {
+      "profile_id": "frictionless",
+      "initial_cash": 10000.0,
+      "fee_bps": 0.0,
+      "slippage_bps": 0.0,
+      "max_abs_exposure": 1.0,
+      "liquidate_at_end": true
+    },
+    {
+      "profile_id": "conservative_research_cost",
+      "initial_cash": 10000.0,
+      "fee_bps": 10.0,
+      "slippage_bps": 5.0,
+      "max_abs_exposure": 1.0,
+      "liquidate_at_end": true
+    }
+  ],
+  "suitability_policy": {
+    "minimum_overall_ready_ratio": 0.8,
+    "require_all_selected_series_ready": true,
+    "require_all_benchmark_runs_successful": true,
+    "maximum_total_duplicate_timestamps": 0,
+    "maximum_total_off_grid_timestamps": 0,
+    "next_venue_on_failure": "bybit"
+  }
+}
