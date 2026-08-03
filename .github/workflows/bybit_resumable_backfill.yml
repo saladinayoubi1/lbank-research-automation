@@ -1,0 +1,64 @@
+name: Run resumable Bybit Spot backfill pilot
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/bybit_resumable_backfill.yml"
+      - "bybit_spot_backfill.py"
+      - "bybit_spot_archive_audit.py"
+      - "bybit_spot_archive_collector.py"
+      - "tests/test_bybit_spot_backfill.py"
+      - "requirements.lock"
+      - "requirements-dev.lock"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install locked dependencies
+        run: python -m pip install -r requirements.lock
+
+      - name: Check dependency consistency
+        run: python -m pip check
+
+      - name: Run one atomic monthly backfill unit
+        run: >-
+          python bybit_spot_backfill.py
+          --start-date 2022-12-01
+          --end-date 2022-12-31
+          --state-root build/bybit_backfill_state
+          --cache-root build/bybit_backfill_cache
+          --max-archives-per-run 2
+          --clean
+
+      - name: Enforce monthly pilot completion
+        run: >-
+          python -c "import json, pathlib, sys;
+          p=pathlib.Path('build/bybit_backfill_state/_backfill_report.json');
+          r=json.loads(p.read_text());
+          s=r['summary'];
+          sys.exit(0 if s['backfill_complete'] and s['current_dataset_integrity_ok'] else 1)"
+
+      - name: Upload resumable state snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: bybit-resumable-backfill-2022-12-${{ github.sha }}
+          path: build/bybit_backfill_state
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 9
