@@ -35,14 +35,17 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh api --paginate "repos/$GITHUB_REPOSITORY/actions/artifacts?per_page=100" > build/artifacts.json
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/actions/artifacts?per_page=100" > build/artifact-pages.json
           for number in $(seq -w 1 26); do
             artifact_id=$(python - "$number" <<'PY'
           import json, sys
           number=sys.argv[1]
           prefix=f"bybit-chunk-{number}-attempt-"
-          payload=json.load(open("build/artifacts.json"))
-          items=[item for item in payload.get("artifacts", []) if not item.get("expired") and item.get("name", "").startswith(prefix)]
+          pages=json.load(open("build/artifact-pages.json"))
+          items=[]
+          for page in pages:
+              items.extend(page.get("artifacts", []))
+          items=[item for item in items if not item.get("expired") and item.get("name", "").startswith(prefix)]
           items.sort(key=lambda item: (item.get("created_at", ""), item.get("id", 0)))
           print(items[-1]["id"] if items else "")
           PY
