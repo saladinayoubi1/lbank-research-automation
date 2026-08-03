@@ -1,0 +1,14 @@
+name: Extend Bybit Spot history
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  notice:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Use the verified batch workflows and final aggregation workflow."

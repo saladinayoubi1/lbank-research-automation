@@ -1,0 +1,244 @@
+name: Finalize Bybit full history
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/bybit_finalize.yml"
+      - "aggregate_bybit_artifacts.py"
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      GH_TOKEN: ${{ github.token }}
+      BASE_ARTIFACT_ID: "8845033283"
+      FINAL_ZIP: build/BYBIT_full_history_2022-12-01_to_2026-07-31.zip
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements.lock
+      - run: python -m pip check
+      - name: Wait for all verified monthly artifacts
+        run: |
+          python - <<'PY'
+          import os, re, time
+          import requests
+
+          repo = os.environ["GITHUB_REPOSITORY"]
+          token = os.environ["GH_TOKEN"]
+          headers = {
+              "Authorization": f"Bearer {token}",
+              "Accept": "application/vnd.github+json",
+              "X-GitHub-Api-Version": "2022-11-28",
+          }
+
+          def list_artifacts():
+              result = []
+              page = 1
+              while True:
+                  response = requests.get(
+                      f"https://api.github.com/repos/{repo}/actions/artifacts",
+                      headers=headers,
+                      params={"per_page": 100, "page": page},
+                      timeout=60,
+                  )
+                  response.raise_for_status()
+                  batch = response.json().get("artifacts", [])
+                  result.extend(batch)
+                  if len(batch) < 100:
+                      return result
+                  page += 1
+
+          required = {f"{number:02d}" for number in range(1, 43)}
+          pattern = re.compile(r"^bybit-chunk-(\d{2})-attempt-\d+$")
+          for poll in range(1, 111):
+              present = set()
+              for artifact in list_artifacts():
+                  if artifact.get("expired"):
+                      continue
+                  match = pattern.match(str(artifact.get("name", "")))
+                  if match:
+                      present.add(match.group(1))
+              missing = sorted(required - present)
+              print(f"artifact poll {poll}: present={len(present)}/42 missing={','.join(missing)}")
+              if not missing:
+                  break
+              time.sleep(20)
+          else:
+              raise SystemExit("Timed out waiting for monthly artifacts")
+          PY
+      - name: Download latest valid artifact for every month
+        run: |
+          rm -rf build/bybit_artifacts build/bybit_full_history
+          mkdir -p build/bybit_artifacts
+          python - <<'PY'
+          import os, re, zipfile
+          from pathlib import Path
+          import requests
+
+          repo = os.environ["GITHUB_REPOSITORY"]
+          token = os.environ["GH_TOKEN"]
+          base_id = int(os.environ["BASE_ARTIFACT_ID"])
+          root = Path("build/bybit_artifacts")
+          headers = {
+              "Authorization": f"Bearer {token}",
+              "Accept": "application/vnd.github+json",
+              "X-GitHub-Api-Version": "2022-11-28",
+          }
+
+          def list_artifacts():
+              result = []
+              page = 1
+              while True:
+                  response = requests.get(
+                      f"https://api.github.com/repos/{repo}/actions/artifacts",
+                      headers=headers,
+                      params={"per_page": 100, "page": page},
+                      timeout=60,
+                  )
+                  response.raise_for_status()
+                  batch = response.json().get("artifacts", [])
+                  result.extend(batch)
+                  if len(batch) < 100:
+                      return result
+                  page += 1
+
+          def download(artifact_id: int, destination: Path):
+              response = requests.get(
+                  f"https://api.github.com/repos/{repo}/actions/artifacts/{artifact_id}/zip",
+                  headers=headers,
+                  timeout=180,
+                  allow_redirects=True,
+              )
+              response.raise_for_status()
+              archive = destination.with_suffix(".zip")
+              archive.write_bytes(response.content)
+              destination.mkdir(parents=True, exist_ok=True)
+              with zipfile.ZipFile(archive) as handle:
+                  handle.extractall(destination)
+              archive.unlink()
+
+          pattern = re.compile(r"^bybit-chunk-(\d{2})-attempt-\d+$")
+          latest = {}
+          for artifact in list_artifacts():
+              if artifact.get("expired"):
+                  continue
+              match = pattern.match(str(artifact.get("name", "")))
+              if not match:
+                  continue
+              chunk = match.group(1)
+              if chunk not in {f"{number:02d}" for number in range(1, 43)}:
+                  continue
+              previous = latest.get(chunk)
+              key = (str(artifact.get("created_at", "")), int(artifact["id"]))
+              if previous is None or key > previous[0]:
+                  latest[chunk] = (key, artifact)
+
+          missing = sorted({f"{number:02d}" for number in range(1, 43)} - set(latest))
+          if missing:
+              raise SystemExit(f"Missing monthly artifacts: {missing}")
+
+          download(base_id, root / f"base-{base_id}")
+          for chunk in sorted(latest):
+              artifact = latest[chunk][1]
+              print(f"downloading chunk {chunk}: {artifact['id']} {artifact['name']}")
+              download(int(artifact["id"]), root / f"chunk-{chunk}-{artifact['id']}")
+          PY
+      - name: Aggregate and validate complete history
+        run: |
+          python aggregate_bybit_artifacts.py \
+            --input-root build/bybit_artifacts \
+            --output-root build/bybit_full_history \
+            --zip-path "$FINAL_ZIP" \
+            --start-date 2022-12-01 \
+            --end-date 2026-07-31 \
+            --clean
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report_path = Path("build/bybit_full_history/_backfill_report.json")
+          report = json.loads(report_path.read_text())
+          expected = {"minute15": 128544, "hour1": 32136, "hour4": 8034}
+          assert report["summary"]["full_history_ready"] is True
+          assert report["summary"]["completed_units"] == 44
+          assert report["summary"]["source_archives"] == 88
+          assert report["summary"]["ready_series"] == 6
+          assert len(report["statuses"]) == 6
+          for item in report["statuses"]:
+              assert item["rows"] == expected[item["timeframe"]], item
+              assert item["expected_rows"] == expected[item["timeframe"]], item
+              assert item["missing_candles"] == 0, item
+              assert item["gap_count"] == 0, item
+              assert item["duplicate_count"] == 0, item
+              assert item["off_grid_count"] == 0, item
+              assert item["invalid_ohlc_count"] == 0, item
+              assert item["integrity_ok"] is True, item
+              assert item["status"] == "ready", item
+          report.pop("snapshot_zip", None)
+          report["packaging"] = {
+              "archive_name": "BYBIT_full_history_2022-12-01_to_2026-07-31.zip",
+              "archive_sha256_location": "external sidecar and delivery manifest",
+          }
+          report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+          PY
+      - name: Build final immutable package and digest
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import aggregate_bybit_artifacts as aggregate
+
+          root = Path("build/bybit_full_history")
+          aggregate.write_json(root / "_snapshot_manifest.json", aggregate.build_inventory(root))
+          aggregate.write_sha256s(root)
+          PY
+          rm -f "$FINAL_ZIP"
+          (cd build/bybit_full_history && zip -q -r "../$(basename "$FINAL_ZIP")" .)
+          sha256sum "$FINAL_ZIP" | tee "${FINAL_ZIP}.sha256"
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+
+          path = Path(os.environ["FINAL_ZIP"])
+          digest = hashlib.sha256(path.read_bytes()).hexdigest()
+          report = json.loads(Path("build/bybit_full_history/_backfill_report.json").read_text())
+          delivery = {
+              "file_name": path.name,
+              "size_bytes": path.stat().st_size,
+              "sha256": digest,
+              "range": "2022-12-01 through 2026-07-31 UTC",
+              "ready_series": report["summary"]["ready_series"],
+              "completed_units": report["summary"]["completed_units"],
+              "source_archives": report["summary"]["source_archives"],
+              "statuses": report["statuses"],
+          }
+          Path("build/BYBIT_full_history_delivery.json").write_text(
+              json.dumps(delivery, indent=2, sort_keys=True) + "\n"
+          )
+          print(json.dumps(delivery, sort_keys=True))
+          PY
+          unzip -t "$FINAL_ZIP"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bybit-full-history-final-${{ github.run_attempt }}
+          path: |
+            build/BYBIT_full_history_2022-12-01_to_2026-07-31.zip
+            build/BYBIT_full_history_2022-12-01_to_2026-07-31.zip.sha256
+            build/BYBIT_full_history_delivery.json
+            build/bybit_full_history/_backfill_report.json
+            build/bybit_full_history/_backfill_report.md
+            build/bybit_full_history/_backfill_status.csv
+            build/bybit_full_history/_source_manifest.json
+            build/bybit_full_history/_snapshot_manifest.json
+            build/bybit_full_history/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0

@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import argparse
+import csv
+import gzip
 import hashlib
 import json
+import re
 import shutil
 from pathlib import Path
 from typing import Any, Callable
@@ -34,6 +37,7 @@ OFFICIAL_POSITIONAL_COLUMNS = (
     "side",
     "rpi",
 )
+PARSER_LINE_SAMPLE_LIMIT = 5
 
 
 class BybitArchiveAuditError(RuntimeError):
@@ -133,34 +137,113 @@ def normalize_named_columns(frame: pd.DataFrame) -> pd.DataFrame:
     return frame.rename(columns=rename)
 
 
-def read_trade_archive(path: Path) -> tuple[pd.DataFrame, dict[str, Any]]:
-    named = normalize_named_columns(
-        pd.read_csv(
-            path,
-            compression="gzip",
-            dtype="string",
-            low_memory=False,
-        )
-    )
-    used_positional_schema = not set(REQUIRED_TRADE_COLUMNS).issubset(named.columns)
-    if used_positional_schema:
-        raw = pd.read_csv(
-            path,
-            compression="gzip",
-            header=None,
-            dtype="string",
-            low_memory=False,
-        )
-        if raw.shape[1] < len(REQUIRED_TRADE_COLUMNS):
+def _count_nonempty_archive_lines(path: Path) -> int:
+    with gzip.open(path, "rb") as handle:
+        return sum(bool(line.strip()) for line in handle)
+
+
+def _parser_line_samples(error: pd.errors.ParserError) -> list[int]:
+    samples = [
+        int(value)
+        for value in re.findall(r"line\s+(\d+)", str(error), flags=re.IGNORECASE)
+    ]
+    return list(dict.fromkeys(samples))[:PARSER_LINE_SAMPLE_LIMIT]
+
+
+def _read_csv_with_malformed_audit(
+    path: Path,
+    *,
+    header: str | int | None = "infer",
+    names: tuple[str, ...] | None = None,
+    skiprows: int = 0,
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    options: dict[str, Any] = {
+        "compression": "gzip",
+        "header": header,
+        "dtype": "string",
+        "low_memory": False,
+        "skiprows": skiprows,
+    }
+    if names is not None:
+        options["names"] = list(names)
+    try:
+        frame = pd.read_csv(path, **options)
+        return frame, {
+            "parser_engine": "c",
+            "malformed_csv_rows": 0,
+            "malformed_csv_line_samples": [],
+            "source_rows_parsed": int(len(frame)),
+            "source_rows_skipped": 0,
+        }
+    except pd.errors.ParserError as error:
+        nonempty_lines = _count_nonempty_archive_lines(path)
+        frame = pd.read_csv(path, on_bad_lines="skip", **options)
+        header_rows = skiprows + (0 if header is None else 1)
+        expected_rows = max(0, nonempty_lines - header_rows)
+        skipped_rows = max(0, expected_rows - len(frame))
+        if skipped_rows == 0:
             raise BybitArchiveAuditError(
-                f"Archive has {raw.shape[1]} columns; expected at least 4"
-            )
-        column_count = min(raw.shape[1], len(OFFICIAL_POSITIONAL_COLUMNS))
-        raw = raw.iloc[:, :column_count].copy()
-        raw.columns = OFFICIAL_POSITIONAL_COLUMNS[:column_count]
-        frame = raw
+                "CSV parser failed but no rejected source rows could be audited"
+            ) from error
+        return frame, {
+            "parser_engine": "c-skip-bad-lines",
+            "malformed_csv_rows": int(skipped_rows),
+            "malformed_csv_line_samples": _parser_line_samples(error),
+            "source_rows_parsed": int(len(frame)),
+            "source_rows_skipped": int(skipped_rows),
+        }
+
+
+def _first_nonempty_archive_row(path: Path) -> list[str]:
+    with gzip.open(path, "rt", encoding="utf-8-sig", newline="") as handle:
+        reader = csv.reader(handle)
+        first_row = next(
+            (row for row in reader if any(value.strip() for value in row)),
+            [],
+        )
+    if not first_row:
+        raise BybitArchiveAuditError(f"Archive is empty: {path}")
+    return first_row
+
+
+def _canonical_header_columns(columns: list[str]) -> list[str]:
+    probe = normalize_named_columns(pd.DataFrame(columns=columns))
+    return [str(column) for column in probe.columns]
+
+
+def _extended_named_header(columns: list[str]) -> tuple[str, ...]:
+    canonical = _canonical_header_columns(columns)
+    official = list(OFFICIAL_POSITIONAL_COLUMNS)
+    if canonical == official[: len(canonical)] and len(canonical) < len(official):
+        return tuple(columns) + tuple(official[len(canonical) :])
+    return tuple(columns)
+
+
+def read_trade_archive(path: Path) -> tuple[pd.DataFrame, dict[str, Any]]:
+    first_row = _first_nonempty_archive_row(path)
+    canonical_header = _canonical_header_columns(first_row)
+    used_positional_schema = not set(REQUIRED_TRADE_COLUMNS).issubset(
+        canonical_header
+    )
+    extended_named_columns = 0
+    if used_positional_schema:
+        frame, parser_metadata = _read_csv_with_malformed_audit(
+            path,
+            header=None,
+            names=OFFICIAL_POSITIONAL_COLUMNS,
+        )
+        source_header_columns: list[str] = []
     else:
-        frame = named.copy()
+        names = _extended_named_header(first_row)
+        extended_named_columns = len(names) - len(first_row)
+        named, parser_metadata = _read_csv_with_malformed_audit(
+            path,
+            header=None,
+            names=names,
+            skiprows=1,
+        )
+        frame = normalize_named_columns(named)
+        source_header_columns = first_row
 
     frame = frame.loc[:, ~frame.columns.duplicated()].copy()
     missing = sorted(set(REQUIRED_TRADE_COLUMNS).difference(frame.columns))
@@ -194,6 +277,9 @@ def read_trade_archive(path: Path) -> tuple[pd.DataFrame, dict[str, Any]]:
         "used_positional_schema": used_positional_schema,
         "source_columns": [str(column) for column in frame.columns],
         "timestamp_unit": timestamp_unit,
+        "source_header_columns": source_header_columns,
+        "extended_named_schema_columns": extended_named_columns,
+        **parser_metadata,
     }
 
 

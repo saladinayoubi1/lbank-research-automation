@@ -1,0 +1,51 @@
+name: Bybit history batch B
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/bybit_batch_b.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  chunk:
+    name: chunk-${{ matrix.id }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        include:
+          - { id: "18", start: "2025-11-01", end: "2025-11-30" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements.lock
+      - run: python -m pip check
+      - name: Build verified month
+        run: |
+          state_root="build/chunk-${{ matrix.id }}"
+          python bybit_spot_backfill.py --start-date "${{ matrix.start }}" --end-date "${{ matrix.end }}" --state-root "$state_root" --cache-root "build/cache-${{ matrix.id }}" --max-archives-per-run 2 --clean
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          report=json.loads((Path(f"build/chunk-{os.environ['CHUNK_ID']}")/'_backfill_report.json').read_text())
+          s=report['summary']
+          ok=s['backfill_complete'] and s['completed_units']==1 and s['remaining_units']==0 and s['run_failures']==0 and s['current_dataset_integrity_ok'] and len(report['statuses'])==6 and all(x['integrity_ok'] for x in report['statuses'])
+          raise SystemExit(0 if ok else 1)
+          PY
+        env:
+          CHUNK_ID: ${{ matrix.id }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bybit-chunk-${{ matrix.id }}-attempt-${{ github.run_attempt }}
+          path: build/chunk-${{ matrix.id }}
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 9

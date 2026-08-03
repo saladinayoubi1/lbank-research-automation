@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gzip
 from pathlib import Path
 
 import pandas as pd
@@ -26,6 +27,15 @@ def write_official_archive(path: Path, symbol: str, audit_date: str) -> None:
     frame.to_csv(path, index=False, compression="gzip")
 
 
+def inject_extra_field(path: Path, data_row_number: int) -> None:
+    with gzip.open(path, "rt", encoding="utf-8", newline="") as handle:
+        lines = handle.readlines()
+    line_index = data_row_number
+    lines[line_index] = lines[line_index].rstrip("\r\n") + ",unexpected\n"
+    with gzip.open(path, "wt", encoding="utf-8", newline="") as handle:
+        handle.writelines(lines)
+
+
 def test_archive_url_uses_official_spot_path():
     assert audit.archive_url("BTCUSDT", "2026-08-01") == (
         "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-08-01.csv.gz"
@@ -41,7 +51,27 @@ def test_read_official_archive_normalizes_columns(tmp_path):
     assert "symbol" not in frame.columns
     assert schema["timestamp_unit"] == "ms"
     assert schema["used_positional_schema"] is False
+    assert schema["parser_engine"] == "c"
+    assert schema["malformed_csv_rows"] == 0
+    assert schema["source_rows_parsed"] == 24 * 60
+    assert schema["source_rows_skipped"] == 0
     assert frame["side"].iloc[:2].tolist() == ["Buy", "Sell"]
+
+
+def test_read_official_archive_skips_and_audits_malformed_row(tmp_path):
+    path = tmp_path / "BTCUSDT_2026-08-01.csv.gz"
+    write_official_archive(path, "BTCUSDT", "2026-08-01")
+    inject_extra_field(path, data_row_number=10)
+
+    frame, schema = audit.read_trade_archive(path)
+
+    assert len(frame) == 24 * 60 - 1
+    assert schema["parser_engine"] == "c-skip-bad-lines"
+    assert schema["malformed_csv_rows"] == 1
+    assert schema["source_rows_parsed"] == 24 * 60 - 1
+    assert schema["source_rows_skipped"] == 1
+    assert len(schema["malformed_csv_line_samples"]) <= audit.PARSER_LINE_SAMPLE_LIMIT
+    assert frame["trade_id"].eq("10").sum() == 0
 
 
 def test_read_positional_archive_supports_official_layout(tmp_path):
@@ -195,6 +225,43 @@ def test_build_report_passes_two_clean_archives(tmp_path):
     assert report["summary"]["candidate_for_full_spot_archive_backfill"] is True
 
 
+def test_build_report_accepts_audited_malformed_row_when_candles_stay_complete(
+    tmp_path,
+):
+    source_root = tmp_path / "source"
+    source_root.mkdir()
+    for symbol in audit.SYMBOLS:
+        path = source_root / audit.archive_filename(symbol, "2026-08-01")
+        write_official_archive(path, symbol, "2026-08-01")
+        if symbol == "BTCUSDT":
+            inject_extra_field(path, data_row_number=10)
+
+    def downloader(symbol, audit_date, cache_root):
+        path = source_root / audit.archive_filename(symbol, audit_date)
+        return {
+            "symbol": symbol,
+            "audit_date": audit_date,
+            "url": audit.archive_url(symbol, audit_date),
+            "path": path.as_posix(),
+            "size_bytes": path.stat().st_size,
+            "sha256": "test",
+            "http_status": 200,
+        }
+
+    report = audit.build_archive_audit_report(
+        audit_date="2026-08-01",
+        cache_root=tmp_path / "cache",
+        downloader=downloader,
+    )
+
+    btc = next(item for item in report["archives"] if item["symbol"] == "BTCUSDT")
+    assert btc["malformed_csv_rows"] == 1
+    assert btc["source_rows_skipped"] == 1
+    assert btc["archive_passed"] is True
+    assert report["summary"]["series_passed"] == 6
+    assert report["summary"]["candidate_for_full_spot_archive_backfill"] is True
+
+
 def test_build_report_survives_download_errors(tmp_path):
     def downloader(symbol, audit_date, cache_root):
         raise RuntimeError("unavailable")
@@ -231,3 +298,50 @@ def test_write_report_creates_four_files(tmp_path):
         "_bybit_spot_archive_series.csv",
         "_bybit_spot_archive_sources.csv",
     }
+
+
+def test_read_positional_archive_accepts_mixed_five_and_six_column_rows(tmp_path):
+    path = tmp_path / "mixed-positional.csv.gz"
+    rows = [
+        ["1", "1740787200100", "100.0", "0.1", "buy"],
+        ["2", "1740787260100", "101.0", "0.2", "sell", "0"],
+    ]
+    with gzip.open(path, "wt", encoding="utf-8", newline="") as handle:
+        for row in rows:
+            handle.write(",".join(row) + "\n")
+
+    frame, schema = audit.read_trade_archive(path)
+
+    assert schema["used_positional_schema"] is True
+    assert schema["malformed_csv_rows"] == 0
+    assert schema["source_rows_parsed"] == 2
+    assert frame["price"].tolist() == [100.0, 101.0]
+    assert frame["side"].tolist() == ["Buy", "Sell"]
+    assert pd.isna(frame.loc[0, "rpi"])
+    assert frame.loc[1, "rpi"] == "0"
+
+
+def test_read_named_archive_extends_legacy_five_column_header(tmp_path):
+    path = tmp_path / "mixed-named.csv.gz"
+    with gzip.open(path, "wt", encoding="utf-8", newline="") as handle:
+        handle.write("id,timestamp,price,volume,side\n")
+        handle.write("1,1740787200100,100.0,0.1,buy\n")
+        handle.write("2,1740787260100,101.0,0.2,sell,0\n")
+
+    frame, schema = audit.read_trade_archive(path)
+
+    assert schema["used_positional_schema"] is False
+    assert schema["source_header_columns"] == [
+        "id",
+        "timestamp",
+        "price",
+        "volume",
+        "side",
+    ]
+    assert schema["extended_named_schema_columns"] == 1
+    assert schema["malformed_csv_rows"] == 0
+    assert schema["source_rows_parsed"] == 2
+    assert frame["price"].tolist() == [100.0, 101.0]
+    assert frame["side"].tolist() == ["Buy", "Sell"]
+    assert pd.isna(frame.loc[0, "rpi"])
+    assert frame.loc[1, "rpi"] == "0"

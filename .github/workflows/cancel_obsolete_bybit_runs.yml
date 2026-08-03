@@ -1,0 +1,31 @@
+name: Cancel premature Bybit finalizers
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/cancel_obsolete_bybit_runs.yml"
+      - ".github/workflows/bybit_batch_a.yml"
+      - ".github/workflows/bybit_batch_b.yml"
+      - ".github/workflows/bybit_batch_c.yml"
+      - ".github/workflows/bybit_batch_early.yml"
+      - ".github/workflows/bybit_finalize.yml"
+      - ".github/workflows/bybit_final_aggregate.yml"
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  cancel:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel premature finalization runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs?branch=${GITHUB_HEAD_REF}&per_page=100" \
+            --jq ".workflow_runs[] | select(.id != $GITHUB_RUN_ID and (.status == \"queued\" or .status == \"in_progress\") and (.name == \"Finalize Bybit full history\" or .name == \"Aggregate final Bybit history\")) | .id" \
+            | while read -r run_id; do
+                [ -z "$run_id" ] && continue
+                gh api --method POST "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/cancel" || true
+              done
