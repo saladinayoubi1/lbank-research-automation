@@ -1,0 +1,70 @@
+name: Aggregate final Bybit history
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/bybit_final_aggregate.yml"
+      - "bybit_spot_chunk_aggregator.py"
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  aggregate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements.lock
+      - run: python -m pip check
+      - name: Download verified base snapshot
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p build/base build/chunks
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/8845033283/zip" > build/base.zip
+          unzip -q build/base.zip -d build/base
+      - name: Download latest verified monthly chunks
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api --paginate "repos/$GITHUB_REPOSITORY/actions/artifacts?per_page=100" > build/artifacts.json
+          for number in $(seq -w 1 26); do
+            artifact_id=$(python - "$number" <<'PY'
+          import json, sys
+          number=sys.argv[1]
+          prefix=f"bybit-chunk-{number}-attempt-"
+          payload=json.load(open("build/artifacts.json"))
+          items=[item for item in payload.get("artifacts", []) if not item.get("expired") and item.get("name", "").startswith(prefix)]
+          items.sort(key=lambda item: (item.get("created_at", ""), item.get("id", 0)))
+          print(items[-1]["id"] if items else "")
+          PY
+            )
+            if [ -z "$artifact_id" ]; then
+              echo "Missing artifact for chunk-$number" >&2
+              exit 1
+            fi
+            mkdir -p "build/chunks/chunk-$number"
+            gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" > "build/chunk-$number.zip"
+            unzip -q "build/chunk-$number.zip" -d "build/chunks/chunk-$number"
+          done
+      - name: Aggregate and enforce full-range integrity
+        run: |
+          python bybit_spot_chunk_aggregator.py \
+            --base-root build/base \
+            --chunks-root build/chunks \
+            --output-root build/bybit-full-history-2022-12-01_2026-07-31
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bybit-full-history-2022-12-01_2026-07-31
+          path: build/bybit-full-history-2022-12-01_2026-07-31
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
