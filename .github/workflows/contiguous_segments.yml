@@ -1,0 +1,50 @@
+name: Analyze contiguous research segments
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/contiguous_segments.yml"
+      - "contiguous_segments.py"
+      - "tests/test_contiguous_segments.py"
+      - "main.py"
+      - "requirements.lock"
+      - "data/market/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install locked dependencies
+        run: python -m pip install -r requirements.lock
+
+      - name: Analyze maximal timestamp-contiguous blocks
+        run: >-
+          python contiguous_segments.py
+          --input-root data/market
+          --output-root build/contiguous_segments
+          --minimum-segment-rows 1000
+          --clean
+
+      - name: Upload contiguous segment analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: lbank-contiguous-segments-${{ github.sha }}
+          path: build/contiguous_segments
+          if-no-files-found: error
+          retention-days: 3
+          compression-level: 9
