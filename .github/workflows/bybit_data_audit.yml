@@ -5,7 +5,9 @@ on:
     paths:
       - ".github/workflows/bybit_data_audit.yml"
       - "bybit_data_audit.py"
+      - "bybit_spot_archive_audit.py"
       - "tests/test_bybit_data_audit.py"
+      - "tests/test_bybit_spot_archive_audit.py"
       - "main.py"
       - "requirements.lock"
   workflow_dispatch:
@@ -16,7 +18,7 @@ permissions:
 jobs:
   audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
 
     steps:
       - name: Check out repository
@@ -34,12 +36,20 @@ jobs:
       - name: Check dependency consistency
         run: python -m pip check
 
-      - name: Run bounded public Bybit audit
+      - name: Diagnose REST API access from the hosted runner
         continue-on-error: true
         run: >-
           python bybit_data_audit.py
-          --output-root build/bybit_data_audit
+          --output-root build/bybit_api_access_audit
           --request-pause 0.1
+          --clean
+
+      - name: Audit fixed official Spot trade archives
+        run: >-
+          python bybit_spot_archive_audit.py
+          --audit-date 2026-08-01
+          --cache-root build/bybit_spot_archive_cache
+          --output-root build/bybit_spot_archive_audit
           --clean
 
       - name: Upload Bybit audit evidence
@@ -47,14 +57,16 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: bybit-public-data-audit-${{ github.sha }}
-          path: build/bybit_data_audit
+          path: |
+            build/bybit_api_access_audit
+            build/bybit_spot_archive_audit
           if-no-files-found: error
           retention-days: 7
           compression-level: 9
 
-      - name: Enforce candidate gate
+      - name: Enforce official archive candidate gate
         run: >-
           python -c "import json, pathlib, sys;
-          p=pathlib.Path('build/bybit_data_audit/_bybit_data_audit.json');
+          p=pathlib.Path('build/bybit_spot_archive_audit/_bybit_spot_archive_audit.json');
           r=json.loads(p.read_text());
-          sys.exit(0 if r['summary']['candidate_for_full_backfill'] else 1)"
+          sys.exit(0 if r['summary']['candidate_for_full_spot_archive_backfill'] else 1)"
