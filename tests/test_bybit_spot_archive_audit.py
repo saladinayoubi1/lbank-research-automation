@@ -319,3 +319,29 @@ def test_read_positional_archive_accepts_mixed_five_and_six_column_rows(tmp_path
     assert frame["side"].tolist() == ["Buy", "Sell"]
     assert pd.isna(frame.loc[0, "rpi"])
     assert frame.loc[1, "rpi"] == "0"
+
+
+def test_read_named_archive_extends_legacy_five_column_header(tmp_path):
+    path = tmp_path / "mixed-named.csv.gz"
+    with gzip.open(path, "wt", encoding="utf-8", newline="") as handle:
+        handle.write("id,timestamp,price,volume,side\n")
+        handle.write("1,1740787200100,100.0,0.1,buy\n")
+        handle.write("2,1740787260100,101.0,0.2,sell,0\n")
+
+    frame, schema = audit.read_trade_archive(path)
+
+    assert schema["used_positional_schema"] is False
+    assert schema["source_header_columns"] == [
+        "id",
+        "timestamp",
+        "price",
+        "volume",
+        "side",
+    ]
+    assert schema["extended_named_schema_columns"] == 1
+    assert schema["malformed_csv_rows"] == 0
+    assert schema["source_rows_parsed"] == 2
+    assert frame["price"].tolist() == [100.0, 101.0]
+    assert frame["side"].tolist() == ["Buy", "Sell"]
+    assert pd.isna(frame.loc[0, "rpi"])
+    assert frame.loc[1, "rpi"] == "0"
