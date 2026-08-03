@@ -12,9 +12,12 @@ DEFAULT_OUTPUT_ROOT = Path("build/gap_probe")
 
 
 def inventory_to_probe_report(inventory: dict[str, Any]) -> dict[str, Any]:
-    """Adapt inventory rows to the established quality-audit input contract."""
+    """Adapt invalid inventory rows to the established quality-audit contract."""
     results: list[dict[str, Any]] = []
     for row in inventory.get("rows", []):
+        if row.get("canonical_valid"):
+            continue
+
         raw_row = {
             "timestamp_utc": row["timestamp_utc"],
             "open": row["open"],
@@ -28,11 +31,7 @@ def inventory_to_probe_report(inventory: dict[str, Any]) -> dict[str, Any]:
             "symbol": row["symbol"],
             "timeframe": row["timeframe"],
             "missing_timestamp_utc": row["timestamp_utc"],
-            "classification": (
-                "recoverable_validated"
-                if row.get("canonical_valid")
-                else "present_but_rejected_by_validation"
-            ),
+            "classification": "present_but_rejected_by_validation",
             "observations": [{"exact_raw_rows": [raw_row]}],
         })
 
@@ -54,7 +53,10 @@ def build_inventory_quality_audit(inventory: dict[str, Any]) -> dict[str, Any]:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Measure OHLCV severity for every missing row observed in cached probe responses."
+        description=(
+            "Measure OHLCV severity for every invalid missing row observed "
+            "in cached probe responses."
+        )
     )
     parser.add_argument(
         "--inventory-json",
