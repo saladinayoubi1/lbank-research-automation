@@ -1,7 +1,15 @@
 name: Cancel obsolete Bybit runs
 
 on:
-  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/cancel_obsolete_bybit_runs.yml"
+      - ".github/workflows/bybit_batch_a.yml"
+      - ".github/workflows/bybit_batch_b.yml"
+      - ".github/workflows/bybit_batch_c.yml"
+      - ".github/workflows/bybit_batch_early.yml"
+      - ".github/workflows/bybit_finalize.yml"
+      - ".github/workflows/bybit_final_aggregate.yml"
 
 permissions:
   actions: write
@@ -10,5 +18,16 @@ permissions:
 jobs:
   cancel:
     runs-on: ubuntu-latest
+    env:
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
     steps:
-      - run: echo "Automatic cancellation is disabled while bounded history batches are being completed."
+      - name: Cancel superseded and premature finalization runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs?branch=${GITHUB_HEAD_REF}&per_page=100" \
+            --jq ".workflow_runs[] | select(.id != $GITHUB_RUN_ID and (.status == \"queued\" or .status == \"in_progress\") and (.head_sha != \"$HEAD_SHA\" or .name == \"Finalize Bybit full history\" or .name == \"Aggregate final Bybit history\")) | .id" \
+            | while read -r run_id; do
+                [ -z "$run_id" ] && continue
+                gh api --method POST "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/cancel" || true
+              done
