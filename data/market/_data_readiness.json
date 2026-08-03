@@ -32,6 +32,11 @@
     },
     {
       "readiness_reason": "integrity_failed",
+      "symbol": "btc_usdt",
+      "timeframe": "minute15"
+    },
+    {
+      "readiness_reason": "integrity_failed",
       "symbol": "eth_usdt",
       "timeframe": "hour1"
     },
@@ -39,6 +44,11 @@
       "readiness_reason": "integrity_failed",
       "symbol": "eth_usdt",
       "timeframe": "hour4"
+    },
+    {
+      "readiness_reason": "integrity_failed",
+      "symbol": "eth_usdt",
+      "timeframe": "minute15"
     },
     {
       "readiness_reason": "integrity_failed",
@@ -94,23 +104,15 @@
     {
       "symbol": "agt_usdt",
       "timeframe": "hour4"
-    },
-    {
-      "symbol": "btc_usdt",
-      "timeframe": "minute15"
-    },
-    {
-      "symbol": "eth_usdt",
-      "timeframe": "minute15"
     }
   ],
   "summary": {
     "all_ready": false,
-    "blocked_series": 17,
-    "ready_series": 4,
+    "blocked_series": 19,
+    "ready_series": 2,
     "reason_counts": {
-      "integrity_failed": 17,
-      "ready": 4
+      "integrity_failed": 19,
+      "ready": 2
     },
     "total_series": 21
   }
