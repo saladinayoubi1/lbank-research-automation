@@ -10,8 +10,6 @@ from typing import Any, Callable
 import pandas as pd
 import requests
 
-from main import analyze_timestamp_integrity
-
 ARCHIVE_BASE_URL = "https://public.bybit.com/spot"
 DEFAULT_AUDIT_DATE = "2026-08-01"
 DEFAULT_OUTPUT_ROOT = Path("build/bybit_spot_archive_audit")
@@ -304,6 +302,18 @@ def count_gap_groups(
     return 1 + int((differences != step).sum())
 
 
+def count_off_grid_timestamps(
+    timestamps: pd.DatetimeIndex,
+    step: pd.Timedelta,
+) -> int:
+    step_seconds = int(step.total_seconds())
+    return sum(
+        int(timestamp.timestamp()) % step_seconds != 0
+        or timestamp.microsecond != 0
+        for timestamp in timestamps
+    )
+
+
 def audit_candles(
     candles: pd.DataFrame,
     symbol: str,
@@ -324,18 +334,19 @@ def audit_candles(
     )
 
     if candles.empty:
-        actual_index = pd.DatetimeIndex([], tz="UTC")
+        raw_index = pd.DatetimeIndex([], tz="UTC")
+        actual_index = raw_index
         duplicate_count = 0
         off_grid_count = 0
         invalid_ohlc_count = 0
         negative_volume_count = 0
     else:
-        internal = analyze_timestamp_integrity(candles["timestamp"], timeframe)
-        duplicate_count = int(internal["duplicate_count"])
-        off_grid_count = int(internal["off_grid_count"])
-        actual_index = pd.DatetimeIndex(
+        raw_index = pd.DatetimeIndex(
             pd.to_datetime(candles["timestamp"], utc=True, errors="raise")
-        ).drop_duplicates().sort_values()
+        ).sort_values()
+        actual_index = raw_index.drop_duplicates()
+        duplicate_count = int(len(raw_index) - len(actual_index))
+        off_grid_count = count_off_grid_timestamps(actual_index, step)
         required_high = candles[["open", "close", "low"]].max(axis=1)
         required_low = candles[["open", "close", "high"]].min(axis=1)
         invalid_ohlc_count = int(
