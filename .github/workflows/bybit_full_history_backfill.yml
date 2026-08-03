@@ -18,25 +18,38 @@ jobs:
   chunk:
     name: chunk-${{ matrix.id }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     strategy:
       fail-fast: false
-      max-parallel: 4
+      max-parallel: 6
       matrix:
         include:
-          - { id: "01", start: "2024-06-01", end: "2024-07-31" }
-          - { id: "02", start: "2024-08-01", end: "2024-09-30" }
-          - { id: "03", start: "2024-10-01", end: "2024-11-30" }
-          - { id: "04", start: "2024-12-01", end: "2025-01-31" }
-          - { id: "05", start: "2025-02-01", end: "2025-03-31" }
-          - { id: "06", start: "2025-04-01", end: "2025-05-31" }
-          - { id: "07", start: "2025-06-01", end: "2025-07-31" }
-          - { id: "08", start: "2025-08-01", end: "2025-09-30" }
-          - { id: "09", start: "2025-10-01", end: "2025-11-30" }
-          - { id: "10", start: "2025-12-01", end: "2026-01-31" }
-          - { id: "11", start: "2026-02-01", end: "2026-03-31" }
-          - { id: "12", start: "2026-04-01", end: "2026-05-31" }
-          - { id: "13", start: "2026-06-01", end: "2026-07-31" }
+          - { id: "01", start: "2024-06-01", end: "2024-06-30" }
+          - { id: "02", start: "2024-07-01", end: "2024-07-31" }
+          - { id: "03", start: "2024-08-01", end: "2024-08-31" }
+          - { id: "04", start: "2024-09-01", end: "2024-09-30" }
+          - { id: "05", start: "2024-10-01", end: "2024-10-31" }
+          - { id: "06", start: "2024-11-01", end: "2024-11-30" }
+          - { id: "07", start: "2024-12-01", end: "2024-12-31" }
+          - { id: "08", start: "2025-01-01", end: "2025-01-31" }
+          - { id: "09", start: "2025-02-01", end: "2025-02-28" }
+          - { id: "10", start: "2025-03-01", end: "2025-03-31" }
+          - { id: "11", start: "2025-04-01", end: "2025-04-30" }
+          - { id: "12", start: "2025-05-01", end: "2025-05-31" }
+          - { id: "13", start: "2025-06-01", end: "2025-06-30" }
+          - { id: "14", start: "2025-07-01", end: "2025-07-31" }
+          - { id: "15", start: "2025-08-01", end: "2025-08-31" }
+          - { id: "16", start: "2025-09-01", end: "2025-09-30" }
+          - { id: "17", start: "2025-10-01", end: "2025-10-31" }
+          - { id: "18", start: "2025-11-01", end: "2025-11-30" }
+          - { id: "19", start: "2025-12-01", end: "2025-12-31" }
+          - { id: "20", start: "2026-01-01", end: "2026-01-31" }
+          - { id: "21", start: "2026-02-01", end: "2026-02-28" }
+          - { id: "22", start: "2026-03-01", end: "2026-03-31" }
+          - { id: "23", start: "2026-04-01", end: "2026-04-30" }
+          - { id: "24", start: "2026-05-01", end: "2026-05-31" }
+          - { id: "25", start: "2026-06-01", end: "2026-06-30" }
+          - { id: "26", start: "2026-07-01", end: "2026-07-31" }
 
     steps:
       - uses: actions/checkout@v4
@@ -57,7 +70,7 @@ jobs:
               --end-date "${{ matrix.end }}" \
               --state-root "build/chunk-${{ matrix.id }}" \
               --cache-root "build/cache-${{ matrix.id }}" \
-              --max-archives-per-run 4 \
+              --max-archives-per-run 2 \
               --clean; then
               success=true
               break
@@ -74,7 +87,7 @@ jobs:
           summary = report["summary"]
           if not (
               summary["backfill_complete"]
-              and summary["completed_units"] == 2
+              and summary["completed_units"] == 1
               and summary["remaining_units"] == 0
               and summary["run_failures"] == 0
               and summary["current_dataset_integrity_ok"]
@@ -150,8 +163,8 @@ jobs:
           completed_ids = {item["unit_id"] for item in checkpoint["completed_units"]}
 
           chunk_dirs = sorted(path for path in chunks_root.iterdir() if path.is_dir())
-          if len(chunk_dirs) != 13:
-              raise SystemExit(f"Expected 13 chunk artifacts, found {len(chunk_dirs)}")
+          if len(chunk_dirs) != 26:
+              raise SystemExit(f"Expected 26 chunk artifacts, found {len(chunk_dirs)}")
 
           for chunk in chunk_dirs:
               report = json.loads((chunk / backfill.REPORT_NAME).read_text())
@@ -194,8 +207,7 @@ jobs:
               checkpoint["completed_units"],
               audit.SYMBOLS,
           )
-          status_frame = pd.DataFrame(statuses)
-          status_frame.to_csv(final / backfill.STATUS_NAME, index=False)
+          pd.DataFrame(statuses).to_csv(final / backfill.STATUS_NAME, index=False)
 
           start_date = "2022-12-01"
           end_date = "2026-07-31"
@@ -205,7 +217,7 @@ jobs:
                   "start_date": start_date,
                   "end_date": end_date,
                   "symbols": list(audit.SYMBOLS),
-                  "construction": "verified base snapshot plus 13 parallel two-month chunks",
+                  "construction": "verified base snapshot plus 26 parallel one-month chunks",
               },
               "summary": {
                   "plan_units": len(checkpoint["completed_units"]),
