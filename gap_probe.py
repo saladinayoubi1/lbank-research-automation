@@ -37,6 +37,67 @@ def utc_timestamp(value: Any) -> pd.Timestamp:
     return timestamp.tz_convert("UTC")
 
 
+def timestamps_from_raw_rows(rows: list[list[Any]]) -> pd.DatetimeIndex:
+    """Extract unique UTC timestamps from raw API rows without OHLCV validation."""
+    raw_values = [row[0] for row in rows if isinstance(row, (list, tuple)) and row]
+    if not raw_values:
+        return pd.DatetimeIndex([], tz="UTC")
+
+    numeric = pd.to_numeric(pd.Series(raw_values), errors="coerce")
+    timestamps = pd.to_datetime(numeric, unit="s", utc=True, errors="coerce")
+    return pd.DatetimeIndex(timestamps.dropna()).drop_duplicates().sort_values()
+
+
+def diagnose_exact_raw_rows(
+    rows: list[list[Any]],
+    target: pd.Timestamp,
+) -> list[dict[str, Any]]:
+    """Describe raw rows at the target and why canonical validation rejects them."""
+    target = utc_timestamp(target)
+    diagnosed: list[dict[str, Any]] = []
+
+    for row in rows:
+        if not isinstance(row, (list, tuple)) or not row:
+            continue
+
+        raw_timestamp = pd.to_numeric(pd.Series([row[0]]), errors="coerce").iloc[0]
+        if pd.isna(raw_timestamp):
+            continue
+        timestamp = pd.to_datetime(raw_timestamp, unit="s", utc=True, errors="coerce")
+        if pd.isna(timestamp) or timestamp != target:
+            continue
+
+        reasons: list[str] = []
+        values = list(row[:6])
+        if len(values) < 6:
+            reasons.append("short_row")
+            values.extend([None] * (6 - len(values)))
+
+        numeric = pd.to_numeric(pd.Series(values[1:6]), errors="coerce")
+        open_price, high, low, close, volume = numeric.tolist()
+        if numeric.isna().any():
+            reasons.append("non_numeric_or_missing_ohlcv")
+        else:
+            if high < max(open_price, close, low):
+                reasons.append("high_below_ohlc_max")
+            if low > min(open_price, close, high):
+                reasons.append("low_above_ohlc_min")
+            if volume < 0:
+                reasons.append("negative_volume")
+
+        diagnosed.append({
+            "timestamp_utc": target.isoformat(),
+            "open": values[1],
+            "high": values[2],
+            "low": values[3],
+            "close": values[4],
+            "volume": values[5],
+            "validation_reasons": reasons,
+        })
+
+    return diagnosed
+
+
 def sample_missing_timestamps(
     missing: set[pd.Timestamp] | list[pd.Timestamp],
     sample_count: int,
@@ -59,32 +120,44 @@ def sample_missing_timestamps(
 
 
 def classify_observations(observations: list[dict[str, Any]]) -> tuple[str, bool]:
-    """Classify whether a missing candle is returned by public API probes."""
-    if any(observation["exact_present"] for observation in observations):
-        return "recoverable", True
+    """Classify raw-source presence separately from canonical validation."""
+    if any(observation["validated_exact_present"] for observation in observations):
+        return "recoverable_validated", True
+
+    raw_exact = [
+        observation for observation in observations
+        if observation["raw_exact_present"]
+    ]
+    if raw_exact:
+        if any(observation["validation_error"] is None for observation in raw_exact):
+            return "present_but_rejected_by_validation", False
+        return "present_but_validation_inconclusive", False
 
     successful = [
-        observation for observation in observations if observation["error"] is None
+        observation
+        for observation in observations
+        if observation["request_error"] is None
     ]
     if not successful:
         return "inconclusive_api_failure", False
 
-    returned_count = sum(observation["returned_count"] for observation in successful)
+    returned_count = sum(
+        observation["raw_returned_count"] for observation in successful
+    )
     if returned_count == 0:
-        return "inconclusive_empty_response", False
+        return "inconclusive_empty_raw_response", False
 
     has_before = any(
-        observation["nearest_before_utc"] is not None
+        observation["raw_nearest_before_utc"] is not None
         for observation in successful
     )
     has_after = any(
-        observation["nearest_after_utc"] is not None
+        observation["raw_nearest_after_utc"] is not None
         for observation in successful
     )
-    bracketed = has_before and has_after
-    if bracketed:
-        return "absent_from_public_kline_response", False
-    return "inconclusive_unbracketed", False
+    if has_before and has_after:
+        return "absent_from_raw_public_kline_response", False
+    return "inconclusive_unbracketed_raw_response", False
 
 
 def probe_missing_timestamp(
@@ -112,71 +185,114 @@ def probe_missing_timestamp(
         observation: dict[str, Any] = {
             "anchor": anchor_name,
             "requested_time_utc": requested_at.isoformat(),
-            "returned_count": 0,
-            "first_returned_utc": None,
-            "last_returned_utc": None,
-            "exact_present": False,
-            "nearest_before_utc": None,
-            "nearest_after_utc": None,
-            "error": None,
+            "raw_returned_count": 0,
+            "validated_returned_count": 0,
+            "rejected_row_count": 0,
+            "raw_first_returned_utc": None,
+            "raw_last_returned_utc": None,
+            "validated_first_returned_utc": None,
+            "validated_last_returned_utc": None,
+            "raw_exact_present": False,
+            "validated_exact_present": False,
+            "raw_nearest_before_utc": None,
+            "raw_nearest_after_utc": None,
+            "exact_raw_rows": [],
+            "request_error": None,
+            "validation_error": None,
         }
 
         try:
             rows = fetcher(symbol, timeframe, int(requested_at.timestamp()))
-            frame = converter(rows, symbol, timeframe)
-            if "timestamp" not in frame.columns:
-                raise ValueError("Converted API frame has no timestamp column")
-
-            timestamps = pd.DatetimeIndex(
-                pd.to_datetime(frame["timestamp"], utc=True, errors="raise")
-            ).drop_duplicates().sort_values()
-            before = timestamps[timestamps < target]
-            after = timestamps[timestamps > target]
-
-            observation.update({
-                "returned_count": int(len(timestamps)),
-                "first_returned_utc": (
-                    None if timestamps.empty else timestamps[0].isoformat()
-                ),
-                "last_returned_utc": (
-                    None if timestamps.empty else timestamps[-1].isoformat()
-                ),
-                "exact_present": bool(target in timestamps),
-                "nearest_before_utc": (
-                    None if before.empty else before[-1].isoformat()
-                ),
-                "nearest_after_utc": (
-                    None if after.empty else after[0].isoformat()
-                ),
-            })
-        except Exception as exc:  # Diagnostic output must survive partial API failure.
-            observation["error"] = f"{type(exc).__name__}: {exc}"
+        except Exception as exc:  # Diagnostic output must survive API failure.
+            observation["request_error"] = f"{type(exc).__name__}: {exc}"
             LOGGER.warning(
-                "Gap probe failed for %s %s at %s (%s): %s",
+                "Gap probe request failed for %s %s at %s (%s): %s",
                 symbol,
                 timeframe,
                 target,
                 anchor_name,
                 exc,
             )
+        else:
+            raw_timestamps = timestamps_from_raw_rows(rows)
+            raw_before = raw_timestamps[raw_timestamps < target]
+            raw_after = raw_timestamps[raw_timestamps > target]
+            observation.update({
+                "raw_returned_count": int(len(raw_timestamps)),
+                "raw_first_returned_utc": (
+                    None if raw_timestamps.empty else raw_timestamps[0].isoformat()
+                ),
+                "raw_last_returned_utc": (
+                    None if raw_timestamps.empty else raw_timestamps[-1].isoformat()
+                ),
+                "raw_exact_present": bool(target in raw_timestamps),
+                "raw_nearest_before_utc": (
+                    None if raw_before.empty else raw_before[-1].isoformat()
+                ),
+                "raw_nearest_after_utc": (
+                    None if raw_after.empty else raw_after[0].isoformat()
+                ),
+                "exact_raw_rows": diagnose_exact_raw_rows(rows, target),
+            })
+
+            try:
+                frame = converter(rows, symbol, timeframe)
+                if "timestamp" not in frame.columns:
+                    raise ValueError("Converted API frame has no timestamp column")
+                validated = pd.DatetimeIndex(
+                    pd.to_datetime(frame["timestamp"], utc=True, errors="raise")
+                ).drop_duplicates().sort_values()
+                observation.update({
+                    "validated_returned_count": int(len(validated)),
+                    "rejected_row_count": max(
+                        0,
+                        int(len(raw_timestamps) - len(validated)),
+                    ),
+                    "validated_first_returned_utc": (
+                        None if validated.empty else validated[0].isoformat()
+                    ),
+                    "validated_last_returned_utc": (
+                        None if validated.empty else validated[-1].isoformat()
+                    ),
+                    "validated_exact_present": bool(target in validated),
+                })
+            except Exception as exc:  # Keep raw evidence if validation fails.
+                observation["validation_error"] = f"{type(exc).__name__}: {exc}"
+                LOGGER.warning(
+                    "Gap probe validation failed for %s %s at %s (%s): %s",
+                    symbol,
+                    timeframe,
+                    target,
+                    anchor_name,
+                    exc,
+                )
 
         observations.append(observation)
         if request_pause_seconds:
             time.sleep(request_pause_seconds)
 
-    classification, exact_recovered = classify_observations(observations)
+    classification, validated_recovered = classify_observations(observations)
     successful_requests = sum(
-        observation["error"] is None for observation in observations
+        observation["request_error"] is None for observation in observations
     )
     failed_requests = len(observations) - successful_requests
-    bracketed = any(
-        observation["nearest_before_utc"] is not None
+    validation_errors = sum(
+        observation["validation_error"] is not None for observation in observations
+    )
+    raw_exact_present = any(
+        observation["raw_exact_present"] for observation in observations
+    )
+    validated_exact_present = any(
+        observation["validated_exact_present"] for observation in observations
+    )
+    raw_bracketed = any(
+        observation["raw_nearest_before_utc"] is not None
         for observation in observations
-        if observation["error"] is None
+        if observation["request_error"] is None
     ) and any(
-        observation["nearest_after_utc"] is not None
+        observation["raw_nearest_after_utc"] is not None
         for observation in observations
-        if observation["error"] is None
+        if observation["request_error"] is None
     )
 
     return {
@@ -184,10 +300,13 @@ def probe_missing_timestamp(
         "timeframe": timeframe,
         "missing_timestamp_utc": target.isoformat(),
         "classification": classification,
-        "exact_recovered": exact_recovered,
-        "bracketed_by_returned_candles": bracketed,
+        "raw_exact_present": raw_exact_present,
+        "validated_exact_present": validated_exact_present,
+        "validated_recovered": validated_recovered,
+        "raw_bracketed_by_returned_candles": raw_bracketed,
         "successful_requests": successful_requests,
         "failed_requests": failed_requests,
+        "validation_errors": validation_errors,
         "observations": observations,
     }
 
@@ -254,6 +373,7 @@ def build_probe_report(
     )
     successful_requests = sum(result["successful_requests"] for result in results)
     failed_requests = sum(result["failed_requests"] for result in results)
+    validation_errors = sum(result["validation_errors"] for result in results)
 
     return {
         "generated_at_utc": pd.Timestamp.now(tz="UTC").isoformat(),
@@ -271,6 +391,13 @@ def build_probe_report(
             "total_source_missing_candles": total_source_missing,
             "successful_requests": successful_requests,
             "failed_requests": failed_requests,
+            "validation_errors": validation_errors,
+            "raw_exact_targets": sum(
+                result["raw_exact_present"] for result in results
+            ),
+            "validated_exact_targets": sum(
+                result["validated_exact_present"] for result in results
+            ),
             "classification_counts": dict(sorted(classification_counts.items())),
         },
         "results": results,
@@ -295,6 +422,9 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- Total source missing candles: {summary['total_source_missing_candles']}",
         f"- Successful API requests: {summary['successful_requests']}",
         f"- Failed API requests: {summary['failed_requests']}",
+        f"- Validation errors: {summary['validation_errors']}",
+        f"- Targets present in raw API rows: {summary['raw_exact_targets']}",
+        f"- Targets retained after validation: {summary['validated_exact_targets']}",
         "- Classifications:",
     ]
     for classification, count in summary["classification_counts"].items():
@@ -304,13 +434,13 @@ def render_markdown(report: dict[str, Any]) -> str:
         "",
         "## Sample results",
         "",
-        "| Symbol | Timeframe | Missing timestamp UTC | Classification | Exact returned | Bracketed | Successful | Failed |",
+        "| Symbol | Timeframe | Missing timestamp UTC | Classification | Raw exact | Validated exact | Successful | Failed |",
         "|---|---|---|---|---:|---:|---:|---:|",
     ])
     for result in report["results"]:
         lines.append(
             "| {symbol} | {timeframe} | {missing_timestamp_utc} | {classification} | "
-            "{exact_recovered} | {bracketed_by_returned_candles} | "
+            "{raw_exact_present} | {validated_exact_present} | "
             "{successful_requests} | {failed_requests} |".format(**result)
         )
 
@@ -318,10 +448,12 @@ def render_markdown(report: dict[str, Any]) -> str:
         "",
         "## Classification meanings",
         "",
-        "- `recoverable`: at least one public API response contained the exact missing timestamp.",
-        "- `absent_from_public_kline_response`: successful responses returned candles on both sides of the target, but never the target itself.",
-        "- `inconclusive_unbracketed`: responses succeeded but did not provide candles on both sides of the target.",
-        "- `inconclusive_empty_response`: all successful responses were empty.",
+        "- `recoverable_validated`: the exact target survived canonical OHLCV validation.",
+        "- `present_but_rejected_by_validation`: the raw API returned the target, but canonical validation removed it.",
+        "- `present_but_validation_inconclusive`: the raw API returned the target, but validation itself errored.",
+        "- `absent_from_raw_public_kline_response`: raw responses bracketed the target but never returned it.",
+        "- `inconclusive_unbracketed_raw_response`: raw responses did not bracket the target.",
+        "- `inconclusive_empty_raw_response`: successful requests contained no parseable raw timestamps.",
         "- `inconclusive_api_failure`: all three anchor requests failed.",
         "",
     ])
@@ -362,7 +494,7 @@ def write_probe_report(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Probe public LBank kline responses around known missing candles."
+        description="Probe raw and validated LBank rows around known candle gaps."
     )
     parser.add_argument("--input-root", type=Path, default=DEFAULT_INPUT_ROOT)
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
