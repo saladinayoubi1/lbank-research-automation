@@ -95,7 +95,7 @@ def calculate_risk_metrics(
     initial_cash: float,
 ) -> dict[str, float | None]:
     equity = pd.to_numeric(equity_curve["equity"], errors="raise")
-    returns = equity.pct_change().replace([float("inf"), float("-inf")], pd.NA).dropna()
+    returns = equity.pct_change().replace([float("inf"), float("-inf")], float("nan")).dropna()
     bars_per_year = BARS_PER_YEAR.get(timeframe)
     if bars_per_year is None:
         raise BenchmarkError(f"Unsupported timeframe for annualization: {timeframe}")
@@ -304,10 +304,13 @@ def run_benchmark(manifest_path: Path) -> dict[str, Any]:
         manifest["suitability_policy"],
     )
 
+    selected_keys = {
+        (item["symbol"], item["timeframe"])
+        for item in manifest["series"]
+    }
     selected_readiness = readiness.loc[
         readiness.apply(
-            lambda row: (row["symbol"], row["timeframe"])
-            in {(item["symbol"], item["timeframe"]) for item in manifest["series"]},
+            lambda row: (row["symbol"], row["timeframe"]) in selected_keys,
             axis=1,
         )
     ]
@@ -370,14 +373,19 @@ def render_markdown(report: dict[str, Any]) -> str:
     for run in report["runs"]:
         total_return = run.get("total_return")
         max_drawdown = run.get("max_drawdown")
+        values = {
+            "symbol": run["symbol"],
+            "timeframe": run["timeframe"],
+            "strategy_id": run["strategy_id"],
+            "profile_id": run["profile_id"],
+            "success": run["success"],
+            "return_value": "" if total_return is None else f"{total_return:.2%}",
+            "drawdown_value": "" if max_drawdown is None else f"{max_drawdown:.2%}",
+            "fills": run.get("fill_count", ""),
+            "error": run.get("error") or "",
+        }
         lines.append(
-            "| {symbol} | {timeframe} | {strategy_id} | {profile_id} | {success} | {return_value} | {drawdown_value} | {fills} | {error} |".format(
-                **run,
-                return_value="" if total_return is None else f"{total_return:.2%}",
-                drawdown_value="" if max_drawdown is None else f"{max_drawdown:.2%}",
-                fills=run.get("fill_count", ""),
-                error=run.get("error") or "",
-            )
+            "| {symbol} | {timeframe} | {strategy_id} | {profile_id} | {success} | {return_value} | {drawdown_value} | {fills} | {error} |".format(**values)
         )
     lines.append("")
     return "\n".join(lines)
