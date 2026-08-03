@@ -58,7 +58,8 @@ def observation(**overrides):
 def test_sample_missing_timestamps_spreads_samples(monkeypatch):
     module = load_module(monkeypatch)
     missing = {
-        pd.Timestamp("2026-01-01T00:00:00Z") + pd.Timedelta(minutes=15 * i)
+        pd.Timestamp("2026-01-01T00:00:00Z")
+        + pd.Timedelta(15 * int(i), unit="min")
         for i in range(5)
     }
 
@@ -156,8 +157,8 @@ def test_probe_survives_partial_request_failure(monkeypatch):
         requested = pd.to_datetime(rows[0][0], unit="s", utc=True)
         if requested == target:
             timestamps = [
-                target - pd.Timedelta(minutes=15),
-                target + pd.Timedelta(minutes=15),
+                target - pd.Timedelta(15, unit="min"),
+                target + pd.Timedelta(15, unit="min"),
             ]
         else:
             timestamps = [requested]
@@ -258,7 +259,9 @@ def test_write_probe_report_creates_json_markdown_and_csv(monkeypatch, tmp_path)
 
     module.write_probe_report(report, tmp_path, clean=True)
 
-    assert json.loads((tmp_path / "_gap_probe.json").read_text())["summary"] == report["summary"]
+    assert json.loads(
+        (tmp_path / "_gap_probe.json").read_text()
+    )["summary"] == report["summary"]
     assert "recoverable" in (tmp_path / "_gap_probe.md").read_text()
     csv = pd.read_csv(tmp_path / "_gap_probe.csv")
     assert csv.loc[0, "symbol"] == "btc_usdt"
