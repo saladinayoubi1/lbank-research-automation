@@ -2,9 +2,12 @@
 
 `gap_probe.py` is a read-only diagnostic for known timestamp gaps in the canonical LBank OHLCV dataset.
 
-It answers a narrow question before any repair policy is changed:
+It answers two separate questions before any repair policy is changed:
 
-> Does the public `/v2/kline.do` response return the exact missing timestamp when queried immediately before, at, and immediately after that timestamp?
+1. Did the public `/v2/kline.do` response contain the exact missing timestamp in its raw rows?
+2. If present, did that row survive the canonical numeric, OHLC, and volume validation used by the Collector and Gap Repair?
+
+The distinction matters because a timestamp can exist in the public response but be intentionally excluded from canonical Parquet when its OHLCV values violate the schema contract.
 
 The probe never writes to `data/market`, never creates synthetic candles, and never changes readiness status.
 
@@ -16,41 +19,53 @@ For each source series that contains at least one internal timestamp gap, the de
 2. exactly at the target;
 3. one timeframe step after the target.
 
-Each observation records:
+Each observation records both raw and validated evidence:
 
 - requested anchor time;
-- returned row count;
-- first and last returned timestamps;
-- whether the exact target appeared;
-- nearest returned timestamp before the target;
-- nearest returned timestamp after the target;
-- any request or conversion error.
+- raw and validated row counts;
+- first and last raw and validated timestamps;
+- whether the exact target appeared in raw rows;
+- whether the exact target survived canonical validation;
+- nearest raw timestamps before and after the target;
+- raw target OHLCV values;
+- validation-rejection reasons for raw target rows;
+- request or validation errors.
 
 A manual run can increase `--samples-per-series` to select spread-out samples across each series' missing timestamps.
 
 ## Classifications
 
-### `recoverable`
+### `recoverable_validated`
 
-At least one response contains the exact missing timestamp. This is evidence that the current bounded repair query or merge path should be investigated.
+At least one response contains the exact missing timestamp and the row survives canonical validation. This is evidence that bounded repair request or merge semantics should be investigated.
 
-### `absent_from_public_kline_response`
+### `present_but_rejected_by_validation`
 
-Successful responses contain candles on both sides of the target but never the target itself. This is evidence that the sampled candle is absent from the public kline response for those anchors.
+The raw API contains the target timestamp, but canonical validation removes it. The JSON report records the raw OHLCV values and rejection reasons, such as:
+
+- `high_below_ohlc_max`;
+- `low_above_ohlc_min`;
+- `negative_volume`;
+- `non_numeric_or_missing_ohlcv`;
+- `short_row`.
+
+This is not a pagination failure. It is a source-quality or interpretation issue and must not be repaired by silently accepting invalid OHLCV.
+
+### `present_but_validation_inconclusive`
+
+The raw API contains the target, but the validation pass itself failed before the result could be determined.
+
+### `absent_from_raw_public_kline_response`
+
+Successful raw responses contain timestamps on both sides of the target but never the target itself.
 
 This classification does **not** authorize creation of a synthetic candle. The series remains integrity-invalid under the current canonical continuity contract.
 
-### `inconclusive_unbracketed`
+### Inconclusive classifications
 
-Requests succeeded, but returned timestamps did not bracket the target. The API's returned window did not provide enough evidence.
-
-### `inconclusive_empty_response`
-
-All successful requests returned no usable candles.
-
-### `inconclusive_api_failure`
-
-All three anchor requests failed. The probe should be repeated later.
+- `inconclusive_unbracketed_raw_response`: raw responses did not bracket the target.
+- `inconclusive_empty_raw_response`: successful requests contained no parseable raw timestamps.
+- `inconclusive_api_failure`: all three anchor requests failed.
 
 ## Outputs
 
@@ -63,7 +78,7 @@ build/gap_probe/
 └── _gap_probe.md
 ```
 
-The JSON file contains full per-anchor evidence. CSV and Markdown provide compact review views.
+The JSON file contains full per-anchor and raw-row evidence. CSV and Markdown provide compact review views.
 
 ## Local run
 
@@ -81,6 +96,7 @@ The **Probe public kline gaps** GitHub Actions workflow performs the same diagno
 
 - Do not weaken the integrity gate based on a single run.
 - Do not synthesize OHLCV values from neighboring candles.
-- If samples are `recoverable`, inspect and adjust only the bounded repair request semantics.
-- If samples are consistently `absent_from_public_kline_response`, preserve raw source truth and decide separately whether research should use contiguous subranges rather than a synthetic full series.
+- If samples are `recoverable_validated`, inspect and adjust only bounded repair request or merge semantics.
+- If samples are `present_but_rejected_by_validation`, preserve the raw evidence separately and investigate the exchange row format or source-quality defect before changing validation.
+- If samples are consistently `absent_from_raw_public_kline_response`, preserve raw source truth and decide separately whether research should use contiguous subranges rather than a synthetic full series.
 - If results are inconclusive, repeat the probe before changing code or data policy.
