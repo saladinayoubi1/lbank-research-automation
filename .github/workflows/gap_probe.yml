@@ -5,9 +5,13 @@ on:
     paths:
       - ".github/workflows/gap_probe.yml"
       - "gap_probe.py"
+      - "gap_inventory.py"
       - "candle_quality_audit.py"
+      - "inventory_quality_audit.py"
       - "tests/test_gap_probe.py"
+      - "tests/test_gap_inventory.py"
       - "tests/test_candle_quality_audit.py"
+      - "tests/test_inventory_quality_audit.py"
       - "gap_repair.py"
       - "main.py"
       - "requirements.lock"
@@ -34,22 +38,22 @@ jobs:
       - name: Install locked dependencies
         run: python -m pip install -r requirements.lock
 
-      - name: Probe known gaps from three adjacent anchors
+      - name: Probe gaps and inventory cached public responses
         run: >-
-          python gap_probe.py
+          python gap_inventory.py
           --input-root data/market
           --output-root build/gap_probe
           --samples-per-series 1
           --request-pause 0.15
           --clean
 
-      - name: Audit invalid candle severity
+      - name: Audit all invalid missing rows observed in cache
         run: >-
-          python candle_quality_audit.py
-          --probe-json build/gap_probe/_gap_probe.json
+          python inventory_quality_audit.py
+          --inventory-json build/gap_probe/_gap_inventory.json
           --output-root build/gap_probe
 
-      - name: Upload diagnostic gap probe
+      - name: Upload diagnostic gap evidence
         uses: actions/upload-artifact@v4
         with:
           name: lbank-gap-probe-${{ github.sha }}
