@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import gzip
 import hashlib
 import json
 import re
 import shutil
-import warnings
 from pathlib import Path
 from typing import Any, Callable
 
@@ -142,11 +142,10 @@ def _count_nonempty_archive_lines(path: Path) -> int:
         return sum(bool(line.strip()) for line in handle)
 
 
-def _parser_line_samples(messages: list[str]) -> list[int]:
+def _parser_line_samples(error: pd.errors.ParserError) -> list[int]:
     samples = [
         int(value)
-        for message in messages
-        for value in re.findall(r"line\s+(\d+)", message, flags=re.IGNORECASE)
+        for value in re.findall(r"line\s+(\d+)", str(error), flags=re.IGNORECASE)
     ]
     return list(dict.fromkeys(samples))[:PARSER_LINE_SAMPLE_LIMIT]
 
@@ -162,19 +161,11 @@ def _read_csv_with_malformed_audit(
         "header": header,
         "dtype": "string",
         "low_memory": False,
-        "on_bad_lines": "warn",
     }
     if names is not None:
         options["names"] = list(names)
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always", pd.errors.ParserWarning)
+    try:
         frame = pd.read_csv(path, **options)
-    parser_messages = [
-        str(item.message)
-        for item in caught
-        if issubclass(item.category, pd.errors.ParserWarning)
-    ]
-    if not parser_messages:
         return frame, {
             "parser_engine": "c",
             "malformed_csv_rows": 0,
@@ -182,37 +173,49 @@ def _read_csv_with_malformed_audit(
             "source_rows_parsed": int(len(frame)),
             "source_rows_skipped": 0,
         }
+    except pd.errors.ParserError as error:
+        nonempty_lines = _count_nonempty_archive_lines(path)
+        frame = pd.read_csv(path, on_bad_lines="skip", **options)
+        header_rows = 0 if header is None else 1
+        expected_rows = max(0, nonempty_lines - header_rows)
+        skipped_rows = max(0, expected_rows - len(frame))
+        if skipped_rows == 0:
+            raise BybitArchiveAuditError(
+                "CSV parser failed but no rejected source rows could be audited"
+            ) from error
+        return frame, {
+            "parser_engine": "c-skip-bad-lines",
+            "malformed_csv_rows": int(skipped_rows),
+            "malformed_csv_line_samples": _parser_line_samples(error),
+            "source_rows_parsed": int(len(frame)),
+            "source_rows_skipped": int(skipped_rows),
+        }
 
-    nonempty_lines = _count_nonempty_archive_lines(path)
-    header_rows = 0 if header is None else 1
-    expected_rows = max(0, nonempty_lines - header_rows)
-    skipped_rows = max(0, expected_rows - len(frame))
-    if skipped_rows == 0:
-        raise BybitArchiveAuditError(
-            "CSV parser rejected rows but the skipped-row count could not be audited"
+
+def _archive_uses_named_schema(path: Path) -> bool:
+    with gzip.open(path, "rt", encoding="utf-8-sig", newline="") as handle:
+        reader = csv.reader(handle)
+        first_row = next(
+            (row for row in reader if any(value.strip() for value in row)),
+            [],
         )
-    return frame, {
-        "parser_engine": "c-skip-bad-lines",
-        "malformed_csv_rows": int(skipped_rows),
-        "malformed_csv_line_samples": _parser_line_samples(parser_messages),
-        "source_rows_parsed": int(len(frame)),
-        "source_rows_skipped": int(skipped_rows),
-    }
+    if not first_row:
+        raise BybitArchiveAuditError(f"Archive is empty: {path}")
+    probe = normalize_named_columns(pd.DataFrame(columns=first_row))
+    return set(REQUIRED_TRADE_COLUMNS).issubset(probe.columns)
 
 
 def read_trade_archive(path: Path) -> tuple[pd.DataFrame, dict[str, Any]]:
-    named_raw, parser_metadata = _read_csv_with_malformed_audit(path)
-    named = normalize_named_columns(named_raw)
-    used_positional_schema = not set(REQUIRED_TRADE_COLUMNS).issubset(named.columns)
+    used_positional_schema = not _archive_uses_named_schema(path)
     if used_positional_schema:
-        raw, parser_metadata = _read_csv_with_malformed_audit(
+        frame, parser_metadata = _read_csv_with_malformed_audit(
             path,
             header=None,
             names=OFFICIAL_POSITIONAL_COLUMNS,
         )
-        frame = raw
     else:
-        frame = named.copy()
+        named, parser_metadata = _read_csv_with_malformed_audit(path)
+        frame = normalize_named_columns(named)
 
     frame = frame.loc[:, ~frame.columns.duplicated()].copy()
     missing = sorted(set(REQUIRED_TRADE_COLUMNS).difference(frame.columns))
