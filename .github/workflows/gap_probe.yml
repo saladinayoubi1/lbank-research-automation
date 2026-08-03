@@ -5,7 +5,9 @@ on:
     paths:
       - ".github/workflows/gap_probe.yml"
       - "gap_probe.py"
+      - "candle_quality_audit.py"
       - "tests/test_gap_probe.py"
+      - "tests/test_candle_quality_audit.py"
       - "gap_repair.py"
       - "main.py"
       - "requirements.lock"
@@ -40,6 +42,12 @@ jobs:
           --samples-per-series 1
           --request-pause 0.15
           --clean
+
+      - name: Audit invalid candle severity
+        run: >-
+          python candle_quality_audit.py
+          --probe-json build/gap_probe/_gap_probe.json
+          --output-root build/gap_probe
 
       - name: Upload diagnostic gap probe
         uses: actions/upload-artifact@v4
