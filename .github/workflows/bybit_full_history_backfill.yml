@@ -25,7 +25,7 @@ on:
       end_date:
         description: "Inclusive history end date"
         required: true
-        default: "2026-07-31"
+        default: "2024-01-31"
       max_archives_per_stage:
         description: "Bounded archive budget per stage"
         required: true
@@ -33,7 +33,7 @@ on:
       max_stages:
         description: "Maximum bounded stages in this workflow run"
         required: true
-        default: "8"
+        default: "2"
 
 permissions:
   contents: read
@@ -42,15 +42,15 @@ permissions:
 jobs:
   backfill:
     runs-on: ubuntu-latest
-    timeout-minutes: 240
+    timeout-minutes: 60
     env:
       GH_TOKEN: ${{ github.token }}
       SOURCE_RUN_ID: ${{ github.event.inputs.source_run_id || '30785207089' }}
       SOURCE_ARTIFACT_NAME: ${{ github.event.inputs.source_artifact_name || 'bybit-resumable-backfill-2022-12-to-2023-01-4758d5ac480a28b58bd850bd89bbb6995c5b4e18' }}
       START_DATE: ${{ github.event.inputs.start_date || '2022-12-01' }}
-      END_DATE: ${{ github.event.inputs.end_date || '2026-07-31' }}
+      END_DATE: ${{ github.event.inputs.end_date || '2024-01-31' }}
       MAX_ARCHIVES_PER_STAGE: ${{ github.event.inputs.max_archives_per_stage || '12' }}
-      MAX_STAGES: ${{ github.event.inputs.max_stages || '8' }}
+      MAX_STAGES: ${{ github.event.inputs.max_stages || '2' }}
 
     steps:
       - name: Check out repository
@@ -121,7 +121,7 @@ jobs:
             exit 1
           fi
 
-      - name: Enforce final full-range integrity
+      - name: Enforce final range integrity
         run: |
           python - <<'PY'
           import json
@@ -134,9 +134,9 @@ jobs:
           summary = report["summary"]
 
           expected_rows = {
-              "minute15": 128544,
-              "hour1": 32136,
-              "hour4": 8034,
+              "minute15": 40992,
+              "hour1": 10248,
+              "hour4": 2562,
           }
           statuses = report["statuses"]
           status_ok = (
@@ -150,27 +150,25 @@ jobs:
               and all(item["off_grid_count"] == 0 for item in statuses)
           )
           completed_ids = [item["unit_id"] for item in checkpoint["completed_units"]]
-          unique_completed = len(completed_ids) == len(set(completed_ids))
           source_units = [item["unit_id"] for item in sources]
-          source_pairs_ok = all(source_units.count(unit_id) == 2 for unit_id in completed_ids)
-
           ok = (
               summary["backfill_complete"]
+              and summary["completed_units"] == 14
               and summary["remaining_units"] == 0
               and summary["current_dataset_integrity_ok"]
               and summary["run_failures"] == 0
-              and unique_completed
-              and source_pairs_ok
+              and len(completed_ids) == len(set(completed_ids))
+              and all(source_units.count(unit_id) == 2 for unit_id in completed_ids)
               and status_ok
           )
           if not ok:
-              raise SystemExit("Final full-range integrity gate failed")
+              raise SystemExit("Final range integrity gate failed")
           PY
 
-      - name: Upload full-range resumable snapshot
+      - name: Upload resumable snapshot
         uses: actions/upload-artifact@v4
         with:
-          name: bybit-resumable-backfill-2022-12-to-2026-07-${{ github.sha }}
+          name: bybit-resumable-backfill-2022-12-to-2024-01-${{ github.sha }}
           path: build/bybit_backfill_state
           if-no-files-found: error
           retention-days: 7
