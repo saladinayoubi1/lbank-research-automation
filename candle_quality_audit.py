@@ -12,6 +12,7 @@ import pandas as pd
 
 DEFAULT_PROBE_JSON = Path("build/gap_probe/_gap_probe.json")
 DEFAULT_OUTPUT_ROOT = Path("build/gap_probe")
+THRESHOLD_ABS_TOLERANCE = 1e-9
 
 
 def finite_number(value: Any, field: str) -> float:
@@ -21,16 +22,30 @@ def finite_number(value: Any, field: str) -> float:
     return number
 
 
+def at_or_below(value: float, threshold: float) -> bool:
+    return value <= threshold or math.isclose(
+        value,
+        threshold,
+        rel_tol=0.0,
+        abs_tol=THRESHOLD_ABS_TOLERANCE,
+    )
+
+
 def severity_bucket(violation_bps: float) -> str:
     if violation_bps < 0 or not math.isfinite(violation_bps):
         raise ValueError("violation_bps must be finite and non-negative")
-    if violation_bps == 0:
+    if math.isclose(
+        violation_bps,
+        0.0,
+        rel_tol=0.0,
+        abs_tol=THRESHOLD_ABS_TOLERANCE,
+    ):
         return "none"
-    if violation_bps <= 1:
+    if at_or_below(violation_bps, 1):
         return "rounding_le_1_bps"
-    if violation_bps <= 5:
+    if at_or_below(violation_bps, 5):
         return "minor_le_5_bps"
-    if violation_bps <= 10:
+    if at_or_below(violation_bps, 10):
         return "moderate_le_10_bps"
     return "material_gt_10_bps"
 
@@ -143,10 +158,18 @@ def build_quality_audit(probe_report: dict[str, Any]) -> dict[str, Any]:
             "reason_mismatch_rows": sum(not row["reason_match"] for row in rows),
             "maximum_violation_bps": max(violation_values, default=0.0),
             "median_violation_bps": median(violation_values) if violation_values else 0.0,
-            "at_or_below_1_bps": sum(value <= 1 for value in violation_values),
-            "at_or_below_5_bps": sum(value <= 5 for value in violation_values),
-            "at_or_below_10_bps": sum(value <= 10 for value in violation_values),
-            "above_10_bps": sum(value > 10 for value in violation_values),
+            "at_or_below_1_bps": sum(
+                at_or_below(value, 1) for value in violation_values
+            ),
+            "at_or_below_5_bps": sum(
+                at_or_below(value, 5) for value in violation_values
+            ),
+            "at_or_below_10_bps": sum(
+                at_or_below(value, 10) for value in violation_values
+            ),
+            "above_10_bps": sum(
+                not at_or_below(value, 10) for value in violation_values
+            ),
         },
         "rows": rows,
     }
