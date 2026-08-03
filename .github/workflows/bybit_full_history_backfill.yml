@@ -21,19 +21,19 @@ on:
         default: "2022-12-01"
       end_date:
         required: true
-        default: "2025-01-31"
+        default: "2024-05-31"
       source_completed_units:
         required: true
         default: "14"
       final_completed_units:
         required: true
-        default: "26"
+        default: "18"
       max_archives_per_stage:
         required: true
-        default: "12"
+        default: "8"
       max_stages:
         required: true
-        default: "2"
+        default: "1"
 
 permissions:
   contents: read
@@ -42,17 +42,17 @@ permissions:
 jobs:
   backfill:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 45
     env:
       GH_TOKEN: ${{ github.token }}
       SOURCE_RUN_ID: ${{ github.event.inputs.source_run_id || '30790162024' }}
       SOURCE_ARTIFACT_NAME: ${{ github.event.inputs.source_artifact_name || 'bybit-resumable-backfill-2022-12-to-2024-01-e4cf6861398589e29ee7a53445efd489bee669d6' }}
       START_DATE: ${{ github.event.inputs.start_date || '2022-12-01' }}
-      END_DATE: ${{ github.event.inputs.end_date || '2025-01-31' }}
+      END_DATE: ${{ github.event.inputs.end_date || '2024-05-31' }}
       SOURCE_COMPLETED_UNITS: ${{ github.event.inputs.source_completed_units || '14' }}
-      FINAL_COMPLETED_UNITS: ${{ github.event.inputs.final_completed_units || '26' }}
-      MAX_ARCHIVES_PER_STAGE: ${{ github.event.inputs.max_archives_per_stage || '12' }}
-      MAX_STAGES: ${{ github.event.inputs.max_stages || '2' }}
+      FINAL_COMPLETED_UNITS: ${{ github.event.inputs.final_completed_units || '18' }}
+      MAX_ARCHIVES_PER_STAGE: ${{ github.event.inputs.max_archives_per_stage || '8' }}
+      MAX_STAGES: ${{ github.event.inputs.max_stages || '1' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -145,7 +145,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: bybit-resumable-backfill-2022-12-to-2025-01-${{ github.sha }}
+          name: bybit-resumable-backfill-2022-12-to-2024-05-${{ github.sha }}
           path: build/bybit_backfill_state
           if-no-files-found: error
           retention-days: 7
