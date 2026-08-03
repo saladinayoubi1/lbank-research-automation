@@ -17,23 +17,24 @@ DEFAULT_AUDIT_DATE = "2026-08-01"
 DEFAULT_OUTPUT_ROOT = Path("build/bybit_spot_archive_audit")
 DEFAULT_CACHE_ROOT = Path("build/bybit_spot_archive_cache")
 SYMBOLS = ("BTCUSDT", "ETHUSDT")
-TIMEFRAMES = {
+TIMEFRAME_RULES = {
     "minute15": "15min",
     "hour1": "1h",
     "hour4": "4h",
 }
-REQUIRED_TRADE_COLUMNS = ("timestamp", "symbol", "side", "size", "price")
-POSITIONAL_TRADE_COLUMNS = (
-    "timestamp",
-    "symbol",
-    "side",
-    "size",
-    "price",
-    "tick_direction",
+TIMEFRAME_DELTAS = {
+    "minute15": pd.Timedelta(15, unit="min"),
+    "hour1": pd.Timedelta(1, unit="h"),
+    "hour4": pd.Timedelta(4, unit="h"),
+}
+REQUIRED_TRADE_COLUMNS = ("timestamp", "side", "size", "price")
+OFFICIAL_POSITIONAL_COLUMNS = (
     "trade_id",
-    "gross_value",
-    "home_notional",
-    "foreign_notional",
+    "timestamp",
+    "price",
+    "size",
+    "side",
+    "rpi",
 )
 
 
@@ -96,24 +97,31 @@ def download_archive(
 
 
 def normalize_column_name(value: Any) -> str:
-    return "".join(character for character in str(value).strip().lower() if character.isalnum())
+    return "".join(
+        character
+        for character in str(value).strip().lower()
+        if character.isalnum()
+    )
 
 
 def normalize_named_columns(frame: pd.DataFrame) -> pd.DataFrame:
     aliases = {
+        "id": "trade_id",
+        "tradeid": "trade_id",
+        "trdmatchid": "trade_id",
+        "execid": "trade_id",
         "timestamp": "timestamp",
         "time": "timestamp",
         "trdtime": "timestamp",
         "symbol": "symbol",
         "side": "side",
         "size": "size",
+        "volume": "size",
         "qty": "size",
         "quantity": "size",
         "price": "price",
         "execprice": "price",
-        "trdmatchid": "trade_id",
-        "tradeid": "trade_id",
-        "execid": "trade_id",
+        "rpi": "rpi",
         "tickdirection": "tick_direction",
         "grossvalue": "gross_value",
         "homenotional": "home_notional",
@@ -128,17 +136,30 @@ def normalize_named_columns(frame: pd.DataFrame) -> pd.DataFrame:
 
 
 def read_trade_archive(path: Path) -> tuple[pd.DataFrame, dict[str, Any]]:
-    named = normalize_named_columns(pd.read_csv(path, compression="gzip"))
+    named = normalize_named_columns(
+        pd.read_csv(
+            path,
+            compression="gzip",
+            dtype="string",
+            low_memory=False,
+        )
+    )
     used_positional_schema = not set(REQUIRED_TRADE_COLUMNS).issubset(named.columns)
     if used_positional_schema:
-        raw = pd.read_csv(path, compression="gzip", header=None)
+        raw = pd.read_csv(
+            path,
+            compression="gzip",
+            header=None,
+            dtype="string",
+            low_memory=False,
+        )
         if raw.shape[1] < len(REQUIRED_TRADE_COLUMNS):
             raise BybitArchiveAuditError(
-                f"Archive has {raw.shape[1]} columns; expected at least 5"
+                f"Archive has {raw.shape[1]} columns; expected at least 4"
             )
-        column_count = min(raw.shape[1], len(POSITIONAL_TRADE_COLUMNS))
+        column_count = min(raw.shape[1], len(OFFICIAL_POSITIONAL_COLUMNS))
         raw = raw.iloc[:, :column_count].copy()
-        raw.columns = POSITIONAL_TRADE_COLUMNS[:column_count]
+        raw.columns = OFFICIAL_POSITIONAL_COLUMNS[:column_count]
         frame = raw
     else:
         frame = named.copy()
@@ -150,17 +171,26 @@ def read_trade_archive(path: Path) -> tuple[pd.DataFrame, dict[str, Any]]:
 
     timestamp_numeric = pd.to_numeric(frame["timestamp"], errors="coerce")
     finite_timestamp = timestamp_numeric.dropna().abs()
-    timestamp_unit = "ms" if (not finite_timestamp.empty and finite_timestamp.median() >= 1e11) else "s"
+    timestamp_unit = (
+        "ms"
+        if not finite_timestamp.empty and finite_timestamp.median() >= 1e11
+        else "s"
+    )
     frame["timestamp"] = pd.to_datetime(
         timestamp_numeric,
         unit=timestamp_unit,
         utc=True,
         errors="coerce",
     )
-    frame["symbol"] = frame["symbol"].astype("string").str.strip().str.upper()
+    if "symbol" in frame.columns:
+        frame["symbol"] = (
+            frame["symbol"].astype("string").str.strip().str.upper()
+        )
     frame["side"] = frame["side"].astype("string").str.strip().str.title()
     frame["size"] = pd.to_numeric(frame["size"], errors="coerce")
     frame["price"] = pd.to_numeric(frame["price"], errors="coerce")
+    if "trade_id" in frame.columns:
+        frame["trade_id"] = frame["trade_id"].astype("string").str.strip()
 
     return frame, {
         "used_positional_schema": used_positional_schema,
@@ -174,6 +204,10 @@ def validate_trades(
     symbol: str,
     audit_date: str,
 ) -> tuple[pd.DataFrame, dict[str, int]]:
+    frame = frame.copy()
+    if "symbol" not in frame.columns:
+        frame["symbol"] = symbol
+
     day_start = pd.Timestamp(audit_date, tz="UTC")
     day_end = day_start + pd.Timedelta(1, unit="D")
 
@@ -197,8 +231,8 @@ def validate_trades(
 
     duplicate_trade_id_count = 0
     if "trade_id" in valid.columns:
-        ids = valid["trade_id"].astype("string")
-        duplicate_trade_id_count = int(ids.notna().sum() - ids.dropna().nunique())
+        ids = valid["trade_id"].dropna().astype("string")
+        duplicate_trade_id_count = int(len(ids) - ids.nunique())
 
     return valid, {
         "source_rows": int(len(frame)),
@@ -219,16 +253,30 @@ def trades_to_candles(
     timeframe: str,
     audit_date: str,
 ) -> pd.DataFrame:
-    if timeframe not in TIMEFRAMES:
+    if timeframe not in TIMEFRAME_RULES:
         raise BybitArchiveAuditError(f"Unsupported timeframe: {timeframe}")
     if trades.empty:
         return pd.DataFrame(
-            columns=["timestamp", "open", "high", "low", "close", "volume", "symbol", "timeframe"]
+            columns=[
+                "timestamp",
+                "open",
+                "high",
+                "low",
+                "close",
+                "volume",
+                "symbol",
+                "timeframe",
+            ]
         )
 
-    rule = TIMEFRAMES[timeframe]
+    rule = TIMEFRAME_RULES[timeframe]
     indexed = trades.set_index("timestamp").sort_index()
-    candles = indexed.resample(rule, origin="start_day", label="left", closed="left").agg(
+    candles = indexed.resample(
+        rule,
+        origin="start_day",
+        label="left",
+        closed="left",
+    ).agg(
         open=("price", "first"),
         high=("price", "max"),
         low=("price", "min"),
@@ -244,63 +292,102 @@ def trades_to_candles(
     return candles
 
 
+def count_gap_groups(
+    missing: pd.DatetimeIndex,
+    step: pd.Timedelta,
+) -> int:
+    if missing.empty:
+        return 0
+    if len(missing) == 1:
+        return 1
+    differences = missing[1:] - missing[:-1]
+    return 1 + int((differences != step).sum())
+
+
 def audit_candles(
     candles: pd.DataFrame,
     symbol: str,
     timeframe: str,
     audit_date: str,
 ) -> dict[str, Any]:
-    rule = TIMEFRAMES[timeframe]
+    if timeframe not in TIMEFRAME_DELTAS:
+        raise BybitArchiveAuditError(f"Unsupported timeframe: {timeframe}")
+
+    step = TIMEFRAME_DELTAS[timeframe]
     day_start = pd.Timestamp(audit_date, tz="UTC")
     day_end = day_start + pd.Timedelta(1, unit="D")
-    expected_rows = int(pd.Timedelta(1, unit="D") / pd.Timedelta(rule))
+    expected_index = pd.date_range(
+        day_start,
+        day_end,
+        freq=step,
+        inclusive="left",
+    )
 
     if candles.empty:
-        integrity = {
-            "expected_rows": expected_rows,
-            "missing_candles": expected_rows,
-            "gap_count": 1 if expected_rows else 0,
-            "duplicate_count": 0,
-            "off_grid_count": 0,
-            "integrity_ok": False,
-        }
+        actual_index = pd.DatetimeIndex([], tz="UTC")
+        duplicate_count = 0
+        off_grid_count = 0
         invalid_ohlc_count = 0
         negative_volume_count = 0
     else:
-        integrity = analyze_timestamp_integrity(candles["timestamp"], timeframe)
+        internal = analyze_timestamp_integrity(candles["timestamp"], timeframe)
+        duplicate_count = int(internal["duplicate_count"])
+        off_grid_count = int(internal["off_grid_count"])
+        actual_index = pd.DatetimeIndex(
+            pd.to_datetime(candles["timestamp"], utc=True, errors="raise")
+        ).drop_duplicates().sort_values()
         required_high = candles[["open", "close", "low"]].max(axis=1)
         required_low = candles[["open", "close", "high"]].min(axis=1)
         invalid_ohlc_count = int(
-            ((candles["high"] < required_high) | (candles["low"] > required_low)).sum()
+            (
+                (candles["high"] < required_high)
+                | (candles["low"] > required_low)
+            ).sum()
         )
         negative_volume_count = int((candles["volume"] < 0).sum())
 
-    first_expected = day_start
-    last_expected = day_end - pd.Timedelta(rule)
+    missing = expected_index.difference(actual_index)
+    unexpected = actual_index.difference(expected_index)
+    missing_candles = int(len(missing))
+    gap_count = count_gap_groups(missing, step)
     complete_day = (
-        len(candles) == expected_rows
-        and not candles.empty
-        and candles.iloc[0]["timestamp"] == first_expected
-        and candles.iloc[-1]["timestamp"] == last_expected
+        len(actual_index) == len(expected_index)
+        and missing_candles == 0
+        and unexpected.empty
+    )
+    integrity_ok = (
+        complete_day
+        and duplicate_count == 0
+        and off_grid_count == 0
     )
     passed = (
-        complete_day
-        and bool(integrity["integrity_ok"])
+        integrity_ok
         and invalid_ohlc_count == 0
         and negative_volume_count == 0
     )
+
     return {
         "symbol": symbol,
         "timeframe": timeframe,
         "audit_date": audit_date,
         "rows": int(len(candles)),
-        "expected_day_rows": expected_rows,
-        "first_candle_utc": None if candles.empty else candles.iloc[0]["timestamp"].isoformat(),
-        "last_candle_utc": None if candles.empty else candles.iloc[-1]["timestamp"].isoformat(),
+        "expected_day_rows": int(len(expected_index)),
+        "expected_rows": int(len(expected_index)),
+        "missing_candles": missing_candles,
+        "gap_count": gap_count,
+        "duplicate_count": duplicate_count,
+        "off_grid_count": off_grid_count,
+        "unexpected_timestamp_count": int(len(unexpected)),
+        "first_candle_utc": (
+            None if actual_index.empty else actual_index[0].isoformat()
+        ),
+        "last_candle_utc": (
+            None if actual_index.empty else actual_index[-1].isoformat()
+        ),
         "complete_utc_day": complete_day,
         "invalid_ohlc_count": invalid_ohlc_count,
         "negative_volume_count": negative_volume_count,
-        **integrity,
+        "integrity_ok": integrity_ok,
         "audit_passed": passed,
     }
 
@@ -340,17 +427,21 @@ def build_archive_audit_report(
                 == 0
             )
             archives.append(archive)
-            for timeframe in TIMEFRAMES:
+            for timeframe in TIMEFRAME_RULES:
                 candles = trades_to_candles(valid, symbol, timeframe, audit_date)
-                series.append(audit_candles(candles, symbol, timeframe, audit_date))
+                series.append(
+                    audit_candles(candles, symbol, timeframe, audit_date)
+                )
         except Exception as exc:
-            errors.append({
-                "symbol": symbol,
-                "audit_date": audit_date,
-                "error": f"{type(exc).__name__}: {exc}",
-            })
+            errors.append(
+                {
+                    "symbol": symbol,
+                    "audit_date": audit_date,
+                    "error": f"{type(exc).__name__}: {exc}",
+                }
+            )
 
-    expected_series = len(SYMBOLS) * len(TIMEFRAMES)
+    expected_series = len(SYMBOLS) * len(TIMEFRAME_RULES)
     passed_series = sum(bool(item["audit_passed"]) for item in series)
     passed_archives = sum(bool(item.get("archive_passed")) for item in archives)
     candidate = (
@@ -367,7 +458,7 @@ def build_archive_audit_report(
         "scope": {
             "audit_date": audit_date,
             "symbols": list(SYMBOLS),
-            "timeframes": list(TIMEFRAMES),
+            "timeframes": list(TIMEFRAME_RULES),
             "archive_base_url": ARCHIVE_BASE_URL,
         },
         "summary": {
@@ -408,7 +499,9 @@ def render_markdown(report: dict[str, Any]) -> str:
     ]
     for item in report["series"]:
         lines.append(
-            "| {symbol} | {timeframe} | {rows} | {expected_day_rows} | {missing_candles} | {gap_count} | {duplicate_count} | {off_grid_count} | {invalid_ohlc_count} | {audit_passed} |".format(**item)
+            "| {symbol} | {timeframe} | {rows} | {expected_day_rows} | {missing_candles} | {gap_count} | {duplicate_count} | {off_grid_count} | {invalid_ohlc_count} | {audit_passed} |".format(
+                **item
+            )
         )
     if report["errors"]:
         lines.extend(["", "## Errors", ""])
@@ -427,13 +520,16 @@ def write_report(report: dict[str, Any], output_root: Path, clean: bool) -> None
         encoding="utf-8",
     )
     (output_root / "_bybit_spot_archive_audit.md").write_text(
-        render_markdown(report), encoding="utf-8"
+        render_markdown(report),
+        encoding="utf-8",
     )
     pd.DataFrame(report["series"]).to_csv(
-        output_root / "_bybit_spot_archive_series.csv", index=False
+        output_root / "_bybit_spot_archive_series.csv",
+        index=False,
     )
     pd.DataFrame(report["archives"]).to_csv(
-        output_root / "_bybit_spot_archive_sources.csv", index=False
+        output_root / "_bybit_spot_archive_sources.csv",
+        index=False,
     )
 
 
@@ -456,7 +552,11 @@ def main() -> int:
     )
     write_report(report, args.output_root, args.clean)
     print(json.dumps(report["summary"], sort_keys=True))
-    return 0 if report["summary"]["candidate_for_full_spot_archive_backfill"] else 1
+    return (
+        0
+        if report["summary"]["candidate_for_full_spot_archive_backfill"]
+        else 1
+    )
 
 
 if __name__ == "__main__":
