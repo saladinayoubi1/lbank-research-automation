@@ -298,3 +298,24 @@ def test_write_report_creates_four_files(tmp_path):
         "_bybit_spot_archive_series.csv",
         "_bybit_spot_archive_sources.csv",
     }
+
+
+def test_read_positional_archive_accepts_mixed_five_and_six_column_rows(tmp_path):
+    path = tmp_path / "mixed-positional.csv.gz"
+    rows = [
+        ["1", "1740787200100", "100.0", "0.1", "buy"],
+        ["2", "1740787260100", "101.0", "0.2", "sell", "0"],
+    ]
+    with gzip.open(path, "wt", encoding="utf-8", newline="") as handle:
+        for row in rows:
+            handle.write(",".join(row) + "\n")
+
+    frame, schema = audit.read_trade_archive(path)
+
+    assert schema["used_positional_schema"] is True
+    assert schema["malformed_csv_rows"] == 0
+    assert schema["source_rows_parsed"] == 2
+    assert frame["price"].tolist() == [100.0, 101.0]
+    assert frame["side"].tolist() == ["Buy", "Sell"]
+    assert pd.isna(frame.loc[0, "rpi"])
+    assert frame.loc[1, "rpi"] == "0"
