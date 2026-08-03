@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import gzip
 from pathlib import Path
 
 import pandas as pd
@@ -8,7 +7,7 @@ import pandas as pd
 import bybit_spot_archive_audit as audit
 
 
-def write_named_archive(path: Path, symbol: str, audit_date: str) -> None:
+def write_official_archive(path: Path, symbol: str, audit_date: str) -> None:
     timestamps = pd.date_range(
         pd.Timestamp(audit_date, tz="UTC"),
         periods=24 * 60,
@@ -16,12 +15,12 @@ def write_named_archive(path: Path, symbol: str, audit_date: str) -> None:
     )
     frame = pd.DataFrame(
         {
-            "timestamp": timestamps.view("int64") / 1_000_000_000,
-            "symbol": symbol,
-            "side": ["Buy", "Sell"] * (len(timestamps) // 2),
-            "size": 1.0,
+            "id": [str(index + 1) for index in range(len(timestamps))],
+            "timestamp": timestamps.astype("int64") // 1_000_000,
             "price": 100.0 + (pd.Series(range(len(timestamps))) / 1000.0),
-            "trdMatchID": [f"trade-{index}" for index in range(len(timestamps))],
+            "volume": 1.0,
+            "side": ["buy", "sell"] * (len(timestamps) // 2),
+            "rpi": 0,
         }
     )
     frame.to_csv(path, index=False, compression="gzip")
@@ -33,26 +32,53 @@ def test_archive_url_uses_official_spot_path():
     )
 
 
-def test_read_named_archive_normalizes_columns(tmp_path):
+def test_read_official_archive_normalizes_columns(tmp_path):
     path = tmp_path / "BTCUSDT_2026-08-01.csv.gz"
-    write_named_archive(path, "BTCUSDT", "2026-08-01")
+    write_official_archive(path, "BTCUSDT", "2026-08-01")
     frame, schema = audit.read_trade_archive(path)
     assert set(audit.REQUIRED_TRADE_COLUMNS).issubset(frame.columns)
     assert "trade_id" in frame.columns
-    assert schema["timestamp_unit"] == "s"
+    assert "symbol" not in frame.columns
+    assert schema["timestamp_unit"] == "ms"
     assert schema["used_positional_schema"] is False
+    assert frame["side"].iloc[:2].tolist() == ["Buy", "Sell"]
 
 
-def test_read_positional_archive_supports_common_layout(tmp_path):
+def test_read_positional_archive_supports_official_layout(tmp_path):
     path = tmp_path / "positional.csv.gz"
     rows = [
-        [1785542400.1, "BTCUSDT", "Buy", 0.1, 100.0, "PlusTick", "id-1"],
-        [1785542460.1, "BTCUSDT", "Sell", 0.2, 101.0, "MinusTick", "id-2"],
+        ["1", "1785542400100", "100.0", "0.1", "buy", "0"],
+        ["2", "1785542460100", "101.0", "0.2", "sell", "0"],
     ]
-    pd.DataFrame(rows).to_csv(path, index=False, header=False, compression="gzip")
+    pd.DataFrame(rows).to_csv(
+        path,
+        index=False,
+        header=False,
+        compression="gzip",
+    )
     frame, schema = audit.read_trade_archive(path)
     assert schema["used_positional_schema"] is True
+    assert schema["timestamp_unit"] == "ms"
     assert frame["price"].tolist() == [100.0, 101.0]
+    assert frame["size"].tolist() == [0.1, 0.2]
+
+
+def test_validate_trades_injects_expected_symbol():
+    frame = pd.DataFrame(
+        {
+            "timestamp": pd.to_datetime(
+                ["2026-08-01T00:00:00Z", "2026-08-01T00:01:00Z"]
+            ),
+            "side": ["Buy", "Sell"],
+            "size": [1.0, 1.0],
+            "price": [100.0, 101.0],
+            "trade_id": ["1", "2"],
+        }
+    )
+    valid, quality = audit.validate_trades(frame, "BTCUSDT", "2026-08-01")
+    assert len(valid) == 2
+    assert valid["symbol"].unique().tolist() == ["BTCUSDT"]
+    assert quality["invalid_symbol_rows"] == 0
 
 
 def test_validate_trades_rejects_wrong_symbol_and_price():
@@ -75,7 +101,9 @@ def test_validate_trades_rejects_wrong_symbol_and_price():
 
 def test_trade_aggregation_builds_complete_day():
     timestamps = pd.date_range(
-        "2026-08-01T00:00:00Z", periods=24 * 60, freq="1min"
+        "2026-08-01T00:00:00Z",
+        periods=24 * 60,
+        freq="1min",
     )
     trades = pd.DataFrame(
         {
@@ -86,22 +114,60 @@ def test_trade_aggregation_builds_complete_day():
             "price": 100.0 + pd.Series(range(len(timestamps))) / 1000.0,
         }
     )
-    for timeframe, expected_rows in [("minute15", 96), ("hour1", 24), ("hour4", 6)]:
+    for timeframe, expected_rows in [
+        ("minute15", 96),
+        ("hour1", 24),
+        ("hour4", 6),
+    ]:
         candles = audit.trades_to_candles(
-            trades, "BTCUSDT", timeframe, "2026-08-01"
+            trades,
+            "BTCUSDT",
+            timeframe,
+            "2026-08-01",
         )
         result = audit.audit_candles(
-            candles, "BTCUSDT", timeframe, "2026-08-01"
+            candles,
+            "BTCUSDT",
+            timeframe,
+            "2026-08-01",
         )
         assert result["rows"] == expected_rows
+        assert result["missing_candles"] == 0
         assert result["audit_passed"] is True
+
+
+def test_full_day_audit_detects_boundary_candle_missing():
+    timestamps = pd.date_range(
+        "2026-08-01T00:15:00Z",
+        periods=95,
+        freq="15min",
+    )
+    candles = pd.DataFrame(
+        {
+            "timestamp": timestamps,
+            "open": 100.0,
+            "high": 101.0,
+            "low": 99.0,
+            "close": 100.5,
+            "volume": 1.0,
+        }
+    )
+    result = audit.audit_candles(
+        candles,
+        "BTCUSDT",
+        "minute15",
+        "2026-08-01",
+    )
+    assert result["missing_candles"] == 1
+    assert result["gap_count"] == 1
+    assert result["audit_passed"] is False
 
 
 def test_build_report_passes_two_clean_archives(tmp_path):
     source_root = tmp_path / "source"
     source_root.mkdir()
     for symbol in audit.SYMBOLS:
-        write_named_archive(
+        write_official_archive(
             source_root / audit.archive_filename(symbol, "2026-08-01"),
             symbol,
             "2026-08-01",
