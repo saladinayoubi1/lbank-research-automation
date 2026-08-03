@@ -44,22 +44,6 @@ jobs:
           --request-pause 0.1
           --clean
 
-      - name: Inspect official Spot archive layout
-        run: |
-          python - <<'PY'
-          import gzip
-          import requests
-
-          for symbol in ("BTCUSDT", "ETHUSDT"):
-              url = f"https://public.bybit.com/spot/{symbol}/{symbol}_2026-08-01.csv.gz"
-              response = requests.get(url, timeout=120)
-              response.raise_for_status()
-              lines = gzip.decompress(response.content).decode("utf-8", errors="replace").splitlines()
-              print(f"ARCHIVE_LAYOUT {symbol} rows={len(lines)}")
-              for line in lines[:3]:
-                  print(line)
-          PY
-
       - name: Audit fixed official Spot trade archives
         run: >-
           python bybit_spot_archive_audit.py
