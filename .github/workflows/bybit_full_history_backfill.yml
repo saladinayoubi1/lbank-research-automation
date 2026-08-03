@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 30
     strategy:
       fail-fast: false
-      max-parallel: 13
+      max-parallel: 4
       matrix:
         include:
           - { id: "01", start: "2024-06-01", end: "2024-07-31" }
@@ -49,13 +49,23 @@ jobs:
 
       - name: Build independent verified chunk
         run: |
-          python bybit_spot_backfill.py \
-            --start-date "${{ matrix.start }}" \
-            --end-date "${{ matrix.end }}" \
-            --state-root "build/chunk-${{ matrix.id }}" \
-            --cache-root "build/cache-${{ matrix.id }}" \
-            --max-archives-per-run 4 \
-            --clean
+          success=false
+          for attempt in 1 2 3; do
+            rm -rf "build/chunk-${{ matrix.id }}"
+            if python bybit_spot_backfill.py \
+              --start-date "${{ matrix.start }}" \
+              --end-date "${{ matrix.end }}" \
+              --state-root "build/chunk-${{ matrix.id }}" \
+              --cache-root "build/cache-${{ matrix.id }}" \
+              --max-archives-per-run 4 \
+              --clean; then
+              success=true
+              break
+            fi
+            [ -f "build/chunk-${{ matrix.id }}/_backfill_report.json" ] && cat "build/chunk-${{ matrix.id }}/_backfill_report.json"
+            sleep $((attempt * 10))
+          done
+          [ "$success" = "true" ] || exit 1
           python - <<'PY'
           import json, os
           from pathlib import Path
