@@ -1,0 +1,60 @@
+name: Audit Bybit public spot data
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/bybit_data_audit.yml"
+      - "bybit_data_audit.py"
+      - "tests/test_bybit_data_audit.py"
+      - "main.py"
+      - "requirements.lock"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install locked dependencies
+        run: python -m pip install -r requirements.lock
+
+      - name: Check dependency consistency
+        run: python -m pip check
+
+      - name: Run bounded public Bybit audit
+        continue-on-error: true
+        run: >-
+          python bybit_data_audit.py
+          --output-root build/bybit_data_audit
+          --request-pause 0.1
+          --clean
+
+      - name: Upload Bybit audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bybit-public-data-audit-${{ github.sha }}
+          path: build/bybit_data_audit
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 9
+
+      - name: Enforce candidate gate
+        run: >-
+          python -c "import json, pathlib, sys;
+          p=pathlib.Path('build/bybit_data_audit/_bybit_data_audit.json');
+          r=json.loads(p.read_text());
+          sys.exit(0 if r['summary']['candidate_for_full_backfill'] else 1)"
