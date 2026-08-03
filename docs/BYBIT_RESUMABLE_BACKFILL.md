@@ -84,16 +84,32 @@ Every unit and the accumulated contiguous range require:
 - correct symbol and timeframe identity;
 - valid, unique raw trade IDs within each archive.
 
-## Monthly pilot
+## Live resume verification
 
-The pull-request workflow processes December 2022 as one atomic monthly unit:
+The pull-request workflow runs the same two-month plan twice against one state directory.
 
-- two monthly archives;
-- 2,976 fifteen-minute candles per symbol;
-- 744 hourly candles per symbol;
-- 186 four-hour candles per symbol.
+Stage one:
 
-A passing pilot proves monthly archive compatibility, checkpoint creation, and full-month integrity. It does not by itself complete the full historical backfill.
+- requests December 2022 through January 2023;
+- processes only `monthly:2022-12` because the budget is two archives;
+- leaves one unit remaining;
+- records a valid incomplete checkpoint.
+
+Stage two:
+
+- reruns without `--clean`;
+- skips the completed December unit;
+- processes only `monthly:2023-01`;
+- verifies that the source manifest contains exactly two symbol archives per month;
+- requires the accumulated December–January range to remain fully contiguous and integrity-valid.
+
+Expected final rows per symbol:
+
+- `minute15`: 5,952;
+- `hour1`: 1,488;
+- `hour4`: 372.
+
+A passing integration run proves live monthly archive compatibility, checkpoint persistence, skip-on-resume behavior, and accumulated two-month integrity. It does not by itself complete the full historical backfill.
 
 ## Safety boundary
 
