@@ -1,6 +1,6 @@
 # LBank Research Automation
 
-A public-market-data research pipeline for collecting, validating, repairing, archiving, and safely loading LBank OHLCV candles.
+A public-market-data research pipeline for collecting, validating, repairing, archiving, safely loading, and backtesting LBank OHLCV candles.
 
 This repository is research infrastructure only. It does **not** place orders, use private LBank APIs, withdraw funds, or contain real-trading credentials.
 
@@ -21,7 +21,7 @@ Snapshot Manifest / Partitioned Export
         ↓
 Guarded Research Loader
         ↓
-Backtest research — future stage
+Strategy-neutral Backtest Core
 ```
 
 ## Current universe
@@ -86,7 +86,7 @@ Integrity failure takes precedence over freshness. An invalid series cannot be m
 
 `data_readiness.py` converts integrity status into deterministic research decisions. Only integrity-valid `current` or `backfilling` series can be marked ready. An optional minimum-row threshold may be applied by research jobs.
 
-`research_data.py` is the approved loader for future analyses and backtests. It rejects blocked series before reading Parquet and then revalidates:
+`research_data.py` is the approved loader for analyses and backtests. It rejects blocked series before reading Parquet and then revalidates:
 
 - canonical schema and column order;
 - symbol/timeframe identity;
@@ -124,6 +124,22 @@ build/partitioned_market/
 ```
 
 The partitioner preserves the canonical columns and all source rows. It does not silently repair, remove, or reinterpret gaps. Integrity metrics and SHA-256 values are recorded in `_partition_manifest.json` and `_partition_manifest.md`.
+
+## Backtest core
+
+`backtest_engine.py` is a pure single-series execution and accounting engine. It accepts precomputed signed target exposures but does not create strategy signals.
+
+A target emitted at candle `t` executes at candle `t+1` open. The engine supports:
+
+- long, flat, and short target exposure;
+- explicit maximum exposure;
+- adverse slippage in basis points;
+- fees on filled notional;
+- close-to-close equity and drawdown tracking;
+- optional end-of-test liquidation;
+- fill, equity-curve, and summary-metric outputs.
+
+The core does not model funding, exchange liquidation, order-book depth, partial fills, or intrabar stop/target sequencing. See [`docs/BACKTEST_ENGINE.md`](docs/BACKTEST_ENGINE.md).
 
 ## Dependency policy
 
