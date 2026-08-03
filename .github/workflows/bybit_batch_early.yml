@@ -4,10 +4,6 @@ on:
   pull_request:
     paths:
       - ".github/workflows/bybit_batch_early.yml"
-      - "bybit_spot_backfill.py"
-      - "bybit_spot_archive_audit.py"
-      - "bybit_spot_archive_collector.py"
-      - "requirements.lock"
 
 permissions:
   contents: read
@@ -16,26 +12,12 @@ jobs:
   chunk:
     name: chunk-${{ matrix.id }}
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       max-parallel: 2
       matrix:
         include:
-          - { id: "27", start: "2023-02-01", end: "2023-02-28" }
-          - { id: "28", start: "2023-03-01", end: "2023-03-31" }
-          - { id: "29", start: "2023-04-01", end: "2023-04-30" }
-          - { id: "30", start: "2023-05-01", end: "2023-05-31" }
-          - { id: "31", start: "2023-06-01", end: "2023-06-30" }
-          - { id: "32", start: "2023-07-01", end: "2023-07-31" }
-          - { id: "33", start: "2023-08-01", end: "2023-08-31" }
-          - { id: "34", start: "2023-09-01", end: "2023-09-30" }
-          - { id: "35", start: "2023-10-01", end: "2023-10-31" }
-          - { id: "36", start: "2023-11-01", end: "2023-11-30" }
-          - { id: "37", start: "2023-12-01", end: "2023-12-31" }
-          - { id: "38", start: "2024-01-01", end: "2024-01-31" }
-          - { id: "39", start: "2024-02-01", end: "2024-02-29" }
-          - { id: "40", start: "2024-03-01", end: "2024-03-31" }
           - { id: "41", start: "2024-04-01", end: "2024-04-30" }
           - { id: "42", start: "2024-05-01", end: "2024-05-31" }
     steps:
@@ -48,22 +30,8 @@ jobs:
       - run: python -m pip check
       - name: Build verified month
         run: |
-          success=false
           state_root="build/chunk-${{ matrix.id }}"
-          for attempt in 1 2 3; do
-            rm -rf "$state_root"
-            if python bybit_spot_backfill.py --start-date "${{ matrix.start }}" --end-date "${{ matrix.end }}" --state-root "$state_root" --cache-root "build/cache-${{ matrix.id }}" --max-archives-per-run 2 --clean; then
-              success=true
-              break
-            fi
-            if [ -f "$state_root/_backfill_report.json" ]; then
-              echo "::group::Backfill report for chunk-${{ matrix.id }}, attempt $attempt"
-              python -m json.tool "$state_root/_backfill_report.json" || cat "$state_root/_backfill_report.json"
-              echo "::endgroup::"
-            fi
-            sleep $((attempt * 15))
-          done
-          [ "$success" = "true" ] || exit 1
+          python bybit_spot_backfill.py --start-date "${{ matrix.start }}" --end-date "${{ matrix.end }}" --state-root "$state_root" --cache-root "build/cache-${{ matrix.id }}" --max-archives-per-run 2 --clean
           python - <<'PY'
           import json, os
           from pathlib import Path
@@ -80,5 +48,5 @@ jobs:
           name: bybit-chunk-${{ matrix.id }}-attempt-${{ github.run_attempt }}
           path: build/chunk-${{ matrix.id }}
           if-no-files-found: warn
-          retention-days: 7
+          retention-days: 30
           compression-level: 9
