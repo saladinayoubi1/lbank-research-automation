@@ -42,11 +42,17 @@ jobs:
       - name: Build verified month
         run: |
           success=false
+          state_root="build/chunk-${{ matrix.id }}"
           for attempt in 1 2 3; do
-            rm -rf "build/chunk-${{ matrix.id }}"
-            if python bybit_spot_backfill.py --start-date "${{ matrix.start }}" --end-date "${{ matrix.end }}" --state-root "build/chunk-${{ matrix.id }}" --cache-root "build/cache-${{ matrix.id }}" --max-archives-per-run 2 --clean; then
+            rm -rf "$state_root"
+            if python bybit_spot_backfill.py --start-date "${{ matrix.start }}" --end-date "${{ matrix.end }}" --state-root "$state_root" --cache-root "build/cache-${{ matrix.id }}" --max-archives-per-run 2 --clean; then
               success=true
               break
+            fi
+            if [ -f "$state_root/_backfill_report.json" ]; then
+              echo "::group::Backfill report for chunk-${{ matrix.id }}, attempt $attempt"
+              python -m json.tool "$state_root/_backfill_report.json" || cat "$state_root/_backfill_report.json"
+              echo "::endgroup::"
             fi
             sleep $((attempt * 15))
           done
@@ -62,9 +68,10 @@ jobs:
         env:
           CHUNK_ID: ${{ matrix.id }}
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: bybit-chunk-${{ matrix.id }}
+          name: bybit-chunk-${{ matrix.id }}-attempt-${{ github.run_attempt }}
           path: build/chunk-${{ matrix.id }}
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 7
           compression-level: 9
