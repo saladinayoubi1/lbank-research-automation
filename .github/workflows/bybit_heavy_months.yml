@@ -1,0 +1,216 @@
+name: Build heavy Bybit months
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/bybit_heavy_months.yml"
+      - "bybit_spot_backfill.py"
+      - "bybit_spot_archive_audit.py"
+      - "bybit_spot_archive_collector.py"
+      - "requirements.lock"
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  build-part:
+    name: part-${{ matrix.id }}-${{ matrix.symbol }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        include:
+          - { id: "01", start: "2024-06-01", end: "2024-06-30", symbol: "BTCUSDT" }
+          - { id: "01", start: "2024-06-01", end: "2024-06-30", symbol: "ETHUSDT" }
+          - { id: "02", start: "2024-07-01", end: "2024-07-31", symbol: "BTCUSDT" }
+          - { id: "02", start: "2024-07-01", end: "2024-07-31", symbol: "ETHUSDT" }
+          - { id: "03", start: "2024-08-01", end: "2024-08-31", symbol: "BTCUSDT" }
+          - { id: "03", start: "2024-08-01", end: "2024-08-31", symbol: "ETHUSDT" }
+          - { id: "05", start: "2024-10-01", end: "2024-10-31", symbol: "BTCUSDT" }
+          - { id: "05", start: "2024-10-01", end: "2024-10-31", symbol: "ETHUSDT" }
+          - { id: "06", start: "2024-11-01", end: "2024-11-30", symbol: "BTCUSDT" }
+          - { id: "06", start: "2024-11-01", end: "2024-11-30", symbol: "ETHUSDT" }
+          - { id: "07", start: "2024-12-01", end: "2024-12-31", symbol: "BTCUSDT" }
+          - { id: "07", start: "2024-12-01", end: "2024-12-31", symbol: "ETHUSDT" }
+          - { id: "08", start: "2025-01-01", end: "2025-01-31", symbol: "BTCUSDT" }
+          - { id: "08", start: "2025-01-01", end: "2025-01-31", symbol: "ETHUSDT" }
+          - { id: "09", start: "2025-02-01", end: "2025-02-28", symbol: "BTCUSDT" }
+          - { id: "09", start: "2025-02-01", end: "2025-02-28", symbol: "ETHUSDT" }
+          - { id: "18", start: "2025-11-01", end: "2025-11-30", symbol: "BTCUSDT" }
+          - { id: "18", start: "2025-11-01", end: "2025-11-30", symbol: "ETHUSDT" }
+          - { id: "22", start: "2026-03-01", end: "2026-03-31", symbol: "BTCUSDT" }
+          - { id: "22", start: "2026-03-01", end: "2026-03-31", symbol: "ETHUSDT" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements.lock
+      - run: python -m pip check
+      - name: Build one verified symbol-month
+        env:
+          CHUNK_ID: ${{ matrix.id }}
+          START_DATE: ${{ matrix.start }}
+          END_DATE: ${{ matrix.end }}
+          SYMBOL: ${{ matrix.symbol }}
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          import bybit_spot_backfill as backfill
+
+          symbol = os.environ["SYMBOL"]
+          root = Path(f"build/part-{os.environ['CHUNK_ID']}-{symbol}")
+          report = backfill.run_backfill(
+              start_date=os.environ["START_DATE"],
+              end_date=os.environ["END_DATE"],
+              state_root=root,
+              cache_root=Path(f"build/cache-{os.environ['CHUNK_ID']}-{symbol}"),
+              max_archives_per_run=1,
+              symbols=(symbol,),
+              clean=True,
+          )
+          summary = report["summary"]
+          ok = (
+              summary["backfill_complete"]
+              and summary["completed_units"] == 1
+              and summary["remaining_units"] == 0
+              and summary["run_failures"] == 0
+              and summary["current_dataset_integrity_ok"]
+              and len(report["statuses"]) == 3
+              and all(item["integrity_ok"] and item["status"] == "ready" for item in report["statuses"])
+          )
+          print(json.dumps(summary, sort_keys=True))
+          raise SystemExit(0 if ok else 1)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bybit-part-${{ matrix.id }}-${{ matrix.symbol }}
+          path: build/part-${{ matrix.id }}-${{ matrix.symbol }}
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+  combine-month:
+    name: combine-${{ matrix.id }}
+    needs: build-part
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        include:
+          - { id: "01", start: "2024-06-01", end: "2024-06-30" }
+          - { id: "02", start: "2024-07-01", end: "2024-07-31" }
+          - { id: "03", start: "2024-08-01", end: "2024-08-31" }
+          - { id: "05", start: "2024-10-01", end: "2024-10-31" }
+          - { id: "06", start: "2024-11-01", end: "2024-11-30" }
+          - { id: "07", start: "2024-12-01", end: "2024-12-31" }
+          - { id: "08", start: "2025-01-01", end: "2025-01-31" }
+          - { id: "09", start: "2025-02-01", end: "2025-02-28" }
+          - { id: "18", start: "2025-11-01", end: "2025-11-30" }
+          - { id: "22", start: "2026-03-01", end: "2026-03-31" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements.lock
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: bybit-part-${{ matrix.id }}-*
+          path: build/parts
+      - name: Combine symbol parts into a standard verified month
+        env:
+          CHUNK_ID: ${{ matrix.id }}
+          START_DATE: ${{ matrix.start }}
+          END_DATE: ${{ matrix.end }}
+        run: |
+          python - <<'PY'
+          import json, os, shutil
+          from pathlib import Path
+          import pandas as pd
+
+          chunk = os.environ["CHUNK_ID"]
+          roots = sorted(Path("build/parts").glob(f"bybit-part-{chunk}-*"))
+          if len(roots) != 2:
+              raise SystemExit(f"Expected two symbol parts for {chunk}, found {roots}")
+          output = Path(f"build/chunk-{chunk}")
+          if output.exists():
+              shutil.rmtree(output)
+          output.mkdir(parents=True)
+
+          reports = [json.loads((root / "_backfill_report.json").read_text()) for root in roots]
+          checkpoints = [json.loads((root / "_checkpoint.json").read_text()) for root in roots]
+          sources = []
+          statuses = []
+          runs = []
+          completed = None
+          for root, report, checkpoint in zip(roots, reports, checkpoints):
+              sources.extend(json.loads((root / "_source_manifest.json").read_text()))
+              statuses.extend(report["statuses"])
+              runs.extend(checkpoint.get("runs", []))
+              unit = checkpoint["completed_units"][0]
+              if completed is None:
+                  completed = unit
+              elif completed["unit_id"] != unit["unit_id"]:
+                  raise SystemExit("Mismatched completed units")
+              shutil.copytree(root / "bybit_market", output / "bybit_market", dirs_exist_ok=True)
+
+          if len(sources) != 2 or len(statuses) != 6:
+              raise SystemExit("Incomplete combined month")
+          if not all(item["integrity_ok"] and item["status"] == "ready" for item in statuses):
+              raise SystemExit("A combined series is not ready")
+
+          checkpoint = {
+              "schema_version": 1,
+              "completed_units": [completed],
+              "failed_units": [],
+              "runs": runs,
+          }
+          report = {
+              "generated_at_utc": pd.Timestamp.now(tz="UTC").isoformat(),
+              "configuration": {
+                  "start_date": os.environ["START_DATE"],
+                  "end_date": os.environ["END_DATE"],
+                  "symbols": ["BTCUSDT", "ETHUSDT"],
+                  "max_archives_per_run": 2,
+              },
+              "summary": {
+                  "plan_units": 1,
+                  "plan_archives": 2,
+                  "completed_units": 1,
+                  "remaining_units": 0,
+                  "units_completed_this_run": 1,
+                  "archives_completed_this_run": 2,
+                  "run_failures": 0,
+                  "backfill_complete": True,
+                  "current_dataset_integrity_ok": True,
+              },
+              "completed_this_run": [completed],
+              "sources_this_run": sources,
+              "run_failures": [],
+              "statuses": statuses,
+          }
+          def write_json(name, value):
+              (output / name).write_text(json.dumps(value, indent=2, sort_keys=True, default=str) + "\n")
+          write_json("_checkpoint.json", checkpoint)
+          write_json("_source_manifest.json", sources)
+          write_json("_backfill_report.json", report)
+          pd.DataFrame(sources).to_csv(output / "_source_manifest.csv", index=False)
+          pd.DataFrame(statuses).to_csv(output / "_backfill_status.csv", index=False)
+          print(json.dumps(report["summary"], sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bybit-chunk-${{ matrix.id }}-attempt-${{ github.run_attempt }}
+          path: build/chunk-${{ matrix.id }}
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
