@@ -1,0 +1,51 @@
+name: Probe public kline gaps
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/gap_probe.yml"
+      - "gap_probe.py"
+      - "tests/test_gap_probe.py"
+      - "gap_repair.py"
+      - "main.py"
+      - "requirements.lock"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install locked dependencies
+        run: python -m pip install -r requirements.lock
+
+      - name: Probe known gaps from three adjacent anchors
+        run: >-
+          python gap_probe.py
+          --input-root data/market
+          --output-root build/gap_probe
+          --samples-per-series 1
+          --request-pause 0.15
+          --clean
+
+      - name: Upload diagnostic gap probe
+        uses: actions/upload-artifact@v4
+        with:
+          name: lbank-gap-probe-${{ github.sha }}
+          path: build/gap_probe
+          if-no-files-found: error
+          retention-days: 3
+          compression-level: 9
