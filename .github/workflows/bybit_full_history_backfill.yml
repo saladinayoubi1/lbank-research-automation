@@ -11,27 +11,27 @@ on:
   workflow_dispatch:
     inputs:
       source_run_id:
-        description: "Workflow run ID containing the previous resumable state artifact"
         required: true
-        default: "30785207089"
+        default: "30790162024"
       source_artifact_name:
-        description: "Previous resumable state artifact name"
         required: true
-        default: "bybit-resumable-backfill-2022-12-to-2023-01-4758d5ac480a28b58bd850bd89bbb6995c5b4e18"
+        default: "bybit-resumable-backfill-2022-12-to-2024-01-e4cf6861398589e29ee7a53445efd489bee669d6"
       start_date:
-        description: "Inclusive history start date"
         required: true
         default: "2022-12-01"
       end_date:
-        description: "Inclusive history end date"
         required: true
-        default: "2024-01-31"
+        default: "2025-01-31"
+      source_completed_units:
+        required: true
+        default: "14"
+      final_completed_units:
+        required: true
+        default: "26"
       max_archives_per_stage:
-        description: "Bounded archive budget per stage"
         required: true
         default: "12"
       max_stages:
-        description: "Maximum bounded stages in this workflow run"
         required: true
         default: "2"
 
@@ -45,46 +45,37 @@ jobs:
     timeout-minutes: 60
     env:
       GH_TOKEN: ${{ github.token }}
-      SOURCE_RUN_ID: ${{ github.event.inputs.source_run_id || '30785207089' }}
-      SOURCE_ARTIFACT_NAME: ${{ github.event.inputs.source_artifact_name || 'bybit-resumable-backfill-2022-12-to-2023-01-4758d5ac480a28b58bd850bd89bbb6995c5b4e18' }}
+      SOURCE_RUN_ID: ${{ github.event.inputs.source_run_id || '30790162024' }}
+      SOURCE_ARTIFACT_NAME: ${{ github.event.inputs.source_artifact_name || 'bybit-resumable-backfill-2022-12-to-2024-01-e4cf6861398589e29ee7a53445efd489bee669d6' }}
       START_DATE: ${{ github.event.inputs.start_date || '2022-12-01' }}
-      END_DATE: ${{ github.event.inputs.end_date || '2024-01-31' }}
+      END_DATE: ${{ github.event.inputs.end_date || '2025-01-31' }}
+      SOURCE_COMPLETED_UNITS: ${{ github.event.inputs.source_completed_units || '14' }}
+      FINAL_COMPLETED_UNITS: ${{ github.event.inputs.final_completed_units || '26' }}
       MAX_ARCHIVES_PER_STAGE: ${{ github.event.inputs.max_archives_per_stage || '12' }}
       MAX_STAGES: ${{ github.event.inputs.max_stages || '2' }}
 
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
-
-      - name: Install locked dependencies
-        run: python -m pip install -r requirements.lock
-
-      - name: Check dependency consistency
-        run: python -m pip check
+      - run: python -m pip install -r requirements.lock
+      - run: python -m pip check
 
       - name: Restore verified resumable state
         run: |
           mkdir -p build/bybit_backfill_state
-          gh run download "$SOURCE_RUN_ID" \
-            --repo "$GITHUB_REPOSITORY" \
-            --name "$SOURCE_ARTIFACT_NAME" \
-            --dir build/bybit_backfill_state
+          gh run download "$SOURCE_RUN_ID" --repo "$GITHUB_REPOSITORY" --name "$SOURCE_ARTIFACT_NAME" --dir build/bybit_backfill_state
           python - <<'PY'
-          import json
+          import json, os
           from pathlib import Path
-
-          root = Path("build/bybit_backfill_state")
-          checkpoint = json.loads((root / "_checkpoint.json").read_text())
-          units = [item["unit_id"] for item in checkpoint["completed_units"]]
-          expected = ["monthly:2022-12", "monthly:2023-01"]
-          if units != expected:
-              raise SystemExit(f"Unexpected restored checkpoint: {units}")
+          checkpoint = json.loads(Path("build/bybit_backfill_state/_checkpoint.json").read_text())
+          completed = checkpoint["completed_units"]
+          ids = [item["unit_id"] for item in completed]
+          expected = int(os.environ["SOURCE_COMPLETED_UNITS"])
+          if len(completed) != expected or len(ids) != len(set(ids)):
+              raise SystemExit(f"Unexpected restored checkpoint: {len(completed)} units")
           PY
 
       - name: Run bounded continuation stages
@@ -98,49 +89,48 @@ jobs:
               --state-root build/bybit_backfill_state \
               --cache-root build/bybit_backfill_cache \
               --max-archives-per-run "$MAX_ARCHIVES_PER_STAGE"
-
             completed=$(python - <<'PY'
           import json
           from pathlib import Path
-          report = json.loads(Path("build/bybit_backfill_state/_backfill_report.json").read_text())
-          summary = report["summary"]
+          summary = json.loads(Path("build/bybit_backfill_state/_backfill_report.json").read_text())["summary"]
           if not summary["current_dataset_integrity_ok"] or summary["run_failures"]:
               raise SystemExit(2)
           print("true" if summary["backfill_complete"] else "false")
           PY
             )
-
             rm -f build/bybit_backfill_cache/*.csv.gz
-            if [ "$completed" = "true" ]; then
-              break
-            fi
+            [ "$completed" = "true" ] && break
           done
-
-          if [ "$completed" != "true" ]; then
-            echo "Backfill did not complete within MAX_STAGES=$MAX_STAGES" >&2
-            exit 1
-          fi
+          [ "$completed" = "true" ] || exit 1
 
       - name: Enforce final range integrity
         run: |
           python - <<'PY'
-          import json
+          import json, os
           from pathlib import Path
+          import pandas as pd
 
           root = Path("build/bybit_backfill_state")
           report = json.loads((root / "_backfill_report.json").read_text())
           checkpoint = json.loads((root / "_checkpoint.json").read_text())
           sources = json.loads((root / "_source_manifest.json").read_text())
           summary = report["summary"]
-
-          expected_rows = {
-              "minute15": 40992,
-              "hour1": 10248,
-              "hour4": 2562,
-          }
+          start = pd.Timestamp(os.environ["START_DATE"])
+          end = pd.Timestamp(os.environ["END_DATE"])
+          days = int((end - start).days) + 1
+          expected_rows = {"minute15": days * 96, "hour1": days * 24, "hour4": days * 6}
           statuses = report["statuses"]
-          status_ok = (
-              len(statuses) == 6
+          completed_ids = [item["unit_id"] for item in checkpoint["completed_units"]]
+          source_units = [item["unit_id"] for item in sources]
+          ok = (
+              summary["backfill_complete"]
+              and summary["completed_units"] == int(os.environ["FINAL_COMPLETED_UNITS"])
+              and summary["remaining_units"] == 0
+              and summary["current_dataset_integrity_ok"]
+              and summary["run_failures"] == 0
+              and len(statuses) == 6
+              and len(completed_ids) == len(set(completed_ids))
+              and all(source_units.count(unit_id) == 2 for unit_id in completed_ids)
               and all(item["integrity_ok"] for item in statuses)
               and all(item["rows"] == expected_rows[item["timeframe"]] for item in statuses)
               and all(item["expected_rows"] == expected_rows[item["timeframe"]] for item in statuses)
@@ -149,26 +139,13 @@ jobs:
               and all(item["duplicate_count"] == 0 for item in statuses)
               and all(item["off_grid_count"] == 0 for item in statuses)
           )
-          completed_ids = [item["unit_id"] for item in checkpoint["completed_units"]]
-          source_units = [item["unit_id"] for item in sources]
-          ok = (
-              summary["backfill_complete"]
-              and summary["completed_units"] == 14
-              and summary["remaining_units"] == 0
-              and summary["current_dataset_integrity_ok"]
-              and summary["run_failures"] == 0
-              and len(completed_ids) == len(set(completed_ids))
-              and all(source_units.count(unit_id) == 2 for unit_id in completed_ids)
-              and status_ok
-          )
           if not ok:
               raise SystemExit("Final range integrity gate failed")
           PY
 
-      - name: Upload resumable snapshot
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: bybit-resumable-backfill-2022-12-to-2024-01-${{ github.sha }}
+          name: bybit-resumable-backfill-2022-12-to-2025-01-${{ github.sha }}
           path: build/bybit_backfill_state
           if-no-files-found: error
           retention-days: 7
