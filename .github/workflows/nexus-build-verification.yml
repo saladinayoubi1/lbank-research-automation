@@ -57,17 +57,19 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
           cache-dependency-path: desktop/lbank-monitor/package.json
       - name: Install dependencies
         run: npm install --no-audit --no-fund
       - name: Build installer and portable package
-        run: npm run dist
+        run: npm run dist:win
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
       - uses: actions/upload-artifact@v4
         with:
           name: nexus-windows-packages
           path: |
             desktop/lbank-monitor/dist/*.exe
-            desktop/lbank-monitor/dist/*.zip
+            desktop/lbank-monitor/dist/SHA256SUMS.txt
           if-no-files-found: error
