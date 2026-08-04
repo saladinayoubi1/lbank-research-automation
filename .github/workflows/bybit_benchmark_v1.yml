@@ -1,0 +1,74 @@
+name: Bybit research benchmark v1
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/bybit_benchmark_v1.yml"
+      - "bybit_benchmark_v1.py"
+      - "experiments/bybit_benchmark_v1.json"
+      - "tests/test_bybit_benchmark_v1.py"
+      - "docs/BYBIT_BENCHMARK_V1.md"
+  workflow_dispatch:
+    inputs:
+      artifact_id:
+        description: "GitHub Actions artifact containing the immutable final Bybit delivery"
+        required: false
+        default: "8867026863"
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      DEFAULT_ARTIFACT_ID: "8867026863"
+      EXPECTED_ARCHIVE_SHA256: "5f1173467c2296201940c3b7786b7cc3e5442244e07289769ab4867ace41d668"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements-dev.lock
+      - run: python -m pip check
+      - run: python -m pytest -q
+      - name: Download and verify immutable Bybit dataset
+        run: |
+          set -euo pipefail
+          artifact_id="${{ github.event.inputs.artifact_id }}"
+          if [ -z "$artifact_id" ]; then artifact_id="$DEFAULT_ARTIFACT_ID"; fi
+          rm -rf build/final_delivery build/bybit_dataset
+          mkdir -p build/final_delivery build/bybit_dataset
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" > build/final_delivery.zip
+          unzip -q build/final_delivery.zip -d build/final_delivery
+          archive="build/final_delivery/BYBIT_full_history_2022-12-01_to_2026-07-31.zip"
+          actual=$(sha256sum "$archive" | awk '{print $1}')
+          test "$actual" = "$EXPECTED_ARCHIVE_SHA256"
+          unzip -q "$archive" -d build/bybit_dataset
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report=json.loads(Path("build/bybit_dataset/_backfill_report.json").read_text())
+          assert report["summary"]["full_history_ready"] is True
+          assert report["summary"]["completed_units"] == 44
+          assert report["summary"]["source_archives"] == 88
+          assert report["summary"]["ready_series"] == 6
+          PY
+      - name: Run fixed baseline and holdout benchmark
+        run: |
+          python bybit_benchmark_v1.py \
+            --manifest experiments/bybit_benchmark_v1.json \
+            --output-root build/bybit_benchmark_v1 \
+            --require-all-series-ready \
+            --require-all-runs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bybit-benchmark-v1-${{ github.run_attempt }}
+          path: build/bybit_benchmark_v1
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
