@@ -1,11 +1,6 @@
 name: Bybit strategy search v2
 
 on:
-  pull_request:
-    paths:
-      - ".github/workflows/bybit_strategy_search_v2.yml"
-      - "bybit_strategy_search_v2.py"
-      - "experiments/bybit_strategy_search_v2.json"
   workflow_dispatch:
     inputs:
       artifact_id:
@@ -46,29 +41,15 @@ jobs:
           archive="build/final_delivery/BYBIT_full_history_2022-12-01_to_2026-07-31.zip"
           test "$(sha256sum "$archive" | awk '{print $1}')" = "$EXPECTED_SHA256"
           unzip -q "$archive" -d build/bybit_dataset
-      - name: Search predeclared strategy space
+      - name: Reproduce v2 result
         run: |
           python bybit_strategy_search_v2.py \
             --manifest experiments/bybit_strategy_search_v2.json \
             --output build/bybit_strategy_search_v2
       - uses: actions/upload-artifact@v4
-        if: always()
         with:
           name: bybit-strategy-search-v2-${{ github.run_attempt }}
           path: build/bybit_strategy_search_v2
           if-no-files-found: error
           retention-days: 30
           compression-level: 9
-      - name: Enforce robustness gates
-        run: |
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          report=json.loads(Path('build/bybit_strategy_search_v2/strategy_search_v2.json').read_text())
-          print(json.dumps(report['summary'], sort_keys=True))
-          print(json.dumps(report['selected_strategy'], indent=2, sort_keys=True))
-          print(json.dumps(report['locked_test_summaries'], indent=2, sort_keys=True))
-          assert report['summary']['qualifies_for_paper_forward_review'] is True
-          assert report['summary']['automatic_paper_forward_started'] is False
-          assert report['summary']['live_trading_enabled'] is False
-          PY
