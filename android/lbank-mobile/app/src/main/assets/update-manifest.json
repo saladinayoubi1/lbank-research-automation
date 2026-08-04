@@ -1,0 +1,19 @@
+{
+  "version": "3.0.0",
+  "channel": "personal-stable",
+  "published_at": "2026-08-04T14:40:00Z",
+  "files": [
+    {
+      "name": "app.js",
+      "url": "https://raw.githubusercontent.com/saladinayoubi1/lbank-research-automation/main/android/lbank-mobile/app/src/main/assets/app.js"
+    },
+    {
+      "name": "personal-tools.js",
+      "url": "https://raw.githubusercontent.com/saladinayoubi1/lbank-research-automation/main/android/lbank-mobile/app/src/main/assets/personal-tools.js"
+    },
+    {
+      "name": "v3.css",
+      "url": "https://raw.githubusercontent.com/saladinayoubi1/lbank-research-automation/main/android/lbank-mobile/app/src/main/assets/v3.css"
+    }
+  ]
+}
