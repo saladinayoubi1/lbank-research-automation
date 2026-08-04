@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#08111f">
+  <title>LBank Market Monitor</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark">L</span><div><strong>LBank Monitor</strong><small>Market Intelligence</small></div></div>
+      <nav>
+        <a class="active" href="#overview">نمای کلی</a>
+        <a href="#marketSection">بازارها</a>
+        <a href="#qualitySection">سلامت داده</a>
+      </nav>
+      <div class="sidebar-foot"><span class="status-dot"></span><small>اتصال فقط به داده عمومی</small></div>
+    </aside>
+    <div class="workspace">
+      <header class="topbar">
+        <div><small>داشبورد پایش داده</small><h1>LBank Market Monitor</h1></div>
+        <div class="top-actions"><span class="live-pill"><i></i> LIVE</span><button id="theme" aria-label="تغییر پوسته">◐</button></div>
+      </header>
+      <main>
+        <section id="overview" class="overview" aria-live="polite">
+          <article><span>وضعیت سیستم</span><strong id="health">در حال بارگذاری</strong><em>کنترل یکپارچگی فعال</em></article>
+          <article><span>سری‌های پایش‌شده</span><strong id="seriesCount">—</strong><em>نماد و تایم‌فریم</em></article>
+          <article><span>آخرین بروزرسانی</span><strong id="updated">—</strong><em>زمان محلی دستگاه</em></article>
+        </section>
+        <section class="control-panel">
+          <div class="toolbar">
+            <label>نماد<select id="symbol"></select></label>
+            <label>بازه زمانی<select id="timeframe"></select></label>
+            <button id="refresh">بروزرسانی داده</button>
+          </div>
+        </section>
+        <section id="selected" class="selected card hero-card"></section>
+        <section id="marketSection" class="section-block"><div class="section-title"><div><small>Market Watch</small><h2>بازارها</h2></div><span>نمای لحظه‌ای</span></div><div id="markets" class="grid"></div></section>
+        <section id="qualitySection" class="section-block"><div class="section-title"><div><small>Data Integrity</small><h2>سلامت داده</h2></div><span>کنترل خودکار</span></div><div id="quality" class="grid"></div></section>
+      </main>
+    </div>
+  </div>
+  <template id="marketTemplate"><article class="card market"><div><b></b><small></small></div><strong></strong><span></span></article></template>
+  <script src="app.js" defer></script>
+</body>
+</html>
