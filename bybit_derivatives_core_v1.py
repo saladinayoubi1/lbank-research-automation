@@ -50,28 +50,71 @@ class Client:
         self.pause = pause
         self.session = requests.Session()
         self.session.headers['User-Agent'] = 'lbank-research-automation/derivatives-v1'
+        self.preferred_base: str | None = None
+        self.blocked_bases: set[str] = set()
+        self.transport_failures: dict[str, int] = {}
+
+    def _ordered_bases(self) -> list[str]:
+        available = [base for base in self.bases if base not in self.blocked_bases]
+        if self.preferred_base in available:
+            return [self.preferred_base, *[base for base in available if base != self.preferred_base]]
+        return available
 
     def get(self, path: str, params: dict[str, Any]) -> dict[str, Any]:
         last: Exception | None = None
-        for attempt in range(self.attempts):
+        attempts = 0
+        while attempts < self.attempts:
+            candidates = self._ordered_bases()
+            if not candidates:
+                break
+            base = candidates[attempts % len(candidates)]
+            attempts += 1
             try:
                 response = self.session.get(
-                    self.bases[attempt % len(self.bases)] + path,
+                    base + path,
                     params=params,
-                    timeout=self.timeout,
+                    timeout=(5.0, self.timeout),
                 )
-                if response.status_code in {403, 429, 500, 502, 503, 504}:
-                    raise ValidationError(f'retryable HTTP {response.status_code}')
+                if response.status_code in {403, 404, 451}:
+                    self.blocked_bases.add(base)
+                    if self.preferred_base == base:
+                        self.preferred_base = None
+                    last = ValidationError(f'blocked HTTP {response.status_code} from {base}')
+                    continue
+                if response.status_code in {429, 500, 502, 503, 504}:
+                    last = ValidationError(f'temporary HTTP {response.status_code} from {base}')
+                    time.sleep(min(0.25 * attempts, 2.0))
+                    continue
                 response.raise_for_status()
                 payload = response.json()
-                if int(payload.get('retCode', -1)) != 0:
-                    raise ValidationError(str(payload.get('retMsg')))
+                ret_code = int(payload.get('retCode', -1))
+                if ret_code != 0:
+                    message = str(payload.get('retMsg'))
+                    if ret_code in {10006, 10016}:
+                        last = ValidationError(f'temporary Bybit error {ret_code}: {message}')
+                        time.sleep(min(0.25 * attempts, 2.0))
+                        continue
+                    raise ValidationError(f'Bybit error {ret_code}: {message}')
+                self.preferred_base = base
+                self.transport_failures[base] = 0
                 time.sleep(self.pause)
                 return payload
-            except (requests.RequestException, ValueError, ValidationError) as exc:
+            except (requests.RequestException, ValueError) as exc:
                 last = exc
-                time.sleep(min(0.5 * 2**attempt, 8.0))
-        raise ValidationError(f'Bybit request failed: {last}')
+                failures = self.transport_failures.get(base, 0) + 1
+                self.transport_failures[base] = failures
+                if failures >= 2:
+                    self.blocked_bases.add(base)
+                    if self.preferred_base == base:
+                        self.preferred_base = None
+                continue
+            except ValidationError as exc:
+                last = exc
+                raise
+        raise ValidationError(
+            f'Bybit request failed after {attempts} attempts; '
+            f'blocked={sorted(self.blocked_bases)}; last={last}'
+        )
 
 
 def milliseconds(value: str | pd.Timestamp) -> int:
