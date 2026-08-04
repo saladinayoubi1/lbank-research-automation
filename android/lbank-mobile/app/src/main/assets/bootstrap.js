@@ -3,7 +3,7 @@
   const BASE='https://raw.githubusercontent.com/saladinayoubi1/lbank-research-automation/main/android/lbank-mobile/app/src/main/assets/';
   const MANIFEST=BASE+'update-manifest.json';
   const CACHE_KEY='lbank-remote-bundle-v3';
-  const SCRIPTS=['provider-manager.js','nexus-council.js','app.js','personal-tools.js'];
+  const SCRIPTS=['provider-manager.js','provider-sync.js','nexus-council.js','app.js','personal-tools.js'];
   const STYLES=['v3.css','nexus-council.css'];
   const ALLOWED=[...SCRIPTS,...STYLES];
   let applied=false;
