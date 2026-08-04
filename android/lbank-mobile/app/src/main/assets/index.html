@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b1220">
+  <title>LBank Market Monitor</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <div><small>پایش داده عمومی</small><h1>LBank Market Monitor</h1></div>
+    <button id="theme" aria-label="تغییر پوسته">◐</button>
+  </header>
+  <main>
+    <section class="overview" aria-live="polite">
+      <article><span>وضعیت</span><strong id="health">در حال بارگذاری</strong></article>
+      <article><span>سری‌ها</span><strong id="seriesCount">—</strong></article>
+      <article><span>آخرین بروزرسانی</span><strong id="updated">—</strong></article>
+    </section>
+    <section class="toolbar">
+      <label>نماد<select id="symbol"></select></label>
+      <label>بازه<select id="timeframe"></select></label>
+      <button id="refresh">بروزرسانی</button>
+    </section>
+    <section id="selected" class="selected card"></section>
+    <section><h2>بازارها</h2><div id="markets" class="grid"></div></section>
+    <section><h2>سلامت داده</h2><div id="quality" class="grid"></div></section>
+  </main>
+  <template id="marketTemplate"><article class="card market"><div><b></b><small></small></div><strong></strong><span></span></article></template>
+  <script src="app.js" defer></script>
+</body>
+</html>
