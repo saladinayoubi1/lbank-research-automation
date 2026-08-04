@@ -60,8 +60,9 @@ jobs:
           PY
       - name: Run fixed baseline and holdout benchmark
         run: |
+          cp experiments/bybit_benchmark_v1.json build/bybit_experiment_manifest.json
           python bybit_benchmark_v1.py \
-            --manifest experiments/bybit_benchmark_v1.json \
+            --manifest build/bybit_experiment_manifest.json \
             --output-root build/bybit_benchmark_v1
       - uses: actions/upload-artifact@v4
         if: always()
