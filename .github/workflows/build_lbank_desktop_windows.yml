@@ -23,8 +23,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: npm
-          cache-dependency-path: desktop/lbank-monitor/package-lock.json
       - name: Copy dashboard assets
         run: |
           $source = "android/lbank-mobile/app/src/main/assets"
@@ -54,7 +52,7 @@ jobs:
       - name: Generate SHA-256 checksums
         run: |
           Get-ChildItem "desktop/lbank-monitor/dist" -File |
-            Where-Object { $_.Extension -in ".exe", ".zip" } |
+            Where-Object { $_.Extension -eq ".exe" } |
             ForEach-Object {
               $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
               "$hash  $($_.Name)" | Out-File -FilePath "desktop/lbank-monitor/dist/SHA256SUMS.txt" -Append -Encoding utf8
