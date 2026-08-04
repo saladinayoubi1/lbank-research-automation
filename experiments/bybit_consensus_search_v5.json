@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "experiment_id": "bybit_consensus_search_v5_2026-08-04",
+  "dataset": {
+    "dataset_root": "build/bybit_dataset",
+    "archive_sha256": "5f1173467c2296201940c3b7786b7cc3e5442244e07289769ab4867ace41d668"
+  },
+  "symbols": ["btc_usdt", "eth_usdt"],
+  "timeframe": "hour4",
+  "folds": [
+    {"start": "2023-06-01", "end": "2023-11-01"},
+    {"start": "2023-11-01", "end": "2024-04-01"},
+    {"start": "2024-04-01", "end": "2024-09-01"},
+    {"start": "2024-09-01", "end": "2025-02-01"},
+    {"start": "2025-02-01", "end": "2025-07-01"},
+    {"start": "2025-07-01", "end": "2026-01-01"},
+    {"start": "2026-01-01", "end": "2026-08-01"}
+  ],
+  "execution": {
+    "conservative": {
+      "initial_cash": 10000.0,
+      "fee_bps": 10.0,
+      "slippage_bps": 5.0,
+      "annual_short_carry": 0.20
+    },
+    "stress": {
+      "initial_cash": 10000.0,
+      "fee_bps": 15.0,
+      "slippage_bps": 10.0,
+      "annual_short_carry": 0.40
+    }
+  },
+  "search": {
+    "top_exact": 160,
+    "ensemble_size": 9,
+    "lookback_sets": [
+      [30, 90, 180],
+      [60, 120, 240],
+      [30, 60, 120, 240]
+    ],
+    "vote_pairs": [
+      {"long": 0.50, "short": 0.67},
+      {"long": 0.67, "short": 1.00}
+    ],
+    "ema_pairs": [
+      {"fast": 20, "slow": 240},
+      {"fast": 45, "slow": 240},
+      {"fast": 90, "slow": 240}
+    ],
+    "deadband": [0.00, 0.03],
+    "short_scale": [0.25, 0.50],
+    "fast_reversal": [0.03, 0.07],
+    "market_mode": ["asset", "breadth"],
+    "vol_days": [30, 90],
+    "target_vol": [0.10, 0.15, 0.20],
+    "rebalance_days": [7, 30],
+    "vol_ratio_trigger": [1.25, 1.75],
+    "high_vol_scale": [0.25, 0.50],
+    "quantum": 0.10
+  },
+  "gates": {
+    "conservative": {
+      "minimum_positive_ratio": 0.71,
+      "minimum_median_return": 0.04,
+      "minimum_worst_return": -0.10,
+      "maximum_drawdown": 0.22,
+      "minimum_median_sharpe": 0.60,
+      "minimum_sharpe": -0.50,
+      "minimum_fill_count": 4,
+      "minimum_asset_fill_count": 1
+    },
+    "stress": {
+      "minimum_positive_ratio": 0.57,
+      "minimum_median_return": 0.00,
+      "minimum_worst_return": -0.15,
+      "maximum_drawdown": 0.28,
+      "minimum_median_sharpe": 0.00,
+      "minimum_sharpe": -0.80,
+      "minimum_fill_count": 4,
+      "minimum_asset_fill_count": 1
+    }
+  },
+  "plateau": {
+    "minimum_passers": 8,
+    "minimum_lookback_sets": 2,
+    "minimum_ema_pairs": 2,
+    "minimum_target_vols": 2
+  }
+}
