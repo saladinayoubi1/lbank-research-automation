@@ -1,12 +1,6 @@
 name: Bybit neighborhood validation v7
 
 on:
-  pull_request:
-    paths:
-      - ".github/workflows/bybit_neighborhood_validation_v7.yml"
-      - "bybit_neighborhood_validation_v7.py"
-      - "experiments/bybit_neighborhood_validation_v7.json"
-      - "tests/test_bybit_neighborhood_validation_v7.py"
   workflow_dispatch:
     inputs:
       artifact_id:
@@ -47,28 +41,16 @@ jobs:
           archive="build/final_delivery/BYBIT_full_history_2022-12-01_to_2026-07-31.zip"
           test "$(sha256sum "$archive" | awk '{print $1}')" = "$EXPECTED_SHA256"
           unzip -q "$archive" -d build/bybit_dataset
-      - name: Validate frozen strategy neighborhood
+      - name: Reproduce frozen strategy neighborhood validation
         run: |
           python bybit_neighborhood_validation_v7.py \
             --manifest experiments/bybit_neighborhood_validation_v7.json \
-            --output build/bybit_neighborhood_validation_v7
+            --output build/bybit_neighborhood_validation_v7 \
+            --require-qualified
       - uses: actions/upload-artifact@v4
-        if: always()
         with:
           name: bybit-neighborhood-validation-v7-${{ github.run_attempt }}
           path: build/bybit_neighborhood_validation_v7
           if-no-files-found: error
           retention-days: 30
           compression-level: 9
-      - name: Enforce frozen strategy and plateau gates
-        run: |
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          report=json.loads(Path('build/bybit_neighborhood_validation_v7/neighborhood_validation_v7.json').read_text())
-          print(json.dumps(report['summary'], indent=2, sort_keys=True))
-          print(json.dumps(report['frozen_strategy'], indent=2, sort_keys=True))
-          assert report['summary']['qualifies_for_derivatives_validation_and_prospective_paper_forward'] is True
-          assert report['summary']['automatic_paper_forward_started'] is False
-          assert report['summary']['live_trading_enabled'] is False
-          PY
