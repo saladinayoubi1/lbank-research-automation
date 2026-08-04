@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "experiment_id": "bybit_benchmark_v1",
+  "venue": "bybit_spot_official_archives",
+  "dataset": {
+    "artifact_id": 8867026863,
+    "artifact_name": "bybit-full-history-final-3",
+    "archive_name": "BYBIT_full_history_2022-12-01_to_2026-07-31.zip",
+    "archive_sha256": "5f1173467c2296201940c3b7786b7cc3e5442244e07289769ab4867ace41d668",
+    "range_start_utc": "2022-12-01T00:00:00+00:00",
+    "range_end_utc": "2026-07-31T23:45:00+00:00",
+    "dataset_root": "build/bybit_dataset",
+    "status_path": "build/bybit_dataset/_backfill_status.csv",
+    "snapshot_manifest_path": "build/bybit_dataset/_snapshot_manifest.json"
+  },
+  "holdout_start_utc": "2025-08-01T00:00:00+00:00",
+  "minimum_rows": 8000,
+  "series": [
+    {"symbol": "btc_usdt", "timeframe": "minute15"},
+    {"symbol": "btc_usdt", "timeframe": "hour1"},
+    {"symbol": "btc_usdt", "timeframe": "hour4"},
+    {"symbol": "eth_usdt", "timeframe": "minute15"},
+    {"symbol": "eth_usdt", "timeframe": "hour1"},
+    {"symbol": "eth_usdt", "timeframe": "hour4"}
+  ],
+  "strategies": [
+    {
+      "strategy_id": "buy_and_hold",
+      "role": "market_benchmark",
+      "parameters": {}
+    },
+    {
+      "strategy_id": "sma_long_flat",
+      "role": "paper_forward_candidate",
+      "parameters": {"fast_window": 50, "slow_window": 200}
+    },
+    {
+      "strategy_id": "donchian_long_flat",
+      "role": "paper_forward_candidate",
+      "parameters": {"entry_window": 55, "exit_window": 20}
+    }
+  ],
+  "execution_profiles": [
+    {
+      "profile_id": "frictionless",
+      "initial_cash": 10000.0,
+      "fee_bps": 0.0,
+      "slippage_bps": 0.0,
+      "max_abs_exposure": 1.0,
+      "liquidate_at_end": true
+    },
+    {
+      "profile_id": "conservative",
+      "initial_cash": 10000.0,
+      "fee_bps": 10.0,
+      "slippage_bps": 5.0,
+      "max_abs_exposure": 1.0,
+      "liquidate_at_end": true
+    }
+  ],
+  "qualification_policy": {
+    "period": "holdout",
+    "profile_id": "conservative",
+    "benchmark_strategy_id": "buy_and_hold",
+    "minimum_total_return": 0.0,
+    "minimum_median_total_return": 0.0,
+    "maximum_drawdown": 0.25,
+    "minimum_sharpe_like": 0.0,
+    "minimum_fill_count": 4,
+    "automatic_paper_forward": false,
+    "automatic_live_trading": false
+  }
+}
