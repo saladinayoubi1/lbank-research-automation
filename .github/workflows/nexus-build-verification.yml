@@ -1,0 +1,75 @@
+name: NEXUS Build Verification
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  secure-gateway-verification:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify Android secure gateway
+        run: |
+          test -f android/lbank-mobile/app/src/main/java/com/saladinayoubi/lbankmobile/MainActivity.java
+          grep -q 'AndroidKeyStore' android/lbank-mobile/app/src/main/java/com/saladinayoubi/lbankmobile/MainActivity.java
+          grep -q 'NexusNative' android/lbank-mobile/app/src/main/java/com/saladinayoubi/lbankmobile/MainActivity.java
+          grep -q 'AES/GCM/NoPadding' android/lbank-mobile/app/src/main/java/com/saladinayoubi/lbankmobile/MainActivity.java
+      - name: Verify Electron secure bridge packaging
+        run: |
+          test -f desktop/lbank-monitor/preload.js
+          test -f desktop/lbank-monitor/main.js
+          node -e "const p=require('./desktop/lbank-monitor/package.json'); if(!p.build.files.includes('preload.js')) process.exit(1)"
+          grep -q 'contextBridge' desktop/lbank-monitor/preload.js
+
+  android-apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android/lbank-mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Build debug APK
+        run: gradle --no-daemon assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nexus-android-debug-apk
+          path: android/lbank-mobile/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+  windows-desktop:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: desktop/lbank-monitor
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: desktop/lbank-monitor/package.json
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Build installer and portable package
+        run: npm run dist:win
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nexus-windows-packages
+          path: |
+            desktop/lbank-monitor/dist/*.exe
+            desktop/lbank-monitor/dist/SHA256SUMS.txt
+          if-no-files-found: error
