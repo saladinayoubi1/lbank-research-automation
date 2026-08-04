@@ -1,0 +1,49 @@
+{
+  "name": "lbank-market-monitor",
+  "version": "2.0.0",
+  "description": "Professional offline-first LBank public market data monitor",
+  "main": "main.js",
+  "author": "saladinayoubi1",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist:win": "electron-builder --win nsis portable"
+  },
+  "devDependencies": {
+    "electron": "34.3.3",
+    "electron-builder": "25.1.8"
+  },
+  "build": {
+    "appId": "com.saladinayoubi.lbankmonitor",
+    "productName": "LBank Market Monitor",
+    "asar": true,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "app",
+        "to": "app",
+        "filter": ["**/*"]
+      }
+    ],
+    "win": {
+      "target": ["nsis", "portable"],
+      "artifactName": "LBANK_Market_Monitor_${version}_${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "LBank Market Monitor",
+      "installerLanguages": ["en_US"]
+    }
+  }
+}
