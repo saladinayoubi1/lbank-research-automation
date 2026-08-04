@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "validation_id": "bybit_frozen_regime_strategy_derivatives_validation_v1_2026-08-04",
+  "frozen_strategy_manifest": "experiments/bybit_frozen_regime_strategy_v1.json",
+  "spot_dataset_root": "build/bybit_dataset",
+  "spot_symbols": ["btc_usdt", "eth_usdt"],
+  "linear_symbols": ["BTCUSDT", "ETHUSDT"],
+  "history_start_utc": "2022-12-01T00:00:00Z",
+  "history_end_exclusive_utc": "2026-08-01T00:00:00Z",
+  "api_base_urls": [
+    "https://api.bybit.com",
+    "https://api.bytick.com"
+  ],
+  "timeout_seconds": 30,
+  "maximum_attempts": 6,
+  "request_pause_seconds": 0.03,
+  "folds": [
+    {"start": "2023-06-01", "end": "2023-11-01"},
+    {"start": "2023-11-01", "end": "2024-04-01"},
+    {"start": "2024-04-01", "end": "2024-09-01"},
+    {"start": "2024-09-01", "end": "2025-02-01"},
+    {"start": "2025-02-01", "end": "2025-07-01"},
+    {"start": "2025-07-01", "end": "2026-01-01"},
+    {"start": "2026-01-01", "end": "2026-08-01"}
+  ],
+  "execution_profiles": {
+    "conservative": {
+      "initial_cash": 10000.0,
+      "fee_bps": 10.0,
+      "execution_window_minutes": 3,
+      "spread_bps": 2.0,
+      "impact_floor_bps": 3.0,
+      "impact_bps_per_ten_percent": 10.0,
+      "fallback_slippage_bps": 12.0,
+      "account_leverage": 2.0,
+      "liquidation_fee_bps": 75.0
+    },
+    "stress": {
+      "initial_cash": 10000.0,
+      "fee_bps": 15.0,
+      "execution_window_minutes": 5,
+      "spread_bps": 6.0,
+      "impact_floor_bps": 7.0,
+      "impact_bps_per_ten_percent": 20.0,
+      "fallback_slippage_bps": 25.0,
+      "account_leverage": 2.0,
+      "liquidation_fee_bps": 100.0
+    }
+  },
+  "gates": {
+    "conservative": {
+      "minimum_positive_ratio": 0.71,
+      "minimum_median_return": 0.04,
+      "minimum_worst_return": -0.10,
+      "maximum_drawdown": 0.22,
+      "minimum_median_sharpe": 0.60,
+      "minimum_sharpe": -0.50,
+      "minimum_fill_count": 4,
+      "minimum_asset_fill_count": 1,
+      "minimum_funding_coverage": 0.98,
+      "minimum_execution_coverage": 0.98,
+      "maximum_margin_utilization": 0.60,
+      "maximum_risk_tier_utilization": 0.75
+    },
+    "stress": {
+      "minimum_positive_ratio": 0.57,
+      "minimum_median_return": 0.00,
+      "minimum_worst_return": -0.15,
+      "maximum_drawdown": 0.28,
+      "minimum_median_sharpe": 0.00,
+      "minimum_sharpe": -0.80,
+      "minimum_fill_count": 4,
+      "minimum_asset_fill_count": 1,
+      "minimum_funding_coverage": 0.98,
+      "minimum_execution_coverage": 0.95,
+      "maximum_margin_utilization": 0.65,
+      "maximum_risk_tier_utilization": 0.75
+    }
+  }
+}
