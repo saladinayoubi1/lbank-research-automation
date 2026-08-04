@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "mode": "autopilot",
+  "defaults": {
+    "continueWithoutApproval": true,
+    "preferReversibleChanges": true,
+    "requirePassingChecksBeforeMerge": true,
+    "maxAutomaticRetriesPerJob": 2,
+    "notifyOnRoutineProgress": false
+  },
+  "allowed": [
+    "analyze_repository",
+    "create_branch",
+    "edit_code",
+    "edit_documentation",
+    "add_tests",
+    "commit_changes",
+    "open_pull_request",
+    "run_ci",
+    "rerun_transient_failures",
+    "fix_safe_ci_errors",
+    "merge_after_required_checks",
+    "prepare_release_artifacts",
+    "continue_to_next_approved_stage"
+  ],
+  "approvalRequired": [
+    "change_billing",
+    "create_or_rotate_secrets",
+    "use_signing_certificate",
+    "deploy_to_production",
+    "delete_user_data",
+    "perform_manual_device_action",
+    "make_irreversible_product_decision"
+  ],
+  "stopConditions": {
+    "missingCredential": true,
+    "missingRepositoryPermission": true,
+    "paidServiceRequired": true,
+    "signingIdentityRequired": true,
+    "manualHardwareInteractionRequired": true,
+    "irreversibleDecisionRequired": true
+  }
+}
