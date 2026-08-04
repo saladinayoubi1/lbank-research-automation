@@ -1,0 +1,167 @@
+{
+  "schema_version": 1,
+  "experiment_id": "bybit_neighborhood_validation_v7_2026-08-04",
+  "dataset": {
+    "dataset_root": "build/bybit_dataset",
+    "archive_sha256": "5f1173467c2296201940c3b7786b7cc3e5442244e07289769ab4867ace41d668"
+  },
+  "symbols": ["btc_usdt", "eth_usdt"],
+  "folds": [
+    {"start": "2023-06-01", "end": "2023-11-01"},
+    {"start": "2023-11-01", "end": "2024-04-01"},
+    {"start": "2024-04-01", "end": "2024-09-01"},
+    {"start": "2024-09-01", "end": "2025-02-01"},
+    {"start": "2025-02-01", "end": "2025-07-01"},
+    {"start": "2025-07-01", "end": "2026-01-01"},
+    {"start": "2026-01-01", "end": "2026-08-01"}
+  ],
+  "execution": {
+    "conservative": {
+      "initial_cash": 10000.0,
+      "fee_bps": 10.0,
+      "slippage_bps": 5.0,
+      "annual_short_carry": 0.20
+    },
+    "stress": {
+      "initial_cash": 10000.0,
+      "fee_bps": 15.0,
+      "slippage_bps": 10.0,
+      "annual_short_carry": 0.40
+    }
+  },
+  "frozen_components": [
+    {
+      "deadband": 0.03,
+      "ema_fast_days": 45,
+      "ema_slow_days": 240,
+      "fast_reversal": 0.03,
+      "high_vol_scale": 0.50,
+      "long_vote": 0.50,
+      "lookbacks": [30, 90, 180],
+      "quantum": 0.10,
+      "rebalance_days": 7,
+      "regime_fast_days": 30,
+      "regime_slow_days": 120,
+      "regime_threshold": 0.03,
+      "short_scale": 0.25,
+      "short_vote": 0.67,
+      "target_vol": 0.10,
+      "transition_scale": 0.25,
+      "vol_days": 90,
+      "vol_ratio_trigger": 1.25
+    },
+    {
+      "deadband": 0.03,
+      "ema_fast_days": 45,
+      "ema_slow_days": 240,
+      "fast_reversal": 0.03,
+      "high_vol_scale": 0.50,
+      "long_vote": 0.50,
+      "lookbacks": [30, 90, 180],
+      "quantum": 0.10,
+      "rebalance_days": 7,
+      "regime_fast_days": 30,
+      "regime_slow_days": 120,
+      "regime_threshold": 0.03,
+      "short_scale": 0.50,
+      "short_vote": 0.67,
+      "target_vol": 0.10,
+      "transition_scale": 0.25,
+      "vol_days": 90,
+      "vol_ratio_trigger": 1.25
+    },
+    {
+      "deadband": 0.03,
+      "ema_fast_days": 45,
+      "ema_slow_days": 240,
+      "fast_reversal": 0.03,
+      "high_vol_scale": 0.50,
+      "long_vote": 0.50,
+      "lookbacks": [30, 90, 180],
+      "quantum": 0.10,
+      "rebalance_days": 7,
+      "regime_fast_days": 30,
+      "regime_slow_days": 120,
+      "regime_threshold": 0.00,
+      "short_scale": 0.25,
+      "short_vote": 0.67,
+      "target_vol": 0.10,
+      "transition_scale": 0.25,
+      "vol_days": 90,
+      "vol_ratio_trigger": 1.25
+    },
+    {
+      "deadband": 0.03,
+      "ema_fast_days": 45,
+      "ema_slow_days": 240,
+      "fast_reversal": 0.03,
+      "high_vol_scale": 0.50,
+      "long_vote": 0.50,
+      "lookbacks": [30, 90, 180],
+      "quantum": 0.10,
+      "rebalance_days": 7,
+      "regime_fast_days": 30,
+      "regime_slow_days": 120,
+      "regime_threshold": 0.00,
+      "short_scale": 0.50,
+      "short_vote": 0.67,
+      "target_vol": 0.10,
+      "transition_scale": 0.25,
+      "vol_days": 90,
+      "vol_ratio_trigger": 1.25
+    }
+  ],
+  "neighborhood": {
+    "lookback_sets": [
+      [20, 60, 120],
+      [30, 90, 180],
+      [30, 60, 120, 240],
+      [45, 90, 180]
+    ],
+    "ema_pairs": [
+      [30, 180],
+      [30, 240],
+      [45, 180],
+      [45, 240],
+      [60, 240],
+      [60, 300]
+    ],
+    "deadband": [0.02, 0.03, 0.04],
+    "regime_fast_days": [20, 30, 45, 60],
+    "regime_slow_days": [90, 120, 180, 240],
+    "regime_threshold": [0.015, 0.02, 0.03, 0.04],
+    "transition_scale": [0.10, 0.20, 0.25, 0.35],
+    "vol_days": [60, 90, 120, 180],
+    "target_vol": [0.075, 0.09, 0.10, 0.11, 0.125],
+    "rebalance_days": [5, 7, 14],
+    "short_scale": [0.15, 0.20, 0.25, 0.35, 0.50]
+  },
+  "gates": {
+    "conservative": {
+      "minimum_positive_ratio": 0.71,
+      "minimum_median_return": 0.04,
+      "minimum_worst_return": -0.10,
+      "maximum_drawdown": 0.22,
+      "minimum_median_sharpe": 0.60,
+      "minimum_sharpe": -0.50,
+      "minimum_fill_count": 4,
+      "minimum_asset_fill_count": 1
+    },
+    "stress": {
+      "minimum_positive_ratio": 0.57,
+      "minimum_median_return": 0.00,
+      "minimum_worst_return": -0.15,
+      "maximum_drawdown": 0.28,
+      "minimum_median_sharpe": 0.00,
+      "minimum_sharpe": -0.80,
+      "minimum_fill_count": 4,
+      "minimum_asset_fill_count": 1
+    }
+  },
+  "plateau": {
+    "minimum_passers": 8,
+    "minimum_lookback_sets": 2,
+    "minimum_ema_pairs": 2,
+    "minimum_target_vols": 2
+  }
+}
