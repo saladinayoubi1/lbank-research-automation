@@ -1,0 +1,45 @@
+name: Build LBank Mobile APK
+
+on:
+  pull_request:
+    paths:
+      - "android/lbank-mobile/**"
+      - ".github/workflows/build_lbank_mobile_apk.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.10.2"
+      - name: Build debug APK
+        working-directory: android/lbank-mobile
+        run: gradle --no-daemon :app:assembleDebug
+      - name: Verify APK
+        run: |
+          test -s android/lbank-mobile/app/build/outputs/apk/debug/app-debug.apk
+          sha256sum android/lbank-mobile/app/build/outputs/apk/debug/app-debug.apk > android/lbank-mobile/app/build/outputs/apk/debug/LBANK_MOBILE_V2.apk.sha256
+          cp android/lbank-mobile/app/build/outputs/apk/debug/app-debug.apk android/lbank-mobile/app/build/outputs/apk/debug/LBANK_MOBILE_V2.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LBANK_MOBILE_V2_APK
+          path: |
+            android/lbank-mobile/app/build/outputs/apk/debug/LBANK_MOBILE_V2.apk
+            android/lbank-mobile/app/build/outputs/apk/debug/LBANK_MOBILE_V2.apk.sha256
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
