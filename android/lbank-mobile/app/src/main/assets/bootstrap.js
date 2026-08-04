@@ -10,10 +10,11 @@
   const status=()=>document.getElementById('updateStatus');
   const setStatus=text=>{const el=status();if(el)el.lastChild.textContent=' '+text};
   const safeName=name=>ALLOWED.includes(name)&&!name.includes('..')&&!name.includes('/');
+  const moduleLoaded=name=>(name==='provider-manager.js'&&window.LBankProviders)||(name==='nexus-council.js'&&window.NexusCouncil);
   const fetchText=async url=>{const join=url.includes('?')?'&':'?';const r=await fetch(url+join+'t='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);return r.text()};
   const injectStyle=(text,name)=>{if(document.querySelector(`[data-remote-update="${name}"]`))return;const el=document.createElement('style');el.dataset.remoteUpdate=name;el.textContent=text;document.head.appendChild(el)};
-  const execute=(text,name)=>{if(document.querySelector(`[data-remote-update="${name}"]`))return;const el=document.createElement('script');el.dataset.remoteUpdate=name;el.textContent=text+'\n//# sourceURL='+name;document.body.appendChild(el)};
-  const fallback=name=>{if(document.querySelector(`script[data-local-module="${name}"]`))return;const el=document.createElement('script');el.src=name;el.dataset.localModule=name;el.async=false;document.body.appendChild(el)};
+  const execute=(text,name)=>{if(moduleLoaded(name)||document.querySelector(`[data-remote-update="${name}"]`))return;const el=document.createElement('script');el.dataset.remoteUpdate=name;el.textContent=text+'\n//# sourceURL='+name;document.body.appendChild(el)};
+  const fallback=name=>{if(moduleLoaded(name)||document.querySelector(`script[data-local-module="${name}"]`))return;const el=document.createElement('script');el.src=name;el.dataset.localModule=name;el.async=false;document.body.appendChild(el)};
   function validateManifest(m){if(!m||typeof m.version!=='string'||!Array.isArray(m.files))throw new Error('Invalid manifest');const names=new Set();for(const f of m.files){if(!safeName(f.name)||names.has(f.name)||typeof f.url!=='string'||!f.url.startsWith(BASE))throw new Error('Unsafe update manifest');names.add(f.name)}}
   async function downloadBundle(){const manifest=JSON.parse(await fetchText(MANIFEST));validateManifest(manifest);const files={};for(const f of manifest.files)files[f.name]=await fetchText(f.url);return{version:manifest.version,files,savedAt:Date.now()}}
   function cachedBundle(){try{const b=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');return b&&b.files?b:null}catch{return null}}
