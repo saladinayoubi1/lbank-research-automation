@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "experiment_id": "bybit_long_short_search_v4_2026-08-04",
+  "dataset": {
+    "dataset_root": "build/bybit_dataset",
+    "archive_sha256": "5f1173467c2296201940c3b7786b7cc3e5442244e07289769ab4867ace41d668"
+  },
+  "symbols": ["btc_usdt", "eth_usdt"],
+  "timeframe": "hour4",
+  "folds": [
+    {"start": "2023-06-01", "end": "2023-11-01"},
+    {"start": "2023-11-01", "end": "2024-04-01"},
+    {"start": "2024-04-01", "end": "2024-09-01"},
+    {"start": "2024-09-01", "end": "2025-02-01"},
+    {"start": "2025-02-01", "end": "2025-07-01"},
+    {"start": "2025-07-01", "end": "2026-01-01"},
+    {"start": "2026-01-01", "end": "2026-08-01"}
+  ],
+  "execution": {
+    "conservative": {
+      "initial_cash": 10000.0,
+      "fee_bps": 10.0,
+      "slippage_bps": 5.0,
+      "annual_short_carry": 0.20
+    },
+    "stress": {
+      "initial_cash": 10000.0,
+      "fee_bps": 15.0,
+      "slippage_bps": 10.0,
+      "annual_short_carry": 0.40
+    }
+  },
+  "search": {
+    "top_exact": 120,
+    "ensemble_size": 9,
+    "risk": {
+      "vol_days": [30, 60, 90],
+      "target_vol": [0.20, 0.30, 0.50],
+      "rebalance_days": [7, 14, 30],
+      "quantum": 0.25
+    },
+    "tsmom_long_short": {
+      "lookback_sets": [[30, 60, 120], [30, 90, 180], [60, 120, 180], [30, 60, 90, 180], [60, 90, 120, 180]],
+      "vote_threshold": [0.50, 0.67, 1.0],
+      "deadband": [0.0, 0.02, 0.05],
+      "allocation": ["equal", "inverse_vol"]
+    },
+    "ema_long_short": {
+      "fast_days": [20, 45, 90],
+      "slow_days": [120, 180, 240],
+      "deadband": [0.0, 0.01, 0.03],
+      "allocation": ["equal", "inverse_vol"]
+    },
+    "breakout_long_short": {
+      "entry_days": [30, 60, 90, 120],
+      "exit_days": [10, 20, 40, 60],
+      "allocation": ["equal", "inverse_vol"]
+    },
+    "relative_value": {
+      "lookback_sets": [[30, 60, 120], [30, 90, 180], [60, 120, 180], [30, 60, 90, 180], [60, 90, 120, 180]],
+      "minimum_score_spread": [0.02, 0.05, 0.10]
+    }
+  },
+  "gates": {
+    "conservative": {
+      "minimum_positive_ratio": 0.71,
+      "minimum_median_return": 0.04,
+      "minimum_worst_return": -0.10,
+      "maximum_drawdown": 0.22,
+      "minimum_median_sharpe": 0.60,
+      "minimum_sharpe": -0.50,
+      "minimum_fill_count": 4,
+      "minimum_asset_fill_count": 1
+    },
+    "stress": {
+      "minimum_positive_ratio": 0.57,
+      "minimum_median_return": 0.00,
+      "minimum_worst_return": -0.15,
+      "maximum_drawdown": 0.28,
+      "minimum_median_sharpe": 0.00,
+      "minimum_sharpe": -0.80,
+      "minimum_fill_count": 4,
+      "minimum_asset_fill_count": 1
+    }
+  }
+}
