@@ -5,6 +5,7 @@ import math
 import pandas as pd
 
 from bybit_derivatives_validation_v1 import (
+    Client,
     InstrumentSpec,
     Position,
     RiskTier,
@@ -99,3 +100,43 @@ def test_expected_funding_count_for_eight_hour_interval() -> None:
     start = pd.Timestamp("2026-01-01T00:00:00Z")
     end = pd.Timestamp("2026-01-02T00:00:00Z")
     assert expected_funding_count(start, end, 480) == 3
+
+
+def test_client_demotes_blocked_base_and_caches_working_base() -> None:
+    class FakeResponse:
+        def __init__(self, status_code: int) -> None:
+            self.status_code = status_code
+
+        def raise_for_status(self) -> None:
+            if self.status_code >= 400:
+                raise AssertionError("unexpected raise_for_status call")
+
+        def json(self) -> dict[str, object]:
+            return {"retCode": 0, "retMsg": "OK", "result": {"list": []}}
+
+    class FakeSession:
+        def __init__(self) -> None:
+            self.calls: list[str] = []
+
+        def get(self, url: str, **_: object) -> FakeResponse:
+            self.calls.append(url)
+            return FakeResponse(403 if url.startswith("https://blocked.example") else 200)
+
+    client = Client(
+        ["https://blocked.example", "https://working.example"],
+        timeout=1.0,
+        attempts=4,
+        pause=0.0,
+    )
+    fake = FakeSession()
+    client.session = fake  # type: ignore[assignment]
+    client.get("/v5/market/time", {})
+    client.get("/v5/market/time", {})
+
+    assert client.preferred_base == "https://working.example"
+    assert client.blocked_bases == {"https://blocked.example"}
+    assert fake.calls == [
+        "https://blocked.example/v5/market/time",
+        "https://working.example/v5/market/time",
+        "https://working.example/v5/market/time",
+    ]
