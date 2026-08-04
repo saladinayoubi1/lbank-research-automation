@@ -1,1 +1,0 @@
-Qualification requires development stability, positive locked-test performance on both BTC and ETH, controlled drawdown, positive risk-adjusted return, sufficient fills, and survival under stressed transaction costs.
