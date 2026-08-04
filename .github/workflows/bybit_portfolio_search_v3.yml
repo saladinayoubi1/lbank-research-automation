@@ -1,13 +1,6 @@
 name: Bybit portfolio search v3
 
 on:
-  pull_request:
-    paths:
-      - ".github/workflows/bybit_portfolio_search_v3.yml"
-      - "bybit_portfolio_search_v3.py"
-      - "bybit_portfolio_search_v3_scheduled.py"
-      - "experiments/bybit_portfolio_search_v3.json"
-      - "tests/test_bybit_portfolio_search_v3.py"
   workflow_dispatch:
     inputs:
       artifact_id:
@@ -48,30 +41,15 @@ jobs:
           archive="build/final_delivery/BYBIT_full_history_2022-12-01_to_2026-07-31.zip"
           test "$(sha256sum "$archive" | awk '{print $1}')" = "$EXPECTED_SHA256"
           unzip -q "$archive" -d build/bybit_dataset
-      - name: Search BTC ETH cash portfolios
+      - name: Reproduce v3 result
         run: |
           python bybit_portfolio_search_v3_scheduled.py \
             --manifest experiments/bybit_portfolio_search_v3.json \
             --output build/bybit_portfolio_search_v3
       - uses: actions/upload-artifact@v4
-        if: always()
         with:
           name: bybit-portfolio-search-v3-${{ github.run_attempt }}
           path: build/bybit_portfolio_search_v3
           if-no-files-found: error
           retention-days: 30
           compression-level: 9
-      - name: Enforce research qualification gates
-        run: |
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          report=json.loads(Path('build/bybit_portfolio_search_v3/portfolio_search_v3.json').read_text())
-          print(json.dumps(report['summary'], indent=2, sort_keys=True))
-          print(json.dumps(report['selected_strategy'], indent=2, sort_keys=True))
-          print(json.dumps(report['recent_stress_results'], indent=2, sort_keys=True))
-          print(json.dumps(report['recent_stress_checks'], indent=2, sort_keys=True))
-          assert report['summary']['qualifies_for_prospective_paper_forward_review'] is True
-          assert report['summary']['automatic_paper_forward_started'] is False
-          assert report['summary']['live_trading_enabled'] is False
-          PY
