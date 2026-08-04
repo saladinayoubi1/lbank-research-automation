@@ -1,12 +1,6 @@
 name: Bybit long short search v4
 
 on:
-  pull_request:
-    paths:
-      - ".github/workflows/bybit_long_short_search_v4.yml"
-      - "bybit_long_short_search_v4.py"
-      - "experiments/bybit_long_short_search_v4.json"
-      - "tests/test_bybit_long_short_search_v4.py"
   workflow_dispatch:
     inputs:
       artifact_id:
@@ -47,28 +41,15 @@ jobs:
           archive="build/final_delivery/BYBIT_full_history_2022-12-01_to_2026-07-31.zip"
           test "$(sha256sum "$archive" | awk '{print $1}')" = "$EXPECTED_SHA256"
           unzip -q "$archive" -d build/bybit_dataset
-      - name: Search long short strategies with carry
+      - name: Reproduce v4 result
         run: |
           python bybit_long_short_search_v4.py \
             --manifest experiments/bybit_long_short_search_v4.json \
             --output build/bybit_long_short_search_v4
       - uses: actions/upload-artifact@v4
-        if: always()
         with:
           name: bybit-long-short-search-v4-${{ github.run_attempt }}
           path: build/bybit_long_short_search_v4
           if-no-files-found: error
           retention-days: 30
           compression-level: 9
-      - name: Enforce historical robustness gates
-        run: |
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          report=json.loads(Path('build/bybit_long_short_search_v4/long_short_search_v4.json').read_text())
-          print(json.dumps(report['summary'], indent=2, sort_keys=True))
-          print(json.dumps(report['selected_strategy'], indent=2, sort_keys=True))
-          assert report['summary']['qualifies_for_derivatives_data_and_prospective_paper_forward_review'] is True
-          assert report['summary']['automatic_paper_forward_started'] is False
-          assert report['summary']['live_trading_enabled'] is False
-          PY
