@@ -1,0 +1,71 @@
+name: Build LBank Desktop Windows
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "desktop/lbank-monitor/**"
+      - "android/lbank-mobile/app/src/main/assets/**"
+      - ".github/workflows/build_lbank_desktop_windows.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: desktop/lbank-monitor/package-lock.json
+      - name: Copy dashboard assets
+        run: |
+          $source = "android/lbank-mobile/app/src/main/assets"
+          $target = "desktop/lbank-monitor/app"
+          if (Test-Path $target) { Remove-Item $target -Recurse -Force }
+          New-Item -ItemType Directory -Path $target | Out-Null
+          Copy-Item "$source/*" $target -Recurse -Force
+      - name: Install packaging dependencies
+        working-directory: desktop/lbank-monitor
+        run: npm install --no-audit --no-fund
+      - name: Validate packaged dashboard files
+        run: |
+          $required = @(
+            "desktop/lbank-monitor/app/index.html",
+            "desktop/lbank-monitor/app/styles.css",
+            "desktop/lbank-monitor/app/app.js",
+            "desktop/lbank-monitor/app/data.json"
+          )
+          foreach ($path in $required) {
+            if (!(Test-Path $path)) { throw "Missing required asset: $path" }
+          }
+      - name: Build installer and portable EXE
+        working-directory: desktop/lbank-monitor
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npm run dist:win
+      - name: Generate SHA-256 checksums
+        run: |
+          Get-ChildItem "desktop/lbank-monitor/dist" -File |
+            Where-Object { $_.Extension -in ".exe", ".zip" } |
+            ForEach-Object {
+              $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
+              "$hash  $($_.Name)" | Out-File -FilePath "desktop/lbank-monitor/dist/SHA256SUMS.txt" -Append -Encoding utf8
+            }
+          Get-Content "desktop/lbank-monitor/dist/SHA256SUMS.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LBANK_DESKTOP_WINDOWS_V2
+          path: |
+            desktop/lbank-monitor/dist/*.exe
+            desktop/lbank-monitor/dist/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
