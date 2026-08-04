@@ -5,6 +5,7 @@ on:
     paths:
       - ".github/workflows/bybit_portfolio_search_v3.yml"
       - "bybit_portfolio_search_v3.py"
+      - "bybit_portfolio_search_v3_scheduled.py"
       - "experiments/bybit_portfolio_search_v3.json"
       - "tests/test_bybit_portfolio_search_v3.py"
   workflow_dispatch:
@@ -49,7 +50,7 @@ jobs:
           unzip -q "$archive" -d build/bybit_dataset
       - name: Search BTC ETH cash portfolios
         run: |
-          python bybit_portfolio_search_v3.py \
+          python bybit_portfolio_search_v3_scheduled.py \
             --manifest experiments/bybit_portfolio_search_v3.json \
             --output build/bybit_portfolio_search_v3
       - uses: actions/upload-artifact@v4
