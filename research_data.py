@@ -23,9 +23,6 @@ def get_series_readiness(
     status_path: Path = DEFAULT_STATUS_PATH,
     minimum_rows: int = 0,
 ) -> dict[str, Any]:
-    if not status_path.exists():
-        raise ResearchDataError(f"Readiness source not found: {status_path}")
-
     status_frame = pd.read_csv(status_path)
     readiness = evaluate_readiness(status_frame, minimum_rows=minimum_rows)
     match = readiness.loc[
@@ -61,7 +58,7 @@ def validate_research_frame(
         normalized["timestamp"],
         utc=True,
         errors="raise",
-    )
+    ).astype("datetime64[ns, UTC]")
     normalized = normalized.sort_values("timestamp").reset_index(drop=True)
 
     symbols = set(normalized["symbol"].dropna().astype(str))
