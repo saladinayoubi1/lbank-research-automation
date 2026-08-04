@@ -26,24 +26,19 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.10.2"
-      - name: Build debug APK
+      - name: Build signed release APK
         working-directory: android/lbank-mobile
-        run: gradle --no-daemon --stacktrace :app:assembleDebug
-      - name: Validate and package APK
+        run: gradle --no-daemon --stacktrace :app:assembleRelease
+      - name: Validate and package production APK
         env:
-          APK_SOURCE: android/lbank-mobile/app/build/outputs/apk/debug/app-debug.apk
-          APK_FINAL: android/lbank-mobile/app/build/outputs/apk/debug/LBANK_MOBILE_V2.apk
+          APK_SOURCE: android/lbank-mobile/app/build/outputs/apk/release/app-release.apk
+          APK_FINAL: android/lbank-mobile/app/build/outputs/apk/release/LBANK_MOBILE_V2_RELEASE.apk
         run: |
           set -euo pipefail
           test -s "$APK_SOURCE"
           cp "$APK_SOURCE" "$APK_FINAL"
-
           size=$(stat -c%s "$APK_FINAL")
-          if [ "$size" -lt 10000 ]; then
-            echo "APK is unexpectedly small: $size bytes" >&2
-            exit 1
-          fi
-
+          test "$size" -ge 10000
           unzip -t "$APK_FINAL"
           unzip -l "$APK_FINAL" | tee /tmp/apk-contents.txt
           grep -q "AndroidManifest.xml" /tmp/apk-contents.txt
@@ -52,33 +47,31 @@ jobs:
           grep -q "assets/styles.css" /tmp/apk-contents.txt
           grep -q "assets/app.js" /tmp/apk-contents.txt
           grep -q "assets/data.json" /tmp/apk-contents.txt
-
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK_FINAL" | tee /tmp/apksigner.txt
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK_FINAL" | tee /tmp/aapt-badging.txt
-          grep -q "package: name='com.saladinayoubi.lbankmobile'" /tmp/aapt-badging.txt
+          grep -q "package: name='com.saladinayoubi.lbankmobile' versionCode='3' versionName='2.1.0'" /tmp/aapt-badging.txt
           grep -q "launchable-activity:" /tmp/aapt-badging.txt
-
           sha256sum "$APK_FINAL" > "${APK_FINAL}.sha256"
           digest=$(cut -d' ' -f1 "${APK_FINAL}.sha256")
           size_kb=$(awk "BEGIN {printf \"%.1f\", $size/1024}")
-
           {
-            echo "## LBank Mobile APK"
+            echo "## LBank Mobile Production APK"
             echo ""
-            echo "- Build: successful"
-            echo "- APK validation: successful"
+            echo "- Release build: successful"
+            echo "- Signature validation: successful"
             echo "- Package: \`com.saladinayoubi.lbankmobile\`"
-            echo "- File: \`LBANK_MOBILE_V2.apk\`"
+            echo "- Version: \`2.1.0 (3)\`"
+            echo "- File: \`LBANK_MOBILE_V2_RELEASE.apk\`"
             echo "- Size: ${size} bytes (${size_kb} KB)"
             echo "- SHA-256: \`${digest}\`"
-            echo "- Included assets: HTML, CSS, JavaScript, dashboard data"
+            echo "- Branding: custom icon and Android 12 splash screen"
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:
-          name: LBANK_MOBILE_V2_APK
+          name: LBANK_MOBILE_V2_RELEASE_APK
           path: |
-            android/lbank-mobile/app/build/outputs/apk/debug/LBANK_MOBILE_V2.apk
-            android/lbank-mobile/app/build/outputs/apk/debug/LBANK_MOBILE_V2.apk.sha256
+            android/lbank-mobile/app/build/outputs/apk/release/LBANK_MOBILE_V2_RELEASE.apk
+            android/lbank-mobile/app/build/outputs/apk/release/LBANK_MOBILE_V2_RELEASE.apk.sha256
           if-no-files-found: error
           retention-days: 30
           compression-level: 0
