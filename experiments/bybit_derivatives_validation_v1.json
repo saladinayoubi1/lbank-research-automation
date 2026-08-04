@@ -8,11 +8,19 @@
   "history_start_utc": "2022-12-01T00:00:00Z",
   "history_end_exclusive_utc": "2026-08-01T00:00:00Z",
   "api_base_urls": [
+    "https://api.bybit.nl",
+    "https://api.bybit.tr",
+    "https://api.bybit.kz",
+    "https://api.bybitgeorgia.ge",
+    "https://api.bybit.ae",
+    "https://api.bybit.id",
+    "https://api.byhkbit.com",
+    "https://api.manepa.jp",
     "https://api.bybit.com",
     "https://api.bytick.com"
   ],
   "timeout_seconds": 30,
-  "maximum_attempts": 6,
+  "maximum_attempts": 20,
   "request_pause_seconds": 0.03,
   "folds": [
     {"start": "2023-06-01", "end": "2023-11-01"},
