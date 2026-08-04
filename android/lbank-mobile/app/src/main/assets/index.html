@@ -1,48 +1,23 @@
 <!doctype html>
 <html lang="fa" dir="rtl">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#08111f">
-  <title>LBank Market Monitor</title>
-  <link rel="stylesheet" href="styles.css">
-</head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#08111f"><title>LBank Personal Pro</title><link rel="stylesheet" href="styles.css"></head>
 <body>
-  <div class="app-shell">
-    <aside class="sidebar">
-      <div class="brand"><span class="brand-mark">L</span><div><strong>LBank Monitor</strong><small>Market Intelligence</small></div></div>
-      <nav>
-        <a class="active" href="#overview">نمای کلی</a>
-        <a href="#marketSection">بازارها</a>
-        <a href="#qualitySection">سلامت داده</a>
-      </nav>
-      <div class="sidebar-foot"><span class="status-dot"></span><small>اتصال فقط به داده عمومی</small></div>
-    </aside>
-    <div class="workspace">
-      <header class="topbar">
-        <div><small>داشبورد پایش داده</small><h1>LBank Market Monitor</h1></div>
-        <div class="top-actions"><span class="live-pill"><i></i> LIVE</span><button id="theme" aria-label="تغییر پوسته">◐</button></div>
-      </header>
-      <main>
-        <section id="overview" class="overview" aria-live="polite">
-          <article><span>وضعیت سیستم</span><strong id="health">در حال بارگذاری</strong><em>کنترل یکپارچگی فعال</em></article>
-          <article><span>سری‌های پایش‌شده</span><strong id="seriesCount">—</strong><em>نماد و تایم‌فریم</em></article>
-          <article><span>آخرین بروزرسانی</span><strong id="updated">—</strong><em>زمان محلی دستگاه</em></article>
-        </section>
-        <section class="control-panel">
-          <div class="toolbar">
-            <label>نماد<select id="symbol"></select></label>
-            <label>بازه زمانی<select id="timeframe"></select></label>
-            <button id="refresh">بروزرسانی داده</button>
-          </div>
-        </section>
-        <section id="selected" class="selected card hero-card"></section>
-        <section id="marketSection" class="section-block"><div class="section-title"><div><small>Market Watch</small><h2>بازارها</h2></div><span>نمای لحظه‌ای</span></div><div id="markets" class="grid"></div></section>
-        <section id="qualitySection" class="section-block"><div class="section-title"><div><small>Data Integrity</small><h2>سلامت داده</h2></div><span>کنترل خودکار</span></div><div id="quality" class="grid"></div></section>
-      </main>
-    </div>
-  </div>
-  <template id="marketTemplate"><article class="card market"><div><b></b><small></small></div><strong></strong><span></span></article></template>
-  <script src="app.js" defer></script>
-</body>
-</html>
+<div class="app-shell">
+<aside class="sidebar"><div class="brand"><span class="brand-mark">L</span><div><strong>LBank Personal</strong><small>V3 Pro Monitor</small></div></div><nav><a class="active" href="#overview">نمای کلی</a><a href="#watchlistSection">واچ‌لیست</a><a href="#marketSection">بازارها</a><a href="#alertsSection">هشدارها</a><a href="#qualitySection">سلامت داده</a><a href="#settingsSection">تنظیمات</a></nav><div class="sidebar-foot"><span class="status-dot"></span><small>فقط داده عمومی</small></div></aside>
+<div class="workspace">
+<header class="topbar"><div><small data-i18n="subtitle">داشبورد شخصی بازار</small><h1>LBank Personal Pro</h1></div><div class="top-actions"><span class="live-pill"><i></i> LIVE</span><button id="lang" title="زبان">FA</button><button id="theme" title="پوسته">◐</button></div></header>
+<main>
+<section id="overview" class="overview"><article><span>وضعیت سیستم</span><strong id="health">در حال بارگذاری</strong><em>کنترل یکپارچگی فعال</em></article><article><span>سری‌های پایش‌شده</span><strong id="seriesCount">—</strong><em>نماد و تایم‌فریم</em></article><article><span>آخرین بروزرسانی</span><strong id="updated">—</strong><em>زمان محلی دستگاه</em></article></section>
+<section class="control-panel"><div class="toolbar"><label>جستجو<input id="search" placeholder="BTC, ETH..."></label><label>نماد<select id="symbol"></select></label><label>بازه<select id="timeframe"></select></label><button id="refresh">بروزرسانی</button></div></section>
+<section id="selected" class="selected card hero-card"></section>
+<section class="quick-actions"><button id="toggleWatch">☆ افزودن به واچ‌لیست</button><button id="addAlert">＋ هشدار قیمت</button><button id="exportCsv">↓ خروجی CSV</button><button id="backup">پشتیبان تنظیمات</button><label class="file-btn">بازیابی<input id="restore" type="file" accept="application/json"></label></section>
+<section id="watchlistSection" class="section-block"><div class="section-title"><div><small>Personal Watchlist</small><h2>واچ‌لیست</h2></div><span id="watchCount">۰ نماد</span></div><div id="watchlist" class="grid"></div></section>
+<section id="marketSection" class="section-block"><div class="section-title"><div><small>Market Watch</small><h2>بازارها</h2></div><span>نمای لحظه‌ای</span></div><div id="markets" class="grid"></div></section>
+<section id="alertsSection" class="section-block"><div class="section-title"><div><small>Price Rules</small><h2>هشدارها</h2></div><span id="alertCount">۰ فعال</span></div><div id="alerts" class="grid"></div></section>
+<section id="qualitySection" class="section-block"><div class="section-title"><div><small>Data Integrity</small><h2>سلامت داده</h2></div><span>کنترل خودکار</span></div><div id="quality" class="grid"></div></section>
+<section id="settingsSection" class="section-block"><div class="section-title"><div><small>Personal Preferences</small><h2>تنظیمات</h2></div></div><div class="settings-grid"><label><input id="performance" type="checkbox"> حالت Performance</label><label><input id="compact" type="checkbox"> کارت‌های فشرده</label><button id="clearSettings" class="danger-btn">پاک‌کردن تنظیمات شخصی</button></div></section>
+</main></div></div>
+<template id="marketTemplate"><article class="card market"><div><b></b><small></small></div><strong></strong><span></span></article></template>
+<dialog id="alertDialog"><form method="dialog"><h3>هشدار قیمت</h3><p id="alertSymbol"></p><label>شرط<select id="alertDirection"><option value="above">بالاتر از</option><option value="below">پایین‌تر از</option></select></label><label>قیمت<input id="alertPrice" type="number" step="any" required></label><menu><button value="cancel">لغو</button><button id="saveAlert" value="default">ذخیره</button></menu></form></dialog>
+<div id="toast" role="status"></div><script src="app.js" defer></script>
+</body></html>
