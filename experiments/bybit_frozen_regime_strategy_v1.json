@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "strategy_id": "bybit_btc_eth_regime_consensus_v1",
+  "frozen_at_utc": "2026-08-04T10:15:07Z",
+  "research_status": "eligible_for_derivatives_validation_and_prospective_paper_forward",
+  "data_contract": {
+    "venue": "bybit_spot_official_archives",
+    "symbols": ["btc_usdt", "eth_usdt"],
+    "timeframe": "hour4",
+    "history_start_utc": "2022-12-01T00:00:00Z",
+    "history_end_exclusive_utc": "2026-08-01T00:00:00Z",
+    "archive_sha256": "5f1173467c2296201940c3b7786b7cc3e5442244e07289769ab4867ace41d668"
+  },
+  "execution_contract": {
+    "signal_observation": "completed_4h_candle_close",
+    "execution": "next_4h_candle_open",
+    "rebalance_days": 7,
+    "maximum_gross_exposure": 1.0,
+    "target_volatility": 0.10,
+    "volatility_lookback_days": 90,
+    "weight_quantum": 0.10,
+    "high_volatility_ratio_trigger": 1.25,
+    "high_volatility_scale": 0.50
+  },
+  "signal_contract": {
+    "asset_momentum_lookbacks_days": [30, 90, 180],
+    "long_vote_threshold": 0.50,
+    "short_vote_threshold": 0.67,
+    "asset_ema_fast_days": 45,
+    "asset_ema_slow_days": 240,
+    "momentum_deadband": 0.03,
+    "fast_reversal_limit": 0.03,
+    "regime_fast_days": 30,
+    "regime_slow_days": 120,
+    "transition_long_scale": 0.25,
+    "states": {
+      "bull": "broad fast momentum above threshold and broad slow momentum positive; long consensus permitted",
+      "bear": "broad fast momentum below negative threshold and broad slow momentum negative; confirmed short consensus permitted",
+      "transition": "short disabled and long consensus scaled to 25 percent"
+    }
+  },
+  "ensemble_components": [
+    {"regime_threshold": 0.03, "short_scale": 0.25},
+    {"regime_threshold": 0.03, "short_scale": 0.50},
+    {"regime_threshold": 0.00, "short_scale": 0.25},
+    {"regime_threshold": 0.00, "short_scale": 0.50}
+  ],
+  "ensemble_aggregation": "median_target_weight_per_asset",
+  "historical_cross_validation": {
+    "folds": 7,
+    "conservative": {
+      "fee_bps": 10.0,
+      "slippage_bps": 5.0,
+      "annual_short_carry": 0.20,
+      "positive_fold_ratio": 0.8571428571428571,
+      "median_fold_return": 0.04182724028832663,
+      "worst_fold_return": -0.013403360795967045,
+      "worst_fold_drawdown": 0.046403960957594914,
+      "median_fold_sharpe": 0.9297804161964595,
+      "minimum_fold_sharpe": -0.4419811752506506
+    },
+    "stress": {
+      "fee_bps": 15.0,
+      "slippage_bps": 10.0,
+      "annual_short_carry": 0.40,
+      "positive_fold_ratio": 0.8571428571428571,
+      "median_fold_return": 0.03599996149722284,
+      "worst_fold_return": -0.01601745395920584,
+      "worst_fold_drawdown": 0.046413600169652125,
+      "median_fold_sharpe": 0.8083688064278576,
+      "minimum_fold_sharpe": -0.5350394235086899
+    }
+  },
+  "parameter_plateau": {
+    "neighborhood_candidates": 480,
+    "dual_profile_passers": 29,
+    "passing_lookback_sets": [[30, 90, 180], [45, 90, 180]],
+    "passing_ema_pairs": [[30, 240], [45, 240]],
+    "passing_target_volatilities": [0.10, 0.11]
+  },
+  "promotion_policy": {
+    "automatic_paper_forward": false,
+    "live_trading": false,
+    "required_next_gate": "validate actual derivatives funding margin liquidation and execution, then run prospective paper forward with these parameters unchanged"
+  },
+  "limitations": [
+    "All available history informed development, so these results are not a pristine out-of-sample test.",
+    "Short exposure was modeled from Spot OHLCV with conservative and stressed annual carry assumptions; actual perpetual funding and borrow mechanics were not present in the source dataset.",
+    "No result guarantees future profitability."
+  ]
+}
