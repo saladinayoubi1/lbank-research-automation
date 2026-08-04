@@ -2,14 +2,12 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <application
         android:allowBackup="false"
-        android:usesCleartextTraffic="false"
-        android:label="LBank Market Monitor"
+        android:usesCleartextTraffic="true"
+        android:label="NEXUS Personal Pro"
         android:icon="@drawable/ic_lbank"
         android:roundIcon="@drawable/ic_lbank"
         android:theme="@style/AppTheme">
-        <activity
-            android:name=".MainActivity"
-            android:exported="true">
+        <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
