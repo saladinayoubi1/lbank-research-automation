@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       input_file:
-        description: CSL JSON file to validate or upload
+        description: CSL JSON file under references/
         required: true
         default: references/crypto-fx-library.json
       collection_key:
@@ -23,18 +23,24 @@ jobs:
   validate-and-sync:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      INPUT_FILE: ${{ inputs.input_file }}
+      COLLECTION_KEY: ${{ inputs.collection_key }}
     steps:
       - uses: actions/checkout@v4
       - name: Validate unit tests
         run: python -m unittest tests.test_sync_zotero
       - name: Validate input only
         if: ${{ !inputs.apply }}
-        run: python scripts/sync_zotero.py "${{ inputs.input_file }}"
+        run: python scripts/sync_zotero.py "$INPUT_FILE"
       - name: Upload validated items
         if: ${{ inputs.apply }}
         env:
           ZOTERO_API_KEY: ${{ secrets.ZOTERO_API_KEY }}
           ZOTERO_LIBRARY_ID: ${{ secrets.ZOTERO_LIBRARY_ID }}
-        run: >-
-          python scripts/sync_zotero.py "${{ inputs.input_file }}" --apply
-          ${{ inputs.collection_key && format('--collection-key {0}', inputs.collection_key) || '' }}
+        run: |
+          args=("$INPUT_FILE" --apply)
+          if [[ -n "$COLLECTION_KEY" ]]; then
+            args+=(--collection-key "$COLLECTION_KEY")
+          fi
+          python scripts/sync_zotero.py "${args[@]}"
