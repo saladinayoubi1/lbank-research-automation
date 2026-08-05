@@ -1,6 +1,6 @@
 {
-  "version": 1,
-  "currentMissionId": "M-007",
+  "version": 2,
+  "currentMissionId": "M-008",
   "selectionPolicy": {
     "priorityOrder": [
       "stability",
@@ -51,9 +51,17 @@
     {
       "id": "M-007",
       "title": "Mission Control UI",
-      "status": "active",
+      "status": "completed",
       "priority": "user_experience",
       "dependencies": ["M-004", "M-006"],
+      "reversible": true
+    },
+    {
+      "id": "M-008",
+      "title": "Artifact Integrity Foundation",
+      "status": "active",
+      "priority": "security",
+      "dependencies": ["M-004", "M-007"],
       "reversible": true
     }
   ]
