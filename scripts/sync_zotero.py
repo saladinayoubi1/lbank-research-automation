@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 import urllib.error
 import urllib.request
@@ -13,6 +14,24 @@ from typing import Any
 
 REQUIRED = ("title", "type")
 ALLOWED_TYPES = {"article-journal", "book", "chapter", "paper-conference", "report", "thesis", "webpage"}
+COLLECTION_KEY_RE = re.compile(r"^[A-Z0-9]{1,32}$")
+
+
+def validate_input_path(path: Path, root: Path | None = None) -> Path:
+    root = (root or Path.cwd()).resolve()
+    allowed = (root / "references").resolve()
+    resolved = path.resolve()
+    if resolved.suffix.lower() != ".json" or allowed not in resolved.parents:
+        raise ValueError("input must be a .json file under references/")
+    return resolved
+
+
+def validate_collection_key(value: str | None) -> str | None:
+    if value is None or value == "":
+        return None
+    if not COLLECTION_KEY_RE.fullmatch(value):
+        raise ValueError("collection key must contain only 1-32 uppercase letters or digits")
+    return value
 
 
 def load_items(path: Path) -> list[dict[str, Any]]:
@@ -50,7 +69,7 @@ def to_zotero(item: dict[str, Any], collection_key: str | None) -> dict[str, Any
         "itemType": type_map[item["type"]], "title": item["title"], "creators": creators,
         "date": str(item.get("issued", {}).get("date-parts", [[""]])[0][0]),
         "DOI": item.get("DOI", ""), "url": item.get("URL", ""),
-        "abstractNote": item.get("abstract", ""), "tags": [{"tag": t} for t in item.get("keyword", "").split(",") if t.strip()],
+        "abstractNote": item.get("abstract", ""), "tags": [{"tag": t.strip()} for t in item.get("keyword", "").split(",") if t.strip()],
     }
     if collection_key:
         payload["collections"] = [collection_key]
@@ -58,6 +77,8 @@ def to_zotero(item: dict[str, Any], collection_key: str | None) -> dict[str, Any
 
 
 def upload(items: list[dict[str, Any]], *, library_id: str, api_key: str, collection_key: str | None) -> None:
+    if not library_id.isdigit():
+        raise ValueError("ZOTERO_LIBRARY_ID must be numeric")
     url = f"https://api.zotero.org/users/{library_id}/items"
     body = json.dumps([to_zotero(i, collection_key) for i in items]).encode("utf-8")
     req = urllib.request.Request(url, data=body, method="POST", headers={
@@ -78,13 +99,15 @@ def main() -> int:
     parser.add_argument("--collection-key")
     args = parser.parse_args()
     try:
-        items = load_items(args.input)
+        path = validate_input_path(args.input)
+        collection_key = validate_collection_key(args.collection_key)
+        items = load_items(path)
         if args.apply:
             api_key = os.environ.get("ZOTERO_API_KEY")
             library_id = os.environ.get("ZOTERO_LIBRARY_ID")
             if not api_key or not library_id:
                 raise ValueError("ZOTERO_API_KEY and ZOTERO_LIBRARY_ID are required for --apply")
-            upload(items, library_id=library_id, api_key=api_key, collection_key=args.collection_key)
+            upload(items, library_id=library_id, api_key=api_key, collection_key=collection_key)
         print(json.dumps({"valid": True, "count": len(items), "applied": bool(args.apply)}, sort_keys=True))
         return 0
     except (OSError, json.JSONDecodeError, ValueError, RuntimeError) as exc:
