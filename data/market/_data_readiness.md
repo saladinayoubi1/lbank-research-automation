@@ -7,24 +7,24 @@
 
 | Symbol | Timeframe | Rows | Status | Integrity OK | Missing | Gaps | Duplicates | Off-grid | Ready | Reason |
 |---|---|---:|---|---|---:|---:|---:|---:|---|---|
-| aero_usdt | hour1 | 14259 | invalid | False | 11 | 11 | 0 | 0 | False | integrity_failed |
+| aero_usdt | hour1 | 14260 | invalid | False | 11 | 11 | 0 | 0 | False | integrity_failed |
 | aero_usdt | hour4 | 3568 | current | True | 0 | 0 | 0 | 0 | True | ready |
-| aero_usdt | minute15 | 56971 | invalid | False | 109 | 109 | 0 | 0 | False | integrity_failed |
-| agt_usdt | hour1 | 10718 | invalid | False | 1 | 1 | 0 | 0 | False | integrity_failed |
+| aero_usdt | minute15 | 56975 | invalid | False | 109 | 109 | 0 | 0 | False | integrity_failed |
+| agt_usdt | hour1 | 10719 | invalid | False | 1 | 1 | 0 | 0 | False | integrity_failed |
 | agt_usdt | hour4 | 2681 | current | True | 0 | 0 | 0 | 0 | True | ready |
-| agt_usdt | minute15 | 42848 | invalid | False | 27 | 27 | 0 | 0 | False | integrity_failed |
-| btc_usdt | hour1 | 40250 | invalid | False | 20 | 20 | 0 | 0 | False | integrity_failed |
+| agt_usdt | minute15 | 42852 | invalid | False | 27 | 27 | 0 | 0 | False | integrity_failed |
+| btc_usdt | hour1 | 40251 | invalid | False | 20 | 20 | 0 | 0 | False | integrity_failed |
 | btc_usdt | hour4 | 10062 | invalid | False | 6 | 6 | 0 | 0 | False | integrity_failed |
-| btc_usdt | minute15 | 160907 | invalid | False | 173 | 173 | 0 | 0 | False | integrity_failed |
-| eth_usdt | hour1 | 40244 | invalid | False | 26 | 26 | 0 | 0 | False | integrity_failed |
+| btc_usdt | minute15 | 160911 | invalid | False | 173 | 173 | 0 | 0 | False | integrity_failed |
+| eth_usdt | hour1 | 40245 | invalid | False | 26 | 26 | 0 | 0 | False | integrity_failed |
 | eth_usdt | hour4 | 10065 | invalid | False | 3 | 3 | 0 | 0 | False | integrity_failed |
-| eth_usdt | minute15 | 160869 | invalid | False | 211 | 211 | 0 | 0 | False | integrity_failed |
-| layer_usdt | hour1 | 12967 | invalid | False | 9 | 9 | 0 | 0 | False | integrity_failed |
+| eth_usdt | minute15 | 160873 | invalid | False | 211 | 211 | 0 | 0 | False | integrity_failed |
+| layer_usdt | hour1 | 12968 | invalid | False | 9 | 9 | 0 | 0 | False | integrity_failed |
 | layer_usdt | hour4 | 3244 | invalid | False | 1 | 1 | 0 | 0 | False | integrity_failed |
-| layer_usdt | minute15 | 51852 | invalid | False | 52 | 51 | 0 | 0 | False | integrity_failed |
-| pbu_usdt | hour1 | 21800 | invalid | False | 8 | 8 | 0 | 0 | False | integrity_failed |
+| layer_usdt | minute15 | 51856 | invalid | False | 52 | 51 | 0 | 0 | False | integrity_failed |
+| pbu_usdt | hour1 | 21801 | invalid | False | 8 | 8 | 0 | 0 | False | integrity_failed |
 | pbu_usdt | hour4 | 5452 | invalid | False | 1 | 1 | 0 | 0 | False | integrity_failed |
-| pbu_usdt | minute15 | 87106 | invalid | False | 125 | 125 | 0 | 0 | False | integrity_failed |
-| udoge_usdt | hour1 | 15677 | invalid | False | 14 | 14 | 0 | 0 | False | integrity_failed |
+| pbu_usdt | minute15 | 87110 | invalid | False | 125 | 125 | 0 | 0 | False | integrity_failed |
+| udoge_usdt | hour1 | 15678 | invalid | False | 14 | 14 | 0 | 0 | False | integrity_failed |
 | udoge_usdt | hour4 | 3922 | invalid | False | 2 | 2 | 0 | 0 | False | integrity_failed |
-| udoge_usdt | minute15 | 62645 | invalid | False | 116 | 116 | 0 | 0 | False | integrity_failed |
+| udoge_usdt | minute15 | 62649 | invalid | False | 116 | 116 | 0 | 0 | False | integrity_failed |
