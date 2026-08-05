@@ -1,0 +1,34 @@
+[
+  {
+    "type": "report",
+    "title": "Bitcoin: A Peer-to-Peer Electronic Cash System",
+    "author": [
+      {
+        "family": "Nakamoto",
+        "given": "Satoshi"
+      }
+    ],
+    "issued": {
+      "date-parts": [[2008]]
+    },
+    "URL": "https://bitcoin.org/bitcoin.pdf",
+    "abstract": "Foundational protocol paper describing a peer-to-peer electronic cash system based on proof-of-work and a distributed timestamp server.",
+    "keyword": "crypto, bitcoin, protocol, market foundations"
+  },
+  {
+    "type": "report",
+    "title": "Triennial Central Bank Survey of Foreign Exchange and Over-the-counter Derivatives Markets in 2022",
+    "author": [
+      {
+        "family": "Bank for International Settlements",
+        "given": ""
+      }
+    ],
+    "issued": {
+      "date-parts": [[2022]]
+    },
+    "URL": "https://www.bis.org/statistics/rpfx22.htm",
+    "abstract": "Official BIS survey package covering the size and structure of global foreign-exchange and OTC derivatives markets.",
+    "keyword": "forex, market microstructure, derivatives, official statistics"
+  }
+]
