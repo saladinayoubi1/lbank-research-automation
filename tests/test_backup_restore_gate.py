@@ -38,12 +38,12 @@ class BackupRestoreGateTests(unittest.TestCase):
         evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
         return evidence_path, restored, evidence
 
+    def rewrite(self, path, evidence):
+        path.write_text(json.dumps(evidence), encoding="utf-8")
+
     def test_complete_offline_drill_evidence_passes(self):
         evidence_path, restored, _ = self.fixture()
         self.assertIn("restore-integrity", verify(evidence_path, restored))
-
-    def rewrite(self, path, evidence):
-        path.write_text(json.dumps(evidence), encoding="utf-8")
 
     def test_digest_mismatch_fails_closed(self):
         evidence_path, restored, _ = self.fixture()
@@ -51,9 +51,23 @@ class BackupRestoreGateTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "digest mismatch"):
             verify(evidence_path, restored)
 
+    def test_non_hex_digest_fails_closed(self):
+        evidence_path, restored, evidence = self.fixture()
+        evidence["restored_files"][0]["sha256"] = "g" * 64
+        self.rewrite(evidence_path, evidence)
+        with self.assertRaisesRegex(ValueError, "invalid restored digest"):
+            verify(evidence_path, restored)
+
     def test_missing_scope_fails_closed(self):
         evidence_path, restored, evidence = self.fixture()
         evidence["scope"].remove("operational_state")
+        self.rewrite(evidence_path, evidence)
+        with self.assertRaisesRegex(ValueError, "scope"):
+            verify(evidence_path, restored)
+
+    def test_duplicate_scope_fails_closed(self):
+        evidence_path, restored, evidence = self.fixture()
+        evidence["scope"].append("artifacts")
         self.rewrite(evidence_path, evidence)
         with self.assertRaisesRegex(ValueError, "scope"):
             verify(evidence_path, restored)
@@ -70,6 +84,13 @@ class BackupRestoreGateTests(unittest.TestCase):
         evidence["rpo_target_seconds"] = 60
         self.rewrite(evidence_path, evidence)
         with self.assertRaisesRegex(ValueError, "RPO"):
+            verify(evidence_path, restored)
+
+    def test_boolean_numeric_target_fails_closed(self):
+        evidence_path, restored, evidence = self.fixture()
+        evidence["rto_target_seconds"] = True
+        self.rewrite(evidence_path, evidence)
+        with self.assertRaisesRegex(ValueError, "RTO"):
             verify(evidence_path, restored)
 
     def test_missing_negative_drill_fails_closed(self):
@@ -91,6 +112,36 @@ class BackupRestoreGateTests(unittest.TestCase):
         evidence["restored_files"][0]["path"] = "../state.json"
         self.rewrite(evidence_path, evidence)
         with self.assertRaisesRegex(ValueError, "safe relative"):
+            verify(evidence_path, restored)
+
+    def test_symlinked_root_fails_closed(self):
+        evidence_path, restored, _ = self.fixture()
+        link = restored.parent / "restored-link"
+        try:
+            link.symlink_to(restored, target_is_directory=True)
+        except (OSError, NotImplementedError):
+            self.skipTest("symlinks unavailable")
+        with self.assertRaisesRegex(ValueError, "real directory"):
+            verify(evidence_path, link)
+
+    def test_parent_symlink_escape_fails_closed(self):
+        evidence_path, restored, evidence = self.fixture()
+        outside = restored.parent / "outside"
+        outside.mkdir()
+        (outside / "state.json").write_text('{"ok":true}\n', encoding="utf-8")
+        link = restored / "nested"
+        try:
+            link.symlink_to(outside, target_is_directory=True)
+        except (OSError, NotImplementedError):
+            self.skipTest("symlinks unavailable")
+        target = outside / "state.json"
+        evidence["restored_files"][0] = {
+            "path": "nested/state.json",
+            "sha256": hashlib.sha256(target.read_bytes()).hexdigest(),
+            "size": target.stat().st_size,
+        }
+        self.rewrite(evidence_path, evidence)
+        with self.assertRaisesRegex(ValueError, "escapes root"):
             verify(evidence_path, restored)
 
 
