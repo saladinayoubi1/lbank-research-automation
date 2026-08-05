@@ -2,8 +2,8 @@
 """Fail-closed verification for a prepared release bundle.
 
 This verifier is intentionally offline and uses only Python's standard library.
-It proves internal consistency of a release bundle; it does not create or trust
-signing identities, production approvals, credentials, or billing resources.
+It proves bounded internal consistency only. It does not prove publisher identity,
+vulnerability absence, dependency reachability, or production approval.
 """
 from __future__ import annotations
 
@@ -15,6 +15,9 @@ from pathlib import Path
 from typing import Any
 
 REQUIRED = ("artifact-manifest.json", "sbom.cdx.json", "provenance.json")
+MAX_JSON_BYTES = 5 * 1024 * 1024
+SUPPORTED_CYCLONEDX = {"1.4", "1.5", "1.6"}
+COMPLETENESS_STATES = {"complete", "incomplete", "unknown"}
 
 
 def fail(message: str) -> None:
@@ -23,6 +26,8 @@ def fail(message: str) -> None:
 
 def load_json(path: Path) -> Any:
     try:
+        if path.stat().st_size > MAX_JSON_BYTES:
+            fail(f"JSON file exceeds {MAX_JSON_BYTES} bytes: {path.name}")
         return json.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError:
         fail(f"missing required file: {path.name}")
@@ -36,6 +41,88 @@ def sha256(path: Path) -> str:
         for chunk in iter(lambda: fh.read(1024 * 1024), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+def verify_sbom(sbom: Any) -> str:
+    if not isinstance(sbom, dict) or sbom.get("bomFormat") != "CycloneDX":
+        fail("SBOM must be CycloneDX JSON")
+    if sbom.get("specVersion") not in SUPPORTED_CYCLONEDX:
+        fail("unsupported CycloneDX specVersion")
+
+    components = sbom.get("components")
+    if not isinstance(components, list) or not components:
+        fail("SBOM components must be a non-empty list")
+
+    metadata = sbom.get("metadata")
+    properties = metadata.get("properties") if isinstance(metadata, dict) else None
+    completeness = "unknown"
+    if isinstance(properties, list):
+        for prop in properties:
+            if isinstance(prop, dict) and prop.get("name") == "nexus:graph-completeness":
+                completeness = prop.get("value")
+                break
+    if completeness not in COMPLETENESS_STATES:
+        fail("invalid SBOM graph-completeness state")
+
+    refs: set[str] = set()
+    for component in components:
+        if not isinstance(component, dict):
+            fail("SBOM component must be an object")
+        ref = component.get("bom-ref")
+        if not isinstance(ref, str) or not ref.strip():
+            fail("every SBOM component requires a non-empty bom-ref")
+        if ref in refs:
+            fail(f"duplicate SBOM bom-ref: {ref}")
+        refs.add(ref)
+        purl = component.get("purl")
+        if purl is not None and (not isinstance(purl, str) or not purl.startswith("pkg:") or any(ch.isspace() for ch in purl)):
+            fail(f"malformed component purl: {ref}")
+
+    dependencies = sbom.get("dependencies")
+    if not isinstance(dependencies, list):
+        fail("SBOM dependencies must be a list")
+    dependency_refs: set[str] = set()
+    edges: dict[str, set[str]] = {}
+    for entry in dependencies:
+        if not isinstance(entry, dict) or not isinstance(entry.get("ref"), str):
+            fail("SBOM dependency entry requires ref")
+        ref = entry["ref"]
+        if ref not in refs:
+            fail(f"unknown dependency ref: {ref}")
+        if ref in dependency_refs:
+            fail(f"duplicate dependency entry: {ref}")
+        dependency_refs.add(ref)
+        depends_on = entry.get("dependsOn", [])
+        if not isinstance(depends_on, list) or any(not isinstance(x, str) for x in depends_on):
+            fail(f"dependsOn must be a string list: {ref}")
+        unknown = set(depends_on) - refs
+        if unknown:
+            fail(f"unknown dependency target: {sorted(unknown)[0]}")
+        if ref in depends_on:
+            fail(f"self dependency is forbidden: {ref}")
+        edges[ref] = set(depends_on)
+
+    if completeness == "complete" and dependency_refs != refs:
+        fail("complete SBOM must include one dependency entry per component")
+
+    visiting: set[str] = set()
+    visited: set[str] = set()
+
+    def visit(node: str) -> None:
+        if node in visiting:
+            fail(f"dependency cycle detected: {node}")
+        if node in visited:
+            return
+        visiting.add(node)
+        for child in edges.get(node, set()):
+            visit(child)
+        visiting.remove(node)
+        visited.add(node)
+
+    for ref in refs:
+        visit(ref)
+
+    return completeness
 
 
 def verify(bundle: Path, require_signature: bool = True) -> list[str]:
@@ -72,13 +159,7 @@ def verify(bundle: Path, require_signature: bool = True) -> list[str]:
         if not isinstance(size, int) or size < 0 or target.stat().st_size != size:
             fail(f"size mismatch: {name}")
 
-    sbom = load_json(bundle / "sbom.cdx.json")
-    if not isinstance(sbom, dict) or sbom.get("bomFormat") != "CycloneDX":
-        fail("SBOM must be CycloneDX JSON")
-    if not isinstance(sbom.get("specVersion"), str):
-        fail("SBOM specVersion is required")
-    if not isinstance(sbom.get("components"), list):
-        fail("SBOM components must be a list")
+    completeness = verify_sbom(load_json(bundle / "sbom.cdx.json"))
 
     provenance = load_json(bundle / "provenance.json")
     if not isinstance(provenance, dict):
@@ -100,7 +181,7 @@ def verify(bundle: Path, require_signature: bool = True) -> list[str]:
             fail("signature and signer certificate are required for production release")
         fail("signature identity policy is not configured; production verification is blocked")
 
-    return ["manifest", "sbom", "provenance", "artifact-digests"]
+    return ["manifest", f"sbom-{completeness}", "provenance", "artifact-digests"]
 
 
 def main() -> int:
