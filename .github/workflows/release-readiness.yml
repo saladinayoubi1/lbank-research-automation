@@ -1,0 +1,30 @@
+name: Release Readiness
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/release_gate.py'
+      - 'tests/test_release_gate.py'
+      - '.github/workflows/release-readiness.yml'
+      - 'docs/RELEASE_READINESS.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fail-closed-cross-platform:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ['3.12']
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Run release gate tests
+        run: python -m unittest tests.test_release_gate -v
