@@ -10,12 +10,13 @@ import argparse
 import hashlib
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 MAX_JSON_BYTES = 1024 * 1024
 REQUIRED_SCOPE = {"artifacts", "release_metadata", "configuration", "operational_state"}
+HEX = set("0123456789abcdef")
 
 
 def fail(message: str) -> None:
@@ -23,8 +24,8 @@ def fail(message: str) -> None:
 
 
 def load_json(path: Path) -> Any:
-    if not path.is_file():
-        fail(f"missing drill evidence: {path.name}")
+    if not path.is_file() or path.is_symlink():
+        fail(f"missing or unsupported drill evidence: {path.name}")
     if path.stat().st_size > MAX_JSON_BYTES:
         fail("drill evidence exceeds size limit")
     try:
@@ -54,6 +55,9 @@ def verify(evidence_path: Path, restored_root: Path) -> list[str]:
     data = load_json(evidence_path)
     if not isinstance(data, dict):
         fail("drill evidence must be an object")
+    if not restored_root.is_dir() or restored_root.is_symlink():
+        fail("restored root must be a real directory")
+    root = restored_root.resolve()
 
     backup_id = data.get("backup_id")
     if not isinstance(backup_id, str) or not backup_id:
@@ -65,7 +69,7 @@ def verify(evidence_path: Path, restored_root: Path) -> list[str]:
     if not isinstance(data.get("key_owner"), str) or not data["key_owner"]:
         fail("key owner is required")
     retention_days = data.get("retention_days")
-    if not isinstance(retention_days, int) or retention_days < 1:
+    if not isinstance(retention_days, int) or isinstance(retention_days, bool) or retention_days < 1:
         fail("positive retention_days is required")
 
     start = parse_time(data.get("restore_started_at"), "restore_started_at")
@@ -76,9 +80,9 @@ def verify(evidence_path: Path, restored_root: Path) -> list[str]:
 
     rpo_target = data.get("rpo_target_seconds")
     rto_target = data.get("rto_target_seconds")
-    if not isinstance(rpo_target, int) or rpo_target < 0:
+    if not isinstance(rpo_target, int) or isinstance(rpo_target, bool) or rpo_target < 0:
         fail("valid RPO target is required")
-    if not isinstance(rto_target, int) or rto_target < 1:
+    if not isinstance(rto_target, int) or isinstance(rto_target, bool) or rto_target < 1:
         fail("valid RTO target is required")
     measured_rpo = int((start - backup_time).total_seconds())
     measured_rto = int((end - start).total_seconds())
@@ -88,8 +92,13 @@ def verify(evidence_path: Path, restored_root: Path) -> list[str]:
         fail("RTO target not met")
 
     scope = data.get("scope")
-    if not isinstance(scope, list) or set(scope) != REQUIRED_SCOPE:
-        fail("restore scope is incomplete or unexpected")
+    if (
+        not isinstance(scope, list)
+        or any(not isinstance(item, str) for item in scope)
+        or len(scope) != len(set(scope))
+        or set(scope) != REQUIRED_SCOPE
+    ):
+        fail("restore scope is incomplete, duplicated, or unexpected")
     if data.get("clean_environment") is not True:
         fail("clean-environment restore is required")
     if data.get("corruption_test_passed") is not True:
@@ -117,13 +126,16 @@ def verify(evidence_path: Path, restored_root: Path) -> list[str]:
             fail(f"duplicate restored path: {name}")
         seen.add(name)
         target = restored_root / name
+        resolved = target.resolve(strict=False)
+        if root not in resolved.parents:
+            fail(f"restored path escapes root: {name}")
         if not target.is_file() or target.is_symlink():
             fail(f"restored file missing or unsupported: {name}")
-        if not isinstance(digest, str) or len(digest) != 64:
+        if not isinstance(digest, str) or len(digest) != 64 or any(c not in HEX for c in digest):
             fail(f"invalid restored digest: {name}")
         if sha256(target) != digest:
             fail(f"restored digest mismatch: {name}")
-        if not isinstance(size, int) or size < 0 or target.stat().st_size != size:
+        if not isinstance(size, int) or isinstance(size, bool) or size < 0 or target.stat().st_size != size:
             fail(f"restored size mismatch: {name}")
 
     return ["backup-metadata", "restore-integrity", "rpo", "rto", "negative-drills", "target-verification"]
