@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "currentMissionId": "M-004",
+  "currentMissionId": "M-005",
   "selectionPolicy": {
     "priorityOrder": [
       "stability",
@@ -27,7 +27,7 @@
     {
       "id": "M-004",
       "title": "Mission Queue and Orchestrator Core",
-      "status": "active",
+      "status": "completed",
       "priority": "automation",
       "dependencies": ["M-003"],
       "reversible": true
@@ -35,7 +35,7 @@
     {
       "id": "M-005",
       "title": "AI Council Core",
-      "status": "queued",
+      "status": "active",
       "priority": "maintainability",
       "dependencies": ["M-004"],
       "reversible": true
