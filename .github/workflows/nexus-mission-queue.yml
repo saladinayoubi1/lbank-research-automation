@@ -4,17 +4,31 @@ on:
   pull_request:
     paths:
       - 'config/nexus-mission-queue.json'
+      - 'config/nexus-ai-council.json'
+      - 'config/nexus-brain-policy.json'
       - 'scripts/validate_nexus_mission_queue.js'
       - 'scripts/nexus_orchestrator.js'
       - 'scripts/test_nexus_orchestrator.js'
+      - 'scripts/nexus_ai_council.js'
+      - 'scripts/test_nexus_ai_council.js'
+      - 'scripts/nexus_brain_core.js'
+      - 'scripts/test_nexus_brain_core.js'
+      - 'docs/adr/ADR-003-nexus-brain-policy-gate.md'
       - '.github/workflows/nexus-mission-queue.yml'
   push:
     branches: [main]
     paths:
       - 'config/nexus-mission-queue.json'
+      - 'config/nexus-ai-council.json'
+      - 'config/nexus-brain-policy.json'
       - 'scripts/validate_nexus_mission_queue.js'
       - 'scripts/nexus_orchestrator.js'
       - 'scripts/test_nexus_orchestrator.js'
+      - 'scripts/nexus_ai_council.js'
+      - 'scripts/test_nexus_ai_council.js'
+      - 'scripts/nexus_brain_core.js'
+      - 'scripts/test_nexus_brain_core.js'
+      - 'docs/adr/ADR-003-nexus-brain-policy-gate.md'
       - '.github/workflows/nexus-mission-queue.yml'
   workflow_dispatch:
 
@@ -34,5 +48,11 @@ jobs:
         run: node scripts/validate_nexus_mission_queue.js
       - name: Test orchestrator selection
         run: node scripts/test_nexus_orchestrator.js
+      - name: Test AI Council policy
+        run: node scripts/test_nexus_ai_council.js
+      - name: Validate Brain Core policy
+        run: node scripts/nexus_brain_core.js
+      - name: Test Brain Core decisions
+        run: node scripts/test_nexus_brain_core.js
       - name: Render transferable state
         run: node scripts/nexus_orchestrator.js

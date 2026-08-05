@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "currentMissionId": "M-006",
+  "currentMissionId": "M-007",
   "selectionPolicy": {
     "priorityOrder": [
       "stability",
@@ -43,7 +43,7 @@
     {
       "id": "M-006",
       "title": "NEXUS Brain Core",
-      "status": "active",
+      "status": "completed",
       "priority": "maintainability",
       "dependencies": ["M-004"],
       "reversible": true
@@ -51,9 +51,9 @@
     {
       "id": "M-007",
       "title": "Mission Control UI",
-      "status": "queued",
+      "status": "active",
       "priority": "user_experience",
-      "dependencies": ["M-004"],
+      "dependencies": ["M-004", "M-006"],
       "reversible": true
     }
   ]
