@@ -34,7 +34,6 @@ class DisasterRecoveryGateTests(unittest.TestCase):
             "exercise_id": "dr-2026-08-05",
             "started_at": "2026-08-05T18:00:00Z",
             "completed_at": "2026-08-05T20:00:00Z",
-            "max_evidence_age_days": 30,
             "production_authorized": False,
             "objectives": {
                 "target_rpo_minutes": 60,
@@ -68,6 +67,7 @@ class DisasterRecoveryGateTests(unittest.TestCase):
     def test_complete_evidence_passes(self):
         checks = validate(self.write(self.evidence()), now=NOW)
         self.assertIn("scenario-coverage", checks)
+        self.assertIn("evidence-reference-safety", checks)
         self.assertIn("production-deny", checks)
 
     def test_production_authorization_is_rejected(self):
@@ -76,9 +76,16 @@ class DisasterRecoveryGateTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "production_authorized"):
             validate(self.write(evidence), now=NOW)
 
+    def test_evidence_cannot_override_freshness_policy(self):
+        evidence = self.evidence()
+        evidence["max_evidence_age_days"] = 36500
+        with self.assertRaisesRegex(ValueError, "cannot override"):
+            validate(self.write(evidence), now=NOW)
+
     def test_stale_evidence_fails_closed(self):
         evidence = self.evidence()
-        evidence["completed_at"] = "2026-01-01T00:00:00Z"
+        evidence["started_at"] = "2026-06-01T00:00:00Z"
+        evidence["completed_at"] = "2026-06-01T02:00:00Z"
         with self.assertRaisesRegex(ValueError, "stale"):
             validate(self.write(evidence), now=NOW)
 
@@ -116,6 +123,24 @@ class DisasterRecoveryGateTests(unittest.TestCase):
         evidence = self.evidence()
         evidence["completed_at"] = "2026-08-06T20:00:00Z"
         with self.assertRaisesRegex(ValueError, "future"):
+            validate(self.write(evidence), now=NOW)
+
+    def test_path_traversal_evidence_ref_is_rejected(self):
+        evidence = self.evidence()
+        evidence["scenarios"][0]["evidence_ref"] = "../secrets.json"
+        with self.assertRaisesRegex(ValueError, "safe canonical"):
+            validate(self.write(evidence), now=NOW)
+
+    def test_absolute_evidence_ref_is_rejected(self):
+        evidence = self.evidence()
+        evidence["scenarios"][0]["evidence_ref"] = "/tmp/evidence.json"
+        with self.assertRaisesRegex(ValueError, "safe canonical"):
+            validate(self.write(evidence), now=NOW)
+
+    def test_windows_separator_evidence_ref_is_rejected(self):
+        evidence = self.evidence()
+        evidence["scenarios"][0]["evidence_ref"] = "records\\evidence.json"
+        with self.assertRaisesRegex(ValueError, "forward slashes"):
             validate(self.write(evidence), now=NOW)
 
 
