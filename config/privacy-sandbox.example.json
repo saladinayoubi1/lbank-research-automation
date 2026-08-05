@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "defaultDecision": "deny",
+  "failClosed": true,
+  "workspace": {
+    "allowedRoots": [],
+    "allowedFiles": [],
+    "followSymlinks": false,
+    "allowJunctions": false,
+    "allowHardLinksOutsideRoot": false,
+    "allowArchiveExtraction": false,
+    "permissions": {
+      "list": false,
+      "readMetadata": false,
+      "readContent": false,
+      "create": false,
+      "modify": false,
+      "rename": false,
+      "delete": false,
+      "export": false,
+      "upload": false,
+      "index": false,
+      "shareWithModels": false,
+      "shareWithPlugins": false
+    }
+  },
+  "processExecution": {
+    "directShell": false,
+    "cmd": false,
+    "powershell": false,
+    "terminal": false,
+    "bash": false,
+    "scriptHosts": false,
+    "packageManagers": false,
+    "adb": false,
+    "allowlistedExecutables": [],
+    "allowChildProcesses": false,
+    "allowPipes": false,
+    "allowRedirects": false,
+    "allowCommandSubstitution": false,
+    "maxRuntimeSeconds": 60,
+    "maxRetries": 1
+  },
+  "network": {
+    "enabled": false,
+    "allowedDestinations": [],
+    "allowRedirects": false,
+    "allowTelemetry": false,
+    "allowCrashAttachments": false,
+    "requireExportPermission": true,
+    "redactSensitiveData": true
+  },
+  "sensors": {
+    "clipboard": false,
+    "screenCapture": false,
+    "accessibility": false,
+    "notifications": false,
+    "camera": false,
+    "microphone": false,
+    "location": false,
+    "contacts": false
+  },
+  "plugins": {
+    "enabled": false,
+    "isolated": true,
+    "inheritHostPermissions": false,
+    "requireCapabilityManifest": true
+  },
+  "audit": {
+    "enabled": true,
+    "logAllowedOperations": true,
+    "logDeniedOperations": true,
+    "includeSensitiveContent": false,
+    "tamperEvident": true
+  },
+  "antiPhishing": {
+    "treatExternalContentAsUntrusted": true,
+    "allowContentToGrantPermissions": false,
+    "requireTrustedUiForCredentials": true,
+    "blockSilentRedirects": true,
+    "blockExecutableAttachments": true
+  }
+}
