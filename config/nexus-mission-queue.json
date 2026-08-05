@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "currentMissionId": "M-005",
+  "currentMissionId": "M-006",
   "selectionPolicy": {
     "priorityOrder": [
       "stability",
@@ -35,7 +35,7 @@
     {
       "id": "M-005",
       "title": "AI Council Core",
-      "status": "active",
+      "status": "completed",
       "priority": "maintainability",
       "dependencies": ["M-004"],
       "reversible": true
@@ -43,7 +43,7 @@
     {
       "id": "M-006",
       "title": "NEXUS Brain Core",
-      "status": "queued",
+      "status": "active",
       "priority": "maintainability",
       "dependencies": ["M-004"],
       "reversible": true
