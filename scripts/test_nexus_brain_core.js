@@ -26,7 +26,7 @@ assert.strictEqual(validateBrainPolicy(brainPolicy), true);
 assert.deepStrictEqual(evaluate(brainPolicy, councilPolicy, queue, approveVotes, request()), {
   decision: 'approve',
   reason: 'policy_and_council_approved',
-  missionId: 'M-006',
+  missionId: 'M-007',
   execution: 'proposal_only',
 });
 assert.strictEqual(evaluate(brainPolicy, councilPolicy, queue, approveVotes, request({ action: 'deploy_production' })).reason, 'action_not_allowed');
