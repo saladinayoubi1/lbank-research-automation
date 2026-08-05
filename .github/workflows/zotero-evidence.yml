@@ -1,0 +1,35 @@
+name: Zotero Evidence Bridge
+
+on:
+  pull_request:
+    paths:
+      - "references/**"
+      - "scripts/validate_bibtex.py"
+      - "tests/test_validate_bibtex.py"
+      - "docs/zotero-evidence-bridge.md"
+      - ".github/workflows/zotero-evidence.yml"
+  push:
+    branches: [main]
+    paths:
+      - "references/**"
+      - "scripts/validate_bibtex.py"
+      - "tests/test_validate_bibtex.py"
+      - "docs/zotero-evidence-bridge.md"
+      - ".github/workflows/zotero-evidence.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate BibTeX export
+        run: python scripts/validate_bibtex.py references/references.bib
+      - name: Run bridge tests
+        run: python -m unittest tests.test_validate_bibtex
