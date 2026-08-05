@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "defaultDecision": "defer",
+  "allowedActions": ["analyze", "plan", "propose_change", "run_repository_tests", "open_pull_request"],
+  "humanApprovalRequired": ["credentials", "billing", "signing", "production_deployment", "destructive_user_data", "manual_device_action", "irreversible_product_decision"],
+  "riskClasses": {
+    "low": {"minimumCouncilDecision": "approve", "requireHumanApproval": false},
+    "high": {"minimumCouncilDecision": "approve", "requireHumanApproval": true}
+  },
+  "sideEffects": {
+    "default": "deny",
+    "allowedRepositories": ["saladinayoubi1/lbank-research-automation"],
+    "allowProduction": false,
+    "allowCredentialUse": false,
+    "allowBilling": false,
+    "allowSigning": false
+  },
+  "limits": {
+    "maxPlanSteps": 12,
+    "maxFilesPerChange": 20,
+    "maxParallelMissions": 2
+  }
+}
