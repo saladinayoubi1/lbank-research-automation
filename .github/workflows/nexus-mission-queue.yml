@@ -1,0 +1,30 @@
+name: NEXUS Mission Queue
+
+on:
+  pull_request:
+    paths:
+      - 'config/nexus-mission-queue.json'
+      - 'scripts/validate_nexus_mission_queue.js'
+      - '.github/workflows/nexus-mission-queue.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'config/nexus-mission-queue.json'
+      - 'scripts/validate_nexus_mission_queue.js'
+      - '.github/workflows/nexus-mission-queue.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-mission-queue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate mission queue
+        run: node scripts/validate_nexus_mission_queue.js

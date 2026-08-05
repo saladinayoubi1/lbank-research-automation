@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "currentMissionId": "M-004",
+  "selectionPolicy": {
+    "priorityOrder": [
+      "stability",
+      "security",
+      "automation",
+      "development_speed",
+      "maintainability",
+      "user_experience",
+      "monetization"
+    ],
+    "allowParallelIndependentMissions": true,
+    "zeroIdle": true,
+    "requireDependenciesComplete": true
+  },
+  "missions": [
+    {
+      "id": "M-003",
+      "title": "Autopilot Foundation",
+      "status": "completed",
+      "priority": "automation",
+      "dependencies": [],
+      "reversible": true
+    },
+    {
+      "id": "M-004",
+      "title": "Mission Queue and Orchestrator Core",
+      "status": "active",
+      "priority": "automation",
+      "dependencies": ["M-003"],
+      "reversible": true
+    },
+    {
+      "id": "M-005",
+      "title": "AI Council Core",
+      "status": "queued",
+      "priority": "maintainability",
+      "dependencies": ["M-004"],
+      "reversible": true
+    },
+    {
+      "id": "M-006",
+      "title": "NEXUS Brain Core",
+      "status": "queued",
+      "priority": "maintainability",
+      "dependencies": ["M-004"],
+      "reversible": true
+    },
+    {
+      "id": "M-007",
+      "title": "Mission Control UI",
+      "status": "queued",
+      "priority": "user_experience",
+      "dependencies": ["M-004"],
+      "reversible": true
+    }
+  ]
+}
