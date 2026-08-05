@@ -135,68 +135,44 @@ def test_repair_series_merges_only_recovered_missing_rows(monkeypatch):
 
     module.save_merged = save_merged
 
-    assert module.repair_series("btc_usdt", "minute15") == (1, 0)
+    repaired, failures, outcomes = module.repair_series_with_outcomes(
+        "btc_usdt", "minute15"
+    )
+    assert (repaired, failures) == (1, 0)
+    assert outcomes[0].status == "recovered"
+    assert outcomes[0].recovered_candles == 1
     assert captured["incoming"]["timestamp"].tolist() == [
         pd.Timestamp("2026-01-01T00:15:00Z")
     ]
 
 
-def test_request_budget_skips_gap_starts_already_recovered(monkeypatch):
-    module, _ = load_module(monkeypatch)
-    existing = pd.DataFrame({
-        "timestamp": pd.to_datetime([
-            "2026-01-01T00:00:00Z",
-            "2026-01-01T00:30:00Z",
-            "2026-01-01T01:00:00Z",
-            "2026-01-01T01:30:00Z",
-            "2026-01-01T02:00:00Z",
-        ]),
-        "symbol": ["btc_usdt"] * 5,
-        "timeframe": ["minute15"] * 5,
-    })
-    calls: list[pd.Timestamp] = []
-
-    module.read_existing = lambda path: existing
-
-    def get_klines(symbol, timeframe, start):
-        calls.append(pd.to_datetime(start, unit="s", utc=True))
-        return [["unused"]]
-
-    module.get_klines = get_klines
-
-    def rows_to_frame(rows, symbol, timeframe):
-        start = calls[-1]
-        timestamps = [start]
-        if start == pd.Timestamp("2026-01-01T00:15:00Z"):
-            timestamps.append(pd.Timestamp("2026-01-01T00:45:00Z"))
-        return pd.DataFrame({
-            "timestamp": timestamps,
-            "symbol": [symbol] * len(timestamps),
-            "timeframe": [timeframe] * len(timestamps),
-        })
-
-    module.rows_to_frame = rows_to_frame
-    module.save_merged = (
-        lambda current, incoming, path:
-        len(current) + len(pd.concat(incoming, ignore_index=True))
-    )
-
-    assert module.repair_series("btc_usdt", "minute15") == (4, 0)
-    assert calls == [
-        pd.Timestamp("2026-01-01T00:15:00Z"),
-        pd.Timestamp("2026-01-01T01:15:00Z"),
-        pd.Timestamp("2026-01-01T01:45:00Z"),
-    ]
-
-
-def test_repair_series_counts_api_failures_without_aborting_series(monkeypatch):
+def test_successful_empty_response_is_source_unavailable(monkeypatch):
     module, _ = load_module(monkeypatch)
     module.read_existing = lambda path: pd.DataFrame({
         "timestamp": pd.to_datetime([
             "2026-01-01T00:00:00Z",
             "2026-01-01T00:30:00Z",
-            "2026-01-01T01:00:00Z",
-            "2026-01-01T01:30:00Z",
+        ])
+    })
+    module.get_klines = lambda *args, **kwargs: []
+    module.rows_to_frame = lambda *args, **kwargs: pd.DataFrame(
+        columns=["timestamp"]
+    )
+
+    repaired, failures, outcomes = module.repair_series_with_outcomes(
+        "btc_usdt", "minute15"
+    )
+
+    assert (repaired, failures) == (0, 0)
+    assert [outcome.status for outcome in outcomes] == ["source_unavailable"]
+
+
+def test_api_exception_is_fetch_failed(monkeypatch):
+    module, _ = load_module(monkeypatch)
+    module.read_existing = lambda path: pd.DataFrame({
+        "timestamp": pd.to_datetime([
+            "2026-01-01T00:00:00Z",
+            "2026-01-01T00:30:00Z",
         ])
     })
 
@@ -204,22 +180,83 @@ def test_repair_series_counts_api_failures_without_aborting_series(monkeypatch):
         raise requests.RequestException("temporary failure")
 
     module.get_klines = get_klines
+    repaired, failures, outcomes = module.repair_series_with_outcomes(
+        "btc_usdt", "minute15"
+    )
 
-    assert module.repair_series("btc_usdt", "minute15") == (0, 3)
+    assert (repaired, failures) == (0, 1)
+    assert [outcome.status for outcome in outcomes] == ["fetch_failed"]
+    assert outcomes[0].detail == "RequestException"
 
 
-def test_repair_all_stops_after_failure_limit_and_writes_status(monkeypatch):
+def test_request_budget_records_deferred_windows(monkeypatch):
+    module, _ = load_module(monkeypatch)
+    module.MAX_GAP_WINDOWS_PER_SERIES_PER_RUN = 1
+    module.read_existing = lambda path: pd.DataFrame({
+        "timestamp": pd.to_datetime([
+            "2026-01-01T00:00:00Z",
+            "2026-01-01T00:30:00Z",
+            "2026-01-01T01:00:00Z",
+        ])
+    })
+    module.get_klines = lambda *args, **kwargs: []
+    module.rows_to_frame = lambda *args, **kwargs: pd.DataFrame(
+        columns=["timestamp"]
+    )
+
+    _, _, outcomes = module.repair_series_with_outcomes(
+        "btc_usdt", "minute15"
+    )
+
+    assert [outcome.status for outcome in outcomes] == [
+        "source_unavailable",
+        "deferred_budget",
+    ]
+
+
+def test_write_gap_repair_report_distinguishes_failure_classes(
+    monkeypatch, tmp_path
+):
+    module, _ = load_module(monkeypatch)
+    module.OUTPUT_ROOT = tmp_path
+    outcomes = [
+        module.GapRepairOutcome(
+            "btc_usdt", "minute15", "2026-01-01T00:15:00+00:00",
+            "source_unavailable", 0, "no candle"
+        ),
+        module.GapRepairOutcome(
+            "eth_usdt", "hour1", "2026-01-01T01:00:00+00:00",
+            "fetch_failed", 0, "RequestException"
+        ),
+    ]
+
+    module.write_gap_repair_report(outcomes)
+
+    report = pd.read_csv(tmp_path / "_gap_repair_status.csv")
+    assert set(report["status"]) == {"source_unavailable", "fetch_failed"}
+    markdown = (tmp_path / "_gap_repair_status.md").read_text(encoding="utf-8")
+    assert "source_unavailable" in markdown
+    assert "fetch_failed" in markdown
+
+
+def test_repair_all_stops_after_failure_limit_and_writes_reports(monkeypatch):
     module, _ = load_module(monkeypatch)
     module.SYMBOLS = ["btc_usdt", "eth_usdt", "aero_usdt"]
     module.TIMEFRAMES = ["minute15"]
     calls = []
     status_calls = []
+    report_calls = []
 
-    def repair_series(symbol, timeframe):
+    def repair_series_with_outcomes(symbol, timeframe):
         calls.append((symbol, timeframe))
-        return 0, 1
+        outcome = module.GapRepairOutcome(
+            symbol, timeframe, "2026-01-01T00:15:00+00:00",
+            "fetch_failed", 0, "RequestException"
+        )
+        return 0, 1, [outcome]
 
-    module.repair_series = repair_series
+    module.repair_series_with_outcomes = repair_series_with_outcomes
+    module.write_gap_repair_report = lambda outcomes: report_calls.append(outcomes)
     module.write_backfill_status = lambda: status_calls.append(True)
 
     with pytest.raises(RuntimeError, match="3 failed API request windows"):
@@ -230,4 +267,5 @@ def test_repair_all_stops_after_failure_limit_and_writes_status(monkeypatch):
         ("eth_usdt", "minute15"),
         ("aero_usdt", "minute15"),
     ]
+    assert len(report_calls[0]) == 3
     assert status_calls == [True]

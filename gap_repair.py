@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import asdict, dataclass
 import logging
 from pathlib import Path
 
@@ -22,6 +23,16 @@ from main import (
 LOGGER = logging.getLogger("lbank_gap_repair")
 MAX_GAP_WINDOWS_PER_SERIES_PER_RUN = 3
 MAX_REPAIR_FAILURES_PER_RUN = 3
+
+
+@dataclass(frozen=True)
+class GapRepairOutcome:
+    symbol: str
+    timeframe: str
+    gap_start_utc: str
+    status: str
+    recovered_candles: int
+    detail: str
 
 
 def find_gap_starts(timestamps: pd.Series, timeframe: str) -> list[pd.Timestamp]:
@@ -72,19 +83,23 @@ def select_missing_rows(
     return frame.loc[frame["timestamp"].isin(normalized_missing)].copy()
 
 
-def repair_series(symbol: str, timeframe: str) -> tuple[int, int]:
-    """Repair bounded gap windows and return repaired and failed counts."""
+def repair_series_with_outcomes(
+    symbol: str,
+    timeframe: str,
+) -> tuple[int, int, list[GapRepairOutcome]]:
+    """Repair bounded gap windows and classify each attempted or deferred gap."""
     output_path = Path(OUTPUT_ROOT) / symbol / f"{timeframe}.parquet"
     existing = read_existing(output_path)
     if existing.empty:
-        return 0, 0
+        return 0, 0, []
 
     gap_starts = find_gap_starts(existing["timestamp"], timeframe)
     if not gap_starts:
-        return 0, 0
+        return 0, 0, []
 
     missing = missing_timestamp_set(existing["timestamp"], timeframe)
     repaired_frames: list[pd.DataFrame] = []
+    outcomes: list[GapRepairOutcome] = []
     request_count = 0
     request_failures = 0
 
@@ -92,13 +107,29 @@ def repair_series(symbol: str, timeframe: str) -> tuple[int, int]:
         if gap_start not in missing:
             continue
         if request_count >= MAX_GAP_WINDOWS_PER_SERIES_PER_RUN:
-            break
+            outcomes.append(GapRepairOutcome(
+                symbol=symbol,
+                timeframe=timeframe,
+                gap_start_utc=gap_start.isoformat(),
+                status="deferred_budget",
+                recovered_candles=0,
+                detail="per-series request budget exhausted",
+            ))
+            continue
 
         request_count += 1
         try:
             rows = get_klines(symbol, timeframe, int(gap_start.timestamp()))
-        except (requests.RequestException, LBankError):
+        except (requests.RequestException, LBankError) as exc:
             request_failures += 1
+            outcomes.append(GapRepairOutcome(
+                symbol=symbol,
+                timeframe=timeframe,
+                gap_start_utc=gap_start.isoformat(),
+                status="fetch_failed",
+                recovered_candles=0,
+                detail=type(exc).__name__,
+            ))
             LOGGER.exception(
                 "Gap request failed for %s %s from %s",
                 symbol,
@@ -110,6 +141,14 @@ def repair_series(symbol: str, timeframe: str) -> tuple[int, int]:
         frame = rows_to_frame(rows, symbol, timeframe)
         repaired = select_missing_rows(frame, missing)
         if repaired.empty:
+            outcomes.append(GapRepairOutcome(
+                symbol=symbol,
+                timeframe=timeframe,
+                gap_start_utc=gap_start.isoformat(),
+                status="source_unavailable",
+                recovered_candles=0,
+                detail="request succeeded but returned no currently missing candle",
+            ))
             LOGGER.warning(
                 "No missing candles recovered for %s %s from %s",
                 symbol,
@@ -118,31 +157,88 @@ def repair_series(symbol: str, timeframe: str) -> tuple[int, int]:
             )
             continue
 
+        recovered_count = len(repaired)
         repaired_frames.append(repaired)
         missing.difference_update(
             pd.DatetimeIndex(pd.to_datetime(repaired["timestamp"], utc=True))
         )
+        outcomes.append(GapRepairOutcome(
+            symbol=symbol,
+            timeframe=timeframe,
+            gap_start_utc=gap_start.isoformat(),
+            status="recovered",
+            recovered_candles=recovered_count,
+            detail="missing candle rows returned and selected",
+        ))
 
     if not repaired_frames:
-        return 0, request_failures
+        return 0, request_failures, outcomes
 
     before = len(existing)
     after = save_merged(existing, repaired_frames, output_path)
     repaired_count = max(0, after - before)
     LOGGER.info("Repaired %s candle(s) for %s %s", repaired_count, symbol, timeframe)
-    return repaired_count, request_failures
+    return repaired_count, request_failures, outcomes
+
+
+def repair_series(symbol: str, timeframe: str) -> tuple[int, int]:
+    """Backward-compatible repair API returning repaired and failed counts."""
+    repaired, failures, _ = repair_series_with_outcomes(symbol, timeframe)
+    return repaired, failures
+
+
+def write_gap_repair_report(outcomes: list[GapRepairOutcome]) -> None:
+    """Write machine-readable and human-readable gap outcome reports."""
+    output_root = Path(OUTPUT_ROOT)
+    output_root.mkdir(parents=True, exist_ok=True)
+    columns = [
+        "symbol",
+        "timeframe",
+        "gap_start_utc",
+        "status",
+        "recovered_candles",
+        "detail",
+    ]
+    frame = pd.DataFrame([asdict(outcome) for outcome in outcomes], columns=columns)
+    if not frame.empty:
+        frame = frame.sort_values(["symbol", "timeframe", "gap_start_utc"])
+
+    frame.to_csv(output_root / "_gap_repair_status.csv", index=False)
+
+    lines = [
+        "# LBank Gap Repair Status",
+        "",
+        "Successful requests that return no missing candle are classified as "
+        "`source_unavailable`; transport or API exceptions are `fetch_failed`.",
+        "",
+        "| Symbol | Timeframe | Gap start UTC | Status | Recovered | Detail |",
+        "|---|---|---|---|---:|---|",
+    ]
+    for row in frame.to_dict("records"):
+        lines.append(
+            "| {symbol} | {timeframe} | {gap_start_utc} | {status} | "
+            "{recovered_candles} | {detail} |".format(**row)
+        )
+    (output_root / "_gap_repair_status.md").write_text(
+        "\n".join(lines) + "\n",
+        encoding="utf-8",
+    )
 
 
 def repair_all() -> int:
     repaired_total = 0
     failure_total = 0
+    outcomes: list[GapRepairOutcome] = []
 
     try:
         for symbol in SYMBOLS:
             for timeframe in TIMEFRAMES:
-                repaired_count, request_failures = repair_series(symbol, timeframe)
+                repaired_count, request_failures, series_outcomes = (
+                    repair_series_with_outcomes(symbol, timeframe)
+                )
                 repaired_total += repaired_count
                 failure_total += request_failures
+                outcomes.extend(series_outcomes)
 
                 if failure_total >= MAX_REPAIR_FAILURES_PER_RUN:
                     raise RuntimeError(
@@ -150,6 +246,7 @@ def repair_all() -> int:
                         f"{failure_total} failed API request windows"
                     )
     finally:
+        write_gap_repair_report(outcomes)
         write_backfill_status()
 
     return repaired_total
