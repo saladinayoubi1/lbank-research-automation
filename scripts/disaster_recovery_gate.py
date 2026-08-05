@@ -11,16 +11,22 @@ import argparse
 import json
 import sys
 from datetime import datetime, timezone
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 MAX_EVIDENCE_BYTES = 1_000_000
+MAX_EVIDENCE_AGE_DAYS = 30
 REQUIRED_SCENARIOS = {
     "primary-region-loss",
     "backup-corruption",
     "credential-loss",
     "dependency-outage",
 }
+REQUIRED_OWNER_KEYS = (
+    "incident_commander",
+    "recovery_operator",
+    "security_approver",
+)
 
 
 def fail(message: str) -> None:
@@ -60,6 +66,18 @@ def parse_utc(value: Any, key: str) -> datetime:
     return parsed.astimezone(timezone.utc)
 
 
+def validate_evidence_ref(value: Any) -> None:
+    if not isinstance(value, str) or not value.strip():
+        fail("scenario evidence_ref is required")
+    if "\\" in value:
+        fail("scenario evidence_ref must use canonical forward slashes")
+    ref = PurePosixPath(value)
+    if ref.is_absolute() or ".." in ref.parts or "." in ref.parts:
+        fail("scenario evidence_ref must be a safe canonical relative path")
+    if str(ref) != value or value.startswith("/"):
+        fail("scenario evidence_ref must be a safe canonical relative path")
+
+
 def validate(evidence_path: Path, *, now: datetime | None = None) -> list[str]:
     evidence = load_json(evidence_path)
     if not isinstance(evidence, dict):
@@ -69,6 +87,8 @@ def validate(evidence_path: Path, *, now: datetime | None = None) -> list[str]:
         fail("unsupported schema_version")
     if evidence.get("production_authorized") is not False:
         fail("production_authorized must be explicitly false")
+    if "max_evidence_age_days" in evidence:
+        fail("evidence cannot override verifier freshness policy")
 
     exercise_id = evidence.get("exercise_id")
     if not isinstance(exercise_id, str) or not exercise_id.strip():
@@ -81,9 +101,7 @@ def validate(evidence_path: Path, *, now: datetime | None = None) -> list[str]:
     current = now or datetime.now(timezone.utc)
     if completed > current:
         fail("completed_at cannot be in the future")
-
-    max_age_days = require_positive_number(evidence, "max_evidence_age_days")
-    if (current - completed).total_seconds() > max_age_days * 86400:
+    if (current - completed).total_seconds() > MAX_EVIDENCE_AGE_DAYS * 86400:
         fail("disaster-recovery evidence is stale")
 
     objectives = evidence.get("objectives")
@@ -111,11 +129,13 @@ def validate(evidence_path: Path, *, now: datetime | None = None) -> list[str]:
     owners = evidence.get("owners")
     if not isinstance(owners, dict):
         fail("owners must be an object")
-    for key in ("incident_commander", "recovery_operator", "security_approver"):
+    owner_values: list[str] = []
+    for key in REQUIRED_OWNER_KEYS:
         value = owners.get(key)
         if not isinstance(value, str) or not value.strip():
             fail(f"owners.{key} is required")
-    if len(set(owners.values())) != len(owners.values()):
+        owner_values.append(value.strip())
+    if len(set(owner_values)) != len(owner_values):
         fail("separation of duties requires distinct owners")
 
     scenarios = evidence.get("scenarios")
@@ -134,8 +154,7 @@ def validate(evidence_path: Path, *, now: datetime | None = None) -> list[str]:
         require_bool(scenario, "executed")
         require_bool(scenario, "expected_failure_observed")
         require_bool(scenario, "recovery_verified")
-        if not isinstance(scenario.get("evidence_ref"), str) or not scenario["evidence_ref"].strip():
-            fail("scenario evidence_ref is required")
+        validate_evidence_ref(scenario.get("evidence_ref"))
     missing = REQUIRED_SCENARIOS - seen
     if missing:
         fail("missing required disaster scenarios: " + ",".join(sorted(missing)))
@@ -151,6 +170,7 @@ def validate(evidence_path: Path, *, now: datetime | None = None) -> list[str]:
         "negative-drills",
         "separation-of-duties",
         "scenario-coverage",
+        "evidence-reference-safety",
         "production-deny",
     ]
 
