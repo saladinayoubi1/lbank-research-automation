@@ -30,5 +30,21 @@
     "URL": "https://www.bis.org/statistics/rpfx22.htm",
     "abstract": "Official BIS survey package covering the size and structure of global foreign-exchange and OTC derivatives markets.",
     "keyword": "forex, market microstructure, derivatives, official statistics"
+  },
+  {
+    "type": "report",
+    "title": "NEXUS Zotero Connection Test — 2026-08-05",
+    "author": [
+      {
+        "family": "NEXUS",
+        "given": "Automation"
+      }
+    ],
+    "issued": {
+      "date-parts": [[2026, 8, 5]]
+    },
+    "URL": "https://github.com/saladinayoubi1/lbank-research-automation",
+    "abstract": "Temporary, clearly labeled test record created to verify the GitHub-to-Zotero write path. Safe to delete after verification.",
+    "keyword": "NEXUS, zotero, connection-test, temporary"
   }
 ]
