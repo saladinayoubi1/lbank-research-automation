@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "quorum": 2,
+  "roles": [
+    {
+      "id": "stability",
+      "priority": 1,
+      "veto": true
+    },
+    {
+      "id": "security",
+      "priority": 2,
+      "veto": true
+    },
+    {
+      "id": "delivery",
+      "priority": 3,
+      "veto": false
+    }
+  ],
+  "decisionPolicy": {
+    "requireQuorum": true,
+    "rejectOnVeto": true,
+    "tieBreaker": "lowest_priority_number"
+  }
+}
