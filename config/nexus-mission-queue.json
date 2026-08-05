@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "currentMissionId": "M-008",
+  "currentMissionId": "M-009",
   "selectionPolicy": {
     "priorityOrder": [
       "stability",
@@ -59,9 +59,17 @@
     {
       "id": "M-008",
       "title": "Artifact Integrity Foundation",
-      "status": "active",
+      "status": "completed",
       "priority": "security",
       "dependencies": ["M-004", "M-007"],
+      "reversible": true
+    },
+    {
+      "id": "M-009",
+      "title": "SBOM Verification Foundation",
+      "status": "active",
+      "priority": "security",
+      "dependencies": ["M-008"],
       "reversible": true
     }
   ]
