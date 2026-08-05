@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/saladinayoubi1/lbank-research-automation/policy/capability-policy.schema.json",
+  "title": "NEXUS capability policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "default", "grants"],
+  "properties": {
+    "version": {"const": 1},
+    "default": {"const": "deny"},
+    "grants": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "subject", "operation", "root", "resource", "purpose",
+          "expires_at", "max_bytes", "max_uses", "correlation_id"
+        ],
+        "properties": {
+          "subject": {"type": "string", "minLength": 1, "maxLength": 128},
+          "operation": {
+            "enum": ["read_file", "write_file", "create_file", "list_directory"]
+          },
+          "root": {"type": "string", "minLength": 1},
+          "resource": {"type": "string", "minLength": 1},
+          "purpose": {"type": "string", "minLength": 1, "maxLength": 512},
+          "expires_at": {"type": "string", "format": "date-time"},
+          "max_bytes": {"type": "integer", "minimum": 0, "maximum": 104857600},
+          "max_uses": {"type": "integer", "minimum": 1, "maximum": 1000},
+          "correlation_id": {"type": "string", "minLength": 8, "maxLength": 128}
+        }
+      }
+    }
+  }
+}
