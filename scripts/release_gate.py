@@ -11,11 +11,15 @@ import argparse
 import hashlib
 import json
 import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
+from uuid import UUID
 
 REQUIRED = ("artifact-manifest.json", "sbom.cdx.json", "provenance.json")
 MAX_JSON_BYTES = 5 * 1024 * 1024
+MAX_EVIDENCE_AGE = timedelta(hours=24)
+MAX_FUTURE_SKEW = timedelta(minutes=5)
 SUPPORTED_CYCLONEDX = {"1.4", "1.5", "1.6"}
 COMPLETENESS_STATES = {"complete", "incomplete", "unknown"}
 
@@ -43,18 +47,54 @@ def sha256(path: Path) -> str:
     return h.hexdigest()
 
 
-def verify_sbom(sbom: Any) -> str:
+def valid_sha256(value: Any) -> bool:
+    return isinstance(value, str) and len(value) == 64 and all(c in "0123456789abcdef" for c in value)
+
+
+def parse_time(value: Any, field: str) -> datetime:
+    if not isinstance(value, str) or not value:
+        fail(f"{field} is required")
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        fail(f"{field} must be RFC3339")
+    if parsed.tzinfo is None:
+        fail(f"{field} must include timezone")
+    return parsed.astimezone(timezone.utc)
+
+
+def verify_freshness(timestamp: datetime, now: datetime, field: str) -> None:
+    if timestamp > now + MAX_FUTURE_SKEW:
+        fail(f"{field} is too far in the future")
+    if now - timestamp > MAX_EVIDENCE_AGE:
+        fail(f"{field} is stale")
+
+
+def verify_sbom(sbom: Any, now: datetime) -> tuple[str, str, datetime]:
     if not isinstance(sbom, dict) or sbom.get("bomFormat") != "CycloneDX":
         fail("SBOM must be CycloneDX JSON")
     if sbom.get("specVersion") not in SUPPORTED_CYCLONEDX:
         fail("unsupported CycloneDX specVersion")
 
+    serial = sbom.get("serialNumber")
+    if not isinstance(serial, str) or not serial.startswith("urn:uuid:"):
+        fail("SBOM serialNumber must be a UUID URN")
+    try:
+        UUID(serial.removeprefix("urn:uuid:"))
+    except ValueError:
+        fail("SBOM serialNumber must be a UUID URN")
+
+    metadata = sbom.get("metadata")
+    if not isinstance(metadata, dict):
+        fail("SBOM metadata is required")
+    timestamp = parse_time(metadata.get("timestamp"), "SBOM metadata.timestamp")
+    verify_freshness(timestamp, now, "SBOM metadata.timestamp")
+
     components = sbom.get("components")
     if not isinstance(components, list) or not components:
         fail("SBOM components must be a non-empty list")
 
-    metadata = sbom.get("metadata")
-    properties = metadata.get("properties") if isinstance(metadata, dict) else None
+    properties = metadata.get("properties")
     completeness = "unknown"
     if isinstance(properties, list):
         for prop in properties:
@@ -122,10 +162,18 @@ def verify_sbom(sbom: Any) -> str:
     for ref in refs:
         visit(ref)
 
-    return completeness
+    return completeness, serial, timestamp
 
 
-def verify(bundle: Path, require_signature: bool = True) -> list[str]:
+def verify(
+    bundle: Path,
+    require_signature: bool = True,
+    *,
+    now: datetime | None = None,
+    expected_source_commit: str | None = None,
+    expected_builder: str | None = None,
+) -> list[str]:
+    now = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
     if not bundle.is_dir():
         fail("release bundle directory does not exist")
     for name in REQUIRED:
@@ -152,26 +200,59 @@ def verify(bundle: Path, require_signature: bool = True) -> list[str]:
         target = bundle / name
         if not target.is_file():
             fail(f"manifest artifact missing: {name}")
-        if not isinstance(digest, str) or len(digest) != 64 or any(c not in "0123456789abcdef" for c in digest):
+        if not valid_sha256(digest):
             fail(f"invalid SHA-256 for: {name}")
         if sha256(target) != digest:
             fail(f"digest mismatch: {name}")
         if not isinstance(size, int) or size < 0 or target.stat().st_size != size:
             fail(f"size mismatch: {name}")
 
-    completeness = verify_sbom(load_json(bundle / "sbom.cdx.json"))
+    sbom_path = bundle / "sbom.cdx.json"
+    completeness, sbom_serial, sbom_timestamp = verify_sbom(load_json(sbom_path), now)
 
     provenance = load_json(bundle / "provenance.json")
     if not isinstance(provenance, dict):
         fail("provenance must be an object")
-    if not provenance.get("source_commit") or not provenance.get("builder"):
-        fail("provenance requires source_commit and builder")
+    source_commit = provenance.get("source_commit")
+    builder = provenance.get("builder")
+    if not isinstance(source_commit, str) or len(source_commit) != 40 or any(c not in "0123456789abcdef" for c in source_commit):
+        fail("provenance source_commit must be a lowercase 40-character Git SHA")
+    if not isinstance(builder, str) or not builder.strip():
+        fail("provenance builder is required")
+    if expected_source_commit is not None and source_commit != expected_source_commit:
+        fail("provenance source_commit mismatch")
+    if expected_builder is not None and builder != expected_builder:
+        fail("provenance builder mismatch")
+
+    issued_at = parse_time(provenance.get("issued_at"), "provenance issued_at")
+    verify_freshness(issued_at, now, "provenance issued_at")
+    if abs((issued_at - sbom_timestamp).total_seconds()) > MAX_FUTURE_SKEW.total_seconds():
+        fail("SBOM and provenance timestamps are not coherently bound")
+    if provenance.get("sbom_serial_number") != sbom_serial:
+        fail("provenance SBOM serial mismatch")
+    if provenance.get("sbom_sha256") != sha256(sbom_path):
+        fail("provenance SBOM digest mismatch")
+
     subjects = provenance.get("subjects")
     if not isinstance(subjects, list) or not subjects:
         fail("provenance requires non-empty subjects")
-    subject_map = {s.get("path"): s.get("sha256") for s in subjects if isinstance(s, dict)}
+    subject_map: dict[str, str] = {}
+    for subject in subjects:
+        if not isinstance(subject, dict):
+            fail("provenance subject must be an object")
+        path = subject.get("path")
+        digest = subject.get("sha256")
+        if not isinstance(path, str) or not path or Path(path).is_absolute() or ".." in Path(path).parts:
+            fail("provenance subject path must be a safe relative path")
+        if path in subject_map:
+            fail(f"duplicate provenance subject: {path}")
+        if not valid_sha256(digest):
+            fail(f"invalid provenance subject SHA-256: {path}")
+        subject_map[path] = digest
+    if set(subject_map) != seen:
+        fail("provenance subjects must exactly match manifest artifacts")
     for item in entries:
-        if subject_map.get(item["path"]) != item["sha256"]:
+        if subject_map[item["path"]] != item["sha256"]:
             fail(f"provenance subject mismatch: {item['path']}")
 
     if require_signature:
@@ -181,16 +262,23 @@ def verify(bundle: Path, require_signature: bool = True) -> list[str]:
             fail("signature and signer certificate are required for production release")
         fail("signature identity policy is not configured; production verification is blocked")
 
-    return ["manifest", f"sbom-{completeness}", "provenance", "artifact-digests"]
+    return ["manifest", f"sbom-{completeness}", "provenance-fresh", "artifact-digests"]
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("bundle", type=Path)
     parser.add_argument("--allow-unsigned", action="store_true", help="CI validation only; never production approval")
+    parser.add_argument("--expected-source-commit")
+    parser.add_argument("--expected-builder")
     args = parser.parse_args()
     try:
-        checks = verify(args.bundle, require_signature=not args.allow_unsigned)
+        checks = verify(
+            args.bundle,
+            require_signature=not args.allow_unsigned,
+            expected_source_commit=args.expected_source_commit,
+            expected_builder=args.expected_builder,
+        )
     except ValueError as exc:
         print(f"RELEASE_GATE=BLOCKED reason={exc}", file=sys.stderr)
         return 1
