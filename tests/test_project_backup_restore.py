@@ -63,6 +63,30 @@ def test_verify_rejects_path_traversal_before_restore(tmp_path: Path) -> None:
         backup.verify_backup(archive, checksum)
 
 
+def test_verify_rejects_windows_backslash_traversal(tmp_path: Path) -> None:
+    archive = tmp_path / "backup.zip"
+    with zipfile.ZipFile(archive, "w") as output:
+        output.writestr("..\\escape.txt", "blocked")
+        output.writestr(
+            "BACKUP_MANIFEST.json",
+            '{"file_count": 1, "files": ["..\\\\escape.txt"]}',
+        )
+    checksum = _write_checksum(archive)
+
+    with pytest.raises(ValueError, match="unsafe archive member"):
+        backup.verify_backup(archive, checksum)
+
+
+def test_verify_rejects_non_object_manifest(tmp_path: Path) -> None:
+    archive = tmp_path / "backup.zip"
+    with zipfile.ZipFile(archive, "w") as output:
+        output.writestr("BACKUP_MANIFEST.json", "[]")
+    checksum = _write_checksum(archive)
+
+    with pytest.raises(ValueError, match="manifest must be an object"):
+        backup.verify_backup(archive, checksum)
+
+
 def test_restore_requires_empty_destination(tmp_path: Path) -> None:
     archive = tmp_path / "backup.zip"
     with zipfile.ZipFile(archive, "w") as output:
@@ -76,6 +100,30 @@ def test_restore_requires_empty_destination(tmp_path: Path) -> None:
     destination.mkdir()
     (destination / "existing.txt").write_text("keep", encoding="utf-8")
 
-    with pytest.raises(ValueError, match="must be empty"):
+    with pytest.raises(ValueError, match="empty directory or absent"):
         backup.restore_backup(archive, checksum, destination)
     assert (destination / "existing.txt").read_text(encoding="utf-8") == "keep"
+
+
+def test_restore_failure_does_not_publish_partial_output(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    archive = tmp_path / "backup.zip"
+    with zipfile.ZipFile(archive, "w") as output:
+        output.writestr("file.txt", "safe")
+        output.writestr(
+            "BACKUP_MANIFEST.json",
+            '{"file_count": 1, "files": ["file.txt"]}',
+        )
+    checksum = _write_checksum(archive)
+    destination = tmp_path / "restore"
+
+    def fail_copy(src, dst, length: int) -> None:
+        dst.write(src.read(1))
+        raise OSError("simulated partial write")
+
+    monkeypatch.setattr(backup.shutil, "copyfileobj", fail_copy)
+
+    with pytest.raises(OSError, match="simulated partial write"):
+        backup.restore_backup(archive, checksum, destination)
+
+    assert not destination.exists()
+    assert not list(tmp_path.glob(".restore.restore-*"))
