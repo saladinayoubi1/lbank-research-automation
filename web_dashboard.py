@@ -1,10 +1,8 @@
 """Read-only local HTTP API for generated research-readiness reports.
 
 This module intentionally uses only the Python standard library. It exposes
-pre-generated JSON/CSV reports and never reads Parquet files, calls LBank, or
-performs write operations.
+pre-generated reports and never calls exchanges, Zotero, or write APIs.
 """
-
 from __future__ import annotations
 
 import argparse
@@ -16,6 +14,12 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlsplit
+
+from dashboard_integrations import (
+    IntegrationUnavailableError,
+    load_research_summary,
+    load_zotero_summary,
+)
 
 DEFAULT_DATA_ROOT = Path("data/market")
 SUMMARY_FILENAME = "_data_readiness.json"
@@ -34,35 +38,23 @@ class ApiResponse:
 
 def _report_metadata(path: Path) -> dict[str, Any]:
     stat = path.stat()
-    return {
-        "source": path.name,
-        "generated_report_mtime_ns": stat.st_mtime_ns,
-        "stale_possible": True,
-    }
+    return {"source": path.name, "generated_report_mtime_ns": stat.st_mtime_ns, "stale_possible": True}
 
 
 def load_summary(data_root: Path) -> dict[str, Any]:
     path = data_root / SUMMARY_FILENAME
     try:
-        raw = path.read_text(encoding="utf-8")
-        payload = json.loads(raw)
+        payload = json.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError as exc:
         raise ReportUnavailableError(f"missing report: {SUMMARY_FILENAME}") from exc
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         raise ReportUnavailableError(f"invalid report: {SUMMARY_FILENAME}") from exc
-
     if not isinstance(payload, dict):
         raise ReportUnavailableError(f"invalid report root: {SUMMARY_FILENAME}")
-
     return {"summary": payload, "metadata": _report_metadata(path)}
 
 
-def load_series(
-    data_root: Path,
-    *,
-    symbol: str | None = None,
-    timeframe: str | None = None,
-) -> dict[str, Any]:
+def load_series(data_root: Path, *, symbol: str | None = None, timeframe: str | None = None) -> dict[str, Any]:
     path = data_root / SERIES_FILENAME
     try:
         with path.open("r", encoding="utf-8", newline="") as handle:
@@ -71,55 +63,34 @@ def load_series(
         raise ReportUnavailableError(f"missing report: {SERIES_FILENAME}") from exc
     except (OSError, UnicodeError, csv.Error) as exc:
         raise ReportUnavailableError(f"invalid report: {SERIES_FILENAME}") from exc
-
     if symbol is not None:
         rows = [row for row in rows if row.get("symbol") == symbol]
     if timeframe is not None:
         rows = [row for row in rows if row.get("timeframe") == timeframe]
-
-    return {
-        "series": rows,
-        "count": len(rows),
-        "filters": {"symbol": symbol, "timeframe": timeframe},
-        "metadata": _report_metadata(path),
-    }
+    return {"series": rows, "count": len(rows), "filters": {"symbol": symbol, "timeframe": timeframe}, "metadata": _report_metadata(path)}
 
 
 def dispatch_get(path_with_query: str, data_root: Path = DEFAULT_DATA_ROOT) -> ApiResponse:
     parsed = urlsplit(path_with_query)
     query = parse_qs(parsed.query, keep_blank_values=True)
+    integration_root = data_root.parent / "integrations"
 
     if parsed.path == "/health":
-        return ApiResponse(
-            HTTPStatus.OK,
-            {
-                "status": "ok",
-                "service": "lbank-research-readiness-dashboard",
-                "mode": "read-only",
-            },
-        )
+        return ApiResponse(HTTPStatus.OK, {"status": "ok", "service": "lbank-research-readiness-dashboard", "mode": "read-only"})
 
     try:
         if parsed.path == "/api/readiness/summary":
             return ApiResponse(HTTPStatus.OK, load_summary(data_root))
-
         if parsed.path == "/api/readiness/series":
-            symbol = query.get("symbol", [None])[0]
-            timeframe = query.get("timeframe", [None])[0]
-            return ApiResponse(
-                HTTPStatus.OK,
-                load_series(data_root, symbol=symbol, timeframe=timeframe),
-            )
-    except ReportUnavailableError as exc:
-        return ApiResponse(
-            HTTPStatus.SERVICE_UNAVAILABLE,
-            {"error": "report_unavailable", "detail": str(exc)},
-        )
+            return ApiResponse(HTTPStatus.OK, load_series(data_root, symbol=query.get("symbol", [None])[0], timeframe=query.get("timeframe", [None])[0]))
+        if parsed.path == "/api/integrations/zotero":
+            return ApiResponse(HTTPStatus.OK, {"summary": load_zotero_summary(integration_root)})
+        if parsed.path == "/api/integrations/research":
+            return ApiResponse(HTTPStatus.OK, {"summary": load_research_summary(integration_root)})
+    except (ReportUnavailableError, IntegrationUnavailableError) as exc:
+        return ApiResponse(HTTPStatus.SERVICE_UNAVAILABLE, {"error": "report_unavailable", "detail": str(exc)})
 
-    return ApiResponse(
-        HTTPStatus.NOT_FOUND,
-        {"error": "not_found", "path": parsed.path},
-    )
+    return ApiResponse(HTTPStatus.NOT_FOUND, {"error": "not_found", "path": parsed.path})
 
 
 def build_handler(data_root: Path):
@@ -132,21 +103,12 @@ def build_handler(data_root: Path):
             self.send_header("Cache-Control", "no-store")
             self.end_headers()
             self.wfile.write(body)
-
-        def do_GET(self) -> None:  # noqa: N802 - stdlib handler API
+        def do_GET(self) -> None:  # noqa: N802
             self._send(dispatch_get(self.path, data_root))
-
-        def do_POST(self) -> None:  # noqa: N802 - stdlib handler API
-            self._send(
-                ApiResponse(
-                    HTTPStatus.METHOD_NOT_ALLOWED,
-                    {"error": "method_not_allowed", "allowed": ["GET"]},
-                )
-            )
-
+        def do_POST(self) -> None:  # noqa: N802
+            self._send(ApiResponse(HTTPStatus.METHOD_NOT_ALLOWED, {"error": "method_not_allowed", "allowed": ["GET"]}))
         def log_message(self, format: str, *args: object) -> None:
             return
-
     return DashboardHandler
 
 
