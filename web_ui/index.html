@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>LBank Research Readiness</title>
+  <link rel="stylesheet" href="/ui/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <p class="eyebrow">LOCAL · READ ONLY · RESEARCH USE</p>
+      <h1>Research readiness dashboard</h1>
+      <p>Generated reports only. This interface does not trade or handle credentials.</p>
+    </header>
+    <section id="state" class="state" aria-live="polite">Loading readiness reports…</section>
+    <section id="cards" class="cards" hidden>
+      <article><span>Total series</span><strong id="total">—</strong></article>
+      <article><span>Ready</span><strong id="ready">—</strong></article>
+      <article><span>Blocked</span><strong id="blocked">—</strong></article>
+      <article><span>Overall</span><strong id="overall">—</strong></article>
+    </section>
+    <section class="panel">
+      <div class="panel-heading"><h2>Series status</h2><button id="refresh" type="button">Refresh</button></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Symbol</th><th>Timeframe</th><th>Status</th><th>Reason</th></tr></thead>
+          <tbody id="series"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+  <script src="/ui/app.js" defer></script>
+</body>
+</html>
