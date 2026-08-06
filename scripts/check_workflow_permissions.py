@@ -30,10 +30,7 @@ def construct_mapping(loader: UniqueKeySafeLoader, node: yaml.MappingNode, deep:
     return mapping
 
 
-UniqueKeySafeLoader.add_constructor(
-    yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-    construct_mapping,
-)
+UniqueKeySafeLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, construct_mapping)
 
 
 def load_yaml(path: Path) -> dict[str, Any]:
@@ -78,6 +75,22 @@ def validate_policy(policy: Any) -> dict[str, Any]:
     return workflows
 
 
+def inventory_rule(path: Path, workflow: dict[str, Any]) -> dict[str, Any]:
+    jobs: dict[str, Any] = {}
+    for name, job in workflow["jobs"].items():
+        if not isinstance(job, dict):
+            raise ValueError(f"{path}: job {name} must be a mapping")
+        rule: dict[str, Any] = {"policy_version": 1}
+        if "permissions" in job:
+            rule["permissions"] = normalize_permissions(job["permissions"], f"{path}: job {name}")
+        jobs[name] = rule
+    return {
+        "policy_version": 1,
+        "workflow_permissions": normalize_permissions(workflow.get("permissions"), f"{path}: workflow"),
+        "jobs": jobs,
+    }
+
+
 def validate_workflow(path: Path, workflow: dict[str, Any], rule: dict[str, Any]) -> None:
     if not isinstance(rule, dict) or rule.get("policy_version") != 1:
         raise ValueError(f"{path}: missing versioned workflow policy")
@@ -89,14 +102,10 @@ def validate_workflow(path: Path, workflow: dict[str, Any], rule: dict[str, Any]
         raise ValueError(f"{path}: workflow permissions differ from policy")
     if any(level == "write" for level in actual_workflow.values()) and not rule.get("write_justification"):
         raise ValueError(f"{path}: workflow write scope lacks justification")
-
     jobs_policy = rule.get("jobs")
-    if not isinstance(jobs_policy, dict):
-        raise ValueError(f"{path}: jobs policy must be a mapping")
     jobs = workflow["jobs"]
-    if set(jobs) != set(jobs_policy):
+    if not isinstance(jobs_policy, dict) or set(jobs) != set(jobs_policy):
         raise ValueError(f"{path}: job inventory differs from policy")
-
     for job_name, job in jobs.items():
         if not isinstance(job, dict):
             raise ValueError(f"{path}: job {job_name} must be a mapping")
@@ -109,8 +118,7 @@ def validate_workflow(path: Path, workflow: dict[str, Any], rule: dict[str, Any]
             if not isinstance(allowed_job, dict) or actual_job != allowed_job:
                 raise ValueError(f"{path}: job {job_name} permissions differ from policy")
             for scope, level in actual_job.items():
-                workflow_level = actual_workflow.get(scope, "none")
-                if level == "write" and workflow_level != "write":
+                if level == "write" and actual_workflow.get(scope, "none") != "write":
                     raise ValueError(f"{path}: job {job_name} widens {scope} to write")
                 if level == "write" and not job_rule.get("write_justification"):
                     raise ValueError(f"{path}: job {job_name} write scope lacks justification")
@@ -125,9 +133,12 @@ def run(workflow_dir: Path = WORKFLOW_DIR, policy_path: Path = POLICY_PATH) -> l
     actual = {p.as_posix() for p in paths}
     expected = set(rules)
     if actual != expected:
-        missing = sorted(actual - expected)
-        stale = sorted(expected - actual)
-        raise ValueError(f"workflow inventory mismatch missing_policy={missing} stale_policy={stale}")
+        snapshot = {p.as_posix(): inventory_rule(p, load_yaml(p)) for p in paths}
+        raise ValueError(
+            "workflow inventory mismatch "
+            f"missing_policy={sorted(actual - expected)} stale_policy={sorted(expected - actual)} "
+            f"inventory_json={json.dumps(snapshot, sort_keys=True, separators=(',', ':'))}"
+        )
     for path in paths:
         validate_workflow(path, load_yaml(path), rules[path.as_posix()])
     return sorted(actual)
