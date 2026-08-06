@@ -1,5 +1,6 @@
 const state = document.querySelector('#state');
 const cards = document.querySelector('#cards');
+const integrationCards = document.querySelector('#integration-cards');
 const tbody = document.querySelector('#series');
 
 function showState(message, kind = 'info') {
@@ -14,6 +15,18 @@ function renderSummary(summary) {
   document.querySelector('#blocked').textContent = summary.blocked_series ?? 0;
   document.querySelector('#overall').textContent = summary.all_ready ? 'Ready' : 'Attention';
   cards.hidden = false;
+}
+
+function renderIntegrations(zotero, research) {
+  document.querySelector('#zotero-items').textContent = zotero.item_count ?? 0;
+  document.querySelector('#zotero-findings').textContent = zotero.finding_count ?? 0;
+  document.querySelector('#zotero-status').textContent = zotero.status === 'clean' ? 'Clean' : 'Attention';
+  document.querySelector('#zotero-duplicates').textContent = `${zotero.duplicate_doi_groups ?? 0} DOI duplicate groups`;
+  document.querySelector('#research-claims').textContent = research.claim_count ?? 0;
+  document.querySelector('#research-evidence').textContent = research.evidence_count ?? 0;
+  document.querySelector('#research-status').textContent = research.stale ? 'Review overdue' : 'Research-only';
+  document.querySelector('#research-review').textContent = research.next_review_due ? `Review ${research.next_review_due}` : 'No review date';
+  integrationCards.hidden = false;
 }
 
 function renderSeries(rows) {
@@ -47,19 +60,26 @@ async function readJson(url) {
 
 async function loadDashboard() {
   cards.hidden = true;
+  integrationCards.hidden = true;
   tbody.replaceChildren();
-  showState('Loading readiness reports…');
+  showState('Loading readiness and integration reports…');
   try {
-    const [summaryPayload, seriesPayload] = await Promise.all([
+    const [summaryPayload, seriesPayload, zoteroPayload, researchPayload] = await Promise.all([
       readJson('/api/readiness/summary'),
       readJson('/api/readiness/series'),
+      readJson('/api/integrations/zotero'),
+      readJson('/api/integrations/research'),
     ]);
-    if (!summaryPayload.summary || !Array.isArray(seriesPayload.series)) {
+    if (!summaryPayload.summary || !Array.isArray(seriesPayload.series) || !zoteroPayload.summary || !researchPayload.summary) {
       throw new Error('Malformed API response');
     }
     renderSummary(summaryPayload.summary);
+    renderIntegrations(zoteroPayload.summary, researchPayload.summary);
     renderSeries(seriesPayload.series);
-    showState(seriesPayload.series.length ? 'Reports loaded.' : 'Reports loaded; no series found.', seriesPayload.series.length ? 'success' : 'empty');
+    const stale = Boolean(researchPayload.summary.stale);
+    const kind = stale ? 'empty' : (seriesPayload.series.length ? 'success' : 'empty');
+    const message = stale ? 'Reports loaded; Research review is overdue.' : (seriesPayload.series.length ? 'Reports loaded.' : 'Reports loaded; no series found.');
+    showState(message, kind);
   } catch (error) {
     renderSeries([]);
     showState(error instanceof Error ? error.message : 'Dashboard unavailable', 'error');
