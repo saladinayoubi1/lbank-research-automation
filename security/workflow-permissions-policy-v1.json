@@ -1,17 +1,46 @@
 {
-  "version": 1,
   "policy_name": "ADR-0016-v1",
+  "version": 1,
   "workflows": {
-    ".github/workflows/workflow-permissions-audit.yml": {
-      "policy_version": 1,
-      "workflow_permissions": {
-        "contents": "read"
-      },
-      "jobs": {
-        "audit": {
-          "policy_version": 1
-        }
-      }
-    }
+    ".github/workflows/backup-restore-readiness.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"fail-closed-cross-platform":{"policy_version":1}}},
+    ".github/workflows/build_lbank_desktop_windows.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"build-windows":{"policy_version":1}}},
+    ".github/workflows/build_lbank_mobile_apk.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"build-apk":{"policy_version":1}}},
+    ".github/workflows/bybit_batch_a.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"chunk":{"policy_version":1}}},
+    ".github/workflows/bybit_batch_b.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"chunk":{"policy_version":1}}},
+    ".github/workflows/bybit_batch_c.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"chunk":{"policy_version":1}}},
+    ".github/workflows/bybit_batch_early.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"chunk":{"policy_version":1}}},
+    ".github/workflows/bybit_benchmark_v1.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"benchmark":{"policy_version":1}}},
+    ".github/workflows/bybit_consensus_search_v5.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"search":{"policy_version":1}}},
+    ".github/workflows/bybit_data_audit.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"audit":{"policy_version":1}}},
+    ".github/workflows/bybit_derivatives_validation_v1.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"validate":{"policy_version":1}}},
+    ".github/workflows/bybit_final_aggregate.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"aggregate":{"policy_version":1}}},
+    ".github/workflows/bybit_finalize.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"finalize":{"policy_version":1}}},
+    ".github/workflows/bybit_full_history_backfill.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"notice":{"policy_version":1}}},
+    ".github/workflows/bybit_heavy_months.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"build-part":{"policy_version":1},"combine-month":{"policy_version":1}}},
+    ".github/workflows/bybit_long_short_search_v4.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"search":{"policy_version":1}}},
+    ".github/workflows/bybit_neighborhood_validation_v7.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"validate":{"policy_version":1}}},
+    ".github/workflows/bybit_portfolio_search_v3.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"search":{"policy_version":1}}},
+    ".github/workflows/bybit_regime_search_v6.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"search":{"policy_version":1}}},
+    ".github/workflows/bybit_resumable_backfill.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"backfill":{"policy_version":1}}},
+    ".github/workflows/bybit_spot_archive_collector.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"collect":{"policy_version":1}}},
+    ".github/workflows/bybit_strategy_search_v2.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"search":{"policy_version":1}}},
+    ".github/workflows/bybit_stream_heavy.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"combine-month":{"policy_version":1},"stream-part":{"policy_version":1}}},
+    ".github/workflows/cancel_obsolete_bybit_runs.yml": {"policy_version":1,"workflow_permissions":{"actions":"write","contents":"read"},"write_justification":"Required to cancel obsolete GitHub Actions workflow runs; contents remains read-only.","jobs":{"cancel":{"policy_version":1}}},
+    ".github/workflows/collect.yml": {"policy_version":1,"workflow_permissions":{"contents":"write"},"write_justification":"Required to commit and push the repository-managed public candle dataset produced by the collector.","jobs":{"collect":{"policy_version":1}}},
+    ".github/workflows/contiguous_segments.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"analyze":{"policy_version":1}}},
+    ".github/workflows/disaster-recovery-readiness.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"fail-closed-cross-platform":{"policy_version":1}}},
+    ".github/workflows/export_partitioned.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"partition":{"policy_version":1}}},
+    ".github/workflows/export_snapshot.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"export":{"policy_version":1}}},
+    ".github/workflows/gap_probe.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"probe":{"policy_version":1}}},
+    ".github/workflows/lbank_benchmark_v1.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"benchmark":{"policy_version":1}}},
+    ".github/workflows/nexus-autopilot-policy.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"validate-policy":{"policy_version":1}}},
+    ".github/workflows/nexus-build-verification.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"android-apk":{"policy_version":1},"secure-gateway-verification":{"policy_version":1},"windows-desktop":{"policy_version":1}}},
+    ".github/workflows/nexus-mission-queue.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"validate-mission-queue":{"policy_version":1}}},
+    ".github/workflows/release-readiness.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"fail-closed-cross-platform":{"policy_version":1}}},
+    ".github/workflows/release-recovery.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"reproducibility-and-rollback":{"policy_version":1}}},
+    ".github/workflows/tests.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"test":{"policy_version":1}}},
+    ".github/workflows/workflow-permissions-audit.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"audit":{"policy_version":1}}},
+    ".github/workflows/zotero-evidence.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"validate":{"policy_version":1}}},
+    ".github/workflows/zotero-web-api-sync.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"validate-and-sync":{"policy_version":1}}}
   }
 }
