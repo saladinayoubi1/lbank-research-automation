@@ -98,9 +98,16 @@ class BackupRestoreGateTests(unittest.TestCase):
             verify(path, restored, now=NOW)
 
     def test_stale_evidence_fails(self):
-        path, restored, evidence, _ = self.fixture()
-        evidence["restore_completed_at"] = (NOW - timedelta(days=31)).isoformat().replace("+00:00", "Z")
-        evidence["restore_started_at"] = (NOW - timedelta(days=31, minutes=2)).isoformat().replace("+00:00", "Z")
+        path, restored, evidence, proof = self.fixture()
+        stale_backup = NOW - timedelta(days=31, minutes=4)
+        stale_started = NOW - timedelta(days=31, minutes=2)
+        stale_completed = NOW - timedelta(days=31)
+        record = json.loads(proof.read_text())
+        record["backup_created_at"] = stale_backup.isoformat().replace("+00:00", "Z")
+        proof.write_text(json.dumps(record, sort_keys=True), encoding="utf-8")
+        evidence["backup_evidence_sha256"] = hashlib.sha256(proof.read_bytes()).hexdigest()
+        evidence["restore_started_at"] = stale_started.isoformat().replace("+00:00", "Z")
+        evidence["restore_completed_at"] = stale_completed.isoformat().replace("+00:00", "Z")
         self.rewrite(path, evidence)
         with self.assertRaisesRegex(ValueError, "stale"):
             verify(path, restored, now=NOW)
