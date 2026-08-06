@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "workflows": {
+    ".github/workflows/workflow-permissions-audit.yml": {
+      "policy_version": 1,
+      "workflow_permissions": {
+        "contents": "read"
+      },
+      "jobs": {
+        "audit": {
+          "policy_version": 1
+        }
+      }
+    }
+  }
+}
