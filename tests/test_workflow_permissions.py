@@ -17,21 +17,7 @@ class WorkflowPermissionsTests(unittest.TestCase):
         path = workflows / workflow_name
         path.write_text(workflow, encoding="utf-8")
         policy = root / "policy.json"
-        policy.write_text(
-            json.dumps(
-                {
-                    "version": 1,
-                    "workflows": {
-                        path.as_posix(): {
-                            "policy_version": 1,
-                            "workflow_permissions": {"contents": "read"},
-                            "jobs": jobs or {"audit": {"policy_version": 1}},
-                        }
-                    },
-                }
-            ),
-            encoding="utf-8",
-        )
+        policy.write_text(json.dumps({"version": 1, "workflows": {path.as_posix(): {"policy_version": 1, "workflow_permissions": {"contents": "read"}, "jobs": jobs or {"audit": {"policy_version": 1}}}}}), encoding="utf-8")
         return workflows, policy, path
 
     def mutate_policy(self, policy: Path, mutation):
@@ -44,7 +30,6 @@ class WorkflowPermissionsTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, pattern):
             run(workflows, policy)
 
-    # Positive regression coverage
     def test_read_only_workflow_passes(self):
         workflows, policy, _ = self.fixture()
         self.assertEqual(len(run(workflows, policy)), 1)
@@ -59,7 +44,6 @@ class WorkflowPermissionsTests(unittest.TestCase):
         workflows, policy, _ = self.fixture(VALID.replace("permissions:\n  contents: read", "permissions: {contents: read}"))
         self.assertEqual(len(run(workflows, policy)), 1)
 
-    # Bypass coverage
     def test_write_all_blocked(self):
         self.assertBlocked(VALID.replace("permissions:\n  contents: read", "permissions: write-all"), "scalar permissions")
 
@@ -67,23 +51,14 @@ class WorkflowPermissionsTests(unittest.TestCase):
         self.assertBlocked(VALID.replace("permissions:\n  contents: read", "permissions: read-all"), "scalar permissions")
 
     def test_duplicate_workflow_permission_keys_blocked(self):
-        self.assertBlocked(
-            VALID.replace("permissions:\n  contents: read", "permissions:\n  contents: read\npermissions:\n  contents: write"),
-            "duplicate YAML key",
-        )
+        self.assertBlocked(VALID.replace("permissions:\n  contents: read", "permissions:\n  contents: read\npermissions:\n  contents: write"), "duplicate YAML key")
 
     def test_duplicate_nested_job_permission_keys_blocked(self):
-        workflow = VALID.replace(
-            "runs-on:",
-            "permissions:\n      contents: read\n    permissions:\n      contents: write\n    runs-on:",
-        )
+        workflow = VALID.replace("runs-on:", "permissions:\n      contents: read\n    permissions:\n      contents: write\n    runs-on:")
         self.assertBlocked(workflow, "duplicate YAML key")
 
     def test_aliases_and_anchors_blocked(self):
-        self.assertBlocked(
-            "name: test\non: push\npermissions: &p\n  contents: read\njobs:\n  audit:\n    permissions: *p\n    runs-on: ubuntu-latest\n    steps: []\n",
-            "anchors|aliases",
-        )
+        self.assertBlocked("name: test\non: push\npermissions: &p\n  contents: read\njobs:\n  audit:\n    permissions: *p\n    runs-on: ubuntu-latest\n    steps: []\n", "anchors|aliases")
 
     def test_unused_anchor_blocked(self):
         self.assertBlocked(VALID.replace("name: test", "name: &n test"), "anchors")
@@ -106,7 +81,7 @@ class WorkflowPermissionsTests(unittest.TestCase):
     def test_job_escalation_blocked(self):
         workflow = VALID.replace("runs-on:", "permissions:\n      contents: write\n    runs-on:")
         jobs = {"audit": {"policy_version": 1, "permissions": {"contents": "write"}, "write_justification": "mutation"}}
-        self.assertBlocked(workflow, "widens")
+        self.assertBlocked(workflow, "widens", jobs=jobs)
 
     def test_new_workflow_without_policy_blocked(self):
         workflows, policy, _ = self.fixture()
@@ -130,7 +105,6 @@ class WorkflowPermissionsTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "job inventory differs"):
             run(workflows, policy)
 
-    # Mutation coverage
     def test_policy_version_mutation_blocked(self):
         workflows, policy, _ = self.fixture()
         self.mutate_policy(policy, lambda data: data.__setitem__("version", 2))
