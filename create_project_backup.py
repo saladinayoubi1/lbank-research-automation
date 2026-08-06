@@ -5,7 +5,9 @@ import argparse
 import hashlib
 import json
 import os
+import shutil
 import subprocess
+import tempfile
 import zipfile
 from datetime import datetime
 from pathlib import Path, PurePosixPath
@@ -74,8 +76,10 @@ def create_backup(label: str | None = None) -> tuple[Path, Path]:
 
 
 def _safe_member_name(name: str) -> str:
+    if not name or "\\" in name or "\x00" in name:
+        raise ValueError(f"unsafe archive member: {name!r}")
     path = PurePosixPath(name)
-    if path.is_absolute() or ".." in path.parts or not path.parts:
+    if path.is_absolute() or ".." in path.parts or any(part in {"", "."} for part in path.parts):
         raise ValueError(f"unsafe archive member: {name!r}")
     return path.as_posix()
 
@@ -84,48 +88,69 @@ def verify_backup(archive: Path, checksum_path: Path) -> dict[str, object]:
     expected_line = checksum_path.read_text(encoding="utf-8").strip().split()
     if len(expected_line) != 2 or expected_line[1] != archive.name:
         raise ValueError("invalid checksum file format or archive name")
-    if sha256(archive) != expected_line[0].lower():
+    expected_digest = expected_line[0].lower()
+    if len(expected_digest) != 64 or any(ch not in "0123456789abcdef" for ch in expected_digest):
+        raise ValueError("invalid checksum digest")
+    if sha256(archive) != expected_digest:
         raise ValueError("backup checksum mismatch")
 
     with zipfile.ZipFile(archive, "r") as source:
         bad_member = source.testzip()
         if bad_member is not None:
             raise ValueError(f"corrupt archive member: {bad_member}")
-        names = source.namelist()
+        members = source.infolist()
+        names = [member.filename for member in members]
         if len(names) != len(set(names)):
             raise ValueError("duplicate archive member")
         safe_names = [_safe_member_name(name) for name in names]
+        if any(member.is_dir() for member in members):
+            raise ValueError("directory archive members are not supported")
         if MANIFEST_NAME not in safe_names:
             raise ValueError("backup manifest missing")
-        manifest = json.loads(source.read(MANIFEST_NAME).decode("utf-8"))
+        try:
+            manifest = json.loads(source.read(MANIFEST_NAME).decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise ValueError("invalid backup manifest") from exc
 
+    if not isinstance(manifest, dict):
+        raise ValueError("backup manifest must be an object")
     files = manifest.get("files")
     if not isinstance(files, list) or any(not isinstance(item, str) for item in files):
         raise ValueError("backup manifest files must be a string list")
+    safe_manifest_files = [_safe_member_name(item) for item in files]
     if len(files) != manifest.get("file_count"):
         raise ValueError("backup manifest file_count mismatch")
-    if len(files) != len(set(files)):
+    if len(safe_manifest_files) != len(set(safe_manifest_files)):
         raise ValueError("backup manifest contains duplicate files")
-    if set(files) != set(safe_names) - {MANIFEST_NAME}:
+    if set(safe_manifest_files) != set(safe_names) - {MANIFEST_NAME}:
         raise ValueError("backup manifest does not match archive contents")
     return manifest
 
 
 def restore_backup(archive: Path, checksum_path: Path, destination: Path) -> dict[str, object]:
     manifest = verify_backup(archive, checksum_path)
-    destination.mkdir(parents=True, exist_ok=True)
-    if any(destination.iterdir()):
-        raise ValueError("restore destination must be empty")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if destination.exists() and (not destination.is_dir() or any(destination.iterdir())):
+        raise ValueError("restore destination must be an empty directory or absent")
 
-    with zipfile.ZipFile(archive, "r") as source:
-        for member in source.infolist():
-            name = _safe_member_name(member.filename)
-            if name == MANIFEST_NAME:
-                continue
-            target = destination / Path(*PurePosixPath(name).parts)
-            target.parent.mkdir(parents=True, exist_ok=True)
-            with source.open(member, "r") as src, target.open("wb") as dst:
-                dst.write(src.read())
+    staging = Path(tempfile.mkdtemp(prefix=f".{destination.name}.restore-", dir=destination.parent))
+    try:
+        with zipfile.ZipFile(archive, "r") as source:
+            for member in source.infolist():
+                name = _safe_member_name(member.filename)
+                if name == MANIFEST_NAME:
+                    continue
+                target = staging / Path(*PurePosixPath(name).parts)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                with source.open(member, "r") as src, target.open("xb") as dst:
+                    shutil.copyfileobj(src, dst, length=1024 * 1024)
+
+        if destination.exists():
+            destination.rmdir()
+        os.replace(staging, destination)
+    except Exception:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
     return manifest
 
 
