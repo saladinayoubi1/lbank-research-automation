@@ -84,7 +84,7 @@ def validate_contract_registry(payload: Any) -> None:
         if contract.get("contract_version") != "1.0.0":
             raise ContractValidationError(f"modules.{name}.contract_version must be 1.0.0")
         if not isinstance(contract.get("failure_mode"), str) and name not in {
-            "regime_detector", "decision_engine", "deterministic_risk_engine"
+            "decision_engine", "deterministic_risk_engine", "dashboard_api_adapter"
         }:
             raise ContractValidationError(f"modules.{name}.failure_mode is required")
 
