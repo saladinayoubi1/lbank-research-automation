@@ -1,4 +1,4 @@
-"""Prepare local integration reports and launch the browser dashboard."""
+"""Prepare local reports and launch the browser dashboard."""
 from __future__ import annotations
 
 import json
@@ -14,6 +14,9 @@ LEGACY_INTEGRATION_ROOT = ROOT / "integrations"
 RESEARCH_REPORT = INTEGRATION_ROOT / "research_evidence_summary.json"
 ZOTERO_REPORT = INTEGRATION_ROOT / "zotero_metadata_report_v2.json"
 REFERENCE_JSON = ROOT / "references" / "crypto-fx-library.json"
+BACKFILL_STATUS = DATA_ROOT / "_backfill_status.csv"
+READINESS_JSON = DATA_ROOT / "_data_readiness.json"
+READINESS_CSV = DATA_ROOT / "_data_readiness.csv"
 
 
 def ensure_research_report() -> None:
@@ -57,6 +60,23 @@ def ensure_zotero_report() -> None:
     ZOTERO_REPORT.write_text(result.stdout, encoding="utf-8")
 
 
+def ensure_readiness_reports() -> None:
+    if not BACKFILL_STATUS.exists():
+        raise FileNotFoundError(f"Missing readiness source: {BACKFILL_STATUS}")
+    subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "data_readiness.py"),
+            "--status-path",
+            str(BACKFILL_STATUS),
+        ],
+        cwd=ROOT,
+        check=True,
+    )
+    if not READINESS_JSON.exists() or not READINESS_CSV.exists():
+        raise FileNotFoundError("Readiness reports were not generated")
+
+
 def main() -> None:
     INTEGRATION_ROOT.mkdir(parents=True, exist_ok=True)
     if LEGACY_INTEGRATION_ROOT.exists():
@@ -65,14 +85,25 @@ def main() -> None:
             target = INTEGRATION_ROOT / name
             if source.exists() and not target.exists():
                 shutil.copy2(source, target)
+
     ensure_research_report()
     ensure_zotero_report()
+    ensure_readiness_reports()
+
     print("Reports ready:")
+    print(f"  {READINESS_JSON}")
+    print(f"  {READINESS_CSV}")
     print(f"  {RESEARCH_REPORT}")
     print(f"  {ZOTERO_REPORT}")
-    print("Opening dashboard on http://127.0.0.1:8000")
+    print("Dashboard available at http://127.0.0.1:8000")
+
     subprocess.run(
-        [sys.executable, str(ROOT / "web_ui_server.py"), "--data-root", str(DATA_ROOT)],
+        [
+            sys.executable,
+            str(ROOT / "web_ui_server.py"),
+            "--data-root",
+            str(DATA_ROOT),
+        ],
         cwd=ROOT,
         check=True,
     )
