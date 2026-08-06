@@ -1,13 +1,9 @@
 #!/usr/bin/env python3
-"""Fail-closed validation for disaster-recovery exercise evidence.
-
-This module validates supplied, offline evidence only. It does not create backups,
-credentials, recovery infrastructure, production authorization, or a claim that
-an organization is disaster-recovery ready.
-"""
+"""Fail-closed validation for bounded disaster-recovery exercise evidence."""
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from datetime import datetime, timezone
@@ -34,14 +30,22 @@ def fail(message: str) -> None:
 
 
 def load_json(path: Path) -> Any:
-    if not path.is_file():
-        fail(f"missing evidence file: {path.name}")
+    if not path.is_file() or path.is_symlink():
+        fail(f"missing or unsafe evidence file: {path.name}")
     if path.stat().st_size > MAX_EVIDENCE_BYTES:
         fail("evidence file exceeds maximum size")
     try:
         return json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
         fail(f"invalid JSON: {exc.msg}")
+
+
+def sha256(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
 
 
 def require_bool(obj: dict[str, Any], key: str) -> None:
@@ -60,30 +64,54 @@ def parse_utc(value: Any, key: str) -> datetime:
     if not isinstance(value, str) or not value.endswith("Z"):
         fail(f"{key} must be a UTC timestamp ending in Z")
     try:
-        parsed = datetime.fromisoformat(value[:-1] + "+00:00")
+        return datetime.fromisoformat(value[:-1] + "+00:00").astimezone(timezone.utc)
     except ValueError:
         fail(f"{key} must be a valid UTC timestamp")
-    return parsed.astimezone(timezone.utc)
 
 
-def validate_evidence_ref(value: Any) -> None:
+def safe_relative_path(value: Any) -> PurePosixPath:
     if not isinstance(value, str) or not value.strip():
         fail("scenario evidence_ref is required")
     if "\\" in value:
         fail("scenario evidence_ref must use canonical forward slashes")
     ref = PurePosixPath(value)
-    if ref.is_absolute() or ".." in ref.parts or "." in ref.parts:
+    if ref.is_absolute() or ".." in ref.parts or "." in ref.parts or str(ref) != value:
         fail("scenario evidence_ref must be a safe canonical relative path")
-    if str(ref) != value or value.startswith("/"):
-        fail("scenario evidence_ref must be a safe canonical relative path")
+    return ref
+
+
+def verify_scenario_evidence(root: Path, exercise_id: str, scenario: dict[str, Any]) -> None:
+    ref = safe_relative_path(scenario.get("evidence_ref"))
+    expected = scenario.get("evidence_sha256")
+    if not isinstance(expected, str) or len(expected) != 64 or any(c not in "0123456789abcdef" for c in expected):
+        fail("scenario evidence_sha256 must be lowercase SHA-256")
+    candidate = root.joinpath(*ref.parts)
+    if not candidate.is_file() or candidate.is_symlink():
+        fail("scenario evidence artifact is missing or unsafe")
+    try:
+        candidate.resolve(strict=True).relative_to(root.resolve(strict=True))
+    except (OSError, ValueError):
+        fail("scenario evidence artifact escapes evidence root")
+    if candidate.stat().st_size > MAX_EVIDENCE_BYTES:
+        fail("scenario evidence artifact exceeds maximum size")
+    if sha256(candidate) != expected:
+        fail("scenario evidence digest mismatch")
+    record = load_json(candidate)
+    if not isinstance(record, dict):
+        fail("scenario evidence artifact must be an object")
+    if record.get("exercise_id") != exercise_id:
+        fail("scenario evidence exercise mismatch")
+    if record.get("scenario") != scenario.get("name"):
+        fail("scenario evidence name mismatch")
+    require_bool(record, "observed")
+    require_bool(record, "recovery_verified")
 
 
 def validate(evidence_path: Path, *, now: datetime | None = None) -> list[str]:
     evidence = load_json(evidence_path)
     if not isinstance(evidence, dict):
         fail("evidence root must be an object")
-
-    if evidence.get("schema_version") != 1:
+    if evidence.get("schema_version") != 2:
         fail("unsupported schema_version")
     if evidence.get("production_authorized") is not False:
         fail("production_authorized must be explicitly false")
@@ -93,6 +121,15 @@ def validate(evidence_path: Path, *, now: datetime | None = None) -> list[str]:
     exercise_id = evidence.get("exercise_id")
     if not isinstance(exercise_id, str) or not exercise_id.strip():
         fail("exercise_id is required")
+    source_commit = evidence.get("source_commit")
+    workflow_run_id = evidence.get("workflow_run_id")
+    policy_version = evidence.get("policy_version")
+    if not isinstance(source_commit, str) or len(source_commit) != 40 or any(c not in "0123456789abcdef" for c in source_commit):
+        fail("source_commit must be lowercase 40-character SHA")
+    if not isinstance(workflow_run_id, int) or workflow_run_id <= 0:
+        fail("workflow_run_id must be a positive integer")
+    if policy_version != "ADR-0013-v1":
+        fail("unsupported policy_version")
 
     started = parse_utc(evidence.get("started_at"), "started_at")
     completed = parse_utc(evidence.get("completed_at"), "completed_at")
@@ -107,29 +144,18 @@ def validate(evidence_path: Path, *, now: datetime | None = None) -> list[str]:
     objectives = evidence.get("objectives")
     if not isinstance(objectives, dict):
         fail("objectives must be an object")
-    target_rpo = require_positive_number(objectives, "target_rpo_minutes")
-    target_rto = require_positive_number(objectives, "target_rto_minutes")
-    measured_rpo = require_positive_number(objectives, "measured_rpo_minutes")
-    measured_rto = require_positive_number(objectives, "measured_rto_minutes")
-    if measured_rpo > target_rpo:
+    if require_positive_number(objectives, "measured_rpo_minutes") > require_positive_number(objectives, "target_rpo_minutes"):
         fail("measured RPO exceeds target")
-    if measured_rto > target_rto:
+    if require_positive_number(objectives, "measured_rto_minutes") > require_positive_number(objectives, "target_rto_minutes"):
         fail("measured RTO exceeds target")
 
-    require_bool(evidence, "clean_environment")
-    require_bool(evidence, "independent_backup_source")
-    require_bool(evidence, "target_side_verification")
-    require_bool(evidence, "rollback_tested")
-    require_bool(evidence, "restore_tested")
-    require_bool(evidence, "corruption_rejected")
-    require_bool(evidence, "missing_backup_rejected")
-    require_bool(evidence, "runbook_followed")
-    require_bool(evidence, "audit_log_preserved")
+    for key in ("clean_environment", "independent_backup_source", "target_side_verification", "rollback_tested", "restore_tested", "corruption_rejected", "missing_backup_rejected", "runbook_followed", "audit_log_preserved"):
+        require_bool(evidence, key)
 
     owners = evidence.get("owners")
     if not isinstance(owners, dict):
         fail("owners must be an object")
-    owner_values: list[str] = []
+    owner_values = []
     for key in REQUIRED_OWNER_KEYS:
         value = owners.get(key)
         if not isinstance(value, str) or not value.strip():
@@ -154,25 +180,14 @@ def validate(evidence_path: Path, *, now: datetime | None = None) -> list[str]:
         require_bool(scenario, "executed")
         require_bool(scenario, "expected_failure_observed")
         require_bool(scenario, "recovery_verified")
-        validate_evidence_ref(scenario.get("evidence_ref"))
+        verify_scenario_evidence(evidence_path.parent, exercise_id, scenario)
     missing = REQUIRED_SCENARIOS - seen
     if missing:
         fail("missing required disaster scenarios: " + ",".join(sorted(missing)))
-
     if evidence.get("open_critical_findings") not in (0, 0.0):
         fail("open_critical_findings must be zero")
 
-    return [
-        "freshness",
-        "rpo-rto",
-        "restore",
-        "rollback",
-        "negative-drills",
-        "separation-of-duties",
-        "scenario-coverage",
-        "evidence-reference-safety",
-        "production-deny",
-    ]
+    return ["freshness", "rpo-rto", "restore", "rollback", "negative-drills", "separation-of-duties", "scenario-coverage", "evidence-artifact-binding", "source-workflow-binding", "production-deny"]
 
 
 def main() -> int:

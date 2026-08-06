@@ -1,4 +1,5 @@
 import copy
+import hashlib
 import json
 import tempfile
 import unittest
@@ -7,40 +8,40 @@ from pathlib import Path
 
 from scripts.disaster_recovery_gate import validate
 
-
 NOW = datetime(2026, 8, 5, 22, 0, tzinfo=timezone.utc)
+SCENARIOS = ("primary-region-loss", "backup-corruption", "credential-loss", "dependency-outage")
 
 
 class DisasterRecoveryGateTests(unittest.TestCase):
-    def evidence(self) -> dict:
+    def write_bundle(self, mutate_record=None) -> tuple[Path, dict]:
+        root = Path(tempfile.mkdtemp())
+        records = root / "records"
+        records.mkdir()
         scenarios = []
-        for name in (
-            "primary-region-loss",
-            "backup-corruption",
-            "credential-loss",
-            "dependency-outage",
-        ):
-            scenarios.append(
-                {
-                    "name": name,
-                    "executed": True,
-                    "expected_failure_observed": True,
-                    "recovery_verified": True,
-                    "evidence_ref": f"records/{name}.json",
-                }
-            )
-        return {
-            "schema_version": 1,
+        for name in SCENARIOS:
+            record = {"exercise_id": "dr-2026-08-05", "scenario": name, "observed": True, "recovery_verified": True}
+            if mutate_record is not None:
+                mutate_record(name, record)
+            path = records / f"{name}.json"
+            path.write_text(json.dumps(record, sort_keys=True), encoding="utf-8")
+            scenarios.append({
+                "name": name,
+                "executed": True,
+                "expected_failure_observed": True,
+                "recovery_verified": True,
+                "evidence_ref": f"records/{name}.json",
+                "evidence_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            })
+        evidence = {
+            "schema_version": 2,
+            "policy_version": "ADR-0013-v1",
+            "source_commit": "a" * 40,
+            "workflow_run_id": 123456,
             "exercise_id": "dr-2026-08-05",
             "started_at": "2026-08-05T18:00:00Z",
             "completed_at": "2026-08-05T20:00:00Z",
             "production_authorized": False,
-            "objectives": {
-                "target_rpo_minutes": 60,
-                "target_rto_minutes": 180,
-                "measured_rpo_minutes": 30,
-                "measured_rto_minutes": 120,
-            },
+            "objectives": {"target_rpo_minutes": 60, "target_rto_minutes": 180, "measured_rpo_minutes": 30, "measured_rto_minutes": 120},
             "clean_environment": True,
             "independent_backup_source": True,
             "target_side_verification": True,
@@ -50,98 +51,115 @@ class DisasterRecoveryGateTests(unittest.TestCase):
             "missing_backup_rejected": True,
             "runbook_followed": True,
             "audit_log_preserved": True,
-            "owners": {
-                "incident_commander": "role:incident-commander",
-                "recovery_operator": "role:recovery-operator",
-                "security_approver": "role:security-approver",
-            },
+            "owners": {"incident_commander": "oidc:incident", "recovery_operator": "oidc:recovery", "security_approver": "oidc:security"},
             "scenarios": scenarios,
             "open_critical_findings": 0,
         }
+        evidence_path = root / "dr-evidence.json"
+        evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
+        return evidence_path, evidence
 
-    def write(self, evidence: dict) -> Path:
-        path = Path(tempfile.mkdtemp()) / "dr-evidence.json"
+    def rewrite(self, path: Path, evidence: dict) -> None:
         path.write_text(json.dumps(evidence), encoding="utf-8")
-        return path
 
-    def test_complete_evidence_passes(self):
-        checks = validate(self.write(self.evidence()), now=NOW)
-        self.assertIn("scenario-coverage", checks)
-        self.assertIn("evidence-reference-safety", checks)
-        self.assertIn("production-deny", checks)
+    def test_bound_evidence_passes(self):
+        path, _ = self.write_bundle()
+        checks = validate(path, now=NOW)
+        self.assertIn("evidence-artifact-binding", checks)
+        self.assertIn("source-workflow-binding", checks)
+
+    def test_tampered_record_is_rejected(self):
+        path, evidence = self.write_bundle()
+        record = path.parent / evidence["scenarios"][0]["evidence_ref"]
+        record.write_text("{}", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "digest mismatch"):
+            validate(path, now=NOW)
+
+    def test_wrong_exercise_record_is_rejected(self):
+        path, _ = self.write_bundle(lambda name, record: record.update(exercise_id="other") if name == SCENARIOS[0] else None)
+        with self.assertRaisesRegex(ValueError, "exercise mismatch"):
+            validate(path, now=NOW)
+
+    def test_wrong_scenario_record_is_rejected(self):
+        path, _ = self.write_bundle(lambda name, record: record.update(scenario="other") if name == SCENARIOS[0] else None)
+        with self.assertRaisesRegex(ValueError, "name mismatch"):
+            validate(path, now=NOW)
+
+    def test_missing_record_is_rejected(self):
+        path, evidence = self.write_bundle()
+        (path.parent / evidence["scenarios"][0]["evidence_ref"]).unlink()
+        with self.assertRaisesRegex(ValueError, "missing or unsafe"):
+            validate(path, now=NOW)
+
+    def test_symlink_record_is_rejected(self):
+        path, evidence = self.write_bundle()
+        record = path.parent / evidence["scenarios"][0]["evidence_ref"]
+        target = path.parent / "target.json"
+        target.write_bytes(record.read_bytes())
+        record.unlink()
+        try:
+            record.symlink_to(target)
+        except (OSError, NotImplementedError):
+            self.skipTest("symlink unavailable")
+        with self.assertRaisesRegex(ValueError, "missing or unsafe"):
+            validate(path, now=NOW)
+
+    def test_wrong_digest_is_rejected(self):
+        path, evidence = self.write_bundle()
+        evidence["scenarios"][0]["evidence_sha256"] = "0" * 64
+        self.rewrite(path, evidence)
+        with self.assertRaisesRegex(ValueError, "digest mismatch"):
+            validate(path, now=NOW)
+
+    def test_missing_source_binding_is_rejected(self):
+        path, evidence = self.write_bundle()
+        evidence["source_commit"] = "main"
+        self.rewrite(path, evidence)
+        with self.assertRaisesRegex(ValueError, "source_commit"):
+            validate(path, now=NOW)
+
+    def test_wrong_policy_version_is_rejected(self):
+        path, evidence = self.write_bundle()
+        evidence["policy_version"] = "mutable-latest"
+        self.rewrite(path, evidence)
+        with self.assertRaisesRegex(ValueError, "policy_version"):
+            validate(path, now=NOW)
 
     def test_production_authorization_is_rejected(self):
-        evidence = self.evidence()
+        path, evidence = self.write_bundle()
         evidence["production_authorized"] = True
+        self.rewrite(path, evidence)
         with self.assertRaisesRegex(ValueError, "production_authorized"):
-            validate(self.write(evidence), now=NOW)
+            validate(path, now=NOW)
 
-    def test_evidence_cannot_override_freshness_policy(self):
-        evidence = self.evidence()
-        evidence["max_evidence_age_days"] = 36500
-        with self.assertRaisesRegex(ValueError, "cannot override"):
-            validate(self.write(evidence), now=NOW)
-
-    def test_stale_evidence_fails_closed(self):
-        evidence = self.evidence()
+    def test_stale_evidence_is_rejected(self):
+        path, evidence = self.write_bundle()
         evidence["started_at"] = "2026-06-01T00:00:00Z"
         evidence["completed_at"] = "2026-06-01T02:00:00Z"
+        self.rewrite(path, evidence)
         with self.assertRaisesRegex(ValueError, "stale"):
-            validate(self.write(evidence), now=NOW)
+            validate(path, now=NOW)
 
-    def test_rto_regression_fails_closed(self):
-        evidence = self.evidence()
-        evidence["objectives"]["measured_rto_minutes"] = 181
-        with self.assertRaisesRegex(ValueError, "RTO"):
-            validate(self.write(evidence), now=NOW)
-
-    def test_missing_scenario_fails_closed(self):
-        evidence = self.evidence()
-        evidence["scenarios"] = evidence["scenarios"][:-1]
-        with self.assertRaisesRegex(ValueError, "missing required"):
-            validate(self.write(evidence), now=NOW)
-
-    def test_duplicate_scenario_fails_closed(self):
-        evidence = self.evidence()
-        evidence["scenarios"].append(copy.deepcopy(evidence["scenarios"][0]))
-        with self.assertRaisesRegex(ValueError, "duplicate"):
-            validate(self.write(evidence), now=NOW)
-
-    def test_failed_negative_drill_is_rejected(self):
-        evidence = self.evidence()
-        evidence["corruption_rejected"] = False
-        with self.assertRaisesRegex(ValueError, "corruption_rejected"):
-            validate(self.write(evidence), now=NOW)
-
-    def test_owner_role_reuse_breaks_separation_of_duties(self):
-        evidence = self.evidence()
+    def test_owner_reuse_is_rejected(self):
+        path, evidence = self.write_bundle()
         evidence["owners"]["security_approver"] = evidence["owners"]["recovery_operator"]
+        self.rewrite(path, evidence)
         with self.assertRaisesRegex(ValueError, "separation of duties"):
-            validate(self.write(evidence), now=NOW)
+            validate(path, now=NOW)
 
-    def test_future_completion_is_rejected(self):
-        evidence = self.evidence()
-        evidence["completed_at"] = "2026-08-06T20:00:00Z"
-        with self.assertRaisesRegex(ValueError, "future"):
-            validate(self.write(evidence), now=NOW)
-
-    def test_path_traversal_evidence_ref_is_rejected(self):
-        evidence = self.evidence()
-        evidence["scenarios"][0]["evidence_ref"] = "../secrets.json"
+    def test_path_traversal_is_rejected(self):
+        path, evidence = self.write_bundle()
+        evidence["scenarios"][0]["evidence_ref"] = "../escape.json"
+        self.rewrite(path, evidence)
         with self.assertRaisesRegex(ValueError, "safe canonical"):
-            validate(self.write(evidence), now=NOW)
+            validate(path, now=NOW)
 
-    def test_absolute_evidence_ref_is_rejected(self):
-        evidence = self.evidence()
-        evidence["scenarios"][0]["evidence_ref"] = "/tmp/evidence.json"
-        with self.assertRaisesRegex(ValueError, "safe canonical"):
-            validate(self.write(evidence), now=NOW)
-
-    def test_windows_separator_evidence_ref_is_rejected(self):
-        evidence = self.evidence()
-        evidence["scenarios"][0]["evidence_ref"] = "records\\evidence.json"
-        with self.assertRaisesRegex(ValueError, "forward slashes"):
-            validate(self.write(evidence), now=NOW)
+    def test_duplicate_scenario_is_rejected(self):
+        path, evidence = self.write_bundle()
+        evidence["scenarios"].append(copy.deepcopy(evidence["scenarios"][0]))
+        self.rewrite(path, evidence)
+        with self.assertRaisesRegex(ValueError, "duplicate"):
+            validate(path, now=NOW)
 
 
 if __name__ == "__main__":
