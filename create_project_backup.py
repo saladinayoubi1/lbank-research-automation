@@ -1,4 +1,4 @@
-"""Create a compact, restorable project archive without caches or secrets."""
+"""Create, verify, and safely restore compact project backups."""
 from __future__ import annotations
 
 import argparse
@@ -8,13 +8,14 @@ import os
 import subprocess
 import zipfile
 from datetime import datetime
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parent
 BACKUP_ROOT = ROOT / "backups"
 EXCLUDED_DIRS = {".git", ".venv", "__pycache__", ".pytest_cache", "backups"}
 EXCLUDED_SUFFIXES = {".pyc", ".pyo", ".tmp", ".log"}
 EXCLUDED_NAMES = {".env", "credentials.json", "token.json"}
+MANIFEST_NAME = "BACKUP_MANIFEST.json"
 
 
 def should_include(path: Path) -> bool:
@@ -65,22 +66,102 @@ def create_backup(label: str | None = None) -> tuple[Path, Path]:
             "excluded_secret_names": sorted(EXCLUDED_NAMES),
             "files": included,
         }
-        output.writestr("BACKUP_MANIFEST.json", json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
+        output.writestr(MANIFEST_NAME, json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
 
     checksum_path = archive.with_suffix(".sha256")
     checksum_path.write_text(f"{sha256(archive)}  {archive.name}\n", encoding="utf-8")
     return archive, checksum_path
 
 
+def _safe_member_name(name: str) -> str:
+    path = PurePosixPath(name)
+    if path.is_absolute() or ".." in path.parts or not path.parts:
+        raise ValueError(f"unsafe archive member: {name!r}")
+    return path.as_posix()
+
+
+def verify_backup(archive: Path, checksum_path: Path) -> dict[str, object]:
+    expected_line = checksum_path.read_text(encoding="utf-8").strip().split()
+    if len(expected_line) != 2 or expected_line[1] != archive.name:
+        raise ValueError("invalid checksum file format or archive name")
+    if sha256(archive) != expected_line[0].lower():
+        raise ValueError("backup checksum mismatch")
+
+    with zipfile.ZipFile(archive, "r") as source:
+        bad_member = source.testzip()
+        if bad_member is not None:
+            raise ValueError(f"corrupt archive member: {bad_member}")
+        names = source.namelist()
+        if len(names) != len(set(names)):
+            raise ValueError("duplicate archive member")
+        safe_names = [_safe_member_name(name) for name in names]
+        if MANIFEST_NAME not in safe_names:
+            raise ValueError("backup manifest missing")
+        manifest = json.loads(source.read(MANIFEST_NAME).decode("utf-8"))
+
+    files = manifest.get("files")
+    if not isinstance(files, list) or any(not isinstance(item, str) for item in files):
+        raise ValueError("backup manifest files must be a string list")
+    if len(files) != manifest.get("file_count"):
+        raise ValueError("backup manifest file_count mismatch")
+    if len(files) != len(set(files)):
+        raise ValueError("backup manifest contains duplicate files")
+    if set(files) != set(safe_names) - {MANIFEST_NAME}:
+        raise ValueError("backup manifest does not match archive contents")
+    return manifest
+
+
+def restore_backup(archive: Path, checksum_path: Path, destination: Path) -> dict[str, object]:
+    manifest = verify_backup(archive, checksum_path)
+    destination.mkdir(parents=True, exist_ok=True)
+    if any(destination.iterdir()):
+        raise ValueError("restore destination must be empty")
+
+    with zipfile.ZipFile(archive, "r") as source:
+        for member in source.infolist():
+            name = _safe_member_name(member.filename)
+            if name == MANIFEST_NAME:
+                continue
+            target = destination / Path(*PurePosixPath(name).parts)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with source.open(member, "r") as src, target.open("wb") as dst:
+                dst.write(src.read())
+    return manifest
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--label")
+    subparsers = parser.add_subparsers(dest="command")
+
+    create_parser = subparsers.add_parser("create")
+    create_parser.add_argument("--label")
+
+    verify_parser = subparsers.add_parser("verify")
+    verify_parser.add_argument("archive", type=Path)
+    verify_parser.add_argument("checksum", type=Path)
+
+    restore_parser = subparsers.add_parser("restore")
+    restore_parser.add_argument("archive", type=Path)
+    restore_parser.add_argument("checksum", type=Path)
+    restore_parser.add_argument("destination", type=Path)
+
     args = parser.parse_args()
-    archive, checksum = create_backup(args.label)
-    print(f"Backup: {archive}")
-    print(f"Checksum: {checksum}")
-    print("Upload these two files to Google Drive / LBANK_PROJECT_ARCHIVE.")
-    return 0
+    command = args.command or "create"
+    if command == "create":
+        archive, checksum = create_backup(getattr(args, "label", None))
+        print(f"Backup: {archive}")
+        print(f"Checksum: {checksum}")
+        print("Upload these two files to Google Drive / LBANK_PROJECT_ARCHIVE.")
+        return 0
+    if command == "verify":
+        verify_backup(args.archive, args.checksum)
+        print("Backup verification: valid")
+        return 0
+    if command == "restore":
+        restore_backup(args.archive, args.checksum, args.destination)
+        print(f"Restore verification: valid -> {args.destination}")
+        return 0
+    raise AssertionError("unreachable")
 
 
 if __name__ == "__main__":
