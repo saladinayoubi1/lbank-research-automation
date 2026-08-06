@@ -1,21 +1,17 @@
 #!/usr/bin/env python3
-"""Offline fail-closed gates for reproducibility and rollback metadata.
-
-These checks compare two independently produced output directories and validate a
-rollback record. They do not create releases, credentials, backups, signatures,
-or production approvals.
-"""
+"""Offline fail-closed gates for reproducibility and rollback evidence."""
 from __future__ import annotations
 
 import argparse
 import hashlib
 import json
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 MAX_JSON_BYTES = 1_000_000
 EXCLUDED_NAMES = {"artifact-manifest.sig", "artifact-manifest.pem"}
+POLICY_VERSION = "ADR-0014-v1"
 
 
 def fail(message: str) -> None:
@@ -52,9 +48,7 @@ def compare_outputs(first: Path, second: Path) -> list[str]:
     left = snapshot(first)
     right = snapshot(second)
     if left.keys() != right.keys():
-        missing = sorted(left.keys() - right.keys())
-        extra = sorted(right.keys() - left.keys())
-        fail(f"reproducible-build file set mismatch missing={missing} extra={extra}")
+        fail(f"reproducible-build file set mismatch missing={sorted(left.keys()-right.keys())} extra={sorted(right.keys()-left.keys())}")
     mismatches = [name for name in left if left[name] != right[name]]
     if mismatches:
         fail("reproducible-build digest mismatch: " + ",".join(mismatches))
@@ -63,6 +57,8 @@ def compare_outputs(first: Path, second: Path) -> list[str]:
 
 def load_json(path: Path) -> Any:
     try:
+        if path.is_symlink() or not path.is_file():
+            fail(f"missing or unsafe file: {path.name}")
         if path.stat().st_size > MAX_JSON_BYTES:
             fail(f"JSON exceeds maximum size: {path.name}")
         return json.loads(path.read_text(encoding="utf-8"))
@@ -76,30 +72,67 @@ def valid_digest(value: object) -> bool:
     return isinstance(value, str) and len(value) == 64 and all(c in "0123456789abcdef" for c in value)
 
 
+def valid_commit(value: object) -> bool:
+    return isinstance(value, str) and len(value) == 40 and all(c in "0123456789abcdef" for c in value)
+
+
+def safe_evidence_path(root: Path, value: object) -> Path:
+    if not isinstance(value, str) or not value or "\\" in value:
+        fail("evidence_ref must be a canonical relative path")
+    ref = PurePosixPath(value)
+    if ref.is_absolute() or ".." in ref.parts or "." in ref.parts or str(ref) != value:
+        fail("evidence_ref must be a canonical relative path")
+    candidate = root.joinpath(*ref.parts)
+    try:
+        candidate.resolve(strict=True).relative_to(root.resolve(strict=True))
+    except (OSError, ValueError):
+        fail("evidence_ref escapes rollback record directory")
+    if candidate.is_symlink() or not candidate.is_file():
+        fail("rollback evidence is missing or unsafe")
+    return candidate
+
+
 def verify_rollback_record(path: Path) -> list[str]:
     record = load_json(path)
-    if not isinstance(record, dict):
-        fail("rollback record must be an object")
+    if not isinstance(record, dict) or record.get("schema_version") != 2:
+        fail("rollback record must use schema_version 2")
+    if record.get("policy_version") != POLICY_VERSION:
+        fail("unsupported rollback policy_version")
+    if record.get("authorized") is not False:
+        fail("rollback record must remain unauthorized until explicit production approval")
+
     current = record.get("current")
     previous = record.get("previous_valid")
     if not isinstance(current, dict) or not isinstance(previous, dict):
         fail("rollback record requires current and previous_valid objects")
     for label, item in (("current", current), ("previous_valid", previous)):
-        version = item.get("version")
-        digest = item.get("manifest_sha256")
-        if not isinstance(version, str) or not version.strip():
+        if not isinstance(item.get("version"), str) or not item["version"].strip():
             fail(f"{label} version is required")
-        if not valid_digest(digest):
+        if not valid_digest(item.get("manifest_sha256")):
             fail(f"{label} manifest_sha256 must be lowercase SHA-256")
-    if current["version"] == previous["version"]:
-        fail("rollback target must differ from current version")
-    if current["manifest_sha256"] == previous["manifest_sha256"]:
-        fail("rollback target digest must differ from current digest")
-    if record.get("authorized") is not False:
-        fail("rollback record must remain unauthorized until explicit production approval")
-    if record.get("schema_compatible") is not True:
-        fail("rollback record must explicitly assert schema compatibility")
-    return ["current", "previous-valid", "unauthorized-by-default", "schema-compatible"]
+        if not valid_commit(item.get("source_commit")):
+            fail(f"{label} source_commit must be lowercase 40-character SHA")
+        if not isinstance(item.get("workflow_run_id"), int) or item["workflow_run_id"] <= 0:
+            fail(f"{label} workflow_run_id must be a positive integer")
+    if current["version"] == previous["version"] or current["manifest_sha256"] == previous["manifest_sha256"]:
+        fail("rollback target must differ from current release")
+
+    evidence = safe_evidence_path(path.parent, record.get("evidence_ref"))
+    expected = record.get("evidence_sha256")
+    if not valid_digest(expected) or sha256(evidence) != expected:
+        fail("rollback evidence digest mismatch")
+    proof = load_json(evidence)
+    if not isinstance(proof, dict):
+        fail("rollback evidence must be an object")
+    if proof.get("policy_version") != POLICY_VERSION:
+        fail("rollback evidence policy mismatch")
+    if proof.get("current_manifest_sha256") != current["manifest_sha256"]:
+        fail("rollback evidence current manifest mismatch")
+    if proof.get("previous_manifest_sha256") != previous["manifest_sha256"]:
+        fail("rollback evidence previous manifest mismatch")
+    if proof.get("schema_test_passed") is not True or proof.get("rollback_test_passed") is not True:
+        fail("rollback evidence must record successful schema and rollback tests")
+    return ["current", "previous-valid", "source-workflow-binding", "evidence-binding", "unauthorized-by-default"]
 
 
 def main() -> int:
@@ -113,11 +146,9 @@ def main() -> int:
     args = parser.parse_args()
     try:
         if args.command == "compare-outputs":
-            files = compare_outputs(args.first, args.second)
-            print("REPRODUCIBLE_BUILD=PASS files=" + ",".join(files))
+            print("REPRODUCIBLE_BUILD=PASS files=" + ",".join(compare_outputs(args.first, args.second)))
         else:
-            checks = verify_rollback_record(args.record)
-            print("ROLLBACK_GATE=PASS checks=" + ",".join(checks))
+            print("ROLLBACK_GATE=PASS checks=" + ",".join(verify_rollback_record(args.record)))
     except ValueError as exc:
         print(f"RELEASE_RECOVERY_GATE=BLOCKED reason={exc}", file=sys.stderr)
         return 1
