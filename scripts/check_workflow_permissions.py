@@ -14,6 +14,11 @@ from yaml.events import AliasEvent, NodeEvent
 WORKFLOW_DIR = Path(".github/workflows")
 POLICY_PATH = Path("security/workflow-permissions-policy-v1.json")
 ALLOWED_LEVELS = {"read", "write", "none"}
+ALLOWED_SCOPES = {
+    "actions", "attestations", "checks", "contents", "deployments",
+    "discussions", "id-token", "issues", "models", "packages", "pages",
+    "pull-requests", "security-events", "statuses",
+}
 
 
 class UniqueKeySafeLoader(yaml.SafeLoader):
@@ -33,6 +38,25 @@ def construct_mapping(loader: UniqueKeySafeLoader, node: yaml.MappingNode, deep:
 UniqueKeySafeLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, construct_mapping)
 
 
+def reject_duplicate_json_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate policy key: {key!r}")
+        result[key] = value
+    return result
+
+
+def load_policy(path: Path) -> dict[str, Any]:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=reject_duplicate_json_keys)
+    except (json.JSONDecodeError, ValueError) as exc:
+        raise ValueError(f"unsafe or malformed policy JSON: {exc}") from exc
+    if not isinstance(data, dict):
+        raise ValueError("policy root must be a mapping")
+    return data
+
+
 def load_yaml(path: Path) -> dict[str, Any]:
     text = path.read_text(encoding="utf-8")
     try:
@@ -48,18 +72,22 @@ def load_yaml(path: Path) -> dict[str, Any]:
         raise ValueError("workflow root must be a mapping")
     if "jobs" not in data or not isinstance(data["jobs"], dict) or not data["jobs"]:
         raise ValueError("workflow jobs must be a non-empty mapping")
+    if any(not isinstance(name, str) or not name for name in data["jobs"]):
+        raise ValueError("workflow job names must be non-empty strings")
     return data
 
 
 def normalize_permissions(value: Any, where: str) -> dict[str, str]:
     if isinstance(value, str):
         raise ValueError(f"{where}: scalar permissions such as {value!r} are forbidden")
-    if not isinstance(value, dict):
-        raise ValueError(f"{where}: permissions must be an explicit mapping")
+    if not isinstance(value, dict) or not value:
+        raise ValueError(f"{where}: permissions must be a non-empty explicit mapping")
     result: dict[str, str] = {}
     for scope, level in value.items():
         if not isinstance(scope, str) or not isinstance(level, str):
             raise ValueError(f"{where}: permission scopes and levels must be strings")
+        if scope not in ALLOWED_SCOPES:
+            raise ValueError(f"{where}: unknown permission scope {scope!r}")
         if level not in ALLOWED_LEVELS:
             raise ValueError(f"{where}: invalid level {level!r} for {scope}")
         result[scope] = level
@@ -69,9 +97,11 @@ def normalize_permissions(value: Any, where: str) -> dict[str, str]:
 def validate_policy(policy: Any) -> dict[str, Any]:
     if not isinstance(policy, dict) or policy.get("version") != 1:
         raise ValueError("policy must be an object with version 1")
+    if set(policy) != {"version", "workflows"}:
+        raise ValueError("policy root contains missing or unexpected fields")
     workflows = policy.get("workflows")
-    if not isinstance(workflows, dict):
-        raise ValueError("policy workflows must be a mapping")
+    if not isinstance(workflows, dict) or not workflows:
+        raise ValueError("policy workflows must be a non-empty mapping")
     return workflows
 
 
@@ -94,14 +124,20 @@ def inventory_rule(path: Path, workflow: dict[str, Any]) -> dict[str, Any]:
 def validate_workflow(path: Path, workflow: dict[str, Any], rule: dict[str, Any]) -> None:
     if not isinstance(rule, dict) or rule.get("policy_version") != 1:
         raise ValueError(f"{path}: missing versioned workflow policy")
+    allowed_rule_fields = {"policy_version", "workflow_permissions", "jobs", "write_justification"}
+    if not set(rule).issubset(allowed_rule_fields):
+        raise ValueError(f"{path}: workflow policy contains unexpected fields")
     allowed_workflow = rule.get("workflow_permissions")
     if not isinstance(allowed_workflow, dict):
         raise ValueError(f"{path}: workflow_permissions policy must be a mapping")
     actual_workflow = normalize_permissions(workflow.get("permissions"), f"{path}: workflow")
+    allowed_workflow = normalize_permissions(allowed_workflow, f"{path}: workflow policy")
     if actual_workflow != allowed_workflow:
         raise ValueError(f"{path}: workflow permissions differ from policy")
-    if any(level == "write" for level in actual_workflow.values()) and not rule.get("write_justification"):
-        raise ValueError(f"{path}: workflow write scope lacks justification")
+    if any(level == "write" for level in actual_workflow.values()):
+        justification = rule.get("write_justification")
+        if not isinstance(justification, str) or not justification.strip():
+            raise ValueError(f"{path}: workflow write scope lacks justification")
     jobs_policy = rule.get("jobs")
     jobs = workflow["jobs"]
     if not isinstance(jobs_policy, dict) or set(jobs) != set(jobs_policy):
@@ -112,23 +148,30 @@ def validate_workflow(path: Path, workflow: dict[str, Any], rule: dict[str, Any]
         job_rule = jobs_policy[job_name]
         if not isinstance(job_rule, dict) or job_rule.get("policy_version") != 1:
             raise ValueError(f"{path}: job {job_name} lacks versioned policy")
+        allowed_job_fields = {"policy_version", "permissions", "write_justification"}
+        if not set(job_rule).issubset(allowed_job_fields):
+            raise ValueError(f"{path}: job {job_name} policy contains unexpected fields")
         if "permissions" in job:
             actual_job = normalize_permissions(job["permissions"], f"{path}: job {job_name}")
             allowed_job = job_rule.get("permissions")
-            if not isinstance(allowed_job, dict) or actual_job != allowed_job:
+            if not isinstance(allowed_job, dict):
+                raise ValueError(f"{path}: job {job_name} permissions differ from policy")
+            allowed_job = normalize_permissions(allowed_job, f"{path}: job {job_name} policy")
+            if actual_job != allowed_job:
                 raise ValueError(f"{path}: job {job_name} permissions differ from policy")
             for scope, level in actual_job.items():
                 if level == "write" and actual_workflow.get(scope, "none") != "write":
                     raise ValueError(f"{path}: job {job_name} widens {scope} to write")
-                if level == "write" and not job_rule.get("write_justification"):
-                    raise ValueError(f"{path}: job {job_name} write scope lacks justification")
+                if level == "write":
+                    justification = job_rule.get("write_justification")
+                    if not isinstance(justification, str) or not justification.strip():
+                        raise ValueError(f"{path}: job {job_name} write scope lacks justification")
         elif job_rule.get("permissions") not in (None, actual_workflow):
             raise ValueError(f"{path}: job {job_name} policy expects explicit permissions")
 
 
 def run(workflow_dir: Path = WORKFLOW_DIR, policy_path: Path = POLICY_PATH) -> list[str]:
-    policy = json.loads(policy_path.read_text(encoding="utf-8"))
-    rules = validate_policy(policy)
+    rules = validate_policy(load_policy(policy_path))
     paths = sorted([*workflow_dir.glob("*.yml"), *workflow_dir.glob("*.yaml")])
     actual = {p.as_posix() for p in paths}
     expected = set(rules)
@@ -151,7 +194,7 @@ def main() -> int:
     args = parser.parse_args()
     try:
         checked = run(args.workflow_dir, args.policy)
-    except (OSError, json.JSONDecodeError, ValueError) as exc:
+    except (OSError, ValueError) as exc:
         print(f"WORKFLOW_PERMISSIONS_GATE=BLOCKED reason={exc}", file=sys.stderr)
         return 1
     print(f"WORKFLOW_PERMISSIONS_GATE=PASS workflows={len(checked)}")
