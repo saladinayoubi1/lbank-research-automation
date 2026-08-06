@@ -97,8 +97,11 @@ def normalize_permissions(value: Any, where: str) -> dict[str, str]:
 def validate_policy(policy: Any) -> dict[str, Any]:
     if not isinstance(policy, dict) or policy.get("version") != 1:
         raise ValueError("policy must be an object with version 1")
-    if set(policy) != {"version", "workflows"}:
+    allowed_root = {"policy_name", "version", "workflows"}
+    if not set(policy).issubset(allowed_root) or not {"version", "workflows"}.issubset(policy):
         raise ValueError("policy root contains missing or unexpected fields")
+    if "policy_name" in policy and policy["policy_name"] != "ADR-0016-v1":
+        raise ValueError("unsupported policy_name")
     workflows = policy.get("workflows")
     if not isinstance(workflows, dict) or not workflows:
         raise ValueError("policy workflows must be a non-empty mapping")
