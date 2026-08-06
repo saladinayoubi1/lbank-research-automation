@@ -1,5 +1,6 @@
 {
   "version": 1,
+  "policy_name": "ADR-0016-v1",
   "workflows": {
     ".github/workflows/workflow-permissions-audit.yml": {
       "policy_version": 1,
