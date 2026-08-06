@@ -1,0 +1,293 @@
+registry_version: 1.0.0
+status: proposed
+scope: research_and_paper_trading_only
+issue: 94
+
+rules:
+  dependency_direction: adapters_to_domain
+  unknown_protected_contract_fields: reject
+  persisted_accounting_numeric_type: decimal
+  persisted_timestamp_timezone: UTC
+  live_execution: prohibited
+  private_credentials: prohibited
+  llm_final_authority: prohibited
+  failed_candidate_replaces_previous_valid: false
+
+modules:
+  market_core:
+    contract_version: 1.0.0
+    owns:
+      - canonical_market_identifiers
+      - candle_and_market_event_types
+      - timestamp_and_decimal_rules
+      - market_validation_primitives
+    accepts:
+      - versioned_market_data_contract
+    emits:
+      - validated_market_domain_object
+      - deterministic_rejection
+    may_depend_on:
+      - pure_domain_utilities
+    must_not_depend_on:
+      - crypto_adapter
+      - forex_adapter
+      - dashboard_api_adapter
+      - llm_or_agent_client
+      - exchange_or_broker_sdk
+      - persistence_implementation
+    failure_mode: fail_closed_preserve_previous_valid
+
+  crypto_adapter:
+    contract_version: 1.0.0
+    owns:
+      - crypto_symbol_translation
+      - venue_public_market_semantics
+      - funding_and_perpetual_metadata_translation
+    accepts:
+      - public_crypto_market_payload
+    emits:
+      - versioned_market_data_contract
+      - deterministic_rejection
+    may_depend_on:
+      - market_core_public_contracts
+    must_not_emit:
+      - credential
+      - private_endpoint_command
+      - live_order_command
+      - withdrawal_command
+    failure_mode: quarantine_invalid_payload
+
+  forex_adapter:
+    contract_version: 1.0.0
+    owns:
+      - fx_symbol_translation
+      - quote_and_pip_conventions
+      - session_and_rollover_translation
+    accepts:
+      - public_fx_market_payload
+    emits:
+      - versioned_market_data_contract
+      - deterministic_rejection
+    may_depend_on:
+      - market_core_public_contracts
+    must_not_emit:
+      - credential
+      - private_endpoint_command
+      - live_order_command
+      - withdrawal_command
+    failure_mode: quarantine_invalid_payload
+
+  research_lab:
+    contract_version: 1.0.0
+    owns:
+      - dataset_qualification
+      - experiment_registration
+      - evidence_and_benchmark_packages
+      - reproducibility_metadata
+    accepts:
+      - validated_market_domain_object
+      - bounded_versioned_evidence
+    emits:
+      - versioned_research_package
+      - deterministic_rejection
+    promotion_authority: research_only
+    failure_mode: block_invalid_or_unqualified_evidence
+
+  strategy_lab:
+    contract_version: 1.0.0
+    owns:
+      - strategy_hypothesis
+      - feature_and_parameter_versions
+      - cost_and_slippage_assumptions
+      - walk_forward_and_out_of_sample_evaluation
+      - sensitivity_and_regime_breakdown
+      - drawdown_failure_modes_and_stop_criteria
+    accepts:
+      - versioned_research_package
+      - validated_market_domain_object
+    emits:
+      - versioned_strategy_candidate
+      - deterministic_rejection
+    promotion_path:
+      - research
+      - candidate
+      - shadow_or_paper
+    forbidden_promotion:
+      - direct_to_live
+    failure_mode: remain_at_current_promotion_state
+
+  regime_detector:
+    contract_version: 1.0.0
+    accepts:
+      - validated_market_domain_object
+      - versioned_feature_context
+    emits:
+      - versioned_regime_classification
+      - unavailable_or_conflicting_regime
+    authority: advisory
+    failure_mode: no_permissive_default
+
+  decision_engine:
+    contract_version: 1.0.0
+    accepts:
+      - versioned_strategy_candidate
+      - versioned_regime_classification
+      - portfolio_context
+      - active_policy_reference
+    emits:
+      - structured_decision_proposal
+      - deterministic_rejection
+    required_trace:
+      - strategy_version
+      - model_version_if_applicable
+      - evidence_source_trace
+      - correlation_id
+      - causation_id
+      - deterministic_input_digest
+    authority: proposal_only
+    must_not_bypass:
+      - deterministic_risk_engine
+
+  deterministic_risk_engine:
+    contract_version: 1.0.0
+    accepts:
+      - structured_decision_proposal
+      - portfolio_context
+      - versioned_risk_policy
+    emits:
+      - accepted_paper_transition
+      - rejected_paper_transition
+    final_authority_for:
+      - exposure
+      - concentration
+      - leverage
+      - drawdown
+      - stale_signal
+      - duplicate_signal
+      - session_boundary
+      - kill_switch
+      - policy_version
+    reject_on:
+      - unknown
+      - malformed
+      - stale
+      - duplicate
+      - reordered
+      - unsupported
+    llm_override: prohibited
+
+  paper_execution:
+    contract_version: 1.0.0
+    invariant:
+      paper_trading_only: true
+    accepts:
+      - accepted_paper_transition
+      - validated_market_domain_object
+    emits:
+      - versioned_paper_execution_event
+      - deterministic_rejection
+    supports:
+      - simulated_order
+      - simulated_fill
+      - fee
+      - slippage
+      - stop
+      - target
+      - reduce
+      - reverse
+      - close
+      - end_of_session
+    prohibited_fields:
+      - credential
+      - live_order
+      - withdrawal
+      - production_promotion
+      - billing
+    failure_mode: no_state_transition
+
+  portfolio_event_store:
+    contract_version: 1.0.0
+    owns:
+      - append_only_events
+      - canonical_serialization
+      - digest_chain
+      - deterministic_reducer
+      - previous_valid_state
+    accepts:
+      - versioned_paper_execution_event
+    emits:
+      - reconstructed_portfolio_state
+      - deterministic_rejection
+    reject_on:
+      - duplicate_event_id
+      - duplicate_sequence
+      - sequence_gap
+      - reordered_event
+      - digest_mismatch
+      - partial_write
+      - unknown_event_type
+    failure_mode: quarantine_candidate_preserve_previous_valid
+
+  dashboard_api_adapter:
+    contract_version: 1.0.0
+    accepts:
+      - approved_read_model
+      - versioned_application_command
+    emits:
+      - bounded_dashboard_response
+      - validated_application_command
+      - deterministic_rejection
+    may_depend_on:
+      - public_application_ports
+    must_not_directly_mutate:
+      - portfolio_event_store
+      - paper_execution
+      - deterministic_risk_engine
+    exposure_constraints:
+      - explicit_field_allowlist
+      - no_sensitive_source_data_by_default
+    external_blockers:
+      - issue_89_network_exposure
+      - issue_91_report_provenance
+
+ai_authority:
+  allowed:
+    - classify
+    - summarize
+    - propose
+    - prioritize
+    - explain
+    - produce_structured_research_artifact
+  prohibited:
+    - authorize_final_trading_decision
+    - change_risk_policy
+    - create_or_use_financial_credentials
+    - place_real_order
+    - request_withdrawal
+    - promote_strategy_directly_to_live
+    - suppress_failure_or_residual_risk
+  required_trace:
+    - model_identity_and_version
+    - prompt_or_policy_version_if_applicable
+    - source_evidence_trace
+    - input_digest
+    - output_schema_version
+    - deterministic_validation_result
+
+change_control:
+  breaking_contract_change_requires:
+    - ADR
+    - migration_plan
+    - compatibility_window
+    - rollback_plan
+    - recovery_test
+  bug_fix_requires:
+    - regression_test
+  done_requires:
+    - fixed_head_green_tests
+    - documentation_and_contract_update
+    - observability_evidence
+    - rollback_and_clean_recovery
+    - residual_risk_statement
+    - zero_unresolved_review_threads
+    - no_live_or_credential_path_confirmation
