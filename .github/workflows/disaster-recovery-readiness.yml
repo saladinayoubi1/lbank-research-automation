@@ -1,0 +1,29 @@
+name: Disaster Recovery Readiness
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/disaster_recovery_gate.py'
+      - 'tests/test_disaster_recovery_gate.py'
+      - '.github/workflows/disaster-recovery-readiness.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fail-closed-cross-platform:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ['3.12']
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Run disaster recovery gate tests
+        run: python -m unittest tests.test_disaster_recovery_gate -v
