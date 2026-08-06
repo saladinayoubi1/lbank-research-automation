@@ -1,0 +1,37 @@
+name: Workflow Permissions Policy
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+      - 'security/workflow-permissions-policy-v1.json'
+      - 'scripts/check_workflow_permissions.py'
+      - 'tests/test_workflow_permissions.py'
+      - 'docs/adr/ADR-0016-workflow-token-permissions.md'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/**'
+      - 'security/workflow-permissions-policy-v1.json'
+      - 'scripts/check_workflow_permissions.py'
+      - 'tests/test_workflow_permissions.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install safe YAML parser
+        run: python -m pip install --disable-pip-version-check 'PyYAML==6.0.2'
+      - name: Run adversarial unit tests
+        run: python -m unittest tests.test_workflow_permissions -v
+      - name: Audit complete workflow inventory
+        run: python scripts/check_workflow_permissions.py
