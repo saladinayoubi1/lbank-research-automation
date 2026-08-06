@@ -17,7 +17,7 @@ function renderSummary(summary) {
   cards.hidden = false;
 }
 
-function renderIntegrations(zotero, research) {
+function renderIntegrations(zotero = {}, research = {}) {
   document.querySelector('#zotero-items').textContent = zotero.item_count ?? 0;
   document.querySelector('#zotero-findings').textContent = zotero.finding_count ?? 0;
   document.querySelector('#zotero-status').textContent = zotero.status === 'clean' ? 'Clean' : 'Attention';
@@ -52,9 +52,12 @@ function renderSeries(rows) {
 
 async function readJson(url) {
   const response = await fetch(url, {headers: {'Accept': 'application/json'}, cache: 'no-store'});
-  if (!response.ok) throw new Error(`API unavailable (${response.status})`);
-  const payload = await response.json();
-  if (!payload || typeof payload !== 'object') throw new Error('Malformed API response');
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const detail = payload.detail || payload.error || `HTTP ${response.status}`;
+    throw new Error(`${url}: ${detail}`);
+  }
+  if (!payload || typeof payload !== 'object') throw new Error(`${url}: malformed response`);
   return payload;
 }
 
@@ -63,26 +66,41 @@ async function loadDashboard() {
   integrationCards.hidden = true;
   tbody.replaceChildren();
   showState('Loading readiness and integration reports…');
-  try {
-    const [summaryPayload, seriesPayload, zoteroPayload, researchPayload] = await Promise.all([
-      readJson('/api/readiness/summary'),
-      readJson('/api/readiness/series'),
-      readJson('/api/integrations/zotero'),
-      readJson('/api/integrations/research'),
-    ]);
-    if (!summaryPayload.summary || !Array.isArray(seriesPayload.series) || !zoteroPayload.summary || !researchPayload.summary) {
-      throw new Error('Malformed API response');
-    }
-    renderSummary(summaryPayload.summary);
-    renderIntegrations(zoteroPayload.summary, researchPayload.summary);
-    renderSeries(seriesPayload.series);
-    const stale = Boolean(researchPayload.summary.stale);
-    const kind = stale ? 'empty' : (seriesPayload.series.length ? 'success' : 'empty');
-    const message = stale ? 'Reports loaded; Research review is overdue.' : (seriesPayload.series.length ? 'Reports loaded.' : 'Reports loaded; no series found.');
-    showState(message, kind);
-  } catch (error) {
+
+  const results = await Promise.allSettled([
+    readJson('/api/readiness/summary'),
+    readJson('/api/readiness/series'),
+    readJson('/api/integrations/zotero'),
+    readJson('/api/integrations/research'),
+  ]);
+
+  const [summaryResult, seriesResult, zoteroResult, researchResult] = results;
+  const errors = [];
+
+  if (summaryResult.status === 'fulfilled' && summaryResult.value.summary) {
+    renderSummary(summaryResult.value.summary);
+  } else {
+    errors.push(summaryResult.reason?.message || 'Readiness summary unavailable');
+  }
+
+  if (seriesResult.status === 'fulfilled' && Array.isArray(seriesResult.value.series)) {
+    renderSeries(seriesResult.value.series);
+  } else {
     renderSeries([]);
-    showState(error instanceof Error ? error.message : 'Dashboard unavailable', 'error');
+    errors.push(seriesResult.reason?.message || 'Readiness series unavailable');
+  }
+
+  const zotero = zoteroResult.status === 'fulfilled' ? zoteroResult.value.summary : {};
+  const research = researchResult.status === 'fulfilled' ? researchResult.value.summary : {};
+  renderIntegrations(zotero, research);
+  if (zoteroResult.status === 'rejected') errors.push(zoteroResult.reason?.message || 'Zotero report unavailable');
+  if (researchResult.status === 'rejected') errors.push(researchResult.reason?.message || 'Research report unavailable');
+
+  if (errors.length) {
+    showState(`Loaded with warnings: ${errors.join(' | ')}`, 'error');
+  } else {
+    const stale = Boolean(research?.stale);
+    showState(stale ? 'Reports loaded; Research review is overdue.' : 'Reports loaded.', stale ? 'empty' : 'success');
   }
 }
 
