@@ -41,7 +41,7 @@ def test_current_registry_is_valid() -> None:
         (lambda p: p["modules"]["deterministic_risk_engine"].__setitem__("llm_override", "allowed"), "risk authority"),
         (lambda p: p["modules"]["dashboard_api_adapter"]["must_not_directly_mutate"].remove("portfolio_event_store"), "dashboard mutation"),
         (lambda p: p["ai_authority"]["prohibited"].remove("place_real_order"), "AI authority"),
-        (lambda p: p["change_control"]["bug_fix_requires"].remove("regression_test"), "regression"),
+        (lambda p: p["change_control"]["bug_fix_requires"].remove("regression_test"), "bug_fix_requires"),
     ],
 )
 def test_safety_mutations_fail_closed(mutate, message: str) -> None:
