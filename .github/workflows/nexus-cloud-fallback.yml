@@ -74,32 +74,13 @@ jobs:
         run: |
           mkdir -p fallback-status
           python - <<'PY'
-          import json, os
-          from datetime import datetime, timezone
+          import json
+          import os
 
-          outcomes = {
-              'install': os.getenv('INSTALL_OUTCOME', 'missing'),
-              'compile': os.getenv('COMPILE_OUTCOME', 'missing'),
-              'tests': os.getenv('TEST_OUTCOME', 'missing'),
-          }
-          checkpoint_valid = all(value == 'success' for value in outcomes.values())
-          data = {
-              'schema_version': 1,
-              'mode': 'github-actions-cloud-fallback',
-              'generated_at': datetime.now(timezone.utc).isoformat(),
-              'repository': os.getenv('GITHUB_REPOSITORY'),
-              'sha': os.getenv('GITHUB_SHA'),
-              'run_id': os.getenv('GITHUB_RUN_ID'),
-              'run_attempt': os.getenv('GITHUB_RUN_ATTEMPT'),
-              'event_name': os.getenv('GITHUB_EVENT_NAME'),
-              'checkpoint_valid': checkpoint_valid,
-              'step_outcomes': outcomes,
-              'invalid_reasons': [] if checkpoint_valid else [
-                  f'{name}:{outcome}' for name, outcome in outcomes.items() if outcome != 'success'
-              ],
-              'note': 'Cloud-side health/test checkpoint. Consumers must require checkpoint_valid=true.'
-          }
-          open('fallback-status/status.json','w',encoding='utf-8').write(json.dumps(data, indent=2))
+          from nexus_cloud_fallback_status import build_status
+
+          with open('fallback-status/status.json', 'w', encoding='utf-8') as handle:
+              json.dump(build_status(os.environ), handle, indent=2)
           PY
 
       - name: Upload fallback checkpoint
