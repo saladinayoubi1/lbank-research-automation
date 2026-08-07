@@ -1,20 +1,33 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import math
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from types import MappingProxyType
+from typing import Any, Mapping
 
 import pandas as pd
 
 DEFAULT_STATUS_PATH = Path("data/market/_backfill_status.csv")
 RESEARCH_READY_STATUSES = {"current", "backfilling"}
-DEFAULT_FRESHNESS_LIMIT_HOURS = {
-    "minute15": 1.0,
-    "hour1": 3.0,
-    "hour4": 8.0,
-}
+FRESHNESS_POLICY_VERSION = "1.0.0"
+_MAX_APPROVED_FRESHNESS_HOURS = MappingProxyType(
+    {
+        "minute15": 1.0,
+        "hour1": 3.0,
+        "hour4": 8.0,
+    }
+)
+DEFAULT_FRESHNESS_LIMIT_HOURS = MappingProxyType(
+    {
+        "minute15": 1.0,
+        "hour1": 3.0,
+        "hour4": 8.0,
+    }
+)
 REQUIRED_COLUMNS = {
     "symbol",
     "timeframe",
@@ -27,6 +40,50 @@ REQUIRED_COLUMNS = {
     "duplicate_count",
     "off_grid_count",
 }
+
+
+def _validate_freshness_policy(policy: Mapping[str, Any]) -> dict[str, float]:
+    expected_keys = set(_MAX_APPROVED_FRESHNESS_HOURS)
+    actual_keys = set(policy)
+    if actual_keys != expected_keys:
+        missing = sorted(expected_keys - actual_keys)
+        unknown = sorted(actual_keys - expected_keys)
+        raise ValueError(
+            f"freshness policy keys must match registered timeframes; missing={missing}, unknown={unknown}"
+        )
+
+    validated: dict[str, float] = {}
+    for timeframe in sorted(expected_keys):
+        raw = policy[timeframe]
+        if isinstance(raw, bool):
+            raise ValueError(f"freshness limit for {timeframe} must be a finite number")
+        try:
+            value = float(raw)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                f"freshness limit for {timeframe} must be a finite number"
+            ) from exc
+        maximum = float(_MAX_APPROVED_FRESHNESS_HOURS[timeframe])
+        if not math.isfinite(value) or not 0 < value <= maximum:
+            raise ValueError(
+                f"freshness limit for {timeframe} must be finite and within (0, {maximum}]"
+            )
+        validated[timeframe] = value
+    return validated
+
+
+_ACTIVE_FRESHNESS_LIMIT_HOURS = MappingProxyType(
+    _validate_freshness_policy(DEFAULT_FRESHNESS_LIMIT_HOURS)
+)
+_FRESHNESS_POLICY_CANONICAL = json.dumps(
+    {
+        "version": FRESHNESS_POLICY_VERSION,
+        "limits_hours": dict(_ACTIVE_FRESHNESS_LIMIT_HOURS),
+    },
+    sort_keys=True,
+    separators=(",", ":"),
+).encode("utf-8")
+FRESHNESS_POLICY_DIGEST = hashlib.sha256(_FRESHNESS_POLICY_CANONICAL).hexdigest()
 
 
 def normalize_bool(value: Any) -> bool:
@@ -68,13 +125,12 @@ def evaluate_readiness(
         raise ValueError(f"Status report is missing required columns: {joined}")
     if minimum_rows < 0:
         raise ValueError("minimum_rows must be non-negative")
-
-    limits = dict(DEFAULT_FRESHNESS_LIMIT_HOURS)
     if freshness_limits_hours is not None:
-        limits.update(freshness_limits_hours)
-    if any(float(value) <= 0 for value in limits.values()):
-        raise ValueError("freshness limits must be positive")
+        raise ValueError(
+            "runtime freshness policy overrides are not allowed; use a registered policy version"
+        )
 
+    limits = dict(_ACTIVE_FRESHNESS_LIMIT_HOURS)
     result = status_frame.copy()
     result["rows"] = pd.to_numeric(result["rows"], errors="coerce").fillna(0).astype(int)
     result["integrity_ok"] = result["integrity_ok"].map(normalize_bool)
@@ -82,10 +138,14 @@ def evaluate_readiness(
     result["timeframe"] = result["timeframe"].astype(str).str.strip().str.lower()
 
     as_of = _normalize_as_of(as_of_utc)
+    evaluated_at_utc = as_of.isoformat()
     last_candle = pd.to_datetime(result["last_candle_utc"], utc=True, errors="coerce")
     freshness_hours = (as_of - last_candle).dt.total_seconds() / 3600.0
     result["freshness_hours"] = freshness_hours.round(4)
     result["freshness_limit_hours"] = result["timeframe"].map(limits)
+    result["freshness_policy_version"] = FRESHNESS_POLICY_VERSION
+    result["freshness_policy_digest"] = FRESHNESS_POLICY_DIGEST
+    result["evaluated_at_utc"] = evaluated_at_utc
     result["freshness_ok"] = (
         last_candle.notna()
         & result["freshness_limit_hours"].notna()
@@ -149,6 +209,8 @@ def write_reports(
 
     readiness_frame.to_csv(csv_path, index=False)
 
+    evaluated_values = readiness_frame["evaluated_at_utc"].dropna().unique().tolist()
+    evaluated_at_utc = evaluated_values[0] if len(evaluated_values) == 1 else None
     lines = [
         "# LBank Data Readiness",
         "",
@@ -156,6 +218,9 @@ def write_reports(
         f"- Ready for research: {summary['ready_series']}",
         f"- Blocked: {summary['blocked_series']}",
         f"- All ready: {summary['all_ready']}",
+        f"- Evaluated at UTC: {evaluated_at_utc}",
+        f"- Freshness policy version: {FRESHNESS_POLICY_VERSION}",
+        f"- Freshness policy digest: {FRESHNESS_POLICY_DIGEST}",
         "",
         "| Symbol | Timeframe | Rows | Status | Integrity OK | Freshness h | Freshness limit h | Fresh | Missing | Gaps | Duplicates | Off-grid | Ready | Reason |",
         "|---|---|---:|---|---|---:|---:|---|---:|---:|---:|---:|---|---|",
@@ -171,6 +236,11 @@ def write_reports(
 
     payload = {
         "summary": summary,
+        "evaluated_at_utc": evaluated_at_utc,
+        "freshness_policy": {
+            "version": FRESHNESS_POLICY_VERSION,
+            "digest": FRESHNESS_POLICY_DIGEST,
+        },
         "ready_series": readiness_frame.loc[
             readiness_frame["ready_for_research"], ["symbol", "timeframe"]
         ].to_dict("records"),
