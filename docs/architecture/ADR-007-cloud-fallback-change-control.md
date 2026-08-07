@@ -1,7 +1,7 @@
 # ADR-007: NEXUS cloud-fallback workflow change control
 
-Status: Accepted
-Version: 1.0.0
+Status: Proposed
+Version: 1.1.0
 
 ## Context
 
@@ -20,6 +20,31 @@ NEXUS uses a cloud-fallback GitHub Actions workflow as an auxiliary recovery/val
 9. No workflow, agent, LLM, or auxiliary check may authorize real orders, credentials, billing, production mutation, or risk-policy changes.
 
 Semantic changes to this decision require a new ADR version and must not silently reinterpret an existing checkpoint schema.
+
+## Evidence triangulation
+
+### Official standard / authoritative guidance
+
+- NIST SP 800-218 SSDF v1.1, especially Protect Software (PS), requires protection of code/configuration-as-code from unauthorized access and tampering and supports least-privilege controls: https://csrc.nist.gov/pubs/sp/800/218/final
+- GitHub Secure Use Reference states that least privilege should be applied to workflow credentials and that pinning an action to a full-length commit SHA is the only way to use an action as an immutable release: https://docs.github.com/en/actions/reference/security/secure-use
+- GitHub documents that `workflow_run` is a privileged trigger capable of receiving write tokens/secrets even when the triggering workflow was unprivileged, and warns against processing untrusted code in this context: https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows
+
+### Independent academic evidence
+
+- Torres-Arias et al., “in-toto: Providing farm-to-table guarantees for bits and bytes,” USENIX Security 2019, demonstrates supply-chain verification based on authenticated step/layout evidence and evaluates the approach against 30 real software supply-chain compromises: https://www.usenix.org/conference/usenixsecurity19/presentation/torres-arias
+
+This supports binding recovery evidence to explicit steps and identities rather than accepting an unstructured success marker.
+
+### Implementation / incident-oriented evidence
+
+- GitHub’s workflow security documentation describes real attack classes around privileged workflow triggers, including cache poisoning and unintended write/secret access, and recommends treating restored caches and untrusted contexts as untrusted input: https://docs.github.com/en/actions/reference/security/secure-use
+- GitHub dependency-caching guidance explicitly states that cache contents are not signed or verified and that poisoned caches can lead to code execution in trusted workflows: https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching
+
+### Limitation / opposing view
+
+- Exact SHA/run binding and schema validation improve evidence integrity but do not prove that the underlying runner, dependencies, GitHub control plane, or repository rules were uncompromised.
+- A green checkpoint is not independent authorization when the same change can alter both the producer and the policy/checks that accept it. This is why Issue #106 remains fail-closed.
+- Full-length action SHA pinning improves immutability of referenced actions but does not by itself prove the pinned code is safe; source review and update governance remain necessary.
 
 ## Assets, actors, trust boundaries, and entry points
 
@@ -53,6 +78,25 @@ A checkpoint is invalid unless the consumer recognizes the exact schema and mode
 Missing, malformed, stale, future, conflicting, unsupported, or mismatched evidence is quarantined and must not replace previous-known-good evidence. Consumers must not downgrade to legacy interpretation when schema validation fails.
 
 Simultaneous workflow/policy weakening remains residual risk and cannot be promoted to independent authorization evidence until Issue #106 provides an authority outside the candidate change set plus bypass tests.
+
+## Positive, negative, and bypass verification
+
+Required positive tests:
+- a supported schema with all required step outcomes `success`, exact repository/SHA/run binding, valid offset-aware timestamp, and acceptable freshness validates;
+- a restored previous-known-good tuple validates only after rerunning required checks on one fixed rollback SHA.
+
+Required negative tests:
+- reject missing or unknown schema;
+- reject any skipped, neutral, cancelled, timed-out, malformed, or non-success required step;
+- reject stale, future, malformed, or timezone-naive timestamps when freshness is claimed;
+- reject repository, source SHA, run ID, or run-attempt mismatch;
+- reject producer/consumer disagreement over `checkpoint_valid` or invalid reasons.
+
+Required bypass tests:
+- a candidate that weakens the checkpoint producer cannot self-authorize independent control-plane trust;
+- a candidate that weakens workflow-permissions policy cannot convert the same candidate’s green run into independent authorization;
+- invalid candidate evidence must not overwrite previous-known-good state;
+- legacy/unknown evidence must not be silently reinterpreted as schema v2.
 
 ## Compatibility and schema evolution
 
