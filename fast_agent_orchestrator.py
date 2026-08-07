@@ -8,7 +8,6 @@ import subprocess
 import time
 import urllib.error
 import urllib.request
-from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -17,8 +16,8 @@ REPO = "saladinayoubi1/lbank-research-automation"
 STATE_DIR = Path("data/agent_coordination")
 STATE_FILE = STATE_DIR / "status.json"
 EVENT_FILE = STATE_DIR / "events.jsonl"
+HEARTBEAT_FILE = STATE_DIR / "local_heartbeat.json"
 DEFAULT_POLL_SECONDS = 30
-TERMINAL = {"completed", "success", "failure", "cancelled", "skipped", "timed_out", "action_required"}
 
 
 def utcnow() -> str:
@@ -91,13 +90,17 @@ def rerun_failed(run_id: int) -> tuple[bool, str]:
 def classify(run_info: dict[str, Any]) -> str:
     status = (run_info.get("status") or "").lower()
     conclusion = (run_info.get("conclusion") or "").lower()
-    if status in {"queued", "in_progress", "waiting", "pending", "requested"}:
+    if status in {"waiting", "pending", "requested"}:
+        return "WAITING"
+    if status in {"queued", "in_progress"}:
         return "RUNNING"
     if conclusion == "success":
         return "DONE"
     if conclusion in {"failure", "timed_out", "startup_failure"}:
         return "FAILED"
-    if conclusion in {"cancelled", "action_required", "stale"}:
+    if conclusion == "action_required":
+        return "WAITING"
+    if conclusion in {"cancelled", "stale"}:
         return "BLOCKED"
     return "UNKNOWN"
 
@@ -112,6 +115,7 @@ def newest_by_name(runs: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
 
 
 def inspect_once(previous: dict[str, Any], auto_retry: bool) -> dict[str, Any]:
+    checked_at = utcnow()
     try:
         runs = get_runs()
         online = True
@@ -135,7 +139,6 @@ def inspect_once(previous: dict[str, Any], auto_retry: bool) -> dict[str, Any]:
         if state != old_state:
             event("state_change", workflow=name, old=old_state, new=state, run_id=run_id)
 
-        # Retry immediately on a newly observed failure. Do not spin forever.
         already_retried_id = old.get("last_auto_retry_run_id")
         if auto_retry and state == "FAILED" and run_id and already_retried_id != run_id:
             ok, detail = rerun_failed(int(run_id))
@@ -154,21 +157,28 @@ def inspect_once(previous: dict[str, Any], auto_retry: bool) -> dict[str, Any]:
             "auto_retry": retry,
         }
 
-    return {
+    summary_states = ["RUNNING", "WAITING", "DONE", "FAILED", "BLOCKED", "UNKNOWN"]
+    heartbeat = {
         "schema_version": 1,
-        "generated_at": utcnow(),
+        "generated_at": checked_at,
+        "pid": os.getpid(),
+        "local_process_alive": True,
+        "internet_reachable": online,
+        "network_error": network_error,
+        "gh_cli_available": gh_available(),
+    }
+    atomic_json(HEARTBEAT_FILE, heartbeat)
+
+    return {
+        "schema_version": 2,
+        "generated_at": checked_at,
         "repo": REPO,
         "poll_seconds": previous.get("poll_seconds", DEFAULT_POLL_SECONDS) if isinstance(previous, dict) else DEFAULT_POLL_SECONDS,
-        "local_node": {
-            "alive": True,
-            "internet_reachable": online,
-            "network_error": network_error,
-            "gh_cli_available": gh_available(),
-        },
+        "local_node": heartbeat,
         "workflows": workflows,
         "summary": {
             key: sum(1 for value in workflows.values() if value["state"] == key)
-            for key in ["RUNNING", "DONE", "FAILED", "BLOCKED", "UNKNOWN"]
+            for key in summary_states
         },
     }
 
