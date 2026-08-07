@@ -29,6 +29,12 @@ def test_current_registry_is_valid() -> None:
 @pytest.mark.parametrize(
     ("mutate", "message"),
     [
+        (lambda p: p.__setitem__("status", "accepted"), "status"),
+        (lambda p: p.__setitem__("issue", 95), "issue"),
+        (lambda p: p["rules"].__setitem__("dependency_direction", "bidirectional"), "dependency_direction"),
+        (lambda p: p["rules"].__setitem__("unknown_protected_contract_fields", "allow"), "unknown_protected_contract_fields"),
+        (lambda p: p["rules"].__setitem__("persisted_accounting_numeric_type", "float"), "persisted_accounting_numeric_type"),
+        (lambda p: p["rules"].__setitem__("persisted_timestamp_timezone", "local"), "persisted_timestamp_timezone"),
         (lambda p: p["rules"].__setitem__("live_execution", "allowed"), "live_execution"),
         (lambda p: p["rules"].__setitem__("private_credentials", "allowed"), "private_credentials"),
         (lambda p: p["modules"]["paper_execution"]["invariant"].__setitem__("paper_trading_only", False), "paper_trading_only"),
