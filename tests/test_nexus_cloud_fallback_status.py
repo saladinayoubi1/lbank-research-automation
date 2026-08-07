@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from nexus_cloud_fallback_status import build_status
+from nexus_cloud_fallback_status import build_status, validate_status
 
 
 def valid_env() -> dict[str, str]:
@@ -19,8 +19,12 @@ def valid_env() -> dict[str, str]:
     }
 
 
+def valid_status() -> dict[str, object]:
+    return build_status(valid_env(), generated_at="2026-08-07T12:00:00+00:00")
+
+
 def test_checkpoint_valid_only_when_all_steps_and_identity_are_present() -> None:
-    status = build_status(valid_env(), generated_at="2026-08-07T12:00:00+00:00")
+    status = valid_status()
 
     assert status["schema_version"] == 2
     assert status["checkpoint_valid"] is True
@@ -83,3 +87,76 @@ def test_pull_request_merge_runner_sha_does_not_replace_source_head_sha() -> Non
     assert status["checkpoint_valid"] is True
     assert status["sha"] != status["runner_sha"]
     assert status["sha"] == env["CHECKPOINT_SHA"]
+
+
+def test_consumer_accepts_exact_bound_checkpoint() -> None:
+    ok, reasons = validate_status(
+        valid_status(), expected_repository="owner/repo", expected_sha="a" * 40, expected_run_id="123"
+    )
+    assert ok is True
+    assert reasons == ()
+
+
+@pytest.mark.parametrize("schema", [None, 1, 3, "2"])
+def test_consumer_rejects_unknown_or_legacy_schema(schema: object) -> None:
+    status = valid_status()
+    status["schema_version"] = schema
+    ok, reasons = validate_status(status, expected_repository="owner/repo", expected_sha="a" * 40)
+    assert ok is False
+    assert "schema:unsupported" in reasons
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "expected_reason"),
+    [
+        ("repository", "attacker/repo", "identity:repository:mismatch"),
+        ("sha", "c" * 40, "identity:sha:mismatch"),
+        ("run_id", "999", "identity:run_id:mismatch"),
+    ],
+)
+def test_consumer_rejects_replayed_or_mismatched_identity(
+    field: str, value: str, expected_reason: str
+) -> None:
+    status = valid_status()
+    status[field] = value
+    ok, reasons = validate_status(
+        status, expected_repository="owner/repo", expected_sha="a" * 40, expected_run_id="123"
+    )
+    assert ok is False
+    assert expected_reason in reasons
+
+
+@pytest.mark.parametrize("checkpoint_valid", [False, None, 1, "true"])
+def test_consumer_requires_literal_true_checkpoint_valid(checkpoint_valid: object) -> None:
+    status = valid_status()
+    status["checkpoint_valid"] = checkpoint_valid
+    ok, reasons = validate_status(status, expected_repository="owner/repo", expected_sha="a" * 40)
+    assert ok is False
+    assert "checkpoint:invalid" in reasons
+
+
+def test_consumer_rechecks_step_outcomes_instead_of_trusting_summary_boolean() -> None:
+    status = valid_status()
+    status["step_outcomes"] = {"install": "success", "compile": "success", "tests": "skipped"}
+    status["checkpoint_valid"] = True
+    ok, reasons = validate_status(status, expected_repository="owner/repo", expected_sha="a" * 40)
+    assert ok is False
+    assert "steps:tests:not_success" in reasons
+
+
+def test_consumer_quarantines_producer_with_embedded_invalid_reasons() -> None:
+    status = valid_status()
+    status["invalid_reasons"] = ["tests:failure"]
+    status["checkpoint_valid"] = True
+    ok, reasons = validate_status(status, expected_repository="owner/repo", expected_sha="a" * 40)
+    assert ok is False
+    assert "producer:invalid_reasons_present" in reasons
+
+
+@pytest.mark.parametrize("generated_at", [None, "", "not-a-date", "2026-08-07T12:00:00"])
+def test_consumer_rejects_missing_malformed_or_timezone_free_timestamp(generated_at: object) -> None:
+    status = valid_status()
+    status["generated_at"] = generated_at
+    ok, reasons = validate_status(status, expected_repository="owner/repo", expected_sha="a" * 40)
+    assert ok is False
+    assert any(reason.startswith("generated_at:") for reason in reasons)
