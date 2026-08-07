@@ -3,11 +3,6 @@ name: Release Readiness
 on:
   push:
     branches: [main]
-    paths:
-      - 'scripts/release_gate.py'
-      - 'tests/test_release_gate.py'
-      - '.github/workflows/release-readiness.yml'
-      - 'docs/RELEASE_READINESS.md'
   pull_request:
     paths:
       - 'scripts/release_gate.py'
