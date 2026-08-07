@@ -1,6 +1,7 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "project": "NEXUS / lbank-research-automation",
+  "observed_at_utc": "2026-08-07T15:17:42Z",
   "memory_policy": {
     "repository_is_durable_source": true,
     "chat_is_source_of_truth": false,
@@ -28,6 +29,30 @@
     "fabricated_market_data": false,
     "invalid_data_may_pass_research_gate": false
   },
+  "repository_snapshot": {
+    "main_sha": "ffdf4589b29a491e9cdabe12eef150c760d3a56b",
+    "open_pull_requests": [
+      {"number": 118, "head_sha": "af7948276471b139121a7c18f8d44c96d55006a7", "draft": true, "ci": "green", "purpose": "version and bound freshness readiness policy"},
+      {"number": 117, "head_sha": "745481a494f3a608556fc31cc3181e3a7056ba10", "draft": true, "ci": "green", "purpose": "make cloud fallback status fail-closed"},
+      {"number": 105, "head_sha": "28a90f918d82fe76149288cac0646de53a320d2a", "draft": true, "ci": "green", "purpose": "enforce NEXUS contract validator in CI"}
+    ],
+    "release_authority": {
+      "production_ready": false,
+      "signing_authorized": false,
+      "production_approval_authorized": false,
+      "credentials_authorized": false,
+      "billing_authorized": false,
+      "note": "Repository gates provide bounded offline/research evidence only; external authority remains required for signing, production approval, credentials, billing, deployment and live financial actions."
+    }
+  },
+  "external_backup": {
+    "provider": "Google Drive",
+    "folder_name": "NEXUS Project Memory Backup",
+    "document_name": "NEXUS Project Memory Backup — Durable",
+    "document_id": "14wBdcjec0_0PhDzupk7QjaPlB3A_uw4A1EUzseeKQ4s",
+    "verified_present": true,
+    "contains_secrets": false
+  },
   "continuity": {
     "required_reads": [
       "docs/project_memory/PROJECT_MEMORY.md",
@@ -35,8 +60,9 @@
       "docs/project_memory/DECISIONS.md",
       "docs/project_memory/RECOVERY_PLAYBOOK.md"
     ],
-    "reconstruct_from": ["git history", "issues", "pull requests", "CI/workflow evidence", "durable project memory"],
+    "reconstruct_from": ["git history", "issues", "pull requests", "CI/workflow evidence", "durable project memory", "Google Drive backup"],
     "chat_loss_tolerated": true,
-    "local_machine_loss_tolerated_for_project_knowledge": true
+    "local_machine_loss_tolerated_for_project_knowledge": true,
+    "laptop_offline_is_not_internet_outage": true
   }
 }
