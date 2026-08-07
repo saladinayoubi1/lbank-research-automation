@@ -154,14 +154,23 @@ def _preflight_yaml(raw: bytes) -> None:
 def validate_contract_registry(payload: Any) -> None:
     root = _mapping(payload, "registry")
     _exact_keys(root, ROOT_KEYS, "registry")
-    if root["registry_version"] != "1.0.0":
-        raise ContractValidationError("unsupported registry_version")
-    if root["scope"] != "research_and_paper_trading_only":
-        raise ContractValidationError("scope must remain research_and_paper_trading_only")
+    expected_root_values = {
+        "registry_version": "1.0.0",
+        "status": "proposed",
+        "scope": "research_and_paper_trading_only",
+        "issue": 94,
+    }
+    for key, expected in expected_root_values.items():
+        if root[key] != expected:
+            raise ContractValidationError(f"{key} must equal {expected!r}")
 
     rules = _mapping(root["rules"], "rules")
     _exact_keys(rules, RULE_KEYS, "rules")
     expected_rules = {
+        "dependency_direction": "adapters_to_domain",
+        "unknown_protected_contract_fields": "reject",
+        "persisted_accounting_numeric_type": "decimal",
+        "persisted_timestamp_timezone": "UTC",
         "live_execution": "prohibited",
         "private_credentials": "prohibited",
         "llm_final_authority": "prohibited",
