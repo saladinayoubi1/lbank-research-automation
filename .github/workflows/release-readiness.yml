@@ -1,6 +1,13 @@
 name: Release Readiness
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/release_gate.py'
+      - 'tests/test_release_gate.py'
+      - '.github/workflows/release-readiness.yml'
+      - 'docs/RELEASE_READINESS.md'
   pull_request:
     paths:
       - 'scripts/release_gate.py'
@@ -22,8 +29,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: ${{ matrix.python }}
       - name: Run release gate tests
