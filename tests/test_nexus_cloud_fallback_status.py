@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from nexus_cloud_fallback_status import build_status, validate_status
+from nexus_cloud_fallback_status import build_status, promote_checkpoint, validate_status
 
 
 def valid_env() -> dict[str, str]:
@@ -185,3 +185,70 @@ def test_consumer_rejects_invalid_freshness_policy(max_age: object) -> None:
     )
     assert ok is False
     assert "freshness:policy_invalid" in reasons
+
+
+def test_invalid_candidate_preserves_previous_known_good_checkpoint() -> None:
+    previous = valid_status()
+    candidate = valid_status()
+    candidate["step_outcomes"] = {"install": "success", "compile": "success", "tests": "failure"}
+    candidate["checkpoint_valid"] = True
+    snapshot = dict(previous)
+
+    selected, promoted, reasons = promote_checkpoint(
+        candidate,
+        previous,
+        expected_repository="owner/repo",
+        expected_sha="a" * 40,
+        expected_run_id="123",
+    )
+
+    assert promoted is False
+    assert "steps:tests:not_success" in reasons
+    assert selected == snapshot
+    assert previous == snapshot
+    assert selected is not previous
+
+
+def test_recovery_promotes_only_restored_valid_candidate() -> None:
+    previous = valid_status()
+    invalid = valid_status()
+    invalid["schema_version"] = 1
+
+    selected, promoted, reasons = promote_checkpoint(
+        invalid,
+        previous,
+        expected_repository="owner/repo",
+        expected_sha="a" * 40,
+        expected_run_id="123",
+    )
+    assert promoted is False
+    assert "schema:unsupported" in reasons
+    assert selected == previous
+
+    restored = valid_status()
+    selected, promoted, reasons = promote_checkpoint(
+        restored,
+        previous,
+        expected_repository="owner/repo",
+        expected_sha="a" * 40,
+        expected_run_id="123",
+    )
+    assert promoted is True
+    assert reasons == ()
+    assert selected == restored
+
+
+def test_invalid_candidate_without_previous_known_good_stays_unselected() -> None:
+    candidate = valid_status()
+    candidate["repository"] = "attacker/repo"
+
+    selected, promoted, reasons = promote_checkpoint(
+        candidate,
+        None,
+        expected_repository="owner/repo",
+        expected_sha="a" * 40,
+    )
+
+    assert selected is None
+    assert promoted is False
+    assert "identity:repository:mismatch" in reasons
