@@ -32,6 +32,7 @@ jobs:
           cache: 'pip'
 
       - name: Install locked test dependencies
+        id: install
         shell: bash
         run: |
           python -m pip install --upgrade pip
@@ -47,6 +48,7 @@ jobs:
           python -m pip check
 
       - name: Compile Python sources
+        id: compile
         shell: bash
         run: |
           python - <<'PY'
@@ -57,6 +59,7 @@ jobs:
           PY
 
       - name: Run tests
+        id: tests
         shell: bash
         run: |
           if [ -d tests ]; then python -m pytest -q; else echo 'No tests directory'; fi
@@ -64,18 +67,37 @@ jobs:
       - name: Build fallback status
         if: always()
         shell: bash
+        env:
+          INSTALL_OUTCOME: ${{ steps.install.outcome }}
+          COMPILE_OUTCOME: ${{ steps.compile.outcome }}
+          TEST_OUTCOME: ${{ steps.tests.outcome }}
         run: |
           mkdir -p fallback-status
           python - <<'PY'
           import json, os
           from datetime import datetime, timezone
+
+          outcomes = {
+              'install': os.getenv('INSTALL_OUTCOME', 'missing'),
+              'compile': os.getenv('COMPILE_OUTCOME', 'missing'),
+              'tests': os.getenv('TEST_OUTCOME', 'missing'),
+          }
+          checkpoint_valid = all(value == 'success' for value in outcomes.values())
           data = {
+              'schema_version': 1,
               'mode': 'github-actions-cloud-fallback',
               'generated_at': datetime.now(timezone.utc).isoformat(),
               'repository': os.getenv('GITHUB_REPOSITORY'),
               'sha': os.getenv('GITHUB_SHA'),
               'run_id': os.getenv('GITHUB_RUN_ID'),
-              'note': 'Runs independently of the local laptop and provides a cloud-side health/test checkpoint.'
+              'run_attempt': os.getenv('GITHUB_RUN_ATTEMPT'),
+              'event_name': os.getenv('GITHUB_EVENT_NAME'),
+              'checkpoint_valid': checkpoint_valid,
+              'step_outcomes': outcomes,
+              'invalid_reasons': [] if checkpoint_valid else [
+                  f'{name}:{outcome}' for name, outcome in outcomes.items() if outcome != 'success'
+              ],
+              'note': 'Cloud-side health/test checkpoint. Consumers must require checkpoint_valid=true.'
           }
           open('fallback-status/status.json','w',encoding='utf-8').write(json.dumps(data, indent=2))
           PY
