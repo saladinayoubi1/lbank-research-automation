@@ -37,6 +37,7 @@
     ".github/workflows/nexus-autopilot-policy.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"validate-policy":{"policy_version":1}}},
     ".github/workflows/nexus-build-verification.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"android-apk":{"policy_version":1},"secure-gateway-verification":{"policy_version":1},"windows-desktop":{"policy_version":1}}},
     ".github/workflows/nexus-cloud-fallback.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"fallback-health":{"policy_version":1}}},
+    ".github/workflows/nexus-event-driven-failure-triage.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read","issues":"write"},"write_justification":"Required only to create or refresh fail-closed GitHub issues containing workflow failure evidence; repository contents and actions remain read-only.","jobs":{"triage":{"policy_version":1}}},
     ".github/workflows/nexus-mission-queue.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"validate-mission-queue":{"policy_version":1}}},
     ".github/workflows/release-readiness.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"fail-closed-cross-platform":{"policy_version":1}}},
     ".github/workflows/release-recovery.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"reproducibility-and-rollback":{"policy_version":1}}},
