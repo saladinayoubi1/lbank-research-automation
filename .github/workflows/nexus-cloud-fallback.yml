@@ -4,6 +4,12 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '17 * * * *'
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -35,8 +41,9 @@ jobs:
         shell: bash
         run: |
           python - <<'PY'
-          import compileall, sys
-          ok = compileall.compile_dir('.', quiet=1, rx=r'(^|/)(\.git|\.venv|venv|node_modules)(/|$)')
+          import compileall, re
+          excluded = re.compile(r'(^|/)(\.git|\.venv|venv|node_modules)(/|$)')
+          ok = compileall.compile_dir('.', quiet=1, rx=excluded)
           raise SystemExit(0 if ok else 1)
           PY
 
