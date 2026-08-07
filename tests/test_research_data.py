@@ -32,6 +32,7 @@ def status_frame(
                 "gap_count": 0 if integrity_ok else 1,
                 "duplicate_count": 0,
                 "off_grid_count": 0,
+                "last_candle_utc": pd.Timestamp.now(tz="UTC").isoformat(),
             }
         ]
     )

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -9,10 +10,16 @@ import pandas as pd
 
 DEFAULT_STATUS_PATH = Path("data/market/_backfill_status.csv")
 RESEARCH_READY_STATUSES = {"current", "backfilling"}
+DEFAULT_FRESHNESS_LIMIT_HOURS = {
+    "minute15": 1.0,
+    "hour1": 3.0,
+    "hour4": 8.0,
+}
 REQUIRED_COLUMNS = {
     "symbol",
     "timeframe",
     "rows",
+    "last_candle_utc",
     "status",
     "integrity_ok",
     "missing_candles",
@@ -36,11 +43,25 @@ def normalize_bool(value: Any) -> bool:
     raise ValueError(f"Unsupported boolean value: {value!r}")
 
 
+def _normalize_as_of(as_of_utc: datetime | None) -> pd.Timestamp:
+    if as_of_utc is None:
+        return pd.Timestamp(datetime.now(timezone.utc))
+    timestamp = pd.Timestamp(as_of_utc)
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.tz_localize("UTC")
+    else:
+        timestamp = timestamp.tz_convert("UTC")
+    return timestamp
+
+
 def evaluate_readiness(
     status_frame: pd.DataFrame,
     minimum_rows: int = 0,
+    *,
+    as_of_utc: datetime | None = None,
+    freshness_limits_hours: dict[str, float] | None = None,
 ) -> pd.DataFrame:
-    """Add deterministic research-readiness fields to a status report."""
+    """Add deterministic, fail-closed research-readiness fields to a status report."""
     missing_columns = REQUIRED_COLUMNS.difference(status_frame.columns)
     if missing_columns:
         joined = ", ".join(sorted(missing_columns))
@@ -48,10 +69,29 @@ def evaluate_readiness(
     if minimum_rows < 0:
         raise ValueError("minimum_rows must be non-negative")
 
+    limits = dict(DEFAULT_FRESHNESS_LIMIT_HOURS)
+    if freshness_limits_hours is not None:
+        limits.update(freshness_limits_hours)
+    if any(float(value) <= 0 for value in limits.values()):
+        raise ValueError("freshness limits must be positive")
+
     result = status_frame.copy()
     result["rows"] = pd.to_numeric(result["rows"], errors="coerce").fillna(0).astype(int)
     result["integrity_ok"] = result["integrity_ok"].map(normalize_bool)
     result["status"] = result["status"].astype(str).str.strip().str.lower()
+    result["timeframe"] = result["timeframe"].astype(str).str.strip().str.lower()
+
+    as_of = _normalize_as_of(as_of_utc)
+    last_candle = pd.to_datetime(result["last_candle_utc"], utc=True, errors="coerce")
+    freshness_hours = (as_of - last_candle).dt.total_seconds() / 3600.0
+    result["freshness_hours"] = freshness_hours.round(4)
+    result["freshness_limit_hours"] = result["timeframe"].map(limits)
+    result["freshness_ok"] = (
+        last_candle.notna()
+        & result["freshness_limit_hours"].notna()
+        & result["freshness_hours"].ge(0)
+        & (result["freshness_hours"] <= result["freshness_limit_hours"])
+    )
 
     reasons: list[str] = []
     ready_flags: list[bool] = []
@@ -59,6 +99,12 @@ def evaluate_readiness(
     for row in result.to_dict("records"):
         if not row["integrity_ok"]:
             reason = "integrity_failed"
+        elif pd.isna(row["freshness_limit_hours"]):
+            reason = "freshness_policy_missing"
+        elif pd.isna(row["freshness_hours"]) or float(row["freshness_hours"]) < 0:
+            reason = "last_candle_invalid"
+        elif not row["freshness_ok"]:
+            reason = "stale_data"
         elif row["status"] not in RESEARCH_READY_STATUSES:
             reason = f"status_{row['status'] or 'unknown'}"
         elif int(row["rows"]) < minimum_rows:
@@ -111,12 +157,13 @@ def write_reports(
         f"- Blocked: {summary['blocked_series']}",
         f"- All ready: {summary['all_ready']}",
         "",
-        "| Symbol | Timeframe | Rows | Status | Integrity OK | Missing | Gaps | Duplicates | Off-grid | Ready | Reason |",
-        "|---|---|---:|---|---|---:|---:|---:|---:|---|---|",
+        "| Symbol | Timeframe | Rows | Status | Integrity OK | Freshness h | Freshness limit h | Fresh | Missing | Gaps | Duplicates | Off-grid | Ready | Reason |",
+        "|---|---|---:|---|---|---:|---:|---|---:|---:|---:|---:|---|---|",
     ]
     for row in readiness_frame.sort_values(["symbol", "timeframe"]).to_dict("records"):
         lines.append(
             "| {symbol} | {timeframe} | {rows} | {status} | {integrity_ok} | "
+            "{freshness_hours} | {freshness_limit_hours} | {freshness_ok} | "
             "{missing_candles} | {gap_count} | {duplicate_count} | "
             "{off_grid_count} | {ready_for_research} | {readiness_reason} |".format(**row)
         )
@@ -142,12 +189,18 @@ def write_reports(
 def generate_readiness_report(
     status_path: Path = DEFAULT_STATUS_PATH,
     minimum_rows: int = 0,
+    *,
+    as_of_utc: datetime | None = None,
 ) -> dict[str, Any]:
     if not status_path.exists():
         raise FileNotFoundError(f"Status report not found: {status_path}")
 
     status_frame = pd.read_csv(status_path)
-    readiness_frame = evaluate_readiness(status_frame, minimum_rows=minimum_rows)
+    readiness_frame = evaluate_readiness(
+        status_frame,
+        minimum_rows=minimum_rows,
+        as_of_utc=as_of_utc,
+    )
     return write_reports(readiness_frame, status_path.parent)
 
 
