@@ -18,6 +18,8 @@ STATE_FILE = STATE_DIR / "status.json"
 EVENT_FILE = STATE_DIR / "events.jsonl"
 HEARTBEAT_FILE = STATE_DIR / "local_heartbeat.json"
 DEFAULT_POLL_SECONDS = 30
+COORDINATOR_WORKFLOW = "Fast Agent Coordinator"
+AUTO_RETRY_CONCLUSIONS = {"timed_out", "startup_failure"}
 
 
 def utcnow() -> str:
@@ -47,10 +49,14 @@ def gh_available() -> bool:
 
 
 def github_api_json(path: str) -> dict[str, Any]:
-    req = urllib.request.Request(
-        f"https://api.github.com/repos/{REPO}/{path}",
-        headers={"Accept": "application/vnd.github+json", "User-Agent": "nexus-fast-agent-orchestrator"},
-    )
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "User-Agent": "nexus-fast-agent-orchestrator",
+    }
+    token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    req = urllib.request.Request(f"https://api.github.com/repos/{REPO}/{path}", headers=headers)
     with urllib.request.urlopen(req, timeout=15) as response:
         return json.loads(response.read().decode("utf-8"))
 
@@ -59,7 +65,7 @@ def get_runs() -> list[dict[str, Any]]:
     if gh_available():
         cp = run([
             "gh", "run", "list", "--repo", REPO, "--limit", "20",
-            "--json", "databaseId,name,status,conclusion,headSha,createdAt,updatedAt,event,url",
+            "--json", "databaseId,name,status,conclusion,headSha,createdAt,updatedAt,event,url,attempt",
         ])
         if cp.returncode == 0:
             return json.loads(cp.stdout or "[]")
@@ -76,8 +82,23 @@ def get_runs() -> list[dict[str, Any]]:
             "updatedAt": item.get("updated_at"),
             "event": item.get("event"),
             "url": item.get("html_url"),
+            "attempt": item.get("run_attempt"),
         })
     return result
+
+
+def get_run_details(run_id: int) -> dict[str, Any]:
+    item = github_api_json(f"actions/runs/{run_id}")
+    return {
+        "databaseId": item.get("id"),
+        "name": item.get("name"),
+        "status": item.get("status"),
+        "conclusion": item.get("conclusion"),
+        "headSha": item.get("head_sha"),
+        "event": item.get("event"),
+        "attempt": item.get("run_attempt"),
+        "url": item.get("html_url"),
+    }
 
 
 def rerun_failed(run_id: int) -> tuple[bool, str]:
@@ -114,6 +135,40 @@ def newest_by_name(runs: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     return latest
 
 
+def retry_eligibility(info: dict[str, Any]) -> tuple[bool, str]:
+    if (info.get("name") or "") == COORDINATOR_WORKFLOW:
+        return False, "coordinator_self_observation"
+    if classify(info) != "FAILED":
+        return False, "not_failed"
+    conclusion = (info.get("conclusion") or "").lower()
+    if conclusion not in AUTO_RETRY_CONCLUSIONS:
+        return False, "non_retryable_or_ambiguous_failure"
+    run_id = info.get("databaseId")
+    head_sha = info.get("headSha")
+    attempt = info.get("attempt")
+    if not isinstance(run_id, int) or not run_id:
+        return False, "missing_run_id"
+    if not isinstance(head_sha, str) or not head_sha:
+        return False, "missing_head_sha"
+    if not isinstance(attempt, int):
+        return False, "retry_history_unavailable"
+    if attempt != 1:
+        return False, "already_retried"
+    return True, "eligible_first_attempt_transient_failure"
+
+
+def authoritative_retry_evidence(listed: dict[str, Any], current: dict[str, Any]) -> tuple[bool, str]:
+    for key in ("databaseId", "name", "headSha"):
+        if current.get(key) != listed.get(key):
+            return False, f"run_identity_changed:{key}"
+    eligible, reason = retry_eligibility(current)
+    if not eligible:
+        return False, reason
+    if current.get("conclusion") != listed.get("conclusion"):
+        return False, "conclusion_changed"
+    return True, "authoritative_first_attempt_confirmed"
+
+
 def inspect_once(previous: dict[str, Any], auto_retry: bool) -> dict[str, Any]:
     checked_at = utcnow()
     try:
@@ -134,20 +189,46 @@ def inspect_once(previous: dict[str, Any], auto_retry: bool) -> dict[str, Any]:
         old = prev_workflows.get(name, {})
         old_state = old.get("state")
         run_id = info.get("databaseId")
-        retry = {"attempted": False, "ok": False, "detail": None}
+        retry = {"attempted": False, "ok": False, "reason": "auto_retry_disabled", "detail": None}
 
         if state != old_state:
             event("state_change", workflow=name, old=old_state, new=state, run_id=run_id)
 
-        already_retried_id = old.get("last_auto_retry_run_id")
-        if auto_retry and state == "FAILED" and run_id and already_retried_id != run_id:
-            ok, detail = rerun_failed(int(run_id))
-            retry = {"attempted": True, "ok": ok, "detail": detail}
-            event("auto_retry", workflow=name, run_id=run_id, ok=ok, detail=detail)
+        if auto_retry:
+            eligible, reason = retry_eligibility(info)
+            retry["reason"] = reason
+            if eligible:
+                try:
+                    current = get_run_details(int(run_id))
+                    eligible, reason = authoritative_retry_evidence(info, current)
+                    retry["reason"] = reason
+                except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, subprocess.SubprocessError) as exc:
+                    eligible = False
+                    retry["reason"] = "authoritative_history_unavailable"
+                    retry["detail"] = f"{type(exc).__name__}: {exc}"
+                if eligible:
+                    ok, detail = rerun_failed(int(run_id))
+                    retry = {
+                        "attempted": True,
+                        "ok": ok,
+                        "reason": "rerun_requested" if ok else "rerun_request_failed",
+                        "detail": detail,
+                    }
+                    event(
+                        "auto_retry",
+                        workflow=name,
+                        run_id=run_id,
+                        head_sha=info.get("headSha"),
+                        attempt=info.get("attempt"),
+                        ok=ok,
+                        reason=retry["reason"],
+                        detail=detail,
+                    )
 
         workflows[name] = {
             "state": state,
             "run_id": run_id,
+            "run_attempt": info.get("attempt"),
             "conclusion": info.get("conclusion"),
             "status": info.get("status"),
             "head_sha": info.get("headSha"),
@@ -170,7 +251,7 @@ def inspect_once(previous: dict[str, Any], auto_retry: bool) -> dict[str, Any]:
     atomic_json(HEARTBEAT_FILE, heartbeat)
 
     return {
-        "schema_version": 2,
+        "schema_version": 3,
         "generated_at": checked_at,
         "repo": REPO,
         "poll_seconds": previous.get("poll_seconds", DEFAULT_POLL_SECONDS) if isinstance(previous, dict) else DEFAULT_POLL_SECONDS,
