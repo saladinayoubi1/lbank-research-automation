@@ -1,0 +1,41 @@
+name: Fast Agent Coordinator
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/5 * * * *'
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: fast-agent-coordinator
+  cancel-in-progress: false
+
+jobs:
+  inspect-and-recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Inspect workflow states and retry newly failed runs
+        run: python fast_agent_orchestrator.py --once
+
+      - name: Publish coordinator status
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fast-agent-status-${{ github.run_id }}
+          path: data/agent_coordination/
+          if-no-files-found: warn
+          retention-days: 7
