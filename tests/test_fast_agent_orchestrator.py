@@ -3,6 +3,8 @@ from fast_agent_orchestrator import classify, newest_by_name
 
 def test_classify_states():
     assert classify({"status": "in_progress", "conclusion": None}) == "RUNNING"
+    assert classify({"status": "waiting", "conclusion": None}) == "WAITING"
+    assert classify({"status": "completed", "conclusion": "action_required"}) == "WAITING"
     assert classify({"status": "completed", "conclusion": "success"}) == "DONE"
     assert classify({"status": "completed", "conclusion": "failure"}) == "FAILED"
     assert classify({"status": "completed", "conclusion": "cancelled"}) == "BLOCKED"
