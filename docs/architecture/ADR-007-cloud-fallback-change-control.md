@@ -1,83 +1,99 @@
 # ADR-007: NEXUS cloud-fallback workflow change control
 
-Status: Proposed
+Status: Accepted
+Version: 1.0.0
 
 ## Context
 
-NEXUS uses a cloud-fallback GitHub Actions workflow as an auxiliary recovery/validation path. PR #109 fixes persistent execution gaps in that workflow by adding pull-request and main-push triggers, compiling Python with a valid regex object, installing the locked test environment, failing closed when tests exist without the lock file, running `pip check`, and registering the workflow in the versioned workflow-permissions policy.
-
-A workflow can become a false-green source if it silently changes dependency resolution, skips tests, broadens permissions, diverges from the canonical test environment, or is treated as independent evidence while the same candidate change can weaken both the workflow and its policy inventory.
+NEXUS uses a cloud-fallback GitHub Actions workflow as an auxiliary recovery/validation path. A fallback workflow can become a false-green source if it silently changes dependency resolution, skips tests, broadens permissions, diverges from the canonical test environment, or emits a checkpoint that consumers accept without binding it to the exact repository revision and run identity.
 
 ## Decision
 
 1. The cloud-fallback workflow remains an auxiliary CI/recovery control, not production authorization and not evidence of live-trading readiness.
 2. Test dependencies must come from the repository-owned locked development dependency set. If `tests/` exists and that lock is missing, the workflow fails closed.
-3. The workflow runs `pip check`, compile validation, and the repository test suite before claiming fallback health.
+3. The workflow runs dependency validation, compile validation, and the repository test suite before claiming fallback health.
 4. Pull-request and `main` push execution are required so workflow changes are exercised before and after integration. Scheduled/manual execution may remain additive.
 5. The workflow must stay registered in the versioned workflow-permissions policy. Permissions must remain least-privilege and explicitly reviewable.
-6. Changes to the fallback workflow, its dependency source, permissions inventory, or trust assumptions require fixed-head green CI, mergeability confirmation, zero unresolved review threads, rollback notes, and ADR review when the decision or trust boundary changes.
-7. Cloud-fallback success is not independent control-plane evidence while a candidate change can modify both the workflow and the policy/checks that authorize it. Issue #106 remains the governing blocker for stronger self-authorization claims.
-8. No workflow, agent, LLM, or auxiliary check may authorize real orders, credentials, billing, production mutation, or risk-policy changes.
+6. Persisted checkpoint consumers must reject missing/unknown schema versions, non-true `checkpoint_valid`, non-success required step outcomes, malformed timestamps, stale/future checkpoints under an explicit freshness budget, and mismatched repository/SHA/run identity.
+7. Changes to the fallback workflow, checkpoint schema/consumer, dependency source, permissions inventory, or trust assumptions require fixed-head green CI, mergeability confirmation, zero unresolved review threads, rollback notes, and ADR review.
+8. Cloud-fallback success is not independent control-plane evidence while a candidate change can modify both workflow and authorizing policy/checks. Issue #106 remains the governing blocker for stronger self-authorization claims.
+9. No workflow, agent, LLM, or auxiliary check may authorize real orders, credentials, billing, production mutation, or risk-policy changes.
 
-## Alternatives considered
+Semantic changes to this decision require a new ADR version and must not silently reinterpret an existing checkpoint schema.
 
-### Keep the fallback schedule/manual-only
+## Assets, actors, trust boundaries, and entry points
 
-Rejected because workflow defects can remain latent until recovery is needed and are not exercised on the candidate SHA.
+Protected assets are truthful CI/recovery health, exact-head traceability, previous-known-good recovery evidence, least-privilege workflow authority, and prevention of stale/replayed checkpoints being represented as current.
 
-### Install unpinned dependencies ad hoc
+Relevant actors/failures include maintainers, compromised automation, malicious or stale artifact suppliers, dependency/runner drift, accidental workflow weakening, and consumers using an obsolete contract.
 
-Rejected because dependency drift can create non-reproducible results and false greens relative to the canonical test environment.
+Trust boundaries are `repository/ref -> GitHub workflow -> step outcomes -> persisted checkpoint -> consumer`, plus `workflow/policy change -> repository review/ruleset authority`. Entry points include workflow YAML, dependency locks, status schema fields, uploaded artifacts, consumer expectations, and permissions-policy inventory.
 
-### Treat the fallback as an independent approval gate
+The workflow may attest only to bounded test/checkpoint facts. Independent authorization remains outside this control until Issue #106 is satisfied.
 
-Rejected until an authority outside the candidate change set protects the relevant workflow, validator/policy, and bypass surface. See Issue #106.
-
-## Compatibility
-
-The workflow remains on Python 3.12 and uses the repository's existing locked development dependency set. Trigger additions are additive. This ADR does not change runtime application schemas, market-data contracts, persistence formats, broker/exchange adapters, or execution behavior.
-
-## Threats and failure modes
+## Threats and abuse cases
 
 - missing or modified lock file;
 - dependency conflicts hidden by successful installation;
-- compile gate disabled or malformed;
-- pytest omitted or pointed at a partial test set;
-- workflow permissions widened;
-- workflow removed from the permissions inventory;
-- simultaneous weakening of workflow and its policy/checks;
-- stale success from an older head SHA;
-- claims that exceed the evidence actually produced by the fallback job.
+- compile/test step disabled, skipped, neutral, cancelled, or malformed;
+- workflow permissions widened or workflow removed from inventory;
+- producer sets `checkpoint_valid=true` while required outcomes disagree;
+- legacy or unknown schema accepted as healthy;
+- stale checkpoint replayed for a newer SHA/run;
+- future timestamp or malformed clock data hides replay;
+- repository, source SHA, or run ID substituted;
+- workflow and policy/checks weakened together to create self-authorized green evidence;
+- previous-known-good evidence overwritten during failed recovery;
+- claims that exceed the bounded evidence produced by the fallback job.
 
-The workflow must fail closed for missing locked test dependencies when tests are present. Other self-authorization cases remain residual risk until Issue #106 is satisfied.
+## Deny-by-default policy
+
+A checkpoint is invalid unless the consumer recognizes the exact schema and mode, requires literal `checkpoint_valid=true`, independently rechecks every required step outcome as `success`, verifies expected repository and source SHA, verifies run identity when available, validates an offset-aware timestamp, and enforces an explicit positive freshness budget when freshness is claimed.
+
+Missing, malformed, stale, future, conflicting, unsupported, or mismatched evidence is quarantined and must not replace previous-known-good evidence. Consumers must not downgrade to legacy interpretation when schema validation fails.
+
+Simultaneous workflow/policy weakening remains residual risk and cannot be promoted to independent authorization evidence until Issue #106 provides an authority outside the candidate change set plus bypass tests.
+
+## Compatibility and schema evolution
+
+Checkpoint schema v2 adds exact step outcomes, source and runner SHA distinction, run attempt/event identity, and `checkpoint_valid` with deterministic invalid reasons. Consumers that do not explicitly support schema v2 must fail closed. Future schema changes require a version bump, compatibility plan, migration or dual-read policy where justified, regression tests, rollback instructions, and ADR review.
 
 ## Rollback and recovery
 
-Revert the workflow/policy change as one bounded change set and restore the last known-good workflow plus permissions-policy tuple. Run all required repository checks on the rollback SHA before treating fallback health as restored. If dependency or runner behavior changed externally, quarantine the failed fallback result and use the canonical test path while the incompatibility is investigated.
+Rollback restores the last known-good workflow, policy inventory, checkpoint producer, and compatible consumer tuple. Do not silently reinterpret v2 evidence using legacy semantics.
+
+Recovery procedure:
+1. quarantine the failed or unverifiable checkpoint and preserve previous-known-good evidence unchanged;
+2. restore the previous-valid workflow/policy/producer/consumer revisions from Git;
+3. rerun all required repository checks on one fixed rollback SHA;
+4. produce a new checkpoint and verify exact repository/SHA/run binding, supported schema, required step outcomes, timestamp/freshness policy, and zero invalid reasons;
+5. only then replace the quarantined candidate as the active fallback health record.
+
+A recovery exercise is considered successful only when an intentionally invalid candidate is rejected without mutating previous-known-good state, followed by successful validation of the restored tuple on a fixed SHA.
 
 ## Observability and evidence
 
-Evidence for a merge decision consists of the exact head SHA, workflow-run conclusions for that SHA, mergeability state, review-thread state, and the reviewed workflow/policy diff. A green result from a different SHA is not acceptable evidence.
+Merge evidence consists of exact head SHA, workflow-run conclusions for that SHA, mergeability state, review-thread state, reviewed workflow/producer/consumer/ADR diff, and executable positive/negative/replay tests. A green result from a different SHA is not acceptable evidence.
 
 ## Residual risk
 
-This control does not provide independent control-plane authorization, signed provenance, immutable runner identity, cross-platform fallback execution, production deployment approval, or live-execution safety certification.
+This control does not provide independent control-plane authorization, signed provenance, immutable runner identity, cross-platform fallback execution, production deployment approval, or live-execution safety certification. GitHub Actions semantics and repository rules remain external dependencies.
 
 ## Obsolescence triggers
 
-Revisit this ADR if any of the following change materially:
-
-- Python or runner major version;
-- dependency lock format or package manager;
-- GitHub Actions permission model;
-- workflow trigger architecture;
-- required-check/ruleset authority;
-- provenance/signing model;
-- repository test entrypoint;
-- resolution of Issue #106 with a stronger independent authorization mechanism.
+Revisit this ADR on any material change to:
+- GitHub Actions outcome semantics, including `skipped` or `neutral` behavior;
+- required-check or repository ruleset authority;
+- workflow trigger architecture or permission model;
+- checkpoint schema, consumer contract, freshness budget, or artifact retention;
+- Python/runner major version, dependency lock format, or repository test entrypoint;
+- provenance/signing or trusted-builder model;
+- resolution or redesign of Issue #106;
+- any false-green, replay, recovery, or checkpoint-substitution incident.
 
 ## Related work
 
 - PR #109 — cloud-fallback CI gate repair
+- PR #117 — fail-closed checkpoint semantics and consumer validation
 - Issue #94 — NEXUS architecture baseline and change-control gates
 - Issue #106 — independent protection against control-plane self-authorization
