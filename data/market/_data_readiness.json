@@ -96,6 +96,11 @@
       "timeframe": "minute15"
     }
   ],
+  "evaluated_at_utc": "2026-08-07T15:37:12.999094+00:00",
+  "freshness_policy": {
+    "digest": "ad3bc54c9135ba4eacd28d6f06620973e009a6eca71010c4e314efe5b4cafd9e",
+    "version": "1.0.0"
+  },
   "ready_series": [
     {
       "symbol": "aero_usdt",
