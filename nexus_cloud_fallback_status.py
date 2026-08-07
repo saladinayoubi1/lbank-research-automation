@@ -57,6 +57,8 @@ def validate_status(
     expected_repository: str,
     expected_sha: str,
     expected_run_id: str | None = None,
+    max_age_seconds: int | None = None,
+    now: datetime | None = None,
 ) -> tuple[bool, tuple[str, ...]]:
     """Fail-closed validation for consumers of persisted fallback checkpoints."""
     reasons: list[str] = []
@@ -74,6 +76,7 @@ def validate_status(
     if expected_run_id is not None and status.get("run_id") != expected_run_id:
         reasons.append("identity:run_id:mismatch")
 
+    parsed: datetime | None = None
     generated_at = status.get("generated_at")
     if not isinstance(generated_at, str) or not generated_at:
         reasons.append("generated_at:missing")
@@ -82,8 +85,23 @@ def validate_status(
             parsed = datetime.fromisoformat(generated_at.replace("Z", "+00:00"))
             if parsed.tzinfo is None:
                 reasons.append("generated_at:timezone_missing")
+                parsed = None
         except ValueError:
             reasons.append("generated_at:invalid")
+
+    if max_age_seconds is not None:
+        if isinstance(max_age_seconds, bool) or not isinstance(max_age_seconds, int) or max_age_seconds <= 0:
+            reasons.append("freshness:policy_invalid")
+        elif parsed is not None:
+            reference = now or datetime.now(timezone.utc)
+            if reference.tzinfo is None:
+                reasons.append("freshness:clock_timezone_missing")
+            else:
+                age_seconds = (reference.astimezone(timezone.utc) - parsed.astimezone(timezone.utc)).total_seconds()
+                if age_seconds < 0:
+                    reasons.append("freshness:future")
+                elif age_seconds > max_age_seconds:
+                    reasons.append("freshness:stale")
 
     outcomes = status.get("step_outcomes")
     if not isinstance(outcomes, Mapping):
