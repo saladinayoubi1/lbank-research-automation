@@ -71,6 +71,7 @@ jobs:
           INSTALL_OUTCOME: ${{ steps.install.outcome }}
           COMPILE_OUTCOME: ${{ steps.compile.outcome }}
           TEST_OUTCOME: ${{ steps.tests.outcome }}
+          CHECKPOINT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           mkdir -p fallback-status
           python - <<'PY'
