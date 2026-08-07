@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "project": "NEXUS / lbank-research-automation",
+  "memory_policy": {
+    "repository_is_durable_source": true,
+    "chat_is_source_of_truth": false,
+    "secrets_allowed": false,
+    "core_goals_agent_editable": false,
+    "high_impact_actions_require_human_approval": true
+  },
+  "objectives": [
+    "durable project continuity independent of chat sessions",
+    "incremental safe autonomy",
+    "rapid agent/workflow failure detection and recovery",
+    "persistent lessons so solved failures are not rediscovered from zero",
+    "cloud continuity when the local laptop is offline"
+  ],
+  "known_runtime_components": [
+    "Fast Agent Coordinator",
+    "local node supervisor",
+    "dashboard",
+    "GitHub Actions",
+    "cloud fallback"
+  ],
+  "data_policy": {
+    "research_only": true,
+    "real_trading": false,
+    "fabricated_market_data": false,
+    "invalid_data_may_pass_research_gate": false
+  },
+  "continuity": {
+    "required_reads": [
+      "docs/project_memory/PROJECT_MEMORY.md",
+      "docs/project_memory/STATE.json",
+      "docs/project_memory/DECISIONS.md",
+      "docs/project_memory/RECOVERY_PLAYBOOK.md"
+    ],
+    "reconstruct_from": ["git history", "issues", "pull requests", "CI/workflow evidence", "durable project memory"],
+    "chat_loss_tolerated": true,
+    "local_machine_loss_tolerated_for_project_knowledge": true
+  }
+}
