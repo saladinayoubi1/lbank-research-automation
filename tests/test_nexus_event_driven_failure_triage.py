@@ -49,17 +49,11 @@ def test_duplicate_delivery_uses_stable_workflow_and_sha_marker():
 
 def test_no_privileged_execution_of_triggering_code_or_artifacts():
     text = _text().lower()
-    forbidden = (
-        'actions/checkout',
-        'download-artifact',
-        'actions/cache',
-        'run:',
-        'child_process',
-        'exec(',
-        'eval(',
-    )
-    for token in forbidden:
+    for token in ('actions/checkout', 'download-artifact', 'actions/cache', 'child_process', 'exec(', 'eval('):
         assert token not in text, f'privileged workflow must not execute untrusted material: {token}'
+    assert re.search(r'^\s*run\s*:', text, flags=re.MULTILINE) is None, (
+        'privileged workflow must not contain a shell run step'
+    )
 
 
 def test_triage_evidence_explicitly_denies_authority():
