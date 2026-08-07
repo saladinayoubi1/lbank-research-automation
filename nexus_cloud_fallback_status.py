@@ -116,3 +116,29 @@ def validate_status(
         reasons.append("producer:invalid_reasons_present")
 
     return (not reasons, tuple(reasons))
+
+
+def promote_checkpoint(
+    candidate: Mapping[str, object],
+    previous_known_good: Mapping[str, object] | None,
+    *,
+    expected_repository: str,
+    expected_sha: str,
+    expected_run_id: str | None = None,
+    max_age_seconds: int | None = None,
+    now: datetime | None = None,
+) -> tuple[dict[str, object] | None, bool, tuple[str, ...]]:
+    """Promote only a validated candidate; otherwise preserve previous-known-good evidence."""
+    ok, reasons = validate_status(
+        candidate,
+        expected_repository=expected_repository,
+        expected_sha=expected_sha,
+        expected_run_id=expected_run_id,
+        max_age_seconds=max_age_seconds,
+        now=now,
+    )
+    if ok:
+        return dict(candidate), True, ()
+    if previous_known_good is None:
+        return None, False, reasons
+    return dict(previous_known_good), False, reasons
