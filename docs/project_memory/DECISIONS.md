@@ -26,3 +26,15 @@ Status: ACTIVE unless superseded by newer repository evidence
 - LBank and Bybit data namespaces must not be silently mixed.
 - Invalid/gapped market data must not be promoted to research-ready merely to keep pipelines moving.
 - Bybit official Spot archives became the approved historical source after the documented LBank quality findings; current repository evidence must be consulted for the latest dataset status.
+
+## 2026-08-07 — Independent continuity backup established
+Status: ACTIVE
+
+Decision: GitHub remains the authoritative versioned engineering memory, with an independent Google Drive copy in `NEXUS Project Memory Backup` / `NEXUS Project Memory Backup — Durable`. The Drive copy stores distilled project state and recovery knowledge only; it must not contain secrets or raw private transcripts.
+
+Reason: A second provider reduces the risk that loss of a chat, local machine, or a single engineering service resets project direction.
+
+## 2026-08-07 — Release authority remains fail-closed
+Status: ACTIVE
+
+Decision: Existing artifact/SBOM/provenance/reproducibility/rollback/backup/DR gates are evidence controls, not production authorization. Signing identity, production approval, credentials, billing, deployment and live financial actions remain outside autonomous authority until separately authorized and verified.
