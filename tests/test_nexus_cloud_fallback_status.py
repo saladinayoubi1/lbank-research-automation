@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 import pytest
 
 from nexus_cloud_fallback_status import build_status, validate_status
@@ -25,26 +27,19 @@ def valid_status() -> dict[str, object]:
 
 def test_checkpoint_valid_only_when_all_steps_and_identity_are_present() -> None:
     status = valid_status()
-
     assert status["schema_version"] == 2
     assert status["checkpoint_valid"] is True
     assert status["sha"] == "a" * 40
     assert status["runner_sha"] == "b" * 40
     assert status["invalid_reasons"] == []
-    assert status["step_outcomes"] == {
-        "install": "success",
-        "compile": "success",
-        "tests": "success",
-    }
+    assert status["step_outcomes"] == {"install": "success", "compile": "success", "tests": "success"}
 
 
 @pytest.mark.parametrize("outcome", ["failure", "cancelled", "skipped", "neutral", "missing", ""])
 def test_non_success_step_outcomes_fail_closed(outcome: str) -> None:
     env = valid_env()
     env["TEST_OUTCOME"] = outcome
-
     status = build_status(env)
-
     assert status["checkpoint_valid"] is False
     assert f"tests:{outcome}" in status["invalid_reasons"]
 
@@ -63,9 +58,7 @@ def test_non_success_step_outcomes_fail_closed(outcome: str) -> None:
 def test_missing_checkpoint_identity_fails_closed(key: str, reason: str) -> None:
     env = valid_env()
     env.pop(key)
-
     status = build_status(env)
-
     assert status["checkpoint_valid"] is False
     assert reason in status["invalid_reasons"]
 
@@ -73,9 +66,7 @@ def test_missing_checkpoint_identity_fails_closed(key: str, reason: str) -> None
 def test_missing_outcome_is_not_silently_promoted() -> None:
     env = valid_env()
     env.pop("COMPILE_OUTCOME")
-
     status = build_status(env)
-
     assert status["checkpoint_valid"] is False
     assert "compile:missing" in status["invalid_reasons"]
 
@@ -83,7 +74,6 @@ def test_missing_outcome_is_not_silently_promoted() -> None:
 def test_pull_request_merge_runner_sha_does_not_replace_source_head_sha() -> None:
     env = valid_env()
     status = build_status(env)
-
     assert status["checkpoint_valid"] is True
     assert status["sha"] != status["runner_sha"]
     assert status["sha"] == env["CHECKPOINT_SHA"]
@@ -114,9 +104,7 @@ def test_consumer_rejects_unknown_or_legacy_schema(schema: object) -> None:
         ("run_id", "999", "identity:run_id:mismatch"),
     ],
 )
-def test_consumer_rejects_replayed_or_mismatched_identity(
-    field: str, value: str, expected_reason: str
-) -> None:
+def test_consumer_rejects_replayed_or_mismatched_identity(field: str, value: str, expected_reason: str) -> None:
     status = valid_status()
     status[field] = value
     ok, reasons = validate_status(
@@ -160,3 +148,40 @@ def test_consumer_rejects_missing_malformed_or_timezone_free_timestamp(generated
     ok, reasons = validate_status(status, expected_repository="owner/repo", expected_sha="a" * 40)
     assert ok is False
     assert any(reason.startswith("generated_at:") for reason in reasons)
+
+
+def test_consumer_rejects_stale_checkpoint() -> None:
+    ok, reasons = validate_status(
+        valid_status(),
+        expected_repository="owner/repo",
+        expected_sha="a" * 40,
+        max_age_seconds=300,
+        now=datetime(2026, 8, 7, 12, 5, 1, tzinfo=timezone.utc),
+    )
+    assert ok is False
+    assert "freshness:stale" in reasons
+
+
+def test_consumer_rejects_future_checkpoint() -> None:
+    ok, reasons = validate_status(
+        valid_status(),
+        expected_repository="owner/repo",
+        expected_sha="a" * 40,
+        max_age_seconds=300,
+        now=datetime(2026, 8, 7, 11, 59, 59, tzinfo=timezone.utc),
+    )
+    assert ok is False
+    assert "freshness:future" in reasons
+
+
+@pytest.mark.parametrize("max_age", [0, -1, True])
+def test_consumer_rejects_invalid_freshness_policy(max_age: object) -> None:
+    ok, reasons = validate_status(
+        valid_status(),
+        expected_repository="owner/repo",
+        expected_sha="a" * 40,
+        max_age_seconds=max_age,  # type: ignore[arg-type]
+        now=datetime(2026, 8, 7, 12, 1, tzinfo=timezone.utc),
+    )
+    assert ok is False
+    assert "freshness:policy_invalid" in reasons
