@@ -10,7 +10,8 @@ STEP_ENV = {
 }
 IDENTITY_ENV = {
     "repository": "GITHUB_REPOSITORY",
-    "sha": "GITHUB_SHA",
+    "sha": "CHECKPOINT_SHA",
+    "runner_sha": "GITHUB_SHA",
     "run_id": "GITHUB_RUN_ID",
     "run_attempt": "GITHUB_RUN_ATTEMPT",
     "event_name": "GITHUB_EVENT_NAME",
@@ -32,12 +33,16 @@ def build_status(env: Mapping[str, str], *, generated_at: str | None = None) -> 
     timestamp = generated_at or datetime.now(timezone.utc).isoformat()
 
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "mode": "github-actions-cloud-fallback",
         "generated_at": timestamp,
         **identity,
         "checkpoint_valid": checkpoint_valid,
         "step_outcomes": outcomes,
         "invalid_reasons": invalid_reasons,
-        "note": "Cloud-side health/test checkpoint. Consumers must require checkpoint_valid=true.",
+        "note": (
+            "Cloud-side health/test checkpoint. 'sha' is the exact source head under test; "
+            "'runner_sha' is the GitHub Actions execution SHA and may be a pull-request merge ref. "
+            "Consumers must require checkpoint_valid=true and match sha to the expected source revision."
+        ),
     }
