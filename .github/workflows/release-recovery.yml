@@ -3,10 +3,6 @@ name: Release Recovery
 on:
   push:
     branches: [main]
-    paths:
-      - 'scripts/release_recovery_gate.py'
-      - 'tests/test_release_recovery_gate.py'
-      - '.github/workflows/release-recovery.yml'
   pull_request:
     paths:
       - 'scripts/release_recovery_gate.py'
