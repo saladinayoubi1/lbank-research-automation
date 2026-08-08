@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "project": "NEXUS / lbank-research-automation",
   "memory_policy": {
     "repository_is_durable_source": true,
@@ -22,6 +22,12 @@
     "GitHub Actions",
     "cloud fallback"
   ],
+  "runtime_status": {
+    "agent_execution_state": "not_independently_observed_this_run",
+    "laptop_state": "unknown",
+    "internet_outage_state": "unknown",
+    "laptop_offline_is_not_internet_outage": true
+  },
   "data_policy": {
     "research_only": true,
     "real_trading": false,
@@ -35,13 +41,23 @@
       "docs/project_memory/DECISIONS.md",
       "docs/project_memory/RECOVERY_PLAYBOOK.md"
     ],
-    "reconstruct_from": ["git history", "issues", "pull requests", "CI/workflow evidence", "durable project memory"],
+    "reconstruct_from": [
+      "repository project memory",
+      "STATE",
+      "decision log",
+      "recovery playbook",
+      "exact current pull requests and CI evidence",
+      "Google Drive durable backup"
+    ],
     "chat_loss_tolerated": true,
-    "local_machine_loss_tolerated_for_project_knowledge": true
+    "local_machine_loss_tolerated_for_project_knowledge": true,
+    "drive_is_secondary_continuity_backup": true
   },
   "current_evidence": {
     "observed_main_sha": "d6b16ef146d3bf75efe7ae9e0675c1c22d78620c",
     "observed_at_utc": "2026-08-08T09:02:00Z",
+    "authoritative_memory_pr": 140,
+    "superseded_memory_prs": [129, 139],
     "market_data_source_hierarchy": {
       "status": "ADR-009, reconciliation-agent alignment, and first executable source-mapping validator merged; real source mappings remain unapproved by default",
       "primary": "Bybit",
