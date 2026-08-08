@@ -52,8 +52,29 @@ def _sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _validated_input_timestamps(frame: pd.DataFrame, timeframe: str) -> pd.DatetimeIndex:
+    if timeframe not in TIMEFRAME_SECONDS:
+        raise ValueError("unsupported_timeframe")
+    if "timestamp" not in frame.columns:
+        raise ValueError("timestamp_column_missing")
+
+    parsed = pd.to_datetime(frame["timestamp"], utc=True, errors="coerce")
+    if parsed.isna().any():
+        raise ValueError("invalid_timestamp")
+    if parsed.duplicated().any():
+        raise ValueError("duplicate_timestamp")
+    if not parsed.is_monotonic_increasing:
+        raise ValueError("out_of_order_timestamp")
+
+    timestamps = pd.DatetimeIndex(parsed)
+    step_ns = int(TIMEFRAME_SECONDS[timeframe]) * 1_000_000_000
+    if len(timestamps) and (timestamps.asi8 % step_ns != 0).any():
+        raise ValueError("off_grid_timestamp")
+    return timestamps
+
+
 def missing_timestamps(frame: pd.DataFrame, timeframe: str) -> list[pd.Timestamp]:
-    timestamps = pd.DatetimeIndex(pd.to_datetime(frame["timestamp"], utc=True).drop_duplicates().sort_values())
+    timestamps = _validated_input_timestamps(frame, timeframe)
     if len(timestamps) < 2:
         return []
     step = pd.Timedelta(TIMEFRAME_SECONDS[timeframe], unit="s")
