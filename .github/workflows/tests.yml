@@ -36,5 +36,8 @@ jobs:
       - name: Compile Python sources
         run: python -m compileall -q .
 
+      - name: Validate NEXUS architecture contracts
+        run: python nexus_architecture_validator.py docs/architecture/module-contract-registry.yaml
+
       - name: Run tests
         run: python -m pytest -q
