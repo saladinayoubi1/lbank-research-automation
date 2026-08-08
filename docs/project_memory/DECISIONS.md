@@ -35,3 +35,12 @@ Evidence: `main` at `914c8e3d70fe598407f4e7e2b06a6152b74d5015`, `data/market/_da
 Decision: 19 of 21 tracked LBank symbol/timeframe series are not research-ready because historical continuity checks fail. Current freshness is within policy and duplicate/off-grid counts are zero, so the active blocker is persistent historical gaps, not present collector staleness. Only `aero_usdt/hour4` and `agt_usdt/hour4` are currently ready.
 
 Policy: Keep all affected series excluded from Backtest, Strategy Lab, Decision Engine and Paper Trading. Missing intervals remain `unknown/unavailable` until deterministic reconciliation proves that an approved public source exposes the candle. Never fabricate/interpolate candles or silently mix exchange namespaces to make integrity green.
+
+## 2026-08-08 — Bybit/Binance/LBank source hierarchy is governed by ADR-009
+Status: ACTIVE
+
+Evidence: PR #132 merged at exact head `df3b3fa754bfbba93961d13674bf1296c9bc34f9` after `Test`, `NEXUS Build Verification`, and `NEXUS Cloud Fallback` succeeded, mergeability was true, and unresolved review threads were zero. Resulting `main` observed at `7d1ef589310a3f63149ea8a6bb3598a1b0217916`.
+
+Decision: For NEXUS research and paper-trading data architecture, Bybit is the primary market/execution reference, Binance is secondary compatible corroboration/backfill evidence, and LBank is tertiary/research-only. Cross-source data may be reconciled only under explicit semantic compatibility and provenance. No source may be silently relabeled as another exchange; ambiguity, unavailable evidence, open candles, unresolved gaps, checksum/provenance failures, or material disagreement remain fail-closed.
+
+Boundary: This decision authorizes public-data architecture only. It does not authorize live trading, credentials, signing, billing, production deployment, or real financial actions. Implementation remains pending under #131 and must satisfy ADR-009 tests, rollback/recovery, deterministic mapping/manifest contracts, exact-head CI and review gates before merge.
