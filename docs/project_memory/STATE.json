@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "NEXUS / lbank-research-automation",
-  "observed_at_utc": "2026-08-08T05:30:00Z",
+  "observed_at_utc": "2026-08-08T07:19:00Z",
   "memory_policy": {
     "repository_is_durable_source": true,
     "chat_is_source_of_truth": false,
@@ -27,31 +27,39 @@
     "research_only": true,
     "real_trading": false,
     "fabricated_market_data": false,
-    "invalid_data_may_pass_research_gate": false
+    "invalid_data_may_pass_research_gate": false,
+    "execution_exchange": "Bybit",
+    "market_data_hierarchy": {
+      "primary": "Bybit",
+      "secondary": "Binance",
+      "tertiary": "LBank"
+    },
+    "source_policy_issue": 131,
+    "silent_cross_exchange_substitution_allowed": false
   },
   "repository_snapshot": {
-    "main_sha": "887d50a8de34df4d7f7d4cda38773e43470e7b36",
+    "main_sha": "44db8d6e6b3797e26bd56d18ec6acb5f529545bc",
     "main_head_commit": "data: update LBank public candles",
     "main_head_change_path": "direct_main_data_commit",
-    "main_head_ci_evidence": "no_combined_status_or_commit_associated_workflow_run_observed_on_current_verification_surface",
+    "main_head_ci_evidence": "not_independently_verified_on_current_connected_surface_this_run",
     "release_fail_closed_issue": 124,
+    "recent_architecture_changes": [
+      {"pull_request": 130, "merge_commit_sha": "e8867307459901df18aaa3e05c7f08947d07e423", "status": "merged", "purpose": "dedicated data backfill and reconciliation agent contract"},
+      {"issue": 131, "status": "open", "decision": "Bybit primary/execution; Binance secondary cross-validation/backfill; LBank tertiary/research-only", "implementation_status": "governed design pending reviewed implementation; no silent substitution"}
+    ],
     "open_pull_requests": [
-      {"number": 129, "head_sha": "e254ee74719547da1aa1ce66b025f664d204d41d", "draft": true, "mergeable_observed": false, "purpose": "refresh durable continuity snapshot", "ci_observed": "Test/NEXUS Build Verification/NEXUS Cloud Fallback succeeded on this pre-memory-update head", "note": "this branch receives a new SHA after this memory write; re-query exact PR head, mergeability, CI and review threads before any merge"},
-      {"number": 123, "head_sha": "64733a814e641688add6f9979aee25ad46cfebab", "draft": true, "mergeable_observed": false, "purpose": "event-driven CI failure triage", "claim_boundary": "no independent release or production authority"},
+      {"number": 129, "head_sha_before_this_memory_update": "6d580861acda99a37bd271fb9559ea9baded4126", "draft": true, "mergeable_observed_before_this_update": false, "purpose": "refresh durable continuity snapshot", "note": "this memory write creates a new head; re-query exact final head CI, mergeability and review threads before merge"},
+      {"number": 123, "head_sha": "64733a814e641688add6f9979aee25ad46cfebab", "draft": true, "mergeable_observed": false, "purpose": "event-driven CI failure triage"},
       {"number": 117, "head_sha": "043c4465ab268769c3ecfb51d07c214c1a5509fd", "draft": true, "mergeable_observed": false, "purpose": "fail-closed cloud fallback checkpoint", "blocker": "independent control-plane authorization remains unresolved in issue #106"},
       {"number": 105, "head_sha": "28a90f918d82fe76149288cac0646de53a320d2a", "draft": true, "mergeable_observed": false, "purpose": "enforce NEXUS contract validator in CI", "blocker": "independent authorization remains unresolved in issue #106"}
     ],
     "superseded_pull_requests": [121],
-    "active_blockers": [43, 64, 89, 91, 106, 122, 124, 125],
+    "active_blockers": [43, 64, 89, 91, 106, 122, 124, 125, 131],
     "data_readiness": {
-      "source_sha": "887d50a8de34df4d7f7d4cda38773e43470e7b36",
-      "total_series": 21,
-      "ready_for_research": 2,
-      "blocked": 19,
-      "freshness_policy_version": "1.0.0",
-      "duplicates_observed": 0,
-      "off_grid_observed": 0,
-      "integrity_blocker": 125
+      "source_sha": "44db8d6e6b3797e26bd56d18ec6acb5f529545bc",
+      "status": "fail_closed_pending_exact_sha_revalidation",
+      "integrity_blocker": 125,
+      "note": "Do not carry forward prior exact counts as current-main evidence without re-reading current readiness artifacts. Invalid, stale, ambiguous, duplicate, out-of-order or off-grid data remains excluded from downstream consumers."
     },
     "release_authority": {
       "production_ready": false,
@@ -60,7 +68,16 @@
       "credentials_authorized": false,
       "billing_authorized": false,
       "deployment_authorized": false,
-      "live_financial_actions_authorized": false
+      "live_financial_actions_authorized": false,
+      "remaining_evidence_requirements": [
+        "exact-main release CI evidence",
+        "trusted provenance",
+        "reproducible build proof",
+        "tested rollback",
+        "measured backup/restore RPO/RTO",
+        "independent disaster-recovery exercise",
+        "exact-head cross-platform release validation"
+      ]
     }
   },
   "external_backup": {
@@ -69,7 +86,8 @@
     "document_name": "NEXUS Project Memory Backup — Durable",
     "document_id": "14wBdcjec0_0PhDzupk7QjaPlB3A_uw4A1EUzseeKQ4s",
     "object_presence_observed": true,
-    "latest_observed_snapshot_mentions_main_sha": "959d33088bc4aed1a3da6fd3c90350eb3fec6fe8",
+    "latest_observed_snapshot_mentions_main_sha": "887d50a8de34df4d7f7d4cda38773e43470e7b36",
+    "refresh_required_for_main_sha": "44db8d6e6b3797e26bd56d18ec6acb5f529545bc",
     "source_sha_verified": false,
     "content_hash_verified": false,
     "freshness_contract_verified": false,
@@ -85,7 +103,7 @@
       "docs/project_memory/RECOVERY_PLAYBOOK.md"
     ],
     "reconstruct_from": ["git history", "issues", "pull requests", "CI/workflow evidence", "durable project memory"],
-    "conditional_external_recovery_source": "Google Drive only after issue #122 validation",
+    "conditional_external_recovery_source": "Google Drive only after repository sources and subject to issue #122 validation",
     "chat_loss_tolerated": true,
     "local_machine_loss_tolerated_for_project_knowledge": true,
     "laptop_offline_is_not_internet_outage": true
