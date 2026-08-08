@@ -70,18 +70,18 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "76f010d9e8b4fe4a6769b5fe126ecbd1d8e4d074",
-    "observed_at_utc": "2026-08-08T09:49:29Z",
+    "observed_main_sha": "fa5926504e004ba358f14039de0b8a1ab3d85d66",
+    "observed_at_utc": "2026-08-08T10:34:25Z",
     "authoritative_memory_pr": 140,
     "superseded_memory_prs": [129, 139],
     "memory_pr_validation": {
-      "previous_exact_head": "13dc4013629de891103af8637c7c0e98fb5de62d",
+      "previous_exact_head": "f658c781d6936efa962ab60630f167ddce7a83ba",
       "mergeable": true,
       "unresolved_review_threads": 0,
-      "test": "success",
-      "build_verification": "success",
-      "cloud_fallback": "success",
-      "note": "this evidence predates the current fail-closed Drive clarification commit and must be revalidated before merge"
+      "test": "pending_revalidation_after_current_state_refresh",
+      "build_verification": "pending_revalidation_after_current_state_refresh",
+      "cloud_fallback": "pending_revalidation_after_current_state_refresh",
+      "note": "merge is prohibited until all applicable CI is green on the new exact memory head"
     },
     "release_readiness": {
       "production_ready": false,
@@ -100,15 +100,23 @@
       "release_blockers": [43, 124]
     },
     "market_data_source_hierarchy": {
-      "status": "ADR-009, reconciliation-agent alignment, source-mapping validator merged; Binance public Spot adapter remains draft in PR #141 with interval/window/completeness hardening pending exact-head CI; real source mappings remain unapproved by default",
+      "status": "ADR-009, reconciliation-agent alignment, source-mapping validator and bounded Binance public Spot adapter are merged; real source mappings remain unapproved by default",
       "primary": "Bybit",
       "secondary": "Binance",
       "tertiary": "LBank",
       "adr": "docs/architecture/ADR-009-market-data-source-hierarchy.md",
       "source_registry": "docs/architecture/market-data-source-registry.yaml",
       "source_registry_mappings": 0,
-      "merge_prs": [132, 135, 136],
-      "open_adapter_pr": 141
+      "merge_prs": [132, 135, 136, 141],
+      "binance_adapter_merge": {
+        "pr": 141,
+        "exact_head": "c6c1fa11edfebbabc1dcfe1992fe6f9c4eebdf2c",
+        "resulting_main": "fa5926504e004ba358f14039de0b8a1ab3d85d66",
+        "test": "success",
+        "build_verification": "success",
+        "cloud_fallback": "success",
+        "unresolved_review_threads": 0
+      }
     },
     "architecture_validation": {
       "ci_enforcement_pr": 138,
