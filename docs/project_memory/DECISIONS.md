@@ -35,3 +35,21 @@ Evidence: `main` at `914c8e3d70fe598407f4e7e2b06a6152b74d5015`, `data/market/_da
 Decision: 19 of 21 tracked LBank symbol/timeframe series are not research-ready because historical continuity checks fail. Current freshness is within policy and duplicate/off-grid counts are zero, so the active blocker is persistent historical gaps, not present collector staleness. Only `aero_usdt/hour4` and `agt_usdt/hour4` are currently ready.
 
 Policy: Keep all affected series excluded from Backtest, Strategy Lab, Decision Engine and Paper Trading. Missing intervals remain `unknown/unavailable` until deterministic reconciliation proves that an approved public source exposes the candle. Never fabricate/interpolate candles or silently mix exchange namespaces to make integrity green.
+
+## 2026-08-08 — Every main push requires traceable release-readiness evidence
+Status: ACTIVE
+
+Evidence: PR #128 merged into `main` as `069c54e0ba9b5dd4df89a29567b96fb9688e1be3`. The release-readiness workflow now subscribes to every push to `main`. On the currently available verification surface, combined status for the exact main SHA is empty and commit-associated workflow lookup exposes no run; that lookup is PR-event-limited, so absence is not proof that a push-triggered run did not execute.
+
+Decision: Release authority remains fail-closed until CI evidence can be independently observed and bound to the exact candidate main SHA. A workflow trigger configuration is prospective control, not evidence that a particular main commit passed. Issue #124 remains the release blocker.
+
+Operational rule: Repository-managed data, code, schema and workflow changes should flow through branch/PR review or an explicitly reviewed equivalent control that preserves immutable exact-SHA evidence. Repeated direct `data: update LBank public candles` commits on `main` remain a provenance/change-control gap until that path is governed.
+
+## 2026-08-08 — External Drive copy is continuity aid, not recovery proof
+Status: ACTIVE
+
+Evidence: Google Drive folder `NEXUS Project Memory Backup` and document `NEXUS Project Memory Backup — Durable` are present; the latest observed document snapshot mentions current main `069c54e0ba9b5dd4df89a29567b96fb9688e1be3` and preserves the no-secrets and laptop-offline/internet-outage distinction.
+
+Decision: The Drive document is an independent continuity copy only. It must not be promoted to recovery-proven, tamper-resistant, privacy-verified, or production-authoritative evidence until #122 proves source-SHA binding, content hash, freshness contract, provider-object binding, no-secrets/privacy validation and recovery exercise behavior.
+
+Rollback/recovery: Preserve the previous-known-good repository memory and Drive copy when validation fails. Quarantine stale, conflicting or unverifiable candidates instead of overwriting known-good continuity evidence.
