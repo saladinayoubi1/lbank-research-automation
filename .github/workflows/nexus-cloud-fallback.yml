@@ -32,6 +32,7 @@ jobs:
           cache: 'pip'
 
       - name: Install locked test dependencies
+        id: install
         shell: bash
         run: |
           python -m pip install --upgrade pip
@@ -47,6 +48,7 @@ jobs:
           python -m pip check
 
       - name: Compile Python sources
+        id: compile
         shell: bash
         run: |
           python - <<'PY'
@@ -57,6 +59,7 @@ jobs:
           PY
 
       - name: Run tests
+        id: tests
         shell: bash
         run: |
           if [ -d tests ]; then python -m pytest -q; else echo 'No tests directory'; fi
@@ -64,20 +67,21 @@ jobs:
       - name: Build fallback status
         if: always()
         shell: bash
+        env:
+          INSTALL_OUTCOME: ${{ steps.install.outcome }}
+          COMPILE_OUTCOME: ${{ steps.compile.outcome }}
+          TEST_OUTCOME: ${{ steps.tests.outcome }}
+          CHECKPOINT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           mkdir -p fallback-status
           python - <<'PY'
-          import json, os
-          from datetime import datetime, timezone
-          data = {
-              'mode': 'github-actions-cloud-fallback',
-              'generated_at': datetime.now(timezone.utc).isoformat(),
-              'repository': os.getenv('GITHUB_REPOSITORY'),
-              'sha': os.getenv('GITHUB_SHA'),
-              'run_id': os.getenv('GITHUB_RUN_ID'),
-              'note': 'Runs independently of the local laptop and provides a cloud-side health/test checkpoint.'
-          }
-          open('fallback-status/status.json','w',encoding='utf-8').write(json.dumps(data, indent=2))
+          import json
+          import os
+
+          from nexus_cloud_fallback_status import build_status
+
+          with open('fallback-status/status.json', 'w', encoding='utf-8') as handle:
+              json.dump(build_status(os.environ), handle, indent=2)
           PY
 
       - name: Upload fallback checkpoint
