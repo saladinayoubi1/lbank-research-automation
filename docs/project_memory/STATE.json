@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "NEXUS / lbank-research-automation",
-  "observed_at_utc": "2026-08-08T05:19:45Z",
+  "observed_at_utc": "2026-08-08T05:30:00Z",
   "memory_policy": {
     "repository_is_durable_source": true,
     "chat_is_source_of_truth": false,
@@ -30,19 +30,29 @@
     "invalid_data_may_pass_research_gate": false
   },
   "repository_snapshot": {
-    "main_sha": "959d33088bc4aed1a3da6fd3c90350eb3fec6fe8",
+    "main_sha": "887d50a8de34df4d7f7d4cda38773e43470e7b36",
     "main_head_commit": "data: update LBank public candles",
     "main_head_change_path": "direct_main_data_commit",
     "main_head_ci_evidence": "no_combined_status_or_commit_associated_workflow_run_observed_on_current_verification_surface",
     "release_fail_closed_issue": 124,
     "open_pull_requests": [
-      {"number": 129, "head_sha": "a952c0164600b31c7f0014b3b158abeaf98abc47", "draft": true, "mergeable_observed": true, "purpose": "refresh durable continuity snapshot", "note": "pre-update observed head; this branch receives a new SHA after this memory write, so re-query exact PR head before any merge"},
+      {"number": 129, "head_sha": "e254ee74719547da1aa1ce66b025f664d204d41d", "draft": true, "mergeable_observed": false, "purpose": "refresh durable continuity snapshot", "ci_observed": "Test/NEXUS Build Verification/NEXUS Cloud Fallback succeeded on this pre-memory-update head", "note": "this branch receives a new SHA after this memory write; re-query exact PR head, mergeability, CI and review threads before any merge"},
       {"number": 123, "head_sha": "64733a814e641688add6f9979aee25ad46cfebab", "draft": true, "mergeable_observed": false, "purpose": "event-driven CI failure triage", "claim_boundary": "no independent release or production authority"},
-      {"number": 117, "head_sha": "043c4465ab268769c3ecfb51d07c214c1a5509fd", "draft": true, "mergeable_observed": true, "purpose": "fail-closed cloud fallback checkpoint", "blocker": "independent control-plane authorization remains unresolved in issue #106"},
+      {"number": 117, "head_sha": "043c4465ab268769c3ecfb51d07c214c1a5509fd", "draft": true, "mergeable_observed": false, "purpose": "fail-closed cloud fallback checkpoint", "blocker": "independent control-plane authorization remains unresolved in issue #106"},
       {"number": 105, "head_sha": "28a90f918d82fe76149288cac0646de53a320d2a", "draft": true, "mergeable_observed": false, "purpose": "enforce NEXUS contract validator in CI", "blocker": "independent authorization remains unresolved in issue #106"}
     ],
     "superseded_pull_requests": [121],
     "active_blockers": [43, 64, 89, 91, 106, 122, 124, 125],
+    "data_readiness": {
+      "source_sha": "887d50a8de34df4d7f7d4cda38773e43470e7b36",
+      "total_series": 21,
+      "ready_for_research": 2,
+      "blocked": 19,
+      "freshness_policy_version": "1.0.0",
+      "duplicates_observed": 0,
+      "off_grid_observed": 0,
+      "integrity_blocker": 125
+    },
     "release_authority": {
       "production_ready": false,
       "signing_authorized": false,
