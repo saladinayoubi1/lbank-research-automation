@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "observed_main_sha": "bdf357d067876b67af69df7e8e475cfd07f74313",
+  "observed_at_utc": "2026-08-08T17:37:00Z",
+  "production_ready": false,
+  "data_readiness": {"total_series": 21, "ready": 2, "blocked": 19, "evaluated_at_utc": "2026-08-08T17:11:35.680210+00:00"},
+  "merged_material_prs": {"170": "bounded exhaustive gap repair", "172": "BTC/ETH mappings and fail-closed reconciliation candidates", "175": "privacy-scoped main-ref-only self-hosted runner"},
+  "open_prs": [117, 176],
+  "active_blockers": [43,58,64,89,91,106,107,122,124,125,131],
+  "notes": [
+    "PR 176 remains draft and aggregate issue 131 is not closed.",
+    "Google Drive remains non-authoritative until issue 122 verification requirements are satisfied.",
+    "No live trading, credentials, billing, signing, production deployment, or dataset promotion is authorized."
+  ]
+}
