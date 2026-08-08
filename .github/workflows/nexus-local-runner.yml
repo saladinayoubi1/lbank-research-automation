@@ -25,7 +25,8 @@ jobs:
     # Self-hosted runners must never execute repository code from arbitrary refs.
     # Dispatches against non-main refs are skipped fail-closed.
     if: github.ref == 'refs/heads/main'
-    runs-on: [self-hosted, Windows, X64, nexus-local]
+    # The registered Windows runner currently has the default labels only.
+    runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 120
     defaults:
       run:
@@ -63,3 +64,7 @@ jobs:
       - name: Exhaustive gap repair
         if: inputs.task == 'exhaustive-gap-repair'
         run: python exhaustive_gap_repair.py
+
+      - name: Local change report
+        if: always()
+        run: git status --short
