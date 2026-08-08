@@ -48,15 +48,14 @@
       "STATE",
       "decision log",
       "recovery playbook",
-      "exact current pull requests and CI evidence",
-      "Google Drive durable backup"
+      "exact current pull requests and CI evidence"
     ],
     "chat_loss_tolerated": true,
     "local_machine_loss_tolerated_for_project_knowledge": true,
-    "drive_is_secondary_continuity_backup": true,
+    "drive_is_secondary_continuity_backup": false,
     "external_backup_candidate": {
       "provider": "Google Drive",
-      "status": "present-but-not-authoritative-for-recovery-until-contract-verification",
+      "status": "presence-only-untrusted-candidate-until-contract-verification",
       "may_authorize_recovery": false,
       "required_before_use": [
         "versioned contract",
@@ -74,11 +73,12 @@
   "current_evidence": {
     "observed_main_sha": "9e6dc5a79bd8ee6ed21f1e18f9d4f121b91948e2",
     "observed_at_utc": "2026-08-08T19:18:06Z",
-    "open_pull_requests": [117, 183],
+    "open_pull_requests": [117, 183, 184],
     "memory_refresh_branch": "continuity/refresh-release-state-20260808-2248",
     "memory_pr_validation": {
-      "state": "pending_exact_head_ci_after_refresh",
-      "merge_allowed": false
+      "state": "pending_exact_head_ci_after_fail_closed_refresh",
+      "merge_allowed": false,
+      "note": "Drive remains non-authoritative; merge only after exact final head CI is green, mergeable=true and review evidence is clean"
     },
     "release_readiness": {
       "production_ready": false,
@@ -111,14 +111,16 @@
     },
     "pull_request_evidence": {
       "183": {
-        "head": "c6e7eafda6340407a96f8acd89314315ae8effa0",
+        "head": "7c122c2c003bbd5aedf4ff3f38533f9b9e3bc83c",
         "draft": true,
-        "mergeable": false,
+        "mergeable": true,
         "ci": {
-          "Test": "success",
-          "NEXUS Build Verification": "success",
-          "NEXUS Cloud Fallback": "success"
+          "Test": "in_progress",
+          "NEXUS Build Verification": "in_progress",
+          "NEXUS Cloud Fallback": "in_progress"
         },
+        "review_blocker": "unbounded max_candidates fan-out",
+        "review_blocker_remediation": "hard MAX_CANDIDATES=50 library bound plus zero-fetch negative regressions and exact-boundary test; awaiting exact-head CI revalidation",
         "scope_conflicts_with_memory_refresh": false
       },
       "117": {
