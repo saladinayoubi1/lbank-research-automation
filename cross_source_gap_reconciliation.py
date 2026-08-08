@@ -22,6 +22,7 @@ TIMEFRAME_MAP = {
 }
 SUPPORTED_SYMBOLS = {"btc_usdt": "BTCUSDT", "eth_usdt": "ETHUSDT"}
 MAX_OHLC_RELATIVE_DEVIATION = Decimal("0.01")
+MAX_CANDIDATES = 50
 OUTPUT_ROOT = Path("data/market/reconciliation")
 OHLC_FIELDS = ("open", "high", "low", "close")
 
@@ -71,6 +72,14 @@ def _validated_input_timestamps(frame: pd.DataFrame, timeframe: str) -> pd.Datet
     if len(timestamps) and (timestamps.asi8 % step_ns != 0).any():
         raise ValueError("off_grid_timestamp")
     return timestamps
+
+
+def _validated_max_candidates(value: int) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError("invalid_max_candidates")
+    if not 1 <= value <= MAX_CANDIDATES:
+        raise ValueError("max_candidates_out_of_bounds")
+    return value
 
 
 def missing_timestamps(frame: pd.DataFrame, timeframe: str) -> list[pd.Timestamp]:
@@ -210,9 +219,10 @@ def reconcile_dataset(
     symbol: str,
     timeframe: str,
     *,
-    max_candidates: int = 50,
+    max_candidates: int = MAX_CANDIDATES,
     generated_at: datetime | None = None,
 ) -> dict[str, Any]:
+    max_candidates = _validated_max_candidates(max_candidates)
     frame = pd.read_parquet(path)
     missing = missing_timestamps(frame, timeframe)
     generated_at = generated_at or datetime.now(timezone.utc)
@@ -230,6 +240,7 @@ def reconcile_dataset(
             "secondary": "Binance",
             "tertiary": "LBank",
             "max_ohlc_relative_deviation": str(MAX_OHLC_RELATIVE_DEVIATION),
+            "max_candidates": MAX_CANDIDATES,
             "synthetic_candles": False,
             "silent_substitution": False,
         },
@@ -256,10 +267,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Generate fail-closed Bybit/Binance reconciliation candidates for LBank gaps")
     parser.add_argument("symbol", choices=sorted(SUPPORTED_SYMBOLS))
     parser.add_argument("timeframe", choices=sorted(TIMEFRAME_MAP))
-    parser.add_argument("--max-candidates", type=int, default=50)
+    parser.add_argument("--max-candidates", type=int, default=MAX_CANDIDATES)
     args = parser.parse_args()
     path = Path("data/market") / args.symbol / f"{args.timeframe}.parquet"
-    payload = reconcile_dataset(path, args.symbol, args.timeframe, max_candidates=max(1, args.max_candidates))
+    payload = reconcile_dataset(path, args.symbol, args.timeframe, max_candidates=args.max_candidates)
     eligible = sum(candidate["status"] == "eligible_candidate" for candidate in payload["candidates"])
     blocked = len(payload["candidates"]) - eligible
     print(json.dumps({"symbol": args.symbol, "timeframe": args.timeframe, "eligible": eligible, "blocked": blocked, "missing_total": payload["input"]["missing_total"], "reconciliation_sha256": payload["reconciliation_sha256"]}, sort_keys=True))
