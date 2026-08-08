@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "project": "NEXUS / lbank-research-automation",
   "memory_policy": {
     "repository_is_durable_source": true,
@@ -52,9 +52,10 @@
     ],
     "chat_loss_tolerated": true,
     "local_machine_loss_tolerated_for_project_knowledge": true,
+    "drive_is_secondary_continuity_backup": false,
     "external_backup_candidate": {
       "provider": "Google Drive",
-      "status": "presence-only-untrusted-candidate-until-issue-122",
+      "status": "presence-only-untrusted-candidate-until-contract-verification",
       "may_authorize_recovery": false,
       "required_before_use": [
         "versioned contract",
@@ -70,14 +71,19 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "87f9e55dd69b76602690d7260fc4d5edca5c1903",
-    "observed_at_utc": "2026-08-08T11:20:00Z",
-    "authoritative_memory_pr": 140,
-    "superseded_memory_prs": [129, 139],
+    "observed_main_sha": "7865c886d60ee8428e8ed742783d2fee96e83207",
+    "observed_at_utc": "2026-08-08T20:13:09Z",
+    "latest_main_change": {
+      "commit": "7865c886d60ee8428e8ed742783d2fee96e83207",
+      "summary": "data: update LBank public candles",
+      "architecture_or_core_goal_change_observed": false
+    },
+    "open_pull_requests": [117, 184],
+    "memory_refresh_branch": "continuity/refresh-release-state-20260808-2248",
     "memory_pr_validation": {
-      "state": "pending_revalidation_after_current_state_refresh",
+      "state": "pending_exact_head_ci_after_material_event_refresh",
       "merge_allowed": false,
-      "note": "re-read exact memory head and require applicable green CI, mergeable=true and zero unresolved review threads before merge"
+      "note": "Drive remains non-authoritative; merge only after exact final head CI is green, mergeable=true and review evidence is clean"
     },
     "release_readiness": {
       "production_ready": false,
@@ -87,41 +93,68 @@
       "cyclonedx_sbom_gate": true,
       "provenance_binding_gate": true,
       "production_signature_policy_configured": false,
-      "reproducible_build_proven": false,
-      "rollback_exercised": false,
+      "reproducible_build_comparison_gate": true,
+      "reproducible_production_build_proven": false,
+      "rollback_record_gate": true,
+      "rollback_exercised_in_production": false,
       "backup_restore_rpo_rto_proven": false,
       "independent_disaster_recovery_proven": false,
+      "cross_platform_workflow_matrix": ["ubuntu-latest", "windows-latest", "macos-latest"],
       "exact_main_cross_platform_release_evidence_proven": false,
       "owner_production_approval": false,
+      "release_readiness_main_push_control": {
+        "status": "absent_on_observed_main",
+        "workflow": ".github/workflows/release-readiness.yml",
+        "note": "current workflow is pull_request/workflow_dispatch only; enabling a three-OS main-push matrix may affect Actions usage and requires owner billing approval"
+      },
       "release_recovery_main_push_control": {
-        "status": "validated_candidate_unmerged",
-        "pr": 144,
-        "candidate_head": "3ea336881abdce5e7f80f95cfc1017fd7c425a60",
-        "scope": "remove Release Recovery push-to-main path filter; preserve cross-platform fail-closed tests",
-        "exact_head_ci": ["Release Recovery", "Workflow Permissions Policy", "NEXUS Cloud Fallback", "Test", "NEXUS Build Verification"],
-        "all_observed_ci_green": true,
-        "mergeable": true,
-        "unresolved_review_threads": 0,
-        "merge_allowed": false,
-        "merge_blocker": "automated merge attempt was blocked by tool safety controls; candidate remains open and unchanged"
+        "status": "merged",
+        "merge_pr": 148,
+        "scope": "Release Recovery runs on every push to main and preserves pull-request path scoping",
+        "production_authority": false
+      },
+      "fail_closed_verification": {
+        "release_gate": "rejects missing/tampered/malformed manifest, SBOM and provenance; production signature verification blocks without approved identity policy",
+        "recovery_gate": "rejects non-identical outputs, unsafe rollback evidence and pre-authorized rollback records"
       },
       "release_blockers": [43, 58, 64, 124]
     },
+    "pull_request_evidence": {
+      "184": {
+        "state": "open",
+        "draft": true,
+        "scope": "docs/project_memory/STATE.json only",
+        "scope_conflicts_with_pr_117": false,
+        "pre_refresh_head_ci": {
+          "head": "5e6a20d0f2bac0cef17ad959303a739c267c19ec",
+          "Test": "success",
+          "NEXUS Build Verification": "success",
+          "NEXUS Cloud Fallback": "success"
+        },
+        "exact_final_head_ci": "pending_after_this_refresh"
+      },
+      "117": {
+        "state": "open",
+        "head": "043c4465ab268769c3ecfb51d07c214c1a5509fd",
+        "draft": true,
+        "mergeable": true,
+        "scope_conflicts_with_memory_refresh": false
+      }
+    },
     "market_data_source_hierarchy": {
-      "status": "ADR-009, reconciliation-agent alignment, source-mapping validator and bounded Binance public Spot adapter are merged; real source mappings remain unapproved by default",
       "primary": "Bybit",
       "secondary": "Binance",
       "tertiary": "LBank",
-      "adr": "docs/architecture/ADR-009-market-data-source-hierarchy.md",
-      "source_registry": "docs/architecture/market-data-source-registry.yaml",
-      "source_registry_mappings": 0,
-      "merge_prs": [132, 135, 136, 141]
+      "real_source_mappings_default_approved": false
     },
     "architecture_validation": {
       "ci_enforcement_pr": 138,
-      "status": "merged; Test workflow runs nexus_architecture_validator.py before pytest",
       "independent_control_plane_proven": false,
       "remaining_blocker": 106
+    },
+    "offline_semantics": {
+      "internet_outage": "local runtime may continue in reduced mode; cloud synchronization resumes after connectivity returns",
+      "laptop_powered_off": "local collectors halt; remote cloud continuity is a separate target and must not be conflated with an internet outage"
     },
     "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131]
   }
