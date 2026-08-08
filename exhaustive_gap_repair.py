@@ -11,7 +11,8 @@ import gap_repair
 from data_readiness import generate_readiness_report
 
 DEFAULT_STATUS_PATH = Path("data/market/_backfill_status.csv")
-DEFAULT_MAX_ROUNDS = 20
+MAX_ROUNDS = 20
+DEFAULT_MAX_ROUNDS = MAX_ROUNDS
 
 
 def _status_snapshot(status_path: Path) -> dict[str, Any]:
@@ -50,8 +51,10 @@ def run_exhaustive_repair(
     repair_fn: Callable[[], int] = gap_repair.repair_all,
     readiness_fn: Callable[..., dict[str, Any]] = generate_readiness_report,
 ) -> dict[str, Any]:
-    if max_rounds < 1:
-        raise ValueError("max_rounds must be >= 1")
+    if isinstance(max_rounds, bool) or not isinstance(max_rounds, int):
+        raise ValueError("max_rounds must be an integer")
+    if not 1 <= max_rounds <= MAX_ROUNDS:
+        raise ValueError(f"max_rounds must be between 1 and {MAX_ROUNDS}")
 
     before = _status_snapshot(status_path)
     rounds: list[dict[str, Any]] = []
