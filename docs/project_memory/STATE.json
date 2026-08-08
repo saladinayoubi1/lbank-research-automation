@@ -107,9 +107,9 @@
       "release_blockers": [43, 58, 64, 124]
     },
     "open_pull_requests": {
-      "117": "cloud fallback fail-closed checkpoint; draft and non-mergeable",
-      "149": "market-data provenance manifest contract; draft and non-mergeable",
-      "151": "current Project Memory refresh; draft; exact-head revalidation required before merge"
+      "117": "cloud fallback fail-closed checkpoint; draft; mergeable=true; exact-head CI/policy revalidation still required",
+      "149": "market-data provenance manifest contract; draft; mergeable=true; #131 full ADR/recovery gate prevents slice-only merge",
+      "151": "current Project Memory refresh; draft; exact-head revalidation required after this correction"
     },
     "market_data_source_hierarchy": {
       "status": "ADR-009, reconciliation-agent alignment, source-mapping validator, bounded Binance public Spot adapter and deterministic pagination are merged; real source mappings remain unapproved by default",
