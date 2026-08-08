@@ -70,21 +70,23 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "b0ffbcb4280f83c4973374198e119d80ddac98f8",
-    "observed_at_utc": "2026-08-08T11:33:00Z",
+    "observed_main_sha": "66fda39e40d46ee8004d3d28cd5f093734bcea81",
+    "observed_at_utc": "2026-08-08T12:04:41Z",
     "last_merged_memory_pr": 140,
+    "active_memory_pr": 147,
     "superseded_memory_prs": [129, 139],
     "memory_status": {
-      "state": "pr-140-merged-after-exact-head-green-ci",
-      "pr": 140,
-      "head": "8a7855596d7063f7833c23d125e185a0a37b8148",
-      "merge_commit": "b0ffbcb4280f83c4973374198e119d80ddac98f8",
-      "unresolved_review_threads": 0,
+      "state": "pr-147-refreshing-current-evidence",
+      "last_merged_pr": 140,
+      "last_merged_head": "8a7855596d7063f7833c23d125e185a0a37b8148",
+      "last_merge_commit": "b0ffbcb4280f83c4973374198e119d80ddac98f8",
+      "unresolved_review_threads_at_last_merge": 0,
       "build_verification_retry": "initial artifact-finalization HTTP 403 was retried once and the exact-head job then succeeded",
       "ci_issue_closed": 145
     },
     "release_readiness": {
       "production_ready": false,
+      "exact_main_combined_status_count": 0,
       "exact_main_release_run_independently_verified": false,
       "artifact_manifest_gate": true,
       "cyclonedx_sbom_gate": true,
@@ -112,7 +114,8 @@
         "mergeable": true,
         "unresolved_review_threads": 0,
         "merge_allowed_by_repository_evidence": true,
-        "merge_blocker": "automated merge attempt remains blocked by tool safety controls; candidate is unchanged"
+        "main_has_advanced_since_candidate_base": true,
+        "current_diff_scope_still_only_release_recovery_workflow": true
       },
       "release_blockers": [43, 58, 64, 124]
     },
@@ -129,7 +132,10 @@
         "pr": 146,
         "head": "9da1b33660c030c458f87907238baa77b7f4faf2",
         "purpose": "deterministic bounded multi-page Binance public Spot kline retrieval",
-        "state": "draft-awaiting-ci",
+        "state": "draft-exact-head-ci-green-mergeable-review-clean",
+        "exact_head_ci_green": true,
+        "mergeable": true,
+        "unresolved_review_threads": 0,
         "changes_real_source_mapping": false,
         "changes_downstream_eligibility": false
       }
