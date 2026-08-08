@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "project": "NEXUS / lbank-research-automation",
   "memory_policy": {
     "repository_is_durable_source": true,
@@ -22,7 +22,8 @@
     "local node supervisor",
     "dashboard",
     "GitHub Actions",
-    "cloud fallback"
+    "cloud fallback",
+    "privacy-safe self-hosted Windows runner"
   ],
   "runtime_status": {
     "agent_execution_state": "not_independently_observed_this_run",
@@ -48,36 +49,51 @@
       "STATE",
       "decision log",
       "recovery playbook",
-      "exact current pull requests and CI evidence"
+      "exact current pull requests and CI evidence",
+      "Google Drive durable backup after repository evidence"
     ],
     "chat_loss_tolerated": true,
     "local_machine_loss_tolerated_for_project_knowledge": true,
     "external_backup_candidate": {
       "provider": "Google Drive",
-      "status": "presence-only-untrusted-candidate-until-issue-122",
+      "folder": "NEXUS Project Memory Backup",
+      "document": "NEXUS Project Memory Backup — Durable",
+      "status": "object-present-but-recovery-authority-unproven",
       "may_authorize_recovery": false,
-      "required_before_use": [
-        "versioned contract",
-        "bounded freshness",
-        "exact source SHA binding",
-        "content hash or manifest verification",
-        "provider object identity verification",
-        "poisoned stale replay and substitution rejection",
-        "no-secrets and privacy validation",
-        "fixed-tuple recovery exercise"
-      ],
       "blocker": 122
     }
   },
   "current_evidence": {
-    "observed_main_sha": "87f9e55dd69b76602690d7260fc4d5edca5c1903",
-    "observed_at_utc": "2026-08-08T11:20:00Z",
-    "authoritative_memory_pr": 140,
-    "superseded_memory_prs": [129, 139],
-    "memory_pr_validation": {
-      "state": "pending_revalidation_after_current_state_refresh",
-      "merge_allowed": false,
-      "note": "re-read exact memory head and require applicable green CI, mergeable=true and zero unresolved review threads before merge"
+    "observed_main_sha": "53934041fab540ae7382de1140c3ce3f3a81996b",
+    "observed_at_utc": "2026-08-08T18:15:14Z",
+    "recent_merged_milestones": {
+      "source_reconciliation": 172,
+      "privacy_safe_self_hosted_runner": 175,
+      "deterministic_market_data_provenance_manifest": 176
+    },
+    "open_pull_requests": {
+      "117": {
+        "purpose": "fail-closed cloud fallback checkpoint",
+        "mergeable": false,
+        "draft": true
+      },
+      "178": {
+        "purpose": "stale Project Memory refresh from bdf357d",
+        "mergeable": false,
+        "draft": true,
+        "superseded_by_this_refresh": true
+      },
+      "179": {
+        "purpose": "deterministic OHLC-aware source reconciliation",
+        "head_sha": "2fcdbc7d33d03a6ab8307f5ddc99a796ff1870ff",
+        "mergeable": true,
+        "draft": true,
+        "exact_head_ci": {
+          "Test": "success",
+          "NEXUS Build Verification": "success",
+          "NEXUS Cloud Fallback": "success"
+        }
+      }
     },
     "release_readiness": {
       "production_ready": false,
@@ -93,36 +109,27 @@
       "independent_disaster_recovery_proven": false,
       "exact_main_cross_platform_release_evidence_proven": false,
       "owner_production_approval": false,
-      "release_recovery_main_push_control": {
-        "status": "validated_candidate_unmerged",
-        "pr": 144,
-        "candidate_head": "3ea336881abdce5e7f80f95cfc1017fd7c425a60",
-        "scope": "remove Release Recovery push-to-main path filter; preserve cross-platform fail-closed tests",
-        "exact_head_ci": ["Release Recovery", "Workflow Permissions Policy", "NEXUS Cloud Fallback", "Test", "NEXUS Build Verification"],
-        "all_observed_ci_green": true,
-        "mergeable": true,
-        "unresolved_review_threads": 0,
-        "merge_allowed": false,
-        "merge_blocker": "automated merge attempt was blocked by tool safety controls; candidate remains open and unchanged"
-      },
       "release_blockers": [43, 58, 64, 124]
     },
     "market_data_source_hierarchy": {
-      "status": "ADR-009, reconciliation-agent alignment, source-mapping validator and bounded Binance public Spot adapter are merged; real source mappings remain unapproved by default",
       "primary": "Bybit",
       "secondary": "Binance",
       "tertiary": "LBank",
-      "adr": "docs/architecture/ADR-009-market-data-source-hierarchy.md",
-      "source_registry": "docs/architecture/market-data-source-registry.yaml",
-      "source_registry_mappings": 0,
-      "merge_prs": [132, 135, 136, 141]
+      "approved_real_mappings": "BTC/USDT spot and ETH/USDT spot after PR 172",
+      "deterministic_provenance_manifest_pr": 176,
+      "reconciliation_followup_pr": 179
     },
     "architecture_validation": {
       "ci_enforcement_pr": 138,
-      "status": "merged; Test workflow runs nexus_architecture_validator.py before pytest",
       "independent_control_plane_proven": false,
       "remaining_blocker": 106
     },
+    "recovery_lessons": [
+      "repository evidence remains authoritative over chat or Drive",
+      "Drive is secondary and must fail closed until issue 122 controls are proven",
+      "laptop offline state must never be inferred as an internet outage",
+      "exact-head CI and exact-main evidence must not be inferred from nearby successful PR runs"
+    ],
     "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131]
   }
 }
