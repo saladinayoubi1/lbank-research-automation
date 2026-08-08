@@ -17,38 +17,17 @@
     "invalid_data_may_pass_research_gate": false
   },
   "continuity": {
-    "required_reads": [
-      "docs/project_memory/PROJECT_MEMORY.md",
-      "docs/project_memory/STATE.json",
-      "docs/project_memory/DECISIONS.md",
-      "docs/project_memory/RECOVERY_PLAYBOOK.md"
-    ],
-    "external_backup_candidate": {
-      "provider": "Google Drive",
-      "status": "secondary-continuity-copy-not-authoritative-until-issue-122",
-      "may_authorize_recovery": false,
-      "blocker": 122
-    }
+    "required_reads": ["docs/project_memory/PROJECT_MEMORY.md", "docs/project_memory/STATE.json", "docs/project_memory/DECISIONS.md", "docs/project_memory/RECOVERY_PLAYBOOK.md"],
+    "external_backup_candidate": {"provider": "Google Drive", "status": "secondary-continuity-copy-not-authoritative-until-issue-122", "may_authorize_recovery": false, "blocker": 122}
   },
   "current_evidence": {
     "observed_main_sha": "89f331b59bbc57f16677284e580899c4f408d349",
     "observed_at_utc": "2026-08-08T15:44:00Z",
-    "authoritative_memory_pr": null,
+    "authoritative_memory_pr": 165,
     "memory_refresh_branch": "memory/current-main-89f3-refresh",
     "superseded_or_stale_memory_prs": [129, 139, 140, 147, 150, 151, 161, 163],
     "memory_merge_allowed": false,
-    "release_readiness": {
-      "production_ready": false,
-      "exact_main_combined_status_count": 0,
-      "exact_main_release_run_independently_verified": false,
-      "production_signature_policy_configured": false,
-      "reproducible_build_proven_for_current_release": false,
-      "rollback_exercised_for_current_release": false,
-      "backup_restore_rpo_rto_proven": false,
-      "independent_disaster_recovery_proven": false,
-      "owner_production_approval": false,
-      "release_blockers": [43, 58, 64, 124]
-    },
+    "release_readiness": {"production_ready": false, "exact_main_combined_status_count": 0, "exact_main_release_run_independently_verified": false, "production_signature_policy_configured": false, "reproducible_build_proven_for_current_release": false, "rollback_exercised_for_current_release": false, "backup_restore_rpo_rto_proven": false, "independent_disaster_recovery_proven": false, "owner_production_approval": false, "release_blockers": [43, 58, 64, 124]},
     "open_pull_requests": {
       "117": "cloud fallback fail-closed checkpoint; draft; issue 106 remains",
       "164": "current-main deterministic market-data provenance manifest implementation and recovery regression; draft; exact-head CI required; aggregate issue 131 gate remains",
@@ -62,13 +41,7 @@
       "data_readiness": "artifact evaluated 2026-08-08T15:05:20.126757+00:00 reports 21 total, 2 ready, 19 blocked for integrity_failed",
       "release": "exact-main release evidence remains independently unproven on connected status surface"
     },
-    "market_data_source_hierarchy": {
-      "primary": "Bybit",
-      "secondary": "Binance",
-      "tertiary": "LBank",
-      "source_registry_mappings": 0,
-      "merge_prs": [132, 135, 136, 141, 146, 162]
-    },
+    "market_data_source_hierarchy": {"primary": "Bybit", "secondary": "Binance", "tertiary": "LBank", "source_registry_mappings": 0, "merge_prs": [132, 135, 136, 141, 146, 162]},
     "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131]
   }
 }
