@@ -71,7 +71,7 @@
   },
   "current_evidence": {
     "observed_main_sha": "87f9e55dd69b76602690d7260fc4d5edca5c1903",
-    "observed_at_utc": "2026-08-08T11:18:03Z",
+    "observed_at_utc": "2026-08-08T11:20:00Z",
     "authoritative_memory_pr": 140,
     "superseded_memory_prs": [129, 139],
     "memory_pr_validation": {
@@ -94,11 +94,16 @@
       "exact_main_cross_platform_release_evidence_proven": false,
       "owner_production_approval": false,
       "release_recovery_main_push_control": {
-        "status": "proposed_pending_validation",
+        "status": "validated_candidate_unmerged",
         "pr": 144,
         "candidate_head": "3ea336881abdce5e7f80f95cfc1017fd7c425a60",
         "scope": "remove Release Recovery push-to-main path filter; preserve cross-platform fail-closed tests",
-        "merge_allowed": false
+        "exact_head_ci": ["Release Recovery", "Workflow Permissions Policy", "NEXUS Cloud Fallback", "Test", "NEXUS Build Verification"],
+        "all_observed_ci_green": true,
+        "mergeable": true,
+        "unresolved_review_threads": 0,
+        "merge_allowed": false,
+        "merge_blocker": "automated merge attempt was blocked by tool safety controls; candidate remains open and unchanged"
       },
       "release_blockers": [43, 58, 64, 124]
     },
