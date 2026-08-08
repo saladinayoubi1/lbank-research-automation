@@ -71,3 +71,12 @@ Evidence: `main` advanced again to `1f0f42dde56ec5a363f3120e22a6a721ea8af88c` at
 Decision: This exact main SHA is not release-ready on currently observable evidence. Keep release/production fail-closed under #124. Refresh the existing continuity PR #129 rather than creating a conflicting memory branch. The independently stored Drive continuity snapshot may record this fact, but it remains non-authoritative for recovery until #122 is satisfied.
 
 Recovery lesson: Recurring direct-main data commits repeatedly supersede exact-SHA release evidence and stale transient project-memory state. The durable fix is to route the data producer through branch/PR review or a reviewed equivalent mechanism that preserves immutable exact-SHA CI/provenance evidence; do not weaken release or data gates to accommodate the current direct-main path.
+
+## 2026-08-08 — Current main advanced again; continuity refreshed without relaxing gates
+Status: ACTIVE
+
+Evidence: `main` is now `887d50a8de34df4d7f7d4cda38773e43470e7b36` (`data: update LBank public candles`, 2026-08-08T05:27:02Z). The connected exact-SHA surfaces report zero combined statuses and zero PR-associated workflow runs for this SHA. `data/market/_data_readiness.md` on this exact SHA still reports 21 tracked series, 2 research-ready and 19 blocked, with zero duplicate/off-grid observations and integrity failures remaining the blocker. PR #129 pre-update head `e254ee74719547da1aa1ce66b025f664d204d41d` had successful `Test`, `NEXUS Build Verification`, and `NEXUS Cloud Fallback` runs and zero review threads, but its mergeability is currently false after main advanced.
+
+Decision: Keep release and production claims fail-closed under #124 and data consumers fail-closed under #125. Update the existing continuity branch rather than opening a competing memory PR. Do not merge #129 while its current exact head has not been revalidated after this memory update and while mergeability remains false.
+
+Recovery lesson: Rapid direct-main data churn is itself a continuity/release-evidence hazard. A valid PR-head check cannot be reused as evidence for a newer `main`, and a memory update invalidates its own prior head-SHA CI evidence. Always re-query the exact final PR head before merge; keep laptop-offline and internet-outage semantics distinct.
