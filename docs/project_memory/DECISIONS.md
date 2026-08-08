@@ -71,3 +71,10 @@ Evidence: PR #140 contains the newer repository-owned Project Memory snapshot ag
 Decision: PR #140 is the sole authoritative open Project Memory refresh. PR #129 is superseded and must not be merged. Recovery starts from repository Project Memory + STATE + decision log + recovery playbook + exact current PR/CI evidence, then the independent Drive backup. Laptop shutdown/offline and internet outage are distinct states and must never be inferred from one another.
 
 Boundary: This consolidation changes continuity metadata only. It grants no signing, production approval, credential, billing, deployment, live-trading or irreversible authority.
+
+## 2026-08-08 — Critical notification marker
+Status: ACTIVE
+
+Decision: Any user-facing NEXUS notification that is materially important or requires owner intervention must be prefixed with `🔴`. Routine informational updates that do not require attention should not use this marker.
+
+Boundary: The marker is presentation/triage metadata only; it does not change severity, authorization, release, production, signing, credential, billing, or financial-action policy.
