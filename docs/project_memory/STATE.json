@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "NEXUS / lbank-research-automation",
-  "observed_at_utc": "2026-08-08T02:22:35Z",
+  "observed_at_utc": "2026-08-08T04:14:57Z",
   "memory_policy": {
     "repository_is_durable_source": true,
     "chat_is_source_of_truth": false,
@@ -30,13 +30,13 @@
     "invalid_data_may_pass_research_gate": false
   },
   "repository_snapshot": {
-    "main_sha": "c8643f428cbe46df264da934c7aa36c31acf09e7",
+    "main_sha": "1f0f42dde56ec5a363f3120e22a6a721ea8af88c",
     "main_head_commit": "data: update LBank public candles",
     "main_head_change_path": "direct_main_data_commit",
     "main_head_ci_evidence": "no_combined_status_or_commit_associated_workflow_run_observed_on_current_verification_surface",
     "release_fail_closed_issue": 124,
     "open_pull_requests": [
-      {"number": 129, "head_sha": "3a56401302ae242b923ebf15af94f172777276e2", "draft": true, "mergeable_observed": true, "purpose": "refresh durable continuity snapshot", "note": "this branch now records the newer main SHA and will receive a new head SHA after this update"},
+      {"number": 129, "head_sha": "f615da2e542a4b8c2811a1a9953830d49f834b83", "draft": true, "mergeable_observed": true, "purpose": "refresh durable continuity snapshot", "note": "pre-update observed head; this branch receives a new SHA after this memory write, so re-query exact PR head before any merge"},
       {"number": 123, "head_sha": "64733a814e641688add6f9979aee25ad46cfebab", "draft": true, "mergeable_observed": true, "purpose": "event-driven CI failure triage", "claim_boundary": "no independent release or production authority"},
       {"number": 117, "head_sha": "043c4465ab268769c3ecfb51d07c214c1a5509fd", "draft": true, "mergeable_observed": true, "purpose": "fail-closed cloud fallback checkpoint", "blocker": "independent control-plane authorization remains unresolved in issue #106"},
       {"number": 105, "head_sha": "28a90f918d82fe76149288cac0646de53a320d2a", "draft": true, "mergeable_observed": true, "purpose": "enforce NEXUS contract validator in CI", "blocker": "independent authorization remains unresolved in issue #106"}
@@ -59,7 +59,7 @@
     "document_name": "NEXUS Project Memory Backup — Durable",
     "document_id": "14wBdcjec0_0PhDzupk7QjaPlB3A_uw4A1EUzseeKQ4s",
     "object_presence_observed": true,
-    "latest_observed_snapshot_mentions_main_sha": "c8643f428cbe46df264da934c7aa36c31acf09e7",
+    "latest_observed_snapshot_mentions_main_sha": "1f0f42dde56ec5a363f3120e22a6a721ea8af88c",
     "source_sha_verified": false,
     "content_hash_verified": false,
     "freshness_contract_verified": false,
