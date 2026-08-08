@@ -10,16 +10,27 @@ function showState(message, kind = 'info') {
   state.textContent = message;
 }
 
-function renderSummary(summary = {}) {
+function normalizeSummary(summary = {}) {
+  if (summary && typeof summary.summary === 'object' && !Array.isArray(summary.summary)) {
+    return summary.summary;
+  }
+  return summary || {};
+}
+
+function renderSummary(rawSummary = {}) {
+  const summary = normalizeSummary(rawSummary);
   const total = Number(summary.total_series ?? 0);
   const ready = Number(summary.ready_series ?? 0);
   const blocked = Number(summary.blocked_series ?? 0);
-  const rate = total > 0 ? Math.round((ready / total) * 100) : 0;
-  document.querySelector('#total').textContent = total;
-  document.querySelector('#ready').textContent = ready;
-  document.querySelector('#blocked').textContent = blocked;
+  const safeTotal = Number.isFinite(total) ? total : 0;
+  const safeReady = Number.isFinite(ready) ? ready : 0;
+  const safeBlocked = Number.isFinite(blocked) ? blocked : 0;
+  const rate = safeTotal > 0 ? Math.round((safeReady / safeTotal) * 100) : 0;
+  document.querySelector('#total').textContent = safeTotal;
+  document.querySelector('#ready').textContent = safeReady;
+  document.querySelector('#blocked').textContent = safeBlocked;
   document.querySelector('#readiness-rate').textContent = `${rate}%`;
-  document.querySelector('#readiness-caption').textContent = summary.all_ready ? 'All tracked series ready' : `${blocked} series still blocked`;
+  document.querySelector('#readiness-caption').textContent = summary.all_ready ? 'All tracked series ready' : `${safeBlocked} series still blocked`;
   document.querySelector('#overall').textContent = summary.all_ready ? 'Ready' : 'Attention';
   cards.hidden = false;
 }
