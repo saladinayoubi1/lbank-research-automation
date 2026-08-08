@@ -73,6 +73,7 @@
   "current_evidence": {
     "observed_main_sha": "91d2cfe7c803202e3c32afa9988c1eac2dec2b4f",
     "observed_at_utc": "2026-08-08T13:15:00Z",
+    "authoritative_memory_pr": 151,
     "memory_refresh_branch": "memory/current-main-91d2cfe7-refresh",
     "superseded_or_stale_memory_prs": [129, 139, 140, 147, 150],
     "memory_merge_allowed": false,
@@ -108,7 +109,7 @@
     "open_pull_requests": {
       "117": "cloud fallback fail-closed checkpoint; draft and non-mergeable",
       "149": "market-data provenance manifest contract; draft and non-mergeable",
-      "150": "stale continuity refresh after main advanced; draft and non-mergeable"
+      "151": "current Project Memory refresh; draft; exact-head revalidation required before merge"
     },
     "market_data_source_hierarchy": {
       "status": "ADR-009, reconciliation-agent alignment, source-mapping validator, bounded Binance public Spot adapter and deterministic pagination are merged; real source mappings remain unapproved by default",
