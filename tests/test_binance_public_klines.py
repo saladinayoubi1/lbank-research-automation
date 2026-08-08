@@ -8,9 +8,12 @@ from binance_public_klines import BinanceKlineError, fetch_closed_klines, normal
 
 
 NOW_MS = 2_000_000
+INTERVAL_MS = 900_000
 
 
-def _row(open_time: int = 1_000_000, close_time: int = 1_899_999) -> list[object]:
+def _row(open_time: int = 900_000, close_time: int | None = None) -> list[object]:
+    if close_time is None:
+        close_time = open_time + INTERVAL_MS - 1
     return [
         open_time,
         "100.0",
@@ -35,8 +38,8 @@ def test_normalizes_closed_spot_kline_with_provenance() -> None:
             "market_type": "spot",
             "symbol": "BTCUSDT",
             "interval": "15m",
-            "open_time_ms": 1_000_000,
-            "close_time_ms": 1_899_999,
+            "open_time_ms": 900_000,
+            "close_time_ms": 1_799_999,
             "open": "100.0",
             "high": "110.0",
             "low": "90.0",
@@ -49,7 +52,7 @@ def test_normalizes_closed_spot_kline_with_provenance() -> None:
 
 def test_rejects_open_or_incomplete_candle() -> None:
     with pytest.raises(BinanceKlineError, match="not a closed historical candle"):
-        normalize_closed_klines([_row(close_time=NOW_MS)], symbol="BTCUSDT", interval="15m", now_ms=NOW_MS)
+        normalize_closed_klines([_row(open_time=1_800_000)], symbol="BTCUSDT", interval="15m", now_ms=NOW_MS)
 
 
 def test_rejects_duplicate_open_time() -> None:
@@ -60,7 +63,7 @@ def test_rejects_duplicate_open_time() -> None:
 def test_rejects_non_chronological_payload() -> None:
     with pytest.raises(BinanceKlineError, match="strictly chronological"):
         normalize_closed_klines(
-            [_row(open_time=1_100_000, close_time=1_199_999), _row(open_time=1_000_000, close_time=1_099_999)],
+            [_row(open_time=900_000), _row(open_time=0)],
             symbol="BTCUSDT",
             interval="15m",
             now_ms=NOW_MS,
@@ -77,6 +80,39 @@ def test_rejects_invalid_ohlc_bounds() -> None:
 def test_rejects_unknown_interval() -> None:
     with pytest.raises(BinanceKlineError, match="unsupported Binance interval"):
         normalize_closed_klines([_row()], symbol="BTCUSDT", interval="1m", now_ms=NOW_MS)
+
+
+def test_rejects_off_grid_open_time() -> None:
+    with pytest.raises(BinanceKlineError, match="off the 15m grid"):
+        normalize_closed_klines(
+            [_row(open_time=900_001, close_time=1_800_000)],
+            symbol="BTCUSDT",
+            interval="15m",
+            now_ms=2_000_001,
+        )
+
+
+def test_rejects_wrong_granularity_even_when_closed_and_ordered() -> None:
+    with pytest.raises(BinanceKlineError, match="does not match requested 15m duration"):
+        normalize_closed_klines(
+            [_row(open_time=0, close_time=3_599_999)],
+            symbol="BTCUSDT",
+            interval="15m",
+            now_ms=4_000_000,
+        )
+
+
+def test_complete_window_rejects_truncated_payload() -> None:
+    with pytest.raises(BinanceKlineError, match="incomplete or substituted"):
+        normalize_closed_klines(
+            [_row(open_time=0)],
+            symbol="BTCUSDT",
+            interval="15m",
+            now_ms=NOW_MS,
+            start_time_ms=0,
+            end_time_ms=900_000,
+            require_complete_window=True,
+        )
 
 
 class _Response:
@@ -105,8 +141,8 @@ def test_fetch_uses_fixed_public_endpoint_without_redirects_or_credentials() -> 
         "BTCUSDT",
         "15m",
         now_ms=NOW_MS,
-        start_time_ms=1,
-        end_time_ms=100,
+        start_time_ms=900_000,
+        end_time_ms=900_000,
         limit=10,
         session=session,
     )
@@ -120,21 +156,35 @@ def test_fetch_uses_fixed_public_endpoint_without_redirects_or_credentials() -> 
         "symbol": "BTCUSDT",
         "interval": "15m",
         "limit": 10,
-        "startTime": 1,
-        "endTime": 100,
+        "startTime": 900_000,
+        "endTime": 900_000,
     }
 
 
 def test_fetch_rejects_non_200_response() -> None:
     session = _Session(_Response({"code": -1}, status_code=429))
     with pytest.raises(BinanceKlineError, match="HTTP 429"):
-        fetch_closed_klines("BTCUSDT", "15m", now_ms=NOW_MS, session=session)
+        fetch_closed_klines(
+            "BTCUSDT",
+            "15m",
+            now_ms=NOW_MS,
+            start_time_ms=900_000,
+            end_time_ms=900_000,
+            session=session,
+        )
 
 
 def test_fetch_rejects_invalid_limit_before_network() -> None:
     session = _Session(_Response([_row()]))
     with pytest.raises(BinanceKlineError, match="limit must be between"):
         fetch_closed_klines("BTCUSDT", "15m", now_ms=NOW_MS, limit=1001, session=session)
+    assert session.calls == []
+
+
+def test_fetch_requires_explicit_window_before_network() -> None:
+    session = _Session(_Response([_row()]))
+    with pytest.raises(BinanceKlineError, match="start_time_ms must be"):
+        fetch_closed_klines("BTCUSDT", "15m", now_ms=NOW_MS, session=session)
     assert session.calls == []
 
 
@@ -145,8 +195,77 @@ def test_fetch_rejects_reversed_time_range_before_network() -> None:
             "BTCUSDT",
             "15m",
             now_ms=NOW_MS,
-            start_time_ms=100,
-            end_time_ms=99,
+            start_time_ms=900_000,
+            end_time_ms=0,
             session=session,
         )
     assert session.calls == []
+
+
+def test_fetch_rejects_window_larger_than_single_complete_page() -> None:
+    session = _Session(_Response([_row(open_time=0), _row(open_time=900_000)]))
+    with pytest.raises(BinanceKlineError, match="deterministic pagination is required"):
+        fetch_closed_klines(
+            "BTCUSDT",
+            "15m",
+            now_ms=NOW_MS,
+            start_time_ms=0,
+            end_time_ms=900_000,
+            limit=1,
+            session=session,
+        )
+    assert session.calls == []
+
+
+def test_fetch_rejects_window_that_includes_open_candle() -> None:
+    session = _Session(_Response([_row(open_time=1_800_000)]))
+    with pytest.raises(BinanceKlineError, match="open or incomplete candle"):
+        fetch_closed_klines(
+            "BTCUSDT",
+            "15m",
+            now_ms=NOW_MS,
+            start_time_ms=1_800_000,
+            end_time_ms=1_800_000,
+            session=session,
+        )
+    assert session.calls == []
+
+
+def test_fetch_rejects_stale_replayed_well_formed_page() -> None:
+    session = _Session(_Response([_row(open_time=0)]))
+    with pytest.raises(BinanceKlineError, match="precedes requested start_time_ms"):
+        fetch_closed_klines(
+            "BTCUSDT",
+            "15m",
+            now_ms=NOW_MS,
+            start_time_ms=900_000,
+            end_time_ms=900_000,
+            session=session,
+        )
+
+
+def test_fetch_rejects_out_of_window_page_substitution() -> None:
+    session = _Session(_Response([_row(open_time=1_800_000)]))
+    with pytest.raises(BinanceKlineError, match="exceeds requested end_time_ms"):
+        fetch_closed_klines(
+            "BTCUSDT",
+            "15m",
+            now_ms=3_000_000,
+            start_time_ms=900_000,
+            end_time_ms=900_000,
+            session=session,
+        )
+
+
+def test_fetch_rejects_truncated_response_for_requested_window() -> None:
+    session = _Session(_Response([_row(open_time=0)]))
+    with pytest.raises(BinanceKlineError, match="incomplete or substituted"):
+        fetch_closed_klines(
+            "BTCUSDT",
+            "15m",
+            now_ms=NOW_MS,
+            start_time_ms=0,
+            end_time_ms=900_000,
+            limit=2,
+            session=session,
+        )
