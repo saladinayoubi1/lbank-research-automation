@@ -8,12 +8,13 @@ import pytest
 
 from market_data_provenance_manifest import (
     ProvenanceManifestError,
+    SUPPORTED_TIMEFRAMES_MS,
     build_provenance_manifest,
     validate_provenance_manifest,
 )
 
 
-def _candles() -> list[dict[str, object]]:
+def _candles(interval_ms: int = 900_000) -> list[dict[str, object]]:
     return [
         {
             "open_time_ms": 0,
@@ -24,7 +25,7 @@ def _candles() -> list[dict[str, object]]:
             "volume": "12.5",
         },
         {
-            "open_time_ms": 900_000,
+            "open_time_ms": interval_ms,
             "open": "105",
             "high": "112",
             "low": "101",
@@ -75,6 +76,63 @@ def test_manifest_is_deterministic_and_validates() -> None:
     validate_provenance_manifest(first, candles)
 
 
+def test_supported_timeframes_have_positive_exact_cadence() -> None:
+    for timeframe, interval_ms in SUPPORTED_TIMEFRAMES_MS.items():
+        candles = _candles(interval_ms)
+        manifest = _manifest(
+            candles,
+            timeframe=timeframe,
+            retrieval_end_ms=interval_ms,
+        )
+        validate_provenance_manifest(manifest, candles)
+
+
+def test_rejects_unknown_timeframe() -> None:
+    with pytest.raises(ProvenanceManifestError, match="unsupported timeframe"):
+        _manifest(timeframe="13m")
+
+
+def test_rejects_wrong_cadence_and_mixed_cadence() -> None:
+    with pytest.raises(ProvenanceManifestError, match="cadence"):
+        _manifest(_candles(3_600_000), timeframe="15m", retrieval_end_ms=3_600_000)
+
+    candles = _candles()
+    candles.append(
+        {
+            "open_time_ms": 2_700_000,
+            "open": "108",
+            "high": "114",
+            "low": "103",
+            "close": "110",
+            "volume": "8",
+        }
+    )
+    with pytest.raises(ProvenanceManifestError, match="cadence"):
+        _manifest(candles, retrieval_end_ms=2_700_000)
+
+
+def test_rejects_off_grid_timestamp() -> None:
+    candles = _candles()
+    candles[1]["open_time_ms"] = 900_001
+    with pytest.raises(ProvenanceManifestError, match="off the declared timeframe grid"):
+        _manifest(candles, retrieval_end_ms=900_001)
+
+
+def test_rejects_self_consistent_timeframe_relabel_and_rehash() -> None:
+    candles = _candles()
+    manifest = _manifest(candles)
+    manifest["timeframe"] = "1h"
+    _resign_untrusted_manifest(manifest)
+    with pytest.raises(ProvenanceManifestError, match="cadence"):
+        validate_provenance_manifest(manifest, candles)
+
+
+def test_rejects_partial_declared_window() -> None:
+    candles = _candles()
+    with pytest.raises(ProvenanceManifestError, match="completely cover"):
+        _manifest(candles, retrieval_end_ms=1_800_000)
+
+
 def test_rejects_candle_tamper() -> None:
     candles = _candles()
     manifest = _manifest(candles)
@@ -107,16 +165,16 @@ def test_rejects_out_of_order_or_duplicate_candles() -> None:
 
 
 def test_rejects_candles_outside_declared_retrieval_window() -> None:
-    with pytest.raises(ProvenanceManifestError, match="outside the declared retrieval window"):
-        _manifest(retrieval_start_ms=1)
+    with pytest.raises(ProvenanceManifestError, match="retrieval window"):
+        _manifest(retrieval_start_ms=900_000, retrieval_end_ms=1_800_000)
 
 
 def test_rejects_self_consistent_window_substitution() -> None:
     candles = _candles()
     manifest = _manifest(candles)
-    manifest["retrieval_window"] = {"start_ms": 1, "end_ms": 900_000}
+    manifest["retrieval_window"] = {"start_ms": 900_000, "end_ms": 1_800_000}
     _resign_untrusted_manifest(manifest)
-    with pytest.raises(ProvenanceManifestError, match="outside the declared retrieval window"):
+    with pytest.raises(ProvenanceManifestError, match="retrieval window"):
         validate_provenance_manifest(manifest, candles)
 
 
