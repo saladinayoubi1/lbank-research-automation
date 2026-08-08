@@ -70,18 +70,14 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "fa5926504e004ba358f14039de0b8a1ab3d85d66",
-    "observed_at_utc": "2026-08-08T10:34:25Z",
+    "observed_main_sha": "87f9e55dd69b76602690d7260fc4d5edca5c1903",
+    "observed_at_utc": "2026-08-08T11:18:03Z",
     "authoritative_memory_pr": 140,
     "superseded_memory_prs": [129, 139],
     "memory_pr_validation": {
-      "previous_exact_head": "f658c781d6936efa962ab60630f167ddce7a83ba",
-      "mergeable": true,
-      "unresolved_review_threads": 0,
-      "test": "pending_revalidation_after_current_state_refresh",
-      "build_verification": "pending_revalidation_after_current_state_refresh",
-      "cloud_fallback": "pending_revalidation_after_current_state_refresh",
-      "note": "merge is prohibited until all applicable CI is green on the new exact memory head"
+      "state": "pending_revalidation_after_current_state_refresh",
+      "merge_allowed": false,
+      "note": "re-read exact memory head and require applicable green CI, mergeable=true and zero unresolved review threads before merge"
     },
     "release_readiness": {
       "production_ready": false,
@@ -97,7 +93,14 @@
       "independent_disaster_recovery_proven": false,
       "exact_main_cross_platform_release_evidence_proven": false,
       "owner_production_approval": false,
-      "release_blockers": [43, 124]
+      "release_recovery_main_push_control": {
+        "status": "proposed_pending_validation",
+        "pr": 144,
+        "candidate_head": "3ea336881abdce5e7f80f95cfc1017fd7c425a60",
+        "scope": "remove Release Recovery push-to-main path filter; preserve cross-platform fail-closed tests",
+        "merge_allowed": false
+      },
+      "release_blockers": [43, 58, 64, 124]
     },
     "market_data_source_hierarchy": {
       "status": "ADR-009, reconciliation-agent alignment, source-mapping validator and bounded Binance public Spot adapter are merged; real source mappings remain unapproved by default",
@@ -107,16 +110,7 @@
       "adr": "docs/architecture/ADR-009-market-data-source-hierarchy.md",
       "source_registry": "docs/architecture/market-data-source-registry.yaml",
       "source_registry_mappings": 0,
-      "merge_prs": [132, 135, 136, 141],
-      "binance_adapter_merge": {
-        "pr": 141,
-        "exact_head": "c6c1fa11edfebbabc1dcfe1992fe6f9c4eebdf2c",
-        "resulting_main": "fa5926504e004ba358f14039de0b8a1ab3d85d66",
-        "test": "success",
-        "build_verification": "success",
-        "cloud_fallback": "success",
-        "unresolved_review_threads": 0
-      }
+      "merge_prs": [132, 135, 136, 141]
     },
     "architecture_validation": {
       "ci_enforcement_pr": 138,
@@ -124,6 +118,6 @@
       "independent_control_plane_proven": false,
       "remaining_blocker": 106
     },
-    "active_blockers": [43, 64, 89, 91, 106, 107, 122, 124, 125, 131]
+    "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131]
   }
 }
