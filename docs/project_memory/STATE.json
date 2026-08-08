@@ -17,112 +17,34 @@
     "persistent lessons so solved failures are not rediscovered from zero",
     "cloud continuity when the local laptop is offline"
   ],
-  "known_runtime_components": [
-    "Fast Agent Coordinator",
-    "local node supervisor",
-    "dashboard",
-    "GitHub Actions",
-    "cloud fallback"
-  ],
-  "runtime_status": {
-    "agent_execution_state": "not_independently_observed_this_run",
-    "laptop_state": "unknown",
-    "internet_outage_state": "unknown",
-    "laptop_offline_is_not_internet_outage": true
-  },
-  "data_policy": {
-    "research_only": true,
-    "real_trading": false,
-    "fabricated_market_data": false,
-    "invalid_data_may_pass_research_gate": false
-  },
+  "known_runtime_components": ["Fast Agent Coordinator", "local node supervisor", "dashboard", "GitHub Actions", "cloud fallback"],
+  "runtime_status": {"agent_execution_state": "not_independently_observed_this_run", "laptop_state": "unknown", "internet_outage_state": "unknown", "laptop_offline_is_not_internet_outage": true},
+  "data_policy": {"research_only": true, "real_trading": false, "fabricated_market_data": false, "invalid_data_may_pass_research_gate": false},
   "continuity": {
-    "required_reads": [
-      "docs/project_memory/PROJECT_MEMORY.md",
-      "docs/project_memory/STATE.json",
-      "docs/project_memory/DECISIONS.md",
-      "docs/project_memory/RECOVERY_PLAYBOOK.md"
-    ],
-    "reconstruct_from": [
-      "repository project memory",
-      "STATE",
-      "decision log",
-      "recovery playbook",
-      "exact current pull requests and CI evidence"
-    ],
+    "required_reads": ["docs/project_memory/PROJECT_MEMORY.md", "docs/project_memory/STATE.json", "docs/project_memory/DECISIONS.md", "docs/project_memory/RECOVERY_PLAYBOOK.md"],
+    "reconstruct_from": ["repository project memory", "STATE", "decision log", "recovery playbook", "exact current pull requests and CI evidence"],
     "chat_loss_tolerated": true,
     "local_machine_loss_tolerated_for_project_knowledge": true,
-    "external_backup_candidate": {
-      "provider": "Google Drive",
-      "status": "presence-only-untrusted-candidate-until-issue-122",
-      "may_authorize_recovery": false,
-      "required_before_use": [
-        "versioned contract",
-        "bounded freshness",
-        "exact source SHA binding",
-        "content hash or manifest verification",
-        "provider object identity verification",
-        "poisoned stale replay and substitution rejection",
-        "no-secrets and privacy validation",
-        "fixed-tuple recovery exercise"
-      ],
-      "blocker": 122
-    }
+    "external_backup_candidate": {"provider": "Google Drive", "status": "presence-only-untrusted-candidate-until-issue-122", "may_authorize_recovery": false, "required_before_use": ["versioned contract", "bounded freshness", "exact source SHA binding", "content hash or manifest verification", "provider object identity verification", "poisoned stale replay and substitution rejection", "no-secrets and privacy validation", "fixed-tuple recovery exercise"], "blocker": 122}
   },
   "current_evidence": {
-    "observed_main_sha": "87f9e55dd69b76602690d7260fc4d5edca5c1903",
-    "observed_at_utc": "2026-08-08T11:20:00Z",
-    "authoritative_memory_pr": 140,
-    "superseded_memory_prs": [129, 139],
-    "memory_pr_validation": {
-      "state": "pending_revalidation_after_current_state_refresh",
-      "merge_allowed": false,
-      "note": "re-read exact memory head and require applicable green CI, mergeable=true and zero unresolved review threads before merge"
+    "observed_main_sha": "bdf357d067876b67af69df7e8e475cfd07f74313",
+    "observed_at_utc": "2026-08-08T17:37:00Z",
+    "authoritative_memory_pr": null,
+    "memory_refresh_branch": "memory/current-main-bdf357-refresh",
+    "superseded_memory_prs": [129,139,140,147,150,151,161,163,165,167,168,177],
+    "memory_merge_allowed": false,
+    "release_readiness": {"production_ready": false, "exact_main_release_run_independently_verified": false, "production_signature_policy_configured": false, "backup_restore_rpo_rto_proven": false, "independent_disaster_recovery_proven": false, "owner_production_approval": false, "release_blockers": [43,58,64,124]},
+    "data_readiness": {"evaluated_at_utc": "2026-08-08T17:11:35.680210+00:00", "total_series": 21, "ready_for_research": 2, "blocked": 19, "all_ready": false, "duplicate_rows": 0, "off_grid_rows": 0, "blocker": 125},
+    "market_data_source_hierarchy": {"primary": "Bybit", "secondary": "Binance", "tertiary": "LBank", "source_registry_mappings": 2, "latest_mapping_reconciliation_pr": 172, "latest_mapping_reconciliation_merge_sha": "8c391cbfabb6ec5cc15facb1ebac898be3ad1337", "provenance_manifest_candidate_pr": 176, "aggregate_blocker": 131},
+    "open_pull_requests": {"117": "cloud fallback fail-closed checkpoint; old base lineage; issue 106 remains", "176": "deterministic provenance manifest replayed onto current main; draft; aggregate issue 131 gate remains"},
+    "recent_material_events": {
+      "170": "bounded exhaustive LBank gap repair merged; readiness remains 21 total, 2 ready, 19 blocked",
+      "172": "BTC/ETH spot mappings plus fail-closed Bybit/Binance reconciliation candidate generation merged; canonical dataset mutation remains out of scope",
+      "175": "self-hosted runner workflow merged only after permissions inventory was registered, non-main dispatch execution was blocked fail-closed, exact-head five-gate CI was green, mergeable=true and review threads were zero",
+      "176": "stale provenance PR 164 replaced by a current-main draft replay with adversarial and recovery tests"
     },
-    "release_readiness": {
-      "production_ready": false,
-      "exact_main_combined_status_count": 0,
-      "exact_main_release_run_independently_verified": false,
-      "artifact_manifest_gate": true,
-      "cyclonedx_sbom_gate": true,
-      "provenance_binding_gate": true,
-      "production_signature_policy_configured": false,
-      "reproducible_build_proven": false,
-      "rollback_exercised": false,
-      "backup_restore_rpo_rto_proven": false,
-      "independent_disaster_recovery_proven": false,
-      "exact_main_cross_platform_release_evidence_proven": false,
-      "owner_production_approval": false,
-      "release_recovery_main_push_control": {
-        "status": "validated_candidate_unmerged",
-        "pr": 144,
-        "candidate_head": "3ea336881abdce5e7f80f95cfc1017fd7c425a60",
-        "scope": "remove Release Recovery push-to-main path filter; preserve cross-platform fail-closed tests",
-        "exact_head_ci": ["Release Recovery", "Workflow Permissions Policy", "NEXUS Cloud Fallback", "Test", "NEXUS Build Verification"],
-        "all_observed_ci_green": true,
-        "mergeable": true,
-        "unresolved_review_threads": 0,
-        "merge_allowed": false,
-        "merge_blocker": "automated merge attempt was blocked by tool safety controls; candidate remains open and unchanged"
-      },
-      "release_blockers": [43, 58, 64, 124]
-    },
-    "market_data_source_hierarchy": {
-      "status": "ADR-009, reconciliation-agent alignment, source-mapping validator and bounded Binance public Spot adapter are merged; real source mappings remain unapproved by default",
-      "primary": "Bybit",
-      "secondary": "Binance",
-      "tertiary": "LBank",
-      "adr": "docs/architecture/ADR-009-market-data-source-hierarchy.md",
-      "source_registry": "docs/architecture/market-data-source-registry.yaml",
-      "source_registry_mappings": 0,
-      "merge_prs": [132, 135, 136, 141]
-    },
-    "architecture_validation": {
-      "ci_enforcement_pr": 138,
-      "status": "merged; Test workflow runs nexus_architecture_validator.py before pytest",
-      "independent_control_plane_proven": false,
-      "remaining_blocker": 106
-    },
-    "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131]
+    "recovery_lessons": ["Register every new workflow in the versioned workflow-permissions inventory; never weaken the inventory gate.", "Self-hosted runner jobs must not execute repository code from arbitrary dispatch refs; require main-ref execution and explicit main checkout.", "Supersede stale-base implementation PRs with clean current-main replays when conflict state is uncertain."],
+    "active_blockers": [43,58,64,89,91,106,107,122,124,125,131]
   }
 }
