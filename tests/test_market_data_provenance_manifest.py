@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import copy
+import hashlib
+import json
 
 import pytest
 
@@ -50,6 +52,19 @@ def _manifest(candles: list[dict[str, object]] | None = None, **overrides: objec
     return build_provenance_manifest(**args)  # type: ignore[arg-type]
 
 
+def _resign_untrusted_manifest(manifest: dict[str, object]) -> None:
+    unsigned = dict(manifest)
+    unsigned.pop("manifest_sha256", None)
+    payload = json.dumps(
+        unsigned,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8")
+    manifest["manifest_sha256"] = hashlib.sha256(payload).hexdigest()
+
+
 def test_manifest_is_deterministic_and_validates() -> None:
     candles = _candles()
     first = _manifest(candles)
@@ -80,6 +95,8 @@ def test_rejects_manifest_metadata_tamper() -> None:
 def test_rejects_sensitive_metadata_recursively() -> None:
     with pytest.raises(ProvenanceManifestError, match="sensitive metadata key"):
         _manifest(metadata={"nested": {"Authorization": "Bearer should-not-persist"}})
+    with pytest.raises(ProvenanceManifestError, match="sensitive metadata key"):
+        _manifest(metadata={"nested": {"access-token": "should-not-persist"}})
 
 
 def test_rejects_out_of_order_or_duplicate_candles() -> None:
@@ -92,6 +109,24 @@ def test_rejects_out_of_order_or_duplicate_candles() -> None:
 def test_rejects_candles_outside_declared_retrieval_window() -> None:
     with pytest.raises(ProvenanceManifestError, match="outside the declared retrieval window"):
         _manifest(retrieval_start_ms=1)
+
+
+def test_rejects_self_consistent_window_substitution() -> None:
+    candles = _candles()
+    manifest = _manifest(candles)
+    manifest["retrieval_window"] = {"start_ms": 1, "end_ms": 900_000}
+    _resign_untrusted_manifest(manifest)
+    with pytest.raises(ProvenanceManifestError, match="outside the declared retrieval window"):
+        validate_provenance_manifest(manifest, candles)
+
+
+def test_rejects_self_consistent_unsupported_source() -> None:
+    candles = _candles()
+    manifest = _manifest(candles)
+    manifest["source"] = "SubstitutedExchange"
+    _resign_untrusted_manifest(manifest)
+    with pytest.raises(ProvenanceManifestError, match="unsupported source"):
+        validate_provenance_manifest(manifest, candles)
 
 
 def test_rejects_unknown_manifest_fields_fail_closed() -> None:
