@@ -10,6 +10,22 @@ from typing import Any
 MANIFEST_SCHEMA = "nexus.market-data-provenance.v1"
 ALLOWED_SOURCES = {"Bybit", "Binance", "LBank"}
 ALLOWED_MARKET_TYPES = {"spot", "perpetual", "futures"}
+SUPPORTED_TIMEFRAMES_MS = {
+    "1m": 60_000,
+    "3m": 180_000,
+    "5m": 300_000,
+    "15m": 900_000,
+    "30m": 1_800_000,
+    "1h": 3_600_000,
+    "2h": 7_200_000,
+    "4h": 14_400_000,
+    "6h": 21_600_000,
+    "8h": 28_800_000,
+    "12h": 43_200_000,
+    "1d": 86_400_000,
+    "3d": 259_200_000,
+    "1w": 604_800_000,
+}
 REQUIRED_CANDLE_FIELDS = (
     "open_time_ms",
     "open",
@@ -66,6 +82,14 @@ def _validate_non_negative_int(name: str, value: Any) -> int:
     return value
 
 
+def _timeframe_interval_ms(timeframe: Any) -> int:
+    timeframe = _validate_text("timeframe", timeframe)
+    try:
+        return SUPPORTED_TIMEFRAMES_MS[timeframe]
+    except KeyError as exc:
+        raise ProvenanceManifestError("unsupported timeframe") from exc
+
+
 def _reject_sensitive_metadata(value: Any, *, path: str = "metadata") -> None:
     if isinstance(value, Mapping):
         for key, nested in value.items():
@@ -80,7 +104,9 @@ def _reject_sensitive_metadata(value: Any, *, path: str = "metadata") -> None:
             _reject_sensitive_metadata(nested, path=f"{path}[{index}]")
 
 
-def _normalize_candles(candles: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+def _normalize_candles(
+    candles: Sequence[Mapping[str, Any]], *, interval_ms: int
+) -> list[dict[str, Any]]:
     if isinstance(candles, (str, bytes, bytearray)) or not isinstance(candles, Sequence):
         raise ProvenanceManifestError("candles must be a sequence of mappings")
     if not candles:
@@ -95,11 +121,35 @@ def _normalize_candles(candles: Sequence[Mapping[str, Any]]) -> list[dict[str, A
         if missing:
             raise ProvenanceManifestError(f"candle {index} missing fields: {','.join(missing)}")
         open_time = _validate_non_negative_int(f"candle {index} open_time_ms", candle["open_time_ms"])
-        if previous_open is not None and open_time <= previous_open:
-            raise ProvenanceManifestError("candle timestamps must be strictly increasing")
+        if open_time % interval_ms != 0:
+            raise ProvenanceManifestError("candle timestamp is off the declared timeframe grid")
+        if previous_open is not None:
+            if open_time <= previous_open:
+                raise ProvenanceManifestError("candle timestamps must be strictly increasing")
+            if open_time - previous_open != interval_ms:
+                raise ProvenanceManifestError("candle cadence does not match the declared timeframe")
         previous_open = open_time
         normalized.append({field: candle[field] for field in REQUIRED_CANDLE_FIELDS})
     return normalized
+
+
+def _validate_window_completeness(
+    *, retrieval_start_ms: int, retrieval_end_ms: int, interval_ms: int, normalized_candles: list[dict[str, Any]]
+) -> None:
+    if retrieval_start_ms % interval_ms != 0 or retrieval_end_ms % interval_ms != 0:
+        raise ProvenanceManifestError("retrieval window is off the declared timeframe grid")
+    if retrieval_end_ms < retrieval_start_ms:
+        raise ProvenanceManifestError("retrieval_end_ms cannot be before retrieval_start_ms")
+    if (retrieval_end_ms - retrieval_start_ms) % interval_ms != 0:
+        raise ProvenanceManifestError("retrieval window does not align to the declared timeframe")
+
+    first_open = normalized_candles[0]["open_time_ms"]
+    last_open = normalized_candles[-1]["open_time_ms"]
+    if first_open != retrieval_start_ms or last_open != retrieval_end_ms:
+        raise ProvenanceManifestError("candles do not completely cover the declared retrieval window")
+    expected_count = ((retrieval_end_ms - retrieval_start_ms) // interval_ms) + 1
+    if len(normalized_candles) != expected_count:
+        raise ProvenanceManifestError("candle count does not completely cover the declared retrieval window")
 
 
 def build_provenance_manifest(
@@ -124,20 +174,23 @@ def build_provenance_manifest(
         raise ProvenanceManifestError("unsupported market_type")
     source_symbol = _validate_text("source_symbol", source_symbol)
     canonical_symbol = _validate_text("canonical_symbol", canonical_symbol)
+    interval_ms = _timeframe_interval_ms(timeframe)
     timeframe = _validate_text("timeframe", timeframe)
     endpoint_contract = _validate_text("endpoint_contract", endpoint_contract)
     mapping_policy_version = _validate_text("mapping_policy_version", mapping_policy_version)
 
     retrieval_start_ms = _validate_non_negative_int("retrieval_start_ms", retrieval_start_ms)
     retrieval_end_ms = _validate_non_negative_int("retrieval_end_ms", retrieval_end_ms)
-    if retrieval_end_ms < retrieval_start_ms:
-        raise ProvenanceManifestError("retrieval_end_ms cannot be before retrieval_start_ms")
+    normalized_candles = _normalize_candles(candles, interval_ms=interval_ms)
+    _validate_window_completeness(
+        retrieval_start_ms=retrieval_start_ms,
+        retrieval_end_ms=retrieval_end_ms,
+        interval_ms=interval_ms,
+        normalized_candles=normalized_candles,
+    )
 
-    normalized_candles = _normalize_candles(candles)
     first_open = normalized_candles[0]["open_time_ms"]
     last_open = normalized_candles[-1]["open_time_ms"]
-    if first_open < retrieval_start_ms or last_open > retrieval_end_ms:
-        raise ProvenanceManifestError("candle timestamps fall outside the declared retrieval window")
 
     if metadata is not None and not isinstance(metadata, Mapping):
         raise ProvenanceManifestError("metadata must be a mapping")
@@ -198,23 +251,26 @@ def validate_provenance_manifest(manifest: Mapping[str, Any], candles: Sequence[
     market_type = _validate_text("market_type", manifest["market_type"])
     if market_type not in ALLOWED_MARKET_TYPES:
         raise ProvenanceManifestError("unsupported market_type")
-    for field in ("source_symbol", "canonical_symbol", "timeframe", "endpoint_contract", "mapping_policy_version"):
+    for field in ("source_symbol", "canonical_symbol", "endpoint_contract", "mapping_policy_version"):
         _validate_text(field, manifest[field])
+    interval_ms = _timeframe_interval_ms(manifest["timeframe"])
 
     retrieval_window = manifest["retrieval_window"]
     if not isinstance(retrieval_window, Mapping) or set(retrieval_window) != {"start_ms", "end_ms"}:
         raise ProvenanceManifestError("retrieval_window does not match the exact schema")
     retrieval_start_ms = _validate_non_negative_int("retrieval_window.start_ms", retrieval_window["start_ms"])
     retrieval_end_ms = _validate_non_negative_int("retrieval_window.end_ms", retrieval_window["end_ms"])
-    if retrieval_end_ms < retrieval_start_ms:
-        raise ProvenanceManifestError("retrieval_window.end_ms cannot be before start_ms")
 
-    normalized_candles = _normalize_candles(candles)
+    normalized_candles = _normalize_candles(candles, interval_ms=interval_ms)
+    _validate_window_completeness(
+        retrieval_start_ms=retrieval_start_ms,
+        retrieval_end_ms=retrieval_end_ms,
+        interval_ms=interval_ms,
+        normalized_candles=normalized_candles,
+    )
+
     first_open = normalized_candles[0]["open_time_ms"]
     last_open = normalized_candles[-1]["open_time_ms"]
-    if first_open < retrieval_start_ms or last_open > retrieval_end_ms:
-        raise ProvenanceManifestError("candle timestamps fall outside the declared retrieval window")
-
     if manifest["candle_count"] != len(normalized_candles):
         raise ProvenanceManifestError("candle_count mismatch")
     if manifest["first_open_time_ms"] != first_open:
