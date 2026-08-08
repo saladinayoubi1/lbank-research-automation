@@ -70,18 +70,21 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "87f9e55dd69b76602690d7260fc4d5edca5c1903",
-    "observed_at_utc": "2026-08-08T11:20:00Z",
-    "authoritative_memory_pr": 140,
+    "observed_main_sha": "b0ffbcb4280f83c4973374198e119d80ddac98f8",
+    "observed_at_utc": "2026-08-08T11:33:00Z",
+    "last_merged_memory_pr": 140,
     "superseded_memory_prs": [129, 139],
-    "memory_pr_validation": {
-      "state": "pending_revalidation_after_current_state_refresh",
-      "merge_allowed": false,
-      "note": "re-read exact memory head and require applicable green CI, mergeable=true and zero unresolved review threads before merge"
+    "memory_status": {
+      "state": "pr-140-merged-after-exact-head-green-ci",
+      "pr": 140,
+      "head": "8a7855596d7063f7833c23d125e185a0a37b8148",
+      "merge_commit": "b0ffbcb4280f83c4973374198e119d80ddac98f8",
+      "unresolved_review_threads": 0,
+      "build_verification_retry": "initial artifact-finalization HTTP 403 was retried once and the exact-head job then succeeded",
+      "ci_issue_closed": 145
     },
     "release_readiness": {
       "production_ready": false,
-      "exact_main_combined_status_count": 0,
       "exact_main_release_run_independently_verified": false,
       "artifact_manifest_gate": true,
       "cyclonedx_sbom_gate": true,
@@ -98,12 +101,18 @@
         "pr": 144,
         "candidate_head": "3ea336881abdce5e7f80f95cfc1017fd7c425a60",
         "scope": "remove Release Recovery push-to-main path filter; preserve cross-platform fail-closed tests",
-        "exact_head_ci": ["Release Recovery", "Workflow Permissions Policy", "NEXUS Cloud Fallback", "Test", "NEXUS Build Verification"],
+        "exact_head_ci": [
+          "Release Recovery",
+          "Workflow Permissions Policy",
+          "NEXUS Cloud Fallback",
+          "Test",
+          "NEXUS Build Verification"
+        ],
         "all_observed_ci_green": true,
         "mergeable": true,
         "unresolved_review_threads": 0,
-        "merge_allowed": false,
-        "merge_blocker": "automated merge attempt was blocked by tool safety controls; candidate remains open and unchanged"
+        "merge_allowed_by_repository_evidence": true,
+        "merge_blocker": "automated merge attempt remains blocked by tool safety controls; candidate is unchanged"
       },
       "release_blockers": [43, 58, 64, 124]
     },
@@ -115,7 +124,15 @@
       "adr": "docs/architecture/ADR-009-market-data-source-hierarchy.md",
       "source_registry": "docs/architecture/market-data-source-registry.yaml",
       "source_registry_mappings": 0,
-      "merge_prs": [132, 135, 136, 141]
+      "merge_prs": [132, 135, 136, 141],
+      "active_candidate": {
+        "pr": 146,
+        "head": "9da1b33660c030c458f87907238baa77b7f4faf2",
+        "purpose": "deterministic bounded multi-page Binance public Spot kline retrieval",
+        "state": "draft-awaiting-ci",
+        "changes_real_source_mapping": false,
+        "changes_downstream_eligibility": false
+      }
     },
     "architecture_validation": {
       "ci_enforcement_pr": 138,
@@ -123,6 +140,7 @@
       "independent_control_plane_proven": false,
       "remaining_blocker": 106
     },
+    "resolved_transient_ci_issues": [142, 143, 145],
     "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131]
   }
 }
