@@ -28,12 +28,18 @@
       "status": "secondary-continuity-copy-not-authoritative-until-issue-122",
       "may_authorize_recovery": false,
       "blocker": 122
+    },
+    "runtime_status": {
+      "agent_execution_state": "not_independently_observed_this_run",
+      "laptop_state": "unknown",
+      "internet_outage_state": "unknown",
+      "laptop_offline_is_not_internet_outage": true
     }
   },
   "current_evidence": {
-    "observed_main_sha": "2cbd4ab2ccbd3ddbe90eb8e855dda8b42520f96e",
-    "observed_at_utc": "2026-08-08T16:34:00Z",
-    "authoritative_memory_pr": null,
+    "observed_main_sha": "a378c539f40216e1a40e35cd9f9880d547d0b2fc",
+    "observed_at_utc": "2026-08-08T17:17:00Z",
+    "authoritative_memory_pr": 168,
     "memory_refresh_branch": "memory/current-main-2cbd-refresh",
     "superseded_or_stale_memory_prs": [129, 139, 140, 147, 150, 151, 161, 163, 165, 167],
     "memory_merge_allowed": false,
@@ -51,22 +57,27 @@
     },
     "open_pull_requests": {
       "117": "cloud fallback fail-closed checkpoint; draft; old base lineage and issue 106 remain",
-      "164": "deterministic market-data provenance manifest; exact head CI green, mergeable=true, zero unresolved review threads; blocked by ADR-009A Proposed-status governance ambiguity and aggregate issue 131 gate"
+      "164": "deterministic market-data provenance manifest; draft and mergeable; aggregate issue 131 gate remains",
+      "168": "authoritative Project Memory refresh; branch advanced after prior Android build failure caused by external Maven HTTP 403; exact-head CI must be revalidated",
+      "172": "BTC/ETH Bybit+Binance+LBank mapping and fail-closed reconciliation candidate generation; exact head f9d98c2cb09b9120d63171a98f74dfe60df4ca4a has Test, NEXUS Build Verification and NEXUS Cloud Fallback green; does not mutate canonical data or authorize production"
     },
     "recent_material_events": {
-      "159": "Zotero dashboard restart-loop fix merged",
-      "162": "ADR-009A semantic-binding addendum merged but retains Status: Proposed",
-      "164": "provenance manifest candidate exact head c67a76ba84e51979936faee2853a24bbf4316727 has Test, NEXUS Build Verification and NEXUS Cloud Fallback green; merge remains blocked by policy authority/alignment",
       "166": "mission-control readiness summary normalization merged",
-      "latest_main": "automated LBank public-candle update advanced main to 2cbd4ab2ccbd3ddbe90eb8e855dda8b42520f96e",
-      "data_readiness": "last repository evidence reports 21 total, 2 ready, 19 blocked; do not promote without fresh deterministic validation",
-      "release": "exact-main release evidence remains independently unproven on connected status surface"
+      "170": "bounded exhaustive LBank gap repair runner merged; subsequent repository evidence still reports 21 total series, 2 ready and 19 blocked",
+      "172": "reconciliation candidate PR opened from exact current main; exact-head core CI green and canonical dataset mutation remains explicitly out of scope",
+      "latest_main": "automated LBank public-candle update advanced main to a378c539f40216e1a40e35cd9f9880d547d0b2fc",
+      "data_readiness": "21 total series, 2 ready, 19 blocked at 2026-08-08T17:11:35Z; no promotion authorized",
+      "release": "exact-main combined status surface remains empty; production readiness remains fail-closed"
     },
+    "recovery_lessons": [
+      "A CI dependency-resolution failure returning HTTP 403 from Maven Central can be external/transient; do not weaken gates or treat it as successful evidence. Revalidate on a fresh exact head while preserving fail-closed status."
+    ],
     "market_data_source_hierarchy": {
       "primary": "Bybit",
       "secondary": "Binance",
       "tertiary": "LBank",
       "source_registry_mappings": 0,
+      "pending_mapping_pr": 172,
       "merge_prs": [132, 135, 136, 141, 146, 162]
     },
     "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131]
