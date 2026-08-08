@@ -62,3 +62,12 @@ Evidence: PR #138 merged at exact head `b2b3e925cce4babf08c630b0629c01eba98ba3c4
 Decision: The existing Ubuntu/Windows/macOS Test workflow must execute `nexus_architecture_validator.py` against the versioned module contract registry before pytest. Validator failure is a delivery blocker and must not be bypassed or weakened to obtain green CI.
 
 Limitation: This proves the validator executes in repository CI; it does not prove independent control-plane protection against a candidate changing the workflow, validator, registry and tests together. Issue #106 remains active and stronger self-authorization claims remain fail-closed.
+
+## 2026-08-08 — One authoritative open Project Memory PR
+Status: ACTIVE
+
+Evidence: PR #140 contains the newer repository-owned Project Memory snapshot against main `d6b16ef146d3bf75efe7ae9e0675c1c22d78620c`; PR #129 is an older continuity snapshot and is non-mergeable against newer main state.
+
+Decision: PR #140 is the sole authoritative open Project Memory refresh. PR #129 is superseded and must not be merged. Recovery starts from repository Project Memory + STATE + decision log + recovery playbook + exact current PR/CI evidence, then the independent Drive backup. Laptop shutdown/offline and internet outage are distinct states and must never be inferred from one another.
+
+Boundary: This consolidation changes continuity metadata only. It grants no signing, production approval, credential, billing, deployment, live-trading or irreversible authority.
