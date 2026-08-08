@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "project": "NEXUS / lbank-research-automation",
   "memory_policy": {
     "repository_is_durable_source": true,
@@ -48,13 +48,14 @@
       "STATE",
       "decision log",
       "recovery playbook",
-      "exact current pull requests and CI evidence"
+      "exact current pull requests and CI evidence",
+      "Google Drive durable backup"
     ],
     "chat_loss_tolerated": true,
     "local_machine_loss_tolerated_for_project_knowledge": true,
     "external_backup_candidate": {
       "provider": "Google Drive",
-      "status": "presence-only-untrusted-candidate-until-issue-122",
+      "status": "secondary-continuity-copy-not-authoritative-until-issue-122",
       "may_authorize_recovery": false,
       "required_before_use": [
         "versioned contract",
@@ -70,15 +71,11 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "87f9e55dd69b76602690d7260fc4d5edca5c1903",
-    "observed_at_utc": "2026-08-08T11:20:00Z",
-    "authoritative_memory_pr": 140,
-    "superseded_memory_prs": [129, 139],
-    "memory_pr_validation": {
-      "state": "pending_revalidation_after_current_state_refresh",
-      "merge_allowed": false,
-      "note": "re-read exact memory head and require applicable green CI, mergeable=true and zero unresolved review threads before merge"
-    },
+    "observed_main_sha": "91d2cfe7c803202e3c32afa9988c1eac2dec2b4f",
+    "observed_at_utc": "2026-08-08T13:15:00Z",
+    "memory_refresh_branch": "memory/current-main-91d2cfe7-refresh",
+    "superseded_or_stale_memory_prs": [129, 139, 140, 147, 150],
+    "memory_merge_allowed": false,
     "release_readiness": {
       "production_ready": false,
       "exact_main_combined_status_count": 0,
@@ -87,35 +84,41 @@
       "cyclonedx_sbom_gate": true,
       "provenance_binding_gate": true,
       "production_signature_policy_configured": false,
-      "reproducible_build_proven": false,
-      "rollback_exercised": false,
+      "reproducible_build_comparison_gate_present": true,
+      "reproducible_build_proven_for_current_release": false,
+      "rollback_record_gate_present": true,
+      "rollback_exercised_for_current_release": false,
       "backup_restore_rpo_rto_proven": false,
       "independent_disaster_recovery_proven": false,
       "exact_main_cross_platform_release_evidence_proven": false,
       "owner_production_approval": false,
+      "release_readiness_main_push_control": {
+        "status": "merged",
+        "workflow": ".github/workflows/release-readiness.yml",
+        "scope": "run fail-closed release gate tests on every push to main across Ubuntu Windows macOS"
+      },
       "release_recovery_main_push_control": {
-        "status": "validated_candidate_unmerged",
-        "pr": 144,
-        "candidate_head": "3ea336881abdce5e7f80f95cfc1017fd7c425a60",
-        "scope": "remove Release Recovery push-to-main path filter; preserve cross-platform fail-closed tests",
-        "exact_head_ci": ["Release Recovery", "Workflow Permissions Policy", "NEXUS Cloud Fallback", "Test", "NEXUS Build Verification"],
-        "all_observed_ci_green": true,
-        "mergeable": true,
-        "unresolved_review_threads": 0,
-        "merge_allowed": false,
-        "merge_blocker": "automated merge attempt was blocked by tool safety controls; candidate remains open and unchanged"
+        "status": "merged_via_pr_148",
+        "merge_commit": "7c874fcc8c15876dfad19deadb023db355b010f5",
+        "workflow": ".github/workflows/release-recovery.yml",
+        "scope": "run reproducibility and rollback gate tests on every push to main across Ubuntu Windows macOS"
       },
       "release_blockers": [43, 58, 64, 124]
     },
+    "open_pull_requests": {
+      "117": "cloud fallback fail-closed checkpoint; draft and non-mergeable",
+      "149": "market-data provenance manifest contract; draft and non-mergeable",
+      "150": "stale continuity refresh after main advanced; draft and non-mergeable"
+    },
     "market_data_source_hierarchy": {
-      "status": "ADR-009, reconciliation-agent alignment, source-mapping validator and bounded Binance public Spot adapter are merged; real source mappings remain unapproved by default",
+      "status": "ADR-009, reconciliation-agent alignment, source-mapping validator, bounded Binance public Spot adapter and deterministic pagination are merged; real source mappings remain unapproved by default",
       "primary": "Bybit",
       "secondary": "Binance",
       "tertiary": "LBank",
       "adr": "docs/architecture/ADR-009-market-data-source-hierarchy.md",
       "source_registry": "docs/architecture/market-data-source-registry.yaml",
       "source_registry_mappings": 0,
-      "merge_prs": [132, 135, 136, 141]
+      "merge_prs": [132, 135, 136, 141, 146]
     },
     "architecture_validation": {
       "ci_enforcement_pr": 138,
