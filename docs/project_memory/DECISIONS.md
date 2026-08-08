@@ -80,3 +80,12 @@ Evidence: `main` is now `887d50a8de34df4d7f7d4cda38773e43470e7b36` (`data: updat
 Decision: Keep release and production claims fail-closed under #124 and data consumers fail-closed under #125. Update the existing continuity branch rather than opening a competing memory PR. Do not merge #129 while its current exact head has not been revalidated after this memory update and while mergeability remains false.
 
 Recovery lesson: Rapid direct-main data churn is itself a continuity/release-evidence hazard. A valid PR-head check cannot be reused as evidence for a newer `main`, and a memory update invalidates its own prior head-SHA CI evidence. Always re-query the exact final PR head before merge; keep laptop-offline and internet-outage semantics distinct.
+
+## 2026-08-08 — Bybit execution hierarchy and current-main continuity are now durable
+Status: ACTIVE
+
+Evidence: `main` is exactly `44db8d6e6b3797e26bd56d18ec6acb5f529545bc` (`data: update LBank public candles`). PR #130 merged as `e8867307459901df18aaa3e05c7f08947d07e423`, establishing the bounded Data Backfill & Reconciliation Agent contract. Issue #131 records the governed source hierarchy: Bybit is the primary market/execution reference, Binance is the secondary public source for compatible cross-validation and bounded backfill evidence, and LBank is tertiary/research-only.
+
+Decision: Persist this hierarchy without authorizing silent cross-exchange substitution. Unknown or semantically incompatible data remains fail-closed. The current direct-main data commit supersedes the prior transient release snapshot, so release remains blocked until exact-SHA release evidence is independently verified. Production signing, approval, credentials, billing, deployment and live financial actions remain owner-controlled and unauthorized.
+
+Recovery lesson: Architecture decisions and transient repository state are different classes of memory. Durable source hierarchy may be recorded while the exact-main CI state remains unknown; never turn missing verification into a green claim. Refresh the existing continuity PR instead of opening a conflicting memory PR, and preserve laptop-offline versus internet-outage as distinct conditions.
