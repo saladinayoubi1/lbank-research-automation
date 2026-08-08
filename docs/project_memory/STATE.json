@@ -6,7 +6,9 @@
     "chat_is_source_of_truth": false,
     "secrets_allowed": false,
     "core_goals_agent_editable": false,
-    "high_impact_actions_require_human_approval": true
+    "high_impact_actions_require_human_approval": true,
+    "important_or_owner_action_notifications_use_red_marker": true,
+    "unacknowledged_red_notifications_repeat_in_reports": true
   },
   "objectives": [
     "durable project continuity independent of chat sessions",
@@ -54,19 +56,20 @@
     "drive_is_secondary_continuity_backup": true
   },
   "current_evidence": {
-    "observed_main_sha": "d6b16ef146d3bf75efe7ae9e0675c1c22d78620c",
-    "observed_at_utc": "2026-08-08T09:02:00Z",
+    "observed_main_sha": "76f010d9",
+    "observed_at_utc": "2026-08-08T10:00:00Z",
     "authoritative_memory_pr": 140,
     "superseded_memory_prs": [129, 139],
     "market_data_source_hierarchy": {
-      "status": "ADR-009, reconciliation-agent alignment, and first executable source-mapping validator merged; real source mappings remain unapproved by default",
+      "status": "ADR-009, reconciliation-agent alignment, source-mapping validator merged; Binance public Spot adapter is proposed in draft PR #141; real source mappings remain unapproved by default",
       "primary": "Bybit",
       "secondary": "Binance",
       "tertiary": "LBank",
       "adr": "docs/architecture/ADR-009-market-data-source-hierarchy.md",
       "source_registry": "docs/architecture/market-data-source-registry.yaml",
       "source_registry_mappings": 0,
-      "merge_prs": [132, 135, 136]
+      "merge_prs": [132, 135, 136],
+      "open_adapter_pr": 141
     },
     "architecture_validation": {
       "ci_enforcement_pr": 138,
