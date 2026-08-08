@@ -73,7 +73,7 @@
   "current_evidence": {
     "observed_main_sha": "b3c0acd6830b9e3baec8ad7e656480786e4256ec",
     "observed_at_utc": "2026-08-08T15:36:00Z",
-    "authoritative_memory_pr": null,
+    "authoritative_memory_pr": 161,
     "memory_refresh_branch": "memory/current-main-b3c0-refresh",
     "superseded_or_stale_memory_prs": [129, 139, 140, 147, 150, 151],
     "memory_merge_allowed": false,
@@ -109,7 +109,8 @@
     "open_pull_requests": {
       "117": "cloud fallback fail-closed checkpoint; draft; currently non-mergeable against current main and bounded by issue 106",
       "159": "current-main replay of Zotero dashboard restart-loop fix; draft; exact-head CI running; supersedes closed PR 157",
-      "160": "current-main replay of deterministic market-data provenance manifest contract; draft; exact-head CI running; aggregate issue 131 policy gate remains"
+      "160": "current-main replay of deterministic market-data provenance manifest contract; draft; exact-head CI running; aggregate issue 131 policy gate remains",
+      "161": "authoritative current-main Project Memory refresh; draft; exact-head CI must be green before merge"
     },
     "recent_material_events": {
       "152": "merged after exact-head Test, NEXUS Build Verification and NEXUS Cloud Fallback succeeded; local runtime state paths ignored",
