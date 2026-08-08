@@ -62,3 +62,12 @@ Evidence: `main` advanced to `c8643f428cbe46df264da934c7aa36c31acf09e7` with com
 Decision: Treat this SHA as a material continuity event but not as release-ready. Keep production/release fail-closed under #124, and continue treating direct repository-managed data commits to `main` as a provenance/change-control gap until the data update path is routed through branch/PR review or a reviewed equivalent control with exact-SHA evidence.
 
 Recovery lesson: A workflow configured for `push` is not sufficient evidence by itself; recovery and release decisions must bind to observable evidence for the exact candidate SHA. Preserve the distinction between laptop offline state and internet outage when reconstructing operational state.
+
+## 2026-08-08 — Repeated direct-main data updates invalidate transient release evidence
+Status: ACTIVE
+
+Evidence: `main` advanced again to `1f0f42dde56ec5a363f3120e22a6a721ea8af88c` at `2026-08-08T03:44:32Z` with `data: update LBank public candles`. For this exact SHA the available combined-status surface returns zero statuses and the commit-associated workflow lookup returns zero runs. The latter lookup is PR-event-limited; therefore absence alone does not prove a push run did not execute. The `Release Readiness` workflow configuration still subscribes to every push to `main`.
+
+Decision: This exact main SHA is not release-ready on currently observable evidence. Keep release/production fail-closed under #124. Refresh the existing continuity PR #129 rather than creating a conflicting memory branch. The independently stored Drive continuity snapshot may record this fact, but it remains non-authoritative for recovery until #122 is satisfied.
+
+Recovery lesson: Recurring direct-main data commits repeatedly supersede exact-SHA release evidence and stale transient project-memory state. The durable fix is to route the data producer through branch/PR review or a reviewed equivalent mechanism that preserves immutable exact-SHA CI/provenance evidence; do not weaken release or data gates to accommodate the current direct-main path.
