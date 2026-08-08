@@ -1,0 +1,121 @@
+name: NEXUS Event-Driven Failure Triage
+
+on:
+  workflow_run:
+    workflows:
+      - Test
+      - NEXUS Cloud Fallback
+      - NEXUS Build Verification
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+concurrency:
+  group: nexus-failure-triage-${{ github.event.workflow_run.id }}
+  cancel-in-progress: false
+
+jobs:
+  triage:
+    if: >-
+      (
+        github.event.workflow_run.name == 'Test' ||
+        github.event.workflow_run.name == 'NEXUS Cloud Fallback' ||
+        github.event.workflow_run.name == 'NEXUS Build Verification'
+      ) && (
+        github.event.workflow_run.conclusion == 'failure' ||
+        github.event.workflow_run.conclusion == 'cancelled' ||
+        github.event.workflow_run.conclusion == 'timed_out' ||
+        github.event.workflow_run.conclusion == 'action_required'
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Upsert fail-closed triage issue
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            const { owner, repo } = context.repo;
+            const allowedWorkflows = new Set([
+              'Test',
+              'NEXUS Cloud Fallback',
+              'NEXUS Build Verification'
+            ]);
+            const allowedConclusions = new Set([
+              'failure',
+              'cancelled',
+              'timed_out',
+              'action_required'
+            ]);
+            const validHeadSha = typeof run?.head_sha === 'string' && /^[0-9a-f]{40}$/.test(run.head_sha);
+            const validRunUrl = typeof run?.html_url === 'string' && /^https:\/\/github\.com\//.test(run.html_url);
+            const validAttempt = Number.isInteger(run?.run_attempt) && run.run_attempt >= 1;
+
+            if (
+              !run ||
+              !allowedWorkflows.has(run.name) ||
+              !allowedConclusions.has(run.conclusion) ||
+              !validHeadSha ||
+              !validRunUrl ||
+              !validAttempt
+            ) {
+              core.warning('Rejected malformed or non-allow-listed workflow_run metadata; no issue write performed.');
+              return;
+            }
+
+            const safeInline = (value) => String(value ?? 'unknown')
+              .replace(/[\r\n\t]/g, ' ')
+              .replace(/`/g, '\\`')
+              .replace(/[\u0000-\u001f\u007f]/g, '');
+
+            const safeBranch = safeInline(run.head_branch);
+            const safeEvent = safeInline(run.event);
+            const marker = `<!-- nexus-ci-triage:${run.name}:${run.head_sha} -->`;
+            const title = `[NEXUS CI] ${run.name} failed on ${run.head_sha.slice(0, 12)}`;
+            const body = [
+              marker,
+              '## Event-driven CI failure',
+              '',
+              `- workflow: \`${run.name}\``,
+              `- conclusion: \`${run.conclusion}\``,
+              `- head SHA: \`${run.head_sha}\``,
+              `- branch: \`${safeBranch}\``,
+              `- event: \`${safeEvent}\``,
+              `- run attempt: \`${run.run_attempt}\``,
+              `- run: ${run.html_url}`,
+              '',
+              '## NEXUS handling',
+              '',
+              '- Treat this SHA as **not releasable / not merge-authorized** until exact-head evidence is green.',
+              '- Inspect failed job logs and classify transient vs persistent.',
+              '- Retry only within bounded retry policy; persistent failures require the smallest safe fix plus regression coverage.',
+              '- Do not weaken tests, validators, security gates, data-integrity gates, or policy to obtain green CI.',
+              '- Keep research/paper-only safety boundary; no credentials, billing, signing, production deployment, or live financial authority.',
+              '',
+              'This issue was created immediately by `NEXUS Event-Driven Failure Triage` so autonomous reviewers can react without waiting for the periodic polling cycle.'
+            ].join('\n');
+
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: 'open',
+              per_page: 100
+            });
+
+            const existing = issues.find(i => !i.pull_request && (i.body || '').includes(marker));
+            if (existing) {
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: existing.number,
+                title,
+                body
+              });
+              core.info(`Updated triage issue #${existing.number}`);
+            } else {
+              const created = await github.rest.issues.create({ owner, repo, title, body });
+              core.info(`Created triage issue #${created.data.number}`);
+            }
