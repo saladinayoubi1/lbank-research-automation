@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "observed_main_sha": "8c391cbfabb6ec5cc15facb1ebac898be3ad1337",
+  "observed_at_utc": "2026-08-08T17:36:00Z",
+  "production_ready": false,
+  "data_readiness": {"total_series": 21, "ready": 2, "blocked": 19, "evaluated_at_utc": "2026-08-08T17:11:35.680210+00:00"},
+  "merged_material_prs": {"170": "bounded exhaustive gap repair", "172": "BTC/ETH mappings and fail-closed reconciliation candidates"},
+  "open_prs": [117, 175, 176],
+  "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131],
+  "notes": [
+    "PR 175 is not merge-authorized until exact-head CI is fully green, mergeable=true and review threads are clear.",
+    "PR 176 is a draft current-main replay of the provenance-manifest slice and remains under aggregate issue 131 governance.",
+    "Google Drive remains non-authoritative until issue 122 contract/freshness/source-SHA/content verification requirements are satisfied."
+  ]
+}
