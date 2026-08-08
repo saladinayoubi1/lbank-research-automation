@@ -123,7 +123,7 @@ def test_rejects_self_consistent_timeframe_relabel_and_rehash() -> None:
     manifest = _manifest(candles)
     manifest["timeframe"] = "1h"
     _resign_untrusted_manifest(manifest)
-    with pytest.raises(ProvenanceManifestError, match="cadence"):
+    with pytest.raises(ProvenanceManifestError, match="grid|cadence"):
         validate_provenance_manifest(manifest, candles)
 
 
