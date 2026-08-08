@@ -53,3 +53,12 @@ Evidence: Google Drive folder `NEXUS Project Memory Backup` and document `NEXUS 
 Decision: The Drive document is an independent continuity copy only. It must not be promoted to recovery-proven, tamper-resistant, privacy-verified, or production-authoritative evidence until #122 proves source-SHA binding, content hash, freshness contract, provider-object binding, no-secrets/privacy validation and recovery exercise behavior.
 
 Rollback/recovery: Preserve the previous-known-good repository memory and Drive copy when validation fails. Quarantine stale, conflicting or unverifiable candidates instead of overwriting known-good continuity evidence.
+
+## 2026-08-08 — Direct main data commit advanced continuity state without traceable CI
+Status: ACTIVE
+
+Evidence: `main` advanced to `c8643f428cbe46df264da934c7aa36c31acf09e7` with commit `data: update LBank public candles`. On the available verification surface, combined status is empty and commit-associated workflow lookup returns no run for this exact SHA.
+
+Decision: Treat this SHA as a material continuity event but not as release-ready. Keep production/release fail-closed under #124, and continue treating direct repository-managed data commits to `main` as a provenance/change-control gap until the data update path is routed through branch/PR review or a reviewed equivalent control with exact-SHA evidence.
+
+Recovery lesson: A workflow configured for `push` is not sufficient evidence by itself; recovery and release decisions must bind to observable evidence for the exact candidate SHA. Preserve the distinction between laptop offline state and internet outage when reconstructing operational state.
