@@ -71,12 +71,12 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "9e6dc5a79bd8ee6ed21f1e18f9d4f121b91948e2",
-    "observed_at_utc": "2026-08-08T19:18:06Z",
-    "open_pull_requests": [117, 183, 184],
+    "observed_main_sha": "d0b29f1a6872ca69834cd8b1561ee047db5e8634",
+    "observed_at_utc": "2026-08-08T19:36:18Z",
+    "open_pull_requests": [117, 184],
     "memory_refresh_branch": "continuity/refresh-release-state-20260808-2248",
     "memory_pr_validation": {
-      "state": "pending_exact_head_ci_after_fail_closed_refresh",
+      "state": "pending_exact_head_ci_after_material_event_refresh",
       "merge_allowed": false,
       "note": "Drive remains non-authoritative; merge only after exact final head CI is green, mergeable=true and review evidence is clean"
     },
@@ -111,17 +111,17 @@
     },
     "pull_request_evidence": {
       "183": {
+        "status": "merged",
         "head": "7c122c2c003bbd5aedf4ff3f38533f9b9e3bc83c",
-        "draft": true,
-        "mergeable": true,
+        "merge_commit": "d0b29f1a6872ca69834cd8b1561ee047db5e8634",
         "ci": {
-          "Test": "in_progress",
-          "NEXUS Build Verification": "in_progress",
-          "NEXUS Cloud Fallback": "in_progress"
+          "Test": "success",
+          "NEXUS Build Verification": "success",
+          "NEXUS Cloud Fallback": "success"
         },
+        "unresolved_review_threads": 0,
         "review_blocker": "unbounded max_candidates fan-out",
-        "review_blocker_remediation": "hard MAX_CANDIDATES=50 library bound plus zero-fetch negative regressions and exact-boundary test; awaiting exact-head CI revalidation",
-        "scope_conflicts_with_memory_refresh": false
+        "review_blocker_remediation": "merged with hard MAX_CANDIDATES=50 library bound, zero-fetch negative regressions, exact-boundary test and abuse/rollback/obsolescence evidence"
       },
       "117": {
         "head": "043c4465ab268769c3ecfb51d07c214c1a5509fd",
