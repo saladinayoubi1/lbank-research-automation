@@ -75,6 +75,6 @@ Boundary: This consolidation changes continuity metadata only. It grants no sign
 ## 2026-08-08 — Critical notification marker
 Status: ACTIVE
 
-Decision: Any user-facing NEXUS notification that is materially important or requires owner intervention must be prefixed with `🔴`. Routine informational updates that do not require attention should not use this marker.
+Decision: Any user-facing NEXUS notification that is materially important or requires owner intervention must be prefixed with `🔴`. Routine informational updates that do not require attention should not use this marker. If a critical `🔴` item has not been acknowledged by the owner, the next requested NEXUS report must repeat that item with the same `🔴` marker until it is acknowledged, resolved, or superseded by newer evidence.
 
 Boundary: The marker is presentation/triage metadata only; it does not change severity, authorization, release, production, signing, credential, billing, or financial-action policy.
