@@ -163,3 +163,19 @@ def test_rejects_unsupported_source_and_market_type() -> None:
         _manifest(source="UnknownExchange")
     with pytest.raises(ProvenanceManifestError, match="unsupported market_type"):
         _manifest(market_type="margin")
+
+
+def test_recovery_preserves_previous_valid_after_semantic_relabel_rejection() -> None:
+    candles = _candles()
+    previous_valid = _manifest(candles)
+    previous_snapshot = copy.deepcopy(previous_valid)
+
+    rejected_candidate = copy.deepcopy(previous_valid)
+    rejected_candidate["timeframe"] = "1h"
+    _resign_untrusted_manifest(rejected_candidate)
+
+    with pytest.raises(ProvenanceManifestError, match="grid|cadence"):
+        validate_provenance_manifest(rejected_candidate, candles)
+
+    validate_provenance_manifest(previous_valid, candles)
+    assert previous_valid == previous_snapshot
