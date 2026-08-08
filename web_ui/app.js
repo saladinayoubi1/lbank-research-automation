@@ -2,6 +2,7 @@ const state = document.querySelector('#state');
 const cards = document.querySelector('#cards');
 const integrationCards = document.querySelector('#integration-cards');
 const tbody = document.querySelector('#series');
+const alerts = document.querySelector('#alerts');
 
 function showState(message, kind = 'info') {
   state.hidden = false;
@@ -9,10 +10,16 @@ function showState(message, kind = 'info') {
   state.textContent = message;
 }
 
-function renderSummary(summary) {
-  document.querySelector('#total').textContent = summary.total_series ?? 0;
-  document.querySelector('#ready').textContent = summary.ready_series ?? 0;
-  document.querySelector('#blocked').textContent = summary.blocked_series ?? 0;
+function renderSummary(summary = {}) {
+  const total = Number(summary.total_series ?? 0);
+  const ready = Number(summary.ready_series ?? 0);
+  const blocked = Number(summary.blocked_series ?? 0);
+  const rate = total > 0 ? Math.round((ready / total) * 100) : 0;
+  document.querySelector('#total').textContent = total;
+  document.querySelector('#ready').textContent = ready;
+  document.querySelector('#blocked').textContent = blocked;
+  document.querySelector('#readiness-rate').textContent = `${rate}%`;
+  document.querySelector('#readiness-caption').textContent = summary.all_ready ? 'All tracked series ready' : `${blocked} series still blocked`;
   document.querySelector('#overall').textContent = summary.all_ready ? 'Ready' : 'Attention';
   cards.hidden = false;
 }
@@ -27,6 +34,36 @@ function renderIntegrations(zotero = {}, research = {}) {
   document.querySelector('#research-status').textContent = research.stale ? 'Review overdue' : 'Research-only';
   document.querySelector('#research-review').textContent = research.next_review_due ? `Review ${research.next_review_due}` : 'No review date';
   integrationCards.hidden = false;
+}
+
+function renderAlerts(rows = [], zotero = {}, research = {}, errors = []) {
+  alerts.replaceChildren();
+  const blockedRows = Array.isArray(rows) ? rows.filter((item) => String(item.ready_for_research).toLowerCase() !== 'true') : [];
+  const items = [];
+  if (errors.length) items.push({icon: '🔴', title: 'Dashboard input warning', detail: errors[0]});
+  if (blockedRows.length) {
+    const sample = blockedRows.slice(0, 2).map((item) => `${item.symbol || 'Unknown'} ${item.timeframe || ''}`).join(', ');
+    items.push({icon: '🔴', title: `${blockedRows.length} market-data series blocked`, detail: sample || 'Review readiness reasons in the table below.'});
+  }
+  if (Number(zotero.finding_count ?? 0) > 0) items.push({icon: '🔴', title: `${zotero.finding_count} Zotero metadata findings`, detail: 'Findings are research metadata issues, not a dashboard process failure.'});
+  if (research.stale) items.push({icon: '🔴', title: 'Research review overdue', detail: research.next_review_due ? `Review due ${research.next_review_due}` : 'No current review date is available.'});
+  if (!items.length) items.push({icon: '●', title: 'No immediate intervention required', detail: 'Current dashboard inputs report no active blocker that needs manual action.'});
+
+  for (const item of items.slice(0, 4)) {
+    const row = document.createElement('div');
+    row.className = 'alert';
+    const icon = document.createElement('span');
+    icon.className = 'alert-icon';
+    icon.textContent = item.icon;
+    const body = document.createElement('div');
+    const title = document.createElement('strong');
+    title.textContent = item.title;
+    const detail = document.createElement('small');
+    detail.textContent = item.detail;
+    body.append(title, detail);
+    row.append(icon, body);
+    alerts.append(row);
+  }
 }
 
 function renderSeries(rows) {
@@ -65,6 +102,7 @@ async function loadDashboard() {
   cards.hidden = true;
   integrationCards.hidden = true;
   tbody.replaceChildren();
+  alerts.innerHTML = '<p class="muted">Checking blockers…</p>';
   showState('Loading readiness and integration reports…');
 
   const results = await Promise.allSettled([
@@ -76,32 +114,25 @@ async function loadDashboard() {
 
   const [summaryResult, seriesResult, zoteroResult, researchResult] = results;
   const errors = [];
+  const summary = summaryResult.status === 'fulfilled' ? summaryResult.value.summary || {} : {};
+  const rows = seriesResult.status === 'fulfilled' && Array.isArray(seriesResult.value.series) ? seriesResult.value.series : [];
+  const zotero = zoteroResult.status === 'fulfilled' ? zoteroResult.value.summary || {} : {};
+  const research = researchResult.status === 'fulfilled' ? researchResult.value.summary || {} : {};
 
-  if (summaryResult.status === 'fulfilled' && summaryResult.value.summary) {
-    renderSummary(summaryResult.value.summary);
-  } else {
-    errors.push(summaryResult.reason?.message || 'Readiness summary unavailable');
-  }
+  if (summaryResult.status === 'fulfilled' && summaryResult.value.summary) renderSummary(summary);
+  else errors.push(summaryResult.reason?.message || 'Readiness summary unavailable');
 
-  if (seriesResult.status === 'fulfilled' && Array.isArray(seriesResult.value.series)) {
-    renderSeries(seriesResult.value.series);
-  } else {
-    renderSeries([]);
-    errors.push(seriesResult.reason?.message || 'Readiness series unavailable');
-  }
+  if (seriesResult.status === 'fulfilled' && Array.isArray(seriesResult.value.series)) renderSeries(rows);
+  else { renderSeries([]); errors.push(seriesResult.reason?.message || 'Readiness series unavailable'); }
 
-  const zotero = zoteroResult.status === 'fulfilled' ? zoteroResult.value.summary : {};
-  const research = researchResult.status === 'fulfilled' ? researchResult.value.summary : {};
   renderIntegrations(zotero, research);
   if (zoteroResult.status === 'rejected') errors.push(zoteroResult.reason?.message || 'Zotero report unavailable');
   if (researchResult.status === 'rejected') errors.push(researchResult.reason?.message || 'Research report unavailable');
+  renderAlerts(rows, zotero, research, errors);
 
-  if (errors.length) {
-    showState(`Loaded with warnings: ${errors.join(' | ')}`, 'error');
-  } else {
-    const stale = Boolean(research?.stale);
-    showState(stale ? 'Reports loaded; Research review is overdue.' : 'Reports loaded.', stale ? 'empty' : 'success');
-  }
+  if (errors.length) showState(`Loaded with warnings: ${errors.join(' | ')}`, 'error');
+  else if (research.stale) showState('Reports loaded; research review is overdue.', 'error');
+  else showState('Reports loaded. Monitoring surface is healthy.', 'success');
 }
 
 document.querySelector('#refresh').addEventListener('click', loadDashboard);

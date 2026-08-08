@@ -3,31 +3,66 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>LBank Research Readiness</title>
+  <title>NEXUS Mission Control</title>
   <link rel="stylesheet" href="/ui/styles.css">
 </head>
 <body>
   <main class="shell">
-    <header>
-      <p class="eyebrow">LOCAL · READ ONLY · RESEARCH USE</p>
-      <h1>Research readiness dashboard</h1>
-      <p>Generated reports only. This interface does not trade, write to Zotero, or handle credentials.</p>
+    <header class="hero">
+      <div>
+        <p class="eyebrow">NEXUS · LOCAL · READ ONLY · RESEARCH USE</p>
+        <h1>Mission Control</h1>
+        <p class="hero-copy">A compact view of project progress, market-data readiness, research evidence, and the items that need attention.</p>
+      </div>
+      <div class="hero-badge"><span class="dot"></span><span>Local node</span><strong id="overall">Checking…</strong></div>
     </header>
-    <section id="state" class="state" aria-live="polite">Loading readiness reports…</section>
-    <section id="cards" class="cards" hidden>
-      <article><span>Total series</span><strong id="total">—</strong></article>
-      <article><span>Ready</span><strong id="ready">—</strong></article>
-      <article><span>Blocked</span><strong id="blocked">—</strong></article>
-      <article><span>Overall</span><strong id="overall">—</strong></article>
+
+    <section id="state" class="state" aria-live="polite">Loading NEXUS reports…</section>
+
+    <section class="section-block">
+      <div class="section-title"><div><p class="kicker">PROJECT ROADMAP</p><h2>From foundation to release</h2></div><span class="muted">Current focus: validated research readiness</span></div>
+      <div class="roadmap">
+        <article class="phase done"><span class="phase-no">01</span><div><strong>Foundation</strong><small>Repository, tests, policies, architecture</small></div><em>Done</em></article>
+        <article class="phase done"><span class="phase-no">02</span><div><strong>Market data</strong><small>LBank dataset + Bybit/Binance source hierarchy</small></div><em>Active</em></article>
+        <article class="phase current"><span class="phase-no">03</span><div><strong>Validation</strong><small>Readiness, provenance, gap and quality controls</small></div><em>Now</em></article>
+        <article class="phase"><span class="phase-no">04</span><div><strong>Strategy research</strong><small>Backtests, regimes, portfolio evidence</small></div><em>Next</em></article>
+        <article class="phase"><span class="phase-no">05</span><div><strong>Release gates</strong><small>Recovery, reproducibility, approval evidence</small></div><em>Pending</em></article>
+        <article class="phase"><span class="phase-no">06</span><div><strong>Production</strong><small>Only after every fail-closed gate passes</small></div><em>Locked</em></article>
+      </div>
     </section>
-    <section id="integration-cards" class="cards" hidden aria-label="Integration summaries">
+
+    <section id="cards" class="cards metric-cards" hidden>
+      <article><span>Total series</span><strong id="total">—</strong><small>Tracked market-data series</small></article>
+      <article><span>Ready</span><strong id="ready">—</strong><small>Eligible for research</small></article>
+      <article><span>Blocked</span><strong id="blocked">—</strong><small>Need remediation</small></article>
+      <article><span>Readiness</span><strong id="readiness-rate">—</strong><small id="readiness-caption">Awaiting report</small></article>
+    </section>
+
+    <section class="two-col">
+      <div class="panel compact-panel">
+        <div class="panel-heading"><div><p class="kicker">DATA SOURCES</p><h2>Source hierarchy</h2></div></div>
+        <div class="sources">
+          <div><span class="rank">1</span><strong>Bybit</strong><small>Primary</small></div>
+          <div><span class="rank">2</span><strong>Binance</strong><small>Secondary</small></div>
+          <div><span class="rank">3</span><strong>LBank</strong><small>Tertiary / local dataset</small></div>
+        </div>
+      </div>
+
+      <div class="panel compact-panel">
+        <div class="panel-heading"><div><p class="kicker">ATTENTION</p><h2>What needs action</h2></div></div>
+        <div id="alerts" class="alerts"><p class="muted">Checking blockers…</p></div>
+      </div>
+    </section>
+
+    <section id="integration-cards" class="cards integration-cards" hidden aria-label="Integration summaries">
       <article><span>Zotero items</span><strong id="zotero-items">—</strong><small id="zotero-status">Unavailable</small></article>
       <article><span>Zotero findings</span><strong id="zotero-findings">—</strong><small id="zotero-duplicates">—</small></article>
       <article><span>Research claims</span><strong id="research-claims">—</strong><small id="research-status">Unavailable</small></article>
       <article><span>Research evidence</span><strong id="research-evidence">—</strong><small id="research-review">—</small></article>
     </section>
+
     <section class="panel">
-      <div class="panel-heading"><h2>Series status</h2><button id="refresh" type="button">Refresh</button></div>
+      <div class="panel-heading"><div><p class="kicker">MARKET DATA</p><h2>Series status</h2></div><button id="refresh" type="button">Refresh</button></div>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Symbol</th><th>Timeframe</th><th>Status</th><th>Reason</th></tr></thead>
@@ -35,6 +70,8 @@
         </table>
       </div>
     </section>
+
+    <footer>Read-only monitoring surface. No trading, credentials, billing, signing, or production mutation.</footer>
   </main>
   <script src="/ui/app.js" defer></script>
 </body>
