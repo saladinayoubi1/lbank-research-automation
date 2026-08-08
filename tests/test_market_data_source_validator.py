@@ -71,9 +71,16 @@ def write_candidate(tmp_path: Path, text: str) -> Path:
     return candidate
 
 
-def test_current_registry_is_valid_and_authorizes_no_mapping() -> None:
+def test_current_registry_is_valid_and_authorizes_only_reviewed_btc_eth_spot_mappings() -> None:
     payload = current_payload()
-    assert payload["mappings"] == []
+    mappings = payload["mappings"]
+    assert len(mappings) == 6
+    assert {item["canonical_symbol"] for item in mappings} == {"BTC/USDT", "ETH/USDT"}
+    assert {item["timeframe"] for item in mappings} == {"minute15", "hour1", "hour4"}
+    assert all(item["market_category"] == "spot" for item in mappings)
+    assert all(item["candle_finality"] == "closed_only" for item in mappings)
+    assert all([source["exchange"] for source in item["sources"]] == ["Bybit", "Binance", "LBank"] for item in mappings)
+    assert all([source["role"] for source in item["sources"]] == ["primary", "secondary", "tertiary"] for item in mappings)
     load_and_validate(REGISTRY)
 
 
