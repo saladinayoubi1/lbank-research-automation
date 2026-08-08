@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "observed_main_sha": "2b588e8713aa8be68d4db9cb6d4dc380d166debf",
+  "observed_at_utc": "2026-08-08T16:30:00Z",
+  "authoritative_memory_pr": null,
+  "production_ready": false,
+  "exact_main_combined_status_count": 0,
+  "exact_main_release_run_independently_verified": false,
+  "production_signature_policy_configured": false,
+  "owner_production_approval": false,
+  "open_prs": [117, 164],
+  "material_events": {
+    "166": "mission-control readiness summary normalization merged on current main",
+    "164": "exact-head CI green; merge blocked by ADR-009A Proposed-status governance ambiguity and aggregate issue 131 gate"
+  },
+  "runtime_status": {
+    "agent_execution_state": "not_independently_observed_this_run",
+    "laptop_state": "unknown",
+    "internet_outage_state": "unknown",
+    "laptop_offline_is_not_internet_outage": true
+  },
+  "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131]
+}
