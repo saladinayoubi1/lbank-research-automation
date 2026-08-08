@@ -83,6 +83,47 @@ def test_invalid_input_blocks_before_any_source_fetch(tmp_path, monkeypatch):
         recon.reconcile_dataset(path, "btc_usdt", "minute15")
 
 
+@pytest.mark.parametrize("value", [0, -1, recon.MAX_CANDIDATES + 1, 10**9])
+def test_invalid_max_candidates_blocks_before_source_fetch(tmp_path, monkeypatch, value):
+    path = tmp_path / "minute15.parquet"
+    pd.DataFrame({
+        "timestamp": pd.to_datetime([
+            "2024-01-01T00:00:00Z",
+            "2024-01-01T00:30:00Z",
+        ], utc=True)
+    }).to_parquet(path, index=False)
+    monkeypatch.setattr(recon, "fetch_bybit", lambda *a, **k: (_ for _ in ()).throw(AssertionError("must not fetch")))
+    monkeypatch.setattr(recon, "fetch_binance", lambda *a, **k: (_ for _ in ()).throw(AssertionError("must not fetch")))
+
+    with pytest.raises(ValueError, match="max_candidates_out_of_bounds"):
+        recon.reconcile_dataset(path, "btc_usdt", "minute15", max_candidates=value)
+
+
+def test_max_candidates_exact_boundary_is_accepted(tmp_path, monkeypatch):
+    path = tmp_path / "minute15.parquet"
+    frame = pd.DataFrame({
+        "timestamp": pd.to_datetime([
+            "2024-01-01T00:00:00Z",
+            "2024-01-01T00:30:00Z",
+        ], utc=True)
+    })
+    frame.to_parquet(path, index=False)
+    target_ts = int(pd.Timestamp("2024-01-01T00:15:00Z").timestamp() * 1000)
+    monkeypatch.setattr(recon, "fetch_bybit", lambda *a, **k: [_row("Bybit", "100", ts=target_ts)])
+    monkeypatch.setattr(recon, "fetch_binance", lambda *a, **k: [_row("Binance", "100", ts=target_ts)])
+    monkeypatch.setattr(recon, "OUTPUT_ROOT", tmp_path / "out")
+
+    payload = recon.reconcile_dataset(
+        path,
+        "btc_usdt",
+        "minute15",
+        max_candidates=recon.MAX_CANDIDATES,
+        generated_at=datetime(2026, 8, 8, 12, 0, tzinfo=timezone.utc),
+    )
+    assert len(payload["candidates"]) == 1
+    assert payload["source_policy"]["max_candidates"] == recon.MAX_CANDIDATES
+
+
 def test_eligible_only_when_primary_and_secondary_ohlc_agree(monkeypatch):
     monkeypatch.setattr(recon, "fetch_bybit", lambda *a, **k: [_row("Bybit", "100")])
     monkeypatch.setattr(recon, "fetch_binance", lambda *a, **k: [_row("Binance", "100.5")])
