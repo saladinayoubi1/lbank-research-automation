@@ -71,8 +71,8 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "7021b0315f143aff3ba9a26fc9e192f680467886",
-    "observed_at_utc": "2026-08-08T14:14:00Z",
+    "observed_main_sha": "d0e52194aac1a92d3caf3620a7dc0d299b1287c9",
+    "observed_at_utc": "2026-08-08T14:31:00Z",
     "authoritative_memory_pr": 151,
     "memory_refresh_branch": "memory/current-main-91d2cfe7-refresh",
     "superseded_or_stale_memory_prs": [129, 139, 140, 147, 150],
@@ -107,10 +107,13 @@
       "release_blockers": [43, 58, 64, 124]
     },
     "open_pull_requests": {
-      "117": "cloud fallback fail-closed checkpoint; draft; currently non-mergeable against newer main; exact-head revalidation still required",
-      "149": "market-data provenance manifest contract; draft; mergeable=true; exact-head Test, Build Verification and Cloud Fallback succeeded; #131 full ADR/recovery gate remains",
-      "151": "current Project Memory refresh; draft; prior exact-head CI succeeded but main advanced to 7021b031; refreshed again and must revalidate exact new head before merge",
-      "152": "ignore local NEXUS runtime state; reversible hygiene change; exact-head Test, Build Verification and Cloud Fallback succeeded; currently non-mergeable against newer main"
+      "117": "cloud fallback fail-closed checkpoint; draft; mergeable=true but validation predates current main and exact-current-base revalidation is required",
+      "149": "market-data provenance manifest contract; draft; semantic timeframe relabel blocker was remediated on head 67875140b9837b8498a536ea1525fa6d21ec3732 with explicit supported-interval, grid, exact-cadence, full-window and regression controls; exact-head CI and ADR-009 alignment remain required before merge",
+      "151": "current Project Memory refresh; draft; refreshed after PR #152 merge and provenance remediation; exact-head CI, mergeability and review-thread gates still required"
+    },
+    "recent_material_events": {
+      "152": "merged at exact head 8d665baf146217a4c49162aa30693f39a9c1760a after Test, NEXUS Build Verification and NEXUS Cloud Fallback succeeded, mergeable=true and zero unresolved review threads; resulting main d0e52194aac1a92d3caf3620a7dc0d299b1287c9",
+      "149_remediation": "timeframe identity is now deny-by-default and bound to a fixed interval grid/cadence and complete declared retrieval window; exact-head CI and policy documentation remain pending"
     },
     "market_data_source_hierarchy": {
       "status": "ADR-009, reconciliation-agent alignment, source-mapping validator, bounded Binance public Spot adapter and deterministic pagination are merged; real source mappings remain unapproved by default",
