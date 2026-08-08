@@ -71,8 +71,8 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "d0e52194aac1a92d3caf3620a7dc0d299b1287c9",
-    "observed_at_utc": "2026-08-08T14:36:00Z",
+    "observed_main_sha": "fe6100eaecca73074f622f7bf1019ff918518fd5",
+    "observed_at_utc": "2026-08-08T15:14:00Z",
     "authoritative_memory_pr": 151,
     "memory_refresh_branch": "memory/current-main-91d2cfe7-refresh",
     "superseded_or_stale_memory_prs": [129, 139, 140, 147, 150],
@@ -107,13 +107,16 @@
       "release_blockers": [43, 58, 64, 124]
     },
     "open_pull_requests": {
-      "117": "cloud fallback fail-closed checkpoint; draft; mergeable=true but validation predates current main and exact-current-base revalidation is required",
-      "149": "market-data provenance manifest contract; draft; semantic timeframe relabel blocker remediated; head 42e318fadce31b1775fd304e46c90fbcba5e0077. Prior head 67875140 failed Test/Cloud Fallback only because the new relabel regression expected the word cadence while the fail-closed implementation correctly rejected earlier on grid mismatch; assertion was minimally widened to grid|cadence and exact-head rerun is required. ADR-009/#131 aggregate policy gate remains",
-      "151": "current Project Memory refresh; draft; refreshed after PR #152 merge and provenance CI repair; exact-head CI, mergeability and review-thread gates still required"
+      "117": "cloud fallback fail-closed checkpoint; draft; non-mergeable against current main and bounded by issue 106",
+      "149": "market-data provenance manifest contract; draft; head 42e318fadce31b1775fd304e46c90fbcba5e0077; Test, NEXUS Build Verification and NEXUS Cloud Fallback all green; mergeable=true; aggregate issue 131 policy gate remains",
+      "151": "authoritative Project Memory refresh; draft; refreshed to current main fe6100eaecca73074f622f7bf1019ff918518fd5; exact-head CI must rerun after this memory commit",
+      "157": "dashboard restart-loop fix for Zotero findings; read-only/reversible; head 62c0ddccd5590bdd628a411686b1a71dde80744f; mergeable=true; exact-head CI required before merge",
+      "158": "read-only NEXUS Mission Control dashboard upgrade; head f9237bcc59d3c2b9da2eacfcd69d794a6f393f7d; mergeable=true; exact-head CI required before merge"
     },
     "recent_material_events": {
-      "152": "merged at exact head 8d665baf146217a4c49162aa30693f39a9c1760a after Test, NEXUS Build Verification and NEXUS Cloud Fallback succeeded, mergeable=true and zero unresolved review threads; resulting main d0e52194aac1a92d3caf3620a7dc0d299b1287c9",
-      "149_remediation": "timeframe identity is deny-by-default and bound to fixed interval grid/cadence and complete declared retrieval window; deterministic CI failure was a test-message mismatch, not a weakened gate, and was repaired minimally; exact-head rerun and policy documentation remain pending"
+      "152": "merged at exact head 8d665baf146217a4c49162aa30693f39a9c1760a after Test, NEXUS Build Verification and NEXUS Cloud Fallback succeeded, mergeable=true and zero unresolved review threads",
+      "149_validation": "head 42e318fadce31b1775fd304e46c90fbcba5e0077 has successful Test, NEXUS Build Verification and NEXUS Cloud Fallback; no production signing authority is implied",
+      "current_main": "fe6100eaecca73074f622f7bf1019ff918518fd5 is a repository-managed market-data update; connected combined status surface returns zero statuses, so exact-main release evidence remains fail-closed"
     },
     "market_data_source_hierarchy": {
       "status": "ADR-009, reconciliation-agent alignment, source-mapping validator, bounded Binance public Spot adapter and deterministic pagination are merged; real source mappings remain unapproved by default",
