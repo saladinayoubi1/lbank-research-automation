@@ -71,17 +71,17 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "7865c886d60ee8428e8ed742783d2fee96e83207",
-    "observed_at_utc": "2026-08-08T20:13:09Z",
+    "observed_main_sha": "387c71be35a8bcc71d93b64a2d88e33c17cfecfb",
+    "observed_at_utc": "2026-08-08T21:14:00Z",
     "latest_main_change": {
-      "commit": "7865c886d60ee8428e8ed742783d2fee96e83207",
+      "commit": "387c71be35a8bcc71d93b64a2d88e33c17cfecfb",
       "summary": "data: update LBank public candles",
       "architecture_or_core_goal_change_observed": false
     },
-    "open_pull_requests": [117, 184],
-    "memory_refresh_branch": "continuity/refresh-release-state-20260808-2248",
+    "open_pull_requests": [117, 186],
+    "memory_refresh_branch": "continuity/refresh-release-state-20260809-0052",
     "memory_pr_validation": {
-      "state": "pending_exact_head_ci_after_material_event_refresh",
+      "state": "pending_exact_head_ci",
       "merge_allowed": false,
       "note": "Drive remains non-authoritative; merge only after exact final head CI is green, mergeable=true and review evidence is clean"
     },
@@ -99,13 +99,18 @@
       "rollback_exercised_in_production": false,
       "backup_restore_rpo_rto_proven": false,
       "independent_disaster_recovery_proven": false,
-      "cross_platform_workflow_matrix": ["ubuntu-latest", "windows-latest", "macos-latest"],
+      "cross_platform_workflow_matrix": [
+        "ubuntu-latest",
+        "windows-latest",
+        "macos-latest"
+      ],
       "exact_main_cross_platform_release_evidence_proven": false,
       "owner_production_approval": false,
       "release_readiness_main_push_control": {
-        "status": "absent_on_observed_main",
+        "status": "present_on_observed_main",
         "workflow": ".github/workflows/release-readiness.yml",
-        "note": "current workflow is pull_request/workflow_dispatch only; enabling a three-OS main-push matrix may affect Actions usage and requires owner billing approval"
+        "scope": "Release Readiness runs on every push to main and uses Ubuntu/Windows/macOS Python 3.12 matrix",
+        "production_authority": false
       },
       "release_recovery_main_push_control": {
         "status": "merged",
@@ -120,24 +125,28 @@
       "release_blockers": [43, 58, 64, 124]
     },
     "pull_request_evidence": {
-      "184": {
+      "186": {
         "state": "open",
+        "head": "d04f476887673066e33010a8e5dce0fcca9e3a3e",
         "draft": true,
-        "scope": "docs/project_memory/STATE.json only",
-        "scope_conflicts_with_pr_117": false,
-        "pre_refresh_head_ci": {
-          "head": "5e6a20d0f2bac0cef17ad959303a739c267c19ec",
+        "mergeable": true,
+        "changed_files": [
+          "cross_source_reconciliation_provenance.py",
+          "docs/evidence/source-reconciliation-provenance-binding-v4.md",
+          "tests/test_cross_source_reconciliation_provenance.py"
+        ],
+        "exact_head_ci": {
           "Test": "success",
           "NEXUS Build Verification": "success",
           "NEXUS Cloud Fallback": "success"
         },
-        "exact_final_head_ci": "pending_after_this_refresh"
+        "scope_conflicts_with_memory_refresh": false
       },
       "117": {
         "state": "open",
         "head": "043c4465ab268769c3ecfb51d07c214c1a5509fd",
         "draft": true,
-        "mergeable": true,
+        "mergeable": false,
         "scope_conflicts_with_memory_refresh": false
       }
     },
