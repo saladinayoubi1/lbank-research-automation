@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "NEXUS / lbank-research-automation",
-  "observed_at_utc": "2026-08-08T07:31:00Z",
+  "observed_at_utc": "2026-08-08T08:21:00Z",
   "memory_policy": {
     "repository_is_durable_source": true,
     "chat_is_source_of_truth": false,
@@ -23,6 +23,12 @@
     "GitHub Actions",
     "cloud fallback"
   ],
+  "runtime_status": {
+    "agent_execution_state": "not_independently_observed_this_run",
+    "laptop_state": "unknown",
+    "internet_outage_state": "unknown",
+    "laptop_offline_is_not_internet_outage": true
+  },
   "data_policy": {
     "research_only": true,
     "real_trading": false,
@@ -35,29 +41,32 @@
       "tertiary": "LBank"
     },
     "source_policy_issue": 131,
+    "source_policy_pr": 132,
     "silent_cross_exchange_substitution_allowed": false
   },
   "repository_snapshot": {
-    "main_sha": "b0dfe73121ebdcacac0a20e286f03ed29e846bca",
-    "main_head_commit": "Add event-driven CI failure triage for NEXUS (#123)",
-    "main_head_change_path": "reviewed_pull_request_merge",
-    "main_head_ci_evidence": "release evidence must be independently verified on exact current main; PR-head CI is not reused as main release evidence",
-    "release_fail_closed_issue": 124,
+    "main_sha": "e83040de6845e66cca74bf82a3756447b48fa5f0",
+    "main_head_commit": "data: update LBank public candles",
+    "main_head_change_path": "direct_repository_managed_data_commit",
+    "main_head_ci_evidence": "connected combined-status surface returned zero statuses for exact main SHA; production release remains fail-closed",
+    "release_fail_closed_issues": [43, 124],
     "recent_architecture_changes": [
       {"pull_request": 123, "merge_commit_sha": "b0dfe73121ebdcacac0a20e286f03ed29e846bca", "status": "merged", "purpose": "event-driven fail-closed CI failure triage"},
       {"pull_request": 130, "merge_commit_sha": "e8867307459901df18aaa3e05c7f08947d07e423", "status": "merged", "purpose": "dedicated data backfill and reconciliation agent contract"},
-      {"issue": 131, "status": "open", "decision": "Bybit primary/execution; Binance secondary cross-validation/backfill; LBank tertiary/research-only", "implementation_status": "governed design pending reviewed implementation; no silent substitution"}
+      {"issue": 131, "status": "open", "decision": "Bybit primary/execution; Binance secondary cross-validation/backfill; LBank tertiary/research-only"},
+      {"pull_request": 132, "head_sha": "df3b3fa754bfbba93961d13674bf1296c9bc34f9", "status": "open_draft_non_mergeable_observed", "purpose": "market-data source hierarchy ADR"}
     ],
     "open_pull_requests": [
-      {"number": 129, "draft": true, "purpose": "refresh durable continuity snapshot", "note": "this memory write creates a new head; re-query exact final head CI, mergeability and review threads before any merge"},
-      {"number": 117, "head_sha": "043c4465ab268769c3ecfb51d07c214c1a5509fd", "draft": true, "purpose": "fail-closed cloud fallback checkpoint", "blocker": "independent control-plane authorization remains unresolved in issue #106"},
-      {"number": 105, "head_sha": "28a90f918d82fe76149288cac0646de53a320d2a", "draft": true, "purpose": "enforce NEXUS contract validator in CI", "blocker": "independent authorization remains unresolved in issue #106"}
+      {"number": 132, "head_sha": "df3b3fa754bfbba93961d13674bf1296c9bc34f9", "draft": true, "mergeable_observed": false, "purpose": "market-data source hierarchy ADR"},
+      {"number": 129, "draft": true, "purpose": "refresh durable continuity snapshot", "note": "this memory write creates a new head; exact-head CI, mergeability and review threads must be revalidated before merge"},
+      {"number": 117, "head_sha": "043c4465ab268769c3ecfb51d07c214c1a5509fd", "draft": true, "mergeable_observed": false, "purpose": "fail-closed cloud fallback checkpoint", "blocker": "independent control-plane authorization remains unresolved in issue #106"},
+      {"number": 105, "head_sha": "28a90f918d82fe76149288cac0646de53a320d2a", "draft": true, "mergeable_observed": false, "purpose": "enforce NEXUS contract validator in CI", "blocker": "independent authorization remains unresolved in issue #106"}
     ],
     "superseded_pull_requests": [121],
     "active_blockers": [43, 64, 89, 91, 106, 122, 124, 125, 131],
     "data_readiness": {
-      "source_data_commit": "44db8d6e6b3797e26bd56d18ec6acb5f529545bc",
-      "evaluated_at_utc": "2026-08-08T07:15:36.034540+00:00",
+      "source_data_commit": "e83040de6845e66cca74bf82a3756447b48fa5f0",
+      "evaluated_at_utc": "2026-08-08T08:03:53.986240+00:00",
       "total_series": 21,
       "research_ready": 2,
       "blocked": 19,
@@ -68,7 +77,7 @@
       "freshness_within_policy": true,
       "status": "fail_closed_historical_integrity_gaps",
       "integrity_blocker": 125,
-      "note": "Invalid, stale, ambiguous, duplicate, out-of-order or off-grid data remains excluded from downstream consumers. No synthetic candles or silent source substitution."
+      "note": "Freshness advanced to the 08:00 UTC candle without repairing historical gaps. Invalid, stale, ambiguous, duplicate, out-of-order or off-grid data remains excluded. No synthetic candles or silent source substitution."
     },
     "release_authority": {
       "production_ready": false,
@@ -78,14 +87,21 @@
       "billing_authorized": false,
       "deployment_authorized": false,
       "live_financial_actions_authorized": false,
+      "bounded_controls_observed": [
+        "artifact manifest integrity validation",
+        "CycloneDX SBOM structural validation",
+        "provenance verifier requirements documented/implemented in release controls"
+      ],
       "remaining_evidence_requirements": [
         "exact-main release CI evidence",
-        "trusted provenance",
-        "reproducible build proof",
-        "tested rollback",
+        "trusted provenance bound to one fixed release SHA and artifacts",
+        "owner-approved signing identity and trust policy",
+        "reproducible build proof from isolated clean builds",
+        "tested fail-closed rollback",
         "measured backup/restore RPO/RTO",
         "independent disaster-recovery exercise",
-        "exact-head cross-platform release validation"
+        "exact-head Ubuntu/Windows/macOS release validation",
+        "owner-controlled production approval"
       ]
     }
   },
@@ -95,8 +111,8 @@
     "document_name": "NEXUS Project Memory Backup — Durable",
     "document_id": "14wBdcjec0_0PhDzupk7QjaPlB3A_uw4A1EUzseeKQ4s",
     "object_presence_observed": true,
-    "latest_observed_snapshot_mentions_main_sha": "44db8d6e6b3797e26bd56d18ec6acb5f529545bc",
-    "refresh_required_for_main_sha": "b0dfe73121ebdcacac0a20e286f03ed29e846bca",
+    "latest_observed_snapshot_mentions_main_sha": "e83040de6845e66cca74bf82a3756447b48fa5f0",
+    "latest_refresh_observed_at_utc": "2026-08-08T08:21:00Z",
     "source_sha_verified": false,
     "content_hash_verified": false,
     "freshness_contract_verified": false,
@@ -112,7 +128,7 @@
       "docs/project_memory/RECOVERY_PLAYBOOK.md"
     ],
     "reconstruct_from": ["git history", "issues", "pull requests", "CI/workflow evidence", "durable project memory"],
-    "conditional_external_recovery_source": "Google Drive only after repository sources and subject to issue #122 validation",
+    "external_recovery_source_after_repository": "Google Drive subject to issue #122 validation",
     "chat_loss_tolerated": true,
     "local_machine_loss_tolerated_for_project_knowledge": true,
     "laptop_offline_is_not_internet_outage": true
