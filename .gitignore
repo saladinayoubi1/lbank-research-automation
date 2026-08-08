@@ -216,3 +216,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# NEXUS local agent runtime state
+data/agent_coordination/
+data/integrations/
