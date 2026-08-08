@@ -40,15 +40,23 @@
     "local_machine_loss_tolerated_for_project_knowledge": true
   },
   "current_evidence": {
-    "observed_main_sha": "7d1ef589310a3f63149ea8a6bb3598a1b0217916",
-    "observed_at_utc": "2026-08-08T08:32:00Z",
+    "observed_main_sha": "4eaadd08c99d4069faa0881707aa8e4a601ee9ac",
+    "observed_at_utc": "2026-08-08T08:46:00Z",
     "market_data_source_hierarchy": {
-      "status": "ADR-009 merged; implementation remains pending under issue #131",
+      "status": "ADR-009, reconciliation-agent alignment, and first executable source-mapping validator merged; real source mappings remain unapproved by default",
       "primary": "Bybit",
       "secondary": "Binance",
       "tertiary": "LBank",
       "adr": "docs/architecture/ADR-009-market-data-source-hierarchy.md",
-      "merge_pr": 132
+      "source_registry": "docs/architecture/market-data-source-registry.yaml",
+      "source_registry_mappings": 0,
+      "merge_prs": [132, 135, 136]
+    },
+    "architecture_validation": {
+      "ci_enforcement_pr": 138,
+      "status": "merged; Test workflow runs nexus_architecture_validator.py before pytest",
+      "independent_control_plane_proven": false,
+      "remaining_blocker": 106
     },
     "active_blockers": [43, 64, 89, 91, 106, 107, 122, 124, 125, 131]
   }
