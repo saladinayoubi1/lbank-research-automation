@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "project": "NEXUS / lbank-research-automation",
   "memory_policy": {
     "repository_is_durable_source": true,
@@ -48,13 +48,14 @@
       "STATE",
       "decision log",
       "recovery playbook",
-      "exact current pull requests and CI evidence"
+      "exact current pull requests and CI evidence",
+      "external backup only after issue 122 contract and verification requirements are satisfied"
     ],
     "chat_loss_tolerated": true,
     "local_machine_loss_tolerated_for_project_knowledge": true,
     "external_backup_candidate": {
       "provider": "Google Drive",
-      "status": "presence-only-untrusted-candidate-until-issue-122",
+      "status": "secondary-continuity-copy-not-authoritative-until-issue-122",
       "may_authorize_recovery": false,
       "required_before_use": [
         "versioned contract",
@@ -70,15 +71,12 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "87f9e55dd69b76602690d7260fc4d5edca5c1903",
-    "observed_at_utc": "2026-08-08T11:20:00Z",
-    "authoritative_memory_pr": 140,
-    "superseded_memory_prs": [129, 139],
-    "memory_pr_validation": {
-      "state": "pending_revalidation_after_current_state_refresh",
-      "merge_allowed": false,
-      "note": "re-read exact memory head and require applicable green CI, mergeable=true and zero unresolved review threads before merge"
-    },
+    "observed_main_sha": "b3c0acd6830b9e3baec8ad7e656480786e4256ec",
+    "observed_at_utc": "2026-08-08T15:36:00Z",
+    "authoritative_memory_pr": null,
+    "memory_refresh_branch": "memory/current-main-b3c0-refresh",
+    "superseded_or_stale_memory_prs": [129, 139, 140, 147, 150, 151],
+    "memory_merge_allowed": false,
     "release_readiness": {
       "production_ready": false,
       "exact_main_combined_status_count": 0,
@@ -87,35 +85,49 @@
       "cyclonedx_sbom_gate": true,
       "provenance_binding_gate": true,
       "production_signature_policy_configured": false,
-      "reproducible_build_proven": false,
-      "rollback_exercised": false,
+      "reproducible_build_comparison_gate_present": true,
+      "reproducible_build_proven_for_current_release": false,
+      "rollback_record_gate_present": true,
+      "rollback_exercised_for_current_release": false,
       "backup_restore_rpo_rto_proven": false,
       "independent_disaster_recovery_proven": false,
       "exact_main_cross_platform_release_evidence_proven": false,
       "owner_production_approval": false,
+      "release_readiness_main_push_control": {
+        "status": "merged",
+        "workflow": ".github/workflows/release-readiness.yml",
+        "scope": "run fail-closed release gate tests on every push to main across Ubuntu Windows macOS"
+      },
       "release_recovery_main_push_control": {
-        "status": "validated_candidate_unmerged",
-        "pr": 144,
-        "candidate_head": "3ea336881abdce5e7f80f95cfc1017fd7c425a60",
-        "scope": "remove Release Recovery push-to-main path filter; preserve cross-platform fail-closed tests",
-        "exact_head_ci": ["Release Recovery", "Workflow Permissions Policy", "NEXUS Cloud Fallback", "Test", "NEXUS Build Verification"],
-        "all_observed_ci_green": true,
-        "mergeable": true,
-        "unresolved_review_threads": 0,
-        "merge_allowed": false,
-        "merge_blocker": "automated merge attempt was blocked by tool safety controls; candidate remains open and unchanged"
+        "status": "merged_via_pr_148",
+        "merge_commit": "7c874fcc8c15876dfad19deadb023db355b010f5",
+        "workflow": ".github/workflows/release-recovery.yml",
+        "scope": "run reproducibility and rollback gate tests on every push to main across Ubuntu Windows macOS"
       },
       "release_blockers": [43, 58, 64, 124]
     },
+    "open_pull_requests": {
+      "117": "cloud fallback fail-closed checkpoint; draft; currently non-mergeable against current main and bounded by issue 106",
+      "159": "current-main replay of Zotero dashboard restart-loop fix; draft; exact-head CI running; supersedes closed PR 157",
+      "160": "current-main replay of deterministic market-data provenance manifest contract; draft; exact-head CI running; aggregate issue 131 policy gate remains"
+    },
+    "recent_material_events": {
+      "152": "merged after exact-head Test, NEXUS Build Verification and NEXUS Cloud Fallback succeeded; local runtime state paths ignored",
+      "158": "Mission Control dashboard UI merged at exact head f9237bcc59d3c2b9da2eacfcd69d794a6f393f7d; resulting main b3c0acd6830b9e3baec8ad7e656480786e4256ec",
+      "157_to_159": "stale Zotero launcher fix PR 157 closed after branch divergence; identical two-file fix replayed from current main in PR 159 and must independently revalidate",
+      "149_to_160": "stale provenance-manifest PR 149 closed after branch divergence; fail-closed two-file implementation replayed from current main in PR 160 and must independently revalidate",
+      "ci_triage_153_156": "event-driven failure issues for superseded PR 149 heads were closed after exact head 42e318fadce31b1775fd304e46c90fbcba5e0077 succeeded in Test, NEXUS Build Verification and NEXUS Cloud Fallback; no gate weakening",
+      "current_main": "connected combined status surface returns zero statuses for b3c0acd6830b9e3baec8ad7e656480786e4256ec, so exact-main release evidence remains fail-closed"
+    },
     "market_data_source_hierarchy": {
-      "status": "ADR-009, reconciliation-agent alignment, source-mapping validator and bounded Binance public Spot adapter are merged; real source mappings remain unapproved by default",
+      "status": "ADR-009, reconciliation-agent alignment, source-mapping validator, bounded Binance public Spot adapter and deterministic pagination are merged; real source mappings remain unapproved by default",
       "primary": "Bybit",
       "secondary": "Binance",
       "tertiary": "LBank",
       "adr": "docs/architecture/ADR-009-market-data-source-hierarchy.md",
       "source_registry": "docs/architecture/market-data-source-registry.yaml",
       "source_registry_mappings": 0,
-      "merge_prs": [132, 135, 136, 141]
+      "merge_prs": [132, 135, 136, 141, 146]
     },
     "architecture_validation": {
       "ci_enforcement_pr": 138,
