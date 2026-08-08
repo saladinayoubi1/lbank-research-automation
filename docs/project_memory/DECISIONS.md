@@ -81,6 +81,15 @@ Decision: The Binance adapter is approved only as a bounded public Spot retrieva
 
 Boundary: Public data only; no credentials, persistence, live orders, signing, billing, production deployment or financial action.
 
+## 2026-08-08 — Release recovery validation must observe every main push
+Status: ACTIVE
+
+Evidence: Current `main` observed at `87f9e55dd69b76602690d7260fc4d5edca5c1903` has zero combined statuses and no commit-associated workflow evidence on the connected verification surface. `Release Readiness` already subscribes to every `push -> main`, while `Release Recovery` still filters main pushes to recovery-control paths only. Draft PR #144 proposes removing that push path filter without changing its Ubuntu/Windows/macOS matrix or fail-closed tests.
+
+Decision: Production/release claims remain blocked until exact-main evidence is observable on one fixed SHA. A safe prospective remediation is to run the existing Release Recovery gate on every main push so routine direct-main data commits cannot bypass reproducibility/rollback validation by path. PR #144 must remain unmerged until exact-head CI is green, mergeable, review-clean and non-conflicting with newer main.
+
+Boundary: This is CI evidence hardening only. It does not prove reproducible builds, actual rollback, backup/restore, DR, signing, production approval or publisher identity, and it grants no credential, billing, deployment, live-trading or irreversible authority.
+
 ## 2026-08-08 — Critical notification marker
 Status: ACTIVE
 
