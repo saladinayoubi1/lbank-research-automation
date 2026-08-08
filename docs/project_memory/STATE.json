@@ -38,5 +38,18 @@
     "reconstruct_from": ["git history", "issues", "pull requests", "CI/workflow evidence", "durable project memory"],
     "chat_loss_tolerated": true,
     "local_machine_loss_tolerated_for_project_knowledge": true
+  },
+  "current_evidence": {
+    "observed_main_sha": "7d1ef589310a3f63149ea8a6bb3598a1b0217916",
+    "observed_at_utc": "2026-08-08T08:32:00Z",
+    "market_data_source_hierarchy": {
+      "status": "ADR-009 merged; implementation remains pending under issue #131",
+      "primary": "Bybit",
+      "secondary": "Binance",
+      "tertiary": "LBank",
+      "adr": "docs/architecture/ADR-009-market-data-source-hierarchy.md",
+      "merge_pr": 132
+    },
+    "active_blockers": [43, 64, 89, 91, 106, 107, 122, 124, 125, 131]
   }
 }
