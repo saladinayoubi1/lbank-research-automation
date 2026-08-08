@@ -45,18 +45,31 @@ def ensure_zotero_report() -> None:
         return
     if not REFERENCE_JSON.exists():
         raise FileNotFoundError(f"Missing reference file: {REFERENCE_JSON}")
+    cmd = [
+        sys.executable,
+        str(ROOT / "tools" / "zotero_metadata_audit.py"),
+        str(REFERENCE_JSON),
+        "--json",
+    ]
     result = subprocess.run(
-        [
-            sys.executable,
-            str(ROOT / "tools" / "zotero_metadata_audit.py"),
-            str(REFERENCE_JSON),
-            "--json",
-        ],
+        cmd,
         cwd=ROOT,
-        check=True,
+        check=False,
         capture_output=True,
         text=True,
     )
+    # zotero_metadata_audit.py uses exit code 1 to mean metadata findings were
+    # detected. That is a valid audit result, not a launcher failure. Exit code
+    # 2 (or any unexpected code) represents an actual audit execution failure.
+    if result.returncode not in (0, 1):
+        raise subprocess.CalledProcessError(
+            result.returncode,
+            cmd,
+            output=result.stdout,
+            stderr=result.stderr,
+        )
+    if not result.stdout.strip():
+        raise RuntimeError("Zotero metadata audit produced no JSON report")
     ZOTERO_REPORT.write_text(result.stdout, encoding="utf-8")
 
 
