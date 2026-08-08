@@ -43,7 +43,7 @@
   "current_evidence": {
     "observed_main_sha": "aeb0bbea190f9e63dc9ee426abd29faf8ad51c8f",
     "observed_at_utc": "2026-08-08T15:40:00Z",
-    "authoritative_memory_pr": null,
+    "authoritative_memory_pr": 163,
     "memory_refresh_branch": "memory/current-main-aeb0-refresh",
     "superseded_or_stale_memory_prs": [129, 139, 140, 147, 150, 151, 161],
     "memory_merge_allowed": false,
@@ -63,7 +63,7 @@
       "117": "cloud fallback fail-closed checkpoint; draft; non-mergeable against current main; issue 106 remains",
       "160": "deterministic market-data provenance manifest; draft; head 0044a4cf9ae13c52366809db88531e7501be0f42 after explicit recovery regression; exact-head CI must rerun; depends on ADR alignment and issue 131 gate",
       "162": "ADR-009 semantic-binding addendum; draft; head 5b99bacf770ad66dd6063cc28c8a6f8e952be4fe; exact-head CI in progress",
-      "163": "current-main Project Memory refresh; draft; exact-head CI required before merge"
+      "163": "authoritative current-main Project Memory refresh; draft; exact-head CI required before merge"
     },
     "recent_material_events": {
       "158": "Mission Control UI merged; resulting main b3c0acd6830b9e3baec8ad7e656480786e4256ec",
