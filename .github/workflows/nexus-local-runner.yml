@@ -1,0 +1,61 @@
+name: NEXUS Local Runner
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: Safe local task to run
+        required: true
+        type: choice
+        options:
+          - health
+          - tests
+          - readiness
+          - exhaustive-gap-repair
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nexus-local-runner
+  cancel-in-progress: false
+
+jobs:
+  local:
+    runs-on: [self-hosted, Windows, X64, nexus-local]
+    timeout-minutes: 120
+    defaults:
+      run:
+        shell: cmd
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          clean: true
+          fetch-depth: 1
+
+      - name: Privacy guard
+        run: >-
+          python -c "import os, pathlib, sys;
+          root=pathlib.Path.cwd().resolve();
+          home=pathlib.Path.home().resolve();
+          assert root != home and home not in root.parents;
+          print('privacy_guard=ok');
+          print('workspace=' + str(root.name));"
+
+      - name: Health
+        if: inputs.task == 'health'
+        run: python -m pytest -q tests/test_nexus_architecture_validator.py tests/test_web_dashboard.py
+
+      - name: Tests
+        if: inputs.task == 'tests'
+        run: python -m pytest -q
+
+      - name: Readiness
+        if: inputs.task == 'readiness'
+        run: python data_readiness.py --status-path data\market\_backfill_status.csv
+
+      - name: Exhaustive gap repair
+        if: inputs.task == 'exhaustive-gap-repair'
+        run: python exhaustive_gap_repair.py
