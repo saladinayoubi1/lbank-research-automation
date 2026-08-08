@@ -24,6 +24,8 @@
     "observed_at_utc":"2026-08-08T09:49:29Z",
     "authoritative_memory_pr":140,
     "superseded_memory_prs":[129,139],
+    "memory_pr_validation":{"previous_exact_head":"13dc4013629de891103af8637c7c0e98fb5de62d","mergeable":true,"unresolved_review_threads":0,"test":"success","build_verification":"success","cloud_fallback":"success","note":"this evidence predates the current STATE refresh commit and must be revalidated before merge"},
+    "release_readiness":{"production_ready":false,"exact_main_combined_status_count":0,"exact_main_release_run_independently_verified":false,"artifact_manifest_gate":true,"cyclonedx_sbom_gate":true,"provenance_binding_gate":true,"production_signature_policy_configured":false,"reproducible_build_proven":false,"rollback_exercised":false,"backup_restore_rpo_rto_proven":false,"independent_disaster_recovery_proven":false,"exact_main_cross_platform_release_evidence_proven":false,"owner_production_approval":false,"release_blockers":[43,124]},
     "market_data_source_hierarchy":{"status":"ADR-009, reconciliation-agent alignment, source-mapping validator merged; Binance public Spot adapter proposed in draft PR #141; real source mappings remain unapproved by default","primary":"Bybit","secondary":"Binance","tertiary":"LBank","adr":"docs/architecture/ADR-009-market-data-source-hierarchy.md","source_registry":"docs/architecture/market-data-source-registry.yaml","source_registry_mappings":0,"merge_prs":[132,135,136],"open_adapter_pr":141},
     "architecture_validation":{"ci_enforcement_pr":138,"status":"merged; Test workflow runs nexus_architecture_validator.py before pytest","independent_control_plane_proven":false,"remaining_blocker":106},
     "active_blockers":[43,64,89,91,106,107,122,124,125,131]
