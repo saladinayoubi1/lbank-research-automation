@@ -66,11 +66,20 @@ Limitation: This proves the validator executes in repository CI; it does not pro
 ## 2026-08-08 — One authoritative open Project Memory PR
 Status: ACTIVE
 
-Evidence: PR #140 contains the newer repository-owned Project Memory snapshot against main `d6b16ef146d3bf75efe7ae9e0675c1c22d78620c`; PR #129 is an older continuity snapshot and is non-mergeable against newer main state.
+Evidence: PR #140 contains the newer repository-owned Project Memory snapshot against current repository evidence; PR #129 is an older continuity snapshot and must not be merged against newer main state.
 
-Decision: PR #140 is the sole authoritative open Project Memory refresh. PR #129 is superseded and must not be merged. Recovery starts from repository Project Memory + STATE + decision log + recovery playbook + exact current PR/CI evidence, then the independent Drive backup. Laptop shutdown/offline and internet outage are distinct states and must never be inferred from one another.
+Decision: PR #140 is the sole authoritative open Project Memory refresh. PR #129 is superseded and must not be merged. Recovery starts from repository Project Memory + STATE + decision log + recovery playbook + exact current PR/CI evidence. A Google Drive object may be treated only as an external backup candidate while #122 is open; presence alone is not recovery evidence and it must not authorize recovery until its versioned contract, freshness, source-SHA/content binding, object identity, no-secrets/privacy checks, replay/substitution rejection and fixed-tuple recovery exercise are verified. Laptop shutdown/offline and internet outage are distinct states and must never be inferred from one another.
 
-Boundary: This consolidation changes continuity metadata only. It grants no signing, production approval, credential, billing, deployment, live-trading or irreversible authority.
+Boundary: This consolidation changes continuity metadata only. It grants no signing, production approval, credential, billing, deployment, live-trading or irreversible authority. Drive remains fail-closed and non-authoritative until #122 is satisfied.
+
+## 2026-08-08 — Binance adapter replay/window boundary remains fail-closed until revalidated
+Status: ACTIVE
+
+Evidence: Review on PR #141 identified that its original exact-head-green implementation trusted the caller interval label and did not prove returned rows belonged to the requested start/end window or a complete deterministic page. Candidate hardening was added on branch `data/binance-public-kline-adapter` to derive fixed interval duration/grid locally, bind rows to explicit request bounds, reject open/incomplete windows, reject oversized single-page requests, and require an exact expected timestamp set. The candidate remains unmerged until the new exact head passes required CI/review gates.
+
+Decision: A green CI result on a superseded adapter head is not merge authority. Wrong-granularity, off-grid, stale/replayed, out-of-window, truncated, partial or substituted kline pages remain blocked. No real source mapping or downstream eligibility may be granted to clear this blocker.
+
+Boundary: Public Spot data only; no credentials, persistence, live orders, signing, billing, production deployment or financial action.
 
 ## 2026-08-08 — Critical notification marker
 Status: ACTIVE
