@@ -70,59 +70,58 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "87f9e55dd69b76602690d7260fc4d5edca5c1903",
-    "observed_at_utc": "2026-08-08T11:20:00Z",
-    "authoritative_memory_pr": 140,
-    "superseded_memory_prs": [129, 139],
-    "memory_pr_validation": {
-      "state": "pending_revalidation_after_current_state_refresh",
-      "merge_allowed": false,
-      "note": "re-read exact memory head and require applicable green CI, mergeable=true and zero unresolved review threads before merge"
-    },
+    "observed_main_sha": "8c391cbfabb6ec5cc15facb1ebac898be3ad1337",
+    "observed_at_utc": "2026-08-08T17:36:00Z",
+    "authoritative_memory_pr": null,
+    "memory_refresh_branch": "memory/current-main-8c391-refresh",
+    "superseded_memory_prs": [129, 139, 140, 147, 150, 151, 161, 163, 165, 167, 168],
+    "memory_merge_allowed": false,
     "release_readiness": {
       "production_ready": false,
       "exact_main_combined_status_count": 0,
       "exact_main_release_run_independently_verified": false,
-      "artifact_manifest_gate": true,
-      "cyclonedx_sbom_gate": true,
-      "provenance_binding_gate": true,
       "production_signature_policy_configured": false,
-      "reproducible_build_proven": false,
-      "rollback_exercised": false,
       "backup_restore_rpo_rto_proven": false,
       "independent_disaster_recovery_proven": false,
-      "exact_main_cross_platform_release_evidence_proven": false,
       "owner_production_approval": false,
-      "release_recovery_main_push_control": {
-        "status": "validated_candidate_unmerged",
-        "pr": 144,
-        "candidate_head": "3ea336881abdce5e7f80f95cfc1017fd7c425a60",
-        "scope": "remove Release Recovery push-to-main path filter; preserve cross-platform fail-closed tests",
-        "exact_head_ci": ["Release Recovery", "Workflow Permissions Policy", "NEXUS Cloud Fallback", "Test", "NEXUS Build Verification"],
-        "all_observed_ci_green": true,
-        "mergeable": true,
-        "unresolved_review_threads": 0,
-        "merge_allowed": false,
-        "merge_blocker": "automated merge attempt was blocked by tool safety controls; candidate remains open and unchanged"
-      },
       "release_blockers": [43, 58, 64, 124]
     },
+    "data_readiness": {
+      "evaluated_at_utc": "2026-08-08T17:11:35.680210+00:00",
+      "total_series": 21,
+      "ready_for_research": 2,
+      "blocked": 19,
+      "all_ready": false,
+      "duplicate_rows": 0,
+      "off_grid_rows": 0,
+      "blocker": 125
+    },
     "market_data_source_hierarchy": {
-      "status": "ADR-009, reconciliation-agent alignment, source-mapping validator and bounded Binance public Spot adapter are merged; real source mappings remain unapproved by default",
       "primary": "Bybit",
       "secondary": "Binance",
       "tertiary": "LBank",
-      "adr": "docs/architecture/ADR-009-market-data-source-hierarchy.md",
-      "source_registry": "docs/architecture/market-data-source-registry.yaml",
-      "source_registry_mappings": 0,
-      "merge_prs": [132, 135, 136, 141]
+      "source_registry_mappings": 2,
+      "latest_mapping_reconciliation_pr": 172,
+      "latest_mapping_reconciliation_merge_sha": "8c391cbfabb6ec5cc15facb1ebac898be3ad1337",
+      "provenance_manifest_candidate_pr": 176,
+      "aggregate_blocker": 131
     },
-    "architecture_validation": {
-      "ci_enforcement_pr": 138,
-      "status": "merged; Test workflow runs nexus_architecture_validator.py before pytest",
-      "independent_control_plane_proven": false,
-      "remaining_blocker": 106
+    "open_pull_requests": {
+      "117": "cloud fallback fail-closed checkpoint; old base lineage; issue 106 remains",
+      "175": "privacy-scoped self-hosted runner; permissions inventory failure found and repaired; exact-head CI revalidation pending; merge blocked until mergeable and all gates green",
+      "176": "deterministic provenance manifest replayed onto current main; draft; aggregate issue 131 gate remains"
     },
+    "recent_material_events": {
+      "170": "bounded exhaustive LBank gap repair merged; subsequent readiness remains 21 total, 2 ready, 19 blocked",
+      "172": "BTC/ETH spot source mappings plus fail-closed Bybit/Binance reconciliation candidate generation merged; canonical LBank data is not mutated",
+      "175": "workflow-permissions inventory gate correctly blocked an unregistered self-hosted workflow; branch was hardened to main-ref-only execution and explicit permissions-policy registration; exact-head CI remains pending",
+      "176": "stale provenance PR 164 replaced by a current-main draft replay with adversarial and recovery tests"
+    },
+    "recovery_lessons": [
+      "A newly added workflow must be registered in the versioned workflow-permissions inventory; do not weaken the inventory gate.",
+      "A self-hosted runner must not execute repository code from arbitrary dispatch refs; require the protected main ref and explicit main checkout fail-closed.",
+      "Stale-base implementation PRs should be superseded by clean current-main replays rather than merged through uncertain conflict state."
+    ],
     "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131]
   }
 }
