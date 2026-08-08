@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
 import pandas as pd
+import pytest
 
 import cross_source_gap_reconciliation as recon
 
@@ -32,6 +33,54 @@ def test_missing_timestamps_detects_internal_gap():
         ], utc=True)
     })
     assert recon.missing_timestamps(frame, "minute15") == [pd.Timestamp("2024-01-01T00:15:00Z")]
+
+
+def test_duplicate_input_timestamp_fails_closed():
+    frame = pd.DataFrame({
+        "timestamp": pd.to_datetime([
+            "2024-01-01T00:00:00Z",
+            "2024-01-01T00:00:00Z",
+        ], utc=True)
+    })
+    with pytest.raises(ValueError, match="duplicate_timestamp"):
+        recon.missing_timestamps(frame, "minute15")
+
+
+def test_out_of_order_input_timestamp_fails_closed():
+    frame = pd.DataFrame({
+        "timestamp": pd.to_datetime([
+            "2024-01-01T00:15:00Z",
+            "2024-01-01T00:00:00Z",
+        ], utc=True)
+    })
+    with pytest.raises(ValueError, match="out_of_order_timestamp"):
+        recon.missing_timestamps(frame, "minute15")
+
+
+def test_off_grid_input_timestamp_fails_closed():
+    frame = pd.DataFrame({
+        "timestamp": pd.to_datetime([
+            "2024-01-01T00:00:00Z",
+            "2024-01-01T00:16:00Z",
+        ], utc=True)
+    })
+    with pytest.raises(ValueError, match="off_grid_timestamp"):
+        recon.missing_timestamps(frame, "minute15")
+
+
+def test_invalid_input_blocks_before_any_source_fetch(tmp_path, monkeypatch):
+    path = tmp_path / "minute15.parquet"
+    pd.DataFrame({
+        "timestamp": pd.to_datetime([
+            "2024-01-01T00:15:00Z",
+            "2024-01-01T00:00:00Z",
+        ], utc=True)
+    }).to_parquet(path, index=False)
+    monkeypatch.setattr(recon, "fetch_bybit", lambda *a, **k: (_ for _ in ()).throw(AssertionError("must not fetch")))
+    monkeypatch.setattr(recon, "fetch_binance", lambda *a, **k: (_ for _ in ()).throw(AssertionError("must not fetch")))
+
+    with pytest.raises(ValueError, match="out_of_order_timestamp"):
+        recon.reconcile_dataset(path, "btc_usdt", "minute15")
 
 
 def test_eligible_only_when_primary_and_secondary_ohlc_agree(monkeypatch):
