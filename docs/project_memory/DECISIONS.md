@@ -89,3 +89,14 @@ Evidence: `main` is exactly `44db8d6e6b3797e26bd56d18ec6acb5f529545bc` (`data: u
 Decision: Persist this hierarchy without authorizing silent cross-exchange substitution. Unknown or semantically incompatible data remains fail-closed. The current direct-main data commit supersedes the prior transient release snapshot, so release remains blocked until exact-SHA release evidence is independently verified. Production signing, approval, credentials, billing, deployment and live financial actions remain owner-controlled and unauthorized.
 
 Recovery lesson: Architecture decisions and transient repository state are different classes of memory. Durable source hierarchy may be recorded while the exact-main CI state remains unknown; never turn missing verification into a green claim. Refresh the existing continuity PR instead of opening a conflicting memory PR, and preserve laptop-offline versus internet-outage as distinct conditions.
+
+## 2026-08-08 — Continuity refreshed at e83040de without weakening release gates
+Status: ACTIVE
+
+Evidence: `main` advanced to `e83040de6845e66cca74bf82a3756447b48fa5f0` at `2026-08-08T08:03:56Z` via another direct repository-managed `data: update LBank public candles` commit. Exact-head combined status remains empty on the connected verification surface. The updated data-readiness artifact still has 21 tracked series, 2 research-ready, 19 blocked, 917 missing candles / 916 gap groups, duplicate=0 and off-grid=0; freshness advanced to the 08:00 UTC candle. Open draft PR #132 now carries the Bybit/Binance/LBank ADR and is observed non-mergeable; PR #129 remains the sole continuity refresh branch.
+
+Decision: Keep production release fail-closed under #43/#124 and data consumers fail-closed under #125. Do not reuse prior PR-head CI as evidence for this newer main SHA. Preserve the governed source hierarchy (Bybit primary/execution, Binance secondary compatible evidence, LBank tertiary) and do not silently substitute across exchanges. No signing, production approval, credential, billing, deployment or live-financial authority is granted.
+
+Continuity action: Refresh the existing #129 repository-memory branch and the independent Drive durable snapshot instead of opening a conflicting memory PR. The Drive copy remains continuity-only and does not become recovery proof until #122 validates source-SHA/content-hash/freshness/provider/privacy binding and a recovery exercise.
+
+Recovery lesson: Direct-main data churn continues to invalidate exact-SHA release evidence and stale transient state. Treat laptop shutdown/offline and internet outage as separate conditions, and reconstruct from repository memory + current STATE + decision log + recovery playbook + exact PR/CI evidence before consulting Drive.
