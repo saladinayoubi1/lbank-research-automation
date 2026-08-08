@@ -71,8 +71,8 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "91d2cfe7c803202e3c32afa9988c1eac2dec2b4f",
-    "observed_at_utc": "2026-08-08T13:15:00Z",
+    "observed_main_sha": "7021b0315f143aff3ba9a26fc9e192f680467886",
+    "observed_at_utc": "2026-08-08T14:14:00Z",
     "authoritative_memory_pr": 151,
     "memory_refresh_branch": "memory/current-main-91d2cfe7-refresh",
     "superseded_or_stale_memory_prs": [129, 139, 140, 147, 150],
@@ -107,9 +107,10 @@
       "release_blockers": [43, 58, 64, 124]
     },
     "open_pull_requests": {
-      "117": "cloud fallback fail-closed checkpoint; draft; mergeable=true; exact-head CI/policy revalidation still required",
-      "149": "market-data provenance manifest contract; draft; mergeable=true; #131 full ADR/recovery gate prevents slice-only merge",
-      "151": "current Project Memory refresh; draft; exact-head revalidation required after this correction"
+      "117": "cloud fallback fail-closed checkpoint; draft; currently non-mergeable against newer main; exact-head revalidation still required",
+      "149": "market-data provenance manifest contract; draft; mergeable=true; exact-head Test, Build Verification and Cloud Fallback succeeded; #131 full ADR/recovery gate remains",
+      "151": "current Project Memory refresh; draft; prior exact-head CI succeeded but main advanced to 7021b031; refreshed again and must revalidate exact new head before merge",
+      "152": "ignore local NEXUS runtime state; reversible hygiene change; exact-head Test, Build Verification and Cloud Fallback succeeded; currently non-mergeable against newer main"
     },
     "market_data_source_hierarchy": {
       "status": "ADR-009, reconciliation-agent alignment, source-mapping validator, bounded Binance public Spot adapter and deterministic pagination are merged; real source mappings remain unapproved by default",
