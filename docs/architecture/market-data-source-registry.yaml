@@ -1,0 +1,15 @@
+registry_version: "1.0.0"
+status: proposed
+scope: research_and_paper_trading_only
+issue: 131
+adr: docs/architecture/ADR-009-market-data-source-hierarchy.md
+authority:
+  primary: Bybit
+  secondary: Binance
+  tertiary: LBank
+  silent_cross_exchange_substitution: prohibited
+  live_trading: prohibited
+  private_credentials: prohibited
+  unknown_mapping: reject
+  failed_candidate_replaces_previous_valid: false
+mappings: []
