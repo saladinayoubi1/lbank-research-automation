@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "project": "NEXUS / lbank-research-automation",
-  "observed_at_utc": "2026-08-08T07:19:00Z",
+  "observed_at_utc": "2026-08-08T07:31:00Z",
   "memory_policy": {
     "repository_is_durable_source": true,
     "chat_is_source_of_truth": false,
@@ -38,28 +38,37 @@
     "silent_cross_exchange_substitution_allowed": false
   },
   "repository_snapshot": {
-    "main_sha": "44db8d6e6b3797e26bd56d18ec6acb5f529545bc",
-    "main_head_commit": "data: update LBank public candles",
-    "main_head_change_path": "direct_main_data_commit",
-    "main_head_ci_evidence": "not_independently_verified_on_current_connected_surface_this_run",
+    "main_sha": "b0dfe73121ebdcacac0a20e286f03ed29e846bca",
+    "main_head_commit": "Add event-driven CI failure triage for NEXUS (#123)",
+    "main_head_change_path": "reviewed_pull_request_merge",
+    "main_head_ci_evidence": "release evidence must be independently verified on exact current main; PR-head CI is not reused as main release evidence",
     "release_fail_closed_issue": 124,
     "recent_architecture_changes": [
+      {"pull_request": 123, "merge_commit_sha": "b0dfe73121ebdcacac0a20e286f03ed29e846bca", "status": "merged", "purpose": "event-driven fail-closed CI failure triage"},
       {"pull_request": 130, "merge_commit_sha": "e8867307459901df18aaa3e05c7f08947d07e423", "status": "merged", "purpose": "dedicated data backfill and reconciliation agent contract"},
       {"issue": 131, "status": "open", "decision": "Bybit primary/execution; Binance secondary cross-validation/backfill; LBank tertiary/research-only", "implementation_status": "governed design pending reviewed implementation; no silent substitution"}
     ],
     "open_pull_requests": [
-      {"number": 129, "head_sha_before_this_memory_update": "6d580861acda99a37bd271fb9559ea9baded4126", "draft": true, "mergeable_observed_before_this_update": false, "purpose": "refresh durable continuity snapshot", "note": "this memory write creates a new head; re-query exact final head CI, mergeability and review threads before merge"},
-      {"number": 123, "head_sha": "64733a814e641688add6f9979aee25ad46cfebab", "draft": true, "mergeable_observed": false, "purpose": "event-driven CI failure triage"},
-      {"number": 117, "head_sha": "043c4465ab268769c3ecfb51d07c214c1a5509fd", "draft": true, "mergeable_observed": false, "purpose": "fail-closed cloud fallback checkpoint", "blocker": "independent control-plane authorization remains unresolved in issue #106"},
-      {"number": 105, "head_sha": "28a90f918d82fe76149288cac0646de53a320d2a", "draft": true, "mergeable_observed": false, "purpose": "enforce NEXUS contract validator in CI", "blocker": "independent authorization remains unresolved in issue #106"}
+      {"number": 129, "draft": true, "purpose": "refresh durable continuity snapshot", "note": "this memory write creates a new head; re-query exact final head CI, mergeability and review threads before any merge"},
+      {"number": 117, "head_sha": "043c4465ab268769c3ecfb51d07c214c1a5509fd", "draft": true, "purpose": "fail-closed cloud fallback checkpoint", "blocker": "independent control-plane authorization remains unresolved in issue #106"},
+      {"number": 105, "head_sha": "28a90f918d82fe76149288cac0646de53a320d2a", "draft": true, "purpose": "enforce NEXUS contract validator in CI", "blocker": "independent authorization remains unresolved in issue #106"}
     ],
     "superseded_pull_requests": [121],
     "active_blockers": [43, 64, 89, 91, 106, 122, 124, 125, 131],
     "data_readiness": {
-      "source_sha": "44db8d6e6b3797e26bd56d18ec6acb5f529545bc",
-      "status": "fail_closed_pending_exact_sha_revalidation",
+      "source_data_commit": "44db8d6e6b3797e26bd56d18ec6acb5f529545bc",
+      "evaluated_at_utc": "2026-08-08T07:15:36.034540+00:00",
+      "total_series": 21,
+      "research_ready": 2,
+      "blocked": 19,
+      "missing_candles": 917,
+      "gap_groups": 916,
+      "duplicate_count": 0,
+      "off_grid_count": 0,
+      "freshness_within_policy": true,
+      "status": "fail_closed_historical_integrity_gaps",
       "integrity_blocker": 125,
-      "note": "Do not carry forward prior exact counts as current-main evidence without re-reading current readiness artifacts. Invalid, stale, ambiguous, duplicate, out-of-order or off-grid data remains excluded from downstream consumers."
+      "note": "Invalid, stale, ambiguous, duplicate, out-of-order or off-grid data remains excluded from downstream consumers. No synthetic candles or silent source substitution."
     },
     "release_authority": {
       "production_ready": false,
@@ -87,7 +96,7 @@
     "document_id": "14wBdcjec0_0PhDzupk7QjaPlB3A_uw4A1EUzseeKQ4s",
     "object_presence_observed": true,
     "latest_observed_snapshot_mentions_main_sha": "44db8d6e6b3797e26bd56d18ec6acb5f529545bc",
-    "refresh_required_for_main_sha": null,
+    "refresh_required_for_main_sha": "b0dfe73121ebdcacac0a20e286f03ed29e846bca",
     "source_sha_verified": false,
     "content_hash_verified": false,
     "freshness_contract_verified": false,
