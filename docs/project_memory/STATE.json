@@ -10,73 +10,22 @@
     "important_or_owner_action_notifications_use_red_marker": true,
     "unacknowledged_red_notifications_repeat_in_reports": true
   },
-  "objectives": [
-    "durable project continuity independent of chat sessions",
-    "incremental safe autonomy",
-    "rapid agent/workflow failure detection and recovery",
-    "persistent lessons so solved failures are not rediscovered from zero",
-    "cloud continuity when the local laptop is offline"
-  ],
-  "known_runtime_components": [
-    "Fast Agent Coordinator",
-    "local node supervisor",
-    "dashboard",
-    "GitHub Actions",
-    "cloud fallback"
-  ],
-  "runtime_status": {
-    "agent_execution_state": "not_independently_observed_this_run",
-    "laptop_state": "unknown",
-    "internet_outage_state": "unknown",
-    "laptop_offline_is_not_internet_outage": true
-  },
-  "data_policy": {
-    "research_only": true,
-    "real_trading": false,
-    "fabricated_market_data": false,
-    "invalid_data_may_pass_research_gate": false
-  },
+  "objectives": ["durable project continuity independent of chat sessions","incremental safe autonomy","rapid agent/workflow failure detection and recovery","persistent lessons so solved failures are not rediscovered from zero","cloud continuity when the local laptop is offline"],
+  "known_runtime_components": ["Fast Agent Coordinator","local node supervisor","dashboard","GitHub Actions","cloud fallback"],
+  "runtime_status": {"agent_execution_state":"not_independently_observed_this_run","laptop_state":"unknown","internet_outage_state":"unknown","laptop_offline_is_not_internet_outage":true},
+  "data_policy": {"research_only":true,"real_trading":false,"fabricated_market_data":false,"invalid_data_may_pass_research_gate":false},
   "continuity": {
-    "required_reads": [
-      "docs/project_memory/PROJECT_MEMORY.md",
-      "docs/project_memory/STATE.json",
-      "docs/project_memory/DECISIONS.md",
-      "docs/project_memory/RECOVERY_PLAYBOOK.md"
-    ],
-    "reconstruct_from": [
-      "repository project memory",
-      "STATE",
-      "decision log",
-      "recovery playbook",
-      "exact current pull requests and CI evidence",
-      "Google Drive durable backup"
-    ],
-    "chat_loss_tolerated": true,
-    "local_machine_loss_tolerated_for_project_knowledge": true,
-    "drive_is_secondary_continuity_backup": true
+    "required_reads":["docs/project_memory/PROJECT_MEMORY.md","docs/project_memory/STATE.json","docs/project_memory/DECISIONS.md","docs/project_memory/RECOVERY_PLAYBOOK.md"],
+    "reconstruct_from":["repository project memory","STATE","decision log","recovery playbook","exact current pull requests and CI evidence","Google Drive durable backup"],
+    "chat_loss_tolerated":true,"local_machine_loss_tolerated_for_project_knowledge":true,"drive_is_secondary_continuity_backup":true
   },
   "current_evidence": {
-    "observed_main_sha": "76f010d9",
-    "observed_at_utc": "2026-08-08T10:00:00Z",
-    "authoritative_memory_pr": 140,
-    "superseded_memory_prs": [129, 139],
-    "market_data_source_hierarchy": {
-      "status": "ADR-009, reconciliation-agent alignment, source-mapping validator merged; Binance public Spot adapter is proposed in draft PR #141; real source mappings remain unapproved by default",
-      "primary": "Bybit",
-      "secondary": "Binance",
-      "tertiary": "LBank",
-      "adr": "docs/architecture/ADR-009-market-data-source-hierarchy.md",
-      "source_registry": "docs/architecture/market-data-source-registry.yaml",
-      "source_registry_mappings": 0,
-      "merge_prs": [132, 135, 136],
-      "open_adapter_pr": 141
-    },
-    "architecture_validation": {
-      "ci_enforcement_pr": 138,
-      "status": "merged; Test workflow runs nexus_architecture_validator.py before pytest",
-      "independent_control_plane_proven": false,
-      "remaining_blocker": 106
-    },
-    "active_blockers": [43, 64, 89, 91, 106, 107, 122, 124, 125, 131]
+    "observed_main_sha":"76f010d9e8b4fe4a6769b5fe126ecbd1d8e4d074",
+    "observed_at_utc":"2026-08-08T09:49:29Z",
+    "authoritative_memory_pr":140,
+    "superseded_memory_prs":[129,139],
+    "market_data_source_hierarchy":{"status":"ADR-009, reconciliation-agent alignment, source-mapping validator merged; Binance public Spot adapter proposed in draft PR #141; real source mappings remain unapproved by default","primary":"Bybit","secondary":"Binance","tertiary":"LBank","adr":"docs/architecture/ADR-009-market-data-source-hierarchy.md","source_registry":"docs/architecture/market-data-source-registry.yaml","source_registry_mappings":0,"merge_prs":[132,135,136],"open_adapter_pr":141},
+    "architecture_validation":{"ci_enforcement_pr":138,"status":"merged; Test workflow runs nexus_architecture_validator.py before pytest","independent_control_plane_proven":false,"remaining_blocker":106},
+    "active_blockers":[43,64,89,91,106,107,122,124,125,131]
   }
 }
