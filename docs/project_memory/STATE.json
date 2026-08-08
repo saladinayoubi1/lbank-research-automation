@@ -72,16 +72,16 @@
   },
   "current_evidence": {
     "observed_main_sha": "387c71be35a8bcc71d93b64a2d88e33c17cfecfb",
-    "observed_at_utc": "2026-08-08T21:14:00Z",
+    "observed_at_utc": "2026-08-08T21:34:00Z",
     "latest_main_change": {
       "commit": "387c71be35a8bcc71d93b64a2d88e33c17cfecfb",
       "summary": "data: update LBank public candles",
       "architecture_or_core_goal_change_observed": false
     },
-    "open_pull_requests": [117, 186],
+    "open_pull_requests": [117, 186, 187, 188],
     "memory_refresh_branch": "continuity/refresh-release-state-20260809-0052",
     "memory_pr_validation": {
-      "state": "pending_exact_head_ci",
+      "state": "pending_exact_head_ci_after_material_event_refresh",
       "merge_allowed": false,
       "note": "Drive remains non-authoritative; merge only after exact final head CI is green, mergeable=true and review evidence is clean"
     },
@@ -125,6 +125,21 @@
       "release_blockers": [43, 58, 64, 124]
     },
     "pull_request_evidence": {
+      "188": {
+        "state": "open",
+        "head": "9b704cd0e5a7093a8bd257b330ee5435f31ffcba",
+        "draft": true,
+        "scope": "hard-bound exhaustive LBank repair rounds and regression coverage",
+        "exact_head_ci": "in_progress_at_refresh",
+        "scope_conflicts_with_memory_refresh": false,
+        "blocker": 171
+      },
+      "187": {
+        "state": "open",
+        "draft": true,
+        "scope": "docs/project_memory/STATE.json only",
+        "exact_head_ci": "pending_after_this_refresh"
+      },
       "186": {
         "state": "open",
         "head": "d04f476887673066e33010a8e5dce0fcca9e3a3e",
@@ -140,14 +155,16 @@
           "NEXUS Build Verification": "success",
           "NEXUS Cloud Fallback": "success"
         },
-        "scope_conflicts_with_memory_refresh": false
+        "scope_conflicts_with_memory_refresh": false,
+        "merge_blocker": "aggregate ADR-009/#131 delivery gate remains open; do not merge this slice as closure evidence"
       },
       "117": {
         "state": "open",
         "head": "043c4465ab268769c3ecfb51d07c214c1a5509fd",
         "draft": true,
-        "mergeable": false,
-        "scope_conflicts_with_memory_refresh": false
+        "mergeable": true,
+        "scope_conflicts_with_memory_refresh": false,
+        "merge_blocker": "requires current-main revalidation and must not overstate independent control-plane protection while #106 remains open"
       }
     },
     "market_data_source_hierarchy": {
@@ -165,6 +182,6 @@
       "internet_outage": "local runtime may continue in reduced mode; cloud synchronization resumes after connectivity returns",
       "laptop_powered_off": "local collectors halt; remote cloud continuity is a separate target and must not be conflated with an internet outage"
     },
-    "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131]
+    "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131, 171]
   }
 }
