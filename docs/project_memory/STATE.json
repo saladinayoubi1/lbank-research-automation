@@ -30,20 +30,8 @@
     "invalid_data_may_pass_research_gate": false
   },
   "continuity": {
-    "required_reads": [
-      "docs/project_memory/PROJECT_MEMORY.md",
-      "docs/project_memory/STATE.json",
-      "docs/project_memory/DECISIONS.md",
-      "docs/project_memory/RECOVERY_PLAYBOOK.md"
-    ],
-    "reconstruct_from": [
-      "repository project memory",
-      "STATE",
-      "decision log",
-      "recovery playbook",
-      "exact current pull requests and CI evidence",
-      "Google Drive backup only after repository evidence"
-    ],
+    "required_reads": ["docs/project_memory/PROJECT_MEMORY.md", "docs/project_memory/STATE.json", "docs/project_memory/DECISIONS.md", "docs/project_memory/RECOVERY_PLAYBOOK.md"],
+    "reconstruct_from": ["repository project memory", "STATE", "decision log", "recovery playbook", "exact current pull requests and CI evidence", "Google Drive backup only after repository evidence"],
     "drive_backup": {
       "provider": "Google Drive",
       "folder": "NEXUS Project Memory Backup",
@@ -55,43 +43,22 @@
   },
   "current_evidence": {
     "observed_main_sha": "9684688a5863956af92f1a88d96979ba1b46ea6d",
-    "observed_at_utc": "2026-08-09T20:21:32Z",
+    "observed_at_utc": "2026-08-09T20:24:03Z",
     "latest_main_change": {
       "summary": "PR #241 merged the canonical-registry provenance binding replay; a later commit only refreshed LBank public candles",
       "architecture_or_core_goal_change_observed": true,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true,
-      "recent_sequence": [
-        "f2076d814fef5c2fa8fde5992963e5a5c6a75d6c Bind reconciliation provenance to canonical registry (#241)",
-        "9684688a5863956af92f1a88d96979ba1b46ea6d data: update LBank public candles"
-      ]
+      "recent_sequence": ["f2076d814fef5c2fa8fde5992963e5a5c6a75d6c Bind reconciliation provenance to canonical registry (#241)", "9684688a5863956af92f1a88d96979ba1b46ea6d data: update LBank public candles"]
     },
-    "open_pull_requests": [117, 243],
+    "open_pull_requests": [117, 243, 244],
     "memory_refresh_branch": "continuity/current-main-9684688a-refresh",
-    "memory_refresh_pr": null,
+    "memory_refresh_pr": 244,
     "pull_request_evidence": {
-      "117": {
-        "state": "open",
-        "draft": true,
-        "scope": "fail-closed cloud fallback checkpoint",
-        "production_authority": false,
-        "remaining_gate": "stale/conflicted against current main; preserve as evidence unless safely replayed"
-      },
-      "241": {
-        "state": "merged",
-        "merge_commit_sha": "f2076d814fef5c2fa8fde5992963e5a5c6a75d6c",
-        "scope": "canonical-registry provenance semantic-binding replay",
-        "production_authority": false,
-        "result": "merged; issue #197 remains open and downstream eligibility remains fail-closed/non-authoritative"
-      },
-      "243": {
-        "state": "open",
-        "draft": true,
-        "head_sha": "17d9c9ad4d3469564a3e243cc4dc1c87b179c2e1",
-        "scope": "evidence-only note for #241 merge",
-        "production_authority": false,
-        "exact_head_ci": "Test, NEXUS Build Verification and NEXUS Cloud Fallback succeeded"
-      }
+      "117": {"state": "open", "draft": true, "scope": "fail-closed cloud fallback checkpoint", "production_authority": false, "remaining_gate": "stale/conflicted against current main; preserve as evidence unless safely replayed"},
+      "241": {"state": "merged", "merge_commit_sha": "f2076d814fef5c2fa8fde5992963e5a5c6a75d6c", "scope": "canonical-registry provenance semantic-binding replay", "production_authority": false, "result": "merged; issue #197 remains open and downstream eligibility remains fail-closed/non-authoritative"},
+      "243": {"state": "open", "draft": true, "head_sha": "17d9c9ad4d3469564a3e243cc4dc1c87b179c2e1", "scope": "evidence-only note for #241 merge", "production_authority": false, "exact_head_ci": "Test, NEXUS Build Verification and NEXUS Cloud Fallback succeeded"},
+      "244": {"state": "open", "draft": true, "scope": "current-main project-memory refresh", "production_authority": false, "merge_gate": "exact-final-head CI + mergeability + clean review evidence"}
     },
     "release_readiness": {
       "production_ready": false,
@@ -119,18 +86,8 @@
       "release_blockers": [43, 58, 64, 124]
     },
     "provider_status": {
-      "deepseek": {
-        "integrated": true,
-        "paid_routing_authoritative": false,
-        "hard_monthly_cap_usd": 5.0,
-        "hard_monthly_cap_proven": false,
-        "blocker": 232,
-        "credential_or_billing_action_performed": false
-      },
-      "zotero": {
-        "local_api_probe_added": true,
-        "production_authority": false
-      }
+      "deepseek": {"integrated": true, "paid_routing_authoritative": false, "hard_monthly_cap_usd": 5.0, "hard_monthly_cap_proven": false, "blocker": 232, "credential_or_billing_action_performed": false},
+      "zotero": {"local_api_probe_added": true, "production_authority": false}
     },
     "market_data": {
       "tracked_series": 21,
