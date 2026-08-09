@@ -65,7 +65,7 @@
   },
   "current_evidence": {
     "observed_main_sha": "12d41647f02f329362923d03542413f4a374b2e0",
-    "observed_at_utc": "2026-08-09T03:35:00Z",
+    "observed_at_utc": "2026-08-09T03:36:00Z",
     "latest_main_change": {
       "commit": "12d41647f02f329362923d03542413f4a374b2e0",
       "summary": "Merge pull request #200: docs: define provenance semantic binding ADR",
@@ -73,7 +73,7 @@
     },
     "latest_material_event": {
       "type": "provenance_semantic_binding_policy_merged_and_implementation_replayed",
-      "summary": "PR #200 merged after exact-head green CI, mergeable=true and clean review evidence; stale implementation PR #198 was closed unmerged and replayed from exact current main as Draft PR #202"
+      "summary": "PR #200 merged after exact-head green CI, mergeable=true and clean review evidence; stale implementation PR #198 was closed unmerged and replayed from exact current main as Draft PR #202, whose exact-head Test, NEXUS Build Verification and NEXUS Cloud Fallback are green"
     },
     "open_pull_requests": [117, 202],
     "superseded_pull_requests": [186, 189, 190, 191, 192, 194, 195, 196, 198, 201],
@@ -83,14 +83,15 @@
         "draft": true,
         "base_sha": "12d41647f02f329362923d03542413f4a374b2e0",
         "head_sha": "2d288b4dcd6a5fb89ea3e0cc69a52fe3f14d84bb",
+        "mergeable": true,
         "scope": "fail-closed provenance semantic binding implementation and regression tests",
         "exact_head_ci": {
-          "Test": "in_progress",
-          "NEXUS Build Verification": "in_progress",
-          "NEXUS Cloud Fallback": "in_progress"
+          "Test": "success",
+          "NEXUS Build Verification": "success",
+          "NEXUS Cloud Fallback": "success"
         },
         "production_authority": false,
-        "remaining_gate": "authoritative registry coupling, broader bypass coverage, rollback/recovery replay, exact-final-head green CI, mergeability and clean review evidence"
+        "remaining_gate": "authoritative registry coupling, broader bypass coverage, rollback/recovery replay and clean final-head review evidence"
       },
       "200": {
         "state": "merged",
