@@ -41,10 +41,10 @@ def _canonical(row):
     }
 
 
-def _candidate(primary, secondary, *, status="eligible_candidate", selected_source="Bybit"):
+def _candidate(primary, secondary, *, status="eligible_candidate", selected_source="Bybit", timeframe="minute15"):
     return Candidate(
         symbol="btc_usdt",
-        timeframe="minute15",
+        timeframe=timeframe,
         timestamp_utc="2024-03-10T00:00:00+00:00",
         status=status,
         selected_source=selected_source,
@@ -55,16 +55,20 @@ def _candidate(primary, secondary, *, status="eligible_candidate", selected_sour
     )
 
 
-def _bind(candidate, primary, secondary):
+def _bind(candidate, primary, secondary, **overrides):
+    kwargs = {
+        "canonical_symbol": "BTC/USDT",
+        "manifest_timeframe": "15m",
+        "mapping_policy_version": "1.0.0",
+        "primary_endpoint_contract": "/v5/market/kline?category=spot&symbol=BTCUSDT&interval=15",
+        "secondary_endpoint_contract": "/api/v3/klines?symbol=BTCUSDT&interval=15m",
+    }
+    kwargs.update(overrides)
     return bind_candidate_provenance(
         candidate,
         primary_row=primary,
         secondary_row=secondary,
-        canonical_symbol="BTC/USDT",
-        manifest_timeframe="15m",
-        mapping_policy_version="1.0.0",
-        primary_endpoint_contract="/v5/market/kline?category=spot&symbol=BTCUSDT&interval=15",
-        secondary_endpoint_contract="/api/v3/klines?symbol=BTCUSDT&interval=15m",
+        **kwargs,
     )
 
 
@@ -76,7 +80,11 @@ def test_binding_is_deterministic_and_validates_both_source_manifests():
     second = _bind(candidate, primary, secondary)
 
     assert first == second
+    assert first["schema"] == "nexus.cross-source-reconciliation-provenance.v2"
     assert first["binding_sha256"]
+    assert first["semantic_binding"]["candidate_timeframe"] == "minute15"
+    assert first["semantic_binding"]["bybit_interval"] == "15"
+    assert first["semantic_binding"]["binance_interval"] == "15m"
     assert first["primary_manifest"]["source"] == "Bybit"
     assert first["secondary_manifest"]["source"] == "Binance"
     assert first["primary_manifest_sha256"] == first["primary_manifest"]["manifest_sha256"]
@@ -115,4 +123,77 @@ def test_source_role_swap_is_rejected():
     candidate = _candidate(primary, secondary)
 
     with pytest.raises(ReconciliationProvenanceError, match="source role mismatch"):
+        _bind(candidate, primary, secondary)
+
+
+def test_timeframe_relabel_and_rehash_is_rejected():
+    primary, secondary = _row("Bybit"), _row("Binance")
+    candidate = _candidate(primary, secondary, timeframe="minute15")
+
+    with pytest.raises(ReconciliationProvenanceError, match="manifest timeframe mismatch"):
+        _bind(candidate, primary, secondary, manifest_timeframe="1h")
+
+
+def test_bybit_endpoint_interval_substitution_is_rejected():
+    primary, secondary = _row("Bybit"), _row("Binance")
+    candidate = _candidate(primary, secondary)
+
+    with pytest.raises(ReconciliationProvenanceError, match="Bybit endpoint contract"):
+        _bind(
+            candidate,
+            primary,
+            secondary,
+            primary_endpoint_contract="/v5/market/kline?category=spot&symbol=BTCUSDT&interval=60",
+        )
+
+
+def test_binance_endpoint_market_interval_substitution_is_rejected():
+    primary, secondary = _row("Bybit"), _row("Binance")
+    candidate = _candidate(primary, secondary)
+
+    with pytest.raises(ReconciliationProvenanceError, match="Binance endpoint contract"):
+        _bind(
+            candidate,
+            primary,
+            secondary,
+            secondary_endpoint_contract="/api/v3/klines?symbol=BTCUSDT&interval=1h",
+        )
+
+
+def test_unknown_mapping_policy_version_is_rejected():
+    primary, secondary = _row("Bybit"), _row("Binance")
+    candidate = _candidate(primary, secondary)
+
+    with pytest.raises(ReconciliationProvenanceError, match="mapping policy version"):
+        _bind(candidate, primary, secondary, mapping_policy_version="9.9.9")
+
+
+def test_off_grid_timestamp_is_rejected_for_candidate_timeframe():
+    primary, secondary = _row("Bybit", ts=1710028800001), _row("Binance", ts=1710028800001)
+    candidate = _candidate(primary, secondary)
+
+    with pytest.raises(ReconciliationProvenanceError, match="off-grid"):
+        _bind(candidate, primary, secondary)
+
+
+def test_hour1_requires_hour1_manifest_and_endpoint_semantics():
+    primary, secondary = _row("Bybit"), _row("Binance")
+    candidate = _candidate(primary, secondary, timeframe="hour1")
+
+    result = _bind(
+        candidate,
+        primary,
+        secondary,
+        manifest_timeframe="1h",
+        primary_endpoint_contract="/v5/market/kline?category=spot&symbol=BTCUSDT&interval=60",
+        secondary_endpoint_contract="/api/v3/klines?symbol=BTCUSDT&interval=1h",
+    )
+    assert result["semantic_binding"]["timestamp_grid_ms"] == 3_600_000
+
+
+def test_unsupported_candidate_timeframe_is_rejected():
+    primary, secondary = _row("Bybit"), _row("Binance")
+    candidate = _candidate(primary, secondary, timeframe="day1")
+
+    with pytest.raises(ReconciliationProvenanceError, match="unsupported candidate timeframe"):
         _bind(candidate, primary, secondary)
