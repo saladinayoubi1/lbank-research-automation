@@ -54,43 +54,33 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "eb7154e6011a817d1f09f63d224a7736b4670cfd",
-    "observed_at_utc": "2026-08-09T06:17:00Z",
+    "observed_main_sha": "0ef684c841ef07e564d45d796ea55c39aae53f44",
+    "observed_at_utc": "2026-08-09T08:22:00Z",
     "latest_main_change": {
       "summary": "data: update LBank public candles",
       "architecture_or_core_goal_change_observed": false
     },
-    "open_pull_requests": [117, 202, 207],
-    "superseded_pull_requests": [186, 189, 190, 191, 192, 194, 195, 196, 198, 201, 204, 208],
-    "memory_refresh_branch": "continuity/current-main-eb7154-refresh",
+    "open_pull_requests": [117, 211],
+    "superseded_pull_requests": [186, 189, 190, 191, 192, 194, 195, 196, 198, 201, 202, 204, 207, 208, 210],
+    "memory_refresh_branch": "continuity/current-main-0ef684-refresh",
+    "memory_refresh_pr": 211,
     "pull_request_evidence": {
-      "207": {
+      "211": {
         "state": "open",
         "draft": true,
-        "base_sha": "7525c049cedef0b39a11d65c685dacfe5b77676a",
-        "head_sha": "c1e28f5e548493f39cc0dd276f45f6b734444725",
-        "mergeable": true,
-        "exact_head_ci": {
-          "Test": "success",
-          "NEXUS Build Verification": "success",
-          "NEXUS Cloud Fallback": "success"
-        },
-        "unresolved_review_threads": 0,
-        "main_advance_after_base": "data/market/** only; no file overlap observed",
-        "production_authority": false,
-        "remaining_gate": "ADR alignment, implementation coupling and rollback/recovery replay; issue #197 remains open"
-      },
-      "202": {
-        "state": "open",
-        "draft": true,
-        "production_authority": false,
-        "remaining_gate": "replay from current main after registry authority is settled, then implementation-registry coupling, bypass coverage, rollback/recovery replay and clean final-head evidence"
+        "base_sha": "0ef684c841ef07e564d45d796ea55c39aae53f44",
+        "exact_head_ci": "pending_after_memory_refresh",
+        "production_authority": false
       },
       "117": {
         "state": "open",
         "draft": true,
+        "base_sha": "cbd3ace73efc58d73f0690cb6bc2bdc27b8596dc",
+        "head_sha": "043c4465ab268769c3ecfb51d07c214c1a5509fd",
+        "mergeable": false,
         "scope": "fail-closed cloud fallback checkpoint",
-        "production_authority": false
+        "production_authority": false,
+        "remaining_gate": "stale/conflicted against current main; preserve as evidence unless safely replayed"
       }
     },
     "release_readiness": {
@@ -136,7 +126,8 @@
       "exact-head PR CI and exact-main release evidence are distinct claims",
       "Drive presence alone is not recovery proof",
       "schema or registry evolution must update fail-closed validators and tests in lockstep",
-      "stale or conflicted continuity PRs should be closed unmerged and replayed from exact current main"
+      "stale or conflicted continuity PRs should be closed unmerged and replayed from exact current main",
+      "a replay branch with no commits provides no remediation evidence and must not inherit stale PR CI authority"
     ],
     "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131, 197]
   }
