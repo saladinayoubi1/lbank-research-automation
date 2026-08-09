@@ -54,23 +54,27 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "0ef684c841ef07e564d45d796ea55c39aae53f44",
-    "observed_at_utc": "2026-08-09T08:22:00Z",
+    "observed_main_sha": "45be0f698ea846aa37dd404764e968a7a7d2dc18",
+    "observed_at_utc": "2026-08-09T09:34:00Z",
     "latest_main_change": {
       "summary": "data: update LBank public candles",
       "architecture_or_core_goal_change_observed": false
     },
-    "open_pull_requests": [117, 211],
-    "superseded_pull_requests": [186, 189, 190, 191, 192, 194, 195, 196, 198, 201, 202, 204, 207, 208, 210],
-    "memory_refresh_branch": "continuity/current-main-0ef684-refresh",
-    "memory_refresh_pr": 211,
+    "open_pull_requests": [117, 213],
+    "superseded_pull_requests": [186, 189, 190, 191, 192, 194, 195, 196, 198, 201, 202, 204, 207, 208, 210, 212],
+    "memory_refresh_branch": "continuity/current-main-45be0f69-refresh",
+    "memory_refresh_pr": null,
     "pull_request_evidence": {
-      "211": {
+      "213": {
         "state": "open",
         "draft": true,
-        "base_sha": "0ef684c841ef07e564d45d796ea55c39aae53f44",
-        "exact_head_ci": "pending_after_memory_refresh",
-        "production_authority": false
+        "base_sha": "45be0f698ea846aa37dd404764e968a7a7d2dc18",
+        "head_sha": "dc703afe749521a242c5ffad6c16993f24f7c7f2",
+        "mergeable": false,
+        "scope": "ADR-009A registry plus validator and regression tests replay",
+        "exact_head_ci": "running_after_exact-current-main_replay",
+        "production_authority": false,
+        "remaining_gate": "all required final-head CI green, mergeable=true, review-clean; then #197 still requires implementation coupling, broader bypass coverage and rollback/recovery replay"
       },
       "117": {
         "state": "open",
@@ -127,7 +131,8 @@
       "Drive presence alone is not recovery proof",
       "schema or registry evolution must update fail-closed validators and tests in lockstep",
       "stale or conflicted continuity PRs should be closed unmerged and replayed from exact current main",
-      "a replay branch with no commits provides no remediation evidence and must not inherit stale PR CI authority"
+      "a replay branch with no commits provides no remediation evidence and must not inherit stale PR CI authority",
+      "when main advances only through non-overlapping data files, replay the exact reviewed tuple from the new main and require fresh final-head CI rather than inheriting old CI authority"
     ],
     "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131, 197]
   }
