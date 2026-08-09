@@ -14,7 +14,7 @@
     "durable project continuity independent of chat sessions",
     "incremental safe autonomy",
     "rapid agent/workflow failure detection and recovery",
-    "persistent lessons so solved failures are not rediscovered from zero",
+    "persistent recovery lessons",
     "cloud continuity when the local laptop is offline"
   ],
   "runtime_status": {
@@ -54,10 +54,10 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "cc0dcfdc46e29768a10a5c46da8b6eea39995db1",
-    "observed_at_utc": "2026-08-09T15:34:00Z",
+    "observed_main_sha": "a98312245781f6e66e02fa30bf8232bc4fd1930f",
+    "observed_at_utc": "2026-08-09T16:16:00Z",
     "latest_main_change": {
-      "summary": "Merged continuity refresh #231 after exact-base identity, exact-head green CI, mergeability and clean-review checks",
+      "summary": "Continuity refresh #231 is on main; subsequent main change is an LBank public-candle data refresh only",
       "architecture_or_core_goal_change_observed": false,
       "meaningful_operational_change_observed": true,
       "recent_sequence": [
@@ -65,79 +65,51 @@
         "0a673f18105fbb3e23ddfaba03b33c61e3b7c879 chore: allow safe push-triggered gap repair",
         "1a64b5237e0ffb62c4c3d289c8d0bcef91521fdc ops: trigger exhaustive gap repair",
         "9d4b60748511a2321760456f086604d6720de210 docs: add NEXUS no-idle continuation rule",
-        "d6bc98927080496151e31daf70be67529031b275 data: update LBank public candles",
-        "cc0dcfdc46e29768a10a5c46da8b6eea39995db1 memory: refresh continuity from current main d6bc9892 (#231)"
+        "cc0dcfdc46e29768a10a5c46da8b6eea39995db1 memory: refresh continuity from current main d6bc9892 (#231)",
+        "a98312245781f6e66e02fa30bf8232bc4fd1930f data: update LBank public candles"
       ]
     },
-    "open_pull_requests": [117, 233],
-    "superseded_pull_requests": [
-      186,
-      189,
-      190,
-      191,
-      192,
-      194,
-      195,
-      196,
-      198,
-      201,
-      202,
-      204,
-      207,
-      208,
-      210,
-      212,
-      214,
-      216,
-      217,
-      218,
-      219,
-      220,
-      222,
-      223,
-      225,
-      226,
-      228,
-      229
-    ],
+    "open_pull_requests": [117, 233, 234, 235],
     "memory_refresh_branch": "continuity/current-main-cc0dcfdc-refresh",
-    "memory_refresh_pr": null,
+    "memory_refresh_pr": 234,
     "pull_request_evidence": {
       "117": {
         "state": "open",
         "draft": true,
-        "base_sha": "cbd3ace73efc58d73f0690cb6bc2bdc27b8596dc",
         "head_sha": "043c4465ab268769c3ecfb51d07c214c1a5509fd",
-        "mergeable": false,
         "scope": "fail-closed cloud fallback checkpoint",
         "production_authority": false,
-        "remaining_gate": "stale/conflicted against current main; preserve as evidence unless safely replayed"
-      },
-      "227": {
-        "state": "merged",
-        "head_sha": "cb7497f72d51cbad95a74a5971fa19e724043c18",
-        "merge_commit_sha": "be7e3319e47238485cd6199fe756639150951241",
-        "scope": "rotate bounded gap-repair windows and continue exhaustive rounds across deferred gaps",
-        "production_authority": false,
-        "result": "merged to main; market-data readiness remains fail-closed at 2 ready / 19 blocked"
-      },
-      "231": {
-        "state": "merged",
-        "head_sha": "c886610787b0715d46d08b4a1678ecb50894bf63",
-        "merge_commit_sha": "cc0dcfdc46e29768a10a5c46da8b6eea39995db1",
-        "scope": "continuity-only STATE refresh",
-        "production_authority": false,
-        "result": "merged after exact-base identity, Test/Build Verification/Cloud Fallback success, mergeable=true and zero review threads"
+        "remaining_gate": "stale against current main; preserve as evidence unless safely replayed"
       },
       "233": {
         "state": "open",
         "draft": true,
         "base_sha": "cc0dcfdc46e29768a10a5c46da8b6eea39995db1",
         "head_sha": "8dc80d4bb8eb360ca8a9459b2787f1780f79ac14",
-        "mergeable": false,
+        "mergeable": true,
         "scope": "runtime canonical registry coupling, validated registry payload access, semantic substitution/off-grid regression coverage",
         "production_authority": false,
-        "remaining_gate": "exact-head Test, NEXUS Build Verification and NEXUS Cloud Fallback are running; after green CI recheck mergeability/reviews; #197 remains fail-closed pending broader raw/downstream bypass coverage and rollback/recovery replay"
+        "ci": "Test, NEXUS Build Verification and NEXUS Cloud Fallback succeeded on exact head",
+        "remaining_gate": "#197 remains fail-closed pending broader raw/downstream bypass coverage and rollback/recovery replay"
+      },
+      "234": {
+        "state": "open",
+        "draft": true,
+        "scope": "continuity-only STATE refresh",
+        "production_authority": false,
+        "note": "existing continuity branch reused to avoid conflicting memory PRs; exact-head CI must be rechecked after this refresh"
+      },
+      "235": {
+        "state": "open",
+        "draft": true,
+        "base_sha": "a98312245781f6e66e02fa30bf8232bc4fd1930f",
+        "head_sha": "928a20f1caead7312f9c83aa808a8d49f0095b9a",
+        "mergeable": true,
+        "scope": "bounded DeepSeek provider, environment-only API key lookup, hard USD budget guard and paid smoke workflow",
+        "production_authority": false,
+        "ci": "Workflow Permissions Policy, Test, NEXUS Build Verification and NEXUS Cloud Fallback succeeded on exact head",
+        "owner_action_required": true,
+        "remaining_gate": "paid smoke requires credential/billing authority; automation must not provide, run or approve it. No successful DeepSeek smoke run was observed on this exact head"
       }
     },
     "release_readiness": {
@@ -155,11 +127,7 @@
       "rollback_exercised_in_production": false,
       "backup_restore_rpo_rto_proven": false,
       "independent_disaster_recovery_proven": false,
-      "cross_platform_workflow_matrix": [
-        "ubuntu-latest",
-        "windows-latest",
-        "macos-latest"
-      ],
+      "cross_platform_workflow_matrix": ["ubuntu-latest", "windows-latest", "macos-latest"],
       "exact_main_cross_platform_release_evidence_proven": false,
       "owner_production_approval": false,
       "fail_closed_verification": {
@@ -187,13 +155,18 @@
       "exact-head PR CI and exact-main release evidence are distinct claims",
       "Drive presence alone is not recovery proof",
       "schema or registry evolution must update fail-closed validators and tests in lockstep",
-      "stale or conflicted continuity PRs should be closed unmerged and replayed from exact current main",
-      "implementation-to-registry coupling must remain non-authoritative until bypass coverage and rollback/recovery replay are proven",
-      "self-hosted local-runner recovery must verify portable Python bootstrap and workspace import paths explicitly; local-runner repair is operational continuity evidence, not production release authority",
-      "bounded gap repair must rotate across deferred windows and exhaustive repair must not stop solely because one round recovered zero candles while deferred gaps remain",
-      "laptop power-off and internet outage remain distinct failure modes and must never be collapsed into one recovery state",
-      "replay of a previously green change must be rebuilt from exact current main when main advances; prior CI remains historical evidence only"
+      "stale or conflicted continuity PRs should be replayed from exact current main rather than merged blindly",
+      "implementation-to-registry coupling remains non-authoritative until bypass coverage and rollback/recovery replay are proven",
+      "bounded gap repair must rotate across deferred windows and exhaustive repair must continue while deferred gaps remain",
+      "laptop power-off and internet outage are distinct failure modes",
+      "credential- or billing-dependent provider smoke tests require explicit owner authority and cannot be inferred from ordinary CI success"
     ],
-    "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131, 197]
+    "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131, 197],
+    "high_impact_pending": {
+      "deepseek_provider_pr": 235,
+      "credential_required": true,
+      "billing_sensitive": true,
+      "automation_authorized": false
+    }
   }
 }
