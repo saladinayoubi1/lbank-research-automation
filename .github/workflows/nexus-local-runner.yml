@@ -22,8 +22,6 @@ concurrency:
 
 jobs:
   local:
-    # Self-hosted runners must never execute repository code from arbitrary refs.
-    # Dispatches against non-main refs are skipped fail-closed.
     if: github.ref == 'refs/heads/main'
     runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 120
@@ -51,10 +49,11 @@ jobs:
             curl.exe -L --fail --retry 3 -o "%RUNNER_TEMP%\get-pip.py" https://bootstrap.pypa.io/get-pip.py
             "%PYROOT%\python.exe" "%RUNNER_TEMP%\get-pip.py" --no-warn-script-location
           )
-          findstr /x /c:"." "%PYROOT%\python312._pth" >nul || echo .>>"%PYROOT%\python312._pth"
+          findstr /x /c:"%GITHUB_WORKSPACE%" "%PYROOT%\python312._pth" >nul || echo %GITHUB_WORKSPACE%>>"%PYROOT%\python312._pth"
           "%PYROOT%\python.exe" -m pip install --disable-pip-version-check -r requirements.txt pytest PyYAML
           echo %PYROOT%>>"%GITHUB_PATH%"
-          "%PYROOT%\python.exe" --version
+          "%PYROOT%\python.exe" -c "import sys; print(sys.version); print(sys.path)"
+          "%PYROOT%\python.exe" -c "import nexus_architecture_validator, web_dashboard; print('workspace_imports=ok')"
 
       - name: Privacy guard
         run: |
