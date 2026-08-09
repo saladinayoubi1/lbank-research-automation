@@ -40,17 +40,30 @@ jobs:
       - name: Bootstrap portable Python
         run: |
           set "PYROOT=%RUNNER_TEMP%\python312"
+          set "PYZIP=%RUNNER_TEMP%\python312.zip"
+          set "GETPIP=%RUNNER_TEMP%\get-pip.py"
+          if exist "%PYROOT%" rmdir /s /q "%PYROOT%"
+          if exist "%PYZIP%" del /f /q "%PYZIP%"
+          if exist "%GETPIP%" del /f /q "%GETPIP%"
+          mkdir "%PYROOT%"
+          curl.exe -L --fail --retry 3 --retry-delay 2 -o "%PYZIP%" https://www.python.org/ftp/python/3.12.10/python-3.12.10-embed-amd64.zip
+          if errorlevel 1 exit /b 1
+          tar.exe -xf "%PYZIP%" -C "%PYROOT%"
+          if errorlevel 1 exit /b 1
           if not exist "%PYROOT%\python.exe" (
-            mkdir "%PYROOT%"
-            curl.exe -L --fail --retry 3 -o "%RUNNER_TEMP%\python312.zip" https://www.python.org/ftp/python/3.12.10/python-3.12.10-embed-amd64.zip
-            tar.exe -xf "%RUNNER_TEMP%\python312.zip" -C "%PYROOT%"
-            echo Lib\site-packages>>"%PYROOT%\python312._pth"
-            echo import site>>"%PYROOT%\python312._pth"
-            curl.exe -L --fail --retry 3 -o "%RUNNER_TEMP%\get-pip.py" https://bootstrap.pypa.io/get-pip.py
-            "%PYROOT%\python.exe" "%RUNNER_TEMP%\get-pip.py" --no-warn-script-location
+            echo ERROR: python.exe missing after extraction
+            dir "%PYROOT%"
+            exit /b 1
           )
-          findstr /x /c:"%GITHUB_WORKSPACE%" "%PYROOT%\python312._pth" >nul || echo %GITHUB_WORKSPACE%>>"%PYROOT%\python312._pth"
+          echo Lib\site-packages>>"%PYROOT%\python312._pth"
+          echo import site>>"%PYROOT%\python312._pth"
+          echo %GITHUB_WORKSPACE%>>"%PYROOT%\python312._pth"
+          curl.exe -L --fail --retry 3 --retry-delay 2 -o "%GETPIP%" https://bootstrap.pypa.io/get-pip.py
+          if errorlevel 1 exit /b 1
+          "%PYROOT%\python.exe" "%GETPIP%" --no-warn-script-location
+          if errorlevel 1 exit /b 1
           "%PYROOT%\python.exe" -m pip install --disable-pip-version-check -r requirements.txt pytest PyYAML
+          if errorlevel 1 exit /b 1
           echo %PYROOT%>>"%GITHUB_PATH%"
           "%PYROOT%\python.exe" -c "import sys; print(sys.version); print(sys.path)"
           "%PYROOT%\python.exe" -c "import nexus_architecture_validator, web_dashboard; print('workspace_imports=ok')"
