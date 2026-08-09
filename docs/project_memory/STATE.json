@@ -54,21 +54,22 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "11cd72fd7ea7882b19913d3382ba934ee7332c85",
-    "observed_at_utc": "2026-08-09T21:23:07Z",
+    "observed_main_sha": "a1d5f0f810d5927f2f64b2d6d0c302ebf5c719fb",
+    "observed_at_utc": "2026-08-09T21:29:57Z",
     "latest_main_change": {
-      "summary": "Since the prior continuity snapshot, main advanced by two LBank public-candle refresh commits only; no architecture or core-goal change was observed",
+      "summary": "Merged Project Memory continuity refresh PR #245 after exact-head CI, mergeability and review evidence passed",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true,
       "recent_sequence": [
         "39950216b962aed54303dfbc59c5a1d9a35b5a9b data: update LBank public candles",
-        "11cd72fd7ea7882b19913d3382ba934ee7332c85 data: update LBank public candles"
+        "11cd72fd7ea7882b19913d3382ba934ee7332c85 data: update LBank public candles",
+        "a1d5f0f810d5927f2f64b2d6d0c302ebf5c719fb Refresh NEXUS continuity from current main 11cd72fd (#245)"
       ]
     },
-    "open_pull_requests": [245],
-    "memory_refresh_branch": "continuity/current-main-11cd72fd-refresh",
-    "memory_refresh_pr": 245,
+    "open_pull_requests": [],
+    "memory_refresh_branch": "continuity/post-245-a1d5f0f8",
+    "memory_refresh_pr": null,
     "pull_request_evidence": {
       "117": {
         "state": "closed",
@@ -94,11 +95,13 @@
         "result": "closed unmerged after main advanced; replayed from exact current main"
       },
       "245": {
-        "state": "open",
-        "draft": true,
+        "state": "merged",
+        "merged": true,
+        "head_sha": "f78d28c80bbc2b9fbe56b119449eda2b31bdfab5",
+        "merge_commit_sha": "a1d5f0f810d5927f2f64b2d6d0c302ebf5c719fb",
         "scope": "current-main project-memory refresh from exact 11cd72fd",
         "production_authority": false,
-        "merge_gate": "exact-final-head CI + mergeability + clean review evidence"
+        "result": "merged after Test, NEXUS Build Verification and NEXUS Cloud Fallback succeeded; mergeable=true; unresolved review threads=0"
       }
     },
     "release_readiness": {
@@ -116,11 +119,7 @@
       "rollback_exercised_in_production": false,
       "backup_restore_rpo_rto_proven": false,
       "independent_disaster_recovery_proven": false,
-      "cross_platform_workflow_matrix": [
-        "ubuntu-latest",
-        "windows-latest",
-        "macos-latest"
-      ],
+      "cross_platform_workflow_matrix": ["ubuntu-latest", "windows-latest", "macos-latest"],
       "exact_main_cross_platform_release_evidence_proven": false,
       "owner_production_approval": false,
       "fail_closed_verification": {
