@@ -54,71 +54,37 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "d6bc98927080496151e31daf70be67529031b275",
-    "observed_at_utc": "2026-08-09T15:21:00Z",
+    "observed_main_sha": "71f67c67b962538be677a5754dbffd17e3c80a7d",
+    "observed_at_utc": "2026-08-09T17:21:23Z",
     "latest_main_change": {
-      "summary": "Merged bounded gap-repair starvation fix, added safe push-triggered exhaustive repair and no-idle continuation rule, then refreshed LBank public candles",
+      "summary": "Merged bounded DeepSeek provider, added a main smoke marker and Zotero local API probe, then refreshed LBank public candles",
       "architecture_or_core_goal_change_observed": false,
       "meaningful_operational_change_observed": true,
       "recent_sequence": [
-        "be7e3319e47238485cd6199fe756639150951241 fix: prevent gap-repair starvation across bounded rounds (#227)",
-        "0a673f18105fbb3e23ddfaba03b33c61e3b7c879 chore: allow safe push-triggered gap repair",
-        "1a64b5237e0ffb62c4c3d289c8d0bcef91521fdc ops: trigger exhaustive gap repair",
-        "9d4b60748511a2321760456f086604d6720de210 docs: add NEXUS no-idle continuation rule",
-        "d6bc98927080496151e31daf70be67529031b275 data: update LBank public candles"
+        "e5cf1c5e8baba3b3602382e62f59cd99f7c3b5d3 feat: integrate bounded DeepSeek provider (#235)",
+        "02a06df5163182009538f93ead78b46ed83fdd74 ci: [deepseek-smoke] verify DeepSeek provider on main",
+        "32a4837c55f5c75fd3a78c11d1f082f067c689b5 ops: add Zotero local API probe to NEXUS runner",
+        "a26444a7247c1b77fb79d5b67b5e799684e33054 [zotero-status] probe Zotero Desktop local API",
+        "71f67c67b962538be677a5754dbffd17e3c80a7d data: update LBank public candles"
       ]
     },
     "open_pull_requests": [117],
-    "superseded_pull_requests": [
-      186,
-      189,
-      190,
-      191,
-      192,
-      194,
-      195,
-      196,
-      198,
-      201,
-      202,
-      204,
-      207,
-      208,
-      210,
-      212,
-      214,
-      216,
-      217,
-      218,
-      219,
-      220,
-      222,
-      223,
-      225,
-      226,
-      228,
-      229
-    ],
-    "memory_refresh_branch": "continuity/current-main-d6bc9892-refresh",
+    "memory_refresh_branch": "continuity/current-main-71f67c67-refresh",
     "memory_refresh_pr": null,
     "pull_request_evidence": {
       "117": {
         "state": "open",
         "draft": true,
-        "base_sha": "cbd3ace73efc58d73f0690cb6bc2bdc27b8596dc",
-        "head_sha": "043c4465ab268769c3ecfb51d07c214c1a5509fd",
-        "mergeable": false,
         "scope": "fail-closed cloud fallback checkpoint",
         "production_authority": false,
         "remaining_gate": "stale/conflicted against current main; preserve as evidence unless safely replayed"
       },
-      "227": {
+      "235": {
         "state": "merged",
-        "head_sha": "cb7497f72d51cbad95a74a5971fa19e724043c18",
-        "merge_commit_sha": "be7e3319e47238485cd6199fe756639150951241",
-        "scope": "rotate bounded gap-repair windows and continue exhaustive rounds across deferred gaps",
+        "merge_commit_sha": "e5cf1c5e8baba3b3602382e62f59cd99f7c3b5d3",
+        "scope": "bounded DeepSeek provider, routing, budget ledger and smoke path",
         "production_authority": false,
-        "result": "merged to main; market-data readiness remains fail-closed at 2 ready / 19 blocked"
+        "result": "merged; hard USD $5.00 monthly budget safety is not proven and issue #232 remains fail-closed"
       }
     },
     "release_readiness": {
@@ -149,6 +115,19 @@
       },
       "release_blockers": [43, 58, 64, 124]
     },
+    "provider_status": {
+      "deepseek": {
+        "integrated": true,
+        "paid_routing_authoritative": false,
+        "hard_monthly_cap_proven": false,
+        "blocker": 232,
+        "credential_or_billing_action_performed": false
+      },
+      "zotero": {
+        "local_api_probe_added": true,
+        "production_authority": false
+      }
+    },
     "market_data": {
       "tracked_series": 21,
       "research_ready_series": 2,
@@ -172,8 +151,10 @@
       "implementation-to-registry coupling must remain non-authoritative until bypass coverage and rollback/recovery replay are proven",
       "self-hosted local-runner recovery must verify portable Python bootstrap and workspace import paths explicitly; local-runner repair is operational continuity evidence, not production release authority",
       "bounded gap repair must rotate across deferred windows and exhaustive repair must not stop solely because one round recovered zero candles while deferred gaps remain",
+      "paid AI provider integration is not proof of a hard monthly budget cap; reservation, concurrency, retry and ambiguous-timeout accounting must fail closed",
+      "local provider/tool probes are continuity observations only and do not confer production authority",
       "laptop power-off and internet outage remain distinct failure modes and must never be collapsed into one recovery state"
     ],
-    "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131, 197]
+    "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131, 197, 232]
   }
 }
