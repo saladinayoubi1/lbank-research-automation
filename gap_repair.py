@@ -24,6 +24,10 @@ LOGGER = logging.getLogger("lbank_gap_repair")
 MAX_GAP_WINDOWS_PER_SERIES_PER_RUN = 3
 MAX_REPAIR_FAILURES_PER_RUN = 3
 
+# Keep a per-process cursor so repeated bounded repair rounds do not retry the
+# same oldest unavailable windows forever while later gaps remain deferred.
+_GAP_CURSOR: dict[tuple[str, str], int] = {}
+
 
 @dataclass(frozen=True)
 class GapRepairOutcome:
@@ -103,7 +107,11 @@ def repair_series_with_outcomes(
     request_count = 0
     request_failures = 0
 
-    for gap_start in gap_starts:
+    cursor_key = (symbol, timeframe)
+    start_index = _GAP_CURSOR.get(cursor_key, 0) % len(gap_starts)
+    ordered_gap_starts = gap_starts[start_index:] + gap_starts[:start_index]
+
+    for gap_start in ordered_gap_starts:
         if gap_start not in missing:
             continue
         if request_count >= MAX_GAP_WINDOWS_PER_SERIES_PER_RUN:
@@ -170,6 +178,12 @@ def repair_series_with_outcomes(
             recovered_candles=recovered_count,
             detail="missing candle rows returned and selected",
         ))
+
+    # Advance by attempted windows, even when the source had no candle. This
+    # prevents repeated rounds from starving later gaps behind the same three
+    # unavailable historical windows.
+    if gap_starts and request_count:
+        _GAP_CURSOR[cursor_key] = (start_index + request_count) % len(gap_starts)
 
     if not repaired_frames:
         return 0, request_failures, outcomes
