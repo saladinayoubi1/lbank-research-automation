@@ -54,22 +54,19 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "71f67c67b962538be677a5754dbffd17e3c80a7d",
-    "observed_at_utc": "2026-08-09T17:21:23Z",
+    "observed_main_sha": "bf10dcd33d8a3ce51df2edcf5e4d7cdc4e9f49f5",
+    "observed_at_utc": "2026-08-09T18:21:00Z",
     "latest_main_change": {
-      "summary": "Merged bounded DeepSeek provider, added a main smoke marker and Zotero local API probe, then refreshed LBank public candles",
+      "summary": "Merged continuity refresh #236, then refreshed LBank public candles",
       "architecture_or_core_goal_change_observed": false,
       "meaningful_operational_change_observed": true,
       "recent_sequence": [
-        "e5cf1c5e8baba3b3602382e62f59cd99f7c3b5d3 feat: integrate bounded DeepSeek provider (#235)",
-        "02a06df5163182009538f93ead78b46ed83fdd74 ci: [deepseek-smoke] verify DeepSeek provider on main",
-        "32a4837c55f5c75fd3a78c11d1f082f067c689b5 ops: add Zotero local API probe to NEXUS runner",
-        "a26444a7247c1b77fb79d5b67b5e799684e33054 [zotero-status] probe Zotero Desktop local API",
-        "71f67c67b962538be677a5754dbffd17e3c80a7d data: update LBank public candles"
+        "dbc17423f94e69099b0b617b53aa1681dcd11deb memory: refresh continuity from current main 71f67c67 (#236)",
+        "bf10dcd33d8a3ce51df2edcf5e4d7cdc4e9f49f5 data: update LBank public candles"
       ]
     },
-    "open_pull_requests": [117],
-    "memory_refresh_branch": "continuity/current-main-71f67c67-refresh",
+    "open_pull_requests": [117, 237],
+    "memory_refresh_branch": "continuity/current-main-bf10dcd3-refresh",
     "memory_refresh_pr": null,
     "pull_request_evidence": {
       "117": {
@@ -77,14 +74,22 @@
         "draft": true,
         "scope": "fail-closed cloud fallback checkpoint",
         "production_authority": false,
-        "remaining_gate": "stale/conflicted against current main; preserve as evidence unless safely replayed"
+        "remaining_gate": "stale against current main; preserve as evidence unless safely replayed"
       },
-      "235": {
-        "state": "merged",
-        "merge_commit_sha": "e5cf1c5e8baba3b3602382e62f59cd99f7c3b5d3",
-        "scope": "bounded DeepSeek provider, routing, budget ledger and smoke path",
+      "237": {
+        "state": "open",
+        "draft": true,
+        "head_sha": "5fc7f425e12ca22367b936be297e608615a47f48",
+        "scope": "bind reconciliation provenance to canonical source registry",
         "production_authority": false,
-        "result": "merged; hard USD $5.00 monthly budget safety is not proven and issue #232 remains fail-closed"
+        "mergeable": true,
+        "exact_head_ci": {
+          "Test": "success",
+          "NEXUS Build Verification": "success",
+          "NEXUS Cloud Fallback": "success"
+        },
+        "unresolved_review_threads": 0,
+        "remaining_gate": "#197 remains fail-closed until downstream/raw bypass coverage and rollback/recovery replay are proven"
       }
     },
     "release_readiness": {
@@ -102,11 +107,7 @@
       "rollback_exercised_in_production": false,
       "backup_restore_rpo_rto_proven": false,
       "independent_disaster_recovery_proven": false,
-      "cross_platform_workflow_matrix": [
-        "ubuntu-latest",
-        "windows-latest",
-        "macos-latest"
-      ],
+      "cross_platform_workflow_matrix": ["ubuntu-latest", "windows-latest", "macos-latest"],
       "exact_main_cross_platform_release_evidence_proven": false,
       "owner_production_approval": false,
       "fail_closed_verification": {
@@ -153,7 +154,8 @@
       "bounded gap repair must rotate across deferred windows and exhaustive repair must not stop solely because one round recovered zero candles while deferred gaps remain",
       "paid AI provider integration is not proof of a hard monthly budget cap; reservation, concurrency, retry and ambiguous-timeout accounting must fail closed",
       "local provider/tool probes are continuity observations only and do not confer production authority",
-      "laptop power-off and internet outage remain distinct failure modes and must never be collapsed into one recovery state"
+      "laptop power-off and internet outage remain distinct failure modes and must never be collapsed into one recovery state",
+      "connector-visible PR CI success does not substitute for exact-main release/recovery evidence"
     ],
     "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131, 197, 232]
   }
