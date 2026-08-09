@@ -73,21 +73,21 @@
   },
   "current_evidence": {
     "observed_main_sha": "7525c049cedef0b39a11d65c685dacfe5b77676a",
-    "observed_at_utc": "2026-08-09T05:12:00Z",
+    "observed_at_utc": "2026-08-09T05:32:00Z",
     "latest_main_change": {
       "commit": "7525c049cedef0b39a11d65c685dacfe5b77676a",
       "summary": "data: update LBank public candles",
       "architecture_or_core_goal_change_observed": false
     },
     "latest_material_event": {
-      "type": "provenance_registry_alignment_exposed_fail_closed_validator_mismatch",
-      "summary": "PR #203 merged repository memory; PR #204 adds ADR-009A registry v1.1 fields but its exact head fails Test and NEXUS Cloud Fallback while Build Verification succeeds; stacked PR #207 updates validator/tests and its observed exact-head Test run succeeds, but full final-head gate evidence is not yet present"
+      "type": "provenance_registry_validator_retargeted_to_exact_current_main",
+      "summary": "Registry-only PR #204 was closed unmerged after deterministic Test and Cloud Fallback failures exposed validator/schema drift. PR #207 was retargeted directly to exact current main so registry v1.1, validator support and regression tests are reviewed as one coherent fail-closed slice; the only main advance since #204 base is data/market/** with no scope overlap. Exact final-head full required CI is not yet proven."
     },
-    "open_pull_requests": [117, 202, 204, 207],
-    "superseded_pull_requests": [186, 189, 190, 191, 192, 194, 195, 196, 198, 201],
+    "open_pull_requests": [117, 202, 207],
+    "superseded_pull_requests": [186, 189, 190, 191, 192, 194, 195, 196, 198, 201, 204],
     "memory_refresh_branch": "continuity/current-main-7525-refresh",
     "memory_pr_validation": {
-      "state": "pending_exact_head_ci_after_refresh",
+      "state": "pending_exact_head_ci_after_material_refresh",
       "merge_allowed": false,
       "note": "merge only after exact final head CI is green, mergeable=true and review evidence is clean"
     },
@@ -95,54 +95,45 @@
       "207": {
         "state": "open",
         "draft": true,
-        "base": "agent/provenance-semantic-registry-alignment",
+        "base": "main",
+        "base_sha": "7525c049cedef0b39a11d65c685dacfe5b77676a",
         "head_sha": "c1e28f5e548493f39cc0dd276f45f6b734444725",
-        "mergeable": true,
+        "mergeable_latest_observation": false,
         "changed_files": [
+          "docs/architecture/market-data-source-registry.yaml",
           "market_data_source_validator.py",
           "tests/test_market_data_source_validator.py"
         ],
         "observed_exact_head_ci": {
-          "Test": "success"
+          "Test": "success",
+          "NEXUS Build Verification": "not_observed_on_retargeted_final_head",
+          "NEXUS Cloud Fallback": "not_observed_on_retargeted_final_head"
         },
         "production_authority": false,
-        "remaining_gate": "full exact-final-head required CI, review cleanliness, stacked-base acceptance and recovery replay"
+        "remaining_gate": "full exact-final-head required CI, mergeability recalculation, ADR alignment, zero unresolved review threads, implementation coupling and rollback/recovery replay"
       },
       "204": {
-        "state": "open",
-        "draft": true,
-        "base_sha": "084efac83796eaad6fdf29a6c87b6cd8d83b123f",
+        "state": "closed_unmerged_superseded_by_207",
         "head_sha": "146f9028327855b92b1bc8fa0eb0aa01750657bd",
-        "mergeable": true,
-        "changed_files": [
-          "docs/architecture/market-data-source-registry.yaml"
-        ],
         "exact_head_ci": {
           "Test": "failure",
           "NEXUS Build Verification": "success",
           "NEXUS Cloud Fallback": "failure"
         },
-        "production_authority": false,
-        "remaining_gate": "validator compatibility via stacked PR #207 and full final-head CI"
+        "lesson": "registry schema evolution without consumer validator evolution fails closed and must not be merged independently"
       },
       "202": {
         "state": "open",
         "draft": true,
         "base_sha": "12d41647f02f329362923d03542413f4a374b2e0",
         "head_sha": "2d288b4dcd6a5fb89ea3e0cc69a52fe3f14d84bb",
-        "mergeable": false,
-        "changed_files": [
-          "cross_source_reconciliation_provenance.py",
-          "tests/test_cross_source_reconciliation_provenance.py"
-        ],
         "production_authority": false,
-        "remaining_gate": "rebase/replay from current main plus authoritative-registry coupling, bypass coverage, rollback/recovery replay and clean final-head evidence"
+        "remaining_gate": "replay from current main after registry authority is settled, then implementation-registry coupling, bypass coverage, rollback/recovery replay and clean final-head evidence"
       },
       "117": {
         "state": "open",
         "draft": true,
         "head_sha": "043c4465ab268769c3ecfb51d07c214c1a5509fd",
-        "mergeable": false,
         "scope": "fail-closed cloud fallback checkpoint",
         "production_authority": false
       }
@@ -205,7 +196,8 @@
       "cryptographic binding proves only claims included in the bound payload; omitted timeframe/endpoint/category/finality semantics remain fail-closed",
       "policy-only slices may define a reviewable contract without granting implementation or downstream authority",
       "after policy or main advances, stale implementation branches should be replayed from exact current main rather than inheriting old CI authority",
-      "schema or registry evolution must update fail-closed validators and tests in lockstep; a registry-only change may correctly fail until the consumer understands the new contract"
+      "schema or registry evolution must update fail-closed validators and tests in lockstep; registry-only changes that the validator cannot interpret must remain unmerged",
+      "retargeting a stacked fix to current main is safer than merging a known-red base PR when the combined objective is coherent and current-main overlap is absent"
     ],
     "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131, 197]
   }
