@@ -13,12 +13,14 @@ on:
           - readiness
           - exhaustive-gap-repair
           - deepseek-smoke
+          - zotero-status
   push:
     branches:
       - main
     paths:
       - .nexus/repair-trigger.txt
       - .nexus/deepseek-trigger.txt
+      - .nexus/zotero-trigger.txt
 
 permissions:
   contents: read
@@ -105,6 +107,17 @@ jobs:
             exit /b 1
           )
           python scripts\deepseek_smoke.py
+
+      - name: Zotero local API status
+        if: (github.event_name == 'push' && contains(github.event.head_commit.message, '[zotero-status]')) || inputs.task == 'zotero-status'
+        run: |
+          python -c "import json,urllib.request; urls=['http://127.0.0.1:23119/connector/ping','http://127.0.0.1:23119/api/users/0/items?limit=1']; out={}; ok=False; import urllib.error; 
+          for u in urls:
+              try:
+                  r=urllib.request.urlopen(u,timeout=5); out[u]={'status':r.status,'content_type':r.headers.get('Content-Type','')}; ok=True
+              except Exception as e:
+                  out[u]={'error':type(e).__name__}
+          print('ZOTERO_LOCAL_STATUS='+json.dumps(out,sort_keys=True)); raise SystemExit(0 if ok else 1)"
 
       - name: Local change report
         if: always()
