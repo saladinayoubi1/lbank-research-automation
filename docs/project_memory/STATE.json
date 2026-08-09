@@ -30,20 +30,8 @@
     "invalid_data_may_pass_research_gate": false
   },
   "continuity": {
-    "required_reads": [
-      "docs/project_memory/PROJECT_MEMORY.md",
-      "docs/project_memory/STATE.json",
-      "docs/project_memory/DECISIONS.md",
-      "docs/project_memory/RECOVERY_PLAYBOOK.md"
-    ],
-    "reconstruct_from": [
-      "repository project memory",
-      "STATE",
-      "decision log",
-      "recovery playbook",
-      "exact current pull requests and CI evidence",
-      "Google Drive backup only after repository evidence"
-    ],
+    "required_reads": ["docs/project_memory/PROJECT_MEMORY.md", "docs/project_memory/STATE.json", "docs/project_memory/DECISIONS.md", "docs/project_memory/RECOVERY_PLAYBOOK.md"],
+    "reconstruct_from": ["repository project memory", "STATE", "decision log", "recovery playbook", "exact current pull requests and CI evidence", "Google Drive backup only after repository evidence"],
     "drive_backup": {
       "provider": "Google Drive",
       "folder": "NEXUS Project Memory Backup",
@@ -54,28 +42,35 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "2e2d8bef4954750833d82bea536c79a41908ea66",
-    "observed_at_utc": "2026-08-09T12:20:00Z",
+    "observed_main_sha": "d68f5db5a2377277859b62bc2cab4bbe8fcb30b2",
+    "observed_at_utc": "2026-08-09T13:17:21Z",
     "latest_main_change": {
-      "summary": "data: update LBank public candles",
-      "architecture_or_core_goal_change_observed": false
+      "summary": "Fix portable Python workspace imports on self-hosted runner",
+      "architecture_or_core_goal_change_observed": false,
+      "meaningful_operational_change_observed": true,
+      "recent_sequence": [
+        "2a2f9a9a14834836ef85f24975cb0e18e28d7355 fix: provision Python on NEXUS self-hosted runner",
+        "504df0c5dc3bdf06e0875e218a83ceeea225842b fix: bootstrap portable Python on local runner",
+        "4202bf4182a6f5d0c2f247d8d8d715b69931ebba data: update LBank public candles",
+        "64886de894b20ba03ca4349b1f4163f99258be10 fix local runner portable Python import path",
+        "d68f5db5a2377277859b62bc2cab4bbe8fcb30b2 Fix portable Python workspace imports on self-hosted runner"
+      ]
     },
-    "open_pull_requests": [117, 217],
-    "superseded_pull_requests": [186, 189, 190, 191, 192, 194, 195, 196, 198, 201, 202, 204, 207, 208, 210, 212, 214, 216, 218, 219, 220],
-    "memory_refresh_branch": "continuity/current-main-2e2d8bef-refresh",
+    "open_pull_requests": [117, 222],
+    "superseded_pull_requests": [186, 189, 190, 191, 192, 194, 195, 196, 198, 201, 202, 204, 207, 208, 210, 212, 214, 216, 217, 218, 219, 220, 223],
+    "memory_refresh_branch": "continuity/current-main-d68f5db5-refresh",
     "memory_refresh_pr": null,
     "pull_request_evidence": {
-      "217": {
+      "222": {
         "state": "open",
         "draft": true,
-        "base_sha": "94b51035378a213a9f08d234935926bd68801f26",
-        "head_sha": "84dbabae7614b94cc4bb2e3c9521fdf5d035db50",
+        "base_sha": "af42b1dcbd62fed5e2c168094fcd9f414a16ec90",
+        "head_sha": "56519493069bf0fb3fa8e30d235b3c53a6b390bf",
         "mergeable": true,
         "exact_head_ci": "Test, NEXUS Build Verification, NEXUS Cloud Fallback succeeded",
-        "unresolved_review_threads": 0,
-        "scope": "implementation-to-registry provenance coupling and semantic regression tests",
+        "scope": "runtime canonical registry coupling, validated registry payload access, semantic substitution/off-grid regression coverage",
         "production_authority": false,
-        "remaining_gate": "current main advanced through non-overlapping data commits; replay from exact current main and require fresh final-head CI before merge consideration; #197 also requires raw/downstream bypass coverage and rollback/recovery replay"
+        "remaining_gate": "main advanced after base, including local-runner workflow changes; do not inherit exact-main authority; #197 remains fail-closed pending broader raw/downstream bypass coverage and rollback/recovery replay"
       },
       "117": {
         "state": "open",
@@ -132,9 +127,8 @@
       "Drive presence alone is not recovery proof",
       "schema or registry evolution must update fail-closed validators and tests in lockstep",
       "stale or conflicted continuity PRs should be closed unmerged and replayed from exact current main",
-      "a replay branch with no commits provides no remediation evidence and must not inherit stale PR CI authority",
-      "when main advances only through non-overlapping data files, replay the exact reviewed tuple from the new main and require fresh final-head CI rather than inheriting old CI authority",
-      "implementation-to-registry coupling must remain non-authoritative until bypass coverage and rollback/recovery replay are proven"
+      "implementation-to-registry coupling must remain non-authoritative until bypass coverage and rollback/recovery replay are proven",
+      "self-hosted local-runner recovery must verify portable Python bootstrap and workspace import paths explicitly; local-runner repair is operational continuity evidence, not production release authority"
     ],
     "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131, 197]
   }
