@@ -13,6 +13,14 @@ class ReconciliationProvenanceError(ValueError):
     pass
 
 
+_TIMEFRAME_SEMANTICS = {
+    "minute15": {"manifest": "15m", "bybit": "15", "binance": "15m", "duration_ms": 15 * 60 * 1000},
+    "hour1": {"manifest": "1h", "bybit": "60", "binance": "1h", "duration_ms": 60 * 60 * 1000},
+    "hour4": {"manifest": "4h", "bybit": "240", "binance": "4h", "duration_ms": 4 * 60 * 60 * 1000},
+}
+_SUPPORTED_MAPPING_POLICY_VERSION = "1.0.0"
+
+
 def _canonical_json(value: Any) -> bytes:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode("utf-8")
 
@@ -50,6 +58,47 @@ def _manifest_candle(row: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+def _validate_semantic_binding(
+    candidate: Candidate,
+    *,
+    primary_symbol: str,
+    secondary_symbol: str,
+    manifest_timeframe: str,
+    mapping_policy_version: str,
+    primary_endpoint_contract: str,
+    secondary_endpoint_contract: str,
+    open_time_ms: int,
+) -> dict[str, Any]:
+    semantics = _TIMEFRAME_SEMANTICS.get(candidate.timeframe)
+    if semantics is None:
+        raise ReconciliationProvenanceError("unsupported candidate timeframe semantic mapping")
+    if manifest_timeframe != semantics["manifest"]:
+        raise ReconciliationProvenanceError("candidate timeframe and manifest timeframe mismatch")
+    if mapping_policy_version != _SUPPORTED_MAPPING_POLICY_VERSION:
+        raise ReconciliationProvenanceError("unsupported mapping policy version")
+
+    expected_primary = f"/v5/market/kline?category=spot&symbol={primary_symbol}&interval={semantics['bybit']}"
+    expected_secondary = f"/api/v3/klines?symbol={secondary_symbol}&interval={semantics['binance']}"
+    if primary_endpoint_contract != expected_primary:
+        raise ReconciliationProvenanceError("Bybit endpoint contract does not match canonical timeframe/category semantics")
+    if secondary_endpoint_contract != expected_secondary:
+        raise ReconciliationProvenanceError("Binance endpoint contract does not match canonical timeframe/market semantics")
+    if open_time_ms % int(semantics["duration_ms"]) != 0:
+        raise ReconciliationProvenanceError("source timestamp is off-grid for canonical timeframe semantics")
+
+    return {
+        "candidate_timeframe": candidate.timeframe,
+        "manifest_timeframe": semantics["manifest"],
+        "bybit_category": "spot",
+        "bybit_interval": semantics["bybit"],
+        "binance_market": "spot",
+        "binance_interval": semantics["binance"],
+        "candle_finality": "closed_only",
+        "timestamp_grid_ms": semantics["duration_ms"],
+        "mapping_policy_version": _SUPPORTED_MAPPING_POLICY_VERSION,
+    }
+
+
 def bind_candidate_provenance(
     candidate: Candidate,
     *,
@@ -83,6 +132,17 @@ def bind_candidate_provenance(
         raise ReconciliationProvenanceError("secondary candle digest mismatch")
 
     open_time_ms = int(primary_canonical["open_time_ms"])
+    semantic_binding = _validate_semantic_binding(
+        candidate,
+        primary_symbol=str(primary_canonical["symbol"]),
+        secondary_symbol=str(secondary_canonical["symbol"]),
+        manifest_timeframe=manifest_timeframe,
+        mapping_policy_version=mapping_policy_version,
+        primary_endpoint_contract=primary_endpoint_contract,
+        secondary_endpoint_contract=secondary_endpoint_contract,
+        open_time_ms=open_time_ms,
+    )
+
     primary_manifest = build_provenance_manifest(
         source="Bybit",
         market_type="spot",
@@ -113,11 +173,10 @@ def bind_candidate_provenance(
     validate_provenance_manifest(secondary_manifest, [_manifest_candle(secondary_row)])
 
     deterministic_core = {
-        "schema": "nexus.cross-source-reconciliation-provenance.v1",
+        "schema": "nexus.cross-source-reconciliation-provenance.v2",
         "candidate": asdict(candidate),
         "canonical_symbol": canonical_symbol,
-        "manifest_timeframe": manifest_timeframe,
-        "mapping_policy_version": mapping_policy_version,
+        "semantic_binding": semantic_binding,
         "primary_manifest_sha256": primary_manifest["manifest_sha256"],
         "secondary_manifest_sha256": secondary_manifest["manifest_sha256"],
     }
