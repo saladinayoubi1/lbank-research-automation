@@ -319,7 +319,7 @@ def validate_source_registry(payload: Any) -> None:
             raise SourceContractValidationError(f"{path}.sources must include Bybit primary evidence")
 
 
-def load_and_validate(path: Path) -> None:
+def load_and_validate(path: Path) -> dict[str, Any]:
     if not path.is_file() or path.is_symlink():
         raise SourceContractValidationError("registry path must be a regular non-symlink file")
     raw = path.read_bytes()
@@ -333,6 +333,7 @@ def load_and_validate(path: Path) -> None:
     except yaml.YAMLError as exc:
         raise SourceContractValidationError(f"invalid YAML: {exc}") from exc
     validate_source_registry(payload)
+    return payload
 
 
 def main() -> int:
