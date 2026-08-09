@@ -54,45 +54,29 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "a1d5f0f810d5927f2f64b2d6d0c302ebf5c719fb",
-    "observed_at_utc": "2026-08-09T21:29:57Z",
+    "observed_main_sha": "7f68d667b6819a845c54aa943b0bf7639c475a39",
+    "observed_at_utc": "2026-08-09T22:22:32Z",
     "latest_main_change": {
-      "summary": "Merged Project Memory continuity refresh PR #245 after exact-head CI, mergeability and review evidence passed",
+      "summary": "LBank public-candle refresh after merged post-245 continuity state PR #246",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true,
       "recent_sequence": [
-        "39950216b962aed54303dfbc59c5a1d9a35b5a9b data: update LBank public candles",
-        "11cd72fd7ea7882b19913d3382ba934ee7332c85 data: update LBank public candles",
-        "a1d5f0f810d5927f2f64b2d6d0c302ebf5c719fb Refresh NEXUS continuity from current main 11cd72fd (#245)"
+        "a1d5f0f810d5927f2f64b2d6d0c302ebf5c719fb Refresh NEXUS continuity from current main 11cd72fd (#245)",
+        "d89dab197705c0b95b39260dc74cc0c6efefc7bc Record post-245 continuity state (#246)",
+        "7f68d667b6819a845c54aa943b0bf7639c475a39 data: update LBank public candles"
       ]
     },
-    "open_pull_requests": [],
-    "memory_refresh_branch": "continuity/post-245-a1d5f0f8",
+    "open_pull_requests": [248],
+    "memory_refresh_branch": "continuity/post-246-7f68d667",
     "memory_refresh_pr": null,
     "pull_request_evidence": {
-      "117": {
-        "state": "closed",
-        "merged": false,
-        "head_sha": "043c4465ab268769c3ecfb51d07c214c1a5509fd",
-        "scope": "superseded fail-closed cloud fallback checkpoint draft",
-        "production_authority": false,
-        "result": "closed unmerged; historical base was stale against current main"
-      },
       "241": {
         "state": "merged",
         "merge_commit_sha": "f2076d814fef5c2fa8fde5992963e5a5c6a75d6c",
         "scope": "canonical-registry provenance semantic-binding replay",
         "production_authority": false,
         "result": "merged; issue #197 remains open and downstream eligibility remains fail-closed/non-authoritative"
-      },
-      "244": {
-        "state": "closed",
-        "merged": false,
-        "head_sha": "b15b42950d086645520b8b0fef3c983c7fd3e656",
-        "scope": "superseded current-main project-memory refresh",
-        "production_authority": false,
-        "result": "closed unmerged after main advanced; replayed from exact current main"
       },
       "245": {
         "state": "merged",
@@ -101,7 +85,25 @@
         "merge_commit_sha": "a1d5f0f810d5927f2f64b2d6d0c302ebf5c719fb",
         "scope": "current-main project-memory refresh from exact 11cd72fd",
         "production_authority": false,
-        "result": "merged after Test, NEXUS Build Verification and NEXUS Cloud Fallback succeeded; mergeable=true; unresolved review threads=0"
+        "result": "merged after Test, NEXUS Build Verification and NEXUS Cloud Fallback succeeded"
+      },
+      "246": {
+        "state": "merged",
+        "merged": true,
+        "merge_commit_sha": "d89dab197705c0b95b39260dc74cc0c6efefc7bc",
+        "scope": "post-245 continuity state",
+        "production_authority": false,
+        "result": "merged before the latest LBank data refresh"
+      },
+      "248": {
+        "state": "open",
+        "draft": true,
+        "mergeable": true,
+        "base_sha": "d89dab197705c0b95b39260dc74cc0c6efefc7bc",
+        "head_sha": "e5c89f043da9c6814a3e888de6ab09958061ea67",
+        "scope": "DeepSeek conservative input+output preflight reservation and regression tests",
+        "production_authority": false,
+        "result": "open draft; no provider call or external action; issue #232 remains open"
       }
     },
     "release_readiness": {
@@ -168,7 +170,8 @@
       "paid AI provider integration is not proof of a hard monthly budget cap; reservation, concurrency, retry and ambiguous-timeout accounting must fail closed",
       "local provider/tool probes are continuity observations only and do not confer production authority",
       "laptop power-off and internet outage remain distinct failure modes and must never be collapsed into one recovery state",
-      "a successful canonical-registry provenance replay does not close #197 until raw/downstream bypass tests and rollback/recovery replay pass on one fixed head"
+      "a successful canonical-registry provenance replay does not close #197 until raw/downstream bypass tests and rollback/recovery replay pass on one fixed head",
+      "a data-only main advance after a continuity merge still makes exact-SHA operational evidence stale and requires a small replay rather than assuming equivalence"
     ],
     "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131, 197, 232]
   }
