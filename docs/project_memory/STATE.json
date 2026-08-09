@@ -55,7 +55,7 @@
   },
   "current_evidence": {
     "observed_main_sha": "11cd72fd7ea7882b19913d3382ba934ee7332c85",
-    "observed_at_utc": "2026-08-09T21:22:37Z",
+    "observed_at_utc": "2026-08-09T21:23:07Z",
     "latest_main_change": {
       "summary": "Since the prior continuity snapshot, main advanced by two LBank public-candle refresh commits only; no architecture or core-goal change was observed",
       "architecture_or_core_goal_change_observed": false,
@@ -66,9 +66,9 @@
         "11cd72fd7ea7882b19913d3382ba934ee7332c85 data: update LBank public candles"
       ]
     },
-    "open_pull_requests": [],
+    "open_pull_requests": [245],
     "memory_refresh_branch": "continuity/current-main-11cd72fd-refresh",
-    "memory_refresh_pr": null,
+    "memory_refresh_pr": 245,
     "pull_request_evidence": {
       "117": {
         "state": "closed",
@@ -92,6 +92,13 @@
         "scope": "superseded current-main project-memory refresh",
         "production_authority": false,
         "result": "closed unmerged after main advanced; replayed from exact current main"
+      },
+      "245": {
+        "state": "open",
+        "draft": true,
+        "scope": "current-main project-memory refresh from exact 11cd72fd",
+        "production_authority": false,
+        "merge_gate": "exact-final-head CI + mergeability + clean review evidence"
       }
     },
     "release_readiness": {
