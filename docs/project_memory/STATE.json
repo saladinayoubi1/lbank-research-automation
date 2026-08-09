@@ -55,7 +55,7 @@
   },
   "current_evidence": {
     "observed_main_sha": "9684688a5863956af92f1a88d96979ba1b46ea6d",
-    "observed_at_utc": "2026-08-09T20:32:21Z",
+    "observed_at_utc": "2026-08-09T20:33:49Z",
     "latest_main_change": {
       "summary": "PR #241 merged the canonical-registry provenance binding replay; a later commit only refreshed LBank public candles",
       "architecture_or_core_goal_change_observed": true,
@@ -66,16 +66,17 @@
         "9684688a5863956af92f1a88d96979ba1b46ea6d data: update LBank public candles"
       ]
     },
-    "open_pull_requests": [117, 244],
+    "open_pull_requests": [244],
     "memory_refresh_branch": "continuity/current-main-9684688a-refresh",
     "memory_refresh_pr": 244,
     "pull_request_evidence": {
       "117": {
-        "state": "open",
-        "draft": true,
-        "scope": "fail-closed cloud fallback checkpoint",
+        "state": "closed",
+        "merged": false,
+        "head_sha": "043c4465ab268769c3ecfb51d07c214c1a5509fd",
+        "scope": "superseded fail-closed cloud fallback checkpoint draft",
         "production_authority": false,
-        "remaining_gate": "stale/conflicted against current main; preserve as evidence unless safely replayed"
+        "result": "closed unmerged; historical base cbd3ace73efc58d73f0690cb6bc2bdc27b8596dc was stale against current main"
       },
       "241": {
         "state": "merged",
