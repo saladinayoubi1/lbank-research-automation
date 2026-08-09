@@ -73,21 +73,21 @@
   },
   "current_evidence": {
     "observed_main_sha": "93091dba5d1ddb7d9d0397d6bde1798bed6fb5a7",
-    "observed_at_utc": "2026-08-09T00:30:20Z",
+    "observed_at_utc": "2026-08-09T01:28:12Z",
     "latest_main_change": {
       "commit": "93091dba5d1ddb7d9d0397d6bde1798bed6fb5a7",
       "summary": "squash merge PR #193 reconciliation provenance binding",
       "architecture_or_core_goal_change_observed": false
     },
     "latest_material_event": {
-      "type": "provenance_binding_merged",
-      "summary": "PR #193 merged after exact-head Test, NEXUS Build Verification and NEXUS Cloud Fallback succeeded; mergeable=true; zero unresolved review threads; intervening main change was data/market/** only"
+      "type": "post_merge_semantic_binding_blocker",
+      "summary": "Issue #197 records that PR #193 digest binding does not yet prove canonical timeframe/endpoint/category/finality equivalence; downstream binding authority remains fail-closed"
     },
-    "open_pull_requests": [117],
+    "open_pull_requests": [117, 196],
     "superseded_pull_requests": [186, 189, 190, 191, 192, 194, 195],
     "memory_refresh_branch": "continuity/current-main-93091dba-refresh",
     "memory_pr_validation": {
-      "state": "pending_pr_and_exact_head_ci",
+      "state": "pending_exact_head_ci_after_blocker_refresh",
       "merge_allowed": false,
       "note": "merge only after exact final head CI is green, mergeable=true and review evidence is clean"
     },
@@ -104,7 +104,17 @@
         },
         "mergeable_before_merge": true,
         "unresolved_review_threads_before_merge": 0,
+        "semantic_binding_authoritative": false,
+        "post_merge_blocker": 197,
         "production_authority": false
+      },
+      "196": {
+        "state": "open",
+        "draft": true,
+        "scope": "docs/project_memory/STATE.json only",
+        "base_sha": "93091dba5d1ddb7d9d0397d6bde1798bed6fb5a7",
+        "merge_allowed": false,
+        "note": "head changed to record blocker #197; exact-final-head CI must be revalidated"
       },
       "117": {
         "state": "open",
@@ -153,6 +163,8 @@
       "real_source_mappings_default_approved": false,
       "historical_gap_policy": "fail_closed",
       "aggregate_reconciliation_blocker": 131,
+      "post_merge_semantic_binding_blocker": 197,
+      "provenance_binding_authoritative_for_downstream": false,
       "tracked_series": 21,
       "research_ready_series": 2,
       "blocked_series": 19
@@ -166,8 +178,9 @@
       "stale or conflicted implementation PRs should be replayed onto exact current main only after overlap is checked",
       "configured push triggers are not proof of an exact-SHA successful run",
       "exact-head PR CI and exact-main release evidence are distinct claims",
-      "Drive presence alone is not recovery proof"
+      "Drive presence alone is not recovery proof",
+      "cryptographic binding proves only claims included in the bound payload; omitted timeframe/endpoint/category/finality semantics remain fail-closed"
     ],
-    "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131]
+    "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131, 197]
   }
 }
