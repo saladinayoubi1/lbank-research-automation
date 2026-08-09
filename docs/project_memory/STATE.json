@@ -18,7 +18,7 @@
     "cloud continuity when the local laptop is offline"
   ],
   "runtime_status": {
-    "agent_execution_state": "not_independently_observed_this_run",
+    "agent_execution_state": "repository_evidence_observed",
     "laptop_state": "unknown",
     "internet_outage_state": "unknown",
     "laptop_offline_is_not_internet_outage": true
@@ -54,47 +54,37 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "f31e0e417ac5c39b4444f90a2d0489bccd85f861",
-    "observed_at_utc": "2026-08-09T10:19:00Z",
+    "observed_main_sha": "2a70c1250ee1c597a44d645d486b7874e2861687",
+    "observed_at_utc": "2026-08-09T11:31:00Z",
     "latest_main_change": {
-      "summary": "Merge PR #213: provenance semantic registry validation replay",
+      "summary": "data: update LBank public candles",
       "architecture_or_core_goal_change_observed": false
     },
-    "open_pull_requests": [117, 215, 216],
-    "superseded_pull_requests": [186, 189, 190, 191, 192, 194, 195, 196, 198, 201, 202, 204, 207, 208, 210, 212, 214],
-    "memory_refresh_branch": "continuity/current-main-f31e0e41-refresh",
-    "memory_refresh_pr": 215,
+    "open_pull_requests": [117, 217, 219],
+    "superseded_pull_requests": [186, 189, 190, 191, 192, 194, 195, 196, 198, 201, 202, 204, 207, 208, 210, 212, 214, 216, 218],
+    "memory_refresh_branch": "continuity/current-main-2a70c125-refresh",
+    "memory_refresh_pr": null,
     "pull_request_evidence": {
-      "216": {
+      "217": {
         "state": "open",
         "draft": true,
-        "base_sha": "f31e0e417ac5c39b4444f90a2d0489bccd85f861",
-        "head_sha": "114a0b5b3e4d2d0486584a2cd0e5ada0c4f3d22f",
+        "base_sha": "94b51035378a213a9f08d234935926bd68801f26",
+        "head_sha": "84dbabae7614b94cc4bb2e3c9521fdf5d035db50",
         "mergeable": true,
         "exact_head_ci": "Test, NEXUS Build Verification, NEXUS Cloud Fallback succeeded",
         "unresolved_review_threads": 0,
         "scope": "implementation-to-registry provenance coupling and semantic regression tests",
         "production_authority": false,
-        "remaining_gate": "#197 remains fail-closed pending broader raw/downstream bypass coverage and rollback/recovery replay"
+        "remaining_gate": "current main advanced through non-overlapping data commits; replay from exact current main and require fresh final-head CI before merge consideration; #197 also requires raw/downstream bypass coverage and rollback/recovery replay"
       },
-      "215": {
-        "state": "open",
+      "219": {
+        "state": "open_but_superseded_by_newer_main",
         "draft": true,
-        "base_sha": "f31e0e417ac5c39b4444f90a2d0489bccd85f861",
-        "exact_head_ci": "pending_after_memory_refresh",
+        "base_sha": "2dfd2b6e5ce1d00fe96c7f084a4456bc585fd500",
+        "head_sha": "9d3cb965f501f47e76cf75585e7948b60675973d",
         "scope": "STATE-only continuity refresh",
-        "production_authority": false
-      },
-      "213": {
-        "state": "merged",
-        "head_sha": "dc703afe749521a242c5ffad6c16993f24f7c7f2",
-        "merge_sha": "f31e0e417ac5c39b4444f90a2d0489bccd85f861",
-        "exact_head_ci": "Test, NEXUS Build Verification, NEXUS Cloud Fallback succeeded",
-        "mergeable_before_merge": true,
-        "unresolved_review_threads": 0,
-        "scope": "ADR-009A machine-readable registry plus validator and regression tests",
         "production_authority": false,
-        "remaining_gate": "#197 still requires implementation↔registry coupling, broader bypass coverage and rollback/recovery replay"
+        "remaining_gate": "do not merge; current main advanced to 2a70c1250ee1c597a44d645d486b7874e2861687"
       },
       "117": {
         "state": "open",
