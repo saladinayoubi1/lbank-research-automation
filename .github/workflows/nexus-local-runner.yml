@@ -25,7 +25,6 @@ jobs:
     # Self-hosted runners must never execute repository code from arbitrary refs.
     # Dispatches against non-main refs are skipped fail-closed.
     if: github.ref == 'refs/heads/main'
-    # The registered Windows runner currently has the default labels only.
     runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 120
     defaults:
@@ -40,14 +39,22 @@ jobs:
           clean: true
           fetch-depth: 1
 
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
       - name: Privacy guard
-        run: >-
-          python -c "import pathlib;
-          root=pathlib.Path.cwd().resolve();
-          home=pathlib.Path.home().resolve();
-          assert root != home and home not in root.parents;
-          print('privacy_guard=ok');
-          print('workspace=' + str(root.name));"
+        shell: powershell
+        run: |
+          $root = (Get-Location).Path
+          $homePath = [Environment]::GetFolderPath('UserProfile')
+          if ($root -eq $homePath -or $root.StartsWith($homePath + [IO.Path]::DirectorySeparatorChar)) {
+            throw 'Workspace must not be inside the service account home directory.'
+          }
+          Write-Host 'privacy_guard=ok'
+          Write-Host ('workspace=' + (Split-Path $root -Leaf))
 
       - name: Health
         if: inputs.task == 'health'
