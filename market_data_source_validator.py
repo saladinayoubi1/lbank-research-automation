@@ -13,7 +13,25 @@ MAX_REGISTRY_BYTES = 128_000
 MAX_MAPPINGS = 1_000
 SUPPORTED_PYYAML_MAJOR = 6
 
-ROOT_KEYS = {"registry_version", "status", "scope", "issue", "adr", "authority", "mappings"}
+ROOT_KEYS = {
+    "registry_version",
+    "status",
+    "scope",
+    "issue",
+    "adr",
+    "parent_adr",
+    "semantic_binding",
+    "authority",
+    "mappings",
+}
+SEMANTIC_BINDING_KEYS = {
+    "authority",
+    "unknown_or_missing_mapping",
+    "unknown_registry_version",
+    "caller_supplied_semantics_authoritative",
+    "rejected_candidate_downstream_eligible",
+    "required_dimensions",
+}
 AUTHORITY_KEYS = {
     "primary",
     "secondary",
@@ -31,7 +49,9 @@ MAPPING_KEYS = {
     "quote_asset",
     "settlement_asset",
     "timeframe",
+    "manifest_timeframe",
     "timestamp_convention",
+    "timestamp_grid_ms",
     "candle_finality",
     "listing_start_utc",
     "listing_end_utc",
@@ -39,8 +59,31 @@ MAPPING_KEYS = {
     "mapping_policy_version",
     "sources",
 }
-SOURCE_KEYS = {"exchange", "role", "symbol", "category", "endpoint_contract", "status"}
+BASE_SOURCE_KEYS = {"exchange", "role", "symbol", "category", "endpoint_contract", "status"}
+SOURCE_KEYS_BY_EXCHANGE = {
+    "Bybit": BASE_SOURCE_KEYS | {"interval"},
+    "Binance": BASE_SOURCE_KEYS | {"market", "interval"},
+    "LBank": BASE_SOURCE_KEYS,
+}
 
+EXPECTED_SEMANTIC_BINDING = {
+    "authority": "canonical_machine_readable_registry",
+    "unknown_or_missing_mapping": "reject",
+    "unknown_registry_version": "reject",
+    "caller_supplied_semantics_authoritative": False,
+    "rejected_candidate_downstream_eligible": False,
+    "required_dimensions": [
+        "candidate_timeframe",
+        "manifest_timeframe",
+        "bybit_category",
+        "bybit_interval",
+        "binance_market",
+        "binance_interval",
+        "timestamp_grid_ms",
+        "candle_finality",
+        "mapping_policy_version",
+    ],
+}
 EXPECTED_AUTHORITY = {
     "primary": "Bybit",
     "secondary": "Binance",
@@ -55,6 +98,11 @@ EXPECTED_ROLES = {"Bybit": "primary", "Binance": "secondary", "LBank": "tertiary
 ALLOWED_CATEGORIES = {"spot", "perpetual", "futures"}
 ALLOWED_TIMEFRAMES = {"minute15", "hour1", "hour4"}
 ALLOWED_SOURCE_STATUS = {"compatible", "unavailable", "incompatible"}
+TIMEFRAME_SEMANTICS = {
+    "minute15": {"manifest_timeframe": "15m", "timestamp_grid_ms": 900_000, "bybit_interval": "15", "binance_interval": "15m"},
+    "hour1": {"manifest_timeframe": "1h", "timestamp_grid_ms": 3_600_000, "bybit_interval": "60", "binance_interval": "1h"},
+    "hour4": {"manifest_timeframe": "4h", "timestamp_grid_ms": 14_400_000, "bybit_interval": "240", "binance_interval": "4h"},
+}
 SYMBOL_RE = re.compile(r"^[A-Z0-9]+/[A-Z0-9]+$")
 
 
@@ -155,15 +203,22 @@ def validate_source_registry(payload: Any) -> None:
     root = _mapping(payload, "registry")
     _exact_keys(root, ROOT_KEYS, "registry")
     expected_root = {
-        "registry_version": "1.0.0",
+        "registry_version": "1.1.0",
         "status": "proposed",
         "scope": "research_and_paper_trading_only",
         "issue": 131,
-        "adr": "docs/architecture/ADR-009-market-data-source-hierarchy.md",
+        "adr": "docs/architecture/ADR-009A-provenance-semantic-binding.md",
+        "parent_adr": "docs/architecture/ADR-009-market-data-source-hierarchy.md",
     }
     for key, expected in expected_root.items():
         if root[key] != expected:
             raise SourceContractValidationError(f"{key} must equal {expected!r}")
+
+    semantic_binding = _mapping(root["semantic_binding"], "semantic_binding")
+    _exact_keys(semantic_binding, SEMANTIC_BINDING_KEYS, "semantic_binding")
+    for key, expected in EXPECTED_SEMANTIC_BINDING.items():
+        if semantic_binding[key] != expected:
+            raise SourceContractValidationError(f"semantic_binding.{key} must equal {expected!r}")
 
     authority = _mapping(root["authority"], "authority")
     _exact_keys(authority, AUTHORITY_KEYS, "authority")
@@ -198,8 +253,15 @@ def validate_source_registry(payload: Any) -> None:
         settlement_asset = _bounded_string(mapping["settlement_asset"], f"{path}.settlement_asset", 32)
         if canonical_symbol.split("/", 1)[1] != quote_asset:
             raise SourceContractValidationError(f"{path}.quote_asset must match canonical symbol quote")
-        if mapping["timeframe"] not in ALLOWED_TIMEFRAMES:
+
+        timeframe = mapping["timeframe"]
+        if timeframe not in ALLOWED_TIMEFRAMES:
             raise SourceContractValidationError(f"{path}.timeframe is unsupported")
+        expected_semantics = TIMEFRAME_SEMANTICS[timeframe]
+        if mapping["manifest_timeframe"] != expected_semantics["manifest_timeframe"]:
+            raise SourceContractValidationError(f"{path}.manifest_timeframe does not match timeframe")
+        if mapping["timestamp_grid_ms"] != expected_semantics["timestamp_grid_ms"]:
+            raise SourceContractValidationError(f"{path}.timestamp_grid_ms does not match timeframe")
         if mapping["timestamp_convention"] != "open_time_utc":
             raise SourceContractValidationError(f"{path}.timestamp_convention must be 'open_time_utc'")
         if mapping["candle_finality"] != "closed_only":
@@ -221,10 +283,10 @@ def validate_source_registry(payload: Any) -> None:
         for source_index, raw_source in enumerate(sources):
             source_path = f"{path}.sources[{source_index}]"
             source = _mapping(raw_source, source_path)
-            _exact_keys(source, SOURCE_KEYS, source_path)
-            exchange = source["exchange"]
+            exchange = source.get("exchange")
             if exchange not in EXPECTED_ROLES:
                 raise SourceContractValidationError(f"{source_path}.exchange is unsupported")
+            _exact_keys(source, SOURCE_KEYS_BY_EXCHANGE[exchange], source_path)
             if exchange in exchanges:
                 raise SourceContractValidationError(f"{path}.sources contains duplicate exchange {exchange}")
             exchanges.add(exchange)
@@ -244,6 +306,15 @@ def validate_source_registry(payload: Any) -> None:
                 raise SourceContractValidationError(f"{source_path}.symbol is required for compatible source")
             if exchange == "Bybit":
                 bybit_present = True
+                if source["interval"] != expected_semantics["bybit_interval"]:
+                    raise SourceContractValidationError(f"{source_path}.interval does not match timeframe")
+                if source["category"] != category:
+                    raise SourceContractValidationError(f"{source_path}.category does not match mapping category")
+            elif exchange == "Binance":
+                if source["market"] != category:
+                    raise SourceContractValidationError(f"{source_path}.market does not match mapping category")
+                if source["interval"] != expected_semantics["binance_interval"]:
+                    raise SourceContractValidationError(f"{source_path}.interval does not match timeframe")
         if not bybit_present:
             raise SourceContractValidationError(f"{path}.sources must include Bybit primary evidence")
 
