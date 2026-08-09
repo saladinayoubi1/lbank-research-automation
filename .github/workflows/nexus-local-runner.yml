@@ -12,6 +12,11 @@ on:
           - tests
           - readiness
           - exhaustive-gap-repair
+  push:
+    branches:
+      - main
+    paths:
+      - .nexus/repair-trigger.txt
 
 permissions:
   contents: read
@@ -73,19 +78,19 @@ jobs:
           python -c "import pathlib; root=pathlib.Path.cwd().resolve(); home=pathlib.Path.home().resolve(); assert root != home and home not in root.parents; print('privacy_guard=ok'); print('workspace=' + root.name)"
 
       - name: Health
-        if: inputs.task == 'health'
+        if: github.event_name == 'workflow_dispatch' && inputs.task == 'health'
         run: python -m pytest -q tests/test_nexus_architecture_validator.py tests/test_web_dashboard.py
 
       - name: Tests
-        if: inputs.task == 'tests'
+        if: github.event_name == 'workflow_dispatch' && inputs.task == 'tests'
         run: python -m pytest -q
 
       - name: Readiness
-        if: inputs.task == 'readiness'
+        if: github.event_name == 'workflow_dispatch' && inputs.task == 'readiness'
         run: python data_readiness.py --status-path data\market\_backfill_status.csv
 
       - name: Exhaustive gap repair
-        if: inputs.task == 'exhaustive-gap-repair'
+        if: github.event_name == 'push' || inputs.task == 'exhaustive-gap-repair'
         run: python exhaustive_gap_repair.py
 
       - name: Local change report
