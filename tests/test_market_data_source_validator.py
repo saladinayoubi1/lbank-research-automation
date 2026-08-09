@@ -24,7 +24,9 @@ def valid_mapping() -> dict:
         "quote_asset": "USDT",
         "settlement_asset": "USDT",
         "timeframe": "minute15",
+        "manifest_timeframe": "15m",
         "timestamp_convention": "open_time_utc",
+        "timestamp_grid_ms": 900000,
         "candle_finality": "closed_only",
         "listing_start_utc": "2024-01-01T00:00:00Z",
         "listing_end_utc": None,
@@ -36,6 +38,7 @@ def valid_mapping() -> dict:
                 "role": "primary",
                 "symbol": "BTCUSDT",
                 "category": "spot",
+                "interval": "15",
                 "endpoint_contract": "public-kline-v1",
                 "status": "compatible",
             },
@@ -44,6 +47,8 @@ def valid_mapping() -> dict:
                 "role": "secondary",
                 "symbol": "BTCUSDT",
                 "category": "spot",
+                "market": "spot",
+                "interval": "15m",
                 "endpoint_contract": "public-klines-v1",
                 "status": "compatible",
             },
@@ -97,9 +102,16 @@ def test_explicit_compatible_mapping_passes() -> None:
         (lambda p: p["authority"].__setitem__("private_credentials", "allowed"), "private_credentials"),
         (lambda p: p["authority"].__setitem__("unknown_mapping", "allow"), "unknown_mapping"),
         (lambda p: p["authority"].__setitem__("failed_candidate_replaces_previous_valid", True), "failed_candidate"),
+        (lambda p: p["semantic_binding"].__setitem__("unknown_or_missing_mapping", "allow"), "unknown_or_missing_mapping"),
+        (lambda p: p["semantic_binding"].__setitem__("caller_supplied_semantics_authoritative", True), "caller_supplied_semantics_authoritative"),
         (lambda p: p["mappings"][0].__setitem__("canonical_symbol", "btc_usdt"), "BASE/QUOTE"),
         (lambda p: p["mappings"][0].__setitem__("timeframe", "5m"), "timeframe"),
+        (lambda p: p["mappings"][0].__setitem__("manifest_timeframe", "1h"), "manifest_timeframe"),
+        (lambda p: p["mappings"][0].__setitem__("timestamp_grid_ms", 3600000), "timestamp_grid_ms"),
         (lambda p: p["mappings"][0].__setitem__("candle_finality", "open_allowed"), "candle_finality"),
+        (lambda p: p["mappings"][0]["sources"][0].__setitem__("interval", "60"), "interval"),
+        (lambda p: p["mappings"][0]["sources"][1].__setitem__("market", "perpetual"), "market"),
+        (lambda p: p["mappings"][0]["sources"][1].__setitem__("interval", "1h"), "interval"),
         (lambda p: p["mappings"][0]["sources"][1].__setitem__("role", "primary"), "source hierarchy"),
         (lambda p: p["mappings"][0]["sources"][1].__setitem__("category", "perpetual"), "compatible category"),
     ],
@@ -115,6 +127,13 @@ def test_unknown_field_fails_closed() -> None:
     payload = payload_with_mapping()
     payload["mappings"][0]["silent_fallback"] = True
     with pytest.raises(SourceContractValidationError, match="schema mismatch"):
+        validate_source_registry(payload)
+
+
+def test_missing_semantic_dimension_fails_closed() -> None:
+    payload = payload_with_mapping()
+    payload["semantic_binding"]["required_dimensions"].remove("timestamp_grid_ms")
+    with pytest.raises(SourceContractValidationError, match="required_dimensions"):
         validate_source_registry(payload)
 
 
@@ -156,7 +175,7 @@ def test_non_utc_listing_timestamp_fails_closed() -> None:
 @pytest.mark.parametrize(
     "text",
     [
-        "registry_version: 1.0.0\nregistry_version: 1.0.0\n",
+        "registry_version: 1.1.0\nregistry_version: 1.1.0\n",
         "authority:\n  primary: Bybit\n  primary: Binance\n",
     ],
 )
@@ -170,7 +189,7 @@ def test_duplicate_yaml_keys_fail_closed(tmp_path: Path, text: str) -> None:
     [
         ("base: &policy\n  primary: Bybit\nauthority: *policy\n", "anchors|aliases"),
         ("---\na: 1\n---\nb: 2\n", "multiple YAML documents"),
-        ("registry_version: !unsafe 1.0.0\n", "custom YAML tags"),
+        ("registry_version: !unsafe 1.1.0\n", "custom YAML tags"),
     ],
 )
 def test_special_yaml_structures_fail_closed(tmp_path: Path, text: str, message: str) -> None:
