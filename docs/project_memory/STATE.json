@@ -72,61 +72,77 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "12d41647f02f329362923d03542413f4a374b2e0",
-    "observed_at_utc": "2026-08-09T03:37:00Z",
+    "observed_main_sha": "7525c049cedef0b39a11d65c685dacfe5b77676a",
+    "observed_at_utc": "2026-08-09T05:12:00Z",
     "latest_main_change": {
-      "commit": "12d41647f02f329362923d03542413f4a374b2e0",
-      "summary": "Merge pull request #200: docs: define provenance semantic binding ADR",
+      "commit": "7525c049cedef0b39a11d65c685dacfe5b77676a",
+      "summary": "data: update LBank public candles",
       "architecture_or_core_goal_change_observed": false
     },
     "latest_material_event": {
-      "type": "provenance_semantic_binding_policy_merged_and_implementation_replayed",
-      "summary": "PR #200 merged after exact-head green CI, mergeable=true and clean review evidence; stale implementation PR #198 was closed unmerged and replayed from exact current main as Draft PR #202, whose exact-head Test, NEXUS Build Verification and NEXUS Cloud Fallback are green"
+      "type": "provenance_registry_alignment_exposed_fail_closed_validator_mismatch",
+      "summary": "PR #203 merged repository memory; PR #204 adds ADR-009A registry v1.1 fields but its exact head fails Test and NEXUS Cloud Fallback while Build Verification succeeds; stacked PR #207 updates validator/tests and its observed exact-head Test run succeeds, but full final-head gate evidence is not yet present"
     },
-    "open_pull_requests": [117, 202],
+    "open_pull_requests": [117, 202, 204, 207],
     "superseded_pull_requests": [186, 189, 190, 191, 192, 194, 195, 196, 198, 201],
-    "memory_refresh_branch": "continuity/current-main-12d4-refresh",
+    "memory_refresh_branch": "continuity/current-main-7525-refresh",
     "memory_pr_validation": {
       "state": "pending_exact_head_ci_after_refresh",
       "merge_allowed": false,
       "note": "merge only after exact final head CI is green, mergeable=true and review evidence is clean"
     },
     "pull_request_evidence": {
+      "207": {
+        "state": "open",
+        "draft": true,
+        "base": "agent/provenance-semantic-registry-alignment",
+        "head_sha": "c1e28f5e548493f39cc0dd276f45f6b734444725",
+        "mergeable": true,
+        "changed_files": [
+          "market_data_source_validator.py",
+          "tests/test_market_data_source_validator.py"
+        ],
+        "observed_exact_head_ci": {
+          "Test": "success"
+        },
+        "production_authority": false,
+        "remaining_gate": "full exact-final-head required CI, review cleanliness, stacked-base acceptance and recovery replay"
+      },
+      "204": {
+        "state": "open",
+        "draft": true,
+        "base_sha": "084efac83796eaad6fdf29a6c87b6cd8d83b123f",
+        "head_sha": "146f9028327855b92b1bc8fa0eb0aa01750657bd",
+        "mergeable": true,
+        "changed_files": [
+          "docs/architecture/market-data-source-registry.yaml"
+        ],
+        "exact_head_ci": {
+          "Test": "failure",
+          "NEXUS Build Verification": "success",
+          "NEXUS Cloud Fallback": "failure"
+        },
+        "production_authority": false,
+        "remaining_gate": "validator compatibility via stacked PR #207 and full final-head CI"
+      },
       "202": {
         "state": "open",
         "draft": true,
         "base_sha": "12d41647f02f329362923d03542413f4a374b2e0",
         "head_sha": "2d288b4dcd6a5fb89ea3e0cc69a52fe3f14d84bb",
-        "mergeable": true,
+        "mergeable": false,
         "changed_files": [
           "cross_source_reconciliation_provenance.py",
           "tests/test_cross_source_reconciliation_provenance.py"
         ],
-        "exact_head_ci": {
-          "Test": "success",
-          "NEXUS Build Verification": "success",
-          "NEXUS Cloud Fallback": "success"
-        },
-        "scope_conflicts_with_memory_refresh": false,
         "production_authority": false,
-        "remaining_gate": "authoritative-registry coupling, broader bypass coverage, rollback/recovery replay and clean final-head review evidence"
-      },
-      "200": {
-        "state": "merged",
-        "head_sha": "1ae0d26c15d28aa3e643a5385ac82912d0c519bf",
-        "merge_sha": "12d41647f02f329362923d03542413f4a374b2e0",
-        "scope": "ADR-009A provenance semantic binding policy only",
-        "exact_head_ci": {
-          "Test": "success",
-          "NEXUS Build Verification": "success",
-          "NEXUS Cloud Fallback": "success"
-        },
-        "production_authority": false
+        "remaining_gate": "rebase/replay from current main plus authoritative-registry coupling, bypass coverage, rollback/recovery replay and clean final-head evidence"
       },
       "117": {
         "state": "open",
         "draft": true,
         "head_sha": "043c4465ab268769c3ecfb51d07c214c1a5509fd",
+        "mergeable": false,
         "scope": "fail-closed cloud fallback checkpoint",
         "production_authority": false
       }
@@ -188,7 +204,8 @@
       "Drive presence alone is not recovery proof",
       "cryptographic binding proves only claims included in the bound payload; omitted timeframe/endpoint/category/finality semantics remain fail-closed",
       "policy-only slices may define a reviewable contract without granting implementation or downstream authority",
-      "after policy or main advances, stale implementation branches should be replayed from exact current main rather than inheriting old CI authority"
+      "after policy or main advances, stale implementation branches should be replayed from exact current main rather than inheriting old CI authority",
+      "schema or registry evolution must update fail-closed validators and tests in lockstep; a registry-only change may correctly fail until the consumer understands the new contract"
     ],
     "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131, 197]
   }
