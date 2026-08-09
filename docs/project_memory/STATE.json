@@ -54,15 +54,16 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "eb7154e6011a817d1f09f63d224a7736b4670cfd",
-    "observed_at_utc": "2026-08-09T06:17:00Z",
+    "observed_main_sha": "24f1dc3519fcbf7601693966018b55e47540deaa",
+    "observed_at_utc": "2026-08-09T07:20:19Z",
     "latest_main_change": {
       "summary": "data: update LBank public candles",
-      "architecture_or_core_goal_change_observed": false
+      "architecture_or_core_goal_change_observed": false,
+      "last_merged_memory_pr": 209
     },
-    "open_pull_requests": [117, 202, 207],
-    "superseded_pull_requests": [186, 189, 190, 191, 192, 194, 195, 196, 198, 201, 204, 208],
-    "memory_refresh_branch": "continuity/current-main-eb7154-refresh",
+    "open_pull_requests": [117, 207],
+    "superseded_pull_requests": [186, 189, 190, 191, 192, 194, 195, 196, 198, 201, 202, 204, 208],
+    "memory_refresh_branch": "continuity/current-main-24f1dc35-refresh",
     "pull_request_evidence": {
       "207": {
         "state": "open",
@@ -76,15 +77,9 @@
           "NEXUS Cloud Fallback": "success"
         },
         "unresolved_review_threads": 0,
-        "main_advance_after_base": "data/market/** only; no file overlap observed",
+        "main_advance_after_base": "main advanced to 24f1dc3519fcbf7601693966018b55e47540deaa through Project Memory merge plus data/market refresh; no file overlap observed; exact-current-main replay still required",
         "production_authority": false,
         "remaining_gate": "ADR alignment, implementation coupling and rollback/recovery replay; issue #197 remains open"
-      },
-      "202": {
-        "state": "open",
-        "draft": true,
-        "production_authority": false,
-        "remaining_gate": "replay from current main after registry authority is settled, then implementation-registry coupling, bypass coverage, rollback/recovery replay and clean final-head evidence"
       },
       "117": {
         "state": "open",
