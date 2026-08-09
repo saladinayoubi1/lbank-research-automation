@@ -30,8 +30,20 @@
     "invalid_data_may_pass_research_gate": false
   },
   "continuity": {
-    "required_reads": ["docs/project_memory/PROJECT_MEMORY.md", "docs/project_memory/STATE.json", "docs/project_memory/DECISIONS.md", "docs/project_memory/RECOVERY_PLAYBOOK.md"],
-    "reconstruct_from": ["repository project memory", "STATE", "decision log", "recovery playbook", "exact current pull requests and CI evidence", "Google Drive backup only after repository evidence"],
+    "required_reads": [
+      "docs/project_memory/PROJECT_MEMORY.md",
+      "docs/project_memory/STATE.json",
+      "docs/project_memory/DECISIONS.md",
+      "docs/project_memory/RECOVERY_PLAYBOOK.md"
+    ],
+    "reconstruct_from": [
+      "repository project memory",
+      "STATE",
+      "decision log",
+      "recovery playbook",
+      "exact current pull requests and CI evidence",
+      "Google Drive backup only after repository evidence"
+    ],
     "drive_backup": {
       "provider": "Google Drive",
       "folder": "NEXUS Project Memory Backup",
@@ -42,36 +54,54 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "d68f5db5a2377277859b62bc2cab4bbe8fcb30b2",
-    "observed_at_utc": "2026-08-09T13:17:21Z",
+    "observed_main_sha": "d6bc98927080496151e31daf70be67529031b275",
+    "observed_at_utc": "2026-08-09T15:21:00Z",
     "latest_main_change": {
-      "summary": "Fix portable Python workspace imports on self-hosted runner",
+      "summary": "Merged bounded gap-repair starvation fix, added safe push-triggered exhaustive repair and no-idle continuation rule, then refreshed LBank public candles",
       "architecture_or_core_goal_change_observed": false,
       "meaningful_operational_change_observed": true,
       "recent_sequence": [
-        "2a2f9a9a14834836ef85f24975cb0e18e28d7355 fix: provision Python on NEXUS self-hosted runner",
-        "504df0c5dc3bdf06e0875e218a83ceeea225842b fix: bootstrap portable Python on local runner",
-        "4202bf4182a6f5d0c2f247d8d8d715b69931ebba data: update LBank public candles",
-        "64886de894b20ba03ca4349b1f4163f99258be10 fix local runner portable Python import path",
-        "d68f5db5a2377277859b62bc2cab4bbe8fcb30b2 Fix portable Python workspace imports on self-hosted runner"
+        "be7e3319e47238485cd6199fe756639150951241 fix: prevent gap-repair starvation across bounded rounds (#227)",
+        "0a673f18105fbb3e23ddfaba03b33c61e3b7c879 chore: allow safe push-triggered gap repair",
+        "1a64b5237e0ffb62c4c3d289c8d0bcef91521fdc ops: trigger exhaustive gap repair",
+        "9d4b60748511a2321760456f086604d6720de210 docs: add NEXUS no-idle continuation rule",
+        "d6bc98927080496151e31daf70be67529031b275 data: update LBank public candles"
       ]
     },
-    "open_pull_requests": [117, 222],
-    "superseded_pull_requests": [186, 189, 190, 191, 192, 194, 195, 196, 198, 201, 202, 204, 207, 208, 210, 212, 214, 216, 217, 218, 219, 220, 223],
-    "memory_refresh_branch": "continuity/current-main-d68f5db5-refresh",
+    "open_pull_requests": [117],
+    "superseded_pull_requests": [
+      186,
+      189,
+      190,
+      191,
+      192,
+      194,
+      195,
+      196,
+      198,
+      201,
+      202,
+      204,
+      207,
+      208,
+      210,
+      212,
+      214,
+      216,
+      217,
+      218,
+      219,
+      220,
+      222,
+      223,
+      225,
+      226,
+      228,
+      229
+    ],
+    "memory_refresh_branch": "continuity/current-main-d6bc9892-refresh",
     "memory_refresh_pr": null,
     "pull_request_evidence": {
-      "222": {
-        "state": "open",
-        "draft": true,
-        "base_sha": "af42b1dcbd62fed5e2c168094fcd9f414a16ec90",
-        "head_sha": "56519493069bf0fb3fa8e30d235b3c53a6b390bf",
-        "mergeable": true,
-        "exact_head_ci": "Test, NEXUS Build Verification, NEXUS Cloud Fallback succeeded",
-        "scope": "runtime canonical registry coupling, validated registry payload access, semantic substitution/off-grid regression coverage",
-        "production_authority": false,
-        "remaining_gate": "main advanced after base, including local-runner workflow changes; do not inherit exact-main authority; #197 remains fail-closed pending broader raw/downstream bypass coverage and rollback/recovery replay"
-      },
       "117": {
         "state": "open",
         "draft": true,
@@ -81,6 +111,14 @@
         "scope": "fail-closed cloud fallback checkpoint",
         "production_authority": false,
         "remaining_gate": "stale/conflicted against current main; preserve as evidence unless safely replayed"
+      },
+      "227": {
+        "state": "merged",
+        "head_sha": "cb7497f72d51cbad95a74a5971fa19e724043c18",
+        "merge_commit_sha": "be7e3319e47238485cd6199fe756639150951241",
+        "scope": "rotate bounded gap-repair windows and continue exhaustive rounds across deferred gaps",
+        "production_authority": false,
+        "result": "merged to main; market-data readiness remains fail-closed at 2 ready / 19 blocked"
       }
     },
     "release_readiness": {
@@ -98,7 +136,11 @@
       "rollback_exercised_in_production": false,
       "backup_restore_rpo_rto_proven": false,
       "independent_disaster_recovery_proven": false,
-      "cross_platform_workflow_matrix": ["ubuntu-latest", "windows-latest", "macos-latest"],
+      "cross_platform_workflow_matrix": [
+        "ubuntu-latest",
+        "windows-latest",
+        "macos-latest"
+      ],
       "exact_main_cross_platform_release_evidence_proven": false,
       "owner_production_approval": false,
       "fail_closed_verification": {
@@ -128,7 +170,9 @@
       "schema or registry evolution must update fail-closed validators and tests in lockstep",
       "stale or conflicted continuity PRs should be closed unmerged and replayed from exact current main",
       "implementation-to-registry coupling must remain non-authoritative until bypass coverage and rollback/recovery replay are proven",
-      "self-hosted local-runner recovery must verify portable Python bootstrap and workspace import paths explicitly; local-runner repair is operational continuity evidence, not production release authority"
+      "self-hosted local-runner recovery must verify portable Python bootstrap and workspace import paths explicitly; local-runner repair is operational continuity evidence, not production release authority",
+      "bounded gap repair must rotate across deferred windows and exhaustive repair must not stop solely because one round recovered zero candles while deferred gaps remain",
+      "laptop power-off and internet outage remain distinct failure modes and must never be collapsed into one recovery state"
     ],
     "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131, 197]
   }
