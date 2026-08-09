@@ -55,16 +55,36 @@
   },
   "current_evidence": {
     "observed_main_sha": "f31e0e417ac5c39b4444f90a2d0489bccd85f861",
-    "observed_at_utc": "2026-08-09T09:37:00Z",
+    "observed_at_utc": "2026-08-09T10:19:00Z",
     "latest_main_change": {
       "summary": "Merge PR #213: provenance semantic registry validation replay",
       "architecture_or_core_goal_change_observed": false
     },
-    "open_pull_requests": [117],
+    "open_pull_requests": [117, 215, 216],
     "superseded_pull_requests": [186, 189, 190, 191, 192, 194, 195, 196, 198, 201, 202, 204, 207, 208, 210, 212, 214],
     "memory_refresh_branch": "continuity/current-main-f31e0e41-refresh",
-    "memory_refresh_pr": null,
+    "memory_refresh_pr": 215,
     "pull_request_evidence": {
+      "216": {
+        "state": "open",
+        "draft": true,
+        "base_sha": "f31e0e417ac5c39b4444f90a2d0489bccd85f861",
+        "head_sha": "114a0b5b3e4d2d0486584a2cd0e5ada0c4f3d22f",
+        "mergeable": true,
+        "exact_head_ci": "Test, NEXUS Build Verification, NEXUS Cloud Fallback succeeded",
+        "unresolved_review_threads": 0,
+        "scope": "implementation-to-registry provenance coupling and semantic regression tests",
+        "production_authority": false,
+        "remaining_gate": "#197 remains fail-closed pending broader raw/downstream bypass coverage and rollback/recovery replay"
+      },
+      "215": {
+        "state": "open",
+        "draft": true,
+        "base_sha": "f31e0e417ac5c39b4444f90a2d0489bccd85f861",
+        "exact_head_ci": "pending_after_memory_refresh",
+        "scope": "STATE-only continuity refresh",
+        "production_authority": false
+      },
       "213": {
         "state": "merged",
         "head_sha": "dc703afe749521a242c5ffad6c16993f24f7c7f2",
@@ -132,7 +152,8 @@
       "schema or registry evolution must update fail-closed validators and tests in lockstep",
       "stale or conflicted continuity PRs should be closed unmerged and replayed from exact current main",
       "a replay branch with no commits provides no remediation evidence and must not inherit stale PR CI authority",
-      "when main advances only through non-overlapping data files, replay the exact reviewed tuple from the new main and require fresh final-head CI rather than inheriting old CI authority"
+      "when main advances only through non-overlapping data files, replay the exact reviewed tuple from the new main and require fresh final-head CI rather than inheriting old CI authority",
+      "implementation-to-registry coupling must remain non-authoritative until bypass coverage and rollback/recovery replay are proven"
     ],
     "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131, 197]
   }
