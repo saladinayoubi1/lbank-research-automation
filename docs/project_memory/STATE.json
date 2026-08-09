@@ -17,13 +17,6 @@
     "persistent lessons so solved failures are not rediscovered from zero",
     "cloud continuity when the local laptop is offline"
   ],
-  "known_runtime_components": [
-    "Fast Agent Coordinator",
-    "local node supervisor",
-    "dashboard",
-    "GitHub Actions",
-    "cloud fallback"
-  ],
   "runtime_status": {
     "agent_execution_state": "not_independently_observed_this_run",
     "laptop_state": "unknown",
@@ -51,82 +44,51 @@
       "exact current pull requests and CI evidence",
       "Google Drive backup only after repository evidence"
     ],
-    "chat_loss_tolerated": true,
-    "local_machine_loss_tolerated_for_project_knowledge": true,
-    "drive_is_secondary_continuity_backup": false,
-    "external_backup_candidate": {
+    "drive_backup": {
       "provider": "Google Drive",
-      "status": "presence-only-untrusted-candidate-until-contract-verification",
-      "may_authorize_recovery": false,
-      "required_before_use": [
-        "versioned contract",
-        "bounded freshness",
-        "exact source SHA binding",
-        "content hash or manifest verification",
-        "provider object identity verification",
-        "poisoned stale replay and substitution rejection",
-        "no-secrets and privacy validation",
-        "fixed-tuple recovery exercise"
-      ],
+      "folder": "NEXUS Project Memory Backup",
+      "document": "NEXUS Project Memory Backup — Durable",
+      "secondary_only": true,
+      "may_authorize_production_recovery": false,
       "blocker": 122
     }
   },
   "current_evidence": {
-    "observed_main_sha": "12d41647f02f329362923d03542413f4a374b2e0",
-    "observed_at_utc": "2026-08-09T03:37:00Z",
+    "observed_main_sha": "eb7154e6011a817d1f09f63d224a7736b4670cfd",
+    "observed_at_utc": "2026-08-09T06:17:00Z",
     "latest_main_change": {
-      "commit": "12d41647f02f329362923d03542413f4a374b2e0",
-      "summary": "Merge pull request #200: docs: define provenance semantic binding ADR",
+      "summary": "data: update LBank public candles",
       "architecture_or_core_goal_change_observed": false
     },
-    "latest_material_event": {
-      "type": "provenance_semantic_binding_policy_merged_and_implementation_replayed",
-      "summary": "PR #200 merged after exact-head green CI, mergeable=true and clean review evidence; stale implementation PR #198 was closed unmerged and replayed from exact current main as Draft PR #202, whose exact-head Test, NEXUS Build Verification and NEXUS Cloud Fallback are green"
-    },
-    "open_pull_requests": [117, 202],
-    "superseded_pull_requests": [186, 189, 190, 191, 192, 194, 195, 196, 198, 201],
-    "memory_refresh_branch": "continuity/current-main-12d4-refresh",
-    "memory_pr_validation": {
-      "state": "pending_exact_head_ci_after_refresh",
-      "merge_allowed": false,
-      "note": "merge only after exact final head CI is green, mergeable=true and review evidence is clean"
-    },
+    "open_pull_requests": [117, 202, 207],
+    "superseded_pull_requests": [186, 189, 190, 191, 192, 194, 195, 196, 198, 201, 204, 208],
+    "memory_refresh_branch": "continuity/current-main-eb7154-refresh",
     "pull_request_evidence": {
+      "207": {
+        "state": "open",
+        "draft": true,
+        "base_sha": "7525c049cedef0b39a11d65c685dacfe5b77676a",
+        "head_sha": "c1e28f5e548493f39cc0dd276f45f6b734444725",
+        "mergeable": true,
+        "exact_head_ci": {
+          "Test": "success",
+          "NEXUS Build Verification": "success",
+          "NEXUS Cloud Fallback": "success"
+        },
+        "unresolved_review_threads": 0,
+        "main_advance_after_base": "data/market/** only; no file overlap observed",
+        "production_authority": false,
+        "remaining_gate": "ADR alignment, implementation coupling and rollback/recovery replay; issue #197 remains open"
+      },
       "202": {
         "state": "open",
         "draft": true,
-        "base_sha": "12d41647f02f329362923d03542413f4a374b2e0",
-        "head_sha": "2d288b4dcd6a5fb89ea3e0cc69a52fe3f14d84bb",
-        "mergeable": true,
-        "changed_files": [
-          "cross_source_reconciliation_provenance.py",
-          "tests/test_cross_source_reconciliation_provenance.py"
-        ],
-        "exact_head_ci": {
-          "Test": "success",
-          "NEXUS Build Verification": "success",
-          "NEXUS Cloud Fallback": "success"
-        },
-        "scope_conflicts_with_memory_refresh": false,
         "production_authority": false,
-        "remaining_gate": "authoritative-registry coupling, broader bypass coverage, rollback/recovery replay and clean final-head review evidence"
-      },
-      "200": {
-        "state": "merged",
-        "head_sha": "1ae0d26c15d28aa3e643a5385ac82912d0c519bf",
-        "merge_sha": "12d41647f02f329362923d03542413f4a374b2e0",
-        "scope": "ADR-009A provenance semantic binding policy only",
-        "exact_head_ci": {
-          "Test": "success",
-          "NEXUS Build Verification": "success",
-          "NEXUS Cloud Fallback": "success"
-        },
-        "production_authority": false
+        "remaining_gate": "replay from current main after registry authority is settled, then implementation-registry coupling, bypass coverage, rollback/recovery replay and clean final-head evidence"
       },
       "117": {
         "state": "open",
         "draft": true,
-        "head_sha": "043c4465ab268769c3ecfb51d07c214c1a5509fd",
         "scope": "fail-closed cloud fallback checkpoint",
         "production_authority": false
       }
@@ -134,6 +96,7 @@
     "release_readiness": {
       "production_ready": false,
       "exact_main_combined_status_count": 0,
+      "exact_main_commit_workflow_runs_observed": 0,
       "exact_main_release_run_independently_verified": false,
       "artifact_manifest_gate": true,
       "cyclonedx_sbom_gate": true,
@@ -147,8 +110,6 @@
       "independent_disaster_recovery_proven": false,
       "cross_platform_workflow_matrix": ["ubuntu-latest", "windows-latest", "macos-latest"],
       "exact_main_cross_platform_release_evidence_proven": false,
-      "release_readiness_main_push_control": "configured_every_push_to_main",
-      "release_recovery_main_push_control": "configured_every_push_to_main",
       "owner_production_approval": false,
       "fail_closed_verification": {
         "release_gate": "rejects missing/tampered/malformed manifest, SBOM and provenance; production signature verification blocks without approved identity policy",
@@ -156,39 +117,26 @@
       },
       "release_blockers": [43, 58, 64, 124]
     },
-    "architecture_validation": {
-      "ci_enforcement_pr": 138,
-      "independent_control_plane_proven": false,
-      "remaining_blocker": 106
-    },
     "market_data": {
-      "source_hierarchy": {
-        "primary": "Bybit",
-        "secondary": "Binance",
-        "tertiary": "LBank"
-      },
-      "real_source_mappings_default_approved": false,
+      "tracked_series": 21,
+      "research_ready_series": 2,
+      "blocked_series": 19,
+      "blocked_reason": "integrity_failed",
       "historical_gap_policy": "fail_closed",
       "aggregate_reconciliation_blocker": 131,
       "post_merge_semantic_binding_blocker": 197,
-      "provenance_binding_authoritative_for_downstream": false,
-      "tracked_series": 21,
-      "research_ready_series": 2,
-      "blocked_series": 19
+      "provenance_binding_authoritative_for_downstream": false
     },
     "offline_semantics": {
       "internet_outage": "local runtime may continue in reduced mode; cloud synchronization resumes after connectivity returns",
       "laptop_powered_off": "local collectors halt; remote cloud continuity is a separate target and must not be conflated with an internet outage"
     },
     "recovery_lessons": [
-      "caller-controlled finite limits are not safe bounds unless an implementation-owned maximum is enforced before side effects",
-      "stale or conflicted implementation PRs should be replayed onto exact current main only after overlap is checked",
       "configured push triggers are not proof of an exact-SHA successful run",
       "exact-head PR CI and exact-main release evidence are distinct claims",
       "Drive presence alone is not recovery proof",
-      "cryptographic binding proves only claims included in the bound payload; omitted timeframe/endpoint/category/finality semantics remain fail-closed",
-      "policy-only slices may define a reviewable contract without granting implementation or downstream authority",
-      "after policy or main advances, stale implementation branches should be replayed from exact current main rather than inheriting old CI authority"
+      "schema or registry evolution must update fail-closed validators and tests in lockstep",
+      "stale or conflicted continuity PRs should be closed unmerged and replayed from exact current main"
     ],
     "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131, 197]
   }
