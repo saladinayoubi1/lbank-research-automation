@@ -54,21 +54,21 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "a1d5f0f810d5927f2f64b2d6d0c302ebf5c719fb",
-    "observed_at_utc": "2026-08-09T21:29:57Z",
+    "observed_main_sha": "7c4c8eb5061807b1fc2d7e2cf39ae794c3071660",
+    "observed_at_utc": "2026-08-09T23:13:39Z",
     "latest_main_change": {
-      "summary": "Merged Project Memory continuity refresh PR #245 after exact-head CI, mergeability and review evidence passed",
+      "summary": "Two additional LBank public-candle refresh commits landed after 7f68d667; no architecture, core-goal, production-authority, or release-policy change observed",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true,
       "recent_sequence": [
-        "39950216b962aed54303dfbc59c5a1d9a35b5a9b data: update LBank public candles",
-        "11cd72fd7ea7882b19913d3382ba934ee7332c85 data: update LBank public candles",
-        "a1d5f0f810d5927f2f64b2d6d0c302ebf5c719fb Refresh NEXUS continuity from current main 11cd72fd (#245)"
+        "7f68d667b6819a845c54aa943b0bf7639c475a39 data: update LBank public candles",
+        "db742d53a00aa39d019f722d0dec06ef306f336c data: update LBank public candles",
+        "7c4c8eb5061807b1fc2d7e2cf39ae794c3071660 data: update LBank public candles"
       ]
     },
-    "open_pull_requests": [],
-    "memory_refresh_branch": "continuity/post-245-a1d5f0f8",
+    "open_pull_requests": [250],
+    "memory_refresh_branch": "continuity/current-7c4c8eb5",
     "memory_refresh_pr": null,
     "pull_request_evidence": {
       "117": {
@@ -102,6 +102,23 @@
         "scope": "current-main project-memory refresh from exact 11cd72fd",
         "production_authority": false,
         "result": "merged after Test, NEXUS Build Verification and NEXUS Cloud Fallback succeeded; mergeable=true; unresolved review threads=0"
+      },
+      "249": {
+        "state": "closed",
+        "merged": false,
+        "head_sha": "9dfe00043853d940bc80cd63dd1433624089a1fd",
+        "scope": "superseded current-main project-memory refresh from 7f68d667",
+        "production_authority": false,
+        "result": "closed unmerged after main advanced to db742d53"
+      },
+      "250": {
+        "state": "open",
+        "draft": true,
+        "base_sha": "db742d53a00aa39d019f722d0dec06ef306f336c",
+        "head_sha": "f75d5aaca65ca9f37db55602af83dee4beba1e5f",
+        "scope": "DeepSeek input-output preflight hardening replay",
+        "production_authority": false,
+        "result": "exact-head Test, NEXUS Build Verification and NEXUS Cloud Fallback succeeded; mergeable=true; #232 remains open"
       }
     },
     "release_readiness": {
@@ -168,7 +185,8 @@
       "paid AI provider integration is not proof of a hard monthly budget cap; reservation, concurrency, retry and ambiguous-timeout accounting must fail closed",
       "local provider/tool probes are continuity observations only and do not confer production authority",
       "laptop power-off and internet outage remain distinct failure modes and must never be collapsed into one recovery state",
-      "a successful canonical-registry provenance replay does not close #197 until raw/downstream bypass tests and rollback/recovery replay pass on one fixed head"
+      "a successful canonical-registry provenance replay does not close #197 until raw/downstream bypass tests and rollback/recovery replay pass on one fixed head",
+      "a provider hardening PR with green exact-head CI does not authorize paid routing while #232 budget/concurrency/reconciliation completion gates remain open"
     ],
     "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131, 197, 232]
   }
