@@ -44,6 +44,19 @@ def _status_snapshot(status_path: Path) -> dict[str, Any]:
     }
 
 
+def _has_deferred_windows(status_path: Path) -> bool:
+    report_path = status_path.parent / "_gap_repair_status.csv"
+    if not report_path.exists():
+        return False
+    try:
+        frame = pd.read_csv(report_path, usecols=["status"])
+    except (ValueError, pd.errors.EmptyDataError):
+        return False
+    if frame.empty:
+        return False
+    return bool(frame["status"].astype(str).eq("deferred_budget").any())
+
+
 def run_exhaustive_repair(
     *,
     max_rounds: int = DEFAULT_MAX_ROUNDS,
@@ -59,17 +72,21 @@ def run_exhaustive_repair(
     before = _status_snapshot(status_path)
     rounds: list[dict[str, Any]] = []
     recovered_total = 0
+    stopped_because = "round_limit"
 
     for round_number in range(1, max_rounds + 1):
         recovered = int(repair_fn())
         recovered_total += recovered
         snapshot = _status_snapshot(status_path)
+        deferred_windows = _has_deferred_windows(status_path)
         rounds.append({
             "round": round_number,
             "recovered_candles": recovered,
+            "deferred_windows": deferred_windows,
             **snapshot,
         })
-        if recovered == 0:
+        if recovered == 0 and not deferred_windows:
+            stopped_because = "no_progress"
             break
 
     readiness = readiness_fn(status_path=status_path)
@@ -79,7 +96,7 @@ def run_exhaustive_repair(
         "after": after,
         "rounds_run": len(rounds),
         "recovered_candles": recovered_total,
-        "stopped_because": "no_progress" if rounds and rounds[-1]["recovered_candles"] == 0 else "round_limit",
+        "stopped_because": stopped_because,
         "readiness": readiness,
         "rounds": rounds,
     }
