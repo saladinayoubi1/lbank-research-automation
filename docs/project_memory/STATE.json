@@ -54,10 +54,10 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "d6bc98927080496151e31daf70be67529031b275",
-    "observed_at_utc": "2026-08-09T15:21:00Z",
+    "observed_main_sha": "cc0dcfdc46e29768a10a5c46da8b6eea39995db1",
+    "observed_at_utc": "2026-08-09T15:34:00Z",
     "latest_main_change": {
-      "summary": "Merged bounded gap-repair starvation fix, added safe push-triggered exhaustive repair and no-idle continuation rule, then refreshed LBank public candles",
+      "summary": "Merged continuity refresh #231 after exact-base identity, exact-head green CI, mergeability and clean-review checks",
       "architecture_or_core_goal_change_observed": false,
       "meaningful_operational_change_observed": true,
       "recent_sequence": [
@@ -65,10 +65,11 @@
         "0a673f18105fbb3e23ddfaba03b33c61e3b7c879 chore: allow safe push-triggered gap repair",
         "1a64b5237e0ffb62c4c3d289c8d0bcef91521fdc ops: trigger exhaustive gap repair",
         "9d4b60748511a2321760456f086604d6720de210 docs: add NEXUS no-idle continuation rule",
-        "d6bc98927080496151e31daf70be67529031b275 data: update LBank public candles"
+        "d6bc98927080496151e31daf70be67529031b275 data: update LBank public candles",
+        "cc0dcfdc46e29768a10a5c46da8b6eea39995db1 memory: refresh continuity from current main d6bc9892 (#231)"
       ]
     },
-    "open_pull_requests": [117],
+    "open_pull_requests": [117, 233],
     "superseded_pull_requests": [
       186,
       189,
@@ -99,7 +100,7 @@
       228,
       229
     ],
-    "memory_refresh_branch": "continuity/current-main-d6bc9892-refresh",
+    "memory_refresh_branch": "continuity/current-main-cc0dcfdc-refresh",
     "memory_refresh_pr": null,
     "pull_request_evidence": {
       "117": {
@@ -119,6 +120,24 @@
         "scope": "rotate bounded gap-repair windows and continue exhaustive rounds across deferred gaps",
         "production_authority": false,
         "result": "merged to main; market-data readiness remains fail-closed at 2 ready / 19 blocked"
+      },
+      "231": {
+        "state": "merged",
+        "head_sha": "c886610787b0715d46d08b4a1678ecb50894bf63",
+        "merge_commit_sha": "cc0dcfdc46e29768a10a5c46da8b6eea39995db1",
+        "scope": "continuity-only STATE refresh",
+        "production_authority": false,
+        "result": "merged after exact-base identity, Test/Build Verification/Cloud Fallback success, mergeable=true and zero review threads"
+      },
+      "233": {
+        "state": "open",
+        "draft": true,
+        "base_sha": "cc0dcfdc46e29768a10a5c46da8b6eea39995db1",
+        "head_sha": "8dc80d4bb8eb360ca8a9459b2787f1780f79ac14",
+        "mergeable": false,
+        "scope": "runtime canonical registry coupling, validated registry payload access, semantic substitution/off-grid regression coverage",
+        "production_authority": false,
+        "remaining_gate": "exact-head Test, NEXUS Build Verification and NEXUS Cloud Fallback are running; after green CI recheck mergeability/reviews; #197 remains fail-closed pending broader raw/downstream bypass coverage and rollback/recovery replay"
       }
     },
     "release_readiness": {
@@ -172,7 +191,8 @@
       "implementation-to-registry coupling must remain non-authoritative until bypass coverage and rollback/recovery replay are proven",
       "self-hosted local-runner recovery must verify portable Python bootstrap and workspace import paths explicitly; local-runner repair is operational continuity evidence, not production release authority",
       "bounded gap repair must rotate across deferred windows and exhaustive repair must not stop solely because one round recovered zero candles while deferred gaps remain",
-      "laptop power-off and internet outage remain distinct failure modes and must never be collapsed into one recovery state"
+      "laptop power-off and internet outage remain distinct failure modes and must never be collapsed into one recovery state",
+      "replay of a previously green change must be rebuilt from exact current main when main advances; prior CI remains historical evidence only"
     ],
     "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131, 197]
   }
