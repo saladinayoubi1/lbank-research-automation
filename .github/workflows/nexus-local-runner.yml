@@ -51,6 +51,7 @@ jobs:
             curl.exe -L --fail --retry 3 -o "%RUNNER_TEMP%\get-pip.py" https://bootstrap.pypa.io/get-pip.py
             "%PYROOT%\python.exe" "%RUNNER_TEMP%\get-pip.py" --no-warn-script-location
           )
+          findstr /x /c:"." "%PYROOT%\python312._pth" >nul || echo .>>"%PYROOT%\python312._pth"
           "%PYROOT%\python.exe" -m pip install --disable-pip-version-check -r requirements.txt pytest PyYAML
           echo %PYROOT%>>"%GITHUB_PATH%"
           "%PYROOT%\python.exe" --version
