@@ -55,15 +55,23 @@
   },
   "current_evidence": {
     "observed_main_sha": "0ef684c841ef07e564d45d796ea55c39aae53f44",
-    "observed_at_utc": "2026-08-09T08:21:00Z",
+    "observed_at_utc": "2026-08-09T08:22:00Z",
     "latest_main_change": {
       "summary": "data: update LBank public candles",
       "architecture_or_core_goal_change_observed": false
     },
-    "open_pull_requests": [117],
+    "open_pull_requests": [117, 211],
     "superseded_pull_requests": [186, 189, 190, 191, 192, 194, 195, 196, 198, 201, 202, 204, 207, 208, 210],
     "memory_refresh_branch": "continuity/current-main-0ef684-refresh",
+    "memory_refresh_pr": 211,
     "pull_request_evidence": {
+      "211": {
+        "state": "open",
+        "draft": true,
+        "base_sha": "0ef684c841ef07e564d45d796ea55c39aae53f44",
+        "exact_head_ci": "pending_after_memory_refresh",
+        "production_authority": false
+      },
       "117": {
         "state": "open",
         "draft": true,
