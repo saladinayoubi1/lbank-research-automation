@@ -96,7 +96,7 @@
       "timeframe": "minute15"
     }
   ],
-  "evaluated_at_utc": "2026-08-09T01:42:53.767508+00:00",
+  "evaluated_at_utc": "2026-08-09T03:22:12.329797+00:00",
   "freshness_policy": {
     "digest": "ad3bc54c9135ba4eacd28d6f06620973e009a6eca71010c4e314efe5b4cafd9e",
     "version": "1.0.0"
