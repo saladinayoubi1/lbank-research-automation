@@ -67,9 +67,9 @@
         "7f68d667b6819a845c54aa943b0bf7639c475a39 data: update LBank public candles"
       ]
     },
-    "open_pull_requests": [248],
+    "open_pull_requests": [248, 249],
     "memory_refresh_branch": "continuity/post-246-7f68d667",
-    "memory_refresh_pr": null,
+    "memory_refresh_pr": 249,
     "pull_request_evidence": {
       "241": {
         "state": "merged",
@@ -104,6 +104,14 @@
         "scope": "DeepSeek conservative input+output preflight reservation and regression tests",
         "production_authority": false,
         "result": "open draft; no provider call or external action; issue #232 remains open"
+      },
+      "249": {
+        "state": "open",
+        "draft": true,
+        "base_sha": "7f68d667b6819a845c54aa943b0bf7639c475a39",
+        "scope": "repository-owned continuity refresh only",
+        "production_authority": false,
+        "result": "draft; exact-head CI/mergeability/review evidence required before any merge"
       }
     },
     "release_readiness": {
