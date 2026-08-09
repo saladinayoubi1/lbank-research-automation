@@ -72,31 +72,31 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "8d15f75ad1459793ca5591862f06b2084e74132f",
-    "observed_at_utc": "2026-08-09T02:14:49Z",
+    "observed_main_sha": "12d41647f02f329362923d03542413f4a374b2e0",
+    "observed_at_utc": "2026-08-09T03:37:00Z",
     "latest_main_change": {
-      "commit": "8d15f75ad1459793ca5591862f06b2084e74132f",
-      "summary": "data: update LBank public candles",
+      "commit": "12d41647f02f329362923d03542413f4a374b2e0",
+      "summary": "Merge pull request #200: docs: define provenance semantic binding ADR",
       "architecture_or_core_goal_change_observed": false
     },
     "latest_material_event": {
-      "type": "provenance_semantic_binding_hardening_in_progress",
-      "summary": "Draft PR #198 is mergeable and exact-head Test, NEXUS Build Verification and NEXUS Cloud Fallback are green; it remains intentionally non-authoritative until ADR/registry alignment, broader bypass coverage and recovery replay gates are satisfied"
+      "type": "provenance_semantic_binding_policy_merged_and_implementation_replayed",
+      "summary": "PR #200 merged after exact-head green CI, mergeable=true and clean review evidence; stale implementation PR #198 was closed unmerged and replayed from exact current main as Draft PR #202, whose exact-head Test, NEXUS Build Verification and NEXUS Cloud Fallback are green"
     },
-    "open_pull_requests": [117, 198],
-    "superseded_pull_requests": [186, 189, 190, 191, 192, 194, 195, 196],
-    "memory_refresh_branch": "continuity/current-main-8d15f75-refresh",
+    "open_pull_requests": [117, 202],
+    "superseded_pull_requests": [186, 189, 190, 191, 192, 194, 195, 196, 198, 201],
+    "memory_refresh_branch": "continuity/current-main-12d4-refresh",
     "memory_pr_validation": {
       "state": "pending_exact_head_ci_after_refresh",
       "merge_allowed": false,
       "note": "merge only after exact final head CI is green, mergeable=true and review evidence is clean"
     },
     "pull_request_evidence": {
-      "198": {
+      "202": {
         "state": "open",
         "draft": true,
-        "base_sha": "93091dba5d1ddb7d9d0397d6bde1798bed6fb5a7",
-        "head_sha": "9d2765c962bc9f75d437017cbd9440005a0f78ce",
+        "base_sha": "12d41647f02f329362923d03542413f4a374b2e0",
+        "head_sha": "2d288b4dcd6a5fb89ea3e0cc69a52fe3f14d84bb",
         "mergeable": true,
         "changed_files": [
           "cross_source_reconciliation_provenance.py",
@@ -109,7 +109,19 @@
         },
         "scope_conflicts_with_memory_refresh": false,
         "production_authority": false,
-        "remaining_gate": "ADR/authoritative-registry alignment, broader bypass coverage, rollback/recovery replay and clean final-head review evidence"
+        "remaining_gate": "authoritative-registry coupling, broader bypass coverage, rollback/recovery replay and clean final-head review evidence"
+      },
+      "200": {
+        "state": "merged",
+        "head_sha": "1ae0d26c15d28aa3e643a5385ac82912d0c519bf",
+        "merge_sha": "12d41647f02f329362923d03542413f4a374b2e0",
+        "scope": "ADR-009A provenance semantic binding policy only",
+        "exact_head_ci": {
+          "Test": "success",
+          "NEXUS Build Verification": "success",
+          "NEXUS Cloud Fallback": "success"
+        },
+        "production_authority": false
       },
       "117": {
         "state": "open",
@@ -174,7 +186,9 @@
       "configured push triggers are not proof of an exact-SHA successful run",
       "exact-head PR CI and exact-main release evidence are distinct claims",
       "Drive presence alone is not recovery proof",
-      "cryptographic binding proves only claims included in the bound payload; omitted timeframe/endpoint/category/finality semantics remain fail-closed"
+      "cryptographic binding proves only claims included in the bound payload; omitted timeframe/endpoint/category/finality semantics remain fail-closed",
+      "policy-only slices may define a reviewable contract without granting implementation or downstream authority",
+      "after policy or main advances, stale implementation branches should be replayed from exact current main rather than inheriting old CI authority"
     ],
     "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131, 197]
   }
