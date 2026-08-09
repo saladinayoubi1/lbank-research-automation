@@ -48,7 +48,8 @@
       "STATE",
       "decision log",
       "recovery playbook",
-      "exact current pull requests and CI evidence"
+      "exact current pull requests and CI evidence",
+      "Google Drive backup only after repository evidence"
     ],
     "chat_loss_tolerated": true,
     "local_machine_loss_tolerated_for_project_knowledge": true,
@@ -71,19 +72,52 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "7865c886d60ee8428e8ed742783d2fee96e83207",
-    "observed_at_utc": "2026-08-08T20:13:09Z",
+    "observed_main_sha": "8d15f75ad1459793ca5591862f06b2084e74132f",
+    "observed_at_utc": "2026-08-09T02:14:49Z",
     "latest_main_change": {
-      "commit": "7865c886d60ee8428e8ed742783d2fee96e83207",
+      "commit": "8d15f75ad1459793ca5591862f06b2084e74132f",
       "summary": "data: update LBank public candles",
       "architecture_or_core_goal_change_observed": false
     },
-    "open_pull_requests": [117, 184],
-    "memory_refresh_branch": "continuity/refresh-release-state-20260808-2248",
+    "latest_material_event": {
+      "type": "provenance_semantic_binding_hardening_in_progress",
+      "summary": "Draft PR #198 is mergeable and exact-head Test, NEXUS Build Verification and NEXUS Cloud Fallback are green; it remains intentionally non-authoritative until ADR/registry alignment, broader bypass coverage and recovery replay gates are satisfied"
+    },
+    "open_pull_requests": [117, 198],
+    "superseded_pull_requests": [186, 189, 190, 191, 192, 194, 195, 196],
+    "memory_refresh_branch": "continuity/current-main-8d15f75-refresh",
     "memory_pr_validation": {
-      "state": "pending_exact_head_ci_after_material_event_refresh",
+      "state": "pending_exact_head_ci_after_refresh",
       "merge_allowed": false,
-      "note": "Drive remains non-authoritative; merge only after exact final head CI is green, mergeable=true and review evidence is clean"
+      "note": "merge only after exact final head CI is green, mergeable=true and review evidence is clean"
+    },
+    "pull_request_evidence": {
+      "198": {
+        "state": "open",
+        "draft": true,
+        "base_sha": "93091dba5d1ddb7d9d0397d6bde1798bed6fb5a7",
+        "head_sha": "9d2765c962bc9f75d437017cbd9440005a0f78ce",
+        "mergeable": true,
+        "changed_files": [
+          "cross_source_reconciliation_provenance.py",
+          "tests/test_cross_source_reconciliation_provenance.py"
+        ],
+        "exact_head_ci": {
+          "Test": "success",
+          "NEXUS Build Verification": "success",
+          "NEXUS Cloud Fallback": "success"
+        },
+        "scope_conflicts_with_memory_refresh": false,
+        "production_authority": false,
+        "remaining_gate": "ADR/authoritative-registry alignment, broader bypass coverage, rollback/recovery replay and clean final-head review evidence"
+      },
+      "117": {
+        "state": "open",
+        "draft": true,
+        "head_sha": "043c4465ab268769c3ecfb51d07c214c1a5509fd",
+        "scope": "fail-closed cloud fallback checkpoint",
+        "production_authority": false
+      }
     },
     "release_readiness": {
       "production_ready": false,
@@ -101,61 +135,47 @@
       "independent_disaster_recovery_proven": false,
       "cross_platform_workflow_matrix": ["ubuntu-latest", "windows-latest", "macos-latest"],
       "exact_main_cross_platform_release_evidence_proven": false,
+      "release_readiness_main_push_control": "configured_every_push_to_main",
+      "release_recovery_main_push_control": "configured_every_push_to_main",
       "owner_production_approval": false,
-      "release_readiness_main_push_control": {
-        "status": "absent_on_observed_main",
-        "workflow": ".github/workflows/release-readiness.yml",
-        "note": "current workflow is pull_request/workflow_dispatch only; enabling a three-OS main-push matrix may affect Actions usage and requires owner billing approval"
-      },
-      "release_recovery_main_push_control": {
-        "status": "merged",
-        "merge_pr": 148,
-        "scope": "Release Recovery runs on every push to main and preserves pull-request path scoping",
-        "production_authority": false
-      },
       "fail_closed_verification": {
         "release_gate": "rejects missing/tampered/malformed manifest, SBOM and provenance; production signature verification blocks without approved identity policy",
         "recovery_gate": "rejects non-identical outputs, unsafe rollback evidence and pre-authorized rollback records"
       },
       "release_blockers": [43, 58, 64, 124]
     },
-    "pull_request_evidence": {
-      "184": {
-        "state": "open",
-        "draft": true,
-        "scope": "docs/project_memory/STATE.json only",
-        "scope_conflicts_with_pr_117": false,
-        "pre_refresh_head_ci": {
-          "head": "5e6a20d0f2bac0cef17ad959303a739c267c19ec",
-          "Test": "success",
-          "NEXUS Build Verification": "success",
-          "NEXUS Cloud Fallback": "success"
-        },
-        "exact_final_head_ci": "pending_after_this_refresh"
-      },
-      "117": {
-        "state": "open",
-        "head": "043c4465ab268769c3ecfb51d07c214c1a5509fd",
-        "draft": true,
-        "mergeable": true,
-        "scope_conflicts_with_memory_refresh": false
-      }
-    },
-    "market_data_source_hierarchy": {
-      "primary": "Bybit",
-      "secondary": "Binance",
-      "tertiary": "LBank",
-      "real_source_mappings_default_approved": false
-    },
     "architecture_validation": {
       "ci_enforcement_pr": 138,
       "independent_control_plane_proven": false,
       "remaining_blocker": 106
     },
+    "market_data": {
+      "source_hierarchy": {
+        "primary": "Bybit",
+        "secondary": "Binance",
+        "tertiary": "LBank"
+      },
+      "real_source_mappings_default_approved": false,
+      "historical_gap_policy": "fail_closed",
+      "aggregate_reconciliation_blocker": 131,
+      "post_merge_semantic_binding_blocker": 197,
+      "provenance_binding_authoritative_for_downstream": false,
+      "tracked_series": 21,
+      "research_ready_series": 2,
+      "blocked_series": 19
+    },
     "offline_semantics": {
       "internet_outage": "local runtime may continue in reduced mode; cloud synchronization resumes after connectivity returns",
       "laptop_powered_off": "local collectors halt; remote cloud continuity is a separate target and must not be conflated with an internet outage"
     },
-    "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131]
+    "recovery_lessons": [
+      "caller-controlled finite limits are not safe bounds unless an implementation-owned maximum is enforced before side effects",
+      "stale or conflicted implementation PRs should be replayed onto exact current main only after overlap is checked",
+      "configured push triggers are not proof of an exact-SHA successful run",
+      "exact-head PR CI and exact-main release evidence are distinct claims",
+      "Drive presence alone is not recovery proof",
+      "cryptographic binding proves only claims included in the bound payload; omitted timeframe/endpoint/category/finality semantics remain fail-closed"
+    ],
+    "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131, 197]
   }
 }
