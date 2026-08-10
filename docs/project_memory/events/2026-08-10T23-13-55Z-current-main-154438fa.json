@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "event_type": "continuity_observation",
+  "observed_at_utc": "2026-08-10T23:13:55Z",
+  "repository": "saladinayoubi1/lbank-research-automation",
+  "observed_main_sha": "154438fac8c90a069e2947258ff9b0c09b98d078",
+  "main_verification": {
+    "status": "current",
+    "change_from_prior": "one additional public LBank candle refresh commit since 35054ae426203c4ed032f28b9624e730f79ff6b7",
+    "architecture_or_core_goal_change_observed": false,
+    "stronger_authority_inferred": false
+  },
+  "pull_request_observation": {
+    "open_pull_requests_before_refresh": [],
+    "stale_pr_closed_unmerged": 307,
+    "stale_pr_base_sha": "35054ae426203c4ed032f28b9624e730f79ff6b7",
+    "stale_pr_head_sha": "a860b8a63a71d7c52e63ef382b7d1810f2646172",
+    "reason": "main advanced before merge; SHA-bound continuity snapshot invalidated fail-closed"
+  },
+  "verified_open_blockers": {
+    "230": "cross-process gap-repair fairness/recovery remains fail-closed until restart persistence and fixed-head recovery evidence are complete",
+    "232": "paid DeepSeek routing remains fail-closed until the USD $5.00 monthly hard-cap recovery/reconciliation gate is complete",
+    "283": "Project Memory canonical-path/schema/freshness validation remains incomplete; stale SHA/conflict semantics must reject stronger autonomous action"
+  },
+  "release_authority": {
+    "production_ready": false,
+    "signing_authorized": false,
+    "production_approval_observed": false,
+    "credential_action_performed": false,
+    "billing_action_performed": false
+  },
+  "recovery_lessons": [
+    "Repository and live PR/CI evidence override stale transient memory fields until canonical freshness validation is complete.",
+    "A SHA-bound continuity snapshot is non-authoritative once main advances before merge, even when the advancing commits are public-data-only.",
+    "Laptop power state and network/DNS availability are distinct signals and must not be conflated.",
+    "A local clone failure caused by DNS resolution failure is network evidence only and is not evidence that the laptop is powered off."
+  ],
+  "authority_boundaries": {
+    "secrets_stored": false,
+    "private_transcript_stored": false,
+    "credential_action_performed": false,
+    "billing_action_performed": false,
+    "signing_action_performed": false,
+    "production_action_performed": false,
+    "live_trading_action_performed": false,
+    "irreversible_action_performed": false
+  }
+}
