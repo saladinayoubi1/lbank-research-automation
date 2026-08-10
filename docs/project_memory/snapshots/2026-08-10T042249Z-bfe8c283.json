@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "project": "NEXUS / lbank-research-automation",
+  "observed_at_utc": "2026-08-10T04:22:49Z",
+  "source_main_sha": "bfe8c283bd56c4d99223d8139771108dc5b6a2ad",
+  "material_change": {
+    "type": "durable_operating_policy",
+    "commit": "bfe8c283bd56c4d99223d8139771108dc5b6a2ad",
+    "path": "docs/project_memory/OPERATING_RULES.md",
+    "summary": "Repository-owned durable operating rules added: DONE requires real verification and durable evidence; continuity/admin churn must not displace blocker reduction; GitHub + Project Memory are durable truth; research-only and high-impact authority boundaries remain unchanged."
+  },
+  "repository_state": {
+    "open_pull_requests": [],
+    "recent_closed_unmerged_pull_requests": [256, 257],
+    "latest_merged_continuity_pr": 255,
+    "exact_main_combined_status_count_observed": 0,
+    "exact_main_pull_request_workflow_runs_observed": 0
+  },
+  "verification": {
+    "local_fresh_clone": "blocked",
+    "local_fresh_clone_reason": "DNS/network resolution failure: github.com could not be resolved",
+    "laptop_power_state": "unknown",
+    "internet_outage_state": "unknown",
+    "laptop_power_off_is_not_internet_outage": true,
+    "production_release_authority": false,
+    "release_fail_closed": true
+  },
+  "release_blockers": {
+    "provenance_semantic_binding_issue": 197,
+    "deepseek_hard_budget_cap_issue": 232,
+    "production_signing_identity_trust_policy_configured": false,
+    "owner_production_approval": false,
+    "reproducible_production_build_proven": false,
+    "production_rollback_exercised": false,
+    "backup_restore_rpo_rto_proven": false,
+    "independent_disaster_recovery_proven": false,
+    "exact_main_cross_platform_release_evidence_proven": false
+  },
+  "authority_boundaries": {
+    "research_only": true,
+    "live_trading": false,
+    "signing_action_performed": false,
+    "credential_action_performed": false,
+    "billing_action_performed": false,
+    "production_deployment_performed": false,
+    "secrets_allowed_in_memory": false,
+    "raw_private_transcript_allowed_in_memory": false
+  },
+  "recovery_lesson": "A repository policy or continuity claim is not DONE without current verification evidence; exact-head PR CI and exact-main release evidence remain distinct claims."
+}
