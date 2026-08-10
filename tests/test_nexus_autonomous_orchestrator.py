@@ -48,16 +48,24 @@ def test_choose_next_blocks_unsafe_then_selects_safe() -> None:
     assert queue[0]["block_reason"] == "task_not_allowlisted"
 
 
-def test_deepseek_proposal_must_still_be_allowlisted(monkeypatch):
-    def fake_chat(*args, **kwargs):
-        return {"content": json.dumps({"task": "deploy", "reason": "production"})}
-    monkeypatch.setattr(orchestrator, "chat", fake_chat)
-    assert orchestrator.ask_deepseek_for_next({}) is None
+def test_scheduled_orchestrator_has_no_external_provider_dependency() -> None:
+    assert not hasattr(orchestrator, "chat")
+    assert not hasattr(orchestrator, "ask_deepseek_for_next")
 
 
-def test_deepseek_can_propose_symbolic_safe_task(monkeypatch):
-    def fake_chat(*args, **kwargs):
-        return {"content": json.dumps({"task": "tests", "reason": "validate current code"})}
-    monkeypatch.setattr(orchestrator, "chat", fake_chat)
-    proposal = orchestrator.ask_deepseek_for_next({})
-    assert proposal == {"task": "tests", "reason": "validate current code"}
+def test_main_uses_repository_queue_only(tmp_path, monkeypatch, capsys) -> None:
+    queue = tmp_path / "queue.json"
+    state = tmp_path / "state.json"
+    queue.write_text(
+        json.dumps([{"task": "tests", "reason": "deterministic suite", "status": "pending"}]),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(orchestrator, "QUEUE", queue)
+    monkeypatch.setattr(orchestrator, "STATE", state)
+
+    orchestrator.main()
+
+    saved = json.loads(state.read_text(encoding="utf-8"))
+    assert saved["next_task"] == "tests"
+    assert saved["next_source"] == "queue"
+    assert "NEXUS_NEXT_TASK=tests" in capsys.readouterr().out
