@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "kind": "nexus_continuity_snapshot",
+  "observed_at_utc": "2026-08-10T17:35:30Z",
+  "source_main_sha": "b5c1187ee4c60a7436f2e6394afc4fcf0690c4c5",
+  "authoritative": false,
+  "facts": [
+    "PR 297 merged on exact head f99e5837a6606c701611138acab1e928bb88c1a9 after Test, NEXUS Build Verification and NEXUS Cloud Fallback succeeded; mergeable was true and unresolved review threads were zero",
+    "main advanced to b5c1187ee4c60a7436f2e6394afc4fcf0690c4c5",
+    "PR 297 landed conservative DeepSeek input+output reservation, atomic ledger locking, ambiguous-charge quarantine, deletion/schema/pricing fail-closed checks, regression tests and ADR-AI-PROVIDER-BUDGET v1",
+    "PR 284 and PR 296 were closed unmerged as stale/superseded; PR 298 was also closed unmerged immediately after main advanced through PR 297",
+    "historical CI issue 271 was closed as superseded because its failed SHA belonged to abandoned PR 270 and the bounded gap-checkpoint primitive later merged through PR 282",
+    "issue 232 remains open/fail-closed for provider-observable reconciliation/recovery and remaining fixed-SHA completion evidence",
+    "canonical docs/project_memory/STATE.json still records stale observed_main_sha af020c6249477bd591eb85b77e7ff0112b19b0c3; exact current repository evidence overrides it"
+  ],
+  "decisions": [
+    "reuse no old green CI after a fixed-base PR becomes stale",
+    "merge only exact-head current-base hardening with green required gates, mergeability and clean review state",
+    "keep paid AI advisory and fail-closed; no credential or billing authority is inferred from provider code",
+    "repository evidence overrides stale transient Project Memory state"
+  ],
+  "lessons": [
+    "pre-network budget reservation is required for a defensible hard cap; post-response accounting alone is insufficient",
+    "ambiguous provider outcomes must retain reserved spend until reconciliation rather than being retried automatically",
+    "continuity snapshots must be regenerated after any main advance before they can be considered for merge"
+  ],
+  "blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131, 197, 230, 232, 283],
+  "safety": {
+    "live_trading": false,
+    "credential_action": false,
+    "billing_action": false,
+    "signing": false,
+    "production_deployment": false,
+    "core_mission_change": false
+  }
+}
