@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "kind": "nexus_continuity_snapshot",
+  "observed_at_utc": "2026-08-10T16:31:46Z",
+  "source_main_sha": "1feeaea3aaa7d3811a301728b901e1850928c86b",
+  "authoritative": false,
+  "facts": [
+    "main advanced from f6a70d03436ed5221490e772917faf866f3b175f to 1feeaea3aaa7d3811a301728b901e1850928c86b via public market-data refresh",
+    "canonical docs/project_memory/STATE.json still records observed_main_sha af020c6249477bd591eb85b77e7ff0112b19b0c3 and is stale relative to current repository evidence",
+    "PR 288 was fixed to stale main f6a70d03436ed5221490e772917faf866f3b175f and was closed unmerged",
+    "PR 284 head 60600afa65697207d1951eaae6eeac8da8fa8489 has successful Workflow Permissions Policy, Test, NEXUS Build Verification, and NEXUS Cloud Fallback runs and zero unresolved review threads, but its validation predates the current main advance",
+    "a replay branch hardening/deepseek-hard-cap-replay-1feeaea was created from exact current main; no technical files were committed to that branch in this snapshot event"
+  ],
+  "decisions": [
+    "do not merge stale continuity snapshots",
+    "do not treat pre-main-advance PR CI as sufficient evidence for a new exact-base validation claim",
+    "current repository evidence overrides stale Project Memory state",
+    "preserve fail-closed status for issues 230, 232, and 283"
+  ],
+  "lessons": [
+    "frequent public-data commits can invalidate fixed-main continuity snapshots without changing core mission or policy",
+    "Project Memory needs deterministic stale-SHA validation rather than relying on manual snapshot refresh",
+    "technical hardening should be replayed from exact current main before stronger merge claims when base evidence changes"
+  ],
+  "blockers": [230, 232, 283],
+  "safety": {
+    "live_trading": false,
+    "credential_action": false,
+    "billing_action": false,
+    "signing": false,
+    "production_deployment": false,
+    "core_mission_change": false
+  }
+}
