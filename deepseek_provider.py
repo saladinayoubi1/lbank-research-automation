@@ -100,15 +100,24 @@ def remaining_budget(ledger: dict[str, Any]) -> float:
     return max(MONTHLY_BUDGET_USD - float(ledger.get("spent_usd", 0.0)), 0.0)
 
 
-def _check_preflight_budget(ledger: dict[str, Any], model: str, max_tokens: int) -> None:
+def _check_preflight_budget(
+    ledger: dict[str, Any], model: str, max_tokens: int, *, input_token_bound: int = 0
+) -> None:
     if model not in ALLOWED_MODELS:
         raise DeepSeekError("unknown model")
     if max_tokens <= 0 or max_tokens > 32768:
         raise DeepSeekError("max_tokens outside NEXUS bound")
-    # Conservative output-only upper bound; reserve stays available for blocker/debug work.
-    worst_output = max_tokens * PRICING[model]["output"] / 1_000_000
+    if input_token_bound < 0:
+        raise DeepSeekError("input token bound is invalid")
+    # Fail closed on a conservative input + output reservation. UTF-8 byte length is
+    # used as an upper bound on input tokens because each encoded token consumes at
+    # least one byte; cache-miss pricing is deliberately used for the full input.
+    prices = PRICING[model]
+    worst_input = input_token_bound * prices["cache_miss"] / 1_000_000
+    worst_output = max_tokens * prices["output"] / 1_000_000
+    worst_total = worst_input + worst_output
     available = remaining_budget(ledger)
-    if available <= 0 or worst_output > available:
+    if available <= 0 or worst_total > available:
         raise BudgetExceeded("DeepSeek monthly budget exhausted")
     if model == PRO_MODEL and available <= RESERVE_USD:
         raise BudgetExceeded("DeepSeek reserve protected for end-of-month blocker work")
@@ -128,7 +137,6 @@ def chat(
         raise DeepSeekError("DEEPSEEK_API_KEY is missing")
     decision = route_task(complexity=complexity, blocker=blocker)
     ledger = load_ledger(ledger_path)
-    _check_preflight_budget(ledger, decision.model, max_tokens)
 
     body: dict[str, Any] = {
         "model": decision.model,
@@ -138,10 +146,17 @@ def chat(
     }
     if decision.reasoning_effort:
         body["reasoning_effort"] = decision.reasoning_effort
+    encoded_body = json.dumps(body, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    _check_preflight_budget(
+        ledger,
+        decision.model,
+        max_tokens,
+        input_token_bound=len(encoded_body),
+    )
 
     req = request.Request(
         f"{BASE_URL}/chat/completions",
-        data=json.dumps(body).encode("utf-8"),
+        data=encoded_body,
         headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
         method="POST",
     )
