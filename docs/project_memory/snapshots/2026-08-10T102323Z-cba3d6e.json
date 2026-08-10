@@ -1,0 +1,56 @@
+{
+  "schema_version": 2,
+  "project": "NEXUS / lbank-research-automation",
+  "record_type": "continuity_snapshot",
+  "observed_at_utc": "2026-08-10T10:23:23Z",
+  "observed_main_sha": "cba3d6edf260494cf810029624376633a80c2b1b",
+  "previous_memory_main_sha": "075d727e16006bc648b828d682edf9844499484d",
+  "main_delta": {
+    "ahead_by": 8,
+    "classification": "data_only",
+    "changed_paths": [
+      "data/btc_usdt_15m.csv",
+      "data/btc_usdt_1h.csv",
+      "data/eth_usdt_15m.csv",
+      "data/eth_usdt_1h.csv",
+      "data/sol_usdt_15m.csv",
+      "data/sol_usdt_1h.csv"
+    ],
+    "architecture_or_core_goal_change_observed": false,
+    "production_authority_change_observed": false
+  },
+  "pull_requests": {
+    "open": [],
+    "recently_closed_unmerged": [267, 268]
+  },
+  "release_readiness": {
+    "production_ready": false,
+    "artifact_manifest_verifier": "present_fail_closed",
+    "cyclonedx_sbom_verifier": "present_fail_closed",
+    "provenance_verifier": "present_fail_closed_but_issue_197_open",
+    "signature_verifier": "present_fail_closed_no_authorized_signer_or_trust_policy",
+    "reproducible_build_control": "deterministic_byte_identity_test_present_not_production_proof",
+    "rollback_control": "record_verifier_present_not_production_execution_proof",
+    "backup_restore_rpo_rto_proven": false,
+    "independent_disaster_recovery_proven": false,
+    "cross_platform_workflow_matrix": ["ubuntu-latest", "windows-latest", "macos-latest"],
+    "owner_production_approval": false
+  },
+  "blockers": {
+    "197": "open_downstream_provenance_authority",
+    "232": "open_hard_monthly_budget_cap",
+    "signer_identity_trust_policy": "missing",
+    "production_approval": "owner_required"
+  },
+  "recovery": {
+    "local_clone_verification": "blocked_by_dns_resolution_for_github.com",
+    "laptop_power_off_is_not_internet_outage": true,
+    "drive_backup_is_secondary_only": true
+  },
+  "safety": {
+    "secrets_included": false,
+    "raw_private_transcript_included": false,
+    "credential_or_billing_action_performed": false,
+    "signing_or_production_action_performed": false
+  }
+}
