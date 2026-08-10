@@ -131,8 +131,8 @@ def load_ledger(path: str | Path = CANONICAL_LEDGER) -> dict[str, Any]:
 
 
 def _sync_file(path: Path) -> None:
-    """Flush one durable file handle before paid network I/O can proceed."""
-    with path.open("rb") as handle:
+    """Flush one writable file handle before paid network I/O can proceed."""
+    with path.open("r+b") as handle:
         os.fsync(handle.fileno())
 
 
