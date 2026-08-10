@@ -59,8 +59,9 @@ def write_checkpoint(path: Path, checkpoint: GapRepairCheckpoint) -> None:
     temporary = path.with_name(f".{path.name}.tmp")
     payload = json.dumps(asdict(checkpoint), sort_keys=True, separators=(",", ":")) + "\n"
     try:
-        temporary.write_text(payload, encoding="utf-8")
-        with temporary.open("rb") as handle:
+        with temporary.open("w", encoding="utf-8", newline="\n") as handle:
+            handle.write(payload)
+            handle.flush()
             os.fsync(handle.fileno())
         os.replace(temporary, path)
     finally:
