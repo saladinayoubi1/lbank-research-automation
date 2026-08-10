@@ -54,21 +54,21 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "a1d5f0f810d5927f2f64b2d6d0c302ebf5c719fb",
-    "observed_at_utc": "2026-08-09T21:29:57Z",
+    "observed_main_sha": "af020c6249477bd591eb85b77e7ff0112b19b0c3",
+    "observed_at_utc": "2026-08-10T00:18:28Z",
     "latest_main_change": {
-      "summary": "Merged Project Memory continuity refresh PR #245 after exact-head CI, mergeability and review evidence passed",
+      "summary": "Continuity PR #246 merged after #245, then main advanced through LBank public-candle refresh commits only; PRs #250 and #251 were closed unmerged as non-authoritative/stale; no architecture, core-goal, release-policy, or production-authority change observed",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true,
       "recent_sequence": [
-        "39950216b962aed54303dfbc59c5a1d9a35b5a9b data: update LBank public candles",
-        "11cd72fd7ea7882b19913d3382ba934ee7332c85 data: update LBank public candles",
-        "a1d5f0f810d5927f2f64b2d6d0c302ebf5c719fb Refresh NEXUS continuity from current main 11cd72fd (#245)"
+        "d89dab197705c0b95b39260dc74cc0c6efefc7bc Record post-245 continuity state (#246)",
+        "7c4c8eb5061807b1fc2d7e2cf39ae794c3071660 data: update LBank public candles",
+        "af020c6249477bd591eb85b77e7ff0112b19b0c3 data: update LBank public candles"
       ]
     },
     "open_pull_requests": [],
-    "memory_refresh_branch": "continuity/post-245-a1d5f0f8",
+    "memory_refresh_branch": "continuity/current-af020c62",
     "memory_refresh_pr": null,
     "pull_request_evidence": {
       "117": {
@@ -86,14 +86,6 @@
         "production_authority": false,
         "result": "merged; issue #197 remains open and downstream eligibility remains fail-closed/non-authoritative"
       },
-      "244": {
-        "state": "closed",
-        "merged": false,
-        "head_sha": "b15b42950d086645520b8b0fef3c983c7fd3e656",
-        "scope": "superseded current-main project-memory refresh",
-        "production_authority": false,
-        "result": "closed unmerged after main advanced; replayed from exact current main"
-      },
       "245": {
         "state": "merged",
         "merged": true,
@@ -102,6 +94,31 @@
         "scope": "current-main project-memory refresh from exact 11cd72fd",
         "production_authority": false,
         "result": "merged after Test, NEXUS Build Verification and NEXUS Cloud Fallback succeeded; mergeable=true; unresolved review threads=0"
+      },
+      "246": {
+        "state": "merged",
+        "merged": true,
+        "head_sha": "40267411c5b65d735b4cdcc0853ceab8e7c61de5",
+        "merge_commit_sha": "d89dab197705c0b95b39260dc74cc0c6efefc7bc",
+        "scope": "post-245 continuity metadata refresh",
+        "production_authority": false,
+        "result": "merged; no production authority conferred"
+      },
+      "250": {
+        "state": "closed",
+        "merged": false,
+        "head_sha": "f75d5aaca65ca9f37db55602af83dee4beba1e5f",
+        "scope": "DeepSeek input-output preflight hardening replay",
+        "production_authority": false,
+        "result": "closed unmerged; #232 remains open and hard-cap/billing authority remains fail-closed"
+      },
+      "251": {
+        "state": "closed",
+        "merged": false,
+        "head_sha": "98cd4ff5f1e1f610d1c12d3033b8aacfae8c5d11",
+        "scope": "superseded current-main project-memory refresh",
+        "production_authority": false,
+        "result": "closed unmerged because repository state changed during validation and snapshot became stale"
       }
     },
     "release_readiness": {
@@ -168,7 +185,8 @@
       "paid AI provider integration is not proof of a hard monthly budget cap; reservation, concurrency, retry and ambiguous-timeout accounting must fail closed",
       "local provider/tool probes are continuity observations only and do not confer production authority",
       "laptop power-off and internet outage remain distinct failure modes and must never be collapsed into one recovery state",
-      "a successful canonical-registry provenance replay does not close #197 until raw/downstream bypass tests and rollback/recovery replay pass on one fixed head"
+      "a successful canonical-registry provenance replay does not close #197 until raw/downstream bypass tests and rollback/recovery replay pass on one fixed head",
+      "continuity snapshots that become stale during validation must be closed unmerged and replayed from exact current main; green CI does not make stale memory authoritative"
     ],
     "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131, 197, 232]
   }
