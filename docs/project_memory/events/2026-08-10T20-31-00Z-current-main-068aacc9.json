@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "event_type": "continuity_observation",
+  "observed_at_utc": "2026-08-10T20:31:00Z",
+  "repository": "saladinayoubi1/lbank-research-automation",
+  "observed_main_sha": "068aacc9e33f20061e45081815f37e57d3d55d01",
+  "main_verification": {
+    "method": "compare exact SHA to main",
+    "status": "identical",
+    "ahead_by": 0,
+    "behind_by": 0
+  },
+  "main_change_summary": "Main advanced from e54de5ac19f7611337e59858e12c12d046c9e080 to 068aacc9e33f20061e45081815f37e57d3d55d01 through a public LBank candle refresh commit. No stronger authority is inferred from that data-only commit.",
+  "pull_request_observation": {
+    "stale_pr_closed_unmerged": 304,
+    "stale_pr_base_sha": "e54de5ac19f7611337e59858e12c12d046c9e080",
+    "stale_pr_head_sha": "aad734226cb6b5aac4ad24402b211e2ebb078c55",
+    "reason": "main advanced before final validation; fail-closed continuity snapshot invalidation"
+  },
+  "canonical_state": {
+    "path": "docs/project_memory/STATE.json",
+    "recorded_main_sha": "af020c6249477bd591eb85b77e7ff0112b19b0c3",
+    "freshness_status": "stale",
+    "authority_rule": "current repository, issue, PR and CI evidence overrides stale transient STATE fields",
+    "blocker": 283
+  },
+  "verified_open_blockers": {
+    "230": "cross-process gap-repair fairness/recovery remains fail-closed until durable checkpoint, concurrency, restart replay, ADR/threat model, rollback/recovery and fixed-head gates are complete",
+    "232": "DeepSeek paid-routing hard-cap authority remains fail-closed until recovery/reconciliation, ambiguous request handling and fixed-head completion evidence are complete",
+    "283": "Project Memory canonical-path/schema/freshness validation remains incomplete; stale SHA/conflict semantics must reject stronger autonomous action"
+  },
+  "recovery_lessons": [
+    "A SHA-bound continuity snapshot becomes non-authoritative when main advances before merge, even when the main change is public-data-only.",
+    "Repository evidence must override stale transient memory fields until canonical freshness validation is complete.",
+    "Green PR CI cannot make a stale base authoritative."
+  ],
+  "authority_boundaries": {
+    "secrets_stored": false,
+    "credential_action_performed": false,
+    "billing_action_performed": false,
+    "signing_action_performed": false,
+    "production_action_performed": false,
+    "live_trading_action_performed": false,
+    "irreversible_action_performed": false
+  }
+}
