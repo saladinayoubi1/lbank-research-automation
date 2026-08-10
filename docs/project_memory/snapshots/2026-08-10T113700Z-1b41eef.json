@@ -1,0 +1,44 @@
+{
+  "schema_version": 2,
+  "project": "NEXUS / lbank-research-automation",
+  "record_type": "continuity_snapshot",
+  "observed_at_utc": "2026-08-10T11:37:00Z",
+  "observed_main_sha": "1b41eef3ae7c786c7d3c242aeb5879b23509a245",
+  "material_events": [
+    "PR #273 merged continuity snapshot from exact prior main e2976367af7ac388aa72f1680aabbf7d748d0568",
+    "stacked PR #272 passed cross-platform Test and merged into PR #270 head branch as 28b6f33c16928fffe3e84b6e1e8f339f5dbfe7f8",
+    "PR #270 was closed unmerged after its base became stale relative to current main",
+    "replacement Draft PR #274 was replayed from exact current main 1b41eef3ae7c786c7d3c242aeb5879b23509a245 at head 89af896cd19ed59e10488911960ad28d4611fe15"
+  ],
+  "active_work": {
+    "274": {
+      "state": "open_draft",
+      "base_sha": "1b41eef3ae7c786c7d3c242aeb5879b23509a245",
+      "head_sha": "89af896cd19ed59e10488911960ad28d4611fe15",
+      "purpose": "durable_gap_repair_checkpoint_primitive_with_windows_portable_fsync",
+      "ci": "fresh exact-head Test / NEXUS Build Verification / NEXUS Cloud Fallback in progress"
+    }
+  },
+  "blockers": {
+    "197": "open; provenance semantic-binding/downstream eligibility remains fail-closed",
+    "230": "open; checkpoint primitive is not yet repair-loop integration or restart-starvation-freedom proof",
+    "232": "open; DeepSeek hard USD $5.00 monthly budget authority remains fail-closed"
+  },
+  "issue_230_remaining_completion_gates": [
+    "repair-loop integration",
+    "concurrent-writer and monotonic ownership semantics",
+    "restart replay on one fixed gap set",
+    "versioned ADR and threat/failure model",
+    "rollback/recovery and obsolescence triggers",
+    "exact-final-head green CI and clean review evidence"
+  ],
+  "safety": {
+    "research_only": true,
+    "live_trading_performed": false,
+    "credential_action_performed": false,
+    "billing_action_performed": false,
+    "signing_or_production_deployment_performed": false,
+    "irreversible_action_performed": false,
+    "core_mission_or_risk_policy_changed": false
+  }
+}
