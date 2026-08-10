@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import nexus_autonomous_orchestrator as orchestrator
 
 
@@ -11,11 +13,13 @@ def test_external_provider_task_is_not_allowlisted() -> None:
     assert reason == "task_not_allowlisted"
 
 
-def test_credential_or_external_ai_reason_is_blocked() -> None:
+def test_protected_authority_reason_is_blocked() -> None:
     for reason_text in (
-        "use credential-backed helper",
-        "ask external AI to choose",
-        "use DeepSeek reviewer",
+        "deploy to production",
+        "use credential",
+        "delete records",
+        "change billing",
+        "live trading",
     ):
         ok, reason = orchestrator.validate_task(
             {"task": "health", "reason": reason_text}
@@ -42,3 +46,18 @@ def test_choose_next_blocks_unsafe_then_selects_safe() -> None:
     assert chosen is queue[1]
     assert queue[0]["status"] == "blocked"
     assert queue[0]["block_reason"] == "task_not_allowlisted"
+
+
+def test_deepseek_proposal_must_still_be_allowlisted(monkeypatch):
+    def fake_chat(*args, **kwargs):
+        return {"content": json.dumps({"task": "deploy", "reason": "production"})}
+    monkeypatch.setattr(orchestrator, "chat", fake_chat)
+    assert orchestrator.ask_deepseek_for_next({}) is None
+
+
+def test_deepseek_can_propose_symbolic_safe_task(monkeypatch):
+    def fake_chat(*args, **kwargs):
+        return {"content": json.dumps({"task": "tests", "reason": "validate current code"})}
+    monkeypatch.setattr(orchestrator, "chat", fake_chat)
+    proposal = orchestrator.ask_deepseek_for_next({})
+    assert proposal == {"task": "tests", "reason": "validate current code"}
