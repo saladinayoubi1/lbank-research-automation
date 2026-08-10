@@ -18,16 +18,10 @@
     "cloud continuity when the local laptop is offline"
   ],
   "runtime_status": {
-    "agent_execution_state": "repository_evidence_observed",
+    "agent_execution_state": "bounded_repository_autonomy_defined",
     "laptop_state": "unknown",
     "internet_outage_state": "unknown",
     "laptop_offline_is_not_internet_outage": true
-  },
-  "data_policy": {
-    "research_only": true,
-    "real_trading": false,
-    "fabricated_market_data": false,
-    "invalid_data_may_pass_research_gate": false
   },
   "continuity": {
     "required_reads": [
@@ -49,90 +43,62 @@
       "folder": "NEXUS Project Memory Backup",
       "document": "NEXUS Project Memory Backup — Durable",
       "secondary_only": true,
-      "may_authorize_production_recovery": false,
-      "blocker": 122
+      "may_authorize_production_recovery": false
     }
   },
   "current_evidence": {
-    "observed_main_sha": "af020c6249477bd591eb85b77e7ff0112b19b0c3",
-    "observed_at_utc": "2026-08-10T00:18:28Z",
-    "latest_main_change": {
-      "summary": "Continuity PR #246 merged after #245, then main advanced through LBank public-candle refresh commits only; PRs #250 and #251 were closed unmerged as non-authoritative/stale; no architecture, core-goal, release-policy, or production-authority change observed",
-      "architecture_or_core_goal_change_observed": false,
-      "core_goal_change_observed": false,
-      "meaningful_operational_change_observed": true,
-      "recent_sequence": [
-        "d89dab197705c0b95b39260dc74cc0c6efefc7bc Record post-245 continuity state (#246)",
-        "7c4c8eb5061807b1fc2d7e2cf39ae794c3071660 data: update LBank public candles",
-        "af020c6249477bd591eb85b77e7ff0112b19b0c3 data: update LBank public candles"
-      ]
-    },
-    "open_pull_requests": [252],
-    "memory_refresh_branch": "continuity/current-af020c62",
-    "memory_refresh_pr": 252,
+    "observed_main_sha": "f6a70d03436ed5221490e772917faf866f3b175f",
+    "observed_at_utc": "2026-08-10T15:23:01Z",
+    "material_changes": [
+      {
+        "sha": "d5d2203511d9a49fbb94ff88971bce7481a01608",
+        "summary": "added bounded repository task orchestrator with symbolic allowlisted execution and no arbitrary shell authority"
+      },
+      {
+        "sha": "5386d6d0ec4a3846b96fcc8c13ac35897526f377",
+        "summary": "made scheduled autonomy credential-free and removed paid external-AI tasks from the autonomous execution allowlist"
+      },
+      {
+        "sha": "f6a70d03436ed5221490e772917faf866f3b175f",
+        "summary": "added incidental-versus-material main-drift policy to reduce unsafe PR replay churn"
+      }
+    ],
+    "open_pull_requests": [282, 284],
     "pull_request_evidence": {
-      "117": {
-        "state": "closed",
-        "merged": false,
-        "head_sha": "043c4465ab268769c3ecfb51d07c214c1a5509fd",
-        "scope": "superseded fail-closed cloud fallback checkpoint draft",
-        "production_authority": false,
-        "result": "closed unmerged; historical base was stale against current main"
-      },
-      "241": {
-        "state": "merged",
-        "merge_commit_sha": "f2076d814fef5c2fa8fde5992963e5a5c6a75d6c",
-        "scope": "canonical-registry provenance semantic-binding replay",
-        "production_authority": false,
-        "result": "merged; issue #197 remains open and downstream eligibility remains fail-closed/non-authoritative"
-      },
-      "245": {
-        "state": "merged",
-        "merged": true,
-        "head_sha": "f78d28c80bbc2b9fbe56b119449eda2b31bdfab5",
-        "merge_commit_sha": "a1d5f0f810d5927f2f64b2d6d0c302ebf5c719fb",
-        "scope": "current-main project-memory refresh from exact 11cd72fd",
-        "production_authority": false,
-        "result": "merged after Test, NEXUS Build Verification and NEXUS Cloud Fallback succeeded; mergeable=true; unresolved review threads=0"
-      },
-      "246": {
-        "state": "merged",
-        "merged": true,
-        "head_sha": "40267411c5b65d735b4cdcc0853ceab8e7c61de5",
-        "merge_commit_sha": "d89dab197705c0b95b39260dc74cc0c6efefc7bc",
-        "scope": "post-245 continuity metadata refresh",
-        "production_authority": false,
-        "result": "merged; no production authority conferred"
-      },
-      "250": {
-        "state": "closed",
-        "merged": false,
-        "head_sha": "f75d5aaca65ca9f37db55602af83dee4beba1e5f",
-        "scope": "DeepSeek input-output preflight hardening replay",
-        "production_authority": false,
-        "result": "closed unmerged; #232 remains open and hard-cap/billing authority remains fail-closed"
-      },
-      "251": {
-        "state": "closed",
-        "merged": false,
-        "head_sha": "98cd4ff5f1e1f610d1c12d3033b8aacfae8c5d11",
-        "scope": "superseded current-main project-memory refresh",
-        "production_authority": false,
-        "result": "closed unmerged because repository state changed during validation and snapshot became stale"
-      },
-      "252": {
+      "282": {
         "state": "open",
         "draft": true,
-        "scope": "current-main project-memory refresh from exact af020c62",
+        "mergeable": false,
+        "head_sha": "6835ec0ff55a939d6da3d4c4824cc6bdd5c556d0",
+        "scope": "ordered durable gap-repair checkpoint replay",
         "production_authority": false,
-        "merge_gate": "exact-final-head CI + mergeability + clean review evidence"
+        "blocker": 230
+      },
+      "284": {
+        "state": "open",
+        "draft": true,
+        "mergeable": true,
+        "head_sha": "8b5eaea39130076ebce396fa2f104d389c4bbafe",
+        "scope": "DeepSeek hard-cap reservation and bounded symbolic planner hardening",
+        "production_authority": false,
+        "exact_head_ci": {
+          "Workflow Permissions Policy": "in_progress",
+          "Test": "in_progress",
+          "NEXUS Build Verification": "in_progress",
+          "NEXUS Cloud Fallback": "in_progress"
+        },
+        "blocker": 232
       }
+    },
+    "autonomy": {
+      "scheduled_execution_credential_free_on_main": true,
+      "external_paid_ai_allowed_in_scheduled_autonomous_execution_on_main": false,
+      "symbolic_task_allowlist": ["health", "tests", "readiness", "zotero-status"],
+      "arbitrary_shell_from_planner_allowed": false,
+      "production_or_live_trading_authority": false
     },
     "release_readiness": {
       "production_ready": false,
-      "exact_main_combined_status_count": 0,
-      "exact_main_commit_workflow_runs_observed": 0,
-      "exact_main_release_run_independently_verified": false,
       "artifact_manifest_gate": true,
       "cyclonedx_sbom_gate": true,
       "provenance_binding_gate": true,
@@ -148,9 +114,8 @@
       "owner_production_approval": false,
       "fail_closed_verification": {
         "release_gate": "rejects missing/tampered/malformed manifest, SBOM and provenance; production signature verification blocks without approved identity policy",
-        "recovery_gate": "rejects non-identical outputs, unsafe rollback evidence and pre-authorized rollback records"
-      },
-      "release_blockers": [43, 58, 64, 124]
+        "recovery_gate": "requires deterministic output comparison and rollback evidence; verifier tests are not production recovery proof"
+      }
     },
     "provider_status": {
       "deepseek": {
@@ -160,41 +125,25 @@
         "hard_monthly_cap_proven": false,
         "blocker": 232,
         "credential_or_billing_action_performed": false
-      },
-      "zotero": {
-        "local_api_probe_added": true,
-        "production_authority": false
       }
     },
-    "market_data": {
-      "tracked_series": 21,
-      "research_ready_series": 2,
-      "blocked_series": 19,
-      "blocked_reason": "integrity_failed",
-      "historical_gap_policy": "fail_closed",
-      "aggregate_reconciliation_blocker": 131,
-      "post_merge_semantic_binding_blocker": 197,
-      "provenance_binding_authoritative_for_downstream": false
+    "provenance_status": {
+      "downstream_authoritative": false,
+      "blocker": 197
     },
-    "offline_semantics": {
-      "internet_outage": "local runtime may continue in reduced mode; cloud synchronization resumes after connectivity returns",
-      "laptop_powered_off": "local collectors halt; remote cloud continuity is a separate target and must not be conflated with an internet outage"
+    "gap_repair_recovery": {
+      "cross_process_recovery_authoritative": false,
+      "blocker": 230
     },
     "recovery_lessons": [
-      "configured push triggers are not proof of an exact-SHA successful run",
+      "configured push triggers are not proof of an exact-SHA successful run on the connected status surface",
       "exact-head PR CI and exact-main release evidence are distinct claims",
-      "Drive presence alone is not recovery proof",
-      "schema or registry evolution must update fail-closed validators and tests in lockstep",
-      "stale or conflicted continuity PRs should be closed unmerged and replayed from exact current main",
-      "implementation-to-registry coupling must remain non-authoritative until bypass coverage and rollback/recovery replay are proven",
-      "self-hosted local-runner recovery must verify portable Python bootstrap and workspace import paths explicitly; local-runner repair is operational continuity evidence, not production release authority",
-      "bounded gap repair must rotate across deferred windows and exhaustive repair must not stop solely because one round recovered zero candles while deferred gaps remain",
-      "paid AI provider integration is not proof of a hard monthly budget cap; reservation, concurrency, retry and ambiguous-timeout accounting must fail closed",
-      "local provider/tool probes are continuity observations only and do not confer production authority",
-      "laptop power-off and internet outage remain distinct failure modes and must never be collapsed into one recovery state",
-      "a successful canonical-registry provenance replay does not close #197 until raw/downstream bypass tests and rollback/recovery replay pass on one fixed head",
-      "continuity snapshots that become stale during validation must be closed unmerged and replayed from exact current main; green CI does not make stale memory authoritative"
+      "Drive presence alone is not production recovery proof",
+      "scheduled autonomy must remain credential-free unless owner-approved billing and credential authority are explicitly supplied",
+      "planner output must remain symbolic and mapped to repository-controlled fixed commands",
+      "incidental main drift must not cause technical PR replay churn; material drift requires refreshed evidence",
+      "laptop power-off and internet/DNS outage are distinct failure modes and must never be collapsed"
     ],
-    "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131, 197, 232]
+    "active_issue_blockers": [197, 230, 232]
   }
 }
