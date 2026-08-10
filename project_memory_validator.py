@@ -14,7 +14,7 @@ CANONICAL_FILES = (
     "DECISIONS.md",
     "RECOVERY_PLAYBOOK.md",
 )
-CANONICAL_REQUIRED_READS = [str(CANONICAL_DIR / name) for name in CANONICAL_FILES]
+CANONICAL_REQUIRED_READS = [(CANONICAL_DIR / name).as_posix() for name in CANONICAL_FILES]
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 
 
@@ -52,7 +52,7 @@ def validate_repository(root: str | Path = ".", expected_observed_main: str | No
 
     for name in CANONICAL_FILES:
         path = memory_dir / name
-        _require(path.is_file(), f"missing canonical Project Memory file: {CANONICAL_DIR / name}")
+        _require(path.is_file(), f"missing canonical Project Memory file: {(CANONICAL_DIR / name).as_posix()}")
         _require(path.resolve().parent == memory_dir.resolve(), f"alternate-path substitution rejected: {path}")
 
     project_memory = (memory_dir / "PROJECT_MEMORY.md").read_text(encoding="utf-8")
