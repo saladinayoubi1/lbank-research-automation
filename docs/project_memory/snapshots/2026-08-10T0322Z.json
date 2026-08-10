@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "project": "NEXUS / lbank-research-automation",
+  "observed_at_utc": "2026-08-10T03:22:26Z",
+  "observed_main_sha": "3f94093f1e63ceb50c16356831d35fc901df5a61",
+  "meaningful_changes": [
+    "PR #255 merged continuity snapshot into main",
+    "standing autonomous execution policy recorded in project memory",
+    "safe NEXUS execution policy now explicitly batches compatible actions without artificial delays"
+  ],
+  "pull_requests": {
+    "255": "merged",
+    "256": "closed_unmerged_stale"
+  },
+  "release_readiness": {
+    "production_ready": false,
+    "artifact_manifest_gate": true,
+    "cyclonedx_sbom_gate": true,
+    "provenance_binding_gate": true,
+    "production_signature_identity_policy_configured": false,
+    "reproducible_build_gate": true,
+    "reproducible_production_build_proven": false,
+    "rollback_gate": true,
+    "rollback_exercised_in_production": false,
+    "backup_restore_rpo_rto_proven": false,
+    "independent_disaster_recovery_proven": false,
+    "cross_platform_matrix": ["ubuntu-latest", "windows-latest", "macos-latest"],
+    "exact_main_combined_status_count": 0,
+    "exact_main_pr_triggered_workflow_runs_observed": 0,
+    "exact_main_cross_platform_release_evidence_proven": false,
+    "owner_production_approval": false
+  },
+  "active_fail_closed_blockers": {
+    "197": "provenance semantic binding/downstream authority incomplete",
+    "232": "DeepSeek USD $5.00/month hard-cap proof incomplete"
+  },
+  "protected_boundaries": {
+    "signing": "owner/trust-policy action required",
+    "production_approval": "owner action required",
+    "credentials": "never stored in repository memory",
+    "billing": "no autonomous billing change",
+    "irreversible_actions": "owner approval required"
+  },
+  "continuity": {
+    "repository_is_primary_source": true,
+    "drive_backup_is_secondary": true,
+    "secrets_allowed": false,
+    "raw_private_transcript_allowed": false,
+    "laptop_power_off_is_not_internet_outage": true,
+    "recovery_order": [
+      "repository project memory",
+      "STATE",
+      "decision log",
+      "recovery playbook",
+      "latest CI and PR evidence",
+      "Google Drive durable backup"
+    ]
+  }
+}
