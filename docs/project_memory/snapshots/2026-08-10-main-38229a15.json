@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "kind": "nexus_continuity_snapshot",
+  "observed_at_utc": "2026-08-10T16:34:26Z",
+  "source_main_sha": "38229a15ec7acfaede92f341469b6dd9f43b48e1",
+  "authoritative": false,
+  "facts": [
+    "PR 282 merged by squash at exact head 6835ec0ff55a939d6da3d4c4824cc6bdd5c556d0; merge commit 38229a15ec7acfaede92f341469b6dd9f43b48e1",
+    "PR 282 exact-head Test, NEXUS Build Verification, and NEXUS Cloud Fallback succeeded; mergeable was true and unresolved review threads were zero before merge",
+    "PR 282 landed only gap_repair_checkpoint.py and tests/test_gap_repair_checkpoint.py",
+    "issue 230 remains fail-closed because repair-loop integration, concurrent ownership, crash-window replay, ADR/threat model, rollback/recovery, and fixed-head completion evidence remain incomplete",
+    "PR 288 and PR 293 were closed unmerged after their fixed-main continuity snapshots became stale",
+    "canonical docs/project_memory/STATE.json still records observed_main_sha af020c6249477bd591eb85b77e7ff0112b19b0c3 and is stale relative to current repository evidence",
+    "PR 284 head 60600afa65697207d1951eaae6eeac8da8fa8489 previously passed Workflow Permissions Policy, Test, NEXUS Build Verification, and NEXUS Cloud Fallback with zero unresolved review threads, but stronger merge claims require validation against current repository evidence after main advancement"
+  ],
+  "decisions": [
+    "preserve #230 fail-closed after merging the independent checkpoint primitive",
+    "invalidate continuity snapshots when main advances before merge",
+    "repository evidence overrides stale Project Memory transient state",
+    "do not grant paid AI, credential, production, signing, deployment, live-trading, or irreversible authority"
+  ],
+  "lessons": [
+    "small independent fail-closed primitives can merge without closing their parent blocker when remaining gates are explicit",
+    "continuity refresh must be regenerated after any main advance to avoid stale recovery claims",
+    "Project Memory needs a deterministic exact-main freshness validator"
+  ],
+  "blockers": [230, 232, 283],
+  "safety": {
+    "live_trading": false,
+    "credential_action": false,
+    "billing_action": false,
+    "signing": false,
+    "production_deployment": false,
+    "core_mission_change": false
+  }
+}
