@@ -30,6 +30,8 @@ def fail(message: str) -> None:
 
 def load_json(path: Path) -> Any:
     try:
+        if path.is_symlink():
+            fail(f"JSON file must not be a symlink: {path.name}")
         if path.stat().st_size > MAX_JSON_BYTES:
             fail(f"JSON file exceeds {MAX_JSON_BYTES} bytes: {path.name}")
         return json.loads(path.read_text(encoding="utf-8"))
@@ -174,8 +176,8 @@ def verify(
     expected_builder: str | None = None,
 ) -> list[str]:
     now = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
-    if not bundle.is_dir():
-        fail("release bundle directory does not exist")
+    if bundle.is_symlink() or not bundle.is_dir():
+        fail("release bundle directory does not exist or is a symlink")
     for name in REQUIRED:
         if not (bundle / name).is_file():
             fail(f"missing required file: {name}")
@@ -198,6 +200,8 @@ def verify(
             fail(f"duplicate artifact path: {name}")
         seen.add(name)
         target = bundle / name
+        if target.is_symlink():
+            fail(f"manifest artifact must not be a symlink: {name}")
         if not target.is_file():
             fail(f"manifest artifact missing: {name}")
         if not valid_sha256(digest):

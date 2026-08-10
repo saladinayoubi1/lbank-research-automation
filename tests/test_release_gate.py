@@ -105,6 +105,40 @@ class ReleaseGateTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "safe relative path"):
             self.verify_ci(root)
 
+    def test_symlinked_artifact_fails_closed(self):
+        root = self.bundle()
+        outside = Path(tempfile.mkdtemp()) / "outside.bin"
+        outside.write_bytes((root / "dataset.bin").read_bytes())
+        (root / "dataset.bin").unlink()
+        try:
+            (root / "dataset.bin").symlink_to(outside)
+        except OSError:
+            self.skipTest("symlinks unavailable on this runner")
+        with self.assertRaisesRegex(ValueError, "must not be a symlink"):
+            self.verify_ci(root)
+
+    def test_symlinked_metadata_fails_closed(self):
+        root = self.bundle()
+        outside = Path(tempfile.mkdtemp()) / "provenance.json"
+        outside.write_bytes((root / "provenance.json").read_bytes())
+        (root / "provenance.json").unlink()
+        try:
+            (root / "provenance.json").symlink_to(outside)
+        except OSError:
+            self.skipTest("symlinks unavailable on this runner")
+        with self.assertRaisesRegex(ValueError, "JSON file must not be a symlink"):
+            self.verify_ci(root)
+
+    def test_symlinked_bundle_root_fails_closed(self):
+        root = self.bundle()
+        link = Path(tempfile.mkdtemp()) / "bundle-link"
+        try:
+            link.symlink_to(root, target_is_directory=True)
+        except OSError:
+            self.skipTest("symlinks unavailable on this runner")
+        with self.assertRaisesRegex(ValueError, "is a symlink"):
+            self.verify_ci(link)
+
     def test_unknown_completeness_is_explicit(self):
         root = self.bundle()
         self.mutate_sbom(root, lambda s: s["metadata"].pop("properties"), rebind=True)
