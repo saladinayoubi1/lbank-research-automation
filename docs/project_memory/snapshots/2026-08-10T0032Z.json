@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "project": "NEXUS / lbank-research-automation",
+  "source_main_sha": "a86f918faeee0fd7b791adc775821771b302de75",
+  "observed_at_utc": "2026-08-10T00:32:30Z",
+  "material_events": [
+    {
+      "type": "project_memory_merge",
+      "pull_request": 252,
+      "result": "merged",
+      "head_sha": "2080bd82d51763df3c4bea719028757493e100b0",
+      "exact_head_ci": {
+        "Test": "success",
+        "NEXUS Build Verification": "success",
+        "NEXUS Cloud Fallback": "success"
+      }
+    }
+  ],
+  "release_readiness": {
+    "production_ready": false,
+    "artifact_manifest_gate": true,
+    "cyclonedx_sbom_gate": true,
+    "provenance_binding_gate": true,
+    "production_signature_policy_configured": false,
+    "reproducible_production_build_proven": false,
+    "rollback_exercised_in_production": false,
+    "backup_restore_rpo_rto_proven": false,
+    "independent_disaster_recovery_proven": false,
+    "cross_platform_matrix": ["ubuntu-latest", "windows-latest", "macos-latest"],
+    "exact_main_combined_status_count": 0,
+    "exact_main_commit_workflow_runs_observed": 0,
+    "exact_main_cross_platform_release_evidence_proven": false,
+    "owner_production_approval": false
+  },
+  "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131, 197, 232],
+  "provider_constraints": {
+    "deepseek_hard_monthly_cap_usd": 5.0,
+    "hard_cap_proven": false,
+    "credential_or_billing_action_performed": false
+  },
+  "recovery_invariants": {
+    "repository_memory_primary": true,
+    "drive_backup_secondary": true,
+    "laptop_power_off_is_distinct_from_internet_outage": true,
+    "secrets_allowed": false,
+    "raw_private_transcript_allowed": false,
+    "production_or_irreversible_actions_require_owner_approval": true
+  }
+}
