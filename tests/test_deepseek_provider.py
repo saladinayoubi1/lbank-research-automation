@@ -79,6 +79,27 @@ def test_exhausted_budget_fails_closed():
         ds._check_preflight_budget(ledger, ds.DEFAULT_MODEL, 256)
 
 
+def test_preflight_reserves_input_and_output_cost():
+    ledger = {"spent_usd": ds.MONTHLY_BUDGET_USD - 0.01}
+    with pytest.raises(ds.BudgetExceeded):
+        ds._check_preflight_budget(
+            ledger,
+            ds.DEFAULT_MODEL,
+            1,
+            input_token_bound=100_000,
+        )
+
+
+def test_negative_input_bound_fails_closed():
+    with pytest.raises(ds.DeepSeekError):
+        ds._check_preflight_budget(
+            {"spent_usd": 0.0},
+            ds.DEFAULT_MODEL,
+            256,
+            input_token_bound=-1,
+        )
+
+
 def test_pro_reserve_is_protected():
     ledger = {"spent_usd": ds.MONTHLY_BUDGET_USD - ds.RESERVE_USD + 0.01}
     with pytest.raises(ds.BudgetExceeded):
