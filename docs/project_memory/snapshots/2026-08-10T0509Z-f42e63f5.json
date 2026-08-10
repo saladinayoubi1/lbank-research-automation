@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "project": "NEXUS / lbank-research-automation",
+  "observed_at_utc": "2026-08-10T05:09:33Z",
+  "source_main_sha": "f42e63f5b317acff0f0ec8c44145a9ea91b31cfd",
+  "material_change": {
+    "type": "blocker_reduction_and_main_advance",
+    "summary": "Main advanced after continuity PR #258 through an LBank public-candle refresh; draft PR #259 now adds fail-closed DeepSeek input+output preflight cost bounding and has green exact-head Test, NEXUS Build Verification, and NEXUS Cloud Fallback. #232 remains open because atomic durable reservation, concurrency, ambiguous timeout/retry reconciliation, durable ledger recovery, provider reconciliation, and hard-cap proof are still missing."
+  },
+  "repository_state": {
+    "open_pull_requests": [259],
+    "pr_259": {
+      "draft": true,
+      "mergeable_observed": true,
+      "base_sha": "067a57c14bc9fc7f5f9112941b07d4b8e2c2325d",
+      "head_sha": "abf83c67495d19ddd8332165e1507cd82eafc165",
+      "exact_head_ci": {
+        "Test": "success",
+        "NEXUS Build Verification": "success",
+        "NEXUS Cloud Fallback": "success"
+      },
+      "production_authority": false
+    },
+    "exact_main_combined_status_count_observed": 0,
+    "exact_main_pull_request_workflow_runs_observed": 0
+  },
+  "release_readiness": {
+    "production_ready": false,
+    "artifact_manifest_gate_present": true,
+    "cyclonedx_sbom_gate_present": true,
+    "provenance_binding_gate_present": true,
+    "production_signing_identity_trust_policy_configured": false,
+    "reproducible_production_build_proven": false,
+    "production_rollback_exercised": false,
+    "backup_restore_rpo_rto_proven": false,
+    "independent_disaster_recovery_proven": false,
+    "exact_main_cross_platform_release_evidence_proven": false,
+    "owner_production_approval": false,
+    "fail_closed": true
+  },
+  "active_material_blockers": {
+    "provenance_downstream_authority": 197,
+    "deepseek_hard_monthly_budget_cap": 232
+  },
+  "authority_boundaries": {
+    "research_only": true,
+    "live_trading": false,
+    "signing_action_performed": false,
+    "credential_action_performed": false,
+    "billing_action_performed": false,
+    "production_deployment_performed": false,
+    "secrets_allowed_in_memory": false,
+    "raw_private_transcript_allowed_in_memory": false
+  },
+  "offline_semantics": {
+    "laptop_power_state": "unknown",
+    "internet_outage_state": "unknown",
+    "laptop_power_off_is_not_internet_outage": true
+  },
+  "recovery_lesson": "Green exact-head PR CI proves only that PR head's applicable checks; it does not establish exact-main production release evidence or a hard provider budget cap."
+}
