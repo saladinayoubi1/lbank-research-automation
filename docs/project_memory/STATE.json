@@ -67,9 +67,9 @@
         "af020c6249477bd591eb85b77e7ff0112b19b0c3 data: update LBank public candles"
       ]
     },
-    "open_pull_requests": [],
+    "open_pull_requests": [252],
     "memory_refresh_branch": "continuity/current-af020c62",
-    "memory_refresh_pr": null,
+    "memory_refresh_pr": 252,
     "pull_request_evidence": {
       "117": {
         "state": "closed",
@@ -119,6 +119,13 @@
         "scope": "superseded current-main project-memory refresh",
         "production_authority": false,
         "result": "closed unmerged because repository state changed during validation and snapshot became stale"
+      },
+      "252": {
+        "state": "open",
+        "draft": true,
+        "scope": "current-main project-memory refresh from exact af020c62",
+        "production_authority": false,
+        "merge_gate": "exact-final-head CI + mergeability + clean review evidence"
       }
     },
     "release_readiness": {
