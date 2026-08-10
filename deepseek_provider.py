@@ -14,7 +14,7 @@ import os
 from pathlib import Path
 import time
 from typing import Any
-from urllib import error, request
+from urllib import request
 from uuid import uuid4
 
 BASE_URL = "https://api.deepseek.com"
@@ -65,13 +65,11 @@ def _month_key(now: datetime | None = None) -> str:
     return (now or datetime.now(timezone.utc)).strftime("%Y-%m")
 
 
-def _canonical_or_test_path(path: str | Path) -> Path:
+def _canonical_path(path: str | Path) -> Path:
     p = Path(path)
-    if p == CANONICAL_LEDGER:
-        return p
-    if os.environ.get("PYTEST_CURRENT_TEST"):
-        return p
-    raise DeepSeekError("alternate usage ledger path is not authorized")
+    if p != CANONICAL_LEDGER:
+        raise DeepSeekError("alternate usage ledger path is not authorized")
+    return p
 
 
 def _fresh_ledger() -> dict[str, Any]:
@@ -114,7 +112,7 @@ def _validate_ledger(data: Any) -> dict[str, Any]:
 
 
 def load_ledger(path: str | Path = CANONICAL_LEDGER) -> dict[str, Any]:
-    p = _canonical_or_test_path(path)
+    p = Path(path)
     sentinel = p.with_suffix(p.suffix + ".initialized")
     if not p.exists():
         if sentinel.exists():
@@ -133,7 +131,7 @@ def load_ledger(path: str | Path = CANONICAL_LEDGER) -> dict[str, Any]:
 
 
 def save_ledger(path: str | Path, ledger: dict[str, Any]) -> None:
-    p = _canonical_or_test_path(path)
+    p = Path(path)
     _validate_ledger(ledger)
     p.parent.mkdir(parents=True, exist_ok=True)
     tmp = p.with_suffix(p.suffix + ".tmp")
@@ -172,8 +170,7 @@ def _ledger_lock(path: Path, timeout: float = 10.0):
 def calculate_cost(model: str, usage: dict[str, Any]) -> float:
     if model not in PRICING:
         raise DeepSeekError("unknown model pricing")
-    required = ("prompt_tokens", "completion_tokens")
-    if any(k not in usage for k in required):
+    if any(k not in usage for k in ("prompt_tokens", "completion_tokens")):
         raise DeepSeekError("usage counters are missing")
     try:
         prompt = int(usage["prompt_tokens"])
@@ -200,8 +197,6 @@ def _worst_case_reservation(model: str, messages: list[dict[str, str]], max_toke
     if not isinstance(messages, list) or not messages:
         raise DeepSeekError("messages must be a non-empty list")
     payload_bytes = len(json.dumps(messages, ensure_ascii=False, separators=(",", ":")).encode("utf-8"))
-    # One token cannot require fewer than one encoded byte in a byte-capable tokenizer;
-    # add protocol headroom and charge all possible input as the higher cache-miss rate.
     worst_input_tokens = payload_bytes + 2048
     price = PRICING[model]
     reserve = (worst_input_tokens * price["cache_miss"] + max_tokens * price["output"]) / 1_000_000
@@ -264,7 +259,7 @@ def chat(
     if not key:
         raise DeepSeekError("DEEPSEEK_API_KEY is missing")
     decision = route_task(complexity=complexity, blocker=blocker)
-    path = _canonical_or_test_path(ledger_path)
+    path = _canonical_path(ledger_path)
     request_id, _ = _reserve(path, decision.model, messages, max_tokens, blocker)
 
     body: dict[str, Any] = {
@@ -284,8 +279,7 @@ def chat(
     try:
         with request.urlopen(req, timeout=timeout) as resp:
             payload = json.loads(resp.read().decode("utf-8"))
-    except Exception as exc:
-        # Request may have been accepted/billed. Keep reservation quarantined; never auto-retry.
+    except Exception:
         raise AmbiguousCharge("DeepSeek request outcome is ambiguous; reservation retained") from None
 
     choices, usage = payload.get("choices"), payload.get("usage")
