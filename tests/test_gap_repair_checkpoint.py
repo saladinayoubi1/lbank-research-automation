@@ -63,6 +63,30 @@ def test_stale_gap_set_is_rejected(tmp_path: Path):
         )
 
 
+def test_reordered_gap_sequence_is_rejected(tmp_path: Path):
+    path = tmp_path / "cursor.json"
+    original = gaps()
+    write_checkpoint(
+        path,
+        build_checkpoint(
+            symbol="btc_usdt",
+            timeframe="minute15",
+            gap_starts=original,
+            cursor=1,
+        ),
+    )
+
+    with pytest.raises(CheckpointError, match="gap-set identity"):
+        read_checkpoint(
+            path,
+            symbol="btc_usdt",
+            timeframe="minute15",
+            gap_starts=list(reversed(original)),
+        )
+
+    assert gap_set_digest(original) != gap_set_digest(list(reversed(original)))
+
+
 def test_series_identity_substitution_is_rejected(tmp_path: Path):
     path = tmp_path / "cursor.json"
     write_checkpoint(
