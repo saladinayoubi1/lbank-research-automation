@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "observed_at_utc": "2026-08-10T07:34:00Z",
+  "source_main_sha": "bf3164066fb75fe032395e845cded1155839404e",
+  "material_event": {
+    "pull_request": 263,
+    "result": "merged",
+    "exact_head_sha": "ebd5c93f30db582018fafcfc3ee7d75657a90630",
+    "merge_sha": "bf3164066fb75fe032395e845cded1155839404e",
+    "scope": "NEXUS Build Verification now also triggers on pushes to main",
+    "ci_evidence": [
+      "Workflow Permissions Policy: success",
+      "NEXUS Cloud Fallback: success",
+      "Test: success",
+      "NEXUS Build Verification: success"
+    ],
+    "mergeable_before_merge": true,
+    "unresolved_review_threads_before_merge": 0
+  },
+  "superseded_continuity_pr": {
+    "pull_request": 264,
+    "state": "closed_unmerged",
+    "reason": "base 7b2e690eecef70dc245c8013372e399da89d7349 became stale after PR #263 merged"
+  },
+  "authority_boundary": {
+    "research_only": true,
+    "live_trading": false,
+    "credentials": false,
+    "billing": false,
+    "signing": false,
+    "production_deployment": false,
+    "core_goal_change": false
+  },
+  "active_fail_closed_blockers": [197, 232],
+  "lessons": [
+    "Exact-head PR CI and exact-main push evidence are distinct claims.",
+    "A continuity snapshot based on a superseded main must be closed unmerged and replayed from exact current main.",
+    "Adding a main push trigger improves observability but does not by itself prove production readiness, rollback, disaster recovery, signing, or release authority."
+  ]
+}
