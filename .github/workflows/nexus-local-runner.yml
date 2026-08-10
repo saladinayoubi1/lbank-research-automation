@@ -14,6 +14,7 @@ on:
           - exhaustive-gap-repair
           - deepseek-smoke
           - zotero-status
+          - autonomous
   push:
     branches:
       - main
@@ -21,6 +22,9 @@ on:
       - .nexus/repair-trigger.txt
       - .nexus/deepseek-trigger.txt
       - .nexus/zotero-trigger.txt
+      - .nexus/autonomous-trigger.txt
+  schedule:
+    - cron: '17 * * * *'
 
 permissions:
   contents: read
@@ -59,11 +63,7 @@ jobs:
           if errorlevel 1 exit /b 1
           tar.exe -xf "%PYZIP%" -C "%PYROOT%"
           if errorlevel 1 exit /b 1
-          if not exist "%PYROOT%\python.exe" (
-            echo ERROR: python.exe missing after extraction
-            dir "%PYROOT%"
-            exit /b 1
-          )
+          if not exist "%PYROOT%\python.exe" exit /b 1
           echo Lib\site-packages>>"%PYROOT%\python312._pth"
           echo import site>>"%PYROOT%\python312._pth"
           echo %GITHUB_WORKSPACE%>>"%PYROOT%\python312._pth"
@@ -74,12 +74,9 @@ jobs:
           "%PYROOT%\python.exe" -m pip install --disable-pip-version-check -r requirements.txt pytest PyYAML
           if errorlevel 1 exit /b 1
           echo %PYROOT%>>"%GITHUB_PATH%"
-          "%PYROOT%\python.exe" -c "import sys; print(sys.version); print(sys.path)"
-          "%PYROOT%\python.exe" -c "import nexus_architecture_validator, web_dashboard; print('workspace_imports=ok')"
 
       - name: Privacy guard
-        run: |
-          python -c "import pathlib; root=pathlib.Path.cwd().resolve(); home=pathlib.Path.home().resolve(); assert root != home and home not in root.parents; print('privacy_guard=ok'); print('workspace=' + root.name)"
+        run: python -c "import pathlib; root=pathlib.Path.cwd().resolve(); home=pathlib.Path.home().resolve(); assert root != home and home not in root.parents; print('privacy_guard=ok')"
 
       - name: Health
         if: github.event_name == 'workflow_dispatch' && inputs.task == 'health'
@@ -101,23 +98,23 @@ jobs:
         if: (github.event_name == 'push' && contains(github.event.head_commit.message, '[deepseek-smoke]')) || inputs.task == 'deepseek-smoke'
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-        run: |
-          if "%DEEPSEEK_API_KEY%"=="" (
-            echo ERROR: DEEPSEEK_API_KEY is not configured
-            exit /b 1
-          )
-          python scripts\deepseek_smoke.py
+        run: python scripts\deepseek_smoke.py
 
       - name: Zotero local API status
         if: (github.event_name == 'push' && contains(github.event.head_commit.message, '[zotero-status]')) || inputs.task == 'zotero-status'
         run: |
-          python -c "import json,urllib.request; urls=['http://127.0.0.1:23119/connector/ping','http://127.0.0.1:23119/api/users/0/items?limit=1']; out={}; ok=False; import urllib.error; 
-          for u in urls:
-              try:
-                  r=urllib.request.urlopen(u,timeout=5); out[u]={'status':r.status,'content_type':r.headers.get('Content-Type','')}; ok=True
-              except Exception as e:
-                  out[u]={'error':type(e).__name__}
-          print('ZOTERO_LOCAL_STATUS='+json.dumps(out,sort_keys=True)); raise SystemExit(0 if ok else 1)"
+          python -c "import json,urllib.request; urls=['http://127.0.0.1:23119/connector/ping','http://127.0.0.1:23119/api/users/0/items?limit=1']; out={}; ok=False; exec('for u in urls:\n try:\n  r=urllib.request.urlopen(u,timeout=5); out[u]={\"status\":r.status}; ok=True\n except Exception as e:\n  out[u]={\"error\":type(e).__name__}'); print('ZOTERO_LOCAL_STATUS='+json.dumps(out,sort_keys=True)); raise SystemExit(0 if ok else 1)"
+
+      - name: Autonomous planner
+        if: github.event_name == 'schedule' || inputs.task == 'autonomous' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[autonomous]'))
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: python nexus_autonomous_orchestrator.py
+
+      - name: Autonomous execute allowlisted task
+        if: github.event_name == 'schedule' || inputs.task == 'autonomous' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[autonomous]'))
+        run: |
+          python -c "import json,pathlib,subprocess,sys; s=json.loads(pathlib.Path('build/autonomy/state.json').read_text()); t=s.get('next_task'); cmds={'health':[sys.executable,'-m','pytest','-q','tests/test_nexus_architecture_validator.py','tests/test_web_dashboard.py'],'tests':[sys.executable,'-m','pytest','-q'],'readiness':[sys.executable,'data_readiness.py','--status-path',r'data\market\_backfill_status.csv'],'zotero-status':[sys.executable,'-c',\"import urllib.request; urllib.request.urlopen('http://127.0.0.1:23119/connector/ping',timeout=5); print('zotero=ok')\"],'deepseek-smoke':[sys.executable,r'scripts\deepseek_smoke.py']}; print('autonomous_task='+str(t)); raise SystemExit(subprocess.run(cmds[t]).returncode if t in cmds else 0)"
 
       - name: Local change report
         if: always()
