@@ -24,7 +24,8 @@ class GapRepairCheckpoint:
 
 
 def gap_set_digest(gap_starts: Iterable[str]) -> str:
-    canonical = "\n".join(sorted(str(value) for value in gap_starts)).encode("utf-8")
+    """Bind checkpoint identity to the authoritative ordered gap sequence."""
+    canonical = "\n".join(str(value) for value in gap_starts).encode("utf-8")
     return hashlib.sha256(canonical).hexdigest()
 
 
@@ -92,7 +93,7 @@ def read_checkpoint(
     values = list(gap_starts)
     expected_digest = gap_set_digest(values)
     if payload["gap_set_digest"] != expected_digest:
-        raise CheckpointError("checkpoint gap-set identity is stale or substituted")
+        raise CheckpointError("checkpoint gap-set identity is stale, reordered, or substituted")
 
     cursor = payload["cursor"]
     if not isinstance(cursor, int) or isinstance(cursor, bool) or cursor < 0:
