@@ -24,6 +24,18 @@ Update continuity after material events, not every small repository change.
 If one task is waiting on CI/review, move to another independent high-value blocker instead of spinning.
 Use GitHub Actions, agents, cloud fallback, DeepSeek, and the laptop/self-hosted runner only where they materially improve speed, quality, verification, or resilience.
 
+### Main-drift / replay control
+Do not automatically close and replay a technical PR merely because `main` advanced.
+First classify the drift:
+- **incidental drift**: unrelated public market-data/candle refreshes, continuity-only changes, or other non-overlapping changes that do not alter the PR's assumptions, touched code, tests, policy, authority, or acceptance criteria;
+- **material drift**: overlapping code/policy/schema/workflow/test changes, changed assumptions, changed authority, or anything that can invalidate the PR's evidence.
+
+For incidental drift, preserve the existing PR whenever possible. Compare the changed paths/semantics, update or rebase the branch only when technically required, and rerun the minimum exact-head verification needed. Incidental drift alone is not a reason to create a replacement PR.
+For material drift, re-establish evidence on the new base before merge; replay only when preserving the existing PR cannot safely establish the new evidence.
+Do not make volatile exact-`main` SHA equality a completion requirement for continuity-only snapshots unless the snapshot is specifically proving a material fixed-SHA property.
+Prefer semantic applicability and non-overlap checks over churn caused solely by unrelated data refresh commits.
+Track replay rate as an efficiency signal: repeated replacement PRs caused by incidental drift are an operational defect to reduce, not normal progress.
+
 ## 3. Continuity Across Chats
 Chat is a temporary working interface, not the source of truth.
 GitHub + Project Memory are the durable source of truth.
