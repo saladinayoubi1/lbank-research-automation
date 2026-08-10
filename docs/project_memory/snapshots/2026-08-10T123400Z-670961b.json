@@ -1,0 +1,53 @@
+{
+  "schema_version": 2,
+  "project": "NEXUS / lbank-research-automation",
+  "record_type": "continuity_snapshot",
+  "observed_at_utc": "2026-08-10T12:34:00Z",
+  "observed_main_sha": "670961b7504cb0d4f46db165a857a9c63e29951c",
+  "previous_memory_main_sha": "1b41eef3ae7c786c7d3c242aeb5879b23509a245",
+  "main_delta": {
+    "classification": "public_market_data_refresh",
+    "architecture_or_core_goal_change_observed": false,
+    "production_authority_change_observed": false,
+    "notable_commits": [
+      "670961b7504cb0d4f46db165a857a9c63e29951c"
+    ]
+  },
+  "pull_requests": {
+    "open": [276],
+    "closed_unmerged_this_observation": [274, 275],
+    "276": {
+      "state": "open_draft",
+      "base_sha": "670961b7504cb0d4f46db165a857a9c63e29951c",
+      "head_sha": "8799f572c2c0d15dc7c89288bdf9aff2d0e2734b",
+      "purpose": "durable_gap_repair_checkpoint_primitive_clean_replay",
+      "ci": "in_progress_test_build_verification_cloud_fallback"
+    }
+  },
+  "blockers": {
+    "197": "open_fail_closed_downstream_provenance_semantic_binding",
+    "230": "open_fail_closed_restart_persistent_gap_repair_fairness",
+    "232": "open_fail_closed_hard_monthly_budget_cap"
+  },
+  "issue_230_remaining_gates": [
+    "repair_loop_integration",
+    "concurrent_writer_and_monotonic_ownership",
+    "deterministic_restart_replay",
+    "versioned_adr_and_threat_model",
+    "rollback_recovery_and_obsolescence_alignment",
+    "exact_final_head_green_ci_and_review_evidence"
+  ],
+  "recovery": {
+    "drive_backup_is_secondary_only": true,
+    "drive_presence_alone_is_not_recovery_proof": true,
+    "gap_repair_checkpoint_work": "clean_replay_pr_276"
+  },
+  "safety": {
+    "secrets_included": false,
+    "raw_private_transcript_included": false,
+    "credential_or_billing_action_performed": false,
+    "signing_or_production_action_performed": false,
+    "live_trading_action_performed": false,
+    "irreversible_action_performed": false
+  }
+}
