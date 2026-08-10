@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "observed_at_utc": "2026-08-10T08:24:00Z",
+  "observed_at_utc": "2026-08-10T08:34:30Z",
   "source_main_sha": "075d727e16006bc648b828d682edf9844499484d",
   "material_events": [
     {
@@ -18,15 +18,30 @@
       "pull_request": 265,
       "result": "closed_unmerged",
       "reason": "continuity snapshot base bf316406 was superseded by current main"
+    },
+    {
+      "pull_request": 268,
+      "result": "opened_draft",
+      "head_sha": "15eb20bbb8855365434e73bb1b60ca1720a16b14",
+      "scope": "DeepSeek input-output preflight hardening replayed from exact current main",
+      "production_authority": false
     }
   ],
+  "continuity_pr": 267,
   "open_pull_requests": {
     "266": {
-      "scope": "DeepSeek input-output preflight hardening",
+      "scope": "superseded DeepSeek input-output preflight replay",
       "head_sha": "38b058157877c90e008e7eb7e6c6a9271962bb20",
       "base_sha_at_creation": "bf3164066fb75fe032395e845cded1155839404e",
-      "relation_to_current_main": "diverged_by_one_data_commit",
-      "exact_head_ci": ["Test: success", "NEXUS Build Verification: success", "NEXUS Cloud Fallback: success"],
+      "relation_to_current_main": "stale_non_authoritative",
+      "production_authority": false
+    },
+    "268": {
+      "scope": "DeepSeek input-output preflight hardening replay",
+      "head_sha": "15eb20bbb8855365434e73bb1b60ca1720a16b14",
+      "base_sha_at_creation": "075d727e16006bc648b828d682edf9844499484d",
+      "relation_to_current_main": "exact_base_at_creation",
+      "exact_head_ci": ["Test: queued", "NEXUS Build Verification: queued", "NEXUS Cloud Fallback: queued"],
       "production_authority": false
     }
   },
@@ -62,7 +77,7 @@
   },
   "lessons": [
     "Configured main-push workflows improve observability but do not prove production readiness without positive exact-SHA evidence.",
-    "Stale continuity PRs are closed unmerged and replayed from exact current main.",
+    "Stale or superseded work must not be treated as authoritative merely because its prior CI was green; replay from exact current main when scopes are non-conflicting.",
     "DNS or internet failure must not be recorded as evidence that the laptop is powered off."
   ]
 }
