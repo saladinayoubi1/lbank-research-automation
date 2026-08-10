@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "nexus_continuity_snapshot",
+  "observed_at_utc": "2026-08-10T17:34:00Z",
+  "source_main_sha": "226e3d3cd6e38df48a8d3e12c140ccd186090834",
+  "authoritative": false,
+  "facts": [
+    "current observed main is 226e3d3cd6e38df48a8d3e12c140ccd186090834 after PR 295 hardened release evidence against symlink substitution",
+    "PR 296 was closed unmerged because its continuity snapshot was fixed to stale base 0a4719f6672570272378ecd8a60dc3895854f268",
+    "PR 284 was closed unmerged because its base f6a70d03436ed5221490e772917faf866f3b175f became stale",
+    "replacement Draft PR 297 was created from exact current main and has exact head f99e5837a6606c701611138acab1e928bb88c1a9",
+    "PR 297 replays only the DeepSeek hard-cap reservation slice: input+output reservation, atomic ledger locking, ambiguous-charge quarantine, schema/pricing/deletion checks, regression tests and ADR-AI-PROVIDER-BUDGET v1",
+    "PR 297 is mergeable; NEXUS Cloud Fallback succeeded on exact head while Test and NEXUS Build Verification were still running at snapshot time",
+    "historical CI issue 271 was closed as superseded because its failed SHA belonged to abandoned PR 270 and the bounded checkpoint primitive was later replayed and merged through PR 282",
+    "canonical docs/project_memory/STATE.json still records observed_main_sha af020c6249477bd591eb85b77e7ff0112b19b0c3 and remains stale relative to current repository evidence"
+  ],
+  "decisions": [
+    "close stale fixed-base continuity and implementation PRs unmerged rather than reuse old green CI",
+    "replay hardening from exact current main when newer main changes do not overlap the target slice",
+    "keep issue 232 fail-closed until exact-final-head CI, review, recovery and reconciliation criteria are complete",
+    "repository evidence overrides stale Project Memory transient state",
+    "do not grant credential, billing, signing, production deployment, live-trading, financial, or core-mission authority"
+  ],
+  "lessons": [
+    "green CI on an old fixed-base PR is not current merge authority after main advances",
+    "event-specific CI issues should be closed when their failed SHA is abandoned and a later replay provides the actionable path",
+    "paid-provider budget controls must reserve before network I/O and quarantine ambiguous charges rather than relying on post-response accounting"
+  ],
+  "blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131, 197, 230, 232, 283],
+  "safety": {
+    "live_trading": false,
+    "credential_action": false,
+    "billing_action": false,
+    "signing": false,
+    "production_deployment": false,
+    "core_mission_change": false
+  }
+}
