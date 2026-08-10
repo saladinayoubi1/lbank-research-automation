@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "observed_at_utc": "2026-08-10T08:24:00Z",
+  "source_main_sha": "075d727e16006bc648b828d682edf9844499484d",
+  "material_events": [
+    {
+      "pull_request": 263,
+      "result": "merged",
+      "merge_sha": "bf3164066fb75fe032395e845cded1155839404e",
+      "scope": "NEXUS Build Verification now triggers on pushes to main"
+    },
+    {
+      "commit": "075d727e16006bc648b828d682edf9844499484d",
+      "scope": "LBank public candle data refresh",
+      "architecture_or_core_goal_change": false
+    },
+    {
+      "pull_request": 265,
+      "result": "closed_unmerged",
+      "reason": "continuity snapshot base bf316406 was superseded by current main"
+    }
+  ],
+  "open_pull_requests": {
+    "266": {
+      "scope": "DeepSeek input-output preflight hardening",
+      "head_sha": "38b058157877c90e008e7eb7e6c6a9271962bb20",
+      "base_sha_at_creation": "bf3164066fb75fe032395e845cded1155839404e",
+      "relation_to_current_main": "diverged_by_one_data_commit",
+      "exact_head_ci": ["Test: success", "NEXUS Build Verification: success", "NEXUS Cloud Fallback: success"],
+      "production_authority": false
+    }
+  },
+  "release_readiness": {
+    "production_ready": false,
+    "artifact_manifest_gate": true,
+    "cyclonedx_sbom_gate": true,
+    "provenance_binding_gate": true,
+    "production_signature_policy_configured": false,
+    "reproducible_build_comparison_gate": true,
+    "rollback_record_gate": true,
+    "rollback_exercised_in_production": false,
+    "backup_restore_rpo_rto_proven": false,
+    "independent_disaster_recovery_proven": false,
+    "cross_platform_matrix": ["ubuntu-latest", "windows-latest", "macos-latest"],
+    "local_checkout_verification": "blocked_by_dns_resolution_for_github.com"
+  },
+  "active_fail_closed_blockers": [197, 232],
+  "authority_boundary": {
+    "research_only": true,
+    "live_trading": false,
+    "credentials": false,
+    "billing": false,
+    "signing": false,
+    "production_deployment": false,
+    "core_goal_change": false
+  },
+  "continuity": {
+    "repository_first": true,
+    "drive_backup_secondary": true,
+    "laptop_power_off_is_not_internet_outage": true,
+    "secrets_or_raw_private_transcripts_stored": false
+  },
+  "lessons": [
+    "Configured main-push workflows improve observability but do not prove production readiness without positive exact-SHA evidence.",
+    "Stale continuity PRs are closed unmerged and replayed from exact current main.",
+    "DNS or internet failure must not be recorded as evidence that the laptop is powered off."
+  ]
+}
