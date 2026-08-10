@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "project": "NEXUS / lbank-research-automation",
+  "observed_at_utc": "2026-08-10T07:20:30Z",
+  "source_main_sha": "7b2e690eecef70dc245c8013372e399da89d7349",
+  "material_change": {
+    "type": "main_advance_and_exact_main_ci_gap_remediation",
+    "summary": "Continuity PR #261 merged, main then advanced through an LBank public-candle refresh. Draft PR #263 now adds a main-push trigger to NEXUS Build Verification, directly reducing the previously identified post-merge exact-main evidence gap. PR #263 is mergeable, review-thread clean, and its exact head passed Workflow Permissions Policy, Test, NEXUS Build Verification, and NEXUS Cloud Fallback. It is not merged and confers no production authority."
+  },
+  "repository_state": {
+    "open_pull_requests": [263],
+    "pr_263": {
+      "draft": true,
+      "mergeable_observed": true,
+      "base_sha": "7b2e690eecef70dc245c8013372e399da89d7349",
+      "head_sha": "ebd5c93f30db582018fafcfc3ee7d75657a90630",
+      "changed_file": ".github/workflows/nexus-build-verification.yml",
+      "change": "add push trigger for main",
+      "exact_head_ci": {
+        "Workflow Permissions Policy": "success",
+        "Test": "success",
+        "NEXUS Build Verification": "success",
+        "NEXUS Cloud Fallback": "success"
+      },
+      "unresolved_review_threads_observed": 0,
+      "production_authority": false
+    }
+  },
+  "release_readiness": {
+    "production_ready": false,
+    "artifact_manifest_gate_present": true,
+    "cyclonedx_sbom_gate_present": true,
+    "provenance_binding_gate_present": true,
+    "production_signing_identity_trust_policy_configured": false,
+    "real_production_bundle_verified": false,
+    "two_clean_production_builds_byte_identical_proven": false,
+    "production_rollback_exercised": false,
+    "backup_restore_rpo_rto_proven": false,
+    "independent_disaster_recovery_proven": false,
+    "owner_production_approval": false,
+    "fail_closed": true
+  },
+  "verification_observations": {
+    "local_fresh_clone": "blocked",
+    "local_fresh_clone_reason": "DNS/network resolution failure: github.com could not be resolved",
+    "local_test_pass_claimed": false,
+    "laptop_power_state": "unknown",
+    "internet_outage_state": "unknown",
+    "laptop_power_off_is_not_internet_outage": true,
+    "pr_ci_does_not_prove_real_production_bundle_or_recovery": true
+  },
+  "active_material_blockers": {
+    "provenance_downstream_authority": 197,
+    "deepseek_hard_monthly_budget_cap": 232,
+    "production_signing_policy": "missing",
+    "production_approval": "missing",
+    "production_reproducible_build_evidence": "missing",
+    "production_rollback_evidence": "missing",
+    "backup_restore_measured_rpo_rto": "missing",
+    "independent_disaster_recovery": "missing"
+  },
+  "authority_boundaries": {
+    "research_only": true,
+    "live_trading": false,
+    "signing_action_performed": false,
+    "credential_action_performed": false,
+    "billing_action_performed": false,
+    "production_deployment_performed": false,
+    "secrets_allowed_in_memory": false,
+    "raw_private_transcript_allowed_in_memory": false
+  },
+  "agent_state": {
+    "continuity_release_audit": "active",
+    "release_manager_gap_reduction": "pr_263_active",
+    "independent_production_authority": false
+  },
+  "recovery_lesson": "A main-push workflow trigger is a necessary improvement for post-merge evidence, but only a successful run on the exact merged main SHA can prove that workflow execution. PR-head green CI is not production release evidence."
+}
