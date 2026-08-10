@@ -1,0 +1,56 @@
+{
+  "schema_version": "nexus.project-memory.snapshot/v1",
+  "captured_at_utc": "2026-08-10T17:20:00Z",
+  "source_main_sha": "0a4719f6672570272378ecd8a60dc3895854f268",
+  "source_main_commit_message": "Merge pull request #294 from saladinayoubi1/continuity/main-38229ca6",
+  "authoritative": false,
+  "canonical_state_path": "docs/project_memory/STATE.json",
+  "canonical_decision_order": [
+    "docs/project_memory/STATE.json",
+    "docs/project_memory/DECISION_LOG.md",
+    "docs/project_memory/RECOVERY_RUNBOOK.md"
+  ],
+  "facts": {
+    "canonical_state_last_updated": "2026-08-08T14:37:35Z",
+    "latest_merged_continuity_snapshot": "docs/project_memory/snapshots/2026-08-10-main-38229ca6.json",
+    "meaningful_changes_since_snapshot": [
+      "PR #294 merged repository-owned continuity snapshot onto main.",
+      "Draft PR #295 opened from exact main to reject symlinked release bundle/evidence/artifacts; scope has no file overlap with PR #284.",
+      "Issue #197 is closed; prior reports or backups describing it as open are superseded."
+    ],
+    "open_work_at_capture": [
+      "Draft PR #284 remains open and must not be merged while issue #232 remains open.",
+      "Draft PR #295 head 9f4f2cac1381265dadad88029b37d392608f760e has Release Readiness, Test, NEXUS Build Verification, and NEXUS Cloud Fallback successful on the exact head.",
+      "Issue #230 recovery persistence/ownership/replay work remains open.",
+      "Issue #232 billing hard-cap authority remains open.",
+      "Issue #283 durable continuity updater/freshness guardrails remain open."
+    ],
+    "production_authority": "blocked",
+    "local_clone_observation": "Could not resolve host: github.com; DNS/network failure, not evidence of laptop power-off."
+  },
+  "decisions": [
+    "Do not rewrite canonical objectives or red lines without owner approval.",
+    "Do not grant signing, production, credential, billing, deployment, or live-trading authority in continuity or release-hardening changes."
+  ],
+  "recovery_lessons": [
+    "Symlinked release evidence must fail closed; lexical path validation alone is insufficient.",
+    "Laptop power loss is distinct from DNS/network outage.",
+    "Drive remains independent secondary backup; repository memory is primary."
+  ],
+  "blockers": [
+    {
+      "issue": 230,
+      "reason": "Cross-process/restart-persistent gap-repair recovery remains open."
+    },
+    {
+      "issue": 232,
+      "reason": "Fail-closed USD $5.00/month provider usage ledger/billing authority remains open."
+    },
+    {
+      "issue": 283,
+      "reason": "Durable project-memory refresh/provenance/recovery guardrails remain incomplete."
+    }
+  ],
+  "secrets_recorded": false,
+  "raw_private_transcript_recorded": false
+}
