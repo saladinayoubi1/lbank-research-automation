@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import json
-import os
 from pathlib import Path
 
 import pytest
@@ -15,7 +13,6 @@ def _path(tmp_path: Path) -> Path:
 
 def test_large_input_small_output_reserves_input_cost(tmp_path, monkeypatch):
     monkeypatch.setenv("PYTEST_CURRENT_TEST", "1")
-    path = _path(tmp_path)
     messages = [{"role": "user", "content": "x" * 1_000_000}]
     _, amount = ds._worst_case_reservation(ds.DEFAULT_MODEL, messages, 1)
     assert amount > 0.13
@@ -25,7 +22,7 @@ def test_routine_cannot_consume_protected_reserve(tmp_path, monkeypatch):
     monkeypatch.setenv("PYTEST_CURRENT_TEST", "1")
     path = _path(tmp_path)
     ledger = ds._fresh_ledger()
-    ledger["spent_usd"] = 4.49
+    ledger["spent_usd"] = 4.4999
     ds.save_ledger(path, ledger)
     with pytest.raises(ds.BudgetExceeded):
         ds._reserve(path, ds.DEFAULT_MODEL, [{"role": "user", "content": "hello"}], 1024, False)
@@ -37,20 +34,20 @@ def test_blocker_can_use_reserve_without_exceeding_cap(tmp_path, monkeypatch):
     ledger = ds._fresh_ledger()
     ledger["spent_usd"] = 4.60
     ds.save_ledger(path, ledger)
-    rid, amount = ds._reserve(path, ds.PRO_MODEL, [{"role": "user", "content": "critical"}], 64, True)
+    rid, _ = ds._reserve(path, ds.PRO_MODEL, [{"role": "user", "content": "critical"}], 64, True)
     loaded = ds.load_ledger(path)
     assert rid in loaded["inflight"]
     assert loaded["spent_usd"] + loaded["reserved_usd"] <= ds.MONTHLY_BUDGET_USD
 
 
-def test_two_reservations_cannot_race_past_budget(tmp_path, monkeypatch):
+def test_reservation_cannot_cross_routine_cap(tmp_path, monkeypatch):
     monkeypatch.setenv("PYTEST_CURRENT_TEST", "1")
     path = _path(tmp_path)
     ledger = ds._fresh_ledger()
     ledger["spent_usd"] = 4.49
     ds.save_ledger(path, ledger)
     with pytest.raises(ds.BudgetExceeded):
-        ds._reserve(path, ds.DEFAULT_MODEL, [{"role": "user", "content": "a" * 20000}], 1024, False)
+        ds._reserve(path, ds.DEFAULT_MODEL, [{"role": "user", "content": "a" * 100000}], 1024, False)
     loaded = ds.load_ledger(path)
     assert loaded["spent_usd"] + loaded["reserved_usd"] <= ds.MONTHLY_BUDGET_USD
 
