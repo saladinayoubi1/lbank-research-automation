@@ -2,7 +2,7 @@
   "schema_version": 2,
   "project": "NEXUS / lbank-research-automation",
   "record_type": "continuity_snapshot",
-  "observed_at_utc": "2026-08-10T12:34:00Z",
+  "observed_at_utc": "2026-08-10T13:18:00Z",
   "observed_main_sha": "670961b7504cb0d4f46db165a857a9c63e29951c",
   "previous_memory_main_sha": "1b41eef3ae7c786c7d3c242aeb5879b23509a245",
   "main_delta": {
@@ -14,14 +14,26 @@
     ]
   },
   "pull_requests": {
-    "open": [276],
+    "open": [276, 277],
     "closed_unmerged_this_observation": [274, 275],
     "276": {
       "state": "open_draft",
+      "mergeable": true,
       "base_sha": "670961b7504cb0d4f46db165a857a9c63e29951c",
       "head_sha": "8799f572c2c0d15dc7c89288bdf9aff2d0e2734b",
       "purpose": "durable_gap_repair_checkpoint_primitive_clean_replay",
-      "ci": "in_progress_test_build_verification_cloud_fallback"
+      "ci": {
+        "test": "success",
+        "nexus_build_verification": "success",
+        "nexus_cloud_fallback": "success"
+      }
+    },
+    "277": {
+      "state": "open_draft",
+      "mergeable": true,
+      "base_sha": "670961b7504cb0d4f46db165a857a9c63e29951c",
+      "purpose": "continuity_snapshot_refresh",
+      "ci_note": "this snapshot update advances the PR head and therefore requires fresh exact-final-head CI before merge"
     }
   },
   "blockers": {
@@ -37,10 +49,22 @@
     "rollback_recovery_and_obsolescence_alignment",
     "exact_final_head_green_ci_and_review_evidence"
   ],
+  "release_readiness": {
+    "artifact_manifest_verification": "present_fail_closed",
+    "sbom_verification": "present_fail_closed",
+    "provenance_verification": "present_fail_closed",
+    "production_signing": "blocked_pending_owner_approved_signer_identity_and_trust_policy",
+    "reproducible_production_build_proof": "unproven",
+    "executed_production_rollback": "unproven",
+    "measured_backup_restore_rpo_rto": "unproven",
+    "independent_disaster_recovery": "unproven",
+    "production_approval": "not_granted"
+  },
   "recovery": {
     "drive_backup_is_secondary_only": true,
     "drive_presence_alone_is_not_recovery_proof": true,
-    "gap_repair_checkpoint_work": "clean_replay_pr_276"
+    "gap_repair_checkpoint_work": "clean_replay_pr_276",
+    "laptop_power_off_and_internet_dns_outage_are_distinct": true
   },
   "safety": {
     "secrets_included": false,
