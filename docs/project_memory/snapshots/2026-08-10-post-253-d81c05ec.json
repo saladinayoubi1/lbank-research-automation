@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "project": "NEXUS / lbank-research-automation",
+  "source_main_sha": "d81c05ec703eae8510e2874371188430c9726439",
+  "observed_at_utc": "2026-08-10T01:30:00Z",
+  "material_events": [
+    {
+      "type": "project_memory_snapshot_merge",
+      "pull_request": 253,
+      "result": "merged",
+      "head_sha": "58659abfb3682a7a24e75326056efe6647d34866",
+      "merge_commit_sha": "d81c05ec703eae8510e2874371188430c9726439",
+      "exact_head_ci": {
+        "Test": "success",
+        "NEXUS Build Verification": "success",
+        "NEXUS Cloud Fallback": "success"
+      },
+      "mergeable_before_merge": true,
+      "unresolved_review_threads": 0
+    }
+  ],
+  "authority": {
+    "research_only": true,
+    "production_ready": false,
+    "live_trading": false,
+    "credentials": false,
+    "billing": false,
+    "signing": false,
+    "production_deployment": false
+  },
+  "active_fail_closed_blockers": {
+    "197": "canonical provenance binding remains non-authoritative for downstream eligibility until raw/downstream bypass coverage and fixed-head rollback/recovery replay are proven",
+    "232": "DeepSeek paid routing remains non-authoritative until atomic input+output reservation, concurrency, retry/ambiguous-timeout reconciliation, durable ledger semantics, ADR/threat model, bypass tests and rollback/recovery are proven under the USD $5.00 monthly cap"
+  },
+  "recovery_invariants": {
+    "repository_memory_primary": true,
+    "drive_backup_presence_alone_is_not_recovery_proof": true,
+    "laptop_power_off_is_distinct_from_internet_outage": true,
+    "secrets_allowed": false,
+    "production_or_irreversible_actions_require_owner_approval": true
+  }
+}
