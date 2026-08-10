@@ -1,0 +1,4 @@
+trigger: autonomous
+requested_at: 2026-08-10T16:55:00+03:30
+mode: bounded-safe-loop
+planner: deepseek
