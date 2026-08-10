@@ -2,7 +2,7 @@
   "schema_version": 2,
   "project": "NEXUS / lbank-research-automation",
   "record_type": "continuity_snapshot",
-  "observed_at_utc": "2026-08-10T13:18:00Z",
+  "observed_at_utc": "2026-08-10T13:33:30Z",
   "observed_main_sha": "670961b7504cb0d4f46db165a857a9c63e29951c",
   "previous_memory_main_sha": "1b41eef3ae7c786c7d3c242aeb5879b23509a245",
   "main_delta": {
@@ -14,7 +14,7 @@
     ]
   },
   "pull_requests": {
-    "open": [276, 277],
+    "open": [276, 277, 278],
     "closed_unmerged_this_observation": [274, 275],
     "276": {
       "state": "open_draft",
@@ -26,14 +26,21 @@
         "test": "success",
         "nexus_build_verification": "success",
         "nexus_cloud_fallback": "success"
-      }
+      },
+      "merge_blocker": "gap_set_digest sorts values while cursor is positional, allowing same-elements reordered gap sequences to reinterpret a persisted cursor without identity mismatch"
     },
     "277": {
       "state": "open_draft",
-      "mergeable": true,
       "base_sha": "670961b7504cb0d4f46db165a857a9c63e29951c",
       "purpose": "continuity_snapshot_refresh",
       "ci_note": "this snapshot update advances the PR head and therefore requires fresh exact-final-head CI before merge"
+    },
+    "278": {
+      "state": "open_draft_stacked_on_276",
+      "base_sha": "8799f572c2c0d15dc7c89288bdf9aff2d0e2734b",
+      "head_sha": "0bba979d4e338e68d4d8aace1265566070deb4db",
+      "purpose": "bind positional gap-repair cursor identity to authoritative ordered gap sequence and add reorder bypass regression",
+      "ci_note": "fresh exact-head CI pending"
     }
   },
   "blockers": {
@@ -42,9 +49,10 @@
     "232": "open_fail_closed_hard_monthly_budget_cap"
   },
   "issue_230_remaining_gates": [
+    "merge_or replay PR278 reorder-binding fix into current-main checkpoint work after exact-head CI",
     "repair_loop_integration",
     "concurrent_writer_and_monotonic_ownership",
-    "deterministic_restart_replay",
+    "deterministic_restart_replay_and_crash_window coverage",
     "versioned_adr_and_threat_model",
     "rollback_recovery_and_obsolescence_alignment",
     "exact_final_head_green_ci_and_review_evidence"
@@ -63,7 +71,7 @@
   "recovery": {
     "drive_backup_is_secondary_only": true,
     "drive_presence_alone_is_not_recovery_proof": true,
-    "gap_repair_checkpoint_work": "clean_replay_pr_276",
+    "gap_repair_checkpoint_work": "PR276 primitive is CI-green but merge-blocked by ordered-identity bypass; PR278 is the narrow stacked remediation",
     "laptop_power_off_and_internet_dns_outage_are_distinct": true
   },
   "safety": {
