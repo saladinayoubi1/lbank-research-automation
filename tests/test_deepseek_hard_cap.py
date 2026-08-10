@@ -95,3 +95,37 @@ def test_alternate_ledger_path_rejected_even_if_pytest_env_is_forged(monkeypatch
     monkeypatch.setenv("PYTEST_CURRENT_TEST", "forged")
     with pytest.raises(ds.DeepSeekError, match="alternate usage ledger"):
         ds._canonical_path(tmp_path / "other.json")
+
+
+def test_save_ledger_fsyncs_before_replace(monkeypatch, tmp_path):
+    path = _path(tmp_path)
+    events = []
+    real_fsync = ds.os.fsync
+    real_replace = ds.os.replace
+
+    def tracked_fsync(fd):
+        events.append("fsync")
+        return real_fsync(fd)
+
+    def tracked_replace(src, dst):
+        events.append("replace")
+        return real_replace(src, dst)
+
+    monkeypatch.setattr(ds.os, "fsync", tracked_fsync)
+    monkeypatch.setattr(ds.os, "replace", tracked_replace)
+    ds.save_ledger(path, ds._fresh_ledger())
+
+    assert "replace" in events
+    assert "fsync" in events
+    assert events.index("fsync") < events.index("replace")
+
+
+def test_save_ledger_fsync_failure_fails_closed(monkeypatch, tmp_path):
+    path = _path(tmp_path)
+
+    def fail_fsync(_fd):
+        raise OSError("simulated durability failure")
+
+    monkeypatch.setattr(ds.os, "fsync", fail_fsync)
+    with pytest.raises(ds.DeepSeekError, match="durability commit failed"):
+        ds.save_ledger(path, ds._fresh_ledger())

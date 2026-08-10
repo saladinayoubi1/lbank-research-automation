@@ -130,14 +130,53 @@ def load_ledger(path: str | Path = CANONICAL_LEDGER) -> dict[str, Any]:
     return data
 
 
+def _sync_file(path: Path) -> None:
+    """Flush one writable file handle before paid network I/O can proceed."""
+    with path.open("r+b") as handle:
+        os.fsync(handle.fileno())
+
+
+def _sync_parent_directory(path: Path) -> None:
+    """Persist rename/create metadata where directory fsync is supported.
+
+    Windows does not expose a portable directory fsync through Python's stdlib. On
+    Windows we fsync the replaced file and sentinel themselves and keep paid-routing
+    authority non-authoritative until crash/restart recovery is proven on that OS.
+    """
+    if os.name == "nt":
+        return
+    flags = os.O_RDONLY
+    if hasattr(os, "O_DIRECTORY"):
+        flags |= os.O_DIRECTORY
+    fd = os.open(path.parent, flags)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
 def save_ledger(path: str | Path, ledger: dict[str, Any]) -> None:
     p = Path(path)
     _validate_ledger(ledger)
     p.parent.mkdir(parents=True, exist_ok=True)
     tmp = p.with_suffix(p.suffix + ".tmp")
-    tmp.write_text(json.dumps(ledger, sort_keys=True, indent=2), encoding="utf-8")
-    tmp.replace(p)
-    p.with_suffix(p.suffix + ".initialized").touch(exist_ok=True)
+    payload = json.dumps(ledger, sort_keys=True, indent=2)
+    try:
+        with tmp.open("w", encoding="utf-8", newline="\n") as handle:
+            handle.write(payload)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(tmp, p)
+        _sync_file(p)
+        _sync_parent_directory(p)
+
+        sentinel = p.with_suffix(p.suffix + ".initialized")
+        with sentinel.open("a+b") as handle:
+            handle.flush()
+            os.fsync(handle.fileno())
+        _sync_parent_directory(sentinel)
+    except OSError as exc:
+        raise DeepSeekError("usage ledger durability commit failed") from exc
 
 
 @contextmanager
