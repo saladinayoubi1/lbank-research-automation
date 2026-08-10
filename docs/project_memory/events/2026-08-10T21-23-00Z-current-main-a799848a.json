@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "event_type": "continuity_observation",
+  "observed_at_utc": "2026-08-10T21:23:00Z",
+  "repository": "saladinayoubi1/lbank-research-automation",
+  "observed_main_sha": "a799848acc5738a2043653902add32ede45a5821",
+  "main_verification": {
+    "method": "fetch main commit and compare prior observed main",
+    "status": "current",
+    "change_from_prior": "two public LBank candle refresh commits only",
+    "stronger_authority_inferred": false
+  },
+  "pull_request_observation": {
+    "stale_pr_closed_unmerged": 305,
+    "stale_pr_base_sha": "068aacc9e33f20061e45081815f37e57d3d55d01",
+    "stale_pr_head_sha": "e69393a2df6d228bea6ef6d45601aad3e086f923",
+    "reason": "main advanced before merge; SHA-bound continuity snapshot invalidated fail-closed"
+  },
+  "verified_open_blockers": {
+    "230": "cross-process gap-repair fairness/recovery remains fail-closed until restart persistence and fixed-head recovery evidence are complete",
+    "232": "paid DeepSeek routing remains fail-closed until the USD $5.00 monthly hard-cap recovery/reconciliation gate is complete",
+    "283": "Project Memory canonical-path/schema/freshness validation remains incomplete; stale SHA/conflict semantics must reject stronger autonomous action"
+  },
+  "release_authority": {
+    "production_ready": false,
+    "signing_authorized": false,
+    "production_approval_observed": false,
+    "credential_action_performed": false,
+    "billing_action_performed": false
+  },
+  "recovery_lessons": [
+    "A SHA-bound continuity snapshot is non-authoritative once main advances before merge, even when the advancing commits are public-data-only.",
+    "Repository and live CI/PR evidence override stale transient memory fields until canonical freshness validation is complete.",
+    "Laptop power state and network/DNS availability are distinct signals and must not be conflated."
+  ],
+  "authority_boundaries": {
+    "secrets_stored": false,
+    "private_transcript_stored": false,
+    "credential_action_performed": false,
+    "billing_action_performed": false,
+    "signing_action_performed": false,
+    "production_action_performed": false,
+    "live_trading_action_performed": false,
+    "irreversible_action_performed": false
+  }
+}
