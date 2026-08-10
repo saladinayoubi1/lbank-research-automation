@@ -1,0 +1,72 @@
+{
+  "schema_version": 2,
+  "project": "NEXUS / lbank-research-automation",
+  "record_type": "continuity_snapshot",
+  "observed_at_utc": "2026-08-10T11:16:00Z",
+  "observed_main_sha": "e2976367af7ac388aa72f1680aabbf7d748d0568",
+  "previous_memory_main_sha": "cba3d6edf260494cf810029624376633a80c2b1b",
+  "main_delta": {
+    "classification": "continuity_merge_plus_data_refresh",
+    "architecture_or_core_goal_change_observed": false,
+    "production_authority_change_observed": false,
+    "notable_commits": [
+      "f40f211d6b27ba58dacc8aa401c7c27a167447b0",
+      "e2976367af7ac388aa72f1680aabbf7d748d0568"
+    ]
+  },
+  "pull_requests": {
+    "open": [270, 272],
+    "270": {
+      "state": "open_draft",
+      "mergeable": false,
+      "head_sha": "28ce0b05412751a8a8123b96928335a51e75cc98",
+      "purpose": "durable_gap_repair_checkpoint_primitive",
+      "ci": "test_failed_windows_build_verification_success_cloud_fallback_success"
+    },
+    "272": {
+      "state": "open_draft",
+      "mergeable": true,
+      "head_sha": "dbf4f4554faac897bbbfd2078704713a65b20547",
+      "base": "fix/gap-cursor-persistence-230",
+      "purpose": "windows_portable_checkpoint_fsync_fix",
+      "cross_platform_test": "ubuntu_macos_windows_success"
+    }
+  },
+  "release_readiness": {
+    "production_ready": false,
+    "artifact_manifest_verifier": "present_fail_closed",
+    "cyclonedx_sbom_verifier": "present_fail_closed",
+    "provenance_verifier": "present_fail_closed_but_issue_197_open",
+    "signature_verifier": "present_fail_closed_no_authorized_signer_or_trust_policy",
+    "reproducible_build_control": "byte_identity_verifier_present_not_production_build_proof",
+    "rollback_control": "record_and_evidence_verifier_present_not_production_execution_proof",
+    "backup_restore_rpo_rto_proven": false,
+    "independent_disaster_recovery_proven": false,
+    "release_readiness_matrix": ["ubuntu-latest", "windows-latest", "macos-latest"],
+    "release_recovery_matrix": ["ubuntu-latest", "windows-latest", "macos-latest"],
+    "owner_production_approval": false
+  },
+  "blockers": {
+    "197": "open_downstream_provenance_semantic_binding",
+    "232": "open_hard_monthly_budget_cap",
+    "signer_identity_trust_policy": "missing",
+    "production_approval": "owner_required",
+    "production_reproducible_build_evidence": "missing",
+    "production_rollback_execution_evidence": "missing",
+    "backup_restore_rpo_rto_evidence": "missing",
+    "independent_disaster_recovery_evidence": "missing"
+  },
+  "recovery": {
+    "local_clone_verification": "blocked_by_dns_resolution_for_github.com",
+    "laptop_power_off_is_not_internet_outage": true,
+    "drive_backup_is_secondary_only": true,
+    "gap_repair_checkpoint_work": "in_progress_via_pr_270_and_pr_272"
+  },
+  "safety": {
+    "secrets_included": false,
+    "raw_private_transcript_included": false,
+    "credential_or_billing_action_performed": false,
+    "signing_or_production_action_performed": false,
+    "irreversible_action_performed": false
+  }
+}
