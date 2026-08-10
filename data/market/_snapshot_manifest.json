@@ -3,7 +3,7 @@
   "file_count": 21,
   "files": [
     {
-      "bytes": 419024,
+      "bytes": 419130,
       "columns": [
         "timestamp",
         "open",
@@ -15,11 +15,11 @@
         "timeframe"
       ],
       "first_candle_utc": "2024-12-19T08:00:00+00:00",
-      "last_candle_utc": "2026-08-10T09:00:00+00:00",
+      "last_candle_utc": "2026-08-10T11:00:00+00:00",
       "path": "aero_usdt/hour1.parquet",
-      "rows": 14367,
+      "rows": 14369,
       "schema_ok": true,
-      "sha256": "c785ef2f40c2ea6a066efbf95d191a39930b6bf099d32c535437dd5518c67a0e",
+      "sha256": "41ebc6c2d8656dc231c2ba3e9f089733b924e18ff8ba26bed245c8b1cbd74863",
       "symbol": "aero_usdt",
       "timeframe": "hour1"
     },
@@ -45,7 +45,7 @@
       "timeframe": "hour4"
     },
     {
-      "bytes": 1506746,
+      "bytes": 1506808,
       "columns": [
         "timestamp",
         "open",
@@ -57,16 +57,16 @@
         "timeframe"
       ],
       "first_candle_utc": "2024-12-19T08:00:00+00:00",
-      "last_candle_utc": "2026-08-10T09:45:00+00:00",
+      "last_candle_utc": "2026-08-10T11:00:00+00:00",
       "path": "aero_usdt/minute15.parquet",
-      "rows": 57403,
+      "rows": 57408,
       "schema_ok": true,
-      "sha256": "346358de96554dba5785472a7d621e69b379084f9948f69dc22115856f208d52",
+      "sha256": "9bba9aa2d7f7c8c9835f117bb91d962b061f507fb85c8589f9f09c71cc48e1cd",
       "symbol": "aero_usdt",
       "timeframe": "minute15"
     },
     {
-      "bytes": 425020,
+      "bytes": 425100,
       "columns": [
         "timestamp",
         "open",
@@ -78,11 +78,11 @@
         "timeframe"
       ],
       "first_candle_utc": "2025-05-16T07:00:00+00:00",
-      "last_candle_utc": "2026-08-10T09:00:00+00:00",
+      "last_candle_utc": "2026-08-10T11:00:00+00:00",
       "path": "agt_usdt/hour1.parquet",
-      "rows": 10826,
+      "rows": 10828,
       "schema_ok": true,
-      "sha256": "71a7c8a9b800d232739ff25ab12dc3eb5c13c997317a0f75f22ff164365c5bb9",
+      "sha256": "fda51c8e533408e4190703d209bc09152c8543e270dbd20ff9d9d2d1ee9494a9",
       "symbol": "agt_usdt",
       "timeframe": "hour1"
     },
@@ -108,7 +108,7 @@
       "timeframe": "hour4"
     },
     {
-      "bytes": 1330932,
+      "bytes": 1331076,
       "columns": [
         "timestamp",
         "open",
@@ -120,16 +120,16 @@
         "timeframe"
       ],
       "first_candle_utc": "2025-05-16T07:15:00+00:00",
-      "last_candle_utc": "2026-08-10T09:45:00+00:00",
+      "last_candle_utc": "2026-08-10T11:00:00+00:00",
       "path": "agt_usdt/minute15.parquet",
-      "rows": 43279,
+      "rows": 43284,
       "schema_ok": true,
-      "sha256": "798bfd0be2cc2cce55a17874d8a7f2bc7d821c633107db4e8675635474dfce35",
+      "sha256": "9259e24b8308a02680100bb4a4d86256a375afe15d93ec237fb23a4952a08d46",
       "symbol": "agt_usdt",
       "timeframe": "minute15"
     },
     {
-      "bytes": 1919945,
+      "bytes": 1920002,
       "columns": [
         "timestamp",
         "open",
@@ -141,11 +141,11 @@
         "timeframe"
       ],
       "first_candle_utc": "2022-01-01T00:00:00+00:00",
-      "last_candle_utc": "2026-08-10T09:00:00+00:00",
+      "last_candle_utc": "2026-08-10T11:00:00+00:00",
       "path": "btc_usdt/hour1.parquet",
-      "rows": 40358,
+      "rows": 40360,
       "schema_ok": true,
-      "sha256": "0b608327bb1db19218ef3a25b7b72421d6f85b2c434c1133bff6190203f2a32e",
+      "sha256": "f5464b7a1651692cc63417182afc38150a71faeb84b93439f61727dc52966df9",
       "symbol": "btc_usdt",
       "timeframe": "hour1"
     },
@@ -171,7 +171,7 @@
       "timeframe": "hour4"
     },
     {
-      "bytes": 6812815,
+      "bytes": 6812935,
       "columns": [
         "timestamp",
         "open",
@@ -183,16 +183,16 @@
         "timeframe"
       ],
       "first_candle_utc": "2022-01-01T00:00:00+00:00",
-      "last_candle_utc": "2026-08-10T09:45:00+00:00",
+      "last_candle_utc": "2026-08-10T11:00:00+00:00",
       "path": "btc_usdt/minute15.parquet",
-      "rows": 161339,
+      "rows": 161344,
       "schema_ok": true,
-      "sha256": "08a10c193e35a501292cba12cffcdaa211ee4172c0949d50a1e44b941cb25fe8",
+      "sha256": "09ad186564f4329769525b8bea4fdeeefbc2c266ea24860d1cea9cc68e14bb22",
       "symbol": "btc_usdt",
       "timeframe": "minute15"
     },
     {
-      "bytes": 1523753,
+      "bytes": 1523857,
       "columns": [
         "timestamp",
         "open",
@@ -204,11 +204,11 @@
         "timeframe"
       ],
       "first_candle_utc": "2022-01-01T00:00:00+00:00",
-      "last_candle_utc": "2026-08-10T09:00:00+00:00",
+      "last_candle_utc": "2026-08-10T11:00:00+00:00",
       "path": "eth_usdt/hour1.parquet",
-      "rows": 40352,
+      "rows": 40354,
       "schema_ok": true,
-      "sha256": "d91d4d5072b24692e8612643a76495ba6aec8faa15d184e47fee7f048cf2518f",
+      "sha256": "65b31dde3b83d4fe5ffd5b5a7060097cf97ca835d4c2368db9cbe9f80d4ffede",
       "symbol": "eth_usdt",
       "timeframe": "hour1"
     },
@@ -234,7 +234,7 @@
       "timeframe": "hour4"
     },
     {
-      "bytes": 5519958,
+      "bytes": 5520103,
       "columns": [
         "timestamp",
         "open",
@@ -246,16 +246,16 @@
         "timeframe"
       ],
       "first_candle_utc": "2022-01-01T00:00:00+00:00",
-      "last_candle_utc": "2026-08-10T09:45:00+00:00",
+      "last_candle_utc": "2026-08-10T11:00:00+00:00",
       "path": "eth_usdt/minute15.parquet",
-      "rows": 161301,
+      "rows": 161306,
       "schema_ok": true,
-      "sha256": "a019484fac3fe539b277282eed9397d0b95885c0c81b6126f7f6a0e14db57386",
+      "sha256": "7405eb6d8c0a5cd52bf10566d32d624c7f0563b05ec4ec62a859b4c4925a5241",
       "symbol": "eth_usdt",
       "timeframe": "minute15"
     },
     {
-      "bytes": 405494,
+      "bytes": 405530,
       "columns": [
         "timestamp",
         "open",
@@ -267,11 +267,11 @@
         "timeframe"
       ],
       "first_candle_utc": "2025-02-11T06:00:00+00:00",
-      "last_candle_utc": "2026-08-10T09:00:00+00:00",
+      "last_candle_utc": "2026-08-10T11:00:00+00:00",
       "path": "layer_usdt/hour1.parquet",
-      "rows": 13075,
+      "rows": 13077,
       "schema_ok": true,
-      "sha256": "ff33106f39491fc2432956f3b7500135f5504962f410f5f0245d650a4dea161f",
+      "sha256": "b682cecb0c9f38e41d8a5dbf9a8de90b4b7ac9c83066d0cd09ff99f6052debe5",
       "symbol": "layer_usdt",
       "timeframe": "hour1"
     },
@@ -297,7 +297,7 @@
       "timeframe": "hour4"
     },
     {
-      "bytes": 1358182,
+      "bytes": 1358284,
       "columns": [
         "timestamp",
         "open",
@@ -309,16 +309,16 @@
         "timeframe"
       ],
       "first_candle_utc": "2025-02-11T06:00:00+00:00",
-      "last_candle_utc": "2026-08-10T09:45:00+00:00",
+      "last_candle_utc": "2026-08-10T11:00:00+00:00",
       "path": "layer_usdt/minute15.parquet",
-      "rows": 52283,
+      "rows": 52288,
       "schema_ok": true,
-      "sha256": "87fad073b1c9325b74772307238eb6f4f46193ccc15d16813ed8063c53825cbf",
+      "sha256": "8e2978104beb78cf4fb248138b32edaa294f0339a1e715faa6741d1132123005",
       "symbol": "layer_usdt",
       "timeframe": "minute15"
     },
     {
-      "bytes": 1102383,
+      "bytes": 1102467,
       "columns": [
         "timestamp",
         "open",
@@ -330,11 +330,11 @@
         "timeframe"
       ],
       "first_candle_utc": "2024-02-09T06:00:00+00:00",
-      "last_candle_utc": "2026-08-10T09:00:00+00:00",
+      "last_candle_utc": "2026-08-10T11:00:00+00:00",
       "path": "pbu_usdt/hour1.parquet",
-      "rows": 21908,
+      "rows": 21910,
       "schema_ok": true,
-      "sha256": "be34e948752cf1af7a714b8d92d2b285aa330237ce20dacba2cec8cc928b3c5d",
+      "sha256": "4a646a2e1f4bd5da8dd1594386cfb4efc20740f00369424af213526184ac9941",
       "symbol": "pbu_usdt",
       "timeframe": "hour1"
     },
@@ -360,7 +360,7 @@
       "timeframe": "hour4"
     },
     {
-      "bytes": 4265864,
+      "bytes": 4266148,
       "columns": [
         "timestamp",
         "open",
@@ -372,16 +372,16 @@
         "timeframe"
       ],
       "first_candle_utc": "2024-02-09T06:15:00+00:00",
-      "last_candle_utc": "2026-08-10T09:45:00+00:00",
+      "last_candle_utc": "2026-08-10T11:00:00+00:00",
       "path": "pbu_usdt/minute15.parquet",
-      "rows": 87538,
+      "rows": 87543,
       "schema_ok": true,
-      "sha256": "1a98df0cca49b1c59bd9c414f275d0fa6d6313db867916adf6626bf0c60112c9",
+      "sha256": "4abe1c5832bcd9bf13827d3e1ce56c1cce208454c9e8a17f1cebbf57c4e74369",
       "symbol": "pbu_usdt",
       "timeframe": "minute15"
     },
     {
-      "bytes": 730182,
+      "bytes": 730272,
       "columns": [
         "timestamp",
         "open",
@@ -393,11 +393,11 @@
         "timeframe"
       ],
       "first_candle_utc": "2024-10-21T03:00:00+00:00",
-      "last_candle_utc": "2026-08-10T09:00:00+00:00",
+      "last_candle_utc": "2026-08-10T11:00:00+00:00",
       "path": "udoge_usdt/hour1.parquet",
-      "rows": 15785,
+      "rows": 15787,
       "schema_ok": true,
-      "sha256": "7f3dc267c401e108947ecc910dfd33fc9ff5c8f823fc6921700a09d419f38583",
+      "sha256": "79097513e3b10ec371891cc19e78b017ce8401b8a204d8dbdf4fb2482fdb5eb0",
       "symbol": "udoge_usdt",
       "timeframe": "hour1"
     },
@@ -423,7 +423,7 @@
       "timeframe": "hour4"
     },
     {
-      "bytes": 2740342,
+      "bytes": 2740588,
       "columns": [
         "timestamp",
         "open",
@@ -435,17 +435,17 @@
         "timeframe"
       ],
       "first_candle_utc": "2024-10-21T03:45:00+00:00",
-      "last_candle_utc": "2026-08-10T09:45:00+00:00",
+      "last_candle_utc": "2026-08-10T11:00:00+00:00",
       "path": "udoge_usdt/minute15.parquet",
-      "rows": 63077,
+      "rows": 63082,
       "schema_ok": true,
-      "sha256": "3d10418debbb7ad88ec8b324c694b355eee0d54768c824baff6b0879c9a2b393",
+      "sha256": "1b2c094f2d455bcea83e7670697411989144b5d77d241dc0b10715eef392bc60",
       "symbol": "udoge_usdt",
       "timeframe": "minute15"
     }
   ],
-  "generated_at_utc": "2026-08-10T09:58:35.008581+00:00",
-  "source_commit": "075d727e16006bc648b828d682edf9844499484d",
-  "total_bytes": 31705770,
-  "total_rows": 822074
+  "generated_at_utc": "2026-08-10T11:12:47.904222+00:00",
+  "source_commit": "f40f211d6b27ba58dacc8aa401c7c27a167447b0",
+  "total_bytes": 31707430,
+  "total_rows": 822123
 }
