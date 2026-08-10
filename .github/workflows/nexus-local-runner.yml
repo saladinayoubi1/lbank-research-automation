@@ -107,14 +107,12 @@ jobs:
 
       - name: Autonomous planner
         if: github.event_name == 'schedule' || inputs.task == 'autonomous' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[autonomous]'))
-        env:
-          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
         run: python nexus_autonomous_orchestrator.py
 
       - name: Autonomous execute allowlisted task
         if: github.event_name == 'schedule' || inputs.task == 'autonomous' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[autonomous]'))
         run: |
-          python -c "import json,pathlib,subprocess,sys; s=json.loads(pathlib.Path('build/autonomy/state.json').read_text()); t=s.get('next_task'); cmds={'health':[sys.executable,'-m','pytest','-q','tests/test_nexus_architecture_validator.py','tests/test_web_dashboard.py'],'tests':[sys.executable,'-m','pytest','-q'],'readiness':[sys.executable,'data_readiness.py','--status-path',r'data\market\_backfill_status.csv'],'zotero-status':[sys.executable,'-c',\"import urllib.request; urllib.request.urlopen('http://127.0.0.1:23119/connector/ping',timeout=5); print('zotero=ok')\"],'deepseek-smoke':[sys.executable,r'scripts\deepseek_smoke.py']}; print('autonomous_task='+str(t)); raise SystemExit(subprocess.run(cmds[t]).returncode if t in cmds else 0)"
+          python -c "import json,pathlib,subprocess,sys; s=json.loads(pathlib.Path('build/autonomy/state.json').read_text()); t=s.get('next_task'); cmds={'health':[sys.executable,'-m','pytest','-q','tests/test_nexus_architecture_validator.py','tests/test_web_dashboard.py'],'tests':[sys.executable,'-m','pytest','-q'],'readiness':[sys.executable,'data_readiness.py','--status-path',r'data\market\_backfill_status.csv'],'zotero-status':[sys.executable,'-c',\"import urllib.request; urllib.request.urlopen('http://127.0.0.1:23119/connector/ping',timeout=5); print('zotero=ok')\"]}; print('autonomous_task='+str(t)); raise SystemExit(subprocess.run(cmds[t]).returncode if t in cmds else 0)"
 
       - name: Local change report
         if: always()
