@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "event_type": "continuity_observation",
+  "observed_at_utc": "2026-08-10T20:18:00Z",
+  "repository": "saladinayoubi1/lbank-research-automation",
+  "observed_main_sha": "e54de5ac19f7611337e59858e12c12d046c9e080",
+  "main_change_summary": "Main advanced after PR #300 only through public LBank candle refresh commits; no architecture, core-goal, signing, billing, credential, production-approval, or release-authority change was observed.",
+  "open_pull_requests": [],
+  "canonical_state": {
+    "path": "docs/project_memory/STATE.json",
+    "recorded_main_sha": "af020c6249477bd591eb85b77e7ff0112b19b0c3",
+    "freshness_status": "stale",
+    "authority_rule": "current repository/PR/CI evidence overrides stale transient STATE fields",
+    "blocker": 283
+  },
+  "release_readiness": {
+    "production_ready": false,
+    "exact_main_combined_status_count": 0,
+    "artifact_manifest_gate_present": true,
+    "cyclonedx_sbom_gate_present": true,
+    "provenance_binding_gate_present": true,
+    "production_signature_authorized": false,
+    "reproducible_production_build_proven": false,
+    "production_rollback_exercised": false,
+    "backup_restore_rpo_rto_proven": false,
+    "independent_disaster_recovery_proven": false,
+    "exact_main_cross_platform_release_evidence_proven": false,
+    "owner_production_approval": false,
+    "active_release_blockers": [43, 58, 64, 124]
+  },
+  "active_blockers": [43, 58, 64, 89, 91, 94, 106, 107, 122, 124, 125, 131, 197, 230, 232, 283],
+  "recovery_lessons": [
+    "A successful PR test suite is not equivalent to exact-main release evidence.",
+    "A public-data-only main advance can stale SHA-bound continuity snapshots without changing architecture or authority.",
+    "Repository evidence must override stale transient memory fields until canonical freshness validation is complete.",
+    "Laptop powered-off state and internet/DNS outage are distinct failure modes."
+  ],
+  "authority_boundaries": {
+    "secrets_stored": false,
+    "raw_private_transcript_stored": false,
+    "credential_action_performed": false,
+    "billing_action_performed": false,
+    "signing_action_performed": false,
+    "production_action_performed": false,
+    "irreversible_action_performed": false
+  }
+}
