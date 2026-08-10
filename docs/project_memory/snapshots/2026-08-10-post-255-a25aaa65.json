@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "project": "NEXUS / lbank-research-automation",
+  "source_main_sha": "a25aaa65c0090c5a9a69cc60b81f721e0794fcaf",
+  "observed_at_utc": "2026-08-10T02:30:00Z",
+  "material_events": [
+    {
+      "type": "continuity_snapshot_merge",
+      "pull_request": 255,
+      "result": "merged",
+      "head_sha": "bf4d401c60e826ba64b0d332bb3cf89b739601f8",
+      "merge_commit_sha": "a25aaa65c0090c5a9a69cc60b81f721e0794fcaf",
+      "base_sha": "bd92089acbf60f020b4804597931f58463ee3d99",
+      "gates": {
+        "Test": "success",
+        "NEXUS Build Verification": "success",
+        "NEXUS Cloud Fallback": "success",
+        "mergeable": true,
+        "unresolved_review_threads": 0
+      },
+      "production_authority": false
+    }
+  ],
+  "authority": {
+    "research_only": true,
+    "production_ready": false,
+    "live_trading": false,
+    "credentials": false,
+    "billing": false,
+    "signing": false,
+    "production_deployment": false
+  },
+  "active_fail_closed_blockers": {
+    "197": "canonical provenance binding remains non-authoritative for downstream eligibility until raw/downstream bypass coverage and fixed-head rollback/recovery replay are proven",
+    "232": "DeepSeek paid routing remains non-authoritative until hard-cap reservation/concurrency/retry/reconciliation and rollback/recovery evidence are proven under the USD $5.00 monthly cap"
+  },
+  "lessons": [
+    "exact-current-main validation must be repeated immediately before merge",
+    "green CI does not authorize production, credentials, billing, signing, deployment, live trading or irreversible actions",
+    "continuity updates remain repository-owned and fail closed when their source main SHA becomes stale"
+  ]
+}
