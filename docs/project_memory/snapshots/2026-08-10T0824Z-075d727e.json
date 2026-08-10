@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "observed_at_utc": "2026-08-10T08:34:30Z",
+  "observed_at_utc": "2026-08-10T09:21:00Z",
   "source_main_sha": "075d727e16006bc648b828d682edf9844499484d",
   "material_events": [
     {
@@ -41,7 +41,7 @@
       "head_sha": "15eb20bbb8855365434e73bb1b60ca1720a16b14",
       "base_sha_at_creation": "075d727e16006bc648b828d682edf9844499484d",
       "relation_to_current_main": "exact_base_at_creation",
-      "exact_head_ci": ["Test: queued", "NEXUS Build Verification: queued", "NEXUS Cloud Fallback: queued"],
+      "exact_head_ci": ["Test: success", "NEXUS Build Verification: success", "NEXUS Cloud Fallback: success"],
       "production_authority": false
     }
   },
