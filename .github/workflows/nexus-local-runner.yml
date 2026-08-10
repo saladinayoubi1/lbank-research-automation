@@ -107,6 +107,8 @@ jobs:
 
       - name: Autonomous planner
         if: github.event_name == 'schedule' || inputs.task == 'autonomous' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[autonomous]'))
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
         run: python nexus_autonomous_orchestrator.py
 
       - name: Autonomous execute allowlisted task
