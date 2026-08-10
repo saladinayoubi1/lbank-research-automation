@@ -63,7 +63,7 @@
         "summary": "added incidental-versus-material main-drift policy to reduce unsafe PR replay churn"
       }
     ],
-    "open_pull_requests": [282, 284],
+    "open_pull_requests": [282, 284, 287],
     "pull_request_evidence": {
       "282": {
         "state": "open",
@@ -82,12 +82,28 @@
         "scope": "DeepSeek hard-cap reservation and bounded symbolic planner hardening",
         "production_authority": false,
         "exact_head_ci": {
-          "Workflow Permissions Policy": "in_progress",
+          "Workflow Permissions Policy": "success",
+          "Test": "failure",
+          "NEXUS Build Verification": "success",
+          "NEXUS Cloud Fallback": "failure"
+        },
+        "verified_failures": [
+          "routine request did not fail closed before consuming protected reserve",
+          "two reservations did not fail closed at the final routine-budget boundary"
+        ],
+        "blocker": 232
+      },
+      "287": {
+        "state": "open",
+        "draft": true,
+        "head_sha": "10176f6af2e17f6a6ecac98aed1db72600890b6a",
+        "scope": "repository-owned continuity refresh from exact main",
+        "production_authority": false,
+        "exact_head_ci": {
           "Test": "in_progress",
           "NEXUS Build Verification": "in_progress",
           "NEXUS Cloud Fallback": "in_progress"
-        },
-        "blocker": 232
+        }
       }
     },
     "autonomy": {
@@ -135,12 +151,19 @@
       "cross_process_recovery_authoritative": false,
       "blocker": 230
     },
+    "local_validation": {
+      "fresh_clone_started": false,
+      "reason": "DNS resolution failed for github.com",
+      "local_test_pass_claimed": false,
+      "laptop_power_off_inferred": false
+    },
     "recovery_lessons": [
       "configured push triggers are not proof of an exact-SHA successful run on the connected status surface",
       "exact-head PR CI and exact-main release evidence are distinct claims",
       "Drive presence alone is not production recovery proof",
       "scheduled autonomy must remain credential-free unless owner-approved billing and credential authority are explicitly supplied",
       "planner output must remain symbolic and mapped to repository-controlled fixed commands",
+      "budget reserve semantics must be verified by negative boundary tests; implementation claims do not override failing tests",
       "incidental main drift must not cause technical PR replay churn; material drift requires refreshed evidence",
       "laptop power-off and internet/DNS outage are distinct failure modes and must never be collapsed"
     ],
