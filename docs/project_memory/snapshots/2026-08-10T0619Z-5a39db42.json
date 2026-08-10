@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "project": "NEXUS / lbank-research-automation",
+  "observed_at_utc": "2026-08-10T06:19:01Z",
+  "source_main_sha": "5a39db4222216be26b6926afe7a00caf5318237b",
+  "material_change": {
+    "type": "main_advance_and_release_audit_correction",
+    "summary": "Continuity PR #260 is now on main. Draft PR #259 remains open, mergeable, non-production-authoritative, and green on exact-head Test, NEXUS Build Verification, and NEXUS Cloud Fallback. Release audit confirmed the repository has fail-closed manifest/SBOM/provenance and reproducibility/rollback verifier code plus Ubuntu/Windows/macOS unit-test workflows, but those workflows test verifier behavior rather than proving a real production bundle, two clean production builds, production rollback, backup/restore RPO/RTO, or independent disaster recovery."
+  },
+  "repository_state": {
+    "open_pull_requests": [259],
+    "pr_259": {
+      "draft": true,
+      "mergeable_observed": true,
+      "base_sha": "067a57c14bc9fc7f5f9112941b07d4b8e2c2325d",
+      "head_sha": "abf83c67495d19ddd8332165e1507cd82eafc165",
+      "changed_files": ["deepseek_provider.py", "tests/test_deepseek_provider.py"],
+      "exact_head_ci": {
+        "Test": "success",
+        "NEXUS Build Verification": "success",
+        "NEXUS Cloud Fallback": "success"
+      },
+      "production_authority": false
+    }
+  },
+  "release_readiness": {
+    "production_ready": false,
+    "artifact_manifest_gate_present": true,
+    "cyclonedx_sbom_gate_present": true,
+    "provenance_binding_gate_present": true,
+    "release_gate_negative_tests_present": true,
+    "release_gate_cross_platform_unit_test_matrix": ["ubuntu-latest", "windows-latest", "macos-latest"],
+    "reproducibility_comparator_present": true,
+    "rollback_evidence_verifier_present": true,
+    "production_signing_identity_trust_policy_configured": false,
+    "real_production_bundle_verified": false,
+    "two_clean_production_builds_byte_identical_proven": false,
+    "production_rollback_exercised": false,
+    "backup_restore_rpo_rto_proven": false,
+    "independent_disaster_recovery_proven": false,
+    "owner_production_approval": false,
+    "fail_closed": true
+  },
+  "evidence_semantics": {
+    "commit_workflow_connector_scope": "pull_request_triggered_runs_only",
+    "zero_pull_request_runs_on_main_is_not_proof_that_push_workflows_did_not_run": true,
+    "combined_commit_status_is_not_equivalent_to_github_actions_check_run_evidence": true,
+    "local_clone_attempt": "blocked_by_dns_resolution_failure",
+    "local_test_pass_claimed": false
+  },
+  "active_material_blockers": {
+    "provenance_downstream_authority": 197,
+    "deepseek_hard_monthly_budget_cap": 232,
+    "production_signing_policy": "missing",
+    "production_approval": "missing",
+    "production_reproducible_build_evidence": "missing",
+    "production_rollback_evidence": "missing",
+    "backup_restore_measured_rpo_rto": "missing",
+    "independent_disaster_recovery": "missing"
+  },
+  "authority_boundaries": {
+    "research_only": true,
+    "live_trading": false,
+    "signing_action_performed": false,
+    "credential_action_performed": false,
+    "billing_action_performed": false,
+    "production_deployment_performed": false,
+    "secrets_allowed_in_memory": false,
+    "raw_private_transcript_allowed_in_memory": false
+  },
+  "offline_semantics": {
+    "laptop_power_state": "unknown",
+    "internet_outage_state": "unknown",
+    "observed_execution_environment_dns_failure": true,
+    "laptop_power_off_is_not_internet_outage": true
+  },
+  "agent_state": {
+    "continuity_release_audit": "active",
+    "independent_production_authority": false
+  },
+  "recovery_lesson": "Do not infer absence of main push workflows from the commit-workflow connector because that connector exposes pull-request-triggered runs only. Treat cross-platform verifier unit-test coverage separately from real release artifact, reproducible-build, rollback, restore, and disaster-recovery evidence."
+}
