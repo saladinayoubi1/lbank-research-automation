@@ -8,6 +8,12 @@ import project_memory_validator as pmv
 
 VALID_SHA = "a" * 40
 OTHER_SHA = "b" * 40
+EXPECTED_CANONICAL_READS = [
+    "docs/project_memory/PROJECT_MEMORY.md",
+    "docs/project_memory/STATE.json",
+    "docs/project_memory/DECISIONS.md",
+    "docs/project_memory/RECOVERY_PLAYBOOK.md",
+]
 
 
 def _write_memory(root: Path, *, observed_sha: str = VALID_SHA) -> Path:
@@ -40,12 +46,7 @@ def _write_memory(root: Path, *, observed_sha: str = VALID_SHA) -> Path:
             "fabricated_market_data": False,
         },
         "continuity": {
-            "required_reads": [
-                "docs/project_memory/PROJECT_MEMORY.md",
-                "docs/project_memory/STATE.json",
-                "docs/project_memory/DECISIONS.md",
-                "docs/project_memory/RECOVERY_PLAYBOOK.md",
-            ],
+            "required_reads": list(EXPECTED_CANONICAL_READS),
             "drive_backup": {
                 "secondary_only": True,
                 "may_authorize_production_recovery": False,
@@ -66,6 +67,11 @@ def _load_state(memory: Path) -> dict:
 
 def _save_state(memory: Path, state: dict) -> None:
     (memory / "STATE.json").write_text(json.dumps(state), encoding="utf-8")
+
+
+def test_canonical_required_reads_use_repository_slashes():
+    assert pmv.CANONICAL_REQUIRED_READS == EXPECTED_CANONICAL_READS
+    assert all("\\" not in path for path in pmv.CANONICAL_REQUIRED_READS)
 
 
 def test_valid_canonical_memory_passes(tmp_path):
