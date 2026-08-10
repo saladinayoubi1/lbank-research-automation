@@ -12,14 +12,12 @@ def _path(tmp_path: Path) -> Path:
 
 
 def test_large_input_small_output_reserves_input_cost(tmp_path, monkeypatch):
-    monkeypatch.setenv("PYTEST_CURRENT_TEST", "1")
     messages = [{"role": "user", "content": "x" * 1_000_000}]
     _, amount = ds._worst_case_reservation(ds.DEFAULT_MODEL, messages, 1)
     assert amount > 0.13
 
 
 def test_routine_cannot_consume_protected_reserve(tmp_path, monkeypatch):
-    monkeypatch.setenv("PYTEST_CURRENT_TEST", "1")
     path = _path(tmp_path)
     ledger = ds._fresh_ledger()
     ledger["spent_usd"] = 4.4999
@@ -29,7 +27,6 @@ def test_routine_cannot_consume_protected_reserve(tmp_path, monkeypatch):
 
 
 def test_blocker_can_use_reserve_without_exceeding_cap(tmp_path, monkeypatch):
-    monkeypatch.setenv("PYTEST_CURRENT_TEST", "1")
     path = _path(tmp_path)
     ledger = ds._fresh_ledger()
     ledger["spent_usd"] = 4.60
@@ -41,7 +38,6 @@ def test_blocker_can_use_reserve_without_exceeding_cap(tmp_path, monkeypatch):
 
 
 def test_reservation_cannot_cross_routine_cap(tmp_path, monkeypatch):
-    monkeypatch.setenv("PYTEST_CURRENT_TEST", "1")
     path = _path(tmp_path)
     ledger = ds._fresh_ledger()
     ledger["spent_usd"] = 4.49
@@ -53,7 +49,6 @@ def test_reservation_cannot_cross_routine_cap(tmp_path, monkeypatch):
 
 
 def test_missing_ledger_after_initialization_fails_closed(tmp_path, monkeypatch):
-    monkeypatch.setenv("PYTEST_CURRENT_TEST", "1")
     path = _path(tmp_path)
     ds.save_ledger(path, ds._fresh_ledger())
     path.unlink()
@@ -62,7 +57,6 @@ def test_missing_ledger_after_initialization_fails_closed(tmp_path, monkeypatch)
 
 
 def test_inconsistent_usage_rejected(tmp_path, monkeypatch):
-    monkeypatch.setenv("PYTEST_CURRENT_TEST", "1")
     with pytest.raises(ds.DeepSeekError):
         ds.calculate_cost(ds.DEFAULT_MODEL, {
             "prompt_tokens": 10,
@@ -73,7 +67,6 @@ def test_inconsistent_usage_rejected(tmp_path, monkeypatch):
 
 
 def test_month_rollover_with_inflight_fails_closed(tmp_path, monkeypatch):
-    monkeypatch.setenv("PYTEST_CURRENT_TEST", "1")
     path = _path(tmp_path)
     ledger = ds._fresh_ledger()
     ledger["month"] = "2000-01"
@@ -85,7 +78,6 @@ def test_month_rollover_with_inflight_fails_closed(tmp_path, monkeypatch):
 
 
 def test_successful_reconciliation_releases_reservation(tmp_path, monkeypatch):
-    monkeypatch.setenv("PYTEST_CURRENT_TEST", "1")
     path = _path(tmp_path)
     rid, _ = ds._reserve(path, ds.DEFAULT_MODEL, [{"role": "user", "content": "hello"}], 32, False)
     actual, ledger = ds._reconcile(path, rid, ds.DEFAULT_MODEL, {
@@ -99,7 +91,7 @@ def test_successful_reconciliation_releases_reservation(tmp_path, monkeypatch):
     assert rid not in ledger["inflight"]
 
 
-def test_alternate_ledger_path_rejected_outside_tests(monkeypatch, tmp_path):
-    monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+def test_alternate_ledger_path_rejected_even_if_pytest_env_is_forged(monkeypatch, tmp_path):
+    monkeypatch.setenv("PYTEST_CURRENT_TEST", "forged")
     with pytest.raises(ds.DeepSeekError, match="alternate usage ledger"):
-        ds._canonical_or_test_path(tmp_path / "other.json")
+        ds._canonical_path(tmp_path / "other.json")
