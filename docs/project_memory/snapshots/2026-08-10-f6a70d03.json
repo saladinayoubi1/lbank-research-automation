@@ -1,12 +1,13 @@
 {
   "schema_version": 1,
   "snapshot_type": "continuity_evidence",
-  "observed_main_sha": "f6a70d03436ed5221490e772917faf866f3b175f",
-  "observed_at_utc": "2026-08-10T15:23:01Z",
+  "observed_main_sha": "1feeaea3aaa7d3811a301728b901e1850928c86b",
+  "observed_at_utc": "2026-08-10T16:13:20Z",
   "material_changes": {
     "bounded_orchestrator_sha": "d5d2203511d9a49fbb94ff88971bce7481a01608",
     "credential_free_autonomy_sha": "5386d6d0ec4a3846b96fcc8c13ac35897526f377",
-    "main_drift_policy_sha": "f6a70d03436ed5221490e772917faf866f3b175f"
+    "main_drift_policy_sha": "f6a70d03436ed5221490e772917faf866f3b175f",
+    "current_main_change_since_policy": "data-only LBank public candle refresh"
   },
   "autonomy": {
     "scheduled_execution_credential_free": true,
@@ -19,24 +20,33 @@
     "282": {
       "head_sha": "6835ec0ff55a939d6da3d4c4824cc6bdd5c556d0",
       "draft": true,
-      "mergeable": false,
+      "mergeable": true,
+      "ci": {
+        "NEXUS Build Verification": "success",
+        "Test": "success",
+        "NEXUS Cloud Fallback": "success"
+      },
       "blocker": 230
     },
     "284": {
-      "head_sha": "8b5eaea39130076ebce396fa2f104d389c4bbafe",
+      "head_sha": "60600afa65697207d1951eaae6eeac8da8fa8489",
       "draft": true,
       "mergeable": true,
       "ci": {
         "Workflow Permissions Policy": "success",
         "NEXUS Build Verification": "success",
-        "Test": "failure",
-        "NEXUS Cloud Fallback": "failure"
+        "Test": "success",
+        "NEXUS Cloud Fallback": "success"
       },
-      "verified_failures": [
-        "routine request did not fail closed before consuming protected reserve",
-        "two reservations did not fail closed at the final routine-budget boundary"
-      ],
+      "hard_cap_control_candidate_green_on_exact_head": true,
+      "billing_authority_granted": false,
       "blocker": 232
+    },
+    "288": {
+      "head_sha_before_this_refresh": "52dcbe759e888f7c8852146490e2a57b5c97936f",
+      "draft": true,
+      "mergeable": true,
+      "continuity_only": true
     }
   },
   "release": {
@@ -58,7 +68,7 @@
   "active_issue_blockers": [197, 230, 232],
   "local_validation": {
     "fresh_clone_started": false,
-    "reason": "DNS resolution failed for github.com",
+    "reason": "DNS resolution failed for github.com in prior local verification",
     "local_test_pass_claimed": false,
     "laptop_power_off_inferred": false
   },
