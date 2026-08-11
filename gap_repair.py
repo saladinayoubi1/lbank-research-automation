@@ -7,6 +7,12 @@ from pathlib import Path
 import pandas as pd
 import requests
 
+from gap_repair_checkpoint import (
+    CheckpointError,
+    build_checkpoint,
+    read_checkpoint,
+    write_checkpoint,
+)
 from main import (
     LBankError,
     OUTPUT_ROOT,
@@ -23,10 +29,6 @@ from main import (
 LOGGER = logging.getLogger("lbank_gap_repair")
 MAX_GAP_WINDOWS_PER_SERIES_PER_RUN = 3
 MAX_REPAIR_FAILURES_PER_RUN = 3
-
-# Keep a per-process cursor so repeated bounded repair rounds do not retry the
-# same oldest unavailable windows forever while later gaps remain deferred.
-_GAP_CURSOR: dict[tuple[str, str], int] = {}
 
 
 @dataclass(frozen=True)
@@ -87,6 +89,42 @@ def select_missing_rows(
     return frame.loc[frame["timestamp"].isin(normalized_missing)].copy()
 
 
+def _checkpoint_path(symbol: str, timeframe: str) -> Path:
+    return Path(OUTPUT_ROOT) / "_gap_repair_checkpoints" / symbol / f"{timeframe}.json"
+
+
+def _load_start_index(
+    symbol: str,
+    timeframe: str,
+    gap_starts: list[pd.Timestamp],
+) -> int:
+    path = _checkpoint_path(symbol, timeframe)
+    if not path.exists():
+        return 0
+    checkpoint = read_checkpoint(
+        path,
+        symbol=symbol,
+        timeframe=timeframe,
+        gap_starts=[value.isoformat() for value in gap_starts],
+    )
+    return checkpoint.cursor
+
+
+def _persist_next_index(
+    symbol: str,
+    timeframe: str,
+    gap_starts: list[pd.Timestamp],
+    cursor: int,
+) -> None:
+    checkpoint = build_checkpoint(
+        symbol=symbol,
+        timeframe=timeframe,
+        gap_starts=[value.isoformat() for value in gap_starts],
+        cursor=cursor,
+    )
+    write_checkpoint(_checkpoint_path(symbol, timeframe), checkpoint)
+
+
 def repair_series_with_outcomes(
     symbol: str,
     timeframe: str,
@@ -107,8 +145,19 @@ def repair_series_with_outcomes(
     request_count = 0
     request_failures = 0
 
-    cursor_key = (symbol, timeframe)
-    start_index = _GAP_CURSOR.get(cursor_key, 0) % len(gap_starts)
+    try:
+        start_index = _load_start_index(symbol, timeframe, gap_starts)
+    except CheckpointError as exc:
+        outcomes.append(GapRepairOutcome(
+            symbol=symbol,
+            timeframe=timeframe,
+            gap_start_utc=gap_starts[0].isoformat(),
+            status="checkpoint_invalid",
+            recovered_candles=0,
+            detail=str(exc),
+        ))
+        return 0, 0, outcomes
+
     ordered_gap_starts = gap_starts[start_index:] + gap_starts[:start_index]
 
     for gap_start in ordered_gap_starts:
@@ -179,11 +228,9 @@ def repair_series_with_outcomes(
             detail="missing candle rows returned and selected",
         ))
 
-    # Advance by attempted windows, even when the source had no candle. This
-    # prevents repeated rounds from starving later gaps behind the same three
-    # unavailable historical windows.
     if gap_starts and request_count:
-        _GAP_CURSOR[cursor_key] = (start_index + request_count) % len(gap_starts)
+        next_index = (start_index + request_count) % len(gap_starts)
+        _persist_next_index(symbol, timeframe, gap_starts, next_index)
 
     if not repaired_frames:
         return 0, request_failures, outcomes
@@ -223,7 +270,8 @@ def write_gap_repair_report(outcomes: list[GapRepairOutcome]) -> None:
         "# LBank Gap Repair Status",
         "",
         "Successful requests that return no missing candle are classified as "
-        "`source_unavailable`; transport or API exceptions are `fetch_failed`.",
+        "`source_unavailable`; transport or API exceptions are `fetch_failed`. "
+        "Invalid persisted fairness state is `checkpoint_invalid` and blocks that series for the run.",
         "",
         "| Symbol | Timeframe | Gap start UTC | Status | Recovered | Detail |",
         "|---|---|---|---|---:|---|",

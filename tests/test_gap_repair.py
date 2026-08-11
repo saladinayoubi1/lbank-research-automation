@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib
 import sys
+import tempfile
 import types
 from pathlib import Path
 
@@ -17,7 +18,7 @@ def load_module(monkeypatch):
         pass
 
     fake_main.LBankError = LBankError
-    fake_main.OUTPUT_ROOT = Path("data/market")
+    fake_main.OUTPUT_ROOT = Path(tempfile.mkdtemp()) / "market"
     fake_main.SYMBOLS = ["btc_usdt"]
     fake_main.TIMEFRAMES = ["minute15"]
     fake_main.TIMEFRAME_SECONDS = {
@@ -192,6 +193,55 @@ def test_request_budget_rotates_to_later_gap_on_next_round(monkeypatch):
         pd.Timestamp("2026-01-01T00:15:00Z"),
         pd.Timestamp("2026-01-01T00:45:00Z"),
     ]
+
+
+def test_persisted_cursor_survives_module_restart(monkeypatch, tmp_path):
+    existing = pd.DataFrame({"timestamp": pd.to_datetime([
+        "2026-01-01T00:00:00Z",
+        "2026-01-01T00:30:00Z",
+        "2026-01-01T01:00:00Z",
+    ])})
+    requested = []
+
+    first, _ = load_module(monkeypatch)
+    first.OUTPUT_ROOT = tmp_path
+    first.MAX_GAP_WINDOWS_PER_SERIES_PER_RUN = 1
+    first.read_existing = lambda path: existing
+    first.get_klines = lambda symbol, timeframe, start: requested.append(pd.to_datetime(start, unit="s", utc=True)) or []
+    first.rows_to_frame = lambda *args, **kwargs: pd.DataFrame(columns=["timestamp"])
+    first.repair_series_with_outcomes("btc_usdt", "minute15")
+
+    second, _ = load_module(monkeypatch)
+    second.OUTPUT_ROOT = tmp_path
+    second.MAX_GAP_WINDOWS_PER_SERIES_PER_RUN = 1
+    second.read_existing = lambda path: existing
+    second.get_klines = lambda symbol, timeframe, start: requested.append(pd.to_datetime(start, unit="s", utc=True)) or []
+    second.rows_to_frame = lambda *args, **kwargs: pd.DataFrame(columns=["timestamp"])
+    second.repair_series_with_outcomes("btc_usdt", "minute15")
+
+    assert requested == [
+        pd.Timestamp("2026-01-01T00:15:00Z"),
+        pd.Timestamp("2026-01-01T00:45:00Z"),
+    ]
+
+
+def test_corrupt_persisted_cursor_fails_closed(monkeypatch, tmp_path):
+    module, _ = load_module(monkeypatch)
+    module.OUTPUT_ROOT = tmp_path
+    module.read_existing = lambda path: pd.DataFrame({"timestamp": pd.to_datetime([
+        "2026-01-01T00:00:00Z", "2026-01-01T00:30:00Z"
+    ])})
+    checkpoint = tmp_path / "_gap_repair_checkpoints" / "btc_usdt" / "minute15.json"
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_text("{broken", encoding="utf-8")
+    requested = []
+    module.get_klines = lambda *args, **kwargs: requested.append(True) or []
+
+    repaired, failures, outcomes = module.repair_series_with_outcomes("btc_usdt", "minute15")
+
+    assert (repaired, failures) == (0, 0)
+    assert requested == []
+    assert [outcome.status for outcome in outcomes] == ["checkpoint_invalid"]
 
 
 def test_write_gap_repair_report_distinguishes_failure_classes(monkeypatch, tmp_path):
