@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -38,6 +40,10 @@ jobs:
 
       - name: Validate NEXUS architecture contracts
         run: python nexus_architecture_validator.py docs/architecture/module-contract-registry.yaml
+
+      - name: Bind Project Memory validation to PR base SHA
+        if: github.event_name == 'pull_request'
+        run: python project_memory_ci_gate.py --base-sha ${{ github.event.pull_request.base.sha }} --head-sha ${{ github.event.pull_request.head.sha }}
 
       - name: Run tests
         run: python -m pytest -q
