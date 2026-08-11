@@ -22,17 +22,27 @@
       "state": "closed_unmerged",
       "reason": "continuity snapshot became stale when main advanced through PR #309"
     },
+    "pr_313": {
+      "state": "draft_unmerged",
+      "base_sha": "3f00d45b396ba4a1e3d785f5bd1ee95b546f4523",
+      "current_head_sha": "e191dd3e02cc2fe79e8bbdb7fe257d5d16156671",
+      "scope": "reject canonical Project Memory symlinks and require authoritative expected observed-main SHA",
+      "initial_exact_head_result": "Test and NEXUS Cloud Fallback failed because an existing safety-boundary regression test omitted the newly mandatory expected SHA; test fixture corrected on the same branch and fresh exact-head CI is required",
+      "overlaps_pr_312_files": false
+    },
     "issue_283": {
       "state": "open_fail_closed",
       "remaining": [
         "canonical STATE.json observed_main_sha remains stale",
-        "validator is not yet wired into CI with an authoritative non-self-referential SHA source for push/PR contexts"
+        "validator authoritative SHA still needs deterministic CI event-context wiring",
+        "TOCTOU / trusted immutable-workspace claim boundary remains unresolved until explicitly enforced or bounded"
       ]
     }
   },
   "lessons": [
     "A green validator implementation is not proof of fresh canonical memory until the authoritative SHA source and CI invocation are defined.",
-    "Continuity snapshots fixed to an older main must be closed unmerged after material main advancement."
+    "Continuity snapshots fixed to an older main must be closed unmerged after material main advancement.",
+    "Making freshness evidence mandatory can reorder fail-closed errors; existing negative tests must pass explicit authoritative evidence when they intend to exercise a later safety boundary."
   ],
   "authority_boundaries": {
     "credentials": false,
