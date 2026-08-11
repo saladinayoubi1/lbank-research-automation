@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "event_id": "2026-08-11-release-controls-main-bf7bb949",
+  "event_type": "repository_security_and_continuity_change",
+  "observed_main_sha": "bf7bb949d6f105d57548248c0cd120a496694c05",
+  "observed_at_utc": "2026-08-11T12:26:37Z",
+  "changes": [
+    {
+      "merged_pr": 330,
+      "merge_commit": "d62df5bbc6325242a47d6a6d5398474a1ae530db",
+      "summary": "Release-bundle verification now rejects undeclared regular files, symlinks, and non-regular entries fail-closed."
+    },
+    {
+      "merged_pr": 332,
+      "merge_commit": "b808b310a691e312e14229c1a7f0192ba62f3bd5",
+      "summary": "CODEOWNERS landed for control-plane review visibility.",
+      "security_boundary": "Visibility only; independent branch/rules enforcement and candidate-unmodifiable verification remain required."
+    },
+    {
+      "merged_pr": 334,
+      "merge_commit": "ab1c01409100e59dfa1b17b6e0d41a2b67bf12a6",
+      "summary": "Repository-owned continuity evidence for the CODEOWNERS change landed."
+    }
+  ],
+  "release_evidence": {
+    "pr330_head": "e15dc44a74f41180bbfebbdb9020a744183fdc36",
+    "release_readiness": "success",
+    "test": "success",
+    "nexus_build_verification": "success",
+    "nexus_cloud_fallback": "success"
+  },
+  "continuity": {
+    "state_json_stale": true,
+    "project_memory_freshness_issue": 283,
+    "laptop_shutdown_is_not_network_or_dns_failure": true,
+    "recovery_source_order": [
+      "repository_memory",
+      "STATE",
+      "decision_log",
+      "recovery_playbook",
+      "latest_CI_PR_evidence",
+      "drive_backup"
+    ]
+  },
+  "secrets_included": false
+}
