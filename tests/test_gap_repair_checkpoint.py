@@ -5,7 +5,16 @@ from pathlib import Path
 
 import pytest
 
-from gap_repair_checkpoint import CheckpointError, build_checkpoint, gap_set_digest, read_checkpoint, write_checkpoint
+from gap_repair_checkpoint import (
+    CheckpointError,
+    build_checkpoint,
+    checkpoint_lock,
+    gap_set_digest,
+    initialized_marker,
+    lock_path,
+    read_checkpoint,
+    write_checkpoint,
+)
 
 
 def gaps():
@@ -18,6 +27,25 @@ def test_checkpoint_round_trip_survives_process_memory_loss(tmp_path: Path):
     restored = read_checkpoint(path, symbol="btc_usdt", timeframe="minute15", gap_starts=gaps())
     assert restored.cursor == 1
     assert restored.gap_set_digest == gap_set_digest(gaps())
+    assert initialized_marker(path).exists()
+
+
+def test_deleted_initialized_checkpoint_is_rejected(tmp_path: Path):
+    path = tmp_path / "cursor.json"
+    write_checkpoint(path, build_checkpoint(symbol="btc_usdt", timeframe="minute15", gap_starts=gaps(), cursor=1))
+    path.unlink()
+    with pytest.raises(CheckpointError, match="missing after prior initialization"):
+        read_checkpoint(path, symbol="btc_usdt", timeframe="minute15", gap_starts=gaps())
+
+
+def test_concurrent_checkpoint_owner_fails_closed(tmp_path: Path):
+    path = tmp_path / "cursor.json"
+    with checkpoint_lock(path):
+        assert lock_path(path).exists()
+        with pytest.raises(CheckpointError, match="ownership is locked"):
+            with checkpoint_lock(path):
+                pass
+    assert not lock_path(path).exists()
 
 
 def test_stale_gap_set_is_rejected(tmp_path: Path):
