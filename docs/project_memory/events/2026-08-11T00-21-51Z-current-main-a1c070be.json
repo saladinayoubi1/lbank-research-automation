@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "event_type": "continuity_observation",
+  "observed_at_utc": "2026-08-11T00:21:51Z",
+  "repository": "saladinayoubi1/lbank-research-automation",
+  "observed_main_sha": "a1c070bec104e68c33e56106f6952fe8e0357297",
+  "main_verification": {
+    "status": "current",
+    "change_from_prior": "continuity PR #308 merged, followed by two public LBank candle refresh commits",
+    "architecture_or_core_goal_change_observed": false,
+    "stronger_authority_inferred": false
+  },
+  "pull_request_observation": {
+    "open_pull_requests": [309],
+    "pr_309_head_sha": "76c7ac65dc0608a05e445050e33e43d5e5639394",
+    "pr_309_mergeable": true,
+    "pr_309_exact_head_ci": [
+      "Test=success (Ubuntu/Windows/macOS)",
+      "NEXUS Build Verification=success",
+      "NEXUS Cloud Fallback=success"
+    ],
+    "pr_309_main_relation": "diverged; behind current main by two data-only commits",
+    "integration_policy": "do not merge until current-main compatibility and freshness are revalidated fail-closed"
+  },
+  "verified_open_blockers": {
+    "230": "cross-process/restart gap-repair recovery remains fail-closed",
+    "232": "USD $5.00/month hard-cap and billing authority remain fail-closed",
+    "283": "canonical Project Memory freshness/schema/conflict validation remains open; PR #309 is a partial validator slice and is not yet wired to CI"
+  },
+  "release_authority": {
+    "production_ready": false,
+    "artifact_manifest_gate_present": true,
+    "cyclonedx_sbom_gate_present": true,
+    "provenance_binding_gate_present": true,
+    "production_signature_policy_configured": false,
+    "reproducible_production_build_proven": false,
+    "rollback_exercised_in_production": false,
+    "backup_restore_rpo_rto_proven": false,
+    "independent_disaster_recovery_proven": false,
+    "owner_production_approval_observed": false
+  },
+  "recovery_lessons": [
+    "Repository and live PR/CI evidence override stale transient STATE fields until canonical freshness validation is complete.",
+    "Exact-head green CI does not authorize merging a SHA-bound continuity/freshness change after main advances; compatibility must be revalidated.",
+    "Laptop power state and network/DNS availability are distinct signals and must not be conflated."
+  ],
+  "authority_boundaries": {
+    "secrets_stored": false,
+    "private_transcript_stored": false,
+    "credential_action_performed": false,
+    "billing_action_performed": false,
+    "signing_action_performed": false,
+    "production_action_performed": false,
+    "irreversible_action_performed": false
+  }
+}
