@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "event_id": "2026-08-11-collector-pr-gate-524cdf6b",
+  "event_type": "repository_security_and_continuity_change",
+  "observed_main_sha": "524cdf6bb0fce978187d499431f8fbcd5f7adbd1",
+  "observed_at_utc": "2026-08-11T18:22:14Z",
+  "changes": [
+    {
+      "open_pr": 354,
+      "head_sha": "0e635e481932616ba42b26de109baa01d971b70f",
+      "summary": "Gap-checkpoint ownership hardening is replayed from exact current main and exact-head Test, NEXUS Build Verification, NEXUS Cloud Fallback, and public-kline gap probe are green.",
+      "security_boundary": "Issue #230 remains open because ownership does not yet cover the complete read/network/cursor-decision/durable-write transaction."
+    },
+    {
+      "open_pr": 355,
+      "head_sha": "80ffc5db0fcb65a3724376d4c58abe4aa4fe883e",
+      "summary": "Collector direct-main publication is being replaced with an automation branch and Draft PR path.",
+      "security_boundary": "Workflow Permissions Policy fails on the exact head; workflow-wide contents:write plus pull-requests:write is overbroad. Keep Draft and fail closed until least-privilege separation and adversarial bypass tests pass."
+    }
+  ],
+  "release_evidence": {
+    "exact_main_sha": "524cdf6bb0fce978187d499431f8fbcd5f7adbd1",
+    "production_authorized": false,
+    "reason": "No production approval, approved signer/trust policy, production signing, measured restore/DR proof, or irreversible production authority is recorded by this event."
+  },
+  "continuity": {
+    "laptop_shutdown_is_not_network_or_dns_failure": true,
+    "recovery_source_order": [
+      "repository_memory",
+      "STATE",
+      "decision_log",
+      "recovery_playbook",
+      "latest_CI_PR_evidence",
+      "drive_backup"
+    ]
+  },
+  "secrets_included": false
+}
