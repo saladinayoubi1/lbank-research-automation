@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0",
+  "event_id": "2026-08-11-release-controls-main-bf7bb949",
+  "event_type": "repository_security_and_continuity_change",
+  "observed_main_sha": "bf7bb949d6f105d57548248c0cd120a496694c05",
+  "observed_at_utc": "2026-08-11T12:26:37Z",
+  "changes": [
+    {
+      "merged_pr": 330,
+      "head_sha": "e15dc44a74f41180bbfebbdb9020a744183fdc36",
+      "merge_commit": "d62f35f429f5c0d6708eee62c121d271af84ba06",
+      "summary": "Release-bundle verification now rejects undeclared regular files, symlinks, and non-regular entries fail-closed."
+    },
+    {
+      "closed_unmerged_pr": 332,
+      "head_sha": "0fc9fd5c955852f8526d9cbeb34075d50ff5561e",
+      "summary": "Superseded CODEOWNERS replay closed without merge; it is not authoritative repository state."
+    },
+    {
+      "merged_pr": 334,
+      "head_sha": "b8cbaeb9557601dfbdbd2f830801d176c13973f2",
+      "merge_commit": "011ce70c74692b41ece7c141ac8d5826dc63133a",
+      "summary": "CODEOWNERS coverage landed for the NEXUS control-plane tuple and for .github/CODEOWNERS itself.",
+      "security_boundary": "Visibility/ownership metadata only; independent branch/rules enforcement and candidate-unmodifiable verification remain required."
+    },
+    {
+      "main_commit": "bf7bb949d6f105d57548248c0cd120a496694c05",
+      "summary": "Public LBank candle data refresh advanced main after PR #334 without changing the NEXUS authority boundary."
+    }
+  ],
+  "release_evidence": {
+    "pr330_head": "e15dc44a74f41180bbfebbdb9020a744183fdc36",
+    "release_readiness": "success",
+    "test": "success",
+    "nexus_build_verification": "success",
+    "nexus_cloud_fallback": "success"
+  },
+  "continuity": {
+    "state_json_stale": true,
+    "project_memory_freshness_issue": 283,
+    "laptop_shutdown_is_not_network_or_dns_failure": true,
+    "recovery_source_order": [
+      "repository_memory",
+      "STATE",
+      "decision_log",
+      "recovery_playbook",
+      "latest_CI_PR_evidence",
+      "drive_backup"
+    ]
+  },
+  "secrets_included": false
+}
