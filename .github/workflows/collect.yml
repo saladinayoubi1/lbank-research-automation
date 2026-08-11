@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
 
 concurrency:
   group: lbank-market-collector
@@ -51,7 +50,6 @@ jobs:
         id: data_commit
         shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
           DATA_BRANCH: automation/lbank-market-data
         run: |
           git config user.name "github-actions[bot]"
@@ -67,27 +65,12 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Open or retain draft data PR
+      - name: Report data publication target
         if: steps.data_commit.outputs.changed == 'true'
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          DATA_BRANCH: automation/lbank-market-data
-        run: |
-          pr_number="$(gh pr list --head "$DATA_BRANCH" --base main --state open --json number --jq '.[0].number // empty')"
-          if [ -z "$pr_number" ]; then
-            gh pr create \
-              --base main \
-              --head "$DATA_BRANCH" \
-              --draft \
-              --title "data: update LBank public candles" \
-              --body "Automated public-market data update. Keep draft until exact-head CI and release gates are green."
-          else
-            echo "Existing data PR #$pr_number retained."
-          fi
+        run: echo "Data update published to automation/lbank-market-data; main remains unchanged pending reviewed PR promotion."
 
       - name: Report gap repair failure
         if: steps.gap_repair.outcome == 'failure'
         run: |
-          echo "::error::Gap repair failed; data changes remain isolated on the automation branch/PR."
+          echo "::error::Gap repair failed; data changes remain isolated on the automation branch."
           exit 1
