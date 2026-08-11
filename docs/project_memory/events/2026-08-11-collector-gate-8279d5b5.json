@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0",
+  "event_id": "2026-08-11-collector-gate-8279d5b5",
+  "event_type": "repository_security_and_continuity_change",
+  "observed_main_sha": "8279d5b53ca5653276487ed22aaf08ca44cdc49b",
+  "observed_at_utc": "2026-08-11T18:35:00Z",
+  "changes": [
+    {
+      "pr": 354,
+      "head_sha": "0e635e481932616ba42b26de109baa01d971b70f",
+      "summary": "Gap-checkpoint hardening had exact-head green Test, NEXUS Build Verification, NEXUS Cloud Fallback, and public-kline gap probe before main advanced.",
+      "security_boundary": "Issue #230 remains open: ownership is not proven across the complete read/network-repair/cursor-decision/durable-write transaction, including crash durability and orphan-lock recovery."
+    },
+    {
+      "pr": 355,
+      "head_sha": "80ffc5db0fcb65a3724376d4c58abe4aa4fe883e",
+      "summary": "Collector publication was proposed to move from direct-main writes to an automation branch plus Draft PR.",
+      "security_boundary": "Exact-head Workflow Permissions Policy failed because workflow-wide contents:write plus pull-requests:write is overbroad. Keep fail closed until least-privilege separation and adversarial bypass tests pass."
+    },
+    {
+      "summary": "All previously open remediation/continuity PRs became closed without merge after main advanced via public LBank data refresh; no stale snapshot is treated as authority."
+    }
+  ],
+  "release_evidence": {
+    "exact_main_sha": "8279d5b53ca5653276487ed22aaf08ca44cdc49b",
+    "production_authorized": false,
+    "reason": "Exact-main release-readiness proof was not established in this observation; signing, production approval, measured restore/DR proof, and irreversible production authority remain absent."
+  },
+  "continuity": {
+    "laptop_shutdown_is_not_network_or_dns_failure": true,
+    "recovery_source_order": ["repository_memory", "STATE", "decision_log", "recovery_playbook", "latest_CI_PR_evidence", "drive_backup"]
+  },
+  "secrets_included": false
+}
