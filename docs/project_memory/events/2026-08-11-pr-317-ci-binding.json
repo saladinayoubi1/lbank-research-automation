@@ -1,25 +1,25 @@
 {
   "schema_version": 1,
-  "event": "project_memory_ci_binding_candidate_validated",
-  "observed_at_utc": "2026-08-11T03:12:00Z",
+  "event": "project_memory_ci_binding_candidate_closed_fail_closed",
+  "observed_at_utc": "2026-08-11T03:29:55Z",
   "source_main_sha": "d933b7b01c39fae0140e6ad191134e65f84a7797",
   "pull_request": 317,
   "pull_request_head_sha": "20fdc4d7b3c5c10af4e2796262d5540d30781f2f",
   "facts": [
     "Current main advanced from ad58504d35a44eea7a4f4e3d4128e3a0f50ea521 by one LBank public-candle refresh commit only.",
     "PR #316 was closed unmerged after its fixed-main continuity snapshot became stale.",
-    "Draft PR #317 binds Project Memory validation in pull-request context to github.event.pull_request.base.sha when canonical memory or the validator changes.",
-    "PR #317 exact head has successful Workflow Permissions Policy, Test, NEXUS Build Verification, and NEXUS Cloud Fallback runs and is mergeable.",
-    "PR #317 does not close issue #283 and does not prove merge-time base-advance revalidation, immutable-workspace/TOCTOU resistance, or independent protection against candidate weakening of the workflow/gate."
+    "PR #317 exact head had successful Workflow Permissions Policy, Test, NEXUS Build Verification, and NEXUS Cloud Fallback runs and was mergeable with zero unresolved review threads.",
+    "Review found that PR #317 was not independently self-protecting: candidate-controlled changes could weaken the new gate/workflow/validator and green candidate CI could not independently attest checker integrity.",
+    "PR #317 was closed unmerged on 2026-08-11; issue #283 remains open and fail-closed, with issue #106 the control-plane dependency."
   ],
   "decisions": [
-    "Keep Project Memory freshness fail-closed until the remaining #283 trust-boundary and merge-time revalidation claims are proven.",
-    "Do not merge this continuity event while PR #317 is under active validation; it is a non-overlapping durable record only."
+    "Do not merge candidate-owned freshness enforcement until an independently trusted enforcement path protects the verifier and workflow from self-authorization.",
+    "Keep Project Memory freshness fail-closed until #106/#283 trust-boundary, merge-time revalidation, rollback, recovery, and bypass tests are proven."
   ],
   "lessons": [
-    "Authoritative pull-request base SHA is stronger freshness evidence than self-reported repository state but is not by itself a complete merge-time freshness guarantee.",
-    "Data-only main drift must remain distinct from architecture, authority, or core-goal change.",
-    "Laptop power state and internet or DNS outage remain separate recovery states."
+    "Green CI is insufficient when the candidate can modify the control that interprets the evidence.",
+    "Authoritative pull-request base SHA is useful freshness evidence but does not by itself establish an independently trustworthy merge-time freshness authority.",
+    "Data-only main drift must remain distinct from architecture, authority, or core-goal change."
   ],
   "authority_boundary": {
     "credentials": false,
