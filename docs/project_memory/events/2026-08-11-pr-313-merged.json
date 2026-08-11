@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "event": "project_memory_fail_closed_hardening_merged",
+  "observed_at_utc": "2026-08-11T01:30:00Z",
+  "source_main_sha": "3f00d45b396ba4a1e3d785f5bd1ee95b546f4523",
+  "resulting_main_sha": "ad58504d35a44eea7a4f4e3d4128e3a0f50ea521",
+  "pull_request": 313,
+  "pull_request_head_sha": "e191dd3e02cc2fe79e8bbdb7fe257d5d16156671",
+  "facts": [
+    "PR #313 merged only after Test, NEXUS Build Verification, and NEXUS Cloud Fallback succeeded on the exact final head.",
+    "The PR was mergeable and had zero unresolved review threads before merge.",
+    "Canonical Project Memory symlink substitution is now rejected.",
+    "Successful Project Memory validation now requires an explicit authoritative expected observed-main SHA.",
+    "PR #312 was closed unmerged because its fixed-base continuity snapshot became stale after main advanced."
+  ],
+  "decisions": [
+    "Issue #283 remains open and fail-closed until canonical STATE freshness, authoritative CI SHA wiring, and the remaining TOCTOU/immutable-workspace claim are proven.",
+    "Do not weaken freshness or canonical-path validation to obtain green CI."
+  ],
+  "lessons": [
+    "A green validator without an externally supplied authoritative SHA is insufficient freshness evidence.",
+    "Canonical filenames must not be allowed to redirect through symlinks.",
+    "A continuity snapshot fixed to an older main must be closed unmerged once main advances."
+  ],
+  "authority_boundary": {
+    "credentials": false,
+    "billing": false,
+    "signing": false,
+    "production_deployment": false,
+    "live_trading": false,
+    "irreversible_action": false
+  }
+}
