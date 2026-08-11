@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0",
+  "event_id": "2026-08-11-gap-recovery-adr-e96409d7",
+  "event_type": "repository_reliability_and_continuity_change",
+  "observed_main_sha": "f3d15ddd30b8dc97574a563a17f0198bac7eadb1",
+  "facts": [
+    "Draft PR #362 advanced from fd34276989856de102fae36f84cb77ec9936ca93 to e96409d7da1a1d5df684f06512f12b771410e49e after adding ADR-0230 for durable gap-repair checkpoint recovery.",
+    "ADR-0230 binds checkpoint authority to symbol, timeframe, ordered gap-set digest and schema version; defines bounded repair, ownership, threat/failure cases, rollback/recovery replay and obsolescence triggers.",
+    "ADR-0230 explicitly rejects age-only or PID-only orphan-lock breaking and narrows current durability claims because portable containing-directory crash durability is not proven.",
+    "Prior green workflow evidence on fd34276989856de102fae36f84cb77ec9936ca93 is superseded for merge purposes; fresh exact-head CI is required on e96409d7da1a1d5df684f06512f12b771410e49e.",
+    "Issue #230 remains open and fail-closed because safe orphan-lock recovery, portable directory-entry durability, adversarial crash/path/lock bypass replay and policy/test co-weakening evidence are incomplete."
+  ],
+  "decisions": [
+    "Keep PR #362 Draft until all remaining #230 gates align on one fixed head and base remains exact current main.",
+    "Do not automatically delete ambiguous orphan locks using age or PID heuristics.",
+    "Do not claim cross-filesystem crash durability beyond evidence actually implemented and tested."
+  ],
+  "lessons": [
+    "A recovery ADR should narrow claims when filesystem or ownership evidence is incomplete rather than converting green CI into authority.",
+    "Orphan-lock recovery requires a provable ownership/liveness contract; ambiguous cleanup is a concurrency safety risk.",
+    "Any head mutation supersedes prior exact-head merge evidence and requires fresh gates."
+  ],
+  "safety_boundary": {
+    "research_only": true,
+    "production_authority": false,
+    "credentials_or_billing_changed": false,
+    "signing_or_deployment_performed": false,
+    "live_trading_performed": false
+  }
+}
