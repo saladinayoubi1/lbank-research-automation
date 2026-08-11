@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0",
+  "event_id": "2026-08-12-gap-recovery-ordering-b0f4c492",
+  "event_type": "repository_reliability_and_continuity_change",
+  "observed_main_sha": "f3d15ddd30b8dc97574a563a17f0198bac7eadb1",
+  "facts": [
+    "Draft PR #362 advanced from ef650dc9ff86a77bdc05af86a7241ea3515cd8f4 to b0f4c49219ff23ebc477aa1e665882c3573bf569 with test-only coverage for checkpoint restart persistence and data-save-before-cursor ordering.",
+    "At exact PR #362 head b0f4c49219ff23ebc477aa1e665882c3573bf569, Test, NEXUS Build Verification, NEXUS Cloud Fallback, and Probe public kline gaps completed successfully.",
+    "The new failure-ordering regression proves a simulated durable data-save failure does not advance the cursor and does not leave the transaction lock behind.",
+    "The new restart regression proves bounded cursor state survives module reload and rotates to a different eligible gap on the next bounded invocation.",
+    "Issue #230 remains fail-closed because safe orphan-lock recovery/quarantine authority, portable containing-directory crash durability or a tested narrower contract, alternate-path/crash-window replay, and independent policy/test co-weakening evidence remain incomplete."
+  ],
+  "decisions": [
+    "Keep PR #362 Draft and do not merge solely because exact-head CI is green.",
+    "Preserve ambiguous pre-existing locks rather than age/PID-breaking them without a versioned liveness contract.",
+    "Treat production signing, approval, credentials, billing, deployment, and other irreversible authority as owner-blocked."
+  ],
+  "lessons": [
+    "Failure-ordering tests should prove the fairness cursor cannot become authoritative ahead of durable recovered data.",
+    "Process/module restart persistence is distinct from machine shutdown recovery and from internet/DNS outage recovery; these failure modes must remain separately evidenced.",
+    "Exact-head green CI does not by itself prove independent repository enforcement or production disaster recovery."
+  ],
+  "safety_boundary": {
+    "research_only": true,
+    "production_authority": false,
+    "credentials_or_billing_changed": false,
+    "signing_or_deployment_performed": false,
+    "live_trading_performed": false,
+    "private_transcript_stored": false
+  }
+}
