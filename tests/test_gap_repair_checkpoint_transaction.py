@@ -178,3 +178,41 @@ def test_bounded_cursor_survives_module_reload_and_rotates_next_gap(monkeypatch,
 
     assert len(second_requests) == 1
     assert second_requests[0] != first_requests[0]
+
+
+def test_fixed_gap_set_is_exhaustively_traversed_across_clean_restarts(monkeypatch, tmp_path):
+    requested = []
+    for _ in range(3):
+        module = load_module(monkeypatch)
+        module.OUTPUT_ROOT = tmp_path
+        module.MAX_GAP_WINDOWS_PER_SERIES_PER_RUN = 1
+        module.read_existing = lambda path: multi_gap_frame()
+        module.get_klines = lambda symbol, timeframe, start: requested.append(start) or []
+        module.repair_series_with_outcomes("btc_usdt", "minute15")
+
+    assert len(requested) == 3
+    assert len(set(requested)) == 3
+
+
+def test_gap_set_change_fails_closed_before_network(monkeypatch, tmp_path):
+    module = load_module(monkeypatch)
+    module.OUTPUT_ROOT = tmp_path
+    module.MAX_GAP_WINDOWS_PER_SERIES_PER_RUN = 1
+    module.read_existing = lambda path: multi_gap_frame()
+    module.get_klines = lambda *args, **kwargs: []
+    module.repair_series_with_outcomes("btc_usdt", "minute15")
+
+    changed = load_module(monkeypatch)
+    changed.OUTPUT_ROOT = tmp_path
+    changed.MAX_GAP_WINDOWS_PER_SERIES_PER_RUN = 1
+    changed.read_existing = lambda path: gapped_frame()
+    requested = []
+    changed.get_klines = lambda *args, **kwargs: requested.append(True) or []
+
+    repaired, failures, outcomes = changed.repair_series_with_outcomes(
+        "btc_usdt", "minute15"
+    )
+
+    assert (repaired, failures) == (0, 0)
+    assert requested == []
+    assert [outcome.status for outcome in outcomes] == ["checkpoint_invalid"]
