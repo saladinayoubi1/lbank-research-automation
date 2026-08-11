@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "event": "current_main_continuity_refresh",
+  "observed_at_utc": "2026-08-11T11:27:00Z",
+  "source_main_sha": "40ba525ba02c46b7b68f3b74ba8285f48ef1b505",
+  "facts": [
+    "Current main advanced from c1d1621c0838c4c5bf625c2f6bc10c26274d8bc9 to 40ba525ba02c46b7b68f3b74ba8285f48ef1b505 through a public LBank candle refresh commit only; no observed architecture, core-goal, signing, billing, credential, or production-authority change.",
+    "PRs #325, #328, and #329 were closed unmerged after their fixed-base snapshots became stale.",
+    "The undeclared release-bundle-content bypass remains absent from main, so Draft PR #330 recreates the previously validated fail-closed inventory hardening from exact current main.",
+    "PR #330 exact head e15dc44a74f41180bbfebbdb9020a744183fdc36 has Release Readiness successful while Test, NEXUS Build Verification, and NEXUS Cloud Fallback are still in progress at observation time.",
+    "Production release remains fail-closed because approved signer identity/trust policy, owner production approval, reproducible production build proof, exercised production rollback, measured backup/restore RPO/RTO, and independent disaster-recovery proof remain unproven or unauthorized."
+  ],
+  "decisions": [
+    "Keep PR #330 Draft and unmerged until exact-final-head CI is fully green, mergeability/review evidence is clean, and base freshness is revalidated.",
+    "Do not perform signing, production approval, credential, billing, deployment, live-trading, or irreversible actions without explicit owner authority.",
+    "Preserve repository Project Memory as the primary durable source and Google Drive as independent secondary redundancy.",
+    "Preserve the distinction between laptop shutdown/offline and internet or DNS failure."
+  ],
+  "lessons": [
+    "Routine data-only main drift invalidates fixed-base continuity and hardening PRs even when their code remains valid.",
+    "A previously green hardening patch must be recreated and revalidated on exact current main rather than merged from stale evidence.",
+    "Release-bundle integrity requires closed-world inventory verification in addition to manifest digests."
+  ],
+  "release_readiness": {
+    "production_ready": false,
+    "artifact_manifest_gate_present": true,
+    "bundle_inventory_gate_candidate_pr": 330,
+    "cyclonedx_sbom_gate_present": true,
+    "provenance_binding_gate_present": true,
+    "production_signature_policy_configured": false,
+    "reproducible_build_comparison_gate_present": true,
+    "reproducible_production_build_proven": false,
+    "rollback_record_gate_present": true,
+    "rollback_exercised_in_production": false,
+    "backup_restore_rpo_rto_proven": false,
+    "independent_disaster_recovery_proven": false,
+    "owner_production_approval": false
+  },
+  "authority_boundary": {
+    "credentials": false,
+    "billing": false,
+    "signing": false,
+    "production_deployment": false,
+    "live_trading": false,
+    "irreversible_action": false
+  }
+}
