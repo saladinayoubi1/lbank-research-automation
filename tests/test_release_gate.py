@@ -79,7 +79,7 @@ class ReleaseGateTests(unittest.TestCase):
         )
 
     def test_unsigned_ci_bundle_passes_internal_consistency(self):
-        self.assertEqual(self.verify_ci(self.bundle()), ["manifest", "sbom-complete", "provenance-fresh", "artifact-digests"])
+        self.assertEqual(self.verify_ci(self.bundle()), ["manifest", "bundle-inventory", "sbom-complete", "provenance-fresh", "artifact-digests"])
 
     def test_production_fails_closed_without_signature_policy(self):
         with self.assertRaisesRegex(ValueError, "signature"):
@@ -105,6 +105,30 @@ class ReleaseGateTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "safe relative path"):
             self.verify_ci(root)
 
+    def test_unmanifested_file_fails_closed(self):
+        root = self.bundle()
+        (root / "extra.bin").write_bytes(b"undeclared")
+        with self.assertRaisesRegex(ValueError, "unmanifested file"):
+            self.verify_ci(root)
+
+    def test_unmanifested_nested_file_fails_closed(self):
+        root = self.bundle()
+        (root / "extra").mkdir()
+        (root / "extra" / "payload.bin").write_bytes(b"undeclared")
+        with self.assertRaisesRegex(ValueError, "unmanifested file"):
+            self.verify_ci(root)
+
+    def test_unmanifested_symlink_fails_closed(self):
+        root = self.bundle()
+        outside = Path(tempfile.mkdtemp()) / "outside.bin"
+        outside.write_bytes(b"outside")
+        try:
+            (root / "extra-link").symlink_to(outside)
+        except OSError:
+            self.skipTest("symlinks unavailable on this runner")
+        with self.assertRaisesRegex(ValueError, "symlink is not allowed"):
+            self.verify_ci(root)
+
     def test_symlinked_artifact_fails_closed(self):
         root = self.bundle()
         outside = Path(tempfile.mkdtemp()) / "outside.bin"
@@ -126,7 +150,7 @@ class ReleaseGateTests(unittest.TestCase):
             (root / "provenance.json").symlink_to(outside)
         except OSError:
             self.skipTest("symlinks unavailable on this runner")
-        with self.assertRaisesRegex(ValueError, "JSON file must not be a symlink"):
+        with self.assertRaisesRegex(ValueError, "symlink"):
             self.verify_ci(root)
 
     def test_symlinked_bundle_root_fails_closed(self):
