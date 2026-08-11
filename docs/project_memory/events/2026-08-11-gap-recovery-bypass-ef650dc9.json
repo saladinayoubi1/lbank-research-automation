@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0",
+  "event_id": "2026-08-11-gap-recovery-bypass-ef650dc9",
+  "event_type": "repository_reliability_and_continuity_change",
+  "observed_main_sha": "f3d15ddd30b8dc97574a563a17f0198bac7eadb1",
+  "facts": [
+    "Draft PR #362 advanced from e96409d7da1a1d5df684f06512f12b771410e49e to ef650dc9ff86a77bdc05af86a7241ea3515cd8f4 after adding explicit checkpoint downgrade and pre-existing/orphan-lock bypass regressions.",
+    "The new regression coverage rejects unsupported checkpoint schema downgrade and proves that an existing lock is preserved rather than automatically broken from ambiguous PID/age evidence.",
+    "All four observed workflows were green on the superseded e96409d7da1a1d5df684f06512f12b771410e49e head; that evidence is no longer merge-authoritative after the head mutation.",
+    "Fresh Test, NEXUS Build Verification, NEXUS Cloud Fallback and Probe public kline gaps runs started for ef650dc9ff86a77bdc05af86a7241ea3515cd8f4.",
+    "Issue #230 remains open and fail-closed for safe orphan-lock recovery/quarantine authority, portable containing-directory crash durability or a tested narrower contract, alternate-path/crash-window replay, policy/test co-weakening evidence and final fixed-head gates."
+  ],
+  "decisions": [
+    "Keep PR #362 Draft and do not merge until residual #230 gates and fresh exact-head CI/review evidence align on one fixed head.",
+    "Preserve ambiguous pre-existing locks rather than inferring liveness from PID or age.",
+    "Treat prior exact-head CI as superseded immediately after any PR head mutation."
+  ],
+  "lessons": [
+    "Bypass requirements should be encoded as deterministic regression tests where possible instead of remaining documentation-only claims.",
+    "Fail-closed orphan-lock behavior is safer than heuristic lock breaking, but it is not equivalent to a complete recovery mechanism.",
+    "Project Memory should record both newly proven behavior and the residual claim boundary after a material reliability change."
+  ],
+  "safety_boundary": {
+    "research_only": true,
+    "production_authority": false,
+    "credentials_or_billing_changed": false,
+    "signing_or_deployment_performed": false,
+    "live_trading_performed": false
+  }
+}
