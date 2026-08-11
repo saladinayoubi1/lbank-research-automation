@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "event": "current_main_continuity_refresh",
+  "observed_at_utc": "2026-08-11T08:31:00Z",
+  "source_main_sha": "9f3463e20f131c557fae1e21d45bf90a9c0620f4",
+  "facts": [
+    "Current main advanced from 117abf5cd76b00e5a2eca2728a22caf1684b2b1e to 9f3463e20f131c557fae1e21d45bf90a9c0620f4 through public LBank candle refresh commits only.",
+    "PR #321 was closed unmerged after its fixed-main continuity snapshot became stale.",
+    "Draft PR #322 is open from exact current main and adds preparatory CODEOWNERS metadata for NEXUS control-plane paths; it explicitly does not satisfy issue #106 without independently enforced code-owner review or an equivalent protected authority.",
+    "At observation time PR #322 is mergeable and its Test, NEXUS Build Verification, and NEXUS Cloud Fallback workflow runs are still in progress.",
+    "Canonical docs/project_memory/STATE.json remains materially stale relative to exact current main and continues to be non-authoritative for transient repository state."
+  ],
+  "decisions": [
+    "Do not merge continuity snapshots or control-plane hardening while exact-final-head CI is incomplete or fixed-main freshness is stale.",
+    "Do not treat CODEOWNERS metadata alone as an independent enforcement boundary; issue #106 remains fail-closed until repository rules or equivalent trusted enforcement and bypass/recovery proof exist.",
+    "Preserve the distinction between laptop power-off and network or DNS failure."
+  ],
+  "lessons": [
+    "Routine data-only main drift invalidates fixed-main continuity snapshots without changing architecture or authority boundaries.",
+    "Candidate-visible ownership metadata is useful preparatory control but is not self-protecting enforcement unless the repository independently requires it.",
+    "Connector-visible GitHub CI is usable repository evidence, while local clone failure from DNS must not be misclassified as laptop power-off."
+  ],
+  "release_readiness": {
+    "production_ready": false,
+    "artifact_manifest_gate_present": true,
+    "cyclonedx_sbom_gate_present": true,
+    "provenance_binding_gate_present": true,
+    "production_signature_policy_configured": false,
+    "reproducible_build_comparison_gate_present": true,
+    "reproducible_production_build_proven": false,
+    "rollback_record_gate_present": true,
+    "rollback_exercised_in_production": false,
+    "backup_restore_rpo_rto_proven": false,
+    "independent_disaster_recovery_proven": false,
+    "owner_production_approval": false
+  },
+  "authority_boundary": {
+    "credentials": false,
+    "billing": false,
+    "signing": false,
+    "production_deployment": false,
+    "live_trading": false,
+    "irreversible_action": false
+  }
+}
