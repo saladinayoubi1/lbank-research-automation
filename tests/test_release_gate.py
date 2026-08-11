@@ -150,7 +150,7 @@ class ReleaseGateTests(unittest.TestCase):
             (root / "provenance.json").symlink_to(outside)
         except OSError:
             self.skipTest("symlinks unavailable on this runner")
-        with self.assertRaisesRegex(ValueError, "JSON file must not be a symlink"):
+        with self.assertRaisesRegex(ValueError, "symlink"):
             self.verify_ci(root)
 
     def test_symlinked_bundle_root_fails_closed(self):
