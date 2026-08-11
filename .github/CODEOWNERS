@@ -1,0 +1,8 @@
+# NEXUS control-plane ownership.
+# Preparatory metadata only until independently enforced repository rules require CODEOWNER review.
+# Self-protect the ownership policy as part of the same control-plane tuple.
+/.github/CODEOWNERS @saladinayoubi1
+/.github/workflows/tests.yml @saladinayoubi1
+/nexus_architecture_validator.py @saladinayoubi1
+/docs/architecture/module-contract-registry.yaml @saladinayoubi1
+/tests/ @saladinayoubi1
