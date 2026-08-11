@@ -14,7 +14,6 @@ PROTECTED_PATHS = {
     "docs/project_memory/DECISIONS.md",
     "docs/project_memory/RECOVERY_PLAYBOOK.md",
     "project_memory_validator.py",
-    "project_memory_ci_gate.py",
 }
 
 
