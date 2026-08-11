@@ -1,0 +1,58 @@
+{
+  "schema_version": "1.0",
+  "event_id": "2026-08-11-continuity-010771ff",
+  "event_type": "repository_continuity_update",
+  "observed_main_sha": "010771ffd0a118ce20302b7c7d61a05fd2ff689e",
+  "observed_at_utc": "2026-08-11T16:18:53Z",
+  "changes": [
+    {
+      "type": "project_memory_freshness_hardening",
+      "pr": 349,
+      "summary": "PR #349 merged and binds Project Memory validation to the exact pull-request base SHA when canonical memory or its validator changes; exact PR-head CI passed."
+    },
+    {
+      "type": "exact_main_release_evidence",
+      "summary": "Exact-main push evidence now includes successful Release Readiness, Test, NEXUS Build Verification, NEXUS Cloud Fallback, Release Recovery and Workflow Permissions Policy runs. Release Readiness passed on Ubuntu, Windows and macOS; build verification produced Windows and Android artifacts with GitHub SHA-256 digests."
+    },
+    {
+      "type": "control_plane_blocker",
+      "issue": 106,
+      "summary": "The main branch is currently unprotected and required-status-check enforcement is off, so repository CI and CODEOWNERS are not independently fail-closed against direct pushes. No branch-protection or repository-rules mutation was made without owner governance approval."
+    }
+  ],
+  "continuity": {
+    "canonical_state_file_remains_stale": true,
+    "canonical_state_recorded_main_sha": "af020c6249477bd591eb85b77e7ff0112b19b0c3",
+    "project_memory_freshness_issue": 283,
+    "laptop_power_off_is_not_internet_outage": true,
+    "recovery_order": [
+      "repository project memory",
+      "STATE",
+      "decision log",
+      "recovery playbook",
+      "exact current CI and PR evidence",
+      "Google Drive backup"
+    ]
+  },
+  "release_readiness": {
+    "production_ready": false,
+    "exact_main_release_readiness_success": true,
+    "exact_main_cross_platform_release_gate": ["ubuntu-latest", "windows-latest", "macos-latest"],
+    "artifact_build_evidence_present": true,
+    "production_signature_policy_configured": false,
+    "reproducible_production_build_proven": false,
+    "rollback_exercised_in_production": false,
+    "backup_restore_rpo_rto_proven": false,
+    "independent_disaster_recovery_proven": false,
+    "owner_production_approval": false
+  },
+  "authority_boundaries": {
+    "signing_authorized": false,
+    "production_approval_granted": false,
+    "credential_use_authorized": false,
+    "billing_authorized": false,
+    "live_trading_authorized": false,
+    "irreversible_action_authorized": false
+  },
+  "secrets_included": false
+}
