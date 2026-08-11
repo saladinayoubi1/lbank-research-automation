@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 concurrency:
   group: lbank-market-collector
@@ -20,6 +21,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -44,21 +47,47 @@ jobs:
       - name: Generate dataset snapshot manifest
         run: python snapshot_manifest.py
 
-      - name: Commit data changes
+      - name: Commit data changes to automation branch
+        id: data_commit
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DATA_BRANCH: automation/lbank-market-data
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -f data/market
           if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "No data changes."
           else
             git commit -m "data: update LBank public candles"
-            git push
+            git fetch origin "$DATA_BRANCH:refs/remotes/origin/$DATA_BRANCH" || true
+            git push --force-with-lease origin "HEAD:refs/heads/$DATA_BRANCH"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open or retain draft data PR
+        if: steps.data_commit.outputs.changed == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DATA_BRANCH: automation/lbank-market-data
+        run: |
+          pr_number="$(gh pr list --head "$DATA_BRANCH" --base main --state open --json number --jq '.[0].number // empty')"
+          if [ -z "$pr_number" ]; then
+            gh pr create \
+              --base main \
+              --head "$DATA_BRANCH" \
+              --draft \
+              --title "data: update LBank public candles" \
+              --body "Automated public-market data update. Keep draft until exact-head CI and release gates are green."
+          else
+            echo "Existing data PR #$pr_number retained."
           fi
 
       - name: Report gap repair failure
         if: steps.gap_repair.outcome == 'failure'
         run: |
-          echo "::error::Gap repair failed after collector data was committed."
+          echo "::error::Gap repair failed; data changes remain isolated on the automation branch/PR."
           exit 1
