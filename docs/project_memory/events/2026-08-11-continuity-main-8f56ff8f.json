@@ -1,0 +1,49 @@
+{
+  "schema_version": "1.0",
+  "event_id": "2026-08-11-continuity-main-8f56ff8f",
+  "event_type": "repository_security_and_continuity_change",
+  "observed_main_sha": "8f56ff8fb4549be5732424530f67f84d589308d6",
+  "observed_at_utc": "2026-08-11T13:20:00Z",
+  "changes": [
+    {
+      "merged_pr": 336,
+      "merge_commit": "59b0e359e8d0182cf974433fbe63044c246e737d",
+      "summary": "Repository-owned continuity event for release hardening and control-plane state landed on main."
+    },
+    {
+      "main_commit": "8f56ff8fb4549be5732424530f67f84d589308d6",
+      "summary": "Public LBank candle refresh advanced main after PR #336 without changing architecture, goals, or authority boundaries."
+    },
+    {
+      "open_pr": 338,
+      "head_sha": "3db2bd166fe05c01ee8bd067d20b295243143d9d",
+      "base_sha": "59b0e359e8d0182cf974433fbe63044c246e737d",
+      "summary": "Project Memory CI binding candidate has successful exact-head Workflow Permissions Policy, Test, NEXUS Build Verification, and NEXUS Cloud Fallback, but its recorded base is behind current main and must not be treated as exact-current-main evidence."
+    }
+  ],
+  "release_evidence": {
+    "current_main_commit_workflow_runs": 0,
+    "production_readiness": "FAIL_CLOSED",
+    "reason": "No commit-associated workflow run was observed for the exact current main SHA. Existing validated release controls remain bounded evidence only."
+  },
+  "continuity": {
+    "project_memory_freshness_issue": 283,
+    "laptop_shutdown_is_not_network_or_dns_failure": true,
+    "recovery_source_order": [
+      "repository_memory",
+      "STATE",
+      "decision_log",
+      "recovery_playbook",
+      "latest_CI_PR_evidence",
+      "drive_backup"
+    ]
+  },
+  "authority_boundaries": {
+    "signing_authorized": false,
+    "production_approval_granted": false,
+    "credential_use_authorized": false,
+    "billing_authorized": false,
+    "irreversible_action_authorized": false
+  },
+  "secrets_included": false
+}
