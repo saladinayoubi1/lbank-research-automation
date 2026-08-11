@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "event": "current_main_continuity_refresh",
+  "observed_at_utc": "2026-08-11T07:15:05Z",
+  "source_main_sha": "117abf5cd76b00e5a2eca2728a22caf1684b2b1e",
+  "facts": [
+    "Current main advanced from 8e4bbc598236cf1ea6d2e1af978a7bbdb381a715 to 117abf5cd76b00e5a2eca2728a22caf1684b2b1e through a public LBank candle refresh commit only.",
+    "PR #320 was fixed to the older main SHA and was closed unmerged after its source snapshot became stale.",
+    "Issue #283 remains open; exact current repository evidence overrides stale transient state."
+  ],
+  "decisions": [
+    "Do not merge fixed-main continuity snapshots after main advances; close them unmerged and regenerate from exact current main.",
+    "Do not weaken memory, release, security, data-integrity or recovery gates to reconcile stale state.",
+    "Preserve the distinction between laptop power-off and network or DNS failure."
+  ],
+  "lessons": [
+    "Routine collector commits can invalidate an otherwise green continuity snapshot without changing architecture, goals or authority boundaries.",
+    "Exact-current-main evidence must be rechecked immediately before merge."
+  ],
+  "release_readiness": {
+    "production_ready": false,
+    "signing_authority": false,
+    "production_approval": false,
+    "reproducible_production_build_proven": false,
+    "rollback_exercised_in_production": false,
+    "backup_restore_rpo_rto_proven": false,
+    "independent_disaster_recovery_proven": false
+  }
+}
