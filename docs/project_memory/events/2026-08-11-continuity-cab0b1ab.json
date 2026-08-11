@@ -1,0 +1,53 @@
+{
+  "schema_version": "1.0",
+  "event_id": "2026-08-11-continuity-cab0b1ab",
+  "event_type": "repository_continuity_update",
+  "observed_main_sha": "cab0b1ab7e6eee5ad36a927c01cb06bddf03e0b6",
+  "observed_at_utc": "2026-08-11T14:35:00Z",
+  "changes": [
+    {
+      "type": "main_advance",
+      "summary": "Main advanced after PR #341 through a direct-main LBank public-candle refresh commit. No architecture, core-goal, credential, billing, signing, deployment, or live-trading authority change is inferred from this data commit."
+    },
+    {
+      "type": "stale_pr_closed",
+      "pr": 342,
+      "merged": false,
+      "summary": "PR #342 was closed unmerged because its fixed base e79fe87d4218fa61a30191f225c3fea985b1556f was no longer exact current main, despite green exact-head CI and zero unresolved review threads."
+    },
+    {
+      "type": "ci_triage",
+      "issue": 343,
+      "summary": "Test failure on e79fe87d was classified as transient runner/storage I/O during macOS dependency installation; Ubuntu and Windows passed. Only the failed macOS job was retried within bounded retry policy."
+    }
+  ],
+  "data_quality": {
+    "evaluated_at_utc": "2026-08-11T14:24:35.129272+00:00",
+    "tracked_series": 21,
+    "research_ready_series": 2,
+    "blocked_series": 19,
+    "missing_candles_total": 918,
+    "all_series_fresh": true,
+    "blocked_reason": "historical_integrity_gaps",
+    "policy": "No synthetic/interpolated candles and no silent cross-exchange substitution; invalid series remain excluded from downstream research/paper consumers."
+  },
+  "continuity": {
+    "canonical_state_file_remains_stale": true,
+    "canonical_state_recorded_main_sha": "af020c6249477bd591eb85b77e7ff0112b19b0c3",
+    "project_memory_freshness_issue": 283,
+    "policy": "Current repository evidence overrides stale transient fields in canonical STATE.json; stronger autonomous claims remain fail-closed."
+  },
+  "lessons": [
+    "A green continuity PR becomes non-authoritative when main advances before merge and must be replayed from exact current main.",
+    "Runner-level dependency-install I/O failures should be retried narrowly before any code change is proposed."
+  ],
+  "authority_boundaries": {
+    "signing_authorized": false,
+    "production_approval_granted": false,
+    "credential_use_authorized": false,
+    "billing_authorized": false,
+    "live_trading_authorized": false,
+    "irreversible_action_authorized": false
+  },
+  "secrets_included": false
+}
