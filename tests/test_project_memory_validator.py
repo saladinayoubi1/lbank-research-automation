@@ -134,7 +134,7 @@ def test_safety_boundary_conflict_is_rejected(tmp_path):
     state["data_policy"]["real_trading"] = True
     _save_state(memory, state)
     with pytest.raises(pmv.MemoryValidationError, match="real trading"):
-        pmv.validate_repository(tmp_path)
+        pmv.validate_repository(tmp_path, expected_observed_main=VALID_SHA)
 
 
 def test_invalid_sha_and_timestamp_are_rejected(tmp_path):
@@ -150,3 +150,23 @@ def test_invalid_sha_and_timestamp_are_rejected(tmp_path):
     _save_state(memory, state)
     with pytest.raises(pmv.MemoryValidationError, match="timestamp"):
         pmv.validate_repository(tmp_path)
+
+
+def test_missing_authoritative_expected_sha_fails_closed(tmp_path):
+    _write_memory(tmp_path)
+    with pytest.raises(pmv.MemoryValidationError, match="authoritative expected observed-main SHA is required"):
+        pmv.validate_repository(tmp_path)
+
+
+def test_same_directory_symlink_substitution_is_rejected(tmp_path):
+    memory = _write_memory(tmp_path)
+    canonical = memory / "DECISIONS.md"
+    target = memory / "DECISIONS.real.md"
+    target.write_text(canonical.read_text(encoding="utf-8"), encoding="utf-8")
+    canonical.unlink()
+    try:
+        canonical.symlink_to(target.name)
+    except (OSError, NotImplementedError):
+        pytest.skip("symlink creation is not available on this platform")
+    with pytest.raises(pmv.MemoryValidationError, match="symlink substitution rejected"):
+        pmv.validate_repository(tmp_path, expected_observed_main=VALID_SHA)

@@ -52,6 +52,7 @@ def validate_repository(root: str | Path = ".", expected_observed_main: str | No
 
     for name in CANONICAL_FILES:
         path = memory_dir / name
+        _require(not path.is_symlink(), f"symlink substitution rejected: {(CANONICAL_DIR / name).as_posix()}")
         _require(path.is_file(), f"missing canonical Project Memory file: {(CANONICAL_DIR / name).as_posix()}")
         _require(path.resolve().parent == memory_dir.resolve(), f"alternate-path substitution rejected: {path}")
 
@@ -92,9 +93,9 @@ def validate_repository(root: str | Path = ".", expected_observed_main: str | No
     _require(isinstance(observed_main, str) and SHA_RE.fullmatch(observed_main) is not None, "observed_main_sha must be a lowercase 40-hex SHA")
     observed_at = _parse_utc(evidence.get("observed_at_utc"))
 
-    if expected_observed_main is not None:
-        _require(SHA_RE.fullmatch(expected_observed_main) is not None, "expected observed-main SHA is malformed")
-        _require(observed_main == expected_observed_main, f"stale Project Memory: STATE observed {observed_main}, expected {expected_observed_main}")
+    _require(expected_observed_main is not None, "authoritative expected observed-main SHA is required")
+    _require(SHA_RE.fullmatch(expected_observed_main) is not None, "expected observed-main SHA is malformed")
+    _require(observed_main == expected_observed_main, f"stale Project Memory: STATE observed {observed_main}, expected {expected_observed_main}")
 
     data_policy = state.get("data_policy")
     _require(isinstance(data_policy, dict), "STATE.json missing data_policy")
@@ -113,7 +114,7 @@ def validate_repository(root: str | Path = ".", expected_observed_main: str | No
 def main() -> int:
     parser = argparse.ArgumentParser(description="Fail-closed validator for canonical NEXUS Project Memory")
     parser.add_argument("--root", default=".", help="repository root")
-    parser.add_argument("--expected-observed-main", default=None, help="exact repository SHA that STATE.json must record")
+    parser.add_argument("--expected-observed-main", required=True, help="exact authoritative repository SHA that STATE.json must record")
     args = parser.parse_args()
     try:
         result = validate_repository(args.root, args.expected_observed_main)
