@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "event": "release_inventory_fail_closed_hardening",
+  "observed_at_utc": "2026-08-11T10:25:00Z",
+  "source_main_sha": "c1d1621c0838c4c5bf625c2f6bc10c26274d8bc9",
+  "facts": [
+    "Current main is c1d1621c0838c4c5bf625c2f6bc10c26274d8bc9; its advance from ae7710130086f8f34ae6107325033d90b2304b23 is a public LBank candle refresh only, with no observed architecture, core-goal, release-policy, signing, billing, credential, or production-authority change.",
+    "A real release-verifier bypass was identified: manifest-listed artifacts were verified, but undeclared files or symlinks elsewhere in the prepared release bundle were not rejected as a closed inventory.",
+    "Draft PR #325 is based on exact current main and adds fail-closed whole-bundle inventory verification plus regression tests for undeclared top-level files, nested files, and symlinks. It changes only scripts/release_gate.py and tests/test_release_gate.py and does not overlap open PR #322, which changes .github/CODEOWNERS.",
+    "The first PR #325 CI head failed because an existing symlink regression test asserted the previous exact error text; the stricter verifier rejected the unsafe symlink earlier. The assertion was narrowed to the security property, and exact final head 4e9b8fe005a4f77b7ec2930637d4b12c2ed2b934 has successful Test, Release Readiness, NEXUS Build Verification, and NEXUS Cloud Fallback.",
+    "Canonical docs/project_memory/STATE.json remains materially stale for transient repository state at observed_main_sha af020c6249477bd591eb85b77e7ff0112b19b0c3; issue #283 remains open and exact repository evidence takes precedence.",
+    "Production signing remains intentionally fail-closed because no approved signer identity/trust policy is configured. Real reproducible production-build proof, executed production rollback, measured backup/restore RPO/RTO, independent disaster recovery, and owner production approval remain unproven or unauthorized."
+  ],
+  "decisions": [
+    "Keep PR #325 Draft and unmerged until final-head evidence remains green, mergeability/review evidence remains clean, and the base is still current enough for a safe merge decision.",
+    "Do not perform signing, production approval, credential, billing, deployment, live-trading, or irreversible actions without owner authority.",
+    "Preserve repository Project Memory as the primary durable source and Google Drive as independent secondary redundancy.",
+    "Preserve the distinction between laptop shutdown/offline and internet or DNS failure."
+  ],
+  "lessons": [
+    "Artifact digest verification is insufficient unless the verifier also closes the release-bundle inventory over every regular file and symlink.",
+    "Fail-closed hardening can change which guard rejects an unsafe input first; regression tests should assert the safety property rather than brittle exact error wording when ordering is not part of the contract.",
+    "A failing initial CI head is useful evidence when it blocks merge and exposes a stale test assumption; only the corrected exact final head may be used for a readiness claim."
+  ],
+  "release_readiness": {
+    "production_ready": false,
+    "artifact_manifest_gate_present": true,
+    "bundle_inventory_gate_candidate_pr": 325,
+    "cyclonedx_sbom_gate_present": true,
+    "provenance_binding_gate_present": true,
+    "production_signature_policy_configured": false,
+    "reproducible_build_comparison_gate_present": true,
+    "reproducible_production_build_proven": false,
+    "rollback_record_gate_present": true,
+    "rollback_exercised_in_production": false,
+    "backup_restore_rpo_rto_proven": false,
+    "independent_disaster_recovery_proven": false,
+    "cross_platform_release_verifier_ci_on_pr_325": true,
+    "owner_production_approval": false
+  },
+  "authority_boundary": {
+    "credentials": false,
+    "billing": false,
+    "signing": false,
+    "production_deployment": false,
+    "live_trading": false,
+    "irreversible_action": false
+  }
+}
