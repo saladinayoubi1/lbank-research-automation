@@ -7,6 +7,7 @@ import types
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 
 def load_module(monkeypatch):
@@ -43,6 +44,19 @@ def gapped_frame():
         ]),
         "symbol": ["btc_usdt", "btc_usdt"],
         "timeframe": ["minute15", "minute15"],
+    })
+
+
+def multi_gap_frame():
+    return pd.DataFrame({
+        "timestamp": pd.to_datetime([
+            "2026-01-01T00:00:00Z",
+            "2026-01-01T00:30:00Z",
+            "2026-01-01T01:00:00Z",
+            "2026-01-01T01:30:00Z",
+        ]),
+        "symbol": ["btc_usdt"] * 4,
+        "timeframe": ["minute15"] * 4,
     })
 
 
@@ -118,3 +132,49 @@ def test_recovered_data_is_saved_before_cursor_commit(monkeypatch, tmp_path):
 
     assert (repaired, failures) == (1, 0)
     assert operations == ["save_data", "commit_cursor"]
+
+
+def test_data_save_failure_never_advances_cursor(monkeypatch, tmp_path):
+    module = load_module(monkeypatch)
+    module.OUTPUT_ROOT = tmp_path
+    module.read_existing = lambda path: gapped_frame()
+    module.get_klines = lambda *args, **kwargs: [["unused"]]
+    module.rows_to_frame = lambda *args, **kwargs: recovered_frame()
+    cursor_commits = []
+
+    def fail_save(existing, incoming, path):
+        raise OSError("simulated durable data save failure")
+
+    module.save_merged = fail_save
+    module._persist_next_index = lambda *args, **kwargs: cursor_commits.append(True)
+
+    checkpoint = module._checkpoint_path("btc_usdt", "minute15")
+    with pytest.raises(OSError, match="durable data save failure"):
+        module.repair_series_with_outcomes("btc_usdt", "minute15")
+
+    assert cursor_commits == []
+    assert not Path(f"{checkpoint}.lock").exists()
+
+
+def test_bounded_cursor_survives_module_reload_and_rotates_next_gap(monkeypatch, tmp_path):
+    module = load_module(monkeypatch)
+    module.OUTPUT_ROOT = tmp_path
+    module.MAX_GAP_WINDOWS_PER_SERIES_PER_RUN = 1
+    module.read_existing = lambda path: multi_gap_frame()
+    first_requests = []
+    module.get_klines = lambda symbol, timeframe, start: first_requests.append(start) or []
+
+    module.repair_series_with_outcomes("btc_usdt", "minute15")
+    assert len(first_requests) == 1
+
+    reloaded = load_module(monkeypatch)
+    reloaded.OUTPUT_ROOT = tmp_path
+    reloaded.MAX_GAP_WINDOWS_PER_SERIES_PER_RUN = 1
+    reloaded.read_existing = lambda path: multi_gap_frame()
+    second_requests = []
+    reloaded.get_klines = lambda symbol, timeframe, start: second_requests.append(start) or []
+
+    reloaded.repair_series_with_outcomes("btc_usdt", "minute15")
+
+    assert len(second_requests) == 1
+    assert second_requests[0] != first_requests[0]
