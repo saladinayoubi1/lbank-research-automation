@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0",
+  "event_id": "2026-08-11-checkpoint-replay-f3d15ddd",
+  "event_type": "repository_reliability_and_continuity_change",
+  "observed_main_sha": "f3d15ddd30b8dc97574a563a17f0198bac7eadb1",
+  "facts": [
+    "PR #361 merged and advanced main from d9ebc59f94ab1c7248ba6c4357f0080550f1cbfc to f3d15ddd30b8dc97574a563a17f0198bac7eadb1.",
+    "PR #360 was closed unmerged because its base became stale; its CI is not merge authority.",
+    "Draft PR #362 replays the same checkpoint-ownership slice from exact current main with head fd34276989856de102fae36f84cb77ec9936ca93.",
+    "At that exact #362 head, Test, NEXUS Build Verification, NEXUS Cloud Fallback, and Probe public kline gaps are successful; mergeable is true and unresolved review threads are zero.",
+    "Repository rulesets were not observed; independent required-check and bypass enforcement remains unproven.",
+    "Current research data readiness remains 2 of 21 ready and 19 of 21 blocked as integrity_failed.",
+    "Canonical STATE.json remains stale relative to current repository evidence and must not authorize stronger action."
+  ],
+  "decisions": [
+    "Keep PR #362 Draft and do not merge solely because CI is green.",
+    "Keep issue #230 fail-closed until orphan-lock recovery, crash-durability claim, adversarial bypass/crash replay, and fixed-SHA ADR/rollback/recovery evidence are satisfied.",
+    "Repository evidence overrides stale Project Memory state; Drive presence alone is not recovery proof."
+  ],
+  "lessons": [
+    "A concurrent main advance invalidates an otherwise green PR tuple and requires exact-current-main replay.",
+    "Checkpoint fairness state must not advance before recovered data persistence, and ownership must cover the complete authoritative repair transaction.",
+    "Green workflow execution is distinct from independent repository enforcement."
+  ],
+  "safety_boundary": {
+    "research_only": true,
+    "production_authority": false,
+    "credentials_or_billing_changed": false,
+    "signing_or_deployment_performed": false,
+    "live_trading_performed": false
+  }
+}
