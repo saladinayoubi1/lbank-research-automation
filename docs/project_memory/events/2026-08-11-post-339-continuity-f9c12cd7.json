@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "event_id": "2026-08-11-post-339-continuity-f9c12cd7",
+  "event_type": "repository_continuity_update",
+  "observed_main_sha": "f9c12cd7c461b707a0b9805d91bccd0c16d70815",
+  "observed_at_utc": "2026-08-11T13:35:30Z",
+  "changes": [
+    {
+      "closed_pr": 338,
+      "merged": false,
+      "head_sha": "3db2bd166fe05c01ee8bd067d20b295243143d9d",
+      "base_sha": "59b0e359e8d0182cf974433fbe63044c246e737d",
+      "summary": "Closed unmerged because the candidate base was behind current main; green exact-head CI did not make stale-base evidence authoritative."
+    },
+    {
+      "merged_pr": 339,
+      "head_sha": "04920ef811646a5b1f81388771ef19f36a9d7ad3",
+      "merge_commit": "f9c12cd7c461b707a0b9805d91bccd0c16d70815",
+      "summary": "Continuity-only Project Memory event merged after exact-final-head Test, NEXUS Build Verification, and NEXUS Cloud Fallback succeeded, mergeable was true, review threads were zero, and base remained exact current main."
+    }
+  ],
+  "continuity": {
+    "canonical_state_file_remains_stale": true,
+    "canonical_state_recorded_main_sha": "af020c6249477bd591eb85b77e7ff0112b19b0c3",
+    "project_memory_freshness_issue": 283,
+    "policy": "Repository evidence wins for transient state; stale canonical STATE must remain fail-closed until refreshed under deterministic freshness binding."
+  },
+  "authority_boundaries": {
+    "signing_authorized": false,
+    "production_approval_granted": false,
+    "credential_use_authorized": false,
+    "billing_authorized": false,
+    "live_trading_authorized": false,
+    "irreversible_action_authorized": false
+  },
+  "secrets_included": false
+}
