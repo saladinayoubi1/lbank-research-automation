@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "event": "current_main_continuity_refresh",
+  "observed_at_utc": "2026-08-11T05:29:45Z",
+  "source_main_sha": "8e4bbc598236cf1ea6d2e1af978a7bbdb381a715",
+  "facts": [
+    "Current main advanced from 659ecde331af4252a496eb7dbb7c66c9d79c2127 to 8e4bbc598236cf1ea6d2e1af978a7bbdb381a715 through a public LBank candle refresh commit only.",
+    "PR #319 was fixed to the older main SHA and was closed unmerged after the source snapshot became stale.",
+    "Canonical docs/project_memory/STATE.json still records observed_main_sha=af020c6249477bd591eb85b77e7ff0112b19b0c3 and remains materially stale relative to exact current main.",
+    "Current LBank readiness evidence still has 21 tracked series, 2 integrity-valid/research-ready series and 19 blocked series, with 918 missing candles in aggregate.",
+    "Issue #283 therefore remains fail-closed; repository evidence at exact current main overrides stale transient STATE fields."
+  ],
+  "decisions": [
+    "Do not merge fixed-main continuity snapshots after main advances; close them unmerged and regenerate from exact current main.",
+    "Do not weaken Project Memory, data-integrity, security or release gates to reconcile stale state.",
+    "Drive presence remains secondary evidence only and does not prove recovery without freshness, source-SHA and content-bound verification."
+  ],
+  "lessons": [
+    "Routine collector commits can invalidate an otherwise green fixed-main continuity PR without changing architecture or authority boundaries.",
+    "Exact-current repository evidence must be rechecked immediately before merge, even for append-only continuity metadata.",
+    "Persistent historical gaps remain distinct from collector freshness and continue to require fail-closed downstream eligibility."
+  ],
+  "release_readiness": {
+    "production_ready": false,
+    "signing_authority": false,
+    "production_approval": false,
+    "credential_or_billing_action_performed": false,
+    "reproducible_production_build_proven": false,
+    "rollback_exercised_in_production": false,
+    "backup_restore_rpo_rto_proven": false,
+    "independent_disaster_recovery_proven": false
+  },
+  "authority_boundary": {
+    "credentials": false,
+    "billing": false,
+    "signing": false,
+    "production_deployment": false,
+    "live_trading": false,
+    "irreversible_action": false
+  }
+}
