@@ -1,6 +1,6 @@
 # LBank Gap Repair Status
 
-Successful requests that return no missing candle are classified as `source_unavailable`; transport or API exceptions are `fetch_failed`.
+Successful requests that return no missing candle are classified as `source_unavailable`; transport or API exceptions are `fetch_failed`. Invalid persisted fairness state is `checkpoint_invalid` and blocks that series for the run.
 
 | Symbol | Timeframe | Gap start UTC | Status | Recovered | Detail |
 |---|---|---|---|---:|---|
