@@ -17,6 +17,7 @@ from typing import Any
 from uuid import UUID
 
 REQUIRED = ("artifact-manifest.json", "sbom.cdx.json", "provenance.json")
+RESERVED_BUNDLE_FILES = set(REQUIRED) | {"artifact-manifest.sig", "artifact-manifest.pem"}
 MAX_JSON_BYTES = 5 * 1024 * 1024
 MAX_EVIDENCE_AGE = timedelta(hours=24)
 MAX_FUTURE_SKEW = timedelta(minutes=5)
@@ -167,6 +168,16 @@ def verify_sbom(sbom: Any, now: datetime) -> tuple[str, str, datetime]:
     return completeness, serial, timestamp
 
 
+def verify_bundle_inventory(bundle: Path, manifested: set[str]) -> None:
+    """Reject any undeclared content or symlink anywhere in the prepared bundle."""
+    for path in sorted(bundle.rglob("*")):
+        relative = path.relative_to(bundle).as_posix()
+        if path.is_symlink():
+            fail(f"symlink is not allowed in release bundle: {relative}")
+        if path.is_file() and relative not in manifested and relative not in RESERVED_BUNDLE_FILES:
+            fail(f"unmanifested file in release bundle: {relative}")
+
+
 def verify(
     bundle: Path,
     require_signature: bool = True,
@@ -210,6 +221,8 @@ def verify(
             fail(f"digest mismatch: {name}")
         if not isinstance(size, int) or size < 0 or target.stat().st_size != size:
             fail(f"size mismatch: {name}")
+
+    verify_bundle_inventory(bundle, seen)
 
     sbom_path = bundle / "sbom.cdx.json"
     completeness, sbom_serial, sbom_timestamp = verify_sbom(load_json(sbom_path), now)
@@ -266,7 +279,7 @@ def verify(
             fail("signature and signer certificate are required for production release")
         fail("signature identity policy is not configured; production verification is blocked")
 
-    return ["manifest", f"sbom-{completeness}", "provenance-fresh", "artifact-digests"]
+    return ["manifest", "bundle-inventory", f"sbom-{completeness}", "provenance-fresh", "artifact-digests"]
 
 
 def main() -> int:
