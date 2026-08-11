@@ -89,7 +89,7 @@ def write_checkpoint(path: Path, checkpoint: GapRepairCheckpoint) -> None:
             handle.flush()
             os.fsync(handle.fileno())
         os.replace(temporary, path)
-        with path.open("rb") as handle:
+        with path.open("r+b") as handle:
             os.fsync(handle.fileno())
         marker = initialized_marker(path)
         with marker.open("ab") as handle:
