@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "event": "project_memory_ci_binding_candidate_validated",
+  "observed_at_utc": "2026-08-11T03:12:00Z",
+  "source_main_sha": "d933b7b01c39fae0140e6ad191134e65f84a7797",
+  "pull_request": 317,
+  "pull_request_head_sha": "20fdc4d7b3c5c10af4e2796262d5540d30781f2f",
+  "facts": [
+    "Current main advanced from ad58504d35a44eea7a4f4e3d4128e3a0f50ea521 by one LBank public-candle refresh commit only.",
+    "PR #316 was closed unmerged after its fixed-main continuity snapshot became stale.",
+    "Draft PR #317 binds Project Memory validation in pull-request context to github.event.pull_request.base.sha when canonical memory or the validator changes.",
+    "PR #317 exact head has successful Workflow Permissions Policy, Test, NEXUS Build Verification, and NEXUS Cloud Fallback runs and is mergeable.",
+    "PR #317 does not close issue #283 and does not prove merge-time base-advance revalidation, immutable-workspace/TOCTOU resistance, or independent protection against candidate weakening of the workflow/gate."
+  ],
+  "decisions": [
+    "Keep Project Memory freshness fail-closed until the remaining #283 trust-boundary and merge-time revalidation claims are proven.",
+    "Do not merge this continuity event while PR #317 is under active validation; it is a non-overlapping durable record only."
+  ],
+  "lessons": [
+    "Authoritative pull-request base SHA is stronger freshness evidence than self-reported repository state but is not by itself a complete merge-time freshness guarantee.",
+    "Data-only main drift must remain distinct from architecture, authority, or core-goal change.",
+    "Laptop power state and internet or DNS outage remain separate recovery states."
+  ],
+  "authority_boundary": {
+    "credentials": false,
+    "billing": false,
+    "signing": false,
+    "production_deployment": false,
+    "live_trading": false,
+    "irreversible_action": false
+  }
+}
