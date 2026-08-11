@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "event_id": "2026-08-11-checkpoint-replay-2448716",
+  "event_type": "repository_security_and_continuity_change",
+  "observed_main_sha": "f3d15ddd30b8dc97574a563a17f0198bac7eadb1",
+  "observed_at_utc": "2026-08-11T23:15:40Z",
+  "changes": [
+    {
+      "pr": 362,
+      "head_sha": "2448716a41f22e8e4eec107b7d7d3bcbbbff71b6",
+      "summary": "Checkpoint ownership hardening advanced with deletion fail-closed behavior, exclusive repair ownership, durable-save-before-cursor ordering, fsync coverage, restart traversal, and stale-gap-set regression coverage.",
+      "ci": ["Test:success", "NEXUS Build Verification:success", "NEXUS Cloud Fallback:success", "Probe public kline gaps:success"],
+      "security_boundary": "Issue #230 remains fail-closed: alternate-path/crash-window bypass evidence, portable containing-directory crash durability, and independent verifier/policy/test co-weakening protection remain incomplete."
+    },
+    {
+      "pr": 363,
+      "summary": "Closed unmerged after becoming stale when PR #362 advanced to a new exact head."
+    }
+  ],
+  "production_authorized": false,
+  "continuity": {
+    "laptop_shutdown_is_not_network_or_dns_failure": true,
+    "recovery_source_order": ["repository_memory", "STATE", "decision_log", "recovery_playbook", "latest_CI_PR_evidence", "drive_backup"]
+  },
+  "secrets_included": false
+}
