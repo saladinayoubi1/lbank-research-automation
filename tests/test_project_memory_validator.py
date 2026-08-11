@@ -134,7 +134,7 @@ def test_safety_boundary_conflict_is_rejected(tmp_path):
     state["data_policy"]["real_trading"] = True
     _save_state(memory, state)
     with pytest.raises(pmv.MemoryValidationError, match="real trading"):
-        pmv.validate_repository(tmp_path)
+        pmv.validate_repository(tmp_path, expected_observed_main=VALID_SHA)
 
 
 def test_invalid_sha_and_timestamp_are_rejected(tmp_path):
