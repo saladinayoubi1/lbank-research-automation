@@ -352,6 +352,7 @@ Successful requests that return no missing candle are classified as `source_unav
 | btc_usdt | minute15 | 2026-07-24T16:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | btc_usdt | minute15 | 2026-07-29T12:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | btc_usdt | minute15 | 2026-08-03T19:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| btc_usdt | minute15 | 2026-08-11T00:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | eth_usdt | hour1 | 2024-09-15T23:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
 | eth_usdt | hour1 | 2024-11-03T23:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
 | eth_usdt | hour1 | 2024-11-09T14:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
