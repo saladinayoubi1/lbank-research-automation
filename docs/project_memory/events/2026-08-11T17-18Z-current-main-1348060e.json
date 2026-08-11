@@ -1,0 +1,58 @@
+{
+  "schema_version": "1.0",
+  "event_id": "2026-08-11T17-18Z-current-main-1348060e",
+  "event_type": "repository_security_and_continuity_change",
+  "observed_main_sha": "1348060e1f7c23abd8eccf94a7b934b700e5978e",
+  "observed_at_utc": "2026-08-11T17:18:45Z",
+  "changes": [
+    {
+      "previous_main_sha": "010771ffd0a118ce20302b7c7d61a05fd2ff689e",
+      "main_commit": "1348060e1f7c23abd8eccf94a7b934b700e5978e",
+      "summary": "Public LBank candle data refresh advanced main; no architecture, core-goal, release-policy, or production-authority change observed."
+    },
+    {
+      "open_pr": 351,
+      "base_sha": "1348060e1f7c23abd8eccf94a7b934b700e5978e",
+      "head_sha": "8a4bf5d64f45f9ffb75f7ac7c4b3f57cedd7fb05",
+      "draft": true,
+      "mergeable": true,
+      "summary": "Gap-checkpoint deletion/concurrent-ownership hardening is isolated and CI-green, but remains fail-closed because ownership is not held across the full repair transaction and crash-durability/recovery proof is incomplete."
+    }
+  ],
+  "ci_evidence": {
+    "pr351": {
+      "test": "success",
+      "nexus_build_verification": "success",
+      "nexus_cloud_fallback": "success",
+      "probe_public_kline_gaps": "success"
+    }
+  },
+  "control_plane": {
+    "main_branch_protected": false,
+    "required_status_enforcement": false,
+    "direct_push_bypass_risk": true
+  },
+  "production_boundary": {
+    "production_ready": false,
+    "approved_signer_identity_policy": false,
+    "owner_production_approval": false,
+    "reproducible_production_build_proven": false,
+    "production_rollback_exercised": false,
+    "backup_restore_rpo_rto_proven": false,
+    "independent_disaster_recovery_proven": false
+  },
+  "continuity": {
+    "state_json_stale": true,
+    "laptop_shutdown_is_not_network_or_dns_failure": true,
+    "recovery_source_order": [
+      "repository_memory",
+      "STATE",
+      "decision_log",
+      "recovery_playbook",
+      "latest_CI_PR_evidence",
+      "drive_backup"
+    ]
+  },
+  "secrets_included": false,
+  "private_transcript_included": false
+}
