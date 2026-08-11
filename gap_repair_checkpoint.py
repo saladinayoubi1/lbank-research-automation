@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 import hashlib
 import json
 import os
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Iterator
 
 SCHEMA_VERSION = 1
 
@@ -41,6 +42,43 @@ def build_checkpoint(*, symbol: str, timeframe: str, gap_starts: Iterable[str], 
     return GapRepairCheckpoint(SCHEMA_VERSION, symbol, timeframe, gap_set_digest(values), cursor)
 
 
+def initialized_marker(path: Path) -> Path:
+    return path.with_suffix(path.suffix + ".initialized")
+
+
+def lock_path(path: Path) -> Path:
+    return path.with_suffix(path.suffix + ".lock")
+
+
+@contextmanager
+def checkpoint_lock(path: Path) -> Iterator[None]:
+    """Acquire exclusive cross-process ownership for one series checkpoint.
+
+    Orphaned locks are deliberately not broken automatically. A pre-existing lock is
+    ambiguous after process failure, so repair fails closed rather than risking a
+    non-monotonic cursor update.
+    """
+    lock = lock_path(path)
+    lock.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    except FileExistsError as exc:
+        raise CheckpointError("checkpoint ownership is locked or recovery is required") from exc
+    try:
+        os.write(fd, str(os.getpid()).encode("ascii", "strict"))
+        os.fsync(fd)
+        os.close(fd)
+        fd = -1
+        yield
+    finally:
+        if fd >= 0:
+            os.close(fd)
+        try:
+            lock.unlink()
+        except FileNotFoundError:
+            pass
+
+
 def write_checkpoint(path: Path, checkpoint: GapRepairCheckpoint) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.tmp")
@@ -51,12 +89,20 @@ def write_checkpoint(path: Path, checkpoint: GapRepairCheckpoint) -> None:
             handle.flush()
             os.fsync(handle.fileno())
         os.replace(temporary, path)
+        with path.open("rb") as handle:
+            os.fsync(handle.fileno())
+        marker = initialized_marker(path)
+        with marker.open("ab") as handle:
+            handle.flush()
+            os.fsync(handle.fileno())
     finally:
         if temporary.exists():
             temporary.unlink()
 
 
 def read_checkpoint(path: Path, *, symbol: str, timeframe: str, gap_starts: Iterable[str]) -> GapRepairCheckpoint:
+    if not path.exists() and initialized_marker(path).exists():
+        raise CheckpointError("checkpoint missing after prior initialization")
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
