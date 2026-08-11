@@ -10,6 +10,7 @@ import requests
 from gap_repair_checkpoint import (
     CheckpointError,
     build_checkpoint,
+    initialized_marker,
     read_checkpoint,
     write_checkpoint,
 )
@@ -100,6 +101,8 @@ def _load_start_index(
 ) -> int:
     path = _checkpoint_path(symbol, timeframe)
     if not path.exists():
+        if initialized_marker(path).exists():
+            raise CheckpointError("checkpoint missing after prior initialization")
         return 0
     checkpoint = read_checkpoint(
         path,
