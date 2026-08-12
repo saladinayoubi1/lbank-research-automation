@@ -74,3 +74,36 @@ Risky or ambiguous changes must not be merged automatically.
 The owner should not need to repeatedly ask whether a task was tested, whether continuity was saved, whether a blocker actually moved, or whether research work is being displaced by infrastructure work.
 Surface only meaningful milestones, real blockers, failed/missing verification, material efficiency problems, stale assumptions, strategy/evidence milestones, or actions that require owner involvement.
 Mark owner-required actions with 🔴.
+
+## 7. Phase Scope Freeze and Blocker Classification
+Once a phase enters stabilization, its Definition of Done is frozen. A newly discovered failure must be classified before it can expand the phase:
+- **phase blocker**: directly prevents an already-declared phase acceptance criterion from being met;
+- **technical debt / next phase**: real defect or hardening opportunity that does not invalidate the frozen phase acceptance criteria;
+- **non-blocking / optional**: useful improvement that must not delay phase closure.
+
+Only a phase blocker may delay phase closure. Do not silently promote new hardening ideas, new governance requirements, or unrelated CI improvements into the active phase. Any exception must explicitly identify which frozen acceptance criterion is invalidated.
+
+For Phase 3 specifically, no new feature scope is allowed. The active stabilization objective is limited to closing the already-open autonomous-runtime and reliability acceptance boundaries that prevent verified end-to-end operation. New feature requests, speculative hardening, and unrelated release-readiness work go to the backlog unless they demonstrably invalidate this objective.
+
+## 8. Consolidation-First Engineering
+Do not treat closely coupled autonomy failures as separate patch streams when they form one runtime chain. Diagnose and verify the whole chain:
+
+`GitHub/Issue -> Orchestrator -> durable queue/state -> Runner/Workers -> DeepSeek advisory worker -> Test/Recovery -> CI evidence -> next task`
+
+For this chain:
+1. prefer one stabilization plan and one bounded acceptance matrix over repeated local fixes;
+2. reuse existing components instead of adding parallel mechanisms unless replacement is explicitly justified;
+3. require restart/recovery evidence across the chain, not only isolated unit success;
+4. prevent CI/policy/test changes from self-authorizing weaker acceptance;
+5. when one worker is blocked, schedule another independent safe task instead of idling;
+6. use DeepSeek for bounded parallel analysis, test review, edge-case discovery, log analysis, and patch proposals when budget and secret gates permit;
+7. keep merge/release/risk authority deterministic and outside DeepSeek.
+
+A patch that fixes one symptom but leaves the same end-to-end failure mode untested is not considered stabilization complete.
+
+## 9. Execution Intent and No-Reinterpretation Rule
+When the owner gives a clear operational instruction, execute the requested operation as stated unless doing so is technically impossible, unsafe, irreversible, or requires missing authority. Do not substitute a different project, broaden the requested scope, or reinterpret a direct execution request into planning-only work merely for convenience.
+
+If an exact request cannot be executed, state the concrete limitation once, then perform the closest safe action that advances the same objective. Avoid repeated clarification when current repository state can resolve ambiguity.
+
+For project work, default to: inspect current evidence -> execute bounded safe work -> verify -> continue to the next independent safe task. Do not stop merely to ask for another "continue", "test", or "run" instruction when no owner decision is required.
