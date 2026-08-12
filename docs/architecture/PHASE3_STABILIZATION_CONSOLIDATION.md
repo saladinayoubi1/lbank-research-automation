@@ -22,10 +22,13 @@ Close Phase 3 by proving the existing NEXUS autonomous runtime works end-to-end 
    - ambiguous/corrupt state fails closed with an explicit reason.
 
 3. **Bounded DeepSeek worker path**
-   - DeepSeek is advisory only;
+   - DeepSeek is advisory only and never owns merge, release, credential, billing, production, core-goal, or risk-policy authority;
    - hard monthly budget and reservation/reconciliation rules remain enforced;
+   - every outbound payload must pass deterministic pre-egress classification, redaction, and an explicit field/content allowlist before any provider call;
+   - secrets, credentials, authorization headers, private financial/account data, raw sensitive chat content, and any unclassified or ambiguous payload are denied from provider egress;
+   - provider output is untrusted advisory evidence and must be validated against repository evidence plus deterministic tests/policy gates before it can affect code, state, or decisions;
    - bounded parallel workloads may include log analysis, test review, edge-case discovery, documentation, and patch proposals;
-   - missing key, ambiguous spend, or provider failure must not block the rest of NEXUS.
+   - missing key, ambiguous spend, failed pre-egress validation, or provider failure must not block the rest of NEXUS.
 
 4. **Control-plane independence**
    - candidate changes cannot silently weaken the policy, validator, workflow, registry, and their tests together and still authorize themselves;
@@ -47,7 +50,7 @@ A newly discovered issue may block Phase 3 only when it invalidates one of the s
 
 Current examples:
 - #230 is in scope because durable restart/recovery is a frozen runtime requirement.
-- #232 is in scope only to the extent needed for bounded DeepSeek worker routing and budget-safe operation.
+- #232 is in scope only to the extent needed for bounded DeepSeek worker routing, deterministic pre-egress safety, and budget-safe operation.
 - #283 is in scope only to the extent stale memory can break autonomous resume.
 - #106 is in scope only to the extent candidate changes could self-authorize a weaker runtime/control plane.
 - #380 / related CI failures are in scope because Local Runner bootstrap/resume is a frozen runtime requirement.
