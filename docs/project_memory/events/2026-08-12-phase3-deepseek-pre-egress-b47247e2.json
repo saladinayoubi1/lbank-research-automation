@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "event_id": "2026-08-12-phase3-deepseek-pre-egress-b47247e2",
+  "event_type": "phase3_policy_safety_hardening",
+  "observed_main_sha": "6a8093744c19e0a1250df193ab9d1351313f018e",
+  "candidate_pr": 390,
+  "candidate_policy_sha": "b47247e2afeaa1ea2c3b15cc1e1193fae3ec151b",
+  "facts": [
+    "Phase 3 gate 3 now requires deterministic pre-egress classification, redaction, and explicit allowlisting before any DeepSeek provider call.",
+    "Secrets, credentials, authorization headers, private financial/account data, raw sensitive chat content, and ambiguous or unclassified payloads are denied from provider egress.",
+    "DeepSeek remains advisory only and cannot own merge, release, credential, billing, production, core-goal, or risk-policy authority.",
+    "Provider output must be validated against repository evidence and deterministic tests/policy gates before affecting code, state, or decisions.",
+    "The policy change does not enable a provider call, credential use, billing change, production deployment, signing, live trading, or financial action."
+  ],
+  "decision": "Keep PR #390 Draft and fail closed until exact-final-head CI, mergeability, review cleanliness, and the remaining Phase 3 gates are verified. Gate #232 remains the implementation authority for budget-safe and pre-egress-safe DeepSeek routing.",
+  "lesson": "A bounded external AI worker requires an outbound-data trust boundary as well as spend limits; budget safety does not authorize data egress.",
+  "secrets_included": false
+}
