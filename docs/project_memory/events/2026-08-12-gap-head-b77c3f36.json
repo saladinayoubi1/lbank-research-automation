@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "event_id": "2026-08-12-gap-head-b77c3f36",
+  "event_type": "repository_security_and_continuity_change",
+  "observed_main_sha": "f3d15ddd30b8dc97574a563a17f0198bac7eadb1",
+  "observed_at_utc": "2026-08-12T02:15:00Z",
+  "changes": [
+    {
+      "pr": 362,
+      "head_sha": "b77c3f3604e0597af1deea52fa26123541cb6580",
+      "summary": "Gap-checkpoint hardening advanced to a new exact head. Test, NEXUS Build Verification, NEXUS Cloud Fallback, and Probe public kline gaps all succeeded on that head.",
+      "security_boundary": "Issue #230 remains open/fail-closed: safe orphan-lock recovery, portable containing-directory crash durability on Windows/every supported filesystem, adversarial alternate-path/lock bypass replay, and independent policy/test co-weakening protection remain incomplete."
+    }
+  ],
+  "production_readiness": {
+    "authorized": false,
+    "blockers": [
+      "owner-approved signer identity and trust policy",
+      "owner production approval",
+      "reproducible production build proof",
+      "executed production rollback proof",
+      "measured backup/restore RPO and RTO",
+      "independent disaster-recovery proof"
+    ]
+  },
+  "continuity": {
+    "laptop_shutdown_is_not_network_or_dns_failure": true,
+    "recovery_source_order": [
+      "repository_memory",
+      "STATE",
+      "decision_log",
+      "recovery_playbook",
+      "latest_CI_PR_evidence",
+      "drive_backup"
+    ]
+  },
+  "secrets_included": false
+}
