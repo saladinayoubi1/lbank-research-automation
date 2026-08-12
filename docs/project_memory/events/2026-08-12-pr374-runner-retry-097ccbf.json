@@ -5,13 +5,17 @@
   "observed_main_sha": "097ccbf6e4727c188a62d155b264dcda09403f33",
   "observed_at_utc": "2026-08-12T13:21:00Z",
   "facts": [
-    "PR #374 is open from exact current main and fixes the observed NEXUS Local Runner bootstrap transfer failure by adding bounded curl retry-all-errors behavior without changing credentials, permissions, signing, billing, deployment, live-trading, or production authority.",
-    "PR #374 exact head 4817e3dfadd6169adfd431b44424786e69fb50d7 is mergeable and Workflow Permissions Policy, Test, NEXUS Build Verification, and NEXUS Cloud Fallback all succeeded.",
+    "PR #374 is open from exact current main and proposes bounded curl --retry-all-errors behavior for the observed NEXUS Local Runner bootstrap transfer failure; the affected Local Runner path is not yet proven repaired on the PR exact head.",
+    "PR #374 exact head 4817e3dfadd6169adfd431b44424786e69fb50d7 is mergeable; Workflow Permissions Policy, Test, NEXUS Build Verification, and NEXUS Cloud Fallback succeeded; unresolved review threads are zero.",
+    "PR #374 was converted to Draft after fail-closed review because --retry-all-errors broadens retry semantics and the scheduled NEXUS Local Runner path has no exact-head execution evidence or equivalent hermetic positive/negative regression proof.",
+    "The latest NEXUS Local Runner run observed on exact main is run 31594151720 and it failed; no newer main Local Runner run was observed in the checked workflow history.",
+    "Current main is unprotected: branch protected=false and required-status enforcement is off, so issue #106 remains an independent control-plane blocker.",
     "Draft PR #362 remains open on older base f3d15ddd30b8dc97574a563a17f0198bac7eadb1; issue #230 remains fail-closed under its documented recovery claim boundary.",
     "Exact-main Release Readiness run 31576565842 succeeded but uploaded zero GitHub Actions artifacts, so no single auditable produced release-evidence bundle from that run binds artifact manifest, SBOM, and provenance outputs."
   ],
   "decisions": [
-    "Record the meaningful runner-recovery delta as one isolated append-only event without modifying canonical goals or STATE transient fields.",
+    "Keep PR #374 Draft and do not merge until the affected retry behavior is proven on the exact candidate head or by a hermetic equivalent test covering bounded success and fail-closed negative cases.",
+    "Record the material fail-closed correction in Project Memory without modifying canonical goals or granting production authority.",
     "Do not merge automatically and do not perform signing, production approval, credential, billing, deployment, live-trading, or irreversible actions."
   ],
   "recovery": {
@@ -26,6 +30,8 @@
     "laptop_power_off_is_not_internet_or_dns_outage": true
   },
   "remaining_blockers": [
+    "PR #374 must prove the affected Local Runner bootstrap retry behavior, including bounded recovery from a retryable partial transfer and fail-closed behavior for persistent transfer failure, TLS verification failure, corrupt/truncated archive, and invalid get-pip content.",
+    "Issue #106 remains open because main branch protection and required-status enforcement are disabled.",
     "Release Readiness has not demonstrated a single auditable release-evidence bundle containing artifact manifest, SBOM, and provenance from the same exact-main run.",
     "Issue #230 remains fail-closed for safe orphan-lock recovery, supported-filesystem directory-entry crash durability, canonical alternate-path binding beyond symlink aliases, independent policy/test co-weakening protection, and fixed-SHA recovery/bypass evidence.",
     "Production signer identity/trust policy and owner production approval remain absent or unauthorized.",
