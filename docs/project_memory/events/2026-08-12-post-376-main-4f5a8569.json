@@ -32,7 +32,14 @@
   ],
   "release_evidence": {
     "exact_main_sha": "4f5a8569910963a84c60e8cd74b90e156da8a7fd",
-    "exact_main_post_merge_workflows": "pending_observation",
+    "exact_main_push_workflows": {
+      "Workflow Permissions Policy": "success",
+      "Test": "success",
+      "NEXUS Build Verification": "success",
+      "NEXUS Cloud Fallback": "success",
+      "Release Readiness": "success",
+      "Release Recovery": "success"
+    },
     "production_authorized": false,
     "reproducible_production_build_proven": false,
     "production_rollback_exercised": false,
