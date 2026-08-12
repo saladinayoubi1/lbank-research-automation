@@ -51,9 +51,13 @@ def lock_path(path: Path) -> Path:
 
 
 def _reject_symlink(path: Path, *, label: str) -> None:
-    """Reject path substitution through symlinks before state is trusted or mutated."""
-    if path.is_symlink():
-        raise CheckpointError(f"{label} path substitution is not allowed")
+    """Reject path substitution through a symlink leaf or parent component."""
+    candidate = path.expanduser()
+    if not candidate.is_absolute():
+        candidate = Path.cwd() / candidate
+    for component in (candidate, *candidate.parents):
+        if component.is_symlink():
+            raise CheckpointError(f"{label} path substitution is not allowed")
 
 
 def _fsync_parent_directory(path: Path) -> None:
