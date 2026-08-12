@@ -18,7 +18,10 @@ def load_module(monkeypatch):
         pass
 
     fake_main.LBankError = LBankError
-    fake_main.OUTPUT_ROOT = Path(tempfile.mkdtemp()) / "market"
+    # macOS may return a tempfile path through the system /var -> /private/var
+    # alias. Resolve only the test fixture root so production symlink defenses
+    # remain strict while the fixture uses the canonical path.
+    fake_main.OUTPUT_ROOT = Path(tempfile.mkdtemp()).resolve() / "market"
     fake_main.SYMBOLS = ["btc_usdt"]
     fake_main.TIMEFRAMES = ["minute15"]
     fake_main.TIMEFRAME_SECONDS = {
