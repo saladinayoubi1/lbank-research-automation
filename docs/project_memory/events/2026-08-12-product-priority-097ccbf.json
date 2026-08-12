@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0",
+  "event_id": "2026-08-12-product-priority-097ccbf",
+  "event_type": "continuity_goal_priority_update",
+  "observed_main_sha": "097ccbf6e4727c188a62d155b264dcda09403f33",
+  "observed_at_utc": "2026-08-12T08:18:51Z",
+  "facts": [
+    "Main advanced from f3d15ddd30b8dc97574a563a17f0198bac7eadb1 to 097ccbf6e4727c188a62d155b264dcda09403f33 via commit 'Prioritize strategy research and product outcomes'.",
+    "Repository operating rules now explicitly prioritize research-backed strategy evidence and realistic backtest/paper-trading progression while preserving the existing research/backtest/paper-only authority boundary.",
+    "On exact main 097ccbf6e4727c188a62d155b264dcda09403f33, Release Readiness, Release Recovery, Test, NEXUS Build Verification, and NEXUS Cloud Fallback completed successfully.",
+    "Release Readiness fail-closed release-gate tests passed on Ubuntu, macOS, and Windows with Python 3.12.",
+    "Release Recovery reproducibility-and-rollback tests passed on Ubuntu, macOS, and Windows with Python 3.12.",
+    "Release Readiness uploaded zero artifacts; NEXUS Build Verification uploaded Windows and Android build artifacts with SHA-256 digests.",
+    "Draft PR #362 is the only observed open PR; it is based on stale main f3d15ddd30b8dc97574a563a17f0198bac7eadb1 and is currently non-mergeable against current main.",
+    "Main branch protection and required-status enforcement are disabled."
+  ],
+  "decisions": [
+    "Treat the product-priority update already committed on main as owner-authoritative repository state; do not rewrite core goals from automation.",
+    "Keep release and production authority fail-closed; CI test success is not production approval or signing authority.",
+    "Keep continuity changes isolated from PR #362 and do not merge either PR automatically."
+  ],
+  "recovery": {
+    "source_order": [
+      "repository project memory",
+      "STATE",
+      "decision log",
+      "recovery playbook",
+      "latest exact CI and pull-request evidence",
+      "Google Drive durable backup"
+    ],
+    "laptop_power_off_is_not_internet_or_dns_outage": true
+  },
+  "remaining_blockers": [
+    "Release Readiness does not publish a single auditable release-evidence artifact bundle containing manifest, SBOM, and provenance from the same release run.",
+    "Production signing identity/trust policy and owner production approval are not authorized.",
+    "Production reproducible-build proof, executed production rollback, measured backup/restore RPO-RTO, and independent disaster-recovery proof remain absent.",
+    "Draft PR #362 must be rebased/replayed and revalidated from current main before merge consideration.",
+    "Main branch protection and required-status enforcement remain disabled."
+  ],
+  "production_authorized": false,
+  "secrets_included": false,
+  "raw_private_transcript_included": false,
+  "drive_backup_authoritative": false
+}
