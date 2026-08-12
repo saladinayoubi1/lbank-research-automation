@@ -129,6 +129,33 @@ def _persist_next_index(
     write_checkpoint(_checkpoint_path(symbol, timeframe), checkpoint)
 
 
+def _remap_next_index(
+    prior_gap_starts: list[pd.Timestamp],
+    current_gap_starts: list[pd.Timestamp],
+    start_index: int,
+    request_count: int,
+) -> int:
+    """Map the next fair position onto the authoritative post-save gap set."""
+    if not current_gap_starts or not prior_gap_starts:
+        return 0
+
+    next_prior_index = (start_index + request_count) % len(prior_gap_starts)
+    candidates = (
+        prior_gap_starts[next_prior_index:] + prior_gap_starts[:next_prior_index]
+    )
+    current_positions = {
+        gap_start: index for index, gap_start in enumerate(current_gap_starts)
+    }
+    for candidate in candidates:
+        if candidate in current_positions:
+            return current_positions[candidate]
+
+    # If every prior gap disappeared, any newly discovered gap is a new identity.
+    # Start deterministically at its first position rather than persisting a cursor
+    # that refers to the pre-save set.
+    return 0
+
+
 def repair_series_with_outcomes(
     symbol: str,
     timeframe: str,
@@ -231,14 +258,43 @@ def repair_series_with_outcomes(
             # after save but before cursor commit, replay recomputes gaps from the
             # saved data instead of skipping unsaved repair work.
             repaired_count = 0
+            checkpoint_gap_starts = gap_starts
+            next_index = (
+                (start_index + request_count) % len(gap_starts)
+                if gap_starts and request_count
+                else 0
+            )
             if repaired_frames:
                 before = len(existing)
                 after = save_merged(existing, repaired_frames, output_path)
                 repaired_count = max(0, after - before)
 
+                # The durable data save can remove or reshape gaps. Reload the
+                # authoritative file while ownership is still held, bind the new
+                # checkpoint to that post-save identity, and remap fairness to the
+                # next surviving gap from the prior circular order.
+                persisted = read_existing(output_path)
+                if persisted.empty:
+                    raise CheckpointError(
+                        "post-save market data is unavailable for checkpoint remap"
+                    )
+                checkpoint_gap_starts = find_gap_starts(
+                    persisted["timestamp"], timeframe
+                )
+                next_index = _remap_next_index(
+                    gap_starts,
+                    checkpoint_gap_starts,
+                    start_index,
+                    request_count,
+                )
+
             if gap_starts and request_count:
-                next_index = (start_index + request_count) % len(gap_starts)
-                _persist_next_index(symbol, timeframe, gap_starts, next_index)
+                _persist_next_index(
+                    symbol,
+                    timeframe,
+                    checkpoint_gap_starts,
+                    next_index,
+                )
 
             if repaired_count:
                 LOGGER.info(
