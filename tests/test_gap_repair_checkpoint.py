@@ -139,6 +139,26 @@ def test_checkpoint_symlink_substitution_is_rejected(tmp_path: Path):
             pass
 
 
+def test_checkpoint_parent_symlink_substitution_is_rejected(tmp_path: Path):
+    if not hasattr(os, "symlink"):
+        pytest.skip("symlink support unavailable")
+    real_dir = tmp_path / "real"
+    real_dir.mkdir()
+    alias_dir = tmp_path / "alias"
+    try:
+        alias_dir.symlink_to(real_dir, target_is_directory=True)
+    except (OSError, NotImplementedError):
+        pytest.skip("directory symlink creation unavailable")
+
+    path = alias_dir / "cursor.json"
+    checkpoint = build_checkpoint(symbol="btc_usdt", timeframe="minute15", gap_starts=gaps(), cursor=1)
+    with pytest.raises(CheckpointError, match="path substitution"):
+        write_checkpoint(path, checkpoint)
+    with pytest.raises(CheckpointError, match="path substitution"):
+        with checkpoint_lock(path):
+            pass
+
+
 def test_checkpoint_marker_symlink_substitution_is_rejected(tmp_path: Path):
     if not hasattr(os, "symlink"):
         pytest.skip("symlink support unavailable")
