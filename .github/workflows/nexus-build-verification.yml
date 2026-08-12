@@ -88,6 +88,16 @@ jobs:
         run: npm run dist:win
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Generate Windows SHA-256 checksums
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem 'dist/*.exe' | Sort-Object Name
+          if (-not $files) { throw 'No Windows .exe artifacts were produced' }
+          $lines = foreach ($file in $files) {
+            $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $file.FullName).Hash.ToLowerInvariant()
+            "$hash  $($file.Name)"
+          }
+          $lines | Set-Content -Encoding ascii 'dist/SHA256SUMS.txt'
       - name: Build unsigned Windows evidence bundle
         working-directory: ${{ github.workspace }}
         run: >-
