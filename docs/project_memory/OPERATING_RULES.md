@@ -17,12 +17,35 @@ Never report or persist work as completed without verification evidence.
 After executing a task, attempt verification in the same work cycle instead of waiting for the owner to ask later.
 Re-check previously claimed completed work whenever evidence is missing, especially external integrations, runners, connectors, automations, Zotero, DeepSeek, and similar dependencies.
 
-## 2. Execution Efficiency
-Prefer material reduction of real blockers over continuity/admin churn.
+## 2. Product Priority
+The primary objective is not infrastructure for its own sake. The primary objective is to produce research-backed trading strategies that survive realistic validation and can progress through research -> backtest -> paper-trading evaluation.
+
+Strategy quality and evidence are the product. Infrastructure, CI, memory, governance, agents, runners, and recovery controls exist to support that product, not to become the dominant workload.
+
+Keep Phase 3 foundational crypto evidence work moving in parallel with infrastructure remediation. Do not pause independent strategy/evidence work merely because a non-blocking reliability or governance item remains open.
+
+For each strategy family, prioritize an evidence-to-experiment loop:
+1. evidence hypothesis and market rationale;
+2. explicit entry/exit/risk rules with no hidden discretion;
+3. data requirements and semantic compatibility;
+4. deterministic backtest implementation;
+5. transaction costs, slippage, funding, latency, leverage/liquidation and execution realism where applicable;
+6. train/validation/out-of-sample or walk-forward separation;
+7. robustness tests across regimes, symbols, timeframes and parameter perturbations;
+8. benchmark comparison and statistical uncertainty;
+9. failure modes, invalidation criteria and kill conditions;
+10. paper-trading eligibility only after the above is verified.
+
+Do not optimize primarily for headline return. Prefer repeatable risk-adjusted performance, drawdown control, stability, implementation realism, low leakage/overfitting risk, and reproducible evidence.
+
+A governance/reliability task may block a strategy experiment only when it can materially invalidate the experiment's data, execution assumptions, reproducibility, safety boundary, or measured result. Otherwise run both tracks in parallel.
+
+## 3. Execution Efficiency
+Prefer material reduction of real blockers and product milestones over continuity/admin churn.
 Do not create repeated Project Memory refresh PRs for trivial main movement.
 Update continuity after material events, not every small repository change.
-If one task is waiting on CI/review, move to another independent high-value blocker instead of spinning.
-Use GitHub Actions, agents, cloud fallback, DeepSeek, and the laptop/self-hosted runner only where they materially improve speed, quality, verification, or resilience.
+If one task is waiting on CI/review, move to another independent high-value blocker or strategy/evidence task instead of spinning.
+Use GitHub Actions, agents, cloud fallback, DeepSeek, Zotero, and the laptop/self-hosted runner only where they materially improve speed, quality, verification, research throughput, or resilience.
 
 ### Main-drift / replay control
 Do not automatically close and replay a technical PR merely because `main` advanced.
@@ -36,18 +59,18 @@ Do not make volatile exact-`main` SHA equality a completion requirement for cont
 Prefer semantic applicability and non-overlap checks over churn caused solely by unrelated data refresh commits.
 Track replay rate as an efficiency signal: repeated replacement PRs caused by incidental drift are an operational defect to reduce, not normal progress.
 
-## 3. Continuity Across Chats
+## 4. Continuity Across Chats
 Chat is a temporary working interface, not the source of truth.
 GitHub + Project Memory are the durable source of truth.
 A new chat must recover current state from durable project memory and current GitHub evidence rather than asking the owner to restate old decisions.
 Do not assume a previous chat's claim is authoritative when current repository evidence disagrees.
 
-## 4. Authority Boundary
+## 5. Authority Boundary
 NEXUS remains research/backtest/paper-only unless the owner explicitly changes the project authority in a separately verified decision.
 No live trading, production authority, credential disclosure, signing authority, billing changes, secret disclosure, or irreversible actions.
 Risky or ambiguous changes must not be merged automatically.
 
-## 5. Owner Experience
-The owner should not need to repeatedly ask whether a task was tested, whether continuity was saved, or whether a blocker actually moved.
-Surface only meaningful milestones, real blockers, failed/missing verification, material efficiency problems, stale assumptions, or actions that require owner involvement.
+## 6. Owner Experience
+The owner should not need to repeatedly ask whether a task was tested, whether continuity was saved, whether a blocker actually moved, or whether research work is being displaced by infrastructure work.
+Surface only meaningful milestones, real blockers, failed/missing verification, material efficiency problems, stale assumptions, strategy/evidence milestones, or actions that require owner involvement.
 Mark owner-required actions with 🔴.
