@@ -41,8 +41,9 @@ def test_extracted_interpreter_is_rebuilt_from_verified_archive_each_run():
     assert text.index('if exist "%PYROOT%" rmdir /s /q "%PYROOT%"') < text.index('tar.exe -xf "%PYZIP%"')
 
 
-def test_bootstrap_network_operations_remain_bounded_and_fail_closed():
+def test_bootstrap_network_operations_remain_bounded_fail_closed_and_portable():
     text = _text()
-    assert text.count('--retry 3 --retry-all-errors --retry-delay 2') >= 2
+    assert text.count('--retry 3 --retry-delay 2') >= 2
+    assert '--retry-all-errors' not in text
     assert '--retries 5 --timeout 60' in text
     assert 'if errorlevel 1 exit /b 1' in text
