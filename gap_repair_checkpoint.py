@@ -50,6 +50,23 @@ def lock_path(path: Path) -> Path:
     return path.with_suffix(path.suffix + ".lock")
 
 
+def _fsync_parent_directory(path: Path) -> None:
+    """Persist directory-entry mutations where the platform exposes directory fsync.
+
+    Windows does not provide the same portable directory-fsync contract through
+    Python's os module, so the stronger crash-durability claim remains explicitly
+    unproven there rather than being simulated with a weaker operation.
+    """
+    if os.name == "nt":
+        return
+    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+    fd = os.open(path.parent, flags)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
 @contextmanager
 def checkpoint_lock(path: Path) -> Iterator[None]:
     """Acquire exclusive cross-process ownership for one series checkpoint.
@@ -69,6 +86,7 @@ def checkpoint_lock(path: Path) -> Iterator[None]:
         os.fsync(fd)
         os.close(fd)
         fd = -1
+        _fsync_parent_directory(lock)
         yield
     finally:
         if fd >= 0:
@@ -77,6 +95,8 @@ def checkpoint_lock(path: Path) -> Iterator[None]:
             lock.unlink()
         except FileNotFoundError:
             pass
+        else:
+            _fsync_parent_directory(lock)
 
 
 def write_checkpoint(path: Path, checkpoint: GapRepairCheckpoint) -> None:
@@ -89,15 +109,20 @@ def write_checkpoint(path: Path, checkpoint: GapRepairCheckpoint) -> None:
             handle.flush()
             os.fsync(handle.fileno())
         os.replace(temporary, path)
+        _fsync_parent_directory(path)
         with path.open("r+b") as handle:
             os.fsync(handle.fileno())
         marker = initialized_marker(path)
+        marker_existed = marker.exists()
         with marker.open("ab") as handle:
             handle.flush()
             os.fsync(handle.fileno())
+        if not marker_existed:
+            _fsync_parent_directory(marker)
     finally:
         if temporary.exists():
             temporary.unlink()
+            _fsync_parent_directory(temporary)
 
 
 def read_checkpoint(path: Path, *, symbol: str, timeframe: str, gap_starts: Iterable[str]) -> GapRepairCheckpoint:
