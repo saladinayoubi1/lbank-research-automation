@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "event_id": "2026-08-12-continuity-pr372-closed-097ccbf",
+  "event_type": "continuity_state_recovery",
+  "observed_main_sha": "097ccbf6e4727c188a62d155b264dcda09403f33",
+  "observed_at_utc": "2026-08-12T12:14:55Z",
+  "facts": [
+    "Main remains 097ccbf6e4727c188a62d155b264dcda09403f33; its owner-authored operating priority emphasizes strategy research and evidence-backed backtest/paper-trading progression without expanding production authority.",
+    "Draft PR #372 was closed without merge on 2026-08-12T11:35:35Z, so its continuity-only events are not repository-owned main state.",
+    "At this observation there are no open pull requests.",
+    "Exact-main release verification remains fail-closed: successful control tests are not production approval, signing authority, or proof of an auditable published release bundle."
+  ],
+  "decisions": [
+    "Recover the meaningful continuity delta from closed-unmerged PR #372 in a new isolated draft PR based on exact current main.",
+    "Do not merge automatically and do not change owner-defined goals, production authority, credentials, billing, or signing policy."
+  ],
+  "recovery": {
+    "source_order": [
+      "repository project memory",
+      "STATE",
+      "decision log",
+      "recovery playbook",
+      "latest exact CI and pull-request evidence",
+      "Google Drive durable backup"
+    ],
+    "laptop_power_off_is_not_internet_or_dns_outage": true
+  },
+  "remaining_blockers": [
+    "Release Readiness has not demonstrated a single auditable release-evidence bundle containing artifact manifest, SBOM, and provenance from the same exact-main release run.",
+    "Production signing identity/trust policy and owner production approval are not authorized.",
+    "Production reproducible-build proof, executed production rollback, measured backup/restore RPO-RTO, and independent disaster-recovery proof remain absent."
+  ],
+  "production_authorized": false,
+  "secrets_included": false,
+  "raw_private_transcript_included": false,
+  "drive_backup_authoritative": false
+}
