@@ -41,6 +41,39 @@ class BuildReleaseEvidenceTests(unittest.TestCase):
             self.assertIn("sbom-unknown", checks)
             self.assertIn("provenance-fresh", checks)
 
+    def test_windows_bundle_includes_executables_and_checksum_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            dist = root / "desktop" / "lbank-monitor" / "dist"
+            dist.mkdir(parents=True)
+            (dist / "NEXUS_Setup.exe").write_bytes(b"installer")
+            (dist / "NEXUS_Portable.exe").write_bytes(b"portable")
+            (dist / "SHA256SUMS.txt").write_text("checksums\n", encoding="ascii")
+            bundle = root / "bundle"
+            cwd = Path.cwd()
+            try:
+                import os
+                os.chdir(root)
+                build_bundle(
+                    bundle,
+                    ["desktop/lbank-monitor/dist/*.exe", "desktop/lbank-monitor/dist/SHA256SUMS.txt"],
+                    SOURCE_COMMIT,
+                    BUILDER,
+                )
+            finally:
+                os.chdir(cwd)
+
+            manifest = json.loads((bundle / "artifact-manifest.json").read_text(encoding="utf-8"))
+            paths = {entry["path"] for entry in manifest["artifacts"]}
+            self.assertEqual(
+                paths,
+                {
+                    "payload/NEXUS_Portable.exe",
+                    "payload/NEXUS_Setup.exe",
+                    "payload/SHA256SUMS.txt",
+                },
+            )
+
     def test_missing_artifact_glob_fails_closed(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
