@@ -44,10 +44,30 @@ jobs:
           gradle-version: '8.9'
       - name: Build debug APK
         run: gradle --no-daemon assembleDebug
+      - name: Build unsigned Android evidence bundle
+        working-directory: ${{ github.workspace }}
+        run: >-
+          python scripts/build_release_evidence.py
+          --bundle-dir release-evidence/android
+          --artifact-glob 'android/lbank-mobile/app/build/outputs/apk/debug/*.apk'
+          --source-commit '${{ github.sha }}'
+          --builder 'github-actions/nexus-build-verification/android-apk'
+      - name: Fail-closed verify Android evidence bundle
+        working-directory: ${{ github.workspace }}
+        run: >-
+          python scripts/release_gate.py release-evidence/android
+          --allow-unsigned
+          --expected-source-commit '${{ github.sha }}'
+          --expected-builder 'github-actions/nexus-build-verification/android-apk'
       - uses: actions/upload-artifact@v4
         with:
           name: nexus-android-debug-apk
           path: android/lbank-mobile/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nexus-android-release-evidence
+          path: release-evidence/android
           if-no-files-found: error
 
   windows-desktop:
@@ -68,10 +88,41 @@ jobs:
         run: npm run dist:win
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Generate Windows SHA-256 checksums
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem 'dist/*.exe' | Sort-Object Name
+          if (-not $files) { throw 'No Windows .exe artifacts were produced' }
+          $lines = foreach ($file in $files) {
+            $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $file.FullName).Hash.ToLowerInvariant()
+            "$hash  $($file.Name)"
+          }
+          $lines | Set-Content -Encoding ascii 'dist/SHA256SUMS.txt'
+      - name: Build unsigned Windows evidence bundle
+        working-directory: ${{ github.workspace }}
+        run: >-
+          python scripts/build_release_evidence.py
+          --bundle-dir release-evidence/windows
+          --artifact-glob 'desktop/lbank-monitor/dist/*.exe'
+          --artifact-glob 'desktop/lbank-monitor/dist/SHA256SUMS.txt'
+          --source-commit '${{ github.sha }}'
+          --builder 'github-actions/nexus-build-verification/windows-desktop'
+      - name: Fail-closed verify Windows evidence bundle
+        working-directory: ${{ github.workspace }}
+        run: >-
+          python scripts/release_gate.py release-evidence/windows
+          --allow-unsigned
+          --expected-source-commit '${{ github.sha }}'
+          --expected-builder 'github-actions/nexus-build-verification/windows-desktop'
       - uses: actions/upload-artifact@v4
         with:
           name: nexus-windows-packages
           path: |
             desktop/lbank-monitor/dist/*.exe
             desktop/lbank-monitor/dist/SHA256SUMS.txt
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nexus-windows-release-evidence
+          path: release-evidence/windows
           if-no-files-found: error
