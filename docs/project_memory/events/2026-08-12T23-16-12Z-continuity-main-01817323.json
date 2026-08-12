@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "event_type": "continuity_checkpoint",
+  "observed_at_utc": "2026-08-12T23:16:12Z",
+  "repository": "saladinayoubi1/lbank-research-automation",
+  "main_sha": "01817323a03363197696095487af87d76e50b7e6",
+  "meaningful_change": {
+    "merged_pr": 390,
+    "summary": "Phase 3 stabilization scope freeze and deterministic fail-closed DeepSeek pre-egress boundary are now on main."
+  },
+  "open_prs": [
+    {"number": 380, "state": "draft", "purpose": "local runner bootstrap cache reuse", "merge_hold": "requires real post-fix affected-path runner validation"},
+    {"number": 362, "state": "draft", "purpose": "durable gap checkpoint ownership", "merge_hold": "#230 recovery/durability evidence incomplete"}
+  ],
+  "exact_main_ci": {
+    "release_readiness": "success",
+    "release_recovery": "success",
+    "nexus_build_verification": "success"
+  },
+  "release_boundary": {
+    "artifact_manifest_sbom_provenance": "CI evidence path present; production release authority not granted",
+    "signing": "blocked_pending_owner_approved_signer_identity_and_trust_policy",
+    "production_approval": "blocked_pending_owner_approval",
+    "reproducible_production_build": "not_proven",
+    "executed_production_rollback": "not_proven",
+    "measured_backup_restore_rpo_rto": "not_proven",
+    "independent_disaster_recovery": "not_proven"
+  },
+  "recovery_order": ["repository_project_memory", "STATE", "decision_log", "recovery_playbook", "latest_CI_and_PR", "Google_Drive_Durable_backup"],
+  "continuity_invariants": {
+    "device_power_off_is_not_network_dns_outage": true,
+    "no_secrets_or_raw_private_transcripts": true,
+    "owner_goals_and_red_lines_unchanged": true
+  }
+}
