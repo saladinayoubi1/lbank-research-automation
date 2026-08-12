@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0",
+  "event_id": "2026-08-12-continuity-gap-23d6ddb7",
+  "event_type": "repository_security_and_continuity_change",
+  "observed_main_sha": "f3d15ddd30b8dc97574a563a17f0198bac7eadb1",
+  "observed_at_utc": "2026-08-12T04:18:00Z",
+  "changes": [
+    {
+      "pr": 362,
+      "head_sha": "23d6ddb7aee204977517c03873aebabafde6801a",
+      "summary": "Draft gap-checkpoint hardening advanced on the exact current main base; Test, NEXUS Build Verification, NEXUS Cloud Fallback, and Probe public kline gaps are green on the exact head.",
+      "security_boundary": "Issue #230 remains fail-closed: safe orphan-lock recovery, portable containing-directory crash durability across supported filesystems, broader alternate-path/filesystem-alias bypass replay, and independent protection against verifier/policy/test co-weakening remain incomplete."
+    }
+  ],
+  "release_evidence": {
+    "exact_main_sha": "f3d15ddd30b8dc97574a563a17f0198bac7eadb1",
+    "release_readiness": "success",
+    "release_recovery": "success",
+    "release_readiness_artifact_count": 0,
+    "backup_restore_exact_main_run": "absent",
+    "disaster_recovery_exact_main_run": "absent",
+    "cross_platform_gate": ["ubuntu-latest", "windows-latest", "macos-latest"],
+    "production_authorized": false,
+    "reason": "Cross-platform release-gate tests are green, but no auditable Release Readiness artifact bundle is produced for this SHA; exact-main backup/restore and disaster-recovery workflow runs are absent, and owner-approved signing/trust, production approval, reproducible production build, executed rollback, measured restore RPO/RTO, and independent DR proof remain absent."
+  },
+  "continuity": {
+    "laptop_shutdown_is_not_network_or_dns_failure": true,
+    "recovery_source_order": ["repository_memory", "STATE", "decision_log", "recovery_playbook", "latest_CI_PR_evidence", "drive_backup"]
+  },
+  "secrets_included": false
+}
