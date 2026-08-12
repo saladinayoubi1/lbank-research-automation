@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -115,6 +116,46 @@ def test_bool_and_out_of_range_cursor_are_rejected():
         build_checkpoint(symbol="btc_usdt", timeframe="minute15", gap_starts=gaps(), cursor=True)
     with pytest.raises(CheckpointError, match="outside"):
         build_checkpoint(symbol="btc_usdt", timeframe="minute15", gap_starts=gaps(), cursor=2)
+
+
+def test_checkpoint_symlink_substitution_is_rejected(tmp_path: Path):
+    if not hasattr(os, "symlink"):
+        pytest.skip("symlink support unavailable")
+    target = tmp_path / "outside.json"
+    checkpoint = build_checkpoint(symbol="btc_usdt", timeframe="minute15", gap_starts=gaps(), cursor=1)
+    target.write_text(json.dumps(checkpoint.__dict__), encoding="utf-8")
+    path = tmp_path / "cursor.json"
+    try:
+        path.symlink_to(target)
+    except (OSError, NotImplementedError):
+        pytest.skip("symlink creation unavailable")
+
+    with pytest.raises(CheckpointError, match="path substitution"):
+        read_checkpoint(path, symbol="btc_usdt", timeframe="minute15", gap_starts=gaps())
+    with pytest.raises(CheckpointError, match="path substitution"):
+        write_checkpoint(path, checkpoint)
+    with pytest.raises(CheckpointError, match="path substitution"):
+        with checkpoint_lock(path):
+            pass
+
+
+def test_checkpoint_marker_symlink_substitution_is_rejected(tmp_path: Path):
+    if not hasattr(os, "symlink"):
+        pytest.skip("symlink support unavailable")
+    path = tmp_path / "cursor.json"
+    target = tmp_path / "outside.marker"
+    target.write_text("", encoding="utf-8")
+    marker = initialized_marker(path)
+    try:
+        marker.symlink_to(target)
+    except (OSError, NotImplementedError):
+        pytest.skip("symlink creation unavailable")
+
+    checkpoint = build_checkpoint(symbol="btc_usdt", timeframe="minute15", gap_starts=gaps(), cursor=1)
+    with pytest.raises(CheckpointError, match="marker path substitution"):
+        write_checkpoint(path, checkpoint)
+    with pytest.raises(CheckpointError, match="marker path substitution"):
+        read_checkpoint(path, symbol="btc_usdt", timeframe="minute15", gap_starts=gaps())
 
 
 def test_checkpoint_write_syncs_directory_entry_mutations(monkeypatch, tmp_path: Path):
