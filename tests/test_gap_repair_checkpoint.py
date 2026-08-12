@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+import gap_repair_checkpoint as checkpoint_module
 from gap_repair_checkpoint import (
     CheckpointError,
     build_checkpoint,
@@ -114,3 +115,28 @@ def test_bool_and_out_of_range_cursor_are_rejected():
         build_checkpoint(symbol="btc_usdt", timeframe="minute15", gap_starts=gaps(), cursor=True)
     with pytest.raises(CheckpointError, match="outside"):
         build_checkpoint(symbol="btc_usdt", timeframe="minute15", gap_starts=gaps(), cursor=2)
+
+
+def test_checkpoint_write_syncs_directory_entry_mutations(monkeypatch, tmp_path: Path):
+    path = tmp_path / "cursor.json"
+    synced = []
+    monkeypatch.setattr(checkpoint_module, "_fsync_parent_directory", lambda value: synced.append(value))
+
+    write_checkpoint(
+        path,
+        build_checkpoint(symbol="btc_usdt", timeframe="minute15", gap_starts=gaps(), cursor=1),
+    )
+
+    assert path in synced
+    assert initialized_marker(path) in synced
+
+
+def test_checkpoint_lock_syncs_create_and_remove(monkeypatch, tmp_path: Path):
+    path = tmp_path / "cursor.json"
+    synced = []
+    monkeypatch.setattr(checkpoint_module, "_fsync_parent_directory", lambda value: synced.append(value))
+
+    with checkpoint_lock(path):
+        assert lock_path(path).exists()
+
+    assert synced == [lock_path(path), lock_path(path)]
