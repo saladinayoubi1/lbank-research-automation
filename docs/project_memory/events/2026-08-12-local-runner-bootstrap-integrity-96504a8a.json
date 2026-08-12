@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "event_id": "2026-08-12-local-runner-bootstrap-integrity-96504a8a",
+  "event_type": "workflow_reliability_security_hardening",
+  "observed_main_sha": "6a8093744c19e0a1250df193ab9d1351313f018e",
+  "candidate_pr": 380,
+  "candidate_head_sha": "96504a8aa7c42281a5a121864ede03899013a427",
+  "facts": [
+    "The prior cache-reuse candidate trusted an extracted portable Python when python.exe merely existed.",
+    "The candidate now caches only the Python 3.12.10 embeddable ZIP, verifies the upstream-published SHA-256 before reuse and before extraction, and rebuilds the extracted interpreter directory on every run.",
+    "Regression coverage asserts SHA-256 pinning, verification-before-extraction, no extracted-interpreter reuse, bounded retries, and fail-closed command handling.",
+    "Generic PR CI was restarted for the new exact head and must finish before any merge consideration."
+  ],
+  "decision": "Keep PR #380 Draft and deny merge until exact-head CI is green and the affected self-hosted Local Runner path is validated. The remaining get-pip bootstrap is network-fetched and not yet independently content-pinned, so complete supply-chain authority is not claimed.",
+  "lesson": "Reliability caches on self-hosted runners must cache verifiable immutable inputs rather than trust mutable extracted executables by existence.",
+  "security_boundary": "No credentials, signing, billing, production deployment, live trading, financial action, or weakening of data/security gates is authorized.",
+  "secrets_included": false
+}
