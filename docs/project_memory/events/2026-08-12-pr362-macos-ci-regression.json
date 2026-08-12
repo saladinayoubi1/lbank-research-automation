@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "event_type": "continuity_snapshot",
+  "recorded_at": "2026-08-12T07:13:17Z",
+  "observed_main_sha": "f3d15ddd30b8dc97574a563a17f0198bac7eadb1",
+  "open_prs": [
+    {
+      "number": 362,
+      "draft": true,
+      "head_sha": "d6c23f001315817001588c27efdb52449ab0005d",
+      "ci": {
+        "Test": "failure",
+        "NEXUS Build Verification": "success",
+        "NEXUS Cloud Fallback": "success",
+        "Probe public kline gaps": "success"
+      },
+      "failing_test_matrix": "macos-3.12"
+    }
+  ],
+  "release_posture": "fail_closed",
+  "blockers": [
+    "PR 362 Test fails on macOS 3.12 at the recorded exact head; root cause is not proven from the available CI evidence.",
+    "Production signing remains blocked pending owner-approved signer identity and trust policy plus explicit production approval.",
+    "Backup Restore Readiness and Disaster Recovery Readiness have no main-branch execution evidence at the observed main SHA."
+  ],
+  "recovery_order": [
+    "repository project memory",
+    "STATE",
+    "decision log",
+    "recovery playbook",
+    "latest CI and PR state",
+    "Google Drive backup"
+  ],
+  "recovery_lessons": [
+    "Laptop shutdown or power-off is distinct from internet or DNS outage; externally hosted repository, CI, and Drive evidence remain authoritative while the laptop is offline."
+  ],
+  "secrets_stored": false
+}
