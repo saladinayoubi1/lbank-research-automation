@@ -8,8 +8,8 @@
     {
       "pr": 362,
       "head_sha": "c7823b2d1a556d5cf4408bdeb0ece3871c6debc9",
-      "summary": "Draft gap-checkpoint hardening exact-head Test, NEXUS Build Verification, NEXUS Cloud Fallback, and Probe public kline gaps are green; ownership covers checkpoint read through durable data save and cursor commit, with supported POSIX directory-entry fsync.",
-      "security_boundary": "Issue #230 remains fail-closed: safe orphan-lock recovery, Windows/every-filesystem directory-entry crash durability, adversarial alternate-path/lock bypass replay, and independent policy/test co-weakening evidence remain incomplete."
+      "summary": "Draft gap-checkpoint hardening exact-head Test, NEXUS Build Verification, NEXUS Cloud Fallback, and Probe public kline gaps are green; ownership covers checkpoint read through durable data save and cursor commit, with supported POSIX directory-entry fsync. Semantic inspection additionally found that a successful data repair can change the gap set after save while the cursor checkpoint is still persisted against the pre-save gap-set digest.",
+      "security_boundary": "Issue #230 remains fail-closed: deterministic post-save gap-set transition/remap is not yet specified or regression-tested; safe orphan-lock recovery, Windows/every-filesystem directory-entry crash durability, adversarial alternate-path/lock bypass replay, and independent policy/test co-weakening evidence also remain incomplete. Green CI on this head is therefore not merge authority."
     }
   ],
   "release_evidence": {
