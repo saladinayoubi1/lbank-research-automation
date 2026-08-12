@@ -4,15 +4,17 @@
   "event_type": "workflow_reliability_security_hardening",
   "observed_main_sha": "6a8093744c19e0a1250df193ab9d1351313f018e",
   "candidate_pr": 380,
-  "candidate_head_sha": "96504a8aa7c42281a5a121864ede03899013a427",
+  "candidate_implementation_sha": "992d31925f57657ab65b873932e12a15ec4cd22f",
   "facts": [
     "The prior cache-reuse candidate trusted an extracted portable Python when python.exe merely existed.",
-    "The candidate now caches only the Python 3.12.10 embeddable ZIP, verifies the upstream-published SHA-256 before reuse and before extraction, and rebuilds the extracted interpreter directory on every run.",
-    "Regression coverage asserts SHA-256 pinning, verification-before-extraction, no extracted-interpreter reuse, bounded retries, and fail-closed command handling.",
-    "Generic PR CI was restarted for the new exact head and must finish before any merge consideration."
+    "The candidate caches only immutable bootstrap archives and rebuilds the extracted interpreter on every run.",
+    "Python 3.12.10 embeddable ZIP reuse and extraction are gated by its pinned upstream SHA-256.",
+    "The network-fetched get-pip.py execution path was removed. pip now bootstraps from the pinned pip 26.1.2 wheel published by PyPI, whose SHA-256 is verified before extraction.",
+    "Regression coverage asserts Python and pip artifact pinning, verification-before-extraction, absence of get-pip.py, no extracted-interpreter reuse, bounded retries, and fail-closed command handling.",
+    "Generic exact-head PR CI must rerun after this material change; affected self-hosted Local Runner runtime evidence is still a separate claim."
   ],
-  "decision": "Keep PR #380 Draft and deny merge until exact-head CI is green and the affected self-hosted Local Runner path is validated. The remaining get-pip bootstrap is network-fetched and not yet independently content-pinned, so complete supply-chain authority is not claimed.",
-  "lesson": "Reliability caches on self-hosted runners must cache verifiable immutable inputs rather than trust mutable extracted executables by existence.",
+  "decision": "Keep PR #380 Draft and deny merge until the new exact-head CI is green and the affected self-hosted Local Runner path is validated under its reviewed main-only execution contract. Supply-chain claims are limited to content verification of the pinned Python ZIP and pip wheel; no broader package-index or production authority is claimed.",
+  "lesson": "A bootstrap repair must not replace availability risk with remote-code-execution trust: network-delivered bootstrap code must be content-bound before execution, and reusable caches must contain verifiable immutable inputs rather than mutable extracted runtimes.",
   "security_boundary": "No credentials, signing, billing, production deployment, live trading, financial action, or weakening of data/security gates is authorized.",
   "secrets_included": false
 }
