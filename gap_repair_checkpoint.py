@@ -50,6 +50,12 @@ def lock_path(path: Path) -> Path:
     return path.with_suffix(path.suffix + ".lock")
 
 
+def _reject_symlink(path: Path, *, label: str) -> None:
+    """Reject path substitution through symlinks before state is trusted or mutated."""
+    if path.is_symlink():
+        raise CheckpointError(f"{label} path substitution is not allowed")
+
+
 def _fsync_parent_directory(path: Path) -> None:
     """Persist directory-entry mutations where the platform exposes directory fsync.
 
@@ -76,6 +82,8 @@ def checkpoint_lock(path: Path) -> Iterator[None]:
     non-monotonic cursor update.
     """
     lock = lock_path(path)
+    _reject_symlink(path, label="checkpoint")
+    _reject_symlink(lock, label="checkpoint lock")
     lock.parent.mkdir(parents=True, exist_ok=True)
     try:
         fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
@@ -100,8 +108,12 @@ def checkpoint_lock(path: Path) -> Iterator[None]:
 
 
 def write_checkpoint(path: Path, checkpoint: GapRepairCheckpoint) -> None:
+    marker = initialized_marker(path)
+    _reject_symlink(path, label="checkpoint")
+    _reject_symlink(marker, label="checkpoint marker")
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.tmp")
+    _reject_symlink(temporary, label="checkpoint temporary")
     payload = json.dumps(asdict(checkpoint), sort_keys=True, separators=(",", ":")) + "\n"
     try:
         with temporary.open("w", encoding="utf-8", newline="\n") as handle:
@@ -112,7 +124,6 @@ def write_checkpoint(path: Path, checkpoint: GapRepairCheckpoint) -> None:
         _fsync_parent_directory(path)
         with path.open("r+b") as handle:
             os.fsync(handle.fileno())
-        marker = initialized_marker(path)
         marker_existed = marker.exists()
         with marker.open("ab") as handle:
             handle.flush()
@@ -126,7 +137,10 @@ def write_checkpoint(path: Path, checkpoint: GapRepairCheckpoint) -> None:
 
 
 def read_checkpoint(path: Path, *, symbol: str, timeframe: str, gap_starts: Iterable[str]) -> GapRepairCheckpoint:
-    if not path.exists() and initialized_marker(path).exists():
+    marker = initialized_marker(path)
+    _reject_symlink(path, label="checkpoint")
+    _reject_symlink(marker, label="checkpoint marker")
+    if not path.exists() and marker.exists():
         raise CheckpointError("checkpoint missing after prior initialization")
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
