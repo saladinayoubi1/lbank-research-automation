@@ -22,11 +22,12 @@ The cursor is positional within that exact ordered gap set. Reordering, adding, 
 
 ### Persistence semantics
 
-1. A checkpoint write uses a same-directory temporary file, file flush/fsync, and atomic replace.
+1. A checkpoint write uses a same-directory temporary file, file flush/fsync, atomic replace, and—where Python exposes a supported directory descriptor—containing-directory fsync after entry mutation.
 2. Recovered market-data rows must be durably saved before the fairness cursor advances.
-3. The initialized marker distinguishes first use from deletion after prior initialization.
-4. Corrupt, malformed, unsupported-version, stale-gap-set, wrong-series, impossible-cursor, missing-after-initialization, or ownership-conflict state fails closed before a stronger recovery claim.
-5. Current implementation fsyncs the checkpoint/marker file contents. It does **not** yet prove containing-directory entry durability on every supported filesystem. Until that is implemented and tested, claims are limited to file-content durability after the relevant directory entry is visible; crash-durable rename/creation across all supported filesystems remains unproven.
+3. The initialized marker distinguishes first use from deletion after prior initialization; its creation is directory-synced where supported.
+4. Lock-file create/remove mutations are directory-synced where supported so ownership evidence is not intentionally weaker than checkpoint data.
+5. Corrupt, malformed, unsupported-version, stale-gap-set, wrong-series, impossible-cursor, missing-after-initialization, or ownership-conflict state fails closed before a stronger recovery claim.
+6. POSIX-style directory fsync is now implemented for checkpoint, initialization-marker, temporary-file cleanup, and lock entry mutations. Python does not expose an equivalent portable directory-fsync contract on Windows, so crash-durable rename/creation across every supported filesystem remains explicitly unproven rather than silently treated as equivalent.
 
 ### Ownership semantics
 
@@ -56,7 +57,8 @@ A leftover lock after abnormal termination is not safe to delete solely because 
 | Worker crashes while lock exists | Do not age/PID-break automatically; quarantine/recovery proof is required. |
 | Crash after data save but before cursor commit | Reprocessing the same bounded window is acceptable; cursor must not advance ahead of durable data. |
 | Crash after cursor decision but before durable data save | Transaction ordering must prevent this state from becoming authoritative. |
-| Directory-entry durability loss | Strong crash-durability claim remains blocked until directory fsync/portable equivalent is tested. |
+| POSIX directory-entry durability loss | Checkpoint/marker/lock entry mutations are directory-fsynced; failure propagates rather than being treated as durable. |
+| Windows directory-entry durability | Strong crash-durability claim remains blocked pending a tested portable/equivalent contract. |
 | Alternate checkpoint/status path | Must not bypass canonical path/identity policy. |
 | Policy and tests weakened together | Independent deterministic policy checks/review evidence are required; green tests alone are insufficient. |
 
@@ -67,6 +69,7 @@ A leftover lock after abnormal termination is not safe to delete solely because 
 - **Unbounded retry:** can monopolize request budget and hide unavailable-source conditions.
 - **Age-based orphan-lock deletion:** can evict a live slow worker.
 - **PID-only orphan-lock deletion:** PID reuse and host ambiguity can misidentify ownership.
+- **Best-effort directory sync with swallowed errors:** would create a false durability claim; supported fsync failures must propagate.
 - **Treating green CI as recovery authority:** CI does not prove crash replay, filesystem semantics, or independent policy enforcement by itself.
 
 ## Positive validation required before completion
@@ -75,7 +78,8 @@ A leftover lock after abnormal termination is not safe to delete solely because 
 2. Repeated bounded invocations reach every eligible deferred gap within the documented bound.
 3. Recovered data is saved before cursor advancement.
 4. Ownership is held across checkpoint read, network repair, data save, and cursor commit.
-5. Exact final head passes all required CI, is mergeable, and has no unresolved review thread.
+5. Supported POSIX directory-entry mutations invoke fail-closed directory fsync after create/replace/remove operations.
+6. Exact final head passes all required CI, is mergeable, and has no unresolved review thread.
 
 ## Negative/bypass validation required before completion
 
@@ -101,8 +105,8 @@ On one fixed repository head and fixed dataset/gap set:
 ## Residual risks / current blockers
 
 - Safe orphan-lock recovery is not yet implemented; ambiguous leftover locks remain manual/quarantine recovery events.
-- Portable containing-directory crash durability is not yet proven across supported filesystems.
-- Adversarial crash/path/lock bypass replay and policy/test co-weakening evidence are incomplete.
+- Windows/every-filesystem containing-directory crash durability is not yet proven by a portable equivalent to POSIX directory fsync.
+- Adversarial alternate-path/lock bypass replay and policy/test co-weakening evidence remain incomplete.
 - Therefore #230 remains open and restart-starvation freedom is non-authoritative.
 
 ## Obsolescence triggers
