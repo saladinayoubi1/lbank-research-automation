@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0",
+  "event_id": "2026-08-12-local-runner-ci-green-43fc0e9e",
+  "event_type": "continuity_validation_update",
+  "observed_main_sha": "6a8093744c19e0a1250df193ab9d1351313f018e",
+  "candidate_pr": 380,
+  "candidate_head_sha": "43fc0e9e4da05ae4fa22e9e0b200e0d93df3b2b8",
+  "facts": [
+    "Exact-head PR CI is green for Workflow Permissions Policy, Test, NEXUS Build Verification, and NEXUS Cloud Fallback.",
+    "The affected nexus-local-runner workflow has no run recorded for the candidate branch, so the self-hosted recovery path remains unvalidated on this exact head.",
+    "PR #380 remains Draft and unmerged; PR #362 remains open and must not be overlapped or merged as part of this continuity update."
+  ],
+  "decision": "Keep PR #380 fail-closed and unmerged until the affected Local Runner workflow executes successfully on the exact candidate head. Do not infer production, release, signing, credential, billing, or deployment authority from generic CI success.",
+  "recovery_rule": "Device shutdown and Internet/DNS outage are distinct failure classes and must remain separately diagnosed during recovery.",
+  "security_boundary": "No API keys, credentials, passwords, billing secrets, signing material, private raw transcripts, production deployment, live trading, or irreversible financial action are stored or authorized.",
+  "secrets_included": false
+}
