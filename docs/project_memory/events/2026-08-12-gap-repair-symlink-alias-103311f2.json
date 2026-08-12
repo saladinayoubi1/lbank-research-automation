@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0",
+  "event_id": "2026-08-12-gap-repair-symlink-alias-103311f2",
+  "event_type": "gap_repair_recovery_hardening",
+  "observed_main_sha": "f3d15ddd30b8dc97574a563a17f0198bac7eadb1",
+  "observed_at_utc": "2026-08-12T06:30:00Z",
+  "facts": [
+    "Draft PR #362 remains based on exact main f3d15ddd30b8dc97574a563a17f0198bac7eadb1.",
+    "Source/test head 103311f21031d420401c6fc251c1875be03c16c5 adds fail-closed rejection for symlink components in exhaustive-repair status and deferred-report paths, with regression tests.",
+    "At observation time Test, NEXUS Build Verification, and NEXUS Cloud Fallback were successful on source/test head 103311f21031d420401c6fc251c1875be03c16c5; Probe public kline gaps remained in progress.",
+    "PR #362 has zero unresolved review threads at this observation."
+  ],
+  "decisions": [
+    "Treat status/report symlink substitution as an alias-bypass attempt and reject it before stronger recovery/progress trust.",
+    "Keep issue #230 and PR #362 fail-closed; this change does not establish canonical binding for every arbitrary alternate status path or filesystem alias."
+  ],
+  "lessons": [
+    "Filesystem symlink-alias rejection closes one concrete bypass class but is not equivalent to proving canonical path identity.",
+    "Exact-head CI evidence becomes stale after any Project Memory commit and must be re-collected on the resulting head before merge consideration."
+  ],
+  "remaining_blockers": [
+    "safe orphan-lock recovery",
+    "portable containing-directory crash durability on Windows and every supported filesystem",
+    "canonical alternate status/path binding beyond symlink substitution",
+    "independent protection against policy/test co-weakening"
+  ],
+  "drive_backup_authoritative": false,
+  "production_authorized": false,
+  "secrets_included": false
+}
