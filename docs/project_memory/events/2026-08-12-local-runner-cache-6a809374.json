@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0",
+  "event_id": "2026-08-12-local-runner-cache-6a809374",
+  "event_type": "continuity_and_runner_reliability_change",
+  "observed_main_sha": "6a8093744c19e0a1250df193ab9d1351313f018e",
+  "observed_at_utc": "2026-08-12T17:30:00Z",
+  "changes": [
+    {
+      "open_pr": 380,
+      "head_sha": "c5d21a47fe147f7cc69c16bb56a63174d550f5a1",
+      "summary": "Draft Local Runner bootstrap hardening reuses an existing portable Python/cache and bounds network/bootstrap retries.",
+      "validation": "Workflow Permissions Policy, Test, NEXUS Build Verification, and NEXUS Cloud Fallback succeeded on the exact PR head.",
+      "merge_hold": "Keep Draft and unmerged until a subsequent Local Runner execution validates the cache fallback and its trust boundary."
+    },
+    {
+      "open_pr": 362,
+      "head_sha": "a6136f984c29d9382c966fe93b3549e6c0e6af5a",
+      "summary": "Gap-checkpoint ownership hardening remains Draft and merge-held by issue #230."
+    }
+  ],
+  "release_evidence": {
+    "exact_main_sha": "6a8093744c19e0a1250df193ab9d1351313f018e",
+    "release_readiness": "success",
+    "release_recovery": "success",
+    "build_verification": "success",
+    "production_authorized": false,
+    "reproducible_production_build_proven": false,
+    "production_rollback_exercised": false,
+    "measured_restore_rpo_rto_proven": false,
+    "independent_disaster_recovery_proven": false
+  },
+  "continuity": {
+    "recovery_order": [
+      "repository_project_memory",
+      "STATE",
+      "decision_log",
+      "recovery_playbook",
+      "latest_CI_and_PR",
+      "drive_backup"
+    ],
+    "device_shutdown_is_not_network_or_dns_outage": true,
+    "drive_backup_authoritative": false
+  },
+  "secrets_included": false
+}
