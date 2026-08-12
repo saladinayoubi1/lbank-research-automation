@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "event_id": "2026-08-12-runtime-evidence-watch-2249",
+  "event_type": "continuity_runtime_evidence",
+  "observed_main_sha": "6a8093744c19e0a1250df193ab9d1351313f018e",
+  "open_prs": [362, 380],
+  "facts": [
+    "PR #380 current head is 39c02c0a9f475e3da8db98fbe43833eed1419985 and exact-head Workflow Permissions Policy, Test, NEXUS Build Verification, and NEXUS Cloud Fallback are successful.",
+    "PR #380 remains Draft and unmerged; its affected NEXUS Local Runner runtime path is main-only and is not proven by generic PR CI.",
+    "A scheduled NEXUS Local Runner run on exact main 6a8093744c19e0a1250df193ab9d1351313f018e, run 31632038489, was in progress at observation time.",
+    "PR #362 remains Draft and unmerged under issue #230 completion gates.",
+    "Device shutdown and Internet/DNS outage remain distinct recovery conditions."
+  ],
+  "recovery_order": [
+    "repository project memory",
+    "STATE",
+    "decision log",
+    "recovery playbook",
+    "latest CI and PR state",
+    "Google Drive durable backup"
+  ],
+  "decision": "Keep PR #380 and #362 fail-closed and unmerged until their exact claim boundaries are satisfied; do not treat in-progress Local Runner evidence as success.",
+  "secrets_included": false
+}
