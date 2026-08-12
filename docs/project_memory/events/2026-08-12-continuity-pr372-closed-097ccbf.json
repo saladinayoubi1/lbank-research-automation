@@ -7,11 +7,11 @@
   "facts": [
     "Main remains 097ccbf6e4727c188a62d155b264dcda09403f33; its owner-authored operating priority emphasizes strategy research and evidence-backed backtest/paper-trading progression without expanding production authority.",
     "Draft PR #372 was closed without merge on 2026-08-12T11:35:35Z, so its continuity-only events are not repository-owned main state.",
-    "At this observation there are no open pull requests.",
-    "Exact-main release verification remains fail-closed: successful control tests are not production approval, signing authority, or proof of an auditable published release bundle."
+    "Draft PR #362 remains open on older base f3d15ddd30b8dc97574a563a17f0198bac7eadb1; its documented claim boundary keeps issue #230 fail-closed and does not authorize merge or production.",
+    "Exact-main Release Readiness and Release Recovery runs succeeded, but Release Readiness uploaded zero GitHub Actions artifacts, so successful verifier tests are not proof of one auditable published release-evidence bundle."
   ],
   "decisions": [
-    "Recover the meaningful continuity delta from closed-unmerged PR #372 in a new isolated draft PR based on exact current main.",
+    "Recover the meaningful continuity delta from closed-unmerged PR #372 in a new isolated draft PR based on exact current main without overlapping PR #362 implementation files.",
     "Do not merge automatically and do not change owner-defined goals, production authority, credentials, billing, or signing policy."
   ],
   "recovery": {
@@ -27,6 +27,7 @@
   },
   "remaining_blockers": [
     "Release Readiness has not demonstrated a single auditable release-evidence bundle containing artifact manifest, SBOM, and provenance from the same exact-main release run.",
+    "Issue #230 remains fail-closed on PR #362 for safe orphan-lock recovery, supported-filesystem directory-entry crash durability, canonical alternate-path binding beyond symlink aliases, independent policy/test co-weakening protection, and fixed-SHA recovery/bypass evidence.",
     "Production signing identity/trust policy and owner production approval are not authorized.",
     "Production reproducible-build proof, executed production rollback, measured backup/restore RPO-RTO, and independent disaster-recovery proof remain absent."
   ],
