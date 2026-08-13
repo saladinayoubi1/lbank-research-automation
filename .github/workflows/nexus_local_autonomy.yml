@@ -4,6 +4,17 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '*/5 * * * *'
+  push:
+    branches: [main]
+    paths:
+      - '.nexus/autonomous-queue.json'
+      - 'config/nexus-mission-queue.json'
+      - 'scripts/nexus_local_worker.py'
+      - 'scripts/nexus_orchestrator.js'
+      - 'scripts/nexus_ai_council.js'
+      - 'scripts/nexus_brain_core.js'
+      - 'scripts/deepseek_smoke.py'
+      - '.github/workflows/nexus_local_autonomy.yml'
 
 permissions:
   contents: read
