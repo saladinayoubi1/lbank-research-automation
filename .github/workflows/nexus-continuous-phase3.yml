@@ -3,7 +3,7 @@ name: NEXUS Continuous Phase 3
 on:
   workflow_dispatch:
   schedule:
-    - cron: '7 * * * *'
+    - cron: '*/5 * * * *'
 
 concurrency:
   group: nexus-continuous-phase3
@@ -16,7 +16,7 @@ jobs:
   local-worker:
     name: Continuous local worker
     runs-on: [self-hosted, Windows]
-    timeout-minutes: 350
+    timeout-minutes: 6
     steps:
       - uses: actions/checkout@v4
       - name: Show runtime
@@ -24,11 +24,11 @@ jobs:
         run: |
           python --version
           node --version
-      - name: Run continuous Phase 3 worker
+      - name: Run bounded near-continuous Phase 3 worker
         shell: powershell
         env:
           NEXUS_WORKER_INTERVAL_SECONDS: '15'
-          NEXUS_WORKER_MAX_RUNTIME_SECONDS: '20400'
+          NEXUS_WORKER_MAX_RUNTIME_SECONDS: '240'
           NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: ${{ vars.NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
         run: python scripts/nexus_continuous_worker.py
@@ -44,7 +44,7 @@ jobs:
   cloud-watchdog:
     name: Cloud fallback watchdog
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - name: Verify orchestrator and Phase 3 lanes
