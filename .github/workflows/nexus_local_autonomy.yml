@@ -26,17 +26,17 @@ concurrency:
 jobs:
   local-worker:
     runs-on: [self-hosted, Windows, X64]
-    timeout-minutes: 58
+    timeout-minutes: 10
     env:
-      NEXUS_WORKER_MAX_SECONDS: '3000'
-      NEXUS_WORKER_IDLE_SLEEP: '30'
+      NEXUS_WORKER_MAX_SECONDS: '240'
+      NEXUS_WORKER_IDLE_SLEEP: '15'
       DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Runner identity
-        shell: pwsh
+        shell: powershell
         run: |
           New-Item -ItemType Directory -Force build/autonomy | Out-Null
           $payload = @{
@@ -49,19 +49,19 @@ jobs:
           Write-Host $payload
 
       - name: Validate orchestrator and agent policy
-        shell: pwsh
+        shell: powershell
         run: |
           node scripts/nexus_orchestrator.js | Tee-Object -FilePath build/autonomy/orchestrator-state.json
           node scripts/nexus_ai_council.js
           node scripts/nexus_brain_core.js
 
       - name: Run bounded autonomous queue
-        shell: pwsh
+        shell: powershell
         run: python scripts/nexus_local_worker.py
 
       - name: Show final worker evidence
         if: always()
-        shell: pwsh
+        shell: powershell
         run: |
           if (Test-Path build/autonomy/worker-heartbeat.json) { Get-Content build/autonomy/worker-heartbeat.json }
           if (Test-Path .nexus/autonomous-queue.json) { Get-Content .nexus/autonomous-queue.json }
