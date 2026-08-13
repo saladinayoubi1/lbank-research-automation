@@ -1,0 +1,67 @@
+name: NEXUS Local Autonomy
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/5 * * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nexus-local-autonomy
+  cancel-in-progress: false
+
+jobs:
+  local-worker:
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 58
+    env:
+      NEXUS_WORKER_MAX_SECONDS: '3000'
+      NEXUS_WORKER_IDLE_SLEEP: '30'
+      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Runner identity
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force build/autonomy | Out-Null
+          $payload = @{
+            runner = $env:RUNNER_NAME
+            os = $env:RUNNER_OS
+            arch = $env:RUNNER_ARCH
+            timestamp = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+          } | ConvertTo-Json
+          $payload | Set-Content -Encoding UTF8 build/autonomy/runner-identity.json
+          Write-Host $payload
+
+      - name: Validate orchestrator and agent policy
+        shell: pwsh
+        run: |
+          node scripts/nexus_orchestrator.js | Tee-Object -FilePath build/autonomy/orchestrator-state.json
+          node scripts/nexus_ai_council.js
+          node scripts/nexus_brain_core.js
+
+      - name: Run bounded autonomous queue
+        shell: pwsh
+        run: python scripts/nexus_local_worker.py
+
+      - name: Show final worker evidence
+        if: always()
+        shell: pwsh
+        run: |
+          if (Test-Path build/autonomy/worker-heartbeat.json) { Get-Content build/autonomy/worker-heartbeat.json }
+          if (Test-Path .nexus/autonomous-queue.json) { Get-Content .nexus/autonomous-queue.json }
+
+      - name: Upload autonomy evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexus-local-autonomy-${{ github.run_id }}
+          path: |
+            build/autonomy/**
+            .nexus/autonomous-queue.json
+          if-no-files-found: warn
+          retention-days: 7
