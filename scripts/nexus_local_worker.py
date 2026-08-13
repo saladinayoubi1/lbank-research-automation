@@ -22,6 +22,8 @@ COMMANDS = {
     'readiness': [sys.executable, 'data_readiness.py', '--status-path', r'data\market\_backfill_status.csv'],
     'zotero-status': [sys.executable, '-c', "import urllib.request; urllib.request.urlopen('http://127.0.0.1:23119/connector/ping',timeout=5); print('zotero=ok')"],
     'ai-council-health': ['node', 'scripts/nexus_ai_council.js'],
+    'brain-health': ['node', 'scripts/nexus_brain_core.js'],
+    'deepseek-smoke': [sys.executable, 'scripts/deepseek_smoke.py'],
 }
 
 
@@ -69,6 +71,12 @@ def run_once() -> bool:
         return False
     index, task = selected
     name = str(task['task'])
+    if name == 'deepseek-smoke' and not os.environ.get('DEEPSEEK_API_KEY'):
+        queue[index]['status'] = 'blocked'
+        queue[index]['block_reason'] = 'DEEPSEEK_API_KEY_missing_on_runner'
+        save_queue(queue)
+        write_heartbeat(state='blocked', task=name, task_id=task.get('id'))
+        return True
     queue[index]['status'] = 'running'
     queue[index]['started_at'] = time.time()
     save_queue(queue)
