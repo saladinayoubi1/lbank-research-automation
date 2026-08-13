@@ -16,28 +16,33 @@ jobs:
   local-worker:
     name: Continuous local worker
     runs-on: [self-hosted, Windows]
-    timeout-minutes: 350
+    timeout-minutes: 58
     steps:
       - uses: actions/checkout@v4
-      - name: Show runtime
-        shell: powershell
-        run: |
-          python --version
-          node --version
-      - name: Run continuous Phase 3 worker
+      - name: Resolve Python runtime and run continuous Phase 3 worker
         shell: powershell
         env:
           NEXUS_WORKER_INTERVAL_SECONDS: '15'
-          NEXUS_WORKER_MAX_RUNTIME_SECONDS: '20400'
+          NEXUS_WORKER_MAX_RUNTIME_SECONDS: '3300'
           NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: ${{ vars.NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-        run: python scripts/nexus_continuous_worker.py
+        run: |
+          if (Get-Command python -ErrorAction SilentlyContinue) {
+            python --version
+            python scripts/nexus_continuous_worker.py
+          } elseif (Get-Command py -ErrorAction SilentlyContinue) {
+            py -3 --version
+            py -3 scripts/nexus_continuous_worker.py
+          } else {
+            throw 'Python runtime unavailable on NEXUS-LOCAL-RUNNER'
+          }
       - name: Upload worker heartbeat
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: nexus-phase3-heartbeat-${{ github.run_id }}
           path: .nexus_runtime/
+          include-hidden-files: true
           if-no-files-found: warn
           retention-days: 7
 
@@ -47,9 +52,11 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Verify orchestrator and Phase 3 lanes
+      - name: Verify orchestrator, AI council and Phase 3 lanes
         run: |
           node scripts/nexus_orchestrator.js
+          node scripts/nexus_ai_council.js
+          node scripts/test_nexus_ai_council.js
           python scripts/nexus_phase3_task.py evidence
           python scripts/nexus_phase3_task.py strategy
           python scripts/nexus_phase3_task.py gates
@@ -59,5 +66,6 @@ jobs:
         with:
           name: nexus-phase3-cloud-watchdog-${{ github.run_id }}
           path: .nexus_runtime/
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 7
