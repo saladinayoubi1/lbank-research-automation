@@ -2,6 +2,14 @@ name: NEXUS Continuous Phase 3
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'config/nexus-mission-queue.json'
+      - 'scripts/nexus_orchestrator.js'
+      - 'scripts/nexus_continuous_worker.py'
+      - 'scripts/nexus_phase3_task.py'
+      - '.github/workflows/nexus-continuous-phase3.yml'
   schedule:
     - cron: '7 * * * *'
 
@@ -19,19 +27,25 @@ jobs:
     timeout-minutes: 350
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - name: Show runtime
-        shell: powershell
+        shell: cmd
         run: |
           python --version
           node --version
       - name: Run continuous Phase 3 worker
-        shell: powershell
+        shell: cmd
         env:
           NEXUS_WORKER_INTERVAL_SECONDS: '15'
           NEXUS_WORKER_MAX_RUNTIME_SECONDS: '20400'
           NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: ${{ vars.NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-        run: python scripts/nexus_continuous_worker.py
+        run: python scripts\nexus_continuous_worker.py
       - name: Upload worker heartbeat
         if: always()
         uses: actions/upload-artifact@v4
@@ -39,6 +53,7 @@ jobs:
           name: nexus-phase3-heartbeat-${{ github.run_id }}
           path: .nexus_runtime/
           if-no-files-found: warn
+          include-hidden-files: true
           retention-days: 7
 
   cloud-watchdog:
@@ -60,4 +75,5 @@ jobs:
           name: nexus-phase3-cloud-watchdog-${{ github.run_id }}
           path: .nexus_runtime/
           if-no-files-found: error
+          include-hidden-files: true
           retention-days: 7
