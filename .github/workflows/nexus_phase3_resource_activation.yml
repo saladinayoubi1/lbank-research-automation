@@ -64,5 +64,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Exercise orchestrator, agents, and local runner
-        shell: powershell
+        shell: cmd
         run: node scripts/nexus_phase3_worker.js
