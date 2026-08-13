@@ -1,0 +1,88 @@
+[
+  {
+    "id": "moskowitz2012timeseriesmomentum",
+    "type": "article-journal",
+    "title": "Time Series Momentum",
+    "author": [
+      {"family": "Moskowitz", "given": "Tobias J."},
+      {"family": "Ooi", "given": "Yao Hua"},
+      {"family": "Pedersen", "given": "Lasse Heje"}
+    ],
+    "container-title": "Journal of Financial Economics",
+    "volume": "104",
+    "issue": "2",
+    "page": "228-250",
+    "issued": {"date-parts": [[2012]]},
+    "DOI": "10.1016/j.jfineco.2011.11.003"
+  },
+  {
+    "id": "sullivan1999datasnooping",
+    "type": "article-journal",
+    "title": "Data-Snooping, Technical Trading Rule Performance, and the Bootstrap",
+    "author": [
+      {"family": "Sullivan", "given": "Ryan"},
+      {"family": "Timmermann", "given": "Allan"},
+      {"family": "White", "given": "Halbert"}
+    ],
+    "container-title": "The Journal of Finance",
+    "volume": "54",
+    "issue": "5",
+    "page": "1647-1691",
+    "issued": {"date-parts": [[1999]]},
+    "DOI": "10.1111/0022-1082.00163"
+  },
+  {
+    "id": "lebaron1999technical",
+    "type": "article-journal",
+    "title": "Technical Trading Rule Profitability and Foreign Exchange Intervention",
+    "author": [{"family": "LeBaron", "given": "Blake"}],
+    "container-title": "Journal of International Economics",
+    "volume": "49",
+    "issue": "1",
+    "issued": {"date-parts": [[1999]]},
+    "DOI": "10.1016/S0022-1996(98)00061-0"
+  },
+  {
+    "id": "ulku2013drivers",
+    "type": "article-journal",
+    "title": "Drivers of technical trend-following rules' profitability in world stock markets",
+    "author": [
+      {"family": "Ulkü", "given": "Numan"},
+      {"family": "Prodan", "given": "Eugeniu"}
+    ],
+    "container-title": "International Review of Financial Analysis",
+    "volume": "30",
+    "page": "214-229",
+    "issued": {"date-parts": [[2013]]},
+    "DOI": "10.1016/j.irfa.2013.08.005"
+  },
+  {
+    "id": "zarrabi2017fxtechnical",
+    "type": "article-journal",
+    "title": "FX technical trading rules can be profitable sometimes!",
+    "author": [
+      {"family": "Zarrabi", "given": "Nima"},
+      {"family": "Snaith", "given": "Stuart"},
+      {"family": "Coakley", "given": "Jerry"}
+    ],
+    "container-title": "International Review of Financial Analysis",
+    "volume": "49",
+    "page": "113-127",
+    "issued": {"date-parts": [[2017]]},
+    "DOI": "10.1016/j.irfa.2016.12.010"
+  },
+  {
+    "id": "rohrbach2019momentum",
+    "type": "report",
+    "title": "Momentum and Trend Following Trading Strategies for Currencies Revisited - Combining Academia and Industry",
+    "author": [
+      {"family": "Rohrbach", "given": "Janick"},
+      {"family": "Suremann", "given": "Silvan"},
+      {"family": "Osterrieder", "given": "Joerg"}
+    ],
+    "publisher": "SSRN",
+    "issued": {"date-parts": [[2019]]},
+    "DOI": "10.2139/ssrn.2949379",
+    "note": "Originally posted 2017; revised 2019"
+  }
+]
