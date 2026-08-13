@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "event_type": "local_runner_recovery_candidate",
+  "observed_at_utc": "2026-08-13T00:05:00Z",
+  "repository": "saladinayoubi1/lbank-research-automation",
+  "source_main_sha": "679699b547b1dd44b55b6f7a71f48662e59e31c9",
+  "evidence": {
+    "failed_run_id": 31649208201,
+    "failed_run_number": 57,
+    "failed_main_sha": "01817323a03363197696095487af87d76e50b7e6",
+    "failure_signature": "self-hosted Windows curl rejected --retry-all-errors during portable Python bootstrap",
+    "latest_current_main_run_number": 58,
+    "latest_current_main_run_state": "queued"
+  },
+  "candidate_change": {
+    "scope": "local runner portable Python bootstrap only",
+    "removes_unsupported_curl_option": true,
+    "python_archive_sha256_pinned": true,
+    "pip_wheel_sha256_pinned": true,
+    "network_retries_bounded": true,
+    "runtime_rebuilt_from_verified_archive_each_run": true,
+    "regression_test_added": true
+  },
+  "claim_boundary": {
+    "post_fix_self_hosted_success_proven": false,
+    "merge_authorized": false,
+    "production_authority": false,
+    "live_trading_authority": false,
+    "credential_or_billing_authority": false
+  },
+  "lesson": "Do not assume curl option parity on a self-hosted Windows runner; portable bootstrap flags must be regression-tested against the observed runner capability and remain bounded/fail-closed."
+}
