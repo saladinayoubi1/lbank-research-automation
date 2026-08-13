@@ -3,7 +3,7 @@ name: NEXUS Continuous Phase 3
 on:
   workflow_dispatch:
   schedule:
-    - cron: '7 * * * *'
+    - cron: '*/5 * * * *'
 
 concurrency:
   group: nexus-continuous-phase3
@@ -16,7 +16,7 @@ jobs:
   local-worker:
     name: Continuous local worker
     runs-on: [self-hosted, Windows]
-    timeout-minutes: 350
+    timeout-minutes: 6
     steps:
       - uses: actions/checkout@v4
       - name: Show runtime
@@ -24,13 +24,31 @@ jobs:
         run: |
           python --version
           node --version
+      - name: Validate local agent council
+        shell: powershell
+        run: |
+          node scripts/nexus_ai_council.js
+          node scripts/test_nexus_ai_council.js
+      - name: Probe Zotero local integration
+        shell: powershell
+        run: |
+          if (Test-Path scripts/sync_zotero.py) {
+            python scripts/sync_zotero.py --help
+          } else {
+            throw 'scripts/sync_zotero.py missing'
+          }
+      - name: Run one bounded DeepSeek smoke
+        if: vars.NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED == '1'
+        shell: powershell
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: python scripts/deepseek_smoke.py
       - name: Run continuous Phase 3 worker
         shell: powershell
         env:
-          NEXUS_WORKER_INTERVAL_SECONDS: '15'
-          NEXUS_WORKER_MAX_RUNTIME_SECONDS: '20400'
-          NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: ${{ vars.NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED }}
-          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          NEXUS_WORKER_INTERVAL_SECONDS: '10'
+          NEXUS_WORKER_MAX_RUNTIME_SECONDS: '270'
+          NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: '0'
         run: python scripts/nexus_continuous_worker.py
       - name: Upload worker heartbeat
         if: always()
@@ -44,12 +62,16 @@ jobs:
   cloud-watchdog:
     name: Cloud fallback watchdog
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - name: Verify orchestrator and Phase 3 lanes
+      - name: Verify orchestrator and AI council
         run: |
           node scripts/nexus_orchestrator.js
+          node scripts/nexus_ai_council.js
+          node scripts/test_nexus_ai_council.js
+      - name: Run independent Phase 3 lanes
+        run: |
           python scripts/nexus_phase3_task.py evidence
           python scripts/nexus_phase3_task.py strategy
           python scripts/nexus_phase3_task.py gates
