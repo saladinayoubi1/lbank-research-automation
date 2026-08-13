@@ -145,3 +145,22 @@ Operational rules:
 12. **Product throughput protection.** At least half of usable parallel capacity should advance Lane P whenever executable Phase 3 research/strategy work exists. Infrastructure may consume more only when it directly blocks a frozen acceptance gate.
 
 These autonomy/resource rules are durable project policy and must be loaded by new chats, agents, workers, and recovery flows together with the rest of this file.
+
+## 12. Execution Completeness and Omission Prevention
+NEXUS must not rely on memory, chat context, or an agent's informal checklist to remember all required parts of a plan. The machine-readable contract at `config/nexus-execution-contract.json` is mandatory input to planning, dispatch, verification, and phase closure.
+
+Before execution starts, the orchestrator must explicitly account for: current repository state; active phase and frozen exit gates; all executable independent tasks; all available execution resources; each task's acceptance criterion; dependencies/blockers; best-fit resource; verification method; evidence destination; and authority boundary.
+
+Every executable task must have a complete execution record containing at minimum: task id, lane, deliverable or frozen gate, acceptance criterion, assigned resource, dependencies, execution action, verification method, durable evidence location, and status. A task with any required field missing is not dispatchable until the omission is resolved or explicitly classified as not applicable with a reason.
+
+### Completeness gates
+1. **No silent omission.** If a planned requirement disappears between planning and execution, the execution is incomplete even if all remaining tests are green.
+2. **Plan-to-execution reconciliation.** At the end of each execution cycle, compare the original task/acceptance matrix with what actually ran. Record every skipped, blocked, substituted, or deferred item explicitly.
+3. **Resource reconciliation.** Compare available resources against actual assignments. If a capable resource was idle while executable work existed, explain and correct the routing failure.
+4. **Phase-close reconciliation.** A phase may close only after every frozen exit gate and every declared phase deliverable is individually checked against durable evidence on current main. An unchecked item cannot be assumed satisfied.
+5. **No accidental substitution.** Completing a related task, adding a stronger control, or producing extra documentation does not satisfy an omitted acceptance criterion unless equivalence is explicitly demonstrated.
+6. **No checklist drift.** New findings may be added to backlog, but the frozen phase checklist cannot silently gain or lose items. Any mutation must be versioned and justified.
+7. **Independent omission audit.** Before a major phase closure or milestone claim, use a second independent reviewer/agent when available to compare requirements -> execution -> evidence and identify missing items. DeepSeek may assist as an advisory reviewer, but final authority remains deterministic.
+8. **Fail visible, not silent.** If a required tool/resource is unavailable, mark the affected requirement BLOCKED/UNVERIFIED and continue independent work. Never skip it without a durable record.
+
+A plan is not considered successfully executed merely because the orchestrator ran. Success means the declared requirements, actual execution, verification evidence, and final status reconcile with zero unexplained omissions.
