@@ -1,0 +1,75 @@
+name: NEXUS DeepSeek Strategy Review
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/deepseek_strategy_review.py'
+      - 'research/evidence/ema_crossover_evidence_matrix.md'
+      - '.github/workflows/nexus-deepseek-strategy-review.yml'
+
+concurrency:
+  group: nexus-deepseek-strategy-review
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    name: Bounded strategy review
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      PYTHONPATH: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Enforce paid-routing gate
+        shell: bash
+        env:
+          PAID_ALLOWED: ${{ vars.NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: |
+          if [ "$PAID_ALLOWED" != "1" ]; then
+            echo 'DEEPSEEK_UNVERIFIED: paid-routing gate is not enabled'
+            exit 2
+          fi
+          if [ -z "$DEEPSEEK_API_KEY" ]; then
+            echo 'DEEPSEEK_UNVERIFIED: secret unavailable to workflow'
+            exit 2
+          fi
+      - name: Run real bounded EMA strategy review
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: python scripts/deepseek_strategy_review.py
+      - name: Independently validate structured evidence
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path('build/deepseek/strategy-review.json')
+          d = json.loads(p.read_text(encoding='utf-8'))
+          assert d['authority'] == 'advisory-research-backtest-paper-only'
+          assert d['independent_verification_required'] is True
+          r = d['review']
+          required = {'findings','edge_case_tests','execution_realism','oos_robustness','kill_conditions','uncertainties'}
+          assert required.issubset(r)
+          assert all(isinstance(r[k], list) for k in required)
+          assert len(r['findings']) > 0
+          assert len(r['edge_case_tests']) > 0
+          print('DEEPSEEK_STRATEGY_REVIEW_EVIDENCE_OK')
+          PY
+      - name: Upload durable advisory evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexus-deepseek-strategy-review-${{ github.run_id }}
+          path: |
+            build/deepseek/strategy-review.json
+            build/deepseek/usage.json
+          if-no-files-found: warn
+          retention-days: 14
