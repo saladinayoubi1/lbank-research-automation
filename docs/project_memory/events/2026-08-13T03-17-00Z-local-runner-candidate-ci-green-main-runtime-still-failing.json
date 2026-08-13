@@ -9,18 +9,17 @@
     "candidate_head_before_memory_append": "966489691bb30a821e5ec17124573d3599f211bc",
     "candidate_mergeable": true,
     "candidate_generic_ci_green": true,
-    "successful_exact_head_checks": ["Workflow Permissions Policy","Test","NEXUS Build Verification","NEXUS Cloud Fallback"],
+    "successful_exact_head_checks": ["Workflow Permissions Policy", "Test", "NEXUS Build Verification", "NEXUS Cloud Fallback"],
     "latest_completed_main_runtime_run_id": 31661817694,
     "latest_completed_main_runtime_conclusion": "failure",
     "latest_completed_main_runtime_failed_step": "Bootstrap portable Python",
-    "newer_main_runtime_run_id": 31668852664,
-    "newer_main_runtime_status_at_observation": "in_progress",
+    "newer_main_runtime_observation": "unverified; previously recorded run id 31668852664 was not resolvable via the repository Actions API and is intentionally not treated as evidence",
     "post_fix_self_hosted_success_proven": false,
     "runtime_workflow_checks_out_main_not_candidate": true
   },
   "continuity": {
     "device_power_off_is_not_internet_or_dns_outage": true,
-    "recovery_order": ["repository_project_memory","STATE","decision_log","recovery_playbook","latest_ci_and_pr_state","google_drive_durable_backup"]
+    "recovery_order": ["repository_project_memory", "STATE", "decision_log", "recovery_playbook", "latest_ci_and_pr_state", "google_drive_durable_backup"]
   },
   "claim_boundary": {
     "merge_authorized": false,
