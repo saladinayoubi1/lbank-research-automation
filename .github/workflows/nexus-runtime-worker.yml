@@ -1,0 +1,59 @@
+name: NEXUS Runtime Worker
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '7 * * * *'
+  pull_request:
+    paths:
+      - 'scripts/nexus_runtime_worker.js'
+      - 'scripts/nexus_orchestrator.js'
+      - 'config/nexus-mission-queue.json'
+      - '.github/workflows/nexus-runtime-worker.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nexus-runtime-worker
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Validate orchestrator
+        run: node scripts/nexus_orchestrator.js
+      - name: Validate AI council
+        run: node scripts/nexus_ai_council.js
+      - name: Validate runtime worker once
+        env:
+          NEXUS_DEEPSEEK_SMOKE: '0'
+        run: node scripts/nexus_runtime_worker.js --once
+
+  laptop-worker:
+    if: github.event_name != 'pull_request'
+    needs: preflight
+    runs-on: [self-hosted, Windows]
+    timeout-minutes: 58
+    env:
+      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+      NEXUS_DEEPSEEK_SMOKE: '1'
+      RUNNER_ENVIRONMENT: self-hosted-windows
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify runtime prerequisites
+        shell: powershell
+        run: |
+          node --version
+          python --version
+          node scripts/nexus_orchestrator.js
+          node scripts/nexus_ai_council.js
+      - name: Start continuous NEXUS worker
+        shell: powershell
+        run: node scripts/nexus_runtime_worker.js --interval-ms=20000
