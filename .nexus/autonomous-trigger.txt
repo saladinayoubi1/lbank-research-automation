@@ -1,4 +1,6 @@
 trigger: autonomous
-requested_at: 2026-08-10T16:55:00+03:30
+requested_at: 2026-08-13T15:24:00+03:30
 mode: bounded-safe-loop
-planner: deepseek
+planner: orchestrator+ai-council+deepseek
+objective: phase3-product-research
+queue: .nexus/autonomous-queue.json
