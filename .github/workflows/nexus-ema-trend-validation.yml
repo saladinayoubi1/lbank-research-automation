@@ -1,0 +1,63 @@
+name: NEXUS EMA Trend Validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'ema_trend_v1.py'
+      - 'backtest_engine.py'
+      - '.github/workflows/nexus-ema-trend-validation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  deterministic-validation:
+    name: Deterministic EMA validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install backtest dependencies
+        run: python -m pip install --disable-pip-version-check pandas
+      - name: Verify warmup, next-bar execution and explicit costs
+        run: |
+          python - <<'PY'
+          import pandas as pd
+          from ema_trend_v1 import target_exposures, run_ema_trend_backtest
+
+          closes = [100.0 + i for i in range(80)]
+          frame = pd.DataFrame({
+              'timestamp': pd.date_range('2026-01-01', periods=len(closes), freq='15min', tz='UTC'),
+              'open': closes,
+              'high': [v * 1.001 for v in closes],
+              'low': [v * 0.999 for v in closes],
+              'close': closes,
+          })
+          targets = target_exposures(frame)
+          assert set(targets.unique()).issubset({0.0, 1.0})
+          assert targets.iloc[:49].eq(0.0).all()
+          assert targets.iloc[49:].eq(1.0).all()
+
+          zero = run_ema_trend_backtest(frame, fee_bps=0.0, slippage_bps=0.0)
+          costly = run_ema_trend_backtest(frame, fee_bps=6.0, slippage_bps=2.0)
+          entries = zero.fills[zero.fills['reason'] == 'target_rebalance']
+          assert not entries.empty
+          entry = entries.iloc[0]
+          signal_i = frame.index[frame['timestamp'] == entry['signal_time']][0]
+          execution_i = frame.index[frame['timestamp'] == entry['execution_time']][0]
+          assert execution_i == signal_i + 1
+          assert costly.metrics['final_equity'] < zero.metrics['final_equity']
+          assert costly.metrics['total_fees'] > 0.0
+          print({
+              'warmup_bars': 49,
+              'first_execution_lag_bars': int(execution_i - signal_i),
+              'zero_cost_final_equity': zero.metrics['final_equity'],
+              'costly_final_equity': costly.metrics['final_equity'],
+              'costly_total_fees': costly.metrics['total_fees'],
+          })
+          PY
