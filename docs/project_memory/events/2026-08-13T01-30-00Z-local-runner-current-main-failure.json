@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "event_type": "local_runner_current_main_failure_observed",
+  "observed_at_utc": "2026-08-13T01:30:00Z",
+  "repository": "saladinayoubi1/lbank-research-automation",
+  "observed_main_sha": "679699b547b1dd44b55b6f7a71f48662e59e31c9",
+  "evidence": {
+    "workflow": "NEXUS Local Runner",
+    "run_id": 31652707654,
+    "run_number": 58,
+    "head_sha": "679699b547b1dd44b55b6f7a71f48662e59e31c9",
+    "status": "completed",
+    "conclusion": "failure",
+    "candidate_pr": 397,
+    "candidate_head_before_memory_append": "13f11d5378fdcce5c0b93f7441d992f7cc4ae4ef",
+    "candidate_generic_ci_green": true,
+    "post_fix_self_hosted_success_proven": false
+  },
+  "continuity": {
+    "device_power_off_is_not_internet_or_dns_outage": true,
+    "recovery_order": [
+      "repository_project_memory",
+      "STATE",
+      "decision_log",
+      "recovery_playbook",
+      "latest_ci_and_pr_state",
+      "google_drive_durable_backup"
+    ]
+  },
+  "claim_boundary": {
+    "merge_authorized": false,
+    "production_authority": false,
+    "signing_authority": false,
+    "credential_or_billing_authority": false
+  },
+  "lesson": "A green hosted CI candidate does not satisfy the self-hosted affected-path gate; exact runtime evidence remains required and failures must remain fail-closed."
+}
