@@ -124,3 +124,24 @@ When the owner gives a clear operational instruction, execute the requested oper
 If an exact request cannot be executed, state the concrete limitation once, then perform the closest safe action that advances the same objective. Avoid repeated clarification when current repository state can resolve ambiguity.
 
 For project work, default to: inspect current evidence -> execute bounded safe work -> verify -> continue to the next independent safe task. Do not stop merely to ask for another "continue", "test", or "run" instruction when no owner decision is required.
+
+## 11. Autonomy, Resource Utilization, and No-Idle Rule
+Available execution resources are not considered part of NEXUS merely because they are connected. Each available resource must either receive real bounded work or be explicitly marked unavailable/blocked with evidence.
+
+Resources include at minimum: self-hosted laptop/runner, GitHub Actions, internal agents/workers, DeepSeek, Zotero, cloud fallback, and repository automation.
+
+Operational rules:
+1. **No passive connected state.** "Configured", "connected", "installed", or "available" is not equivalent to ACTIVE. A resource is ACTIVE only after it has accepted and completed a real task with durable evidence.
+2. **Automatic dispatch.** The orchestrator must assign work to available resources without waiting for the owner to repeat instructions. When independent work exists, idle capable resources are an efficiency defect.
+3. **Capability-based routing.** Use the laptop/self-hosted runner for local-only, Windows-specific, long-running, integration, restart/recovery and real-environment verification; use GitHub Actions for independent CI evidence; use agents for parallel bounded decomposition; use DeepSeek for advisory analysis/review/edge-case discovery within budget and secret policy; use Zotero for evidence/reference workflow; use cloud fallback only when it materially reduces blocking.
+4. **Parallelism by default.** Independent Product/Research, Frozen Blocker and verification tasks should run concurrently up to safe resource and WIP limits. A waiting PR/CI/runner must not idle unrelated resources.
+5. **Persistent work loop.** NEXUS execution must follow `recover state -> select highest-value executable tasks -> dispatch -> execute -> verify -> persist evidence/state -> immediately select next tasks`. Chat messages are not a required continuation trigger.
+6. **Watchdog vs worker separation.** Scheduled automations are watchdog/recovery triggers, not the primary execution engine. The durable worker/orchestrator is responsible for continuous task progression while available.
+7. **Utilization evidence.** For each active resource, persist at least: assigned task, start/end or current state, result, verification status, blocker reason if any, and last successful use. If a resource has no useful assignment, record why rather than silently leaving it idle.
+8. **Anti-theater rule.** Do not create PRs, issues, continuity updates, workflow runs, or status artifacts merely to demonstrate activity. Activity counts only when it advances a deliverable, closes a frozen blocker, produces research evidence, verifies a claim, or materially improves execution.
+9. **Owner non-repetition guarantee.** Once the owner has approved an ongoing operational objective and the authority boundary is unchanged, do not require repeated "continue", "run", "test", "use the laptop", "use DeepSeek", or "use the agents" instructions. Repetition is required only for a genuinely new owner decision, expanded authority, or risky/irreversible action.
+10. **Idle escalation.** If an available capable resource remains unused for two consecutive execution cycles while executable work exists, treat this as an orchestration failure: diagnose routing/queue/permissions immediately and correct it before adding new scope.
+11. **Truthful status.** Report resources separately as CONFIGURED, ACTIVE/VERIFIED, UNVERIFIED, BLOCKED, or UNAVAILABLE. Never collapse these states into a generic "done" claim.
+12. **Product throughput protection.** At least half of usable parallel capacity should advance Lane P whenever executable Phase 3 research/strategy work exists. Infrastructure may consume more only when it directly blocks a frozen acceptance gate.
+
+These autonomy/resource rules are durable project policy and must be loaded by new chats, agents, workers, and recovery flows together with the rest of this file.
