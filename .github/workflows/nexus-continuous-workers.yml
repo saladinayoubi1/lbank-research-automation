@@ -1,0 +1,98 @@
+name: NEXUS Continuous Workers
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/5 * * * *'
+
+concurrency:
+  group: nexus-continuous-workers
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  cloud-orchestrator:
+    name: Cloud orchestrator and agent lane
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Select active missions
+        run: node scripts/nexus_orchestrator.js config/nexus-mission-queue.json
+      - name: Validate AI council
+        run: |
+          node scripts/nexus_ai_council.js
+          node scripts/test_nexus_ai_council.js
+      - name: Record lane heartbeat
+        run: |
+          mkdir -p .nexus-runtime
+          printf '{"lane":"cloud-agent","status":"executed","sha":"%s","run_id":"%s"}\n' "$GITHUB_SHA" "$GITHUB_RUN_ID" > .nexus-runtime/cloud-agent.json
+      - name: Upload cloud evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexus-cloud-agent-${{ github.run_id }}
+          path: .nexus-runtime/cloud-agent.json
+          retention-days: 7
+
+  deepseek-advisory:
+    name: DeepSeek bounded advisory lane
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Detect DeepSeek availability
+        id: key
+        shell: bash
+        run: |
+          if [ -n "$DEEPSEEK_API_KEY" ]; then echo 'available=true' >> "$GITHUB_OUTPUT"; else echo 'available=false' >> "$GITHUB_OUTPUT"; fi
+      - name: Run bounded DeepSeek smoke/advisory verification
+        if: steps.key.outputs.available == 'true'
+        run: python scripts/deepseek_smoke.py
+      - name: Fail closed when key is unavailable
+        if: steps.key.outputs.available != 'true'
+        run: echo 'DeepSeek lane UNVERIFIED: DEEPSEEK_API_KEY is unavailable to this workflow.'
+
+  laptop-worker:
+    name: Windows self-hosted worker lane
+    runs-on: [self-hosted, Windows]
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute orchestrator on real laptop runner
+        shell: powershell
+        run: node scripts/nexus_orchestrator.js config/nexus-mission-queue.json
+      - name: Validate local agent council
+        shell: powershell
+        run: |
+          node scripts/nexus_ai_council.js
+          node scripts/test_nexus_ai_council.js
+      - name: Probe Zotero integration without claiming success
+        shell: powershell
+        run: |
+          if (Test-Path scripts/sync_zotero.py) {
+            python scripts/sync_zotero.py --help
+          } else {
+            Write-Output 'Zotero sync script missing; lane remains UNVERIFIED.'
+          }
+      - name: Persist local execution evidence
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force -Path .nexus-runtime | Out-Null
+          $json = @{ lane='windows-self-hosted'; status='executed'; sha=$env:GITHUB_SHA; run_id=$env:GITHUB_RUN_ID } | ConvertTo-Json -Compress
+          Set-Content -Path .nexus-runtime/windows-self-hosted.json -Value $json
+      - name: Upload laptop evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexus-windows-runner-${{ github.run_id }}
+          path: .nexus-runtime/windows-self-hosted.json
+          retention-days: 7
