@@ -140,6 +140,47 @@ def _fill_price(reference_price: float, quantity_change: float, slippage_rate: f
     return reference_price * (1.0 - slippage_rate)
 
 
+def _cost_aware_quantity_change(
+    *,
+    cash: float,
+    quantity: float,
+    reference_price: float,
+    target_exposure: float,
+    fee_rate: float,
+    slippage_rate: float,
+) -> float:
+    """Solve the trade size so post-trade exposure includes fees and slippage.
+
+    Sizing from pre-trade equity alone can create a small unintended leveraged
+    position when costs are non-zero (for example a 100% long target leaves
+    negative cash after entry fees). This solver prices the intended trade side
+    first and solves the post-cost exposure identity at the reference price.
+    """
+
+    equity_before = cash + quantity * reference_price
+    numerator = target_exposure * equity_before - quantity * reference_price
+    if abs(numerator) <= 1e-12:
+        return 0.0
+
+    direction = 1.0 if numerator > 0 else -1.0
+    fill_price = _fill_price(reference_price, direction, slippage_rate)
+
+    if direction > 0:
+        cost_drag_per_unit = (fill_price - reference_price) + fill_price * fee_rate
+        denominator = reference_price + target_exposure * cost_drag_per_unit
+    else:
+        cost_drag_per_unit = (reference_price - fill_price) + fill_price * fee_rate
+        denominator = reference_price - target_exposure * cost_drag_per_unit
+
+    if not isfinite(denominator) or denominator <= 0:
+        raise BacktestError("Cost-aware target sizing produced an invalid denominator")
+
+    quantity_change = numerator / denominator
+    if not isfinite(quantity_change):
+        raise BacktestError("Cost-aware target sizing produced a non-finite quantity")
+    return quantity_change
+
+
 def _empty_fills() -> pd.DataFrame:
     return pd.DataFrame(columns=FILL_COLUMNS)
 
@@ -185,8 +226,14 @@ def run_target_exposure_backtest(
             if not isfinite(equity_at_open):
                 raise BacktestError("Equity became non-finite before execution")
 
-            target_quantity = equity_at_open * target_exposure / reference_price
-            quantity_change = target_quantity - quantity
+            quantity_change = _cost_aware_quantity_change(
+                cash=cash,
+                quantity=quantity,
+                reference_price=reference_price,
+                target_exposure=target_exposure,
+                fee_rate=fee_rate,
+                slippage_rate=slippage_rate,
+            )
 
             if abs(quantity_change) > tolerance:
                 fill_price = _fill_price(
