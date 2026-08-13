@@ -8,6 +8,7 @@ const { buildState } = require('./nexus_orchestrator');
 const ROOT = path.resolve(__dirname, '..');
 const QUEUE_PATH = path.join(ROOT, 'config', 'nexus-mission-queue.json');
 const STATE_PATH = path.join(ROOT, 'runtime', 'nexus-worker-state.json');
+let cachedDeepSeekProbe = null;
 
 function run(cmd, args, options = {}) {
   const result = spawnSync(cmd, args, {
@@ -59,11 +60,18 @@ function missionProfile(mission) {
 }
 
 function deepSeekProbe() {
+  if (cachedDeepSeekProbe) return { ...cachedDeepSeekProbe, cached: true };
   if (!process.env.DEEPSEEK_API_KEY) {
-    return { attempted: false, ok: false, reason: 'DEEPSEEK_API_KEY_missing' };
+    cachedDeepSeekProbe = { attempted: false, ok: false, reason: 'DEEPSEEK_API_KEY_missing' };
+    return cachedDeepSeekProbe;
+  }
+  if (process.env.NEXUS_DEEPSEEK_SMOKE !== '1') {
+    cachedDeepSeekProbe = { attempted: false, ok: true, reason: 'credential_present_smoke_disabled' };
+    return cachedDeepSeekProbe;
   }
   const result = run('python', ['scripts/deepseek_smoke.py'], { timeout: 90000 });
-  return { attempted: true, ...result };
+  cachedDeepSeekProbe = { attempted: true, ...result };
+  return cachedDeepSeekProbe;
 }
 
 function executeCycle() {
