@@ -1,19 +1,26 @@
 {
-  "version": 1,
-  "currentMissionId": "M-009",
+  "version": 2,
+  "currentMissionId": "M-010",
   "selectionPolicy": {
     "priorityOrder": [
+      "product_research",
+      "phase_blocker",
       "stability",
-      "security",
       "automation",
       "development_speed",
+      "security",
       "maintainability",
       "user_experience",
-      "monetization"
+      "monetization",
+      "backlog"
     ],
     "allowParallelIndependentMissions": true,
+    "maxParallelMissions": 3,
+    "minimumProductCapacityFraction": 0.5,
     "zeroIdle": true,
-    "requireDependenciesComplete": true
+    "requireDependenciesComplete": true,
+    "phase3ScopeFrozen": true,
+    "newHardeningDefaultsToBacklog": true
   },
   "missions": [
     {
@@ -21,6 +28,7 @@
       "title": "Autopilot Foundation",
       "status": "completed",
       "priority": "automation",
+      "lane": "general",
       "dependencies": [],
       "reversible": true
     },
@@ -29,6 +37,7 @@
       "title": "Mission Queue and Orchestrator Core",
       "status": "completed",
       "priority": "automation",
+      "lane": "general",
       "dependencies": ["M-003"],
       "reversible": true
     },
@@ -37,6 +46,7 @@
       "title": "AI Council Core",
       "status": "completed",
       "priority": "maintainability",
+      "lane": "general",
       "dependencies": ["M-004"],
       "reversible": true
     },
@@ -45,6 +55,7 @@
       "title": "NEXUS Brain Core",
       "status": "completed",
       "priority": "maintainability",
+      "lane": "general",
       "dependencies": ["M-004"],
       "reversible": true
     },
@@ -53,6 +64,7 @@
       "title": "Mission Control UI",
       "status": "completed",
       "priority": "user_experience",
+      "lane": "general",
       "dependencies": ["M-004", "M-006"],
       "reversible": true
     },
@@ -61,16 +73,56 @@
       "title": "Artifact Integrity Foundation",
       "status": "completed",
       "priority": "security",
+      "lane": "general",
       "dependencies": ["M-004", "M-007"],
       "reversible": true
     },
     {
       "id": "M-009",
       "title": "SBOM Verification Foundation",
-      "status": "active",
-      "priority": "security",
+      "status": "queued",
+      "priority": "backlog",
+      "lane": "backlog",
       "dependencies": ["M-008"],
-      "reversible": true
+      "reversible": true,
+      "phase3Blocking": false,
+      "note": "Deferred from active Phase 3 unless a frozen exit gate is concretely invalidated."
+    },
+    {
+      "id": "M-010",
+      "title": "Phase 3 Foundational Crypto Evidence Pack",
+      "status": "active",
+      "priority": "product_research",
+      "lane": "product",
+      "dependencies": ["M-004"],
+      "reversible": true,
+      "phase3Blocking": true,
+      "sourceIssue": 45,
+      "acceptance": "Complete and verify the foundational crypto evidence pack without expanding Phase 3 scope."
+    },
+    {
+      "id": "M-011",
+      "title": "Phase 3 Strategy Evidence-to-Experiment Preparation",
+      "status": "active",
+      "priority": "product_research",
+      "lane": "product",
+      "dependencies": ["M-004"],
+      "reversible": true,
+      "phase3Blocking": false,
+      "sourceIssue": 45,
+      "acceptance": "Advance strategy hypotheses, deterministic rules, data requirements, realism assumptions, OOS/walk-forward and robustness design in parallel with blockers."
+    },
+    {
+      "id": "M-012",
+      "title": "Phase 3 Frozen Runtime Gates",
+      "status": "active",
+      "priority": "phase_blocker",
+      "lane": "blocker",
+      "dependencies": ["M-004"],
+      "reversible": true,
+      "phase3Blocking": true,
+      "sourceIssue": 389,
+      "acceptance": "Close only the six frozen Phase 3 gates; all unrelated hardening remains backlog."
     }
   ]
 }
