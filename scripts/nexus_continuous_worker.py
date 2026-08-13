@@ -21,6 +21,20 @@ COMMANDS = {
     "M-012": [sys.executable, str(ROOT / "scripts" / "nexus_phase3_task.py"), "gates"],
 }
 
+PRIORITY_ORDER = [
+    "product_research",
+    "phase_blocker",
+    "stability",
+    "automation",
+    "development_speed",
+    "security",
+    "maintainability",
+    "user_experience",
+    "monetization",
+    "backlog",
+]
+LANE_ORDER = {"product": 0, "blocker": 1, "general": 2, "backlog": 9}
+
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -56,18 +70,51 @@ def release_lock() -> None:
         pass
 
 
+def _deps_complete(mission: dict, by_id: dict[str, dict]) -> bool:
+    return all(by_id.get(mid, {}).get("status") == "completed" for mid in mission.get("dependencies", []))
+
+
+def _rank(mission: dict) -> tuple[int, int, str]:
+    lane = LANE_ORDER.get(mission.get("lane", "general"), LANE_ORDER["general"])
+    try:
+        priority = PRIORITY_ORDER.index(mission.get("priority"))
+    except ValueError:
+        priority = len(PRIORITY_ORDER)
+    return lane, priority, str(mission.get("id", ""))
+
+
 def select_ready() -> list[str]:
-    proc = subprocess.run(
-        ["node", str(ROOT / "scripts" / "nexus_orchestrator.js"), str(QUEUE)],
-        cwd=ROOT,
-        text=True,
-        capture_output=True,
-        timeout=30,
-    )
-    if proc.returncode != 0:
-        raise RuntimeError(f"orchestrator failed: {proc.stderr.strip()}")
-    state = json.loads(proc.stdout)
-    return [mid for mid in state.get("readyMissionIds", []) if mid in COMMANDS]
+    queue = json.loads(QUEUE.read_text(encoding="utf-8"))
+    missions = queue.get("missions", [])
+    by_id = {str(m.get("id")): m for m in missions}
+    ready = [
+        m for m in missions
+        if m.get("id") in COMMANDS
+        and m.get("status") in {"active", "queued"}
+        and _deps_complete(m, by_id)
+    ]
+    ready.sort(key=_rank)
+
+    max_parallel = max(1, int(queue.get("selectionPolicy", {}).get("maxParallelMissions", 3)))
+    selected: list[dict] = []
+    selected_ids: set[str] = set()
+
+    product_ready = [m for m in ready if m.get("lane", "general") == "product"]
+    product_slots = (max_parallel + 1) // 2 if product_ready else 0
+    for mission in product_ready[:product_slots]:
+        selected.append(mission)
+        selected_ids.add(str(mission["id"]))
+
+    for mission in ready:
+        if len(selected) >= max_parallel:
+            break
+        mid = str(mission["id"])
+        if mid in selected_ids:
+            continue
+        selected.append(mission)
+        selected_ids.add(mid)
+
+    return [str(m["id"]) for m in selected]
 
 
 def run_mission(mission_id: str) -> dict:
@@ -95,10 +142,10 @@ def cycle() -> dict:
                 mid = futures[future]
                 try:
                     results.append(future.result())
-                except Exception as exc:  # fail one mission without idling independent lanes
+                except Exception as exc:
                     results.append({"mission_id": mid, "verified": False, "error": repr(exc)})
     payload = {
-        "version": 1,
+        "version": 2,
         "pid": os.getpid(),
         "timestamp": now_iso(),
         "ready_missions": ready,
@@ -120,7 +167,7 @@ def main() -> int:
                 payload = cycle()
                 print(json.dumps(payload, sort_keys=True), flush=True)
             except Exception as exc:
-                error = {"version": 1, "pid": os.getpid(), "timestamp": now_iso(), "fatal_cycle_error": repr(exc)}
+                error = {"version": 2, "pid": os.getpid(), "timestamp": now_iso(), "fatal_cycle_error": repr(exc)}
                 write_json_atomic(HEARTBEAT, error)
                 print(json.dumps(error, sort_keys=True), file=sys.stderr, flush=True)
             if once:
