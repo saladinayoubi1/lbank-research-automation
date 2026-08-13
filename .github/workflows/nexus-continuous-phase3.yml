@@ -30,22 +30,34 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Show runtime
-        shell: cmd
+      - name: Resolve local Python runtime
+        shell: powershell
         run: |
-          python --version
-          node --version
-      - name: Run bounded Phase 3 worker
+          if (Get-Command python -ErrorAction SilentlyContinue) {
+            python --version
+          } elseif (Get-Command py -ErrorAction SilentlyContinue) {
+            py -3 --version
+          } else {
+            throw 'Python runtime unavailable on NEXUS-LOCAL-RUNNER'
+          }
+      - name: Show Node runtime
         shell: cmd
+        run: node --version
+      - name: Run bounded Phase 3 worker
+        shell: powershell
         env:
           NEXUS_WORKER_INTERVAL_SECONDS: '15'
           NEXUS_WORKER_MAX_RUNTIME_SECONDS: '240'
           NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: ${{ vars.NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-        run: python scripts\nexus_continuous_worker.py
+        run: |
+          if (Get-Command python -ErrorAction SilentlyContinue) {
+            python scripts/nexus_continuous_worker.py
+          } elseif (Get-Command py -ErrorAction SilentlyContinue) {
+            py -3 scripts/nexus_continuous_worker.py
+          } else {
+            throw 'Python runtime unavailable on NEXUS-LOCAL-RUNNER'
+          }
       - name: Upload worker heartbeat
         if: always()
         uses: actions/upload-artifact@v4
