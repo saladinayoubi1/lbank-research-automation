@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "purpose": "Prevent silent omissions during NEXUS planning, dispatch, execution, verification, and phase closure.",
+  "requiredBeforeExecution": [
+    "recover_current_repository_state",
+    "read_OPERATING_RULES",
+    "identify_phase_and_frozen_exit_gates",
+    "enumerate_available_resources",
+    "enumerate_executable_independent_tasks",
+    "map_each_task_to_acceptance_criterion",
+    "map_each_task_to_best_resource",
+    "record_dependencies_and_blockers",
+    "confirm_authority_boundary"
+  ],
+  "requiredPerTask": [
+    "task_id",
+    "lane",
+    "deliverable_or_gate",
+    "acceptance_criterion",
+    "assigned_resource",
+    "dependencies",
+    "execution_action",
+    "verification_method",
+    "durable_evidence_location",
+    "status"
+  ],
+  "resourceRouting": {
+    "product_research": ["agents", "deepseek", "github_actions", "self_hosted_runner", "zotero"],
+    "local_windows_integration": ["self_hosted_runner"],
+    "independent_ci_verification": ["github_actions"],
+    "parallel_analysis_review": ["agents", "deepseek"],
+    "evidence_reference_management": ["zotero"],
+    "fallback_when_primary_unavailable": ["cloud_fallback"]
+  },
+  "omissionGuards": {
+    "no_unmapped_work": true,
+    "no_done_without_verification": true,
+    "no_phase_close_with_unchecked_exit_gate": true,
+    "no_idle_capable_resource_for_two_cycles_when_work_exists": true,
+    "no_new_phase_blocker_without_frozen_gate_mapping": true,
+    "no_activity_only_pr_or_issue": true,
+    "no_waiting_on_one_resource_when_independent_work_exists": true,
+    "no_silent_skip_of_failed_or_unavailable_resource": true
+  },
+  "phaseCloseChecklist": [
+    "all_frozen_exit_gates_have_durable_evidence",
+    "all_phase_deliverables_are_present",
+    "all_required_real_environment_checks_are_complete",
+    "all_resource_dependent_claims_are_verified_or_explicitly_non_required",
+    "all_known_failures_are_classified_as_phase_blocker_or_backlog",
+    "no_open_phase_blocker_is_unmapped",
+    "owner_required_actions_are_explicit",
+    "final_status_is_reconciled_against_current_main"
+  ],
+  "statusVocabulary": ["QUEUED", "ACTIVE", "VERIFIED", "UNVERIFIED", "BLOCKED", "BACKLOG", "UNAVAILABLE"]
+}
