@@ -24,6 +24,7 @@ on:
       - .nexus/deepseek-trigger.txt
       - .nexus/zotero-trigger.txt
       - .nexus/autonomous-trigger.txt
+      - .github/workflows/nexus-local-runner.yml
   schedule:
     - cron: '17 * * * *'
 
@@ -149,7 +150,18 @@ jobs:
         env:
           NEXUS_WORKER_MAX_SECONDS: '3300'
           NEXUS_WORKER_IDLE_SLEEP: '60'
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
         run: python scripts\nexus_local_worker.py
+
+      - name: Upload autonomous worker evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexus-local-worker-evidence-${{ github.run_id }}
+          if-no-files-found: warn
+          path: |
+            .nexus/autonomous-queue.json
+            build/autonomy/worker-heartbeat.json
 
       - name: Local change report
         if: always()
