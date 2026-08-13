@@ -31,5 +31,35 @@ Autonomy must be granted in layers. New authority starts narrow and low-risk. Co
 - Project memory must remain useful even if a ChatGPT conversation, local browser session, or local machine state disappears.
 - External model workers such as DeepSeek are optional accelerators, never a single point of failure and never owners of secrets/merge/release authority by default.
 
+## NEXUS AI Council / AI Room
+The AI Council is a durable NEXUS architecture component and must be recovered by every new chat/agent together with the rest of Project Memory.
+
+Canonical implementation:
+- `scripts/nexus_ai_council.js`
+- `config/nexus-ai-council.json`
+
+Current policy version: `1`.
+Current quorum: `2`.
+Current roles:
+- `stability` — priority 1, veto enabled;
+- `security` — priority 2, veto enabled;
+- `delivery` — priority 3, no veto.
+
+Current decision behavior:
+- invalid/unknown votes are ignored;
+- insufficient valid votes => `defer`;
+- a rejecting veto role can reject when `rejectOnVeto` is enabled;
+- otherwise majority decides;
+- ties use the lowest numeric role priority as tie-breaker.
+
+Operational intent:
+- The AI Council is a bounded review/decision layer, not the primary scheduler and not a replacement for Product/Research execution.
+- It may combine independent AI/agent perspectives for stability, security and delivery decisions.
+- It must not own credentials, billing, live trading, production, signing, irreversible actions, or unrestricted merge/release authority.
+- DeepSeek and other external models may contribute bounded advisory analysis but do not gain veto/authority merely by participating.
+- Council review must not silently expand an active phase. A stability/security concern may block Phase 3 only when it concretely invalidates a frozen Phase 3 acceptance gate; otherwise it belongs to backlog/next phase.
+- The Council must not cause idle time: when one reviewed item waits on CI/runner/external evidence, independent Product/Research work continues.
+- Council existence, policy, role configuration and meaningful policy changes must be persisted in Project Memory and checked during chat migration/recovery.
+
 ## Continuity rule
 A fresh agent/session should be able to recover direction by reading this directory plus repository history, issues, PRs and CI. If it cannot, the memory system is incomplete and must be repaired before increasing autonomy.
