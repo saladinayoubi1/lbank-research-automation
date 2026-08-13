@@ -40,7 +40,24 @@ Do not optimize primarily for headline return. Prefer repeatable risk-adjusted p
 
 A governance/reliability task may block a strategy experiment only when it can materially invalidate the experiment's data, execution assumptions, reproducibility, safety boundary, or measured result. Otherwise run both tracks in parallel.
 
-## 3. Execution Efficiency
+## 3. Phase Execution Architecture
+During an active phase, work is split into three explicit lanes:
+
+- **Lane P — Product/Research:** phase deliverables, evidence packs, strategy hypotheses, deterministic backtests and paper-trading readiness. This lane receives at least 50% of execution capacity whenever it has executable work.
+- **Lane B — Frozen Blockers:** only blockers already mapped to frozen phase exit gates. This lane may remediate root causes but may not expand the phase acceptance contract.
+- **Lane Q — Quarantine/Backlog:** newly discovered hardening, release, security, supply-chain, governance, DR, CI and architecture improvements that do not directly invalidate a frozen exit gate. Record them once and defer them; do not recursively analyze them during the active phase.
+
+WIP limits during stabilization:
+- at most 2 active technical blocker PRs at once;
+- at most 1 continuity/memory PR at once, and normally none unless a material event requires it;
+- every active blocker PR must name the exact frozen exit gate it closes;
+- if a blocker generates a newly discovered concern outside that gate, route that concern to Lane Q instead of expanding the PR;
+- after two consecutive remediation iterations on the same blocker without closing its acceptance criterion, perform root-cause consolidation before another patch;
+- when blocker work waits on CI, runner, review, or external availability, Lane P must continue rather than idling.
+
+A phase cannot be held open by an unbounded chain of newly discovered controls. New findings may override the freeze only when they demonstrate a concrete high-impact failure that makes a frozen acceptance claim false or unsafe. The override must identify the exact invalidated claim; otherwise it is next-phase backlog.
+
+## 4. Execution Efficiency
 Prefer material reduction of real blockers and product milestones over continuity/admin churn.
 Do not create repeated Project Memory refresh PRs for trivial main movement.
 Update continuity after material events, not every small repository change.
@@ -59,23 +76,23 @@ Do not make volatile exact-`main` SHA equality a completion requirement for cont
 Prefer semantic applicability and non-overlap checks over churn caused solely by unrelated data refresh commits.
 Track replay rate as an efficiency signal: repeated replacement PRs caused by incidental drift are an operational defect to reduce, not normal progress.
 
-## 4. Continuity Across Chats
+## 5. Continuity Across Chats
 Chat is a temporary working interface, not the source of truth.
 GitHub + Project Memory are the durable source of truth.
 A new chat must recover current state from durable project memory and current GitHub evidence rather than asking the owner to restate old decisions.
 Do not assume a previous chat's claim is authoritative when current repository evidence disagrees.
 
-## 5. Authority Boundary
+## 6. Authority Boundary
 NEXUS remains research/backtest/paper-only unless the owner explicitly changes the project authority in a separately verified decision.
 No live trading, production authority, credential disclosure, signing authority, billing changes, secret disclosure, or irreversible actions.
 Risky or ambiguous changes must not be merged automatically.
 
-## 6. Owner Experience
+## 7. Owner Experience
 The owner should not need to repeatedly ask whether a task was tested, whether continuity was saved, whether a blocker actually moved, or whether research work is being displaced by infrastructure work.
 Surface only meaningful milestones, real blockers, failed/missing verification, material efficiency problems, stale assumptions, strategy/evidence milestones, or actions that require owner involvement.
 Mark owner-required actions with 🔴.
 
-## 7. Phase Scope Freeze and Blocker Classification
+## 8. Phase Scope Freeze and Blocker Classification
 Once a phase enters stabilization, its Definition of Done is frozen. A newly discovered failure must be classified before it can expand the phase:
 - **phase blocker**: directly prevents an already-declared phase acceptance criterion from being met;
 - **technical debt / next phase**: real defect or hardening opportunity that does not invalidate the frozen phase acceptance criteria;
@@ -83,9 +100,9 @@ Once a phase enters stabilization, its Definition of Done is frozen. A newly dis
 
 Only a phase blocker may delay phase closure. Do not silently promote new hardening ideas, new governance requirements, or unrelated CI improvements into the active phase. Any exception must explicitly identify which frozen acceptance criterion is invalidated.
 
-For Phase 3 specifically, no new feature scope is allowed. The active stabilization objective is limited to closing the already-open autonomous-runtime and reliability acceptance boundaries that prevent verified end-to-end operation. New feature requests, speculative hardening, and unrelated release-readiness work go to the backlog unless they demonstrably invalidate this objective.
+For Phase 3 specifically, no new feature scope is allowed. The active stabilization objective is limited to closing the already-open autonomous-runtime and reliability acceptance boundaries that prevent verified end-to-end operation. New feature requests, speculative hardening, release-readiness, production signing, full DR, broad supply-chain hardening and unrelated infrastructure improvements go to Lane Q unless they directly falsify a frozen Phase 3 exit gate.
 
-## 8. Consolidation-First Engineering
+## 9. Consolidation-First Engineering
 Do not treat closely coupled autonomy failures as separate patch streams when they form one runtime chain. Diagnose and verify the whole chain:
 
 `GitHub/Issue -> Orchestrator -> durable queue/state -> Runner/Workers -> DeepSeek advisory worker -> Test/Recovery -> CI evidence -> next task`
@@ -99,9 +116,9 @@ For this chain:
 6. use DeepSeek for bounded parallel analysis, test review, edge-case discovery, log analysis, and patch proposals when budget and secret gates permit;
 7. keep merge/release/risk authority deterministic and outside DeepSeek.
 
-A patch that fixes one symptom but leaves the same end-to-end failure mode untested is not considered stabilization complete.
+A patch that fixes one symptom but leaves the same end-to-end failure mode untested is not considered stabilization complete. Conversely, once the frozen end-to-end acceptance claim is proven, additional hardening is not allowed to reopen the phase unless it demonstrates that claim is actually false or unsafe.
 
-## 9. Execution Intent and No-Reinterpretation Rule
+## 10. Execution Intent and No-Reinterpretation Rule
 When the owner gives a clear operational instruction, execute the requested operation as stated unless doing so is technically impossible, unsafe, irreversible, or requires missing authority. Do not substitute a different project, broaden the requested scope, or reinterpret a direct execution request into planning-only work merely for convenience.
 
 If an exact request cannot be executed, state the concrete limitation once, then perform the closest safe action that advances the same objective. Avoid repeated clarification when current repository state can resolve ambiguity.
