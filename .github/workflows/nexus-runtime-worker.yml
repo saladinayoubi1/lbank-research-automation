@@ -34,6 +34,7 @@ jobs:
       - name: Validate runtime worker once
         env:
           NEXUS_DEEPSEEK_SMOKE: '0'
+          NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: '0'
         run: node scripts/nexus_runtime_worker.js --once
 
   laptop-worker:
@@ -43,6 +44,7 @@ jobs:
     timeout-minutes: 58
     env:
       DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+      NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: ${{ vars.NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED }}
       NEXUS_DEEPSEEK_SMOKE: '1'
       RUNNER_ENVIRONMENT: self-hosted-windows
     steps:
