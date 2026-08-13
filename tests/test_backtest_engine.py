@@ -93,27 +93,55 @@ def test_short_position_profits_when_price_falls() -> None:
     assert list(result.fills["side"]) == ["sell", "buy"]
 
 
-def test_fees_are_charged_on_entry_and_final_liquidation() -> None:
+def test_fees_are_charged_without_implicit_entry_leverage() -> None:
     result = run_target_exposure_backtest(
         make_market([100, 100], [100, 100]),
         [1, 0],
         BacktestConfig(initial_cash=1_000, fee_bps=100),
     )
 
-    assert result.metrics["total_fees"] == pytest.approx(20)
-    assert result.metrics["final_equity"] == pytest.approx(980)
+    entry = result.fills.iloc[0]
+    assert entry["cash_after"] == pytest.approx(0)
+    assert result.equity_curve.iloc[-1]["net_exposure"] == pytest.approx(0)
+    assert result.metrics["total_fees"] == pytest.approx(19.801980198019802)
+    assert result.metrics["final_equity"] == pytest.approx(980.1980198019802)
 
 
-def test_slippage_is_adverse_on_both_sides() -> None:
+def test_slippage_is_adverse_without_implicit_entry_leverage() -> None:
     result = run_target_exposure_backtest(
         make_market([100, 100], [100, 100]),
         [1, 0],
         BacktestConfig(initial_cash=1_000, slippage_bps=100),
     )
 
-    assert result.fills.iloc[0]["fill_price"] == pytest.approx(101)
+    entry = result.fills.iloc[0]
+    assert entry["fill_price"] == pytest.approx(101)
+    assert entry["cash_after"] == pytest.approx(0)
     assert result.fills.iloc[-1]["fill_price"] == pytest.approx(99)
-    assert result.metrics["final_equity"] == pytest.approx(980)
+    assert result.metrics["final_equity"] == pytest.approx(980.1980198019802)
+
+
+def test_cost_aware_long_target_does_not_exceed_configured_exposure() -> None:
+    result = run_target_exposure_backtest(
+        make_market([100, 100, 100], [100, 100, 100]),
+        [1, 1, 0],
+        BacktestConfig(initial_cash=1_000, fee_bps=60, slippage_bps=20),
+    )
+
+    live_rows = result.equity_curve.iloc[:-1]
+    assert (live_rows["net_exposure"].abs() <= 1.0 + 1e-12).all()
+    assert result.fills.iloc[0]["cash_after"] >= -1e-9
+
+
+def test_cost_aware_short_target_does_not_exceed_configured_exposure() -> None:
+    result = run_target_exposure_backtest(
+        make_market([100, 100, 100], [100, 100, 100]),
+        [-1, -1, 0],
+        BacktestConfig(initial_cash=1_000, fee_bps=60, slippage_bps=20),
+    )
+
+    live_rows = result.equity_curve.iloc[:-1]
+    assert (live_rows["net_exposure"].abs() <= 1.0 + 1e-12).all()
 
 
 def test_max_drawdown_is_reported_as_positive_magnitude() -> None:
