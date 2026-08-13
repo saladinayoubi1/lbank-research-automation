@@ -51,7 +51,11 @@ function missionProfile(mission) {
       verify: ['node', ['scripts/nexus_orchestrator.js']],
     },
   };
-  return profiles[mission.id] || { lane: 'backlog', tools: ['orchestrator'], verify: ['node', ['scripts/nexus_orchestrator.js']] };
+  return profiles[mission.id] || {
+    lane: 'backlog',
+    tools: ['orchestrator'],
+    verify: ['node', ['scripts/nexus_orchestrator.js']],
+  };
 }
 
 function deepSeekProbe() {
@@ -65,7 +69,7 @@ function deepSeekProbe() {
 function executeCycle() {
   const queue = loadQueue();
   const state = buildState(queue);
-  const selectedIds = state.selectedMissionIds || (state.selectedMissionId ? [state.selectedMissionId] : []);
+  const selectedIds = state.readyMissionIds || (state.selectedMissionId ? [state.selectedMissionId] : []);
   const byId = new Map(queue.missions.map((m) => [m.id, m]));
   const records = [];
 
@@ -74,7 +78,9 @@ function executeCycle() {
     if (!mission) continue;
     const profile = missionProfile(mission);
     const verification = run(profile.verify[0], profile.verify[1]);
-    const deepseek = profile.tools.includes('deepseek') ? deepSeekProbe() : { attempted: false, ok: false, reason: 'not_required' };
+    const deepseek = profile.tools.includes('deepseek')
+      ? deepSeekProbe()
+      : { attempted: false, ok: false, reason: 'not_required' };
     records.push({
       missionId: mission.id,
       title: mission.title,
