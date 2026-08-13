@@ -1,0 +1,68 @@
+name: NEXUS Phase 3 Resource Activation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'config/nexus-mission-queue.json'
+      - 'scripts/nexus_orchestrator.js'
+      - 'scripts/nexus_phase3_worker.js'
+      - 'scripts/nexus_ai_council.js'
+      - 'scripts/test_nexus_ai_council.js'
+      - 'scripts/deepseek_smoke.py'
+      - 'deepseek_provider.py'
+      - '.github/workflows/nexus_phase3_resource_activation.yml'
+  schedule:
+    - cron: '*/15 * * * *'
+
+concurrency:
+  group: nexus-phase3-resource-activation
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  cloud-agents-deepseek:
+    name: Cloud agents and DeepSeek
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify orchestrator selection
+        run: node scripts/nexus_orchestrator.js
+      - name: Exercise AI council agents
+        run: node scripts/test_nexus_ai_council.js
+      - name: Exercise bounded DeepSeek provider when key is available
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          PYTHONPATH: ${{ github.workspace }}
+        shell: bash
+        run: |
+          if [ -z "$DEEPSEEK_API_KEY" ]; then
+            echo 'DEEPSEEK_UNVERIFIED: secret not available to this workflow'
+            exit 0
+          fi
+          python scripts/deepseek_smoke.py
+      - name: Emit cloud resource status
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          PYTHONPATH: ${{ github.workspace }}
+        run: node scripts/nexus_phase3_worker.js
+
+  laptop-runner:
+    name: Windows self-hosted laptop
+    runs-on: [self-hosted, Windows]
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exercise orchestrator, agents, and local runner
+        shell: powershell
+        run: node scripts/nexus_phase3_worker.js
