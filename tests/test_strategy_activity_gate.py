@@ -31,8 +31,8 @@ def test_activity_gate_accepts_sufficiently_active_oos_candidate():
 def test_activity_gate_rejects_sparse_candidate_for_each_default_dimension():
     entries = [
         datetime(2026, 1, 1, tzinfo=UTC),
+        datetime(2026, 1, 20, tzinfo=UTC),
         datetime(2026, 2, 20, tzinfo=UTC),
-        datetime(2026, 4, 20, tzinfo=UTC),
     ]
 
     result = evaluate_activity(
