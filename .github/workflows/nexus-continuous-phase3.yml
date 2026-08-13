@@ -15,16 +15,16 @@ on:
 
 concurrency:
   group: nexus-continuous-phase3
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
   local-worker:
-    name: Continuous local worker
+    name: Bounded local Phase 3 worker
     runs-on: [self-hosted, Windows]
-    timeout-minutes: 350
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -38,11 +38,11 @@ jobs:
         run: |
           python --version
           node --version
-      - name: Run continuous Phase 3 worker
+      - name: Run bounded Phase 3 worker
         shell: cmd
         env:
           NEXUS_WORKER_INTERVAL_SECONDS: '15'
-          NEXUS_WORKER_MAX_RUNTIME_SECONDS: '20400'
+          NEXUS_WORKER_MAX_RUNTIME_SECONDS: '240'
           NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: ${{ vars.NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
         run: python scripts\nexus_continuous_worker.py
