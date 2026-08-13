@@ -66,17 +66,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Verify local toolchain
+      - name: Verify local Node toolchain
         shell: cmd
-        run: |
-          node --version
-          python --version
-      - name: Exercise orchestrator, agents, DeepSeek, and local runner
+        run: node --version
+      - name: Exercise orchestrator, AI council, and local runner
         shell: cmd
-        env:
-          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-          PYTHONPATH: ${{ github.workspace }}
         run: node scripts\nexus_phase3_worker.js
