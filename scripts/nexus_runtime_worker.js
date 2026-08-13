@@ -61,12 +61,16 @@ function missionProfile(mission) {
 
 function deepSeekProbe() {
   if (cachedDeepSeekProbe) return { ...cachedDeepSeekProbe, cached: true };
+  if (process.env.NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED !== '1') {
+    cachedDeepSeekProbe = { attempted: false, ok: false, reason: 'paid_routing_budget_gate_closed' };
+    return cachedDeepSeekProbe;
+  }
   if (!process.env.DEEPSEEK_API_KEY) {
     cachedDeepSeekProbe = { attempted: false, ok: false, reason: 'DEEPSEEK_API_KEY_missing' };
     return cachedDeepSeekProbe;
   }
   if (process.env.NEXUS_DEEPSEEK_SMOKE !== '1') {
-    cachedDeepSeekProbe = { attempted: false, ok: true, reason: 'credential_present_smoke_disabled' };
+    cachedDeepSeekProbe = { attempted: false, ok: true, reason: 'approved_credential_present_smoke_disabled' };
     return cachedDeepSeekProbe;
   }
   const result = run('python', ['scripts/deepseek_smoke.py'], { timeout: 90000 });
