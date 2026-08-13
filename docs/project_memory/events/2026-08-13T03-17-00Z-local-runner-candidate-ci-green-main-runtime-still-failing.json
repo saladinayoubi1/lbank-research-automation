@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "event_type": "local_runner_candidate_ci_green_main_runtime_still_failing",
+  "observed_at_utc": "2026-08-13T03:17:00Z",
+  "repository": "saladinayoubi1/lbank-research-automation",
+  "observed_main_sha": "679699b547b1dd44b55b6f7a71f48662e59e31c9",
+  "evidence": {
+    "candidate_pr": 397,
+    "candidate_head_before_memory_append": "966489691bb30a821e5ec17124573d3599f211bc",
+    "candidate_mergeable": true,
+    "candidate_generic_ci_green": true,
+    "successful_exact_head_checks": ["Workflow Permissions Policy","Test","NEXUS Build Verification","NEXUS Cloud Fallback"],
+    "latest_completed_main_runtime_run_id": 31661817694,
+    "latest_completed_main_runtime_conclusion": "failure",
+    "latest_completed_main_runtime_failed_step": "Bootstrap portable Python",
+    "newer_main_runtime_run_id": 31668852664,
+    "newer_main_runtime_status_at_observation": "in_progress",
+    "post_fix_self_hosted_success_proven": false,
+    "runtime_workflow_checks_out_main_not_candidate": true
+  },
+  "continuity": {
+    "device_power_off_is_not_internet_or_dns_outage": true,
+    "recovery_order": ["repository_project_memory","STATE","decision_log","recovery_playbook","latest_ci_and_pr_state","google_drive_durable_backup"]
+  },
+  "claim_boundary": {
+    "merge_authorized": false,
+    "production_authority": false,
+    "signing_authority": false,
+    "credential_or_billing_authority": false
+  },
+  "lesson": "Hosted exact-head CI does not substitute for the affected self-hosted runtime gate when that workflow intentionally checks out main; merge remains fail-closed until post-fix runtime evidence exists."
+}
