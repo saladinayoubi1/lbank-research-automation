@@ -6,12 +6,12 @@ from pathlib import Path
 
 import pandas as pd
 
-from ema_robustness_v1 import run_ema_robustness
+from ema_walkforward_v1 import run_ema_walk_forward
 from research_data import load_research_series
 
 ROOT = Path(__file__).resolve().parents[1]
 STATUS = ROOT / "data" / "market" / "_backfill_status.csv"
-OUTPUT = ROOT / "build" / "research" / "ema_robustness_v1.json"
+OUTPUT = ROOT / "build" / "research" / "ema_walkforward_v1.json"
 
 
 def current_head() -> str:
@@ -35,7 +35,7 @@ def select_research_series(status: pd.DataFrame, limit: int = 2) -> list[tuple[s
         (status["timeframe"] == "hour4")
         & (status["integrity_ok"].astype(str).str.lower() == "true")
         & (status["status"] == "current")
-        & (pd.to_numeric(status["rows"], errors="coerce") >= 500)
+        & (pd.to_numeric(status["rows"], errors="coerce") >= 900)
     ].copy()
     candidates = candidates.sort_values(["rows", "symbol"], ascending=[False, True])
     return [
@@ -48,7 +48,7 @@ def main() -> None:
     status = pd.read_csv(STATUS)
     selected = select_research_series(status)
     if not selected:
-        raise RuntimeError("no research-ready hour4 series are available")
+        raise RuntimeError("no research-ready hour4 series with at least 900 rows are available")
 
     evidence: list[dict[str, object]] = []
     for symbol, timeframe in selected:
@@ -56,9 +56,9 @@ def main() -> None:
             symbol,
             timeframe,
             data_root=ROOT / "data" / "market",
-            minimum_rows=500,
+            minimum_rows=900,
         )
-        result = run_ema_robustness(frame)
+        result = run_ema_walk_forward(frame)
         evidence.append(
             {
                 "symbol": symbol,
