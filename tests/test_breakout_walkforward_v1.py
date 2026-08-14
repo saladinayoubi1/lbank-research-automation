@@ -5,9 +5,11 @@ import math
 import pandas as pd
 import pytest
 
+from backtest_engine import BacktestConfig, run_target_exposure_backtest
 from breakout_walkforward_v1 import (
     BreakoutWalkForwardError,
     WalkForwardConfig,
+    _benchmark_targets,
     _warm_test_targets,
     run_breakout_walk_forward,
 )
@@ -124,6 +126,23 @@ def test_warmup_does_not_carry_training_position_into_oos() -> None:
 
     assert targets.iloc[:110].eq(0.0).all()
     assert targets.iloc[110] == 0.0
+
+
+def test_buy_hold_benchmark_enters_exactly_at_first_oos_open() -> None:
+    frame = make_market(130)
+    test_start_offset = 100
+    targets = _benchmark_targets(len(frame), test_start_offset)
+
+    result = run_target_exposure_backtest(
+        frame,
+        targets,
+        BacktestConfig(initial_cash=10_000.0, liquidate_at_end=True),
+    )
+
+    first_fill = result.fills.iloc[0]
+    assert first_fill["reason"] == "target_rebalance"
+    assert first_fill["execution_time"] == frame.iloc[test_start_offset]["timestamp"]
+    assert first_fill["signal_time"] == frame.iloc[test_start_offset - 1]["timestamp"]
 
 
 def test_uncertainty_is_finite_and_fail_closed() -> None:
