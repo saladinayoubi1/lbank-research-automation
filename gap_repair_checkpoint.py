@@ -51,7 +51,6 @@ def lock_path(path: Path) -> Path:
 
 
 def _reject_symlink(path: Path, *, label: str) -> None:
-    """Reject path substitution through a symlink leaf or parent component."""
     candidate = path.expanduser()
     if not candidate.is_absolute():
         candidate = Path.cwd() / candidate
@@ -61,12 +60,6 @@ def _reject_symlink(path: Path, *, label: str) -> None:
 
 
 def _fsync_parent_directory(path: Path) -> None:
-    """Persist directory-entry mutations where the platform exposes directory fsync.
-
-    Windows does not provide the same portable directory-fsync contract through
-    Python's os module, so the stronger crash-durability claim remains explicitly
-    unproven there rather than being simulated with a weaker operation.
-    """
     if os.name == "nt":
         return
     flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
@@ -77,38 +70,68 @@ def _fsync_parent_directory(path: Path) -> None:
         os.close(fd)
 
 
+def _acquire_os_lock(handle) -> None:
+    try:
+        if os.name == "nt":
+            import msvcrt
+
+            handle.seek(0)
+            msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except (OSError, BlockingIOError) as exc:
+        raise CheckpointError("checkpoint ownership is active in another process") from exc
+
+
+def _release_os_lock(handle) -> None:
+    if os.name == "nt":
+        import msvcrt
+
+        handle.seek(0)
+        msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+    else:
+        import fcntl
+
+        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
 @contextmanager
 def checkpoint_lock(path: Path) -> Iterator[None]:
-    """Acquire exclusive cross-process ownership for one series checkpoint.
+    """Hold cross-process ownership using a kernel-managed file lock.
 
-    Orphaned locks are deliberately not broken automatically. A pre-existing lock is
-    ambiguous after process failure, so repair fails closed rather than risking a
-    non-monotonic cursor update.
+    The coordination file is intentionally persistent. Kernel locks are released when
+    a process exits, including abnormal termination, so stale metadata cannot create
+    an orphan-lock deadlock. The file itself is never used as proof of ownership.
     """
     lock = lock_path(path)
     _reject_symlink(path, label="checkpoint")
     _reject_symlink(lock, label="checkpoint lock")
     lock.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-    except FileExistsError as exc:
-        raise CheckpointError("checkpoint ownership is locked or recovery is required") from exc
-    try:
-        os.write(fd, str(os.getpid()).encode("ascii", "strict"))
-        os.fsync(fd)
-        os.close(fd)
-        fd = -1
-        _fsync_parent_directory(lock)
-        yield
-    finally:
-        if fd >= 0:
-            os.close(fd)
-        try:
-            lock.unlink()
-        except FileNotFoundError:
-            pass
-        else:
+
+    created = not lock.exists()
+    with lock.open("a+b") as handle:
+        if created:
+            handle.write(b"0")
+            handle.flush()
+            os.fsync(handle.fileno())
             _fsync_parent_directory(lock)
+        elif lock.stat().st_size == 0:
+            handle.write(b"0")
+            handle.flush()
+            os.fsync(handle.fileno())
+
+        _acquire_os_lock(handle)
+        try:
+            handle.seek(0)
+            handle.truncate()
+            handle.write(str(os.getpid()).encode("ascii", "strict"))
+            handle.flush()
+            os.fsync(handle.fileno())
+            yield
+        finally:
+            _release_os_lock(handle)
 
 
 def write_checkpoint(path: Path, checkpoint: GapRepairCheckpoint) -> None:
