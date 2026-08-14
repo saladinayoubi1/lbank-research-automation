@@ -37,6 +37,18 @@ Use chronological train/validation/test or rolling/anchored walk-forward splits.
 
 Minimum robustness checks: multiple symbols, at least two timeframes where data quality permits, cost stress, one-bar extra execution delay, start-date perturbation, and EMA-length perturbation around the primary pair. Report failure regions and window-level dispersion, not only aggregate performance.
 
+## OOS activity eligibility
+
+A strategy may show attractive return statistics while producing too few independent out-of-sample decisions to support a useful Phase 3 research conclusion. Therefore every OOS or walk-forward evaluation window must also pass the repository strategy-activity eligibility gate before the candidate can be considered eligible for paper-forward promotion.
+
+The activity check must use the exact timezone-aware half-open OOS interval `[window_start, window_end)` and the actual entry timestamps produced inside that interval. Duplicate timestamps, equivalent instants represented with different UTC offsets, naive timestamps, or entries outside the declared OOS window are invalid evidence and must fail closed. Evaluation duration and calendar-month coverage must be derived from the OOS window itself rather than supplied as caller-controlled denominators.
+
+The experiment report must preserve both outcomes independently:
+- statistical/performance result for the strategy;
+- activity-eligibility result and reason codes.
+
+A profitable but activity-ineligible EMA candidate remains research evidence only and cannot be promoted by relaxing the activity policy after observing results. Conversely, high activity cannot rescue a strategy that fails the primary performance/null or robustness criteria.
+
 ## Benchmarks and uncertainty
 
 Compare against cash and, where economically meaningful, buy-and-hold. Also compare against a simple return-sign/time-series-momentum baseline when implemented. Report net return/CAGR, Sharpe or Sortino with stated annualization, maximum drawdown, Calmar, turnover, exposure, hit rate, tail loss, number of trades/fills, and walk-forward window distribution.
@@ -46,5 +58,7 @@ Any search over symbols, timeframes, filters or parameter pairs must disclose th
 ## Invalidation and paper-forward gate
 
 The strategy is invalidated for promotion if results depend on look-ahead, unsorted/duplicate timestamps, impossible fills, hidden zero-cost assumptions, one narrow regime/symbol/timeframe, or parameter selection that does not survive held-out evaluation. It is also invalidated if realistic cost stress removes the effect or if materially small data changes reverse the conclusion.
+
+Paper-forward eligibility additionally requires that the relevant OOS/walk-forward windows pass the strategy-activity gate under its predeclared policy. Sparse activity may be reported as an empirical result, but it cannot be reclassified as sufficient after the fact solely because returns look favorable.
 
 Passing historical verification permits only a separate paper-forward evaluation. Live trading, production deployment and personal financial recommendations remain outside authority.
