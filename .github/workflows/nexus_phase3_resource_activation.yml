@@ -33,7 +33,7 @@ on:
     - cron: '*/15 * * * *'
 
 concurrency:
-  group: nexus-phase3-resource-activation
+  group: nexus-phase3-resource-activation-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
