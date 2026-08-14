@@ -52,7 +52,6 @@ jobs:
     env:
       NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: '0'
       NEXUS_DEEPSEEK_SMOKE: '0'
-      NEXUS_STATE_DIR: ${{ runner.temp }}\nexus-phase3-candidate-state-${{ github.run_id }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -61,6 +60,9 @@ jobs:
       - name: Bootstrap portable Python
         shell: cmd
         run: call scripts\bootstrap_portable_python.cmd
+      - name: Initialize candidate state path
+        shell: cmd
+        run: echo NEXUS_STATE_DIR=%RUNNER_TEMP%\nexus-phase3-candidate-state-%GITHUB_RUN_ID%>>%GITHUB_ENV%
       - name: Verify Windows candidate runtime
         shell: cmd
         run: |
