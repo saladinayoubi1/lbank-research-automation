@@ -77,7 +77,7 @@ def test_robustness_returns_finite_research_evidence() -> None:
     assert len(result["runs"]) == 6
     for run in result["runs"]:
         assert math.isfinite(float(run["metric_total_return"]))
-        assert math.isfinite(float(run["metric_max_drawdown"]))
+        assert math.isfinite(float(run["max_drawdown"]))
 
 
 def test_window_contract_is_fail_closed() -> None:
