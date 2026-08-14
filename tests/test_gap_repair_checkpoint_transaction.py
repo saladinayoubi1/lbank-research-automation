@@ -97,7 +97,10 @@ def test_checkpoint_lock_file_persists_as_non_authoritative_coordination_inode(m
 
     def get_klines(*args, **kwargs):
         lock = Path(f"{checkpoint}.lock")
-        observed.append(lock.exists() and lock.read_text(encoding="utf-8").strip().isdigit())
+        # On Windows, msvcrt.locking intentionally prevents another handle from
+        # reading the locked byte range. Existence is the portable invariant;
+        # file contents are coordination metadata, not ownership authority.
+        observed.append(lock.exists())
         return []
 
     module.get_klines = get_klines
