@@ -110,6 +110,7 @@ def _replace_durable(source: Path, destination: Path) -> None:
     if not move_file_ex(str(source), str(destination), flags):
         error = ctypes.get_last_error()
         raise OSError(error, "MoveFileExW durable replacement failed", str(destination))
+    _fsync_parent_directory(destination)
 
 
 def _acquire_os_lock(handle) -> None:
