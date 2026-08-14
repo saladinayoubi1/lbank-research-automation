@@ -15,6 +15,8 @@ Every `.github/workflows/*.yml` and `.yaml` file must have an exact entry in `se
 
 Unlisted workflows, missing jobs, stale policy entries, and mismatched permissions fail closed. Write scopes require an exact allowlist entry and a non-empty justification. The current policy is expected to prefer `contents: read` and deny other scopes unless separately reviewed.
 
+The protected default-branch ruleset requires the `audit` context for merge. Therefore a candidate cannot be merged merely because its file set falls outside the audit workflow's normal path filter: the complete workflow inventory still has to be evaluated and the required context emitted for the exact candidate head. Until trigger coverage itself is changed through the separately protected Gate-4 control plane, a PR may explicitly include this ADR in its reviewed change set to cause the existing audit workflow to run; that is trigger evidence only and does not weaken, replace, or bypass the audit.
+
 ## Threat model and abuse cases
 
 Threat actors include a compromised action dependency, a malicious or mistaken contributor, and an attacker able to modify workflow YAML. Relevant abuse cases are broad token grants, duplicate-key shadowing, alias-based policy substitution, malformed YAML interpreted differently by tools, inline-map bypasses, job-level escalation, and adding a workflow outside the reviewed inventory.
@@ -35,4 +37,4 @@ This gate does not authenticate third-party actions, prove action source integri
 
 ## Obsolescence triggers
 
-Revisit this ADR when GitHub changes permission semantics, new permission scopes appear, PyYAML security or parsing behavior changes, reusable workflow trust is modeled, repository workflow generation is introduced, or a stronger maintained policy engine replaces this checker.
+Revisit this ADR when GitHub changes permission semantics, new permission scopes appear, PyYAML security or parsing behavior changes, reusable workflow trust is modeled, repository workflow generation is introduced, required-check trigger semantics change, or a stronger maintained policy engine replaces this checker.

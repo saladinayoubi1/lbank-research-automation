@@ -15,7 +15,19 @@ MAX_ROUNDS = 20
 DEFAULT_MAX_ROUNDS = MAX_ROUNDS
 
 
+def _reject_symlink_alias(path: Path, *, label: str) -> None:
+    """Fail closed when a status input is reached through a symlink alias."""
+    candidate = path.expanduser()
+    if not candidate.is_absolute():
+        candidate = Path.cwd() / candidate
+
+    for component in (candidate, *candidate.parents):
+        if component.is_symlink():
+            raise ValueError(f"{label} path must not contain a symlink component")
+
+
 def _status_snapshot(status_path: Path) -> dict[str, Any]:
+    _reject_symlink_alias(status_path, label="status")
     if not status_path.exists():
         return {
             "total_series": 0,
@@ -45,7 +57,9 @@ def _status_snapshot(status_path: Path) -> dict[str, Any]:
 
 
 def _has_deferred_windows(status_path: Path) -> bool:
+    _reject_symlink_alias(status_path, label="status")
     report_path = status_path.parent / "_gap_repair_status.csv"
+    _reject_symlink_alias(report_path, label="gap repair report")
     if not report_path.exists():
         return False
     try:
