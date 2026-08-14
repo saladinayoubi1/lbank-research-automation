@@ -3,11 +3,17 @@
 from __future__ import annotations
 
 import json
+import os
 
-from deepseek_provider import chat
+from deepseek_provider import DeepSeekError, chat
+
+PAID_ROUTING_FLAG = "NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED"
 
 
 def main() -> None:
+    if os.environ.get(PAID_ROUTING_FLAG) != "1":
+        raise DeepSeekError("DeepSeek paid routing is not explicitly authorized")
+
     result = chat(
         [
             {
