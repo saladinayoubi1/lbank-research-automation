@@ -24,6 +24,7 @@ on:
       - .nexus/deepseek-trigger.txt
       - .nexus/zotero-trigger.txt
       - .nexus/autonomous-trigger.txt
+      - scripts/bootstrap_portable_python.cmd
       - .github/workflows/nexus-local-runner.yml
   schedule:
     - cron: '17 * * * *'
@@ -52,64 +53,12 @@ jobs:
           clean: true
           fetch-depth: 1
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Bootstrap portable Python
-        run: |
-          set "PYROOT=%RUNNER_TEMP%\python312"
-          set "PYZIP=%RUNNER_TEMP%\python-3.12.10-embed-amd64.zip"
-          set "PIP_WHEEL=%RUNNER_TEMP%\pip-26.1.2-py3-none-any.whl"
-          set "PYZIP_SHA256=4acbed6dd1c744b0376e3b1cf57ce906f9dc9e95e68824584c8099a63025a3c3"
-          set "PIP_WHEEL_SHA256=382ff9f685ee3bc25864f820aa50505825f10f5458ffff07e30a6d96e5715cab"
-          if exist "%PYZIP%" (
-            certutil -hashfile "%PYZIP%" SHA256 | findstr /i "%PYZIP_SHA256%" >nul
-            if errorlevel 1 del /f /q "%PYZIP%"
-          )
-          if not exist "%PYZIP%" (
-            curl.exe -L --fail --retry 3 --retry-delay 2 -o "%PYZIP%.tmp" https://www.python.org/ftp/python/3.12.10/python-3.12.10-embed-amd64.zip
-            if errorlevel 1 exit /b 1
-            certutil -hashfile "%PYZIP%.tmp" SHA256 | findstr /i "%PYZIP_SHA256%" >nul
-            if errorlevel 1 (
-              del /f /q "%PYZIP%.tmp"
-              exit /b 1
-            )
-            move /y "%PYZIP%.tmp" "%PYZIP%" >nul
-            if errorlevel 1 exit /b 1
-          )
-          certutil -hashfile "%PYZIP%" SHA256 | findstr /i "%PYZIP_SHA256%" >nul
-          if errorlevel 1 exit /b 1
-          if exist "%PIP_WHEEL%" (
-            certutil -hashfile "%PIP_WHEEL%" SHA256 | findstr /i "%PIP_WHEEL_SHA256%" >nul
-            if errorlevel 1 del /f /q "%PIP_WHEEL%"
-          )
-          if not exist "%PIP_WHEEL%" (
-            curl.exe -L --fail --retry 3 --retry-delay 2 -o "%PIP_WHEEL%.tmp" https://files.pythonhosted.org/packages/5d/95/6b5cb3461ea5673ba0995989746db58eb18b91b54dbf331e72f569540946/pip-26.1.2-py3-none-any.whl
-            if errorlevel 1 exit /b 1
-            certutil -hashfile "%PIP_WHEEL%.tmp" SHA256 | findstr /i "%PIP_WHEEL_SHA256%" >nul
-            if errorlevel 1 (
-              del /f /q "%PIP_WHEEL%.tmp"
-              exit /b 1
-            )
-            move /y "%PIP_WHEEL%.tmp" "%PIP_WHEEL%" >nul
-            if errorlevel 1 exit /b 1
-          )
-          certutil -hashfile "%PIP_WHEEL%" SHA256 | findstr /i "%PIP_WHEEL_SHA256%" >nul
-          if errorlevel 1 exit /b 1
-          if exist "%PYROOT%" rmdir /s /q "%PYROOT%"
-          mkdir "%PYROOT%"
-          tar.exe -xf "%PYZIP%" -C "%PYROOT%"
-          if errorlevel 1 exit /b 1
-          if not exist "%PYROOT%\python.exe" exit /b 1
-          mkdir "%PYROOT%\Lib\site-packages"
-          if errorlevel 1 exit /b 1
-          tar.exe -xf "%PIP_WHEEL%" -C "%PYROOT%\Lib\site-packages"
-          if errorlevel 1 exit /b 1
-          echo Lib\site-packages>>"%PYROOT%\python312._pth"
-          echo import site>>"%PYROOT%\python312._pth"
-          echo %GITHUB_WORKSPACE%>>"%PYROOT%\python312._pth"
-          "%PYROOT%\python.exe" -m pip --version
-          if errorlevel 1 exit /b 1
-          "%PYROOT%\python.exe" -m pip install --disable-pip-version-check --retries 5 --timeout 60 -r requirements.txt pytest PyYAML
-          if errorlevel 1 exit /b 1
-          echo %PYROOT%>>"%GITHUB_PATH%"
+        run: call scripts\bootstrap_portable_python.cmd
 
       - name: Privacy guard
         run: python -c "import pathlib; root=pathlib.Path.cwd().resolve(); home=pathlib.Path.home().resolve(); assert root != home and home not in root.parents; print('privacy_guard=ok')"
@@ -157,7 +106,7 @@ jobs:
           NEXUS_WORKER_MAX_SECONDS: '3300'
           NEXUS_WORKER_IDLE_SLEEP: '60'
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-          NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: ${{ vars.NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED }}
+          NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: '0'
         run: python scripts\nexus_local_worker.py
 
       - name: Upload autonomous worker evidence
