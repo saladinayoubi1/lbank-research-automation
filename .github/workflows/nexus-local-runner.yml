@@ -26,8 +26,6 @@ on:
       - .nexus/autonomous-trigger.txt
       - scripts/bootstrap_portable_python.cmd
       - .github/workflows/nexus-local-runner.yml
-  schedule:
-    - cron: '17 * * * *'
 
 permissions:
   contents: read
@@ -101,7 +99,7 @@ jobs:
         run: node scripts\nexus_ai_council.js
 
       - name: Persistent autonomous worker
-        if: github.event_name == 'schedule' || inputs.task == 'autonomous' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[autonomous]'))
+        if: inputs.task == 'autonomous' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[autonomous]'))
         env:
           NEXUS_WORKER_MAX_SECONDS: '3300'
           NEXUS_WORKER_IDLE_SLEEP: '60'
