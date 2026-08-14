@@ -16,7 +16,7 @@ OUTPUT = ROOT / "build" / "research" / "ema_robustness_v1.json"
 
 def current_head() -> str:
     result = subprocess.run(
-        ["git", "rev-parse", "HEAD"],
+        ["git", "-c", f"safe.directory={ROOT}", "rev-parse", "HEAD"],
         cwd=ROOT,
         check=True,
         capture_output=True,
