@@ -2,6 +2,12 @@ name: NEXUS Phase 3 Resource Activation
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - 'ema_walkforward_v1.py'
+      - 'scripts/run_ema_walkforward_v1.py'
+      - 'tests/test_ema_walkforward_v1.py'
+      - '.github/workflows/nexus_phase3_resource_activation.yml'
   push:
     branches: [main]
     paths:
@@ -12,7 +18,9 @@ on:
       - 'scripts/test_nexus_ai_council.js'
       - 'scripts/deepseek_smoke.py'
       - 'scripts/run_ema_robustness_v1.py'
+      - 'scripts/run_ema_walkforward_v1.py'
       - 'ema_robustness_v1.py'
+      - 'ema_walkforward_v1.py'
       - 'deepseek_provider.py'
       - 'data/market/**'
       - '.github/workflows/nexus_phase3_resource_activation.yml'
@@ -69,7 +77,7 @@ jobs:
   laptop-runner:
     name: Windows self-hosted laptop
     runs-on: [self-hosted, Windows]
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -91,11 +99,18 @@ jobs:
         env:
           NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: '0'
         run: python scripts\run_ema_robustness_v1.py
-      - name: Upload durable EMA robustness evidence
+      - name: Execute real EMA walk-forward research on ready datasets
+        shell: cmd
+        env:
+          NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: '0'
+        run: python scripts\run_ema_walkforward_v1.py
+      - name: Upload durable EMA research evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: nexus-ema-robustness-${{ github.run_id }}
-          path: build/research/ema_robustness_v1.json
+          name: nexus-ema-research-${{ github.run_id }}
+          path: |
+            build/research/ema_robustness_v1.json
+            build/research/ema_walkforward_v1.json
           if-no-files-found: warn
           retention-days: 14
