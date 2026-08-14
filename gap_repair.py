@@ -10,6 +10,8 @@ import requests
 from gap_repair_checkpoint import (
     CheckpointError,
     build_checkpoint,
+    checkpoint_lock,
+    initialized_marker,
     read_checkpoint,
     write_checkpoint,
 )
@@ -100,6 +102,8 @@ def _load_start_index(
 ) -> int:
     path = _checkpoint_path(symbol, timeframe)
     if not path.exists():
+        if initialized_marker(path).exists():
+            raise CheckpointError("checkpoint missing after prior initialization")
         return 0
     checkpoint = read_checkpoint(
         path,
@@ -125,6 +129,33 @@ def _persist_next_index(
     write_checkpoint(_checkpoint_path(symbol, timeframe), checkpoint)
 
 
+def _remap_next_index(
+    prior_gap_starts: list[pd.Timestamp],
+    current_gap_starts: list[pd.Timestamp],
+    start_index: int,
+    request_count: int,
+) -> int:
+    """Map the next fair position onto the authoritative post-save gap set."""
+    if not current_gap_starts or not prior_gap_starts:
+        return 0
+
+    next_prior_index = (start_index + request_count) % len(prior_gap_starts)
+    candidates = (
+        prior_gap_starts[next_prior_index:] + prior_gap_starts[:next_prior_index]
+    )
+    current_positions = {
+        gap_start: index for index, gap_start in enumerate(current_gap_starts)
+    }
+    for candidate in candidates:
+        if candidate in current_positions:
+            return current_positions[candidate]
+
+    # If every prior gap disappeared, any newly discovered gap is a new identity.
+    # Start deterministically at its first position rather than persisting a cursor
+    # that refers to the pre-save set.
+    return 0
+
+
 def repair_series_with_outcomes(
     symbol: str,
     timeframe: str,
@@ -144,9 +175,135 @@ def repair_series_with_outcomes(
     outcomes: list[GapRepairOutcome] = []
     request_count = 0
     request_failures = 0
+    checkpoint_path = _checkpoint_path(symbol, timeframe)
 
     try:
-        start_index = _load_start_index(symbol, timeframe, gap_starts)
+        # One owner covers the complete authoritative checkpoint transaction:
+        # read cursor -> bounded network repair -> durable data save -> cursor commit.
+        # A competing or orphaned lock fails closed before any network mutation.
+        with checkpoint_lock(checkpoint_path):
+            start_index = _load_start_index(symbol, timeframe, gap_starts)
+            ordered_gap_starts = gap_starts[start_index:] + gap_starts[:start_index]
+
+            for gap_start in ordered_gap_starts:
+                if gap_start not in missing:
+                    continue
+                if request_count >= MAX_GAP_WINDOWS_PER_SERIES_PER_RUN:
+                    outcomes.append(GapRepairOutcome(
+                        symbol=symbol,
+                        timeframe=timeframe,
+                        gap_start_utc=gap_start.isoformat(),
+                        status="deferred_budget",
+                        recovered_candles=0,
+                        detail="per-series request budget exhausted",
+                    ))
+                    continue
+
+                request_count += 1
+                try:
+                    rows = get_klines(symbol, timeframe, int(gap_start.timestamp()))
+                except (requests.RequestException, LBankError) as exc:
+                    request_failures += 1
+                    outcomes.append(GapRepairOutcome(
+                        symbol=symbol,
+                        timeframe=timeframe,
+                        gap_start_utc=gap_start.isoformat(),
+                        status="fetch_failed",
+                        recovered_candles=0,
+                        detail=type(exc).__name__,
+                    ))
+                    LOGGER.exception(
+                        "Gap request failed for %s %s from %s",
+                        symbol,
+                        timeframe,
+                        gap_start,
+                    )
+                    continue
+
+                frame = rows_to_frame(rows, symbol, timeframe)
+                repaired = select_missing_rows(frame, missing)
+                if repaired.empty:
+                    outcomes.append(GapRepairOutcome(
+                        symbol=symbol,
+                        timeframe=timeframe,
+                        gap_start_utc=gap_start.isoformat(),
+                        status="source_unavailable",
+                        recovered_candles=0,
+                        detail="request succeeded but returned no currently missing candle",
+                    ))
+                    LOGGER.warning(
+                        "No missing candles recovered for %s %s from %s",
+                        symbol,
+                        timeframe,
+                        gap_start,
+                    )
+                    continue
+
+                recovered_count = len(repaired)
+                repaired_frames.append(repaired)
+                missing.difference_update(
+                    pd.DatetimeIndex(pd.to_datetime(repaired["timestamp"], utc=True))
+                )
+                outcomes.append(GapRepairOutcome(
+                    symbol=symbol,
+                    timeframe=timeframe,
+                    gap_start_utc=gap_start.isoformat(),
+                    status="recovered",
+                    recovered_candles=recovered_count,
+                    detail="missing candle rows returned and selected",
+                ))
+
+            # Never advance durable fairness state before recovered market data is
+            # durably handed to the repository's save path. If the process dies
+            # after save but before cursor commit, replay recomputes gaps from the
+            # saved data instead of skipping unsaved repair work.
+            repaired_count = 0
+            checkpoint_gap_starts = gap_starts
+            next_index = (
+                (start_index + request_count) % len(gap_starts)
+                if gap_starts and request_count
+                else 0
+            )
+            if repaired_frames:
+                before = len(existing)
+                after = save_merged(existing, repaired_frames, output_path)
+                repaired_count = max(0, after - before)
+
+                # The durable data save can remove or reshape gaps. Reload the
+                # authoritative file while ownership is still held, bind the new
+                # checkpoint to that post-save identity, and remap fairness to the
+                # next surviving gap from the prior circular order.
+                persisted = read_existing(output_path)
+                if persisted.empty:
+                    raise CheckpointError(
+                        "post-save market data is unavailable for checkpoint remap"
+                    )
+                checkpoint_gap_starts = find_gap_starts(
+                    persisted["timestamp"], timeframe
+                )
+                next_index = _remap_next_index(
+                    gap_starts,
+                    checkpoint_gap_starts,
+                    start_index,
+                    request_count,
+                )
+
+            if gap_starts and request_count:
+                _persist_next_index(
+                    symbol,
+                    timeframe,
+                    checkpoint_gap_starts,
+                    next_index,
+                )
+
+            if repaired_count:
+                LOGGER.info(
+                    "Repaired %s candle(s) for %s %s",
+                    repaired_count,
+                    symbol,
+                    timeframe,
+                )
+            return repaired_count, request_failures, outcomes
     except CheckpointError as exc:
         outcomes.append(GapRepairOutcome(
             symbol=symbol,
@@ -157,89 +314,6 @@ def repair_series_with_outcomes(
             detail=str(exc),
         ))
         return 0, 0, outcomes
-
-    ordered_gap_starts = gap_starts[start_index:] + gap_starts[:start_index]
-
-    for gap_start in ordered_gap_starts:
-        if gap_start not in missing:
-            continue
-        if request_count >= MAX_GAP_WINDOWS_PER_SERIES_PER_RUN:
-            outcomes.append(GapRepairOutcome(
-                symbol=symbol,
-                timeframe=timeframe,
-                gap_start_utc=gap_start.isoformat(),
-                status="deferred_budget",
-                recovered_candles=0,
-                detail="per-series request budget exhausted",
-            ))
-            continue
-
-        request_count += 1
-        try:
-            rows = get_klines(symbol, timeframe, int(gap_start.timestamp()))
-        except (requests.RequestException, LBankError) as exc:
-            request_failures += 1
-            outcomes.append(GapRepairOutcome(
-                symbol=symbol,
-                timeframe=timeframe,
-                gap_start_utc=gap_start.isoformat(),
-                status="fetch_failed",
-                recovered_candles=0,
-                detail=type(exc).__name__,
-            ))
-            LOGGER.exception(
-                "Gap request failed for %s %s from %s",
-                symbol,
-                timeframe,
-                gap_start,
-            )
-            continue
-
-        frame = rows_to_frame(rows, symbol, timeframe)
-        repaired = select_missing_rows(frame, missing)
-        if repaired.empty:
-            outcomes.append(GapRepairOutcome(
-                symbol=symbol,
-                timeframe=timeframe,
-                gap_start_utc=gap_start.isoformat(),
-                status="source_unavailable",
-                recovered_candles=0,
-                detail="request succeeded but returned no currently missing candle",
-            ))
-            LOGGER.warning(
-                "No missing candles recovered for %s %s from %s",
-                symbol,
-                timeframe,
-                gap_start,
-            )
-            continue
-
-        recovered_count = len(repaired)
-        repaired_frames.append(repaired)
-        missing.difference_update(
-            pd.DatetimeIndex(pd.to_datetime(repaired["timestamp"], utc=True))
-        )
-        outcomes.append(GapRepairOutcome(
-            symbol=symbol,
-            timeframe=timeframe,
-            gap_start_utc=gap_start.isoformat(),
-            status="recovered",
-            recovered_candles=recovered_count,
-            detail="missing candle rows returned and selected",
-        ))
-
-    if gap_starts and request_count:
-        next_index = (start_index + request_count) % len(gap_starts)
-        _persist_next_index(symbol, timeframe, gap_starts, next_index)
-
-    if not repaired_frames:
-        return 0, request_failures, outcomes
-
-    before = len(existing)
-    after = save_merged(existing, repaired_frames, output_path)
-    repaired_count = max(0, after - before)
-    LOGGER.info("Repaired %s candle(s) for %s %s", repaired_count, symbol, timeframe)
-    return repaired_count, request_failures, outcomes
 
 
 def repair_series(symbol: str, timeframe: str) -> tuple[int, int]:

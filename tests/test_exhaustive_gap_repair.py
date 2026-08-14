@@ -164,3 +164,50 @@ def test_recovery_after_rejected_pathological_limit_is_deterministic(tmp_path):
     assert result["recovered_candles"] == 2
     assert result["stopped_because"] == "no_progress"
     assert result["after"]["blocked_series"] == 0
+
+
+def test_rejects_symlinked_status_before_repair_side_effects(tmp_path):
+    target = tmp_path / "real-status.csv"
+    status = tmp_path / "status.csv"
+    write_status(target, ok=0, blocked=1, missing=2)
+    try:
+        status.symlink_to(target)
+    except (OSError, NotImplementedError):
+        pytest.skip("symlink creation unavailable on this platform")
+
+    repair_calls = 0
+
+    def repair():
+        nonlocal repair_calls
+        repair_calls += 1
+        return 0
+
+    with pytest.raises(ValueError, match="symlink"):
+        runner.run_exhaustive_repair(
+            max_rounds=1,
+            status_path=status,
+            repair_fn=repair,
+            readiness_fn=lambda **_: {"all_ready": False},
+        )
+
+    assert repair_calls == 0
+
+
+def test_rejects_symlinked_deferred_report_before_trusting_progress(tmp_path):
+    status = tmp_path / "status.csv"
+    target = tmp_path / "real-gap-report.csv"
+    report = tmp_path / "_gap_repair_status.csv"
+    write_status(status, ok=0, blocked=1, missing=2)
+    pd.DataFrame([{"status": "deferred_budget"}]).to_csv(target, index=False)
+    try:
+        report.symlink_to(target)
+    except (OSError, NotImplementedError):
+        pytest.skip("symlink creation unavailable on this platform")
+
+    with pytest.raises(ValueError, match="symlink"):
+        runner.run_exhaustive_repair(
+            max_rounds=1,
+            status_path=status,
+            repair_fn=lambda: 0,
+            readiness_fn=lambda **_: {"all_ready": False},
+        )
