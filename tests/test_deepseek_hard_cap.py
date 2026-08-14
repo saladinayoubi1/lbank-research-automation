@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+import threading
 
 import pytest
 
@@ -45,6 +47,60 @@ def test_reservation_cannot_cross_routine_cap(tmp_path, monkeypatch):
     with pytest.raises(ds.BudgetExceeded):
         ds._reserve(path, ds.DEFAULT_MODEL, [{"role": "user", "content": "a" * 100000}], 1024, False)
     loaded = ds.load_ledger(path)
+    assert loaded["spent_usd"] + loaded["reserved_usd"] <= ds.MONTHLY_BUDGET_USD
+
+
+def test_concurrent_last_slice_allows_only_one_reservation(tmp_path):
+    path = _path(tmp_path)
+    messages = [{"role": "user", "content": "critical"}]
+    _, amount = ds._worst_case_reservation(ds.PRO_MODEL, messages, 64)
+    ledger = ds._fresh_ledger()
+    ledger["spent_usd"] = ds.MONTHLY_BUDGET_USD - (amount * 1.5)
+    ds.save_ledger(path, ledger)
+
+    barrier = threading.Barrier(2)
+
+    def reserve_once():
+        barrier.wait()
+        try:
+            rid, _ = ds._reserve(path, ds.PRO_MODEL, messages, 64, True)
+            return ("reserved", rid)
+        except ds.BudgetExceeded:
+            return ("rejected", None)
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(lambda _n: reserve_once(), range(2)))
+
+    assert sorted(result[0] for result in results) == ["rejected", "reserved"]
+    loaded = ds.load_ledger(path)
+    assert len(loaded["inflight"]) == 1
+    assert loaded["spent_usd"] + loaded["reserved_usd"] <= ds.MONTHLY_BUDGET_USD
+
+
+def test_ambiguous_timeout_retains_reservation_and_reduces_remaining_budget(tmp_path, monkeypatch):
+    path = _path(tmp_path)
+    monkeypatch.setattr(ds, "CANONICAL_LEDGER", path)
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "test-only-key")
+
+    def timeout(*_args, **_kwargs):
+        raise TimeoutError("simulated ambiguous timeout")
+
+    monkeypatch.setattr(ds.request, "urlopen", timeout)
+    before = ds.remaining_budget(ds._fresh_ledger())
+
+    with pytest.raises(ds.AmbiguousCharge, match="ambiguous"):
+        ds.chat(
+            [{"role": "user", "content": "bounded test"}],
+            blocker=True,
+            max_tokens=64,
+            ledger_path=path,
+            timeout=0.01,
+        )
+
+    loaded = ds.load_ledger(path)
+    assert len(loaded["inflight"]) == 1
+    assert loaded["reserved_usd"] > 0
+    assert ds.remaining_budget(loaded) < before
     assert loaded["spent_usd"] + loaded["reserved_usd"] <= ds.MONTHLY_BUDGET_USD
 
 
