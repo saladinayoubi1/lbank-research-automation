@@ -79,7 +79,11 @@ def test_cursor_commit_failure_occurs_after_data_save_and_releases_owner(monkeyp
         module.repair_series_with_outcomes("btc_usdt", "minute15")
 
     assert operations == ["save_data", "commit_cursor"]
-    assert not Path(f"{checkpoint}.lock").exists()
+    assert Path(f"{checkpoint}.lock").exists()
+
+    # The coordination file persists by design; ownership must still be reusable.
+    with module.checkpoint_lock(checkpoint):
+        pass
 
 
 def test_failed_cursor_commit_does_not_report_recovery_complete(monkeypatch, tmp_path):
