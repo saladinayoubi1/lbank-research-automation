@@ -11,7 +11,10 @@ on:
       - 'scripts/nexus_ai_council.js'
       - 'scripts/test_nexus_ai_council.js'
       - 'scripts/deepseek_smoke.py'
+      - 'scripts/run_ema_robustness_v1.py'
+      - 'ema_robustness_v1.py'
       - 'deepseek_provider.py'
+      - 'data/market/**'
       - '.github/workflows/nexus_phase3_resource_activation.yml'
   schedule:
     - cron: '*/15 * * * *'
@@ -66,7 +69,7 @@ jobs:
   laptop-runner:
     name: Windows self-hosted laptop
     runs-on: [self-hosted, Windows]
-    timeout-minutes: 12
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -80,3 +83,19 @@ jobs:
         env:
           NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: '0'
         run: node scripts\nexus_phase3_worker.js
+      - name: Bootstrap portable Python for Product/Research
+        shell: cmd
+        run: scripts\bootstrap_portable_python.cmd
+      - name: Execute real EMA robustness research on ready datasets
+        shell: cmd
+        env:
+          NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: '0'
+        run: python scripts\run_ema_robustness_v1.py
+      - name: Upload durable EMA robustness evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexus-ema-robustness-${{ github.run_id }}
+          path: build/research/ema_robustness_v1.json
+          if-no-files-found: warn
+          retention-days: 14
