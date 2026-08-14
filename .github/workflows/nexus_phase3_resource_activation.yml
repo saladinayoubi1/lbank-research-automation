@@ -10,6 +10,9 @@ on:
       - 'breakout_robustness_v1.py'
       - 'scripts/run_breakout_robustness_v1.py'
       - 'tests/test_breakout_robustness_v1.py'
+      - 'breakout_walkforward_v1.py'
+      - 'scripts/run_breakout_walkforward_v1.py'
+      - 'tests/test_breakout_walkforward_v1.py'
       - '.github/workflows/nexus_phase3_resource_activation.yml'
   push:
     branches: [main]
@@ -23,9 +26,11 @@ on:
       - 'scripts/run_ema_robustness_v1.py'
       - 'scripts/run_ema_walkforward_v1.py'
       - 'scripts/run_breakout_robustness_v1.py'
+      - 'scripts/run_breakout_walkforward_v1.py'
       - 'ema_robustness_v1.py'
       - 'ema_walkforward_v1.py'
       - 'breakout_robustness_v1.py'
+      - 'breakout_walkforward_v1.py'
       - 'deepseek_provider.py'
       - 'data/market/**'
       - '.github/workflows/nexus_phase3_resource_activation.yml'
@@ -119,6 +124,11 @@ jobs:
         env:
           NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: '0'
         run: python scripts\run_breakout_robustness_v1.py
+      - name: Execute breakout walk-forward validation on ready datasets
+        shell: cmd
+        env:
+          NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: '0'
+        run: python scripts\run_breakout_walkforward_v1.py
       - name: Upload durable EMA research evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -134,6 +144,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: nexus-breakout-research-${{ github.run_id }}
-          path: build/research/breakout_robustness_v1.json
+          path: |
+            build/research/breakout_robustness_v1.json
+            build/research/breakout_walkforward_v1.json
           if-no-files-found: warn
           retention-days: 14
