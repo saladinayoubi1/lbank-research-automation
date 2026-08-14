@@ -119,7 +119,7 @@ def test_invalid_window_fails_closed() -> None:
 def test_duration_and_calendar_months_are_derived_from_window() -> None:
     policy = ActivityPolicy(
         min_oos_trades=2,
-        min_trades_per_30d=1.9,
+        min_trades_per_30d=1.0,
         min_active_month_ratio=1.0,
         max_median_gap_days=40.0,
     )
