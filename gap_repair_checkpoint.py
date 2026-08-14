@@ -85,6 +85,33 @@ def _fsync_parent_directory(path: Path) -> None:
         os.close(fd)
 
 
+def _replace_durable(source: Path, destination: Path) -> None:
+    """Atomically replace destination and request durable directory-entry commit.
+
+    POSIX persists the rename by fsyncing the parent directory. Windows has no
+    portable directory-fsync primitive in Python, so use the documented
+    MOVEFILE_WRITE_THROUGH flag together with replacement semantics instead of
+    silently weakening the durability contract.
+    """
+    if os.name != "nt":
+        os.replace(source, destination)
+        _fsync_parent_directory(destination)
+        return
+
+    import ctypes
+    from ctypes import wintypes
+
+    move_file_ex = ctypes.WinDLL("kernel32", use_last_error=True).MoveFileExW
+    move_file_ex.argtypes = [wintypes.LPCWSTR, wintypes.LPCWSTR, wintypes.DWORD]
+    move_file_ex.restype = wintypes.BOOL
+    MOVEFILE_REPLACE_EXISTING = 0x1
+    MOVEFILE_WRITE_THROUGH = 0x8
+    flags = MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH
+    if not move_file_ex(str(source), str(destination), flags):
+        error = ctypes.get_last_error()
+        raise OSError(error, "MoveFileExW durable replacement failed", str(destination))
+
+
 def _acquire_os_lock(handle) -> None:
     try:
         if os.name == "nt":
@@ -149,33 +176,42 @@ def checkpoint_lock(path: Path) -> Iterator[None]:
             _release_os_lock(handle)
 
 
+def _write_fsynced_text(path: Path, payload: str) -> None:
+    with path.open("w", encoding="utf-8", newline="\n") as handle:
+        handle.write(payload)
+        handle.flush()
+        os.fsync(handle.fileno())
+
+
 def write_checkpoint(path: Path, checkpoint: GapRepairCheckpoint) -> None:
     path = _canonical_path(path, label="checkpoint")
     marker = initialized_marker(path)
     _reject_symlink(marker, label="checkpoint marker")
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.tmp")
+    marker_temporary = marker.with_name(f".{marker.name}.tmp")
     _reject_symlink(temporary, label="checkpoint temporary")
+    _reject_symlink(marker_temporary, label="checkpoint marker temporary")
     payload = json.dumps(asdict(checkpoint), sort_keys=True, separators=(",", ":")) + "\n"
     try:
-        with temporary.open("w", encoding="utf-8", newline="\n") as handle:
-            handle.write(payload)
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(temporary, path)
-        _fsync_parent_directory(path)
+        _write_fsynced_text(temporary, payload)
+        _replace_durable(temporary, path)
         with path.open("r+b") as handle:
             os.fsync(handle.fileno())
-        marker_existed = marker.exists()
-        with marker.open("ab") as handle:
-            handle.flush()
-            os.fsync(handle.fileno())
-        if not marker_existed:
-            _fsync_parent_directory(marker)
+
+        if not marker.exists():
+            _write_fsynced_text(marker_temporary, "initialized\n")
+            _replace_durable(marker_temporary, marker)
+        else:
+            with marker.open("r+b") as handle:
+                os.fsync(handle.fileno())
     finally:
         if temporary.exists():
             temporary.unlink()
             _fsync_parent_directory(temporary)
+        if marker_temporary.exists():
+            marker_temporary.unlink()
+            _fsync_parent_directory(marker_temporary)
 
 
 def read_checkpoint(path: Path, *, symbol: str, timeframe: str, gap_starts: Iterable[str]) -> GapRepairCheckpoint:
