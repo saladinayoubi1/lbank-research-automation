@@ -44,23 +44,21 @@ def test_concurrent_checkpoint_owner_fails_closed(tmp_path: Path):
     path = tmp_path / "cursor.json"
     with checkpoint_lock(path):
         assert lock_path(path).exists()
-        with pytest.raises(CheckpointError, match="ownership is locked"):
+        with pytest.raises(CheckpointError, match="ownership is active"):
             with checkpoint_lock(path):
                 pass
-    assert not lock_path(path).exists()
+    assert lock_path(path).exists()
 
 
-def test_preexisting_orphan_lock_is_not_broken_automatically(tmp_path: Path):
+def test_preexisting_coordination_file_does_not_create_orphan_deadlock(tmp_path: Path):
     path = tmp_path / "cursor.json"
     lock = lock_path(path)
     lock.write_text("999999", encoding="ascii")
 
-    with pytest.raises(CheckpointError, match="ownership is locked"):
-        with checkpoint_lock(path):
-            pass
+    with checkpoint_lock(path):
+        assert lock.exists()
 
     assert lock.exists()
-    assert lock.read_text(encoding="ascii") == "999999"
 
 
 def test_stale_gap_set_is_rejected(tmp_path: Path):
@@ -192,7 +190,7 @@ def test_checkpoint_write_syncs_directory_entry_mutations(monkeypatch, tmp_path:
     assert initialized_marker(path) in synced
 
 
-def test_checkpoint_lock_syncs_create_and_remove(monkeypatch, tmp_path: Path):
+def test_checkpoint_lock_syncs_coordination_file_creation(monkeypatch, tmp_path: Path):
     path = tmp_path / "cursor.json"
     synced = []
     monkeypatch.setattr(checkpoint_module, "_fsync_parent_directory", lambda value: synced.append(value))
@@ -200,4 +198,4 @@ def test_checkpoint_lock_syncs_create_and_remove(monkeypatch, tmp_path: Path):
     with checkpoint_lock(path):
         assert lock_path(path).exists()
 
-    assert synced == [lock_path(path), lock_path(path)]
+    assert synced == [lock_path(path)]
