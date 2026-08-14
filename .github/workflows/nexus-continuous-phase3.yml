@@ -9,6 +9,7 @@ on:
       - 'scripts/nexus_orchestrator.js'
       - 'scripts/nexus_continuous_worker.py'
       - 'scripts/nexus_phase3_task.py'
+      - 'scripts/bootstrap_portable_python.cmd'
       - '.github/workflows/nexus-continuous-phase3.yml'
   schedule:
     - cron: '7 * * * *'
@@ -24,15 +25,15 @@ jobs:
   local-worker:
     name: Bounded local Phase 3 worker
     runs-on: [self-hosted, Windows]
-    timeout-minutes: 8
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
+      - name: Bootstrap portable Python
+        shell: cmd
+        run: call scripts\bootstrap_portable_python.cmd
       - name: Show runtime
         shell: cmd
         run: |
@@ -43,8 +44,7 @@ jobs:
         env:
           NEXUS_WORKER_INTERVAL_SECONDS: '15'
           NEXUS_WORKER_MAX_RUNTIME_SECONDS: '240'
-          NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: ${{ vars.NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED }}
-          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: '0'
         run: python scripts\nexus_continuous_worker.py
       - name: Upload worker heartbeat
         if: always()
