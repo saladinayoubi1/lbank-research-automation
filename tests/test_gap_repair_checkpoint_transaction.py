@@ -68,26 +68,27 @@ def recovered_frame():
     })
 
 
-def test_existing_checkpoint_owner_fails_before_network(monkeypatch, tmp_path):
+def test_stale_lock_metadata_does_not_block_recovery(monkeypatch, tmp_path):
     module = load_module(monkeypatch)
     module.OUTPUT_ROOT = tmp_path
     module.read_existing = lambda path: gapped_frame()
     checkpoint = module._checkpoint_path("btc_usdt", "minute15")
     checkpoint.parent.mkdir(parents=True, exist_ok=True)
-    Path(f"{checkpoint}.lock").write_text("other-owner", encoding="utf-8")
+    Path(f"{checkpoint}.lock").write_text("dead-owner", encoding="utf-8")
     requested = []
     module.get_klines = lambda *args, **kwargs: requested.append(True) or []
+    module.rows_to_frame = lambda *args, **kwargs: pd.DataFrame(columns=["timestamp"])
 
     repaired, failures, outcomes = module.repair_series_with_outcomes(
         "btc_usdt", "minute15"
     )
 
     assert (repaired, failures) == (0, 0)
-    assert requested == []
-    assert [outcome.status for outcome in outcomes] == ["checkpoint_invalid"]
+    assert requested == [True]
+    assert [outcome.status for outcome in outcomes] == ["source_unavailable"]
 
 
-def test_checkpoint_lock_is_held_during_network_repair(monkeypatch, tmp_path):
+def test_checkpoint_lock_file_persists_as_non_authoritative_coordination_inode(monkeypatch, tmp_path):
     module = load_module(monkeypatch)
     module.OUTPUT_ROOT = tmp_path
     module.read_existing = lambda path: gapped_frame()
@@ -95,17 +96,17 @@ def test_checkpoint_lock_is_held_during_network_repair(monkeypatch, tmp_path):
     observed = []
 
     def get_klines(*args, **kwargs):
-        observed.append(Path(f"{checkpoint}.lock").exists())
-        return [["unused"]]
+        lock = Path(f"{checkpoint}.lock")
+        observed.append(lock.exists() and lock.read_text(encoding="utf-8").strip().isdigit())
+        return []
 
     module.get_klines = get_klines
-    module.rows_to_frame = lambda *args, **kwargs: recovered_frame()
-    module.save_merged = lambda existing, incoming, path: len(existing) + 1
+    module.rows_to_frame = lambda *args, **kwargs: pd.DataFrame(columns=["timestamp"])
 
     module.repair_series_with_outcomes("btc_usdt", "minute15")
 
     assert observed == [True]
-    assert not Path(f"{checkpoint}.lock").exists()
+    assert Path(f"{checkpoint}.lock").exists()
 
 
 def test_recovered_data_is_saved_before_cursor_commit(monkeypatch, tmp_path):
@@ -153,7 +154,7 @@ def test_data_save_failure_never_advances_cursor(monkeypatch, tmp_path):
         module.repair_series_with_outcomes("btc_usdt", "minute15")
 
     assert cursor_commits == []
-    assert not Path(f"{checkpoint}.lock").exists()
+    assert Path(f"{checkpoint}.lock").exists()
 
 
 def test_bounded_cursor_survives_module_reload_and_rotates_next_gap(monkeypatch, tmp_path):
