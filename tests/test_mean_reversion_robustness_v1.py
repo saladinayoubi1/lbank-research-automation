@@ -5,6 +5,7 @@ import pytest
 
 from mean_reversion_robustness_v1 import (
     MeanReversionRobustnessError,
+    _buy_hold_total_return,
     build_mean_reversion_targets,
     run_mean_reversion_robustness,
 )
@@ -47,6 +48,17 @@ def test_invalid_ohlc_fails_closed():
 def test_invalid_threshold_order_fails_closed():
     with pytest.raises(MeanReversionRobustnessError, match="strictly below"):
         build_mean_reversion_targets(_frame([100.0] * 30), 20, -0.5, -1.0)
+
+
+def test_buy_hold_benchmark_enters_at_first_research_open():
+    frame = _frame([100.0, 110.0, 121.0])
+    benchmark_return = _buy_hold_total_return(
+        frame,
+        initial_cash=10_000.0,
+        fee_bps=0.0,
+        slippage_bps=0.0,
+    )
+    assert benchmark_return == pytest.approx(0.21)
 
 
 def test_robustness_contract_has_cost_stress_benchmark_and_no_auto_promotion():
