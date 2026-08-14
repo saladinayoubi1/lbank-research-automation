@@ -1,3 +1,4 @@
+# gate4-adversarial-probe: harmless candidate-side modification that must be rejected by the trusted-base guard
 name: NEXUS Autopilot Policy
 
 on:
