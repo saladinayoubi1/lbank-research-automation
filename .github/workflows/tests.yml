@@ -2,6 +2,7 @@ name: Test
 
 on:
   pull_request:
+  pull_request_target:
   push:
     branches:
       - main
@@ -11,6 +12,7 @@ permissions:
 
 jobs:
   test:
+    if: github.event_name != 'pull_request_target'
     strategy:
       fail-fast: false
       matrix:
@@ -47,3 +49,80 @@ jobs:
 
       - name: Run tests
         run: python -m pytest -q
+
+  control-plane-bootstrap-guard:
+    name: control-plane trusted guard
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out candidate with history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Reject simultaneous control-plane co-weakening
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          git fetch origin "$BASE_SHA" "$HEAD_SHA" --no-tags
+          mapfile -t changed < <(git diff --name-only "$BASE_SHA...$HEAD_SHA")
+          workflow_or_policy=0
+          validator_or_contract=0
+          protected_tests=0
+          for path in "${changed[@]}"; do
+            case "$path" in
+              .github/workflows/tests.yml|.github/workflows/workflow-permissions-audit.yml|security/workflow-permissions-policy-v1.json|.github/CODEOWNERS)
+                workflow_or_policy=1 ;;
+              nexus_architecture_validator.py|docs/architecture/module-contract-registry.yaml|project_memory_ci_gate.py)
+                validator_or_contract=1 ;;
+              tests/test_nexus_architecture_validator.py|tests/test_workflow_permissions*.py|tests/test_project_memory*.py)
+                protected_tests=1 ;;
+            esac
+          done
+          if (( workflow_or_policy + validator_or_contract + protected_tests >= 2 )); then
+            echo "::error::Trusted control-plane layers must not be changed together in one PR. Split policy/workflow, validator/contract, and protected-test changes so an unchanged layer independently evaluates the next change."
+            printf 'changed: %s\n' "${changed[@]}"
+            exit 1
+          fi
+          echo "Trusted control-plane co-weakening guard: pass"
+
+  control-plane-trusted-guard:
+    name: control-plane trusted guard
+    if: github.event_name == 'pull_request_target'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out trusted base with history
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+      - name: Evaluate candidate diff from trusted base workflow
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          git fetch origin "$HEAD_SHA" --no-tags
+          mapfile -t changed < <(git diff --name-only "$BASE_SHA...$HEAD_SHA")
+          workflow_or_policy=0
+          validator_or_contract=0
+          protected_tests=0
+          for path in "${changed[@]}"; do
+            case "$path" in
+              .github/workflows/tests.yml|.github/workflows/workflow-permissions-audit.yml|security/workflow-permissions-policy-v1.json|.github/CODEOWNERS)
+                workflow_or_policy=1 ;;
+              nexus_architecture_validator.py|docs/architecture/module-contract-registry.yaml|project_memory_ci_gate.py)
+                validator_or_contract=1 ;;
+              tests/test_nexus_architecture_validator.py|tests/test_workflow_permissions*.py|tests/test_project_memory*.py)
+                protected_tests=1 ;;
+            esac
+          done
+          if (( workflow_or_policy + validator_or_contract + protected_tests >= 2 )); then
+            echo "::error::Trusted control-plane layers must not be changed together in one PR. Split policy/workflow, validator/contract, and protected-test changes so an unchanged layer independently evaluates the next change."
+            printf 'changed: %s\n' "${changed[@]}"
+            exit 1
+          fi
+          echo "Trusted control-plane co-weakening guard: pass"
