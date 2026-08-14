@@ -71,12 +71,19 @@ def run_once() -> bool:
         return False
     index, task = selected
     name = str(task['task'])
-    if name == 'deepseek-smoke' and not os.environ.get('DEEPSEEK_API_KEY'):
-        queue[index]['status'] = 'blocked'
-        queue[index]['block_reason'] = 'DEEPSEEK_API_KEY_missing_on_runner'
-        save_queue(queue)
-        write_heartbeat(state='blocked', task=name, task_id=task.get('id'))
-        return True
+    if name == 'deepseek-smoke':
+        if os.environ.get('NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED') != '1':
+            queue[index]['status'] = 'blocked'
+            queue[index]['block_reason'] = 'NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED_not_1'
+            save_queue(queue)
+            write_heartbeat(state='blocked', task=name, task_id=task.get('id'))
+            return True
+        if not os.environ.get('DEEPSEEK_API_KEY'):
+            queue[index]['status'] = 'blocked'
+            queue[index]['block_reason'] = 'DEEPSEEK_API_KEY_missing_on_runner'
+            save_queue(queue)
+            write_heartbeat(state='blocked', task=name, task_id=task.get('id'))
+            return True
     queue[index]['status'] = 'running'
     queue[index]['started_at'] = time.time()
     save_queue(queue)
