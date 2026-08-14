@@ -12,93 +12,60 @@ permissions:
 
 jobs:
   test:
-    if: github.event_name != 'pull_request_target'
+    name: ${{ matrix.check_name }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include: ${{ fromJSON(github.event_name == 'pull_request_target' && '[{"os":"ubuntu-latest","check_name":"control-plane trusted guard","mode":"guard"}]' || github.event_name == 'pull_request' && '[{"os":"ubuntu-latest","check_name":"test (ubuntu-latest)","mode":"test"},{"os":"windows-latest","check_name":"test (windows-latest)","mode":"test"},{"os":"macos-latest","check_name":"test (macos-latest)","mode":"test"},{"os":"ubuntu-latest","check_name":"control-plane trusted guard","mode":"guard"}]' || '[{"os":"ubuntu-latest","check_name":"test (ubuntu-latest)","mode":"test"},{"os":"windows-latest","check_name":"test (windows-latest)","mode":"test"},{"os":"macos-latest","check_name":"test (macos-latest)","mode":"test"}]') }}
     runs-on: ${{ matrix.os }}
 
     steps:
       - name: Check out repository
+        if: matrix.mode == 'test'
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      - name: Check out trusted PR base
+        if: matrix.mode == 'guard'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+
       - name: Set up Python
+        if: matrix.mode == 'test'
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
 
       - name: Install locked test dependencies
+        if: matrix.mode == 'test'
         run: python -m pip install -r requirements-dev.lock
 
       - name: Check dependency consistency
+        if: matrix.mode == 'test'
         run: python -m pip check
 
       - name: Compile Python sources
+        if: matrix.mode == 'test'
         run: python -m compileall -q .
 
       - name: Validate NEXUS architecture contracts
+        if: matrix.mode == 'test'
         run: python nexus_architecture_validator.py docs/architecture/module-contract-registry.yaml
 
       - name: Bind Project Memory validation to PR base SHA
-        if: github.event_name == 'pull_request'
+        if: matrix.mode == 'test' && github.event_name == 'pull_request'
         run: python project_memory_ci_gate.py --base-sha ${{ github.event.pull_request.base.sha }} --head-sha ${{ github.event.pull_request.head.sha }}
 
       - name: Run tests
+        if: matrix.mode == 'test'
         run: python -m pytest -q
 
-  control-plane-bootstrap-guard:
-    name: control-plane trusted guard
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out candidate with history
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Reject simultaneous control-plane co-weakening
-        shell: bash
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          set -euo pipefail
-          git fetch origin "$BASE_SHA" "$HEAD_SHA" --no-tags
-          mapfile -t changed < <(git diff --name-only "$BASE_SHA...$HEAD_SHA")
-          workflow_or_policy=0
-          validator_or_contract=0
-          protected_tests=0
-          for path in "${changed[@]}"; do
-            case "$path" in
-              .github/workflows/tests.yml|.github/workflows/workflow-permissions-audit.yml|security/workflow-permissions-policy-v1.json|.github/CODEOWNERS)
-                workflow_or_policy=1 ;;
-              nexus_architecture_validator.py|docs/architecture/module-contract-registry.yaml|project_memory_ci_gate.py)
-                validator_or_contract=1 ;;
-              tests/test_nexus_architecture_validator.py|tests/test_workflow_permissions*.py|tests/test_project_memory*.py)
-                protected_tests=1 ;;
-            esac
-          done
-          if (( workflow_or_policy + validator_or_contract + protected_tests >= 2 )); then
-            echo "::error::Trusted control-plane layers must not be changed together in one PR. Split policy/workflow, validator/contract, and protected-test changes so an unchanged layer independently evaluates the next change."
-            printf 'changed: %s\n' "${changed[@]}"
-            exit 1
-          fi
-          echo "Trusted control-plane co-weakening guard: pass"
-
-  control-plane-trusted-guard:
-    name: control-plane trusted guard
-    if: github.event_name == 'pull_request_target'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out trusted base with history
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.base.sha }}
-          fetch-depth: 0
-      - name: Evaluate candidate diff from trusted base workflow
+      - name: Reject simultaneous control-plane co-weakening from trusted base
+        if: matrix.mode == 'guard'
         shell: bash
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
@@ -121,7 +88,7 @@ jobs:
             esac
           done
           if (( workflow_or_policy + validator_or_contract + protected_tests >= 2 )); then
-            echo "::error::Trusted control-plane layers must not be changed together in one PR. Split policy/workflow, validator/contract, and protected-test changes so an unchanged layer independently evaluates the next change."
+            echo "::error::Trusted control-plane layers must not be changed together in one PR. Split workflow/policy, validator/contract, and protected-test changes so an unchanged trusted layer independently evaluates the next change."
             printf 'changed: %s\n' "${changed[@]}"
             exit 1
           fi
