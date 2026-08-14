@@ -39,3 +39,10 @@ def test_autonomous_windows_paths_disable_paid_smoke_during_stabilization() -> N
     for name in ("nexus-local-runner.yml", "nexus_local_autonomy.yml", "nexus-continuous-phase3.yml"):
         workflow = text(ROOT / ".github" / "workflows" / name)
         assert "NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: '0'" in workflow, name
+
+
+def test_candidate_validation_state_survives_workflow_reruns() -> None:
+    runtime_worker = text(ROOT / ".github" / "workflows" / "nexus-runtime-worker.yml")
+    assert "NEXUS_STATE_DIR=%RUNNER_WORKSPACE%\\_nexus_phase3_candidate_state" in runtime_worker
+    assert "NEXUS_STATE_DIR=%RUNNER_TEMP%" not in runtime_worker
+    assert "candidate-state-%GITHUB_RUN_ID%" not in runtime_worker
