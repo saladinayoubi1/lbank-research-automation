@@ -8,6 +8,7 @@ from __future__ import annotations
 import pandas as pd
 
 from backtest_engine import BacktestConfig, BacktestResult, run_target_exposure_backtest
+from performance_metrics import calculate_performance_metrics
 
 FAST_SPAN = 20
 SLOW_SPAN = 50
@@ -46,8 +47,14 @@ def run_ema_trend_backtest(
         max_abs_exposure=1.0,
         liquidate_at_end=True,
     )
-    return run_target_exposure_backtest(
+    base = run_target_exposure_backtest(
         market_frame,
         target_exposures(market_frame),
         config,
+    )
+    research_metrics = calculate_performance_metrics(base.equity_curve)
+    return BacktestResult(
+        equity_curve=base.equity_curve,
+        fills=base.fills,
+        metrics={**base.metrics, **research_metrics},
     )
