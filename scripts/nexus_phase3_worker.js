@@ -41,7 +41,8 @@ function cycle() {
 
   status.resources.aiCouncil = run(process.execPath, [path.join('scripts', 'test_nexus_ai_council.js')]);
 
-  if (process.env.DEEPSEEK_API_KEY) {
+  const paidRoutingAllowed = process.env.NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED === '1';
+  if (paidRoutingAllowed && process.env.DEEPSEEK_API_KEY) {
     status.resources.deepseek = run(process.env.PYTHON || 'python', [path.join('scripts', 'deepseek_smoke.py')], {
       env: { ...process.env, PYTHONPATH: ROOT },
     });
@@ -49,7 +50,9 @@ function cycle() {
     status.resources.deepseek = {
       ok: false,
       skipped: true,
-      reason: 'DEEPSEEK_API_KEY missing from runtime environment',
+      reason: paidRoutingAllowed
+        ? 'DEEPSEEK_API_KEY missing from runtime environment'
+        : 'NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED is not 1',
     };
   }
 
