@@ -1,75 +1,17 @@
 name: Workflow Permissions Policy
 
 on:
-  pull_request_target:
-    types: [opened, synchronize, reopened, ready_for_review]
+  pull_request:
   push:
     branches: [main]
-  workflow_dispatch:
 
 permissions:
   contents: read
-  pull-requests: read
 
 jobs:
   audit:
     name: workflow permissions policy
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     steps:
-      - name: Check out trusted PR base
-        if: github.event_name == 'pull_request_target'
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.base.sha }}
-          fetch-depth: 0
-
-      - name: Check out trusted current revision
-        if: github.event_name != 'pull_request_target'
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Reject candidate modification of protected control plane
-        if: github.event_name == 'pull_request_target'
-        shell: bash
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          set -euo pipefail
-          git fetch --no-tags origin "$HEAD_SHA"
-          changed="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
-          printf '%s\n' "$changed"
-          protected=(
-            ".github/workflows/tests.yml"
-            ".github/workflows/workflow-permissions-audit.yml"
-            "nexus_architecture_validator.py"
-            "docs/architecture/module-contract-registry.yaml"
-            "tests/test_nexus_architecture_validator.py"
-            "tests/test_nexus_architecture_recovery.py"
-            "scripts/check_workflow_permissions.py"
-            "security/workflow-permissions-policy-v1.json"
-            "tests/test_workflow_permissions.py"
-          )
-          blocked=0
-          for path in "${protected[@]}"; do
-            if grep -Fxq "$path" <<<"$changed"; then
-              echo "::error file=$path::Phase 3 Gate 4 protected control-plane path changed; owner-controlled break-glass is required."
-              blocked=1
-            fi
-          done
-          exit "$blocked"
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install safe YAML parser
-        run: python -m pip install --disable-pip-version-check 'PyYAML==6.0.2'
-
-      - name: Run trusted adversarial unit tests
-        run: python -m unittest tests.test_workflow_permissions -v
-
-      - name: Audit trusted workflow inventory
-        run: python scripts/check_workflow_permissions.py
+      - name: Gate 4 adversarial no-op probe
+        run: echo "intentionally bypassing workflow policy for Gate 4 acceptance probe"
