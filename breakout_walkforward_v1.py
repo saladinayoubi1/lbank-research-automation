@@ -120,8 +120,13 @@ def _warm_test_targets(
 
 
 def _benchmark_targets(length: int, test_start_offset: int) -> pd.Series:
+    """Enter Buy & Hold at the first OOS open under next-bar-open execution."""
+    if length < 2 or test_start_offset <= 0 or test_start_offset >= length:
+        raise BreakoutWalkForwardError("benchmark test boundary is outside the context")
     targets = pd.Series(0.0, index=range(length), dtype="float64")
-    targets.iloc[test_start_offset:] = 1.0
+    # The engine executes target[t] at open[t+1]. Emit the benchmark target on
+    # the final warmup bar so its first fill is exactly the first OOS bar open.
+    targets.iloc[test_start_offset - 1 :] = 1.0
     return targets
 
 
