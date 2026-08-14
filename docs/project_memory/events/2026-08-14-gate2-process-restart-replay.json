@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "event_id": "2026-08-14-gate2-process-restart-replay",
+  "event_type": "gate2_recovery_evidence",
+  "observed_main_sha": "42237e4c9f0cba1bec7e31817d30b151ff258ee1",
+  "facts": [
+    "Gate 2 requires a true cross-process restart replay over one fixed durable gap-repair checkpoint.",
+    "This branch adds a deterministic subprocess acceptance test that executes gap_repair in two distinct Python processes against the same state directory and fixed gap set.",
+    "The first process is expected to attempt the first bounded gap and persist cursor 1; the second fresh process is expected to resume at the second gap and wrap the cursor to 0."
+  ],
+  "decisions": [
+    "Treat module reload as insufficient evidence for process-restart recovery; require distinct OS process IDs.",
+    "Keep Gate 2 fail-closed unless exact-head CI proves this replay and the remaining #230 ownership/crash/bypass criteria are satisfied."
+  ],
+  "production_authorized": false,
+  "live_trading_authorized": false,
+  "secrets_included": false
+}
