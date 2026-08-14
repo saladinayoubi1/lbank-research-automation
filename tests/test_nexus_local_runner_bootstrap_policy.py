@@ -2,13 +2,16 @@ from pathlib import Path
 
 
 WORKFLOW = Path('.github/workflows/nexus-local-runner.yml')
+BOOTSTRAP = Path('scripts/bootstrap_portable_python.cmd')
 EXPECTED_PYTHON_SHA256 = '4acbed6dd1c744b0376e3b1cf57ce906f9dc9e95e68824584c8099a63025a3c3'
 EXPECTED_PIP_SHA256 = '382ff9f685ee3bc25864f820aa50505825f10f5458ffff07e30a6d96e5715cab'
 EXPECTED_PIP_WHEEL = 'pip-26.1.2-py3-none-any.whl'
 
 
 def _text() -> str:
-    return WORKFLOW.read_text(encoding='utf-8')
+    workflow = WORKFLOW.read_text(encoding='utf-8')
+    assert 'call scripts\\bootstrap_portable_python.cmd' in workflow
+    return BOOTSTRAP.read_text(encoding='utf-8')
 
 
 def test_portable_python_archive_is_sha256_pinned_and_verified_before_extract():

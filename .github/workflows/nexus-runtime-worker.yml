@@ -8,6 +8,9 @@ on:
     paths:
       - 'scripts/nexus_runtime_worker.js'
       - 'scripts/nexus_orchestrator.js'
+      - 'scripts/bootstrap_portable_python.cmd'
+      - 'tests/test_phase3_windows_runtime_contract.py'
+      - 'tests/test_nexus_local_runner_bootstrap_policy.py'
       - 'config/nexus-mission-queue.json'
       - '.github/workflows/nexus-runtime-worker.yml'
 
@@ -16,7 +19,7 @@ permissions:
 
 concurrency:
   group: nexus-runtime-worker
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   preflight:
@@ -37,6 +40,32 @@ jobs:
           NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: '0'
         run: node scripts/nexus_runtime_worker.js --once
 
+  windows-candidate-validation:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor == github.repository_owner
+    needs: preflight
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 12
+    env:
+      NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: '0'
+      NEXUS_DEEPSEEK_SMOKE: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Bootstrap portable Python
+        shell: cmd
+        run: call scripts\bootstrap_portable_python.cmd
+      - name: Verify Windows candidate runtime
+        shell: cmd
+        run: |
+          node --version
+          python --version
+          node scripts\nexus_orchestrator.js
+          node scripts\nexus_ai_council.js
+          node scripts\nexus_runtime_worker.js --once
+          python -m pytest -q tests\test_phase3_windows_runtime_contract.py tests\test_nexus_local_runner_bootstrap_policy.py
+
   laptop-worker:
     if: github.event_name != 'pull_request'
     needs: preflight
@@ -45,17 +74,19 @@ jobs:
     env:
       DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
       NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: ${{ vars.NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED }}
-      NEXUS_DEEPSEEK_SMOKE: '1'
+      NEXUS_DEEPSEEK_SMOKE: '0'
       RUNNER_ENVIRONMENT: self-hosted-windows
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
       - name: Verify runtime prerequisites
-        shell: powershell
+        shell: cmd
         run: |
           node --version
-          python --version
-          node scripts/nexus_orchestrator.js
-          node scripts/nexus_ai_council.js
+          node scripts\nexus_orchestrator.js
+          node scripts\nexus_ai_council.js
       - name: Start continuous NEXUS worker
-        shell: powershell
-        run: node scripts/nexus_runtime_worker.js --interval-ms=20000
+        shell: cmd
+        run: node scripts\nexus_runtime_worker.js --interval-ms=20000
