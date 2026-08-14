@@ -59,6 +59,21 @@ def _reject_symlink(path: Path, *, label: str) -> None:
             raise CheckpointError(f"{label} path substitution is not allowed")
 
 
+def _canonical_path(path: Path, *, label: str) -> Path:
+    """Return one canonical lexical/real path after rejecting symlink substitution.
+
+    Every checkpoint, marker and lock operation is derived from this canonical path,
+    so relative paths, ``..`` aliases and platform case-normalization cannot create
+    separate ownership/checkpoint identities for the same filesystem location.
+    """
+    _reject_symlink(path, label=label)
+    expanded = os.path.expanduser(os.fspath(path))
+    absolute = os.path.abspath(expanded)
+    real = os.path.realpath(absolute)
+    normalized = os.path.normcase(os.path.normpath(real))
+    return Path(normalized)
+
+
 def _fsync_parent_directory(path: Path) -> None:
     if os.name == "nt":
         return
@@ -105,8 +120,8 @@ def checkpoint_lock(path: Path) -> Iterator[None]:
     a process exits, including abnormal termination, so stale metadata cannot create
     an orphan-lock deadlock. The file itself is never used as proof of ownership.
     """
-    lock = lock_path(path)
-    _reject_symlink(path, label="checkpoint")
+    checkpoint = _canonical_path(path, label="checkpoint")
+    lock = lock_path(checkpoint)
     _reject_symlink(lock, label="checkpoint lock")
     lock.parent.mkdir(parents=True, exist_ok=True)
 
@@ -135,8 +150,8 @@ def checkpoint_lock(path: Path) -> Iterator[None]:
 
 
 def write_checkpoint(path: Path, checkpoint: GapRepairCheckpoint) -> None:
+    path = _canonical_path(path, label="checkpoint")
     marker = initialized_marker(path)
-    _reject_symlink(path, label="checkpoint")
     _reject_symlink(marker, label="checkpoint marker")
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.tmp")
@@ -164,8 +179,8 @@ def write_checkpoint(path: Path, checkpoint: GapRepairCheckpoint) -> None:
 
 
 def read_checkpoint(path: Path, *, symbol: str, timeframe: str, gap_starts: Iterable[str]) -> GapRepairCheckpoint:
+    path = _canonical_path(path, label="checkpoint")
     marker = initialized_marker(path)
-    _reject_symlink(path, label="checkpoint")
     _reject_symlink(marker, label="checkpoint marker")
     if not path.exists() and marker.exists():
         raise CheckpointError("checkpoint missing after prior initialization")
