@@ -14,6 +14,7 @@ on:
       - 'scripts/nexus_ai_council.js'
       - 'scripts/nexus_brain_core.js'
       - 'scripts/deepseek_smoke.py'
+      - 'scripts/bootstrap_portable_python.cmd'
       - '.github/workflows/nexus_local_autonomy.yml'
 
 permissions:
@@ -31,15 +32,16 @@ jobs:
       NEXUS_WORKER_MAX_SECONDS: '240'
       NEXUS_WORKER_IDLE_SLEEP: '15'
       DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+      NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: '0'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
+      - name: Bootstrap portable Python
+        shell: cmd
+        run: call scripts\bootstrap_portable_python.cmd
 
       - name: Runner identity
         shell: cmd
