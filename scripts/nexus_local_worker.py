@@ -1,8 +1,8 @@
 """Bounded persistent worker for the NEXUS self-hosted runner.
 
-The worker repeatedly executes only repository-defined, allow-listed local tasks.
-It never accepts arbitrary shell commands and never performs live-trading,
-production, signing, billing or credential-management actions.
+Mutable runtime state is kept outside the repository checkout when NEXUS_STATE_DIR is
+set. The tracked .nexus queue is only an initial seed, so actions/checkout clean/reset
+cannot silently rewind completed/running tasks between scheduled jobs.
 """
 from __future__ import annotations
 
@@ -13,8 +13,11 @@ import subprocess
 import sys
 import time
 
-QUEUE = pathlib.Path('.nexus/autonomous-queue.json')
-HEARTBEAT = pathlib.Path('build/autonomy/worker-heartbeat.json')
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+SEED_QUEUE = ROOT / '.nexus' / 'autonomous-queue.json'
+STATE_DIR = pathlib.Path(os.environ.get('NEXUS_STATE_DIR', str(ROOT / '.nexus'))).resolve()
+QUEUE = STATE_DIR / 'autonomous-queue.json'
+HEARTBEAT = STATE_DIR / 'worker-heartbeat.json'
 
 COMMANDS = {
     'health': [sys.executable, '-m', 'pytest', '-q', 'tests/test_nexus_architecture_validator.py', 'tests/test_web_dashboard.py'],
@@ -27,13 +30,21 @@ COMMANDS = {
 }
 
 
-def load_queue() -> list[dict]:
-    if not QUEUE.exists():
-        return []
-    data = json.loads(QUEUE.read_text(encoding='utf-8'))
+def _read_queue(path: pathlib.Path) -> list[dict]:
+    data = json.loads(path.read_text(encoding='utf-8'))
     if not isinstance(data, list):
         raise RuntimeError('autonomous queue must be a list')
     return data
+
+
+def load_queue() -> list[dict]:
+    if QUEUE.exists():
+        return _read_queue(QUEUE)
+    if not SEED_QUEUE.exists():
+        return []
+    queue = _read_queue(SEED_QUEUE)
+    save_queue(queue)
+    return queue
 
 
 def save_queue(queue: list[dict]) -> None:
@@ -45,8 +56,10 @@ def save_queue(queue: list[dict]) -> None:
 
 def write_heartbeat(**extra: object) -> None:
     HEARTBEAT.parent.mkdir(parents=True, exist_ok=True)
-    payload = {'pid': os.getpid(), 'time': time.time(), **extra}
-    HEARTBEAT.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding='utf-8')
+    payload = {'pid': os.getpid(), 'time': time.time(), 'queue_path': str(QUEUE), **extra}
+    tmp = HEARTBEAT.with_suffix('.json.tmp')
+    tmp.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding='utf-8')
+    tmp.replace(HEARTBEAT)
 
 
 def next_task(queue: list[dict]) -> tuple[int, dict] | None:
@@ -81,7 +94,7 @@ def run_once() -> bool:
     queue[index]['started_at'] = time.time()
     save_queue(queue)
     write_heartbeat(state='running', task=name, task_id=task.get('id'))
-    result = subprocess.run(COMMANDS[name], check=False)
+    result = subprocess.run(COMMANDS[name], check=False, cwd=ROOT)
     queue = load_queue()
     if index >= len(queue):
         raise RuntimeError('queue changed incompatibly during task execution')
