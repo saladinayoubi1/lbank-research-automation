@@ -122,6 +122,67 @@ def _backtest(
     return cleaned
 
 
+def _buy_hold_total_return(
+    market_frame: pd.DataFrame,
+    *,
+    initial_cash: float,
+    fee_bps: float,
+    slippage_bps: float,
+) -> float:
+    """Benchmark from the first market open through the final market close.
+
+    The shared engine intentionally executes target[t] at open[t+1], so applying a
+    constant long target directly to the research frame would enter one bar late.
+    Use a two-row execution frame with a synthetic signal row so the actual fill is
+    exactly the first research open while liquidation still occurs at the final close.
+    """
+    if len(market_frame) < 2:
+        raise MeanReversionRobustnessError("Buy & Hold benchmark needs at least two bars")
+    required = {"timestamp", "open", "close"}
+    missing = sorted(required - set(market_frame.columns))
+    if missing:
+        raise MeanReversionRobustnessError(
+            f"Buy & Hold benchmark is missing columns: {missing}"
+        )
+
+    first_timestamp = pd.to_datetime(market_frame.iloc[0]["timestamp"], utc=True)
+    last_timestamp = pd.to_datetime(market_frame.iloc[-1]["timestamp"], utc=True)
+    if last_timestamp <= first_timestamp:
+        raise MeanReversionRobustnessError("Buy & Hold benchmark timestamps are invalid")
+
+    first_open = float(pd.to_numeric(market_frame.iloc[0]["open"], errors="raise"))
+    last_close = float(pd.to_numeric(market_frame.iloc[-1]["close"], errors="raise"))
+    if not all(isfinite(value) and value > 0.0 for value in (first_open, last_close)):
+        raise MeanReversionRobustnessError("Buy & Hold benchmark prices are invalid")
+
+    low = min(first_open, last_close)
+    high = max(first_open, last_close)
+    execution_frame = pd.DataFrame(
+        {
+            "timestamp": [first_timestamp - pd.Timedelta(nanoseconds=1), last_timestamp],
+            "open": [first_open, first_open],
+            "high": [first_open, high],
+            "low": [first_open, low],
+            "close": [first_open, last_close],
+        }
+    )
+    benchmark = run_target_exposure_backtest(
+        execution_frame,
+        pd.Series([1.0, 1.0], dtype="float64"),
+        BacktestConfig(
+            initial_cash=initial_cash,
+            fee_bps=fee_bps,
+            slippage_bps=slippage_bps,
+            max_abs_exposure=1.0,
+            liquidate_at_end=True,
+        ),
+    )
+    total_return = float(benchmark.metrics["total_return"])
+    if not isfinite(total_return):
+        raise MeanReversionRobustnessError("Buy & Hold benchmark became non-finite")
+    return total_return
+
+
 def run_mean_reversion_robustness(
     market_frame: pd.DataFrame,
     *,
@@ -136,14 +197,12 @@ def run_mean_reversion_robustness(
     for profile_id, profile in EXECUTION_PROFILES.items():
         fee_bps = float(profile["fee_bps"])
         slippage_bps = float(profile["slippage_bps"])
-        benchmark = _backtest(
+        benchmark_return = _buy_hold_total_return(
             market_frame,
-            pd.Series(1.0, index=market_frame.index, dtype="float64"),
             initial_cash=initial_cash,
             fee_bps=fee_bps,
             slippage_bps=slippage_bps,
         )
-        benchmark_return = float(benchmark["metric_total_return"])
 
         profile_runs: list[dict[str, object]] = []
         for lookback, entry_z, exit_z in PARAMETER_GRID:
