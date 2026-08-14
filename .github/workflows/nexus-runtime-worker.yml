@@ -62,7 +62,9 @@ jobs:
         run: call scripts\bootstrap_portable_python.cmd
       - name: Initialize candidate state path
         shell: cmd
-        run: echo NEXUS_STATE_DIR=%RUNNER_TEMP%\nexus-phase3-candidate-state-%GITHUB_RUN_ID%>>%GITHUB_ENV%
+        run: |
+          set "NEXUS_CANDIDATE_KEY=%GITHUB_HEAD_REF:/=-%"
+          echo NEXUS_STATE_DIR=%RUNNER_WORKSPACE%\_nexus_phase3_candidate_state\%NEXUS_CANDIDATE_KEY%>>%GITHUB_ENV%
       - name: Verify Windows candidate runtime
         shell: cmd
         run: |
