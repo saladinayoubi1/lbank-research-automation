@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from statistics import median
 from typing import Iterable
 
@@ -29,20 +29,52 @@ class ActivityResult:
     median_gap_days: float | None
 
 
+def _as_utc(value: datetime, *, name: str) -> datetime:
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError(f"{name} must be timezone-aware")
+    return value.astimezone(timezone.utc)
+
+
+def _calendar_month_count(window_start: datetime, window_end: datetime) -> int:
+    """Count UTC calendar months touched by the half-open evaluation window."""
+
+    last_included = window_end - timedelta(microseconds=1)
+    return (
+        (last_included.year - window_start.year) * 12
+        + (last_included.month - window_start.month)
+        + 1
+    )
+
+
 def evaluate_activity(
     entry_times: Iterable[datetime],
     *,
-    evaluation_days: float,
-    total_calendar_months: int,
+    window_start: datetime,
+    window_end: datetime,
     policy: ActivityPolicy = ActivityPolicy(),
 ) -> ActivityResult:
-    times = sorted(entry_times)
-    if evaluation_days <= 0:
-        raise ValueError("evaluation_days must be > 0")
-    if total_calendar_months <= 0:
-        raise ValueError("total_calendar_months must be > 0")
-    if any(t.tzinfo is None for t in times):
-        raise ValueError("entry_times must be timezone-aware")
+    """Evaluate strategy activity inside one explicit OOS interval.
+
+    Window semantics are half-open: ``[window_start, window_end)``.  Inputs are
+    normalized to UTC before duplicate, boundary, month-coverage, and gap checks
+    so equivalent instants expressed with different offsets cannot be counted as
+    separate trades.
+    """
+
+    start = _as_utc(window_start, name="window_start")
+    end = _as_utc(window_end, name="window_end")
+    if end <= start:
+        raise ValueError("window_end must be after window_start")
+
+    times = [_as_utc(t, name="entry_times") for t in entry_times]
+    if len(set(times)) != len(times):
+        raise ValueError("entry_times must not contain duplicate timestamps")
+    if any(t < start or t >= end for t in times):
+        raise ValueError("entry_times must fall within [window_start, window_end)")
+
+    times.sort()
+    evaluation_days = (end - start).total_seconds() / 86_400.0
+    total_calendar_months = _calendar_month_count(start, end)
 
     trade_count = len(times)
     trades_per_30d = trade_count * 30.0 / evaluation_days
