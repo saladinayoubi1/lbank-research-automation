@@ -1,17 +1,22 @@
 """Bounded autonomous orchestrator for NEXUS.
 
 Turns repository-maintained tasks into deterministic, repository-controlled execution
-plans. External AI providers are intentionally excluded from autonomous planning so
-scheduled runs cannot consume credentials or incur provider billing.
+plans. Mutable queue/state live in NEXUS_STATE_DIR when configured; tracked repository
+files are only source/seed evidence and are never treated as durable runtime state.
+External AI providers are intentionally excluded from autonomous planning.
 """
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Any
 
-QUEUE = Path(".nexus/autonomous-queue.json")
-STATE = Path("build/autonomy/state.json")
+ROOT = Path(__file__).resolve().parent
+SEED_QUEUE = ROOT / ".nexus" / "autonomous-queue.json"
+STATE_DIR = Path(os.environ.get("NEXUS_STATE_DIR", str(ROOT / ".nexus"))).resolve()
+QUEUE = STATE_DIR / "autonomous-queue.json"
+STATE = STATE_DIR / "state.json"
 ALLOWED_TASKS = {"health", "tests", "readiness", "zotero-status"}
 PROTECTED_TERMS = {
     "production", "deploy", "live trading", "live-trading", "billing", "secret",
@@ -31,6 +36,19 @@ def save_json(path: Path, data: Any) -> None:
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(json.dumps(data, indent=2, sort_keys=True), encoding="utf-8")
     tmp.replace(path)
+
+
+def load_queue() -> list[dict[str, Any]]:
+    if QUEUE.exists():
+        queue = load_json(QUEUE, [])
+    elif SEED_QUEUE.exists():
+        queue = load_json(SEED_QUEUE, [])
+        save_json(QUEUE, queue)
+    else:
+        queue = []
+    if not isinstance(queue, list):
+        raise SystemExit("invalid autonomous queue")
+    return queue
 
 
 def validate_task(task: dict[str, Any]) -> tuple[bool, str]:
@@ -56,10 +74,10 @@ def choose_next(queue: list[dict[str, Any]]) -> dict[str, Any] | None:
 
 
 def main() -> None:
-    queue = load_json(QUEUE, [])
-    if not isinstance(queue, list):
-        raise SystemExit("invalid autonomous queue")
+    queue = load_queue()
     state = load_json(STATE, {"completed": [], "failed": [], "blocked": []})
+    if not isinstance(state, dict):
+        raise SystemExit("invalid autonomous state")
     task = choose_next(queue)
     if task is None:
         state.pop("next_task", None)
@@ -67,16 +85,15 @@ def main() -> None:
         state.pop("next_source", None)
         save_json(QUEUE, queue)
         save_json(STATE, state)
-        print(json.dumps({"ok": True, "action": "none", "reason": "no_safe_task"}, sort_keys=True))
+        print(json.dumps({"ok": True, "action": "none", "reason": "no_safe_task", "queue_path": str(QUEUE)}, sort_keys=True))
         return
-    # The workflow maps this validated symbolic task to a fixed command. No arbitrary shell is accepted.
     state["next_task"] = task["task"]
     state["next_reason"] = task.get("reason", "")
     state["next_source"] = "queue"
     save_json(QUEUE, queue)
     save_json(STATE, state)
     print("NEXUS_NEXT_TASK=" + task["task"])
-    print(json.dumps({"ok": True, "task": task["task"], "source": "queue"}, sort_keys=True))
+    print(json.dumps({"ok": True, "task": task["task"], "source": "queue", "queue_path": str(QUEUE)}, sort_keys=True))
 
 
 if __name__ == "__main__":
