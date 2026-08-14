@@ -43,15 +43,21 @@ jobs:
         shell: cmd
         run: call scripts\bootstrap_portable_python.cmd
 
+      - name: Initialize durable state path
+        shell: cmd
+        run: echo NEXUS_STATE_DIR=%RUNNER_WORKSPACE%\nexus-phase3-state>>%GITHUB_ENV%
+
       - name: Runner identity
         shell: cmd
         run: |
           if not exist build\autonomy mkdir build\autonomy
-          python -c "import json,os,time,pathlib; pathlib.Path('build/autonomy').mkdir(parents=True,exist_ok=True); p={'runner':os.getenv('RUNNER_NAME'),'os':os.getenv('RUNNER_OS'),'arch':os.getenv('RUNNER_ARCH'),'timestamp':int(time.time())}; pathlib.Path('build/autonomy/runner-identity.json').write_text(json.dumps(p,indent=2),encoding='utf-8'); print(json.dumps(p))"
+          python -c "import json,os,time,pathlib; pathlib.Path('build/autonomy').mkdir(parents=True,exist_ok=True); p={'runner':os.getenv('RUNNER_NAME'),'os':os.getenv('RUNNER_OS'),'arch':os.getenv('RUNNER_ARCH'),'state_dir':os.getenv('NEXUS_STATE_DIR'),'timestamp':int(time.time())}; pathlib.Path('build/autonomy/runner-identity.json').write_text(json.dumps(p,indent=2),encoding='utf-8'); print(json.dumps(p))"
 
       - name: Validate orchestrator and agent policy
         shell: cmd
         run: |
+          python nexus_autonomous_orchestrator.py > build\autonomy\autonomous-orchestrator-state.txt
+          type build\autonomy\autonomous-orchestrator-state.txt
           node scripts\nexus_orchestrator.js > build\autonomy\orchestrator-state.json
           type build\autonomy\orchestrator-state.json
           node scripts\nexus_ai_council.js
@@ -65,17 +71,24 @@ jobs:
         if: always()
         shell: cmd
         run: |
-          if exist build\autonomy\worker-heartbeat.json type build\autonomy\worker-heartbeat.json
-          if exist .nexus\autonomous-queue.json type .nexus\autonomous-queue.json
+          if exist "%NEXUS_STATE_DIR%\worker-heartbeat.json" type "%NEXUS_STATE_DIR%\worker-heartbeat.json"
+          if exist "%NEXUS_STATE_DIR%\autonomous-queue.json" type "%NEXUS_STATE_DIR%\autonomous-queue.json"
+
+      - name: Copy durable state evidence into artifact staging
+        if: always()
+        shell: cmd
+        run: |
+          if not exist build\autonomy\durable-state mkdir build\autonomy\durable-state
+          if exist "%NEXUS_STATE_DIR%\worker-heartbeat.json" copy /Y "%NEXUS_STATE_DIR%\worker-heartbeat.json" build\autonomy\durable-state\worker-heartbeat.json
+          if exist "%NEXUS_STATE_DIR%\autonomous-queue.json" copy /Y "%NEXUS_STATE_DIR%\autonomous-queue.json" build\autonomy\durable-state\autonomous-queue.json
+          if exist "%NEXUS_STATE_DIR%\state.json" copy /Y "%NEXUS_STATE_DIR%\state.json" build\autonomy\durable-state\state.json
 
       - name: Upload autonomy evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: nexus-local-autonomy-${{ github.run_id }}
-          path: |
-            build/autonomy/**
-            .nexus/autonomous-queue.json
+          path: build/autonomy/**
           if-no-files-found: warn
           include-hidden-files: true
           retention-days: 7

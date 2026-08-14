@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import json
+
+import pytest
+
 import nexus_autonomous_orchestrator as orchestrator
 
 
@@ -42,3 +46,45 @@ def test_choose_next_blocks_unsafe_then_selects_safe() -> None:
     assert chosen is queue[1]
     assert queue[0]["status"] == "blocked"
     assert queue[0]["block_reason"] == "task_not_allowlisted"
+
+
+def test_durable_queue_wins_over_reset_repository_seed(tmp_path, monkeypatch) -> None:
+    seed = tmp_path / "checkout" / ".nexus" / "autonomous-queue.json"
+    durable = tmp_path / "runner-state" / "autonomous-queue.json"
+    seed.parent.mkdir(parents=True)
+    durable.parent.mkdir(parents=True)
+    seed.write_text(json.dumps([{"task": "health", "status": "pending"}]), encoding="utf-8")
+    durable.write_text(json.dumps([{"task": "health", "status": "completed"}]), encoding="utf-8")
+    monkeypatch.setattr(orchestrator, "SEED_QUEUE", seed)
+    monkeypatch.setattr(orchestrator, "QUEUE", durable)
+
+    # A clean checkout can rewind the tracked seed, but cannot rewind runner-local state.
+    seed.write_text(json.dumps([{"task": "health", "status": "pending"}]), encoding="utf-8")
+    assert orchestrator.load_queue()[0]["status"] == "completed"
+
+
+def test_first_run_seeds_external_state_once(tmp_path, monkeypatch) -> None:
+    seed = tmp_path / "checkout" / ".nexus" / "autonomous-queue.json"
+    durable = tmp_path / "runner-state" / "autonomous-queue.json"
+    seed.parent.mkdir(parents=True)
+    seed.write_text(json.dumps([{"task": "tests", "status": "pending"}]), encoding="utf-8")
+    monkeypatch.setattr(orchestrator, "SEED_QUEUE", seed)
+    monkeypatch.setattr(orchestrator, "QUEUE", durable)
+
+    queue = orchestrator.load_queue()
+    assert queue == [{"task": "tests", "status": "pending"}]
+    assert json.loads(durable.read_text(encoding="utf-8")) == queue
+
+
+def test_corrupt_durable_queue_never_falls_back_to_clean_seed(tmp_path, monkeypatch) -> None:
+    seed = tmp_path / "checkout" / ".nexus" / "autonomous-queue.json"
+    durable = tmp_path / "runner-state" / "autonomous-queue.json"
+    seed.parent.mkdir(parents=True)
+    durable.parent.mkdir(parents=True)
+    seed.write_text(json.dumps([{"task": "health", "status": "pending"}]), encoding="utf-8")
+    durable.write_text("{not-json", encoding="utf-8")
+    monkeypatch.setattr(orchestrator, "SEED_QUEUE", seed)
+    monkeypatch.setattr(orchestrator, "QUEUE", durable)
+
+    with pytest.raises(json.JSONDecodeError):
+        orchestrator.load_queue()
