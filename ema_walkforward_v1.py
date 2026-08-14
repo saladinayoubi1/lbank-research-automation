@@ -30,6 +30,10 @@ class WalkForwardConfig:
             raise EmaWalkForwardError("test_bars must be at least 20")
         if self.step_bars < 1:
             raise EmaWalkForwardError("step_bars must be positive")
+        if self.step_bars < self.test_bars:
+            raise EmaWalkForwardError(
+                "step_bars must be at least test_bars so OOS folds do not overlap"
+            )
         if self.bootstrap_samples < 200:
             raise EmaWalkForwardError("bootstrap_samples must be at least 200")
 
