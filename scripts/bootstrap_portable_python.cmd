@@ -2,10 +2,14 @@
 setlocal EnableExtensions
 
 set "PYROOT=%RUNNER_TEMP%\python312"
-set "PYZIP=%RUNNER_TEMP%\python-3.12.10-embed-amd64.zip"
-set "PIP_WHEEL=%RUNNER_TEMP%\pip-26.1.2-py3-none-any.whl"
+set "CACHE_ROOT=%RUNNER_WORKSPACE%\_nexus_bootstrap_cache"
+set "PYZIP=%CACHE_ROOT%\python-3.12.10-embed-amd64.zip"
+set "PIP_WHEEL=%CACHE_ROOT%\pip-26.1.2-py3-none-any.whl"
 set "PYZIP_SHA256=4acbed6dd1c744b0376e3b1cf57ce906f9dc9e95e68824584c8099a63025a3c3"
 set "PIP_WHEEL_SHA256=382ff9f685ee3bc25864f820aa50505825f10f5458ffff07e30a6d96e5715cab"
+
+if not exist "%CACHE_ROOT%" mkdir "%CACHE_ROOT%"
+if errorlevel 1 exit /b 1
 
 rem Prefer an already-installed, executable Python to avoid making the real
 rem self-hosted runner depend on a fresh large Python download. Build an
