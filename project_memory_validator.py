@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
+import stat
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -27,10 +29,55 @@ def _require(condition: bool, message: str) -> None:
         raise MemoryValidationError(message)
 
 
-def _load_json(path: Path) -> dict[str, Any]:
+def _identity(info: os.stat_result) -> tuple[int, int]:
+    return (info.st_dev, info.st_ino)
+
+
+def _stable_signature(info: os.stat_result) -> tuple[int, int, int, int]:
+    return (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns)
+
+
+def _read_stable_text(path: Path) -> str:
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        before = path.lstat()
+    except OSError as exc:
+        raise MemoryValidationError(f"canonical Project Memory file unavailable: {path}") from exc
+    _require(not stat.S_ISLNK(before.st_mode), f"symlink substitution rejected: {path.as_posix()}")
+    _require(stat.S_ISREG(before.st_mode), f"canonical Project Memory path is not a regular file: {path}")
+
+    flags = os.O_RDONLY
+    if hasattr(os, "O_BINARY"):
+        flags |= os.O_BINARY
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+
+    fd = -1
+    try:
+        fd = os.open(path, flags)
+        opened = os.fstat(fd)
+        _require(stat.S_ISREG(opened.st_mode), f"canonical Project Memory path is not a regular file: {path}")
+        _require(_identity(opened) == _identity(before), f"canonical Project Memory file replaced during validation: {path}")
+        with os.fdopen(fd, "r", encoding="utf-8", closefd=False) as handle:
+            text = handle.read()
+            after_read = os.fstat(fd)
+        after_path = path.lstat()
+        _require(not stat.S_ISLNK(after_path.st_mode), f"symlink substitution rejected: {path.as_posix()}")
+        _require(_stable_signature(after_read) == _stable_signature(opened), f"canonical Project Memory file changed during validation: {path}")
+        _require(_stable_signature(after_path) == _stable_signature(opened), f"canonical Project Memory file replaced during validation: {path}")
+        return text
+    except MemoryValidationError:
+        raise
+    except (OSError, UnicodeError) as exc:
+        raise MemoryValidationError(f"canonical Project Memory file changed or unreadable during validation: {path}") from exc
+    finally:
+        if fd >= 0:
+            os.close(fd)
+
+
+def _load_json_text(text: str, path: Path) -> dict[str, Any]:
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError as exc:
         raise MemoryValidationError(f"malformed state: {path}") from exc
     _require(isinstance(data, dict), "STATE.json must contain an object")
     return data
@@ -49,24 +96,23 @@ def _parse_utc(value: Any) -> datetime:
 def validate_repository(root: str | Path = ".", expected_observed_main: str | None = None) -> dict[str, Any]:
     repo = Path(root).resolve()
     memory_dir = repo / CANONICAL_DIR
-
     for name in CANONICAL_FILES:
         path = memory_dir / name
         _require(not path.is_symlink(), f"symlink substitution rejected: {(CANONICAL_DIR / name).as_posix()}")
         _require(path.is_file(), f"missing canonical Project Memory file: {(CANONICAL_DIR / name).as_posix()}")
         _require(path.resolve().parent == memory_dir.resolve(), f"alternate-path substitution rejected: {path}")
 
-    project_memory = (memory_dir / "PROJECT_MEMORY.md").read_text(encoding="utf-8")
-    decisions = (memory_dir / "DECISIONS.md").read_text(encoding="utf-8")
-    recovery = (memory_dir / "RECOVERY_PLAYBOOK.md").read_text(encoding="utf-8")
-    state = _load_json(memory_dir / "STATE.json")
+    project_memory = _read_stable_text(memory_dir / "PROJECT_MEMORY.md")
+    decisions = _read_stable_text(memory_dir / "DECISIONS.md")
+    recovery = _read_stable_text(memory_dir / "RECOVERY_PLAYBOOK.md")
+    state_path = memory_dir / "STATE.json"
+    state = _load_json_text(_read_stable_text(state_path), state_path)
 
     _require("## Immutable mission and safety boundary" in project_memory, "PROJECT_MEMORY.md missing safety boundary")
     _require("## Durable-memory contract" in project_memory, "PROJECT_MEMORY.md missing durable-memory contract")
     _require("append-oriented" in decisions.lower(), "DECISIONS.md must preserve append/supersede semantics")
-    _require("verify current `main`, open PRs/issues and CI/workflow evidence" in recovery, "RECOVERY_PLAYBOOK.md must require live repository verification")
+    _require("verify current `main`, open prs/issues and ci/workflow evidence" in recovery.lower(), "RECOVERY_PLAYBOOK.md must require live repository verification")
     _require("presence alone" in recovery.lower(), "RECOVERY_PLAYBOOK.md must reject backup-presence-only recovery claims")
-
     _require(isinstance(state.get("schema_version"), int) and state["schema_version"] >= 2, "unsupported STATE.json schema_version")
     _require(state.get("project") == "NEXUS / lbank-research-automation", "STATE.json project identity mismatch")
 
@@ -79,9 +125,7 @@ def validate_repository(root: str | Path = ".", expected_observed_main: str | No
 
     continuity = state.get("continuity")
     _require(isinstance(continuity, dict), "STATE.json missing continuity section")
-    required_reads = continuity.get("required_reads")
-    _require(required_reads == CANONICAL_REQUIRED_READS, "required_reads must name exactly the four canonical Project Memory paths")
-
+    _require(continuity.get("required_reads") == CANONICAL_REQUIRED_READS, "required_reads must name exactly the four canonical Project Memory paths")
     drive = continuity.get("drive_backup")
     _require(isinstance(drive, dict), "STATE.json missing drive_backup contract")
     _require(drive.get("secondary_only") is True, "Drive backup must remain secondary-only")
@@ -92,7 +136,6 @@ def validate_repository(root: str | Path = ".", expected_observed_main: str | No
     observed_main = evidence.get("observed_main_sha")
     _require(isinstance(observed_main, str) and SHA_RE.fullmatch(observed_main) is not None, "observed_main_sha must be a lowercase 40-hex SHA")
     observed_at = _parse_utc(evidence.get("observed_at_utc"))
-
     _require(expected_observed_main is not None, "authoritative expected observed-main SHA is required")
     _require(SHA_RE.fullmatch(expected_observed_main) is not None, "expected observed-main SHA is malformed")
     _require(observed_main == expected_observed_main, f"stale Project Memory: STATE observed {observed_main}, expected {expected_observed_main}")
@@ -103,12 +146,7 @@ def validate_repository(root: str | Path = ".", expected_observed_main: str | No
     _require(data_policy.get("real_trading") is False, "real trading must remain disabled")
     _require(data_policy.get("fabricated_market_data") is False, "fabricated market data must remain forbidden")
 
-    return {
-        "schema_version": state["schema_version"],
-        "observed_main_sha": observed_main,
-        "observed_at_utc": observed_at.isoformat().replace("+00:00", "Z"),
-        "canonical_files": list(CANONICAL_REQUIRED_READS),
-    }
+    return {"schema_version": state["schema_version"], "observed_main_sha": observed_main, "observed_at_utc": observed_at.isoformat().replace("+00:00", "Z"), "canonical_files": list(CANONICAL_REQUIRED_READS)}
 
 
 def main() -> int:
