@@ -5,6 +5,7 @@ import json
 import os
 import re
 import stat
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -93,6 +94,44 @@ def _parse_utc(value: Any) -> datetime:
     return parsed.astimezone(timezone.utc)
 
 
+def _git_stdout(repo: Path, *args: str) -> str | None:
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(repo), *args],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return completed.stdout.strip()
+
+
+def _direct_snapshot_integration_is_fresh(repo: Path, observed_main: str, expected_current_main: str) -> bool:
+    """Allow only the commit that directly integrates a snapshot to preserve freshness.
+
+    STATE.json necessarily records the main SHA observed before its own integration commit exists.
+    The integration commit is therefore accepted only when the authoritative expected SHA is the
+    repository HEAD, the recorded SHA is that HEAD's first parent, and the integration commit itself
+    changed canonical STATE.json. Any later main advance fails this one-hop rule and becomes stale.
+    """
+    head = _git_stdout(repo, "rev-parse", "HEAD")
+    if head != expected_current_main:
+        return False
+    parent_line = _git_stdout(repo, "rev-list", "--parents", "-n", "1", "HEAD")
+    if not parent_line:
+        return False
+    parts = parent_line.split()
+    if len(parts) < 2 or parts[1] != observed_main:
+        return False
+    changed = _git_stdout(repo, "diff", "--name-only", parts[1], head)
+    if changed is None:
+        return False
+    changed_paths = {line.strip().replace("\\", "/") for line in changed.splitlines() if line.strip()}
+    return (CANONICAL_DIR / "STATE.json").as_posix() in changed_paths
+
+
 def validate_repository(root: str | Path = ".", expected_observed_main: str | None = None) -> dict[str, Any]:
     repo = Path(root).resolve()
     memory_dir = repo / CANONICAL_DIR
@@ -138,7 +177,8 @@ def validate_repository(root: str | Path = ".", expected_observed_main: str | No
     observed_at = _parse_utc(evidence.get("observed_at_utc"))
     _require(expected_observed_main is not None, "authoritative expected observed-main SHA is required")
     _require(SHA_RE.fullmatch(expected_observed_main) is not None, "expected observed-main SHA is malformed")
-    _require(observed_main == expected_observed_main, f"stale Project Memory: STATE observed {observed_main}, expected {expected_observed_main}")
+    freshness_ok = observed_main == expected_observed_main or _direct_snapshot_integration_is_fresh(repo, observed_main, expected_observed_main)
+    _require(freshness_ok, f"stale Project Memory: STATE observed {observed_main}, expected {expected_observed_main}")
 
     data_policy = state.get("data_policy")
     _require(isinstance(data_policy, dict), "STATE.json missing data_policy")
@@ -146,13 +186,18 @@ def validate_repository(root: str | Path = ".", expected_observed_main: str | No
     _require(data_policy.get("real_trading") is False, "real trading must remain disabled")
     _require(data_policy.get("fabricated_market_data") is False, "fabricated market data must remain forbidden")
 
-    return {"schema_version": state["schema_version"], "observed_main_sha": observed_main, "observed_at_utc": observed_at.isoformat().replace("+00:00", "Z"), "canonical_files": list(CANONICAL_REQUIRED_READS)}
+    return {
+        "schema_version": state["schema_version"],
+        "observed_main_sha": observed_main,
+        "observed_at_utc": observed_at.isoformat().replace("+00:00", "Z"),
+        "canonical_files": list(CANONICAL_REQUIRED_READS),
+    }
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Fail-closed validator for canonical NEXUS Project Memory")
     parser.add_argument("--root", default=".", help="repository root")
-    parser.add_argument("--expected-observed-main", required=True, help="exact authoritative repository SHA that STATE.json must record")
+    parser.add_argument("--expected-observed-main", required=True, help="authoritative current repository SHA; STATE must match it or be its direct integration parent")
     args = parser.parse_args()
     try:
         result = validate_repository(args.root, args.expected_observed_main)

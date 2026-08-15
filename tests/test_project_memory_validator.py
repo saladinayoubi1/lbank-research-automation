@@ -1,4 +1,5 @@
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -69,6 +70,16 @@ def _save_state(memory: Path, state: dict) -> None:
     (memory / "STATE.json").write_text(json.dumps(state), encoding="utf-8")
 
 
+def _git(repo: Path, *args: str) -> str:
+    completed = subprocess.run(
+        ["git", "-C", str(repo), *args],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return completed.stdout.strip()
+
+
 def test_canonical_required_reads_use_repository_slashes():
     assert pmv.CANONICAL_REQUIRED_READS == EXPECTED_CANONICAL_READS
     assert all("\\" not in path for path in pmv.CANONICAL_REQUIRED_READS)
@@ -107,6 +118,54 @@ def test_main_advance_after_snapshot_is_rejected(tmp_path):
     _write_memory(tmp_path, observed_sha=VALID_SHA)
     with pytest.raises(pmv.MemoryValidationError, match="expected"):
         pmv.validate_repository(tmp_path, expected_observed_main=OTHER_SHA)
+
+
+def test_direct_integration_commit_does_not_self_stale_snapshot(tmp_path):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init")
+    _git(repo, "config", "user.email", "nexus-test@example.invalid")
+    _git(repo, "config", "user.name", "NEXUS Test")
+    memory = _write_memory(repo, observed_sha=VALID_SHA)
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-m", "base memory")
+    base_sha = _git(repo, "rev-parse", "HEAD")
+
+    state = _load_state(memory)
+    state["current_evidence"]["observed_main_sha"] = base_sha
+    _save_state(memory, state)
+    _git(repo, "add", "docs/project_memory/STATE.json")
+    _git(repo, "commit", "-m", "integrate exact-base snapshot")
+    integration_sha = _git(repo, "rev-parse", "HEAD")
+
+    result = pmv.validate_repository(repo, expected_observed_main=integration_sha)
+    assert result["observed_main_sha"] == base_sha
+
+
+def test_any_main_advance_after_integration_rejects_snapshot(tmp_path):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init")
+    _git(repo, "config", "user.email", "nexus-test@example.invalid")
+    _git(repo, "config", "user.name", "NEXUS Test")
+    memory = _write_memory(repo, observed_sha=VALID_SHA)
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-m", "base memory")
+    base_sha = _git(repo, "rev-parse", "HEAD")
+
+    state = _load_state(memory)
+    state["current_evidence"]["observed_main_sha"] = base_sha
+    _save_state(memory, state)
+    _git(repo, "add", "docs/project_memory/STATE.json")
+    _git(repo, "commit", "-m", "integrate exact-base snapshot")
+
+    (repo / "later.txt").write_text("advance\n", encoding="utf-8")
+    _git(repo, "add", "later.txt")
+    _git(repo, "commit", "-m", "later main advance")
+    advanced_sha = _git(repo, "rev-parse", "HEAD")
+
+    with pytest.raises(pmv.MemoryValidationError, match="stale Project Memory"):
+        pmv.validate_repository(repo, expected_observed_main=advanced_sha)
 
 
 def test_required_read_path_conflict_is_rejected(tmp_path):
