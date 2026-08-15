@@ -29,4 +29,4 @@ Local state may continue, but remote status is stale. Queue safe work where supp
 Repository/runtime evidence wins for transient facts. Core mission/safety changes require human approval. Record supersession rather than deleting old decisions.
 
 ## Backup principle
-Keep at least two independent durable copies of essential project knowledge: repository history plus an external archive/backup. Backups must exclude secrets and should include hashes/manifests where practical.
+Keep at least two independent durable copies of essential project knowledge: repository history plus an external archive/backup. Backup presence alone is not recovery evidence; verify freshness, source identity, integrity, and content binding before treating a backup as authoritative. Backups must exclude secrets and should include hashes/manifests where practical.
