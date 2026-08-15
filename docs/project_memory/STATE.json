@@ -67,9 +67,9 @@
         "2eee456e91a1e84e8bdfae49de7e391209bf681f Merge PR #496; first parent matches recorded snapshot and STATE.json changed in the integration commit"
       ]
     },
-    "open_pull_requests": [484, 489, 491, 492],
+    "open_pull_requests": [484, 489, 491, 492, 498],
     "memory_refresh_branch": "nexus/gate5-finalize-2eee456",
-    "memory_refresh_pr": 497,
+    "memory_refresh_pr": 498,
     "pull_request_evidence": {
       "477": {
         "state": "merged",
@@ -115,6 +115,13 @@
         "scope": "Gate 5 post-merge self-staleness root-cause repair",
         "production_authority": false,
         "result": "merged after all required checks passed; merge commit first parent equals the prior exact-main snapshot and STATE.json changed in that integration commit, satisfying the one-hop freshness rule"
+      },
+      "498": {
+        "state": "open",
+        "draft": false,
+        "scope": "Gate 5 final durable evidence refresh after PR #496",
+        "production_authority": false,
+        "merge_gate": "exact-final-head CI, mergeability and clean review"
       }
     },
     "release_readiness": {
