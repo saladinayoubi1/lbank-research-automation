@@ -65,6 +65,12 @@ jobs:
         run: |
           set "NEXUS_CANDIDATE_KEY=%GITHUB_HEAD_REF:/=-%"
           echo NEXUS_STATE_DIR=%RUNNER_WORKSPACE%\_nexus_phase3_candidate_state\%NEXUS_CANDIDATE_KEY%>>%GITHUB_ENV%
+      - name: Exercise durable candidate state
+        shell: cmd
+        run: |
+          python -c "import os,pathlib; d=pathlib.Path(os.environ['NEXUS_STATE_DIR']); q=d/'autonomous-queue.json'; s=d/'state.json'; print('candidate_queue_preexisting='+str(q.exists()).lower()); print('candidate_state_preexisting='+str(s.exists()).lower())"
+          python nexus_autonomous_orchestrator.py
+          python -c "import os,pathlib; d=pathlib.Path(os.environ['NEXUS_STATE_DIR']); q=d/'autonomous-queue.json'; s=d/'state.json'; assert q.is_file(), 'durable queue missing'; assert s.is_file(), 'durable state missing'; print('candidate_durable_state_verified=true')"
       - name: Verify Windows candidate runtime
         shell: cmd
         run: |

@@ -46,10 +46,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.sha }}
           persist-credentials: false
           clean: true
           fetch-depth: 1
+
+      - name: Verify exact trigger SHA
+        run: |
+          for /f %%S in ('git rev-parse HEAD') do set "CHECKED_OUT_SHA=%%S"
+          if /I not "%CHECKED_OUT_SHA%"=="%GITHUB_SHA%" (
+            echo Checkout SHA mismatch: expected %GITHUB_SHA% got %CHECKED_OUT_SHA%
+            exit /b 1
+          )
+          echo exact_trigger_sha=%CHECKED_OUT_SHA%
 
       - uses: actions/setup-node@v4
         with:

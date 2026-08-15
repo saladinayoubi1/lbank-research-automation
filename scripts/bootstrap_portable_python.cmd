@@ -2,11 +2,42 @@
 setlocal EnableExtensions
 
 set "PYROOT=%RUNNER_TEMP%\python312"
-set "PYZIP=%RUNNER_TEMP%\python-3.12.10-embed-amd64.zip"
-set "PIP_WHEEL=%RUNNER_TEMP%\pip-26.1.2-py3-none-any.whl"
+set "CACHE_ROOT=%RUNNER_WORKSPACE%\_nexus_bootstrap_cache"
+set "PYZIP=%CACHE_ROOT%\python-3.12.10-embed-amd64.zip"
+set "PIP_WHEEL=%CACHE_ROOT%\pip-26.1.2-py3-none-any.whl"
 set "PYZIP_SHA256=4acbed6dd1c744b0376e3b1cf57ce906f9dc9e95e68824584c8099a63025a3c3"
 set "PIP_WHEEL_SHA256=382ff9f685ee3bc25864f820aa50505825f10f5458ffff07e30a6d96e5715cab"
 
+if not exist "%CACHE_ROOT%" mkdir "%CACHE_ROOT%"
+if errorlevel 1 exit /b 1
+
+rem Prefer an already-installed, executable Python to avoid making the real
+rem self-hosted runner depend on a fresh large Python download. Build an
+rem isolated venv so repository dependencies do not mutate the host install.
+set "LOCAL_PY="
+python -c "import sys; raise SystemExit(0 if sys.version_info >= (3,11) else 1)" >nul 2>&1
+if not errorlevel 1 set "LOCAL_PY=python"
+if not defined LOCAL_PY (
+  py -3 -c "import sys; raise SystemExit(0 if sys.version_info >= (3,11) else 1)" >nul 2>&1
+  if not errorlevel 1 set "LOCAL_PY=py -3"
+)
+
+if defined LOCAL_PY (
+  echo bootstrap_source=local_python
+  if exist "%PYROOT%" rmdir /s /q "%PYROOT%"
+  %LOCAL_PY% -m venv "%PYROOT%"
+  if errorlevel 1 exit /b 1
+  if not exist "%PYROOT%\Scripts\python.exe" exit /b 1
+  "%PYROOT%\Scripts\python.exe" -m pip --version
+  if errorlevel 1 exit /b 1
+  "%PYROOT%\Scripts\python.exe" -m pip install --disable-pip-version-check --retries 5 --timeout 60 -r requirements.txt pytest PyYAML
+  if errorlevel 1 exit /b 1
+  if defined GITHUB_PATH echo %PYROOT%\Scripts>>"%GITHUB_PATH%"
+  "%PYROOT%\Scripts\python.exe" --version
+  exit /b 0
+)
+
+echo bootstrap_source=checksum_pinned_portable_fallback
 if exist "%PYZIP%" (
   certutil -hashfile "%PYZIP%" SHA256 | findstr /i "%PYZIP_SHA256%" >nul
   if errorlevel 1 del /f /q "%PYZIP%"

@@ -50,3 +50,34 @@ def test_bootstrap_network_operations_remain_bounded_fail_closed_and_portable():
     assert '--retry-all-errors' not in text
     assert '--retries 5 --timeout 60' in text
     assert 'if errorlevel 1 exit /b 1' in text
+
+
+def test_portable_artifact_cache_survives_runner_temp_cleanup_and_remains_checksum_verified():
+    text = _text()
+    assert 'CACHE_ROOT=%RUNNER_WORKSPACE%\\_nexus_bootstrap_cache' in text
+    assert 'PYZIP=%CACHE_ROOT%\\python-3.12.10-embed-amd64.zip' in text
+    assert f'PIP_WHEEL=%CACHE_ROOT%\\{EXPECTED_PIP_WHEEL}' in text
+    assert 'if not exist "%CACHE_ROOT%" mkdir "%CACHE_ROOT%"' in text
+    assert 'PYZIP=%RUNNER_TEMP%' not in text
+    assert 'PIP_WHEEL=%RUNNER_TEMP%' not in text
+
+
+def test_local_runner_checkout_is_bound_to_trigger_sha_and_verified():
+    workflow = WORKFLOW.read_text(encoding='utf-8')
+    assert 'ref: ${{ github.sha }}' in workflow
+    assert 'ref: main' not in workflow
+    assert 'git rev-parse HEAD' in workflow
+    assert 'GITHUB_SHA' in workflow
+    assert 'Checkout SHA mismatch' in workflow
+
+
+def test_bootstrap_prefers_verified_local_python_with_isolated_venv_before_network_fallback():
+    text = _text()
+    assert 'bootstrap_source=local_python' in text
+    assert 'sys.version_info >= (3,11)' in text
+    assert '-m venv "%PYROOT%"' in text
+    assert '"%PYROOT%\\Scripts\\python.exe" -m pip --version' in text
+    assert 'bootstrap_source=checksum_pinned_portable_fallback' in text
+    local_index = text.index('bootstrap_source=local_python')
+    python_download_index = text.index('https://www.python.org/ftp/python/')
+    assert local_index < python_download_index
