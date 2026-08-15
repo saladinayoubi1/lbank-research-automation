@@ -170,3 +170,25 @@ def test_same_directory_symlink_substitution_is_rejected(tmp_path):
         pytest.skip("symlink creation is not available on this platform")
     with pytest.raises(pmv.MemoryValidationError, match="symlink substitution rejected"):
         pmv.validate_repository(tmp_path, expected_observed_main=VALID_SHA)
+
+
+def test_replacement_between_identity_check_and_open_is_rejected(tmp_path, monkeypatch):
+    memory = _write_memory(tmp_path)
+    canonical = memory / "PROJECT_MEMORY.md"
+    replacement = memory / "replacement.md"
+    replacement.write_text(canonical.read_text(encoding="utf-8"), encoding="utf-8")
+    real_open = pmv.os.open
+    replaced = False
+
+    def swapping_open(path, flags, *args, **kwargs):
+        nonlocal replaced
+        candidate = Path(path)
+        if not replaced and candidate == canonical:
+            replaced = True
+            canonical.unlink()
+            replacement.replace(canonical)
+        return real_open(path, flags, *args, **kwargs)
+
+    monkeypatch.setattr(pmv.os, "open", swapping_open)
+    with pytest.raises(pmv.MemoryValidationError, match="replaced during validation"):
+        pmv.validate_repository(tmp_path, expected_observed_main=VALID_SHA)
