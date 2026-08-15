@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
+import stat
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -27,10 +29,64 @@ def _require(condition: bool, message: str) -> None:
         raise MemoryValidationError(message)
 
 
-def _load_json(path: Path) -> dict[str, Any]:
+def _identity(info: os.stat_result) -> tuple[int, int]:
+    return (info.st_dev, info.st_ino)
+
+
+def _stable_signature(info: os.stat_result) -> tuple[int, int, int, int]:
+    return (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns)
+
+
+def _read_stable_text(path: Path) -> str:
+    """Read one canonical file from a single verified file identity.
+
+    The path is lstat'd before open, the opened descriptor identity must match,
+    and descriptor/path signatures must remain unchanged through the read. This
+    rejects replacement between path validation and use instead of relying on a
+    check-then-read Path.read_text() sequence.
+    """
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        before = path.lstat()
+    except OSError as exc:
+        raise MemoryValidationError(f"canonical Project Memory file unavailable: {path}") from exc
+    _require(not stat.S_ISLNK(before.st_mode), f"symlink substitution rejected: {path.as_posix()}")
+    _require(stat.S_ISREG(before.st_mode), f"canonical Project Memory path is not a regular file: {path}")
+
+    flags = os.O_RDONLY
+    if hasattr(os, "O_BINARY"):
+        flags |= os.O_BINARY
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+
+    fd = -1
+    try:
+        fd = os.open(path, flags)
+        opened = os.fstat(fd)
+        _require(stat.S_ISREG(opened.st_mode), f"canonical Project Memory path is not a regular file: {path}")
+        _require(_identity(opened) == _identity(before), f"canonical Project Memory file replaced during validation: {path}")
+
+        with os.fdopen(fd, "r", encoding="utf-8", closefd=False) as handle:
+            text = handle.read()
+            after_read = os.fstat(fd)
+        after_path = path.lstat()
+
+        _require(not stat.S_ISLNK(after_path.st_mode), f"symlink substitution rejected: {path.as_posix()}")
+        _require(_stable_signature(after_read) == _stable_signature(opened), f"canonical Project Memory file changed during validation: {path}")
+        _require(_stable_signature(after_path) == _stable_signature(opened), f"canonical Project Memory file replaced during validation: {path}")
+        return text
+    except MemoryValidationError:
+        raise
+    except (OSError, UnicodeError) as exc:
+        raise MemoryValidationError(f"canonical Project Memory file changed or unreadable during validation: {path}") from exc
+    finally:
+        if fd >= 0:
+            os.close(fd)
+
+
+def _load_json_text(text: str, path: Path) -> dict[str, Any]:
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError as exc:
         raise MemoryValidationError(f"malformed state: {path}") from exc
     _require(isinstance(data, dict), "STATE.json must contain an object")
     return data
@@ -56,10 +112,11 @@ def validate_repository(root: str | Path = ".", expected_observed_main: str | No
         _require(path.is_file(), f"missing canonical Project Memory file: {(CANONICAL_DIR / name).as_posix()}")
         _require(path.resolve().parent == memory_dir.resolve(), f"alternate-path substitution rejected: {path}")
 
-    project_memory = (memory_dir / "PROJECT_MEMORY.md").read_text(encoding="utf-8")
-    decisions = (memory_dir / "DECISIONS.md").read_text(encoding="utf-8")
-    recovery = (memory_dir / "RECOVERY_PLAYBOOK.md").read_text(encoding="utf-8")
-    state = _load_json(memory_dir / "STATE.json")
+    project_memory = _read_stable_text(memory_dir / "PROJECT_MEMORY.md")
+    decisions = _read_stable_text(memory_dir / "DECISIONS.md")
+    recovery = _read_stable_text(memory_dir / "RECOVERY_PLAYBOOK.md")
+    state_path = memory_dir / "STATE.json"
+    state = _load_json_text(_read_stable_text(state_path), state_path)
 
     _require("## Immutable mission and safety boundary" in project_memory, "PROJECT_MEMORY.md missing safety boundary")
     _require("## Durable-memory contract" in project_memory, "PROJECT_MEMORY.md missing durable-memory contract")
