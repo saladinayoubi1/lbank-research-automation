@@ -52,6 +52,16 @@ def test_bootstrap_network_operations_remain_bounded_fail_closed_and_portable():
     assert 'if errorlevel 1 exit /b 1' in text
 
 
+def test_portable_artifact_cache_survives_runner_temp_cleanup_and_remains_checksum_verified():
+    text = _text()
+    assert 'CACHE_ROOT=%RUNNER_WORKSPACE%\\_nexus_bootstrap_cache' in text
+    assert 'PYZIP=%CACHE_ROOT%\\python-3.12.10-embed-amd64.zip' in text
+    assert f'PIP_WHEEL=%CACHE_ROOT%\\{EXPECTED_PIP_WHEEL}' in text
+    assert 'if not exist "%CACHE_ROOT%" mkdir "%CACHE_ROOT%"' in text
+    assert 'PYZIP=%RUNNER_TEMP%' not in text
+    assert 'PIP_WHEEL=%RUNNER_TEMP%' not in text
+
+
 def test_local_runner_checkout_is_bound_to_trigger_sha_and_verified():
     workflow = WORKFLOW.read_text(encoding='utf-8')
     assert 'ref: ${{ github.sha }}' in workflow
