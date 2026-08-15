@@ -1,8 +1,9 @@
 @echo off
 setlocal EnableExtensions
 
-set "PYROOT=%RUNNER_TEMP%\python312"
+set "PYROOT=%RUNNER_WORKSPACE%\_nexus_python312_env"
 set "CACHE_ROOT=%RUNNER_WORKSPACE%\_nexus_bootstrap_cache"
+set "PIP_CACHE_DIR=%CACHE_ROOT%\pip-cache"
 set "PYZIP=%CACHE_ROOT%\python-3.12.10-embed-amd64.zip"
 set "PIP_WHEEL=%CACHE_ROOT%\pip-26.1.2-py3-none-any.whl"
 set "PYZIP_SHA256=4acbed6dd1c744b0376e3b1cf57ce906f9dc9e95e68824584c8099a63025a3c3"
@@ -10,10 +11,31 @@ set "PIP_WHEEL_SHA256=382ff9f685ee3bc25864f820aa50505825f10f5458ffff07e30a6d96e5
 
 if not exist "%CACHE_ROOT%" mkdir "%CACHE_ROOT%"
 if errorlevel 1 exit /b 1
+if not exist "%PIP_CACHE_DIR%" mkdir "%PIP_CACHE_DIR%"
+if errorlevel 1 exit /b 1
 
-rem Prefer an already-installed, executable Python to avoid making the real
-rem self-hosted runner depend on a fresh large Python download. Build an
-rem isolated venv so repository dependencies do not mutate the host install.
+rem Reuse a previously verified persistent environment before touching the network.
+if exist "%PYROOT%\Scripts\python.exe" (
+  "%PYROOT%\Scripts\python.exe" -c "import pandas, pyarrow, requests, tenacity, pytest, yaml" >nul 2>&1
+  if not errorlevel 1 (
+    echo bootstrap_source=persistent_venv
+    if defined GITHUB_PATH echo %PYROOT%\Scripts>>"%GITHUB_PATH%"
+    "%PYROOT%\Scripts\python.exe" --version
+    exit /b 0
+  )
+)
+if exist "%PYROOT%\python.exe" (
+  "%PYROOT%\python.exe" -c "import pandas, pyarrow, requests, tenacity, pytest, yaml" >nul 2>&1
+  if not errorlevel 1 (
+    echo bootstrap_source=persistent_portable_python
+    if defined GITHUB_PATH echo %PYROOT%>>"%GITHUB_PATH%"
+    "%PYROOT%\python.exe" --version
+    exit /b 0
+  )
+)
+
+rem Prefer an already-installed, executable Python. Build the venv in persistent
+rem runner workspace so a verified dependency environment survives later checkouts.
 set "LOCAL_PY="
 python -c "import sys; raise SystemExit(0 if sys.version_info >= (3,11) else 1)" >nul 2>&1
 if not errorlevel 1 set "LOCAL_PY=python"
@@ -30,7 +52,9 @@ if defined LOCAL_PY (
   if not exist "%PYROOT%\Scripts\python.exe" exit /b 1
   "%PYROOT%\Scripts\python.exe" -m pip --version
   if errorlevel 1 exit /b 1
-  "%PYROOT%\Scripts\python.exe" -m pip install --disable-pip-version-check --retries 5 --timeout 60 -r requirements.txt pytest PyYAML
+  "%PYROOT%\Scripts\python.exe" -m pip install --disable-pip-version-check --retries 5 --timeout 60 --cache-dir "%PIP_CACHE_DIR%" -r requirements.txt pytest PyYAML
+  if errorlevel 1 exit /b 1
+  "%PYROOT%\Scripts\python.exe" -c "import pandas, pyarrow, requests, tenacity, pytest, yaml"
   if errorlevel 1 exit /b 1
   if defined GITHUB_PATH echo %PYROOT%\Scripts>>"%GITHUB_PATH%"
   "%PYROOT%\Scripts\python.exe" --version
@@ -93,7 +117,9 @@ echo %GITHUB_WORKSPACE%>>"%PYROOT%\python312._pth"
 
 "%PYROOT%\python.exe" -m pip --version
 if errorlevel 1 exit /b 1
-"%PYROOT%\python.exe" -m pip install --disable-pip-version-check --retries 5 --timeout 60 -r requirements.txt pytest PyYAML
+"%PYROOT%\python.exe" -m pip install --disable-pip-version-check --retries 5 --timeout 60 --cache-dir "%PIP_CACHE_DIR%" -r requirements.txt pytest PyYAML
+if errorlevel 1 exit /b 1
+"%PYROOT%\python.exe" -c "import pandas, pyarrow, requests, tenacity, pytest, yaml"
 if errorlevel 1 exit /b 1
 
 if defined GITHUB_PATH echo %PYROOT%>>"%GITHUB_PATH%"
