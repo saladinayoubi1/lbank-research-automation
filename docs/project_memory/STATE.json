@@ -54,22 +54,22 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "41068e536813914e0852dfa0f70fcaa69a5b6939",
-    "observed_at_utc": "2026-08-15T17:34:37Z",
+    "observed_main_sha": "43dae24c12d42ac2872bb97f515cd52c0e899f2c",
+    "observed_at_utc": "2026-08-15T17:50:49Z",
     "latest_main_change": {
-      "summary": "Exact repository main observed after PR #490 repaired required audit emission without weakening the protected ruleset and PR #493 merged Gate 3 hard-cap acceptance evidence; Gate 5 remains open and no production/live-trading authority is inferred from this snapshot",
+      "summary": "Exact repository main observed after PR #494 merged Gate 5 canonical-read hardening. Gate 5 issue #283 was reopened because the pre-merge exact-SHA snapshot self-staled when the merge commit advanced main; PR #496 now repairs that integration-boundary semantic without weakening stale-state rejection or production authority boundaries.",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true,
       "recent_sequence": [
-        "62f2fd4b547f78ebc817d2f02d58ee4202eaf79f Merge PR #490 to emit required audit check on every pull request",
-        "844743df6dbe4dfcf26f62925a81966faaa5c809 Gate 3 exact-head hard-cap acceptance tests",
-        "41068e536813914e0852dfa0f70fcaa69a5b6939 Merge PR #493 with all required checks including trusted guard successful"
+        "41068e536813914e0852dfa0f70fcaa69a5b6939 Merge PR #493 with all required checks including trusted guard successful",
+        "b328f320670b28eb6422f153efabdb2d3ac6b81b Gate 5 exact-head canonical-read and freshness hardening",
+        "43dae24c12d42ac2872bb97f515cd52c0e899f2c Merge PR #494; subsequent verification exposed post-merge self-staleness semantics"
       ]
     },
-    "open_pull_requests": [494],
-    "memory_refresh_branch": "nexus/gate5-current-41068e5",
-    "memory_refresh_pr": 494,
+    "open_pull_requests": [484, 489, 491, 492, 496],
+    "memory_refresh_branch": "nexus/gate5-self-staleness-fix-43dae24",
+    "memory_refresh_pr": 496,
     "pull_request_evidence": {
       "477": {
         "state": "merged",
@@ -99,11 +99,20 @@
         "result": "merged after audit, ubuntu/windows/macos tests, trusted guard, build verification and cloud fallback succeeded"
       },
       "494": {
-        "state": "open",
-        "draft": false,
+        "state": "merged",
+        "merged": true,
+        "head_sha": "b328f320670b28eb6422f153efabdb2d3ac6b81b",
+        "merge_commit_sha": "43dae24c12d42ac2872bb97f515cd52c0e899f2c",
         "scope": "Gate 5 canonical stable-read hardening and exact-main Project Memory refresh",
         "production_authority": false,
-        "merge_gate": "exact-final-head CI, stale/conflict rejection, recovery/rollback evidence, mergeability and clean review"
+        "result": "merged after exact-final-head CI and clean review; post-merge verification correctly reopened #283 because the snapshot SHA self-staled at integration"
+      },
+      "496": {
+        "state": "open",
+        "draft": false,
+        "scope": "Gate 5 post-merge self-staleness root-cause repair",
+        "production_authority": false,
+        "merge_gate": "exact-final-head CI, direct-integration success regression, next-main-advance stale rejection, mergeability and clean review"
       }
     },
     "release_readiness": {
@@ -172,7 +181,7 @@
       "laptop power-off and internet outage remain distinct failure modes and must never be collapsed into one recovery state",
       "a successful canonical-registry provenance replay does not close #197 until raw/downstream bypass tests and rollback/recovery replay pass on one fixed head",
       "continuity snapshots that become stale during validation must be closed unmerged and replayed from exact current main; green CI does not make stale memory authoritative",
-      "Project Memory validation must bind STATE.json to an externally observed exact main SHA; a validator fix alone cannot make a stale snapshot authoritative"
+      "Project Memory validation must bind STATE.json to externally observed repository evidence; the direct commit that integrates an exact-base snapshot may inherit freshness only for that one integration hop when STATE.json changed in that commit, and any later main advance must fail closed"
     ],
     "active_blockers": [43, 58, 64, 89, 91, 107, 122, 124, 125, 131, 197, 232, 283]
   }
