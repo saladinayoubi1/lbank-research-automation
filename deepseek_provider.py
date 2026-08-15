@@ -17,6 +17,8 @@ from typing import Any
 from urllib import request
 from uuid import uuid4
 
+from deepseek_egress import EgressDenied, prepare_egress_messages
+
 BASE_URL = "https://api.deepseek.com"
 DEFAULT_MODEL = "deepseek-v4-flash"
 PRO_MODEL = "deepseek-v4-pro"
@@ -334,13 +336,18 @@ def chat(
     key = os.environ.get("DEEPSEEK_API_KEY")
     if not key:
         raise DeepSeekError("DEEPSEEK_API_KEY is missing")
+    try:
+        _classification, safe_messages = prepare_egress_messages(messages)
+    except EgressDenied as exc:
+        raise DeepSeekError(f"DeepSeek egress denied: {exc}") from exc
+
     decision = route_task(complexity=complexity, blocker=blocker)
     path = _canonical_path(ledger_path)
-    request_id, _ = _reserve(path, decision.model, messages, max_tokens, blocker)
+    request_id, _ = _reserve(path, decision.model, safe_messages, max_tokens, blocker)
 
     body: dict[str, Any] = {
         "model": decision.model,
-        "messages": messages,
+        "messages": safe_messages,
         "max_tokens": max_tokens,
         "thinking": {"type": "enabled" if decision.thinking else "disabled"},
     }
