@@ -1,1 +1,0 @@
-Gate 5 finalization evidence is carried by the accompanying STATE.json update. This note intentionally contains no authority-bearing state and may be removed later.
