@@ -46,3 +46,12 @@ def test_candidate_validation_state_survives_workflow_reruns() -> None:
     assert "NEXUS_STATE_DIR=%RUNNER_WORKSPACE%\\_nexus_phase3_candidate_state" in runtime_worker
     assert "NEXUS_STATE_DIR=%RUNNER_TEMP%" not in runtime_worker
     assert "candidate-state-%GITHUB_RUN_ID%" not in runtime_worker
+
+
+def test_candidate_validation_exercises_real_durable_queue_and_state() -> None:
+    runtime_worker = text(ROOT / ".github" / "workflows" / "nexus-runtime-worker.yml")
+    assert "Exercise durable candidate state" in runtime_worker
+    assert "candidate_queue_preexisting=" in runtime_worker
+    assert "candidate_state_preexisting=" in runtime_worker
+    assert "python nexus_autonomous_orchestrator.py" in runtime_worker
+    assert "candidate_durable_state_verified=true" in runtime_worker
