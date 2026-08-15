@@ -90,7 +90,7 @@ def test_ambiguous_timeout_retains_reservation_and_reduces_remaining_budget(tmp_
 
     with pytest.raises(ds.AmbiguousCharge, match="ambiguous"):
         ds.chat(
-            [{"role": "user", "content": "bounded test"}],
+            [{"role": "user", "content": "Reply with exactly: NEXUS_DEEPSEEK_OK"}],
             blocker=True,
             max_tokens=64,
             ledger_path=path,
