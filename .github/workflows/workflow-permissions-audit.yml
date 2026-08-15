@@ -2,12 +2,6 @@ name: Workflow Permissions Policy
 
 on:
   pull_request:
-    paths:
-      - '.github/workflows/**'
-      - 'security/workflow-permissions-policy-v1.json'
-      - 'scripts/check_workflow_permissions.py'
-      - 'tests/test_workflow_permissions.py'
-      - 'docs/adr/ADR-0016-workflow-token-permissions.md'
   push:
     branches: [main]
     paths:
