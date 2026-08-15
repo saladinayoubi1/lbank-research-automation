@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA_ROOT = ROOT / "data" / "market"
 
 
-def test_frozen_fresh_snapshot_executes_empirical_robustness_without_promotion():
+def test_frozen_fresh_snapshot_executes_empirical_robustness_without_promotion(capsys):
     summaries = {}
     for symbol in ("aero_usdt", "agt_usdt"):
         frame = load_research_series(symbol, "hour4", data_root=DATA_ROOT, minimum_rows=500)
@@ -31,4 +31,5 @@ def test_frozen_fresh_snapshot_executes_empirical_robustness_without_promotion()
         assert result["authority"] == "research-backtest-paper-only"
         assert result["automatic_promotion_allowed"] is False
         assert result["research_disposition"] in {"reject_hypothesis", "continue_to_walkforward_validation"}
-    print("VOL_MOMENTUM_EMPIRICAL=" + json.dumps(summaries, sort_keys=True))
+    with capsys.disabled():
+        print("VOL_MOMENTUM_EMPIRICAL=" + json.dumps(summaries, sort_keys=True), flush=True)
