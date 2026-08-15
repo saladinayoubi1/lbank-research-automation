@@ -22,7 +22,10 @@ _DENY_PATTERNS = (
     ),
     re.compile(r"\b(?:private\s+)?account\s+(?:number|no\.?|id)\s*[:=]?\s*[A-Z0-9 -]{6,}\b", re.IGNORECASE),
     re.compile(r"\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b"),
-    re.compile(r"\b(?:raw[_ -]?chat|chat\s+transcript|conversation\s+transcript)\b", re.IGNORECASE),
+    re.compile(
+        r"\b(?:raw[_ -]?chat(?:[_ -]+)transcript|chat(?:[_ -]+)transcript|conversation(?:[_ -]+)transcript)\b",
+        re.IGNORECASE,
+    ),
 )
 
 _EMAIL = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
