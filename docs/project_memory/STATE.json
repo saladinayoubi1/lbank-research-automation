@@ -54,22 +54,22 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "2eee456e91a1e84e8bdfae49de7e391209bf681f",
-    "observed_at_utc": "2026-08-15T17:55:45Z",
+    "observed_main_sha": "5ea4519c7ce4bd4944833392a706ca1b16aacc21",
+    "observed_at_utc": "2026-08-15T18:09:24Z",
     "latest_main_change": {
-      "summary": "Exact repository main observed after PR #496 merged the Gate 5 post-merge freshness repair. The merge commit directly integrates a STATE snapshot bound to its first parent, so the one-hop freshness rule is satisfied without weakening subsequent stale-state rejection.",
+      "summary": "Exact repository main observed after PR #498 merged the final Gate 5 durable-evidence refresh. Gate 5 remains completed; this bookkeeping refresh records the merged state without changing validator semantics or authority boundaries.",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true,
       "recent_sequence": [
-        "43dae24c12d42ac2872bb97f515cd52c0e899f2c Merge PR #494; post-merge verification exposed self-staleness",
         "c4015235e66bd8b8ccc0c3186eb82eb2758c8a1e Gate 5 one-hop freshness repair with exact-head green CI",
-        "2eee456e91a1e84e8bdfae49de7e391209bf681f Merge PR #496; first parent matches recorded snapshot and STATE.json changed in the integration commit"
+        "2eee456e91a1e84e8bdfae49de7e391209bf681f Merge PR #496; self-staleness root cause repaired",
+        "5ea4519c7ce4bd4944833392a706ca1b16aacc21 Merge PR #498; Gate 5 durable evidence finalized"
       ]
     },
-    "open_pull_requests": [484, 489, 491, 492, 498],
-    "memory_refresh_branch": "nexus/gate5-finalize-2eee456",
-    "memory_refresh_pr": 498,
+    "open_pull_requests": [484, 489, 491, 492],
+    "memory_refresh_branch": null,
+    "memory_refresh_pr": null,
     "pull_request_evidence": {
       "477": {
         "state": "merged",
@@ -117,11 +117,13 @@
         "result": "merged after all required checks passed; merge commit first parent equals the prior exact-main snapshot and STATE.json changed in that integration commit, satisfying the one-hop freshness rule"
       },
       "498": {
-        "state": "open",
-        "draft": false,
+        "state": "merged",
+        "merged": true,
+        "head_sha": "ce26de56bb71edd37786b2333a9415b7e4e9463c",
+        "merge_commit_sha": "5ea4519c7ce4bd4944833392a706ca1b16aacc21",
         "scope": "Gate 5 final durable evidence refresh after PR #496",
         "production_authority": false,
-        "merge_gate": "exact-final-head CI, mergeability and clean review"
+        "result": "merged after exact-final-head CI and clean review; issue #283 completed and removed from active blockers"
       }
     },
     "release_readiness": {
