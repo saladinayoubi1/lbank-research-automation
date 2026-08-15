@@ -179,31 +179,68 @@ def save_ledger(path: str | Path, ledger: dict[str, Any]) -> None:
         raise DeepSeekError("usage ledger durability commit failed") from exc
 
 
+def _try_kernel_lock(handle) -> bool:
+    handle.seek(0)
+    if os.name == "nt":
+        import msvcrt
+
+        try:
+            msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+            return True
+        except OSError:
+            return False
+
+    import fcntl
+
+    try:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return True
+    except BlockingIOError:
+        return False
+
+
+def _release_kernel_lock(handle) -> None:
+    handle.seek(0)
+    if os.name == "nt":
+        import msvcrt
+
+        msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+        return
+
+    import fcntl
+
+    fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
 @contextmanager
 def _ledger_lock(path: Path, timeout: float = 10.0):
+    """Serialize ledger mutation with a kernel-managed lock.
+
+    The coordination file is persistent and is never treated as ownership proof.
+    Kernel ownership is released automatically if the holder process exits or
+    crashes, preventing stale lock-file deadlock after restart.
+    """
     lock = path.with_suffix(path.suffix + ".lock")
     lock.parent.mkdir(parents=True, exist_ok=True)
     deadline = time.monotonic() + timeout
-    fd = None
-    while fd is None:
-        try:
-            fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-        except FileExistsError:
+    with lock.open("a+b") as handle:
+        handle.seek(0, os.SEEK_END)
+        if handle.tell() == 0:
+            handle.write(b"\0")
+            handle.flush()
+            os.fsync(handle.fileno())
+        acquired = False
+        while not acquired:
+            acquired = _try_kernel_lock(handle)
+            if acquired:
+                break
             if time.monotonic() >= deadline:
                 raise DeepSeekError("usage ledger is locked or recovery is required")
             time.sleep(0.05)
-    try:
-        os.write(fd, str(os.getpid()).encode("ascii", "ignore"))
-        os.close(fd)
-        fd = None
-        yield
-    finally:
-        if fd is not None:
-            os.close(fd)
         try:
-            lock.unlink()
-        except FileNotFoundError:
-            pass
+            yield
+        finally:
+            _release_kernel_lock(handle)
 
 
 def calculate_cost(model: str, usage: dict[str, Any]) -> float:
