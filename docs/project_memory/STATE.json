@@ -54,78 +54,61 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "af020c6249477bd591eb85b77e7ff0112b19b0c3",
-    "observed_at_utc": "2026-08-10T00:18:28Z",
+    "observed_main_sha": "1cd90e49ad9082e0d894e36bb5dfa057f0b992fd",
+    "observed_at_utc": "2026-08-15T08:07:56Z",
     "latest_main_change": {
-      "summary": "Continuity PR #246 merged after #245, then main advanced through LBank public-candle refresh commits only; PRs #250 and #251 were closed unmerged as non-authoritative/stale; no architecture, core-goal, release-policy, or production-authority change observed",
+      "summary": "Exact repository main observed at 1cd90e49 after Gate 1 PR #481 merged; Gate 2 remains completed, Gate 3 and Gate 5 remain open, and no production/live-trading authority is inferred from this snapshot",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true,
       "recent_sequence": [
-        "d89dab197705c0b95b39260dc74cc0c6efefc7bc Record post-245 continuity state (#246)",
-        "7c4c8eb5061807b1fc2d7e2cf39ae794c3071660 data: update LBank public candles",
-        "af020c6249477bd591eb85b77e7ff0112b19b0c3 data: update LBank public candles"
+        "431f937087d67b94b3fd817556d453e2c09ce749 Merge Gate 2 durable restart/recovery via PR #477",
+        "49cc4e3a3806a3f83370e4aae9f4b1b4b3c0533d Gate 1 exact-head Windows restart/resume evidence",
+        "1cd90e49ad9082e0d894e36bb5dfa057f0b992fd Merge PR #481 replaying Gate 1 Windows restart evidence on current main"
       ]
     },
-    "open_pull_requests": [252],
-    "memory_refresh_branch": "continuity/current-af020c62",
-    "memory_refresh_pr": 252,
+    "open_pull_requests": [479, 482, 483, 484, 485],
+    "memory_refresh_branch": "nexus/gate5-stable-canonical-read-1cd90e4",
+    "memory_refresh_pr": 485,
     "pull_request_evidence": {
-      "117": {
-        "state": "closed",
-        "merged": false,
-        "head_sha": "043c4465ab268769c3ecfb51d07c214c1a5509fd",
-        "scope": "superseded fail-closed cloud fallback checkpoint draft",
-        "production_authority": false,
-        "result": "closed unmerged; historical base was stale against current main"
-      },
-      "241": {
-        "state": "merged",
-        "merge_commit_sha": "f2076d814fef5c2fa8fde5992963e5a5c6a75d6c",
-        "scope": "canonical-registry provenance semantic-binding replay",
-        "production_authority": false,
-        "result": "merged; issue #197 remains open and downstream eligibility remains fail-closed/non-authoritative"
-      },
-      "245": {
+      "477": {
         "state": "merged",
         "merged": true,
-        "head_sha": "f78d28c80bbc2b9fbe56b119449eda2b31bdfab5",
-        "merge_commit_sha": "a1d5f0f810d5927f2f64b2d6d0c302ebf5c719fb",
-        "scope": "current-main project-memory refresh from exact 11cd72fd",
+        "head_sha": "cc026941f6be6a856074f4fb91481c47754829fa",
+        "merge_commit_sha": "431f937087d67b94b3fd817556d453e2c09ce749",
+        "scope": "Gate 2 durable restart/recovery",
         "production_authority": false,
-        "result": "merged after Test, NEXUS Build Verification and NEXUS Cloud Fallback succeeded; mergeable=true; unresolved review threads=0"
+        "result": "merged after exact-head acceptance evidence; issue #230 completed"
       },
-      "246": {
+      "481": {
         "state": "merged",
         "merged": true,
-        "head_sha": "40267411c5b65d735b4cdcc0853ceab8e7c61de5",
-        "merge_commit_sha": "d89dab197705c0b95b39260dc74cc0c6efefc7bc",
-        "scope": "post-245 continuity metadata refresh",
+        "head_sha": "49cc4e3a3806a3f83370e4aae9f4b1b4b3c0533d",
+        "merge_commit_sha": "1cd90e49ad9082e0d894e36bb5dfa057f0b992fd",
+        "scope": "Gate 1 Windows restart/resume replay",
         "production_authority": false,
-        "result": "merged; no production authority conferred"
+        "result": "merged after real self-hosted Windows restart/resume evidence"
       },
-      "250": {
-        "state": "closed",
-        "merged": false,
-        "head_sha": "f75d5aaca65ca9f37db55602af83dee4beba1e5f",
-        "scope": "DeepSeek input-output preflight hardening replay",
+      "482": {
+        "state": "open",
+        "draft": false,
+        "scope": "emit required audit check on ordinary protected PRs",
         "production_authority": false,
-        "result": "closed unmerged; #232 remains open and hard-cap/billing authority remains fail-closed"
+        "merge_gate": "independent control-plane approval; no force merge or ruleset weakening"
       },
-      "251": {
-        "state": "closed",
-        "merged": false,
-        "head_sha": "98cd4ff5f1e1f610d1c12d3033b8aacfae8c5d11",
-        "scope": "superseded current-main project-memory refresh",
+      "483": {
+        "state": "open",
+        "draft": false,
+        "scope": "Gate 3 concurrent last-budget-slice and ambiguous-timeout acceptance",
         "production_authority": false,
-        "result": "closed unmerged because repository state changed during validation and snapshot became stale"
+        "merge_gate": "required checks and exact-final-head evidence"
       },
-      "252": {
+      "485": {
         "state": "open",
         "draft": true,
-        "scope": "current-main project-memory refresh from exact af020c62",
+        "scope": "Gate 5 canonical stable-read and exact-main memory refresh",
         "production_authority": false,
-        "merge_gate": "exact-final-head CI + mergeability + clean review evidence"
+        "merge_gate": "exact-final-head CI, stale/conflict rejection, recovery/rollback evidence, mergeability and clean review"
       }
     },
     "release_readiness": {
@@ -193,8 +176,9 @@
       "local provider/tool probes are continuity observations only and do not confer production authority",
       "laptop power-off and internet outage remain distinct failure modes and must never be collapsed into one recovery state",
       "a successful canonical-registry provenance replay does not close #197 until raw/downstream bypass tests and rollback/recovery replay pass on one fixed head",
-      "continuity snapshots that become stale during validation must be closed unmerged and replayed from exact current main; green CI does not make stale memory authoritative"
+      "continuity snapshots that become stale during validation must be closed unmerged and replayed from exact current main; green CI does not make stale memory authoritative",
+      "Project Memory validation must bind STATE.json to an externally observed exact main SHA; a validator fix alone cannot make a stale snapshot authoritative"
     ],
-    "active_blockers": [43, 58, 64, 89, 91, 106, 107, 122, 124, 125, 131, 197, 232]
+    "active_blockers": [43, 58, 64, 89, 91, 107, 122, 124, 125, 131, 197, 232, 283]
   }
 }
