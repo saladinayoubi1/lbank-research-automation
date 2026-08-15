@@ -121,7 +121,7 @@ def validate_repository(root: str | Path = ".", expected_observed_main: str | No
     _require("## Immutable mission and safety boundary" in project_memory, "PROJECT_MEMORY.md missing safety boundary")
     _require("## Durable-memory contract" in project_memory, "PROJECT_MEMORY.md missing durable-memory contract")
     _require("append-oriented" in decisions.lower(), "DECISIONS.md must preserve append/supersede semantics")
-    _require("verify current `main`, open PRs/issues and CI/workflow evidence" in recovery, "RECOVERY_PLAYBOOK.md must require live repository verification")
+    _require("verify current `main`, open prs/issues and ci/workflow evidence" in recovery.lower(), "RECOVERY_PLAYBOOK.md must require live repository verification")
     _require("presence alone" in recovery.lower(), "RECOVERY_PLAYBOOK.md must reject backup-presence-only recovery claims")
 
     _require(isinstance(state.get("schema_version"), int) and state["schema_version"] >= 2, "unsupported STATE.json schema_version")
