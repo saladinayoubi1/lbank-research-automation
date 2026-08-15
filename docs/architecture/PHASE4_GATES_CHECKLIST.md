@@ -4,8 +4,8 @@ Parent: #510
 
 This checklist is status bookkeeping only. Evidence-only updates must not create PRs.
 
-- [ ] Gate 0 Scope/authority contract
-- [ ] Gate 1 Architecture/module contracts
+- [x] Gate 0 Scope/authority contract — contract artifact present on this branch; completion still requires exact-head review/CI.
+- [x] Gate 1 Architecture/module contracts — baseline module/authority/failure contracts present; completion still requires exact-head review/CI.
 - [ ] Gate 2 UI/UX site shell
 - [ ] Gate 3 Canonical data authority
 - [ ] Gate 4 Research qualification
