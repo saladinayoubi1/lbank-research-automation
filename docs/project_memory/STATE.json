@@ -54,22 +54,22 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "5ea4519c7ce4bd4944833392a706ca1b16aacc21",
-    "observed_at_utc": "2026-08-15T18:09:24Z",
+    "observed_main_sha": "93c0713b45e2dded424d599b6093c93fac4fc086",
+    "observed_at_utc": "2026-08-15T21:18:30Z",
     "latest_main_change": {
-      "summary": "Exact repository main observed after PR #498 merged the final Gate 5 durable-evidence refresh. Gate 5 remains completed; this bookkeeping refresh records the merged state without changing validator semantics or authority boundaries.",
+      "summary": "Exact repository main observed after PR #504 merged Gate 3 recovery/tamper acceptance. Gate 3 remains open because frozen-contract reassessment found missing deterministic DeepSeek pre-egress enforcement; exact-current-main remediation is Draft PR #505.",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true,
       "recent_sequence": [
-        "c4015235e66bd8b8ccc0c3186eb82eb2758c8a1e Gate 5 one-hop freshness repair with exact-head green CI",
-        "2eee456e91a1e84e8bdfae49de7e391209bf681f Merge PR #496; self-staleness root cause repaired",
-        "5ea4519c7ce4bd4944833392a706ca1b16aacc21 Merge PR #498; Gate 5 durable evidence finalized"
+        "cf8fc051a2750af3fabffed779b8b5ed10468b5f Merge PR #503; DeepSeek ledger ownership moved to kernel-managed locking",
+        "93c0713b45e2dded424d599b6093c93fac4fc086 Merge PR #504; recovery/tamper acceptance tests integrated",
+        "Draft PR #505 opened from exact current main for the remaining frozen pre-egress defect"
       ]
     },
-    "open_pull_requests": [484, 489, 491, 492],
-    "memory_refresh_branch": null,
-    "memory_refresh_pr": null,
+    "open_pull_requests": [484, 489, 491, 492, 502, 505],
+    "memory_refresh_branch": "nexus/gate3-pre-egress-93c0713",
+    "memory_refresh_pr": 505,
     "pull_request_evidence": {
       "477": {
         "state": "merged",
@@ -124,6 +124,33 @@
         "scope": "Gate 5 final durable evidence refresh after PR #496",
         "production_authority": false,
         "result": "merged after exact-final-head CI and clean review; issue #283 completed and removed from active blockers"
+      },
+      "503": {
+        "state": "merged",
+        "merged": true,
+        "head_sha": "6e1e4da7f7f70a970be1498fc287eff8f361565a",
+        "merge_commit_sha": "cf8fc051a2750af3fabffed779b8b5ed10468b5f",
+        "scope": "Gate 3 kernel-managed DeepSeek ledger lock recovery",
+        "production_authority": false,
+        "result": "merged after exact-head required CI and trusted guard; stale coordination files no longer act as ownership proof"
+      },
+      "504": {
+        "state": "merged",
+        "merged": true,
+        "head_sha": "f08d8d4dd98ab48812aa484e27e952e4a132a9d7",
+        "merge_commit_sha": "93c0713b45e2dded424d599b6093c93fac4fc086",
+        "scope": "Gate 3 recovery/tamper acceptance",
+        "production_authority": false,
+        "result": "merged after exact-head required CI; corrupt/tampered ledgers, reservation ownership, over-reservation reconciliation and restart preservation are covered"
+      },
+      "505": {
+        "state": "open",
+        "merged": false,
+        "head_sha": "8d68257be0116c138e0f2eb5f3726b6c98480503",
+        "merge_commit_sha": null,
+        "scope": "Gate 3 deterministic DeepSeek pre-egress classification/redaction/allowlisting and ADR alignment",
+        "production_authority": false,
+        "result": "draft pending exact-head CI and frozen acceptance verification"
       }
     },
     "release_readiness": {
@@ -187,12 +214,13 @@
       "implementation-to-registry coupling must remain non-authoritative until bypass coverage and rollback/recovery replay are proven",
       "self-hosted local-runner recovery must verify portable Python bootstrap and workspace import paths explicitly; local-runner repair is operational continuity evidence, not production release authority",
       "bounded gap repair must rotate across deferred windows and exhaustive repair must not stop solely because one round recovered zero candles while deferred gaps remain",
-      "paid AI provider integration is not proof of a hard monthly budget cap; reservation, concurrency, retry and ambiguous-timeout accounting must fail closed",
+      "paid AI provider integration is not proof of a hard monthly budget cap; reservation, concurrency, retry, ambiguous-timeout accounting and deterministic pre-egress enforcement must fail closed",
       "local provider/tool probes are continuity observations only and do not confer production authority",
       "laptop power-off and internet outage remain distinct failure modes and must never be collapsed into one recovery state",
       "a successful canonical-registry provenance replay does not close #197 until raw/downstream bypass tests and rollback/recovery replay pass on one fixed head",
       "continuity snapshots that become stale during validation must be closed unmerged and replayed from exact current main; green CI does not make stale memory authoritative",
-      "Project Memory validation must bind STATE.json to externally observed repository evidence; the direct commit that integrates an exact-base snapshot may inherit freshness only for that one integration hop when STATE.json changed in that commit, and any later main advance must fail closed"
+      "Project Memory validation must bind STATE.json to externally observed repository evidence; the direct commit that integrates an exact-base snapshot may inherit freshness only for that one integration hop when STATE.json changed in that commit, and any later main advance must fail closed",
+      "frozen Gate 3 pre-egress policy is an executable acceptance boundary: provider-bound messages must be deterministically classified, sanitized and allowlisted before reservation or network I/O"
     ],
     "active_blockers": [43, 58, 64, 89, 91, 107, 122, 124, 125, 131, 197, 232]
   }
