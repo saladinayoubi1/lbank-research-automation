@@ -54,22 +54,22 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "43dae24c12d42ac2872bb97f515cd52c0e899f2c",
-    "observed_at_utc": "2026-08-15T17:50:49Z",
+    "observed_main_sha": "2eee456e91a1e84e8bdfae49de7e391209bf681f",
+    "observed_at_utc": "2026-08-15T17:55:45Z",
     "latest_main_change": {
-      "summary": "Exact repository main observed after PR #494 merged Gate 5 canonical-read hardening. Gate 5 issue #283 was reopened because the pre-merge exact-SHA snapshot self-staled when the merge commit advanced main; PR #496 now repairs that integration-boundary semantic without weakening stale-state rejection or production authority boundaries.",
+      "summary": "Exact repository main observed after PR #496 merged the Gate 5 post-merge freshness repair. The merge commit directly integrates a STATE snapshot bound to its first parent, so the one-hop freshness rule is satisfied without weakening subsequent stale-state rejection.",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true,
       "recent_sequence": [
-        "41068e536813914e0852dfa0f70fcaa69a5b6939 Merge PR #493 with all required checks including trusted guard successful",
-        "b328f320670b28eb6422f153efabdb2d3ac6b81b Gate 5 exact-head canonical-read and freshness hardening",
-        "43dae24c12d42ac2872bb97f515cd52c0e899f2c Merge PR #494; subsequent verification exposed post-merge self-staleness semantics"
+        "43dae24c12d42ac2872bb97f515cd52c0e899f2c Merge PR #494; post-merge verification exposed self-staleness",
+        "c4015235e66bd8b8ccc0c3186eb82eb2758c8a1e Gate 5 one-hop freshness repair with exact-head green CI",
+        "2eee456e91a1e84e8bdfae49de7e391209bf681f Merge PR #496; first parent matches recorded snapshot and STATE.json changed in the integration commit"
       ]
     },
-    "open_pull_requests": [484, 489, 491, 492, 496],
-    "memory_refresh_branch": "nexus/gate5-self-staleness-fix-43dae24",
-    "memory_refresh_pr": 496,
+    "open_pull_requests": [484, 489, 491, 492],
+    "memory_refresh_branch": "nexus/gate5-finalize-2eee456",
+    "memory_refresh_pr": 497,
     "pull_request_evidence": {
       "477": {
         "state": "merged",
@@ -108,11 +108,13 @@
         "result": "merged after exact-final-head CI and clean review; post-merge verification correctly reopened #283 because the snapshot SHA self-staled at integration"
       },
       "496": {
-        "state": "open",
-        "draft": false,
+        "state": "merged",
+        "merged": true,
+        "head_sha": "c4015235e66bd8b8ccc0c3186eb82eb2758c8a1e",
+        "merge_commit_sha": "2eee456e91a1e84e8bdfae49de7e391209bf681f",
         "scope": "Gate 5 post-merge self-staleness root-cause repair",
         "production_authority": false,
-        "merge_gate": "exact-final-head CI, direct-integration success regression, next-main-advance stale rejection, mergeability and clean review"
+        "result": "merged after all required checks passed; merge commit first parent equals the prior exact-main snapshot and STATE.json changed in that integration commit, satisfying the one-hop freshness rule"
       }
     },
     "release_readiness": {
@@ -183,6 +185,6 @@
       "continuity snapshots that become stale during validation must be closed unmerged and replayed from exact current main; green CI does not make stale memory authoritative",
       "Project Memory validation must bind STATE.json to externally observed repository evidence; the direct commit that integrates an exact-base snapshot may inherit freshness only for that one integration hop when STATE.json changed in that commit, and any later main advance must fail closed"
     ],
-    "active_blockers": [43, 58, 64, 89, 91, 107, 122, 124, 125, 131, 197, 232, 283]
+    "active_blockers": [43, 58, 64, 89, 91, 107, 122, 124, 125, 131, 197, 232]
   }
 }
