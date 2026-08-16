@@ -138,3 +138,84 @@ def test_worker_authority_must_cover_task():
     workers = am.workers_from(cfg)
     candidates = am.eligible_workers(cfg["tasks"][0], workers)
     assert all(w.id != "dev" for w in candidates)
+
+
+def test_worker_capacity_allows_safe_parallel_leases():
+    cfg = base_config()
+    cfg["workers"][0]["max_concurrent_tasks"] = 2
+    cfg["workers"][1]["capabilities"] = ["root_cause_analysis", "diagnostics"]
+    cfg["tasks"] = [
+        {"id": "A", "status": "PENDING", "priority": 10, "dependencies": [], "required_capabilities": ["implementation"], "preferred_resources": ["cloud"], "authority": 1},
+        {"id": "B", "status": "PENDING", "priority": 9, "dependencies": [], "required_capabilities": ["implementation"], "preferred_resources": ["cloud"], "authority": 1},
+    ]
+    am.cycle(cfg, datetime(2026, 8, 16, 12, 0, tzinfo=timezone.utc))
+    assert [task["status"] for task in cfg["tasks"]] == ["LEASED", "LEASED"]
+    assert [task["assigned_worker"] for task in cfg["tasks"]] == ["dev", "dev"]
+
+
+def test_load_aware_router_prefers_worker_with_more_free_capacity():
+    cfg = base_config()
+    cfg["workers"] = [
+        {"id": "busy", "capabilities": ["implementation"], "resources": ["cloud"], "authority_max": 3, "max_concurrent_tasks": 2},
+        {"id": "free", "capabilities": ["implementation"], "resources": ["cloud"], "authority_max": 3, "max_concurrent_tasks": 2},
+    ]
+    cfg["tasks"] = [
+        {"id": "ACTIVE", "status": "RUNNING", "assigned_worker": "busy", "producer": "busy", "priority": 20, "dependencies": [], "required_capabilities": ["implementation"], "preferred_resources": ["cloud"], "authority": 1},
+        {"id": "NEXT", "status": "PENDING", "priority": 10, "dependencies": [], "required_capabilities": ["implementation"], "preferred_resources": ["cloud"], "authority": 1},
+    ]
+    am.cycle(cfg, datetime(2026, 8, 16, 12, 0, tzinfo=timezone.utc))
+    assert cfg["tasks"][1]["assigned_worker"] == "free"
+
+
+def test_summary_exposes_idle_capacity_and_unassigned_ready_work():
+    cfg = base_config()
+    cfg["workers"][0]["max_concurrent_tasks"] = 2
+    cfg["tasks"][0]["status"] = "READY"
+    summary = am.summarize(cfg)
+    assert summary["worker_capacity"]["dev"] == {"active": 0, "capacity": 2, "available": 2}
+    assert summary["available_worker_slots"] >= 2
+    assert summary["unassigned_ready"] == ["A"]
+
+
+def test_manager_accepts_tasks_from_multiple_project_phases():
+    cfg = base_config()
+    cfg["tasks"] = [
+        {"id": "P3", "phase": 3, "status": "PENDING", "priority": 10, "dependencies": [], "required_capabilities": ["implementation"], "preferred_resources": ["cloud"], "authority": 1},
+        {"id": "P4", "phase": 4, "status": "PENDING", "priority": 9, "dependencies": [], "required_capabilities": ["implementation"], "preferred_resources": ["cloud"], "authority": 1},
+    ]
+    cfg["workers"][0]["max_concurrent_tasks"] = 2
+    summary = am.cycle(cfg, datetime(2026, 8, 16, 12, 0, tzinfo=timezone.utc))
+    assert {task["phase"] for task in cfg["tasks"] if task["status"] == "LEASED"} == {3, 4}
+    assert summary["task_phases"] == [3, 4]
+
+
+def test_invalid_worker_capacity_fails_closed():
+    cfg = base_config()
+    cfg["workers"][0]["max_concurrent_tasks"] = 0
+    with pytest.raises(ValueError, match="invalid worker capacity"):
+        am.validate_config(cfg)
+
+
+def test_verification_does_not_overbook_worker_capacity():
+    cfg = base_config()
+    cfg["workers"][2]["enabled"] = False
+    cfg["tasks"] = [
+        {"id": "ACTIVE", "status": "VERIFYING", "assigned_worker": "qa", "producer": "dev", "priority": 20, "dependencies": [], "required_capabilities": ["implementation"], "preferred_resources": ["cloud"], "authority": 1},
+        {"id": "NEXT", "status": "RUNNING", "assigned_worker": "dev", "producer": "dev", "priority": 10, "dependencies": [], "required_capabilities": ["implementation"], "preferred_resources": ["cloud"], "authority": 1},
+    ]
+    am.record_result(cfg, "NEXT", "dev", "success", {"tests": "pass"})
+    assert cfg["tasks"][1]["status"] == "BLOCKED"
+    assert cfg["tasks"][1]["blocked_reason"] == "independent verifier unavailable"
+
+
+def test_triage_does_not_overbook_or_exceed_worker_authority():
+    cfg = base_config()
+    cfg["workers"][1]["authority_max"] = 1
+    cfg["workers"][2]["authority_max"] = 2
+    cfg["tasks"] = [
+        {"id": "ACTIVE", "status": "RUNNING", "assigned_worker": "rca", "producer": "dev", "priority": 20, "dependencies": [], "required_capabilities": [], "preferred_resources": ["cloud"], "authority": 1},
+        {"id": "TRIAGE", "status": "TRIAGE", "producer": "dev", "failure_class": "deterministic_or_unknown", "priority": 10, "dependencies": [], "required_capabilities": [], "preferred_resources": ["cloud"], "authority": 2},
+    ]
+    am.route_triage(cfg, datetime(2026, 8, 16, 12, 0, tzinfo=timezone.utc))
+    assert cfg["tasks"][1]["status"] == "BLOCKED"
+    assert cfg["tasks"][1]["blocked_reason"] == "independent root-cause analyst unavailable"

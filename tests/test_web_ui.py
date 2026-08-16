@@ -10,6 +10,7 @@ def write_ui(root: Path) -> None:
     (root / "index.html").write_text("<main>dashboard integration-cards zotero-items research-evidence</main>", encoding="utf-8")
     (root / "app.js").write_text("/api/integrations/zotero /api/integrations/research loading error empty success", encoding="utf-8")
     (root / "styles.css").write_text("body{}", encoding="utf-8")
+    (root / "phase4.css").write_text(".view{}", encoding="utf-8")
 
 
 def write_reports(root: Path, rows: str = "symbol,timeframe,ready_for_research,readiness_reason\n") -> None:
@@ -35,6 +36,14 @@ def test_ui_shell_is_served(tmp_path: Path):
     response = dispatch("/", tmp_path / "data", ui)
     assert response.status == HTTPStatus.OK
     assert b"dashboard" in response.body
+
+
+def test_phase4_stylesheet_is_served_from_explicit_allowlist(tmp_path: Path):
+    ui = tmp_path / "ui"
+    write_ui(ui)
+    response = dispatch("/ui/phase4.css", tmp_path / "data", ui)
+    assert response.status == HTTPStatus.OK
+    assert response.content_type == "text/css"
 
 
 def test_success_api_response_is_delegated(tmp_path: Path):
@@ -66,6 +75,33 @@ def test_empty_api_response_is_preserved(tmp_path: Path):
     write_reports(data)
     response = dispatch("/api/readiness/series", data, tmp_path)
     assert json.loads(response.body)["series"] == []
+
+
+def test_phase4_shell_exposes_all_required_read_only_surfaces():
+    html = Path("web_ui/index.html").read_text(encoding="utf-8")
+    script = Path("web_ui/app.js").read_text(encoding="utf-8")
+    surfaces = {"mission", "ai", "research", "strategies", "paper", "portfolio", "risk", "data", "agents", "events", "system"}
+    for surface in surfaces:
+        assert f'data-view="{surface}"' in html
+        assert f'data-surface="{surface}"' in html
+    assert "NO LIVE EXECUTION" in html
+    assert "Mutation API</span><strong>DISABLED" in html
+    assert "selectSurface" in script
+
+
+def test_phase4_shell_has_explicit_blocked_degraded_and_empty_states():
+    html = Path("web_ui/index.html").read_text(encoding="utf-8")
+    assert 'status-chip blocked' in html
+    assert 'status-chip degraded' in html
+    assert 'class="empty-state' in html
+    assert "Fail closed" in html
+
+
+def test_phase4_navigation_fails_safe_for_untrusted_url_fragments():
+    script = Path("web_ui/app.js").read_text(encoding="utf-8")
+    assert "surfaces.has(name) ? name : 'mission'" in script
+    assert 'document.querySelector(`[data-surface=' not in script
+    assert "window.addEventListener('popstate'" in script
 
 
 def test_malformed_api_response_fails_closed(tmp_path: Path):

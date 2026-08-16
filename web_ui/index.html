@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>NEXUS Mission Control</title>
   <link rel="stylesheet" href="/ui/styles.css">
+  <link rel="stylesheet" href="/ui/phase4.css">
 </head>
 <body>
   <main class="shell">
@@ -17,7 +18,24 @@
       <div class="hero-badge"><span class="dot"></span><span>Local node</span><strong id="overall">Checking…</strong></div>
     </header>
 
+    <nav class="surface-nav" aria-label="NEXUS surfaces">
+      <button class="nav-item active" data-view="mission" type="button">Mission Control</button>
+      <button class="nav-item" data-view="ai" type="button">AI Room</button>
+      <button class="nav-item" data-view="research" type="button">Research</button>
+      <button class="nav-item" data-view="strategies" type="button">Strategies</button>
+      <button class="nav-item" data-view="paper" type="button">Paper Trading</button>
+      <button class="nav-item" data-view="portfolio" type="button">Portfolio</button>
+      <button class="nav-item" data-view="risk" type="button">Risk</button>
+      <button class="nav-item" data-view="data" type="button">Data Registry</button>
+      <button class="nav-item" data-view="agents" type="button">Agents</button>
+      <button class="nav-item" data-view="events" type="button">Events</button>
+      <button class="nav-item" data-view="system" type="button">System</button>
+    </nav>
+
     <section id="state" class="state" aria-live="polite">Loading NEXUS reports…</section>
+
+    <section class="view active" data-surface="mission" aria-labelledby="mission-title">
+      <div class="surface-heading"><div><p class="kicker">PHASE 4 · PAPER ONLY</p><h2 id="mission-title">Mission Control</h2></div><div class="mode-chip">NO LIVE EXECUTION</div></div>
 
     <section class="section-block">
       <div class="section-title"><div><p class="kicker">PROJECT ROADMAP</p><h2>From foundation to release</h2></div><span class="muted">Current focus: validated research readiness</span></div>
@@ -70,6 +88,21 @@
         </table>
       </div>
     </section>
+    </section>
+
+    <section class="view" data-surface="ai" aria-labelledby="ai-title">
+      <div class="surface-heading"><div><p class="kicker">BOUNDED CONTROL PLANE</p><h2 id="ai-title">AI Chat Room</h2></div><span class="status-chip blocked">Observe / propose only</span></div>
+      <div class="workspace-grid"><article class="panel workspace-main"><div class="empty-state"><strong>No active AI session</strong><p>Sessions require versioned context, provider identity and an authority decision before any tool proposal.</p></div></article><article class="panel guardrail"><h3>Authority gate</h3><dl><div><dt>L0–L1</dt><dd>Available</dd></div><div><dt>L2–L3</dt><dd>Policy required</dd></div><div><dt>L4</dt><dd>Owner only</dd></div></dl></article></div>
+    </section>
+    <section class="view" data-surface="research" aria-labelledby="research-title"><div class="surface-heading"><div><p class="kicker">EVIDENCE PIPELINE</p><h2 id="research-title">Research & Experiments</h2></div><span class="status-chip degraded">Qualification pending</span></div><div class="stage-grid"><article>Hypothesis<small>Versioned question</small></article><article>Backtest<small>Costs and slippage</small></article><article>Robustness<small>Walk-forward + OOS</small></article><article>Candidate<small>Paper eligibility gate</small></article></div></section>
+    <section class="view" data-surface="strategies" aria-labelledby="strategy-title"><div class="surface-heading"><div><p class="kicker">VERSIONED REGISTRY</p><h2 id="strategy-title">Strategy Registry</h2></div><span class="status-chip blocked">No active paper strategy</span></div><div class="empty-state panel"><strong>Registry is fail-closed</strong><p>A strategy appears here only after its exact data, configuration, evidence and policy versions are bound.</p></div></section>
+    <section class="view" data-surface="paper" aria-labelledby="paper-title"><div class="surface-heading"><div><p class="kicker">DEMO ACCOUNT</p><h2 id="paper-title">Paper Trading & Positions</h2></div><span class="status-chip safe">Paper mode</span></div><div class="cards"><article><span>Open positions</span><strong>0</strong><small>No qualified signal</small></article><article><span>Pending orders</span><strong>0</strong><small>Risk-approved only</small></article><article><span>Manual signals</span><strong>0</strong><small>Same risk path</small></article><article><span>Live authority</span><strong>OFF</strong><small>Hard boundary</small></article></div></section>
+    <section class="view" data-surface="portfolio" aria-labelledby="portfolio-title"><div class="surface-heading"><div><p class="kicker">DETERMINISTIC ACCOUNTING</p><h2 id="portfolio-title">Portfolio, PnL & Journal</h2></div><span class="status-chip blocked">Event store pending</span></div><div class="empty-state panel"><strong>No reconstructable paper ledger</strong><p>Balances and PnL remain unavailable until append-only replay invariants are proven.</p></div></section>
+    <section class="view" data-surface="risk" aria-labelledby="risk-title"><div class="surface-heading"><div><p class="kicker">FINAL PAPER AUTHORITY</p><h2 id="risk-title">Risk & Kill Switch</h2></div><span class="status-chip safe">Fail closed</span></div><div class="policy-grid"><article><span>Kill switch</span><strong>ENGAGED</strong></article><article><span>Max exposure</span><strong>Not authorized</strong></article><article><span>Daily loss</span><strong>Not authorized</strong></article><article><span>Policy version</span><strong>Pending registry</strong></article></div></section>
+    <section class="view" data-surface="data" aria-labelledby="data-title"><div class="surface-heading"><div><p class="kicker">CANONICAL INPUTS</p><h2 id="data-title">Data Registry & Readiness</h2></div><span class="status-chip degraded">Validation active</span></div><div class="empty-state panel"><strong>Readiness detail is shown in Mission Control</strong><p>Only provenance-bound, fresh and structurally valid datasets may become research eligible.</p></div></section>
+    <section class="view" data-surface="agents" aria-labelledby="agents-title"><div class="surface-heading"><div><p class="kicker">LEASED WORK</p><h2 id="agents-title">Agents, Queue & Providers</h2></div><span class="status-chip degraded">Runtime evidence required</span></div><div class="stage-grid"><article>Queue<small>Durable priorities</small></article><article>Leases<small>Bounded ownership</small></article><article>Workers<small>Explicit capabilities</small></article><article>Verification<small>Independent producer</small></article></div></section>
+    <section class="view" data-surface="events" aria-labelledby="events-title"><div class="surface-heading"><div><p class="kicker">APPEND-ONLY AUDIT</p><h2 id="events-title">Events & Audit Explorer</h2></div><span class="status-chip blocked">Schema pending</span></div><div class="empty-state panel"><strong>No authoritative event stream</strong><p>Malformed, reordered, duplicated or tampered events must never replace the previous valid state.</p></div></section>
+    <section class="view" data-surface="system" aria-labelledby="system-title"><div class="surface-heading"><div><p class="kicker">SETTINGS · NOTIFICATIONS</p><h2 id="system-title">System Status</h2></div><span class="status-chip safe">Read only</span></div><div class="policy-grid"><article><span>Mutation API</span><strong>DISABLED</strong></article><article><span>Credentials</span><strong>NOT LOADED</strong></article><article><span>Production</span><strong>LOCKED</strong></article><article><span>Cache policy</span><strong>NO STORE</strong></article></div></section>
 
     <footer>Read-only monitoring surface. No trading, credentials, billing, signing, or production mutation.</footer>
   </main>

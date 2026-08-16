@@ -16,6 +16,7 @@ STATIC_ROUTES = {
     "/": "index.html",
     "/ui/app.js": "app.js",
     "/ui/styles.css": "styles.css",
+    "/ui/phase4.css": "phase4.css",
 }
 
 @dataclass(frozen=True)

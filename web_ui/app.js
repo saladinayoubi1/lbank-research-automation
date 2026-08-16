@@ -4,6 +4,28 @@ const integrationCards = document.querySelector('#integration-cards');
 const tbody = document.querySelector('#series');
 const alerts = document.querySelector('#alerts');
 
+const surfaces = new Map(
+  [...document.querySelectorAll('[data-surface]')].map((view) => [view.dataset.surface, view]),
+);
+
+function selectSurface(name, { updateHistory = true } = {}) {
+  const selectedName = surfaces.has(name) ? name : 'mission';
+  const target = surfaces.get(selectedName);
+  if (!target) return;
+  document.querySelectorAll('.view').forEach((view) => view.classList.toggle('active', view === target));
+  document.querySelectorAll('.nav-item').forEach((button) => {
+    const active = button.dataset.view === selectedName;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-current', active ? 'page' : 'false');
+  });
+  if (updateHistory && location.hash !== `#${selectedName}`) {
+    history.pushState(null, '', `#${selectedName}`);
+  }
+}
+
+document.querySelectorAll('.nav-item').forEach((button) => button.addEventListener('click', () => selectSurface(button.dataset.view)));
+window.addEventListener('popstate', () => selectSurface(location.hash.slice(1), { updateHistory: false }));
+
 function showState(message, kind = 'info') {
   state.hidden = false;
   state.dataset.kind = kind;
@@ -147,4 +169,5 @@ async function loadDashboard() {
 }
 
 document.querySelector('#refresh').addEventListener('click', loadDashboard);
+selectSurface(location.hash.slice(1) || 'mission', { updateHistory: false });
 loadDashboard();
