@@ -5,8 +5,6 @@ import base64
 import io
 import json
 import os
-import time
-import urllib.error
 import urllib.request
 import uuid
 import zipfile
@@ -87,14 +85,7 @@ def dispatch_task(task: dict[str, Any], *, ref: str) -> None:
     _api(
         "POST",
         f"https://api.github.com/repos/{repo}/actions/workflows/{EXECUTOR_WORKFLOW}/dispatches",
-        {
-            "ref": ref,
-            "inputs": {
-                "payload_b64": encoded,
-                "lease_id": env["lease_id"],
-                "transport": env["transport"],
-            },
-        },
+        {"ref": ref, "inputs": {"payload_b64": encoded, "lease_id": env["lease_id"], "transport": env["transport"]}},
     )
     now = am.utcnow()
     task["status"] = "RUNNING"
@@ -179,20 +170,36 @@ def poll_results(config: dict[str, Any]) -> int:
     return count
 
 
+def _load_runtime(path: Path) -> dict[str, Any] | None:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError):
+        return None
+
+
+def _save(path: Path, summary_path: Path, config: dict[str, Any]) -> None:
+    am.atomic_json(path, config)
+    am.atomic_json(summary_path, am.summarize(config))
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="NEXUS agent dispatch/result transport")
     parser.add_argument("--runtime", default=str(RUNTIME_PATH))
     parser.add_argument("--summary", default=str(SUMMARY_PATH))
     parser.add_argument("--ref", default=os.environ.get("GITHUB_REF_NAME", "main"))
+    parser.add_argument("--mode", choices=("poll", "dispatch", "both"), default="both")
     args = parser.parse_args()
     path = Path(args.runtime)
-    config = json.loads(path.read_text(encoding="utf-8"))
+    summary_path = Path(args.summary)
+    config = _load_runtime(path)
+    if config is None:
+        print(json.dumps({"dispatched": 0, "ingested": 0, "reason": "runtime_missing"}, sort_keys=True))
+        return 0
     am.validate_config(config)
     am.enforce_owner_boundaries(config)
-    ingested = poll_results(config)
-    dispatched = dispatch_pending(config, ref=args.ref)
-    am.atomic_json(path, config)
-    am.atomic_json(Path(args.summary), am.summarize(config))
+    ingested = poll_results(config) if args.mode in {"poll", "both"} else 0
+    dispatched = dispatch_pending(config, ref=args.ref) if args.mode in {"dispatch", "both"} else 0
+    _save(path, summary_path, config)
     print(json.dumps({"dispatched": dispatched, "ingested": ingested, "summary": am.summarize(config)}, sort_keys=True))
     return 0
 
