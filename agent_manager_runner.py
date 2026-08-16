@@ -10,11 +10,25 @@ import agent_manager as am
 
 RUNTIME_PATH = Path("data/agent_coordination/agent_manager_runtime.json")
 SUMMARY_PATH = Path("data/agent_coordination/manager_state.json")
+STATE_BINDING_KEYS = (
+    "phase",
+    "gate",
+    "dependencies",
+    "required_capabilities",
+    "authority",
+    "acceptance",
+)
+
+
+def _definition_changed(current: dict[str, Any], previous: dict[str, Any]) -> bool:
+    """Return True when persisted execution state is no longer valid for the Git definition."""
+    return any(current.get(key) != previous.get(key) for key in STATE_BINDING_KEYS)
 
 
 def merge_definition(template: dict[str, Any], runtime: dict[str, Any] | None) -> dict[str, Any]:
     """Carry runtime task state forward while taking worker/policy definitions from git.
 
+    Runtime state is trusted only while the security-relevant task definition is unchanged.
     New tasks from the repository are added. Removed tasks are retained as quarantined
     historical records instead of silently disappearing.
     """
@@ -38,6 +52,10 @@ def merge_definition(template: dict[str, Any], runtime: dict[str, Any] | None) -
     for task in merged.get("tasks", []):
         old = old_by_id.get(task["id"])
         if not old:
+            continue
+        # A completed/leased state belongs to one exact control definition. Authority,
+        # acceptance, capability or dependency drift invalidates that state fail-closed.
+        if _definition_changed(task, old):
             continue
         for key in runtime_keys:
             if key in old:
