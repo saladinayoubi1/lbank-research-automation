@@ -2,6 +2,27 @@ name: NEXUS Runtime Worker
 
 on:
   workflow_dispatch:
+    inputs:
+      payload_b64:
+        description: Optional bounded Agent Manager task envelope
+        required: false
+        default: ''
+        type: string
+      lease_id:
+        description: Optional Agent Manager lease identity
+        required: false
+        default: ''
+        type: string
+      transport:
+        description: Optional bounded task transport
+        required: false
+        default: ''
+        type: choice
+        options:
+          - ''
+          - github-cloud
+          - deepseek
+          - windows
   schedule:
     - cron: '7 * * * *'
   pull_request:
@@ -10,7 +31,10 @@ on:
       - 'scripts/nexus_orchestrator.js'
       - 'scripts/nexus_local_worker.py'
       - 'nexus_autonomous_orchestrator.py'
+      - 'agent_transport.py'
+      - 'scripts/agent_task_executor.py'
       - 'scripts/bootstrap_portable_python.cmd'
+      - 'tests/test_agent_transport.py'
       - 'tests/test_phase3_windows_runtime_contract.py'
       - 'tests/test_nexus_local_runner_bootstrap_policy.py'
       - 'tests/test_nexus_autonomous_orchestrator.py'
@@ -22,27 +46,56 @@ permissions:
   contents: read
 
 concurrency:
-  group: nexus-runtime-worker
+  group: nexus-runtime-worker-${{ github.event.inputs.lease_id || github.ref }}
   cancel-in-progress: true
+
+env:
+  RESULT_PATH: build/agent-result/result.json
 
 jobs:
   preflight:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 12
+    env:
+      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+      NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: ${{ vars.NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED }}
+      NEXUS_DEEPSEEK_SMOKE: '0'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - name: Validate orchestrator
+        if: github.event_name != 'workflow_dispatch' || github.event.inputs.payload_b64 == ''
         run: node scripts/nexus_orchestrator.js
       - name: Validate AI council
+        if: github.event_name != 'workflow_dispatch' || github.event.inputs.payload_b64 == ''
         run: node scripts/nexus_ai_council.js
       - name: Validate runtime worker once
+        if: github.event_name != 'workflow_dispatch' || github.event.inputs.payload_b64 == ''
         env:
-          NEXUS_DEEPSEEK_SMOKE: '0'
           NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: '0'
         run: node scripts/nexus_runtime_worker.js --once
+      - name: Execute bounded cloud or DeepSeek task
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.payload_b64 != '' && github.event.inputs.transport != 'windows'
+        continue-on-error: true
+        shell: bash
+        run: |
+          python scripts/agent_task_executor.py \
+            --payload-b64 '${{ github.event.inputs.payload_b64 }}' \
+            --transport '${{ github.event.inputs.transport }}' \
+            --output "$RESULT_PATH"
+      - name: Upload bounded cloud or DeepSeek result
+        if: always() && github.event_name == 'workflow_dispatch' && github.event.inputs.payload_b64 != '' && github.event.inputs.transport != 'windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexus-agent-result-${{ github.event.inputs.lease_id }}
+          path: ${{ env.RESULT_PATH }}
+          if-no-files-found: error
+          retention-days: 14
 
   windows-candidate-validation:
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor == github.repository_owner
@@ -79,10 +132,14 @@ jobs:
           node scripts\nexus_orchestrator.js
           node scripts\nexus_ai_council.js
           node scripts\nexus_runtime_worker.js --once
-          python -m pytest -q tests\test_phase3_windows_runtime_contract.py tests\test_nexus_local_runner_bootstrap_policy.py tests\test_nexus_autonomous_orchestrator.py
+          python -m pytest -q tests\test_phase3_windows_runtime_contract.py tests\test_nexus_local_runner_bootstrap_policy.py tests\test_nexus_autonomous_orchestrator.py tests\test_agent_transport.py
 
   laptop-worker:
-    if: github.event_name != 'pull_request'
+    if: >-
+      github.event_name != 'pull_request' &&
+      (github.event_name != 'workflow_dispatch' ||
+       github.event.inputs.payload_b64 == '' ||
+       github.event.inputs.transport == 'windows')
     needs: preflight
     runs-on: [self-hosted, Windows]
     timeout-minutes: 58
@@ -96,12 +153,31 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Bootstrap portable Python for bounded task
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.payload_b64 != '' && github.event.inputs.transport == 'windows'
+        shell: cmd
+        run: call scripts\bootstrap_portable_python.cmd
       - name: Verify runtime prerequisites
+        if: github.event_name != 'workflow_dispatch' || github.event.inputs.payload_b64 == ''
         shell: cmd
         run: |
           node --version
           node scripts\nexus_orchestrator.js
           node scripts\nexus_ai_council.js
+      - name: Execute bounded Windows task
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.payload_b64 != '' && github.event.inputs.transport == 'windows'
+        shell: cmd
+        continue-on-error: true
+        run: python scripts\agent_task_executor.py --payload-b64 "${{ github.event.inputs.payload_b64 }}" --transport windows --output "%RESULT_PATH%"
+      - name: Upload bounded Windows result
+        if: always() && github.event_name == 'workflow_dispatch' && github.event.inputs.payload_b64 != '' && github.event.inputs.transport == 'windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexus-agent-result-${{ github.event.inputs.lease_id }}
+          path: ${{ env.RESULT_PATH }}
+          if-no-files-found: error
+          retention-days: 14
       - name: Start continuous NEXUS worker
+        if: github.event_name != 'workflow_dispatch' || github.event.inputs.payload_b64 == ''
         shell: cmd
         run: node scripts\nexus_runtime_worker.js --interval-ms=20000
