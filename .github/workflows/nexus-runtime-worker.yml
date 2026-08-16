@@ -65,9 +65,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
       - name: Validate orchestrator
         if: github.event_name != 'workflow_dispatch' || github.event.inputs.payload_b64 == ''
         run: node scripts/nexus_orchestrator.js
@@ -79,6 +76,17 @@ jobs:
         env:
           NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: '0'
         run: node scripts/nexus_runtime_worker.js --once
+      - name: Install locked Python test dependencies for bounded cloud task
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.payload_b64 != '' && github.event.inputs.transport == 'github-cloud'
+        shell: bash
+        run: |
+          python --version
+          python -m pip install -r requirements-dev.lock
+          python -m pip check
+      - name: Verify Python runtime for bounded DeepSeek task
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.payload_b64 != '' && github.event.inputs.transport == 'deepseek'
+        shell: bash
+        run: python --version
       - name: Execute bounded cloud or DeepSeek task
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.payload_b64 != '' && github.event.inputs.transport != 'windows'
         continue-on-error: true
