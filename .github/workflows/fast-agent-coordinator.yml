@@ -36,11 +36,14 @@ jobs:
           restore-keys: |
             nexus-agent-manager-
 
-      - name: Advance capability-aware mission DAG
+      - name: Ingest completed worker results before stale-lease evaluation
+        run: python agent_transport.py --mode poll --runtime data/agent_coordination/agent_manager_runtime.json --summary data/agent_coordination/manager_state.json --ref "${GITHUB_REF_NAME}"
+
+      - name: Advance capability-aware mission DAG and five-minute triage
         run: python agent_manager_runner.py --config config/nexus-agent-manager.json
 
-      - name: Poll verified worker results and dispatch newly leased tasks
-        run: python agent_transport.py --runtime data/agent_coordination/agent_manager_runtime.json --summary data/agent_coordination/manager_state.json --ref "${GITHUB_REF_NAME}"
+      - name: Dispatch newly leased tasks to their real transport
+        run: python agent_transport.py --mode dispatch --runtime data/agent_coordination/agent_manager_runtime.json --summary data/agent_coordination/manager_state.json --ref "${GITHUB_REF_NAME}"
 
       - name: Inspect workflow states and retry only proven transient failures
         run: python fast_agent_orchestrator.py --once
