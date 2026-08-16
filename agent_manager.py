@@ -105,6 +105,27 @@ def dependencies_done(task: dict[str, Any], by_id: dict[str, dict[str, Any]]) ->
     return all(by_id[d].get("status") == "DONE" for d in task.get("dependencies", []))
 
 
+def enforce_owner_boundaries(config: dict[str, Any]) -> None:
+    """Fail closed for L4 tasks regardless of restored runtime status.
+
+    Persisted state must never turn an owner-only action into an executable lease,
+    verification, triage job, or completed autonomous task.
+    """
+    for task in config["tasks"]:
+        if int(task.get("authority", 0)) < 4 or task.get("status") == "QUARANTINED":
+            continue
+        prior = task.get("status")
+        task["status"] = "OWNER_REQUIRED"
+        task["blocked_reason"] = "L4 owner approval required"
+        task["assigned_worker"] = None
+        task["lease_id"] = None
+        task["leased_at"] = None
+        task["heartbeat_at"] = None
+        task["lease_expires_at"] = None
+        if prior != "OWNER_REQUIRED":
+            emit("owner_boundary_enforced", task_id=task["id"], prior_status=prior)
+
+
 def eligible_workers(task: dict[str, Any], workers: list[Worker], *, verifier_only: bool = False) -> list[Worker]:
     needed = set(task.get("required_capabilities", []))
     preferred = set(task.get("preferred_resources", []))
@@ -195,6 +216,12 @@ def route_triage(config: dict[str, Any], now: datetime) -> None:
     for task in config["tasks"]:
         if task.get("status") != "TRIAGE":
             continue
+        if int(task.get("authority", 0)) >= 4:
+            task["status"] = "OWNER_REQUIRED"
+            task["blocked_reason"] = "L4 owner approval required"
+            task["assigned_worker"] = None
+            emit("owner_boundary_enforced", task_id=task["id"], prior_status="TRIAGE")
+            continue
         failure_class = task.get("failure_class", "unknown")
         # Only proven transient failures may be directly retried. Everything else gets RCA first.
         if failure_class in {"startup_failure", "timed_out", "transient_network"} and int(task.get("transient_retries", 0)) < 1:
@@ -222,6 +249,11 @@ def route_triage(config: dict[str, Any], now: datetime) -> None:
 
 
 def request_verification(config: dict[str, Any], task: dict[str, Any], now: datetime) -> bool:
+    if int(task.get("authority", 0)) >= 4:
+        task["status"] = "OWNER_REQUIRED"
+        task["blocked_reason"] = "L4 owner approval required"
+        task["assigned_worker"] = None
+        return False
     workers = workers_from(config)
     candidates = eligible_workers(task, workers, verifier_only=True)
     if not candidates:
@@ -241,6 +273,8 @@ def request_verification(config: dict[str, Any], task: dict[str, Any], now: date
 
 def record_result(config: dict[str, Any], task_id: str, worker_id: str, outcome: str, evidence: dict[str, Any] | None = None) -> None:
     task = task_index(config)[task_id]
+    if int(task.get("authority", 0)) >= 4:
+        raise ValueError("L4 task results require owner-controlled handling")
     if task.get("assigned_worker") != worker_id:
         raise ValueError("worker does not own current lease")
     evidence = evidence or {}
@@ -281,6 +315,7 @@ def summarize(config: dict[str, Any]) -> dict[str, Any]:
 def cycle(config: dict[str, Any], now: datetime | None = None) -> dict[str, Any]:
     validate_config(config)
     now = now or utcnow()
+    enforce_owner_boundaries(config)
     expire_stale_leases(config, now)
     route_triage(config, now)
     release_ready_tasks(config)
