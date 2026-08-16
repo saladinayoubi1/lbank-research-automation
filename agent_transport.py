@@ -15,7 +15,7 @@ import agent_manager as am
 
 RUNTIME_PATH = Path("data/agent_coordination/agent_manager_runtime.json")
 SUMMARY_PATH = Path("data/agent_coordination/manager_state.json")
-EXECUTOR_WORKFLOW = "nexus-agent-executor.yml"
+EXECUTOR_WORKFLOW = "nexus-runtime-worker.yml"
 ARTIFACT_PREFIX = "nexus-agent-result-"
 
 
