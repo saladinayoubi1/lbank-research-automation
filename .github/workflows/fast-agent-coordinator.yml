@@ -28,10 +28,13 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Inspect workflow states and retry newly failed runs
+      - name: Advance capability-aware mission DAG
+        run: python agent_manager.py --config config/nexus-agent-manager.json
+
+      - name: Inspect workflow states and retry only proven transient failures
         run: python fast_agent_orchestrator.py --once
 
-      - name: Publish coordinator status
+      - name: Publish coordinator and manager status
         if: always()
         uses: actions/upload-artifact@v4
         with:
