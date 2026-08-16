@@ -41,6 +41,35 @@ def test_l4_never_auto_executes():
     assert cfg["tasks"][0].get("assigned_worker") is None
 
 
+def test_restored_l4_running_or_done_state_is_forced_back_to_owner_required():
+    cfg = base_config()
+    cfg["tasks"] = [{
+        "id": "L4", "status": "DONE", "priority": 100, "dependencies": [],
+        "required_capabilities": [], "preferred_resources": [], "authority": 4,
+        "assigned_worker": "dev", "producer": "dev", "lease_id": "stale",
+        "heartbeat_at": "2026-08-16T11:59:00+00:00",
+        "lease_expires_at": "2026-08-16T12:04:00+00:00",
+    }]
+    am.cycle(cfg, datetime(2026, 8, 16, 12, 0, tzinfo=timezone.utc))
+    task = cfg["tasks"][0]
+    assert task["status"] == "OWNER_REQUIRED"
+    assert task["assigned_worker"] is None
+    assert task["lease_id"] is None
+    assert task["heartbeat_at"] is None
+    assert task["lease_expires_at"] is None
+
+
+def test_l4_result_submission_is_rejected_even_with_matching_worker_identity():
+    cfg = base_config()
+    cfg["tasks"] = [{
+        "id": "L4", "status": "VERIFYING", "priority": 100, "dependencies": [],
+        "required_capabilities": [], "preferred_resources": [], "authority": 4,
+        "assigned_worker": "qa", "producer": "dev",
+    }]
+    with pytest.raises(ValueError, match="L4 task results require owner-controlled handling"):
+        am.record_result(cfg, "L4", "qa", "success", {"forged": True})
+
+
 def test_stale_lease_enters_five_minute_triage():
     cfg = base_config()
     task = cfg["tasks"][0]
