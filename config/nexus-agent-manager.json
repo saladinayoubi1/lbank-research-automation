@@ -1,0 +1,164 @@
+{
+  "schema_version": 1,
+  "phase": 4,
+  "policy": {
+    "max_parallel_tasks": 6,
+    "five_minute_triage": true,
+    "best_solution_first": true,
+    "blind_retry_forbidden": true,
+    "independent_verification_required": true,
+    "phase_continuity_required": true,
+    "l4_owner_required": true
+  },
+  "workers": [
+    {
+      "id": "architect-agent",
+      "capabilities": ["architecture", "dependency_analysis", "root_cause_analysis", "diagnostics", "contract_review"],
+      "resources": ["github-cloud"],
+      "authority_max": 3,
+      "enabled": true,
+      "verifier": true
+    },
+    {
+      "id": "developer-agent",
+      "capabilities": ["implementation", "refactor", "unit_tests", "diagnostics"],
+      "resources": ["github-cloud"],
+      "authority_max": 3,
+      "enabled": true,
+      "verifier": false
+    },
+    {
+      "id": "qa-verifier-agent",
+      "capabilities": ["unit_tests", "integration_tests", "adversarial_tests", "recovery_tests", "contract_review", "root_cause_analysis", "diagnostics", "ui_validation", "data_validation"],
+      "resources": ["github-cloud"],
+      "authority_max": 3,
+      "enabled": true,
+      "verifier": true
+    },
+    {
+      "id": "research-agent",
+      "capabilities": ["research", "data_validation", "strategy_qualification", "root_cause_analysis", "diagnostics"],
+      "resources": ["github-cloud", "windows-local"],
+      "authority_max": 2,
+      "enabled": true,
+      "verifier": true
+    },
+    {
+      "id": "deepseek-bounded",
+      "capabilities": ["code_review", "test_generation", "log_analysis", "documentation", "refactor_proposal", "root_cause_analysis", "diagnostics"],
+      "resources": ["deepseek"],
+      "authority_max": 2,
+      "enabled": true,
+      "verifier": false
+    },
+    {
+      "id": "windows-runner",
+      "capabilities": ["windows_runtime", "heavy_compute", "integration_tests", "recovery_tests", "data_validation", "diagnostics"],
+      "resources": ["windows-local"],
+      "authority_max": 3,
+      "enabled": true,
+      "verifier": true
+    },
+    {
+      "id": "cloud-worker",
+      "capabilities": ["implementation", "unit_tests", "integration_tests", "log_analysis", "diagnostics"],
+      "resources": ["github-cloud"],
+      "authority_max": 3,
+      "enabled": true,
+      "verifier": false
+    }
+  ],
+  "tasks": [
+    {
+      "id": "P4-MGR-001",
+      "title": "Verify global agent-manager architecture and invariants",
+      "phase": 4,
+      "gate": 13,
+      "status": "PENDING",
+      "priority": 100,
+      "dependencies": [],
+      "required_capabilities": ["architecture", "contract_review"],
+      "preferred_resources": ["github-cloud"],
+      "authority": 1,
+      "acceptance": ["task DAG valid", "authority boundaries preserved", "phase continuity explicit"]
+    },
+    {
+      "id": "P4-MGR-002",
+      "title": "Adversarial test agent-manager leasing triage verification and no-blind-retry behavior",
+      "phase": 4,
+      "gate": 16,
+      "status": "PENDING",
+      "priority": 95,
+      "dependencies": ["P4-MGR-001"],
+      "required_capabilities": ["adversarial_tests", "recovery_tests"],
+      "preferred_resources": ["github-cloud"],
+      "authority": 1,
+      "acceptance": ["expired lease triages", "non-transient failure gets RCA", "producer cannot self-verify"]
+    },
+    {
+      "id": "P4-UI-001",
+      "title": "Audit and design Gate 2 responsive site shell contract",
+      "phase": 4,
+      "gate": 2,
+      "status": "PENDING",
+      "priority": 90,
+      "dependencies": ["P4-MGR-001"],
+      "required_capabilities": ["contract_review", "ui_validation"],
+      "preferred_resources": ["github-cloud"],
+      "authority": 1,
+      "acceptance": ["mobile-first surfaces mapped", "no direct state mutation", "degraded states covered"]
+    },
+    {
+      "id": "P4-DATA-001",
+      "title": "Audit Gate 3 canonical data prerequisites and current readiness",
+      "phase": 4,
+      "gate": 3,
+      "status": "PENDING",
+      "priority": 88,
+      "dependencies": ["P4-MGR-001"],
+      "required_capabilities": ["data_validation"],
+      "preferred_resources": ["windows-local", "github-cloud"],
+      "authority": 1,
+      "acceptance": ["source provenance audited", "freshness/integrity gaps classified", "no silent substitution"]
+    },
+    {
+      "id": "P4-EVENT-001",
+      "title": "Audit Gate 5 deterministic event-store prerequisites",
+      "phase": 4,
+      "gate": 5,
+      "status": "PENDING",
+      "priority": 87,
+      "dependencies": ["P4-MGR-001"],
+      "required_capabilities": ["architecture", "contract_review"],
+      "preferred_resources": ["github-cloud"],
+      "authority": 1,
+      "acceptance": ["event ownership mapped", "replay invariants defined", "corruption failure leaves prior-valid state"]
+    },
+    {
+      "id": "P4-DEEPSEEK-001",
+      "title": "Bounded independent review of Phase 4 manager edge cases",
+      "phase": 4,
+      "gate": 11,
+      "status": "PENDING",
+      "priority": 80,
+      "dependencies": ["P4-MGR-001"],
+      "required_capabilities": ["code_review", "test_generation"],
+      "preferred_resources": ["deepseek"],
+      "authority": 1,
+      "acceptance": ["edge cases documented", "tests proposed", "no secret or authority expansion"]
+    },
+    {
+      "id": "P4-L4-GUARD",
+      "title": "Production live-trading authority remains owner-only",
+      "phase": 4,
+      "gate": 18,
+      "status": "PENDING",
+      "priority": 10,
+      "dependencies": [],
+      "required_capabilities": [],
+      "preferred_resources": [],
+      "authority": 4,
+      "acceptance": ["must never auto-execute"]
+    }
+  ]
+}
