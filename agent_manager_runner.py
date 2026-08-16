@@ -21,17 +21,10 @@ STATE_BINDING_KEYS = (
 
 
 def _definition_changed(current: dict[str, Any], previous: dict[str, Any]) -> bool:
-    """Return True when persisted execution state is no longer valid for the Git definition."""
     return any(current.get(key) != previous.get(key) for key in STATE_BINDING_KEYS)
 
 
 def merge_definition(template: dict[str, Any], runtime: dict[str, Any] | None) -> dict[str, Any]:
-    """Carry runtime task state forward while taking worker/policy definitions from git.
-
-    Runtime state is trusted only while the security-relevant task definition is unchanged.
-    New tasks from the repository are added. Removed tasks are retained as quarantined
-    historical records instead of silently disappearing.
-    """
     if not runtime or runtime.get("schema_version") != template.get("schema_version"):
         return deepcopy(template)
 
@@ -47,20 +40,18 @@ def merge_definition(template: dict[str, Any], runtime: dict[str, Any] | None) -
         "leased_at", "heartbeat_at", "lease_expires_at", "attempt", "transient_retries",
         "triage_reason", "triage_started_at", "triage_mode", "required_output",
         "failure_class", "failure_evidence", "result_evidence", "verification_evidence",
-        "verified_at", "blocked_reason"
+        "verified_at", "blocked_reason", "dispatch_id", "dispatch_transport", "dispatched_at",
+        "result_artifact_ingested", "result_received_at"
     }
     for task in merged.get("tasks", []):
         old = old_by_id.get(task["id"])
         if not old:
             continue
-        # A completed/leased state belongs to one exact control definition. Authority,
-        # acceptance, capability or dependency drift invalidates that state fail-closed.
         if _definition_changed(task, old):
             continue
         for key in runtime_keys:
             if key in old:
                 task[key] = deepcopy(old[key])
-        # Never let runtime state change immutable authority/dependency definitions.
         for key in definition_keys:
             if key in task:
                 continue
