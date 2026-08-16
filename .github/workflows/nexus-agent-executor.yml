@@ -1,0 +1,92 @@
+name: NEXUS Agent Executor
+
+on:
+  workflow_dispatch:
+    inputs:
+      payload_b64:
+        required: true
+        type: string
+      lease_id:
+        required: true
+        type: string
+      transport:
+        required: true
+        type: choice
+        options:
+          - github-cloud
+          - deepseek
+          - windows
+
+permissions:
+  contents: read
+
+env:
+  RESULT_PATH: build/agent-result/result.json
+
+jobs:
+  cloud:
+    if: inputs.transport == 'github-cloud'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Execute bounded cloud task
+        continue-on-error: true
+        run: python scripts/agent_task_executor.py --payload-b64 '${{ inputs.payload_b64 }}' --transport github-cloud --output "$RESULT_PATH"
+      - name: Upload result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexus-agent-result-${{ inputs.lease_id }}
+          path: ${{ env.RESULT_PATH }}
+          if-no-files-found: error
+          retention-days: 14
+
+  deepseek:
+    if: inputs.transport == 'deepseek'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+      NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: ${{ vars.NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Execute bounded DeepSeek task
+        continue-on-error: true
+        run: python scripts/agent_task_executor.py --payload-b64 '${{ inputs.payload_b64 }}' --transport deepseek --output "$RESULT_PATH"
+      - name: Upload result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexus-agent-result-${{ inputs.lease_id }}
+          path: ${{ env.RESULT_PATH }}
+          if-no-files-found: error
+          retention-days: 14
+
+  windows:
+    if: inputs.transport == 'windows'
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Execute bounded Windows task
+        shell: pwsh
+        continue-on-error: true
+        run: python scripts/agent_task_executor.py --payload-b64 '${{ inputs.payload_b64 }}' --transport windows --output "$env:RESULT_PATH"
+      - name: Upload result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexus-agent-result-${{ inputs.lease_id }}
+          path: ${{ env.RESULT_PATH }}
+          if-no-files-found: error
+          retention-days: 14
