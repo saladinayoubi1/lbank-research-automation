@@ -16,7 +16,7 @@ concurrency:
 jobs:
   inspect-and-recover:
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 5
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -38,6 +38,9 @@ jobs:
 
       - name: Advance capability-aware mission DAG
         run: python agent_manager_runner.py --config config/nexus-agent-manager.json
+
+      - name: Poll verified worker results and dispatch newly leased tasks
+        run: python agent_transport.py --runtime data/agent_coordination/agent_manager_runtime.json --summary data/agent_coordination/manager_state.json --ref "${GITHUB_REF_NAME}"
 
       - name: Inspect workflow states and retry only proven transient failures
         run: python fast_agent_orchestrator.py --once
