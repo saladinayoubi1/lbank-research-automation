@@ -34,6 +34,7 @@
     ".github/workflows/fast-agent-coordinator.yml": {"policy_version":1,"workflow_permissions":{"actions":"write","contents":"read"},"write_justification":"Required to retry newly failed GitHub Actions runs; repository contents remain read-only.","jobs":{"inspect-and-recover":{"policy_version":1}}},
     ".github/workflows/gap_probe.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"probe":{"policy_version":1}}},
     ".github/workflows/lbank_benchmark_v1.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"benchmark":{"policy_version":1}}},
+    ".github/workflows/nexus-agent-executor.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"cloud":{"policy_version":1},"deepseek":{"policy_version":1},"windows":{"policy_version":1}}},
     ".github/workflows/nexus-autopilot-policy.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"validate-policy":{"policy_version":1}}},
     ".github/workflows/nexus-build-verification.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"android-apk":{"policy_version":1},"secure-gateway-verification":{"policy_version":1},"windows-desktop":{"policy_version":1}}},
     ".github/workflows/nexus-cloud-fallback.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"fallback-health":{"policy_version":1}}},
