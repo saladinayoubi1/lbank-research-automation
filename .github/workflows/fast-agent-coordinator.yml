@@ -28,14 +28,32 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Inspect workflow states and retry newly failed runs
+      - name: Restore latest durable manager state
+        uses: actions/cache/restore@v4
+        with:
+          path: data/agent_coordination
+          key: nexus-agent-manager-${{ github.run_id }}
+          restore-keys: |
+            nexus-agent-manager-
+
+      - name: Advance capability-aware mission DAG
+        run: python agent_manager_runner.py --config config/nexus-agent-manager.json
+
+      - name: Inspect workflow states and retry only proven transient failures
         run: python fast_agent_orchestrator.py --once
 
-      - name: Publish coordinator status
+      - name: Save durable manager state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: data/agent_coordination
+          key: nexus-agent-manager-${{ github.run_id }}
+
+      - name: Publish coordinator and manager evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: fast-agent-status-${{ github.run_id }}
           path: data/agent_coordination/
           if-no-files-found: warn
-          retention-days: 7
+          retention-days: 14
