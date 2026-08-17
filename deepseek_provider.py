@@ -29,6 +29,7 @@ RESERVE_USD = 0.50
 PRICING_VERSION = "2026-08-09"
 LEDGER_SCHEMA = 2
 CANONICAL_LEDGER = Path("build/deepseek/usage.json")
+MAX_PROVIDER_RESPONSE_BYTES = 1_000_000
 PRICING = {
     DEFAULT_MODEL: {"cache_hit": 0.0028, "cache_miss": 0.14, "output": 0.28},
     PRO_MODEL: {"cache_hit": 0.003625, "cache_miss": 0.435, "output": 0.87},
@@ -373,14 +374,27 @@ def chat(
     )
     try:
         with request.urlopen(req, timeout=timeout) as resp:
-            payload = json.loads(resp.read().decode("utf-8"))
+            raw = resp.read(MAX_PROVIDER_RESPONSE_BYTES + 1)
+            if len(raw) > MAX_PROVIDER_RESPONSE_BYTES:
+                raise AmbiguousCharge("DeepSeek response exceeded bounded size; reservation retained")
+            payload = json.loads(raw.decode("utf-8"))
+    except AmbiguousCharge:
+        raise
     except Exception:
         raise AmbiguousCharge("DeepSeek request outcome is ambiguous; reservation retained") from None
 
+    if not isinstance(payload, dict):
+        raise AmbiguousCharge("DeepSeek response root is malformed; reservation retained")
     choices, usage = payload.get("choices"), payload.get("usage")
     if not isinstance(choices, list) or not choices or not isinstance(usage, dict):
         raise AmbiguousCharge("DeepSeek response missing choices or usage; reservation retained")
-    content = ((choices[0] or {}).get("message") or {}).get("content")
+    first_choice = choices[0]
+    if not isinstance(first_choice, dict):
+        raise AmbiguousCharge("DeepSeek response choice is malformed; reservation retained")
+    message = first_choice.get("message")
+    if not isinstance(message, dict):
+        raise AmbiguousCharge("DeepSeek response message is malformed; reservation retained")
+    content = message.get("content")
     if not isinstance(content, str):
         raise AmbiguousCharge("DeepSeek response missing text content; reservation retained")
     cost, ledger = _reconcile(path, request_id, decision.model, usage)
