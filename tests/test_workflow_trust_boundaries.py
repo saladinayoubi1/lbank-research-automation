@@ -102,7 +102,54 @@ permissions:
   contents: read
 jobs:
   laptop:
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, Windows]
+    steps:
+      - run: python main.py
+"""
+        self.validate(workflow)
+
+    def test_self_hosted_manual_dispatch_without_trusted_ref_is_blocked(self):
+        workflow = """name: bad
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  laptop:
+    runs-on: [self-hosted, Windows]
+    steps:
+      - uses: actions/checkout@v4
+      - run: python main.py
+"""
+        self.assertBlocked(workflow, "workflow_dispatch code from an arbitrary ref")
+
+    def test_self_hosted_manual_dispatch_pinned_to_default_branch_is_allowed(self):
+        workflow = """name: good
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  laptop:
+    if: github.ref_name == github.event.repository.default_branch
+    runs-on: [self-hosted, Windows]
+    steps:
+      - uses: actions/checkout@v4
+      - run: python main.py
+"""
+        self.validate(workflow)
+
+    def test_self_hosted_job_excluding_manual_event_is_allowed(self):
+        workflow = """name: good
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  laptop:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor == github.repository_owner
     runs-on: [self-hosted, Windows]
     steps:
       - run: python main.py
