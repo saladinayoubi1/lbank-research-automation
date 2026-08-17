@@ -6,7 +6,7 @@ def nexusGatewayUrl = providers.gradleProperty("NEXUS_GATEWAY_URL").getOrElse("h
 def escapedGatewayUrl = nexusGatewayUrl.replace("\\", "\\\\").replace('"', '\\"')
 
 android {
-    namespace "com.saladinayoubi.lbankmobile"
+    namespace "com.saladinayoubi1.lbankmobile"
     compileSdk 35
 
     defaultConfig {
