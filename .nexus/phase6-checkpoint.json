@@ -1,0 +1,56 @@
+{
+  "schema": "nexus.phase-checkpoint.v1",
+  "phase": 6,
+  "status": "candidate_complete",
+  "parent_issue": 591,
+  "final_pr": 592,
+  "formal_gates": "0-6",
+  "formal_gates_complete": true,
+  "source_of_truth": "github",
+  "base_main_sha": "441599050f22ebfa217ddbc61e5635cfae0a209e",
+  "paper_only": true,
+  "live_trading_authority": false,
+  "private_exchange_credentials_allowed": false,
+  "withdrawals_allowed": false,
+  "production_promotion_allowed": false,
+  "billing_changes_allowed": false,
+  "signing_authority_allowed": false,
+  "deterministic_risk_final_authority": true,
+  "profitability_claim": false,
+  "phase5_checkpoint": ".nexus/phase5-checkpoint.json",
+  "phase5_reopened": false,
+  "gate10_created": false,
+  "canonical_research_pipeline": "phase6_research_pipeline.py",
+  "deepseek_budget_adr": "docs/architecture/ADR-AI-PROVIDER-BUDGET.md",
+  "paid_provider_smoke_required": false,
+  "security_reconciliation": {
+    "historical_security_pr": 558,
+    "historical_security_pr_state": "closed_unmerged_superseded",
+    "owner_reauthorization_issue": 568,
+    "owner_reauthorization_phase6_blocking": false
+  },
+  "deepseek_issue": {
+    "issue": 232,
+    "state_at_candidate_checkpoint": "open_pending_post_merge_acceptance_closure",
+    "hard_cap_code_integrated_before_phase6": true,
+    "phase6_added_adr_and_offline_contract_tests": true
+  },
+  "superseded_historical_prs": [400, 422, 423, 456, 459, 463, 464, 466, 476, 479, 484, 489, 491, 492, 502, 558],
+  "closure_basis": [
+    "real canonical Bybit closed-candle research adapter implemented",
+    "deterministic strategy/backtest evidence feeds existing Strategy Factory",
+    "qualification cannot produce more than paper-candidate authority",
+    "replay and tamper invariants tested",
+    "DeepSeek USD 5 authorization bound and ambiguous-charge recovery contract frozen without paid call",
+    "legacy open PR queue conservatively retired without merging stale history",
+    "README updated to current NEXUS architecture",
+    "pre-checkpoint candidate head passed Test, Build Verification, Cloud Fallback, Workflow Permissions Policy and partition export",
+    "final checkpoint head requires fresh exact-head CI before merge"
+  ],
+  "remaining_non_owner_engineering_tasks": [],
+  "owner_only_optional_boundary": {
+    "issue": 568,
+    "description": "future re-authoritative promotion into frozen Gate 4 control plane",
+    "required_for_current_project_closure": false
+  }
+}
