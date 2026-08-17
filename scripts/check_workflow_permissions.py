@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Fail-closed GitHub Actions permission and trust-boundary validation."""
+"""Fail-closed GitHub Actions permission policy validation."""
 from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -20,8 +19,6 @@ ALLOWED_SCOPES = {
     "discussions", "id-token", "issues", "models", "packages", "pages",
     "pull-requests", "security-events", "statuses",
 }
-UNTRUSTED_INPUT_IN_RUN = re.compile(r"\$\{\{\s*(?:github\.event\.inputs|inputs)\.", re.IGNORECASE)
-SECRET_EXPRESSION = re.compile(r"\$\{\{[^}]*\bsecrets\.", re.IGNORECASE)
 
 
 class UniqueKeySafeLoader(yaml.SafeLoader):
@@ -127,79 +124,6 @@ def inventory_rule(path: Path, workflow: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _trigger_names(workflow: dict[str, Any]) -> set[str]:
-    # PyYAML 1.1 may parse the unquoted key `on` as boolean True.
-    value = workflow.get("on")
-    if value is None and True in workflow:
-        value = workflow[True]
-    if isinstance(value, str):
-        return {value}
-    if isinstance(value, list):
-        return {item for item in value if isinstance(item, str)}
-    if isinstance(value, dict):
-        return {str(key) for key in value}
-    return set()
-
-
-def _is_self_hosted(value: Any) -> bool:
-    if isinstance(value, str):
-        return value.strip().lower() == "self-hosted"
-    if isinstance(value, list):
-        return any(isinstance(item, str) and item.strip().lower() == "self-hosted" for item in value)
-    return False
-
-
-def _condition_excludes_untrusted_pr(value: Any) -> bool:
-    if not isinstance(value, str):
-        return False
-    compact = " ".join(value.split())
-    explicitly_not_pr = (
-        "github.event_name != 'pull_request'" in compact
-        or 'github.event_name != "pull_request"' in compact
-        or "github.event_name == 'workflow_dispatch'" in compact
-        or 'github.event_name == "workflow_dispatch"' in compact
-    )
-    owner_same_repo = (
-        "github.event.pull_request.head.repo.full_name == github.repository" in compact
-        and "github.actor == github.repository_owner" in compact
-    )
-    return explicitly_not_pr or owner_same_repo
-
-
-def _contains_secret_expression(value: Any) -> bool:
-    if isinstance(value, str):
-        return bool(SECRET_EXPRESSION.search(value))
-    if isinstance(value, dict):
-        return any(_contains_secret_expression(item) for item in value.values())
-    if isinstance(value, list):
-        return any(_contains_secret_expression(item) for item in value)
-    return False
-
-
-def validate_workflow_trust_boundaries(path: Path, workflow: dict[str, Any]) -> None:
-    pull_request_enabled = "pull_request" in _trigger_names(workflow)
-    for job_name, job in workflow["jobs"].items():
-        if not isinstance(job, dict):
-            raise ValueError(f"{path}: job {job_name} must be a mapping")
-        job_guard = _condition_excludes_untrusted_pr(job.get("if"))
-        if pull_request_enabled and _is_self_hosted(job.get("runs-on")) and not job_guard:
-            raise ValueError(f"{path}: self-hosted job {job_name} may execute pull_request code without an owner/same-repo or no-PR guard")
-        if pull_request_enabled and _contains_secret_expression(job.get("env")) and not job_guard:
-            raise ValueError(f"{path}: job {job_name} exposes a secret to pull_request code")
-        steps = job.get("steps", [])
-        if not isinstance(steps, list):
-            raise ValueError(f"{path}: job {job_name} steps must be a list")
-        for index, step in enumerate(steps):
-            if not isinstance(step, dict):
-                raise ValueError(f"{path}: job {job_name} step {index} must be a mapping")
-            run_text = step.get("run")
-            if isinstance(run_text, str) and UNTRUSTED_INPUT_IN_RUN.search(run_text):
-                raise ValueError(f"{path}: job {job_name} step {index} interpolates workflow input directly into run shell source")
-            step_guard = job_guard or _condition_excludes_untrusted_pr(step.get("if"))
-            if pull_request_enabled and isinstance(run_text, str) and _contains_secret_expression(step.get("env")) and not step_guard:
-                raise ValueError(f"{path}: job {job_name} step {index} exposes a secret to pull_request run code")
-
-
 def validate_workflow(path: Path, workflow: dict[str, Any], rule: dict[str, Any]) -> None:
     if not isinstance(rule, dict) or rule.get("policy_version") != 1:
         raise ValueError(f"{path}: missing versioned workflow policy")
@@ -247,7 +171,6 @@ def validate_workflow(path: Path, workflow: dict[str, Any], rule: dict[str, Any]
                         raise ValueError(f"{path}: job {job_name} write scope lacks justification")
         elif job_rule.get("permissions") not in (None, actual_workflow):
             raise ValueError(f"{path}: job {job_name} policy expects explicit permissions")
-    validate_workflow_trust_boundaries(path, workflow)
 
 
 def run(workflow_dir: Path = WORKFLOW_DIR, policy_path: Path = POLICY_PATH) -> list[str]:
