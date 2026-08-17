@@ -113,18 +113,12 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           path: gate20-head
           fetch-depth: 0
-      - name: Set up Python for Gate 20 cloud evidence
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor == github.repository_owner
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          cache: pip
-          cache-dependency-path: gate20-head/requirements-dev.lock
       - name: Verify exact-head Gate 20 cloud evidence
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor == github.repository_owner
         working-directory: gate20-head
         shell: bash
         run: |
+          python --version
           python -m pip install -r requirements-dev.lock
           python -m pip check
           python -m pytest -q tests/test_phase4_gate20_e2e.py
