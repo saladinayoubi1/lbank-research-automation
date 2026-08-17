@@ -11,6 +11,7 @@ import pytest
 
 import agent_transport as at
 import deepseek_provider as dp
+import paper_event_store as pes
 from capability_broker import AuthorizationDenied, CapabilityBroker, CapabilityGrant, Operation
 from scripts import agent_task_executor as executor
 
@@ -36,6 +37,34 @@ def _zip_result(payload: bytes) -> bytes:
     with zipfile.ZipFile(target, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         zf.writestr("result.json", payload)
     return target.getvalue()
+
+
+def _provenance(timeframe: str = "minute15") -> dict[str, object]:
+    return {
+        "kind": "automatic",
+        "source_id": "security-regression",
+        "source_timestamp": "2026-08-17T00:00:00Z",
+        "received_timestamp": "2026-08-17T00:00:01Z",
+        "timeframe": timeframe,
+        "confidence": "1",
+        "strategy_version": "strategy-v1",
+        "policy_version": "risk-v1",
+    }
+
+
+def _event(event_type: str, payload: dict[str, object], *, provenance: dict[str, object] | None = None):
+    return pes.build_event(
+        event_id="security-event-1",
+        event_type=event_type,
+        aggregate_id="paper-account-security",
+        sequence=1,
+        occurred_at="2026-08-17T00:00:02Z",
+        correlation_id="security-correlation",
+        causation_id="security-cause",
+        provenance=provenance or _provenance(),
+        previous_event_digest=pes.GENESIS_DIGEST,
+        payload=payload,
+    )
 
 
 def test_deepseek_provider_rejects_oversized_response_before_json_parse(monkeypatch):
@@ -128,6 +157,29 @@ def test_runtime_workflow_never_interpolates_dispatch_payload_into_shell():
     assert workflow.count("persist-credentials: false") >= 4
 
 
+def test_all_phase_self_hosted_workflows_pin_trusted_dispatch_boundaries():
+    autonomy = Path(".github/workflows/nexus_local_autonomy.yml").read_text(encoding="utf-8")
+    continuous = Path(".github/workflows/nexus-continuous-phase3.yml").read_text(encoding="utf-8")
+    activation = Path(".github/workflows/nexus_phase3_resource_activation.yml").read_text(encoding="utf-8")
+    local_runner = Path(".github/workflows/nexus-local-runner.yml").read_text(encoding="utf-8")
+    runtime = Path(".github/workflows/nexus-runtime-worker.yml").read_text(encoding="utf-8")
+
+    for workflow in (autonomy, continuous):
+        assert "github.actor == github.repository_owner" in workflow
+        assert "github.ref_name == github.event.repository.default_branch" in workflow
+        assert "persist-credentials: false" in workflow
+        assert "Verify exact trigger SHA" in workflow
+
+    assert "github.event.pull_request.head.repo.full_name == github.repository" in activation
+    assert "github.actor == github.repository_owner" in activation
+    assert "persist-credentials: false" in activation
+    assert "Verify exact trusted SHA" in activation
+    assert "persist-credentials: false" in local_runner
+    assert "Verify exact trigger SHA" in local_runner
+    assert "github.event.pull_request.head.repo.full_name == github.repository" in runtime
+    assert "github.actor == github.repository_owner" in runtime
+
+
 def test_bounded_reader_refuses_one_byte_over_limit():
     with pytest.raises(RuntimeError, match="exceeds bounded size"):
         at._bounded_read(io.BytesIO(b"12345"), 4, "test stream")
@@ -190,3 +242,23 @@ def test_one_use_capability_is_reserved_before_concurrent_io(tmp_path: Path, mon
     assert any("exhausted" in str(value) for kind, value in results if kind == "denied")
     assert calls == 1
     assert broker.verify_audit_chain()
+
+
+def test_paper_event_rejects_unbounded_sensitive_or_cross_timeframe_values():
+    with pytest.raises(pes.PaperEventError, match="reason_code"):
+        _event("risk_rejection_recorded", {"reason_code": "x" * (pes.MAX_REASON_CODE_CHARS + 1)})
+    with pytest.raises(pes.PaperEventError, match="forbidden authority or secret material"):
+        _event("risk_rejection_recorded", {"reason_code": "api_key=super-secret-value"})
+    with pytest.raises(pes.PaperEventError, match="timeframe does not match provenance"):
+        _event(
+            "signal_recorded",
+            {"symbol": "BTCUSDT", "timeframe": "hour1", "side": "buy", "quantity": "1", "reference_price": "60000"},
+            provenance=_provenance("minute15"),
+        )
+    with pytest.raises(pes.PaperEventError, match="unsupported paper order type"):
+        _event(
+            "order_intent_recorded",
+            {"symbol": "BTCUSDT", "side": "long", "quantity": "1", "order_type": "live_market"},
+        )
+    with pytest.raises(pes.PaperEventError, match="bounded decimal size"):
+        _event("demo_account_opened", {"currency": "USDT", "opening_cash": "9" * (pes.MAX_DECIMAL_CHARS + 1)})
