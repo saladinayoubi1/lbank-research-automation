@@ -19,14 +19,25 @@ MEMORY = {
 }
 
 MISSION = {
-    "mission": {"status": "RUNNING"},
-    "queue": {"counts": {"RUNNING": 1, "BLOCKED": 0}},
+    "contract_version": "nexus.mission-control.read.v1",
+    "mission": {
+        "mission_id": "phase4-final",
+        "title": "Phase 4 final evidence",
+        "status": "RUNNING",
+        "priority": 100,
+        "deadline_at": "2026-08-18T08:00:00Z",
+        "state_digest": "a" * 64,
+    },
+    "queue": {"counts": {"READY": 1, "RUNNING": 1, "BLOCKED": 0}, "total": 2},
     "agents": ["producer", "verifier"],
     "runners": ["cloud", "windows"],
     "local_node": "offline",
     "data": "ready",
     "providers": "ready",
     "paper": "paper-only",
+    "circuits": {"provider": False, "data": False, "strategy": False, "risk": False},
+    "limits": {"resource_limited": False, "budget_limited": False},
+    "notifications": [],
 }
 
 
@@ -57,6 +68,7 @@ def test_observe_turn_is_l0_and_never_executes_or_persists_chat():
     assert result["proposal"]["executed"] is False
     assert result["proposal"]["state_mutation"] is False
     assert result["proposal"]["paper_only"] is True
+    assert result["execution"] is None
     assert result["privacy"] == {
         "server_persisted_transcript": False,
         "external_provider_called": False,
@@ -67,14 +79,23 @@ def test_observe_turn_is_l0_and_never_executes_or_persists_chat():
     assert result["operations"]["agents"] == ["producer", "verifier"]
 
 
-def test_persian_workflow_is_l3_route_only_and_not_executed():
+def test_persian_workflow_executes_read_only_l3_from_authoritative_mission_projection():
     result = evaluate("خودمختار ادامه بده تا تمام شود")
+    assert result["contract_version"] == "nexus.ai-room.v2"
     assert result["intent"] == "workflow"
     assert result["decision"]["allowed"] is True
     assert result["decision"]["authority_level"] == 3
     assert result["decision"]["route"] == "mission-runner"
-    assert result["proposal"]["executed"] is False
+    assert result["proposal"]["executed"] is True
     assert result["proposal"]["state_mutation"] is False
+    execution = result["execution"]
+    assert execution["status"] == "completed"
+    assert execution["contract_version"] == "nexus.mission-runner.v2"
+    assert execution["selected_mission_id"] == "phase4-final"
+    assert execution["parallel_mission_ids"] == ["phase4-final"]
+    assert execution["mission_state_digest"] == "a" * 64
+    assert execution["state_mutation"] is False
+    assert execution["paper_only"] is True
 
 
 def test_persian_paper_action_is_only_a_risk_bound_proposal():
@@ -84,6 +105,8 @@ def test_persian_paper_action_is_only_a_risk_bound_proposal():
     assert result["decision"]["authority_level"] == 2
     assert result["decision"]["route"] == "paper-signal-proposal"
     assert result["proposal"]["executed"] is False
+    assert result["execution"]["status"] == "staged"
+    assert result["execution"]["reason_code"] == "deterministic_risk_required"
     assert "Risk/Paper Execution" in result["reply"]
 
 
@@ -95,6 +118,7 @@ def test_owner_sensitive_persian_request_is_owner_required():
     assert result["decision"]["reason_code"] == "human_required"
     assert result["decision"]["route"] is None
     assert result["proposal"]["executed"] is False
+    assert result["execution"] is None
 
 
 def test_persian_proposal_remains_l1_without_tool():
@@ -103,6 +127,7 @@ def test_persian_proposal_remains_l1_without_tool():
     assert result["decision"]["allowed"] is True
     assert result["decision"]["authority_level"] == 1
     assert result["decision"]["route"] is None
+    assert result["execution"] is None
 
 
 def test_raw_message_is_digest_bound_but_never_returned():
@@ -115,10 +140,36 @@ def test_raw_message_is_digest_bound_but_never_returned():
     assert result["decision"]["allowed"] is False
 
 
-def test_same_turn_context_and_time_are_deterministic():
+def test_same_turn_context_time_and_mission_projection_are_deterministic():
     first = evaluate("خودمختار ادامه بده")
     second = evaluate("خودمختار ادامه بده")
     assert first == second
+
+
+def test_missing_or_legacy_mission_control_fails_closed_without_mutation():
+    missing = evaluate_room_message(
+        request("خودمختار ادامه بده"),
+        project_memory_snapshot=MEMORY,
+        mission_control=None,
+        evaluated_at=NOW,
+    )
+    assert missing["decision"]["allowed"] is True
+    assert missing["decision"]["route"] == "mission-runner"
+    assert missing["proposal"]["executed"] is False
+    assert missing["execution"]["status"] == "failed"
+    assert missing["execution"]["reason_code"] == "mission_orchestration_unavailable"
+    assert missing["execution"]["state_mutation"] is False
+
+    legacy = {"mission": {"status": "RUNNING"}, "queue": {"counts": {"RUNNING": 1}}}
+    rejected = evaluate_room_message(
+        request("خودمختار ادامه بده", "turn-legacy"),
+        project_memory_snapshot=MEMORY,
+        mission_control=legacy,
+        evaluated_at=NOW,
+    )
+    assert rejected["proposal"]["executed"] is False
+    assert rejected["execution"]["status"] == "failed"
+    assert "schema mismatch" in rejected["execution"]["detail"]
 
 
 def test_request_schema_and_message_bounds_fail_closed():

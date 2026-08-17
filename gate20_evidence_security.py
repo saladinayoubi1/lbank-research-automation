@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Mapping
 
+from gate20_ai_room_evidence import augment_gate20_evidence, validate_ai_room_evidence
 from phase4_e2e import (
     Phase4E2EError,
     run_phase4_gate20,
@@ -40,6 +41,7 @@ def _critical_projection(evidence: Mapping[str, Any]) -> dict[str, Any]:
     audit = evidence.get("audit")
     recovery = evidence.get("recovery")
     ai_control = evidence.get("ai_control")
+    ai_room = evidence.get("ai_room")
     security = evidence.get("security")
     resources = evidence.get("resources")
     for field, value in (
@@ -48,12 +50,14 @@ def _critical_projection(evidence: Mapping[str, Any]) -> dict[str, Any]:
         ("audit", audit),
         ("recovery", recovery),
         ("ai_control", ai_control),
+        ("ai_room", ai_room),
         ("security", security),
         ("resources", resources),
     ):
         if not isinstance(value, Mapping):
             raise Phase4E2EError(f"Gate 20 {field} evidence must be an object")
 
+    validated_room = validate_ai_room_evidence(ai_room)
     state_digest = _sha256(pipeline.get("state_digest"), "pipeline.state_digest")
     dashboard_state_digest = _sha256(dashboard.get("state_digest"), "dashboard.state_digest")
     last_event_digest = _sha256(pipeline.get("last_event_digest"), "pipeline.last_event_digest")
@@ -132,6 +136,7 @@ def _critical_projection(evidence: Mapping[str, Any]) -> dict[str, Any]:
             "owner_sensitive_status": ai_control.get("owner_sensitive_status"),
             "owner_sensitive_reason_code": ai_control.get("owner_sensitive_reason_code"),
         },
+        "ai_room": validated_room,
         "security": dict(security),
     }
 
@@ -142,16 +147,20 @@ def verify_gate20_evidence_strict(
     expected_source_sha: str,
     verification_workspace: Path,
 ) -> dict[str, Any]:
-    """Verify the envelope, then independently rerun deterministic Gate 20 security claims.
+    """Verify the envelope and independently rerun all deterministic security claims.
 
-    Runtime latency and audit-chain head telemetry are intentionally not compared byte-for-byte;
-    all deterministic trading, recovery, authority, and air-gap claims are re-derived from the
-    exact source SHA and compared fail-closed.
+    Runtime latency and audit-chain head telemetry are intentionally not compared
+    byte-for-byte. Trading, recovery, authority, air-gap, and interactive AI Room
+    claims are re-derived from the exact source SHA and compared fail-closed.
     """
     verified = verify_gate20_evidence(evidence, expected_source_sha=expected_source_sha)
     supplied_projection = _critical_projection(verified)
 
-    reference = run_phase4_gate20(expected_source_sha, Path(verification_workspace))
+    reference_base = run_phase4_gate20(expected_source_sha, Path(verification_workspace))
+    reference = augment_gate20_evidence(
+        reference_base,
+        Path(verification_workspace) / "ai-room",
+    )
     verify_gate20_evidence(reference, expected_source_sha=expected_source_sha)
     reference_projection = _critical_projection(reference)
 

@@ -58,6 +58,17 @@ FORBIDDEN_TOOL_PREFIXES = (
     "signing.",
     "shell.",
 )
+FORBIDDEN_AUTHORITY_VALUES = {
+    "live_order",
+    "real_order",
+    "live_trading",
+    "withdraw",
+    "withdrawal",
+    "production_deploy",
+    "production_deployment",
+    "billing_authority",
+    "signing_authority",
+}
 DEFAULT_ALLOWED_TOOLS = frozenset(
     {
         "market.read_public",
@@ -130,6 +141,12 @@ def _check_text(value: str, field: str) -> None:
     for pattern in _SECRET_PATTERNS:
         if pattern.search(value):
             raise SecretMaterialDetected(f"secret material detected in {field}")
+    stripped = value.casefold().strip()
+    normalized = re.sub(r"[^a-z0-9]+", "_", stripped).strip("_")
+    if any(stripped.startswith(prefix) for prefix in FORBIDDEN_TOOL_PREFIXES):
+        raise AirGapViolation(f"forbidden authority namespace detected in {field}")
+    if normalized in FORBIDDEN_AUTHORITY_VALUES:
+        raise AirGapViolation(f"forbidden authority value detected in {field}")
 
 
 def validate_paper_contract(value: Any) -> ValidationResult:

@@ -82,10 +82,14 @@ def test_ambiguous_timeout_retains_reservation_and_reduces_remaining_budget(tmp_
     monkeypatch.setattr(ds, "CANONICAL_LEDGER", path)
     monkeypatch.setenv("DEEPSEEK_API_KEY", "test-only-key")
 
+    marker_authorizer = object()
+    marker_request = object()
+    monkeypatch.setattr(ds, "authorize_deepseek_json", lambda _body: (marker_authorizer, marker_request))
+
     def timeout(*_args, **_kwargs):
         raise TimeoutError("simulated ambiguous timeout")
 
-    monkeypatch.setattr(ds.request, "urlopen", timeout)
+    monkeypatch.setattr(ds, "post_authorized_json", timeout)
     before = ds.remaining_budget(ds._fresh_ledger())
 
     with pytest.raises(ds.AmbiguousCharge, match="ambiguous"):

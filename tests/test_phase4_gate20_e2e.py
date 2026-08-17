@@ -5,6 +5,8 @@ import copy
 import pytest
 
 from ai_room import evaluate_room_message
+from gate20_ai_room_evidence import augment_gate20_evidence
+from gate20_evidence_security import verify_gate20_evidence_strict
 from phase4_e2e import Phase4E2EError, run_phase4_gate20, verify_gate20_evidence
 from scripts.phase4_gate20_evidence import require_exact_runtime_head
 
@@ -44,7 +46,7 @@ def test_full_gate20_path_is_same_sha_paper_only_and_recoverable(tmp_path):
     assert "deny" not in verified["resources"]["actions"].values()
 
 
-def test_ai_chat_can_inspect_and_orchestrate_but_not_take_owner_live_authority(tmp_path):
+def test_ai_control_plane_can_route_bounded_workflow_but_not_owner_live_authority(tmp_path):
     evidence = run_phase4_gate20(SOURCE_SHA, tmp_path)
     ai = evidence["ai_control"]
 
@@ -58,7 +60,31 @@ def test_ai_chat_can_inspect_and_orchestrate_but_not_take_owner_live_authority(t
     assert ai["owner_sensitive_reason_code"] == "human_required"
 
 
-def test_interactive_ai_room_is_persian_aware_and_route_only():
+def _mission_projection() -> dict:
+    return {
+        "contract_version": "nexus.mission-control.read.v1",
+        "mission": {
+            "mission_id": "phase4-interactive-test",
+            "title": "Phase 4 interactive Gate 20",
+            "status": "RUNNING",
+            "priority": 100,
+            "deadline_at": "2026-08-18T08:00:00Z",
+            "state_digest": "a" * 64,
+        },
+        "queue": {"counts": {"READY": 1, "RUNNING": 1}, "total": 2},
+        "agents": ["producer", "verifier"],
+        "runners": ["cloud", "windows"],
+        "local_node": "offline",
+        "data": "ready",
+        "providers": "ready",
+        "paper": "paper-only",
+        "circuits": {"provider": False, "data": False, "strategy": False, "risk": False},
+        "limits": {"resource_limited": False, "budget_limited": False},
+        "notifications": [],
+    }
+
+
+def test_interactive_ai_room_is_persian_aware_and_executes_only_read_only_l3():
     memory = {
         "schema_version": 2,
         "project": "NEXUS",
@@ -68,16 +94,7 @@ def test_interactive_ai_room_is_persian_aware_and_route_only():
             "secrets_allowed": False,
         },
     }
-    mission = {
-        "mission": {"status": "RUNNING"},
-        "queue": {"counts": {"RUNNING": 1}},
-        "agents": ["producer", "verifier"],
-        "runners": ["cloud", "windows"],
-        "local_node": "offline",
-        "data": "ready",
-        "providers": "ready",
-        "paper": "paper-only",
-    }
+    mission = _mission_projection()
     workflow = evaluate_room_message(
         {
             "session_id": "gate20-session",
@@ -89,11 +106,17 @@ def test_interactive_ai_room_is_persian_aware_and_route_only():
         mission_control=mission,
         evaluated_at="2026-08-17T08:00:00Z",
     )
+    assert workflow["contract_version"] == "nexus.ai-room.v2"
     assert workflow["decision"]["allowed"] is True
     assert workflow["decision"]["authority_level"] == 3
     assert workflow["decision"]["route"] == "mission-runner"
-    assert workflow["proposal"]["executed"] is False
+    assert workflow["proposal"]["executed"] is True
     assert workflow["proposal"]["state_mutation"] is False
+    assert workflow["execution"]["contract_version"] == "nexus.mission-runner.v2"
+    assert workflow["execution"]["selected_mission_id"] == "phase4-interactive-test"
+    assert workflow["execution"]["mission_state_digest"] == "a" * 64
+    assert workflow["execution"]["status"] == "completed"
+    assert workflow["execution"]["state_mutation"] is False
     assert workflow["privacy"]["server_persisted_transcript"] is False
     assert workflow["privacy"]["external_provider_called"] is False
 
@@ -111,6 +134,28 @@ def test_interactive_ai_room_is_persian_aware_and_route_only():
     assert owner["decision"]["allowed"] is False
     assert owner["decision"]["status"] == "owner_required"
     assert owner["decision"]["route"] is None
+    assert owner["proposal"]["executed"] is False
+
+
+def test_augmented_final_evidence_contains_independently_verified_ai_room(tmp_path):
+    base = run_phase4_gate20(SOURCE_SHA, tmp_path / "source")
+    evidence = augment_gate20_evidence(base, tmp_path / "source" / "ai-room")
+    verified = verify_gate20_evidence_strict(
+        evidence,
+        expected_source_sha=SOURCE_SHA,
+        verification_workspace=tmp_path / "independent",
+    )
+    room = verified["ai_room"]
+    assert room["evidence_version"] == "nexus.gate20-ai-room.v2"
+    assert room["interactive"] is True
+    assert room["inspect"]["allowed"] is True
+    assert room["orchestration"]["route"] == "mission-runner"
+    assert room["orchestration"]["tool_contract_version"] == "nexus.mission-runner.v2"
+    assert room["orchestration"]["executed"] is True
+    assert room["orchestration"]["state_mutation"] is False
+    assert room["orchestration"]["mission_state_digest"] == room["orchestration"]["pipeline_state_digest"]
+    assert room["owner_sensitive"]["allowed"] is False
+    assert room["owner_sensitive"]["status"] == "owner_required"
 
 
 def test_same_inputs_reproduce_identical_trading_and_recovery_state(tmp_path):
@@ -122,8 +167,6 @@ def test_same_inputs_reproduce_identical_trading_and_recovery_state(tmp_path):
     assert first["pipeline"]["state_digest"] == second["pipeline"]["state_digest"]
     assert first["pipeline"]["fill_price"] == second["pipeline"]["fill_price"]
     assert first["recovery"]["checkpoint_digest"] == second["recovery"]["checkpoint_digest"]
-    # Audit records may contain measured runtime telemetry, so their chain head is
-    # intentionally run-specific. Integrity and replay must still hold independently.
     assert first["audit"]["coverage_complete"] is True
     assert second["audit"]["coverage_complete"] is True
     assert first["audit"]["restart_replay_identical"] is True
@@ -149,7 +192,6 @@ def test_mutation_cannot_claim_live_authority_or_writable_dashboard(tmp_path):
     live = copy.deepcopy(evidence)
     live["security"]["live_authority_available"] = True
     live.pop("evidence_digest")
-    # A caller cannot re-seal arbitrary evidence through the verifier; missing digest fails first.
     with pytest.raises(Phase4E2EError, match="digest mismatch"):
         verify_gate20_evidence(live, expected_source_sha=SOURCE_SHA)
 

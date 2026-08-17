@@ -1,8 +1,10 @@
-"""Secure NEXUS browser gateway with one bounded AI Room proposal endpoint.
+"""Secure NEXUS browser gateway with one bounded AI Room control-plane endpoint.
 
 All ordinary dashboard routes remain read-only. The only accepted POST route is
-``/api/ai-room/message``; it returns an AI control-plane decision/proposal and
-never executes a tool or mutates trading/project state.
+``/api/ai-room/message``. It never grants ambient mutation or trading authority: after
+``evaluate_ai_action`` it may execute only the policy-approved, reversible, read-only
+L3 ``mission-runner`` orchestration route. L2 paper actions remain staged behind the
+deterministic Risk/Paper Execution path, and L4 remains owner-required.
 """
 from __future__ import annotations
 

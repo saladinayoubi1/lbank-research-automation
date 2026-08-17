@@ -17,12 +17,37 @@ RUNTIME_PATH = Path("data/agent_coordination/agent_manager_runtime.json")
 SUMMARY_PATH = Path("data/agent_coordination/manager_state.json")
 EXECUTOR_WORKFLOW = "nexus-runtime-worker.yml"
 ARTIFACT_PREFIX = "nexus-agent-result-"
+MAX_GITHUB_API_BYTES = 1_000_000
+MAX_ARTIFACT_ARCHIVE_BYTES = 2_000_000
+MAX_ARTIFACT_UNCOMPRESSED_BYTES = 2_000_000
+MAX_RESULT_JSON_BYTES = 256_000
+MAX_ARTIFACT_ENTRIES = 32
 RESULT_KEYS = {
     "schema_version", "task_id", "lease_id", "correlation_id", "dispatch_id",
     "worker_id", "transport", "outcome", "evidence",
 }
 DISPATCHABLE = {"LEASED", "RUNNING", "VERIFYING"}
 RESULT_WAITING = {"RUNNING", "VERIFYING"}
+
+
+class _StripAuthorizationRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Follow HTTPS artifact redirects without forwarding repository credentials."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: ANN001
+        if not isinstance(newurl, str) or not newurl.casefold().startswith("https://"):
+            raise RuntimeError("artifact redirect must remain HTTPS")
+        redirected = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if redirected is not None:
+            redirected.remove_header("Authorization")
+            redirected.remove_header("Proxy-Authorization")
+        return redirected
+
+
+def _bounded_read(stream: Any, limit: int, label: str) -> bytes:
+    raw = stream.read(limit + 1)
+    if len(raw) > limit:
+        raise RuntimeError(f"{label} exceeds bounded size")
+    return raw
 
 
 def _api(method: str, url: str, payload: dict[str, Any] | None = None) -> Any:
@@ -42,7 +67,7 @@ def _api(method: str, url: str, payload: dict[str, Any] | None = None) -> Any:
         },
     )
     with urllib.request.urlopen(req, timeout=30) as resp:
-        raw = resp.read()
+        raw = _bounded_read(resp, MAX_GITHUB_API_BYTES, "GitHub API response")
         return json.loads(raw.decode("utf-8")) if raw else None
 
 
@@ -131,8 +156,6 @@ def dispatch_task(task: dict[str, Any], *, ref: str) -> None:
     now = am.utcnow()
     if prior_status == "LEASED":
         task["status"] = "RUNNING"
-    # VERIFYING must remain VERIFYING so a successful verifier result closes the task.
-    # RUNNING is retained for root-cause-analysis leases.
     task["correlation_id"] = env["correlation_id"]
     task["dispatch_id"] = env["dispatch_id"]
     task["dispatch_transport"] = env["transport"]
@@ -159,27 +182,52 @@ def dispatch_pending(config: dict[str, Any], *, ref: str) -> int:
         expected_dispatch = dispatch_id_for(task)
         if task.get("dispatch_id") == expected_dispatch:
             continue
-        # A new lease (retry, verifier, or RCA analyst) supersedes any old dispatch identity.
         dispatch_task(task, ref=ref)
         count += 1
     return count
 
 
 def _artifact_json(artifact_id: int) -> dict[str, Any]:
+    if isinstance(artifact_id, bool) or not isinstance(artifact_id, int) or artifact_id < 1:
+        raise RuntimeError("artifact id is invalid")
     repo = _repo()
     token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
+    if not token:
+        raise RuntimeError("GitHub token missing")
     req = urllib.request.Request(
         f"https://api.github.com/repos/{repo}/actions/artifacts/{artifact_id}/zip",
         method="GET",
         headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"},
     )
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        blob = resp.read()
-    with zipfile.ZipFile(io.BytesIO(blob)) as zf:
-        names = [n for n in zf.namelist() if n.endswith("result.json")]
-        if len(names) != 1:
-            raise RuntimeError("result artifact must contain exactly one result.json")
-        return json.loads(zf.read(names[0]).decode("utf-8"))
+    opener = urllib.request.build_opener(_StripAuthorizationRedirectHandler())
+    with opener.open(req, timeout=30) as resp:
+        blob = _bounded_read(resp, MAX_ARTIFACT_ARCHIVE_BYTES, "agent artifact archive")
+    try:
+        with zipfile.ZipFile(io.BytesIO(blob)) as zf:
+            infos = zf.infolist()
+            if not infos or len(infos) > MAX_ARTIFACT_ENTRIES:
+                raise RuntimeError("result artifact entry count is outside bounds")
+            if sum(info.file_size for info in infos) > MAX_ARTIFACT_UNCOMPRESSED_BYTES:
+                raise RuntimeError("result artifact uncompressed size exceeds bound")
+            matches = [info for info in infos if info.filename == "result.json" and not info.is_dir()]
+            if len(matches) != 1:
+                raise RuntimeError("result artifact must contain exactly one canonical result.json")
+            info = matches[0]
+            if info.flag_bits & 0x1:
+                raise RuntimeError("encrypted result artifact is forbidden")
+            if info.file_size > MAX_RESULT_JSON_BYTES:
+                raise RuntimeError("result.json exceeds bounded size")
+            with zf.open(info, "r") as result_stream:
+                raw_result = _bounded_read(result_stream, MAX_RESULT_JSON_BYTES, "result.json")
+    except zipfile.BadZipFile as exc:
+        raise RuntimeError("result artifact is not a valid ZIP archive") from exc
+    try:
+        result = json.loads(raw_result.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise RuntimeError("result artifact JSON is malformed") from exc
+    if not isinstance(result, dict):
+        raise RuntimeError("result artifact JSON root must be an object")
+    return result
 
 
 def find_result(lease_id: str) -> dict[str, Any] | None:
@@ -190,7 +238,16 @@ def find_result(lease_id: str) -> dict[str, Any] | None:
     if not artifacts:
         return None
     artifacts.sort(key=lambda a: a.get("created_at", ""), reverse=True)
-    return _artifact_json(int(artifacts[0]["id"]))
+    artifact = artifacts[0]
+    artifact_size = artifact.get("size_in_bytes")
+    if (
+        isinstance(artifact_size, bool)
+        or not isinstance(artifact_size, int)
+        or artifact_size < 1
+        or artifact_size > MAX_ARTIFACT_ARCHIVE_BYTES
+    ):
+        raise RuntimeError("result artifact metadata size is outside bounds")
+    return _artifact_json(int(artifact["id"]))
 
 
 def ingest_result(config: dict[str, Any], task: dict[str, Any], result: dict[str, Any]) -> None:
@@ -243,7 +300,6 @@ def poll_results(config: dict[str, Any]) -> int:
         if not lease_id:
             continue
         if task.get("dispatch_id") != dispatch_id_for(task):
-            # Old artifact identity belongs to an earlier lease and must not be polled as current.
             continue
         result = find_result(lease_id)
         if result is None:

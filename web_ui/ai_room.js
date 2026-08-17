@@ -6,13 +6,13 @@
 
   const headerChip = room.querySelector('.status-chip');
   if (headerChip) {
-    headerChip.textContent = 'Policy-gated · L0–L3 staging';
+    headerChip.textContent = 'Policy-gated · L0–L3 bounded orchestration';
     headerChip.className = 'status-chip safe';
   }
 
   const API_CONTRACT = 'nexus.dashboard.read.v1';
-  const ROOM_CONTRACT = 'nexus.ai-room.v1';
-  const STORAGE_KEY = 'nexus.ai-room.session.v1';
+  const ROOM_CONTRACT = 'nexus.ai-room.v2';
+  const STORAGE_KEY = 'nexus.ai-room.session.v2';
   const MAX_HISTORY = 40;
   const MAX_MESSAGE = 8000;
 
@@ -92,12 +92,12 @@
   input.name = 'message';
   input.rows = 3;
   input.maxLength = MAX_MESSAGE;
-  input.placeholder = 'Ask NEXUS to inspect, propose, stage a paper action, or route a bounded workflow…';
+  input.placeholder = 'Ask NEXUS to inspect, propose, stage a paper action, or run bounded mission orchestration…';
   input.autocomplete = 'off';
   const actions = document.createElement('div');
   actions.className = 'ai-room-form-actions';
   const hint = document.createElement('small');
-  hint.textContent = 'Raw history stays in this browser session. No external AI provider is called from this endpoint.';
+  hint.textContent = 'Raw history stays in this browser session. L3 may execute only the read-only reversible mission runner; no external AI provider is called.';
   const send = document.createElement('button');
   send.type = 'submit';
   send.textContent = 'Send';
@@ -134,9 +134,9 @@
     gate.append(
       gateRow('L0–L1', 'Observe / propose'),
       gateRow('L2', 'Paper proposal only'),
-      gateRow('L3', 'Bounded reversible route'),
+      gateRow('L3', 'Read-only mission orchestration'),
       gateRow('L4', 'Owner required'),
-      gateRow('State mutation', 'OFF in chat endpoint'),
+      gateRow('Trading mutation', 'OFF in AI Room'),
     );
     runtime.replaceChildren();
     if (!result) {
@@ -148,12 +148,17 @@
     }
     const decision = result.decision || {};
     const operations = result.operations || {};
+    const execution = result.execution || {};
     const facts = [
       ['Intent', result.intent || 'unknown'],
       ['Decision', decision.status || 'blocked'],
       ['Authority', `L${Number(decision.authority_level ?? 0)}`],
       ['Route', decision.route || 'none'],
+      ['Tool status', execution.status || 'not invoked'],
+      ['Executed', result.proposal?.executed ? 'YES' : 'NO'],
+      ['State mutation', result.proposal?.state_mutation ? 'ON' : 'OFF'],
       ['Mission', operations.mission_status || 'unknown'],
+      ['Selected mission', execution.selected_mission_id || 'none'],
       ['Agents', String(Array.isArray(operations.agents) ? operations.agents.length : 0)],
       ['Runners', String(Array.isArray(operations.runners) ? operations.runners.length : 0)],
       ['External provider', result.privacy?.external_provider_called ? 'ON' : 'OFF'],
@@ -193,7 +198,7 @@
       const strong = document.createElement('strong');
       strong.textContent = 'AI Room ready';
       const p = document.createElement('p');
-      p.textContent = 'Messages are evaluated through the deterministic authority gate before any route is proposed.';
+      p.textContent = 'Messages pass the deterministic authority gate before any route. Only approved read-only L3 mission orchestration can execute here.';
       empty.append(strong, p);
       log.append(empty);
       return;
@@ -246,11 +251,13 @@
     try {
       const result = await sendTurn(message);
       const decision = result.decision || {};
+      const execution = result.execution || {};
       const route = decision.route ? ` · route ${decision.route}` : '';
+      const executionMeta = execution.status ? ` · ${execution.status}` : '';
       appendMessage(
         'assistant',
         result.reply || 'No response text.',
-        `L${Number(decision.authority_level ?? 0)} · ${decision.status || 'blocked'} · ${decision.reason_code || 'unknown'}${route}`,
+        `L${Number(decision.authority_level ?? 0)} · ${decision.status || 'blocked'} · ${decision.reason_code || 'unknown'}${route}${executionMeta}`,
       );
       renderGate(result);
     } catch (error) {

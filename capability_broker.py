@@ -109,7 +109,7 @@ class CapabilityBroker:
                 raise AuthorizationDenied("file exceeds capability byte limit")
         finally:
             os.close(fd)
-        self._consume(state, "read_file")
+        self._complete(state, "read_file")
         return data
 
     def write_file(self, token: str, subject: str, data: bytes) -> None:
@@ -126,7 +126,7 @@ class CapabilityBroker:
             os.fsync(fd)
         finally:
             os.close(fd)
-        self._consume(state, "write_file")
+        self._complete(state, "write_file")
 
     def create_file(self, token: str, subject: str, data: bytes) -> None:
         state = self._authorize(token, subject, Operation.CREATE_FILE)
@@ -142,7 +142,7 @@ class CapabilityBroker:
             os.fsync(fd)
         finally:
             os.close(fd)
-        self._consume(state, "create_file")
+        self._complete(state, "create_file")
 
     def list_directory(self, token: str, subject: str) -> tuple[str, ...]:
         state = self._authorize(token, subject, Operation.LIST_DIRECTORY)
@@ -151,7 +151,7 @@ class CapabilityBroker:
         encoded_size = sum(len(name.encode("utf-8")) for name in entries)
         if encoded_size > state.grant.max_bytes:
             raise AuthorizationDenied("directory listing exceeds capability byte limit")
-        self._consume(state, "list_directory")
+        self._complete(state, "list_directory")
         return entries
 
     def audit_records(self) -> tuple[dict[str, Any], ...]:
@@ -194,11 +194,14 @@ class CapabilityBroker:
             if reason:
                 self._record(operation.value, grant, "deny", reason)
                 raise AuthorizationDenied(reason)
+            # Reserve one use while the authorization lock is held. A failed operation
+            # burns the reservation rather than restoring it: fail-closed semantics
+            # prevent concurrent callers from reusing a one-shot capability.
+            state.remaining_uses -= 1
             return state
 
-    def _consume(self, state: _CapabilityState, action: str) -> None:
+    def _complete(self, state: _CapabilityState, action: str) -> None:
         with self._lock:
-            state.remaining_uses -= 1
             self._record(action, state.grant, "allow")
 
     @staticmethod

@@ -37,9 +37,11 @@ jobs:
       - run: python -m pip check
       - run: python -m pytest -q
       - name: Download and verify immutable Bybit dataset
+        env:
+          DISPATCH_ARTIFACT_ID: ${{ github.event.inputs.artifact_id }}
         run: |
           set -euo pipefail
-          artifact_id="${{ github.event.inputs.artifact_id }}"
+          artifact_id="$DISPATCH_ARTIFACT_ID"
           if [ -z "$artifact_id" ]; then artifact_id="$DEFAULT_ARTIFACT_ID"; fi
           rm -rf build/final_delivery build/bybit_dataset
           mkdir -p build/final_delivery build/bybit_dataset

@@ -41,6 +41,8 @@ jobs:
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -52,6 +54,7 @@ jobs:
       - name: Exercise AI council agents
         run: node scripts/test_nexus_ai_council.js
       - name: Exercise bounded DeepSeek provider when explicitly authorized
+        if: github.event_name != 'pull_request'
         env:
           NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: ${{ vars.NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
@@ -70,16 +73,31 @@ jobs:
       - name: Emit cloud resource status without a second paid call
         env:
           NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: '0'
-          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           PYTHONPATH: ${{ github.workspace }}
         run: node scripts/nexus_phase3_worker.js
 
   laptop-runner:
     name: Windows self-hosted laptop
+    if: >-
+      github.event_name != 'pull_request' &&
+      (github.event_name != 'workflow_dispatch' ||
+       (github.actor == github.repository_owner &&
+        github.ref_name == github.event.repository.default_branch))
     runs-on: [self-hosted, Windows]
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 1
+      - name: Verify exact trusted SHA
+        shell: cmd
+        run: |
+          for /f %%S in ('git rev-parse HEAD') do set "CHECKED_OUT_SHA=%%S"
+          if /I not "%CHECKED_OUT_SHA%"=="%GITHUB_SHA%" exit /b 1
+          echo exact_trusted_sha=%CHECKED_OUT_SHA%
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
