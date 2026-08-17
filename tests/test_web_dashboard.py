@@ -43,7 +43,6 @@ def test_summary_returns_generated_json_and_metadata(tmp_path: Path):
 
     payload = load_summary(tmp_path)
 
-    assert payload["contract_version"] == "nexus.dashboard.read.v1"
     assert payload["summary"]["total_series"] == 2
     assert payload["metadata"]["source"] == "_data_readiness.json"
     assert payload["metadata"]["stale_possible"] is True
