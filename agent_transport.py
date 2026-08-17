@@ -21,6 +21,8 @@ RESULT_KEYS = {
     "schema_version", "task_id", "lease_id", "correlation_id", "dispatch_id",
     "worker_id", "transport", "outcome", "evidence",
 }
+DISPATCHABLE = {"LEASED", "RUNNING", "VERIFYING"}
+RESULT_WAITING = {"RUNNING", "VERIFYING"}
 
 
 def _api(method: str, url: str, payload: dict[str, Any] | None = None) -> Any:
@@ -115,6 +117,9 @@ def envelope_for(task: dict[str, Any]) -> dict[str, Any]:
 
 
 def dispatch_task(task: dict[str, Any], *, ref: str) -> None:
+    prior_status = task.get("status")
+    if prior_status not in DISPATCHABLE:
+        raise ValueError("task is not in a dispatchable lease state")
     env = envelope_for(task)
     encoded = base64.urlsafe_b64encode(json.dumps(env, sort_keys=True).encode("utf-8")).decode("ascii")
     repo = _repo()
@@ -124,7 +129,10 @@ def dispatch_task(task: dict[str, Any], *, ref: str) -> None:
         {"ref": ref, "inputs": {"payload_b64": encoded, "lease_id": env["lease_id"], "transport": env["transport"]}},
     )
     now = am.utcnow()
-    task["status"] = "RUNNING"
+    if prior_status == "LEASED":
+        task["status"] = "RUNNING"
+    # VERIFYING must remain VERIFYING so a successful verifier result closes the task.
+    # RUNNING is retained for root-cause-analysis leases.
     task["correlation_id"] = env["correlation_id"]
     task["dispatch_id"] = env["dispatch_id"]
     task["dispatch_transport"] = env["transport"]
@@ -139,14 +147,19 @@ def dispatch_task(task: dict[str, Any], *, ref: str) -> None:
         lease_id=env["lease_id"],
         correlation_id=env["correlation_id"],
         dispatch_id=env["dispatch_id"],
+        lease_status=prior_status,
     )
 
 
 def dispatch_pending(config: dict[str, Any], *, ref: str) -> int:
     count = 0
     for task in config.get("tasks", []):
-        if task.get("status") != "LEASED" or task.get("dispatch_id"):
+        if task.get("status") not in DISPATCHABLE or not task.get("lease_id") or not task.get("assigned_worker"):
             continue
+        expected_dispatch = dispatch_id_for(task)
+        if task.get("dispatch_id") == expected_dispatch:
+            continue
+        # A new lease (retry, verifier, or RCA analyst) supersedes any old dispatch identity.
         dispatch_task(task, ref=ref)
         count += 1
     return count
@@ -188,7 +201,9 @@ def ingest_result(config: dict[str, Any], task: dict[str, Any], result: dict[str
     if result.get("task_id") != task.get("id") or result.get("lease_id") != task.get("lease_id"):
         raise ValueError("stale or mismatched task result")
     expected_correlation = task.get("correlation_id") or correlation_for(task)
-    expected_dispatch = task.get("dispatch_id") or dispatch_id_for(task)
+    expected_dispatch = dispatch_id_for(task)
+    if task.get("dispatch_id") != expected_dispatch:
+        raise ValueError("task dispatch identity is stale for current lease")
     if result.get("correlation_id") != expected_correlation:
         raise ValueError("result correlation does not match task lifecycle")
     if result.get("dispatch_id") != expected_dispatch:
@@ -204,6 +219,8 @@ def ingest_result(config: dict[str, Any], task: dict[str, Any], result: dict[str
     evidence = result.get("evidence")
     if not isinstance(evidence, dict):
         raise ValueError("result evidence must be an object")
+    completed_lease_id = task.get("lease_id")
+    completed_dispatch_id = expected_dispatch
     am.record_result(config, task["id"], task["assigned_worker"], outcome, evidence)
     task["result_artifact_ingested"] = True
     task["result_received_at"] = am.iso()
@@ -211,19 +228,22 @@ def ingest_result(config: dict[str, Any], task: dict[str, Any], result: dict[str
         "task_result_ingested",
         task_id=task["id"],
         outcome=outcome,
-        lease_id=task.get("lease_id"),
+        lease_id=completed_lease_id,
         correlation_id=expected_correlation,
-        dispatch_id=expected_dispatch,
+        dispatch_id=completed_dispatch_id,
     )
 
 
 def poll_results(config: dict[str, Any]) -> int:
     count = 0
     for task in config.get("tasks", []):
-        if task.get("status") != "RUNNING" or not task.get("dispatch_id"):
+        if task.get("status") not in RESULT_WAITING or not task.get("dispatch_id"):
             continue
         lease_id = task.get("lease_id")
         if not lease_id:
+            continue
+        if task.get("dispatch_id") != dispatch_id_for(task):
+            # Old artifact identity belongs to an earlier lease and must not be polled as current.
             continue
         result = find_result(lease_id)
         if result is None:
