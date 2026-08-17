@@ -8,8 +8,9 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from ai_control_plane import AIControlPlaneError, classify_intent, evaluate_ai_action
+from mission_runner import DEFAULT_QUEUE_PATH, MissionRunnerError, run_mission_orchestration
 
-AI_ROOM_CONTRACT_VERSION = "nexus.ai-room.v1"
+AI_ROOM_CONTRACT_VERSION = "nexus.ai-room.v2"
 MAX_PROJECT_MEMORY_BYTES = 1_000_000
 REQUEST_KEYS = {"session_id", "conversation_id", "turn_id", "message"}
 
@@ -33,7 +34,7 @@ TOOL_REGISTRY = {
 }
 
 POLICY = {
-    "policy_version": "phase4-ai-room-policy-v1",
+    "policy_version": "phase4-ai-room-policy-v2",
     "max_retry_count": 2,
     "max_timeout_seconds": 30,
     "max_delegation_depth": 2,
@@ -44,7 +45,7 @@ POLICY = {
 MODEL = {
     "provider_id": "nexus-local",
     "model_id": "deterministic-ops-room",
-    "model_version": "v1",
+    "model_version": "v2",
 }
 
 _PERSIAN_OWNER_TERMS = (
@@ -129,9 +130,6 @@ def _classify_room_intent(message: str) -> tuple[str, str]:
         ("propose", _PERSIAN_PROPOSAL_TERMS),
     ):
         if any(term in text for term in terms):
-            # Gate 10 re-classifies current_message independently. Feed it only a
-            # canonical intent sentinel; the original message remains bound by a
-            # SHA-256 digest in working context and is never persisted server-side.
             return intent, _CLASSIFIER_SENTINELS[intent]
     return "observe", message
 
@@ -212,7 +210,7 @@ def _model_output(intent: str) -> dict[str, Any]:
         }
     if intent == "workflow":
         return {
-            "intent": intent, "action": "stage_bounded_workflow", "tool": "mission-runner",
+            "intent": intent, "action": "run_bounded_mission_orchestration", "tool": "mission-runner",
             "parameters": {"mode": "paper_research_only", "state_mutation": False},
             "requested_authority": 3, "retry_count": 0, "timeout_seconds": 30,
             "delegation_depth": 1, "cancel_requested": False,
@@ -224,7 +222,48 @@ def _model_output(intent: str) -> dict[str, Any]:
     }
 
 
-def _reply(intent: str, decision: Mapping[str, Any], operations: Mapping[str, Any]) -> str:
+def _execute_route(route: str | None, *, mission_queue_path: Path) -> dict[str, Any] | None:
+    if route is None:
+        return None
+    if route == "paper-signal-proposal":
+        return {
+            "tool": route,
+            "status": "staged",
+            "executed": False,
+            "state_mutation": False,
+            "paper_only": True,
+            "reason_code": "deterministic_risk_required",
+        }
+    if route == "mission-runner":
+        try:
+            result = run_mission_orchestration(mission_queue_path)
+        except MissionRunnerError as exc:
+            return {
+                "tool": route,
+                "status": "failed",
+                "executed": False,
+                "state_mutation": False,
+                "paper_only": True,
+                "reason_code": "mission_orchestration_unavailable",
+                "detail": str(exc)[:240],
+            }
+        return {"tool": route, "status": "completed", **result}
+    return {
+        "tool": route,
+        "status": "blocked",
+        "executed": False,
+        "state_mutation": False,
+        "paper_only": True,
+        "reason_code": "unsupported_ai_room_route",
+    }
+
+
+def _reply(
+    intent: str,
+    decision: Mapping[str, Any],
+    operations: Mapping[str, Any],
+    execution: Mapping[str, Any] | None,
+) -> str:
     status = str(decision.get("status", "blocked"))
     reason = str(decision.get("reason_code", "unknown"))
     if status == "owner_required":
@@ -232,9 +271,17 @@ def _reply(intent: str, decision: Mapping[str, Any], operations: Mapping[str, An
     if not decision.get("allowed"):
         return f"The request was blocked by the AI authority gate ({reason}). No state was changed."
     if intent == "workflow":
-        return "The bounded workflow route is policy-valid. It is staged only; this chat endpoint did not execute or mutate project state."
+        if execution and execution.get("executed") is True:
+            selected = execution.get("selected_mission_id") or "none"
+            parallel = ", ".join(execution.get("parallel_mission_ids", [])) or "none"
+            return (
+                "Bounded mission orchestration completed through the approved L3 mission-runner route. "
+                f"Selected mission: {selected}; parallel-ready: {parallel}. No trading or project state was mutated."
+            )
+        failure = execution.get("reason_code", "mission_orchestration_unavailable") if execution else "mission_orchestration_unavailable"
+        return f"The L3 route was policy-valid but bounded mission orchestration failed closed ({failure}). No state was changed."
     if intent == "paper_action":
-        return "The paper-action proposal passed the AI gate. It is staged only and still requires the deterministic Risk/Paper Execution path before any simulated state change."
+        return "The paper-action proposal passed the AI gate. It remains staged and still requires the deterministic Risk/Paper Execution path before any simulated state change."
     if intent == "propose":
         return "The request is accepted as a proposal. No tool was invoked and no project state was changed."
     mission = operations.get("mission_status", "unknown")
@@ -247,9 +294,15 @@ def evaluate_room_message(
     *,
     project_memory_snapshot: Mapping[str, Any],
     mission_control: Mapping[str, Any] | None = None,
+    mission_queue_path: Path = DEFAULT_QUEUE_PATH,
     evaluated_at: str | None = None,
 ) -> dict[str, Any]:
-    """Evaluate one browser chat turn without executing tools or persisting the raw transcript."""
+    """Evaluate one browser turn and execute only an authority-approved bounded route.
+
+    Raw chat is never persisted server-side. L0/L1 are read/proposal-only. L2 is staged
+    because deterministic Risk remains authoritative. L3 may execute only the read-only
+    reversible mission-runner. L4 always remains owner-required.
+    """
     if not isinstance(request, Mapping) or set(request) != REQUEST_KEYS:
         raise AIRoomError("AI Room request schema mismatch")
     session_id = _bounded_identifier(request["session_id"], "session_id")
@@ -284,7 +337,7 @@ def evaluate_room_message(
         "generated_at": now_text,
         "expires_at": _iso(now + timedelta(minutes=10)),
         "working_context_id": "ai-room-working-context",
-        "working_context_version": "v1",
+        "working_context_version": "v2",
         "working_context_digest": _digest(working_context),
         "project_memory_id": "repository-project-memory",
         "project_memory_version": f"schema-{project_memory_snapshot.get('schema_version', 'unknown')}",
@@ -312,6 +365,8 @@ def evaluate_room_message(
     except AIControlPlaneError as exc:
         raise AIRoomError("AI control plane rejected malformed input") from exc
     decision = asdict(result)
+    execution = _execute_route(decision["route"] if decision["allowed"] else None, mission_queue_path=mission_queue_path)
+    executed = bool(execution and execution.get("executed") is True)
     return {
         "contract_version": AI_ROOM_CONTRACT_VERSION,
         "session_id": session_id,
@@ -322,12 +377,13 @@ def evaluate_room_message(
         "proposal": {
             "action": proposal["action"],
             "route": decision["route"],
-            "executed": False,
+            "executed": executed,
             "state_mutation": False,
             "paper_only": True,
         },
+        "execution": execution,
         "operations": operations,
-        "reply": _reply(intent, decision, operations),
+        "reply": _reply(intent, decision, operations, execution),
         "privacy": {
             "server_persisted_transcript": False,
             "external_provider_called": False,
