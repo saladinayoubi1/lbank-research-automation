@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Mapping
@@ -39,6 +40,54 @@ FORBIDDEN_TERMS = {
     "api_key", "api_secret", "credential", "private_key", "live_order", "withdrawal",
     "production", "billing", "signing", "exchange_secret", "seed_phrase",
 }
+SENSITIVE_ACTION_FRAGMENTS = (
+    "api_key",
+    "api_secret",
+    "credential",
+    "private_key",
+    "live_order",
+    "real_order",
+    "live_trade",
+    "real_trade",
+    "withdraw",
+    "production",
+    "billing",
+    "signing",
+    "exchange_secret",
+    "seed_phrase",
+)
+FORBIDDEN_TOOL_PREFIXES = (
+    "exchange_private",
+    "exchange_live",
+    "wallet_withdraw",
+    "production_deploy",
+    "billing_",
+    "signing_",
+    "shell_",
+)
+FORBIDDEN_PARAMETER_VALUE_FRAGMENTS = (
+    "api_key",
+    "api_secret",
+    "credential",
+    "private_key",
+    "live_order",
+    "real_order",
+    "live_trade",
+    "real_trade",
+    "withdrawal",
+    "wallet_withdraw",
+    "production_deploy",
+    "production_promotion",
+    "billing_authority",
+    "signing_authority",
+    "exchange_secret",
+    "seed_phrase",
+    "exchange_live",
+    "exchange_private",
+    "private_api",
+    "private_exchange",
+    "shell_exec",
+)
 
 
 @dataclass(frozen=True)
@@ -83,6 +132,20 @@ def _identifier(value: Any, field: str) -> str:
     return value
 
 
+def _security_token(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "_", value.casefold()).strip("_")
+
+
+def _is_sensitive_action(value: str) -> bool:
+    normalized = _security_token(value)
+    return any(fragment in normalized for fragment in SENSITIVE_ACTION_FRAGMENTS)
+
+
+def _is_forbidden_tool(value: str) -> bool:
+    normalized = _security_token(value)
+    return any(normalized.startswith(prefix) for prefix in FORBIDDEN_TOOL_PREFIXES)
+
+
 def _utc(value: Any, field: str) -> datetime:
     if not isinstance(value, str):
         raise AIControlPlaneError(f"{field} must be UTC ISO-8601")
@@ -114,13 +177,17 @@ def _bounded_int(value: Any, field: str, *, minimum: int = 0) -> int:
 def _reject_forbidden(value: Any, path: str = "parameters") -> None:
     if isinstance(value, Mapping):
         for key, child in value.items():
-            normalized = str(key).lower()
+            normalized = _security_token(str(key))
             if normalized in FORBIDDEN_TERMS or any(term in normalized for term in FORBIDDEN_TERMS):
                 raise AIControlPlaneError(f"{path}.{key} is forbidden")
             _reject_forbidden(child, f"{path}.{key}")
     elif isinstance(value, list):
         for index, child in enumerate(value):
             _reject_forbidden(child, f"{path}[{index}]")
+    elif isinstance(value, str):
+        normalized = _security_token(value)
+        if any(fragment in normalized for fragment in FORBIDDEN_PARAMETER_VALUE_FRAGMENTS):
+            raise AIControlPlaneError(f"{path} contains forbidden authority material")
 
 
 def classify_intent(message: Any) -> str:
@@ -282,10 +349,16 @@ def evaluate_ai_action(
                 route=None, session=session, context=context, model=model, policy=policy,
                 model_output=model_output, evaluated_at=evaluated_at,
             )
-        _identifier(model_output["action"], "model_output.action")
+        action = _identifier(model_output["action"], "model_output.action")
         authority = _bounded_int(model_output["requested_authority"], "model_output.requested_authority")
         if authority > 4:
             raise AIControlPlaneError("requested authority is invalid")
+        if _is_sensitive_action(action):
+            return _audit_decision(
+                allowed=False, status="owner_required", reason_code="human_required",
+                authority_level=max(authority, 4), route=None, session=session, context=context,
+                model=model, policy=policy, model_output=model_output, evaluated_at=evaluated_at,
+            )
         if authority > INTENT_MAX_AUTHORITY[classified_intent]:
             return _audit_decision(
                 allowed=False, status="blocked", reason_code="authority_self_promotion",
@@ -325,7 +398,7 @@ def evaluate_ai_action(
             raise AIControlPlaneError("parameters must be an object")
         _reject_forbidden(model_output["parameters"])
 
-        if classified_intent == "owner_sensitive" or authority == 4 or model_output["action"] in policy["human_required_actions"]:
+        if classified_intent == "owner_sensitive" or authority == 4 or action in policy["human_required_actions"]:
             return _audit_decision(
                 allowed=False, status="owner_required", reason_code="human_required",
                 authority_level=max(authority, 4 if classified_intent == "owner_sensitive" else authority),
@@ -348,6 +421,12 @@ def evaluate_ai_action(
             )
 
         _identifier(tool_name, "model_output.tool")
+        if _is_forbidden_tool(tool_name):
+            return _audit_decision(
+                allowed=False, status="blocked", reason_code="forbidden_tool_namespace",
+                authority_level=authority, route=None, session=session, context=context, model=model,
+                policy=policy, model_output=model_output, evaluated_at=evaluated_at,
+            )
         if not isinstance(tool_registry, Mapping) or tool_name not in tool_registry:
             return _audit_decision(
                 allowed=False, status="blocked", reason_code="tool_not_registered",

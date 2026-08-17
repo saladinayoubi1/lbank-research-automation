@@ -10,6 +10,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import json
+import math
 import os
 from pathlib import Path
 import time
@@ -86,6 +87,15 @@ def _fresh_ledger() -> dict[str, Any]:
     }
 
 
+def _finite_nonnegative_number(value: Any) -> bool:
+    return (
+        not isinstance(value, bool)
+        and isinstance(value, (int, float))
+        and math.isfinite(float(value))
+        and float(value) >= 0.0
+    )
+
+
 def _validate_ledger(data: Any) -> dict[str, Any]:
     if not isinstance(data, dict):
         raise DeepSeekError("usage ledger is malformed")
@@ -94,21 +104,23 @@ def _validate_ledger(data: Any) -> dict[str, Any]:
     if data.get("pricing_version") != PRICING_VERSION:
         raise DeepSeekError("usage ledger pricing version is stale or unknown")
     for key in ("spent_usd", "reserved_usd"):
-        value = data.get(key)
-        if not isinstance(value, (int, float)) or value < 0:
+        if not _finite_nonnegative_number(data.get(key)):
             raise DeepSeekError("usage ledger accounting is malformed")
-    if not isinstance(data.get("requests"), int) or data["requests"] < 0:
+    if isinstance(data.get("requests"), bool) or not isinstance(data.get("requests"), int) or data["requests"] < 0:
         raise DeepSeekError("usage ledger request count is malformed")
     if not isinstance(data.get("inflight"), dict):
         raise DeepSeekError("usage ledger inflight state is malformed")
     expected_reserved = 0.0
     for rec in data["inflight"].values():
-        if not isinstance(rec, dict) or not isinstance(rec.get("reserved_usd"), (int, float)) or rec["reserved_usd"] < 0:
+        if not isinstance(rec, dict) or not _finite_nonnegative_number(rec.get("reserved_usd")):
             raise DeepSeekError("usage ledger reservation is malformed")
         expected_reserved += float(rec["reserved_usd"])
+    if not math.isfinite(expected_reserved):
+        raise DeepSeekError("usage ledger reservation total is malformed")
     if abs(expected_reserved - float(data["reserved_usd"])) > 1e-7:
         raise DeepSeekError("usage ledger reservation total is inconsistent")
-    if float(data["spent_usd"]) + float(data["reserved_usd"]) > MONTHLY_BUDGET_USD + 1e-9:
+    committed = float(data["spent_usd"]) + float(data["reserved_usd"])
+    if not math.isfinite(committed) or committed > MONTHLY_BUDGET_USD + 1e-9:
         raise DeepSeekError("usage ledger exceeds configured monthly cap")
     return data
 
