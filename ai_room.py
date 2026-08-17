@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from ai_control_plane import AIControlPlaneError, classify_intent, evaluate_ai_action
-from mission_runner import DEFAULT_QUEUE_PATH, MissionRunnerError, run_mission_orchestration
+from mission_runner import MissionRunnerError, run_mission_orchestration
 
 AI_ROOM_CONTRACT_VERSION = "nexus.ai-room.v2"
 MAX_PROJECT_MEMORY_BYTES = 1_000_000
@@ -222,7 +222,11 @@ def _model_output(intent: str) -> dict[str, Any]:
     }
 
 
-def _execute_route(route: str | None, *, mission_queue_path: Path) -> dict[str, Any] | None:
+def _execute_route(
+    route: str | None,
+    *,
+    mission_control: Mapping[str, Any] | None,
+) -> dict[str, Any] | None:
     if route is None:
         return None
     if route == "paper-signal-proposal":
@@ -235,8 +239,18 @@ def _execute_route(route: str | None, *, mission_queue_path: Path) -> dict[str, 
             "reason_code": "deterministic_risk_required",
         }
     if route == "mission-runner":
+        if not isinstance(mission_control, Mapping):
+            return {
+                "tool": route,
+                "status": "failed",
+                "executed": False,
+                "state_mutation": False,
+                "paper_only": True,
+                "reason_code": "mission_orchestration_unavailable",
+                "detail": "Mission Control projection is unavailable",
+            }
         try:
-            result = run_mission_orchestration(mission_queue_path)
+            result = run_mission_orchestration(mission_control)
         except MissionRunnerError as exc:
             return {
                 "tool": route,
@@ -294,14 +308,14 @@ def evaluate_room_message(
     *,
     project_memory_snapshot: Mapping[str, Any],
     mission_control: Mapping[str, Any] | None = None,
-    mission_queue_path: Path = DEFAULT_QUEUE_PATH,
     evaluated_at: str | None = None,
 ) -> dict[str, Any]:
     """Evaluate one browser turn and execute only an authority-approved bounded route.
 
     Raw chat is never persisted server-side. L0/L1 are read/proposal-only. L2 is staged
     because deterministic Risk remains authoritative. L3 may execute only the read-only
-    reversible mission-runner. L4 always remains owner-required.
+    reversible mission-runner over the same Mission Control projection displayed by the
+    gateway. L4 always remains owner-required.
     """
     if not isinstance(request, Mapping) or set(request) != REQUEST_KEYS:
         raise AIRoomError("AI Room request schema mismatch")
@@ -365,7 +379,10 @@ def evaluate_room_message(
     except AIControlPlaneError as exc:
         raise AIRoomError("AI control plane rejected malformed input") from exc
     decision = asdict(result)
-    execution = _execute_route(decision["route"] if decision["allowed"] else None, mission_queue_path=mission_queue_path)
+    execution = _execute_route(
+        decision["route"] if decision["allowed"] else None,
+        mission_control=mission_control,
+    )
     executed = bool(execution and execution.get("executed") is True)
     return {
         "contract_version": AI_ROOM_CONTRACT_VERSION,

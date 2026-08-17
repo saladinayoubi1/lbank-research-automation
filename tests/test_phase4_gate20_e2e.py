@@ -60,6 +60,30 @@ def test_ai_control_plane_can_route_bounded_workflow_but_not_owner_live_authorit
     assert ai["owner_sensitive_reason_code"] == "human_required"
 
 
+def _mission_projection() -> dict:
+    return {
+        "contract_version": "nexus.mission-control.read.v1",
+        "mission": {
+            "mission_id": "phase4-interactive-test",
+            "title": "Phase 4 interactive Gate 20",
+            "status": "RUNNING",
+            "priority": 100,
+            "deadline_at": "2026-08-18T08:00:00Z",
+            "state_digest": "a" * 64,
+        },
+        "queue": {"counts": {"READY": 1, "RUNNING": 1}, "total": 2},
+        "agents": ["producer", "verifier"],
+        "runners": ["cloud", "windows"],
+        "local_node": "offline",
+        "data": "ready",
+        "providers": "ready",
+        "paper": "paper-only",
+        "circuits": {"provider": False, "data": False, "strategy": False, "risk": False},
+        "limits": {"resource_limited": False, "budget_limited": False},
+        "notifications": [],
+    }
+
+
 def test_interactive_ai_room_is_persian_aware_and_executes_only_read_only_l3():
     memory = {
         "schema_version": 2,
@@ -70,16 +94,7 @@ def test_interactive_ai_room_is_persian_aware_and_executes_only_read_only_l3():
             "secrets_allowed": False,
         },
     }
-    mission = {
-        "mission": {"status": "RUNNING"},
-        "queue": {"counts": {"RUNNING": 1}},
-        "agents": ["producer", "verifier"],
-        "runners": ["cloud", "windows"],
-        "local_node": "offline",
-        "data": "ready",
-        "providers": "ready",
-        "paper": "paper-only",
-    }
+    mission = _mission_projection()
     workflow = evaluate_room_message(
         {
             "session_id": "gate20-session",
@@ -97,7 +112,9 @@ def test_interactive_ai_room_is_persian_aware_and_executes_only_read_only_l3():
     assert workflow["decision"]["route"] == "mission-runner"
     assert workflow["proposal"]["executed"] is True
     assert workflow["proposal"]["state_mutation"] is False
-    assert workflow["execution"]["contract_version"] == "nexus.mission-runner.v1"
+    assert workflow["execution"]["contract_version"] == "nexus.mission-runner.v2"
+    assert workflow["execution"]["selected_mission_id"] == "phase4-interactive-test"
+    assert workflow["execution"]["mission_state_digest"] == "a" * 64
     assert workflow["execution"]["status"] == "completed"
     assert workflow["execution"]["state_mutation"] is False
     assert workflow["privacy"]["server_persisted_transcript"] is False
@@ -129,11 +146,14 @@ def test_augmented_final_evidence_contains_independently_verified_ai_room(tmp_pa
         verification_workspace=tmp_path / "independent",
     )
     room = verified["ai_room"]
+    assert room["evidence_version"] == "nexus.gate20-ai-room.v2"
     assert room["interactive"] is True
     assert room["inspect"]["allowed"] is True
     assert room["orchestration"]["route"] == "mission-runner"
+    assert room["orchestration"]["tool_contract_version"] == "nexus.mission-runner.v2"
     assert room["orchestration"]["executed"] is True
     assert room["orchestration"]["state_mutation"] is False
+    assert room["orchestration"]["mission_state_digest"] == room["orchestration"]["pipeline_state_digest"]
     assert room["owner_sensitive"]["allowed"] is False
     assert room["owner_sensitive"]["status"] == "owner_required"
 
