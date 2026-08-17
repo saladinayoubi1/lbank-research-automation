@@ -1,1 +1,26 @@
-{"generated_at_utc":"2026-08-04T12:00:00+00:00","status":{"ready":0,"failed":0,"total":0,"series":[]},"series":[]}
+{
+  "generated_at_utc": "2026-08-17T16:09:02Z",
+  "project": {
+    "name": "NEXUS Research Automation",
+    "status": "complete",
+    "phase": 6,
+    "gates": "0-6",
+    "mode": "research_backtest_paper",
+    "pipeline_status": "کامل و تثبیت‌شده",
+    "canonical_source": "Bybit",
+    "fallback_sources": ["Binance", "LBank"],
+    "strategy_families": ["momentum", "trend_breakout", "mean_reversion"],
+    "deterministic_risk_final_authority": true,
+    "live_trading_authority": false,
+    "profitability_claim": false,
+    "main_sha": "5b2c12be31caf8d1494efa1eb481e27253c0e371",
+    "result_note": "زیرساخت NEXUS برای پژوهش، بک‌تست و Paper Trading تکمیل شده است. داده بازار در اپ از مسیر عمومی و فقط‌خواندنی Bybit دریافت می‌شود. هیچ مسیر معامله واقعی، برداشت یا استفاده از اعتبار خصوصی صرافی در این نسخه وجود ندارد."
+  },
+  "status": {
+    "ready": 0,
+    "failed": 0,
+    "total": 0,
+    "series": []
+  },
+  "series": []
+}

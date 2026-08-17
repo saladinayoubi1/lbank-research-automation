@@ -1,20 +1,127 @@
 <!doctype html>
 <html lang="fa" dir="rtl">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#08111f"><title>NEXUS Personal Pro</title><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="v3.css"><link rel="stylesheet" href="nexus-council.css"></head>
-<body><div class="app-shell">
-<aside class="sidebar"><div class="brand"><span class="brand-mark">N</span><div><strong>NEXUS</strong><small>AI Operating System</small></div></div><nav><a class="active" href="#overview">نمای کلی</a><a href="#nexusSection">شورای هوش مصنوعی</a><a href="#memorySection">حافظه تیمی</a><a href="#watchlistSection">واچ‌لیست</a><a href="#marketSection">بازارها</a><a href="#alertsSection">هشدارها</a><a href="#providerSection">ارائه‌دهنده‌ها</a><a href="#qualitySection">سلامت داده</a><a href="#settingsSection">تنظیمات</a></nav><div class="sidebar-foot"><span class="status-dot"></span><small>چندمدلی و قابل توسعه</small></div></aside>
-<div class="workspace"><header class="topbar"><div><small>سیستم همکاری چندهوش‌مصنوعی</small><h1>NEXUS Personal Pro</h1></div><div class="top-actions"><span id="updateStatus" class="live-pill"><i></i> AUTO</span><button id="lang">FA</button><button id="theme">◐</button></div></header><main>
-<section id="overview" class="overview"><article><span>وضعیت سیستم</span><strong id="health">در حال بارگذاری</strong><em>کنترل یکپارچگی فعال</em></article><article><span>سری‌های پایش‌شده</span><strong id="seriesCount">—</strong><em>نماد و تایم‌فریم</em></article><article><span>آخرین بروزرسانی</span><strong id="updated">—</strong><em>زمان محلی دستگاه</em></article></section>
-<section id="nexusSection" class="section-block"><div class="section-title"><div><small>Multi-model R&amp;D Council</small><h2>شورای NEXUS</h2></div><span>رهبر: <b id="nexusLeaderLabel">—</b></span></div><div id="nexusTeam" class="nexus-team"></div><div class="nexus-layout"><div class="card nexus-panel"><div class="nexus-controls"><label class="topic">موضوع یا پروژه<textarea id="nexusTopic" placeholder="مثلاً یک استراتژی کم‌ریسک برای BTC در تایم‌فریم ۱۵ دقیقه طراحی و نقد کنید."></textarea></label><label>حالت<select id="nexusMode"><option value="specialist">پاسخ تخصصی تقسیم‌شده</option><option value="debate">اتاق گفت‌وگو و مناظره</option></select></label><label>تعداد دور<input id="nexusRounds" type="number" min="1" max="4" value="2"></label><button id="nexusRun">اجرای شورا</button></div><div id="nexusChat" class="nexus-chat"><article class="card empty">پس از اجرا، گفت‌وگوی مدل‌ها اینجا نمایش داده می‌شود.</article></div></div><article class="card nexus-final"><h3>خروجی واحد</h3><pre id="nexusFinal">رهبر شورا پس از بررسی نظرات، نتیجه نهایی را اینجا می‌نویسد.</pre></article></div></section>
-<section id="memorySection" class="section-block"><div class="section-title"><div><small>Team Memory</small><h2>حافظه پروژه‌ها</h2></div><span>تصمیم‌ها، نقدها و خروجی‌ها</span></div><div id="nexusMemory" class="grid"></div></section>
-<section class="control-panel"><div class="toolbar"><label>جستجو<input id="search" placeholder="BTC, ETH..."></label><label>نماد<select id="symbol"></select></label><label>بازه<select id="timeframe"></select></label><button id="refresh">بروزرسانی</button></div></section><section id="selected" class="selected card hero-card"></section><section class="quick-actions"><button id="toggleWatch">☆ افزودن به واچ‌لیست</button><button id="addAlert">＋ هشدار قیمت</button><button id="exportCsv">↓ خروجی CSV</button><button id="backup">پشتیبان تنظیمات</button><label class="file-btn">بازیابی<input id="restore" type="file" accept="application/json"></label></section>
-<section id="watchlistSection" class="section-block"><div class="section-title"><div><small>Personal Watchlist</small><h2>واچ‌لیست</h2></div><span id="watchCount">۰ نماد</span></div><div id="watchlist" class="grid"></div></section>
-<section id="marketSection" class="section-block"><div class="section-title"><div><small>Market Watch</small><h2>بازارها</h2></div><span>نمای لحظه‌ای</span></div><div id="markets" class="grid"></div></section>
-<section id="alertsSection" class="section-block"><div class="section-title"><div><small>Price Rules</small><h2>هشدارها</h2></div><span id="alertCount">۰ فعال</span></div><div id="alerts" class="grid"></div></section>
-<section id="providerSection" class="section-block"><div class="section-title"><div><small>AI Router</small><h2>مدیریت ارائه‌دهنده‌های هوش مصنوعی</h2></div><span id="providerCount">۰ فعال</span></div><div class="quick-actions"><button id="addProvider">＋ افزودن سرویس</button><button id="exportProviders">↓ خروجی تنظیمات</button><label class="file-btn">بازیابی سرویس‌ها<input id="importProviders" type="file" accept="application/json"></label></div><div id="providerList" class="grid"></div><p class="card empty">کلیدهای API داخل مخزن ذخیره نمی‌شوند و فقط در نشست همان دستگاه نگهداری می‌شوند.</p></section>
-<section id="qualitySection" class="section-block"><div class="section-title"><div><small>Data Integrity</small><h2>سلامت داده</h2></div><span>کنترل خودکار</span></div><div id="quality" class="grid"></div></section>
-<section id="settingsSection" class="section-block"><div class="section-title"><div><small>Personal Preferences</small><h2>تنظیمات</h2></div></div><div class="settings-grid"><label><input id="performance" type="checkbox"> حالت Performance</label><label><input id="compact" type="checkbox"> کارت‌های فشرده</label><button id="checkUpdate">بررسی بروزرسانی</button><button id="clearSettings" class="danger-btn">پاک‌کردن تنظیمات شخصی</button></div></section>
-</main></div></div>
-<template id="marketTemplate"><article class="card market"><div><b></b><small></small></div><strong></strong><span></span></article></template>
-<dialog id="alertDialog"><form method="dialog"><h3>هشدار قیمت</h3><p id="alertSymbol"></p><label>شرط<select id="alertDirection"><option value="above">بالاتر از</option><option value="below">پایین‌تر از</option></select></label><label>قیمت<input id="alertPrice" type="number" step="any" required></label><menu><button value="cancel">لغو</button><button id="saveAlert" value="default">ذخیره</button></menu></form></dialog>
-<div id="toast" role="status"></div><script src="provider-manager.js" defer></script><script src="nexus-council.js" defer></script><script src="bootstrap.js" defer></script></body></html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#07111f">
+  <meta name="color-scheme" content="dark light">
+  <title>NEXUS Personal Pro</title>
+  <link rel="stylesheet" href="delivery.css">
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brandline">
+      <div class="logo">N</div>
+      <div>
+        <strong>NEXUS Personal Pro</strong>
+        <small>Research · Backtest · Paper Trading</small>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span class="mode-pill">PAPER ONLY</span>
+      <button id="theme" aria-label="تغییر پوسته">☀</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="overview" aria-label="وضعیت کلی">
+      <article>
+        <span>وضعیت NEXUS</span>
+        <strong id="health">آماده</strong>
+        <em>Phase 6 نهایی</em>
+      </article>
+      <article>
+        <span>حالت عملیاتی</span>
+        <strong id="operatingMode">Research / Paper</strong>
+        <em>بدون معامله واقعی</em>
+      </article>
+      <article>
+        <span>بازار عمومی</span>
+        <strong id="marketStatus">در حال اتصال</strong>
+        <em><span id="marketDetail">Bybit read-only</span> · <span id="updated">—</span></em>
+      </article>
+    </section>
+
+    <section class="section" id="resultSection">
+      <div class="section-head">
+        <div><small>Project Result</small><h2>نتیجه نهایی پروژه</h2></div>
+        <span class="badge">COMPLETE</span>
+      </div>
+      <article class="result-card">
+        <div class="result-title"><h3>NEXUS Research Automation</h3><span class="badge">Verified</span></div>
+        <div class="result-grid">
+          <div><span>فاز نهایی</span><b id="projectPhase">Phase 6 · 0–6</b></div>
+          <div><span>پایپ‌لاین پژوهش</span><b id="pipelineState">کامل</b></div>
+          <div><span>مرجع ریسک</span><b id="riskState">Deterministic Risk</b></div>
+          <div><span>منبع اصلی داده</span><b id="sourceState">Bybit</b></div>
+          <div><span>Commit نهایی</span><b id="buildSha">5b2c12be</b></div>
+          <div><span>اختیار مالی</span><b class="up">Paper-only</b></div>
+        </div>
+        <p id="resultNote" class="result-note">زیرساخت پژوهش، بک‌تست و Paper Trading تکمیل است. این نسخه عمداً مجوز معامله با پول واقعی ندارد.</p>
+      </article>
+    </section>
+
+    <section class="section" id="marketSection">
+      <div class="section-head"><div><small>Public Market Data</small><h2>بازار عمومی</h2></div><small>کندل بسته · فقط خواندنی</small></div>
+      <div class="panel controls">
+        <label>نماد<select id="symbol"></select></label>
+        <label>تایم‌فریم<select id="timeframe"></select></label>
+        <button id="refresh">بروزرسانی</button>
+      </div>
+      <article id="selected" class="panel hero"><div class="loading-line"><i></i>در حال دریافت داده عمومی…</div></article>
+      <div class="actions">
+        <button id="toggleWatch">☆ افزودن به واچ‌لیست</button>
+        <button id="addAlert">＋ هشدار قیمت</button>
+      </div>
+      <div id="markets" class="grid" style="margin-top:10px"></div>
+    </section>
+
+    <section class="section" id="watchSection">
+      <div class="section-head"><div><small>Personal Watchlist</small><h2>واچ‌لیست</h2></div><small id="watchCount">۱ نماد</small></div>
+      <div id="watchlist" class="grid"></div>
+    </section>
+
+    <section class="section" id="strategySection">
+      <div class="section-head"><div><small>Strategy Factory</small><h2>خانواده‌های پژوهش</h2></div><small>بدون ادعای سود تضمینی</small></div>
+      <div id="strategies" class="grid"></div>
+    </section>
+
+    <section class="section" id="alertsSection">
+      <div class="section-head"><div><small>Local Price Rules</small><h2>هشدارهای دستگاه</h2></div><small>محلی</small></div>
+      <div id="alerts" class="grid"></div>
+    </section>
+
+    <section class="section" id="qualitySection">
+      <div class="section-head"><div><small>Integrity & Authority</small><h2>سلامت و مرزهای سیستم</h2></div></div>
+      <div id="quality" class="grid"></div>
+    </section>
+
+    <section class="section" id="settingsSection">
+      <div class="section-head"><div><small>Local Preferences</small><h2>تنظیمات محلی</h2></div></div>
+      <div class="panel settings">
+        <p>تنظیمات این صفحه، واچ‌لیست و هشدارها فقط روی همین دستگاه نگهداری می‌شوند.</p>
+        <button id="clearLocal">پاک‌کردن</button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<dialog id="alertDialog">
+  <form method="dialog">
+    <h3 style="margin:0">هشدار قیمت</h3>
+    <p id="alertSymbol" class="subtle"></p>
+    <label>شرط
+      <select id="alertDirection">
+        <option value="above">بالاتر از</option>
+        <option value="below">پایین‌تر از</option>
+      </select>
+    </label>
+    <label>قیمت<input id="alertPrice" type="number" step="any" required></label>
+    <menu><button value="cancel">لغو</button><button id="saveAlert" value="default">ذخیره</button></menu>
+  </form>
+</dialog>
+<div id="toast" role="status"></div>
+<script src="mobile-runtime.js" defer></script>
+</body>
+</html>

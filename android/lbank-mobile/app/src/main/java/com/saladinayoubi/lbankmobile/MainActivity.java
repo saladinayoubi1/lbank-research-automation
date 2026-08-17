@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 import java.util.Arrays;
@@ -39,6 +40,8 @@ public final class MainActivity extends Activity {
     private static final String GATEWAY_SECRET_ID = "gateway";
     private static final int MAX_RESPONSE_BYTES = 1_000_000;
     private static final int MAX_REQUEST_CHARS = 4096;
+    private static final String BYBIT_BASE_URL = "https://api.bybit.com";
+    private static final Set<String> PUBLIC_INTERVALS = new HashSet<>(Arrays.asList("15", "60", "240"));
     private static final Set<String> ALLOWED_PATHS = new HashSet<>(Arrays.asList(
             "/health",
             "/api/readiness/summary",
@@ -218,6 +221,41 @@ public final class MainActivity extends Activity {
         return payload.toString();
     }
 
+    private String callPublicMarket(String symbol, String interval) throws Exception {
+        String normalizedSymbol = symbol == null ? "" : symbol.trim().toUpperCase();
+        if (!normalizedSymbol.matches("[A-Z0-9]{3,32}")) {
+            throw new SecurityException("Unsupported public market symbol");
+        }
+        if (!PUBLIC_INTERVALS.contains(interval)) {
+            throw new SecurityException("Unsupported public market interval");
+        }
+        String query = "category=spot&symbol="
+                + URLEncoder.encode(normalizedSymbol, StandardCharsets.UTF_8)
+                + "&interval=" + URLEncoder.encode(interval, StandardCharsets.UTF_8)
+                + "&limit=120";
+        URL target = new URL(BYBIT_BASE_URL + "/v5/market/kline?" + query);
+        if (!"https".equalsIgnoreCase(target.getProtocol()) || !"api.bybit.com".equalsIgnoreCase(target.getHost())) {
+            throw new SecurityException("Public market origin rejected");
+        }
+
+        HttpsURLConnection connection = (HttpsURLConnection) target.openConnection();
+        connection.setConnectTimeout(15000);
+        connection.setReadTimeout(30000);
+        connection.setInstanceFollowRedirects(false);
+        connection.setRequestMethod("GET");
+        connection.setRequestProperty("Accept", "application/json");
+        connection.setRequestProperty("User-Agent", "nexus-mobile/1.0");
+        int code = connection.getResponseCode();
+        InputStream stream = code >= 200 && code < 300 ? connection.getInputStream() : connection.getErrorStream();
+        String text = readBounded(stream);
+        if (code < 200 || code >= 300) throw new IllegalStateException("Bybit public market HTTP " + code);
+        JSONObject payload = new JSONObject(text);
+        if (payload.optInt("retCode", -1) != 0) {
+            throw new IllegalStateException("Bybit public market rejected request");
+        }
+        return payload.toString();
+    }
+
     public final class NativeGateway {
         @JavascriptInterface public boolean isAvailable() { return true; }
 
@@ -263,6 +301,17 @@ public final class MainActivity extends Activity {
                 try { payload = callGateway(requestJson); }
                 catch (Exception e) { ok = false; payload = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage(); }
                 final String script = "window.NexusNativeResult(" + JSONObject.quote(requestId) + "," + ok + "," + JSONObject.quote(payload) + ")";
+                runOnUiThread(() -> webView.evaluateJavascript(script, null));
+            });
+        }
+
+        @JavascriptInterface public void requestPublicMarket(String requestId, String symbol, String interval) {
+            executor.execute(() -> {
+                boolean ok = true;
+                String payload;
+                try { payload = callPublicMarket(symbol, interval); }
+                catch (Exception e) { ok = false; payload = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage(); }
+                final String script = "window.NexusPublicMarketResult(" + JSONObject.quote(requestId) + "," + ok + "," + JSONObject.quote(payload) + ")";
                 runOnUiThread(() -> webView.evaluateJavascript(script, null));
             });
         }
