@@ -4,6 +4,12 @@
   const room = document.querySelector('[data-surface="ai"]');
   if (!room) return;
 
+  const headerChip = room.querySelector('.status-chip');
+  if (headerChip) {
+    headerChip.textContent = 'Policy-gated · L0–L3 staging';
+    headerChip.className = 'status-chip safe';
+  }
+
   const API_CONTRACT = 'nexus.dashboard.read.v1';
   const ROOM_CONTRACT = 'nexus.ai-room.v1';
   const STORAGE_KEY = 'nexus.ai-room.session.v1';
