@@ -39,8 +39,18 @@ on:
       - 'tests/test_nexus_local_runner_bootstrap_policy.py'
       - 'tests/test_nexus_autonomous_orchestrator.py'
       - 'config/nexus-mission-queue.json'
+      - 'ai_room.py'
+      - 'mission_runner.py'
+      - 'web_ui_server.py'
+      - 'web_ui/ai_room.js'
+      - 'gate20_ai_room_evidence.py'
+      - 'gate20_evidence_security.py'
       - 'phase4_e2e.py'
       - 'scripts/phase4_gate20_evidence.py'
+      - 'tests/test_ai_room.py'
+      - 'tests/test_ai_room_gateway.py'
+      - 'tests/test_mission_runner.py'
+      - 'tests/test_gate20_evidence_security_adversarial.py'
       - 'tests/test_phase4_gate20_e2e.py'
       - 'tests/test_phase4_postclose_security.py'
       - '.github/workflows/nexus-runtime-worker.yml'
@@ -136,7 +146,7 @@ jobs:
           python --version
           python -m pip install -r requirements-dev.lock
           python -m pip check
-          python -m pytest -q tests/test_phase4_gate20_e2e.py tests/test_phase4_postclose_security.py
+          python -m pytest -q tests/test_phase4_gate20_e2e.py tests/test_phase4_postclose_security.py tests/test_ai_room.py tests/test_ai_room_gateway.py tests/test_mission_runner.py tests/test_gate20_evidence_security_adversarial.py
           python scripts/phase4_gate20_evidence.py --source-sha '${{ github.event.pull_request.head.sha }}' --output build/phase4-gate20-evidence.json
       - name: Upload exact-head Phase 4 Gate 20 cloud evidence
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor == github.repository_owner
@@ -192,7 +202,7 @@ jobs:
           node scripts\nexus_orchestrator.js
           node scripts\nexus_ai_council.js
           node scripts\nexus_runtime_worker.js --once
-          python -m pytest -q tests\test_phase3_windows_runtime_contract.py tests\test_nexus_local_runner_bootstrap_policy.py tests\test_nexus_autonomous_orchestrator.py tests\test_agent_transport.py tests\test_phase4_gate20_e2e.py tests\test_phase4_postclose_security.py
+          python -m pytest -q tests\test_phase3_windows_runtime_contract.py tests\test_nexus_local_runner_bootstrap_policy.py tests\test_nexus_autonomous_orchestrator.py tests\test_agent_transport.py tests\test_phase4_gate20_e2e.py tests\test_phase4_postclose_security.py tests\test_ai_room.py tests\test_ai_room_gateway.py tests\test_mission_runner.py tests\test_gate20_evidence_security_adversarial.py
       - name: Generate exact-head Phase 4 Gate 20 evidence
         shell: cmd
         run: python scripts\phase4_gate20_evidence.py --source-sha "${{ github.event.pull_request.head.sha }}" --output build\phase4-gate20-evidence.json
