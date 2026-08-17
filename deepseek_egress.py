@@ -11,6 +11,7 @@ class EgressDenied(ValueError):
 
 _HEALTH_SMOKE = "Reply with exactly: NEXUS_DEEPSEEK_OK"
 _RESEARCH_PREFIX = "You are an independent quantitative-research reviewer for NEXUS."
+_AGENT_REVIEW_PREFIX = "You are a bounded NEXUS repository reviewer."
 _ALLOWED_MESSAGE_KEYS = {"role", "content"}
 
 _DENY_PATTERNS = (
@@ -38,6 +39,8 @@ def _classify(content: str) -> str:
         return "health_smoke"
     if content.startswith(_RESEARCH_PREFIX):
         return "research_advisory"
+    if content.startswith(_AGENT_REVIEW_PREFIX):
+        return "agent_review_advisory"
     raise EgressDenied("DeepSeek egress payload is unclassified")
 
 
@@ -57,8 +60,9 @@ def _redact(content: str) -> str:
 def prepare_egress_messages(messages: Any) -> tuple[str, list[dict[str, str]]]:
     """Classify, validate, redact and allowlist one outbound advisory message.
 
-    Only the frozen health-smoke probe and repository-owned quantitative-research
-    advisory prompt are authorized. Unknown shapes/content fail closed.
+    Only repository-owned health, quantitative-research and bounded agent-review
+    prompts are authorized. Unknown shapes/content fail closed before reservation
+    or network I/O.
     """
     if not isinstance(messages, list) or len(messages) != 1:
         raise EgressDenied("DeepSeek egress payload must contain exactly one allowlisted message")
