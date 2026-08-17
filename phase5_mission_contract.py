@@ -47,6 +47,10 @@ RUNTIME_FIELDS = {
     "result_artifact_ingested",
     "result_received_at",
     "correlation_id",
+    # Phase 5 Gate 3: monotonic per-task fencing and immutable attempt history.
+    "fence_generation",
+    "active_attempt_id",
+    "attempt_history",
 }
 
 
