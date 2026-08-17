@@ -71,6 +71,55 @@ def _exact(value: Any, keys: set[str], name: str) -> Mapping[str, Any]:
     return value
 
 
+def _bounded_fraction(value: Any, field: str) -> Decimal:
+    result = _decimal(value, field, positive=True)
+    if result > Decimal("1"):
+        raise RiskInputError(f"{field} must be <= 1")
+    return result
+
+
+def _positive_int(value: Any, field: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        raise RiskInputError(f"{field} must be a positive integer")
+    return value
+
+
+def _bounded_string_collection(value: Any, field: str) -> tuple[str, ...]:
+    if not isinstance(value, (list, tuple, set)) or not value or len(value) > 10_000:
+        raise RiskInputError(f"{field} must be a non-empty bounded collection")
+    items = tuple(value)
+    if any(not isinstance(item, str) or not item or len(item) > 128 for item in items):
+        raise RiskInputError(f"{field} contains an invalid identifier")
+    if len(items) != len(set(items)):
+        raise RiskInputError(f"{field} contains duplicates")
+    return items
+
+
+def _eligible_strategies(value: Any) -> set[tuple[str, str]]:
+    if not isinstance(value, (list, tuple)) or not value or len(value) > 10_000:
+        raise RiskInputError("eligible_strategies must be a non-empty bounded collection")
+    result: set[tuple[str, str]] = set()
+    for item in value:
+        if not isinstance(item, Mapping) or set(item) != {"id", "version"}:
+            raise RiskInputError("eligible_strategies entry schema mismatch")
+        strategy_id = item["id"]
+        version = item["version"]
+        if (
+            not isinstance(strategy_id, str)
+            or not strategy_id
+            or len(strategy_id) > 128
+            or not isinstance(version, str)
+            or not version
+            or len(version) > 128
+        ):
+            raise RiskInputError("eligible_strategies contains an invalid identifier")
+        identity = (strategy_id, version)
+        if identity in result:
+            raise RiskInputError("eligible_strategies contains duplicates")
+        result.add(identity)
+    return result
+
+
 def _deny(signal: Mapping[str, Any], policy: Mapping[str, Any], reason: str, proposed: Decimal = Decimal("0"), resulting: Decimal = Decimal("0")) -> RiskDecision:
     return RiskDecision(
         allowed=False,
@@ -93,13 +142,34 @@ def evaluate_risk(
     signal = _exact(signal, SIGNAL_KEYS, "signal")
     state = _exact(state, STATE_KEYS, "state")
     policy = _exact(policy, POLICY_KEYS, "policy")
+
+    for field in ("policy_id", "policy_version"):
+        if not isinstance(policy[field], str) or not policy[field] or len(policy[field]) > 128:
+            raise RiskInputError(f"policy.{field} must be a non-empty bounded string")
+
+    max_position_fraction = _bounded_fraction(policy["max_position_fraction"], "policy.max_position_fraction")
+    max_aggregate_fraction = _bounded_fraction(policy["max_aggregate_fraction"], "policy.max_aggregate_fraction")
+    max_daily_loss_fraction = _bounded_fraction(policy["max_daily_loss_fraction"], "policy.max_daily_loss_fraction")
+    max_drawdown_fraction = _bounded_fraction(policy["max_drawdown_fraction"], "policy.max_drawdown_fraction")
+    min_stop_distance_fraction = _bounded_fraction(policy["min_stop_distance_fraction"], "policy.min_stop_distance_fraction")
+    max_stop_distance_fraction = _bounded_fraction(policy["max_stop_distance_fraction"], "policy.max_stop_distance_fraction")
+    min_target_distance_fraction = _bounded_fraction(policy["min_target_distance_fraction"], "policy.min_target_distance_fraction")
+    if max_position_fraction > max_aggregate_fraction:
+        raise RiskInputError("policy.max_position_fraction must be <= policy.max_aggregate_fraction")
+    if min_stop_distance_fraction > max_stop_distance_fraction:
+        raise RiskInputError("policy.min_stop_distance_fraction must be <= policy.max_stop_distance_fraction")
+    max_signals_per_session = _positive_int(policy["max_signals_per_session"], "policy.max_signals_per_session")
+    max_signal_age_seconds = _positive_int(policy["max_signal_age_seconds"], "policy.max_signal_age_seconds")
+    supported_symbols = _bounded_string_collection(policy["supported_symbols"], "policy.supported_symbols")
+    supported_timeframes = _bounded_string_collection(policy["supported_timeframes"], "policy.supported_timeframes")
+    eligible = _eligible_strategies(policy["eligible_strategies"])
+
     now = _utc(evaluated_at, "evaluated_at")
     source_time = _utc(signal["source_timestamp"], "signal.source_timestamp")
     if source_time > now:
         return _deny(signal, policy, "signal_timestamp_future")
     age = (now - source_time).total_seconds()
-    max_age = int(policy["max_signal_age_seconds"])
-    if max_age < 1 or age > max_age:
+    if age > max_signal_age_seconds:
         return _deny(signal, policy, "signal_stale")
 
     if not isinstance(state["seen_signal_ids"], (tuple, list, set)):
@@ -113,11 +183,10 @@ def evaluate_risk(
         return _deny(signal, policy, "provenance_invalid")
     if signal["side"] not in {"long", "short"}:
         return _deny(signal, policy, "side_unsupported")
-    if signal["symbol"] not in policy["supported_symbols"]:
+    if signal["symbol"] not in supported_symbols:
         return _deny(signal, policy, "symbol_unsupported")
-    if signal["timeframe"] not in policy["supported_timeframes"]:
+    if signal["timeframe"] not in supported_timeframes:
         return _deny(signal, policy, "timeframe_unsupported")
-    eligible = {(item["id"], item["version"]) for item in policy["eligible_strategies"]}
     if (signal["strategy_id"], signal["strategy_version"]) not in eligible:
         return _deny(signal, policy, "strategy_ineligible")
 
@@ -133,7 +202,9 @@ def evaluate_risk(
             return _deny(signal, policy, reason)
     if state["session_open"] is not True:
         return _deny(signal, policy, "session_closed")
-    if int(state["signals_today"]) >= int(policy["max_signals_per_session"]):
+    if isinstance(state["signals_today"], bool) or not isinstance(state["signals_today"], int) or state["signals_today"] < 0:
+        raise RiskInputError("signals_today must be a non-negative integer")
+    if state["signals_today"] >= max_signals_per_session:
         return _deny(signal, policy, "session_signal_limit")
 
     equity = _decimal(state["equity"], "state.equity", positive=True)
@@ -141,6 +212,8 @@ def evaluate_risk(
     daily_pnl = _decimal(state["daily_realized_pnl"], "state.daily_realized_pnl")
     exposure = _decimal(state["current_exposure"], "state.current_exposure")
     position_exposure = _decimal(state["position_exposure"], "state.position_exposure")
+    if exposure < 0 or position_exposure < 0:
+        raise RiskInputError("exposure values must be non-negative")
     quantity = _decimal(signal["quantity"], "signal.quantity", positive=True)
     price = _decimal(signal["reference_price"], "signal.reference_price", positive=True)
     stop = _decimal(signal["stop_price"], "signal.stop_price", positive=True)
@@ -148,24 +221,21 @@ def evaluate_risk(
     proposed = quantity * price
     resulting = exposure + proposed
 
-    if daily_pnl < -(daily_start * _decimal(policy["max_daily_loss_fraction"], "policy.max_daily_loss_fraction", positive=True)):
+    if daily_pnl < -(daily_start * max_daily_loss_fraction):
         return _deny(signal, policy, "daily_loss_limit", proposed, resulting)
     drawdown = (daily_start - equity) / daily_start
-    if drawdown > _decimal(policy["max_drawdown_fraction"], "policy.max_drawdown_fraction", positive=True):
+    if drawdown > max_drawdown_fraction:
         return _deny(signal, policy, "drawdown_limit", proposed, resulting)
-    if position_exposure + proposed > equity * _decimal(policy["max_position_fraction"], "policy.max_position_fraction", positive=True):
+    if position_exposure + proposed > equity * max_position_fraction:
         return _deny(signal, policy, "position_size_limit", proposed, resulting)
-    if resulting > equity * _decimal(policy["max_aggregate_fraction"], "policy.max_aggregate_fraction", positive=True):
+    if resulting > equity * max_aggregate_fraction:
         return _deny(signal, policy, "aggregate_exposure_limit", proposed, resulting)
 
     stop_distance = abs(price - stop) / price
     target_distance = abs(target - price) / price
-    min_stop = _decimal(policy["min_stop_distance_fraction"], "policy.min_stop_distance_fraction", positive=True)
-    max_stop = _decimal(policy["max_stop_distance_fraction"], "policy.max_stop_distance_fraction", positive=True)
-    min_target = _decimal(policy["min_target_distance_fraction"], "policy.min_target_distance_fraction", positive=True)
-    if stop_distance < min_stop or stop_distance > max_stop:
+    if stop_distance < min_stop_distance_fraction or stop_distance > max_stop_distance_fraction:
         return _deny(signal, policy, "stop_distance_invalid", proposed, resulting)
-    if target_distance < min_target:
+    if target_distance < min_target_distance_fraction:
         return _deny(signal, policy, "target_distance_invalid", proposed, resulting)
     if signal["side"] == "long" and not (stop < price < target):
         return _deny(signal, policy, "protective_prices_invalid", proposed, resulting)
