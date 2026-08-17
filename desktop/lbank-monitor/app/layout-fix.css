@@ -1,0 +1,27 @@
+:root{--sidebar-expanded-width:202px;--sidebar-collapsed-width:58px}
+body{min-width:0;overflow-x:hidden}
+.shell{direction:ltr;grid-template-columns:var(--sidebar-width) minmax(0,1fr);transition:grid-template-columns .16s ease}
+.sidebar{direction:rtl;overflow:hidden;transition:width .16s ease,padding .16s ease}
+.workspace{direction:rtl;min-width:0;overflow-x:auto;scrollbar-gutter:stable}
+.workspace main{min-width:820px}
+.terminal-frame{min-width:0;overflow-x:auto;overscroll-behavior-inline:contain}
+.terminal-toolbar,.terminal-body,.market-grid{min-width:760px}
+.sidebar-toggle{width:34px;min-width:34px;padding:0;display:grid;place-items:center;font-family:"Segoe UI Symbol","Segoe UI",sans-serif;font-size:1rem}
+body.sidebar-collapsed{--sidebar-width:var(--sidebar-collapsed-width)}
+body.sidebar-collapsed .sidebar{padding-inline:8px}
+body.sidebar-collapsed .brand-block{justify-content:center;padding-inline:0}
+body.sidebar-collapsed .brand-copy,body.sidebar-collapsed .mode-block>div,body.sidebar-collapsed .sidebar nav a b,body.sidebar-collapsed .sidebar nav a small,body.sidebar-collapsed .sidebar-foot{display:none}
+body.sidebar-collapsed .mode-block{justify-content:center;padding-inline:0;margin-inline:2px}
+body.sidebar-collapsed .sidebar nav a{display:flex;justify-content:center;align-items:center;padding-inline:0;min-width:0}
+body.sidebar-collapsed .sidebar nav a>span{width:auto;font-size:.58rem;color:var(--text)}
+body.sidebar-collapsed .sidebar nav a.active{border-left-color:var(--blue)}
+@media(max-width:1180px){
+  body:not(.sidebar-user-expanded){--sidebar-width:var(--sidebar-collapsed-width)}
+  body:not(.sidebar-user-expanded) .sidebar{padding-inline:8px}
+  body:not(.sidebar-user-expanded) .brand-block{justify-content:center;padding-inline:0}
+  body:not(.sidebar-user-expanded) .brand-copy,body:not(.sidebar-user-expanded) .mode-block>div,body:not(.sidebar-user-expanded) .sidebar nav a b,body:not(.sidebar-user-expanded) .sidebar nav a small,body:not(.sidebar-user-expanded) .sidebar-foot{display:none}
+  body:not(.sidebar-user-expanded) .mode-block{justify-content:center;padding-inline:0;margin-inline:2px}
+  body:not(.sidebar-user-expanded) .sidebar nav a{display:flex;justify-content:center;align-items:center;padding-inline:0}
+  body:not(.sidebar-user-expanded) .sidebar nav a>span{width:auto;font-size:.58rem;color:var(--text)}
+}
+@media(max-width:900px){.workspace main{min-width:760px}}
