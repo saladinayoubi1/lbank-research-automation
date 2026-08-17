@@ -1,14 +1,17 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
 import io
 import json
-import zipfile
 from pathlib import Path
+import threading
+import zipfile
 
 import pytest
 
 import agent_transport as at
 import deepseek_provider as dp
+from capability_broker import AuthorizationDenied, CapabilityBroker, CapabilityGrant, Operation
 from scripts import agent_task_executor as executor
 
 
@@ -129,3 +132,61 @@ def test_bounded_reader_refuses_one_byte_over_limit():
     with pytest.raises(RuntimeError, match="exceeds bounded size"):
         at._bounded_read(io.BytesIO(b"12345"), 4, "test stream")
     assert at._bounded_read(io.BytesIO(b"1234"), 4, "test stream") == b"1234"
+
+
+def test_one_use_capability_is_reserved_before_concurrent_io(tmp_path: Path, monkeypatch):
+    target = tmp_path / "allowed.txt"
+    target.write_bytes(b"approved")
+    broker = CapabilityBroker()
+    token = broker.issue(CapabilityGrant(
+        subject="research-agent",
+        operation=Operation.READ_FILE,
+        root=tmp_path,
+        resource=target,
+        purpose="concurrency security regression",
+        expires_at=datetime.now(timezone.utc) + timedelta(minutes=5),
+        max_bytes=1024,
+        max_uses=1,
+        correlation_id="capability-race-regression",
+    ))
+
+    original_resolve = broker._resolve_existing_file
+    first_entered_io = threading.Event()
+    release_first = threading.Event()
+    calls_lock = threading.Lock()
+    calls = 0
+
+    def blocking_resolve(grant):  # noqa: ANN001
+        nonlocal calls
+        with calls_lock:
+            calls += 1
+            call_number = calls
+        if call_number == 1:
+            first_entered_io.set()
+            assert release_first.wait(3), "first authorized operation was not released"
+        return original_resolve(grant)
+
+    monkeypatch.setattr(broker, "_resolve_existing_file", blocking_resolve)
+    results: list[tuple[str, object]] = []
+
+    def worker() -> None:
+        try:
+            results.append(("ok", broker.read_file(token, "research-agent")))
+        except AuthorizationDenied as exc:
+            results.append(("denied", str(exc)))
+
+    first = threading.Thread(target=worker)
+    second = threading.Thread(target=worker)
+    first.start()
+    assert first_entered_io.wait(2), "first operation never crossed authorization boundary"
+    second.start()
+    second.join(2)
+    assert not second.is_alive(), "second caller should fail before reaching blocked I/O"
+    release_first.set()
+    first.join(2)
+    assert not first.is_alive()
+
+    assert sorted(kind for kind, _ in results) == ["denied", "ok"]
+    assert any("exhausted" in str(value) for kind, value in results if kind == "denied")
+    assert calls == 1
+    assert broker.verify_audit_chain()
