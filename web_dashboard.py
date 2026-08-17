@@ -24,6 +24,12 @@ from dashboard_integrations import (
 DEFAULT_DATA_ROOT = Path("data/market")
 SUMMARY_FILENAME = "_data_readiness.json"
 SERIES_FILENAME = "_data_readiness.csv"
+API_CONTRACT_VERSION = "nexus.dashboard.read.v1"
+
+
+def versioned(payload: dict[str, Any]) -> dict[str, Any]:
+    """Attach the immutable read-only dashboard contract version."""
+    return {"contract_version": API_CONTRACT_VERSION, **payload}
 
 
 class ReportUnavailableError(RuntimeError):
@@ -76,21 +82,21 @@ def dispatch_get(path_with_query: str, data_root: Path = DEFAULT_DATA_ROOT) -> A
     integration_root = data_root.parent / "integrations"
 
     if parsed.path == "/health":
-        return ApiResponse(HTTPStatus.OK, {"status": "ok", "service": "lbank-research-readiness-dashboard", "mode": "read-only"})
+        return ApiResponse(HTTPStatus.OK, versioned({"status": "ok", "service": "lbank-research-readiness-dashboard", "mode": "read-only"}))
 
     try:
         if parsed.path == "/api/readiness/summary":
-            return ApiResponse(HTTPStatus.OK, load_summary(data_root))
+            return ApiResponse(HTTPStatus.OK, versioned(load_summary(data_root)))
         if parsed.path == "/api/readiness/series":
-            return ApiResponse(HTTPStatus.OK, load_series(data_root, symbol=query.get("symbol", [None])[0], timeframe=query.get("timeframe", [None])[0]))
+            return ApiResponse(HTTPStatus.OK, versioned(load_series(data_root, symbol=query.get("symbol", [None])[0], timeframe=query.get("timeframe", [None])[0])))
         if parsed.path == "/api/integrations/zotero":
-            return ApiResponse(HTTPStatus.OK, {"summary": load_zotero_summary(integration_root)})
+            return ApiResponse(HTTPStatus.OK, versioned({"summary": load_zotero_summary(integration_root)}))
         if parsed.path == "/api/integrations/research":
-            return ApiResponse(HTTPStatus.OK, {"summary": load_research_summary(integration_root)})
+            return ApiResponse(HTTPStatus.OK, versioned({"summary": load_research_summary(integration_root)}))
     except (ReportUnavailableError, IntegrationUnavailableError) as exc:
-        return ApiResponse(HTTPStatus.SERVICE_UNAVAILABLE, {"error": "report_unavailable", "detail": str(exc)})
+        return ApiResponse(HTTPStatus.SERVICE_UNAVAILABLE, versioned({"error": "report_unavailable", "detail": str(exc)}))
 
-    return ApiResponse(HTTPStatus.NOT_FOUND, {"error": "not_found", "path": parsed.path})
+    return ApiResponse(HTTPStatus.NOT_FOUND, versioned({"error": "not_found", "path": parsed.path}))
 
 
 def build_handler(data_root: Path):
@@ -106,7 +112,7 @@ def build_handler(data_root: Path):
         def do_GET(self) -> None:  # noqa: N802
             self._send(dispatch_get(self.path, data_root))
         def do_POST(self) -> None:  # noqa: N802
-            self._send(ApiResponse(HTTPStatus.METHOD_NOT_ALLOWED, {"error": "method_not_allowed", "allowed": ["GET"]}))
+            self._send(ApiResponse(HTTPStatus.METHOD_NOT_ALLOWED, versioned({"error": "method_not_allowed", "allowed": ["GET"]})))
         def log_message(self, format: str, *args: object) -> None:
             return
     return DashboardHandler

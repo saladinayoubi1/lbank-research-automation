@@ -80,13 +80,14 @@ def test_empty_api_response_is_preserved(tmp_path: Path):
 def test_phase4_shell_exposes_all_required_read_only_surfaces():
     html = Path("web_ui/index.html").read_text(encoding="utf-8")
     script = Path("web_ui/app.js").read_text(encoding="utf-8")
-    surfaces = {"mission", "ai", "research", "strategies", "paper", "portfolio", "risk", "data", "agents", "events", "system"}
+    surfaces = {"mission", "ai", "research", "strategies", "paper", "portfolio", "risk", "data", "agents", "events", "notifications", "system"}
     for surface in surfaces:
         assert f'data-view="{surface}"' in html
         assert f'data-surface="{surface}"' in html
     assert "NO LIVE EXECUTION" in html
     assert "Mutation API</span><strong>DISABLED" in html
     assert "selectSurface" in script
+    assert "API_CONTRACT_VERSION" in script
 
 
 def test_phase4_shell_has_explicit_blocked_degraded_and_empty_states():
@@ -95,6 +96,8 @@ def test_phase4_shell_has_explicit_blocked_degraded_and_empty_states():
     assert 'status-chip degraded' in html
     assert 'class="empty-state' in html
     assert "Fail closed" in html
+    for state in ("loading", "ready", "stale", "degraded", "blocked", "recovering", "failed", "empty"):
+        assert f'data-state="{state}"' in html
 
 
 def test_phase4_navigation_fails_safe_for_untrusted_url_fragments():
@@ -121,3 +124,10 @@ def test_unavailable_api_response_fails_closed(tmp_path: Path):
 def test_missing_ui_asset_is_controlled(tmp_path: Path):
     response = dispatch("/", tmp_path / "data", tmp_path / "missing")
     assert response.status == HTTPStatus.SERVICE_UNAVAILABLE
+
+
+def test_phase4_notifications_are_a_distinct_surface():
+    html = Path("web_ui/index.html").read_text(encoding="utf-8")
+    assert 'data-view="notifications"' in html
+    assert 'data-surface="notifications"' in html
+    assert "owner-required notification" in html

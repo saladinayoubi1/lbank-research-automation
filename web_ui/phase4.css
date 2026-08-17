@@ -2,6 +2,9 @@
 .nav-item{flex:0 0 auto;white-space:nowrap;border-color:#273750;background:#101826;color:#91a3ba}
 .nav-item.active{border-color:#5a86c9;background:#1b3152;color:#e5efff;box-shadow:inset 0 0 0 1px rgba(110,168,254,.18)}
 .view{display:none}.view.active{display:block}
+.state-legend{display:flex;flex-wrap:wrap;gap:7px;margin:-4px 0 18px}
+.state-legend span{border:1px solid var(--line);border-radius:999px;padding:5px 9px;color:var(--muted);font-size:.7rem;font-weight:800;text-transform:uppercase}
+.state-legend [data-state="ready"]{border-color:#286546;color:#a6ecc6}.state-legend [data-state="stale"],.state-legend [data-state="degraded"]{border-color:#735d27;color:#f3d98d}.state-legend [data-state="blocked"],.state-legend [data-state="failed"]{border-color:#753434;color:#ffc1c1}.state-legend [data-state="recovering"],.state-legend [data-state="loading"]{border-color:#355b8b;color:#b9d7ff}
 .surface-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:20px 0 14px}
 .mode-chip,.status-chip{display:inline-flex;align-items:center;border-radius:999px;padding:7px 11px;font-size:.72rem;font-weight:800;letter-spacing:.04em}
 .mode-chip,.status-chip.safe{border:1px solid #286546;background:#122f23;color:#a6ecc6}
