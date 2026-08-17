@@ -5,14 +5,17 @@ import io
 import json
 from pathlib import Path
 import threading
+from types import SimpleNamespace
 import zipfile
 
 import pytest
 
 import agent_transport as at
+import deepseek_network_transport as dnt
 import deepseek_provider as dp
 import paper_event_store as pes
 from capability_broker import AuthorizationDenied, CapabilityBroker, CapabilityGrant, Operation
+from network_egress import HttpMethod
 from scripts import agent_task_executor as executor
 
 
@@ -67,24 +70,56 @@ def _event(event_type: str, payload: dict[str, object], *, provenance: dict[str,
     )
 
 
-def test_deepseek_provider_rejects_oversized_response_before_json_parse(monkeypatch):
-    monkeypatch.setenv("DEEPSEEK_API_KEY", "test-key")
-    monkeypatch.setattr(dp, "_reserve", lambda *args, **kwargs: ("reserved", 0.01))
+def test_deepseek_transport_rejects_oversized_response_before_json_parse():
+    class _TransportResponse:
+        status = 200
 
-    class _ProviderResponse(_BytesResponse):
+        def getheader(self, name):  # noqa: ANN001
+            return None
+
         def read(self, size=-1):
-            assert size == dp.MAX_PROVIDER_RESPONSE_BYTES + 1
+            assert size == dnt.MAX_RESPONSE_BYTES + 1
             return b"x" * size
 
-    monkeypatch.setattr(dp.request, "urlopen", lambda *args, **kwargs: _ProviderResponse())
-    with pytest.raises(dp.AmbiguousCharge, match="exceeded bounded size"):
-        dp.chat([{"role": "user", "content": "Reply with exactly: NEXUS_DEEPSEEK_OK"}])
+    class _Connection:
+        def request(self, *args, **kwargs):  # noqa: ANN002, ANN003
+            return None
+
+        def getresponse(self):
+            return _TransportResponse()
+
+        def close(self):
+            return None
+
+    class _Authorizer:
+        def reject_redirect(self, status, location):  # noqa: ANN001
+            assert status == 200
+            assert location is None
+
+    authorized = SimpleNamespace(
+        request_bytes=2,
+        method=HttpMethod.POST,
+        host=dnt.DEEPSEEK_HOST,
+        port=443,
+        path_and_query="/chat/completions",
+        max_response_bytes=dnt.MAX_RESPONSE_BYTES,
+    )
+    with pytest.raises(Exception, match="response byte limit exceeded"):
+        dnt.post_authorized_json(
+            body=b"{}",
+            headers={"Content-Type": "application/json"},
+            authorized=authorized,
+            authorizer=_Authorizer(),
+            timeout=1.0,
+            connection_factory=lambda *args, **kwargs: _Connection(),
+        )
 
 
 def test_deepseek_provider_rejects_non_object_response_and_retains_ambiguity(monkeypatch):
     monkeypatch.setenv("DEEPSEEK_API_KEY", "test-key")
     monkeypatch.setattr(dp, "_reserve", lambda *args, **kwargs: ("reserved", 0.01))
-    monkeypatch.setattr(dp.request, "urlopen", lambda *args, **kwargs: _BytesResponse(b"[]"))
+    monkeypatch.setattr(dp, "authorize_deepseek_json", lambda *args, **kwargs: (object(), object()))
+    monkeypatch.setattr(dp, "post_authorized_json", lambda *args, **kwargs: b"[]")
     with pytest.raises(dp.AmbiguousCharge, match="root is malformed"):
         dp.chat([{"role": "user", "content": "Reply with exactly: NEXUS_DEEPSEEK_OK"}])
 
