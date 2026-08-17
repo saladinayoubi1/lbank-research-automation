@@ -39,8 +39,10 @@ on:
       - 'tests/test_nexus_local_runner_bootstrap_policy.py'
       - 'tests/test_nexus_autonomous_orchestrator.py'
       - 'config/nexus-mission-queue.json'
+      - 'phase4_e2e.py'
+      - 'scripts/phase4_gate20_evidence.py'
+      - 'tests/test_phase4_gate20_e2e.py'
       - '.github/workflows/nexus-runtime-worker.yml'
-      - '.github/workflows/nexus_local_autonomy.yml'
 
 permissions:
   contents: read
@@ -132,7 +134,7 @@ jobs:
           python -c "import os,pathlib; d=pathlib.Path(os.environ['NEXUS_STATE_DIR']); q=d/'autonomous-queue.json'; s=d/'state.json'; print('candidate_queue_preexisting='+str(q.exists()).lower()); print('candidate_state_preexisting='+str(s.exists()).lower())"
           python nexus_autonomous_orchestrator.py
           python -c "import os,pathlib; d=pathlib.Path(os.environ['NEXUS_STATE_DIR']); q=d/'autonomous-queue.json'; s=d/'state.json'; assert q.is_file(), 'durable queue missing'; assert s.is_file(), 'durable state missing'; print('candidate_durable_state_verified=true')"
-      - name: Verify Windows candidate runtime
+      - name: Verify Windows candidate runtime and Gate 20 E2E
         shell: cmd
         run: |
           node --version
@@ -140,7 +142,17 @@ jobs:
           node scripts\nexus_orchestrator.js
           node scripts\nexus_ai_council.js
           node scripts\nexus_runtime_worker.js --once
-          python -m pytest -q tests\test_phase3_windows_runtime_contract.py tests\test_nexus_local_runner_bootstrap_policy.py tests\test_nexus_autonomous_orchestrator.py tests\test_agent_transport.py
+          python -m pytest -q tests\test_phase3_windows_runtime_contract.py tests\test_nexus_local_runner_bootstrap_policy.py tests\test_nexus_autonomous_orchestrator.py tests\test_agent_transport.py tests\test_phase4_gate20_e2e.py
+      - name: Generate exact-head Phase 4 Gate 20 evidence
+        shell: cmd
+        run: python scripts\phase4_gate20_evidence.py --source-sha "${{ github.event.pull_request.head.sha }}" --output build\phase4-gate20-evidence.json
+      - name: Upload exact-head Phase 4 Gate 20 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase4-gate20-windows-evidence-${{ github.event.pull_request.head.sha }}
+          path: build/phase4-gate20-evidence.json
+          if-no-files-found: error
+          retention-days: 14
 
   laptop-worker:
     if: >-
