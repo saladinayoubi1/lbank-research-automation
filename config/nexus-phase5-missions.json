@@ -1,10 +1,10 @@
 {
   "schema_version": "nexus.phase5-mission.v1",
   "mission_id": "nexus-phase5-autonomous-operations",
-  "mission_revision": 1,
+  "mission_revision": 2,
   "phase": 5,
   "policy": {
-    "version": "phase5-policy-v1",
+    "version": "phase5-policy-v2",
     "max_parallel_tasks": 6,
     "five_minute_triage": true,
     "best_solution_first": true,
@@ -17,6 +17,7 @@
   "workers": [
     {
       "id": "architect-agent",
+      "trust_domain": "github-cloud",
       "capabilities": ["architecture", "dependency_analysis", "root_cause_analysis", "diagnostics", "contract_review"],
       "resources": ["github-cloud"],
       "authority_max": 3,
@@ -26,6 +27,7 @@
     },
     {
       "id": "developer-agent",
+      "trust_domain": "github-cloud",
       "capabilities": ["implementation", "refactor", "unit_tests", "diagnostics"],
       "resources": ["github-cloud"],
       "authority_max": 3,
@@ -35,6 +37,7 @@
     },
     {
       "id": "qa-verifier-agent",
+      "trust_domain": "github-cloud",
       "capabilities": ["unit_tests", "integration_tests", "adversarial_tests", "recovery_tests", "contract_review", "root_cause_analysis", "diagnostics", "ui_validation", "data_validation"],
       "resources": ["github-cloud"],
       "authority_max": 3,
@@ -44,6 +47,7 @@
     },
     {
       "id": "research-agent",
+      "trust_domain": "github-cloud",
       "capabilities": ["research", "data_validation", "strategy_qualification", "root_cause_analysis", "diagnostics"],
       "resources": ["github-cloud", "windows-local"],
       "authority_max": 2,
@@ -53,6 +57,7 @@
     },
     {
       "id": "deepseek-bounded",
+      "trust_domain": "deepseek-external",
       "capabilities": ["code_review", "test_generation", "log_analysis", "documentation", "refactor_proposal", "root_cause_analysis", "diagnostics"],
       "resources": ["deepseek"],
       "authority_max": 2,
@@ -62,6 +67,7 @@
     },
     {
       "id": "windows-runner",
+      "trust_domain": "windows-local",
       "capabilities": ["windows_runtime", "heavy_compute", "integration_tests", "recovery_tests", "data_validation", "diagnostics"],
       "resources": ["windows-local"],
       "authority_max": 3,
@@ -71,6 +77,7 @@
     },
     {
       "id": "cloud-worker",
+      "trust_domain": "github-cloud",
       "capabilities": ["implementation", "unit_tests", "integration_tests", "log_analysis", "diagnostics"],
       "resources": ["github-cloud"],
       "authority_max": 3,
@@ -91,7 +98,8 @@
       "required_capabilities": ["architecture", "contract_review"],
       "preferred_resources": ["github-cloud"],
       "authority": 1,
-      "acceptance": ["phase is metadata only", "authorization spec digest is deterministic", "dependency cycles fail closed"]
+      "acceptance": ["phase is metadata only", "authorization spec digest is deterministic", "dependency cycles fail closed"],
+      "verification": {"mode": "independent_worker", "required_capabilities": ["contract_review"]}
     },
     {
       "id": "P5-G2-STATE",
@@ -104,7 +112,8 @@
       "required_capabilities": ["architecture", "contract_review"],
       "preferred_resources": ["github-cloud"],
       "authority": 1,
-      "acceptance": ["authoritative state is not GitHub cache", "corrupt state quarantines", "previous-valid restart is deterministic"]
+      "acceptance": ["authoritative state is not GitHub cache", "corrupt state quarantines", "previous-valid restart is deterministic"],
+      "verification": {"mode": "independent_trust_domain", "required_capabilities": ["recovery_tests"]}
     },
     {
       "id": "P5-G3-FENCING",
@@ -117,7 +126,8 @@
       "required_capabilities": ["adversarial_tests", "recovery_tests"],
       "preferred_resources": ["github-cloud", "windows-local"],
       "authority": 1,
-      "acceptance": ["stale attempts cannot commit", "duplicate callbacks are idempotent", "retry history is preserved"]
+      "acceptance": ["stale attempts cannot commit", "duplicate callbacks are idempotent", "retry history is preserved"],
+      "verification": {"mode": "independent_trust_domain", "required_capabilities": ["recovery_tests"]}
     },
     {
       "id": "P5-G4-EVIDENCE",
@@ -130,7 +140,8 @@
       "required_capabilities": ["contract_review", "adversarial_tests"],
       "preferred_resources": ["github-cloud"],
       "authority": 1,
-      "acceptance": ["producer and verifier trust domains are explicit", "evidence binds source spec attempt and policy", "substituted evidence fails closed"]
+      "acceptance": ["producer and verifier trust domains are explicit", "evidence binds source spec attempt and policy", "substituted evidence fails closed"],
+      "verification": {"mode": "independent_trust_domain", "required_capabilities": ["integration_tests"]}
     },
     {
       "id": "P5-G7-DATA",
@@ -143,7 +154,8 @@
       "required_capabilities": ["data_validation"],
       "preferred_resources": ["windows-local", "github-cloud"],
       "authority": 1,
-      "acceptance": ["instrument timeframe category interval and finality are bound", "ambiguous source semantics remain ineligible", "no silent namespace substitution"]
+      "acceptance": ["instrument timeframe category interval and finality are bound", "ambiguous source semantics remain ineligible", "no silent namespace substitution"],
+      "verification": {"mode": "independent_trust_domain", "required_capabilities": ["data_validation"]}
     },
     {
       "id": "P5-G6-STRATEGY",
@@ -156,7 +168,8 @@
       "required_capabilities": ["research", "strategy_qualification"],
       "preferred_resources": ["github-cloud", "windows-local"],
       "authority": 2,
-      "acceptance": ["hypothesis is preregistered before execution", "robustness walk-forward OOS and cost stress are reproducible", "output is Paper Candidate or deterministic kill result"]
+      "acceptance": ["hypothesis is preregistered before execution", "robustness walk-forward OOS and cost stress are reproducible", "output is Paper Candidate or deterministic kill result"],
+      "verification": {"mode": "independent_trust_domain", "required_capabilities": ["integration_tests"]}
     },
     {
       "id": "P5-DEEPSEEK-OPTIONAL",
@@ -169,7 +182,8 @@
       "required_capabilities": ["code_review", "test_generation"],
       "preferred_resources": ["deepseek"],
       "authority": 1,
-      "acceptance": ["provider is optional", "no secret or authority expansion", "failure does not block NEXUS"]
+      "acceptance": ["provider is optional", "no secret or authority expansion", "failure does not block NEXUS"],
+      "verification": {"mode": "independent_worker", "required_capabilities": ["contract_review"]}
     },
     {
       "id": "P5-L4-GUARD",
@@ -182,7 +196,8 @@
       "required_capabilities": [],
       "preferred_resources": [],
       "authority": 4,
-      "acceptance": ["must never auto-execute"]
+      "acceptance": ["must never auto-execute"],
+      "verification": {"mode": "owner_required", "required_capabilities": []}
     }
   ]
 }

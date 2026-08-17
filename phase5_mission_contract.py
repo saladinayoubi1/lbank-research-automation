@@ -7,6 +7,7 @@ from typing import Any
 
 MISSION_SCHEMA = "nexus.phase5-mission.v1"
 RUNTIME_SCHEMA = "nexus.phase5-runtime.v1"
+VERIFICATION_MODES = {"independent_worker", "independent_trust_domain", "owner_required"}
 
 # Fields that define authorization/acceptance semantics for a task. Phase, gate,
 # title, priority and preferred resources are intentionally metadata/scheduling
@@ -17,6 +18,9 @@ TASK_SPEC_FIELDS = (
     "required_capabilities",
     "authority",
     "acceptance",
+    # Gate 4: verification strength is authorization-relevant and therefore
+    # changes the task spec digest when it changes.
+    "verification",
 )
 
 RUNTIME_FIELDS = {
@@ -114,6 +118,30 @@ def _validate_dag(tasks: list[dict[str, Any]]) -> None:
         visit(task_id)
 
 
+def _validate_verification(task: dict[str, Any]) -> None:
+    verification = task.get("verification")
+    if verification is None:
+        # Compatibility for existing Gate-1 test fixtures and historical shadow
+        # definitions. The canonical Phase-5 mission config sets this explicitly.
+        return
+    if not isinstance(verification, dict):
+        raise MissionContractError(f"verification must be an object for {task['id']}")
+    allowed = {"mode", "required_capabilities"}
+    if set(verification) != allowed:
+        raise MissionContractError(f"verification fields are invalid for {task['id']}")
+    mode = verification.get("mode")
+    if mode not in VERIFICATION_MODES:
+        raise MissionContractError(f"verification mode is invalid for {task['id']}")
+    caps = verification.get("required_capabilities")
+    if not isinstance(caps, list) or any(not isinstance(item, str) or not item for item in caps):
+        raise MissionContractError(f"verification capabilities are invalid for {task['id']}")
+    authority = int(task.get("authority", 0))
+    if authority >= 4 and mode != "owner_required":
+        raise MissionContractError(f"L4 task verification must be owner_required for {task['id']}")
+    if authority < 4 and mode == "owner_required":
+        raise MissionContractError(f"non-L4 task may not use owner_required verification for {task['id']}")
+
+
 def validate_and_materialize(config: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(config, dict):
         raise MissionContractError("mission config root must be an object")
@@ -143,6 +171,8 @@ def validate_and_materialize(config: dict[str, Any]) -> dict[str, Any]:
         if worker_id in worker_ids:
             raise MissionContractError("worker ids must be unique")
         worker_ids.add(worker_id)
+        if "trust_domain" in worker:
+            _bounded_string(worker.get("trust_domain"), f"worker trust_domain for {worker_id}")
 
     task_ids: set[str] = set()
     for task in tasks:
@@ -175,6 +205,7 @@ def validate_and_materialize(config: dict[str, Any]) -> dict[str, Any]:
             raise MissionContractError(f"invalid required_capabilities for {task['id']}")
         if not isinstance(acceptance, list) or not acceptance or any(not isinstance(item, str) or not item for item in acceptance):
             raise MissionContractError(f"invalid acceptance for {task['id']}")
+        _validate_verification(task)
 
     _validate_dag(tasks)
 
