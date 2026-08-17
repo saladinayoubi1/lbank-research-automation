@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from gate20_ai_room_evidence import augment_gate20_evidence
 from gate20_evidence_security import verify_gate20_evidence_strict
 from phase4_e2e import Phase4E2EError, run_phase4_gate20
 
@@ -59,7 +60,8 @@ def main() -> int:
     source_sha = require_exact_runtime_head(args.source_sha, current_git_head())
     output = args.output.resolve()
     workspace = (args.workspace or output.parent / "gate20-workspace").resolve()
-    evidence = run_phase4_gate20(source_sha, workspace)
+    base_evidence = run_phase4_gate20(source_sha, workspace)
+    evidence = augment_gate20_evidence(base_evidence, workspace / "ai-room")
     verify_gate20_evidence_strict(
         evidence,
         expected_source_sha=source_sha,
@@ -82,6 +84,9 @@ def main() -> int:
         "dashboard_read_only": evidence["dashboard"]["read_only"],
         "replay_identical": evidence["recovery"]["paper_replay_identical"],
         "owner_sensitive_allowed": evidence["ai_control"]["owner_sensitive_allowed"],
+        "ai_room_interactive": evidence["ai_room"]["interactive"],
+        "ai_room_orchestration_executed": evidence["ai_room"]["orchestration"]["executed"],
+        "ai_room_state_mutation": evidence["ai_room"]["orchestration"]["state_mutation"],
         "independent_security_rerun": True,
     }, sort_keys=True))
     return 0
