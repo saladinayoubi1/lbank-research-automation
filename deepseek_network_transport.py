@@ -79,12 +79,10 @@ def authorize_deepseek_json(
     body: bytes,
     *,
     authorizer: NetworkEgressAuthorizer | None = None,
-    now: datetime | None = None,
 ) -> tuple[NetworkEgressAuthorizer, AuthorizedRequest]:
     if not isinstance(body, bytes):
         raise EgressDenied("DeepSeek request body must be bytes")
     authz = authorizer or NetworkEgressAuthorizer()
-    issued_at = now or datetime.now(timezone.utc)
     grant = EgressGrant(
         subject=DEEPSEEK_SUBJECT,
         purpose="bounded DeepSeek research assistance",
@@ -93,7 +91,7 @@ def authorize_deepseek_json(
         content_types=frozenset({JSON_CONTENT_TYPE}),
         max_request_bytes=MAX_REQUEST_BYTES,
         max_response_bytes=MAX_RESPONSE_BYTES,
-        expires_at=issued_at + GRANT_TTL,
+        expires_at=datetime.now(timezone.utc) + GRANT_TTL,
         port=443,
     )
     authorized = authz.authorize(
