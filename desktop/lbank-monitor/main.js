@@ -117,7 +117,7 @@ async function callPublicMarket(symbol, interval) {
   target.searchParams.set('limit', '120');
   const { text, payload } = await boundedJsonFetch(target, {
     method: 'GET',
-    headers: { accept: 'application/json', 'user-agent': 'nexus-personal-pro/3.3' }
+    headers: { accept: 'application/json', 'user-agent': 'nexus-personal-pro/3.5' }
   });
   if (!payload || payload.retCode !== 0 || !Array.isArray(payload.result?.list)) throw new Error('Invalid Bybit public market response');
   return text;
@@ -153,11 +153,11 @@ function createWindow() {
     minWidth: 1080,
     minHeight: 720,
     show: false,
-    backgroundColor: '#07111f',
+    backgroundColor: '#090c11',
     autoHideMenuBar: true,
     title: 'NEXUS Personal Pro',
     titleBarStyle: 'hidden',
-    titleBarOverlay: { color: '#091525', symbolColor: '#eaf2fb', height: 46 },
+    titleBarOverlay: { color: '#0c1016', symbolColor: '#e8edf3', height: 46 },
     webPreferences: {
       contextIsolation: true,
       sandbox: true,
