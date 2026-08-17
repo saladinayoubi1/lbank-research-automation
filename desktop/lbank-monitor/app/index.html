@@ -7,10 +7,11 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <title>NEXUS Research Terminal</title>
   <link rel="stylesheet" href="desktop.css">
+  <link rel="stylesheet" href="layout-fix.css">
 </head>
 <body>
 <div class="shell">
-  <aside class="sidebar">
+  <aside id="sidebar" class="sidebar">
     <div class="brand-block">
       <div class="brand-mark">N</div>
       <div class="brand-copy"><strong>NEXUS</strong><span>RESEARCH TERMINAL</span></div>
@@ -22,15 +23,15 @@
     </div>
 
     <nav aria-label="ناوبری اصلی">
-      <a class="active" href="#market"><span>01</span><b>بازار</b><small>Market</small></a>
-      <a href="#strategies"><span>02</span><b>استراتژی‌ها</b><small>Factory</small></a>
-      <a href="#result"><span>03</span><b>وضعیت پژوهش</b><small>Research</small></a>
-      <a href="#integrity"><span>04</span><b>کنترل‌ها</b><small>Integrity</small></a>
-      <a href="#alerts"><span>05</span><b>هشدارها</b><small>Local</small></a>
+      <a class="active" href="#market" title="بازار"><span>01</span><b>بازار</b><small>Market</small></a>
+      <a href="#strategies" title="استراتژی‌ها"><span>02</span><b>استراتژی‌ها</b><small>Factory</small></a>
+      <a href="#result" title="وضعیت پژوهش"><span>03</span><b>وضعیت پژوهش</b><small>Research</small></a>
+      <a href="#integrity" title="کنترل‌ها"><span>04</span><b>کنترل‌ها</b><small>Integrity</small></a>
+      <a href="#alerts" title="هشدارها"><span>05</span><b>هشدارها</b><small>Local</small></a>
     </nav>
 
     <div class="sidebar-foot">
-      <div><span>BUILD</span><b id="appVersion">3.5.0</b></div>
+      <div><span>BUILD</span><b id="appVersion">3.5.1</b></div>
       <div><span>DATA</span><b>BYBIT</b></div>
       <div><span>RISK</span><b>DETERMINISTIC</b></div>
       <div><span>MODE</span><b>PAPER</b></div>
@@ -44,6 +45,7 @@
         <h1>پایانه پژوهش بازار</h1>
       </div>
       <div class="top-actions">
+        <button id="sidebarToggle" class="sidebar-toggle" type="button" aria-label="جمع کردن پنل کناری" aria-controls="sidebar" aria-expanded="true" title="جمع کردن پنل">◀</button>
         <span id="connectionPill" class="status-pill neutral"><i></i><b>بازار در انتظار اتصال</b></span>
         <button id="theme" class="theme-btn" type="button" aria-label="تغییر پوسته">☀</button>
       </div>
