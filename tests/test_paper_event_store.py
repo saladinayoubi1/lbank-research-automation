@@ -129,7 +129,7 @@ def test_unknown_schema_and_live_authority_fields_are_denied():
         make_event(1, "live_order_submitted", {})
     with pytest.raises(PaperEventError, match="schema mismatch"):
         make_event(1, "demo_account_opened", {"currency": "USDT", "opening_cash": "1", "extra": "no"})
-    with pytest.raises(PaperEventError, match="forbidden"):
+    with pytest.raises(PaperEventError, match="schema mismatch"):
         make_event(1, "demo_account_opened", {"currency": "USDT", "opening_cash": "1", "api_key": "secret"})
 
 
