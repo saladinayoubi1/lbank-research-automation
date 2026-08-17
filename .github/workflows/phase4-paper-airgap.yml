@@ -18,6 +18,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Install locked test dependencies
+        run: python -m pip install -r requirements-dev.lock
       - name: Verify independent Phase 4 paper/live air gap
         run: python scripts/independent_phase4_airgap_gate.py
       - name: Run Gate 18 adversarial tests
