@@ -1,7 +1,7 @@
 {
   "name": "nexus-personal-pro",
-  "version": "3.2.0",
-  "description": "NEXUS multi-model personal AI workspace and LBank monitor",
+  "version": "3.3.0",
+  "description": "NEXUS research, backtest and paper-trading desktop workspace",
   "main": "main.js",
   "author": "saladinayoubi1",
   "license": "MIT",
@@ -22,16 +22,19 @@
     "files": ["main.js", "preload.js", "package.json"],
     "extraResources": [{"from":"app","to":"app","filter":["**/*"]}],
     "win": {
-      "target": ["nsis", "portable"],
-      "artifactName": "NEXUS_Personal_Pro_${version}_${arch}.${ext}"
+      "target": ["nsis", "portable"]
     },
     "nsis": {
+      "artifactName": "NEXUS_Personal_Pro_Setup_${version}_${arch}.${ext}",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "NEXUS Personal Pro",
       "installerLanguages": ["en_US"]
+    },
+    "portable": {
+      "artifactName": "NEXUS_Personal_Pro_Portable_${version}_${arch}.${ext}"
     }
   }
 }
