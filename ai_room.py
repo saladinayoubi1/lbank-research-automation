@@ -47,6 +47,25 @@ MODEL = {
     "model_version": "v1",
 }
 
+_PERSIAN_OWNER_TERMS = (
+    "پروداکشن", "محیط اصلی", "معامله واقعی", "ترید واقعی", "برداشت", "صورتحساب",
+    "کلید خصوصی", "کلید api", "کلید ای پی آی", "امضا کن",
+)
+_PERSIAN_WORKFLOW_TERMS = (
+    "خودمختار", "خودکار", "گردش کار", "واگذار", "ادامه بده", "تا تمام", "تا تموم",
+)
+_PERSIAN_PAPER_TERMS = (
+    "معامله کاغذی", "پیپر ترید", "پیپر", "پوزیشن باز", "پوزیشن ببند", "کیل سوئیچ",
+)
+_PERSIAN_PROPOSAL_TERMS = ("پیشنهاد", "توصیه", "طرح", "برنامه بده", "نقشه بده")
+_CLASSIFIER_SENTINELS = {
+    "owner_sensitive": "production",
+    "workflow": "workflow",
+    "paper_action": "paper trade",
+    "propose": "propose",
+    "observe": "observe status",
+}
+
 
 class AIRoomError(ValueError):
     """Raised when the interactive AI Room request/context is unsafe or malformed."""
@@ -67,6 +86,10 @@ def _canonical(value: Any) -> bytes:
 
 def _digest(value: Any) -> str:
     return hashlib.sha256(_canonical(value)).hexdigest()
+
+
+def _text_digest(value: str) -> str:
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
 
 def _bounded_identifier(value: Any, field: str) -> str:
@@ -91,6 +114,26 @@ def _utc(value: str | None = None) -> datetime:
 
 def _iso(value: datetime) -> str:
     return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _classify_room_intent(message: str) -> tuple[str, str]:
+    """Add deterministic Persian coverage while preserving Gate 10's classifier authority."""
+    base = classify_intent(message)
+    if base != "observe":
+        return base, message
+    text = message.casefold()
+    for intent, terms in (
+        ("owner_sensitive", _PERSIAN_OWNER_TERMS),
+        ("workflow", _PERSIAN_WORKFLOW_TERMS),
+        ("paper_action", _PERSIAN_PAPER_TERMS),
+        ("propose", _PERSIAN_PROPOSAL_TERMS),
+    ):
+        if any(term in text for term in terms):
+            # Gate 10 re-classifies current_message independently. Feed it only a
+            # canonical intent sentinel; the original message remains bound by a
+            # SHA-256 digest in working context and is never persisted server-side.
+            return intent, _CLASSIFIER_SENTINELS[intent]
+    return "observe", message
 
 
 def load_project_memory_snapshot(path: Path) -> dict[str, Any]:
@@ -150,62 +193,34 @@ def _mission_projection(mission_control: Mapping[str, Any] | None) -> dict[str, 
 def _model_output(intent: str) -> dict[str, Any]:
     if intent == "observe":
         return {
-            "intent": intent,
-            "action": "inspect_status",
-            "tool": None,
-            "parameters": {},
-            "requested_authority": 0,
-            "retry_count": 0,
-            "timeout_seconds": 10,
-            "delegation_depth": 0,
-            "cancel_requested": False,
+            "intent": intent, "action": "inspect_status", "tool": None, "parameters": {},
+            "requested_authority": 0, "retry_count": 0, "timeout_seconds": 10,
+            "delegation_depth": 0, "cancel_requested": False,
         }
     if intent == "propose":
         return {
-            "intent": intent,
-            "action": "propose_plan",
-            "tool": None,
-            "parameters": {},
-            "requested_authority": 1,
-            "retry_count": 0,
-            "timeout_seconds": 10,
-            "delegation_depth": 0,
-            "cancel_requested": False,
+            "intent": intent, "action": "propose_plan", "tool": None, "parameters": {},
+            "requested_authority": 1, "retry_count": 0, "timeout_seconds": 10,
+            "delegation_depth": 0, "cancel_requested": False,
         }
     if intent == "paper_action":
         return {
-            "intent": intent,
-            "action": "stage_paper_signal_proposal",
-            "tool": "paper-signal-proposal",
+            "intent": intent, "action": "stage_paper_signal_proposal", "tool": "paper-signal-proposal",
             "parameters": {"mode": "paper_only", "state_mutation": False},
-            "requested_authority": 2,
-            "retry_count": 0,
-            "timeout_seconds": 15,
-            "delegation_depth": 0,
-            "cancel_requested": False,
+            "requested_authority": 2, "retry_count": 0, "timeout_seconds": 15,
+            "delegation_depth": 0, "cancel_requested": False,
         }
     if intent == "workflow":
         return {
-            "intent": intent,
-            "action": "stage_bounded_workflow",
-            "tool": "mission-runner",
+            "intent": intent, "action": "stage_bounded_workflow", "tool": "mission-runner",
             "parameters": {"mode": "paper_research_only", "state_mutation": False},
-            "requested_authority": 3,
-            "retry_count": 0,
-            "timeout_seconds": 30,
-            "delegation_depth": 1,
-            "cancel_requested": False,
+            "requested_authority": 3, "retry_count": 0, "timeout_seconds": 30,
+            "delegation_depth": 1, "cancel_requested": False,
         }
     return {
-        "intent": "owner_sensitive",
-        "action": "owner_sensitive_request",
-        "tool": None,
-        "parameters": {},
-        "requested_authority": 4,
-        "retry_count": 0,
-        "timeout_seconds": 10,
-        "delegation_depth": 0,
-        "cancel_requested": False,
+        "intent": "owner_sensitive", "action": "owner_sensitive_request", "tool": None,
+        "parameters": {}, "requested_authority": 4, "retry_count": 0, "timeout_seconds": 10,
+        "delegation_depth": 0, "cancel_requested": False,
     }
 
 
@@ -256,17 +271,21 @@ def evaluate_room_message(
     now = _utc(evaluated_at)
     now_text = _iso(now)
     operations = _mission_projection(mission_control)
-    intent = classify_intent(message)
+    intent, classifier_message = _classify_room_intent(message)
     proposal = _model_output(intent)
+    working_context = {
+        "operations": operations,
+        "raw_message_digest": _text_digest(message),
+    }
     context = {
-        "context_id": f"ai-room-context-{turn_id}",
+        "context_id": f"ai-room-context-{_text_digest(turn_id)[:24]}",
         "conversation_id": conversation_id,
         "provenance_id": "nexus-ai-room-runtime",
         "generated_at": now_text,
         "expires_at": _iso(now + timedelta(minutes=10)),
         "working_context_id": "ai-room-working-context",
         "working_context_version": "v1",
-        "working_context_digest": _digest(operations),
+        "working_context_digest": _digest(working_context),
         "project_memory_id": "repository-project-memory",
         "project_memory_version": f"schema-{project_memory_snapshot.get('schema_version', 'unknown')}",
         "project_memory_digest": _digest(project_memory_snapshot),
@@ -278,7 +297,7 @@ def evaluate_room_message(
         "actor_id": "dashboard-owner-session",
         "turn_id": turn_id,
         "created_at": now_text,
-        "current_message": message,
+        "current_message": classifier_message,
     }
     try:
         result = evaluate_ai_action(
@@ -314,5 +333,6 @@ def evaluate_room_message(
             "external_provider_called": False,
             "history_scope": "browser_session",
             "raw_message_returned": False,
+            "raw_message_digest_bound": True,
         },
     }
