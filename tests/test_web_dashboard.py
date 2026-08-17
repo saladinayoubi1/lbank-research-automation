@@ -2,7 +2,7 @@ import json
 from http import HTTPStatus
 from pathlib import Path
 
-from web_dashboard import dispatch_get, load_series, load_summary
+from web_dashboard import dispatch_get, load_mission_control, load_series, load_summary
 
 
 def write_reports(root: Path) -> None:
@@ -24,6 +24,27 @@ def write_reports(root: Path) -> None:
         "eth_usdt,hour4,False,integrity_failed\n",
         encoding="utf-8",
     )
+
+
+def write_mission_control(data_root: Path) -> dict:
+    payload = {
+        "contract_version": "nexus.mission-control.read.v1",
+        "mission": {"mission_id": "m1", "title": "Mission", "status": "RUNNING", "priority": 90, "deadline_at": "2026-08-17T10:00:00Z", "state_digest": "a" * 64},
+        "queue": {"counts": {"RUNNING": 1, "READY": 2}, "total": 3},
+        "agents": ["agent-a", "agent-b"],
+        "runners": ["runner-1"],
+        "local_node": "online",
+        "data": "ready",
+        "providers": "ready",
+        "paper": "paper-only",
+        "circuits": {"provider": False, "data": False, "strategy": False, "risk": False},
+        "limits": {"resource_limited": False, "budget_limited": False},
+        "notifications": [],
+    }
+    root = data_root.parent / "mission_control"
+    root.mkdir(parents=True, exist_ok=True)
+    (root / "_mission_control.json").write_text(json.dumps(payload), encoding="utf-8")
+    return payload
 
 
 def test_health_is_stable_and_read_only(tmp_path: Path):
@@ -109,6 +130,41 @@ def test_query_cannot_select_an_arbitrary_file(tmp_path: Path):
 
     assert response.status == HTTPStatus.OK
     assert "do-not-expose" not in json.dumps(response.payload)
+
+
+def test_mission_control_projection_is_served_read_only(tmp_path: Path):
+    data_root = tmp_path / "market"
+    data_root.mkdir()
+    expected = write_mission_control(data_root)
+
+    loaded = load_mission_control(data_root)
+    assert loaded["mission_control"] == expected
+    assert loaded["metadata"]["source"] == "_mission_control.json"
+
+    response = dispatch_get("/api/mission-control", data_root)
+    assert response.status == HTTPStatus.OK
+    assert response.payload["contract_version"] == "nexus.dashboard.read.v1"
+    assert response.payload["mission_control"]["contract_version"] == "nexus.mission-control.read.v1"
+    assert response.payload["mission_control"]["queue"]["total"] == 3
+
+
+def test_mission_control_missing_incompatible_or_oversized_report_fails_closed(tmp_path: Path):
+    data_root = tmp_path / "market"
+    data_root.mkdir()
+    assert dispatch_get("/api/mission-control", data_root).status == HTTPStatus.SERVICE_UNAVAILABLE
+
+    payload = write_mission_control(data_root)
+    payload["contract_version"] = "wrong"
+    report = data_root.parent / "mission_control" / "_mission_control.json"
+    report.write_text(json.dumps(payload), encoding="utf-8")
+    response = dispatch_get("/api/mission-control", data_root)
+    assert response.status == HTTPStatus.SERVICE_UNAVAILABLE
+    assert "incompatible" in response.payload["detail"]
+
+    report.write_text("x" * 1_000_001, encoding="utf-8")
+    response = dispatch_get("/api/mission-control", data_root)
+    assert response.status == HTTPStatus.SERVICE_UNAVAILABLE
+    assert "bounded size" in response.payload["detail"]
 
 
 def test_unknown_route_returns_json_404(tmp_path: Path):
