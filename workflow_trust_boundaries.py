@@ -36,10 +36,14 @@ def _is_self_hosted(value: Any) -> bool:
     return False
 
 
+def _compact_condition(value: Any) -> str:
+    return " ".join(value.split()) if isinstance(value, str) else ""
+
+
 def _condition_excludes_untrusted_pr(value: Any) -> bool:
-    if not isinstance(value, str):
+    compact = _compact_condition(value)
+    if not compact:
         return False
-    compact = " ".join(value.split())
     explicitly_not_pr = (
         "github.event_name != 'pull_request'" in compact
         or 'github.event_name != "pull_request"' in compact
@@ -51,6 +55,28 @@ def _condition_excludes_untrusted_pr(value: Any) -> bool:
         and "github.actor == github.repository_owner" in compact
     )
     return explicitly_not_pr or owner_same_repo
+
+
+def _condition_pins_or_excludes_manual_dispatch(value: Any) -> bool:
+    compact = _compact_condition(value)
+    if not compact:
+        return False
+    excludes_dispatch = (
+        "github.event_name != 'workflow_dispatch'" in compact
+        or 'github.event_name != "workflow_dispatch"' in compact
+        or "github.event_name == 'pull_request'" in compact
+        or 'github.event_name == "pull_request"' in compact
+        or "github.event_name == 'push'" in compact
+        or 'github.event_name == "push"' in compact
+        or "github.event_name == 'schedule'" in compact
+        or 'github.event_name == "schedule"' in compact
+    )
+    trusted_ref = (
+        "github.ref_name == github.event.repository.default_branch" in compact
+        or "github.ref == 'refs/heads/main'" in compact
+        or 'github.ref == "refs/heads/main"' in compact
+    )
+    return excludes_dispatch or trusted_ref
 
 
 def _contains_secret_expression(value: Any) -> bool:
@@ -65,15 +91,23 @@ def _contains_secret_expression(value: Any) -> bool:
 
 def validate_workflow_trust_boundaries(path: Path, workflow: dict[str, Any]) -> None:
     """Fail closed on the trust-boundary classes found during the post-Phase4 audit."""
-    pull_request_enabled = "pull_request" in _trigger_names(workflow)
+    triggers = _trigger_names(workflow)
+    pull_request_enabled = "pull_request" in triggers
+    manual_enabled = "workflow_dispatch" in triggers
     for job_name, job in workflow["jobs"].items():
         if not isinstance(job, dict):
             raise ValueError(f"{path}: job {job_name} must be a mapping")
+        self_hosted = _is_self_hosted(job.get("runs-on"))
         job_guard = _condition_excludes_untrusted_pr(job.get("if"))
-        if pull_request_enabled and _is_self_hosted(job.get("runs-on")) and not job_guard:
+        if pull_request_enabled and self_hosted and not job_guard:
             raise ValueError(
                 f"{path}: self-hosted job {job_name} may execute pull_request code "
                 "without an owner/same-repo or no-PR guard"
+            )
+        if manual_enabled and self_hosted and not _condition_pins_or_excludes_manual_dispatch(job.get("if")):
+            raise ValueError(
+                f"{path}: self-hosted job {job_name} may execute workflow_dispatch code "
+                "from an arbitrary ref"
             )
         if pull_request_enabled and _contains_secret_expression(job.get("env")) and not job_guard:
             raise ValueError(f"{path}: job {job_name} exposes a secret to pull_request code")
