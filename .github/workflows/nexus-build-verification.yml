@@ -30,6 +30,7 @@ jobs:
           test -f desktop/lbank-monitor/main.js
           test -f desktop/lbank-monitor/app/index.html
           test -f desktop/lbank-monitor/app/desktop.css
+          test -f desktop/lbank-monitor/app/layout-fix.css
           test -f desktop/lbank-monitor/app/desktop-runtime.js
           test -f desktop/lbank-monitor/app/project-data.js
           node -e "const p=require('./desktop/lbank-monitor/package.json'); if(!p.build.files.includes('preload.js') || !p.build.extraResources?.some(x=>x.from==='app')) process.exit(1)"
@@ -109,6 +110,7 @@ jobs:
           $required = @(
             'desktop/lbank-monitor/app/index.html',
             'desktop/lbank-monitor/app/desktop.css',
+            'desktop/lbank-monitor/app/layout-fix.css',
             'desktop/lbank-monitor/app/desktop-runtime.js',
             'desktop/lbank-monitor/app/project-data.js'
           )
@@ -123,11 +125,11 @@ jobs:
         shell: pwsh
         run: |
           $resourceRoot = 'dist/win-unpacked/resources/app'
-          foreach ($name in @('index.html','desktop.css','desktop-runtime.js','project-data.js')) {
+          foreach ($name in @('index.html','desktop.css','layout-fix.css','desktop-runtime.js','project-data.js')) {
             if (!(Test-Path (Join-Path $resourceRoot $name))) { throw "Packaged UI asset missing: $name" }
           }
-          if (!(Get-ChildItem 'dist/NEXUS_Personal_Pro_Setup_3.5.0_*.exe' -ErrorAction SilentlyContinue)) { throw 'Setup EXE missing' }
-          if (!(Get-ChildItem 'dist/NEXUS_Personal_Pro_Portable_3.5.0_*.exe' -ErrorAction SilentlyContinue)) { throw 'Portable EXE missing' }
+          if (!(Get-ChildItem 'dist/NEXUS_Personal_Pro_Setup_3.5.1_*.exe' -ErrorAction SilentlyContinue)) { throw 'Setup EXE missing' }
+          if (!(Get-ChildItem 'dist/NEXUS_Personal_Pro_Portable_3.5.1_*.exe' -ErrorAction SilentlyContinue)) { throw 'Portable EXE missing' }
       - name: Generate Windows SHA-256 checksums
         shell: pwsh
         run: |
@@ -158,8 +160,8 @@ jobs:
         with:
           name: nexus-windows-packages
           path: |
-            desktop/lbank-monitor/dist/NEXUS_Personal_Pro_Setup_3.5.0_*.exe
-            desktop/lbank-monitor/dist/NEXUS_Personal_Pro_Portable_3.5.0_*.exe
+            desktop/lbank-monitor/dist/NEXUS_Personal_Pro_Setup_3.5.1_*.exe
+            desktop/lbank-monitor/dist/NEXUS_Personal_Pro_Portable_3.5.1_*.exe
             desktop/lbank-monitor/dist/SHA256SUMS.txt
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
