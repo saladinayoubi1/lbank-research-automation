@@ -1,4 +1,4 @@
-"""Read-only local HTTP API for generated research-readiness reports.
+"""Read-only local HTTP API for generated NEXUS reports.
 
 This module intentionally uses only the Python standard library. It exposes
 pre-generated reports and never calls exchanges, Zotero, or write APIs.
@@ -24,6 +24,9 @@ from dashboard_integrations import (
 DEFAULT_DATA_ROOT = Path("data/market")
 SUMMARY_FILENAME = "_data_readiness.json"
 SERIES_FILENAME = "_data_readiness.csv"
+MISSION_CONTROL_FILENAME = "_mission_control.json"
+MISSION_CONTROL_CONTRACT_VERSION = "nexus.mission-control.read.v1"
+MAX_MISSION_CONTROL_BYTES = 1_000_000
 API_CONTRACT_VERSION = "nexus.dashboard.read.v1"
 
 
@@ -76,6 +79,27 @@ def load_series(data_root: Path, *, symbol: str | None = None, timeframe: str | 
     return {"series": rows, "count": len(rows), "filters": {"symbol": symbol, "timeframe": timeframe}, "metadata": _report_metadata(path)}
 
 
+def load_mission_control(data_root: Path) -> dict[str, Any]:
+    path = data_root.parent / "mission_control" / MISSION_CONTROL_FILENAME
+    try:
+        stat = path.stat()
+        if stat.st_size > MAX_MISSION_CONTROL_BYTES:
+            raise ReportUnavailableError("Mission Control report exceeds bounded size")
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise ReportUnavailableError(f"missing report: {MISSION_CONTROL_FILENAME}") from exc
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise ReportUnavailableError(f"invalid report: {MISSION_CONTROL_FILENAME}") from exc
+    if not isinstance(payload, dict):
+        raise ReportUnavailableError(f"invalid report root: {MISSION_CONTROL_FILENAME}")
+    if payload.get("contract_version") != MISSION_CONTROL_CONTRACT_VERSION:
+        raise ReportUnavailableError("incompatible Mission Control report contract")
+    required = {"mission", "queue", "agents", "runners", "local_node", "data", "providers", "paper", "circuits", "limits", "notifications"}
+    if not required.issubset(payload):
+        raise ReportUnavailableError("incomplete Mission Control report")
+    return {"mission_control": payload, "metadata": _report_metadata(path)}
+
+
 def dispatch_get(path_with_query: str, data_root: Path = DEFAULT_DATA_ROOT) -> ApiResponse:
     parsed = urlsplit(path_with_query)
     query = parse_qs(parsed.query, keep_blank_values=True)
@@ -89,6 +113,8 @@ def dispatch_get(path_with_query: str, data_root: Path = DEFAULT_DATA_ROOT) -> A
             return ApiResponse(HTTPStatus.OK, versioned(load_summary(data_root)))
         if parsed.path == "/api/readiness/series":
             return ApiResponse(HTTPStatus.OK, versioned(load_series(data_root, symbol=query.get("symbol", [None])[0], timeframe=query.get("timeframe", [None])[0])))
+        if parsed.path == "/api/mission-control":
+            return ApiResponse(HTTPStatus.OK, versioned(load_mission_control(data_root)))
         if parsed.path == "/api/integrations/zotero":
             return ApiResponse(HTTPStatus.OK, versioned({"summary": load_zotero_summary(integration_root)}))
         if parsed.path == "/api/integrations/research":
