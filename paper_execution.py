@@ -79,10 +79,11 @@ def _validate_command(command: Any) -> Mapping[str, Any]:
         raise PaperExecutionError("fee_rate outside bounded paper range")
     if slippage < 0 or slippage > MAX_SLIPPAGE_BPS:
         raise PaperExecutionError("slippage_bps outside bounded paper range")
-    if command["side"] == "long" and not (stop < reference < target):
-        raise PaperExecutionError("invalid long protective prices")
-    if command["side"] == "short" and not (target < reference < stop):
-        raise PaperExecutionError("invalid short protective prices")
+    if command["operation"] in {"open", "reverse"}:
+        if command["side"] == "long" and not (stop < reference < target):
+            raise PaperExecutionError("invalid long protective prices")
+        if command["side"] == "short" and not (target < reference < stop):
+            raise PaperExecutionError("invalid short protective prices")
     return {
         **command,
         "quantity": quantity,
@@ -143,7 +144,10 @@ def execute_paper_command(
     if not isinstance(risk_decision, RiskDecision) or not risk_decision.allowed:
         raise PaperExecutionError("deterministic risk approval is required")
     if risk_decision.signal_id != causation_id:
-        raise PaperExecutionError("risk approval causation mismatch")\n    expected_notional = command["quantity"] * command["reference_price"]\n    if risk_decision.proposed_notional != expected_notional:\n        raise PaperExecutionError("risk approval amount mismatch")
+        raise PaperExecutionError("risk approval causation mismatch")
+    expected_notional = command["quantity"] * command["reference_price"]
+    if risk_decision.proposed_notional != expected_notional:
+        raise PaperExecutionError("risk approval amount mismatch")
 
     operation = str(command["operation"])
     symbol = str(command["symbol"])
@@ -162,7 +166,9 @@ def execute_paper_command(
     if operation == "close" and quantity != current[1]:
         raise PaperExecutionError("close quantity must equal position")
     if operation == "reverse" and current[0] == side:
-        raise PaperExecutionError("reverse must change position side")\n    if operation == "reverse" and quantity != current[1]:\n        raise PaperExecutionError("reverse quantity must equal position")
+        raise PaperExecutionError("reverse must change position side")
+    if operation == "reverse" and quantity != current[1]:
+        raise PaperExecutionError("reverse quantity must equal position")
 
     is_buy = (operation in {"open", "reverse"} and side == "long") or (
         operation in {"close", "reduce"} and side == "short"
