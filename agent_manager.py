@@ -52,6 +52,7 @@ class Worker:
     authority_max: int
     enabled: bool = True
     verifier: bool = False
+    max_concurrent_tasks: int = 1
 
 
 def load_config(path: Path = QUEUE_PATH) -> dict[str, Any]:
@@ -72,6 +73,10 @@ def validate_config(config: dict[str, Any]) -> None:
         raise ValueError("worker ids must be unique")
     if None in task_ids or len(task_ids) != len(tasks):
         raise ValueError("task ids must be unique")
+    for worker in workers:
+        capacity = worker.get("max_concurrent_tasks", 1)
+        if isinstance(capacity, bool) or not isinstance(capacity, int) or capacity < 1:
+            raise ValueError(f"invalid worker capacity for {worker.get('id')}")
     for task in tasks:
         deps = task.get("dependencies", [])
         unknown = set(deps) - task_ids
@@ -81,6 +86,9 @@ def validate_config(config: dict[str, Any]) -> None:
             raise ValueError(f"invalid authority for {task['id']}")
         if task.get("producer") and task["producer"] not in worker_ids:
             raise ValueError(f"unknown producer for {task['id']}")
+        phase = task.get("phase", config.get("phase"))
+        if isinstance(phase, bool) or not isinstance(phase, int) or phase < 1:
+            raise ValueError(f"invalid phase for {task['id']}")
 
 
 def workers_from(config: dict[str, Any]) -> list[Worker]:
@@ -92,6 +100,7 @@ def workers_from(config: dict[str, Any]) -> list[Worker]:
             authority_max=int(w.get("authority_max", 0)),
             enabled=bool(w.get("enabled", True)),
             verifier=bool(w.get("verifier", False)),
+            max_concurrent_tasks=max(1, int(w.get("max_concurrent_tasks", 1))),
         )
         for w in config["workers"]
     ]
@@ -99,6 +108,17 @@ def workers_from(config: dict[str, Any]) -> list[Worker]:
 
 def task_index(config: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return {t["id"]: t for t in config["tasks"]}
+
+
+def active_worker_load(config: dict[str, Any], *, exclude_task: dict[str, Any] | None = None) -> dict[str, int]:
+    load: dict[str, int] = {}
+    for task in config["tasks"]:
+        if task is exclude_task:
+            continue
+        worker_id = task.get("assigned_worker")
+        if task.get("status") in ACTIVE and worker_id:
+            load[worker_id] = load.get(worker_id, 0) + 1
+    return load
 
 
 def dependencies_done(task: dict[str, Any], by_id: dict[str, dict[str, Any]]) -> bool:
@@ -126,11 +146,18 @@ def enforce_owner_boundaries(config: dict[str, Any]) -> None:
             emit("owner_boundary_enforced", task_id=task["id"], prior_status=prior)
 
 
-def eligible_workers(task: dict[str, Any], workers: list[Worker], *, verifier_only: bool = False) -> list[Worker]:
+def eligible_workers(
+    task: dict[str, Any],
+    workers: list[Worker],
+    *,
+    verifier_only: bool = False,
+    active_load: dict[str, int] | None = None,
+) -> list[Worker]:
     needed = set(task.get("required_capabilities", []))
     preferred = set(task.get("preferred_resources", []))
     producer = task.get("producer")
-    result: list[tuple[int, str, Worker]] = []
+    active_load = active_load or {}
+    result: list[tuple[int, float, int, str, Worker]] = []
     for worker in workers:
         if not worker.enabled or worker.authority_max < int(task.get("authority", 0)):
             continue
@@ -140,9 +167,14 @@ def eligible_workers(task: dict[str, Any], workers: list[Worker], *, verifier_on
             continue
         if not needed.issubset(worker.capabilities):
             continue
+        load = int(active_load.get(worker.id, 0))
+        if load >= worker.max_concurrent_tasks:
+            continue
         resource_score = len(preferred.intersection(worker.resources))
-        result.append((-resource_score, worker.id, worker))
-    return [item[2] for item in sorted(result)]
+        utilization = load / worker.max_concurrent_tasks
+        remaining_capacity = worker.max_concurrent_tasks - load
+        result.append((-resource_score, utilization, -remaining_capacity, worker.id, worker))
+    return [item[4] for item in sorted(result)]
 
 
 def release_ready_tasks(config: dict[str, Any]) -> None:
@@ -177,7 +209,7 @@ def expire_stale_leases(config: dict[str, Any], now: datetime) -> None:
 
 def assign_ready_tasks(config: dict[str, Any], now: datetime) -> None:
     workers = workers_from(config)
-    busy = {t.get("assigned_worker") for t in config["tasks"] if t.get("status") in ACTIVE}
+    active_load = active_worker_load(config)
     max_parallel = int(config.get("policy", {}).get("max_parallel_tasks", 4))
     active_count = sum(t.get("status") in ACTIVE for t in config["tasks"])
     if active_count >= max_parallel:
@@ -194,7 +226,7 @@ def assign_ready_tasks(config: dict[str, Any], now: datetime) -> None:
             task["blocked_reason"] = "L4 owner approval required"
             emit("owner_required", task_id=task["id"])
             continue
-        candidates = [w for w in eligible_workers(task, workers) if w.id not in busy]
+        candidates = eligible_workers(task, workers, active_load=active_load)
         if not candidates:
             continue
         worker = candidates[0]
@@ -206,13 +238,14 @@ def assign_ready_tasks(config: dict[str, Any], now: datetime) -> None:
         task["heartbeat_at"] = iso(now)
         task["lease_expires_at"] = iso(now + timedelta(minutes=DEFAULT_LEASE_MINUTES))
         task["attempt"] = int(task.get("attempt", 0)) + 1
-        busy.add(worker.id)
+        active_load[worker.id] = active_load.get(worker.id, 0) + 1
         active_count += 1
         emit("task_leased", task_id=task["id"], worker=worker.id, attempt=task["attempt"])
 
 
 def route_triage(config: dict[str, Any], now: datetime) -> None:
     workers = workers_from(config)
+    active_load = active_worker_load(config)
     for task in config["tasks"]:
         if task.get("status") != "TRIAGE":
             continue
@@ -231,7 +264,15 @@ def route_triage(config: dict[str, Any], now: datetime) -> None:
             emit("bounded_transient_retry", task_id=task["id"])
             continue
         rca_caps = {"root_cause_analysis", "diagnostics"}
-        candidates = [w for w in workers if w.enabled and rca_caps.issubset(w.capabilities) and w.id != task.get("producer")]
+        candidates = [
+            w
+            for w in workers
+            if w.enabled
+            and w.authority_max >= int(task.get("authority", 0))
+            and rca_caps.issubset(w.capabilities)
+            and w.id != task.get("producer")
+            and active_load.get(w.id, 0) < w.max_concurrent_tasks
+        ]
         if not candidates:
             task["status"] = "BLOCKED"
             task["blocked_reason"] = "independent root-cause analyst unavailable"
@@ -245,6 +286,7 @@ def route_triage(config: dict[str, Any], now: datetime) -> None:
         task["lease_id"] = str(uuid.uuid4())
         task["heartbeat_at"] = iso(now)
         task["lease_expires_at"] = iso(now + timedelta(minutes=DEFAULT_LEASE_MINUTES))
+        active_load[analyst.id] = active_load.get(analyst.id, 0) + 1
         emit("root_cause_assigned", task_id=task["id"], worker=analyst.id)
 
 
@@ -255,7 +297,12 @@ def request_verification(config: dict[str, Any], task: dict[str, Any], now: date
         task["assigned_worker"] = None
         return False
     workers = workers_from(config)
-    candidates = eligible_workers(task, workers, verifier_only=True)
+    candidates = eligible_workers(
+        task,
+        workers,
+        verifier_only=True,
+        active_load=active_worker_load(config, exclude_task=task),
+    )
     if not candidates:
         task["status"] = "BLOCKED"
         task["blocked_reason"] = "independent verifier unavailable"
@@ -303,12 +350,27 @@ def summarize(config: dict[str, Any]) -> dict[str, Any]:
         counts[task.get("status", "UNKNOWN")] = counts.get(task.get("status", "UNKNOWN"), 0) + 1
     total = len(config["tasks"])
     done = counts.get("DONE", 0)
+    workers = workers_from(config)
+    active_load = active_worker_load(config)
+    worker_capacity = {
+        worker.id: {
+            "active": active_load.get(worker.id, 0),
+            "capacity": worker.max_concurrent_tasks,
+            "available": max(0, worker.max_concurrent_tasks - active_load.get(worker.id, 0)),
+        }
+        for worker in workers if worker.enabled
+    }
+    unassigned_ready = [t["id"] for t in config["tasks"] if t.get("status") == "READY" and not t.get("assigned_worker")]
     return {
         "generated_at": iso(),
         "phase": config.get("phase"),
+        "task_phases": sorted({int(t.get("phase", config.get("phase"))) for t in config["tasks"]}),
         "counts": counts,
         "verified_progress_percent": round((done / total * 100.0) if total else 0.0, 2),
         "owner_required": [t["id"] for t in config["tasks"] if t.get("status") == "OWNER_REQUIRED"],
+        "worker_capacity": worker_capacity,
+        "available_worker_slots": sum(item["available"] for item in worker_capacity.values()),
+        "unassigned_ready": unassigned_ready,
     }
 
 

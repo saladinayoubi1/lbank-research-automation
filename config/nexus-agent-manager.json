@@ -8,7 +8,8 @@
     "blind_retry_forbidden": true,
     "independent_verification_required": true,
     "phase_continuity_required": true,
-    "l4_owner_required": true
+    "l4_owner_required": true,
+    "manager_scope": "all_current_and_future_phases"
   },
   "workers": [
     {
@@ -17,7 +18,8 @@
       "resources": ["github-cloud"],
       "authority_max": 3,
       "enabled": true,
-      "verifier": true
+      "verifier": true,
+      "max_concurrent_tasks": 1
     },
     {
       "id": "developer-agent",
@@ -25,7 +27,8 @@
       "resources": ["github-cloud"],
       "authority_max": 3,
       "enabled": true,
-      "verifier": false
+      "verifier": false,
+      "max_concurrent_tasks": 2
     },
     {
       "id": "qa-verifier-agent",
@@ -33,7 +36,8 @@
       "resources": ["github-cloud"],
       "authority_max": 3,
       "enabled": true,
-      "verifier": true
+      "verifier": true,
+      "max_concurrent_tasks": 2
     },
     {
       "id": "research-agent",
@@ -41,7 +45,8 @@
       "resources": ["github-cloud", "windows-local"],
       "authority_max": 2,
       "enabled": true,
-      "verifier": true
+      "verifier": true,
+      "max_concurrent_tasks": 1
     },
     {
       "id": "deepseek-bounded",
@@ -49,7 +54,8 @@
       "resources": ["deepseek"],
       "authority_max": 2,
       "enabled": true,
-      "verifier": false
+      "verifier": false,
+      "max_concurrent_tasks": 1
     },
     {
       "id": "windows-runner",
@@ -57,7 +63,8 @@
       "resources": ["windows-local"],
       "authority_max": 3,
       "enabled": true,
-      "verifier": true
+      "verifier": true,
+      "max_concurrent_tasks": 2
     },
     {
       "id": "cloud-worker",
@@ -65,7 +72,8 @@
       "resources": ["github-cloud"],
       "authority_max": 3,
       "enabled": true,
-      "verifier": false
+      "verifier": false,
+      "max_concurrent_tasks": 2
     }
   ],
   "tasks": [
