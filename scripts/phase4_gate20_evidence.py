@@ -10,7 +10,8 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from phase4_e2e import Phase4E2EError, run_phase4_gate20, verify_gate20_evidence
+from gate20_evidence_security import verify_gate20_evidence_strict
+from phase4_e2e import Phase4E2EError, run_phase4_gate20
 
 
 def _validated_sha(value: str, field: str) -> str:
@@ -59,7 +60,11 @@ def main() -> int:
     output = args.output.resolve()
     workspace = (args.workspace or output.parent / "gate20-workspace").resolve()
     evidence = run_phase4_gate20(source_sha, workspace)
-    verify_gate20_evidence(evidence, expected_source_sha=source_sha)
+    verify_gate20_evidence_strict(
+        evidence,
+        expected_source_sha=source_sha,
+        verification_workspace=workspace.parent / "gate20-independent-verification",
+    )
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(
         json.dumps(evidence, sort_keys=True, separators=(",", ":"), ensure_ascii=False) + "\n",
@@ -77,6 +82,7 @@ def main() -> int:
         "dashboard_read_only": evidence["dashboard"]["read_only"],
         "replay_identical": evidence["recovery"]["paper_replay_identical"],
         "owner_sensitive_allowed": evidence["ai_control"]["owner_sensitive_allowed"],
+        "independent_security_rerun": True,
     }, sort_keys=True))
     return 0
 
