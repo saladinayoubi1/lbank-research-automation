@@ -162,7 +162,7 @@ def execute_paper_command(
     if operation == "close" and quantity != current[1]:
         raise PaperExecutionError("close quantity must equal position")
     if operation == "reverse" and current[0] == side:
-        raise PaperExecutionError("reverse must change position side")
+        raise PaperExecutionError("reverse must change position side")\n    if operation == "reverse" and quantity != current[1]:\n        raise PaperExecutionError("reverse quantity must equal position")
 
     is_buy = (operation in {"open", "reverse"} and side == "long") or (
         operation in {"close", "reduce"} and side == "short"
