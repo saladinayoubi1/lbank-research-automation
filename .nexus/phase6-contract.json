@@ -2,9 +2,12 @@
   "schema": "nexus.phase-contract.v1",
   "phase": 6,
   "title": "Real Research Pipeline & Final Operational Closure",
-  "status": "in_progress",
+  "status": "candidate_complete",
   "parent_issue": 591,
+  "final_pr": 592,
   "base_main_sha": "441599050f22ebfa217ddbc61e5635cfae0a209e",
+  "engineering_gates_complete": true,
+  "completed_gates": ["0", "1", "2", "3", "4", "5", "6"],
   "paper_only": true,
   "live_trading_authority": false,
   "private_exchange_credentials_allowed": false,
@@ -13,6 +16,7 @@
   "billing_changes_allowed": false,
   "signing_authority_allowed": false,
   "deterministic_risk_final_authority": true,
+  "profitability_claim": false,
   "gates": {
     "0": "frozen contract and current-main inventory",
     "1": "canonical Bybit public closed-candle dataset to deterministic strategy/backtest adapter",
@@ -29,6 +33,15 @@
     "no_unresolved_non_owner_engineering_task",
     "paper_only_authority_preserved"
   ],
+  "verification": {
+    "pre_checkpoint_head": "fe7ad0d8d3b9ee499aae3fbd5c52fc119e1f6858",
+    "pre_checkpoint_test": "success",
+    "pre_checkpoint_build_verification": "success",
+    "pre_checkpoint_cloud_fallback": "success",
+    "pre_checkpoint_workflow_permissions": "success",
+    "pre_checkpoint_partition_export": "success",
+    "final_head_must_reverify": true
+  },
   "owner_boundary": {
     "issue": 568,
     "action": "Gate 4 frozen control-plane re-authoritative promotion",
