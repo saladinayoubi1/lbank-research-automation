@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from typing import Any, Iterable, Mapping
@@ -11,6 +11,12 @@ SCHEMA_VERSION = "nexus.paper-event.v1"
 GENESIS_DIGEST = "0" * 64
 PAPER_ONLY = True
 MAX_EVENTS = 100_000
+MAX_SIGNAL_AGE_SECONDS = {
+    "minute15": 3_600,
+    "hour1": 14_400,
+    "hour4": 57_600,
+    "session": 86_400,
+}
 
 EVENT_PAYLOAD_KEYS = {
     "demo_account_opened": {"currency", "opening_cash"},
@@ -35,7 +41,7 @@ DECIMAL_FIELDS = {
     "opening_cash", "quantity", "reference_price", "price", "entry_price",
     "exit_price", "realized_pnl", "amount", "cash", "equity", "unrealized_pnl",
 }
-POSITIVE_DECIMALS = {"quantity", "reference_price", "price", "entry_price", "exit_price"}
+POSITIVE_DECIMALS = {"opening_cash", "quantity", "reference_price", "price", "entry_price", "exit_price"}
 PROVENANCE_KEYS = {
     "kind", "source_id", "source_timestamp", "received_timestamp", "timeframe",
     "confidence", "strategy_version", "policy_version",
@@ -203,13 +209,22 @@ def build_event(
         raise PaperEventError("previous_event_digest must be hexadecimal") from exc
     normalized_payload = validate_payload(event_type, payload)
     normalized_provenance = validate_provenance(provenance)
+    normalized_occurred_at = _utc(occurred_at, "occurred_at")
+    source_time = datetime.fromisoformat(normalized_provenance["source_timestamp"].replace("Z", "+00:00"))
+    received_time = datetime.fromisoformat(normalized_provenance["received_timestamp"].replace("Z", "+00:00"))
+    occurred_time = datetime.fromisoformat(normalized_occurred_at)
+    if source_time > received_time or received_time > occurred_time:
+        raise PaperEventError("provenance timestamps must be causally ordered")
+    max_age = MAX_SIGNAL_AGE_SECONDS[normalized_provenance["timeframe"]]
+    if event_type in {"signal_recorded", "order_intent_recorded"} and (occurred_time - source_time).total_seconds() > max_age:
+        raise PaperEventError("stale signal provenance")
     core = {
         "schema_version": SCHEMA_VERSION,
         "event_id": event_id,
         "event_type": event_type,
         "aggregate_id": aggregate_id,
         "sequence": sequence,
-        "occurred_at": _utc(occurred_at, "occurred_at"),
+        "occurred_at": normalized_occurred_at,
         "correlation_id": correlation_id,
         "causation_id": causation_id,
         "provenance": normalized_provenance,
