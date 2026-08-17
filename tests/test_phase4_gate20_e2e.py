@@ -5,6 +5,7 @@ import copy
 import pytest
 
 from phase4_e2e import Phase4E2EError, run_phase4_gate20, verify_gate20_evidence
+from scripts.phase4_gate20_evidence import require_exact_runtime_head
 
 SOURCE_SHA = "1" * 40
 
@@ -106,3 +107,13 @@ def test_malformed_source_sha_is_rejected_before_e2e_execution(tmp_path):
     for source_sha in ("short", "g" * 40, "1" * 41):
         with pytest.raises(Phase4E2EError, match="source_sha"):
             run_phase4_gate20(source_sha, tmp_path / source_sha[:8])
+
+
+def test_final_evidence_runtime_head_must_equal_declared_source_sha():
+    assert require_exact_runtime_head(SOURCE_SHA, SOURCE_SHA.upper()) == SOURCE_SHA
+
+    with pytest.raises(Phase4E2EError, match="runtime Git HEAD does not match source_sha"):
+        require_exact_runtime_head(SOURCE_SHA, "2" * 40)
+
+    with pytest.raises(Phase4E2EError, match="runtime_git_head"):
+        require_exact_runtime_head(SOURCE_SHA, "not-a-sha")
