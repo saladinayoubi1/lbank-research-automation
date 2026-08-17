@@ -1,163 +1,108 @@
-# LBank Research Automation
+# NEXUS Research Automation
 
-A public-market-data research pipeline for collecting, validating, repairing, archiving, safely loading, and backtesting LBank OHLCV candles.
+NEXUS is a fail-closed, evidence-driven research and paper-trading platform for public crypto/FX market data. The repository began as LBank data research infrastructure and now includes canonical multi-source data contracts, deterministic backtesting, durable mission/task state, independent qualification, bounded AI-provider assistance, and paper-only execution controls.
 
-This repository is research infrastructure only. It does **not** place orders, use private LBank APIs, withdraw funds, or contain real-trading credentials.
+## Authority boundary
 
-## Pipeline
+NEXUS is **research / backtest / paper only**.
 
-```text
-LBank public kline API
-        ↓
-Incremental Collector
-        ↓
-Timestamp Integrity Validation
-        ↓
-Bounded Gap Repair
-        ↓
-Data Readiness Gate
-        ↓
-Snapshot Manifest / Partitioned Export
-        ↓
-Guarded Research Loader
-        ↓
-Strategy-neutral Backtest Core
-```
+It does not authorize:
 
-## Current universe
+- live-money order placement;
+- private exchange credentials;
+- withdrawals;
+- production promotion;
+- signing authority;
+- billing changes;
+- AI/provider overrides of deterministic Risk.
 
-Symbols:
+A strategy qualification result is evidence, not permission to trade live. Deterministic Risk remains final authority for any paper candidate.
 
-- `btc_usdt`
-- `eth_usdt`
-- `aero_usdt`
-- `agt_usdt`
-- `layer_usdt`
-- `pbu_usdt`
-- `udoge_usdt`
-
-Timeframes:
-
-- `minute15`
-- `hour1`
-- `hour4`
-
-The Collector runs through GitHub Actions every 15 minutes and advances each symbol/timeframe incrementally. Existing pagination, request size, page limits, and canonical Parquet schema are intentionally bounded.
-
-## Canonical dataset layout
+## Architecture
 
 ```text
-data/market/
-├── _backfill_status.csv
-├── _backfill_status.md
-├── _data_readiness.csv
-├── _data_readiness.json
-├── _data_readiness.md
-├── _snapshot_manifest.json
-├── _snapshot_manifest.md
-└── <symbol>/
-    ├── minute15.parquet
-    ├── hour1.parquet
-    └── hour4.parquet
+Public market data (Bybit primary; registry-defined fallbacks)
+        ↓
+Provenance + semantic source validation
+        ↓
+Canonical closed-candle dataset binding
+        ↓
+Preregistered strategy experiment
+        ↓
+Deterministic next-bar-open backtest
+        ↓
+Robustness / cost stress / OOS / regime evidence
+        ↓
+Independent Strategy Factory qualification
+        ↓
+Killed ───────────────┐
+                      └─ or ─> Paper Candidate
+                                  ↓
+                         Deterministic Risk review
 ```
 
-Each Parquet file uses the exact column order documented in [`docs/SCHEMA.md`](docs/SCHEMA.md).
-
-## Integrity rules
-
-A series is invalid when any of these conditions is detected:
-
-- missing candle intervals;
-- duplicate timestamps;
-- timestamps outside the timeframe grid.
-
-The status report records:
-
-- `expected_rows`
-- `missing_candles`
-- `gap_count`
-- `duplicate_count`
-- `off_grid_count`
-- `integrity_ok`
-
-Integrity failure takes precedence over freshness. An invalid series cannot be marked `current`.
-
-## Research-readiness rules
-
-`data_readiness.py` converts integrity status into deterministic research decisions. Only integrity-valid `current` or `backfilling` series can be marked ready. An optional minimum-row threshold may be applied by research jobs.
-
-`research_data.py` is the approved loader for analyses and backtests. It rejects blocked series before reading Parquet and then revalidates:
-
-- canonical schema and column order;
-- symbol/timeframe identity;
-- timestamp continuity at load time;
-- optional minimum rows.
-
-## Gap repair
-
-`gap_repair.py` repairs only known missing candle windows. It is bounded to a small number of API requests per series per run, merges only timestamps that are currently missing, and does not change Collector pagination or storage schema.
-
-## Verifiable snapshots
-
-`snapshot_manifest.py` inventories every canonical Parquet file and records:
-
-- relative path;
-- symbol and timeframe;
-- row count and byte size;
-- first and last candle;
-- canonical schema status;
-- SHA-256 digest.
-
-The manual **Export dataset snapshot** workflow packages `data/market` as a short-lived GitHub Actions artifact. No Google Drive credentials are stored in GitHub.
-
-## Partitioned research export
-
-`partition_dataset.py` creates a separate, lossless year/month-partitioned copy:
+Durable orchestration is separate from strategy authority:
 
 ```text
-build/partitioned_market/
-└── symbol=<symbol>/
-    └── timeframe=<timeframe>/
-        └── year=<YYYY>/
-            └── month=<MM>/
-                └── part-00000.parquet
+Mission/task contract
+  → hashed CAS state
+  → attempts / leases / idempotency
+  → independent verification
+  → deny-by-default worker policy
 ```
 
-The partitioner preserves the canonical columns and all source rows. It does not silently repair, remove, or reinterpret gaps. Integrity metrics and SHA-256 values are recorded in `_partition_manifest.json` and `_partition_manifest.md`.
+## Canonical market data
 
-## Backtest core
+`docs/architecture/market-data-source-registry.yaml` is the machine-readable semantic authority. It defines canonical symbols, market categories, timeframes, source roles, endpoint contracts, timestamp grids and closed-candle finality.
 
-`backtest_engine.py` is a pure single-series execution and accounting engine. It accepts precomputed signed target exposures but does not create strategy signals.
+The current hierarchy uses Bybit as primary for canonical mappings. Secondary/tertiary sources cannot silently replace primary data. Unknown, stale, substituted or semantically mismatched data fails closed before strategy qualification.
 
-A target emitted at candle `t` executes at candle `t+1` open. The engine supports:
+Key modules:
 
-- long, flat, and short target exposure;
-- explicit maximum exposure;
-- adverse slippage in basis points;
-- fees on filled notional;
-- close-to-close equity and drawdown tracking;
-- optional end-of-test liquidation;
-- fill, equity-curve, and summary-metric outputs.
+- `bybit_public_klines.py` — bounded public closed-candle retrieval;
+- `market_data_provenance_manifest.py` — deterministic provenance binding;
+- `phase5_data_binding.py` — canonical source/semantic enforcement;
+- `data_readiness.py`, `research_data.py` — legacy/local dataset readiness and guarded loading.
 
-The core does not model funding, exchange liquidation, order-book depth, partial fills, or intrabar stop/target sequencing. See [`docs/BACKTEST_ENGINE.md`](docs/BACKTEST_ENGINE.md).
+The original LBank collector remains useful as a public-data research lane; it is no longer the sole project architecture.
 
-## Dependency policy
+## Strategy research
 
-Python 3.12 is used in GitHub Actions.
+`backtest_engine.py` is the strategy-neutral accounting engine. A signal emitted at candle `t` executes at candle `t+1` open. It models bounded target exposure, fees, adverse slippage, equity, drawdown and end-of-test liquidation.
 
-- `requirements.txt` defines supported direct-dependency ranges for development and planned upgrades.
-- `requirements.lock` pins the complete runtime environment used by Collector and export workflows.
-- `requirements-dev.lock` pins the runtime environment plus the test toolchain.
-- Lock updates must use a pull request and pass the complete repository test suite plus `pip check`.
+`phase5_strategy_factory.py` freezes experiment identity and qualification semantics. Approved families are momentum, trend breakout and mean reversion. Qualification consumes typed evidence and either produces `killed` or a bounded `paper_candidate`; it never grants live authority.
 
-Install the exact runtime environment:
+`phase6_research_pipeline.py` connects real canonical Bybit datasets to the existing backtest and Strategy Factory path. It generates deterministic long/flat research targets, base/stress backtests, a final holdout, ordered regime evidence and a paper-only handoff artifact. It contains no private API or live-order path.
 
-```bash
-python -m pip install -r requirements.lock
-python -m pip check
-```
+A passing pipeline is **not a profitability claim**. The dataset, hypothesis, cost model, kill criteria and fixed code SHA remain part of the evidence boundary.
 
-Install the exact test environment:
+## Durable state and verification
+
+Phase 5 established the canonical durable mission/task runtime:
+
+- `phase5_mission_contract.py`
+- `phase5_state_store.py`
+- `phase5_attempts.py`
+- `phase5_verification.py`
+- `phase5_worker_policy.py`
+- `phase5_strategy_factory.py`
+- `phase5_data_binding.py`
+
+The durable Phase 5 checkpoint is `.nexus/phase5-checkpoint.json`; Gate 9 Cloud/Windows evidence is preserved under `docs/evidence/phase5/gate9/`.
+
+## Optional AI providers
+
+AI providers are bounded assistants only. DeepSeek is optional and must not become a startup dependency or authority holder.
+
+`deepseek_provider.py` uses a canonical USD 5.00 monthly authorization ledger with conservative pre-I/O reservation, a protected reserve, kernel-managed serialization, ambiguous-charge quarantine and fail-closed pricing/model/ledger validation. Network traffic is separately constrained by the egress authorizer and pinned HTTPS transport.
+
+The budget/recovery authority is documented in `docs/architecture/ADR-AI-PROVIDER-BUDGET.md`.
+
+A `DEEPSEEK_API_KEY` must only exist in an approved secret store. Never commit or paste it into repository content. Key presence alone does not authorize paid routing.
+
+## Testing
+
+Install the pinned development environment and run the complete suite:
 
 ```bash
 python -m pip install -r requirements-dev.lock
@@ -165,51 +110,28 @@ python -m pip check
 python -m pytest -q
 ```
 
-For dependency-upgrade exploration only, install the supported ranges:
+Useful focused suites:
 
 ```bash
-python -m pip install -r requirements.txt
+python -m pytest -q tests/test_phase5_mission_contract.py
+python -m pytest -q tests/test_phase5_state_store.py
+python -m pytest -q tests/test_phase5_strategy_factory.py
+python -m pytest -q tests/test_phase6_research_pipeline.py
+python -m pytest -q tests/test_deepseek_budget_contract.py
 ```
 
-## Local commands
+GitHub pull requests must also satisfy the repository's required cross-platform and control-plane checks. Candidate code must not weaken tests, validators or protected workflow policy to obtain green CI.
 
-Run the Collector:
+## Data and backtest limitations
 
-```bash
-python main.py
-```
+Market data can contain venue outages, listing changes, bad candles or incomplete history. Canonical validation reduces these risks but does not make historical data infallible.
 
-Run bounded Gap Repair:
+The backtest is deterministic research infrastructure, not an exchange simulator. It does not claim full order-book depth, partial-fill realism, exchange liquidation behavior or intrabar stop sequencing unless explicitly modeled by a research slice.
 
-```bash
-python gap_repair.py
-```
+Results must be interpreted with fees/slippage stress, OOS evidence, regime behavior, drawdown and failure modes. Research that fails its preregistered controls is killed rather than tuned around the gate.
 
-Generate readiness and snapshot reports:
+## Project closure model
 
-```bash
-python data_readiness.py
-python snapshot_manifest.py
-```
+Phase 5 formal Gates 0–9 are complete and preserved as a closed historical contract. They are not reopened with an invented Gate 10.
 
-Build the partitioned research copy:
-
-```bash
-python partition_dataset.py \
-  --input-root data/market \
-  --output-root build/partitioned_market \
-  --clean
-```
-
-## Data limitations
-
-The repository dataset is preliminary research data. A series must pass the readiness gate and guarded loader before it is used. Historical completeness may continue to improve over multiple scheduled runs. No result should be treated as production-grade trading evidence until the selected dataset is complete, integrity-valid, reproducible, and independently reviewed.
-
-## Safety boundaries
-
-- Public market data only.
-- No private API keys.
-- No order placement.
-- No withdrawals.
-- No real-money execution logic.
-- No automatic promotion from research to live trading.
+Phase 6 is the bounded final engineering closure layer: real canonical research pipeline integration, optional-provider budget/recovery acceptance, deterministic resilience coverage, current documentation and conservative retirement of superseded backlog. Any future expansion of financial authority requires a new explicit owner-approved contract; it is not implied by completion of NEXUS research infrastructure.
