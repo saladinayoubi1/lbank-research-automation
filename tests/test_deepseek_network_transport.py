@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+import deepseek_provider as ds
 from deepseek_network_transport import (
     DEEPSEEK_CHAT_URL,
     MAX_RESPONSE_BYTES,
@@ -124,3 +125,43 @@ def test_body_must_match_authorized_byte_count():
             timeout=2,
             connection_factory=_Connection,
         )
+
+
+def test_provider_chat_uses_authorizer_and_pinned_transport_not_urlopen(monkeypatch, tmp_path):
+    ledger = tmp_path / "usage.json"
+    monkeypatch.setattr(ds, "CANONICAL_LEDGER", ledger)
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "test-only-key")
+    marker_authorizer = object()
+    marker_request = object()
+    seen = {}
+
+    def authorize(body):
+        seen["authorized_body"] = body
+        return marker_authorizer, marker_request
+
+    def post(**kwargs):
+        seen["post"] = kwargs
+        return (
+            b'{"choices":[{"message":{"content":"NEXUS_DEEPSEEK_OK"}}],'
+            b'"usage":{"prompt_tokens":1,"prompt_cache_hit_tokens":0,'
+            b'"prompt_cache_miss_tokens":1,"completion_tokens":1}}'
+        )
+
+    def forbidden_urlopen(*_args, **_kwargs):
+        raise AssertionError("urllib provider I/O must never be used")
+
+    monkeypatch.setattr(ds, "authorize_deepseek_json", authorize)
+    monkeypatch.setattr(ds, "post_authorized_json", post)
+    monkeypatch.setattr(ds.request, "urlopen", forbidden_urlopen)
+
+    result = ds.chat(
+        [{"role": "user", "content": "Reply with exactly: NEXUS_DEEPSEEK_OK"}],
+        max_tokens=32,
+        ledger_path=ledger,
+    )
+
+    assert result["content"] == "NEXUS_DEEPSEEK_OK"
+    assert seen["post"]["authorized"] is marker_request
+    assert seen["post"]["authorizer"] is marker_authorizer
+    assert seen["post"]["body"] == seen["authorized_body"]
+    assert ds.load_ledger(ledger)["inflight"] == {}
