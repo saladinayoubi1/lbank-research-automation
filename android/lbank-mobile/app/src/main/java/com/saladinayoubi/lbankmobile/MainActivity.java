@@ -12,17 +12,20 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -30,9 +33,25 @@ import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
+import javax.net.ssl.HttpsURLConnection;
 
 public final class MainActivity extends Activity {
-    private static final String KEY_ALIAS = "nexus_provider_keys";
+    private static final String KEY_ALIAS = "nexus_gateway_token";
+    private static final String GATEWAY_SECRET_ID = "gateway";
+    private static final int MAX_RESPONSE_BYTES = 1_000_000;
+    private static final int MAX_REQUEST_CHARS = 4096;
+    private static final Set<String> ALLOWED_PATHS = new HashSet<>(Arrays.asList(
+            "/health",
+            "/api/readiness/summary",
+            "/api/readiness/series",
+            "/api/mission-control",
+            "/api/integrations/zotero",
+            "/api/integrations/research"
+    ));
+    private static final Set<String> SERIES_QUERY_KEYS = new HashSet<>(Arrays.asList(
+            "symbol", "timeframe", "limit", "offset"
+    ));
+
     private WebView webView;
     private final ExecutorService executor = Executors.newFixedThreadPool(3);
 
@@ -52,7 +71,7 @@ public final class MainActivity extends Activity {
         settings.setDisplayZoomControls(false);
         settings.setLoadWithOverviewMode(true);
         settings.setUseWideViewPort(true);
-        settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+        settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
 
         webView.addJavascriptInterface(new NativeGateway(), "NexusNative");
@@ -92,115 +111,157 @@ public final class MainActivity extends Activity {
         return new String(cipher.doFinal(Base64.decode(parts[1], Base64.NO_WRAP)), StandardCharsets.UTF_8);
     }
 
-    private String readAll(InputStream stream) throws Exception {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8));
-        StringBuilder out = new StringBuilder();
-        String line;
-        while ((line = reader.readLine()) != null) out.append(line).append('\n');
-        return out.toString().trim();
+    private void assertGatewaySecretId(String id) {
+        if (!GATEWAY_SECRET_ID.equals(id)) {
+            throw new SecurityException("Only the NEXUS gateway token is accepted by the native bridge");
+        }
     }
 
-    private JSONObject postJson(String url, JSONObject body, JSONObject headers) throws Exception {
-        URL parsed = new URL(url);
-        String protocol = parsed.getProtocol();
-        if (!"https".equals(protocol) && !("http".equals(protocol) && ("127.0.0.1".equals(parsed.getHost()) || "localhost".equals(parsed.getHost()) || parsed.getHost().startsWith("192.168.") || parsed.getHost().startsWith("10.")))) {
-            throw new SecurityException("Only HTTPS or local-network HTTP endpoints are allowed");
+    private URL gatewayBaseUrl() throws Exception {
+        URL base = new URL(BuildConfig.NEXUS_GATEWAY_URL);
+        if (!"https".equalsIgnoreCase(base.getProtocol())) {
+            throw new SecurityException("Android NEXUS gateway must use HTTPS");
         }
-        HttpURLConnection connection = (HttpURLConnection) parsed.openConnection();
-        connection.setConnectTimeout(20000);
-        connection.setReadTimeout(90000);
-        connection.setRequestMethod("POST");
-        connection.setDoOutput(true);
-        connection.setRequestProperty("Content-Type", "application/json");
-        JSONArray names = headers.names();
-        if (names != null) for (int i = 0; i < names.length(); i++) {
-            String name = names.getString(i);
-            connection.setRequestProperty(name, headers.getString(name));
+        if (base.getUserInfo() != null || base.getQuery() != null || base.getRef() != null || !(base.getPath().isEmpty() || "/".equals(base.getPath()))) {
+            throw new SecurityException("Android NEXUS gateway configuration must be an origin only");
         }
-        try (OutputStream os = connection.getOutputStream()) {
-            os.write(body.toString().getBytes(StandardCharsets.UTF_8));
+        return base;
+    }
+
+    private String validateRelativePath(String requestJson) throws Exception {
+        if (requestJson == null || requestJson.length() > MAX_REQUEST_CHARS) {
+            throw new SecurityException("Gateway request is malformed or oversized");
         }
+        JSONObject request = new JSONObject(requestJson);
+        Iterator<String> keys = request.keys();
+        if (!keys.hasNext()) throw new SecurityException("Gateway request is empty");
+        String onlyKey = keys.next();
+        if (!"path".equals(onlyKey) || keys.hasNext()) {
+            throw new SecurityException("Only a bounded gateway path is accepted");
+        }
+        String rawPath = request.getString("path");
+        if (rawPath.length() > MAX_REQUEST_CHARS || rawPath.contains("#") || rawPath.startsWith("//")) {
+            throw new SecurityException("Gateway path is invalid");
+        }
+        URI relative = new URI(rawPath);
+        if (relative.isAbsolute() || relative.getHost() != null || relative.getUserInfo() != null) {
+            throw new SecurityException("Absolute URLs are forbidden in WebView requests");
+        }
+        String path = relative.getPath();
+        if (!ALLOWED_PATHS.contains(path)) {
+            throw new SecurityException("Gateway route is not allowlisted");
+        }
+        String rawQuery = relative.getRawQuery();
+        if (rawQuery != null && !rawQuery.isEmpty()) {
+            if (!"/api/readiness/series".equals(path)) {
+                throw new SecurityException("Query parameters are forbidden on this gateway route");
+            }
+            Set<String> seen = new HashSet<>();
+            for (String pair : rawQuery.split("&")) {
+                if (pair.isEmpty()) throw new SecurityException("Gateway query is malformed");
+                String[] parts = pair.split("=", 2);
+                String key = URLDecoder.decode(parts[0], StandardCharsets.UTF_8);
+                String value = parts.length == 2 ? URLDecoder.decode(parts[1], StandardCharsets.UTF_8) : "";
+                if (!SERIES_QUERY_KEYS.contains(key) || !seen.add(key) || value.length() > 160) {
+                    throw new SecurityException("Gateway query is invalid");
+                }
+            }
+        }
+        return rawPath;
+    }
+
+    private String readBounded(InputStream stream) throws Exception {
+        if (stream == null) return "";
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        byte[] buffer = new byte[8192];
+        int total = 0;
+        int read;
+        while ((read = stream.read(buffer)) != -1) {
+            total += read;
+            if (total > MAX_RESPONSE_BYTES) throw new SecurityException("Gateway response exceeds bounded size");
+            output.write(buffer, 0, read);
+        }
+        return output.toString(StandardCharsets.UTF_8);
+    }
+
+    private String callGateway(String requestJson) throws Exception {
+        String relativePath = validateRelativePath(requestJson);
+        URL base = gatewayBaseUrl();
+        URL target = new URL(base, relativePath);
+        int basePort = base.getPort() == -1 ? base.getDefaultPort() : base.getPort();
+        int targetPort = target.getPort() == -1 ? target.getDefaultPort() : target.getPort();
+        if (!base.getProtocol().equalsIgnoreCase(target.getProtocol())
+                || !base.getHost().equalsIgnoreCase(target.getHost())
+                || basePort != targetPort) {
+            throw new SecurityException("Gateway origin escape rejected");
+        }
+
+        HttpsURLConnection connection = (HttpsURLConnection) target.openConnection();
+        connection.setConnectTimeout(15000);
+        connection.setReadTimeout(30000);
+        connection.setInstanceFollowRedirects(false);
+        connection.setRequestMethod("GET");
+        connection.setRequestProperty("Accept", "application/json");
+        String packed = getPreferences(MODE_PRIVATE).getString("gateway_token", "");
+        String token = decrypt(packed);
+        if (!token.isEmpty()) connection.setRequestProperty("Authorization", "Bearer " + token);
+
+        int contentLength = connection.getContentLength();
+        if (contentLength > MAX_RESPONSE_BYTES) throw new SecurityException("Gateway response exceeds bounded size");
         int code = connection.getResponseCode();
         InputStream stream = code >= 200 && code < 300 ? connection.getInputStream() : connection.getErrorStream();
-        String text = stream == null ? "" : readAll(stream);
-        if (code < 200 || code >= 300) throw new IllegalStateException("HTTP " + code + ": " + text);
-        return new JSONObject(text);
-    }
-
-    private String callProvider(JSONObject request) throws Exception {
-        JSONObject p = request.getJSONObject("provider");
-        JSONArray messages = request.getJSONArray("messages");
-        String type = p.getString("type");
-        String base = p.getString("baseUrl").replaceAll("/$", "");
-        String model = p.getString("model");
-        String key = decrypt(getPreferences(MODE_PRIVATE).getString("key_" + p.getString("id"), ""));
-        if (!"ollama".equals(type) && key.isEmpty()) throw new IllegalStateException("API Key تنظیم نشده");
-        JSONObject headers = new JSONObject();
-        JSONObject body = new JSONObject();
-        JSONObject response;
-
-        if ("openai-compatible".equals(type)) {
-            headers.put("Authorization", "Bearer " + key);
-            body.put("model", model).put("messages", messages).put("temperature", 0.25);
-            response = postJson(base + "/chat/completions", body, headers);
-            return response.getJSONArray("choices").getJSONObject(0).getJSONObject("message").optString("content");
+        String text = readBounded(stream);
+        if (code < 200 || code >= 300) throw new IllegalStateException("NEXUS gateway HTTP " + code);
+        JSONObject payload = new JSONObject(text);
+        if (!"nexus.dashboard.read.v1".equals(payload.optString("contract_version"))) {
+            throw new SecurityException("Incompatible NEXUS gateway response");
         }
-        if ("anthropic".equals(type)) {
-            headers.put("x-api-key", key).put("anthropic-version", "2023-06-01");
-            JSONArray filtered = new JSONArray();
-            String system = "";
-            for (int i = 0; i < messages.length(); i++) {
-                JSONObject m = messages.getJSONObject(i);
-                if ("system".equals(m.getString("role"))) system = m.getString("content"); else filtered.put(m);
-            }
-            body.put("model", model).put("max_tokens", 1800).put("messages", filtered).put("system", system);
-            response = postJson(base + "/v1/messages", body, headers);
-            JSONArray content = response.getJSONArray("content");
-            StringBuilder out = new StringBuilder();
-            for (int i = 0; i < content.length(); i++) out.append(content.getJSONObject(i).optString("text"));
-            return out.toString();
-        }
-        if ("gemini".equals(type)) {
-            StringBuilder prompt = new StringBuilder();
-            for (int i = 0; i < messages.length(); i++) {
-                JSONObject m = messages.getJSONObject(i);
-                prompt.append(m.getString("role")).append(": ").append(m.getString("content")).append("\n\n");
-            }
-            body.put("contents", new JSONArray().put(new JSONObject().put("parts", new JSONArray().put(new JSONObject().put("text", prompt.toString())))));
-            response = postJson(base + "/v1beta/models/" + model + ":generateContent?key=" + java.net.URLEncoder.encode(key, "UTF-8"), body, headers);
-            return response.getJSONArray("candidates").getJSONObject(0).getJSONObject("content").getJSONArray("parts").getJSONObject(0).optString("text");
-        }
-        if ("ollama".equals(type)) {
-            body.put("model", model).put("stream", false).put("messages", messages);
-            response = postJson(base + "/api/chat", body, headers);
-            return response.getJSONObject("message").optString("content");
-        }
-        throw new IllegalArgumentException("نوع سرویس پشتیبانی نمی‌شود");
+        return payload.toString();
     }
 
     public final class NativeGateway {
         @JavascriptInterface public boolean isAvailable() { return true; }
 
-        @JavascriptInterface public void saveKey(String providerId, String value) {
+        @JavascriptInterface public String gatewayInfo() {
+            try {
+                URL base = gatewayBaseUrl();
+                return new JSONObject()
+                        .put("mode", "secure-gateway")
+                        .put("origin", base.getProtocol() + "://" + base.getAuthority())
+                        .put("readOnly", true)
+                        .toString();
+            } catch (Exception e) {
+                return new JSONObject().put("mode", "blocked").put("readOnly", true).toString();
+            }
+        }
+
+        @JavascriptInterface public void saveKey(String id, String value) {
+            assertGatewaySecretId(id);
             try {
                 String encrypted = value == null || value.isEmpty() ? "" : encrypt(value);
-                getPreferences(MODE_PRIVATE).edit().putString("key_" + providerId, encrypted).apply();
+                getPreferences(MODE_PRIVATE).edit().putString("gateway_token", encrypted).apply();
             } catch (Exception e) { throw new IllegalStateException(e); }
         }
 
-        @JavascriptInterface public boolean hasKey(String providerId) {
-            return !getPreferences(MODE_PRIVATE).getString("key_" + providerId, "").isEmpty();
+        @JavascriptInterface public boolean hasKey(String id) {
+            try {
+                assertGatewaySecretId(id);
+                return !getPreferences(MODE_PRIVATE).getString("gateway_token", "").isEmpty();
+            } catch (Exception e) {
+                return false;
+            }
         }
 
-        @JavascriptInterface public void deleteKey(String providerId) {
-            getPreferences(MODE_PRIVATE).edit().remove("key_" + providerId).apply();
+        @JavascriptInterface public void deleteKey(String id) {
+            assertGatewaySecretId(id);
+            getPreferences(MODE_PRIVATE).edit().remove("gateway_token").apply();
         }
 
         @JavascriptInterface public void request(String requestId, String requestJson) {
             executor.execute(() -> {
                 boolean ok = true;
                 String payload;
-                try { payload = callProvider(new JSONObject(requestJson)); }
+                try { payload = callGateway(requestJson); }
                 catch (Exception e) { ok = false; payload = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage(); }
                 final String script = "window.NexusNativeResult(" + JSONObject.quote(requestId) + "," + ok + "," + JSONObject.quote(payload) + ")";
                 runOnUiThread(() -> webView.evaluateJavascript(script, null));
