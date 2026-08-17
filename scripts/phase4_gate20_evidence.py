@@ -3,13 +3,46 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from phase4_e2e import run_phase4_gate20, verify_gate20_evidence
+from phase4_e2e import Phase4E2EError, run_phase4_gate20, verify_gate20_evidence
+
+
+def _validated_sha(value: str, field: str) -> str:
+    if not isinstance(value, str) or len(value) != 40:
+        raise Phase4E2EError(f"{field} must be a 40-character Git commit SHA")
+    try:
+        int(value, 16)
+    except ValueError as exc:
+        raise Phase4E2EError(f"{field} must be hexadecimal") from exc
+    return value.lower()
+
+
+def require_exact_runtime_head(expected_sha: str, actual_sha: str) -> str:
+    """Fail closed unless the executing checkout is the declared evidence SHA."""
+    expected = _validated_sha(expected_sha, "source_sha")
+    actual = _validated_sha(actual_sha, "runtime_git_head")
+    if actual != expected:
+        raise Phase4E2EError("runtime Git HEAD does not match source_sha")
+    return actual
+
+
+def current_git_head() -> str:
+    completed = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if completed.returncode != 0:
+        raise Phase4E2EError("unable to resolve runtime Git HEAD")
+    return _validated_sha(completed.stdout.strip(), "runtime_git_head")
 
 
 def parse_args() -> argparse.Namespace:
@@ -22,10 +55,11 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    source_sha = require_exact_runtime_head(args.source_sha, current_git_head())
     output = args.output.resolve()
     workspace = (args.workspace or output.parent / "gate20-workspace").resolve()
-    evidence = run_phase4_gate20(args.source_sha, workspace)
-    verify_gate20_evidence(evidence, expected_source_sha=args.source_sha)
+    evidence = run_phase4_gate20(source_sha, workspace)
+    verify_gate20_evidence(evidence, expected_source_sha=source_sha)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(
         json.dumps(evidence, sort_keys=True, separators=(",", ":"), ensure_ascii=False) + "\n",
@@ -35,6 +69,7 @@ def main() -> int:
         "gate": 20,
         "status": "PASS",
         "source_sha": evidence["source_sha"],
+        "runtime_git_head": source_sha,
         "evidence_digest": evidence["evidence_digest"],
         "paper_only": evidence["paper_only"],
         "audit_head_digest": evidence["audit"]["head_event_digest"],
