@@ -23,15 +23,23 @@ def _bounded_id(value: Any, field: str) -> str:
 
 
 def decode_payload(value: str) -> dict[str, Any]:
-    data = json.loads(base64.urlsafe_b64decode(value.encode("ascii")).decode("utf-8"))
+    if not isinstance(value, str) or not value or len(value) > 64_000:
+        raise ValueError("dispatch payload must be a non-empty bounded string")
+    try:
+        decoded = base64.b64decode(value.encode("ascii"), altchars=b"-_", validate=True)
+        data = json.loads(decoded.decode("utf-8"))
+    except (UnicodeEncodeError, UnicodeDecodeError, ValueError, json.JSONDecodeError) as exc:
+        raise ValueError("dispatch payload encoding is invalid") from exc
     if not isinstance(data, dict) or set(data) != DISPATCH_KEYS:
         raise ValueError("dispatch payload schema mismatch")
     if data["schema_version"] != 2:
         raise ValueError("unsupported dispatch payload schema")
     for field in ("task_id", "lease_id", "correlation_id", "dispatch_id", "worker_id", "transport"):
         _bounded_id(data[field], field)
-    if int(data["authority"]) >= 4:
-        raise ValueError("L4 payload execution is forbidden")
+    if isinstance(data["authority"], bool) or not isinstance(data["authority"], int):
+        raise ValueError("authority must be an integer")
+    if data["authority"] >= 4 or data["authority"] < 0:
+        raise ValueError("L4 or invalid payload execution is forbidden")
     if data["transport"] not in {"github-cloud", "deepseek", "windows"}:
         raise ValueError("unsupported dispatch transport")
     if not isinstance(data["required_capabilities"], list) or not all(isinstance(item, str) for item in data["required_capabilities"]):
@@ -140,10 +148,12 @@ def execute(payload: dict[str, Any], transport: str) -> dict[str, Any]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Execute one bounded NEXUS agent task")
-    parser.add_argument("--payload-b64", required=True)
-    parser.add_argument("--transport", required=True)
+    parser.add_argument("--payload-b64", default=os.environ.get("NEXUS_TASK_PAYLOAD_B64"))
+    parser.add_argument("--transport", default=os.environ.get("NEXUS_TASK_TRANSPORT"))
     parser.add_argument("--output", default="result.json")
     args = parser.parse_args()
+    if not args.payload_b64 or not args.transport:
+        parser.error("bounded payload and transport are required")
     payload = decode_payload(args.payload_b64)
     result = execute(payload, args.transport)
     Path(args.output).write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
