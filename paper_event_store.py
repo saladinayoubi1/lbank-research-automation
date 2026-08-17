@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
@@ -11,6 +12,11 @@ SCHEMA_VERSION = "nexus.paper-event.v1"
 GENESIS_DIGEST = "0" * 64
 PAPER_ONLY = True
 MAX_EVENTS = 100_000
+MAX_CANONICAL_EVENT_BYTES = 65_536
+MAX_DECIMAL_CHARS = 128
+MAX_REASON_CODE_CHARS = 160
+SUPPORTED_TIMEFRAMES = {"minute15", "hour1", "hour4", "session"}
+PAPER_ORDER_TYPES = {"paper_open", "paper_close", "paper_reduce", "paper_reverse"}
 MAX_SIGNAL_AGE_SECONDS = {
     "minute15": 3_600,
     "hour1": 14_400,
@@ -50,6 +56,12 @@ FORBIDDEN_TERMS = {
     "api_key", "api_secret", "credential", "private_key", "withdrawal",
     "exchange_order_id", "live_order", "production", "billing", "signing",
 }
+FORBIDDEN_VALUE_FRAGMENTS = {
+    "api_key", "api_secret", "credential", "private_key", "seed_phrase",
+    "authorization_bearer", "exchange_secret", "exchange_private", "live_order",
+    "real_order", "live_trade", "real_trade", "withdrawal", "wallet_withdraw",
+    "production_deploy", "production_promotion", "billing_authority", "signing_authority",
+}
 ENVELOPE_KEYS = {
     "schema_version", "event_id", "event_type", "aggregate_id", "sequence",
     "occurred_at", "correlation_id", "causation_id", "provenance",
@@ -87,11 +99,14 @@ class ReplayResult:
 
 def _canonical(value: Any) -> bytes:
     try:
-        return json.dumps(
+        encoded = json.dumps(
             value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False
         ).encode("utf-8")
     except (TypeError, ValueError) as exc:
         raise PaperEventError("event is not canonically serializable") from exc
+    if len(encoded) > MAX_CANONICAL_EVENT_BYTES:
+        raise PaperEventError("event exceeds bounded canonical size")
+    return encoded
 
 
 def _digest(value: Any) -> str:
@@ -99,8 +114,8 @@ def _digest(value: Any) -> str:
 
 
 def _utc(value: Any, field: str) -> str:
-    if not isinstance(value, str):
-        raise PaperEventError(f"{field} must be an ISO-8601 UTC string")
+    if not isinstance(value, str) or not value or len(value) > 64:
+        raise PaperEventError(f"{field} must be a bounded ISO-8601 UTC string")
     try:
         parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError as exc:
@@ -114,7 +129,13 @@ def _decimal(value: Any, field: str, *, positive: bool = False) -> Decimal:
     if isinstance(value, float):
         raise PaperEventError(f"{field} must not use binary floating point")
     try:
-        parsed = Decimal(str(value))
+        text = str(value)
+    except Exception as exc:
+        raise PaperEventError(f"{field} is not a valid decimal") from exc
+    if not text or len(text) > MAX_DECIMAL_CHARS:
+        raise PaperEventError(f"{field} exceeds bounded decimal size")
+    try:
+        parsed = Decimal(text)
     except (InvalidOperation, TypeError, ValueError) as exc:
         raise PaperEventError(f"{field} is not a valid decimal") from exc
     if not parsed.is_finite():
@@ -130,28 +151,37 @@ def _validate_identifier(value: Any, field: str) -> str:
     return value
 
 
+def _security_token(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "_", value.casefold()).strip("_")
+
+
 def _reject_forbidden(value: Any, path: str = "event") -> None:
     if isinstance(value, Mapping):
         for key, child in value.items():
-            normalized = str(key).lower()
+            normalized = _security_token(str(key))
             if normalized in FORBIDDEN_TERMS or any(term in normalized for term in FORBIDDEN_TERMS):
                 raise PaperEventError(f"{path}.{key} is forbidden in paper-trading events")
             _reject_forbidden(child, f"{path}.{key}")
     elif isinstance(value, list):
         for index, child in enumerate(value):
             _reject_forbidden(child, f"{path}[{index}]")
+    elif isinstance(value, str):
+        normalized = _security_token(value)
+        if any(fragment in normalized for fragment in FORBIDDEN_VALUE_FRAGMENTS):
+            raise PaperEventError(f"{path} contains forbidden authority or secret material")
 
 
 def validate_provenance(provenance: Any) -> dict[str, Any]:
     if not isinstance(provenance, dict) or set(provenance) != PROVENANCE_KEYS:
         raise PaperEventError("provenance schema mismatch")
+    _reject_forbidden(provenance, "provenance")
     if provenance["kind"] not in {"automatic", "manual"}:
         raise PaperEventError("provenance.kind must be automatic or manual")
     for field in ("source_id", "strategy_version", "policy_version"):
         _validate_identifier(provenance[field], f"provenance.{field}")
     _utc(provenance["source_timestamp"], "provenance.source_timestamp")
     _utc(provenance["received_timestamp"], "provenance.received_timestamp")
-    if provenance["timeframe"] not in {"minute15", "hour1", "hour4", "session"}:
+    if provenance["timeframe"] not in SUPPORTED_TIMEFRAMES:
         raise PaperEventError("unsupported provenance timeframe")
     confidence = _decimal(provenance["confidence"], "provenance.confidence")
     if confidence < 0 or confidence > 1:
@@ -170,14 +200,24 @@ def validate_payload(event_type: str, payload: Any) -> dict[str, Any]:
         normalized[field] = str(_decimal(payload[field], field, positive=field in POSITIVE_DECIMALS))
     if "symbol" in payload:
         _validate_identifier(payload["symbol"], "symbol")
+    if "currency" in payload:
+        _validate_identifier(payload["currency"], "currency")
+    if "reason_code" in payload:
+        if not isinstance(payload["reason_code"], str) or not payload["reason_code"] or len(payload["reason_code"]) > MAX_REASON_CODE_CHARS:
+            raise PaperEventError("reason_code must be a non-empty bounded string")
     if payload.get("side") not in {None, "long", "short", "buy", "sell"}:
         raise PaperEventError("unsupported side")
+    if event_type == "signal_recorded" and payload["timeframe"] not in SUPPORTED_TIMEFRAMES:
+        raise PaperEventError("unsupported signal timeframe")
+    if event_type == "order_intent_recorded" and payload["order_type"] not in PAPER_ORDER_TYPES:
+        raise PaperEventError("unsupported paper order type")
     if event_type == "risk_decision_recorded" and payload["decision"] not in {"allow", "reject"}:
         raise PaperEventError("unsupported risk decision")
     if event_type == "session_boundary_recorded" and payload["boundary"] not in {"open", "close"}:
         raise PaperEventError("unsupported session boundary")
     if "enabled" in payload and not isinstance(payload["enabled"], bool):
         raise PaperEventError("enabled must be boolean")
+    _canonical(normalized)
     return normalized
 
 
@@ -209,6 +249,8 @@ def build_event(
         raise PaperEventError("previous_event_digest must be hexadecimal") from exc
     normalized_payload = validate_payload(event_type, payload)
     normalized_provenance = validate_provenance(provenance)
+    if event_type == "signal_recorded" and normalized_payload["timeframe"] != normalized_provenance["timeframe"]:
+        raise PaperEventError("signal timeframe does not match provenance")
     normalized_occurred_at = _utc(occurred_at, "occurred_at")
     source_time = datetime.fromisoformat(normalized_provenance["source_timestamp"].replace("Z", "+00:00"))
     received_time = datetime.fromisoformat(normalized_provenance["received_timestamp"].replace("Z", "+00:00"))
