@@ -369,9 +369,6 @@ def chat(
         body["reasoning_effort"] = decision.reasoning_effort
     body_bytes = json.dumps(body, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
 
-    # DNS resolution and the deny-by-default decision happen before a paid reservation.
-    # The resulting immutable IP set is then used directly after the reservation, so
-    # there is no hostname re-resolution or redirect authority in the HTTP client.
     try:
         authorizer, authorized = authorize_deepseek_json(body_bytes)
     except NetworkEgressDenied as exc:
@@ -390,10 +387,18 @@ def chat(
     except Exception:
         raise AmbiguousCharge("DeepSeek request outcome is ambiguous; reservation retained") from None
 
+    if not isinstance(payload, dict):
+        raise AmbiguousCharge("DeepSeek response root is malformed; reservation retained")
     choices, usage = payload.get("choices"), payload.get("usage")
     if not isinstance(choices, list) or not choices or not isinstance(usage, dict):
         raise AmbiguousCharge("DeepSeek response missing choices or usage; reservation retained")
-    content = ((choices[0] or {}).get("message") or {}).get("content")
+    first_choice = choices[0]
+    if not isinstance(first_choice, dict):
+        raise AmbiguousCharge("DeepSeek response choice is malformed; reservation retained")
+    message = first_choice.get("message")
+    if not isinstance(message, dict):
+        raise AmbiguousCharge("DeepSeek response message is malformed; reservation retained")
+    content = message.get("content")
     if not isinstance(content, str):
         raise AmbiguousCharge("DeepSeek response missing text content; reservation retained")
     cost, ledger = _reconcile(path, request_id, decision.model, usage)
