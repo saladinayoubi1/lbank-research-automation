@@ -1,4 +1,4 @@
-package com.saladinayoubi.lbankmobile;
+package com.saladinayoubi1.lbankmobile;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -16,7 +16,6 @@ import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLDecoder;
@@ -181,7 +180,7 @@ public final class MainActivity extends Activity {
             if (total > MAX_RESPONSE_BYTES) throw new SecurityException("Gateway response exceeds bounded size");
             output.write(buffer, 0, read);
         }
-        return output.toString(StandardCharsets.UTF_8);
+        return new String(output.toByteArray(), StandardCharsets.UTF_8);
     }
 
     private String callGateway(String requestJson) throws Exception {
@@ -231,7 +230,7 @@ public final class MainActivity extends Activity {
                         .put("readOnly", true)
                         .toString();
             } catch (Exception e) {
-                return new JSONObject().put("mode", "blocked").put("readOnly", true).toString();
+                return "{\"mode\":\"blocked\",\"readOnly\":true}";
             }
         }
 
