@@ -3,6 +3,7 @@ const cards = document.querySelector('#cards');
 const integrationCards = document.querySelector('#integration-cards');
 const tbody = document.querySelector('#series');
 const alerts = document.querySelector('#alerts');
+const API_CONTRACT_VERSION = 'nexus.dashboard.read.v1';
 
 const surfaces = new Map(
   [...document.querySelectorAll('[data-surface]')].map((view) => [view.dataset.surface, view]),
@@ -128,6 +129,9 @@ async function readJson(url) {
     throw new Error(`${url}: ${detail}`);
   }
   if (!payload || typeof payload !== 'object') throw new Error(`${url}: malformed response`);
+  if (payload.contract_version !== API_CONTRACT_VERSION) {
+    throw new Error(`${url}: incompatible API contract`);
+  }
   return payload;
 }
 
@@ -136,7 +140,7 @@ async function loadDashboard() {
   integrationCards.hidden = true;
   tbody.replaceChildren();
   alerts.innerHTML = '<p class="muted">Checking blockers…</p>';
-  showState('Loading readiness and integration reports…');
+  showState('Loading readiness and integration reports…', 'loading');
 
   const results = await Promise.allSettled([
     readJson('/api/readiness/summary'),
@@ -163,8 +167,8 @@ async function loadDashboard() {
   if (researchResult.status === 'rejected') errors.push(researchResult.reason?.message || 'Research report unavailable');
   renderAlerts(rows, zotero, research, errors);
 
-  if (errors.length) showState(`Loaded with warnings: ${errors.join(' | ')}`, 'error');
-  else if (research.stale) showState('Reports loaded; research review is overdue.', 'error');
+  if (errors.length) showState(`Loaded with warnings: ${errors.join(' | ')}`, 'degraded');
+  else if (research.stale) showState('Reports loaded; research review is overdue.', 'stale');
   else showState('Reports loaded. Monitoring surface is healthy.', 'success');
 }
 
