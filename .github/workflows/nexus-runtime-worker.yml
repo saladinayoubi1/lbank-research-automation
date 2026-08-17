@@ -53,6 +53,12 @@ on:
       - 'tests/test_gate20_evidence_security_adversarial.py'
       - 'tests/test_phase4_gate20_e2e.py'
       - 'tests/test_phase4_postclose_security.py'
+      - 'phase5_data_binding.py'
+      - 'phase5_strategy_factory.py'
+      - 'phase5_shadow_migration.py'
+      - 'phase5_gate9_e2e.py'
+      - 'scripts/phase5_gate9_evidence.py'
+      - 'tests/test_phase5_*.py'
       - '.github/workflows/nexus-runtime-worker.yml'
 
 permissions:
@@ -72,7 +78,7 @@ jobs:
       (github.actor == github.repository_owner &&
        github.ref_name == github.event.repository.default_branch)
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
     env:
       NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: ${{ vars.NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED }}
       NEXUS_DEEPSEEK_SMOKE: '0'
@@ -130,17 +136,17 @@ jobs:
           path: ${{ env.RESULT_PATH }}
           if-no-files-found: error
           retention-days: 14
-      - name: Checkout exact PR head for Gate 20 cloud evidence
+      - name: Checkout exact PR head for Phase 4/5 evidence
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor == github.repository_owner
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          path: gate20-head
+          path: gate-evidence-head
           fetch-depth: 0
           persist-credentials: false
       - name: Verify exact-head Gate 20 cloud evidence
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor == github.repository_owner
-        working-directory: gate20-head
+        working-directory: gate-evidence-head
         shell: bash
         run: |
           python --version
@@ -153,7 +159,20 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: phase4-gate20-cloud-evidence-${{ github.event.pull_request.head.sha }}
-          path: gate20-head/build/phase4-gate20-evidence.json
+          path: gate-evidence-head/build/phase4-gate20-evidence.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Verify exact-head Phase 5 Gate 9 cloud evidence
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor == github.repository_owner
+        working-directory: gate-evidence-head
+        shell: bash
+        run: python scripts/phase5_gate9_evidence.py --source-sha '${{ github.event.pull_request.head.sha }}' --output build/phase5-gate9-evidence.json
+      - name: Upload exact-head Phase 5 Gate 9 cloud evidence
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor == github.repository_owner
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase5-gate9-cloud-evidence-${{ github.event.pull_request.head.sha }}
+          path: gate-evidence-head/build/phase5-gate9-evidence.json
           if-no-files-found: error
           retention-days: 14
 
@@ -161,7 +180,7 @@ jobs:
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor == github.repository_owner
     needs: preflight
     runs-on: [self-hosted, Windows, X64]
-    timeout-minutes: 12
+    timeout-minutes: 20
     env:
       NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: '0'
       NEXUS_DEEPSEEK_SMOKE: '0'
@@ -213,6 +232,16 @@ jobs:
           path: build/phase4-gate20-evidence.json
           if-no-files-found: error
           retention-days: 14
+      - name: Generate exact-head Phase 5 Gate 9 Windows evidence
+        shell: cmd
+        run: python scripts\phase5_gate9_evidence.py --source-sha "${{ github.event.pull_request.head.sha }}" --output build\phase5-gate9-evidence.json
+      - name: Upload exact-head Phase 5 Gate 9 Windows evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase5-gate9-windows-evidence-${{ github.event.pull_request.head.sha }}
+          path: build/phase5-gate9-evidence.json
+          if-no-files-found: error
+          retention-days: 14
 
   laptop-worker:
     if: >-
@@ -254,7 +283,7 @@ jobs:
         env:
           NEXUS_TASK_PAYLOAD_B64: ${{ github.event.inputs.payload_b64 }}
           NEXUS_TASK_TRANSPORT: ${{ github.event.inputs.transport }}
-        run: python scripts\agent_task_executor.py --output "%RESULT_PATH%"
+        run: python scripts/agent_task_executor.py --output "%RESULT_PATH%"
       - name: Upload bounded Windows result
         if: always() && github.event_name == 'workflow_dispatch' && github.event.inputs.payload_b64 != '' && github.event.inputs.transport == 'windows'
         uses: actions/upload-artifact@v4
