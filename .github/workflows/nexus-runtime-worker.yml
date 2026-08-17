@@ -59,7 +59,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:
-      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
       NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: ${{ vars.NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED }}
       NEXUS_DEEPSEEK_SMOKE: '0'
     steps:
@@ -89,14 +88,30 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.payload_b64 != '' && github.event.inputs.transport == 'deepseek'
         shell: bash
         run: python --version
-      - name: Execute bounded cloud or DeepSeek task
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.payload_b64 != '' && github.event.inputs.transport != 'windows'
+      - name: Execute bounded cloud task
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.payload_b64 != '' && github.event.inputs.transport == 'github-cloud'
         continue-on-error: true
         shell: bash
+        env:
+          NEXUS_TASK_PAYLOAD_B64: ${{ github.event.inputs.payload_b64 }}
+          NEXUS_TASK_TRANSPORT: ${{ github.event.inputs.transport }}
         run: |
           python scripts/agent_task_executor.py \
-            --payload-b64 '${{ github.event.inputs.payload_b64 }}' \
-            --transport '${{ github.event.inputs.transport }}' \
+            --payload-b64 "$NEXUS_TASK_PAYLOAD_B64" \
+            --transport "$NEXUS_TASK_TRANSPORT" \
+            --output "$RESULT_PATH"
+      - name: Execute bounded DeepSeek task
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.payload_b64 != '' && github.event.inputs.transport == 'deepseek'
+        continue-on-error: true
+        shell: bash
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          NEXUS_TASK_PAYLOAD_B64: ${{ github.event.inputs.payload_b64 }}
+          NEXUS_TASK_TRANSPORT: ${{ github.event.inputs.transport }}
+        run: |
+          python scripts/agent_task_executor.py \
+            --payload-b64 "$NEXUS_TASK_PAYLOAD_B64" \
+            --transport "$NEXUS_TASK_TRANSPORT" \
             --output "$RESULT_PATH"
       - name: Upload bounded cloud or DeepSeek result
         if: always() && github.event_name == 'workflow_dispatch' && github.event.inputs.payload_b64 != '' && github.event.inputs.transport != 'windows'
@@ -220,9 +235,12 @@ jobs:
           node scripts\nexus_ai_council.js
       - name: Execute bounded Windows task
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.payload_b64 != '' && github.event.inputs.transport == 'windows'
-        shell: cmd
+        shell: pwsh
         continue-on-error: true
-        run: python scripts\agent_task_executor.py --payload-b64 "${{ github.event.inputs.payload_b64 }}" --transport windows --output "%RESULT_PATH%"
+        env:
+          NEXUS_TASK_PAYLOAD_B64: ${{ github.event.inputs.payload_b64 }}
+          NEXUS_TASK_TRANSPORT: ${{ github.event.inputs.transport }}
+        run: python scripts\agent_task_executor.py --payload-b64 $env:NEXUS_TASK_PAYLOAD_B64 --transport $env:NEXUS_TASK_TRANSPORT --output $env:RESULT_PATH
       - name: Upload bounded Windows result
         if: always() && github.event_name == 'workflow_dispatch' && github.event.inputs.payload_b64 != '' && github.event.inputs.transport == 'windows'
         uses: actions/upload-artifact@v4
