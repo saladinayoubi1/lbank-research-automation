@@ -1,8 +1,10 @@
 """Fail-closed DeepSeek provider for bounded NEXUS research assistance.
 
-Paid routing uses an atomic reservation ledger. Every request reserves a conservative
-worst-case input+output cost before network I/O. Ambiguous requests keep their
-reservation quarantined, so retries cannot spend the same budget slice twice.
+Paid routing uses an atomic reservation ledger. Every provider request reserves a
+conservative worst-case input+output cost before HTTPS application I/O. Network
+authorization is deny-by-default and pins transport to pre-authorized public addresses.
+Ambiguous requests keep their reservation quarantined, so retries cannot spend the same
+budget slice twice.
 """
 from __future__ import annotations
 
@@ -15,10 +17,12 @@ import os
 from pathlib import Path
 import time
 from typing import Any
-from urllib import request
+from urllib import request  # compatibility surface for older no-network tests; not used for provider I/O
 from uuid import uuid4
 
 from deepseek_egress import EgressDenied, prepare_egress_messages
+from deepseek_network_transport import authorize_deepseek_json, post_authorized_json
+from network_egress import EgressDenied as NetworkEgressDenied
 
 BASE_URL = "https://api.deepseek.com"
 DEFAULT_MODEL = "deepseek-v4-flash"
@@ -355,8 +359,6 @@ def chat(
 
     decision = route_task(complexity=complexity, blocker=blocker)
     path = _canonical_path(ledger_path)
-    request_id, _ = _reserve(path, decision.model, safe_messages, max_tokens, blocker)
-
     body: dict[str, Any] = {
         "model": decision.model,
         "messages": safe_messages,
@@ -365,15 +367,26 @@ def chat(
     }
     if decision.reasoning_effort:
         body["reasoning_effort"] = decision.reasoning_effort
-    req = request.Request(
-        f"{BASE_URL}/chat/completions",
-        data=json.dumps(body).encode("utf-8"),
-        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-        method="POST",
-    )
+    body_bytes = json.dumps(body, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+
+    # DNS resolution and the deny-by-default decision happen before a paid reservation.
+    # The resulting immutable IP set is then used directly after the reservation, so
+    # there is no hostname re-resolution or redirect authority in the HTTP client.
     try:
-        with request.urlopen(req, timeout=timeout) as resp:
-            payload = json.loads(resp.read().decode("utf-8"))
+        authorizer, authorized = authorize_deepseek_json(body_bytes)
+    except NetworkEgressDenied as exc:
+        raise DeepSeekError(f"DeepSeek network egress denied: {exc}") from exc
+
+    request_id, _ = _reserve(path, decision.model, safe_messages, max_tokens, blocker)
+    try:
+        raw_payload = post_authorized_json(
+            body=body_bytes,
+            headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+            authorized=authorized,
+            authorizer=authorizer,
+            timeout=timeout,
+        )
+        payload = json.loads(raw_payload.decode("utf-8"))
     except Exception:
         raise AmbiguousCharge("DeepSeek request outcome is ambiguous; reservation retained") from None
 
