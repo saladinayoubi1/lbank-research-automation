@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
-
 import pytest
 
 from deepseek_network_transport import (
@@ -20,11 +18,7 @@ def _authorized(body: bytes):
     from network_egress import NetworkEgressAuthorizer
 
     authorizer = NetworkEgressAuthorizer(resolver=lambda _host, _port: [PUBLIC_IP])
-    return authorize_deepseek_json(
-        body,
-        authorizer=authorizer,
-        now=datetime.now(timezone.utc),
-    )
+    return authorize_deepseek_json(body, authorizer=authorizer)
 
 
 def test_deepseek_request_is_authorized_to_exact_host_path_and_ip():
