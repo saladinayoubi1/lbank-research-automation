@@ -14,7 +14,8 @@ def _configure_no_network(monkeypatch, tmp_path: Path) -> Path:
     def network_must_not_run(*_args, **_kwargs):
         raise AssertionError("provider network must not be reached for denied egress")
 
-    monkeypatch.setattr(ds.request, "urlopen", network_must_not_run)
+    monkeypatch.setattr(ds, "authorize_deepseek_json", network_must_not_run)
+    monkeypatch.setattr(ds, "post_authorized_json", network_must_not_run)
     return path
 
 
