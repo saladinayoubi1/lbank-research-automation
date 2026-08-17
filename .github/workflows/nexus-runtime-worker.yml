@@ -117,6 +117,15 @@ jobs:
       NEXUS_DEEPSEEK_SMOKE: '0'
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Verify exact PR head checkout
+        shell: cmd
+        run: |
+          for /f %%i in ('git rev-parse HEAD') do set "NEXUS_RUNTIME_HEAD=%%i"
+          if /I not "%NEXUS_RUNTIME_HEAD%"=="${{ github.event.pull_request.head.sha }}" exit /b 1
+          echo exact_pr_head_verified=%NEXUS_RUNTIME_HEAD%
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
