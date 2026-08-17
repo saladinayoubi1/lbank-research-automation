@@ -15,7 +15,7 @@ import deepseek_network_transport as dnt
 import deepseek_provider as dp
 import paper_event_store as pes
 from capability_broker import AuthorizationDenied, CapabilityBroker, CapabilityGrant, Operation
-from network_egress import HttpMethod
+from network_egress import EgressDenied, HttpMethod
 from scripts import agent_task_executor as executor
 
 
@@ -104,7 +104,7 @@ def test_deepseek_transport_rejects_oversized_response_before_json_parse():
         path_and_query="/chat/completions",
         max_response_bytes=dnt.MAX_RESPONSE_BYTES,
     )
-    with pytest.raises(Exception, match="response byte limit exceeded"):
+    with pytest.raises(EgressDenied, match="response byte limit exceeded"):
         dnt.post_authorized_json(
             body=b"{}",
             headers={"Content-Type": "application/json"},
@@ -205,8 +205,12 @@ def test_all_phase_self_hosted_workflows_pin_trusted_dispatch_boundaries():
         assert "persist-credentials: false" in workflow
         assert "Verify exact trigger SHA" in workflow
 
-    assert "github.event.pull_request.head.repo.full_name == github.repository" in activation
-    assert "github.actor == github.repository_owner" in activation
+    laptop_gate = activation.split("  laptop-runner:", 1)[1].split("    runs-on:", 1)[0]
+    assert "github.event_name == 'push' || github.event_name == 'schedule'" in laptop_gate
+    assert "github.event_name == 'workflow_dispatch'" in laptop_gate
+    assert "github.actor == github.repository_owner" in laptop_gate
+    assert "github.ref_name == github.event.repository.default_branch" in laptop_gate
+    assert "github.event_name == 'pull_request'" not in laptop_gate
     assert "persist-credentials: false" in activation
     assert "Verify exact trusted SHA" in activation
     assert "persist-credentials: false" in local_runner
