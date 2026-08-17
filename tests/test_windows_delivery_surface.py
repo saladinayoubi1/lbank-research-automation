@@ -17,13 +17,14 @@ def test_windows_delivery_entrypoint_is_committed_and_packaged() -> None:
     required = [
         APP / "index.html",
         APP / "desktop.css",
+        APP / "layout-fix.css",
         APP / "desktop-runtime.js",
         APP / "project-data.js",
     ]
     assert all(path.is_file() for path in required)
 
     package = json.loads(read(DESKTOP / "package.json"))
-    assert package["version"] == "3.5.0"
+    assert package["version"] == "3.5.1"
     assert any(item.get("from") == "app" and item.get("to") == "app" for item in package["build"]["extraResources"])
 
     main = read(DESKTOP / "main.js")
@@ -64,6 +65,25 @@ def test_windows_theme_is_flat_dense_and_optimized_for_laptop_viewports() -> Non
     assert "border-radius:18px" not in css
 
 
+def test_windows_layout_reserves_physical_left_sidebar_and_recovers_overflow() -> None:
+    index = read(APP / "index.html")
+    css = read(APP / "layout-fix.css")
+    runtime = read(APP / "desktop-runtime.js")
+
+    assert 'id="sidebarToggle"' in index
+    assert 'href="layout-fix.css"' in index
+    assert ".shell{direction:ltr" in css
+    assert ".sidebar{direction:rtl" in css
+    assert ".workspace{direction:rtl;min-width:0;overflow-x:auto" in css
+    assert ".terminal-frame{min-width:0;overflow-x:auto" in css
+    assert "body.sidebar-collapsed" in css
+    assert "--sidebar-collapsed-width:58px" in css
+    assert "sidebarCollapsed:false" in runtime
+    assert "function toggleSidebar()" in runtime
+    assert "#sidebarToggle" in runtime
+    assert "e.key.toLowerCase()==='b'" in runtime
+
+
 def test_renderer_has_strict_csp_and_no_direct_network_access() -> None:
     index = read(APP / "index.html")
     assert "connect-src 'none'" in index
@@ -100,7 +120,7 @@ def test_project_metadata_preserves_paper_only_authority() -> None:
     assert "deterministic_risk_final_authority: true" in data
     assert "profitability_claim: false" in data
     assert "canonical_source: 'Bybit'" in data
-    assert "delivery_version: '3.5.0'" in data
+    assert "delivery_version: '3.5.1'" in data
 
 
 def test_windows_targets_have_distinct_artifact_names() -> None:
@@ -115,5 +135,6 @@ def test_windows_workflow_verifies_packaged_resources_not_mobile_copy() -> None:
     workflow = read(ROOT / ".github" / "workflows" / "build_lbank_desktop_windows.yml")
     assert "Copy dashboard assets" not in workflow
     assert "dist/win-unpacked/resources/app" in workflow
-    assert "NEXUS_Personal_Pro_Setup_3.5.0_" in workflow
-    assert "NEXUS_Personal_Pro_Portable_3.5.0_" in workflow
+    assert "layout-fix.css" in workflow
+    assert "NEXUS_Personal_Pro_Setup_3.5.1_" in workflow
+    assert "NEXUS_Personal_Pro_Portable_3.5.1_" in workflow

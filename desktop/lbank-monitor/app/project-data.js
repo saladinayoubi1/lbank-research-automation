@@ -13,5 +13,5 @@ window.NEXUS_PROJECT = Object.freeze({
   strategy_families: ['momentum','trend_breakout','mean_reversion'],
   robustness_evidence: ['stress','out_of_sample','regime','benchmark'],
   profitability_claim: false,
-  delivery_version: '3.5.0'
+  delivery_version: '3.5.1'
 });

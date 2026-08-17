@@ -28,6 +28,7 @@ jobs:
           $required = @(
             "desktop/lbank-monitor/app/index.html",
             "desktop/lbank-monitor/app/desktop.css",
+            "desktop/lbank-monitor/app/layout-fix.css",
             "desktop/lbank-monitor/app/desktop-runtime.js",
             "desktop/lbank-monitor/app/project-data.js",
             "desktop/lbank-monitor/main.js",
@@ -37,7 +38,7 @@ jobs:
             if (!(Test-Path $path)) { throw "Missing required desktop asset: $path" }
           }
           $package = Get-Content "desktop/lbank-monitor/package.json" -Raw | ConvertFrom-Json
-          if ($package.version -ne "3.5.0") { throw "Unexpected desktop version: $($package.version)" }
+          if ($package.version -ne "3.5.1") { throw "Unexpected desktop version: $($package.version)" }
       - name: Install packaging dependencies
         working-directory: desktop/lbank-monitor
         run: npm install --no-audit --no-fund
@@ -49,13 +50,13 @@ jobs:
       - name: Verify packaged desktop resources
         run: |
           $resourceRoot = "desktop/lbank-monitor/dist/win-unpacked/resources/app"
-          $required = @("index.html", "desktop.css", "desktop-runtime.js", "project-data.js")
+          $required = @("index.html", "desktop.css", "layout-fix.css", "desktop-runtime.js", "project-data.js")
           foreach ($name in $required) {
             $path = Join-Path $resourceRoot $name
             if (!(Test-Path $path)) { throw "Packaged UI asset missing: $path" }
           }
-          $setup = Get-ChildItem "desktop/lbank-monitor/dist/NEXUS_Personal_Pro_Setup_3.5.0_*.exe" -ErrorAction SilentlyContinue
-          $portable = Get-ChildItem "desktop/lbank-monitor/dist/NEXUS_Personal_Pro_Portable_3.5.0_*.exe" -ErrorAction SilentlyContinue
+          $setup = Get-ChildItem "desktop/lbank-monitor/dist/NEXUS_Personal_Pro_Setup_3.5.1_*.exe" -ErrorAction SilentlyContinue
+          $portable = Get-ChildItem "desktop/lbank-monitor/dist/NEXUS_Personal_Pro_Portable_3.5.1_*.exe" -ErrorAction SilentlyContinue
           if (!$setup) { throw "Installer EXE missing" }
           if (!$portable) { throw "Portable EXE missing" }
       - name: Generate SHA-256 checksums
@@ -71,10 +72,10 @@ jobs:
           Get-Content "desktop/lbank-monitor/dist/SHA256SUMS.txt"
       - uses: actions/upload-artifact@v4
         with:
-          name: NEXUS_PERSONAL_PRO_WINDOWS_3_5_0
+          name: NEXUS_PERSONAL_PRO_WINDOWS_3_5_1
           path: |
-            desktop/lbank-monitor/dist/NEXUS_Personal_Pro_Setup_3.5.0_*.exe
-            desktop/lbank-monitor/dist/NEXUS_Personal_Pro_Portable_3.5.0_*.exe
+            desktop/lbank-monitor/dist/NEXUS_Personal_Pro_Setup_3.5.1_*.exe
+            desktop/lbank-monitor/dist/NEXUS_Personal_Pro_Portable_3.5.1_*.exe
             desktop/lbank-monitor/dist/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 30
