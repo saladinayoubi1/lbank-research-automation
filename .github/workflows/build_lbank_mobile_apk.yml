@@ -1,4 +1,4 @@
-name: Build LBank Mobile APK
+name: Build NEXUS Mobile APK
 
 on:
   pull_request:
@@ -29,10 +29,10 @@ jobs:
       - name: Build signed release APK
         working-directory: android/lbank-mobile
         run: gradle --no-daemon --stacktrace :app:assembleRelease
-      - name: Validate and package production APK
+      - name: Validate and package NEXUS APK
         env:
           APK_SOURCE: android/lbank-mobile/app/build/outputs/apk/release/app-release.apk
-          APK_FINAL: android/lbank-mobile/app/build/outputs/apk/release/LBANK_MOBILE_V2_RELEASE.apk
+          APK_FINAL: android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_2_2_0.apk
         run: |
           set -euo pipefail
           test -s "$APK_SOURCE"
@@ -44,34 +44,34 @@ jobs:
           grep -q "AndroidManifest.xml" /tmp/apk-contents.txt
           grep -q "classes.dex" /tmp/apk-contents.txt
           grep -q "assets/index.html" /tmp/apk-contents.txt
-          grep -q "assets/styles.css" /tmp/apk-contents.txt
-          grep -q "assets/app.js" /tmp/apk-contents.txt
+          grep -q "assets/delivery.css" /tmp/apk-contents.txt
+          grep -q "assets/mobile-runtime.js" /tmp/apk-contents.txt
           grep -q "assets/data.json" /tmp/apk-contents.txt
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK_FINAL" | tee /tmp/apksigner.txt
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK_FINAL" | tee /tmp/aapt-badging.txt
-          grep -q "package: name='com.saladinayoubi.lbankmobile' versionCode='3' versionName='2.1.0'" /tmp/aapt-badging.txt
+          grep -q "package: name='com.saladinayoubi.lbankmobile' versionCode='4' versionName='2.2.0'" /tmp/aapt-badging.txt
           grep -q "launchable-activity:" /tmp/aapt-badging.txt
           sha256sum "$APK_FINAL" > "${APK_FINAL}.sha256"
           digest=$(cut -d' ' -f1 "${APK_FINAL}.sha256")
           size_kb=$(awk "BEGIN {printf \"%.1f\", $size/1024}")
           {
-            echo "## LBank Mobile Production APK"
+            echo "## NEXUS Personal Pro Android"
             echo ""
             echo "- Release build: successful"
             echo "- Signature validation: successful"
             echo "- Package: \`com.saladinayoubi.lbankmobile\`"
-            echo "- Version: \`2.1.0 (3)\`"
-            echo "- File: \`LBANK_MOBILE_V2_RELEASE.apk\`"
+            echo "- Version: \`2.2.0 (4)\`"
+            echo "- File: \`NEXUS_PERSONAL_PRO_2_2_0.apk\`"
             echo "- Size: ${size} bytes (${size_kb} KB)"
             echo "- SHA-256: \`${digest}\`"
-            echo "- Branding: custom icon and Android 12 splash screen"
+            echo "- Surface: result-first Phase 6 status + read-only public Bybit closed candles"
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:
-          name: LBANK_MOBILE_V2_RELEASE_APK
+          name: NEXUS_PERSONAL_PRO_2_2_0_APK
           path: |
-            android/lbank-mobile/app/build/outputs/apk/release/LBANK_MOBILE_V2_RELEASE.apk
-            android/lbank-mobile/app/build/outputs/apk/release/LBANK_MOBILE_V2_RELEASE.apk.sha256
+            android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_2_2_0.apk
+            android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_2_2_0.apk.sha256
           if-no-files-found: error
           retention-days: 30
           compression-level: 0
