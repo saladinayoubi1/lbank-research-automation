@@ -5,112 +5,147 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="dark light">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
-  <title>NEXUS Personal Pro</title>
+  <title>NEXUS Research Terminal</title>
   <link rel="stylesheet" href="desktop.css">
 </head>
 <body>
 <div class="shell">
   <aside class="sidebar">
-    <div class="brand">
+    <div class="brand-block">
       <div class="brand-mark">N</div>
-      <div><strong>NEXUS</strong><span>Research Operations · Windows</span></div>
+      <div class="brand-copy"><strong>NEXUS</strong><span>RESEARCH TERMINAL</span></div>
     </div>
-    <div class="authority"><i></i><div><b>PAPER ONLY</b><small>Research · Backtest · Paper</small></div></div>
+
+    <div class="mode-block">
+      <span class="mode-dot"></span>
+      <div><b>PAPER ONLY</b><small>NO LIVE AUTHORITY</small></div>
+    </div>
+
     <nav aria-label="ناوبری اصلی">
-      <a class="active" href="#overview"><span>01</span>نمای کلی</a>
-      <a href="#result"><span>02</span>نتیجه پروژه</a>
-      <a href="#market"><span>03</span>بازار عمومی</a>
-      <a href="#strategies"><span>04</span>Strategy Factory</a>
-      <a href="#integrity"><span>05</span>سلامت و امنیت</a>
-      <a href="#alerts"><span>06</span>هشدارهای محلی</a>
+      <a class="active" href="#market"><span>01</span><b>بازار</b><small>Market</small></a>
+      <a href="#strategies"><span>02</span><b>استراتژی‌ها</b><small>Factory</small></a>
+      <a href="#result"><span>03</span><b>وضعیت پژوهش</b><small>Research</small></a>
+      <a href="#integrity"><span>04</span><b>کنترل‌ها</b><small>Integrity</small></a>
+      <a href="#alerts"><span>05</span><b>هشدارها</b><small>Local</small></a>
     </nav>
+
     <div class="sidebar-foot">
-      <div><span>نسخه</span><b id="appVersion">3.4.0</b></div>
-      <div><span>منبع اصلی</span><b>Bybit</b></div>
-      <div><span>اختیار ریسک</span><b>Deterministic</b></div>
+      <div><span>BUILD</span><b id="appVersion">3.5.0</b></div>
+      <div><span>DATA</span><b>BYBIT</b></div>
+      <div><span>RISK</span><b>DETERMINISTIC</b></div>
+      <div><span>MODE</span><b>PAPER</b></div>
     </div>
   </aside>
 
   <section class="workspace">
     <header class="topbar">
-      <div>
-        <small>NEXUS · RESEARCH OPERATIONS</small>
-        <h1>کنسول عملیات پژوهش و Paper Trading</h1>
+      <div class="title-stack">
+        <span>NEXUS / RESEARCH / TERMINAL</span>
+        <h1>پایانه پژوهش بازار</h1>
       </div>
       <div class="top-actions">
         <span id="connectionPill" class="status-pill neutral"><i></i><b>بازار در انتظار اتصال</b></span>
-        <button id="theme" class="icon-btn" type="button" aria-label="تغییر پوسته">☀</button>
+        <button id="theme" class="theme-btn" type="button" aria-label="تغییر پوسته">☀</button>
       </div>
     </header>
 
     <main>
-      <section id="overview" class="section first">
-        <div class="summary-grid">
-          <article class="summary primary"><span>وضعیت پروژه</span><strong>Phase 6 Complete</strong><small>Formal Gates 0–6 تکمیل شده‌اند</small></article>
-          <article class="summary"><span>حالت عملیاتی</span><strong>Research / Paper</strong><small>معامله واقعی عمداً غیرفعال است</small></article>
-          <article class="summary"><span>مرجع نهایی ریسک</span><strong>Deterministic Risk</strong><small>AI فقط نقش مشورتی و محدود دارد</small></article>
-          <article class="summary"><span>وضعیت بازار</span><strong id="marketStatus">آماده اتصال</strong><small id="marketDetail">Bybit public · read-only</small></article>
+      <section id="overview" class="telemetry-strip" aria-label="وضعیت سیستم">
+        <div><span>PIPELINE</span><b>PHASE 6 / COMPLETE</b><small>Formal Gates 0–6</small></div>
+        <div><span>EXECUTION</span><b>RESEARCH / PAPER</b><small>Live trading disabled</small></div>
+        <div><span>RISK AUTHORITY</span><b>DETERMINISTIC</b><small>AI advisory only</small></div>
+        <div><span>MARKET LINK</span><b id="marketStatus">آماده اتصال</b><small id="marketDetail">Bybit public · read-only</small></div>
+      </section>
+
+      <section id="market" class="section market-section">
+        <div class="section-titlebar">
+          <div><span>PUBLIC MARKET / CLOSED CANDLES</span><h2>مانیتور بازار</h2></div>
+          <div class="section-meta">BYBIT SPOT · READ ONLY</div>
+        </div>
+
+        <div class="terminal-frame">
+          <div class="terminal-toolbar">
+            <label><span>SYMBOL</span><select id="symbol"></select></label>
+            <label><span>TIMEFRAME</span><select id="timeframe"></select></label>
+            <button id="refresh" class="primary-btn" type="button">دریافت داده</button>
+            <div class="toolbar-note">Only confirmed closed candles</div>
+          </div>
+
+          <div class="terminal-body">
+            <div class="market-primary">
+              <div id="selected" class="selected-state">
+                <div class="loading"><i></i><span>آماده دریافت داده عمومی بازار</span></div>
+              </div>
+              <div class="market-actions">
+                <button id="toggleWatch" type="button">☆ واچ‌لیست</button>
+                <button id="addAlert" type="button">＋ هشدار قیمت</button>
+              </div>
+            </div>
+
+            <aside class="watch-terminal">
+              <div class="terminal-subhead"><div><span>WATCHLIST</span><b>رصد محلی</b></div><strong id="watchCount">1</strong></div>
+              <div id="watchlist" class="watch-list"></div>
+            </aside>
+          </div>
+
+          <div id="markets" class="market-grid"></div>
+        </div>
+      </section>
+
+      <section id="strategies" class="section">
+        <div class="section-titlebar">
+          <div><span>STRATEGY FACTORY</span><h2>خانواده‌های پژوهش</h2></div>
+          <div class="section-meta">OOS · STRESS · REGIME · BENCHMARK</div>
+        </div>
+        <div class="strategy-table">
+          <article class="strategy-row"><div class="strategy-code">MOM</div><div class="strategy-name"><b>Momentum</b><span>مومنتوم</span></div><p>کاندیدا فقط بعد از عبور از شواهد OOS، تنش هزینه، رژیم و کنترل ریسک پذیرفته می‌شود.</p><strong>BOUNDED</strong></article>
+          <article class="strategy-row"><div class="strategy-code">BRK</div><div class="strategy-name"><b>Trend Breakout</b><span>شکست روند</span></div><p>ارزیابی با اجرای next-bar-open و کنترل deterministic برای جلوگیری از lookahead انجام می‌شود.</p><strong>BOUNDED</strong></article>
+          <article class="strategy-row"><div class="strategy-code">REV</div><div class="strategy-name"><b>Mean Reversion</b><span>بازگشت به میانگین</span></div><p>پذیرش فقط با شواهد پایدار و قابل بازپخش؛ نتیجه ضعیف به‌صورت fail-closed رد می‌شود.</p><strong>BOUNDED</strong></article>
         </div>
       </section>
 
       <section id="result" class="section">
-        <div class="section-head"><div><span class="eyebrow">FINAL PROJECT RESULT</span><h2>نتیجه نهایی NEXUS</h2></div><span class="verified-badge">✓ VERIFIED DELIVERY</span></div>
-        <article class="result-panel">
-          <div class="result-lead">
-            <div><span class="eyebrow">NEXUS Research Automation</span><h3>زیرساخت پژوهش، بک‌تست و Paper Trading تکمیل و تثبیت شده است.</h3><p>این نسخه خروجی را برای مشاهده و تحلیل ارائه می‌کند؛ هیچ مسیر سفارش واقعی، برداشت، یا credential خصوصی صرافی در رابط Windows اضافه نشده است.</p></div>
-            <div class="completion-ring"><b>100%</b><span>Defined scope</span></div>
-          </div>
-          <div class="result-grid">
-            <div><span>فاز نهایی</span><b>Phase 6 · Gates 0–6</b></div>
-            <div><span>Pipeline</span><b>Deterministic research</b></div>
-            <div><span>منبع اصلی داده</span><b>Bybit</b></div>
-            <div><span>Fallback</span><b>Binance → LBank</b></div>
-            <div><span>ارزیابی استراتژی</span><b>OOS · Stress · Regime</b></div>
-            <div><span>اختیار مالی</span><b class="good">Paper-only</b></div>
-          </div>
-        </article>
-      </section>
-
-      <section id="market" class="section">
-        <div class="section-head"><div><span class="eyebrow">PUBLIC MARKET DATA</span><h2>بازار عمومی</h2></div><span class="muted">Bybit Spot · کندل بسته · فقط خواندنی</span></div>
-        <div class="market-layout">
-          <article class="panel market-main">
-            <div class="controls">
-              <label>نماد<select id="symbol"></select></label>
-              <label>تایم‌فریم<select id="timeframe"></select></label>
-              <button id="refresh" class="primary-btn" type="button">بروزرسانی بازار</button>
-            </div>
-            <div id="selected" class="selected-state"><div class="loading"><i></i><span>برای دریافت قیمت عمومی آماده است.</span></div></div>
-            <div class="market-actions"><button id="toggleWatch" type="button">☆ افزودن به واچ‌لیست</button><button id="addAlert" type="button">＋ هشدار قیمت</button></div>
-          </article>
-          <aside class="panel watch-panel"><div class="panel-head"><div><span class="eyebrow">WATCHLIST</span><h3>واچ‌لیست</h3></div><b id="watchCount">1</b></div><div id="watchlist" class="watch-list"></div></aside>
+        <div class="section-titlebar">
+          <div><span>RESEARCH STATUS</span><h2>نتیجه نهایی NEXUS</h2></div>
+          <div class="verified-line">VERIFIED DELIVERY</div>
         </div>
-        <div id="markets" class="market-grid"></div>
-      </section>
-
-      <section id="strategies" class="section">
-        <div class="section-head"><div><span class="eyebrow">STRATEGY FACTORY</span><h2>خانواده‌های پژوهش</h2></div><span class="muted">هیچ ادعای سود تضمینی وجود ندارد</span></div>
-        <div class="strategy-grid">
-          <article class="strategy-card"><div class="strategy-icon">M</div><div><b>Momentum</b><span>مومنتوم</span><p>کاندیدا فقط بعد از عبور از شواهد OOS، تنش هزینه، رژیم و کنترل ریسک پذیرفته می‌شود.</p></div></article>
-          <article class="strategy-card"><div class="strategy-icon">T</div><div><b>Trend Breakout</b><span>شکست روند</span><p>شکست‌ها با اجرای next-bar-open و کنترل deterministic برای جلوگیری از lookahead ارزیابی می‌شوند.</p></div></article>
-          <article class="strategy-card"><div class="strategy-icon">R</div><div><b>Mean Reversion</b><span>بازگشت به میانگین</span><p>قبولی فقط بر اساس شواهد پایدار و قابل بازپخش انجام می‌شود؛ نتیجه ضعیف fail-closed رد می‌شود.</p></div></article>
+        <div class="research-status">
+          <div class="research-lead">
+            <span>DEFINED SCOPE</span>
+            <h3>Phase 6 Complete</h3>
+            <p>زیرساخت پژوهش، بک‌تست و Paper Trading تثبیت شده است. این رابط برای مشاهده و تحلیل است و هیچ مسیر سفارش واقعی، برداشت یا credential خصوصی صرافی اضافه نمی‌کند.</p>
+          </div>
+          <div class="research-matrix">
+            <div><span>PHASE</span><b>6 · GATES 0–6</b></div>
+            <div><span>PIPELINE</span><b>DETERMINISTIC</b></div>
+            <div><span>PRIMARY DATA</span><b>BYBIT</b></div>
+            <div><span>FALLBACK</span><b>BINANCE → LBANK</b></div>
+            <div><span>EVIDENCE</span><b>OOS / STRESS / REGIME</b></div>
+            <div><span>AUTHORITY</span><b class="good">PAPER ONLY</b></div>
+          </div>
         </div>
       </section>
 
       <section id="integrity" class="section">
-        <div class="section-head"><div><span class="eyebrow">INTEGRITY & AUTHORITY</span><h2>سلامت و مرزهای سیستم</h2></div></div>
-        <div class="integrity-grid">
-          <article class="integrity ok"><i>✓</i><div><b>Paper / Live Air Gap</b><p>رابط تحویل هیچ اختیار معامله واقعی دریافت نمی‌کند.</p></div></article>
-          <article class="integrity ok"><i>✓</i><div><b>Read-only Market Bridge</b><p>فقط GET عمومی Bybit برای نمادها و تایم‌فریم‌های محدود مجاز است.</p></div></article>
-          <article class="integrity ok"><i>✓</i><div><b>Secure Electron Boundary</b><p>contextIsolation و sandbox فعال و Node.js در renderer غیرفعال است.</p></div></article>
-          <article class="integrity ok"><i>✓</i><div><b>Deterministic Risk Authority</b><p>خروجی AI نمی‌تواند مرجع نهایی ریسک را دور بزند.</p></div></article>
-          <article class="integrity warn"><i>!</i><div><b>No Profitability Claim</b><p>نتایج پژوهشی تضمین سود یا آمادگی production محسوب نمی‌شوند.</p></div></article>
-          <article class="integrity info"><i>i</i><div><b id="runtimeInfo">Windows package</b><p>اطلاعات نسخه و معماری از خود بسته Electron خوانده می‌شود.</p></div></article>
+        <div class="section-titlebar">
+          <div><span>INTEGRITY / AUTHORITY</span><h2>کنترل‌های سیستم</h2></div>
+          <div class="section-meta">FAIL CLOSED</div>
+        </div>
+        <div class="integrity-table">
+          <article class="integrity-row ok"><i></i><b>Paper / Live Air Gap</b><p>رابط تحویل اختیار معامله واقعی ندارد.</p><strong>PASS</strong></article>
+          <article class="integrity-row ok"><i></i><b>Read-only Market Bridge</b><p>فقط GET عمومی Bybit برای نمادها و تایم‌فریم‌های محدود.</p><strong>PASS</strong></article>
+          <article class="integrity-row ok"><i></i><b>Secure Electron Boundary</b><p>contextIsolation و sandbox فعال؛ Node.js در renderer خاموش.</p><strong>PASS</strong></article>
+          <article class="integrity-row ok"><i></i><b>Deterministic Risk Authority</b><p>خروجی AI مرجع نهایی ریسک را دور نمی‌زند.</p><strong>PASS</strong></article>
+          <article class="integrity-row warn"><i></i><b>No Profitability Claim</b><p>نتایج پژوهشی تضمین سود یا آمادگی production نیست.</p><strong>BOUNDARY</strong></article>
+          <article class="integrity-row info"><i></i><b id="runtimeInfo">Windows package</b><p>نسخه و معماری از بسته Electron خوانده می‌شود.</p><strong>INFO</strong></article>
         </div>
       </section>
 
       <section id="alerts" class="section last">
-        <div class="section-head"><div><span class="eyebrow">LOCAL PRICE RULES</span><h2>هشدارهای محلی</h2></div><span class="muted">فقط روی این دستگاه</span></div>
+        <div class="section-titlebar">
+          <div><span>LOCAL RULES</span><h2>هشدارهای قیمت</h2></div>
+          <div class="section-meta">THIS DEVICE ONLY</div>
+        </div>
         <div id="alertList" class="alert-grid"></div>
       </section>
     </main>
@@ -119,7 +154,7 @@
 
 <dialog id="alertDialog">
   <form method="dialog">
-    <div class="dialog-head"><div><span class="eyebrow">LOCAL ALERT</span><h3>هشدار قیمت</h3></div><button value="cancel" class="close-btn" aria-label="بستن">×</button></div>
+    <div class="dialog-head"><div><span>LOCAL ALERT</span><h3>هشدار قیمت</h3></div><button value="cancel" class="close-btn" aria-label="بستن">×</button></div>
     <p id="alertSymbol" class="muted"></p>
     <label>شرط<select id="alertDirection"><option value="above">بالاتر از</option><option value="below">پایین‌تر از</option></select></label>
     <label>قیمت<input id="alertPrice" type="number" step="any" required></label>
