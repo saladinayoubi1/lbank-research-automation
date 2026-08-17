@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -47,11 +48,11 @@ def test_windows_ui_is_result_first_readable_and_not_legacy_placeholder() -> Non
 
 def test_windows_theme_is_dense_and_optimized_for_common_laptop_viewports() -> None:
     css = read(APP / "desktop.css")
-    assert "--sidebar-width:224px" in css
-    assert "--topbar-height:64px" in css
+    assert re.search(r"--sidebar-width\s*:\s*224px", css)
+    assert re.search(r"--topbar-height\s*:\s*64px", css)
     assert "grid-template-columns:repeat(4,minmax(0,1fr))" in css
     assert "@media(max-height:780px) and (min-width:1180px)" in css
-    assert "--topbar-height:58px" in css
+    assert re.search(r"--topbar-height\s*:\s*58px", css)
     assert "result-grid{display:grid;grid-template-columns:repeat(6" in css
     assert "border-radius:var(--radius)" in css
 
