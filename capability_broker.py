@@ -93,7 +93,7 @@ class CapabilityBroker:
             self._record_system("revoke_all", "allow")
 
     def read_file(self, token: str, subject: str) -> bytes:
-        state = self._authorize(token, subject, Operation.READ_FILE)
+        state = self._authorize_and_reserve(token, subject, Operation.READ_FILE)
         path = self._resolve_existing_file(state.grant)
         flags = os.O_RDONLY | getattr(os, "O_BINARY", 0)
         if hasattr(os, "O_NOFOLLOW"):
@@ -109,11 +109,10 @@ class CapabilityBroker:
                 raise AuthorizationDenied("file exceeds capability byte limit")
         finally:
             os.close(fd)
-        self._consume(state, "read_file")
         return data
 
     def write_file(self, token: str, subject: str, data: bytes) -> None:
-        state = self._authorize(token, subject, Operation.WRITE_FILE)
+        state = self._authorize_and_reserve(token, subject, Operation.WRITE_FILE)
         if len(data) > state.grant.max_bytes:
             raise AuthorizationDenied("write exceeds capability byte limit")
         path = self._resolve_existing_file(state.grant)
@@ -126,10 +125,9 @@ class CapabilityBroker:
             os.fsync(fd)
         finally:
             os.close(fd)
-        self._consume(state, "write_file")
 
     def create_file(self, token: str, subject: str, data: bytes) -> None:
-        state = self._authorize(token, subject, Operation.CREATE_FILE)
+        state = self._authorize_and_reserve(token, subject, Operation.CREATE_FILE)
         if len(data) > state.grant.max_bytes:
             raise AuthorizationDenied("create exceeds capability byte limit")
         path = self._resolve_new_file(state.grant)
@@ -142,16 +140,14 @@ class CapabilityBroker:
             os.fsync(fd)
         finally:
             os.close(fd)
-        self._consume(state, "create_file")
 
     def list_directory(self, token: str, subject: str) -> tuple[str, ...]:
-        state = self._authorize(token, subject, Operation.LIST_DIRECTORY)
+        state = self._authorize_and_reserve(token, subject, Operation.LIST_DIRECTORY)
         path = self._resolve_existing_directory(state.grant)
         entries = tuple(sorted(entry.name for entry in os.scandir(path)))
         encoded_size = sum(len(name.encode("utf-8")) for name in entries)
         if encoded_size > state.grant.max_bytes:
             raise AuthorizationDenied("directory listing exceeds capability byte limit")
-        self._consume(state, "list_directory")
         return entries
 
     def audit_records(self) -> tuple[dict[str, Any], ...]:
@@ -173,7 +169,13 @@ class CapabilityBroker:
             previous = expected
         return True
 
-    def _authorize(self, token: str, subject: str, operation: Operation) -> _CapabilityState:
+    def _authorize_and_reserve(self, token: str, subject: str, operation: Operation) -> _CapabilityState:
+        """Authorize and atomically reserve one use before any sensitive I/O.
+
+        A reserved use is intentionally not restored if the subsequent filesystem
+        operation fails. Fail-closed consumption prevents concurrent or retry races
+        from reusing a one-shot capability after authorization has been granted.
+        """
         now = datetime.now(timezone.utc)
         with self._lock:
             state = self._capabilities.get(token)
@@ -194,12 +196,9 @@ class CapabilityBroker:
             if reason:
                 self._record(operation.value, grant, "deny", reason)
                 raise AuthorizationDenied(reason)
-            return state
-
-    def _consume(self, state: _CapabilityState, action: str) -> None:
-        with self._lock:
             state.remaining_uses -= 1
-            self._record(action, state.grant, "allow")
+            self._record(operation.value, grant, "allow", "use_reserved")
+            return state
 
     @staticmethod
     def _validate_grant(grant: CapabilityGrant) -> None:
