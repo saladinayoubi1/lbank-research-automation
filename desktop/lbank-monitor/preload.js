@@ -2,6 +2,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('NexusNative', {
   isAvailable: () => true,
+  gatewayInfo: () => ipcRenderer.invoke('nexus:gateway-info'),
   hasKey: id => ipcRenderer.sendSync('nexus:has-key', String(id)),
   saveKey: (id, value) => ipcRenderer.sendSync('nexus:save-key', String(id), String(value || '')),
   deleteKey: id => ipcRenderer.sendSync('nexus:delete-key', String(id)),
