@@ -2,7 +2,11 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.check_workflow_permissions import load_yaml, validate_workflow_trust_boundaries
+from scripts.check_workflow_permissions import load_yaml
+from workflow_trust_boundaries import validate_workflow_trust_boundaries
+
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 class WorkflowTrustBoundaryTests(unittest.TestCase):
@@ -15,6 +19,14 @@ class WorkflowTrustBoundaryTests(unittest.TestCase):
     def assertBlocked(self, text: str, pattern: str) -> None:
         with self.assertRaisesRegex(ValueError, pattern):
             self.validate(text)
+
+    def test_repository_workflow_inventory_passes_trust_boundary_scan(self):
+        workflow_root = ROOT / ".github" / "workflows"
+        paths = sorted([*workflow_root.glob("*.yml"), *workflow_root.glob("*.yaml")])
+        self.assertTrue(paths)
+        for path in paths:
+            with self.subTest(path=path.name):
+                validate_workflow_trust_boundaries(path, load_yaml(path))
 
     def test_direct_workflow_input_interpolation_in_run_is_blocked(self):
         workflow = """name: bad
