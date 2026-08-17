@@ -126,8 +126,8 @@ jobs:
           foreach ($name in @('index.html','desktop.css','desktop-runtime.js','project-data.js')) {
             if (!(Test-Path (Join-Path $resourceRoot $name))) { throw "Packaged UI asset missing: $name" }
           }
-          if (!(Get-ChildItem 'dist/NEXUS_Personal_Pro_Setup_3.4.0_*.exe' -ErrorAction SilentlyContinue)) { throw 'Setup EXE missing' }
-          if (!(Get-ChildItem 'dist/NEXUS_Personal_Pro_Portable_3.4.0_*.exe' -ErrorAction SilentlyContinue)) { throw 'Portable EXE missing' }
+          if (!(Get-ChildItem 'dist/NEXUS_Personal_Pro_Setup_3.5.0_*.exe' -ErrorAction SilentlyContinue)) { throw 'Setup EXE missing' }
+          if (!(Get-ChildItem 'dist/NEXUS_Personal_Pro_Portable_3.5.0_*.exe' -ErrorAction SilentlyContinue)) { throw 'Portable EXE missing' }
       - name: Generate Windows SHA-256 checksums
         shell: pwsh
         run: |
@@ -158,8 +158,8 @@ jobs:
         with:
           name: nexus-windows-packages
           path: |
-            desktop/lbank-monitor/dist/NEXUS_Personal_Pro_Setup_3.4.0_*.exe
-            desktop/lbank-monitor/dist/NEXUS_Personal_Pro_Portable_3.4.0_*.exe
+            desktop/lbank-monitor/dist/NEXUS_Personal_Pro_Setup_3.5.0_*.exe
+            desktop/lbank-monitor/dist/NEXUS_Personal_Pro_Portable_3.5.0_*.exe
             desktop/lbank-monitor/dist/SHA256SUMS.txt
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
