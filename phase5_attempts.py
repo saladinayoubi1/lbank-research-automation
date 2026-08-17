@@ -117,11 +117,15 @@ def begin_attempt(
             and current.get("source_sha") == source_sha
         ):
             return deepcopy(current)
-        current["status"] = "SUPERSEDED"
-        current["superseded_at"] = _utcnow()
 
+    # Capacity denial must not mutate the current valid attempt. This keeps a
+    # bounded-retry rejection fail-closed and side-effect free.
     if len(history) >= MAX_TASK_ATTEMPTS:
         raise AttemptError("task reached bounded attempt limit")
+
+    if current and current.get("status") in ACTIVE_ATTEMPT_STATES:
+        current["status"] = "SUPERSEDED"
+        current["superseded_at"] = _utcnow()
 
     previous_fence = task.get("fence_generation", 0)
     if isinstance(previous_fence, bool) or not isinstance(previous_fence, int) or previous_fence < 0:
