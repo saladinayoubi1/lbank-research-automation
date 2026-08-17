@@ -1,26 +1,34 @@
 {
-  "generated_at_utc": "2026-08-17T16:09:02Z",
+  "generated_at_utc": "2026-08-17T22:02:00Z",
   "project": {
-    "name": "NEXUS Research Automation",
+    "name": "NEXUS Personal Pro",
     "status": "complete",
     "phase": 6,
     "gates": "0-6",
+    "product_version": "3.0.0",
     "mode": "research_backtest_paper",
-    "pipeline_status": "کامل و تثبیت‌شده",
     "canonical_source": "Bybit",
     "fallback_sources": ["Binance", "LBank"],
     "strategy_families": ["momentum", "trend_breakout", "mean_reversion"],
     "deterministic_risk_final_authority": true,
     "live_trading_authority": false,
     "profitability_claim": false,
-    "main_sha": "5b2c12be31caf8d1494efa1eb481e27253c0e371",
-    "result_note": "زیرساخت NEXUS برای پژوهش، بک‌تست و Paper Trading تکمیل شده است. داده بازار در اپ از مسیر عمومی و فقط‌خواندنی Bybit دریافت می‌شود. هیچ مسیر معامله واقعی، برداشت یا استفاده از اعتبار خصوصی صرافی در این نسخه وجود ندارد."
-  },
-  "status": {
-    "ready": 0,
-    "failed": 0,
-    "total": 0,
-    "series": []
-  },
-  "series": []
+    "base_main_sha": "5bca591f6ab324ce41c3a3f5855a53f7d7a90e2c",
+    "backend_contracts": {
+      "paper_execution": "paper_execution.py",
+      "paper_event_store": "paper_event_store.py / nexus.paper-event.v1",
+      "risk": "deterministic_risk.py",
+      "ai_room": "ai_room.py / nexus.ai-room.v2",
+      "mission_control": "mission_control.py",
+      "research_pipeline": "phase6_research_pipeline.py"
+    },
+    "mobile_delivery": {
+      "public_market": "Bybit closed candles through bounded read-only native bridge",
+      "paper_execution": "local deterministic simulator mirroring backend risk/paper constraints; no exchange order path",
+      "ai_room": "local deterministic Ops Room with optional secure-gateway AI Room POST",
+      "mission_control": "local projection with optional secure-gateway sync",
+      "audit_replay": "local SHA-256 event chain",
+      "live": "visible but owner-controlled and locked"
+    }
+  }
 }

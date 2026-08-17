@@ -26,13 +26,13 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.10.2"
-      - name: Build signed release APK
+      - name: Build installable release APK
         working-directory: android/lbank-mobile
         run: gradle --no-daemon --stacktrace :app:assembleRelease
-      - name: Validate and package NEXUS APK
+      - name: Validate and package NEXUS product APK
         env:
           APK_SOURCE: android/lbank-mobile/app/build/outputs/apk/release/app-release.apk
-          APK_FINAL: android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_2_2_0.apk
+          APK_FINAL: android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_3_0_0.apk
         run: |
           set -euo pipefail
           test -s "$APK_SOURCE"
@@ -41,37 +41,45 @@ jobs:
           test "$size" -ge 10000
           unzip -t "$APK_FINAL"
           unzip -l "$APK_FINAL" | tee /tmp/apk-contents.txt
-          grep -q "AndroidManifest.xml" /tmp/apk-contents.txt
-          grep -q "classes.dex" /tmp/apk-contents.txt
-          grep -q "assets/index.html" /tmp/apk-contents.txt
-          grep -q "assets/delivery.css" /tmp/apk-contents.txt
-          grep -q "assets/mobile-runtime.js" /tmp/apk-contents.txt
-          grep -q "assets/data.json" /tmp/apk-contents.txt
+          for asset in AndroidManifest.xml classes.dex assets/index.html assets/delivery.css assets/mobile-core.js assets/mobile-runtime.js assets/data.json; do
+            grep -q "$asset" /tmp/apk-contents.txt
+          done
+          unzip -p "$APK_FINAL" assets/index.html | grep -q "اتاق هوش مصنوعی"
+          unzip -p "$APK_FINAL" assets/index.html | grep -q "ترید دمو"
+          unzip -p "$APK_FINAL" assets/index.html | grep -q "ترید اصلی قفل است"
+          { unzip -p "$APK_FINAL" assets/mobile-core.js; unzip -p "$APK_FINAL" assets/mobile-runtime.js; } > /tmp/mobile-product.js
+          grep -q "risk_allowed" /tmp/mobile-product.js
+          grep -q "paper_trading_only" /tmp/mobile-product.js
+          grep -q "NexusAiRoomResult" /tmp/mobile-product.js
+          if grep -Eq '/v5/order|apiSecret|secretKey|private_key' /tmp/mobile-product.js; then
+            echo "Forbidden live/private authority material found in mobile runtime" >&2
+            exit 1
+          fi
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK_FINAL" | tee /tmp/apksigner.txt
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK_FINAL" | tee /tmp/aapt-badging.txt
-          grep -q "package: name='com.saladinayoubi.lbankmobile' versionCode='4' versionName='2.2.0'" /tmp/aapt-badging.txt
+          grep -q "package: name='com.saladinayoubi.lbankmobile' versionCode='5' versionName='3.0.0'" /tmp/aapt-badging.txt
           grep -q "launchable-activity:" /tmp/aapt-badging.txt
           sha256sum "$APK_FINAL" > "${APK_FINAL}.sha256"
           digest=$(cut -d' ' -f1 "${APK_FINAL}.sha256")
           size_kb=$(awk "BEGIN {printf \"%.1f\", $size/1024}")
           {
-            echo "## NEXUS Personal Pro Android"
+            echo "## NEXUS Personal Pro Android 3.0.0"
             echo ""
-            echo "- Release build: successful"
-            echo "- Signature validation: successful"
+            echo "- Release APK build: successful"
+            echo "- APK signature verification: successful (repository release build uses the configured debug signing key; this is not a store-signing claim)"
             echo "- Package: \`com.saladinayoubi.lbankmobile\`"
-            echo "- Version: \`2.2.0 (4)\`"
-            echo "- File: \`NEXUS_PERSONAL_PRO_2_2_0.apk\`"
+            echo "- Version: \`3.0.0 (5)\`"
+            echo "- File: \`NEXUS_PERSONAL_PRO_3_0_0.apk\`"
             echo "- Size: ${size} bytes (${size_kb} KB)"
             echo "- SHA-256: \`${digest}\`"
-            echo "- Surface: result-first Phase 6 status + read-only public Bybit closed candles"
+            echo "- Surface: Research/Strategy + deterministic Risk + local Paper execution + AI Room + Mission Control + Audit/Replay + locked Live page"
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:
-          name: NEXUS_PERSONAL_PRO_2_2_0_APK
+          name: NEXUS_PERSONAL_PRO_3_0_0_APK
           path: |
-            android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_2_2_0.apk
-            android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_2_2_0.apk.sha256
+            android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_3_0_0.apk
+            android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_3_0_0.apk.sha256
           if-no-files-found: error
           retention-days: 30
           compression-level: 0
