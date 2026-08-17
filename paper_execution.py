@@ -143,7 +143,7 @@ def execute_paper_command(
     if not isinstance(risk_decision, RiskDecision) or not risk_decision.allowed:
         raise PaperExecutionError("deterministic risk approval is required")
     if risk_decision.signal_id != causation_id:
-        raise PaperExecutionError("risk approval causation mismatch")
+        raise PaperExecutionError("risk approval causation mismatch")\n    expected_notional = command["quantity"] * command["reference_price"]\n    if risk_decision.proposed_notional != expected_notional:\n        raise PaperExecutionError("risk approval amount mismatch")
 
     operation = str(command["operation"])
     symbol = str(command["symbol"])
