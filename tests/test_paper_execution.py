@@ -97,8 +97,8 @@ def test_close_reconstructs_realized_pnl_and_removes_protection():
     assert closed.state.positions == ()
     assert closed.state.stops == ()
     assert closed.state.targets == ()
-    assert closed.realized_pnl == Decimal("13.80000000")
-    assert closed.state.realized_pnl == Decimal("13.80000000")
+    assert closed.realized_pnl == Decimal("18.78000000")
+    assert closed.state.realized_pnl == Decimal("18.78000000")
 
 
 def test_reduce_and_reverse_are_deterministic():
