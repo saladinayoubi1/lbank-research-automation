@@ -3,36 +3,42 @@
     "id": "phase3-local-health",
     "task": "health",
     "reason": "Verify the local self-hosted runner can execute the current NEXUS architecture tests.",
-    "status": "pending"
+    "status": "superseded",
+    "superseded_by": ".nexus/phase5-checkpoint.json"
   },
   {
     "id": "phase3-readiness",
     "task": "readiness",
     "reason": "Verify current market-data readiness used by Phase 3 research and backtests.",
-    "status": "pending"
+    "status": "superseded",
+    "superseded_by": ".nexus/phase5-checkpoint.json"
   },
   {
     "id": "phase3-zotero-status",
     "task": "zotero-status",
     "reason": "Verify Zotero Desktop local API availability for the Phase 3 evidence workflow.",
-    "status": "pending"
+    "status": "superseded",
+    "superseded_by": ".nexus/phase5-checkpoint.json"
   },
   {
     "id": "phase3-ai-council-health",
     "task": "ai-council-health",
     "reason": "Verify the repository AI Council policy engine is operational before assigning advisory work.",
-    "status": "pending"
+    "status": "superseded",
+    "superseded_by": ".nexus/phase5-checkpoint.json"
   },
   {
     "id": "phase3-brain-health",
     "task": "brain-health",
     "reason": "Verify NEXUS Brain Core can select an eligible Phase 3 mission under current policy.",
-    "status": "pending"
+    "status": "superseded",
+    "superseded_by": ".nexus/phase5-checkpoint.json"
   },
   {
     "id": "phase3-deepseek-smoke",
     "task": "deepseek-smoke",
     "reason": "Perform one bounded paid DeepSeek smoke task on the local runner and record real execution evidence.",
-    "status": "pending"
+    "status": "superseded",
+    "superseded_by": ".nexus/phase5-checkpoint.json"
   }
 ]
