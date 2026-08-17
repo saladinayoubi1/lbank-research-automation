@@ -9,6 +9,7 @@ on:
       - 'security/workflow-permissions-policy-v1.json'
       - 'scripts/check_workflow_permissions.py'
       - 'tests/test_workflow_permissions.py'
+      - 'tests/test_workflow_trust_boundaries.py'
   workflow_dispatch:
 
 permissions:
@@ -26,6 +27,6 @@ jobs:
       - name: Install safe YAML parser
         run: python -m pip install --disable-pip-version-check 'PyYAML==6.0.2'
       - name: Run adversarial unit tests
-        run: python -m unittest tests.test_workflow_permissions -v
+        run: python -m unittest tests.test_workflow_permissions tests.test_workflow_trust_boundaries -v
       - name: Audit complete workflow inventory
         run: python scripts/check_workflow_permissions.py
