@@ -1,0 +1,188 @@
+{
+  "schema_version": "nexus.phase5-mission.v1",
+  "mission_id": "nexus-phase5-autonomous-operations",
+  "mission_revision": 1,
+  "phase": 5,
+  "policy": {
+    "version": "phase5-policy-v1",
+    "max_parallel_tasks": 6,
+    "five_minute_triage": true,
+    "best_solution_first": true,
+    "blind_retry_forbidden": true,
+    "independent_verification_required": true,
+    "phase_continuity_required": true,
+    "l4_owner_required": true,
+    "paper_only": true
+  },
+  "workers": [
+    {
+      "id": "architect-agent",
+      "capabilities": ["architecture", "dependency_analysis", "root_cause_analysis", "diagnostics", "contract_review"],
+      "resources": ["github-cloud"],
+      "authority_max": 3,
+      "enabled": true,
+      "verifier": true,
+      "max_concurrent_tasks": 1
+    },
+    {
+      "id": "developer-agent",
+      "capabilities": ["implementation", "refactor", "unit_tests", "diagnostics"],
+      "resources": ["github-cloud"],
+      "authority_max": 3,
+      "enabled": true,
+      "verifier": false,
+      "max_concurrent_tasks": 2
+    },
+    {
+      "id": "qa-verifier-agent",
+      "capabilities": ["unit_tests", "integration_tests", "adversarial_tests", "recovery_tests", "contract_review", "root_cause_analysis", "diagnostics", "ui_validation", "data_validation"],
+      "resources": ["github-cloud"],
+      "authority_max": 3,
+      "enabled": true,
+      "verifier": true,
+      "max_concurrent_tasks": 2
+    },
+    {
+      "id": "research-agent",
+      "capabilities": ["research", "data_validation", "strategy_qualification", "root_cause_analysis", "diagnostics"],
+      "resources": ["github-cloud", "windows-local"],
+      "authority_max": 2,
+      "enabled": true,
+      "verifier": true,
+      "max_concurrent_tasks": 1
+    },
+    {
+      "id": "deepseek-bounded",
+      "capabilities": ["code_review", "test_generation", "log_analysis", "documentation", "refactor_proposal", "root_cause_analysis", "diagnostics"],
+      "resources": ["deepseek"],
+      "authority_max": 2,
+      "enabled": true,
+      "verifier": false,
+      "max_concurrent_tasks": 1
+    },
+    {
+      "id": "windows-runner",
+      "capabilities": ["windows_runtime", "heavy_compute", "integration_tests", "recovery_tests", "data_validation", "diagnostics"],
+      "resources": ["windows-local"],
+      "authority_max": 3,
+      "enabled": true,
+      "verifier": true,
+      "max_concurrent_tasks": 2
+    },
+    {
+      "id": "cloud-worker",
+      "capabilities": ["implementation", "unit_tests", "integration_tests", "log_analysis", "diagnostics"],
+      "resources": ["github-cloud"],
+      "authority_max": 3,
+      "enabled": true,
+      "verifier": false,
+      "max_concurrent_tasks": 2
+    }
+  ],
+  "tasks": [
+    {
+      "id": "P5-G1-CONTRACT",
+      "title": "Verify phase-independent mission identity and dependency invariants",
+      "phase": 5,
+      "gate": 1,
+      "status": "PENDING",
+      "priority": 100,
+      "dependencies": [],
+      "required_capabilities": ["architecture", "contract_review"],
+      "preferred_resources": ["github-cloud"],
+      "authority": 1,
+      "acceptance": ["phase is metadata only", "authorization spec digest is deterministic", "dependency cycles fail closed"]
+    },
+    {
+      "id": "P5-G2-STATE",
+      "title": "Design and verify durable Supervisor StateStore semantics",
+      "phase": 5,
+      "gate": 2,
+      "status": "PENDING",
+      "priority": 96,
+      "dependencies": ["P5-G1-CONTRACT"],
+      "required_capabilities": ["architecture", "contract_review"],
+      "preferred_resources": ["github-cloud"],
+      "authority": 1,
+      "acceptance": ["authoritative state is not GitHub cache", "corrupt state quarantines", "previous-valid restart is deterministic"]
+    },
+    {
+      "id": "P5-G3-FENCING",
+      "title": "Adversarially verify attempts leases fencing and idempotency",
+      "phase": 5,
+      "gate": 3,
+      "status": "PENDING",
+      "priority": 94,
+      "dependencies": ["P5-G1-CONTRACT"],
+      "required_capabilities": ["adversarial_tests", "recovery_tests"],
+      "preferred_resources": ["github-cloud", "windows-local"],
+      "authority": 1,
+      "acceptance": ["stale attempts cannot commit", "duplicate callbacks are idempotent", "retry history is preserved"]
+    },
+    {
+      "id": "P5-G4-EVIDENCE",
+      "title": "Define typed independent verification evidence contract",
+      "phase": 5,
+      "gate": 4,
+      "status": "PENDING",
+      "priority": 92,
+      "dependencies": ["P5-G1-CONTRACT"],
+      "required_capabilities": ["contract_review", "adversarial_tests"],
+      "preferred_resources": ["github-cloud"],
+      "authority": 1,
+      "acceptance": ["producer and verifier trust domains are explicit", "evidence binds source spec attempt and policy", "substituted evidence fails closed"]
+    },
+    {
+      "id": "P5-G7-DATA",
+      "title": "Close canonical market-data semantic binding for Strategy Factory inputs",
+      "phase": 5,
+      "gate": 7,
+      "status": "PENDING",
+      "priority": 90,
+      "dependencies": ["P5-G1-CONTRACT"],
+      "required_capabilities": ["data_validation"],
+      "preferred_resources": ["windows-local", "github-cloud"],
+      "authority": 1,
+      "acceptance": ["instrument timeframe category interval and finality are bound", "ambiguous source semantics remain ineligible", "no silent namespace substitution"]
+    },
+    {
+      "id": "P5-G6-STRATEGY",
+      "title": "Run evidence-driven Strategy Factory qualification path",
+      "phase": 5,
+      "gate": 6,
+      "status": "PENDING",
+      "priority": 88,
+      "dependencies": ["P5-G7-DATA"],
+      "required_capabilities": ["research", "strategy_qualification"],
+      "preferred_resources": ["github-cloud", "windows-local"],
+      "authority": 2,
+      "acceptance": ["hypothesis is preregistered before execution", "robustness walk-forward OOS and cost stress are reproducible", "output is Paper Candidate or deterministic kill result"]
+    },
+    {
+      "id": "P5-DEEPSEEK-OPTIONAL",
+      "title": "Optional bounded second-opinion review of Phase 5 edge cases",
+      "phase": 5,
+      "gate": 5,
+      "status": "PENDING",
+      "priority": 40,
+      "dependencies": ["P5-G1-CONTRACT"],
+      "required_capabilities": ["code_review", "test_generation"],
+      "preferred_resources": ["deepseek"],
+      "authority": 1,
+      "acceptance": ["provider is optional", "no secret or authority expansion", "failure does not block NEXUS"]
+    },
+    {
+      "id": "P5-L4-GUARD",
+      "title": "Live production signing billing and financial authority remains owner-only",
+      "phase": 5,
+      "gate": 0,
+      "status": "PENDING",
+      "priority": 10,
+      "dependencies": [],
+      "required_capabilities": [],
+      "preferred_resources": [],
+      "authority": 4,
+      "acceptance": ["must never auto-execute"]
+    }
+  ]
+}
