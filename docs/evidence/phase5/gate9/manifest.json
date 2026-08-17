@@ -1,0 +1,49 @@
+{
+  "artifacts_expires_at": "2026-08-31",
+  "authority": {
+    "billing_changes_allowed": false,
+    "deterministic_risk_final_authority": true,
+    "l4_owner_required": true,
+    "live_execution_allowed": false,
+    "private_exchange_credentials_allowed": false,
+    "production_promotion_allowed": false,
+    "signing_authority_allowed": false,
+    "withdrawals_allowed": false
+  },
+  "durable_copies": [
+    "docs/evidence/phase5/gate9/cloud.json",
+    "docs/evidence/phase5/gate9/windows.json"
+  ],
+  "gate9_evidence_digest": "bfbcc134d24b48e06c728a71984708bd4990a541ccf0b46519c43bb72c2aa02c",
+  "merge_sha": "6450863f1b631e2c59c44f65d0890d04169054ff",
+  "notes": [
+    "Cloud and Windows payloads share the same Gate 9 evidence digest.",
+    "Runtime evidence digests differ by platform as expected.",
+    "The deterministic Gate 6 proof is killed by ROBUSTNESS_KILL and makes no profitability claim."
+  ],
+  "paper_only": true,
+  "phase": 5,
+  "proof_suites_executed": true,
+  "runtime_artifacts": [
+    {
+      "artifact_archive_sha256": "5c918e29d54e900058c79199c453f7a1700e78d488302190095fb6a4c8329a28",
+      "artifact_id": 9291251310,
+      "artifact_name": "phase5-gate9-cloud-evidence-5d0671103ea77db6003fada42dc9792ae86bf03f",
+      "artifact_payload_sha256": "1568b602dcf7ca9ee6999bf7b45df7fe46eabe15a59d0a9feef2524d02ef6bc1",
+      "platform": "Linux",
+      "runtime_evidence_digest": "d46d2a5b4f287b733d51c5a74b8747c6297dd969a923094895a87c72e65941b6"
+    },
+    {
+      "artifact_archive_sha256": "923f1c1f71a47c8d1adce31bb39aba0666d683d9959bf4a1d9aadc71d996b026",
+      "artifact_id": 9291420323,
+      "artifact_name": "phase5-gate9-windows-evidence-5d0671103ea77db6003fada42dc9792ae86bf03f",
+      "artifact_payload_sha256": "bbe70af9c5e956ca66871d7ac00b0f9476d3c2539544d3b757c347327d88800d",
+      "platform": "Windows",
+      "runtime_evidence_digest": "bd8eed88c63fbe7ecd16fe9327fda3d518de1ee9e6e5f157ee9b93bf19e7ad68"
+    }
+  ],
+  "schema_version": "nexus.phase5-gate9-evidence-manifest.v1",
+  "source_sha": "5d0671103ea77db6003fada42dc9792ae86bf03f",
+  "status": "complete",
+  "workflow_run_id": 32037871988
+}

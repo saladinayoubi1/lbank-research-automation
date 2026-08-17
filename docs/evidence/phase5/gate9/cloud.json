@@ -1,0 +1,87 @@
+{
+  "gate9": {
+    "authority": {
+      "billing_changes_allowed": false,
+      "deterministic_risk_final_authority": true,
+      "l4_owner_required": true,
+      "live_execution_allowed": false,
+      "private_exchange_credentials_allowed": false,
+      "production_promotion_allowed": false,
+      "signing_authority_allowed": false,
+      "withdrawals_allowed": false
+    },
+    "evidence_digest": "bfbcc134d24b48e06c728a71984708bd4990a541ccf0b46519c43bb72c2aa02c",
+    "gate6": {
+      "experiment_id": "be3e44e68ecb88da2f14133fee2ac3f2dee0ad045b2b77c53564f088c9864193",
+      "family": "momentum",
+      "kill_reasons": [
+        "ROBUSTNESS_KILL"
+      ],
+      "profitability_claim": false,
+      "qualification_digest": "977a5348d29f8f5ac6759a65d52e3bdb7c843d3aa32d9084bb8a573ec9785baa",
+      "replay_identical": true,
+      "status": "killed",
+      "strategy_version": "phase5-gate9-momentum-v1"
+    },
+    "gate7": {
+      "category": "spot",
+      "dataset_binding_sha256": "9e85e8901354473c6fbf1ee027ab0450aa45c8142126e2184fe43c2f13144b14",
+      "finality": "closed_only",
+      "instrument": "BTC/USDT",
+      "interval": "15",
+      "mapping_id": "btc-usdt-spot-minute15-v1",
+      "market": "spot",
+      "registry_version": "1.1.0",
+      "source": "Bybit",
+      "source_role": "primary",
+      "timeframe": "15m"
+    },
+    "gate8": {
+      "chaos": {
+        "corrupted_state": true,
+        "duplicate_callback": true,
+        "github_outage": true,
+        "partial_evidence_failure": true,
+        "provider_outage": true,
+        "restart": true,
+        "stale_lease": true,
+        "windows_offline_reconnect": true
+      },
+      "cutover_ready": true,
+      "durable_supervisor_mode": "canonical_phase5",
+      "exact_parity": true,
+      "legacy_mode": "watchdog_fallback",
+      "shadow_report_digest": "cfcec4ca82fbf7f4920c64df6de856cf3e60f1fa61f3507ee19ddb0f33534437"
+    },
+    "paper_only": true,
+    "proof_suites": [
+      "tests/test_phase5_mission_contract.py",
+      "tests/test_phase5_state_store.py",
+      "tests/test_phase5_attempts.py",
+      "tests/test_phase5_verification.py",
+      "tests/test_phase5_worker_policy.py",
+      "tests/test_phase5_data_binding.py",
+      "tests/test_phase5_strategy_factory.py",
+      "tests/test_phase5_gate8_chaos.py",
+      "tests/test_phase5_gate9_e2e.py"
+    ],
+    "schema_version": "nexus.phase5-gate9-evidence.v1",
+    "source_sha": "5d0671103ea77db6003fada42dc9792ae86bf03f"
+  },
+  "proof_suites": [
+    "tests/test_phase5_mission_contract.py",
+    "tests/test_phase5_state_store.py",
+    "tests/test_phase5_attempts.py",
+    "tests/test_phase5_verification.py",
+    "tests/test_phase5_worker_policy.py",
+    "tests/test_phase5_data_binding.py",
+    "tests/test_phase5_strategy_factory.py",
+    "tests/test_phase5_gate8_chaos.py",
+    "tests/test_phase5_gate9_e2e.py"
+  ],
+  "proof_suites_executed": true,
+  "runtime_evidence_digest": "d46d2a5b4f287b733d51c5a74b8747c6297dd969a923094895a87c72e65941b6",
+  "runtime_platform": "Linux",
+  "schema_version": "nexus.phase5-gate9-runtime-evidence.v1",
+  "source_sha": "5d0671103ea77db6003fada42dc9792ae86bf03f"
+}

@@ -4,3 +4,5 @@ mode: bounded-safe-loop
 planner: orchestrator+ai-council+deepseek
 objective: phase3-product-research
 queue: .nexus/autonomous-queue.json
+state: superseded
+superseded_by: .nexus/phase5-checkpoint.json
