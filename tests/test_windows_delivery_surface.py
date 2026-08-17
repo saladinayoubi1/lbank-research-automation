@@ -22,7 +22,7 @@ def test_windows_delivery_entrypoint_is_committed_and_packaged() -> None:
     assert all(path.is_file() for path in required)
 
     package = json.loads(read(DESKTOP / "package.json"))
-    assert package["version"] == "3.3.0"
+    assert package["version"] == "3.4.0"
     assert any(item.get("from") == "app" and item.get("to") == "app" for item in package["build"]["extraResources"])
 
     main = read(DESKTOP / "main.js")
@@ -38,10 +38,22 @@ def test_windows_ui_is_result_first_readable_and_not_legacy_placeholder() -> Non
     assert "PAPER ONLY" in index
     assert "نتیجه نهایی NEXUS" in index
     assert "Strategy Factory" in index
+    assert "NEXUS · RESEARCH OPERATIONS" in index
     assert "در حال بارگذاری" not in index
     assert "OpenAI" not in index
     assert "Google Gemini" not in index
-    assert 'font-family:"Roboto","Noto Sans Arabic","Segoe UI",Tahoma,Arial,sans-serif' in css
+    assert 'font-family:"Segoe UI Variable Text","Segoe UI",Tahoma,Arial,sans-serif' in css
+
+
+def test_windows_theme_is_dense_and_optimized_for_common_laptop_viewports() -> None:
+    css = read(APP / "desktop.css")
+    assert "--sidebar-width:224px" in css
+    assert "--topbar-height:64px" in css
+    assert "grid-template-columns:repeat(4,minmax(0,1fr))" in css
+    assert "@media(max-height:780px) and (min-width:1180px)" in css
+    assert "--topbar-height:58px" in css
+    assert "result-grid{display:grid;grid-template-columns:repeat(6" in css
+    assert "border-radius:var(--radius)" in css
 
 
 def test_renderer_has_strict_csp_and_no_direct_network_access() -> None:
@@ -80,6 +92,7 @@ def test_project_metadata_preserves_paper_only_authority() -> None:
     assert "deterministic_risk_final_authority: true" in data
     assert "profitability_claim: false" in data
     assert "canonical_source: 'Bybit'" in data
+    assert "delivery_version: '3.4.0'" in data
 
 
 def test_windows_targets_have_distinct_artifact_names() -> None:
@@ -94,5 +107,5 @@ def test_windows_workflow_verifies_packaged_resources_not_mobile_copy() -> None:
     workflow = read(ROOT / ".github" / "workflows" / "build_lbank_desktop_windows.yml")
     assert "Copy dashboard assets" not in workflow
     assert "dist/win-unpacked/resources/app" in workflow
-    assert "NEXUS_Personal_Pro_Setup_3.3.0_" in workflow
-    assert "NEXUS_Personal_Pro_Portable_3.3.0_" in workflow
+    assert "NEXUS_Personal_Pro_Setup_3.4.0_" in workflow
+    assert "NEXUS_Personal_Pro_Portable_3.4.0_" in workflow
