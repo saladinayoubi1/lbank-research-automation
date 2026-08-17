@@ -2,13 +2,17 @@ from __future__ import annotations
 
 import ast
 from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from automated_signal_pipeline import DECISION_KEYS
 from deterministic_risk import POLICY_KEYS, SIGNAL_KEYS, STATE_KEYS
 from paper_execution import COMMAND_KEYS
 from paper_live_airgap import FORBIDDEN_EXACT_KEYS, FORBIDDEN_KEY_FRAGMENTS
 
-ROOT = Path(__file__).resolve().parents[1]
 CRITICAL_MODULES = (
     ROOT / "automated_signal_pipeline.py",
     ROOT / "deterministic_risk.py",
