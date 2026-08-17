@@ -69,7 +69,7 @@ def test_deepseek_provider_rejects_non_object_response_after_authorized_transpor
     monkeypatch.setattr(dp, "_reserve", lambda *args, **kwargs: ("reserved", 0.01))
     monkeypatch.setattr(dp, "post_authorized_json", lambda **kwargs: b"[]")
     with pytest.raises(dp.AmbiguousCharge, match="root is malformed"):
-        dp.chat([{"role": "user", "content": "bounded test"}])
+        dp.chat([{"role": "user", "content": "Reply with exactly: NEXUS_DEEPSEEK_OK"}])
 
 
 def test_artifact_redirect_strips_repository_credentials_and_denies_http_downgrade():
