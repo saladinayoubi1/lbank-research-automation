@@ -34,6 +34,7 @@ def test_health_is_stable_and_read_only(tmp_path: Path):
         "status": "ok",
         "service": "lbank-research-readiness-dashboard",
         "mode": "read-only",
+        "contract_version": "nexus.dashboard.read.v1",
     }
 
 
@@ -42,6 +43,7 @@ def test_summary_returns_generated_json_and_metadata(tmp_path: Path):
 
     payload = load_summary(tmp_path)
 
+    assert payload["contract_version"] == "nexus.dashboard.read.v1"
     assert payload["summary"]["total_series"] == 2
     assert payload["metadata"]["source"] == "_data_readiness.json"
     assert payload["metadata"]["stale_possible"] is True
@@ -114,4 +116,10 @@ def test_unknown_route_returns_json_404(tmp_path: Path):
     response = dispatch_get("/api/unknown", tmp_path)
 
     assert response.status == HTTPStatus.NOT_FOUND
-    assert response.payload == {"error": "not_found", "path": "/api/unknown"}
+    assert response.payload == {"contract_version": "nexus.dashboard.read.v1", "error": "not_found", "path": "/api/unknown"}
+
+
+def test_every_api_response_declares_read_contract(tmp_path: Path):
+    write_reports(tmp_path)
+    for route in ("/health", "/api/readiness/summary", "/api/readiness/series", "/api/unknown"):
+        assert dispatch_get(route, tmp_path).payload["contract_version"] == "nexus.dashboard.read.v1"
