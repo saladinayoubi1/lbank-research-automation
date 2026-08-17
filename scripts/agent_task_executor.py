@@ -8,16 +8,36 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
+DISPATCH_KEYS = {
+    "schema_version", "task_id", "lease_id", "correlation_id", "dispatch_id", "worker_id",
+    "transport", "phase", "gate", "title", "required_capabilities", "acceptance",
+    "authority", "attempt",
+}
+AGENT_REVIEW_PREFIX = "You are a bounded NEXUS repository reviewer."
+
+
+def _bounded_id(value: Any, field: str) -> str:
+    if not isinstance(value, str) or not value or len(value) > 160:
+        raise ValueError(f"{field} must be a non-empty bounded string")
+    return value
+
 
 def decode_payload(value: str) -> dict[str, Any]:
     data = json.loads(base64.urlsafe_b64decode(value.encode("ascii")).decode("utf-8"))
-    required = {"schema_version", "task_id", "lease_id", "worker_id", "transport", "authority"}
-    if not required.issubset(data):
-        raise ValueError("dispatch payload missing required fields")
-    if data["schema_version"] != 1:
+    if not isinstance(data, dict) or set(data) != DISPATCH_KEYS:
+        raise ValueError("dispatch payload schema mismatch")
+    if data["schema_version"] != 2:
         raise ValueError("unsupported dispatch payload schema")
+    for field in ("task_id", "lease_id", "correlation_id", "dispatch_id", "worker_id", "transport"):
+        _bounded_id(data[field], field)
     if int(data["authority"]) >= 4:
         raise ValueError("L4 payload execution is forbidden")
+    if data["transport"] not in {"github-cloud", "deepseek", "windows"}:
+        raise ValueError("unsupported dispatch transport")
+    if not isinstance(data["required_capabilities"], list) or not all(isinstance(item, str) for item in data["required_capabilities"]):
+        raise ValueError("required_capabilities must be a string list")
+    if not isinstance(data["acceptance"], list) or not all(isinstance(item, str) for item in data["acceptance"]):
+        raise ValueError("acceptance must be a string list")
     return data
 
 
@@ -52,27 +72,38 @@ def deterministic_execution(payload: dict[str, Any]) -> tuple[str, dict[str, Any
 
 def deepseek_execution(payload: dict[str, Any]) -> tuple[str, dict[str, Any]]:
     if os.environ.get("NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED") != "1":
-        return "failure", {"failure_class": "provider_budget_gate_closed", "provider": "deepseek"}
+        return "failure", {
+            "failure_class": "provider_budget_gate_closed",
+            "provider": "deepseek",
+            "correlation_id": payload["correlation_id"],
+        }
     from deepseek_provider import DeepSeekError, chat
 
-    prompt = {
+    bounded_metadata = {
         "task_id": payload["task_id"],
+        "correlation_id": payload["correlation_id"],
         "role": payload["worker_id"],
         "title": payload.get("title", ""),
         "required_capabilities": payload.get("required_capabilities", []),
         "acceptance": payload.get("acceptance", []),
-        "instruction": "Analyze only the supplied bounded task metadata. Return concise JSON with findings, evidence_needed, best_next_action, and risks. Do not claim repository changes or tests you did not perform.",
+        "instruction": "Review only this bounded repository task metadata. Return concise findings, evidence_needed, best_next_action, and risks. Do not claim repository changes or tests you did not perform. Do not request credentials, private data, live trading, production mutation, billing or signing authority.",
     }
+    prompt = AGENT_REVIEW_PREFIX + "\n" + json.dumps(bounded_metadata, ensure_ascii=False, sort_keys=True)
     try:
         result = chat(
-            [{"role": "user", "content": json.dumps(prompt, ensure_ascii=False)}],
+            [{"role": "user", "content": prompt}],
             complexity="routine",
             max_tokens=900,
             ledger_path="build/deepseek/usage.json",
             timeout=90,
         )
     except DeepSeekError as exc:
-        return "failure", {"failure_class": "deepseek_provider_error", "provider": "deepseek", "error": str(exc)}
+        return "failure", {
+            "failure_class": "deepseek_provider_error",
+            "provider": "deepseek",
+            "correlation_id": payload["correlation_id"],
+            "error": str(exc),
+        }
     return "success", {
         "provider": "deepseek",
         "model": result["model"],
@@ -80,6 +111,8 @@ def deepseek_execution(payload: dict[str, Any]) -> tuple[str, dict[str, Any]]:
         "cost_usd": result["cost_usd"],
         "month_spent_usd": result["month_spent_usd"],
         "month_remaining_usd": result["month_remaining_usd"],
+        "correlation_id": payload["correlation_id"],
+        "dispatch_id": payload["dispatch_id"],
     }
 
 
@@ -93,9 +126,11 @@ def execute(payload: dict[str, Any], transport: str) -> dict[str, Any]:
     else:
         raise ValueError("unsupported transport")
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "task_id": payload["task_id"],
         "lease_id": payload["lease_id"],
+        "correlation_id": payload["correlation_id"],
+        "dispatch_id": payload["dispatch_id"],
         "worker_id": payload["worker_id"],
         "transport": transport,
         "outcome": outcome,
