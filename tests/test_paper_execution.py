@@ -41,11 +41,11 @@ def initial_state():
     return replay([first, second]).state
 
 
-def approved(signal_id="sig-1"):
+def approved(signal_id="sig-1", proposed="600"):
     return RiskDecision(
         allowed=True, reason_code="risk_allowed", policy_id="paper-risk",
         policy_version="1.0.0", signal_id=signal_id,
-        proposed_notional=Decimal("600"), resulting_exposure=Decimal("600"),
+        proposed_notional=Decimal(proposed), resulting_exposure=Decimal(proposed),
     )
 
 
@@ -62,7 +62,7 @@ def command(operation="open", **changes):
 
 def run(state, cmd, signal_id="sig-1", kind="automatic", correlation="run-1"):
     return execute_paper_command(
-        command=cmd, state=state, risk_decision=approved(signal_id),
+        command=cmd, state=state, risk_decision=approved(signal_id, str(Decimal(str(cmd["quantity"])) * Decimal(str(cmd["reference_price"])))),
         occurred_at=TIME, provenance=provenance(kind), correlation_id=correlation,
         causation_id=signal_id,
     )
