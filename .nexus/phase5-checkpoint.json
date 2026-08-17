@@ -1,0 +1,27 @@
+{
+  "canonical_runtime_mode": "canonical_phase5",
+  "closure_basis": [
+    "Gates 0-9 complete",
+    "Fixed-SHA Cloud and Windows Gate 9 evidence PASS",
+    "Durable evidence copies committed",
+    "Legacy Phase 3 autonomous queue superseded without deleting history"
+  ],
+  "final_pr": 589,
+  "formal_gates": "0-9",
+  "formal_gates_complete": true,
+  "gate9_evidence_manifest": "docs/evidence/phase5/gate9/manifest.json",
+  "gate9_source_sha": "5d0671103ea77db6003fada42dc9792ae86bf03f",
+  "legacy_queue": ".nexus/autonomous-queue.json",
+  "legacy_queue_state": "superseded",
+  "legacy_runtime_mode": "watchdog_fallback",
+  "live_trading_authority": false,
+  "main_sha_at_close": "6450863f1b631e2c59c44f65d0890d04169054ff",
+  "next_phase_requires_new_contract": true,
+  "paper_only": true,
+  "parent_issue": 583,
+  "phase": 5,
+  "remaining_non_blocking_backlog": [568, 232],
+  "schema_version": "nexus.phase-checkpoint.v1",
+  "source_of_truth": "github",
+  "status": "complete"
+}
