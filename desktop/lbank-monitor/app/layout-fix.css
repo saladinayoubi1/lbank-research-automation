@@ -15,13 +15,5 @@ body.sidebar-collapsed .mode-block{justify-content:center;padding-inline:0;margi
 body.sidebar-collapsed .sidebar nav a{display:flex;justify-content:center;align-items:center;padding-inline:0;min-width:0}
 body.sidebar-collapsed .sidebar nav a>span{width:auto;font-size:.58rem;color:var(--text)}
 body.sidebar-collapsed .sidebar nav a.active{border-left-color:var(--blue)}
-@media(max-width:1180px){
-  body:not(.sidebar-user-expanded){--sidebar-width:var(--sidebar-collapsed-width)}
-  body:not(.sidebar-user-expanded) .sidebar{padding-inline:8px}
-  body:not(.sidebar-user-expanded) .brand-block{justify-content:center;padding-inline:0}
-  body:not(.sidebar-user-expanded) .brand-copy,body:not(.sidebar-user-expanded) .mode-block>div,body:not(.sidebar-user-expanded) .sidebar nav a b,body:not(.sidebar-user-expanded) .sidebar nav a small,body:not(.sidebar-user-expanded) .sidebar-foot{display:none}
-  body:not(.sidebar-user-expanded) .mode-block{justify-content:center;padding-inline:0;margin-inline:2px}
-  body:not(.sidebar-user-expanded) .sidebar nav a{display:flex;justify-content:center;align-items:center;padding-inline:0}
-  body:not(.sidebar-user-expanded) .sidebar nav a>span{width:auto;font-size:.58rem;color:var(--text)}
-}
+@media(max-width:1180px){body:not(.sidebar-collapsed){--sidebar-width:180px}.workspace main{min-width:800px}}
 @media(max-width:900px){.workspace main{min-width:760px}}
