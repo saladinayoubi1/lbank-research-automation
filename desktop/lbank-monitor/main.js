@@ -11,6 +11,8 @@ const ALLOWED_PATHS = new Set([
   '/api/integrations/zotero',
   '/api/integrations/research',
 ]);
+const PUBLIC_MARKET_SYMBOLS = new Set(['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT']);
+const PUBLIC_MARKET_INTERVALS = new Set(['15', '60', '240']);
 const MAX_RESPONSE_BYTES = 1_000_000;
 const MAX_REQUEST_CHARS = 4096;
 
@@ -70,31 +72,55 @@ function parseGatewayRequest(requestJson) {
   }
   return parsed.pathname + parsed.search;
 }
+async function boundedJsonFetch(target, options = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 30000);
+  try {
+    const response = await fetch(target, { ...options, signal: controller.signal, redirect: 'error', cache: 'no-store' });
+    const length = Number(response.headers.get('content-length') || '0');
+    if (length > MAX_RESPONSE_BYTES) throw new Error('Response exceeds bounded size');
+    const text = await response.text();
+    if (Buffer.byteLength(text, 'utf8') > MAX_RESPONSE_BYTES) throw new Error('Response exceeds bounded size');
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return { text, payload: JSON.parse(text) };
+  } finally {
+    clearTimeout(timer);
+  }
+}
 async function callGateway(requestJson) {
   const relativePath = parseGatewayRequest(requestJson);
   const base = gatewayBaseUrl();
   const target = new URL(relativePath, base);
   if (target.origin !== base.origin) throw new Error('Gateway origin escape rejected');
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 30000);
-  try {
-    const headers = { accept: 'application/json' };
-    if (base.protocol === 'https:') {
-      const token = readKey(GATEWAY_SECRET_ID);
-      if (token) headers.authorization = `Bearer ${token}`;
-    }
-    const response = await fetch(target, { method: 'GET', headers, signal: controller.signal, redirect: 'error', cache: 'no-store' });
-    const length = Number(response.headers.get('content-length') || '0');
-    if (length > MAX_RESPONSE_BYTES) throw new Error('Gateway response exceeds bounded size');
-    const text = await response.text();
-    if (Buffer.byteLength(text, 'utf8') > MAX_RESPONSE_BYTES) throw new Error('Gateway response exceeds bounded size');
-    if (!response.ok) throw new Error(`NEXUS gateway HTTP ${response.status}`);
-    const payload = JSON.parse(text);
-    if (!payload || payload.contract_version !== 'nexus.dashboard.read.v1') throw new Error('Incompatible NEXUS gateway response');
-    return JSON.stringify(payload);
-  } finally {
-    clearTimeout(timer);
+  const headers = { accept: 'application/json' };
+  if (base.protocol === 'https:') {
+    const token = readKey(GATEWAY_SECRET_ID);
+    if (token) headers.authorization = `Bearer ${token}`;
   }
+  const { payload } = await boundedJsonFetch(target, { method: 'GET', headers });
+  if (!payload || payload.contract_version !== 'nexus.dashboard.read.v1') throw new Error('Incompatible NEXUS gateway response');
+  return JSON.stringify(payload);
+}
+function validatePublicMarket(symbol, interval) {
+  const normalizedSymbol = String(symbol || '').trim().toUpperCase();
+  const normalizedInterval = String(interval || '').trim();
+  if (!PUBLIC_MARKET_SYMBOLS.has(normalizedSymbol)) throw new Error('Unsupported public market symbol');
+  if (!PUBLIC_MARKET_INTERVALS.has(normalizedInterval)) throw new Error('Unsupported public market interval');
+  return { symbol: normalizedSymbol, interval: normalizedInterval };
+}
+async function callPublicMarket(symbol, interval) {
+  const safe = validatePublicMarket(symbol, interval);
+  const target = new URL('https://api.bybit.com/v5/market/kline');
+  target.searchParams.set('category', 'spot');
+  target.searchParams.set('symbol', safe.symbol);
+  target.searchParams.set('interval', safe.interval);
+  target.searchParams.set('limit', '120');
+  const { text, payload } = await boundedJsonFetch(target, {
+    method: 'GET',
+    headers: { accept: 'application/json', 'user-agent': 'nexus-personal-pro/3.3' }
+  });
+  if (!payload || payload.retCode !== 0 || !Array.isArray(payload.result?.list)) throw new Error('Invalid Bybit public market response');
+  return text;
 }
 
 ipcMain.on('nexus:has-key', (event, id) => {
@@ -114,20 +140,48 @@ ipcMain.handle('nexus:gateway-info', async () => {
   const base = gatewayBaseUrl();
   return { mode: base.protocol === 'https:' ? 'remote-or-tls-local' : 'local-loopback', origin: base.origin, readOnly: true };
 });
+ipcMain.handle('nexus:public-market', async (_event, symbol, interval) => callPublicMarket(symbol, interval));
+ipcMain.handle('nexus:app-info', async () => ({
+  name: app.getName(), version: app.getVersion(), platform: process.platform, arch: process.arch,
+  packaged: app.isPackaged, authority: 'research-backtest-paper-only'
+}));
 
 function createWindow() {
   const window = new BrowserWindow({
-    width: 1440, height: 920, minWidth: 980, minHeight: 680, show: false,
-    backgroundColor: '#06101d', autoHideMenuBar: true, title: 'NEXUS Personal Pro',
-    titleBarStyle: 'hidden', titleBarOverlay: { color: '#081524', symbolColor: '#eef5ff', height: 46 },
-    webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, devTools: false, preload: path.join(__dirname, 'preload.js') }
+    width: 1480,
+    height: 940,
+    minWidth: 1080,
+    minHeight: 720,
+    show: false,
+    backgroundColor: '#07111f',
+    autoHideMenuBar: true,
+    title: 'NEXUS Personal Pro',
+    titleBarStyle: 'hidden',
+    titleBarOverlay: { color: '#091525', symbolColor: '#eaf2fb', height: 46 },
+    webPreferences: {
+      contextIsolation: true,
+      sandbox: true,
+      nodeIntegration: false,
+      devTools: false,
+      preload: path.join(__dirname, 'preload.js')
+    }
   });
   const appRoot = app.isPackaged ? path.join(process.resourcesPath, 'app') : path.join(__dirname, 'app');
-  window.loadFile(path.join(appRoot, 'index.html'));
+  const entrypoint = path.join(appRoot, 'index.html');
+  if (!fs.existsSync(entrypoint)) throw new Error(`NEXUS desktop entrypoint missing: ${entrypoint}`);
+  window.loadFile(entrypoint);
   window.once('ready-to-show', () => window.show());
-  window.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\//i.test(url)) shell.openExternal(url); return { action: 'deny' }; });
-  window.webContents.on('will-navigate', (event, url) => { if (!url.startsWith('file://')) event.preventDefault(); });
+  window.webContents.setWindowOpenHandler(({ url }) => {
+    if (/^https:\/\//i.test(url)) shell.openExternal(url);
+    return { action: 'deny' };
+  });
+  window.webContents.on('will-navigate', (event, url) => {
+    if (!url.startsWith('file://')) event.preventDefault();
+  });
 }
 
-app.whenReady().then(() => { createWindow(); app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); }); });
+app.whenReady().then(() => {
+  createWindow();
+  app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
+});
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
