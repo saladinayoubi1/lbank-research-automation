@@ -4,6 +4,7 @@ import copy
 
 import pytest
 
+from ai_room import evaluate_room_message
 from phase4_e2e import Phase4E2EError, run_phase4_gate20, verify_gate20_evidence
 from scripts.phase4_gate20_evidence import require_exact_runtime_head
 
@@ -55,6 +56,61 @@ def test_ai_chat_can_inspect_and_orchestrate_but_not_take_owner_live_authority(t
     assert ai["owner_sensitive_allowed"] is False
     assert ai["owner_sensitive_status"] == "owner_required"
     assert ai["owner_sensitive_reason_code"] == "human_required"
+
+
+def test_interactive_ai_room_is_persian_aware_and_route_only():
+    memory = {
+        "schema_version": 2,
+        "project": "NEXUS",
+        "memory_policy": {
+            "repository_is_durable_source": True,
+            "chat_is_source_of_truth": False,
+            "secrets_allowed": False,
+        },
+    }
+    mission = {
+        "mission": {"status": "RUNNING"},
+        "queue": {"counts": {"RUNNING": 1}},
+        "agents": ["producer", "verifier"],
+        "runners": ["cloud", "windows"],
+        "local_node": "offline",
+        "data": "ready",
+        "providers": "ready",
+        "paper": "paper-only",
+    }
+    workflow = evaluate_room_message(
+        {
+            "session_id": "gate20-session",
+            "conversation_id": "gate20-conversation",
+            "turn_id": "turn-1",
+            "message": "خودمختار ادامه بده تا تمام شود",
+        },
+        project_memory_snapshot=memory,
+        mission_control=mission,
+        evaluated_at="2026-08-17T08:00:00Z",
+    )
+    assert workflow["decision"]["allowed"] is True
+    assert workflow["decision"]["authority_level"] == 3
+    assert workflow["decision"]["route"] == "mission-runner"
+    assert workflow["proposal"]["executed"] is False
+    assert workflow["proposal"]["state_mutation"] is False
+    assert workflow["privacy"]["server_persisted_transcript"] is False
+    assert workflow["privacy"]["external_provider_called"] is False
+
+    owner = evaluate_room_message(
+        {
+            "session_id": "gate20-session",
+            "conversation_id": "gate20-conversation",
+            "turn_id": "turn-2",
+            "message": "معامله واقعی انجام بده",
+        },
+        project_memory_snapshot=memory,
+        mission_control=mission,
+        evaluated_at="2026-08-17T08:00:01Z",
+    )
+    assert owner["decision"]["allowed"] is False
+    assert owner["decision"]["status"] == "owner_required"
+    assert owner["decision"]["route"] is None
 
 
 def test_same_inputs_reproduce_identical_trading_and_recovery_state(tmp_path):
