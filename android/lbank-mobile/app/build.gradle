@@ -2,8 +2,11 @@ plugins {
     id "com.android.application"
 }
 
+def nexusGatewayUrl = providers.gradleProperty("NEXUS_GATEWAY_URL").getOrElse("https://127.0.0.1:8443")
+def escapedGatewayUrl = nexusGatewayUrl.replace("\\", "\\\\").replace('"', '\\"')
+
 android {
-    namespace "com.saladinayoubi.lbankmobile"
+    namespace "com.saladinayoubi1.lbankmobile"
     compileSdk 35
 
     defaultConfig {
@@ -12,6 +15,11 @@ android {
         targetSdk 35
         versionCode 3
         versionName "2.1.0"
+        buildConfigField "String", "NEXUS_GATEWAY_URL", "\"${escapedGatewayUrl}\""
+    }
+
+    buildFeatures {
+        buildConfig true
     }
 
     buildTypes {

@@ -2,10 +2,29 @@ const { app, BrowserWindow, shell, ipcMain, safeStorage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
-function keyFile() { return path.join(app.getPath('userData'), 'nexus-keys.json'); }
+const GATEWAY_SECRET_ID = 'gateway';
+const ALLOWED_PATHS = new Set([
+  '/health',
+  '/api/readiness/summary',
+  '/api/readiness/series',
+  '/api/mission-control',
+  '/api/integrations/zotero',
+  '/api/integrations/research',
+]);
+const MAX_RESPONSE_BYTES = 1_000_000;
+const MAX_REQUEST_CHARS = 4096;
+
+function keyFile() { return path.join(app.getPath('userData'), 'nexus-gateway-secret.json'); }
 function loadKeys() { try { return JSON.parse(fs.readFileSync(keyFile(), 'utf8')); } catch { return {}; } }
-function saveKeys(keys) { fs.mkdirSync(path.dirname(keyFile()), { recursive: true }); fs.writeFileSync(keyFile(), JSON.stringify(keys), { mode: 0o600 }); }
+function saveKeys(keys) {
+  fs.mkdirSync(path.dirname(keyFile()), { recursive: true });
+  fs.writeFileSync(keyFile(), JSON.stringify(keys), { mode: 0o600 });
+}
+function assertSecretId(id) {
+  if (id !== GATEWAY_SECRET_ID) throw new Error('Only the NEXUS gateway token is accepted by this bridge');
+}
 function storeKey(id, value) {
+  assertSecretId(id);
   const keys = loadKeys();
   if (!value) delete keys[id];
   else {
@@ -15,56 +34,86 @@ function storeKey(id, value) {
   saveKeys(keys);
 }
 function readKey(id) {
+  assertSecretId(id);
   const packed = loadKeys()[id];
   if (!packed) return '';
   if (!safeStorage.isEncryptionAvailable()) throw new Error('Windows secure storage is unavailable');
   return safeStorage.decryptString(Buffer.from(packed, 'base64'));
 }
-function validateUrl(raw) {
-  const u = new URL(raw);
-  const local = ['127.0.0.1', 'localhost'].includes(u.hostname) || u.hostname.startsWith('192.168.') || u.hostname.startsWith('10.');
-  if (u.protocol !== 'https:' && !(u.protocol === 'http:' && local)) throw new Error('Only HTTPS or local-network HTTP endpoints are allowed');
-  return u;
+function gatewayBaseUrl() {
+  const raw = process.env.NEXUS_GATEWAY_URL || 'http://127.0.0.1:8000';
+  const url = new URL(raw);
+  const loopback = url.hostname === '127.0.0.1' || url.hostname === '::1' || url.hostname === 'localhost';
+  if (url.username || url.password || url.search || url.hash || (url.pathname && url.pathname !== '/')) {
+    throw new Error('NEXUS gateway URL must be an origin only');
+  }
+  if (url.protocol === 'http:' && !loopback) throw new Error('Plain HTTP gateway is allowed only on loopback');
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') throw new Error('Unsupported NEXUS gateway protocol');
+  return url;
 }
-async function postJson(url, body, headers = {}) {
-  validateUrl(url);
+function parseGatewayRequest(requestJson) {
+  if (typeof requestJson !== 'string' || requestJson.length > MAX_REQUEST_CHARS) throw new Error('Gateway request is malformed or oversized');
+  const request = JSON.parse(requestJson);
+  if (!request || typeof request !== 'object' || Array.isArray(request)) throw new Error('Gateway request must be an object');
+  const keys = Object.keys(request).sort();
+  if (keys.length !== 1 || keys[0] !== 'path') throw new Error('Only a bounded gateway path is accepted');
+  if (typeof request.path !== 'string' || request.path.length > MAX_REQUEST_CHARS || request.path.includes('#')) throw new Error('Gateway path is invalid');
+  const parsed = new URL(request.path, 'https://nexus.invalid');
+  if (parsed.origin !== 'https://nexus.invalid') throw new Error('Absolute URLs are forbidden in renderer requests');
+  if (!ALLOWED_PATHS.has(parsed.pathname)) throw new Error('Gateway route is not allowlisted');
+  if (parsed.pathname !== '/api/readiness/series' && parsed.search) throw new Error('Query parameters are forbidden on this gateway route');
+  const allowedQuery = new Set(['symbol', 'timeframe', 'limit', 'offset']);
+  const seen = new Set();
+  for (const [key, value] of parsed.searchParams.entries()) {
+    if (!allowedQuery.has(key) || seen.has(key) || value.length > 160) throw new Error('Gateway query is invalid');
+    seen.add(key);
+  }
+  return parsed.pathname + parsed.search;
+}
+async function callGateway(requestJson) {
+  const relativePath = parseGatewayRequest(requestJson);
+  const base = gatewayBaseUrl();
+  const target = new URL(relativePath, base);
+  if (target.origin !== base.origin) throw new Error('Gateway origin escape rejected');
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 90000);
+  const timer = setTimeout(() => controller.abort(), 30000);
   try {
-    const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body), signal: controller.signal });
-    const text = await r.text();
-    if (!r.ok) throw new Error(`HTTP ${r.status}: ${text.slice(0, 500)}`);
-    return JSON.parse(text);
-  } finally { clearTimeout(timer); }
-}
-async function callProvider(request) {
-  const p = request.provider, messages = request.messages, base = p.baseUrl.replace(/\/$/, ''), key = readKey(p.id);
-  if (p.type !== 'ollama' && !key) throw new Error('API Key تنظیم نشده');
-  if (p.type === 'openai-compatible') {
-    const j = await postJson(base + '/chat/completions', { model: p.model, messages, temperature: 0.25 }, { authorization: 'Bearer ' + key });
-    return j.choices?.[0]?.message?.content || '';
+    const headers = { accept: 'application/json' };
+    if (base.protocol === 'https:') {
+      const token = readKey(GATEWAY_SECRET_ID);
+      if (token) headers.authorization = `Bearer ${token}`;
+    }
+    const response = await fetch(target, { method: 'GET', headers, signal: controller.signal, redirect: 'error', cache: 'no-store' });
+    const length = Number(response.headers.get('content-length') || '0');
+    if (length > MAX_RESPONSE_BYTES) throw new Error('Gateway response exceeds bounded size');
+    const text = await response.text();
+    if (Buffer.byteLength(text, 'utf8') > MAX_RESPONSE_BYTES) throw new Error('Gateway response exceeds bounded size');
+    if (!response.ok) throw new Error(`NEXUS gateway HTTP ${response.status}`);
+    const payload = JSON.parse(text);
+    if (!payload || payload.contract_version !== 'nexus.dashboard.read.v1') throw new Error('Incompatible NEXUS gateway response');
+    return JSON.stringify(payload);
+  } finally {
+    clearTimeout(timer);
   }
-  if (p.type === 'anthropic') {
-    const system = messages.find(x => x.role === 'system')?.content || '';
-    const j = await postJson(base + '/v1/messages', { model: p.model, max_tokens: 1800, system, messages: messages.filter(x => x.role !== 'system') }, { 'x-api-key': key, 'anthropic-version': '2023-06-01' });
-    return (j.content || []).map(x => x.text || '').join('\n');
-  }
-  if (p.type === 'gemini') {
-    const prompt = messages.map(x => `${x.role}: ${x.content}`).join('\n\n');
-    const j = await postJson(`${base}/v1beta/models/${encodeURIComponent(p.model)}:generateContent?key=${encodeURIComponent(key)}`, { contents: [{ parts: [{ text: prompt }] }] });
-    return j.candidates?.[0]?.content?.parts?.map(x => x.text || '').join('\n') || '';
-  }
-  if (p.type === 'ollama') {
-    const j = await postJson(base + '/api/chat', { model: p.model, stream: false, messages });
-    return j.message?.content || '';
-  }
-  throw new Error('نوع سرویس پشتیبانی نمی‌شود');
 }
 
-ipcMain.on('nexus:has-key', (event, id) => { event.returnValue = !!loadKeys()[id]; });
-ipcMain.on('nexus:save-key', (event, id, value) => { try { storeKey(id, value); event.returnValue = true; } catch (e) { event.returnValue = false; } });
-ipcMain.on('nexus:delete-key', (event, id) => { try { storeKey(id, ''); event.returnValue = true; } catch { event.returnValue = false; } });
-ipcMain.handle('nexus:request', async (_event, requestJson) => callProvider(JSON.parse(requestJson)));
+ipcMain.on('nexus:has-key', (event, id) => {
+  try { assertSecretId(String(id)); event.returnValue = !!loadKeys()[GATEWAY_SECRET_ID]; }
+  catch { event.returnValue = false; }
+});
+ipcMain.on('nexus:save-key', (event, id, value) => {
+  try { storeKey(String(id), String(value || '')); event.returnValue = true; }
+  catch { event.returnValue = false; }
+});
+ipcMain.on('nexus:delete-key', (event, id) => {
+  try { storeKey(String(id), ''); event.returnValue = true; }
+  catch { event.returnValue = false; }
+});
+ipcMain.handle('nexus:request', async (_event, requestJson) => callGateway(String(requestJson)));
+ipcMain.handle('nexus:gateway-info', async () => {
+  const base = gatewayBaseUrl();
+  return { mode: base.protocol === 'https:' ? 'remote-or-tls-local' : 'local-loopback', origin: base.origin, readOnly: true };
+});
 
 function createWindow() {
   const window = new BrowserWindow({
