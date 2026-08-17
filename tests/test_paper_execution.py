@@ -134,7 +134,17 @@ def test_denied_or_mismatched_risk_cannot_execute():
             causation_id="sig-1",
         )
     with pytest.raises(PaperExecutionError, match="causation mismatch"):
-        run(initial_state(), command(), signal_id="other")
+        execute_paper_command(
+            command=command(), state=initial_state(), risk_decision=approved("other"),
+            occurred_at=TIME, provenance=provenance(), correlation_id="run",
+            causation_id="sig-1",
+        )
+    with pytest.raises(PaperExecutionError, match="amount mismatch"):
+        execute_paper_command(
+            command=command(), state=initial_state(), risk_decision=approved("sig-1", "1"),
+            occurred_at=TIME, provenance=provenance(), correlation_id="run",
+            causation_id="sig-1",
+        )
 
 
 @pytest.mark.parametrize(
