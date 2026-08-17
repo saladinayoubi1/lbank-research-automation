@@ -45,7 +45,7 @@ class _PinnedHTTPSConnection(http.client.HTTPSConnection):
         self._authorizer = authorizer
 
     def connect(self) -> None:
-        last_error: BaseException | None = None
+        last_error: Exception | None = None
         for destination_ip in self._authorized.resolved_ips:
             raw = None
             try:
@@ -63,7 +63,7 @@ class _PinnedHTTPSConnection(http.client.HTTPSConnection):
                     server_hostname=self._authorized.host,
                 )
                 return
-            except BaseException as exc:
+            except (OSError, ssl.SSLError, EgressDenied) as exc:
                 last_error = exc
                 if raw is not None:
                     try:
