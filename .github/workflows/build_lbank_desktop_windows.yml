@@ -1,11 +1,11 @@
-name: Build LBank Desktop Windows
+name: Build NEXUS Desktop Windows
 
 on:
   workflow_dispatch:
   pull_request:
     paths:
       - "desktop/lbank-monitor/**"
-      - "android/lbank-mobile/app/src/main/assets/**"
+      - "tests/test_windows_delivery_surface.py"
       - ".github/workflows/build_lbank_desktop_windows.yml"
 
 permissions:
@@ -23,46 +23,58 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Copy dashboard assets
-        run: |
-          $source = "android/lbank-mobile/app/src/main/assets"
-          $target = "desktop/lbank-monitor/app"
-          if (Test-Path $target) { Remove-Item $target -Recurse -Force }
-          New-Item -ItemType Directory -Path $target | Out-Null
-          Copy-Item "$source/*" $target -Recurse -Force
-      - name: Install packaging dependencies
-        working-directory: desktop/lbank-monitor
-        run: npm install --no-audit --no-fund
-      - name: Validate packaged dashboard files
+      - name: Validate committed desktop surface
         run: |
           $required = @(
             "desktop/lbank-monitor/app/index.html",
-            "desktop/lbank-monitor/app/styles.css",
-            "desktop/lbank-monitor/app/app.js",
-            "desktop/lbank-monitor/app/data.json"
+            "desktop/lbank-monitor/app/desktop.css",
+            "desktop/lbank-monitor/app/desktop-runtime.js",
+            "desktop/lbank-monitor/app/project-data.js",
+            "desktop/lbank-monitor/main.js",
+            "desktop/lbank-monitor/preload.js"
           )
           foreach ($path in $required) {
-            if (!(Test-Path $path)) { throw "Missing required asset: $path" }
+            if (!(Test-Path $path)) { throw "Missing required desktop asset: $path" }
           }
+          $package = Get-Content "desktop/lbank-monitor/package.json" -Raw | ConvertFrom-Json
+          if ($package.version -ne "3.3.0") { throw "Unexpected desktop version: $($package.version)" }
+      - name: Install packaging dependencies
+        working-directory: desktop/lbank-monitor
+        run: npm install --no-audit --no-fund
       - name: Build installer and portable EXE
         working-directory: desktop/lbank-monitor
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
         run: npm run dist:win
+      - name: Verify packaged desktop resources
+        run: |
+          $resourceRoot = "desktop/lbank-monitor/dist/win-unpacked/resources/app"
+          $required = @("index.html", "desktop.css", "desktop-runtime.js", "project-data.js")
+          foreach ($name in $required) {
+            $path = Join-Path $resourceRoot $name
+            if (!(Test-Path $path)) { throw "Packaged UI asset missing: $path" }
+          }
+          $setup = Get-ChildItem "desktop/lbank-monitor/dist/NEXUS_Personal_Pro_Setup_3.3.0_*.exe" -ErrorAction SilentlyContinue
+          $portable = Get-ChildItem "desktop/lbank-monitor/dist/NEXUS_Personal_Pro_Portable_3.3.0_*.exe" -ErrorAction SilentlyContinue
+          if (!$setup) { throw "Installer EXE missing" }
+          if (!$portable) { throw "Portable EXE missing" }
       - name: Generate SHA-256 checksums
         run: |
+          Remove-Item "desktop/lbank-monitor/dist/SHA256SUMS.txt" -ErrorAction SilentlyContinue
           Get-ChildItem "desktop/lbank-monitor/dist" -File |
             Where-Object { $_.Extension -eq ".exe" } |
+            Sort-Object Name |
             ForEach-Object {
               $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
-              "$hash  $($_.Name)" | Out-File -FilePath "desktop/lbank-monitor/dist/SHA256SUMS.txt" -Append -Encoding utf8
+              "$hash  $($_.Name)" | Out-File -FilePath "desktop/lbank-monitor/dist/SHA256SUMS.txt" -Append -Encoding ascii
             }
           Get-Content "desktop/lbank-monitor/dist/SHA256SUMS.txt"
       - uses: actions/upload-artifact@v4
         with:
-          name: LBANK_DESKTOP_WINDOWS_V2
+          name: NEXUS_PERSONAL_PRO_WINDOWS_3_3_0
           path: |
-            desktop/lbank-monitor/dist/*.exe
+            desktop/lbank-monitor/dist/NEXUS_Personal_Pro_Setup_3.3.0_*.exe
+            desktop/lbank-monitor/dist/NEXUS_Personal_Pro_Portable_3.3.0_*.exe
             desktop/lbank-monitor/dist/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 30
