@@ -23,7 +23,7 @@ def _authorized(body: bytes):
     return authorize_deepseek_json(
         body,
         authorizer=authorizer,
-        now=datetime(2026, 8, 17, tzinfo=timezone.utc),
+        now=datetime.now(timezone.utc),
     )
 
 
