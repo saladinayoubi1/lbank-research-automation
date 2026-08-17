@@ -29,13 +29,15 @@
       <button class="nav-item" data-view="data" type="button">Data Registry</button>
       <button class="nav-item" data-view="agents" type="button">Agents</button>
       <button class="nav-item" data-view="events" type="button">Events</button>
-      <button class="nav-item" data-view="system" type="button">System</button>
+      <button class="nav-item" data-view="notifications" type="button">Notifications</button>
+      <button class="nav-item" data-view="system" type="button">Settings / System</button>
     </nav>
 
     <section id="state" class="state" aria-live="polite">Loading NEXUS reports…</section>
 
     <section class="view active" data-surface="mission" aria-labelledby="mission-title">
       <div class="surface-heading"><div><p class="kicker">PHASE 4 · PAPER ONLY</p><h2 id="mission-title">Mission Control</h2></div><div class="mode-chip">NO LIVE EXECUTION</div></div>
+      <div class="state-legend" aria-label="Operational state vocabulary"><span data-state="loading">Loading</span><span data-state="ready">Ready</span><span data-state="stale">Stale</span><span data-state="degraded">Degraded</span><span data-state="blocked">Blocked</span><span data-state="recovering">Recovering</span><span data-state="failed">Failed</span><span data-state="empty">Empty</span></div>
 
     <section class="section-block">
       <div class="section-title"><div><p class="kicker">PROJECT ROADMAP</p><h2>From foundation to release</h2></div><span class="muted">Current focus: validated research readiness</span></div>
@@ -102,7 +104,8 @@
     <section class="view" data-surface="data" aria-labelledby="data-title"><div class="surface-heading"><div><p class="kicker">CANONICAL INPUTS</p><h2 id="data-title">Data Registry & Readiness</h2></div><span class="status-chip degraded">Validation active</span></div><div class="empty-state panel"><strong>Readiness detail is shown in Mission Control</strong><p>Only provenance-bound, fresh and structurally valid datasets may become research eligible.</p></div></section>
     <section class="view" data-surface="agents" aria-labelledby="agents-title"><div class="surface-heading"><div><p class="kicker">LEASED WORK</p><h2 id="agents-title">Agents, Queue & Providers</h2></div><span class="status-chip degraded">Runtime evidence required</span></div><div class="stage-grid"><article>Queue<small>Durable priorities</small></article><article>Leases<small>Bounded ownership</small></article><article>Workers<small>Explicit capabilities</small></article><article>Verification<small>Independent producer</small></article></div></section>
     <section class="view" data-surface="events" aria-labelledby="events-title"><div class="surface-heading"><div><p class="kicker">APPEND-ONLY AUDIT</p><h2 id="events-title">Events & Audit Explorer</h2></div><span class="status-chip blocked">Schema pending</span></div><div class="empty-state panel"><strong>No authoritative event stream</strong><p>Malformed, reordered, duplicated or tampered events must never replace the previous valid state.</p></div></section>
-    <section class="view" data-surface="system" aria-labelledby="system-title"><div class="surface-heading"><div><p class="kicker">SETTINGS · NOTIFICATIONS</p><h2 id="system-title">System Status</h2></div><span class="status-chip safe">Read only</span></div><div class="policy-grid"><article><span>Mutation API</span><strong>DISABLED</strong></article><article><span>Credentials</span><strong>NOT LOADED</strong></article><article><span>Production</span><strong>LOCKED</strong></article><article><span>Cache policy</span><strong>NO STORE</strong></article></div></section>
+    <section class="view" data-surface="notifications" aria-labelledby="notifications-title"><div class="surface-heading"><div><p class="kicker">ACTIONABLE OPERATIONS</p><h2 id="notifications-title">Notifications</h2></div><span class="status-chip safe">Read only</span></div><div class="empty-state panel"><strong>No owner-required notification</strong><p>Failures, stale inputs, recovery events, budget limits and owner-required actions appear here without granting mutation authority.</p></div></section>
+    <section class="view" data-surface="system" aria-labelledby="system-title"><div class="surface-heading"><div><p class="kicker">SETTINGS · SYSTEM</p><h2 id="system-title">System Status</h2></div><span class="status-chip safe">Read only</span></div><div class="policy-grid"><article><span>Mutation API</span><strong>DISABLED</strong></article><article><span>Credentials</span><strong>NOT LOADED</strong></article><article><span>Production</span><strong>LOCKED</strong></article><article><span>Cache policy</span><strong>NO STORE</strong></article></div></section>
 
     <footer>Read-only monitoring surface. No trading, credentials, billing, signing, or production mutation.</footer>
   </main>
