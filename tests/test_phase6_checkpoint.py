@@ -45,7 +45,7 @@ def test_closure_preserves_phase5_and_never_widens_authority():
         assert artifact["gate10_created"] is False
     assert phase5["phase"] == 5
     assert phase5["formal_gates_complete"] is True
-    assert checkpoint["phase5_checkpoint"] == str(PHASE5)
+    assert checkpoint["phase5_checkpoint"] == PHASE5.as_posix()
 
 
 def test_only_remaining_boundary_is_explicitly_owner_only_and_nonblocking():
@@ -66,8 +66,8 @@ def test_required_final_artifacts_exist_and_paid_smoke_is_not_completion_authori
     checkpoint = load(CHECKPOINT)
     assert PIPELINE.is_file()
     assert ADR.is_file()
-    assert checkpoint["canonical_research_pipeline"] == str(PIPELINE)
-    assert checkpoint["deepseek_budget_adr"] == str(ADR)
+    assert checkpoint["canonical_research_pipeline"] == PIPELINE.as_posix()
+    assert checkpoint["deepseek_budget_adr"] == ADR.as_posix()
     assert checkpoint["paid_provider_smoke_required"] is False
     assert checkpoint["deepseek_issue"]["hard_cap_code_integrated_before_phase6"] is True
     assert checkpoint["deepseek_issue"]["phase6_added_adr_and_offline_contract_tests"] is True
