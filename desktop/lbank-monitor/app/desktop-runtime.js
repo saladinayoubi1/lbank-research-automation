@@ -5,12 +5,23 @@ const SYMBOLS=['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT'];
 const TFS={'15':{label:'۱۵ دقیقه',ms:900000},'60':{label:'۱ ساعت',ms:3600000},'240':{label:'۴ ساعت',ms:14400000}};
 const KEY='nexus-windows-delivery-v1';
 let state=loadState(),series=[],marketState='neutral',marketMessage='Bybit public · read-only';
-function loadState(){try{return Object.assign({theme:'dark',watch:['BTCUSDT'],alerts:[]},JSON.parse(localStorage.getItem(KEY)||'{}'))}catch{return{theme:'dark',watch:['BTCUSDT'],alerts:[]}}}
+function loadState(){try{return Object.assign({theme:'dark',watch:['BTCUSDT'],alerts:[],sidebarCollapsed:false},JSON.parse(localStorage.getItem(KEY)||'{}'))}catch{return{theme:'dark',watch:['BTCUSDT'],alerts:[],sidebarCollapsed:false}}}
 function save(){localStorage.setItem(KEY,JSON.stringify(state))}
 function fmt(v,d=8){const n=Number(v);return Number.isFinite(n)?new Intl.NumberFormat('fa-IR',{maximumFractionDigits:d}).format(n):'—'}
 function price(v){const n=Number(v);return Number.isFinite(n)?fmt(n,n>=1000?2:n>=1?4:8):'—'}
 function toast(text){const el=$('#toast');el.textContent=text;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),2200)}
 function applyTheme(){document.body.classList.toggle('light',state.theme==='light');$('#theme').textContent=state.theme==='light'?'☾':'☀'}
+function applySidebar(){
+  const collapsed=!!state.sidebarCollapsed;
+  document.body.classList.toggle('sidebar-collapsed',collapsed);
+  const btn=$('#sidebarToggle');
+  if(!btn)return;
+  btn.textContent=collapsed?'▶':'◀';
+  btn.setAttribute('aria-expanded',String(!collapsed));
+  btn.setAttribute('aria-label',collapsed?'باز کردن پنل کناری':'جمع کردن پنل کناری');
+  btn.title=collapsed?'باز کردن پنل':'جمع کردن پنل';
+}
+function toggleSidebar(){state.sidebarCollapsed=!state.sidebarCollapsed;save();applySidebar()}
 function setupControls(){
   $('#symbol').innerHTML=SYMBOLS.map(x=>`<option value="${x}">${x}</option>`).join('');
   $('#timeframe').innerHTML=Object.entries(TFS).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join('');
@@ -62,13 +73,15 @@ function checkAlerts(){let changed=false;state.alerts.forEach(a=>{if(a.triggered
 function renderAlerts(){checkAlerts();$('#alertList').innerHTML=state.alerts.length?state.alerts.map((a,i)=>`<article class="alert-card"><header><b>${a.symbol}</b><span class="${a.triggered?'up':'muted'}">${a.triggered?'فعال شده':'در انتظار'}</span></header><p>${a.direction==='above'?'بالاتر از':'پایین‌تر از'} ${price(a.price)}</p><button data-del="${i}">حذف</button></article>`).join(''):'<div class="empty">هشدار قیمتی تعریف نشده است.</div>';$$('[data-del]').forEach(b=>b.onclick=()=>{state.alerts.splice(+b.dataset.del,1);save();renderAlerts()})}
 function renderAll(){renderStatus();renderSelected();renderMarkets();renderWatch();renderAlerts()}
 function bind(){
+  $('#sidebarToggle').onclick=toggleSidebar;
   $('#theme').onclick=()=>{state.theme=state.theme==='light'?'dark':'light';save();applyTheme()};
   $('#refresh').onclick=refreshAll;$('#symbol').onchange=ensureSelected;$('#timeframe').onchange=refreshAll;
   $('#toggleWatch').onclick=()=>{const s=current();if(!s)return toast('ابتدا داده بازار را دریافت کن');state.watch=state.watch.includes(s.symbol)?state.watch.filter(x=>x!==s.symbol):[...state.watch,s.symbol];save();renderSelected();renderWatch()};
   $('#addAlert').onclick=()=>{const s=current();if(!s)return toast('ابتدا داده بازار را دریافت کن');$('#alertSymbol').textContent=s.symbol;$('#alertPrice').value=s.latest.close;$('#alertDialog').showModal()};
   $('#saveAlert').onclick=e=>{e.preventDefault();const s=current(),p=Number($('#alertPrice').value);if(!s||!Number.isFinite(p)||p<=0)return;state.alerts.push({symbol:s.symbol,direction:$('#alertDirection').value,price:p,triggered:false});save();$('#alertDialog').close();renderAlerts();toast('هشدار ذخیره شد')};
   const links=$$('.sidebar nav a');links.forEach(a=>a.onclick=()=>{links.forEach(x=>x.classList.remove('active'));a.classList.add('active')});
+  document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='b'){e.preventDefault();toggleSidebar()}});
 }
-async function init(){applyTheme();setupControls();bind();renderAll();await appInfo();refreshAll()}
+async function init(){applyTheme();applySidebar();setupControls();bind();renderAll();await appInfo();refreshAll()}
 window.addEventListener('DOMContentLoaded',init);
 })();
