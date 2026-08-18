@@ -1,11 +1,10 @@
 (() => {
   'use strict';
 
-  const $ = (id) => document.getElementById(id);
-  const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const fmt = (v, digits = 2) => Number.isFinite(Number(v)) ? Number(v).toFixed(digits) : '—';
-  const stateClass = (s) => `state state-${String(s || 'UNKNOWN').toUpperCase()}`;
-  let lastMission = null;
+  const $ = id => document.getElementById(id);
+  const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fmt = (value, digits = 2) => Number.isFinite(Number(value)) ? Number(value).toFixed(digits) : '—';
+  const stateClass = state => `state state-${String(state || 'UNKNOWN').toUpperCase().replace(/[^A-Z0-9_-]/g, '_')}`;
 
   async function api(path, options = {}) {
     const response = await fetch(path, {cache:'no-store', credentials:'same-origin', ...options});
@@ -38,7 +37,9 @@
         <span id="missionSyncState" class="mission-meta">—</span>
       </div>
       <div id="missionOwnerActions"></div>
-      <div class="mission-section-label">RESOURCES / WORKERS</div>
+      <div class="mission-section-label">LOCAL SUPERVISOR / BUILD EVIDENCE</div>
+      <div id="missionSystemEvidence" class="mission-grid"></div>
+      <div class="mission-section-label" style="margin-top:14px">RESOURCES / WORKERS</div>
       <div id="missionResources" class="mission-grid"></div>
       <div class="mission-section-label" style="margin-top:14px">TASK QUEUE / ASSIGNMENTS</div>
       <div class="table-wrap"><table class="mission-table"><thead><tr><th>Task</th><th>State</th><th>Worker / transport</th><th>Lease / heartbeat</th><th>Evidence / blocker</th></tr></thead><tbody id="missionTasks"></tbody></table></div>
@@ -57,7 +58,7 @@
     leader.id = 'strategyMissionLeader';
     leader.className = 'strategy-leader';
     const firstPanel = view.querySelector('.panel');
-    if (firstPanel) view.insertBefore(leader, firstPanel);
+    if (firstPanel) view.insertBefore(leader, firstPanel); else view.appendChild(leader);
     const history = document.createElement('article');
     history.className = 'panel';
     history.innerHTML = `<header><div><span>QUALIFICATION EVIDENCE</span><h2>تاریخچه Strategyهای واقعی</h2></div></header><div class="table-wrap"><table class="mission-table"><thead><tr><th>Strategy</th><th>Status</th><th>Dataset</th><th>OOS / Walk-forward</th><th>Stress / Regime / DD</th><th>Failure / Benchmark</th></tr></thead><tbody id="strategyMissionRows"></tbody></table></div>`;
@@ -72,36 +73,44 @@
     const resources = m.resources || [];
     const leader = m.strategy_center?.leading_candidate;
     const owner = m.owner_actions || [];
+    const supervisor = m.local_supervisor || {};
+    const build = m.build_evidence || {};
     const current = active[0];
     const currentText = current ? `${esc(current.id)} · ${esc(current.title)}` : (m.control_plane?.runtime_present ? 'No active task / control plane idle' : 'Runtime state not present on this laptop');
-    const resourceText = resources.length ? resources.map(r => `${esc(r.id)}:${esc(r.state)}`).join(' · ') : 'No resource evidence';
+    const resourceText = resources.length ? resources.map(r => `${esc(r.id)}:${esc(r.state)}`).join(' · ') : 'No runtime resource evidence';
     const strategyText = leader ? `${esc(leader.request?.family)} · ${esc(leader.qualification?.status)}` : 'No qualified candidate recorded';
-    const blockerText = blocked.length ? `${esc(blocked[0].id)} · ${esc(blocked[0].status)}` : 'No non-owner blocker in current evidence';
+    const recoveryText = blocked.length ? `${esc(blocked[0].id)} · ${esc(blocked[0].status)}` : `Supervisor ${esc(supervisor.status || 'unknown')} · restart ${esc(supervisor.restart_count ?? 0)}/${esc(supervisor.restart_limit ?? 3)}`;
     host.innerHTML = `
       <div><span>NOW</span><b>${currentText}</b><small>${active.length} active · ${fmt(m.control_plane?.verified_progress_percent,1)}% verified</small></div>
       <div><span>RESOURCES</span><b>${resourceText}</b><small>${esc(m.source)}${m.stale ? ' · STALE SNAPSHOT' : ''}</small></div>
       <div><span>LEADING STRATEGY</span><b>${strategyText}</b><small>${leader ? `OOS ${fmt(leader.evidence?.oos_score,4)} · DD ${fmt(leader.evidence?.max_drawdown_pct,2)}%` : 'Requires real qualification evidence'}</small></div>
-      <div><span>BLOCKER / RECOVERY</span><b>${blockerText}</b><small>${blocked.length} blocked / triage / quarantined</small></div>
-      <div class="${owner.length ? 'owner-needed' : 'owner-clear'}"><span>OWNER ACTION</span><b>${owner.length ? `🔴 ${owner.length} owner-required` : 'No owner action required'}</b><small>${owner.length ? esc(owner[0].title || owner[0].id) : 'L4 noise is suppressed unless real'}</small></div>`;
+      <div><span>BLOCKER / RECOVERY</span><b>${recoveryText}</b><small>${blocked.length} blocked/triage · build ${esc(build.status || 'unavailable')}</small></div>
+      <div class="${owner.length ? 'owner-needed' : 'owner-clear'}"><span>OWNER ACTION</span><b>${owner.length ? `🔴 ${owner.length} owner-required` : 'No owner action required'}</b><small>${owner.length ? esc(owner[0].title || owner[0].id) : 'Only actual OWNER_REQUIRED L4 is surfaced here'}</small></div>`;
   }
 
   function renderOwner(m) {
     const host = $('missionOwnerActions'); if (!host) return;
     const rows = m.owner_actions || [];
-    if (!rows.length) {
-      host.innerHTML = `<div class="owner-action-box clear"><b>OWNER ACTION: NONE</b><div class="mission-meta">هیچ تصمیم L4 واقعی در snapshot فعلی نیازمند دخالت مالک نیست.</div></div>`;
-      return;
-    }
-    host.innerHTML = rows.map(row => `<div class="owner-action-box"><b>🔴 ${esc(row.id)} — ${esc(row.title)}</b><div class="mission-meta">${esc(row.blocked_reason || 'L4 owner approval required')} · authority L${esc(row.authority)}</div></div>`).join('');
+    host.innerHTML = rows.length
+      ? rows.map(row => `<div class="owner-action-box"><b>🔴 ${esc(row.id)} — ${esc(row.title)}</b><div class="mission-meta">${esc(row.blocked_reason || 'L4 owner approval required')} · authority L${esc(row.authority)}</div></div>`).join('')
+      : `<div class="owner-action-box clear"><b>OWNER ACTION: NONE</b><div class="mission-meta">هیچ تصمیم L4 واقعی در snapshot فعلی نیازمند دخالت مالک نیست.</div></div>`;
+  }
+
+  function renderSystemEvidence(m) {
+    const host = $('missionSystemEvidence'); if (!host) return;
+    const supervisor = m.local_supervisor || {};
+    const build = m.build_evidence || {};
+    const buildState = build.status === 'verified' && build.exact_source === true ? 'VERIFIED' : 'UNKNOWN';
+    host.innerHTML = `
+      <div class="mission-card"><h3>local-supervisor</h3><p class="${stateClass(supervisor.status)}">${esc(String(supervisor.status || 'unknown').toUpperCase())}</p><p>Restart: ${esc(supervisor.restart_count ?? 0)} / ${esc(supervisor.restart_limit ?? 3)}</p><p>${esc(supervisor.reason || 'bounded restart policy active')}</p></div>
+      <div class="mission-card"><h3>exact-source-build</h3><p class="${stateClass(buildState)}">${buildState}</p><p>SHA: ${esc((build.source_sha || '').slice(0,12) || 'unavailable')}</p><p>Run: ${esc(build.run_id || '—')} · ${esc(build.workflow || 'no build evidence')}</p></div>`;
   }
 
   function renderResources(m) {
     const host = $('missionResources'); if (!host) return;
-    const workers = m.workers || [];
-    const resources = m.resources || [];
-    const resourceCards = resources.map(r => `<div class="mission-card"><h3>${esc(r.id)}</h3><p class="${stateClass(r.state)}">${esc(r.state)}</p><p>Workers: ${esc((r.workers || []).join(', ') || '—')}</p><p>Active: ${esc((r.active_workers || []).join(', ') || 'none')}</p><p>Routed: ${esc((r.routed_tasks || []).join(', ') || 'none')}</p></div>`);
-    const workerCards = workers.map(w => `<div class="mission-card"><h3>${esc(w.id)}</h3><p class="${stateClass(w.state)}">${esc(w.state)}${w.verifier ? ' · verifier' : ''}</p><p>${esc((w.resources || []).join(' / '))}</p><p>Active: ${esc((w.active_tasks || []).join(', ') || 'none')}</p><p>Authority ≤ L${esc(w.authority_max)}</p></div>`);
-    host.innerHTML = [...resourceCards, ...workerCards].join('') || `<div class="mission-empty">No real resource/worker evidence is available.</div>`;
+    const resources = (m.resources || []).map(r => `<div class="mission-card"><h3>${esc(r.id)}</h3><p class="${stateClass(r.state)}">${esc(r.state)}</p><p>Workers: ${esc((r.workers || []).join(', ') || '—')}</p><p>Active: ${esc((r.active_workers || []).join(', ') || 'none')}</p><p>Routed: ${esc((r.routed_tasks || []).join(', ') || 'none')}</p></div>`);
+    const workers = (m.workers || []).map(w => `<div class="mission-card"><h3>${esc(w.id)}</h3><p class="${stateClass(w.state)}">${esc(w.state)}${w.verifier ? ' · verifier' : ''}</p><p>${esc((w.resources || []).join(' / ') || 'no resource')}</p><p>Active: ${esc((w.active_tasks || []).join(', ') || 'none')}</p><p>Authority ≤ L${esc(w.authority_max)}</p></div>`);
+    host.innerHTML = [...resources, ...workers].join('') || `<div class="mission-empty">No real resource/worker runtime evidence is available.</div>`;
   }
 
   function renderTasks(m) {
@@ -127,8 +136,9 @@
     const leader = center.leading_candidate;
     const host = $('strategyMissionLeader');
     if (host) {
-      if (!leader) host.innerHTML = `<span class="mission-section-label">CURRENT LEADER</span><h3>هنوز Paper Candidate واقعی ثبت نشده است</h3><p class="mission-meta">یک Research/Backtest واقعی اجرا کن؛ Strategy فقط بعد از OOS / walk-forward / stress / regime / failure-mode qualification وارد این بخش می‌شود.</p>`;
-      else host.innerHTML = `<span class="mission-section-label">CURRENT LEADER · NOT A PROFITABILITY CLAIM</span><h3>${esc(leader.request?.family)} · ${esc(leader.dataset?.instrument || leader.request?.symbol)}</h3><div class="strategy-evidence-grid"><div><span>OOS</span><b>${fmt(leader.evidence?.oos_score,4)}</b></div><div><span>WALK-FORWARD</span><b>${fmt(leader.evidence?.walk_forward_score,4)}</b></div><div><span>ROBUSTNESS</span><b>${fmt(leader.evidence?.robustness_score,4)}</b></div><div><span>MAX DRAWDOWN</span><b>${fmt(leader.evidence?.max_drawdown_pct,2)}%</b></div><div><span>COST STRESS LOSS</span><b>${fmt(leader.evidence?.cost_stress_loss_pct,2)}%</b></div><div><span>REGIME PASS</span><b>${fmt(leader.evidence?.regime_pass_ratio,3)}</b></div><div><span>FAILURE SEVERITY</span><b>${fmt(leader.evidence?.failure_mode_severity,3)}</b></div><div><span>BENCHMARK</span><b>${fmt(leader.evidence?.benchmark_score,4)}</b></div></div><p class="mission-meta">Dataset ${esc(leader.dataset?.binding_sha256 || '—')} · fees/slippage ${esc(JSON.stringify(leader.cost_model || {}))}</p>`;
+      host.innerHTML = leader
+        ? `<span class="mission-section-label">CURRENT LEADER · NOT A PROFITABILITY CLAIM</span><h3>${esc(leader.request?.family)} · ${esc(leader.dataset?.instrument || leader.request?.symbol)}</h3><div class="strategy-evidence-grid"><div><span>OOS</span><b>${fmt(leader.evidence?.oos_score,4)}</b></div><div><span>WALK-FORWARD</span><b>${fmt(leader.evidence?.walk_forward_score,4)}</b></div><div><span>ROBUSTNESS</span><b>${fmt(leader.evidence?.robustness_score,4)}</b></div><div><span>MAX DRAWDOWN</span><b>${fmt(leader.evidence?.max_drawdown_pct,2)}%</b></div><div><span>COST STRESS LOSS</span><b>${fmt(leader.evidence?.cost_stress_loss_pct,2)}%</b></div><div><span>REGIME PASS</span><b>${fmt(leader.evidence?.regime_pass_ratio,3)}</b></div><div><span>FAILURE SEVERITY</span><b>${fmt(leader.evidence?.failure_mode_severity,3)}</b></div><div><span>BENCHMARK</span><b>${fmt(leader.evidence?.benchmark_score,4)}</b></div></div><p class="mission-meta">Dataset ${esc(leader.dataset?.binding_sha256 || '—')} · fees/slippage ${esc(JSON.stringify(leader.cost_model || {}))}</p>`
+        : `<span class="mission-section-label">CURRENT LEADER</span><h3>هنوز Paper Candidate واقعی ثبت نشده است</h3><p class="mission-meta">Strategy فقط بعد از OOS / walk-forward / stress / regime / failure-mode qualification وارد این بخش می‌شود.</p>`;
     }
     const rowsHost = $('strategyMissionRows'); if (!rowsHost) return;
     rowsHost.innerHTML = (center.runs || []).slice().reverse().map(r => `<tr><td><b>${esc(r.request?.family)}</b><div class="mission-meta">${esc(r.request?.symbol)} · ${esc(r.request?.timeframe)}</div></td><td><b class="${stateClass(r.qualification?.status === 'paper_candidate' ? 'DONE' : 'BLOCKED')}">${esc(r.qualification?.status || 'unknown')}</b><div class="mission-meta">${esc((r.qualification?.kill_reasons || []).join(', ') || 'accepted path')}</div></td><td>${esc(r.dataset?.source || '—')}<div class="mission-meta">${esc((r.dataset?.binding_sha256 || '').slice(0,18))}…</div></td><td>OOS ${fmt(r.evidence?.oos_score,4)}<br>WF ${fmt(r.evidence?.walk_forward_score,4)}</td><td>Stress ${fmt(r.evidence?.cost_stress_loss_pct,2)}%<br>Regime ${fmt(r.evidence?.regime_pass_ratio,3)} · DD ${fmt(r.evidence?.max_drawdown_pct,2)}%</td><td>Failure ${fmt(r.evidence?.failure_mode_severity,3)}<br>Benchmark ${fmt(r.evidence?.benchmark_score,4)}</td></tr>`).join('') || `<tr><td colspan="6">No durable strategy evidence yet.</td></tr>`;
@@ -143,11 +153,13 @@
   }
 
   function renderMission(m) {
-    lastMission = m;
     if ($('buildLabel')) $('buildLabel').textContent = '5.0.0';
     const badge = $('missionBadge');
-    if (badge) { badge.textContent = m.control_plane?.runtime_present ? 'CONTROL PLANE' : (m.source === 'imported_snapshot' ? 'IMPORTED STATE' : 'NO RUNTIME'); badge.className = `badge ${m.stale ? 'warn' : (m.control_plane?.runtime_present ? 'good' : 'neutral')}`; }
-    renderNow(m); renderOwner(m); renderResources(m); renderTasks(m); renderEvents(m); renderStrategy(m); renderSync(m);
+    if (badge) {
+      badge.textContent = m.control_plane?.runtime_present ? 'CONTROL PLANE' : (m.source === 'imported_snapshot' ? 'IMPORTED STATE' : 'NO RUNTIME');
+      badge.className = `badge ${m.stale ? 'warn' : (m.control_plane?.runtime_present ? 'good' : 'neutral')}`;
+    }
+    renderNow(m); renderOwner(m); renderSystemEvidence(m); renderResources(m); renderTasks(m); renderEvents(m); renderStrategy(m); renderSync(m);
   }
 
   async function refreshMission() {
