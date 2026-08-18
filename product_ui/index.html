@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>NEXUS Personal Pro</title>
+  <link rel="stylesheet" href="/ui/product.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar" class="sidebar">
+    <div class="brand"><div class="brand-mark">N</div><div class="brand-copy"><b>NEXUS</b><span>PERSONAL PRO</span></div></div>
+    <div class="authority"><i></i><div><b>RESEARCH / PAPER</b><span>LIVE AUTHORITY LOCKED</span></div></div>
+    <nav id="nav">
+      <button data-view="overview" class="active"><span>01</span><b>مرکز فرمان</b><small>Mission</small></button>
+      <button data-view="paper"><span>02</span><b>ترید دمو</b><small>Paper</small></button>
+      <button data-view="ai"><span>03</span><b>اتاق هوش مصنوعی</b><small>AI Room</small></button>
+      <button data-view="strategies"><span>04</span><b>استراتژی‌ها</b><small>Strategy Lab</small></button>
+      <button data-view="research"><span>05</span><b>آزمایشگاه پژوهش</b><small>Research</small></button>
+      <button data-view="risk"><span>06</span><b>تصمیم و ریسک</b><small>Risk</small></button>
+      <button data-view="agents"><span>07</span><b>عامل‌ها و صف</b><small>Agents</small></button>
+      <button data-view="audit"><span>08</span><b>رویداد و بازپخش</b><small>Audit</small></button>
+      <button data-view="live"><span>09</span><b>ترید اصلی</b><small>Live · Locked</small></button>
+    </nav>
+    <div class="side-foot"><span>CANONICAL PRODUCT</span><b id="buildLabel">4.0 integration</b></div>
+  </aside>
+
+  <section class="workspace">
+    <header class="topbar">
+      <button id="sidebarToggle" class="icon-btn" aria-label="جمع کردن منو">☰</button>
+      <div class="page-title"><span id="pageCode">NEXUS / MISSION CONTROL</span><h1 id="pageTitle">مرکز فرمان NEXUS</h1></div>
+      <div class="top-status"><span id="gatewayState" class="status neutral"><i></i><b>در حال اتصال</b></span><button id="reload" class="icon-btn" title="بروزرسانی">↻</button></div>
+    </header>
+
+    <main>
+      <section id="view-overview" class="view active">
+        <div class="hero-grid">
+          <article class="hero-card"><span>PRODUCT STATE</span><b id="productState">در حال خواندن…</b><small>وضعیت واقعی backend و runtime</small></article>
+          <article class="hero-card"><span>PAPER ENGINE</span><b id="paperState">—</b><small>Deterministic execution only</small></article>
+          <article class="hero-card"><span>RISK AUTHORITY</span><b>DETERMINISTIC</b><small>AI cannot bypass final risk</small></article>
+          <article class="hero-card danger"><span>LIVE / MAIN</span><b id="liveState">LOCKED</b><small>Owner-controlled future stage</small></article>
+        </div>
+        <div class="two-col">
+          <article class="panel">
+            <header><div><span>MISSION CONTROL</span><h2>عملیات و صف مأموریت‌ها</h2></div><strong id="missionBadge" class="badge neutral">UNKNOWN</strong></header>
+            <div id="missionSummary" class="metric-grid"></div>
+          </article>
+          <article class="panel">
+            <header><div><span>PIPELINE</span><h2>زنجیره تصمیم‌گیری NEXUS</h2></div></header>
+            <div class="pipeline">
+              <div>Data<b>Market Core</b></div><em>→</em><div>Research<b>Research Lab</b></div><em>→</em><div>Strategy<b>Strategy Lab</b></div><em>→</em><div>Regime<b>Detector</b></div><em>→</em><div>Decision<b>Committee</b></div><em>→</em><div>Risk<b>Deterministic</b></div><em>→</em><div>Paper<b>Execution</b></div>
+            </div>
+          </article>
+        </div>
+        <article class="panel">
+          <header><div><span>CAPABILITY MAP</span><h2>قابلیت‌های متصل به محصول</h2></div></header>
+          <div id="capabilityMap" class="capability-grid"></div>
+        </article>
+      </section>
+
+      <section id="view-paper" class="view">
+        <div class="section-head"><div><span>PAPER / DEMO EXECUTION</span><h2>حساب دمو و اجرای شبیه‌سازی‌شده</h2></div><strong class="badge good">PAPER ONLY</strong></div>
+        <div class="paper-layout">
+          <article class="panel account-panel">
+            <header><div><span>DEMO ACCOUNT</span><h2>پرتفوی</h2></div><button id="paperRefresh" class="small-btn">بروزرسانی</button></header>
+            <div id="paperMetrics" class="metric-grid"></div>
+            <div class="subhead">پوزیشن‌های باز</div>
+            <div id="positions" class="table-wrap"></div>
+          </article>
+          <article class="panel ticket-panel">
+            <header><div><span>ORDER TICKET</span><h2>فرمان Paper</h2></div><strong class="badge good">RISK GATED</strong></header>
+            <form id="paperOrder" class="order-form">
+              <label>عملیات<select name="operation"><option value="open">باز کردن</option><option value="close">بستن</option><option value="reduce">کاهش</option><option value="reverse">معکوس</option></select></label>
+              <label>نماد<select name="symbol"><option>BTCUSDT</option><option>ETHUSDT</option><option>SOLUSDT</option><option>BNBUSDT</option><option>XRPUSDT</option></select></label>
+              <label>تایم‌فریم<select name="timeframe"><option value="minute15">15m</option><option value="hour1">1h</option><option value="hour4">4h</option></select></label>
+              <label>جهت<select name="side"><option value="long">Long</option><option value="short">Short</option></select></label>
+              <label>مقدار<input name="quantity" value="0.001" inputmode="decimal"></label>
+              <label>قیمت مرجع<input name="reference_price" value="60000" inputmode="decimal"></label>
+              <label>حد ضرر<input name="stop_price" value="59000" inputmode="decimal"></label>
+              <label>هدف<input name="target_price" value="62000" inputmode="decimal"></label>
+              <button class="primary" type="submit">ارسال به Risk → Paper Execution</button>
+            </form>
+            <div id="orderResult" class="result-box muted">هیچ فرمانی ارسال نشده است.</div>
+          </article>
+        </div>
+        <article class="panel"><header><div><span>EVENT JOURNAL</span><h2>آخرین رویدادهای Paper</h2></div></header><div id="paperEvents" class="event-list"></div></article>
+      </section>
+
+      <section id="view-ai" class="view">
+        <div class="section-head"><div><span>MULTI-AI CONTROL ROOM</span><h2>اتاق هوش مصنوعی NEXUS</h2></div><strong class="badge warn">POLICY GATED</strong></div>
+        <div class="ai-layout">
+          <article class="panel ai-chat">
+            <div id="aiTranscript" class="transcript"><div class="message system"><b>NEXUS</b><p>اتاق AI به policy و Project Memory متصل است. درخواست مالی/Live بدون اختیار مالک اجرا نمی‌شود.</p></div></div>
+            <form id="aiForm" class="composer"><textarea id="aiMessage" placeholder="مثلاً: وضعیت پروژه و Paper Trading را بررسی کن"></textarea><button class="primary">ارسال</button></form>
+          </article>
+          <article class="panel">
+            <header><div><span>AUTHORITY</span><h2>مرزهای اتاق AI</h2></div></header>
+            <div class="rule-list"><div><b>L0</b><span>مشاهده و وضعیت</span></div><div><b>L1</b><span>پیشنهاد و برنامه</span></div><div><b>L2</b><span>Paper proposal؛ Risk لازم</span></div><div><b>L3</b><span>گردش‌کار محدود و برگشت‌پذیر</span></div><div class="danger-line"><b>L4</b><span>Owner required / Live / Production</span></div></div>
+          </article>
+        </div>
+      </section>
+
+      <section id="view-strategies" class="view">
+        <div class="section-head"><div><span>STRATEGY LAB</span><h2>Strategy Factory و مسیر Qualification</h2></div></div>
+        <article class="panel"><div id="strategyFamilies" class="strategy-grid"></div></article>
+        <article class="panel"><header><div><span>PROMOTION PATH</span><h2>مسیر پذیرش استراتژی</h2></div></header><div id="qualificationPath" class="stage-track"></div></article>
+      </section>
+
+      <section id="view-research" class="view">
+        <div class="section-head"><div><span>RESEARCH LAB</span><h2>پژوهش، شواهد و آزمایش‌ها</h2></div></div>
+        <div class="two-col">
+          <article class="panel"><header><div><span>EVIDENCE RULES</span><h2>قواعد پذیرش</h2></div></header><div class="check-list"><div>✓ فرضیه صریح و preregistered</div><div>✓ هزینه، fee و slippage واقعی</div><div>✓ Walk-forward و Out-of-sample</div><div>✓ Regime و sensitivity</div><div>✓ Failure modes و drawdown</div><div>✓ Lookahead / snooping controls</div></div></article>
+          <article class="panel"><header><div><span>RESEARCH INTEGRATION</span><h2>منابع پژوهشی</h2></div></header><div id="researchStatus" class="empty-state">در حال بررسی gateway پژوهش…</div></article>
+        </div>
+      </section>
+
+      <section id="view-risk" class="view">
+        <div class="section-head"><div><span>DECISION / RISK</span><h2>کنترل تصمیم و ریسک قطعی</h2></div><strong class="badge good">FINAL AUTHORITY</strong></div>
+        <div class="risk-grid"><article class="panel"><span>POSITION LIMIT</span><b>10% equity</b><small>Paper product policy</small></article><article class="panel"><span>AGGREGATE LIMIT</span><b>30% equity</b><small>Paper product policy</small></article><article class="panel"><span>DAILY LOSS</span><b>5%</b><small>Fail closed</small></article><article class="panel"><span>DRAWDOWN</span><b>10%</b><small>Fail closed</small></article></div>
+        <article class="panel"><header><div><span>LAST DECISION</span><h2>آخرین نتیجه Risk / Execution</h2></div></header><pre id="lastRisk" class="json-view">هنوز تصمیمی ثبت نشده است.</pre></article>
+      </section>
+
+      <section id="view-agents" class="view">
+        <div class="section-head"><div><span>AGENT MANAGER</span><h2>عامل‌ها، Providerها و صف کار</h2></div></div>
+        <article class="panel"><div id="agentState" class="empty-state">در حال خواندن Mission Control…</div></article>
+      </section>
+
+      <section id="view-audit" class="view">
+        <div class="section-head"><div><span>AUDIT / REPLAY</span><h2>رویدادها، Digest و بازپخش</h2></div></div>
+        <article class="panel"><header><div><span>PAPER EVENT CHAIN</span><h2>زنجیره tamper-evident</h2></div><strong id="auditDigest" class="mono">—</strong></header><div id="auditEvents" class="event-list"></div></article>
+      </section>
+
+      <section id="view-live" class="view">
+        <div class="live-lock">
+          <div class="lock-icon">⌁</div><span>LIVE / MAIN TRADING</span><h2>قفل‌شده — نیازمند مرحله مالکانه مستقل</h2><p>این قسمت عمداً وجود دارد تا معماری محصول کامل باشد، اما در قرارداد فعلی NEXUS هیچ API Key خصوصی، سفارش واقعی، برداشت، production promotion یا اختیار مالی فعال نیست.</p>
+          <div id="liveDetails" class="lock-grid"></div>
+          <strong>OWNER-CONTROLLED FUTURE STAGE</strong>
+        </div>
+      </section>
+    </main>
+  </section>
+</div>
+<div id="toast" role="status"></div>
+<script src="/ui/product.js"></script>
+</body>
+</html>

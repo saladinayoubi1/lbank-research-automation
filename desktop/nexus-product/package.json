@@ -1,0 +1,38 @@
+{
+  "name": "nexus-personal-pro-product",
+  "version": "4.0.0",
+  "description": "NEXUS Personal Pro integrated research and paper-trading workspace",
+  "main": "main.js",
+  "author": "saladinayoubi1",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist:win": "electron-builder --win nsis portable"
+  },
+  "devDependencies": {
+    "electron": "34.3.3",
+    "electron-builder": "25.1.8"
+  },
+  "build": {
+    "appId": "com.saladinayoubi.nexuspersonal.product",
+    "productName": "NEXUS Personal Pro",
+    "asar": true,
+    "directories": {"output": "dist"},
+    "files": ["main.js", "package.json"],
+    "extraResources": [
+      {"from":"sidecar/nexus-product-server.exe","to":"nexus-product-server.exe"}
+    ],
+    "win": {"target": ["nsis", "portable"]},
+    "nsis": {
+      "artifactName": "NEXUS_Personal_Pro_Setup_${version}_${arch}.${ext}",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "NEXUS Personal Pro",
+      "installerLanguages": ["en_US"]
+    },
+    "portable": {"artifactName": "NEXUS_Personal_Pro_Portable_${version}_${arch}.${ext}"}
+  }
+}
