@@ -48,12 +48,40 @@ def _events(path: Path) -> list[dict[str, Any]]:
     return rows
 
 
+def _ci_event(ci: dict[str, Any] | None) -> dict[str, Any] | None:
+    if ci is None:
+        return None
+    if ci.get("schema_version") != 3 or not isinstance(ci.get("workflows"), dict) or not isinstance(ci.get("summary"), dict):
+        raise SystemExit("CI coordinator status is not snapshot eligible")
+    workflows: dict[str, Any] = {}
+    for name, raw in ci["workflows"].items():
+        if not isinstance(name, str) or not isinstance(raw, dict):
+            continue
+        workflows[name] = {
+            key: raw.get(key) for key in (
+                "state", "run_id", "run_attempt", "conclusion", "status",
+                "head_sha", "updated_at", "url", "auto_retry",
+            )
+        }
+    return {
+        "at": ci.get("generated_at"),
+        "kind": "ci_snapshot",
+        "payload": {
+            "repo": ci.get("repo"),
+            "summary": dict(ci.get("summary") or {}),
+            "local_node": ci.get("local_node"),
+            "workflows": workflows,
+        },
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Export a portable, paper-only NEXUS Agent Manager snapshot")
     parser.add_argument("--config", type=Path, default=Path("config/nexus-agent-manager.json"))
     parser.add_argument("--runtime", type=Path, default=Path("data/agent_coordination/agent_manager_runtime.json"))
     parser.add_argument("--summary", type=Path, default=Path("data/agent_coordination/manager_state.json"))
     parser.add_argument("--events", type=Path, default=Path("data/agent_coordination/manager_events.jsonl"))
+    parser.add_argument("--ci", type=Path, default=Path("data/agent_coordination/status.json"))
     parser.add_argument("--output", type=Path, default=Path("data/agent_coordination/nexus-mission-control-snapshot.json"))
     args = parser.parse_args()
 
@@ -64,6 +92,11 @@ def main() -> int:
     if runtime is not None and runtime.get("schema_version") != 1:
         raise SystemExit("agent-manager runtime schema mismatch")
     summary = _read_object(args.summary, required=False)
+    events = _events(args.events)
+    ci_event = _ci_event(_read_object(args.ci, required=False))
+    if ci_event is not None:
+        events.append(ci_event)
+        events = events[-MAX_EVENTS:]
     payload = {
         "contract_version": SNAPSHOT_CONTRACT,
         "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -71,7 +104,7 @@ def main() -> int:
         "config": config,
         "runtime": runtime,
         "summary": summary,
-        "events": _events(args.events),
+        "events": events,
         "paper_only": True,
         "live_trading_authority": False,
     }
