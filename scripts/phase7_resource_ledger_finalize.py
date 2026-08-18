@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 import agent_manager as am
+import phase7_offline_network_proof as offline_proof
 from scripts import phase7_proof_complete as secure_completion
 from scripts import phase7_proof_prepare as prepare
 
@@ -72,6 +73,11 @@ def _assert_prepared_schema(row: Mapping[str, Any]) -> None:
 def _already_normalized(run: Mapping[str, Any]) -> bool:
     if run.get("hardware_proof_complete") is not True:
         return False
+    network = run.get("offline_network_proof")
+    if not isinstance(network, Mapping) or network.get("reboot_after_prepare") is not True:
+        return False
+    if network.get("internet_unavailable_pre") is not True or network.get("internet_unavailable_post") is not True:
+        return False
     classes = run.get("resource_classification")
     if not isinstance(classes, Mapping) or classes.get("Laptop", {}).get("classification") != "EXECUTED":
         return False
@@ -83,14 +89,49 @@ def _already_normalized(run: Mapping[str, Any]) -> bool:
         and len(verifier) == 1
         and producer[0].get("classification") == "EXECUTED"
         and verifier[0].get("classification") == "EXECUTED"
+        and producer[0].get("offline_network_proof_sha256") == network.get("proof_sha256")
         and not any(row.get("role") == "producer_result" for row in rows)
     )
+
+
+def _network_summary(
+    run: Mapping[str, Any],
+    returned_result: Path,
+    offline_network_proof: Path,
+) -> dict[str, Any]:
+    source_sha = run.get("source_sha")
+    if not isinstance(source_sha, str) or len(source_sha) != 40:
+        raise Phase7LedgerFinalizeError("prepared source SHA is invalid")
+    try:
+        evidence = offline_proof.validate_offline_network_proof(
+            Path(offline_network_proof),
+            Path(returned_result),
+            expected_source_sha=source_sha,
+        )
+    except offline_proof.OfflineNetworkProofError as exc:
+        raise Phase7LedgerFinalizeError(str(exc)) from exc
+    return {
+        "schema_version": evidence["schema_version"],
+        "session_id": evidence["session_id"],
+        "source_sha": evidence["source_sha"],
+        "prepared_at": evidence["prepared_at"],
+        "boot_time_utc": evidence["boot_time_utc"],
+        "reboot_after_prepare": evidence["reboot_after_prepare"],
+        "execution_started_at": evidence["execution_started_at"],
+        "execution_finished_at": evidence["execution_finished_at"],
+        "observation_method": evidence["observation_method"],
+        "internet_unavailable_pre": evidence["internet_unavailable_pre"],
+        "internet_unavailable_post": evidence["internet_unavailable_post"],
+        "result_sha256": evidence["result_sha256"],
+        "proof_sha256": evidence["proof_sha256"],
+    }
 
 
 def _normalize(
     prepared_run: Mapping[str, Any],
     completed_run: Mapping[str, Any],
     runtime: Mapping[str, Any],
+    network: Mapping[str, Any],
 ) -> dict[str, Any]:
     if completed_run.get("hardware_proof_complete") is not True:
         raise Phase7LedgerFinalizeError("hardware proof is not complete")
@@ -125,6 +166,13 @@ def _normalize(
     laptop["timestamps"]["result_at"] = task.get("result_received_at")
     laptop["latency_ms"] = _seconds_between(laptop["timestamps"].get("dispatch_at"), task.get("result_received_at"))
     laptop["result_bundle_sha256"] = completed_run.get("courier", {}).get("result_bundle_sha256")
+    laptop["offline_network_proof_sha256"] = network.get("proof_sha256")
+    laptop["offline_execution"] = {
+        "reboot_after_prepare": True,
+        "internet_unavailable_pre": True,
+        "internet_unavailable_post": True,
+        "observation_method": network.get("observation_method"),
+    }
 
     verifier_lease = legacy_verifier.get("lease_id")
     verifier_dispatch = legacy_verifier.get("dispatch_id")
@@ -148,6 +196,11 @@ def _normalize(
         "dispatch_id": verifier_dispatch,
         "transport": verifier_transport,
     }
+    verifier_evidence = dict(verification_evidence)
+    verifier_evidence["offline_network_proof_sha256"] = network.get("proof_sha256")
+    verifier_evidence["offline_reboot_verified"] = True
+    verifier_evidence["offline_network_unavailable_pre"] = True
+    verifier_evidence["offline_network_unavailable_post"] = True
     verifier_row = prepare._ledger_row(
         config=dict(runtime),
         task=verifier_task,
@@ -157,18 +210,20 @@ def _normalize(
         routing=routing,
         classification="EXECUTED",
         outcome="success",
-        evidence=dict(verification_evidence),
+        evidence=verifier_evidence,
         latency_ms=_seconds_between(task.get("dispatched_at"), task.get("verified_at")),
         result_at=task.get("verified_at"),
         verifier_id=EXPECTED_VERIFIER,
         verifier_result="success",
     )
+    verifier_row["offline_network_proof_sha256"] = network.get("proof_sha256")
 
     other_rows = [row for row in completed_ledger if row.get("task_id") != TASK_ID]
     ledger = [*other_rows, laptop, verifier_row]
     result = dict(completed_run)
     result["resource_ledger"] = ledger
     result["resource_classification"] = prepare.resource_classification(ledger)
+    result["offline_network_proof"] = dict(network)
     if result["resource_classification"]["Laptop"]["classification"] != "EXECUTED":
         raise Phase7LedgerFinalizeError("Laptop resource did not classify as EXECUTED")
     result.pop("run_digest", None)
@@ -176,13 +231,23 @@ def _normalize(
     return result
 
 
-def finalize(artifact_dir: Path, returned_result: Path) -> dict[str, Any]:
+def finalize(
+    artifact_dir: Path,
+    returned_result: Path,
+    offline_network_proof: Path,
+) -> dict[str, Any]:
     artifact_dir = Path(artifact_dir)
+    returned_result = Path(returned_result)
+    offline_network_proof = Path(offline_network_proof)
     run_path = artifact_dir / "phase7-proof-mission-run.json"
     runtime_path = artifact_dir / "agent-manager-runtime.json"
     current_run = _read(run_path)
+    network = _network_summary(current_run, returned_result, offline_network_proof)
 
     if _already_normalized(current_run):
+        stored = current_run.get("offline_network_proof")
+        if not isinstance(stored, Mapping) or stored.get("proof_sha256") != network.get("proof_sha256"):
+            raise Phase7LedgerFinalizeError("offline network proof changed after completion")
         return current_run
 
     prepared_snapshot_path = artifact_dir / "phase7-proof-prepared-run.json"
@@ -195,10 +260,12 @@ def finalize(artifact_dir: Path, returned_result: Path) -> dict[str, Any]:
         prepared = current_run
         if not prepared_snapshot_path.exists():
             secure_completion._write_json(prepared_snapshot_path, prepared)
-        completed = secure_completion.complete(artifact_dir, Path(returned_result))
+        # Offline proof is validated above before secure completion can advance
+        # the canonical hardware state.
+        completed = secure_completion.complete(artifact_dir, returned_result)
 
     runtime = _read(runtime_path)
-    normalized = _normalize(prepared, completed, runtime)
+    normalized = _normalize(prepared, completed, runtime, network)
     secure_completion._write_json(run_path, normalized)
     return normalized
 
@@ -207,8 +274,13 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Securely complete and normalize the Phase 7 laptop resource ledger")
     parser.add_argument("--artifact-dir", required=True)
     parser.add_argument("--returned-result", required=True)
+    parser.add_argument("--offline-network-proof", required=True)
     args = parser.parse_args()
-    result = finalize(Path(args.artifact_dir), Path(args.returned_result))
+    result = finalize(
+        Path(args.artifact_dir),
+        Path(args.returned_result),
+        Path(args.offline_network_proof),
+    )
     print(json.dumps(result, ensure_ascii=False, sort_keys=True))
     return 0
 

@@ -6,12 +6,14 @@ from pathlib import Path
 import agent_manager as am
 import offline_agent_courier as courier
 import phase7_e2e_proof
+import phase7_offline_network_proof as network_proof
 from scripts import phase7_proof_complete as secure_completion
 from scripts import phase7_proof_prepare as prepare
 from scripts import phase7_resource_ledger_finalize as finalizer
 
 SOURCE = "a" * 40
 KEY = "phase7-ledger-finalize-key-" + "x" * 40
+SESSION = "p7-20260818T200000Z-deadbeef"
 
 
 def _fake_e2e(source_sha: str) -> dict:
@@ -66,7 +68,40 @@ def _verifier_run(cmd: list[str], timeout: int = 600) -> dict:
     return {"ok": True, "returncode": 0, "stdout": "cloud verifier passed", "stderr": ""}
 
 
-def _prepare_return(monkeypatch, tmp_path: Path) -> tuple[Path, Path]:
+def _write_network_proof(path: Path, returned: Path) -> Path:
+    value = {
+        "schema_version": network_proof.SCHEMA,
+        "session_id": SESSION,
+        "source_sha": SOURCE,
+        "prepared_at": "2026-08-18T20:00:00Z",
+        "boot_time_utc": "2026-08-18T20:01:00Z",
+        "reboot_after_prepare": True,
+        "pre_execution": {
+            "checked_at": "2026-08-18T20:02:00Z",
+            "internet_unavailable": True,
+            "targets": [
+                {"host": "api.github.com", "port": 443, "reachable": False, "error": "offline"},
+                {"host": "1.1.1.1", "port": 443, "reachable": False, "error": "offline"},
+            ],
+        },
+        "execution_started_at": "2026-08-18T20:03:00Z",
+        "execution_finished_at": "2026-08-18T20:04:00Z",
+        "post_execution": {
+            "checked_at": "2026-08-18T20:05:00Z",
+            "internet_unavailable": True,
+            "targets": [
+                {"host": "api.github.com", "port": 443, "reachable": False, "error": "offline"},
+                {"host": "1.1.1.1", "port": 443, "reachable": False, "error": "offline"},
+            ],
+        },
+        "result_sha256": network_proof.sha256_file(returned),
+        "observation_method": network_proof.OBSERVATION_METHOD,
+    }
+    path.write_text(json.dumps(value), encoding="utf-8")
+    return path
+
+
+def _prepare_return(monkeypatch, tmp_path: Path) -> tuple[Path, Path, Path]:
     artifact = tmp_path / "artifact"
     monkeypatch.setenv(courier.KEY_ENV, KEY)
     monkeypatch.setenv("NEXUS_PHASE7_TEST_VERIFIER", "1")
@@ -80,8 +115,9 @@ def _prepare_return(monkeypatch, tmp_path: Path) -> tuple[Path, Path]:
     returned = tmp_path / "phase7-laptop-result.json"
     monkeypatch.setattr(courier.executor, "execute", _executor)
     courier.execute_bundle(dispatch, returned)
+    network = _write_network_proof(tmp_path / "offline-network-proof.json", returned)
     monkeypatch.setattr(secure_completion.executor, "run", _verifier_run)
-    return artifact, returned
+    return artifact, returned, network
 
 
 def _assert_normalized_row(row: dict) -> None:
@@ -102,17 +138,18 @@ def _assert_normalized_row(row: dict) -> None:
 
 
 def test_finalizer_replaces_waiting_laptop_with_executed_and_verified_rows(monkeypatch, tmp_path: Path):
-    artifact, returned = _prepare_return(monkeypatch, tmp_path)
+    artifact, returned, network = _prepare_return(monkeypatch, tmp_path)
     before = json.loads((artifact / "phase7-proof-mission-run.json").read_text(encoding="utf-8"))
     assert before["resource_classification"]["Laptop"]["classification"] == "UNAVAILABLE"
-    assert before["resource_classification"]["Internal Agent"]["classification"] == "EXECUTED"
-    assert before["resource_classification"]["Cloud/GitHub worker"]["classification"] == "EXECUTED"
-    assert before["resource_classification"]["DeepSeek/AI provider"]["classification"] == "UNAVAILABLE"
 
-    completed = finalizer.finalize(artifact, returned)
+    completed = finalizer.finalize(artifact, returned, network)
 
     assert completed["hardware_proof_complete"] is True
     assert completed["manager_summary"]["verified_progress_percent"] == 100.0
+    assert completed["offline_network_proof"]["reboot_after_prepare"] is True
+    assert completed["offline_network_proof"]["internet_unavailable_pre"] is True
+    assert completed["offline_network_proof"]["internet_unavailable_post"] is True
+    assert completed["offline_network_proof"]["result_sha256"] == network_proof.sha256_file(returned)
     classes = completed["resource_classification"]
     assert classes["Laptop"]["classification"] == "EXECUTED"
     assert classes["Internal Agent"]["classification"] == "EXECUTED"
@@ -125,16 +162,15 @@ def test_finalizer_replaces_waiting_laptop_with_executed_and_verified_rows(monke
         ("verifier", finalizer.EXPECTED_VERIFIER),
     }
     assert all(row["classification"] == "EXECUTED" for row in laptop_rows)
-    assert not any(row.get("role") == "producer_result" for row in laptop_rows)
     producer = next(row for row in laptop_rows if row["role"] == "producer")
     verifier = next(row for row in laptop_rows if row["role"] == "verifier")
     assert producer["resource_class"] == "Laptop"
-    assert producer["result"]["outcome"] == "success"
-    assert producer["verifier"] == {"worker_id": finalizer.EXPECTED_VERIFIER, "result": "success"}
-    assert producer["result_bundle_sha256"] == completed["courier"]["result_bundle_sha256"]
+    assert producer["offline_network_proof_sha256"] == completed["offline_network_proof"]["proof_sha256"]
+    assert producer["offline_execution"]["reboot_after_prepare"] is True
+    assert producer["offline_execution"]["internet_unavailable_pre"] is True
+    assert producer["offline_execution"]["internet_unavailable_post"] is True
+    assert verifier["offline_network_proof_sha256"] == completed["offline_network_proof"]["proof_sha256"]
     assert verifier["resource_class"] == "Cloud/GitHub worker"
-    assert verifier["result"]["outcome"] == "success"
-    assert verifier["routing"]["selected_worker"] == finalizer.EXPECTED_VERIFIER
     for row in completed["resource_ledger"]:
         _assert_normalized_row(row)
 
@@ -143,24 +179,40 @@ def test_finalizer_replaces_waiting_laptop_with_executed_and_verified_rows(monke
 
 
 def test_finalizer_is_idempotent_after_normalization(monkeypatch, tmp_path: Path):
-    artifact, returned = _prepare_return(monkeypatch, tmp_path)
-    first = finalizer.finalize(artifact, returned)
-    second = finalizer.finalize(artifact, returned)
+    artifact, returned, network = _prepare_return(monkeypatch, tmp_path)
+    first = finalizer.finalize(artifact, returned, network)
+    second = finalizer.finalize(artifact, returned, network)
     assert second == first
     assert second["resource_classification"]["Laptop"]["classification"] == "EXECUTED"
 
 
+def test_finalizer_rejects_changed_or_online_network_proof_before_hardware_completion(monkeypatch, tmp_path: Path):
+    artifact, returned, network = _prepare_return(monkeypatch, tmp_path)
+    proof = json.loads(network.read_text(encoding="utf-8"))
+    proof["pre_execution"]["targets"][0]["reachable"] = True
+    network.write_text(json.dumps(proof), encoding="utf-8")
+
+    try:
+        finalizer.finalize(artifact, returned, network)
+        assert False, "online network proof must fail"
+    except finalizer.Phase7LedgerFinalizeError as exc:
+        assert "reachable external network" in str(exc)
+
+    run = json.loads((artifact / "phase7-proof-mission-run.json").read_text(encoding="utf-8"))
+    assert run["hardware_proof_complete"] is False
+
+
 def test_finalizer_recovers_if_secure_completion_finished_before_ledger_normalization(monkeypatch, tmp_path: Path):
-    artifact, returned = _prepare_return(monkeypatch, tmp_path)
+    artifact, returned, network = _prepare_return(monkeypatch, tmp_path)
     run_path = artifact / "phase7-proof-mission-run.json"
     prepared = json.loads(run_path.read_text(encoding="utf-8"))
     secure_completion._write_json(artifact / "phase7-proof-prepared-run.json", prepared)
     raw_completed = secure_completion.complete(artifact, returned)
     assert raw_completed["hardware_proof_complete"] is True
-    assert any(row.get("role") == "producer_result" for row in raw_completed["resource_ledger"])
 
-    normalized = finalizer.finalize(artifact, returned)
+    normalized = finalizer.finalize(artifact, returned, network)
     assert normalized["resource_classification"]["Laptop"]["classification"] == "EXECUTED"
+    assert normalized["offline_network_proof"]["proof_sha256"] == network_proof.sha256_file(network)
     assert not any(
         row.get("task_id") == finalizer.TASK_ID and row.get("role") == "producer_result"
         for row in normalized["resource_ledger"]

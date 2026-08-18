@@ -19,11 +19,16 @@ on:
       - 'scripts/phase7_proof_prepare.py'
       - 'scripts/phase7_proof_complete.py'
       - 'scripts/phase7_resource_ledger_finalize.py'
+      - 'scripts/phase7_return_package.py'
+      - 'scripts/phase7_build_return_manifest.py'
+      - 'scripts/phase7_offline_laptop.ps1'
+      - 'phase7_offline_network_proof.py'
       - 'offline_agent_courier.py'
       - 'phase5_mission_contract.py'
       - 'phase7_e2e_proof.py'
       - 'tests/test_phase7_*.py'
       - 'tests/test_offline_agent_courier.py'
+      - '.nexus/phase7-return/**'
       - 'docs/adr/ADR-003-nexus-brain-policy-gate.md'
       - '.github/workflows/nexus-mission-queue.yml'
   push:
@@ -45,6 +50,10 @@ on:
       - 'scripts/phase7_proof_prepare.py'
       - 'scripts/phase7_proof_complete.py'
       - 'scripts/phase7_resource_ledger_finalize.py'
+      - 'scripts/phase7_return_package.py'
+      - 'scripts/phase7_build_return_manifest.py'
+      - 'scripts/phase7_offline_laptop.ps1'
+      - 'phase7_offline_network_proof.py'
       - 'offline_agent_courier.py'
       - 'phase5_mission_contract.py'
       - 'phase7_e2e_proof.py'
@@ -67,12 +76,48 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
           persist-credentials: false
       - name: Verify exact source checkout
         shell: bash
         run: |
           test "$(git rev-parse HEAD)" = "$NEXUS_PROOF_SOURCE_SHA"
           echo "phase7_exact_source_checkout=$NEXUS_PROOF_SOURCE_SHA"
+      - name: Guard data-only returned-laptop PR
+        id: returned_laptop_guard
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'phase7/return-')
+        shell: bash
+        env:
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          test "$HEAD_REPO" = "$GITHUB_REPOSITORY"
+          test "$PR_AUTHOR" = "$REPO_OWNER"
+          test "$GITHUB_ACTOR" = "$REPO_OWNER"
+          session="${GITHUB_HEAD_REF#phase7/return-}"
+          [[ "$session" =~ ^p7-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{8}$ ]]
+          package_rel=".nexus/phase7-return/$session"
+          mapfile -t changed < <(git diff --name-only "$BASE_SHA...HEAD")
+          test "${#changed[@]}" -gt 0
+          for path in "${changed[@]}"; do
+            case "$path" in
+              "$package_rel"/*) ;;
+              *) echo "non-data return change rejected: $path" >&2; exit 1 ;;
+            esac
+          done
+          manifest="$package_rel/manifest.json"
+          test -f "$manifest"
+          source_sha=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1], encoding='utf-8'))['source_sha'])" "$manifest")
+          [[ "$source_sha" =~ ^[0-9a-f]{40}$ ]]
+          git cat-file -e "${source_sha}^{commit}"
+          git merge-base --is-ancestor "$source_sha" "$BASE_SHA"
+          test "$(git rev-parse HEAD^)" = "$source_sha"
+          echo "session_id=$session" >> "$GITHUB_OUTPUT"
+          echo "package_root=$GITHUB_WORKSPACE/$package_rel" >> "$GITHUB_OUTPUT"
+          echo "source_sha=$source_sha" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -109,9 +154,30 @@ jobs:
             tests/test_phase7_proof_prepare.py \
             tests/test_phase7_proof_complete.py \
             tests/test_phase7_resource_ledger_finalize.py \
+            tests/test_phase7_return_package.py \
+            tests/test_phase7_build_return_manifest.py \
+            tests/test_phase7_offline_network_proof.py \
+            tests/test_phase7_offline_handoff_surface.py \
             tests/test_offline_agent_courier.py
+      - name: Validate returned-laptop package before secret access
+        id: returned_laptop_validation
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'phase7/return-')
+        shell: bash
+        env:
+          PACKAGE_ROOT: ${{ steps.returned_laptop_guard.outputs.package_root }}
+          SOURCE_SHA: ${{ steps.returned_laptop_guard.outputs.source_sha }}
+        run: |
+          set -euo pipefail
+          trusted="$RUNNER_TEMP/phase7-trusted-$SOURCE_SHA"
+          rm -rf "$trusted"
+          git worktree add --detach "$trusted" "$SOURCE_SHA"
+          cd "$trusted"
+          PYTHONPATH="$trusted" python -m scripts.phase7_return_package \
+            --package-root "$PACKAGE_ROOT" \
+            --expected-source-sha "$SOURCE_SHA"
+          echo "trusted_root=$trusted" >> "$GITHUB_OUTPUT"
       - name: Execute exact-head Phase 7 cloud proof on pull request
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && !startsWith(github.head_ref, 'phase7/return-')
         run: |
           unset NEXUS_OFFLINE_COURIER_KEY
           unset NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED
@@ -126,6 +192,7 @@ jobs:
         run: |
           python -m scripts.phase7_proof_prepare --source-sha "$NEXUS_PROOF_SOURCE_SHA" --output-dir build/phase7-proof
       - name: Verify exact-source Phase 7 proof remains Paper-only
+        if: github.event_name != 'pull_request' || !startsWith(github.head_ref, 'phase7/return-')
         run: |
           python - <<'PY'
           import json, os
@@ -155,9 +222,55 @@ jobs:
           print('phase7_resource_classification=' + json.dumps(classes, sort_keys=True))
           PY
       - name: Upload Phase 7 proof and courier evidence
+        if: github.event_name != 'pull_request' || !startsWith(github.head_ref, 'phase7/return-')
         uses: actions/upload-artifact@v4
         with:
           name: nexus-phase7-proof-${{ github.event.pull_request.head.sha || github.sha }}
           path: build/phase7-proof
+          if-no-files-found: error
+          retention-days: 14
+      - name: Independently finalize returned laptop proof
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'phase7/return-') && github.event.pull_request.head.repo.full_name == github.repository && github.actor == github.repository_owner
+        shell: bash
+        env:
+          NEXUS_OFFLINE_COURIER_KEY: ${{ secrets.NEXUS_OFFLINE_COURIER_KEY }}
+          PACKAGE_ROOT: ${{ steps.returned_laptop_guard.outputs.package_root }}
+          SOURCE_SHA: ${{ steps.returned_laptop_guard.outputs.source_sha }}
+          TRUSTED_ROOT: ${{ steps.returned_laptop_validation.outputs.trusted_root }}
+        run: |
+          set -euo pipefail
+          test -n "$NEXUS_OFFLINE_COURIER_KEY"
+          test -d "$TRUSTED_ROOT"
+          cd "$TRUSTED_ROOT"
+          PYTHONPATH="$TRUSTED_ROOT" python -m scripts.phase7_resource_ledger_finalize \
+            --artifact-dir "$PACKAGE_ROOT/prepared" \
+            --returned-result "$PACKAGE_ROOT/returned/phase7-laptop-result.json" \
+            --offline-network-proof "$PACKAGE_ROOT/returned/offline-network-proof.json"
+          python - "$PACKAGE_ROOT/prepared/phase7-proof-mission-run.json" "$SOURCE_SHA" <<'PY'
+          import json, sys
+          from pathlib import Path
+          run = json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))
+          assert run['source_sha'] == sys.argv[2]
+          assert run['paper_only'] is True
+          assert run['live_trading_authority'] is False
+          assert run['hardware_proof_complete'] is True
+          assert run['core_cloud_chain_complete'] is True
+          assert run['manager_summary']['verified_progress_percent'] == 100.0
+          assert run['resource_classification']['Laptop']['classification'] == 'EXECUTED'
+          network = run['offline_network_proof']
+          assert network['reboot_after_prepare'] is True
+          assert network['internet_unavailable_pre'] is True
+          assert network['internet_unavailable_post'] is True
+          print('phase7_returned_laptop_verified=true')
+          PY
+          rm -rf "$GITHUB_WORKSPACE/build/phase7-return-verified"
+          mkdir -p "$GITHUB_WORKSPACE/build/phase7-return-verified"
+          cp -a "$PACKAGE_ROOT/prepared/." "$GITHUB_WORKSPACE/build/phase7-return-verified/"
+      - name: Upload independently verified returned-laptop proof
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'phase7/return-')
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexus-phase7-return-verified-${{ steps.returned_laptop_guard.outputs.session_id }}
+          path: build/phase7-return-verified
           if-no-files-found: error
           retention-days: 14
