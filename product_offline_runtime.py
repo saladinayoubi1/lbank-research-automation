@@ -140,6 +140,19 @@ class OfflineDatasetStore:
         }
 
 
+class CachingProductResearchRuntime(ProductResearchRuntime):
+    """Online canonical research that automatically preserves every validated dataset for later offline use."""
+
+    def __init__(self, product_runtime: ProductRuntime, store: OfflineDatasetStore, *, source_sha: str | None = None) -> None:
+        super().__init__(product_runtime, source_sha=source_sha)
+        self.store = store
+
+    def fetch_dataset(self, *, symbol: str, timeframe: str, limit: int = 240) -> dict[str, Any]:
+        dataset = super().fetch_dataset(symbol=symbol, timeframe=timeframe, limit=limit)
+        self.store.import_dataset(dataset)
+        return dataset
+
+
 class OfflineProductResearchRuntime(ProductResearchRuntime):
     """Runs the canonical research pipeline from a locally imported dataset without network I/O."""
 
