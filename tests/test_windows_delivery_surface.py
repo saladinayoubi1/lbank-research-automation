@@ -22,10 +22,10 @@ def test_canonical_windows_product_packages_python_sidecar_and_source_bindings()
     assert all(path.is_file() for path in required)
 
     package = json.loads(read(DESKTOP / "package.json"))
-    assert package["version"] == "4.1.0"
+    assert package["version"] == "4.1.1"
     assert package["main"] == "main.js"
     resources = {(item.get("from"), item.get("to")) for item in package["build"]["extraResources"]}
-    assert ("sidecar/nexus-product-server.exe", "nexus-product-server.exe") in resources
+    assert ("sidecar/nexus-product-server", "nexus-product-server") in resources
     assert ("sidecar/source-sha.txt", "source-sha.txt") in resources
     assert ("sidecar/market-data-source-registry.yaml", "docs/architecture/market-data-source-registry.yaml") in resources
 
@@ -38,6 +38,19 @@ def test_canonical_windows_product_packages_python_sidecar_and_source_bindings()
     assert "market-data-source-registry.yaml" in main
     assert "127.0.0.1" in main
     assert "/api/product/overview" in main
+
+
+def test_windows_startup_is_slow_machine_tolerant_and_diagnostic() -> None:
+    main = read(DESKTOP / "main.js")
+    assert "const http = require('http')" in main
+    assert "timeoutMs = 90000" in main
+    assert "sidecarExit" in main
+    assert "sidecarStderr" in main
+    assert "nexus-product-startup.log" in main
+    assert "engine exited before startup" in main
+    assert "Startup diagnostics" in main
+    assert "cwd: path.dirname(bindings.executable)" in main
+    assert "fetch(`${origin}/api/product/overview`" not in main
 
 
 def test_canonical_surface_is_full_nexus_product_not_market_shell() -> None:
@@ -115,9 +128,9 @@ def test_windows_targets_are_distinct_and_trusted_workflow_builds_exact_source_p
     workflow = read(ROOT / ".github" / "workflows" / "build_lbank_desktop_windows.yml")
     for marker in (
         "product_runtime.py", "product_research_runtime.py", "product_control_runtime.py",
-        "product_web_server.py", "desktop/nexus-product", "PyInstaller", "nexus-product-server.exe",
+        "product_web_server.py", "desktop/nexus-product", "PyInstaller", "--onedir", "nexus-product-server.exe",
         "Smoke-test canonical product sidecar", "source-sha.txt", "market-data-source-registry.yaml",
-        "NEXUS_Personal_Pro_Setup_4.1.0_", "NEXUS_Personal_Pro_Portable_4.1.0_",
+        "NEXUS_Personal_Pro_Setup_4.1.1_", "NEXUS_Personal_Pro_Portable_4.1.1_",
     ):
         assert marker in workflow
     assert "push:" in workflow and "branches: [main]" in workflow

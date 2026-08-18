@@ -1,6 +1,6 @@
 {
   "name": "nexus-personal-pro-product",
-  "version": "4.1.0",
+  "version": "4.1.1",
   "description": "NEXUS Personal Pro canonical Python-sidecar research, backtest and paper-trading workspace",
   "main": "main.js",
   "author": "saladinayoubi1",
@@ -21,7 +21,7 @@
     "directories": {"output": "dist"},
     "files": ["main.js", "package.json"],
     "extraResources": [
-      {"from":"sidecar/nexus-product-server.exe","to":"nexus-product-server.exe"},
+      {"from":"sidecar/nexus-product-server","to":"nexus-product-server"},
       {"from":"sidecar/source-sha.txt","to":"source-sha.txt"},
       {"from":"sidecar/market-data-source-registry.yaml","to":"docs/architecture/market-data-source-registry.yaml"}
     ],
