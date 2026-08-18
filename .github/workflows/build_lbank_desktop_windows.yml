@@ -91,7 +91,10 @@ jobs:
             if ($recovery.status -ne "verified") { throw "Paper recovery verification failed" }
             $mission = Invoke-RestMethod -Uri "http://127.0.0.1:18765/api/product/mission-control" -TimeoutSec 3
             if ($mission.status -ne "idle" -or $mission.mission.status -ne "idle") { throw "Clean-install Mission Control is not truthful idle" }
-            if ($mission.agents.Count -ne 0 -or $mission.runners.Count -ne 0 -or $mission.providers.PSObject.Properties.Count -ne 0) { throw "Clean-install Mission Control fabricated runtime actors" }
+            $agentCount = @($mission.agents).Count
+            $runnerCount = @($mission.runners).Count
+            $providerCount = @($mission.providers.PSObject.Properties).Count
+            if ($agentCount -ne 0 -or $runnerCount -ne 0 -or $providerCount -ne 0) { throw "Clean-install Mission Control fabricated runtime actors" }
             if ($mission.queue.counts.READY -ne 0 -or $mission.queue.counts.RUNNING -ne 0) { throw "Clean-install Mission Control queue is not empty" }
             $css = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:18765/ui/product-extra.css" -TimeoutSec 3
             if ($css.StatusCode -ne 200) { throw "Extended full-product UI stylesheet missing" }
