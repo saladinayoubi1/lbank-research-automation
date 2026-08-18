@@ -290,8 +290,9 @@
       "tertiary_legacy_source": "LBank",
       "canonical_registry": "docs/architecture/market-data-source-registry.yaml",
       "canonical_binding_runtime": "phase5_data_binding.py",
-      "canonical_provenance_binding_authoritative_for_downstream": true,
-      "semantic_binding_issue_pending_metadata_closure": 197,
+      "canonical_provenance_binding_authoritative_for_downstream": false,
+      "semantic_binding_blocker": 197,
+      "semantic_binding_note": "The canonical Bybit product/research path is registry-bound, but legacy cross-source provenance remains fail-closed for downstream eligibility until #197 completes raw/downstream bypass enforcement and fixed-tuple rollback/recovery replay on one fixed SHA.",
       "legacy_lbank": {
         "tracked_series": 21,
         "research_ready_series": 2,
