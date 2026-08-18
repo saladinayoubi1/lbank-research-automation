@@ -110,7 +110,7 @@ jobs:
           unset NEXUS_OFFLINE_COURIER_KEY
           unset NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED
           unset DEEPSEEK_API_KEY
-          python scripts/phase7_proof_prepare.py --source-sha "$NEXUS_PROOF_SOURCE_SHA" --output-dir build/phase7-proof
+          python -m scripts.phase7_proof_prepare --source-sha "$NEXUS_PROOF_SOURCE_SHA" --output-dir build/phase7-proof
       - name: Execute exact-source Phase 7 cloud proof and prepare offline courier
         if: github.event_name != 'pull_request'
         env:
@@ -118,7 +118,7 @@ jobs:
           NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: ${{ vars.NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
         run: |
-          python scripts/phase7_proof_prepare.py --source-sha "$NEXUS_PROOF_SOURCE_SHA" --output-dir build/phase7-proof
+          python -m scripts.phase7_proof_prepare --source-sha "$NEXUS_PROOF_SOURCE_SHA" --output-dir build/phase7-proof
       - name: Verify exact-source Phase 7 proof remains Paper-only
         run: |
           python - <<'PY'
