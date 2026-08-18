@@ -40,12 +40,14 @@ jobs:
           test -f desktop/nexus-product/main.js
           node --check desktop/nexus-product/main.js
           node --check product_ui/product.js
-          node -e "const p=require('./desktop/nexus-product/package.json'); if(p.version!=='4.1.0' || !p.build.extraResources?.some(x=>x.to==='nexus-product-server.exe') || !p.build.extraResources?.some(x=>x.to==='source-sha.txt')) process.exit(1)"
+          node -e "const p=require('./desktop/nexus-product/package.json'); if(p.version!=='4.1.1' || !p.build.extraResources?.some(x=>x.to==='nexus-product-server') || !p.build.extraResources?.some(x=>x.to==='source-sha.txt')) process.exit(1)"
           grep -q 'contextIsolation: true' desktop/nexus-product/main.js
           grep -q 'sandbox: true' desktop/nexus-product/main.js
           grep -q 'nodeIntegration: false' desktop/nexus-product/main.js
           grep -q 'NEXUS_SOURCE_SHA' desktop/nexus-product/main.js
           grep -q 'NEXUS_MARKET_REGISTRY_PATH' desktop/nexus-product/main.js
+          grep -q 'timeoutMs = 90000' desktop/nexus-product/main.js
+          grep -q 'nexus-product-startup.log' desktop/nexus-product/main.js
           grep -q 'run_automated_signal_pipeline' product_research_runtime.py
           grep -q 'run_research_job' product_research_runtime.py
           grep -q 'execute_paper_command' product_runtime.py
@@ -129,7 +131,7 @@ jobs:
           python -m PyInstaller
           --noconfirm
           --clean
-          --onefile
+          --onedir
           --name nexus-product-server
           --add-data "product_ui;product_ui"
           --add-data ".nexus/phase6-checkpoint.json;.nexus"
@@ -139,7 +141,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path 'desktop/nexus-product/sidecar' -Force | Out-Null
-          Copy-Item 'dist/nexus-product-server.exe' 'desktop/nexus-product/sidecar/nexus-product-server.exe'
+          Copy-Item 'dist/nexus-product-server' 'desktop/nexus-product/sidecar/nexus-product-server' -Recurse -Force
           Set-Content -LiteralPath 'desktop/nexus-product/sidecar/source-sha.txt' -Value $env:GITHUB_SHA -NoNewline -Encoding ascii
           Copy-Item 'docs/architecture/market-data-source-registry.yaml' 'desktop/nexus-product/sidecar/market-data-source-registry.yaml'
       - name: Install Electron dependencies
@@ -155,13 +157,13 @@ jobs:
         run: |
           $root = 'desktop/nexus-product/dist/win-unpacked/resources'
           foreach ($path in @(
-            "$root/nexus-product-server.exe",
+            "$root/nexus-product-server/nexus-product-server.exe",
             "$root/source-sha.txt",
             "$root/docs/architecture/market-data-source-registry.yaml"
           )) { if (!(Test-Path $path)) { throw "Packaged canonical resource missing: $path" } }
           if ((Get-Content "$root/source-sha.txt" -Raw).Trim() -ne $env:GITHUB_SHA) { throw 'Packaged source SHA mismatch' }
-          if (!(Get-ChildItem 'desktop/nexus-product/dist/NEXUS_Personal_Pro_Setup_4.1.0_*.exe' -ErrorAction SilentlyContinue)) { throw 'Setup EXE missing' }
-          if (!(Get-ChildItem 'desktop/nexus-product/dist/NEXUS_Personal_Pro_Portable_4.1.0_*.exe' -ErrorAction SilentlyContinue)) { throw 'Portable EXE missing' }
+          if (!(Get-ChildItem 'desktop/nexus-product/dist/NEXUS_Personal_Pro_Setup_4.1.1_*.exe' -ErrorAction SilentlyContinue)) { throw 'Setup EXE missing' }
+          if (!(Get-ChildItem 'desktop/nexus-product/dist/NEXUS_Personal_Pro_Portable_4.1.1_*.exe' -ErrorAction SilentlyContinue)) { throw 'Portable EXE missing' }
       - name: Generate Windows SHA-256 checksums
         shell: pwsh
         run: |
@@ -190,8 +192,8 @@ jobs:
         with:
           name: nexus-windows-packages
           path: |
-            desktop/nexus-product/dist/NEXUS_Personal_Pro_Setup_4.1.0_*.exe
-            desktop/nexus-product/dist/NEXUS_Personal_Pro_Portable_4.1.0_*.exe
+            desktop/nexus-product/dist/NEXUS_Personal_Pro_Setup_4.1.1_*.exe
+            desktop/nexus-product/dist/NEXUS_Personal_Pro_Portable_4.1.1_*.exe
             desktop/nexus-product/dist/SHA256SUMS.txt
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
