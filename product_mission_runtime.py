@@ -16,11 +16,14 @@ CI_CONTRACT = "nexus.product-ci-health.v1"
 MAX_SNAPSHOT_BYTES = 2_000_000
 MAX_EVENTS = 200
 MAX_STRATEGY_RUNS = 200
+MAX_ROUTING_CANDIDATES = 32
+MAX_WAIT_ROWS = 32
 ACTIVE_STATES = {"LEASED", "RUNNING", "VERIFYING", "TRIAGE"}
 KNOWN_STATES = {
     "PENDING", "READY", "LEASED", "RUNNING", "VERIFYING", "DONE", "TRIAGE",
     "BLOCKED", "OWNER_REQUIRED", "QUARANTINED",
 }
+WAIT_STATES = {"WAITING_EXTERNAL", "COMPLETED"}
 
 
 class ProductMissionError(RuntimeError):
@@ -99,10 +102,141 @@ def _bounded_events(path: Path) -> list[dict[str, Any]]:
     return events
 
 
+def _bounded_text(value: Any, *, limit: int = 200) -> str | None:
+    if not isinstance(value, str) or not value or len(value) > limit:
+        return None
+    return value
+
+
+def _bounded_text_list(value: Any, *, limit: int = 32, item_limit: int = 160) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    result: list[str] = []
+    for item in value[:limit]:
+        text = _bounded_text(item, limit=item_limit)
+        if text is not None:
+            result.append(text)
+    return result
+
+
+def _finite_number(value: Any) -> float | int | None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    number = float(value)
+    if number != number or number in {float("inf"), float("-inf")}:
+        return None
+    return value
+
+
+def _observed_routing_view(value: Any) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        return {}
+    result: dict[str, Any] = {}
+    if isinstance(value.get("available"), bool):
+        result["available"] = value["available"]
+    for key in ("health_score", "latency_ms", "failure_rate", "cost_units", "queue_depth", "capacity"):
+        number = _finite_number(value.get(key))
+        if number is not None:
+            result[key] = number
+    result["data_locality"] = _bounded_text_list(value.get("data_locality"), limit=16)
+    result["trust_domains"] = _bounded_text_list(value.get("trust_domains"), limit=16)
+    return result
+
+
+def _routing_decision_view(value: Any) -> dict[str, Any] | None:
+    if not isinstance(value, Mapping):
+        return None
+    result: dict[str, Any] = {
+        "evaluated_at": _bounded_text(value.get("evaluated_at")),
+        "selected_worker": _bounded_text(value.get("selected_worker")),
+        "reason": _bounded_text(value.get("reason")),
+    }
+    selected_score = _finite_number(value.get("selected_score"))
+    if selected_score is not None:
+        result["selected_score"] = selected_score
+    candidates: list[dict[str, Any]] = []
+    raw_candidates = value.get("candidates")
+    if isinstance(raw_candidates, list):
+        for raw in raw_candidates[:MAX_ROUTING_CANDIDATES]:
+            if not isinstance(raw, Mapping):
+                continue
+            worker_id = _bounded_text(raw.get("worker_id"))
+            if worker_id is None:
+                continue
+            row: dict[str, Any] = {
+                "worker_id": worker_id,
+                "eligible": raw.get("eligible") is True,
+                "rejection_reasons": _bounded_text_list(raw.get("rejection_reasons"), limit=16),
+                "selection_reason": _bounded_text(raw.get("selection_reason")),
+                "observed": _observed_routing_view(raw.get("observed")),
+            }
+            score = _finite_number(raw.get("score"))
+            if score is not None:
+                row["score"] = score
+            components = raw.get("components")
+            if isinstance(components, Mapping):
+                safe_components: dict[str, Any] = {}
+                for key in (
+                    "health", "latency", "failure_rate", "cost", "queue_depth",
+                    "preferred_resource", "data_locality", "trust_domain", "remaining_capacity",
+                ):
+                    number = _finite_number(components.get(key))
+                    if number is not None:
+                        safe_components[key] = number
+                row["components"] = safe_components
+            candidates.append(row)
+    result["candidates"] = candidates
+    return result
+
+
+def _wait_timeline_view(value: Any) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        return []
+    result: list[dict[str, Any]] = []
+    for raw in value[-MAX_WAIT_ROWS:]:
+        if not isinstance(raw, Mapping):
+            continue
+        row = {
+            key: _bounded_text(raw.get(key))
+            for key in (
+                "started_at", "from_status", "dispatch_id", "worker_id", "transport",
+                "completed_at", "outcome",
+            )
+        }
+        result.append({key: item for key, item in row.items() if item is not None})
+    return result
+
+
+def _zero_idle_view(value: Any) -> dict[str, Any] | None:
+    if not isinstance(value, Mapping):
+        return None
+    overlaps: list[dict[str, Any]] = []
+    raw_overlaps = value.get("overlapped_external_waits")
+    if isinstance(raw_overlaps, list):
+        for raw in raw_overlaps[:MAX_WAIT_ROWS]:
+            if not isinstance(raw, Mapping):
+                continue
+            row = {
+                key: _bounded_text(raw.get(key))
+                for key in ("task_id", "worker_id", "wait_started_at", "dispatch_id")
+            }
+            clean = {key: item for key, item in row.items() if item is not None}
+            if clean.get("task_id"):
+                overlaps.append(clean)
+    return {
+        "leased_at": _bounded_text(value.get("leased_at")),
+        "rule": _bounded_text(value.get("rule")),
+        "overlapped_external_waits": overlaps,
+    }
+
+
 def _task_view(task: Mapping[str, Any]) -> dict[str, Any]:
     status = str(task.get("status") or "PENDING").upper()
     if status not in KNOWN_STATES:
         status = "BLOCKED"
+    external_wait_state = str(task.get("external_wait_state") or "").upper()
+    if external_wait_state not in WAIT_STATES:
+        external_wait_state = None
     return {
         "id": task.get("id"),
         "title": task.get("title"),
@@ -119,6 +253,11 @@ def _task_view(task: Mapping[str, Any]) -> dict[str, Any]:
         "verifier": task.get("verifier"),
         "attempt": int(task.get("attempt") or 0),
         "transient_retries": int(task.get("transient_retries") or 0),
+        "lease_id": _bounded_text(task.get("lease_id")),
+        "fence_generation": task.get("fence_generation") if isinstance(task.get("fence_generation"), int) and not isinstance(task.get("fence_generation"), bool) else None,
+        "active_attempt_id": _bounded_text(task.get("active_attempt_id")),
+        "correlation_id": _bounded_text(task.get("correlation_id")),
+        "dispatch_id": _bounded_text(task.get("dispatch_id")),
         "leased_at": task.get("leased_at"),
         "heartbeat_at": task.get("heartbeat_at"),
         "lease_expires_at": task.get("lease_expires_at"),
@@ -133,11 +272,19 @@ def _task_view(task: Mapping[str, Any]) -> dict[str, Any]:
         "result_evidence": task.get("result_evidence"),
         "verification_evidence": task.get("verification_evidence"),
         "failure_evidence": task.get("failure_evidence"),
+        "routing_decision": _routing_decision_view(task.get("routing_decision")),
+        "waiting_from_status": _bounded_text(task.get("waiting_from_status")),
+        "external_wait_state": external_wait_state,
+        "external_wait_started_at": _bounded_text(task.get("external_wait_started_at")),
+        "external_wait_completed_at": _bounded_text(task.get("external_wait_completed_at")),
+        "external_wait_timeline": _wait_timeline_view(task.get("external_wait_timeline")),
+        "zero_idle_evidence": _zero_idle_view(task.get("zero_idle_evidence")),
     }
 
 
-def _worker_views(config: Mapping[str, Any], tasks: list[dict[str, Any]], *, runtime_present: bool) -> list[dict[str, Any]]:
+def _worker_views(config: Mapping[str, Any], tasks: list[dict[str, Any]], *, runtime_present: bool, runtime: Mapping[str, Any] | None = None) -> list[dict[str, Any]]:
     result: list[dict[str, Any]] = []
+    runtime_metrics = runtime.get("resource_metrics") if isinstance(runtime, Mapping) and isinstance(runtime.get("resource_metrics"), Mapping) else {}
     for raw in config.get("workers", []):
         if not isinstance(raw, Mapping):
             continue
@@ -152,6 +299,9 @@ def _worker_views(config: Mapping[str, Any], tasks: list[dict[str, Any]], *, run
             state = "IDLE"
         else:
             state = "UNKNOWN"
+        static_routing = raw.get("routing") if isinstance(raw.get("routing"), Mapping) else {}
+        observed = runtime_metrics.get(worker_id) if isinstance(runtime_metrics, Mapping) and isinstance(runtime_metrics.get(worker_id), Mapping) else {}
+        merged_routing = {**static_routing, **observed}
         result.append({
             "id": worker_id,
             "state": state,
@@ -163,6 +313,7 @@ def _worker_views(config: Mapping[str, Any], tasks: list[dict[str, Any]], *, run
             "max_concurrent_tasks": int(raw.get("max_concurrent_tasks") or 1),
             "active_tasks": [task["id"] for task in active],
             "assigned_tasks": [task["id"] for task in assigned],
+            "routing_metrics": _observed_routing_view(merged_routing) if runtime_present else {},
         })
     return result
 
@@ -422,7 +573,7 @@ class ProductMissionRuntime:
         tasks_source = runtime.get("tasks") if isinstance(runtime, Mapping) and isinstance(runtime.get("tasks"), list) else config.get("tasks", [])
         tasks = [_task_view(row) for row in tasks_source if isinstance(row, Mapping)]
         runtime_present = runtime is not None
-        workers = _worker_views(config, tasks, runtime_present=runtime_present)
+        workers = _worker_views(config, tasks, runtime_present=runtime_present, runtime=runtime if isinstance(runtime, Mapping) else None)
         age = _snapshot_age(generated_at)
         resources = _resource_views(workers, tasks, snapshot_age_seconds=age)
         counts: dict[str, int] = {}
@@ -431,6 +582,19 @@ class ProductMissionRuntime:
         owner_actions = [task for task in tasks if task["status"] == "OWNER_REQUIRED" and int(task.get("authority") or 0) >= 4]
         active_tasks = [task for task in tasks if task["status"] in ACTIVE_STATES]
         failed_tasks = [task for task in tasks if task["status"] in {"BLOCKED", "TRIAGE", "QUARANTINED"}]
+        external_waiting = [
+            {
+                "task_id": task.get("id"),
+                "worker_id": task.get("assigned_worker"),
+                "wait_started_at": task.get("external_wait_started_at"),
+                "dispatch_id": task.get("dispatch_id"),
+            }
+            for task in tasks if task.get("external_wait_state") == "WAITING_EXTERNAL"
+        ]
+        zero_idle_assignments = [
+            {"task_id": task.get("id"), **task["zero_idle_evidence"]}
+            for task in tasks if isinstance(task.get("zero_idle_evidence"), Mapping)
+        ]
         total_non_owner = sum(1 for task in tasks if int(task.get("authority") or 0) < 4)
         done_non_owner = sum(1 for task in tasks if int(task.get("authority") or 0) < 4 and task["status"] == "DONE")
         try:
@@ -457,6 +621,8 @@ class ProductMissionRuntime:
                 "verified_progress_percent": round((done_non_owner / total_non_owner * 100.0) if total_non_owner else 0.0, 2),
                 "active_tasks": active_tasks,
                 "blocked_or_triage": failed_tasks,
+                "external_waiting": external_waiting,
+                "zero_idle_assignments": zero_idle_assignments,
             },
             "workers": workers,
             "resources": resources,
