@@ -68,6 +68,7 @@ def test_canonical_surface_is_full_nexus_product_not_market_shell() -> None:
 def test_canonical_product_uses_real_python_data_research_paper_risk_and_event_store() -> None:
     runtime = read(ROOT / "product_runtime.py")
     research = read(ROOT / "product_research_runtime.py")
+    canonical_backtest = read(ROOT / "canonical_backtest.py")
     controls = read(ROOT / "product_control_runtime.py")
     assert "from deterministic_risk import" in runtime and "evaluate_risk" in runtime
     assert "from paper_execution import" in runtime and "execute_paper_command" in runtime
@@ -76,7 +77,10 @@ def test_canonical_product_uses_real_python_data_research_paper_risk_and_event_s
     assert "_session_signal_count" in runtime
     assert "fetch_bind_bybit_dataset" in research
     assert "run_research_job" in research
-    assert "run_target_exposure_backtest" in research
+    assert "run_canonical_target_exposure_backtest" in research
+    assert "run_target_exposure_backtest" not in research
+    assert "run_target_exposure_backtest" in canonical_backtest
+    assert "validate_canonical_dataset" in canonical_backtest
     assert "run_automated_signal_pipeline" in research
     assert "qualification_killed" in research and "paper_executed" in research
     assert "recovery_snapshot" in controls and "export_csv" in controls
