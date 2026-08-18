@@ -113,6 +113,13 @@ def transport_for(worker_id: str) -> str:
     return "github-cloud"
 
 
+def offline_courier_workers(config: dict[str, Any]) -> frozenset[str]:
+    raw = config.get("policy", {}).get("offline_courier_workers", [])
+    if not isinstance(raw, list) or not all(isinstance(item, str) and item for item in raw):
+        raise ValueError("offline_courier_workers must be a string list")
+    return frozenset(raw)
+
+
 def envelope_for(task: dict[str, Any]) -> dict[str, Any]:
     lease_id = task.get("lease_id")
     worker = task.get("assigned_worker")
@@ -176,8 +183,11 @@ def dispatch_task(task: dict[str, Any], *, ref: str) -> None:
 
 def dispatch_pending(config: dict[str, Any], *, ref: str) -> int:
     count = 0
+    courier_workers = offline_courier_workers(config)
     for task in config.get("tasks", []):
         if task.get("status") not in DISPATCHABLE or not task.get("lease_id") or not task.get("assigned_worker"):
+            continue
+        if task.get("assigned_worker") in courier_workers:
             continue
         expected_dispatch = dispatch_id_for(task)
         if task.get("dispatch_id") == expected_dispatch:
@@ -293,8 +303,11 @@ def ingest_result(config: dict[str, Any], task: dict[str, Any], result: dict[str
 
 def poll_results(config: dict[str, Any]) -> int:
     count = 0
+    courier_workers = offline_courier_workers(config)
     for task in config.get("tasks", []):
         if task.get("status") not in RESULT_WAITING or not task.get("dispatch_id"):
+            continue
+        if task.get("assigned_worker") in courier_workers:
             continue
         lease_id = task.get("lease_id")
         if not lease_id:
