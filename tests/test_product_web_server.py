@@ -132,7 +132,18 @@ def test_product_static_script_is_same_origin_only(product_server) -> None:
     status, _, raw = _request(port, "GET", "/ui/product.js")
     assert status == 200
     script = raw.decode("utf-8")
+    lowered = script.casefold()
     assert "https://" not in script
     assert "/api/product/paper/order" in script
     assert "/api/ai-room/message" in script
-    assert "withdraw" not in script.casefold()
+    # The UI may display locked authority fields such as withdrawals_allowed=false.
+    # Reject actual write routes or private credential material instead of the status word.
+    for forbidden in (
+        "/api/product/live/order",
+        "/withdraw",
+        "/v5/order",
+        "apisecret",
+        "secretkey",
+        "private_key",
+    ):
+        assert forbidden not in lowered
