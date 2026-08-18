@@ -4,9 +4,11 @@ import json
 from copy import deepcopy
 
 import pytest
+import yaml
 
 from backtest_engine import BacktestConfig
 from canonical_backtest import CanonicalBacktestError, run_canonical_target_exposure_backtest
+from phase5_data_binding import REGISTRY_PATH
 from phase6_research_pipeline import bind_bybit_closed_dataset
 
 START_15M = 1_700_000_100_000
@@ -82,6 +84,25 @@ def test_semantic_or_binding_tamper_is_blocked_before_backtest(field, value):
     dataset[field] = value
     with pytest.raises(CanonicalBacktestError):
         _run(dataset)
+
+
+def test_primary_source_status_change_blocks_authoritative_backtest(tmp_path):
+    payload = yaml.safe_load(REGISTRY_PATH.read_text(encoding="utf-8"))
+    target = next(
+        mapping for mapping in payload["mappings"]
+        if mapping["canonical_symbol"] == "BTC/USDT" and mapping["timeframe"] == "minute15"
+    )
+    bybit = next(source for source in target["sources"] if source["exchange"] == "Bybit")
+    bybit["status"] = "incompatible"
+    registry = tmp_path / "registry.yaml"
+    registry.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
+    dataset = _dataset()
+    with pytest.raises(CanonicalBacktestError):
+        run_canonical_target_exposure_backtest(
+            dataset,
+            [1.0] * dataset["row_count"],
+            registry_path=registry,
+        )
 
 
 def test_row_payload_or_manifest_tamper_is_blocked_before_backtest():
