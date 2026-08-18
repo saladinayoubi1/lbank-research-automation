@@ -15,6 +15,58 @@ DISPATCH_KEYS = {
 }
 AGENT_REVIEW_PREFIX = "You are a bounded NEXUS repository reviewer."
 
+# Phase 7 proof workloads are deliberately hard-coded. A dispatch may select one
+# of these identifiers, but it cannot inject a path or command. This keeps the
+# worker useful for real resource consumption while preserving the execution
+# boundary: Research / Backtest / Paper only, no credentials and no Live/L4.
+PHASE7_WORKLOADS: dict[str, dict[str, Any]] = {
+    "P7-LAPTOP-CANONICAL": {
+        "transports": ("windows",),
+        "suite": (
+            "tests/test_phase5_data_binding.py",
+            "tests/test_canonical_backtest_boundary.py",
+            "tests/test_product_offline_runtime.py",
+        ),
+        "offline_capable": True,
+        "network_required": False,
+        "purpose": "canonical-data-and-offline-backtest-proof",
+    },
+    "P7-CLOUD-VERIFY": {
+        "transports": ("github-cloud",),
+        "suite": (
+            "tests/test_agent_transport.py",
+            "tests/test_phase7_resource_manager.py",
+            "tests/test_phase7_mission_projection.py",
+        ),
+        "offline_capable": False,
+        "network_required": False,
+        "purpose": "resource-routing-transport-and-mission-verification",
+    },
+    "P7-RESEARCH-STRATEGY": {
+        "transports": ("github-cloud",),
+        "suite": (
+            "tests/test_phase5_strategy_factory.py",
+            "tests/test_phase6_research_pipeline.py",
+            "tests/test_downstream_provenance_boundary.py",
+        ),
+        "offline_capable": False,
+        "network_required": False,
+        "purpose": "research-strategy-and-provenance-proof",
+    },
+    "P7-PAPER-PERFORMANCE": {
+        "transports": ("github-cloud",),
+        "suite": (
+            "tests/test_deterministic_risk.py",
+            "tests/test_paper_execution.py",
+            "tests/test_paper_event_store.py",
+            "tests/test_performance_metrics.py",
+        ),
+        "offline_capable": False,
+        "network_required": False,
+        "purpose": "risk-paper-and-performance-proof",
+    },
+}
+
 
 def _bounded_id(value: Any, field: str) -> str:
     if not isinstance(value, str) or not value or len(value) > 160:
@@ -59,8 +111,46 @@ def run(cmd: list[str], timeout: int = 600) -> dict[str, Any]:
     }
 
 
-def deterministic_execution(payload: dict[str, Any]) -> tuple[str, dict[str, Any]]:
+def _phase7_pytest_workload(payload: dict[str, Any], transport: str, spec: dict[str, Any]) -> tuple[str, dict[str, Any]]:
     task_id = payload["task_id"]
+    if payload.get("phase") != 7:
+        return "failure", {
+            "failure_class": "workload_phase_mismatch",
+            "executor": "bounded-pytest",
+            "workload_id": task_id,
+            "expected_phase": 7,
+            "observed_phase": payload.get("phase"),
+        }
+    allowed = tuple(spec["transports"])
+    if transport not in allowed:
+        return "failure", {
+            "failure_class": "workload_transport_mismatch",
+            "executor": "bounded-pytest",
+            "workload_id": task_id,
+            "allowed_transports": list(allowed),
+            "observed_transport": transport,
+        }
+    suite = tuple(spec["suite"])
+    result = run(["python", "-m", "pytest", "-q", *suite], timeout=900)
+    ok = bool(result["ok"])
+    return ("success" if ok else "failure"), {
+        "executor": "bounded-pytest",
+        "workload_id": task_id,
+        "purpose": spec["purpose"],
+        "suite": list(suite),
+        "offline_capable": bool(spec["offline_capable"]),
+        "network_required": bool(spec["network_required"]),
+        "transport": transport,
+        "tests": result,
+        "failure_class": None if ok else "deterministic_test_failure",
+    }
+
+
+def deterministic_execution(payload: dict[str, Any], transport: str) -> tuple[str, dict[str, Any]]:
+    task_id = payload["task_id"]
+    phase7 = PHASE7_WORKLOADS.get(task_id)
+    if phase7 is not None:
+        return _phase7_pytest_workload(payload, transport, phase7)
     if task_id in {"P4-MGR-001", "P4-MGR-002"}:
         result = run(["python", "-m", "pytest", "-q", "tests/test_agent_manager.py", "tests/test_agent_manager_runner.py", "tests/test_agent_transport.py"])
         return ("success" if result["ok"] else "failure", {"executor": "pytest", "tests": result, "failure_class": "deterministic_test_failure" if not result["ok"] else None})
@@ -129,7 +219,7 @@ def execute(payload: dict[str, Any], transport: str) -> dict[str, Any]:
     if transport == "deepseek":
         outcome, evidence = deepseek_execution(payload)
     elif transport in {"github-cloud", "windows"}:
-        outcome, evidence = deterministic_execution(payload)
+        outcome, evidence = deterministic_execution(payload, transport)
     else:
         raise ValueError("unsupported transport")
     return {
