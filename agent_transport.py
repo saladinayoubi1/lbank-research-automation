@@ -161,16 +161,29 @@ def dispatch_task(task: dict[str, Any], *, ref: str) -> None:
         {"ref": ref, "inputs": {"payload_b64": encoded, "lease_id": env["lease_id"], "transport": env["transport"]}},
     )
     now = am.utcnow()
+    task["waiting_from_status"] = prior_status
     if prior_status == "LEASED":
         task["status"] = "RUNNING"
+    task["external_wait_state"] = am.WAITING_EXTERNAL
     task["correlation_id"] = env["correlation_id"]
     task["dispatch_id"] = env["dispatch_id"]
     task["dispatch_transport"] = env["transport"]
     task["dispatched_at"] = am.iso(now)
+    task["external_wait_started_at"] = am.iso(now)
     task["heartbeat_at"] = am.iso(now)
     task["lease_expires_at"] = am.iso(now + am.timedelta(minutes=am.DEFAULT_LEASE_MINUTES))
+    timeline = task.setdefault("external_wait_timeline", [])
+    timeline.append(
+        {
+            "started_at": am.iso(now),
+            "from_status": prior_status,
+            "dispatch_id": env["dispatch_id"],
+            "worker_id": env["worker_id"],
+            "transport": env["transport"],
+        }
+    )
     am.emit(
-        "task_dispatched",
+        "task_dispatched_external_wait",
         task_id=task["id"],
         worker=env["worker_id"],
         transport=env["transport"],
@@ -291,6 +304,13 @@ def ingest_result(config: dict[str, Any], task: dict[str, Any], result: dict[str
     am.record_result(config, task["id"], task["assigned_worker"], outcome, evidence)
     task["result_artifact_ingested"] = True
     task["result_received_at"] = am.iso()
+    if task.get("external_wait_state") == am.WAITING_EXTERNAL:
+        task["external_wait_state"] = "COMPLETED"
+        task["external_wait_completed_at"] = task["result_received_at"]
+    timeline = task.get("external_wait_timeline")
+    if isinstance(timeline, list) and timeline:
+        timeline[-1]["completed_at"] = task["result_received_at"]
+        timeline[-1]["outcome"] = outcome
     am.emit(
         "task_result_ingested",
         task_id=task["id"],

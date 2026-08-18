@@ -29,11 +29,19 @@ def merge_definition(template: dict[str, Any], runtime: dict[str, Any] | None) -
         return deepcopy(template)
 
     merged = deepcopy(template)
+    if isinstance(runtime.get("resource_metrics"), dict):
+        merged["resource_metrics"] = deepcopy(runtime["resource_metrics"])
+    if runtime.get("resource_metrics_updated_at"):
+        merged["resource_metrics_updated_at"] = runtime["resource_metrics_updated_at"]
+
     old_by_id = {t["id"]: t for t in runtime.get("tasks", []) if isinstance(t, dict) and t.get("id")}
     new_ids = {t["id"] for t in merged.get("tasks", [])}
     definition_keys = {
         "id", "title", "phase", "gate", "priority", "dependencies",
-        "required_capabilities", "preferred_resources", "authority", "acceptance"
+        "required_capabilities", "preferred_resources", "required_resources",
+        "required_data_locality", "preferred_data_locality",
+        "required_trust_domain", "preferred_trust_domains",
+        "min_health_score", "max_cost_units", "authority", "acceptance"
     }
     runtime_keys = {
         "status", "ready_at", "assigned_worker", "producer", "verifier", "lease_id",
@@ -43,7 +51,9 @@ def merge_definition(template: dict[str, Any], runtime: dict[str, Any] | None) -
         "verified_at", "blocked_reason", "dispatch_id", "dispatch_transport", "dispatched_at",
         "dispatch_mode", "offline_dispatch_digest", "offline_dispatch_bundle_created_at",
         "offline_result_bundle_ingested", "offline_result_bundle_digest",
-        "result_artifact_ingested", "result_received_at"
+        "result_artifact_ingested", "result_received_at", "routing_decision",
+        "zero_idle_evidence", "waiting_from_status", "external_wait_state", "external_wait_started_at",
+        "external_wait_completed_at", "external_wait_timeline"
     }
     for task in merged.get("tasks", []):
         old = old_by_id.get(task["id"])

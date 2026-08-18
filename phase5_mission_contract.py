@@ -51,6 +51,16 @@ RUNTIME_FIELDS = {
     "result_artifact_ingested",
     "result_received_at",
     "correlation_id",
+    # Phase 7 Resource Manager evidence is runtime state, not mission authority.
+    # Preserve it across a clean durable restore so an unchanged cycle remains
+    # byte-stable and the routing/WAIT ledger survives Supervisor restarts.
+    "routing_decision",
+    "zero_idle_evidence",
+    "waiting_from_status",
+    "external_wait_state",
+    "external_wait_started_at",
+    "external_wait_completed_at",
+    "external_wait_timeline",
     # Phase 5 Gate 3: monotonic per-task fencing and immutable attempt history.
     "fence_generation",
     "active_attempt_id",
