@@ -18,46 +18,54 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - name: Verify Android secure gateway
         run: |
           test -f android/lbank-mobile/app/src/main/java/com/saladinayoubi/lbankmobile/MainActivity.java
           grep -q 'AndroidKeyStore' android/lbank-mobile/app/src/main/java/com/saladinayoubi/lbankmobile/MainActivity.java
           grep -q 'NexusNative' android/lbank-mobile/app/src/main/java/com/saladinayoubi/lbankmobile/MainActivity.java
           grep -q 'AES/GCM/NoPadding' android/lbank-mobile/app/src/main/java/com/saladinayoubi/lbankmobile/MainActivity.java
-      - name: Verify Electron secure bridge and integrated desktop surface
+      - name: Verify canonical Python-sidecar product surface
         run: |
-          test -f desktop/lbank-monitor/preload.js
-          test -f desktop/lbank-monitor/main.js
-          test -f desktop/lbank-monitor/app/index.html
-          test -f desktop/lbank-monitor/app/full-product.css
-          test -f desktop/lbank-monitor/app/desktop-product.js
-          test -f desktop/lbank-monitor/app/project-data.js
-          node -e "const p=require('./desktop/lbank-monitor/package.json'); if(p.version!=='4.0.0' || !p.build.files.includes('preload.js') || !p.build.extraResources?.some(x=>x.from==='app')) process.exit(1)"
-          node --check desktop/lbank-monitor/main.js
-          node --check desktop/lbank-monitor/preload.js
-          node --check desktop/lbank-monitor/app/desktop-product.js
-          grep -q 'contextBridge' desktop/lbank-monitor/preload.js
-          grep -q 'requestAiRoom' desktop/lbank-monitor/preload.js
-          grep -q 'contextIsolation: true' desktop/lbank-monitor/main.js
-          grep -q 'sandbox: true' desktop/lbank-monitor/main.js
-          grep -q 'nodeIntegration: false' desktop/lbank-monitor/main.js
-          grep -q 'PUBLIC_MARKET_SYMBOLS' desktop/lbank-monitor/main.js
-          grep -q 'nexus:public-market' desktop/lbank-monitor/main.js
-          grep -q 'nexus:ai-room' desktop/lbank-monitor/main.js
-          grep -q 'paper_trading_only:true' desktop/lbank-monitor/app/desktop-product.js
-          grep -q 'function verifyLedger()' desktop/lbank-monitor/app/desktop-product.js
-          grep -q 'ترید دمو' desktop/lbank-monitor/app/index.html
-          grep -q 'اتاق هوش مصنوعی' desktop/lbank-monitor/app/index.html
-          grep -q 'Mission Control' desktop/lbank-monitor/app/index.html
-          grep -q 'ترید اصلی قفل است' desktop/lbank-monitor/app/index.html
-      - name: Install locked Gate 18 test dependencies
+          test -f product_runtime.py
+          test -f product_research_runtime.py
+          test -f product_control_runtime.py
+          test -f product_web_server.py
+          test -f product_ui/index.html
+          test -f product_ui/product.css
+          test -f product_ui/product-extra.css
+          test -f product_ui/product.js
+          test -f desktop/nexus-product/main.js
+          node --check desktop/nexus-product/main.js
+          node --check product_ui/product.js
+          node -e "const p=require('./desktop/nexus-product/package.json'); if(p.version!=='4.1.0' || !p.build.extraResources?.some(x=>x.to==='nexus-product-server.exe') || !p.build.extraResources?.some(x=>x.to==='source-sha.txt')) process.exit(1)"
+          grep -q 'contextIsolation: true' desktop/nexus-product/main.js
+          grep -q 'sandbox: true' desktop/nexus-product/main.js
+          grep -q 'nodeIntegration: false' desktop/nexus-product/main.js
+          grep -q 'NEXUS_SOURCE_SHA' desktop/nexus-product/main.js
+          grep -q 'NEXUS_MARKET_REGISTRY_PATH' desktop/nexus-product/main.js
+          grep -q 'run_automated_signal_pipeline' product_research_runtime.py
+          grep -q 'run_research_job' product_research_runtime.py
+          grep -q 'execute_paper_command' product_runtime.py
+          grep -q 'recovery_snapshot' product_control_runtime.py
+          grep -q '/api/product/research/run' product_web_server.py
+          grep -q '/api/product/paper/auto' product_web_server.py
+          grep -q 'OWNER-CONTROLLED FUTURE STAGE' product_ui/index.html
+      - name: Install locked product test dependencies
         run: python -m pip install -r requirements-dev.lock
       - name: Verify independent Phase 4 paper/live air gap
         run: python scripts/independent_phase4_airgap_gate.py
       - name: Run Gate 18 adversarial tests
         run: python -m pytest -q tests/test_paper_live_airgap.py
-      - name: Run Windows full-product regression tests
-        run: python -m pytest -q tests/test_windows_delivery_surface.py
+      - name: Run canonical full-product regression tests
+        run: >-
+          python -m pytest -q
+          tests/test_product_runtime.py
+          tests/test_product_web_server.py
+          tests/test_product_research_runtime.py
+          tests/test_windows_delivery_surface.py
 
   android-apk:
     runs-on: ubuntu-latest
@@ -103,66 +111,76 @@ jobs:
 
   windows-desktop:
     runs-on: windows-latest
-    defaults:
-      run:
-        working-directory: desktop/lbank-monitor
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-          cache-dependency-path: desktop/lbank-monitor/package.json
-      - name: Validate committed Windows full product
-        shell: pwsh
-        working-directory: ${{ github.workspace }}
+      - name: Install canonical product build dependencies
         run: |
-          $required = @(
-            'desktop/lbank-monitor/app/index.html',
-            'desktop/lbank-monitor/app/full-product.css',
-            'desktop/lbank-monitor/app/desktop-product.js',
-            'desktop/lbank-monitor/app/project-data.js'
-          )
-          foreach ($path in $required) { if (!(Test-Path $path)) { throw "Missing desktop product asset: $path" } }
-          node --check desktop/lbank-monitor/main.js
-          node --check desktop/lbank-monitor/preload.js
-          node --check desktop/lbank-monitor/app/desktop-product.js
-      - name: Install dependencies
+          python -m pip install -r requirements-dev.lock
+          python -m pip install -r requirements-product-build.lock
+      - name: Build canonical Python product sidecar
+        run: >-
+          python -m PyInstaller
+          --noconfirm
+          --clean
+          --onefile
+          --name nexus-product-server
+          --add-data "product_ui;product_ui"
+          --add-data ".nexus/phase6-checkpoint.json;.nexus"
+          --add-data "docs/project_memory/STATE.json;docs/project_memory"
+          product_web_server.py
+      - name: Stage exact-source product resources
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path 'desktop/nexus-product/sidecar' -Force | Out-Null
+          Copy-Item 'dist/nexus-product-server.exe' 'desktop/nexus-product/sidecar/nexus-product-server.exe'
+          Set-Content -LiteralPath 'desktop/nexus-product/sidecar/source-sha.txt' -Value $env:GITHUB_SHA -NoNewline -Encoding ascii
+          Copy-Item 'docs/architecture/market-data-source-registry.yaml' 'desktop/nexus-product/sidecar/market-data-source-registry.yaml'
+      - name: Install Electron dependencies
+        working-directory: desktop/nexus-product
         run: npm install --no-audit --no-fund
-      - name: Build installer and portable package
+      - name: Build canonical installer and portable package
+        working-directory: desktop/nexus-product
         run: npm run dist:win
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-      - name: Verify packaged integrated UI and package variants
+      - name: Verify packaged canonical resources and package variants
         shell: pwsh
         run: |
-          $resourceRoot = 'dist/win-unpacked/resources/app'
-          foreach ($name in @('index.html','full-product.css','desktop-product.js','project-data.js')) {
-            if (!(Test-Path (Join-Path $resourceRoot $name))) { throw "Packaged product asset missing: $name" }
-          }
-          if (!(Get-ChildItem 'dist/NEXUS_Personal_Pro_Setup_4.0.0_*.exe' -ErrorAction SilentlyContinue)) { throw 'Setup EXE missing' }
-          if (!(Get-ChildItem 'dist/NEXUS_Personal_Pro_Portable_4.0.0_*.exe' -ErrorAction SilentlyContinue)) { throw 'Portable EXE missing' }
+          $root = 'desktop/nexus-product/dist/win-unpacked/resources'
+          foreach ($path in @(
+            "$root/nexus-product-server.exe",
+            "$root/source-sha.txt",
+            "$root/docs/architecture/market-data-source-registry.yaml"
+          )) { if (!(Test-Path $path)) { throw "Packaged canonical resource missing: $path" } }
+          if ((Get-Content "$root/source-sha.txt" -Raw).Trim() -ne $env:GITHUB_SHA) { throw 'Packaged source SHA mismatch' }
+          if (!(Get-ChildItem 'desktop/nexus-product/dist/NEXUS_Personal_Pro_Setup_4.1.0_*.exe' -ErrorAction SilentlyContinue)) { throw 'Setup EXE missing' }
+          if (!(Get-ChildItem 'desktop/nexus-product/dist/NEXUS_Personal_Pro_Portable_4.1.0_*.exe' -ErrorAction SilentlyContinue)) { throw 'Portable EXE missing' }
       - name: Generate Windows SHA-256 checksums
         shell: pwsh
         run: |
-          $files = Get-ChildItem 'dist/*.exe' | Sort-Object Name
+          $files = Get-ChildItem 'desktop/nexus-product/dist/*.exe' | Sort-Object Name
           if (-not $files) { throw 'No Windows .exe artifacts were produced' }
           $lines = foreach ($file in $files) {
             $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $file.FullName).Hash.ToLowerInvariant()
             "$hash  $($file.Name)"
           }
-          $lines | Set-Content -Encoding ascii 'dist/SHA256SUMS.txt'
+          $lines | Set-Content -Encoding ascii 'desktop/nexus-product/dist/SHA256SUMS.txt'
       - name: Build unsigned Windows evidence bundle
-        working-directory: ${{ github.workspace }}
         run: >-
           python scripts/build_release_evidence.py
           --bundle-dir release-evidence/windows
-          --artifact-glob 'desktop/lbank-monitor/dist/*.exe'
-          --artifact-glob 'desktop/lbank-monitor/dist/SHA256SUMS.txt'
+          --artifact-glob 'desktop/nexus-product/dist/*.exe'
+          --artifact-glob 'desktop/nexus-product/dist/SHA256SUMS.txt'
           --source-commit '${{ github.sha }}'
           --builder 'github-actions/nexus-build-verification/windows-desktop'
       - name: Fail-closed verify Windows evidence bundle
-        working-directory: ${{ github.workspace }}
         run: >-
           python scripts/release_gate.py release-evidence/windows
           --allow-unsigned
@@ -172,9 +190,9 @@ jobs:
         with:
           name: nexus-windows-packages
           path: |
-            desktop/lbank-monitor/dist/NEXUS_Personal_Pro_Setup_4.0.0_*.exe
-            desktop/lbank-monitor/dist/NEXUS_Personal_Pro_Portable_4.0.0_*.exe
-            desktop/lbank-monitor/dist/SHA256SUMS.txt
+            desktop/nexus-product/dist/NEXUS_Personal_Pro_Setup_4.1.0_*.exe
+            desktop/nexus-product/dist/NEXUS_Personal_Pro_Portable_4.1.0_*.exe
+            desktop/nexus-product/dist/SHA256SUMS.txt
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
