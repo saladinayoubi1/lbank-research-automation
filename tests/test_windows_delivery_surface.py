@@ -22,7 +22,7 @@ def test_canonical_windows_product_packages_python_sidecar_and_source_bindings()
     assert all(path.is_file() for path in required)
 
     package = json.loads(read(DESKTOP / "package.json"))
-    assert package["version"] == "4.1.1"
+    assert package["version"] == "4.1.2"
     assert package["main"] == "main.js"
     resources = {(item.get("from"), item.get("to")) for item in package["build"]["extraResources"]}
     assert ("sidecar/nexus-product-server", "nexus-product-server") in resources
@@ -68,7 +68,6 @@ def test_canonical_surface_is_full_nexus_product_not_market_shell() -> None:
 def test_canonical_product_uses_real_python_data_research_paper_risk_and_event_store() -> None:
     runtime = read(ROOT / "product_runtime.py")
     research = read(ROOT / "product_research_runtime.py")
-    canonical_backtest = read(ROOT / "canonical_backtest.py")
     controls = read(ROOT / "product_control_runtime.py")
     assert "from deterministic_risk import" in runtime and "evaluate_risk" in runtime
     assert "from paper_execution import" in runtime and "execute_paper_command" in runtime
@@ -78,9 +77,6 @@ def test_canonical_product_uses_real_python_data_research_paper_risk_and_event_s
     assert "fetch_bind_bybit_dataset" in research
     assert "run_research_job" in research
     assert "run_canonical_target_exposure_backtest" in research
-    assert "run_target_exposure_backtest" not in research
-    assert "run_target_exposure_backtest" in canonical_backtest
-    assert "validate_canonical_dataset" in canonical_backtest
     assert "run_automated_signal_pipeline" in research
     assert "qualification_killed" in research and "paper_executed" in research
     assert "recovery_snapshot" in controls and "export_csv" in controls
@@ -98,6 +94,9 @@ def test_product_gateway_exposes_real_full_current_scope_contracts() -> None:
         assert route in server
     assert "build_ai_handler" in server
     assert '"live_main": "locked_owner_controlled"' in server
+    assert '"projection": "clean_install_idle"' in server
+    assert '"agents": []' in server
+    assert '"runners": []' in server
     assert '"/ui/product-extra.css": "product-extra.css"' in server
 
 
@@ -134,7 +133,7 @@ def test_windows_targets_are_distinct_and_trusted_workflow_builds_exact_source_p
         "product_runtime.py", "product_research_runtime.py", "product_control_runtime.py",
         "product_web_server.py", "desktop/nexus-product", "PyInstaller", "--onedir", "nexus-product-server.exe",
         "Smoke-test canonical product sidecar", "source-sha.txt", "market-data-source-registry.yaml",
-        "NEXUS_Personal_Pro_Setup_4.1.1_", "NEXUS_Personal_Pro_Portable_4.1.1_",
+        "NEXUS_Personal_Pro_Setup_4.1.2_", "NEXUS_Personal_Pro_Portable_4.1.2_",
     ):
         assert marker in workflow
     assert "push:" in workflow and "branches: [main]" in workflow

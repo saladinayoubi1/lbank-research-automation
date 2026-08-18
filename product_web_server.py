@@ -58,7 +58,44 @@ def _phase6_checkpoint() -> dict[str, Any]:
     )}
 
 
+def _clean_idle_mission_snapshot() -> dict[str, Any]:
+    """Truthful clean-install projection; no agents, runners, or providers are fabricated."""
+    return {
+        "status": "idle",
+        "contract_version": "nexus.mission-control.read.v1",
+        "projection": "clean_install_idle",
+        "reason": "no Mission Control runtime report has been generated yet",
+        "mission": {
+            "mission_id": None,
+            "objective": None,
+            "status": "idle",
+            "priority": "normal",
+            "policy_version": None,
+            "schedule": None,
+            "last_run": None,
+            "next_run": None,
+            "completed_steps": 0,
+            "total_steps": 0,
+            "progress": 0,
+            "current_task": None,
+        },
+        "queue": {"counts": {"READY": 0, "RUNNING": 0, "FAILED": 0, "BLOCKED": 0}},
+        "agents": [],
+        "runners": [],
+        "local_node": {"registered": False, "enabled": False, "healthy": False},
+        "data": {"status": "idle", "runtime_report_present": False},
+        "providers": {},
+        "paper": {"mode": "paper", "live_trading_authority": False},
+        "circuits": {},
+        "limits": {},
+        "notifications": [],
+    }
+
+
 def _mission_snapshot(data_root: Path) -> dict[str, Any]:
+    report = data_root.resolve().parent / "mission_control" / "_mission_control.json"
+    if not report.exists() and not report.is_symlink():
+        return _clean_idle_mission_snapshot()
     try:
         payload = load_mission_control(data_root)["mission_control"]
     except Exception as exc:
@@ -293,7 +330,7 @@ def main() -> None:
     parser.add_argument("--data-root", type=Path, default=DEFAULT_DATA_ROOT)
     parser.add_argument("--ui-root", type=Path, default=PRODUCT_UI_ROOT)
     args = parser.parse_args()
-    serve(args.host, args.port, args.data_root, ui_root=args.ui_root)
+    serve(args.host, args.port, data_root=args.data_root, ui_root=args.ui_root)
 
 
 if __name__ == "__main__": main()
