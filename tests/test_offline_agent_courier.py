@@ -77,6 +77,20 @@ def prepare(monkeypatch, tmp_path):
     return tmp_path / "runtime.json", tmp_path / "summary.json"
 
 
+def fake_success_result(payload, transport):
+    return {
+        "schema_version": 2,
+        "task_id": payload["task_id"],
+        "lease_id": payload["lease_id"],
+        "correlation_id": payload["correlation_id"],
+        "dispatch_id": payload["dispatch_id"],
+        "worker_id": payload["worker_id"],
+        "transport": transport,
+        "outcome": "success",
+        "evidence": {},
+    }
+
+
 def test_github_transport_skips_offline_courier_worker(monkeypatch):
     cfg = config()
     calls = []
@@ -126,17 +140,9 @@ def test_offline_execute_and_import_enters_independent_verification(monkeypatch,
 
     def fake_execute(payload, transport):
         assert transport == "windows"
-        return {
-            "schema_version": 2,
-            "task_id": payload["task_id"],
-            "lease_id": payload["lease_id"],
-            "correlation_id": payload["correlation_id"],
-            "dispatch_id": payload["dispatch_id"],
-            "worker_id": payload["worker_id"],
-            "transport": transport,
-            "outcome": "success",
-            "evidence": {"executor": "offline-test", "canonical": True},
-        }
+        result = fake_success_result(payload, transport)
+        result["evidence"] = {"executor": "offline-test", "canonical": True}
+        return result
 
     monkeypatch.setattr(courier.executor, "execute", fake_execute)
     result_bundle = courier.execute_bundle(dispatch_path, result_path)
@@ -152,27 +158,59 @@ def test_offline_execute_and_import_enters_independent_verification(monkeypatch,
     assert task["offline_result_bundle_digest"] == result_bundle["result_sha256"]
 
 
+def test_replayed_result_bundle_is_rejected_after_first_import(monkeypatch, tmp_path):
+    runtime, summary = prepare(monkeypatch, tmp_path)
+    cfg = config()
+    dispatch_path = tmp_path / "dispatch.json"
+    result_path = tmp_path / "result.json"
+    courier.export_task(cfg, "P4-DATA-001", dispatch_path, runtime_path=runtime, summary_path=summary)
+    monkeypatch.setattr(courier.executor, "execute", fake_success_result)
+    courier.execute_bundle(dispatch_path, result_path)
+
+    courier.import_result(cfg, result_path, runtime_path=runtime, summary_path=summary)
+    task = cfg["tasks"][0]
+    verifier_lease = task["lease_id"]
+    assert task["status"] == "VERIFYING"
+
+    with pytest.raises(ValueError, match="stale or mismatched task result"):
+        courier.import_result(cfg, result_path, runtime_path=runtime, summary_path=summary)
+    assert task["status"] == "VERIFYING"
+    assert task["lease_id"] == verifier_lease
+
+
+def test_validly_sealed_result_for_wrong_worker_is_rejected(monkeypatch, tmp_path):
+    runtime, summary = prepare(monkeypatch, tmp_path)
+    cfg = config()
+    dispatch_path = tmp_path / "dispatch.json"
+    result_path = tmp_path / "result.json"
+    courier.export_task(cfg, "P4-DATA-001", dispatch_path, runtime_path=runtime, summary_path=summary)
+    monkeypatch.setattr(courier.executor, "execute", fake_success_result)
+    bundle = courier.execute_bundle(dispatch_path, result_path)
+
+    forged_result = deepcopy(bundle["result"])
+    forged_result["worker_id"] = "qa-verifier-agent"
+    forged_unsigned = {
+        "schema_version": 1,
+        "kind": courier.RESULT_KIND,
+        "created_at": bundle["created_at"],
+        "source_dispatch_sha256": bundle["source_dispatch_sha256"],
+        "result_sha256": courier._digest(forged_result),
+        "result": forged_result,
+    }
+    result_path.write_text(json.dumps(courier._seal(forged_unsigned)), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="worker does not own lease"):
+        courier.import_result(cfg, result_path, runtime_path=runtime, summary_path=summary)
+    assert cfg["tasks"][0]["status"] == "RUNNING"
+
+
 def test_stale_result_from_previous_lease_is_rejected(monkeypatch, tmp_path):
     runtime, summary = prepare(monkeypatch, tmp_path)
     cfg = config()
     dispatch_path = tmp_path / "dispatch.json"
     result_path = tmp_path / "result.json"
     courier.export_task(cfg, "P4-DATA-001", dispatch_path, runtime_path=runtime, summary_path=summary)
-
-    def fake_execute(payload, transport):
-        return {
-            "schema_version": 2,
-            "task_id": payload["task_id"],
-            "lease_id": payload["lease_id"],
-            "correlation_id": payload["correlation_id"],
-            "dispatch_id": payload["dispatch_id"],
-            "worker_id": payload["worker_id"],
-            "transport": transport,
-            "outcome": "success",
-            "evidence": {},
-        }
-
-    monkeypatch.setattr(courier.executor, "execute", fake_execute)
+    monkeypatch.setattr(courier.executor, "execute", fake_success_result)
     courier.execute_bundle(dispatch_path, result_path)
 
     task = cfg["tasks"][0]
@@ -190,21 +228,7 @@ def test_result_after_offline_lease_expiry_is_rejected(monkeypatch, tmp_path):
     dispatch_path = tmp_path / "dispatch.json"
     result_path = tmp_path / "result.json"
     courier.export_task(cfg, "P4-DATA-001", dispatch_path, runtime_path=runtime, summary_path=summary)
-
-    def fake_execute(payload, transport):
-        return {
-            "schema_version": 2,
-            "task_id": payload["task_id"],
-            "lease_id": payload["lease_id"],
-            "correlation_id": payload["correlation_id"],
-            "dispatch_id": payload["dispatch_id"],
-            "worker_id": payload["worker_id"],
-            "transport": transport,
-            "outcome": "success",
-            "evidence": {},
-        }
-
-    monkeypatch.setattr(courier.executor, "execute", fake_execute)
+    monkeypatch.setattr(courier.executor, "execute", fake_success_result)
     courier.execute_bundle(dispatch_path, result_path)
     cfg["tasks"][0]["lease_expires_at"] = am.iso(am.utcnow() - timedelta(seconds=1))
     with pytest.raises(ValueError, match="after lease expiry"):
