@@ -76,7 +76,7 @@ def test_canonical_product_uses_real_python_data_research_paper_risk_and_event_s
     assert "_session_signal_count" in runtime
     assert "fetch_bind_bybit_dataset" in research
     assert "run_research_job" in research
-    assert "run_target_exposure_backtest" in research
+    assert "run_canonical_target_exposure_backtest" in research
     assert "run_automated_signal_pipeline" in research
     assert "qualification_killed" in research and "paper_executed" in research
     assert "recovery_snapshot" in controls and "export_csv" in controls
