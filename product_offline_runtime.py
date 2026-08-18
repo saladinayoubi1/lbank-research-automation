@@ -98,8 +98,10 @@ class OfflineDatasetStore:
                 os.fsync(handle.fileno())
             Path(tmp_name).replace(target)
         finally:
-            try: Path(tmp_name).unlink(missing_ok=True)
-            except OSError: pass
+            try:
+                Path(tmp_name).unlink(missing_ok=True)
+            except OSError:
+                pass
         return {"contract_version": OFFLINE_CONTRACT, "status": "imported", "dataset": _dataset_summary(dataset)}
 
     def load(self, binding_sha256: str) -> dict[str, Any]:
@@ -125,8 +127,10 @@ class OfflineDatasetStore:
             binding = path.stem
             if not _BINDING_RE.fullmatch(binding):
                 continue
-            try: datasets.append(_dataset_summary(self.load(binding)))
-            except ProductOfflineError: continue
+            try:
+                datasets.append(_dataset_summary(self.load(binding)))
+            except ProductOfflineError:
+                continue
         return {
             "contract_version": OFFLINE_CONTRACT,
             "mode": "offline_first",
@@ -188,3 +192,19 @@ class OfflineProductResearchRuntime(ProductResearchRuntime):
             limit=dataset["row_count"],
         )
         return {**result, "data_mode": "offline_import", "internet_used": False, "historical_research_allowed": True}
+
+    def auto_paper(self) -> dict[str, Any]:
+        research = self._last_research
+        if research is None:
+            raise ProductResearchError("run canonical research before automated Paper")
+        try:
+            dataset = validate_canonical_dataset(research["_dataset"], registry_path=_registry_path())
+            request = research["request"]
+            spec = TIMEFRAMES[request["timeframe"]]
+            source_ms = int(dataset["rows"][-1]["open_time_ms"]) + int(spec["step_ms"])
+            age_ms = int(self.clock_ms()) - source_ms
+        except Exception as exc:
+            raise ProductResearchError(f"automated Paper rejected invalid offline lineage: {exc}") from exc
+        if age_ms < 0 or age_ms > int(spec["step_ms"]) * 2:
+            raise ProductResearchError("automated Paper rejected stale canonical data")
+        return super().auto_paper()
