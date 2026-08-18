@@ -17,6 +17,7 @@ on:
       - 'scripts/agent_task_executor.py'
       - 'scripts/phase7_proof_prepare.py'
       - 'offline_agent_courier.py'
+      - 'phase5_mission_contract.py'
       - 'phase7_e2e_proof.py'
       - 'tests/test_phase7_*.py'
       - 'tests/test_offline_agent_courier.py'
@@ -39,6 +40,7 @@ on:
       - 'scripts/agent_task_executor.py'
       - 'scripts/phase7_proof_prepare.py'
       - 'offline_agent_courier.py'
+      - 'phase5_mission_contract.py'
       - 'phase7_e2e_proof.py'
       - 'tests/test_phase7_*.py'
       - 'tests/test_offline_agent_courier.py'
@@ -86,6 +88,7 @@ jobs:
             tests/test_phase7_resource_manager.py \
             tests/test_phase7_mission_projection.py \
             tests/test_phase7_courier_zero_idle.py \
+            tests/test_phase7_courier_restore.py \
             tests/test_phase7_e2e_proof.py \
             tests/test_phase7_proof_prepare.py \
             tests/test_offline_agent_courier.py
