@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Mapping
 from urllib.parse import urlsplit
 
+from product_build_runtime import ProductBuildEvidenceError, build_evidence_snapshot, supervisor_snapshot
 from product_control_runtime import ProductControlRuntime
 from product_mission_runtime import ProductMissionError, ProductMissionRuntime
 from product_offline_runtime import (
@@ -74,7 +75,8 @@ def build_handler(
             length = int(raw_length)
             if length < 2 or length > MAX_OFFLINE_REQUEST_BYTES:
                 self._send(_json_error(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, "offline_import_out_of_bounds", "offline request exceeds bounded import size", active_config)); return None
-            try: payload = json.loads(self.rfile.read(length).decode("utf-8"))
+            try:
+                payload = json.loads(self.rfile.read(length).decode("utf-8"))
             except (UnicodeDecodeError, json.JSONDecodeError):
                 self._send(_json_error(HTTPStatus.BAD_REQUEST, "invalid_json", "malformed JSON", active_config)); return None
             if not isinstance(payload, Mapping):
@@ -82,7 +84,8 @@ def build_handler(
             return payload
 
         def _offline_index(self, *, head_only: bool = False) -> None:
-            try: response = _safe_asset(ui_root, "index.html")
+            try:
+                response = _safe_asset(ui_root, "index.html")
             except Exception as exc:
                 self._send(_json_error(HTTPStatus.SERVICE_UNAVAILABLE, "offline_asset_unavailable", str(exc), active_config), head_only=head_only); return
             head_marker = b"</head>"
@@ -105,7 +108,8 @@ def build_handler(
                 if not self._authorized(): return
                 if parsed.query:
                     self._send(_json_error(HTTPStatus.BAD_REQUEST, "invalid_query", "offline static routes do not accept query", active_config)); return
-                try: response = _safe_asset(ui_root, OFFLINE_STATIC[parsed.path])
+                try:
+                    response = _safe_asset(ui_root, OFFLINE_STATIC[parsed.path])
                 except Exception as exc:
                     self._send(_json_error(HTTPStatus.SERVICE_UNAVAILABLE, "offline_asset_unavailable", str(exc), active_config)); return
                 self._send(response); return
@@ -123,15 +127,19 @@ def build_handler(
                 if not self._authorized(): return
                 if parsed.query:
                     self._send(_json_error(HTTPStatus.BAD_REQUEST, "invalid_query", "mission status does not accept query", active_config)); return
-                try: payload = mission.snapshot()
-                except ProductMissionError as exc:
+                try:
+                    payload = mission.snapshot()
+                    payload["local_supervisor"] = supervisor_snapshot(runtime.root)
+                    payload["build_evidence"] = build_evidence_snapshot()
+                except (ProductMissionError, ProductBuildEvidenceError) as exc:
                     self._send(_json_error(HTTPStatus.SERVICE_UNAVAILABLE, "mission_control_unavailable", str(exc), active_config)); return
                 self._send(ApiResponse(HTTPStatus.OK, payload)); return
             if parsed.path == "/api/product/mission/export":
                 if not self._authorized(): return
                 if parsed.query:
                     self._send(_json_error(HTTPStatus.BAD_REQUEST, "invalid_query", "mission export does not accept query", active_config)); return
-                try: payload = mission.export_snapshot()
+                try:
+                    payload = mission.export_snapshot()
                 except ProductMissionError as exc:
                     self._send(_json_error(HTTPStatus.SERVICE_UNAVAILABLE, "mission_export_unavailable", str(exc), active_config)); return
                 self._send(ApiResponse(HTTPStatus.OK, payload)); return
@@ -139,9 +147,28 @@ def build_handler(
                 if not self._authorized(): return
                 if parsed.query:
                     self._send(_json_error(HTTPStatus.BAD_REQUEST, "invalid_query", "strategy evidence does not accept query", active_config)); return
-                try: payload = mission.strategy_store.history()
+                try:
+                    payload = mission.strategy_store.history()
                 except ProductMissionError as exc:
                     self._send(_json_error(HTTPStatus.SERVICE_UNAVAILABLE, "strategy_evidence_unavailable", str(exc), active_config)); return
+                self._send(ApiResponse(HTTPStatus.OK, payload)); return
+            if parsed.path == "/api/product/build-evidence":
+                if not self._authorized(): return
+                if parsed.query:
+                    self._send(_json_error(HTTPStatus.BAD_REQUEST, "invalid_query", "build evidence does not accept query", active_config)); return
+                try:
+                    payload = build_evidence_snapshot()
+                except ProductBuildEvidenceError as exc:
+                    self._send(_json_error(HTTPStatus.SERVICE_UNAVAILABLE, "build_evidence_unavailable", str(exc), active_config)); return
+                self._send(ApiResponse(HTTPStatus.OK, payload)); return
+            if parsed.path == "/api/product/local-supervisor":
+                if not self._authorized(): return
+                if parsed.query:
+                    self._send(_json_error(HTTPStatus.BAD_REQUEST, "invalid_query", "supervisor status does not accept query", active_config)); return
+                try:
+                    payload = supervisor_snapshot(runtime.root)
+                except ProductBuildEvidenceError as exc:
+                    self._send(_json_error(HTTPStatus.SERVICE_UNAVAILABLE, "supervisor_unavailable", str(exc), active_config)); return
                 self._send(ApiResponse(HTTPStatus.OK, payload)); return
             super().do_GET()
 
@@ -154,7 +181,8 @@ def build_handler(
                 self._offline_index(head_only=True); return
             if parsed.path in OFFLINE_STATIC:
                 if not self._authorized(): return
-                try: response = _safe_asset(ui_root, OFFLINE_STATIC[parsed.path])
+                try:
+                    response = _safe_asset(ui_root, OFFLINE_STATIC[parsed.path])
                 except Exception as exc:
                     self._send(_json_error(HTTPStatus.SERVICE_UNAVAILABLE, "offline_asset_unavailable", str(exc), active_config), head_only=True); return
                 self._send(response, head_only=True); return
@@ -177,10 +205,12 @@ def build_handler(
                 if parsed.path == "/api/product/offline/import":
                     result = store.import_dataset(payload)
                 elif parsed.path == "/api/product/offline/research":
-                    if set(payload) != {"binding_sha256", "family"}: raise ProductOfflineError("offline research request schema mismatch")
+                    if set(payload) != {"binding_sha256", "family"}:
+                        raise ProductOfflineError("offline research request schema mismatch")
                     result = offline_research.run_imported_research(binding_sha256=str(payload["binding_sha256"]), family=str(payload["family"]))
                 elif parsed.path == "/api/product/offline/paper/auto":
-                    if set(payload): raise ProductOfflineError("offline auto-paper request must be an empty object")
+                    if set(payload):
+                        raise ProductOfflineError("offline auto-paper request must be an empty object")
                     result = offline_research.auto_paper()
                 else:
                     result = mission.import_snapshot(payload)
@@ -210,4 +240,5 @@ def main() -> None:
     serve(args.host, args.port, data_root=args.data_root, ui_root=args.ui_root)
 
 
-if __name__ == "__main__": main()
+if __name__ == "__main__":
+    main()
