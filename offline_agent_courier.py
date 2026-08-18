@@ -117,6 +117,7 @@ def export_task(
         raise ValueError("unknown task")
     if task.get("status") not in {"LEASED", "RUNNING"}:
         raise ValueError("offline task must hold an active lease")
+    prior_status = str(task.get("status"))
     worker = task.get("assigned_worker")
     if worker not in at.offline_courier_workers(config):
         raise ValueError("task worker is not configured for offline courier")
@@ -152,6 +153,20 @@ def export_task(
     task["dispatched_at"] = task.get("dispatched_at") or am.iso(now)
     task["offline_dispatch_digest"] = payload_digest
     task["offline_dispatch_bundle_created_at"] = created_at
+    if task.get("external_wait_state") != am.WAITING_EXTERNAL:
+        task["waiting_from_status"] = prior_status
+        task["external_wait_state"] = am.WAITING_EXTERNAL
+        task["external_wait_started_at"] = am.iso(now)
+        task.setdefault("external_wait_timeline", []).append(
+            {
+                "started_at": am.iso(now),
+                "from_status": prior_status,
+                "dispatch_id": expected_dispatch,
+                "worker_id": worker,
+                "transport": "windows",
+                "mode": "offline-courier",
+            }
+        )
     # An offline courier cannot send a live heartbeat. The bounded lease expiry is
     # therefore the fencing deadline; heartbeat is intentionally absent.
     task["heartbeat_at"] = None
@@ -178,7 +193,6 @@ def execute_bundle(dispatch_path: Path, output: Path) -> dict[str, Any]:
     payload = bundle["payload"]
     if not isinstance(payload, dict) or _digest(payload) != bundle.get("payload_sha256"):
         raise ValueError("offline dispatch payload digest mismatch")
-    # Reuse the canonical executor decoder instead of maintaining a second schema.
     encoded = base64.urlsafe_b64encode(_canonical(payload)).decode("ascii")
     payload = executor.decode_payload(encoded)
     if payload.get("transport") != "windows":
