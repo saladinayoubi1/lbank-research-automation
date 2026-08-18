@@ -47,6 +47,7 @@ def test_mobile_retains_local_paper_risk_fallback_but_labels_it_explicitly() -> 
     assert "LOCAL FALLBACK" in canonical
     assert "CANONICAL BACKEND" in canonical
     assert "canonical.connected" in canonical
+    assert "Mission unsynced" in canonical
 
 
 def test_android_prefers_bounded_canonical_product_backend_when_connected() -> None:
@@ -58,7 +59,7 @@ def test_android_prefers_bounded_canonical_product_backend_when_connected() -> N
     assert "PRODUCT_POST_PATHS" in activity
     for route in (
         "/api/product/overview", "/api/product/paper", "/api/product/paper/events",
-        "/api/product/strategies", "/api/product/live", "/api/product/data/registry",
+        "/api/product/strategies", "/api/product/mission/full", "/api/product/live", "/api/product/data/registry",
         "/api/product/research/last", "/api/product/risk", "/api/product/recovery",
         "/api/product/notifications", "/api/product/paper/order", "/api/product/paper/auto",
         "/api/product/research/run", "/api/product/session", "/api/product/kill-switch",
@@ -68,10 +69,27 @@ def test_android_prefers_bounded_canonical_product_backend_when_connected() -> N
         "/api/product/overview", "/api/product/paper", "/api/product/risk",
         "/api/product/recovery", "/api/product/data/registry", "/api/product/research/run",
         "/api/product/paper/order", "/api/product/session", "/api/product/kill-switch",
+        "/api/product/mission/full",
     ):
         assert route in client
     assert "document.addEventListener('click',intercept,true)" in client
-    assert "Paper mutations → backend" in client
+    assert "Mission + Paper → backend" in client
+
+
+def test_android_mission_control_uses_real_backend_contract_and_never_fabricates_unsynced_state() -> None:
+    activity = MAIN_ACTIVITY.read_text(encoding="utf-8")
+    client = (ASSETS / "mobile-canonical-client.js").read_text(encoding="utf-8")
+    assert '"/api/product/mission/full"' in activity
+    assert "/api/product/mission/full" in client
+    for marker in (
+        "MISSION UNSYNCED", "OWNER ACTION", "LEADING STRATEGY", "CI / EXACT HEAD",
+        "owner_actions", "strategy_center", "ci_health", "snapshot_age_seconds",
+        "local_supervisor", "build_evidence", "dispatch_transport", "heartbeat_at",
+    ):
+        assert marker in client
+    assert "/api/product/mission/import" not in activity
+    assert "/api/product/mission/import" not in client
+    assert "هیچ Task/Agent/CI state ساختگی نمایش داده نمی‌شود" in client
 
 
 def test_android_product_bridge_is_https_origin_bounded_and_fail_closed() -> None:
@@ -116,7 +134,7 @@ def test_mobile_network_surface_has_no_live_exchange_private_write_path() -> Non
         assert forbidden not in activity
 
 
-def test_mobile_metadata_discloses_canonical_backend_first_and_local_fallback() -> None:
+def test_mobile_metadata_discloses_real_mission_control_backend_and_local_fallback() -> None:
     project = json.loads((ASSETS / "data.json").read_text(encoding="utf-8"))["project"]
     assert project["status"] == "complete"
     assert project["phase"] == 6
@@ -125,24 +143,31 @@ def test_mobile_metadata_discloses_canonical_backend_first_and_local_fallback() 
     assert project["deterministic_risk_final_authority"] is True
     assert project["live_trading_authority"] is False
     assert project["profitability_claim"] is False
-    assert project["product_version"] == "3.1.0"
+    assert project["product_version"] == "3.2.0"
+    assert project["canonical_windows_main_sha"] == "366fe9b2b8e3788a3cb510af9a040fc091a2632d"
+    assert project["backend_contracts"]["mission_control"] == "product_mission_runtime.py / nexus.product-mission-control.v1"
+    assert project["backend_contracts"]["strategy_center"] == "product_mission_runtime.py / nexus.product-strategy-center.v1"
     assert project["mobile_delivery"]["mode"] == "canonical_backend_first_with_explicit_local_fallback"
     assert "/api/product/*" in project["mobile_delivery"]["canonical_product"]
     assert "LOCAL FALLBACK" in project["mobile_delivery"]["local_fallback"]
+    assert "/api/product/mission/full" in project["mobile_delivery"]["mission_control"]
+    assert "MISSION UNSYNCED" in project["mobile_delivery"]["mission_control"]
+    assert "does not fabricate state" in project["mobile_delivery"]["mission_control"]
     assert "locked" in project["mobile_delivery"]["live"]
 
 
-def test_mobile_version_and_ci_package_android_parity_build() -> None:
+def test_mobile_version_and_ci_package_android_final_mission_control_build() -> None:
     gradle = BUILD_GRADLE.read_text(encoding="utf-8")
     workflow = WORKFLOW.read_text(encoding="utf-8")
-    assert "versionCode 6" in gradle
-    assert 'versionName "3.1.0"' in gradle
-    assert "NEXUS_PERSONAL_PRO_3_1_0.apk" in workflow
-    assert "versionCode='6' versionName='3.1.0'" in workflow
+    assert "versionCode 7" in gradle
+    assert 'versionName "3.2.0"' in gradle
+    assert "NEXUS_PERSONAL_PRO_3_2_0.apk" in workflow
+    assert "versionCode='7' versionName='3.2.0'" in workflow
     assert "assets/mobile-canonical-client.js" in workflow
-    assert "CANONICAL BACKEND" in workflow
-    assert "LOCAL FALLBACK" in workflow
-    assert "/api/product/research/run" in workflow
-    assert "/api/product/paper/order" in workflow
-    assert "NexusProductResult" in workflow
+    for marker in (
+        "CANONICAL BACKEND", "LOCAL FALLBACK", "/api/product/research/run",
+        "/api/product/paper/order", "/api/product/mission/full", "MISSION UNSYNCED",
+        "OWNER ACTION", "LEADING STRATEGY", "CI / EXACT HEAD", "NexusProductResult",
+    ):
+        assert marker in workflow
     assert "push:" in workflow and "branches: [main]" in workflow
