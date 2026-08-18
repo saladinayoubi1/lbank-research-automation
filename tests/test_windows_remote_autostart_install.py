@@ -16,7 +16,8 @@ def test_remote_installer_refuses_service_identities_and_ephemeral_workspace():
         "NT AUTHORITY\\NETWORK SERVICE",
         "NT AUTHORITY\\LOCAL SERVICE",
         "GITHUB_WORKSPACE",
-        "[\\/]_work[\\/]",
+        "$root -match",
+        "_work",
         "no stable repository checkout was found outside the GitHub Actions workspace",
         "multiple stable repository checkouts found",
     ):
@@ -30,7 +31,9 @@ def test_remote_installer_uses_bounded_stable_repo_candidates_and_exact_origin()
         "Documents\\lbank-research-automation",
         "LOCALAPPDATA 'NEXUS\\lbank-research-automation'",
         "remote','get-url','origin",
-        "saladinayoubi1[/\\\\]lbank-research-automation",
+        "$ExpectedRemotePattern",
+        "saladinayoubi1",
+        "lbank-research-automation",
     ):
         assert marker in text
     assert "-Recurse" not in text
