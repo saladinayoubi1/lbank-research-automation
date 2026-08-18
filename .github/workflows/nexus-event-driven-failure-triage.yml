@@ -20,35 +20,33 @@ concurrency:
 jobs:
   triage:
     if: >-
-      (
-        github.event.workflow_run.name == 'Test' ||
-        github.event.workflow_run.name == 'NEXUS Cloud Fallback' ||
-        github.event.workflow_run.name == 'NEXUS Build Verification'
-      ) && (
-        github.event.workflow_run.conclusion == 'failure' ||
-        github.event.workflow_run.conclusion == 'cancelled' ||
-        github.event.workflow_run.conclusion == 'timed_out' ||
-        github.event.workflow_run.conclusion == 'action_required'
-      )
+      github.event.workflow_run.name == 'Test' ||
+      github.event.workflow_run.name == 'NEXUS Cloud Fallback' ||
+      github.event.workflow_run.name == 'NEXUS Build Verification'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Upsert fail-closed triage issue
+      - name: Upsert actionable failure and retire superseded CI issues
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
           script: |
             const run = context.payload.workflow_run;
             const { owner, repo } = context.repo;
+            const defaultBranch = context.payload.repository?.default_branch || 'main';
             const allowedWorkflows = new Set([
               'Test',
               'NEXUS Cloud Fallback',
               'NEXUS Build Verification'
             ]);
-            const allowedConclusions = new Set([
+            const failureConclusions = new Set([
               'failure',
               'cancelled',
               'timed_out',
               'action_required'
+            ]);
+            const allowedConclusions = new Set([
+              'success',
+              ...failureConclusions
             ]);
             const validHeadSha = typeof run?.head_sha === 'string' && /^[0-9a-f]{40}$/.test(run.head_sha);
             const validRunUrl = typeof run?.html_url === 'string' && /^https:\/\/github\.com\//.test(run.html_url);
@@ -104,8 +102,131 @@ jobs:
               state: 'open',
               per_page: 100
             });
+            const openPrNumbers = new Set(
+              issues.filter(issue => Boolean(issue.pull_request)).map(issue => issue.number)
+            );
 
-            const existing = issues.find(i => !i.pull_request && (i.body || '').includes(marker));
+            const parseTriage = (issue) => {
+              if (issue.pull_request) return null;
+              const text = issue.body || '';
+              const markerMatch = text.match(/<!-- nexus-ci-triage:([^:]+):([0-9a-f]{40}) -->/);
+              if (!markerMatch || !allowedWorkflows.has(markerMatch[1])) return null;
+              const eventMatch = text.match(/^- event: `([^`]+)`/m);
+              const branchMatch = text.match(/^- branch: `([^`]+)`/m);
+              const runMatch = text.match(/^- run: https:\/\/github\.com\/[^/\s]+\/[^/\s]+\/actions\/runs\/(\d+)$/m);
+              return {
+                workflow: markerMatch[1],
+                sha: markerMatch[2],
+                event: eventMatch?.[1] || 'unknown',
+                branch: branchMatch?.[1] || 'unknown',
+                runId: runMatch ? Number(runMatch[1]) : null
+              };
+            };
+
+            const closeIssue = async (issue, reason) => {
+              const currentBody = issue.body || '';
+              const note = `\n\n---\nClosed automatically by NEXUS CI hygiene: ${reason}`;
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: issue.number,
+                state: 'closed',
+                state_reason: 'not_planned',
+                body: currentBody.includes('Closed automatically by NEXUS CI hygiene:') ? currentBody : currentBody + note
+              });
+              core.info(`Closed superseded triage issue #${issue.number}: ${reason}`);
+            };
+
+            const currentBranchSupersedes = (parsed) => (
+              parsed.workflow === run.name &&
+              parsed.event === run.event &&
+              parsed.branch === safeBranch &&
+              parsed.sha !== run.head_sha
+            );
+
+            for (const issue of issues) {
+              const parsed = parseTriage(issue);
+              if (!parsed) continue;
+
+              // A newer completed run for the same workflow/event/branch supersedes an
+              // older SHA, regardless of whether the newer run succeeds or fails.
+              if (currentBranchSupersedes(parsed)) {
+                await closeIssue(issue, `a newer ${run.name} run exists for branch ${safeBranch}.`);
+                continue;
+              }
+
+              if (
+                parsed.event === 'push' &&
+                parsed.branch === defaultBranch &&
+                run.event === 'push' &&
+                safeBranch === defaultBranch &&
+                parsed.workflow === run.name &&
+                parsed.sha !== run.head_sha
+              ) {
+                await closeIssue(issue, `a newer ${run.name} run exists on ${defaultBranch}.`);
+                continue;
+              }
+
+              // Historical PR failures are retired only after independently binding the
+              // recorded issue marker to the recorded Actions run and proving every PR
+              // associated with that run is no longer present in the open issue/PR set.
+              // Missing, malformed, mismatched or unavailable evidence fails closed.
+              if (parsed.event === 'pull_request' && Number.isSafeInteger(parsed.runId) && parsed.runId > 0) {
+                try {
+                  const historical = (await github.rest.actions.getWorkflowRun({
+                    owner,
+                    repo,
+                    run_id: parsed.runId
+                  })).data;
+                  const expectedRepoUrl = `https://github.com/${owner}/${repo}/actions/runs/${parsed.runId}`;
+                  const bound = historical.name === parsed.workflow &&
+                    historical.head_sha === parsed.sha &&
+                    historical.event === 'pull_request' &&
+                    historical.html_url === expectedRepoUrl;
+                  const associatedPrNumbers = Array.isArray(historical.pull_requests)
+                    ? historical.pull_requests
+                        .map(pr => pr?.number)
+                        .filter(number => Number.isSafeInteger(number) && number > 0)
+                    : [];
+
+                  if (!bound) {
+                    core.warning(`Preserved triage issue #${issue.number}: historical workflow evidence mismatch.`);
+                    continue;
+                  }
+                  if (associatedPrNumbers.length === 0) {
+                    core.warning(`Preserved triage issue #${issue.number}: no independently associated pull request.`);
+                    continue;
+                  }
+                  if (associatedPrNumbers.every(number => !openPrNumbers.has(number))) {
+                    await closeIssue(issue, `all pull requests bound to workflow run ${parsed.runId} are closed or merged.`);
+                  }
+                } catch (error) {
+                  core.warning(`Preserved triage issue #${issue.number}: historical run verification failed (${error.message}).`);
+                }
+              }
+            }
+
+            const refreshedIssues = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: 'open',
+              per_page: 100
+            });
+            const existing = refreshedIssues.find(i => !i.pull_request && (i.body || '').includes(marker));
+
+            if (run.conclusion === 'success') {
+              if (existing) {
+                await closeIssue(existing, 'the exact SHA now has a successful workflow run.');
+              }
+              core.info(`Successful ${run.name} run on ${run.head_sha}; no failure issue required.`);
+              return;
+            }
+
+            if (!failureConclusions.has(run.conclusion)) {
+              core.info(`Conclusion ${run.conclusion} does not require a failure issue.`);
+              return;
+            }
+
             if (existing) {
               await github.rest.issues.update({
                 owner,
