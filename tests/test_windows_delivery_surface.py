@@ -4,167 +4,123 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-DESKTOP = ROOT / "desktop" / "lbank-monitor"
-APP = DESKTOP / "app"
+DESKTOP = ROOT / "desktop" / "nexus-product"
+UI = ROOT / "product_ui"
 
 
 def read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def test_windows_full_product_assets_are_committed_and_packaged() -> None:
+def test_canonical_windows_product_packages_python_sidecar() -> None:
     required = [
-        APP / "index.html",
-        APP / "full-product.css",
-        APP / "desktop-product.js",
-        APP / "project-data.js",
         DESKTOP / "main.js",
-        DESKTOP / "preload.js",
+        DESKTOP / "package.json",
+        ROOT / "product_runtime.py",
+        ROOT / "product_web_server.py",
+        UI / "index.html",
+        UI / "product.css",
+        UI / "product.js",
     ]
     assert all(path.is_file() for path in required)
 
     package = json.loads(read(DESKTOP / "package.json"))
     assert package["version"] == "4.0.0"
-    assert any(item.get("from") == "app" and item.get("to") == "app" for item in package["build"]["extraResources"])
-    assert "app/desktop-product.js" in package["scripts"]["check"]
+    assert package["main"] == "main.js"
+    assert any(
+        item.get("from") == "sidecar/nexus-product-server.exe"
+        and item.get("to") == "nexus-product-server.exe"
+        for item in package["build"]["extraResources"]
+    )
+
+    main = read(DESKTOP / "main.js")
+    assert "nexus-product-server.exe" in main
+    assert "spawn(executable" in main
+    assert "127.0.0.1" in main
+    assert "/api/product/overview" in main
 
 
-def test_windows_surface_is_integrated_nexus_product_not_market_shell() -> None:
-    index = read(APP / "index.html")
-    assert "NEXUS Personal Pro" in index
-    assert "مرکز فرمان" in index
-    assert "ترید دمو" in index
-    assert "اتاق هوش مصنوعی" in index
-    assert "Mission Control" in index
-    assert "لابراتوار استراتژی" in index
-    assert "ممیزی و بازپخش" in index
-    assert "ترید اصلی قفل است" in index
-    assert "desktop-product.js" in index
-    assert "full-product.css" in index
+def test_canonical_surface_is_full_nexus_product_not_market_shell() -> None:
+    index = read(UI / "index.html")
+    for marker in (
+        "NEXUS Personal Pro",
+        "Mission Control",
+        "ترید دمو",
+        "اتاق هوش مصنوعی",
+        "Strategy Lab",
+        "Research Lab",
+        "تصمیم و ریسک",
+        "عامل‌ها و صف",
+        "رویداد و بازپخش",
+        "ترید اصلی",
+        "OWNER-CONTROLLED FUTURE STAGE",
+    ):
+        assert marker in index
     assert "Research Terminal" not in index
     assert "پایانه پژوهش بازار" not in index
 
 
-def test_renderer_csp_stays_network_dark_and_electron_boundary_is_isolated() -> None:
-    index = read(APP / "index.html")
-    main = read(DESKTOP / "main.js")
-    preload = read(DESKTOP / "preload.js")
+def test_canonical_product_uses_real_python_paper_risk_and_event_store() -> None:
+    runtime = read(ROOT / "product_runtime.py")
+    assert "from deterministic_risk import" in runtime
+    assert "evaluate_risk" in runtime
+    assert "from paper_execution import" in runtime
+    assert "execute_paper_command" in runtime
+    assert "from paper_event_store import" in runtime
+    assert "replay_events" in runtime
+    assert "validate_event_chain" in runtime
+    assert "paper-events.jsonl" in runtime
+    assert "paper_trading_only" in runtime
 
-    assert "connect-src 'none'" in index
-    assert "object-src 'none'" in index
+
+def test_product_gateway_exposes_real_paper_ai_mission_and_locked_live_contracts() -> None:
+    server = read(ROOT / "product_web_server.py")
+    assert "/api/product/overview" in server
+    assert "/api/product/paper" in server
+    assert "/api/product/paper/events" in server
+    assert "/api/product/paper/order" in server
+    assert "/api/product/strategies" in server
+    assert "/api/product/mission-control" in server
+    assert "/api/product/live" in server
+    assert "build_ai_handler" in server
+    assert "live_main\": \"locked_owner_controlled" in server
+
+
+def test_electron_boundary_is_loopback_only_sandboxed_and_fail_closed() -> None:
+    main = read(DESKTOP / "main.js")
     assert "contextIsolation: true" in main
     assert "sandbox: true" in main
     assert "nodeIntegration: false" in main
     assert "devTools: false" in main
-    assert "contextBridge" in preload
+    assert "webSecurity: true" in main
+    assert "allowRunningInsecureContent: false" in main
+    assert "target.origin === origin" in main
+    assert "NEXUS startup blocked" in main
+    assert "No Paper or Live state was changed" in main
 
 
-def test_public_market_bridge_is_bounded_read_only_and_closed_candle_runtime_filters() -> None:
-    main = read(DESKTOP / "main.js")
-    runtime = read(APP / "desktop-product.js")
-    assert "PUBLIC_MARKET_SYMBOLS" in main
-    assert "PUBLIC_MARKET_INTERVALS" in main
-    assert "https://api.bybit.com/v5/market/kline" in main
-    assert "method: 'GET'" in main
-    assert "redirect: 'error'" in main
-    assert "nexus:public-market" in main
-    assert "requestPublicMarket" in read(DESKTOP / "preload.js")
-    assert "c.t+step<=now" in runtime
-
-
-def test_paper_product_has_deterministic_risk_execution_pnl_and_protective_controls() -> None:
-    runtime = read(APP / "desktop-product.js")
-    for token in (
-        "paper_trading_only:true",
-        "risk_allowed",
-        "maxDailyLoss",
-        "maxDrawdown",
-        "maxSignals",
-        "executePaper",
-        "closePosition",
-        "processProtective",
-        "fee_recorded",
-        "slippage_recorded",
-        "position_opened",
-        "position_closed",
-        "kill_switch_recorded",
+def test_canonical_runtime_has_no_live_exchange_write_or_private_credential_path() -> None:
+    product_text = "\n".join(
+        read(path).casefold()
+        for path in (
+            ROOT / "product_runtime.py",
+            ROOT / "product_web_server.py",
+            UI / "product.js",
+            DESKTOP / "main.js",
+        )
+    )
+    for forbidden in (
+        "/v5/order",
+        "/order/create",
+        "/api/product/live/order",
+        "apisecret",
+        "secretkey",
+        "private_key",
     ):
-        assert token in runtime
+        assert forbidden not in product_text
 
 
-def test_audit_chain_and_replay_are_tamper_evident() -> None:
-    runtime = read(APP / "desktop-product.js")
-    assert "GENESIS='0'.repeat(64)" in runtime
-    assert "previous_event_digest" in runtime
-    assert "event_digest:sha256" in runtime
-    assert "function verifyLedger()" in runtime
-    assert "function replayLedger()" in runtime
-    assert "digest_mismatch" in runtime
-    assert "chain_mismatch" in runtime
-
-
-def test_ai_room_is_bounded_gateway_plus_local_fallback_without_live_authority() -> None:
-    main = read(DESKTOP / "main.js")
-    preload = read(DESKTOP / "preload.js")
-    runtime = read(APP / "desktop-product.js")
-    assert "AI_REQUEST_KEYS" in main
-    assert "/api/ai-room/message" in main
-    assert "method: 'POST'" in main
-    assert "nexus:ai-room" in main
-    assert "requestAiRoom" in preload
-    assert "localAiReply" in runtime
-    assert "paper-stage" in runtime
-    assert "Risk Gate" in runtime
-
-
-def test_research_preview_is_next_bar_open_and_no_profitability_claim_is_preserved() -> None:
-    runtime = read(APP / "desktop-product.js")
-    data = read(APP / "project-data.js")
-    assert "strategySignal" in runtime
-    assert "entry=c[i+1].o" in runtime
-    assert "momentum" in runtime
-    assert "trend_breakout" in runtime
-    assert "mean_reversion" in runtime
-    assert "profitability_claim: false" in data
-
-
-def test_full_product_layout_reserves_left_sidebar_and_supports_collapse_and_overflow() -> None:
-    css = read(APP / "full-product.css")
-    runtime = read(APP / "desktop-product.js")
-    assert ".shell{height:100vh;display:grid;grid-template-columns:var(--sidebar) minmax(0,1fr);direction:ltr" in css
-    assert ".sidebar{direction:rtl" in css
-    assert ".viewport{min-width:0;overflow:auto" in css
-    assert "body.sidebar-collapsed .shell" in css
-    assert "sidebarCollapsed:false" in runtime
-    assert "e.key.toLowerCase()==='b'" in runtime
-
-
-def test_project_metadata_marks_v4_complete_product_with_locked_live_authority() -> None:
-    data = read(APP / "project-data.js")
-    assert "product_surface: 'integrated_desktop'" in data
-    assert "delivery_version: '4.0.0'" in data
-    assert "paper_only: true" in data
-    assert "live_trading_authority: false" in data
-    assert "deterministic_risk_final_authority: true" in data
-    assert "locked_live_surface" in data
-    assert "paper_execution" in data
-    assert "ai_room" in data
-    assert "mission_control" in data
-    assert "audit_replay" in data
-
-
-def test_no_exchange_live_order_or_private_exchange_credential_path_in_native_bridge() -> None:
-    native = (read(DESKTOP / "main.js") + read(DESKTOP / "preload.js")).lower()
-    assert "/v5/order" not in native
-    assert "/order/create" not in native
-    assert "apikey" not in native
-    assert "apisecret" not in native
-    assert "secretkey" not in native
-    assert "withdraw" not in native
-    assert "liveTradingAuthority: false" in read(DESKTOP / "main.js")
-
-
-def test_windows_targets_and_workflows_build_distinct_v4_artifacts() -> None:
+def test_windows_targets_are_distinct_and_trusted_workflow_builds_canonical_sidecar() -> None:
     package = json.loads(read(DESKTOP / "package.json"))
     build = package["build"]
     assert build["nsis"]["artifactName"].startswith("NEXUS_Personal_Pro_Setup_")
@@ -172,9 +128,21 @@ def test_windows_targets_and_workflows_build_distinct_v4_artifacts() -> None:
     assert build["nsis"]["artifactName"] != build["portable"]["artifactName"]
 
     workflow = read(ROOT / ".github" / "workflows" / "build_lbank_desktop_windows.yml")
-    verification = read(ROOT / ".github" / "workflows" / "nexus-build-verification.yml")
-    for text in (workflow, verification):
-        assert "full-product.css" in text
-        assert "desktop-product.js" in text
-        assert "NEXUS_Personal_Pro_Setup_4.0.0_" in text
-        assert "NEXUS_Personal_Pro_Portable_4.0.0_" in text
+    assert "product_runtime.py" in workflow
+    assert "product_web_server.py" in workflow
+    assert "desktop/nexus-product" in workflow
+    assert "PyInstaller" in workflow
+    assert "nexus-product-server.exe" in workflow
+    assert "Smoke-test canonical product sidecar" in workflow
+    assert "NEXUS_Personal_Pro_Setup_4.0.0_" in workflow
+    assert "NEXUS_Personal_Pro_Portable_4.0.0_" in workflow
+
+
+def test_frozen_workflow_permissions_policy_remains_authoritative() -> None:
+    policy = json.loads(read(ROOT / "security" / "workflow-permissions-policy-v1.json"))
+    trusted = policy["workflows"][".github/workflows/build_lbank_desktop_windows.yml"]
+    assert trusted["workflow_permissions"] == {"contents": "read"}
+    assert set(trusted["jobs"]) == {"build-windows"}
+    # Product delivery must use an already-authorized trusted workflow instead of
+    # self-authorizing a new control-plane entry in the same candidate change.
+    assert ".github/workflows/build_nexus_product_windows.yml" not in policy["workflows"]
