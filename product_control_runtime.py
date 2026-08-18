@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from typing import Any, Mapping
 
 from paper_event_store import build_event, replay
-from product_runtime import ProductRuntime, ProductRuntimeError, _paper_provenance, _risk_policy, _risk_state, serialize_portfolio
+from product_runtime import ProductRuntime, _paper_provenance, _risk_policy, _risk_state, _session_signal_count, serialize_portfolio
 
 CONTROL_CONTRACT = "nexus.product-controls.v1"
 
@@ -77,7 +77,7 @@ class ProductControlRuntime:
                 "contract_version": CONTROL_CONTRACT,
                 "paper_only": True,
                 "policy": _risk_policy(),
-                "state": _risk_state(state, symbol=symbols[0]),
+                "state": _risk_state(state, symbol=symbols[0], signals_today=_session_signal_count(events)),
                 "account": serialize_portfolio(state),
                 "live_trading_authority": False,
             }
@@ -129,12 +129,8 @@ class ProductControlRuntime:
             if level is None:
                 continue
             rows.append({
-                "id": event["event_id"],
-                "level": level,
-                "event_type": event["event_type"],
-                "occurred_at": event["occurred_at"],
-                "payload": event["payload"],
-                "digest": event["event_digest"],
+                "id": event["event_id"], "level": level, "event_type": event["event_type"],
+                "occurred_at": event["occurred_at"], "payload": event["payload"], "digest": event["event_digest"],
             })
             if len(rows) >= limit:
                 break
