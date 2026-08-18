@@ -2,14 +2,20 @@ name: Build NEXUS Desktop Windows
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
   pull_request:
     paths:
       - "product_runtime.py"
+      - "product_research_runtime.py"
+      - "product_control_runtime.py"
       - "product_web_server.py"
       - "product_ui/**"
       - "desktop/nexus-product/**"
+      - "docs/architecture/market-data-source-registry.yaml"
       - "requirements-product-build.lock"
       - "tests/test_product_*.py"
+      - "tests/test_windows_delivery_surface.py"
       - ".github/workflows/build_lbank_desktop_windows.yml"
 
 permissions:
@@ -37,7 +43,12 @@ jobs:
           python -m pip install -r requirements-product-build.lock
 
       - name: Run canonical product integration tests
-        run: python -m pytest -q tests/test_product_runtime.py tests/test_product_web_server.py
+        run: >-
+          python -m pytest -q
+          tests/test_product_runtime.py
+          tests/test_product_web_server.py
+          tests/test_product_research_runtime.py
+          tests/test_windows_delivery_surface.py
 
       - name: Build canonical NEXUS Python sidecar
         run: >-
@@ -52,6 +63,9 @@ jobs:
           product_web_server.py
 
       - name: Smoke-test canonical product sidecar
+        env:
+          NEXUS_SOURCE_SHA: ${{ github.sha }}
+          NEXUS_MARKET_REGISTRY_PATH: ${{ github.workspace }}\docs\architecture\market-data-source-registry.yaml
         run: |
           $runtime = Join-Path $env:RUNNER_TEMP "nexus-product-runtime"
           $market = Join-Path $runtime "market"
@@ -70,16 +84,33 @@ jobs:
             if ($paper.paper_only -ne $true) { throw "Paper authority contract missing" }
             $live = Invoke-RestMethod -Uri "http://127.0.0.1:18765/api/product/live" -TimeoutSec 3
             if ($live.orders_allowed -ne $false -or $live.live_trading_authority -ne $false) { throw "Live authority widened" }
+            $registry = Invoke-RestMethod -Uri "http://127.0.0.1:18765/api/product/data/registry" -TimeoutSec 3
+            if ($registry.private_credentials_required -ne $false) { throw "Public data authority contract widened" }
+            $recovery = Invoke-RestMethod -Uri "http://127.0.0.1:18765/api/product/recovery" -TimeoutSec 3
+            if ($recovery.status -ne "verified") { throw "Paper recovery verification failed" }
+            $css = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:18765/ui/product-extra.css" -TimeoutSec 3
+            if ($css.StatusCode -ne 200) { throw "Extended full-product UI stylesheet missing" }
             $ui = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:18765/" -TimeoutSec 3
-            if ($ui.Content -notmatch "اتاق هوش مصنوعی" -or $ui.Content -notmatch "ترید دمو" -or $ui.Content -notmatch "ترید اصلی") { throw "Full product UI surface missing" }
+            foreach ($marker in @("اتاق هوش مصنوعی","ترید دمو","بک‌تست و پژوهش","ریسک و پرتفوی","ممیزی و بازیابی","ترید اصلی")) {
+              if (!$ui.Content.Contains($marker)) { throw "Full product UI marker missing: $marker" }
+            }
           } finally {
             if ($server -and -not $server.HasExited) { Stop-Process -Id $server.Id -Force }
           }
 
-      - name: Stage Python sidecar for Electron
+      - name: Stage source-bound resources for Electron
         run: |
           New-Item -ItemType Directory -Path "desktop/nexus-product/sidecar" -Force | Out-Null
           Copy-Item "dist/nexus-product-server.exe" "desktop/nexus-product/sidecar/nexus-product-server.exe"
+          Set-Content -LiteralPath "desktop/nexus-product/sidecar/source-sha.txt" -Value $env:GITHUB_SHA -NoNewline -Encoding ascii
+          Copy-Item "docs/architecture/market-data-source-registry.yaml" "desktop/nexus-product/sidecar/market-data-source-registry.yaml"
+
+      - name: Validate Electron source bindings
+        run: |
+          node --check "desktop/nexus-product/main.js"
+          node -e "const p=require('./desktop/nexus-product/package.json'); if(p.version!=='4.1.0') process.exit(1)"
+          if ((Get-Content "desktop/nexus-product/sidecar/source-sha.txt" -Raw).Trim() -ne $env:GITHUB_SHA) { throw "Source SHA binding mismatch" }
+          if (!(Test-Path "desktop/nexus-product/sidecar/market-data-source-registry.yaml")) { throw "Canonical registry staging failed" }
 
       - name: Install Electron packaging dependencies
         working-directory: desktop/nexus-product
@@ -91,13 +122,18 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
         run: npm run dist:win
 
-      - name: Verify packaged Python sidecar and authority markers
+      - name: Verify packaged Python sidecar and source bindings
         run: |
-          $resource = "desktop/nexus-product/dist/win-unpacked/resources/nexus-product-server.exe"
-          if (!(Test-Path $resource)) { throw "Packaged NEXUS product sidecar missing" }
-          if ((Get-Item $resource).Length -lt 1000000) { throw "Packaged sidecar is unexpectedly small" }
-          $setup = Get-ChildItem "desktop/nexus-product/dist/NEXUS_Personal_Pro_Setup_4.0.0_*.exe" -ErrorAction SilentlyContinue
-          $portable = Get-ChildItem "desktop/nexus-product/dist/NEXUS_Personal_Pro_Portable_4.0.0_*.exe" -ErrorAction SilentlyContinue
+          $root = "desktop/nexus-product/dist/win-unpacked/resources"
+          foreach ($path in @(
+            "$root/nexus-product-server.exe",
+            "$root/source-sha.txt",
+            "$root/docs/architecture/market-data-source-registry.yaml"
+          )) { if (!(Test-Path $path)) { throw "Packaged canonical resource missing: $path" } }
+          if ((Get-Item "$root/nexus-product-server.exe").Length -lt 1000000) { throw "Packaged sidecar is unexpectedly small" }
+          if ((Get-Content "$root/source-sha.txt" -Raw).Trim() -ne $env:GITHUB_SHA) { throw "Packaged source SHA mismatch" }
+          $setup = Get-ChildItem "desktop/nexus-product/dist/NEXUS_Personal_Pro_Setup_4.1.0_*.exe" -ErrorAction SilentlyContinue
+          $portable = Get-ChildItem "desktop/nexus-product/dist/NEXUS_Personal_Pro_Portable_4.1.0_*.exe" -ErrorAction SilentlyContinue
           if (!$setup) { throw "NEXUS Product Setup EXE missing" }
           if (!$portable) { throw "NEXUS Product Portable EXE missing" }
 
@@ -114,10 +150,10 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: NEXUS_PERSONAL_PRO_PRODUCT_WINDOWS_4_0_0
+          name: NEXUS_PERSONAL_PRO_PRODUCT_WINDOWS_4_1_0
           path: |
-            desktop/nexus-product/dist/NEXUS_Personal_Pro_Setup_4.0.0_*.exe
-            desktop/nexus-product/dist/NEXUS_Personal_Pro_Portable_4.0.0_*.exe
+            desktop/nexus-product/dist/NEXUS_Personal_Pro_Setup_4.1.0_*.exe
+            desktop/nexus-product/dist/NEXUS_Personal_Pro_Portable_4.1.0_*.exe
             desktop/nexus-product/dist/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 30
