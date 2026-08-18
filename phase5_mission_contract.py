@@ -47,6 +47,7 @@ RUNTIME_FIELDS = {
     "blocked_reason",
     "dispatch_id",
     "dispatch_transport",
+    "dispatch_mode",
     "dispatched_at",
     "result_artifact_ingested",
     "result_received_at",
@@ -61,6 +62,13 @@ RUNTIME_FIELDS = {
     "external_wait_started_at",
     "external_wait_completed_at",
     "external_wait_timeline",
+    # Offline Courier identity must survive a Supervisor restart. Without these
+    # fields, a valid returned bundle could no longer be bound to its original
+    # fenced dispatch after the mission definition is re-materialized.
+    "offline_dispatch_digest",
+    "offline_dispatch_bundle_created_at",
+    "offline_result_bundle_ingested",
+    "offline_result_bundle_digest",
     # Phase 5 Gate 3: monotonic per-task fencing and immutable attempt history.
     "fence_generation",
     "active_attempt_id",
