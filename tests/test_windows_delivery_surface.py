@@ -17,12 +17,14 @@ def test_canonical_windows_product_packages_python_sidecar_and_source_bindings()
         DESKTOP / "main.js", DESKTOP / "package.json",
         ROOT / "product_runtime.py", ROOT / "product_research_runtime.py",
         ROOT / "product_control_runtime.py", ROOT / "product_web_server.py",
+        ROOT / "product_offline_runtime.py", ROOT / "product_offline_web_server.py",
         UI / "index.html", UI / "product.css", UI / "product-extra.css", UI / "product.js",
+        UI / "product-offline.js", UI / "product-offline.css",
     ]
     assert all(path.is_file() for path in required)
 
     package = json.loads(read(DESKTOP / "package.json"))
-    assert package["version"] == "4.1.2"
+    assert package["version"] == "4.2.0"
     assert package["main"] == "main.js"
     resources = {(item.get("from"), item.get("to")) for item in package["build"]["extraResources"]}
     assert ("sidecar/nexus-product-server", "nexus-product-server") in resources
@@ -65,10 +67,11 @@ def test_canonical_surface_is_full_nexus_product_not_market_shell() -> None:
     assert "پایانه پژوهش بازار" not in index
 
 
-def test_canonical_product_uses_real_python_data_research_paper_risk_and_event_store() -> None:
+def test_canonical_product_uses_real_python_data_research_paper_risk_event_store_and_offline_vault() -> None:
     runtime = read(ROOT / "product_runtime.py")
     research = read(ROOT / "product_research_runtime.py")
     controls = read(ROOT / "product_control_runtime.py")
+    offline = read(ROOT / "product_offline_runtime.py")
     assert "from deterministic_risk import" in runtime and "evaluate_risk" in runtime
     assert "from paper_execution import" in runtime and "execute_paper_command" in runtime
     assert "from paper_event_store import" in runtime and "replay" in runtime and "validate_event" in runtime
@@ -80,10 +83,16 @@ def test_canonical_product_uses_real_python_data_research_paper_risk_and_event_s
     assert "run_automated_signal_pipeline" in research
     assert "qualification_killed" in research and "paper_executed" in research
     assert "recovery_snapshot" in controls and "export_csv" in controls
+    assert "validate_canonical_dataset" in offline
+    assert "OfflineDatasetStore" in offline
+    assert "CachingProductResearchRuntime" in offline
+    assert '"internet_required_for_startup": False' in offline
+    assert '"live_trading_authority": False' in offline
 
 
-def test_product_gateway_exposes_real_full_current_scope_contracts() -> None:
+def test_product_gateway_exposes_real_full_current_scope_and_offline_contracts() -> None:
     server = read(ROOT / "product_web_server.py")
+    offline_server = read(ROOT / "product_offline_web_server.py")
     for route in (
         "/api/product/overview", "/api/product/paper", "/api/product/paper/events",
         "/api/product/paper/order", "/api/product/paper/auto", "/api/product/research/run",
@@ -92,12 +101,14 @@ def test_product_gateway_exposes_real_full_current_scope_contracts() -> None:
         "/api/product/strategies", "/api/product/mission-control", "/api/product/live",
     ):
         assert route in server
+    for route in ("/api/product/offline", "/api/product/offline/import", "/api/product/offline/research", "/api/product/offline/paper/auto"):
+        assert route in offline_server
     assert "build_ai_handler" in server
     assert '"live_main": "locked_owner_controlled"' in server
     assert '"projection": "clean_install_idle"' in server
-    assert '"agents": []' in server
-    assert '"runners": []' in server
+    assert '"agents": []' in server and '"runners": []' in server
     assert '"/ui/product-extra.css": "product-extra.css"' in server
+    assert "product-offline.js" in offline_server
 
 
 def test_electron_boundary_is_loopback_only_sandboxed_source_bound_and_fail_closed() -> None:
@@ -115,7 +126,8 @@ def test_canonical_runtime_has_no_live_exchange_write_or_private_credential_path
     product_text = "\n".join(read(path).casefold() for path in (
         ROOT / "product_runtime.py", ROOT / "product_research_runtime.py",
         ROOT / "product_control_runtime.py", ROOT / "product_web_server.py",
-        UI / "product.js", DESKTOP / "main.js",
+        ROOT / "product_offline_runtime.py", ROOT / "product_offline_web_server.py",
+        UI / "product.js", UI / "product-offline.js", DESKTOP / "main.js",
     ))
     for forbidden in ("/v5/order", "/order/create", "/api/product/live/order", "apisecret", "secretkey", "private_key"):
         assert forbidden not in product_text
@@ -131,9 +143,10 @@ def test_windows_targets_are_distinct_and_trusted_workflow_builds_exact_source_p
     workflow = read(ROOT / ".github" / "workflows" / "build_lbank_desktop_windows.yml")
     for marker in (
         "product_runtime.py", "product_research_runtime.py", "product_control_runtime.py",
-        "product_web_server.py", "desktop/nexus-product", "PyInstaller", "--onedir", "nexus-product-server.exe",
-        "Smoke-test canonical product sidecar", "source-sha.txt", "market-data-source-registry.yaml",
-        "NEXUS_Personal_Pro_Setup_4.1.2_", "NEXUS_Personal_Pro_Portable_4.1.2_",
+        "product_web_server.py", "product_offline_runtime.py", "product_offline_web_server.py",
+        "desktop/nexus-product", "PyInstaller", "--onedir", "nexus-product-server.exe",
+        "Smoke-test offline-first product sidecar", "source-sha.txt", "market-data-source-registry.yaml",
+        "NEXUS_Personal_Pro_Setup_4.2.0_", "NEXUS_Personal_Pro_Portable_4.2.0_",
     ):
         assert marker in workflow
     assert "push:" in workflow and "branches: [main]" in workflow
