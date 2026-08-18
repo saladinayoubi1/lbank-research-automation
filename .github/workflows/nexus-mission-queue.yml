@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'config/nexus-mission-queue.json'
+      - 'config/nexus-phase7-proof-mission.json'
       - 'config/nexus-ai-council.json'
       - 'config/nexus-brain-policy.json'
       - 'scripts/validate_nexus_mission_queue.js'
@@ -13,12 +14,19 @@ on:
       - 'scripts/test_nexus_ai_council.js'
       - 'scripts/nexus_brain_core.js'
       - 'scripts/test_nexus_brain_core.js'
+      - 'scripts/agent_task_executor.py'
+      - 'scripts/phase7_proof_prepare.py'
+      - 'offline_agent_courier.py'
+      - 'phase7_e2e_proof.py'
+      - 'tests/test_phase7_*.py'
+      - 'tests/test_offline_agent_courier.py'
       - 'docs/adr/ADR-003-nexus-brain-policy-gate.md'
       - '.github/workflows/nexus-mission-queue.yml'
   push:
     branches: [main]
     paths:
       - 'config/nexus-mission-queue.json'
+      - 'config/nexus-phase7-proof-mission.json'
       - 'config/nexus-ai-council.json'
       - 'config/nexus-brain-policy.json'
       - 'scripts/validate_nexus_mission_queue.js'
@@ -28,6 +36,12 @@ on:
       - 'scripts/test_nexus_ai_council.js'
       - 'scripts/nexus_brain_core.js'
       - 'scripts/test_nexus_brain_core.js'
+      - 'scripts/agent_task_executor.py'
+      - 'scripts/phase7_proof_prepare.py'
+      - 'offline_agent_courier.py'
+      - 'phase7_e2e_proof.py'
+      - 'tests/test_phase7_*.py'
+      - 'tests/test_offline_agent_courier.py'
       - 'docs/adr/ADR-003-nexus-brain-policy-gate.md'
       - '.github/workflows/nexus-mission-queue.yml'
   workflow_dispatch:
@@ -38,12 +52,17 @@ permissions:
 jobs:
   validate-mission-queue:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - name: Validate mission queue
         run: node scripts/validate_nexus_mission_queue.js
       - name: Test orchestrator selection
@@ -56,3 +75,53 @@ jobs:
         run: node scripts/test_nexus_brain_core.js
       - name: Render transferable state
         run: node scripts/nexus_orchestrator.js
+      - name: Install locked Phase 7 proof dependencies
+        run: |
+          python -m pip install -r requirements-dev.lock
+          python -m pip check
+      - name: Validate Phase 7 Proof Mission contracts
+        run: |
+          python -m pytest -q \
+            tests/test_phase7_agent_task_executor.py \
+            tests/test_phase7_resource_manager.py \
+            tests/test_phase7_mission_projection.py \
+            tests/test_phase7_courier_zero_idle.py \
+            tests/test_phase7_e2e_proof.py \
+            tests/test_phase7_proof_prepare.py \
+            tests/test_offline_agent_courier.py
+      - name: Execute exact-source Phase 7 cloud proof and prepare offline courier
+        if: github.event_name != 'pull_request'
+        env:
+          NEXUS_OFFLINE_COURIER_KEY: ${{ secrets.NEXUS_OFFLINE_COURIER_KEY }}
+          NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: ${{ vars.NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: |
+          python scripts/phase7_proof_prepare.py --source-sha "$GITHUB_SHA" --output-dir build/phase7-proof
+      - name: Verify exact-source Phase 7 proof remains Paper-only
+        if: github.event_name != 'pull_request'
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          import phase7_e2e_proof as proof
+          root = Path('build/phase7-proof')
+          artifact = json.loads((root / 'phase7-e2e-proof.json').read_text(encoding='utf-8'))
+          proof.validate_proof(artifact, expected_source_sha=os.environ['GITHUB_SHA'])
+          run = json.loads((root / 'phase7-proof-mission-run.json').read_text(encoding='utf-8'))
+          assert run['paper_only'] is True
+          assert run['live_trading_authority'] is False
+          assert run['core_cloud_chain_complete'] is True
+          assert run['source_sha'] == os.environ['GITHUB_SHA'].lower()
+          print('phase7_exact_source_cloud_proof_verified=true')
+          print('phase7_hardware_proof_complete=' + str(bool(run['hardware_proof_complete'])).lower())
+          print('phase7_courier_status=' + str(run['courier']['status']))
+          print('phase7_deepseek_status=' + str(run['deepseek']['status']))
+          PY
+      - name: Upload Phase 7 proof and courier evidence
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexus-phase7-proof-${{ github.sha }}
+          path: build/phase7-proof
+          if-no-files-found: error
+          retention-days: 14
