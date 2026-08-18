@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = [
     ROOT / "scripts" / "phase7_offline_laptop.ps1",
     ROOT / "scripts" / "nexus_windows_autostart.ps1",
+    ROOT / "scripts" / "nexus_github_runner_autostart.ps1",
 ]
 
 
