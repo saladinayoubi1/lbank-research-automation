@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from phase5_data_binding import CanonicalDataError, validate_canonical_dataset
+from product_mission_runtime import StrategyEvidenceStore
 from product_research_runtime import ProductResearchError, ProductResearchRuntime, TIMEFRAMES
 from product_runtime import ProductRuntime
 
@@ -145,24 +146,31 @@ class OfflineDatasetStore:
 
 
 class CachingProductResearchRuntime(ProductResearchRuntime):
-    """Online canonical research that automatically preserves every validated dataset for later offline use."""
+    """Online canonical research that caches validated data and durable Strategy evidence."""
 
     def __init__(self, product_runtime: ProductRuntime, store: OfflineDatasetStore, *, source_sha: str | None = None) -> None:
         super().__init__(product_runtime, source_sha=source_sha)
         self.store = store
+        self.strategy_store = StrategyEvidenceStore(product_runtime.root)
 
     def fetch_dataset(self, *, symbol: str, timeframe: str, limit: int = 240) -> dict[str, Any]:
         dataset = super().fetch_dataset(symbol=symbol, timeframe=timeframe, limit=limit)
         self.store.import_dataset(dataset)
         return dataset
 
+    def run_research(self, *, symbol: str, timeframe: str, family: str, limit: int = 240) -> dict[str, Any]:
+        result = super().run_research(symbol=symbol, timeframe=timeframe, family=family, limit=limit)
+        self.strategy_store.record(result)
+        return result
+
 
 class OfflineProductResearchRuntime(ProductResearchRuntime):
-    """Runs the canonical research pipeline from a locally imported dataset without network I/O."""
+    """Runs the canonical research pipeline from locally imported data without network I/O."""
 
     def __init__(self, product_runtime: ProductRuntime, store: OfflineDatasetStore, *, source_sha: str | None = None) -> None:
         super().__init__(product_runtime, source_sha=source_sha)
         self.store = store
+        self.strategy_store = StrategyEvidenceStore(product_runtime.root)
         self._selected_binding: str | None = None
 
     def fetch_dataset(self, *, symbol: str, timeframe: str, limit: int = 240) -> dict[str, Any]:
@@ -191,7 +199,9 @@ class OfflineProductResearchRuntime(ProductResearchRuntime):
             family=family,
             limit=dataset["row_count"],
         )
-        return {**result, "data_mode": "offline_import", "internet_used": False, "historical_research_allowed": True}
+        public = {**result, "data_mode": "offline_import", "internet_used": False, "historical_research_allowed": True}
+        self.strategy_store.record(public)
+        return public
 
     def auto_paper(self) -> dict[str, Any]:
         research = self._last_research
