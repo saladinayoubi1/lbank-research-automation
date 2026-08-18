@@ -48,6 +48,16 @@ jobs:
       - name: Inspect workflow states and retry only proven transient failures
         run: python fast_agent_orchestrator.py --once
 
+      - name: Export portable Mission Control snapshot
+        if: always()
+        run: >-
+          python scripts/export_mission_control_snapshot.py
+          --config config/nexus-agent-manager.json
+          --runtime data/agent_coordination/agent_manager_runtime.json
+          --summary data/agent_coordination/manager_state.json
+          --events data/agent_coordination/manager_events.jsonl
+          --output data/agent_coordination/nexus-mission-control-snapshot.json
+
       - name: Save durable manager state
         if: always()
         uses: actions/cache/save@v4
