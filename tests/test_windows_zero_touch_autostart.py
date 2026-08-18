@@ -29,7 +29,7 @@ def test_autostart_registers_current_user_logon_task_without_elevation():
     assert "NT AUTHORITY\\SYSTEM" not in text
 
 
-def test_daemon_runs_real_local_supervisor_hidden_and_recovers_it():
+def test_daemon_runs_real_local_supervisor_hidden_recovers_and_binds_exact_checkout():
     text = read(PS)
     for marker in (
         "local_node_supervisor.py",
@@ -39,6 +39,10 @@ def test_daemon_runs_real_local_supervisor_hidden_and_recovers_it():
         "-WindowStyle Hidden",
         "Get-SupervisorProcess",
         "Start-LocalSupervisor",
+        "Test-SupervisorCommandLine",
+        "[IO.Path]::GetFullPath((Join-Path $Root $SupervisorRelative))",
+        "IndexOf($expectedScript, [StringComparison]::OrdinalIgnoreCase)",
+        "$quotedScript",
         "local_supervisor_start_failed",
         "duplicate_daemon_rejected",
     ):
