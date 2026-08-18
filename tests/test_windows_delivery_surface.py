@@ -22,7 +22,7 @@ def test_canonical_windows_product_packages_python_sidecar_and_source_bindings()
     assert all(path.is_file() for path in required)
 
     package = json.loads(read(DESKTOP / "package.json"))
-    assert package["version"] == "4.1.1"
+    assert package["version"] == "4.1.2"
     assert package["main"] == "main.js"
     resources = {(item.get("from"), item.get("to")) for item in package["build"]["extraResources"]}
     assert ("sidecar/nexus-product-server", "nexus-product-server") in resources
@@ -94,6 +94,9 @@ def test_product_gateway_exposes_real_full_current_scope_contracts() -> None:
         assert route in server
     assert "build_ai_handler" in server
     assert '"live_main": "locked_owner_controlled"' in server
+    assert '"projection": "clean_install_idle"' in server
+    assert '"agents": []' in server
+    assert '"runners": []' in server
     assert '"/ui/product-extra.css": "product-extra.css"' in server
 
 
@@ -130,7 +133,7 @@ def test_windows_targets_are_distinct_and_trusted_workflow_builds_exact_source_p
         "product_runtime.py", "product_research_runtime.py", "product_control_runtime.py",
         "product_web_server.py", "desktop/nexus-product", "PyInstaller", "--onedir", "nexus-product-server.exe",
         "Smoke-test canonical product sidecar", "source-sha.txt", "market-data-source-registry.yaml",
-        "NEXUS_Personal_Pro_Setup_4.1.1_", "NEXUS_Personal_Pro_Portable_4.1.1_",
+        "NEXUS_Personal_Pro_Setup_4.1.2_", "NEXUS_Personal_Pro_Portable_4.1.2_",
     ):
         assert marker in workflow
     assert "push:" in workflow and "branches: [main]" in workflow
