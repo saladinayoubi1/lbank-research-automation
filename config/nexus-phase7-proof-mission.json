@@ -1,0 +1,146 @@
+{
+  "schema_version": "nexus.phase5-mission.v1",
+  "mission_id": "nexus-phase7-e2e-proof",
+  "mission_revision": 1,
+  "phase": 7,
+  "policy": {
+    "version": "phase7-proof-policy-v1",
+    "max_parallel_tasks": 3,
+    "five_minute_triage": true,
+    "best_solution_first": true,
+    "blind_retry_forbidden": true,
+    "independent_verification_required": true,
+    "phase_continuity_required": true,
+    "l4_owner_required": true,
+    "paper_only": true,
+    "offline_courier_workers": ["windows-runner"],
+    "offline_courier_lease_minutes": 240
+  },
+  "resource_metrics": {
+    "windows-runner": {"available": true, "health_score": 1.0, "latency_ms": 0.0, "failure_rate": 0.0, "cost_units": 0.0},
+    "cloud-worker": {"available": true, "health_score": 1.0, "latency_ms": 20.0, "failure_rate": 0.0, "cost_units": 0.1},
+    "research-agent": {"available": true, "health_score": 1.0, "latency_ms": 20.0, "failure_rate": 0.0, "cost_units": 0.1},
+    "paper-agent": {"available": true, "health_score": 1.0, "latency_ms": 20.0, "failure_rate": 0.0, "cost_units": 0.1},
+    "qa-verifier-agent": {"available": true, "health_score": 1.0, "latency_ms": 20.0, "failure_rate": 0.0, "cost_units": 2.0}
+  },
+  "workers": [
+    {
+      "id": "windows-runner",
+      "trust_domain": "windows-local",
+      "capabilities": ["windows_runtime", "data_validation", "integration_tests"],
+      "resources": ["windows-local"],
+      "authority_max": 3,
+      "enabled": true,
+      "verifier": false,
+      "max_concurrent_tasks": 1,
+      "routing": {"trust_domains": ["windows-local"], "data_locality": ["windows-local"]}
+    },
+    {
+      "id": "cloud-worker",
+      "trust_domain": "github-cloud",
+      "capabilities": ["integration_tests"],
+      "resources": ["github-cloud"],
+      "authority_max": 3,
+      "enabled": true,
+      "verifier": false,
+      "max_concurrent_tasks": 1,
+      "routing": {"trust_domains": ["github-cloud"], "data_locality": ["repository"]}
+    },
+    {
+      "id": "research-agent",
+      "trust_domain": "github-cloud",
+      "capabilities": ["research", "strategy_qualification"],
+      "resources": ["github-cloud"],
+      "authority_max": 2,
+      "enabled": true,
+      "verifier": false,
+      "max_concurrent_tasks": 1,
+      "routing": {"trust_domains": ["github-cloud"], "data_locality": ["canonical-data"]}
+    },
+    {
+      "id": "paper-agent",
+      "trust_domain": "github-cloud",
+      "capabilities": ["paper_execution", "performance_metrics"],
+      "resources": ["github-cloud"],
+      "authority_max": 2,
+      "enabled": true,
+      "verifier": false,
+      "max_concurrent_tasks": 1,
+      "routing": {"trust_domains": ["github-cloud"], "data_locality": ["paper-ledger"]}
+    },
+    {
+      "id": "qa-verifier-agent",
+      "trust_domain": "github-cloud-verifier",
+      "capabilities": ["data_validation", "integration_tests", "research", "strategy_qualification", "paper_execution", "performance_metrics", "contract_review"],
+      "resources": ["github-cloud"],
+      "authority_max": 3,
+      "enabled": true,
+      "verifier": true,
+      "max_concurrent_tasks": 1,
+      "routing": {"cost_units": 2.0, "trust_domains": ["github-cloud-verifier"], "data_locality": ["repository", "canonical-data", "paper-ledger"]}
+    }
+  ],
+  "tasks": [
+    {
+      "id": "P7-LAPTOP-CANONICAL",
+      "title": "Execute canonical data and offline backtest proof on the disconnected Windows laptop",
+      "phase": 7,
+      "gate": 0,
+      "status": "PENDING",
+      "priority": 100,
+      "dependencies": [],
+      "required_capabilities": ["data_validation"],
+      "preferred_resources": ["windows-local"],
+      "preferred_data_locality": ["windows-local"],
+      "preferred_trust_domains": ["windows-local"],
+      "authority": 1,
+      "acceptance": ["real offline Windows workload executed", "courier lease and dispatch identities preserved", "independent verifier accepts result"],
+      "verification": {"mode": "independent_trust_domain", "required_capabilities": ["data_validation"]}
+    },
+    {
+      "id": "P7-CLOUD-VERIFY",
+      "title": "Exercise Resource Manager transport and Mission Control projection on GitHub cloud",
+      "phase": 7,
+      "gate": 0,
+      "status": "PENDING",
+      "priority": 95,
+      "dependencies": [],
+      "required_capabilities": ["integration_tests"],
+      "preferred_resources": ["github-cloud"],
+      "preferred_trust_domains": ["github-cloud"],
+      "authority": 1,
+      "acceptance": ["real cloud workload executed", "routing evidence retained", "independent verifier accepts result"],
+      "verification": {"mode": "independent_worker", "required_capabilities": ["integration_tests"]}
+    },
+    {
+      "id": "P7-RESEARCH-STRATEGY",
+      "title": "Run canonical research Strategy Factory and provenance proof while laptop courier is waiting",
+      "phase": 7,
+      "gate": 0,
+      "status": "PENDING",
+      "priority": 90,
+      "dependencies": ["P7-CLOUD-VERIFY"],
+      "required_capabilities": ["research", "strategy_qualification"],
+      "preferred_resources": ["github-cloud"],
+      "preferred_data_locality": ["canonical-data"],
+      "authority": 2,
+      "acceptance": ["canonical research workload executed", "Paper Candidate or deterministic kill is evidenced", "zero-idle overlap is recorded when courier wait exists"],
+      "verification": {"mode": "independent_worker", "required_capabilities": ["research", "strategy_qualification"]}
+    },
+    {
+      "id": "P7-PAPER-PERFORMANCE",
+      "title": "Run deterministic Risk Paper execution Performance and drift proof",
+      "phase": 7,
+      "gate": 0,
+      "status": "PENDING",
+      "priority": 85,
+      "dependencies": ["P7-RESEARCH-STRATEGY"],
+      "required_capabilities": ["paper_execution", "performance_metrics"],
+      "preferred_resources": ["github-cloud"],
+      "preferred_data_locality": ["paper-ledger"],
+      "authority": 2,
+      "acceptance": ["deterministic Risk is final Paper authority", "Paper events are attributable and replayable", "Performance and drift evidence is finite and digest-bound"],
+      "verification": {"mode": "independent_worker", "required_capabilities": ["paper_execution", "performance_metrics"]}
+    }
+  ]
+}
