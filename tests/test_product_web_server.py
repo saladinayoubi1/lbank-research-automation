@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import io
 import json
 import threading
 from http.client import HTTPConnection
@@ -34,87 +33,117 @@ def product_server(tmp_path: Path):
     data_root = tmp_path / "data" / "market"
     data_root.mkdir(parents=True)
     runtime = ProductRuntime(tmp_path / "state")
-    server = ThreadingHTTPServer(("127.0.0.1", 0), build_handler(
-        data_root,
-        config=GatewayConfig(mode="local", host="127.0.0.1", port=1),
-        ui_root=PRODUCT_UI_ROOT,
-        runtime=runtime,
+    probe = ThreadingHTTPServer(("127.0.0.1", 0), build_handler(
+        data_root, config=GatewayConfig(mode="local", host="127.0.0.1", port=1),
+        ui_root=PRODUCT_UI_ROOT, runtime=runtime,
     ))
-    # Handler allowlists the configured port, so rebuild using the actual port.
-    port = server.server_address[1]
-    server.server_close()
+    port = probe.server_address[1]
+    probe.server_close()
     server = ThreadingHTTPServer(("127.0.0.1", port), build_handler(
-        data_root,
-        config=GatewayConfig(mode="local", host="127.0.0.1", port=port),
-        ui_root=PRODUCT_UI_ROOT,
-        runtime=runtime,
+        data_root, config=GatewayConfig(mode="local", host="127.0.0.1", port=port),
+        ui_root=PRODUCT_UI_ROOT, runtime=runtime,
     ))
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
         yield port, runtime
     finally:
-        server.shutdown()
-        server.server_close()
-        thread.join(timeout=5)
+        server.shutdown(); server.server_close(); thread.join(timeout=5)
 
 
-def test_product_ui_contains_real_roadmap_surfaces(product_server) -> None:
+def test_product_ui_contains_complete_current_scope_surfaces(product_server) -> None:
     port, _ = product_server
     status, content_type, raw = _request(port, "GET", "/")
-    assert status == 200
-    assert "text/html" in content_type
+    assert status == 200 and "text/html" in content_type
     text = raw.decode("utf-8")
     for token in (
-        "ترید دمو", "اتاق هوش مصنوعی", "Strategy Lab", "Research Lab",
-        "تصمیم و ریسک", "عامل‌ها و صف", "رویداد و بازپخش", "ترید اصلی",
-        "OWNER-CONTROLLED FUTURE STAGE",
+        "مرکز فرمان", "داده و بازار", "بک‌تست و پژوهش", "ترید دمو",
+        "ریسک و پرتفوی", "اتاق هوش مصنوعی", "Strategy Lab", "عامل‌ها و صف",
+        "ممیزی و بازیابی", "ترید اصلی", "OWNER-CONTROLLED FUTURE STAGE",
     ):
         assert token in text
+    assert "/ui/product-extra.css" in text
+
+    status, content_type, css = _request(port, "GET", "/ui/product-extra.css")
+    assert status == 200 and "text/css" in content_type
+    assert b"research-layout" in css
 
 
-def test_product_overview_reports_paper_active_and_live_locked(product_server) -> None:
+def test_product_overview_reports_canonical_backend_and_live_locked(product_server) -> None:
     port, _ = product_server
     status, _, raw = _request(port, "GET", "/api/product/overview")
     assert status == 200
     payload = json.loads(raw)
+    assert payload["delivery"] == "canonical-python-sidecar"
     assert payload["paper"]["active"] is True
     assert payload["paper"]["paper_only"] is True
     assert payload["live"]["status"] == "locked_owner_controlled"
     assert payload["live"]["orders_allowed"] is False
     assert payload["capabilities"]["paper_execution"] == "active"
+    assert payload["capabilities"]["research_backtest_studio"] == "active"
+    assert payload["capabilities"]["automated_paper_pipeline"] == "qualification_and_risk_gated"
     assert payload["capabilities"]["ai_room"] == "policy_gated"
+    assert payload["capabilities"]["reports"] == "json_csv"
 
 
-def test_product_paper_order_mutates_only_demo_state(product_server) -> None:
+def test_product_paper_controls_and_order_mutate_only_demo_state(product_server) -> None:
     port, runtime = product_server
+    status, _, raw = _request(port, "POST", "/api/product/session", {"open": False})
+    assert status == 200 and json.loads(raw)["account"]["session_open"] is False
+    status, _, raw = _request(port, "POST", "/api/product/session", {"open": True})
+    assert status == 200 and json.loads(raw)["account"]["session_open"] is True
+
     order = {
-        "operation": "open",
-        "symbol": "BTCUSDT",
-        "timeframe": "minute15",
-        "side": "long",
-        "quantity": "0.001",
-        "reference_price": "60000",
-        "stop_price": "59000",
-        "target_price": "62000",
+        "operation": "open", "symbol": "BTCUSDT", "timeframe": "minute15",
+        "side": "long", "quantity": "0.001", "reference_price": "60000",
+        "stop_price": "59000", "target_price": "62000",
     }
     status, _, raw = _request(port, "POST", "/api/product/paper/order", order)
     assert status == 200
     payload = json.loads(raw)
-    assert payload["accepted"] is True
-    assert payload["paper_only"] is True
+    assert payload["accepted"] is True and payload["paper_only"] is True
     assert runtime.paper_snapshot()["account"]["positions"][0]["symbol"] == "BTCUSDT"
+
+    status, _, raw = _request(port, "POST", "/api/product/kill-switch", {"enabled": True, "reason_code": "test_stop"})
+    assert status == 200 and json.loads(raw)["account"]["kill_switch_enabled"] is True
+    status, _, raw = _request(port, "POST", "/api/product/kill-switch", {"enabled": False, "reason_code": "test_resume"})
+    assert status == 200 and json.loads(raw)["account"]["kill_switch_enabled"] is False
+
     live_status, _, live_raw = _request(port, "GET", "/api/product/live")
     assert live_status == 200
     live = json.loads(live_raw)
     assert live["enabled"] is False
     assert live["exchange_credentials_configured"] is False
+    assert live["orders_allowed"] is False
 
 
-def test_product_rejects_unknown_write_routes(product_server) -> None:
+def test_product_registry_risk_recovery_notifications_and_exports(product_server) -> None:
     port, _ = product_server
-    status, _, _ = _request(port, "POST", "/api/product/live/order", {"symbol": "BTCUSDT"})
-    assert status == 405
+    for path in (
+        "/api/product/data/registry", "/api/product/risk", "/api/product/recovery",
+        "/api/product/notifications?limit=20", "/api/product/research/last",
+    ):
+        status, _, raw = _request(port, "GET", path)
+        assert status == 200, (path, raw)
+        assert json.loads(raw)["paper_only"] is True
+
+    status, _, raw = _request(port, "GET", "/api/product/data/registry")
+    registry = json.loads(raw)
+    assert registry["private_credentials_required"] is False
+    assert registry["authority"]["primary"] == "Bybit"
+
+    status, content_type, raw = _request(port, "GET", "/api/product/export/paper.json")
+    assert status == 200 and "application/json" in content_type
+    assert json.loads(raw)["paper"]["paper_only"] is True
+    status, content_type, raw = _request(port, "GET", "/api/product/export/paper.csv")
+    assert status == 200 and "text/csv" in content_type and b"event_type" in raw
+
+
+def test_product_rejects_live_and_unknown_write_routes(product_server) -> None:
+    port, _ = product_server
+    for path in ("/api/product/live/order", "/api/product/withdraw", "/api/product/exchange/credentials"):
+        status, _, _ = _request(port, "POST", path, {"symbol": "BTCUSDT"})
+        assert status == 405
 
 
 def test_product_strategies_are_real_factory_families(product_server) -> None:
@@ -127,23 +156,18 @@ def test_product_strategies_are_real_factory_families(product_server) -> None:
     assert all(row["live_execution_allowed"] is False for row in payload["families"])
 
 
-def test_product_static_script_is_same_origin_only(product_server) -> None:
+def test_product_static_script_is_same_origin_only_and_has_real_product_routes(product_server) -> None:
     port, _ = product_server
     status, _, raw = _request(port, "GET", "/ui/product.js")
     assert status == 200
     script = raw.decode("utf-8")
     lowered = script.casefold()
     assert "https://" not in script
-    assert "/api/product/paper/order" in script
-    assert "/api/ai-room/message" in script
-    # The UI may display locked authority fields such as withdrawals_allowed=false.
-    # Reject actual write routes or private credential material instead of the status word.
-    for forbidden in (
-        "/api/product/live/order",
-        "/withdraw",
-        "/v5/order",
-        "apisecret",
-        "secretkey",
-        "private_key",
+    for route in (
+        "/api/product/paper/order", "/api/product/paper/auto", "/api/product/research/run",
+        "/api/product/risk", "/api/product/recovery", "/api/product/data/registry",
+        "/api/product/session", "/api/product/kill-switch", "/api/ai-room/message",
     ):
+        assert route in script
+    for forbidden in ("/api/product/live/order", "/withdraw", "/v5/order", "apisecret", "secretkey", "private_key"):
         assert forbidden not in lowered
