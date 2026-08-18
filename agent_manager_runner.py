@@ -41,6 +41,8 @@ def merge_definition(template: dict[str, Any], runtime: dict[str, Any] | None) -
         "triage_reason", "triage_started_at", "triage_mode", "required_output",
         "failure_class", "failure_evidence", "result_evidence", "verification_evidence",
         "verified_at", "blocked_reason", "dispatch_id", "dispatch_transport", "dispatched_at",
+        "dispatch_mode", "offline_dispatch_digest", "offline_dispatch_bundle_created_at",
+        "offline_result_bundle_ingested", "offline_result_bundle_digest",
         "result_artifact_ingested", "result_received_at"
     }
     for task in merged.get("tasks", []):
