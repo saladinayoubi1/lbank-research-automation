@@ -17,6 +17,7 @@ on:
       - 'scripts/test_nexus_brain_core.js'
       - 'scripts/agent_task_executor.py'
       - 'scripts/phase7_proof_prepare.py'
+      - 'scripts/phase7_proof_complete.py'
       - 'offline_agent_courier.py'
       - 'phase5_mission_contract.py'
       - 'phase7_e2e_proof.py'
@@ -41,6 +42,7 @@ on:
       - 'scripts/test_nexus_brain_core.js'
       - 'scripts/agent_task_executor.py'
       - 'scripts/phase7_proof_prepare.py'
+      - 'scripts/phase7_proof_complete.py'
       - 'offline_agent_courier.py'
       - 'phase5_mission_contract.py'
       - 'phase7_e2e_proof.py'
@@ -103,6 +105,7 @@ jobs:
             tests/test_phase7_courier_restore.py \
             tests/test_phase7_e2e_proof.py \
             tests/test_phase7_proof_prepare.py \
+            tests/test_phase7_proof_complete.py \
             tests/test_offline_agent_courier.py
       - name: Execute exact-head Phase 7 cloud proof on pull request
         if: github.event_name == 'pull_request'
