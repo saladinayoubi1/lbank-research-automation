@@ -94,12 +94,7 @@ def _position_exposure(state: PortfolioState, symbol: str | None = None) -> Deci
 
 
 def _session_signal_count(events: list[Mapping[str, Any]]) -> int:
-    """Count actual proposals in the current Paper session, not journal records.
-
-    Automatic proposals have a ``signal_recorded`` event. Manual accepted proposals
-    have a manual-provenance ``risk_decision_recorded`` event. This avoids counting
-    the many accounting/audit events emitted by one execution as separate signals.
-    """
+    """Count actual proposals in the current Paper session, not journal records."""
     start = 0
     session_open = False
     for index, event in enumerate(events):
@@ -165,6 +160,10 @@ class ProductRuntime:
         self.paper_events_path = self.runtime_dir / "paper-events.jsonl"
         self.opening_cash = str(Decimal(opening_cash))
         self._lock = threading.RLock()
+        # Establish the journal clock boundary immediately so every downstream
+        # automated event is necessarily ordered after account/session bootstrap.
+        with self._lock:
+            self._ensure_account()
 
     def _read_events(self) -> list[dict[str, Any]]:
         if not self.paper_events_path.exists(): return []
