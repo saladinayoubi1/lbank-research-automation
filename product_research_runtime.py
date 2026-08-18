@@ -10,12 +10,12 @@ from decimal import Decimal, ROUND_DOWN
 from pathlib import Path
 from typing import Any, Callable, Mapping
 
-import pandas as pd
-
 from automated_signal_pipeline import run_automated_signal_pipeline
-from backtest_engine import BacktestConfig, run_target_exposure_backtest
+from backtest_engine import BacktestConfig
+from canonical_backtest import run_canonical_target_exposure_backtest
 from market_data_source_validator import load_and_validate
 from phase5_data_binding import REGISTRY_PATH, validate_canonical_dataset
+from phase5_strategy_factory import qualify
 from phase6_research_pipeline import fetch_bind_bybit_dataset, generate_targets, run_research_job
 from product_runtime import (
     PAPER_DEFAULT_FEE_RATE,
@@ -97,13 +97,6 @@ def _public_mapping(registry: Mapping[str, Any], symbol: str, timeframe: str) ->
     return matches[0]
 
 
-def _frame(dataset: Mapping[str, Any]) -> pd.DataFrame:
-    artifact = validate_canonical_dataset(dataset, registry_path=_registry_path())
-    frame = pd.DataFrame(artifact["rows"])
-    frame["timestamp"] = pd.to_datetime(frame["open_time_ms"], unit="ms", utc=True)
-    return frame[["timestamp", "open", "high", "low", "close"]].copy()
-
-
 def _finite(value: Any) -> float:
     result = float(value)
     if not (-float("inf") < result < float("inf")):
@@ -171,7 +164,12 @@ class ProductResearchRuntime:
         try:
             job = run_research_job(dataset, hypothesis=f"Preregistered {family} research on canonical closed candles; no profitability claim.", family=family, strategy_version=f"{family}-product-v1", strategy_config=config, code_sha=code_sha, cost_model=COST_MODEL, kill_criteria=KILL_CRITERIA)
             targets = generate_targets(dataset, family, config)
-            backtest = run_target_exposure_backtest(_frame(dataset), targets, BacktestConfig(initial_cash=10_000.0, fee_bps=COST_MODEL["fee_bps"], slippage_bps=COST_MODEL["slippage_bps"], max_abs_exposure=1.0, liquidate_at_end=True))
+            backtest = run_canonical_target_exposure_backtest(
+                dataset,
+                targets,
+                BacktestConfig(initial_cash=10_000.0, fee_bps=COST_MODEL["fee_bps"], slippage_bps=COST_MODEL["slippage_bps"], max_abs_exposure=1.0, liquidate_at_end=True),
+                registry_path=_registry_path(),
+            )
         except Exception as exc:
             raise ProductResearchError(f"research qualification failed closed: {exc}") from exc
         last_row = dataset["rows"][-1]
@@ -179,14 +177,14 @@ class ProductResearchRuntime:
             "contract_version": PRODUCT_RESEARCH_CONTRACT, "paper_only": True, "live_execution_allowed": False, "profitability_claim": False, "source_sha": code_sha,
             "request": {"symbol": symbol, "timeframe": timeframe, "family": family, "limit": limit},
             "dataset": {"binding_sha256": dataset["binding_sha256"], "manifest_sha256": dataset["manifest_sha256"], "instrument": dataset["instrument"], "source": dataset["source"], "source_symbol": dataset["source_symbol"], "timeframe": dataset["manifest_timeframe"], "row_count": dataset["row_count"], "first_open_time_ms": dataset["rows"][0]["open_time_ms"], "last_open_time_ms": last_row["open_time_ms"], "last_close": last_row["close"]},
-            "strategy_config": config, "cost_model": dict(COST_MODEL), "kill_criteria": dict(KILL_CRITERIA), "qualification": job["qualification"], "evidence": job["evidence"], "paper_candidate_handoff": job["paper_candidate_handoff"], "pipeline_digest": job["pipeline_digest"], "latest_target": float(targets.iloc[-1]), "backtest": _serialize_backtest(backtest), "_dataset": dataset,
+            "strategy_config": config, "cost_model": dict(COST_MODEL), "kill_criteria": dict(KILL_CRITERIA), "qualification": job["qualification"], "evidence": job["evidence"], "paper_candidate_handoff": job["paper_candidate_handoff"], "pipeline_digest": job["pipeline_digest"], "latest_target": float(targets.iloc[-1]), "backtest": _serialize_backtest(backtest), "_dataset": dataset, "_experiment": job["experiment"],
         }
         self._last_research = result
-        return {key: value for key, value in result.items() if key != "_dataset"}
+        return {key: value for key, value in result.items() if not key.startswith("_")}
 
     def last_research(self) -> dict[str, Any]:
         if self._last_research is None: return {"contract_version": PRODUCT_RESEARCH_CONTRACT, "status": "no_research_run", "paper_only": True}
-        return {key: value for key, value in self._last_research.items() if key != "_dataset"}
+        return {key: value for key, value in self._last_research.items() if not key.startswith("_")}
 
     @staticmethod
     def _regime(dataset: Mapping[str, Any]) -> tuple[str, str]:
@@ -200,10 +198,32 @@ class ProductResearchRuntime:
     def auto_paper(self) -> dict[str, Any]:
         research = self._last_research
         if research is None: raise ProductResearchError("run canonical research before automated Paper")
-        qualification = research["qualification"]
+        try:
+            dataset = validate_canonical_dataset(research["_dataset"], registry_path=_registry_path())
+            qualification = research["qualification"]
+            recomputed = qualify(dataset, research["_experiment"], research["evidence"])
+        except Exception as exc:
+            raise ProductResearchError(f"automated Paper rejected invalid canonical lineage: {exc}") from exc
+        if recomputed != qualification:
+            raise ProductResearchError("automated Paper rejected mutated qualification lineage")
+        expected_evidence_ref = f"dataset-sha256:{dataset['binding_sha256']}"
+        if expected_evidence_ref not in research["evidence"].get("evidence_refs", []):
+            raise ProductResearchError("automated Paper rejected evidence bound to another dataset")
+        dataset_summary = research.get("dataset", {})
+        request = research.get("request", {})
+        if dataset_summary.get("binding_sha256") != dataset["binding_sha256"] or dataset_summary.get("manifest_sha256") != dataset["manifest_sha256"]:
+            raise ProductResearchError("automated Paper rejected mutated dataset summary")
+        if qualification.get("dataset_binding_sha256") != dataset["binding_sha256"]:
+            raise ProductResearchError("automated Paper rejected qualification bound to another dataset")
+        if request.get("symbol") != dataset["source_symbol"] or TIMEFRAMES.get(request.get("timeframe"), {}).get("manifest") != dataset["manifest_timeframe"] or request.get("family") != qualification.get("family"):
+            raise ProductResearchError("automated Paper rejected request outside canonical qualification tuple")
+        handoff = research.get("paper_candidate_handoff")
+        if qualification.get("status") == "paper_candidate":
+            if not isinstance(handoff, Mapping) or handoff.get("qualification_digest") != qualification.get("qualification_digest") or handoff.get("paper_only") is not True or handoff.get("live_execution_allowed") is not False:
+                raise ProductResearchError("automated Paper rejected invalid paper-candidate handoff")
         if qualification.get("status") != "paper_candidate": return {"contract_version": PRODUCT_AUTO_PAPER_CONTRACT, "paper_only": True, "accepted": False, "status": "qualification_killed", "kill_reasons": qualification.get("kill_reasons", [])}
         if float(research.get("latest_target", 0.0)) <= 0.0: return {"contract_version": PRODUCT_AUTO_PAPER_CONTRACT, "paper_only": True, "accepted": False, "status": "no_open_signal"}
-        dataset = research["_dataset"]; request = research["request"]; spec = TIMEFRAMES[request["timeframe"]]; family = request["family"]; strategy_version = qualification["strategy_version"]
+        spec = TIMEFRAMES[request["timeframe"]]; family = request["family"]; strategy_version = qualification["strategy_version"]
         source_ms = int(dataset["rows"][-1]["open_time_ms"]) + int(spec["step_ms"]); source_time = _utc_ms(source_ms); occurred_at = _utc_now()
         if int(datetime.now(timezone.utc).timestamp() * 1000) - source_ms > int(spec["step_ms"]) * 2: raise ProductResearchError("automated Paper rejected stale canonical data")
         dataset_id = f"canonical:{dataset['mapping_id']}"; dataset_revision = dataset["binding_sha256"]; regime_label, regime_confidence = self._regime(dataset); regime_id = f"regime:{dataset_revision[:20]}:{regime_label}"; correlation_id = f"auto-paper:{uuid.uuid4().hex}"

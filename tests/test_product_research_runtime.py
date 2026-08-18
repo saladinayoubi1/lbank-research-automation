@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+import product_research_runtime as product_research
 from phase6_research_pipeline import bind_bybit_closed_dataset
 from product_control_runtime import ProductControlRuntime
 from product_research_runtime import ProductResearchError, ProductResearchRuntime
@@ -66,6 +67,18 @@ def _research(tmp_path: Path, now_ms: int):
     return runtime, research
 
 
+def _permissive_kills():
+    return {
+        "min_robustness_score": -1.0,
+        "max_cost_stress_loss_pct": 100.0,
+        "min_walk_forward_score": -1.0,
+        "min_oos_score": -1.0,
+        "max_drawdown_pct": 100.0,
+        "min_regime_pass_ratio": 0.0,
+        "max_failure_mode_severity": 10.0,
+    }
+
+
 def test_registry_and_research_are_real_canonical_paper_only(tmp_path: Path) -> None:
     now = _now_ms()
     _, research = _research(tmp_path, now)
@@ -86,6 +99,8 @@ def test_registry_and_research_are_real_canonical_paper_only(tmp_path: Path) -> 
     assert result["backtest"]["metrics"]["fill_count"] >= 1
     assert result["backtest"]["equity_curve"]
     assert result["pipeline_digest"]
+    assert "_dataset" not in result
+    assert "_experiment" not in result
 
 
 def test_research_rejects_stale_or_unbound_release_data(tmp_path: Path) -> None:
@@ -102,16 +117,14 @@ def test_research_rejects_stale_or_unbound_release_data(tmp_path: Path) -> None:
         missing_sha.run_research(symbol="BTCUSDT", timeframe="minute15", family="momentum", limit=180)
 
 
-def test_qualification_gated_auto_paper_runs_real_deterministic_pipeline(tmp_path: Path) -> None:
+def test_qualification_gated_auto_paper_runs_real_deterministic_pipeline(tmp_path: Path, monkeypatch) -> None:
     now = _now_ms()
+    monkeypatch.setattr(product_research, "KILL_CRITERIA", _permissive_kills())
     runtime, research = _research(tmp_path, now)
     result = research.run_research(symbol="BTCUSDT", timeframe="minute15", family="momentum", limit=180)
+    assert result["qualification"]["status"] == "paper_candidate"
+    assert result["latest_target"] == 1.0
 
-    # Exercise the positive automated execution path independent of whether the
-    # conservative sample qualification happened to kill this synthetic slice.
-    research._last_research["qualification"]["status"] = "paper_candidate"
-    research._last_research["qualification"]["kill_reasons"] = []
-    research._last_research["latest_target"] = 1.0
     auto = research.auto_paper()
 
     assert auto["paper_only"] is True
@@ -124,6 +137,30 @@ def test_qualification_gated_auto_paper_runs_real_deterministic_pipeline(tmp_pat
     snapshot = runtime.paper_snapshot()
     assert snapshot["account"]["positions"][0]["symbol"] == "BTCUSDT"
     assert snapshot["session_signal_count"] == 1
+
+
+def test_auto_paper_rejects_dataset_tamper_before_decision_or_execution(tmp_path: Path, monkeypatch) -> None:
+    now = _now_ms()
+    monkeypatch.setattr(product_research, "KILL_CRITERIA", _permissive_kills())
+    runtime, research = _research(tmp_path, now)
+    result = research.run_research(symbol="BTCUSDT", timeframe="minute15", family="momentum", limit=180)
+    assert result["qualification"]["status"] == "paper_candidate"
+    research._last_research["_dataset"]["source_role"] = "secondary_validation"
+    with pytest.raises(ProductResearchError, match="invalid canonical lineage"):
+        research.auto_paper()
+    assert runtime.paper_snapshot()["session_signal_count"] == 0
+
+
+def test_auto_paper_rejects_mutated_qualification_before_decision_or_execution(tmp_path: Path, monkeypatch) -> None:
+    now = _now_ms()
+    monkeypatch.setattr(product_research, "KILL_CRITERIA", _permissive_kills())
+    runtime, research = _research(tmp_path, now)
+    result = research.run_research(symbol="BTCUSDT", timeframe="minute15", family="momentum", limit=180)
+    assert result["qualification"]["status"] == "paper_candidate"
+    research._last_research["qualification"]["dataset_binding_sha256"] = "0" * 64
+    with pytest.raises(ProductResearchError, match="mutated qualification lineage"):
+        research.auto_paper()
+    assert runtime.paper_snapshot()["session_signal_count"] == 0
 
 
 def test_paper_controls_recovery_notifications_and_exports_are_durable(tmp_path: Path) -> None:
