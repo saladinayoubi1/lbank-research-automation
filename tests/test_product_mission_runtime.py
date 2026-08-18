@@ -39,6 +39,7 @@ def test_definition_only_is_truthful_unknown_not_fabricated_runtime(tmp_path: Pa
     assert {worker["state"] for worker in snapshot["workers"]} == {"UNKNOWN"}
     assert snapshot["owner_action_required"] is False
     assert snapshot["owner_actions"] == []
+    assert snapshot["ci_health"]["status"] == "unavailable"
     assert snapshot["live_trading_authority"] is False
 
 
@@ -63,9 +64,22 @@ def test_real_runtime_surfaces_assignment_recovery_and_only_true_owner_action(tm
     assert snapshot["events"][0]["kind"] == "task_leased"
 
 
-def test_snapshot_import_preserves_real_control_plane_without_internet(tmp_path: Path) -> None:
+def test_snapshot_import_preserves_real_control_plane_ci_evidence_without_internet(tmp_path: Path) -> None:
     config_path = tmp_path / "config.json"; config = _config(); _write(config_path, config)
     mission = ProductMissionRuntime(tmp_path / "state", config_path=config_path)
+    ci_event = {
+        "at": "2026-08-18T10:00:00Z",
+        "kind": "ci_snapshot",
+        "payload": {
+            "repo": "saladinayoubi1/lbank-research-automation",
+            "summary": {"RUNNING":0,"WAITING":0,"DONE":5,"FAILED":0,"BLOCKED":0,"UNKNOWN":0},
+            "local_node": {"internet_reachable": True},
+            "workflows": {
+                "Test": {"state":"DONE","run_id":100,"run_attempt":1,"conclusion":"success","status":"completed","head_sha":"a"*40,"updated_at":"2026-08-18T10:00:00Z","url":"https://example.invalid","auto_retry":{"attempted":False}},
+                "Build": {"state":"DONE","run_id":101,"run_attempt":1,"conclusion":"success","status":"completed","head_sha":"a"*40,"updated_at":"2026-08-18T10:00:00Z","url":"https://example.invalid","auto_retry":{"attempted":False}},
+            },
+        },
+    }
     imported = {
         "contract_version": SNAPSHOT_CONTRACT,
         "generated_at": "2026-08-18T10:00:00Z",
@@ -73,7 +87,7 @@ def test_snapshot_import_preserves_real_control_plane_without_internet(tmp_path:
         "config": config,
         "runtime": {**config, "tasks": [{**config["tasks"][0], "status":"DONE", "verified_at":"2026-08-18T09:59:00Z"}, config["tasks"][1]]},
         "summary": {"generated_at":"2026-08-18T10:00:00Z"},
-        "events": [{"at":"2026-08-18T09:59:00Z","kind":"task_done","task_id":"T1"}],
+        "events": [{"at":"2026-08-18T09:59:00Z","kind":"task_done","task_id":"T1"}, ci_event],
         "paper_only": True,
         "live_trading_authority": False,
     }
@@ -82,13 +96,21 @@ def test_snapshot_import_preserves_real_control_plane_without_internet(tmp_path:
     assert snapshot["source"] == "imported_snapshot"
     assert snapshot["tasks"][0]["status"] == "DONE"
     assert snapshot["control_plane"]["verified_progress_percent"] == 100.0
+    assert snapshot["ci_health"]["status"] == "available"
+    assert snapshot["ci_health"]["state"] == "DONE"
+    assert snapshot["ci_health"]["single_exact_head"] is True
+    assert snapshot["ci_health"]["head_shas"] == ["a" * 40]
 
 
-def test_snapshot_import_rejects_authority_widening(tmp_path: Path) -> None:
+def test_snapshot_import_rejects_authority_widening_and_invalid_timestamp(tmp_path: Path) -> None:
     config_path = tmp_path / "config.json"; config = _config(); _write(config_path, config)
     mission = ProductMissionRuntime(tmp_path / "state", config_path=config_path)
     payload = {"contract_version":SNAPSHOT_CONTRACT,"generated_at":"2026-08-18T10:00:00Z","source":"x","config":config,"runtime":None,"summary":None,"events":[],"paper_only":True,"live_trading_authority":True}
     with pytest.raises(ProductMissionError, match="widened authority"):
+        mission.import_snapshot(payload)
+    payload["live_trading_authority"] = False
+    payload["generated_at"] = "not-a-time"
+    with pytest.raises(ProductMissionError, match="generated_at invalid"):
         mission.import_snapshot(payload)
 
 
@@ -114,3 +136,11 @@ def test_strategy_center_uses_qualification_evidence_not_single_backtest(tmp_pat
     assert center["leading_candidate"]["request"]["family"] == "trend_breakout"
     assert center["profitability_claim"] is False
     assert "OOS" in center["ranking_rule"]
+
+
+def test_strategy_zero_score_is_real_evidence_not_missing(tmp_path: Path) -> None:
+    store = StrategyEvidenceStore(tmp_path)
+    store.record(_run("momentum", "paper_candidate", -0.01, 0.10, 0.10, 2.0))
+    store.record(_run("trend_breakout", "paper_candidate", 0.0, -0.50, -0.50, 30.0))
+    center = store.history()
+    assert center["leading_candidate"]["request"]["family"] == "trend_breakout"
