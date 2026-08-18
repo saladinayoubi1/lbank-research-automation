@@ -418,6 +418,12 @@ def prepare(source_sha: str, output_dir: Path, *, mission_path: Path = MISSION_P
     state_db = output_dir / "phase7-supervisor-state.sqlite3"
     store = SQLiteStateStore(state_db)
     config = load_runtime_template(mission_path)
+    deepseek_configured = (
+        os.environ.get("NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED") == "1"
+        and bool(os.environ.get("DEEPSEEK_API_KEY"))
+    )
+    if "deepseek-bounded" in config.get("resource_metrics", {}):
+        config["resource_metrics"]["deepseek-bounded"]["available"] = deepseek_configured
 
     state = _persist(store, config, None)
     summary = am.cycle(config)
@@ -523,8 +529,7 @@ def prepare(source_sha: str, output_dir: Path, *, mission_path: Path = MISSION_P
 
     e2e = phase7_e2e_proof.build_proof(source_sha)
     phase7_e2e_proof.validate_proof(e2e, expected_source_sha=source_sha)
-    e2e_path = output_dir / "phase7-e2e-proof.json"
-    _write(e2e_path, e2e)
+    _write(output_dir / "phase7-e2e-proof.json", e2e)
 
     final_summary = am.summarize(config)
     am.atomic_json(runtime_path, config)
