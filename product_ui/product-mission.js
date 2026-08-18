@@ -15,6 +15,11 @@
     return body;
   }
 
+  function latestCi(m) {
+    const events = (m.events || []).filter(e => e && e.kind === 'ci_snapshot' && e.payload && typeof e.payload === 'object');
+    return events.length ? events[events.length - 1] : null;
+  }
+
   function ensureOverview() {
     const view = $('view-overview');
     if (!view || $('missionNow')) return;
@@ -37,7 +42,7 @@
         <span id="missionSyncState" class="mission-meta">—</span>
       </div>
       <div id="missionOwnerActions"></div>
-      <div class="mission-section-label">LOCAL SUPERVISOR / BUILD EVIDENCE</div>
+      <div class="mission-section-label">LOCAL SUPERVISOR / BUILD / CI EVIDENCE</div>
       <div id="missionSystemEvidence" class="mission-grid"></div>
       <div class="mission-section-label" style="margin-top:14px">RESOURCES / WORKERS</div>
       <div id="missionResources" class="mission-grid"></div>
@@ -75,6 +80,9 @@
     const owner = m.owner_actions || [];
     const supervisor = m.local_supervisor || {};
     const build = m.build_evidence || {};
+    const ci = latestCi(m)?.payload;
+    const ciSummary = ci?.summary || {};
+    const ciBad = Number(ciSummary.FAILED || 0) + Number(ciSummary.BLOCKED || 0);
     const current = active[0];
     const currentText = current ? `${esc(current.id)} · ${esc(current.title)}` : (m.control_plane?.runtime_present ? 'No active task / control plane idle' : 'Runtime state not present on this laptop');
     const resourceText = resources.length ? resources.map(r => `${esc(r.id)}:${esc(r.state)}`).join(' · ') : 'No runtime resource evidence';
@@ -84,7 +92,7 @@
       <div><span>NOW</span><b>${currentText}</b><small>${active.length} active · ${fmt(m.control_plane?.verified_progress_percent,1)}% verified</small></div>
       <div><span>RESOURCES</span><b>${resourceText}</b><small>${esc(m.source)}${m.stale ? ' · STALE SNAPSHOT' : ''}</small></div>
       <div><span>LEADING STRATEGY</span><b>${strategyText}</b><small>${leader ? `OOS ${fmt(leader.evidence?.oos_score,4)} · DD ${fmt(leader.evidence?.max_drawdown_pct,2)}%` : 'Requires real qualification evidence'}</small></div>
-      <div><span>BLOCKER / RECOVERY</span><b>${recoveryText}</b><small>${blocked.length} blocked/triage · build ${esc(build.status || 'unavailable')}</small></div>
+      <div><span>BLOCKER / RECOVERY</span><b>${recoveryText}</b><small>${blocked.length} control blockers · CI ${ci ? (ciBad ? `${ciBad} failed/blocked` : 'no failed/blocked') : 'not synced'} · build ${esc(build.status || 'unavailable')}</small></div>
       <div class="${owner.length ? 'owner-needed' : 'owner-clear'}"><span>OWNER ACTION</span><b>${owner.length ? `🔴 ${owner.length} owner-required` : 'No owner action required'}</b><small>${owner.length ? esc(owner[0].title || owner[0].id) : 'Only actual OWNER_REQUIRED L4 is surfaced here'}</small></div>`;
   }
 
@@ -101,9 +109,20 @@
     const supervisor = m.local_supervisor || {};
     const build = m.build_evidence || {};
     const buildState = build.status === 'verified' && build.exact_source === true ? 'VERIFIED' : 'UNKNOWN';
+    const ciEvent = latestCi(m);
+    const ci = ciEvent?.payload || {};
+    const workflows = ci.workflows || {};
+    const summary = ci.summary || {};
+    const failed = Number(summary.FAILED || 0);
+    const blocked = Number(summary.BLOCKED || 0);
+    const running = Number(summary.RUNNING || 0);
+    const done = Number(summary.DONE || 0);
+    const ciState = !ciEvent ? 'UNKNOWN' : (failed || blocked ? 'FAILED' : (running ? 'RUNNING' : 'DONE'));
+    const exactHeads = Object.entries(workflows).slice(0,8).map(([name,row]) => `${name}:${row.state || 'UNKNOWN'}@${String(row.head_sha || '').slice(0,8) || 'no-sha'}`).join(' · ') || 'no exact-head CI snapshot imported';
     host.innerHTML = `
       <div class="mission-card"><h3>local-supervisor</h3><p class="${stateClass(supervisor.status)}">${esc(String(supervisor.status || 'unknown').toUpperCase())}</p><p>Restart: ${esc(supervisor.restart_count ?? 0)} / ${esc(supervisor.restart_limit ?? 3)}</p><p>${esc(supervisor.reason || 'bounded restart policy active')}</p></div>
-      <div class="mission-card"><h3>exact-source-build</h3><p class="${stateClass(buildState)}">${buildState}</p><p>SHA: ${esc((build.source_sha || '').slice(0,12) || 'unavailable')}</p><p>Run: ${esc(build.run_id || '—')} · ${esc(build.workflow || 'no build evidence')}</p></div>`;
+      <div class="mission-card"><h3>exact-source-build</h3><p class="${stateClass(buildState)}">${buildState}</p><p>SHA: ${esc((build.source_sha || '').slice(0,12) || 'unavailable')}</p><p>Run: ${esc(build.run_id || '—')} · ${esc(build.workflow || 'no build evidence')}</p></div>
+      <div class="mission-card"><h3>CI HEALTH / EXACT HEAD</h3><p class="${stateClass(ciState)}">${ciState}</p><p>Done ${done} · Running ${running} · Failed ${failed} · Blocked ${blocked}</p><p>${esc(exactHeads)}</p></div>`;
   }
 
   function renderResources(m) {
