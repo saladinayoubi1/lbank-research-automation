@@ -1,11 +1,11 @@
 {
-  "generated_at_utc": "2026-08-18T06:20:00Z",
+  "generated_at_utc": "2026-08-18T10:40:00Z",
   "project": {
     "name": "NEXUS Personal Pro",
     "status": "complete",
     "phase": 6,
     "gates": "0-6",
-    "product_version": "3.1.0",
+    "product_version": "3.2.0",
     "mode": "research_backtest_paper",
     "canonical_source": "Bybit",
     "fallback_sources": ["Binance", "LBank"],
@@ -13,23 +13,25 @@
     "deterministic_risk_final_authority": true,
     "live_trading_authority": false,
     "profitability_claim": false,
-    "canonical_windows_main_sha": "bdcf5ab32a5f979b3d2c780344f554d639907e0a",
+    "canonical_windows_main_sha": "366fe9b2b8e3788a3cb510af9a040fc091a2632d",
     "backend_contracts": {
       "product": "nexus.product-overview.v2 / api/product/*",
       "paper_execution": "paper_execution.py",
       "paper_event_store": "paper_event_store.py / nexus.paper-event.v1",
       "risk": "deterministic_risk.py",
       "research": "product_research_runtime.py / phase6_research_pipeline.py",
+      "strategy_center": "product_mission_runtime.py / nexus.product-strategy-center.v1",
       "ai_room": "ai_room.py / nexus.ai-room.v2",
-      "mission_control": "mission_control.py"
+      "mission_control": "product_mission_runtime.py / nexus.product-mission-control.v1",
+      "ci_health": "nexus.product-ci-health.v1"
     },
     "mobile_delivery": {
       "mode": "canonical_backend_first_with_explicit_local_fallback",
-      "canonical_product": "when the configured HTTPS Secure Gateway exposes /api/product/*, Android reads and mutates Paper/Research/Risk/Recovery through the Python backend",
+      "canonical_product": "when the configured HTTPS Secure Gateway exposes /api/product/*, Android reads and mutates bounded Paper/Research/Risk/Recovery through the Python backend",
       "local_fallback": "when canonical backend is unavailable, the existing local deterministic Paper/Risk mirror remains available and is visibly labelled LOCAL FALLBACK",
       "public_market": "Bybit closed candles through bounded read-only native bridge",
       "ai_room": "policy-gated secure-gateway AI Room POST",
-      "mission_control": "canonical product overview projection when backend is connected; local projection otherwise",
+      "mission_control": "reads the real /api/product/mission/full contract through the approved HTTPS gateway and surfaces tasks, workers, resources, strategy evidence, CI exact-head evidence and true owner actions; if unavailable it shows MISSION UNSYNCED and does not fabricate state",
       "audit_replay": "canonical backend replay/recovery when connected; local SHA-256 event chain otherwise",
       "live": "visible but owner-controlled and locked; no exchange order, withdrawal, signing or private credential path"
     }
