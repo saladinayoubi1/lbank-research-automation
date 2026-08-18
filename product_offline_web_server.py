@@ -20,7 +20,7 @@ from product_offline_runtime import (
 from product_research_runtime import ProductResearchError, ProductResearchRuntime
 from product_runtime import ProductRuntime
 from product_web_server import PRODUCT_UI_ROOT, _json_error, _safe_asset, build_handler as build_product_handler
-from web_dashboard import ApiResponse, GatewayConfig, validate_gateway_config
+from web_dashboard import ApiResponse, ByteResponse, GatewayConfig, validate_gateway_config
 
 DEFAULT_DATA_ROOT = Path("data/market")
 MAX_OFFLINE_REQUEST_BYTES = MAX_OFFLINE_DATASET_BYTES + 65_536
@@ -69,16 +69,31 @@ def build_handler(
             length = int(raw_length)
             if length < 2 or length > MAX_OFFLINE_REQUEST_BYTES:
                 self._send(_json_error(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, "offline_import_out_of_bounds", "offline request exceeds bounded import size", active_config)); return None
-            try:
-                payload = json.loads(self.rfile.read(length).decode("utf-8"))
+            try: payload = json.loads(self.rfile.read(length).decode("utf-8"))
             except (UnicodeDecodeError, json.JSONDecodeError):
                 self._send(_json_error(HTTPStatus.BAD_REQUEST, "invalid_json", "malformed JSON", active_config)); return None
             if not isinstance(payload, Mapping):
                 self._send(_json_error(HTTPStatus.BAD_REQUEST, "invalid_offline_request", "JSON object required", active_config)); return None
             return payload
 
+        def _offline_index(self, *, head_only: bool = False) -> None:
+            try: response = _safe_asset(ui_root, "index.html")
+            except Exception as exc:
+                self._send(_json_error(HTTPStatus.SERVICE_UNAVAILABLE, "offline_asset_unavailable", str(exc), active_config), head_only=head_only); return
+            marker = b"</body>"
+            injection = b'<script src="/ui/product-offline.js"></script></body>'
+            if marker not in response.body:
+                self._send(_json_error(HTTPStatus.SERVICE_UNAVAILABLE, "offline_asset_invalid", "product index body marker missing", active_config), head_only=head_only); return
+            body = response.body.replace(marker, injection, 1)
+            self._send(ByteResponse(response.status, body, response.content_type, response.headers), head_only=head_only)
+
         def do_GET(self) -> None:  # noqa: N802
             parsed = urlsplit(self.path)
+            if parsed.path == "/":
+                if not self._authorized(): return
+                if parsed.query:
+                    self._send(_json_error(HTTPStatus.BAD_REQUEST, "invalid_query", "product index does not accept query", active_config)); return
+                self._offline_index(); return
             if parsed.path in OFFLINE_STATIC:
                 if not self._authorized(): return
                 if parsed.query:
@@ -101,6 +116,11 @@ def build_handler(
 
         def do_HEAD(self) -> None:  # noqa: N802
             parsed = urlsplit(self.path)
+            if parsed.path == "/":
+                if not self._authorized(): return
+                if parsed.query:
+                    self._send(_json_error(HTTPStatus.BAD_REQUEST, "invalid_query", "product index does not accept query", active_config), head_only=True); return
+                self._offline_index(head_only=True); return
             if parsed.path in OFFLINE_STATIC:
                 if not self._authorized(): return
                 try: response = _safe_asset(ui_root, OFFLINE_STATIC[parsed.path])
@@ -111,11 +131,7 @@ def build_handler(
 
         def do_POST(self) -> None:  # noqa: N802
             parsed = urlsplit(self.path)
-            routes = {
-                "/api/product/offline/import",
-                "/api/product/offline/research",
-                "/api/product/offline/paper/auto",
-            }
+            routes = {"/api/product/offline/import", "/api/product/offline/research", "/api/product/offline/paper/auto"}
             if parsed.path not in routes:
                 super().do_POST(); return
             if not self._authorized(): return
@@ -127,15 +143,10 @@ def build_handler(
                 if parsed.path == "/api/product/offline/import":
                     result = store.import_dataset(payload)
                 elif parsed.path == "/api/product/offline/research":
-                    if set(payload) != {"binding_sha256", "family"}:
-                        raise ProductOfflineError("offline research request schema mismatch")
-                    result = offline_research.run_imported_research(
-                        binding_sha256=str(payload["binding_sha256"]),
-                        family=str(payload["family"]),
-                    )
+                    if set(payload) != {"binding_sha256", "family"}: raise ProductOfflineError("offline research request schema mismatch")
+                    result = offline_research.run_imported_research(binding_sha256=str(payload["binding_sha256"]), family=str(payload["family"]))
                 else:
-                    if set(payload):
-                        raise ProductOfflineError("offline auto-paper request must be an empty object")
+                    if set(payload): raise ProductOfflineError("offline auto-paper request must be an empty object")
                     result = offline_research.auto_paper()
             except (ProductOfflineError, ProductResearchError) as exc:
                 self._send(_json_error(HTTPStatus.BAD_REQUEST, "offline_action_rejected", str(exc), active_config)); return
@@ -163,5 +174,4 @@ def main() -> None:
     serve(args.host, args.port, data_root=args.data_root, ui_root=args.ui_root)
 
 
-if __name__ == "__main__":
-    main()
+if __name__ == "__main__": main()
