@@ -8,6 +8,7 @@ on:
       - 'config/nexus-ai-council.json'
       - 'config/nexus-brain-policy.json'
       - 'scripts/validate_nexus_mission_queue.js'
+      - 'scripts/test_validate_nexus_mission_queue.js'
       - 'scripts/nexus_orchestrator.js'
       - 'scripts/test_nexus_orchestrator.js'
       - 'scripts/nexus_ai_council.js'
@@ -31,6 +32,7 @@ on:
       - 'config/nexus-ai-council.json'
       - 'config/nexus-brain-policy.json'
       - 'scripts/validate_nexus_mission_queue.js'
+      - 'scripts/test_validate_nexus_mission_queue.js'
       - 'scripts/nexus_orchestrator.js'
       - 'scripts/test_nexus_orchestrator.js'
       - 'scripts/nexus_ai_council.js'
@@ -67,6 +69,8 @@ jobs:
           python-version: '3.12'
       - name: Validate mission queue
         run: node scripts/validate_nexus_mission_queue.js
+      - name: Test mission queue validator
+        run: node scripts/test_validate_nexus_mission_queue.js
       - name: Test orchestrator selection
         run: node scripts/test_nexus_orchestrator.js
       - name: Test AI Council policy
