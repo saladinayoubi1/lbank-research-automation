@@ -8,8 +8,13 @@ from typing import Any
 
 import pandas as pd
 
-from backtest_engine import BacktestConfig, BacktestError, run_target_exposure_backtest
+from backtest_engine import BacktestConfig
 from bybit_public_klines import fetch_closed_klines
+from canonical_backtest import (
+    CanonicalBacktestError,
+    canonical_market_frame,
+    run_canonical_target_exposure_backtest,
+)
 from market_data_provenance_manifest import build_provenance_manifest
 from phase5_data_binding import bind_canonical_dataset, validate_canonical_dataset
 from phase5_strategy_factory import build_experiment, qualify
@@ -142,11 +147,11 @@ def fetch_bind_bybit_dataset(
 
 
 def _market_frame(dataset: Mapping[str, Any]) -> pd.DataFrame:
-    artifact = validate_canonical_dataset(dataset)
-    rows = artifact["rows"]
-    frame = pd.DataFrame(rows)
-    frame["timestamp"] = pd.to_datetime(frame["open_time_ms"], unit="ms", utc=True)
-    return frame[["timestamp", "open", "high", "low", "close"]].copy()
+    try:
+        _artifact, frame = canonical_market_frame(dataset)
+        return frame
+    except CanonicalBacktestError as exc:
+        raise Phase6PipelineError(f"canonical market frame rejected: {exc}") from exc
 
 
 def _momentum_targets(frame: pd.DataFrame, config: Mapping[str, Any]) -> pd.Series:
@@ -223,10 +228,18 @@ def generate_targets(
     return targets
 
 
-def _run(frame: pd.DataFrame, targets: Sequence[float], fee_bps: float, slippage_bps: float):
+def _run(
+    dataset: Mapping[str, Any],
+    targets: Sequence[float],
+    fee_bps: float,
+    slippage_bps: float,
+    *,
+    start: int = 0,
+    end: int | None = None,
+):
     try:
-        return run_target_exposure_backtest(
-            frame,
+        return run_canonical_target_exposure_backtest(
+            dataset,
             targets,
             BacktestConfig(
                 initial_cash=10_000.0,
@@ -235,13 +248,15 @@ def _run(frame: pd.DataFrame, targets: Sequence[float], fee_bps: float, slippage
                 max_abs_exposure=1.0,
                 liquidate_at_end=True,
             ),
+            start=start,
+            end=end,
         )
-    except BacktestError as exc:
+    except CanonicalBacktestError as exc:
         raise Phase6PipelineError(f"deterministic backtest rejected input: {exc}") from exc
 
 
 def _slice_return(
-    frame: pd.DataFrame,
+    dataset: Mapping[str, Any],
     targets: pd.Series,
     start: int,
     end: int,
@@ -252,10 +267,12 @@ def _slice_return(
     if end - start < 3:
         return 0.0
     result = _run(
-        frame.iloc[start:end].reset_index(drop=True),
-        targets.iloc[start:end].reset_index(drop=True),
+        dataset,
+        targets,
         fee_bps,
         slippage_bps,
+        start=start,
+        end=end,
     )
     return float(result.metrics["total_return"])
 
@@ -294,13 +311,13 @@ def build_qualification_evidence(
     if stress_fee < base_fee or stress_slippage < base_slippage:
         raise Phase6PipelineError("stress cost model cannot be weaker than base costs")
 
-    base = _run(frame, targets, base_fee, base_slippage)
-    stress = _run(frame, targets, stress_fee, stress_slippage)
-    benchmark = _run(frame, [1.0] * len(frame), base_fee, base_slippage)
+    base = _run(dataset, targets, base_fee, base_slippage)
+    stress = _run(dataset, targets, stress_fee, stress_slippage)
+    benchmark = _run(dataset, [1.0] * len(frame), base_fee, base_slippage)
 
     oos_start = max(1, int(len(frame) * 0.70))
     oos_return = _slice_return(
-        frame,
+        dataset,
         targets,
         oos_start,
         len(frame),
@@ -311,7 +328,7 @@ def build_qualification_evidence(
     boundaries = [0, len(frame) // 3, (2 * len(frame)) // 3, len(frame)]
     regime_returns = [
         _slice_return(
-            frame,
+            dataset,
             targets,
             boundaries[index],
             boundaries[index + 1],
