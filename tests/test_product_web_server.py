@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 from product_runtime import ProductRuntime
-from product_web_server import PRODUCT_UI_ROOT, build_handler
+from product_web_server import PRODUCT_UI_ROOT, _mission_snapshot, build_handler
 from web_dashboard import GatewayConfig
 
 
@@ -79,11 +79,38 @@ def test_product_overview_reports_canonical_backend_and_live_locked(product_serv
     assert payload["paper"]["paper_only"] is True
     assert payload["live"]["status"] == "locked_owner_controlled"
     assert payload["live"]["orders_allowed"] is False
+    assert payload["mission_control"]["status"] == "idle"
+    assert payload["mission_control"]["queue"]["counts"] == {"READY": 0, "RUNNING": 0, "FAILED": 0, "BLOCKED": 0}
+    assert payload["mission_control"]["agents"] == []
     assert payload["capabilities"]["paper_execution"] == "active"
     assert payload["capabilities"]["research_backtest_studio"] == "active"
     assert payload["capabilities"]["automated_paper_pipeline"] == "qualification_and_risk_gated"
     assert payload["capabilities"]["ai_room"] == "policy_gated"
+    assert payload["capabilities"]["mission_control"] == "idle"
     assert payload["capabilities"]["reports"] == "json_csv"
+
+
+def test_clean_install_mission_control_is_truthful_idle_but_corrupt_state_fails_closed(tmp_path: Path) -> None:
+    data_root = tmp_path / "data" / "market"
+    data_root.mkdir(parents=True)
+    clean = _mission_snapshot(data_root)
+    assert clean["status"] == "idle"
+    assert clean["projection"] == "clean_install_idle"
+    assert clean["mission"]["status"] == "idle"
+    assert clean["queue"]["counts"] == {"READY": 0, "RUNNING": 0, "FAILED": 0, "BLOCKED": 0}
+    assert clean["agents"] == []
+    assert clean["runners"] == []
+    assert clean["providers"] == {}
+    assert clean["local_node"]["registered"] is False
+    assert clean["paper"]["live_trading_authority"] is False
+
+    report = data_root.parent / "mission_control" / "_mission_control.json"
+    report.parent.mkdir(parents=True)
+    report.write_text("{}", encoding="utf-8")
+    corrupt = _mission_snapshot(data_root)
+    assert corrupt["status"] == "unavailable"
+    assert "incompatible Mission Control report contract" in corrupt["reason"]
+    assert report.read_text(encoding="utf-8") == "{}"
 
 
 def test_product_paper_controls_and_order_mutate_only_demo_state(product_server) -> None:
