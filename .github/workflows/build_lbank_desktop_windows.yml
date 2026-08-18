@@ -23,22 +23,28 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Validate committed desktop surface
+      - name: Validate committed integrated desktop product
         run: |
           $required = @(
             "desktop/lbank-monitor/app/index.html",
-            "desktop/lbank-monitor/app/desktop.css",
-            "desktop/lbank-monitor/app/layout-fix.css",
-            "desktop/lbank-monitor/app/desktop-runtime.js",
+            "desktop/lbank-monitor/app/full-product.css",
+            "desktop/lbank-monitor/app/desktop-product.js",
             "desktop/lbank-monitor/app/project-data.js",
             "desktop/lbank-monitor/main.js",
             "desktop/lbank-monitor/preload.js"
           )
           foreach ($path in $required) {
-            if (!(Test-Path $path)) { throw "Missing required desktop asset: $path" }
+            if (!(Test-Path $path)) { throw "Missing required desktop product asset: $path" }
           }
           $package = Get-Content "desktop/lbank-monitor/package.json" -Raw | ConvertFrom-Json
-          if ($package.version -ne "3.5.1") { throw "Unexpected desktop version: $($package.version)" }
+          if ($package.version -ne "4.0.0") { throw "Unexpected desktop version: $($package.version)" }
+          node --check desktop/lbank-monitor/main.js
+          node --check desktop/lbank-monitor/preload.js
+          node --check desktop/lbank-monitor/app/desktop-product.js
+          $index = Get-Content "desktop/lbank-monitor/app/index.html" -Raw
+          foreach ($marker in @("ترید دمو", "اتاق هوش مصنوعی", "Mission Control", "ممیزی و بازپخش", "ترید اصلی قفل است")) {
+            if (!$index.Contains($marker)) { throw "Integrated product marker missing: $marker" }
+          }
       - name: Install packaging dependencies
         working-directory: desktop/lbank-monitor
         run: npm install --no-audit --no-fund
@@ -47,16 +53,16 @@ jobs:
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
         run: npm run dist:win
-      - name: Verify packaged desktop resources
+      - name: Verify packaged integrated resources
         run: |
           $resourceRoot = "desktop/lbank-monitor/dist/win-unpacked/resources/app"
-          $required = @("index.html", "desktop.css", "layout-fix.css", "desktop-runtime.js", "project-data.js")
+          $required = @("index.html", "full-product.css", "desktop-product.js", "project-data.js")
           foreach ($name in $required) {
             $path = Join-Path $resourceRoot $name
-            if (!(Test-Path $path)) { throw "Packaged UI asset missing: $path" }
+            if (!(Test-Path $path)) { throw "Packaged product asset missing: $path" }
           }
-          $setup = Get-ChildItem "desktop/lbank-monitor/dist/NEXUS_Personal_Pro_Setup_3.5.1_*.exe" -ErrorAction SilentlyContinue
-          $portable = Get-ChildItem "desktop/lbank-monitor/dist/NEXUS_Personal_Pro_Portable_3.5.1_*.exe" -ErrorAction SilentlyContinue
+          $setup = Get-ChildItem "desktop/lbank-monitor/dist/NEXUS_Personal_Pro_Setup_4.0.0_*.exe" -ErrorAction SilentlyContinue
+          $portable = Get-ChildItem "desktop/lbank-monitor/dist/NEXUS_Personal_Pro_Portable_4.0.0_*.exe" -ErrorAction SilentlyContinue
           if (!$setup) { throw "Installer EXE missing" }
           if (!$portable) { throw "Portable EXE missing" }
       - name: Generate SHA-256 checksums
@@ -72,10 +78,10 @@ jobs:
           Get-Content "desktop/lbank-monitor/dist/SHA256SUMS.txt"
       - uses: actions/upload-artifact@v4
         with:
-          name: NEXUS_PERSONAL_PRO_WINDOWS_3_5_1
+          name: NEXUS_PERSONAL_PRO_WINDOWS_4_0_0
           path: |
-            desktop/lbank-monitor/dist/NEXUS_Personal_Pro_Setup_3.5.1_*.exe
-            desktop/lbank-monitor/dist/NEXUS_Personal_Pro_Portable_3.5.1_*.exe
+            desktop/lbank-monitor/dist/NEXUS_Personal_Pro_Setup_4.0.0_*.exe
+            desktop/lbank-monitor/dist/NEXUS_Personal_Pro_Portable_4.0.0_*.exe
             desktop/lbank-monitor/dist/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 30
