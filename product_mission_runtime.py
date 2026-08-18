@@ -12,11 +12,11 @@ from dashboard_integrations import IntegrationUnavailableError, load_research_su
 MISSION_CONTRACT = "nexus.product-mission-control.v1"
 SNAPSHOT_CONTRACT = "nexus.agent-manager-snapshot.v1"
 STRATEGY_CONTRACT = "nexus.product-strategy-center.v1"
+CI_CONTRACT = "nexus.product-ci-health.v1"
 MAX_SNAPSHOT_BYTES = 2_000_000
 MAX_EVENTS = 200
 MAX_STRATEGY_RUNS = 200
 ACTIVE_STATES = {"LEASED", "RUNNING", "VERIFYING", "TRIAGE"}
-TERMINAL_STATES = {"DONE", "OWNER_REQUIRED", "QUARANTINED"}
 KNOWN_STATES = {
     "PENDING", "READY", "LEASED", "RUNNING", "VERIFYING", "DONE", "TRIAGE",
     "BLOCKED", "OWNER_REQUIRED", "QUARANTINED",
@@ -169,7 +169,7 @@ def _worker_views(config: Mapping[str, Any], tasks: list[dict[str, Any]], *, run
 
 def _resource_views(workers: list[dict[str, Any]], tasks: list[dict[str, Any]], *, snapshot_age_seconds: float | None) -> list[dict[str, Any]]:
     names = sorted({resource for worker in workers for resource in worker["resources"]})
-    result = []
+    result: list[dict[str, Any]] = []
     for name in names:
         members = [worker for worker in workers if name in worker["resources"]]
         active = [worker for worker in members if worker["state"] == "BUSY"]
@@ -182,7 +182,13 @@ def _resource_views(workers: list[dict[str, Any]], tasks: list[dict[str, Any]], 
         else:
             state = "IDLE_OR_AVAILABLE"
         routed = [task["id"] for task in tasks if name in task["preferred_resources"] and task["status"] in ACTIVE_STATES]
-        result.append({"id": name, "state": state, "workers": [w["id"] for w in members], "active_workers": [w["id"] for w in active], "routed_tasks": routed})
+        result.append({
+            "id": name,
+            "state": state,
+            "workers": [worker["id"] for worker in members],
+            "active_workers": [worker["id"] for worker in active],
+            "routed_tasks": routed,
+        })
     return result
 
 
@@ -190,18 +196,99 @@ def _snapshot_age(generated_at: Any) -> float | None:
     parsed = _parse_time(generated_at)
     if parsed is None:
         return None
-    return max(0.0, (datetime.now(timezone.utc) - parsed).total_seconds())
+    delta = (datetime.now(timezone.utc) - parsed).total_seconds()
+    if delta < -300:
+        return None
+    return max(0.0, delta)
+
+
+def _latest_ci(events: list[dict[str, Any]]) -> dict[str, Any]:
+    for event in reversed(events):
+        if event.get("kind") != "ci_snapshot" or not isinstance(event.get("payload"), Mapping):
+            continue
+        payload = event["payload"]
+        workflows_raw = payload.get("workflows")
+        summary_raw = payload.get("summary")
+        if not isinstance(workflows_raw, Mapping) or not isinstance(summary_raw, Mapping):
+            continue
+        workflows: dict[str, Any] = {}
+        exact_heads: set[str] = set()
+        for name, raw in workflows_raw.items():
+            if not isinstance(name, str) or not isinstance(raw, Mapping):
+                continue
+            head_sha = raw.get("head_sha")
+            if isinstance(head_sha, str) and head_sha:
+                exact_heads.add(head_sha)
+            workflows[name] = {
+                key: raw.get(key) for key in (
+                    "state", "run_id", "run_attempt", "conclusion", "status",
+                    "head_sha", "updated_at", "url", "auto_retry",
+                )
+            }
+        counts = {key: int(summary_raw.get(key) or 0) for key in ("RUNNING", "WAITING", "DONE", "FAILED", "BLOCKED", "UNKNOWN")}
+        state = "FAILED" if counts["FAILED"] or counts["BLOCKED"] else ("RUNNING" if counts["RUNNING"] or counts["WAITING"] else "DONE")
+        return {
+            "contract_version": CI_CONTRACT,
+            "status": "available",
+            "state": state,
+            "generated_at": event.get("at"),
+            "summary": counts,
+            "workflows": workflows,
+            "head_shas": sorted(exact_heads),
+            "single_exact_head": len(exact_heads) == 1,
+        }
+    return {
+        "contract_version": CI_CONTRACT,
+        "status": "unavailable",
+        "state": "UNKNOWN",
+        "generated_at": None,
+        "summary": {key: 0 for key in ("RUNNING", "WAITING", "DONE", "FAILED", "BLOCKED", "UNKNOWN")},
+        "workflows": {},
+        "head_shas": [],
+        "single_exact_head": False,
+    }
+
+
+def _metric(evidence: Mapping[str, Any], key: str, missing: float) -> float:
+    value = evidence.get(key)
+    if value is None or isinstance(value, bool):
+        return missing
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return missing
+    return number
 
 
 class StrategyEvidenceStore:
     def __init__(self, root: Path) -> None:
         self.path = Path(root) / "product_runtime" / "research-history.jsonl"
 
+    def _load_runs(self) -> list[dict[str, Any]]:
+        runs: list[dict[str, Any]] = []
+        if not self.path.exists():
+            return runs
+        if self.path.is_symlink() or not self.path.is_file() or self.path.stat().st_size > MAX_SNAPSHOT_BYTES * 4:
+            raise ProductMissionError("research history is unsafe")
+        try:
+            with self.path.open("r", encoding="utf-8") as handle:
+                for line in handle:
+                    if not line.strip():
+                        continue
+                    value = json.loads(line)
+                    if isinstance(value, dict):
+                        runs.append(value)
+                        if len(runs) > MAX_STRATEGY_RUNS:
+                            runs.pop(0)
+        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+            raise ProductMissionError("research history is invalid") from exc
+        return runs
+
     def record(self, result: Mapping[str, Any]) -> None:
         public = {key: value for key, value in result.items() if not str(key).startswith("_")}
         record = {"recorded_at": _utc_now(), **public}
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        existing = self.history()["runs"]
+        existing = self._load_runs()
         existing.append(record)
         existing = existing[-MAX_STRATEGY_RUNS:]
         temp = self.path.with_suffix(".tmp")
@@ -209,37 +296,33 @@ class StrategyEvidenceStore:
             with temp.open("w", encoding="utf-8", newline="\n") as handle:
                 for row in existing:
                     handle.write(json.dumps(row, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False) + "\n")
-                handle.flush(); os.fsync(handle.fileno())
+                handle.flush()
+                os.fsync(handle.fileno())
             temp.replace(self.path)
         except OSError as exc:
-            try: temp.unlink(missing_ok=True)
-            except OSError: pass
+            try:
+                temp.unlink(missing_ok=True)
+            except OSError:
+                pass
             raise ProductMissionError("failed to persist research evidence") from exc
 
     def history(self) -> dict[str, Any]:
-        runs: list[dict[str, Any]] = []
-        if self.path.exists():
-            if self.path.is_symlink() or not self.path.is_file() or self.path.stat().st_size > MAX_SNAPSHOT_BYTES * 4:
-                raise ProductMissionError("research history is unsafe")
-            try:
-                with self.path.open("r", encoding="utf-8") as handle:
-                    for line in handle:
-                        if not line.strip(): continue
-                        value = json.loads(line)
-                        if isinstance(value, dict):
-                            runs.append(value)
-                            if len(runs) > MAX_STRATEGY_RUNS: runs.pop(0)
-            except (OSError, UnicodeError, json.JSONDecodeError) as exc:
-                raise ProductMissionError("research history is invalid") from exc
-        candidates = [row for row in runs if row.get("qualification", {}).get("status") == "paper_candidate"]
+        runs = self._load_runs()
+        candidates = [
+            row for row in runs
+            if isinstance(row.get("qualification"), Mapping)
+            and row["qualification"].get("status") == "paper_candidate"
+        ]
+
         def score(row: Mapping[str, Any]) -> tuple[float, float, float, float]:
-            evidence = row.get("evidence") or {}
+            evidence = row.get("evidence") if isinstance(row.get("evidence"), Mapping) else {}
             return (
-                float(evidence.get("oos_score") or -999.0),
-                float(evidence.get("walk_forward_score") or -999.0),
-                float(evidence.get("robustness_score") or -999.0),
-                -float(evidence.get("max_drawdown_pct") or 999.0),
+                _metric(evidence, "oos_score", -999.0),
+                _metric(evidence, "walk_forward_score", -999.0),
+                _metric(evidence, "robustness_score", -999.0),
+                -_metric(evidence, "max_drawdown_pct", 999.0),
             )
+
         candidates.sort(key=score, reverse=True)
         leader = candidates[0] if candidates else None
         return {
@@ -274,18 +357,14 @@ class ProductMissionRuntime:
         return payload
 
     def export_snapshot(self) -> dict[str, Any]:
-        config = self._config()
-        runtime = _read_json(self.runtime_path)
-        summary = _read_json(self.summary_path)
-        events = _bounded_events(self.event_path)
         return {
             "contract_version": SNAPSHOT_CONTRACT,
             "generated_at": _utc_now(),
             "source": "local-agent-manager",
-            "config": config,
-            "runtime": runtime,
-            "summary": summary,
-            "events": events,
+            "config": self._config(),
+            "runtime": _read_json(self.runtime_path),
+            "summary": _read_json(self.summary_path),
+            "events": _bounded_events(self.event_path),
             "paper_only": True,
             "live_trading_authority": False,
         }
@@ -293,16 +372,25 @@ class ProductMissionRuntime:
     def import_snapshot(self, payload: Mapping[str, Any]) -> dict[str, Any]:
         if not isinstance(payload, Mapping) or payload.get("contract_version") != SNAPSHOT_CONTRACT:
             raise ProductMissionError("mission snapshot contract mismatch")
-        if set(payload) != {"contract_version", "generated_at", "source", "config", "runtime", "summary", "events", "paper_only", "live_trading_authority"}:
+        required = {"contract_version", "generated_at", "source", "config", "runtime", "summary", "events", "paper_only", "live_trading_authority"}
+        if set(payload) != required:
             raise ProductMissionError("mission snapshot schema mismatch")
         if payload.get("paper_only") is not True or payload.get("live_trading_authority") is not False:
             raise ProductMissionError("mission snapshot widened authority")
+        if _parse_time(payload.get("generated_at")) is None:
+            raise ProductMissionError("mission snapshot generated_at invalid")
+        source = payload.get("source")
+        if not isinstance(source, str) or not 1 <= len(source) <= 120:
+            raise ProductMissionError("mission snapshot source invalid")
         config = payload.get("config")
         if not isinstance(config, Mapping) or config.get("schema_version") != 1 or not isinstance(config.get("workers"), list) or not isinstance(config.get("tasks"), list):
             raise ProductMissionError("mission snapshot configuration invalid")
         runtime = payload.get("runtime")
         if runtime is not None and (not isinstance(runtime, Mapping) or runtime.get("schema_version") != 1):
             raise ProductMissionError("mission snapshot runtime invalid")
+        summary = payload.get("summary")
+        if summary is not None and not isinstance(summary, Mapping):
+            raise ProductMissionError("mission snapshot summary invalid")
         events = payload.get("events")
         if not isinstance(events, list) or len(events) > MAX_EVENTS or any(not isinstance(row, Mapping) for row in events):
             raise ProductMissionError("mission snapshot event ledger invalid")
@@ -330,6 +418,7 @@ class ProductMissionRuntime:
             summary = imported.get("summary") if isinstance(imported.get("summary"), Mapping) else None
             events = [dict(row) for row in imported.get("events", []) if isinstance(row, Mapping)][-MAX_EVENTS:]
             generated_at = imported.get("generated_at")
+
         tasks_source = runtime.get("tasks") if isinstance(runtime, Mapping) and isinstance(runtime.get("tasks"), list) else config.get("tasks", [])
         tasks = [_task_view(row) for row in tasks_source if isinstance(row, Mapping)]
         runtime_present = runtime is not None
@@ -344,11 +433,14 @@ class ProductMissionRuntime:
         failed_tasks = [task for task in tasks if task["status"] in {"BLOCKED", "TRIAGE", "QUARANTINED"}]
         total_non_owner = sum(1 for task in tasks if int(task.get("authority") or 0) < 4)
         done_non_owner = sum(1 for task in tasks if int(task.get("authority") or 0) < 4 and task["status"] == "DONE")
-        try: research_summary = load_research_summary(self.integration_root)
-        except IntegrationUnavailableError as exc: research_summary = {"status": "unavailable", "reason": str(exc)}
-        try: zotero_summary = load_zotero_summary(self.integration_root)
-        except IntegrationUnavailableError as exc: zotero_summary = {"status": "unavailable", "reason": str(exc)}
-        strategy = self.strategy_store.history()
+        try:
+            research_summary = load_research_summary(self.integration_root)
+        except IntegrationUnavailableError as exc:
+            research_summary = {"status": "unavailable", "reason": str(exc)}
+        try:
+            zotero_summary = load_zotero_summary(self.integration_root)
+        except IntegrationUnavailableError as exc:
+            zotero_summary = {"status": "unavailable", "reason": str(exc)}
         return {
             "contract_version": MISSION_CONTRACT,
             "paper_only": True,
@@ -370,9 +462,10 @@ class ProductMissionRuntime:
             "resources": resources,
             "tasks": tasks,
             "events": events,
+            "ci_health": _latest_ci(events),
             "owner_actions": owner_actions,
             "owner_action_required": bool(owner_actions),
-            "strategy_center": strategy,
+            "strategy_center": self.strategy_store.history(),
             "research_integration": research_summary,
             "zotero_integration": zotero_summary,
         }
