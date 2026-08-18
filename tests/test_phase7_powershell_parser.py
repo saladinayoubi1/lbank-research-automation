@@ -9,24 +9,28 @@ import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SCRIPT = ROOT / "scripts" / "phase7_offline_laptop.ps1"
+SCRIPTS = [
+    ROOT / "scripts" / "phase7_offline_laptop.ps1",
+    ROOT / "scripts" / "nexus_windows_autostart.ps1",
+]
 
 
 @pytest.mark.skipif(os.name != "nt", reason="PowerShell parser proof requires Windows")
-def test_phase7_offline_helper_parses_with_windows_powershell():
+@pytest.mark.parametrize("script", SCRIPTS, ids=lambda p: p.name)
+def test_windows_helpers_parse_with_windows_powershell(script: Path):
     powershell = shutil.which("powershell.exe") or shutil.which("powershell")
     assert powershell, "Windows PowerShell is required on windows-latest"
-    assert SCRIPT.is_file()
+    assert script.is_file()
 
     env = os.environ.copy()
-    env["NEXUS_PHASE7_PS1"] = str(SCRIPT)
+    env["NEXUS_WINDOWS_PS1"] = str(script)
     command = (
         "$tokens=$null; $errors=$null; "
         "[System.Management.Automation.Language.Parser]::ParseFile("
-        "$env:NEXUS_PHASE7_PS1,[ref]$tokens,[ref]$errors) | Out-Null; "
+        "$env:NEXUS_WINDOWS_PS1,[ref]$tokens,[ref]$errors) | Out-Null; "
         "if ($errors.Count -ne 0) { "
         "$errors | ForEach-Object { Write-Error $_.Message }; exit 1 }; "
-        "Write-Output 'phase7_powershell_parse_valid=true'"
+        "Write-Output 'nexus_windows_powershell_parse_valid=true'"
     )
     completed = subprocess.run(
         [powershell, "-NoProfile", "-NonInteractive", "-Command", command],
@@ -38,4 +42,4 @@ def test_phase7_offline_helper_parses_with_windows_powershell():
         check=False,
     )
     assert completed.returncode == 0, completed.stdout + completed.stderr
-    assert "phase7_powershell_parse_valid=true" in completed.stdout
+    assert "nexus_windows_powershell_parse_valid=true" in completed.stdout
