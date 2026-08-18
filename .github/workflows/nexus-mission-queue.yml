@@ -230,7 +230,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       - name: Independently finalize returned laptop proof
-        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'phase7/return-')
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'phase7/return-') && github.event.pull_request.head.repo.full_name == github.repository && github.actor == github.repository_owner
         shell: bash
         env:
           NEXUS_OFFLINE_COURIER_KEY: ${{ secrets.NEXUS_OFFLINE_COURIER_KEY }}
