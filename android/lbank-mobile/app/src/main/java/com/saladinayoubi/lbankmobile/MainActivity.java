@@ -50,7 +50,7 @@ public final class MainActivity extends Activity {
     ));
     private static final Set<String> PRODUCT_GET_PATHS = new HashSet<>(Arrays.asList(
             "/api/product/overview", "/api/product/paper", "/api/product/paper/events",
-            "/api/product/strategies", "/api/product/mission-control", "/api/product/live",
+            "/api/product/strategies", "/api/product/mission-control", "/api/product/mission/full", "/api/product/live",
             "/api/product/data/registry", "/api/product/research/last", "/api/product/risk",
             "/api/product/recovery", "/api/product/notifications"
     ));
@@ -317,7 +317,7 @@ public final class MainActivity extends Activity {
         connection.setInstanceFollowRedirects(false);
         connection.setRequestMethod("GET");
         connection.setRequestProperty("Accept", "application/json");
-        connection.setRequestProperty("User-Agent", "nexus-mobile/3.1");
+        connection.setRequestProperty("User-Agent", "nexus-mobile/3.2");
         int code = connection.getResponseCode();
         String text = readBounded(code >= 200 && code < 300 ? connection.getInputStream() : connection.getErrorStream());
         if (code < 200 || code >= 300) throw new IllegalStateException("Bybit public market HTTP " + code);
@@ -352,7 +352,7 @@ public final class MainActivity extends Activity {
             try { assertGatewaySecretId(id); return !getPreferences(MODE_PRIVATE).getString("gateway_token", "").isEmpty(); }
             catch (Exception e) { return false; }
         }
-        @JavascriptInterface public void deleteKey(String id) { assertGatewaySecretId(id); getPreferences(MODE_PRIVATE).edit().remove("gateway_token").apply(); }
+        @JavascriptInterface public void deleteKey(String id) { assertGatewaySecretId(id); getPreferences(MODE_PRIVATE).edit().remove("gateway_token", "").apply(); }
         @JavascriptInterface public void request(String id, String json) { executor.execute(() -> { try { deliver("NexusNativeResult", id, true, callDashboard(json)); } catch (Exception e) { deliver("NexusNativeResult", id, false, e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage()); } }); }
         @JavascriptInterface public void requestAiRoom(String id, String json) { executor.execute(() -> { try { deliver("NexusAiRoomResult", id, true, callAiRoom(json)); } catch (Exception e) { deliver("NexusAiRoomResult", id, false, e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage()); } }); }
         @JavascriptInterface public void requestProduct(String id, String method, String path, String bodyJson) { executor.execute(() -> { try { deliver("NexusProductResult", id, true, callProduct(method == null ? "" : method.trim().toUpperCase(), path, bodyJson == null ? "{}" : bodyJson)); } catch (Exception e) { deliver("NexusProductResult", id, false, e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage()); } }); }
