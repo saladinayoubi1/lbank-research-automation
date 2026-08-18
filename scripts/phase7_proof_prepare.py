@@ -21,6 +21,7 @@ import phase7_e2e_proof
 MISSION_PATH = Path("config/nexus-phase7-proof-mission.json")
 MISSION_ID = "nexus-phase7-e2e-proof"
 DEEPSEEK_TASK_ID = "P7-DEEPSEEK-ADVISORY"
+RESOURCE_CLASSES = ("Laptop", "Internal Agent", "Cloud/GitHub worker", "DeepSeek/AI provider")
 
 
 def _canonical(value: Any) -> bytes:
@@ -74,6 +75,17 @@ def _resource_class(worker_id: str) -> str:
     return "Cloud/GitHub worker"
 
 
+def _active_load_excluding_task(config: dict[str, Any], task_id: str | None) -> dict[str, int]:
+    load: dict[str, int] = {}
+    for row in config.get("tasks", []):
+        if task_id and row.get("id") == task_id:
+            continue
+        worker_id = row.get("assigned_worker")
+        if row.get("status") in am.ACTIVE and worker_id:
+            load[str(worker_id)] = load.get(str(worker_id), 0) + 1
+    return load
+
+
 def _annotated_routing(
     config: dict[str, Any],
     task: Mapping[str, Any],
@@ -89,7 +101,7 @@ def _annotated_routing(
             dict(task),
             am.workers_from(config),
             verifier_only=verifier_only,
-            active_load=am.active_worker_load(config, exclude_task=dict(task)),
+            active_load=_active_load_excluding_task(config, str(task.get("id") or "")),
         )
         selected = next((row for row in rows if row.get("worker_id") == worker_id and row.get("eligible")), None)
         for row in rows:
@@ -151,8 +163,11 @@ def _ledger_row(
     latency_ms: float | None,
     result_at: str | None,
     verifier_id: str | None = None,
+    verifier_result: str | None = None,
     availability_reason: str | None = None,
 ) -> dict[str, Any]:
+    if classification not in {"EXECUTED", "UNAVAILABLE"}:
+        raise ValueError("resource ledger classification must be EXECUTED or UNAVAILABLE")
     observed = routing.get("selected_observed") if isinstance(routing.get("selected_observed"), Mapping) else {}
     evidence_dict = dict(evidence or {})
     return {
@@ -175,7 +190,7 @@ def _ledger_row(
             "evidence_sha256": _digest(evidence_dict) if evidence is not None else None,
             "failure_class": evidence_dict.get("failure_class"),
         },
-        "verifier": {"worker_id": verifier_id, "result": "assigned" if verifier_id else None},
+        "verifier": {"worker_id": verifier_id, "result": verifier_result},
         "latency_ms": round(float(latency_ms), 3) if latency_ms is not None else None,
         "retry_failure": {
             "transient_retries": int(task.get("transient_retries") or 0),
@@ -187,6 +202,32 @@ def _ledger_row(
         },
         "availability_reason": availability_reason,
     }
+
+
+def resource_classification(ledger: list[dict[str, Any]]) -> dict[str, Any]:
+    summary: dict[str, Any] = {}
+    for resource_class in RESOURCE_CLASSES:
+        rows = [row for row in ledger if row.get("resource_class") == resource_class]
+        executed = [row for row in rows if row.get("classification") == "EXECUTED" and row.get("result", {}).get("outcome") == "success"]
+        unavailable = [row for row in rows if row.get("classification") == "UNAVAILABLE"]
+        if executed:
+            status = "EXECUTED"
+            reason = None
+        elif unavailable:
+            status = "UNAVAILABLE"
+            reason = next((row.get("availability_reason") for row in unavailable if row.get("availability_reason")), "unavailable")
+        else:
+            status = "UNAVAILABLE"
+            reason = "no_resource_ledger_entry"
+        summary[resource_class] = {
+            "classification": status,
+            "reason": reason,
+            "task_ids": sorted({str(row.get("task_id")) for row in rows if row.get("task_id")}),
+            "worker_ids": sorted({str(row.get("worker_id")) for row in rows if row.get("worker_id")}),
+            "executed_rows": len(executed),
+            "unavailable_rows": len(unavailable),
+        }
+    return summary
 
 
 def _execute_and_verify(config: dict[str, Any], task_id: str, ledger: list[dict[str, Any]]) -> None:
@@ -227,6 +268,7 @@ def _execute_and_verify(config: dict[str, Any], task_id: str, ledger: list[dict[
             latency_ms=elapsed,
             result_at=producer_result_at,
             verifier_id=verifier_id,
+            verifier_result="assigned" if verifier_id else None,
         )
     )
     if result["outcome"] != "success":
@@ -267,6 +309,7 @@ def _execute_and_verify(config: dict[str, Any], task_id: str, ledger: list[dict[
             latency_ms=elapsed,
             result_at=task.get("result_received_at"),
             verifier_id=verifier,
+            verifier_result="success" if verification["outcome"] == "success" else "failure",
         )
     )
 
@@ -298,7 +341,7 @@ def _deepseek_virtual_task(config: dict[str, Any], source_sha: str) -> tuple[dic
         "selected_worker": routing["selected_worker"],
         "selected_score": routing["selected_score"],
         "reason": routing["reason"],
-        "candidates": am.rank_worker_candidates(task, am.workers_from(config), active_load=am.active_worker_load(config)),
+        "candidates": am.rank_worker_candidates(task, am.workers_from(config), active_load=_active_load_excluding_task(config, DEEPSEEK_TASK_ID)),
     }
     envelope = _direct_dispatch_identity(task)
     return task, envelope
@@ -497,6 +540,7 @@ def prepare(source_sha: str, output_dir: Path, *, mission_path: Path = MISSION_P
         "state_sha256": state.payload_sha256,
         "manager_summary": final_summary,
         "resource_ledger": resource_ledger,
+        "resource_classification": resource_classification(resource_ledger),
         "courier": courier_status,
         "deepseek": deepseek_status,
         "zero_idle_evidence": zero_idle,
