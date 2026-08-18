@@ -56,13 +56,13 @@ function Ensure-LocalVenv([string]$Root) {
     if (Test-Path -LiteralPath $venvPython -PathType Leaf) { return $venvPython }
 
     $python = Get-Command python -ErrorAction SilentlyContinue
-    $args = @('-m','venv',(Join-Path $Root '.venv'))
+    $venvArgs = @('-m','venv',(Join-Path $Root '.venv'))
     if ($python) {
-        & $python.Source @args
+        & $python.Source @venvArgs
     } else {
         $py = Get-Command py -ErrorAction SilentlyContinue
         if (-not $py) { throw 'Python 3 is required for first-time NEXUS autostart installation' }
-        & $py.Source -3 @args
+        & $py.Source -3 @venvArgs
     }
     if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $venvPython -PathType Leaf)) {
         throw 'failed to create .venv for NEXUS autostart'
@@ -149,6 +149,12 @@ function Invoke-Phase7Mode([string]$Root, [string]$PhaseMode, [string]$SessionId
     return ($proc.ExitCode -eq 0)
 }
 
+function Test-SupervisorCommandLine([string]$CommandLine, [string]$Root) {
+    if (-not $CommandLine) { return $false }
+    $expectedScript = [IO.Path]::GetFullPath((Join-Path $Root $SupervisorRelative))
+    return $CommandLine.IndexOf($expectedScript, [StringComparison]::OrdinalIgnoreCase) -ge 0
+}
+
 function Get-SupervisorProcess([string]$Root) {
     if (Test-Path -LiteralPath $SupervisorPidPath -PathType Leaf) {
         try {
@@ -156,14 +162,14 @@ function Get-SupervisorProcess([string]$Root) {
             $proc = Get-Process -Id $pidValue -ErrorAction SilentlyContinue
             if ($proc) {
                 $wmi = Get-CimInstance Win32_Process -Filter "ProcessId=$pidValue" -ErrorAction SilentlyContinue
-                if ($wmi -and $wmi.CommandLine -like '*local_node_supervisor.py*') { return $proc }
+                if ($wmi -and (Test-SupervisorCommandLine ([string]$wmi.CommandLine) $Root)) { return $proc }
             }
         } catch { }
     }
 
     try {
         foreach ($row in Get-CimInstance Win32_Process -ErrorAction SilentlyContinue) {
-            if ($row.CommandLine -and $row.CommandLine -like '*local_node_supervisor.py*') {
+            if ($row.CommandLine -and (Test-SupervisorCommandLine ([string]$row.CommandLine) $Root)) {
                 $proc = Get-Process -Id $row.ProcessId -ErrorAction SilentlyContinue
                 if ($proc) {
                     Set-Content -LiteralPath $SupervisorPidPath -Encoding ASCII -Value $proc.Id
@@ -182,12 +188,13 @@ function Start-LocalSupervisor([string]$Root) {
     $python = Ensure-LocalVenv $Root
     $pythonw = Join-Path (Split-Path -Parent $python) 'pythonw.exe'
     $exe = if (Test-Path -LiteralPath $pythonw -PathType Leaf) { $pythonw } else { $python }
-    $script = Join-Path $Root $SupervisorRelative
+    $script = [IO.Path]::GetFullPath((Join-Path $Root $SupervisorRelative))
     if (-not (Test-Path -LiteralPath $script -PathType Leaf)) { throw 'local_node_supervisor.py is missing' }
 
-    $proc = Start-Process -FilePath $exe -ArgumentList @($script,'--poll-seconds','20','--with-dashboard') -WorkingDirectory $Root -WindowStyle Hidden -PassThru
+    $quotedScript = '"' + $script.Replace('"','\"') + '"'
+    $proc = Start-Process -FilePath $exe -ArgumentList @($quotedScript,'--poll-seconds','20','--with-dashboard') -WorkingDirectory $Root -WindowStyle Hidden -PassThru
     Set-Content -LiteralPath $SupervisorPidPath -Encoding ASCII -Value $proc.Id
-    Write-Log "local_supervisor_started pid=$($proc.Id)"
+    Write-Log "local_supervisor_started pid=$($proc.Id) script=$script"
     return $proc
 }
 
@@ -250,8 +257,8 @@ function Install-Autostart {
     $script = (Resolve-Path -LiteralPath $PSCommandPath).Path
     $ps = Get-PowerShellExe
     $user = "$env:USERDOMAIN\$env:USERNAME"
-    $args = "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$script`" -Mode RunDaemon -RepoRoot `"$root`""
-    $action = New-ScheduledTaskAction -Execute $ps -Argument $args -WorkingDirectory $root
+    $taskArgs = "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$script`" -Mode RunDaemon -RepoRoot `"$root`""
+    $action = New-ScheduledTaskAction -Execute $ps -Argument $taskArgs -WorkingDirectory $root
     $trigger = New-ScheduledTaskTrigger -AtLogOn -User $user
     $principal = New-ScheduledTaskPrincipal -UserId $user -LogonType Interactive -RunLevel Limited
     $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -MultipleInstances IgnoreNew -RestartCount 999 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit ([TimeSpan]::Zero)
