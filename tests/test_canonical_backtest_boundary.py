@@ -91,7 +91,7 @@ def test_row_payload_or_manifest_tamper_is_blocked_before_backtest():
         _run(dataset)
 
     dataset = _dataset()
-    dataset["provenance_manifest"]["source"] = "Binance"
+    dataset["manifest"]["source"] = "Binance"
     with pytest.raises(CanonicalBacktestError):
         _run(dataset)
 
