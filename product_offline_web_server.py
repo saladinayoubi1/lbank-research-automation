@@ -12,6 +12,7 @@ from urllib.parse import urlsplit
 from product_control_runtime import ProductControlRuntime
 from product_offline_runtime import (
     MAX_OFFLINE_DATASET_BYTES,
+    CachingProductResearchRuntime,
     OfflineDatasetStore,
     OfflineProductResearchRuntime,
     ProductOfflineError,
@@ -42,9 +43,9 @@ def build_handler(
 ):
     active_config = validate_gateway_config(config or GatewayConfig())
     runtime = runtime or ProductRuntime(data_root.parent)
-    online_research = online_research or ProductResearchRuntime(runtime)
-    controls = controls or ProductControlRuntime(runtime)
     store = store or OfflineDatasetStore(data_root.parent / "offline-datasets")
+    online_research = online_research or CachingProductResearchRuntime(runtime, store)
+    controls = controls or ProductControlRuntime(runtime)
     offline_research = offline_research or OfflineProductResearchRuntime(runtime, store)
     BaseProductHandler = build_product_handler(
         data_root,
