@@ -16,9 +16,12 @@
 ## Repair contract
 
 - Keep failure detection fail-closed.
-- Keep the exact current head failure open until exact-head success evidence exists.
-- Close only CI triage records whose PR is no longer open at that exact head SHA, or whose exact SHA later succeeds.
-- On the default branch, a newer run retires older same-workflow default-branch failure records.
+- Keep an actionable current-head failure open until newer or exact-head evidence supersedes it.
+- A newer completed run for the same workflow/event/branch retires the older SHA record.
+- An exact-SHA success retires the matching failure record.
+- A historical pull-request failure may be retired only after the issue marker is rebound to its recorded Actions run and every PR associated with that run is absent from the current open Issue/PR inventory.
+- Missing, malformed, mismatched, unavailable, or association-free historical evidence is preserved rather than guessed closed.
+- Preserve the frozen workflow permission tuple: `actions: read`, `contents: read`, `issues: write`; do not add pull-request permission to obtain cleanup capability.
 - Preserve issue history; closure is auditable and appends a NEXUS CI hygiene reason.
 - Do not weaken Test, NEXUS Build Verification, NEXUS Cloud Fallback, workflow permissions, data-integrity gates, deterministic Risk, or the Research/Backtest/Paper-only authority boundary.
 
@@ -28,9 +31,11 @@
 
 - success events are observed only for cleanup;
 - only failure-like conclusions create failure issues;
-- exact open PR head SHA controls actionability;
-- exact-SHA success closes the matching failure;
-- default-branch newer runs retire older same-workflow failures;
+- the frozen privileged-workflow permission tuple is unchanged;
+- a newer same-branch run retires an older SHA without PR-read permission;
+- historical cleanup binds marker SHA/workflow/event/run URL to `actions.getWorkflowRun` evidence;
+- historical PR closure uses the open Issue/PR inventory and fails closed on missing/mismatched association;
+- exact-SHA success and default-branch supersession remain supported;
 - cleanup closes rather than deletes issue history;
 - privileged workflow still does not checkout or execute triggering code/artifacts.
 
