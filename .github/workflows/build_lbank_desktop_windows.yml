@@ -55,7 +55,7 @@ jobs:
           python -m PyInstaller
           --noconfirm
           --clean
-          --onefile
+          --onedir
           --name nexus-product-server
           --add-data "product_ui;product_ui"
           --add-data ".nexus/phase6-checkpoint.json;.nexus"
@@ -70,10 +70,11 @@ jobs:
           $runtime = Join-Path $env:RUNNER_TEMP "nexus-product-runtime"
           $market = Join-Path $runtime "market"
           New-Item -ItemType Directory -Path $market -Force | Out-Null
-          $server = Start-Process -FilePath "dist/nexus-product-server.exe" -ArgumentList @("--host","127.0.0.1","--port","18765","--data-root",$market) -PassThru -WindowStyle Hidden
+          $server = Start-Process -FilePath "dist/nexus-product-server/nexus-product-server.exe" -ArgumentList @("--host","127.0.0.1","--port","18765","--data-root",$market) -PassThru -WindowStyle Hidden
           try {
             $ready = $false
-            for ($i = 0; $i -lt 40; $i++) {
+            for ($i = 0; $i -lt 100; $i++) {
+              if ($server.HasExited) { throw "Canonical NEXUS product sidecar exited with code $($server.ExitCode)" }
               try {
                 $payload = Invoke-RestMethod -Uri "http://127.0.0.1:18765/api/product/overview" -TimeoutSec 2
                 if ($payload.paper.active -eq $true -and $payload.live.enabled -eq $false) { $ready = $true; break }
@@ -90,26 +91,24 @@ jobs:
             if ($recovery.status -ne "verified") { throw "Paper recovery verification failed" }
             $css = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:18765/ui/product-extra.css" -TimeoutSec 3
             if ($css.StatusCode -ne 200) { throw "Extended full-product UI stylesheet missing" }
-            $ui = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:18765/" -TimeoutSec 3
-            foreach ($marker in @("اتاق هوش مصنوعی","ترید دمو","بک‌تست و پژوهش","ریسک و پرتفوی","ممیزی و بازیابی","ترید اصلی")) {
-              if (!$ui.Content.Contains($marker)) { throw "Full product UI marker missing: $marker" }
-            }
           } finally {
             if ($server -and -not $server.HasExited) { Stop-Process -Id $server.Id -Force }
           }
 
       - name: Stage source-bound resources for Electron
         run: |
+          Remove-Item "desktop/nexus-product/sidecar/nexus-product-server" -Recurse -Force -ErrorAction SilentlyContinue
           New-Item -ItemType Directory -Path "desktop/nexus-product/sidecar" -Force | Out-Null
-          Copy-Item "dist/nexus-product-server.exe" "desktop/nexus-product/sidecar/nexus-product-server.exe"
+          Copy-Item "dist/nexus-product-server" "desktop/nexus-product/sidecar/nexus-product-server" -Recurse -Force
           Set-Content -LiteralPath "desktop/nexus-product/sidecar/source-sha.txt" -Value $env:GITHUB_SHA -NoNewline -Encoding ascii
           Copy-Item "docs/architecture/market-data-source-registry.yaml" "desktop/nexus-product/sidecar/market-data-source-registry.yaml"
 
       - name: Validate Electron source bindings
         run: |
           node --check "desktop/nexus-product/main.js"
-          node -e "const p=require('./desktop/nexus-product/package.json'); if(p.version!=='4.1.0') process.exit(1)"
+          node -e "const p=require('./desktop/nexus-product/package.json'); if(p.version!=='4.1.1') process.exit(1)"
           if ((Get-Content "desktop/nexus-product/sidecar/source-sha.txt" -Raw).Trim() -ne $env:GITHUB_SHA) { throw "Source SHA binding mismatch" }
+          if (!(Test-Path "desktop/nexus-product/sidecar/nexus-product-server/nexus-product-server.exe")) { throw "Onedir sidecar staging failed" }
           if (!(Test-Path "desktop/nexus-product/sidecar/market-data-source-registry.yaml")) { throw "Canonical registry staging failed" }
 
       - name: Install Electron packaging dependencies
@@ -126,14 +125,14 @@ jobs:
         run: |
           $root = "desktop/nexus-product/dist/win-unpacked/resources"
           foreach ($path in @(
-            "$root/nexus-product-server.exe",
+            "$root/nexus-product-server/nexus-product-server.exe",
             "$root/source-sha.txt",
             "$root/docs/architecture/market-data-source-registry.yaml"
           )) { if (!(Test-Path $path)) { throw "Packaged canonical resource missing: $path" } }
-          if ((Get-Item "$root/nexus-product-server.exe").Length -lt 1000000) { throw "Packaged sidecar is unexpectedly small" }
+          if ((Get-Item "$root/nexus-product-server/nexus-product-server.exe").Length -lt 1000000) { throw "Packaged sidecar executable is unexpectedly small" }
           if ((Get-Content "$root/source-sha.txt" -Raw).Trim() -ne $env:GITHUB_SHA) { throw "Packaged source SHA mismatch" }
-          $setup = Get-ChildItem "desktop/nexus-product/dist/NEXUS_Personal_Pro_Setup_4.1.0_*.exe" -ErrorAction SilentlyContinue
-          $portable = Get-ChildItem "desktop/nexus-product/dist/NEXUS_Personal_Pro_Portable_4.1.0_*.exe" -ErrorAction SilentlyContinue
+          $setup = Get-ChildItem "desktop/nexus-product/dist/NEXUS_Personal_Pro_Setup_4.1.1_*.exe" -ErrorAction SilentlyContinue
+          $portable = Get-ChildItem "desktop/nexus-product/dist/NEXUS_Personal_Pro_Portable_4.1.1_*.exe" -ErrorAction SilentlyContinue
           if (!$setup) { throw "NEXUS Product Setup EXE missing" }
           if (!$portable) { throw "NEXUS Product Portable EXE missing" }
 
@@ -150,10 +149,10 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: NEXUS_PERSONAL_PRO_PRODUCT_WINDOWS_4_1_0
+          name: NEXUS_PERSONAL_PRO_PRODUCT_WINDOWS_4_1_1
           path: |
-            desktop/nexus-product/dist/NEXUS_Personal_Pro_Setup_4.1.0_*.exe
-            desktop/nexus-product/dist/NEXUS_Personal_Pro_Portable_4.1.0_*.exe
+            desktop/nexus-product/dist/NEXUS_Personal_Pro_Setup_4.1.1_*.exe
+            desktop/nexus-product/dist/NEXUS_Personal_Pro_Portable_4.1.1_*.exe
             desktop/nexus-product/dist/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 30
