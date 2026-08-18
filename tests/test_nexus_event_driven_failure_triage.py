@@ -8,12 +8,12 @@ def _text():
     return WORKFLOW.read_text(encoding='utf-8')
 
 
-def test_privileged_workflow_has_exact_minimal_permissions():
+def test_privileged_workflow_has_exact_frozen_permissions():
     text = _text()
     assert 'contents: read' in text
     assert 'actions: read' in text
     assert 'issues: write' in text
-    assert 'pull-requests: read' in text
+    assert 'pull-requests: read' not in text
     for forbidden in ('contents: write', 'actions: write', 'pull-requests: write', 'packages: write', 'id-token: write'):
         assert forbidden not in text
 
@@ -43,9 +43,7 @@ def test_success_runs_are_observed_for_cleanup_but_only_failure_like_conclusions
         assert f"'{rejected}'" not in text.split('const allowedConclusions', 1)[1].split(']);', 1)[0]
     assert "if (run.conclusion === 'success')" in text
     assert 'if (!failureConclusions.has(run.conclusion))' in text
-    success_index = text.index("if (run.conclusion === 'success')")
-    create_index = text.index('github.rest.issues.create')
-    assert success_index < create_index
+    assert text.index("if (run.conclusion === 'success')") < text.index('github.rest.issues.create')
 
 
 def test_malformed_metadata_fails_closed_before_issue_write():
@@ -82,23 +80,45 @@ def test_duplicate_delivery_uses_stable_workflow_and_sha_marker():
     assert 'issues.create' in text
 
 
-def test_superseded_pull_request_failures_are_retired_by_exact_open_head_sha():
+def test_newer_same_branch_run_retires_older_sha_without_pr_permission():
     text = _text()
-    assert 'github.rest.pulls.list' in text
-    assert "state: 'open'" in text
-    assert 'const activePrHeads = new Set(openPulls.map(pr => pr.head?.sha).filter(Boolean));' in text
-    assert "parsed.event === 'pull_request' && !activePrHeads.has(parsed.sha)" in text
-    assert 'the pull request is closed or its head advanced to a newer SHA.' in text
+    assert 'const currentBranchSupersedes = (parsed)' in text
+    assert 'parsed.workflow === run.name' in text
+    assert 'parsed.event === run.event' in text
+    assert 'parsed.branch === safeBranch' in text
+    assert 'parsed.sha !== run.head_sha' in text
+    assert 'a newer ${run.name} run exists for branch ${safeBranch}.' in text
+    assert 'github.rest.pulls.list' not in text
 
 
-def test_exact_sha_success_closes_matching_failure_and_default_branch_supersedes_older_failures():
+def test_historical_pr_cleanup_binds_actions_run_to_open_issue_pr_inventory():
+    text = _text()
+    assert 'const openPrNumbers = new Set(' in text
+    assert 'issues.filter(issue => Boolean(issue.pull_request)).map(issue => issue.number)' in text
+    assert 'github.rest.actions.getWorkflowRun' in text
+    assert 'historical.name === parsed.workflow' in text
+    assert 'historical.head_sha === parsed.sha' in text
+    assert "historical.event === 'pull_request'" in text
+    assert 'historical.html_url === expectedRepoUrl' in text
+    assert 'associatedPrNumbers.every(number => !openPrNumbers.has(number))' in text
+    assert 'all pull requests bound to workflow run ${parsed.runId} are closed or merged.' in text
+
+
+def test_historical_cleanup_fails_closed_on_missing_or_mismatched_association():
+    text = _text()
+    assert 'Preserved triage issue #${issue.number}: historical workflow evidence mismatch.' in text
+    assert 'Preserved triage issue #${issue.number}: no independently associated pull request.' in text
+    assert 'Preserved triage issue #${issue.number}: historical run verification failed' in text
+    assert 'associatedPrNumbers.length === 0' in text
+
+
+def test_exact_sha_success_and_default_branch_supersession_are_preserved():
     text = _text()
     assert "if (run.conclusion === 'success')" in text
-    assert "the exact SHA now has a successful workflow run." in text
+    assert 'the exact SHA now has a successful workflow run.' in text
     assert "parsed.event === 'push'" in text
     assert 'parsed.branch === defaultBranch' in text
     assert 'parsed.workflow === run.name' in text
-    assert 'parsed.sha !== run.head_sha' in text
     assert 'a newer ${run.name} run exists on ${defaultBranch}.' in text
 
 
