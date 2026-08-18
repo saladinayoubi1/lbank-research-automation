@@ -57,10 +57,18 @@ jobs:
   validate-mission-queue:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      NEXUS_PROOF_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+      - name: Verify exact source checkout
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "$NEXUS_PROOF_SOURCE_SHA"
+          echo "phase7_exact_source_checkout=$NEXUS_PROOF_SOURCE_SHA"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -96,6 +104,13 @@ jobs:
             tests/test_phase7_e2e_proof.py \
             tests/test_phase7_proof_prepare.py \
             tests/test_offline_agent_courier.py
+      - name: Execute exact-head Phase 7 cloud proof on pull request
+        if: github.event_name == 'pull_request'
+        run: |
+          unset NEXUS_OFFLINE_COURIER_KEY
+          unset NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED
+          unset DEEPSEEK_API_KEY
+          python -m scripts.phase7_proof_prepare --source-sha "$NEXUS_PROOF_SOURCE_SHA" --output-dir build/phase7-proof
       - name: Execute exact-source Phase 7 cloud proof and prepare offline courier
         if: github.event_name != 'pull_request'
         env:
@@ -103,9 +118,8 @@ jobs:
           NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: ${{ vars.NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
         run: |
-          python scripts/phase7_proof_prepare.py --source-sha "$GITHUB_SHA" --output-dir build/phase7-proof
+          python -m scripts.phase7_proof_prepare --source-sha "$NEXUS_PROOF_SOURCE_SHA" --output-dir build/phase7-proof
       - name: Verify exact-source Phase 7 proof remains Paper-only
-        if: github.event_name != 'pull_request'
         run: |
           python - <<'PY'
           import json, os
@@ -113,22 +127,25 @@ jobs:
           import phase7_e2e_proof as proof
           root = Path('build/phase7-proof')
           artifact = json.loads((root / 'phase7-e2e-proof.json').read_text(encoding='utf-8'))
-          proof.validate_proof(artifact, expected_source_sha=os.environ['GITHUB_SHA'])
+          proof.validate_proof(artifact, expected_source_sha=os.environ['NEXUS_PROOF_SOURCE_SHA'])
           run = json.loads((root / 'phase7-proof-mission-run.json').read_text(encoding='utf-8'))
           assert run['paper_only'] is True
           assert run['live_trading_authority'] is False
           assert run['core_cloud_chain_complete'] is True
-          assert run['source_sha'] == os.environ['GITHUB_SHA'].lower()
+          assert run['source_sha'] == os.environ['NEXUS_PROOF_SOURCE_SHA'].lower()
+          if os.environ.get('GITHUB_EVENT_NAME') == 'pull_request':
+              assert run['hardware_proof_complete'] is False
+              assert run['courier']['status'] == 'KEY_UNAVAILABLE'
+              assert run['deepseek']['status'] == 'UNAVAILABLE'
           print('phase7_exact_source_cloud_proof_verified=true')
           print('phase7_hardware_proof_complete=' + str(bool(run['hardware_proof_complete'])).lower())
           print('phase7_courier_status=' + str(run['courier']['status']))
           print('phase7_deepseek_status=' + str(run['deepseek']['status']))
           PY
       - name: Upload Phase 7 proof and courier evidence
-        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
-          name: nexus-phase7-proof-${{ github.sha }}
+          name: nexus-phase7-proof-${{ github.event.pull_request.head.sha || github.sha }}
           path: build/phase7-proof
           if-no-files-found: error
           retention-days: 14
