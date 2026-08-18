@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
@@ -39,8 +38,7 @@ def _seconds_between(start: Any, end: Any) -> float | None:
         b = datetime.fromisoformat(end.replace("Z", "+00:00"))
     except ValueError:
         return None
-    value = (b - a).total_seconds() * 1000.0
-    return round(max(0.0, value), 3)
+    return round(max(0.0, (b - a).total_seconds() * 1000.0), 3)
 
 
 def _existing_laptop_producer(ledger: list[dict[str, Any]]) -> dict[str, Any]:
@@ -69,6 +67,24 @@ def _assert_prepared_schema(row: Mapping[str, Any]) -> None:
         raise Phase7LedgerFinalizeError("prepared laptop row is not waiting on real offline execution")
     if not isinstance(row.get("routing"), Mapping) or not isinstance(row.get("lease_fencing"), Mapping):
         raise Phase7LedgerFinalizeError("prepared laptop routing/fencing evidence is missing")
+
+
+def _already_normalized(run: Mapping[str, Any]) -> bool:
+    if run.get("hardware_proof_complete") is not True:
+        return False
+    classes = run.get("resource_classification")
+    if not isinstance(classes, Mapping) or classes.get("Laptop", {}).get("classification") != "EXECUTED":
+        return False
+    rows = [row for row in run.get("resource_ledger", []) if isinstance(row, Mapping) and row.get("task_id") == TASK_ID]
+    producer = [row for row in rows if row.get("role") == "producer" and row.get("worker_id") == EXPECTED_PRODUCER]
+    verifier = [row for row in rows if row.get("role") == "verifier" and row.get("worker_id") == EXPECTED_VERIFIER]
+    return (
+        len(producer) == 1
+        and len(verifier) == 1
+        and producer[0].get("classification") == "EXECUTED"
+        and verifier[0].get("classification") == "EXECUTED"
+        and not any(row.get("role") == "producer_result" for row in rows)
+    )
 
 
 def _normalize(
@@ -148,10 +164,7 @@ def _normalize(
         verifier_result="success",
     )
 
-    other_rows = [
-        row for row in completed_ledger
-        if row.get("task_id") != TASK_ID
-    ]
+    other_rows = [row for row in completed_ledger if row.get("task_id") != TASK_ID]
     ledger = [*other_rows, laptop, verifier_row]
     result = dict(completed_run)
     result["resource_ledger"] = ledger
@@ -167,19 +180,21 @@ def finalize(artifact_dir: Path, returned_result: Path) -> dict[str, Any]:
     artifact_dir = Path(artifact_dir)
     run_path = artifact_dir / "phase7-proof-mission-run.json"
     runtime_path = artifact_dir / "agent-manager-runtime.json"
-    prepared = _read(run_path)
+    current_run = _read(run_path)
 
-    if prepared.get("hardware_proof_complete") is True:
-        completed = prepared
-        # A prior secure completion can be normalized without replaying Courier.
-        prepared_snapshot_path = artifact_dir / "phase7-proof-prepared-run.json"
+    if _already_normalized(current_run):
+        return current_run
+
+    prepared_snapshot_path = artifact_dir / "phase7-proof-prepared-run.json"
+    if current_run.get("hardware_proof_complete") is True:
         if not prepared_snapshot_path.is_file():
-            raise Phase7LedgerFinalizeError("prepared run snapshot required for idempotent ledger normalization")
+            raise Phase7LedgerFinalizeError("prepared run snapshot required to recover ledger normalization")
         prepared = _read(prepared_snapshot_path)
+        completed = current_run
     else:
-        snapshot = artifact_dir / "phase7-proof-prepared-run.json"
-        if not snapshot.exists():
-            secure_completion._write_json(snapshot, prepared)
+        prepared = current_run
+        if not prepared_snapshot_path.exists():
+            secure_completion._write_json(prepared_snapshot_path, prepared)
         completed = secure_completion.complete(artifact_dir, Path(returned_result))
 
     runtime = _read(runtime_path)
