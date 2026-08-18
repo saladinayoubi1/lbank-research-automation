@@ -23,6 +23,7 @@ MAX_PRODUCT_REQUEST_BYTES = 16_384
 PRODUCT_STATIC = {
     "/": "index.html",
     "/ui/product.css": "product.css",
+    "/ui/product-extra.css": "product-extra.css",
     "/ui/product.js": "product.js",
 }
 
