@@ -27,20 +27,25 @@ jobs:
           grep -q 'AndroidKeyStore' android/lbank-mobile/app/src/main/java/com/saladinayoubi/lbankmobile/MainActivity.java
           grep -q 'NexusNative' android/lbank-mobile/app/src/main/java/com/saladinayoubi/lbankmobile/MainActivity.java
           grep -q 'AES/GCM/NoPadding' android/lbank-mobile/app/src/main/java/com/saladinayoubi/lbankmobile/MainActivity.java
-      - name: Verify canonical Python-sidecar product surface
+      - name: Verify canonical offline-first Python-sidecar product surface
         run: |
           test -f product_runtime.py
           test -f product_research_runtime.py
           test -f product_control_runtime.py
           test -f product_web_server.py
+          test -f product_offline_runtime.py
+          test -f product_offline_web_server.py
           test -f product_ui/index.html
           test -f product_ui/product.css
           test -f product_ui/product-extra.css
           test -f product_ui/product.js
+          test -f product_ui/product-offline.js
+          test -f product_ui/product-offline.css
           test -f desktop/nexus-product/main.js
           node --check desktop/nexus-product/main.js
           node --check product_ui/product.js
-          node -e "const p=require('./desktop/nexus-product/package.json'); if(p.version!=='4.1.2' || !p.build.extraResources?.some(x=>x.to==='nexus-product-server') || !p.build.extraResources?.some(x=>x.to==='source-sha.txt')) process.exit(1)"
+          node --check product_ui/product-offline.js
+          node -e "const p=require('./desktop/nexus-product/package.json'); if(p.version!=='4.2.0' || !p.build.extraResources?.some(x=>x.to==='nexus-product-server') || !p.build.extraResources?.some(x=>x.to==='source-sha.txt')) process.exit(1)"
           grep -q 'contextIsolation: true' desktop/nexus-product/main.js
           grep -q 'sandbox: true' desktop/nexus-product/main.js
           grep -q 'nodeIntegration: false' desktop/nexus-product/main.js
@@ -52,9 +57,13 @@ jobs:
           grep -q 'run_research_job' product_research_runtime.py
           grep -q 'execute_paper_command' product_runtime.py
           grep -q 'recovery_snapshot' product_control_runtime.py
-          grep -q '/api/product/research/run' product_web_server.py
-          grep -q '/api/product/paper/auto' product_web_server.py
           grep -q 'clean_install_idle' product_web_server.py
+          grep -q 'OfflineDatasetStore' product_offline_runtime.py
+          grep -q 'CachingProductResearchRuntime' product_offline_runtime.py
+          grep -q '/api/product/offline/import' product_offline_web_server.py
+          grep -q '/api/product/offline/research' product_offline_web_server.py
+          grep -q 'internet_required_for_startup' product_offline_runtime.py
+          grep -q 'OFFLINE-FIRST' product_ui/product-offline.js
           grep -q 'OWNER-CONTROLLED FUTURE STAGE' product_ui/index.html
       - name: Install locked product test dependencies
         run: python -m pip install -r requirements-dev.lock
@@ -68,6 +77,7 @@ jobs:
           tests/test_product_runtime.py
           tests/test_product_web_server.py
           tests/test_product_research_runtime.py
+          tests/test_product_offline_runtime.py
           tests/test_windows_delivery_surface.py
 
   android-apk:
@@ -127,7 +137,7 @@ jobs:
         run: |
           python -m pip install -r requirements-dev.lock
           python -m pip install -r requirements-product-build.lock
-      - name: Build canonical Python product sidecar
+      - name: Build offline-first Python product sidecar
         run: >-
           python -m PyInstaller
           --noconfirm
@@ -137,7 +147,7 @@ jobs:
           --add-data "product_ui;product_ui"
           --add-data ".nexus/phase6-checkpoint.json;.nexus"
           --add-data "docs/project_memory/STATE.json;docs/project_memory"
-          product_web_server.py
+          product_offline_web_server.py
       - name: Stage exact-source product resources
         shell: pwsh
         run: |
@@ -163,8 +173,8 @@ jobs:
             "$root/docs/architecture/market-data-source-registry.yaml"
           )) { if (!(Test-Path $path)) { throw "Packaged canonical resource missing: $path" } }
           if ((Get-Content "$root/source-sha.txt" -Raw).Trim() -ne $env:GITHUB_SHA) { throw 'Packaged source SHA mismatch' }
-          if (!(Get-ChildItem 'desktop/nexus-product/dist/NEXUS_Personal_Pro_Setup_4.1.2_*.exe' -ErrorAction SilentlyContinue)) { throw 'Setup EXE missing' }
-          if (!(Get-ChildItem 'desktop/nexus-product/dist/NEXUS_Personal_Pro_Portable_4.1.2_*.exe' -ErrorAction SilentlyContinue)) { throw 'Portable EXE missing' }
+          if (!(Get-ChildItem 'desktop/nexus-product/dist/NEXUS_Personal_Pro_Setup_4.2.0_*.exe' -ErrorAction SilentlyContinue)) { throw 'Setup EXE missing' }
+          if (!(Get-ChildItem 'desktop/nexus-product/dist/NEXUS_Personal_Pro_Portable_4.2.0_*.exe' -ErrorAction SilentlyContinue)) { throw 'Portable EXE missing' }
       - name: Generate Windows SHA-256 checksums
         shell: pwsh
         run: |
@@ -193,8 +203,8 @@ jobs:
         with:
           name: nexus-windows-packages
           path: |
-            desktop/nexus-product/dist/NEXUS_Personal_Pro_Setup_4.1.2_*.exe
-            desktop/nexus-product/dist/NEXUS_Personal_Pro_Portable_4.1.2_*.exe
+            desktop/nexus-product/dist/NEXUS_Personal_Pro_Setup_4.2.0_*.exe
+            desktop/nexus-product/dist/NEXUS_Personal_Pro_Portable_4.2.0_*.exe
             desktop/nexus-product/dist/SHA256SUMS.txt
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
