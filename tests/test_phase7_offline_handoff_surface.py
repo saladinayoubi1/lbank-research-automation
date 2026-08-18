@@ -32,8 +32,12 @@ def test_courier_key_is_dpapi_protected_stdin_only_and_cleaned_after_verified_co
         "verified_progress_percent", "Laptop.classification",
     ):
         assert marker in text
-    assert "--body" not in text
+    # A normal PR description may use --body. The security invariant is that
+    # the Courier secret itself is never passed through PR/body/CLI arguments.
+    assert "'--body',$SecretValue" not in text
+    assert '"--body",$SecretValue' not in text
     assert "Write-Host $secret" not in text
+    assert "Write-Host $SecretValue" not in text
     assert "Set-Content -LiteralPath $keyPath" not in text
     assert "Copy-Item -LiteralPath $s.key_path" not in text
 
