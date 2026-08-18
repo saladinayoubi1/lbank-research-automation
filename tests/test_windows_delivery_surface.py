@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -13,128 +12,169 @@ def read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def test_windows_delivery_entrypoint_is_committed_and_packaged() -> None:
+def test_windows_full_product_assets_are_committed_and_packaged() -> None:
     required = [
         APP / "index.html",
-        APP / "desktop.css",
-        APP / "layout-fix.css",
-        APP / "desktop-runtime.js",
+        APP / "full-product.css",
+        APP / "desktop-product.js",
         APP / "project-data.js",
+        DESKTOP / "main.js",
+        DESKTOP / "preload.js",
     ]
     assert all(path.is_file() for path in required)
 
     package = json.loads(read(DESKTOP / "package.json"))
-    assert package["version"] == "3.5.1"
+    assert package["version"] == "4.0.0"
     assert any(item.get("from") == "app" and item.get("to") == "app" for item in package["build"]["extraResources"])
-
-    main = read(DESKTOP / "main.js")
-    assert "path.join(appRoot, 'index.html')" in main
-    assert "NEXUS desktop entrypoint missing" in main
+    assert "app/desktop-product.js" in package["scripts"]["check"]
 
 
-def test_windows_ui_is_terminal_first_readable_and_not_legacy_placeholder() -> None:
+def test_windows_surface_is_integrated_nexus_product_not_market_shell() -> None:
     index = read(APP / "index.html")
-    css = read(APP / "desktop.css")
-
-    assert "NEXUS Research Terminal" in index
-    assert "RESEARCH TERMINAL" in index
-    assert "Phase 6 Complete" in index
-    assert "PAPER ONLY" in index
-    assert "نتیجه نهایی NEXUS" in index
-    assert "STRATEGY FACTORY" in index
-    assert "مانیتور بازار" in index
-    assert index.index('id="market"') < index.index('id="result"')
-    assert "در حال بارگذاری" not in index
-    assert "OpenAI" not in index
-    assert "Google Gemini" not in index
-    assert re.search(r'font-family:\s*"Segoe UI Variable Text","Segoe UI",Tahoma,Arial,sans-serif', css)
+    assert "NEXUS Personal Pro" in index
+    assert "مرکز فرمان" in index
+    assert "ترید دمو" in index
+    assert "اتاق هوش مصنوعی" in index
+    assert "Mission Control" in index
+    assert "لابراتوار استراتژی" in index
+    assert "ممیزی و بازپخش" in index
+    assert "ترید اصلی قفل است" in index
+    assert "desktop-product.js" in index
+    assert "full-product.css" in index
+    assert "Research Terminal" not in index
+    assert "پایانه پژوهش بازار" not in index
 
 
-def test_windows_theme_is_flat_dense_and_optimized_for_laptop_viewports() -> None:
-    css = read(APP / "desktop.css")
-    assert re.search(r"--sidebar-width\s*:\s*202px", css)
-    assert re.search(r"--topbar-height\s*:\s*56px", css)
-    assert ".telemetry-strip{display:grid;grid-template-columns:repeat(4" in css
-    assert ".terminal-frame{background:var(--panel);border:1px solid var(--line)}" in css
-    assert ".strategy-table{border:1px solid var(--line);background:var(--panel)}" in css
-    assert ".integrity-table{display:grid;grid-template-columns:repeat(2" in css
-    assert "@media(max-height:780px) and (min-width:1180px)" in css
-    assert re.search(r"--topbar-height\s*:\s*50px", css)
-    assert "linear-gradient" not in css
-    assert "backdrop-filter" not in css
-    assert "border-radius:18px" not in css
-
-
-def test_windows_layout_reserves_physical_left_sidebar_and_recovers_overflow() -> None:
+def test_renderer_csp_stays_network_dark_and_electron_boundary_is_isolated() -> None:
     index = read(APP / "index.html")
-    css = read(APP / "layout-fix.css")
-    runtime = read(APP / "desktop-runtime.js")
-
-    assert 'id="sidebarToggle"' in index
-    assert 'href="layout-fix.css"' in index
-    assert ".shell{direction:ltr" in css
-    assert ".sidebar{direction:rtl" in css
-    assert ".workspace{direction:rtl;min-width:0;overflow-x:auto" in css
-    assert ".terminal-frame{min-width:0;overflow-x:auto" in css
-    assert "body.sidebar-collapsed" in css
-    assert "--sidebar-collapsed-width:58px" in css
-    assert "sidebarCollapsed:false" in runtime
-    assert "function toggleSidebar()" in runtime
-    assert "#sidebarToggle" in runtime
-    assert "e.key.toLowerCase()==='b'" in runtime
-
-
-def test_renderer_has_strict_csp_and_no_direct_network_access() -> None:
-    index = read(APP / "index.html")
-    assert "connect-src 'none'" in index
-    assert "object-src 'none'" in index
-    assert "desktop-runtime.js" in index
-    assert "project-data.js" in index
-
-
-def test_electron_boundary_stays_isolated_and_public_market_is_bounded() -> None:
     main = read(DESKTOP / "main.js")
     preload = read(DESKTOP / "preload.js")
 
+    assert "connect-src 'none'" in index
+    assert "object-src 'none'" in index
     assert "contextIsolation: true" in main
     assert "sandbox: true" in main
     assert "nodeIntegration: false" in main
     assert "devTools: false" in main
+    assert "contextBridge" in preload
+
+
+def test_public_market_bridge_is_bounded_read_only_and_closed_candle_runtime_filters() -> None:
+    main = read(DESKTOP / "main.js")
+    runtime = read(APP / "desktop-product.js")
     assert "PUBLIC_MARKET_SYMBOLS" in main
-    assert "BTCUSDT" in main and "XRPUSDT" in main
     assert "PUBLIC_MARKET_INTERVALS" in main
     assert "https://api.bybit.com/v5/market/kline" in main
     assert "method: 'GET'" in main
     assert "redirect: 'error'" in main
     assert "nexus:public-market" in main
-    assert "requestPublicMarket" in preload
-    lowered = (main + preload).lower()
-    assert "/order" not in lowered
-    assert "withdraw" not in lowered
+    assert "requestPublicMarket" in read(DESKTOP / "preload.js")
+    assert "c.t+step<=now" in runtime
 
 
-def test_project_metadata_preserves_paper_only_authority() -> None:
+def test_paper_product_has_deterministic_risk_execution_pnl_and_protective_controls() -> None:
+    runtime = read(APP / "desktop-product.js")
+    for token in (
+        "paper_trading_only:true",
+        "risk_allowed",
+        "maxDailyLoss",
+        "maxDrawdown",
+        "maxSignals",
+        "executePaper",
+        "closePosition",
+        "processProtective",
+        "fee_recorded",
+        "slippage_recorded",
+        "position_opened",
+        "position_closed",
+        "kill_switch_recorded",
+    ):
+        assert token in runtime
+
+
+def test_audit_chain_and_replay_are_tamper_evident() -> None:
+    runtime = read(APP / "desktop-product.js")
+    assert "GENESIS='0'.repeat(64)" in runtime
+    assert "previous_event_digest" in runtime
+    assert "event_digest:sha256" in runtime
+    assert "function verifyLedger()" in runtime
+    assert "function replayLedger()" in runtime
+    assert "digest_mismatch" in runtime
+    assert "chain_mismatch" in runtime
+
+
+def test_ai_room_is_bounded_gateway_plus_local_fallback_without_live_authority() -> None:
+    main = read(DESKTOP / "main.js")
+    preload = read(DESKTOP / "preload.js")
+    runtime = read(APP / "desktop-product.js")
+    assert "AI_REQUEST_KEYS" in main
+    assert "/api/ai-room/message" in main
+    assert "method: 'POST'" in main
+    assert "nexus:ai-room" in main
+    assert "requestAiRoom" in preload
+    assert "localAiReply" in runtime
+    assert "paper-stage" in runtime
+    assert "Risk Gate" in runtime
+
+
+def test_research_preview_is_next_bar_open_and_no_profitability_claim_is_preserved() -> None:
+    runtime = read(APP / "desktop-product.js")
     data = read(APP / "project-data.js")
+    assert "strategySignal" in runtime
+    assert "entry=c[i+1].o" in runtime
+    assert "momentum" in runtime
+    assert "trend_breakout" in runtime
+    assert "mean_reversion" in runtime
+    assert "profitability_claim: false" in data
+
+
+def test_full_product_layout_reserves_left_sidebar_and_supports_collapse_and_overflow() -> None:
+    css = read(APP / "full-product.css")
+    runtime = read(APP / "desktop-product.js")
+    assert ".shell{height:100vh;display:grid;grid-template-columns:var(--sidebar) minmax(0,1fr);direction:ltr" in css
+    assert ".sidebar{direction:rtl" in css
+    assert ".viewport{min-width:0;overflow:auto" in css
+    assert "body.sidebar-collapsed .shell" in css
+    assert "sidebarCollapsed:false" in runtime
+    assert "e.key.toLowerCase()==='b'" in runtime
+
+
+def test_project_metadata_marks_v4_complete_product_with_locked_live_authority() -> None:
+    data = read(APP / "project-data.js")
+    assert "product_surface: 'integrated_desktop'" in data
+    assert "delivery_version: '4.0.0'" in data
     assert "paper_only: true" in data
     assert "live_trading_authority: false" in data
     assert "deterministic_risk_final_authority: true" in data
-    assert "profitability_claim: false" in data
-    assert "canonical_source: 'Bybit'" in data
-    assert "delivery_version: '3.5.1'" in data
+    assert "locked_live_surface" in data
+    assert "paper_execution" in data
+    assert "ai_room" in data
+    assert "mission_control" in data
+    assert "audit_replay" in data
 
 
-def test_windows_targets_have_distinct_artifact_names() -> None:
+def test_no_exchange_live_order_or_private_exchange_credential_path_in_native_bridge() -> None:
+    native = (read(DESKTOP / "main.js") + read(DESKTOP / "preload.js")).lower()
+    assert "/v5/order" not in native
+    assert "/order/create" not in native
+    assert "apikey" not in native
+    assert "apisecret" not in native
+    assert "secretkey" not in native
+    assert "withdraw" not in native
+    assert "liveTradingAuthority: false" in read(DESKTOP / "main.js")
+
+
+def test_windows_targets_and_workflows_build_distinct_v4_artifacts() -> None:
     package = json.loads(read(DESKTOP / "package.json"))
     build = package["build"]
     assert build["nsis"]["artifactName"].startswith("NEXUS_Personal_Pro_Setup_")
     assert build["portable"]["artifactName"].startswith("NEXUS_Personal_Pro_Portable_")
     assert build["nsis"]["artifactName"] != build["portable"]["artifactName"]
 
-
-def test_windows_workflow_verifies_packaged_resources_not_mobile_copy() -> None:
     workflow = read(ROOT / ".github" / "workflows" / "build_lbank_desktop_windows.yml")
-    assert "Copy dashboard assets" not in workflow
-    assert "dist/win-unpacked/resources/app" in workflow
-    assert "layout-fix.css" in workflow
-    assert "NEXUS_Personal_Pro_Setup_3.5.1_" in workflow
-    assert "NEXUS_Personal_Pro_Portable_3.5.1_" in workflow
+    verification = read(ROOT / ".github" / "workflows" / "nexus-build-verification.yml")
+    for text in (workflow, verification):
+        assert "full-product.css" in text
+        assert "desktop-product.js" in text
+        assert "NEXUS_Personal_Pro_Setup_4.0.0_" in text
+        assert "NEXUS_Personal_Pro_Portable_4.0.0_" in text

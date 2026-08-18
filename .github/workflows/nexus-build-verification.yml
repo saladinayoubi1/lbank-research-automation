@@ -24,29 +24,39 @@ jobs:
           grep -q 'AndroidKeyStore' android/lbank-mobile/app/src/main/java/com/saladinayoubi/lbankmobile/MainActivity.java
           grep -q 'NexusNative' android/lbank-mobile/app/src/main/java/com/saladinayoubi/lbankmobile/MainActivity.java
           grep -q 'AES/GCM/NoPadding' android/lbank-mobile/app/src/main/java/com/saladinayoubi/lbankmobile/MainActivity.java
-      - name: Verify Electron secure bridge and desktop surface
+      - name: Verify Electron secure bridge and integrated desktop surface
         run: |
           test -f desktop/lbank-monitor/preload.js
           test -f desktop/lbank-monitor/main.js
           test -f desktop/lbank-monitor/app/index.html
-          test -f desktop/lbank-monitor/app/desktop.css
-          test -f desktop/lbank-monitor/app/layout-fix.css
-          test -f desktop/lbank-monitor/app/desktop-runtime.js
+          test -f desktop/lbank-monitor/app/full-product.css
+          test -f desktop/lbank-monitor/app/desktop-product.js
           test -f desktop/lbank-monitor/app/project-data.js
-          node -e "const p=require('./desktop/lbank-monitor/package.json'); if(!p.build.files.includes('preload.js') || !p.build.extraResources?.some(x=>x.from==='app')) process.exit(1)"
+          node -e "const p=require('./desktop/lbank-monitor/package.json'); if(p.version!=='4.0.0' || !p.build.files.includes('preload.js') || !p.build.extraResources?.some(x=>x.from==='app')) process.exit(1)"
+          node --check desktop/lbank-monitor/main.js
+          node --check desktop/lbank-monitor/preload.js
+          node --check desktop/lbank-monitor/app/desktop-product.js
           grep -q 'contextBridge' desktop/lbank-monitor/preload.js
+          grep -q 'requestAiRoom' desktop/lbank-monitor/preload.js
           grep -q 'contextIsolation: true' desktop/lbank-monitor/main.js
           grep -q 'sandbox: true' desktop/lbank-monitor/main.js
           grep -q 'nodeIntegration: false' desktop/lbank-monitor/main.js
           grep -q 'PUBLIC_MARKET_SYMBOLS' desktop/lbank-monitor/main.js
           grep -q 'nexus:public-market' desktop/lbank-monitor/main.js
+          grep -q 'nexus:ai-room' desktop/lbank-monitor/main.js
+          grep -q 'paper_trading_only:true' desktop/lbank-monitor/app/desktop-product.js
+          grep -q 'function verifyLedger()' desktop/lbank-monitor/app/desktop-product.js
+          grep -q 'ترید دمو' desktop/lbank-monitor/app/index.html
+          grep -q 'اتاق هوش مصنوعی' desktop/lbank-monitor/app/index.html
+          grep -q 'Mission Control' desktop/lbank-monitor/app/index.html
+          grep -q 'ترید اصلی قفل است' desktop/lbank-monitor/app/index.html
       - name: Install locked Gate 18 test dependencies
         run: python -m pip install -r requirements-dev.lock
       - name: Verify independent Phase 4 paper/live air gap
         run: python scripts/independent_phase4_airgap_gate.py
       - name: Run Gate 18 adversarial tests
         run: python -m pytest -q tests/test_paper_live_airgap.py
-      - name: Run Windows delivery regression tests
+      - name: Run Windows full-product regression tests
         run: python -m pytest -q tests/test_windows_delivery_surface.py
 
   android-apk:
@@ -103,33 +113,35 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: desktop/lbank-monitor/package.json
-      - name: Validate committed Windows UI
+      - name: Validate committed Windows full product
         shell: pwsh
         working-directory: ${{ github.workspace }}
         run: |
           $required = @(
             'desktop/lbank-monitor/app/index.html',
-            'desktop/lbank-monitor/app/desktop.css',
-            'desktop/lbank-monitor/app/layout-fix.css',
-            'desktop/lbank-monitor/app/desktop-runtime.js',
+            'desktop/lbank-monitor/app/full-product.css',
+            'desktop/lbank-monitor/app/desktop-product.js',
             'desktop/lbank-monitor/app/project-data.js'
           )
-          foreach ($path in $required) { if (!(Test-Path $path)) { throw "Missing desktop UI asset: $path" } }
+          foreach ($path in $required) { if (!(Test-Path $path)) { throw "Missing desktop product asset: $path" } }
+          node --check desktop/lbank-monitor/main.js
+          node --check desktop/lbank-monitor/preload.js
+          node --check desktop/lbank-monitor/app/desktop-product.js
       - name: Install dependencies
         run: npm install --no-audit --no-fund
       - name: Build installer and portable package
         run: npm run dist:win
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-      - name: Verify packaged UI and package variants
+      - name: Verify packaged integrated UI and package variants
         shell: pwsh
         run: |
           $resourceRoot = 'dist/win-unpacked/resources/app'
-          foreach ($name in @('index.html','desktop.css','layout-fix.css','desktop-runtime.js','project-data.js')) {
-            if (!(Test-Path (Join-Path $resourceRoot $name))) { throw "Packaged UI asset missing: $name" }
+          foreach ($name in @('index.html','full-product.css','desktop-product.js','project-data.js')) {
+            if (!(Test-Path (Join-Path $resourceRoot $name))) { throw "Packaged product asset missing: $name" }
           }
-          if (!(Get-ChildItem 'dist/NEXUS_Personal_Pro_Setup_3.5.1_*.exe' -ErrorAction SilentlyContinue)) { throw 'Setup EXE missing' }
-          if (!(Get-ChildItem 'dist/NEXUS_Personal_Pro_Portable_3.5.1_*.exe' -ErrorAction SilentlyContinue)) { throw 'Portable EXE missing' }
+          if (!(Get-ChildItem 'dist/NEXUS_Personal_Pro_Setup_4.0.0_*.exe' -ErrorAction SilentlyContinue)) { throw 'Setup EXE missing' }
+          if (!(Get-ChildItem 'dist/NEXUS_Personal_Pro_Portable_4.0.0_*.exe' -ErrorAction SilentlyContinue)) { throw 'Portable EXE missing' }
       - name: Generate Windows SHA-256 checksums
         shell: pwsh
         run: |
@@ -160,8 +172,8 @@ jobs:
         with:
           name: nexus-windows-packages
           path: |
-            desktop/lbank-monitor/dist/NEXUS_Personal_Pro_Setup_3.5.1_*.exe
-            desktop/lbank-monitor/dist/NEXUS_Personal_Pro_Portable_3.5.1_*.exe
+            desktop/lbank-monitor/dist/NEXUS_Personal_Pro_Setup_4.0.0_*.exe
+            desktop/lbank-monitor/dist/NEXUS_Personal_Pro_Portable_4.0.0_*.exe
             desktop/lbank-monitor/dist/SHA256SUMS.txt
           if-no-files-found: error
       - uses: actions/upload-artifact@v4

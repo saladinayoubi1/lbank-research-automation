@@ -11,10 +11,11 @@ const ALLOWED_PATHS = new Set([
   '/api/integrations/zotero',
   '/api/integrations/research',
 ]);
+const AI_REQUEST_KEYS = new Set(['session_id', 'conversation_id', 'turn_id', 'message']);
 const PUBLIC_MARKET_SYMBOLS = new Set(['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT']);
 const PUBLIC_MARKET_INTERVALS = new Set(['15', '60', '240']);
 const MAX_RESPONSE_BYTES = 1_000_000;
-const MAX_REQUEST_CHARS = 4096;
+const MAX_REQUEST_CHARS = 16_384;
 
 function keyFile() { return path.join(app.getPath('userData'), 'nexus-gateway-secret.json'); }
 function loadKeys() { try { return JSON.parse(fs.readFileSync(keyFile(), 'utf8')); } catch { return {}; } }
@@ -46,20 +47,18 @@ function gatewayBaseUrl() {
   const raw = process.env.NEXUS_GATEWAY_URL || 'http://127.0.0.1:8000';
   const url = new URL(raw);
   const loopback = url.hostname === '127.0.0.1' || url.hostname === '::1' || url.hostname === 'localhost';
-  if (url.username || url.password || url.search || url.hash || (url.pathname && url.pathname !== '/')) {
-    throw new Error('NEXUS gateway URL must be an origin only');
-  }
+  if (url.username || url.password || url.search || url.hash || (url.pathname && url.pathname !== '/')) throw new Error('NEXUS gateway URL must be an origin only');
   if (url.protocol === 'http:' && !loopback) throw new Error('Plain HTTP gateway is allowed only on loopback');
   if (url.protocol !== 'https:' && url.protocol !== 'http:') throw new Error('Unsupported NEXUS gateway protocol');
   return url;
 }
 function parseGatewayRequest(requestJson) {
-  if (typeof requestJson !== 'string' || requestJson.length > MAX_REQUEST_CHARS) throw new Error('Gateway request is malformed or oversized');
+  if (typeof requestJson !== 'string' || requestJson.length > 4096) throw new Error('Gateway request is malformed or oversized');
   const request = JSON.parse(requestJson);
   if (!request || typeof request !== 'object' || Array.isArray(request)) throw new Error('Gateway request must be an object');
   const keys = Object.keys(request).sort();
   if (keys.length !== 1 || keys[0] !== 'path') throw new Error('Only a bounded gateway path is accepted');
-  if (typeof request.path !== 'string' || request.path.length > MAX_REQUEST_CHARS || request.path.includes('#')) throw new Error('Gateway path is invalid');
+  if (typeof request.path !== 'string' || request.path.length > 4096 || request.path.includes('#')) throw new Error('Gateway path is invalid');
   const parsed = new URL(request.path, 'https://nexus.invalid');
   if (parsed.origin !== 'https://nexus.invalid') throw new Error('Absolute URLs are forbidden in renderer requests');
   if (!ALLOWED_PATHS.has(parsed.pathname)) throw new Error('Gateway route is not allowlisted');
@@ -72,6 +71,20 @@ function parseGatewayRequest(requestJson) {
   }
   return parsed.pathname + parsed.search;
 }
+function validateAiRequest(requestJson) {
+  if (typeof requestJson !== 'string' || requestJson.length < 2 || requestJson.length > MAX_REQUEST_CHARS) throw new Error('AI Room request is malformed or oversized');
+  const payload = JSON.parse(requestJson);
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) throw new Error('AI Room request must be an object');
+  const keys = Object.keys(payload).sort();
+  const expected = [...AI_REQUEST_KEYS].sort();
+  if (keys.length !== expected.length || keys.some((key, index) => key !== expected[index])) throw new Error('AI Room request schema mismatch');
+  for (const key of expected) {
+    const value = payload[key];
+    const limit = key === 'message' ? 8192 : 160;
+    if (typeof value !== 'string' || !value.trim() || value.length > limit) throw new Error(`AI Room field out of bounds: ${key}`);
+  }
+  return payload;
+}
 async function boundedJsonFetch(target, options = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 30000);
@@ -83,23 +96,41 @@ async function boundedJsonFetch(target, options = {}) {
     if (Buffer.byteLength(text, 'utf8') > MAX_RESPONSE_BYTES) throw new Error('Response exceeds bounded size');
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return { text, payload: JSON.parse(text) };
-  } finally {
-    clearTimeout(timer);
+  } finally { clearTimeout(timer); }
+}
+function gatewayHeaders(base, includeJson = false) {
+  const headers = { accept: 'application/json' };
+  if (includeJson) headers['content-type'] = 'application/json; charset=utf-8';
+  if (base.protocol === 'https:') {
+    const token = readKey(GATEWAY_SECRET_ID);
+    if (token) headers.authorization = `Bearer ${token}`;
   }
+  return headers;
+}
+function assertDashboardContract(payload) {
+  if (!payload || payload.contract_version !== 'nexus.dashboard.read.v1') throw new Error('Incompatible NEXUS gateway response');
 }
 async function callGateway(requestJson) {
   const relativePath = parseGatewayRequest(requestJson);
   const base = gatewayBaseUrl();
   const target = new URL(relativePath, base);
   if (target.origin !== base.origin) throw new Error('Gateway origin escape rejected');
-  const headers = { accept: 'application/json' };
-  if (base.protocol === 'https:') {
-    const token = readKey(GATEWAY_SECRET_ID);
-    if (token) headers.authorization = `Bearer ${token}`;
-  }
-  const { payload } = await boundedJsonFetch(target, { method: 'GET', headers });
-  if (!payload || payload.contract_version !== 'nexus.dashboard.read.v1') throw new Error('Incompatible NEXUS gateway response');
+  const { payload } = await boundedJsonFetch(target, { method: 'GET', headers: gatewayHeaders(base) });
+  assertDashboardContract(payload);
   return JSON.stringify(payload);
+}
+async function callAiRoom(requestJson) {
+  const payload = validateAiRequest(requestJson);
+  const base = gatewayBaseUrl();
+  const target = new URL('/api/ai-room/message', base);
+  if (target.origin !== base.origin) throw new Error('Gateway origin escape rejected');
+  const { payload: responsePayload } = await boundedJsonFetch(target, {
+    method: 'POST',
+    headers: gatewayHeaders(base, true),
+    body: JSON.stringify(payload),
+  });
+  assertDashboardContract(responsePayload);
+  return JSON.stringify(responsePayload);
 }
 function validatePublicMarket(symbol, interval) {
   const normalizedSymbol = String(symbol || '').trim().toUpperCase();
@@ -117,7 +148,7 @@ async function callPublicMarket(symbol, interval) {
   target.searchParams.set('limit', '120');
   const { text, payload } = await boundedJsonFetch(target, {
     method: 'GET',
-    headers: { accept: 'application/json', 'user-agent': 'nexus-personal-pro/3.5.1' }
+    headers: { accept: 'application/json', 'user-agent': 'nexus-personal-pro/4.0.0' }
   });
   if (!payload || payload.retCode !== 0 || !Array.isArray(payload.result?.list)) throw new Error('Invalid Bybit public market response');
   return text;
@@ -136,28 +167,36 @@ ipcMain.on('nexus:delete-key', (event, id) => {
   catch { event.returnValue = false; }
 });
 ipcMain.handle('nexus:request', async (_event, requestJson) => callGateway(String(requestJson)));
+ipcMain.handle('nexus:ai-room', async (_event, requestJson) => callAiRoom(String(requestJson)));
 ipcMain.handle('nexus:gateway-info', async () => {
   const base = gatewayBaseUrl();
-  return { mode: base.protocol === 'https:' ? 'remote-or-tls-local' : 'local-loopback', origin: base.origin, readOnly: true };
+  return {
+    mode: base.protocol === 'https:' ? 'remote-or-tls-local' : 'local-loopback',
+    origin: base.origin,
+    readOnly: true,
+    boundedAiRoom: true,
+    paperMutation: false,
+    liveTradingAuthority: false,
+  };
 });
 ipcMain.handle('nexus:public-market', async (_event, symbol, interval) => callPublicMarket(symbol, interval));
 ipcMain.handle('nexus:app-info', async () => ({
   name: app.getName(), version: app.getVersion(), platform: process.platform, arch: process.arch,
-  packaged: app.isPackaged, authority: 'research-backtest-paper-only'
+  packaged: app.isPackaged, authority: 'research-backtest-paper-only', productSurface: 'integrated-desktop'
 }));
 
 function createWindow() {
   const window = new BrowserWindow({
-    width: 1480,
-    height: 940,
-    minWidth: 1080,
-    minHeight: 720,
+    width: 1440,
+    height: 900,
+    minWidth: 960,
+    minHeight: 650,
     show: false,
-    backgroundColor: '#090c11',
+    backgroundColor: '#080b10',
     autoHideMenuBar: true,
     title: 'NEXUS Personal Pro',
     titleBarStyle: 'hidden',
-    titleBarOverlay: { color: '#0c1016', symbolColor: '#e8edf3', height: 46 },
+    titleBarOverlay: { color: '#0b0f15', symbolColor: '#e8edf3', height: 42 },
     webPreferences: {
       contextIsolation: true,
       sandbox: true,
@@ -175,9 +214,7 @@ function createWindow() {
     if (/^https:\/\//i.test(url)) shell.openExternal(url);
     return { action: 'deny' };
   });
-  window.webContents.on('will-navigate', (event, url) => {
-    if (!url.startsWith('file://')) event.preventDefault();
-  });
+  window.webContents.on('will-navigate', (event, url) => { if (!url.startsWith('file://')) event.preventDefault(); });
 }
 
 app.whenReady().then(() => {

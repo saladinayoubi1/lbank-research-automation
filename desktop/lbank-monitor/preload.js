@@ -7,9 +7,7 @@ contextBridge.exposeInMainWorld('NexusNative', {
   hasKey: id => ipcRenderer.sendSync('nexus:has-key', String(id)),
   saveKey: (id, value) => ipcRenderer.sendSync('nexus:save-key', String(id), String(value || '')),
   deleteKey: id => ipcRenderer.sendSync('nexus:delete-key', String(id)),
-  request: (id, requestJson) => ipcRenderer.invoke('nexus:request', String(requestJson)).then(
-    value => window.NexusNativeResult(String(id), true, String(value)),
-    error => window.NexusNativeResult(String(id), false, error?.message || String(error))
-  ),
+  request: requestJson => ipcRenderer.invoke('nexus:request', String(requestJson)),
+  requestAiRoom: requestJson => ipcRenderer.invoke('nexus:ai-room', String(requestJson)),
   requestPublicMarket: (symbol, interval) => ipcRenderer.invoke('nexus:public-market', String(symbol), String(interval))
 });
