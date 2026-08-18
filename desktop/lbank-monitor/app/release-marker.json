@@ -1,0 +1,9 @@
+{
+  "product": "NEXUS Personal Pro",
+  "platform": "windows",
+  "version": "4.0.0",
+  "surface": "integrated-desktop",
+  "paper_only": true,
+  "live_trading_authority": false,
+  "profitability_claim": false
+}
