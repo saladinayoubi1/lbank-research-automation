@@ -5,7 +5,6 @@
     ".github/workflows/backup-restore-readiness.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"fail-closed-cross-platform":{"policy_version":1}}},
     ".github/workflows/build_lbank_desktop_windows.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"build-windows":{"policy_version":1}}},
     ".github/workflows/build_lbank_mobile_apk.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"build-apk":{"policy_version":1}}},
-    ".github/workflows/build_nexus_product_windows.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"build-product-windows":{"policy_version":1}}},
     ".github/workflows/bybit_batch_a.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"chunk":{"policy_version":1}}},
     ".github/workflows/bybit_batch_b.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"chunk":{"policy_version":1}}},
     ".github/workflows/bybit_batch_c.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"chunk":{"policy_version":1}}},
