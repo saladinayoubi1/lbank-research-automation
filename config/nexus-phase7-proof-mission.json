@@ -1,10 +1,10 @@
 {
   "schema_version": "nexus.phase5-mission.v1",
   "mission_id": "nexus-phase7-e2e-proof",
-  "mission_revision": 1,
+  "mission_revision": 2,
   "phase": 7,
   "policy": {
-    "version": "phase7-proof-policy-v1",
+    "version": "phase7-proof-policy-v2",
     "max_parallel_tasks": 3,
     "five_minute_triage": true,
     "best_solution_first": true,
@@ -21,7 +21,8 @@
     "cloud-worker": {"available": true, "health_score": 1.0, "latency_ms": 20.0, "failure_rate": 0.0, "cost_units": 0.1},
     "research-agent": {"available": true, "health_score": 1.0, "latency_ms": 20.0, "failure_rate": 0.0, "cost_units": 0.1},
     "paper-agent": {"available": true, "health_score": 1.0, "latency_ms": 20.0, "failure_rate": 0.0, "cost_units": 0.1},
-    "qa-verifier-agent": {"available": true, "health_score": 1.0, "latency_ms": 20.0, "failure_rate": 0.0, "cost_units": 2.0}
+    "qa-verifier-agent": {"available": true, "health_score": 1.0, "latency_ms": 20.0, "failure_rate": 0.0, "cost_units": 2.0},
+    "deepseek-bounded": {"available": true, "health_score": 1.0, "latency_ms": 250.0, "failure_rate": 0.0, "cost_units": 1.0}
   },
   "workers": [
     {
@@ -78,6 +79,17 @@
       "verifier": true,
       "max_concurrent_tasks": 1,
       "routing": {"cost_units": 2.0, "trust_domains": ["github-cloud-verifier"], "data_locality": ["repository", "canonical-data", "paper-ledger"]}
+    },
+    {
+      "id": "deepseek-bounded",
+      "trust_domain": "deepseek-external",
+      "capabilities": ["code_review", "test_generation", "log_analysis"],
+      "resources": ["deepseek"],
+      "authority_max": 2,
+      "enabled": true,
+      "verifier": false,
+      "max_concurrent_tasks": 1,
+      "routing": {"cost_units": 1.0, "trust_domains": ["deepseek-external"], "data_locality": []}
     }
   ],
   "tasks": [

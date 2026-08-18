@@ -18,6 +18,7 @@ on:
       - 'scripts/agent_task_executor.py'
       - 'scripts/phase7_proof_prepare.py'
       - 'scripts/phase7_proof_complete.py'
+      - 'scripts/phase7_resource_ledger_finalize.py'
       - 'offline_agent_courier.py'
       - 'phase5_mission_contract.py'
       - 'phase7_e2e_proof.py'
@@ -43,6 +44,7 @@ on:
       - 'scripts/agent_task_executor.py'
       - 'scripts/phase7_proof_prepare.py'
       - 'scripts/phase7_proof_complete.py'
+      - 'scripts/phase7_resource_ledger_finalize.py'
       - 'offline_agent_courier.py'
       - 'phase5_mission_contract.py'
       - 'phase7_e2e_proof.py'
@@ -106,6 +108,7 @@ jobs:
             tests/test_phase7_e2e_proof.py \
             tests/test_phase7_proof_prepare.py \
             tests/test_phase7_proof_complete.py \
+            tests/test_phase7_resource_ledger_finalize.py \
             tests/test_offline_agent_courier.py
       - name: Execute exact-head Phase 7 cloud proof on pull request
         if: github.event_name == 'pull_request'
@@ -136,14 +139,20 @@ jobs:
           assert run['live_trading_authority'] is False
           assert run['core_cloud_chain_complete'] is True
           assert run['source_sha'] == os.environ['NEXUS_PROOF_SOURCE_SHA'].lower()
+          classes = run['resource_classification']
+          assert classes['Internal Agent']['classification'] == 'EXECUTED'
+          assert classes['Cloud/GitHub worker']['classification'] == 'EXECUTED'
           if os.environ.get('GITHUB_EVENT_NAME') == 'pull_request':
               assert run['hardware_proof_complete'] is False
               assert run['courier']['status'] == 'KEY_UNAVAILABLE'
               assert run['deepseek']['status'] == 'UNAVAILABLE'
+              assert classes['Laptop']['classification'] == 'UNAVAILABLE'
+              assert classes['DeepSeek/AI provider']['classification'] == 'UNAVAILABLE'
           print('phase7_exact_source_cloud_proof_verified=true')
           print('phase7_hardware_proof_complete=' + str(bool(run['hardware_proof_complete'])).lower())
           print('phase7_courier_status=' + str(run['courier']['status']))
           print('phase7_deepseek_status=' + str(run['deepseek']['status']))
+          print('phase7_resource_classification=' + json.dumps(classes, sort_keys=True))
           PY
       - name: Upload Phase 7 proof and courier evidence
         uses: actions/upload-artifact@v4
