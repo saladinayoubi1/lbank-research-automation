@@ -13,6 +13,7 @@ def test_privileged_workflow_has_exact_minimal_permissions():
     assert 'contents: read' in text
     assert 'actions: read' in text
     assert 'issues: write' in text
+    assert 'pull-requests: read' in text
     for forbidden in ('contents: write', 'actions: write', 'pull-requests: write', 'packages: write', 'id-token: write'):
         assert forbidden not in text
 
@@ -32,13 +33,19 @@ def test_only_expected_source_workflows_are_allowlisted_at_trigger_and_job_gate(
     assert 'NEXUS Event-Driven Failure Triage' not in text.split('workflows:', 1)[1].split('types:', 1)[0]
 
 
-def test_only_failure_like_conclusions_can_run_job_and_script():
+def test_success_runs_are_observed_for_cleanup_but_only_failure_like_conclusions_create_failure_issues():
     text = _text()
+    assert "const allowedConclusions = new Set([" in text
+    assert "'success'" in text.split('const allowedConclusions', 1)[1]
     for conclusion in ('failure', 'cancelled', 'timed_out', 'action_required'):
-        assert f"github.event.workflow_run.conclusion == '{conclusion}'" in text
-        assert f"'{conclusion}'" in text.split('const allowedConclusions', 1)[1]
-    for rejected in ('success', 'neutral', 'skipped'):
-        assert f"github.event.workflow_run.conclusion == '{rejected}'" not in text
+        assert f"'{conclusion}'" in text.split('const failureConclusions', 1)[1]
+    for rejected in ('neutral', 'skipped'):
+        assert f"'{rejected}'" not in text.split('const allowedConclusions', 1)[1].split(']);', 1)[0]
+    assert "if (run.conclusion === 'success')" in text
+    assert 'if (!failureConclusions.has(run.conclusion))' in text
+    success_index = text.index("if (run.conclusion === 'success')")
+    create_index = text.index('github.rest.issues.create')
+    assert success_index < create_index
 
 
 def test_malformed_metadata_fails_closed_before_issue_write():
@@ -73,6 +80,34 @@ def test_duplicate_delivery_uses_stable_workflow_and_sha_marker():
     assert "(i.body || '').includes(marker)" in text
     assert 'issues.update' in text
     assert 'issues.create' in text
+
+
+def test_superseded_pull_request_failures_are_retired_by_exact_open_head_sha():
+    text = _text()
+    assert 'github.rest.pulls.list' in text
+    assert "state: 'open'" in text
+    assert 'const activePrHeads = new Set(openPulls.map(pr => pr.head?.sha).filter(Boolean));' in text
+    assert "parsed.event === 'pull_request' && !activePrHeads.has(parsed.sha)" in text
+    assert 'the pull request is closed or its head advanced to a newer SHA.' in text
+
+
+def test_exact_sha_success_closes_matching_failure_and_default_branch_supersedes_older_failures():
+    text = _text()
+    assert "if (run.conclusion === 'success')" in text
+    assert "the exact SHA now has a successful workflow run." in text
+    assert "parsed.event === 'push'" in text
+    assert 'parsed.branch === defaultBranch' in text
+    assert 'parsed.workflow === run.name' in text
+    assert 'parsed.sha !== run.head_sha' in text
+    assert 'a newer ${run.name} run exists on ${defaultBranch}.' in text
+
+
+def test_cleanup_is_auditable_and_does_not_delete_issue_history():
+    text = _text()
+    assert "state: 'closed'" in text
+    assert "state_reason: 'not_planned'" in text
+    assert 'Closed automatically by NEXUS CI hygiene:' in text
+    assert 'issues.delete' not in text
 
 
 def test_no_privileged_execution_of_triggering_code_or_artifacts():
