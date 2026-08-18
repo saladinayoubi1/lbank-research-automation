@@ -1,7 +1,7 @@
 {
   "name": "nexus-personal-pro-product",
-  "version": "4.1.2",
-  "description": "NEXUS Personal Pro canonical Python-sidecar research, backtest and paper-trading workspace",
+  "version": "4.2.0",
+  "description": "NEXUS Personal Pro offline-first canonical Python-sidecar research, backtest and paper-trading workspace",
   "main": "main.js",
   "author": "saladinayoubi1",
   "license": "MIT",
