@@ -1,13 +1,14 @@
 {
   "name": "nexus-personal-pro",
-  "version": "3.5.1",
-  "description": "NEXUS research, backtest and paper-trading desktop workspace",
+  "version": "4.0.0",
+  "description": "NEXUS integrated research, backtest, deterministic paper execution, AI Room and Mission Control desktop product",
   "main": "main.js",
   "author": "saladinayoubi1",
   "license": "MIT",
   "private": true,
   "scripts": {
     "start": "electron .",
+    "check": "node --check main.js && node --check preload.js && node --check app/desktop-product.js",
     "dist:win": "electron-builder --win nsis portable"
   },
   "devDependencies": {
@@ -21,9 +22,7 @@
     "directories": { "output": "dist" },
     "files": ["main.js", "preload.js", "package.json"],
     "extraResources": [{"from":"app","to":"app","filter":["**/*"]}],
-    "win": {
-      "target": ["nsis", "portable"]
-    },
+    "win": { "target": ["nsis", "portable"] },
     "nsis": {
       "artifactName": "NEXUS_Personal_Pro_Setup_${version}_${arch}.${ext}",
       "oneClick": false,
@@ -33,8 +32,6 @@
       "shortcutName": "NEXUS Personal Pro",
       "installerLanguages": ["en_US"]
     },
-    "portable": {
-      "artifactName": "NEXUS_Personal_Pro_Portable_${version}_${arch}.${ext}"
-    }
+    "portable": { "artifactName": "NEXUS_Personal_Pro_Portable_${version}_${arch}.${ext}" }
   }
 }
