@@ -25,6 +25,7 @@ on:
       - .nexus/zotero-trigger.txt
       - .nexus/autonomous-trigger.txt
       - scripts/bootstrap_portable_python.cmd
+      - scripts/install_nexus_autostart_from_runner.ps1
       - .github/workflows/nexus-local-runner.yml
 
 permissions:
@@ -69,6 +70,21 @@ jobs:
 
       - name: Privacy guard
         run: python -c "import pathlib; root=pathlib.Path.cwd().resolve(); home=pathlib.Path.home().resolve(); assert root != home and home not in root.parents; print('privacy_guard=ok')"
+
+      - name: Install zero-touch NEXUS autostart
+        if: github.event_name == 'push' && contains(github.event.head_commit.message, '[install-autostart]')
+        shell: powershell
+        run: |
+          & .\scripts\install_nexus_autostart_from_runner.ps1 -SourceSha "$env:GITHUB_SHA"
+
+      - name: Upload zero-touch install evidence
+        if: github.event_name == 'push' && contains(github.event.head_commit.message, '[install-autostart]')
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexus-zero-touch-install-${{ github.run_id }}
+          if-no-files-found: error
+          retention-days: 14
+          path: build/autostart-install/evidence.json
 
       - name: Health
         if: github.event_name == 'workflow_dispatch' && inputs.task == 'health'
