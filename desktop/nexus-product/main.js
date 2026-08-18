@@ -20,6 +20,27 @@ function freePort() {
   });
 }
 
+function productBindings() {
+  const repoRoot = path.resolve(__dirname, '..', '..');
+  const resourceRoot = app.isPackaged ? process.resourcesPath : repoRoot;
+  const executable = app.isPackaged
+    ? path.join(resourceRoot, 'nexus-product-server.exe')
+    : path.join(repoRoot, 'dist', 'nexus-product-server.exe');
+  const registry = app.isPackaged
+    ? path.join(resourceRoot, 'docs', 'architecture', 'market-data-source-registry.yaml')
+    : path.join(repoRoot, 'docs', 'architecture', 'market-data-source-registry.yaml');
+  let sourceSha = String(process.env.NEXUS_SOURCE_SHA || '').trim().toLowerCase();
+  if (app.isPackaged) {
+    const sourceFile = path.join(resourceRoot, 'source-sha.txt');
+    if (!fs.existsSync(sourceFile)) throw new Error(`NEXUS source binding missing: ${sourceFile}`);
+    sourceSha = fs.readFileSync(sourceFile, 'utf8').trim().toLowerCase();
+  }
+  if (!/^[0-9a-f]{40}$/.test(sourceSha)) throw new Error('NEXUS release source SHA is missing or invalid');
+  if (!fs.existsSync(executable)) throw new Error(`NEXUS product sidecar missing: ${executable}`);
+  if (!fs.existsSync(registry)) throw new Error(`NEXUS canonical market registry missing: ${registry}`);
+  return { executable, registry, sourceSha, resourceRoot };
+}
+
 async function waitForProduct(origin, timeoutMs = 25000) {
   const deadline = Date.now() + timeoutMs;
   let lastError = null;
@@ -46,15 +67,18 @@ async function startSidecar() {
   if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Unable to allocate bounded product port');
   const dataRoot = path.join(app.getPath('userData'), 'product-data', 'market');
   fs.mkdirSync(dataRoot, { recursive: true });
-  const executable = app.isPackaged
-    ? path.join(process.resourcesPath, 'nexus-product-server.exe')
-    : path.resolve(__dirname, '..', '..', 'dist', 'nexus-product-server.exe');
-  if (!fs.existsSync(executable)) throw new Error(`NEXUS product sidecar missing: ${executable}`);
+  const bindings = productBindings();
   const args = ['--host', '127.0.0.1', '--port', String(port), '--data-root', dataRoot];
-  sidecar = spawn(executable, args, {
+  sidecar = spawn(bindings.executable, args, {
+    cwd: bindings.resourceRoot,
     windowsHide: true,
     stdio: ['ignore', 'pipe', 'pipe'],
-    env: { ...process.env, PYTHONUTF8: '1' },
+    env: {
+      ...process.env,
+      PYTHONUTF8: '1',
+      NEXUS_SOURCE_SHA: bindings.sourceSha,
+      NEXUS_MARKET_REGISTRY_PATH: bindings.registry,
+    },
   });
   sidecar.stdout.on('data', () => {});
   sidecar.stderr.on('data', () => {});
