@@ -1,7 +1,7 @@
 {
   "name": "nexus-personal-pro-product",
-  "version": "4.2.0",
-  "description": "NEXUS Personal Pro offline-first canonical Python-sidecar research, backtest and paper-trading workspace",
+  "version": "5.0.0",
+  "description": "NEXUS Personal Pro final offline-first Mission Control for research, strategy, agents, risk and paper execution",
   "main": "main.js",
   "author": "saladinayoubi1",
   "license": "MIT",
@@ -23,7 +23,9 @@
     "extraResources": [
       {"from":"sidecar/nexus-product-server","to":"nexus-product-server"},
       {"from":"sidecar/source-sha.txt","to":"source-sha.txt"},
-      {"from":"sidecar/market-data-source-registry.yaml","to":"docs/architecture/market-data-source-registry.yaml"}
+      {"from":"sidecar/build-evidence.json","to":"build-evidence.json"},
+      {"from":"sidecar/market-data-source-registry.yaml","to":"docs/architecture/market-data-source-registry.yaml"},
+      {"from":"sidecar/nexus-agent-manager.json","to":"config/nexus-agent-manager.json"}
     ],
     "win": {"target": ["nsis", "portable"]},
     "nsis": {
