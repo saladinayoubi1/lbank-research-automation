@@ -60,10 +60,11 @@ PHASE7_WORKLOADS: dict[str, dict[str, Any]] = {
             "tests/test_paper_execution.py",
             "tests/test_paper_event_store.py",
             "tests/test_performance_metrics.py",
+            "tests/test_phase7_e2e_proof.py",
         ),
         "offline_capable": False,
         "network_required": False,
-        "purpose": "risk-paper-and-performance-proof",
+        "purpose": "risk-paper-performance-and-e2e-proof",
     },
 }
 

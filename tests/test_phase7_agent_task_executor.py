@@ -97,6 +97,7 @@ def test_research_and_paper_workloads_are_bounded_cloud_suites(monkeypatch) -> N
         "tests/test_paper_execution.py",
         "tests/test_paper_event_store.py",
         "tests/test_performance_metrics.py",
+        "tests/test_phase7_e2e_proof.py",
     ]
 
 
