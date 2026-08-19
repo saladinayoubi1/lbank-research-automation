@@ -18,6 +18,7 @@
     "appId": "com.saladinayoubi.nexuspersonal.product",
     "productName": "NEXUS Personal Pro",
     "asar": true,
+    "afterPack": "after-pack.js",
     "directories": {"output": "dist"},
     "files": ["bootstrap-main.js", "main.js", "preload.js", "package.json"],
     "extraResources": [
