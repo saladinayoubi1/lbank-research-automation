@@ -1,3 +1,4 @@
+import os
 import platform
 import re
 import subprocess
@@ -73,8 +74,9 @@ def test_owner_autostart_verifier_powershell_syntax_on_windows():
         "-NoProfile",
         "-NonInteractive",
         "-Command",
-        "$e=$null;$t=$null;[System.Management.Automation.Language.Parser]::ParseFile($args[0],[ref]$t,[ref]$e)|Out-Null;if($e.Count){$e|ForEach-Object{Write-Error $_};exit 1}",
-        str(VERIFIER),
+        "$e=$null;$t=$null;[System.Management.Automation.Language.Parser]::ParseFile($env:NEXUS_VERIFIER_PATH,[ref]$t,[ref]$e)|Out-Null;if($e.Count){$e|ForEach-Object{Write-Error $_};exit 1}",
     ]
-    result = subprocess.run(command, cwd=ROOT, text=True, capture_output=True, timeout=30)
+    env = os.environ.copy()
+    env["NEXUS_VERIFIER_PATH"] = str(VERIFIER)
+    result = subprocess.run(command, cwd=ROOT, env=env, text=True, capture_output=True, timeout=30)
     assert result.returncode == 0, result.stdout + result.stderr
