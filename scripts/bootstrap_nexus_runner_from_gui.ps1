@@ -203,7 +203,7 @@ function Wait-ForListener([pscustomobject]$Runner, [int]$Seconds = 20) {
     return $null
 }
 
-function Start-InteractiveRunnerFallback([pscustomobject]$Runner) {
+function Start-InteractiveRunnerFallback([pscustomobject]$Runner, [string]$Reason = 'unspecified') {
     $existing = Get-Listener $Runner
     if ($existing) { return [int]$existing.ProcessId }
 
@@ -216,7 +216,7 @@ function Start-InteractiveRunnerFallback([pscustomobject]$Runner) {
     $proc = New-Object System.Diagnostics.Process
     $proc.StartInfo = $psi
     [void]$proc.Start()
-    Write-Log "service_stopped_user_fallback_start_requested root=$($Runner.Root) bootstrap_pid=$($proc.Id)"
+    Write-Log "user_fallback_start_requested reason=$Reason root=$($Runner.Root) bootstrap_pid=$($proc.Id)"
     return [int]$proc.Id
 }
 
@@ -268,7 +268,8 @@ try {
     $service = Get-RunnerService $runner
     if ($service) {
         $serviceStartError = $null
-        if ([string]$service.State -ne 'Running') {
+        $serviceWasRunning = ([string]$service.State -eq 'Running')
+        if (-not $serviceWasRunning) {
             try { Start-Service -Name ([string]$service.Name) -ErrorAction Stop }
             catch { $serviceStartError = $_.Exception.Message }
         }
@@ -277,7 +278,7 @@ try {
             $listener = Get-Listener $runner
             $fallbackPid = $null
             if (-not $listener) {
-                $fallbackPid = Start-InteractiveRunnerFallback $runner
+                $fallbackPid = Start-InteractiveRunnerFallback $runner 'service_start_denied'
                 $listener = Wait-ForListener $runner
             }
             if (-not $listener) {
@@ -309,13 +310,51 @@ try {
             exit 0
         }
 
-        $listener = Wait-ForListener $runner
+        # A Windows Service that merely reports Running is not proof that the
+        # GitHub Runner.Listener is healthy. Give an already-running service a
+        # short bounded grace period, then re-check immediately before starting
+        # the existing configured run.cmd in the interactive owner context.
+        # This preserves the no-elevation/no-registration boundary and avoids a
+        # second listener whenever the service recovers during the grace period.
+        $listener = if ($serviceWasRunning) { Wait-ForListener $runner 8 } else { Wait-ForListener $runner }
+        if (-not $listener -and $serviceWasRunning) {
+            $fallbackPid = Start-InteractiveRunnerFallback $runner 'service_running_listener_absent'
+            $listener = Wait-ForListener $runner
+            if (-not $listener) {
+                Write-Evidence 'SERVICE_RUNNING_STALE_USER_FALLBACK_LISTENER_NOT_OBSERVED' @{
+                    configured_runner_count = 1
+                    runner_root = $runner.Root
+                    agent_name = $runner.AgentName
+                    service_name = [string]$service.Name
+                    service_state = [string]$service.State
+                    service_was_running = $true
+                    scheduled_task_changed = $false
+                    fallback_transport = 'current_user_hidden_process'
+                    fallback_bootstrap_pid = $fallbackPid
+                }
+                exit 13
+            }
+            Write-Evidence 'SERVICE_RUNNING_STALE_USER_FALLBACK_RUNNING' @{
+                configured_runner_count = 1
+                runner_root = $runner.Root
+                agent_name = $runner.AgentName
+                service_name = [string]$service.Name
+                service_state = [string]$service.State
+                service_was_running = $true
+                listener_pid = [int]$listener.ProcessId
+                scheduled_task_changed = $false
+                fallback_transport = 'current_user_hidden_process'
+                fallback_bootstrap_pid = $fallbackPid
+            }
+            exit 0
+        }
         if (-not $listener) {
             Write-Evidence 'SERVICE_STARTED_LISTENER_NOT_OBSERVED' @{
                 configured_runner_count = 1
                 runner_root = $runner.Root
                 agent_name = $runner.AgentName
                 service_name = [string]$service.Name
+                service_was_running = $false
                 scheduled_task_changed = $false
             }
             exit 13
@@ -325,6 +364,7 @@ try {
             runner_root = $runner.Root
             agent_name = $runner.AgentName
             service_name = [string]$service.Name
+            service_was_running = $serviceWasRunning
             listener_pid = [int]$listener.ProcessId
             scheduled_task_changed = $false
         }
