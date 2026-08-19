@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, screen, shell } = require('electron');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const http = require('http');
@@ -15,8 +15,34 @@ let isQuitting = false;
 let restartCount = 0;
 let restartWindowStartedAt = Date.now();
 let restartScheduled = false;
+let preferencesIpcRegistered = false;
 const MAX_RESTARTS_PER_WINDOW = 3;
 const RESTART_WINDOW_MS = 10 * 60 * 1000;
+
+const DEFAULT_UI_PREFERENCES = Object.freeze({
+  fontFamily: 'system',
+  fontSize: 14,
+  uiScale: 1,
+  density: 'comfortable',
+  frameStyle: 'soft',
+  accent: 'blue',
+  theme: 'graphite',
+  contrast: 'normal',
+  sidebarMode: 'expanded',
+  motion: 'full',
+  windowPreset: 'auto',
+});
+const UI_ENUMS = Object.freeze({
+  fontFamily: new Set(['system', 'tahoma', 'arial', 'mono']),
+  density: new Set(['compact', 'comfortable', 'spacious']),
+  frameStyle: new Set(['sharp', 'soft', 'rounded']),
+  accent: new Set(['blue', 'cyan', 'green', 'amber']),
+  theme: new Set(['graphite', 'midnight', 'black']),
+  contrast: new Set(['normal', 'high']),
+  sidebarMode: new Set(['expanded', 'collapsed']),
+  motion: new Set(['full', 'reduced']),
+  windowPreset: new Set(['auto', 'compact', 'standard', 'large', 'maximize']),
+});
 
 function freePort() {
   return new Promise((resolve, reject) => {
@@ -65,6 +91,111 @@ function supervisorPath() {
   const root = path.join(app.getPath('userData'), 'product-data');
   fs.mkdirSync(root, { recursive: true });
   return path.join(root, 'supervisor-state.json');
+}
+
+function preferencesPath() {
+  const root = path.join(app.getPath('userData'), 'preferences');
+  fs.mkdirSync(root, { recursive: true });
+  return path.join(root, 'ui-preferences.json');
+}
+
+function normalizeUiPreferences(raw = {}) {
+  const input = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+  const normalized = { ...DEFAULT_UI_PREFERENCES };
+  for (const [key, allowed] of Object.entries(UI_ENUMS)) {
+    const value = String(input[key] ?? '');
+    if (allowed.has(value)) normalized[key] = value;
+  }
+  const fontSize = Number(input.fontSize);
+  if (Number.isFinite(fontSize)) normalized.fontSize = Math.min(19, Math.max(12, Math.round(fontSize)));
+  const uiScale = Number(input.uiScale);
+  if (Number.isFinite(uiScale)) normalized.uiScale = Math.min(1.4, Math.max(0.8, Math.round(uiScale * 20) / 20));
+  return normalized;
+}
+
+function loadUiPreferences() {
+  try {
+    const target = preferencesPath();
+    if (!fs.existsSync(target)) return { ...DEFAULT_UI_PREFERENCES };
+    const stat = fs.statSync(target);
+    if (!stat.isFile() || stat.size < 2 || stat.size > 16384) throw new Error('preference file size is invalid');
+    const payload = JSON.parse(fs.readFileSync(target, 'utf8'));
+    return normalizeUiPreferences(payload && payload.preferences ? payload.preferences : payload);
+  } catch (error) {
+    logStartup(`UI preferences fell back to defaults: ${error.message}`);
+    return { ...DEFAULT_UI_PREFERENCES };
+  }
+}
+
+function saveUiPreferences(raw) {
+  const preferences = normalizeUiPreferences(raw);
+  const target = preferencesPath();
+  const tmp = `${target}.tmp`;
+  const payload = {
+    schema_version: 'nexus.ui-preferences.v1',
+    updated_at: new Date().toISOString(),
+    preferences,
+  };
+  fs.writeFileSync(tmp, JSON.stringify(payload, null, 2), 'utf8');
+  fs.renameSync(tmp, target);
+  return preferences;
+}
+
+function trustedPreferenceSender(event) {
+  const senderUrl = String(event?.senderFrame?.url || event?.sender?.getURL?.() || '');
+  return Boolean(productOrigin && senderUrl.startsWith(productOrigin + '/'));
+}
+
+function boundedWindowSize(preset, workAreaSize) {
+  const availableWidth = Math.max(800, Number(workAreaSize?.width || 1480) - 24);
+  const availableHeight = Math.max(560, Number(workAreaSize?.height || 920) - 24);
+  const presets = {
+    compact: { width: 1024, height: 700 },
+    standard: { width: 1280, height: 800 },
+    large: { width: 1480, height: 920 },
+    auto: { width: 1480, height: 920 },
+  };
+  const requested = presets[preset] || presets.auto;
+  return {
+    width: Math.min(requested.width, availableWidth),
+    height: Math.min(requested.height, availableHeight),
+  };
+}
+
+function applyWindowPreset(win, preset) {
+  if (!win || win.isDestroyed()) return;
+  if (preset === 'maximize') {
+    win.maximize();
+    return;
+  }
+  if (win.isMaximized()) win.unmaximize();
+  const display = screen.getDisplayMatching(win.getBounds());
+  const size = boundedWindowSize(preset, display?.workAreaSize);
+  win.setSize(size.width, size.height, true);
+  win.center();
+}
+
+function registerUiPreferenceIpc() {
+  if (preferencesIpcRegistered) return;
+  preferencesIpcRegistered = true;
+  ipcMain.handle('nexus:ui-preferences:get', event => {
+    if (!trustedPreferenceSender(event)) throw new Error('untrusted NEXUS preference sender');
+    return loadUiPreferences();
+  });
+  ipcMain.handle('nexus:ui-preferences:set', (event, raw) => {
+    if (!trustedPreferenceSender(event)) throw new Error('untrusted NEXUS preference sender');
+    const preferences = saveUiPreferences(raw);
+    const win = BrowserWindow.fromWebContents(event.sender);
+    applyWindowPreset(win, preferences.windowPreset);
+    return preferences;
+  });
+  ipcMain.handle('nexus:ui-preferences:reset', event => {
+    if (!trustedPreferenceSender(event)) throw new Error('untrusted NEXUS preference sender');
+    const preferences = saveUiPreferences(DEFAULT_UI_PREFERENCES);
+    const win = BrowserWindow.fromWebContents(event.sender);
+    applyWindowPreset(win, preferences.windowPreset);
+    return preferences;
+  });
 }
 
 function writeSupervisorState(status, extra = {}) {
@@ -224,12 +355,23 @@ function stopSidecar() {
 }
 
 function createWindow(origin) {
+  const preferences = loadUiPreferences();
+  const workArea = screen.getPrimaryDisplay()?.workAreaSize;
+  const initialSize = boundedWindowSize(preferences.windowPreset, workArea);
   const win = new BrowserWindow({
-    width: 1480, height: 920, minWidth: 1024, minHeight: 700, show: false,
-    backgroundColor: '#090c10', autoHideMenuBar: true, title: 'NEXUS Personal Pro',
-    titleBarStyle: 'hidden', titleBarOverlay: { color: '#0a0e13', symbolColor: '#e8eef6', height: 44 },
-    webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, devTools: false, webSecurity: true, allowRunningInsecureContent: false },
+    width: initialSize.width, height: initialSize.height, minWidth: 800, minHeight: 560, show: false,
+    backgroundColor: '#090c10', autoHideMenuBar: true, title: 'NEXUS Personal Pro', frame: true,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      sandbox: true,
+      nodeIntegration: false,
+      devTools: false,
+      webSecurity: true,
+      allowRunningInsecureContent: false,
+    },
   });
+  if (preferences.windowPreset === 'maximize') win.maximize();
   win.webContents.setWindowOpenHandler(({ url }) => {
     try { const target = new URL(url); if (target.protocol === 'https:') shell.openExternal(url); } catch {}
     return { action: 'deny' };
@@ -255,6 +397,7 @@ function showStartupFailure(error) {
 }
 
 app.whenReady().then(async () => {
+  registerUiPreferenceIpc();
   try { const origin = await startSidecar(); createWindow(origin); }
   catch (error) {
     logStartup(`startup blocked: ${error && error.stack ? error.stack : error}`);
