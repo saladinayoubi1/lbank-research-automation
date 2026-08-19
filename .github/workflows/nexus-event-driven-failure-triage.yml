@@ -7,6 +7,7 @@ on:
       - NEXUS Cloud Fallback
       - NEXUS Build Verification
       - NEXUS Local Runner
+      - Build NEXUS Desktop Windows
     types: [completed]
   push:
     branches:
@@ -31,7 +32,8 @@ jobs:
         github.event.workflow_run.name == 'Test' ||
         github.event.workflow_run.name == 'NEXUS Cloud Fallback' ||
         github.event.workflow_run.name == 'NEXUS Build Verification' ||
-        github.event.workflow_run.name == 'NEXUS Local Runner'
+        github.event.workflow_run.name == 'NEXUS Local Runner' ||
+        github.event.workflow_run.name == 'Build NEXUS Desktop Windows'
       ))
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -43,10 +45,13 @@ jobs:
             const { owner, repo } = context.repo;
             const defaultBranch = context.payload.repository?.default_branch || 'main';
             const installWorkflow = 'NEXUS Local Runner';
+            const packageWorkflow = 'Build NEXUS Desktop Windows';
+            const packageArtifactName = 'NEXUS_PERSONAL_PRO_FINAL_MISSION_CONTROL_WINDOWS_5_1_0';
             const installIssueNumber = 702;
             const installCommitMarker = '[install-autostart]';
             const validSha = (value) => typeof value === 'string' && /^[0-9a-f]{40}$/.test(value);
             const installMarkerFor = (sha) => `<!-- nexus-zero-touch-install:${sha} -->`;
+            const packageMarkerFor = (sha) => `<!-- nexus-windows-main-package:${sha} -->`;
 
             const upsertInstallEvidence = async ({ sha, state, lines }) => {
               if (!validSha(sha) || !['PENDING', 'SUCCESS', 'FAILURE'].includes(state)) {
@@ -97,6 +102,53 @@ jobs:
               return true;
             };
 
+            const upsertPackageEvidence = async ({ sha, state, lines }) => {
+              if (!validSha(sha) || !['SUCCESS', 'FAILURE'].includes(state)) {
+                core.setFailed('Refused malformed exact-main Windows package evidence.');
+                return false;
+              }
+              const marker = packageMarkerFor(sha);
+              const body = [
+                marker,
+                '## NEXUS exact-main Windows package evidence',
+                '',
+                `- state: **${state}**`,
+                `- exact main SHA: \`${sha}\``,
+                ...lines,
+                '',
+                state === 'SUCCESS'
+                  ? '- Scope: this proves the Windows Setup/Portable package artifact was produced by the trusted main-push build and independently located for this exact SHA. It does **not** prove execution on the owner laptop, autostart installation, reboot/resume, or complete Phase 7 acceptance.'
+                  : '- Scope: fail-closed. An exact-main Windows package is **not** claimed for this SHA.',
+                '',
+                '- Safety boundary: Research/Backtest/Paper only; no live trading, exchange credentials, withdrawals, production authority, signing, or billing.'
+              ].join('\n');
+
+              const comments = await github.paginate(github.rest.issues.listComments, {
+                owner,
+                repo,
+                issue_number: installIssueNumber,
+                per_page: 100
+              });
+              const matches = comments.filter(comment => typeof comment.body === 'string' && comment.body.includes(marker));
+              if (matches.length > 1) {
+                core.warning(`Multiple Windows package evidence comments found for ${sha}; updating the oldest stable marker only.`);
+              }
+              if (matches.length > 0) {
+                const selected = [...matches].sort((a, b) => a.id - b.id)[0];
+                await github.rest.issues.updateComment({ owner, repo, comment_id: selected.id, body });
+                core.info(`Updated Phase 7 Windows package evidence comment ${selected.id} for ${sha}: ${state}`);
+              } else {
+                const created = await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: installIssueNumber,
+                  body
+                });
+                core.info(`Created Phase 7 Windows package evidence comment ${created.data.id} for ${sha}: ${state}`);
+              }
+              return true;
+            };
+
             if (context.eventName === 'push') {
               const sha = context.payload.after;
               const ref = context.payload.ref;
@@ -142,6 +194,89 @@ jobs:
             const validRunId = Number.isSafeInteger(run?.id) && run.id > 0;
             const validRunUrl = typeof run?.html_url === 'string' && /^https:\/\/github\.com\//.test(run.html_url);
             const validAttempt = Number.isInteger(run?.run_attempt) && run.run_attempt >= 1;
+
+            if (run?.name === packageWorkflow) {
+              if (
+                !allowedConclusions.has(run.conclusion) ||
+                !validHeadSha ||
+                !validRunId ||
+                !validRunUrl ||
+                !validAttempt ||
+                run.event !== 'push' ||
+                run.head_branch !== defaultBranch
+              ) {
+                core.warning('Rejected malformed or non-main Windows package completion metadata; no package evidence write performed.');
+                return;
+              }
+              const expectedRunUrl = `https://github.com/${owner}/${repo}/actions/runs/${run.id}`;
+              if (run.html_url !== expectedRunUrl) {
+                core.warning('Rejected Windows package completion with non-canonical run URL.');
+                return;
+              }
+
+              try {
+                const commit = (await github.rest.repos.getCommit({ owner, repo, ref: run.head_sha })).data;
+                if (commit?.sha !== run.head_sha) {
+                  core.warning('Rejected Windows package completion that could not bind to the exact main commit.');
+                  return;
+                }
+              } catch (error) {
+                core.warning(`Could not bind Windows package completion to exact commit (${error.message}); preserving fail-closed state.`);
+                return;
+              }
+
+              let artifacts;
+              try {
+                artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, {
+                  owner,
+                  repo,
+                  run_id: run.id,
+                  per_page: 100
+                });
+              } catch (error) {
+                await upsertPackageEvidence({
+                  sha: run.head_sha,
+                  state: 'FAILURE',
+                  lines: [
+                    `- build conclusion: \`${run.conclusion}\``,
+                    `- workflow run: ${run.html_url}`,
+                    `- expected artifact: \`${packageArtifactName}\``,
+                    `- verification error: \`${String(error.message || 'artifact lookup failed').replace(/[`\r\n\t]/g, ' ')}\``
+                  ]
+                });
+                return;
+              }
+
+              const matches = artifacts.filter(artifact =>
+                artifact?.name === packageArtifactName &&
+                artifact?.expired === false &&
+                Number.isSafeInteger(artifact?.id) && artifact.id > 0 &&
+                Number.isFinite(artifact?.size_in_bytes) && artifact.size_in_bytes > 0
+              );
+              const artifactVerified = matches.length === 1;
+              const success = run.conclusion === 'success' && artifactVerified;
+              const evidenceLines = [
+                `- build conclusion: \`${run.conclusion}\``,
+                `- workflow run: ${run.html_url}`,
+                `- workflow run id: \`${run.id}\``,
+                `- expected artifact: \`${packageArtifactName}\``,
+                `- verified matching artifacts: \`${matches.length}\``
+              ];
+              if (artifactVerified) {
+                const artifact = matches[0];
+                evidenceLines.push(`- artifact id: \`${artifact.id}\``);
+                evidenceLines.push(`- artifact size bytes: \`${artifact.size_in_bytes}\``);
+                if (typeof artifact.digest === 'string' && /^sha256:[0-9a-f]{64}$/.test(artifact.digest)) {
+                  evidenceLines.push(`- artifact digest: \`${artifact.digest}\``);
+                }
+              }
+              await upsertPackageEvidence({
+                sha: run.head_sha,
+                state: success ? 'SUCCESS' : 'FAILURE',
+                lines: evidenceLines
+              });
+              return;
+            }
 
             if (run?.name === installWorkflow) {
               if (
