@@ -159,14 +159,12 @@ def _sqrt(value: Decimal) -> Decimal:
 
 def _drawdown(equity: Sequence[Decimal]) -> tuple[Decimal, int]:
     peak = equity[0]
-    peak_index = 0
     max_dd = Decimal("0")
     max_duration = 0
     active_peak_index = 0
     for index, value in enumerate(equity):
         if value >= peak:
             peak = value
-            peak_index = index
             active_peak_index = index
             continue
         if peak > 0:
@@ -176,7 +174,7 @@ def _drawdown(equity: Sequence[Decimal]) -> tuple[Decimal, int]:
         duration = index - active_peak_index
         if duration > max_duration:
             max_duration = duration
-    return _q(max_dd, Q6), max_duration
+    return max_dd, max_duration
 
 
 def _consecutive_losses(net_pnls: Sequence[Decimal]) -> int:
