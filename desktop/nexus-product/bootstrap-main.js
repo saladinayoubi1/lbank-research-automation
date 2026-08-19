@@ -4,12 +4,22 @@ const fs = require('fs');
 const path = require('path');
 
 const BOOTSTRAP_TIMEOUT_MS = 35000;
+const OWNER_AUTOSTART_TIMEOUT_MS = 15 * 60 * 1000;
 
 function appendBootstrapLog(message) {
   try {
     const root = app.getPath('logs');
     fs.mkdirSync(root, { recursive: true });
     const target = path.join(root, 'nexus-gui-runner-bootstrap.log');
+    fs.appendFileSync(target, `[${new Date().toISOString()}] ${String(message).slice(0, 4000)}\n`, 'utf8');
+  } catch {}
+}
+
+function appendOwnerAutostartLog(message) {
+  try {
+    const root = app.getPath('logs');
+    fs.mkdirSync(root, { recursive: true });
+    const target = path.join(root, 'nexus-owner-autostart-bootstrap.log');
     fs.appendFileSync(target, `[${new Date().toISOString()}] ${String(message).slice(0, 4000)}\n`, 'utf8');
   } catch {}
 }
@@ -24,24 +34,14 @@ function packagedSourceSha() {
 
 function windowsPowerShell() {
   const systemRoot = process.env.SystemRoot || 'C:\\Windows';
-  const fixed = path.join(systemRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
-  return fixed;
+  return path.join(systemRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
 }
 
-function startRunnerColdBootstrap() {
-  if (process.platform !== 'win32' || !app.isPackaged) return Promise.resolve({ status: 'SKIPPED' });
-
-  const script = path.join(process.resourcesPath, 'scripts', 'bootstrap_nexus_runner_from_gui.ps1');
+function runPackagedPowerShell({ scriptName, timeoutMs, log, sourceSha }) {
+  const script = path.join(process.resourcesPath, 'scripts', scriptName);
   if (!fs.existsSync(script)) {
-    appendBootstrapLog(`blocked: bootstrap script missing: ${script}`);
+    log(`blocked: bootstrap script missing: ${script}`);
     return Promise.resolve({ status: 'SCRIPT_MISSING' });
-  }
-
-  let sourceSha;
-  try { sourceSha = packagedSourceSha(); }
-  catch (error) {
-    appendBootstrapLog(`blocked: ${error.message}`);
-    return Promise.resolve({ status: 'SOURCE_BINDING_INVALID' });
   }
 
   return new Promise((resolve) => {
@@ -65,7 +65,7 @@ function startRunnerColdBootstrap() {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
-      appendBootstrapLog(JSON.stringify({ source_sha: sourceSha, ...result, stdout: stdout.slice(-1200), stderr: stderr.slice(-1200) }));
+      log(JSON.stringify({ source_sha: sourceSha, script: scriptName, ...result, stdout: stdout.slice(-1200), stderr: stderr.slice(-1200) }));
       resolve(result);
     };
 
@@ -77,12 +77,44 @@ function startRunnerColdBootstrap() {
     const timer = setTimeout(() => {
       try { child.kill(); } catch {}
       finish({ status: 'TIMEOUT', code: null, signal: null });
-    }, BOOTSTRAP_TIMEOUT_MS);
+    }, timeoutMs);
+  });
+}
+
+function startRunnerColdBootstrap(sourceSha) {
+  return runPackagedPowerShell({
+    scriptName: 'bootstrap_nexus_runner_from_gui.ps1',
+    timeoutMs: BOOTSTRAP_TIMEOUT_MS,
+    log: appendBootstrapLog,
+    sourceSha,
+  });
+}
+
+function startOwnerAutostartBootstrap(sourceSha) {
+  const bundle = path.join(process.resourcesPath, 'nexus-source.bundle');
+  if (!fs.existsSync(bundle)) {
+    appendOwnerAutostartLog(`blocked: exact-source bundle missing: ${bundle}`);
+    return Promise.resolve({ status: 'SOURCE_BUNDLE_MISSING' });
+  }
+  return runPackagedPowerShell({
+    scriptName: 'install_nexus_owner_autostart_from_gui.ps1',
+    timeoutMs: OWNER_AUTOSTART_TIMEOUT_MS,
+    log: appendOwnerAutostartLog,
+    sourceSha,
   });
 }
 
 app.whenReady().then(() => {
-  startRunnerColdBootstrap().catch(error => appendBootstrapLog(`unexpected bootstrap error: ${error && error.stack ? error.stack : error}`));
+  if (process.platform !== 'win32' || !app.isPackaged) return;
+  let sourceSha;
+  try { sourceSha = packagedSourceSha(); }
+  catch (error) {
+    appendBootstrapLog(`blocked: ${error.message}`);
+    appendOwnerAutostartLog(`blocked: ${error.message}`);
+    return;
+  }
+  startRunnerColdBootstrap(sourceSha).catch(error => appendBootstrapLog(`unexpected bootstrap error: ${error && error.stack ? error.stack : error}`));
+  startOwnerAutostartBootstrap(sourceSha).catch(error => appendOwnerAutostartLog(`unexpected owner bootstrap error: ${error && error.stack ? error.stack : error}`));
 });
 
 require('./main.js');
