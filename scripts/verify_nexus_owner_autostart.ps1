@@ -10,6 +10,7 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version 2.0
 
 $ExpectedRepoSuffix = '\NEXUS\lbank-research-automation'
+$TaskXmlNamespace = 'http://schemas.microsoft.com/windows/2004/02/mit/task'
 $ServiceIdentities = @(
     'NT AUTHORITY\SYSTEM',
     'NT AUTHORITY\NETWORK SERVICE',
@@ -32,42 +33,76 @@ function Sanitize-Inline([string]$Value) {
     return ($Value -replace '[\r\n\t]+',' ' -replace '[\u0000-\u001f\u007f]','').Trim()
 }
 
-function Get-TaskSnapshot([string]$Name, [string]$ExpectedScript) {
-    $matches = @(Get-ScheduledTask -TaskName $Name -ErrorAction SilentlyContinue)
-    if ($matches.Count -ne 1) {
-        throw "scheduled task $Name count is $($matches.Count), expected exactly 1"
+function Get-XmlNodeText([xml]$Document, [Xml.XmlNamespaceManager]$NamespaceManager, [string]$XPath) {
+    $node = $Document.SelectSingleNode($XPath, $NamespaceManager)
+    if ($null -eq $node) { return '' }
+    return [string]$node.InnerText
+}
+
+function Get-TaskXml([string]$Name) {
+    $schtasks = Join-Path $env:SystemRoot 'System32\schtasks.exe'
+    if (-not (Test-Path -LiteralPath $schtasks -PathType Leaf)) {
+        throw 'schtasks.exe is unavailable'
     }
-    $task = $matches[0]
-    $principal = $task.Principal
-    if (-not $principal) { throw "scheduled task $Name has no principal" }
-    $user = [string]$principal.UserId
-    $runLevel = [string]$principal.RunLevel
-    $logonType = [string]$principal.LogonType
+
+    $output = & $schtasks /Query /TN $Name /XML 2>&1
+    $exitCode = $LASTEXITCODE
+    if ($exitCode -ne 0) {
+        $detail = Sanitize-Inline (($output | ForEach-Object { [string]$_ }) -join ' ')
+        if (-not $detail) { $detail = "exit code $exitCode" }
+        throw "scheduled task $Name could not be queried read-only via schtasks.exe: $detail"
+    }
+
+    $text = ($output | ForEach-Object { [string]$_ }) -join [Environment]::NewLine
+    if (-not $text.Trim()) {
+        throw "scheduled task $Name returned empty XML"
+    }
+    try { return [xml]$text }
+    catch { throw "scheduled task $Name returned invalid XML: $(Sanitize-Inline $_.Exception.Message)" }
+}
+
+function Get-TaskSnapshot([string]$Name, [string]$ExpectedScript) {
+    $taskXml = Get-TaskXml $Name
+    $ns = New-Object Xml.XmlNamespaceManager($taskXml.NameTable)
+    $ns.AddNamespace('t', $TaskXmlNamespace)
+
+    $principalNode = $taskXml.SelectSingleNode('/t:Task/t:Principals/t:Principal[1]', $ns)
+    if ($null -eq $principalNode) { throw "scheduled task $Name has no principal" }
+
+    $user = Get-XmlNodeText $taskXml $ns '/t:Task/t:Principals/t:Principal[1]/t:UserId'
+    $xmlRunLevel = Get-XmlNodeText $taskXml $ns '/t:Task/t:Principals/t:Principal[1]/t:RunLevel'
+    $xmlLogonType = Get-XmlNodeText $taskXml $ns '/t:Task/t:Principals/t:Principal[1]/t:LogonType'
     if (-not $user -or $ServiceIdentities -contains $user.ToUpperInvariant()) {
         throw "scheduled task $Name is not bound to a real owner-user principal"
     }
-    if ($runLevel -ne 'Limited') {
-        throw "scheduled task $Name run level is $runLevel, expected Limited"
+    if ($xmlRunLevel -ne 'LeastPrivilege') {
+        throw "scheduled task $Name run level is $xmlRunLevel, expected Limited/LeastPrivilege"
     }
-    if ($logonType -notmatch 'Interactive') {
-        throw "scheduled task $Name logon type is $logonType, expected Interactive"
+    if ($xmlLogonType -notmatch '^InteractiveToken') {
+        throw "scheduled task $Name logon type is $xmlLogonType, expected Interactive"
     }
 
-    $triggers = @($task.Triggers)
-    if ($triggers.Count -lt 1) { throw "scheduled task $Name has no trigger" }
-    $logonTriggers = @($triggers | Where-Object { $_.CimClass.CimClassName -match 'LogonTrigger' })
+    $logonTriggers = @($taskXml.SelectNodes('/t:Task/t:Triggers/t:LogonTrigger', $ns))
     if ($logonTriggers.Count -lt 1) { throw "scheduled task $Name has no logon trigger" }
-    $triggerUsers = @($logonTriggers | ForEach-Object { [string]$_.UserId } | Where-Object { $_ })
+    $triggerUsers = @()
+    foreach ($trigger in $logonTriggers) {
+        $node = $trigger.SelectSingleNode('t:UserId', $ns)
+        if ($null -ne $node -and [string]$node.InnerText) { $triggerUsers += [string]$node.InnerText }
+    }
     if ($triggerUsers.Count -gt 0 -and -not ($triggerUsers -contains $user)) {
         throw "scheduled task $Name logon trigger principal mismatch"
     }
 
-    $actions = @($task.Actions)
+    $actions = @($taskXml.SelectNodes('/t:Task/t:Actions/t:Exec', $ns))
     if ($actions.Count -ne 1) { throw "scheduled task $Name action count is $($actions.Count), expected 1" }
     $action = $actions[0]
-    $execute = Sanitize-Inline ([string]$action.Execute)
-    $arguments = Sanitize-Inline ([string]$action.Arguments)
-    $workingDirectory = Normalize-FullPath ([string]$action.WorkingDirectory)
+    $commandNode = $action.SelectSingleNode('t:Command', $ns)
+    $argumentsNode = $action.SelectSingleNode('t:Arguments', $ns)
+    $workingDirectoryNode = $action.SelectSingleNode('t:WorkingDirectory', $ns)
+    $execute = if ($null -ne $commandNode) { Sanitize-Inline ([string]$commandNode.InnerText) } else { '' }
+    $arguments = if ($null -ne $argumentsNode) { Sanitize-Inline ([string]$argumentsNode.InnerText) } else { '' }
+    $workingDirectory = if ($null -ne $workingDirectoryNode) { Normalize-FullPath ([string]$workingDirectoryNode.InnerText) } else { '' }
+
     if ([IO.Path]::GetFileName($execute) -notmatch '^(?i)powershell\.exe$') {
         throw "scheduled task $Name executable is not powershell.exe"
     }
@@ -84,25 +119,22 @@ function Get-TaskSnapshot([string]$Name, [string]$ExpectedScript) {
         throw "scheduled task $Name working directory is outside the bounded owner NEXUS checkout"
     }
 
-    $state = [string]$task.State
-    if ($state -notin @('Ready','Running','Queued')) {
-        throw "scheduled task $Name state is $state"
-    }
-    $info = Get-ScheduledTaskInfo -TaskName $Name -ErrorAction SilentlyContinue
-
     return [ordered]@{
         name = $Name
         exists = $true
-        state = $state
+        scheduler_source = 'schtasks_xml'
+        configuration_state = 'Configured'
         principal_user = $user
-        logon_type = $logonType
-        run_level = $runLevel
+        logon_type = 'Interactive'
+        xml_logon_type = $xmlLogonType
+        run_level = 'Limited'
+        xml_run_level = $xmlRunLevel
         logon_trigger_users = @($triggerUsers)
         execute = $execute
         arguments = $arguments
         working_directory = $workingDirectory
-        last_run_time = if ($info) { [string]$info.LastRunTime } else { $null }
-        last_task_result = if ($info) { [int64]$info.LastTaskResult } else { $null }
+        last_run_time = $null
+        last_task_result = $null
     }
 }
 
@@ -112,13 +144,14 @@ function Write-Evidence([string]$Status, [hashtable]$Extra = @{}) {
     New-Item -ItemType Directory -Force -Path $dir | Out-Null
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent().Name
     $payload = [ordered]@{
-        contract_version = 'nexus.owner-autostart-readonly-proof.v1'
+        contract_version = 'nexus.owner-autostart-readonly-proof.v2'
         status = $Status
         target_package_source_sha = $SourceSha.ToLowerInvariant()
         generated_at = [DateTime]::UtcNow.ToString('o')
         verifier_identity = $identity
         verifier_service_context = ($ServiceIdentities -contains $identity.ToUpperInvariant())
         task_scheduler_read_only = $true
+        task_scheduler_query_transport = 'schtasks_xml'
         owner_profile_file_content_read = $false
         task_registration_modified = $false
         runner_registration_modified = $false
