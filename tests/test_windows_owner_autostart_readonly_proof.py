@@ -22,15 +22,22 @@ def test_owner_autostart_verifier_is_strictly_read_only():
         "New-ScheduledTaskAction",
         "New-ScheduledTaskTrigger",
         "New-ScheduledTaskPrincipal",
+        "Get-ScheduledTask",
+        "Get-ScheduledTaskInfo",
         "config.cmd",
         ".credentials",
+        "/Create",
+        "/Change",
+        "/Delete",
+        "/Run",
+        "/End",
     )
     for token in forbidden:
         assert token not in text
-    assert "Get-ScheduledTask" in text
-    assert "Get-ScheduledTaskInfo" in text
-    assert "run level is" in text
-    assert "expected Limited" in text
+    assert "schtasks.exe" in text
+    assert "/Query /TN $Name /XML" in text
+    assert "task_scheduler_query_transport = 'schtasks_xml'" in text
+    assert "expected Limited/LeastPrivilege" in text
     assert "expected Interactive" in text
     assert "owner_profile_file_content_read = $false" in text
     assert "task_registration_modified = $false" in text
@@ -47,6 +54,8 @@ def test_owner_autostart_verifier_binds_both_expected_tasks_and_scripts():
     assert "nexus_github_runner_autostart.ps1" in text
     assert "-Mode\\s+RunDaemon" in text
     assert "\\NEXUS\\lbank-research-automation" in text
+    assert "InteractiveToken" in text
+    assert "LeastPrivilege" in text
 
 
 def test_owner_autostart_proof_target_is_exact_sha():
