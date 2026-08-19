@@ -13,7 +13,7 @@ $ExpectedGitHubUrl = 'https://github.com/saladinayoubi1/lbank-research-automatio
 $ExpectedRemotePattern = '(?i)github\.com[:/]saladinayoubi1/lbank-research-automation(?:\.git)?$'
 $PackageRef = 'refs/heads/nexus-package-source'
 $ResourcesRoot = Split-Path -Parent $PSScriptRoot
-$BundlePath = Join-Path $ResourcesRoot 'nexus-source.bundle'
+$SeedRepoPath = Join-Path $ResourcesRoot 'nexus-source-seed.git'
 $ManagedRepoRoot = Join-Path $env:LOCALAPPDATA 'NEXUS\lbank-research-automation'
 $StateRoot = Join-Path $env:LOCALAPPDATA 'NEXUS\OwnerAutostartBootstrap'
 $EvidencePath = Join-Path $StateRoot 'evidence.json'
@@ -39,7 +39,7 @@ function Write-Evidence([string]$Status, [hashtable]$Extra = @{}) {
         repository = $ExpectedRepo
         managed_repo_root = $ManagedRepoRoot
         interactive_user = "$env:USERDOMAIN\$env:USERNAME"
-        bundle_verified = $false
+        seed_verified = $false
         network_credentials_added = $false
         runner_registration_modified = $false
         machine_execution_policy_modified = $false
@@ -88,22 +88,15 @@ function Assert-InteractiveOwner {
     return $identity
 }
 
-function Assert-BundleSource {
-    if (-not (Test-Path -LiteralPath $BundlePath -PathType Leaf)) { throw 'packaged exact-source Git bundle is missing' }
-    $git = Get-Git
-    & $git bundle verify $BundlePath *> $null
-    if ($LASTEXITCODE -ne 0) { throw 'packaged exact-source Git bundle verification failed' }
-    $heads = & $git bundle list-heads $BundlePath $PackageRef 2>&1
-    if ($LASTEXITCODE -ne 0) { throw 'packaged exact-source Git bundle head lookup failed' }
-    $line = (($heads | Out-String).Trim())
-    if ($line -notmatch '^([0-9a-fA-F]{40})\s+refs/heads/nexus-package-source$') {
-        throw 'packaged exact-source Git bundle does not expose the expected bounded ref'
+function Assert-SeedSource {
+    if (-not (Test-Path -LiteralPath $SeedRepoPath -PathType Container)) { throw 'packaged exact-source Git seed is missing' }
+    if (-not (Test-Path -LiteralPath (Join-Path $SeedRepoPath 'shallow') -PathType Leaf)) { throw 'packaged exact-source Git seed is not shallow bounded' }
+    $seedSha = Invoke-GitGlobal @('--git-dir',$SeedRepoPath,'rev-parse',$PackageRef)
+    if ($seedSha.ToLowerInvariant() -ne $SourceSha.ToLowerInvariant()) {
+        throw "packaged source mismatch: expected $($SourceSha.ToLowerInvariant()) got $seedSha"
     }
-    $bundleSha = $Matches[1].ToLowerInvariant()
-    if ($bundleSha -ne $SourceSha.ToLowerInvariant()) {
-        throw "packaged source mismatch: expected $($SourceSha.ToLowerInvariant()) got $bundleSha"
-    }
-    return $bundleSha
+    [void](Invoke-GitGlobal @('--git-dir',$SeedRepoPath,'fsck','--no-dangling'))
+    return $seedSha.ToLowerInvariant()
 }
 
 function Assert-CanonicalRemote([string]$Root) {
@@ -115,7 +108,7 @@ function Assert-CanonicalRemote([string]$Root) {
 
 function Assert-TrackedClean([string]$Root) {
     $status = Invoke-Git $Root @('status','--porcelain=v1','--untracked-files=no')
-    if ($status) { throw 'managed checkout has tracked owner changes; refusing automatic update' }
+    if ($status) { throw 'managed checkout has tracked owner changes; refusing automatic replacement' }
 }
 
 function Initialize-ManagedRepo {
@@ -125,30 +118,27 @@ function Initialize-ManagedRepo {
         throw "managed checkout path already exists but is not a valid canonical repository: $ManagedRepoRoot"
     }
 
-    [void](Invoke-GitGlobal @('clone','--no-checkout','--branch','nexus-package-source',$BundlePath,$ManagedRepoRoot))
+    # --no-local prevents hardlinks back into a Portable package that may disappear
+    # after process exit; the managed checkout must own its object database.
+    [void](Invoke-GitGlobal @('clone','--no-local','--no-checkout','--branch','nexus-package-source',$SeedRepoPath,$ManagedRepoRoot))
     [void](Invoke-Git $ManagedRepoRoot @('remote','set-url','origin',$ExpectedGitHubUrl))
     [void](Invoke-Git $ManagedRepoRoot @('checkout','-B','main',$SourceSha.ToLowerInvariant()))
     Assert-CanonicalRemote $ManagedRepoRoot
 }
 
-function Update-ManagedRepo {
+function Validate-ExistingManagedRepo {
+    if (-not (Test-Path -LiteralPath (Join-Path $ManagedRepoRoot '.git') -PathType Container)) {
+        throw "managed checkout path exists without a Git repository: $ManagedRepoRoot"
+    }
     $top = Invoke-Git $ManagedRepoRoot @('rev-parse','--show-toplevel')
     if ((Resolve-Path -LiteralPath $top).Path -ne (Resolve-Path -LiteralPath $ManagedRepoRoot).Path) {
         throw 'managed checkout root validation failed'
     }
     Assert-CanonicalRemote $ManagedRepoRoot
     Assert-TrackedClean $ManagedRepoRoot
-
-    [void](Invoke-Git $ManagedRepoRoot @('fetch','--no-tags',$BundlePath,$PackageRef))
-    $fetched = Invoke-Git $ManagedRepoRoot @('rev-parse','FETCH_HEAD')
-    if ($fetched.ToLowerInvariant() -ne $SourceSha.ToLowerInvariant()) {
-        throw "bundle fetch SHA mismatch: expected $($SourceSha.ToLowerInvariant()) got $fetched"
-    }
-    $branch = Invoke-Git $ManagedRepoRoot @('branch','--show-current')
-    if ($branch -ne 'main') { [void](Invoke-Git $ManagedRepoRoot @('checkout','main')) }
     $head = Invoke-Git $ManagedRepoRoot @('rev-parse','HEAD')
     if ($head.ToLowerInvariant() -ne $SourceSha.ToLowerInvariant()) {
-        [void](Invoke-Git $ManagedRepoRoot @('merge','--ff-only','FETCH_HEAD'))
+        throw "managed checkout is bound to a different source SHA ($head); automatic source replacement is refused"
     }
 }
 
@@ -157,10 +147,7 @@ function Prepare-ManagedRepo {
         Initialize-ManagedRepo
         return $true
     }
-    if (-not (Test-Path -LiteralPath (Join-Path $ManagedRepoRoot '.git') -PathType Container)) {
-        throw "managed checkout path exists without a Git repository: $ManagedRepoRoot"
-    }
-    Update-ManagedRepo
+    Validate-ExistingManagedRepo
     return $false
 }
 
@@ -195,7 +182,7 @@ function Task-Snapshot([string]$Name) {
 try {
     Ensure-StateRoot
     $identity = Assert-InteractiveOwner
-    $bundleSha = Assert-BundleSource
+    $seedSha = Assert-SeedSource
     $managedCreated = Prepare-ManagedRepo
     $head = Invoke-Git $ManagedRepoRoot @('rev-parse','HEAD')
     if ($head.ToLowerInvariant() -ne $SourceSha.ToLowerInvariant()) {
@@ -211,8 +198,8 @@ try {
     if ($core.run_level -ne 'Limited' -or $runner.run_level -ne 'Limited') { throw 'owner-user scheduled tasks are not limited-runlevel' }
 
     Write-Evidence 'SUCCESS' @{
-        bundle_verified = $true
-        bundle_sha = $bundleSha
+        seed_verified = $true
+        seed_sha = $seedSha
         windows_identity = $identity
         managed_checkout_created = [bool]$managedCreated
         managed_head = $head.ToLowerInvariant()
