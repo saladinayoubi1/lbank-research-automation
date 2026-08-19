@@ -1,2 +1,2 @@
-trigger_after_bridge=d11f4948f2b31357c7f63ecee7f7d2f9427cb8af
-reason=retrigger zero-touch NEXUS autostart install with exact-SHA Phase 7 evidence bridge active
+trigger_after_executionpolicy_fix=97452d77b183e9f489b12b7be8bef7a9a05c2e2d
+reason=retrigger zero-touch NEXUS autostart install after per-process ExecutionPolicy fix and locked Windows Runner dependencies
