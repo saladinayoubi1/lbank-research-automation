@@ -19,9 +19,9 @@ def read(path: Path) -> str:
 def test_gui_bootstrap_uses_bounded_owner_fallback_only_after_service_start_failure() -> None:
     text = read(GUI_BOOTSTRAP)
     service = text.index("$service = Get-RunnerService $runner")
-    running = text.index("Wait-ForListener $runner", service)
+    wait_for_fallback = text.index("Wait-ForListener $runner", service)
     fallback = text.index("SERVICE_STOPPED_USER_FALLBACK_RUNNING", service)
-    assert service < fallback < running
+    assert service < wait_for_fallback < fallback
     for marker in (
         "Start-Service",
         "Start-InteractiveRunnerFallback",
