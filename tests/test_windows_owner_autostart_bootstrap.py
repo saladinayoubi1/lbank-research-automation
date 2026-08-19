@@ -35,6 +35,7 @@ def test_owner_bootstrap_is_exact_source_interactive_and_fail_closed() -> None:
         "NEXUS-ZeroTouch-Autopilot",
         "NEXUS-GitHub-Runner-Autostart",
         "run_level",
+        "managed_checkout_updated_from_package_seed",
         "network_credentials_added = $false",
         "runner_registration_modified = $false",
         "machine_execution_policy_modified = $false",
@@ -56,17 +57,98 @@ def test_owner_bootstrap_is_exact_source_interactive_and_fail_closed() -> None:
         "remove-item -recurse",
         "get-childitem -recurse",
         "reset --hard",
+        "git clean",
     ):
         assert forbidden not in lowered
 
 
-def test_owner_bootstrap_uses_only_packaged_seed_for_initial_source() -> None:
+def test_owner_bootstrap_uses_only_packaged_seed_for_initial_and_existing_source() -> None:
     script = read(SCRIPT)
     assert "Invoke-GitGlobal @('clone','--no-local','--no-checkout','--branch','nexus-package-source',$SeedRepoPath,$ManagedRepoRoot)" in script
     assert "remote','set-url','origin',$ExpectedGitHubUrl" in script
-    assert "automatic source replacement is refused" in script
+    assert "'fetch','--no-tags','--update-shallow',$SeedRepoPath,$PackageRef" in script
+    assert "'rev-parse','FETCH_HEAD'" in script
+    assert "'checkout','-B','main','FETCH_HEAD'" in script
+    assert "packaged seed fetch mismatch" in script
+    assert "managed checkout reconciliation failed" in script
     assert "fetch','origin" not in script
     assert "pull" not in script.casefold()
+
+
+def test_existing_managed_checkout_must_be_canonical_and_tracked_clean_before_reconcile() -> None:
+    script = read(SCRIPT)
+    validate = script.index("function Validate-ExistingManagedRepo")
+    reconcile = script.index("function Reconcile-ExistingManagedRepo")
+    prepare = script.index("function Prepare-ManagedRepo")
+    section = script[validate:reconcile]
+    assert "Assert-CanonicalRemote $ManagedRepoRoot" in section
+    assert "Assert-TrackedClean $ManagedRepoRoot" in section
+    assert "managed checkout has tracked owner changes; refusing automatic replacement" in script
+    assert validate < reconcile < prepare
+    prepare_section = script[prepare:script.index("function Get-PowerShellExe")]
+    assert "Validate-ExistingManagedRepo" in prepare_section
+    assert "Reconcile-ExistingManagedRepo" in prepare_section
+
+
+def _git(*args: str, cwd: Path | None = None) -> str:
+    completed = subprocess.run(
+        ["git", *args],
+        cwd=cwd,
+        text=True,
+        capture_output=True,
+        timeout=30,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    return completed.stdout.strip()
+
+
+def test_shallow_packaged_seed_can_reconcile_an_older_clean_checkout_without_network(tmp_path: Path) -> None:
+    if not shutil.which("git"):
+        pytest.skip("git is unavailable")
+
+    source = tmp_path / "source"
+    source.mkdir()
+    _git("init", "-b", "main", cwd=source)
+    _git("config", "user.email", "nexus-test@example.invalid", cwd=source)
+    _git("config", "user.name", "NEXUS Test", cwd=source)
+    (source / "payload.txt").write_text("old\n", encoding="utf-8")
+    _git("add", "payload.txt", cwd=source)
+    _git("commit", "-m", "old", cwd=source)
+    old_sha = _git("rev-parse", "HEAD", cwd=source)
+
+    (source / "payload.txt").write_text("new\n", encoding="utf-8")
+    _git("add", "payload.txt", cwd=source)
+    _git("commit", "-m", "new", cwd=source)
+    new_sha = _git("rev-parse", "HEAD", cwd=source)
+    _git("branch", "nexus-package-source", new_sha, cwd=source)
+
+    managed = tmp_path / "managed"
+    _git("clone", str(source), str(managed))
+    _git("checkout", "-B", "main", old_sha, cwd=managed)
+    assert _git("status", "--porcelain=v1", "--untracked-files=no", cwd=managed) == ""
+
+    seed = tmp_path / "nexus-source-seed.git"
+    _git(
+        "clone",
+        "--bare",
+        "--depth",
+        "1",
+        "--branch",
+        "nexus-package-source",
+        source.as_uri(),
+        str(seed),
+    )
+    assert (seed / "shallow").is_file()
+    assert _git("--git-dir", str(seed), "rev-parse", "refs/heads/nexus-package-source") == new_sha
+
+    _git("fetch", "--no-tags", "--update-shallow", str(seed), "refs/heads/nexus-package-source", cwd=managed)
+    assert _git("rev-parse", "FETCH_HEAD", cwd=managed) == new_sha
+    _git("checkout", "-B", "main", "FETCH_HEAD", cwd=managed)
+
+    assert _git("rev-parse", "HEAD", cwd=managed) == new_sha
+    assert (managed / "payload.txt").read_text(encoding="utf-8") == "new\n"
+    assert _git("status", "--porcelain=v1", "--untracked-files=no", cwd=managed) == ""
 
 
 def test_packaged_entrypoint_runs_owner_bootstrap_without_blocking_product_main() -> None:
