@@ -81,7 +81,8 @@ function runPackagedPowerShell({ scriptName, timeoutMs, log, sourceSha }) {
   });
 }
 
-function startRunnerColdBootstrap(sourceSha) {
+function startRunnerColdBootstrap() {
+  const sourceSha = packagedSourceSha();
   return runPackagedPowerShell({
     scriptName: 'bootstrap_nexus_runner_from_gui.ps1',
     timeoutMs: BOOTSTRAP_TIMEOUT_MS,
@@ -106,14 +107,13 @@ function startOwnerAutostartBootstrap(sourceSha) {
 
 app.whenReady().then(() => {
   if (process.platform !== 'win32' || !app.isPackaged) return;
+  startRunnerColdBootstrap().catch(error => appendBootstrapLog(`unexpected bootstrap error: ${error && error.stack ? error.stack : error}`));
   let sourceSha;
   try { sourceSha = packagedSourceSha(); }
   catch (error) {
-    appendBootstrapLog(`blocked: ${error.message}`);
     appendOwnerAutostartLog(`blocked: ${error.message}`);
     return;
   }
-  startRunnerColdBootstrap(sourceSha).catch(error => appendBootstrapLog(`unexpected bootstrap error: ${error && error.stack ? error.stack : error}`));
   startOwnerAutostartBootstrap(sourceSha).catch(error => appendOwnerAutostartLog(`unexpected owner bootstrap error: ${error && error.stack ? error.stack : error}`));
 });
 
