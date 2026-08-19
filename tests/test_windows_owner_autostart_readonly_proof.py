@@ -61,7 +61,7 @@ def test_owner_autostart_verifier_binds_both_expected_tasks_and_scripts():
 def test_owner_autostart_proof_target_is_exact_sha():
     value = TARGET.read_text(encoding="utf-8").strip()
     assert re.fullmatch(r"[0-9a-f]{40}", value)
-    assert value == "baed5d72eab3547809c8444cc08ba00e36eb0e41"
+    assert value == "809060eee1f8d1e09e1c25e14ad5faf8764bf731"
 
 
 def test_local_runner_wires_readonly_proof_without_permission_expansion():
