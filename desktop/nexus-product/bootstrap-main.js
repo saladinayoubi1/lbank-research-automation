@@ -4,7 +4,10 @@ const fs = require('fs');
 const path = require('path');
 
 const BOOTSTRAP_TIMEOUT_MS = 35000;
+const RUNNER_SUPERVISOR_INTERVAL_MS = 60 * 1000;
 const OWNER_AUTOSTART_TIMEOUT_MS = 15 * 60 * 1000;
+const OWNER_AUTOSTART_RETRY_LIMIT = 3;
+const OWNER_AUTOSTART_RETRY_DELAY_MS = 15 * 1000;
 
 function appendBootstrapLog(message) {
   try {
@@ -91,6 +94,27 @@ function startRunnerColdBootstrap() {
   });
 }
 
+let runnerBootstrapInFlight = false;
+async function reconcileRunnerFromGui() {
+  if (runnerBootstrapInFlight) return { status: 'ALREADY_RUNNING' };
+  runnerBootstrapInFlight = true;
+  try {
+    return await startRunnerColdBootstrap();
+  } catch (error) {
+    appendBootstrapLog(`unexpected bootstrap error: ${error && error.stack ? error.stack : error}`);
+    return { status: 'UNEXPECTED_ERROR' };
+  } finally {
+    runnerBootstrapInFlight = false;
+  }
+}
+
+function startRunnerSupervisor() {
+  void reconcileRunnerFromGui();
+  const timer = setInterval(() => { void reconcileRunnerFromGui(); }, RUNNER_SUPERVISOR_INTERVAL_MS);
+  app.once('before-quit', () => clearInterval(timer));
+  appendBootstrapLog(`runner_supervisor_started interval_ms=${RUNNER_SUPERVISOR_INTERVAL_MS}`);
+}
+
 function startOwnerAutostartBootstrap(sourceSha) {
   const seed = path.join(process.resourcesPath, 'nexus-source-seed.git');
   if (!fs.existsSync(seed)) {
@@ -105,16 +129,42 @@ function startOwnerAutostartBootstrap(sourceSha) {
   });
 }
 
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function startOwnerAutostartWithRetry(sourceSha) {
+  for (let attempt = 1; attempt <= OWNER_AUTOSTART_RETRY_LIMIT; attempt += 1) {
+    let result;
+    try {
+      result = await startOwnerAutostartBootstrap(sourceSha);
+    } catch (error) {
+      appendOwnerAutostartLog(`unexpected owner bootstrap error attempt=${attempt}: ${error && error.stack ? error.stack : error}`);
+      result = { status: 'UNEXPECTED_ERROR' };
+    }
+    if (result && result.status === 'SUCCESS') {
+      appendOwnerAutostartLog(`owner_bootstrap_complete attempt=${attempt}`);
+      return result;
+    }
+    if (attempt < OWNER_AUTOSTART_RETRY_LIMIT) {
+      appendOwnerAutostartLog(`owner_bootstrap_retry attempt=${attempt} status=${result && result.status ? result.status : 'UNKNOWN'} delay_ms=${OWNER_AUTOSTART_RETRY_DELAY_MS}`);
+      await delay(OWNER_AUTOSTART_RETRY_DELAY_MS);
+    }
+  }
+  appendOwnerAutostartLog(`owner_bootstrap_exhausted attempts=${OWNER_AUTOSTART_RETRY_LIMIT}`);
+  return { status: 'RETRY_EXHAUSTED' };
+}
+
 app.whenReady().then(() => {
   if (process.platform !== 'win32' || !app.isPackaged) return;
-  startRunnerColdBootstrap().catch(error => appendBootstrapLog(`unexpected bootstrap error: ${error && error.stack ? error.stack : error}`));
+  startRunnerSupervisor();
   let sourceSha;
   try { sourceSha = packagedSourceSha(); }
   catch (error) {
     appendOwnerAutostartLog(`blocked: ${error.message}`);
     return;
   }
-  startOwnerAutostartBootstrap(sourceSha).catch(error => appendOwnerAutostartLog(`unexpected owner bootstrap error: ${error && error.stack ? error.stack : error}`));
+  void startOwnerAutostartWithRetry(sourceSha);
 });
 
 require('./main.js');
