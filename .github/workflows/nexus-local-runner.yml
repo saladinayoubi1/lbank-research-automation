@@ -34,7 +34,14 @@ permissions:
   contents: read
 
 concurrency:
-  group: nexus-local-runner
+  group: >-
+    nexus-local-runner-${{
+      github.event_name == 'push' && contains(github.event.head_commit.message, '[verify-owner-autostart]') && 'owner-proof' ||
+      github.event_name == 'push' && contains(github.event.head_commit.message, '[install-autostart]') && 'install' ||
+      ((github.event_name == 'push' && contains(github.event.head_commit.message, '[autonomous]')) ||
+       (github.event_name == 'workflow_dispatch' && inputs.task == 'autonomous')) && 'autonomous' ||
+      'general'
+    }}
   cancel-in-progress: false
 
 jobs:
@@ -67,9 +74,9 @@ jobs:
         if: github.event_name == 'push' && contains(github.event.head_commit.message, '[verify-owner-autostart]')
         run: >-
           powershell.exe -NoProfile -NonInteractive -Command
-          "$root=[IO.Path]::GetFullPath($env:GITHUB_WORKSPACE).TrimEnd('\');
-          $home=[IO.Path]::GetFullPath($env:USERPROFILE).TrimEnd('\');
-          if ($root -eq $home -or $root.StartsWith($home + '\',[StringComparison]::OrdinalIgnoreCase))
+          "$root=[IO.Path]::GetFullPath($env:GITHUB_WORKSPACE).TrimEnd('\\');
+          $home=[IO.Path]::GetFullPath($env:USERPROFILE).TrimEnd('\\');
+          if ($root -eq $home -or $root.StartsWith($home + '\\',[StringComparison]::OrdinalIgnoreCase))
           { Write-Error 'Owner-proof workspace must not be the user profile or a descendant of it'; exit 1 };
           Write-Host 'owner_proof_privacy_guard=ok'"
 
@@ -157,21 +164,25 @@ jobs:
       - name: Persistent autonomous worker
         if: inputs.task == 'autonomous' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[autonomous]'))
         env:
-          NEXUS_WORKER_MAX_SECONDS: '3300'
-          NEXUS_WORKER_IDLE_SLEEP: '60'
+          NEXUS_STATE_DIR: ${{ runner.workspace }}\_nexus_local_worker_state
+          NEXUS_WORKER_MAX_SECONDS: '720'
+          NEXUS_WORKER_MAX_TASKS_PER_LEASE: '1'
+          NEXUS_WORKER_EXIT_ON_IDLE: '1'
+          NEXUS_WORKER_IDLE_SLEEP: '15'
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: '0'
         run: python scripts\nexus_local_worker.py
 
       - name: Upload autonomous worker evidence
-        if: always()
+        if: always() && (inputs.task == 'autonomous' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[autonomous]')))
         uses: actions/upload-artifact@v4
         with:
           name: nexus-local-worker-evidence-${{ github.run_id }}
           if-no-files-found: warn
+          retention-days: 14
           path: |
-            .nexus/autonomous-queue.json
-            build/autonomy/worker-heartbeat.json
+            ${{ runner.workspace }}\_nexus_local_worker_state\autonomous-queue.json
+            ${{ runner.workspace }}\_nexus_local_worker_state\worker-heartbeat.json
 
       - name: Local change report
         if: always()
