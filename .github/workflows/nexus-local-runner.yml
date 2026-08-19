@@ -73,9 +73,10 @@ jobs:
 
       - name: Install zero-touch NEXUS autostart
         if: github.event_name == 'push' && contains(github.event.head_commit.message, '[install-autostart]')
-        shell: powershell
-        run: |
-          & .\scripts\install_nexus_autostart_from_runner.ps1 -SourceSha "$env:GITHUB_SHA"
+        run: >-
+          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass
+          -File scripts\install_nexus_autostart_from_runner.ps1
+          -SourceSha "%GITHUB_SHA%"
 
       - name: Upload zero-touch install evidence
         if: github.event_name == 'push' && contains(github.event.head_commit.message, '[install-autostart]')
