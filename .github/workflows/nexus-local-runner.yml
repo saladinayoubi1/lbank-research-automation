@@ -30,7 +30,6 @@ on:
 
 permissions:
   contents: read
-  statuses: write
 
 concurrency:
   group: nexus-local-runner
@@ -73,7 +72,6 @@ jobs:
         run: python -c "import pathlib; root=pathlib.Path.cwd().resolve(); home=pathlib.Path.home().resolve(); assert root != home and home not in root.parents; print('privacy_guard=ok')"
 
       - name: Install zero-touch NEXUS autostart
-        id: install_autostart
         if: github.event_name == 'push' && contains(github.event.head_commit.message, '[install-autostart]')
         shell: powershell
         run: |
@@ -87,30 +85,6 @@ jobs:
           if-no-files-found: error
           retention-days: 14
           path: build/autostart-install/evidence.json
-
-      - name: Report zero-touch install commit status
-        if: always() && github.event_name == 'push' && contains(github.event.head_commit.message, '[install-autostart]')
-        shell: powershell
-        env:
-          NEXUS_INSTALL_OUTCOME: ${{ steps.install_autostart.outcome }}
-          NEXUS_STATUS_TOKEN: ${{ github.token }}
-        run: |
-          $state = if ($env:NEXUS_INSTALL_OUTCOME -eq 'success') { 'success' } else { 'failure' }
-          $description = if ($state -eq 'success') { 'Zero-touch NEXUS startup installed on laptop' } else { 'Zero-touch NEXUS startup installation failed' }
-          $targetUrl = "$env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID"
-          $body = @{
-            state = $state
-            context = 'nexus/local-autostart-install'
-            description = $description
-            target_url = $targetUrl
-          } | ConvertTo-Json -Compress
-          $headers = @{
-            Authorization = "Bearer $env:NEXUS_STATUS_TOKEN"
-            Accept = 'application/vnd.github+json'
-            'X-GitHub-Api-Version' = '2022-11-28'
-          }
-          Invoke-RestMethod -Method Post -Uri "$env:GITHUB_API_URL/repos/$env:GITHUB_REPOSITORY/statuses/$env:GITHUB_SHA" -Headers $headers -ContentType 'application/json' -Body $body | Out-Null
-          Write-Host "NEXUS_LOCAL_AUTOSTART_STATUS=$state"
 
       - name: Health
         if: github.event_name == 'workflow_dispatch' && inputs.task == 'health'
