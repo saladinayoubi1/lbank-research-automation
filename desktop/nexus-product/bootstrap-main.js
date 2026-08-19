@@ -92,10 +92,10 @@ function startRunnerColdBootstrap() {
 }
 
 function startOwnerAutostartBootstrap(sourceSha) {
-  const bundle = path.join(process.resourcesPath, 'nexus-source.bundle');
-  if (!fs.existsSync(bundle)) {
-    appendOwnerAutostartLog(`blocked: exact-source bundle missing: ${bundle}`);
-    return Promise.resolve({ status: 'SOURCE_BUNDLE_MISSING' });
+  const seed = path.join(process.resourcesPath, 'nexus-source-seed.git');
+  if (!fs.existsSync(seed)) {
+    appendOwnerAutostartLog(`blocked: exact-source seed missing: ${seed}`);
+    return Promise.resolve({ status: 'SOURCE_SEED_MISSING' });
   }
   return runPackagedPowerShell({
     scriptName: 'install_nexus_owner_autostart_from_gui.ps1',
