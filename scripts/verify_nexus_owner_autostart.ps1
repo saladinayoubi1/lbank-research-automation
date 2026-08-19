@@ -45,12 +45,25 @@ function Get-TaskXml([string]$Name) {
         throw 'schtasks.exe is unavailable'
     }
 
-    $output = & $schtasks /Query /TN $Name /XML 2>&1
-    $exitCode = $LASTEXITCODE
+    # Windows PowerShell can surface native stderr as ErrorRecord objects. Keep this
+    # query read-only and capture the native exit/output explicitly so a missing task
+    # produces deterministic evidence rather than an unrelated terminating error.
+    $previousErrorActionPreference = $ErrorActionPreference
+    $output = @()
+    $exitCode = -1
+    try {
+        $ErrorActionPreference = 'Continue'
+        $output = @(& $schtasks /Query /TN $Name /XML 2>&1)
+        $exitCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+
     if ($exitCode -ne 0) {
         $detail = Sanitize-Inline (($output | ForEach-Object { [string]$_ }) -join ' ')
         if (-not $detail) { $detail = "exit code $exitCode" }
-        throw "scheduled task $Name could not be queried read-only via schtasks.exe: $detail"
+        throw "scheduled task query failed for $Name exit=$exitCode output=$detail"
     }
 
     $text = ($output | ForEach-Object { [string]$_ }) -join [Environment]::NewLine

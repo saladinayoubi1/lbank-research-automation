@@ -75,8 +75,8 @@ jobs:
         run: >-
           powershell.exe -NoProfile -NonInteractive -Command
           "$root=[IO.Path]::GetFullPath($env:GITHUB_WORKSPACE).TrimEnd('\\');
-          $home=[IO.Path]::GetFullPath($env:USERPROFILE).TrimEnd('\\');
-          if ($root -eq $home -or $root.StartsWith($home + '\\',[StringComparison]::OrdinalIgnoreCase))
+          $userHome=[IO.Path]::GetFullPath($env:USERPROFILE).TrimEnd('\\');
+          if ($root -eq $userHome -or $root.StartsWith($userHome + '\\',[StringComparison]::OrdinalIgnoreCase))
           { Write-Error 'Owner-proof workspace must not be the user profile or a descendant of it'; exit 1 };
           Write-Host 'owner_proof_privacy_guard=ok'"
 
