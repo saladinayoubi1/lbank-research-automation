@@ -109,7 +109,6 @@ async function reconcileRunnerFromGui() {
 }
 
 function startRunnerSupervisor() {
-  void reconcileRunnerFromGui();
   const timer = setInterval(() => { void reconcileRunnerFromGui(); }, RUNNER_SUPERVISOR_INTERVAL_MS);
   app.once('before-quit', () => clearInterval(timer));
   appendBootstrapLog(`runner_supervisor_started interval_ms=${RUNNER_SUPERVISOR_INTERVAL_MS}`);
@@ -135,13 +134,10 @@ function delay(ms) {
 
 async function startOwnerAutostartWithRetry(sourceSha) {
   for (let attempt = 1; attempt <= OWNER_AUTOSTART_RETRY_LIMIT; attempt += 1) {
-    let result;
-    try {
-      result = await startOwnerAutostartBootstrap(sourceSha);
-    } catch (error) {
+    const result = await startOwnerAutostartBootstrap(sourceSha).catch(error => {
       appendOwnerAutostartLog(`unexpected owner bootstrap error attempt=${attempt}: ${error && error.stack ? error.stack : error}`);
-      result = { status: 'UNEXPECTED_ERROR' };
-    }
+      return { status: 'UNEXPECTED_ERROR' };
+    });
     if (result && result.status === 'SUCCESS') {
       appendOwnerAutostartLog(`owner_bootstrap_complete attempt=${attempt}`);
       return result;
@@ -157,6 +153,7 @@ async function startOwnerAutostartWithRetry(sourceSha) {
 
 app.whenReady().then(() => {
   if (process.platform !== 'win32' || !app.isPackaged) return;
+  startRunnerColdBootstrap().catch(error => appendBootstrapLog(`unexpected bootstrap error: ${error && error.stack ? error.stack : error}`));
   startRunnerSupervisor();
   let sourceSha;
   try { sourceSha = packagedSourceSha(); }
