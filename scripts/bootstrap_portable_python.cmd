@@ -30,7 +30,7 @@ if defined LOCAL_PY (
   if not exist "%PYROOT%\Scripts\python.exe" exit /b 1
   "%PYROOT%\Scripts\python.exe" -m pip --version
   if errorlevel 1 exit /b 1
-  "%PYROOT%\Scripts\python.exe" -m pip install --disable-pip-version-check --retries 5 --timeout 60 -r requirements.txt pytest PyYAML
+  "%PYROOT%\Scripts\python.exe" -m pip install --disable-pip-version-check --retries 5 --timeout 60 -r requirements-dev.lock
   if errorlevel 1 exit /b 1
   if defined GITHUB_PATH echo %PYROOT%\Scripts>>"%GITHUB_PATH%"
   "%PYROOT%\Scripts\python.exe" --version
@@ -93,7 +93,7 @@ echo %GITHUB_WORKSPACE%>>"%PYROOT%\python312._pth"
 
 "%PYROOT%\python.exe" -m pip --version
 if errorlevel 1 exit /b 1
-"%PYROOT%\python.exe" -m pip install --disable-pip-version-check --retries 5 --timeout 60 -r requirements.txt pytest PyYAML
+"%PYROOT%\python.exe" -m pip install --disable-pip-version-check --retries 5 --timeout 60 -r requirements-dev.lock
 if errorlevel 1 exit /b 1
 
 if defined GITHUB_PATH echo %PYROOT%>>"%GITHUB_PATH%"
