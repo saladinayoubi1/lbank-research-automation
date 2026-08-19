@@ -31,7 +31,7 @@
     ".github/workflows/disaster-recovery-readiness.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"fail-closed-cross-platform":{"policy_version":1}}},
     ".github/workflows/export_partitioned.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"partition":{"policy_version":1}}},
     ".github/workflows/export_snapshot.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"export":{"policy_version":1}}},
-    ".github/workflows/fast-agent-coordinator.yml": {"policy_version":1,"workflow_permissions":{"actions":"write","contents":"read"},"write_justification":"Required to retry newly failed GitHub Actions workflow runs; repository contents remain read-only.","jobs":{"inspect-and-recover":{"policy_version":1}}},
+    ".github/workflows/fast-agent-coordinator.yml": {"policy_version":1,"workflow_permissions":{"actions":"write","contents":"read"},"write_justification":"Required to retry newly failed GitHub Actions runs; repository contents remain read-only.","jobs":{"inspect-and-recover":{"policy_version":1}}},
     ".github/workflows/gap_probe.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"probe":{"policy_version":1}}},
     ".github/workflows/lbank_benchmark_v1.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"benchmark":{"policy_version":1}}},
     ".github/workflows/nexus-autopilot-policy.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"validate-policy":{"policy_version":1}}},
