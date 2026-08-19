@@ -203,6 +203,23 @@ function Wait-ForListener([pscustomobject]$Runner, [int]$Seconds = 20) {
     return $null
 }
 
+function Start-InteractiveRunnerFallback([pscustomobject]$Runner) {
+    $existing = Get-Listener $Runner
+    if ($existing) { return [int]$existing.ProcessId }
+
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName = $env:ComSpec
+    $psi.UseShellExecute = $false
+    $psi.CreateNoWindow = $true
+    $psi.WorkingDirectory = $Runner.Root
+    $psi.Arguments = '/d /s /c ""' + $Runner.RunCmd + '""'
+    $proc = New-Object System.Diagnostics.Process
+    $proc.StartInfo = $psi
+    [void]$proc.Start()
+    Write-Log "service_stopped_user_fallback_start_requested root=$($Runner.Root) bootstrap_pid=$($proc.Id)"
+    return [int]$proc.Id
+}
+
 function Install-InteractiveRunnerTask([pscustomobject]$Runner) {
     $user = "$env:USERDOMAIN\$env:USERNAME"
     $quotedRun = '"' + $Runner.RunCmd.Replace('"','') + '"'
@@ -250,21 +267,48 @@ try {
 
     $service = Get-RunnerService $runner
     if ($service) {
+        $serviceStartError = $null
         if ([string]$service.State -ne 'Running') {
             try { Start-Service -Name ([string]$service.Name) -ErrorAction Stop }
-            catch {
-                Write-Evidence 'SERVICE_STOPPED_REQUIRES_ELEVATION' @{
+            catch { $serviceStartError = $_.Exception.Message }
+        }
+
+        if ($serviceStartError) {
+            $listener = Get-Listener $runner
+            $fallbackPid = $null
+            if (-not $listener) {
+                $fallbackPid = Start-InteractiveRunnerFallback $runner
+                $listener = Wait-ForListener $runner
+            }
+            if (-not $listener) {
+                Write-Evidence 'SERVICE_STOPPED_USER_FALLBACK_LISTENER_NOT_OBSERVED' @{
                     configured_runner_count = 1
                     runner_root = $runner.Root
                     agent_name = $runner.AgentName
                     service_name = [string]$service.Name
                     service_state = [string]$service.State
                     scheduled_task_changed = $false
-                    error = $_.Exception.Message
+                    fallback_transport = 'current_user_hidden_process'
+                    fallback_bootstrap_pid = $fallbackPid
+                    service_start_error = $serviceStartError
                 }
                 exit 12
             }
+            Write-Evidence 'SERVICE_STOPPED_USER_FALLBACK_RUNNING' @{
+                configured_runner_count = 1
+                runner_root = $runner.Root
+                agent_name = $runner.AgentName
+                service_name = [string]$service.Name
+                service_state = [string]$service.State
+                listener_pid = [int]$listener.ProcessId
+                scheduled_task_changed = $false
+                fallback_transport = 'current_user_hidden_process'
+                fallback_bootstrap_pid = $fallbackPid
+                service_start_error = $serviceStartError
+            }
+            exit 0
         }
+
         $listener = Wait-ForListener $runner
         if (-not $listener) {
             Write-Evidence 'SERVICE_STARTED_LISTENER_NOT_OBSERVED' @{
