@@ -8,7 +8,7 @@ on:
       - NEXUS Build Verification
       - NEXUS Local Runner
       - Build NEXUS Desktop Windows
-    types: [completed]
+    types: [requested, in_progress, completed]
   push:
     branches:
       - main
@@ -29,11 +29,17 @@ jobs:
     if: >-
       github.event_name == 'push' ||
       (github.event_name == 'workflow_run' && (
-        github.event.workflow_run.name == 'Test' ||
-        github.event.workflow_run.name == 'NEXUS Cloud Fallback' ||
-        github.event.workflow_run.name == 'NEXUS Build Verification' ||
-        github.event.workflow_run.name == 'NEXUS Local Runner' ||
-        github.event.workflow_run.name == 'Build NEXUS Desktop Windows'
+        (github.event.action == 'completed' && (
+          github.event.workflow_run.name == 'Test' ||
+          github.event.workflow_run.name == 'NEXUS Cloud Fallback' ||
+          github.event.workflow_run.name == 'NEXUS Build Verification' ||
+          github.event.workflow_run.name == 'NEXUS Local Runner' ||
+          github.event.workflow_run.name == 'Build NEXUS Desktop Windows'
+        )) ||
+        (github.event.workflow_run.name == 'NEXUS Local Runner' && (
+          github.event.action == 'requested' ||
+          github.event.action == 'in_progress'
+        ))
       ))
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -152,7 +158,7 @@ jobs:
             };
 
             const upsertOwnerProofEvidence = async ({ sha, state, lines }) => {
-              if (!validSha(sha) || !['SUCCESS', 'FAILURE'].includes(state)) {
+              if (!validSha(sha) || !['PENDING', 'SUCCESS', 'FAILURE'].includes(state)) {
                 core.setFailed('Refused malformed owner autostart proof evidence.');
                 return false;
               }
@@ -167,7 +173,9 @@ jobs:
                 '',
                 state === 'SUCCESS'
                   ? '- Scope: this proves the self-hosted Windows Runner completed the read-only owner Task Scheduler verifier and emitted exactly one expected proof artifact. Artifact contents must still be independently inspected before claiming the owner tasks are valid; reboot/resume and offline Phase 7 remain separate proofs.'
-                  : '- Scope: fail-closed. Owner-user autostart validity is **not** claimed for this verifier SHA.',
+                  : state === 'PENDING'
+                    ? '- Scope: queue/dispatch evidence only. Owner-user autostart validity is **not** claimed until the self-hosted Runner completes and the exact proof artifact is independently observed.'
+                    : '- Scope: fail-closed. Owner-user autostart validity is **not** claimed for this verifier SHA.',
                 '',
                 '- Safety boundary: verifier is read-only; Research/Backtest/Paper only; no task mutation, runner registration, live trading, credentials, withdrawals, production authority, signing, or billing.'
               ].join('\n');
@@ -224,6 +232,7 @@ jobs:
             }
 
             const run = context.payload.workflow_run;
+            const workflowRunAction = context.payload.action;
             const ciWorkflows = new Set([
               'Test',
               'NEXUS Cloud Fallback',
@@ -243,6 +252,63 @@ jobs:
             const validRunId = Number.isSafeInteger(run?.id) && run.id > 0;
             const validRunUrl = typeof run?.html_url === 'string' && /^https:\/\/github\.com\//.test(run.html_url);
             const validAttempt = Number.isInteger(run?.run_attempt) && run.run_attempt >= 1;
+            const earlyLocalRunnerAction = workflowRunAction === 'requested' || workflowRunAction === 'in_progress';
+
+            if (run?.name === installWorkflow && earlyLocalRunnerAction) {
+              if (
+                !validHeadSha ||
+                !validRunId ||
+                !validRunUrl ||
+                !validAttempt ||
+                run.event !== 'push' ||
+                run.head_branch !== defaultBranch
+              ) {
+                core.warning('Rejected malformed or non-main early NEXUS Local Runner metadata; no install/proof evidence write performed.');
+                return;
+              }
+              const expectedRunUrl = `https://github.com/${owner}/${repo}/actions/runs/${run.id}`;
+              if (run.html_url !== expectedRunUrl) {
+                core.warning('Rejected early NEXUS Local Runner event with non-canonical run URL.');
+                return;
+              }
+
+              let commit;
+              try {
+                commit = (await github.rest.repos.getCommit({ owner, repo, ref: run.head_sha })).data;
+              } catch (error) {
+                core.warning(`Could not bind early local runner event to exact commit (${error.message}); preserving fail-closed state.`);
+                return;
+              }
+              const commitMessage = commit?.commit?.message;
+              const installRequested = typeof commitMessage === 'string' && commitMessage.includes(installCommitMarker);
+              const ownerProofRequested = typeof commitMessage === 'string' && commitMessage.includes(ownerProofCommitMarker);
+              if (commit?.sha !== run.head_sha || (!installRequested && !ownerProofRequested)) {
+                core.info('Early local runner event is not bound to an install or owner-autostart proof main commit; no Phase 7 evidence write required.');
+                return;
+              }
+              if (installRequested && ownerProofRequested) {
+                core.warning('Refused ambiguous local runner commit containing both install and owner-proof markers.');
+                return;
+              }
+
+              const localRunnerState = workflowRunAction === 'requested' ? 'REQUESTED' : 'IN_PROGRESS';
+              const expectedArtifactName = ownerProofRequested
+                ? `nexus-owner-autostart-proof-${run.id}`
+                : `nexus-zero-touch-install-${run.id}`;
+              const lines = [
+                `- local runner state: \`${localRunnerState}\``,
+                `- workflow event action: \`${workflowRunAction}\``,
+                `- workflow run: ${run.html_url}`,
+                `- workflow run id: \`${run.id}\``,
+                `- expected artifact: \`${expectedArtifactName}\``
+              ];
+              if (ownerProofRequested) {
+                await upsertOwnerProofEvidence({ sha: run.head_sha, state: 'PENDING', lines });
+              } else {
+                await upsertInstallEvidence({ sha: run.head_sha, state: 'PENDING', lines });
+              }
+              return;
+            }
 
             if (run?.name === packageWorkflow) {
               if (

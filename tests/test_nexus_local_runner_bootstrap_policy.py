@@ -81,3 +81,28 @@ def test_bootstrap_prefers_verified_local_python_with_isolated_venv_before_netwo
     local_index = text.index('bootstrap_source=local_python')
     python_download_index = text.index('https://www.python.org/ftp/python/')
     assert local_index < python_download_index
+
+
+def test_owner_autostart_proof_fast_path_skips_heavy_python_and_node_bootstrap():
+    workflow = WORKFLOW.read_text(encoding='utf-8')
+    skip_expr = "github.event_name != 'push' || !contains(github.event.head_commit.message, '[verify-owner-autostart]')"
+    assert workflow.count(skip_expr) == 3
+    verifier = workflow.index('- name: Verify owner-user autostart read-only')
+    setup_node = workflow.index('- uses: actions/setup-node@v4')
+    bootstrap = workflow.index('- name: Bootstrap portable Python')
+    assert verifier < setup_node < bootstrap
+    assert '- name: Owner-proof privacy guard' in workflow
+    assert 'owner_proof_privacy_guard=ok' in workflow
+    assert 'USERPROFILE' in workflow
+    assert 'GITHUB_WORKSPACE' in workflow
+    assert 'Owner-proof workspace must not be the user profile or a descendant of it' in workflow
+
+
+def test_non_owner_proof_paths_preserve_python_bootstrap_and_privacy_guard():
+    workflow = WORKFLOW.read_text(encoding='utf-8')
+    assert '- name: Bootstrap portable Python' in workflow
+    assert 'call scripts\\bootstrap_portable_python.cmd' in workflow
+    assert '- name: Privacy guard' in workflow
+    assert "python -c \"import pathlib; root=pathlib.Path.cwd().resolve(); home=pathlib.Path.home().resolve();" in workflow
+    assert '- name: Install zero-touch NEXUS autostart' in workflow
+    assert '- name: Persistent autonomous worker' in workflow
