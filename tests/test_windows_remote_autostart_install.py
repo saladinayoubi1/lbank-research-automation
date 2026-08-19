@@ -123,7 +123,11 @@ def test_local_runner_install_trigger_is_main_push_marker_only_and_evidence_back
     assert "if: github.ref == 'refs/heads/main'" in text
     assert "scripts/install_nexus_autostart_from_runner.ps1" in text
     marker = "github.event_name == 'push' && contains(github.event.head_commit.message, '[install-autostart]')"
-    assert text.count(marker) == 2
+    # Two occurrences gate the installer and its evidence upload. The third only selects
+    # the non-cancelling `install` concurrency lane and does not execute a mutation.
+    assert text.count(marker) == 3
+    assert f"{marker} && 'install'" in text
+    assert text.count("if: " + marker) == 2
     assert "powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass" in text
     assert "-SourceSha \"%GITHUB_SHA%\"" in text
     assert "nexus-zero-touch-install-${{ github.run_id }}" in text
