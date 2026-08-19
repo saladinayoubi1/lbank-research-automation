@@ -61,7 +61,11 @@ def test_local_runner_completion_is_bound_to_main_push_exact_commit_and_canonica
     assert 'run.html_url !== expectedRunUrl' in text
     assert 'github.rest.repos.getCommit' in text
     assert 'commit?.sha !== run.head_sha' in text
-    assert '!commitMessage.includes(installCommitMarker)' in text
+    assert "const installRequested = typeof commitMessage === 'string' && commitMessage.includes(installCommitMarker);" in text
+    assert "const ownerProofRequested = typeof commitMessage === 'string' && commitMessage.includes(ownerProofCommitMarker);" in text
+    assert '(!installRequested && !ownerProofRequested)' in text
+    assert 'installRequested && ownerProofRequested' in text
+    assert 'Refused ambiguous local runner commit containing both install and owner-proof markers.' in text
 
 
 def test_zero_touch_success_requires_exact_nonexpired_nonempty_artifact_from_same_run():
