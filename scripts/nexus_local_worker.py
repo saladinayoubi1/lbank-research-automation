@@ -3,6 +3,10 @@
 Mutable runtime state is kept outside the repository checkout when NEXUS_STATE_DIR is
 set. The tracked .nexus queue is only an initial seed, so actions/checkout clean/reset
 cannot silently rewind completed/running tasks between scheduled jobs.
+
+The worker lease bounds scheduling between tasks; it never kills an allow-listed task
+mid-command merely because the lease clock elapsed. NEXUS_WORKER_MAX_TASKS_PER_LEASE
+can be used to yield the physical runner after a bounded number of task attempts.
 """
 from __future__ import annotations
 
@@ -22,7 +26,7 @@ HEARTBEAT = STATE_DIR / 'worker-heartbeat.json'
 COMMANDS = {
     'health': [sys.executable, '-m', 'pytest', '-q', 'tests/test_nexus_architecture_validator.py', 'tests/test_web_dashboard.py'],
     'tests': [sys.executable, '-m', 'pytest', '-q'],
-    'readiness': [sys.executable, 'data_readiness.py', '--status-path', r'data\market\_backfill_status.csv'],
+    'readiness': [sys.executable, 'data_readiness.py', '--status-path', r'data\\market\\_backfill_status.csv'],
     'zotero-status': [sys.executable, '-c', "import urllib.request; urllib.request.urlopen('http://127.0.0.1:23119/connector/ping',timeout=5); print('zotero=ok')"],
     'ai-council-health': ['node', 'scripts/nexus_ai_council.js'],
     'brain-health': ['node', 'scripts/nexus_brain_core.js'],
@@ -113,15 +117,56 @@ def run_once() -> bool:
     return True
 
 
+def _read_nonnegative_int(name: str, default: int) -> int:
+    raw = os.environ.get(name, str(default))
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        raise RuntimeError(f'{name} must be an integer') from exc
+    if value < 0:
+        raise RuntimeError(f'{name} must be non-negative')
+    return value
+
+
+def _env_enabled(name: str, default: bool = False) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {'1', 'true', 'yes', 'on'}
+
+
 def main() -> None:
-    max_seconds = int(os.environ.get('NEXUS_WORKER_MAX_SECONDS', '3300'))
-    idle_sleep = int(os.environ.get('NEXUS_WORKER_IDLE_SLEEP', '60'))
+    max_seconds = _read_nonnegative_int('NEXUS_WORKER_MAX_SECONDS', 3300)
+    idle_sleep = _read_nonnegative_int('NEXUS_WORKER_IDLE_SLEEP', 60)
+    max_tasks = _read_nonnegative_int('NEXUS_WORKER_MAX_TASKS_PER_LEASE', 0)
+    exit_on_idle = _env_enabled('NEXUS_WORKER_EXIT_ON_IDLE', False)
     started = time.monotonic()
+    tasks_run = 0
+    exit_reason = 'lease_expired'
+
     while time.monotonic() - started < max_seconds:
+        if max_tasks and tasks_run >= max_tasks:
+            exit_reason = 'task_quota'
+            break
         did_work = run_once()
-        if not did_work:
-            time.sleep(idle_sleep)
-    write_heartbeat(state='cycle_complete')
+        if did_work:
+            tasks_run += 1
+            continue
+        if exit_on_idle:
+            exit_reason = 'idle'
+            break
+        remaining = max_seconds - (time.monotonic() - started)
+        if remaining <= 0:
+            break
+        time.sleep(min(idle_sleep, remaining))
+
+    write_heartbeat(
+        state='cycle_complete',
+        exit_reason=exit_reason,
+        tasks_run=tasks_run,
+        lease_seconds=max_seconds,
+        max_tasks_per_lease=max_tasks,
+    )
 
 
 if __name__ == '__main__':
