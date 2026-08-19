@@ -40,6 +40,7 @@ function Write-Evidence([string]$Status, [hashtable]$Extra = @{}) {
         managed_repo_root = $ManagedRepoRoot
         interactive_user = "$env:USERDOMAIN\$env:USERNAME"
         seed_verified = $false
+        managed_checkout_updated_from_package_seed = $false
         network_credentials_added = $false
         runner_registration_modified = $false
         machine_execution_policy_modified = $false
@@ -136,19 +137,52 @@ function Validate-ExistingManagedRepo {
     }
     Assert-CanonicalRemote $ManagedRepoRoot
     Assert-TrackedClean $ManagedRepoRoot
-    $head = Invoke-Git $ManagedRepoRoot @('rev-parse','HEAD')
-    if ($head.ToLowerInvariant() -ne $SourceSha.ToLowerInvariant()) {
-        throw "managed checkout is bound to a different source SHA ($head); automatic source replacement is refused"
+    return (Invoke-Git $ManagedRepoRoot @('rev-parse','HEAD')).ToLowerInvariant()
+}
+
+function Reconcile-ExistingManagedRepo([string]$CurrentHead) {
+    $target = $SourceSha.ToLowerInvariant()
+    if ($CurrentHead.ToLowerInvariant() -eq $target) { return $false }
+
+    # The package seed is the only source used for reconciliation. No origin/network
+    # fetch is performed and no credential is added. --update-shallow allows the exact
+    # packaged shallow commit to be imported into an older managed checkout.
+    Write-Log "reconcile managed checkout prior_sha=$CurrentHead target_sha=$target source=packaged_seed"
+    [void](Invoke-Git $ManagedRepoRoot @('fetch','--no-tags','--update-shallow',$SeedRepoPath,$PackageRef))
+    $fetched = Invoke-Git $ManagedRepoRoot @('rev-parse','FETCH_HEAD')
+    if ($fetched.ToLowerInvariant() -ne $target) {
+        throw "packaged seed fetch mismatch: expected $target got $fetched"
     }
+
+    # checkout -B updates only this clean managed checkout. Git itself refuses an
+    # untracked-file collision; we do not delete, clean, or hard-reset owner data.
+    [void](Invoke-Git $ManagedRepoRoot @('checkout','-B','main','FETCH_HEAD'))
+    Assert-CanonicalRemote $ManagedRepoRoot
+    Assert-TrackedClean $ManagedRepoRoot
+    $head = Invoke-Git $ManagedRepoRoot @('rev-parse','HEAD')
+    if ($head.ToLowerInvariant() -ne $target) {
+        throw "managed checkout reconciliation failed: expected $target got $head"
+    }
+    return $true
 }
 
 function Prepare-ManagedRepo {
     if (-not (Test-Path -LiteralPath $ManagedRepoRoot -PathType Container)) {
         Initialize-ManagedRepo
-        return $true
+        return [ordered]@{
+            created = $true
+            updated_from_package_seed = $false
+            previous_head = $null
+        }
     }
-    Validate-ExistingManagedRepo
-    return $false
+
+    $previousHead = Validate-ExistingManagedRepo
+    $updated = Reconcile-ExistingManagedRepo $previousHead
+    return [ordered]@{
+        created = $false
+        updated_from_package_seed = [bool]$updated
+        previous_head = $previousHead
+    }
 }
 
 function Get-PowerShellExe {
@@ -183,7 +217,7 @@ try {
     Ensure-StateRoot
     $identity = Assert-InteractiveOwner
     $seedSha = Assert-SeedSource
-    $managedCreated = Prepare-ManagedRepo
+    $managed = Prepare-ManagedRepo
     $head = Invoke-Git $ManagedRepoRoot @('rev-parse','HEAD')
     if ($head.ToLowerInvariant() -ne $SourceSha.ToLowerInvariant()) {
         throw "managed checkout exact-source verification failed: $head"
@@ -201,7 +235,9 @@ try {
         seed_verified = $true
         seed_sha = $seedSha
         windows_identity = $identity
-        managed_checkout_created = [bool]$managedCreated
+        managed_checkout_created = [bool]$managed.created
+        managed_checkout_updated_from_package_seed = [bool]$managed.updated_from_package_seed
+        managed_previous_head = $managed.previous_head
         managed_head = $head.ToLowerInvariant()
         core_task = $core
         runner_task = $runner
