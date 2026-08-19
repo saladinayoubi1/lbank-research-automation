@@ -1,0 +1,9 @@
+NEXUS owner bootstrap native-command contract
+
+- Packaged Windows helper runs under Windows PowerShell 5.1.
+- Native git/PowerShell child commands are judged by process exit code, not by stderr text.
+- Zero-exit stderr remains diagnostic output and must not become a terminating bootstrap failure.
+- Non-zero exit remains fail-closed and is recorded with the current bootstrap stage.
+- GUI Runner reconciliation is bounded to one in-flight attempt and supervised every 60 seconds while the packaged app is open.
+- Owner autostart bootstrap retries at most three times with a 15-second delay.
+- No credential, runner registration, elevation, machine ExecutionPolicy, Gate 4, or Live/L4 authority changes are permitted.
