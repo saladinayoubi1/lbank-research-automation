@@ -8,7 +8,7 @@
   "private": true,
   "scripts": {
     "start": "electron .",
-    "dist:win": "node stage-package-resources.js && electron-builder --win nsis portable"
+    "dist:win": "node -e \"const fs=require('fs');fs.mkdirSync('sidecar',{recursive:true});fs.copyFileSync('../../scripts/bootstrap_nexus_runner_from_gui.ps1','sidecar/bootstrap_nexus_runner_from_gui.ps1')\" && node stage-package-resources.js && electron-builder --win nsis portable"
   },
   "devDependencies": {
     "electron": "34.3.3",
