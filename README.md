@@ -2,6 +2,12 @@
 
 NEXUS is a fail-closed, evidence-driven research and paper-trading platform for public crypto/FX market data. The repository began as LBank data research infrastructure and now includes canonical multi-source data contracts, deterministic backtesting, durable mission/task state, independent qualification, bounded AI-provider assistance, and paper-only execution controls.
 
+## Current project map
+
+The canonical navigation index for the active project is [`docs/PROJECT_MAP.md`](docs/PROJECT_MAP.md). It maps the current Phase 7 lanes, source-of-truth order, major implementation surfaces, acceptance path, and incremental repository-cleanup rules.
+
+The active repository roadmap is Phase 7 (`#696`) with lanes `#697`–`#700`, inventory `#701`, proof mission `#702`, and final Mission Control acceptance `#692`. Historical phase documents remain evidence and context; they do not override the current acceptance issues or current executable behavior.
+
 ## Authority boundary
 
 NEXUS is **research / backtest / paper only**.
@@ -49,6 +55,21 @@ Mission/task contract
   → attempts / leases / idempotency
   → independent verification
   → deny-by-default worker policy
+```
+
+Phase 7 connects those existing foundations into one replayable system:
+
+```text
+Mission
+  → Supervisor / Resource Manager
+  → verified Workers
+  → canonical Data Intelligence / Regime
+  → Strategy Factory
+  → Decision
+  → deterministic Risk
+  → realistic Paper execution
+  → Performance / Drift
+  → Mission Control
 ```
 
 ## Canonical market data
@@ -132,6 +153,10 @@ Results must be interpreted with fees/slippage stress, OOS evidence, regime beha
 
 ## Project closure model
 
-Phase 5 formal Gates 0–9 are complete and preserved as a closed historical contract. They are not reopened with an invented Gate 10.
+Phases 3–6 are closed historical prerequisites and remain preserved as completed contracts unless new evidence explicitly proves a false-green dependency.
 
-Phase 6 is the bounded final engineering closure layer: real canonical research pipeline integration, optional-provider budget/recovery acceptance, deterministic resilience coverage, current documentation and conservative retirement of superseded backlog. Any future expansion of financial authority requires a new explicit owner-approved contract; it is not implied by completion of NEXUS research infrastructure.
+**Phase 7 is the active integration and acceptance phase.** Its job is to connect the existing control-plane, canonical-data, Strategy Factory, deterministic Risk, Paper, performance/drift, and Mission Control surfaces into one fixed-SHA replayable proof. CI green is necessary but not sufficient: Phase 7 closes only after the `#702` end-to-end proof mission satisfies the acceptance contract and the real product state required by `#692` is demonstrated.
+
+Infrastructure work, including Windows runner work, is not a separate project goal; it is prioritized only when it blocks an active Phase 7 lane or the end-to-end proof.
+
+Any future expansion of financial authority requires a new explicit owner-approved contract. Completion of Phase 7 does not imply live trading, credential authority, withdrawals, signing, billing, or L4 execution.
