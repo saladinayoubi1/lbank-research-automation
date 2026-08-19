@@ -3,6 +3,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PS = ROOT / "scripts" / "install_nexus_autostart_from_runner.ps1"
 WF = ROOT / ".github" / "workflows" / "nexus-local-runner.yml"
+POLICY = ROOT / "security" / "workflow-permissions-policy-v1.json"
 
 
 def read(path: Path) -> str:
@@ -123,8 +124,30 @@ def test_local_runner_install_trigger_is_main_push_marker_only_and_evidence_back
     assert "if: github.ref == 'refs/heads/main'" in text
     assert "scripts/install_nexus_autostart_from_runner.ps1" in text
     marker = "github.event_name == 'push' && contains(github.event.head_commit.message, '[install-autostart]')"
-    assert text.count(marker) == 2
+    assert text.count(marker) == 3
+    assert 'id: install_autostart' in text
     assert "-SourceSha \"$env:GITHUB_SHA\"" in text
     assert "nexus-zero-touch-install-${{ github.run_id }}" in text
     assert "build/autostart-install/evidence.json" in text
     assert "install-autostart" not in text.split("options:", 1)[1].split("push:", 1)[0]
+
+
+def test_local_runner_status_handshake_is_fixed_exact_sha_and_narrowly_authorized():
+    workflow = read(WF)
+    policy = read(POLICY)
+    for marker in (
+        "statuses: write",
+        "always() && github.event_name == 'push'",
+        "NEXUS_INSTALL_OUTCOME: ${{ steps.install_autostart.outcome }}",
+        "NEXUS_STATUS_TOKEN: ${{ github.token }}",
+        "nexus/local-autostart-install",
+        "$env:GITHUB_API_URL/repos/$env:GITHUB_REPOSITORY/statuses/$env:GITHUB_SHA",
+        "NEXUS_LOCAL_AUTOSTART_STATUS=$state",
+    ):
+        assert marker in workflow
+    assert workflow.count("statuses: write") == 1
+    assert "contents: write" not in workflow
+    assert "issues: write" not in workflow
+    assert "actions: write" not in workflow
+    assert '"contents":"read","statuses":"write"' in policy
+    assert "Required only to report the fixed nexus/local-autostart-install commit status" in policy
