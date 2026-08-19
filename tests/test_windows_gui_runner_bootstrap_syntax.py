@@ -35,9 +35,10 @@ def test_bootstrap_powershell_parses_on_windows() -> None:
     powershell = shutil.which("powershell.exe") or shutil.which("powershell")
     if not powershell:
         pytest.skip("Windows PowerShell is unavailable")
+    escaped_script = str(SCRIPT).replace("'", "''")
     command = (
         "$tokens=$null;$errors=$null;"
-        f"[System.Management.Automation.Language.Parser]::ParseFile('{str(SCRIPT).replace("'", "''")}',[ref]$tokens,[ref]$errors)|Out-Null;"
+        f"[System.Management.Automation.Language.Parser]::ParseFile('{escaped_script}',[ref]$tokens,[ref]$errors)|Out-Null;"
         "if($errors.Count -gt 0){$errors|ForEach-Object{Write-Error $_.Message};exit 1}"
     )
     completed = subprocess.run(
