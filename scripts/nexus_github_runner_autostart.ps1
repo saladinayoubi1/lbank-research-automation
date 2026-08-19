@@ -268,24 +268,47 @@ function Reconcile-Runner([string]$Root, [ref]$LastStartAttempt) {
 
     $service = Get-ServiceForRunner $runner
     if ($service) {
-        if ([string]$service.State -eq 'Running') {
-            Write-Log "runner_service_running service=$($service.Name) start_mode=$($service.StartMode) root=$($runner.Root)"
-            return 'SERVICE_RUNNING'
-        }
-
         $serviceStartError = $null
-        try {
-            Start-Service -Name ([string]$service.Name) -ErrorAction Stop
-            Start-Sleep -Seconds 2
-            $refreshed = Get-CimInstance Win32_Service -Filter "Name='$($service.Name.Replace("'","''"))'" -ErrorAction SilentlyContinue
-            if ($refreshed -and [string]$refreshed.State -eq 'Running') {
-                Write-Log "runner_service_started service=$($service.Name) start_mode=$($refreshed.StartMode) root=$($runner.Root)"
-                return 'SERVICE_RUNNING'
+        $serviceRunning = ([string]$service.State -eq 'Running')
+        if ($serviceRunning) {
+            Write-Log "runner_service_running_observed service=$($service.Name) start_mode=$($service.StartMode) root=$($runner.Root) listener_verified=false"
+        } else {
+            try {
+                Start-Service -Name ([string]$service.Name) -ErrorAction Stop
+                Start-Sleep -Seconds 2
+                $refreshed = Get-CimInstance Win32_Service -Filter "Name='$($service.Name.Replace("'","''"))'" -ErrorAction SilentlyContinue
+                if ($refreshed -and [string]$refreshed.State -eq 'Running') {
+                    $service = $refreshed
+                    $serviceRunning = $true
+                    Write-Log "runner_service_started service=$($service.Name) start_mode=$($service.StartMode) root=$($runner.Root) listener_verified=false"
+                }
+            }
+            catch {
+                $serviceStartError = $_.Exception.Message
+                Write-Log "runner_service_stopped_requires_admin service=$($service.Name) start_mode=$($service.StartMode) error=$serviceStartError"
             }
         }
-        catch {
-            $serviceStartError = $_.Exception.Message
-            Write-Log "runner_service_stopped_requires_admin service=$($service.Name) start_mode=$($service.StartMode) error=$serviceStartError"
+
+        if ($serviceRunning) {
+            $listener = Get-ListenerProcess $runner
+            if (-not $listener) {
+                Start-Sleep -Seconds 8
+                $listener = Get-ListenerProcess $runner
+            }
+            if ($listener) {
+                Write-Log "runner_service_running_listener_verified service=$($service.Name) start_mode=$($service.StartMode) root=$($runner.Root) pid=$($listener.Id) agent=$($runner.AgentName)"
+                return 'SERVICE_RUNNING'
+            }
+
+            $now = [DateTime]::UtcNow
+            if (($now - $LastStartAttempt.Value).TotalSeconds -lt 60) {
+                Write-Log "runner_service_running_listener_missing_cooldown service=$($service.Name) root=$($runner.Root)"
+                return 'SERVICE_RUNNING_LISTENER_MISSING_COOLDOWN'
+            }
+            $LastStartAttempt.Value = $now
+            Write-Log "runner_service_running_stale_user_fallback service=$($service.Name) start_mode=$($service.StartMode) root=$($runner.Root)"
+            if (Start-InteractiveRunner $runner) { return 'LISTENER_RUNNING_SERVICE_STALE_FALLBACK' }
+            return 'LISTENER_STARTING_SERVICE_STALE_FALLBACK'
         }
 
         $listener = Get-ListenerProcess $runner
@@ -384,12 +407,14 @@ function Show-Status {
         return
     }
     $service = Get-ServiceForRunner $runner
+    $listener = Get-ListenerProcess $runner
     if ($service) {
-        Write-Host "GitHub runner: SERVICE $($service.State) / StartMode=$($service.StartMode)"
+        $listenerState = if ($listener) { "RUNNING (PID $($listener.Id))" } else { 'NOT OBSERVED' }
+        Write-Host "GitHub runner: SERVICE $($service.State) / StartMode=$($service.StartMode) / LISTENER $listenerState"
+    } elseif ($listener) {
+        Write-Host "GitHub runner: LISTENER RUNNING (PID $($listener.Id))"
     } else {
-        $listener = Get-ListenerProcess $runner
-        if ($listener) { Write-Host "GitHub runner: LISTENER RUNNING (PID $($listener.Id))" }
-        else { Write-Host 'GitHub runner: LISTENER STOPPED' }
+        Write-Host 'GitHub runner: LISTENER STOPPED'
     }
     Write-Host "Runner root: $($runner.Root)"
     Write-Host "Runner name: $($runner.AgentName)"
