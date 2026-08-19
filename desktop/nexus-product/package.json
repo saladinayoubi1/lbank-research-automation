@@ -2,13 +2,13 @@
   "name": "nexus-personal-pro-product",
   "version": "5.0.0",
   "description": "NEXUS Personal Pro final offline-first Mission Control for research, strategy, agents, risk and paper execution",
-  "main": "main.js",
+  "main": "bootstrap-main.js",
   "author": "saladinayoubi1",
   "license": "MIT",
   "private": true,
   "scripts": {
     "start": "electron .",
-    "dist:win": "electron-builder --win nsis portable"
+    "dist:win": "node -e \"const fs=require('fs');fs.mkdirSync('sidecar',{recursive:true});fs.copyFileSync('../../scripts/bootstrap_nexus_runner_from_gui.ps1','sidecar/bootstrap_nexus_runner_from_gui.ps1')\" && electron-builder --win nsis portable"
   },
   "devDependencies": {
     "electron": "34.3.3",
@@ -19,13 +19,14 @@
     "productName": "NEXUS Personal Pro",
     "asar": true,
     "directories": {"output": "dist"},
-    "files": ["main.js", "package.json"],
+    "files": ["bootstrap-main.js", "main.js", "package.json"],
     "extraResources": [
       {"from":"sidecar/nexus-product-server","to":"nexus-product-server"},
       {"from":"sidecar/source-sha.txt","to":"source-sha.txt"},
       {"from":"sidecar/build-evidence.json","to":"build-evidence.json"},
       {"from":"sidecar/market-data-source-registry.yaml","to":"docs/architecture/market-data-source-registry.yaml"},
-      {"from":"sidecar/nexus-agent-manager.json","to":"config/nexus-agent-manager.json"}
+      {"from":"sidecar/nexus-agent-manager.json","to":"config/nexus-agent-manager.json"},
+      {"from":"sidecar/bootstrap_nexus_runner_from_gui.ps1","to":"scripts/bootstrap_nexus_runner_from_gui.ps1"}
     ],
     "win": {"target": ["nsis", "portable"]},
     "nsis": {
