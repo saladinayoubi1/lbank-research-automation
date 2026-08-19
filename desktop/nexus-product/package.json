@@ -28,7 +28,7 @@
       {"from":"sidecar/nexus-agent-manager.json","to":"config/nexus-agent-manager.json"},
       {"from":"sidecar/bootstrap_nexus_runner_from_gui.ps1","to":"scripts/bootstrap_nexus_runner_from_gui.ps1"},
       {"from":"sidecar/install_nexus_owner_autostart_from_gui.ps1","to":"scripts/install_nexus_owner_autostart_from_gui.ps1"},
-      {"from":"sidecar/nexus-source.bundle","to":"nexus-source.bundle"}
+      {"from":"sidecar/nexus-source-seed.git","to":"nexus-source-seed.git"}
     ],
     "win": {"target": ["nsis", "portable"]},
     "nsis": {
