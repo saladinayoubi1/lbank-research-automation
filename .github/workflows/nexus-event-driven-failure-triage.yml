@@ -49,9 +49,11 @@ jobs:
             const packageArtifactName = 'NEXUS_PERSONAL_PRO_FINAL_MISSION_CONTROL_WINDOWS_5_1_0';
             const installIssueNumber = 702;
             const installCommitMarker = '[install-autostart]';
+            const ownerProofCommitMarker = '[verify-owner-autostart]';
             const validSha = (value) => typeof value === 'string' && /^[0-9a-f]{40}$/.test(value);
             const installMarkerFor = (sha) => `<!-- nexus-zero-touch-install:${sha} -->`;
             const packageMarkerFor = (sha) => `<!-- nexus-windows-main-package:${sha} -->`;
+            const ownerProofMarkerFor = (sha) => `<!-- nexus-owner-autostart-proof:${sha} -->`;
 
             const upsertInstallEvidence = async ({ sha, state, lines }) => {
               if (!validSha(sha) || !['PENDING', 'SUCCESS', 'FAILURE'].includes(state)) {
@@ -145,6 +147,53 @@ jobs:
                   body
                 });
                 core.info(`Created Phase 7 Windows package evidence comment ${created.data.id} for ${sha}: ${state}`);
+              }
+              return true;
+            };
+
+            const upsertOwnerProofEvidence = async ({ sha, state, lines }) => {
+              if (!validSha(sha) || !['SUCCESS', 'FAILURE'].includes(state)) {
+                core.setFailed('Refused malformed owner autostart proof evidence.');
+                return false;
+              }
+              const marker = ownerProofMarkerFor(sha);
+              const body = [
+                marker,
+                '## NEXUS owner-user autostart read-only proof',
+                '',
+                `- state: **${state}**`,
+                `- verifier main SHA: \`${sha}\``,
+                ...lines,
+                '',
+                state === 'SUCCESS'
+                  ? '- Scope: this proves the self-hosted Windows Runner completed the read-only owner Task Scheduler verifier and emitted exactly one expected proof artifact. Artifact contents must still be independently inspected before claiming the owner tasks are valid; reboot/resume and offline Phase 7 remain separate proofs.'
+                  : '- Scope: fail-closed. Owner-user autostart validity is **not** claimed for this verifier SHA.',
+                '',
+                '- Safety boundary: verifier is read-only; Research/Backtest/Paper only; no task mutation, runner registration, live trading, credentials, withdrawals, production authority, signing, or billing.'
+              ].join('\n');
+
+              const comments = await github.paginate(github.rest.issues.listComments, {
+                owner,
+                repo,
+                issue_number: installIssueNumber,
+                per_page: 100
+              });
+              const matches = comments.filter(comment => typeof comment.body === 'string' && comment.body.includes(marker));
+              if (matches.length > 1) {
+                core.warning(`Multiple owner-autostart proof comments found for ${sha}; updating the oldest stable marker only.`);
+              }
+              if (matches.length > 0) {
+                const selected = [...matches].sort((a, b) => a.id - b.id)[0];
+                await github.rest.issues.updateComment({ owner, repo, comment_id: selected.id, body });
+                core.info(`Updated Phase 7 owner-autostart proof comment ${selected.id} for ${sha}: ${state}`);
+              } else {
+                const created = await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: installIssueNumber,
+                  body
+                });
+                core.info(`Created Phase 7 owner-autostart proof comment ${created.data.id} for ${sha}: ${state}`);
               }
               return true;
             };
@@ -288,7 +337,7 @@ jobs:
                 run.event !== 'push' ||
                 run.head_branch !== defaultBranch
               ) {
-                core.warning('Rejected malformed or non-main NEXUS Local Runner completion metadata; no install evidence write performed.');
+                core.warning('Rejected malformed or non-main NEXUS Local Runner completion metadata; no install/proof evidence write performed.');
                 return;
               }
               const expectedRunUrl = `https://github.com/${owner}/${repo}/actions/runs/${run.id}`;
@@ -305,8 +354,14 @@ jobs:
                 return;
               }
               const commitMessage = commit?.commit?.message;
-              if (commit?.sha !== run.head_sha || typeof commitMessage !== 'string' || !commitMessage.includes(installCommitMarker)) {
-                core.info('Local runner completion is not bound to an install-autostart main commit; no install evidence write required.');
+              const installRequested = typeof commitMessage === 'string' && commitMessage.includes(installCommitMarker);
+              const ownerProofRequested = typeof commitMessage === 'string' && commitMessage.includes(ownerProofCommitMarker);
+              if (commit?.sha !== run.head_sha || (!installRequested && !ownerProofRequested)) {
+                core.info('Local runner completion is not bound to an install or owner-autostart proof main commit; no Phase 7 evidence write required.');
+                return;
+              }
+              if (installRequested && ownerProofRequested) {
+                core.warning('Refused ambiguous local runner commit containing both install and owner-proof markers.');
                 return;
               }
 
@@ -319,15 +374,61 @@ jobs:
                   per_page: 100
                 });
               } catch (error) {
-                await upsertInstallEvidence({
+                if (ownerProofRequested) {
+                  await upsertOwnerProofEvidence({
+                    sha: run.head_sha,
+                    state: 'FAILURE',
+                    lines: [
+                      `- local runner conclusion: \`${run.conclusion}\``,
+                      `- workflow run: ${run.html_url}`,
+                      '- expected proof artifact: `UNVERIFIED`',
+                      `- verification error: \`${String(error.message || 'artifact lookup failed').replace(/[`\r\n\t]/g, ' ')}\``
+                    ]
+                  });
+                } else {
+                  await upsertInstallEvidence({
+                    sha: run.head_sha,
+                    state: 'FAILURE',
+                    lines: [
+                      `- local runner conclusion: \`${run.conclusion}\``,
+                      `- workflow run: ${run.html_url}`,
+                      '- expected install artifact: `UNVERIFIED`',
+                      `- verification error: \`${String(error.message || 'artifact lookup failed').replace(/[`\r\n\t]/g, ' ')}\``
+                    ]
+                  });
+                }
+                return;
+              }
+
+              if (ownerProofRequested) {
+                const expectedArtifactName = `nexus-owner-autostart-proof-${run.id}`;
+                const matches = artifacts.filter(artifact =>
+                  artifact?.name === expectedArtifactName &&
+                  artifact?.expired === false &&
+                  Number.isSafeInteger(artifact?.id) && artifact.id > 0 &&
+                  Number.isFinite(artifact?.size_in_bytes) && artifact.size_in_bytes > 0
+                );
+                const artifactVerified = matches.length === 1;
+                const success = run.conclusion === 'success' && artifactVerified;
+                const evidenceLines = [
+                  `- local runner conclusion: \`${run.conclusion}\``,
+                  `- workflow run: ${run.html_url}`,
+                  `- workflow run id: \`${run.id}\``,
+                  `- expected artifact: \`${expectedArtifactName}\``,
+                  `- verified matching artifacts: \`${matches.length}\``
+                ];
+                if (artifactVerified) {
+                  const artifact = matches[0];
+                  evidenceLines.push(`- artifact id: \`${artifact.id}\``);
+                  evidenceLines.push(`- artifact size bytes: \`${artifact.size_in_bytes}\``);
+                  if (typeof artifact.digest === 'string' && /^sha256:[0-9a-f]{64}$/.test(artifact.digest)) {
+                    evidenceLines.push(`- artifact digest: \`${artifact.digest}\``);
+                  }
+                }
+                await upsertOwnerProofEvidence({
                   sha: run.head_sha,
-                  state: 'FAILURE',
-                  lines: [
-                    `- local runner conclusion: \`${run.conclusion}\``,
-                    `- workflow run: ${run.html_url}`,
-                    '- expected install artifact: `UNVERIFIED`',
-                    `- verification error: \`${String(error.message || 'artifact lookup failed').replace(/[`\r\n\t]/g, ' ')}\``
-                  ]
+                  state: success ? 'SUCCESS' : 'FAILURE',
+                  lines: evidenceLines
                 });
                 return;
               }
