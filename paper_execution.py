@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation, ROUND_HALF_EVEN
-from typing import Any, Mapping, Sequence
+from typing import Any, Mapping
 
 from deterministic_risk import RiskDecision
 from paper_event_store import PortfolioState, build_event, replay
+from paper_exchange_simulator import PaperExchangeSimulationError, simulate_paper_order
 
 COMMAND_KEYS = {
     "operation", "symbol", "side", "quantity", "reference_price", "stop_price",
@@ -28,6 +29,9 @@ class PaperExecutionResult:
     fee: Decimal
     slippage_cost: Decimal
     realized_pnl: Decimal
+    execution_status: str = "FILLED"
+    filled_quantity: Decimal = Decimal("0")
+    remaining_quantity: Decimal = Decimal("0")
 
 
 def _decimal(value: Any, field: str, *, positive: bool = False) -> Decimal:
@@ -46,10 +50,6 @@ def _decimal(value: Any, field: str, *, positive: bool = False) -> Decimal:
 
 def _money(value: Decimal) -> Decimal:
     return value.quantize(MONEY_QUANTUM, rounding=ROUND_HALF_EVEN)
-
-
-def _price(value: Decimal) -> Decimal:
-    return value.quantize(PRICE_QUANTUM, rounding=ROUND_HALF_EVEN)
 
 
 def _position(state: PortfolioState, symbol: str) -> tuple[str, Decimal, Decimal] | None:
@@ -133,6 +133,7 @@ def execute_paper_command(
     provenance: dict[str, Any],
     correlation_id: str,
     causation_id: str,
+    execution_profile: Mapping[str, Any] | None = None,
 ) -> PaperExecutionResult:
     command = _validate_command(command)
     if state.aggregate_id is None or state.currency is None:
@@ -152,7 +153,7 @@ def execute_paper_command(
     operation = str(command["operation"])
     symbol = str(command["symbol"])
     side = str(command["side"])
-    quantity = command["quantity"]
+    requested_quantity = command["quantity"]
     reference = command["reference_price"]
     current = _position(state, symbol)
     if operation == "open" and current is not None:
@@ -161,28 +162,58 @@ def execute_paper_command(
         raise PaperExecutionError("paper operation requires an existing position")
     if current is not None and operation in {"close", "reduce"} and current[0] != side:
         raise PaperExecutionError("position side mismatch")
-    if operation == "reduce" and quantity >= current[1]:
+    if operation == "reduce" and requested_quantity >= current[1]:
         raise PaperExecutionError("reduce quantity must be smaller than position")
-    if operation == "close" and quantity != current[1]:
+    if operation == "close" and requested_quantity != current[1]:
         raise PaperExecutionError("close quantity must equal position")
     if operation == "reverse" and current[0] == side:
         raise PaperExecutionError("reverse must change position side")
-    if operation == "reverse" and quantity != current[1]:
+    if operation == "reverse" and requested_quantity != current[1]:
         raise PaperExecutionError("reverse quantity must equal position")
 
     is_buy = (operation in {"open", "reverse"} and side == "long") or (
         operation in {"close", "reduce"} and side == "short"
     )
-    slip_fraction = command["slippage_bps"] / Decimal("10000")
-    fill = _price(reference * (Decimal("1") + slip_fraction if is_buy else Decimal("1") - slip_fraction))
-    notional = _money(quantity * fill)
-    fee = _money(notional * command["fee_rate"])
-    slippage_cost = _money(abs(fill - reference) * quantity)
+    profile = execution_profile or {
+        "latency_ms": 0,
+        "per_fill_quantity": str(requested_quantity),
+        "max_fills": 1,
+    }
+    try:
+        simulation = simulate_paper_order(
+            order={
+                "order_id": correlation_id,
+                "symbol": symbol,
+                "side": "buy" if is_buy else "sell",
+                "quantity": str(requested_quantity),
+                "reference_price": str(reference),
+                "fee_rate": str(command["fee_rate"]),
+                "slippage_bps": str(command["slippage_bps"]),
+            },
+            profile=profile,
+        )
+    except PaperExchangeSimulationError as exc:
+        raise PaperExecutionError(f"paper exchange simulation rejected: {exc}") from exc
+
+    filled_quantity = simulation.filled_quantity
+    if filled_quantity <= 0 or not simulation.fills:
+        raise PaperExecutionError("paper exchange produced no executable fill")
+    if operation == "reverse" and simulation.remaining_quantity != 0:
+        raise PaperExecutionError("partial reverse is not supported; no state transition applied")
+
+    # v1 simulator uses one deterministic price across bounded fill slices. Keep this
+    # explicit so a future price-per-slice model cannot silently alter accounting.
+    fill_prices = {fill.price for fill in simulation.fills}
+    if len(fill_prices) != 1:
+        raise PaperExecutionError("mixed fill prices require explicit weighted accounting")
+    fill = simulation.fills[0].price
+    fee = simulation.total_fee
+    slippage_cost = simulation.total_slippage_cost
     realized = Decimal("0")
     if current is not None:
         current_side, _, entry = current
         realized = _money(
-            (fill - entry) * quantity if current_side == "long" else (entry - fill) * quantity
+            (fill - entry) * filled_quantity if current_side == "long" else (entry - fill) * filled_quantity
         )
 
     events: list[dict[str, Any]] = []
@@ -193,35 +224,45 @@ def execute_paper_command(
         "causation_id": causation_id,
     }
     _append(events, state, event_type="order_intent_recorded", payload={
-        "symbol": symbol, "side": side, "quantity": str(quantity), "order_type": f"paper_{operation}",
+        "symbol": symbol, "side": side, "quantity": str(requested_quantity), "order_type": f"paper_{operation}",
     }, **common)
     _append(events, state, event_type="risk_decision_recorded", payload={
         "decision": "allow", "reason_code": risk_decision.reason_code,
     }, **common)
-    _append(events, state, event_type="simulated_fill_recorded", payload={
-        "symbol": symbol, "side": side, "quantity": str(quantity), "price": str(fill),
-    }, **common)
+    for simulated_fill in simulation.fills:
+        _append(events, state, event_type="simulated_fill_recorded", payload={
+            "symbol": symbol,
+            "side": side,
+            "quantity": str(simulated_fill.quantity),
+            "price": str(simulated_fill.price),
+        }, **common)
 
     if operation == "open":
         transition_type = "position_opened"
         transition_payload = {
-            "symbol": symbol, "side": side, "quantity": str(quantity), "entry_price": str(fill),
+            "symbol": symbol, "side": side, "quantity": str(filled_quantity), "entry_price": str(fill),
         }
     elif operation == "reduce":
         transition_type = "position_reduced"
         transition_payload = {
-            "symbol": symbol, "quantity": str(quantity), "exit_price": str(fill),
+            "symbol": symbol, "quantity": str(filled_quantity), "exit_price": str(fill),
             "realized_pnl": str(realized),
         }
-    elif operation == "close":
+    elif operation == "close" and simulation.remaining_quantity == 0:
         transition_type = "position_closed"
         transition_payload = {
             "symbol": symbol, "exit_price": str(fill), "realized_pnl": str(realized),
         }
+    elif operation == "close":
+        transition_type = "position_reduced"
+        transition_payload = {
+            "symbol": symbol, "quantity": str(filled_quantity), "exit_price": str(fill),
+            "realized_pnl": str(realized),
+        }
     else:
         transition_type = "position_reversed"
         transition_payload = {
-            "symbol": symbol, "side": side, "quantity": str(quantity),
+            "symbol": symbol, "side": side, "quantity": str(filled_quantity),
             "entry_price": str(fill), "realized_pnl": str(realized),
         }
     _append(events, state, event_type=transition_type, payload=transition_payload, **common)
@@ -256,4 +297,7 @@ def execute_paper_command(
         fee=fee,
         slippage_cost=slippage_cost,
         realized_pnl=realized,
+        execution_status=simulation.status,
+        filled_quantity=filled_quantity,
+        remaining_quantity=simulation.remaining_quantity,
     )
