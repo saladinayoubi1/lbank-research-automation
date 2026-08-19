@@ -18,6 +18,7 @@ $ManagedRepoRoot = Join-Path $env:LOCALAPPDATA 'NEXUS\lbank-research-automation'
 $StateRoot = Join-Path $env:LOCALAPPDATA 'NEXUS\OwnerAutostartBootstrap'
 $EvidencePath = Join-Path $StateRoot 'evidence.json'
 $LogPath = Join-Path $StateRoot 'bootstrap.log'
+$CurrentStage = 'startup'
 
 function Ensure-StateRoot {
     New-Item -ItemType Directory -Force -Path $StateRoot | Out-Null
@@ -27,6 +28,11 @@ function Write-Log([string]$Message) {
     Ensure-StateRoot
     $stamp = [DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
     Add-Content -LiteralPath $LogPath -Encoding UTF8 -Value "[$stamp] $Message"
+}
+
+function Sanitize-Inline([string]$Value) {
+    if ($null -eq $Value) { return '' }
+    return ($Value -replace '[\r\n\t]+',' ' -replace '[\u0000-\u001f\u007f]','').Trim()
 }
 
 function Write-Evidence([string]$Status, [hashtable]$Extra = @{}) {
@@ -39,8 +45,10 @@ function Write-Evidence([string]$Status, [hashtable]$Extra = @{}) {
         repository = $ExpectedRepo
         managed_repo_root = $ManagedRepoRoot
         interactive_user = "$env:USERDOMAIN\$env:USERNAME"
+        stage = $CurrentStage
         seed_verified = $false
         managed_checkout_updated_from_package_seed = $false
+        native_commands_judged_by_exit_code = $true
         network_credentials_added = $false
         runner_registration_modified = $false
         machine_execution_policy_modified = $false
@@ -52,7 +60,39 @@ function Write-Evidence([string]$Status, [hashtable]$Extra = @{}) {
     $tmp = $EvidencePath + '.tmp'
     $payload | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $tmp -Encoding UTF8
     Move-Item -LiteralPath $tmp -Destination $EvidencePath -Force
-    Write-Log "status=$Status source_sha=$($SourceSha.ToLowerInvariant())"
+    Write-Log "status=$Status stage=$CurrentStage source_sha=$($SourceSha.ToLowerInvariant())"
+}
+
+function Invoke-NativeCapture([string]$Executable, [string]$WorkingDirectory, [string[]]$Arguments, [string]$Label) {
+    # Windows PowerShell 5.1 represents native stderr as ErrorRecord objects when
+    # redirected with 2>&1. Git writes normal progress/advice to stderr even on
+    # success, so temporarily use Continue and decide success only by exit code.
+    $previous = $ErrorActionPreference
+    $rows = @()
+    $exitCode = -1
+    try {
+        $ErrorActionPreference = 'Continue'
+        if ($WorkingDirectory) {
+            Push-Location -LiteralPath $WorkingDirectory
+            try {
+                $rows = @(& $Executable @Arguments 2>&1)
+                $exitCode = $LASTEXITCODE
+            }
+            finally { Pop-Location }
+        }
+        else {
+            $rows = @(& $Executable @Arguments 2>&1)
+            $exitCode = $LASTEXITCODE
+        }
+    }
+    finally {
+        $ErrorActionPreference = $previous
+    }
+    $text = (($rows | ForEach-Object { [string]$_ }) -join [Environment]::NewLine).Trim()
+    if ($exitCode -ne 0) {
+        throw "$Label failed exit=$exitCode output=$(Sanitize-Inline $text)"
+    }
+    return [pscustomobject]@{ ExitCode = $exitCode; Text = $text }
 }
 
 function Get-Git {
@@ -63,20 +103,14 @@ function Get-Git {
 
 function Invoke-Git([string]$Root, [string[]]$Args) {
     $git = Get-Git
-    $output = & $git -C $Root @Args 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        throw "git $($Args -join ' ') failed: $(($output | Out-String).Trim())"
-    }
-    return (($output | Out-String).Trim())
+    $result = Invoke-NativeCapture $git $Root $Args ("git " + ($Args -join ' '))
+    return $result.Text
 }
 
 function Invoke-GitGlobal([string[]]$Args) {
     $git = Get-Git
-    $output = & $git @Args 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        throw "git $($Args -join ' ') failed: $(($output | Out-String).Trim())"
-    }
-    return (($output | Out-String).Trim())
+    $result = Invoke-NativeCapture $git '' $Args ("git " + ($Args -join ' '))
+    return $result.Text
 }
 
 function Assert-InteractiveOwner {
@@ -195,8 +229,8 @@ function Invoke-Installer([string]$RelativeScript) {
     $path = Join-Path $ManagedRepoRoot $RelativeScript
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "required installer missing: $RelativeScript" }
     $ps = Get-PowerShellExe
-    & $ps -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $path -Mode Install -RepoRoot $ManagedRepoRoot
-    if ($LASTEXITCODE -ne 0) { throw "installer failed: $RelativeScript" }
+    $args = @('-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',$path,'-Mode','Install','-RepoRoot',$ManagedRepoRoot)
+    [void](Invoke-NativeCapture $ps $ManagedRepoRoot $args ("installer $RelativeScript"))
 }
 
 function Task-Snapshot([string]$Name) {
@@ -215,22 +249,32 @@ function Task-Snapshot([string]$Name) {
 
 try {
     Ensure-StateRoot
+    $CurrentStage = 'identity'
     $identity = Assert-InteractiveOwner
+
+    $CurrentStage = 'seed'
     $seedSha = Assert-SeedSource
+
+    $CurrentStage = 'managed_checkout'
     $managed = Prepare-ManagedRepo
     $head = Invoke-Git $ManagedRepoRoot @('rev-parse','HEAD')
     if ($head.ToLowerInvariant() -ne $SourceSha.ToLowerInvariant()) {
         throw "managed checkout exact-source verification failed: $head"
     }
 
+    $CurrentStage = 'core_autostart_install'
     Invoke-Installer 'scripts\nexus_windows_autostart.ps1'
+
+    $CurrentStage = 'runner_autostart_install'
     Invoke-Installer 'scripts\nexus_github_runner_autostart.ps1'
 
+    $CurrentStage = 'task_verify'
     $core = Task-Snapshot 'NEXUS-ZeroTouch-Autopilot'
     $runner = Task-Snapshot 'NEXUS-GitHub-Runner-Autostart'
     if (-not $core.exists -or -not $runner.exists) { throw 'required owner-user scheduled tasks were not created' }
     if ($core.run_level -ne 'Limited' -or $runner.run_level -ne 'Limited') { throw 'owner-user scheduled tasks are not limited-runlevel' }
 
+    $CurrentStage = 'complete'
     Write-Evidence 'SUCCESS' @{
         seed_verified = $true
         seed_sha = $seedSha
@@ -247,12 +291,13 @@ try {
     exit 0
 }
 catch {
+    $message = Sanitize-Inline $_.Exception.Message
     try {
         Write-Evidence 'BLOCKED' @{
-            error = $_.Exception.Message
+            error = $message
             installed = $false
         }
     } catch { }
-    try { Write-Log "blocked error=$($_.Exception.Message)" } catch { }
+    try { Write-Log "blocked stage=$CurrentStage error=$message" } catch { }
     exit 20
 }
