@@ -272,6 +272,8 @@ function Reconcile-Runner([string]$Root, [ref]$LastStartAttempt) {
             Write-Log "runner_service_running service=$($service.Name) start_mode=$($service.StartMode) root=$($runner.Root)"
             return 'SERVICE_RUNNING'
         }
+
+        $serviceStartError = $null
         try {
             Start-Service -Name ([string]$service.Name) -ErrorAction Stop
             Start-Sleep -Seconds 2
@@ -282,9 +284,24 @@ function Reconcile-Runner([string]$Root, [ref]$LastStartAttempt) {
             }
         }
         catch {
-            Write-Log "runner_service_stopped_requires_admin service=$($service.Name) start_mode=$($service.StartMode) error=$($_.Exception.Message)"
+            $serviceStartError = $_.Exception.Message
+            Write-Log "runner_service_stopped_requires_admin service=$($service.Name) start_mode=$($service.StartMode) error=$serviceStartError"
         }
-        return 'SERVICE_STOPPED'
+
+        $listener = Get-ListenerProcess $runner
+        if ($listener) {
+            Write-Log "runner_service_stopped_user_fallback_healthy pid=$($listener.Id) service=$($service.Name) root=$($runner.Root) agent=$($runner.AgentName)"
+            return 'LISTENER_RUNNING_USER_FALLBACK'
+        }
+
+        $now = [DateTime]::UtcNow
+        if (($now - $LastStartAttempt.Value).TotalSeconds -lt 60) {
+            return 'SERVICE_STOPPED_USER_FALLBACK_COOLDOWN'
+        }
+        $LastStartAttempt.Value = $now
+        Write-Log "runner_service_stopped_user_fallback service=$($service.Name) start_mode=$($service.StartMode) service_start_error=$serviceStartError root=$($runner.Root)"
+        if (Start-InteractiveRunner $runner) { return 'LISTENER_RUNNING_USER_FALLBACK' }
+        return 'LISTENER_STARTING_USER_FALLBACK'
     }
 
     $listener = Get-ListenerProcess $runner
