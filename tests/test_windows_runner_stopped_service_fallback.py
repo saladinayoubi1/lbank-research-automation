@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -10,6 +11,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 GUI_BOOTSTRAP = ROOT / "scripts" / "bootstrap_nexus_runner_from_gui.ps1"
 RUNNER_AUTOSTART = ROOT / "scripts" / "nexus_github_runner_autostart.ps1"
+GUI_ENTRY = ROOT / "desktop" / "nexus-product" / "bootstrap-main.js"
 
 
 def read(path: Path) -> str:
@@ -71,6 +73,17 @@ def test_gui_bootstrap_does_not_treat_running_service_as_healthy_without_listene
     assert "config.cmd" not in lowered
     assert "--token" not in lowered
     assert "-verb runas" not in lowered
+
+
+def test_stale_service_recovery_fits_packaged_bootstrap_timeout() -> None:
+    script = read(GUI_BOOTSTRAP)
+    entry = read(GUI_ENTRY)
+    default_wait = re.search(r"function Wait-ForListener\([^\n]+\[int\]\$Seconds = (\d+)\)", script)
+    grace_wait = re.search(r"Wait-ForListener \$runner (\d+) \} else", script)
+    timeout = re.search(r"const BOOTSTRAP_TIMEOUT_MS = (\d+);", entry)
+    assert default_wait and grace_wait and timeout
+    worst_case_ms = (int(default_wait.group(1)) + int(grace_wait.group(1))) * 1000
+    assert worst_case_ms + 5000 <= int(timeout.group(1))
 
 
 def test_persistent_runner_daemon_prefers_service_but_yields_to_owner_listener_when_unstartable() -> None:
