@@ -23,15 +23,15 @@ def test_owner_bootstrap_is_exact_source_interactive_and_fail_closed() -> None:
     script = read(SCRIPT)
     for marker in (
         "nexus.owner-autostart-bootstrap.v1",
-        "nexus-source.bundle",
+        "nexus-source-seed.git",
         "refs/heads/nexus-package-source",
-        "bundle verify $BundlePath",
-        "bundle list-heads $BundlePath",
+        "--git-dir",
+        "fsck",
         "[Environment]::UserInteractive",
         "NT AUTHORITY\\NETWORK SERVICE",
         "LOCALAPPDATA",
         "NEXUS\\lbank-research-automation",
-        "--ff-only",
+        "--no-local",
         "NEXUS-ZeroTouch-Autopilot",
         "NEXUS-GitHub-Runner-Autostart",
         "run_level",
@@ -55,15 +55,16 @@ def test_owner_bootstrap_is_exact_source_interactive_and_fail_closed() -> None:
         "set-executionpolicy",
         "remove-item -recurse",
         "get-childitem -recurse",
+        "reset --hard",
     ):
         assert forbidden not in lowered
 
 
-def test_owner_bootstrap_uses_only_packaged_bundle_for_source_sync() -> None:
+def test_owner_bootstrap_uses_only_packaged_seed_for_initial_source() -> None:
     script = read(SCRIPT)
-    assert "Invoke-GitGlobal @('clone','--no-checkout','--branch','nexus-package-source',$BundlePath,$ManagedRepoRoot)" in script
-    assert "Invoke-Git $ManagedRepoRoot @('fetch','--no-tags',$BundlePath,$PackageRef)" in script
+    assert "Invoke-GitGlobal @('clone','--no-local','--no-checkout','--branch','nexus-package-source',$SeedRepoPath,$ManagedRepoRoot)" in script
     assert "remote','set-url','origin',$ExpectedGitHubUrl" in script
+    assert "automatic source replacement is refused" in script
     assert "fetch','origin" not in script
     assert "pull" not in script.casefold()
 
@@ -72,7 +73,7 @@ def test_packaged_entrypoint_runs_owner_bootstrap_without_blocking_product_main(
     entry = read(ENTRY)
     for marker in (
         "install_nexus_owner_autostart_from_gui.ps1",
-        "nexus-source.bundle",
+        "nexus-source-seed.git",
         "OWNER_AUTOSTART_TIMEOUT_MS",
         "startOwnerAutostartBootstrap(sourceSha).catch",
         "nexus-owner-autostart-bootstrap.log",
@@ -82,30 +83,33 @@ def test_packaged_entrypoint_runs_owner_bootstrap_without_blocking_product_main(
     assert "shell: true" not in entry
 
 
-def test_package_config_carries_owner_helper_and_exact_source_bundle() -> None:
+def test_package_config_carries_owner_helper_and_exact_source_seed() -> None:
     package = json.loads(read(DESKTOP / "package.json"))
     resources = {(item.get("from"), item.get("to")) for item in package["build"]["extraResources"]}
     assert ("sidecar/install_nexus_owner_autostart_from_gui.ps1", "scripts/install_nexus_owner_autostart_from_gui.ps1") in resources
-    assert ("sidecar/nexus-source.bundle", "nexus-source.bundle") in resources
+    assert ("sidecar/nexus-source-seed.git", "nexus-source-seed.git") in resources
     dist = package["scripts"]["dist:win"]
     assert "stage-package-resources.js" in dist
     assert dist.index("stage-package-resources.js") < dist.index("electron-builder")
 
 
-def test_package_stager_builds_self_contained_source_bundle_and_cleans_temp_ref() -> None:
+def test_package_stager_builds_shallow_exact_source_seed_and_cleans_temp_ref() -> None:
     stager = read(STAGER)
     for marker in (
         "install_nexus_owner_autostart_from_gui.ps1",
-        "nexus-source.bundle",
+        "nexus-source-seed.git",
         "refs/heads/nexus-package-source",
-        "--is-shallow-repository",
-        "--unshallow",
-        "bundle', 'create",
-        "bundle', 'verify",
+        "--depth', '1'",
+        "--bare",
+        "--branch', 'nexus-package-source'",
+        "pathToFileURL",
         "update-ref', '-d'",
         "GITHUB_SHA",
+        "shallow",
     ):
         assert marker in stager
+    assert "--unshallow" not in stager
+    assert "bundle" not in stager.casefold()
     assert "--token" not in stager
     assert "config.cmd" not in stager.casefold()
 
