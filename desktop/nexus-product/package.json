@@ -1,6 +1,6 @@
 {
   "name": "nexus-personal-pro-product",
-  "version": "5.0.0",
+  "version": "5.1.0",
   "description": "NEXUS Personal Pro final offline-first Mission Control for research, strategy, agents, risk and paper execution",
   "main": "bootstrap-main.js",
   "author": "saladinayoubi1",
@@ -19,7 +19,7 @@
     "productName": "NEXUS Personal Pro",
     "asar": true,
     "directories": {"output": "dist"},
-    "files": ["bootstrap-main.js", "main.js", "package.json"],
+    "files": ["bootstrap-main.js", "main.js", "preload.js", "package.json"],
     "extraResources": [
       {"from":"sidecar/nexus-product-server","to":"nexus-product-server"},
       {"from":"sidecar/source-sha.txt","to":"source-sha.txt"},
