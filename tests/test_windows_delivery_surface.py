@@ -6,6 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 DESKTOP = ROOT / "desktop" / "nexus-product"
 UI = ROOT / "product_ui"
+GUI_RUNNER_BOOTSTRAP = ROOT / "scripts" / "bootstrap_nexus_runner_from_gui.ps1"
 
 
 def read(path: Path) -> str:
@@ -14,7 +15,8 @@ def read(path: Path) -> str:
 
 def test_final_windows_product_packages_real_mission_control_and_source_bindings() -> None:
     required = [
-        DESKTOP / "main.js", DESKTOP / "package.json",
+        DESKTOP / "bootstrap-main.js", DESKTOP / "main.js", DESKTOP / "package.json",
+        GUI_RUNNER_BOOTSTRAP,
         ROOT / "product_runtime.py", ROOT / "product_research_runtime.py",
         ROOT / "product_control_runtime.py", ROOT / "product_web_server.py",
         ROOT / "product_offline_runtime.py", ROOT / "product_offline_web_server.py",
@@ -29,13 +31,16 @@ def test_final_windows_product_packages_real_mission_control_and_source_bindings
 
     package = json.loads(read(DESKTOP / "package.json"))
     assert package["version"] == "5.0.0"
-    assert package["main"] == "main.js"
+    assert package["main"] == "bootstrap-main.js"
+    assert {"bootstrap-main.js", "main.js", "package.json"}.issubset(set(package["build"]["files"]))
     resources = {(item.get("from"), item.get("to")) for item in package["build"]["extraResources"]}
     assert ("sidecar/nexus-product-server", "nexus-product-server") in resources
     assert ("sidecar/source-sha.txt", "source-sha.txt") in resources
     assert ("sidecar/build-evidence.json", "build-evidence.json") in resources
     assert ("sidecar/market-data-source-registry.yaml", "docs/architecture/market-data-source-registry.yaml") in resources
     assert ("sidecar/nexus-agent-manager.json", "config/nexus-agent-manager.json") in resources
+    assert ("sidecar/bootstrap_nexus_runner_from_gui.ps1", "scripts/bootstrap_nexus_runner_from_gui.ps1") in resources
+    assert "bootstrap_nexus_runner_from_gui.ps1" in package["scripts"]["dist:win"]
 
     main = read(DESKTOP / "main.js")
     for marker in (
@@ -45,6 +50,59 @@ def test_final_windows_product_packages_real_mission_control_and_source_bindings
         "/api/product/overview",
     ):
         assert marker in main
+
+
+def test_packaged_windows_entrypoint_revives_existing_runner_without_blocking_product_main() -> None:
+    bootstrap = read(DESKTOP / "bootstrap-main.js")
+    for marker in (
+        "process.platform !== 'win32'", "!app.isPackaged", "source-sha.txt",
+        "bootstrap_nexus_runner_from_gui.ps1", "-NoProfile", "-NonInteractive",
+        "-WindowStyle", "Hidden", "windowsHide: true", "BOOTSTRAP_TIMEOUT_MS = 35000",
+        "startRunnerColdBootstrap().catch", "require('./main.js')",
+        "nexus-gui-runner-bootstrap.log",
+    ):
+        assert marker in bootstrap
+    assert bootstrap.index("app.whenReady().then") < bootstrap.index("require('./main.js')")
+    assert "shell: true" not in bootstrap
+    assert "config.cmd" not in bootstrap.casefold()
+
+
+def test_gui_runner_bootstrap_is_bounded_fail_closed_and_does_not_register_or_reconfigure_runner() -> None:
+    script = read(GUI_RUNNER_BOOTSTRAP)
+    for marker in (
+        "nexus.gui-runner-bootstrap.v1", "NEXUS-GitHub-Runner-Autostart",
+        "https://github.com/saladinayoubi1/lbank-research-automation",
+        "[Environment]::UserInteractive", "NT AUTHORITY\\SYSTEM",
+        "MULTIPLE_RUNNERS_REJECTED", "RUNNER_NOT_FOUND",
+        "SERVICE_STOPPED_REQUIRES_ELEVATION", "TASK_INSTALLED_LISTENER_RUNNING",
+        "New-ScheduledTaskAction", "New-ScheduledTaskTrigger", "Register-ScheduledTask",
+        "-RunLevel Limited", "Runner.Listener.exe", ".runner", ".credentials", "run.cmd",
+        "credentials_modified = $false", "runner_registered = $false",
+        "config_cmd_invoked = $false", "live_trading_authority = $false", "paper_only = $true",
+    ):
+        assert marker in script
+    lowered = script.casefold()
+    for forbidden in (
+        "config.cmd", "--url", "--token", "personalaccesstoken", "github_token",
+        "remove-item -recurse", "get-childitem -recurse", "runlevel highest",
+    ):
+        assert forbidden not in lowered
+    assert "Start-Service" in script
+    assert "Start-Process" not in script
+    assert "-Verb RunAs" not in script
+
+
+def test_gui_runner_bootstrap_discovery_is_narrow_and_exact_repo_bound() -> None:
+    script = read(GUI_RUNNER_BOOTSTRAP)
+    for marker in (
+        "actions.runner.*", "actions-runner", "Desktop\\actions-runner",
+        "Downloads\\actions-runner", "LOCALAPPDATA", "Group-Object Root",
+        "gitHubUrl", "Normalize-GitHubUrl", "configured_runner_count",
+        "multiple runner services map to the configured runner root",
+    ):
+        assert marker in script
+    assert "Get-ChildItem -LiteralPath $parent -Directory -Filter 'actions-runner*'" in script
+    assert "-Recurse" not in script
 
 
 def test_windows_startup_is_slow_machine_tolerant_diagnostic_and_bounded_self_recovering() -> None:
@@ -144,11 +202,12 @@ def test_runtime_has_no_live_exchange_write_private_credential_or_l4_execution_p
         ROOT / "product_control_runtime.py", ROOT / "product_web_server.py",
         ROOT / "product_offline_runtime.py", ROOT / "product_offline_web_server.py",
         ROOT / "product_mission_runtime.py", ROOT / "product_build_runtime.py",
-        UI / "product.js", UI / "product-offline.js", UI / "product-mission.js", DESKTOP / "main.js",
+        UI / "product.js", UI / "product-offline.js", UI / "product-mission.js",
+        DESKTOP / "bootstrap-main.js", DESKTOP / "main.js", GUI_RUNNER_BOOTSTRAP,
     ))
     for forbidden in ("/v5/order", "/order/create", "/api/product/live/order", "apisecret", "secretkey", "private_key"):
         assert forbidden not in product_text
-    assert "live_trading_authority\": false" in product_text or "live_trading_authority': false" in product_text or "live_trading_authority: false" in product_text
+    assert "live_trading_authority\": false" in product_text or "live_trading_authority': false" in product_text or "live_trading_authority = $false" in product_text
 
 
 def test_windows_targets_are_distinct_and_trusted_workflow_builds_exact_source_final_product() -> None:
