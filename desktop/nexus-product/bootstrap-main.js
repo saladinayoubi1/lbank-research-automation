@@ -1,4 +1,4 @@
-const { app } = require('electron');
+const { app, ipcMain } = require('electron');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
@@ -8,6 +8,8 @@ const RUNNER_SUPERVISOR_INTERVAL_MS = 60 * 1000;
 const OWNER_AUTOSTART_TIMEOUT_MS = 15 * 60 * 1000;
 const OWNER_AUTOSTART_RETRY_LIMIT = 3;
 const OWNER_AUTOSTART_RETRY_DELAY_MS = 15 * 1000;
+const RUNNER_STATE_CHANNEL = 'nexus:runner-bootstrap:get';
+const RUNNER_EVIDENCE_MAX_BYTES = 64 * 1024;
 
 function appendBootstrapLog(message) {
   try {
@@ -39,6 +41,67 @@ function windowsPowerShell() {
   const systemRoot = process.env.SystemRoot || 'C:\\Windows';
   return path.join(systemRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
 }
+
+function safeRunnerText(value, maxLength = 160) {
+  if (typeof value !== 'string') return null;
+  return value.replace(/[\u0000-\u001f\u007f]+/g, ' ').trim().slice(0, maxLength) || null;
+}
+
+function runnerBootstrapEvidencePath() {
+  const localAppData = String(process.env.LOCALAPPDATA || '').trim();
+  if (!localAppData || !path.isAbsolute(localAppData)) return null;
+  const nexusRoot = path.resolve(localAppData, 'NEXUS');
+  const target = path.resolve(nexusRoot, 'GuiRunnerBootstrap', 'evidence.json');
+  const relative = path.relative(nexusRoot, target);
+  if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) return null;
+  return target;
+}
+
+function safeRunnerBootstrapState() {
+  const target = runnerBootstrapEvidencePath();
+  if (!target) return { available: false, status: 'LOCALAPPDATA_UNAVAILABLE' };
+  try {
+    const stat = fs.lstatSync(target);
+    if (!stat.isFile() || stat.isSymbolicLink() || stat.size < 2 || stat.size > RUNNER_EVIDENCE_MAX_BYTES) {
+      return { available: false, status: 'EVIDENCE_FILE_REJECTED' };
+    }
+    const payload = JSON.parse(fs.readFileSync(target, 'utf8'));
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+      return { available: false, status: 'EVIDENCE_SCHEMA_REJECTED' };
+    }
+    const status = safeRunnerText(payload.status, 96);
+    if (!status || !/^[A-Z0-9_]+$/.test(status)) {
+      return { available: false, status: 'EVIDENCE_STATUS_REJECTED' };
+    }
+    const sourceSha = typeof payload.source_sha === 'string' && /^[0-9a-fA-F]{40}$/.test(payload.source_sha)
+      ? payload.source_sha.toLowerCase()
+      : null;
+    return {
+      available: true,
+      status,
+      source_sha: sourceSha,
+      generated_at: safeRunnerText(payload.generated_at, 64),
+      agent_name: safeRunnerText(payload.agent_name, 96),
+      service_name: safeRunnerText(payload.service_name, 128),
+      service_state: safeRunnerText(payload.service_state, 48),
+      fallback_transport: safeRunnerText(payload.fallback_transport, 64),
+      error: safeRunnerText(payload.error, 240),
+    };
+  } catch (error) {
+    if (error && error.code === 'ENOENT') return { available: false, status: 'EVIDENCE_NOT_PRESENT' };
+    return { available: false, status: 'EVIDENCE_READ_FAILED' };
+  }
+}
+
+function trustedRunnerStateSender(event) {
+  const senderUrl = String(event?.senderFrame?.url || event?.sender?.getURL?.() || '');
+  return /^http:\/\/127\.0\.0\.1:\d+\//.test(senderUrl);
+}
+
+ipcMain.handle(RUNNER_STATE_CHANNEL, event => {
+  if (!trustedRunnerStateSender(event)) throw new Error('untrusted NEXUS runner-state sender');
+  return safeRunnerBootstrapState();
+});
 
 function runPackagedPowerShell({ scriptName, timeoutMs, log, sourceSha }) {
   const script = path.join(process.resourcesPath, 'scripts', scriptName);
