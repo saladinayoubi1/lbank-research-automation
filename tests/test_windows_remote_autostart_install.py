@@ -9,62 +9,104 @@ def read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def test_remote_installer_refuses_service_identities_and_ephemeral_workspace():
+def test_remote_installer_refuses_service_or_noninteractive_identity_and_ephemeral_install_root():
     text = read(PS)
     for marker in (
         "NT AUTHORITY\\SYSTEM",
         "NT AUTHORITY\\NETWORK SERVICE",
         "NT AUTHORITY\\LOCAL SERVICE",
+        "[Environment]::UserInteractive",
+        "not executing in an interactive owner session",
         "GITHUB_WORKSPACE",
         "$root -match",
         "_work",
-        "no stable repository checkout was found outside the GitHub Actions workspace",
-        "multiple stable repository checkouts found",
     ):
         assert marker in text
 
 
-def test_remote_installer_uses_bounded_stable_repo_candidates_and_exact_origin():
+def test_remote_installer_uses_bounded_candidates_and_managed_localappdata_fallback():
     text = read(PS)
     for marker in (
         "Desktop\\lbank-research-automation",
         "Documents\\lbank-research-automation",
-        "LOCALAPPDATA 'NEXUS\\lbank-research-automation'",
-        "remote','get-url','origin",
-        "$ExpectedRemotePattern",
-        "saladinayoubi1",
-        "lbank-research-automation",
+        "NEXUS\\lbank-research-automation",
+        "$ManagedRepoRoot",
+        "New-ManagedStableRepo",
+        "Resolve-StableRepo",
+        "managed checkout path already exists but is not a valid canonical repository",
+        "clone','--no-hardlinks','--no-checkout'",
+        "remote','set-url','origin'",
+        "checkout','-B','main'",
     ):
         assert marker in text
     assert "-Recurse" not in text
 
 
-def test_remote_installer_preserves_owner_changes_and_requires_exact_fast_forward_main():
+def test_ambiguous_owner_checkouts_are_not_touched_and_use_managed_checkout():
+    text = read(PS)
+    for marker in (
+        "Get-OwnerStableRepoCandidates",
+        "$ownerCandidates.Count -eq 1",
+        "Selection='single-owner-checkout'",
+        "Selection='existing-managed'",
+        "'managed-no-owner-checkout'",
+        "'managed-ambiguous-owner-checkouts'",
+        "OwnerCandidateCount=$ownerCandidates.Count",
+    ):
+        assert marker in text
+    assert "multiple stable repository checkouts found" not in text
+
+
+def test_remote_installer_validates_exact_workspace_sha_and_canonical_origin():
+    text = read(PS)
+    for marker in (
+        "Validate-Workspace",
+        "GITHUB_WORKSPACE is not the repository root",
+        "runner workspace SHA mismatch",
+        "$ExpectedRemotePattern",
+        "repository origin is not the canonical NEXUS repository",
+        "rev-parse','HEAD",
+    ):
+        assert marker in text
+
+
+def test_remote_installer_preserves_owner_changes_and_fast_forwards_from_exact_local_workspace():
     text = read(PS)
     for marker in (
         "diff --quiet",
         "diff --cached --quiet",
         "tracked unstaged changes",
         "staged changes",
-        "fetch','origin','main','--quiet",
+        "Sync-ExactMainFromWorkspace",
+        "fetch','--no-tags','--quiet',$Workspace,'HEAD'",
         "checkout','main",
-        "merge','--ff-only','origin/main",
+        "merge','--ff-only','FETCH_HEAD",
+        "runner workspace moved before sync",
         "stable main SHA mismatch",
     ):
         assert marker in text
+    assert "fetch','origin','main" not in text
     assert "reset --hard" not in text
     assert "clean -fd" not in text
 
 
-def test_remote_installer_installs_both_existing_versioned_autostart_helpers_and_emits_evidence():
+def test_remote_installer_does_not_add_network_credentials_and_emits_v2_evidence():
     text = read(PS)
     for marker in (
         "scripts\\nexus_windows_autostart.ps1",
         "scripts\\nexus_github_runner_autostart.ps1",
         "NEXUS-ZeroTouch-Autopilot",
         "NEXUS-GitHub-Runner-Autostart",
-        "nexus.zero-touch-remote-install.v1",
+        "nexus.zero-touch-remote-install.v2",
+        "stable_repo_selection",
+        "owner_candidate_count",
+        "sync_source = 'exact-github-actions-workspace'",
+        "network_credentials_added = $false",
+        "managed_checkout_created",
+        "interactive_owner_session",
         "NEXUS_ZERO_TOUCH_REMOTE_INSTALL=SUCCESS",
+        "NEXUS_STABLE_SELECTION",
+        "NEXUS_MANAGED_CHECKOUT_CREATED",
         "build\\autostart-install",
     ):
         assert marker in text
@@ -72,6 +114,7 @@ def test_remote_installer_installs_both_existing_versioned_autostart_helpers_and
     assert "gh auth login" not in lowered
     assert "config.cmd" not in lowered
     assert "personalaccesstoken" not in lowered
+    assert "github_token" not in lowered
 
 
 def test_local_runner_install_trigger_is_main_push_marker_only_and_evidence_backed():
