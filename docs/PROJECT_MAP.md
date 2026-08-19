@@ -1,0 +1,175 @@
+# NEXUS Project Map
+
+This document is the navigation layer for the current NEXUS repository. It does not replace code, tests, ADRs, evidence, or GitHub acceptance issues. Its purpose is to stop the project from becoming a collection of disconnected historical phases, experiments, branches, workflows, and product surfaces.
+
+## Source-of-truth order
+
+When two project descriptions disagree, use this order:
+
+1. **Current Phase acceptance issues** — Phase 7 parent `#696`, lanes `#697`–`#700`, inventory `#701`, proof mission `#702`, and product acceptance `#692`.
+2. **Current `main` code, tests, and protected workflows** — executable behavior outranks old prose.
+3. **Architecture ADRs and machine-readable contracts** under `docs/architecture/`.
+4. **Replayable evidence** under `docs/evidence/`, workflow artifacts, and issue evidence markers.
+5. **Historical phase documents and legacy research notes** — useful context, but not current acceptance authority.
+
+A closed historical phase is not silently reopened. If current evidence proves a prior capability false-green, the affected dependency must be explicitly reclassified.
+
+## Phase status
+
+| Phase | Repository parent | Status | Meaning |
+|---|---:|---|---|
+| Phase 3 | `#389` | CLOSED / completed | Historical prerequisite |
+| Phase 4 | `#510` | CLOSED / completed | Historical prerequisite |
+| Phase 5 | `#583` | CLOSED / completed | Durable contracts/state/verification foundation |
+| Phase 6 | `#591` | CLOSED / completed | Canonical research integration foundation |
+| Phase 7 | `#696` | **OPEN** | Current integration and proof phase |
+
+The current authority boundary remains **Research / Backtest / Paper only**. No Live/L4 authority is implied by Phase 7.
+
+## Phase 7 lanes
+
+### Lane A — AI Control Plane / Resource Manager (`#697`)
+
+Required path:
+
+`Mission -> Supervisor -> Router/Resource Manager -> Worker -> heartbeat/result -> Evidence -> Independent Verifier -> next task`
+
+Primary existing implementation surfaces:
+
+- `agent_manager.py`
+- `agent_manager_runner.py`
+- `agent_transport.py`
+- `ai_control_plane.py`
+- `.github/workflows/`
+- Windows local-runner/bootstrap scripts under `scripts/`
+- packaged Windows bootstrap under `desktop/nexus-product/`
+
+Current acceptance emphasis:
+
+- real task allocation, not status-only telemetry;
+- deterministic routing reasons;
+- leases/fencing and authenticated result binding;
+- zero-idle behavior for independent READY tasks;
+- truthful EXECUTED/UNAVAILABLE resource ledger;
+- physical Windows runner proof where the laptop is actually used.
+
+### Lane B — Data Intelligence / Regime Engine (`#698`)
+
+Canonical path:
+
+`Validated Data -> Features -> Market Structure -> Volatility/Liquidity -> Regime -> Cross-timeframe Context -> Strategy Features`
+
+Existing foundations include:
+
+- `bybit_public_klines.py`
+- `market_data_provenance_manifest.py`
+- `phase5_data_binding.py`
+- `data_readiness.py`
+- `research_data.py`
+- source contracts under `docs/architecture/`
+
+Phase 7 acceptance requires deterministic/versioned feature and regime evidence, provenance binding, no look-ahead, replayability, and typed outputs consumable downstream.
+
+### Lane C — Strategy Factory (`#699`)
+
+Canonical lifecycle:
+
+`IDEA -> RESEARCHED -> BACKTESTED -> VALIDATED -> CANDIDATE -> PAPER -> QUARANTINED/REJECTED`
+
+Existing foundations include:
+
+- `backtest_engine.py`
+- `phase5_strategy_factory.py`
+- `phase6_research_pipeline.py`
+
+Every immutable strategy version must bind hypothesis, parameters, data revision/provenance, code SHA, IS/OOS windows, execution-cost assumptions, regime evidence, metrics, kill criteria, evidence digests, and lifecycle state.
+
+Promotion/demotion remains deterministic and evidence-gated; AI may advise but may not promote a strategy by discretion.
+
+### Lane D — Realistic Paper Execution (`#700`)
+
+Canonical path:
+
+`Signal/Decision -> Deterministic Risk -> Order Intent -> Simulated Exchange -> Fill/Partial Fill -> Fees/Slippage/Latency -> Reconciliation -> PnL -> Audit`
+
+Architecture foundation includes `docs/architecture/ADR-010-paper-event-store.md` and the existing deterministic Risk/Paper contracts already present in the repository.
+
+Phase 7 acceptance requires replayable Paper state, Backtest/Paper parity at Strategy/Decision/Risk boundaries, realistic bounded execution differences, reconciliation, kill switches, and Paper-only futures mechanics where applicable.
+
+## Cross-lane convergence
+
+The Phase 7 exit path is `#702`:
+
+`Mission -> Supervisor -> Router -> Workers -> Evidence -> Independent Verifier -> Canonical Data -> Data Intelligence/Regime -> Strategy Factory -> Decision -> Deterministic Risk -> Paper -> Performance/Drift -> Mission Control`
+
+`#702` is not documentation-only. At least one fixed final SHA must produce replayable end-to-end evidence.
+
+Mission Control acceptance remains tracked by `#692`. The Windows/Android product must expose the same real durable task/resource/strategy/paper/evidence state; static cards, fabricated workers, and GitHub-only status do not satisfy acceptance.
+
+## Current execution order
+
+1. Prove the corrected Windows runner/autostart path on the physical owner laptop.
+2. Complete the applicable local-laptop slice of `#702` with real returned evidence.
+3. Prove Lane A resource allocation, routing reasons, zero-idle scheduling, and verifier separation.
+4. Feed canonical validated data into Lane B and produce deterministic regime/features evidence.
+5. Drive at least one strategy family through Lane C to deterministic Candidate or Reject.
+6. Pass the accepted output through Decision -> deterministic Risk -> Lane D Paper execution/reconciliation.
+7. Produce Performance/Drift evidence.
+8. Project exactly the same state into Mission Control (`#692`).
+9. Run the complete fixed-SHA Phase 7 proof and close only gates with replayable acceptance evidence.
+
+Infrastructure work is prioritized only when it blocks one of these steps.
+
+## Repository organization policy
+
+The repository contains significant historical material. Cleanup must therefore be incremental rather than a mass move.
+
+### Keep stable for now
+
+- imported Python module paths;
+- protected workflow paths/names;
+- evidence paths referenced by acceptance issues;
+- historical ADR filenames, even where numbering is duplicated;
+- phase-specific filenames that are still imported or cited.
+
+### New organization rule
+
+New work should be classified before implementation as one of:
+
+- `control-plane`
+- `data-intelligence`
+- `strategy-factory`
+- `paper-execution`
+- `mission-control`
+- `evidence/verification`
+- `infrastructure` (only when blocking an active lane)
+
+Every new PR should name its Phase 7 lane/gate or explain why it is cross-lane infrastructure.
+
+### ADR cleanup rule
+
+Existing duplicate ADR identifiers are treated as historical immutable filenames to avoid breaking references. Do not create another duplicate identifier. A later dedicated cleanup may add an ADR index and aliases without rewriting history.
+
+### Branch cleanup rule
+
+The repository has many historical `agent/*` and `nexus/*` branches. They must not be bulk-deleted blindly. Branch cleanup should classify each branch as:
+
+- ACTIVE — backs an open PR/current proof;
+- MERGED-REFERENCE — merged historical reference, safe to prune after verification;
+- STALE/ABANDONED — no open PR and no unique required commit/evidence;
+- PROTECTED/HANDOFF — retained intentionally for recovery/evidence.
+
+Delete only after the classification is evidence-backed.
+
+## Definition of organized
+
+NEXUS is considered structurally organized when a maintainer can answer these questions without reconstructing project history from dozens of PRs:
+
+1. Which Phase/Lane owns this component?
+2. What is its canonical contract?
+3. What code implements it?
+4. What test/evidence proves it?
+5. What downstream component consumes it?
+6. What remains open before Phase 7 acceptance?
+
+This map is the starting index; executable code and acceptance evidence remain authoritative.
