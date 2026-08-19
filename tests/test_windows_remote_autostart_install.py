@@ -20,7 +20,6 @@ def test_remote_installer_refuses_service_or_noninteractive_identity_and_ephemer
         "GITHUB_WORKSPACE",
         "$root -match",
         "_work",
-        "multiple stable repository checkouts found",
     ):
         assert marker in text
 
@@ -41,6 +40,21 @@ def test_remote_installer_uses_bounded_candidates_and_managed_localappdata_fallb
     ):
         assert marker in text
     assert "-Recurse" not in text
+
+
+def test_ambiguous_owner_checkouts_are_not_touched_and_use_managed_checkout():
+    text = read(PS)
+    for marker in (
+        "Get-OwnerStableRepoCandidates",
+        "$ownerCandidates.Count -eq 1",
+        "Selection='single-owner-checkout'",
+        "Selection='existing-managed'",
+        "'managed-no-owner-checkout'",
+        "'managed-ambiguous-owner-checkouts'",
+        "OwnerCandidateCount=$ownerCandidates.Count",
+    ):
+        assert marker in text
+    assert "multiple stable repository checkouts found" not in text
 
 
 def test_remote_installer_validates_exact_workspace_sha_and_canonical_origin():
@@ -84,11 +98,14 @@ def test_remote_installer_does_not_add_network_credentials_and_emits_v2_evidence
         "NEXUS-ZeroTouch-Autopilot",
         "NEXUS-GitHub-Runner-Autostart",
         "nexus.zero-touch-remote-install.v2",
+        "stable_repo_selection",
+        "owner_candidate_count",
         "sync_source = 'exact-github-actions-workspace'",
         "network_credentials_added = $false",
         "managed_checkout_created",
         "interactive_owner_session",
         "NEXUS_ZERO_TOUCH_REMOTE_INSTALL=SUCCESS",
+        "NEXUS_STABLE_SELECTION",
         "NEXUS_MANAGED_CHECKOUT_CREATED",
         "build\\autostart-install",
     ):
