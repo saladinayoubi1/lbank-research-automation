@@ -34,6 +34,18 @@ if (!/^[0-9a-f]{40}$/.test(head)) throw new Error('repository HEAD is not a full
 const expected = String(process.env.GITHUB_SHA || head).trim().toLowerCase();
 if (expected !== head) throw new Error(`build source mismatch: GITHUB_SHA=${expected} HEAD=${head}`);
 
+// GitHub Actions normally checks out a shallow repository. A Git bundle made from
+// that state may advertise the exact ref while omitting parent objects required by
+// a fresh clone. Expand history only on the trusted build machine; no credentials
+// or Git metadata are copied into the packaged resource.
+if (runGit(['rev-parse', '--is-shallow-repository']) === 'true') {
+  execFileSync('git', ['fetch', '--unshallow', '--no-tags', 'origin'], {
+    cwd: repoRoot,
+    stdio: ['ignore', 'pipe', 'pipe'],
+    windowsHide: true,
+  });
+}
+
 const bundlePath = path.join(sidecarRoot, 'nexus-source.bundle');
 try {
   runGit(['update-ref', packageRef, head]);
