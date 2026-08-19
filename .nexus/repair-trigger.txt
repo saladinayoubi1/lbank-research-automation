@@ -1,2 +1,2 @@
-trigger=2026-08-09T17:40:00+03:30
-reason=run exhaustive gap repair after PR 227 merge
+trigger=2026-08-19T09:54:00+03:30
+reason=retrigger zero-touch NEXUS autostart install on self-hosted runner without control-plane permission changes
