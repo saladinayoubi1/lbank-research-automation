@@ -15,7 +15,7 @@ def read(path: Path) -> str:
 
 def test_final_windows_product_packages_real_mission_control_and_source_bindings() -> None:
     required = [
-        DESKTOP / "bootstrap-main.js", DESKTOP / "main.js", DESKTOP / "package.json",
+        DESKTOP / "bootstrap-main.js", DESKTOP / "main.js", DESKTOP / "preload.js", DESKTOP / "package.json",
         GUI_RUNNER_BOOTSTRAP,
         ROOT / "product_runtime.py", ROOT / "product_research_runtime.py",
         ROOT / "product_control_runtime.py", ROOT / "product_web_server.py",
@@ -30,9 +30,9 @@ def test_final_windows_product_packages_real_mission_control_and_source_bindings
     assert all(path.is_file() for path in required)
 
     package = json.loads(read(DESKTOP / "package.json"))
-    assert package["version"] == "5.0.0"
+    assert package["version"] == "5.1.0"
     assert package["main"] == "bootstrap-main.js"
-    assert {"bootstrap-main.js", "main.js", "package.json"}.issubset(set(package["build"]["files"]))
+    assert {"bootstrap-main.js", "main.js", "preload.js", "package.json"}.issubset(set(package["build"]["files"]))
     resources = {(item.get("from"), item.get("to")) for item in package["build"]["extraResources"]}
     assert ("sidecar/nexus-product-server", "nexus-product-server") in resources
     assert ("sidecar/source-sha.txt", "source-sha.txt") in resources
@@ -203,7 +203,7 @@ def test_runtime_has_no_live_exchange_write_private_credential_or_l4_execution_p
         ROOT / "product_offline_runtime.py", ROOT / "product_offline_web_server.py",
         ROOT / "product_mission_runtime.py", ROOT / "product_build_runtime.py",
         UI / "product.js", UI / "product-offline.js", UI / "product-mission.js",
-        DESKTOP / "bootstrap-main.js", DESKTOP / "main.js", GUI_RUNNER_BOOTSTRAP,
+        DESKTOP / "bootstrap-main.js", DESKTOP / "main.js", DESKTOP / "preload.js", GUI_RUNNER_BOOTSTRAP,
     ))
     for forbidden in ("/v5/order", "/order/create", "/api/product/live/order", "apisecret", "secretkey", "private_key"):
         assert forbidden not in product_text
@@ -222,7 +222,8 @@ def test_windows_targets_are_distinct_and_trusted_workflow_builds_exact_source_f
         "product_mission_runtime.py", "product_build_runtime.py", "tests/test_product_mission_runtime.py",
         "Build final Mission Control Python sidecar", "Smoke-test final Mission Control sidecar",
         "nexus-agent-manager.json", "build-evidence.json", "source-sha.txt",
-        "NEXUS_Personal_Pro_Setup_5.0.0_", "NEXUS_Personal_Pro_Portable_5.0.0_",
+        "NEXUS_Personal_Pro_Setup_5.1.0_", "NEXUS_Personal_Pro_Portable_5.1.0_",
+        "node --check \"desktop/nexus-product/preload.js\"", "node --check \"product_ui/product.js\"",
     ):
         assert marker in workflow
     assert "push:" in workflow and "branches: [main]" in workflow

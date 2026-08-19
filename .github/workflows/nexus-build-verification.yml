@@ -33,13 +33,14 @@ jobs:
             product_runtime.py product_research_runtime.py product_control_runtime.py product_web_server.py \
             product_offline_runtime.py product_offline_web_server.py product_mission_runtime.py product_build_runtime.py \
             product_ui/index.html product_ui/product.js product_ui/product-offline.js product_ui/product-offline.css \
-            product_ui/product-mission.js product_ui/product-mission.css desktop/nexus-product/main.js \
+            product_ui/product-mission.js product_ui/product-mission.css desktop/nexus-product/main.js desktop/nexus-product/preload.js \
             config/nexus-agent-manager.json scripts/export_mission_control_snapshot.py; do test -f "$path"; done
           node --check desktop/nexus-product/main.js
+          node --check desktop/nexus-product/preload.js
           node --check product_ui/product.js
           node --check product_ui/product-offline.js
           node --check product_ui/product-mission.js
-          node -e "const p=require('./desktop/nexus-product/package.json'); if(p.version!=='5.0.0' || !p.build.extraResources?.some(x=>x.to==='nexus-product-server') || !p.build.extraResources?.some(x=>x.to==='source-sha.txt') || !p.build.extraResources?.some(x=>x.to==='build-evidence.json') || !p.build.extraResources?.some(x=>x.to==='config/nexus-agent-manager.json')) process.exit(1)"
+          node -e "const p=require('./desktop/nexus-product/package.json'); if(p.version!=='5.1.0' || !p.build.files?.includes('preload.js') || !p.build.extraResources?.some(x=>x.to==='nexus-product-server') || !p.build.extraResources?.some(x=>x.to==='source-sha.txt') || !p.build.extraResources?.some(x=>x.to==='build-evidence.json') || !p.build.extraResources?.some(x=>x.to==='config/nexus-agent-manager.json')) process.exit(1)"
           grep -q 'contextIsolation: true' desktop/nexus-product/main.js
           grep -q 'sandbox: true' desktop/nexus-product/main.js
           grep -q 'nodeIntegration: false' desktop/nexus-product/main.js
@@ -47,6 +48,9 @@ jobs:
           grep -q 'NEXUS_BUILD_EVIDENCE_PATH' desktop/nexus-product/main.js
           grep -q 'MAX_RESTARTS_PER_WINDOW = 3' desktop/nexus-product/main.js
           grep -q 'bounded_restart_policy' desktop/nexus-product/main.js
+          grep -q 'nexus:ui-preferences:get' desktop/nexus-product/preload.js
+          grep -q 'nexus:ui-preferences:set' desktop/nexus-product/preload.js
+          grep -q 'nexus:ui-preferences:reset' desktop/nexus-product/preload.js
           grep -q 'run_automated_signal_pipeline' product_research_runtime.py
           grep -q 'run_research_job' product_research_runtime.py
           grep -q 'execute_paper_command' product_runtime.py
@@ -76,6 +80,7 @@ jobs:
           tests/test_product_offline_runtime.py
           tests/test_product_mission_runtime.py
           tests/test_windows_delivery_surface.py
+          tests/test_windows_ui_personalization.py
 
   android-apk:
     runs-on: ubuntu-latest
@@ -186,8 +191,8 @@ jobs:
             "$root/config/nexus-agent-manager.json"
           )) { if (!(Test-Path $path)) { throw "Packaged Mission Control resource missing: $path" } }
           if ((Get-Content "$root/source-sha.txt" -Raw).Trim() -ne $env:GITHUB_SHA) { throw 'Packaged source SHA mismatch' }
-          if (!(Get-ChildItem 'desktop/nexus-product/dist/NEXUS_Personal_Pro_Setup_5.0.0_*.exe' -ErrorAction SilentlyContinue)) { throw 'Setup EXE missing' }
-          if (!(Get-ChildItem 'desktop/nexus-product/dist/NEXUS_Personal_Pro_Portable_5.0.0_*.exe' -ErrorAction SilentlyContinue)) { throw 'Portable EXE missing' }
+          if (!(Get-ChildItem 'desktop/nexus-product/dist/NEXUS_Personal_Pro_Setup_5.1.0_*.exe' -ErrorAction SilentlyContinue)) { throw 'Setup EXE missing' }
+          if (!(Get-ChildItem 'desktop/nexus-product/dist/NEXUS_Personal_Pro_Portable_5.1.0_*.exe' -ErrorAction SilentlyContinue)) { throw 'Portable EXE missing' }
       - name: Generate Windows SHA-256 checksums
         shell: pwsh
         run: |
@@ -216,8 +221,8 @@ jobs:
         with:
           name: nexus-windows-final-mission-control-packages
           path: |
-            desktop/nexus-product/dist/NEXUS_Personal_Pro_Setup_5.0.0_*.exe
-            desktop/nexus-product/dist/NEXUS_Personal_Pro_Portable_5.0.0_*.exe
+            desktop/nexus-product/dist/NEXUS_Personal_Pro_Setup_5.1.0_*.exe
+            desktop/nexus-product/dist/NEXUS_Personal_Pro_Portable_5.1.0_*.exe
             desktop/nexus-product/dist/SHA256SUMS.txt
           if-no-files-found: error
       - uses: actions/upload-artifact@v4

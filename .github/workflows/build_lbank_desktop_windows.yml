@@ -57,6 +57,7 @@ jobs:
           tests/test_product_offline_runtime.py
           tests/test_product_mission_runtime.py
           tests/test_windows_delivery_surface.py
+          tests/test_windows_ui_personalization.py
 
       - name: Build final Mission Control Python sidecar
         run: >-
@@ -144,9 +145,11 @@ jobs:
       - name: Validate Electron source and Mission bindings
         run: |
           node --check "desktop/nexus-product/main.js"
+          node --check "desktop/nexus-product/preload.js"
+          node --check "product_ui/product.js"
           node --check "product_ui/product-offline.js"
           node --check "product_ui/product-mission.js"
-          node -e "const p=require('./desktop/nexus-product/package.json'); if(p.version!=='5.0.0') process.exit(1)"
+          node -e "const p=require('./desktop/nexus-product/package.json'); if(p.version!=='5.1.0') process.exit(1)"
           if ((Get-Content "desktop/nexus-product/sidecar/source-sha.txt" -Raw).Trim() -ne $env:GITHUB_SHA) { throw "Source SHA binding mismatch" }
           foreach ($path in @(
             "desktop/nexus-product/sidecar/nexus-product-server/nexus-product-server.exe",
@@ -179,10 +182,10 @@ jobs:
           if ((Get-Content "$root/source-sha.txt" -Raw).Trim() -ne $env:GITHUB_SHA) { throw "Packaged source SHA mismatch" }
           $build = Get-Content "$root/build-evidence.json" -Raw | ConvertFrom-Json
           if ($build.source_sha -ne $env:GITHUB_SHA -or $build.paper_only -ne $true -or $build.live_trading_authority -ne $false) { throw "Packaged build evidence mismatch" }
-          $setup = Get-ChildItem "desktop/nexus-product/dist/NEXUS_Personal_Pro_Setup_5.0.0_*.exe" -ErrorAction SilentlyContinue
-          $portable = Get-ChildItem "desktop/nexus-product/dist/NEXUS_Personal_Pro_Portable_5.0.0_*.exe" -ErrorAction SilentlyContinue
-          if (!$setup) { throw "NEXUS 5.0.0 Setup EXE missing" }
-          if (!$portable) { throw "NEXUS 5.0.0 Portable EXE missing" }
+          $setup = Get-ChildItem "desktop/nexus-product/dist/NEXUS_Personal_Pro_Setup_5.1.0_*.exe" -ErrorAction SilentlyContinue
+          $portable = Get-ChildItem "desktop/nexus-product/dist/NEXUS_Personal_Pro_Portable_5.1.0_*.exe" -ErrorAction SilentlyContinue
+          if (!$setup) { throw "NEXUS 5.1.0 Setup EXE missing" }
+          if (!$portable) { throw "NEXUS 5.1.0 Portable EXE missing" }
 
       - name: Generate SHA-256 checksums
         run: |
@@ -197,10 +200,10 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: NEXUS_PERSONAL_PRO_FINAL_MISSION_CONTROL_WINDOWS_5_0_0
+          name: NEXUS_PERSONAL_PRO_FINAL_MISSION_CONTROL_WINDOWS_5_1_0
           path: |
-            desktop/nexus-product/dist/NEXUS_Personal_Pro_Setup_5.0.0_*.exe
-            desktop/nexus-product/dist/NEXUS_Personal_Pro_Portable_5.0.0_*.exe
+            desktop/nexus-product/dist/NEXUS_Personal_Pro_Setup_5.1.0_*.exe
+            desktop/nexus-product/dist/NEXUS_Personal_Pro_Portable_5.1.0_*.exe
             desktop/nexus-product/dist/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 30
