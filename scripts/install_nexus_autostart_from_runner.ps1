@@ -148,11 +148,12 @@ function Resolve-StableRepo([string]$Workspace, [string]$ExpectedSha) {
     }
 
     $managed = New-ManagedStableRepo $Workspace $ExpectedSha
+    $selection = if ($ownerCandidates.Count -eq 0) { 'managed-no-owner-checkout' } else { 'managed-ambiguous-owner-checkouts' }
     return [pscustomobject]@{
         Root=$managed
         ManagedCreated=$true
         OwnerCandidateCount=$ownerCandidates.Count
-        Selection=if ($ownerCandidates.Count -eq 0) { 'managed-no-owner-checkout' } else { 'managed-ambiguous-owner-checkouts' }
+        Selection=$selection
     }
 }
 
