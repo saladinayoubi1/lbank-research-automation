@@ -6,7 +6,13 @@ on:
       - Test
       - NEXUS Cloud Fallback
       - NEXUS Build Verification
+      - NEXUS Local Runner
     types: [completed]
+  push:
+    branches:
+      - main
+    paths:
+      - .nexus/repair-trigger.txt
 
 permissions:
   contents: read
@@ -14,26 +20,110 @@ permissions:
   issues: write
 
 concurrency:
-  group: nexus-failure-triage-${{ github.event.workflow_run.id }}
+  group: nexus-failure-triage-${{ github.event_name }}-${{ github.event.workflow_run.id || github.sha }}
   cancel-in-progress: false
 
 jobs:
   triage:
     if: >-
-      github.event.workflow_run.name == 'Test' ||
-      github.event.workflow_run.name == 'NEXUS Cloud Fallback' ||
-      github.event.workflow_run.name == 'NEXUS Build Verification'
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_run' && (
+        github.event.workflow_run.name == 'Test' ||
+        github.event.workflow_run.name == 'NEXUS Cloud Fallback' ||
+        github.event.workflow_run.name == 'NEXUS Build Verification' ||
+        github.event.workflow_run.name == 'NEXUS Local Runner'
+      ))
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Upsert actionable failure and retire superseded CI issues
+      - name: Upsert actionable failure and runner install evidence
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
           script: |
-            const run = context.payload.workflow_run;
             const { owner, repo } = context.repo;
             const defaultBranch = context.payload.repository?.default_branch || 'main';
-            const allowedWorkflows = new Set([
+            const installWorkflow = 'NEXUS Local Runner';
+            const installIssueNumber = 702;
+            const installCommitMarker = '[install-autostart]';
+            const validSha = (value) => typeof value === 'string' && /^[0-9a-f]{40}$/.test(value);
+            const installMarkerFor = (sha) => `<!-- nexus-zero-touch-install:${sha} -->`;
+
+            const upsertInstallEvidence = async ({ sha, state, lines }) => {
+              if (!validSha(sha) || !['PENDING', 'SUCCESS', 'FAILURE'].includes(state)) {
+                core.setFailed('Refused malformed zero-touch install evidence.');
+                return false;
+              }
+              const marker = installMarkerFor(sha);
+              const body = [
+                marker,
+                '## NEXUS zero-touch laptop install evidence',
+                '',
+                `- state: **${state}**`,
+                `- exact main SHA: \`${sha}\``,
+                ...lines,
+                '',
+                state === 'SUCCESS'
+                  ? '- Scope: this proves the zero-touch autostart installer completed and emitted its expected artifact for this exact SHA. It does **not** by itself prove reboot/resume or the complete Phase 7 hardware Proof Mission.'
+                  : state === 'PENDING'
+                    ? '- Scope: dispatch evidence only. Physical installation is **not** claimed until the self-hosted runner completes and the exact expected artifact is independently observed.'
+                    : '- Scope: fail-closed. Physical installation is **not** claimed for this SHA.',
+                '',
+                '- Safety boundary: Research/Backtest/Paper only; no live trading, exchange credentials, withdrawals, production authority, signing, or billing.'
+              ].join('\n');
+
+              const comments = await github.paginate(github.rest.issues.listComments, {
+                owner,
+                repo,
+                issue_number: installIssueNumber,
+                per_page: 100
+              });
+              const matches = comments.filter(comment => typeof comment.body === 'string' && comment.body.includes(marker));
+              if (matches.length > 1) {
+                core.warning(`Multiple zero-touch evidence comments found for ${sha}; updating the oldest stable marker only.`);
+              }
+              if (matches.length > 0) {
+                const selected = [...matches].sort((a, b) => a.id - b.id)[0];
+                await github.rest.issues.updateComment({ owner, repo, comment_id: selected.id, body });
+                core.info(`Updated Phase 7 install evidence comment ${selected.id} for ${sha}: ${state}`);
+              } else {
+                const created = await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: installIssueNumber,
+                  body
+                });
+                core.info(`Created Phase 7 install evidence comment ${created.data.id} for ${sha}: ${state}`);
+              }
+              return true;
+            };
+
+            if (context.eventName === 'push') {
+              const sha = context.payload.after;
+              const ref = context.payload.ref;
+              const message = context.payload.head_commit?.message;
+              const expectedRef = `refs/heads/${defaultBranch}`;
+              if (ref !== expectedRef || !validSha(sha)) {
+                core.warning('Rejected malformed or non-default-branch zero-touch dispatch metadata; no issue write performed.');
+                return;
+              }
+              if (typeof message !== 'string' || !message.includes(installCommitMarker)) {
+                core.info('Repair trigger push has no install marker; zero-touch evidence bridge is a no-op.');
+                return;
+              }
+              await upsertInstallEvidence({
+                sha,
+                state: 'PENDING',
+                lines: [
+                  '- local runner state: `AWAITING_COMPLETION`',
+                  '- evidence source: trusted GitHub-hosted push event on `main`',
+                  '- expected completion workflow: `NEXUS Local Runner`'
+                ]
+              });
+              return;
+            }
+
+            const run = context.payload.workflow_run;
+            const ciWorkflows = new Set([
               'Test',
               'NEXUS Cloud Fallback',
               'NEXUS Build Verification'
@@ -48,13 +138,95 @@ jobs:
               'success',
               ...failureConclusions
             ]);
-            const validHeadSha = typeof run?.head_sha === 'string' && /^[0-9a-f]{40}$/.test(run.head_sha);
+            const validHeadSha = validSha(run?.head_sha);
+            const validRunId = Number.isSafeInteger(run?.id) && run.id > 0;
             const validRunUrl = typeof run?.html_url === 'string' && /^https:\/\/github\.com\//.test(run.html_url);
             const validAttempt = Number.isInteger(run?.run_attempt) && run.run_attempt >= 1;
 
+            if (run?.name === installWorkflow) {
+              if (
+                !allowedConclusions.has(run.conclusion) ||
+                !validHeadSha ||
+                !validRunId ||
+                !validRunUrl ||
+                !validAttempt ||
+                run.event !== 'push' ||
+                run.head_branch !== defaultBranch
+              ) {
+                core.warning('Rejected malformed or non-main NEXUS Local Runner completion metadata; no install evidence write performed.');
+                return;
+              }
+              const expectedRunUrl = `https://github.com/${owner}/${repo}/actions/runs/${run.id}`;
+              if (run.html_url !== expectedRunUrl) {
+                core.warning('Rejected NEXUS Local Runner completion with non-canonical run URL.');
+                return;
+              }
+
+              let commit;
+              try {
+                commit = (await github.rest.repos.getCommit({ owner, repo, ref: run.head_sha })).data;
+              } catch (error) {
+                core.warning(`Could not bind local runner completion to exact commit (${error.message}); preserving fail-closed state.`);
+                return;
+              }
+              const commitMessage = commit?.commit?.message;
+              if (commit?.sha !== run.head_sha || typeof commitMessage !== 'string' || !commitMessage.includes(installCommitMarker)) {
+                core.info('Local runner completion is not bound to an install-autostart main commit; no install evidence write required.');
+                return;
+              }
+
+              let artifacts;
+              try {
+                artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, {
+                  owner,
+                  repo,
+                  run_id: run.id,
+                  per_page: 100
+                });
+              } catch (error) {
+                await upsertInstallEvidence({
+                  sha: run.head_sha,
+                  state: 'FAILURE',
+                  lines: [
+                    `- local runner conclusion: \`${run.conclusion}\``,
+                    `- workflow run: ${run.html_url}`,
+                    '- expected install artifact: `UNVERIFIED`',
+                    `- verification error: \`${String(error.message || 'artifact lookup failed').replace(/[`\r\n\t]/g, ' ')}\``
+                  ]
+                });
+                return;
+              }
+
+              const expectedArtifactName = `nexus-zero-touch-install-${run.id}`;
+              const matches = artifacts.filter(artifact =>
+                artifact?.name === expectedArtifactName &&
+                artifact?.expired === false &&
+                Number.isSafeInteger(artifact?.id) && artifact.id > 0 &&
+                Number.isFinite(artifact?.size_in_bytes) && artifact.size_in_bytes > 0
+              );
+              const artifactVerified = matches.length === 1;
+              const success = run.conclusion === 'success' && artifactVerified;
+              const evidenceLines = [
+                `- local runner conclusion: \`${run.conclusion}\``,
+                `- workflow run: ${run.html_url}`,
+                `- expected artifact: \`${expectedArtifactName}\``,
+                `- verified matching artifacts: \`${matches.length}\``
+              ];
+              if (artifactVerified) {
+                evidenceLines.push(`- artifact id: \`${matches[0].id}\``);
+                evidenceLines.push(`- artifact size bytes: \`${matches[0].size_in_bytes}\``);
+              }
+              await upsertInstallEvidence({
+                sha: run.head_sha,
+                state: success ? 'SUCCESS' : 'FAILURE',
+                lines: evidenceLines
+              });
+              return;
+            }
+
             if (
               !run ||
-              !allowedWorkflows.has(run.name) ||
+              !ciWorkflows.has(run.name) ||
               !allowedConclusions.has(run.conclusion) ||
               !validHeadSha ||
               !validRunUrl ||
@@ -110,7 +282,7 @@ jobs:
               if (issue.pull_request) return null;
               const text = issue.body || '';
               const markerMatch = text.match(/<!-- nexus-ci-triage:([^:]+):([0-9a-f]{40}) -->/);
-              if (!markerMatch || !allowedWorkflows.has(markerMatch[1])) return null;
+              if (!markerMatch || !ciWorkflows.has(markerMatch[1])) return null;
               const eventMatch = text.match(/^- event: `([^`]+)`/m);
               const branchMatch = text.match(/^- branch: `([^`]+)`/m);
               const runMatch = text.match(/^- run: https:\/\/github\.com\/[^/\s]+\/[^/\s]+\/actions\/runs\/(\d+)$/m);
@@ -148,8 +320,6 @@ jobs:
               const parsed = parseTriage(issue);
               if (!parsed) continue;
 
-              // A newer completed run for the same workflow/event/branch supersedes an
-              // older SHA, regardless of whether the newer run succeeds or fails.
               if (currentBranchSupersedes(parsed)) {
                 await closeIssue(issue, `a newer ${run.name} run exists for branch ${safeBranch}.`);
                 continue;
@@ -167,10 +337,6 @@ jobs:
                 continue;
               }
 
-              // Historical PR failures are retired only after independently binding the
-              // recorded issue marker to the recorded Actions run and proving every PR
-              // associated with that run is no longer present in the open issue/PR set.
-              // Missing, malformed, mismatched or unavailable evidence fails closed.
               if (parsed.event === 'pull_request' && Number.isSafeInteger(parsed.runId) && parsed.runId > 0) {
                 try {
                   const historical = (await github.rest.actions.getWorkflowRun({
