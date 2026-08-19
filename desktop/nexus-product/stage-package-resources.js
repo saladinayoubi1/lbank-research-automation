@@ -3,15 +3,16 @@
 const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const { pathToFileURL } = require('url');
 
 const desktopRoot = __dirname;
 const repoRoot = path.resolve(desktopRoot, '..', '..');
 const sidecarRoot = path.join(desktopRoot, 'sidecar');
 const packageRef = 'refs/heads/nexus-package-source';
 
-function runGit(args) {
+function runGit(args, options = {}) {
   return execFileSync('git', args, {
-    cwd: repoRoot,
+    cwd: options.cwd || repoRoot,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
     windowsHide: true,
@@ -34,27 +35,19 @@ if (!/^[0-9a-f]{40}$/.test(head)) throw new Error('repository HEAD is not a full
 const expected = String(process.env.GITHUB_SHA || head).trim().toLowerCase();
 if (expected !== head) throw new Error(`build source mismatch: GITHUB_SHA=${expected} HEAD=${head}`);
 
-// GitHub Actions normally checks out a shallow repository. A Git bundle made from
-// that state may advertise the exact ref while omitting parent objects required by
-// a fresh clone. Expand history only on the trusted build machine; no credentials
-// or Git metadata are copied into the packaged resource.
-if (runGit(['rev-parse', '--is-shallow-repository']) === 'true') {
-  execFileSync('git', ['fetch', '--unshallow', '--no-tags', 'origin'], {
-    cwd: repoRoot,
-    stdio: ['ignore', 'pipe', 'pipe'],
-    windowsHide: true,
-  });
-}
-
-const bundlePath = path.join(sidecarRoot, 'nexus-source.bundle');
+// Keep the packaged source small and self-contained: create a depth-1 bare seed
+// from the exact build commit. Git preserves the original commit/tree identity and
+// records the missing ancestry as a shallow boundary. No GitHub credential/config
+// is copied into the package.
+const seedPath = path.join(sidecarRoot, 'nexus-source-seed.git');
+fs.rmSync(seedPath, { recursive: true, force: true });
 try {
   runGit(['update-ref', packageRef, head]);
-  execFileSync('git', ['bundle', 'create', bundlePath, packageRef], {
-    cwd: repoRoot,
-    stdio: ['ignore', 'pipe', 'pipe'],
-    windowsHide: true,
-  });
-  execFileSync('git', ['bundle', 'verify', bundlePath], {
+  const sourceUrl = pathToFileURL(repoRoot + path.sep).href;
+  execFileSync('git', [
+    'clone', '--depth', '1', '--bare', '--branch', 'nexus-package-source',
+    sourceUrl, seedPath,
+  ], {
     cwd: repoRoot,
     stdio: ['ignore', 'pipe', 'pipe'],
     windowsHide: true,
@@ -63,9 +56,10 @@ try {
   try { runGit(['update-ref', '-d', packageRef]); } catch {}
 }
 
-if (!fs.existsSync(bundlePath) || fs.statSync(bundlePath).size < 128) {
-  throw new Error('exact-source Git bundle was not created');
-}
+const seeded = runGit(['--git-dir', seedPath, 'rev-parse', packageRef], { cwd: repoRoot }).toLowerCase();
+if (seeded !== head) throw new Error(`seed source mismatch: expected ${head} got ${seeded}`);
+if (!fs.existsSync(path.join(seedPath, 'shallow'))) throw new Error('exact-source seed is not shallow bounded');
+if (!fs.existsSync(path.join(seedPath, 'objects'))) throw new Error('exact-source seed object database is missing');
 
 process.stdout.write(`NEXUS_PACKAGE_SOURCE_SHA=${head}\n`);
-process.stdout.write(`NEXUS_PACKAGE_SOURCE_BUNDLE=${bundlePath}\n`);
+process.stdout.write(`NEXUS_PACKAGE_SOURCE_SEED=${seedPath}\n`);
