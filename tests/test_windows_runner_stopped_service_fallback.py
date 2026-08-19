@@ -16,12 +16,13 @@ def read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def test_gui_bootstrap_uses_bounded_owner_fallback_only_after_service_start_failure() -> None:
+def test_gui_bootstrap_uses_bounded_owner_fallback_after_service_start_failure() -> None:
     text = read(GUI_BOOTSTRAP)
     service = text.index("$service = Get-RunnerService $runner")
-    wait_for_fallback = text.index("Wait-ForListener $runner", service)
-    fallback = text.index("SERVICE_STOPPED_USER_FALLBACK_RUNNING", service)
-    assert service < wait_for_fallback < fallback
+    start_failure = text.index("if ($serviceStartError)", service)
+    start_owner = text.index("Start-InteractiveRunnerFallback $runner 'service_start_denied'", start_failure)
+    fallback = text.index("SERVICE_STOPPED_USER_FALLBACK_RUNNING", start_owner)
+    assert service < start_failure < start_owner < fallback
     for marker in (
         "Start-Service",
         "Start-InteractiveRunnerFallback",
@@ -40,6 +41,36 @@ def test_gui_bootstrap_uses_bounded_owner_fallback_only_after_service_start_fail
     assert "-verb runas" not in lowered
     assert "config.cmd" not in lowered
     assert "--token" not in lowered
+
+
+def test_gui_bootstrap_does_not_treat_running_service_as_healthy_without_listener() -> None:
+    text = read(GUI_BOOTSTRAP)
+    service = text.index("$service = Get-RunnerService $runner")
+    was_running = text.index("$serviceWasRunning = ([string]$service.State -eq 'Running')", service)
+    bounded_wait = text.index("Wait-ForListener $runner 8", was_running)
+    stale_guard = text.index("if (-not $listener -and $serviceWasRunning)", bounded_wait)
+    start_owner = text.index("Start-InteractiveRunnerFallback $runner 'service_running_listener_absent'", stale_guard)
+    success = text.index("SERVICE_RUNNING_STALE_USER_FALLBACK_RUNNING", start_owner)
+    assert service < was_running < bounded_wait < stale_guard < start_owner < success
+    for marker in (
+        "SERVICE_RUNNING_STALE_USER_FALLBACK_RUNNING",
+        "SERVICE_RUNNING_STALE_USER_FALLBACK_LISTENER_NOT_OBSERVED",
+        "service_was_running = $true",
+        "fallback_transport = 'current_user_hidden_process'",
+        "scheduled_task_changed = $false",
+    ):
+        assert marker in text
+    # Start-InteractiveRunnerFallback performs one final Get-Listener check before
+    # launching run.cmd, which bounds the duplicate-listener race.
+    helper = text[text.index("function Start-InteractiveRunnerFallback"):text.index("function Install-InteractiveRunnerTask")]
+    assert "$existing = Get-Listener $Runner" in helper
+    assert "if ($existing) { return [int]$existing.ProcessId }" in helper
+    lowered = text.casefold()
+    assert "stop-service" not in lowered
+    assert "restart-service" not in lowered
+    assert "config.cmd" not in lowered
+    assert "--token" not in lowered
+    assert "-verb runas" not in lowered
 
 
 def test_persistent_runner_daemon_prefers_service_but_yields_to_owner_listener_when_unstartable() -> None:
