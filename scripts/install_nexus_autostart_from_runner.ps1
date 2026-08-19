@@ -86,13 +86,12 @@ function Validate-StableRepo([string]$Path, [string]$Workspace) {
     catch { return $null }
 }
 
-function Get-StableRepoCandidates([string]$Workspace) {
+function Get-OwnerStableRepoCandidates([string]$Workspace) {
     $candidates = New-Object 'System.Collections.Generic.List[string]'
     $roots = @(
         (Join-Path $env:USERPROFILE 'Desktop\lbank-research-automation'),
         (Join-Path $env:USERPROFILE 'lbank-research-automation'),
-        (Join-Path $env:USERPROFILE 'Documents\lbank-research-automation'),
-        $ManagedRepoRoot
+        (Join-Path $env:USERPROFILE 'Documents\lbank-research-automation')
     )
     foreach ($candidate in $roots) {
         $valid = Validate-StableRepo $candidate $Workspace
@@ -124,15 +123,37 @@ function New-ManagedStableRepo([string]$Workspace, [string]$ExpectedSha) {
 }
 
 function Resolve-StableRepo([string]$Workspace, [string]$ExpectedSha) {
-    $candidates = @(Get-StableRepoCandidates $Workspace)
-    if ($candidates.Count -gt 1) {
-        Fail "multiple stable repository checkouts found: $($candidates -join ', ')"
+    $ownerCandidates = @(Get-OwnerStableRepoCandidates $Workspace)
+
+    if (Test-Path -LiteralPath $ManagedRepoRoot) {
+        $managed = Validate-StableRepo $ManagedRepoRoot $Workspace
+        if (-not $managed) {
+            Fail "managed checkout path already exists but is not a valid canonical repository: $ManagedRepoRoot"
+        }
+        return [pscustomobject]@{
+            Root=$managed
+            ManagedCreated=$false
+            OwnerCandidateCount=$ownerCandidates.Count
+            Selection='existing-managed'
+        }
     }
-    if ($candidates.Count -eq 1) {
-        return [pscustomobject]@{ Root=$candidates[0]; ManagedCreated=$false }
+
+    if ($ownerCandidates.Count -eq 1) {
+        return [pscustomobject]@{
+            Root=$ownerCandidates[0]
+            ManagedCreated=$false
+            OwnerCandidateCount=1
+            Selection='single-owner-checkout'
+        }
     }
+
     $managed = New-ManagedStableRepo $Workspace $ExpectedSha
-    return [pscustomobject]@{ Root=$managed; ManagedCreated=$true }
+    return [pscustomobject]@{
+        Root=$managed
+        ManagedCreated=$true
+        OwnerCandidateCount=$ownerCandidates.Count
+        Selection=if ($ownerCandidates.Count -eq 0) { 'managed-no-owner-checkout' } else { 'managed-ambiguous-owner-checkouts' }
+    }
 }
 
 function Assert-TrackedClean([string]$Root) {
@@ -202,6 +223,8 @@ $evidence = [ordered]@{
     source_sha = $SourceSha.ToLowerInvariant()
     repository = $ExpectedRepo
     stable_repo_root = $stableRoot
+    stable_repo_selection = $stable.Selection
+    owner_candidate_count = [int]$stable.OwnerCandidateCount
     managed_checkout_created = [bool]$stable.ManagedCreated
     sync_source = 'exact-github-actions-workspace'
     network_credentials_added = $false
@@ -216,5 +239,6 @@ $evidence = [ordered]@{
 $evidence | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $EvidencePath -Encoding UTF8
 Write-Host "NEXUS_ZERO_TOUCH_REMOTE_INSTALL=SUCCESS"
 Write-Host "NEXUS_STABLE_REPO=$stableRoot"
+Write-Host "NEXUS_STABLE_SELECTION=$($stable.Selection)"
 Write-Host "NEXUS_MANAGED_CHECKOUT_CREATED=$($stable.ManagedCreated)"
 Write-Host "NEXUS_AUTOSTART_EVIDENCE=$EvidencePath"
