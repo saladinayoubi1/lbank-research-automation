@@ -33,12 +33,13 @@ function Invoke-GitGlobal([string[]]$Args) {
     return (($output | Out-String).Trim())
 }
 
-function Is-ServiceIdentity {
+function Get-ExecutionIdentity {
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent().Name
     $blocked = @('NT AUTHORITY\SYSTEM','NT AUTHORITY\NETWORK SERVICE','NT AUTHORITY\LOCAL SERVICE')
     return [pscustomobject]@{
         Name = $identity
         Blocked = ($blocked -contains $identity.ToUpperInvariant())
+        UserInteractive = [Environment]::UserInteractive
     }
 }
 
@@ -180,8 +181,9 @@ function Task-Snapshot([string]$Name) {
 
 if ($env:OS -ne 'Windows_NT') { Fail 'Windows is required' }
 New-Item -ItemType Directory -Force -Path $EvidenceDir | Out-Null
-$identity = Is-ServiceIdentity
+$identity = Get-ExecutionIdentity
 if ($identity.Blocked) { Fail "self-hosted runner is executing as service identity $($identity.Name); owner-user Task Scheduler install is unsafe" }
+if (-not $identity.UserInteractive) { Fail "self-hosted runner is not executing in an interactive owner session ($($identity.Name)); owner-user Task Scheduler install is unsafe" }
 
 $workspace = Validate-Workspace $env:GITHUB_WORKSPACE $SourceSha
 $stable = Resolve-StableRepo $workspace $SourceSha
@@ -204,6 +206,7 @@ $evidence = [ordered]@{
     sync_source = 'exact-github-actions-workspace'
     network_credentials_added = $false
     windows_identity = $identity.Name
+    interactive_owner_session = [bool]$identity.UserInteractive
     github_workspace_rejected_as_install_root = $true
     tracked_owner_changes_preserved = $true
     core_task = $core
