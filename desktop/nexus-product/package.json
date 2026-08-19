@@ -8,7 +8,7 @@
   "private": true,
   "scripts": {
     "start": "electron .",
-    "dist:win": "node -e \"const fs=require('fs');fs.mkdirSync('sidecar',{recursive:true});fs.copyFileSync('../../scripts/bootstrap_nexus_runner_from_gui.ps1','sidecar/bootstrap_nexus_runner_from_gui.ps1')\" && electron-builder --win nsis portable"
+    "dist:win": "node stage-package-resources.js && electron-builder --win nsis portable"
   },
   "devDependencies": {
     "electron": "34.3.3",
@@ -26,7 +26,9 @@
       {"from":"sidecar/build-evidence.json","to":"build-evidence.json"},
       {"from":"sidecar/market-data-source-registry.yaml","to":"docs/architecture/market-data-source-registry.yaml"},
       {"from":"sidecar/nexus-agent-manager.json","to":"config/nexus-agent-manager.json"},
-      {"from":"sidecar/bootstrap_nexus_runner_from_gui.ps1","to":"scripts/bootstrap_nexus_runner_from_gui.ps1"}
+      {"from":"sidecar/bootstrap_nexus_runner_from_gui.ps1","to":"scripts/bootstrap_nexus_runner_from_gui.ps1"},
+      {"from":"sidecar/install_nexus_owner_autostart_from_gui.ps1","to":"scripts/install_nexus_owner_autostart_from_gui.ps1"},
+      {"from":"sidecar/nexus-source.bundle","to":"nexus-source.bundle"}
     ],
     "win": {"target": ["nsis", "portable"]},
     "nsis": {
