@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 import shutil
 import subprocess
@@ -24,16 +25,16 @@ def test_owner_bootstrap_is_exact_source_interactive_and_fail_closed() -> None:
         "nexus.owner-autostart-bootstrap.v1",
         "nexus-source.bundle",
         "refs/heads/nexus-package-source",
-        "git bundle verify",
-        "git bundle list-heads",
+        "bundle verify $BundlePath",
+        "bundle list-heads $BundlePath",
         "[Environment]::UserInteractive",
         "NT AUTHORITY\\NETWORK SERVICE",
-        "%LOCALAPPDATA%" if False else "LOCALAPPDATA",
+        "LOCALAPPDATA",
         "NEXUS\\lbank-research-automation",
         "--ff-only",
         "NEXUS-ZeroTouch-Autopilot",
         "NEXUS-GitHub-Runner-Autostart",
-        "-RunLevel Limited" if False else "run_level",
+        "run_level",
         "network_credentials_added = $false",
         "runner_registration_modified = $false",
         "machine_execution_policy_modified = $false",
@@ -79,6 +80,16 @@ def test_packaged_entrypoint_runs_owner_bootstrap_without_blocking_product_main(
     ):
         assert marker in entry
     assert "shell: true" not in entry
+
+
+def test_package_config_carries_owner_helper_and_exact_source_bundle() -> None:
+    package = json.loads(read(DESKTOP / "package.json"))
+    resources = {(item.get("from"), item.get("to")) for item in package["build"]["extraResources"]}
+    assert ("sidecar/install_nexus_owner_autostart_from_gui.ps1", "scripts/install_nexus_owner_autostart_from_gui.ps1") in resources
+    assert ("sidecar/nexus-source.bundle", "nexus-source.bundle") in resources
+    dist = package["scripts"]["dist:win"]
+    assert "stage-package-resources.js" in dist
+    assert dist.index("stage-package-resources.js") < dist.index("electron-builder")
 
 
 def test_package_stager_builds_self_contained_source_bundle_and_cleans_temp_ref() -> None:
