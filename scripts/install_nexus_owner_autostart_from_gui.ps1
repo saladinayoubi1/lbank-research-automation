@@ -101,15 +101,15 @@ function Get-Git {
     return $git.Source
 }
 
-function Invoke-Git([string]$Root, [string[]]$Args) {
+function Invoke-Git([string]$Root, [string[]]$GitArguments) {
     $git = Get-Git
-    $result = Invoke-NativeCapture $git $Root $Args ("git " + ($Args -join ' '))
+    $result = Invoke-NativeCapture -Executable $git -WorkingDirectory $Root -Arguments $GitArguments -Label ("git " + ($GitArguments -join ' '))
     return $result.Text
 }
 
-function Invoke-GitGlobal([string[]]$Args) {
+function Invoke-GitGlobal([string[]]$GitArguments) {
     $git = Get-Git
-    $result = Invoke-NativeCapture $git '' $Args ("git " + ($Args -join ' '))
+    $result = Invoke-NativeCapture -Executable $git -WorkingDirectory '' -Arguments $GitArguments -Label ("git " + ($GitArguments -join ' '))
     return $result.Text
 }
 
@@ -126,23 +126,23 @@ function Assert-InteractiveOwner {
 function Assert-SeedSource {
     if (-not (Test-Path -LiteralPath $SeedRepoPath -PathType Container)) { throw 'packaged exact-source Git seed is missing' }
     if (-not (Test-Path -LiteralPath (Join-Path $SeedRepoPath 'shallow') -PathType Leaf)) { throw 'packaged exact-source Git seed is not shallow bounded' }
-    $seedSha = Invoke-GitGlobal @('--git-dir',$SeedRepoPath,'rev-parse',$PackageRef)
+    $seedSha = Invoke-GitGlobal -GitArguments @('--git-dir',$SeedRepoPath,'rev-parse',$PackageRef)
     if ($seedSha.ToLowerInvariant() -ne $SourceSha.ToLowerInvariant()) {
         throw "packaged source mismatch: expected $($SourceSha.ToLowerInvariant()) got $seedSha"
     }
-    [void](Invoke-GitGlobal @('--git-dir',$SeedRepoPath,'fsck','--no-dangling'))
+    [void](Invoke-GitGlobal -GitArguments @('--git-dir',$SeedRepoPath,'fsck','--no-dangling'))
     return $seedSha.ToLowerInvariant()
 }
 
 function Assert-CanonicalRemote([string]$Root) {
-    $remote = Invoke-Git $Root @('remote','get-url','origin')
+    $remote = Invoke-Git -Root $Root -GitArguments @('remote','get-url','origin')
     if ($remote -notmatch $ExpectedRemotePattern) {
         throw "managed checkout origin is not canonical: $remote"
     }
 }
 
 function Assert-TrackedClean([string]$Root) {
-    $status = Invoke-Git $Root @('status','--porcelain=v1','--untracked-files=no')
+    $status = Invoke-Git -Root $Root -GitArguments @('status','--porcelain=v1','--untracked-files=no')
     if ($status) { throw 'managed checkout has tracked owner changes; refusing automatic replacement' }
 }
 
@@ -155,9 +155,9 @@ function Initialize-ManagedRepo {
 
     # --no-local prevents hardlinks back into a Portable package that may disappear
     # after process exit; the managed checkout must own its object database.
-    [void](Invoke-GitGlobal @('clone','--no-local','--no-checkout','--branch','nexus-package-source',$SeedRepoPath,$ManagedRepoRoot))
-    [void](Invoke-Git $ManagedRepoRoot @('remote','set-url','origin',$ExpectedGitHubUrl))
-    [void](Invoke-Git $ManagedRepoRoot @('checkout','-B','main',$SourceSha.ToLowerInvariant()))
+    [void](Invoke-GitGlobal -GitArguments @('clone','--no-local','--no-checkout','--branch','nexus-package-source',$SeedRepoPath,$ManagedRepoRoot))
+    [void](Invoke-Git -Root $ManagedRepoRoot -GitArguments @('remote','set-url','origin',$ExpectedGitHubUrl))
+    [void](Invoke-Git -Root $ManagedRepoRoot -GitArguments @('checkout','-B','main',$SourceSha.ToLowerInvariant()))
     Assert-CanonicalRemote $ManagedRepoRoot
 }
 
@@ -165,13 +165,13 @@ function Validate-ExistingManagedRepo {
     if (-not (Test-Path -LiteralPath (Join-Path $ManagedRepoRoot '.git') -PathType Container)) {
         throw "managed checkout path exists without a Git repository: $ManagedRepoRoot"
     }
-    $top = Invoke-Git $ManagedRepoRoot @('rev-parse','--show-toplevel')
+    $top = Invoke-Git -Root $ManagedRepoRoot -GitArguments @('rev-parse','--show-toplevel')
     if ((Resolve-Path -LiteralPath $top).Path -ne (Resolve-Path -LiteralPath $ManagedRepoRoot).Path) {
         throw 'managed checkout root validation failed'
     }
     Assert-CanonicalRemote $ManagedRepoRoot
     Assert-TrackedClean $ManagedRepoRoot
-    return (Invoke-Git $ManagedRepoRoot @('rev-parse','HEAD')).ToLowerInvariant()
+    return (Invoke-Git -Root $ManagedRepoRoot -GitArguments @('rev-parse','HEAD')).ToLowerInvariant()
 }
 
 function Reconcile-ExistingManagedRepo([string]$CurrentHead) {
@@ -182,18 +182,18 @@ function Reconcile-ExistingManagedRepo([string]$CurrentHead) {
     # fetch is performed and no credential is added. --update-shallow allows the exact
     # packaged shallow commit to be imported into an older managed checkout.
     Write-Log "reconcile managed checkout prior_sha=$CurrentHead target_sha=$target source=packaged_seed"
-    [void](Invoke-Git $ManagedRepoRoot @('fetch','--no-tags','--update-shallow',$SeedRepoPath,$PackageRef))
-    $fetched = Invoke-Git $ManagedRepoRoot @('rev-parse','FETCH_HEAD')
+    [void](Invoke-Git -Root $ManagedRepoRoot -GitArguments @('fetch','--no-tags','--update-shallow',$SeedRepoPath,$PackageRef))
+    $fetched = Invoke-Git -Root $ManagedRepoRoot -GitArguments @('rev-parse','FETCH_HEAD')
     if ($fetched.ToLowerInvariant() -ne $target) {
         throw "packaged seed fetch mismatch: expected $target got $fetched"
     }
 
     # checkout -B updates only this clean managed checkout. Git itself refuses an
     # untracked-file collision; we do not delete, clean, or hard-reset owner data.
-    [void](Invoke-Git $ManagedRepoRoot @('checkout','-B','main','FETCH_HEAD'))
+    [void](Invoke-Git -Root $ManagedRepoRoot -GitArguments @('checkout','-B','main','FETCH_HEAD'))
     Assert-CanonicalRemote $ManagedRepoRoot
     Assert-TrackedClean $ManagedRepoRoot
-    $head = Invoke-Git $ManagedRepoRoot @('rev-parse','HEAD')
+    $head = Invoke-Git -Root $ManagedRepoRoot -GitArguments @('rev-parse','HEAD')
     if ($head.ToLowerInvariant() -ne $target) {
         throw "managed checkout reconciliation failed: expected $target got $head"
     }
@@ -229,8 +229,8 @@ function Invoke-Installer([string]$RelativeScript) {
     $path = Join-Path $ManagedRepoRoot $RelativeScript
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "required installer missing: $RelativeScript" }
     $ps = Get-PowerShellExe
-    $args = @('-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',$path,'-Mode','Install','-RepoRoot',$ManagedRepoRoot)
-    [void](Invoke-NativeCapture $ps $ManagedRepoRoot $args ("installer $RelativeScript"))
+    $installerArguments = @('-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',$path,'-Mode','Install','-RepoRoot',$ManagedRepoRoot)
+    [void](Invoke-NativeCapture -Executable $ps -WorkingDirectory $ManagedRepoRoot -Arguments $installerArguments -Label ("installer $RelativeScript"))
 }
 
 function Task-Snapshot([string]$Name) {
@@ -257,7 +257,7 @@ try {
 
     $CurrentStage = 'managed_checkout'
     $managed = Prepare-ManagedRepo
-    $head = Invoke-Git $ManagedRepoRoot @('rev-parse','HEAD')
+    $head = Invoke-Git -Root $ManagedRepoRoot -GitArguments @('rev-parse','HEAD')
     if ($head.ToLowerInvariant() -ne $SourceSha.ToLowerInvariant()) {
         throw "managed checkout exact-source verification failed: $head"
     }
