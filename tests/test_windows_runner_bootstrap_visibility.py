@@ -41,6 +41,13 @@ def test_runner_bootstrap_evidence_reader_is_bounded_local_and_secret_free() -> 
     assert "runner_root:" not in text
 
 
+def test_runner_bootstrap_evidence_reader_tolerates_windows_powershell_utf8_bom() -> None:
+    text = read(ENTRY)
+    assert "function parseRunnerEvidenceJson(raw)" in text
+    assert "text.charCodeAt(0) === 0xFEFF ? text.slice(1) : text" in text
+    assert "parseRunnerEvidenceJson(fs.readFileSync(target, 'utf8'))" in text
+
+
 def test_runner_state_ipc_is_loopback_only_and_returns_whitelisted_projection() -> None:
     text = read(ENTRY)
     assert "trustedRunnerStateSender" in text

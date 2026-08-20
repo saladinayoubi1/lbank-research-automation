@@ -47,6 +47,12 @@ function safeRunnerText(value, maxLength = 160) {
   return value.replace(/[\u0000-\u001f\u007f]+/g, ' ').trim().slice(0, maxLength) || null;
 }
 
+function parseRunnerEvidenceJson(raw) {
+  const text = String(raw ?? '');
+  const normalized = text.charCodeAt(0) === 0xFEFF ? text.slice(1) : text;
+  return JSON.parse(normalized);
+}
+
 function runnerBootstrapEvidencePath() {
   const localAppData = String(process.env.LOCALAPPDATA || '').trim();
   if (!localAppData || !path.isAbsolute(localAppData)) return null;
@@ -65,7 +71,7 @@ function safeRunnerBootstrapState() {
     if (!stat.isFile() || stat.isSymbolicLink() || stat.size < 2 || stat.size > RUNNER_EVIDENCE_MAX_BYTES) {
       return { available: false, status: 'EVIDENCE_FILE_REJECTED' };
     }
-    const payload = JSON.parse(fs.readFileSync(target, 'utf8'));
+    const payload = parseRunnerEvidenceJson(fs.readFileSync(target, 'utf8'));
     if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
       return { available: false, status: 'EVIDENCE_SCHEMA_REJECTED' };
     }
