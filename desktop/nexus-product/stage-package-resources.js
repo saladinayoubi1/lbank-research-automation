@@ -53,9 +53,20 @@ try {
     stdio: ['ignore', 'pipe', 'pipe'],
     windowsHide: true,
   });
+
+  // A bare clone may pack the branch and leave refs/ empty. Electron-builder does
+  // not preserve empty directories, but Git requires refs/ (or a valid loose ref)
+  // for the packaged directory to be recognized as a repository on the owner PC.
+  // Re-materialize the exact source ref as a loose ref before packaging.
+  runGit(['--git-dir', seedPath, 'update-ref', packageRef, head], { cwd: repoRoot });
 } finally {
   try { runGit(['update-ref', '-d', packageRef]); } catch {}
 }
+
+const looseRefPath = path.join(seedPath, 'refs', 'heads', 'nexus-package-source');
+if (!fs.existsSync(looseRefPath)) throw new Error('exact-source seed loose ref is missing');
+const looseRef = fs.readFileSync(looseRefPath, 'utf8').trim().toLowerCase();
+if (looseRef !== head) throw new Error(`seed loose ref mismatch: expected ${head} got ${looseRef}`);
 
 const seeded = runGit(['--git-dir', seedPath, 'rev-parse', packageRef], { cwd: repoRoot }).toLowerCase();
 if (seeded !== head) throw new Error(`seed source mismatch: expected ${head} got ${seeded}`);
