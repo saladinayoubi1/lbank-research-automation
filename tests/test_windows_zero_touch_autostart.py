@@ -29,6 +29,18 @@ def test_autostart_registers_current_user_logon_task_without_elevation():
     assert "NT AUTHORITY\\SYSTEM" not in text
 
 
+def test_install_persists_task_before_runtime_hydration():
+    text = read(PS)
+    install = text[text.index("function Install-Autostart"):text.index("function Uninstall-Autostart")]
+    daemon = text[text.index("function Run-Daemon"):text.index("switch ($Mode)")]
+
+    assert "Ensure-LocalVenv" not in install
+    assert install.index("Register-ScheduledTask") < install.index("Start-ScheduledTask")
+    assert "runtime_hydration=daemon_managed" in install
+    assert "Start-LocalSupervisor" in daemon
+    assert "local_supervisor_start_failed" in daemon
+
+
 def test_daemon_runs_real_local_supervisor_hidden_recovers_and_binds_exact_checkout():
     text = read(PS)
     for marker in (

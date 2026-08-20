@@ -251,9 +251,10 @@ function Handle-Phase7([string]$Root) {
 function Install-Autostart {
     if ($env:OS -ne 'Windows_NT') { throw 'NEXUS Windows autostart can only be installed on Windows' }
     $root = Resolve-RepoRoot
-    [void](Ensure-LocalVenv $root)
     Ensure-StateRoot
 
+    # Persistence must not depend on first-run Python/venv hydration. The daemon owns
+    # prerequisite reconciliation and retries supervisor startup without losing the task.
     $script = (Resolve-Path -LiteralPath $PSCommandPath).Path
     $ps = Get-PowerShellExe
     $user = "$env:USERDOMAIN\$env:USERNAME"
@@ -265,7 +266,7 @@ function Install-Autostart {
     $task = New-ScheduledTask -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description 'Starts the NEXUS local supervisor and safely resumes Phase 7 offline handoff after Windows logon.'
     Register-ScheduledTask -TaskName $TaskName -InputObject $task -Force | Out-Null
     Start-ScheduledTask -TaskName $TaskName
-    Write-Log "autostart_installed task=$TaskName user=$user repo=$root"
+    Write-Log "autostart_installed task=$TaskName user=$user repo=$root runtime_hydration=daemon_managed"
     Write-Host "NEXUS zero-touch autostart installed: $TaskName"
 }
 
