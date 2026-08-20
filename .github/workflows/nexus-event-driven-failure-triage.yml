@@ -41,9 +41,106 @@ jobs:
           github.event.action == 'in_progress'
         ))
       ))
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
+    runs-on: >-
+      ${{
+        github.event_name == 'workflow_run' &&
+        github.event.action == 'completed' &&
+        github.event.workflow_run.name == 'Build NEXUS Desktop Windows' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_branch == github.event.repository.default_branch &&
+        github.event.workflow_run.head_repository.full_name == github.repository &&
+        github.event.workflow_run.conclusion == 'success' &&
+        'nexus-local' || 'ubuntu-latest'
+      }}
+    timeout-minutes: 15
     steps:
+      - name: Checkout exact trusted package source for physical probe
+        if: >-
+          github.event_name == 'workflow_run' &&
+          github.event.action == 'completed' &&
+          github.event.workflow_run.name == 'Build NEXUS Desktop Windows' &&
+          github.event.workflow_run.event == 'push' &&
+          github.event.workflow_run.head_branch == github.event.repository.default_branch &&
+          github.event.workflow_run.head_repository.full_name == github.repository &&
+          github.event.workflow_run.conclusion == 'success'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 1
+
+      - name: Verify exact trusted package source
+        if: >-
+          github.event_name == 'workflow_run' &&
+          github.event.action == 'completed' &&
+          github.event.workflow_run.name == 'Build NEXUS Desktop Windows' &&
+          github.event.workflow_run.event == 'push' &&
+          github.event.workflow_run.head_branch == github.event.repository.default_branch &&
+          github.event.workflow_run.head_repository.full_name == github.repository &&
+          github.event.workflow_run.conclusion == 'success'
+        shell: pwsh
+        env:
+          EXPECTED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          $actual = (git rev-parse HEAD).Trim()
+          if ($actual -ne $env:EXPECTED_SHA) { throw "Physical probe checkout SHA mismatch" }
+          Write-Host "physical_probe_exact_sha=$actual"
+
+      - name: Download exact hosted sidecar bundle
+        if: >-
+          github.event_name == 'workflow_run' &&
+          github.event.action == 'completed' &&
+          github.event.workflow_run.name == 'Build NEXUS Desktop Windows' &&
+          github.event.workflow_run.event == 'push' &&
+          github.event.workflow_run.head_branch == github.event.repository.default_branch &&
+          github.event.workflow_run.head_repository.full_name == github.repository &&
+          github.event.workflow_run.conclusion == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: nexus-windows-sidecar-compat-${{ github.event.workflow_run.head_sha }}
+          path: diagnostic-bundle
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Run bounded physical sidecar compatibility probe
+        id: physical_sidecar_probe
+        continue-on-error: true
+        if: >-
+          github.event_name == 'workflow_run' &&
+          github.event.action == 'completed' &&
+          github.event.workflow_run.name == 'Build NEXUS Desktop Windows' &&
+          github.event.workflow_run.event == 'push' &&
+          github.event.workflow_run.head_branch == github.event.repository.default_branch &&
+          github.event.workflow_run.head_repository.full_name == github.repository &&
+          github.event.workflow_run.conclusion == 'success'
+        shell: pwsh
+        env:
+          EXPECTED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: >-
+          ./scripts/windows_sidecar_physical_probe.ps1
+          -BundleRoot "diagnostic-bundle"
+          -ExpectedSourceSha "$env:EXPECTED_SHA"
+          -OutputPath "build/windows-sidecar-physical-compat/evidence.json"
+
+      - name: Upload physical sidecar compatibility evidence
+        if: >-
+          always() &&
+          github.event_name == 'workflow_run' &&
+          github.event.action == 'completed' &&
+          github.event.workflow_run.name == 'Build NEXUS Desktop Windows' &&
+          github.event.workflow_run.event == 'push' &&
+          github.event.workflow_run.head_branch == github.event.repository.default_branch &&
+          github.event.workflow_run.head_repository.full_name == github.repository &&
+          github.event.workflow_run.conclusion == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexus-windows-sidecar-physical-compat-${{ github.event.workflow_run.head_sha }}-${{ github.run_id }}
+          path: build/windows-sidecar-physical-compat/evidence.json
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Upsert actionable failure and runner install evidence
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
@@ -708,3 +805,24 @@ jobs:
               const created = await github.rest.issues.create({ owner, repo, title, body });
               core.info(`Created triage issue #${created.data.number}`);
             }
+
+      - name: Enforce physical sidecar compatibility result
+        if: >-
+          always() &&
+          github.event_name == 'workflow_run' &&
+          github.event.action == 'completed' &&
+          github.event.workflow_run.name == 'Build NEXUS Desktop Windows' &&
+          github.event.workflow_run.event == 'push' &&
+          github.event.workflow_run.head_branch == github.event.repository.default_branch &&
+          github.event.workflow_run.head_repository.full_name == github.repository &&
+          github.event.workflow_run.conclusion == 'success'
+        shell: pwsh
+        run: |
+          $path = "build/windows-sidecar-physical-compat/evidence.json"
+          if (!(Test-Path -LiteralPath $path -PathType Leaf)) { throw "physical sidecar evidence missing" }
+          $evidence = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json
+          if ($evidence.source_sha -ne "${{ github.event.workflow_run.head_sha }}") { throw "physical sidecar evidence SHA mismatch" }
+          if ($evidence.paper_only -ne $true -or $evidence.live_trading_authority -ne $false) { throw "physical sidecar authority evidence widened" }
+          if ($evidence.status -ne "SUCCESS" -or $evidence.overview_ok -ne $true) {
+            throw "physical sidecar compatibility failed: status=$($evidence.status) exit=$($evidence.process_exit_hex) module=$($evidence.fault.faulting_module)"
+          }
