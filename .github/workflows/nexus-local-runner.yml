@@ -39,6 +39,7 @@ concurrency:
     nexus-local-runner-${{
       github.event_name == 'push' && contains(github.event.head_commit.message, '[verify-owner-autostart]') && 'owner-proof' ||
       github.event_name == 'push' && contains(github.event.head_commit.message, '[install-autostart]') && 'install' ||
+      github.event_name == 'push' && contains(github.event.head_commit.message, '[sidecar-compat]') && 'sidecar-compat' ||
       ((github.event_name == 'push' && contains(github.event.head_commit.message, '[autonomous]')) ||
        (github.event_name == 'workflow_dispatch' && inputs.task == 'autonomous')) && 'autonomous' ||
       'general'
@@ -163,7 +164,9 @@ jobs:
         run: node scripts\nexus_ai_council.js
 
       - name: Physical sidecar compatibility diagnostic
-        if: github.event_name == 'workflow_dispatch' && inputs.task == 'sidecar-compat'
+        if: >-
+          (github.event_name == 'workflow_dispatch' && inputs.task == 'sidecar-compat') ||
+          (github.event_name == 'push' && contains(github.event.head_commit.message, '[sidecar-compat]'))
         run: >-
           powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass
           -File scripts\windows_sidecar_local_compat.ps1
@@ -171,7 +174,11 @@ jobs:
           -OutputPath "build\windows-sidecar-local-compat\evidence.json"
 
       - name: Upload physical sidecar compatibility evidence
-        if: always() && github.event_name == 'workflow_dispatch' && inputs.task == 'sidecar-compat'
+        if: >-
+          always() && (
+            (github.event_name == 'workflow_dispatch' && inputs.task == 'sidecar-compat') ||
+            (github.event_name == 'push' && contains(github.event.head_commit.message, '[sidecar-compat]'))
+          )
         uses: actions/upload-artifact@v4
         with:
           name: nexus-windows-sidecar-local-compat-${{ github.run_id }}
