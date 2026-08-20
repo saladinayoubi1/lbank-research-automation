@@ -12,3 +12,16 @@ body[data-contrast="high"]{--text:#f4f7fb;--strong:#fff;--muted:#c3ccd7;--dim:#9
 .hero-card b,.metric b,.pipeline div b,.capability b,.strategy-card h3,.risk-grid b,.preview-card span{font-size:var(--nexus-readable-value)!important;line-height:1.45!important}
 .hero-card,.metric,.risk-grid .panel,.strategy-card,.capability{min-height:72px}.hero-card small,.metric small,.strategy-card p,.risk-grid small,.preview-card small{white-space:normal;overflow-wrap:anywhere}
 @media(max-width:1366px),(max-height:768px){.hero-card small,.metric small,.strategy-card p,.risk-grid small,.compact-row span,.settings-form label{font-size:var(--nexus-readable-secondary)!important;line-height:1.5!important}.hero-card b,.metric b,.risk-grid b,.capability b{font-size:var(--nexus-readable-value)!important}.hero-card,.metric,.risk-grid .panel,.strategy-card{min-height:78px}}
+
+/* NEXUS navigation polish: presentation only; no runtime/authority changes. */
+.topbar>.top-status{display:contents}
+#reload{order:0}
+.page-title{order:1}
+#gatewayState{order:2}
+#sidebarToggle{order:3}
+.sidebar nav{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--line2) transparent;padding-inline-end:2px}
+.sidebar nav::-webkit-scrollbar{width:7px}.sidebar nav::-webkit-scrollbar-track{background:transparent}.sidebar nav::-webkit-scrollbar-thumb{background:var(--line2);border-radius:999px}.side-foot{flex:0 0 auto}
+.sidebar nav button>span{width:24px;display:grid;place-items:center;font-size:0!important;line-height:1!important;color:var(--dim)}
+.sidebar nav button>span::before{font:600 17px/1 "Segoe UI Symbol","Segoe UI",sans-serif;color:currentColor}.sidebar nav button.active>span::before{color:var(--blue)}
+.sidebar nav button[data-view="overview"]>span::before{content:"⌂"}.sidebar nav button[data-view="data"]>span::before{content:"▦"}.sidebar nav button[data-view="research"]>span::before{content:"∑"}.sidebar nav button[data-view="paper"]>span::before{content:"↗"}.sidebar nav button[data-view="risk"]>span::before{content:"◆"}.sidebar nav button[data-view="ai"]>span::before{content:"✦"}.sidebar nav button[data-view="strategies"]>span::before{content:"⎇"}.sidebar nav button[data-view="agents"]>span::before{content:"⚙"}.sidebar nav button[data-view="audit"]>span::before{content:"◎"}.sidebar nav button[data-view="live"]>span::before{content:"⊘"}
+body.sidebar-collapsed .sidebar nav button>span{font-size:0!important}@media(max-width:900px){.sidebar nav button>span::before{font-size:16px}}
