@@ -44,7 +44,7 @@ concurrency:
        (github.event_name == 'workflow_dispatch' && inputs.task == 'autonomous')) && 'autonomous' ||
       'general'
     }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[verify-owner-autostart]') }}
 
 jobs:
   local:
