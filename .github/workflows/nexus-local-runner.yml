@@ -108,16 +108,14 @@ jobs:
 
       - name: Bootstrap portable Python
         if: >-
-          github.event_name != 'push' ||
-          !contains(github.event.head_commit.message, '[verify-owner-autostart]') ||
-          contains(github.event.head_commit.message, '[sidecar-compat]')
+          (github.event_name != 'push' || !contains(github.event.head_commit.message, '[verify-owner-autostart]')) ||
+          (github.event_name == 'push' && contains(github.event.head_commit.message, '[sidecar-compat]'))
         run: call scripts\bootstrap_portable_python.cmd
 
       - name: Privacy guard
         if: >-
-          github.event_name != 'push' ||
-          !contains(github.event.head_commit.message, '[verify-owner-autostart]') ||
-          contains(github.event.head_commit.message, '[sidecar-compat]')
+          (github.event_name != 'push' || !contains(github.event.head_commit.message, '[verify-owner-autostart]')) ||
+          (github.event_name == 'push' && contains(github.event.head_commit.message, '[sidecar-compat]'))
         run: python -c "import pathlib; root=pathlib.Path.cwd().resolve(); home=pathlib.Path.home().resolve(); assert root != home and home not in root.parents; print('privacy_guard=ok')"
 
       - name: Install zero-touch NEXUS autostart
