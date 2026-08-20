@@ -41,6 +41,8 @@ jobs:
         shell: pwsh
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -142,8 +144,17 @@ jobs:
           $registry = Join-Path $bundle "market-data-source-registry.yaml"
           $agent = Join-Path $bundle "nexus-agent-manager.json"
           $buildEvidence = Join-Path $bundle "build-evidence.json"
-          foreach ($path in @($exe,$registry,$agent,$buildEvidence)) {
+          $sourceShaPath = Join-Path $bundle "source-sha.txt"
+          foreach ($path in @($exe,$registry,$agent,$buildEvidence,$sourceShaPath)) {
             if (!(Test-Path -LiteralPath $path)) { throw "diagnostic bundle missing required path" }
+          }
+          $bundleSha = (Get-Content -LiteralPath $sourceShaPath -Raw -ErrorAction Stop).Trim()
+          $build = Get-Content -LiteralPath $buildEvidence -Raw -ErrorAction Stop | ConvertFrom-Json
+          if ($bundleSha -ne $env:GITHUB_SHA -or $build.source_sha -ne $env:GITHUB_SHA) {
+            throw "diagnostic bundle source SHA does not match current trusted main push"
+          }
+          if ($build.paper_only -ne $true -or $build.live_trading_authority -ne $false) {
+            throw "diagnostic bundle authority evidence is not Paper-only"
           }
 
           $probeRoot = Join-Path $env:RUNNER_TEMP ("nexus-sidecar-probe-" + $env:GITHUB_RUN_ID)
@@ -212,13 +223,31 @@ jobs:
             }
           } catch {}
 
-          $os = Get-CimInstance Win32_OperatingSystem
+          $osVersion = [Environment]::OSVersion.Version.ToString()
+          $osBuild = [string][Environment]::OSVersion.Version.Build
+          $osArchitecture = [string]$env:PROCESSOR_ARCHITECTURE
+          $totalVisibleMemoryMb = $null
+          $freePhysicalMemoryMb = $null
+          $osProbe = "environment-fallback"
+          try {
+            $os = Get-CimInstance Win32_OperatingSystem -ErrorAction Stop
+            if ($os) {
+              $osVersion = [string]$os.Version
+              $osBuild = [string]$os.BuildNumber
+              $osArchitecture = [string]$os.OSArchitecture
+              $totalVisibleMemoryMb = [Math]::Round(([double]$os.TotalVisibleMemorySize / 1024), 0)
+              $freePhysicalMemoryMb = [Math]::Round(([double]$os.FreePhysicalMemory / 1024), 0)
+              $osProbe = "cim"
+            }
+          } catch {}
+
           $exitHex = $null
           if ($null -ne $exitCode) {
             $unsigned = [uint64]($exitCode -band 0xffffffffL)
             $exitHex = ('0x{0:X8}' -f $unsigned)
           }
-          $errText = if (Test-Path $stderr) { Get-Content $stderr -Raw -ErrorAction SilentlyContinue } else { '' }
+          $errText = if (Test-Path $stderr) { (Get-Content $stderr -Tail 80 -ErrorAction SilentlyContinue | Out-String) } else { '' }
+          if ($null -eq $errText) { $errText = '' }
           if ($errText.Length -gt 1600) { $errText = $errText.Substring($errText.Length - 1600) }
           $result = [ordered]@{
             contract_version = "nexus.windows-sidecar-physical-compat.v1"
@@ -229,11 +258,12 @@ jobs:
             process_exit_hex = $exitHex
             stderr_tail = $errText
             fault = $exception
-            os_version = [string]$os.Version
-            os_build = [string]$os.BuildNumber
-            os_architecture = [string]$os.OSArchitecture
-            total_visible_memory_mb = [Math]::Round(([double]$os.TotalVisibleMemorySize / 1024), 0)
-            free_physical_memory_mb = [Math]::Round(([double]$os.FreePhysicalMemory / 1024), 0)
+            os_probe = $osProbe
+            os_version = $osVersion
+            os_build = $osBuild
+            os_architecture = $osArchitecture
+            total_visible_memory_mb = $totalVisibleMemoryMb
+            free_physical_memory_mb = $freePhysicalMemoryMb
             paper_only = $true
             live_trading_authority = $false
             generated_at = (Get-Date).ToUniversalTime().ToString("o")
