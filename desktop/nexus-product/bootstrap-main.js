@@ -4,12 +4,16 @@ const fs = require('fs');
 const path = require('path');
 
 const BOOTSTRAP_TIMEOUT_MS = 35000;
+const RUNNER_PROVISION_TIMEOUT_MS = 5 * 60 * 1000;
 const RUNNER_SUPERVISOR_INTERVAL_MS = 60 * 1000;
 const OWNER_AUTOSTART_TIMEOUT_MS = 15 * 60 * 1000;
 const OWNER_AUTOSTART_RETRY_LIMIT = 3;
 const OWNER_AUTOSTART_RETRY_DELAY_MS = 15 * 1000;
 const RUNNER_STATE_CHANNEL = 'nexus:runner-bootstrap:get';
 const RUNNER_EVIDENCE_MAX_BYTES = 64 * 1024;
+const RUNNER_REGISTRATION_TOKEN_ENV = 'NEXUS_GITHUB_RUNNER_REGISTRATION_TOKEN';
+let runnerRegistrationToken = String(process.env[RUNNER_REGISTRATION_TOKEN_ENV] || '').trim();
+delete process.env[RUNNER_REGISTRATION_TOKEN_ENV];
 
 function appendBootstrapLog(message) {
   try {
@@ -109,7 +113,7 @@ ipcMain.handle(RUNNER_STATE_CHANNEL, event => {
   return safeRunnerBootstrapState();
 });
 
-function runPackagedPowerShell({ scriptName, timeoutMs, log, sourceSha }) {
+function runPackagedPowerShell({ scriptName, timeoutMs, log, sourceSha, extraEnv = {} }) {
   const script = path.join(process.resourcesPath, 'scripts', scriptName);
   if (!fs.existsSync(script)) {
     log(`blocked: bootstrap script missing: ${script}`);
@@ -127,7 +131,7 @@ function runPackagedPowerShell({ scriptName, timeoutMs, log, sourceSha }) {
     ], {
       windowsHide: true,
       stdio: ['ignore', 'pipe', 'pipe'],
-      env: { ...process.env },
+      env: { ...process.env, ...extraEnv },
     });
 
     let stdout = '';
@@ -163,11 +167,34 @@ function startRunnerColdBootstrap() {
   });
 }
 
+function startRunnerProvisioning(sourceSha) {
+  if (!runnerRegistrationToken) {
+    appendBootstrapLog('runner_provision_auth_required token_source=NEXUS_GITHUB_RUNNER_REGISTRATION_TOKEN');
+    return Promise.resolve({ status: 'REGISTRATION_TOKEN_REQUIRED', code: 20 });
+  }
+  const token = runnerRegistrationToken;
+  runnerRegistrationToken = '';
+  return runPackagedPowerShell({
+    scriptName: 'provision_nexus_github_runner.ps1',
+    timeoutMs: RUNNER_PROVISION_TIMEOUT_MS,
+    log: appendBootstrapLog,
+    sourceSha,
+    extraEnv: { [RUNNER_REGISTRATION_TOKEN_ENV]: token },
+  });
+}
+
 let runnerBootstrapInFlight = false;
 async function reconcileRunnerFromGui() {
   if (runnerBootstrapInFlight) return { status: 'ALREADY_RUNNING' };
   runnerBootstrapInFlight = true;
   try {
+    const initial = await startRunnerColdBootstrap();
+    const state = safeRunnerBootstrapState();
+    if (!state.available || state.status !== 'RUNNER_NOT_FOUND') return initial;
+
+    const sourceSha = packagedSourceSha();
+    const provisioned = await startRunnerProvisioning(sourceSha);
+    if (!provisioned || provisioned.status !== 'SUCCESS') return provisioned || { status: 'PROVISION_FAILED' };
     return await startRunnerColdBootstrap();
   } catch (error) {
     appendBootstrapLog(`unexpected bootstrap error: ${error && error.stack ? error.stack : error}`);
@@ -222,7 +249,7 @@ async function startOwnerAutostartWithRetry(sourceSha) {
 
 app.whenReady().then(() => {
   if (process.platform !== 'win32' || !app.isPackaged) return;
-  startRunnerColdBootstrap().catch(error => appendBootstrapLog(`unexpected bootstrap error: ${error && error.stack ? error.stack : error}`));
+  void reconcileRunnerFromGui();
   startRunnerSupervisor();
   let sourceSha;
   try { sourceSha = packagedSourceSha(); }
