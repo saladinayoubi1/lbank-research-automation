@@ -83,12 +83,16 @@ jobs:
           Write-Host 'owner_proof_privacy_guard=ok'"
 
       - name: Verify owner-user autostart read-only
+        id: owner_autostart_proof
+        continue-on-error: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[sidecar-compat]') }}
         if: github.event_name == 'push' && contains(github.event.head_commit.message, '[verify-owner-autostart]')
         run: |
           set /p OWNER_SOURCE_SHA=<.nexus\owner-autostart-proof-target.txt
           powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File scripts\verify_nexus_owner_autostart.ps1 -SourceSha "%OWNER_SOURCE_SHA%"
 
       - name: Upload owner-user autostart proof
+        id: owner_autostart_artifact
+        continue-on-error: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[sidecar-compat]') }}
         if: always() && github.event_name == 'push' && contains(github.event.head_commit.message, '[verify-owner-autostart]')
         uses: actions/upload-artifact@v4
         with:
@@ -103,11 +107,17 @@ jobs:
           node-version: '20'
 
       - name: Bootstrap portable Python
-        if: github.event_name != 'push' || !contains(github.event.head_commit.message, '[verify-owner-autostart]')
+        if: >-
+          github.event_name != 'push' ||
+          !contains(github.event.head_commit.message, '[verify-owner-autostart]') ||
+          contains(github.event.head_commit.message, '[sidecar-compat]')
         run: call scripts\bootstrap_portable_python.cmd
 
       - name: Privacy guard
-        if: github.event_name != 'push' || !contains(github.event.head_commit.message, '[verify-owner-autostart]')
+        if: >-
+          github.event_name != 'push' ||
+          !contains(github.event.head_commit.message, '[verify-owner-autostart]') ||
+          contains(github.event.head_commit.message, '[sidecar-compat]')
         run: python -c "import pathlib; root=pathlib.Path.cwd().resolve(); home=pathlib.Path.home().resolve(); assert root != home and home not in root.parents; print('privacy_guard=ok')"
 
       - name: Install zero-touch NEXUS autostart
@@ -185,6 +195,23 @@ jobs:
           if-no-files-found: error
           retention-days: 14
           path: build/windows-sidecar-local-compat/evidence.json
+
+      - name: Enforce dual-marker owner-proof result
+        if: >-
+          always() &&
+          github.event_name == 'push' &&
+          contains(github.event.head_commit.message, '[sidecar-compat]') &&
+          contains(github.event.head_commit.message, '[verify-owner-autostart]')
+        run: |
+          if /I not "${{ steps.owner_autostart_proof.outcome }}"=="success" (
+            echo owner_autostart_proof_outcome=${{ steps.owner_autostart_proof.outcome }}
+            exit /b 1
+          )
+          if /I not "${{ steps.owner_autostart_artifact.outcome }}"=="success" (
+            echo owner_autostart_artifact_outcome=${{ steps.owner_autostart_artifact.outcome }}
+            exit /b 1
+          )
+          echo dual_marker_owner_proof=success
 
       - name: Persistent autonomous worker
         if: inputs.task == 'autonomous' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[autonomous]'))
