@@ -53,9 +53,22 @@ try {
     stdio: ['ignore', 'pipe', 'pipe'],
     windowsHide: true,
   });
+
+  // A bare clone commonly stores the branch only in packed-refs, leaving refs/
+  // empty. Electron-builder does not preserve empty directories, while Git's
+  // repository validation expects refs/ to exist on the installed owner machine.
+  // Deleting and recreating the staged branch forces Git to materialize a loose
+  // refs/heads/nexus-package-source file without changing the exact commit.
+  runGit(['--git-dir', seedPath, 'update-ref', '-d', packageRef], { cwd: repoRoot });
+  runGit(['--git-dir', seedPath, 'update-ref', packageRef, head], { cwd: repoRoot });
 } finally {
   try { runGit(['update-ref', '-d', packageRef]); } catch {}
 }
+
+const looseRefPath = path.join(seedPath, 'refs', 'heads', 'nexus-package-source');
+if (!fs.existsSync(looseRefPath)) throw new Error('exact-source seed loose ref is missing');
+const looseRef = fs.readFileSync(looseRefPath, 'utf8').trim().toLowerCase();
+if (looseRef !== head) throw new Error(`seed loose ref mismatch: expected ${head} got ${looseRef}`);
 
 const seeded = runGit(['--git-dir', seedPath, 'rev-parse', packageRef], { cwd: repoRoot }).toLowerCase();
 if (seeded !== head) throw new Error(`seed source mismatch: expected ${head} got ${seeded}`);
