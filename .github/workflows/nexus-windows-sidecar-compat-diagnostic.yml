@@ -118,7 +118,7 @@ jobs:
           compression-level: 0
 
   physical-compat:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name != 'pull_request' && github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: build-sidecar
     runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 20
@@ -218,7 +218,6 @@ jobs:
             $unsigned = [uint64]($exitCode -band 0xffffffffL)
             $exitHex = ('0x{0:X8}' -f $unsigned)
           }
-          $outTail = if (Test-Path $stdout) { (Get-Content $stdout -Raw -ErrorAction SilentlyContinue).Trim()[-([Math]::Min(1200,(Get-Item $stdout).Length))..-1] -join '' } else { '' }
           $errText = if (Test-Path $stderr) { Get-Content $stderr -Raw -ErrorAction SilentlyContinue } else { '' }
           if ($errText.Length -gt 1600) { $errText = $errText.Substring($errText.Length - 1600) }
           $result = [ordered]@{
