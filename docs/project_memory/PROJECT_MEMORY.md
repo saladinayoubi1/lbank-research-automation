@@ -24,6 +24,9 @@ Autonomy must be granted in layers. New authority starts narrow and low-risk. Co
 6. Every important entry should identify date, evidence/commit/issue/PR when available, and whether it is active/superseded.
 7. If memory conflicts with current repository evidence, stop automatic high-impact action, record the conflict, and resolve from authoritative evidence.
 
+## Current operational checkpoint
+For Phase 7 continuation, read `PHASE7_CURRENT_CHECKPOINT.md` before planning or reporting status. It records the latest exact-main/physical acceptance evidence known when that checkpoint was written. Current repository, issue, PR, CI and artifact evidence always supersedes the checkpoint if main has advanced.
+
 ## Current architectural anchors
 - GitHub repository is the durable engineering source of truth.
 - Fast Agent Coordinator and local supervisor provide rapid status/recovery while the laptop is available.
