@@ -54,10 +54,12 @@ try {
     windowsHide: true,
   });
 
-  // A bare clone may pack the branch and leave refs/ empty. Electron-builder does
-  // not preserve empty directories, but Git requires refs/ (or a valid loose ref)
-  // for the packaged directory to be recognized as a repository on the owner PC.
-  // Re-materialize the exact source ref as a loose ref before packaging.
+  // A bare clone commonly stores the branch only in packed-refs, leaving refs/
+  // empty. Electron-builder does not preserve empty directories, while Git's
+  // repository validation expects refs/ to exist on the installed owner machine.
+  // Deleting and recreating the staged branch forces Git to materialize a loose
+  // refs/heads/nexus-package-source file without changing the exact commit.
+  runGit(['--git-dir', seedPath, 'update-ref', '-d', packageRef], { cwd: repoRoot });
   runGit(['--git-dir', seedPath, 'update-ref', packageRef, head], { cwd: repoRoot });
 } finally {
   try { runGit(['update-ref', '-d', packageRef]); } catch {}
