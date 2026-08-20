@@ -1,6 +1,6 @@
 @echo off
 setlocal EnableExtensions
-rem Phase 7 final-SHA convergence trigger; behavior intentionally unchanged.
+rem Physical sidecar rerun trigger after #857; bootstrap behavior intentionally unchanged.
 
 set "PYROOT=%RUNNER_TEMP%\python312"
 set "CACHE_ROOT=%RUNNER_WORKSPACE%\_nexus_bootstrap_cache"
