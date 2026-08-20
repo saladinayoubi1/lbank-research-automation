@@ -113,7 +113,7 @@ ipcMain.handle(RUNNER_STATE_CHANNEL, event => {
   return safeRunnerBootstrapState();
 });
 
-function runPackagedPowerShell({ scriptName, timeoutMs, log, sourceSha, extraEnv = {} }) {
+function runPackagedPowerShell({ scriptName, timeoutMs, log, sourceSha, extraEnv = {}, redactOutput = false }) {
   const script = path.join(process.resourcesPath, 'scripts', scriptName);
   if (!fs.existsSync(script)) {
     log(`blocked: bootstrap script missing: ${script}`);
@@ -141,7 +141,10 @@ function runPackagedPowerShell({ scriptName, timeoutMs, log, sourceSha, extraEnv
       if (settled) return;
       settled = true;
       clearTimeout(timer);
-      log(JSON.stringify({ source_sha: sourceSha, script: scriptName, ...result, stdout: stdout.slice(-1200), stderr: stderr.slice(-1200) }));
+      const output = redactOutput
+        ? { stdout_bytes: Buffer.byteLength(stdout), stderr_bytes: Buffer.byteLength(stderr), output_redacted: true }
+        : { stdout: stdout.slice(-1200), stderr: stderr.slice(-1200) };
+      log(JSON.stringify({ source_sha: sourceSha, script: scriptName, ...result, ...output }));
       resolve(result);
     };
 
@@ -180,6 +183,7 @@ function startRunnerProvisioning(sourceSha) {
     log: appendBootstrapLog,
     sourceSha,
     extraEnv: { [RUNNER_REGISTRATION_TOKEN_ENV]: token },
+    redactOutput: true,
   });
 }
 
@@ -188,7 +192,10 @@ async function reconcileRunnerFromGui() {
   if (runnerBootstrapInFlight) return { status: 'ALREADY_RUNNING' };
   runnerBootstrapInFlight = true;
   try {
-    const initial = await startRunnerColdBootstrap();
+    const initial = await startRunnerColdBootstrap().catch(error => {
+      appendBootstrapLog(`cold bootstrap rejected: ${error && error.message ? error.message : error}`);
+      return { status: 'FAILED' };
+    });
     const state = safeRunnerBootstrapState();
     if (!state.available || state.status !== 'RUNNER_NOT_FOUND') return initial;
 
