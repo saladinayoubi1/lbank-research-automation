@@ -89,11 +89,15 @@ def test_desktop_packages_and_invokes_provisioner_only_after_runner_not_found() 
         "RUNNER_PROVISION_TIMEOUT_MS",
         "provision_nexus_github_runner.ps1",
         "NEXUS_GITHUB_RUNNER_REGISTRATION_TOKEN",
+        "delete process.env[RUNNER_REGISTRATION_TOKEN_ENV]",
         "RUNNER_NOT_FOUND",
         "startRunnerProvisioning",
         "reconcileRunnerFromGui",
+        "redactOutput: true",
     ):
         assert marker in entry
-    assert entry.index("RUNNER_NOT_FOUND") < entry.index("startRunnerProvisioning(sourceSha)")
+    decision = entry.index("state.status !== 'RUNNER_NOT_FOUND'")
+    provision_call = entry.index("const provisioned = await startRunnerProvisioning(sourceSha)")
+    assert decision < provision_call
     assert "shell: true" not in entry
     assert "config.cmd" not in entry.casefold()
