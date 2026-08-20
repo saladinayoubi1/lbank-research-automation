@@ -129,7 +129,7 @@ function Get-VerifiedRunnerArchive {
         $hash = (Get-FileHash -LiteralPath $tmp -Algorithm SHA256).Hash.ToLowerInvariant()
         if ($hash -ne $RunnerArchiveSha256) {
             Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue
-            Fail 'RUNNER_ARCHIVE_HASH_MISMATCH' "official runner archive SHA-256 mismatch"
+            Fail 'RUNNER_ARCHIVE_HASH_MISMATCH' 'official runner archive SHA-256 mismatch'
         }
         Move-Item -LiteralPath $tmp -Destination $archive -Force
     }
@@ -174,8 +174,7 @@ function Register-Runner([string]$Token, [string]$Name) {
         '--token', $Token,
         '--name', $Name,
         '--work', '_work',
-        '--labels', 'nexus-local',
-        '--no-default-labels'
+        '--labels', 'nexus-local'
     )
     try {
         & $configCmd @arguments
