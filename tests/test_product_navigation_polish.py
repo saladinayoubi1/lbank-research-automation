@@ -20,7 +20,28 @@ def test_sidebar_is_vertically_scrollable_without_page_runtime_changes():
     assert ".side-foot{flex:0 0 auto}" in text
 
 
-def test_numeric_nav_labels_are_visually_replaced_by_semantic_icons():
+def test_nav_uses_semantic_icon_glyphs_in_dom_and_no_numeric_labels():
+    html = INDEX.read_text(encoding="utf-8")
+    icons = {
+        "overview": "⌂",
+        "data": "▦",
+        "research": "∑",
+        "paper": "↗",
+        "risk": "◆",
+        "ai": "✦",
+        "strategies": "⎇",
+        "agents": "⚙",
+        "audit": "◎",
+        "live": "⊘",
+    }
+    for view, glyph in icons.items():
+        assert f'data-view="{view}"' in html
+        assert f'<span class="nav-icon" aria-hidden="true">{glyph}</span>' in html
+    for label in ("01","02","03","04","05","06","07","08","09","10"):
+        assert f'<span>{label}</span>' not in html
+
+
+def test_css_keeps_semantic_icon_projection_and_hides_legacy_number_text():
     text = CSS.read_text(encoding="utf-8")
     for view in ("overview","data","research","paper","risk","ai","strategies","agents","audit","live"):
         assert f'button[data-view="{view}"]>span::before' in text
