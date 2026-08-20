@@ -1,0 +1,261 @@
+name: NEXUS Windows Sidecar Compatibility Diagnostic
+
+on:
+  pull_request:
+    paths:
+      - "product_*.py"
+      - "paper_*.py"
+      - "deterministic_risk.py"
+      - "phase5_*.py"
+      - "phase6_*.py"
+      - "market_data_*.py"
+      - "web_dashboard.py"
+      - "requirements.lock"
+      - "requirements-dev.lock"
+      - "requirements-product-build.lock"
+      - ".github/workflows/nexus-windows-sidecar-compat-diagnostic.yml"
+  push:
+    branches: [main]
+    paths:
+      - "product_*.py"
+      - "paper_*.py"
+      - "deterministic_risk.py"
+      - "phase5_*.py"
+      - "phase6_*.py"
+      - "market_data_*.py"
+      - "web_dashboard.py"
+      - "requirements.lock"
+      - "requirements-dev.lock"
+      - "requirements-product-build.lock"
+      - ".github/workflows/nexus-windows-sidecar-compat-diagnostic.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-sidecar:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install exact product build environment
+        run: |
+          python -m pip install -r requirements-dev.lock
+          python -m pip install -r requirements-product-build.lock
+
+      - name: Build exact sidecar
+        run: >-
+          python -m PyInstaller
+          --noconfirm
+          --clean
+          --onedir
+          --name nexus-product-server
+          --add-data "product_ui;product_ui"
+          --add-data ".nexus/phase6-checkpoint.json;.nexus"
+          --add-data "docs/project_memory/STATE.json;docs/project_memory"
+          product_offline_web_server.py
+
+      - name: Stage diagnostic bundle
+        run: |
+          $root = "build/windows-sidecar-compat"
+          New-Item -ItemType Directory -Path $root -Force | Out-Null
+          Copy-Item "dist/nexus-product-server" "$root/nexus-product-server" -Recurse -Force
+          Copy-Item "docs/architecture/market-data-source-registry.yaml" "$root/market-data-source-registry.yaml" -Force
+          Copy-Item "config/nexus-agent-manager.json" "$root/nexus-agent-manager.json" -Force
+          $evidence = [ordered]@{
+            contract_version = "nexus.product-build-evidence.v1"
+            source_sha = $env:GITHUB_SHA
+            workflow = "NEXUS Windows Sidecar Compatibility Diagnostic"
+            run_id = $env:GITHUB_RUN_ID
+            run_attempt = $env:GITHUB_RUN_ATTEMPT
+            ref = $env:GITHUB_REF
+            builder = "github-actions/windows-latest"
+            generated_at = (Get-Date).ToUniversalTime().ToString("o")
+            paper_only = $true
+            live_trading_authority = $false
+          }
+          $evidence | ConvertTo-Json -Depth 4 -Compress | Set-Content -LiteralPath "$root/build-evidence.json" -Encoding utf8
+          Set-Content -LiteralPath "$root/source-sha.txt" -Value $env:GITHUB_SHA -NoNewline -Encoding ascii
+
+      - name: Hosted Windows control smoke
+        env:
+          NEXUS_SOURCE_SHA: ${{ github.sha }}
+          NEXUS_MARKET_REGISTRY_PATH: ${{ github.workspace }}\build\windows-sidecar-compat\market-data-source-registry.yaml
+          NEXUS_AGENT_MANAGER_CONFIG: ${{ github.workspace }}\build\windows-sidecar-compat\nexus-agent-manager.json
+          NEXUS_BUILD_EVIDENCE_PATH: ${{ github.workspace }}\build\windows-sidecar-compat\build-evidence.json
+        run: |
+          $market = Join-Path $env:RUNNER_TEMP "nexus-sidecar-hosted-market"
+          New-Item -ItemType Directory -Path $market -Force | Out-Null
+          $exe = "build/windows-sidecar-compat/nexus-product-server/nexus-product-server.exe"
+          $server = Start-Process -FilePath $exe -ArgumentList @("--host","127.0.0.1","--port","18766","--data-root",$market) -PassThru -WindowStyle Hidden
+          try {
+            $ready = $false
+            for ($i = 0; $i -lt 80; $i++) {
+              if ($server.HasExited) { throw "hosted sidecar exited with code $($server.ExitCode)" }
+              try {
+                $payload = Invoke-RestMethod -Uri "http://127.0.0.1:18766/api/product/overview" -TimeoutSec 2
+                if ($payload.paper.active -eq $true -and $payload.live.enabled -eq $false) { $ready = $true; break }
+              } catch { Start-Sleep -Milliseconds 250 }
+            }
+            if (-not $ready) { throw "hosted sidecar did not become ready" }
+          } finally {
+            if ($server -and -not $server.HasExited) { Stop-Process -Id $server.Id -Force }
+          }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nexus-windows-sidecar-compat-${{ github.sha }}
+          path: build/windows-sidecar-compat
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+
+  physical-compat:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build-sidecar
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Download exact hosted sidecar bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: nexus-windows-sidecar-compat-${{ github.sha }}
+          path: diagnostic-bundle
+
+      - name: Run read-only physical compatibility probe
+        env:
+          NEXUS_SOURCE_SHA: ${{ github.sha }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          $bundle = (Resolve-Path "diagnostic-bundle").Path
+          $exe = Join-Path $bundle "nexus-product-server\nexus-product-server.exe"
+          $registry = Join-Path $bundle "market-data-source-registry.yaml"
+          $agent = Join-Path $bundle "nexus-agent-manager.json"
+          $buildEvidence = Join-Path $bundle "build-evidence.json"
+          foreach ($path in @($exe,$registry,$agent,$buildEvidence)) {
+            if (!(Test-Path -LiteralPath $path)) { throw "diagnostic bundle missing required path" }
+          }
+
+          $probeRoot = Join-Path $env:RUNNER_TEMP ("nexus-sidecar-probe-" + $env:GITHUB_RUN_ID)
+          Remove-Item -LiteralPath $probeRoot -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Path $probeRoot -Force | Out-Null
+          $market = Join-Path $probeRoot "market"
+          New-Item -ItemType Directory -Path $market -Force | Out-Null
+          $stdout = Join-Path $probeRoot "stdout.txt"
+          $stderr = Join-Path $probeRoot "stderr.txt"
+          $evidencePath = Join-Path $probeRoot "evidence.json"
+          $startedAt = (Get-Date).ToUniversalTime()
+
+          $env:NEXUS_MARKET_REGISTRY_PATH = $registry
+          $env:NEXUS_AGENT_MANAGER_CONFIG = $agent
+          $env:NEXUS_BUILD_EVIDENCE_PATH = $buildEvidence
+
+          $status = "UNKNOWN"
+          $exitCode = $null
+          $overviewOk = $false
+          $server = $null
+          try {
+            $server = Start-Process -FilePath $exe -ArgumentList @("--host","127.0.0.1","--port","18767","--data-root",$market) -PassThru -WindowStyle Hidden -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+            for ($i = 0; $i -lt 80; $i++) {
+              if ($server.HasExited) {
+                $exitCode = [int64]$server.ExitCode
+                $status = "EXITED_BEFORE_READY"
+                break
+              }
+              try {
+                $payload = Invoke-RestMethod -Uri "http://127.0.0.1:18767/api/product/overview" -TimeoutSec 2
+                if ($payload.paper.active -eq $true -and $payload.live.enabled -eq $false) {
+                  $overviewOk = $true
+                  $status = "SUCCESS"
+                  break
+                }
+              } catch {}
+              Start-Sleep -Milliseconds 250
+            }
+            if ($status -eq "UNKNOWN") { $status = "TIMEOUT" }
+          } catch {
+            $status = "SPAWN_ERROR"
+          } finally {
+            if ($server -and -not $server.HasExited) {
+              Stop-Process -Id $server.Id -Force -ErrorAction SilentlyContinue
+            }
+            if ($server -and $server.HasExited -and $null -eq $exitCode) { $exitCode = [int64]$server.ExitCode }
+          }
+
+          $exception = $null
+          try {
+            $event = Get-WinEvent -FilterHashtable @{LogName='Application'; Id=1000; StartTime=$startedAt.AddMinutes(-1)} -ErrorAction Stop |
+              Where-Object { $_.Message -match 'nexus-product-server\.exe' } |
+              Select-Object -First 1
+            if ($event) {
+              [xml]$xml = $event.ToXml()
+              $values = @($xml.Event.EventData.Data | ForEach-Object { [string]$_.'#text' })
+              $exception = [ordered]@{
+                event_id = [int]$event.Id
+                application = if ($values.Count -gt 0) { $values[0] } else { $null }
+                application_version = if ($values.Count -gt 1) { $values[1] } else { $null }
+                faulting_module = if ($values.Count -gt 3) { $values[3] } else { $null }
+                faulting_module_version = if ($values.Count -gt 4) { $values[4] } else { $null }
+                exception_code = if ($values.Count -gt 6) { $values[6] } else { $null }
+                exception_offset = if ($values.Count -gt 7) { $values[7] } else { $null }
+              }
+            }
+          } catch {}
+
+          $os = Get-CimInstance Win32_OperatingSystem
+          $exitHex = $null
+          if ($null -ne $exitCode) {
+            $unsigned = [uint64]($exitCode -band 0xffffffffL)
+            $exitHex = ('0x{0:X8}' -f $unsigned)
+          }
+          $outTail = if (Test-Path $stdout) { (Get-Content $stdout -Raw -ErrorAction SilentlyContinue).Trim()[-([Math]::Min(1200,(Get-Item $stdout).Length))..-1] -join '' } else { '' }
+          $errText = if (Test-Path $stderr) { Get-Content $stderr -Raw -ErrorAction SilentlyContinue } else { '' }
+          if ($errText.Length -gt 1600) { $errText = $errText.Substring($errText.Length - 1600) }
+          $result = [ordered]@{
+            contract_version = "nexus.windows-sidecar-physical-compat.v1"
+            source_sha = $env:GITHUB_SHA
+            status = $status
+            overview_ok = $overviewOk
+            process_exit_code = $exitCode
+            process_exit_hex = $exitHex
+            stderr_tail = $errText
+            fault = $exception
+            os_version = [string]$os.Version
+            os_build = [string]$os.BuildNumber
+            os_architecture = [string]$os.OSArchitecture
+            total_visible_memory_mb = [Math]::Round(([double]$os.TotalVisibleMemorySize / 1024), 0)
+            free_physical_memory_mb = [Math]::Round(([double]$os.FreePhysicalMemory / 1024), 0)
+            paper_only = $true
+            live_trading_authority = $false
+            generated_at = (Get-Date).ToUniversalTime().ToString("o")
+          }
+          $result | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $evidencePath -Encoding utf8
+          New-Item -ItemType Directory -Path "build/windows-sidecar-physical-compat" -Force | Out-Null
+          Copy-Item -LiteralPath $evidencePath -Destination "build/windows-sidecar-physical-compat/evidence.json" -Force
+          Get-Content "build/windows-sidecar-physical-compat/evidence.json"
+
+      - name: Upload physical compatibility evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexus-windows-sidecar-physical-compat-${{ github.run_id }}
+          path: build/windows-sidecar-physical-compat/evidence.json
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Enforce physical startup result
+        run: |
+          $evidence = Get-Content "build/windows-sidecar-physical-compat/evidence.json" -Raw | ConvertFrom-Json
+          if ($evidence.status -ne "SUCCESS" -or $evidence.overview_ok -ne $true) {
+            throw "physical sidecar compatibility failed: status=$($evidence.status) exit=$($evidence.process_exit_hex) module=$($evidence.fault.faulting_module)"
+          }
