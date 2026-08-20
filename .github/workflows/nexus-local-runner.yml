@@ -15,6 +15,7 @@ on:
           - deepseek-smoke
           - zotero-status
           - ai-council-health
+          - sidecar-compat
           - autonomous
   push:
     branches:
@@ -160,6 +161,23 @@ jobs:
       - name: AI Council health
         if: github.event_name == 'workflow_dispatch' && inputs.task == 'ai-council-health'
         run: node scripts\nexus_ai_council.js
+
+      - name: Physical sidecar compatibility diagnostic
+        if: github.event_name == 'workflow_dispatch' && inputs.task == 'sidecar-compat'
+        run: >-
+          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass
+          -File scripts\windows_sidecar_local_compat.ps1
+          -SourceSha "%GITHUB_SHA%"
+          -OutputPath "build\windows-sidecar-local-compat\evidence.json"
+
+      - name: Upload physical sidecar compatibility evidence
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.task == 'sidecar-compat'
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexus-windows-sidecar-local-compat-${{ github.run_id }}
+          if-no-files-found: error
+          retention-days: 14
+          path: build/windows-sidecar-local-compat/evidence.json
 
       - name: Persistent autonomous worker
         if: inputs.task == 'autonomous' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[autonomous]'))
