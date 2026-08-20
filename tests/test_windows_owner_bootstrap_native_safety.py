@@ -27,8 +27,8 @@ def test_owner_bootstrap_native_commands_are_judged_by_exit_code_not_stderr() ->
         "$ErrorActionPreference = $previous",
         "if ($exitCode -ne 0)",
         "native_commands_judged_by_exit_code = $true",
-        "Invoke-NativeCapture $git",
-        "Invoke-NativeCapture $ps",
+        "Invoke-NativeCapture -Executable $git",
+        "Invoke-NativeCapture -Executable $ps",
     ):
         assert marker in text
     assert text.index("$ErrorActionPreference = 'Continue'") < text.index("$rows = @(& $Executable @Arguments 2>&1)")
@@ -110,6 +110,38 @@ if (-not $rejected) { exit 13 }
 exit 0
 '''
     script = tmp_path / "native-stderr-probe.ps1"
+    script.write_text(probe, encoding="utf-8")
+    completed = subprocess.run(
+        [powershell, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", str(script)],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        timeout=30,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows PowerShell Git argv binding is Windows-only")
+def test_windows_powershell_git_wrapper_preserves_explicit_argument_vector(tmp_path: Path) -> None:
+    powershell = shutil.which("powershell.exe") or shutil.which("powershell")
+    if not powershell or not shutil.which("git"):
+        pytest.skip("Windows PowerShell or Git is unavailable")
+
+    text = read(OWNER)
+    start = text.index("function Sanitize-Inline")
+    end = text.index("function Assert-InteractiveOwner")
+    functions = text[start:end]
+    root = str(ROOT).replace("'", "''")
+    probe = functions + rf'''
+$ErrorActionPreference = 'Stop'
+$version = Invoke-GitGlobal -GitArguments @('--version')
+if ($version -notmatch '^git version ') {{ exit 21 }}
+$top = Invoke-Git -Root '{root}' -GitArguments @('rev-parse','--show-toplevel')
+if (-not $top) {{ exit 22 }}
+exit 0
+'''
+    script = tmp_path / "git-argv-probe.ps1"
     script.write_text(probe, encoding="utf-8")
     completed = subprocess.run(
         [powershell, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", str(script)],

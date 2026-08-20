@@ -64,7 +64,7 @@ def test_owner_bootstrap_is_exact_source_interactive_and_fail_closed() -> None:
 
 def test_owner_bootstrap_uses_only_packaged_seed_for_initial_and_existing_source() -> None:
     script = read(SCRIPT)
-    assert "Invoke-GitGlobal @('clone','--no-local','--no-checkout','--branch','nexus-package-source',$SeedRepoPath,$ManagedRepoRoot)" in script
+    assert "Invoke-GitGlobal -GitArguments @('clone','--no-local','--no-checkout','--branch','nexus-package-source',$SeedRepoPath,$ManagedRepoRoot)" in script
     assert "remote','set-url','origin',$ExpectedGitHubUrl" in script
     assert "'fetch','--no-tags','--update-shallow',$SeedRepoPath,$PackageRef" in script
     assert "'rev-parse','FETCH_HEAD'" in script
@@ -73,6 +73,19 @@ def test_owner_bootstrap_uses_only_packaged_seed_for_initial_and_existing_source
     assert "managed checkout reconciliation failed" in script
     assert "fetch','origin" not in script
     assert "pull" not in script.casefold()
+
+
+def test_owner_bootstrap_native_argv_binding_never_uses_automatic_args() -> None:
+    script = read(SCRIPT)
+    assert "function Invoke-Git([string]$Root, [string[]]$GitArguments)" in script
+    assert "function Invoke-GitGlobal([string[]]$GitArguments)" in script
+    assert "[string[]]$Args" not in script
+    assert "$args =" not in script.casefold()
+    assert "Invoke-NativeCapture -Executable $git -WorkingDirectory $Root -Arguments $GitArguments" in script
+    assert "Invoke-NativeCapture -Executable $git -WorkingDirectory '' -Arguments $GitArguments" in script
+    assert "Invoke-GitGlobal -GitArguments @('--git-dir',$SeedRepoPath,'rev-parse',$PackageRef)" in script
+    assert "Invoke-Git -Root $ManagedRepoRoot -GitArguments @('rev-parse','HEAD')" in script
+    assert "-Arguments $installerArguments" in script
 
 
 def test_existing_managed_checkout_must_be_canonical_and_tracked_clean_before_reconcile() -> None:
