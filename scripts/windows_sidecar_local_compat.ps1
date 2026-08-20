@@ -41,9 +41,9 @@ New-Item -ItemType Directory -Path $outputParent -Force | Out-Null
 $buildStatus = "NOT_STARTED"
 $buildErrorType = $null
 try {
-    & python -m pip install -r requirements-dev.lock
+    & python -m pip install --disable-pip-version-check --no-input --retries 2 --timeout 30 -r requirements-dev.lock
     if ($LASTEXITCODE -ne 0) { throw "requirements-dev.lock installation failed" }
-    & python -m pip install -r requirements-product-build.lock
+    & python -m pip install --disable-pip-version-check --no-input --retries 2 --timeout 30 -r requirements-product-build.lock
     if ($LASTEXITCODE -ne 0) { throw "requirements-product-build.lock installation failed" }
 
     & python -m PyInstaller `
