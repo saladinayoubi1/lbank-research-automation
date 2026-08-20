@@ -32,11 +32,21 @@ $stdout = Join-Path $root "stdout.txt"
 $stderr = Join-Path $root "stderr.txt"
 $output = [IO.Path]::GetFullPath((Join-Path $workspace $OutputPath))
 $outputParent = Split-Path -Parent $output
+$productUi = Join-Path $workspace "product_ui"
+$phase6Checkpoint = Join-Path $workspace ".nexus\phase6-checkpoint.json"
+$projectMemoryState = Join-Path $workspace "docs\project_memory\STATE.json"
+$entrypoint = Join-Path $workspace "product_offline_web_server.py"
 
 Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Path $root -Force | Out-Null
 New-Item -ItemType Directory -Path $market -Force | Out-Null
 New-Item -ItemType Directory -Path $outputParent -Force | Out-Null
+
+foreach ($required in @($productUi, $phase6Checkpoint, $projectMemoryState, $entrypoint)) {
+    if (!(Test-Path -LiteralPath $required)) {
+        throw "physical diagnostic required source path missing"
+    }
+}
 
 $buildStatus = "NOT_STARTED"
 $buildErrorType = $null
@@ -54,10 +64,10 @@ try {
         --workpath (Join-Path $root "pyinstaller-work") `
         --specpath $root `
         --name nexus-product-server `
-        --add-data "product_ui;product_ui" `
-        --add-data ".nexus/phase6-checkpoint.json;.nexus" `
-        --add-data "docs/project_memory/STATE.json;docs/project_memory" `
-        product_offline_web_server.py
+        --add-data "$productUi;product_ui" `
+        --add-data "$phase6Checkpoint;.nexus" `
+        --add-data "$projectMemoryState;docs/project_memory" `
+        $entrypoint
     if ($LASTEXITCODE -ne 0) { throw "PyInstaller sidecar build failed" }
     $buildStatus = "SUCCESS"
 } catch {
