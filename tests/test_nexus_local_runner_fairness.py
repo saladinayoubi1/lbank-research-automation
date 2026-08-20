@@ -21,7 +21,7 @@ def _load_worker():
     return module
 
 
-def test_local_runner_uses_task_aware_non_cancelling_concurrency_lanes():
+def test_local_runner_uses_task_aware_concurrency_lanes_and_latest_owner_proof_wins():
     text = _workflow()
     assert "group: >-" in text
     assert "nexus-local-runner-${{" in text
@@ -32,7 +32,11 @@ def test_local_runner_uses_task_aware_non_cancelling_concurrency_lanes():
     assert "'[autonomous]'" in text
     assert "&& 'autonomous'" in text
     assert "'general'" in text
-    assert "cancel-in-progress: false" in text
+    cancel_line = next(line.strip() for line in text.splitlines() if line.strip().startswith("cancel-in-progress:"))
+    assert cancel_line == "cancel-in-progress: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[verify-owner-autostart]') }}"
+    assert "[install-autostart]" not in cancel_line
+    assert "[sidecar-compat]" not in cancel_line
+    assert "[autonomous]" not in cancel_line
     assert "group: nexus-local-runner\n" not in text
 
 
