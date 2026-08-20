@@ -36,6 +36,8 @@ jobs:
         shell: pwsh
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -142,6 +144,20 @@ jobs:
           Copy-Item "docs/architecture/market-data-source-registry.yaml" "desktop/nexus-product/sidecar/market-data-source-registry.yaml"
           Copy-Item "config/nexus-agent-manager.json" "desktop/nexus-product/sidecar/nexus-agent-manager.json"
 
+      - name: Stage bounded physical sidecar diagnostic bundle
+        run: |
+          $root = "build/windows-sidecar-compat"
+          Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Path $root -Force | Out-Null
+          Copy-Item "desktop/nexus-product/sidecar/nexus-product-server" "$root/nexus-product-server" -Recurse -Force
+          Copy-Item "desktop/nexus-product/sidecar/source-sha.txt" "$root/source-sha.txt" -Force
+          Copy-Item "desktop/nexus-product/sidecar/build-evidence.json" "$root/build-evidence.json" -Force
+          Copy-Item "desktop/nexus-product/sidecar/market-data-source-registry.yaml" "$root/market-data-source-registry.yaml" -Force
+          Copy-Item "desktop/nexus-product/sidecar/nexus-agent-manager.json" "$root/nexus-agent-manager.json" -Force
+          if ((Get-Content "$root/source-sha.txt" -Raw).Trim() -ne $env:GITHUB_SHA) { throw "Diagnostic source SHA mismatch" }
+          $build = Get-Content "$root/build-evidence.json" -Raw | ConvertFrom-Json
+          if ($build.source_sha -ne $env:GITHUB_SHA -or $build.paper_only -ne $true -or $build.live_trading_authority -ne $false) { throw "Diagnostic authority evidence mismatch" }
+
       - name: Validate Electron source and Mission bindings
         run: |
           node --check "desktop/nexus-product/main.js"
@@ -207,4 +223,13 @@ jobs:
             desktop/nexus-product/dist/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 30
+          compression-level: 0
+
+      - name: Upload exact hosted sidecar for physical compatibility probe
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexus-windows-sidecar-compat-${{ github.sha }}
+          path: build/windows-sidecar-compat
+          if-no-files-found: error
+          retention-days: 7
           compression-level: 0
