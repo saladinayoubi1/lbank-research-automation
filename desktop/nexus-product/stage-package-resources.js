@@ -28,6 +28,7 @@ function copyScript(name) {
 
 fs.mkdirSync(sidecarRoot, { recursive: true });
 copyScript('bootstrap_nexus_runner_from_gui.ps1');
+copyScript('provision_nexus_github_runner.ps1');
 copyScript('install_nexus_owner_autostart_from_gui.ps1');
 
 const head = runGit(['rev-parse', 'HEAD']).toLowerCase();
