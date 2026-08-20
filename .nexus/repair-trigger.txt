@@ -1,2 +1,3 @@
 trigger_after_executionpolicy_fix=97452d77b183e9f489b12b7be8bef7a9a05c2e2d
 reason=retrigger zero-touch NEXUS autostart install after per-process ExecutionPolicy fix and locked Windows Runner dependencies
+phase4_retrigger_after_owner_autostart_fix=a64d65717b248dfc8fdc4e10423f690c071224dc
