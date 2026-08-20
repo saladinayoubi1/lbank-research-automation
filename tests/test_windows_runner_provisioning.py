@@ -2,6 +2,11 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import shutil
+import subprocess
+import sys
+
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 PROVISION = ROOT / "scripts" / "provision_nexus_github_runner.ps1"
@@ -102,3 +107,25 @@ def test_desktop_packages_and_invokes_provisioner_only_after_runner_not_found() 
     assert decision < provision_call
     assert "shell: true" not in entry
     assert "config.cmd" not in entry.casefold()
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows PowerShell parser check is Windows-only")
+def test_provisioner_powershell_parses_on_windows() -> None:
+    powershell = shutil.which("powershell.exe") or shutil.which("powershell")
+    if not powershell:
+        pytest.skip("Windows PowerShell is unavailable")
+    escaped = str(PROVISION).replace("'", "''")
+    command = (
+        "$tokens=$null;$errors=$null;"
+        f"[System.Management.Automation.Language.Parser]::ParseFile('{escaped}',[ref]$tokens,[ref]$errors)|Out-Null;"
+        "if($errors.Count -gt 0){$errors|ForEach-Object{Write-Error $_.Message};exit 1}"
+    )
+    completed = subprocess.run(
+        [powershell, "-NoProfile", "-NonInteractive", "-Command", command],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        timeout=20,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr or completed.stdout
