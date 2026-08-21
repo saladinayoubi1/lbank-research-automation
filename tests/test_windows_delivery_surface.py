@@ -76,8 +76,10 @@ def test_gui_runner_bootstrap_is_bounded_fail_closed_and_does_not_register_or_re
         "MULTIPLE_RUNNERS_REJECTED", "RUNNER_NOT_FOUND",
         "SERVICE_STOPPED_USER_FALLBACK_RUNNING", "SERVICE_STOPPED_USER_FALLBACK_LISTENER_NOT_OBSERVED",
         "TASK_INSTALLED_LISTENER_RUNNING",
-        "New-ScheduledTaskAction", "New-ScheduledTaskTrigger", "Register-ScheduledTask",
-        "-RunLevel Limited", "Runner.Listener.exe", ".runner", ".credentials", "run.cmd",
+        "System.Diagnostics.Process]::GetProcessesByName('Runner.Listener')",
+        "Registry::HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services",
+        "Schedule.Service", "RegisterTaskDefinition", "Principal.RunLevel = 0",
+        "Runner.Listener.exe", ".runner", ".credentials", "run.cmd",
         "credentials_modified = $false", "runner_registered = $false",
         "config_cmd_invoked = $false", "live_trading_authority = $false", "paper_only = $true",
     ):
@@ -86,6 +88,9 @@ def test_gui_runner_bootstrap_is_bounded_fail_closed_and_does_not_register_or_re
     for forbidden in (
         "config.cmd", "--url", "--token", "personalaccesstoken", "github_token",
         "remove-item -recurse", "get-childitem -recurse", "runlevel highest",
+        "get-ciminstance", "new-scheduledtaskaction", "new-scheduledtasktrigger",
+        "new-scheduledtaskprincipal", "new-scheduledtasksettingsset", "register-scheduledtask",
+        "start-scheduledtask",
     ):
         assert forbidden not in lowered
     assert "Start-Service" in script

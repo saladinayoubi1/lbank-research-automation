@@ -64,7 +64,7 @@ function Convert-ExecutableToRunnerRoot([string]$ExecutablePath) {
 
 function Get-ServiceExecutable([string]$PathName) {
     if (-not $PathName) { return $null }
-    $value = $PathName.Trim()
+    $value = [Environment]::ExpandEnvironmentVariables($PathName.Trim())
     $quoted = [regex]::Match($value, '^"([^"]+\.exe)"')
     if ($quoted.Success) { return $quoted.Groups[1].Value }
     $plain = [regex]::Match($value, '^([^\s]+\.exe)')
@@ -110,8 +110,50 @@ function Add-Candidate([System.Collections.Generic.List[string]]$List, [string]$
 }
 
 function Get-RunnerServices {
-    try { return @(Get-CimInstance Win32_Service -ErrorAction SilentlyContinue | Where-Object { $_.Name -like 'actions.runner.*' }) }
-    catch { return @() }
+    $results = @()
+    $servicesRoot = 'Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services'
+    try {
+        foreach ($key in Get-ChildItem -LiteralPath $servicesRoot -ErrorAction SilentlyContinue) {
+            $name = [string]$key.PSChildName
+            if ($name -notlike 'actions.runner.*') { continue }
+            $pathName = ''
+            try {
+                $properties = Get-ItemProperty -LiteralPath $key.PSPath -Name ImagePath -ErrorAction Stop
+                $pathName = [Environment]::ExpandEnvironmentVariables([string]$properties.ImagePath)
+            }
+            catch { }
+            $state = ''
+            try {
+                $service = Get-Service -Name $name -ErrorAction Stop
+                $state = [string]$service.Status
+            }
+            catch { }
+            $results += [pscustomobject]@{
+                Name = $name
+                PathName = $pathName
+                State = $state
+            }
+        }
+    }
+    catch { }
+    return @($results)
+}
+
+function Get-RunnerListenerProcesses {
+    $results = @()
+    try {
+        foreach ($process in [System.Diagnostics.Process]::GetProcessesByName('Runner.Listener')) {
+            $path = $null
+            try { $path = [string]$process.MainModule.FileName } catch { }
+            if (-not $path) { continue }
+            $results += [pscustomobject]@{
+                ProcessId = [int]$process.Id
+                ExecutablePath = $path
+            }
+        }
+    }
+    catch { }
+    return @($results)
 }
 
 function Get-CandidateRunnerRoots {
@@ -121,12 +163,9 @@ function Get-CandidateRunnerRoots {
         Add-Candidate $candidates (Convert-ExecutableToRunnerRoot (Get-ServiceExecutable ([string]$svc.PathName)))
     }
 
-    try {
-        foreach ($process in Get-CimInstance Win32_Process -Filter "Name='Runner.Listener.exe'" -ErrorAction SilentlyContinue) {
-            Add-Candidate $candidates (Convert-ExecutableToRunnerRoot ([string]$process.ExecutablePath))
-        }
+    foreach ($process in Get-RunnerListenerProcesses) {
+        Add-Candidate $candidates (Convert-ExecutableToRunnerRoot ([string]$process.ExecutablePath))
     }
-    catch { }
 
     foreach ($known in @(
         (Join-Path $env:SystemDrive 'actions-runner'),
@@ -182,14 +221,14 @@ function Get-RunnerService([pscustomobject]$Runner) {
 }
 
 function Get-Listener([pscustomobject]$Runner) {
-    try {
-        foreach ($row in Get-CimInstance Win32_Process -Filter "Name='Runner.Listener.exe'" -ErrorAction SilentlyContinue) {
-            $root = Convert-ExecutableToRunnerRoot ([string]$row.ExecutablePath)
-            if (-not $root) { continue }
+    foreach ($row in Get-RunnerListenerProcesses) {
+        $root = Convert-ExecutableToRunnerRoot ([string]$row.ExecutablePath)
+        if (-not $root) { continue }
+        try {
             if ((Resolve-Path -LiteralPath $root).Path -eq $Runner.Root) { return $row }
         }
+        catch { }
     }
-    catch { }
     return $null
 }
 
@@ -220,17 +259,40 @@ function Start-InteractiveRunnerFallback([pscustomobject]$Runner, [string]$Reaso
     return [int]$proc.Id
 }
 
+function Connect-TaskScheduler {
+    $service = New-Object -ComObject 'Schedule.Service'
+    $service.Connect()
+    return $service
+}
+
 function Install-InteractiveRunnerTask([pscustomobject]$Runner) {
     $user = "$env:USERDOMAIN\$env:USERNAME"
-    $quotedRun = '"' + $Runner.RunCmd.Replace('"','') + '"'
-    $taskArgs = '/d /s /c "' + $quotedRun + '"'
-    $action = New-ScheduledTaskAction -Execute $env:ComSpec -Argument $taskArgs -WorkingDirectory $Runner.Root
-    $trigger = New-ScheduledTaskTrigger -AtLogOn -User $user
-    $principal = New-ScheduledTaskPrincipal -UserId $user -LogonType Interactive -RunLevel Limited
-    $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -MultipleInstances IgnoreNew -RestartCount 999 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit ([TimeSpan]::Zero)
-    $task = New-ScheduledTask -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description 'Starts the already-configured NEXUS GitHub Actions self-hosted runner after Windows logon without a visible terminal.'
-    Register-ScheduledTask -TaskName $TaskName -InputObject $task -Force | Out-Null
-    Start-ScheduledTask -TaskName $TaskName
+    $service = Connect-TaskScheduler
+    $folder = $service.GetFolder('\')
+    $definition = $service.NewTask(0)
+    $definition.RegistrationInfo.Description = 'Starts the already-configured NEXUS GitHub Actions self-hosted runner after Windows logon without a visible terminal.'
+    $definition.RegistrationInfo.Author = 'NEXUS Personal Pro'
+    $definition.Principal.UserId = $user
+    $definition.Principal.LogonType = 3
+    $definition.Principal.RunLevel = 0
+    $definition.Settings.Enabled = $true
+    $definition.Settings.StartWhenAvailable = $true
+    $definition.Settings.DisallowStartIfOnBatteries = $false
+    $definition.Settings.StopIfGoingOnBatteries = $false
+    $definition.Settings.MultipleInstances = 2
+    $definition.Settings.RestartInterval = 'PT1M'
+    $definition.Settings.RestartCount = 999
+    $definition.Settings.ExecutionTimeLimit = 'PT0S'
+    $trigger = $definition.Triggers.Create(9)
+    $trigger.Enabled = $true
+    $trigger.UserId = $user
+    $action = $definition.Actions.Create(0)
+    $action.Path = $env:ComSpec
+    $action.Arguments = '/d /s /c ""' + $Runner.RunCmd + '""'
+    $action.WorkingDirectory = $Runner.Root
+    $registered = $folder.RegisterTaskDefinition("\$TaskName", $definition, 6, $null, $null, 3, $null)
+    if (-not $registered) { throw 'Task Scheduler did not return the registered runner task' }
+    [void]$registered.Run($null)
 }
 
 try {
@@ -261,6 +323,7 @@ try {
             agent_name = $runner.AgentName
             listener_pid = [int]$listener.ProcessId
             scheduled_task_changed = $false
+            process_discovery_transport = 'System.Diagnostics.Process'
         }
         exit 0
     }
@@ -310,12 +373,6 @@ try {
             exit 0
         }
 
-        # A Windows Service that merely reports Running is not proof that the
-        # GitHub Runner.Listener is healthy. Give an already-running service a
-        # short bounded grace period, then re-check immediately before starting
-        # the existing configured run.cmd in the interactive owner context.
-        # This preserves the no-elevation/no-registration boundary and avoids a
-        # second listener whenever the service recovers during the grace period.
         $listener = if ($serviceWasRunning) { Wait-ForListener $runner 8 } else { Wait-ForListener $runner }
         if (-not $listener -and $serviceWasRunning) {
             $fallbackPid = Start-InteractiveRunnerFallback $runner 'service_running_listener_absent'
@@ -380,6 +437,7 @@ try {
             agent_name = $runner.AgentName
             scheduled_task = $TaskName
             scheduled_task_changed = $true
+            task_scheduler_transport = 'COM'
         }
         exit 14
     }
@@ -391,6 +449,7 @@ try {
         listener_pid = [int]$listener.ProcessId
         scheduled_task = $TaskName
         scheduled_task_changed = $true
+        task_scheduler_transport = 'COM'
     }
     exit 0
 }
