@@ -13,6 +13,8 @@ $TaskName = 'NEXUS-GitHub-Runner-Autostart'
 $StateRoot = Join-Path $env:LOCALAPPDATA 'NEXUS\GuiRunnerBootstrap'
 $EvidencePath = Join-Path $StateRoot 'evidence.json'
 $LogPath = Join-Path $StateRoot 'bootstrap.log'
+$ManagedRunnerRoot = Join-Path $env:LOCALAPPDATA 'NEXUS\actions-runner'
+$ManagedRunnerMarkerName = '.nexus-managed-runner.json'
 
 function Ensure-StateRoot {
     New-Item -ItemType Directory -Force -Path $StateRoot | Out-Null
@@ -172,7 +174,7 @@ function Get-CandidateRunnerRoots {
         (Join-Path $env:USERPROFILE 'actions-runner'),
         (Join-Path $env:USERPROFILE 'Desktop\actions-runner'),
         (Join-Path $env:USERPROFILE 'Downloads\actions-runner'),
-        (Join-Path $env:LOCALAPPDATA 'NEXUS\actions-runner')
+        $ManagedRunnerRoot
     )) { Add-Candidate $candidates $known }
 
     foreach ($parent in @(
@@ -193,6 +195,17 @@ function Get-CandidateRunnerRoots {
     return @($candidates)
 }
 
+function Test-IsNexusManagedRunner([pscustomobject]$Runner) {
+    if (-not $Runner) { return $false }
+    try {
+        $expected = (Resolve-Path -LiteralPath $ManagedRunnerRoot -ErrorAction Stop).Path
+        if ([string]::Compare($Runner.Root, $expected, $true) -ne 0) { return $false }
+        $marker = Join-Path $Runner.Root $ManagedRunnerMarkerName
+        return (Test-Path -LiteralPath $marker -PathType Leaf)
+    }
+    catch { return $false }
+}
+
 function Find-UniqueRunner {
     $valid = @()
     foreach ($candidate in Get-CandidateRunnerRoots) {
@@ -200,9 +213,20 @@ function Find-UniqueRunner {
         if ($runner) { $valid += $runner }
     }
     $unique = @($valid | Group-Object Root | ForEach-Object { $_.Group[0] })
-    if ($unique.Count -eq 0) { return [pscustomobject]@{ Status='NONE'; Runner=$null; Count=0 } }
-    if ($unique.Count -gt 1) { return [pscustomobject]@{ Status='MULTIPLE'; Runner=$null; Count=$unique.Count } }
-    return [pscustomobject]@{ Status='ONE'; Runner=$unique[0]; Count=1 }
+    if ($unique.Count -eq 0) {
+        return [pscustomobject]@{ Status='NONE'; Runner=$null; Count=0; DiscoveredCount=0; SelectedBy='none' }
+    }
+    if ($unique.Count -eq 1) {
+        return [pscustomobject]@{ Status='ONE'; Runner=$unique[0]; Count=1; DiscoveredCount=1; SelectedBy='unique-repo-runner' }
+    }
+
+    $managed = @($unique | Where-Object { Test-IsNexusManagedRunner $_ })
+    if ($managed.Count -eq 1) {
+        Write-Log "multiple_repo_runners_discovered=$($unique.Count) selected_nexus_managed_root=$($managed[0].Root)"
+        return [pscustomobject]@{ Status='ONE'; Runner=$managed[0]; Count=1; DiscoveredCount=$unique.Count; SelectedBy='nexus-managed-root' }
+    }
+
+    return [pscustomobject]@{ Status='MULTIPLE'; Runner=$null; Count=$unique.Count; DiscoveredCount=$unique.Count; SelectedBy='ambiguous' }
 }
 
 function Get-RunnerService([pscustomobject]$Runner) {
@@ -310,7 +334,7 @@ try {
         exit 10
     }
     if ($selection.Status -eq 'MULTIPLE') {
-        Write-Evidence 'MULTIPLE_RUNNERS_REJECTED' @{ configured_runner_count = $selection.Count }
+        Write-Evidence 'MULTIPLE_RUNNERS_REJECTED' @{ configured_runner_count = $selection.Count; discovered_runner_count = $selection.DiscoveredCount; runner_selection_policy = $selection.SelectedBy }
         exit 11
     }
 
@@ -319,6 +343,8 @@ try {
     if ($listener) {
         Write-Evidence 'LISTENER_ALREADY_RUNNING' @{
             configured_runner_count = 1
+            discovered_runner_count = $selection.DiscoveredCount
+            runner_selection_policy = $selection.SelectedBy
             runner_root = $runner.Root
             agent_name = $runner.AgentName
             listener_pid = [int]$listener.ProcessId
@@ -347,6 +373,8 @@ try {
             if (-not $listener) {
                 Write-Evidence 'SERVICE_STOPPED_USER_FALLBACK_LISTENER_NOT_OBSERVED' @{
                     configured_runner_count = 1
+                    discovered_runner_count = $selection.DiscoveredCount
+                    runner_selection_policy = $selection.SelectedBy
                     runner_root = $runner.Root
                     agent_name = $runner.AgentName
                     service_name = [string]$service.Name
@@ -360,6 +388,8 @@ try {
             }
             Write-Evidence 'SERVICE_STOPPED_USER_FALLBACK_RUNNING' @{
                 configured_runner_count = 1
+                discovered_runner_count = $selection.DiscoveredCount
+                runner_selection_policy = $selection.SelectedBy
                 runner_root = $runner.Root
                 agent_name = $runner.AgentName
                 service_name = [string]$service.Name
@@ -380,6 +410,8 @@ try {
             if (-not $listener) {
                 Write-Evidence 'SERVICE_RUNNING_STALE_USER_FALLBACK_LISTENER_NOT_OBSERVED' @{
                     configured_runner_count = 1
+                    discovered_runner_count = $selection.DiscoveredCount
+                    runner_selection_policy = $selection.SelectedBy
                     runner_root = $runner.Root
                     agent_name = $runner.AgentName
                     service_name = [string]$service.Name
@@ -393,6 +425,8 @@ try {
             }
             Write-Evidence 'SERVICE_RUNNING_STALE_USER_FALLBACK_RUNNING' @{
                 configured_runner_count = 1
+                discovered_runner_count = $selection.DiscoveredCount
+                runner_selection_policy = $selection.SelectedBy
                 runner_root = $runner.Root
                 agent_name = $runner.AgentName
                 service_name = [string]$service.Name
@@ -408,6 +442,8 @@ try {
         if (-not $listener) {
             Write-Evidence 'SERVICE_STARTED_LISTENER_NOT_OBSERVED' @{
                 configured_runner_count = 1
+                discovered_runner_count = $selection.DiscoveredCount
+                runner_selection_policy = $selection.SelectedBy
                 runner_root = $runner.Root
                 agent_name = $runner.AgentName
                 service_name = [string]$service.Name
@@ -418,6 +454,8 @@ try {
         }
         Write-Evidence 'SERVICE_RUNNING' @{
             configured_runner_count = 1
+            discovered_runner_count = $selection.DiscoveredCount
+            runner_selection_policy = $selection.SelectedBy
             runner_root = $runner.Root
             agent_name = $runner.AgentName
             service_name = [string]$service.Name
@@ -433,6 +471,8 @@ try {
     if (-not $listener) {
         Write-Evidence 'TASK_INSTALLED_LISTENER_NOT_OBSERVED' @{
             configured_runner_count = 1
+            discovered_runner_count = $selection.DiscoveredCount
+            runner_selection_policy = $selection.SelectedBy
             runner_root = $runner.Root
             agent_name = $runner.AgentName
             scheduled_task = $TaskName
@@ -444,6 +484,8 @@ try {
 
     Write-Evidence 'TASK_INSTALLED_LISTENER_RUNNING' @{
         configured_runner_count = 1
+        discovered_runner_count = $selection.DiscoveredCount
+        runner_selection_policy = $selection.SelectedBy
         runner_root = $runner.Root
         agent_name = $runner.AgentName
         listener_pid = [int]$listener.ProcessId
