@@ -126,8 +126,21 @@ function main() {
   const intervalMs = intervalArg ? Number(intervalArg.split('=')[1]) : 20000;
   if (!Number.isFinite(intervalMs) || intervalMs < 5000) throw new Error('interval must be >= 5000ms');
 
+  // GitHub Actions schedules this worker repeatedly. A self-hosted lease must return
+  // promptly after one deterministic cycle so maintenance/proof jobs are not starved
+  // behind a 58-minute long-lived process. Local/manual invocations outside Actions
+  // keep the continuous behavior unless --once is supplied explicitly.
+  const boundedGitHubSelfHosted =
+    process.env.GITHUB_ACTIONS === 'true' &&
+    process.env.RUNNER_ENVIRONMENT === 'self-hosted-windows';
+
   executeCycle();
-  if (once) return;
+  if (once || boundedGitHubSelfHosted) {
+    if (boundedGitHubSelfHosted && !once) {
+      process.stdout.write('[nexus-worker] bounded_self_hosted_github_cycle=complete\n');
+    }
+    return;
+  }
   setInterval(() => {
     try {
       executeCycle();
