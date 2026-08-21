@@ -155,7 +155,7 @@ function Install-RunnerFiles([string]$Archive) {
 }
 
 function Find-GhExecutable {
-    $cmd = Get-Command gh.exe -ErrorAction SilentlyContinue
+    $cmd = Get-Command gh -ErrorAction SilentlyContinue
     if ($cmd) { return $cmd.Source }
     foreach ($candidate in @(
         (Join-Path $env:ProgramFiles 'GitHub CLI\gh.exe'),
@@ -171,16 +171,17 @@ function Install-PortableGh {
     New-Item -ItemType Directory -Force -Path $toolRoot | Out-Null
     Write-Host 'GitHub CLI is not installed. Downloading the official portable GitHub CLI...'
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    $release = Invoke-RestMethod -UseBasicParsing -Uri 'https://api.github.com/repos/cli/cli/releases/latest' -TimeoutSec 60 -Headers @{ 'User-Agent'='NEXUS-Runner-Registration' }
+    $response = Invoke-WebRequest -UseBasicParsing -Uri 'https://api.github.com/repos/cli/cli/releases/latest' -TimeoutSec 60 -Headers @{ 'User-Agent'='NEXUS-Runner-Registration' }
+    $release = $response.Content | ConvertFrom-Json
     $zipAsset = @($release.assets | Where-Object { $_.name -match '^gh_[0-9.]+_windows_amd64\.zip$' })
     $sumAsset = @($release.assets | Where-Object { $_.name -match '^gh_[0-9.]+_checksums\.txt$' })
     if ($zipAsset.Count -ne 1 -or $sumAsset.Count -ne 1) { Fail 'GH_RELEASE_ASSET_NOT_FOUND' 'Could not resolve official GitHub CLI Windows assets.' }
     $versionRoot = Join-Path $toolRoot ([string]$release.tag_name)
-    $zipPath = Join-Path $toolRoot $zipAsset[0].name
-    $sumPath = Join-Path $toolRoot $sumAsset[0].name
-    Invoke-WebRequest -UseBasicParsing -Uri $zipAsset[0].browser_download_url -OutFile $zipPath -TimeoutSec 180
-    Invoke-WebRequest -UseBasicParsing -Uri $sumAsset[0].browser_download_url -OutFile $sumPath -TimeoutSec 60
-    $line = Get-Content -LiteralPath $sumPath | Where-Object { $_ -match ([regex]::Escape($zipAsset[0].name) + '$') } | Select-Object -First 1
+    $zipPath = Join-Path $toolRoot ([string]$zipAsset[0].name)
+    $sumPath = Join-Path $toolRoot ([string]$sumAsset[0].name)
+    Invoke-WebRequest -UseBasicParsing -Uri ([string]$zipAsset[0].browser_download_url) -OutFile $zipPath -TimeoutSec 180
+    Invoke-WebRequest -UseBasicParsing -Uri ([string]$sumAsset[0].browser_download_url) -OutFile $sumPath -TimeoutSec 60
+    $line = Get-Content -LiteralPath $sumPath | Where-Object { $_ -match ([regex]::Escape([string]$zipAsset[0].name) + '$') } | Select-Object -First 1
     if (-not $line) { Fail 'GH_CHECKSUM_NOT_FOUND' 'GitHub CLI checksum entry was not found.' }
     $expected = ($line -split '\s+')[0].Trim().ToLowerInvariant()
     $actual = (Get-FileHash -LiteralPath $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()
@@ -194,13 +195,13 @@ function Install-PortableGh {
 }
 
 function Ensure-GhAuth([string]$Gh) {
-    & $Gh auth status --hostname github.com *> $null
+    & $Gh auth status --hostname github.com 1>$null 2>$null
     if ($LASTEXITCODE -eq 0) { return }
     Write-Host ''
     Write-Host 'GitHub authorization is required once. Your browser will open; approve the GitHub CLI request.' -ForegroundColor Yellow
     & $Gh auth login --hostname github.com --git-protocol https --web --scopes repo
     if ($LASTEXITCODE -ne 0) { Fail 'GITHUB_AUTH_FAILED' 'GitHub CLI authorization did not complete.' }
-    & $Gh auth status --hostname github.com *> $null
+    & $Gh auth status --hostname github.com 1>$null 2>$null
     if ($LASTEXITCODE -ne 0) { Fail 'GITHUB_AUTH_FAILED' 'GitHub CLI is still not authenticated.' }
 }
 
@@ -277,23 +278,31 @@ function Install-RunnerAutostartTask {
 }
 
 function Get-RunnerListener {
+    $expectedRoot = [IO.Path]::GetFullPath($RunnerRoot)
+
     try {
-        foreach ($row in Get-CimInstance Win32_Process -Filter "Name='Runner.Listener.exe'" -ErrorAction SilentlyContinue) {
-            if ([string]$row.ExecutablePath -and ([IO.Path]::GetFullPath([string]$row.ExecutablePath)).StartsWith(([IO.Path]::GetFullPath($RunnerRoot)), [StringComparison]::OrdinalIgnoreCase)) {
+        foreach ($proc in Get-Process -Name 'Runner.Listener' -ErrorAction SilentlyContinue) {
+            try {
+                $path = [string]$proc.Path
+                if ($path -and ([IO.Path]::GetFullPath($path)).StartsWith($expectedRoot, [StringComparison]::OrdinalIgnoreCase)) {
+                    return $proc
+                }
+            }
+            catch { }
+        }
+    }
+    catch { }
+
+    try {
+        foreach ($row in Get-CimInstance Win32_Process -Filter "Name='Runner.Listener.exe'" -ErrorAction Stop) {
+            $path = [string]$row.ExecutablePath
+            if ($path -and ([IO.Path]::GetFullPath($path)).StartsWith($expectedRoot, [StringComparison]::OrdinalIgnoreCase)) {
                 return $row
             }
         }
     }
     catch {
-        # This laptop may have a broken CIM provider. Fall back to Get-Process and
-        # verify the process module path when Windows allows it.
-        try {
-            foreach ($proc in Get-Process -Name 'Runner.Listener' -ErrorAction SilentlyContinue) {
-                try {
-                    if ($proc.Path -and ([IO.Path]::GetFullPath($proc.Path)).StartsWith(([IO.Path]::GetFullPath($RunnerRoot)), [StringComparison]::OrdinalIgnoreCase)) { return $proc }
-                } catch { }
-            }
-        } catch { }
+        Write-Log 'runner_listener_cim_probe_unavailable_using_process_probe_only=true'
     }
     return $null
 }
@@ -313,12 +322,14 @@ try {
     Assert-OwnerSession
     Write-Host 'NEXUS runner registration started.' -ForegroundColor Cyan
 
+    $githubCliAuthUsed = $false
     if (-not (Test-ConfiguredRunner)) {
         $archive = Get-VerifiedRunnerArchive
         Install-RunnerFiles $archive
         $gh = Find-GhExecutable
         if (-not $gh) { $gh = Install-PortableGh }
         Ensure-GhAuth $gh
+        $githubCliAuthUsed = $true
         $registrationToken = Get-RegistrationToken $gh
         try {
             Register-Runner $registrationToken
@@ -341,7 +352,7 @@ try {
         listener_observed = $true
         listener_pid = $pidValue
         scheduled_task = $TaskName
-        github_cli_auth_used = $true
+        github_cli_auth_used = [bool]$githubCliAuthUsed
     }
     Write-Log "status=SUCCESS runner=$RunnerName root=$RunnerRoot listener_pid=$pidValue"
     Write-Host ''
