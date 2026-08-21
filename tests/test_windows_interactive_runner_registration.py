@@ -9,6 +9,9 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "register_nexus_runner_interactive.ps1"
+HIDDEN_AUTOSTART = ROOT / "scripts" / "install_nexus_runner_hidden_autostart.ps1"
+REGISTER_CMD = ROOT / "REGISTER_NEXUS_RUNNER.cmd"
+REPAIR_CMD = ROOT / "FIX_NEXUS_RUNNER_WINDOW.cmd"
 
 
 def read() -> str:
@@ -82,8 +85,45 @@ def test_runner_persistence_uses_task_scheduler_com_not_cim_or_elevation() -> No
     assert "config.cmd --unattended" not in lowered  # invocation stays argument-safe via call operator
 
 
+def test_registration_entrypoint_replaces_visible_task_with_hidden_autostart() -> None:
+    register_cmd = REGISTER_CMD.read_text(encoding="utf-8")
+    repair_cmd = REPAIR_CMD.read_text(encoding="utf-8")
+    hidden = HIDDEN_AUTOSTART.read_text(encoding="utf-8")
+    assert "install_nexus_runner_hidden_autostart.ps1" in register_cmd
+    assert "install_nexus_runner_hidden_autostart.ps1" in repair_cmd
+    assert "-Mode Install" in register_cmd
+    assert "-Mode Install" in repair_cmd
+    for marker in (
+        "CreateNoWindow = $true",
+        "ProcessWindowStyle]::Hidden",
+        "-WindowStyle Hidden",
+        "Schedule.Service",
+        "RegisterTaskDefinition",
+        "Runner.Worker",
+        "Runner.Listener",
+        "runner_registration_modified = $false",
+        "credentials_modified = $false",
+        "visible_console_required = $false",
+    ):
+        assert marker in hidden
+    task_body = hidden[hidden.index("function Install-HiddenAutostart"):]
+    assert "$action.Path = $env:ComSpec" not in task_body
+    assert "$action.Path = $powershell" in task_body
+
+
+def test_hidden_autostart_preserves_active_job_before_migrating_listener() -> None:
+    hidden = HIDDEN_AUTOSTART.read_text(encoding="utf-8")
+    worker_wait = hidden.index("while ((Get-ManagedProcess 'Runner.Worker')")
+    task_stop = hidden.index("$existing.Stop(0)")
+    listener_stop = hidden.index("Stop-Process -Id $listener.Id")
+    hidden_start = hidden.index("$registered.Run($null)")
+    assert worker_wait < task_stop < listener_stop < hidden_start
+    assert "MIGRATION_PENDING_ACTIVE_JOB" in hidden
+
+
 def test_registration_helper_preserves_nexus_authority_boundaries() -> None:
     text = read()
+    hidden = HIDDEN_AUTOSTART.read_text(encoding="utf-8")
     for marker in (
         "service_installed = $false",
         "elevation_requested = $false",
@@ -92,15 +132,14 @@ def test_registration_helper_preserves_nexus_authority_boundaries() -> None:
         "live_trading_authority = $false",
     ):
         assert marker in text
+        assert marker in hidden
 
 
-def test_registration_helper_powershell_parses_on_windows() -> None:
-    if sys.platform != "win32":
-        pytest.skip("Windows PowerShell parser check is Windows-only")
+def _assert_powershell_parses(path: Path) -> None:
     powershell = shutil.which("powershell.exe") or shutil.which("powershell")
     if not powershell:
         pytest.skip("Windows PowerShell is unavailable")
-    escaped = str(SCRIPT).replace("'", "''")
+    escaped = str(path).replace("'", "''")
     command = (
         "$tokens=$null;$errors=$null;"
         f"[System.Management.Automation.Language.Parser]::ParseFile('{escaped}',[ref]$tokens,[ref]$errors)|Out-Null;"
@@ -115,3 +154,10 @@ def test_registration_helper_powershell_parses_on_windows() -> None:
         check=False,
     )
     assert completed.returncode == 0, completed.stderr or completed.stdout
+
+
+def test_registration_helper_powershell_parses_on_windows() -> None:
+    if sys.platform != "win32":
+        pytest.skip("Windows PowerShell parser check is Windows-only")
+    _assert_powershell_parses(SCRIPT)
+    _assert_powershell_parses(HIDDEN_AUTOSTART)
