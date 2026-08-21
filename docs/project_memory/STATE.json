@@ -53,14 +53,25 @@
       "document": "NEXUS Project Memory Backup — Durable",
       "secondary_only": true,
       "may_authorize_production_recovery": false,
-      "blocker": 122
+      "issue": 122,
+      "status": "verified_secondary_recovery_candidate",
+      "fixed_source_sha": "b0d89457033941932515a0a6a07e79ec165a8cce",
+      "provider_object_id": "1m_KFJ6YvnWhLRYzAFBrZXn3Rb-OqYb_M63V8X_aMvew",
+      "provider_revision_id": "1",
+      "provider_modified_at": "2026-08-21T13:30:58.575Z",
+      "raw_export_size_bytes": 48060,
+      "raw_export_sha256": "b75b35f96305d1c61d10a1f27c13f08effaacc6c0fac7f63aa325ca3bc178c02",
+      "provider_export_adapter": "nexus.project-memory-google-docs-export.v1",
+      "recovery_exercise": "verified",
+      "privacy_findings": 0,
+      "verification_prs": [920, 923]
     }
   },
   "current_evidence": {
-    "observed_main_sha": "0b8cb7c576dffcf13d1e96e68ac6f2656e9700c7",
-    "observed_at_utc": "2026-08-21T12:33:01Z",
+    "observed_main_sha": "9faa02c210ce2aea45271ca06f1e873964e798f9",
+    "observed_at_utc": "2026-08-21T13:58:00Z",
     "latest_main_change": {
-      "summary": "Phase 7 Windows offline-return hardening merged after successful physical acceptance. The acceptance mission remains bound to its fixed proof source SHA; the current main change only hardens Windows BOM/CRLF and first-return branch handling without widening authority.",
+      "summary": "PR #923 merged the bounded Google Docs text/plain export adapter for #122 after exact-head green CI. The verified Drive recovery tuple remains bound to fixed source SHA b0d89457033941932515a0a6a07e79ec165a8cce; repository main remains authoritative and the Drive copy is secondary only.",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true
@@ -125,12 +136,15 @@
       "issue_697": "completed",
       "issue_702": "completed",
       "issue_696": "completed",
+      "issue_122": "completed",
       "return_pr_916": "closed_unmerged",
-      "hardening_pr_915": "merged"
+      "hardening_pr_915": "merged",
+      "backup_verifier_pr_920": "merged",
+      "drive_export_hardening_pr_923": "merged"
     },
     "release_readiness": {
       "production_ready": false,
-      "reason": "NEXUS remains explicitly Research/Backtest/Paper-only; Phase 7 completion does not grant Live/L4, signing, billing, exchange credential, or production authority."
+      "reason": "NEXUS remains explicitly Research/Backtest/Paper-only; Phase 7 completion and verified continuity backup do not grant Live/L4, signing, billing, exchange credential, or production authority."
     },
     "provider_status": {
       "deepseek": {
