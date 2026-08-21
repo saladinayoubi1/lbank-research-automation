@@ -111,14 +111,25 @@ def test_registration_entrypoint_replaces_visible_task_with_hidden_autostart() -
     assert "$action.Path = $powershell" in task_body
 
 
-def test_hidden_autostart_preserves_active_job_before_migrating_listener() -> None:
+def test_hidden_autostart_retires_old_launcher_before_replacing_task_definition() -> None:
     hidden = HIDDEN_AUTOSTART.read_text(encoding="utf-8")
     worker_wait = hidden.index("while ((Get-ManagedProcess 'Runner.Worker')")
     task_stop = hidden.index("$existing.Stop(0)")
-    listener_stop = hidden.index("Stop-Process -Id $listener.Id")
+    launcher_retire = hidden.index("Stop-ManagedLauncherTree")
+    task_register = hidden.index("$folder.RegisterTaskDefinition")
     hidden_start = hidden.index("$registered.Run($null)")
-    assert worker_wait < task_stop < listener_stop < hidden_start
+    assert worker_wait < task_stop < launcher_retire < task_register < hidden_start
     assert "MIGRATION_PENDING_ACTIVE_JOB" in hidden
+    for marker in (
+        "CreateToolhelp32Snapshot",
+        "GetParentProcessId",
+        "taskkill.exe",
+        "$parent.ProcessName -ine 'cmd'",
+        "legacy_launcher_retired",
+    ):
+        assert marker in hidden
+    assert "/IM cmd.exe" not in hidden
+    assert "Stop-Process -Id $listener.Id" not in hidden
 
 
 def test_registration_helper_preserves_nexus_authority_boundaries() -> None:
