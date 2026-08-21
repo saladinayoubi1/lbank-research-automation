@@ -126,8 +126,23 @@ function main() {
   const intervalMs = intervalArg ? Number(intervalArg.split('=')[1]) : 20000;
   if (!Number.isFinite(intervalMs) || intervalMs < 5000) throw new Error('interval must be >= 5000ms');
 
+  // GitHub Actions schedules this worker repeatedly. Keeping a self-hosted Windows
+  // job alive for almost the full workflow timeout monopolizes the only local runner,
+  // blocks maintenance/cutover work and prevents the listener from returning to idle.
+  // One deterministic cycle per Actions lease is enough; local/manual invocations can
+  // still opt into the historical continuous loop by running outside that environment.
+  const boundedGitHubSelfHosted =
+    process.env.GITHUB_ACTIONS === 'true' &&
+    process.env.RUNNER_ENVIRONMENT === 'self-hosted-windows';
+
   executeCycle();
-  if (once) return;
+  if (once || boundedGitHubSelfHosted) {
+    if (boundedGitHubSelfHosted && !once) {
+      process.stdout.write('[nexus-worker] bounded_self_hosted_github_cycle=complete\n');
+    }
+    return;
+  }
+
   setInterval(() => {
     try {
       executeCycle();
