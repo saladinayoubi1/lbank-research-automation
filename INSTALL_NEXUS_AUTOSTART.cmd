@@ -21,8 +21,17 @@ if errorlevel 1 (
   exit /b 1
 )
 
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\enable_nexus_runner_self_heal.ps1"
+if errorlevel 1 (
+  echo.
+  echo [NEXUS] Runner self-heal activation failed.
+  echo Core and runner autostart remain installed.
+  pause
+  exit /b 1
+)
+
 echo.
-echo [NEXUS] Zero-touch core + GitHub runner autostart installed.
+echo [NEXUS] Zero-touch core + GitHub runner autostart + self-heal installed.
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\nexus_github_runner_autostart.ps1" -Mode Status -RepoRoot "%~dp0"
 echo.
 echo After future Windows logons, no CMD or PowerShell window is required.
