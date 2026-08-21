@@ -90,6 +90,103 @@ function Get-ManagedProcess([string]$Name) {
     return $null
 }
 
+function Ensure-ProcessTreeApi {
+    if ('Nexus.RunnerProcessTree' -as [type]) { return }
+    Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+
+namespace Nexus {
+    public static class RunnerProcessTree {
+        private const uint TH32CS_SNAPPROCESS = 0x00000002;
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+        private struct PROCESSENTRY32 {
+            public uint dwSize;
+            public uint cntUsage;
+            public uint th32ProcessID;
+            public IntPtr th32DefaultHeapID;
+            public uint th32ModuleID;
+            public uint cntThreads;
+            public uint th32ParentProcessID;
+            public int pcPriClassBase;
+            public uint dwFlags;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)]
+            public string szExeFile;
+        }
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr CreateToolhelp32Snapshot(uint dwFlags, uint th32ProcessID);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        private static extern bool Process32First(IntPtr hSnapshot, ref PROCESSENTRY32 lppe);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        private static extern bool Process32Next(IntPtr hSnapshot, ref PROCESSENTRY32 lppe);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool CloseHandle(IntPtr hObject);
+
+        public static int GetParentProcessId(int processId) {
+            IntPtr snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+            if (snapshot == new IntPtr(-1)) return 0;
+            try {
+                PROCESSENTRY32 entry = new PROCESSENTRY32();
+                entry.dwSize = (uint)Marshal.SizeOf(typeof(PROCESSENTRY32));
+                if (!Process32First(snapshot, ref entry)) return 0;
+                do {
+                    if (entry.th32ProcessID == (uint)processId) {
+                        return (int)entry.th32ParentProcessID;
+                    }
+                } while (Process32Next(snapshot, ref entry));
+                return 0;
+            }
+            finally {
+                CloseHandle(snapshot);
+            }
+        }
+    }
+}
+'@
+}
+
+function Stop-ManagedLauncherTree {
+    $listener = Get-ManagedProcess 'Runner.Listener'
+    if (-not $listener) { return $false }
+
+    Ensure-ProcessTreeApi
+    $parentPid = [Nexus.RunnerProcessTree]::GetParentProcessId([int]$listener.Id)
+    if ($parentPid -le 0) {
+        throw 'Could not resolve the launcher process for the managed runner listener.'
+    }
+
+    $parent = Get-Process -Id $parentPid -ErrorAction SilentlyContinue
+    if (-not $parent) {
+        throw 'Managed runner launcher exited before it could be retired.'
+    }
+    if ($parent.ProcessName -ine 'cmd') {
+        throw "Refusing to terminate unexpected managed runner parent process: $($parent.ProcessName) (PID $parentPid)."
+    }
+
+    $taskkill = Join-Path $env:SystemRoot 'System32\taskkill.exe'
+    if (-not (Test-Path -LiteralPath $taskkill -PathType Leaf)) {
+        $taskkill = (Get-Command taskkill.exe -ErrorAction Stop).Source
+    }
+    & $taskkill /PID $parentPid /T /F 1>$null 2>$null
+    $taskkillExit = $LASTEXITCODE
+
+    $deadline = [DateTime]::UtcNow.AddSeconds(12)
+    while ((Get-ManagedProcess 'Runner.Listener') -and [DateTime]::UtcNow -lt $deadline) {
+        Start-Sleep -Milliseconds 500
+    }
+    if (Get-ManagedProcess 'Runner.Listener') {
+        throw "Visible managed runner launcher did not exit after targeted process-tree retirement (taskkill exit $taskkillExit)."
+    }
+
+    Write-Log "legacy_runner_launcher_retired parent_pid=$parentPid taskkill_exit=$taskkillExit"
+    return $true
+}
+
 function Invoke-HiddenRunner {
     Assert-ConfiguredRunner
     $runCmd = Join-Path $RunnerRoot 'run.cmd'
@@ -167,30 +264,31 @@ function Install-HiddenAutostart {
     $action.Arguments = "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$StableHostPath`" -Mode Run"
     $action.WorkingDirectory = $RunnerRoot
 
-    $registered = $folder.RegisterTaskDefinition("\$TaskName",$definition,6,$null,$null,3,$null)
-    if (-not $registered) { throw 'Task Scheduler did not return the updated runner task.' }
-
-    # Do not interrupt a running GitHub Actions job. Wait for the managed worker to finish,
-    # then retire the old visible listener and start the newly registered hidden task.
+    # Do not interrupt a running GitHub Actions job. Wait for the managed worker to finish.
     $deadline = [DateTime]::UtcNow.AddMinutes(15)
     while ((Get-ManagedProcess 'Runner.Worker') -and [DateTime]::UtcNow -lt $deadline) {
         Start-Sleep -Seconds 3
     }
     if (Get-ManagedProcess 'Runner.Worker') {
-        Write-Evidence 'MIGRATION_PENDING_ACTIVE_JOB' @{ hidden_task_registered = $true; hidden_task_started = $false }
-        Write-Log 'hidden_autostart_registered_migration_pending_active_job=true'
-        throw 'A GitHub Actions job is still active after 15 minutes; hidden task is installed but the current listener was not interrupted.'
+        Write-Evidence 'MIGRATION_PENDING_ACTIVE_JOB' @{ hidden_task_registered = $false; hidden_task_started = $false }
+        Write-Log 'hidden_autostart_migration_pending_active_job=true'
+        throw 'A GitHub Actions job is still active after 15 minutes; the current listener was not interrupted.'
     }
 
+    # Stop the existing task instance before replacing its definition. Replacing first can leave
+    # the old visible cmd.exe launcher orphaned; killing Runner.Listener alone lets run.cmd restart it.
     if ($existing) {
         try { $existing.Stop(0) } catch { }
-        Start-Sleep -Seconds 2
+        Start-Sleep -Seconds 3
     }
-    $listener = Get-ManagedProcess 'Runner.Listener'
-    if ($listener) {
-        try { Stop-Process -Id $listener.Id -Force -ErrorAction Stop } catch { }
-        Start-Sleep -Seconds 2
+
+    $legacyLauncherRetired = $false
+    if (Get-ManagedProcess 'Runner.Listener') {
+        $legacyLauncherRetired = Stop-ManagedLauncherTree
     }
+
+    $registered = $folder.RegisterTaskDefinition("\$TaskName",$definition,6,$null,$null,3,$null)
+    if (-not $registered) { throw 'Task Scheduler did not return the updated runner task.' }
 
     [void]$registered.Run($null)
     $listenerReady = $false
@@ -201,8 +299,12 @@ function Install-HiddenAutostart {
     } while ([DateTime]::UtcNow -lt $readyDeadline)
     if (-not $listenerReady) { throw 'Hidden runner task was installed, but Runner.Listener.exe was not observed.' }
 
-    Write-Evidence 'SUCCESS' @{ hidden_task_registered = $true; hidden_task_started = $true }
-    Write-Log 'status=SUCCESS hidden_runner_autostart=true visible_console_required=false'
+    Write-Evidence 'SUCCESS' @{
+        hidden_task_registered = $true
+        hidden_task_started = $true
+        legacy_launcher_retired = [bool]$legacyLauncherRetired
+    }
+    Write-Log "status=SUCCESS hidden_runner_autostart=true visible_console_required=false legacy_launcher_retired=$legacyLauncherRetired"
     Write-Host 'NEXUS runner autostart is now hidden. You can close this repair window.' -ForegroundColor Green
 }
 
