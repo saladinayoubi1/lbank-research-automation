@@ -19,17 +19,22 @@ function runGit(args, options = {}) {
   }).trim();
 }
 
-function copyScript(name) {
-  const source = path.join(repoRoot, 'scripts', name);
-  const target = path.join(sidecarRoot, name);
-  if (!fs.existsSync(source)) throw new Error(`required bootstrap script missing: ${name}`);
+function copyScript(sourceName, targetName = sourceName) {
+  const source = path.join(repoRoot, 'scripts', sourceName);
+  const target = path.join(sidecarRoot, targetName);
+  if (!fs.existsSync(source)) throw new Error(`required bootstrap script missing: ${sourceName}`);
   fs.copyFileSync(source, target);
 }
 
 fs.mkdirSync(sidecarRoot, { recursive: true });
 copyScript('bootstrap_nexus_runner_from_gui.ps1');
 copyScript('provision_nexus_github_runner.ps1');
-copyScript('install_nexus_owner_autostart_from_gui.ps1');
+// Preserve the exact-source core bootstrap as a packaged private helper, then expose
+// the wrapper under the existing bootstrap filename so Electron needs no authority or
+// IPC change. The wrapper first establishes both canonical owner tasks and only then
+// adds the same-task five-minute self-heal trigger.
+copyScript('install_nexus_owner_autostart_from_gui.ps1', 'install_nexus_owner_autostart_core.ps1');
+copyScript('install_nexus_owner_autostart_with_self_heal.ps1', 'install_nexus_owner_autostart_from_gui.ps1');
 
 const head = runGit(['rev-parse', 'HEAD']).toLowerCase();
 if (!/^[0-9a-f]{40}$/.test(head)) throw new Error('repository HEAD is not a full SHA');
