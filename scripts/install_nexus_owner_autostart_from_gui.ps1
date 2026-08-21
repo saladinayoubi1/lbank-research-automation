@@ -18,7 +18,9 @@ $ManagedRepoRoot = Join-Path $env:LOCALAPPDATA 'NEXUS\lbank-research-automation'
 $StateRoot = Join-Path $env:LOCALAPPDATA 'NEXUS\OwnerAutostartBootstrap'
 $EvidencePath = Join-Path $StateRoot 'evidence.json'
 $LogPath = Join-Path $StateRoot 'bootstrap.log'
+$TaskCompatRelative = 'scripts\nexus_task_scheduler_compat.ps1'
 $CurrentStage = 'startup'
+$TaskSchedulerCimFallbackUsed = $false
 
 function Ensure-StateRoot {
     New-Item -ItemType Directory -Force -Path $StateRoot | Out-Null
@@ -53,6 +55,7 @@ function Write-Evidence([string]$Status, [hashtable]$Extra = @{}) {
         runner_registration_modified = $false
         machine_execution_policy_modified = $false
         elevation_requested = $false
+        task_scheduler_cim_fallback_used = [bool]$TaskSchedulerCimFallbackUsed
         live_trading_authority = $false
         paper_only = $true
     }
@@ -225,26 +228,55 @@ function Get-PowerShellExe {
     return (Get-Command powershell.exe -ErrorAction Stop).Source
 }
 
+function Import-TaskSchedulerCompat {
+    $path = Join-Path $ManagedRepoRoot $TaskCompatRelative
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "required Task Scheduler compatibility helper missing: $TaskCompatRelative" }
+    . $path
+}
+
+function Install-TaskViaComFallback([string]$RelativeScript) {
+    Import-TaskSchedulerCompat
+    $scriptPath = Join-Path $ManagedRepoRoot $RelativeScript
+    $ps = Get-PowerShellExe
+    $user = "$env:USERDOMAIN\$env:USERNAME"
+    $taskArgs = "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$scriptPath`" -Mode RunDaemon -RepoRoot `"$ManagedRepoRoot`""
+
+    if ($RelativeScript -eq 'scripts\nexus_windows_autostart.ps1') {
+        $name = 'NEXUS-ZeroTouch-Autopilot'
+        $description = 'Starts the NEXUS local supervisor and safely resumes Phase 7 offline handoff after Windows logon.'
+    }
+    elseif ($RelativeScript -eq 'scripts\nexus_github_runner_autostart.ps1') {
+        $name = 'NEXUS-GitHub-Runner-Autostart'
+        $description = 'Keeps the configured NEXUS GitHub Actions self-hosted runner listener available after Windows logon without a visible shell.'
+    }
+    else {
+        throw "Task Scheduler COM fallback is not defined for installer: $RelativeScript"
+    }
+
+    [void](New-NexusInteractiveLogonTask -Name $name -Execute $ps -Arguments $taskArgs -WorkingDirectory $ManagedRepoRoot -User $user -Description $description -StartNow)
+    $script:TaskSchedulerCimFallbackUsed = $true
+    Write-Log "task_scheduler_transport=com_fallback task=$name reason=cim_unavailable"
+}
+
 function Invoke-Installer([string]$RelativeScript) {
     $path = Join-Path $ManagedRepoRoot $RelativeScript
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "required installer missing: $RelativeScript" }
     $ps = Get-PowerShellExe
     $installerArguments = @('-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',$path,'-Mode','Install','-RepoRoot',$ManagedRepoRoot)
-    [void](Invoke-NativeCapture -Executable $ps -WorkingDirectory $ManagedRepoRoot -Arguments $installerArguments -Label ("installer $RelativeScript"))
+    try {
+        [void](Invoke-NativeCapture -Executable $ps -WorkingDirectory $ManagedRepoRoot -Arguments $installerArguments -Label ("installer $RelativeScript"))
+    }
+    catch {
+        $message = Sanitize-Inline $_.Exception.Message
+        if ($message -notmatch '(?i)CimJob_BrokenCimSession|Cannot connect to CIM server') { throw }
+        Write-Log "scheduledtasks_cmdlets_unavailable installer=$RelativeScript error=$message"
+        Install-TaskViaComFallback $RelativeScript
+    }
 }
 
 function Task-Snapshot([string]$Name) {
-    $task = Get-ScheduledTask -TaskName $Name -ErrorAction SilentlyContinue
-    if (-not $task) { return [ordered]@{ exists=$false; state='MISSING' } }
-    $info = Get-ScheduledTaskInfo -TaskName $Name -ErrorAction SilentlyContinue
-    return [ordered]@{
-        exists = $true
-        state = [string]$task.State
-        user = [string]$task.Principal.UserId
-        run_level = [string]$task.Principal.RunLevel
-        last_run_time = if ($info) { [string]$info.LastRunTime } else { $null }
-        last_task_result = if ($info) { [int]$info.LastTaskResult } else { $null }
-    }
+    Import-TaskSchedulerCompat
+    return (Get-NexusScheduledTaskSnapshot $Name)
 }
 
 try {
