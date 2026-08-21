@@ -30,7 +30,6 @@
       {"from":"sidecar/bootstrap_nexus_runner_from_gui.ps1","to":"scripts/bootstrap_nexus_runner_from_gui.ps1"},
       {"from":"sidecar/provision_nexus_github_runner.ps1","to":"scripts/provision_nexus_github_runner.ps1"},
       {"from":"sidecar/install_nexus_owner_autostart_from_gui.ps1","to":"scripts/install_nexus_owner_autostart_from_gui.ps1"},
-      {"from":"sidecar/install_nexus_owner_autostart_core.ps1","to":"scripts/install_nexus_owner_autostart_core.ps1"},
       {"from":"sidecar/nexus-source-seed.git","to":"nexus-source-seed.git"}
     ],
     "win": {"target": ["nsis", "portable"]},
