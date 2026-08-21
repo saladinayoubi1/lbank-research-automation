@@ -58,7 +58,7 @@
   },
   "current_evidence": {
     "observed_main_sha": "0b8cb7c576dffcf13d1e96e68ac6f2656e9700c7",
-    "observed_at_utc": "2026-08-21T12:27:00Z",
+    "observed_at_utc": "2026-08-21T12:33:01Z",
     "latest_main_change": {
       "summary": "Phase 7 Windows offline-return hardening merged after successful physical acceptance. The acceptance mission remains bound to its fixed proof source SHA; the current main change only hardens Windows BOM/CRLF and first-return branch handling without widening authority.",
       "architecture_or_core_goal_change_observed": false,
@@ -124,7 +124,7 @@
     "closure_state": {
       "issue_697": "completed",
       "issue_702": "completed",
-      "issue_696": "pending_project_memory_integration",
+      "issue_696": "completed",
       "return_pr_916": "closed_unmerged",
       "hardening_pr_915": "merged"
     },
