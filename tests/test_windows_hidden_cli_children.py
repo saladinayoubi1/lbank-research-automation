@@ -9,5 +9,8 @@ def test_windows_cli_children_use_create_no_window() -> None:
     assert 'getattr(subprocess, "CREATE_NO_WINDOW", 0)' in text
     assert 'if os.name == "nt" else 0' in text
     assert "creationflags=creationflags" in text
-    assert '["gh", "run", "list"' in text
-    assert '["gh", "run", "rerun"' in text
+
+    # Bind the two GitHub CLI paths semantically instead of depending on whether
+    # the list literal is formatted on one line or across several lines.
+    assert '"gh", "run", "list"' in text.replace("\n", " ")
+    assert '"gh", "run", "rerun"' in text.replace("\n", " ")
