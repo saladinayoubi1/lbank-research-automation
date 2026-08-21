@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "event": "phase7_acceptance_complete",
+  "recorded_at_utc": "2026-08-21T12:28:00Z",
+  "repository": "saladinayoubi1/lbank-research-automation",
+  "observed_main_before_memory_integration": "0b8cb7c576dffcf13d1e96e68ac6f2656e9700c7",
+  "proof_source_sha": "da74ebf855f62d57919e856242b75dc3f1170d28",
+  "return_head_sha": "9d6dccb09245bcd7a025b514f66977b39ed50728",
+  "verification": {
+    "mission_queue_run_id": 32479787219,
+    "artifact_id": 9445631033,
+    "artifact_name": "nexus-phase7-return-verified-p7-20260821T110236Z-6d6f6bf7",
+    "artifact_digest": "sha256:0ff3997ab4d5dcad43c00dc891afa9e1c188120fc1b649fff61ff091d949ac73",
+    "hardware_proof_complete": true,
+    "verified_progress_percent": 100.0,
+    "zero_idle_overlap_verified": true,
+    "reboot_after_prepare": true,
+    "internet_unavailable_pre_execution": true,
+    "internet_unavailable_post_execution": true
+  },
+  "resources": {
+    "laptop": "EXECUTED",
+    "internal_agent": "EXECUTED",
+    "cloud_github": "EXECUTED",
+    "deepseek_ai_provider": "UNAVAILABLE: provider_budget_gate_closed"
+  },
+  "closure": {
+    "issue_697": "completed",
+    "issue_702": "completed",
+    "return_pr_916": "closed_unmerged",
+    "temporary_return_branch_deleted": true,
+    "windows_hardening_pr_915": "merged"
+  },
+  "decision": "Phase 7 acceptance is complete. The physical proof is bound to the fixed proof source SHA; later main only hardens the Windows return transport discovered during acceptance. Missing or budget-gated optional AI-provider participation must remain truthfully UNAVAILABLE and must never be simulated.",
+  "lessons": [
+    "Windows PowerShell 5.1 UTF-8 BOM must be handled explicitly when Python validates JSON evidence.",
+    "Byte-addressed return manifests must normalize Windows/Git line endings before hashing and committing data-only evidence.",
+    "First-return cleanup must tolerate a return branch that does not yet exist.",
+    "Physical acceptance evidence is not complete until an independent verifier publishes a fixed-source artifact and owner-side temporary Courier material is removed."
+  ],
+  "authority": {
+    "research_backtest_paper_only": true,
+    "live_trading_authority": false,
+    "credentials_or_billing_authority_added": false
+  }
+}
