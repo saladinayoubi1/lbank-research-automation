@@ -1,5 +1,5 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "project": "NEXUS / lbank-research-automation",
   "memory_policy": {
     "repository_is_durable_source": true,
@@ -18,16 +18,19 @@
     "cloud continuity when the local laptop is offline"
   ],
   "runtime_status": {
-    "agent_execution_state": "repository_evidence_observed",
-    "laptop_state": "unknown",
-    "internet_outage_state": "unknown",
-    "laptop_offline_is_not_internet_outage": true
+    "agent_execution_state": "phase7_acceptance_verified",
+    "laptop_state": "physical_phase7_proof_verified_and_owner_cleanup_observed",
+    "internet_outage_state": "not_assumed_from_laptop_state",
+    "laptop_offline_is_not_internet_outage": true,
+    "runner_registration_modified_by_phase7_cleanup": false,
+    "watchdog_required": false
   },
   "data_policy": {
     "research_only": true,
     "real_trading": false,
     "fabricated_market_data": false,
-    "invalid_data_may_pass_research_gate": false
+    "invalid_data_may_pass_research_gate": false,
+    "live_l4_authority": false
   },
   "continuity": {
     "required_reads": [
@@ -54,284 +57,90 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "c6f7a6ac6adf24b9fb5f35ac10b8623cd63187bf",
-    "observed_at_utc": "2026-08-18T08:08:13Z",
+    "observed_main_sha": "0b8cb7c576dffcf13d1e96e68ac6f2656e9700c7",
+    "observed_at_utc": "2026-08-21T12:27:00Z",
     "latest_main_change": {
-      "summary": "Exact repository main observed after canonical Windows product integration via PR #606, Android canonical-backend parity via PR #672, and Windows 4.1.1 Python-sidecar startup hardening via PR #673. Phase 5 is complete, Phase 6 is candidate-complete/merged, Product Integration #603 is completed, and the authorized boundary remains Research / Backtest / Paper only with Live/L4 locked.",
+      "summary": "Phase 7 Windows offline-return hardening merged after successful physical acceptance. The acceptance mission remains bound to its fixed proof source SHA; the current main change only hardens Windows BOM/CRLF and first-return branch handling without widening authority.",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
-      "meaningful_operational_change_observed": true,
-      "recent_sequence": [
-        "6450863f1b631e2c59c44f65d0890d04169054ff Merge PR #589; Phase 5 Gates 0-9 completed with fixed-SHA Cloud/Windows evidence",
-        "5b2c12be31caf8d1494efa1eb481e27253c0e371 Merge PR #592; Phase 6 real canonical research pipeline and bounded final engineering closure integrated",
-        "bdcf5ab32a5f979b3d2c780344f554d639907e0a Merge PR #606; canonical Windows NEXUS 4.1 product integrated",
-        "1f33820d88b9dedf8c8641d93d14aaf20d0c1b7b Merge PR #672; Android 3.1 canonical product parity integrated",
-        "c6f7a6ac6adf24b9fb5f35ac10b8623cd63187bf Merge PR #673; Windows 4.1.1 sidecar startup reliability hardening integrated"
-      ]
+      "meaningful_operational_change_observed": true
     },
-    "open_pull_requests": [676],
-    "memory_refresh_branch": "agent/repair-project-state-20260818-v2",
-    "memory_refresh_pr": 676,
+    "phase7": {
+      "status": "complete",
+      "parent_issue": 696,
+      "control_plane_issue": 697,
+      "e2e_issue": 702,
+      "proof_source_sha": "da74ebf855f62d57919e856242b75dc3f1170d28",
+      "return_head_sha": "9d6dccb09245bcd7a025b514f66977b39ed50728",
+      "verification_run_id": 32479787219,
+      "verified_artifact_id": 9445631033,
+      "verified_artifact_name": "nexus-phase7-return-verified-p7-20260821T110236Z-6d6f6bf7",
+      "verified_artifact_digest": "sha256:0ff3997ab4d5dcad43c00dc891afa9e1c188120fc1b649fff61ff091d949ac73",
+      "hardware_proof_complete": true,
+      "verified_progress_percent": 100.0,
+      "laptop_classification": "EXECUTED",
+      "internal_agent_classification": "EXECUTED",
+      "cloud_classification": "EXECUTED",
+      "deepseek_classification": "UNAVAILABLE",
+      "deepseek_reason": "provider_budget_gate_closed",
+      "zero_idle_overlap_verified": true,
+      "real_reboot_after_prepare": true,
+      "internet_unavailable_pre_execution": true,
+      "internet_unavailable_post_execution": true,
+      "paper_only": true,
+      "live_trading_authority": false,
+      "return_pr": 916,
+      "return_pr_state": "closed_unmerged",
+      "return_branch_deleted": true,
+      "permanent_windows_hardening_pr": 915,
+      "permanent_windows_hardening_main_sha": "0b8cb7c576dffcf13d1e96e68ac6f2656e9700c7"
+    },
     "phase_status": {
       "phase5": {
         "status": "complete",
         "formal_gates": "0-9",
-        "final_pr": 589,
-        "checkpoint": ".nexus/phase5-checkpoint.json"
+        "final_pr": 589
       },
       "phase6": {
-        "status": "candidate_complete",
+        "status": "complete",
         "formal_gates": "0-6",
-        "formal_gates_complete": true,
-        "final_pr": 592,
-        "checkpoint": ".nexus/phase6-checkpoint.json"
+        "final_pr": 592
+      },
+      "phase7": {
+        "status": "complete",
+        "formal_gates": "0-6",
+        "acceptance_issue": 702,
+        "control_plane_issue": 697,
+        "proof_source_sha": "da74ebf855f62d57919e856242b75dc3f1170d28",
+        "verified_progress_percent": 100.0
       },
       "product_integration": {
         "status": "complete",
         "issue": 603,
-        "windows_product_pr": 606,
-        "windows_hardening_pr": 673,
-        "windows_version": "4.1.1",
-        "android_pr": 672,
-        "android_version": "3.1.0",
         "canonical_backend": "python_product_runtime",
         "live_authority": false
       }
     },
-    "pull_request_evidence": {
-      "477": {
-        "state": "merged",
-        "merged": true,
-        "head_sha": "cc026941f6be6a856074f4fb91481c47754829fa",
-        "merge_commit_sha": "431f937087d67b94b3fd817556d453e2c09ce749",
-        "scope": "Gate 2 durable restart/recovery",
-        "production_authority": false,
-        "result": "merged after exact-head acceptance evidence; issue #230 completed"
-      },
-      "490": {
-        "state": "merged",
-        "merged": true,
-        "head_sha": "9444a46975ccdeaa859a022adfbc5c78e37691ca",
-        "merge_commit_sha": "62f2fd4b547f78ebc817d2f02d58ee4202eaf79f",
-        "scope": "required audit check emitted on every pull request",
-        "production_authority": false,
-        "result": "merged through owner-controlled PR-only break-glass; bypass was removed immediately after merge and ruleset returned to empty bypass list"
-      },
-      "493": {
-        "state": "merged",
-        "merged": true,
-        "head_sha": "844743df6dbe4dfcf26f62925a81966faaa5c809",
-        "merge_commit_sha": "41068e536813914e0852dfa0f70fcaa69a5b6939",
-        "scope": "Gate 3 concurrent final-budget-slice and ambiguous-timeout acceptance",
-        "production_authority": false,
-        "result": "merged after audit, ubuntu/windows/macos tests, trusted guard, build verification and cloud fallback succeeded"
-      },
-      "494": {
-        "state": "merged",
-        "merged": true,
-        "head_sha": "b328f320670b28eb6422f153efabdb2d3ac6b81b",
-        "merge_commit_sha": "43dae24c12d42ac2872bb97f515cd52c0e899f2c",
-        "scope": "Gate 5 canonical stable-read hardening and exact-main Project Memory refresh",
-        "production_authority": false,
-        "result": "merged after exact-final-head CI and clean review; post-merge verification correctly reopened #283 because the snapshot SHA self-staled at integration"
-      },
-      "496": {
-        "state": "merged",
-        "merged": true,
-        "head_sha": "c4015235e66bd8b8ccc0c3186eb82eb2758c8a1e",
-        "merge_commit_sha": "2eee456e91a1e84e8bdfae49de7e391209bf681f",
-        "scope": "Gate 5 post-merge self-staleness root-cause repair",
-        "production_authority": false,
-        "result": "merged after all required checks passed; merge commit first parent equals the prior exact-main snapshot and STATE.json changed in that integration commit, satisfying the one-hop freshness rule"
-      },
-      "498": {
-        "state": "merged",
-        "merged": true,
-        "head_sha": "ce26de56bb71edd37786b2333a9415b7e4e9463c",
-        "merge_commit_sha": "5ea4519c7ce4bd4944833392a706ca1b16aacc21",
-        "scope": "Gate 5 final durable evidence refresh after PR #496",
-        "production_authority": false,
-        "result": "merged after exact-final-head CI and clean review; issue #283 completed and removed from active blockers"
-      },
-      "503": {
-        "state": "merged",
-        "merged": true,
-        "head_sha": "6e1e4da7f7f70a970be1498fc287eff8f361565a",
-        "merge_commit_sha": "cf8fc051a2750af3fabffed779b8b5ed10468b5f",
-        "scope": "Gate 3 kernel-managed DeepSeek ledger lock recovery",
-        "production_authority": false,
-        "result": "merged after exact-head required CI and trusted guard; stale coordination files no longer act as ownership proof"
-      },
-      "504": {
-        "state": "merged",
-        "merged": true,
-        "head_sha": "f08d8d4dd98ab48812aa484e27e952e4a132a9d7",
-        "merge_commit_sha": "93c0713b45e2dded424d599b6093c93fac4fc086",
-        "scope": "Gate 3 recovery/tamper acceptance",
-        "production_authority": false,
-        "result": "merged after exact-head required CI; corrupt/tampered ledgers, reservation ownership, over-reservation reconciliation and restart preservation are covered"
-      },
-      "505": {
-        "state": "merged",
-        "merged": true,
-        "head_sha": "717c1b451b6db171183aad3410a8f971a73cc226",
-        "merge_commit_sha": "e8537213eded35c685b78801174f1d688a0acd0b",
-        "scope": "Gate 3 deterministic DeepSeek pre-egress classification/redaction/allowlisting and ADR alignment",
-        "production_authority": false,
-        "result": "merged after frozen Gate 3 remediation; provider-bound payloads are sanitized and allowlisted before reservation/network I/O"
-      },
-      "589": {
-        "state": "merged",
-        "merged": true,
-        "head_sha": "5d0671103ea77db6003fada42dc9792ae86bf03f",
-        "merge_commit_sha": "6450863f1b631e2c59c44f65d0890d04169054ff",
-        "scope": "Phase 5 final Gates 6-9: Strategy Factory, canonical semantic data binding, shadow/cutover resilience and fixed-SHA evidence",
-        "production_authority": false,
-        "result": "merged with Phase 5 Gates 0-9 complete and preserved fixed-SHA Cloud/Windows evidence"
-      },
-      "592": {
-        "state": "merged",
-        "merged": true,
-        "head_sha": "8b94fa76597f6697155d79cf9c820ff2d4b9a403",
-        "merge_commit_sha": "5b2c12be31caf8d1494efa1eb481e27253c0e371",
-        "scope": "Phase 6 real canonical research pipeline, robustness/OOS/regime evidence and paper-only handoff",
-        "production_authority": false,
-        "result": "merged; Phase 6 formal Gates 0-6 candidate-complete without widening authority"
-      },
-      "606": {
-        "state": "merged",
-        "merged": true,
-        "head_sha": "ef5213043b0be07d48a4e8abecd3503852373224",
-        "merge_commit_sha": "bdcf5ab32a5f979b3d2c780344f554d639907e0a",
-        "scope": "canonical Windows NEXUS 4.1 full product with packaged Python research/Paper backend",
-        "production_authority": false,
-        "result": "merged after product integration verification; Live/Main remains explicitly locked"
-      },
-      "672": {
-        "state": "merged",
-        "merged": true,
-        "head_sha": "30b43ff871eb8491a98c88d477cb36ce4e4c9b35",
-        "merge_commit_sha": "1f33820d88b9dedf8c8641d93d14aaf20d0c1b7b",
-        "scope": "Android 3.1 canonical product-backend parity with explicit local deterministic fallback",
-        "production_authority": false,
-        "result": "merged; Android prefers canonical HTTPS product routes while preserving locked Live/L4 boundary"
-      },
-      "673": {
-        "state": "merged",
-        "merged": true,
-        "head_sha": "aad711061270fe257fdd4fbb3e52b902e06075bd",
-        "merge_commit_sha": "c6f7a6ac6adf24b9fb5f35ac10b8623cd63187bf",
-        "scope": "Windows 4.1.1 Python-sidecar startup reliability hardening",
-        "production_authority": false,
-        "result": "merged; switched packaged sidecar to onedir, extended bounded readiness, improved loopback diagnostics, and preserved Research/Backtest/Paper-only authority"
-      },
-      "674": {
-        "state": "closed",
-        "merged": false,
-        "head_sha": "4c9779037cbceab6bcd7c22271754e495e0aac65",
-        "merge_commit_sha": null,
-        "scope": "stale first project-state/CI-lifecycle maintenance candidate",
-        "production_authority": false,
-        "result": "closed unmerged after main advanced through PR #673; replayed from exact current main as PR #676"
-      },
-      "676": {
-        "state": "open",
-        "merged": false,
-        "head_sha": null,
-        "merge_commit_sha": null,
-        "scope": "current project-state refresh and CI issue lifecycle repair",
-        "production_authority": false,
-        "result": "candidate pending exact-head CI and review"
-      }
+    "closure_state": {
+      "issue_697": "completed",
+      "issue_702": "completed",
+      "issue_696": "pending_project_memory_integration",
+      "return_pr_916": "closed_unmerged",
+      "hardening_pr_915": "merged"
     },
     "release_readiness": {
       "production_ready": false,
-      "exact_main_combined_status_count": 0,
-      "exact_main_commit_workflow_runs_observed": 0,
-      "exact_main_release_run_independently_verified": false,
-      "artifact_manifest_gate": true,
-      "cyclonedx_sbom_gate": true,
-      "provenance_binding_gate": true,
-      "production_signature_policy_configured": false,
-      "reproducible_build_comparison_gate": true,
-      "reproducible_production_build_proven": false,
-      "rollback_record_gate": true,
-      "rollback_exercised_in_production": false,
-      "backup_restore_rpo_rto_proven": false,
-      "independent_disaster_recovery_proven": false,
-      "cross_platform_workflow_matrix": ["ubuntu-latest", "windows-latest", "macos-latest"],
-      "exact_main_cross_platform_release_evidence_proven": false,
-      "owner_production_approval": false,
-      "fail_closed_verification": {
-        "release_gate": "rejects missing/tampered/malformed manifest, SBOM and provenance; production signature verification blocks without approved identity policy",
-        "recovery_gate": "rejects non-identical outputs, unsafe rollback evidence and pre-authorized rollback records"
-      },
-      "release_blockers": [43, 58, 64]
+      "reason": "NEXUS remains explicitly Research/Backtest/Paper-only; Phase 7 completion does not grant Live/L4, signing, billing, exchange credential, or production authority."
     },
     "provider_status": {
       "deepseek": {
         "integrated": true,
-        "paid_routing_authoritative": false,
-        "hard_monthly_cap_usd": 5.0,
-        "hard_monthly_cap_proven": true,
-        "blocker": null,
-        "completion_issue": 232,
-        "credential_or_billing_action_performed": false,
-        "note": "budget/recovery and deterministic pre-egress controls are integrated; key presence or a provider call is not startup or authority proof"
-      },
-      "zotero": {
-        "local_api_probe_added": true,
-        "production_authority": false
+        "optional_accelerator": true,
+        "proof_classification": "UNAVAILABLE",
+        "proof_reason": "provider_budget_gate_closed",
+        "fabricated_participation": false,
+        "credential_or_billing_action_performed": false
       }
-    },
-    "market_data": {
-      "canonical_primary": "Bybit",
-      "secondary_validation_source": "Binance",
-      "tertiary_legacy_source": "LBank",
-      "canonical_registry": "docs/architecture/market-data-source-registry.yaml",
-      "canonical_binding_runtime": "phase5_data_binding.py",
-      "canonical_provenance_binding_authoritative_for_downstream": false,
-      "semantic_binding_blocker": 197,
-      "semantic_binding_note": "The canonical Bybit product/research path is registry-bound, but legacy cross-source provenance remains fail-closed for downstream eligibility until #197 completes raw/downstream bypass enforcement and fixed-tuple rollback/recovery replay on one fixed SHA.",
-      "legacy_lbank": {
-        "tracked_series": 21,
-        "research_ready_series": 2,
-        "blocked_series": 19,
-        "blocked_reason": "integrity_failed",
-        "historical_gap_policy": "fail_closed",
-        "freshness_issue": 107,
-        "integrity_issue": 125
-      }
-    },
-    "issue_hygiene": {
-      "initial_open_ci_triage_issues": 134,
-      "initial_open_substantive_issues": 13,
-      "ci_issue_root_cause": "event-driven failure triage upserted per workflow+SHA but did not retire superseded PR heads or exact-SHA failures after success",
-      "repair_branch": "agent/repair-project-state-20260818-v2",
-      "repair_pr": 676,
-      "repair_status": "candidate_pr_open"
-    },
-    "offline_semantics": {
-      "internet_outage": "local runtime may continue in reduced mode; cloud synchronization resumes after connectivity returns",
-      "laptop_powered_off": "local collectors halt; remote cloud continuity is a separate target and must not be conflated with an internet outage"
-    },
-    "recovery_lessons": [
-      "configured push triggers are not proof of an exact-SHA successful run",
-      "exact-head PR CI and exact-main release evidence are distinct claims",
-      "Drive presence alone is not recovery proof",
-      "schema or registry evolution must update fail-closed validators and tests in lockstep",
-      "stale or conflicted continuity PRs should be closed unmerged and replayed from exact current main",
-      "canonical market-data semantic authority must be registry-bound; caller-supplied timeframe, category, endpoint or finality labels cannot grant downstream eligibility",
-      "self-hosted local-runner recovery must verify portable Python bootstrap and workspace import paths explicitly; local-runner repair is operational continuity evidence, not production release authority",
-      "bounded gap repair must rotate across deferred windows and exhaustive repair must not stop solely because one round recovered zero candles while deferred gaps remain",
-      "paid AI provider integration is not proof of budget safety unless reservation, concurrency, retry, ambiguous-timeout accounting and deterministic pre-egress enforcement fail closed",
-      "local provider/tool probes are continuity observations only and do not confer production authority",
-      "laptop power-off and internet outage remain distinct failure modes and must never be collapsed into one recovery state",
-      "continuity snapshots that become stale during validation must be closed unmerged and replayed from exact current main; green CI does not make stale memory authoritative",
-      "Project Memory validation must bind STATE.json to externally observed repository evidence; the direct commit that integrates an exact-base snapshot may inherit freshness only for that one integration hop when STATE.json changed in that commit, and any later main advance must fail closed",
-      "frozen Gate 3 pre-egress policy is an executable acceptance boundary: provider-bound messages must be deterministically classified, sanitized and allowlisted before reservation or network I/O",
-      "event-driven CI failure issues require lifecycle retirement when a PR head advances, a PR closes, or the exact SHA later passes; detection without garbage collection creates operational noise"
-    ],
-    "active_blockers": [43, 58, 64, 89, 91, 107, 122, 125, 197]
+    }
   }
 }
