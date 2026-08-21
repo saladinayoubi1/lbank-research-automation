@@ -11,11 +11,7 @@ Set-StrictMode -Version 2.0
 
 $ExpectedRepoSuffix = '\NEXUS\lbank-research-automation'
 $TaskXmlNamespace = 'http://schemas.microsoft.com/windows/2004/02/mit/task'
-$ServiceIdentities = @(
-    'NT AUTHORITY\SYSTEM',
-    'NT AUTHORITY\NETWORK SERVICE',
-    'NT AUTHORITY\LOCAL SERVICE'
-)
+$ServiceSids = @('S-1-5-18','S-1-5-19','S-1-5-20')
 
 function Normalize-FullPath([string]$Value) {
     if (-not $Value) { return '' }
@@ -33,6 +29,22 @@ function Sanitize-Inline([string]$Value) {
     return ($Value -replace '[\r\n\t]+',' ' -replace '[\u0000-\u001f\u007f]','').Trim()
 }
 
+function Resolve-PrincipalSid([string]$Value) {
+    $candidate = Sanitize-Inline $Value
+    if (-not $candidate) { throw 'scheduled task principal is empty' }
+    if ($candidate -match '^S-\d-\d+(?:-\d+)+$') {
+        try { return (New-Object Security.Principal.SecurityIdentifier($candidate)).Value }
+        catch { throw "scheduled task principal SID is invalid: $candidate" }
+    }
+    try {
+        $account = New-Object Security.Principal.NTAccount($candidate)
+        return $account.Translate([Security.Principal.SecurityIdentifier]).Value
+    }
+    catch {
+        throw "scheduled task principal cannot be resolved to SID: $candidate"
+    }
+}
+
 function Get-XmlNodeText([xml]$Document, [Xml.XmlNamespaceManager]$NamespaceManager, [string]$XPath) {
     $node = $Document.SelectSingleNode($XPath, $NamespaceManager)
     if ($null -eq $node) { return '' }
@@ -45,9 +57,6 @@ function Get-TaskXml([string]$Name) {
         throw 'schtasks.exe is unavailable'
     }
 
-    # Windows PowerShell can surface native stderr as ErrorRecord objects. Keep this
-    # query read-only and capture the native exit/output explicitly so a missing task
-    # produces deterministic evidence rather than an unrelated terminating error.
     $previousErrorActionPreference = $ErrorActionPreference
     $output = @()
     $exitCode = -1
@@ -83,9 +92,10 @@ function Get-TaskSnapshot([string]$Name, [string]$ExpectedScript) {
     if ($null -eq $principalNode) { throw "scheduled task $Name has no principal" }
 
     $user = Get-XmlNodeText $taskXml $ns '/t:Task/t:Principals/t:Principal[1]/t:UserId'
+    $principalSid = Resolve-PrincipalSid $user
     $xmlRunLevel = Get-XmlNodeText $taskXml $ns '/t:Task/t:Principals/t:Principal[1]/t:RunLevel'
     $xmlLogonType = Get-XmlNodeText $taskXml $ns '/t:Task/t:Principals/t:Principal[1]/t:LogonType'
-    if (-not $user -or $ServiceIdentities -contains $user.ToUpperInvariant()) {
+    if ($ServiceSids -contains $principalSid) {
         throw "scheduled task $Name is not bound to a real owner-user principal"
     }
     if ($xmlRunLevel -ne 'LeastPrivilege') {
@@ -98,12 +108,17 @@ function Get-TaskSnapshot([string]$Name, [string]$ExpectedScript) {
     $logonTriggers = @($taskXml.SelectNodes('/t:Task/t:Triggers/t:LogonTrigger', $ns))
     if ($logonTriggers.Count -lt 1) { throw "scheduled task $Name has no logon trigger" }
     $triggerUsers = @()
+    $triggerSids = @()
     foreach ($trigger in $logonTriggers) {
         $node = $trigger.SelectSingleNode('t:UserId', $ns)
-        if ($null -ne $node -and [string]$node.InnerText) { $triggerUsers += [string]$node.InnerText }
+        if ($null -ne $node -and [string]$node.InnerText) {
+            $triggerUser = [string]$node.InnerText
+            $triggerUsers += $triggerUser
+            $triggerSids += (Resolve-PrincipalSid $triggerUser)
+        }
     }
-    if ($triggerUsers.Count -gt 0 -and -not ($triggerUsers -contains $user)) {
-        throw "scheduled task $Name logon trigger principal mismatch"
+    if ($triggerSids.Count -gt 0 -and -not ($triggerSids -contains $principalSid)) {
+        throw "scheduled task $Name logon trigger principal SID mismatch"
     }
 
     $actions = @($taskXml.SelectNodes('/t:Task/t:Actions/t:Exec', $ns))
@@ -116,7 +131,7 @@ function Get-TaskSnapshot([string]$Name, [string]$ExpectedScript) {
     $arguments = if ($null -ne $argumentsNode) { Sanitize-Inline ([string]$argumentsNode.InnerText) } else { '' }
     $workingDirectory = if ($null -ne $workingDirectoryNode) { Normalize-FullPath ([string]$workingDirectoryNode.InnerText) } else { '' }
 
-    if ([IO.Path]::GetFileName($execute) -notmatch '^(?i)powershell\.exe$') {
+    if ([IO.Path]::GetFileName($execute) -ine 'powershell.exe') {
         throw "scheduled task $Name executable is not powershell.exe"
     }
     if ($arguments -notmatch [regex]::Escape($ExpectedScript)) {
@@ -138,11 +153,13 @@ function Get-TaskSnapshot([string]$Name, [string]$ExpectedScript) {
         scheduler_source = 'schtasks_xml'
         configuration_state = 'Configured'
         principal_user = $user
+        principal_sid = $principalSid
         logon_type = 'Interactive'
         xml_logon_type = $xmlLogonType
         run_level = 'Limited'
         xml_run_level = $xmlRunLevel
         logon_trigger_users = @($triggerUsers)
+        logon_trigger_sids = @($triggerSids)
         execute = $execute
         arguments = $arguments
         working_directory = $workingDirectory
@@ -162,7 +179,7 @@ function Write-Evidence([string]$Status, [hashtable]$Extra = @{}) {
         target_package_source_sha = $SourceSha.ToLowerInvariant()
         generated_at = [DateTime]::UtcNow.ToString('o')
         verifier_identity = $identity
-        verifier_service_context = ($ServiceIdentities -contains $identity.ToUpperInvariant())
+        verifier_service_context = ($ServiceSids -contains (Resolve-PrincipalSid $identity))
         task_scheduler_read_only = $true
         task_scheduler_query_transport = 'schtasks_xml'
         owner_profile_file_content_read = $false
@@ -183,14 +200,15 @@ try {
     if ($env:OS -ne 'Windows_NT') { throw 'owner autostart proof is Windows-only' }
     $core = Get-TaskSnapshot 'NEXUS-ZeroTouch-Autopilot' 'nexus_windows_autostart.ps1'
     $runner = Get-TaskSnapshot 'NEXUS-GitHub-Runner-Autostart' 'nexus_github_runner_autostart.ps1'
-    if ($core.principal_user -ne $runner.principal_user) {
-        throw 'owner autostart tasks use different principals'
+    if ($core.principal_sid -ne $runner.principal_sid) {
+        throw 'owner autostart tasks use different owner principal SIDs'
     }
     if ($core.working_directory -ne $runner.working_directory) {
         throw 'owner autostart tasks use different managed checkout roots'
     }
     Write-Evidence 'SUCCESS' @{
         owner_user = $core.principal_user
+        owner_sid = $core.principal_sid
         managed_checkout_root = $core.working_directory
         core_task = $core
         runner_task = $runner
@@ -210,6 +228,6 @@ catch {
             offline_phase7_verified = $false
         }
     } catch { }
-    Write-Error $_
+    Write-Error -ErrorAction Continue $_
     exit 20
 }

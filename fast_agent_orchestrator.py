@@ -41,7 +41,15 @@ def event(kind: str, **fields: Any) -> None:
 
 
 def run(cmd: list[str], timeout: int = 20) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(cmd, text=True, capture_output=True, timeout=timeout, check=False)
+    creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0) if os.name == "nt" else 0
+    return subprocess.run(
+        cmd,
+        text=True,
+        capture_output=True,
+        timeout=timeout,
+        check=False,
+        creationflags=creationflags,
+    )
 
 
 def gh_available() -> bool:
