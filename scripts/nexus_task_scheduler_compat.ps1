@@ -28,7 +28,7 @@ function Get-NexusScheduledTask([string]$Name) {
     $service = Connect-NexusTaskScheduler
     $folder = $service.GetFolder('\')
     try {
-        return $folder.GetTask("\$Name")
+        return $folder.GetTask($Name)
     }
     catch {
         # 0x80070002 is the ordinary "task not found" path. Treat any lookup
@@ -121,7 +121,7 @@ function New-NexusInteractiveLogonTask {
     $action.WorkingDirectory = $WorkingDirectory
 
     $registered = $folder.RegisterTaskDefinition(
-        "\$Name",
+        $Name,
         $definition,
         $TASK_CREATE_OR_UPDATE,
         $null,
@@ -151,9 +151,9 @@ function Remove-NexusScheduledTask([string]$Name) {
     $service = Connect-NexusTaskScheduler
     $folder = $service.GetFolder('\')
     $task = $null
-    try { $task = $folder.GetTask("\$Name") } catch { }
+    try { $task = $folder.GetTask($Name) } catch { }
     if ($task) {
         try { $task.Stop(0) } catch { }
-        $folder.DeleteTask("\$Name", 0)
+        $folder.DeleteTask($Name, 0)
     }
 }
