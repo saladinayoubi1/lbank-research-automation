@@ -1,0 +1,48 @@
+{
+    "schema_version":  "nexus.phase7-offline-network-proof.v1",
+    "session_id":  "p7-20260821T110236Z-6d6f6bf7",
+    "source_sha":  "da74ebf855f62d57919e856242b75dc3f1170d28",
+    "prepared_at":  "2026-08-21T11:10:29.101Z",
+    "boot_time_utc":  "2026-08-21T11:18:20.094Z",
+    "reboot_after_prepare":  true,
+    "pre_execution":  {
+                          "checked_at":  "2026-08-21T11:23:31.843Z",
+                          "internet_unavailable":  true,
+                          "targets":  [
+                                          {
+                                              "host":  "api.github.com",
+                                              "port":  443,
+                                              "reachable":  false,
+                                              "error":  "MethodInvocationException: Exception calling \"EndConnect\" with \"1\" argument(s): \"No such host is known\""
+                                          },
+                                          {
+                                              "host":  "1.1.1.1",
+                                              "port":  443,
+                                              "reachable":  false,
+                                              "error":  "MethodInvocationException: Exception calling \"EndConnect\" with \"1\" argument(s): \"A socket operation was attempted to an unreachable network 1.1.1.1:443\""
+                                          }
+                                      ]
+                      },
+    "execution_started_at":  "2026-08-21T11:23:31.859Z",
+    "execution_finished_at":  "2026-08-21T11:24:30.943Z",
+    "post_execution":  {
+                           "checked_at":  "2026-08-21T11:24:30.959Z",
+                           "internet_unavailable":  true,
+                           "targets":  [
+                                           {
+                                               "host":  "api.github.com",
+                                               "port":  443,
+                                               "reachable":  false,
+                                               "error":  "MethodInvocationException: Exception calling \"EndConnect\" with \"1\" argument(s): \"No such host is known\""
+                                           },
+                                           {
+                                               "host":  "1.1.1.1",
+                                               "port":  443,
+                                               "reachable":  false,
+                                               "error":  "MethodInvocationException: Exception calling \"EndConnect\" with \"1\" argument(s): \"A socket operation was attempted to an unreachable network 1.1.1.1:443\""
+                                           }
+                                       ]
+                       },
+    "result_sha256":  "4392a1e692a4a67b5904d44982c771178c084fa3d2d8be6b4822b76c07897342",
+    "observation_method":  "bounded_tcp_connect_dual_target_v1"
+}

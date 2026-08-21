@@ -1,0 +1,29 @@
+{
+  "created_at": "2026-08-21T11:10:01.786338+00:00",
+  "hmac_sha256": "3895f493d46692852c8fb700b8d2d43333a5b3b515512a6cb51481da5e2696ec",
+  "kind": "nexus.offline-dispatch.v1",
+  "payload": {
+    "acceptance": [
+      "real offline Windows workload executed",
+      "courier lease and dispatch identities preserved",
+      "independent verifier accepts result"
+    ],
+    "attempt": 1,
+    "authority": 1,
+    "correlation_id": "37a533a70b17d6590e0a40d8be4f455e",
+    "dispatch_id": "f1f4b1923f1381ef4bf754ec878facba",
+    "gate": 0,
+    "lease_id": "c642fa1d-04a8-4d7f-9bac-86c1a476d9f9",
+    "phase": 7,
+    "required_capabilities": [
+      "data_validation"
+    ],
+    "schema_version": 2,
+    "task_id": "P7-LAPTOP-CANONICAL",
+    "title": "Execute canonical data and offline backtest proof on the disconnected Windows laptop",
+    "transport": "windows",
+    "worker_id": "windows-runner"
+  },
+  "payload_sha256": "2d8053901494337815eb58579b68a1ef93dc1f482e63f74d241a856fa3bf6cc4",
+  "schema_version": 1
+}

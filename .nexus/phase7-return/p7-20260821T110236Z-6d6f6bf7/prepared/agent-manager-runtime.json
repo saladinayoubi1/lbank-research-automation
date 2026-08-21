@@ -1,0 +1,1452 @@
+{
+  "schema_version": 1,
+  "phase": 7,
+  "phase5_runtime_schema": "nexus.phase5-runtime.v1",
+  "mission_id": "nexus-phase7-e2e-proof",
+  "mission_revision": 2,
+  "policy_version": "phase7-proof-policy-v2",
+  "policy": {
+    "max_parallel_tasks": 3,
+    "five_minute_triage": true,
+    "best_solution_first": true,
+    "blind_retry_forbidden": true,
+    "independent_verification_required": true,
+    "phase_continuity_required": true,
+    "l4_owner_required": true,
+    "paper_only": true,
+    "offline_courier_workers": [
+      "windows-runner"
+    ],
+    "offline_courier_lease_minutes": 240
+  },
+  "workers": [
+    {
+      "id": "windows-runner",
+      "trust_domain": "windows-local",
+      "capabilities": [
+        "windows_runtime",
+        "data_validation",
+        "integration_tests"
+      ],
+      "resources": [
+        "windows-local"
+      ],
+      "authority_max": 3,
+      "enabled": true,
+      "verifier": false,
+      "max_concurrent_tasks": 1,
+      "routing": {
+        "trust_domains": [
+          "windows-local"
+        ],
+        "data_locality": [
+          "windows-local"
+        ]
+      }
+    },
+    {
+      "id": "cloud-worker",
+      "trust_domain": "github-cloud",
+      "capabilities": [
+        "integration_tests"
+      ],
+      "resources": [
+        "github-cloud"
+      ],
+      "authority_max": 3,
+      "enabled": true,
+      "verifier": false,
+      "max_concurrent_tasks": 1,
+      "routing": {
+        "trust_domains": [
+          "github-cloud"
+        ],
+        "data_locality": [
+          "repository"
+        ]
+      }
+    },
+    {
+      "id": "research-agent",
+      "trust_domain": "github-cloud",
+      "capabilities": [
+        "research",
+        "strategy_qualification"
+      ],
+      "resources": [
+        "github-cloud"
+      ],
+      "authority_max": 2,
+      "enabled": true,
+      "verifier": false,
+      "max_concurrent_tasks": 1,
+      "routing": {
+        "trust_domains": [
+          "github-cloud"
+        ],
+        "data_locality": [
+          "canonical-data"
+        ]
+      }
+    },
+    {
+      "id": "paper-agent",
+      "trust_domain": "github-cloud",
+      "capabilities": [
+        "paper_execution",
+        "performance_metrics"
+      ],
+      "resources": [
+        "github-cloud"
+      ],
+      "authority_max": 2,
+      "enabled": true,
+      "verifier": false,
+      "max_concurrent_tasks": 1,
+      "routing": {
+        "trust_domains": [
+          "github-cloud"
+        ],
+        "data_locality": [
+          "paper-ledger"
+        ]
+      }
+    },
+    {
+      "id": "qa-verifier-agent",
+      "trust_domain": "github-cloud-verifier",
+      "capabilities": [
+        "data_validation",
+        "integration_tests",
+        "research",
+        "strategy_qualification",
+        "paper_execution",
+        "performance_metrics",
+        "contract_review"
+      ],
+      "resources": [
+        "github-cloud"
+      ],
+      "authority_max": 3,
+      "enabled": true,
+      "verifier": true,
+      "max_concurrent_tasks": 1,
+      "routing": {
+        "cost_units": 2.0,
+        "trust_domains": [
+          "github-cloud-verifier"
+        ],
+        "data_locality": [
+          "repository",
+          "canonical-data",
+          "paper-ledger"
+        ]
+      }
+    },
+    {
+      "id": "deepseek-bounded",
+      "trust_domain": "deepseek-external",
+      "capabilities": [
+        "code_review",
+        "test_generation",
+        "log_analysis"
+      ],
+      "resources": [
+        "deepseek"
+      ],
+      "authority_max": 2,
+      "enabled": true,
+      "verifier": false,
+      "max_concurrent_tasks": 1,
+      "routing": {
+        "cost_units": 1.0,
+        "trust_domains": [
+          "deepseek-external"
+        ],
+        "data_locality": []
+      }
+    }
+  ],
+  "tasks": [
+    {
+      "id": "P7-LAPTOP-CANONICAL",
+      "title": "Execute canonical data and offline backtest proof on the disconnected Windows laptop",
+      "phase": 7,
+      "gate": 0,
+      "status": "RUNNING",
+      "priority": 100,
+      "dependencies": [],
+      "required_capabilities": [
+        "data_validation"
+      ],
+      "preferred_resources": [
+        "windows-local"
+      ],
+      "preferred_data_locality": [
+        "windows-local"
+      ],
+      "preferred_trust_domains": [
+        "windows-local"
+      ],
+      "authority": 1,
+      "acceptance": [
+        "real offline Windows workload executed",
+        "courier lease and dispatch identities preserved",
+        "independent verifier accepts result"
+      ],
+      "verification": {
+        "mode": "independent_trust_domain",
+        "required_capabilities": [
+          "data_validation"
+        ]
+      },
+      "mission_id": "nexus-phase7-e2e-proof",
+      "mission_revision": 2,
+      "policy_version": "phase7-proof-policy-v2",
+      "spec_digest": "7ad822de7920a56d55177fa4bf08379771b5734d3a80aeada5b6868684802adf",
+      "ready_at": "2026-08-21T11:10:01.783360+00:00",
+      "routing_decision": {
+        "evaluated_at": "2026-08-21T11:10:01.783290+00:00",
+        "selected_worker": "windows-runner",
+        "selected_score": 80.0,
+        "reason": "highest_deterministic_score",
+        "candidates": [
+          {
+            "worker_id": "windows-runner",
+            "eligible": true,
+            "rejection_reasons": [],
+            "score": 80.0,
+            "components": {
+              "health": 30.0,
+              "latency": -0.0,
+              "failure_rate": -0.0,
+              "cost": -0.0,
+              "queue_depth": -0.0,
+              "preferred_resource": 20.0,
+              "data_locality": 15.0,
+              "trust_domain": 10.0,
+              "remaining_capacity": 5.0
+            },
+            "observed": {
+              "available": true,
+              "health_score": 1.0,
+              "latency_ms": 0.0,
+              "failure_rate": 0.0,
+              "cost_units": 0.0,
+              "queue_depth": 0,
+              "capacity": 1,
+              "data_locality": [
+                "windows-local"
+              ],
+              "trust_domains": [
+                "windows-local"
+              ]
+            },
+            "selection_reason": "highest_deterministic_score"
+          },
+          {
+            "worker_id": "qa-verifier-agent",
+            "eligible": true,
+            "rejection_reasons": [],
+            "score": 24.92,
+            "components": {
+              "health": 30.0,
+              "latency": -0.08,
+              "failure_rate": -0.0,
+              "cost": -10.0,
+              "queue_depth": -0.0,
+              "preferred_resource": 0.0,
+              "data_locality": 0.0,
+              "trust_domain": 0.0,
+              "remaining_capacity": 5.0
+            },
+            "observed": {
+              "available": true,
+              "health_score": 1.0,
+              "latency_ms": 20.0,
+              "failure_rate": 0.0,
+              "cost_units": 2.0,
+              "queue_depth": 0,
+              "capacity": 1,
+              "data_locality": [
+                "canonical-data",
+                "paper-ledger",
+                "repository"
+              ],
+              "trust_domains": [
+                "github-cloud-verifier"
+              ]
+            },
+            "selection_reason": "lower_score_than_selected"
+          },
+          {
+            "worker_id": "cloud-worker",
+            "eligible": false,
+            "rejection_reasons": [
+              "missing_capabilities:data_validation"
+            ],
+            "score": null,
+            "components": {
+              "health": 30.0,
+              "latency": -0.08,
+              "failure_rate": -0.0,
+              "cost": -0.5,
+              "queue_depth": -0.0,
+              "preferred_resource": 0.0,
+              "data_locality": 0.0,
+              "trust_domain": 0.0,
+              "remaining_capacity": 5.0
+            },
+            "observed": {
+              "available": true,
+              "health_score": 1.0,
+              "latency_ms": 20.0,
+              "failure_rate": 0.0,
+              "cost_units": 0.1,
+              "queue_depth": 0,
+              "capacity": 1,
+              "data_locality": [
+                "repository"
+              ],
+              "trust_domains": [
+                "github-cloud"
+              ]
+            },
+            "selection_reason": "ineligible"
+          },
+          {
+            "worker_id": "deepseek-bounded",
+            "eligible": false,
+            "rejection_reasons": [
+              "unavailable",
+              "missing_capabilities:data_validation"
+            ],
+            "score": null,
+            "components": {
+              "health": 30.0,
+              "latency": -1.0,
+              "failure_rate": -0.0,
+              "cost": -5.0,
+              "queue_depth": -0.0,
+              "preferred_resource": 0.0,
+              "data_locality": 0.0,
+              "trust_domain": 0.0,
+              "remaining_capacity": 5.0
+            },
+            "observed": {
+              "available": false,
+              "health_score": 1.0,
+              "latency_ms": 250.0,
+              "failure_rate": 0.0,
+              "cost_units": 1.0,
+              "queue_depth": 0,
+              "capacity": 1,
+              "data_locality": [],
+              "trust_domains": [
+                "deepseek-external"
+              ]
+            },
+            "selection_reason": "ineligible"
+          },
+          {
+            "worker_id": "paper-agent",
+            "eligible": false,
+            "rejection_reasons": [
+              "missing_capabilities:data_validation"
+            ],
+            "score": null,
+            "components": {
+              "health": 30.0,
+              "latency": -0.08,
+              "failure_rate": -0.0,
+              "cost": -0.5,
+              "queue_depth": -0.0,
+              "preferred_resource": 0.0,
+              "data_locality": 0.0,
+              "trust_domain": 0.0,
+              "remaining_capacity": 5.0
+            },
+            "observed": {
+              "available": true,
+              "health_score": 1.0,
+              "latency_ms": 20.0,
+              "failure_rate": 0.0,
+              "cost_units": 0.1,
+              "queue_depth": 0,
+              "capacity": 1,
+              "data_locality": [
+                "paper-ledger"
+              ],
+              "trust_domains": [
+                "github-cloud"
+              ]
+            },
+            "selection_reason": "ineligible"
+          },
+          {
+            "worker_id": "research-agent",
+            "eligible": false,
+            "rejection_reasons": [
+              "missing_capabilities:data_validation"
+            ],
+            "score": null,
+            "components": {
+              "health": 30.0,
+              "latency": -0.08,
+              "failure_rate": -0.0,
+              "cost": -0.5,
+              "queue_depth": -0.0,
+              "preferred_resource": 0.0,
+              "data_locality": 0.0,
+              "trust_domain": 0.0,
+              "remaining_capacity": 5.0
+            },
+            "observed": {
+              "available": true,
+              "health_score": 1.0,
+              "latency_ms": 20.0,
+              "failure_rate": 0.0,
+              "cost_units": 0.1,
+              "queue_depth": 0,
+              "capacity": 1,
+              "data_locality": [
+                "canonical-data"
+              ],
+              "trust_domains": [
+                "github-cloud"
+              ]
+            },
+            "selection_reason": "ineligible"
+          }
+        ]
+      },
+      "assigned_worker": "windows-runner",
+      "producer": "windows-runner",
+      "lease_id": "c642fa1d-04a8-4d7f-9bac-86c1a476d9f9",
+      "leased_at": "2026-08-21T11:10:01.783290+00:00",
+      "heartbeat_at": null,
+      "lease_expires_at": "2026-08-21T15:10:01.786491+00:00",
+      "attempt": 1,
+      "correlation_id": "37a533a70b17d6590e0a40d8be4f455e",
+      "dispatch_id": "f1f4b1923f1381ef4bf754ec878facba",
+      "dispatch_transport": "windows",
+      "dispatch_mode": "offline-courier",
+      "dispatched_at": "2026-08-21T11:10:01.786491+00:00",
+      "offline_dispatch_digest": "2d8053901494337815eb58579b68a1ef93dc1f482e63f74d241a856fa3bf6cc4",
+      "offline_dispatch_bundle_created_at": "2026-08-21T11:10:01.786338+00:00",
+      "waiting_from_status": "LEASED",
+      "external_wait_state": "WAITING_EXTERNAL",
+      "external_wait_started_at": "2026-08-21T11:10:01.786491+00:00",
+      "external_wait_timeline": [
+        {
+          "started_at": "2026-08-21T11:10:01.786491+00:00",
+          "from_status": "LEASED",
+          "dispatch_id": "f1f4b1923f1381ef4bf754ec878facba",
+          "worker_id": "windows-runner",
+          "transport": "windows",
+          "mode": "offline-courier"
+        }
+      ]
+    },
+    {
+      "id": "P7-CLOUD-VERIFY",
+      "title": "Exercise Resource Manager transport and Mission Control projection on GitHub cloud",
+      "phase": 7,
+      "gate": 0,
+      "status": "DONE",
+      "priority": 95,
+      "dependencies": [],
+      "required_capabilities": [
+        "integration_tests"
+      ],
+      "preferred_resources": [
+        "github-cloud"
+      ],
+      "preferred_trust_domains": [
+        "github-cloud"
+      ],
+      "authority": 1,
+      "acceptance": [
+        "real cloud workload executed",
+        "routing evidence retained",
+        "independent verifier accepts result"
+      ],
+      "verification": {
+        "mode": "independent_worker",
+        "required_capabilities": [
+          "integration_tests"
+        ]
+      },
+      "mission_id": "nexus-phase7-e2e-proof",
+      "mission_revision": 2,
+      "policy_version": "phase7-proof-policy-v2",
+      "spec_digest": "3c2b85aff4e4beff048abede885a7f1b6fcf358c114d4f053e7de89477527fbe",
+      "ready_at": "2026-08-21T11:10:01.783490+00:00",
+      "routing_decision": {
+        "evaluated_at": "2026-08-21T11:10:01.783290+00:00",
+        "selected_worker": "cloud-worker",
+        "selected_score": 64.42,
+        "reason": "highest_deterministic_score",
+        "candidates": [
+          {
+            "worker_id": "cloud-worker",
+            "eligible": true,
+            "rejection_reasons": [],
+            "score": 64.42,
+            "components": {
+              "health": 30.0,
+              "latency": -0.08,
+              "failure_rate": -0.0,
+              "cost": -0.5,
+              "queue_depth": -0.0,
+              "preferred_resource": 20.0,
+              "data_locality": 0.0,
+              "trust_domain": 10.0,
+              "remaining_capacity": 5.0
+            },
+            "observed": {
+              "available": true,
+              "health_score": 1.0,
+              "latency_ms": 20.0,
+              "failure_rate": 0.0,
+              "cost_units": 0.1,
+              "queue_depth": 0,
+              "capacity": 1,
+              "data_locality": [
+                "repository"
+              ],
+              "trust_domains": [
+                "github-cloud"
+              ]
+            },
+            "selection_reason": "highest_deterministic_score"
+          },
+          {
+            "worker_id": "qa-verifier-agent",
+            "eligible": true,
+            "rejection_reasons": [],
+            "score": 44.92,
+            "components": {
+              "health": 30.0,
+              "latency": -0.08,
+              "failure_rate": -0.0,
+              "cost": -10.0,
+              "queue_depth": -0.0,
+              "preferred_resource": 20.0,
+              "data_locality": 0.0,
+              "trust_domain": 0.0,
+              "remaining_capacity": 5.0
+            },
+            "observed": {
+              "available": true,
+              "health_score": 1.0,
+              "latency_ms": 20.0,
+              "failure_rate": 0.0,
+              "cost_units": 2.0,
+              "queue_depth": 0,
+              "capacity": 1,
+              "data_locality": [
+                "canonical-data",
+                "paper-ledger",
+                "repository"
+              ],
+              "trust_domains": [
+                "github-cloud-verifier"
+              ]
+            },
+            "selection_reason": "lower_score_than_selected"
+          },
+          {
+            "worker_id": "deepseek-bounded",
+            "eligible": false,
+            "rejection_reasons": [
+              "unavailable",
+              "missing_capabilities:integration_tests"
+            ],
+            "score": null,
+            "components": {
+              "health": 30.0,
+              "latency": -1.0,
+              "failure_rate": -0.0,
+              "cost": -5.0,
+              "queue_depth": -0.0,
+              "preferred_resource": 0.0,
+              "data_locality": 0.0,
+              "trust_domain": 0.0,
+              "remaining_capacity": 5.0
+            },
+            "observed": {
+              "available": false,
+              "health_score": 1.0,
+              "latency_ms": 250.0,
+              "failure_rate": 0.0,
+              "cost_units": 1.0,
+              "queue_depth": 0,
+              "capacity": 1,
+              "data_locality": [],
+              "trust_domains": [
+                "deepseek-external"
+              ]
+            },
+            "selection_reason": "ineligible"
+          },
+          {
+            "worker_id": "paper-agent",
+            "eligible": false,
+            "rejection_reasons": [
+              "missing_capabilities:integration_tests"
+            ],
+            "score": null,
+            "components": {
+              "health": 30.0,
+              "latency": -0.08,
+              "failure_rate": -0.0,
+              "cost": -0.5,
+              "queue_depth": -0.0,
+              "preferred_resource": 20.0,
+              "data_locality": 0.0,
+              "trust_domain": 10.0,
+              "remaining_capacity": 5.0
+            },
+            "observed": {
+              "available": true,
+              "health_score": 1.0,
+              "latency_ms": 20.0,
+              "failure_rate": 0.0,
+              "cost_units": 0.1,
+              "queue_depth": 0,
+              "capacity": 1,
+              "data_locality": [
+                "paper-ledger"
+              ],
+              "trust_domains": [
+                "github-cloud"
+              ]
+            },
+            "selection_reason": "ineligible"
+          },
+          {
+            "worker_id": "research-agent",
+            "eligible": false,
+            "rejection_reasons": [
+              "missing_capabilities:integration_tests"
+            ],
+            "score": null,
+            "components": {
+              "health": 30.0,
+              "latency": -0.08,
+              "failure_rate": -0.0,
+              "cost": -0.5,
+              "queue_depth": -0.0,
+              "preferred_resource": 20.0,
+              "data_locality": 0.0,
+              "trust_domain": 10.0,
+              "remaining_capacity": 5.0
+            },
+            "observed": {
+              "available": true,
+              "health_score": 1.0,
+              "latency_ms": 20.0,
+              "failure_rate": 0.0,
+              "cost_units": 0.1,
+              "queue_depth": 0,
+              "capacity": 1,
+              "data_locality": [
+                "canonical-data"
+              ],
+              "trust_domains": [
+                "github-cloud"
+              ]
+            },
+            "selection_reason": "ineligible"
+          },
+          {
+            "worker_id": "windows-runner",
+            "eligible": false,
+            "rejection_reasons": [
+              "capacity_exhausted"
+            ],
+            "score": null,
+            "components": {
+              "health": 30.0,
+              "latency": -0.0,
+              "failure_rate": -0.0,
+              "cost": -0.0,
+              "queue_depth": -20.0,
+              "preferred_resource": 0.0,
+              "data_locality": 0.0,
+              "trust_domain": 0.0,
+              "remaining_capacity": 0.0
+            },
+            "observed": {
+              "available": true,
+              "health_score": 1.0,
+              "latency_ms": 0.0,
+              "failure_rate": 0.0,
+              "cost_units": 0.0,
+              "queue_depth": 1,
+              "capacity": 1,
+              "data_locality": [
+                "windows-local"
+              ],
+              "trust_domains": [
+                "windows-local"
+              ]
+            },
+            "selection_reason": "ineligible"
+          }
+        ]
+      },
+      "assigned_worker": "qa-verifier-agent",
+      "producer": "cloud-worker",
+      "lease_id": "b3655d79-8a77-4341-a583-ae3fa28f7095",
+      "leased_at": "2026-08-21T11:10:01.783290+00:00",
+      "heartbeat_at": "2026-08-21T11:10:02.080982+00:00",
+      "lease_expires_at": "2026-08-21T11:15:02.080982+00:00",
+      "attempt": 1,
+      "correlation_id": "04165a801dedc0b7e71d5b3b82871495",
+      "dispatch_id": "85aeaa3c244723d832455a7cd4919970",
+      "dispatch_transport": "github-cloud",
+      "dispatch_mode": "github-hosted-direct-proof",
+      "dispatched_at": "2026-08-21T11:10:02.081700+00:00",
+      "result_evidence": {
+        "executor": "bounded-pytest",
+        "workload_id": "P7-CLOUD-VERIFY",
+        "purpose": "resource-routing-transport-and-mission-verification",
+        "suite": [
+          "tests/test_agent_transport.py",
+          "tests/test_phase7_resource_manager.py",
+          "tests/test_phase7_mission_projection.py"
+        ],
+        "offline_capable": false,
+        "network_required": false,
+        "transport": "github-cloud",
+        "tests": {
+          "ok": true,
+          "returncode": 0,
+          "stdout": "....................                                                     [100%]\n20 passed in 0.12s\n",
+          "stderr": ""
+        },
+        "failure_class": null
+      },
+      "verifier": "qa-verifier-agent",
+      "result_artifact_ingested": true,
+      "result_received_at": "2026-08-21T11:10:02.353206+00:00",
+      "verified_at": "2026-08-21T11:10:02.353086+00:00",
+      "verification_evidence": {
+        "executor": "bounded-pytest",
+        "workload_id": "P7-CLOUD-VERIFY",
+        "purpose": "resource-routing-transport-and-mission-verification",
+        "suite": [
+          "tests/test_agent_transport.py",
+          "tests/test_phase7_resource_manager.py",
+          "tests/test_phase7_mission_projection.py"
+        ],
+        "offline_capable": false,
+        "network_required": false,
+        "transport": "github-cloud",
+        "tests": {
+          "ok": true,
+          "returncode": 0,
+          "stdout": "....................                                                     [100%]\n20 passed in 0.11s\n",
+          "stderr": ""
+        },
+        "failure_class": null
+      }
+    },
+    {
+      "id": "P7-RESEARCH-STRATEGY",
+      "title": "Run canonical research Strategy Factory and provenance proof while laptop courier is waiting",
+      "phase": 7,
+      "gate": 0,
+      "status": "DONE",
+      "priority": 90,
+      "dependencies": [
+        "P7-CLOUD-VERIFY"
+      ],
+      "required_capabilities": [
+        "research",
+        "strategy_qualification"
+      ],
+      "preferred_resources": [
+        "github-cloud"
+      ],
+      "preferred_data_locality": [
+        "canonical-data"
+      ],
+      "authority": 2,
+      "acceptance": [
+        "canonical research workload executed",
+        "Paper Candidate or deterministic kill is evidenced",
+        "zero-idle overlap is recorded when courier wait exists"
+      ],
+      "verification": {
+        "mode": "independent_worker",
+        "required_capabilities": [
+          "research",
+          "strategy_qualification"
+        ]
+      },
+      "mission_id": "nexus-phase7-e2e-proof",
+      "mission_revision": 2,
+      "policy_version": "phase7-proof-policy-v2",
+      "spec_digest": "55a2c45b3cb1185f9fdeeb9fa581ac3722883adf41b37c5e491eacb4f733f073",
+      "ready_at": "2026-08-21T11:10:02.385487+00:00",
+      "routing_decision": {
+        "evaluated_at": "2026-08-21T11:10:02.385416+00:00",
+        "selected_worker": "research-agent",
+        "selected_score": 69.42,
+        "reason": "highest_deterministic_score",
+        "candidates": [
+          {
+            "worker_id": "research-agent",
+            "eligible": true,
+            "rejection_reasons": [],
+            "score": 69.42,
+            "components": {
+              "health": 30.0,
+              "latency": -0.08,
+              "failure_rate": -0.0,
+              "cost": -0.5,
+              "queue_depth": -0.0,
+              "preferred_resource": 20.0,
+              "data_locality": 15.0,
+              "trust_domain": 0.0,
+              "remaining_capacity": 5.0
+            },
+            "observed": {
+              "available": true,
+              "health_score": 1.0,
+              "latency_ms": 20.0,
+              "failure_rate": 0.0,
+              "cost_units": 0.1,
+              "queue_depth": 0,
+              "capacity": 1,
+              "data_locality": [
+                "canonical-data"
+              ],
+              "trust_domains": [
+                "github-cloud"
+              ]
+            },
+            "selection_reason": "highest_deterministic_score"
+          },
+          {
+            "worker_id": "qa-verifier-agent",
+            "eligible": true,
+            "rejection_reasons": [],
+            "score": 59.92,
+            "components": {
+              "health": 30.0,
+              "latency": -0.08,
+              "failure_rate": -0.0,
+              "cost": -10.0,
+              "queue_depth": -0.0,
+              "preferred_resource": 20.0,
+              "data_locality": 15.0,
+              "trust_domain": 0.0,
+              "remaining_capacity": 5.0
+            },
+            "observed": {
+              "available": true,
+              "health_score": 1.0,
+              "latency_ms": 20.0,
+              "failure_rate": 0.0,
+              "cost_units": 2.0,
+              "queue_depth": 0,
+              "capacity": 1,
+              "data_locality": [
+                "canonical-data",
+                "paper-ledger",
+                "repository"
+              ],
+              "trust_domains": [
+                "github-cloud-verifier"
+              ]
+            },
+            "selection_reason": "lower_score_than_selected"
+          },
+          {
+            "worker_id": "cloud-worker",
+            "eligible": false,
+            "rejection_reasons": [
+              "missing_capabilities:research,strategy_qualification"
+            ],
+            "score": null,
+            "components": {
+              "health": 30.0,
+              "latency": -0.08,
+              "failure_rate": -0.0,
+              "cost": -0.5,
+              "queue_depth": -0.0,
+              "preferred_resource": 20.0,
+              "data_locality": 0.0,
+              "trust_domain": 0.0,
+              "remaining_capacity": 5.0
+            },
+            "observed": {
+              "available": true,
+              "health_score": 1.0,
+              "latency_ms": 20.0,
+              "failure_rate": 0.0,
+              "cost_units": 0.1,
+              "queue_depth": 0,
+              "capacity": 1,
+              "data_locality": [
+                "repository"
+              ],
+              "trust_domains": [
+                "github-cloud"
+              ]
+            },
+            "selection_reason": "ineligible"
+          },
+          {
+            "worker_id": "deepseek-bounded",
+            "eligible": false,
+            "rejection_reasons": [
+              "unavailable",
+              "missing_capabilities:research,strategy_qualification"
+            ],
+            "score": null,
+            "components": {
+              "health": 30.0,
+              "latency": -1.0,
+              "failure_rate": -0.0,
+              "cost": -5.0,
+              "queue_depth": -0.0,
+              "preferred_resource": 0.0,
+              "data_locality": 0.0,
+              "trust_domain": 0.0,
+              "remaining_capacity": 5.0
+            },
+            "observed": {
+              "available": false,
+              "health_score": 1.0,
+              "latency_ms": 250.0,
+              "failure_rate": 0.0,
+              "cost_units": 1.0,
+              "queue_depth": 0,
+              "capacity": 1,
+              "data_locality": [],
+              "trust_domains": [
+                "deepseek-external"
+              ]
+            },
+            "selection_reason": "ineligible"
+          },
+          {
+            "worker_id": "paper-agent",
+            "eligible": false,
+            "rejection_reasons": [
+              "missing_capabilities:research,strategy_qualification"
+            ],
+            "score": null,
+            "components": {
+              "health": 30.0,
+              "latency": -0.08,
+              "failure_rate": -0.0,
+              "cost": -0.5,
+              "queue_depth": -0.0,
+              "preferred_resource": 20.0,
+              "data_locality": 0.0,
+              "trust_domain": 0.0,
+              "remaining_capacity": 5.0
+            },
+            "observed": {
+              "available": true,
+              "health_score": 1.0,
+              "latency_ms": 20.0,
+              "failure_rate": 0.0,
+              "cost_units": 0.1,
+              "queue_depth": 0,
+              "capacity": 1,
+              "data_locality": [
+                "paper-ledger"
+              ],
+              "trust_domains": [
+                "github-cloud"
+              ]
+            },
+            "selection_reason": "ineligible"
+          },
+          {
+            "worker_id": "windows-runner",
+            "eligible": false,
+            "rejection_reasons": [
+              "missing_capabilities:research,strategy_qualification",
+              "capacity_exhausted"
+            ],
+            "score": null,
+            "components": {
+              "health": 30.0,
+              "latency": -0.0,
+              "failure_rate": -0.0,
+              "cost": -0.0,
+              "queue_depth": -20.0,
+              "preferred_resource": 0.0,
+              "data_locality": 0.0,
+              "trust_domain": 0.0,
+              "remaining_capacity": 0.0
+            },
+            "observed": {
+              "available": true,
+              "health_score": 1.0,
+              "latency_ms": 0.0,
+              "failure_rate": 0.0,
+              "cost_units": 0.0,
+              "queue_depth": 1,
+              "capacity": 1,
+              "data_locality": [
+                "windows-local"
+              ],
+              "trust_domains": [
+                "windows-local"
+              ]
+            },
+            "selection_reason": "ineligible"
+          }
+        ]
+      },
+      "zero_idle_evidence": {
+        "leased_at": "2026-08-21T11:10:02.385416+00:00",
+        "overlapped_external_waits": [
+          {
+            "task_id": "P7-LAPTOP-CANONICAL",
+            "worker_id": "windows-runner",
+            "wait_started_at": "2026-08-21T11:10:01.786491+00:00",
+            "dispatch_id": "f1f4b1923f1381ef4bf754ec878facba"
+          }
+        ],
+        "rule": "dispatch_independent_ready_work_while_other_resource_waits"
+      },
+      "assigned_worker": "qa-verifier-agent",
+      "producer": "research-agent",
+      "lease_id": "d6222d90-7593-4f6f-b9e0-089897b0b558",
+      "leased_at": "2026-08-21T11:10:02.385416+00:00",
+      "heartbeat_at": "2026-08-21T11:10:05.070313+00:00",
+      "lease_expires_at": "2026-08-21T11:15:05.070313+00:00",
+      "attempt": 1,
+      "correlation_id": "a46eecd5df2a15ba7d4dadbebb868709",
+      "dispatch_id": "ffba5e3a2852e364a14dc5b09d2acd60",
+      "dispatch_transport": "github-cloud",
+      "dispatch_mode": "github-hosted-direct-proof",
+      "dispatched_at": "2026-08-21T11:10:05.071004+00:00",
+      "result_evidence": {
+        "executor": "bounded-pytest",
+        "workload_id": "P7-RESEARCH-STRATEGY",
+        "purpose": "research-strategy-and-provenance-proof",
+        "suite": [
+          "tests/test_phase5_strategy_factory.py",
+          "tests/test_phase6_research_pipeline.py",
+          "tests/test_downstream_provenance_boundary.py"
+        ],
+        "offline_capable": false,
+        "network_required": false,
+        "transport": "github-cloud",
+        "tests": {
+          "ok": true,
+          "returncode": 0,
+          "stdout": "..................                                                       [100%]\n18 passed in 2.46s\n",
+          "stderr": ""
+        },
+        "failure_class": null
+      },
+      "verifier": "qa-verifier-agent",
+      "result_artifact_ingested": true,
+      "result_received_at": "2026-08-21T11:10:07.730890+00:00",
+      "verified_at": "2026-08-21T11:10:07.730755+00:00",
+      "verification_evidence": {
+        "executor": "bounded-pytest",
+        "workload_id": "P7-RESEARCH-STRATEGY",
+        "purpose": "research-strategy-and-provenance-proof",
+        "suite": [
+          "tests/test_phase5_strategy_factory.py",
+          "tests/test_phase6_research_pipeline.py",
+          "tests/test_downstream_provenance_boundary.py"
+        ],
+        "offline_capable": false,
+        "network_required": false,
+        "transport": "github-cloud",
+        "tests": {
+          "ok": true,
+          "returncode": 0,
+          "stdout": "..................                                                       [100%]\n18 passed in 2.44s\n",
+          "stderr": ""
+        },
+        "failure_class": null
+      }
+    },
+    {
+      "id": "P7-PAPER-PERFORMANCE",
+      "title": "Run deterministic Risk Paper execution Performance and drift proof",
+      "phase": 7,
+      "gate": 0,
+      "status": "DONE",
+      "priority": 85,
+      "dependencies": [
+        "P7-RESEARCH-STRATEGY"
+      ],
+      "required_capabilities": [
+        "paper_execution",
+        "performance_metrics"
+      ],
+      "preferred_resources": [
+        "github-cloud"
+      ],
+      "preferred_data_locality": [
+        "paper-ledger"
+      ],
+      "authority": 2,
+      "acceptance": [
+        "deterministic Risk is final Paper authority",
+        "Paper events are attributable and replayable",
+        "Performance and drift evidence is finite and digest-bound"
+      ],
+      "verification": {
+        "mode": "independent_worker",
+        "required_capabilities": [
+          "paper_execution",
+          "performance_metrics"
+        ]
+      },
+      "mission_id": "nexus-phase7-e2e-proof",
+      "mission_revision": 2,
+      "policy_version": "phase7-proof-policy-v2",
+      "spec_digest": "02d34dae3437b052b5dbebd92203eeaa6eef0cb6e62cb4902cec9e3da303fbcb",
+      "ready_at": "2026-08-21T11:10:07.735851+00:00",
+      "routing_decision": {
+        "evaluated_at": "2026-08-21T11:10:07.735784+00:00",
+        "selected_worker": "paper-agent",
+        "selected_score": 69.42,
+        "reason": "highest_deterministic_score",
+        "candidates": [
+          {
+            "worker_id": "paper-agent",
+            "eligible": true,
+            "rejection_reasons": [],
+            "score": 69.42,
+            "components": {
+              "health": 30.0,
+              "latency": -0.08,
+              "failure_rate": -0.0,
+              "cost": -0.5,
+              "queue_depth": -0.0,
+              "preferred_resource": 20.0,
+              "data_locality": 15.0,
+              "trust_domain": 0.0,
+              "remaining_capacity": 5.0
+            },
+            "observed": {
+              "available": true,
+              "health_score": 1.0,
+              "latency_ms": 20.0,
+              "failure_rate": 0.0,
+              "cost_units": 0.1,
+              "queue_depth": 0,
+              "capacity": 1,
+              "data_locality": [
+                "paper-ledger"
+              ],
+              "trust_domains": [
+                "github-cloud"
+              ]
+            },
+            "selection_reason": "highest_deterministic_score"
+          },
+          {
+            "worker_id": "qa-verifier-agent",
+            "eligible": true,
+            "rejection_reasons": [],
+            "score": 59.92,
+            "components": {
+              "health": 30.0,
+              "latency": -0.08,
+              "failure_rate": -0.0,
+              "cost": -10.0,
+              "queue_depth": -0.0,
+              "preferred_resource": 20.0,
+              "data_locality": 15.0,
+              "trust_domain": 0.0,
+              "remaining_capacity": 5.0
+            },
+            "observed": {
+              "available": true,
+              "health_score": 1.0,
+              "latency_ms": 20.0,
+              "failure_rate": 0.0,
+              "cost_units": 2.0,
+              "queue_depth": 0,
+              "capacity": 1,
+              "data_locality": [
+                "canonical-data",
+                "paper-ledger",
+                "repository"
+              ],
+              "trust_domains": [
+                "github-cloud-verifier"
+              ]
+            },
+            "selection_reason": "lower_score_than_selected"
+          },
+          {
+            "worker_id": "cloud-worker",
+            "eligible": false,
+            "rejection_reasons": [
+              "missing_capabilities:paper_execution,performance_metrics"
+            ],
+            "score": null,
+            "components": {
+              "health": 30.0,
+              "latency": -0.08,
+              "failure_rate": -0.0,
+              "cost": -0.5,
+              "queue_depth": -0.0,
+              "preferred_resource": 20.0,
+              "data_locality": 0.0,
+              "trust_domain": 0.0,
+              "remaining_capacity": 5.0
+            },
+            "observed": {
+              "available": true,
+              "health_score": 1.0,
+              "latency_ms": 20.0,
+              "failure_rate": 0.0,
+              "cost_units": 0.1,
+              "queue_depth": 0,
+              "capacity": 1,
+              "data_locality": [
+                "repository"
+              ],
+              "trust_domains": [
+                "github-cloud"
+              ]
+            },
+            "selection_reason": "ineligible"
+          },
+          {
+            "worker_id": "deepseek-bounded",
+            "eligible": false,
+            "rejection_reasons": [
+              "unavailable",
+              "missing_capabilities:paper_execution,performance_metrics"
+            ],
+            "score": null,
+            "components": {
+              "health": 30.0,
+              "latency": -1.0,
+              "failure_rate": -0.0,
+              "cost": -5.0,
+              "queue_depth": -0.0,
+              "preferred_resource": 0.0,
+              "data_locality": 0.0,
+              "trust_domain": 0.0,
+              "remaining_capacity": 5.0
+            },
+            "observed": {
+              "available": false,
+              "health_score": 1.0,
+              "latency_ms": 250.0,
+              "failure_rate": 0.0,
+              "cost_units": 1.0,
+              "queue_depth": 0,
+              "capacity": 1,
+              "data_locality": [],
+              "trust_domains": [
+                "deepseek-external"
+              ]
+            },
+            "selection_reason": "ineligible"
+          },
+          {
+            "worker_id": "research-agent",
+            "eligible": false,
+            "rejection_reasons": [
+              "missing_capabilities:paper_execution,performance_metrics"
+            ],
+            "score": null,
+            "components": {
+              "health": 30.0,
+              "latency": -0.08,
+              "failure_rate": -0.0,
+              "cost": -0.5,
+              "queue_depth": -0.0,
+              "preferred_resource": 20.0,
+              "data_locality": 0.0,
+              "trust_domain": 0.0,
+              "remaining_capacity": 5.0
+            },
+            "observed": {
+              "available": true,
+              "health_score": 1.0,
+              "latency_ms": 20.0,
+              "failure_rate": 0.0,
+              "cost_units": 0.1,
+              "queue_depth": 0,
+              "capacity": 1,
+              "data_locality": [
+                "canonical-data"
+              ],
+              "trust_domains": [
+                "github-cloud"
+              ]
+            },
+            "selection_reason": "ineligible"
+          },
+          {
+            "worker_id": "windows-runner",
+            "eligible": false,
+            "rejection_reasons": [
+              "missing_capabilities:paper_execution,performance_metrics",
+              "capacity_exhausted"
+            ],
+            "score": null,
+            "components": {
+              "health": 30.0,
+              "latency": -0.0,
+              "failure_rate": -0.0,
+              "cost": -0.0,
+              "queue_depth": -20.0,
+              "preferred_resource": 0.0,
+              "data_locality": 0.0,
+              "trust_domain": 0.0,
+              "remaining_capacity": 0.0
+            },
+            "observed": {
+              "available": true,
+              "health_score": 1.0,
+              "latency_ms": 0.0,
+              "failure_rate": 0.0,
+              "cost_units": 0.0,
+              "queue_depth": 1,
+              "capacity": 1,
+              "data_locality": [
+                "windows-local"
+              ],
+              "trust_domains": [
+                "windows-local"
+              ]
+            },
+            "selection_reason": "ineligible"
+          }
+        ]
+      },
+      "zero_idle_evidence": {
+        "leased_at": "2026-08-21T11:10:07.735784+00:00",
+        "overlapped_external_waits": [
+          {
+            "task_id": "P7-LAPTOP-CANONICAL",
+            "worker_id": "windows-runner",
+            "wait_started_at": "2026-08-21T11:10:01.786491+00:00",
+            "dispatch_id": "f1f4b1923f1381ef4bf754ec878facba"
+          }
+        ],
+        "rule": "dispatch_independent_ready_work_while_other_resource_waits"
+      },
+      "assigned_worker": "qa-verifier-agent",
+      "producer": "paper-agent",
+      "lease_id": "1a0c4381-4459-4717-af8b-4e80086affc8",
+      "leased_at": "2026-08-21T11:10:07.735784+00:00",
+      "heartbeat_at": "2026-08-21T11:10:09.962414+00:00",
+      "lease_expires_at": "2026-08-21T11:15:09.962414+00:00",
+      "attempt": 1,
+      "correlation_id": "45f2e701562740e6e2a90be4377993d5",
+      "dispatch_id": "f3defd5e6d1ff88c64e3385de74addeb",
+      "dispatch_transport": "github-cloud",
+      "dispatch_mode": "github-hosted-direct-proof",
+      "dispatched_at": "2026-08-21T11:10:09.963113+00:00",
+      "result_evidence": {
+        "executor": "bounded-pytest",
+        "workload_id": "P7-PAPER-PERFORMANCE",
+        "purpose": "risk-paper-performance-and-e2e-proof",
+        "suite": [
+          "tests/test_deterministic_risk.py",
+          "tests/test_paper_execution.py",
+          "tests/test_paper_event_store.py",
+          "tests/test_performance_metrics.py",
+          "tests/test_phase7_e2e_proof.py"
+        ],
+        "offline_capable": false,
+        "network_required": false,
+        "transport": "github-cloud",
+        "tests": {
+          "ok": true,
+          "returncode": 0,
+          "stdout": "........................................................................ [ 92%]\n......                                                                   [100%]\n78 passed in 2.01s\n",
+          "stderr": ""
+        },
+        "failure_class": null
+      },
+      "verifier": "qa-verifier-agent",
+      "result_artifact_ingested": true,
+      "result_received_at": "2026-08-21T11:10:12.155694+00:00",
+      "verified_at": "2026-08-21T11:10:12.155565+00:00",
+      "verification_evidence": {
+        "executor": "bounded-pytest",
+        "workload_id": "P7-PAPER-PERFORMANCE",
+        "purpose": "risk-paper-performance-and-e2e-proof",
+        "suite": [
+          "tests/test_deterministic_risk.py",
+          "tests/test_paper_execution.py",
+          "tests/test_paper_event_store.py",
+          "tests/test_performance_metrics.py",
+          "tests/test_phase7_e2e_proof.py"
+        ],
+        "offline_capable": false,
+        "network_required": false,
+        "transport": "github-cloud",
+        "tests": {
+          "ok": true,
+          "returncode": 0,
+          "stdout": "........................................................................ [ 92%]\n......                                                                   [100%]\n78 passed in 1.97s\n",
+          "stderr": ""
+        },
+        "failure_class": null
+      }
+    }
+  ],
+  "resource_metrics": {
+    "windows-runner": {
+      "available": true,
+      "health_score": 1.0,
+      "latency_ms": 0.0,
+      "failure_rate": 0.0,
+      "cost_units": 0.0
+    },
+    "cloud-worker": {
+      "available": true,
+      "health_score": 1.0,
+      "latency_ms": 20.0,
+      "failure_rate": 0.0,
+      "cost_units": 0.1
+    },
+    "research-agent": {
+      "available": true,
+      "health_score": 1.0,
+      "latency_ms": 20.0,
+      "failure_rate": 0.0,
+      "cost_units": 0.1
+    },
+    "paper-agent": {
+      "available": true,
+      "health_score": 1.0,
+      "latency_ms": 20.0,
+      "failure_rate": 0.0,
+      "cost_units": 0.1
+    },
+    "qa-verifier-agent": {
+      "available": true,
+      "health_score": 1.0,
+      "latency_ms": 20.0,
+      "failure_rate": 0.0,
+      "cost_units": 2.0
+    },
+    "deepseek-bounded": {
+      "available": false,
+      "health_score": 1.0,
+      "latency_ms": 250.0,
+      "failure_rate": 0.0,
+      "cost_units": 1.0
+    }
+  }
+}
