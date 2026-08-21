@@ -93,9 +93,11 @@ def test_owner_autostart_proof_fast_path_skips_heavy_python_and_node_bootstrap()
     assert verifier < setup_node < bootstrap
     assert '- name: Owner-proof privacy guard' in workflow
     assert 'owner_proof_privacy_guard=ok' in workflow
-    assert 'USERPROFILE' in workflow
     assert 'GITHUB_WORKSPACE' in workflow
-    assert 'Owner-proof workspace must not be the user profile or a descendant of it' in workflow
+    assert 'GITHUB_REPOSITORY' in workflow
+    assert "$workLeaf -ine '_work'" in workflow
+    assert 'Owner-proof workspace is not an isolated GitHub Actions _work/repo/repo checkout' in workflow
+    assert 'USERPROFILE' not in workflow
 
 
 def test_non_owner_proof_paths_preserve_python_bootstrap_and_privacy_guard():
@@ -103,6 +105,7 @@ def test_non_owner_proof_paths_preserve_python_bootstrap_and_privacy_guard():
     assert '- name: Bootstrap portable Python' in workflow
     assert 'call scripts\\bootstrap_portable_python.cmd' in workflow
     assert '- name: Privacy guard' in workflow
-    assert "python -c \"import pathlib; root=pathlib.Path.cwd().resolve(); home=pathlib.Path.home().resolve();" in workflow
+    assert "python -c \"import os,pathlib; root=pathlib.Path.cwd().resolve(); repo=os.environ['GITHUB_REPOSITORY'].split('/')[-1];" in workflow
+    assert "root.parent.parent.name.casefold()=='_work'" in workflow
     assert '- name: Install zero-touch NEXUS autostart' in workflow
     assert '- name: Persistent autonomous worker' in workflow

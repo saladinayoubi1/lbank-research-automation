@@ -23,11 +23,15 @@ def test_owner_proof_target_is_one_exact_sha() -> None:
     assert re.fullmatch(r"[0-9a-f]{40}", value)
 
 
-def test_owner_proof_privacy_guard_does_not_overwrite_powershell_home() -> None:
+def test_owner_proof_privacy_guard_validates_isolated_actions_workspace_without_profile_scan() -> None:
     text = read(WORKFLOW)
-    assert "$userHome=" in text
-    assert "$root -eq $userHome" in text
-    assert "$root.StartsWith($userHome +" in text
+    assert "$root=[IO.Path]::GetFullPath($env:GITHUB_WORKSPACE)" in text
+    assert "$repoName=($env:GITHUB_REPOSITORY -split '/')[-1]" in text
+    assert "$repoWork=Split-Path -Parent $root" in text
+    assert "$workLeaf=Split-Path -Leaf $workRoot" in text
+    assert "$workLeaf -ine '_work'" in text
+    assert "Owner-proof workspace is not an isolated GitHub Actions _work/repo/repo checkout" in text
+    assert "$userHome=" not in text
     assert "$home=" not in text.casefold()
     assert "permissions:\n  contents: read" in text
 
