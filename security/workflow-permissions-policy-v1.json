@@ -43,7 +43,6 @@
     ".github/workflows/nexus-event-driven-failure-triage.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read","issues":"write"},"write_justification":"Required only to create or refresh fail-closed GitHub issues containing workflow failure evidence; repository contents and actions remain read-only.","jobs":{"triage":{"policy_version":1}}},
     ".github/workflows/nexus-local-runner.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"local":{"policy_version":1}}},
     ".github/workflows/nexus-mission-queue.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"validate-mission-queue":{"policy_version":1}}},
-    ".github/workflows/nexus-runner-hidden-cutover.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"quiet-window":{"policy_version":1}}},
     ".github/workflows/nexus-runtime-worker.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"laptop-worker":{"policy_version":1},"preflight":{"policy_version":1},"windows-candidate-validation":{"policy_version":1}}},
     ".github/workflows/nexus_local_autonomy.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"local-worker":{"policy_version":1}}},
     ".github/workflows/nexus_phase3_resource_activation.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"cloud-agents-deepseek":{"policy_version":1},"laptop-runner":{"policy_version":1}}},
