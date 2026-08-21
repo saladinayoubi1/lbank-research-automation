@@ -85,14 +85,14 @@ def test_runner_persistence_uses_task_scheduler_com_not_cim_or_elevation() -> No
     assert "config.cmd --unattended" not in lowered  # invocation stays argument-safe via call operator
 
 
-def test_registration_entrypoint_replaces_visible_task_with_hidden_autostart() -> None:
+def test_registration_entrypoint_and_repair_use_hidden_autostart_paths() -> None:
     register_cmd = REGISTER_CMD.read_text(encoding="utf-8")
     repair_cmd = REPAIR_CMD.read_text(encoding="utf-8")
     hidden = HIDDEN_AUTOSTART.read_text(encoding="utf-8")
     assert "install_nexus_runner_hidden_autostart.ps1" in register_cmd
-    assert "install_nexus_runner_hidden_autostart.ps1" in repair_cmd
     assert "-Mode Install" in register_cmd
-    assert "-Mode Install" in repair_cmd
+    assert "defer_nexus_runner_hidden_migration.ps1" in repair_cmd
+    assert "CreateNoWindow=$true" in repair_cmd
     for marker in (
         "CreateNoWindow = $true",
         "ProcessWindowStyle]::Hidden",
