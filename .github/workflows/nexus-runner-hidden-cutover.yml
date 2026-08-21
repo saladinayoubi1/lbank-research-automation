@@ -1,0 +1,33 @@
+name: NEXUS Runner Hidden Cutover
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .nexus/runner-hidden-cutover.txt
+      - .github/workflows/nexus-runner-hidden-cutover.yml
+
+permissions:
+  contents: read
+
+# Deliberately share the runtime-worker concurrency group. A cutover marker on main
+# cancels the old long-lived scheduled laptop-worker without touching runner
+# registration or credentials, then holds a short cloud-only quiet window so the
+# already-scheduled local hidden-migration helper can replace the visible launcher.
+concurrency:
+  group: nexus-runtime-worker-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quiet-window:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Hold bounded runner cutover window
+        shell: bash
+        run: |
+          echo "runner_hidden_cutover=active"
+          echo "target_ref=${GITHUB_REF}"
+          sleep 90
+          echo "runner_hidden_cutover=complete"
