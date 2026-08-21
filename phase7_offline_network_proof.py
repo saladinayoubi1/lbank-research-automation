@@ -23,7 +23,10 @@ def _read(path: Path) -> dict[str, Any]:
     if not raw or len(raw) > MAX_BYTES:
         raise OfflineNetworkProofError("offline network proof size is outside bounds")
     try:
-        value = json.loads(raw.decode("utf-8"))
+        # Windows PowerShell 5.1's `Set-Content -Encoding UTF8` writes a UTF-8
+        # BOM. Accept that representation without weakening the JSON/schema
+        # validation that follows.
+        value = json.loads(raw.decode("utf-8-sig"))
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise OfflineNetworkProofError("offline network proof JSON is invalid") from exc
     if not isinstance(value, dict):
