@@ -1,0 +1,5 @@
+requested_at_utc=2026-08-21T07:42:00Z
+purpose=cancel_legacy_visible_scheduled_laptop_worker_and_allow_hidden_runner_migration
+authority=research_backtest_paper_only
+credentials_modified=false
+runner_registration_modified=false
