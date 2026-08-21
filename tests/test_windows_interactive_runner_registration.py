@@ -33,7 +33,7 @@ def test_registration_helper_is_repo_bound_pinned_and_fail_closed() -> None:
 def test_registration_helper_acquires_short_lived_token_without_persisting_it() -> None:
     text = read()
     for marker in (
-        "gh auth login",
+        "& $Gh auth login",
         "--web",
         "--scopes repo",
         "actions/runners/registration-token",
@@ -43,7 +43,9 @@ def test_registration_helper_acquires_short_lived_token_without_persisting_it() 
         "$registrationToken = $null",
     ):
         assert marker in text
-    assert "Set-Content" not in text[text.index("function Get-RegistrationToken"):text.index("function Register-Runner")]
+    token_body = text[text.index("function Get-RegistrationToken"):text.index("function Register-Runner")]
+    assert "Set-Content" not in token_body
+    assert "Add-Content" not in token_body
 
 
 def test_github_cli_fallback_is_official_and_checksum_verified() -> None:
@@ -54,7 +56,7 @@ def test_github_cli_fallback_is_official_and_checksum_verified() -> None:
         "_checksums\\.txt",
         "Get-FileHash",
         "GH_ARCHIVE_HASH_MISMATCH",
-        "NEXUS\\tools\\gh",
+        "tools\\gh",
     ):
         assert marker in text
 
