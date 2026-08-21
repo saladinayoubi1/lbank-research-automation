@@ -107,7 +107,7 @@ def test_stale_and_future_manifest_are_rejected():
 
 def test_document_content_substitution_is_rejected():
     manifest, document = candidate()
-    tampered = document.replace("Paper only", "LIVE ENABLED")
+    tampered = document.replace("Paper only", "LIVE ONLY!")
     with pytest.raises(BackupVerificationError, match="content_hash_mismatch"):
         verify(manifest, tampered)
 
