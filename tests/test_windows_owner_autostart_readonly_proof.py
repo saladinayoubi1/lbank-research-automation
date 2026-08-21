@@ -58,6 +58,26 @@ def test_owner_autostart_verifier_binds_both_expected_tasks_and_scripts():
     assert "LeastPrivilege" in text
 
 
+def test_owner_autostart_principals_are_compared_by_sid_not_text_form():
+    text = VERIFIER.read_text(encoding="utf-8")
+    assert "function Resolve-PrincipalSid" in text
+    assert "Security.Principal.NTAccount" in text
+    assert "Security.Principal.SecurityIdentifier" in text
+    assert "principal_sid = $principalSid" in text
+    assert "logon_trigger_sids = @($triggerSids)" in text
+    assert "$triggerSids -contains $principalSid" in text
+    assert "$core.principal_sid -ne $runner.principal_sid" in text
+    assert "owner autostart tasks use different owner principal SIDs" in text
+    assert "$core.principal_user -ne $runner.principal_user" not in text
+
+
+def test_owner_autostart_failure_exit_is_not_masked_by_error_action_stop():
+    text = VERIFIER.read_text(encoding="utf-8")
+    failure = text[text.rindex("catch {") :]
+    assert "Write-Error -ErrorAction Continue $_" in failure
+    assert "exit 20" in failure
+
+
 def test_owner_autostart_proof_target_is_exact_sha():
     value = TARGET.read_text(encoding="utf-8").strip()
     assert re.fullmatch(r"[0-9a-f]{40}", value)
