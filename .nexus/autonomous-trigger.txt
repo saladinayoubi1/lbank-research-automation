@@ -1,8 +1,8 @@
 trigger: autonomous
-requested_at: 2026-08-13T15:24:00+03:30
+requested_at: 2026-08-21T09:06:00+03:30
 mode: bounded-safe-loop
 planner: orchestrator+ai-council+deepseek
-objective: phase3-product-research
+objective: verify-cim-independent-gui-runner-bootstrap
 queue: .nexus/autonomous-queue.json
-state: superseded
-superseded_by: .nexus/phase5-checkpoint.json
+state: active
+reason: validate newly registered NEXUS local runner and clear GUI RUNNER BLOCKED state
