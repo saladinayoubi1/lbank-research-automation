@@ -115,7 +115,7 @@ def test_hidden_autostart_retires_old_launcher_before_replacing_task_definition(
     hidden = HIDDEN_AUTOSTART.read_text(encoding="utf-8")
     worker_wait = hidden.index("while ((Get-ManagedProcess 'Runner.Worker')")
     task_stop = hidden.index("$existing.Stop(0)")
-    launcher_retire = hidden.index("Stop-ManagedLauncherTree")
+    launcher_retire = hidden.index("$legacyLauncherRetired = Stop-ManagedLauncherTree")
     task_register = hidden.index("$folder.RegisterTaskDefinition")
     hidden_start = hidden.index("$registered.Run($null)")
     assert worker_wait < task_stop < launcher_retire < task_register < hidden_start
