@@ -2,10 +2,14 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
+
+from integration_report_provenance import ENVELOPE_SCHEMA, build_envelope
 
 ROOT = Path(__file__).resolve().parent
 DATA_ROOT = ROOT / "data" / "market"
@@ -19,8 +23,44 @@ READINESS_JSON = DATA_ROOT / "_data_readiness.json"
 READINESS_CSV = DATA_ROOT / "_data_readiness.csv"
 
 
+def _source_identity() -> tuple[str, str, str]:
+    result = subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=ROOT, check=True,
+        capture_output=True, text=True,
+    )
+    commit = result.stdout.strip()
+    run = os.environ.get("GITHUB_RUN_ID")
+    workflow_run = f"github-{run}" if run and run.isdigit() and not run.startswith("0") else f"local-{commit[:12]}"
+    generated_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    return commit, workflow_run, generated_at
+
+
+def _write_bound_report(path: Path, *, kind: str, report: dict) -> None:
+    commit, workflow_run, generated_at = _source_identity()
+    envelope = build_envelope(
+        kind=kind, report=report, source_commit=commit,
+        workflow_run=workflow_run, generated_at=generated_at,
+    )
+    path.write_text(json.dumps(envelope, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _bind_existing(path: Path, *, kind: str) -> bool:
+    if not path.exists():
+        return False
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"Invalid existing {kind} report") from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(f"Invalid existing {kind} report")
+    if payload.get("schema") == ENVELOPE_SCHEMA:
+        return True
+    _write_bound_report(path, kind=kind, report=payload)
+    return True
+
+
 def ensure_research_report() -> None:
-    if RESEARCH_REPORT.exists():
+    if _bind_existing(RESEARCH_REPORT, kind="research"):
         return
     payload = {
         "schema_version": "1.1.0",
@@ -28,20 +68,18 @@ def ensure_research_report() -> None:
         "paper_trading_only": True,
         "claims": [],
         "evidence": [],
-        "next_review_due": None,
+        "next_review_due": datetime.now(timezone.utc).date().isoformat(),
     }
-    RESEARCH_REPORT.write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
+    _write_bound_report(RESEARCH_REPORT, kind="research", report=payload)
 
 
 def ensure_zotero_report() -> None:
-    if ZOTERO_REPORT.exists():
+    if _bind_existing(ZOTERO_REPORT, kind="zotero"):
         return
     legacy = LEGACY_INTEGRATION_ROOT / ZOTERO_REPORT.name
     if legacy.exists():
         shutil.copy2(legacy, ZOTERO_REPORT)
+        _bind_existing(ZOTERO_REPORT, kind="zotero")
         return
     if not REFERENCE_JSON.exists():
         raise FileNotFoundError(f"Missing reference file: {REFERENCE_JSON}")
@@ -70,7 +108,11 @@ def ensure_zotero_report() -> None:
         )
     if not result.stdout.strip():
         raise RuntimeError("Zotero metadata audit produced no JSON report")
-    ZOTERO_REPORT.write_text(result.stdout, encoding="utf-8")
+    try:
+        report = json.loads(result.stdout)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError("Zotero metadata audit produced invalid JSON") from exc
+    _write_bound_report(ZOTERO_REPORT, kind="zotero", report=report)
 
 
 def ensure_readiness_reports() -> None:
