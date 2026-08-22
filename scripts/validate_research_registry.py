@@ -7,7 +7,7 @@ import json
 import re
 import sys
 from datetime import date
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -47,10 +47,10 @@ def _json(path: Path, limit: int = 1_000_000) -> dict[str, Any]:
 def _safe_repo_file(raw: Any) -> Path:
     if not isinstance(raw, str) or not raw or len(raw) > 200 or "\\" in raw:
         raise ValueError("invalid registry path")
-    relative = Path(raw)
-    if relative.is_absolute() or ".." in relative.parts or str(relative) != relative.as_posix():
+    relative = PurePosixPath(raw)
+    if relative.is_absolute() or ".." in relative.parts or raw != relative.as_posix():
         raise ValueError("non-canonical registry path")
-    path = ROOT / relative
+    path = ROOT.joinpath(*relative.parts)
     if path.is_symlink() or not path.is_file() or path.stat().st_nlink != 1:
         raise ValueError(f"unsafe registry target: {raw}")
     return path
