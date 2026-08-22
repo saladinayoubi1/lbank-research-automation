@@ -14,6 +14,8 @@ The release-recovery gate remains deny-by-default. A rollback record must use sc
 
 Schema and rollback claims must be carried in a separate bounded JSON evidence artifact referenced by a canonical repository-local path and bound by SHA-256. The evidence must match both manifest digests and record successful schema and rollback tests. This is internal consistency only; it does not authenticate builders, workflows, approvers, clocks, storage, or target environments.
 
+A reproducibility record must bind one exact source commit, build-instruction digest, dependency-lock digest and toolchain digest to at least two clean attempts. Attempts require distinct builder identities, workflow-run IDs and manifest paths; their referenced manifests must be regular single-link files with identical SHA-256 digests. The record must keep `production_claim: false`. This rejects common replay and same-builder false-independence patterns but does not authenticate the declared identities.
+
 ## Trust boundaries
 
 `source -> isolated builder -> output tree -> manifest/provenance -> rollback evidence -> offline verifier -> protected approver -> target environment`
@@ -40,7 +42,7 @@ Only the offline verifier and fixtures are repository-controlled. External build
 
 ## Verification
 
-Positive, negative and bypass tests cover identical outputs, changed/missing files, symlinks, mutable policy, invalid source commits, evidence tampering, previous-valid substitution, failed schema tests and path traversal. CI must pass on Linux, Windows and macOS.
+Positive, negative and bypass tests cover identical outputs, changed/missing files, symlinks, hardlinks, mutable policy, invalid source commits, unlocked-input metadata, same-builder/run replay, non-clean attempts, divergent manifests, evidence tampering, previous-valid substitution, failed schema tests and path traversal. CI must pass on Linux, Windows and macOS.
 
 ## Rollback and recovery
 
