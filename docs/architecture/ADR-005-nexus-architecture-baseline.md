@@ -127,7 +127,7 @@ Reads approved summaries and submits commands only through versioned application
 
 - It may not mutate event-store, portfolio, execution, or risk state directly.
 - It must not expose sensitive source data outside an explicit allowlist.
-- Network exposure and report provenance remain subject to #89 and #91.
+- Network exposure is governed by accepted ADR-019 and its fail-closed gateway tests. Report provenance remains separately subject to #91.
 
 ## AI and agent authority boundary
 
