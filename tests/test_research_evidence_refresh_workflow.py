@@ -16,4 +16,5 @@ def test_refresh_workflow_runs_all_research_gates():
     text = WORKFLOW.read_text(encoding="utf-8")
     assert "scripts/validate_research_registry.py" in text
     assert "scripts/validate_bibtex.py references/references.bib" in text
-    assert "tests.test_research_registry tests.test_validate_bibtex" in text
+    assert "pytest==8.3.5" in text
+    assert "tests/test_research_registry.py tests/test_validate_bibtex.py" in text
