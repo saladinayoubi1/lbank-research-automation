@@ -39,6 +39,23 @@ def test_funding_basis_carry_claims_are_fully_bound():
     assert matrix["minimum_paper_test_contract"]["venue"].startswith("Bybit primary")
 
 
+def test_strategy_catalog_has_exact_family_coverage_and_three_sources_each():
+    catalog = gate._json(gate.ROOT / "research" / "strategy_family_catalog.json")
+    gate._validate_strategy_catalog(gate.ROOT / "research" / "strategy_family_catalog.json")
+    assert {item["family"] for item in catalog["families"]} == gate.STRATEGY_FAMILIES
+    assert all(len(item["evidence"]) == 3 for item in catalog["families"])
+    assert catalog["market_authority"] == gate.AUTHORITY
+
+
+def test_strategy_catalog_duplicate_or_missing_family_fails(tmp_path: Path):
+    source = gate._json(gate.ROOT / "research" / "strategy_family_catalog.json")
+    source["families"][-1] = source["families"][0]
+    path = tmp_path / "catalog.json"
+    path.write_text(json.dumps(source), encoding="utf-8")
+    with pytest.raises(ValueError, match="coverage mismatch"):
+        gate._validate_strategy_catalog(path)
+
+
 def test_digest_substitution_fails(tmp_path: Path):
     path, registry = _copy_registry(tmp_path)
     registry["entries"][0]["sha256"] = "0" * 64
