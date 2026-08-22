@@ -43,7 +43,7 @@ Blogs, social posts and model outputs may identify candidate sources but are nev
 4. Write a bounded claim plus limitation; never import a conclusion verbatim as project truth.
 5. Bind claim IDs to evidence IDs and record conflicting evidence.
 6. Set a review date and concrete obsolescence triggers.
-7. Run `python scripts/validate_research_registry.py`.
+7. Run `python scripts/validate_research_registry.py`. Registry SHA-256 values use UTF-8 text with LF-normalized line endings so the same evidence has one digest on Windows, macOS and Linux.
 8. Merge only through fixed-head green CI.
 
 Review is required at least every 365 days, and earlier after venue/API/fee/funding/market-structure changes, standards revisions, source retractions, data-method changes, false-green backtests or new contradictory evidence.
