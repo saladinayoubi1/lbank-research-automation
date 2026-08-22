@@ -34,6 +34,12 @@ def test_digest_substitution_fails(tmp_path: Path):
         gate.validate(path)
 
 
+def test_registry_digest_normalizes_crlf(tmp_path: Path):
+    path = tmp_path / "evidence.md"
+    path.write_bytes(b"one\r\ntwo\r\n")
+    assert gate._canonical_text_bytes(path) == b"one\ntwo\n"
+
+
 @pytest.mark.parametrize("bad", [True, 0, 364, 366, "365"])
 def test_review_policy_is_exact_and_bool_safe(tmp_path: Path, bad: object):
     path, registry = _copy_registry(tmp_path)
