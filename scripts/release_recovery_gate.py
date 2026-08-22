@@ -12,6 +12,7 @@ from typing import Any
 MAX_JSON_BYTES = 1_000_000
 EXCLUDED_NAMES = {"artifact-manifest.sig", "artifact-manifest.pem"}
 POLICY_VERSION = "ADR-0014-v1"
+REPRO_SCHEMA = "nexus.reproducible-build-evidence.v1"
 
 
 def fail(message: str) -> None:
@@ -35,6 +36,8 @@ def snapshot(root: Path) -> dict[str, tuple[int, str]]:
             fail(f"symlink is not allowed in release output: {path.relative_to(root).as_posix()}")
         if not path.is_file() or path.name in EXCLUDED_NAMES:
             continue
+        if path.stat().st_nlink != 1:
+            fail(f"hardlinked release output is not allowed: {path.relative_to(root).as_posix()}")
         relative = path.relative_to(root).as_posix()
         if relative in result:
             fail(f"duplicate normalized output path: {relative}")
@@ -87,9 +90,64 @@ def safe_evidence_path(root: Path, value: object) -> Path:
         candidate.resolve(strict=True).relative_to(root.resolve(strict=True))
     except (OSError, ValueError):
         fail("evidence_ref escapes rollback record directory")
-    if candidate.is_symlink() or not candidate.is_file():
+    if candidate.is_symlink() or not candidate.is_file() or candidate.stat().st_nlink != 1:
         fail("rollback evidence is missing or unsafe")
     return candidate
+
+
+def verify_reproducibility_record(path: Path) -> list[str]:
+    record = load_json(path)
+    expected_keys = {
+        "schema", "policy_version", "production_claim", "source_commit",
+        "build_instructions_sha256", "dependency_lock_sha256", "toolchain_sha256", "attempts",
+    }
+    if not isinstance(record, dict) or set(record) != expected_keys or record.get("schema") != REPRO_SCHEMA:
+        fail("reproducibility record schema mismatch")
+    if record.get("policy_version") != POLICY_VERSION or record.get("production_claim") is not False:
+        fail("reproducibility record must remain bounded and non-production")
+    if not valid_commit(record.get("source_commit")):
+        fail("reproducibility source_commit must be lowercase 40-character SHA")
+    for field in ("build_instructions_sha256", "dependency_lock_sha256", "toolchain_sha256"):
+        if not valid_digest(record.get(field)):
+            fail(f"{field} must be lowercase SHA-256")
+    attempts = record.get("attempts")
+    if not isinstance(attempts, list) or not 2 <= len(attempts) <= 10:
+        fail("reproducibility record requires two to ten build attempts")
+    builders: set[str] = set()
+    runs: set[int] = set()
+    refs: set[str] = set()
+    output_digests: set[str] = set()
+    attempt_keys = {"builder_identity", "workflow_run_id", "clean_environment", "manifest_ref", "manifest_sha256", "artifact_count"}
+    for attempt in attempts:
+        if not isinstance(attempt, dict) or set(attempt) != attempt_keys:
+            fail("reproducibility attempt schema mismatch")
+        builder = attempt.get("builder_identity")
+        run_id = attempt.get("workflow_run_id")
+        ref = attempt.get("manifest_ref")
+        if not isinstance(builder, str) or not builder.strip() or len(builder) > 200:
+            fail("builder_identity is required")
+        if not isinstance(run_id, int) or isinstance(run_id, bool) or run_id <= 0:
+            fail("workflow_run_id must be a positive integer")
+        if attempt.get("clean_environment") is not True:
+            fail("each build attempt must declare a clean environment")
+        if not isinstance(ref, str) or ref in refs:
+            fail("build attempts require distinct manifest references")
+        manifest = safe_evidence_path(path.parent, ref)
+        digest = attempt.get("manifest_sha256")
+        if not valid_digest(digest) or sha256(manifest) != digest:
+            fail("build manifest digest mismatch")
+        count = attempt.get("artifact_count")
+        if not isinstance(count, int) or isinstance(count, bool) or count <= 0:
+            fail("artifact_count must be a positive integer")
+        builders.add(builder)
+        runs.add(run_id)
+        refs.add(ref)
+        output_digests.add(digest)
+    if len(builders) != len(attempts) or len(runs) != len(attempts):
+        fail("build attempts must use distinct builders and workflow runs")
+    if len(output_digests) != 1:
+        fail("independent build manifests are not byte-identical")
+    return ["fixed-inputs", "clean-builds", "independent-builders", "distinct-runs", "manifest-identity", "non-production"]
 
 
 def verify_rollback_record(path: Path) -> list[str]:
@@ -143,12 +201,16 @@ def main() -> int:
     reproducible.add_argument("second", type=Path)
     rollback = subparsers.add_parser("verify-rollback")
     rollback.add_argument("record", type=Path)
+    evidence = subparsers.add_parser("verify-reproducibility")
+    evidence.add_argument("record", type=Path)
     args = parser.parse_args()
     try:
         if args.command == "compare-outputs":
             print("REPRODUCIBLE_BUILD=PASS files=" + ",".join(compare_outputs(args.first, args.second)))
-        else:
+        elif args.command == "verify-rollback":
             print("ROLLBACK_GATE=PASS checks=" + ",".join(verify_rollback_record(args.record)))
+        else:
+            print("REPRODUCIBILITY_EVIDENCE_GATE=PASS checks=" + ",".join(verify_reproducibility_record(args.record)))
     except ValueError as exc:
         print(f"RELEASE_RECOVERY_GATE=BLOCKED reason={exc}", file=sys.stderr)
         return 1
