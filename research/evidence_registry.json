@@ -39,9 +39,16 @@
       "domains": ["funding", "basis", "crypto_carry", "fx_carry", "liquidation_risk"]
     },
     {
+      "id": "REG-STRATEGY-FAMILIES-001",
+      "path": "research/strategy_family_catalog.json",
+      "sha256": "51198190379ac910499d008cafdc211f2565ca963e657b70470cee90f1e5daa9",
+      "format": "strategy-family-catalog-json",
+      "domains": ["strategy_taxonomy", "research_hypotheses", "paper_gates"]
+    },
+    {
       "id": "REG-BIBLIOGRAPHY-001",
       "path": "references/references.bib",
-      "sha256": "2c16ada9c5e0b92d952118992c9d6f34652072fec23f4a239ad286a63b1a0892",
+      "sha256": "18fbee047c2700ac061fa3a896a0f5153089abdcec33889022a3c361b3ea073e",
       "format": "bibtex",
       "domains": ["bibliography"]
     }
