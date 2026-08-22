@@ -1,6 +1,6 @@
 # ADR-005: NEXUS architecture baseline and authority boundaries
 
-- Status: Proposed
+- Status: Accepted
 - Scope: Research and paper trading only
 - Issue: #94
 - Version: 1.0.0
@@ -194,6 +194,8 @@ For later implementation slices, recovery must preserve the previous-valid resea
 ## Residual risks
 
 Documentation cannot enforce dependency direction or runtime authority. An executable validator, tests, and CI integration are required in later slices. External signing identity, trust root, protected production approval, credential custody, independent disaster recovery, and isolated reproducible-build infrastructure remain outside this ADR and must stay blocked.
+
+Acceptance records the architecture baseline already exercised through the completed Phase 4–7 paper-only system. It does not resolve the separately governed production-release, dashboard-exposure, signing, disaster-recovery, or Live/L4 blockers.
 
 ## Obsolescence triggers
 
