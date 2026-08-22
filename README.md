@@ -4,9 +4,9 @@ NEXUS is a fail-closed, evidence-driven research and paper-trading platform for 
 
 ## Current project map
 
-The canonical navigation index for the active project is [`docs/PROJECT_MAP.md`](docs/PROJECT_MAP.md). It maps the current Phase 7 lanes, source-of-truth order, major implementation surfaces, acceptance path, and incremental repository-cleanup rules.
+The canonical navigation index for the project is [`docs/PROJECT_MAP.md`](docs/PROJECT_MAP.md). It maps the completed Phase 7 lanes, source-of-truth order, major implementation surfaces, verified acceptance path, and incremental repository-cleanup rules.
 
-The active repository roadmap is Phase 7 (`#696`) with lanes `#697`–`#700`, inventory `#701`, proof mission `#702`, and final Mission Control acceptance `#692`. Historical phase documents remain evidence and context; they do not override the current acceptance issues or current executable behavior.
+Phase 7 (`#696`) and its acceptance path are complete. The durable completion state and fixed evidence identifiers live in [`docs/project_memory/STATE.json`](docs/project_memory/STATE.json). No later phase or broader financial authority is implied; new work is bounded maintenance or must begin with a new explicit owner-approved contract. Historical phase documents remain evidence and context and do not override current executable behavior.
 
 ## Authority boundary
 
@@ -155,8 +155,8 @@ Results must be interpreted with fees/slippage stress, OOS evidence, regime beha
 
 Phases 3–6 are closed historical prerequisites and remain preserved as completed contracts unless new evidence explicitly proves a false-green dependency.
 
-**Phase 7 is the active integration and acceptance phase.** Its job is to connect the existing control-plane, canonical-data, Strategy Factory, deterministic Risk, Paper, performance/drift, and Mission Control surfaces into one fixed-SHA replayable proof. CI green is necessary but not sufficient: Phase 7 closes only after the `#702` end-to-end proof mission satisfies the acceptance contract and the real product state required by `#692` is demonstrated.
+**Phase 7 is complete.** The fixed-SHA replayable proof connected the control-plane, canonical data, Strategy Factory, deterministic Risk, Paper, performance/drift, and Mission Control surfaces. The authoritative completion tuple and closure state are recorded in [`docs/project_memory/STATE.json`](docs/project_memory/STATE.json); old planning text must not reopen the completed phase.
 
-Infrastructure work, including Windows runner work, is not a separate project goal; it is prioritized only when it blocks an active Phase 7 lane or the end-to-end proof.
+Follow-on work is maintenance, defect correction, evidence preservation, or a separately approved future contract. Infrastructure work, including Windows runner work, is not a separate product goal and must be tied to a current bounded requirement.
 
 Any future expansion of financial authority requires a new explicit owner-approved contract. Completion of Phase 7 does not imply live trading, credential authority, withdrawals, signing, billing, or L4 execution.

@@ -6,11 +6,12 @@ This document is the navigation layer for the current NEXUS repository. It does 
 
 When two project descriptions disagree, use this order:
 
-1. **Current Phase acceptance issues** — Phase 7 parent `#696`, lanes `#697`–`#700`, inventory `#701`, proof mission `#702`, and product acceptance `#692`.
-2. **Current `main` code, tests, and protected workflows** — executable behavior outranks old prose.
+1. **Current `main` code, tests, and protected workflows** — executable behavior outranks old prose.
+2. **Durable Project Memory state** — `docs/project_memory/STATE.json` records completed phases and fixed evidence identifiers.
 3. **Architecture ADRs and machine-readable contracts** under `docs/architecture/`.
 4. **Replayable evidence** under `docs/evidence/`, workflow artifacts, and issue evidence markers.
-5. **Historical phase documents and legacy research notes** — useful context, but not current acceptance authority.
+5. **Closed Phase 7 acceptance issues** — parent `#696`, lanes `#697`–`#700`, inventory `#701`, proof mission `#702`, and product acceptance `#692` remain historical acceptance evidence.
+6. **Historical phase documents and legacy research notes** — useful context, but not current acceptance authority.
 
 A closed historical phase is not silently reopened. If current evidence proves a prior capability false-green, the affected dependency must be explicitly reclassified.
 
@@ -22,9 +23,9 @@ A closed historical phase is not silently reopened. If current evidence proves a
 | Phase 4 | `#510` | CLOSED / completed | Historical prerequisite |
 | Phase 5 | `#583` | CLOSED / completed | Durable contracts/state/verification foundation |
 | Phase 6 | `#591` | CLOSED / completed | Canonical research integration foundation |
-| Phase 7 | `#696` | **OPEN** | Current integration and proof phase |
+| Phase 7 | `#696` | **CLOSED / completed** | Fixed-SHA integration and physical proof acceptance complete |
 
-The current authority boundary remains **Research / Backtest / Paper only**. No Live/L4 authority is implied by Phase 7.
+The current authority boundary remains **Research / Backtest / Paper only**. No Live/L4 authority is implied by Phase 7 completion. Bybit remains the primary canonical market reference; Binance is secondary corroboration and LBank is tertiary/legacy research only.
 
 ## Phase 7 lanes
 
@@ -106,7 +107,7 @@ The Phase 7 exit path is `#702`:
 
 Mission Control acceptance remains tracked by `#692`. The Windows/Android product must expose the same real durable task/resource/strategy/paper/evidence state; static cards, fabricated workers, and GitHub-only status do not satisfy acceptance.
 
-## Current execution order
+## Verified Phase 7 execution order
 
 1. Prove the corrected Windows runner/autostart path on the physical owner laptop.
 2. Complete the applicable local-laptop slice of `#702` with real returned evidence.
@@ -118,7 +119,7 @@ Mission Control acceptance remains tracked by `#692`. The Windows/Android produc
 8. Project exactly the same state into Mission Control (`#692`).
 9. Run the complete fixed-SHA Phase 7 proof and close only gates with replayable acceptance evidence.
 
-Infrastructure work is prioritized only when it blocks one of these steps.
+These steps are retained as the completed acceptance trace, not as an open work queue. Current maintenance must preserve their evidence and fail closed if a regression invalidates a dependency. A new phase, production release, Live/L4 path, credential use, signing, or billing authority requires a separate explicit owner-approved contract.
 
 ## Repository organization policy
 
@@ -144,7 +145,7 @@ New work should be classified before implementation as one of:
 - `evidence/verification`
 - `infrastructure` (only when blocking an active lane)
 
-Every new PR should name its Phase 7 lane/gate or explain why it is cross-lane infrastructure.
+Every new PR should name the completed Phase 7 lane it preserves, identify a bounded defect/maintenance contract, or reference a separately approved future phase.
 
 ### ADR cleanup rule
 
@@ -170,6 +171,6 @@ NEXUS is considered structurally organized when a maintainer can answer these qu
 3. What code implements it?
 4. What test/evidence proves it?
 5. What downstream component consumes it?
-6. What remains open before Phase 7 acceptance?
+6. Does this change preserve the completed Phase 7 acceptance evidence and authority boundary?
 
 This map is the starting index; executable code and acceptance evidence remain authoritative.
