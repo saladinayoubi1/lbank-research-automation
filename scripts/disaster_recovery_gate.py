@@ -86,18 +86,22 @@ def verify_scenario_evidence(root: Path, exercise_id: str, scenario: dict[str, A
     if not isinstance(expected, str) or len(expected) != 64 or any(c not in "0123456789abcdef" for c in expected):
         fail("scenario evidence_sha256 must be lowercase SHA-256")
     candidate = root.joinpath(*ref.parts)
-    if not candidate.is_file() or candidate.is_symlink():
+    if not candidate.is_file() or candidate.is_symlink() or candidate.stat().st_nlink != 1:
         fail("scenario evidence artifact is missing or unsafe")
     try:
         candidate.resolve(strict=True).relative_to(root.resolve(strict=True))
     except (OSError, ValueError):
         fail("scenario evidence artifact escapes evidence root")
-    if candidate.stat().st_size > MAX_EVIDENCE_BYTES:
+    raw = candidate.read_bytes()
+    if len(raw) > MAX_EVIDENCE_BYTES:
         fail("scenario evidence artifact exceeds maximum size")
-    if sha256(candidate) != expected:
+    if hashlib.sha256(raw).hexdigest() != expected:
         fail("scenario evidence digest mismatch")
-    record = load_json(candidate)
-    if not isinstance(record, dict):
+    try:
+        record = json.loads(raw.decode("utf-8"))
+    except (UnicodeError, json.JSONDecodeError) as exc:
+        fail(f"invalid bound scenario evidence JSON: {exc}")
+    if not isinstance(record, dict) or set(record) != {"exercise_id", "scenario", "observed", "recovery_verified"}:
         fail("scenario evidence artifact must be an object")
     if record.get("exercise_id") != exercise_id:
         fail("scenario evidence exercise mismatch")
@@ -109,8 +113,15 @@ def verify_scenario_evidence(root: Path, exercise_id: str, scenario: dict[str, A
 
 def validate(evidence_path: Path, *, now: datetime | None = None) -> list[str]:
     evidence = load_json(evidence_path)
-    if not isinstance(evidence, dict):
-        fail("evidence root must be an object")
+    expected_root = {
+        "schema_version", "policy_version", "source_commit", "workflow_run_id", "exercise_id",
+        "started_at", "completed_at", "production_authorized", "objectives", "clean_environment",
+        "independent_backup_source", "target_side_verification", "rollback_tested", "restore_tested",
+        "corruption_rejected", "missing_backup_rejected", "runbook_followed", "audit_log_preserved",
+        "owners", "scenarios", "open_critical_findings",
+    }
+    if not isinstance(evidence, dict) or set(evidence) != expected_root:
+        fail("evidence root schema mismatch")
     if evidence.get("schema_version") != 2:
         fail("unsupported schema_version")
     if evidence.get("production_authorized") is not False:
@@ -153,7 +164,7 @@ def validate(evidence_path: Path, *, now: datetime | None = None) -> list[str]:
         require_bool(evidence, key)
 
     owners = evidence.get("owners")
-    if not isinstance(owners, dict):
+    if not isinstance(owners, dict) or set(owners) != set(REQUIRED_OWNER_KEYS):
         fail("owners must be an object")
     owner_values = []
     for key in REQUIRED_OWNER_KEYS:
@@ -169,7 +180,7 @@ def validate(evidence_path: Path, *, now: datetime | None = None) -> list[str]:
         fail("scenarios must be a list")
     seen: set[str] = set()
     for scenario in scenarios:
-        if not isinstance(scenario, dict):
+        if not isinstance(scenario, dict) or set(scenario) != {"name", "executed", "expected_failure_observed", "recovery_verified", "evidence_ref", "evidence_sha256"}:
             fail("scenario entries must be objects")
         name = scenario.get("name")
         if not isinstance(name, str) or name not in REQUIRED_SCENARIOS:
