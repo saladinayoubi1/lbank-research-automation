@@ -11,6 +11,12 @@ from typing import Any
 import yaml
 from yaml.events import AliasEvent, NodeEvent
 
+REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+if str(REPOSITORY_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPOSITORY_ROOT))
+
+from workflow_trust_boundaries import validate_workflow_trust_boundaries
+
 WORKFLOW_DIR = Path(".github/workflows")
 POLICY_PATH = Path("security/workflow-permissions-policy-v1.json")
 ALLOWED_LEVELS = {"read", "write", "none"}
@@ -186,7 +192,9 @@ def run(workflow_dir: Path = WORKFLOW_DIR, policy_path: Path = POLICY_PATH) -> l
             f"inventory_json={json.dumps(snapshot, sort_keys=True, separators=(',', ':'))}"
         )
     for path in paths:
-        validate_workflow(path, load_yaml(path), rules[path.as_posix()])
+        workflow = load_yaml(path)
+        validate_workflow(path, workflow, rules[path.as_posix()])
+        validate_workflow_trust_boundaries(path, workflow)
     return sorted(actual)
 
 
