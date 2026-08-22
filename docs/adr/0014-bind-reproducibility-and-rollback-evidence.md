@@ -44,6 +44,8 @@ Only the offline verifier and fixtures are repository-controlled. External build
 
 Positive, negative and bypass tests cover identical outputs, changed/missing files, symlinks, hardlinks, mutable policy, invalid source commits, unlocked-input metadata, same-builder/run replay, non-clean attempts, divergent manifests, evidence tampering, previous-valid substitution, failed schema tests and path traversal. CI must pass on Linux, Windows and macOS.
 
+The `Reproducibility Proof` workflow additionally runs two separate clean GitHub-hosted jobs for the same exact SHA, builds a deterministic recovery-control bundle in each, compares both bundle and manifest bytes, then corrupts a candidate, quarantines it and restores the previous-valid bytes. Its artifacts are non-production CI evidence only; the proof does not cover the intentionally nondeterministic Windows installer, signing identity, protected production storage or a production target.
+
 ## Rollback and recovery
 
 Failed candidates are quarantined and must not modify previous-valid state. Recovery requires regenerating evidence from the expected source and workflow, recomputing digests, and revalidating under the current policy. Any production rollback requires protected approval outside mutable repository metadata and target-side verification.
