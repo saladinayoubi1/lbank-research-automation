@@ -1,0 +1,205 @@
+{
+  "schema": "nexus.strategy-family-catalog.v1",
+  "status": "research-only",
+  "paper_trading_only": true,
+  "review_date": "2026-08-22",
+  "next_review_due": "2027-02-22",
+  "market_authority": ["bybit-primary", "binance-secondary-corroboration", "lbank-tertiary-legacy-research-only"],
+  "families": [
+    {
+      "family": "trend",
+      "markets": ["crypto", "fx"],
+      "hypothesis": "Completed-bar directional persistence may survive costs in selected horizons.",
+      "evidence": [
+        {"role": "academic", "locator": "https://doi.org/10.1016/j.jfineco.2011.11.003"},
+        {"role": "implementation", "locator": "research/evidence/ema_crossover_evidence_matrix.md"},
+        {"role": "limitation", "locator": "https://doi.org/10.1111/0022-1082.00163"}
+      ],
+      "critical_risks": ["regime reversal", "turnover", "slippage", "parameter mining"],
+      "falsification": "Net walk-forward performance is not positive and stable against fixed benchmarks.",
+      "paper_gate": "Pre-register horizon and signal; execute no earlier than the next tradable observation."
+    },
+    {
+      "family": "momentum",
+      "markets": ["crypto", "fx"],
+      "hypothesis": "Time-series or cross-sectional persistence may exist but can crash and decay.",
+      "evidence": [
+        {"role": "academic", "locator": "https://doi.org/10.1111/j.1540-6261.1993.tb04702.x"},
+        {"role": "cross_asset", "locator": "https://doi.org/10.1111/jofi.12021"},
+        {"role": "limitation", "locator": "https://doi.org/10.21314/JCF.2016.322"}
+      ],
+      "critical_risks": ["momentum crash", "crowding", "look-ahead ranking", "multiple testing"],
+      "falsification": "The effect disappears out of sample or after costs and crash-window stress.",
+      "paper_gate": "Freeze ranking universe, rebalance rule, lag and delisting treatment."
+    },
+    {
+      "family": "carry",
+      "markets": ["crypto", "fx"],
+      "hypothesis": "Rate, funding or basis compensation may persist while embedding tail and funding-liquidity risk.",
+      "evidence": [
+        {"role": "authoritative", "locator": "https://www.bis.org/publ/work1087.htm"},
+        {"role": "academic", "locator": "https://doi.org/10.1086/593088"},
+        {"role": "implementation", "locator": "https://www.bybit.com/en/help-center/article/Introduction-to-Funding-Rate"}
+      ],
+      "critical_risks": ["funding reversal", "basis widening", "liquidation", "counterparty failure"],
+      "falsification": "Net carry is not robust to funding sign reversal, borrow and liquidation stress.",
+      "paper_gate": "Use exact product funding timestamps and mark-price liquidation rules."
+    },
+    {
+      "family": "value",
+      "markets": ["crypto", "fx"],
+      "hypothesis": "Predefined valuation proxies may explain cross-sectional returns but require defensible economic meaning.",
+      "evidence": [
+        {"role": "academic", "locator": "https://doi.org/10.1111/jofi.12021"},
+        {"role": "model_risk", "locator": "https://www.federalreserve.gov/supervisionreg/srletters/sr1107.htm"},
+        {"role": "limitation", "locator": "https://doi.org/10.1093/rfs/hhv059"}
+      ],
+      "critical_risks": ["proxy ambiguity", "stale fundamentals", "universe bias", "value traps"],
+      "falsification": "The fixed proxy lacks stable out-of-sample rank information after neutralization and costs.",
+      "paper_gate": "Define publication lag, availability time and missing-data policy before testing."
+    },
+    {
+      "family": "mean_reversion",
+      "markets": ["crypto", "fx"],
+      "hypothesis": "Temporary deviations from a preregistered equilibrium may revert before costs and structural breaks dominate.",
+      "evidence": [
+        {"role": "academic", "locator": "https://doi.org/10.2307/1912551"},
+        {"role": "relative_value", "locator": "https://doi.org/10.1093/rfs/hhj020"},
+        {"role": "limitation", "locator": "https://doi.org/10.1111/j.1468-0262.2005.00588.x"}
+      ],
+      "critical_risks": ["structural break", "nonstationarity", "averaging down", "spread execution"],
+      "falsification": "Stationarity and convergence fail in held-out windows or losses accelerate under breaks.",
+      "paper_gate": "Estimate equilibrium only on past data and cap exposure without martingale sizing."
+    },
+    {
+      "family": "arbitrage",
+      "markets": ["crypto", "fx"],
+      "hypothesis": "Observed price gaps may exceed all synchronized execution and transfer constraints.",
+      "evidence": [
+        {"role": "academic", "locator": "https://doi.org/10.1016/j.jfineco.2019.07.001"},
+        {"role": "limits", "locator": "https://doi.org/10.1111/j.1540-6261.1997.tb03807.x"},
+        {"role": "venue_boundary", "locator": "https://www.bybit.com/en/help-center/article/Index-Price-Calculation"}
+      ],
+      "critical_risks": ["leg risk", "transfer delay", "capital controls", "venue default"],
+      "falsification": "No positive locked spread remains under simultaneous executable prices and failure costs.",
+      "paper_gate": "Simulate both legs, queue position, transfer unavailability and venue-specific collateral."
+    },
+    {
+      "family": "market_making",
+      "markets": ["crypto", "fx"],
+      "hypothesis": "Two-sided quoting may earn spread only when inventory and adverse-selection losses are controlled.",
+      "evidence": [
+        {"role": "academic", "locator": "https://doi.org/10.1080/14697680701381228"},
+        {"role": "market_structure", "locator": "https://global.oup.com/academic/product/trading-and-exchanges-9780195144703"},
+        {"role": "implementation", "locator": "https://www.bybit.com/en/help-center/article/Futures-Trading-Rules"}
+      ],
+      "critical_risks": ["adverse selection", "inventory", "queue uncertainty", "latency"],
+      "falsification": "Realistic fills and inventory liquidation produce non-positive net PnL or unsafe tails.",
+      "paper_gate": "Use order-book replay; never assume every touched quote fills."
+    },
+    {
+      "family": "volatility",
+      "markets": ["crypto", "fx"],
+      "hypothesis": "Conditional volatility may be forecastable without implying direction or option profitability.",
+      "evidence": [
+        {"role": "academic", "locator": "https://doi.org/10.2307/1912773"},
+        {"role": "risk", "locator": "https://www.bis.org/basel_framework/"},
+        {"role": "limitation", "locator": "https://doi.org/10.1111/j.1468-0262.2005.00588.x"}
+      ],
+      "critical_risks": ["jump risk", "volatility-of-volatility", "smile dynamics", "hedging cost"],
+      "falsification": "Forecasts fail proper scoring and economic tests in held-out stress regimes.",
+      "paper_gate": "Separate forecast accuracy from tradable option or variance-strategy returns."
+    },
+    {
+      "family": "event_driven",
+      "markets": ["crypto", "fx"],
+      "hypothesis": "Predefined events may shift returns or volatility after timestamp and selection controls.",
+      "evidence": [
+        {"role": "academic", "locator": "https://doi.org/10.1257/jel.35.1.13"},
+        {"role": "model_risk", "locator": "https://www.federalreserve.gov/supervisionreg/srletters/sr1107.htm"},
+        {"role": "limitation", "locator": "https://doi.org/10.1111/1468-0262.00152"}
+      ],
+      "critical_risks": ["timestamp leakage", "event selection", "confounding", "thin samples"],
+      "falsification": "Abnormal outcomes vanish with clean timestamps, controls and multiple-event correction.",
+      "paper_gate": "Store announcement availability time and prohibit revised data in the event window."
+    },
+    {
+      "family": "cross_sectional",
+      "markets": ["crypto", "fx"],
+      "hypothesis": "Fixed cross-sectional ranks may predict relative outcomes across a survivorship-safe universe.",
+      "evidence": [
+        {"role": "academic", "locator": "https://doi.org/10.1111/j.1540-6261.1993.tb04702.x"},
+        {"role": "cross_asset", "locator": "https://doi.org/10.1111/jofi.12021"},
+        {"role": "limitation", "locator": "https://doi.org/10.1093/rfs/hhv059"}
+      ],
+      "critical_risks": ["survivorship", "microcaps", "rebalance cost", "factor crowding"],
+      "falsification": "Rank spreads fail after listing history, liquidity, costs and multiple testing are controlled.",
+      "paper_gate": "Freeze point-in-time universe eligibility and capacity floors."
+    },
+    {
+      "family": "on_chain",
+      "markets": ["crypto"],
+      "hypothesis": "Finalized, economically interpretable chain data may add information after publication delays.",
+      "evidence": [
+        {"role": "academic", "locator": "https://doi.org/10.1016/j.jfineco.2019.07.001"},
+        {"role": "governance", "locator": "https://www.iosco.org/library/pubdocs/pdf/IOSCOPD747.pdf"},
+        {"role": "limitation", "locator": "https://doi.org/10.1145/2382577.2382579"}
+      ],
+      "critical_risks": ["entity labeling", "reorgs", "off-chain blind spots", "vendor revision"],
+      "falsification": "Signals disappear using finalized point-in-time data and revision-aware validation.",
+      "paper_gate": "Record block finality, ingestion time, vendor version and label provenance."
+    },
+    {
+      "family": "funding_basis",
+      "markets": ["crypto"],
+      "hypothesis": "Funding and futures basis may compensate constrained capital but are not guaranteed yield.",
+      "evidence": [
+        {"role": "authoritative", "locator": "https://www.bybit.com/en/help-center/article/Introduction-to-Funding-Rate"},
+        {"role": "academic", "locator": "https://doi.org/10.1287/mnsc.2024.05069"},
+        {"role": "limitation", "locator": "https://www.bybit.com/en/help-center/article/Mark-Price-Calculation-Perpetual-Expiry-Contracts"}
+      ],
+      "critical_risks": ["funding reversal", "liquidation", "borrow", "counterparty"],
+      "falsification": "Net hedged carry fails under observed funding changes, borrow and liquidation stress.",
+      "paper_gate": "Bybit is primary; bind exact contract type, timestamps, funding and mark-price rules."
+    },
+    {
+      "family": "statistical",
+      "markets": ["crypto", "fx"],
+      "hypothesis": "Predefined statistical relations may persist out of sample after dependence and search corrections.",
+      "evidence": [
+        {"role": "academic", "locator": "https://doi.org/10.1093/rfs/hhj020"},
+        {"role": "multiple_testing", "locator": "https://doi.org/10.1111/1468-0262.00152"},
+        {"role": "limitation", "locator": "https://doi.org/10.21314/JCF.2016.322"}
+      ],
+      "critical_risks": ["data snooping", "dependence", "nonstationarity", "false discovery"],
+      "falsification": "Performance fails untouched data, multiplicity control or structural-break stress.",
+      "paper_gate": "Log every candidate, parameter and dataset inspected."
+    },
+    {
+      "family": "machine_learning",
+      "markets": ["crypto", "fx"],
+      "hypothesis": "ML may improve bounded forecasts only under leakage-free temporal validation and independent challenge.",
+      "evidence": [
+        {"role": "authoritative", "locator": "https://www.federalreserve.gov/supervisionreg/srletters/sr1107.htm"},
+        {"role": "leakage", "locator": "https://doi.org/10.1145/2382577.2382579"},
+        {"role": "limitation", "locator": "https://doi.org/10.21314/JCF.2016.322"}
+      ],
+      "critical_risks": ["leakage", "adaptive overfit", "drift", "uninterpretable failure"],
+      "falsification": "The model fails nested temporal evaluation, calibration, drift and cost-aware benchmarks.",
+      "paper_gate": "Freeze features, preprocessing, search budget and untouched final test data."
+    },
+    {
+      "family": "risk_overlay",
+      "markets": ["crypto", "fx"],
+      "hypothesis": "Sizing and risk overlays may reduce losses without converting a weak strategy into evidence of edge.",
+      "evidence": [
+        {"role": "authoritative", "locator": "https://www.bis.org/basel_framework/"},
+        {"role": "academic", "locator": "https://doi.org/10.1111/1467-9965.00068"},
+        {"role": "limitation", "locator": "https://www.federalreserve.gov/supervisionreg/srletters/sr1107.htm"}
+      ],
+      "critical_risks": ["procyclical deleverage", "model error", "liquidity", "hidden leverage"],
+      "falsification": "The overlay worsens tail loss, turnover or recovery under independent stress scenarios.",
+      "paper_gate": "Report unscaled and scaled results; enforce deterministic exposure and loss limits."
+    }
+  ]
+}
