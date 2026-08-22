@@ -1,0 +1,36 @@
+name: Research Evidence Refresh
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 5 * * 1'
+  pull_request:
+    paths:
+      - 'research/**'
+      - 'references/references.bib'
+      - 'scripts/validate_research_registry.py'
+      - 'scripts/validate_bibtex.py'
+      - 'tests/test_research_registry.py'
+      - 'tests/test_validate_bibtex.py'
+      - '.github/workflows/research-evidence-refresh.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned test runner
+        run: python -m pip install --disable-pip-version-check 'pytest==8.3.5'
+      - name: Validate immutable research registry
+        run: python scripts/validate_research_registry.py
+      - name: Validate curated bibliography
+        run: python scripts/validate_bibtex.py references/references.bib
+      - name: Run research boundary tests
+        run: python -m pytest -q tests/test_research_registry.py tests/test_validate_bibtex.py tests/test_validate_research_evidence_matrix.py tests/test_research_evidence_refresh_workflow.py

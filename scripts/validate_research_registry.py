@@ -15,7 +15,12 @@ DEFAULT_REGISTRY = ROOT / "research" / "evidence_registry.json"
 SCHEMA = "nexus.research-evidence-registry.v1"
 AUTHORITY = ["bybit-primary", "binance-secondary-corroboration", "lbank-tertiary-legacy-research-only"]
 ENTRY_KEYS = {"id", "path", "sha256", "format", "domains"}
-FORMATS = {"evidence-matrix-json", "evidence-matrix-markdown", "bibtex"}
+FORMATS = {"evidence-matrix-json", "evidence-matrix-markdown", "bibtex", "strategy-family-catalog-json"}
+STRATEGY_FAMILIES = {
+    "trend", "momentum", "carry", "value", "mean_reversion", "arbitrage",
+    "market_making", "volatility", "event_driven", "cross_sectional",
+    "on_chain", "funding_basis", "statistical", "machine_learning", "risk_overlay",
+}
 SAFE_ID = re.compile(r"^[A-Z0-9][A-Z0-9-]{5,79}$")
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
 
@@ -105,6 +110,59 @@ def _validate_matrix(path: Path) -> None:
             claim_ids.add(claim["claim_id"])
 
 
+def _validate_strategy_catalog(path: Path) -> None:
+    catalog = _json(path)
+    expected = {"schema", "status", "paper_trading_only", "market_authority", "review_date", "next_review_due", "families"}
+    if set(catalog) != expected or catalog["schema"] != "nexus.strategy-family-catalog.v1":
+        raise ValueError(f"strategy catalog schema mismatch: {path}")
+    if catalog["status"] != "research-only" or catalog["paper_trading_only"] is not True:
+        raise ValueError(f"unsafe strategy catalog boundary: {path}")
+    if catalog["market_authority"] != AUTHORITY:
+        raise ValueError(f"strategy catalog market authority mismatch: {path}")
+    try:
+        date.fromisoformat(catalog["review_date"])
+        due = date.fromisoformat(catalog["next_review_due"])
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"invalid strategy catalog review date: {path}") from exc
+    if due < date.today():
+        raise ValueError(f"strategy catalog review overdue: {path}")
+    families = catalog["families"]
+    if not isinstance(families, list) or len(families) != len(STRATEGY_FAMILIES):
+        raise ValueError(f"strategy family coverage mismatch: {path}")
+    names: list[str] = []
+    expected_family_keys = {"family", "markets", "hypothesis", "evidence", "critical_risks", "falsification", "paper_gate"}
+    for family in families:
+        if not isinstance(family, dict) or set(family) != expected_family_keys:
+            raise ValueError(f"strategy family schema mismatch: {path}")
+        names.append(family["family"])
+        for key in ("hypothesis", "falsification", "paper_gate"):
+            if not isinstance(family[key], str) or not family[key].strip() or len(family[key]) > 2_000:
+                raise ValueError(f"invalid strategy family {key}: {path}")
+        for key in ("markets", "critical_risks"):
+            value = family[key]
+            if not isinstance(value, list) or not value or len(value) > 20 or any(not isinstance(item, str) or not item.strip() for item in value):
+                raise ValueError(f"invalid strategy family {key}: {path}")
+        evidence = family["evidence"]
+        if not isinstance(evidence, list) or len(evidence) != 3:
+            raise ValueError(f"strategy family must bind three evidence roles: {path}")
+        roles: set[str] = set()
+        locators: set[str] = set()
+        for source in evidence:
+            if not isinstance(source, dict) or set(source) != {"role", "locator"}:
+                raise ValueError(f"invalid strategy family evidence: {path}")
+            role, locator = source["role"], source["locator"]
+            if not isinstance(role, str) or not role.strip() or not isinstance(locator, str) or not locator.strip():
+                raise ValueError(f"empty strategy family evidence: {path}")
+            if not (locator.startswith("https://") or (not PurePosixPath(locator).is_absolute() and ".." not in PurePosixPath(locator).parts)):
+                raise ValueError(f"unsafe strategy family evidence locator: {path}")
+            roles.add(role)
+            locators.add(locator)
+        if len(roles) != 3 or len(locators) != 3:
+            raise ValueError(f"duplicate strategy family evidence binding: {path}")
+    if len(names) != len(set(names)) or set(names) != STRATEGY_FAMILIES:
+        raise ValueError(f"strategy family coverage mismatch: {path}")
+
+
 def validate(path: Path = DEFAULT_REGISTRY) -> None:
     registry = _json(path)
     if set(registry) != {"schema", "status", "paper_trading_only", "market_authority", "protocol", "max_review_age_days", "entries"}:
@@ -140,6 +198,8 @@ def validate(path: Path = DEFAULT_REGISTRY) -> None:
             raise ValueError(f"registry digest mismatch: {entry['path']}")
         if entry["format"] == "evidence-matrix-json":
             _validate_matrix(target)
+        elif entry["format"] == "strategy-family-catalog-json":
+            _validate_strategy_catalog(target)
         ids.add(entry["id"])
         paths.add(entry["path"])
 
