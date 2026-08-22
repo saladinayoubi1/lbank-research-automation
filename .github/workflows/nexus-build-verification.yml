@@ -158,19 +158,11 @@ jobs:
           Set-Content -LiteralPath 'desktop/nexus-product/sidecar/source-sha.txt' -Value $env:GITHUB_SHA -NoNewline -Encoding ascii
           Copy-Item 'docs/architecture/market-data-source-registry.yaml' 'desktop/nexus-product/sidecar/market-data-source-registry.yaml'
           Copy-Item 'config/nexus-agent-manager.json' 'desktop/nexus-product/sidecar/nexus-agent-manager.json'
-          $evidence = [ordered]@{
-            contract_version = 'nexus.product-build-evidence.v1'
-            source_sha = $env:GITHUB_SHA
-            workflow = 'NEXUS Build Verification/windows-desktop'
-            run_id = $env:GITHUB_RUN_ID
-            run_attempt = $env:GITHUB_RUN_ATTEMPT
-            ref = $env:GITHUB_REF
-            builder = 'github-actions/nexus-build-verification/windows-desktop'
-            generated_at = (Get-Date).ToUniversalTime().ToString('o')
-            paper_only = $true
-            live_trading_authority = $false
-          }
-          $evidence | ConvertTo-Json -Depth 4 -Compress | Set-Content -LiteralPath 'desktop/nexus-product/sidecar/build-evidence.json' -Encoding utf8
+          $sourceTimestamp = git show -s --format=%cI $env:GITHUB_SHA
+          python scripts/write_deterministic_product_build_evidence.py `
+            --output 'desktop/nexus-product/sidecar/build-evidence.json' `
+            --source-sha $env:GITHUB_SHA `
+            --source-timestamp $sourceTimestamp
       - name: Install Electron dependencies
         working-directory: desktop/nexus-product
         run: npm install --no-audit --no-fund
