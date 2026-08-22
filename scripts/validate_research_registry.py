@@ -72,6 +72,9 @@ def _validate_matrix(path: Path) -> None:
     matrix = _json(path)
     if matrix.get("status") != "research-only" or matrix.get("paper_trading_only") is not True:
         raise ValueError(f"unsafe evidence boundary: {path}")
+    matrix_authority = matrix.get("market_authority")
+    if matrix_authority is not None and matrix_authority != AUTHORITY:
+        raise ValueError(f"matrix market authority mismatch: {path}")
     due = matrix.get("next_review_due")
     try:
         parsed_due = date.fromisoformat(due)
