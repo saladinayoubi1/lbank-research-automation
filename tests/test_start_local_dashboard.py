@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import subprocess
+import json
 from pathlib import Path
 
 import pytest
@@ -24,6 +25,7 @@ def _configure_paths(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> tuple[P
     monkeypatch.setattr(launcher, "LEGACY_INTEGRATION_ROOT", legacy_root)
     monkeypatch.setattr(launcher, "REFERENCE_JSON", reference_json)
     monkeypatch.setattr(launcher, "ZOTERO_REPORT", zotero_report)
+    monkeypatch.setattr(launcher, "_source_identity", lambda: ("a" * 40, "github-123", "2026-08-22T12:00:00Z"))
     return reference_json, zotero_report
 
 
@@ -41,7 +43,10 @@ def test_zotero_findings_exit_code_writes_valid_report(
 
     launcher.ensure_zotero_report()
 
-    assert report_path.read_text(encoding="utf-8") == payload
+    envelope = json.loads(report_path.read_text(encoding="utf-8"))
+    assert envelope["kind"] == "zotero"
+    assert envelope["report"]["finding_count"] == 2
+    assert envelope["report_sha256"]
 
 
 def test_zotero_execution_failure_still_fails_closed(
