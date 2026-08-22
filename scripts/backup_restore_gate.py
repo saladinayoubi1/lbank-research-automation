@@ -64,14 +64,21 @@ def safe_evidence_path(root: Path, value: Any) -> Path:
         candidate.resolve(strict=True).relative_to(root.resolve(strict=True))
     except (OSError, ValueError):
         fail("backup evidence artifact escapes evidence root")
-    if not candidate.is_file() or candidate.is_symlink():
+    if not candidate.is_file() or candidate.is_symlink() or candidate.stat().st_nlink != 1:
         fail("backup evidence artifact is missing or unsafe")
     return candidate
 
 
 def verify(evidence_path: Path, restored_root: Path, *, now: datetime | None = None) -> list[str]:
     data = load_json(evidence_path)
-    if not isinstance(data, dict) or data.get("schema_version") != 2:
+    expected_root = {
+        "schema_version", "policy_version", "source_commit", "workflow_run_id", "backup_id",
+        "backup_evidence_ref", "backup_evidence_sha256", "restore_started_at", "restore_completed_at",
+        "rpo_target_seconds", "rto_target_seconds", "scope", "clean_environment",
+        "corruption_test_passed", "missing_backup_test_passed", "target_verification_passed",
+        "production_authorized", "restored_files",
+    }
+    if not isinstance(data, dict) or set(data) != expected_root or data.get("schema_version") != 2:
         fail("drill evidence must use schema_version 2")
     if data.get("policy_version") != POLICY_VERSION:
         fail("unsupported policy_version")
@@ -92,10 +99,15 @@ def verify(evidence_path: Path, restored_root: Path, *, now: datetime | None = N
         fail("backup_id is required")
     artifact = safe_evidence_path(evidence_path.parent, data.get("backup_evidence_ref"))
     expected = data.get("backup_evidence_sha256")
-    if not valid_sha256(expected) or sha256(artifact) != expected:
+    raw_proof = artifact.read_bytes()
+    if not valid_sha256(expected) or hashlib.sha256(raw_proof).hexdigest() != expected:
         fail("backup evidence digest mismatch")
-    proof = load_json(artifact)
-    if not isinstance(proof, dict):
+    try:
+        proof = json.loads(raw_proof.decode("utf-8"))
+    except (UnicodeError, json.JSONDecodeError) as exc:
+        fail(f"invalid bound backup evidence JSON: {exc}")
+    proof_keys = {"backup_id", "independent_storage", "encryption_verified", "retention_verified", "storage_object_version", "key_owner", "retention_days", "backup_created_at"}
+    if not isinstance(proof, dict) or set(proof) != proof_keys:
         fail("backup evidence artifact must be an object")
     if proof.get("backup_id") != backup_id:
         fail("backup evidence backup_id mismatch")
@@ -156,7 +168,7 @@ def verify(evidence_path: Path, restored_root: Path, *, now: datetime | None = N
         resolved = target.resolve(strict=False)
         if root not in resolved.parents:
             fail(f"restored path escapes root: {name}")
-        if not target.is_file() or target.is_symlink():
+        if not target.is_file() or target.is_symlink() or target.stat().st_nlink != 1:
             fail(f"restored file missing or unsupported: {name}")
         if not valid_sha256(digest):
             fail(f"invalid restored digest: {name}")

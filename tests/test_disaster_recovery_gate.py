@@ -104,6 +104,25 @@ class DisasterRecoveryGateTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "missing or unsafe"):
             validate(path, now=NOW)
 
+    def test_hardlink_record_is_rejected(self):
+        path, evidence = self.write_bundle()
+        record = path.parent / evidence["scenarios"][0]["evidence_ref"]
+        target = path.parent / "hardlink-target.json"
+        record.replace(target)
+        try:
+            record.hardlink_to(target)
+        except (OSError, NotImplementedError):
+            self.skipTest("hardlinks unavailable")
+        with self.assertRaisesRegex(ValueError, "missing or unsafe"):
+            validate(path, now=NOW)
+
+    def test_unknown_root_field_is_rejected(self):
+        path, evidence = self.write_bundle()
+        evidence["self_asserted_bypass"] = True
+        self.rewrite(path, evidence)
+        with self.assertRaisesRegex(ValueError, "schema mismatch"):
+            validate(path, now=NOW)
+
     def test_wrong_digest_is_rejected(self):
         path, evidence = self.write_bundle()
         evidence["scenarios"][0]["evidence_sha256"] = "0" * 64

@@ -151,6 +151,22 @@ class BackupRestoreGateTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "escapes root"):
             verify(path, restored, now=NOW)
 
+    def test_hardlinked_restored_file_fails(self):
+        path, restored, evidence, _ = self.fixture()
+        try:
+            (restored / "alias.json").hardlink_to(restored / "state.json")
+        except (OSError, NotImplementedError):
+            self.skipTest("hardlinks unavailable")
+        with self.assertRaisesRegex(ValueError, "missing or unsupported"):
+            verify(path, restored, now=NOW)
+
+    def test_unknown_root_field_fails_closed(self):
+        path, restored, evidence, _ = self.fixture()
+        evidence["production_override"] = False
+        self.rewrite(path, evidence)
+        with self.assertRaisesRegex(ValueError, "schema_version"):
+            verify(path, restored, now=NOW)
+
 
 if __name__ == "__main__":
     unittest.main()
