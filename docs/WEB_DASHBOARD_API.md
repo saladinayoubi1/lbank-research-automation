@@ -33,7 +33,9 @@ Use another report root when required:
 python web_dashboard.py --data-root /path/to/data/market
 ```
 
-Binding to a non-loopback interface exposes the report API to the surrounding network and should be an explicit operator decision.
+Local mode is strictly loopback-only. A non-loopback `--host`, non-loopback client, missing or foreign `Host`, and unapproved browser `Origin` fail closed. Do not expose local mode through `0.0.0.0`, a LAN address, a hostname, port forwarding, or a reverse proxy.
+
+Remote mode is a separate opt-in boundary and will not start unless TLS certificate/key paths, a strong runtime bearer token, exact allowed hosts, and exact HTTPS origins are configured. See [`docs/architecture/ADR-019-secure-gateway-delivery.md`](architecture/ADR-019-secure-gateway-delivery.md). Remote mode does not make this API a production or live-trading service.
 
 ## Endpoints
 
@@ -62,7 +64,7 @@ Example:
 /api/readiness/series?symbol=btc_usdt&timeframe=hour1
 ```
 
-Unknown query parameters are ignored. Query input cannot select a path or filename.
+The accepted query schema is exactly `symbol`, `timeframe`, `limit`, and `offset`. Unknown, repeated, empty, oversized, or out-of-range parameters fail closed. Query input cannot select a path or filename; responses are explicitly paginated and bounded.
 
 ## Response metadata
 
@@ -79,7 +81,10 @@ The timestamp is informative filesystem metadata, not trusted evidence that the 
 - unknown routes return JSON HTTP `404`;
 - unavailable reports return JSON HTTP `503`;
 - unsupported write methods return JSON HTTP `405`;
-- responses use `Cache-Control: no-store`.
+- responses use `Cache-Control: no-store`, `nosniff`, frame denial, no-referrer, a restrictive permissions policy, same-origin resource policy, and a restrictive CSP;
+- oversized request targets, reports, static assets, or responses fail closed;
+- only exact allowlisted UI assets are served and symlinks are rejected;
+- rate-limited requests return HTTP `429` with `Retry-After`.
 
 ## Tests
 
@@ -87,4 +92,4 @@ The timestamp is informative filesystem metadata, not trusted evidence that the 
 python -m pytest -q tests/test_web_dashboard.py
 ```
 
-The tests cover health, valid and invalid reports, CSV conversion, filters, empty results, fixed-path behavior, and unknown routes.
+The dashboard and secure-gateway tests cover health, valid and invalid reports, exact query schemas, pagination and size bounds, fixed paths, loopback binding, Host/Origin authorization, DNS-rebinding variants, remote TLS/token requirements, security headers, method denial, rate limiting, symlink rejection, native-client route allowlists, and unknown routes.
