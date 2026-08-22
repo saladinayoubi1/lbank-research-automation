@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.release_recovery_gate import compare_outputs, verify_rollback_record
+from scripts.release_recovery_gate import compare_outputs, verify_reproducibility_record, verify_rollback_record
 
 
 class ReleaseRecoveryGateTests(unittest.TestCase):
@@ -44,6 +44,35 @@ class ReleaseRecoveryGateTests(unittest.TestCase):
         fn(data)
         path.write_text(json.dumps(data), encoding="utf-8")
 
+    def reproducibility(self) -> Path:
+        root = Path(tempfile.mkdtemp())
+        manifest = b'{"artifact.bin":"' + b"a" * 64 + b'"}\n'
+        attempts = []
+        for index, builder in enumerate(("github-hosted-ubuntu", "independent-clean-builder"), start=1):
+            ref = f"manifest-{index}.json"
+            (root / ref).write_bytes(manifest)
+            attempts.append({
+                "builder_identity": builder,
+                "workflow_run_id": 200 + index,
+                "clean_environment": True,
+                "manifest_ref": ref,
+                "manifest_sha256": hashlib.sha256(manifest).hexdigest(),
+                "artifact_count": 1,
+            })
+        record = {
+            "schema": "nexus.reproducible-build-evidence.v1",
+            "policy_version": "ADR-0014-v1",
+            "production_claim": False,
+            "source_commit": "c" * 40,
+            "build_instructions_sha256": "1" * 64,
+            "dependency_lock_sha256": "2" * 64,
+            "toolchain_sha256": "3" * 64,
+            "attempts": attempts,
+        }
+        path = root / "reproducibility.json"
+        path.write_text(json.dumps(record), encoding="utf-8")
+        return path
+
     def test_two_identical_outputs_pass(self):
         self.assertEqual(compare_outputs(self.output(), self.output()), ["artifact.bin", "meta/version.txt"])
 
@@ -65,6 +94,60 @@ class ReleaseRecoveryGateTests(unittest.TestCase):
             self.skipTest("symlinks unavailable on this runner")
         with self.assertRaisesRegex(ValueError, "symlink"):
             compare_outputs(root, self.output())
+
+    def test_hardlink_fails_closed(self):
+        root = self.output()
+        try:
+            (root / "alias").hardlink_to(root / "artifact.bin")
+        except OSError:
+            self.skipTest("hardlinks unavailable on this runner")
+        with self.assertRaisesRegex(ValueError, "hardlinked"):
+            compare_outputs(root, self.output())
+
+    def test_bound_independent_reproducibility_evidence_passes(self):
+        self.assertEqual(
+            verify_reproducibility_record(self.reproducibility()),
+            ["fixed-inputs", "clean-builds", "independent-builders", "distinct-runs", "manifest-identity", "non-production"],
+        )
+
+    def test_same_builder_replay_fails(self):
+        path = self.reproducibility()
+        self.mutate(path, lambda data: data["attempts"][1].__setitem__("builder_identity", data["attempts"][0]["builder_identity"]))
+        with self.assertRaisesRegex(ValueError, "distinct builders"):
+            verify_reproducibility_record(path)
+
+    def test_same_workflow_run_replay_fails(self):
+        path = self.reproducibility()
+        self.mutate(path, lambda data: data["attempts"][1].__setitem__("workflow_run_id", data["attempts"][0]["workflow_run_id"]))
+        with self.assertRaisesRegex(ValueError, "distinct builders and workflow runs"):
+            verify_reproducibility_record(path)
+
+    def test_unlocked_or_malformed_input_digest_fails(self):
+        path = self.reproducibility()
+        self.mutate(path, lambda data: data.__setitem__("dependency_lock_sha256", "unlocked"))
+        with self.assertRaisesRegex(ValueError, "dependency_lock_sha256"):
+            verify_reproducibility_record(path)
+
+    def test_non_clean_attempt_fails(self):
+        path = self.reproducibility()
+        self.mutate(path, lambda data: data["attempts"][1].__setitem__("clean_environment", False))
+        with self.assertRaisesRegex(ValueError, "clean environment"):
+            verify_reproducibility_record(path)
+
+    def test_divergent_manifest_fails(self):
+        path = self.reproducibility()
+        manifest = path.parent / "manifest-2.json"
+        manifest.write_text('{"artifact.bin":"different"}\n', encoding="utf-8")
+        digest = hashlib.sha256(manifest.read_bytes()).hexdigest()
+        self.mutate(path, lambda data: data["attempts"][1].__setitem__("manifest_sha256", digest))
+        with self.assertRaisesRegex(ValueError, "not byte-identical"):
+            verify_reproducibility_record(path)
+
+    def test_production_claim_fails_closed(self):
+        path = self.reproducibility()
+        self.mutate(path, lambda data: data.__setitem__("production_claim", True))
+        with self.assertRaisesRegex(ValueError, "non-production"):
+            verify_reproducibility_record(path)
 
     def test_valid_rollback_record_passes(self):
         self.assertEqual(verify_rollback_record(self.rollback()), ["current", "previous-valid", "source-workflow-binding", "evidence-binding", "unauthorized-by-default"])
