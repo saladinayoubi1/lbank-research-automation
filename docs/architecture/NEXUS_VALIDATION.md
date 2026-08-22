@@ -2,6 +2,8 @@
 
 The versioned NEXUS contract registry is validated fail-closed before repository tests run.
 
+The accepted v1.0.0 baseline is scoped to research and paper trading. A candidate cannot silently downgrade it to `proposed` or widen its authority.
+
 ## Local validation
 
 From the repository root, install the locked development dependencies and run:
