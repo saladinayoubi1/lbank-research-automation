@@ -29,7 +29,7 @@ def test_current_registry_is_valid() -> None:
 @pytest.mark.parametrize(
     ("mutate", "message"),
     [
-        (lambda p: p.__setitem__("status", "accepted"), "status"),
+        (lambda p: p.__setitem__("status", "proposed"), "status"),
         (lambda p: p.__setitem__("issue", 95), "issue"),
         (lambda p: p["rules"].__setitem__("dependency_direction", "bidirectional"), "dependency_direction"),
         (lambda p: p["rules"].__setitem__("unknown_protected_contract_fields", "allow"), "unknown_protected_contract_fields"),
