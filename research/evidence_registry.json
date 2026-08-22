@@ -1,0 +1,42 @@
+{
+  "schema": "nexus.research-evidence-registry.v1",
+  "status": "research-only",
+  "paper_trading_only": true,
+  "market_authority": [
+    "bybit-primary",
+    "binance-secondary-corroboration",
+    "lbank-tertiary-legacy-research-only"
+  ],
+  "protocol": "research/PROTOCOL_AND_TAXONOMY.md",
+  "max_review_age_days": 365,
+  "entries": [
+    {
+      "id": "REG-MARKET-RISK-BACKTEST-001",
+      "path": "research/evidence/market_structure_risk_backtesting_matrix.json",
+      "sha256": "54d43daa300fd5d1c001a938f4dffa17c78daaabfd1b28824bfb2d68d1019ed7",
+      "format": "evidence-matrix-json",
+      "domains": ["market_structure", "risk", "backtesting"]
+    },
+    {
+      "id": "REG-EXEC-NONSTAT-VALIDATION-001",
+      "path": "research/evidence/execution_nonstationarity_model_validation_matrix.json",
+      "sha256": "7cfc1f7a0a31046145ac25a810319792c2f259913d02533d2d35ce509df69b04",
+      "format": "evidence-matrix-json",
+      "domains": ["execution_costs", "nonstationarity", "model_validation"]
+    },
+    {
+      "id": "REG-EMA-CROSSOVER-001",
+      "path": "research/evidence/ema_crossover_evidence_matrix.md",
+      "sha256": "96fb8f015355b06b758f05e62c5d955d3d6c5c42d4ba78bdac1585b3d741ca66",
+      "format": "evidence-matrix-markdown",
+      "domains": ["trend", "momentum", "backtesting"]
+    },
+    {
+      "id": "REG-BIBLIOGRAPHY-001",
+      "path": "references/references.bib",
+      "sha256": "2c16ada9c5e0b92d952118992c9d6f34652072fec23f4a239ad286a63b1a0892",
+      "format": "bibtex",
+      "domains": ["bibliography"]
+    }
+  ]
+}
