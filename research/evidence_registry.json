@@ -32,6 +32,13 @@
       "domains": ["trend", "momentum", "backtesting"]
     },
     {
+      "id": "REG-FUNDING-BASIS-CARRY-001",
+      "path": "research/evidence/funding_basis_carry_evidence_matrix.json",
+      "sha256": "a16d1503c7ec72cf055445bf84a085984389589247ffdc4b064866168b91e145",
+      "format": "evidence-matrix-json",
+      "domains": ["funding", "basis", "crypto_carry", "fx_carry", "liquidation_risk"]
+    },
+    {
       "id": "REG-BIBLIOGRAPHY-001",
       "path": "references/references.bib",
       "sha256": "2c16ada9c5e0b92d952118992c9d6f34652072fec23f4a239ad286a63b1a0892",
