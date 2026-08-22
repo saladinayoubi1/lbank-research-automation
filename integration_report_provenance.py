@@ -127,8 +127,8 @@ def validate_envelope(value: Any, *, kind: str, now: datetime | None = None,
         raise ProvenanceError("invalid workflow run")
     if value["workflow_run"].startswith("local-") and value["workflow_run"] != f"local-{trusted_commit[:12]}":
         raise ProvenanceError("local workflow binding mismatch")
-    configured_run = os.environ.get("GITHUB_RUN_ID")
-    if configured_run and value["workflow_run"] != f"github-{configured_run}":
+    configured_run = os.environ.get("NEXUS_EXPECTED_WORKFLOW_RUN")
+    if configured_run and value["workflow_run"] != configured_run:
         raise ProvenanceError("workflow run mismatch")
     generated = _utc(value["generated_at"])
     current = now or datetime.now(timezone.utc)
