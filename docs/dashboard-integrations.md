@@ -8,7 +8,8 @@ No endpoint performs network access, writes to Zotero, handles credentials, plac
 
 ## Ownership
 
-- `dashboard_integrations.py`: schema and safety-boundary validation for generated integration reports.
+- `integration_report_provenance.py`: canonical SHA-256 provenance envelope and freshness policy.
+- `dashboard_integrations.py`: bounded schema, identity, binding and privacy validation.
 - `web_dashboard.py`: approved read-only HTTP routes.
 - `web_ui/`: presentation only; no domain validation.
 - `tests/test_dashboard_integrations.py`: adapter failure modes.
@@ -16,9 +17,9 @@ No endpoint performs network access, writes to Zotero, handles credentials, plac
 
 ## Failure behavior
 
-Missing, malformed, incomplete, unsupported-schema, or unsafe-boundary reports return HTTP 503 with `report_unavailable`. The browser hides integration cards and displays an error rather than rendering partial success.
+Missing, malformed, stale/future, unbound, digest-modified, oversized, linked, incomplete, unsupported-schema, unknown-field, or unsafe-boundary reports return HTTP 503 with `report_unavailable`. The browser hides integration cards and displays an error rather than rendering partial success.
 
-Research summaries surface overdue review dates as stale. Zotero summaries expose counts only and do not include item metadata.
+Research summaries require provenance-bound claim/evidence identifiers and a bounded review date. Zotero summaries expose counts only. Titles, creators, DOIs, notes, tags, paths, prompts and raw evidence are never emitted. See ADR-027.
 
 ## Rollback
 
@@ -29,5 +30,6 @@ For a temporary operational rollback before reverting code, remove or rename `da
 ## Residual risk
 
 - Report producers may evolve schemas; unsupported versions remain unavailable until explicitly reviewed.
-- Filesystem modification times are not treated as trusted freshness evidence.
-- The dashboard is intended for local research use and has no authentication boundary for remote deployment.
+- Filesystem modification times are not freshness evidence; the bounded UTC `generated_at` value is.
+- Local SHA-256 binding does not replace external signatures or transparency-log attestations.
+- Local access is protected by ADR-019. Remote mode additionally requires its TLS/token policy and does not imply production approval.

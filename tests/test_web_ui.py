@@ -1,8 +1,10 @@
 import json
+from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
 from pathlib import Path
 
 from web_ui_server import dispatch
+from integration_report_provenance import build_envelope, trusted_source_commit
 
 
 def write_ui(root: Path) -> None:
@@ -19,15 +21,22 @@ def write_reports(root: Path, rows: str = "symbol,timeframe,ready_for_research,r
     (root / "_data_readiness.csv").write_text(rows, encoding="utf-8")
     integrations = root.parent / "integrations"
     integrations.mkdir()
-    (integrations / "zotero_metadata_report_v2.json").write_text(json.dumps({
+    generated = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    zotero_report = {
         "schema_version": "2.0", "mode": "read-only-offline", "item_count": 3,
         "finding_count": 1, "items": [], "duplicates": {"doi": [], "title_year": []},
-    }), encoding="utf-8")
-    (integrations / "research_evidence_summary.json").write_text(json.dumps({
+    }
+    research_report = {
         "schema_version": "1.1.0", "status": "research-only", "paper_trading_only": True,
-        "claims": [{"id": "c1"}], "evidence": [{"domain": "market-structure"}],
-        "next_review_due": "2099-01-01",
-    }), encoding="utf-8")
+        "claims": [{"id": "c1", "evidence_ids": ["e1"]}], "evidence": [{"id": "e1", "domain": "market-structure"}],
+        "next_review_due": (datetime.now(timezone.utc).date() + timedelta(days=180)).isoformat(),
+    }
+    for name, kind, report in (
+        ("zotero_metadata_report_v2.json", "zotero", zotero_report),
+        ("research_evidence_summary.json", "research", research_report),
+    ):
+        envelope = build_envelope(kind=kind, report=report, source_commit=trusted_source_commit(), workflow_run="github-123", generated_at=generated)
+        (integrations / name).write_text(json.dumps(envelope), encoding="utf-8")
 
 
 def test_ui_shell_is_served(tmp_path: Path):
