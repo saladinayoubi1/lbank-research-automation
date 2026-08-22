@@ -56,6 +56,18 @@ def _safe_repo_file(raw: Any) -> Path:
     return path
 
 
+def _canonical_text_bytes(path: Path) -> bytes:
+    raw = path.read_bytes()
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeError as exc:
+        raise ValueError(f"registry target is not UTF-8 text: {path}") from exc
+    text = text.replace("\r\n", "\n")
+    if "\r" in text:
+        raise ValueError(f"registry target contains non-canonical line endings: {path}")
+    return text.encode("utf-8")
+
+
 def _validate_matrix(path: Path) -> None:
     matrix = _json(path)
     if matrix.get("status") != "research-only" or matrix.get("paper_trading_only") is not True:
@@ -120,7 +132,7 @@ def validate(path: Path = DEFAULT_REGISTRY) -> None:
         if not isinstance(entry["domains"], list) or not entry["domains"] or len(entry["domains"]) != len(set(entry["domains"])):
             raise ValueError("invalid registry domains")
         target = _safe_repo_file(entry["path"])
-        digest = hashlib.sha256(target.read_bytes()).hexdigest()
+        digest = hashlib.sha256(_canonical_text_bytes(target)).hexdigest()
         if not isinstance(entry["sha256"], str) or not SHA256.fullmatch(entry["sha256"]) or digest != entry["sha256"]:
             raise ValueError(f"registry digest mismatch: {entry['path']}")
         if entry["format"] == "evidence-matrix-json":
