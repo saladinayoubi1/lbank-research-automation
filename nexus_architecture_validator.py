@@ -156,7 +156,7 @@ def validate_contract_registry(payload: Any) -> None:
     _exact_keys(root, ROOT_KEYS, "registry")
     expected_root_values = {
         "registry_version": "1.0.0",
-        "status": "proposed",
+        "status": "accepted",
         "scope": "research_and_paper_trading_only",
         "issue": 94,
     }
