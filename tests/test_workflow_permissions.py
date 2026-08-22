@@ -164,6 +164,26 @@ class WorkflowPermissionsTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "unexpected fields"):
             run(workflows, policy)
 
+    def test_authoritative_gate_blocks_direct_workflow_input_interpolation(self):
+        workflow = VALID.replace(
+            "on: push",
+            "on:\n  workflow_dispatch:\n    inputs:\n      payload:\n        required: false",
+        ).replace("steps: []", "steps:\n      - run: echo '${{ inputs.payload }}'")
+        self.assertBlocked(workflow, "interpolates workflow input directly")
+
+    def test_authoritative_gate_blocks_unguarded_self_hosted_pull_request(self):
+        workflow = VALID.replace("on: push", "on: pull_request").replace(
+            "runs-on: ubuntu-latest", "runs-on: [self-hosted, Windows]"
+        )
+        self.assertBlocked(workflow, "may execute pull_request code")
+
+    def test_authoritative_gate_blocks_pull_request_secret_exposure(self):
+        workflow = VALID.replace("on: push", "on: pull_request").replace(
+            "steps: []",
+            "env:\n      API_KEY: ${{ secrets.API_KEY }}\n    steps:\n      - run: python main.py",
+        )
+        self.assertBlocked(workflow, "exposes a secret")
+
 
 if __name__ == "__main__":
     unittest.main()
