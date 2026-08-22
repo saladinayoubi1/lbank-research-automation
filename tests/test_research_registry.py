@@ -24,6 +24,19 @@ def test_canonical_registry_passes():
 def test_market_authority_is_bybit_first_and_lbank_tertiary():
     registry = json.loads(gate.DEFAULT_REGISTRY.read_text(encoding="utf-8"))
     assert registry["market_authority"] == gate.AUTHORITY
+    carry = gate._json(gate.ROOT / "research" / "evidence" / "funding_basis_carry_evidence_matrix.json")
+    assert carry["market_authority"] == gate.AUTHORITY
+
+
+def test_funding_basis_carry_claims_are_fully_bound():
+    matrix = gate._json(gate.ROOT / "research" / "evidence" / "funding_basis_carry_evidence_matrix.json")
+    evidence_ids = {row["id"] for row in matrix["evidence"]}
+    assert len(matrix["claims"]) == 3
+    assert len(matrix["evidence"]) == 9
+    for claim in matrix["claims"]:
+        assert len(claim["source_ids"]) == 3
+        assert set(claim["source_ids"]) <= evidence_ids
+    assert matrix["minimum_paper_test_contract"]["venue"].startswith("Bybit primary")
 
 
 def test_digest_substitution_fails(tmp_path: Path):
