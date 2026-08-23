@@ -292,7 +292,11 @@ jobs:
           path: ${{ env.RESULT_PATH }}
           if-no-files-found: error
           retention-days: 14
-      - name: Start continuous NEXUS worker
-        if: github.event_name != 'workflow_dispatch' || github.event.inputs.payload_b64 == ''
+      - name: Run scheduled NEXUS worker once
+        if: github.event_name == 'schedule'
+        shell: cmd
+        run: node scripts\nexus_runtime_worker.js --once
+      - name: Start continuous NEXUS worker on explicit request
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.payload_b64 == ''
         shell: cmd
         run: node scripts\nexus_runtime_worker.js --interval-ms=20000
