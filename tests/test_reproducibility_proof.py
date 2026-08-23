@@ -40,6 +40,20 @@ def test_rollback_drill_rejects_corruption_quarantines_and_restores(tmp_path: Pa
     assert data["restore_verified"] is True
 
 
+def test_workflow_keylessly_attests_complete_nonproduction_evidence() -> None:
+    workflow = Path(".github/workflows/reproducibility-proof.yml").read_text(
+        encoding="utf-8"
+    )
+
+    assert "id-token: write" in workflow
+    assert "attestations: write" in workflow
+    assert "actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6" in workflow
+    assert "if: github.event_name != 'pull_request'" in workflow
+    assert "downloaded/clean-build-a/control-bundle.zip" in workflow
+    assert "downloaded/clean-build-b/control-bundle.zip" in workflow
+    assert "subject-path: reproducibility-evidence/**" in workflow
+
+
 def test_invalid_source_commit_fails(tmp_path: Path):
     with pytest.raises(ValueError, match="source_commit"):
         build(ROOT, tmp_path / "bundle.zip", tmp_path / "manifest.json", "main")
