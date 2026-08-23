@@ -44,7 +44,7 @@ jobs:
           --runner-name %RUNNER_NAME%
       - name: Revalidate generated evidence
         shell: cmd
-        run: %NEXUS_PYTHON% scripts/disaster_recovery_gate.py build\windows-dr-evidence\dr-evidence.json
+        run: "%NEXUS_PYTHON% scripts/disaster_recovery_gate.py build\\windows-dr-evidence\\dr-evidence.json"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: windows-dr-evidence
