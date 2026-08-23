@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+SETUP_NODE = "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020"
 
 WINDOWS_WORKFLOWS = [
     ROOT / ".github" / "workflows" / "nexus-local-runner.yml",
@@ -30,8 +31,8 @@ def test_python_windows_paths_share_portable_bootstrap() -> None:
 def test_node_is_provisioned_before_local_worker_and_runtime_worker() -> None:
     local_runner = text(ROOT / ".github" / "workflows" / "nexus-local-runner.yml")
     runtime_worker = text(ROOT / ".github" / "workflows" / "nexus-runtime-worker.yml")
-    assert "actions/setup-node@v4" in local_runner
-    assert "actions/setup-node@v4" in runtime_worker
+    assert SETUP_NODE in local_runner
+    assert SETUP_NODE in runtime_worker
     assert "shell: powershell" not in runtime_worker
 
 

@@ -48,7 +48,13 @@ def should_include(path: Path) -> bool:
         return False
     if _looks_secret(path):
         return False
-    return path.is_file()
+    if path.is_symlink() or not path.is_file():
+        return False
+    try:
+        path.resolve(strict=True).relative_to(ROOT.resolve(strict=True))
+    except (OSError, ValueError):
+        return False
+    return True
 
 
 def git_value(*args: str) -> str | None:

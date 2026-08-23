@@ -27,7 +27,7 @@ jobs:
       INPUT_FILE: ${{ inputs.input_file }}
       COLLECTION_KEY: ${{ inputs.collection_key }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Validate unit tests
         run: python -m unittest tests.test_sync_zotero
       - name: Validate input only

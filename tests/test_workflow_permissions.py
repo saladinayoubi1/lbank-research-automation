@@ -184,6 +184,23 @@ class WorkflowPermissionsTests(unittest.TestCase):
         )
         self.assertBlocked(workflow, "exposes a secret")
 
+    def test_external_action_mutable_tag_is_blocked(self):
+        workflow = VALID.replace("steps: []", "steps:\n      - uses: actions/checkout@v4")
+        self.assertBlocked(workflow, "full commit SHA")
+
+    def test_external_action_full_sha_passes(self):
+        workflow = VALID.replace(
+            "steps: []",
+            "steps:\n      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+        )
+        workflows, policy, _ = self.fixture(workflow)
+        self.assertEqual(len(run(workflows, policy)), 1)
+
+    def test_local_action_reference_passes(self):
+        workflow = VALID.replace("steps: []", "steps:\n      - uses: ./actions/local")
+        workflows, policy, _ = self.fixture(workflow)
+        self.assertEqual(len(run(workflows, policy)), 1)
+
 
 if __name__ == "__main__":
     unittest.main()
