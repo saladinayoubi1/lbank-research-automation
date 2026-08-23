@@ -53,6 +53,13 @@ def test_workflow_keylessly_attests_complete_nonproduction_evidence() -> None:
     assert "downloaded/clean-build-b/control-bundle.zip" in workflow
     assert "subject-path: reproducibility-evidence/**" in workflow
 
+    policy = Path("security/workflow-permissions-policy-v1.json").read_text(
+        encoding="utf-8"
+    )
+    assert '"keyless-attestation"' in policy
+    assert '"attestations":"write"' in policy
+    assert '"id-token":"write"' in policy
+
 
 def test_invalid_source_commit_fails(tmp_path: Path):
     with pytest.raises(ValueError, match="source_commit"):
