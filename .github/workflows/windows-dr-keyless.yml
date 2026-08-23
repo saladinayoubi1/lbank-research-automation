@@ -36,6 +36,7 @@ jobs:
           if not exist "%PYTHON_DIR%\python.exe" curl.exe --fail --location --silent --show-error "https://www.python.org/ftp/python/3.12.10/python-3.12.10-embed-amd64.zip" --output "%PYTHON_ZIP%"
           if not exist "%PYTHON_DIR%\python.exe" powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "Expand-Archive -LiteralPath '%PYTHON_ZIP%' -DestinationPath '%PYTHON_DIR%' -Force"
           if not exist "%PYTHON_DIR%\python.exe" exit /b 1
+          echo %GITHUB_WORKSPACE%>>"%PYTHON_DIR%\python312._pth"
           "%PYTHON_DIR%\python.exe" --version
           echo NEXUS_PYTHON=%PYTHON_DIR%\python.exe>>"%GITHUB_ENV%"
       - name: Run bounded Windows disaster-recovery exercise
