@@ -27,13 +27,17 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
-      - name: Resolve preinstalled Python without machine changes
+      - name: Provision portable Python without machine changes
         shell: cmd
         run: |
-          where py >nul 2>nul && (echo NEXUS_PYTHON=py -3>>"%GITHUB_ENV%" & py -3 --version & exit /b 0)
-          where python >nul 2>nul && (echo NEXUS_PYTHON=python>>"%GITHUB_ENV%" & python --version & exit /b 0)
-          echo Python 3 is required on the self-hosted runner.
-          exit /b 1
+          set "PYTHON_ZIP=%RUNNER_TEMP%\python-3.12.10-embed-amd64.zip"
+          set "PYTHON_DIR=%RUNNER_TEMP%\nexus-python"
+          if not exist "%PYTHON_DIR%\python.exe" mkdir "%PYTHON_DIR%"
+          if not exist "%PYTHON_DIR%\python.exe" curl.exe --fail --location --silent --show-error "https://www.python.org/ftp/python/3.12.10/python-3.12.10-embed-amd64.zip" --output "%PYTHON_ZIP%"
+          if not exist "%PYTHON_DIR%\python.exe" powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "Expand-Archive -LiteralPath '%PYTHON_ZIP%' -DestinationPath '%PYTHON_DIR%' -Force"
+          if not exist "%PYTHON_DIR%\python.exe" exit /b 1
+          "%PYTHON_DIR%\python.exe" --version
+          echo NEXUS_PYTHON=%PYTHON_DIR%\python.exe>>"%GITHUB_ENV%"
       - name: Run bounded Windows disaster-recovery exercise
         shell: cmd
         run: >-
