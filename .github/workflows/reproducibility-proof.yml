@@ -15,9 +15,13 @@ on:
 
 permissions:
   contents: read
+  id-token: write
+  attestations: write
 
 jobs:
   clean-build:
+    permissions:
+      contents: read
     strategy:
       matrix:
         attempt: [a, b]
@@ -44,6 +48,8 @@ jobs:
 
   compare-and-drill:
     needs: clean-build
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
