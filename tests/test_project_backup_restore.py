@@ -44,6 +44,24 @@ def test_backup_round_trip_and_secret_exclusion(tmp_path: Path, monkeypatch: pyt
     assert not (destination / "id_ed25519").exists()
 
 
+def test_backup_excludes_symlink_to_file_outside_project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    root = tmp_path / "project"
+    root.mkdir()
+    outside = tmp_path / "outside-secret.txt"
+    outside.write_text("must-not-leak\n", encoding="utf-8")
+    (root / "innocent.txt").symlink_to(outside)
+
+    monkeypatch.setattr(backup, "ROOT", root)
+    monkeypatch.setattr(backup, "BACKUP_ROOT", root / "backups")
+    monkeypatch.setattr(backup, "git_value", lambda *args: "test")
+
+    archive, checksum = backup.create_backup("symlink")
+    manifest = backup.verify_backup(archive, checksum)
+    assert "innocent.txt" not in manifest["files"]
+    with zipfile.ZipFile(archive) as source:
+        assert "innocent.txt" not in source.namelist()
+
+
 def test_verify_rejects_checksum_mismatch(tmp_path: Path) -> None:
     archive = tmp_path / "backup.zip"
     with zipfile.ZipFile(archive, "w") as output:

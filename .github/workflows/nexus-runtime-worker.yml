@@ -83,10 +83,10 @@ jobs:
       NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: ${{ vars.NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED }}
       NEXUS_DEEPSEEK_SMOKE: '0'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '20'
       - name: Validate orchestrator
@@ -130,7 +130,7 @@ jobs:
         run: python scripts/agent_task_executor.py --output "$RESULT_PATH"
       - name: Upload bounded cloud or DeepSeek result
         if: always() && github.event_name == 'workflow_dispatch' && github.event.inputs.payload_b64 != '' && github.event.inputs.transport != 'windows'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: nexus-agent-result-${{ github.event.inputs.lease_id }}
           path: ${{ env.RESULT_PATH }}
@@ -138,7 +138,7 @@ jobs:
           retention-days: 14
       - name: Checkout exact PR head for Phase 4/5 evidence
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor == github.repository_owner
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           path: gate-evidence-head
@@ -156,7 +156,7 @@ jobs:
           python scripts/phase4_gate20_evidence.py --source-sha '${{ github.event.pull_request.head.sha }}' --output build/phase4-gate20-evidence.json
       - name: Upload exact-head Phase 4 Gate 20 cloud evidence
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor == github.repository_owner
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: phase4-gate20-cloud-evidence-${{ github.event.pull_request.head.sha }}
           path: gate-evidence-head/build/phase4-gate20-evidence.json
@@ -169,7 +169,7 @@ jobs:
         run: python scripts/phase5_gate9_evidence.py --source-sha '${{ github.event.pull_request.head.sha }}' --output build/phase5-gate9-evidence.json
       - name: Upload exact-head Phase 5 Gate 9 cloud evidence
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor == github.repository_owner
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: phase5-gate9-cloud-evidence-${{ github.event.pull_request.head.sha }}
           path: gate-evidence-head/build/phase5-gate9-evidence.json
@@ -185,7 +185,7 @@ jobs:
       NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: '0'
       NEXUS_DEEPSEEK_SMOKE: '0'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
@@ -196,7 +196,7 @@ jobs:
           for /f %%i in ('git rev-parse HEAD') do set "NEXUS_RUNTIME_HEAD=%%i"
           if /I not "%NEXUS_RUNTIME_HEAD%"=="${{ github.event.pull_request.head.sha }}" exit /b 1
           echo exact_pr_head_verified=%NEXUS_RUNTIME_HEAD%
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '20'
       - name: Bootstrap portable Python
@@ -226,7 +226,7 @@ jobs:
         shell: cmd
         run: python scripts\phase4_gate20_evidence.py --source-sha "${{ github.event.pull_request.head.sha }}" --output build\phase4-gate20-evidence.json
       - name: Upload exact-head Phase 4 Gate 20 evidence
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: phase4-gate20-windows-evidence-${{ github.event.pull_request.head.sha }}
           path: build/phase4-gate20-evidence.json
@@ -236,7 +236,7 @@ jobs:
         shell: cmd
         run: python scripts\phase5_gate9_evidence.py --source-sha "${{ github.event.pull_request.head.sha }}" --output build\phase5-gate9-evidence.json
       - name: Upload exact-head Phase 5 Gate 9 Windows evidence
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: phase5-gate9-windows-evidence-${{ github.event.pull_request.head.sha }}
           path: build/phase5-gate9-evidence.json
@@ -259,10 +259,10 @@ jobs:
       NEXUS_DEEPSEEK_SMOKE: '0'
       RUNNER_ENVIRONMENT: self-hosted-windows
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '20'
       - name: Bootstrap portable Python for bounded task
@@ -286,7 +286,7 @@ jobs:
         run: python scripts/agent_task_executor.py --output "%RESULT_PATH%"
       - name: Upload bounded Windows result
         if: always() && github.event_name == 'workflow_dispatch' && github.event.inputs.payload_b64 != '' && github.event.inputs.transport == 'windows'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: nexus-agent-result-${{ github.event.inputs.lease_id }}
           path: ${{ env.RESULT_PATH }}

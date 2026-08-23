@@ -56,7 +56,7 @@ jobs:
         shell: cmd
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
@@ -99,14 +99,14 @@ jobs:
         id: owner_autostart_artifact
         continue-on-error: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[sidecar-compat]') }}
         if: always() && github.event_name == 'push' && contains(github.event.head_commit.message, '[verify-owner-autostart]')
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: nexus-owner-autostart-proof-${{ github.run_id }}
           if-no-files-found: error
           retention-days: 14
           path: build/owner-autostart-proof/evidence.json
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         if: github.event_name != 'push' || !contains(github.event.head_commit.message, '[verify-owner-autostart]')
         with:
           node-version: '20'
@@ -132,7 +132,7 @@ jobs:
 
       - name: Upload zero-touch install evidence
         if: github.event_name == 'push' && contains(github.event.head_commit.message, '[install-autostart]')
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: nexus-zero-touch-install-${{ github.run_id }}
           if-no-files-found: error
@@ -192,7 +192,7 @@ jobs:
             (github.event_name == 'workflow_dispatch' && inputs.task == 'sidecar-compat') ||
             (github.event_name == 'push' && contains(github.event.head_commit.message, '[sidecar-compat]'))
           )
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: nexus-windows-sidecar-local-compat-${{ github.run_id }}
           if-no-files-found: error
@@ -224,13 +224,12 @@ jobs:
           NEXUS_WORKER_MAX_TASKS_PER_LEASE: '1'
           NEXUS_WORKER_EXIT_ON_IDLE: '1'
           NEXUS_WORKER_IDLE_SLEEP: '15'
-          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: '0'
         run: python scripts\nexus_local_worker.py
 
       - name: Upload autonomous worker evidence
         if: always() && (inputs.task == 'autonomous' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[autonomous]')))
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: nexus-local-worker-evidence-${{ github.run_id }}
           if-no-files-found: warn

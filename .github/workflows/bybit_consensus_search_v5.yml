@@ -21,8 +21,8 @@ jobs:
       DEFAULT_ARTIFACT_ID: "8867026863"
       EXPECTED_SHA256: "5f1173467c2296201940c3b7786b7cc3e5442244e07289769ab4867ace41d668"
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: "3.12"
           cache: pip
@@ -48,7 +48,7 @@ jobs:
           python bybit_consensus_search_v5.py \
             --manifest experiments/bybit_consensus_search_v5.json \
             --output build/bybit_consensus_search_v5
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: bybit-consensus-search-v5-${{ github.run_attempt }}
           path: build/bybit_consensus_search_v5

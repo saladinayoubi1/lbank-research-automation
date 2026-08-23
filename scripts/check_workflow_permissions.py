@@ -25,6 +25,7 @@ ALLOWED_SCOPES = {
     "discussions", "id-token", "issues", "models", "packages", "pages",
     "pull-requests", "security-events", "statuses",
 }
+FULL_COMMIT_SHA_LENGTH = 40
 
 
 class UniqueKeySafeLoader(yaml.SafeLoader):
@@ -179,6 +180,29 @@ def validate_workflow(path: Path, workflow: dict[str, Any], rule: dict[str, Any]
             raise ValueError(f"{path}: job {job_name} policy expects explicit permissions")
 
 
+def validate_immutable_actions(path: Path, workflow: dict[str, Any]) -> None:
+    for job_name, job in workflow["jobs"].items():
+        if not isinstance(job, dict):
+            continue
+        for index, step in enumerate(job.get("steps", []), start=1):
+            if not isinstance(step, dict) or "uses" not in step:
+                continue
+            reference = step["uses"]
+            if not isinstance(reference, str):
+                raise ValueError(f"{path}: job {job_name} step {index} uses must be a string")
+            if reference.startswith("./"):
+                continue
+            _, separator, revision = reference.rpartition("@")
+            if (
+                not separator
+                or len(revision) != FULL_COMMIT_SHA_LENGTH
+                or any(character not in "0123456789abcdefABCDEF" for character in revision)
+            ):
+                raise ValueError(
+                    f"{path}: job {job_name} step {index} external action must use a full commit SHA"
+                )
+
+
 def run(workflow_dir: Path = WORKFLOW_DIR, policy_path: Path = POLICY_PATH) -> list[str]:
     rules = validate_policy(load_policy(policy_path))
     paths = sorted([*workflow_dir.glob("*.yml"), *workflow_dir.glob("*.yaml")])
@@ -195,6 +219,7 @@ def run(workflow_dir: Path = WORKFLOW_DIR, policy_path: Path = POLICY_PATH) -> l
         workflow = load_yaml(path)
         validate_workflow(path, workflow, rules[path.as_posix()])
         validate_workflow_trust_boundaries(path, workflow)
+        validate_immutable_actions(path, workflow)
     return sorted(actual)
 
 
