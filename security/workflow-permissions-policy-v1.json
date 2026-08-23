@@ -51,6 +51,7 @@
     ".github/workflows/reproducibility-proof.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"clean-build":{"policy_version":1},"compare-and-drill":{"policy_version":1}}},
     ".github/workflows/research-evidence-refresh.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"validate":{"policy_version":1}}},
     ".github/workflows/tests.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"test":{"policy_version":1}}},
+    ".github/workflows/windows-dr-keyless.yml": {"policy_version":1,"workflow_permissions":{"attestations":"write","contents":"read","id-token":"write"},"write_justification":"GitHub OIDC keyless attestation for bounded non-production DR evidence.","jobs":{"keyless-attestation":{"policy_version":1,"permissions":{"attestations":"write","contents":"read","id-token":"write"},"write_justification":"Generate repository-bound GitHub OIDC artifact attestation."},"windows-dr-exercise":{"policy_version":1,"permissions":{"contents":"read"}}}},
     ".github/workflows/workflow-permissions-audit.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"audit":{"policy_version":1}}},
     ".github/workflows/zotero-evidence.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"validate":{"policy_version":1}}},
     ".github/workflows/zotero-web-api-sync.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"validate-and-sync":{"policy_version":1}}}
