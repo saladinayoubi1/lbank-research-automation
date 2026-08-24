@@ -17,6 +17,8 @@ from market_data_source_validator import load_and_validate
 from phase5_data_binding import REGISTRY_PATH, validate_canonical_dataset
 from phase5_strategy_factory import qualify
 from phase6_research_pipeline import fetch_bind_bybit_dataset, generate_targets, run_research_job
+from strategy_lifecycle import build_research_lifecycle
+from strategy_registry import build_strategy_record
 from product_runtime import (
     PAPER_DEFAULT_FEE_RATE,
     PAPER_DEFAULT_SLIPPAGE_BPS,
@@ -163,6 +165,10 @@ class ProductResearchRuntime:
         code_sha = _safe_source_sha(self._source_sha_value); dataset = self.fetch_dataset(symbol=symbol, timeframe=timeframe, limit=limit); config = dict(STRATEGY_PRESETS[family])
         try:
             job = run_research_job(dataset, hypothesis=f"Preregistered {family} research on canonical closed candles; no profitability claim.", family=family, strategy_version=f"{family}-product-v1", strategy_config=config, code_sha=code_sha, cost_model=COST_MODEL, kill_criteria=KILL_CRITERIA)
+            strategy_record = build_strategy_record(
+                dataset, job["experiment"], job["qualification"], job["evidence"]
+            )
+            research_lifecycle = build_research_lifecycle(strategy_record)
             targets = generate_targets(dataset, family, config)
             backtest = run_canonical_target_exposure_backtest(
                 dataset,
@@ -177,7 +183,7 @@ class ProductResearchRuntime:
             "contract_version": PRODUCT_RESEARCH_CONTRACT, "paper_only": True, "live_execution_allowed": False, "profitability_claim": False, "source_sha": code_sha,
             "request": {"symbol": symbol, "timeframe": timeframe, "family": family, "limit": limit},
             "dataset": {"binding_sha256": dataset["binding_sha256"], "manifest_sha256": dataset["manifest_sha256"], "instrument": dataset["instrument"], "source": dataset["source"], "source_symbol": dataset["source_symbol"], "timeframe": dataset["manifest_timeframe"], "row_count": dataset["row_count"], "first_open_time_ms": dataset["rows"][0]["open_time_ms"], "last_open_time_ms": last_row["open_time_ms"], "last_close": last_row["close"]},
-            "strategy_config": config, "cost_model": dict(COST_MODEL), "kill_criteria": dict(KILL_CRITERIA), "qualification": job["qualification"], "evidence": job["evidence"], "paper_candidate_handoff": job["paper_candidate_handoff"], "pipeline_digest": job["pipeline_digest"], "latest_target": float(targets.iloc[-1]), "backtest": _serialize_backtest(backtest), "_dataset": dataset, "_experiment": job["experiment"],
+            "strategy_config": config, "cost_model": dict(COST_MODEL), "kill_criteria": dict(KILL_CRITERIA), "qualification": job["qualification"], "evidence": job["evidence"], "strategy_record": strategy_record, "research_lifecycle": list(research_lifecycle), "paper_candidate_handoff": job["paper_candidate_handoff"], "pipeline_digest": job["pipeline_digest"], "latest_target": float(targets.iloc[-1]), "backtest": _serialize_backtest(backtest), "_dataset": dataset, "_experiment": job["experiment"],
         }
         self._last_research = result
         return {key: value for key, value in result.items() if not key.startswith("_")}

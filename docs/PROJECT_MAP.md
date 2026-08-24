@@ -222,3 +222,17 @@ The final Supervisor ledger is accepted only by a separate contract verifier and
 actual task/lease/result/evidence use. A killed strategy is a valid verified research
 outcome; it is never promoted to Paper. The cycle has no Live/L4, private exchange,
 credential, signing, billing, or deployment authority.
+
+## Paper performance, drift, and quarantine bridge
+
+`nexus_paper_performance_drift.py` binds closed Paper trades to the exact task inside
+an independently re-verified Supervisor ledger. A detached task, mutated ledger,
+rejected qualification, missing Paper evidence, family/data mismatch, or Live authority
+fails closed. A newly accepted Paper execution receives a replayable `CANDIDATE -> PAPER`
+lifecycle transition before performance health is evaluated.
+
+The bridge reuses the canonical `performance_analytics.py`, `strategy_registry.py`, and
+`strategy_lifecycle.py` contracts. It emits deterministic expectancy, fee, drawdown and
+regime evidence; insufficient samples remain explicitly `INSUFFICIENT_EVIDENCE`; severe
+drift appends `QUARANTINED`. It has no promotion, exchange, signing, credential, or Live
+Trading authority.
