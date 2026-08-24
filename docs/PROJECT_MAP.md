@@ -193,3 +193,8 @@ Every autonomous dispatch is additionally fail-closed against
 `config/nexus-execution-contract.json`. `nexus_autonomous_orchestrator.py` requires a
 complete per-task execution record and a satisfied pre-execution checklist before it
 selects work; allowlisting alone is not sufficient proof of usable work.
+
+The AI Room boundary is independently checked by `nexus_ai_room_boundary.py`: the
+room may observe, review, propose, and route through its two bounded reversible tools,
+but it cannot import or directly invoke Strategy lifecycle, deterministic Risk, Paper
+execution/event-store, or worker-management mutation authority.
