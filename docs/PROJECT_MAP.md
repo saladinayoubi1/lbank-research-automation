@@ -174,3 +174,27 @@ NEXUS is considered structurally organized when a maintainer can answer these qu
 6. Does this change preserve the completed Phase 7 acceptance evidence and authority boundary?
 
 This map is the starting index; executable code and acceptance evidence remain authoritative.
+
+## Machine-readable integration graph
+
+The canonical component connection matrix is maintained in
+`config/nexus-integration-registry.json` and fail-closed validated by
+`nexus_integration_validator.py`. Each connection records its producer, consumer,
+versioned contract, durable-state surface, independent verifier, evidence, and current
+verification classification. Missing canonical edges, missing repository evidence,
+self-verification, AI authority expansion, Paper authority expansion, and any Live
+Trading activation are rejected.
+
+This registry does not replace the fixed-SHA Phase 7 proof. It prevents later
+maintenance from silently leaving a component present but disconnected from its real
+consumer or verification path.
+
+Every autonomous dispatch is additionally fail-closed against
+`config/nexus-execution-contract.json`. `nexus_autonomous_orchestrator.py` requires a
+complete per-task execution record and a satisfied pre-execution checklist before it
+selects work; allowlisting alone is not sufficient proof of usable work.
+
+The AI Room boundary is independently checked by `nexus_ai_room_boundary.py`: the
+room may observe, review, propose, and route through its two bounded reversible tools,
+but it cannot import or directly invoke Strategy lifecycle, deterministic Risk, Paper
+execution/event-store, or worker-management mutation authority.
