@@ -27,6 +27,18 @@ A closed historical phase is not silently reopened. If current evidence proves a
 
 The current authority boundary remains **Research / Backtest / Paper only**. No Live/L4 authority is implied by Phase 7 completion. Bybit remains the primary canonical market reference; Binance is secondary corroboration and LBank is tertiary/legacy research only.
 
+## Current final-proof acceptance
+
+`nexus_final_proof_mission.py` is the fail-closed acceptance verifier for the
+current integration chain. It binds Supervisor, resource-utilization,
+Mission-Control, and Project-Memory projections to one fixed Git SHA. It does
+not convert registration or heartbeat into execution: every `EXECUTED`
+resource requires task, lease, result, evidence, and verifier digests.
+DeepSeek and the Windows laptop must be reported as `EXECUTED`, `UNAVAILABLE`,
+or `BLOCKED` truthfully; no provider or physical-node claim is inferred. A
+successful validator result remains Paper-only and keeps
+`live_trading_authority=false`.
+
 ## Phase 7 lanes
 
 ### Lane A — AI Control Plane / Resource Manager (`#697`)
