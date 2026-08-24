@@ -161,6 +161,7 @@ def evaluate_paper_drift(
         "strategy_id": record["strategy_id"],
         "family": supervisor_task.get("family"),
         "status": health["health_state"],
+        "closed_trade_count": len(closed_trades),
         "analytics": analytics,
         "health": health,
         "lifecycle": list(updated_lifecycle),
