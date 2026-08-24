@@ -188,6 +188,26 @@ def _mission_projection(mission_control: Mapping[str, Any] | None) -> dict[str, 
     }
 
 
+def _product_projection(product_context: Mapping[str, Any] | None) -> dict[str, Any]:
+    """Expose only bounded, non-secret product state to the AI working context."""
+    if not isinstance(product_context, Mapping):
+        return {"availability": "unavailable"}
+    allowed = {
+        "research_status", "strategy_status", "strategy_family", "paper_status",
+        "open_positions", "risk_status", "recovery_status", "live_status",
+    }
+    result: dict[str, Any] = {"availability": "available"}
+    for key in allowed:
+        value = product_context.get(key)
+        if key == "open_positions":
+            if isinstance(value, int) and not isinstance(value, bool) and 0 <= value <= 10_000:
+                result[key] = value
+        elif isinstance(value, str):
+            result[key] = value[:160]
+    result["live_trading_authority"] = False
+    return result
+
+
 def _model_output(intent: str) -> dict[str, Any]:
     if intent == "observe":
         return {
@@ -300,6 +320,15 @@ def _reply(
         return "The request is accepted as a proposal. No tool was invoked and no project state was changed."
     mission = operations.get("mission_status", "unknown")
     paper = operations.get("paper", "unknown")
+    product = operations.get("product", {})
+    if isinstance(product, Mapping) and product.get("availability") == "available":
+        return (
+            f"Mission Control status: {mission}; paper state: {product.get('paper_status', paper)}; "
+            f"research: {product.get('research_status', 'unknown')}; strategy: "
+            f"{product.get('strategy_status', 'unknown')}; recovery: "
+            f"{product.get('recovery_status', 'unknown')}. Live trading remains locked. "
+            "This was an observe-only request and changed no state."
+        )
     return f"Mission Control status: {mission}; paper state: {paper}. This was an observe-only request and changed no state."
 
 
@@ -308,6 +337,7 @@ def evaluate_room_message(
     *,
     project_memory_snapshot: Mapping[str, Any],
     mission_control: Mapping[str, Any] | None = None,
+    product_context: Mapping[str, Any] | None = None,
     evaluated_at: str | None = None,
 ) -> dict[str, Any]:
     """Evaluate one browser turn and execute only an authority-approved bounded route.
@@ -338,6 +368,7 @@ def evaluate_room_message(
     now = _utc(evaluated_at)
     now_text = _iso(now)
     operations = _mission_projection(mission_control)
+    operations["product"] = _product_projection(product_context)
     intent, classifier_message = _classify_room_intent(message)
     proposal = _model_output(intent)
     working_context = {

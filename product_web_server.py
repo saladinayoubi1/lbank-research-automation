@@ -157,6 +157,65 @@ def _product_overview(runtime: ProductRuntime, data_root: Path) -> dict[str, Any
     }
 
 
+def _integration_snapshot(
+    runtime: ProductRuntime,
+    research_runtime: ProductResearchRuntime,
+    control_runtime: ProductControlRuntime,
+    data_root: Path,
+) -> dict[str, Any]:
+    """One truthful cross-lane read model shared by the UI and AI Room."""
+    paper = runtime.paper_snapshot()
+    account = paper.get("account", {})
+    research = research_runtime.last_research()
+    qualification = research.get("qualification", {}) if isinstance(research, Mapping) else {}
+    recovery = control_runtime.recovery_snapshot()
+    risk = control_runtime.risk_snapshot()
+    mission = _mission_snapshot(data_root)
+    live = runtime.live_surface()
+    return {
+        "contract_version": "nexus.product-integration.v1",
+        "authority": {"mode": "research_backtest_paper", "live_trading_authority": False},
+        "mission": {"status": str(mission.get("status", "unavailable"))},
+        "research": {
+            "status": str(research.get("status", "completed" if qualification else "no_research_run")),
+            "family": str(research.get("request", {}).get("family", "none")) if isinstance(research.get("request"), Mapping) else "none",
+            "qualification": str(qualification.get("status", "none")),
+        },
+        "strategy": {
+            "status": str(qualification.get("status", "qualification_engine_available")),
+            "family": str(qualification.get("family", "none")),
+            "promotion_ceiling": "paper_candidate",
+        },
+        "risk": {"status": "active", "final_paper_authority": True, "kill_switch": bool(risk.get("state", {}).get("kill_switch"))},
+        "paper": {
+            "status": "active" if paper.get("active") is True else "unavailable",
+            "event_count": int(paper.get("event_count", 0)),
+            "open_positions": len(account.get("positions", [])) if isinstance(account.get("positions"), list) else 0,
+        },
+        "recovery": {"status": str(recovery.get("status", "unavailable")), "head_event_digest": recovery.get("head_event_digest")},
+        "live": {"status": str(live.get("status", "locked_owner_controlled")), "orders_allowed": False},
+    }
+
+
+def _ai_product_context(
+    runtime: ProductRuntime,
+    research_runtime: ProductResearchRuntime,
+    control_runtime: ProductControlRuntime,
+    data_root: Path,
+) -> dict[str, Any]:
+    snapshot = _integration_snapshot(runtime, research_runtime, control_runtime, data_root)
+    return {
+        "research_status": snapshot["research"]["status"],
+        "strategy_status": snapshot["strategy"]["status"],
+        "strategy_family": snapshot["strategy"]["family"],
+        "paper_status": snapshot["paper"]["status"],
+        "open_positions": snapshot["paper"]["open_positions"],
+        "risk_status": snapshot["risk"]["status"],
+        "recovery_status": snapshot["recovery"]["status"],
+        "live_status": snapshot["live"]["status"],
+    }
+
+
 def _parse_limit(path: str, *, default: int = 200, maximum: int = 1000) -> int:
     parsed = urlsplit(path)
     if not parsed.query:
@@ -190,7 +249,12 @@ def build_handler(
     runtime = runtime or ProductRuntime(data_root.parent)
     research_runtime = research_runtime or ProductResearchRuntime(runtime)
     control_runtime = control_runtime or ProductControlRuntime(runtime)
-    BaseHandler = build_ai_handler(data_root, ui_root=ui_root, config=active_config)
+    BaseHandler = build_ai_handler(
+        data_root,
+        ui_root=ui_root,
+        config=active_config,
+        product_context_provider=lambda: _ai_product_context(runtime, research_runtime, control_runtime, data_root),
+    )
 
     class ProductHandler(BaseHandler):
         def _product_get(self, *, head_only: bool = False) -> bool:
@@ -231,6 +295,9 @@ def build_handler(
                 elif parsed.path == "/api/product/research/last":
                     if parsed.query: raise ProductRuntimeError("last research does not accept query")
                     payload = research_runtime.last_research()
+                elif parsed.path == "/api/product/integration":
+                    if parsed.query: raise ProductRuntimeError("integration snapshot does not accept query")
+                    payload = _integration_snapshot(runtime, research_runtime, control_runtime, data_root)
                 elif parsed.path == "/api/product/risk":
                     if parsed.query: raise ProductRuntimeError("risk snapshot does not accept query")
                     payload = control_runtime.risk_snapshot()

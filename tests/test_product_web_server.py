@@ -90,6 +90,36 @@ def test_product_overview_reports_canonical_backend_and_live_locked(product_serv
     assert payload["capabilities"]["reports"] == "json_csv"
 
 
+def test_product_integration_snapshot_connects_all_roadmap_lanes(product_server) -> None:
+    port, _ = product_server
+    status, _, raw = _request(port, "GET", "/api/product/integration")
+    assert status == 200
+    payload = json.loads(raw)
+    assert payload["contract_version"] == "nexus.product-integration.v1"
+    assert payload["authority"] == {"mode": "research_backtest_paper", "live_trading_authority": False}
+    assert payload["research"]["status"] == "no_research_run"
+    assert payload["strategy"]["promotion_ceiling"] == "paper_candidate"
+    assert payload["risk"]["final_paper_authority"] is True
+    assert payload["paper"]["status"] == "active"
+    assert payload["recovery"]["status"] == "verified"
+    assert payload["live"] == {"status": "locked_owner_controlled", "orders_allowed": False}
+
+
+def test_product_ai_room_receives_bounded_integrated_context(product_server) -> None:
+    port, _ = product_server
+    request = {"session_id": "s1", "conversation_id": "c1", "turn_id": "t1", "message": "show status"}
+    status, _, raw = _request(port, "POST", "/api/ai-room/message", request)
+    assert status == 200
+    room = json.loads(raw)["ai_room"]
+    product = room["operations"]["product"]
+    assert product["availability"] == "available"
+    assert product["paper_status"] == "active"
+    assert product["recovery_status"] == "verified"
+    assert product["live_status"] == "locked_owner_controlled"
+    assert product["live_trading_authority"] is False
+    assert "Live trading remains locked" in room["reply"]
+
+
 def test_clean_install_mission_control_is_truthful_idle_but_corrupt_state_fails_closed(tmp_path: Path) -> None:
     data_root = tmp_path / "data" / "market"
     data_root.mkdir(parents=True)

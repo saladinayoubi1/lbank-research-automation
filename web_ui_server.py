@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from http import HTTPStatus
 from http.server import ThreadingHTTPServer
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping
 from urllib.parse import urlsplit
 
 from ai_room import AIRoomError, evaluate_room_message, load_project_memory_snapshot
@@ -116,6 +116,7 @@ def dispatch_ai_post(
     project_memory_path: Path = PROJECT_MEMORY_PATH,
     config: GatewayConfig | None = None,
     evaluated_at: str | None = None,
+    product_context: Mapping[str, Any] | None = None,
 ) -> ApiResponse:
     active_config = validate_gateway_config(config or GatewayConfig())
     parsed = urlsplit(path_with_query)
@@ -154,6 +155,7 @@ def dispatch_ai_post(
             payload,
             project_memory_snapshot=project_memory,
             mission_control=mission_control,
+            product_context=product_context,
             evaluated_at=evaluated_at,
         )
     except AIRoomError as exc:
@@ -177,6 +179,7 @@ def build_handler(
     *,
     config: GatewayConfig | None = None,
     project_memory_path: Path = PROJECT_MEMORY_PATH,
+    product_context_provider: Callable[[], Mapping[str, Any]] | None = None,
 ):
     active_config = validate_gateway_config(config or GatewayConfig())
     BaseHandler = build_secure_handler(data_root, config=active_config, ui_root=ui_root)
@@ -280,12 +283,19 @@ def build_handler(
                     versioned({"error": "invalid_ai_room_request", "gateway": gateway_disclosure(active_config)}),
                 ))
                 return
+            product_context = None
+            if product_context_provider is not None:
+                try:
+                    product_context = product_context_provider()
+                except Exception:
+                    product_context = None
             self._send(dispatch_ai_post(
                 self.path,
                 payload,
                 data_root=data_root,
                 project_memory_path=project_memory_path,
                 config=active_config,
+                product_context=product_context,
             ))
 
     return Handler
