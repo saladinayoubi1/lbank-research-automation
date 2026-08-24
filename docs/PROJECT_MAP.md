@@ -198,3 +198,13 @@ The AI Room boundary is independently checked by `nexus_ai_room_boundary.py`: th
 room may observe, review, propose, and route through its two bounded reversible tools,
 but it cannot import or directly invoke Strategy lifecycle, deterministic Risk, Paper
 execution/event-store, or worker-management mutation authority.
+
+## Verified maintenance execution cycle
+
+`nexus_verified_execution_cycle.py` composes the existing Mission, task-attempt,
+lease/fencing, result-ingestion, evidence, and independent-verification contracts into
+one bounded replayable maintenance cycle. Its built-in workload validates the merged
+integration registry and writes an atomic resource-utilization ledger only after the
+producer result is accepted for the current fence and a verifier in a different trust
+domain passes every check. A heartbeat, registration, failed workload, stale/spoofed
+result, self-verification, or Live/L4 authority can never produce `VERIFIED`.

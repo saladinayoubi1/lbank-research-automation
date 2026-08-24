@@ -7,7 +7,7 @@
     {"id": "project_memory", "type": "memory", "authority": "durable_source", "implementation": ["project_memory_runtime_gate.py"], "tests": ["tests/test_project_memory_runtime_gate.py"]},
     {"id": "ai_room", "type": "advisory", "authority": "proposal_only", "implementation": ["ai_room.py", "ai_control_plane.py"], "tests": ["tests/test_ai_room.py", "tests/test_phase4_gate20_e2e.py"]},
     {"id": "mission", "type": "control", "authority": "bounded_command", "implementation": ["product_mission_runtime.py", "mission_runner.py"], "tests": ["tests/test_product_mission_runtime.py", "tests/test_mission_runner.py"]},
-    {"id": "supervisor", "type": "control", "authority": "scheduling", "implementation": ["local_node_supervisor.py", "phase5_mission_runner.py"], "tests": ["tests/test_phase5_mission_runner.py"]},
+    {"id": "supervisor", "type": "control", "authority": "scheduling", "implementation": ["local_node_supervisor.py", "phase5_mission_runner.py", "nexus_verified_execution_cycle.py"], "tests": ["tests/test_phase5_mission_runner.py", "tests/test_nexus_verified_execution_cycle.py"]},
     {"id": "router", "type": "control", "authority": "capability_routing", "implementation": ["agent_manager.py", "agent_manager_runner.py"], "tests": ["tests/test_phase7_resource_manager.py"]},
     {"id": "workers", "type": "worker", "authority": "leased_execution", "implementation": ["agent_transport.py", "deepseek_provider.py", "offline_agent_courier.py"], "tests": ["tests/test_agent_transport.py", "tests/test_phase7_agent_task_executor.py"]},
     {"id": "evidence", "type": "evidence", "authority": "append_only_claim", "implementation": ["artifact_integrity.py", "phase7_e2e_proof.py"], "tests": ["tests/test_phase7_e2e_proof.py"]},
