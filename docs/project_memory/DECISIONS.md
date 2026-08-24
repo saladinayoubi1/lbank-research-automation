@@ -96,3 +96,23 @@ Status: ACTIVE
 Decision: Any user-facing NEXUS notification that is materially important or requires owner intervention must be prefixed with `🔴`. Routine informational updates that do not require attention should not use this marker. If a critical `🔴` item has not been acknowledged by the owner, the next requested NEXUS report must repeat that item with the same `🔴` marker until it is acknowledged, resolved, or superseded by newer evidence.
 
 Boundary: The marker is presentation/triage metadata only; it does not change severity, authorization, release, production, signing, credential, billing, or financial-action policy.
+
+## 2026-08-24 — Verified integration chain now reaches Mission Control
+Status: ACTIVE
+
+Evidence: PRs #954, #955, #956, #957 and #958 merged sequentially. Current `main` is
+`e3e03642c40bb0543dd5e6d92290472f7a5d5961`. The merged chain registers and validates
+the component graph, keeps the AI Room proposal-only, verifies bounded execution with
+producer/verifier separation, connects Supervisor output to Strategy and isolated Paper,
+evaluates deterministic performance drift/quarantine, and projects validated closed Paper
+trades into a digest-protected Mission Control read model.
+
+Decision: Treat the integration chain through Mission Control as repository-verified.
+Do not treat green CI, registration, heartbeat, an unclosed Paper position, or a detached
+analytics record as proof of resource use or strategy performance. Remaining acceptance is
+the fixed-SHA end-to-end Proof Mission plus evidence that the autonomous-improvement loop
+can propose and verify bounded changes without expanding authority.
+
+Boundary: Research/Backtest/Paper only. Live Trading, private exchange adapters,
+credentials, signing, billing, deployment, production promotion and self-authorization
+remain unavailable.

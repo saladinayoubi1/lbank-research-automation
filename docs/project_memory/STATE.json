@@ -18,7 +18,7 @@
     "cloud continuity when the local laptop is offline"
   ],
   "runtime_status": {
-    "agent_execution_state": "phase7_acceptance_verified",
+    "agent_execution_state": "verified_integration_cycle_connected_through_mission_control",
     "laptop_state": "physical_phase7_proof_verified_and_owner_cleanup_observed",
     "internet_outage_state": "not_assumed_from_laptop_state",
     "laptop_offline_is_not_internet_outage": true,
@@ -68,13 +68,25 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "9faa02c210ce2aea45271ca06f1e873964e798f9",
-    "observed_at_utc": "2026-08-21T13:58:00Z",
+    "observed_main_sha": "e3e03642c40bb0543dd5e6d92290472f7a5d5961",
+    "observed_at_utc": "2026-08-24T21:33:50Z",
     "latest_main_change": {
-      "summary": "PR #923 merged the bounded Google Docs text/plain export adapter for #122 after exact-head green CI. The verified Drive recovery tuple remains bound to fixed source SHA b0d89457033941932515a0a6a07e79ec165a8cce; repository main remains authoritative and the Drive copy is secondary only.",
+      "summary": "PRs #954-#958 connected the canonical NEXUS component graph, enforced AI Room proposal-only boundaries, added a verified execution cycle, connected Supervisor to Strategy and Paper, added deterministic Paper drift/quarantine, and projected closed Paper performance into Mission Control. PR #958 merged at main e3e03642c40bb0543dd5e6d92290472f7a5d5961 after all required checks succeeded.",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true
+    },
+    "integration_cycle": {
+      "status": "connected_through_mission_control",
+      "integration_graph_pr": 954,
+      "verified_execution_cycle_pr": 955,
+      "strategy_paper_supervisor_pr": 956,
+      "paper_drift_quarantine_pr": 957,
+      "paper_mission_control_pr": 958,
+      "latest_main_sha": "e3e03642c40bb0543dd5e6d92290472f7a5d5961",
+      "paper_only": true,
+      "live_trading_authority": false,
+      "remaining_acceptance": "fixed-SHA final Proof Mission and autonomous-improvement feedback evidence"
     },
     "phase7": {
       "status": "complete",
