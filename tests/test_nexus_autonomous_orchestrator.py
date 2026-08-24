@@ -5,6 +5,27 @@ import json
 import pytest
 
 import nexus_autonomous_orchestrator as orchestrator
+from nexus_execution_contract import load_contract
+
+
+def complete_task(name: str, reason: str = "repository-local deterministic maintenance") -> dict:
+    return {
+        "task": name,
+        "reason": reason,
+        "task_id": f"task-{name}",
+        "lane": "Lane P",
+        "deliverable_or_gate": "maintenance",
+        "acceptance_criterion": "bounded task passes its deterministic verifier",
+        "assigned_resource": "agents",
+        "dependencies": [],
+        "execution_action": f"run {name}",
+        "verification_method": "deterministic test",
+        "durable_evidence_location": f"build/evidence/{name}.json",
+        "status": "QUEUED",
+        "pre_execution": {
+            key: True for key in load_contract()["requiredBeforeExecution"]
+        },
+    }
 
 
 def test_external_provider_task_is_not_allowlisted() -> None:
@@ -30,17 +51,21 @@ def test_credential_or_external_ai_reason_is_blocked() -> None:
 
 def test_safe_repository_tasks_remain_available() -> None:
     for task in ("health", "tests", "readiness", "zotero-status"):
-        ok, reason = orchestrator.validate_task(
-            {"task": task, "reason": "repository-local deterministic maintenance"}
-        )
+        ok, reason = orchestrator.validate_task(complete_task(task))
         assert ok is True
         assert reason == "ok"
+
+
+def test_allowlisted_task_without_execution_record_is_blocked() -> None:
+    ok, reason = orchestrator.validate_task({"task": "tests", "reason": "deterministic suite"})
+    assert ok is False
+    assert reason == "execution_record_incomplete"
 
 
 def test_choose_next_blocks_unsafe_then_selects_safe() -> None:
     queue = [
         {"task": "deepseek-smoke", "reason": "scheduled", "status": "pending"},
-        {"task": "tests", "reason": "deterministic suite", "status": "pending"},
+        {**complete_task("tests", "deterministic suite"), "status": "QUEUED"},
     ]
     chosen = orchestrator.choose_next(queue)
     assert chosen is queue[1]

@@ -12,6 +12,12 @@ import os
 from pathlib import Path
 from typing import Any
 
+from nexus_execution_contract import (
+    ExecutionContractError,
+    validate_pre_execution_record,
+    validate_task_record,
+)
+
 ROOT = Path(__file__).resolve().parent
 SEED_QUEUE = ROOT / ".nexus" / "autonomous-queue.json"
 STATE_DIR = Path(os.environ.get("NEXUS_STATE_DIR", str(ROOT / ".nexus"))).resolve()
@@ -58,17 +64,24 @@ def validate_task(task: dict[str, Any]) -> tuple[bool, str]:
         return False, "task_not_allowlisted"
     if any(term in detail for term in PROTECTED_TERMS):
         return False, "protected_boundary"
+    try:
+        validate_task_record(task)
+        validate_pre_execution_record(task.get("pre_execution"))
+    except ExecutionContractError:
+        return False, "execution_record_incomplete"
     return True, "ok"
 
 
 def choose_next(queue: list[dict[str, Any]]) -> dict[str, Any] | None:
     for task in queue:
-        if task.get("status", "pending") != "pending":
+        if task.get("status", "pending") not in {"pending", "QUEUED"}:
             continue
         ok, reason = validate_task(task)
         if ok:
             return task
-        task["status"] = "blocked"
+        # Preserve legacy queue vocabulary while all new contract-complete records
+        # use the canonical execution-contract vocabulary.
+        task["status"] = "BLOCKED" if task.get("task_id") else "blocked"
         task["block_reason"] = reason
     return None
 

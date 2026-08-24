@@ -188,3 +188,8 @@ Trading activation are rejected.
 This registry does not replace the fixed-SHA Phase 7 proof. It prevents later
 maintenance from silently leaving a component present but disconnected from its real
 consumer or verification path.
+
+Every autonomous dispatch is additionally fail-closed against
+`config/nexus-execution-contract.json`. `nexus_autonomous_orchestrator.py` requires a
+complete per-task execution record and a satisfied pre-execution checklist before it
+selects work; allowlisting alone is not sufficient proof of usable work.
