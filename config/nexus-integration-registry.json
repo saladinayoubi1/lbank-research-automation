@@ -19,7 +19,7 @@
     {"id": "decision", "type": "proposal", "authority": "proposal_only", "implementation": ["automated_signal_pipeline.py"], "tests": ["tests/test_automated_signal_pipeline.py"]},
     {"id": "risk", "type": "risk", "authority": "deterministic_final", "implementation": ["deterministic_risk.py"], "tests": ["tests/test_deterministic_risk.py"]},
     {"id": "paper", "type": "paper", "authority": "paper_only", "implementation": ["paper_execution.py", "paper_event_store.py", "paper_exchange_simulator.py", "nexus_strategy_paper_supervisor.py"], "tests": ["tests/test_paper_execution.py", "tests/test_paper_realistic_execution.py", "tests/test_nexus_strategy_paper_supervisor.py"]},
-    {"id": "performance", "type": "analytics", "authority": "measurement_only", "implementation": ["performance_analytics.py", "performance_metrics.py"], "tests": ["tests/test_performance_analytics.py"]},
+    {"id": "performance", "type": "analytics", "authority": "measurement_and_quarantine_only", "implementation": ["performance_analytics.py", "performance_metrics.py", "nexus_paper_performance_drift.py"], "tests": ["tests/test_performance_analytics.py", "tests/test_nexus_paper_performance_drift.py"]},
     {"id": "mission_control", "type": "projection", "authority": "read_model", "implementation": ["mission_control.py", "dashboard_integrations.py"], "tests": ["tests/test_mission_control.py"]}
   ],
   "edges": [
@@ -36,7 +36,7 @@
     {"id": "strategy-to-decision", "producer": "strategy_factory", "consumer": "decision", "contract": "nexus.paper-candidate.v1", "durable_state": ["strategy_registry.py"], "verifier": "independent_verifier", "evidence": ["tests/test_automated_signal_pipeline.py"], "status": "VERIFIED"},
     {"id": "decision-to-risk", "producer": "decision", "consumer": "risk", "contract": "nexus.decision-proposal.v1", "durable_state": ["deterministic_risk.py"], "verifier": "independent_verifier", "evidence": ["tests/test_deterministic_risk.py"], "status": "VERIFIED"},
     {"id": "risk-to-paper", "producer": "risk", "consumer": "paper", "contract": "nexus.accepted-paper-transition.v1", "durable_state": ["paper_event_store.py"], "verifier": "independent_verifier", "evidence": ["tests/test_paper_execution.py", "tests/test_paper_realistic_execution.py"], "status": "VERIFIED"},
-    {"id": "paper-to-performance", "producer": "paper", "consumer": "performance", "contract": "nexus.paper-portfolio-state.v1", "durable_state": ["paper_event_store.py"], "verifier": "independent_verifier", "evidence": ["tests/test_performance_analytics.py"], "status": "VERIFIED"},
+    {"id": "paper-to-performance", "producer": "paper", "consumer": "performance", "contract": "nexus.paper-performance-drift.v1", "durable_state": ["paper_event_store.py", "nexus_paper_performance_drift.py"], "verifier": "independent_verifier", "evidence": ["tests/test_performance_analytics.py", "tests/test_nexus_paper_performance_drift.py"], "status": "VERIFIED"},
     {"id": "performance-to-mission-control", "producer": "performance", "consumer": "mission_control", "contract": "nexus.performance-drift.v1", "durable_state": ["dashboard_integrations.py"], "verifier": "independent_verifier", "evidence": ["tests/test_mission_control.py"], "status": "VERIFIED"},
     {"id": "mission-control-to-memory", "producer": "mission_control", "consumer": "project_memory", "contract": "nexus.verified-state-projection.v1", "durable_state": ["docs/project_memory/STATE.json"], "verifier": "independent_verifier", "evidence": ["tests/test_project_memory_runtime_gate.py"], "status": "VERIFIED"}
   ]
