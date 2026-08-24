@@ -236,3 +236,17 @@ The bridge reuses the canonical `performance_analytics.py`, `strategy_registry.p
 regime evidence; insufficient samples remain explicitly `INSUFFICIENT_EVIDENCE`; severe
 drift appends `QUARANTINED`. It has no promotion, exchange, signing, credential, or Live
 Trading authority.
+
+## Closed Paper trades to Mission Control
+
+`nexus_paper_performance_pipeline.py` completes the read path from the append-only Paper
+journal to Mission Control. It independently validates and replays each hash-chained
+journal, reconstructs only fully closed positions, binds fee and slippage records by
+correlation ID, and feeds the resulting closed trades into the verified drift monitor.
+Partial reductions and reversals fail closed until a separate deterministic attribution
+contract exists; they are never guessed or silently flattened.
+
+The multi-strategy projection is bound to an independently verified Supervisor ledger
+and exposes family, strategy ID, lifecycle, sample count, expectancy, net PnL, drawdown,
+and health status. Its durable JSON commit is atomic and digest-protected. The projection
+is explicitly Paper-only, grants no promotion authority, and keeps Live Trading disabled.
