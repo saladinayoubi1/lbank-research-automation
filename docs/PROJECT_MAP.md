@@ -208,3 +208,17 @@ integration registry and writes an atomic resource-utilization ledger only after
 producer result is accepted for the current fence and a verifier in a different trust
 domain passes every check. A heartbeat, registration, failed workload, stale/spoofed
 result, self-verification, or Live/L4 authority can never produce `VERIFIED`.
+
+## Persistent Strategy/Paper Supervisor cycle
+
+`nexus_strategy_paper_supervisor.py` is the repository-owned operational bridge from
+the verified execution contract into the existing Strategy and Paper components. One
+bounded run fetches a canonical public Bybit dataset, creates a separately fenced task
+for each approved strategy family, runs deterministic qualification, and routes only a
+valid Candidate through Decision, deterministic Risk, and an isolated Paper portfolio.
+
+Each family persists its own evidence and portfolio state under `NEXUS_STATE_DIR`.
+The final Supervisor ledger is accepted only by a separate contract verifier and records
+actual task/lease/result/evidence use. A killed strategy is a valid verified research
+outcome; it is never promoted to Paper. The cycle has no Live/L4, private exchange,
+credential, signing, billing, or deployment authority.
