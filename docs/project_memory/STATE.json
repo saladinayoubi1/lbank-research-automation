@@ -18,7 +18,7 @@
     "cloud continuity when the local laptop is offline"
   ],
   "runtime_status": {
-    "agent_execution_state": "final_proof_verified_and_integration_cycle_connected_through_mission_control",
+    "agent_execution_state": "final_proof_verified_and_bybit_prospective_paper_collecting",
     "laptop_state": "physical_phase7_proof_verified_and_owner_cleanup_observed",
     "internet_outage_state": "not_assumed_from_laptop_state",
     "laptop_offline_is_not_internet_outage": true,
@@ -56,9 +56,9 @@
       "may_authorize_production_recovery": false,
       "issue": 122,
       "issue_state": "completed",
-      "status": "verified_secondary_recovery_current_snapshot",
-      "refresh_required": false,
-      "refresh_reason": null,
+      "status": "verified_secondary_recovery_snapshot_stale_after_main_advance",
+      "refresh_required": true,
+      "refresh_reason": "Repository Project Memory advanced beyond the fixed 6d84d100 snapshot; refresh and independently verify the secondary copy after this canonical reconciliation merges.",
       "fixed_source_sha": "6d84d1003666cc8fd9bb86f9aea203b459574b54",
       "provider_object_id": "1m_KFJ6YvnWhLRYzAFBrZXn3Rb-OqYb_M63V8X_aMvew",
       "provider_revision_id": "3",
@@ -79,10 +79,10 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "6d84d1003666cc8fd9bb86f9aea203b459574b54",
-    "observed_at_utc": "2026-08-25T13:53:00Z",
+    "observed_main_sha": "ca2b3f284dd2a6fd910dd25a86e8025ba490fa20",
+    "observed_at_utc": "2026-08-25T22:20:25Z",
     "latest_main_change": {
-      "summary": "PR #973 recorded independently verified final Proof Mission completion in Project Memory. The durable Google Drive secondary recovery document was then refreshed in place and independently read back against that exact canonical source snapshot.",
+      "summary": "PRs #976-#978 connected Phase 3 to the bounded Bybit research ladder, made the reviewed v2 search event-driven, and started the frozen prospective Paper lane. PR #982 then fixed pre-cutoff initialization; main run 32905463932 succeeded and published digest-protected Paper state artifact 9584635133.",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true
@@ -103,10 +103,10 @@
       "phase7_return_pr": 966,
       "powershell51_bookkeeping_fix_pr": 967,
       "delegated_core_surface_test_fix_pr": 972,
-      "latest_main_sha": "6d84d1003666cc8fd9bb86f9aea203b459574b54",
+      "latest_main_sha": "ca2b3f284dd2a6fd910dd25a86e8025ba490fa20",
       "paper_only": true,
       "live_trading_authority": false,
-      "remaining_acceptance": "none for the final Proof Mission; autonomous-improvement feedback remains separately evidence-gated and does not widen authority"
+      "remaining_acceptance": "none for the final Proof Mission; the separate prospective Paper lane must accumulate at least 30 days and 180 completed four-hour bars before review and never widens authority"
     },
     "phase7": {
       "status": "complete",
@@ -153,6 +153,40 @@
       "runner_or_watchdog_change_in_final_fixes": false,
       "self_heal_reintroduced": false
     },
+    "research_to_paper_ladder": {
+      "status": "frozen_candidate_advanced_to_prospective_paper",
+      "phase3_connection_pr": 976,
+      "event_driven_v2_search_pr": 977,
+      "neighborhood_run_id": 32900398896,
+      "neighborhood_artifact_id": 9582995776,
+      "neighborhood_artifact_digest": "sha256:55778215ded753d18c3f21e2c1868b58bab216d39c4ac18facefa2a37a5f3675",
+      "derivatives_run_id": 32901089264,
+      "derivatives_artifact_id": 9583168864,
+      "derivatives_artifact_digest": "sha256:e6a30c142f06785e0cd850cd56c0c01aaf2f0c5b2a066b631c5778af14dc27d6",
+      "strategy_id": "bybit_btc_eth_regime_consensus_v1",
+      "strategy_manifest_sha256": "2a5486eb1f77ce199cac77d280d59d5fa11fa2bcd4ae8091264f78e21f45c19d",
+      "paper_only": true,
+      "live_trading_authority": false
+    },
+    "prospective_paper_forward": {
+      "status": "collecting",
+      "start_pr": 978,
+      "precutoff_initialization_fix_pr": 982,
+      "main_source_sha": "ca2b3f284dd2a6fd910dd25a86e8025ba490fa20",
+      "successful_run_id": 32905463932,
+      "state_artifact_id": 9584635133,
+      "state_artifact_name": "bybit-prospective-paper-forward-v1-state",
+      "state_digest": "a30332e039e5a27342018b1be111b901c7a6df2b975234fc282d140cc2a2d283",
+      "start_not_before_utc": "2026-08-26T00:00:00Z",
+      "completed_bar_count": 0,
+      "minimum_days": 30,
+      "minimum_completed_bars": 180,
+      "paper_only": true,
+      "live_trading_enabled": false,
+      "automatic_live_promotion": false,
+      "private_credentials_used": false,
+      "next_gate": "accumulate immutable prospective observations until COMPLETE_REVIEW_REQUIRED or fail-closed quarantine"
+    },
     "phase_status": {
       "phase5": {
         "status": "complete",
@@ -194,7 +228,13 @@
       "backup_verifier_pr_920": "merged",
       "drive_export_hardening_pr_923": "merged",
       "drive_backup_refresh": "verified",
-      "drive_backup_source_sha": "6d84d1003666cc8fd9bb86f9aea203b459574b54"
+      "drive_backup_source_sha": "6d84d1003666cc8fd9bb86f9aea203b459574b54",
+      "phase3_strategy_surface_pr_976": "merged",
+      "event_driven_strategy_search_pr_977": "merged",
+      "prospective_paper_start_pr_978": "merged",
+      "prospective_paper_precutoff_fix_pr_982": "merged",
+      "prospective_paper_run_32905463932": "success",
+      "drive_backup_refresh_required": true
     },
     "release_readiness": {
       "production_ready": false,
