@@ -3,7 +3,7 @@ setlocal
 title NEXUS Phase 7 Final Proof
 cd /d "%~dp0"
 
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\phase7_final_proof.ps1" -Mode Next -RepoRoot "%~dp0"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\phase7_final_proof.ps1" -Mode Next -RepoRoot "%~dp0."
 set "RC=%ERRORLEVEL%"
 
 if not "%RC%"=="0" (

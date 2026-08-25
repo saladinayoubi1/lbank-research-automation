@@ -71,6 +71,7 @@ def test_final_proof_launcher_preserves_offline_acceptance_sequence():
 def test_root_cmd_runs_same_next_step_launcher_without_installing_background_components():
     text = read(CMD)
     assert 'scripts\\phase7_final_proof.ps1" -Mode Next' in text
+    assert '-RepoRoot "%~dp0."' in text
     assert "run this same file again" in text
     assert "No watchdog, service, runner registration" in text
     lowered = text.lower()
