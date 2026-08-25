@@ -7,6 +7,13 @@ on:
         description: "Final immutable Bybit delivery artifact"
         required: false
         default: "8867026863"
+  push:
+    branches:
+      - main
+    paths:
+      - 'bybit_strategy_search_v2.py'
+      - 'experiments/bybit_strategy_search_v2.json'
+      - '.github/workflows/bybit_strategy_search_v2.yml'
 
 permissions:
   contents: read
