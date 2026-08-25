@@ -17,6 +17,7 @@ from nexus_strategy_paper_supervisor import verify_ledger
 
 SCHEMA = "nexus.final-proof-mission.v1"
 _SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+_DIGEST_RE = re.compile(r"^[0-9a-f]{64}$")
 _RESOURCE_STATES = {"EXECUTED", "UNAVAILABLE", "BLOCKED"}
 _REQUIRED_RESOURCES = {"internal_agents", "deepseek", "windows_laptop", "cloud_verifier"}
 
@@ -65,9 +66,9 @@ def _validate_resource_rows(rows: Any, source_sha: str) -> tuple[dict[str, bool]
                 valid
                 and row.get("task_id")
                 and row.get("lease_id")
-                and row.get("result_digest")
-                and row.get("evidence_digest")
-                and row.get("verifier_digest")
+                and _DIGEST_RE.fullmatch(str(row.get("result_digest", "")))
+                and _DIGEST_RE.fullmatch(str(row.get("evidence_digest", "")))
+                and _DIGEST_RE.fullmatch(str(row.get("verifier_digest", "")))
             )
         else:
             valid = bool(valid and row.get("reason_code") and not row.get("task_id"))
@@ -119,6 +120,12 @@ def verify_final_proof(bundle: Mapping[str, Any]) -> dict[str, Any]:
     checks["windows_truthful"] = resource_states.get("windows_laptop") in {
         "EXECUTED", "UNAVAILABLE", "BLOCKED"
     }
+    # A truthful BLOCKED/UNAVAILABLE declaration is useful evidence, but it is
+    # not physical execution.  Final acceptance must never turn that absence
+    # into a green proof.
+    checks["windows_physical_execution"] = (
+        resource_states.get("windows_laptop") == "EXECUTED"
+    )
 
     passed = all(checks.values())
     core = {
