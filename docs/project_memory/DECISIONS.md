@@ -167,3 +167,12 @@ Boundary: This completion does not grant Live/L4, private exchange credentials, 
 billing, deployment, production promotion, destructive authority, or self-authorization.
 The verified Google Drive continuity mechanism remains secondary-only and must be refreshed
 against the final canonical memory snapshot before it is described as current.
+
+## 2026-08-25 — Final Project Memory Drive refresh verified against final Proof snapshot
+Status: ACTIVE
+
+Evidence: After PR #973 merged, the durable Google Drive document `NEXUS Project Memory Backup — Durable` was refreshed in place against exact repository source SHA `6d84d1003666cc8fd9bb86f9aea203b459574b54`. Provider revision `3` was read back as a text/plain export of 56,782 bytes with raw SHA-256 `8904567e289d113435b5e32e89f559a018e7435b9acd147c5cc67e3305dcadd4`. All seven canonical Project Memory file contents matched their current Git blob IDs exactly. Privacy scanning returned zero forbidden findings. The verification manifest is Drive object `1TtbOxGPpelKbMYmDFn6_w8x-wwkqHv7X`, with byte SHA-256 `2d7bb0744866a491a41253d20241abcb1892066fecd9abd7e7df05d340b22296` and canonical manifest digest `b9e986f485ad0b8046749a42603ff70144667c963b020fe598c08317ce18342d`. Issue #122 comment `5411422131` records the fixed tuple and adversarial recovery checks.
+
+Decision: Treat the Drive document/revision above as the verified secondary recovery snapshot for the final Proof Mission memory state at source SHA `6d84d1003666cc8fd9bb86f9aea203b459574b54`. Preserve repository Project Memory as primary authority. Future material memory changes must refresh and re-verify the secondary snapshot rather than silently treating this tuple as current forever.
+
+Boundary: Secondary continuity only. This evidence does not authorize production recovery, signing, private credentials, billing, deployment, Live/L4, financial actions, destructive operations, or self-authorization.
