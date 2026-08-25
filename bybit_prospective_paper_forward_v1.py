@@ -308,6 +308,8 @@ def collect_observations(
     start = _utc(config["start_not_before_utc"])
     warmup_start = start - pd.Timedelta(days=int(config["warmup_days"]))
     end_ms = latest_closed_open_ms + BAR_MS
+    if end_ms <= int(start.timestamp() * 1000):
+        return []
     api = client or Client(
         list(config["api_base_urls"]), float(config["timeout_seconds"]),
         int(config["maximum_attempts"]), float(config["request_pause_seconds"]),

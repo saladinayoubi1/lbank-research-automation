@@ -161,6 +161,25 @@ def test_pre_cutoff_out_of_order_and_reused_run_id_are_rejected() -> None:
         )
 
 
+def test_collection_before_first_prospective_bar_initializes_without_market_calls() -> None:
+    config, frozen = forward.load_contract(MANIFEST)
+    state = forward.new_state(
+        config, engine_sha256=ENGINE_SHA, source_sha=SOURCE_SHA, run_id=0
+    )
+
+    class UnexpectedClient:
+        def get(self, _path: str, _params: dict[str, object]) -> dict[str, object]:
+            raise AssertionError("pre-cutoff initialization must not query market data")
+
+    assert forward.collect_observations(
+        config,
+        frozen,
+        state,
+        now_utc="2026-08-25T22:11:00Z",
+        client=UnexpectedClient(),  # type: ignore[arg-type]
+    ) == []
+
+
 def test_completed_forward_requires_review_and_never_enables_live() -> None:
     config, _ = forward.load_contract(MANIFEST)
     config = deepcopy(config)
