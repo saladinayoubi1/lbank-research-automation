@@ -257,6 +257,23 @@ regime evidence; insufficient samples remain explicitly `INSUFFICIENT_EVIDENCE`;
 drift appends `QUARANTINED`. It has no promotion, exchange, signing, credential, or Live
 Trading authority.
 
+## Frozen Bybit strategy prospective Paper forward
+
+`bybit_prospective_paper_forward_v1.py` advances the qualified frozen
+`bybit_btc_eth_regime_consensus_v1` strategy through a separate prospective
+Paper evidence lane. Its start cutoff is `2026-08-26T00:00:00Z`; earlier bars
+cannot enter the chain. A scheduled, non-overlapping workflow resumes the latest
+digest-protected state every four hours and uses only public Bybit Spot and linear
+perpetual data.
+
+The strategy manifest and parameters are SHA-256 bound. Conservative and stress
+Paper accounts remain separate while actual funding, public instrument/risk-tier
+metadata, execution-window liquidity, fees, margin and liquidation are recorded.
+Thirty elapsed days and 180 completed 4-hour bars are required before a decision.
+Passing can produce only `COMPLETE_REVIEW_REQUIRED`; failing is quarantined. The
+lane accepts no private credentials, places no exchange orders, and has no Live/L4
+or automatic-promotion authority.
+
 ## Closed Paper trades to Mission Control
 
 `nexus_paper_performance_pipeline.py` completes the read path from the append-only Paper
