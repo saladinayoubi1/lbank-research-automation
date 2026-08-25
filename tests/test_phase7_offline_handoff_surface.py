@@ -4,6 +4,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PS = ROOT / "scripts" / "phase7_offline_laptop.ps1"
+CORE = ROOT / "scripts" / "phase7_offline_laptop_core.ps1"
 WF = ROOT / ".github" / "workflows" / "nexus-mission-queue.yml"
 
 
@@ -12,19 +13,29 @@ def read(path: Path) -> str:
 
 
 def test_powershell_handoff_has_three_explicit_modes_and_no_runner_dependency():
-    text = read(PS)
+    wrapper = read(PS)
+    core = read(CORE)
+    combined = wrapper + "\n" + core
+
+    # The public entry point keeps the three-mode contract while delegating the
+    # original handoff implementation to the immutable core helper. Surface
+    # invariants therefore span the wrapper and its delegated core.
+    for marker in ("PrepareOnline", "ExecuteOffline", "SubmitReturn"):
+        assert marker in wrapper
+    assert "phase7_offline_laptop_core.ps1" in wrapper
+    assert "& $CoreScript" in wrapper
+
     for marker in (
-        "PrepareOnline", "ExecuteOffline", "SubmitReturn",
         "offline_agent_courier", "phase7_build_return_manifest", "phase7_return_package",
         "gh' @('workflow','run'", "gh' @('run','download'", "gh' @('pr','create'",
     ):
-        assert marker in text
-    assert "self-hosted" not in text.casefold()
-    assert "actions-runner" not in text.casefold()
+        assert marker in core
+    assert "self-hosted" not in combined.casefold()
+    assert "actions-runner" not in combined.casefold()
 
 
 def test_courier_key_is_dpapi_protected_stdin_only_and_cleaned_after_verified_completion():
-    text = read(PS)
+    text = read(CORE)
     for marker in (
         "ProtectedData]::Protect", "DataProtectionScope]::CurrentUser",
         "RedirectStandardInput = $true", "$p.StandardInput.Write($SecretValue)",
@@ -43,7 +54,7 @@ def test_courier_key_is_dpapi_protected_stdin_only_and_cleaned_after_verified_co
 
 
 def test_offline_execution_requires_reboot_and_dual_target_unreachable_before_and_after():
-    text = read(PS)
+    text = read(CORE)
     for marker in (
         "LastBootUpTime", "Windows must be rebooted after PrepareOnline",
         "Test-TcpTarget 'api.github.com' 443", "Test-TcpTarget '1.1.1.1' 443",
@@ -56,7 +67,7 @@ def test_offline_execution_requires_reboot_and_dual_target_unreachable_before_an
 
 
 def test_return_branch_is_data_only_and_is_never_merged_by_helper():
-    text = read(PS)
+    text = read(CORE)
     for marker in (
         "phase7/return-$($s.session_id)", ".nexus/phase7-return/$($s.session_id)",
         "return branch contains non-data change", "gh' @('pr','checks'",
