@@ -1,0 +1,83 @@
+{
+  "generated_at": "2026-08-25T09:18:42.972478+00:00",
+  "phase": 7,
+  "task_phases": [
+    7
+  ],
+  "counts": {
+    "RUNNING": 1,
+    "DONE": 3
+  },
+  "verified_progress_percent": 75.0,
+  "owner_required": [],
+  "worker_capacity": {
+    "windows-runner": {
+      "active": 1,
+      "capacity": 1,
+      "available": 0
+    },
+    "cloud-worker": {
+      "active": 0,
+      "capacity": 1,
+      "available": 1
+    },
+    "research-agent": {
+      "active": 0,
+      "capacity": 1,
+      "available": 1
+    },
+    "paper-agent": {
+      "active": 0,
+      "capacity": 1,
+      "available": 1
+    },
+    "qa-verifier-agent": {
+      "active": 0,
+      "capacity": 1,
+      "available": 1
+    },
+    "deepseek-bounded": {
+      "active": 0,
+      "capacity": 1,
+      "available": 1
+    }
+  },
+  "available_worker_slots": 5,
+  "unassigned_ready": [],
+  "external_waiting": [
+    {
+      "task_id": "P7-LAPTOP-CANONICAL",
+      "worker_id": "windows-runner",
+      "wait_started_at": "2026-08-25T09:18:27.287428+00:00",
+      "dispatch_id": "248a913d7102926ea4bb2f7a1174a27f"
+    }
+  ],
+  "zero_idle_assignments": [
+    {
+      "task_id": "P7-RESEARCH-STRATEGY",
+      "leased_at": "2026-08-25T09:18:28.098285+00:00",
+      "overlapped_external_waits": [
+        {
+          "task_id": "P7-LAPTOP-CANONICAL",
+          "worker_id": "windows-runner",
+          "wait_started_at": "2026-08-25T09:18:27.287428+00:00",
+          "dispatch_id": "248a913d7102926ea4bb2f7a1174a27f"
+        }
+      ],
+      "rule": "dispatch_independent_ready_work_while_other_resource_waits"
+    },
+    {
+      "task_id": "P7-PAPER-PERFORMANCE",
+      "leased_at": "2026-08-25T09:18:35.963514+00:00",
+      "overlapped_external_waits": [
+        {
+          "task_id": "P7-LAPTOP-CANONICAL",
+          "worker_id": "windows-runner",
+          "wait_started_at": "2026-08-25T09:18:27.287428+00:00",
+          "dispatch_id": "248a913d7102926ea4bb2f7a1174a27f"
+        }
+      ],
+      "rule": "dispatch_independent_ready_work_while_other_resource_waits"
+    }
+  ]
+}

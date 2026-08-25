@@ -1,0 +1,21 @@
+{
+  "created_at": "2026-08-25T09:40:37.294480Z",
+  "files": {
+    "prepared/agent-manager-runtime.json": "f6259c8cdc0a5dfb1b1ec1e1b6e80e03d48231f93a7c296f7d9fec337a596600",
+    "prepared/courier/phase7-laptop-dispatch.json": "3210a01542a05bdf74708e1edfca75a03d7b5ee8564c9273143e7dfaf935e117",
+    "prepared/manager-events.jsonl": "fc9a8bd2001aaa55e7bed7393b255a220f9dbf47253399cbf61bc97317db46f4",
+    "prepared/manager-state.json": "d30fd19eea3f5a54735a08146e21c26ecd1182fbc49928d5aa7edf106585c53c",
+    "prepared/phase7-e2e-proof.json": "59296ec459a7219cdd678d804f6bfb44afb1244dee1e3ef14623727527a93b04",
+    "prepared/phase7-proof-mission-run.json": "05dbf4a8dfbb656d954d57bb93eeabd374174f7c263750ef108783c986e48cb9",
+    "prepared/phase7-supervisor-state.sqlite3": "ed9cc139985f6653c5274818bd4ed1b3b4421957f07b059574f653a9c42be6ad",
+    "returned/offline-network-proof.json": "d57098152ecb6e36b9112429935d4c7d22f28f372f6b0eb94b5f341c27e26679",
+    "returned/phase7-laptop-result.json": "dc60cfe2c4320fa08aa452d1795edf6cbf3e0f5a49434168fd49fbc35af239ec"
+  },
+  "package_sha256": "65aaabcc36e49b8c3b0dbb69d9f8e2b34f67e5d926421222fabc51166cdca5e4",
+  "prepared_artifact_name": "nexus-phase7-proof-36a3d64f6ce3253b2f9ca76eb594c6afe80e4e9c",
+  "proof_run_id": 32831159231,
+  "repository": "saladinayoubi1/lbank-research-automation",
+  "schema_version": "nexus.phase7-return-package.v1",
+  "session_id": "p7-20260825T091334Z-8a56bfb0",
+  "source_sha": "36a3d64f6ce3253b2f9ca76eb594c6afe80e4e9c"
+}

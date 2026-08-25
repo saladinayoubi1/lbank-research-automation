@@ -1,0 +1,86 @@
+{
+  "canonical_data": {
+    "binding_sha256": "9f5333b245e2dd7c83c33cd07a3337f6cc1950c5b508c39360873a22ac8e9516",
+    "finality": "closed_only",
+    "instrument": "BTC/USDT",
+    "row_count": 90,
+    "source": "Bybit",
+    "source_role": "primary",
+    "timeframe": "15m"
+  },
+  "data_intelligence_regime": {
+    "benchmark_score": 0.2623363361018729,
+    "oos_score": 0.3996486046645815,
+    "regime_pass_ratio": 1.0,
+    "robustness_score": 0.830625447743119,
+    "walk_forward_score": 0.3996486046645815
+  },
+  "decision": {
+    "causation_id": "c4d490019c76ff17c51b603c6f3c9f1cdbf9c6f90799f198b2003f421ae9fa9a",
+    "decision_id": "71f93745a32eaa65bb15764a59ec7aea85e1f5cfa930236b2fc79a26c84ecf9d",
+    "quantity": "1",
+    "reference_price": "125.60000000",
+    "side": "long",
+    "signal_id": "phase7-proof-signal-1"
+  },
+  "live_trading_authority": false,
+  "paper": {
+    "ending_equity": "9999.74867440",
+    "event_count": 9,
+    "event_digests": [
+      "d07f4435662c3e8d0ac1ef3204c721106ab299f5e09ad7027231dbc464a5c8da",
+      "c732d6257589c59b80f067238865a7e179b9be635a8960735cd742673c95625b",
+      "67a56f4e9757eea3e0a83e294a712c9e2b5d18fea6a3d1be4a4eed6a994161bb",
+      "200c00ba27c24b912dee9c690eadcf1ac68a0fe00c8d67fd3f55020b48b723f9",
+      "15a0694dc15122983f774355a9c9ed597a1ccce3b5feeb36c392adc4a1ab23fe",
+      "dcf47792850f8812827fee2c67c929cf077f95f4608098862c1591c9acfd1ce7",
+      "71ccb4c2bb3d7b3f71c5420ffcf44b24589b1196533ae0898fba2ef4628b12b5",
+      "edaf8b5ff8796ed07b0305d2d45fa5cbbdf3f1f8fccffabe67de278019383481",
+      "608af8181083b16830c6cf71b463cff836477805704dc3f3616b2d393018e8f8"
+    ],
+    "fee": "0.12572560",
+    "fill_price": "125.72560000",
+    "open_positions": 1,
+    "slippage_cost": "0.12560000"
+  },
+  "paper_only": true,
+  "performance_drift": {
+    "drift_status": "OBSERVED_BOUNDED_PAPER_COST",
+    "equity_drift_fraction": -2.5132560000029613e-05,
+    "metrics": {
+      "annualized_return": -0.48363653324230194,
+      "annualized_volatility": 0.004075661327506803,
+      "calmar": -19243.42499298647,
+      "calmar_available": true,
+      "cvar_5pct_return": -2.5132560000029613e-05,
+      "elapsed_years": 3.802570537683474e-05,
+      "metric_total_return": -2.5132560000029613e-05,
+      "observations_per_year": 52596.00000000001,
+      "sharpe": -162.16658102087496,
+      "sharpe_available": true,
+      "sortino": 0.0,
+      "sortino_available": false
+    }
+  },
+  "profitability_claim": false,
+  "proof_digest": "fe1c38eaed55711fe71f7383f88a2f4bc02c29fcaa5f531eabb0fd324f069c7d",
+  "risk": {
+    "allowed": true,
+    "policy_id": "phase7-paper-risk",
+    "policy_version": "1.0.0",
+    "proposed_notional": "125.60000000",
+    "reason_code": "risk_allowed",
+    "resulting_exposure": "125.60000000"
+  },
+  "schema_version": "nexus.phase7-e2e-proof.v1",
+  "source_sha": "36a3d64f6ce3253b2f9ca76eb594c6afe80e4e9c",
+  "strategy": {
+    "experiment_id": "3c16a479002850e2437fcac31c08c4f3e1c76d9be4b1aa4d4dfd4e1d0dedcfb8",
+    "family": "momentum",
+    "handoff_digest": "d5f82542e0aaef586dd70d2668538b446cb949e3236209cfdfa245fc3fb2d363",
+    "pipeline_digest": "9854e59c606283804c042cceaf911b82ba8d6b576b937dfcca33dfa2e74ace6d",
+    "qualification_digest": "c4d490019c76ff17c51b603c6f3c9f1cdbf9c6f90799f198b2003f421ae9fa9a",
+    "qualification_status": "paper_candidate",
+    "strategy_version": "phase7-proof-momentum-v1"
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "created_at": "2026-08-25T09:37:19.135572+00:00",
+  "hmac_sha256": "ce9622d1ce2c1deaf513fa84b984d6b7716599deb5a1af7541a5353d22e87379",
+  "kind": "nexus.offline-result.v1",
+  "result": {
+    "correlation_id": "37a533a70b17d6590e0a40d8be4f455e",
+    "dispatch_id": "248a913d7102926ea4bb2f7a1174a27f",
+    "evidence": {
+      "executor": "bounded-pytest",
+      "failure_class": null,
+      "network_required": false,
+      "offline_capable": true,
+      "purpose": "canonical-data-and-offline-backtest-proof",
+      "suite": [
+        "tests/test_phase5_data_binding.py",
+        "tests/test_canonical_backtest_boundary.py",
+        "tests/test_product_offline_runtime.py"
+      ],
+      "tests": {
+        "ok": true,
+        "returncode": 0,
+        "stderr": "",
+        "stdout": ".........................                                                [100%]\n25 passed in 60.94s (0:01:00)\n"
+      },
+      "transport": "windows",
+      "workload_id": "P7-LAPTOP-CANONICAL"
+    },
+    "lease_id": "407d6ef3-5b50-42fd-afd3-c60374ee4ad6",
+    "outcome": "success",
+    "schema_version": 2,
+    "task_id": "P7-LAPTOP-CANONICAL",
+    "transport": "windows",
+    "worker_id": "windows-runner"
+  },
+  "result_sha256": "e9903c73185fb5ecac5578a2d2bc1167481097cbc6a8aa68b8df70043fc60f42",
+  "schema_version": 1,
+  "source_dispatch_sha256": "1ef33fdf81e79b693b2950f09d04f8ec6faaa2b87b1524ef10497459794add5b"
+}

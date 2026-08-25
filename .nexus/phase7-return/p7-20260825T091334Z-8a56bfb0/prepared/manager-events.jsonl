@@ -1,0 +1,21 @@
+{"at": "2026-08-25T09:18:27.283748+00:00", "kind": "task_ready", "task_id": "P7-LAPTOP-CANONICAL"}
+{"at": "2026-08-25T09:18:27.283841+00:00", "kind": "task_ready", "task_id": "P7-CLOUD-VERIFY"}
+{"at": "2026-08-25T09:18:27.284102+00:00", "kind": "task_leased", "task_id": "P7-LAPTOP-CANONICAL", "worker": "windows-runner", "attempt": 1, "routing_score": 80.0, "overlapped_external_waits": []}
+{"at": "2026-08-25T09:18:27.284286+00:00", "kind": "task_leased", "task_id": "P7-CLOUD-VERIFY", "worker": "cloud-worker", "attempt": 1, "routing_score": 64.42, "overlapped_external_waits": []}
+{"at": "2026-08-25T09:18:27.288747+00:00", "kind": "offline_task_exported", "task_id": "P7-LAPTOP-CANONICAL", "worker": "windows-runner", "lease_id": "407d6ef3-5b50-42fd-afd3-c60374ee4ad6", "dispatch_id": "248a913d7102926ea4bb2f7a1174a27f", "payload_sha256": "1ef33fdf81e79b693b2950f09d04f8ec6faaa2b87b1524ef10497459794add5b"}
+{"at": "2026-08-25T09:18:27.710515+00:00", "kind": "verification_assigned", "task_id": "P7-CLOUD-VERIFY", "verifier": "qa-verifier-agent", "producer": "cloud-worker"}
+{"at": "2026-08-25T09:18:27.710636+00:00", "kind": "task_result_ingested", "task_id": "P7-CLOUD-VERIFY", "outcome": "success", "lease_id": "7fb7af79-62a2-401d-8def-a4bf94c7396f", "correlation_id": "04165a801dedc0b7e71d5b3b82871495", "dispatch_id": "808543e81cd0cc97466f76eca52bc2c5"}
+{"at": "2026-08-25T09:18:28.094283+00:00", "kind": "task_done", "task_id": "P7-CLOUD-VERIFY", "verifier": "qa-verifier-agent"}
+{"at": "2026-08-25T09:18:28.094423+00:00", "kind": "task_result_ingested", "task_id": "P7-CLOUD-VERIFY", "outcome": "success", "lease_id": "087030a3-37f7-4e6f-9354-f5b8231e310e", "correlation_id": "04165a801dedc0b7e71d5b3b82871495", "dispatch_id": "560c959e401b8267d29fa7de44a9f859"}
+{"at": "2026-08-25T09:18:28.098445+00:00", "kind": "task_ready", "task_id": "P7-RESEARCH-STRATEGY"}
+{"at": "2026-08-25T09:18:28.098696+00:00", "kind": "task_leased", "task_id": "P7-RESEARCH-STRATEGY", "worker": "research-agent", "attempt": 1, "routing_score": 69.42, "overlapped_external_waits": ["P7-LAPTOP-CANONICAL"]}
+{"at": "2026-08-25T09:18:32.061546+00:00", "kind": "verification_assigned", "task_id": "P7-RESEARCH-STRATEGY", "verifier": "qa-verifier-agent", "producer": "research-agent"}
+{"at": "2026-08-25T09:18:32.061642+00:00", "kind": "task_result_ingested", "task_id": "P7-RESEARCH-STRATEGY", "outcome": "success", "lease_id": "885f224e-bc9b-42a2-b2db-f46b65a0ae5e", "correlation_id": "a46eecd5df2a15ba7d4dadbebb868709", "dispatch_id": "0f9bf9a887253ad73b33456b7716b0f5"}
+{"at": "2026-08-25T09:18:35.958366+00:00", "kind": "task_done", "task_id": "P7-RESEARCH-STRATEGY", "verifier": "qa-verifier-agent"}
+{"at": "2026-08-25T09:18:35.958469+00:00", "kind": "task_result_ingested", "task_id": "P7-RESEARCH-STRATEGY", "outcome": "success", "lease_id": "51421798-65ac-41ee-a653-03438648eda6", "correlation_id": "a46eecd5df2a15ba7d4dadbebb868709", "dispatch_id": "87aff66af15864ee407a21b44b39ccb1"}
+{"at": "2026-08-25T09:18:35.963639+00:00", "kind": "task_ready", "task_id": "P7-PAPER-PERFORMANCE"}
+{"at": "2026-08-25T09:18:35.963884+00:00", "kind": "task_leased", "task_id": "P7-PAPER-PERFORMANCE", "worker": "paper-agent", "attempt": 1, "routing_score": 69.42, "overlapped_external_waits": ["P7-LAPTOP-CANONICAL"]}
+{"at": "2026-08-25T09:18:39.224067+00:00", "kind": "verification_assigned", "task_id": "P7-PAPER-PERFORMANCE", "verifier": "qa-verifier-agent", "producer": "paper-agent"}
+{"at": "2026-08-25T09:18:39.224162+00:00", "kind": "task_result_ingested", "task_id": "P7-PAPER-PERFORMANCE", "outcome": "success", "lease_id": "e3eed357-a508-4cff-b913-b2c2221a3efe", "correlation_id": "45f2e701562740e6e2a90be4377993d5", "dispatch_id": "357c9ba420e228c5054ef7587263a2e1"}
+{"at": "2026-08-25T09:18:42.443976+00:00", "kind": "task_done", "task_id": "P7-PAPER-PERFORMANCE", "verifier": "qa-verifier-agent"}
+{"at": "2026-08-25T09:18:42.444075+00:00", "kind": "task_result_ingested", "task_id": "P7-PAPER-PERFORMANCE", "outcome": "success", "lease_id": "f43f5b3d-e321-4ebe-a536-d7242f27a18d", "correlation_id": "45f2e701562740e6e2a90be4377993d5", "dispatch_id": "0eb9a375f24061f53c8df6c50e209d15"}

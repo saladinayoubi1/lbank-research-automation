@@ -1,0 +1,1149 @@
+{
+  "core_cloud_chain_complete": true,
+  "courier": {
+    "bundle": "courier/phase7-laptop-dispatch.json",
+    "correlation_id": "37a533a70b17d6590e0a40d8be4f455e",
+    "dispatch_id": "248a913d7102926ea4bb2f7a1174a27f",
+    "lease_id": "407d6ef3-5b50-42fd-afd3-c60374ee4ad6",
+    "offline_execution_required": true,
+    "payload_sha256": "1ef33fdf81e79b693b2950f09d04f8ec6faaa2b87b1524ef10497459794add5b",
+    "resource": "windows-local",
+    "status": "EXPORTED",
+    "task_id": "P7-LAPTOP-CANONICAL",
+    "worker_id": "windows-runner"
+  },
+  "deepseek": {
+    "reason": "provider_budget_gate_closed",
+    "status": "UNAVAILABLE",
+    "task_id": "P7-DEEPSEEK-ADVISORY"
+  },
+  "e2e_proof_digest": "fe1c38eaed55711fe71f7383f88a2f4bc02c29fcaa5f531eabb0fd324f069c7d",
+  "hardware_proof_complete": false,
+  "live_trading_authority": false,
+  "manager_summary": {
+    "available_worker_slots": 5,
+    "counts": {
+      "DONE": 3,
+      "RUNNING": 1
+    },
+    "external_waiting": [
+      {
+        "dispatch_id": "248a913d7102926ea4bb2f7a1174a27f",
+        "task_id": "P7-LAPTOP-CANONICAL",
+        "wait_started_at": "2026-08-25T09:18:27.287428+00:00",
+        "worker_id": "windows-runner"
+      }
+    ],
+    "generated_at": "2026-08-25T09:18:42.972478+00:00",
+    "owner_required": [],
+    "phase": 7,
+    "task_phases": [
+      7
+    ],
+    "unassigned_ready": [],
+    "verified_progress_percent": 75.0,
+    "worker_capacity": {
+      "cloud-worker": {
+        "active": 0,
+        "available": 1,
+        "capacity": 1
+      },
+      "deepseek-bounded": {
+        "active": 0,
+        "available": 1,
+        "capacity": 1
+      },
+      "paper-agent": {
+        "active": 0,
+        "available": 1,
+        "capacity": 1
+      },
+      "qa-verifier-agent": {
+        "active": 0,
+        "available": 1,
+        "capacity": 1
+      },
+      "research-agent": {
+        "active": 0,
+        "available": 1,
+        "capacity": 1
+      },
+      "windows-runner": {
+        "active": 1,
+        "available": 0,
+        "capacity": 1
+      }
+    },
+    "zero_idle_assignments": [
+      {
+        "leased_at": "2026-08-25T09:18:28.098285+00:00",
+        "overlapped_external_waits": [
+          {
+            "dispatch_id": "248a913d7102926ea4bb2f7a1174a27f",
+            "task_id": "P7-LAPTOP-CANONICAL",
+            "wait_started_at": "2026-08-25T09:18:27.287428+00:00",
+            "worker_id": "windows-runner"
+          }
+        ],
+        "rule": "dispatch_independent_ready_work_while_other_resource_waits",
+        "task_id": "P7-RESEARCH-STRATEGY"
+      },
+      {
+        "leased_at": "2026-08-25T09:18:35.963514+00:00",
+        "overlapped_external_waits": [
+          {
+            "dispatch_id": "248a913d7102926ea4bb2f7a1174a27f",
+            "task_id": "P7-LAPTOP-CANONICAL",
+            "wait_started_at": "2026-08-25T09:18:27.287428+00:00",
+            "worker_id": "windows-runner"
+          }
+        ],
+        "rule": "dispatch_independent_ready_work_while_other_resource_waits",
+        "task_id": "P7-PAPER-PERFORMANCE"
+      }
+    ]
+  },
+  "mission_id": "nexus-phase7-e2e-proof",
+  "paper_only": true,
+  "resource_classification": {
+    "Cloud/GitHub worker": {
+      "classification": "EXECUTED",
+      "executed_rows": 4,
+      "reason": null,
+      "task_ids": [
+        "P7-CLOUD-VERIFY",
+        "P7-PAPER-PERFORMANCE",
+        "P7-RESEARCH-STRATEGY"
+      ],
+      "unavailable_rows": 0,
+      "worker_ids": [
+        "cloud-worker",
+        "qa-verifier-agent"
+      ]
+    },
+    "DeepSeek/AI provider": {
+      "classification": "UNAVAILABLE",
+      "executed_rows": 0,
+      "reason": "provider_budget_gate_closed",
+      "task_ids": [
+        "P7-DEEPSEEK-ADVISORY"
+      ],
+      "unavailable_rows": 1,
+      "worker_ids": [
+        "deepseek-bounded"
+      ]
+    },
+    "Internal Agent": {
+      "classification": "EXECUTED",
+      "executed_rows": 2,
+      "reason": null,
+      "task_ids": [
+        "P7-PAPER-PERFORMANCE",
+        "P7-RESEARCH-STRATEGY"
+      ],
+      "unavailable_rows": 0,
+      "worker_ids": [
+        "paper-agent",
+        "research-agent"
+      ]
+    },
+    "Laptop": {
+      "classification": "UNAVAILABLE",
+      "executed_rows": 0,
+      "reason": "awaiting_real_offline_laptop_execution",
+      "task_ids": [
+        "P7-LAPTOP-CANONICAL"
+      ],
+      "unavailable_rows": 1,
+      "worker_ids": [
+        "windows-runner"
+      ]
+    }
+  },
+  "resource_ledger": [
+    {
+      "availability_reason": "awaiting_real_offline_laptop_execution",
+      "budget_cost": {
+        "provider_cost_usd": null,
+        "routing_cost_units": 0.0
+      },
+      "classification": "UNAVAILABLE",
+      "latency_ms": null,
+      "lease_fencing": {
+        "attempt": 1,
+        "dispatch_id": "248a913d7102926ea4bb2f7a1174a27f",
+        "fencing_identity_sha256": "bf6b512a30ca2e622121de959aa08daf760ca7fd1e32119b701e85eb096d385a",
+        "lease_id": "407d6ef3-5b50-42fd-afd3-c60374ee4ad6"
+      },
+      "resource": "offline-courier",
+      "resource_class": "Laptop",
+      "result": {
+        "evidence_sha256": "1f5de4929b9148f03d477f4223a8c21a374e7e1369060cd2a48efe626014e676",
+        "failure_class": null,
+        "outcome": "WAITING_EXTERNAL"
+      },
+      "retry_failure": {
+        "observed_failure_rate": 0.0,
+        "transient_retries": 0
+      },
+      "role": "producer",
+      "routing": {
+        "evaluated_at": "2026-08-25T09:18:27.283570+00:00",
+        "reason": "highest_deterministic_score",
+        "rejected_alternatives": [
+          {
+            "eligible": true,
+            "rejection_reasons": [],
+            "score": 24.92,
+            "selection_reason": "lower_score_than_selected",
+            "worker_id": "qa-verifier-agent"
+          },
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "missing_capabilities:data_validation"
+            ],
+            "score": null,
+            "selection_reason": "ineligible",
+            "worker_id": "cloud-worker"
+          },
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "unavailable",
+              "missing_capabilities:data_validation"
+            ],
+            "score": null,
+            "selection_reason": "ineligible",
+            "worker_id": "deepseek-bounded"
+          },
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "missing_capabilities:data_validation"
+            ],
+            "score": null,
+            "selection_reason": "ineligible",
+            "worker_id": "paper-agent"
+          },
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "missing_capabilities:data_validation"
+            ],
+            "score": null,
+            "selection_reason": "ineligible",
+            "worker_id": "research-agent"
+          }
+        ],
+        "selected_components": {
+          "cost": -0.0,
+          "data_locality": 15.0,
+          "failure_rate": -0.0,
+          "health": 30.0,
+          "latency": -0.0,
+          "preferred_resource": 20.0,
+          "queue_depth": -0.0,
+          "remaining_capacity": 5.0,
+          "trust_domain": 10.0
+        },
+        "selected_observed": {
+          "available": true,
+          "capacity": 1,
+          "cost_units": 0.0,
+          "data_locality": [
+            "windows-local"
+          ],
+          "failure_rate": 0.0,
+          "health_score": 1.0,
+          "latency_ms": 0.0,
+          "queue_depth": 0,
+          "trust_domains": [
+            "windows-local"
+          ]
+        },
+        "selected_score": 80.0,
+        "selected_worker": "windows-runner"
+      },
+      "task_id": "P7-LAPTOP-CANONICAL",
+      "timestamps": {
+        "dispatch_at": "2026-08-25T09:18:27.287428+00:00",
+        "heartbeat_at": null,
+        "leased_at": "2026-08-25T09:18:27.283570+00:00",
+        "result_at": null
+      },
+      "verifier": {
+        "result": null,
+        "worker_id": null
+      },
+      "worker_id": "windows-runner"
+    },
+    {
+      "availability_reason": null,
+      "budget_cost": {
+        "provider_cost_usd": null,
+        "routing_cost_units": 0.1
+      },
+      "classification": "EXECUTED",
+      "latency_ms": 417.216,
+      "lease_fencing": {
+        "attempt": 1,
+        "dispatch_id": "808543e81cd0cc97466f76eca52bc2c5",
+        "fencing_identity_sha256": "e2506651fcba2b27f3d16c368334e14a987f8af3c7ef966e71024d90d86c64ab",
+        "lease_id": "7fb7af79-62a2-401d-8def-a4bf94c7396f"
+      },
+      "resource": "github-cloud",
+      "resource_class": "Cloud/GitHub worker",
+      "result": {
+        "evidence_sha256": "f4b0e0fa90d8256f2dfbe787e65c5662ef95f890d0b6f2d6e4efebcfccd09254",
+        "failure_class": null,
+        "outcome": "success"
+      },
+      "retry_failure": {
+        "observed_failure_rate": 0.0,
+        "transient_retries": 0
+      },
+      "role": "producer",
+      "routing": {
+        "evaluated_at": "2026-08-25T09:18:27.283570+00:00",
+        "reason": "highest_deterministic_score",
+        "rejected_alternatives": [
+          {
+            "eligible": true,
+            "rejection_reasons": [],
+            "score": 44.92,
+            "selection_reason": "lower_score_than_selected",
+            "worker_id": "qa-verifier-agent"
+          },
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "unavailable",
+              "missing_capabilities:integration_tests"
+            ],
+            "score": null,
+            "selection_reason": "ineligible",
+            "worker_id": "deepseek-bounded"
+          },
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "missing_capabilities:integration_tests"
+            ],
+            "score": null,
+            "selection_reason": "ineligible",
+            "worker_id": "paper-agent"
+          },
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "missing_capabilities:integration_tests"
+            ],
+            "score": null,
+            "selection_reason": "ineligible",
+            "worker_id": "research-agent"
+          },
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "capacity_exhausted"
+            ],
+            "score": null,
+            "selection_reason": "ineligible",
+            "worker_id": "windows-runner"
+          }
+        ],
+        "selected_components": {
+          "cost": -0.5,
+          "data_locality": 0.0,
+          "failure_rate": -0.0,
+          "health": 30.0,
+          "latency": -0.08,
+          "preferred_resource": 20.0,
+          "queue_depth": -0.0,
+          "remaining_capacity": 5.0,
+          "trust_domain": 10.0
+        },
+        "selected_observed": {
+          "available": true,
+          "capacity": 1,
+          "cost_units": 0.1,
+          "data_locality": [
+            "repository"
+          ],
+          "failure_rate": 0.0,
+          "health_score": 1.0,
+          "latency_ms": 20.0,
+          "queue_depth": 0,
+          "trust_domains": [
+            "github-cloud"
+          ]
+        },
+        "selected_score": 64.42,
+        "selected_worker": "cloud-worker"
+      },
+      "task_id": "P7-CLOUD-VERIFY",
+      "timestamps": {
+        "dispatch_at": "2026-08-25T09:18:27.292835+00:00",
+        "heartbeat_at": "2026-08-25T09:18:27.283570+00:00",
+        "leased_at": "2026-08-25T09:18:27.283570+00:00",
+        "result_at": "2026-08-25T09:18:27.710576+00:00"
+      },
+      "verifier": {
+        "result": "assigned",
+        "worker_id": "qa-verifier-agent"
+      },
+      "worker_id": "cloud-worker"
+    },
+    {
+      "availability_reason": null,
+      "budget_cost": {
+        "provider_cost_usd": null,
+        "routing_cost_units": 2.0
+      },
+      "classification": "EXECUTED",
+      "latency_ms": 382.954,
+      "lease_fencing": {
+        "attempt": 1,
+        "dispatch_id": "560c959e401b8267d29fa7de44a9f859",
+        "fencing_identity_sha256": "8fa7f1f5c69ef7e831d57ace2184d35953e0c184805e299d671110a1b9284dd7",
+        "lease_id": "087030a3-37f7-4e6f-9354-f5b8231e310e"
+      },
+      "resource": "github-cloud",
+      "resource_class": "Cloud/GitHub worker",
+      "result": {
+        "evidence_sha256": "94ab730b7cd3187deb80e8eedaff64cbb9a93f2c6ab2ca0e319457bfd70316dc",
+        "failure_class": null,
+        "outcome": "success"
+      },
+      "retry_failure": {
+        "observed_failure_rate": 0.0,
+        "transient_retries": 0
+      },
+      "role": "verifier",
+      "routing": {
+        "evaluated_at": "2026-08-25T09:18:27.711112+00:00",
+        "reason": "highest_deterministic_score",
+        "rejected_alternatives": [
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "not_verifier",
+              "producer_verifier_separation"
+            ],
+            "score": null,
+            "selection_reason": "ineligible",
+            "worker_id": "cloud-worker"
+          },
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "unavailable",
+              "not_verifier",
+              "missing_capabilities:integration_tests"
+            ],
+            "score": null,
+            "selection_reason": "ineligible",
+            "worker_id": "deepseek-bounded"
+          },
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "not_verifier",
+              "missing_capabilities:integration_tests"
+            ],
+            "score": null,
+            "selection_reason": "ineligible",
+            "worker_id": "paper-agent"
+          },
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "not_verifier",
+              "missing_capabilities:integration_tests"
+            ],
+            "score": null,
+            "selection_reason": "ineligible",
+            "worker_id": "research-agent"
+          },
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "not_verifier",
+              "capacity_exhausted"
+            ],
+            "score": null,
+            "selection_reason": "ineligible",
+            "worker_id": "windows-runner"
+          }
+        ],
+        "selected_components": {
+          "cost": -10.0,
+          "data_locality": 0.0,
+          "failure_rate": -0.0,
+          "health": 30.0,
+          "latency": -0.08,
+          "preferred_resource": 20.0,
+          "queue_depth": -0.0,
+          "remaining_capacity": 5.0,
+          "trust_domain": 0.0
+        },
+        "selected_observed": {
+          "available": true,
+          "capacity": 1,
+          "cost_units": 2.0,
+          "data_locality": [
+            "canonical-data",
+            "paper-ledger",
+            "repository"
+          ],
+          "failure_rate": 0.0,
+          "health_score": 1.0,
+          "latency_ms": 20.0,
+          "queue_depth": 0,
+          "trust_domains": [
+            "github-cloud-verifier"
+          ]
+        },
+        "selected_score": 44.92,
+        "selected_worker": "qa-verifier-agent"
+      },
+      "task_id": "P7-CLOUD-VERIFY",
+      "timestamps": {
+        "dispatch_at": "2026-08-25T09:18:27.711176+00:00",
+        "heartbeat_at": "2026-08-25T09:18:27.710113+00:00",
+        "leased_at": "2026-08-25T09:18:27.283570+00:00",
+        "result_at": "2026-08-25T09:18:28.094368+00:00"
+      },
+      "verifier": {
+        "result": "success",
+        "worker_id": "qa-verifier-agent"
+      },
+      "worker_id": "qa-verifier-agent"
+    },
+    {
+      "availability_reason": null,
+      "budget_cost": {
+        "provider_cost_usd": null,
+        "routing_cost_units": 0.1
+      },
+      "classification": "EXECUTED",
+      "latency_ms": 3962.051,
+      "lease_fencing": {
+        "attempt": 1,
+        "dispatch_id": "0f9bf9a887253ad73b33456b7716b0f5",
+        "fencing_identity_sha256": "07f60a356ef279d2663a642c2d9e0f5b85a8c5e35e2484e4c3424d165c10436b",
+        "lease_id": "885f224e-bc9b-42a2-b2db-f46b65a0ae5e"
+      },
+      "resource": "github-cloud",
+      "resource_class": "Internal Agent",
+      "result": {
+        "evidence_sha256": "82777c238d3de5f3bdf5d324073218f4d31ba79f82d0170a9d56052bddf18666",
+        "failure_class": null,
+        "outcome": "success"
+      },
+      "retry_failure": {
+        "observed_failure_rate": 0.0,
+        "transient_retries": 0
+      },
+      "role": "producer",
+      "routing": {
+        "evaluated_at": "2026-08-25T09:18:28.098285+00:00",
+        "reason": "highest_deterministic_score",
+        "rejected_alternatives": [
+          {
+            "eligible": true,
+            "rejection_reasons": [],
+            "score": 59.92,
+            "selection_reason": "lower_score_than_selected",
+            "worker_id": "qa-verifier-agent"
+          },
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "missing_capabilities:research,strategy_qualification"
+            ],
+            "score": null,
+            "selection_reason": "ineligible",
+            "worker_id": "cloud-worker"
+          },
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "unavailable",
+              "missing_capabilities:research,strategy_qualification"
+            ],
+            "score": null,
+            "selection_reason": "ineligible",
+            "worker_id": "deepseek-bounded"
+          },
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "missing_capabilities:research,strategy_qualification"
+            ],
+            "score": null,
+            "selection_reason": "ineligible",
+            "worker_id": "paper-agent"
+          },
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "missing_capabilities:research,strategy_qualification",
+              "capacity_exhausted"
+            ],
+            "score": null,
+            "selection_reason": "ineligible",
+            "worker_id": "windows-runner"
+          }
+        ],
+        "selected_components": {
+          "cost": -0.5,
+          "data_locality": 15.0,
+          "failure_rate": -0.0,
+          "health": 30.0,
+          "latency": -0.08,
+          "preferred_resource": 20.0,
+          "queue_depth": -0.0,
+          "remaining_capacity": 5.0,
+          "trust_domain": 0.0
+        },
+        "selected_observed": {
+          "available": true,
+          "capacity": 1,
+          "cost_units": 0.1,
+          "data_locality": [
+            "canonical-data"
+          ],
+          "failure_rate": 0.0,
+          "health_score": 1.0,
+          "latency_ms": 20.0,
+          "queue_depth": 0,
+          "trust_domains": [
+            "github-cloud"
+          ]
+        },
+        "selected_score": 69.42,
+        "selected_worker": "research-agent"
+      },
+      "task_id": "P7-RESEARCH-STRATEGY",
+      "timestamps": {
+        "dispatch_at": "2026-08-25T09:18:28.099106+00:00",
+        "heartbeat_at": "2026-08-25T09:18:28.098285+00:00",
+        "leased_at": "2026-08-25T09:18:28.098285+00:00",
+        "result_at": "2026-08-25T09:18:32.061600+00:00"
+      },
+      "verifier": {
+        "result": "assigned",
+        "worker_id": "qa-verifier-agent"
+      },
+      "worker_id": "research-agent"
+    },
+    {
+      "availability_reason": null,
+      "budget_cost": {
+        "provider_cost_usd": null,
+        "routing_cost_units": 2.0
+      },
+      "classification": "EXECUTED",
+      "latency_ms": 3896.092,
+      "lease_fencing": {
+        "attempt": 1,
+        "dispatch_id": "87aff66af15864ee407a21b44b39ccb1",
+        "fencing_identity_sha256": "c75680542d5e015b88a6782dedceb43e5a96ab38f26c0e8d0c25cd2cb197bc30",
+        "lease_id": "51421798-65ac-41ee-a653-03438648eda6"
+      },
+      "resource": "github-cloud",
+      "resource_class": "Cloud/GitHub worker",
+      "result": {
+        "evidence_sha256": "acd16039b24593d8565d8beaeb82e6930c457c3aa8098b653a6385ae69036e95",
+        "failure_class": null,
+        "outcome": "success"
+      },
+      "retry_failure": {
+        "observed_failure_rate": 0.0,
+        "transient_retries": 0
+      },
+      "role": "verifier",
+      "routing": {
+        "evaluated_at": "2026-08-25T09:18:32.062023+00:00",
+        "reason": "highest_deterministic_score",
+        "rejected_alternatives": [
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "not_verifier",
+              "missing_capabilities:research,strategy_qualification"
+            ],
+            "score": null,
+            "selection_reason": "ineligible",
+            "worker_id": "cloud-worker"
+          },
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "unavailable",
+              "not_verifier",
+              "missing_capabilities:research,strategy_qualification"
+            ],
+            "score": null,
+            "selection_reason": "ineligible",
+            "worker_id": "deepseek-bounded"
+          },
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "not_verifier",
+              "missing_capabilities:research,strategy_qualification"
+            ],
+            "score": null,
+            "selection_reason": "ineligible",
+            "worker_id": "paper-agent"
+          },
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "not_verifier",
+              "producer_verifier_separation"
+            ],
+            "score": null,
+            "selection_reason": "ineligible",
+            "worker_id": "research-agent"
+          },
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "not_verifier",
+              "missing_capabilities:research,strategy_qualification",
+              "capacity_exhausted"
+            ],
+            "score": null,
+            "selection_reason": "ineligible",
+            "worker_id": "windows-runner"
+          }
+        ],
+        "selected_components": {
+          "cost": -10.0,
+          "data_locality": 15.0,
+          "failure_rate": -0.0,
+          "health": 30.0,
+          "latency": -0.08,
+          "preferred_resource": 20.0,
+          "queue_depth": -0.0,
+          "remaining_capacity": 5.0,
+          "trust_domain": 0.0
+        },
+        "selected_observed": {
+          "available": true,
+          "capacity": 1,
+          "cost_units": 2.0,
+          "data_locality": [
+            "canonical-data",
+            "paper-ledger",
+            "repository"
+          ],
+          "failure_rate": 0.0,
+          "health_score": 1.0,
+          "latency_ms": 20.0,
+          "queue_depth": 0,
+          "trust_domains": [
+            "github-cloud-verifier"
+          ]
+        },
+        "selected_score": 59.92,
+        "selected_worker": "qa-verifier-agent"
+      },
+      "task_id": "P7-RESEARCH-STRATEGY",
+      "timestamps": {
+        "dispatch_at": "2026-08-25T09:18:32.062082+00:00",
+        "heartbeat_at": "2026-08-25T09:18:32.061206+00:00",
+        "leased_at": "2026-08-25T09:18:28.098285+00:00",
+        "result_at": "2026-08-25T09:18:35.958422+00:00"
+      },
+      "verifier": {
+        "result": "success",
+        "worker_id": "qa-verifier-agent"
+      },
+      "worker_id": "qa-verifier-agent"
+    },
+    {
+      "availability_reason": null,
+      "budget_cost": {
+        "provider_cost_usd": null,
+        "routing_cost_units": 0.1
+      },
+      "classification": "EXECUTED",
+      "latency_ms": 3259.426,
+      "lease_fencing": {
+        "attempt": 1,
+        "dispatch_id": "357c9ba420e228c5054ef7587263a2e1",
+        "fencing_identity_sha256": "c3456c8f5832118c25e1e5805eeee5fc86eb3abfc16c3d4782087fa304ddb26d",
+        "lease_id": "e3eed357-a508-4cff-b913-b2c2221a3efe"
+      },
+      "resource": "github-cloud",
+      "resource_class": "Internal Agent",
+      "result": {
+        "evidence_sha256": "6474db636fe4eb558908b5b1d7c81d05aa9dc550f3ba4fad24688ba5458ff4be",
+        "failure_class": null,
+        "outcome": "success"
+      },
+      "retry_failure": {
+        "observed_failure_rate": 0.0,
+        "transient_retries": 0
+      },
+      "role": "producer",
+      "routing": {
+        "evaluated_at": "2026-08-25T09:18:35.963514+00:00",
+        "reason": "highest_deterministic_score",
+        "rejected_alternatives": [
+          {
+            "eligible": true,
+            "rejection_reasons": [],
+            "score": 59.92,
+            "selection_reason": "lower_score_than_selected",
+            "worker_id": "qa-verifier-agent"
+          },
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "missing_capabilities:paper_execution,performance_metrics"
+            ],
+            "score": null,
+            "selection_reason": "ineligible",
+            "worker_id": "cloud-worker"
+          },
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "unavailable",
+              "missing_capabilities:paper_execution,performance_metrics"
+            ],
+            "score": null,
+            "selection_reason": "ineligible",
+            "worker_id": "deepseek-bounded"
+          },
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "missing_capabilities:paper_execution,performance_metrics"
+            ],
+            "score": null,
+            "selection_reason": "ineligible",
+            "worker_id": "research-agent"
+          },
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "missing_capabilities:paper_execution,performance_metrics",
+              "capacity_exhausted"
+            ],
+            "score": null,
+            "selection_reason": "ineligible",
+            "worker_id": "windows-runner"
+          }
+        ],
+        "selected_components": {
+          "cost": -0.5,
+          "data_locality": 15.0,
+          "failure_rate": -0.0,
+          "health": 30.0,
+          "latency": -0.08,
+          "preferred_resource": 20.0,
+          "queue_depth": -0.0,
+          "remaining_capacity": 5.0,
+          "trust_domain": 0.0
+        },
+        "selected_observed": {
+          "available": true,
+          "capacity": 1,
+          "cost_units": 0.1,
+          "data_locality": [
+            "paper-ledger"
+          ],
+          "failure_rate": 0.0,
+          "health_score": 1.0,
+          "latency_ms": 20.0,
+          "queue_depth": 0,
+          "trust_domains": [
+            "github-cloud"
+          ]
+        },
+        "selected_score": 69.42,
+        "selected_worker": "paper-agent"
+      },
+      "task_id": "P7-PAPER-PERFORMANCE",
+      "timestamps": {
+        "dispatch_at": "2026-08-25T09:18:35.964289+00:00",
+        "heartbeat_at": "2026-08-25T09:18:35.963514+00:00",
+        "leased_at": "2026-08-25T09:18:35.963514+00:00",
+        "result_at": "2026-08-25T09:18:39.224119+00:00"
+      },
+      "verifier": {
+        "result": "assigned",
+        "worker_id": "qa-verifier-agent"
+      },
+      "worker_id": "paper-agent"
+    },
+    {
+      "availability_reason": null,
+      "budget_cost": {
+        "provider_cost_usd": null,
+        "routing_cost_units": 2.0
+      },
+      "classification": "EXECUTED",
+      "latency_ms": 3219.166,
+      "lease_fencing": {
+        "attempt": 1,
+        "dispatch_id": "0eb9a375f24061f53c8df6c50e209d15",
+        "fencing_identity_sha256": "35328a37588f8db097f052cf9ca3a2895546bd5cd4dcfd7192a8b604cdbf8951",
+        "lease_id": "f43f5b3d-e321-4ebe-a536-d7242f27a18d"
+      },
+      "resource": "github-cloud",
+      "resource_class": "Cloud/GitHub worker",
+      "result": {
+        "evidence_sha256": "d9d0a5c489e786b9702f4965a5a7d465e7b9a913c3cc39ca39363cb812bc0c5e",
+        "failure_class": null,
+        "outcome": "success"
+      },
+      "retry_failure": {
+        "observed_failure_rate": 0.0,
+        "transient_retries": 0
+      },
+      "role": "verifier",
+      "routing": {
+        "evaluated_at": "2026-08-25T09:18:39.224591+00:00",
+        "reason": "highest_deterministic_score",
+        "rejected_alternatives": [
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "not_verifier",
+              "missing_capabilities:paper_execution,performance_metrics"
+            ],
+            "score": null,
+            "selection_reason": "ineligible",
+            "worker_id": "cloud-worker"
+          },
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "unavailable",
+              "not_verifier",
+              "missing_capabilities:paper_execution,performance_metrics"
+            ],
+            "score": null,
+            "selection_reason": "ineligible",
+            "worker_id": "deepseek-bounded"
+          },
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "not_verifier",
+              "producer_verifier_separation"
+            ],
+            "score": null,
+            "selection_reason": "ineligible",
+            "worker_id": "paper-agent"
+          },
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "not_verifier",
+              "missing_capabilities:paper_execution,performance_metrics"
+            ],
+            "score": null,
+            "selection_reason": "ineligible",
+            "worker_id": "research-agent"
+          },
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "not_verifier",
+              "missing_capabilities:paper_execution,performance_metrics",
+              "capacity_exhausted"
+            ],
+            "score": null,
+            "selection_reason": "ineligible",
+            "worker_id": "windows-runner"
+          }
+        ],
+        "selected_components": {
+          "cost": -10.0,
+          "data_locality": 15.0,
+          "failure_rate": -0.0,
+          "health": 30.0,
+          "latency": -0.08,
+          "preferred_resource": 20.0,
+          "queue_depth": -0.0,
+          "remaining_capacity": 5.0,
+          "trust_domain": 0.0
+        },
+        "selected_observed": {
+          "available": true,
+          "capacity": 1,
+          "cost_units": 2.0,
+          "data_locality": [
+            "canonical-data",
+            "paper-ledger",
+            "repository"
+          ],
+          "failure_rate": 0.0,
+          "health_score": 1.0,
+          "latency_ms": 20.0,
+          "queue_depth": 0,
+          "trust_domains": [
+            "github-cloud-verifier"
+          ]
+        },
+        "selected_score": 59.92,
+        "selected_worker": "qa-verifier-agent"
+      },
+      "task_id": "P7-PAPER-PERFORMANCE",
+      "timestamps": {
+        "dispatch_at": "2026-08-25T09:18:39.224652+00:00",
+        "heartbeat_at": "2026-08-25T09:18:39.223765+00:00",
+        "leased_at": "2026-08-25T09:18:35.963514+00:00",
+        "result_at": "2026-08-25T09:18:42.444028+00:00"
+      },
+      "verifier": {
+        "result": "success",
+        "worker_id": "qa-verifier-agent"
+      },
+      "worker_id": "qa-verifier-agent"
+    },
+    {
+      "availability_reason": "provider_budget_gate_closed",
+      "budget_cost": {
+        "provider_cost_usd": null,
+        "routing_cost_units": 1.0
+      },
+      "classification": "UNAVAILABLE",
+      "latency_ms": null,
+      "lease_fencing": {
+        "attempt": 1,
+        "dispatch_id": "8ec0805f399bf4bb652fc8281c409f5f",
+        "fencing_identity_sha256": "1419d5c440e1cc44a18558814d83edbfc1eb370453d24c50d5160af321fa7adc",
+        "lease_id": "3ddbed4b92f51cecbd17c2f213ca43ee"
+      },
+      "resource": "deepseek",
+      "resource_class": "DeepSeek/AI provider",
+      "result": {
+        "evidence_sha256": null,
+        "failure_class": null,
+        "outcome": "not_executed"
+      },
+      "retry_failure": {
+        "observed_failure_rate": 0.0,
+        "transient_retries": 0
+      },
+      "role": "advisory",
+      "routing": {
+        "evaluated_at": "2026-08-25T09:18:42.450185+00:00",
+        "reason": "selected_worker_not_eligible",
+        "rejected_alternatives": [
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "missing_capabilities:code_review"
+            ],
+            "score": null,
+            "selection_reason": null,
+            "worker_id": "cloud-worker"
+          },
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "missing_capabilities:code_review"
+            ],
+            "score": null,
+            "selection_reason": null,
+            "worker_id": "paper-agent"
+          },
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "missing_capabilities:code_review"
+            ],
+            "score": null,
+            "selection_reason": null,
+            "worker_id": "qa-verifier-agent"
+          },
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "missing_capabilities:code_review"
+            ],
+            "score": null,
+            "selection_reason": null,
+            "worker_id": "research-agent"
+          },
+          {
+            "eligible": false,
+            "rejection_reasons": [
+              "missing_capabilities:code_review",
+              "capacity_exhausted"
+            ],
+            "score": null,
+            "selection_reason": null,
+            "worker_id": "windows-runner"
+          }
+        ],
+        "selected_components": {
+          "cost": -5.0,
+          "data_locality": 0.0,
+          "failure_rate": -0.0,
+          "health": 30.0,
+          "latency": -1.0,
+          "preferred_resource": 20.0,
+          "queue_depth": -0.0,
+          "remaining_capacity": 5.0,
+          "trust_domain": 10.0
+        },
+        "selected_observed": {
+          "available": false,
+          "capacity": 1,
+          "cost_units": 1.0,
+          "data_locality": [],
+          "failure_rate": 0.0,
+          "health_score": 1.0,
+          "latency_ms": 250.0,
+          "queue_depth": 0,
+          "trust_domains": [
+            "deepseek-external"
+          ]
+        },
+        "selected_score": null,
+        "selected_worker": null
+      },
+      "task_id": "P7-DEEPSEEK-ADVISORY",
+      "timestamps": {
+        "dispatch_at": "2026-08-25T09:18:42.450406+00:00",
+        "heartbeat_at": "2026-08-25T09:18:42.449959+00:00",
+        "leased_at": "2026-08-25T09:18:42.449950+00:00",
+        "result_at": null
+      },
+      "verifier": {
+        "result": null,
+        "worker_id": null
+      },
+      "worker_id": "deepseek-bounded"
+    }
+  ],
+  "run_digest": "e81a9d819f10b39999aa5c7c9601891904d98a6bf2f8b63a90fe4d900a9e46dd",
+  "schema_version": "nexus.phase7-proof-mission-run.v1",
+  "source_sha": "36a3d64f6ce3253b2f9ca76eb594c6afe80e4e9c",
+  "state_generation": 5,
+  "state_sha256": "42885b1fdc695b297b61d75d98b0dfbc462354a052967661e54a5b72e6cad673",
+  "zero_idle_evidence": {
+    "leased_at": "2026-08-25T09:18:28.098285+00:00",
+    "overlapped_external_waits": [
+      {
+        "dispatch_id": "248a913d7102926ea4bb2f7a1174a27f",
+        "task_id": "P7-LAPTOP-CANONICAL",
+        "wait_started_at": "2026-08-25T09:18:27.287428+00:00",
+        "worker_id": "windows-runner"
+      }
+    ],
+    "rule": "dispatch_independent_ready_work_while_other_resource_waits"
+  }
+}
