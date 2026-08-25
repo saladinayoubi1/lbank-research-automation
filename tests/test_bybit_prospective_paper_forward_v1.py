@@ -78,6 +78,16 @@ def test_contract_binds_frozen_strategy_and_paper_only_authority() -> None:
     }
 
 
+def test_frozen_manifest_digest_is_newline_portable(tmp_path: Path) -> None:
+    lf = tmp_path / "manifest-lf.json"
+    crlf = tmp_path / "manifest-crlf.json"
+    content = '{\n  "strategy_id": "portable"\n}\n'
+    lf.write_bytes(content.encode("utf-8"))
+    crlf.write_bytes(content.replace("\n", "\r\n").encode("utf-8"))
+
+    assert forward._file_sha(lf) == forward._file_sha(crlf)  # noqa: SLF001
+
+
 def test_state_and_event_digest_chain_survive_one_paper_bar() -> None:
     config, _ = forward.load_contract(MANIFEST)
     state = forward.new_state(
