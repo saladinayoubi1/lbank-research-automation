@@ -7,6 +7,8 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+from nexus_strategy_discovery_controller import build_status as build_strategy_discovery_status
+
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / ".nexus_runtime" / "phase3"
 OUT.mkdir(parents=True, exist_ok=True)
@@ -45,14 +47,22 @@ def evidence() -> int:
 
 
 def strategy() -> int:
-    candidates = []
-    for path in [ROOT / "research" / "evidence" / "ema_crossover_evidence_matrix.md"]:
-        if path.exists():
-            candidates.append(str(path.relative_to(ROOT)))
+    discovery = build_strategy_discovery_status(ROOT)
     payload = {
-        "task": "strategy_evidence_to_experiment",
+        "task": "strategy_discovery_and_evidence_routing",
         "timestamp": now(),
-        "candidate_evidence": candidates,
+        "mode": discovery["mode"],
+        "paper_only": discovery["paper_only"],
+        "live_trading_authority": discovery["live_trading_authority"],
+        "controller_verified": discovery["controller_verified"],
+        "catalog": discovery["catalog"],
+        "search_stages": discovery["search_stages"],
+        "summary": discovery["summary"],
+        "qualified_candidates": discovery["qualified_candidates"],
+        "qualification_claimed": discovery["qualification_claimed"],
+        "qualification_policy": discovery["qualification_policy"],
+        "errors": discovery["errors"],
+        "discovery_status_sha256": discovery["status_sha256"],
         "required_validation": [
             "deterministic rules",
             "fees/slippage/funding realism",
@@ -61,12 +71,12 @@ def strategy() -> int:
             "benchmark and uncertainty",
             "kill/invalidation criteria",
         ],
-        "verified": bool(candidates),
-        "next_action": "prepare or run deterministic backtest only from an evidence-backed candidate",
+        "verified": discovery["controller_verified"],
+        "next_action": discovery["next_research_action"],
     }
     write("strategy.json", payload)
     print(json.dumps(payload, sort_keys=True))
-    return 0
+    return 0 if discovery["controller_verified"] else 2
 
 
 def gates() -> int:
