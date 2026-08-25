@@ -15,16 +15,15 @@ def _supervisor():
 def _resources():
     executed = {
         "state": "EXECUTED", "source_sha": SHA, "task_id": "task-1",
-        "lease_id": "lease-1", "result_digest": "r" * 64,
-        "evidence_digest": "e" * 64, "verifier_digest": "v" * 64,
+        "lease_id": "lease-1", "result_digest": "a" * 64,
+        "evidence_digest": "b" * 64, "verifier_digest": "c" * 64,
     }
     return [
         {"resource": "internal_agents", **executed},
         {"resource": "cloud_verifier", **executed, "task_id": "verify-1"},
         {"resource": "deepseek", "state": "UNAVAILABLE", "source_sha": SHA,
          "reason_code": "provider_not_configured"},
-        {"resource": "windows_laptop", "state": "BLOCKED", "source_sha": SHA,
-         "reason_code": "physical_evidence_pending"},
+        {"resource": "windows_laptop", **executed, "task_id": "windows-task-1"},
     ]
 
 
@@ -53,6 +52,7 @@ def test_fixed_sha_complete_bundle_verifies_and_persists(tmp_path: Path, monkeyp
     assert result["decision"] == "VERIFIED"
     assert result["checks"]["deepseek_truthful"] is True
     assert result["checks"]["windows_truthful"] is True
+    assert result["checks"]["windows_physical_execution"] is True
     saved = proof.save_verified_bundle(tmp_path / "proof.json", bundle)
     assert saved["verification"]["decision"] == "VERIFIED"
     assert (tmp_path / "proof.json").is_file()
@@ -82,6 +82,31 @@ def test_duplicate_or_missing_resources_reject(monkeypatch) -> None:
     result = proof.verify_final_proof(bundle)
     assert result["decision"] == "REJECTED"
     assert result["checks"]["required_resources_declared"] is False
+
+
+@pytest.mark.parametrize("state", ["BLOCKED", "UNAVAILABLE"])
+def test_missing_physical_windows_execution_rejects(monkeypatch, state) -> None:
+    bundle = _bundle(monkeypatch)
+    bundle["resource_utilization"][3] = {
+        "resource": "windows_laptop",
+        "state": state,
+        "source_sha": SHA,
+        "reason_code": "physical_evidence_pending",
+    }
+    result = proof.verify_final_proof(bundle)
+    assert result["decision"] == "REJECTED"
+    assert result["checks"]["windows_truthful"] is True
+    assert result["checks"]["windows_physical_execution"] is False
+
+
+@pytest.mark.parametrize(
+    "field", ["result_digest", "evidence_digest", "verifier_digest"]
+)
+def test_noncanonical_execution_digest_rejects(monkeypatch, field) -> None:
+    bundle = _bundle(monkeypatch)
+    bundle["resource_utilization"][0][field] = "present-but-not-a-digest"
+    result = proof.verify_final_proof(bundle)
+    assert result["decision"] == "REJECTED"
 
 
 def test_invalid_sha_and_rejected_supervisor_fail_closed(monkeypatch) -> None:
