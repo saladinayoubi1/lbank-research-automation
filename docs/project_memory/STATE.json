@@ -68,10 +68,10 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "ec203f83bf81ca7953ef812e535a9ef23591c3a8",
-    "observed_at_utc": "2026-08-25T06:44:51Z",
+    "observed_main_sha": "cdfcdc8ebc0206eb35b9548f5a283e652464ba4b",
+    "observed_at_utc": "2026-08-25T07:49:00Z",
     "latest_main_change": {
-      "summary": "PRs #954-#958 connected the canonical NEXUS execution chain through Mission Control. PR #959 reconciled Project Memory, PR #960 added the fixed-SHA final Proof Mission verifier, and PR #961 made physical Windows execution mandatory for a VERIFIED final decision. Current observed main is ec203f83bf81ca7953ef812e535a9ef23591c3a8.",
+      "summary": "PR #963 connected the fixed-SHA final Proof Mission assembler to canonical Project Memory, and PR #964 fixed the physical Windows launcher RepoRoot quoting defect. Current observed main is cdfcdc8ebc0206eb35b9548f5a283e652464ba4b. The next acceptance step is execution of the final fixed-SHA Proof Mission with real Windows EXECUTED evidence; no architecture or authority expansion is implied.",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true
@@ -86,10 +86,12 @@
       "project_memory_reconciliation_pr": 959,
       "final_proof_verifier_pr": 960,
       "physical_windows_fail_closed_pr": 961,
-      "latest_main_sha": "ec203f83bf81ca7953ef812e535a9ef23591c3a8",
+      "final_proof_assembler_pr": 963,
+      "windows_launcher_fix_pr": 964,
+      "latest_main_sha": "cdfcdc8ebc0206eb35b9548f5a283e652464ba4b",
       "paper_only": true,
       "live_trading_authority": false,
-      "remaining_acceptance": "assemble and execute the fixed-SHA final Proof Mission with physical Windows EXECUTED evidence, then persist the independently verified result; autonomous-improvement feedback remains separately evidence-gated"
+      "remaining_acceptance": "execute the fixed-SHA final Proof Mission on the physical Windows laptop with Windows classified EXECUTED, then persist the independently verified result; autonomous-improvement feedback remains separately evidence-gated"
     },
     "phase7": {
       "status": "complete",
