@@ -4,6 +4,14 @@ on:
   schedule:
     - cron: "17 */4 * * *"
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/bybit_prospective_paper_forward_v1.yml"
+      - "bybit_prospective_paper_forward_v1.py"
+      - "experiments/bybit_prospective_paper_forward_v1.json"
+      - "experiments/bybit_frozen_regime_strategy_v1.json"
   pull_request:
     paths:
       - ".github/workflows/bybit_prospective_paper_forward_v1.yml"

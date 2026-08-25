@@ -26,7 +26,8 @@ and cannot enable or automatically promote Live trading.
 ## Resumable workflow
 
 `.github/workflows/bybit_prospective_paper_forward_v1.yml` runs every four
-hours and on manual dispatch. It restores the newest 90-day state artifact,
+hours, on manual dispatch, and when the implementation or frozen contract is
+merged to `main`. It restores the newest 90-day state artifact,
 verifies the state, advances only newly completed bars, enforces Paper-only
 authority, and uploads a replacement state artifact. Concurrency prevents two
 writers from advancing the same chain simultaneously.
