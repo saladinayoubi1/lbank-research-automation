@@ -18,12 +18,13 @@
     "cloud continuity when the local laptop is offline"
   ],
   "runtime_status": {
-    "agent_execution_state": "verified_integration_cycle_connected_through_mission_control",
+    "agent_execution_state": "final_proof_verified_and_integration_cycle_connected_through_mission_control",
     "laptop_state": "physical_phase7_proof_verified_and_owner_cleanup_observed",
     "internet_outage_state": "not_assumed_from_laptop_state",
     "laptop_offline_is_not_internet_outage": true,
     "runner_registration_modified_by_phase7_cleanup": false,
-    "watchdog_required": false
+    "watchdog_required": false,
+    "self_heal_reintroduced": false
   },
   "data_policy": {
     "research_only": true,
@@ -54,7 +55,10 @@
       "secondary_only": true,
       "may_authorize_production_recovery": false,
       "issue": 122,
-      "status": "verified_secondary_recovery_candidate",
+      "issue_state": "completed",
+      "status": "verified_secondary_recovery_candidate_refresh_required",
+      "refresh_required": true,
+      "refresh_reason": "The last verified provider tuple is bound to an older repository SHA and predates the 2026-08-25 final Proof Mission completion.",
       "fixed_source_sha": "b0d89457033941932515a0a6a07e79ec165a8cce",
       "provider_object_id": "1m_KFJ6YvnWhLRYzAFBrZXn3Rb-OqYb_M63V8X_aMvew",
       "provider_revision_id": "1",
@@ -68,16 +72,16 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "cdfcdc8ebc0206eb35b9548f5a283e652464ba4b",
-    "observed_at_utc": "2026-08-25T07:49:00Z",
+    "observed_main_sha": "764bb61aa8c2493e8af5992ae542b9bc5fd8cfd6",
+    "observed_at_utc": "2026-08-25T12:59:04Z",
     "latest_main_change": {
-      "summary": "PR #963 connected the fixed-SHA final Proof Mission assembler to canonical Project Memory, and PR #964 fixed the physical Windows launcher RepoRoot quoting defect. Current observed main is cdfcdc8ebc0206eb35b9548f5a283e652464ba4b. The next acceptance step is execution of the final fixed-SHA Proof Mission with real Windows EXECUTED evidence; no architecture or authority expansion is implied.",
+      "summary": "PR #972 repaired the delegated-core Phase 7 surface regression tests after PR #967 split the public PowerShell entry point from the preserved core helper. PR #972 exact-head Workflow Permissions Policy, NEXUS Mission Queue, NEXUS Cloud Fallback, Test, and NEXUS Build Verification all succeeded before merge. The final physical Windows Proof Mission had already completed and been independently verified on source SHA 36a3d64f6ce3253b2f9ca76eb594c6afe80e4e9c.",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true
     },
     "integration_cycle": {
-      "status": "connected_through_mission_control",
+      "status": "verified_complete_through_mission_control_and_final_proof",
       "integration_graph_pr": 954,
       "verified_execution_cycle_pr": 955,
       "strategy_paper_supervisor_pr": 956,
@@ -88,23 +92,40 @@
       "physical_windows_fail_closed_pr": 961,
       "final_proof_assembler_pr": 963,
       "windows_launcher_fix_pr": 964,
-      "latest_main_sha": "cdfcdc8ebc0206eb35b9548f5a283e652464ba4b",
+      "final_proof_memory_binding_pr": 965,
+      "phase7_return_pr": 966,
+      "powershell51_bookkeeping_fix_pr": 967,
+      "delegated_core_surface_test_fix_pr": 972,
+      "latest_main_sha": "764bb61aa8c2493e8af5992ae542b9bc5fd8cfd6",
       "paper_only": true,
       "live_trading_authority": false,
-      "remaining_acceptance": "execute the fixed-SHA final Proof Mission on the physical Windows laptop with Windows classified EXECUTED, then persist the independently verified result; autonomous-improvement feedback remains separately evidence-gated"
+      "remaining_acceptance": "none for the final Proof Mission; autonomous-improvement feedback remains separately evidence-gated and does not widen authority"
     },
     "phase7": {
       "status": "complete",
+      "acceptance_status": "final_physical_windows_proof_verified",
       "parent_issue": 696,
       "control_plane_issue": 697,
       "e2e_issue": 702,
-      "proof_source_sha": "da74ebf855f62d57919e856242b75dc3f1170d28",
-      "return_head_sha": "9d6dccb09245bcd7a025b514f66977b39ed50728",
-      "verification_run_id": 32479787219,
-      "verified_artifact_id": 9445631033,
-      "verified_artifact_name": "nexus-phase7-return-verified-p7-20260821T110236Z-6d6f6bf7",
-      "verified_artifact_digest": "sha256:0ff3997ab4d5dcad43c00dc891afa9e1c188120fc1b649fff61ff091d949ac73",
+      "session_id": "p7-20260825T091334Z-8a56bfb0",
+      "proof_source_sha": "36a3d64f6ce3253b2f9ca76eb594c6afe80e4e9c",
+      "return_head_sha": "822716834f440e9601bc1f4276d72cb8ff486e47",
+      "verification_run_id": 32833291451,
+      "verification_job_id": 97756531362,
+      "proof_run_id": 32831159231,
+      "verified_artifact_id": 9557615766,
+      "verified_artifact_name": "nexus-phase7-return-verified-p7-20260825T091334Z-8a56bfb0",
+      "verified_artifact_digest": "sha256:113b9b768aeae823c068892b392c959c4a2d32d06d596948eb6c2bf11ba612aa",
+      "package_sha256": "65aaabcc36e49b8c3b0dbb69d9f8e2b34f67e5d926421222fabc51166cdca5e4",
+      "offline_network_proof_sha256": "d57098152ecb6e36b9112429935d4c7d22f28f372f6b0eb94b5f341c27e26679",
+      "run_digest": "5a82a68c2d205ef97ea6da7f09fecac8a2b3c4ed108c3f3efca3f88c16302457",
+      "state_sha256": "e3f6022694173aaca3290a17b36d0c2d5a1d546467a840e1182a294d266bfe19",
+      "e2e_proof_digest": "fe1c38eaed55711fe71f7383f88a2f4bc02c29fcaa5f531eabb0fd324f069c7d",
+      "laptop_result_bundle_sha256": "e9903c73185fb5ecac5578a2d2bc1167481097cbc6a8aa68b8df70043fc60f42",
+      "laptop_evidence_sha256": "9faac2be05e11f5a154d2a527fb5d3f66a9298aa8bd61c43c41a3b7b0b915277",
+      "independent_verifier_evidence_sha256": "f45aa24aacf50d0bf9c793462911d0b3b75b736184268b50d7638507633158f7",
       "hardware_proof_complete": true,
+      "core_cloud_chain_complete": true,
       "verified_progress_percent": 100.0,
       "laptop_classification": "EXECUTED",
       "internal_agent_classification": "EXECUTED",
@@ -117,11 +138,13 @@
       "internet_unavailable_post_execution": true,
       "paper_only": true,
       "live_trading_authority": false,
-      "return_pr": 916,
+      "return_pr": 966,
       "return_pr_state": "closed_unmerged",
-      "return_branch_deleted": true,
-      "permanent_windows_hardening_pr": 915,
-      "permanent_windows_hardening_main_sha": "0b8cb7c576dffcf13d1e96e68ac6f2656e9700c7"
+      "return_data_only": true,
+      "powershell51_bookkeeping_hardening_pr": 967,
+      "delegated_core_surface_test_fix_pr": 972,
+      "runner_or_watchdog_change_in_final_fixes": false,
+      "self_heal_reintroduced": false
     },
     "phase_status": {
       "phase5": {
@@ -139,12 +162,15 @@
         "formal_gates": "0-6",
         "acceptance_issue": 702,
         "control_plane_issue": 697,
-        "proof_source_sha": "da74ebf855f62d57919e856242b75dc3f1170d28",
-        "verified_progress_percent": 100.0
+        "proof_source_sha": "36a3d64f6ce3253b2f9ca76eb594c6afe80e4e9c",
+        "verified_progress_percent": 100.0,
+        "physical_windows_proof": "verified"
       },
       "product_integration": {
         "status": "complete",
         "issue": 603,
+        "mission_control_acceptance_issue": 692,
+        "mission_control_acceptance_state": "completed",
         "canonical_backend": "python_product_runtime",
         "live_authority": false
       }
@@ -153,15 +179,17 @@
       "issue_697": "completed",
       "issue_702": "completed",
       "issue_696": "completed",
+      "issue_692": "completed",
       "issue_122": "completed",
-      "return_pr_916": "closed_unmerged",
-      "hardening_pr_915": "merged",
+      "return_pr_966": "closed_unmerged",
+      "powershell51_fix_pr_967": "merged",
+      "surface_regression_fix_pr_972": "merged",
       "backup_verifier_pr_920": "merged",
       "drive_export_hardening_pr_923": "merged"
     },
     "release_readiness": {
       "production_ready": false,
-      "reason": "NEXUS remains explicitly Research/Backtest/Paper-only; Phase 7 completion and verified continuity backup do not grant Live/L4, signing, billing, exchange credential, or production authority."
+      "reason": "NEXUS remains explicitly Research/Backtest/Paper-only; final physical proof, Mission Control acceptance, and continuity controls do not grant Live/L4, signing, billing, exchange credential, deployment, production-promotion, or self-authorization authority."
     },
     "provider_status": {
       "deepseek": {

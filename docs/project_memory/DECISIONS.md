@@ -118,7 +118,7 @@ credentials, signing, billing, deployment, production promotion and self-authori
 remain unavailable.
 
 ## 2026-08-25 — Final Proof Mission requires physical Windows execution
-Status: ACTIVE
+Status: SUPERSEDED by the later 2026-08-25 verified-completion decision below
 
 Evidence: PR #959 reconciled Project Memory with the verified integration chain. PR #960
 added the fixed-SHA final Proof Mission verifier. PR #961 then corrected the acceptance
@@ -136,3 +136,34 @@ as `EXECUTED` or `UNAVAILABLE`.
 Boundary: The assembler is data-only and cannot manufacture missing resource use. The
 result remains Research/Backtest/Paper-only and grants no Live/L4, private-credential,
 signing, billing, deployment, production-promotion, or self-authorization authority.
+
+## 2026-08-25 — Final Proof Mission completed and independently verified on physical Windows
+Status: ACTIVE
+
+Evidence: Session `p7-20260825T091334Z-8a56bfb0` was prepared from exact source SHA
+`36a3d64f6ce3253b2f9ca76eb594c6afe80e4e9c`. Data-only return PR #966 used head
+`822716834f440e9601bc1f4276d72cb8ff486e47` and was closed unmerged as designed. Mission
+Queue run `32833291451` independently verified the returned package and published artifact
+`nexus-phase7-return-verified-p7-20260825T091334Z-8a56bfb0` (artifact ID `9557615766`,
+digest `sha256:113b9b768aeae823c068892b392c959c4a2d32d06d596948eb6c2bf11ba612aa`).
+The verifier recorded a real reboot after preparation, internet unavailable before and after
+offline execution, `hardware_proof_complete=true`, `core_cloud_chain_complete=true`, 100%
+verified progress, Laptop/Internal Agent/Cloud classifications `EXECUTED`, zero-idle overlap,
+and DeepSeek truthfully `UNAVAILABLE` with reason `provider_budget_gate_closed`. Paper-only
+remained true and live-trading authority false. PR #967 then hardened PowerShell 5.1 session
+bookkeeping without changing runner/watchdog state or authority. PR #972 repaired the
+wrapper/core regression-test surface; its exact head passed Workflow Permissions Policy,
+NEXUS Mission Queue, NEXUS Cloud Fallback, Test, and NEXUS Build Verification before merge.
+
+Decision: The physical-Windows acceptance requirement in the preceding decision is
+satisfied and superseded. No further Phase 7 physical proof is required for this acceptance.
+Treat the final Proof Mission as completed evidence for the bounded Research/Backtest/Paper
+architecture. Provider unavailability is not to be disguised as execution, and subsequent
+maintenance must preserve the wrapper/core security, offline, data-only-return, and
+producer/verifier separation invariants. Do not reintroduce self-heal/watchdog behavior as
+part of this completion bookkeeping.
+
+Boundary: This completion does not grant Live/L4, private exchange credentials, signing,
+billing, deployment, production promotion, destructive authority, or self-authorization.
+The verified Google Drive continuity mechanism remains secondary-only and must be refreshed
+against the final canonical memory snapshot before it is described as current.
