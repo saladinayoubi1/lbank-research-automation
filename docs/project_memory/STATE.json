@@ -56,26 +56,34 @@
       "may_authorize_production_recovery": false,
       "issue": 122,
       "issue_state": "completed",
-      "status": "verified_secondary_recovery_candidate_refresh_required",
-      "refresh_required": true,
-      "refresh_reason": "The last verified provider tuple is bound to an older repository SHA and predates the 2026-08-25 final Proof Mission completion.",
-      "fixed_source_sha": "b0d89457033941932515a0a6a07e79ec165a8cce",
+      "status": "verified_secondary_recovery_candidate_current",
+      "refresh_required": false,
+      "refresh_reason": "Completed on 2026-08-25: provider revision 3 was read back and all seven canonical snapshot files matched the exact Git blobs at source SHA 6d84d1003666cc8fd9bb86f9aea203b459574b54.",
+      "fixed_source_sha": "6d84d1003666cc8fd9bb86f9aea203b459574b54",
       "provider_object_id": "1m_KFJ6YvnWhLRYzAFBrZXn3Rb-OqYb_M63V8X_aMvew",
-      "provider_revision_id": "1",
-      "provider_modified_at": "2026-08-21T13:30:58.575Z",
-      "raw_export_size_bytes": 48060,
-      "raw_export_sha256": "b75b35f96305d1c61d10a1f27c13f08effaacc6c0fac7f63aa325ca3bc178c02",
+      "provider_revision_id": "3",
+      "provider_modified_at": "2026-08-25T13:50:13.998Z",
+      "raw_export_size_bytes": 56782,
+      "raw_export_sha256": "8904567e289d113435b5e32e89f559a018e7435b9acd147c5cc67e3305dcadd4",
       "provider_export_adapter": "nexus.project-memory-google-docs-export.v1",
-      "recovery_exercise": "verified",
+      "recovery_exercise": "verified_readback_current_snapshot",
       "privacy_findings": 0,
-      "verification_prs": [920, 923]
+      "verification_prs": [
+        920,
+        923
+      ],
+      "manifest_digest": "267be9c8f55422ab91d7fe78bd67dd9d53b1c8b6997f6989bd81282b7bee653f",
+      "aggregate_source_digest": "a1aef53326524cc1d4038e5a92c73b17d61a277de93bfd103027ac7bdf6ecb23",
+      "source_file_count": 7,
+      "provider_export_bom": true,
+      "refresh_verified_at_utc": "2026-08-25T16:05:00Z"
     }
   },
   "current_evidence": {
-    "observed_main_sha": "764bb61aa8c2493e8af5992ae542b9bc5fd8cfd6",
-    "observed_at_utc": "2026-08-25T12:59:04Z",
+    "observed_main_sha": "6d84d1003666cc8fd9bb86f9aea203b459574b54",
+    "observed_at_utc": "2026-08-25T16:05:00Z",
     "latest_main_change": {
-      "summary": "PR #972 repaired the delegated-core Phase 7 surface regression tests after PR #967 split the public PowerShell entry point from the preserved core helper. PR #972 exact-head Workflow Permissions Policy, NEXUS Mission Queue, NEXUS Cloud Fallback, Test, and NEXUS Build Verification all succeeded before merge. The final physical Windows Proof Mission had already completed and been independently verified on source SHA 36a3d64f6ce3253b2f9ca76eb594c6afe80e4e9c.",
+      "summary": "PR #973 recorded the independently verified 2026-08-25 physical Windows final Proof Mission in canonical Project Memory and merged to main at 6d84d1003666cc8fd9bb86f9aea203b459574b54. The durable Google Drive secondary backup was then refreshed on the same source SHA and provider revision 3 was read back with exact seven-file Git-blob binding, zero privacy findings, and raw provider digest/size verification.",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true
@@ -96,7 +104,7 @@
       "phase7_return_pr": 966,
       "powershell51_bookkeeping_fix_pr": 967,
       "delegated_core_surface_test_fix_pr": 972,
-      "latest_main_sha": "764bb61aa8c2493e8af5992ae542b9bc5fd8cfd6",
+      "latest_main_sha": "6d84d1003666cc8fd9bb86f9aea203b459574b54",
       "paper_only": true,
       "live_trading_authority": false,
       "remaining_acceptance": "none for the final Proof Mission; autonomous-improvement feedback remains separately evidence-gated and does not widen authority"
@@ -185,7 +193,8 @@
       "powershell51_fix_pr_967": "merged",
       "surface_regression_fix_pr_972": "merged",
       "backup_verifier_pr_920": "merged",
-      "drive_export_hardening_pr_923": "merged"
+      "drive_export_hardening_pr_923": "merged",
+      "project_memory_final_proof_pr_973": "merged"
     },
     "release_readiness": {
       "production_ready": false,
