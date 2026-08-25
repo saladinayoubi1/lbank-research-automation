@@ -20,6 +20,7 @@
     ".github/workflows/bybit_long_short_search_v4.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"search":{"policy_version":1}}},
     ".github/workflows/bybit_neighborhood_validation_v7.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"validate":{"policy_version":1}}},
     ".github/workflows/bybit_portfolio_search_v3.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"search":{"policy_version":1}}},
+    ".github/workflows/bybit_prospective_paper_forward_v1.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"contract-test":{"policy_version":1},"paper-forward":{"policy_version":1}}},
     ".github/workflows/bybit_regime_search_v6.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"search":{"policy_version":1}}},
     ".github/workflows/bybit_resumable_backfill.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"backfill":{"policy_version":1}}},
     ".github/workflows/bybit_spot_archive_collector.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"collect":{"policy_version":1}}},
