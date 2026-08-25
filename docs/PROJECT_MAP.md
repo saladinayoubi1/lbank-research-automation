@@ -34,10 +34,18 @@ current integration chain. It binds Supervisor, resource-utilization,
 Mission-Control, and Project-Memory projections to one fixed Git SHA. It does
 not convert registration or heartbeat into execution: every `EXECUTED`
 resource requires task, lease, result, evidence, and verifier digests.
-DeepSeek and the Windows laptop must be reported as `EXECUTED`, `UNAVAILABLE`,
-or `BLOCKED` truthfully; no provider or physical-node claim is inferred. A
-successful validator result remains Paper-only and keeps
+DeepSeek must be reported as `EXECUTED` or `UNAVAILABLE` truthfully; no provider
+claim is inferred. The Windows laptop may be reported truthfully as `EXECUTED`,
+`UNAVAILABLE`, or `BLOCKED`, but final acceptance requires `EXECUTED` with
+canonical task/lease/result/evidence/verifier digests. A successful validator
+result remains Paper-only and keeps
 `live_trading_authority=false`.
+
+`nexus_final_proof_assembler.py` is the data-only convergence point. It reads
+already-produced Supervisor, Mission-Control, scheduler, resource-utilization,
+and canonical Project-Memory evidence, rejects cross-SHA substitution, and only
+then invokes the independent final verifier. It does not execute or fabricate a
+missing Windows workload.
 
 ## Phase 7 lanes
 

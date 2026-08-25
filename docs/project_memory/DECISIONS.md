@@ -116,3 +116,23 @@ can propose and verify bounded changes without expanding authority.
 Boundary: Research/Backtest/Paper only. Live Trading, private exchange adapters,
 credentials, signing, billing, deployment, production promotion and self-authorization
 remain unavailable.
+
+## 2026-08-25 — Final Proof Mission requires physical Windows execution
+Status: ACTIVE
+
+Evidence: PR #959 reconciled Project Memory with the verified integration chain. PR #960
+added the fixed-SHA final Proof Mission verifier. PR #961 then corrected the acceptance
+contract so a truthful `UNAVAILABLE` or `BLOCKED` Windows declaration remains useful
+diagnostic evidence but cannot produce a `VERIFIED` final decision. Current observed
+`main` is `ec203f83bf81ca7953ef812e535a9ef23591c3a8`.
+
+Decision: The remaining convergence path is durable evidence, not another architecture
+rewrite: assemble Supervisor, Mission-Control, scheduler, resource-utilization, and
+canonical Project-Memory evidence on one source SHA; require the Windows laptop to have
+an actual task/lease/result/evidence/verifier chain; run the independent verifier; then
+persist the verified result. DeepSeek remains optional and must be classified truthfully
+as `EXECUTED` or `UNAVAILABLE`.
+
+Boundary: The assembler is data-only and cannot manufacture missing resource use. The
+result remains Research/Backtest/Paper-only and grants no Live/L4, private-credential,
+signing, billing, deployment, production-promotion, or self-authorization authority.
