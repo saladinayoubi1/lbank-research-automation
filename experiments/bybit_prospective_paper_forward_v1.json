@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "forward_id": "bybit_btc_eth_regime_consensus_prospective_paper_v1_20260826",
+  "strategy_manifest": "experiments/bybit_frozen_regime_strategy_v1.json",
+  "strategy_id": "bybit_btc_eth_regime_consensus_v1",
+  "strategy_manifest_sha256": "2a5486eb1f77ce199cac77d280d59d5fa11fa2bcd4ae8091264f78e21f45c19d",
+  "start_not_before_utc": "2026-08-26T00:00:00Z",
+  "minimum_observation_days": 30,
+  "minimum_completed_bars": 180,
+  "linear_symbols": ["BTCUSDT", "ETHUSDT"],
+  "spot_symbols": ["BTCUSDT", "ETHUSDT"],
+  "timeframe": "240",
+  "warmup_days": 300,
+  "api_base_urls": [
+    "https://api.bybit.nl",
+    "https://api.bybit.tr",
+    "https://api.bybit.kz",
+    "https://api.bybitgeorgia.ge",
+    "https://api.bybit.ae",
+    "https://api.bybit.id",
+    "https://api.byhkbit.com",
+    "https://api.manepa.jp",
+    "https://api.bybit.com",
+    "https://api.bytick.com"
+  ],
+  "timeout_seconds": 30,
+  "maximum_attempts": 20,
+  "request_pause_seconds": 0.03,
+  "evidence_prerequisites": {
+    "neighborhood_validation": {
+      "run_id": 32900398896,
+      "artifact_id": 9582995776,
+      "artifact_digest": "sha256:55778215ded753d18c3f21e2c1868b58bab216d39c4ac18facefa2a37a5f3675",
+      "decision": "eligible_for_derivatives_validation_and_prospective_paper_forward"
+    },
+    "derivatives_validation": {
+      "run_id": 32901089264,
+      "artifact_id": 9583168864,
+      "artifact_digest": "sha256:e6a30c142f06785e0cd850cd56c0c01aaf2f0c5b2a066b631c5778af14dc27d6",
+      "decision": "eligible_for_prospective_paper_forward_with_frozen_parameters"
+    }
+  },
+  "execution_profiles": {
+    "conservative": {
+      "initial_cash": 10000.0,
+      "fee_bps": 10.0,
+      "execution_window_minutes": 3,
+      "spread_bps": 2.0,
+      "impact_floor_bps": 3.0,
+      "impact_bps_per_ten_percent": 10.0,
+      "fallback_slippage_bps": 12.0,
+      "account_leverage": 2.0,
+      "liquidation_fee_bps": 75.0
+    },
+    "stress": {
+      "initial_cash": 10000.0,
+      "fee_bps": 15.0,
+      "execution_window_minutes": 5,
+      "spread_bps": 6.0,
+      "impact_floor_bps": 7.0,
+      "impact_bps_per_ten_percent": 20.0,
+      "fallback_slippage_bps": 25.0,
+      "account_leverage": 2.0,
+      "liquidation_fee_bps": 100.0
+    }
+  },
+  "completion_gates": {
+    "conservative": {
+      "minimum_total_return": -0.10,
+      "maximum_drawdown": 0.15,
+      "minimum_fill_count": 4,
+      "minimum_asset_fill_count": 1,
+      "minimum_funding_coverage": 0.95,
+      "minimum_execution_coverage": 0.95,
+      "maximum_margin_utilization": 0.60,
+      "maximum_risk_tier_utilization": 0.75
+    },
+    "stress": {
+      "minimum_total_return": -0.15,
+      "maximum_drawdown": 0.20,
+      "minimum_fill_count": 4,
+      "minimum_asset_fill_count": 1,
+      "minimum_funding_coverage": 0.90,
+      "minimum_execution_coverage": 0.90,
+      "maximum_margin_utilization": 0.65,
+      "maximum_risk_tier_utilization": 0.75
+    }
+  },
+  "authority": {
+    "paper_only": true,
+    "live_trading_enabled": false,
+    "private_credentials_allowed": false,
+    "automatic_live_promotion": false
+  }
+}
