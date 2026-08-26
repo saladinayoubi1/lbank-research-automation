@@ -51,38 +51,49 @@
     "drive_backup": {
       "provider": "Google Drive",
       "folder": "NEXUS Project Memory Backup",
-      "document": "NEXUS Project Memory Backup — Durable",
+      "document": "NEXUS Project Memory Backup — Durable — 2026-08-26 — 028715b9",
       "secondary_only": true,
       "may_authorize_production_recovery": false,
       "issue": 122,
       "issue_state": "completed",
-      "status": "verified_secondary_recovery_snapshot_stale_after_main_advance",
-      "refresh_required": true,
-      "refresh_reason": "Repository Project Memory advanced beyond the fixed 6d84d100 snapshot; refresh and independently verify the secondary copy after this canonical reconciliation merges.",
-      "fixed_source_sha": "6d84d1003666cc8fd9bb86f9aea203b459574b54",
-      "provider_object_id": "1m_KFJ6YvnWhLRYzAFBrZXn3Rb-OqYb_M63V8X_aMvew",
-      "provider_revision_id": "3",
-      "provider_modified_at": "2026-08-25T13:50:13.998Z",
-      "raw_export_size_bytes": 56782,
-      "raw_export_sha256": "8904567e289d113435b5e32e89f559a018e7435b9acd147c5cc67e3305dcadd4",
+      "status": "verified_secondary_recovery_candidate_current_as_of_source_sha",
+      "refresh_required": false,
+      "refresh_reason": "Exact private-provider readback is content-bound to canonical Project Memory at source SHA 028715b9f99bd7107b3ff53b03e432d42eccfbdb.",
+      "fixed_source_sha": "028715b9f99bd7107b3ff53b03e432d42eccfbdb",
+      "provider_object_id": "1HjHjzM1o90YXfMc6cNKyuW5qQGxnE6MpiIPr_U2EFxw",
+      "provider_revision_id": "2",
+      "provider_modified_at": "2026-08-26T19:40:09.035Z",
+      "raw_export_size_bytes": 67094,
+      "raw_export_sha256": "6a61f1c1b6e29f2ea334b9c8042392f525440002615b5b128adfefdfeb73f8cb",
       "provider_export_adapter": "nexus.project-memory-google-docs-export.v1",
-      "recovery_exercise": "verified",
+      "recovery_exercise": "verified_refresh_with_object_revision_source_name_content_and_stale_replay_rejection",
       "privacy_findings": 0,
       "verification_prs": [
         920,
         923
       ],
-      "verification_manifest_drive_id": "1TtbOxGPpelKbMYmDFn6_w8x-wwkqHv7X",
-      "verification_manifest_sha256": "2d7bb0744866a491a41253d20241abcb1892066fecd9abd7e7df05d340b22296",
-      "verification_manifest_digest": "b9e986f485ad0b8046749a42603ff70144667c963b020fe598c08317ce18342d",
-      "aggregate_source_digest": "a1aef53326524cc1d4038e5a92c73b17d61a277de93bfd103027ac7bdf6ecb23"
+      "verification_manifest_drive_id": "1ofVzvRxM0VjKOYh6zHeT6eAlMmAZi6vP",
+      "verification_manifest_sha256": "da47437e639a61be01844c03a103a7abee9050a92730e0792c27f9ddfb5c5d45",
+      "verification_manifest_digest": "d94540752434453f90154718018411971422b409ddaecbd59dac3d52fcb4afac",
+      "aggregate_source_digest": "23a5a3d3855c2c58816dffda3a249ab6ef7036055a14a8861969939496913bc9",
+      "provider_export_bom": true,
+      "canonical_snapshot_utf8_size_bytes": 67078,
+      "canonical_snapshot_utf8_sha256": "86c8e856bb65374a428cca87c85bf2830932211b09bcf9a8e386e75fc5de3abe",
+      "provider_json_equals_canonical_snapshot": true,
+      "manifest_size_bytes": 2109,
+      "previous_valid": {
+        "object_id": "1m_KFJ6YvnWhLRYzAFBrZXn3Rb-OqYb_M63V8X_aMvew",
+        "revision_id": "3",
+        "source_sha": "6d84d1003666cc8fd9bb86f9aea203b459574b54",
+        "raw_export_sha256": "8904567e289d113435b5e32e89f559a018e7435b9acd147c5cc67e3305dcadd4"
+      }
     }
   },
   "current_evidence": {
-    "observed_main_sha": "f9e354d9503b7123583ce1d1bfbdba26202ac238",
-    "observed_at_utc": "2026-08-26T19:28:20Z",
+    "observed_main_sha": "028715b9f99bd7107b3ff53b03e432d42eccfbdb",
+    "observed_at_utc": "2026-08-26T19:43:37Z",
     "latest_main_change": {
-      "summary": "PR #987 merged the fail-closed three-timeframe regime selector and independently replayed Strategy-to-Risk-to-Paper runtime. Its exact head bb85fd50 passed all four required workflow groups before squash merge as f9e354d9; authority remains Paper-only and Phase 3/Phase 7 stay closed.",
+      "summary": "PR #988 merged the verified regime-runtime-to-Paper-drift bridge as 028715b9 after all PR gates passed. All nine main-push workflow groups then succeeded. A new private seven-file Drive snapshot and companion manifest were generated from that exact SHA, read back, privacy-scanned, and independently verified with fail-closed substitution, tamper, and stale-replay checks.",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true
@@ -103,7 +114,7 @@
       "phase7_return_pr": 966,
       "powershell51_bookkeeping_fix_pr": 967,
       "delegated_core_surface_test_fix_pr": 972,
-      "latest_main_sha": "f9e354d9503b7123583ce1d1bfbdba26202ac238",
+      "latest_main_sha": "028715b9f99bd7107b3ff53b03e432d42eccfbdb",
       "paper_only": true,
       "live_trading_authority": false,
       "remaining_acceptance": "none for the final Proof Mission; the separate prospective Paper lane must accumulate at least 30 days and 180 completed four-hour bars before review and never widens authority"
@@ -268,8 +279,8 @@
       "surface_regression_fix_pr_972": "merged",
       "backup_verifier_pr_920": "merged",
       "drive_export_hardening_pr_923": "merged",
-      "drive_backup_refresh": "verified",
-      "drive_backup_source_sha": "6d84d1003666cc8fd9bb86f9aea203b459574b54",
+      "drive_backup_refresh": "verified_current_as_of_source_sha",
+      "drive_backup_source_sha": "028715b9f99bd7107b3ff53b03e432d42eccfbdb",
       "phase3_strategy_surface_pr_976": "merged",
       "event_driven_strategy_search_pr_977": "merged",
       "prospective_paper_start_pr_978": "merged",
@@ -277,7 +288,7 @@
       "regime_strategy_selector_runtime_pr_987": "merged",
       "regime_runtime_drift_pr_988": "integrated_by_this_memory_change",
       "prospective_paper_run_32905463932": "success",
-      "drive_backup_refresh_required": true
+      "drive_backup_refresh_required": false
     },
     "release_readiness": {
       "production_ready": false,
