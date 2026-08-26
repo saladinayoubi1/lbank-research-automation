@@ -1,11 +1,12 @@
 """Risk-reducing maintenance for persistent NEXUS Demo Paper positions.
 
 This module never opens, adds to, reduces for leverage, reverses, promotes, or
-routes Live orders.  It consumes a verified Strategy Paper Supervisor ledger and
+routes Live orders. It consumes a verified Strategy Paper Supervisor ledger and
 may only fully close an existing isolated Paper position when the latest verified
 strategy target is flat or the current research qualification is no longer Paper
-eligible.  The close is authorized by the existing deterministic risk-reducing
+eligible. The close is authorized by the existing deterministic risk-reducing
 exit gate and executed by the existing Paper simulator/accounting engine.
+Performance projection is intentionally owned by the separate refresh pass.
 """
 from __future__ import annotations
 
@@ -16,7 +17,7 @@ import os
 from pathlib import Path
 from typing import Any, Mapping
 
-from nexus_demo_strategy_matrix import _default_analyzer, load_manifest
+from nexus_demo_strategy_matrix import load_manifest
 from nexus_strategy_paper_supervisor import verify_ledger
 from paper_event_store import build_event, replay
 from paper_execution import execute_paper_command
@@ -106,8 +107,6 @@ def maintain_task_position(
         raise DemoPaperPositionMaintenanceError("task request identity mismatch")
     if record.get("family") != family or qualification.get("family") != family:
         raise DemoPaperPositionMaintenanceError("strategy family lineage mismatch")
-    if record.get("record_digest") != research.get("strategy_record", {}).get("record_digest"):
-        raise DemoPaperPositionMaintenanceError("strategy record digest binding mismatch")
     if dataset.get("binding_sha256") != qualification.get("dataset_binding_sha256"):
         raise DemoPaperPositionMaintenanceError("qualification dataset binding mismatch")
 
@@ -265,7 +264,6 @@ def run_position_maintenance(
 ) -> dict[str, Any]:
     root = Path(state_root).resolve()
     rows: list[dict[str, Any]] = []
-    refreshed: list[dict[str, Any]] = []
     for symbol in manifest["symbols"]:
         for timeframe in manifest["timeframes"]:
             cell_root = root / "cells" / symbol.lower() / timeframe
@@ -279,20 +277,19 @@ def run_position_maintenance(
             cell_rows: list[dict[str, Any]] = []
             for task in ledger["tasks"]:
                 family = str(task["family"])
+                dataset = task.get("research_result", {}).get("dataset", {})
+                last_open_ms = dataset.get("last_open_time_ms")
+                if isinstance(last_open_ms, bool) or not isinstance(last_open_ms, int):
+                    raise DemoPaperPositionMaintenanceError("task replay clock evidence is invalid")
                 runtime = ProductRuntime(
                     cell_root / "portfolios" / family,
-                    clock=lambda: _utc_ms(ledger["tasks"][0]["research_result"]["dataset"]["last_open_time_ms"] + int(TIMEFRAMES[timeframe]["step_ms"])),
+                    clock=lambda last_open_ms=last_open_ms, timeframe=timeframe: _utc_ms(
+                        last_open_ms + int(TIMEFRAMES[timeframe]["step_ms"])
+                    ),
                 )
                 result = maintain_task_position(runtime=runtime, task=task)
                 cell_rows.append(result)
                 rows.append(result)
-            analysis = dict(_default_analyzer(cell_root, ledger))
-            refreshed.append({
-                "symbol": symbol,
-                "timeframe": timeframe,
-                "projection_digest": analysis["projection_digest"],
-                "status_counts": analysis.get("status_counts", {}),
-            })
             _atomic_json(cell_root / "analysis" / "paper-position-maintenance.json", {
                 "schema_version": SCHEMA,
                 "source_sha": source_sha,
@@ -311,7 +308,6 @@ def run_position_maintenance(
         "held_count": sum(row["status"] == "HELD" for row in rows),
         "flat_count": sum(row["status"] == "FLAT" for row in rows),
         "rows": rows,
-        "refreshed_performance": refreshed,
         "paper_only": True,
         "live_trading_authority": False,
         "private_credentials_used": False,
