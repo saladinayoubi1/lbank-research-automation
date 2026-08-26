@@ -44,8 +44,7 @@ def _epoch_ms(value: str) -> int:
     return int(parsed.timestamp() * 1000)
 
 
-def extract_closed_paper_trades(events: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
-    """Reconstruct complete closed trades from one validated Paper event journal."""
+def _validated_journal(events: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
     if not isinstance(events, Sequence) or isinstance(events, (str, bytes)):
         raise PaperPerformancePipelineError("Paper journal must be a sequence")
     try:
@@ -53,6 +52,91 @@ def extract_closed_paper_trades(events: Sequence[Mapping[str, Any]]) -> list[dic
         replay(validated)
     except (TypeError, ValueError) as exc:
         raise PaperPerformancePipelineError(f"Paper journal failed replay: {exc}") from exc
+    return validated
+
+
+def _journal_paper_acceptance(
+    *,
+    events: Sequence[Mapping[str, Any]],
+    task: Mapping[str, Any],
+    supervisor_verification: Mapping[str, Any],
+) -> dict[str, Any] | None:
+    """Reconstruct bounded Paper acceptance from an independently replayed journal.
+
+    A prior automatic open may carry the same strategy version across a freshly
+    requalified immutable record.  The derived execution evidence digest binds
+    that prior open to the current record and qualification so the lifecycle can
+    remain PAPER without treating insufficient performance evidence as HEALTHY.
+    """
+    validated = _validated_journal(events)
+    research = task.get("research_result", {})
+    record = research.get("strategy_record", {}) if isinstance(research, Mapping) else {}
+    qualification = research.get("qualification", {}) if isinstance(research, Mapping) else {}
+    if (
+        not isinstance(record, Mapping)
+        or not isinstance(qualification, Mapping)
+        or qualification.get("status") != "paper_candidate"
+        or record.get("lifecycle_state") != "CANDIDATE"
+    ):
+        return None
+    version = record.get("strategy_version")
+    if not isinstance(version, str) or not version:
+        return None
+
+    by_correlation: dict[str, list[dict[str, Any]]] = {}
+    for event in validated:
+        by_correlation.setdefault(str(event["correlation_id"]), []).append(event)
+    for correlation, group in by_correlation.items():
+        signals = [
+            event for event in group
+            if event["event_type"] == "signal_recorded"
+            and event["provenance"].get("kind") == "automatic"
+            and event["provenance"].get("strategy_version") == version
+        ]
+        risks = [
+            event for event in group
+            if event["event_type"] == "risk_decision_recorded"
+            and event["payload"].get("decision") == "allow"
+            and event["provenance"].get("kind") == "automatic"
+            and event["provenance"].get("strategy_version") == version
+        ]
+        opens = [
+            event for event in group
+            if event["event_type"] == "position_opened"
+            and event["provenance"].get("kind") == "automatic"
+            and event["provenance"].get("strategy_version") == version
+        ]
+        if not signals or not risks or not opens:
+            continue
+        signal = signals[0]
+        risk = risks[0]
+        opened = opens[0]
+        if not (signal["sequence"] < risk["sequence"] < opened["sequence"]):
+            continue
+        execution_binding = _digest({
+            "current_record_digest": record.get("record_digest"),
+            "current_qualification_digest": qualification.get("qualification_digest"),
+            "strategy_version": version,
+            "signal_event_digest": signal["event_digest"],
+            "risk_event_digest": risk["event_digest"],
+            "position_open_event_digest": opened["event_digest"],
+            "journal_head_event_digest": validated[-1]["event_digest"],
+            "correlation_id": correlation,
+        })
+        return {
+            "risk_gate_allowed": True,
+            "replay_verified": True,
+            "paper_execution_evidence_sha256": execution_binding,
+            "independent_verifier_evidence_sha256": supervisor_verification["verification_digest"],
+            "producer_id": task["worker_id"],
+            "verifier_id": supervisor_verification["verifier"],
+        }
+    return None
+
+
+def extract_closed_paper_trades(events: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    """Reconstruct complete closed trades from one validated Paper event journal."""
+    validated = _validated_journal(events)
 
     charges: dict[str, Decimal] = {}
     for event in validated:
@@ -127,17 +211,27 @@ def build_paper_performance_projection(
 
     strategies: list[dict[str, Any]] = []
     for task in supervisor_ledger["tasks"]:
-        if task["status"] not in {"paper_executed", "position_exists"}:
+        if task["status"] not in {"paper_executed", "position_exists", "no_open_signal"}:
             continue
         family = task["family"]
         if family not in journals_by_family or family not in baselines_by_family:
+            if task["status"] == "no_open_signal":
+                continue
             raise PaperPerformancePipelineError(f"missing Paper inputs for {family}")
         baseline = baselines_by_family[family]
         if not isinstance(baseline, Mapping) or set(baseline) != {
             "expectancy", "fee_per_trade"
         }:
             raise PaperPerformancePipelineError(f"invalid baseline for {family}")
-        trades = extract_closed_paper_trades(journals_by_family[family])
+        journal = journals_by_family[family]
+        acceptance = _journal_paper_acceptance(
+            events=journal,
+            task=task,
+            supervisor_verification=verification,
+        )
+        if task["status"] == "no_open_signal" and acceptance is None:
+            continue
+        trades = extract_closed_paper_trades(journal)
         monitor = evaluate_paper_drift(
             supervisor_ledger=supervisor_ledger,
             task_id=task["task_id"],
@@ -145,6 +239,7 @@ def build_paper_performance_projection(
             baseline_expectancy=baseline["expectancy"],
             baseline_fee_per_trade=baseline["fee_per_trade"],
             initial_equity=initial_equity,
+            paper_acceptance=acceptance,
         )
         analytics = monitor.get("analytics", {})
         strategies.append({
