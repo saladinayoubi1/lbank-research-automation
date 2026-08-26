@@ -35,6 +35,20 @@ writers from advancing the same chain simultaneously.
 Pull requests run only the focused contract tests; they do not collect market
 observations.
 
+## Independent gate reporting
+
+`.github/workflows/nexus_bybit_paper_gate_report.yml` observes completed
+main-branch Paper workflow runs without becoming a state writer. It downloads
+the exact run artifact, independently verifies the canonical state digest,
+event chain, source SHA, workflow run ID, artifact identity, and fixed
+Paper-only authority, then adds or refreshes Issue #984 evidence only at daily
+six-bar checkpoints or terminal states.
+
+Non-successful producer runs are recorded as fail-closed evidence. Stable
+checkpoint markers prevent repeated no-new-bar runs from creating duplicate
+comments. The reporter has issue-comment authority only; it cannot mutate the
+Paper state, repository contents, strategy, Risk decision, or Live boundary.
+
 ## Completion boundary
 
 The collection gate requires at least 30 elapsed days and 180 completed
