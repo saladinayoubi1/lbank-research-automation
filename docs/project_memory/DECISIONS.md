@@ -215,3 +215,12 @@ credentials, signing, billing, deployment, production promotion, destructive aut
 and self-authorization remain unavailable. The completed physical Windows proof is not
 repeated for this maintenance change; its security and producer/verifier invariants remain
 mandatory.
+
+## 2026-08-26 — Drive secondary snapshot refreshed after regime drift integration
+Status: ACTIVE
+
+Evidence: PR #988 merged the bounded regime-runtime-to-Paper-drift bridge as authoritative main `028715b9f99bd7107b3ff53b03e432d42eccfbdb`, making the source-`f9e354d9` PR #989 and earlier source-`4a662fe0` PR #986 stale; both were closed unmerged. A replacement canonical seven-file snapshot was generated from exact main `028715b9f99bd7107b3ff53b03e432d42eccfbdb` and stored as private Google Docs object `1C6alNjnNOx5iW7urwrtMkFzAzLqZZRvSX8KvK4KVIdw`, Drive revision `2`, modified `2026-08-26T19:43:40.049Z`. Provider text/plain export is `67098` bytes with SHA-256 `987ff7fad4d206701996b4a53b157a8a43ec04e242fdb5662f2f237c5457c6a1`; canonical snapshot JSON is `67082` bytes with SHA-256 `3f2055b058a98e8e67ebed16f22bc1275764f72441188f0e25303c35a8aa8409` and parses to the same provider JSON. The companion manifest is Drive object `1h8h4SpViwy6SvT55d6_i4teu-uov3J1X`, `2110` bytes, file SHA-256 `61e1929620d5a766e21eb1ba20335ea99820f0ea590447af267a898b7d5eeef9`, canonical manifest digest `95cb3ad63653b5ca967f841be0571e00ac62f27a7cd26b88a8143c84a947ba49`, aggregate source digest `23a5a3d3855c2c58816dffda3a249ab6ef7036055a14a8861969939496913bc9`, and zero privacy findings.
+
+Decision: Treat this fixed tuple as the current secondary Project Memory recovery candidate as of source SHA `028715b9f99bd7107b3ff53b03e432d42eccfbdb`. Repository Project Memory remains authoritative. The frozen Bybit prospective Paper lane remains separate and has one verified completed four-hour bar under Issue #984; it still requires both 30 elapsed days and 180 completed bars before human review.
+
+Boundary: Secondary continuity and Paper-only evidence tracking. No Production/Live/L4, credential, signing, billing, deployment, financial-action, automatic-promotion, destructive, watchdog/self-heal, recovery-promotion, or self-authorization authority is granted.
