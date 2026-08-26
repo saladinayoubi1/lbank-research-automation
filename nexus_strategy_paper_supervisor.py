@@ -185,14 +185,16 @@ def run_once(
         raise StrategyPaperSupervisorError("now_ms must be a positive integer")
 
     spec = TIMEFRAMES[timeframe]
+    step_ms = int(spec["step_ms"])
+    last_closed_open_ms = ((now_ms - step_ms) // step_ms) * step_ms
     try:
         dataset = dict(dataset_fetcher(
             canonical_symbol=canonical_symbol,
             source_symbol=symbol,
             interval=spec["interval"],
             now_ms=now_ms,
-            start_time_ms=now_ms - limit * int(spec["step_ms"]),
-            end_time_ms=now_ms,
+            start_time_ms=last_closed_open_ms - (limit - 1) * step_ms,
+            end_time_ms=last_closed_open_ms,
             limit=limit,
         ))
         dataset_sha = str(dataset["binding_sha256"])

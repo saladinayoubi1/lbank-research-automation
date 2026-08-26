@@ -27,6 +27,11 @@ def test_eth_matrix_cell_uses_eth_canonical_dataset_binding(tmp_path: Path) -> N
     assert captured["canonical_symbol"] == "ETH/USDT"
     assert captured["source_symbol"] == "ETHUSDT"
     assert captured["interval"] == "60"
+    step_ms = 3_600_000
+    expected_end = ((1_800_000_000_000 - step_ms) // step_ms) * step_ms
+    assert captured["end_time_ms"] == expected_end
+    assert captured["start_time_ms"] == expected_end - 239 * step_ms
+    assert captured["end_time_ms"] + step_ms - 1 < captured["now_ms"]
 
 
 def test_unknown_matrix_symbol_fails_before_market_fetch(tmp_path: Path) -> None:
