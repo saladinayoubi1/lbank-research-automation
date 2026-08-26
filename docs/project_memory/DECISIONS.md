@@ -185,3 +185,21 @@ Evidence: PR #976 connected the completed Phase 3 task surface to the bounded By
 Decision: Treat Phase 3 as closed and do not reopen it. Treat the separate prospective Paper lane as active evidence collection, not as strategy approval or completion. It must accumulate at least 30 days and 180 completed four-hour bars before a review-required outcome; tampering, engine/manifest drift, invalid public data, or risk-bound violations remain fail-closed. The previously verified Google Drive snapshot at source SHA `6d84d1003666cc8fd9bb86f9aea203b459574b54` is now stale relative to repository memory and must be refreshed and independently re-verified before being described as current.
 
 Boundary: Research/Backtest/Paper only. No exchange orders, private credentials, Live/L4, signing, billing, deployment, production promotion, destructive authority, or self-authorization.
+
+## 2026-08-26 — Regime-aware selection is connected to isolated Paper runtimes
+Status: ACTIVE
+
+Evidence: PR #987 reached final head `bb85fd50f4a5b25f2d3dd26d9bb551a30e41c96c` and merged as `f9e354d9503b7123583ce1d1bfbdba26202ac238`. Workflow Permissions Policy run `33004356684`, NEXUS Cloud Fallback run `33004356628`, Test run `33004356620`, and NEXUS Build Verification run `33004356605` all completed successfully. The merged change added deterministic selection across `momentum`, `trend_breakout`, and `mean_reversion` from digest-bound 15m/1h/4h context, plus an isolated Paper runtime that routes weighted proposals through the existing signal pipeline and Deterministic Risk, independently replays selector/pipeline evidence, validates Paper event chains and persists verified results append-only.
+
+Decision: Treat regime selection and its isolated Paper runtime as repository-verified proposal-to-Paper infrastructure. Allocation never creates an order directly; unavailable, unhealthy, stale, low-confidence, thin-liquidity, mixed, or high-volatility inputs preserve cash fail-closed. The frozen Bybit four-hour prospective lane remains independent and continues its immutable 30-day/180-bar evidence gate under Issue #984.
+
+Boundary: Research/Backtest/Paper only. Deterministic Risk remains final. No automatic strategy promotion, Live/L4, private exchange credentials, withdrawals, signing, billing, deployment, production promotion, destructive authority, or self-authorization.
+
+## 2026-08-26 — Drive secondary snapshot refreshed after regime runtime merge
+Status: ACTIVE
+
+Evidence: PR #986 was closed unmerged because its source SHA `4a662fe0eb62f5de4f5765d6b10c1bc6daa53908` became stale after PR #987. A replacement canonical seven-file snapshot was generated from exact authoritative main `f9e354d9503b7123583ce1d1bfbdba26202ac238` and stored as the private Google Docs object `1-PJ9HrTYHD3H2D4fj4kwiLf7KCVLKD1GXXjQ8TrSo5E`, Drive revision `2`, modified `2026-08-26T19:37:42.369Z`. Provider text/plain export is `63076` bytes with raw SHA-256 `15f44aac08e6b60ba23ff709e5d8a9d7b6b99db6ae671fa09adff09b55b4fdf8`; canonical snapshot JSON is `63060` bytes with SHA-256 `4a511494e2578084dde9b74f5437ef14979024996488fdcb24e7ec96135f731b` and parses to the same provider JSON. The companion manifest is Drive object `1C8TtP2u8L7qPltc1vfCaariHS0pgbB5-`, `2110` bytes, file SHA-256 `ebfd9de0f124f180b8d13f8e411dddc32d541633f60e8ab72e0d453aa2a2dea8`, canonical manifest digest `f8363e5d10d079dd60ce734d03926a55af9ecd43c057ebc87cf6209a07f8d8eb`, aggregate source digest `a628a8e7da0b623bdd3f818494c645edc616df2aeb7da46a4a67a8d54056bbd9`, and zero privacy findings.
+
+Decision: Treat this fixed tuple as the current secondary Project Memory recovery candidate as of source SHA `f9e354d9503b7123583ce1d1bfbdba26202ac238`. Repository Project Memory remains authoritative. Later material Project Memory changes make this tuple stale until a newly generated provider snapshot is independently read back and verified.
+
+Boundary: Secondary continuity only. This evidence grants no Production/Live/L4, credential, signing, billing, deployment, financial-action, destructive, watchdog/self-heal, recovery-promotion, or self-authorization authority.
