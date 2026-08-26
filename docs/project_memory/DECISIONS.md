@@ -237,6 +237,13 @@ Privacy findings were zero. Object, revision, name, source, content, and stale-r
 substitutions all failed closed. Older Drive objects remain preserved as legacy evidence;
 stale PR #986 was closed unmerged.
 
+The separate prospective Paper gate also advanced without changing authority: Issue #984,
+run `32932158365`, and artifact `9593583528` record the first completed four-hour bar,
+state digest `a0e1ca932c5504ee08ed1985cdfa894dc5aaa77aad0d5c0176aacef441cf09c0`,
+status `COLLECTING`, zero orders/fills, and `1 / 180` completed bars. PR #990 records the
+current Drive tuple and this already-verified Paper progress together; closed PR #989 is
+not repository evidence.
+
 Decision: Treat this fixed tuple as the current secondary Project Memory recovery
 candidate for the direct integration child of source SHA `028715b9`. Repository Project
 Memory remains authoritative. A later material memory change must mark this tuple stale
