@@ -1,0 +1,40 @@
+{
+  "schema_version": "nexus.regime-strategy-policy.v1",
+  "paper_only": true,
+  "live_trading_authority": false,
+  "automatic_strategy_promotion": false,
+  "deterministic_risk_final_authority": true,
+  "minimum_context_confidence": "0.55",
+  "watch_weight_multiplier": "0.50",
+  "preserve_cash_alignments": [
+    "VOLATILITY_ALERT",
+    "MIXED"
+  ],
+  "preserve_cash_liquidity_states": [
+    "THIN"
+  ],
+  "approved_families": [
+    "momentum",
+    "trend_breakout",
+    "mean_reversion"
+  ],
+  "alignment_weights": {
+    "ALIGNED_UP": {
+      "momentum": "0.45",
+      "trend_breakout": "0.45",
+      "mean_reversion": "0.10"
+    },
+    "ALIGNED_DOWN": {
+      "momentum": "0.35",
+      "trend_breakout": "0.55",
+      "mean_reversion": "0.10"
+    },
+    "RANGE_DOMINANT": {
+      "momentum": "0.15",
+      "trend_breakout": "0.10",
+      "mean_reversion": "0.75"
+    },
+    "VOLATILITY_ALERT": {},
+    "MIXED": {}
+  }
+}
