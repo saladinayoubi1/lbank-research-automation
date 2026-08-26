@@ -19,8 +19,8 @@ NOW = int(time.time() * 1000)
 SOURCE_SHA = "a" * 40
 
 
-def _dataset(count: int = 240):
-    end_open = ((NOW - STEP) // STEP) * STEP
+def _dataset(count: int = 240, *, now_ms: int = NOW):
+    end_open = ((now_ms - STEP) // STEP) * STEP
     start = end_open - (count - 1) * STEP
     candles = []
     for index in range(count):
@@ -102,6 +102,26 @@ def test_candidate_crosses_real_deterministic_risk_into_isolated_paper(
     assert task["paper_result"]["risk"]["allowed"] is True
     assert task["paper_result"]["execution"]["event_count"] >= 1
     assert task["portfolio_snapshot"]["account"]["positions"][0]["symbol"] == "BTCUSDT"
+
+
+def test_historical_replay_uses_one_clock_through_paper_execution(
+    tmp_path: Path, monkeypatch
+) -> None:
+    historical_now = 1_700_000_000_000
+    monkeypatch.setattr(product_research, "KILL_CRITERIA", _permissive_kills())
+    ledger = run_once(
+        source_sha=SOURCE_SHA,
+        state_root=tmp_path,
+        families=("momentum",),
+        now_ms=historical_now,
+        dataset_fetcher=lambda **_: deepcopy(_dataset(now_ms=historical_now)),
+    )
+
+    task = ledger["tasks"][0]
+    assert task["status"] == "paper_executed"
+    assert task["paper_result"]["risk"]["allowed"] is True
+    assert task["paper_only"] is True
+    assert task["live_trading_authority"] is False
 
 
 def test_independent_verifier_rejects_live_authority_or_lease_spoof(tmp_path: Path) -> None:
