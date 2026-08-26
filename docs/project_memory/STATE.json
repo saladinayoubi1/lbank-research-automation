@@ -51,31 +51,44 @@
     "drive_backup": {
       "provider": "Google Drive",
       "folder": "NEXUS Project Memory Backup",
-      "document": "NEXUS Project Memory Backup — Durable",
+      "document": "NEXUS Project Memory Backup — Durable — 2026-08-26 — 6d84d100",
       "secondary_only": true,
       "may_authorize_production_recovery": false,
       "issue": 122,
       "issue_state": "completed",
-      "status": "verified_secondary_recovery_candidate_refresh_required",
-      "refresh_required": true,
-      "refresh_reason": "The last verified provider tuple is bound to an older repository SHA and predates the 2026-08-25 final Proof Mission completion.",
-      "fixed_source_sha": "b0d89457033941932515a0a6a07e79ec165a8cce",
-      "provider_object_id": "1m_KFJ6YvnWhLRYzAFBrZXn3Rb-OqYb_M63V8X_aMvew",
+      "status": "verified_secondary_recovery_candidate_current_as_of_source_sha",
+      "refresh_required": false,
+      "refresh_reason": "Verified provider read-back is content-bound to the final canonical Project Memory snapshot at source SHA 6d84d1003666cc8fd9bb86f9aea203b459574b54.",
+      "fixed_source_sha": "6d84d1003666cc8fd9bb86f9aea203b459574b54",
+      "provider_object_id": "1e1tnOjG7NElJqBexbwm7KNH3TU6n88xSck-qasYUj84",
       "provider_revision_id": "1",
-      "provider_modified_at": "2026-08-21T13:30:58.575Z",
-      "raw_export_size_bytes": 48060,
-      "raw_export_sha256": "b75b35f96305d1c61d10a1f27c13f08effaacc6c0fac7f63aa325ca3bc178c02",
+      "provider_modified_at": "2026-08-26T07:45:05.346Z",
+      "raw_export_size_bytes": 56781,
+      "raw_export_sha256": "f28f2927efafa9f9e30ded8243b4d97bc231837006b0059eac71d7bc9a950486",
       "provider_export_adapter": "nexus.project-memory-google-docs-export.v1",
-      "recovery_exercise": "verified",
+      "recovery_exercise": "verified_refresh_with_fixed_tuple_substitution_and_content_tamper_rejection",
       "privacy_findings": 0,
-      "verification_prs": [920, 923]
+      "verification_prs": [
+        920,
+        923
+      ],
+      "provider_export_bom": true,
+      "canonical_snapshot_utf8_size_bytes": 56765,
+      "canonical_snapshot_utf8_sha256": "961b21b1370d0fa656db3828721f1221b842966ca7f7f7ee854d7627ec4ecd71",
+      "provider_json_equals_canonical_snapshot": true,
+      "manifest_digest": "7f481af518efb1f56b5c35d63f701505e5472f715e62d683451a5e772ac80e3c",
+      "refresh_snapshot_workflow_run_id": 32944201100,
+      "refresh_snapshot_artifact_id": 9597613624,
+      "previous_provider_object_id": "1m_KFJ6YvnWhLRYzAFBrZXn3Rb-OqYb_M63V8X_aMvew",
+      "previous_provider_revision_id": "1",
+      "previous_fixed_source_sha": "b0d89457033941932515a0a6a07e79ec165a8cce"
     }
   },
   "current_evidence": {
-    "observed_main_sha": "764bb61aa8c2493e8af5992ae542b9bc5fd8cfd6",
-    "observed_at_utc": "2026-08-25T12:59:04Z",
+    "observed_main_sha": "6d84d1003666cc8fd9bb86f9aea203b459574b54",
+    "observed_at_utc": "2026-08-26T07:46:05Z",
     "latest_main_change": {
-      "summary": "PR #972 repaired the delegated-core Phase 7 surface regression tests after PR #967 split the public PowerShell entry point from the preserved core helper. PR #972 exact-head Workflow Permissions Policy, NEXUS Mission Queue, NEXUS Cloud Fallback, Test, and NEXUS Build Verification all succeeded before merge. The final physical Windows Proof Mission had already completed and been independently verified on source SHA 36a3d64f6ce3253b2f9ca76eb594c6afe80e4e9c.",
+      "summary": "PR #973 merged the final verified Proof Mission reconciliation. A new Google Drive secondary Project Memory snapshot was then generated from exact main 6d84d1003666cc8fd9bb86f9aea203b459574b54, stored as a separate provider object so the previous verified object remains legacy evidence, exported back as text/plain, and verified against the repository adapter with zero privacy findings and fail-closed object/revision/source/name/content substitution checks.",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true
@@ -96,7 +109,7 @@
       "phase7_return_pr": 966,
       "powershell51_bookkeeping_fix_pr": 967,
       "delegated_core_surface_test_fix_pr": 972,
-      "latest_main_sha": "764bb61aa8c2493e8af5992ae542b9bc5fd8cfd6",
+      "latest_main_sha": "6d84d1003666cc8fd9bb86f9aea203b459574b54",
       "paper_only": true,
       "live_trading_authority": false,
       "remaining_acceptance": "none for the final Proof Mission; autonomous-improvement feedback remains separately evidence-gated and does not widen authority"
@@ -185,7 +198,8 @@
       "powershell51_fix_pr_967": "merged",
       "surface_regression_fix_pr_972": "merged",
       "backup_verifier_pr_920": "merged",
-      "drive_export_hardening_pr_923": "merged"
+      "drive_export_hardening_pr_923": "merged",
+      "final_proof_memory_pr_973": "merged"
     },
     "release_readiness": {
       "production_ready": false,
