@@ -230,8 +230,9 @@ class ProductResearchRuntime:
         if qualification.get("status") != "paper_candidate": return {"contract_version": PRODUCT_AUTO_PAPER_CONTRACT, "paper_only": True, "accepted": False, "status": "qualification_killed", "kill_reasons": qualification.get("kill_reasons", [])}
         if float(research.get("latest_target", 0.0)) <= 0.0: return {"contract_version": PRODUCT_AUTO_PAPER_CONTRACT, "paper_only": True, "accepted": False, "status": "no_open_signal"}
         spec = TIMEFRAMES[request["timeframe"]]; family = request["family"]; strategy_version = qualification["strategy_version"]
-        source_ms = int(dataset["rows"][-1]["open_time_ms"]) + int(spec["step_ms"]); source_time = _utc_ms(source_ms); occurred_at = _utc_now()
-        if int(datetime.now(timezone.utc).timestamp() * 1000) - source_ms > int(spec["step_ms"]) * 2: raise ProductResearchError("automated Paper rejected stale canonical data")
+        current_ms = self.clock_ms()
+        source_ms = int(dataset["rows"][-1]["open_time_ms"]) + int(spec["step_ms"]); source_time = _utc_ms(source_ms); occurred_at = _utc_ms(current_ms)
+        if current_ms - source_ms > int(spec["step_ms"]) * 2: raise ProductResearchError("automated Paper rejected stale canonical data")
         dataset_id = f"canonical:{dataset['mapping_id']}"; dataset_revision = dataset["binding_sha256"]; regime_label, regime_confidence = self._regime(dataset); regime_id = f"regime:{dataset_revision[:20]}:{regime_label}"; correlation_id = f"auto-paper:{uuid.uuid4().hex}"
         with self.product_runtime._lock:
             existing = self.product_runtime._ensure_account(); state = replay(existing).state

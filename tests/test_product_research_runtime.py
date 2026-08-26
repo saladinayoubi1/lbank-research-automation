@@ -57,7 +57,9 @@ def _dataset(now_ms: int, count: int = 180):
 
 def _research(tmp_path: Path, now_ms: int):
     dataset = _dataset(now_ms)
-    runtime = ProductRuntime(tmp_path / "state")
+    runtime = ProductRuntime(
+        tmp_path / "state", clock=lambda: product_research._utc_ms(now_ms)
+    )
     research = ProductResearchRuntime(
         runtime,
         source_sha="a" * 40,
@@ -139,6 +141,23 @@ def test_qualification_gated_auto_paper_runs_real_deterministic_pipeline(tmp_pat
     snapshot = runtime.paper_snapshot()
     assert snapshot["account"]["positions"][0]["symbol"] == "BTCUSDT"
     assert snapshot["session_signal_count"] == 1
+
+
+def test_auto_paper_uses_the_injected_canonical_clock(tmp_path: Path, monkeypatch) -> None:
+    now = 1_700_000_000_000
+    monkeypatch.setattr(product_research, "KILL_CRITERIA", _permissive_kills())
+    runtime, research = _research(tmp_path, now)
+    result = research.run_research(
+        symbol="BTCUSDT", timeframe="minute15", family="momentum", limit=180
+    )
+    assert result["qualification"]["status"] == "paper_candidate"
+
+    auto = research.auto_paper()
+
+    assert auto["status"] == "paper_executed"
+    assert auto["paper_only"] is True
+    assert auto["live_trading_authority"] is False
+    assert runtime.paper_snapshot()["session_signal_count"] == 1
 
 
 def test_auto_paper_rejects_dataset_tamper_before_decision_or_execution(tmp_path: Path, monkeypatch) -> None:

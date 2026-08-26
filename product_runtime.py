@@ -8,7 +8,7 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping
 
 from deterministic_risk import RiskDecision, evaluate_risk
 from paper_event_store import GENESIS_DIGEST, PortfolioState, build_event, replay, validate_event
@@ -154,11 +154,18 @@ def _risk_reducing_exit(*, state: PortfolioState, signal_id: str, symbol: str, s
 class ProductRuntime:
     """Durable local Paper state. There is no live-money authority in this runtime."""
 
-    def __init__(self, root: Path, *, opening_cash: str = "10000") -> None:
+    def __init__(
+        self,
+        root: Path,
+        *,
+        opening_cash: str = "10000",
+        clock: Callable[[], str] | None = None,
+    ) -> None:
         self.root = Path(root)
         self.runtime_dir = self.root / "product_runtime"
         self.paper_events_path = self.runtime_dir / "paper-events.jsonl"
         self.opening_cash = str(Decimal(opening_cash))
+        self.clock = clock or _utc_now
         self._lock = threading.RLock()
         # Establish the journal clock boundary immediately so every downstream
         # automated event is necessarily ordered after account/session bootstrap.
@@ -199,7 +206,7 @@ class ProductRuntime:
     def _ensure_account(self) -> list[dict[str, Any]]:
         events = self._read_events()
         if events: return events
-        at = _utc_now(); provenance = _paper_provenance(timeframe="session", at=at)
+        at = self.clock(); provenance = _paper_provenance(timeframe="session", at=at)
         account = build_event(
             event_id="product:account:1", event_type="demo_account_opened", aggregate_id=PAPER_ACCOUNT_ID,
             sequence=1, occurred_at=at, correlation_id="product-bootstrap",
@@ -251,7 +258,7 @@ class ProductRuntime:
             if not numeric.is_finite() or numeric <= 0: raise ProductRuntimeError(f"{name} must be positive")
 
         with self._lock:
-            events = self._ensure_account(); state = replay(events).state; at = _utc_now()
+            events = self._ensure_account(); state = replay(events).state; at = self.clock()
             signal_id = f"paper:{uuid.uuid4().hex}"; correlation_id = f"product:{uuid.uuid4().hex}"
             provenance = _paper_provenance(timeframe=timeframe, at=at)
             quantity = str(request["quantity"]); reference_price = str(request["reference_price"])
