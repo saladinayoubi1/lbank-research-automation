@@ -41,6 +41,11 @@ def _archive_path(root: Path, symbol: str, timeframe: str) -> Path:
     return path
 
 
+def _utc_open_ms(values: pd.Series) -> pd.Series:
+    timestamps = pd.to_datetime(values, utc=True, errors="raise")
+    return timestamps.map(lambda value: value.value // 1_000_000).astype("int64")
+
+
 def _load_frame(root: Path, symbol: str, timeframe: str) -> pd.DataFrame:
     frame = pd.read_parquet(_archive_path(root, symbol, timeframe))
     if frame.columns.tolist() != _COLUMNS:
@@ -50,8 +55,7 @@ def _load_frame(root: Path, symbol: str, timeframe: str) -> pd.DataFrame:
         raise DemoArchiveReplayError("archive symbol identity mismatch")
     if set(frame["timeframe"].astype(str)) != {timeframe}:
         raise DemoArchiveReplayError("archive timeframe identity mismatch")
-    timestamps = pd.to_datetime(frame["timestamp"], utc=True, errors="raise")
-    open_ms = (timestamps.astype("int64") // 1_000_000).astype("int64")
+    open_ms = _utc_open_ms(frame["timestamp"])
     _interval, _manifest_timeframe, step_ms = _TIMEFRAMES[timeframe]
     if (
         open_ms.duplicated().any()
