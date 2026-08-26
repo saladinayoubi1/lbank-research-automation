@@ -126,7 +126,28 @@
       "paper_only": true,
       "live_trading_authority": false,
       "automatic_strategy_promotion": false,
-      "next_step": "bind verified runtime evidence to the Paper performance projection for next-cycle drift controls only"
+      "next_step": "collect append-only next-cycle drift projections while the separate prospective Paper lane continues its minimum observation window"
+    },
+    "regime_runtime_drift": {
+      "status": "integrated_paper_only",
+      "integration_pr": 988,
+      "base_source_sha": "f9e354d9503b7123583ce1d1bfbdba26202ac238",
+      "evidence_bindings": [
+        "independently verified Supervisor ledger",
+        "digest-bound Paper performance projection",
+        "independently replayed regime runtime evidence",
+        "one exact source SHA"
+      ],
+      "allowed_next_cycle_controls": [
+        "KEEP",
+        "WATCH_HAIRCUT_NEXT_CYCLE",
+        "REMOVE_FROM_NEXT_SELECTION",
+        "PRESERVE_CURRENT_POLICY_BOUND"
+      ],
+      "current_runtime_mutation": false,
+      "paper_only": true,
+      "live_trading_authority": false,
+      "promotion_authority": false
     },
     "phase7": {
       "status": "complete",
@@ -254,6 +275,7 @@
       "prospective_paper_start_pr_978": "merged",
       "prospective_paper_precutoff_fix_pr_982": "merged",
       "regime_strategy_selector_runtime_pr_987": "merged",
+      "regime_runtime_drift_pr_988": "integrated_by_this_memory_change",
       "prospective_paper_run_32905463932": "success",
       "drive_backup_refresh_required": true
     },

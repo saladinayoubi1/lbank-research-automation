@@ -206,7 +206,9 @@ and Phase 7 acceptance, not as either phase reopening. Runtime performance feedb
 affect only the next selector cycle and must be derived from independently verified
 Supervisor, Paper-performance, and runtime evidence on one source SHA. It may preserve,
 haircut, or remove a candidate from the next cycle; it may not rewrite the active runtime
-or promote a strategy.
+or promote a strategy. PR #988 implements and registers that bounded bridge with
+digest-bound append-only output and fail-closed cross-SHA, missing-family, and tamper
+checks.
 
 Boundary: Research/Backtest/Paper only. Live Trading, automatic promotion, private exchange
 credentials, signing, billing, deployment, production promotion, destructive authority,
