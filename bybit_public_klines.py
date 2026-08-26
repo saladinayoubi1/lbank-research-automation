@@ -5,7 +5,8 @@ from typing import Any
 
 import requests
 
-BASE_URL = "https://api.bybit.com"
+BASE_URLS = ("https://api.bybit.com", "https://api.bytick.com")
+BASE_URL = BASE_URLS[0]
 KLINES_PATH = "/v5/market/kline"
 INTERVAL_MS = {"15": 15 * 60 * 1000, "60": 60 * 60 * 1000, "240": 4 * 60 * 60 * 1000}
 SUPPORTED_INTERVALS = set(INTERVAL_MS)
@@ -159,22 +160,33 @@ def fetch_closed_klines(
         raise BybitKlineError("requested window includes an open/incomplete candle")
 
     client = session or requests.Session()
-    response = client.get(
-        f"{BASE_URL}{KLINES_PATH}",
-        params={
-            "category": "spot",
-            "symbol": normalized_symbol,
-            "interval": interval,
-            "start": start_time_ms,
-            "end": end_time_ms,
-            "limit": limit,
-        },
-        timeout=timeout_seconds,
-        allow_redirects=False,
-        headers={"Accept": "application/json", "User-Agent": "nexus-research/1.0"},
-    )
-    if response.status_code != 200:
-        raise BybitKlineError(f"Bybit kline request failed with HTTP {response.status_code}")
+    params = {
+        "category": "spot",
+        "symbol": normalized_symbol,
+        "interval": interval,
+        "start": start_time_ms,
+        "end": end_time_ms,
+        "limit": limit,
+    }
+    response = None
+    status_codes: list[int] = []
+    for base_url in BASE_URLS:
+        candidate = client.get(
+            f"{base_url}{KLINES_PATH}",
+            params=params,
+            timeout=timeout_seconds,
+            allow_redirects=False,
+            headers={"Accept": "application/json", "User-Agent": "nexus-research/1.0"},
+        )
+        status_codes.append(int(candidate.status_code))
+        if candidate.status_code == 200:
+            response = candidate
+            break
+    if response is None:
+        evidence = ",".join(str(code) for code in status_codes)
+        raise BybitKlineError(
+            f"all official Bybit mainnet endpoints rejected the kline request: {evidence}"
+        )
     if len(response.content) > MAX_RESPONSE_BYTES:
         raise BybitKlineError("Bybit kline response exceeds size limit")
     try:

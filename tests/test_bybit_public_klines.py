@@ -48,3 +48,51 @@ def test_rejects_open_candle():
             start_time_ms=1710000000000,
             end_time_ms=1710000000000,
         )
+
+
+class _Response:
+    def __init__(self, status_code, payload):
+        self.status_code = status_code
+        self._payload = payload
+        self.content = b"{}"
+
+    def json(self):
+        return self._payload
+
+
+class _OfficialEndpointSession:
+    def __init__(self, payload):
+        self.payload = payload
+        self.urls = []
+
+    def get(self, url, **_kwargs):
+        self.urls.append(url)
+        if len(self.urls) == 1:
+            return _Response(403, {})
+        return _Response(200, self.payload)
+
+
+def test_fetch_falls_back_only_to_the_second_official_mainnet_endpoint():
+    rows = [
+        ["1710000900000", "101", "103", "100", "102", "10", "1020"],
+        ["1710000000000", "100", "102", "99", "101", "12", "1212"],
+    ]
+    session = _OfficialEndpointSession(_payload(rows))
+
+    from bybit_public_klines import fetch_closed_klines
+
+    result = fetch_closed_klines(
+        "BTCUSDT",
+        "15",
+        now_ms=1710001800000,
+        start_time_ms=1710000000000,
+        end_time_ms=1710000900000,
+        limit=2,
+        session=session,
+    )
+
+    assert len(result) == 2
+    assert session.urls == [
+        "https://api.bybit.com/v5/market/kline",
+        "https://api.bytick.com/v5/market/kline",
+    ]
