@@ -8,7 +8,7 @@ from product_runtime import ProductRuntime
 
 
 NOW = "2026-08-25T04:00:00Z"
-LAST_OPEN_MS = 1_756_092_600_000
+LAST_OPEN_MS = 1_787_616_000_000
 
 
 def _runtime_with_position(tmp_path: Path) -> ProductRuntime:
