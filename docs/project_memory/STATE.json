@@ -18,7 +18,7 @@
     "cloud continuity when the local laptop is offline"
   ],
   "runtime_status": {
-    "agent_execution_state": "final_proof_verified_and_bybit_prospective_paper_collecting",
+    "agent_execution_state": "final_proof_verified_regime_paper_runtime_merged_and_bybit_prospective_paper_collecting",
     "laptop_state": "physical_phase7_proof_verified_and_owner_cleanup_observed",
     "internet_outage_state": "not_assumed_from_laptop_state",
     "laptop_offline_is_not_internet_outage": true,
@@ -51,38 +51,51 @@
     "drive_backup": {
       "provider": "Google Drive",
       "folder": "NEXUS Project Memory Backup",
-      "document": "NEXUS Project Memory Backup — Durable",
+      "document": "NEXUS Project Memory Backup — Durable — 2026-08-26 — f9e354d9",
       "secondary_only": true,
       "may_authorize_production_recovery": false,
       "issue": 122,
       "issue_state": "completed",
-      "status": "verified_secondary_recovery_snapshot_stale_after_main_advance",
-      "refresh_required": true,
-      "refresh_reason": "Repository Project Memory advanced beyond the fixed 6d84d100 snapshot; refresh and independently verify the secondary copy after this canonical reconciliation merges.",
-      "fixed_source_sha": "6d84d1003666cc8fd9bb86f9aea203b459574b54",
-      "provider_object_id": "1m_KFJ6YvnWhLRYzAFBrZXn3Rb-OqYb_M63V8X_aMvew",
-      "provider_revision_id": "3",
-      "provider_modified_at": "2026-08-25T13:50:13.998Z",
-      "raw_export_size_bytes": 56782,
-      "raw_export_sha256": "8904567e289d113435b5e32e89f559a018e7435b9acd147c5cc67e3305dcadd4",
+      "status": "verified_secondary_recovery_candidate_current_as_of_source_sha",
+      "refresh_required": false,
+      "refresh_reason": "Exact provider read-back is content-bound to the canonical seven-file Project Memory snapshot at source SHA f9e354d9503b7123583ce1d1bfbdba26202ac238.",
+      "fixed_source_sha": "f9e354d9503b7123583ce1d1bfbdba26202ac238",
+      "provider_object_id": "1-PJ9HrTYHD3H2D4fj4kwiLf7KCVLKD1GXXjQ8TrSo5E",
+      "provider_revision_id": "2",
+      "provider_modified_at": "2026-08-26T19:37:42.369Z",
+      "raw_export_size_bytes": 63076,
+      "raw_export_sha256": "15f44aac08e6b60ba23ff709e5d8a9d7b6b99db6ae671fa09adff09b55b4fdf8",
       "provider_export_adapter": "nexus.project-memory-google-docs-export.v1",
-      "recovery_exercise": "verified",
+      "recovery_exercise": "verified_provider_readback_under_existing_fail_closed_object_revision_source_name_and_content_contract",
       "privacy_findings": 0,
       "verification_prs": [
         920,
         923
       ],
-      "verification_manifest_drive_id": "1TtbOxGPpelKbMYmDFn6_w8x-wwkqHv7X",
-      "verification_manifest_sha256": "2d7bb0744866a491a41253d20241abcb1892066fecd9abd7e7df05d340b22296",
-      "verification_manifest_digest": "b9e986f485ad0b8046749a42603ff70144667c963b020fe598c08317ce18342d",
-      "aggregate_source_digest": "a1aef53326524cc1d4038e5a92c73b17d61a277de93bfd103027ac7bdf6ecb23"
+      "verification_manifest_drive_id": "1C8TtP2u8L7qPltc1vfCaariHS0pgbB5-",
+      "verification_manifest_sha256": "ebfd9de0f124f180b8d13f8e411dddc32d541633f60e8ab72e0d453aa2a2dea8",
+      "verification_manifest_digest": "f8363e5d10d079dd60ce734d03926a55af9ecd43c057ebc87cf6209a07f8d8eb",
+      "aggregate_source_digest": "a628a8e7da0b623bdd3f818494c645edc616df2aeb7da46a4a67a8d54056bbd9",
+      "provider_export_bom": true,
+      "canonical_snapshot_utf8_size_bytes": 63060,
+      "canonical_snapshot_utf8_sha256": "4a511494e2578084dde9b74f5437ef14979024996488fdcb24e7ec96135f731b",
+      "provider_json_equals_canonical_snapshot": true,
+      "manifest_digest": "f8363e5d10d079dd60ce734d03926a55af9ecd43c057ebc87cf6209a07f8d8eb",
+      "verification_manifest_size_bytes": 2110,
+      "manifest_generated_at": "2026-08-26T19:38:52.605Z",
+      "previous_valid": {
+        "object_id": "13LOcKDtB7Ji_-qxyyUcd0Cy6zVO9raW3NBkKxsh6TKc",
+        "revision_id": "1",
+        "source_sha": "4a662fe0eb62f5de4f5765d6b10c1bc6daa53908",
+        "raw_export_sha256": "898ffb5d0d0a4f5222dcc8552fed36fb7b735e64d660555306243656b885d6ae"
+      }
     }
   },
   "current_evidence": {
-    "observed_main_sha": "ca2b3f284dd2a6fd910dd25a86e8025ba490fa20",
-    "observed_at_utc": "2026-08-25T22:20:25Z",
+    "observed_main_sha": "f9e354d9503b7123583ce1d1bfbdba26202ac238",
+    "observed_at_utc": "2026-08-26T19:38:52.605Z",
     "latest_main_change": {
-      "summary": "PRs #976-#978 connected Phase 3 to the bounded Bybit research ladder, made the reviewed v2 search event-driven, and started the frozen prospective Paper lane. PR #982 then fixed pre-cutoff initialization; main run 32905463932 succeeded and published digest-protected Paper state artifact 9584635133.",
+      "summary": "PR #987 merged deterministic cross-timeframe regime selection and an independently replayed isolated Paper runtime through Decision, Deterministic Risk, append-only evidence, and restart verification. A replacement private Google Drive secondary snapshot was then generated and read back from exact main f9e354d9503b7123583ce1d1bfbdba26202ac238.",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true
@@ -103,10 +116,12 @@
       "phase7_return_pr": 966,
       "powershell51_bookkeeping_fix_pr": 967,
       "delegated_core_surface_test_fix_pr": 972,
-      "latest_main_sha": "ca2b3f284dd2a6fd910dd25a86e8025ba490fa20",
+      "latest_main_sha": "f9e354d9503b7123583ce1d1bfbdba26202ac238",
       "paper_only": true,
       "live_trading_authority": false,
-      "remaining_acceptance": "none for the final Proof Mission; the separate prospective Paper lane must accumulate at least 30 days and 180 completed four-hour bars before review and never widens authority"
+      "remaining_acceptance": "none for the final Proof Mission; the separate prospective Paper lane must accumulate at least 30 days and 180 completed four-hour bars before review and never widens authority",
+      "regime_strategy_selector_pr": 987,
+      "regime_strategy_runtime_pr": 987
     },
     "phase7": {
       "status": "complete",
@@ -133,7 +148,7 @@
       "independent_verifier_evidence_sha256": "f45aa24aacf50d0bf9c793462911d0b3b75b736184268b50d7638507633158f7",
       "hardware_proof_complete": true,
       "core_cloud_chain_complete": true,
-      "verified_progress_percent": 100.0,
+      "verified_progress_percent": 100,
       "laptop_classification": "EXECUTED",
       "internal_agent_classification": "EXECUTED",
       "cloud_classification": "EXECUTED",
@@ -172,20 +187,32 @@
       "status": "collecting",
       "start_pr": 978,
       "precutoff_initialization_fix_pr": 982,
-      "main_source_sha": "ca2b3f284dd2a6fd910dd25a86e8025ba490fa20",
+      "main_source_sha": "4a662fe0eb62f5de4f5765d6b10c1bc6daa53908",
       "successful_run_id": 32905463932,
       "state_artifact_id": 9584635133,
       "state_artifact_name": "bybit-prospective-paper-forward-v1-state",
-      "state_digest": "a30332e039e5a27342018b1be111b901c7a6df2b975234fc282d140cc2a2d283",
+      "state_digest": "a0e1ca932c5504ee08ed1985cdfa894dc5aaa77aad0d5c0176aacef441cf09c0",
       "start_not_before_utc": "2026-08-26T00:00:00Z",
-      "completed_bar_count": 0,
+      "completed_bar_count": 1,
       "minimum_days": 30,
       "minimum_completed_bars": 180,
       "paper_only": true,
       "live_trading_enabled": false,
       "automatic_live_promotion": false,
       "private_credentials_used": false,
-      "next_gate": "accumulate immutable prospective observations until COMPLETE_REVIEW_REQUIRED or fail-closed quarantine"
+      "next_gate": "accumulate immutable prospective observations until COMPLETE_REVIEW_REQUIRED or fail-closed quarantine",
+      "latest_successful_run_id": 32932158365,
+      "latest_state_artifact_id": 9593583528,
+      "latest_artifact_digest": "sha256:111048e09ae2551ade4fdef2dc8df72f1da8eef13fe279d57aac52d49a4d3a20",
+      "latest_execution_utc": "2026-08-26T00:00:00Z",
+      "issue": 984,
+      "integrity_status": "valid",
+      "target_weights": [
+        "0.0",
+        "0.0"
+      ],
+      "orders": 0,
+      "fills": 0
     },
     "phase_status": {
       "phase5": {
@@ -204,7 +231,7 @@
         "acceptance_issue": 702,
         "control_plane_issue": 697,
         "proof_source_sha": "36a3d64f6ce3253b2f9ca76eb594c6afe80e4e9c",
-        "verified_progress_percent": 100.0,
+        "verified_progress_percent": 100,
         "physical_windows_proof": "verified"
       },
       "product_integration": {
@@ -227,14 +254,18 @@
       "surface_regression_fix_pr_972": "merged",
       "backup_verifier_pr_920": "merged",
       "drive_export_hardening_pr_923": "merged",
-      "drive_backup_refresh": "verified",
-      "drive_backup_source_sha": "6d84d1003666cc8fd9bb86f9aea203b459574b54",
+      "drive_backup_refresh": "verified_current_as_of_source_sha",
+      "drive_backup_source_sha": "f9e354d9503b7123583ce1d1bfbdba26202ac238",
       "phase3_strategy_surface_pr_976": "merged",
       "event_driven_strategy_search_pr_977": "merged",
       "prospective_paper_start_pr_978": "merged",
       "prospective_paper_precutoff_fix_pr_982": "merged",
       "prospective_paper_run_32905463932": "success",
-      "drive_backup_refresh_required": true
+      "drive_backup_refresh_required": false,
+      "drive_backup_previous_pr_986": "superseded_closed_unmerged",
+      "regime_strategy_runtime_pr_987": "merged",
+      "issue_984": "open_collecting_1_of_180",
+      "prospective_paper_run_32932158365": "success"
     },
     "release_readiness": {
       "production_ready": false,
@@ -248,6 +279,37 @@
         "proof_reason": "provider_budget_gate_closed",
         "fabricated_participation": false,
         "credential_or_billing_action_performed": false
+      }
+    },
+    "regime_strategy_runtime": {
+      "status": "verified_merged_paper_only",
+      "pr": 987,
+      "final_head_sha": "bb85fd50f4a5b25f2d3dd26d9bb551a30e41c96c",
+      "merge_sha": "f9e354d9503b7123583ce1d1bfbdba26202ac238",
+      "timeframes": [
+        "15m",
+        "1h",
+        "4h"
+      ],
+      "families": [
+        "momentum",
+        "trend_breakout",
+        "mean_reversion"
+      ],
+      "selector_digest_bound": true,
+      "isolated_paper_portfolios": true,
+      "deterministic_risk_final_authority": true,
+      "independent_replay_verifier": true,
+      "append_only_evidence": true,
+      "paper_only": true,
+      "live_trading_authority": false,
+      "automatic_strategy_promotion": false,
+      "ci": {
+        "workflow_permissions_policy_run_id": 33004356684,
+        "cloud_fallback_run_id": 33004356628,
+        "test_run_id": 33004356620,
+        "build_verification_run_id": 33004356605,
+        "conclusion": "success"
       }
     }
   }
