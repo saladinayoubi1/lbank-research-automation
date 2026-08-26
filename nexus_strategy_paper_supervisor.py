@@ -17,7 +17,7 @@ from typing import Any, Callable, Mapping, Sequence
 
 import phase5_attempts as attempts
 from phase6_research_pipeline import fetch_bind_bybit_dataset
-from product_research_runtime import ProductResearchRuntime, STRATEGY_PRESETS, TIMEFRAMES
+from product_research_runtime import ProductResearchRuntime, STRATEGY_PRESETS, TIMEFRAMES, _utc_ms
 from product_runtime import ProductRuntime
 
 SCHEMA = "nexus.strategy-paper-supervisor.v1"
@@ -213,7 +213,10 @@ def run_once(
             source_sha=hashlib.sha256(("git-object:" + source_sha).encode("ascii")).hexdigest(),
             state_generation=1,
         )
-        runtime = ProductRuntime(state_root / "portfolios" / family)
+        runtime = ProductRuntime(
+            state_root / "portfolios" / family,
+            clock=lambda now_ms=now_ms: _utc_ms(now_ms),
+        )
         research = research_factory(runtime, source_sha, dataset, now_ms)
         try:
             research_result = research.run_research(
