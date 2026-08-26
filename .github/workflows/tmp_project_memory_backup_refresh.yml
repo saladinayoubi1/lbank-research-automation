@@ -1,4 +1,4 @@
-name: Temporary Project Memory Backup Snapshot
+name: Temporary Project Memory Backup Registration
 
 on:
   push:
@@ -6,68 +6,122 @@ on:
       - ops/drive-backup-refresh-20260826
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  snapshot:
+  register:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout fixed canonical source
+      - name: Checkout canonical main
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: 6d84d1003666cc8fd9bb86f9aea203b459574b54
-          fetch-depth: 1
+          fetch-depth: 0
 
-      - name: Build canonical Project Memory snapshot
+      - name: Register verified Drive refresh in Project Memory
         shell: bash
         run: |
           python - <<'PY'
-          from datetime import datetime, timezone
           from pathlib import Path
           import json
-          import project_memory_backup as pmb
 
-          repo = "saladinayoubi1/lbank-research-automation"
           source_sha = "6d84d1003666cc8fd9bb86f9aea203b459574b54"
-          paths = [
-              "docs/project_memory/PROJECT_MEMORY.md",
-              "docs/project_memory/STATE.json",
-              "docs/project_memory/DECISIONS.md",
-              "docs/project_memory/RECOVERY_PLAYBOOK.md",
-              "docs/project_memory/AUTONOMY_POLICY.md",
-              "docs/project_memory/OPERATING_RULES.md",
-              "docs/project_memory/VALIDATION.md",
-          ]
-          files = {p: Path(p).read_text(encoding="utf-8") for p in paths}
-          snapshot = pmb.build_snapshot(
-              repository=repo,
-              source_sha=source_sha,
-              generated_at=datetime.now(timezone.utc),
-              files=files,
-          )
-          text = pmb.snapshot_text(snapshot)
-          findings = pmb.privacy_findings(text)
-          if findings:
-              raise SystemExit(f"privacy findings: {findings}")
-          Path("nexus-project-memory-backup-snapshot.txt").write_text(text, encoding="utf-8", newline="\n")
-          Path("snapshot-meta.json").write_text(json.dumps({
-              "repository": repo,
-              "source_sha": source_sha,
-              "snapshot_utf8_sha256": pmb._sha256(text.encode("utf-8")),
-              "snapshot_utf8_size_bytes": len(text.encode("utf-8")),
-              "privacy_findings": findings,
-              "source_files": paths,
-          }, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+          state_path = Path("docs/project_memory/STATE.json")
+          state = json.loads(state_path.read_text(encoding="utf-8"))
+          drive = state["continuity"]["drive_backup"]
+          if drive.get("refresh_required") is not True:
+              raise SystemExit("expected refresh_required=true before registration")
+
+          previous_object = drive.get("provider_object_id")
+          previous_revision = drive.get("provider_revision_id")
+          previous_source = drive.get("fixed_source_sha")
+
+          drive.update({
+              "document": "NEXUS Project Memory Backup — Durable — 2026-08-26 — 6d84d100",
+              "status": "verified_secondary_recovery_candidate_current_as_of_source_sha",
+              "refresh_required": False,
+              "refresh_reason": "Verified provider read-back is content-bound to the final canonical Project Memory snapshot at source SHA 6d84d1003666cc8fd9bb86f9aea203b459574b54.",
+              "fixed_source_sha": source_sha,
+              "provider_object_id": "1e1tnOjG7NElJqBexbwm7KNH3TU6n88xSck-qasYUj84",
+              "provider_revision_id": "1",
+              "provider_modified_at": "2026-08-26T07:45:05.346Z",
+              "raw_export_size_bytes": 56781,
+              "raw_export_sha256": "f28f2927efafa9f9e30ded8243b4d97bc231837006b0059eac71d7bc9a950486",
+              "provider_export_adapter": "nexus.project-memory-google-docs-export.v1",
+              "provider_export_bom": True,
+              "canonical_snapshot_utf8_size_bytes": 56765,
+              "canonical_snapshot_utf8_sha256": "961b21b1370d0fa656db3828721f1221b842966ca7f7f7ee854d7627ec4ecd71",
+              "provider_json_equals_canonical_snapshot": True,
+              "manifest_digest": "7f481af518efb1f56b5c35d63f701505e5472f715e62d683451a5e772ac80e3c",
+              "recovery_exercise": "verified_refresh_with_fixed_tuple_substitution_and_content_tamper_rejection",
+              "privacy_findings": 0,
+              "refresh_snapshot_workflow_run_id": 32944201100,
+              "refresh_snapshot_artifact_id": 9597613624,
+              "previous_provider_object_id": previous_object,
+              "previous_provider_revision_id": previous_revision,
+              "previous_fixed_source_sha": previous_source,
+          })
+
+          evidence = state["current_evidence"]
+          evidence["observed_main_sha"] = source_sha
+          evidence["observed_at_utc"] = "2026-08-26T07:46:05Z"
+          evidence["latest_main_change"] = {
+              "summary": "PR #973 merged the final verified Proof Mission reconciliation. A new Google Drive secondary Project Memory snapshot was then generated from exact main 6d84d1003666cc8fd9bb86f9aea203b459574b54, stored as a separate provider object so the previous verified object remains legacy evidence, exported back as text/plain, and verified against the repository adapter with zero privacy findings and fail-closed object/revision/source/name/content substitution checks.",
+              "architecture_or_core_goal_change_observed": False,
+              "core_goal_change_observed": False,
+              "meaningful_operational_change_observed": True,
+          }
+          evidence["integration_cycle"]["latest_main_sha"] = source_sha
+          evidence["closure_state"]["final_proof_memory_pr_973"] = "merged"
+
+          state_path.write_text(json.dumps(state, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+          decisions_path = Path("docs/project_memory/DECISIONS.md")
+          decision = r'''
+
+## 2026-08-26 — Google Drive secondary Project Memory snapshot refreshed after final Proof Mission
+Status: ACTIVE
+
+Evidence: The canonical seven-file Project Memory snapshot was generated from exact source SHA
+`6d84d1003666cc8fd9bb86f9aea203b459574b54` by workflow run `32944201100` (artifact
+`9597613624`). A new Google Docs object was created rather than overwriting the previous
+verified object: `1e1tnOjG7NElJqBexbwm7KNH3TU6n88xSck-qasYUj84`, revision `1`, provider
+modified `2026-08-26T07:45:05.346Z`. Provider `text/plain` export size is `56781` bytes and
+raw SHA-256 is `f28f2927efafa9f9e30ded8243b4d97bc231837006b0059eac71d7bc9a950486`.
+The canonical pre-provider snapshot is `56765` bytes with SHA-256
+`961b21b1370d0fa656db3828721f1221b842966ca7f7f7ee854d7627ec4ecd71`; after the bounded
+Google Docs BOM adapter, provider JSON equals that canonical snapshot. Manifest digest is
+`7f481af518efb1f56b5c35d63f701505e5472f715e62d683451a5e772ac80e3c`, privacy findings
+are zero, and independent negative checks rejected object, revision, source-SHA, name and
+content substitution/tampering.
+
+Decision: Treat the new fixed tuple as the current secondary Project Memory recovery candidate
+as of source SHA `6d84d1003666cc8fd9bb86f9aea203b459574b54`. Preserve the prior verified Drive object as
+legacy/previous-valid evidence rather than overwriting it. GitHub repository evidence remains
+authoritative and Drive remains secondary-only.
+
+Boundary: This refresh grants no Production/Live/L4, credentials, signing, billing, deployment,
+financial action, destructive authority or self-authorization.
+'''.lstrip("\n")
+          existing = decisions_path.read_text(encoding="utf-8")
+          if "## 2026-08-26 — Google Drive secondary Project Memory snapshot refreshed after final Proof Mission" in existing:
+              raise SystemExit("decision already present")
+          decisions_path.write_text(existing.rstrip() + "\n\n" + decision, encoding="utf-8")
           PY
 
-      - name: Upload snapshot evidence
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: nexus-project-memory-backup-refresh-6d84d100
-          path: |
-            nexus-project-memory-backup-snapshot.txt
-            snapshot-meta.json
-            project_memory_backup.py
-            project_memory_drive_export.py
-          if-no-files-found: error
-          retention-days: 7
+      - name: Validate Project Memory against fixed source
+        shell: bash
+        run: python project_memory_validator.py --expected-observed-main 6d84d1003666cc8fd9bb86f9aea203b459574b54
+
+      - name: Commit registration branch
+        shell: bash
+        env:
+          TARGET_BRANCH: memory/drive-backup-refresh-20260826
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$TARGET_BRANCH"
+          git add docs/project_memory/STATE.json docs/project_memory/DECISIONS.md
+          git diff --cached --check
+          git commit -m "Record verified Google Drive Project Memory refresh"
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
