@@ -74,8 +74,15 @@ def evaluate_paper_drift(
     baseline_expectancy: Any,
     baseline_fee_per_trade: Any,
     initial_equity: Any = "10000",
+    paper_acceptance: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Measure one isolated Paper strategy and append quarantine when required."""
+    """Measure one isolated Paper strategy and append quarantine when required.
+
+    ``paper_acceptance`` is optional independently reconstructed journal evidence.
+    When supplied it is validated by ``promote_candidate_to_paper`` and lets a
+    verified Paper lifecycle survive later ``position_exists`` or
+    ``no_open_signal`` Supervisor cycles without inventing a health state.
+    """
     supervisor_verification = verify_ledger(supervisor_ledger)
     if supervisor_verification.get("decision") != "pass":
         raise PaperPerformanceDriftError("Supervisor evidence is not independently verified")
@@ -86,8 +93,11 @@ def evaluate_paper_drift(
     supervisor_task = matches[0]
     if supervisor_task.get("paper_only") is not True or supervisor_task.get("live_trading_authority") is not False:
         raise PaperPerformanceDriftError("task exceeds Paper authority")
-    if supervisor_task.get("status") not in {"paper_executed", "position_exists"}:
-        raise PaperPerformanceDriftError("task has no active Paper evidence")
+    status = supervisor_task.get("status")
+    if status not in {"paper_executed", "position_exists", "no_open_signal"}:
+        raise PaperPerformanceDriftError("task has no active or historical Paper evidence")
+    if status == "no_open_signal" and paper_acceptance is None:
+        raise PaperPerformanceDriftError("flat task requires independently reconstructed Paper acceptance")
     research = supervisor_task.get("research_result")
     if not isinstance(research, Mapping):
         raise PaperPerformanceDriftError("strategy research evidence is missing")
@@ -101,7 +111,9 @@ def evaluate_paper_drift(
         raise PaperPerformanceDriftError("strategy dataset binding mismatch")
 
     current_state = replay_lifecycle(lifecycle)
-    if current_state == "CANDIDATE" and supervisor_task.get("status") == "paper_executed":
+    if current_state == "CANDIDATE" and paper_acceptance is not None:
+        lifecycle = promote_candidate_to_paper(record, lifecycle, paper_acceptance)
+    elif current_state == "CANDIDATE" and status == "paper_executed":
         paper = supervisor_task.get("paper_result", {})
         lifecycle = promote_candidate_to_paper(record, lifecycle, {
             "risk_gate_allowed": paper.get("risk", {}).get("allowed") is True,
