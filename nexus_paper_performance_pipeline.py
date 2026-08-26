@@ -64,23 +64,39 @@ def _journal_paper_acceptance(
     """Reconstruct bounded Paper acceptance from an independently replayed journal.
 
     A prior automatic open may carry the same strategy version across a freshly
-    requalified immutable record.  The derived execution evidence digest binds
-    that prior open to the current record and qualification so the lifecycle can
-    remain PAPER without treating insufficient performance evidence as HEALTHY.
+    requalified immutable record only when family, symbol, timeframe, strategy
+    version, current qualification and current record namespace all agree. The
+    derived execution evidence binds the prior verified open to those current
+    inputs without treating insufficient performance evidence as HEALTHY.
     """
     validated = _validated_journal(events)
     research = task.get("research_result", {})
     record = research.get("strategy_record", {}) if isinstance(research, Mapping) else {}
     qualification = research.get("qualification", {}) if isinstance(research, Mapping) else {}
+    request = research.get("request", {}) if isinstance(research, Mapping) else {}
     if (
         not isinstance(record, Mapping)
         or not isinstance(qualification, Mapping)
+        or not isinstance(request, Mapping)
         or qualification.get("status") != "paper_candidate"
         or record.get("lifecycle_state") != "CANDIDATE"
     ):
         return None
     version = record.get("strategy_version")
-    if not isinstance(version, str) or not version:
+    family = str(request.get("family", ""))
+    symbol = str(request.get("symbol", "")).upper()
+    timeframe = str(request.get("timeframe", ""))
+    if (
+        not isinstance(version, str)
+        or not version
+        or not family
+        or not symbol
+        or not timeframe
+        or task.get("family") != family
+        or record.get("family") != family
+        or qualification.get("family") != family
+        or qualification.get("strategy_version") != version
+    ):
         return None
 
     by_correlation: dict[str, list[dict[str, Any]]] = {}
@@ -92,6 +108,9 @@ def _journal_paper_acceptance(
             if event["event_type"] == "signal_recorded"
             and event["provenance"].get("kind") == "automatic"
             and event["provenance"].get("strategy_version") == version
+            and event["provenance"].get("timeframe") == timeframe
+            and event["payload"].get("symbol") == symbol
+            and event["payload"].get("timeframe") == timeframe
         ]
         risks = [
             event for event in group
@@ -99,12 +118,15 @@ def _journal_paper_acceptance(
             and event["payload"].get("decision") == "allow"
             and event["provenance"].get("kind") == "automatic"
             and event["provenance"].get("strategy_version") == version
+            and event["provenance"].get("timeframe") == timeframe
         ]
         opens = [
             event for event in group
             if event["event_type"] == "position_opened"
             and event["provenance"].get("kind") == "automatic"
             and event["provenance"].get("strategy_version") == version
+            and event["provenance"].get("timeframe") == timeframe
+            and event["payload"].get("symbol") == symbol
         ]
         if not signals or not risks or not opens:
             continue
@@ -116,6 +138,9 @@ def _journal_paper_acceptance(
         execution_binding = _digest({
             "current_record_digest": record.get("record_digest"),
             "current_qualification_digest": qualification.get("qualification_digest"),
+            "family": family,
+            "symbol": symbol,
+            "timeframe": timeframe,
             "strategy_version": version,
             "signal_event_digest": signal["event_digest"],
             "risk_event_digest": risk["event_digest"],
