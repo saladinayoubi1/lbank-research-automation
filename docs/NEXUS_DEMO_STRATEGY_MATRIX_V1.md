@@ -47,3 +47,18 @@ monitoring, and the existing lifecycle gates.
 - Automatic strategy promotion is forbidden.
 - Live/L4 authority and exchange-order execution remain absent.
 - The frozen 4h prospective lane remains independent and unchanged.
+
+
+## Deterministic gradual replay
+
+The scheduled Demo matrix consumes the immutable verified Bybit archive with SHA-256
+`5f1173467c2296201940c3b7786b7cc3e5442244e07289769ab4867ace41d668`.
+The archive contains six complete, gap-free series: BTCUSDT and ETHUSDT at 15m,
+1h, and 4h. Each schedule advances every cell by exactly one closed historical
+candle, runs all three isolated strategy families through the Paper Supervisor,
+and refreshes the per-family performance projection.
+
+This is an accelerated historical Paper replay, not a live-market feed. The
+state and Demo snapshot declare `data_mode=verified_immutable_archive_replay`
+and retain the archive digest. No private credential, Live order, or automatic
+strategy promotion is permitted.

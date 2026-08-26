@@ -36,6 +36,7 @@ class DemoStrategyMatrixError(RuntimeError):
 Runner = Callable[..., Mapping[str, Any]]
 Verifier = Callable[[Mapping[str, Any]], Mapping[str, Any]]
 Analyzer = Callable[[Path, Mapping[str, Any]], Mapping[str, Any]]
+ClockResolver = Callable[[str, str, int, int], int]
 
 
 def _canonical(value: Any) -> bytes:
@@ -237,6 +238,9 @@ def run_matrix_cycle(
     runner: Runner = _default_runner,
     verifier: Verifier = _default_verifier,
     analyzer: Analyzer = _default_analyzer,
+    now_resolver: ClockResolver | None = None,
+    data_mode: str = "public_api",
+    dataset_sha256: str | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     source_sha = str(source_sha).strip().lower()
     if not _SHA_RE.fullmatch(source_sha):
@@ -252,11 +256,15 @@ def run_matrix_cycle(
         for timeframe in manifest["timeframes"]:
             cell_id = _cell_id(symbol, timeframe)
             step_ms = _TIMEFRAMES[timeframe]
-            bar_open = _completed_open(now_ms, step_ms)
             previous = prior_cells.get(cell_id, {})
             previous_open = previous.get("last_completed_open_ms", -1)
             if isinstance(previous_open, bool) or not isinstance(previous_open, int):
                 raise DemoStrategyMatrixError("matrix cell cursor is invalid")
+            effective_now_ms = (
+                now_ms if now_resolver is None
+                else now_resolver(symbol, timeframe, previous_open, manifest["history_limit"])
+            )
+            bar_open = _completed_open(effective_now_ms, step_ms)
             if bar_open <= previous_open:
                 cycle_rows.append({"cell_id": cell_id, "status": "SKIPPED_NO_NEW_BAR"})
                 continue
@@ -270,7 +278,7 @@ def run_matrix_cycle(
                     timeframe=timeframe,
                     families=tuple(manifest["families"]),
                     limit=manifest["history_limit"],
-                    now_ms=now_ms,
+                    now_ms=effective_now_ms,
                 ))
                 verification = dict(verifier(ledger))
                 if verification.get("decision") != "pass":
@@ -352,6 +360,8 @@ def run_matrix_cycle(
         "live_trading_authority": False,
         "private_credentials_used": False,
         "automatic_strategy_promotion": False,
+        "data_mode": data_mode,
+        "dataset_sha256": dataset_sha256,
     }
     next_state = {**state_core, "state_digest": _digest(state_core)}
     snapshot_core = {
@@ -376,6 +386,8 @@ def run_matrix_cycle(
         "private_credentials_used": False,
         "automatic_strategy_promotion": False,
         "deterministic_risk_final_authority": True,
+        "data_mode": data_mode,
+        "dataset_sha256": dataset_sha256,
     }
     snapshot = {**snapshot_core, "snapshot_digest": _digest(snapshot_core)}
     return next_state, snapshot
@@ -404,6 +416,8 @@ def main() -> int:
     parser.add_argument("--source-sha", required=True)
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--now-ms", type=int)
+    parser.add_argument("--replay-archive-root", type=Path)
+    parser.add_argument("--archive-sha256")
     args = parser.parse_args()
     if args.now_ms is None:
         import time
@@ -411,9 +425,39 @@ def main() -> int:
     manifest = load_manifest(args.manifest)
     state_path = args.state_root / "matrix-state.json"
     state = load_state(state_path, manifest)
+    runner = _default_runner
+    now_resolver = None
+    data_mode = "public_api"
+    dataset_sha256 = None
+    if bool(args.replay_archive_root) != bool(args.archive_sha256):
+        raise DemoStrategyMatrixError(
+            "replay archive root and archive digest must be supplied together"
+        )
+    if args.replay_archive_root:
+        from nexus_demo_archive_replay import (
+            build_archive_dataset_fetcher,
+            next_replay_now_ms,
+        )
+        from nexus_strategy_paper_supervisor import run_once
+
+        archive_fetcher = build_archive_dataset_fetcher(
+            args.replay_archive_root, archive_sha256=args.archive_sha256
+        )
+
+        def replay_runner(**kwargs: Any) -> Mapping[str, Any]:
+            return run_once(dataset_fetcher=archive_fetcher, **kwargs)
+
+        runner = replay_runner
+        now_resolver = lambda symbol, timeframe, previous, limit: next_replay_now_ms(
+            args.replay_archive_root, symbol, timeframe, previous, limit
+        )
+        data_mode = "verified_immutable_archive_replay"
+        dataset_sha256 = args.archive_sha256
     next_state, snapshot = run_matrix_cycle(
         manifest=manifest, state=state, state_root=args.state_root,
         source_sha=args.source_sha, run_id=args.run_id, now_ms=args.now_ms,
+        runner=runner, now_resolver=now_resolver, data_mode=data_mode,
+        dataset_sha256=dataset_sha256,
     )
     _atomic_json(state_path, next_state)
     _atomic_json(args.state_root / "demo" / "strategy-matrix.json", snapshot)
