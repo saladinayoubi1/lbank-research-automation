@@ -1,0 +1,73 @@
+name: Temporary Current Project Memory Backup Snapshot
+
+on:
+  push:
+    branches:
+      - ops/drive-backup-refresh-current-20260826
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fixed canonical source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: 4a662fe0eb62f5de4f5765d6b10c1bc6daa53908
+          fetch-depth: 1
+
+      - name: Build canonical Project Memory snapshot
+        shell: bash
+        run: |
+          python - <<'PY'
+          from datetime import datetime, timezone
+          from pathlib import Path
+          import json
+          import project_memory_backup as pmb
+
+          repo = "saladinayoubi1/lbank-research-automation"
+          source_sha = "4a662fe0eb62f5de4f5765d6b10c1bc6daa53908"
+          paths = [
+              "docs/project_memory/PROJECT_MEMORY.md",
+              "docs/project_memory/STATE.json",
+              "docs/project_memory/DECISIONS.md",
+              "docs/project_memory/RECOVERY_PLAYBOOK.md",
+              "docs/project_memory/AUTONOMY_POLICY.md",
+              "docs/project_memory/OPERATING_RULES.md",
+              "docs/project_memory/VALIDATION.md",
+          ]
+          files = {p: Path(p).read_text(encoding="utf-8") for p in paths}
+          snapshot = pmb.build_snapshot(
+              repository=repo,
+              source_sha=source_sha,
+              generated_at=datetime.now(timezone.utc),
+              files=files,
+          )
+          text = pmb.snapshot_text(snapshot)
+          findings = pmb.privacy_findings(text)
+          if findings:
+              raise SystemExit(f"privacy findings: {findings}")
+          Path("nexus-project-memory-backup-snapshot.txt").write_text(text, encoding="utf-8", newline="\n")
+          Path("snapshot-meta.json").write_text(json.dumps({
+              "repository": repo,
+              "source_sha": source_sha,
+              "snapshot_utf8_sha256": pmb._sha256(text.encode("utf-8")),
+              "snapshot_utf8_size_bytes": len(text.encode("utf-8")),
+              "privacy_findings": findings,
+              "source_files": paths,
+          }, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+          PY
+
+      - name: Upload snapshot evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: nexus-project-memory-backup-refresh-4a662fe0
+          path: |
+            nexus-project-memory-backup-snapshot.txt
+            snapshot-meta.json
+            project_memory_backup.py
+            project_memory_drive_export.py
+          if-no-files-found: error
+          retention-days: 7
