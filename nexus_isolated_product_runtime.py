@@ -18,7 +18,9 @@ from product_runtime import (
     _paper_provenance,
 )
 
-_ACCOUNT_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{2,127}$")
+# Derived event/correlation/causation identifiers add bounded suffixes and the
+# Paper event envelope caps every identifier at 128 characters.
+_ACCOUNT_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{2,95}$")
 
 
 class IsolatedProductRuntime(ProductRuntime):
