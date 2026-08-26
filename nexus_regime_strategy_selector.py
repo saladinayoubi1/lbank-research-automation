@@ -13,11 +13,19 @@ import re
 from decimal import Decimal, InvalidOperation
 from typing import Any, Mapping, Sequence
 
+from cross_timeframe_context import (
+    CONTEXT_VERSION,
+    MAX_STALE_MULTIPLIER,
+    TIMEFRAME_MS,
+)
+
 
 SELECTION_SCHEMA = "nexus.regime-strategy-selection.v1"
 POLICY_SCHEMA = "nexus.regime-strategy-policy.v1"
 CONTEXT_SCHEMA = "nexus.phase7-cross-timeframe-context.v1"
-ALLOWED_ALIGNMENTS = {"TREND_UP", "TREND_DOWN", "RANGE", "HIGH_VOLATILITY", "MIXED"}
+ALLOWED_ALIGNMENTS = {
+    "ALIGNED_UP", "ALIGNED_DOWN", "RANGE_DOMINANT", "VOLATILITY_ALERT", "MIXED"
+}
 ALLOWED_TIMEFRAMES = {"15m", "1h", "4h"}
 TIMEFRAME_ORDER = {"15m": 0, "1h": 1, "4h": 2}
 ALLOWED_REGIMES = {"TREND_UP", "TREND_DOWN", "HIGH_VOLATILITY", "RANGE"}
@@ -109,6 +117,8 @@ def validate_context(context: Any) -> dict[str, Any]:
         raise RegimeStrategySelectorError("cross-timeframe context schema mismatch")
     if context["schema_version"] != CONTEXT_SCHEMA:
         raise RegimeStrategySelectorError("unsupported cross-timeframe context schema")
+    if context["context_version"] != CONTEXT_VERSION:
+        raise RegimeStrategySelectorError("unsupported cross-timeframe context version")
     if context["paper_only"] is not True or context["lookahead_control"] is not True:
         raise RegimeStrategySelectorError("context exceeds Paper or lookahead authority")
     if context["alignment"] not in ALLOWED_ALIGNMENTS:
@@ -121,8 +131,8 @@ def validate_context(context: Any) -> dict[str, Any]:
     if not isinstance(context["reason_codes"], list):
         raise RegimeStrategySelectorError("context.reason_codes must be a list")
     rows = context["timeframes"]
-    if not isinstance(rows, list) or not 2 <= len(rows) <= 3:
-        raise RegimeStrategySelectorError("context requires two or three timeframes")
+    if not isinstance(rows, list) or len(rows) != 3:
+        raise RegimeStrategySelectorError("context requires all three canonical timeframes")
     seen: set[str] = set()
     last_order = -1
     for index, row in enumerate(rows):
@@ -150,6 +160,23 @@ def validate_context(context: Any) -> dict[str, Any]:
                 raise RegimeStrategySelectorError(f"timeframe {field} must be non-negative")
         if row["available_at_ms"] > context["as_of_ms"]:
             raise RegimeStrategySelectorError("context contains future-bearing evidence")
+        if context["as_of_ms"] - row["available_at_ms"] > TIMEFRAME_MS[timeframe] * MAX_STALE_MULTIPLIER:
+            raise RegimeStrategySelectorError("context contains stale evidence")
+    if seen != ALLOWED_TIMEFRAMES:
+        raise RegimeStrategySelectorError("context requires 15m, 1h, and 4h timeframes")
+    regimes = [row["regime"] for row in rows]
+    if any(regime == "HIGH_VOLATILITY" for regime in regimes):
+        expected_alignment = "VOLATILITY_ALERT"
+    elif all(regime == "TREND_UP" for regime in regimes):
+        expected_alignment = "ALIGNED_UP"
+    elif all(regime == "TREND_DOWN" for regime in regimes):
+        expected_alignment = "ALIGNED_DOWN"
+    elif all(regime == "RANGE" for regime in regimes):
+        expected_alignment = "RANGE_DOMINANT"
+    else:
+        expected_alignment = "MIXED"
+    if context["alignment"] != expected_alignment:
+        raise RegimeStrategySelectorError("context alignment contradicts timeframe regimes")
     unsigned = dict(context)
     claimed = _sha(unsigned.pop("context_sha256"), "context.context_sha256")
     if _digest(unsigned) != claimed:
@@ -316,4 +343,3 @@ def select_strategy_mix(
         "deterministic_risk_final_authority": True,
     }
     return {**core, "selection_digest": _digest(core)}
-

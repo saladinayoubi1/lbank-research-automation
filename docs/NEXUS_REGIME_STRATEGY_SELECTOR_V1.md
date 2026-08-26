@@ -20,10 +20,10 @@ actual Paper action must still pass Decision and Deterministic Risk.
 
 | Cross-timeframe alignment | Momentum | Trend breakout | Mean reversion | Cash |
 |---|---:|---:|---:|---:|
-| `TREND_UP` | 45% | 45% | 10% | remainder |
-| `TREND_DOWN` | 35% | 55% | 10% | remainder |
-| `RANGE` | 15% | 10% | 75% | remainder |
-| `HIGH_VOLATILITY` | 0% | 0% | 0% | 100% |
+| `ALIGNED_UP` | 45% | 45% | 10% | remainder |
+| `ALIGNED_DOWN` | 35% | 55% | 10% | remainder |
+| `RANGE_DOMINANT` | 15% | 10% | 75% | remainder |
+| `VOLATILITY_ALERT` | 0% | 0% | 0% | 100% |
 | `MIXED` | 0% | 0% | 0% | 100% |
 
 Low context confidence or thin liquidity also forces 100% cash. A strategy in

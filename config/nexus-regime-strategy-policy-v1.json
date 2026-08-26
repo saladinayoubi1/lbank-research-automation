@@ -7,7 +7,7 @@
   "minimum_context_confidence": "0.55",
   "watch_weight_multiplier": "0.50",
   "preserve_cash_alignments": [
-    "HIGH_VOLATILITY",
+    "VOLATILITY_ALERT",
     "MIXED"
   ],
   "preserve_cash_liquidity_states": [
@@ -19,22 +19,22 @@
     "mean_reversion"
   ],
   "alignment_weights": {
-    "TREND_UP": {
+    "ALIGNED_UP": {
       "momentum": "0.45",
       "trend_breakout": "0.45",
       "mean_reversion": "0.10"
     },
-    "TREND_DOWN": {
+    "ALIGNED_DOWN": {
       "momentum": "0.35",
       "trend_breakout": "0.55",
       "mean_reversion": "0.10"
     },
-    "RANGE": {
+    "RANGE_DOMINANT": {
       "momentum": "0.15",
       "trend_breakout": "0.10",
       "mean_reversion": "0.75"
     },
-    "HIGH_VOLATILITY": {},
+    "VOLATILITY_ALERT": {},
     "MIXED": {}
   }
 }
