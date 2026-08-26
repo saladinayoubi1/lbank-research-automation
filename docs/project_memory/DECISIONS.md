@@ -215,3 +215,40 @@ credentials, signing, billing, deployment, production promotion, destructive aut
 and self-authorization remain unavailable. The completed physical Windows proof is not
 repeated for this maintenance change; its security and producer/verifier invariants remain
 mandatory.
+
+## 2026-08-26 — Secondary Drive snapshot refreshed after verified regime-drift integration
+Status: ACTIVE
+
+Evidence: PR #988 squash-merged the bounded regime Runtime drift bridge as exact main SHA
+`028715b9f99bd7107b3ff53b03e432d42eccfbdb`; its four PR workflow groups and all nine
+main-push workflow groups succeeded. A new canonical seven-file snapshot from that exact
+SHA was stored as private Google Docs object
+`1HjHjzM1o90YXfMc6cNKyuW5qQGxnE6MpiIPr_U2EFxw`, revision `2`, named
+`NEXUS Project Memory Backup — Durable — 2026-08-26 — 028715b9`. Provider text/plain
+readback is 67,094 bytes with SHA-256
+`6a61f1c1b6e29f2ea334b9c8042392f525440002615b5b128adfefdfeb73f8cb`; its JSON equals
+the 67,078-byte canonical snapshot with SHA-256
+`86c8e856bb65374a428cca87c85bf2830932211b09bcf9a8e386e75fc5de3abe`.
+The 2,109-byte manifest is private Drive object
+`1ofVzvRxM0VjKOYh6zHeT6eAlMmAZi6vP`, byte SHA-256
+`da47437e639a61be01844c03a103a7abee9050a92730e0792c27f9ddfb5c5d45`, and manifest
+digest `d94540752434453f90154718018411971422b409ddaecbd59dac3d52fcb4afac`.
+Privacy findings were zero. Object, revision, name, source, content, and stale-replay
+substitutions all failed closed. Older Drive objects remain preserved as legacy evidence;
+stale PR #986 was closed unmerged.
+
+The separate prospective Paper gate also advanced without changing authority: Issue #984,
+run `32932158365`, and artifact `9593583528` record the first completed four-hour bar,
+state digest `a0e1ca932c5504ee08ed1985cdfa894dc5aaa77aad0d5c0176aacef441cf09c0`,
+status `COLLECTING`, zero orders/fills, and `1 / 180` completed bars. PR #990 records the
+current Drive tuple and this already-verified Paper progress together; closed PR #989 is
+not repository evidence.
+
+Decision: Treat this fixed tuple as the current secondary Project Memory recovery
+candidate for the direct integration child of source SHA `028715b9`. Repository Project
+Memory remains authoritative. A later material memory change must mark this tuple stale
+until another exact provider readback and independent verification succeeds.
+
+Boundary: Secondary continuity only. This does not authorize Production/Live/L4,
+credentials, signing, billing, deployment, financial action, destructive operations,
+watchdog/self-heal, or self-authorization.
