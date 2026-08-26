@@ -49,3 +49,14 @@ def test_archive_fetcher_binds_exact_closed_bybit_window(monkeypatch) -> None:
     assert dataset["row_count"] == 4
     assert dataset["manifest"]["metadata"]["archive_sha256"] == replay.ARCHIVE_SHA256
     assert dataset["paper_only"] is True
+
+
+def test_timestamp_conversion_is_independent_of_parquet_resolution() -> None:
+    values = pd.Series(pd.array(
+        ["2022-12-01T00:00:00Z", "2022-12-01T00:15:00Z"],
+        dtype="datetime64[us, UTC]",
+    ))
+    assert replay._utc_open_ms(values).tolist() == [
+        1_669_852_800_000,
+        1_669_853_700_000,
+    ]
