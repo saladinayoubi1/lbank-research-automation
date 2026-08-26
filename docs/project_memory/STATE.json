@@ -18,7 +18,7 @@
     "cloud continuity when the local laptop is offline"
   ],
   "runtime_status": {
-    "agent_execution_state": "final_proof_verified_and_bybit_prospective_paper_collecting",
+    "agent_execution_state": "final_proof_verified_regime_runtime_drift_merged_and_bybit_prospective_paper_collecting",
     "laptop_state": "physical_phase7_proof_verified_and_owner_cleanup_observed",
     "internet_outage_state": "not_assumed_from_laptop_state",
     "laptop_offline_is_not_internet_outage": true,
@@ -51,38 +51,51 @@
     "drive_backup": {
       "provider": "Google Drive",
       "folder": "NEXUS Project Memory Backup",
-      "document": "NEXUS Project Memory Backup — Durable",
+      "document": "NEXUS Project Memory Backup — Durable — 2026-08-26 — 028715b9",
       "secondary_only": true,
       "may_authorize_production_recovery": false,
       "issue": 122,
       "issue_state": "completed",
-      "status": "verified_secondary_recovery_snapshot_stale_after_main_advance",
-      "refresh_required": true,
-      "refresh_reason": "Repository Project Memory advanced beyond the fixed 6d84d100 snapshot; refresh and independently verify the secondary copy after this canonical reconciliation merges.",
-      "fixed_source_sha": "6d84d1003666cc8fd9bb86f9aea203b459574b54",
-      "provider_object_id": "1m_KFJ6YvnWhLRYzAFBrZXn3Rb-OqYb_M63V8X_aMvew",
-      "provider_revision_id": "3",
-      "provider_modified_at": "2026-08-25T13:50:13.998Z",
-      "raw_export_size_bytes": 56782,
-      "raw_export_sha256": "8904567e289d113435b5e32e89f559a018e7435b9acd147c5cc67e3305dcadd4",
+      "status": "verified_secondary_recovery_candidate_current_as_of_source_sha",
+      "refresh_required": false,
+      "refresh_reason": "Exact provider read-back is content-bound to the canonical seven-file Project Memory snapshot at source SHA 028715b9f99bd7107b3ff53b03e432d42eccfbdb.",
+      "fixed_source_sha": "028715b9f99bd7107b3ff53b03e432d42eccfbdb",
+      "provider_object_id": "1C6alNjnNOx5iW7urwrtMkFzAzLqZZRvSX8KvK4KVIdw",
+      "provider_revision_id": "2",
+      "provider_modified_at": "2026-08-26T19:43:40.049Z",
+      "raw_export_size_bytes": 67098,
+      "raw_export_sha256": "987ff7fad4d206701996b4a53b157a8a43ec04e242fdb5662f2f237c5457c6a1",
       "provider_export_adapter": "nexus.project-memory-google-docs-export.v1",
-      "recovery_exercise": "verified",
+      "recovery_exercise": "verified_provider_readback_under_existing_fail_closed_object_revision_source_name_and_content_contract",
       "privacy_findings": 0,
       "verification_prs": [
         920,
         923
       ],
-      "verification_manifest_drive_id": "1TtbOxGPpelKbMYmDFn6_w8x-wwkqHv7X",
-      "verification_manifest_sha256": "2d7bb0744866a491a41253d20241abcb1892066fecd9abd7e7df05d340b22296",
-      "verification_manifest_digest": "b9e986f485ad0b8046749a42603ff70144667c963b020fe598c08317ce18342d",
-      "aggregate_source_digest": "a1aef53326524cc1d4038e5a92c73b17d61a277de93bfd103027ac7bdf6ecb23"
+      "verification_manifest_drive_id": "1h8h4SpViwy6SvT55d6_i4teu-uov3J1X",
+      "verification_manifest_sha256": "61e1929620d5a766e21eb1ba20335ea99820f0ea590447af267a898b7d5eeef9",
+      "verification_manifest_digest": "95cb3ad63653b5ca967f841be0571e00ac62f27a7cd26b88a8143c84a947ba49",
+      "aggregate_source_digest": "23a5a3d3855c2c58816dffda3a249ab6ef7036055a14a8861969939496913bc9",
+      "provider_export_bom": true,
+      "canonical_snapshot_utf8_size_bytes": 67082,
+      "canonical_snapshot_utf8_sha256": "3f2055b058a98e8e67ebed16f22bc1275764f72441188f0e25303c35a8aa8409",
+      "provider_json_equals_canonical_snapshot": true,
+      "manifest_digest": "95cb3ad63653b5ca967f841be0571e00ac62f27a7cd26b88a8143c84a947ba49",
+      "verification_manifest_size_bytes": 2110,
+      "manifest_generated_at": "2026-08-26T19:43:58.886Z",
+      "previous_valid": {
+        "object_id": "1-PJ9HrTYHD3H2D4fj4kwiLf7KCVLKD1GXXjQ8TrSo5E",
+        "revision_id": "2",
+        "source_sha": "f9e354d9503b7123583ce1d1bfbdba26202ac238",
+        "raw_export_sha256": "15f44aac08e6b60ba23ff709e5d8a9d7b6b99db6ae671fa09adff09b55b4fdf8"
+      }
     }
   },
   "current_evidence": {
-    "observed_main_sha": "f9e354d9503b7123583ce1d1bfbdba26202ac238",
-    "observed_at_utc": "2026-08-26T19:28:20Z",
+    "observed_main_sha": "028715b9f99bd7107b3ff53b03e432d42eccfbdb",
+    "observed_at_utc": "2026-08-26T19:43:58.886Z",
     "latest_main_change": {
-      "summary": "PR #987 merged the fail-closed three-timeframe regime selector and independently replayed Strategy-to-Risk-to-Paper runtime. Its exact head bb85fd50 passed all four required workflow groups before squash merge as f9e354d9; authority remains Paper-only and Phase 3/Phase 7 stay closed.",
+      "summary": "PR #988 merged the fail-closed bridge from independently replayed regime Runtime evidence and verified Paper performance to next-cycle-only drift controls. A replacement private Google Drive secondary snapshot was then generated and read back from exact main 028715b9f99bd7107b3ff53b03e432d42eccfbdb; the separate Bybit prospective Paper gate remains collecting at 1 of 180 completed four-hour bars.",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true
@@ -103,7 +116,7 @@
       "phase7_return_pr": 966,
       "powershell51_bookkeeping_fix_pr": 967,
       "delegated_core_surface_test_fix_pr": 972,
-      "latest_main_sha": "f9e354d9503b7123583ce1d1bfbdba26202ac238",
+      "latest_main_sha": "028715b9f99bd7107b3ff53b03e432d42eccfbdb",
       "paper_only": true,
       "live_trading_authority": false,
       "remaining_acceptance": "none for the final Proof Mission; the separate prospective Paper lane must accumulate at least 30 days and 180 completed four-hour bars before review and never widens authority"
@@ -129,7 +142,7 @@
       "next_step": "collect append-only next-cycle drift projections while the separate prospective Paper lane continues its minimum observation window"
     },
     "regime_runtime_drift": {
-      "status": "integrated_paper_only",
+      "status": "merged_verified_paper_only",
       "integration_pr": 988,
       "base_source_sha": "f9e354d9503b7123583ce1d1bfbdba26202ac238",
       "evidence_bindings": [
@@ -147,7 +160,8 @@
       "current_runtime_mutation": false,
       "paper_only": true,
       "live_trading_authority": false,
-      "promotion_authority": false
+      "promotion_authority": false,
+      "merge_sha": "028715b9f99bd7107b3ff53b03e432d42eccfbdb"
     },
     "phase7": {
       "status": "complete",
@@ -174,7 +188,7 @@
       "independent_verifier_evidence_sha256": "f45aa24aacf50d0bf9c793462911d0b3b75b736184268b50d7638507633158f7",
       "hardware_proof_complete": true,
       "core_cloud_chain_complete": true,
-      "verified_progress_percent": 100.0,
+      "verified_progress_percent": 100,
       "laptop_classification": "EXECUTED",
       "internal_agent_classification": "EXECUTED",
       "cloud_classification": "EXECUTED",
@@ -217,16 +231,28 @@
       "successful_run_id": 32905463932,
       "state_artifact_id": 9584635133,
       "state_artifact_name": "bybit-prospective-paper-forward-v1-state",
-      "state_digest": "a30332e039e5a27342018b1be111b901c7a6df2b975234fc282d140cc2a2d283",
+      "state_digest": "a0e1ca932c5504ee08ed1985cdfa894dc5aaa77aad0d5c0176aacef441cf09c0",
       "start_not_before_utc": "2026-08-26T00:00:00Z",
-      "completed_bar_count": 0,
+      "completed_bar_count": 1,
       "minimum_days": 30,
       "minimum_completed_bars": 180,
       "paper_only": true,
       "live_trading_enabled": false,
       "automatic_live_promotion": false,
       "private_credentials_used": false,
-      "next_gate": "accumulate immutable prospective observations until COMPLETE_REVIEW_REQUIRED or fail-closed quarantine"
+      "next_gate": "accumulate immutable prospective observations until COMPLETE_REVIEW_REQUIRED or fail-closed quarantine",
+      "latest_successful_run_id": 32932158365,
+      "latest_state_artifact_id": 9593583528,
+      "latest_artifact_digest": "sha256:111048e09ae2551ade4fdef2dc8df72f1da8eef13fe279d57aac52d49a4d3a20",
+      "latest_execution_utc": "2026-08-26T00:00:00Z",
+      "issue": 984,
+      "integrity_status": "valid",
+      "target_weights": [
+        "0.0",
+        "0.0"
+      ],
+      "orders": 0,
+      "fills": 0
     },
     "phase_status": {
       "phase5": {
@@ -245,7 +271,7 @@
         "acceptance_issue": 702,
         "control_plane_issue": 697,
         "proof_source_sha": "36a3d64f6ce3253b2f9ca76eb594c6afe80e4e9c",
-        "verified_progress_percent": 100.0,
+        "verified_progress_percent": 100,
         "physical_windows_proof": "verified"
       },
       "product_integration": {
@@ -268,16 +294,20 @@
       "surface_regression_fix_pr_972": "merged",
       "backup_verifier_pr_920": "merged",
       "drive_export_hardening_pr_923": "merged",
-      "drive_backup_refresh": "verified",
-      "drive_backup_source_sha": "6d84d1003666cc8fd9bb86f9aea203b459574b54",
+      "drive_backup_refresh": "verified_current_as_of_source_sha",
+      "drive_backup_source_sha": "028715b9f99bd7107b3ff53b03e432d42eccfbdb",
       "phase3_strategy_surface_pr_976": "merged",
       "event_driven_strategy_search_pr_977": "merged",
       "prospective_paper_start_pr_978": "merged",
       "prospective_paper_precutoff_fix_pr_982": "merged",
       "regime_strategy_selector_runtime_pr_987": "merged",
-      "regime_runtime_drift_pr_988": "integrated_by_this_memory_change",
+      "regime_runtime_drift_pr_988": "merged",
       "prospective_paper_run_32905463932": "success",
-      "drive_backup_refresh_required": true
+      "drive_backup_refresh_required": false,
+      "drive_backup_stale_pr_986": "closed_unmerged",
+      "drive_backup_stale_pr_989": "closed_unmerged",
+      "issue_984": "open_collecting_1_of_180",
+      "prospective_paper_run_32932158365": "success"
     },
     "release_readiness": {
       "production_ready": false,
