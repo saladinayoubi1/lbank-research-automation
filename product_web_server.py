@@ -14,6 +14,7 @@ from phase5_strategy_factory import ALLOWED_FAMILIES
 from product_control_runtime import ProductControlError, ProductControlRuntime
 from product_research_runtime import ProductResearchError, ProductResearchRuntime
 from product_runtime import ProductRuntime, ProductRuntimeError
+from nexus_demo_strategy_matrix import verify_snapshot
 from web_dashboard import ApiResponse, ByteResponse, GatewayConfig, ReportUnavailableError, gateway_disclosure, load_mission_control, validate_gateway_config, versioned
 from web_ui_server import build_handler as build_ai_handler
 
@@ -120,6 +121,31 @@ def _strategy_snapshot() -> dict[str, Any]:
         "deterministic_risk_final_authority": True,
     }
 
+
+
+def _demo_matrix_snapshot(data_root: Path) -> dict[str, Any]:
+    path = data_root.resolve().parent / "demo" / "strategy-matrix.json"
+    unavailable = {
+        "contract_version": "nexus.demo-strategy-matrix-surface.v1",
+        "status": "unavailable",
+        "reason": "snapshot_missing",
+        "paper_only": True,
+        "live_trading_authority": False,
+        "expected_cell_count": 6,
+        "expected_lane_count": 18,
+        "lanes": [],
+    }
+    if not path.exists():
+        return unavailable
+    try:
+        if path.is_symlink() or not path.is_file() or path.stat().st_size > 5_000_000:
+            return {**unavailable, "reason": "snapshot_unsafe"}
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(payload, dict) or verify_snapshot(payload)["decision"] != "pass":
+            return {**unavailable, "reason": "snapshot_verification_failed"}
+        return payload
+    except (OSError, UnicodeError, json.JSONDecodeError, ValueError):
+        return {**unavailable, "reason": "snapshot_unreadable"}
 
 def _product_overview(runtime: ProductRuntime, data_root: Path) -> dict[str, Any]:
     paper = runtime.paper_snapshot()
@@ -278,6 +304,9 @@ def build_handler(
                 elif parsed.path == "/api/product/paper":
                     if parsed.query: raise ProductRuntimeError("paper snapshot does not accept query")
                     payload = runtime.paper_snapshot()
+                elif parsed.path == "/api/product/paper/matrix":
+                    if parsed.query: raise ProductRuntimeError("Paper matrix does not accept query")
+                    payload = _demo_matrix_snapshot(data_root)
                 elif parsed.path == "/api/product/paper/events":
                     payload = runtime.paper_events(limit=_parse_limit(self.path))
                 elif parsed.path == "/api/product/live":

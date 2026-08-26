@@ -24,6 +24,7 @@ SCHEMA = "nexus.strategy-paper-supervisor.v1"
 VERIFICATION_SCHEMA = "nexus.strategy-paper-supervisor-verification.v1"
 DEFAULT_STATE_ROOT = Path(os.environ.get("NEXUS_STATE_DIR", ".nexus-runtime")) / "strategy-paper"
 _SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+_CANONICAL_SYMBOLS = {"BTCUSDT": "BTC/USDT", "ETHUSDT": "ETH/USDT"}
 DatasetFetcher = Callable[..., Mapping[str, Any]]
 ResearchFactory = Callable[[ProductRuntime, str, Mapping[str, Any], int], ProductResearchRuntime]
 
@@ -169,6 +170,10 @@ def run_once(
 ) -> dict[str, Any]:
     source_sha = _source_sha(source_sha)
     families = _families(families)
+    symbol = str(symbol).strip().upper()
+    canonical_symbol = _CANONICAL_SYMBOLS.get(symbol)
+    if canonical_symbol is None:
+        raise StrategyPaperSupervisorError("unsupported matrix symbol")
     if timeframe not in TIMEFRAMES:
         raise StrategyPaperSupervisorError("unsupported timeframe")
     if isinstance(limit, bool) or not isinstance(limit, int) or not 30 <= limit <= 1000:
@@ -182,7 +187,7 @@ def run_once(
     spec = TIMEFRAMES[timeframe]
     try:
         dataset = dict(dataset_fetcher(
-            canonical_symbol="BTC/USDT",
+            canonical_symbol=canonical_symbol,
             source_symbol=symbol,
             interval=spec["interval"],
             now_ms=now_ms,
