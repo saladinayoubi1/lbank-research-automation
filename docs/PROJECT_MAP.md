@@ -287,3 +287,15 @@ The multi-strategy projection is bound to an independently verified Supervisor l
 and exposes family, strategy ID, lifecycle, sample count, expectancy, net PnL, drawdown,
 and health status. Its durable JSON commit is atomic and digest-protected. The projection
 is explicitly Paper-only, grants no promotion authority, and keeps Live Trading disabled.
+
+## Regime Runtime to performance drift bridge
+
+`nexus_regime_runtime_drift.py` binds the independently replayed regime Runtime to the
+verified Supervisor and Mission Control Paper-performance projection. It never rewrites
+the active runtime. Health changes produce only next-cycle `KEEP`, `WATCH_HAIRCUT`,
+`REMOVE_FROM_NEXT_SELECTION`, or insufficient-evidence preservation controls.
+
+Runtime, Supervisor, and Performance digests are retained in one append-only projection;
+cross-SHA evidence, missing selected-family monitoring, mutated inputs, or widened
+authority fail closed. The bridge has measurement/quarantine authority only and no
+promotion, execution, exchange, credential, signing, deployment, or Live/L4 authority.

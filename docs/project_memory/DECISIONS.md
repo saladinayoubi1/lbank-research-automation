@@ -185,3 +185,31 @@ Evidence: PR #976 connected the completed Phase 3 task surface to the bounded By
 Decision: Treat Phase 3 as closed and do not reopen it. Treat the separate prospective Paper lane as active evidence collection, not as strategy approval or completion. It must accumulate at least 30 days and 180 completed four-hour bars before a review-required outcome; tampering, engine/manifest drift, invalid public data, or risk-bound violations remain fail-closed. The previously verified Google Drive snapshot at source SHA `6d84d1003666cc8fd9bb86f9aea203b459574b54` is now stale relative to repository memory and must be refreshed and independently re-verified before being described as current.
 
 Boundary: Research/Backtest/Paper only. No exchange orders, private credentials, Live/L4, signing, billing, deployment, production promotion, destructive authority, or self-authorization.
+
+## 2026-08-26 — Regime selector and replay-verified Paper runtime merged without reopening completed phases
+Status: ACTIVE
+
+Evidence: PR #987 exact head `bb85fd50f4a5b25f2d3dd26d9bb551a30e41c96c`
+passed Workflow Permissions Policy run `33004356684`, NEXUS Cloud Fallback run
+`33004356628`, Test run `33004356620`, and NEXUS Build Verification run
+`33004356605`, then squash-merged as main SHA
+`f9e354d9503b7123583ce1d1bfbdba26202ac238`. The merged selector requires canonical
+`15m`, `1h`, and `4h` context, validates alignment and freshness, and fails closed on
+stale, future, incomplete, or inconsistent evidence. The runtime binds each proposal to
+the selected allocation, independently replays Deterministic Risk and the full isolated
+Paper event chain, validates the terminal portfolio, and persists digest-bound append-only
+evidence. The complete local suite at the exact PR tree reported 1,785 passed, 15 skipped,
+and 78 subtests passed.
+
+Decision: Treat this as a bounded maintenance extension of the already completed Phase 3
+and Phase 7 acceptance, not as either phase reopening. Runtime performance feedback may
+affect only the next selector cycle and must be derived from independently verified
+Supervisor, Paper-performance, and runtime evidence on one source SHA. It may preserve,
+haircut, or remove a candidate from the next cycle; it may not rewrite the active runtime
+or promote a strategy.
+
+Boundary: Research/Backtest/Paper only. Live Trading, automatic promotion, private exchange
+credentials, signing, billing, deployment, production promotion, destructive authority,
+and self-authorization remain unavailable. The completed physical Windows proof is not
+repeated for this maintenance change; its security and producer/verifier invariants remain
+mandatory.
