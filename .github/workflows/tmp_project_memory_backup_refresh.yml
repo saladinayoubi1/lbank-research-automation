@@ -35,7 +35,6 @@ jobs:
           previous_object = drive.get("provider_object_id")
           previous_revision = drive.get("provider_revision_id")
           previous_source = drive.get("fixed_source_sha")
-
           drive.update({
               "document": "NEXUS Project Memory Backup — Durable — 2026-08-26 — 6d84d100",
               "status": "verified_secondary_recovery_candidate_current_as_of_source_sha",
@@ -73,40 +72,39 @@ jobs:
           }
           evidence["integration_cycle"]["latest_main_sha"] = source_sha
           evidence["closure_state"]["final_proof_memory_pr_973"] = "merged"
-
           state_path.write_text(json.dumps(state, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
           decisions_path = Path("docs/project_memory/DECISIONS.md")
-          decision = r'''
-
-## 2026-08-26 — Google Drive secondary Project Memory snapshot refreshed after final Proof Mission
-Status: ACTIVE
-
-Evidence: The canonical seven-file Project Memory snapshot was generated from exact source SHA
-`6d84d1003666cc8fd9bb86f9aea203b459574b54` by workflow run `32944201100` (artifact
-`9597613624`). A new Google Docs object was created rather than overwriting the previous
-verified object: `1e1tnOjG7NElJqBexbwm7KNH3TU6n88xSck-qasYUj84`, revision `1`, provider
-modified `2026-08-26T07:45:05.346Z`. Provider `text/plain` export size is `56781` bytes and
-raw SHA-256 is `f28f2927efafa9f9e30ded8243b4d97bc231837006b0059eac71d7bc9a950486`.
-The canonical pre-provider snapshot is `56765` bytes with SHA-256
-`961b21b1370d0fa656db3828721f1221b842966ca7f7f7ee854d7627ec4ecd71`; after the bounded
-Google Docs BOM adapter, provider JSON equals that canonical snapshot. Manifest digest is
-`7f481af518efb1f56b5c35d63f701505e5472f715e62d683451a5e772ac80e3c`, privacy findings
-are zero, and independent negative checks rejected object, revision, source-SHA, name and
-content substitution/tampering.
-
-Decision: Treat the new fixed tuple as the current secondary Project Memory recovery candidate
-as of source SHA `6d84d1003666cc8fd9bb86f9aea203b459574b54`. Preserve the prior verified Drive object as
-legacy/previous-valid evidence rather than overwriting it. GitHub repository evidence remains
-authoritative and Drive remains secondary-only.
-
-Boundary: This refresh grants no Production/Live/L4, credentials, signing, billing, deployment,
-financial action, destructive authority or self-authorization.
-'''.lstrip("\n")
+          decision_lines = [
+              "## 2026-08-26 — Google Drive secondary Project Memory snapshot refreshed after final Proof Mission",
+              "Status: ACTIVE",
+              "",
+              "Evidence: The canonical seven-file Project Memory snapshot was generated from exact source SHA",
+              "`6d84d1003666cc8fd9bb86f9aea203b459574b54` by workflow run `32944201100` (artifact",
+              "`9597613624`). A new Google Docs object was created rather than overwriting the previous",
+              "verified object: `1e1tnOjG7NElJqBexbwm7KNH3TU6n88xSck-qasYUj84`, revision `1`, provider",
+              "modified `2026-08-26T07:45:05.346Z`. Provider `text/plain` export size is `56781` bytes and",
+              "raw SHA-256 is `f28f2927efafa9f9e30ded8243b4d97bc231837006b0059eac71d7bc9a950486`.",
+              "The canonical pre-provider snapshot is `56765` bytes with SHA-256",
+              "`961b21b1370d0fa656db3828721f1221b842966ca7f7f7ee854d7627ec4ecd71`; after the bounded",
+              "Google Docs BOM adapter, provider JSON equals that canonical snapshot. Manifest digest is",
+              "`7f481af518efb1f56b5c35d63f701505e5472f715e62d683451a5e772ac80e3c`, privacy findings",
+              "are zero, and independent negative checks rejected object, revision, source-SHA, name and",
+              "content substitution/tampering.",
+              "",
+              "Decision: Treat the new fixed tuple as the current secondary Project Memory recovery candidate",
+              "as of source SHA `6d84d1003666cc8fd9bb86f9aea203b459574b54`. Preserve the prior verified Drive object as",
+              "legacy/previous-valid evidence rather than overwriting it. GitHub repository evidence remains",
+              "authoritative and Drive remains secondary-only.",
+              "",
+              "Boundary: This refresh grants no Production/Live/L4, credentials, signing, billing, deployment,",
+              "financial action, destructive authority or self-authorization.",
+          ]
+          marker = decision_lines[0]
           existing = decisions_path.read_text(encoding="utf-8")
-          if "## 2026-08-26 — Google Drive secondary Project Memory snapshot refreshed after final Proof Mission" in existing:
+          if marker in existing:
               raise SystemExit("decision already present")
-          decisions_path.write_text(existing.rstrip() + "\n\n" + decision, encoding="utf-8")
+          decisions_path.write_text(existing.rstrip() + "\n\n" + "\n".join(decision_lines) + "\n", encoding="utf-8")
           PY
 
       - name: Validate Project Memory against fixed source
