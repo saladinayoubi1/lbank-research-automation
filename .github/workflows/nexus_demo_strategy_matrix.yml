@@ -10,9 +10,18 @@ on:
       - "nexus_demo_strategy_matrix.py"
       - "nexus_demo_archive_replay.py"
       - "nexus_demo_state_recovery.py"
+      - "nexus_demo_regime_cycle.py"
+      - "nexus_isolated_product_runtime.py"
+      - "nexus_regime_paper_lane.py"
+      - "nexus_regime_strategy_selector.py"
+      - "nexus_regime_strategy_runtime.py"
+      - "nexus_regime_runtime_drift.py"
+      - "cross_timeframe_context.py"
+      - "data_intelligence.py"
       - "nexus_strategy_paper_supervisor.py"
       - "nexus_paper_performance_pipeline.py"
       - "config/nexus-demo-strategy-matrix-v1.json"
+      - "config/nexus-regime-strategy-policy-v1.json"
       - "requirements.txt"
       - "requirements.lock"
       - "product_web_server.py"
@@ -24,9 +33,18 @@ on:
       - "nexus_demo_strategy_matrix.py"
       - "nexus_demo_archive_replay.py"
       - "nexus_demo_state_recovery.py"
+      - "nexus_demo_regime_cycle.py"
+      - "nexus_isolated_product_runtime.py"
+      - "nexus_regime_paper_lane.py"
+      - "nexus_regime_strategy_selector.py"
+      - "nexus_regime_strategy_runtime.py"
+      - "nexus_regime_runtime_drift.py"
+      - "cross_timeframe_context.py"
+      - "data_intelligence.py"
       - "nexus_strategy_paper_supervisor.py"
       - "nexus_paper_performance_pipeline.py"
       - "config/nexus-demo-strategy-matrix-v1.json"
+      - "config/nexus-regime-strategy-policy-v1.json"
       - "requirements.txt"
       - "requirements.lock"
       - "requirements-dev.lock"
@@ -34,8 +52,12 @@ on:
       - "tests/test_nexus_demo_archive_replay.py"
       - "tests/test_nexus_demo_state_recovery.py"
       - "tests/test_nexus_demo_strategy_matrix_runtime_dependencies.py"
+      - "tests/test_nexus_demo_regime_cycle.py"
       - "tests/test_nexus_strategy_paper_supervisor.py"
       - "tests/test_nexus_strategy_paper_supervisor_matrix_symbol.py"
+      - "tests/test_nexus_paper_performance_pipeline.py"
+      - "tests/test_nexus_regime_paper_lane.py"
+      - "tests/test_nexus_regime_strategy_selector.py"
       - "tests/test_product_demo_matrix_surface.py"
       - "product_web_server.py"
       - "product_ui/index.html"
@@ -68,9 +90,12 @@ jobs:
           tests/test_nexus_demo_archive_replay.py
           tests/test_nexus_demo_state_recovery.py
           tests/test_nexus_demo_strategy_matrix_runtime_dependencies.py
+          tests/test_nexus_demo_regime_cycle.py
           tests/test_nexus_strategy_paper_supervisor.py
           tests/test_nexus_strategy_paper_supervisor_matrix_symbol.py
           tests/test_nexus_paper_performance_pipeline.py
+          tests/test_nexus_regime_paper_lane.py
+          tests/test_nexus_regime_strategy_selector.py
           tests/test_product_demo_matrix_surface.py
 
   matrix-cycle:
@@ -149,6 +174,36 @@ jobs:
           assert snapshot["private_credentials_used"] is False
           assert snapshot["automatic_strategy_promotion"] is False
           assert snapshot["deterministic_risk_final_authority"] is True
+          PY
+      - name: Run synchronized three-timeframe regime selection and isolated Paper
+        run: |
+          set -euo pipefail
+          python nexus_demo_regime_cycle.py \
+            --manifest config/nexus-demo-strategy-matrix-v1.json \
+            --state-root build/nexus_demo_strategy_matrix_state \
+            --source-sha "$GITHUB_SHA" \
+            --replay-archive-root build/nexus_demo_archive \
+            --archive-sha256 "$DATASET_SHA256" \
+            --selector-policy config/nexus-regime-strategy-policy-v1.json
+      - name: Enforce synchronized regime-cycle authority and evidence
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from nexus_demo_regime_cycle import verify_cycle_snapshot
+
+          snapshot = json.loads(Path(
+              "build/nexus_demo_strategy_matrix_state/demo/regime-cycle.json"
+          ).read_text(encoding="utf-8"))
+          assert verify_cycle_snapshot(snapshot)["decision"] == "pass"
+          assert snapshot["expected_cell_count"] == 6
+          assert snapshot["verified_cell_count"] == 6
+          assert snapshot["paper_only"] is True
+          assert snapshot["live_trading_authority"] is False
+          assert snapshot["private_credentials_used"] is False
+          assert snapshot["automatic_strategy_promotion"] is False
+          assert snapshot["deterministic_risk_final_authority"] is True
+          assert snapshot["frozen_prospective_hour4_lane_mutated"] is False
           PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
