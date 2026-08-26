@@ -79,10 +79,10 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "ca2b3f284dd2a6fd910dd25a86e8025ba490fa20",
-    "observed_at_utc": "2026-08-25T22:20:25Z",
+    "observed_main_sha": "f9e354d9503b7123583ce1d1bfbdba26202ac238",
+    "observed_at_utc": "2026-08-26T19:28:20Z",
     "latest_main_change": {
-      "summary": "PRs #976-#978 connected Phase 3 to the bounded Bybit research ladder, made the reviewed v2 search event-driven, and started the frozen prospective Paper lane. PR #982 then fixed pre-cutoff initialization; main run 32905463932 succeeded and published digest-protected Paper state artifact 9584635133.",
+      "summary": "PR #987 merged the fail-closed three-timeframe regime selector and independently replayed Strategy-to-Risk-to-Paper runtime. Its exact head bb85fd50 passed all four required workflow groups before squash merge as f9e354d9; authority remains Paper-only and Phase 3/Phase 7 stay closed.",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true
@@ -103,10 +103,51 @@
       "phase7_return_pr": 966,
       "powershell51_bookkeeping_fix_pr": 967,
       "delegated_core_surface_test_fix_pr": 972,
-      "latest_main_sha": "ca2b3f284dd2a6fd910dd25a86e8025ba490fa20",
+      "latest_main_sha": "f9e354d9503b7123583ce1d1bfbdba26202ac238",
       "paper_only": true,
       "live_trading_authority": false,
       "remaining_acceptance": "none for the final Proof Mission; the separate prospective Paper lane must accumulate at least 30 days and 180 completed four-hour bars before review and never widens authority"
+    },
+    "regime_strategy_runtime": {
+      "status": "merged_verified_paper_only",
+      "selector_runtime_pr": 987,
+      "main_source_sha": "f9e354d9503b7123583ce1d1bfbdba26202ac238",
+      "pull_request_head_sha": "bb85fd50f4a5b25f2d3dd26d9bb551a30e41c96c",
+      "local_full_suite": "1785 passed, 15 skipped, 78 subtests passed",
+      "workflow_runs": {
+        "workflow_permissions_policy": 33004356684,
+        "nexus_cloud_fallback": 33004356628,
+        "test": 33004356620,
+        "nexus_build_verification": 33004356605
+      },
+      "selector_context": "required 15m/1h/4h, canonical alignment, bounded freshness, future-data rejection",
+      "runtime_chain": "context -> selector -> proposal -> deterministic risk -> isolated Paper -> append-only evidence",
+      "independent_replay": true,
+      "paper_only": true,
+      "live_trading_authority": false,
+      "automatic_strategy_promotion": false,
+      "next_step": "collect append-only next-cycle drift projections while the separate prospective Paper lane continues its minimum observation window"
+    },
+    "regime_runtime_drift": {
+      "status": "integrated_paper_only",
+      "integration_pr": 988,
+      "base_source_sha": "f9e354d9503b7123583ce1d1bfbdba26202ac238",
+      "evidence_bindings": [
+        "independently verified Supervisor ledger",
+        "digest-bound Paper performance projection",
+        "independently replayed regime runtime evidence",
+        "one exact source SHA"
+      ],
+      "allowed_next_cycle_controls": [
+        "KEEP",
+        "WATCH_HAIRCUT_NEXT_CYCLE",
+        "REMOVE_FROM_NEXT_SELECTION",
+        "PRESERVE_CURRENT_POLICY_BOUND"
+      ],
+      "current_runtime_mutation": false,
+      "paper_only": true,
+      "live_trading_authority": false,
+      "promotion_authority": false
     },
     "phase7": {
       "status": "complete",
@@ -233,6 +274,8 @@
       "event_driven_strategy_search_pr_977": "merged",
       "prospective_paper_start_pr_978": "merged",
       "prospective_paper_precutoff_fix_pr_982": "merged",
+      "regime_strategy_selector_runtime_pr_987": "merged",
+      "regime_runtime_drift_pr_988": "integrated_by_this_memory_change",
       "prospective_paper_run_32905463932": "success",
       "drive_backup_refresh_required": true
     },
