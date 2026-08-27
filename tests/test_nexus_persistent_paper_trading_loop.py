@@ -223,7 +223,7 @@ def test_loop_verifier_rejects_authority_or_completion_fabrication() -> None:
     assert loop.verify_loop_snapshot(fabricated)["decision"] == "reject"
 
 
-def test_public_regime_adapter_rebinds_archive_provenance_and_rebalance(
+def test_public_regime_adapter_rebinds_archive_provenance_and_full_rebalance(
     monkeypatch, tmp_path: Path
 ) -> None:
     historical = _regime_snapshot()
@@ -245,6 +245,17 @@ def test_public_regime_adapter_rebinds_archive_provenance_and_rebalance(
         "deterministic_risk_final_authority": True,
         "exposure_increased": False,
     }
+    increase = {
+        "increase_digest": "8" * 64,
+        "exposure_increase_operational": True,
+        "fresh_deterministic_risk_required": True,
+        "paper_only": True,
+        "live_trading_authority": False,
+        "private_credentials_used": False,
+        "automatic_strategy_promotion": False,
+        "deterministic_risk_final_authority": True,
+        "unauthorized_exposure_increase": False,
+    }
 
     monkeypatch.setattr(public_regime, "run_demo_regime_cycle", lambda **_kwargs: deepcopy(historical))
     monkeypatch.setattr(
@@ -253,6 +264,16 @@ def test_public_regime_adapter_rebinds_archive_provenance_and_rebalance(
     monkeypatch.setattr(
         public_regime,
         "verify_regime_selected_rebalance",
+        lambda _value: {"decision": "pass"},
+    )
+    monkeypatch.setattr(
+        public_regime,
+        "run_regime_selected_exposure_increase",
+        lambda **_kwargs: deepcopy(increase),
+    )
+    monkeypatch.setattr(
+        public_regime,
+        "verify_regime_selected_exposure_increase",
         lambda _value: {"decision": "pass"},
     )
     result = public_regime.run_public_regime_cycle(
@@ -266,11 +287,11 @@ def test_public_regime_adapter_rebinds_archive_provenance_and_rebalance(
     assert result["archive_sha256"] is None
     assert result["data_mode"] == public_regime.PUBLIC_DATA_MODE
     assert result["regime_selected_rebalance_digest"] == "9" * 64
+    assert result["regime_selected_exposure_increase_digest"] == "8" * 64
     assert result["risk_reducing_rebalance_operational"] is True
-    assert result["regime_selected_exposure_increase_operational"] is False
-    assert result["regime_selected_rebalance_operational"] is False
-    assert result["regime_selected_rebalance_remaining_gap"] == (
-        "REGIME_SELECTED_EXPOSURE_INCREASE_WITH_FRESH_RISK"
-    )
+    assert result["regime_selected_exposure_increase_operational"] is True
+    assert result["regime_selected_rebalance_operational"] is True
+    assert result["regime_selected_rebalance_remaining_gap"] is None
+    assert result["next_core_gap"] == "HEALTH_DRIVEN_STRATEGY_FACTORY_CLOSED_LOOP"
     assert result["cycle_digest"] == regime_digest({k: v for k, v in result.items() if k != "cycle_digest"})
     assert public_regime.verify_cycle_snapshot(result)["decision"] == "pass"
