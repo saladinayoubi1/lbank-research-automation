@@ -10,6 +10,8 @@ on:
       - "nexus_demo_strategy_matrix.py"
       - "nexus_demo_archive_replay.py"
       - "nexus_demo_state_recovery.py"
+      - "nexus_demo_paper_position_maintenance.py"
+      - "nexus_demo_paper_performance_refresh.py"
       - "nexus_demo_regime_cycle.py"
       - "nexus_isolated_product_runtime.py"
       - "nexus_regime_paper_lane.py"
@@ -20,6 +22,7 @@ on:
       - "data_intelligence.py"
       - "nexus_strategy_paper_supervisor.py"
       - "nexus_paper_performance_pipeline.py"
+      - "nexus_paper_performance_drift.py"
       - "config/nexus-demo-strategy-matrix-v1.json"
       - "config/nexus-regime-strategy-policy-v1.json"
       - "requirements.txt"
@@ -33,6 +36,8 @@ on:
       - "nexus_demo_strategy_matrix.py"
       - "nexus_demo_archive_replay.py"
       - "nexus_demo_state_recovery.py"
+      - "nexus_demo_paper_position_maintenance.py"
+      - "nexus_demo_paper_performance_refresh.py"
       - "nexus_demo_regime_cycle.py"
       - "nexus_isolated_product_runtime.py"
       - "nexus_regime_paper_lane.py"
@@ -43,6 +48,7 @@ on:
       - "data_intelligence.py"
       - "nexus_strategy_paper_supervisor.py"
       - "nexus_paper_performance_pipeline.py"
+      - "nexus_paper_performance_drift.py"
       - "config/nexus-demo-strategy-matrix-v1.json"
       - "config/nexus-regime-strategy-policy-v1.json"
       - "requirements.txt"
@@ -52,6 +58,8 @@ on:
       - "tests/test_nexus_demo_archive_replay.py"
       - "tests/test_nexus_demo_state_recovery.py"
       - "tests/test_nexus_demo_strategy_matrix_runtime_dependencies.py"
+      - "tests/test_nexus_demo_paper_position_maintenance.py"
+      - "tests/test_nexus_demo_paper_lifecycle_persistence.py"
       - "tests/test_nexus_demo_regime_cycle.py"
       - "tests/test_nexus_strategy_paper_supervisor.py"
       - "tests/test_nexus_strategy_paper_supervisor_matrix_symbol.py"
@@ -90,6 +98,8 @@ jobs:
           tests/test_nexus_demo_archive_replay.py
           tests/test_nexus_demo_state_recovery.py
           tests/test_nexus_demo_strategy_matrix_runtime_dependencies.py
+          tests/test_nexus_demo_paper_position_maintenance.py
+          tests/test_nexus_demo_paper_lifecycle_persistence.py
           tests/test_nexus_demo_regime_cycle.py
           tests/test_nexus_strategy_paper_supervisor.py
           tests/test_nexus_strategy_paper_supervisor_matrix_symbol.py
@@ -174,6 +184,53 @@ jobs:
           assert snapshot["private_credentials_used"] is False
           assert snapshot["automatic_strategy_promotion"] is False
           assert snapshot["deterministic_risk_final_authority"] is True
+          PY
+      - name: Close risk-reducing Demo positions
+        run: |
+          set -euo pipefail
+          python nexus_demo_paper_position_maintenance.py \
+            --manifest config/nexus-demo-strategy-matrix-v1.json \
+            --state-root build/nexus_demo_strategy_matrix_state \
+            --source-sha "$GITHUB_SHA"
+      - name: Enforce Paper maintenance cannot increase exposure
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          result = json.loads(Path(
+              "build/nexus_demo_strategy_matrix_state/demo/paper-position-maintenance.json"
+          ).read_text(encoding="utf-8"))
+          assert result["cell_count"] == 6
+          assert result["task_count"] == 18
+          assert result["closed_count"] + result["held_count"] + result["flat_count"] == 18
+          assert result["paper_only"] is True
+          assert result["live_trading_authority"] is False
+          assert result["private_credentials_used"] is False
+          assert result["automatic_strategy_promotion"] is False
+          assert result["exposure_increased"] is False
+          assert all(row["exposure_increased"] is False for row in result["rows"])
+          PY
+      - name: Refresh journal-backed Paper lifecycle and performance
+        run: |
+          set -euo pipefail
+          python nexus_demo_paper_performance_refresh.py \
+            --manifest config/nexus-demo-strategy-matrix-v1.json \
+            --state-root build/nexus_demo_strategy_matrix_state \
+            --source-sha "$GITHUB_SHA"
+      - name: Enforce Paper performance refresh authority
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          result = json.loads(Path(
+              "build/nexus_demo_strategy_matrix_state/demo/paper-performance-refresh.json"
+          ).read_text(encoding="utf-8"))
+          assert result["cell_count"] == 6
+          assert result["paper_only"] is True
+          assert result["live_trading_authority"] is False
+          assert result["automatic_strategy_promotion"] is False
           PY
       - name: Run synchronized three-timeframe regime selection and isolated Paper
         run: |
