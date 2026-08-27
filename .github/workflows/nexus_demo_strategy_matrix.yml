@@ -33,6 +33,11 @@ on:
       - "product_web_server.py"
       - "product_ui/index.html"
       - "product_ui/product.js"
+      - "android/lbank-mobile/**"
+      - "scripts/build_release_evidence.py"
+      - "scripts/release_gate.py"
+      - "tests/test_mobile_delivery_surface.py"
+      - ".github/workflows/build_lbank_mobile_apk.yml"
       - ".github/workflows/nexus_demo_strategy_matrix.yml"
   pull_request:
     paths:
@@ -78,6 +83,11 @@ on:
       - "product_web_server.py"
       - "product_ui/index.html"
       - "product_ui/product.js"
+      - "android/lbank-mobile/**"
+      - "scripts/build_release_evidence.py"
+      - "scripts/release_gate.py"
+      - "tests/test_mobile_delivery_surface.py"
+      - ".github/workflows/build_lbank_mobile_apk.yml"
       - ".github/workflows/nexus_demo_strategy_matrix.yml"
 
 permissions:
