@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from copy import deepcopy
+
 import nexus_paper_performance_pipeline as pipeline
 from nexus_paper_performance_pipeline import (
     _journal_paper_acceptance,
@@ -61,16 +63,31 @@ def _task(status="no_open_signal"):
         "status": status,
         "worker_id": "strategy-worker-momentum",
         "research_result": {
+            "request": {
+                "family": "momentum",
+                "symbol": "BTCUSDT",
+                "timeframe": "minute15",
+            },
             "strategy_record": {
+                "family": "momentum",
                 "lifecycle_state": "CANDIDATE",
                 "strategy_version": "momentum-v1",
                 "record_digest": "a" * 64,
             },
             "qualification": {
+                "family": "momentum",
                 "status": "paper_candidate",
+                "strategy_version": "momentum-v1",
                 "qualification_digest": "b" * 64,
             },
         },
+    }
+
+
+def _verification():
+    return {
+        "verification_digest": "c" * 64,
+        "verifier": "strategy-paper-independent-verifier",
     }
 
 
@@ -78,10 +95,7 @@ def test_reconstructs_paper_acceptance_from_automatic_open_and_verifier() -> Non
     acceptance = _journal_paper_acceptance(
         events=_journal(),
         task=_task(),
-        supervisor_verification={
-            "verification_digest": "c" * 64,
-            "verifier": "strategy-paper-independent-verifier",
-        },
+        supervisor_verification=_verification(),
     )
     assert acceptance is not None
     assert acceptance["risk_gate_allowed"] is True
@@ -90,12 +104,41 @@ def test_reconstructs_paper_acceptance_from_automatic_open_and_verifier() -> Non
     assert acceptance["independent_verifier_evidence_sha256"] == "c" * 64
 
 
+def test_lane_substitution_cannot_reuse_prior_paper_acceptance() -> None:
+    for field, replacement in (
+        ("symbol", "ETHUSDT"),
+        ("timeframe", "hour1"),
+        ("family", "trend_breakout"),
+    ):
+        task = deepcopy(_task())
+        task["research_result"]["request"][field] = replacement
+        if field == "family":
+            task["family"] = replacement
+            task["research_result"]["strategy_record"]["family"] = replacement
+            task["research_result"]["qualification"]["family"] = replacement
+        assert _journal_paper_acceptance(
+            events=_journal(),
+            task=task,
+            supervisor_verification=_verification(),
+        ) is None
+
+
+def test_strategy_version_substitution_cannot_reuse_prior_paper_acceptance() -> None:
+    task = deepcopy(_task())
+    task["research_result"]["strategy_record"]["strategy_version"] = "momentum-v2"
+    task["research_result"]["qualification"]["strategy_version"] = "momentum-v2"
+    assert _journal_paper_acceptance(
+        events=_journal(),
+        task=task,
+        supervisor_verification=_verification(),
+    ) is None
+
+
 def test_flat_no_open_signal_keeps_verified_paper_history_in_projection(monkeypatch) -> None:
     ledger = {"tasks": [_task("no_open_signal")]}
     monkeypatch.setattr(pipeline, "verify_ledger", lambda _ledger: {
         "decision": "pass",
-        "verification_digest": "c" * 64,
-        "verifier": "strategy-paper-independent-verifier",
+        **_verification(),
     })
     observed = {}
 
