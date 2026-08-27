@@ -3,7 +3,6 @@
   const q = s => document.querySelector(s);
   const qa = s => [...document.querySelectorAll(s)];
   const LAST_SCREEN = 'nexus-mobile-last-screen-v1';
-  const PRIMARY = new Set(['home', 'paper', 'ai', 'mission']);
   const SECONDARY = new Set(['lab', 'audit', 'live']);
   const SAFE_RESTORE = new Set(['home', 'paper', 'ai', 'mission', 'lab', 'audit']);
 
@@ -155,8 +154,8 @@
     qa('[data-go]').forEach(button => button.addEventListener('click', () => {
       const name = button.dataset.go;
       if (SAFE_RESTORE.has(name)) localStorage.setItem(LAST_SCREEN, name);
-      q('main')?.scrollTo?.({top:0, behavior:'instant'});
-      window.scrollTo({top:0, behavior:'instant'});
+      q('main')?.scrollTo?.({top:0, behavior:'auto'});
+      window.scrollTo({top:0, behavior:'auto'});
     }));
     const saved = localStorage.getItem(LAST_SCREEN);
     if (saved && saved !== 'home' && SAFE_RESTORE.has(saved)) window.setTimeout(() => clickScreen(saved), 0);
