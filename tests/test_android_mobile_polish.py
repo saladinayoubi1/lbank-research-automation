@@ -1,4 +1,6 @@
 from pathlib import Path
+import shutil
+import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
 ANDROID = ROOT / "android" / "lbank-mobile" / "app" / "src" / "main"
@@ -14,6 +16,13 @@ def test_mobile_polish_assets_are_loaded_after_canonical_runtime():
     assert '<link rel="stylesheet" href="mobile-polish.css">' in html
     assert '<script src="mobile-polish.js" defer></script>' in html
     assert html.index('mobile-core.js') < html.index('mobile-runtime.js') < html.index('mobile-polish.js')
+
+
+def test_mobile_polish_javascript_syntax():
+    node = shutil.which("node")
+    if not node:
+        return
+    subprocess.run([node, "--check", str(ASSETS / "mobile-polish.js")], check=True)
 
 
 def test_polish_layer_keeps_mobile_navigation_bounded_and_live_non_restorable():
