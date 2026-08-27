@@ -5,7 +5,16 @@ from typing import Any
 
 import requests
 
-BASE_URL = "https://api.bybit.com"
+# Bybit documents both hosts as equivalent public Mainnet REST endpoints.  The
+# ordered pair is intentionally fixed and bounded: GitHub-hosted runners can land
+# on US IP space where api.bybit.com returns HTTP 403, so the collector may try
+# the second official Mainnet host before failing closed.  No third-party proxy,
+# exchange substitution, private credential or testnet endpoint is permitted.
+OFFICIAL_MAINNET_BASE_URLS = (
+    "https://api.bybit.com",
+    "https://api.bytick.com",
+)
+BASE_URL = OFFICIAL_MAINNET_BASE_URLS[0]
 KLINES_PATH = "/v5/market/kline"
 INTERVAL_MS = {"15": 15 * 60 * 1000, "60": 60 * 60 * 1000, "240": 4 * 60 * 60 * 1000}
 SUPPORTED_INTERVALS = set(INTERVAL_MS)
@@ -130,6 +139,35 @@ def normalize_closed_klines(
     return normalized
 
 
+def _request_one_official_mainnet_host(
+    client: requests.Session,
+    base_url: str,
+    *,
+    symbol: str,
+    interval: str,
+    start_time_ms: int,
+    end_time_ms: int,
+    limit: int,
+    timeout_seconds: float,
+):
+    if base_url not in OFFICIAL_MAINNET_BASE_URLS:
+        raise BybitKlineError("unapproved Bybit Mainnet endpoint")
+    return client.get(
+        f"{base_url}{KLINES_PATH}",
+        params={
+            "category": "spot",
+            "symbol": symbol,
+            "interval": interval,
+            "start": start_time_ms,
+            "end": end_time_ms,
+            "limit": limit,
+        },
+        timeout=timeout_seconds,
+        allow_redirects=False,
+        headers={"Accept": "application/json", "User-Agent": "nexus-research/1.0"},
+    )
+
+
 def fetch_closed_klines(
     symbol: str,
     interval: str,
@@ -159,34 +197,50 @@ def fetch_closed_klines(
         raise BybitKlineError("requested window includes an open/incomplete candle")
 
     client = session or requests.Session()
-    response = client.get(
-        f"{BASE_URL}{KLINES_PATH}",
-        params={
-            "category": "spot",
-            "symbol": normalized_symbol,
-            "interval": interval,
-            "start": start_time_ms,
-            "end": end_time_ms,
-            "limit": limit,
-        },
-        timeout=timeout_seconds,
-        allow_redirects=False,
-        headers={"Accept": "application/json", "User-Agent": "nexus-research/1.0"},
-    )
-    if response.status_code != 200:
-        raise BybitKlineError(f"Bybit kline request failed with HTTP {response.status_code}")
-    if len(response.content) > MAX_RESPONSE_BYTES:
-        raise BybitKlineError("Bybit kline response exceeds size limit")
-    try:
-        payload = response.json()
-    except ValueError as exc:
-        raise BybitKlineError("Bybit kline response is not valid JSON") from exc
-    return normalize_closed_klines(
-        payload,
-        symbol=normalized_symbol,
-        interval=interval,
-        now_ms=now_ms,
-        start_time_ms=start_time_ms,
-        end_time_ms=end_time_ms,
-        require_complete_window=True,
+    rejected_hosts: list[str] = []
+    for base_url in OFFICIAL_MAINNET_BASE_URLS:
+        try:
+            response = _request_one_official_mainnet_host(
+                client,
+                base_url,
+                symbol=normalized_symbol,
+                interval=interval,
+                start_time_ms=start_time_ms,
+                end_time_ms=end_time_ms,
+                limit=limit,
+                timeout_seconds=timeout_seconds,
+            )
+        except requests.RequestException as exc:
+            rejected_hosts.append(f"{base_url}:transport:{type(exc).__name__}")
+            continue
+
+        # HTTP 403 is the documented geographic restriction failure.  The only
+        # fallback is the second official Bybit Mainnet hostname. Other HTTP
+        # failures remain fail-closed immediately because retrying them could hide
+        # a provider/protocol problem rather than a host routing restriction.
+        if response.status_code == 403:
+            rejected_hosts.append(f"{base_url}:http403")
+            continue
+        if response.status_code != 200:
+            raise BybitKlineError(f"Bybit kline request failed with HTTP {response.status_code}")
+        if len(response.content) > MAX_RESPONSE_BYTES:
+            raise BybitKlineError("Bybit kline response exceeds size limit")
+        try:
+            payload = response.json()
+        except ValueError as exc:
+            raise BybitKlineError("Bybit kline response is not valid JSON") from exc
+        return normalize_closed_klines(
+            payload,
+            symbol=normalized_symbol,
+            interval=interval,
+            now_ms=now_ms,
+            start_time_ms=start_time_ms,
+            end_time_ms=end_time_ms,
+            require_complete_window=True,
+        )
+
+    detail = ",".join(rejected_hosts)
+    raise BybitKlineError(
+        "all approved Bybit Mainnet endpoints were unavailable or geographically rejected"
+        + (f": {detail}" if detail else "")
     )
