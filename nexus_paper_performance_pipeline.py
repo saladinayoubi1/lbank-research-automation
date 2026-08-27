@@ -60,14 +60,14 @@ def _journal_paper_acceptance(
     events: Sequence[Mapping[str, Any]],
     task: Mapping[str, Any],
     supervisor_verification: Mapping[str, Any],
+    journal_family: str,
 ) -> dict[str, Any] | None:
     """Reconstruct bounded Paper acceptance from an independently replayed journal.
 
-    A prior automatic open may carry the same strategy version across a freshly
-    requalified immutable record only when family, symbol, timeframe, strategy
-    version, current qualification and current record namespace all agree. The
-    derived execution evidence binds the prior verified open to those current
-    inputs without treating insufficient performance evidence as HEALTHY.
+    The family identity is carried by the Supervisor's isolated journal namespace
+    (``portfolios/<family>``), while symbol/timeframe/version are carried inside
+    the automatic event chain.  A prior automatic open is reusable only when all
+    of those identities and the current qualification/record agree.
     """
     validated = _validated_journal(events)
     research = task.get("research_result", {})
@@ -86,12 +86,15 @@ def _journal_paper_acceptance(
     family = str(request.get("family", ""))
     symbol = str(request.get("symbol", "")).upper()
     timeframe = str(request.get("timeframe", ""))
+    journal_family = str(journal_family).strip()
     if (
         not isinstance(version, str)
         or not version
         or not family
         or not symbol
         or not timeframe
+        or not journal_family
+        or journal_family != family
         or task.get("family") != family
         or record.get("family") != family
         or qualification.get("family") != family
@@ -139,6 +142,7 @@ def _journal_paper_acceptance(
             "current_record_digest": record.get("record_digest"),
             "current_qualification_digest": qualification.get("qualification_digest"),
             "family": family,
+            "journal_family": journal_family,
             "symbol": symbol,
             "timeframe": timeframe,
             "strategy_version": version,
@@ -253,6 +257,7 @@ def build_paper_performance_projection(
             events=journal,
             task=task,
             supervisor_verification=verification,
+            journal_family=family,
         )
         if task["status"] == "no_open_signal" and acceptance is None:
             continue
