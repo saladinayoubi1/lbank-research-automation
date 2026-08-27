@@ -17,12 +17,15 @@ on:
       - "nexus_regime_strategy_selector.py"
       - "nexus_regime_strategy_runtime.py"
       - "nexus_strategy_paper_supervisor.py"
+      - "nexus_paper_performance_pipeline.py"
       - "scripts/nexus_strategy_discovery_controller.py"
       - "config/nexus-demo-strategy-matrix-v1.json"
       - "config/nexus-regime-strategy-policy-v1.json"
       - "research/strategy_family_catalog.json"
       - "tests/test_nexus_persistent_paper_trading_loop.py"
       - "tests/test_nexus_persistent_paper_trading_workflow.py"
+      - "tests/test_nexus_demo_paper_lifecycle_persistence.py"
+      - "tests/test_nexus_paper_performance_pipeline.py"
       - ".github/workflows/nexus_persistent_paper_trading_loop.yml"
   pull_request:
     paths:
@@ -36,12 +39,15 @@ on:
       - "nexus_regime_strategy_selector.py"
       - "nexus_regime_strategy_runtime.py"
       - "nexus_strategy_paper_supervisor.py"
+      - "nexus_paper_performance_pipeline.py"
       - "scripts/nexus_strategy_discovery_controller.py"
       - "config/nexus-demo-strategy-matrix-v1.json"
       - "config/nexus-regime-strategy-policy-v1.json"
       - "research/strategy_family_catalog.json"
       - "tests/test_nexus_persistent_paper_trading_loop.py"
       - "tests/test_nexus_persistent_paper_trading_workflow.py"
+      - "tests/test_nexus_demo_paper_lifecycle_persistence.py"
+      - "tests/test_nexus_paper_performance_pipeline.py"
       - ".github/workflows/nexus_persistent_paper_trading_loop.yml"
 
 permissions:
@@ -71,7 +77,8 @@ jobs:
           tests/test_nexus_persistent_paper_trading_workflow.py
           tests/test_nexus_demo_strategy_matrix.py
           tests/test_nexus_demo_paper_position_maintenance.py
-          tests/test_nexus_demo_paper_performance_refresh.py
+          tests/test_nexus_demo_paper_lifecycle_persistence.py
+          tests/test_nexus_paper_performance_pipeline.py
           tests/test_nexus_demo_regime_cycle.py
           tests/test_nexus_regime_paper_lane.py
           tests/test_nexus_regime_strategy_selector.py
