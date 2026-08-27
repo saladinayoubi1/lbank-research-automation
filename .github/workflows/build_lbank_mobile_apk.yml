@@ -4,12 +4,16 @@ on:
   pull_request:
     paths:
       - "android/lbank-mobile/**"
+      - "scripts/build_release_evidence.py"
+      - "scripts/release_gate.py"
       - "tests/test_mobile_delivery_surface.py"
       - ".github/workflows/build_lbank_mobile_apk.yml"
   push:
     branches: [main]
     paths:
       - "android/lbank-mobile/**"
+      - "scripts/build_release_evidence.py"
+      - "scripts/release_gate.py"
       - "tests/test_mobile_delivery_surface.py"
       - ".github/workflows/build_lbank_mobile_apk.yml"
   workflow_dispatch:
@@ -125,12 +129,47 @@ jobs:
             echo "- Paper/Research: canonical Python backend first via bounded HTTPS bridge; explicit local deterministic Paper fallback when unavailable"
             echo "- Live: locked; no exchange order/private credential/withdrawal/signing path"
           } >> "$GITHUB_STEP_SUMMARY"
+      - name: Build unsigned final APK release evidence
+        run: >-
+          python scripts/build_release_evidence.py
+          --bundle-dir release-evidence/android-v4
+          --artifact-glob 'android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_0_0.apk'
+          --artifact-glob 'android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_0_0.apk.sha256'
+          --source-commit '${{ github.sha }}'
+          --builder 'github-actions/build-nexus-mobile-apk/release-v4'
+      - name: Fail-closed verify final APK release evidence
+        run: >-
+          python scripts/release_gate.py release-evidence/android-v4
+          --allow-unsigned
+          --expected-source-commit '${{ github.sha }}'
+          --expected-builder 'github-actions/build-nexus-mobile-apk/release-v4'
+      - name: Assert final APK evidence cannot claim production approval
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('release-evidence/android-v4')
+          manifest = json.loads((root / 'artifact-manifest.json').read_text(encoding='utf-8'))
+          provenance = json.loads((root / 'provenance.json').read_text(encoding='utf-8'))
+          assert manifest['production_approval'] is False
+          assert provenance['production_approval'] is False
+          assert manifest['purpose'] == 'ci-build-evidence'
+          assert provenance['purpose'] == 'ci-build-evidence'
+          PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: NEXUS_PERSONAL_PRO_4_0_0_APK
           path: |
             android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_0_0.apk
             android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_0_0.apk.sha256
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: NEXUS_PERSONAL_PRO_4_0_0_RELEASE_EVIDENCE
+          path: release-evidence/android-v4
           if-no-files-found: error
           retention-days: 30
           compression-level: 0
