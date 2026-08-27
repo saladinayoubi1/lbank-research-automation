@@ -8,16 +8,23 @@ on:
     branches: [main]
     paths:
       - "nexus_strategy_discovery_rotation.py"
+      - "nexus_multitimeframe_strategy_discovery.py"
       - "scripts/nexus_strategy_discovery_controller.py"
       - "research/strategy_family_catalog.json"
+      - "experiments/nexus_multitimeframe_strategy_discovery_v1.json"
+      - ".github/workflows/nexus_multitimeframe_strategy_discovery.yml"
       - ".github/workflows/nexus_strategy_discovery_rotation.yml"
   pull_request:
     paths:
       - "nexus_strategy_discovery_rotation.py"
+      - "nexus_multitimeframe_strategy_discovery.py"
       - "scripts/nexus_strategy_discovery_controller.py"
       - "research/strategy_family_catalog.json"
+      - "experiments/nexus_multitimeframe_strategy_discovery_v1.json"
+      - "tests/test_nexus_multitimeframe_strategy_discovery.py"
       - "tests/test_nexus_strategy_discovery_rotation.py"
       - "tests/test_nexus_strategy_discovery_controller.py"
+      - ".github/workflows/nexus_multitimeframe_strategy_discovery.yml"
       - ".github/workflows/nexus_strategy_discovery_rotation.yml"
 
 permissions:
@@ -44,6 +51,7 @@ jobs:
           python -m pytest -q
           tests/test_nexus_strategy_discovery_rotation.py
           tests/test_nexus_strategy_discovery_controller.py
+          tests/test_nexus_multitimeframe_strategy_discovery.py
 
   dispatch-one-stage:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
