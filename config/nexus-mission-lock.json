@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "project": "NEXUS / lbank-research-automation",
+  "locked": true,
+  "primary_delivery_objective": "continuously_operating_paper_trading_engine",
+  "safety_boundary": {
+    "research_backtest_paper_only": true,
+    "live_trading_authority": false,
+    "private_exchange_credentials_allowed": false,
+    "automatic_live_promotion": false,
+    "deterministic_risk_final_authority": true
+  },
+  "trading_engine": {
+    "portfolio_model": "multi_pair_multi_timeframe_multi_strategy",
+    "required_symbols": ["BTCUSDT", "ETHUSDT"],
+    "required_timeframes": ["minute15", "hour1", "hour4"],
+    "required_strategy_families": ["momentum", "trend_breakout", "mean_reversion"],
+    "required_loop": [
+      "canonical_public_market_data",
+      "multi_pair_context",
+      "multi_timeframe_context",
+      "multi_strategy_evaluation",
+      "regime_classification",
+      "independent_qualification",
+      "portfolio_allocation_decision",
+      "deterministic_risk",
+      "paper_open_close_rebalance",
+      "performance_drift",
+      "strategy_health_lifecycle",
+      "strategy_factory_discovery_requalification",
+      "next_closed_candle_cycle"
+    ],
+    "cash_reject_no_action_are_valid": true,
+    "continuous_strategy_discovery_required": true,
+    "restart_replay_required": true
+  },
+  "work_priority": {
+    "rule": "trading_engine_first",
+    "ordered_priorities": [
+      "persistent_trading_engine_loop",
+      "strategy_research_discovery_qualification",
+      "risk_paper_lifecycle_performance_drift",
+      "evidence_required_to_prove_trading_loop",
+      "ui_mobile_packaging_agent_infrastructure_only_when_directly_mission_linked"
+    ],
+    "material_work_requires_direct_mission_link": true,
+    "supporting_work_must_not_displace_trading_engine": true,
+    "green_ci_is_not_trading_completion": true
+  },
+  "completion_gate": {
+    "trading_core_complete_claim_requires_persistent_end_to_end_loop": true,
+    "required_runtime_evidence": true,
+    "required_multi_pair": true,
+    "required_multi_timeframe": true,
+    "required_multi_strategy": true,
+    "required_genuine_paper_outcomes_to_performance_drift": true,
+    "required_continuous_strategy_factory": true,
+    "allow_cash_only_cycle": true,
+    "allow_reject_no_action_cycle": true
+  },
+  "deviation_policy": {
+    "material_task_without_direct_mission_link": "defer_or_reject",
+    "owner_override_required_for_priority_change": true,
+    "mission_change_requires_project_memory_update": true
+  }
+}
