@@ -1,8 +1,8 @@
 """Persistent autonomous NEXUS Paper trading loop over public Bybit closed candles.
 
-This is the mission-oriented runtime controller.  It reuses the existing 2 x 3 x 3
+This is the mission-oriented runtime controller. It reuses the existing 2 x 3 x 3
 Strategy Paper matrix, position maintenance, performance/drift evidence, synchronized
-regime selector, Deterministic Risk and isolated Paper engine.  It never grants Live
+regime selector, Deterministic Risk and isolated Paper engine. It never grants Live
 trading authority, never accepts private exchange credentials and never promotes a
 strategy automatically.
 """
@@ -173,6 +173,23 @@ def _research_required(regime: Mapping[str, Any] | None, performance: Mapping[st
     return unhealthy or all_cash
 
 
+def _performance_health_feedback_operational(
+    performance: Mapping[str, Any] | None, expected_cells: int
+) -> bool:
+    if not isinstance(performance, Mapping):
+        return False
+    rows = performance.get("rows")
+    return bool(
+        performance.get("cell_count") == expected_cells
+        and isinstance(rows, list)
+        and len(rows) == expected_cells
+        and all(
+            isinstance(row, Mapping) and isinstance(row.get("status_counts"), Mapping)
+            for row in rows
+        )
+    )
+
+
 def _load_existing_regime(path: Path, source_sha: str, boundary_digest: str) -> dict[str, Any] | None:
     if not path.exists():
         return None
@@ -186,8 +203,6 @@ def _load_existing_regime(path: Path, source_sha: str, boundary_digest: str) -> 
     contexts = value.get("context_digests")
     if not isinstance(contexts, Mapping):
         return None
-    # Boundary identity is separately persisted by the loop state.  This check
-    # prevents a stale regime snapshot from being reused after state loss.
     if not isinstance(boundary_digest, str) or not re.fullmatch(r"[0-9a-f]{64}", boundary_digest):
         return None
     return value
@@ -280,6 +295,24 @@ def run_persistent_cycle(
     if discovery.get("controller_verified") is not True:
         raise PersistentPaperTradingLoopError("Strategy Discovery controller is not verified")
     research_required = _research_required(regime, performance)
+    rebalance_operational = bool(
+        isinstance(regime, Mapping)
+        and regime.get("regime_selected_rebalance_operational") is True
+        and regime.get("regime_selected_exposure_increase_operational") is True
+    )
+    performance_feedback_operational = _performance_health_feedback_operational(
+        performance, expected_cells
+    )
+    health_trigger_requested = bool(
+        research_required and regime_status == "VERIFIED" and rebalance_operational
+    )
+
+    if len(fresh_cells) != expected_cells:
+        remaining_core_gap = "WAITING_FOR_FRESH_CELLS"
+    elif not rebalance_operational:
+        remaining_core_gap = "REGIME_SELECTED_POSITION_CLOSE_AND_RESIZE"
+    else:
+        remaining_core_gap = "RUNTIME_EVIDENCE_AND_DISCOVERY_FEEDBACK_PROOF"
 
     next_state_core = {
         "schema_version": STATE_SCHEMA,
@@ -314,15 +347,22 @@ def run_persistent_cycle(
         "regime_cycle_digest": regime.get("cycle_digest") if regime else None,
         "maintenance_digest": maintenance.get("maintenance_digest") if maintenance else None,
         "performance_refresh_digest": performance.get("refresh_digest") if performance else None,
+        "performance_health_feedback_operational": performance_feedback_operational,
         "strategy_discovery_controller_verified": True,
         "strategy_discovery_next_action": discovery.get("next_research_action"),
         "strategy_discovery_ready_stage_count": discovery.get("summary", {}).get("ready_search_stage_count"),
         "strategy_research_required": research_required,
-        "strategy_discovery_rotation": "automatic_daily_bounded_rotation",
+        "strategy_discovery_health_trigger_requested": health_trigger_requested,
+        "strategy_discovery_health_trigger_contract": "successful_paper_loop_new_4h_boundary_only",
+        "strategy_discovery_rotation": "automatic_daily_and_health_driven_bounded_rotation",
         "persistent_state_digest": next_loop_state["state_digest"],
         "comparison_position_lifecycle": "OPEN_HOLD_RISK_REDUCING_CLOSE",
-        "regime_selected_rebalance_operational": False,
-        "remaining_core_gap": "REGIME_SELECTED_POSITION_CLOSE_AND_RESIZE",
+        "regime_selected_rebalance_operational": rebalance_operational,
+        "regime_selected_exposure_increase_operational": bool(
+            isinstance(regime, Mapping)
+            and regime.get("regime_selected_exposure_increase_operational") is True
+        ),
+        "remaining_core_gap": remaining_core_gap,
         "trading_engine_complete": False,
         "paper_only": True,
         "live_trading_authority": False,
@@ -363,6 +403,10 @@ def verify_loop_snapshot(value: Mapping[str, Any]) -> dict[str, Any]:
             and 0 <= core["fresh_cell_count"] <= 6
             and isinstance(core.get("fresh_cells"), list)
             and len(core["fresh_cells"]) == core["fresh_cell_count"]
+            and isinstance(core.get("performance_health_feedback_operational"), bool)
+            and isinstance(core.get("strategy_discovery_health_trigger_requested"), bool)
+            and isinstance(core.get("regime_selected_rebalance_operational"), bool)
+            and isinstance(core.get("regime_selected_exposure_increase_operational"), bool)
         )
         status = core.get("status")
         checks["status"] = bool(
@@ -374,10 +418,23 @@ def verify_loop_snapshot(value: Mapping[str, Any]) -> dict[str, Any]:
                 and isinstance(core.get("regime_cycle_digest"), str)
             )
         )
+        if status == "WAITING_FOR_FRESH_CELLS":
+            mission_state_valid = core.get("remaining_core_gap") == "WAITING_FOR_FRESH_CELLS"
+        elif core.get("regime_selected_rebalance_operational") is True:
+            mission_state_valid = bool(
+                core.get("regime_selected_exposure_increase_operational") is True
+                and core.get("performance_health_feedback_operational") is True
+                and core.get("remaining_core_gap") == "RUNTIME_EVIDENCE_AND_DISCOVERY_FEEDBACK_PROOF"
+            )
+        else:
+            mission_state_valid = core.get("remaining_core_gap") == "REGIME_SELECTED_POSITION_CLOSE_AND_RESIZE"
         checks["mission_truth"] = bool(
             core.get("strategy_discovery_controller_verified") is True
-            and core.get("regime_selected_rebalance_operational") is False
-            and core.get("remaining_core_gap") == "REGIME_SELECTED_POSITION_CLOSE_AND_RESIZE"
+            and core.get("strategy_discovery_health_trigger_contract")
+            == "successful_paper_loop_new_4h_boundary_only"
+            and core.get("strategy_discovery_rotation")
+            == "automatic_daily_and_health_driven_bounded_rotation"
+            and mission_state_valid
             and core.get("trading_engine_complete") is False
         )
     except (TypeError, ValueError, KeyError):
@@ -416,6 +473,8 @@ def main() -> int:
         "fresh_cells": snapshot["fresh_cell_count"],
         "regime_status": snapshot["regime_status"],
         "strategy_research_required": snapshot["strategy_research_required"],
+        "health_trigger_requested": snapshot["strategy_discovery_health_trigger_requested"],
+        "remaining_core_gap": snapshot["remaining_core_gap"],
         "decision": verification["decision"],
         "loop_digest": snapshot["loop_digest"],
     }, sort_keys=True))
