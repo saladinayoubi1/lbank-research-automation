@@ -15,7 +15,7 @@ from decimal import Decimal, ROUND_DOWN
 from typing import Any, Mapping
 
 from nexus_isolated_product_runtime import IsolatedProductRuntime
-from paper_event_store import replay
+from paper_event_store import PortfolioState, replay
 from phase5_data_binding import validate_canonical_dataset
 from phase5_strategy_factory import qualify
 from product_research_runtime import (
@@ -69,13 +69,38 @@ def _non_actionable(
     return {**core, "preparation_digest": _digest(core), "lane": None}
 
 
-def prepare_regime_paper_lane(research_runtime: ProductResearchRuntime) -> dict[str, Any]:
-    """Build one verified proposal lane without running Risk or Paper execution."""
+def prepare_regime_paper_lane(
+    research_runtime: ProductResearchRuntime,
+    *,
+    portfolio_state_override: PortfolioState | None = None,
+    signals_today_override: int | None = None,
+) -> dict[str, Any]:
+    """Build one verified proposal lane without running Risk or Paper execution.
+
+    ``portfolio_state_override`` is intentionally narrow: a caller may provide a
+    validated hypothetical state from the same isolated account so a multi-step
+    rebalance can be simulated and independently Risk-checked before the journal
+    is atomically committed.  It does not persist that state or bypass Risk.
+    """
     if not isinstance(research_runtime, ProductResearchRuntime):
         raise ProductResearchError("regime Paper preparation requires ProductResearchRuntime")
     product_runtime = research_runtime.product_runtime
     if not isinstance(product_runtime, IsolatedProductRuntime):
         raise ProductResearchError("regime Paper preparation requires an isolated Paper runtime")
+    if portfolio_state_override is not None and not isinstance(
+        portfolio_state_override, PortfolioState
+    ):
+        raise ProductResearchError("regime Paper portfolio override must be a validated PortfolioState")
+    if signals_today_override is not None and (
+        isinstance(signals_today_override, bool)
+        or not isinstance(signals_today_override, int)
+        or signals_today_override < 0
+    ):
+        raise ProductResearchError("regime Paper signal-count override is invalid")
+    if portfolio_state_override is not None and signals_today_override is None:
+        raise ProductResearchError("hypothetical portfolio state requires an explicit signal count")
+    if portfolio_state_override is None and signals_today_override is not None:
+        raise ProductResearchError("signal-count override requires a hypothetical portfolio state")
 
     research = research_runtime._last_research
     if research is None:
@@ -150,9 +175,17 @@ def prepare_regime_paper_lane(research_runtime: ProductResearchRuntime) -> dict[
 
     with product_runtime._lock:
         existing = product_runtime._ensure_account()
-        state = replay(existing).state
-        if state.aggregate_id != product_runtime.account_id:
+        persisted_state = replay(existing).state
+        if persisted_state.aggregate_id != product_runtime.account_id:
             raise ProductResearchError("regime Paper isolated portfolio binding mismatch")
+        state = portfolio_state_override or persisted_state
+        if state.aggregate_id != product_runtime.account_id:
+            raise ProductResearchError("hypothetical Paper state belongs to another isolated account")
+        signals_today = (
+            int(signals_today_override)
+            if signals_today_override is not None
+            else _session_signal_count(existing)
+        )
         if any(row[0] == request["symbol"] for row in state.positions):
             return _non_actionable(
                 family=family, status="position_exists", account_id=product_runtime.account_id
@@ -172,6 +205,7 @@ def prepare_regime_paper_lane(research_runtime: ProductResearchRuntime) -> dict[
             "dataset_revision": dataset_revision,
             "qualification_digest": qualification["qualification_digest"],
             "account_id": product_runtime.account_id,
+            "portfolio_head_event_digest": state.last_event_digest,
             "symbol": request["symbol"],
             "timeframe": request["timeframe"],
             "family": family,
@@ -243,7 +277,7 @@ def prepare_regime_paper_lane(research_runtime: ProductResearchRuntime) -> dict[
             "risk_state": _risk_state(
                 state,
                 symbol=request["symbol"],
-                signals_today=_session_signal_count(existing),
+                signals_today=signals_today,
             ),
             "risk_policy": policy,
             "portfolio_state": state,
