@@ -18,15 +18,23 @@
     "cloud continuity when the local laptop is offline",
     "multi-symbol multi-timeframe multi-strategy Research/Backtest/Paper operation with deterministic Risk final authority"
   ],
+  "mission_lock": {
+    "path": "config/nexus-mission-lock.json",
+    "status": "active",
+    "primary_delivery_objective": "continuously_operating_paper_trading_engine",
+    "work_priority": "trading_engine_first",
+    "supporting_work_must_not_displace_trading_engine": true,
+    "owner_override_required_for_priority_change": true
+  },
   "runtime_status": {
-    "agent_execution_state": "current_parent_exact_sha_demo_verified_physical_windows_final_proof_pending",
-    "laptop_state": "historical_physical_phase7_proof_verified_current_parent_fixed_sha_physical_execution_required",
+    "agent_execution_state": "trading_engine_first_current_exact_sha_demo_verified_physical_windows_final_proof_pending",
+    "laptop_state": "historical_physical_phase7_proof_verified_current_fixed_sha_physical_execution_required",
     "internet_outage_state": "not_assumed_from_laptop_state",
     "laptop_offline_is_not_internet_outage": true,
     "runner_registration_modified_by_phase7_cleanup": false,
     "watchdog_required": false,
     "self_heal_reintroduced": false,
-    "open_pull_requests": 0
+    "open_pull_requests_before_mission_lock_pr": 0
   },
   "data_policy": {
     "research_only": true,
@@ -71,24 +79,23 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "439601d1dc88caf89391849d37dd3946dc5b71f6",
-    "observed_at_utc": "2026-08-27T17:37:22Z",
-    "state_commit_relationship": "observed_main_sha is the parent snapshot reconciled by this state change; merging this state necessarily advances main and must be followed by exact-merge-SHA CI/Demo evidence",
+    "observed_main_sha": "7820c7cb2ae79ccec5e4380bb9fd44430e7dd7f2",
+    "observed_at_utc": "2026-08-27T20:29:30Z",
+    "state_commit_relationship": "observed_main_sha is the exact main snapshot before this Mission Lock integration; merging this state necessarily advances main and the Project Memory validator permits only that direct one-hop integration before the snapshot becomes stale again",
     "latest_main_change": {
-      "pr": 1024,
-      "summary": "Android and release-evidence changes are now mandatory push/PR triggers for the synchronized NEXUS Demo strategy matrix, with regression coverage preventing the exact-SHA proof coupling from being silently removed.",
+      "pr": 1025,
+      "summary": "Canonical Project Memory was reconciled with synchronized regime/Paper integration and then exact-merge-SHA Demo proof was executed successfully on main.",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true
     },
     "same_sha_demo_proof": {
       "status": "VERIFIED",
-      "source_sha": "439601d1dc88caf89391849d37dd3946dc5b71f6",
+      "source_sha": "7820c7cb2ae79ccec5e4380bb9fd44430e7dd7f2",
       "workflow": "NEXUS Demo strategy matrix",
-      "run_id": 33098979262,
-      "artifact_id": 9657626893,
+      "run_id": 33106762868,
+      "artifact_id": 9660809840,
       "artifact_name": "nexus-demo-strategy-matrix-state",
-      "artifact_digest": "sha256:ced8b562f4524dccd6ff99901c960411d46ef14c9633104e057fbfa12b535ddf",
       "verified_cell_count": 6,
       "expected_cell_count": 6,
       "expected_lane_count": 18,
@@ -107,8 +114,6 @@
       "regime_result": {
         "cells": 6,
         "all_cells_cash_weight": "1.000000",
-        "btc_alignment": "RANGE_DOMINANT",
-        "eth_alignment": "MIXED",
         "safe_no_action_is_valid": true
       }
     },
@@ -122,8 +127,7 @@
       "cyclonedx_sbom": true,
       "provenance": true,
       "release_gate": "pass_for_ci_build_evidence_only",
-      "production_approval": false,
-      "note": "The later 439601d1 parent changes only exact-SHA proof trigger/test wiring; this record does not claim the APK was rebuilt from that later SHA."
+      "production_approval": false
     },
     "integration_cycle": {
       "status": "stages_6_7_operational_stage_8_cloud_exact_sha_demo_verified_physical_windows_pending",
@@ -140,36 +144,28 @@
       "exact_sha_final_candidate_trigger_pr": 1018,
       "android_release_evidence_pr": 1023,
       "release_to_demo_exact_sha_trigger_pr": 1024,
+      "project_memory_reconciliation_pr": 1025,
       "paper_only": true,
       "live_trading_authority": false,
-      "remaining_acceptance": "A real physical Windows execution must still produce fixed-SHA final Proof Mission evidence for the eventual installation candidate. The separate prospective Paper gate #984 must independently accumulate its real 30-day/180-bar window. Production gate #43 remains deny-by-default."
+      "remaining_acceptance": "Mission Lock makes the persistent autonomous Paper trading loop the first delivery priority. Physical Windows exact-SHA proof remains a supporting acceptance gate. The prospective Paper gate #984 must independently accumulate its real 30-day/180-bar window. Production gate #43 remains deny-by-default."
     },
     "multitimeframe_strategy_runtime": {
-      "status": "operational_and_fail_closed",
-      "symbols": [
-        "BTCUSDT",
-        "ETHUSDT"
-      ],
-      "timeframes": [
-        "minute15",
-        "hour1",
-        "hour4"
-      ],
-      "families": [
-        "momentum",
-        "trend_breakout",
-        "mean_reversion"
-      ],
+      "status": "operational_components_persistent_autonomous_portfolio_loop_not_yet_claimed_complete",
+      "symbols": ["BTCUSDT", "ETHUSDT"],
+      "timeframes": ["minute15", "hour1", "hour4"],
+      "families": ["momentum", "trend_breakout", "mean_reversion"],
       "comparison_surface": "2 symbols x 3 timeframes x 3 strategy families = 18 isolated comparison lanes",
       "immutable_archive_artifact_id": 8867026863,
       "immutable_archive_sha256": "5f1173467c2296201940c3b7786b7cc3e5442244e07289769ab4867ace41d668",
+      "persistent_autonomous_closed_candle_loop_complete": false,
+      "continuous_strategy_factory_required": true,
       "paper_only": true,
       "live_trading_authority": false,
       "automatic_strategy_promotion": false,
       "deterministic_risk_final_authority": true
     },
     "strategy_discovery": {
-      "status": "integrated_research_only",
+      "status": "integrated_research_only_continuous_discovery_required_by_mission_lock",
       "discovery_pr": 1013,
       "archive_binding_pr": 1014,
       "scope": "BTCUSDT/ETHUSDT x minute15/hour1/hour4 x momentum/trend_breakout/mean_reversion",
@@ -203,7 +199,7 @@
     },
     "final_proof_candidate": {
       "status": "cloud_and_demo_exact_sha_evidence_verified_physical_windows_execution_pending",
-      "observed_parent_sha": "439601d1dc88caf89391849d37dd3946dc5b71f6",
+      "observed_parent_sha": "7820c7cb2ae79ccec5e4380bb9fd44430e7dd7f2",
       "regime_cycle_required": true,
       "windows_physical_execution_required": true,
       "historical_windows_proof_reusable_for_new_sha": false,
@@ -212,6 +208,10 @@
     }
   },
   "open_gates": {
+    "primary_delivery": {
+      "state": "open",
+      "reason": "persistent autonomous multi-pair x multi-timeframe x multi-strategy Paper portfolio loop must be completed before support work can dominate"
+    },
     "prospective_paper": {
       "issue": 984,
       "state": "open",
