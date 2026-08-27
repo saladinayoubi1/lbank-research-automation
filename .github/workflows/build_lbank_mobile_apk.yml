@@ -36,17 +36,17 @@ jobs:
       - uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d
         with:
           gradle-version: "8.10.2"
-      - name: Run mobile final Mission Control regression tests
+      - name: Run mobile product and redesign regression tests
         run: |
           python -m pip install -r requirements-dev.lock
           python -m pytest -q tests/test_mobile_delivery_surface.py
       - name: Build installable release APK
         working-directory: android/lbank-mobile
         run: gradle --no-daemon --stacktrace :app:assembleRelease
-      - name: Validate and package NEXUS Android final Mission Control APK
+      - name: Validate and package NEXUS Android 4 APK
         env:
           APK_SOURCE: android/lbank-mobile/app/build/outputs/apk/release/app-release.apk
-          APK_FINAL: android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_3_2_0.apk
+          APK_FINAL: android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_0_0.apk
         run: |
           set -euo pipefail
           test -s "$APK_SOURCE"
@@ -55,12 +55,21 @@ jobs:
           test "$size" -ge 10000
           unzip -t "$APK_FINAL"
           unzip -l "$APK_FINAL" | tee /tmp/apk-contents.txt
-          for asset in AndroidManifest.xml classes.dex assets/index.html assets/delivery.css assets/mobile-core.js assets/mobile-runtime.js assets/mobile-canonical-client.js assets/data.json; do
+          for asset in AndroidManifest.xml classes.dex assets/index.html assets/delivery.css assets/mobile-redesign.css assets/mobile-core.js assets/mobile-runtime.js assets/mobile-redesign.js assets/mobile-canonical-client.js assets/data.json; do
             grep -q "$asset" /tmp/apk-contents.txt
           done
-          unzip -p "$APK_FINAL" assets/index.html | grep -q "اتاق هوش مصنوعی"
-          unzip -p "$APK_FINAL" assets/index.html | grep -q "ترید دمو"
-          unzip -p "$APK_FINAL" assets/index.html | grep -q "ترید اصلی قفل است"
+          unzip -p "$APK_FINAL" assets/index.html > /tmp/mobile-index.html
+          grep -q 'data-nexus-mobile="4"' /tmp/mobile-index.html
+          grep -q "همه‌چیز مهم، در یک نگاه" /tmp/mobile-index.html
+          grep -q "Paper Portfolio" /tmp/mobile-index.html
+          grep -q "NEXUS AI" /tmp/mobile-index.html
+          grep -q "ترید اصلی قفل است" /tmp/mobile-index.html
+          test "$(grep -c 'class="bottom-nav v4-nav"' /tmp/mobile-index.html)" -eq 1
+          test "$(grep -o 'data-go="home"\|data-go="paper"\|data-go="mission"\|data-go="ai"\|data-go="more"' /tmp/mobile-index.html | wc -l)" -ge 5
+          unzip -p "$APK_FINAL" assets/mobile-redesign.js > /tmp/mobile-redesign.js
+          for marker in "chartSvg" "systemPulseScore" "history.pushState" "popstate" "NexusMobileBack"; do
+            grep -q "$marker" /tmp/mobile-redesign.js
+          done
           unzip -p "$APK_FINAL" assets/mobile-canonical-client.js > /tmp/mobile-canonical-client.js
           for marker in \
             "CANONICAL BACKEND" \
@@ -94,31 +103,34 @@ jobs:
           fi
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK_FINAL" | tee /tmp/apksigner.txt
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK_FINAL" | tee /tmp/aapt-badging.txt
-          grep -q "package: name='com.saladinayoubi.lbankmobile' versionCode='7' versionName='3.2.0'" /tmp/aapt-badging.txt
+          grep -q "package: name='com.saladinayoubi.lbankmobile' versionCode='8' versionName='4.0.0'" /tmp/aapt-badging.txt
           grep -q "launchable-activity:" /tmp/aapt-badging.txt
           sha256sum "$APK_FINAL" > "${APK_FINAL}.sha256"
           digest=$(cut -d' ' -f1 "${APK_FINAL}.sha256")
           size_kb=$(awk "BEGIN {printf \"%.1f\", $size/1024}")
           {
-            echo "## NEXUS Personal Pro Android 3.2.0"
+            echo "## NEXUS Personal Pro Android 4.0.0"
             echo ""
             echo "- Release APK build: successful"
+            echo "- Mobile-first cockpit contract: verified"
+            echo "- Market chart + system pulse + portfolio surface: verified"
+            echo "- Android back navigation history contract: verified"
             echo "- APK signature verification: successful (repository release build uses configured debug signing; not a store-signing claim)"
             echo "- Package: \`com.saladinayoubi.lbankmobile\`"
-            echo "- Version: \`3.2.0 (7)\`"
-            echo "- File: \`NEXUS_PERSONAL_PRO_3_2_0.apk\`"
+            echo "- Version: \`4.0.0 (8)\`"
+            echo "- File: \`NEXUS_PERSONAL_PRO_4_0_0.apk\`"
             echo "- Size: ${size} bytes (${size_kb} KB)"
             echo "- SHA-256: \`${digest}\`"
-            echo "- Mission: real /api/product/mission/full task/worker/resource/strategy/CI/owner evidence when approved HTTPS Gateway is available; truthful MISSION UNSYNCED otherwise"
+            echo "- Mission: real /api/product/mission/full evidence when approved HTTPS Gateway is available; truthful MISSION UNSYNCED otherwise"
             echo "- Paper/Research: canonical Python backend first via bounded HTTPS bridge; explicit local deterministic Paper fallback when unavailable"
             echo "- Live: locked; no exchange order/private credential/withdrawal/signing path"
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: NEXUS_PERSONAL_PRO_3_2_0_APK
+          name: NEXUS_PERSONAL_PRO_4_0_0_APK
           path: |
-            android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_3_2_0.apk
-            android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_3_2_0.apk.sha256
+            android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_0_0.apk
+            android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_0_0.apk.sha256
           if-no-files-found: error
           retention-days: 30
           compression-level: 0
