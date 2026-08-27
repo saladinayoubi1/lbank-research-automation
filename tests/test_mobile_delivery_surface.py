@@ -38,7 +38,6 @@ def test_android_v4_is_a_mobile_first_cockpit_not_the_old_long_panel_page() -> N
     assert 'id="portfolioArc"' in html
     assert 'id="screen-more"' in html
     assert 'class="bottom-nav v4-nav"' in html
-    # Five primary mobile destinations only; specialist surfaces live behind More.
     primary_nav = html.split('<nav class="bottom-nav v4-nav"', 1)[1].split("</nav>", 1)[0]
     for destination in ("home", "paper", "mission", "ai", "more"):
         assert f'data-go="{destination}"' in primary_nav
@@ -209,3 +208,22 @@ def test_mobile_version_and_ci_package_android_v4_build() -> None:
     ):
         assert marker in workflow
     assert "push:" in workflow and "branches: [main]" in workflow
+
+
+def test_final_android_release_apk_is_bound_to_fail_closed_nonproduction_evidence() -> None:
+    workflow = WORKFLOW.read_text(encoding="utf-8")
+    for marker in (
+        "scripts/build_release_evidence.py",
+        "scripts/release_gate.py",
+        "release-evidence/android-v4",
+        "NEXUS_PERSONAL_PRO_4_0_0_RELEASE_EVIDENCE",
+        "github-actions/build-nexus-mobile-apk/release-v4",
+        "--expected-source-commit '${{ github.sha }}'",
+        "--allow-unsigned",
+        "production_approval",
+        "ci-build-evidence",
+    ):
+        assert marker in workflow
+    assert workflow.index("Build installable release APK") < workflow.index("Build unsigned final APK release evidence")
+    assert workflow.index("Build unsigned final APK release evidence") < workflow.index("Fail-closed verify final APK release evidence")
+    assert workflow.index("Fail-closed verify final APK release evidence") < workflow.index("NEXUS_PERSONAL_PRO_4_0_0_RELEASE_EVIDENCE")
