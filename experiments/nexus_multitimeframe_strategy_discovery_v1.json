@@ -1,0 +1,68 @@
+{
+  "schema_version": "nexus.multitimeframe-strategy-discovery-manifest.v1",
+  "experiment_id": "nexus-bybit-btc-eth-15m-1h-4h-3family-discovery-v1",
+  "dataset": {
+    "dataset_root": "build/bybit_dataset",
+    "archive_sha256": "5f1173467c2296201940c3b7786b7cc3e5442244e07289769ab4867ace41d668"
+  },
+  "symbols": ["BTCUSDT", "ETHUSDT"],
+  "timeframes": ["minute15", "hour1", "hour4"],
+  "families": ["momentum", "trend_breakout", "mean_reversion"],
+  "train_fraction": 0.7,
+  "execution": {
+    "conservative": {"fee_bps": 10.0, "slippage_bps": 5.0},
+    "stress": {"fee_bps": 25.0, "slippage_bps": 15.0}
+  },
+  "gates": {
+    "training": {
+      "minimum_positive_ratio": 0.5,
+      "minimum_median_return": -0.02,
+      "minimum_worst_return": -0.08,
+      "maximum_drawdown": 0.30,
+      "minimum_median_sharpe": -0.50,
+      "minimum_sharpe": -1.00,
+      "minimum_fill_count": 2
+    },
+    "locked": {
+      "minimum_positive_ratio": 1.0,
+      "minimum_median_return": 0.0,
+      "minimum_worst_return": -0.02,
+      "maximum_drawdown": 0.20,
+      "minimum_median_sharpe": -0.25,
+      "minimum_sharpe": -0.50,
+      "minimum_fill_count": 2
+    }
+  },
+  "variants": {
+    "momentum": [
+      {"lookback": 6, "entry_threshold": 0.0},
+      {"lookback": 8, "entry_threshold": 0.001},
+      {"lookback": 12, "entry_threshold": 0.0},
+      {"lookback": 12, "entry_threshold": 0.002},
+      {"lookback": 20, "entry_threshold": 0.002},
+      {"lookback": 30, "entry_threshold": 0.005}
+    ],
+    "trend_breakout": [
+      {"entry_lookback": 12, "exit_lookback": 6},
+      {"entry_lookback": 20, "exit_lookback": 10},
+      {"entry_lookback": 30, "exit_lookback": 12},
+      {"entry_lookback": 40, "exit_lookback": 20},
+      {"entry_lookback": 60, "exit_lookback": 30}
+    ],
+    "mean_reversion": [
+      {"lookback": 12, "entry_z": -1.0, "exit_z": 0.0},
+      {"lookback": 12, "entry_z": -1.5, "exit_z": 0.0},
+      {"lookback": 20, "entry_z": -1.0, "exit_z": 0.0},
+      {"lookback": 20, "entry_z": -1.5, "exit_z": 0.0},
+      {"lookback": 30, "entry_z": -1.5, "exit_z": 0.0},
+      {"lookback": 40, "entry_z": -2.0, "exit_z": 0.0}
+    ]
+  },
+  "authority": {
+    "research_only": true,
+    "paper_only": true,
+    "live_trading_authority": false,
+    "private_credentials_allowed": false,
+    "automatic_strategy_promotion": false
+  }
+}
