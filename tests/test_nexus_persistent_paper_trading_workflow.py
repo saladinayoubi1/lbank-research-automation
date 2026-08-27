@@ -46,14 +46,20 @@ def test_persistent_loop_permissions_are_read_only_and_authority_is_fail_closed(
         'assert snapshot["automatic_strategy_promotion"] is False',
         'assert snapshot["deterministic_risk_final_authority"] is True',
         'assert snapshot["trading_engine_complete"] is False',
+        'assert isinstance(snapshot["regime_selected_rebalance_operational"], bool)',
+        'assert isinstance(snapshot["performance_health_feedback_operational"], bool)',
+        'assert isinstance(snapshot["strategy_discovery_health_trigger_requested"], bool)',
     ):
         assert marker in text
 
 
-def test_persistent_loop_contract_suite_covers_selection_risk_paper_and_discovery() -> None:
+def test_persistent_loop_contract_suite_covers_full_lifecycle_risk_health_and_discovery() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     for test_path in (
         "tests/test_nexus_persistent_paper_trading_loop.py",
+        "tests/test_nexus_regime_selected_position_rebalance.py",
+        "tests/test_nexus_regime_selected_exposure_increase.py",
+        "tests/test_nexus_strategy_discovery_health_trigger.py",
         "tests/test_nexus_demo_strategy_matrix.py",
         "tests/test_nexus_demo_paper_position_maintenance.py",
         "tests/test_nexus_demo_paper_lifecycle_persistence.py",
@@ -66,3 +72,13 @@ def test_persistent_loop_contract_suite_covers_selection_risk_paper_and_discover
         "tests/test_nexus_strategy_discovery_controller.py",
     ):
         assert test_path in text
+
+
+def test_lifecycle_implementation_paths_retrigger_the_persistent_runtime() -> None:
+    text = WORKFLOW.read_text(encoding="utf-8")
+    for path in (
+        '"nexus_regime_selected_position_rebalance.py"',
+        '"nexus_regime_selected_exposure_increase.py"',
+        '"nexus_strategy_discovery_health_trigger.py"',
+    ):
+        assert text.count(path) >= 2
