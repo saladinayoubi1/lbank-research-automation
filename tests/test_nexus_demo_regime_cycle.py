@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+import nexus_demo_regime_cycle as regime_cycle
 from nexus_demo_regime_cycle import (
     CELL_SCHEMA,
     SCHEMA,
@@ -134,6 +135,53 @@ def test_synchronized_context_uses_closed_15m_1h_4h_windows_only() -> None:
     assert datasets["minute15"]["rows"][-1]["open_time_ms"] + 900_000 == AS_OF_MS
     assert datasets["hour1"]["rows"][-1]["open_time_ms"] + 3_600_000 == AS_OF_MS
     assert datasets["hour4"]["rows"][-1]["open_time_ms"] + 14_400_000 == AS_OF_MS
+
+
+def test_ready_proposal_must_match_synchronized_context_dataset(monkeypatch, tmp_path: Path) -> None:
+    class DummyResearch:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def run_research(self, **_kwargs):
+            return {"qualification": {"strategy_version": "momentum-product-v1"}}
+
+    monkeypatch.setattr(regime_cycle, "_runtime_for", lambda **_kwargs: object())
+    monkeypatch.setattr(regime_cycle, "ProductResearchRuntime", DummyResearch)
+    monkeypatch.setattr(
+        regime_cycle,
+        "prepare_regime_paper_lane",
+        lambda _research: {
+            "status": "ready",
+            "preparation_digest": "c" * 64,
+            "account_id": "nexus-demo-regime-btc-minute15-momentum",
+            "lane_ready": True,
+            "execution_performed": False,
+            "dataset_binding_sha256": "b" * 64,
+            "strategy_version": "momentum-product-v1",
+            "lane": {"family": "momentum"},
+        },
+    )
+    health_rows = {
+        "momentum": {
+            "strategy_version": "momentum-product-v1",
+            "health_state": "HEALTHY",
+            "record_digest": "d" * 64,
+            "health_digest": "e" * 64,
+        }
+    }
+
+    with pytest.raises(DemoRegimeCycleError, match="not bound to synchronized"):
+        regime_cycle._prepare_candidates_and_lanes(
+            state_root=tmp_path,
+            source_sha=SOURCE_SHA,
+            symbol="BTCUSDT",
+            timeframe="minute15",
+            as_of_ms=AS_OF_MS,
+            history_limit=60,
+            fetcher=_archive_fetcher,
+            health_rows=health_rows,
+            expected_dataset_binding="a" * 64,
+        )
 
 
 def test_restart_reconciliation_appends_paper_events_exactly_once(tmp_path: Path) -> None:

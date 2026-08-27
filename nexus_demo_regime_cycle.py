@@ -401,7 +401,10 @@ def _prepare_candidates_and_lanes(
     history_limit: int,
     fetcher: ArchiveFetcher,
     health_rows: Mapping[str, Mapping[str, Any]],
+    expected_dataset_binding: str,
 ) -> tuple[list[dict[str, Any]], dict[str, Mapping[str, Any]], list[dict[str, Any]]]:
+    if not isinstance(expected_dataset_binding, str) or not _SHA256_RE.fullmatch(expected_dataset_binding):
+        raise DemoRegimeCycleError("synchronized context dataset binding is invalid")
     candidates: list[dict[str, Any]] = []
     lanes: dict[str, Mapping[str, Any]] = {}
     preparations: list[dict[str, Any]] = []
@@ -428,9 +431,14 @@ def _prepare_candidates_and_lanes(
             "account_id": preparation["account_id"],
             "lane_ready": preparation["lane_ready"],
             "execution_performed": preparation["execution_performed"],
+            "dataset_binding_sha256": preparation.get("dataset_binding_sha256"),
         })
         if preparation["status"] != "ready":
             continue
+        if preparation.get("dataset_binding_sha256") != expected_dataset_binding:
+            raise DemoRegimeCycleError(
+                "fresh proposal dataset is not bound to synchronized cross-timeframe context"
+            )
         if (
             health.get("strategy_version") != preparation.get("strategy_version")
             or research_result.get("qualification", {}).get("strategy_version")
@@ -474,7 +482,7 @@ def run_demo_regime_cycle(
 
     for symbol in manifest["symbols"]:
         as_of_ms = _common_as_of(matrix_state, symbol)
-        context, _datasets = build_synchronized_context(
+        context, datasets = build_synchronized_context(
             fetcher=archive_fetcher,
             symbol=symbol,
             as_of_ms=as_of_ms,
@@ -489,6 +497,12 @@ def run_demo_regime_cycle(
                 or matrix_cell.get("source_sha") != source_sha
             ):
                 raise DemoRegimeCycleError("regime cycle requires a freshly verified matrix cell")
+            synchronized_dataset = datasets.get(timeframe)
+            if not isinstance(synchronized_dataset, Mapping):
+                raise DemoRegimeCycleError("synchronized context dataset is missing for matrix timeframe")
+            expected_dataset_binding = synchronized_dataset.get("binding_sha256")
+            if not isinstance(expected_dataset_binding, str) or not _SHA256_RE.fullmatch(expected_dataset_binding):
+                raise DemoRegimeCycleError("synchronized context dataset binding is invalid")
             reconcile_persisted_runtime_evidence(
                 state_root=root, symbol=symbol, timeframe=timeframe, as_of_ms=as_of_ms
             )
@@ -505,6 +519,7 @@ def run_demo_regime_cycle(
                 history_limit=manifest["history_limit"],
                 fetcher=archive_fetcher,
                 health_rows=health_rows,
+                expected_dataset_binding=expected_dataset_binding,
             )
             selection = select_strategy_mix(
                 context=context,
@@ -549,6 +564,7 @@ def run_demo_regime_cycle(
                 "source_sha": source_sha,
                 "as_of_ms": as_of_ms,
                 "context_sha256": context["context_sha256"],
+                "context_dataset_binding_sha256": expected_dataset_binding,
                 "alignment": context["alignment"],
                 "performance_projection_digest": performance["projection_digest"],
                 "candidate_count": len(candidates),
