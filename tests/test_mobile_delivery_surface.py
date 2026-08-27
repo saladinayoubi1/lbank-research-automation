@@ -12,16 +12,48 @@ WORKFLOW = Path(".github/workflows/build_lbank_mobile_apk.yml")
 def test_mobile_entrypoint_keeps_full_nexus_product_surface() -> None:
     html = (ASSETS / "index.html").read_text(encoding="utf-8")
     assert 'href="delivery.css"' in html
+    assert 'href="mobile-redesign.css"' in html
     assert 'src="mobile-core.js"' in html
     assert 'src="mobile-runtime.js"' in html
+    assert 'src="mobile-redesign.js"' in html
     assert 'src="app.js"' not in html
+    assert "mobile-polish" not in html
     for surface in (
-        "ترید دمو", "اتاق هوش مصنوعی", "مدیریت عملیات", "آزمایشگاه پژوهش",
-        "دفتر رویداد و بازپخش", "ترید اصلی قفل است",
+        "Paper Portfolio", "NEXUS AI", "Operations", "Strategy Lab",
+        "Audit Ledger", "ترید اصلی قفل است",
     ):
         assert surface in html
     assert "Private API Keys" in html
     assert "این صفحه عمداً هیچ دکمه فعال‌سازی یا ورودی credential ندارد" in html
+
+
+def test_android_v4_is_a_mobile_first_cockpit_not_the_old_long_panel_page() -> None:
+    html = (ASSETS / "index.html").read_text(encoding="utf-8")
+    css = (ASSETS / "mobile-redesign.css").read_text(encoding="utf-8")
+    js = (ASSETS / "mobile-redesign.js").read_text(encoding="utf-8")
+    assert 'data-nexus-mobile="4"' in html
+    assert "همه‌چیز مهم، در یک نگاه" in html
+    assert 'id="proChart"' in html
+    assert 'id="systemPulse"' in html
+    assert 'id="portfolioArc"' in html
+    assert 'id="screen-more"' in html
+    assert 'class="bottom-nav v4-nav"' in html
+    # Five primary mobile destinations only; specialist surfaces live behind More.
+    primary_nav = html.split('<nav class="bottom-nav v4-nav"', 1)[1].split("</nav>", 1)[0]
+    for destination in ("home", "paper", "mission", "ai", "more"):
+        assert f'data-go="{destination}"' in primary_nav
+    for secondary in ("lab", "audit", "live"):
+        assert f'data-go="{secondary}"' not in primary_nav
+    for token in (
+        ".market-cockpit", ".kpi-strip", ".pulse-grid", ".action-deck",
+        ".portfolio-balance", ".v4-chat", ".more-grid", ".v4-nav",
+    ):
+        assert token in css
+    for token in (
+        "chartSvg", "renderPulse", "renderPortfolioArc", "history.pushState",
+        "popstate", "NexusMobileBack", "data-ai-prompt",
+    ):
+        assert token in js
 
 
 def test_mobile_delivery_css_uses_explicit_readable_font_stack() -> None:
@@ -94,6 +126,7 @@ def test_android_mission_control_uses_real_backend_contract_and_never_fabricates
 
 def test_android_product_bridge_is_https_origin_bounded_and_fail_closed() -> None:
     activity = MAIN_ACTIVITY.read_text(encoding="utf-8")
+    manifest = Path("android/lbank-mobile/app/src/main/AndroidManifest.xml").read_text(encoding="utf-8")
     assert '"https".equalsIgnoreCase(base.getProtocol())' in activity
     assert "Gateway origin escape rejected" in activity
     assert "Absolute product URLs are forbidden" in activity
@@ -105,6 +138,7 @@ def test_android_product_bridge_is_https_origin_bounded_and_fail_closed() -> Non
     assert "AndroidKeyStore" in activity
     assert "AES/GCM/NoPadding" in activity
     assert "gateway_token" in activity
+    assert 'android:usesCleartextTraffic="false"' in manifest
 
 
 def test_ai_room_stays_policy_gated_and_cannot_activate_live_authority() -> None:
@@ -143,11 +177,12 @@ def test_mobile_metadata_discloses_real_mission_control_backend_and_local_fallba
     assert project["deterministic_risk_final_authority"] is True
     assert project["live_trading_authority"] is False
     assert project["profitability_claim"] is False
-    assert project["product_version"] == "3.2.0"
+    assert project["product_version"] == "4.0.0"
     assert project["canonical_windows_main_sha"] == "366fe9b2b8e3788a3cb510af9a040fc091a2632d"
     assert project["backend_contracts"]["mission_control"] == "product_mission_runtime.py / nexus.product-mission-control.v1"
     assert project["backend_contracts"]["strategy_center"] == "product_mission_runtime.py / nexus.product-strategy-center.v1"
-    assert project["mobile_delivery"]["mode"] == "canonical_backend_first_with_explicit_local_fallback"
+    assert project["mobile_delivery"]["mode"] == "mobile_first_cockpit_canonical_backend_first_with_explicit_local_fallback"
+    assert "mobile-first cockpit" in project["mobile_delivery"]["ux"]
     assert "/api/product/*" in project["mobile_delivery"]["canonical_product"]
     assert "LOCAL FALLBACK" in project["mobile_delivery"]["local_fallback"]
     assert "/api/product/mission/full" in project["mobile_delivery"]["mission_control"]
@@ -156,18 +191,21 @@ def test_mobile_metadata_discloses_real_mission_control_backend_and_local_fallba
     assert "locked" in project["mobile_delivery"]["live"]
 
 
-def test_mobile_version_and_ci_package_android_final_mission_control_build() -> None:
+def test_mobile_version_and_ci_package_android_v4_build() -> None:
     gradle = BUILD_GRADLE.read_text(encoding="utf-8")
     workflow = WORKFLOW.read_text(encoding="utf-8")
-    assert "versionCode 7" in gradle
-    assert 'versionName "3.2.0"' in gradle
-    assert "NEXUS_PERSONAL_PRO_3_2_0.apk" in workflow
-    assert "versionCode='7' versionName='3.2.0'" in workflow
+    assert "versionCode 8" in gradle
+    assert 'versionName "4.0.0"' in gradle
+    assert "NEXUS_PERSONAL_PRO_4_0_0.apk" in workflow
+    assert "versionCode='8' versionName='4.0.0'" in workflow
+    assert "assets/mobile-redesign.css" in workflow
+    assert "assets/mobile-redesign.js" in workflow
     assert "assets/mobile-canonical-client.js" in workflow
     for marker in (
         "CANONICAL BACKEND", "LOCAL FALLBACK", "/api/product/research/run",
         "/api/product/paper/order", "/api/product/mission/full", "MISSION UNSYNCED",
         "OWNER ACTION", "LEADING STRATEGY", "CI / EXACT HEAD", "NexusProductResult",
+        "history.pushState", "systemPulseScore",
     ):
         assert marker in workflow
     assert "push:" in workflow and "branches: [main]" in workflow

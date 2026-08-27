@@ -13,8 +13,8 @@ android {
         applicationId "com.saladinayoubi.lbankmobile"
         minSdk 23
         targetSdk 35
-        versionCode 7
-        versionName "3.2.0"
+        versionCode 8
+        versionName "4.0.0"
         buildConfigField "String", "NEXUS_GATEWAY_URL", "\"${escapedGatewayUrl}\""
     }
 

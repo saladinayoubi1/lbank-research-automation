@@ -1,11 +1,11 @@
 {
-  "generated_at_utc": "2026-08-18T10:40:00Z",
+  "generated_at_utc": "2026-08-27T13:55:00Z",
   "project": {
     "name": "NEXUS Personal Pro",
     "status": "complete",
     "phase": 6,
     "gates": "0-6",
-    "product_version": "3.2.0",
+    "product_version": "4.0.0",
     "mode": "research_backtest_paper",
     "canonical_source": "Bybit",
     "fallback_sources": ["Binance", "LBank"],
@@ -26,7 +26,8 @@
       "ci_health": "nexus.product-ci-health.v1"
     },
     "mobile_delivery": {
-      "mode": "canonical_backend_first_with_explicit_local_fallback",
+      "mode": "mobile_first_cockpit_canonical_backend_first_with_explicit_local_fallback",
+      "ux": "Android 4 uses a mobile-first cockpit with market chart, portfolio KPIs, system pulse, five-destination bottom navigation and secondary tools behind More; it does not render the desktop information hierarchy as a long mobile page",
       "canonical_product": "when the configured HTTPS Secure Gateway exposes /api/product/*, Android reads and mutates bounded Paper/Research/Risk/Recovery through the Python backend",
       "local_fallback": "when canonical backend is unavailable, the existing local deterministic Paper/Risk mirror remains available and is visibly labelled LOCAL FALLBACK",
       "public_market": "Bybit closed candles through bounded read-only native bridge",
