@@ -33,6 +33,15 @@ def test_persistent_loop_is_public_data_not_historical_archive_replay() -> None:
     assert 'assert snapshot["data_mode"] == "public_bybit_closed_candles"' in text
 
 
+def test_public_bybit_collector_changes_retrigger_and_are_contract_tested() -> None:
+    text = WORKFLOW.read_text(encoding="utf-8")
+    assert text.count('"bybit_public_klines.py"') >= 2
+    assert text.count('"tests/test_bybit_public_klines.py"') >= 2
+    assert "tests/test_bybit_public_klines.py" in text.split(
+        "Verify persistent Trading Engine contracts", 1
+    )[1]
+
+
 def test_persistent_loop_permissions_are_read_only_and_authority_is_fail_closed() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     permission_block = text.split("permissions:", 1)[1].split("concurrency:", 1)[0]
@@ -56,6 +65,7 @@ def test_persistent_loop_permissions_are_read_only_and_authority_is_fail_closed(
 def test_persistent_loop_contract_suite_covers_full_lifecycle_risk_health_and_discovery() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     for test_path in (
+        "tests/test_bybit_public_klines.py",
         "tests/test_nexus_persistent_paper_trading_loop.py",
         "tests/test_nexus_regime_selected_position_rebalance.py",
         "tests/test_nexus_regime_selected_exposure_increase.py",
@@ -77,6 +87,7 @@ def test_persistent_loop_contract_suite_covers_full_lifecycle_risk_health_and_di
 def test_lifecycle_implementation_paths_retrigger_the_persistent_runtime() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     for path in (
+        '"bybit_public_klines.py"',
         '"nexus_regime_selected_position_rebalance.py"',
         '"nexus_regime_selected_exposure_increase.py"',
         '"nexus_strategy_discovery_health_trigger.py"',
