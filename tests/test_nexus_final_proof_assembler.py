@@ -18,6 +18,18 @@ def _inputs(tmp_path: Path):
     return {
         "supervisor_ledger_path": _write(tmp_path / "supervisor.json", {"source_sha": SHA}),
         "mission_control_path": _write(tmp_path / "mission.json", {"paper_only": True}),
+        "regime_cycle_path": _write(
+            tmp_path / "regime-cycle.json",
+            {
+                "source_sha": SHA,
+                "paper_only": True,
+                "live_trading_authority": False,
+                "private_credentials_used": False,
+                "automatic_strategy_promotion": False,
+                "deterministic_risk_final_authority": True,
+                "frozen_prospective_hour4_lane_mutated": False,
+            },
+        ),
         "scheduler_snapshot_path": _write(tmp_path / "scheduler.json", {"source_sha": SHA}),
         "resource_utilization_path": _write(
             tmp_path / "resources.json", [{"resource": "windows_laptop", "source_sha": SHA}]
@@ -25,7 +37,9 @@ def _inputs(tmp_path: Path):
     }
 
 
-def test_assembler_binds_project_memory_and_delegates_verification(tmp_path: Path, monkeypatch) -> None:
+def test_assembler_binds_project_memory_regime_cycle_and_delegates_verification(
+    tmp_path: Path, monkeypatch
+) -> None:
     inputs = _inputs(tmp_path)
     state = tmp_path / "docs/project_memory/STATE.json"
     state.parent.mkdir(parents=True)
@@ -60,10 +74,11 @@ def test_assembler_binds_project_memory_and_delegates_verification(tmp_path: Pat
     projection = result["project_memory_projection"]
     assert projection["canonical_state_observed_main_sha"] == SHA
     assert len(projection["canonical_state_sha256"]) == 64
+    assert result["regime_cycle_snapshot"]["source_sha"] == SHA
     assert result["output"].endswith("proof.json")
 
 
-@pytest.mark.parametrize("target", ["supervisor", "scheduler", "resources"])
+@pytest.mark.parametrize("target", ["supervisor", "regime", "scheduler", "resources"])
 def test_assembler_rejects_cross_sha_inputs(tmp_path: Path, monkeypatch, target: str) -> None:
     inputs = _inputs(tmp_path)
     state = tmp_path / "docs/project_memory/STATE.json"
@@ -76,6 +91,7 @@ def test_assembler_rejects_cross_sha_inputs(tmp_path: Path, monkeypatch, target:
     )
     path_key = {
         "supervisor": "supervisor_ledger_path",
+        "regime": "regime_cycle_path",
         "scheduler": "scheduler_snapshot_path",
         "resources": "resource_utilization_path",
     }[target]
