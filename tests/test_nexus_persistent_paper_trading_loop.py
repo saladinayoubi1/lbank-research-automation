@@ -125,6 +125,7 @@ def test_stale_source_cell_waits_and_cannot_trade(monkeypatch, tmp_path: Path) -
     assert result["status"] == "WAITING_FOR_FRESH_CELLS"
     assert result["fresh_cell_count"] == 5
     assert result["regime_cycle_digest"] is None
+    assert result["remaining_core_gap"] == "WAITING_FOR_FRESH_CELLS"
     assert result["trading_engine_complete"] is False
     assert loop.verify_loop_snapshot(result)["decision"] == "pass"
 
@@ -168,10 +169,65 @@ def test_fresh_public_cycle_runs_risk_reducing_maintenance_regime_and_discovery(
     assert result["status"] == "PAPER_LOOP_ACTIVE"
     assert result["fresh_cell_count"] == 6
     assert result["regime_status"] == "VERIFIED"
-    assert result["strategy_research_required"] is True  # 100% cash requests more research.
+    assert result["strategy_research_required"] is True
     assert result["strategy_discovery_controller_verified"] is True
     assert result["regime_selected_rebalance_operational"] is False
     assert result["remaining_core_gap"] == "REGIME_SELECTED_POSITION_CLOSE_AND_RESIZE"
+    assert loop.verify_loop_snapshot(result)["decision"] == "pass"
+
+
+def test_full_rebalance_requests_health_driven_discovery_on_new_cash_boundary(
+    monkeypatch, tmp_path: Path
+) -> None:
+    _patch_common(monkeypatch, _matrix_state(fresh=6))
+    monkeypatch.setattr(
+        loop,
+        "run_position_maintenance",
+        lambda **_kwargs: {"maintenance_digest": "1" * 64, "exposure_increased": False},
+    )
+    monkeypatch.setattr(
+        loop,
+        "run_performance_refresh",
+        lambda **_kwargs: {
+            "refresh_digest": "2" * 64,
+            "cell_count": 6,
+            "rows": [
+                {"symbol": f"S{index}", "timeframe": "hour4", "status_counts": {"HEALTHY": 1}}
+                for index in range(6)
+            ],
+        },
+    )
+    monkeypatch.setattr(
+        loop,
+        "_regime_boundary",
+        lambda _state, _symbols: {"BTCUSDT": 1_728_000_000_000, "ETHUSDT": 1_728_000_000_000},
+    )
+    regime = _regime_snapshot()
+    regime["regime_selected_rebalance_operational"] = True
+    regime["regime_selected_exposure_increase_operational"] = True
+    unsigned = dict(regime)
+    unsigned.pop("cycle_digest")
+    regime["cycle_digest"] = regime_digest(unsigned)
+    monkeypatch.setattr(loop, "run_public_regime_cycle", lambda **_kwargs: deepcopy(regime))
+    monkeypatch.setattr(loop, "verify_cycle_snapshot", lambda _value: {"decision": "pass"})
+
+    result = loop.run_persistent_cycle(
+        repo_root=tmp_path,
+        state_root=tmp_path / "state",
+        source_sha=SOURCE_SHA,
+        run_id="125",
+        now_ms=1_728_000_000_000,
+        manifest_path=tmp_path / "manifest.json",
+        selector_policy_path=tmp_path / "policy.json",
+    )
+
+    assert result["regime_selected_rebalance_operational"] is True
+    assert result["regime_selected_exposure_increase_operational"] is True
+    assert result["performance_health_feedback_operational"] is True
+    assert result["strategy_research_required"] is True
+    assert result["strategy_discovery_health_trigger_requested"] is True
+    assert result["remaining_core_gap"] == "RUNTIME_EVIDENCE_AND_DISCOVERY_FEEDBACK_PROOF"
+    assert result["trading_engine_complete"] is False
     assert loop.verify_loop_snapshot(result)["decision"] == "pass"
 
 
@@ -192,15 +248,19 @@ def test_loop_verifier_rejects_authority_or_completion_fabrication() -> None:
         "regime_cycle_digest": None,
         "maintenance_digest": None,
         "performance_refresh_digest": None,
+        "performance_health_feedback_operational": False,
         "strategy_discovery_controller_verified": True,
         "strategy_discovery_next_action": "research",
         "strategy_discovery_ready_stage_count": 7,
         "strategy_research_required": False,
-        "strategy_discovery_rotation": "automatic_daily_bounded_rotation",
+        "strategy_discovery_health_trigger_requested": False,
+        "strategy_discovery_health_trigger_contract": "successful_paper_loop_new_4h_boundary_only",
+        "strategy_discovery_rotation": "automatic_daily_and_health_driven_bounded_rotation",
         "persistent_state_digest": "b" * 64,
         "comparison_position_lifecycle": "OPEN_HOLD_RISK_REDUCING_CLOSE",
         "regime_selected_rebalance_operational": False,
-        "remaining_core_gap": "REGIME_SELECTED_POSITION_CLOSE_AND_RESIZE",
+        "regime_selected_exposure_increase_operational": False,
+        "remaining_core_gap": "WAITING_FOR_FRESH_CELLS",
         "trading_engine_complete": False,
         "paper_only": True,
         "live_trading_authority": False,
