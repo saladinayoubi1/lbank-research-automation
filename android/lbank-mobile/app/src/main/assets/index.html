@@ -1,126 +1,202 @@
 <!doctype html>
-<html lang="fa" dir="rtl">
+<html lang="fa" dir="rtl" data-nexus-mobile="4">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#06111e">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#071019">
   <meta name="color-scheme" content="dark light">
   <title>NEXUS Personal Pro</title>
   <link rel="stylesheet" href="delivery.css">
-  <link rel="stylesheet" href="mobile-polish.css">
+  <link rel="stylesheet" href="mobile-redesign.css">
 </head>
 <body>
-<div class="app-shell">
-  <header class="topbar">
-    <div class="brand"><span class="brand-mark">N</span><div><b>NEXUS Personal Pro</b><small>Research · Risk · Paper · AI Ops</small></div></div>
-    <div class="top-actions"><span class="mode-chip">PAPER AUTHORITY</span><button id="theme" class="icon-btn" aria-label="تغییر پوسته">☀</button></div>
+<div class="app-shell v4-shell">
+  <header class="topbar v4-topbar">
+    <div class="brand">
+      <span class="brand-mark">N</span>
+      <div><b>NEXUS</b><small>PERSONAL PRO · PAPER COCKPIT</small></div>
+    </div>
+    <div class="top-actions">
+      <span class="authority-dot"><i></i>PAPER</span>
+      <button id="theme" class="icon-btn" type="button" aria-label="تغییر پوسته">☀</button>
+    </div>
   </header>
 
-  <main>
+  <main id="appMain">
     <section id="screen-home" class="screen active" data-screen="home">
-      <div class="hero">
-        <div><span class="eyebrow">NEXUS CONTROL CENTER</span><h1>مرکز عملیات پژوهش و Paper Trading</h1><p>داده عمومی بازار، تصمیم ریسک، اجرای دمو، AI Room، Mission Control و Audit در یک برنامه.</p></div>
-        <div class="hero-badges"><span id="marketBadge" class="status warn">MARKET CONNECTING</span><span class="status ok">LIVE LOCKED</span></div>
+      <div class="hero v4-hero">
+        <div class="hero-copy">
+          <span class="eyebrow">NEXUS CONTROL CENTER</span>
+          <h1>همه‌چیز مهم، در یک نگاه.</h1>
+          <p>وضعیت بازار، سرمایه Paper، ریسک، استراتژی و Mission بدون شلوغی پنل‌های دسکتاپ.</p>
+        </div>
+        <div class="hero-badges">
+          <span id="marketBadge" class="status warn">MARKET CONNECTING</span>
+          <span class="status ok">LIVE LOCKED</span>
+        </div>
       </div>
-      <div class="stat-grid">
-        <article><span>سرمایه دمو</span><b id="homeEquity">—</b><small>USDT</small></article>
-        <article><span>PnL تحقق‌یافته</span><b id="homePnl">—</b><small id="homePnlPct">—</small></article>
-        <article><span>پوزیشن‌های باز</span><b id="homePositions">۰</b><small>Paper only</small></article>
-        <article><span>Risk Engine</span><b id="homeRisk">READY</b><small>Deterministic final authority</small></article>
+
+      <section class="market-cockpit" aria-label="بازار">
+        <div class="market-toolbar">
+          <div class="segmented-fields">
+            <label><span>نماد</span><select id="symbol"></select></label>
+            <label><span>بازه</span><select id="timeframe"></select></label>
+          </div>
+          <button id="refreshMarket" class="round-action" type="button" aria-label="بروزرسانی بازار">↻</button>
+        </div>
+        <div id="marketHero" class="market-hero"><div class="loading">در حال دریافت کندل بسته…</div></div>
+        <div id="proChart" class="pro-chart" aria-label="نمودار قیمت"><div class="chart-empty">نمودار پس از دریافت بازار نمایش داده می‌شود</div></div>
+      </section>
+
+      <div class="kpi-strip" aria-label="خلاصه حساب">
+        <article class="kpi-primary"><span>Equity</span><b id="homeEquity">—</b><small>USDT · Paper</small></article>
+        <article><span>Realized</span><b id="homePnl">—</b><small id="homePnlPct">—</small></article>
+        <article><span>Positions</span><b id="homePositions">۰</b><small>open</small></article>
+        <article><span>Risk</span><b id="homeRisk">READY</b><small>final gate</small></article>
       </div>
-      <section class="panel">
-        <div class="section-head"><div><small>Operational Chain</small><h2>زنجیره واقعی NEXUS</h2></div><span class="pill">Phase 6</span></div>
-        <div class="pipeline">
-          <div><i>01</i><b>Research Lab</b><span>داده و بک‌تست</span></div><div><i>02</i><b>Strategy Lab</b><span>Factory</span></div><div><i>03</i><b>Decision</b><span>Signal trace</span></div><div class="strong"><i>04</i><b>Risk</b><span>Final authority</span></div><div><i>05</i><b>Paper Execution</b><span>Simulated fills</span></div><div><i>06</i><b>Audit</b><span>Replay chain</span></div>
+
+      <section class="pulse-card">
+        <div class="section-head clean"><div><small>SYSTEM PULSE</small><h2>وضعیت NEXUS</h2></div><span id="systemPulseScore" class="pulse-score">—</span></div>
+        <div id="systemPulse" class="pulse-grid">
+          <div data-pulse="market"><i></i><span>Market</span><b>SYNC</b></div>
+          <div data-pulse="risk"><i></i><span>Risk</span><b>READY</b></div>
+          <div data-pulse="paper"><i></i><span>Paper</span><b>OPEN</b></div>
+          <div data-pulse="audit"><i></i><span>Audit</span><b>CHECK</b></div>
         </div>
       </section>
-      <section class="panel">
-        <div class="section-head"><div><small>Current Market</small><h2>بازار عمومی Bybit</h2></div><button id="refreshMarket" class="ghost">بروزرسانی</button></div>
-        <div class="control-row"><label>نماد<select id="symbol"></select></label><label>تایم‌فریم<select id="timeframe"></select></label></div>
-        <div id="marketHero" class="market-hero"><div class="loading">در حال دریافت کندل بسته…</div></div>
+
+      <section class="action-deck" aria-label="میانبرها">
+        <button type="button" data-open-screen="paper"><span class="action-icon">↗</span><div><b>Paper Trade</b><small>Risk-gated demo</small></div><em>›</em></button>
+        <button type="button" data-open-screen="mission"><span class="action-icon">◎</span><div><b>Mission Control</b><small>Tasks · Agents · CI</small></div><em>›</em></button>
+        <button type="button" data-open-screen="lab"><span class="action-icon">⌁</span><div><b>Strategy Lab</b><small>Research · Regime</small></div><em>›</em></button>
       </section>
-      <section class="panel compact">
-        <div class="section-head"><div><small>Product Capability</small><h2>قابلیت‌های این نسخه</h2></div></div>
+
+      <section class="panel modules-panel">
+        <div class="section-head clean"><div><small>MODULES</small><h2>اجزای فعال</h2></div></div>
         <div id="capabilityGrid" class="cap-grid"></div>
       </section>
     </section>
 
     <section id="screen-paper" class="screen" data-screen="paper">
-      <div class="screen-title"><div><small>DEMO / PAPER EXECUTION</small><h1>ترید دمو</h1><p>اجرای محلی شبیه‌سازی‌شده با Risk Gate، fee/slippage و event ledger.</p></div><span class="status ok">NO REAL ORDERS</span></div>
-      <div class="paper-summary stat-grid">
-        <article><span>Cash</span><b id="paperCash">—</b><small>USDT</small></article><article><span>Equity</span><b id="paperEquity">—</b><small>mark-to-market</small></article><article><span>Realized PnL</span><b id="paperRealized">—</b><small>USDT</small></article><article><span>Events</span><b id="paperEvents">۰</b><small>hash chained</small></article>
+      <div class="screen-title v4-title">
+        <div><small>PAPER EXECUTION</small><h1>Paper Portfolio</h1><p>اجرای شبیه‌سازی‌شده؛ هر درخواست قبل از ثبت از Deterministic Risk عبور می‌کند.</p></div>
+        <span class="status ok">NO REAL ORDERS</span>
       </div>
-      <section class="panel">
-        <div class="section-head"><div><small>Order Ticket</small><h2>سفارش شبیه‌سازی‌شده</h2></div><div class="toggle-line"><span>Session</span><button id="sessionToggle" class="mini">OPEN</button><span>Kill switch</span><button id="killToggle" class="mini danger">OFF</button></div></div>
-        <div class="ticket-grid">
+
+      <div class="portfolio-balance">
+        <div class="balance-main"><span>Paper Equity</span><b><span id="paperEquity">—</span> <small>USDT</small></b><em id="portfolioMove">SIMULATED ACCOUNT</em></div>
+        <div id="portfolioArc" class="portfolio-arc" aria-hidden="true"><span></span></div>
+      </div>
+
+      <div class="paper-summary compact-kpis">
+        <article><span>Cash</span><b id="paperCash">—</b></article>
+        <article><span>Realized PnL</span><b id="paperRealized">—</b></article>
+        <article><span>Ledger events</span><b id="paperEvents">۰</b></article>
+      </div>
+
+      <section class="safety-bar">
+        <div><small>SESSION</small><button id="sessionToggle" class="mini" type="button">OPEN</button></div>
+        <div><small>KILL SWITCH</small><button id="killToggle" class="mini danger" type="button">OFF</button></div>
+        <div class="safety-final"><small>FINAL AUTHORITY</small><b>RISK ENGINE</b></div>
+      </section>
+
+      <section id="ticketPanel" class="panel ticket-panel">
+        <div class="section-head clean"><div><small>NEW PAPER ORDER</small><h2>Order Ticket</h2></div><span class="paper-chip">SIMULATED</span></div>
+        <div class="ticket-grid primary-ticket">
           <label>نماد<select id="paperSymbol"></select></label>
           <label>جهت<select id="paperSide"><option value="long">LONG</option><option value="short">SHORT</option></select></label>
-          <label>استراتژی<select id="paperStrategy"><option value="momentum">Momentum</option><option value="trend_breakout">Trend breakout</option><option value="mean_reversion">Mean reversion</option></select></label>
-          <label>تعداد<input id="paperQty" type="number" step="any" min="0" value="0.001"></label>
-          <label>قیمت مرجع<input id="paperPrice" type="number" step="any" readonly></label>
-          <label>Stop<input id="paperStop" type="number" step="any"></label>
-          <label>Target<input id="paperTarget" type="number" step="any"></label>
-          <label>Fee %<input id="paperFee" type="number" step="0.001" min="0" max="1" value="0.06"></label>
-          <label>Slippage bps<input id="paperSlip" type="number" step="0.1" min="0" max="100" value="2"></label>
+          <label>استراتژی<select id="paperStrategy"><option value="momentum">Momentum</option><option value="trend_breakout">Trend Breakout</option><option value="mean_reversion">Mean Reversion</option></select></label>
+          <label>تعداد<input id="paperQty" type="number" inputmode="decimal" step="any" min="0" value="0.001"></label>
+          <label>قیمت مرجع<input id="paperPrice" type="number" inputmode="decimal" step="any" readonly></label>
+          <label>Stop<input id="paperStop" type="number" inputmode="decimal" step="any"></label>
+          <label>Target<input id="paperTarget" type="number" inputmode="decimal" step="any"></label>
         </div>
+        <details class="advanced-ticket">
+          <summary>تنظیمات هزینه و Slippage</summary>
+          <div class="ticket-grid advanced-grid">
+            <label>Fee %<input id="paperFee" type="number" inputmode="decimal" step="0.001" min="0" max="1" value="0.06"></label>
+            <label>Slippage bps<input id="paperSlip" type="number" inputmode="decimal" step="0.1" min="0" max="100" value="2"></label>
+          </div>
+        </details>
         <div id="riskPreview" class="risk-preview neutral"><b>Risk preview</b><span>برای ارزیابی، قیمت بازار را دریافت کن.</span></div>
-        <div class="action-row"><button id="previewRisk" class="ghost">ارزیابی ریسک</button><button id="executePaper" class="primary">OPEN PAPER POSITION</button></div>
+        <div class="action-row sticky-actions"><button id="previewRisk" class="ghost" type="button">CHECK RISK</button><button id="executePaper" class="primary" type="button">OPEN PAPER</button></div>
       </section>
-      <section class="panel"><div class="section-head"><div><small>Open Positions</small><h2>پوزیشن‌ها</h2></div></div><div id="positions" class="cards"></div></section>
-      <section class="panel"><div class="section-head"><div><small>Risk Trace</small><h2>آخرین تصمیم Risk</h2></div></div><div id="riskTrace" class="trace"></div></section>
-    </section>
 
-    <section id="screen-ai" class="screen" data-screen="ai">
-      <div class="screen-title"><div><small>AI ROOM · AUTHORITY BOUNDED</small><h1>اتاق هوش مصنوعی</h1><p>Observe / Propose / Paper-stage / Workflow. هیچ AI اجازه عبور از Risk را ندارد.</p></div><span id="aiMode" class="status">LOCAL OPS</span></div>
-      <section class="panel ai-panel">
-        <div id="aiMessages" class="messages"></div>
-        <div class="composer"><textarea id="aiInput" rows="3" placeholder="مثلاً: وضعیت سیستم را گزارش بده؛ یا برای BTC یک پیشنهاد Paper بده"></textarea><button id="aiSend" class="primary">ارسال</button></div>
-      </section>
-      <section class="panel"><div class="section-head"><div><small>Authority Model</small><h2>سطوح اختیار</h2></div></div><div class="authority-grid"><div><b>L0</b><span>Observe</span></div><div><b>L1</b><span>Propose</span></div><div><b>L2</b><span>Paper proposal</span></div><div><b>L3</b><span>Bounded workflow</span></div><div class="locked"><b>L4 🔒</b><span>Owner required</span></div></div><p class="note">پیام‌های مربوط به معامله واقعی، برداشت، کلید خصوصی، امضا یا production به L4 هدایت و بدون اجرا متوقف می‌شوند.</p></section>
+      <section class="panel"><div class="section-head clean"><div><small>OPEN POSITIONS</small><h2>پوزیشن‌ها</h2></div></div><div id="positions" class="cards position-cards"></div></section>
+      <details class="panel trace-panel"><summary>آخرین تصمیم Risk</summary><div id="riskTrace" class="trace"></div></details>
     </section>
 
     <section id="screen-mission" class="screen" data-screen="mission">
-      <div class="screen-title"><div><small>MISSION CONTROL</small><h1>مدیریت عملیات</h1><p>وضعیت محلی برنامه و در صورت اتصال، projection واقعی Mission Control از Secure Gateway.</p></div><button id="syncMission" class="ghost">Sync Gateway</button></div>
-      <div id="missionSummary" class="mission-grid"></div>
-      <section class="panel"><div class="section-head"><div><small>Agents / Runners</small><h2>عامل‌ها و اجراگرها</h2></div><span id="gatewayState" class="pill">LOCAL</span></div><div id="agents" class="cards"></div></section>
-      <section class="panel"><div class="section-head"><div><small>Circuits & Limits</small><h2>مدارهای ایمنی</h2></div></div><div id="circuits" class="cards"></div></section>
-      <section class="panel"><div class="section-head"><div><small>Secure Gateway</small><h2>اتصال اختیاری Backend</h2></div><span id="tokenState" class="pill">NO TOKEN</span></div><p class="note">فقط توکن Secure Gateway؛ کلید صرافی یا credential معاملاتی پذیرفته نمی‌شود.</p><div class="control-row"><label>Gateway bearer token<input id="gatewayToken" type="password" autocomplete="off" placeholder="حداقل ۳۲ کاراکتر برای remote mode"></label></div><div class="action-row" style="margin-top:9px"><button id="deleteGatewayToken" class="mini danger">حذف توکن</button><button id="saveGatewayToken" class="ghost">ذخیره امن</button></div></section>
+      <div class="screen-title v4-title"><div><small>MISSION CONTROL</small><h1>Operations</h1><p>نمای موبایلی Task، Worker، Resource، Strategy و CI. در حالت unsynced هیچ state ساختگی نمایش داده نمی‌شود.</p></div><button id="syncMission" class="ghost sync-button" type="button">SYNC</button></div>
+      <div id="missionSummary" class="mission-grid mission-kpis"></div>
+      <section class="panel"><div class="section-head clean"><div><small>RUNTIME</small><h2>Agents & Runners</h2></div><span id="gatewayState" class="pill">LOCAL</span></div><div id="agents" class="cards runtime-cards"></div></section>
+      <section class="panel"><div class="section-head clean"><div><small>SAFETY</small><h2>Circuits</h2></div></div><div id="circuits" class="cards circuit-cards"></div></section>
+      <details class="panel gateway-settings">
+        <summary><span>Secure Gateway</span><span id="tokenState" class="pill">NO TOKEN</span></summary>
+        <p class="note">فقط bearer token مربوط به Secure Gateway. کلید صرافی یا credential معاملاتی پذیرفته نمی‌شود.</p>
+        <label class="gateway-field">Gateway bearer token<input id="gatewayToken" type="password" autocomplete="off" placeholder="حداقل ۳۲ کاراکتر"></label>
+        <div class="action-row"><button id="deleteGatewayToken" class="mini danger" type="button">حذف</button><button id="saveGatewayToken" class="ghost" type="button">ذخیره امن</button></div>
+      </details>
+    </section>
+
+    <section id="screen-ai" class="screen ai-screen" data-screen="ai">
+      <div class="screen-title v4-title"><div><small>AI ROOM · BOUNDED</small><h1>NEXUS AI</h1><p>Observe، Propose و Paper-stage. هیچ AI اجازه عبور از Risk ندارد.</p></div><span id="aiMode" class="status">LOCAL OPS</span></div>
+      <section class="ai-panel v4-chat">
+        <div id="aiMessages" class="messages"></div>
+        <div class="ai-suggestions">
+          <button type="button" data-ai-prompt="وضعیت NEXUS را خلاصه کن">وضعیت سیستم</button>
+          <button type="button" data-ai-prompt="ریسک و Paper Portfolio را بررسی کن">بررسی ریسک</button>
+          <button type="button" data-ai-prompt="وضعیت Mission Control را گزارش کن">Mission</button>
+        </div>
+        <div class="composer"><textarea id="aiInput" rows="2" placeholder="پیام به NEXUS AI…"></textarea><button id="aiSend" class="send-button" type="button" aria-label="ارسال">↑</button></div>
+      </section>
+      <details class="authority-details"><summary>حدود اختیار AI</summary><div class="authority-grid"><div><b>L0</b><span>Observe</span></div><div><b>L1</b><span>Propose</span></div><div><b>L2</b><span>Paper stage</span></div><div><b>L3</b><span>Workflow</span></div><div class="locked"><b>L4 🔒</b><span>Owner only</span></div></div></details>
     </section>
 
     <section id="screen-lab" class="screen" data-screen="lab">
-      <div class="screen-title"><div><small>RESEARCH / STRATEGY LAB</small><h1>آزمایشگاه پژوهش</h1><p>Strategy Factory اصلی + یک preview محلی روی کندل‌های بسته فعلی.</p></div><span class="status ok">NO PROFIT CLAIM</span></div>
-      <section class="panel"><div class="section-head"><div><small>Strategy Factory</small><h2>خانواده‌های استراتژی</h2></div></div><div id="strategies" class="cards"></div></section>
-      <section class="panel"><div class="section-head"><div><small>Local Preview</small><h2>بک‌تست سریع روی داده فعلی</h2></div><button id="runPreview" class="primary">Run Preview</button></div><div id="previewResult" class="research-result"><p>این preview جایگزین evidence رسمی Phase 6 نیست و ادعای سودآوری ایجاد نمی‌کند.</p></div></section>
+      <div class="screen-title v4-title"><div><small>RESEARCH / STRATEGY</small><h1>Strategy Lab</h1><p>خانواده‌های Strategy Factory، پژوهش canonical و preview روی کندل‌های بسته.</p></div><span class="status ok">NO PROFIT CLAIM</span></div>
+      <section class="panel"><div class="section-head clean"><div><small>STRATEGY FACTORY</small><h2>خانواده‌های فعال</h2></div></div><div id="strategies" class="cards strategy-cards"></div></section>
+      <section class="panel research-panel"><div class="section-head clean"><div><small>CLOSED-CANDLE PREVIEW</small><h2>Research Preview</h2></div><button id="runPreview" class="primary" type="button">RUN</button></div><div id="previewResult" class="research-result"><p>این preview جایگزین evidence رسمی Phase 6 نیست و ادعای سودآوری ایجاد نمی‌کند.</p></div></section>
     </section>
 
     <section id="screen-audit" class="screen" data-screen="audit">
-      <div class="screen-title"><div><small>AUDIT / REPLAY</small><h1>دفتر رویداد و بازپخش</h1><p>رویدادهای Paper روی دستگاه hash-chain می‌شوند و قابل verify/replay هستند.</p></div><button id="verifyLedger" class="ghost">Verify</button></div>
-      <section class="panel"><div class="section-head"><div><small>Integrity</small><h2>سلامت Ledger</h2></div><span id="ledgerStatus" class="status">EMPTY</span></div><div id="auditMetrics" class="stat-grid"></div></section>
-      <section class="panel"><div class="section-head"><div><small>Recent Events</small><h2>رویدادهای اخیر</h2></div><button id="resetDemo" class="mini danger">Reset Demo</button></div><div id="eventList" class="event-list"></div></section>
+      <div class="screen-title v4-title"><div><small>AUDIT / REPLAY</small><h1>Audit Ledger</h1><p>رویدادهای Paper روی دستگاه hash-chain می‌شوند و قابل verify/replay هستند.</p></div><button id="verifyLedger" class="ghost" type="button">VERIFY</button></div>
+      <section class="panel"><div class="section-head clean"><div><small>INTEGRITY</small><h2>سلامت Ledger</h2></div><span id="ledgerStatus" class="status">EMPTY</span></div><div id="auditMetrics" class="stat-grid audit-kpis"></div></section>
+      <section class="panel"><div class="section-head clean"><div><small>RECENT EVENTS</small><h2>Event Stream</h2></div><button id="resetDemo" class="mini danger" type="button">Reset Demo</button></div><div id="eventList" class="event-list"></div></section>
     </section>
 
     <section id="screen-live" class="screen" data-screen="live">
-      <div class="lock-screen">
-        <div class="lock-icon">🔒</div><small>OWNER-CONTROLLED · L4</small><h1>ترید اصلی قفل است</h1><p>NEXUS در وضعیت فعلی هیچ اختیار معامله واقعی، برداشت، امضای سفارش یا نگهداری کلید خصوصی صرافی ندارد.</p>
-        <div class="lock-grid"><div><b>Private API Keys</b><span>غیرفعال / دریافت نمی‌شود</span></div><div><b>Order Endpoint</b><span>وجود ندارد</span></div><div><b>Withdrawal</b><span>ممنوع</span></div><div><b>Activation</b><span>نیازمند مجوز مالک و قرارداد مرحله جدید</span></div></div>
+      <div class="lock-screen v4-lock">
+        <div class="lock-orbit"><span>🔒</span></div>
+        <small>OWNER-CONTROLLED · L4</small><h1>ترید اصلی قفل است</h1>
+        <p>NEXUS هیچ اختیار معامله واقعی، برداشت، امضای سفارش یا نگهداری کلید خصوصی صرافی ندارد.</p>
+        <div class="lock-grid"><div><b>Private API Keys</b><span>غیرفعال / دریافت نمی‌شود</span></div><div><b>Order Endpoint</b><span>وجود ندارد</span></div><div><b>Withdrawal</b><span>ممنوع</span></div><div><b>Activation</b><span>فقط قرارداد مرحله جدید + مجوز مالک</span></div></div>
         <p class="note">این صفحه عمداً هیچ دکمه فعال‌سازی یا ورودی credential ندارد.</p>
       </div>
     </section>
+
+    <section id="screen-more" class="screen" data-screen="more">
+      <div class="screen-title v4-title"><div><small>MORE</small><h1>ابزارها</h1><p>بخش‌های تخصصی که لازم نیست همیشه جلوی چشم باشند.</p></div></div>
+      <div class="more-grid">
+        <button type="button" data-go="lab"><span>⌁</span><b>Strategy Lab</b><small>Research · Factory · Regime</small><em>›</em></button>
+        <button type="button" data-go="audit"><span>≣</span><b>Audit Ledger</b><small>Replay · Integrity</small><em>›</em></button>
+        <button type="button" data-go="live" class="locked-more"><span>🔒</span><b>Live Authority</b><small>Owner L4 · Locked</small><em>›</em></button>
+      </div>
+      <section class="panel about-card"><small>ANDROID 4.0</small><h2>Research · Backtest · Paper</h2><p>Bybit public market · Deterministic Risk final authority · Secure Gateway bounded · Live authority false.</p></section>
+    </section>
   </main>
 
-  <nav class="bottom-nav" aria-label="ناوبری">
-    <button class="active" data-go="home"><span>⌂</span><b>خانه</b></button>
-    <button data-go="paper"><span>↕</span><b>دمو</b></button>
-    <button data-go="ai"><span>✦</span><b>AI Room</b></button>
-    <button data-go="mission"><span>◎</span><b>Mission</b></button>
-    <button data-go="lab"><span>⌁</span><b>Lab</b></button>
-    <button data-go="audit"><span>≣</span><b>Audit</b></button>
-    <button data-go="live"><span>🔒</span><b>Live</b></button>
+  <nav class="bottom-nav v4-nav" aria-label="ناوبری اصلی">
+    <button class="active" type="button" data-go="home"><span>⌂</span><b>خانه</b></button>
+    <button type="button" data-go="paper"><span>↗</span><b>Paper</b></button>
+    <button type="button" data-go="mission"><span>◎</span><b>Mission</b></button>
+    <button type="button" data-go="ai"><span>✦</span><b>AI</b></button>
+    <button type="button" data-go="more"><span>•••</span><b>بیشتر</b></button>
   </nav>
 </div>
 <div id="toast" role="status"></div>
 <script src="mobile-core.js" defer></script>
 <script src="mobile-runtime.js" defer></script>
-<script src="mobile-polish.js" defer></script>
+<script src="mobile-redesign.js" defer></script>
 </body>
 </html>
