@@ -13,6 +13,7 @@ import nexus_multitimeframe_strategy_discovery as discovery
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "experiments" / "nexus_multitimeframe_strategy_discovery_v1.json"
+FREQ = {"minute15": "15min", "hour1": "1h", "hour4": "4h"}
 
 
 def _frame(symbol: str, timeframe: str, *, rows: int = 220, holdout_shock: float = 0.0) -> pd.DataFrame:
@@ -25,7 +26,7 @@ def _frame(symbol: str, timeframe: str, *, rows: int = 220, holdout_shock: float
     high = np.maximum(open_, base) * 1.004
     low = np.minimum(open_, base) * 0.996
     return pd.DataFrame({
-        "timestamp": pd.date_range("2025-01-01", periods=rows, freq="15min", tz="UTC"),
+        "timestamp": pd.date_range("2025-01-01", periods=rows, freq=FREQ[timeframe], tz="UTC"),
         "open": open_,
         "high": high,
         "low": low,
@@ -111,6 +112,29 @@ def test_archive_identity_substitution_fails_closed(tmp_path: Path) -> None:
     frame.to_parquet(path, index=False)
 
     with pytest.raises(discovery.MultiTimeframeDiscoveryError, match="identity mismatch"):
+        discovery.discover(_manifest(root))
+
+
+def test_archive_gap_fails_closed(tmp_path: Path) -> None:
+    root = tmp_path / "archive"
+    _archive(root)
+    path = root / "bybit_market" / "BTCUSDT" / "hour4.parquet"
+    frame = pd.read_parquet(path).drop(index=100).reset_index(drop=True)
+    frame.to_parquet(path, index=False)
+
+    with pytest.raises(discovery.MultiTimeframeDiscoveryError, match="cadence is not gap-free"):
+        discovery.discover(_manifest(root))
+
+
+def test_pair_timestamp_substitution_fails_closed(tmp_path: Path) -> None:
+    root = tmp_path / "archive"
+    _archive(root)
+    path = root / "bybit_market" / "ETHUSDT" / "hour1.parquet"
+    frame = pd.read_parquet(path)
+    frame["timestamp"] = pd.to_datetime(frame["timestamp"], utc=True) + pd.Timedelta(hours=1)
+    frame.to_parquet(path, index=False)
+
+    with pytest.raises(discovery.MultiTimeframeDiscoveryError, match="timestamps are not aligned"):
         discovery.discover(_manifest(root))
 
 
