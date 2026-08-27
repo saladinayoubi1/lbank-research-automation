@@ -7,6 +7,7 @@ on:
   push:
     branches: [main]
     paths:
+      - "bybit_public_klines.py"
       - "nexus_persistent_paper_trading_loop.py"
       - "nexus_public_regime_cycle.py"
       - "nexus_regime_selected_position_rebalance.py"
@@ -25,6 +26,7 @@ on:
       - "config/nexus-demo-strategy-matrix-v1.json"
       - "config/nexus-regime-strategy-policy-v1.json"
       - "research/strategy_family_catalog.json"
+      - "tests/test_bybit_public_klines.py"
       - "tests/test_nexus_persistent_paper_trading_loop.py"
       - "tests/test_nexus_persistent_paper_trading_workflow.py"
       - "tests/test_nexus_regime_selected_position_rebalance.py"
@@ -35,6 +37,7 @@ on:
       - ".github/workflows/nexus_persistent_paper_trading_loop.yml"
   pull_request:
     paths:
+      - "bybit_public_klines.py"
       - "nexus_persistent_paper_trading_loop.py"
       - "nexus_public_regime_cycle.py"
       - "nexus_regime_selected_position_rebalance.py"
@@ -53,6 +56,7 @@ on:
       - "config/nexus-demo-strategy-matrix-v1.json"
       - "config/nexus-regime-strategy-policy-v1.json"
       - "research/strategy_family_catalog.json"
+      - "tests/test_bybit_public_klines.py"
       - "tests/test_nexus_persistent_paper_trading_loop.py"
       - "tests/test_nexus_persistent_paper_trading_workflow.py"
       - "tests/test_nexus_regime_selected_position_rebalance.py"
@@ -85,6 +89,7 @@ jobs:
       - name: Verify persistent Trading Engine contracts
         run: >-
           python -m pytest -q
+          tests/test_bybit_public_klines.py
           tests/test_nexus_persistent_paper_trading_loop.py
           tests/test_nexus_persistent_paper_trading_workflow.py
           tests/test_nexus_regime_selected_position_rebalance.py
