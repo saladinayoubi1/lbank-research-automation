@@ -18,8 +18,8 @@
     "cloud continuity when the local laptop is offline"
   ],
   "runtime_status": {
-    "agent_execution_state": "final_proof_verified_and_bybit_prospective_paper_collecting",
-    "laptop_state": "physical_phase7_proof_verified_and_owner_cleanup_observed",
+    "agent_execution_state": "synchronized_regime_paper_integration_verified_final_candidate_pending_physical_windows_proof",
+    "laptop_state": "historical_physical_phase7_proof_verified_new_fixed_sha_execution_required",
     "internet_outage_state": "not_assumed_from_laptop_state",
     "laptop_offline_is_not_internet_outage": true,
     "runner_registration_modified_by_phase7_cleanup": false,
@@ -56,9 +56,9 @@
       "may_authorize_production_recovery": false,
       "issue": 122,
       "issue_state": "completed",
-      "status": "verified_secondary_recovery_candidate_current_as_of_source_sha",
-      "refresh_required": false,
-      "refresh_reason": "Exact private-provider readback is content-bound to canonical Project Memory at source SHA 028715b9f99bd7107b3ff53b03e432d42eccfbdb.",
+      "status": "verified_secondary_recovery_candidate_stale_after_new_main_integration",
+      "refresh_required": true,
+      "refresh_reason": "The verified Drive snapshot remains recoverable historical evidence but predates the synchronized Demo regime-cycle integration and final-proof regime binding. Repository evidence is authoritative until a new private snapshot is independently verified.",
       "fixed_source_sha": "028715b9f99bd7107b3ff53b03e432d42eccfbdb",
       "provider_object_id": "1HjHjzM1o90YXfMc6cNKyuW5qQGxnE6MpiIPr_U2EFxw",
       "provider_revision_id": "2",
@@ -90,16 +90,16 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "028715b9f99bd7107b3ff53b03e432d42eccfbdb",
-    "observed_at_utc": "2026-08-26T19:43:37Z",
+    "observed_main_sha": "9fae967c102d6b7ddef6ba2478833f3b6b961ce6",
+    "observed_at_utc": "2026-08-27T09:16:35Z",
     "latest_main_change": {
-      "summary": "PR #988 merged the verified regime-runtime-to-Paper-drift bridge as 028715b9 after all PR gates passed. All nine main-push workflow groups then succeeded. A new private seven-file Drive snapshot and companion manifest were generated from that exact SHA, read back, privacy-scanned, and independently verified with fail-closed substitution, tamper, and stale-replay checks.",
+      "summary": "PR #1016 merged synchronized BTC/ETH 15m/1h/4h regime selection into the Demo Paper matrix. Exact-main matrix run 33057539638, Test run 33057539677, Cloud Fallback run 33057539657, and Build Verification run 33057539707 all succeeded. The matrix retains six comparison cells and eighteen lanes while the selected path is digest-bound to one common hour4-derived clock, the immutable Bybit archive, deterministic Risk, isolated Paper accounts, independent runtime verification, and append-only drift evidence.",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true
     },
     "integration_cycle": {
-      "status": "verified_complete_through_mission_control_and_final_proof",
+      "status": "verified_complete_through_synchronized_regime_paper_and_drift_on_exact_main",
       "integration_graph_pr": 954,
       "verified_execution_cycle_pr": 955,
       "strategy_paper_supervisor_pr": 956,
@@ -114,39 +114,53 @@
       "phase7_return_pr": 966,
       "powershell51_bookkeeping_fix_pr": 967,
       "delegated_core_surface_test_fix_pr": 972,
-      "latest_main_sha": "028715b9f99bd7107b3ff53b03e432d42eccfbdb",
+      "selector_runtime_pr": 987,
+      "regime_runtime_drift_pr": 988,
+      "demo_matrix_pr": 996,
+      "demo_state_recovery_pr": 1003,
+      "regime_lane_adapter_pr": 1004,
+      "synchronized_regime_cycle_pr": 1016,
+      "latest_main_sha": "9fae967c102d6b7ddef6ba2478833f3b6b961ce6",
       "paper_only": true,
       "live_trading_authority": false,
-      "remaining_acceptance": "none for the final Proof Mission; the separate prospective Paper lane must accumulate at least 30 days and 180 completed four-hour bars before review and never widens authority"
+      "remaining_acceptance": "Final install candidate must include the synchronized regime-cycle snapshot in the fixed-SHA final proof and must classify windows_laptop as EXECUTED; historical physical proof cannot substitute for physical execution of the new final SHA."
     },
     "regime_strategy_runtime": {
-      "status": "merged_verified_paper_only",
+      "status": "merged_verified_and_operational_in_demo_matrix",
       "selector_runtime_pr": 987,
-      "main_source_sha": "f9e354d9503b7123583ce1d1bfbdba26202ac238",
-      "pull_request_head_sha": "bb85fd50f4a5b25f2d3dd26d9bb551a30e41c96c",
-      "local_full_suite": "1785 passed, 15 skipped, 78 subtests passed",
+      "runtime_drift_pr": 988,
+      "isolated_lane_adapter_pr": 1004,
+      "synchronized_cycle_pr": 1016,
+      "main_source_sha": "9fae967c102d6b7ddef6ba2478833f3b6b961ce6",
       "workflow_runs": {
-        "workflow_permissions_policy": 33004356684,
-        "nexus_cloud_fallback": 33004356628,
-        "test": 33004356620,
-        "nexus_build_verification": 33004356605
+        "nexus_demo_strategy_matrix": 33057539638,
+        "nexus_cloud_fallback": 33057539657,
+        "test": 33057539677,
+        "nexus_build_verification": 33057539707
       },
-      "selector_context": "required 15m/1h/4h, canonical alignment, bounded freshness, future-data rejection",
-      "runtime_chain": "context -> selector -> proposal -> deterministic risk -> isolated Paper -> append-only evidence",
+      "selector_context": "required synchronized closed 15m/1h/4h context at one hour4-derived as_of, bounded freshness, future/stale rejection",
+      "runtime_chain": "verified matrix/performance evidence -> synchronized context -> selector -> proposal -> deterministic risk -> isolated Paper -> independent runtime verification -> append-only drift",
+      "proposal_dataset_binding": "explicitly equal to the synchronized target-timeframe context dataset binding_sha256",
+      "comparison_surface": "BTCUSDT/ETHUSDT x minute15/hour1/hour4 x momentum/trend_breakout/mean_reversion = 18 lanes across 6 cells",
       "independent_replay": true,
+      "restart_reconciliation": "append-only and idempotent; event collision or partial persistence fails closed",
       "paper_only": true,
       "live_trading_authority": false,
       "automatic_strategy_promotion": false,
-      "next_step": "collect append-only next-cycle drift projections while the separate prospective Paper lane continues its minimum observation window"
+      "private_credentials_used": false,
+      "frozen_prospective_hour4_lane_mutated": false,
+      "next_step": "bind the regime-cycle snapshot into final fixed-SHA proof, then execute that final SHA on the physical Windows laptop before installation acceptance"
     },
     "regime_runtime_drift": {
-      "status": "integrated_paper_only",
+      "status": "operational_in_synchronized_demo_cycle",
       "integration_pr": 988,
-      "base_source_sha": "f9e354d9503b7123583ce1d1bfbdba26202ac238",
+      "demo_cycle_pr": 1016,
+      "base_source_sha": "9fae967c102d6b7ddef6ba2478833f3b6b961ce6",
       "evidence_bindings": [
         "independently verified Supervisor ledger",
         "digest-bound Paper performance projection",
         "independently replayed regime runtime evidence",
+        "synchronized target-timeframe dataset binding",
         "one exact source SHA"
       ],
       "allowed_next_cycle_controls": [
@@ -155,14 +169,25 @@
         "REMOVE_FROM_NEXT_SELECTION",
         "PRESERVE_CURRENT_POLICY_BOUND"
       ],
+      "insufficient_evidence_behavior": "preserve cash / no fabricated health claim",
       "current_runtime_mutation": false,
       "paper_only": true,
       "live_trading_authority": false,
       "promotion_authority": false
     },
+    "final_proof_candidate": {
+      "status": "hardening_in_pr_1017_pending_exact_head_ci_and_physical_windows_execution",
+      "candidate_parent_sha": "9fae967c102d6b7ddef6ba2478833f3b6b961ce6",
+      "final_proof_regime_binding_pr": 1017,
+      "required_new_binding": "verified nexus.demo-regime-cycle.v1 snapshot must be present, independently verified, exact-source bound, Paper-only, Risk-final, no private credentials, no automatic promotion, and frozen prospective 4h lane unchanged",
+      "windows_physical_execution_required": true,
+      "historical_windows_proof_reusable_for_new_sha": false,
+      "paper_only": true,
+      "live_trading_authority": false
+    },
     "phase7": {
-      "status": "complete",
-      "acceptance_status": "final_physical_windows_proof_verified",
+      "status": "complete_historical_proof_retained",
+      "acceptance_status": "final_physical_windows_proof_verified_for_historical_phase7_sha",
       "parent_issue": 696,
       "control_plane_issue": 697,
       "e2e_issue": 702,
@@ -261,7 +286,7 @@
         "control_plane_issue": 697,
         "proof_source_sha": "36a3d64f6ce3253b2f9ca76eb594c6afe80e4e9c",
         "verified_progress_percent": 100.0,
-        "physical_windows_proof": "verified"
+        "physical_windows_proof": "verified_for_historical_phase7_sha"
       },
       "product_integration": {
         "status": "complete",
@@ -270,11 +295,31 @@
         "mission_control_acceptance_state": "completed",
         "canonical_backend": "python_product_runtime",
         "live_authority": false
+      },
+      "stage6_multi_strategy_paper": {
+        "status": "verified_on_main",
+        "source_sha": "9fae967c102d6b7ddef6ba2478833f3b6b961ce6",
+        "comparison_cells": 6,
+        "comparison_lanes": 18,
+        "synchronized_regime_cycle": true,
+        "deterministic_risk_final_authority": true
+      },
+      "stage7_performance_drift": {
+        "status": "verified_on_main",
+        "source_sha": "9fae967c102d6b7ddef6ba2478833f3b6b961ce6",
+        "append_only_runtime_evidence": true,
+        "append_only_drift_evidence": true,
+        "insufficient_evidence_preserves_cash": true
+      },
+      "stage8_fixed_sha_final_proof": {
+        "status": "pending_pr_1017_and_new_physical_windows_execution",
+        "regime_cycle_binding_required": true,
+        "windows_physical_execution_required": true
       }
     },
     "closure_state": {
       "issue_697": "completed",
-      "issue_702": "completed",
+      "issue_702": "completed_historical_phase7_acceptance",
       "issue_696": "completed",
       "issue_692": "completed",
       "issue_122": "completed",
@@ -283,22 +328,27 @@
       "surface_regression_fix_pr_972": "merged",
       "backup_verifier_pr_920": "merged",
       "drive_export_hardening_pr_923": "merged",
-      "drive_backup_refresh": "verified_current_as_of_source_sha",
+      "drive_backup_refresh": "stale_after_new_main_integration_refresh_required",
       "drive_backup_source_sha": "028715b9f99bd7107b3ff53b03e432d42eccfbdb",
       "phase3_strategy_surface_pr_976": "merged",
       "event_driven_strategy_search_pr_977": "merged",
       "prospective_paper_start_pr_978": "merged",
       "prospective_paper_precutoff_fix_pr_982": "merged",
       "regime_strategy_selector_runtime_pr_987": "merged",
-      "regime_runtime_drift_pr_988": "integrated_by_this_memory_change",
+      "regime_runtime_drift_pr_988": "merged",
+      "demo_matrix_pr_996": "merged",
+      "demo_state_recovery_pr_1003": "merged",
+      "regime_lane_adapter_pr_1004": "merged",
+      "synchronized_regime_cycle_pr_1016": "merged",
+      "final_proof_regime_binding_pr_1017": "open_pending_ci",
       "prospective_paper_run_32905463932": "success",
       "prospective_paper_run_32932158365": "success_1_of_180_bars",
-      "drive_backup_refresh_record_pr_990": "integrated_by_this_memory_change",
-      "drive_backup_refresh_required": false
+      "drive_backup_refresh_required": true
     },
     "release_readiness": {
       "production_ready": false,
-      "reason": "NEXUS remains explicitly Research/Backtest/Paper-only; final physical proof, Mission Control acceptance, and continuity controls do not grant Live/L4, signing, billing, exchange credential, deployment, production-promotion, or self-authorization authority."
+      "install_candidate_ready": false,
+      "reason": "NEXUS remains explicitly Research/Backtest/Paper-only. Stage 6/7 synchronized Demo integration is verified on main, but the new final candidate still requires exact-head/main CI, final proof binding, and physical Windows execution on that new fixed SHA. None of these steps grants Live/L4, signing, billing, exchange credential, deployment, production-promotion, or self-authorization authority."
     },
     "provider_status": {
       "deepseek": {
