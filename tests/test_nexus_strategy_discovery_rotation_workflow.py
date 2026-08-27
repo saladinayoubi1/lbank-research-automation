@@ -25,6 +25,16 @@ def test_health_event_consumes_exact_triggering_run_artifact_before_dispatch():
     assert "should_dispatch" in text
 
 
+def test_health_dispatch_installs_runtime_dependencies_before_importing_loop_verifier():
+    text = _text()
+    dispatch = text.split("dispatch-one-stage:", 1)[1]
+    install = "python -m pip install -r requirements.lock"
+    trigger = "python nexus_strategy_discovery_health_trigger.py"
+    assert install in dispatch
+    assert "python -m pip check" in dispatch
+    assert dispatch.index(install) < dispatch.index(trigger)
+
+
 def test_rotation_preserves_bounded_dispatch_authority():
     text = _text()
     permissions = text.split("permissions:", 1)[1].split("concurrency:", 1)[0]
