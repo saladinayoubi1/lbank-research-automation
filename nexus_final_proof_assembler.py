@@ -1,9 +1,9 @@
 """Assemble the fixed-SHA NEXUS final Proof Mission from durable evidence.
 
 The assembler is deliberately data-only: it never invents worker execution,
-resource availability, scheduler state, or Project Memory freshness.  It binds
-already-produced evidence to one Git SHA and delegates the final decision to
-``nexus_final_proof_mission``.
+resource availability, scheduler state, synchronized regime output, or Project
+Memory freshness. It binds already-produced evidence to one Git SHA and
+delegates the final decision to ``nexus_final_proof_mission``.
 """
 from __future__ import annotations
 
@@ -61,6 +61,7 @@ def assemble(
     source_sha: str,
     supervisor_ledger_path: Path,
     mission_control_path: Path,
+    regime_cycle_path: Path,
     scheduler_snapshot_path: Path,
     resource_utilization_path: Path,
     output_path: Path,
@@ -78,6 +79,10 @@ def assemble(
         _read_json(mission_control_path, "Mission Control projection"),
         "Mission Control projection",
     )
+    regime_cycle = _object(
+        _read_json(regime_cycle_path, "synchronized regime cycle"),
+        "synchronized regime cycle",
+    )
     scheduler = _object(
         _read_json(scheduler_snapshot_path, "scheduler snapshot"),
         "scheduler snapshot",
@@ -86,6 +91,8 @@ def assemble(
 
     if supervisor.get("source_sha") != source_sha:
         raise FinalProofAssemblerError("Supervisor ledger is not bound to source SHA")
+    if regime_cycle.get("source_sha") != source_sha:
+        raise FinalProofAssemblerError("synchronized regime cycle is not bound to source SHA")
     if scheduler.get("source_sha") != source_sha:
         raise FinalProofAssemblerError("scheduler snapshot is not bound to source SHA")
     if any(row.get("source_sha") != source_sha for row in resources):
@@ -95,6 +102,7 @@ def assemble(
         source_sha=source_sha,
         supervisor_ledger=supervisor,
         mission_control_projection=mission_control,
+        regime_cycle_snapshot=regime_cycle,
         scheduler_snapshot=scheduler,
         resource_utilization=resources,
     )
@@ -123,6 +131,7 @@ def main() -> int:
     parser.add_argument("--source-sha", required=True)
     parser.add_argument("--supervisor-ledger", type=Path, required=True)
     parser.add_argument("--mission-control", type=Path, required=True)
+    parser.add_argument("--regime-cycle", type=Path, required=True)
     parser.add_argument("--scheduler-snapshot", type=Path, required=True)
     parser.add_argument("--resource-utilization", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
@@ -133,6 +142,7 @@ def main() -> int:
             source_sha=args.source_sha,
             supervisor_ledger_path=args.supervisor_ledger,
             mission_control_path=args.mission_control,
+            regime_cycle_path=args.regime_cycle,
             scheduler_snapshot_path=args.scheduler_snapshot,
             resource_utilization_path=args.resource_utilization,
             output_path=args.output,
