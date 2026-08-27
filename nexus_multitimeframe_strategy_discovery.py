@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import itertools
 import json
 import math
 import os
@@ -27,6 +26,12 @@ APPROVED_SYMBOLS = ("BTCUSDT", "ETHUSDT")
 APPROVED_TIMEFRAMES = ("minute15", "hour1", "hour4")
 APPROVED_FAMILIES = ("momentum", "trend_breakout", "mean_reversion")
 REQUIRED_COLUMNS = ["timestamp", "open", "high", "low", "close", "volume", "symbol", "timeframe"]
+TIMEFRAME_STEP_MS = {"minute15": 900_000, "hour1": 3_600_000, "hour4": 14_400_000}
+TIMEFRAME_BARS_PER_YEAR = {
+    "minute15": 365.25 * 96.0,
+    "hour1": 365.25 * 24.0,
+    "hour4": 365.25 * 6.0,
+}
 
 
 class MultiTimeframeDiscoveryError(RuntimeError):
@@ -35,7 +40,9 @@ class MultiTimeframeDiscoveryError(RuntimeError):
 
 def _canonical(value: Any) -> bytes:
     try:
-        return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode("utf-8")
+        return json.dumps(
+            value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False
+        ).encode("utf-8")
     except (TypeError, ValueError) as exc:
         raise MultiTimeframeDiscoveryError("discovery evidence is not canonical JSON") from exc
 
@@ -48,8 +55,37 @@ def _atomic_json(path: Path, value: Mapping[str, Any]) -> None:
     target = Path(path).resolve()
     target.parent.mkdir(parents=True, exist_ok=True)
     temporary = target.with_suffix(target.suffix + f".{os.getpid()}.tmp")
-    temporary.write_text(json.dumps(dict(value), indent=2, sort_keys=True, ensure_ascii=False, allow_nan=False) + "\n", encoding="utf-8")
+    temporary.write_text(
+        json.dumps(dict(value), indent=2, sort_keys=True, ensure_ascii=False, allow_nan=False) + "\n",
+        encoding="utf-8",
+    )
     os.replace(temporary, target)
+
+
+def _gate_fields() -> set[str]:
+    return {
+        "minimum_positive_ratio", "minimum_median_return", "minimum_worst_return",
+        "maximum_drawdown", "minimum_median_sharpe", "minimum_sharpe", "minimum_fill_count",
+    }
+
+
+def _validate_gate(gate: Mapping[str, Any]) -> None:
+    if not isinstance(gate, Mapping) or set(gate) != _gate_fields():
+        raise MultiTimeframeDiscoveryError("gate schema mismatch")
+    for key, value in gate.items():
+        if key == "minimum_fill_count":
+            if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                raise MultiTimeframeDiscoveryError("gate minimum_fill_count is invalid")
+        elif isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)):
+            raise MultiTimeframeDiscoveryError(f"gate {key} is invalid")
+    if not 0.0 <= float(gate["minimum_positive_ratio"]) <= 1.0:
+        raise MultiTimeframeDiscoveryError("gate positive ratio is invalid")
+    if float(gate["maximum_drawdown"]) < 0.0:
+        raise MultiTimeframeDiscoveryError("gate drawdown is invalid")
+
+
+def _variant_id(family: str, config: Mapping[str, Any]) -> str:
+    return _digest({"family": family, "config": dict(config)})[:16]
 
 
 def load_manifest(path: str | Path) -> dict[str, Any]:
@@ -87,23 +123,42 @@ def load_manifest(path: str | Path) -> dict[str, Any]:
         "automatic_strategy_promotion": False,
     }:
         raise MultiTimeframeDiscoveryError("discovery authority boundary mismatch")
+    execution = value.get("execution")
+    if not isinstance(execution, dict) or set(execution) != {"conservative", "stress"}:
+        raise MultiTimeframeDiscoveryError("execution profiles mismatch")
     for profile in ("conservative", "stress"):
-        row = value.get("execution", {}).get(profile)
+        row = execution.get(profile)
         if not isinstance(row, dict) or set(row) != {"fee_bps", "slippage_bps"}:
             raise MultiTimeframeDiscoveryError("execution profile mismatch")
-        if any(isinstance(row[key], bool) or not isinstance(row[key], (int, float)) or float(row[key]) < 0 for key in row):
+        if any(
+            isinstance(row[key], bool)
+            or not isinstance(row[key], (int, float))
+            or not math.isfinite(float(row[key]))
+            or float(row[key]) < 0
+            for key in row
+        ):
             raise MultiTimeframeDiscoveryError("execution profile is invalid")
+    gates = value.get("gates")
+    if not isinstance(gates, dict) or set(gates) != {"training", "locked"}:
+        raise MultiTimeframeDiscoveryError("discovery gates mismatch")
+    for gate in gates.values():
+        _validate_gate(gate)
     variants = value.get("variants")
-    if not isinstance(variants, dict) or tuple(variants) != APPROVED_FAMILIES:
+    if not isinstance(variants, dict) or set(variants) != set(APPROVED_FAMILIES):
         raise MultiTimeframeDiscoveryError("variant families are invalid")
     for family in APPROVED_FAMILIES:
         rows = variants.get(family)
         if not isinstance(rows, list) or not 2 <= len(rows) <= 24 or any(not isinstance(row, dict) for row in rows):
             raise MultiTimeframeDiscoveryError("variant grid is missing or unbounded")
+        ids = [_variant_id(family, row) for row in rows]
+        if len(ids) != len(set(ids)):
+            raise MultiTimeframeDiscoveryError("variant grid contains duplicates")
     return value
 
 
 def load_frame(root: Path, symbol: str, timeframe: str) -> pd.DataFrame:
+    if symbol not in APPROVED_SYMBOLS or timeframe not in APPROVED_TIMEFRAMES:
+        raise MultiTimeframeDiscoveryError("archive request is outside approved discovery scope")
     path = Path(root) / "bybit_market" / symbol / f"{timeframe}.parquet"
     if path.is_symlink() or not path.is_file():
         raise MultiTimeframeDiscoveryError(f"immutable archive frame missing: {symbol}/{timeframe}")
@@ -115,10 +170,18 @@ def load_frame(root: Path, symbol: str, timeframe: str) -> pd.DataFrame:
     frame = frame.sort_values("timestamp").reset_index(drop=True)
     if len(frame) < 160 or frame["timestamp"].duplicated().any() or not frame["timestamp"].is_monotonic_increasing:
         raise MultiTimeframeDiscoveryError(f"archive history is insufficient or non-monotonic: {symbol}/{timeframe}")
+    expected_step = pd.Timedelta(milliseconds=TIMEFRAME_STEP_MS[timeframe])
+    deltas = frame["timestamp"].diff().iloc[1:]
+    if len(deltas) != len(frame) - 1 or not bool((deltas == expected_step).all()):
+        raise MultiTimeframeDiscoveryError(f"archive cadence is not gap-free: {symbol}/{timeframe}")
     if set(frame["symbol"].astype(str)) != {symbol} or set(frame["timeframe"].astype(str)) != {timeframe}:
         raise MultiTimeframeDiscoveryError(f"archive identity mismatch: {symbol}/{timeframe}")
     numeric = frame[["open", "high", "low", "close", "volume"]].astype(float)
-    if not np.isfinite(numeric.to_numpy()).all() or (numeric[["open", "high", "low", "close"]] <= 0).any().any() or (numeric["volume"] < 0).any():
+    if (
+        not np.isfinite(numeric.to_numpy()).all()
+        or (numeric[["open", "high", "low", "close"]] <= 0).any().any()
+        or (numeric["volume"] < 0).any()
+    ):
         raise MultiTimeframeDiscoveryError(f"archive contains invalid market values: {symbol}/{timeframe}")
     return frame
 
@@ -140,11 +203,15 @@ def _finite(config: Mapping[str, Any], field: str) -> float:
 def generate_targets(frame: pd.DataFrame, family: str, config: Mapping[str, Any]) -> pd.Series:
     close = frame["close"].astype(float)
     if family == "momentum":
+        if set(config) != {"lookback", "entry_threshold"}:
+            raise MultiTimeframeDiscoveryError("momentum variant schema mismatch")
         lookback = _positive_int(config, "lookback", 2)
         threshold = _finite(config, "entry_threshold")
         score = close / close.shift(lookback) - 1.0
         target = (score > threshold).astype(float).fillna(0.0)
     elif family == "trend_breakout":
+        if set(config) != {"entry_lookback", "exit_lookback"}:
+            raise MultiTimeframeDiscoveryError("breakout variant schema mismatch")
         entry = _positive_int(config, "entry_lookback", 2)
         exit_ = _positive_int(config, "exit_lookback", 2)
         if exit_ >= entry:
@@ -161,6 +228,8 @@ def generate_targets(frame: pd.DataFrame, family: str, config: Mapping[str, Any]
             values.append(state)
         target = pd.Series(values, dtype="float64")
     elif family == "mean_reversion":
+        if set(config) != {"lookback", "entry_z", "exit_z"}:
+            raise MultiTimeframeDiscoveryError("mean-reversion variant schema mismatch")
         lookback = _positive_int(config, "lookback", 5)
         entry_z = _finite(config, "entry_z")
         exit_z = _finite(config, "exit_z")
@@ -188,9 +257,19 @@ def generate_targets(frame: pd.DataFrame, family: str, config: Mapping[str, Any]
     return target
 
 
-def _simulate(frame: pd.DataFrame, target: pd.Series, start: int, end: int, profile: Mapping[str, Any]) -> dict[str, Any]:
+def _simulate(
+    frame: pd.DataFrame,
+    target: pd.Series,
+    start: int,
+    end: int,
+    profile: Mapping[str, Any],
+    *,
+    bars_per_year: float,
+) -> dict[str, Any]:
     if not 0 <= start < end <= len(frame) or end - start < 20:
         raise MultiTimeframeDiscoveryError("evaluation slice is invalid")
+    if not math.isfinite(float(bars_per_year)) or float(bars_per_year) <= 0:
+        raise MultiTimeframeDiscoveryError("annualization factor is invalid")
     fee_rate = float(profile["fee_bps"]) / 10000.0
     slippage = float(profile["slippage_bps"]) / 10000.0
     cash = 10_000.0
@@ -231,7 +310,7 @@ def _simulate(frame: pd.DataFrame, target: pd.Series, start: int, end: int, prof
     running_max = np.maximum.accumulate(curve)
     drawdown = curve / running_max - 1.0
     std = float(np.std(returns, ddof=0)) if len(returns) else 0.0
-    sharpe = float(np.mean(returns) / std * math.sqrt(max(1, len(returns)))) if std > 0 else 0.0
+    sharpe = float(np.mean(returns) / std * math.sqrt(float(bars_per_year))) if std > 0 else 0.0
     total_return = float(curve[-1] / 10_000.0 - 1.0)
     max_drawdown = float(-drawdown.min())
     score = sharpe + 1.5 * total_return - 1.25 * max_drawdown - 0.002 * turnover
@@ -269,12 +348,7 @@ def _aggregate(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
 
 
 def _gate(summary: Mapping[str, Any], gate: Mapping[str, Any]) -> dict[str, bool]:
-    required = {
-        "minimum_positive_ratio", "minimum_median_return", "minimum_worst_return",
-        "maximum_drawdown", "minimum_median_sharpe", "minimum_sharpe", "minimum_fill_count",
-    }
-    if not isinstance(gate, Mapping) or set(gate) != required:
-        raise MultiTimeframeDiscoveryError("gate schema mismatch")
+    _validate_gate(gate)
     return {
         "positive_ratio": float(summary["positive_ratio"]) >= float(gate["minimum_positive_ratio"]),
         "median_return": float(summary["median_return"]) >= float(gate["minimum_median_return"]),
@@ -286,21 +360,41 @@ def _gate(summary: Mapping[str, Any], gate: Mapping[str, Any]) -> dict[str, bool
     }
 
 
-def _variant_id(family: str, config: Mapping[str, Any]) -> str:
-    return _digest({"family": family, "config": dict(config)})[:16]
-
-
 def _evaluate_variant(
-    frames: Mapping[str, pd.DataFrame], family: str, config: Mapping[str, Any],
-    start_by_symbol: Mapping[str, int], end_by_symbol: Mapping[str, int], profile: Mapping[str, Any],
+    frames: Mapping[str, pd.DataFrame],
+    family: str,
+    config: Mapping[str, Any],
+    start_by_symbol: Mapping[str, int],
+    end_by_symbol: Mapping[str, int],
+    profile: Mapping[str, Any],
+    *,
+    timeframe: str,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    if timeframe not in TIMEFRAME_BARS_PER_YEAR:
+        raise MultiTimeframeDiscoveryError("unsupported evaluation timeframe")
     rows: list[dict[str, Any]] = []
     for symbol in APPROVED_SYMBOLS:
         frame = frames[symbol]
         target = generate_targets(frame, family, config)
-        metric = _simulate(frame, target, start_by_symbol[symbol], end_by_symbol[symbol], profile)
+        metric = _simulate(
+            frame,
+            target,
+            start_by_symbol[symbol],
+            end_by_symbol[symbol],
+            profile,
+            bars_per_year=TIMEFRAME_BARS_PER_YEAR[timeframe],
+        )
         rows.append({"symbol": symbol, **metric})
     return _aggregate(rows), rows
+
+
+def _validate_pair_alignment(frames: Mapping[str, pd.DataFrame], timeframe: str) -> None:
+    if set(frames) != set(APPROVED_SYMBOLS):
+        raise MultiTimeframeDiscoveryError("archive pair surface is incomplete")
+    btc = frames["BTCUSDT"]["timestamp"].reset_index(drop=True)
+    eth = frames["ETHUSDT"]["timestamp"].reset_index(drop=True)
+    if not btc.equals(eth):
+        raise MultiTimeframeDiscoveryError(f"BTC/ETH archive timestamps are not aligned: {timeframe}")
 
 
 def discover(manifest: Mapping[str, Any]) -> dict[str, Any]:
@@ -312,7 +406,11 @@ def discover(manifest: Mapping[str, Any]) -> dict[str, Any]:
 
     for timeframe in APPROVED_TIMEFRAMES:
         frames = {symbol: load_frame(root, symbol, timeframe) for symbol in APPROVED_SYMBOLS}
-        split = {symbol: max(80, min(len(frame) - 40, int(len(frame) * fraction))) for symbol, frame in frames.items()}
+        _validate_pair_alignment(frames, timeframe)
+        split = {
+            symbol: max(80, min(len(frame) - 40, int(len(frame) * fraction)))
+            for symbol, frame in frames.items()
+        }
         train_start = {symbol: 0 for symbol in APPROVED_SYMBOLS}
         train_end = split
         locked_start = split
@@ -321,7 +419,13 @@ def discover(manifest: Mapping[str, Any]) -> dict[str, Any]:
             training_rows: list[dict[str, Any]] = []
             for config in manifest["variants"][family]:
                 summary, _rows = _evaluate_variant(
-                    frames, family, config, train_start, train_end, manifest["execution"]["conservative"]
+                    frames,
+                    family,
+                    config,
+                    train_start,
+                    train_end,
+                    manifest["execution"]["conservative"],
+                    timeframe=timeframe,
                 )
                 checks = _gate(summary, manifest["gates"]["training"])
                 training_rows.append({
@@ -338,8 +442,13 @@ def discover(manifest: Mapping[str, Any]) -> dict[str, Any]:
             locked_pass = True
             for profile_name in ("conservative", "stress"):
                 summary, per_symbol = _evaluate_variant(
-                    frames, family, selected["config"], locked_start, locked_end,
+                    frames,
+                    family,
+                    selected["config"],
+                    locked_start,
+                    locked_end,
                     manifest["execution"][profile_name],
+                    timeframe=timeframe,
                 )
                 checks = _gate(summary, manifest["gates"]["locked"])
                 locked_profiles[profile_name] = {
@@ -415,23 +524,47 @@ def verify_discovery(value: Mapping[str, Any]) -> dict[str, Any]:
         checks["digest"] = isinstance(claimed, str) and claimed == _digest(core)
         cells = core.get("cells")
         proposals = core.get("research_proposals")
-        checks["shape"] = isinstance(cells, list) and len(cells) == 9 and isinstance(proposals, list) and core.get("research_proposal_count") == len(proposals)
-        checks["authority"] = bool(
-            core.get("research_only") is True and core.get("paper_only") is True
-            and core.get("live_trading_authority") is False and core.get("private_credentials_used") is False
-            and core.get("automatic_strategy_promotion") is False and core.get("automatic_paper_forward_started") is False
+        checks["shape"] = bool(
+            isinstance(cells, list)
+            and len(cells) == 9
+            and {(row.get("timeframe"), row.get("family")) for row in cells if isinstance(row, Mapping)}
+            == {(timeframe, family) for timeframe in APPROVED_TIMEFRAMES for family in APPROVED_FAMILIES}
+            and isinstance(proposals, list)
+            and core.get("research_proposal_count") == len(proposals)
         )
-        checks["proposals"] = bool(isinstance(proposals, list) and all(
-            isinstance(row, Mapping) and row.get("proposal_state") == "RESEARCH_PROPOSAL"
-            and row.get("requires_independent_runtime_requalification") is True
-            and row.get("promotion_authority") is False and row.get("live_trading_authority") is False
-            and row.get("proposal_digest") == _digest({k: v for k, v in row.items() if k != "proposal_digest"})
-            for row in proposals
-        ))
+        checks["authority"] = bool(
+            core.get("research_only") is True
+            and core.get("paper_only") is True
+            and core.get("live_trading_authority") is False
+            and core.get("private_credentials_used") is False
+            and core.get("automatic_strategy_promotion") is False
+            and core.get("automatic_paper_forward_started") is False
+        )
+        checks["proposals"] = bool(
+            isinstance(proposals, list)
+            and all(
+                isinstance(row, Mapping)
+                and row.get("proposal_state") == "RESEARCH_PROPOSAL"
+                and row.get("family") in APPROVED_FAMILIES
+                and row.get("timeframe") in APPROVED_TIMEFRAMES
+                and row.get("requires_independent_runtime_requalification") is True
+                and row.get("promotion_authority") is False
+                and row.get("live_trading_authority") is False
+                and row.get("paper_only") is True
+                and row.get("proposal_digest")
+                == _digest({key: item for key, item in row.items() if key != "proposal_digest"})
+                for row in proposals
+            )
+        )
     except Exception:
         pass
     decision = "pass" if all(checks.values()) else "reject"
-    evidence = {"schema_version": "nexus.multitimeframe-strategy-discovery-verification.v1", "decision": decision, "checks": checks, "discovery_digest": value.get("discovery_digest")}
+    evidence = {
+        "schema_version": "nexus.multitimeframe-strategy-discovery-verification.v1",
+        "decision": decision,
+        "checks": checks,
+        "discovery_digest": value.get("discovery_digest"),
+    }
     return {**evidence, "verification_digest": _digest(evidence)}
 
 
@@ -456,8 +589,14 @@ def run(manifest_path: str | Path, output_root: str | Path) -> dict[str, Any]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--manifest", type=Path, default=Path("experiments/nexus_multitimeframe_strategy_discovery_v1.json"))
-    parser.add_argument("--output", type=Path, default=Path("build/nexus_multitimeframe_strategy_discovery"))
+    parser.add_argument(
+        "--manifest", type=Path,
+        default=Path("experiments/nexus_multitimeframe_strategy_discovery_v1.json"),
+    )
+    parser.add_argument(
+        "--output", type=Path,
+        default=Path("build/nexus_multitimeframe_strategy_discovery"),
+    )
     args = parser.parse_args()
     result = run(args.manifest, args.output)
     print(json.dumps({
