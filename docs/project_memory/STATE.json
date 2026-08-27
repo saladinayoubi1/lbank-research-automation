@@ -18,7 +18,7 @@
     "cloud continuity when the local laptop is offline"
   ],
   "runtime_status": {
-    "agent_execution_state": "synchronized_regime_paper_integration_verified_final_candidate_pending_physical_windows_proof",
+    "agent_execution_state": "final_proof_regime_binding_merged_exact_sha_regime_replay_dependency_hardening",
     "laptop_state": "historical_physical_phase7_proof_verified_new_fixed_sha_execution_required",
     "internet_outage_state": "not_assumed_from_laptop_state",
     "laptop_offline_is_not_internet_outage": true,
@@ -90,16 +90,16 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "9fae967c102d6b7ddef6ba2478833f3b6b961ce6",
-    "observed_at_utc": "2026-08-27T09:16:35Z",
+    "observed_main_sha": "b21df8e6e06b930a5267adea1c8a5806094aba40",
+    "observed_at_utc": "2026-08-27T09:42:39Z",
     "latest_main_change": {
-      "summary": "PR #1016 merged synchronized BTC/ETH 15m/1h/4h regime selection into the Demo Paper matrix. Exact-main matrix run 33057539638, Test run 33057539677, Cloud Fallback run 33057539657, and Build Verification run 33057539707 all succeeded. The matrix retains six comparison cells and eighteen lanes while the selected path is digest-bound to one common hour4-derived clock, the immutable Bybit archive, deterministic Risk, isolated Paper accounts, independent runtime verification, and append-only drift evidence.",
+      "summary": "PR #1017 merged the synchronized Demo regime-cycle snapshot into the fail-closed final Proof Mission at b21df8e6. Final proof now independently verifies the exact-source regime snapshot and rejects missing, cross-SHA, Live-enabled, private-credential, auto-promotion, non-Risk-final, or frozen-4h-mutating evidence. The remaining orchestration gap is that final-proof-only changes were not in the Demo matrix push path filter, so PR #1018 makes exact-SHA regime replay a mandatory dependency of future final candidates rather than relying on the schedule.",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true
     },
     "integration_cycle": {
-      "status": "verified_complete_through_synchronized_regime_paper_and_drift_on_exact_main",
+      "status": "verified_through_regime_binding_with_exact_sha_replay_trigger_hardening_in_progress",
       "integration_graph_pr": 954,
       "verified_execution_cycle_pr": 955,
       "strategy_paper_supervisor_pr": 956,
@@ -120,10 +120,11 @@
       "demo_state_recovery_pr": 1003,
       "regime_lane_adapter_pr": 1004,
       "synchronized_regime_cycle_pr": 1016,
-      "latest_main_sha": "9fae967c102d6b7ddef6ba2478833f3b6b961ce6",
+      "final_proof_regime_binding_pr": 1017,
+      "latest_main_sha": "b21df8e6e06b930a5267adea1c8a5806094aba40",
       "paper_only": true,
       "live_trading_authority": false,
-      "remaining_acceptance": "Final install candidate must include the synchronized regime-cycle snapshot in the fixed-SHA final proof and must classify windows_laptop as EXECUTED; historical physical proof cannot substitute for physical execution of the new final SHA."
+      "remaining_acceptance": "Future final-candidate pushes must automatically produce an exact-SHA synchronized regime-cycle snapshot; after cloud/build proof is green, the same fixed SHA must execute on the physical Windows laptop before installation acceptance."
     },
     "regime_strategy_runtime": {
       "status": "merged_verified_and_operational_in_demo_matrix",
@@ -131,7 +132,7 @@
       "runtime_drift_pr": 988,
       "isolated_lane_adapter_pr": 1004,
       "synchronized_cycle_pr": 1016,
-      "main_source_sha": "9fae967c102d6b7ddef6ba2478833f3b6b961ce6",
+      "last_verified_runtime_source_sha": "9fae967c102d6b7ddef6ba2478833f3b6b961ce6",
       "workflow_runs": {
         "nexus_demo_strategy_matrix": 33057539638,
         "nexus_cloud_fallback": 33057539657,
@@ -149,13 +150,13 @@
       "automatic_strategy_promotion": false,
       "private_credentials_used": false,
       "frozen_prospective_hour4_lane_mutated": false,
-      "next_step": "bind the regime-cycle snapshot into final fixed-SHA proof, then execute that final SHA on the physical Windows laptop before installation acceptance"
+      "next_step": "automatically replay the synchronized Demo regime cycle on the final merge SHA, then bind physical Windows execution to that same SHA"
     },
     "regime_runtime_drift": {
       "status": "operational_in_synchronized_demo_cycle",
       "integration_pr": 988,
       "demo_cycle_pr": 1016,
-      "base_source_sha": "9fae967c102d6b7ddef6ba2478833f3b6b961ce6",
+      "last_verified_runtime_source_sha": "9fae967c102d6b7ddef6ba2478833f3b6b961ce6",
       "evidence_bindings": [
         "independently verified Supervisor ledger",
         "digest-bound Paper performance projection",
@@ -176,9 +177,10 @@
       "promotion_authority": false
     },
     "final_proof_candidate": {
-      "status": "hardening_in_pr_1017_pending_exact_head_ci_and_physical_windows_execution",
-      "candidate_parent_sha": "9fae967c102d6b7ddef6ba2478833f3b6b961ce6",
+      "status": "regime_binding_merged_matrix_trigger_dependency_hardening",
+      "candidate_parent_sha": "b21df8e6e06b930a5267adea1c8a5806094aba40",
       "final_proof_regime_binding_pr": 1017,
+      "matrix_trigger_hardening_pr": 1018,
       "required_new_binding": "verified nexus.demo-regime-cycle.v1 snapshot must be present, independently verified, exact-source bound, Paper-only, Risk-final, no private credentials, no automatic promotion, and frozen prospective 4h lane unchanged",
       "windows_physical_execution_required": true,
       "historical_windows_proof_reusable_for_new_sha": false,
@@ -312,8 +314,9 @@
         "insufficient_evidence_preserves_cash": true
       },
       "stage8_fixed_sha_final_proof": {
-        "status": "pending_pr_1017_and_new_physical_windows_execution",
+        "status": "pending_exact_sha_matrix_trigger_hardening_and_new_physical_windows_execution",
         "regime_cycle_binding_required": true,
+        "regime_cycle_exact_sha_push_trigger_required": true,
         "windows_physical_execution_required": true
       }
     },
@@ -340,7 +343,8 @@
       "demo_state_recovery_pr_1003": "merged",
       "regime_lane_adapter_pr_1004": "merged",
       "synchronized_regime_cycle_pr_1016": "merged",
-      "final_proof_regime_binding_pr_1017": "open_pending_ci",
+      "final_proof_regime_binding_pr_1017": "merged",
+      "final_candidate_matrix_trigger_pr_1018": "open_pending_ci",
       "prospective_paper_run_32905463932": "success",
       "prospective_paper_run_32932158365": "success_1_of_180_bars",
       "drive_backup_refresh_required": true
@@ -348,7 +352,7 @@
     "release_readiness": {
       "production_ready": false,
       "install_candidate_ready": false,
-      "reason": "NEXUS remains explicitly Research/Backtest/Paper-only. Stage 6/7 synchronized Demo integration is verified on main, but the new final candidate still requires exact-head/main CI, final proof binding, and physical Windows execution on that new fixed SHA. None of these steps grants Live/L4, signing, billing, exchange credential, deployment, production-promotion, or self-authorization authority."
+      "reason": "NEXUS remains explicitly Research/Backtest/Paper-only. Final proof now requires synchronized regime evidence, but exact-SHA replay must be automatically bound to future final-candidate pushes and the resulting fixed SHA must still execute on the physical Windows laptop. None of these steps grants Live/L4, signing, billing, exchange credential, deployment, production-promotion, or self-authorization authority."
     },
     "provider_status": {
       "deepseek": {
