@@ -91,12 +91,17 @@ def _verification():
     }
 
 
-def test_reconstructs_paper_acceptance_from_automatic_open_and_verifier() -> None:
-    acceptance = _journal_paper_acceptance(
+def _acceptance(task=None, *, journal_family="momentum"):
+    return _journal_paper_acceptance(
         events=_journal(),
-        task=_task(),
+        task=task or _task(),
         supervisor_verification=_verification(),
+        journal_family=journal_family,
     )
+
+
+def test_reconstructs_paper_acceptance_from_automatic_open_and_verifier() -> None:
+    acceptance = _acceptance()
     assert acceptance is not None
     assert acceptance["risk_gate_allowed"] is True
     assert acceptance["replay_verified"] is True
@@ -108,30 +113,28 @@ def test_lane_substitution_cannot_reuse_prior_paper_acceptance() -> None:
     for field, replacement in (
         ("symbol", "ETHUSDT"),
         ("timeframe", "hour1"),
-        ("family", "trend_breakout"),
     ):
         task = deepcopy(_task())
         task["research_result"]["request"][field] = replacement
-        if field == "family":
-            task["family"] = replacement
-            task["research_result"]["strategy_record"]["family"] = replacement
-            task["research_result"]["qualification"]["family"] = replacement
-        assert _journal_paper_acceptance(
-            events=_journal(),
-            task=task,
-            supervisor_verification=_verification(),
-        ) is None
+        assert _acceptance(task) is None
+
+    task = deepcopy(_task())
+    task["family"] = "trend_breakout"
+    task["research_result"]["request"]["family"] = "trend_breakout"
+    task["research_result"]["strategy_record"]["family"] = "trend_breakout"
+    task["research_result"]["qualification"]["family"] = "trend_breakout"
+    assert _acceptance(task, journal_family="momentum") is None
+
+
+def test_wrong_family_journal_namespace_is_rejected() -> None:
+    assert _acceptance(journal_family="trend_breakout") is None
 
 
 def test_strategy_version_substitution_cannot_reuse_prior_paper_acceptance() -> None:
     task = deepcopy(_task())
     task["research_result"]["strategy_record"]["strategy_version"] = "momentum-v2"
     task["research_result"]["qualification"]["strategy_version"] = "momentum-v2"
-    assert _journal_paper_acceptance(
-        events=_journal(),
-        task=task,
-        supervisor_verification=_verification(),
-    ) is None
+    assert _acceptance(task) is None
 
 
 def test_flat_no_open_signal_keeps_verified_paper_history_in_projection(monkeypatch) -> None:
