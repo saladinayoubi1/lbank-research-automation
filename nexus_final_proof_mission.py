@@ -2,7 +2,8 @@
 
 This module does not manufacture runtime evidence.  It consumes the durable
 artifacts emitted by the verified Supervisor, Paper performance projection,
-resource ledger, and Project Memory projection and binds them to one Git SHA.
+resource ledger, synchronized regime cycle, and Project Memory projection and
+binds them to one Git SHA.
 """
 from __future__ import annotations
 
@@ -13,6 +14,7 @@ import re
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
+from nexus_demo_regime_cycle import verify_cycle_snapshot
 from nexus_strategy_paper_supervisor import verify_ledger
 
 SCHEMA = "nexus.final-proof-mission.v1"
@@ -88,9 +90,15 @@ def verify_final_proof(bundle: Mapping[str, Any]) -> dict[str, Any]:
     performance = bundle.get("mission_control_projection")
     memory = bundle.get("project_memory_projection")
     scheduler = bundle.get("scheduler_snapshot")
+    regime_cycle = bundle.get("regime_cycle_snapshot")
 
     supervisor_verification = (
         verify_ledger(supervisor) if isinstance(supervisor, Mapping) else {"decision": "reject"}
+    )
+    regime_verification = (
+        verify_cycle_snapshot(regime_cycle)
+        if isinstance(regime_cycle, Mapping)
+        else {"decision": "reject"}
     )
     checks: dict[str, bool] = {
         "schema": bundle.get("schema_version") == SCHEMA,
@@ -104,6 +112,16 @@ def verify_final_proof(bundle: Mapping[str, Any]) -> dict[str, Any]:
         and performance.get("live_trading_authority") is False
         and performance.get("supervisor_verification_digest")
         == supervisor_verification.get("verification_digest"),
+        "regime_cycle_verified": regime_verification.get("decision") == "pass",
+        "regime_cycle_source_bound": isinstance(regime_cycle, Mapping)
+        and regime_cycle.get("source_sha") == source_sha,
+        "regime_cycle_authority_bound": isinstance(regime_cycle, Mapping)
+        and regime_cycle.get("paper_only") is True
+        and regime_cycle.get("live_trading_authority") is False
+        and regime_cycle.get("private_credentials_used") is False
+        and regime_cycle.get("automatic_strategy_promotion") is False
+        and regime_cycle.get("deterministic_risk_final_authority") is True
+        and regime_cycle.get("frozen_prospective_hour4_lane_mutated") is False,
         "memory_projection_bound": isinstance(memory, Mapping)
         and memory.get("observed_main_sha") == source_sha
         and memory.get("proof_bundle_digest") == bundle.get("unsigned_bundle_digest"),
@@ -146,6 +164,7 @@ def build_unsigned_bundle(
     source_sha: str,
     supervisor_ledger: Mapping[str, Any],
     mission_control_projection: Mapping[str, Any],
+    regime_cycle_snapshot: Mapping[str, Any],
     scheduler_snapshot: Mapping[str, Any],
     resource_utilization: Sequence[Mapping[str, Any]],
 ) -> dict[str, Any]:
@@ -158,6 +177,7 @@ def build_unsigned_bundle(
         "live_trading_authority": False,
         "supervisor_ledger": dict(supervisor_ledger),
         "mission_control_projection": dict(mission_control_projection),
+        "regime_cycle_snapshot": dict(regime_cycle_snapshot),
         "scheduler_snapshot": dict(scheduler_snapshot),
         "resource_utilization": [dict(row) for row in resource_utilization],
     }
