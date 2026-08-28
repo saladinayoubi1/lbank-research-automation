@@ -25,9 +25,11 @@ and cannot enable or automatically promote Live trading.
 
 ## Resumable workflow
 
-`.github/workflows/bybit_prospective_paper_forward_v1.yml` runs every four
+`.github/workflows/bybit_prospective_paper_forward_v1.yml` polls every two
 hours, on manual dispatch, and when the implementation or frozen contract is
-merged to `main`. It restores the newest 90-day state artifact,
+merged to `main`. The redundant poll cadence tolerates a delayed or dropped
+GitHub scheduled event; it does not accelerate the 4-hour evidence clock because
+the engine accepts only previously unseen completed bars. It restores the newest 90-day state artifact,
 verifies the state, advances only newly completed bars, enforces Paper-only
 authority, and uploads a replacement state artifact. Concurrency prevents two
 writers from advancing the same chain simultaneously.
