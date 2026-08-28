@@ -28,6 +28,19 @@ def test_health_event_consumes_exact_triggering_run_artifact_before_dispatch():
     assert "should_dispatch" in text
 
 
+def test_missing_exact_trigger_artifact_fails_closed_without_false_ci_failure():
+    text = _text()
+    health_gate = text.split("Decide daily or health-driven dispatch", 1)[1].split(
+        "Restore rotation state", 1
+    )[0]
+    assert 'if [ -z "$artifact_id" ]; then' in health_gate
+    assert 'echo "should_dispatch=false" >> "$GITHUB_OUTPUT"' in health_gate
+    assert "health dispatch remains fail-closed" in health_gate
+    assert health_gate.index('if [ -z "$artifact_id" ]; then') < health_gate.index(
+        'gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip"'
+    )
+
+
 def test_workflow_run_checkout_is_pinned_to_triggering_sha():
     text = _text()
     binding = "github.event.workflow_run.head_sha"
