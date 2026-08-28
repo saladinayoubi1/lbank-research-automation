@@ -88,7 +88,7 @@ def test_owner_autostart_proof_fast_path_skips_heavy_python_and_node_bootstrap()
     skip_expr = "github.event_name != 'push' || !contains(github.event.head_commit.message, '[verify-owner-autostart]')"
     assert workflow.count(skip_expr) == 3
     verifier = workflow.index('- name: Verify owner-user autostart read-only')
-    setup_node = workflow.index('- uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020')
+    setup_node = workflow.index('- uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020')
     bootstrap = workflow.index('- name: Bootstrap portable Python')
     assert verifier < setup_node < bootstrap
     assert '- name: Owner-proof privacy guard' in workflow
