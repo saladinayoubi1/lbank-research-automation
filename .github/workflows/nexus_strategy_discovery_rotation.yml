@@ -5,13 +5,16 @@ on:
     - cron: "37 2 * * *"
   workflow_dispatch:
   workflow_run:
-    workflows: ["NEXUS persistent Paper trading loop"]
+    workflows:
+      - "NEXUS persistent Paper trading loop"
+      - "NEXUS Demo regime lifecycle bridge"
     types: [completed]
   push:
     branches: [main]
     paths:
       - "nexus_strategy_discovery_rotation.py"
       - "nexus_strategy_discovery_health_trigger.py"
+      - "nexus_demo_strategy_discovery_health_trigger.py"
       - "nexus_multitimeframe_strategy_discovery.py"
       - "scripts/nexus_strategy_discovery_controller.py"
       - "research/strategy_family_catalog.json"
@@ -22,7 +25,10 @@ on:
     paths:
       - "nexus_strategy_discovery_rotation.py"
       - "nexus_strategy_discovery_health_trigger.py"
+      - "nexus_demo_strategy_discovery_health_trigger.py"
       - "nexus_persistent_paper_trading_loop.py"
+      - "nexus_demo_regime_cycle.py"
+      - "nexus_demo_regime_lifecycle_bridge.py"
       - "nexus_multitimeframe_strategy_discovery.py"
       - "scripts/nexus_strategy_discovery_controller.py"
       - "research/strategy_family_catalog.json"
@@ -30,6 +36,7 @@ on:
       - "tests/test_nexus_multitimeframe_strategy_discovery.py"
       - "tests/test_nexus_strategy_discovery_rotation.py"
       - "tests/test_nexus_strategy_discovery_health_trigger.py"
+      - "tests/test_nexus_demo_strategy_discovery_health_trigger.py"
       - "tests/test_nexus_strategy_discovery_rotation_workflow.py"
       - "tests/test_nexus_strategy_discovery_controller.py"
       - ".github/workflows/nexus_multitimeframe_strategy_discovery.yml"
@@ -49,6 +56,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: "3.12"
@@ -59,6 +68,7 @@ jobs:
           python -m pytest -q
           tests/test_nexus_strategy_discovery_rotation.py
           tests/test_nexus_strategy_discovery_health_trigger.py
+          tests/test_nexus_demo_strategy_discovery_health_trigger.py
           tests/test_nexus_strategy_discovery_rotation_workflow.py
           tests/test_nexus_strategy_discovery_controller.py
           tests/test_nexus_multitimeframe_strategy_discovery.py
@@ -78,10 +88,14 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       STATE_ARTIFACT: nexus-strategy-discovery-rotation-state
       PAPER_STATE_ARTIFACT: nexus-persistent-paper-trading-state
+      DEMO_STATE_ARTIFACT: nexus-demo-strategy-matrix-state
       HEALTH_TRIGGER: ${{ github.event_name == 'workflow_run' && 'true' || 'false' }}
+      TRIGGER_WORKFLOW: ${{ github.event.workflow_run.name }}
       TRIGGER_RUN_ID: ${{ github.event.workflow_run.id }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: "3.12"
@@ -100,23 +114,48 @@ jobs:
             exit 0
           fi
 
-          rm -rf build/health-trigger build/paper-loop-state.zip
+          rm -rf build/health-trigger build/trigger-state.zip
           mkdir -p build/health-trigger
+
+          if [ "$TRIGGER_WORKFLOW" = "NEXUS persistent Paper trading loop" ]; then
+            artifact_name="$PAPER_STATE_ARTIFACT"
+          elif [ "$TRIGGER_WORKFLOW" = "NEXUS Demo regime lifecycle bridge" ]; then
+            artifact_name="$DEMO_STATE_ARTIFACT"
+          else
+            echo "unsupported triggering workflow: $TRIGGER_WORKFLOW" >&2
+            exit 1
+          fi
+
           artifact_id="$(gh api \
             -H 'Accept: application/vnd.github+json' \
             "repos/$GITHUB_REPOSITORY/actions/runs/$TRIGGER_RUN_ID/artifacts?per_page=100" \
-            --jq ".artifacts[] | select(.name == \"$PAPER_STATE_ARTIFACT\") | .id" \
+            --jq ".artifacts[] | select(.name == \"$artifact_name\") | .id" \
             | head -n 1)"
           test -n "$artifact_id"
           gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" \
-            > build/paper-loop-state.zip
-          unzip -q build/paper-loop-state.zip -d build/health-trigger/paper-state
-          snapshot="$(find build/health-trigger/paper-state -type f \
-            -path '*/demo/persistent-paper-trading-loop.json' -print -quit)"
-          test -n "$snapshot"
-          python nexus_strategy_discovery_health_trigger.py \
-            --loop-snapshot "$snapshot" \
-            --output build/health-trigger/health-trigger.json
+            > build/trigger-state.zip
+          unzip -q build/trigger-state.zip -d build/health-trigger/state
+
+          if [ "$TRIGGER_WORKFLOW" = "NEXUS persistent Paper trading loop" ]; then
+            snapshot="$(find build/health-trigger/state -type f \
+              -path '*/demo/persistent-paper-trading-loop.json' -print -quit)"
+            test -n "$snapshot"
+            python nexus_strategy_discovery_health_trigger.py \
+              --loop-snapshot "$snapshot" \
+              --output build/health-trigger/health-trigger.json
+          else
+            regime="$(find build/health-trigger/state -type f \
+              -path '*/demo/regime-cycle.json' -print -quit)"
+            lifecycle="$(find build/health-trigger/state -type f \
+              -path '*/demo/regime-lifecycle-bridge.json' -print -quit)"
+            test -n "$regime"
+            test -n "$lifecycle"
+            python nexus_demo_strategy_discovery_health_trigger.py \
+              --regime-snapshot "$regime" \
+              --lifecycle-snapshot "$lifecycle" \
+              --output build/health-trigger/health-trigger.json
+          fi
+
           should_dispatch="$(python -c 'import json; print(str(json.load(open("build/health-trigger/health-trigger.json"))["should_dispatch"]).lower())')"
           echo "should_dispatch=$should_dispatch" >> "$GITHUB_OUTPUT"
           echo "source_sha=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
