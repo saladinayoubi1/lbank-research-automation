@@ -23,6 +23,11 @@ def test_wsl_enablement_is_elevated_bounded_and_never_restarts_automatically() -
     assert "error_message" in text
     assert "Elevated WSL enablement failed without evidence" in text
     assert "exit $child.ExitCode" in text
+    assert "decision = 'UAC_PENDING'" in text
+    assert "Start-Transcript" in text
+    assert "elevated_transcript_begin=true" in text
+    assert "fatal_enablement_error_class" in text
+    assert "WSL_FEATURE_ENABLEMENT_FAILED" in text
 
     for forbidden in (
         "restart-computer",
