@@ -191,7 +191,7 @@ class WorkflowPermissionsTests(unittest.TestCase):
     def test_external_action_full_sha_passes(self):
         workflow = VALID.replace(
             "steps: []",
-            "steps:\n      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "steps:\n      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
         )
         workflows, policy, _ = self.fixture(workflow)
         self.assertEqual(len(run(workflows, policy)), 1)
