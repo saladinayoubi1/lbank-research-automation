@@ -163,7 +163,7 @@ def run_demo_regime_lifecycle_replay(
         "risk_reducing_rebalance_operational": rebalance.get("risk_reducing_rebalance_operational") is True,
         "exposure_increase_operational": increase.get("exposure_increase_operational") is True,
         "fresh_deterministic_risk_required": increase.get("fresh_deterministic_risk_required") is True,
-        "unauthorized_exposure_increase": increase.get("unauthorized_exposure_increase") is True,
+        "unauthorized_exposure_increase": increase.get("unauthorized_exposure_increase") is not False,
         "paper_only": True,
         "live_trading_authority": False,
         "private_credentials_used": False,
