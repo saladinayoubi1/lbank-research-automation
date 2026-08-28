@@ -16,6 +16,7 @@ on:
           - zotero-status
           - ai-council-health
           - sidecar-compat
+          - bybit-wsl-status
           - autonomous
   push:
     branches:
@@ -185,6 +186,22 @@ jobs:
           -File scripts\windows_sidecar_local_compat.ps1
           -SourceSha "%GITHUB_SHA%"
           -OutputPath "build\windows-sidecar-local-compat\evidence.json"
+
+      - name: Diagnose WSL and Bybit public-network eligibility
+        if: github.event_name == 'workflow_dispatch' && inputs.task == 'bybit-wsl-status'
+        run: >-
+          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass
+          -File scripts\diagnose_nexus_bybit_wsl_runner.ps1
+          -OutputPath "build\bybit-wsl-runner-diagnostic\evidence.json"
+
+      - name: Upload WSL and Bybit public-network evidence
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.task == 'bybit-wsl-status'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-bybit-wsl-runner-diagnostic-${{ github.run_id }}
+          if-no-files-found: error
+          retention-days: 14
+          path: build/bybit-wsl-runner-diagnostic/evidence.json
 
       - name: Upload physical sidecar compatibility evidence
         if: >-
