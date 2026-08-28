@@ -17,6 +17,7 @@ on:
           - ai-council-health
           - sidecar-compat
           - bybit-wsl-status
+          - bybit-wsl-enable
           - autonomous
   push:
     branches:
@@ -202,6 +203,22 @@ jobs:
           if-no-files-found: error
           retention-days: 14
           path: build/bybit-wsl-runner-diagnostic/evidence.json
+
+      - name: Enable WSL platform for the isolated Bybit Linux runner
+        if: github.event_name == 'workflow_dispatch' && inputs.task == 'bybit-wsl-enable'
+        run: >-
+          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass
+          -File scripts\enable_nexus_bybit_wsl.ps1
+          -OutputPath "build\bybit-wsl-enablement\evidence.json"
+
+      - name: Upload WSL enablement evidence
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.task == 'bybit-wsl-enable'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-bybit-wsl-enablement-${{ github.run_id }}
+          if-no-files-found: error
+          retention-days: 14
+          path: build/bybit-wsl-enablement/evidence.json
 
       - name: Upload physical sidecar compatibility evidence
         if: >-
