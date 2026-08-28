@@ -9,6 +9,7 @@ on:
     paths:
       - "nexus_demo_strategy_matrix.py"
       - "nexus_demo_archive_replay.py"
+      - "nexus_demo_regime_lifecycle_replay.py"
       - "nexus_demo_state_recovery.py"
       - "nexus_demo_paper_position_maintenance.py"
       - "nexus_demo_paper_performance_refresh.py"
@@ -18,6 +19,8 @@ on:
       - "nexus_regime_strategy_selector.py"
       - "nexus_regime_strategy_runtime.py"
       - "nexus_regime_runtime_drift.py"
+      - "nexus_regime_selected_position_rebalance.py"
+      - "nexus_regime_selected_exposure_increase.py"
       - "cross_timeframe_context.py"
       - "data_intelligence.py"
       - "nexus_strategy_paper_supervisor.py"
@@ -43,6 +46,7 @@ on:
     paths:
       - "nexus_demo_strategy_matrix.py"
       - "nexus_demo_archive_replay.py"
+      - "nexus_demo_regime_lifecycle_replay.py"
       - "nexus_demo_state_recovery.py"
       - "nexus_demo_paper_position_maintenance.py"
       - "nexus_demo_paper_performance_refresh.py"
@@ -52,6 +56,8 @@ on:
       - "nexus_regime_strategy_selector.py"
       - "nexus_regime_strategy_runtime.py"
       - "nexus_regime_runtime_drift.py"
+      - "nexus_regime_selected_position_rebalance.py"
+      - "nexus_regime_selected_exposure_increase.py"
       - "cross_timeframe_context.py"
       - "data_intelligence.py"
       - "nexus_strategy_paper_supervisor.py"
@@ -67,11 +73,14 @@ on:
       - "requirements-dev.lock"
       - "tests/test_nexus_demo_strategy_matrix.py"
       - "tests/test_nexus_demo_archive_replay.py"
+      - "tests/test_nexus_demo_regime_lifecycle_replay.py"
       - "tests/test_nexus_demo_state_recovery.py"
       - "tests/test_nexus_demo_strategy_matrix_runtime_dependencies.py"
       - "tests/test_nexus_demo_paper_position_maintenance.py"
       - "tests/test_nexus_demo_paper_lifecycle_persistence.py"
       - "tests/test_nexus_demo_regime_cycle.py"
+      - "tests/test_nexus_regime_selected_position_rebalance.py"
+      - "tests/test_nexus_regime_selected_exposure_increase.py"
       - "tests/test_nexus_strategy_paper_supervisor.py"
       - "tests/test_nexus_strategy_paper_supervisor_matrix_symbol.py"
       - "tests/test_nexus_paper_performance_pipeline.py"
@@ -114,11 +123,14 @@ jobs:
           python -m pytest -q
           tests/test_nexus_demo_strategy_matrix.py
           tests/test_nexus_demo_archive_replay.py
+          tests/test_nexus_demo_regime_lifecycle_replay.py
           tests/test_nexus_demo_state_recovery.py
           tests/test_nexus_demo_strategy_matrix_runtime_dependencies.py
           tests/test_nexus_demo_paper_position_maintenance.py
           tests/test_nexus_demo_paper_lifecycle_persistence.py
           tests/test_nexus_demo_regime_cycle.py
+          tests/test_nexus_regime_selected_position_rebalance.py
+          tests/test_nexus_regime_selected_exposure_increase.py
           tests/test_nexus_strategy_paper_supervisor.py
           tests/test_nexus_strategy_paper_supervisor_matrix_symbol.py
           tests/test_nexus_paper_performance_pipeline.py
@@ -279,6 +291,39 @@ jobs:
           assert snapshot["automatic_strategy_promotion"] is False
           assert snapshot["deterministic_risk_final_authority"] is True
           assert snapshot["frozen_prospective_hour4_lane_mutated"] is False
+          PY
+      - name: Run immutable archive-backed regime lifecycle bridges
+        run: |
+          set -euo pipefail
+          python nexus_demo_regime_lifecycle_replay.py \
+            --manifest config/nexus-demo-strategy-matrix-v1.json \
+            --state-root build/nexus_demo_strategy_matrix_state \
+            --source-sha "$GITHUB_SHA" \
+            --replay-archive-root build/nexus_demo_archive \
+            --archive-sha256 "$DATASET_SHA256"
+      - name: Independently enforce lifecycle and Paper authority
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from nexus_demo_regime_lifecycle_replay import verify_demo_regime_lifecycle_replay
+
+          snapshot = json.loads(Path(
+              "build/nexus_demo_strategy_matrix_state/demo/regime-lifecycle-replay.json"
+          ).read_text(encoding="utf-8"))
+          verification = verify_demo_regime_lifecycle_replay(snapshot)
+          assert verification["decision"] == "pass", verification
+          assert snapshot["archive_sha256"] == "5f1173467c2296201940c3b7786b7cc3e5442244e07289769ab4867ace41d668"
+          assert snapshot["risk_reducing_rebalance_operational"] is True
+          assert snapshot["exposure_increase_operational"] is True
+          assert snapshot["fresh_deterministic_risk_required"] is True
+          assert snapshot["unauthorized_exposure_increase"] is False
+          assert snapshot["paper_only"] is True
+          assert snapshot["live_trading_authority"] is False
+          assert snapshot["private_credentials_used"] is False
+          assert snapshot["automatic_strategy_promotion"] is False
+          assert snapshot["deterministic_risk_final_authority"] is True
           PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
