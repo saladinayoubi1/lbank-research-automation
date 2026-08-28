@@ -36,9 +36,24 @@ function Write-Evidence {
 }
 
 $target = [IO.Path]::GetFullPath($OutputPath)
+$logTarget = "$target.elevated.log"
 $isAdmin = Test-IsAdministrator
 
 if (-not $isAdmin -and -not $Elevated) {
+    Write-Evidence -Target $target -Payload ([ordered]@{
+        schema_version = 1
+        generated_at_utc = [DateTime]::UtcNow.ToString('o')
+        source_sha = $env:GITHUB_SHA
+        run_id = $env:GITHUB_RUN_ID
+        administrator = $false
+        restart_required = $false
+        automatic_restart_performed = $false
+        private_credentials_used = $false
+        proxy_or_vpn_configured = $false
+        error_class = $null
+        error_message = $null
+        decision = 'UAC_PENDING'
+    })
     $scriptPath = [IO.Path]::GetFullPath($MyInvocation.MyCommand.Path)
     $arguments = @(
         '-NoProfile',
@@ -51,6 +66,11 @@ if (-not $isAdmin -and -not $Elevated) {
 
     Write-Host 'uac_approval_required=true'
     $child = Start-Process -FilePath 'powershell.exe' -ArgumentList $arguments -Verb RunAs -Wait -PassThru
+    if (Test-Path -LiteralPath $logTarget -PathType Leaf) {
+        Write-Host 'elevated_transcript_begin=true'
+        Get-Content -LiteralPath $logTarget | Select-Object -Last 160 | ForEach-Object { Write-Host $_ }
+        Write-Host 'elevated_transcript_end=true'
+    }
     if (Test-Path -LiteralPath $target -PathType Leaf) {
         $evidence = Get-Content -LiteralPath $target -Raw | ConvertFrom-Json
         Write-Host "bybit_wsl_enablement_decision=$($evidence.decision)"
@@ -70,6 +90,48 @@ if (-not $isAdmin -and -not $Elevated) {
 
 if (-not $isAdmin) {
     throw 'Administrator authority was not obtained.'
+}
+
+$transcriptStarted = $false
+try {
+    $logParent = Split-Path -Parent $logTarget
+    New-Item -ItemType Directory -Path $logParent -Force | Out-Null
+    Start-Transcript -LiteralPath $logTarget -Force | Out-Null
+    $transcriptStarted = $true
+}
+catch {
+    Write-Host "transcript_start_error=$($_.Exception.GetType().Name)"
+}
+
+trap {
+    $fatal = $_.Exception
+    $fallback = [ordered]@{
+        schema_version = 1
+        generated_at_utc = [DateTime]::UtcNow.ToString('o')
+        source_sha = $env:GITHUB_SHA
+        run_id = $env:GITHUB_RUN_ID
+        administrator = $true
+        restart_required = $false
+        automatic_restart_performed = $false
+        private_credentials_used = $false
+        proxy_or_vpn_configured = $false
+        error_class = $fatal.GetType().Name
+        error_message = [string]$fatal.Message
+        decision = 'WSL_FEATURE_ENABLEMENT_FAILED'
+    }
+    try {
+        Write-Evidence -Target $target -Payload $fallback
+    }
+    catch {
+        $fallbackJson = $fallback | ConvertTo-Json -Depth 8
+        [IO.File]::WriteAllText($target, $fallbackJson, (New-Object Text.UTF8Encoding($false)))
+    }
+    Write-Host "fatal_enablement_error_class=$($fatal.GetType().Name)"
+    Write-Host "fatal_enablement_error_message=$($fatal.Message)"
+    if ($transcriptStarted) {
+        try { Stop-Transcript | Out-Null } catch { }
+    }
+    exit 1
 }
 
 $before = [ordered]@{
@@ -137,5 +199,12 @@ if ($enablementError) {
 Write-Host "evidence_sha256=$digest"
 
 if (-not $enabled) {
+    if ($transcriptStarted) {
+        Stop-Transcript | Out-Null
+    }
     exit 1
+}
+
+if ($transcriptStarted) {
+    Stop-Transcript | Out-Null
 }
