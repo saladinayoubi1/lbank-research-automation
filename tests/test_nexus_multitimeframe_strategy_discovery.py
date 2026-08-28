@@ -14,6 +14,7 @@ import nexus_multitimeframe_strategy_discovery as discovery
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "experiments" / "nexus_multitimeframe_strategy_discovery_v1.json"
 FREQ = {"minute15": "15min", "hour1": "1h", "hour4": "4h"}
+SOURCE_SHA = "a" * 40
 
 
 def _frame(symbol: str, timeframe: str, *, rows: int = 220, holdout_shock: float = 0.0) -> pd.DataFrame:
@@ -70,8 +71,8 @@ def test_locked_holdout_cannot_change_training_selected_variant(tmp_path: Path) 
     _archive(baseline_root, holdout_shock=0.0)
     _archive(shocked_root, holdout_shock=-0.45)
 
-    baseline = discovery.discover(_manifest(baseline_root))
-    shocked = discovery.discover(_manifest(shocked_root))
+    baseline = discovery.discover(_manifest(baseline_root), source_sha=SOURCE_SHA)
+    shocked = discovery.discover(_manifest(shocked_root), source_sha=SOURCE_SHA)
 
     baseline_selected = {
         (row["timeframe"], row["family"]): row["selected_variant_id"]
@@ -112,7 +113,7 @@ def test_archive_identity_substitution_fails_closed(tmp_path: Path) -> None:
     frame.to_parquet(path, index=False)
 
     with pytest.raises(discovery.MultiTimeframeDiscoveryError, match="identity mismatch"):
-        discovery.discover(_manifest(root))
+        discovery.discover(_manifest(root), source_sha=SOURCE_SHA)
 
 
 def test_archive_gap_fails_closed(tmp_path: Path) -> None:
@@ -123,7 +124,7 @@ def test_archive_gap_fails_closed(tmp_path: Path) -> None:
     frame.to_parquet(path, index=False)
 
     with pytest.raises(discovery.MultiTimeframeDiscoveryError, match="cadence is not gap-free"):
-        discovery.discover(_manifest(root))
+        discovery.discover(_manifest(root), source_sha=SOURCE_SHA)
 
 
 def test_pair_timestamp_substitution_fails_closed(tmp_path: Path) -> None:
@@ -135,13 +136,13 @@ def test_pair_timestamp_substitution_fails_closed(tmp_path: Path) -> None:
     frame.to_parquet(path, index=False)
 
     with pytest.raises(discovery.MultiTimeframeDiscoveryError, match="timestamps are not aligned"):
-        discovery.discover(_manifest(root))
+        discovery.discover(_manifest(root), source_sha=SOURCE_SHA)
 
 
 def test_verifier_rejects_tampered_research_proposal(tmp_path: Path) -> None:
     root = tmp_path / "archive"
     _archive(root)
-    result = discovery.discover(_manifest(root))
+    result = discovery.discover(_manifest(root), source_sha=SOURCE_SHA)
     verification = discovery.verify_discovery(result)
     assert verification["decision"] == "pass"
     assert result["research_only"] is True
@@ -161,12 +162,34 @@ def test_run_persists_verified_research_only_queue(tmp_path: Path) -> None:
     manifest_path = tmp_path / "manifest.json"
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
 
-    result = discovery.run(manifest_path, output)
+    result = discovery.run(manifest_path, output, source_sha=SOURCE_SHA)
     queue = json.loads((output / "research_proposals.json").read_text(encoding="utf-8"))
     verification = json.loads((output / "verification.json").read_text(encoding="utf-8"))
 
     assert verification["decision"] == "pass"
+    assert result["source_sha"] == SOURCE_SHA
+    assert queue["source_discovery_sha"] == SOURCE_SHA
     assert queue["automatic_strategy_promotion"] is False
     assert queue["live_trading_authority"] is False
     assert queue["source_discovery_digest"] == result["discovery_digest"]
     assert all(row["proposal_state"] == "RESEARCH_PROPOSAL" for row in queue["proposals"])
+
+
+def test_discovery_rejects_invalid_or_tampered_source_sha(tmp_path: Path) -> None:
+    root = tmp_path / "archive"
+    _archive(root)
+    with pytest.raises(discovery.MultiTimeframeDiscoveryError, match="exact Git SHA"):
+        discovery.discover(_manifest(root), source_sha="main")
+
+    result = discovery.discover(_manifest(root), source_sha=SOURCE_SHA)
+    tampered = deepcopy(result)
+    tampered["source_sha"] = "b" * 40
+    assert discovery.verify_discovery(tampered)["decision"] == "reject"
+
+
+def test_workflow_binds_discovery_artifact_to_exact_source_sha() -> None:
+    workflow = (
+        ROOT / ".github" / "workflows" / "nexus_multitimeframe_strategy_discovery.yml"
+    ).read_text(encoding="utf-8")
+    assert '--source-sha "$GITHUB_SHA"' in workflow
+    assert 'assert result["source_sha"] == "${{ github.sha }}"' in workflow

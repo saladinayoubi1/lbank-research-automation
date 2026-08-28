@@ -90,6 +90,7 @@ jobs:
           set -euo pipefail
           python nexus_multitimeframe_verified_archive_discovery.py \
             --manifest experiments/nexus_multitimeframe_strategy_discovery_v1.json \
+            --source-sha "$GITHUB_SHA" \
             --output build/nexus_multitimeframe_strategy_discovery
       - name: Verify authority boundary
         run: |
@@ -103,6 +104,7 @@ jobs:
           result = json.loads((root / "multitimeframe_strategy_discovery.json").read_text())
           verification = verify_discovery(result)
           assert verification["decision"] == "pass", verification
+          assert result["source_sha"] == "${{ github.sha }}"
           assert result["dataset_archive_sha256"] == ARCHIVE_SHA256
           assert result["research_only"] is True
           assert result["paper_only"] is True

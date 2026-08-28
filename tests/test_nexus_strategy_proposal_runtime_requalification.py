@@ -46,6 +46,7 @@ def _discovery(*, proposal_count: int = 1):
         proposals.append({**proposal_core, "proposal_digest": discovery_digest(proposal_core)})
     core = {
         "schema_version": "nexus.multitimeframe-strategy-discovery.v1",
+        "source_sha": SOURCE_SHA,
         "dataset_archive_sha256": DATASET_SHA,
         "cells": cells,
         "research_proposals": proposals,
@@ -60,6 +61,7 @@ def _discovery(*, proposal_count: int = 1):
     result = {**core, "discovery_digest": discovery_digest(core)}
     queue = {
         "schema_version": "nexus.strategy-research-proposal-queue.v1",
+        "source_discovery_sha": SOURCE_SHA,
         "source_discovery_digest": result["discovery_digest"],
         "proposals": proposals,
         "automatic_strategy_promotion": False,
@@ -198,6 +200,25 @@ def test_requalification_rejects_unbound_queue_and_tampered_completion(tmp_path:
             queue,
             source_sha=SOURCE_SHA,
             discovery_source_sha="9" * 40,
+            state_root=tmp_path,
+            now_ms=1_787_875_200_000,
+            evaluator=lambda proposal, symbol, *_args: _evaluation(proposal, symbol),
+        )
+
+    wrong_source = dict(discovery)
+    wrong_source["source_sha"] = "9" * 40
+    unsigned_discovery = dict(wrong_source)
+    unsigned_discovery.pop("discovery_digest")
+    wrong_source["discovery_digest"] = discovery_digest(unsigned_discovery)
+    wrong_queue = dict(queue)
+    wrong_queue["source_discovery_sha"] = "9" * 40
+    wrong_queue["source_discovery_digest"] = wrong_source["discovery_digest"]
+    with pytest.raises(StrategyProposalRequalificationError, match="triggering source SHA"):
+        build_requalification(
+            wrong_source,
+            wrong_queue,
+            source_sha=SOURCE_SHA,
+            discovery_source_sha=SOURCE_SHA,
             state_root=tmp_path,
             now_ms=1_787_875_200_000,
             evaluator=lambda proposal, symbol, *_args: _evaluation(proposal, symbol),
