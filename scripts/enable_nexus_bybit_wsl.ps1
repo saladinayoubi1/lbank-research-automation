@@ -51,16 +51,21 @@ if (-not $isAdmin -and -not $Elevated) {
 
     Write-Host 'uac_approval_required=true'
     $child = Start-Process -FilePath 'powershell.exe' -ArgumentList $arguments -Verb RunAs -Wait -PassThru
-    if ($child.ExitCode -ne 0) {
-        throw "Elevated WSL enablement failed with exit code $($child.ExitCode)."
+    if (Test-Path -LiteralPath $target -PathType Leaf) {
+        $evidence = Get-Content -LiteralPath $target -Raw | ConvertFrom-Json
+        Write-Host "bybit_wsl_enablement_decision=$($evidence.decision)"
+        Write-Host "restart_required=$($evidence.restart_required.ToString().ToLowerInvariant())"
+        if ($evidence.error_class) {
+            Write-Host "enablement_error_class=$($evidence.error_class)"
+        }
     }
-    if (-not (Test-Path -LiteralPath $target -PathType Leaf)) {
+    elseif ($child.ExitCode -ne 0) {
+        throw "Elevated WSL enablement failed without evidence; exit code $($child.ExitCode)."
+    }
+    else {
         throw 'Elevated WSL enablement did not produce evidence.'
     }
-    $evidence = Get-Content -LiteralPath $target -Raw | ConvertFrom-Json
-    Write-Host "bybit_wsl_enablement_decision=$($evidence.decision)"
-    Write-Host "restart_required=$($evidence.restart_required.ToString().ToLowerInvariant())"
-    exit 0
+    exit $child.ExitCode
 }
 
 if (-not $isAdmin) {
@@ -72,16 +77,27 @@ $before = [ordered]@{
     virtual_machine_platform = Get-FeatureState -Name 'VirtualMachinePlatform'
 }
 
-$wslResult = Enable-WindowsOptionalFeature -Online -FeatureName 'Microsoft-Windows-Subsystem-Linux' -All -NoRestart
-$vmResult = Enable-WindowsOptionalFeature -Online -FeatureName 'VirtualMachinePlatform' -All -NoRestart
+$wslResult = $null
+$vmResult = $null
+$enablementError = $null
+try {
+    $wslResult = Enable-WindowsOptionalFeature -Online -FeatureName 'Microsoft-Windows-Subsystem-Linux' -All -NoRestart
+    $vmResult = Enable-WindowsOptionalFeature -Online -FeatureName 'VirtualMachinePlatform' -All -NoRestart
+}
+catch {
+    $enablementError = $_.Exception
+}
 
 $after = [ordered]@{
     wsl = Get-FeatureState -Name 'Microsoft-Windows-Subsystem-Linux'
     virtual_machine_platform = Get-FeatureState -Name 'VirtualMachinePlatform'
 }
-$restartRequired = [bool]($wslResult.RestartNeeded -or $vmResult.RestartNeeded)
+$restartRequired = [bool](
+    ($wslResult -and $wslResult.RestartNeeded) -or
+    ($vmResult -and $vmResult.RestartNeeded)
+)
 $enabled = $after.wsl -in @('Enabled', 'EnablePending') -and $after.virtual_machine_platform -in @('Enabled', 'EnablePending')
-$decision = if (-not $enabled) {
+$decision = if ($enablementError -or -not $enabled) {
     'WSL_FEATURE_ENABLEMENT_FAILED'
 }
 elseif ($restartRequired -or $after.wsl -eq 'EnablePending' -or $after.virtual_machine_platform -eq 'EnablePending') {
@@ -103,6 +119,8 @@ $payload = [ordered]@{
     automatic_restart_performed = $false
     private_credentials_used = $false
     proxy_or_vpn_configured = $false
+    error_class = if ($enablementError) { $enablementError.GetType().Name } else { $null }
+    error_message = if ($enablementError) { [string]$enablementError.Message } else { $null }
     decision = $decision
 }
 
@@ -112,6 +130,10 @@ $digest = (Get-FileHash -LiteralPath $target -Algorithm SHA256).Hash.ToLowerInva
 Write-Host "bybit_wsl_enablement_decision=$decision"
 Write-Host "restart_required=$($restartRequired.ToString().ToLowerInvariant())"
 Write-Host 'automatic_restart_performed=false'
+if ($enablementError) {
+    Write-Host "enablement_error_class=$($enablementError.GetType().Name)"
+    Write-Host "enablement_error_message=$($enablementError.Message)"
+}
 Write-Host "evidence_sha256=$digest"
 
 if (-not $enabled) {

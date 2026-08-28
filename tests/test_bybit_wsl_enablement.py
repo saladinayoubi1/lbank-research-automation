@@ -19,6 +19,10 @@ def test_wsl_enablement_is_elevated_bounded_and_never_restarts_automatically() -
     assert "automatic_restart_performed = $false" in text
     assert "private_credentials_used = $false" in text
     assert "proxy_or_vpn_configured = $false" in text
+    assert "error_class" in text
+    assert "error_message" in text
+    assert "Elevated WSL enablement failed without evidence" in text
+    assert "exit $child.ExitCode" in text
 
     for forbidden in (
         "restart-computer",
