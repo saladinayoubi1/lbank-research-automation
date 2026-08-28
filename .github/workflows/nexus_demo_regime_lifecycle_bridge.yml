@@ -27,6 +27,8 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: "3.12"
@@ -63,6 +65,8 @@ jobs:
       STATE_ROOT: build/nexus_demo_strategy_matrix_state
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: "3.12"
