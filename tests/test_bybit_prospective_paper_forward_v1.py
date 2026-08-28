@@ -78,6 +78,17 @@ def test_contract_binds_frozen_strategy_and_paper_only_authority() -> None:
     }
 
 
+def test_workflow_uses_redundant_polling_without_parallel_state_writers() -> None:
+    workflow = (
+        ROOT / ".github" / "workflows" / "bybit_prospective_paper_forward_v1.yml"
+    ).read_text(encoding="utf-8")
+    assert 'cron: "17 */2 * * *"' in workflow
+    assert 'cron: "17 */4 * * *"' not in workflow
+    assert "group: bybit-prospective-paper-forward-v1" in workflow
+    assert "cancel-in-progress: false" in workflow
+    assert "advances only previously unseen closed bars" in workflow
+
+
 def test_frozen_manifest_digest_is_newline_portable(tmp_path: Path) -> None:
     lf = tmp_path / "manifest-lf.json"
     crlf = tmp_path / "manifest-crlf.json"
