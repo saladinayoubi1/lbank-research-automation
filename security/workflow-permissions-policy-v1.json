@@ -45,6 +45,7 @@
     ".github/workflows/nexus-local-runner.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"local":{"policy_version":1}}},
     ".github/workflows/nexus-mission-queue.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"validate-mission-queue":{"policy_version":1}}},
     ".github/workflows/nexus-runtime-worker.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"laptop-worker":{"policy_version":1},"preflight":{"policy_version":1},"windows-candidate-validation":{"policy_version":1}}},
+    ".github/workflows/nexus_demo_regime_lifecycle_replay.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"contract-test":{"policy_version":1},"lifecycle-replay":{"policy_version":1}}},
     ".github/workflows/nexus_demo_strategy_matrix.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"contract-test":{"policy_version":1},"matrix-cycle":{"policy_version":1}}},
     ".github/workflows/nexus_multitimeframe_strategy_discovery.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"contract-test":{"policy_version":1},"discover":{"policy_version":1}}},
     ".github/workflows/nexus_persistent_paper_trading_loop.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"contract-test":{"policy_version":1},"paper-loop":{"policy_version":1}}},
