@@ -146,7 +146,7 @@ jobs:
           path: |
             build/nexus_demo_strategy_matrix_state/demo/regime-cycle.json
             build/nexus_demo_strategy_matrix_state/demo/regime-selected-rebalance.json
-            build/nexus_demo_strategy_strategy_matrix_state/demo/regime-selected-exposure-increase.json
+            build/nexus_demo_strategy_matrix_state/demo/regime-selected-exposure-increase.json
             build/nexus_demo_strategy_matrix_state/demo/regime-lifecycle-bridge.json
           if-no-files-found: error
           retention-days: 90
