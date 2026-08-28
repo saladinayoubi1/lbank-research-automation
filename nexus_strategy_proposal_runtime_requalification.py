@@ -103,6 +103,7 @@ def _validate_inputs(
         raise StrategyProposalRequalificationError("discovery evidence failed verification")
     if set(proposal_queue) != {
         "schema_version",
+        "source_discovery_sha",
         "source_discovery_digest",
         "proposals",
         "automatic_strategy_promotion",
@@ -113,6 +114,7 @@ def _validate_inputs(
     discovery_proposals = discovery.get("research_proposals")
     if (
         proposal_queue.get("schema_version") != QUEUE_SCHEMA
+        or proposal_queue.get("source_discovery_sha") != discovery.get("source_sha")
         or proposal_queue.get("source_discovery_digest") != discovery.get("discovery_digest")
         or proposal_queue.get("automatic_strategy_promotion") is not False
         or proposal_queue.get("live_trading_authority") is not False
@@ -319,6 +321,10 @@ def build_requalification(
     if source_sha != discovery_source_sha:
         raise StrategyProposalRequalificationError(
             "requalification must execute at the exact discovery source SHA"
+        )
+    if discovery.get("source_sha") != discovery_source_sha:
+        raise StrategyProposalRequalificationError(
+            "discovery evidence is not bound to its triggering source SHA"
         )
     if isinstance(now_ms, bool) or not isinstance(now_ms, int) or now_ms <= 0:
         raise StrategyProposalRequalificationError("now_ms must be a positive integer")

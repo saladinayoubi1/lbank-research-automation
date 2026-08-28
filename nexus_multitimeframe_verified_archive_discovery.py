@@ -81,13 +81,18 @@ def load_verified_manifest(path: str | Path) -> dict[str, Any]:
     return manifest
 
 
-def run(manifest_path: str | Path, output_root: str | Path) -> dict[str, Any]:
+def run(
+    manifest_path: str | Path,
+    output_root: str | Path,
+    *,
+    source_sha: str,
+) -> dict[str, Any]:
     """Run the existing discovery core through the verified archive loader."""
     load_verified_manifest(manifest_path)
     original_loader = discovery.load_frame
     discovery.load_frame = load_verified_archive_frame
     try:
-        result = discovery.run(manifest_path, output_root)
+        result = discovery.run(manifest_path, output_root, source_sha=source_sha)
     finally:
         discovery.load_frame = original_loader
 
@@ -116,8 +121,9 @@ def main() -> int:
         type=Path,
         default=Path("build/nexus_multitimeframe_strategy_discovery"),
     )
+    parser.add_argument("--source-sha", required=True)
     args = parser.parse_args()
-    result = run(args.manifest, args.output)
+    result = run(args.manifest, args.output, source_sha=args.source_sha)
     print(json.dumps({
         "research_proposal_count": result["research_proposal_count"],
         "discovery_digest": result["discovery_digest"],

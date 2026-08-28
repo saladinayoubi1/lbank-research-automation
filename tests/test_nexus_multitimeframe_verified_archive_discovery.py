@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "experiments" / "nexus_multitimeframe_strategy_discovery_v1.json"
 ARCHIVE_SYMBOL = {"BTCUSDT": "btc_usdt", "ETHUSDT": "eth_usdt"}
 FREQ = {"minute15": "15min", "hour1": "1h", "hour4": "4h"}
+SOURCE_SHA = "a" * 40
 
 
 def _frame(symbol: str, timeframe: str, rows: int = 220) -> pd.DataFrame:
@@ -66,7 +67,7 @@ def test_adapter_rejects_nonapproved_archive_digest_before_discovery(tmp_path: P
     path.write_text(json.dumps(value), encoding="utf-8")
 
     with pytest.raises(verified.VerifiedArchiveDiscoveryError, match="approved immutable"):
-        verified.run(path, tmp_path / "output")
+        verified.run(path, tmp_path / "output", source_sha=SOURCE_SHA)
 
 
 def test_raw_archive_identity_substitution_fails_closed(tmp_path: Path) -> None:
@@ -88,9 +89,10 @@ def test_verified_adapter_runs_existing_discovery_without_widening_authority(tmp
     path = tmp_path / "manifest.json"
     path.write_text(json.dumps(value), encoding="utf-8")
 
-    result = verified.run(path, output)
+    result = verified.run(path, output, source_sha=SOURCE_SHA)
 
     assert result["dataset_archive_sha256"] == archive.ARCHIVE_SHA256
+    assert result["source_sha"] == SOURCE_SHA
     assert len(result["cells"]) == 9
     assert result["research_only"] is True
     assert result["paper_only"] is True

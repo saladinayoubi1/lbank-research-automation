@@ -51,6 +51,16 @@ def _digest(value: Any) -> str:
     return hashlib.sha256(_canonical(value)).hexdigest()
 
 
+def _source_sha(value: str) -> str:
+    normalized = str(value).strip().lower()
+    if (
+        len(normalized) != 40
+        or any(character not in "0123456789abcdef" for character in normalized)
+    ):
+        raise MultiTimeframeDiscoveryError("source_sha must be an exact Git SHA")
+    return normalized
+
+
 def _atomic_json(path: Path, value: Mapping[str, Any]) -> None:
     target = Path(path).resolve()
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -397,7 +407,8 @@ def _validate_pair_alignment(frames: Mapping[str, pd.DataFrame], timeframe: str)
         raise MultiTimeframeDiscoveryError(f"BTC/ETH archive timestamps are not aligned: {timeframe}")
 
 
-def discover(manifest: Mapping[str, Any]) -> dict[str, Any]:
+def discover(manifest: Mapping[str, Any], *, source_sha: str) -> dict[str, Any]:
+    source_sha = _source_sha(source_sha)
     root = Path(manifest["dataset"]["dataset_root"])
     fraction = float(manifest["train_fraction"])
     cells: list[dict[str, Any]] = []
@@ -494,6 +505,7 @@ def discover(manifest: Mapping[str, Any]) -> dict[str, Any]:
 
     core = {
         "schema_version": SCHEMA,
+        "source_sha": source_sha,
         "experiment_id": manifest["experiment_id"],
         "dataset_archive_sha256": manifest["dataset"]["archive_sha256"],
         "symbols": list(APPROVED_SYMBOLS),
@@ -520,7 +532,10 @@ def verify_discovery(value: Mapping[str, Any]) -> dict[str, Any]:
     try:
         core = dict(value)
         claimed = core.pop("discovery_digest", None)
-        checks["schema"] = core.get("schema_version") == SCHEMA
+        checks["schema"] = bool(
+            core.get("schema_version") == SCHEMA
+            and _source_sha(str(core.get("source_sha", ""))) == core.get("source_sha")
+        )
         checks["digest"] = isinstance(claimed, str) and claimed == _digest(core)
         cells = core.get("cells")
         proposals = core.get("research_proposals")
@@ -568,9 +583,14 @@ def verify_discovery(value: Mapping[str, Any]) -> dict[str, Any]:
     return {**evidence, "verification_digest": _digest(evidence)}
 
 
-def run(manifest_path: str | Path, output_root: str | Path) -> dict[str, Any]:
+def run(
+    manifest_path: str | Path,
+    output_root: str | Path,
+    *,
+    source_sha: str,
+) -> dict[str, Any]:
     manifest = load_manifest(manifest_path)
-    result = discover(manifest)
+    result = discover(manifest, source_sha=source_sha)
     verification = verify_discovery(result)
     if verification["decision"] != "pass":
         raise MultiTimeframeDiscoveryError("independent discovery verification failed")
@@ -579,6 +599,7 @@ def run(manifest_path: str | Path, output_root: str | Path) -> dict[str, Any]:
     _atomic_json(output / "verification.json", verification)
     _atomic_json(output / "research_proposals.json", {
         "schema_version": "nexus.strategy-research-proposal-queue.v1",
+        "source_discovery_sha": result["source_sha"],
         "source_discovery_digest": result["discovery_digest"],
         "proposals": result["research_proposals"],
         "automatic_strategy_promotion": False,
@@ -597,8 +618,9 @@ def main() -> int:
         "--output", type=Path,
         default=Path("build/nexus_multitimeframe_strategy_discovery"),
     )
+    parser.add_argument("--source-sha", required=True)
     args = parser.parse_args()
-    result = run(args.manifest, args.output)
+    result = run(args.manifest, args.output, source_sha=args.source_sha)
     print(json.dumps({
         "research_proposal_count": result["research_proposal_count"],
         "discovery_digest": result["discovery_digest"],
