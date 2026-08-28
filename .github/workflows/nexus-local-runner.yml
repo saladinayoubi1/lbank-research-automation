@@ -218,7 +218,7 @@ jobs:
           name: nexus-bybit-wsl-enablement-${{ github.run_id }}
           if-no-files-found: error
           retention-days: 14
-          path: build/bybit-wsl-enablement/evidence.json
+          path: build/bybit-wsl-enablement/
 
       - name: Upload physical sidecar compatibility evidence
         if: >-
