@@ -45,7 +45,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Upsert actionable failure and runner install evidence
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        uses: actions/github-script@d746ffe35508b1917358783b479e04febd2b8f71 # v9.0.0
         with:
           script: |
             const { owner, repo } = context.repo;

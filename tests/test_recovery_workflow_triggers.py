@@ -6,8 +6,8 @@ WORKFLOWS = (
     ROOT / ".github" / "workflows" / "backup-restore-readiness.yml",
     ROOT / ".github" / "workflows" / "disaster-recovery-readiness.yml",
 )
-CHECKOUT_SHA = "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-PYTHON_SHA = "actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065"
+CHECKOUT_SHA = "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1"
+PYTHON_SHA = "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97"
 
 
 def test_recovery_gates_revalidate_exact_main_and_pr_candidates():
