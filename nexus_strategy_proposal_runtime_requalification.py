@@ -17,6 +17,7 @@ import time
 from pathlib import Path
 from typing import Any, Callable, Mapping
 
+from nexus_demo_archive_replay import ARCHIVE_SHA256
 from nexus_multitimeframe_strategy_discovery import (
     APPROVED_FAMILIES,
     APPROVED_TIMEFRAMES,
@@ -122,6 +123,55 @@ def _validate_inputs(
     return [dict(row) for row in proposals]
 
 
+def _validate_runtime_job(
+    job: Mapping[str, Any],
+    *,
+    dataset_sha: str,
+    source_sha: str,
+    proposal: Mapping[str, Any],
+) -> None:
+    core = dict(job)
+    claimed = core.pop("pipeline_digest", None)
+    experiment = job.get("experiment")
+    qualification = job.get("qualification")
+    handoff = job.get("paper_candidate_handoff")
+    if (
+        job.get("schema_version") != "nexus.phase6-research-pipeline.v1"
+        or job.get("paper_only") is not True
+        or job.get("live_execution_allowed") is not False
+        or job.get("dataset_binding_sha256") != dataset_sha
+        or claimed != _digest(core)
+        or not isinstance(experiment, Mapping)
+        or experiment.get("dataset_binding_sha256") != dataset_sha
+        or experiment.get("code_sha") != source_sha
+        or experiment.get("family") != proposal.get("family")
+        or experiment.get("config") != proposal.get("strategy_config")
+        or not isinstance(qualification, Mapping)
+        or qualification.get("dataset_binding_sha256") != dataset_sha
+        or qualification.get("code_sha") != source_sha
+        or qualification.get("family") != proposal.get("family")
+        or qualification.get("status") not in {"paper_candidate", "killed"}
+        or qualification.get("paper_only") is not True
+        or qualification.get("live_execution_allowed") is not False
+        or qualification.get("deterministic_risk_final_authority") is not True
+    ):
+        raise StrategyProposalRequalificationError(
+            "runtime qualification job failed authority or lineage verification"
+        )
+    if qualification.get("status") == "paper_candidate":
+        if (
+            not isinstance(handoff, Mapping)
+            or handoff.get("qualification_digest") != qualification.get("qualification_digest")
+            or handoff.get("paper_only") is not True
+            or handoff.get("live_execution_allowed") is not False
+            or handoff.get("production_promotion_allowed") is not False
+            or handoff.get("deterministic_risk_final_authority") is not True
+        ):
+            raise StrategyProposalRequalificationError("runtime Paper review handoff is invalid")
+    elif handoff is not None:
+        raise StrategyProposalRequalificationError("killed runtime job emitted a Paper handoff")
+
+
 def _default_evaluator(
     proposal: Mapping[str, Any],
     symbol: str,
@@ -145,19 +195,40 @@ def _default_evaluator(
     )
     family = str(proposal["family"])
     variant_id = str(proposal["variant_id"])
-    job = run_research_job(
-        dataset,
-        hypothesis=(
+    job_kwargs = {
+        "hypothesis": (
             "Independent runtime requalification of a bounded Strategy Discovery "
             f"proposal {proposal['proposal_digest']}; no profitability or promotion claim."
         ),
-        family=family,
-        strategy_version=f"{family}-runtime-requalification-{variant_id}",
-        strategy_config=dict(proposal["strategy_config"]),
-        code_sha=source_sha,
-        cost_model=COST_MODEL,
-        kill_criteria=KILL_CRITERIA,
+        "family": family,
+        "strategy_version": f"{family}-runtime-requalification-{variant_id}",
+        "strategy_config": dict(proposal["strategy_config"]),
+        "code_sha": source_sha,
+        "cost_model": COST_MODEL,
+        "kill_criteria": KILL_CRITERIA,
+    }
+    job = run_research_job(
+        dataset,
+        **job_kwargs,
     )
+    replay = run_research_job(dataset, **job_kwargs)
+    binding = str(dataset.get("binding_sha256", ""))
+    _validate_runtime_job(
+        job,
+        dataset_sha=binding,
+        source_sha=source_sha,
+        proposal=proposal,
+    )
+    _validate_runtime_job(
+        replay,
+        dataset_sha=binding,
+        source_sha=source_sha,
+        proposal=proposal,
+    )
+    if _canonical(job) != _canonical(replay):
+        raise StrategyProposalRequalificationError(
+            "runtime qualification replay is not deterministic"
+        )
     qualification = job.get("qualification")
     if not isinstance(qualification, Mapping):
         raise StrategyProposalRequalificationError("runtime qualification is missing")
@@ -173,7 +244,6 @@ def _default_evaluator(
         or qualification.get("dataset_binding_sha256") != dataset.get("binding_sha256")
     ):
         raise StrategyProposalRequalificationError("runtime qualification authority binding failed")
-    binding = str(dataset.get("binding_sha256", ""))
     if not _HEX64_RE.fullmatch(binding):
         raise StrategyProposalRequalificationError("runtime dataset binding is invalid")
     rows = dataset.get("rows")
@@ -187,8 +257,10 @@ def _default_evaluator(
         "runtime_dataset_binding_sha256": binding,
         "runtime_last_open_time_ms": rows[-1].get("open_time_ms"),
         "qualification_status": status,
+        "pipeline_digest": job.get("pipeline_digest"),
         "qualification_digest": qualification.get("qualification_digest"),
         "kill_reasons": list(qualification.get("kill_reasons", [])),
+        "deterministic_replay_verified": True,
         "data_origin": "canonical_public_bybit_runtime",
         "closed_candle_finality_verified": True,
         "paper_only": True,
@@ -210,7 +282,9 @@ def _validate_evaluation(
         or row.get("variant_id") != proposal.get("variant_id")
         or row.get("qualification_status") not in {"paper_candidate", "killed"}
         or not _HEX64_RE.fullmatch(str(row.get("runtime_dataset_binding_sha256", "")))
+        or not _HEX64_RE.fullmatch(str(row.get("pipeline_digest", "")))
         or not _HEX64_RE.fullmatch(str(row.get("qualification_digest", "")))
+        or row.get("deterministic_replay_verified") is not True
         or row.get("data_origin") != "canonical_public_bybit_runtime"
         or row.get("closed_candle_finality_verified") is not True
         or row.get("paper_only") is not True
@@ -235,14 +309,24 @@ def build_requalification(
     proposal_queue: Mapping[str, Any],
     *,
     source_sha: str,
+    discovery_source_sha: str,
     state_root: str | Path,
     now_ms: int,
     evaluator: Evaluator = _default_evaluator,
 ) -> dict[str, Any]:
     source_sha = _source_sha(source_sha)
+    discovery_source_sha = _source_sha(discovery_source_sha)
+    if source_sha != discovery_source_sha:
+        raise StrategyProposalRequalificationError(
+            "requalification must execute at the exact discovery source SHA"
+        )
     if isinstance(now_ms, bool) or not isinstance(now_ms, int) or now_ms <= 0:
         raise StrategyProposalRequalificationError("now_ms must be a positive integer")
     proposals = _validate_inputs(discovery, proposal_queue)
+    if discovery.get("dataset_archive_sha256") != ARCHIVE_SHA256:
+        raise StrategyProposalRequalificationError(
+            "discovery archive identity is not the approved immutable Bybit dataset"
+        )
     root = Path(state_root).resolve()
     results: list[dict[str, Any]] = []
 
@@ -294,7 +378,9 @@ def build_requalification(
     core = {
         "schema_version": SCHEMA,
         "source_sha": source_sha,
+        "discovery_source_sha": discovery_source_sha,
         "source_discovery_digest": discovery["discovery_digest"],
+        "source_archive_sha256": discovery["dataset_archive_sha256"],
         "source_proposal_queue_schema": QUEUE_SCHEMA,
         "status": status,
         "proposal_count": len(proposals),
@@ -332,7 +418,9 @@ def verify_requalification(value: Mapping[str, Any]) -> dict[str, Any]:
         checks["digest"] = isinstance(claimed, str) and claimed == _digest(core)
         checks["source"] = bool(
             _SHA_RE.fullmatch(str(core.get("source_sha", "")))
+            and core.get("source_sha") == core.get("discovery_source_sha")
             and _HEX64_RE.fullmatch(str(core.get("source_discovery_digest", "")))
+            and core.get("source_archive_sha256") == ARCHIVE_SHA256
             and core.get("source_proposal_queue_schema") == QUEUE_SCHEMA
         )
         checks["authority"] = bool(
@@ -388,6 +476,31 @@ def verify_requalification(value: Mapping[str, Any]) -> dict[str, Any]:
                     and row.get("promotion_authority") is False
                     and row.get("live_trading_authority") is False
                     and isinstance(evaluations, list)
+                    and len(evaluations) <= len(APPROVED_SYMBOLS)
+                    and len({item.get("symbol") for item in evaluations if isinstance(item, Mapping)})
+                    == len(evaluations)
+                    and all(
+                        isinstance(item, Mapping)
+                        and item.get("symbol") in APPROVED_SYMBOLS
+                        and item.get("family") == row.get("family")
+                        and item.get("timeframe") == row.get("timeframe")
+                        and item.get("variant_id") == row.get("variant_id")
+                        and item.get("qualification_status") in {"paper_candidate", "killed"}
+                        and _HEX64_RE.fullmatch(
+                            str(item.get("runtime_dataset_binding_sha256", ""))
+                        )
+                        and _HEX64_RE.fullmatch(str(item.get("pipeline_digest", "")))
+                        and _HEX64_RE.fullmatch(str(item.get("qualification_digest", "")))
+                        and item.get("deterministic_replay_verified") is True
+                        and item.get("data_origin") == "canonical_public_bybit_runtime"
+                        and item.get("closed_candle_finality_verified") is True
+                        and item.get("paper_only") is True
+                        and item.get("live_trading_authority") is False
+                        and item.get("paper_execution_started") is False
+                        and item.get("automatic_strategy_promotion") is False
+                        and item.get("deterministic_risk_final_authority") is True
+                        for item in evaluations
+                    )
                 )
                 if verdict == "QUALIFIED_FOR_REVIEW":
                     row_valid = bool(
@@ -399,8 +512,6 @@ def verify_requalification(value: Mapping[str, Any]) -> dict[str, Any]:
                         and all(
                             isinstance(item, Mapping)
                             and item.get("qualification_status") == "paper_candidate"
-                            and item.get("paper_execution_started") is False
-                            and item.get("automatic_strategy_promotion") is False
                             for item in evaluations
                         )
                     )
@@ -444,6 +555,7 @@ def run(
     queue_path: str | Path,
     *,
     source_sha: str,
+    discovery_source_sha: str,
     state_root: str | Path,
     output: str | Path,
     now_ms: int | None = None,
@@ -452,6 +564,7 @@ def run(
         _load_json(discovery_path),
         _load_json(queue_path),
         source_sha=source_sha,
+        discovery_source_sha=discovery_source_sha,
         state_root=state_root,
         now_ms=int(time.time() * 1000) if now_ms is None else now_ms,
     )
@@ -469,6 +582,7 @@ def main() -> int:
     parser.add_argument("--discovery", type=Path, required=True)
     parser.add_argument("--queue", type=Path, required=True)
     parser.add_argument("--source-sha", required=True)
+    parser.add_argument("--discovery-source-sha", required=True)
     parser.add_argument("--state-root", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--now-ms", type=int)
@@ -477,6 +591,7 @@ def main() -> int:
         args.discovery,
         args.queue,
         source_sha=args.source_sha,
+        discovery_source_sha=args.discovery_source_sha,
         state_root=args.state_root,
         output=args.output,
         now_ms=args.now_ms,
