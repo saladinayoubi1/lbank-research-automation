@@ -28,6 +28,9 @@ def test_wsl_enablement_is_elevated_bounded_and_never_restarts_automatically() -
     assert "elevated_transcript_begin=true" in text
     assert "fatal_enablement_error_class" in text
     assert "WSL_FEATURE_ENABLEMENT_FAILED" in text
+    assert "ADMINISTRATOR_TOKEN_REQUIRED" in text
+    assert "administrator = $isAdmin" in text
+    assert "process_session_id" in text
 
     for forbidden in (
         "restart-computer",
@@ -51,3 +54,4 @@ def test_local_runner_exposes_explicit_wsl_enablement_only() -> None:
     assert "Upload WSL enablement evidence" in text
     assert "nexus-bybit-wsl-enablement-${{ github.run_id }}" in text
     assert "if-no-files-found: error" in text
+    assert "path: build/bybit-wsl-enablement/" in text
