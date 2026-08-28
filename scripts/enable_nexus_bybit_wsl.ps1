@@ -89,7 +89,26 @@ if (-not $isAdmin -and -not $Elevated) {
 }
 
 if (-not $isAdmin) {
-    throw 'Administrator authority was not obtained.'
+    Write-Evidence -Target $target -Payload ([ordered]@{
+        schema_version = 1
+        generated_at_utc = [DateTime]::UtcNow.ToString('o')
+        source_sha = $env:GITHUB_SHA
+        run_id = $env:GITHUB_RUN_ID
+        administrator = $false
+        elevation_requested = [bool]$Elevated
+        process_session_id = [Diagnostics.Process]::GetCurrentProcess().SessionId
+        restart_required = $false
+        automatic_restart_performed = $false
+        private_credentials_used = $false
+        proxy_or_vpn_configured = $false
+        error_class = 'SecurityException'
+        error_message = 'The runner-launched process did not receive an administrator token.'
+        decision = 'ADMINISTRATOR_TOKEN_REQUIRED'
+    })
+    Write-Host 'bybit_wsl_enablement_decision=ADMINISTRATOR_TOKEN_REQUIRED'
+    Write-Host 'restart_required=false'
+    Write-Host 'enablement_error_class=SecurityException'
+    exit 1
 }
 
 $transcriptStarted = $false
@@ -110,7 +129,7 @@ trap {
         generated_at_utc = [DateTime]::UtcNow.ToString('o')
         source_sha = $env:GITHUB_SHA
         run_id = $env:GITHUB_RUN_ID
-        administrator = $true
+        administrator = $isAdmin
         restart_required = $false
         automatic_restart_performed = $false
         private_credentials_used = $false
