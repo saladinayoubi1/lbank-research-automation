@@ -13,6 +13,7 @@ on:
       - "nexus_demo_paper_position_maintenance.py"
       - "nexus_demo_paper_performance_refresh.py"
       - "nexus_demo_regime_cycle.py"
+      - "nexus_demo_regime_lifecycle_bridge.py"
       - "nexus_isolated_product_runtime.py"
       - "nexus_regime_paper_lane.py"
       - "nexus_regime_strategy_selector.py"
@@ -36,8 +37,10 @@ on:
       - "android/lbank-mobile/**"
       - "scripts/build_release_evidence.py"
       - "scripts/release_gate.py"
+      - "tests/test_nexus_demo_regime_lifecycle_bridge.py"
       - "tests/test_mobile_delivery_surface.py"
       - ".github/workflows/build_lbank_mobile_apk.yml"
+      - ".github/workflows/nexus_demo_regime_lifecycle_bridge.yml"
       - ".github/workflows/nexus_demo_strategy_matrix.yml"
   pull_request:
     paths:
@@ -47,6 +50,7 @@ on:
       - "nexus_demo_paper_position_maintenance.py"
       - "nexus_demo_paper_performance_refresh.py"
       - "nexus_demo_regime_cycle.py"
+      - "nexus_demo_regime_lifecycle_bridge.py"
       - "nexus_isolated_product_runtime.py"
       - "nexus_regime_paper_lane.py"
       - "nexus_regime_strategy_selector.py"
@@ -72,6 +76,7 @@ on:
       - "tests/test_nexus_demo_paper_position_maintenance.py"
       - "tests/test_nexus_demo_paper_lifecycle_persistence.py"
       - "tests/test_nexus_demo_regime_cycle.py"
+      - "tests/test_nexus_demo_regime_lifecycle_bridge.py"
       - "tests/test_nexus_strategy_paper_supervisor.py"
       - "tests/test_nexus_strategy_paper_supervisor_matrix_symbol.py"
       - "tests/test_nexus_paper_performance_pipeline.py"
@@ -88,6 +93,7 @@ on:
       - "scripts/release_gate.py"
       - "tests/test_mobile_delivery_surface.py"
       - ".github/workflows/build_lbank_mobile_apk.yml"
+      - ".github/workflows/nexus_demo_regime_lifecycle_bridge.yml"
       - ".github/workflows/nexus_demo_strategy_matrix.yml"
 
 permissions:
