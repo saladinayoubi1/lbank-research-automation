@@ -18,6 +18,7 @@ on:
           - sidecar-compat
           - bybit-wsl-status
           - bybit-wsl-enable
+          - bybit-wsl-provision
           - autonomous
   push:
     branches:
@@ -219,6 +220,22 @@ jobs:
           if-no-files-found: error
           retention-days: 14
           path: build/bybit-wsl-enablement/
+
+      - name: Provision isolated Bybit Linux runner in WSL
+        if: github.event_name == 'workflow_dispatch' && inputs.task == 'bybit-wsl-provision'
+        run: >-
+          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass
+          -File scripts\provision_nexus_bybit_wsl_runner.ps1
+          -OutputPath "build\bybit-wsl-provisioning\evidence.json"
+
+      - name: Upload Bybit WSL Linux runner provisioning evidence
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.task == 'bybit-wsl-provision'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-bybit-wsl-provisioning-${{ github.run_id }}
+          if-no-files-found: error
+          retention-days: 14
+          path: build/bybit-wsl-provisioning/evidence.json
 
       - name: Upload physical sidecar compatibility evidence
         if: >-
