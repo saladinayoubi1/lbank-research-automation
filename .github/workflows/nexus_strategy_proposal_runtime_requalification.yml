@@ -102,6 +102,7 @@ jobs:
             --discovery "$(cat build/discovery-path.txt)" \
             --queue "$(cat build/queue-path.txt)" \
             --source-sha "$TRIGGER_SOURCE_SHA" \
+            --discovery-source-sha "$TRIGGER_SOURCE_SHA" \
             --state-root "$OUTPUT_ROOT/state" \
             --output "$OUTPUT_ROOT/runtime-requalification.json"
       - name: Verify fail-closed authority boundary
@@ -115,6 +116,7 @@ jobs:
           result = json.loads(path.read_text())
           verification = verify_requalification(result)
           assert verification["decision"] == "pass", verification
+          assert result["source_sha"] == result["discovery_source_sha"]
           assert result["research_only"] is True
           assert result["paper_only"] is True
           assert result["paper_execution_started"] is False

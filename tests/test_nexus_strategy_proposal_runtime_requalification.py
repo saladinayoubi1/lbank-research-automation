@@ -10,6 +10,7 @@ from nexus_multitimeframe_strategy_discovery import (
     _digest as discovery_digest,
 )
 from nexus_strategy_proposal_runtime_requalification import (
+    ARCHIVE_SHA256,
     ProductResearchError,
     StrategyProposalRequalificationError,
     _digest,
@@ -18,7 +19,7 @@ from nexus_strategy_proposal_runtime_requalification import (
 )
 
 SOURCE_SHA = "a" * 40
-DATASET_SHA = "b" * 64
+DATASET_SHA = ARCHIVE_SHA256
 
 
 def _discovery(*, proposal_count: int = 1):
@@ -45,6 +46,7 @@ def _discovery(*, proposal_count: int = 1):
         proposals.append({**proposal_core, "proposal_digest": discovery_digest(proposal_core)})
     core = {
         "schema_version": "nexus.multitimeframe-strategy-discovery.v1",
+        "dataset_archive_sha256": DATASET_SHA,
         "cells": cells,
         "research_proposals": proposals,
         "research_proposal_count": len(proposals),
@@ -75,8 +77,10 @@ def _evaluation(proposal, symbol, status="paper_candidate"):
         "runtime_dataset_binding_sha256": ("d" if symbol == "BTCUSDT" else "e") * 64,
         "runtime_last_open_time_ms": 1_787_875_200_000,
         "qualification_status": status,
+        "pipeline_digest": "2" * 64,
         "qualification_digest": ("f" if symbol == "BTCUSDT" else "1") * 64,
         "kill_reasons": [] if status == "paper_candidate" else ["OOS_KILL"],
+        "deterministic_replay_verified": True,
         "data_origin": "canonical_public_bybit_runtime",
         "closed_candle_finality_verified": True,
         "paper_only": True,
@@ -100,6 +104,7 @@ def test_requalification_qualifies_only_for_review_without_paper_or_promotion(tm
         discovery,
         queue,
         source_sha=SOURCE_SHA,
+        discovery_source_sha=SOURCE_SHA,
         state_root=tmp_path,
         now_ms=1_787_875_200_000,
         evaluator=evaluator,
@@ -132,6 +137,7 @@ def test_requalification_rejects_when_one_symbol_is_killed(tmp_path: Path):
         discovery,
         queue,
         source_sha=SOURCE_SHA,
+        discovery_source_sha=SOURCE_SHA,
         state_root=tmp_path,
         now_ms=1_787_875_200_000,
         evaluator=evaluator,
@@ -153,6 +159,7 @@ def test_requalification_records_runtime_data_blocker_fail_closed(tmp_path: Path
         discovery,
         queue,
         source_sha=SOURCE_SHA,
+        discovery_source_sha=SOURCE_SHA,
         state_root=tmp_path,
         now_ms=1_787_875_200_000,
         evaluator=evaluator,
@@ -172,6 +179,7 @@ def test_requalification_zero_proposals_is_valid_no_work(tmp_path: Path):
         discovery,
         queue,
         source_sha=SOURCE_SHA,
+        discovery_source_sha=SOURCE_SHA,
         state_root=tmp_path,
         now_ms=1_787_875_200_000,
         evaluator=lambda *_args: pytest.fail("evaluator must not run for zero proposals"),
@@ -184,6 +192,17 @@ def test_requalification_zero_proposals_is_valid_no_work(tmp_path: Path):
 
 def test_requalification_rejects_unbound_queue_and_tampered_completion(tmp_path: Path):
     discovery, queue = _discovery()
+    with pytest.raises(StrategyProposalRequalificationError, match="exact discovery"):
+        build_requalification(
+            discovery,
+            queue,
+            source_sha=SOURCE_SHA,
+            discovery_source_sha="9" * 40,
+            state_root=tmp_path,
+            now_ms=1_787_875_200_000,
+            evaluator=lambda proposal, symbol, *_args: _evaluation(proposal, symbol),
+        )
+
     bad_queue = dict(queue)
     bad_queue["source_discovery_digest"] = "0" * 64
     with pytest.raises(StrategyProposalRequalificationError, match="bound to discovery"):
@@ -191,6 +210,7 @@ def test_requalification_rejects_unbound_queue_and_tampered_completion(tmp_path:
             discovery,
             bad_queue,
             source_sha=SOURCE_SHA,
+            discovery_source_sha=SOURCE_SHA,
             state_root=tmp_path,
             now_ms=1_787_875_200_000,
             evaluator=lambda proposal, symbol, *_args: _evaluation(proposal, symbol),
@@ -200,6 +220,7 @@ def test_requalification_rejects_unbound_queue_and_tampered_completion(tmp_path:
         discovery,
         queue,
         source_sha=SOURCE_SHA,
+        discovery_source_sha=SOURCE_SHA,
         state_root=tmp_path,
         now_ms=1_787_875_200_000,
         evaluator=lambda proposal, symbol, *_args: _evaluation(proposal, symbol),
@@ -219,3 +240,33 @@ def test_requalification_rejects_unbound_queue_and_tampered_completion(tmp_path:
     unsigned_result.pop("requalification_digest")
     forged["requalification_digest"] = _digest(unsigned_result)
     assert verify_requalification(forged)["decision"] == "reject"
+
+    replay_forged = dict(result)
+    replay_rows = [dict(row) for row in result["proposal_results"]]
+    replay_rows[0]["runtime_evaluations"] = [
+        dict(item) for item in replay_rows[0]["runtime_evaluations"]
+    ]
+    replay_rows[0]["runtime_evaluations"][0]["deterministic_replay_verified"] = False
+    unsigned_row = dict(replay_rows[0])
+    unsigned_row.pop("result_digest")
+    replay_rows[0]["result_digest"] = _digest(unsigned_row)
+    replay_forged["proposal_results"] = replay_rows
+    unsigned_replay = dict(replay_forged)
+    unsigned_replay.pop("requalification_digest")
+    replay_forged["requalification_digest"] = _digest(unsigned_replay)
+    assert verify_requalification(replay_forged)["decision"] == "reject"
+
+
+def test_workflow_binds_exact_trigger_artifact_sha_and_read_only_authority() -> None:
+    text = Path(
+        ".github/workflows/nexus_strategy_proposal_runtime_requalification.yml"
+    ).read_text(encoding="utf-8")
+    assert "actions/runs/$TRIGGER_RUN_ID/artifacts" in text
+    assert "nexus-multitimeframe-strategy-discovery-$TRIGGER_RUN_ID" in text
+    assert "github.event.workflow_run.head_sha" in text
+    assert '--discovery-source-sha "$TRIGGER_SOURCE_SHA"' in text
+    assert 'assert result["source_sha"] == result["discovery_source_sha"]' in text
+    permissions = text.split("permissions:", 1)[1].split("concurrency:", 1)[0]
+    assert "contents: read" in permissions
+    assert "actions: read" in permissions
+    assert "write" not in permissions
