@@ -131,7 +131,12 @@ jobs:
             "repos/$GITHUB_REPOSITORY/actions/runs/$TRIGGER_RUN_ID/artifacts?per_page=100" \
             --jq ".artifacts[] | select(.name == \"$artifact_name\") | .id" \
             | head -n 1)"
-          test -n "$artifact_id"
+          if [ -z "$artifact_id" ]; then
+            echo "No exact triggering-run $artifact_name artifact; health dispatch remains fail-closed."
+            echo "should_dispatch=false" >> "$GITHUB_OUTPUT"
+            echo "source_sha=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" \
             > build/trigger-state.zip
           unzip -q build/trigger-state.zip -d build/health-trigger/state
