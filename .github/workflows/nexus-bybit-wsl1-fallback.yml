@@ -10,6 +10,7 @@ on:
       - scripts/prepare_nexus_bybit_wsl1_fallback.ps1
       - scripts/provision_nexus_bybit_wsl_runner.ps1
       - scripts/repair_nexus_bybit_wsl_runner_package.ps1
+      - scripts/start_nexus_bybit_wsl_runner_native.ps1
       - scripts/diagnose_nexus_bybit_runner_package.ps1
       - .github/workflows/nexus-bybit-wsl1-fallback.yml
 
@@ -49,20 +50,20 @@ jobs:
       - name: Normalize WSL boundary scripts after exact checkout
         run: >-
           powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command
-          "$paths=@('scripts\prepare_nexus_bybit_wsl1_fallback.ps1','scripts\provision_nexus_bybit_wsl_runner.ps1','scripts\repair_nexus_bybit_wsl_runner_package.ps1','scripts\diagnose_nexus_bybit_runner_package.ps1');
+          "$paths=@('scripts\prepare_nexus_bybit_wsl1_fallback.ps1','scripts\provision_nexus_bybit_wsl_runner.ps1','scripts\repair_nexus_bybit_wsl_runner_package.ps1','scripts\start_nexus_bybit_wsl_runner_native.ps1','scripts\diagnose_nexus_bybit_runner_package.ps1');
           foreach($path in $paths){$resolved=(Resolve-Path $path).Path;$bytes=[IO.File]::ReadAllBytes($resolved);$before=$bytes.Length;$normalized=New-Object 'System.Collections.Generic.List[byte]';foreach($b in $bytes){if($b -ne 13){[void]$normalized.Add($b)}};[IO.File]::WriteAllBytes($resolved,$normalized.ToArray());Write-Host ($path + ' removed_cr=' + ($before-$normalized.Count))}"
 
       - name: Verify LF-only WSL boundary scripts on physical Windows
         run: >-
           powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command
-          "$paths=@('scripts\prepare_nexus_bybit_wsl1_fallback.ps1','scripts\provision_nexus_bybit_wsl_runner.ps1','scripts\repair_nexus_bybit_wsl_runner_package.ps1','scripts\diagnose_nexus_bybit_runner_package.ps1');
+          "$paths=@('scripts\prepare_nexus_bybit_wsl1_fallback.ps1','scripts\provision_nexus_bybit_wsl_runner.ps1','scripts\repair_nexus_bybit_wsl_runner_package.ps1','scripts\start_nexus_bybit_wsl_runner_native.ps1','scripts\diagnose_nexus_bybit_runner_package.ps1');
           foreach($path in $paths){$bytes=[IO.File]::ReadAllBytes((Resolve-Path $path));if($bytes -contains 13){Write-Error ($path + ' contains CR bytes at the WSL Bash boundary.');exit 1}};
           Write-Host 'wsl_boundary_line_endings=LF_ONLY'"
 
       - name: Parse fallback and provisioning scripts with Windows PowerShell
         run: >-
           powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command
-          "$paths=@('scripts\prepare_nexus_bybit_wsl1_fallback.ps1','scripts\provision_nexus_bybit_wsl_runner.ps1','scripts\repair_nexus_bybit_wsl_runner_package.ps1','scripts\diagnose_nexus_bybit_runner_package.ps1');
+          "$paths=@('scripts\prepare_nexus_bybit_wsl1_fallback.ps1','scripts\provision_nexus_bybit_wsl_runner.ps1','scripts\repair_nexus_bybit_wsl_runner_package.ps1','scripts\start_nexus_bybit_wsl_runner_native.ps1','scripts\diagnose_nexus_bybit_runner_package.ps1');
           foreach($path in $paths){$tokens=$null;$errors=$null;[void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $path),[ref]$tokens,[ref]$errors);if($errors.Count -gt 0){$errors | ForEach-Object { Write-Error $_.Message };exit 1}}"
 
       - name: Prepare firmware-independent WSL1 distribution
@@ -90,13 +91,13 @@ jobs:
           -Distribution Ubuntu
           -OutputPath "build\bybit-wsl-package-repair\evidence.json"
 
-      - name: Resume provisioning after package repair
+      - name: Start repaired runner with native Task Scheduler
         id: provision_after_repair
         if: steps.provision.outcome == 'failure' && steps.repair.outcome == 'success'
         continue-on-error: true
         run: >-
           powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass
-          -File scripts\provision_nexus_bybit_wsl_runner.ps1
+          -File scripts\start_nexus_bybit_wsl_runner_native.ps1
           -Distribution Ubuntu
           -OutputPath "build\bybit-wsl-provisioning-after-repair\evidence.json"
 
