@@ -4,6 +4,12 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '*/5 * * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'paper_schedule_watchdog.py'
+      - 'tests/test_paper_schedule_watchdog.py'
+      - '.github/workflows/fast-agent-coordinator.yml'
 
 permissions:
   contents: read
