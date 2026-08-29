@@ -32,18 +32,29 @@ function Get-FeatureState {
 function Invoke-Wsl {
     param([Parameter(Mandatory = $true)][string[]]$Arguments)
 
+    $previousErrorActionPreference = $ErrorActionPreference
     try {
-        $text = (& "$env:SystemRoot\System32\wsl.exe" @Arguments 2>&1 | Out-String).Replace([char]0, '').Trim()
+        # Windows PowerShell 5.1 surfaces native stderr as NativeCommandError.  With
+        # ErrorActionPreference=Stop that can throw before $LASTEXITCODE is read,
+        # producing a synthetic -1 instead of wsl.exe's real exit code.  Capture the
+        # merged native streams under Continue and restore the caller preference.
+        $ErrorActionPreference = 'Continue'
+        $rawOutput = @(& "$env:SystemRoot\System32\wsl.exe" @Arguments 2>&1)
+        $exitCode = $LASTEXITCODE
+        $text = (($rawOutput | ForEach-Object { $_.ToString() }) | Out-String).Replace([char]0, '').Trim()
         return [ordered]@{
-            exit_code = $LASTEXITCODE
+            exit_code = if ($null -eq $exitCode) { -1 } else { [int]$exitCode }
             output = $text
         }
     }
     catch {
         return [ordered]@{
             exit_code = -1
-            output = $_.Exception.GetType().Name
+            output = $_.Exception.ToString()
         }
+    }
+    finally {
+        $ErrorActionPreference = $previousErrorActionPreference
     }
 }
 
@@ -236,7 +247,13 @@ if ($Distribution -notin $distributions) {
     }
 
     $evidence.distribution_install_exit_code = $install.exit_code
+    $installOutput = [string]$install.output
+    if ($installOutput.Length -gt 4096) {
+        $installOutput = $installOutput.Substring(0, 4096)
+    }
+    $evidence.distribution_install_output = $installOutput
     if ($install.exit_code -ne 0) {
+        $evidence.restart_required = ($install.output -match '(?i)restart|reboot')
         Complete-Provisioning -Decision 'WSL_DISTRIBUTION_INSTALL_FAILED' -ExitCode 1 -ErrorClass 'InvalidOperationException'
     }
 
