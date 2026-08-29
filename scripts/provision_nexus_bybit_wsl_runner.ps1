@@ -202,7 +202,7 @@ if ($Distribution -notin $distributions) {
         }
         $install = Invoke-Wsl -Arguments $installArguments
     }
-    elseif ($help.output -match '--import') {
+    else {
         $evidence.distribution_install_method = 'pinned_ubuntu_rootfs_import'
         $installParent = Split-Path -Parent $distributionInstallRoot
         New-Item -ItemType Directory -Path $installParent -Force | Out-Null
@@ -233,9 +233,6 @@ if ($Distribution -notin $distributions) {
                 Remove-Item -LiteralPath $rootfsArchive -Force
             }
         }
-    }
-    else {
-        Complete-Provisioning -Decision 'WSL_NONINTERACTIVE_INSTALL_UNAVAILABLE' -ExitCode 1 -ErrorClass 'NotSupportedException'
     }
 
     $evidence.distribution_install_exit_code = $install.exit_code
