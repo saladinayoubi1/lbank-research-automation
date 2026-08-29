@@ -55,13 +55,21 @@ rm -rf -- "`$extract_root"
 exit 0
 "@
 
+# WSL1 invoked from Windows PowerShell 5.1 can corrupt multiline bash -lc
+# arguments through CRLF/quoting translation. Transport the probe as UTF-8
+# base64 and decode it inside Linux so bash receives the exact LF-normalized
+# script while preserving all native stdout/stderr as diagnostic evidence.
+$probeLf = $probe -replace "`r`n", "`n"
+$probeBase64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($probeLf))
+$bashCommand = "printf '%s' '$probeBase64' | base64 -d | bash"
+
 $previousErrorActionPreference = $ErrorActionPreference
 try {
     # Windows PowerShell 5.1 can surface native stderr as NativeCommandError.
     # Capture merged native streams under Continue so the diagnostic itself
     # cannot terminate before $LASTEXITCODE and the output are recorded.
     $ErrorActionPreference = 'Continue'
-    $raw = @(& $wsl -d $Distribution -u root -- bash -lc $probe 2>&1)
+    $raw = @(& $wsl -d $Distribution -u root -- bash -lc $bashCommand 2>&1)
     $wslExitCode = $LASTEXITCODE
 }
 catch {
