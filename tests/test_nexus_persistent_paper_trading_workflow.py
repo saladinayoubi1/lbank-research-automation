@@ -42,16 +42,18 @@ def test_public_bybit_collector_changes_retrigger_and_are_contract_tested() -> N
     )[1]
 
 
-def test_network_eligible_runner_is_explicit_opt_in_and_fail_closed() -> None:
+def test_network_eligible_runner_is_pinned_and_fail_closed() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     paper = text.split("  paper-loop:", 1)[1]
-    assert "vars.NEXUS_BYBIT_NETWORK_RUNNER_ENABLED == '1'" in paper
-    assert "'nexus-bybit-network' || 'ubuntu-latest'" in paper
+    assert "runs-on: nexus-bybit-network" in paper
+    assert "vars.NEXUS_BYBIT_NETWORK_RUNNER_ENABLED" not in paper
+    assert "ubuntu-latest" not in paper
     assert "Enforce eligible Bybit network execution plane" in paper
     assert "runner.environment" in paper
     assert "self-hosted" in paper
     assert "runner.os" in paper
     assert "Linux" in paper
+    assert "bybit_network_execution_plane=self-hosted:nexus-bybit-network" in paper
     assert "proxy" not in paper.lower()
     assert "vpn" not in paper.lower()
 
