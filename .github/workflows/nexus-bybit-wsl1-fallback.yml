@@ -9,12 +9,12 @@ on:
       - .gitattributes
       - scripts/prepare_nexus_bybit_wsl1_fallback.ps1
       - scripts/provision_nexus_bybit_wsl_runner.ps1
+      - scripts/repair_nexus_bybit_wsl_runner_package.ps1
       - scripts/diagnose_nexus_bybit_runner_package.ps1
       - .github/workflows/nexus-bybit-wsl1-fallback.yml
 
 # Bounded physical fallback. Push-triggered provisioning requires the main commit marker;
 # explicit workflow_dispatch is allowed only from main for exact-main diagnostic retries.
-# Comment-only retrigger for the exact-main physical package diagnostic proof.
 permissions:
   contents: read
 
@@ -48,20 +48,20 @@ jobs:
       - name: Normalize WSL boundary scripts after exact checkout
         run: >-
           powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command
-          "$paths=@('scripts\prepare_nexus_bybit_wsl1_fallback.ps1','scripts\provision_nexus_bybit_wsl_runner.ps1','scripts\diagnose_nexus_bybit_runner_package.ps1');
+          "$paths=@('scripts\prepare_nexus_bybit_wsl1_fallback.ps1','scripts\provision_nexus_bybit_wsl_runner.ps1','scripts\repair_nexus_bybit_wsl_runner_package.ps1','scripts\diagnose_nexus_bybit_runner_package.ps1');
           foreach($path in $paths){$resolved=(Resolve-Path $path).Path;$bytes=[IO.File]::ReadAllBytes($resolved);$before=$bytes.Length;$normalized=New-Object 'System.Collections.Generic.List[byte]';foreach($b in $bytes){if($b -ne 13){[void]$normalized.Add($b)}};[IO.File]::WriteAllBytes($resolved,$normalized.ToArray());Write-Host ($path + ' removed_cr=' + ($before-$normalized.Count))}"
 
       - name: Verify LF-only WSL boundary scripts on physical Windows
         run: >-
           powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command
-          "$paths=@('scripts\prepare_nexus_bybit_wsl1_fallback.ps1','scripts\provision_nexus_bybit_wsl_runner.ps1','scripts\diagnose_nexus_bybit_runner_package.ps1');
+          "$paths=@('scripts\prepare_nexus_bybit_wsl1_fallback.ps1','scripts\provision_nexus_bybit_wsl_runner.ps1','scripts\repair_nexus_bybit_wsl_runner_package.ps1','scripts\diagnose_nexus_bybit_runner_package.ps1');
           foreach($path in $paths){$bytes=[IO.File]::ReadAllBytes((Resolve-Path $path));if($bytes -contains 13){Write-Error ($path + ' contains CR bytes at the WSL Bash boundary.');exit 1}};
           Write-Host 'wsl_boundary_line_endings=LF_ONLY'"
 
       - name: Parse fallback and provisioning scripts with Windows PowerShell
         run: >-
           powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command
-          "$paths=@('scripts\prepare_nexus_bybit_wsl1_fallback.ps1','scripts\provision_nexus_bybit_wsl_runner.ps1','scripts\diagnose_nexus_bybit_runner_package.ps1');
+          "$paths=@('scripts\prepare_nexus_bybit_wsl1_fallback.ps1','scripts\provision_nexus_bybit_wsl_runner.ps1','scripts\repair_nexus_bybit_wsl_runner_package.ps1','scripts\diagnose_nexus_bybit_runner_package.ps1');
           foreach($path in $paths){$tokens=$null;$errors=$null;[void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $path),[ref]$tokens,[ref]$errors);if($errors.Count -gt 0){$errors | ForEach-Object { Write-Error $_.Message };exit 1}}"
 
       - name: Prepare firmware-independent WSL1 distribution
@@ -79,8 +79,30 @@ jobs:
           -Distribution Ubuntu
           -OutputPath "build\bybit-wsl-provisioning\evidence.json"
 
-      - name: Capture native runner package diagnostics after provisioning failure
+      - name: Repair encoded Bash boundary and runner registration
+        id: repair
         if: steps.provision.outcome == 'failure'
+        continue-on-error: true
+        run: >-
+          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass
+          -File scripts\repair_nexus_bybit_wsl_runner_package.ps1
+          -Distribution Ubuntu
+          -OutputPath "build\bybit-wsl-package-repair\evidence.json"
+
+      - name: Resume provisioning after package repair
+        id: provision_after_repair
+        if: steps.provision.outcome == 'failure' && steps.repair.outcome == 'success'
+        continue-on-error: true
+        run: >-
+          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass
+          -File scripts\provision_nexus_bybit_wsl_runner.ps1
+          -Distribution Ubuntu
+          -OutputPath "build\bybit-wsl-provisioning-after-repair\evidence.json"
+
+      - name: Capture native runner package diagnostics after unrecovered provisioning failure
+        if: steps.provision.outcome == 'failure' && steps.provision_after_repair.outcome != 'success'
+        timeout-minutes: 12
+        continue-on-error: true
         run: >-
           powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass
           -File scripts\diagnose_nexus_bybit_runner_package.ps1
@@ -88,17 +110,42 @@ jobs:
           -OutputPath "build\bybit-wsl-package-diagnostic\evidence.json"
 
       - name: Upload WSL1 fallback and provisioning evidence
+        id: upload_evidence
         if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: nexus-bybit-wsl1-fallback-${{ github.run_id }}
+          name: nexus-bybit-wsl1-fallback-${{ github.run_id }}-${{ github.run_attempt }}
           if-no-files-found: error
           retention-days: 14
           path: |
             build/bybit-wsl1-fallback/evidence.json
             build/bybit-wsl-provisioning/evidence.json
+            build/bybit-wsl-package-repair/evidence.json
+            build/bybit-wsl-provisioning-after-repair/evidence.json
             build/bybit-wsl-package-diagnostic/evidence.json
 
-      - name: Preserve provisioning failure after durable diagnostics
-        if: steps.provision.outcome == 'failure'
+      - name: Retry evidence upload after transient transport failure
+        id: upload_evidence_retry
+        if: always() && steps.upload_evidence.outcome == 'failure'
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-bybit-wsl1-fallback-${{ github.run_id }}-${{ github.run_attempt }}
+          overwrite: true
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            build/bybit-wsl1-fallback/evidence.json
+            build/bybit-wsl-provisioning/evidence.json
+            build/bybit-wsl-package-repair/evidence.json
+            build/bybit-wsl-provisioning-after-repair/evidence.json
+            build/bybit-wsl-package-diagnostic/evidence.json
+
+      - name: Preserve evidence upload failure after retry
+        if: always() && steps.upload_evidence.outcome == 'failure' && steps.upload_evidence_retry.outcome == 'failure'
+        run: exit /b 1
+
+      - name: Preserve unrecovered provisioning failure after durable diagnostics
+        if: always() && steps.provision.outcome == 'failure' && steps.provision_after_repair.outcome != 'success'
         run: exit /b 1
