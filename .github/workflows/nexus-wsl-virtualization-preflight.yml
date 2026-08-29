@@ -1,5 +1,7 @@
 name: NEXUS WSL Virtualization Preflight
-# Marker-gated physical diagnostic trigger; behavior is unchanged.
+# Marker-gated physical diagnostic trigger. The source script is normalized into
+# an ephemeral copy before execution so legacy `elif` tokens cannot block the
+# hardware probe; the repository checkout and runner service remain untouched.
 
 on:
   push:
@@ -39,10 +41,15 @@ jobs:
           if /I not "%CHECKED_OUT_SHA%"=="%GITHUB_SHA%" exit /b 1
           echo exact_trigger_sha=%CHECKED_OUT_SHA%
 
+      - name: Normalize and parse virtualization diagnostic
+        run: >-
+          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass
+          -Command "$source='scripts\diagnose_nexus_wsl_virtualization.ps1'; $target=Join-Path $env:RUNNER_TEMP 'nexus-wsl-virtualization.ps1'; $text=[IO.File]::ReadAllText($source); $text=[regex]::Replace($text,'(?m)^elif\s+','elseif '); [IO.File]::WriteAllText($target,$text,(New-Object Text.UTF8Encoding($false))); $tokens=$null; $errors=$null; [Management.Automation.Language.Parser]::ParseFile($target,[ref]$tokens,[ref]$errors) | Out-Null; if($errors.Count -gt 0){$errors | ForEach-Object { Write-Error $_.Message }; exit 1}; Write-Host ('normalized_script=' + $target)"
+
       - name: Diagnose and repair bounded virtualization boot state
         run: >-
           powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass
-          -File scripts\diagnose_nexus_wsl_virtualization.ps1
+          -File "%RUNNER_TEMP%\nexus-wsl-virtualization.ps1"
           -OutputPath "build\wsl-virtualization\evidence.json"
 
       - name: Upload virtualization evidence
