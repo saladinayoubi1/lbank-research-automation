@@ -1,7 +1,9 @@
 import pytest
 
+import bybit_public_klines as bybit_klines
 from bybit_public_klines import (
     BybitKlineError,
+    GEO_RETRY_DELAYS_SECONDS,
     OFFICIAL_MAINNET_BASE_URLS,
     fetch_closed_klines,
     normalize_closed_klines,
@@ -97,7 +99,7 @@ def test_fetch_uses_primary_official_mainnet_host_when_available():
     assert session.urls == [OFFICIAL_MAINNET_BASE_URLS[0] + "/v5/market/kline"]
 
 
-def test_fetch_retries_only_the_second_official_mainnet_host_after_http_403():
+def test_fetch_retries_second_official_mainnet_host_after_http_403():
     session = _Session([
         _Response(403),
         _Response(200, _payload(_rows())),
@@ -118,11 +120,40 @@ def test_fetch_retries_only_the_second_official_mainnet_host_after_http_403():
     ]
 
 
-def test_fetch_fails_closed_when_all_official_mainnet_hosts_are_geo_rejected():
-    session = _Session([_Response(403), _Response(403)])
+def test_fetch_recovers_from_one_all_host_403_burst(monkeypatch):
+    sleeps = []
+    monkeypatch.setattr(bybit_klines.time, "sleep", sleeps.append)
+    session = _Session([
+        _Response(403),
+        _Response(403),
+        _Response(200, _payload(_rows())),
+    ])
+    result = fetch_closed_klines(
+        "ETHUSDT",
+        "15",
+        now_ms=1710002000000,
+        start_time_ms=1710000000000,
+        end_time_ms=1710000900000,
+        limit=2,
+        session=session,
+    )
+    assert len(result) == 2
+    assert session.urls == [
+        OFFICIAL_MAINNET_BASE_URLS[0] + "/v5/market/kline",
+        OFFICIAL_MAINNET_BASE_URLS[1] + "/v5/market/kline",
+        OFFICIAL_MAINNET_BASE_URLS[0] + "/v5/market/kline",
+    ]
+    assert sleeps == [GEO_RETRY_DELAYS_SECONDS[0]]
+
+
+def test_fetch_fails_closed_after_bounded_all_host_geo_retries(monkeypatch):
+    sleeps = []
+    monkeypatch.setattr(bybit_klines.time, "sleep", sleeps.append)
+    request_count = len(OFFICIAL_MAINNET_BASE_URLS) * (len(GEO_RETRY_DELAYS_SECONDS) + 1)
+    session = _Session([_Response(403) for _ in range(request_count)])
     with pytest.raises(BybitKlineError, match="all approved Bybit Mainnet endpoints"):
         fetch_closed_klines(
-            "BTCUSDT",
+            "ETHUSDT",
             "15",
             now_ms=1710002000000,
             start_time_ms=1710000000000,
@@ -130,7 +161,8 @@ def test_fetch_fails_closed_when_all_official_mainnet_hosts_are_geo_rejected():
             limit=2,
             session=session,
         )
-    assert len(session.urls) == 2
+    assert len(session.urls) == request_count
+    assert sleeps == list(GEO_RETRY_DELAYS_SECONDS)
 
 
 def test_non_geographic_http_failure_does_not_fall_through_to_another_host():
