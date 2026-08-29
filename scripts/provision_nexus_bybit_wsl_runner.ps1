@@ -41,7 +41,8 @@ function Invoke-Wsl {
         $ErrorActionPreference = 'Continue'
         $rawOutput = @(& "$env:SystemRoot\System32\wsl.exe" @Arguments 2>&1)
         $exitCode = $LASTEXITCODE
-        $text = (($rawOutput | ForEach-Object { $_.ToString() }) | Out-String).Replace([char]0, '').Trim()
+        $text = (($rawOutput | ForEach-Object { $_.ToString() }) | Out-String)
+        $text = ($text -replace "`0", '').Trim()
         return [ordered]@{
             exit_code = if ($null -eq $exitCode) { -1 } else { [int]$exitCode }
             output = $text
