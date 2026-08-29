@@ -42,6 +42,12 @@ jobs:
           if /I not "%CHECKED_OUT_SHA%"=="%GITHUB_SHA%" exit /b 1
           echo exact_trigger_sha=%CHECKED_OUT_SHA%
 
+      - name: Normalize WSL boundary scripts after exact checkout
+        run: >-
+          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command
+          "$paths=@('scripts\prepare_nexus_bybit_wsl1_fallback.ps1','scripts\provision_nexus_bybit_wsl_runner.ps1','scripts\diagnose_nexus_bybit_runner_package.ps1');
+          foreach($path in $paths){$resolved=(Resolve-Path $path).Path;$bytes=[IO.File]::ReadAllBytes($resolved);$before=$bytes.Length;$normalized=New-Object 'System.Collections.Generic.List[byte]';foreach($b in $bytes){if($b -ne 13){[void]$normalized.Add($b)}};[IO.File]::WriteAllBytes($resolved,$normalized.ToArray());Write-Host ($path + ' removed_cr=' + ($before-$normalized.Count))}"
+
       - name: Verify LF-only WSL boundary scripts on physical Windows
         run: >-
           powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command
