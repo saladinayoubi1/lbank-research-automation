@@ -1,0 +1,54 @@
+name: NEXUS Bybit WSL Fix Validation
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - scripts/provision_nexus_bybit_wsl_runner.ps1
+      - .github/workflows/nexus-bybit-wsl-fix-validation.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nexus-bybit-wsl-fix-validation
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    if: contains(github.event.head_commit.message, '[verify-bybit-wsl-provision]')
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 120
+    defaults:
+      run:
+        shell: cmd
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 1
+
+      - name: Verify exact trigger SHA
+        run: |
+          for /f %%S in ('git rev-parse HEAD') do set "CHECKED_OUT_SHA=%%S"
+          if /I not "%CHECKED_OUT_SHA%"=="%GITHUB_SHA%" exit /b 1
+          echo exact_trigger_sha=%CHECKED_OUT_SHA%
+
+      - name: Provision isolated Bybit Linux runner in WSL
+        run: >-
+          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass
+          -File scripts\provision_nexus_bybit_wsl_runner.ps1
+          -OutputPath "build\bybit-wsl-provisioning\evidence.json"
+
+      - name: Upload provisioning evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-bybit-wsl-fix-validation-${{ github.run_id }}
+          if-no-files-found: error
+          retention-days: 14
+          path: build/bybit-wsl-provisioning/evidence.json
