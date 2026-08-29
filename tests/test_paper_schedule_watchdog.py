@@ -113,3 +113,16 @@ def test_coordinator_workflow_invokes_watchdog_without_permission_expansion():
     assert "contents: read" in permission_block
     assert "actions: write" in permission_block
     assert "paper_schedule_watchdog.py" in text
+
+
+def test_coordinator_bootstraps_watchdog_on_bounded_main_push_changes():
+    text = Path(".github/workflows/fast-agent-coordinator.yml").read_text(encoding="utf-8")
+    trigger_block = text.split("permissions:", 1)[0]
+    assert "push:" in trigger_block
+    assert "branches: [main]" in trigger_block
+    for path in (
+        "paper_schedule_watchdog.py",
+        "tests/test_paper_schedule_watchdog.py",
+        ".github/workflows/fast-agent-coordinator.yml",
+    ):
+        assert path in trigger_block
