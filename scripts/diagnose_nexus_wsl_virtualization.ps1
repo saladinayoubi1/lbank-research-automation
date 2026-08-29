@@ -166,13 +166,13 @@ $evidence.systeminfo_output = Limit-Text -Text ([string]$systemInfo.output) -Max
 if (-not $isAdmin) {
     $evidence.decision = 'ADMINISTRATOR_TOKEN_REQUIRED'
 }
-elif ($wslFeature -ne 'Enabled' -or $vmFeature -ne 'Enabled') {
+elseif ($wslFeature -ne 'Enabled' -or $vmFeature -ne 'Enabled') {
     $evidence.decision = 'WSL_FEATURES_NOT_READY'
 }
-elif ($firmwareVirtualization -eq $false -and $hypervisorPresent -ne $true) {
+elseif ($firmwareVirtualization -eq $false -and $hypervisorPresent -ne $true) {
     $evidence.decision = 'FIRMWARE_VIRTUALIZATION_DISABLED'
 }
-elif ($hypervisorLaunchType -and $hypervisorLaunchType -match '^(?i:off)$') {
+elseif ($hypervisorLaunchType -and $hypervisorLaunchType -match '^(?i:off)$') {
     $repair = Invoke-Native -FilePath "$env:SystemRoot\System32\bcdedit.exe" -Arguments @('/set', 'hypervisorlaunchtype', 'auto')
     $evidence.hypervisor_boot_repair_attempted = $true
     $evidence.hypervisor_boot_repair_exit_code = $repair.exit_code
@@ -186,14 +186,14 @@ elif ($hypervisorLaunchType -and $hypervisorLaunchType -match '^(?i:off)$') {
         $evidence.decision = 'HYPERVISOR_BOOT_FLAG_REPAIR_FAILED'
     }
 }
-elif ($pendingRebootSignals.Count -gt 0 -and $hypervisorPresent -ne $true) {
+elseif ($pendingRebootSignals.Count -gt 0 -and $hypervisorPresent -ne $true) {
     $evidence.restart_required = $true
     $evidence.decision = 'WINDOWS_RESTART_REQUIRED_FOR_VIRTUALIZATION'
 }
-elif ($hypervisorPresent -eq $true) {
+elseif ($hypervisorPresent -eq $true) {
     $evidence.decision = 'VIRTUALIZATION_PREFLIGHT_READY'
 }
-elif ($firmwareVirtualization -eq $true) {
+elseif ($firmwareVirtualization -eq $true) {
     $evidence.restart_required = $true
     $evidence.decision = 'HYPERVISOR_NOT_ACTIVE_RESTART_REQUIRED'
 }
