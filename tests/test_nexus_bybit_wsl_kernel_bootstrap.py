@@ -1,4 +1,8 @@
+import os
+import subprocess
 from pathlib import Path
+
+import pytest
 
 
 SCRIPT = Path("scripts/provision_nexus_bybit_wsl_runner.ps1")
@@ -51,3 +55,21 @@ def test_kernel_update_records_verifiable_evidence() -> None:
         "wsl_kernel_update_exit_code",
     ):
         assert marker in text
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows PowerShell parser proof")
+def test_provisioning_script_parses_in_windows_powershell() -> None:
+    command = (
+        "$tokens=$null; $errors=$null; "
+        "[System.Management.Automation.Language.Parser]::ParseFile("
+        f"'{SCRIPT.resolve()}', [ref]$tokens, [ref]$errors) | Out-Null; "
+        "if ($errors.Count -gt 0) { $errors | ForEach-Object { Write-Error $_.Message }; exit 1 }"
+    )
+    completed = subprocess.run(
+        ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", command],
+        text=True,
+        capture_output=True,
+        check=False,
+        timeout=30,
+    )
+    assert completed.returncode == 0, completed.stderr or completed.stdout
