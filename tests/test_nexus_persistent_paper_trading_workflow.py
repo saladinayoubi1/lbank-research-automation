@@ -58,6 +58,24 @@ def test_network_eligible_runner_is_pinned_and_fail_closed() -> None:
     assert "vpn" not in paper.lower()
 
 
+def test_wsl1_node20_compatibility_exception_is_scoped_to_physical_paper_job() -> None:
+    text = WORKFLOW.read_text(encoding="utf-8")
+    contract, paper = text.split("  paper-loop:", 1)
+
+    # GitHub-hosted contract validation stays on the current Node-24 action pins.
+    assert "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" in contract
+    assert "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97" in contract
+    assert "ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION" not in contract
+
+    # The physical WSL1 plane uses the immutable pre-Node24 pins recovered from
+    # the repository's own pre-#1052 state. The opt-out must not escape this job.
+    assert 'ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"' in paper
+    assert "actions/checkout@11d5960a326750d5838078e36cf38b85af677262" in paper
+    assert "actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065" in paper
+    assert "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02" in paper
+    assert "Node 24 Linux binaries fail with Exec format error on WSL1" in paper
+
+
 def test_persistent_loop_permissions_are_read_only_and_authority_is_fail_closed() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     permission_block = text.split("permissions:", 1)[1].split("concurrency:", 1)[0]
