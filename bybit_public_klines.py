@@ -1,19 +1,22 @@
 from __future__ import annotations
 
+import time
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
 import requests
 
-# Bybit documents both hosts as equivalent public Mainnet REST endpoints.  The
-# ordered pair is intentionally fixed and bounded: GitHub-hosted runners can land
-# on US IP space where api.bybit.com returns HTTP 403, so the collector may try
-# the second official Mainnet host before failing closed.  No third-party proxy,
-# exchange substitution, private credential or testnet endpoint is permitted.
+# Bybit documents both hosts as equivalent public Mainnet REST endpoints. The
+# ordered pair is intentionally fixed and bounded. The physical WSL1 proof plane
+# has observed short-lived all-host HTTP 403 bursts after successful public Bybit
+# requests, so the collector may retry the same two official hosts twice with a
+# short bounded backoff before failing closed. No third-party proxy, exchange
+# substitution, private credential or testnet endpoint is permitted.
 OFFICIAL_MAINNET_BASE_URLS = (
     "https://api.bybit.com",
     "https://api.bytick.com",
 )
+GEO_RETRY_DELAYS_SECONDS = (2.0, 5.0)
 BASE_URL = OFFICIAL_MAINNET_BASE_URLS[0]
 KLINES_PATH = "/v5/market/kline"
 INTERVAL_MS = {"15": 15 * 60 * 1000, "60": 60 * 60 * 1000, "240": 4 * 60 * 60 * 1000}
@@ -198,46 +201,59 @@ def fetch_closed_klines(
 
     client = session or requests.Session()
     rejected_hosts: list[str] = []
-    for base_url in OFFICIAL_MAINNET_BASE_URLS:
-        try:
-            response = _request_one_official_mainnet_host(
-                client,
-                base_url,
+    retry_rounds = len(GEO_RETRY_DELAYS_SECONDS) + 1
+    for round_index in range(retry_rounds):
+        round_rejections: list[str] = []
+        for base_url in OFFICIAL_MAINNET_BASE_URLS:
+            try:
+                response = _request_one_official_mainnet_host(
+                    client,
+                    base_url,
+                    symbol=normalized_symbol,
+                    interval=interval,
+                    start_time_ms=start_time_ms,
+                    end_time_ms=end_time_ms,
+                    limit=limit,
+                    timeout_seconds=timeout_seconds,
+                )
+            except requests.RequestException as exc:
+                round_rejections.append(f"{base_url}:transport:{type(exc).__name__}")
+                continue
+
+            # HTTP 403 is the documented geographic/restriction failure. The only
+            # transport retry surface remains the same two official Bybit Mainnet
+            # hosts. Other HTTP failures fail closed immediately because retrying
+            # them could mask a provider/protocol problem.
+            if response.status_code == 403:
+                round_rejections.append(f"{base_url}:http403")
+                continue
+            if response.status_code != 200:
+                raise BybitKlineError(f"Bybit kline request failed with HTTP {response.status_code}")
+            if len(response.content) > MAX_RESPONSE_BYTES:
+                raise BybitKlineError("Bybit kline response exceeds size limit")
+            try:
+                payload = response.json()
+            except ValueError as exc:
+                raise BybitKlineError("Bybit kline response is not valid JSON") from exc
+            return normalize_closed_klines(
+                payload,
                 symbol=normalized_symbol,
                 interval=interval,
+                now_ms=now_ms,
                 start_time_ms=start_time_ms,
                 end_time_ms=end_time_ms,
-                limit=limit,
-                timeout_seconds=timeout_seconds,
+                require_complete_window=True,
             )
-        except requests.RequestException as exc:
-            rejected_hosts.append(f"{base_url}:transport:{type(exc).__name__}")
-            continue
 
-        # HTTP 403 is the documented geographic restriction failure.  The only
-        # fallback is the second official Bybit Mainnet hostname. Other HTTP
-        # failures remain fail-closed immediately because retrying them could hide
-        # a provider/protocol problem rather than a host routing restriction.
-        if response.status_code == 403:
-            rejected_hosts.append(f"{base_url}:http403")
-            continue
-        if response.status_code != 200:
-            raise BybitKlineError(f"Bybit kline request failed with HTTP {response.status_code}")
-        if len(response.content) > MAX_RESPONSE_BYTES:
-            raise BybitKlineError("Bybit kline response exceeds size limit")
-        try:
-            payload = response.json()
-        except ValueError as exc:
-            raise BybitKlineError("Bybit kline response is not valid JSON") from exc
-        return normalize_closed_klines(
-            payload,
-            symbol=normalized_symbol,
-            interval=interval,
-            now_ms=now_ms,
-            start_time_ms=start_time_ms,
-            end_time_ms=end_time_ms,
-            require_complete_window=True,
+        rejected_hosts.extend(round_rejections)
+        all_hosts_geo_rejected = (
+            len(round_rejections) == len(OFFICIAL_MAINNET_BASE_URLS)
+            and all(value.endswith(":http403") for value in round_rejections)
         )
+        if all_hosts_geo_rejected and round_index < len(GEO_RETRY_DELAYS_SECONDS):
+            time.sleep(GEO_RETRY_DELAYS_SECONDS[round_index])
+            continue
+        break
 
     detail = ",".join(rejected_hosts)
     raise BybitKlineError(
