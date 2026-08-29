@@ -121,12 +121,22 @@ jobs:
         shell: cmd
         env:
           NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: '0'
-        run: python scripts\run_ema_robustness_v1.py
+        run: |
+          if not exist build\research mkdir build\research
+          python scripts\run_ema_robustness_v1.py > build\research\ema_robustness_v1.log 2>&1
+          set "EMA_ROBUSTNESS_EXIT=%ERRORLEVEL%"
+          type build\research\ema_robustness_v1.log
+          exit /b %EMA_ROBUSTNESS_EXIT%
       - name: Execute real EMA walk-forward research on ready datasets
         shell: cmd
         env:
           NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: '0'
-        run: python scripts\run_ema_walkforward_v1.py
+        run: |
+          if not exist build\research mkdir build\research
+          python scripts\run_ema_walkforward_v1.py > build\research\ema_walkforward_v1.log 2>&1
+          set "EMA_WALKFORWARD_EXIT=%ERRORLEVEL%"
+          type build\research\ema_walkforward_v1.log
+          exit /b %EMA_WALKFORWARD_EXIT%
       - name: Upload durable EMA research evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -135,5 +145,7 @@ jobs:
           path: |
             build/research/ema_robustness_v1.json
             build/research/ema_walkforward_v1.json
+            build/research/ema_robustness_v1.log
+            build/research/ema_walkforward_v1.log
           if-no-files-found: warn
           retention-days: 14
