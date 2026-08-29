@@ -12,7 +12,7 @@ def test_persistent_loop_runs_on_closed_candle_cadence_and_restores_state() -> N
     assert "workflow_dispatch:" in text
     assert "STATE_ARTIFACT: nexus-persistent-paper-trading-state" in text
     assert "Restore newest persistent Paper state" in text
-    assert "actions/artifacts?name=$STATE_ARTIFACT" in text
+    assert "actions/artifacts?{query}" in text
     assert "Advance public closed-candle Paper portfolio loop" in text
     assert "python nexus_persistent_paper_trading_loop.py" in text
     assert "nexus-persistent-paper-trading-state" in text
@@ -67,13 +67,29 @@ def test_wsl1_node20_compatibility_exception_is_scoped_to_physical_paper_job() -
     assert "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97" in contract
     assert "ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION" not in contract
 
-    # The physical WSL1 plane uses the immutable pre-Node24 pins recovered from
-    # the repository's own pre-#1052 state. The opt-out must not escape this job.
+    # Only JavaScript actions that remain on physical WSL1 use immutable Node-20
+    # pins. Python itself is bootstrapped natively from the pinned Ubuntu 24.04
+    # execution plane rather than downloaded by setup-python.
     assert 'ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"' in paper
     assert "actions/checkout@11d5960a326750d5838078e36cf38b85af677262" in paper
-    assert "actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065" in paper
+    assert "actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065" not in paper
     assert "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02" in paper
     assert "Node 24 Linux binaries fail with Exec format error on WSL1" in paper
+
+
+def test_wsl1_paper_runtime_bootstraps_python_and_restores_without_gh_cli() -> None:
+    text = WORKFLOW.read_text(encoding="utf-8")
+    paper = text.split("  paper-loop:", 1)[1]
+    assert "Bootstrap WSL1 Python 3.12 runtime" in paper
+    assert "apt-get install -y python3 python3-venv" in paper
+    assert "python3 -m venv" in paper
+    assert 'sys.version_info[:2] == (3, 12)' in paper
+    assert 'echo "$venv_root/bin" >> "$GITHUB_PATH"' in paper
+    assert "urllib.request" in paper
+    assert "zipfile.ZipFile" in paper
+    assert "unsafe artifact path" in paper
+    assert "gh api" not in paper
+    assert "unzip -q" not in paper
 
 
 def test_persistent_loop_permissions_are_read_only_and_authority_is_fail_closed() -> None:
