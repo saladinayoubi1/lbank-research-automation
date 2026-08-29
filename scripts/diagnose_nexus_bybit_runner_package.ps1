@@ -15,7 +15,6 @@ if ($outputDir) {
 }
 
 $probe = @"
-set +e
 archive='/tmp/$packageName'
 extract_root='/tmp/nexus-runner-package-diagnostic'
 rm -f -- "`$archive"
@@ -56,8 +55,23 @@ rm -rf -- "`$extract_root"
 exit 0
 "@
 
-$raw = & $wsl -d $Distribution -u root -- bash -lc $probe 2>&1
-$wslExitCode = $LASTEXITCODE
+$previousErrorActionPreference = $ErrorActionPreference
+try {
+    # Windows PowerShell 5.1 can surface native stderr as NativeCommandError.
+    # Capture merged native streams under Continue so the diagnostic itself
+    # cannot terminate before $LASTEXITCODE and the output are recorded.
+    $ErrorActionPreference = 'Continue'
+    $raw = @(& $wsl -d $Distribution -u root -- bash -lc $probe 2>&1)
+    $wslExitCode = $LASTEXITCODE
+}
+catch {
+    $raw = @($_.Exception.ToString())
+    $wslExitCode = -1
+}
+finally {
+    $ErrorActionPreference = $previousErrorActionPreference
+}
+
 $text = (($raw | ForEach-Object { $_.ToString() }) | Out-String)
 $text = ($text -replace "`0", '').Trim()
 if ($text.Length -gt 12000) {
@@ -73,7 +87,7 @@ $evidence = [ordered]@{
     runner_version = $RunnerVersion
     runner_package_url = $packageUrl
     expected_runner_package_sha256 = $RunnerSha256
-    wsl_invocation_exit_code = $wslExitCode
+    wsl_invocation_exit_code = if ($null -eq $wslExitCode) { -1 } else { [int]$wslExitCode }
     diagnostic_output = $text
     windows_runner_paths_modified = $false
     windows_runner_service_modified = $false
@@ -86,6 +100,6 @@ $evidence = [ordered]@{
 
 $evidence | ConvertTo-Json -Depth 6 | Set-Content -Path $OutputPath -Encoding UTF8
 Write-Host 'bybit_runner_package_diagnostic_decision=PACKAGE_DIAGNOSTIC_CAPTURED'
-Write-Host "wsl_invocation_exit_code=$wslExitCode"
+Write-Host "wsl_invocation_exit_code=$($evidence.wsl_invocation_exit_code)"
 Write-Host "evidence_path=$OutputPath"
 exit 0
