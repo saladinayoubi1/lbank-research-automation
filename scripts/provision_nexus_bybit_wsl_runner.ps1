@@ -59,6 +59,65 @@ function Invoke-Wsl {
     }
 }
 
+function Install-Wsl2KernelUpdate {
+    param([Parameter(Mandatory = $true)][string]$Url)
+
+    $msiPath = Join-Path ([IO.Path]::GetTempPath()) ("nexus-wsl2-kernel-{0}.msi" -f [Guid]::NewGuid().ToString('N'))
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        Invoke-WebRequest -Uri $Url -OutFile $msiPath -UseBasicParsing
+        $downloadSha256 = (Get-FileHash -LiteralPath $msiPath -Algorithm SHA256).Hash.ToLowerInvariant()
+        $signature = Get-AuthenticodeSignature -FilePath $msiPath
+        $signatureStatus = [string]$signature.Status
+        $signerSubject = if ($signature.SignerCertificate) { [string]$signature.SignerCertificate.Subject } else { $null }
+        $signerThumbprint = if ($signature.SignerCertificate) { [string]$signature.SignerCertificate.Thumbprint } else { $null }
+        $signatureValid = (
+            $signatureStatus -eq 'Valid' -and
+            $signerSubject -match '(?i)(^|,\s*)CN=Microsoft Corporation(,|$)'
+        )
+        if (-not $signatureValid) {
+            return [ordered]@{
+                exit_code = -1
+                signature_valid = $false
+                signature_status = $signatureStatus
+                signer_subject = $signerSubject
+                signer_thumbprint = $signerThumbprint
+                download_sha256 = $downloadSha256
+                error = 'The downloaded WSL2 kernel MSI did not have a valid Microsoft Corporation Authenticode signature.'
+            }
+        }
+
+        $msiexec = Join-Path $env:SystemRoot 'System32\msiexec.exe'
+        $argumentList = "/i `"$msiPath`" /qn /norestart"
+        $process = Start-Process -FilePath $msiexec -ArgumentList $argumentList -Wait -PassThru
+        return [ordered]@{
+            exit_code = [int]$process.ExitCode
+            signature_valid = $true
+            signature_status = $signatureStatus
+            signer_subject = $signerSubject
+            signer_thumbprint = $signerThumbprint
+            download_sha256 = $downloadSha256
+            error = $null
+        }
+    }
+    catch {
+        return [ordered]@{
+            exit_code = -1
+            signature_valid = $false
+            signature_status = $null
+            signer_subject = $null
+            signer_thumbprint = $null
+            download_sha256 = $null
+            error = $_.Exception.ToString()
+        }
+    }
+    finally {
+        if (Test-Path -LiteralPath $msiPath -PathType Leaf) {
+            Remove-Item -LiteralPath $msiPath -Force
+        }
+    }
+}
+
 function Get-WslDistributions {
     $probe = Invoke-Wsl -Arguments @('--list', '--quiet')
     if ($probe.exit_code -ne 0) {
@@ -104,6 +163,7 @@ $runnerRoot = '/opt/nexus-bybit-runner'
 $distributionInstallRoot = Join-Path $env:ProgramData "NEXUS\BybitWSL\$Distribution"
 $packageName = "actions-runner-linux-x64-$RunnerVersion.tar.gz"
 $packageUrl = "https://github.com/actions/runner/releases/download/v$RunnerVersion/$packageName"
+$wslKernelMsiUrl = 'https://wslstorestorage.blob.core.windows.net/wslblob/wsl_update_x64.msi'
 $isAdmin = Test-IsAdministrator
 
 if ($repository -notmatch '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$') {
@@ -125,6 +185,13 @@ if (-not [Uri]::TryCreate($UbuntuRootfsUrl, [UriKind]::Absolute, [ref]$rootfsUri
     $UbuntuRootfsSha256 -notmatch '^[a-f0-9]{64}$') {
     throw 'The pinned Ubuntu WSL rootfs URL or SHA-256 is invalid.'
 }
+$kernelUri = $null
+if (-not [Uri]::TryCreate($wslKernelMsiUrl, [UriKind]::Absolute, [ref]$kernelUri) -or
+    $kernelUri.Scheme -ne 'https' -or
+    $kernelUri.Host -ne 'wslstorestorage.blob.core.windows.net' -or
+    $kernelUri.AbsolutePath -ne '/wslblob/wsl_update_x64.msi') {
+    throw 'The official WSL2 x64 kernel update URL is invalid.'
+}
 
 $evidence = [ordered]@{
     schema_version = 1
@@ -142,6 +209,10 @@ $evidence = [ordered]@{
     ubuntu_rootfs_url = $UbuntuRootfsUrl
     ubuntu_rootfs_sha256 = $UbuntuRootfsSha256
     ubuntu_rootfs_download_verified = $false
+    wsl_kernel_update_url = $wslKernelMsiUrl
+    wsl_kernel_update_attempted = $false
+    wsl_kernel_update_signature_valid = $false
+    wsl_kernel_update_exit_code = $null
     distribution_install_method = $null
     distribution_install_root = $distributionInstallRoot
     wsl_runner_root = $runnerRoot
@@ -239,6 +310,37 @@ if ($Distribution -notin $distributions) {
             }
             $evidence.ubuntu_rootfs_download_verified = $true
             $install = Invoke-Wsl -Arguments @('--import', $Distribution, $distributionInstallRoot, $rootfsArchive, '--version', '2')
+
+            if ($install.exit_code -ne 0 -and $install.output -match '(?i)WSL 2 requires an update to its kernel component') {
+                $evidence.wsl_kernel_update_attempted = $true
+                $kernelUpdate = Install-Wsl2KernelUpdate -Url $wslKernelMsiUrl
+                $evidence.wsl_kernel_update_signature_valid = [bool]$kernelUpdate.signature_valid
+                $evidence.wsl_kernel_update_signature_status = $kernelUpdate.signature_status
+                $evidence.wsl_kernel_update_signer_subject = $kernelUpdate.signer_subject
+                $evidence.wsl_kernel_update_signer_thumbprint = $kernelUpdate.signer_thumbprint
+                $evidence.wsl_kernel_update_download_sha256 = $kernelUpdate.download_sha256
+                $evidence.wsl_kernel_update_exit_code = $kernelUpdate.exit_code
+                if ($kernelUpdate.error) {
+                    $kernelError = [string]$kernelUpdate.error
+                    if ($kernelError.Length -gt 2048) {
+                        $kernelError = $kernelError.Substring(0, 2048)
+                    }
+                    $evidence.wsl_kernel_update_error = $kernelError
+                }
+                if (-not $kernelUpdate.signature_valid) {
+                    Complete-Provisioning -Decision 'WSL_KERNEL_UPDATE_SIGNATURE_INVALID' -ExitCode 1 -ErrorClass 'SecurityException'
+                }
+                if ($kernelUpdate.exit_code -in @(1641, 3010)) {
+                    $evidence.restart_required = $true
+                    Complete-Provisioning -Decision 'WSL_KERNEL_UPDATE_RESTART_REQUIRED' -ExitCode 1 -ErrorClass 'InvalidOperationException'
+                }
+                if ($kernelUpdate.exit_code -ne 0) {
+                    Complete-Provisioning -Decision 'WSL_KERNEL_UPDATE_FAILED' -ExitCode 1 -ErrorClass 'InvalidOperationException'
+                }
+
+                $evidence.distribution_install_retried_after_kernel_update = $true
+                $install = Invoke-Wsl -Arguments @('--import', $Distribution, $distributionInstallRoot, $rootfsArchive, '--version', '2')
+            }
         }
         finally {
             if (Test-Path -LiteralPath $rootfsArchive -PathType Leaf) {
