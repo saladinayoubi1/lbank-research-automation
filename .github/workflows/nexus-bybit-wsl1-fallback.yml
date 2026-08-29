@@ -14,6 +14,7 @@ on:
 
 # Bounded physical fallback. Push-triggered provisioning requires the main commit marker;
 # explicit workflow_dispatch is allowed only from main for exact-main diagnostic retries.
+# Comment-only retrigger for the exact-main physical package diagnostic proof.
 permissions:
   contents: read
 
