@@ -16,6 +16,16 @@ def test_wsl_linux_runner_provisioning_is_isolated_pinned_and_restart_safe() -> 
     assert '[string]$RunnerVersion = "2.336.0"' in text
     assert 'actions-runner-linux-x64-$RunnerVersion.tar.gz' in text
     assert "04cf0be1aff4c3ec3554466c39124ca250e3effd8873bb7e8d68535aa9505d5d" in text
+    assert "ubuntu-noble-wsl-amd64-24.04lts.rootfs.tar.gz" in text
+    assert "2a790896740b14d637dbdc583cce1ba081ac53b9e9cdb46dc09a2f73abbd9934" in text
+    assert "cloud-images.ubuntu.com" in text
+    assert "pinned_ubuntu_rootfs_import" in text
+    assert "--import" in text
+    assert "ubuntu_rootfs_download_verified" in text
+    assert "UBUNTU_ROOTFS_CHECKSUM_MISMATCH" in text
+    assert "WSL_IMPORT_LOCATION_NOT_EMPTY" in text
+    assert "Get-FileHash -LiteralPath $rootfsArchive -Algorithm SHA256" in text
+    assert "Remove-Item -LiteralPath $rootfsArchive -Force" in text
     assert "sha256sum --check --status" in text
     assert "wsl.exe" in text
     assert "--no-launch" in text
