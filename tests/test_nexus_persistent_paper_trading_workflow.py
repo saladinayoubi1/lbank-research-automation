@@ -90,6 +90,25 @@ def test_wsl1_state_restore_uses_python_stdlib_not_unprovisioned_cli_tools() -> 
     assert "unzip -q" not in restore
 
 
+def test_state_restore_never_forwards_github_token_to_artifact_storage_redirect() -> None:
+    text = WORKFLOW.read_text(encoding="utf-8")
+    paper = text.split("  paper-loop:", 1)[1]
+    restore = paper.split("Restore newest persistent Paper state", 1)[1].split(
+        "Advance public closed-candle Paper portfolio loop", 1
+    )[0]
+    assert "class NoRedirect" in restore
+    assert "urllib.request.build_opener(NoRedirect)" in restore
+    assert "artifact redirect missing Location" in restore
+    assert 'parsed.scheme != "https"' in restore
+    assert "Never" in restore and "GitHub bearer token" in restore
+    storage_block = restore.split("storage_request =", 1)[1].split(
+        "with urllib.request.urlopen(storage_request", 1
+    )[0]
+    assert "User-Agent" in storage_block
+    assert "Authorization" not in storage_block
+    assert "token" not in storage_block
+
+
 def test_persistent_loop_permissions_are_read_only_and_authority_is_fail_closed() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     permission_block = text.split("permissions:", 1)[1].split("concurrency:", 1)[0]
