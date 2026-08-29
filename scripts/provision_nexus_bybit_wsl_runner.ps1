@@ -4,7 +4,9 @@ param(
     [string]$RunnerName = "NEXUS-BYBIT-WSL",
     [string]$RunnerLabel = "nexus-bybit-network",
     [string]$RunnerVersion = "2.336.0",
-    [string]$RunnerSha256 = "04cf0be1aff4c3ec3554466c39124ca250e3effd8873bb7e8d68535aa9505d5d"
+    [string]$RunnerSha256 = "04cf0be1aff4c3ec3554466c39124ca250e3effd8873bb7e8d68535aa9505d5d",
+    [string]$UbuntuRootfsUrl = "https://cloud-images.ubuntu.com/wsl/releases/24.04/current/ubuntu-noble-wsl-amd64-24.04lts.rootfs.tar.gz",
+    [string]$UbuntuRootfsSha256 = "2a790896740b14d637dbdc583cce1ba081ac53b9e9cdb46dc09a2f73abbd9934"
 )
 
 $ErrorActionPreference = 'Stop'
@@ -87,6 +89,7 @@ $repository = [string]$env:GITHUB_REPOSITORY
 $repositoryUrl = if ($repository) { "https://github.com/$repository" } else { $null }
 $taskName = 'NEXUS Bybit WSL Runner'
 $runnerRoot = '/opt/nexus-bybit-runner'
+$distributionInstallRoot = Join-Path $env:ProgramData "NEXUS\BybitWSL\$Distribution"
 $packageName = "actions-runner-linux-x64-$RunnerVersion.tar.gz"
 $packageUrl = "https://github.com/actions/runner/releases/download/v$RunnerVersion/$packageName"
 $isAdmin = Test-IsAdministrator
@@ -102,6 +105,14 @@ foreach ($value in @($Distribution, $RunnerName, $RunnerLabel)) {
 if ($RunnerVersion -notmatch '^\d+\.\d+\.\d+$' -or $RunnerSha256 -notmatch '^[a-f0-9]{64}$') {
     throw 'The pinned runner version or SHA-256 is invalid.'
 }
+$rootfsUri = $null
+if (-not [Uri]::TryCreate($UbuntuRootfsUrl, [UriKind]::Absolute, [ref]$rootfsUri) -or
+    $rootfsUri.Scheme -ne 'https' -or
+    $rootfsUri.Host -ne 'cloud-images.ubuntu.com' -or
+    $rootfsUri.AbsolutePath -notmatch '^/wsl/releases/24\.04/[^/]+/ubuntu-noble-wsl-amd64-24\.04lts\.rootfs\.tar\.gz$' -or
+    $UbuntuRootfsSha256 -notmatch '^[a-f0-9]{64}$') {
+    throw 'The pinned Ubuntu WSL rootfs URL or SHA-256 is invalid.'
+}
 
 $evidence = [ordered]@{
     schema_version = 1
@@ -116,6 +127,11 @@ $evidence = [ordered]@{
     runner_version = $RunnerVersion
     runner_package_sha256 = $RunnerSha256
     runner_package_url = $packageUrl
+    ubuntu_rootfs_url = $UbuntuRootfsUrl
+    ubuntu_rootfs_sha256 = $UbuntuRootfsSha256
+    ubuntu_rootfs_download_verified = $false
+    distribution_install_method = $null
+    distribution_install_root = $distributionInstallRoot
     wsl_runner_root = $runnerRoot
     windows_runner_paths_modified = $false
     automatic_restart_performed = $false
@@ -178,15 +194,50 @@ if ($wslFeature -ne 'Enabled' -or $vmFeature -ne 'Enabled') {
 $distributions = Get-WslDistributions
 if ($Distribution -notin $distributions) {
     $help = Invoke-Wsl -Arguments @('--help')
-    if ($help.output -notmatch '--install' -or $help.output -notmatch '--no-launch') {
-        Complete-Provisioning -Decision 'WSL_NO_LAUNCH_INSTALL_UNAVAILABLE' -ExitCode 1 -ErrorClass 'NotSupportedException'
+    if ($help.output -match '--install' -and $help.output -match '--no-launch') {
+        $evidence.distribution_install_method = 'wsl_install_no_launch'
+        $installArguments = @('--install', '--distribution', $Distribution, '--no-launch')
+        if ($help.output -match '--web-download') {
+            $installArguments += '--web-download'
+        }
+        $install = Invoke-Wsl -Arguments $installArguments
+    }
+    elseif ($help.output -match '--import') {
+        $evidence.distribution_install_method = 'pinned_ubuntu_rootfs_import'
+        $installParent = Split-Path -Parent $distributionInstallRoot
+        New-Item -ItemType Directory -Path $installParent -Force | Out-Null
+        if (Test-Path -LiteralPath $distributionInstallRoot) {
+            $existingItems = @(Get-ChildItem -LiteralPath $distributionInstallRoot -Force -ErrorAction Stop)
+            if ($existingItems.Count -gt 0) {
+                Complete-Provisioning -Decision 'WSL_IMPORT_LOCATION_NOT_EMPTY' -ExitCode 1 -ErrorClass 'InvalidOperationException'
+            }
+        }
+        else {
+            New-Item -ItemType Directory -Path $distributionInstallRoot -Force | Out-Null
+        }
+
+        $rootfsArchive = Join-Path ([IO.Path]::GetTempPath()) ("nexus-ubuntu-wsl-{0}.rootfs.tar.gz" -f [Guid]::NewGuid().ToString('N'))
+        try {
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+            Invoke-WebRequest -Uri $UbuntuRootfsUrl -OutFile $rootfsArchive -UseBasicParsing
+            $downloadedRootfsSha256 = (Get-FileHash -LiteralPath $rootfsArchive -Algorithm SHA256).Hash.ToLowerInvariant()
+            $evidence.ubuntu_rootfs_downloaded_sha256 = $downloadedRootfsSha256
+            if ($downloadedRootfsSha256 -ne $UbuntuRootfsSha256) {
+                Complete-Provisioning -Decision 'UBUNTU_ROOTFS_CHECKSUM_MISMATCH' -ExitCode 1 -ErrorClass 'InvalidDataException'
+            }
+            $evidence.ubuntu_rootfs_download_verified = $true
+            $install = Invoke-Wsl -Arguments @('--import', $Distribution, $distributionInstallRoot, $rootfsArchive, '--version', '2')
+        }
+        finally {
+            if (Test-Path -LiteralPath $rootfsArchive -PathType Leaf) {
+                Remove-Item -LiteralPath $rootfsArchive -Force
+            }
+        }
+    }
+    else {
+        Complete-Provisioning -Decision 'WSL_NONINTERACTIVE_INSTALL_UNAVAILABLE' -ExitCode 1 -ErrorClass 'NotSupportedException'
     }
 
-    $installArguments = @('--install', '--distribution', $Distribution, '--no-launch')
-    if ($help.output -match '--web-download') {
-        $installArguments += '--web-download'
-    }
-    $install = Invoke-Wsl -Arguments $installArguments
     $evidence.distribution_install_exit_code = $install.exit_code
     if ($install.exit_code -ne 0) {
         Complete-Provisioning -Decision 'WSL_DISTRIBUTION_INSTALL_FAILED' -ExitCode 1 -ErrorClass 'InvalidOperationException'
