@@ -37,6 +37,27 @@ function Invoke-Wsl {
     }
 }
 
+function Convert-WindowsPathToWslMountPath {
+    param([Parameter(Mandatory = $true)][string]$WindowsPath)
+
+    # Do not pass a backslash-heavy Win32 path through Windows PowerShell 5.1 ->
+    # wsl.exe argument transport.  The physical runner proved that wslpath sees
+    # C:\a\b as C:ab at this boundary.  Map only rooted local-drive paths into
+    # the default WSL /mnt/<drive> mount deterministically and fail closed for
+    # anything else.
+    $fullPath = [IO.Path]::GetFullPath($WindowsPath)
+    if ($fullPath -match "[`r`n`0']") {
+        throw 'Unsafe characters are not allowed in the Windows package path.'
+    }
+    $pathMatch = [regex]::Match($fullPath, '^([A-Za-z]):\\(.+)$')
+    if (-not $pathMatch.Success) {
+        throw 'Only rooted local-drive Windows paths can be mapped into WSL.'
+    }
+    $drive = $pathMatch.Groups[1].Value.ToLowerInvariant()
+    $relativePath = $pathMatch.Groups[2].Value.Replace('\', '/')
+    return "/mnt/$drive/$relativePath"
+}
+
 function Invoke-EncodedWslBash {
     param(
         [Parameter(Mandatory = $true)][string]$DistributionName,
@@ -205,12 +226,13 @@ $evidence.host_package_downloaded = $true
 $evidence.host_package_verified = $true
 $evidence.host_package_bytes = [int64](Get-Item -LiteralPath $script:hostPackagePath).Length
 
-$wslPath = Invoke-Wsl -Arguments @('-d', $Distribution, '-u', 'root', '--', 'wslpath', '-u', $script:hostPackagePath)
-if ($wslPath.exit_code -ne 0) {
-    Complete-Repair -Decision 'WINDOWS_PACKAGE_WSL_PATH_FAILED' -ExitCode 1 -ErrorClass 'InvalidOperationException' -Detail $wslPath.output
+try {
+    $wslArchivePath = Convert-WindowsPathToWslMountPath -WindowsPath $script:hostPackagePath
 }
-$wslArchivePath = ([string]$wslPath.output).Trim()
-if (-not $wslArchivePath -or $wslArchivePath -match "[`r`n']") {
+catch {
+    Complete-Repair -Decision 'WINDOWS_PACKAGE_WSL_PATH_FAILED' -ExitCode 1 -ErrorClass $_.Exception.GetType().Name -Detail $_.Exception.Message
+}
+if (-not $wslArchivePath -or $wslArchivePath -notmatch '^/mnt/[a-z]/' -or $wslArchivePath -match "[`r`n']") {
     Complete-Repair -Decision 'WINDOWS_PACKAGE_WSL_PATH_UNSAFE' -ExitCode 1 -ErrorClass 'InvalidDataException'
 }
 
