@@ -156,6 +156,17 @@ def _safe_content_type(response: Any) -> str:
     return value if _CONTENT_TYPE_RE.fullmatch(value) else "unknown"
 
 
+def _ret_code_category(ret_code: int | None) -> str:
+    # Current Bybit V5 error-code semantics. Keep this intentionally small and
+    # diagnostic-only; an error code can never authorize market-data acceptance.
+    return {
+        10006: "api_rate_limited",
+        10009: "region_restricted",
+        10010: "unmatched_ip",
+        10024: "compliance_restricted",
+    }.get(ret_code, "unknown" if ret_code is not None else "missing")
+
+
 def _ret_msg_category(value: Any) -> str:
     if not isinstance(value, str):
         return "missing"
@@ -168,41 +179,54 @@ def _ret_msg_category(value: Any) -> str:
         return "ip_banned"
     if "service restricted" in normalized or ("restricted" in normalized and "region" in normalized):
         return "region_restricted"
+    if "compliance" in normalized and ("trigger" in normalized or "restrict" in normalized):
+        return "compliance_restricted"
+    if "unmatched ip" in normalized:
+        return "unmatched_ip"
     if "forbidden" in normalized or "access denied" in normalized:
         return "access_forbidden"
     return "other"
 
 
-def _json_403_metadata(response: Any) -> tuple[int | None, str]:
+def _json_403_metadata(response: Any) -> tuple[int | None, str, str]:
     if _safe_content_type(response) != "application/json":
-        return None, "not_json"
+        return None, "missing", "not_json"
     try:
         payload = response.json()
     except (TypeError, ValueError):
-        return None, "invalid_json"
+        return None, "missing", "invalid_json"
     if not isinstance(payload, dict):
-        return None, "non_object_json"
+        return None, "missing", "non_object_json"
     raw_code = payload.get("retCode")
     ret_code = raw_code if isinstance(raw_code, int) and not isinstance(raw_code, bool) else None
-    return ret_code, _ret_msg_category(payload.get("retMsg"))
+    return ret_code, _ret_code_category(ret_code), _ret_msg_category(payload.get("retMsg"))
 
 
-def _classify_403(response: Any) -> tuple[str, int | None, str]:
-    ret_code, ret_msg_category = _json_403_metadata(response)
+def _classify_403(response: Any) -> tuple[str, int | None, str, str]:
+    ret_code, ret_code_category, ret_msg_category = _json_403_metadata(response)
+    if ret_code_category in {
+        "api_rate_limited",
+        "region_restricted",
+        "unmatched_ip",
+        "compliance_restricted",
+    }:
+        return ret_code_category, ret_code, ret_code_category, ret_msg_category
     if ret_msg_category in {
         "access_too_frequent",
         "ip_banned",
         "region_restricted",
+        "unmatched_ip",
+        "compliance_restricted",
         "access_forbidden",
     }:
-        return ret_msg_category, ret_code, ret_msg_category
+        return ret_msg_category, ret_code, ret_code_category, ret_msg_category
 
     content = bytes(getattr(response, "content", b""))[:_DIAGNOSTIC_BODY_LIMIT].lower()
     if b"access too frequent" in content:
-        return "access_too_frequent", ret_code, ret_msg_category
+        return "access_too_frequent", ret_code, ret_code_category, ret_msg_category
     if b"service restricted" in content or (b"restricted" in content and b"region" in content):
-        return "region_restricted", ret_code, ret_msg_category
-    return "unclassified", ret_code, ret_msg_category
+        return "region_restricted", ret_code, ret_code_category, ret_msg_category
+    return "unclassified", ret_code, ret_code_category, ret_msg_category
 
 
 def _edge_class(response: Any) -> str:
@@ -226,6 +250,7 @@ def _emit_403_diagnostic(
     cdn_request_id: str,
     reason: str,
     ret_code: int | None,
+    ret_code_category: str,
     ret_msg_category: str,
 ) -> None:
     content = bytes(getattr(response, "content", b""))
@@ -236,6 +261,7 @@ def _emit_403_diagnostic(
         "interval": interval,
         "classification": reason,
         "ret_code": ret_code,
+        "ret_code_category": ret_code_category,
         "ret_msg_category": ret_msg_category,
         "edge": _edge_class(response),
         "content_type": _safe_content_type(response),
@@ -330,7 +356,7 @@ def fetch_closed_klines(
             continue
 
         if response.status_code == 403:
-            reason, ret_code, ret_msg_category = _classify_403(response)
+            reason, ret_code, ret_code_category, ret_msg_category = _classify_403(response)
             _emit_403_diagnostic(
                 response,
                 base_url=base_url,
@@ -339,15 +365,23 @@ def fetch_closed_klines(
                 cdn_request_id=cdn_request_id,
                 reason=reason,
                 ret_code=ret_code,
+                ret_code_category=ret_code_category,
                 ret_msg_category=ret_msg_category,
             )
             rejected_hosts.append(f"{base_url}:http403:{reason}")
-            if reason in {"access_too_frequent", "ip_banned"}:
+            if reason in {
+                "access_too_frequent",
+                "api_rate_limited",
+                "ip_banned",
+                "region_restricted",
+                "unmatched_ip",
+                "compliance_restricted",
+            }:
                 close = getattr(client, "close", None)
                 if callable(close):
                     close()
                 raise BybitKlineError(
-                    f"Bybit Mainnet IP access is blocked (HTTP 403 {reason}); "
+                    f"Bybit Mainnet access is blocked (HTTP 403 {reason}); "
                     "repeated requests suppressed"
                 )
             continue
