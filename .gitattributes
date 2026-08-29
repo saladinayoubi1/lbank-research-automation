@@ -1,0 +1,6 @@
+# Bash payloads embedded in these Windows PowerShell scripts are passed directly
+# to `wsl.exe ... bash -lc`.  CRLF working-tree conversion leaks `\r` into Bash
+# tokens on WSL1, so these specific boundary scripts must remain LF on Windows.
+scripts/provision_nexus_bybit_wsl_runner.ps1 text eol=lf
+scripts/prepare_nexus_bybit_wsl1_fallback.ps1 text eol=lf
+scripts/diagnose_nexus_bybit_runner_package.ps1 text eol=lf

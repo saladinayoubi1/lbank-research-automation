@@ -5,6 +5,7 @@ on:
     branches:
       - main
     paths:
+      - .gitattributes
       - scripts/prepare_nexus_bybit_wsl1_fallback.ps1
       - scripts/provision_nexus_bybit_wsl_runner.ps1
       - scripts/diagnose_nexus_bybit_runner_package.ps1
@@ -40,6 +41,13 @@ jobs:
           for /f %%S in ('git rev-parse HEAD') do set "CHECKED_OUT_SHA=%%S"
           if /I not "%CHECKED_OUT_SHA%"=="%GITHUB_SHA%" exit /b 1
           echo exact_trigger_sha=%CHECKED_OUT_SHA%
+
+      - name: Verify LF-only WSL boundary scripts on physical Windows
+        run: >-
+          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command
+          "$paths=@('scripts\prepare_nexus_bybit_wsl1_fallback.ps1','scripts\provision_nexus_bybit_wsl_runner.ps1','scripts\diagnose_nexus_bybit_runner_package.ps1');
+          foreach($path in $paths){$bytes=[IO.File]::ReadAllBytes((Resolve-Path $path));if($bytes -contains 13){Write-Error ($path + ' contains CR bytes at the WSL Bash boundary.');exit 1}};
+          Write-Host 'wsl_boundary_line_endings=LF_ONLY'"
 
       - name: Parse fallback and provisioning scripts with Windows PowerShell
         run: >-
