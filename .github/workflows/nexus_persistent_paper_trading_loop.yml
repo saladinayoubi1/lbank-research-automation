@@ -109,7 +109,7 @@ jobs:
   paper-loop:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: contract-test
-    runs-on: ${{ vars.NEXUS_BYBIT_NETWORK_RUNNER_ENABLED == '1' && 'nexus-bybit-network' || 'ubuntu-latest' }}
+    runs-on: nexus-bybit-network
     timeout-minutes: 50
     env:
       GH_TOKEN: ${{ github.token }}
@@ -122,7 +122,6 @@ jobs:
           python-version: "3.12"
           cache: pip
       - name: Enforce eligible Bybit network execution plane
-        if: vars.NEXUS_BYBIT_NETWORK_RUNNER_ENABLED == '1'
         run: >-
           python -c "assert '${{ runner.environment }}' == 'self-hosted'; assert '${{ runner.os }}' == 'Linux'; print('bybit_network_execution_plane=self-hosted:nexus-bybit-network')"
       - run: python -m pip install -r requirements.lock
