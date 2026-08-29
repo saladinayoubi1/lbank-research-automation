@@ -21,6 +21,7 @@ def test_preflight_distinguishes_firmware_boot_and_restart_blockers() -> None:
     text = SCRIPT.read_text(encoding="utf-8")
     for decision in (
         "FIRMWARE_VIRTUALIZATION_DISABLED",
+        "WSL2_SLAT_UNAVAILABLE",
         "HYPERVISOR_BOOT_FLAG_REPAIRED_RESTART_REQUIRED",
         "WINDOWS_RESTART_REQUIRED_FOR_VIRTUALIZATION",
         "HYPERVISOR_NOT_ACTIVE_RESTART_REQUIRED",
@@ -31,6 +32,26 @@ def test_preflight_distinguishes_firmware_boot_and_restart_blockers() -> None:
     assert "HypervisorPresent" in text
     assert "hypervisorlaunchtype" in text
     assert "PendingFileRenameOperations" in text
+
+
+def test_preflight_has_wmi_independent_processor_feature_probe() -> None:
+    text = SCRIPT.read_text(encoding="utf-8")
+    assert "IsProcessorFeaturePresent" in text
+    assert "PF_SECOND_LEVEL_ADDRESS_TRANSLATION = 20" in text
+    assert "PF_VIRT_FIRMWARE_ENABLED = 21" in text
+    assert "native_processor_features" in text
+    assert "HKLM:\\HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0" in text
+
+
+def test_preflight_uses_isolated_disposable_wsl2_probe() -> None:
+    text = SCRIPT.read_text(encoding="utf-8")
+    assert "NEXUS-WSL2-PROBE-" in text
+    assert "NEXUS\\WSLProbe" in text
+    assert "'--import', $probeName" in text
+    assert "'--unregister', $probeName" in text
+    assert "cleanup_complete" in text
+    assert "transient_service_start_attempted" in text
+    assert "sc.exe" in text
 
 
 def test_preflight_workflow_is_bounded_to_main_and_explicit_marker() -> None:
