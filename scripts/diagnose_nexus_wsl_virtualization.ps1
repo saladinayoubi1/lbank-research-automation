@@ -82,14 +82,107 @@ function Write-Evidence {
     )
     $parent = Split-Path -Parent $Target
     New-Item -ItemType Directory -Path $parent -Force | Out-Null
-    $json = $Payload | ConvertTo-Json -Depth 10
+    $json = $Payload | ConvertTo-Json -Depth 12
     [IO.File]::WriteAllText($Target, $json, (New-Object Text.UTF8Encoding($false)))
+}
+
+function Get-NativeProcessorFeatures {
+    $result = [ordered]@{
+        available = $false
+        virtualization_firmware_enabled = $null
+        second_level_address_translation = $null
+        error = $null
+    }
+    try {
+        if (-not ('Nexus.NativeProcessorFeatures' -as [type])) {
+            Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+namespace Nexus {
+    public static class NativeProcessorFeatures {
+        [DllImport("kernel32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool IsProcessorFeaturePresent(uint processorFeature);
+    }
+}
+'@ -ErrorAction Stop
+        }
+        # PF_SECOND_LEVEL_ADDRESS_TRANSLATION = 20
+        # PF_VIRT_FIRMWARE_ENABLED = 21
+        $result.available = $true
+        $result.second_level_address_translation = [bool][Nexus.NativeProcessorFeatures]::IsProcessorFeaturePresent(20)
+        $result.virtualization_firmware_enabled = [bool][Nexus.NativeProcessorFeatures]::IsProcessorFeaturePresent(21)
+    }
+    catch {
+        $result.error = $_.Exception.ToString()
+    }
+    return $result
+}
+
+function Invoke-LightweightWsl2Probe {
+    param([Parameter(Mandatory = $true)][string]$RunId)
+
+    $probeName = "NEXUS-WSL2-PROBE-$RunId"
+    $probeRoot = Join-Path $env:ProgramData "NEXUS\WSLProbe\$RunId"
+    $rootfs = Join-Path $probeRoot 'rootfs'
+    $installRoot = Join-Path $probeRoot 'install'
+    $archive = Join-Path $probeRoot 'rootfs.tar'
+    $tarPath = Join-Path $env:SystemRoot 'System32\tar.exe'
+    $wslPath = Join-Path $env:SystemRoot 'System32\wsl.exe'
+
+    $result = [ordered]@{
+        attempted = $false
+        distribution_name = $probeName
+        install_root = $installRoot
+        tar_available = (Test-Path -LiteralPath $tarPath)
+        tar_exit_code = $null
+        tar_output = $null
+        import_exit_code = $null
+        import_output = $null
+        unregister_exit_code = $null
+        unregister_output = $null
+        cleanup_complete = $false
+    }
+
+    if (-not $result.tar_available) {
+        return $result
+    }
+
+    try {
+        Remove-Item -LiteralPath $probeRoot -Recurse -Force -ErrorAction SilentlyContinue
+        New-Item -ItemType Directory -Path (Join-Path $rootfs 'etc') -Force | Out-Null
+        [IO.File]::WriteAllText((Join-Path $rootfs 'etc\nexus-wsl2-probe'), "nexus-wsl2-virtualization-probe`n", (New-Object Text.UTF8Encoding($false)))
+
+        $tar = Invoke-Native -FilePath $tarPath -Arguments @('-cf', $archive, '-C', $rootfs, '.')
+        $result.tar_exit_code = $tar.exit_code
+        $result.tar_output = Limit-Text -Text ([string]$tar.output) -Maximum 4000
+        if ($tar.exit_code -ne 0) {
+            return $result
+        }
+
+        New-Item -ItemType Directory -Path $installRoot -Force | Out-Null
+        $result.attempted = $true
+        $import = Invoke-Native -FilePath $wslPath -Arguments @('--import', $probeName, $installRoot, $archive, '--version', '2')
+        $result.import_exit_code = $import.exit_code
+        $result.import_output = Limit-Text -Text ([string]$import.output) -Maximum 8000
+
+        if ($import.exit_code -eq 0) {
+            $unregister = Invoke-Native -FilePath $wslPath -Arguments @('--unregister', $probeName)
+            $result.unregister_exit_code = $unregister.exit_code
+            $result.unregister_output = Limit-Text -Text ([string]$unregister.output) -Maximum 4000
+        }
+    }
+    finally {
+        Remove-Item -LiteralPath $probeRoot -Recurse -Force -ErrorAction SilentlyContinue
+        $result.cleanup_complete = -not (Test-Path -LiteralPath $probeRoot)
+    }
+    return $result
 }
 
 $target = [IO.Path]::GetFullPath($OutputPath)
 $isAdmin = Test-IsAdministrator
 $evidence = [ordered]@{
-    schema_version = 1
+    schema_version = 2
     generated_at_utc = [DateTime]::UtcNow.ToString('o')
     source_sha = $env:GITHUB_SHA
     run_id = $env:GITHUB_RUN_ID
@@ -98,6 +191,7 @@ $evidence = [ordered]@{
     automatic_restart_performed = $false
     restart_required = $false
     boot_configuration_modified = $false
+    transient_service_start_attempted = $false
     decision = $null
 }
 
@@ -110,35 +204,66 @@ $evidence.windows_features = [ordered]@{
 
 $cpu = $null
 $computerSystem = $null
-try { $cpu = Get-CimInstance Win32_Processor -ErrorAction Stop | Select-Object -First 1 } catch { }
-try { $computerSystem = Get-CimInstance Win32_ComputerSystem -ErrorAction Stop } catch { }
+$evidence.cim_processor_error = $null
+$evidence.cim_computer_system_error = $null
+try { $cpu = Get-CimInstance Win32_Processor -ErrorAction Stop | Select-Object -First 1 } catch { $evidence.cim_processor_error = $_.Exception.ToString() }
+try { $computerSystem = Get-CimInstance Win32_ComputerSystem -ErrorAction Stop } catch { $evidence.cim_computer_system_error = $_.Exception.ToString() }
+
+$wmiCpu = $null
+$wmiComputerSystem = $null
+$evidence.wmi_processor_error = $null
+$evidence.wmi_computer_system_error = $null
+if ($null -eq $cpu) {
+    try { $wmiCpu = Get-WmiObject -Class Win32_Processor -ErrorAction Stop | Select-Object -First 1 } catch { $evidence.wmi_processor_error = $_.Exception.ToString() }
+}
+if ($null -eq $computerSystem) {
+    try { $wmiComputerSystem = Get-WmiObject -Class Win32_ComputerSystem -ErrorAction Stop } catch { $evidence.wmi_computer_system_error = $_.Exception.ToString() }
+}
+
+$processorObject = if ($null -ne $cpu) { $cpu } else { $wmiCpu }
+$systemObject = if ($null -ne $computerSystem) { $computerSystem } else { $wmiComputerSystem }
 
 $firmwareVirtualization = $null
 $slat = $null
 $vmMonitor = $null
-if ($null -ne $cpu) {
-    if ($cpu.PSObject.Properties.Name -contains 'VirtualizationFirmwareEnabled') {
-        $firmwareVirtualization = [bool]$cpu.VirtualizationFirmwareEnabled
+if ($null -ne $processorObject) {
+    if ($processorObject.PSObject.Properties.Name -contains 'VirtualizationFirmwareEnabled') {
+        $firmwareVirtualization = [bool]$processorObject.VirtualizationFirmwareEnabled
     }
-    if ($cpu.PSObject.Properties.Name -contains 'SecondLevelAddressTranslationExtensions') {
-        $slat = [bool]$cpu.SecondLevelAddressTranslationExtensions
+    if ($processorObject.PSObject.Properties.Name -contains 'SecondLevelAddressTranslationExtensions') {
+        $slat = [bool]$processorObject.SecondLevelAddressTranslationExtensions
     }
-    if ($cpu.PSObject.Properties.Name -contains 'VMMonitorModeExtensions') {
-        $vmMonitor = [bool]$cpu.VMMonitorModeExtensions
+    if ($processorObject.PSObject.Properties.Name -contains 'VMMonitorModeExtensions') {
+        $vmMonitor = [bool]$processorObject.VMMonitorModeExtensions
     }
 }
 
-$hypervisorPresent = $null
-if ($null -ne $computerSystem -and ($computerSystem.PSObject.Properties.Name -contains 'HypervisorPresent')) {
-    $hypervisorPresent = [bool]$computerSystem.HypervisorPresent
+$nativeFeatures = Get-NativeProcessorFeatures
+if ($null -eq $firmwareVirtualization -and $nativeFeatures.available) {
+    $firmwareVirtualization = [bool]$nativeFeatures.virtualization_firmware_enabled
 }
+if ($null -eq $slat -and $nativeFeatures.available) {
+    $slat = [bool]$nativeFeatures.second_level_address_translation
+}
+$evidence.native_processor_features = $nativeFeatures
 
+$cpuRegistry = $null
+try {
+    $cpuRegistry = Get-ItemProperty 'HKLM:\HARDWARE\DESCRIPTION\System\CentralProcessor\0' -ErrorAction Stop
+}
+catch { }
 $evidence.cpu = [ordered]@{
-    name = if ($null -ne $cpu) { [string]$cpu.Name } else { $null }
-    manufacturer = if ($null -ne $cpu) { [string]$cpu.Manufacturer } else { $null }
+    name = if ($null -ne $processorObject) { [string]$processorObject.Name } elseif ($null -ne $cpuRegistry) { [string]$cpuRegistry.ProcessorNameString } else { $null }
+    manufacturer = if ($null -ne $processorObject) { [string]$processorObject.Manufacturer } elseif ($null -ne $cpuRegistry) { [string]$cpuRegistry.VendorIdentifier } else { $null }
+    identifier = if ($null -ne $cpuRegistry) { [string]$cpuRegistry.Identifier } else { $null }
     virtualization_firmware_enabled = $firmwareVirtualization
     second_level_address_translation = $slat
     vm_monitor_mode_extensions = $vmMonitor
+}
+
+$hypervisorPresent = $null
+if ($null -ne $systemObject -and ($systemObject.PSObject.Properties.Name -contains 'HypervisorPresent')) {
+    $hypervisorPresent = [bool]$systemObject.HypervisorPresent
 }
 $evidence.hypervisor_present = $hypervisorPresent
 
@@ -155,24 +280,34 @@ $pendingRebootSignals = @(Test-PendingReboot)
 $evidence.pending_reboot = ($pendingRebootSignals.Count -gt 0)
 $evidence.pending_reboot_signals = $pendingRebootSignals
 
-$wslStatus = Invoke-Native -FilePath "$env:SystemRoot\System32\wsl.exe" -Arguments @('--status')
-$evidence.wsl_status_exit_code = $wslStatus.exit_code
-$evidence.wsl_status_output = Limit-Text -Text ([string]$wslStatus.output) -Maximum 8000
+$wslList = Invoke-Native -FilePath "$env:SystemRoot\System32\wsl.exe" -Arguments @('--list', '--verbose')
+$evidence.wsl_list_exit_code = $wslList.exit_code
+$evidence.wsl_list_output = Limit-Text -Text ([string]$wslList.output) -Maximum 8000
 
 $systemInfo = Invoke-Native -FilePath "$env:SystemRoot\System32\systeminfo.exe"
 $evidence.systeminfo_exit_code = $systemInfo.exit_code
 $evidence.systeminfo_output = Limit-Text -Text ([string]$systemInfo.output) -Maximum 16000
 
+$vmcompute = Invoke-Native -FilePath "$env:SystemRoot\System32\sc.exe" -Arguments @('query', 'vmcompute')
+$lxssManager = Invoke-Native -FilePath "$env:SystemRoot\System32\sc.exe" -Arguments @('query', 'LxssManager')
+$evidence.services = [ordered]@{
+    vmcompute_query_exit_code = $vmcompute.exit_code
+    vmcompute_query_output = Limit-Text -Text ([string]$vmcompute.output) -Maximum 6000
+    lxssmanager_query_exit_code = $lxssManager.exit_code
+    lxssmanager_query_output = Limit-Text -Text ([string]$lxssManager.output) -Maximum 6000
+}
+
+$hyperVEvents = Invoke-Native -FilePath "$env:SystemRoot\System32\wevtutil.exe" -Arguments @('qe', 'Microsoft-Windows-Hyper-V-Hypervisor-Admin', '/c:20', '/rd:true', '/f:text')
+$evidence.hyperv_hypervisor_events_exit_code = $hyperVEvents.exit_code
+$evidence.hyperv_hypervisor_events_output = Limit-Text -Text ([string]$hyperVEvents.output) -Maximum 16000
+
 if (-not $isAdmin) {
     $evidence.decision = 'ADMINISTRATOR_TOKEN_REQUIRED'
 }
-elseif ($wslFeature -ne 'Enabled' -or $vmFeature -ne 'Enabled') {
+elif ($wslFeature -ne 'Enabled' -or $vmFeature -ne 'Enabled') {
     $evidence.decision = 'WSL_FEATURES_NOT_READY'
 }
-elseif ($firmwareVirtualization -eq $false -and $hypervisorPresent -ne $true) {
-    $evidence.decision = 'FIRMWARE_VIRTUALIZATION_DISABLED'
-}
-elseif ($hypervisorLaunchType -and $hypervisorLaunchType -match '^(?i:off)$') {
+elif ($hypervisorLaunchType -and $hypervisorLaunchType -match '^(?i:off)$') {
     $repair = Invoke-Native -FilePath "$env:SystemRoot\System32\bcdedit.exe" -Arguments @('/set', 'hypervisorlaunchtype', 'auto')
     $evidence.hypervisor_boot_repair_attempted = $true
     $evidence.hypervisor_boot_repair_exit_code = $repair.exit_code
@@ -186,19 +321,62 @@ elseif ($hypervisorLaunchType -and $hypervisorLaunchType -match '^(?i:off)$') {
         $evidence.decision = 'HYPERVISOR_BOOT_FLAG_REPAIR_FAILED'
     }
 }
-elseif ($pendingRebootSignals.Count -gt 0 -and $hypervisorPresent -ne $true) {
-    $evidence.restart_required = $true
-    $evidence.decision = 'WINDOWS_RESTART_REQUIRED_FOR_VIRTUALIZATION'
+elif ($slat -eq $false) {
+    $evidence.decision = 'WSL2_SLAT_UNAVAILABLE'
 }
-elseif ($hypervisorPresent -eq $true) {
-    $evidence.decision = 'VIRTUALIZATION_PREFLIGHT_READY'
-}
-elseif ($firmwareVirtualization -eq $true) {
-    $evidence.restart_required = $true
-    $evidence.decision = 'HYPERVISOR_NOT_ACTIVE_RESTART_REQUIRED'
+elif ($firmwareVirtualization -eq $false) {
+    $evidence.decision = 'FIRMWARE_VIRTUALIZATION_DISABLED'
 }
 else {
-    $evidence.decision = 'VIRTUALIZATION_STATE_UNCERTAIN'
+    if ($vmcompute.exit_code -eq 0 -and $vmcompute.output -notmatch '(?i)STATE\s*:\s*\d+\s+RUNNING') {
+        $serviceStart = Invoke-Native -FilePath "$env:SystemRoot\System32\sc.exe" -Arguments @('start', 'vmcompute')
+        $evidence.transient_service_start_attempted = $true
+        $evidence.vmcompute_start_exit_code = $serviceStart.exit_code
+        $evidence.vmcompute_start_output = Limit-Text -Text ([string]$serviceStart.output) -Maximum 6000
+        Start-Sleep -Seconds 2
+        $vmcomputeAfter = Invoke-Native -FilePath "$env:SystemRoot\System32\sc.exe" -Arguments @('query', 'vmcompute')
+        $evidence.vmcompute_after_start_exit_code = $vmcomputeAfter.exit_code
+        $evidence.vmcompute_after_start_output = Limit-Text -Text ([string]$vmcomputeAfter.output) -Maximum 6000
+    }
+
+    if ($pendingRebootSignals.Count -gt 0 -and $hypervisorPresent -ne $true) {
+        $evidence.restart_required = $true
+        $evidence.decision = 'WINDOWS_RESTART_REQUIRED_FOR_VIRTUALIZATION'
+    }
+    else {
+        $probeRunId = if ([string]::IsNullOrWhiteSpace([string]$env:GITHUB_RUN_ID)) { [Guid]::NewGuid().ToString('N') } else { [string]$env:GITHUB_RUN_ID }
+        $wsl2Probe = Invoke-LightweightWsl2Probe -RunId $probeRunId
+        $evidence.wsl2_probe = $wsl2Probe
+
+        if ($wsl2Probe.attempted -and $wsl2Probe.import_exit_code -eq 0 -and $wsl2Probe.unregister_exit_code -eq 0) {
+            $evidence.decision = 'VIRTUALIZATION_PREFLIGHT_READY'
+        }
+        elseif ($wsl2Probe.import_output -match '(?i)kernel component update|update to its kernel component') {
+            $evidence.decision = 'WSL2_KERNEL_NOT_READY'
+        }
+        elseif ($wsl2Probe.import_output -match '(?i)virtual machine platform|virtualization is enabled in the bios|virtualization.*bios') {
+            if ($firmwareVirtualization -eq $true) {
+                $evidence.restart_required = $true
+                $evidence.decision = 'HYPERVISOR_NOT_ACTIVE_RESTART_REQUIRED'
+            }
+            elseif ($firmwareVirtualization -eq $false) {
+                $evidence.decision = 'FIRMWARE_VIRTUALIZATION_DISABLED'
+            }
+            else {
+                $evidence.decision = 'VIRTUALIZATION_STATE_UNCERTAIN'
+            }
+        }
+        elseif ($hypervisorPresent -eq $true) {
+            $evidence.decision = 'VIRTUALIZATION_PREFLIGHT_READY'
+        }
+        elseif ($firmwareVirtualization -eq $true) {
+            $evidence.restart_required = $true
+            $evidence.decision = 'HYPERVISOR_NOT_ACTIVE_RESTART_REQUIRED'
+        }
+        else {
+            $evidence.decision = 'VIRTUALIZATION_STATE_UNCERTAIN'
+        }
+    }
 }
 
 Write-Evidence -Target $target -Payload $evidence
