@@ -24,8 +24,6 @@ on:
       - 'deepseek_provider.py'
       - 'data/market/**'
       - '.github/workflows/nexus_phase3_resource_activation.yml'
-  schedule:
-    - cron: '*/15 * * * *'
 
 concurrency:
   group: nexus-phase3-resource-activation
