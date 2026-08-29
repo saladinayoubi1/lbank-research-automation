@@ -56,8 +56,15 @@ rm -rf -- "`$extract_root"
 exit 0
 "@
 
-$raw = & $wsl -d $Distribution -u root -- bash -lc $probe 2>&1
-$wslExitCode = $LASTEXITCODE
+$previousErrorActionPreference = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
+try {
+    $raw = $probe | & $wsl -d $Distribution -u root -- bash -s -- 2>&1
+    $wslExitCode = $LASTEXITCODE
+}
+finally {
+    $ErrorActionPreference = $previousErrorActionPreference
+}
 $text = (($raw | ForEach-Object { $_.ToString() }) | Out-String)
 $text = ($text -replace "`0", '').Trim()
 if ($text.Length -gt 12000) {
