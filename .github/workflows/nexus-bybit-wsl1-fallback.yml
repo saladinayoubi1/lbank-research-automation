@@ -1,0 +1,70 @@
+name: NEXUS Bybit WSL1 Firmware Fallback
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - scripts/prepare_nexus_bybit_wsl1_fallback.ps1
+      - .github/workflows/nexus-bybit-wsl1-fallback.yml
+
+# Bounded physical fallback. The main commit marker is required below.
+permissions:
+  contents: read
+
+concurrency:
+  group: nexus-bybit-wsl1-fallback
+  cancel-in-progress: true
+
+jobs:
+  provision:
+    if: contains(github.event.head_commit.message, '[provision-bybit-wsl1]')
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 120
+    defaults:
+      run:
+        shell: cmd
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 1
+
+      - name: Verify exact trigger SHA
+        run: |
+          for /f %%S in ('git rev-parse HEAD') do set "CHECKED_OUT_SHA=%%S"
+          if /I not "%CHECKED_OUT_SHA%"=="%GITHUB_SHA%" exit /b 1
+          echo exact_trigger_sha=%CHECKED_OUT_SHA%
+
+      - name: Parse fallback and provisioning scripts with Windows PowerShell
+        run: >-
+          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command
+          "$paths=@('scripts\prepare_nexus_bybit_wsl1_fallback.ps1','scripts\provision_nexus_bybit_wsl_runner.ps1');
+          foreach($path in $paths){$tokens=$null;$errors=$null;[void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $path),[ref]$tokens,[ref]$errors);if($errors.Count -gt 0){$errors | ForEach-Object { Write-Error $_.Message };exit 1}}"
+
+      - name: Prepare firmware-independent WSL1 distribution
+        run: >-
+          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass
+          -File scripts\prepare_nexus_bybit_wsl1_fallback.ps1
+          -OutputPath "build\bybit-wsl1-fallback\evidence.json"
+
+      - name: Provision isolated Bybit Linux runner on prepared WSL1
+        run: >-
+          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass
+          -File scripts\provision_nexus_bybit_wsl_runner.ps1
+          -Distribution Ubuntu
+          -OutputPath "build\bybit-wsl-provisioning\evidence.json"
+
+      - name: Upload WSL1 fallback and provisioning evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-bybit-wsl1-fallback-${{ github.run_id }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            build/bybit-wsl1-fallback/evidence.json
+            build/bybit-wsl-provisioning/evidence.json
