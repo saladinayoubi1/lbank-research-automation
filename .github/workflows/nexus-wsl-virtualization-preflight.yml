@@ -1,4 +1,5 @@
 name: NEXUS WSL Virtualization Preflight
+# Marker-gated physical diagnostic trigger; behavior is unchanged.
 
 on:
   push:
