@@ -205,11 +205,15 @@ $evidence.host_package_downloaded = $true
 $evidence.host_package_verified = $true
 $evidence.host_package_bytes = [int64](Get-Item -LiteralPath $script:hostPackagePath).Length
 
-$wslPath = Invoke-Wsl -Arguments @('-d', $Distribution, '-u', 'root', '--', 'wslpath', '-u', $script:hostPackagePath)
-if ($wslPath.exit_code -ne 0) {
-    Complete-Repair -Decision 'WINDOWS_PACKAGE_WSL_PATH_FAILED' -ExitCode 1 -ErrorClass 'InvalidOperationException' -Detail $wslPath.output
+# Avoid relying on the distro's wslpath helper: physical WSL1 evidence showed that
+# helper can fail even though the standard /mnt/<drive> automount is available.
+$hostFullPath = [IO.Path]::GetFullPath($script:hostPackagePath)
+if ($hostFullPath -notmatch '^(?<drive>[A-Za-z]):\\(?<rest>.+)$') {
+    Complete-Repair -Decision 'WINDOWS_PACKAGE_WSL_PATH_FAILED' -ExitCode 1 -ErrorClass 'InvalidOperationException' -Detail 'Host package path is not drive-rooted.'
 }
-$wslArchivePath = ([string]$wslPath.output).Trim()
+$drive = $Matches['drive'].ToLowerInvariant()
+$rest = $Matches['rest'].Replace('\', '/')
+$wslArchivePath = "/mnt/$drive/$rest"
 if (-not $wslArchivePath -or $wslArchivePath -match "[`r`n']") {
     Complete-Repair -Decision 'WINDOWS_PACKAGE_WSL_PATH_UNSAFE' -ExitCode 1 -ErrorClass 'InvalidDataException'
 }
