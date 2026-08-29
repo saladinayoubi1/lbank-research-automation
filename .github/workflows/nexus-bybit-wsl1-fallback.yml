@@ -1,6 +1,7 @@
 name: NEXUS Bybit WSL1 Firmware Fallback
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -11,7 +12,8 @@ on:
       - scripts/diagnose_nexus_bybit_runner_package.ps1
       - .github/workflows/nexus-bybit-wsl1-fallback.yml
 
-# Bounded physical fallback. The main commit marker is required below.
+# Bounded physical fallback. Push-triggered provisioning requires the main commit marker;
+# explicit workflow_dispatch is allowed only from main for exact-main diagnostic retries.
 permissions:
   contents: read
 
@@ -21,7 +23,7 @@ concurrency:
 
 jobs:
   provision:
-    if: contains(github.event.head_commit.message, '[provision-bybit-wsl1]')
+    if: (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') || (github.event_name == 'push' && contains(github.event.head_commit.message, '[provision-bybit-wsl1]'))
     runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 120
     defaults:
