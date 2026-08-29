@@ -21,6 +21,8 @@ def test_wsl_linux_runner_provisioning_is_isolated_pinned_and_restart_safe() -> 
     assert "cloud-images.ubuntu.com" in text
     assert "pinned_ubuntu_rootfs_import" in text
     assert "--import" in text
+    assert "elseif ($help.output -match '--import')" not in text
+    assert "WSL_NONINTERACTIVE_INSTALL_UNAVAILABLE" not in text
     assert "ubuntu_rootfs_download_verified" in text
     assert "UBUNTU_ROOTFS_CHECKSUM_MISMATCH" in text
     assert "WSL_IMPORT_LOCATION_NOT_EMPTY" in text
