@@ -12,6 +12,7 @@ on:
       - .github/workflows/nexus-bybit-wsl1-fallback.yml
 
 # Bounded physical fallback. The main commit marker is required below.
+# Comment-only retrigger for the exact-main physical package diagnostic proof.
 permissions:
   contents: read
 
