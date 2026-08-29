@@ -48,6 +48,11 @@ jobs:
       - name: Inspect workflow states and retry only proven transient failures
         run: python fast_agent_orchestrator.py --once
 
+      - name: Recover stale persistent Paper schedule without widening authority
+        run: >-
+          python paper_schedule_watchdog.py
+          --output data/agent_coordination/paper_schedule_watchdog.json
+
       - name: Export portable Mission Control snapshot
         if: always()
         run: >-
