@@ -304,10 +304,10 @@ $evidence.hyperv_hypervisor_events_output = Limit-Text -Text ([string]$hyperVEve
 if (-not $isAdmin) {
     $evidence.decision = 'ADMINISTRATOR_TOKEN_REQUIRED'
 }
-elif ($wslFeature -ne 'Enabled' -or $vmFeature -ne 'Enabled') {
+elseif ($wslFeature -ne 'Enabled' -or $vmFeature -ne 'Enabled') {
     $evidence.decision = 'WSL_FEATURES_NOT_READY'
 }
-elif ($hypervisorLaunchType -and $hypervisorLaunchType -match '^(?i:off)$') {
+elseif ($hypervisorLaunchType -and $hypervisorLaunchType -match '^(?i:off)$') {
     $repair = Invoke-Native -FilePath "$env:SystemRoot\System32\bcdedit.exe" -Arguments @('/set', 'hypervisorlaunchtype', 'auto')
     $evidence.hypervisor_boot_repair_attempted = $true
     $evidence.hypervisor_boot_repair_exit_code = $repair.exit_code
@@ -321,10 +321,10 @@ elif ($hypervisorLaunchType -and $hypervisorLaunchType -match '^(?i:off)$') {
         $evidence.decision = 'HYPERVISOR_BOOT_FLAG_REPAIR_FAILED'
     }
 }
-elif ($slat -eq $false) {
+elseif ($slat -eq $false) {
     $evidence.decision = 'WSL2_SLAT_UNAVAILABLE'
 }
-elif ($firmwareVirtualization -eq $false) {
+elseif ($firmwareVirtualization -eq $false) {
     $evidence.decision = 'FIRMWARE_VIRTUALIZATION_DISABLED'
 }
 else {
