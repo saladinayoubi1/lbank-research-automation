@@ -21,7 +21,7 @@ def test_wsl1_bootstrap_preserves_windows_runner_and_no_reboot_policy():
     assert "automatic_restart_performed = $false" in text
     assert "firmware_setting_modified = $false" in text
     assert "github_registration_token_persisted = $false" in text
-    assert "c:\\actions-runner\\actions-runner" not in lowered
+    assert r"c:\actions-runner\actions-runner" not in lowered
     assert "restart-computer" not in lowered
     assert "shutdown.exe" not in lowered
     assert "bcdedit" not in lowered
