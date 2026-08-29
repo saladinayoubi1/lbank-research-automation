@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - scripts/prepare_nexus_bybit_wsl1_fallback.ps1
+      - scripts/provision_nexus_bybit_wsl_runner.ps1
+      - scripts/diagnose_nexus_bybit_runner_package.ps1
       - .github/workflows/nexus-bybit-wsl1-fallback.yml
 
 # Bounded physical fallback. The main commit marker is required below.
@@ -42,7 +44,7 @@ jobs:
       - name: Parse fallback and provisioning scripts with Windows PowerShell
         run: >-
           powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command
-          "$paths=@('scripts\prepare_nexus_bybit_wsl1_fallback.ps1','scripts\provision_nexus_bybit_wsl_runner.ps1');
+          "$paths=@('scripts\prepare_nexus_bybit_wsl1_fallback.ps1','scripts\provision_nexus_bybit_wsl_runner.ps1','scripts\diagnose_nexus_bybit_runner_package.ps1');
           foreach($path in $paths){$tokens=$null;$errors=$null;[void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $path),[ref]$tokens,[ref]$errors);if($errors.Count -gt 0){$errors | ForEach-Object { Write-Error $_.Message };exit 1}}"
 
       - name: Prepare firmware-independent WSL1 distribution
@@ -52,11 +54,21 @@ jobs:
           -OutputPath "build\bybit-wsl1-fallback\evidence.json"
 
       - name: Provision isolated Bybit Linux runner on prepared WSL1
+        id: provision
+        continue-on-error: true
         run: >-
           powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass
           -File scripts\provision_nexus_bybit_wsl_runner.ps1
           -Distribution Ubuntu
           -OutputPath "build\bybit-wsl-provisioning\evidence.json"
+
+      - name: Capture native runner package diagnostics after provisioning failure
+        if: steps.provision.outcome == 'failure'
+        run: >-
+          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass
+          -File scripts\diagnose_nexus_bybit_runner_package.ps1
+          -Distribution Ubuntu
+          -OutputPath "build\bybit-wsl-package-diagnostic\evidence.json"
 
       - name: Upload WSL1 fallback and provisioning evidence
         if: always()
@@ -68,3 +80,8 @@ jobs:
           path: |
             build/bybit-wsl1-fallback/evidence.json
             build/bybit-wsl-provisioning/evidence.json
+            build/bybit-wsl-package-diagnostic/evidence.json
+
+      - name: Preserve provisioning failure after durable diagnostics
+        if: steps.provision.outcome == 'failure'
+        run: exit /b 1
