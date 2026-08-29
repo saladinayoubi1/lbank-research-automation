@@ -34,6 +34,12 @@ def test_preflight_distinguishes_firmware_boot_and_restart_blockers() -> None:
     assert "PendingFileRenameOperations" in text
 
 
+def test_preflight_uses_powershell_control_flow_keywords() -> None:
+    text = SCRIPT.read_text(encoding="utf-8")
+    assert "\nelif " not in text
+    assert "\nelseif " in text
+
+
 def test_preflight_has_wmi_independent_processor_feature_probe() -> None:
     text = SCRIPT.read_text(encoding="utf-8")
     assert "IsProcessorFeaturePresent" in text
