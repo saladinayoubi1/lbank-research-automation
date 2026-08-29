@@ -135,6 +135,7 @@ def test_fetch_tries_second_official_host_after_unclassified_403(capsys):
     diagnostic = json.loads(line[len(prefix):])
     assert diagnostic["classification"] == "unclassified"
     assert diagnostic["ret_code"] is None
+    assert diagnostic["ret_code_category"] == "missing"
     assert diagnostic["ret_msg_category"] == "not_json"
     assert diagnostic["edge"] == "cloudflare"
     assert diagnostic["content_type"] == "text/html"
@@ -167,13 +168,14 @@ def test_access_too_frequent_403_closes_session_and_does_not_retry(capsys):
     output = capsys.readouterr().out
     assert '"classification":"access_too_frequent"' in output
     assert '"ret_code":null' in output
+    assert '"ret_code_category":"missing"' in output
     assert '"ret_msg_category":"not_json"' in output
     assert '"edge":"cloudfront"' in output
     assert "access too frequent" not in output.lower()
 
 
-def test_json_ip_ban_exposes_only_numeric_code_and_category(capsys):
-    raw_message = "IP has been banned."
+def test_json_region_restriction_10009_exposes_only_code_and_categories(capsys):
+    raw_message = "Service Restricted: Access is currently unavailable for your region."
     payload = {"retCode": 10009, "retMsg": raw_message, "result": {}, "retExtInfo": {}}
     session = _Session([
         _Response(
@@ -183,7 +185,7 @@ def test_json_ip_ban_exposes_only_numeric_code_and_category(capsys):
         ),
         _Response(200, _payload(_rows())),
     ])
-    with pytest.raises(BybitKlineError, match="HTTP 403 ip_banned"):
+    with pytest.raises(BybitKlineError, match="HTTP 403 region_restricted"):
         fetch_closed_klines(
             "BTCUSDT",
             "15",
@@ -196,9 +198,37 @@ def test_json_ip_ban_exposes_only_numeric_code_and_category(capsys):
     assert session.closed is True
     assert len(session.urls) == 1
     output = capsys.readouterr().out
-    assert '"classification":"ip_banned"' in output
+    assert '"classification":"region_restricted"' in output
     assert '"ret_code":10009' in output
-    assert '"ret_msg_category":"ip_banned"' in output
+    assert '"ret_code_category":"region_restricted"' in output
+    assert '"ret_msg_category":"region_restricted"' in output
+    assert raw_message not in output
+
+
+def test_json_api_rate_limit_10006_suppresses_repeated_requests(capsys):
+    raw_message = "Too many visits!"
+    payload = {"retCode": 10006, "retMsg": raw_message, "result": {}, "retExtInfo": {}}
+    session = _Session([
+        _Response(403, payload=payload, headers={"Content-Type": "application/json"}),
+        _Response(200, _payload(_rows())),
+    ])
+    with pytest.raises(BybitKlineError, match="HTTP 403 api_rate_limited"):
+        fetch_closed_klines(
+            "ETHUSDT",
+            "15",
+            now_ms=1710002000000,
+            start_time_ms=1710000000000,
+            end_time_ms=1710000900000,
+            limit=2,
+            session=session,
+        )
+    assert session.closed is True
+    assert len(session.urls) == 1
+    output = capsys.readouterr().out
+    assert '"classification":"api_rate_limited"' in output
+    assert '"ret_code":10006' in output
+    assert '"ret_code_category":"api_rate_limited"' in output
+    assert '"ret_msg_category":"access_too_frequent"' in output
     assert raw_message not in output
 
 
@@ -223,6 +253,7 @@ def test_unknown_json_403_does_not_leak_ret_msg_and_remains_bounded(capsys):
     output = capsys.readouterr().out
     assert output.count('"classification":"unclassified"') == 2
     assert output.count('"ret_code":54321') == 2
+    assert output.count('"ret_code_category":"unknown"') == 2
     assert output.count('"ret_msg_category":"other"') == 2
     assert raw_message not in output
 
