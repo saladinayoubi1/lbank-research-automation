@@ -174,7 +174,6 @@ for ($attempt = 1; -not $packageReady -and $attempt -le 4; $attempt++) {
             --fail `
             --location `
             --retry 5 `
-            --retry-all-errors `
             --retry-delay 2 `
             --connect-timeout 20 `
             --max-time 900 `
