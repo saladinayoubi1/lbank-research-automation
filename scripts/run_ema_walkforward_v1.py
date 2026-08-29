@@ -2,14 +2,18 @@ from __future__ import annotations
 
 import json
 import subprocess
+import sys
 from pathlib import Path
 
 import pandas as pd
 
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 from ema_walkforward_v1 import run_ema_walk_forward
 from research_data import load_research_series
 
-ROOT = Path(__file__).resolve().parents[1]
 STATUS = ROOT / "data" / "market" / "_backfill_status.csv"
 OUTPUT = ROOT / "build" / "research" / "ema_walkforward_v1.json"
 
