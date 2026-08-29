@@ -55,13 +55,20 @@ rm -rf -- "`$extract_root"
 exit 0
 "@
 
+# Windows PowerShell 5.1/native argv transport can corrupt a multiline bash -lc
+# payload that contains nested quotes/redirections. Encode the exact LF-only probe
+# bytes and pass only a small shell-safe launcher across the Windows->WSL boundary.
+$probeLf = $probe -replace "`r", ''
+$probeBase64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($probeLf))
+$probeLauncher = "printf '%s' '$probeBase64' | base64 -d | bash"
+
 $previousErrorActionPreference = $ErrorActionPreference
 try {
     # Windows PowerShell 5.1 can surface native stderr as NativeCommandError.
     # Capture merged native streams under Continue so the diagnostic itself
     # cannot terminate before $LASTEXITCODE and the output are recorded.
     $ErrorActionPreference = 'Continue'
-    $raw = @(& $wsl -d $Distribution -u root -- bash -lc $probe 2>&1)
+    $raw = @(& $wsl -d $Distribution -u root -- bash -lc $probeLauncher 2>&1)
     $wslExitCode = $LASTEXITCODE
 }
 catch {
