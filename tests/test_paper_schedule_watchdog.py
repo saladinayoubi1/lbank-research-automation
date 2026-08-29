@@ -73,6 +73,7 @@ def test_authoritative_recheck_prevents_duplicate_dispatch(monkeypatch):
 
 
 def test_stale_success_dispatches_only_after_second_stale_read(monkeypatch):
+    monkeypatch.setenv("GITHUB_REF_NAME", "main")
     monkeypatch.setattr(watchdog, "utcnow", lambda: NOW)
     monkeypatch.setattr(
         watchdog, "get_workflow_runs", lambda: [run(minutes_ago=90)]
@@ -84,6 +85,26 @@ def test_stale_success_dispatches_only_after_second_stale_read(monkeypatch):
     assert evidence["decision"] == "DISPATCHED"
     assert evidence["dispatch_attempted"] is True
     assert evidence["dispatch_ok"] is True
+
+
+def test_non_default_ref_fails_closed_before_dispatch(monkeypatch):
+    monkeypatch.setenv("GITHUB_REF_NAME", "pull/1074/merge")
+    monkeypatch.setattr(watchdog, "utcnow", lambda: NOW)
+    monkeypatch.setattr(
+        watchdog, "get_workflow_runs", lambda: [run(minutes_ago=90)]
+    )
+    dispatches: list[bool] = []
+    monkeypatch.setattr(
+        watchdog,
+        "dispatch_workflow",
+        lambda: (dispatches.append(True) or True, "unexpected"),
+    )
+
+    evidence = watchdog.watch_once(stale_minutes=45)
+
+    assert evidence["decision"] == "FAIL_CLOSED_NON_DEFAULT_REF"
+    assert evidence["dispatch_attempted"] is False
+    assert dispatches == []
 
 
 def test_coordinator_workflow_invokes_watchdog_without_permission_expansion():
