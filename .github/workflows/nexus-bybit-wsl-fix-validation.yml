@@ -8,6 +8,7 @@ on:
       - scripts/provision_nexus_bybit_wsl_runner.ps1
       - .github/workflows/nexus-bybit-wsl-fix-validation.yml
 
+# Bounded physical probe; the main commit marker is still required below.
 permissions:
   contents: read
 
