@@ -38,6 +38,7 @@
     ".github/workflows/nexus-autopilot-policy.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"validate-policy":{"policy_version":1}}},
     ".github/workflows/nexus-build-verification.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"android-apk":{"policy_version":1},"secure-gateway-verification":{"policy_version":1},"windows-desktop":{"policy_version":1}}},
     ".github/workflows/nexus-bybit-wsl-fix-validation.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"validate":{"policy_version":1}}},
+    ".github/workflows/nexus-bybit-wsl-runner-diagnostics.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"capture":{"policy_version":1}}},
     ".github/workflows/nexus-bybit-wsl1-fallback.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"provision":{"policy_version":1}}},
     ".github/workflows/nexus-cloud-fallback.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"fallback-health":{"policy_version":1}}},
     ".github/workflows/nexus-continuous-phase3.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"cloud-watchdog":{"policy_version":1},"local-worker":{"policy_version":1}}},

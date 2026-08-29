@@ -1,0 +1,52 @@
+name: NEXUS Bybit WSL Runner Diagnostics
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - scripts/capture_nexus_bybit_wsl_runner_diagnostics.ps1
+      - .github/workflows/nexus-bybit-wsl-runner-diagnostics.yml
+  workflow_run:
+    workflows: ["NEXUS persistent Paper trading loop"]
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nexus-bybit-wsl-runner-diagnostics
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    if: ${{ (github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/main') && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'failure' || github.event.workflow_run.conclusion == 'cancelled') }}
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 10
+    steps:
+      - name: Checkout diagnostic source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Capture read-only WSL runner diagnostics
+        shell: powershell
+        env:
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+          SOURCE_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          SOURCE_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+        run: |
+          $sourceRunId = if ($env:SOURCE_RUN_ID) { $env:SOURCE_RUN_ID } else { $env:GITHUB_RUN_ID }
+          $sourceSha = if ($env:SOURCE_HEAD_SHA) { $env:SOURCE_HEAD_SHA } else { $env:GITHUB_SHA }
+          $sourceConclusion = if ($env:SOURCE_CONCLUSION) { $env:SOURCE_CONCLUSION } else { 'diagnostic_push' }
+          .\scripts\capture_nexus_bybit_wsl_runner_diagnostics.ps1 `
+            -SourceRunId $sourceRunId `
+            -SourceSha $sourceSha `
+            -SourceConclusion $sourceConclusion
+
+      - name: Upload sanitized runner diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: nexus-bybit-wsl-runner-diagnostics-${{ github.run_id }}
+          path: build/bybit-wsl-runner-diagnostics/evidence.json
+          if-no-files-found: error
+          retention-days: 30
