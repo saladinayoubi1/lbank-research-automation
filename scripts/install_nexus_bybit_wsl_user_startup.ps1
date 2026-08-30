@@ -34,24 +34,36 @@ $startupRoot = [Environment]::GetFolderPath('Startup')
 $startupVbs = Join-Path $startupRoot 'NEXUS-Bybit-WSL-User-Startup.vbs'
 $legacyStartupCmd = Join-Path $startupRoot 'NEXUS-Bybit-WSL-User-Startup.cmd'
 $wslTimeoutMilliseconds = 10000
-$watchdogGeneration = 2
+$watchdogGeneration = 3
+$managedRunnerLog = '/tmp/nexus-bybit-runner.log'
 
-function Invoke-WslNative {
-    param([Parameter(Mandatory = $true)][string]$Command)
+function New-WslProcessStartInfo {
+    param(
+        [Parameter(Mandatory = $true)][string]$Command,
+        [bool]$RedirectOutput = $false
+    )
 
-    # Invoke wsl.exe through a bounded child process. A stalled WSL interop call
-    # must never pin the watchdog forever and prevent future self-heal attempts.
     $encoded = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($Command))
     $bashCommand = "printf '%s' '$encoded' | base64 -d | bash"
     $psi = New-Object Diagnostics.ProcessStartInfo
     $psi.FileName = $wsl
     $psi.Arguments = '-d ' + $Distribution + ' -u root -- bash -lc "' + $bashCommand + '"'
     $psi.UseShellExecute = $false
-    $psi.RedirectStandardOutput = $true
-    $psi.RedirectStandardError = $true
     $psi.CreateNoWindow = $true
     $psi.WindowStyle = [Diagnostics.ProcessWindowStyle]::Hidden
+    if ($RedirectOutput) {
+        $psi.RedirectStandardOutput = $true
+        $psi.RedirectStandardError = $true
+    }
+    return $psi
+}
 
+function Invoke-WslNative {
+    param([Parameter(Mandatory = $true)][string]$Command)
+
+    # All probe/mutation calls are bounded. The long-lived managed runner uses a
+    # separate watchdog-owned wsl.exe child and is never routed through here.
+    $psi = New-WslProcessStartInfo -Command $Command -RedirectOutput $true
     $proc = New-Object Diagnostics.Process
     $proc.StartInfo = $psi
     try {
@@ -87,30 +99,102 @@ function Test-ExistingRegistration {
     }
 }
 
-function Test-Listener {
-    $probe = Invoke-WslNative "pgrep -f '$RunnerRoot/bin/[R]unner.Listener' >/dev/null 2>&1"
+function Get-RunnerProcessState {
+    $probe = Invoke-WslNative "if pgrep -f '$RunnerRoot/bin/[R]unner.Listener' >/dev/null 2>&1; then echo listener=1; else echo listener=0; fi; if pgrep -f '$RunnerRoot/bin/[R]unner.Worker' >/dev/null 2>&1; then echo worker=1; else echo worker=0; fi"
     if ($probe.exit_code -eq 124) {
-        Write-Log 'listener_probe_timeout=true'
+        Write-Log 'runner_process_probe_timeout=true'
+        return [ordered]@{ known = $false; listener = $false; worker = $false }
     }
-    return ($probe.exit_code -eq 0)
+    if ($probe.exit_code -ne 0) {
+        Write-Log ('runner_process_probe_failed=' + $probe.exit_code)
+        return [ordered]@{ known = $false; listener = $false; worker = $false }
+    }
+    return [ordered]@{
+        known = $true
+        listener = ($probe.output -match '(?m)^listener=1$')
+        worker = ($probe.output -match '(?m)^worker=1$')
+    }
 }
 
-function Start-ListenerIfMissing {
-    Test-ExistingRegistration
-    if (Test-Listener) { return $false }
-    $start = Invoke-WslNative "cd '$RunnerRoot' && export RUNNER_ALLOW_RUNASROOT=1 && export RUNNER_TRACKING_ID= && nohup ./run.sh >>/tmp/nexus-bybit-runner.log 2>&1 </dev/null &"
-    if ($start.exit_code -ne 0) {
-        Write-Log ('runner_start_request_failed=' + $start.exit_code)
-        return $false
+function Test-Listener {
+    $state = Get-RunnerProcessState
+    return ($state.known -and $state.listener)
+}
+
+function Stop-IdleExternalListener {
+    # Never recycle a listener while a Runner.Worker is active. This prevents a
+    # watchdog upgrade from interrupting a physical Paper job already in flight.
+    $command = "if pgrep -f '$RunnerRoot/bin/[R]unner.Worker' >/dev/null 2>&1; then exit 3; fi; for p in `$(pgrep -f '$RunnerRoot/bin/[R]unner.Listener' 2>/dev/null || true); do kill -TERM `$p || true; done; exit 0"
+    $result = Invoke-WslNative $command
+    if ($result.exit_code -eq 3) { return 'BUSY' }
+    if ($result.exit_code -ne 0) {
+        Write-Log ('listener_recycle_failed=' + $result.exit_code)
+        return 'FAILED'
     }
-    Start-Sleep -Seconds 3
-    return (Test-Listener)
+    Start-Sleep -Seconds 2
+    return 'STOPPED'
+}
+
+function Start-ManagedRunnerProcess {
+    Test-ExistingRegistration
+    $command = "cd '$RunnerRoot' && export RUNNER_ALLOW_RUNASROOT=1 && export RUNNER_TRACKING_ID= && exec ./run.sh >>'$managedRunnerLog' 2>&1"
+    $psi = New-WslProcessStartInfo -Command $command -RedirectOutput $false
+    $proc = New-Object Diagnostics.Process
+    $proc.StartInfo = $psi
+    try {
+        if (-not $proc.Start()) {
+            $proc.Dispose()
+            return $null
+        }
+        Start-Sleep -Seconds 5
+        if ($proc.HasExited) {
+            Write-Log ('managed_runner_early_exit=' + $proc.ExitCode)
+            $proc.Dispose()
+            return $null
+        }
+        Write-Log ('managed_runner_started=true windows_pid=' + $proc.Id)
+        return $proc
+    }
+    catch {
+        Write-Log ('managed_runner_start_error=' + $_.Exception.GetType().Name)
+        $proc.Dispose()
+        return $null
+    }
+}
+
+function Stop-PreviousUserWatchdogs {
+    # The stable watchdog path is reused across upgrades. Kill only same-user
+    # PowerShell processes whose command line explicitly points at that script
+    # in -Mode Watch. This is process cleanup only; no task/service/ACL mutation.
+    try {
+        $query = "SELECT ProcessId, CommandLine FROM Win32_Process WHERE Name='powershell.exe'"
+        $searcher = New-Object System.Management.ManagementObjectSearcher($query)
+        foreach ($item in @($searcher.Get())) {
+            $pidValue = [int]$item.ProcessId
+            $commandLine = [string]$item.CommandLine
+            if ($pidValue -eq $PID) { continue }
+            if (-not $commandLine) { continue }
+            if ($commandLine.IndexOf($stableScript, [StringComparison]::OrdinalIgnoreCase) -lt 0) { continue }
+            if ($commandLine -notmatch '(?i)-Mode\s+Watch') { continue }
+            try {
+                [Diagnostics.Process]::GetProcessById($pidValue).Kill()
+                Write-Log ('previous_watchdog_terminated_pid=' + $pidValue)
+            }
+            catch {
+                Write-Log ('previous_watchdog_terminate_failed_pid=' + $pidValue)
+            }
+        }
+        $searcher.Dispose()
+    }
+    catch {
+        Write-Log ('previous_watchdog_inventory_error=' + $_.Exception.GetType().Name)
+    }
 }
 
 function Write-Evidence([string]$Decision, [bool]$ListenerObserved) {
     New-Item -ItemType Directory -Path $stateRoot -Force | Out-Null
     $payload = [ordered]@{
-        schema_version = 2
+        schema_version = 3
         generated_at_utc = [DateTime]::UtcNow.ToString('o')
         decision = $Decision
         windows_identity = [string]$identity.Name
@@ -122,6 +206,9 @@ function Write-Evidence([string]$Decision, [bool]$ListenerObserved) {
         startup_path = $startupVbs
         stable_watchdog_path = $stableScript
         watchdog_generation = $watchdogGeneration
+        watchdog_owns_wsl_child = $true
+        stale_idle_listener_recycle = $true
+        active_worker_interrupt_allowed = $false
         wsl_call_timeout_seconds = [int]($wslTimeoutMilliseconds / 1000)
         administrator_required = $false
         task_scheduler_used = $false
@@ -140,27 +227,63 @@ function Run-Watchdog {
     Test-ExistingRegistration
     New-Item -ItemType Directory -Path $stateRoot -Force | Out-Null
     $createdNew = $false
-    # Version the mutex so a watchdog from an older implementation that is
-    # already stuck inside WSL interop cannot block a repaired watchdog forever.
     $mutexName = 'Local\NEXUS-Bybit-WSL-Watchdog-v' + $watchdogGeneration + '-' + $sid
     $mutex = New-Object Threading.Mutex($true, $mutexName, [ref]$createdNew)
     if (-not $createdNew) { return }
+
+    $managedRunner = $null
     try {
-        Write-Log ('watchdog_started=true generation=' + $watchdogGeneration)
+        Write-Log ('watchdog_started=true generation=' + $watchdogGeneration + ' managed_child=true')
         while ($true) {
             try {
-                if (-not (Test-Listener)) {
-                    $started = Start-ListenerIfMissing
-                    Write-Log ('listener_recovery=' + $started.ToString().ToLowerInvariant())
+                if ($null -ne $managedRunner) {
+                    if ($managedRunner.HasExited) {
+                        Write-Log ('managed_runner_exit=' + $managedRunner.ExitCode)
+                        $managedRunner.Dispose()
+                        $managedRunner = $null
+                    }
+                }
+
+                if ($null -eq $managedRunner) {
+                    $state = Get-RunnerProcessState
+                    if (-not $state.known) {
+                        Write-Log 'runner_state_unknown_waiting=true'
+                    }
+                    elseif ($state.worker) {
+                        Write-Log 'existing_runner_worker_active_waiting=true'
+                    }
+                    else {
+                        if ($state.listener) {
+                            $recycle = Stop-IdleExternalListener
+                            Write-Log ('external_listener_recycle=' + $recycle.ToLowerInvariant())
+                            if ($recycle -eq 'BUSY') {
+                                Start-Sleep -Seconds 15
+                                continue
+                            }
+                        }
+                        $managedRunner = Start-ManagedRunnerProcess
+                        Write-Log ('managed_runner_recovery=' + (($null -ne $managedRunner).ToString().ToLowerInvariant()))
+                    }
                 }
             }
             catch {
                 Write-Log ('watchdog_iteration_error=' + $_.Exception.GetType().Name)
+                if ($null -ne $managedRunner) {
+                    try { $managedRunner.Dispose() } catch { }
+                    $managedRunner = $null
+                }
             }
             Start-Sleep -Seconds 15
         }
     }
     finally {
+        if ($null -ne $managedRunner) {
+            try {
+                if (-not $managedRunner.HasExited) { $managedRunner.Kill() }
+            }
+            catch { }
+            try { $managedRunner.Dispose() } catch { }
+        }
         try { $mutex.ReleaseMutex() } catch { }
         $mutex.Dispose()
     }
@@ -188,6 +311,9 @@ if (Test-Path -LiteralPath $legacyStartupCmd -PathType Leaf) {
     Remove-Item -LiteralPath $legacyStartupCmd -Force
 }
 
+Stop-PreviousUserWatchdogs
+Start-Sleep -Seconds 1
+
 $psi = New-Object Diagnostics.ProcessStartInfo
 $psi.FileName = 'powershell.exe'
 $psi.Arguments = '-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File "' + $stableScript + '" -Mode Watch'
@@ -197,16 +323,20 @@ $psi.WindowStyle = [Diagnostics.ProcessWindowStyle]::Hidden
 $proc = New-Object Diagnostics.Process
 $proc.StartInfo = $psi
 if (-not $proc.Start()) { throw 'Unable to start user-context watchdog.' }
+$proc.Dispose()
 
-Start-Sleep -Seconds 5
+Start-Sleep -Seconds 10
 $listener = Test-Listener
-Write-Evidence -Decision $(if ($listener) { 'USER_CONTEXT_SELF_HEAL_ACTIVE' } else { 'WATCHDOG_STARTED_LISTENER_NOT_YET_OBSERVED' }) -ListenerObserved $listener
+Write-Evidence -Decision $(if ($listener) { 'USER_CONTEXT_MANAGED_CHILD_SELF_HEAL_ACTIVE' } else { 'WATCHDOG_STARTED_LISTENER_NOT_YET_OBSERVED' }) -ListenerObserved $listener
 if (-not $listener) { throw 'Watchdog started but NEXUS-BYBIT-WSL listener was not observed.' }
 
 Write-Host 'bybit_wsl_user_startup_recovery=PASS'
 Write-Host "startup_path=$startupVbs"
 Write-Host "watchdog_path=$stableScript"
 Write-Host ('watchdog_generation=' + $watchdogGeneration)
+Write-Host 'watchdog_owns_wsl_child=true'
+Write-Host 'stale_idle_listener_recycle=true'
+Write-Host 'active_worker_interrupt_allowed=false'
 Write-Host ('wsl_call_timeout_seconds=' + [int]($wslTimeoutMilliseconds / 1000))
 Write-Host 'administrator_required=false'
 Write-Host 'task_scheduler_used=false'
