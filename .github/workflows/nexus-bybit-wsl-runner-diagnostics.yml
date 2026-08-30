@@ -28,7 +28,7 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
       - name: Capture read-only WSL runner diagnostics
-        shell: powershell
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
         env:
           SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
           SOURCE_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
