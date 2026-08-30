@@ -26,7 +26,10 @@ concurrency:
 jobs:
   wake:
     if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') || (github.event_name == 'push' && contains(github.event.head_commit.message, '[wake-bybit-wsl]'))
-    runs-on: [self-hosted, Windows, X64]
+    # Match the label contract already proven by NEXUS-WINDOWS-DR runtime jobs.
+    # Do not require an architecture label that is not needed by this workflow;
+    # the recovery script itself remains fail-closed on the expected WSL runner.
+    runs-on: [self-hosted, Windows]
     timeout-minutes: 15
     defaults:
       run:
