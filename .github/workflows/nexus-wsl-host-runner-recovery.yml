@@ -11,7 +11,7 @@ permissions:
 
 concurrency:
   group: nexus-wsl-host-runner-recovery
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   wake-windows-runner:
@@ -29,18 +29,36 @@ jobs:
           fi
           "$PS_EXE" -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command '
             $ErrorActionPreference = "Stop"
+            $taskName = "NEXUS-GitHub-Runner-Autostart"
             $runnerRoot = "C:\actions-runner\actions-runner"
             $runnerCmd = Join-Path $runnerRoot "run.cmd"
-            if (-not (Test-Path -LiteralPath $runnerCmd -PathType Leaf)) {
-              throw "existing Windows runner entrypoint missing: $runnerCmd"
+            $listener = @(Get-Process -Name "Runner.Listener" -ErrorAction SilentlyContinue)
+            if ($listener.Count -eq 0) {
+              $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+              if ($task) {
+                try {
+                  Start-ScheduledTask -TaskName $taskName -ErrorAction Stop
+                  Write-Host "NEXUS_WINDOWS_RUNNER_WAKE_METHOD=scheduled-task"
+                }
+                catch {
+                  Write-Host "NEXUS_WINDOWS_RUNNER_TASK_START_ERROR=$($_.Exception.Message)"
+                }
+                Start-Sleep -Seconds 12
+                $listener = @(Get-Process -Name "Runner.Listener" -ErrorAction SilentlyContinue)
+              }
             }
-            $alreadyRunning = @(Get-Process -Name "Runner.Listener" -ErrorAction SilentlyContinue).Count -gt 0
-            if (-not $alreadyRunning) {
-              Start-Process -FilePath $runnerCmd -WorkingDirectory $runnerRoot -WindowStyle Hidden
-              Start-Sleep -Seconds 8
+            if ($listener.Count -eq 0) {
+              if (-not (Test-Path -LiteralPath $runnerCmd -PathType Leaf)) {
+                throw "existing Windows runner entrypoint missing: $runnerCmd"
+              }
+              $cmd = Join-Path $env:SystemRoot "System32\cmd.exe"
+              $arguments = "/d /s /c start `"NEXUS Actions Runner`" /min `"$runnerCmd`""
+              Start-Process -FilePath $cmd -ArgumentList $arguments -WorkingDirectory $runnerRoot -WindowStyle Hidden
+              Write-Host "NEXUS_WINDOWS_RUNNER_WAKE_METHOD=detached-cmd-start"
+              Start-Sleep -Seconds 12
+              $listener = @(Get-Process -Name "Runner.Listener" -ErrorAction SilentlyContinue)
             }
-            $running = @(Get-Process -Name "Runner.Listener" -ErrorAction SilentlyContinue).Count -gt 0
-            if (-not $running) {
+            if ($listener.Count -eq 0) {
               throw "Windows Runner.Listener did not start"
             }
             Write-Host "NEXUS_WINDOWS_RUNNER_WAKE=SUCCESS"
