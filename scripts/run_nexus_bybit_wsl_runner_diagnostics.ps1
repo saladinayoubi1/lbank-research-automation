@@ -1,0 +1,119 @@
+param(
+    [string]$OutputPath = "build\bybit-wsl-runner-diagnostics\evidence.json",
+    [string]$RunnerRoot = "/opt/nexus-bybit-runner",
+    [string]$RunnerName = "NEXUS-BYBIT-WSL",
+    [string]$SourceRunId = "",
+    [string]$SourceSha = "",
+    [string]$SourceConclusion = ""
+)
+
+$ErrorActionPreference = 'Stop'
+$ProgressPreference = 'SilentlyContinue'
+
+if ($RunnerRoot -ne '/opt/nexus-bybit-runner') { throw 'RunnerRoot must remain pinned.' }
+if ($RunnerName -ne 'NEXUS-BYBIT-WSL') { throw 'RunnerName must remain pinned.' }
+
+$wsl = Join-Path $env:SystemRoot 'System32\wsl.exe'
+if (-not (Test-Path -LiteralPath $wsl -PathType Leaf)) { throw 'wsl.exe is required.' }
+
+function Invoke-WslNative {
+    param([Parameter(Mandatory = $true)][string[]]$Arguments)
+    $previous = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = 'Continue'
+        $raw = @(& $wsl @Arguments 2>&1)
+        $code = $LASTEXITCODE
+        $text = (($raw | ForEach-Object { $_.ToString() }) | Out-String) -replace "`0", ''
+        return [ordered]@{
+            exit_code = if ($null -eq $code) { -1 } else { [int]$code }
+            output = $text.Trim()
+        }
+    }
+    catch {
+        return [ordered]@{ exit_code = -1; output = $_.Exception.GetType().FullName }
+    }
+    finally {
+        $ErrorActionPreference = $previous
+    }
+}
+
+function Write-ResolutionFailure {
+    param([string]$Decision, [int]$CandidateCount = 0, [int]$MatchCount = 0)
+    $target = [IO.Path]::GetFullPath($OutputPath)
+    $parent = Split-Path -Parent $target
+    New-Item -ItemType Directory -Path $parent -Force | Out-Null
+    $payload = [ordered]@{
+        schema_version = 1
+        generated_at_utc = [DateTime]::UtcNow.ToString('o')
+        source_run_id = if ($SourceRunId) { $SourceRunId } else { [string]$env:GITHUB_RUN_ID }
+        source_sha = if ($SourceSha) { $SourceSha } else { [string]$env:GITHUB_SHA }
+        source_conclusion = if ($SourceConclusion) { $SourceConclusion } else { 'diagnostic_push' }
+        repository = [string]$env:GITHUB_REPOSITORY
+        runner_name = $RunnerName
+        runner_root = $RunnerRoot
+        distribution_candidate_count = $CandidateCount
+        distribution_match_count = $MatchCount
+        runner_mutation_performed = $false
+        windows_runner_paths_modified = $false
+        bybit_private_credentials_used = $false
+        raw_diagnostic_files_uploaded = $false
+        decision = $Decision
+    }
+    $json = $payload | ConvertTo-Json -Depth 8
+    [IO.File]::WriteAllText($target, $json, (New-Object Text.UTF8Encoding($false)))
+}
+
+$inventory = Invoke-WslNative -Arguments @('-l', '-q')
+if ($inventory.exit_code -ne 0) {
+    Write-ResolutionFailure -Decision 'WSL_DISTRIBUTION_INVENTORY_FAILED'
+    throw 'Unable to enumerate WSL distributions.'
+}
+
+$candidates = @(
+    $inventory.output -split "`r?`n" |
+        ForEach-Object { $_.Trim() } |
+        Where-Object { $_ -and $_ -match '^[A-Za-z0-9._ -]+$' } |
+        Select-Object -Unique
+)
+if (-not $candidates) {
+    Write-ResolutionFailure -Decision 'WSL_DISTRIBUTION_INVENTORY_EMPTY'
+    throw 'No WSL distributions were found.'
+}
+
+$matches = New-Object System.Collections.Generic.List[string]
+foreach ($candidate in $candidates) {
+    $probeCommand = "test -x '$RunnerRoot/run.sh' && test -f '$RunnerRoot/.runner' && grep -Eq 'agentName[^,]*$RunnerName' '$RunnerRoot/.runner'"
+    $probe = Invoke-WslNative -Arguments @('-d', $candidate, '-u', 'root', '--', 'bash', '-lc', $probeCommand)
+    if ($probe.exit_code -eq 0) { $matches.Add($candidate) }
+}
+
+if ($matches.Count -ne 1) {
+    Write-ResolutionFailure -Decision 'WSL_RUNNER_DISTRIBUTION_NOT_UNIQUE' -CandidateCount $candidates.Count -MatchCount $matches.Count
+    throw "Expected exactly one WSL distribution containing the pinned NEXUS Bybit runner; found $($matches.Count)."
+}
+
+$resolvedDistribution = $matches[0]
+$sourceRun = if ($SourceRunId) { $SourceRunId } else { [string]$env:GITHUB_RUN_ID }
+$sourceHead = if ($SourceSha) { $SourceSha } else { [string]$env:GITHUB_SHA }
+$sourceResult = if ($SourceConclusion) { $SourceConclusion } else { 'diagnostic_push' }
+
+& "$PSScriptRoot\capture_nexus_bybit_wsl_runner_diagnostics.ps1" `
+    -OutputPath $OutputPath `
+    -Distribution $resolvedDistribution `
+    -RunnerRoot $RunnerRoot `
+    -SourceRunId $sourceRun `
+    -SourceSha $sourceHead `
+    -SourceConclusion $sourceResult
+
+$target = [IO.Path]::GetFullPath($OutputPath)
+if (-not (Test-Path -LiteralPath $target -PathType Leaf)) { throw 'Diagnostics evidence was not produced.' }
+$evidence = Get-Content -LiteralPath $target -Raw | ConvertFrom-Json
+if ($evidence.decision -ne 'RUNNER_DIAGNOSTICS_CAPTURED') { throw "Unexpected diagnostics decision: $($evidence.decision)" }
+if ($evidence.distribution -ne $resolvedDistribution) { throw 'Resolved distribution mismatch.' }
+foreach ($field in @('wsl_status','runner_processes','resources','diag_inventory','diag_signals')) {
+    if ([int]$evidence.$field.exit_code -ne 0) { throw "Diagnostics probe failed: $field" }
+}
+
+Write-Host "resolved_bybit_wsl_distribution=$resolvedDistribution"
+Write-Host 'bybit_wsl_runner_diagnostics_validation=PASS'
+exit 0
