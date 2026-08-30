@@ -41,6 +41,10 @@ jobs:
             -SourceRunId $sourceRunId `
             -SourceSha $sourceSha `
             -SourceConclusion $sourceConclusion
+          # The read-only WSL probes intentionally capture nonzero child-process
+          # results in evidence. Do not leak that stale LASTEXITCODE into the
+          # GitHub PowerShell wrapper after the evidence itself was produced.
+          $global:LASTEXITCODE = 0
 
       - name: Upload sanitized runner diagnostics
         if: always()
