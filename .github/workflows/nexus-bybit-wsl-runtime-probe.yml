@@ -1,0 +1,75 @@
+name: NEXUS Bybit WSL runtime probe
+
+on:
+  push:
+    branches:
+      - diag/bybit-wsl-runtime-probe-20260830
+    paths:
+      - .github/workflows/nexus-bybit-wsl-runtime-probe.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nexus-bybit-wsl-runtime-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 10
+    steps:
+      - name: Probe WSL runtime without mutation
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $wsl = Join-Path $env:SystemRoot 'System32\wsl.exe'
+          if (-not (Test-Path -LiteralPath $wsl -PathType Leaf)) { throw 'wsl.exe is required' }
+
+          $raw = @(& $wsl -l -q 2>&1)
+          if ($LASTEXITCODE -ne 0) { throw 'WSL inventory failed' }
+          $names = @(
+            (($raw | ForEach-Object { $_.ToString() }) -join "`n") -replace "`0", '' -split "`r?`n" |
+              ForEach-Object { $_.Trim() } |
+              Where-Object { $_ -and $_ -match '^[A-Za-z0-9._ -]+$' } |
+              Select-Object -Unique
+          )
+          if (-not $names) { throw 'No WSL distributions found' }
+
+          $matches = @()
+          foreach ($name in $names) {
+            $probe = @(& $wsl -d $name -u root -- bash -lc "test -x /opt/nexus-bybit-runner/run.sh && test -f /opt/nexus-bybit-runner/.runner" 2>&1)
+            $probeCode = $LASTEXITCODE
+            Write-Host "distribution=$name runner_root_present=$($probeCode -eq 0)"
+            if ($probeCode -eq 0) { $matches += $name }
+          }
+          if ($matches.Count -ne 1) { throw "Expected one runner distribution; found $($matches.Count)" }
+
+          $distro = $matches[0]
+          Write-Host "resolved_distribution=$distro"
+          $commands = @(
+            'uname -a',
+            'uname -m',
+            'getconf LONG_BIT 2>/dev/null || true',
+            'command -v python3 || true',
+            'python3 --version 2>&1 || true',
+            'python3 -m pip --version 2>&1 || true',
+            'command -v python || true',
+            'python --version 2>&1 || true',
+            'command -v node || true',
+            'node --version 2>&1 || true',
+            'command -v curl || true',
+            'curl --version 2>&1 | head -n 1 || true',
+            'df -h / /opt 2>/dev/null || true',
+            'free -m 2>/dev/null || true',
+            'ps -eo pid,ppid,stat,etime,comm,args | grep -E "Runner.Worker|setup-python|node|curl|tar|python" | grep -v grep || true'
+          )
+          foreach ($command in $commands) {
+            Write-Host "--- probe: $command"
+            & $wsl -d $distro -u root -- bash -lc $command
+            Write-Host "probe_exit=$LASTEXITCODE"
+          }
+
+          Write-Host 'runner_mutation_performed=false'
+          Write-Host 'private_credentials_used=false'
+          Write-Host 'bybit_wsl_runtime_probe=PASS'
