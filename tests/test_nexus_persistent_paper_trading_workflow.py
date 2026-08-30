@@ -6,6 +6,10 @@ from pathlib import Path
 WORKFLOW = Path(".github/workflows/nexus_persistent_paper_trading_loop.yml")
 
 
+def _paper_job(text: str) -> str:
+    return text.split("  paper-loop:", 1)[1].split("  persist-state:", 1)[0]
+
+
 def test_persistent_loop_runs_on_closed_candle_cadence_and_restores_state() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     assert 'cron: "7,22,37,52 * * * *"' in text
@@ -14,7 +18,7 @@ def test_persistent_loop_runs_on_closed_candle_cadence_and_restores_state() -> N
     assert "Restore newest persistent Paper state" in text
     assert "actions/artifacts?{query}" in text
     assert "Advance public closed-candle Paper portfolio loop" in text
-    assert "python nexus_persistent_paper_trading_loop.py" in text
+    assert "nexus_persistent_paper_trading_loop.py" in text
     assert "nexus-persistent-paper-trading-state" in text
     assert "if: always()" in text
 
@@ -53,7 +57,7 @@ def test_public_bybit_collector_changes_retrigger_and_are_contract_tested() -> N
 
 def test_network_eligible_runner_is_pinned_and_fail_closed() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
-    paper = text.split("  paper-loop:", 1)[1]
+    paper = _paper_job(text)
     assert "runs-on: nexus-bybit-network" in paper
     assert "vars.NEXUS_BYBIT_NETWORK_RUNNER_ENABLED" not in paper
     assert "ubuntu-latest" not in paper
@@ -67,40 +71,44 @@ def test_network_eligible_runner_is_pinned_and_fail_closed() -> None:
     assert "vpn" not in paper.lower()
 
 
-def test_wsl1_node20_compatibility_exception_is_scoped_to_physical_paper_job() -> None:
+def test_physical_wsl_job_avoids_javascript_actions_and_codeload_dependency() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
-    contract, paper = text.split("  paper-loop:", 1)
+    contract, _ = text.split("  paper-loop:", 1)
+    paper = _paper_job(text)
+    persist = text.split("  persist-state:", 1)[1]
 
-    # GitHub-hosted contract validation stays on the current Node-24 action pins.
+    # Hosted jobs retain immutable JavaScript actions on a Node-24-capable plane.
     assert "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" in contract
     assert "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97" in contract
-    assert "ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION" not in contract
+    assert "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02" in persist
 
-    # The physical WSL1 plane uses immutable Node-20 pins proven executable on
-    # the physical runner. The opt-out must not escape this job.
-    assert 'ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"' in paper
-    assert "actions/checkout@11d5960a326750d5838078e36cf38b85af677262" in paper
-    assert "actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065" in paper
-    assert "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02" in paper
-    assert "Node 24 Linux binaries fail with Exec format error on WSL1" in paper
+    # The physical WSL1 job has zero `uses:` steps, so runner preparation never
+    # depends on codeload.github.com or a JavaScript runtime.
+    assert "uses:" not in paper
+    assert "actions/checkout@" not in paper
+    assert "actions/setup-python@" not in paper
+    assert "actions/upload-artifact@" not in paper
+    assert "ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION" not in paper
+    assert "Prepare exact repository and pre-provisioned Python 3.12 without JavaScript actions" in paper
+    assert 'repo_url="https://github.com/${GITHUB_REPOSITORY}.git"' in paper
+    assert 'git fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"' in paper
+    assert 'test "$(git rev-parse HEAD)" = "$GITHUB_SHA"' in paper
 
 
-def test_wsl1_python_selection_avoids_network_cache_restore_and_checks_version() -> None:
+def test_wsl1_python_selection_is_preprovisioned_and_checks_version() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
-    contract, paper = text.split("  paper-loop:", 1)
+    contract, _ = text.split("  paper-loop:", 1)
+    paper = _paper_job(text)
     assert "cache: pip" in contract
-    assert "Select pre-provisioned Python 3.12 without cache restore" in paper
-    setup = paper.split("Select pre-provisioned Python 3.12 without cache restore", 1)[1].split(
-        "Enforce eligible Bybit network execution plane", 1
-    )[0]
-    assert 'python-version: "3.12"' in setup
-    assert "cache: pip" not in setup
+    assert "RUNNER_TOOL_CACHE" in paper
+    assert "No pre-provisioned CPython 3.12 exists on the physical runner." in paper
     assert "sys.version_info[:2] == (3, 12)" in paper
+    assert "cache: pip" not in paper
 
 
 def test_wsl1_state_restore_uses_python_stdlib_not_unprovisioned_cli_tools() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
-    paper = text.split("  paper-loop:", 1)[1]
+    paper = _paper_job(text)
     restore = paper.split("Restore newest persistent Paper state", 1)[1].split(
         "Advance public closed-candle Paper portfolio loop", 1
     )[0]
@@ -114,7 +122,7 @@ def test_wsl1_state_restore_uses_python_stdlib_not_unprovisioned_cli_tools() -> 
 
 def test_state_restore_never_forwards_github_token_to_artifact_storage_redirect() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
-    paper = text.split("  paper-loop:", 1)[1]
+    paper = _paper_job(text)
     restore = paper.split("Restore newest persistent Paper state", 1)[1].split(
         "Advance public closed-candle Paper portfolio loop", 1
     )[0]
@@ -129,6 +137,27 @@ def test_state_restore_never_forwards_github_token_to_artifact_storage_redirect(
     assert "User-Agent" in storage_block
     assert "Authorization" not in storage_block
     assert "token" not in storage_block
+
+
+def test_physical_state_handoff_is_bounded_digest_checked_and_hosted_persisted() -> None:
+    text = WORKFLOW.read_text(encoding="utf-8")
+    paper = _paper_job(text)
+    persist = text.split("  persist-state:", 1)[1]
+
+    assert "Package Paper state for hosted artifact persistence" in paper
+    assert "state_archive_b64" in paper
+    assert "state_archive_sha256" in paper
+    assert "persistent-state-handoff.zip" in paper
+    assert 'state_b64_bytes" -gt 450000' in paper
+    assert "compression=zipfile.ZIP_DEFLATED" in paper
+    assert "compresslevel=9" in paper
+
+    assert "needs.paper-loop.outputs.state_archive_b64" in persist
+    assert "STATE_ARCHIVE_SHA256" in persist
+    assert "sha256sum build/persistent-state-handoff.zip" in persist
+    assert "unsafe state handoff path" in persist
+    assert "hosted_state_handoff_verification=PASS" in persist
+    assert "nexus-persistent-paper-trading-state" in persist
 
 
 def test_persistent_loop_permissions_are_read_only_and_authority_is_fail_closed() -> None:
