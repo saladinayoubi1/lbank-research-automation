@@ -1,9 +1,20 @@
 {
   "schema_version": "nexus.demo-strategy-matrix.v1",
   "matrix_id": "nexus-demo-btc-eth-3tf-3strategy-v1",
-  "symbols": ["BTCUSDT", "ETHUSDT"],
-  "timeframes": ["minute15", "hour1", "hour4"],
-  "families": ["momentum", "trend_breakout", "mean_reversion"],
+  "symbols": [
+    "BTCUSDT",
+    "ETHUSDT"
+  ],
+  "timeframes": [
+    "minute15",
+    "hour1",
+    "hour4"
+  ],
+  "families": [
+    "momentum",
+    "trend_breakout",
+    "mean_reversion"
+  ],
   "history_limit": 240,
   "authority": {
     "paper_only": true,
