@@ -27,14 +27,17 @@
     "owner_override_required_for_priority_change": true
   },
   "runtime_status": {
-    "agent_execution_state": "trading_engine_first_current_exact_sha_demo_verified_physical_windows_final_proof_pending",
-    "laptop_state": "historical_physical_phase7_proof_verified_current_fixed_sha_physical_execution_required",
+    "agent_execution_state": "paper_runtime_acceptance_open_windows_recovery_context_limited",
+    "laptop_state": "physical_windows_runner_verified_linux_paper_runner_historically_verified_current_exact_sha_paper_acceptance_pending",
     "internet_outage_state": "not_assumed_from_laptop_state",
     "laptop_offline_is_not_internet_outage": true,
-    "runner_registration_modified_by_phase7_cleanup": false,
-    "watchdog_required": false,
-    "self_heal_reintroduced": false,
-    "open_pull_requests_before_mission_lock_pr": 0
+    "windows_runner_identity_class": "NETWORK_SERVICE",
+    "windows_user_context_token_available": false,
+    "windows_user_context_token_error": 1314,
+    "windows_scheduled_recovery_task_query_access_denied": true,
+    "bybit_wsl_watchdog_path_exists": true,
+    "runner_registration_modified_by_recovery_work": false,
+    "security_authority_expanded_by_recovery_work": false
   },
   "data_policy": {
     "research_only": true,
@@ -49,7 +52,12 @@
     "deterministic_risk_final_authority": true,
     "primary_market_data_source": "Bybit",
     "secondary_market_data_source": "Binance",
-    "legacy_market_data_source": "LBank"
+    "legacy_market_data_source": "LBank",
+    "approved_public_bybit_mainnet_hosts": ["api.bybit.com", "api.bytick.com"],
+    "proxy_vpn_geographic_circumvention_allowed": false,
+    "testnet_substitution_allowed": false,
+    "synthetic_market_data_substitution_allowed": false,
+    "cross_exchange_substitution_for_acceptance_allowed": false
   },
   "continuity": {
     "required_reads": [
@@ -79,84 +87,63 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "7820c7cb2ae79ccec5e4380bb9fd44430e7dd7f2",
-    "observed_at_utc": "2026-08-27T20:29:30Z",
-    "state_commit_relationship": "observed_main_sha is the exact main snapshot before this Mission Lock integration; merging this state necessarily advances main and the Project Memory validator permits only that direct one-hop integration before the snapshot becomes stale again",
+    "observed_main_sha": "1fa20ee5094e6739c5f9cacfb15aa6f1685d5657",
+    "observed_at_utc": "2026-08-30T14:48:00Z",
+    "state_commit_relationship": "observed_main_sha is the exact main snapshot before this Project Memory reconciliation; merging this state advances main by one direct integration commit and the validator permits only that direct one-hop integration before the snapshot becomes stale again",
     "latest_main_change": {
-      "pr": 1025,
-      "summary": "Canonical Project Memory was reconciled with synchronized regime/Paper integration and then exact-merge-SHA Demo proof was executed successfully on main.",
+      "pr": 1172,
+      "summary": "Added a bounded read-only Windows user-context capability probe; exact-current-main diagnostics proved NETWORK_SERVICE cannot obtain the interactive user WTS token or query the user-owned recovery Scheduled Task.",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true
     },
-    "same_sha_demo_proof": {
-      "status": "VERIFIED",
-      "source_sha": "7820c7cb2ae79ccec5e4380bb9fd44430e7dd7f2",
-      "workflow": "NEXUS Demo strategy matrix",
-      "run_id": 33106762868,
-      "artifact_id": 9660809840,
-      "artifact_name": "nexus-demo-strategy-matrix-state",
-      "verified_cell_count": 6,
+    "paper_runtime_acceptance": {
+      "issue": 1041,
+      "issue_state": "open",
+      "status": "WAITING_FOR_EXACT_CURRENT_MAIN_PHYSICAL_6_CELL_ACCEPTANCE",
+      "latest_physical_run_id": 33313258994,
+      "latest_physical_run_source_sha": "546f99e297c1bdf135a66b1e5748a2912f847852",
+      "latest_physical_runner": "NEXUS-BYBIT-WSL",
+      "latest_physical_machine": "DESKTOP-1R1081M",
+      "latest_physical_state_artifact_id": 9732897292,
+      "latest_physical_state_artifact_digest": "sha256:f50253c427268a9f03f67df3e379eb5f0f37c06010054158ec27cef53f322893",
+      "fresh_cell_count": 2,
       "expected_cell_count": 6,
       "expected_lane_count": 18,
+      "trading_engine_complete": false,
+      "observed_public_bybit_failure": "sanitized unclassified HTTP 403 on approved Mainnet hosts for required fresh cells",
+      "historical_run_cannot_satisfy_current_exact_sha": true,
       "paper_only": true,
       "live_trading_authority": false,
       "private_credentials_used": false,
       "automatic_strategy_promotion": false,
-      "deterministic_risk_final_authority": true,
-      "frozen_prospective_hour4_lane_mutated": false,
-      "paper_position_maintenance": {
-        "closed_count": 0,
-        "held_count": 1,
-        "flat_count": 17,
-        "exposure_increased": false
-      },
-      "regime_result": {
-        "cells": 6,
-        "all_cells_cash_weight": "1.000000",
-        "safe_no_action_is_valid": true
-      }
+      "deterministic_risk_final_authority": true
     },
-    "android_v4_release_evidence": {
-      "status": "verified_unsigned_non_production_build_evidence",
-      "pr": 1023,
-      "source_sha": "ab3c7491d7ee57458fb6cd3eb93fc012f12d4e6c",
-      "apk_name": "NEXUS_PERSONAL_PRO_4_0_0.apk",
-      "apk_sha256": "c1776964b956dedc306ae6cac031c9646676937b80844097e327f2bb2471974e",
-      "artifact_manifest": true,
-      "cyclonedx_sbom": true,
-      "provenance": true,
-      "release_gate": "pass_for_ci_build_evidence_only",
-      "production_approval": false
-    },
-    "integration_cycle": {
-      "status": "stages_6_7_operational_stage_8_cloud_exact_sha_demo_verified_physical_windows_pending",
-      "strategy_paper_supervisor_pr": 956,
-      "paper_drift_quarantine_pr": 957,
-      "paper_mission_control_pr": 958,
-      "regime_selector_runtime_pr": 987,
-      "regime_runtime_drift_pr": 988,
-      "demo_matrix_pr": 996,
-      "demo_state_recovery_pr": 1003,
-      "regime_lane_adapter_pr": 1004,
-      "synchronized_regime_cycle_pr": 1016,
-      "final_proof_regime_binding_pr": 1017,
-      "exact_sha_final_candidate_trigger_pr": 1018,
-      "android_release_evidence_pr": 1023,
-      "release_to_demo_exact_sha_trigger_pr": 1024,
-      "project_memory_reconciliation_pr": 1025,
-      "paper_only": true,
-      "live_trading_authority": false,
-      "remaining_acceptance": "Mission Lock makes the persistent autonomous Paper trading loop the first delivery priority. Physical Windows exact-SHA proof remains a supporting acceptance gate. The prospective Paper gate #984 must independently accumulate its real 30-day/180-bar window. Production gate #43 remains deny-by-default."
+    "windows_recovery_probe": {
+      "status": "CONTEXT_LIMITED_SECURITY_BOUNDARY_PROVEN",
+      "run_id": 33316749061,
+      "source_sha": "1fa20ee5094e6739c5f9cacfb15aa6f1685d5657",
+      "runner": "NEXUS-WINDOWS-DR",
+      "machine": "DESKTOP-1R1081M",
+      "artifact_id": 9733693489,
+      "artifact_digest": "sha256:01782c1e34227c8b62c1cdfd5eb79bb6d4b580dd7de2814cdcd8cacb455bdcb4",
+      "runner_identity_class": "NETWORK_SERVICE",
+      "interactive_console_session_present": true,
+      "interactive_explorer_present": true,
+      "wts_user_token_available": false,
+      "wts_user_token_error": 1314,
+      "scheduled_recovery_task_visible": false,
+      "scheduled_recovery_task_query_access_denied": true,
+      "bybit_watchdog_path_exists": true,
+      "privilege_acl_service_account_change_authorized": false,
+      "runner_reregistration_authorized": false
     },
     "multitimeframe_strategy_runtime": {
-      "status": "operational_components_persistent_autonomous_portfolio_loop_not_yet_claimed_complete",
+      "status": "operational_components_full_fresh_persistent_acceptance_not_yet_proven",
       "symbols": ["BTCUSDT", "ETHUSDT"],
       "timeframes": ["minute15", "hour1", "hour4"],
       "families": ["momentum", "trend_breakout", "mean_reversion"],
       "comparison_surface": "2 symbols x 3 timeframes x 3 strategy families = 18 isolated comparison lanes",
-      "immutable_archive_artifact_id": 8867026863,
-      "immutable_archive_sha256": "5f1173467c2296201940c3b7786b7cc3e5442244e07289769ab4867ace41d668",
       "persistent_autonomous_closed_candle_loop_complete": false,
       "continuous_strategy_factory_required": true,
       "paper_only": true,
@@ -166,8 +153,6 @@
     },
     "strategy_discovery": {
       "status": "integrated_research_only_continuous_discovery_required_by_mission_lock",
-      "discovery_pr": 1013,
-      "archive_binding_pr": 1014,
       "scope": "BTCUSDT/ETHUSDT x minute15/hour1/hour4 x momentum/trend_breakout/mean_reversion",
       "selection": "training_only",
       "challenge": "locked chronological holdout with conservative and stress costs",
@@ -184,38 +169,30 @@
       "start_not_before": "2026-08-26T00:00:00Z",
       "required_elapsed_days": 30,
       "required_completed_hour4_bars": 180,
-      "verified_completed_hour4_bars": 8,
-      "latest_verified_execution": "2026-08-27T04:00:00Z",
-      "latest_verified_workflow_run": 33060482522,
-      "latest_verified_artifact_id": 9641486969,
-      "latest_verified_artifact_digest": "sha256:bbb5f02ea9572d55f8f70879828146b8ee0a5b4366c860d49bfbe96a8c32e431",
-      "orders": 0,
-      "fills": 0,
+      "verified_completed_hour4_bars": 24,
+      "latest_verified_execution": "2026-08-29T20:00:00Z",
+      "latest_verified_workflow_run": 33283170534,
+      "latest_verified_source_sha": "d35c59692250447c7a5e1390e92de3e45c3b8cc7",
+      "latest_verified_artifact_id": 9723597334,
+      "latest_verified_state_digest": "efc435cb2835a3174741f8c26e1b4f1f1d4b43f4b9dc55c526a59593c74a58b2",
+      "latest_verified_artifact_digest": "sha256:a6672616632d36319403da8004979f2f0217e7ca108af993a716c9c24f057cac",
       "paper_only": true,
       "live_trading_authority": false,
       "private_credentials_used": false,
       "automatic_live_promotion": false,
       "may_be_accelerated_or_fabricated": false
-    },
-    "final_proof_candidate": {
-      "status": "cloud_and_demo_exact_sha_evidence_verified_physical_windows_execution_pending",
-      "observed_parent_sha": "7820c7cb2ae79ccec5e4380bb9fd44430e7dd7f2",
-      "regime_cycle_required": true,
-      "windows_physical_execution_required": true,
-      "historical_windows_proof_reusable_for_new_sha": false,
-      "paper_only": true,
-      "live_trading_authority": false
     }
   },
   "open_gates": {
-    "primary_delivery": {
+    "paper_runtime_acceptance": {
+      "issue": 1041,
       "state": "open",
-      "reason": "persistent autonomous multi-pair x multi-timeframe x multi-strategy Paper portfolio loop must be completed before support work can dominate"
+      "reason": "exact-current-main physical Bybit run has not yet advanced all 6 fresh cells and executed the full regime/lifecycle/performance/discovery/replay acceptance chain"
     },
     "prospective_paper": {
       "issue": 984,
       "state": "open",
-      "reason": "hard real-time acceptance gate; verified evidence is 8/180 hour4 bars and less than 30 elapsed days"
+      "reason": "hard real-time acceptance gate; latest verified evidence is 24/180 completed hour4 bars and less than 30 elapsed days"
     },
     "production_release": {
       "issue": 43,
@@ -223,9 +200,9 @@
       "deny_by_default": true,
       "reason": "production signing identity/trust root/key custody/environment approval and human go-no-go remain intentionally ungranted"
     },
-    "physical_windows_final_proof": {
-      "state": "required_before_installation_acceptance",
-      "reason": "historical Phase 7 physical proof cannot be reused for a newer source SHA"
+    "windows_user_context_recovery": {
+      "state": "supporting_blocker_not_primary_delivery_gate",
+      "reason": "NETWORK_SERVICE cannot obtain the interactive user WTS token (1314) or query the user-owned recovery Scheduled Task; do not weaken privilege/ACL/service-account boundaries merely to force recovery"
     }
   },
   "authority": {
@@ -244,9 +221,9 @@
   },
   "history_compaction": {
     "compacted": true,
-    "reason": "Replace stale operational assertions with a bounded current snapshot while preserving the complete prior STATE through immutable Git history.",
-    "prior_state_blob_sha": "ef0b6f8c813b5d906a26b21eb5eaa64ea32512ff",
-    "prior_state_observed_main_sha": "b21df8e6e06b930a5267adea1c8a5806094aba40",
+    "reason": "Reconcile canonical STATE with current GitHub evidence while preserving all prior operational detail through immutable Git history.",
+    "prior_state_blob_sha": "5ed4e40eee4746db80d70f3e7c02c6dd9aafee68",
+    "prior_state_observed_main_sha": "7820c7cb2ae79ccec5e4380bb9fd44430e7dd7f2",
     "historical_detail_preserved_via_git_history": true,
     "do_not_treat_compaction_as_authority_expansion": true
   }
