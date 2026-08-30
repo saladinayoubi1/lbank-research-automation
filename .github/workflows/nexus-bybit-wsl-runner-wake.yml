@@ -42,36 +42,49 @@ jobs:
             throw 'schtasks.exe is required for bootstrap-safe Bybit WSL recovery.'
           }
 
+          # Exact allowlist only. Query visibility is not required: the Windows
+          # service identity is proven unable to query the interactive user's task,
+          # while a bounded /Run request may still be permitted by the task ACL.
           $candidates = @(
             'NEXUS Bybit WSL Runner Persistent',
             'NEXUS Bybit WSL Runner'
           )
+
+          Write-Host "source_sha=$env:GITHUB_SHA"
+          Write-Host 'task_mutation_performed=false'
+          Write-Host 'runner_registration_mutated=false'
+          Write-Host 'live_trading_authority_changed=false'
+
           $selected = $null
           foreach ($taskName in $candidates) {
-            $null = @(& $schtasks /Query /TN $taskName 2>&1)
-            $queryCode = $LASTEXITCODE
-            if ($queryCode -eq 0) {
+            Write-Host "scheduler_attempt_task=$taskName"
+
+            # Windows PowerShell can surface native stderr as NativeCommandError.
+            # Keep the outer script fail-closed while allowing this one bounded
+            # native request to return its real exit code for truthful fallback.
+            $previousErrorActionPreference = $ErrorActionPreference
+            $ErrorActionPreference = 'Continue'
+            try {
+              $runOutput = @(& $schtasks /Run /TN $taskName 2>&1)
+              $runCode = $LASTEXITCODE
+            }
+            finally {
+              $ErrorActionPreference = $previousErrorActionPreference
+            }
+
+            $sanitized = (($runOutput | ForEach-Object { $_.ToString() }) | Out-String).Trim()
+            Write-Host "scheduler_attempt_exit_code=$runCode"
+            if ($sanitized) { Write-Host "scheduler_response=$sanitized" }
+
+            if ($runCode -eq 0) {
               $selected = $taskName
               break
             }
           }
 
           if (-not $selected) {
-            throw 'No approved NEXUS Bybit WSL Scheduled Task is visible from the Windows runner.'
+            throw 'All approved NEXUS Bybit WSL Scheduled Task run requests were rejected.'
           }
 
-          Write-Host "source_sha=$env:GITHUB_SHA"
           Write-Host "selected_recovery_task=$selected"
-          Write-Host 'task_mutation_performed=false'
-          Write-Host 'runner_registration_mutated=false'
-          Write-Host 'live_trading_authority_changed=false'
-
-          $runOutput = @(& $schtasks /Run /TN $selected 2>&1)
-          $runCode = $LASTEXITCODE
-          $sanitized = (($runOutput | ForEach-Object { $_.ToString() }) | Out-String).Trim()
-          if ($sanitized) { Write-Host "scheduler_response=$sanitized" }
-          if ($runCode -ne 0) {
-            throw "Scheduled recovery request failed with exit code $runCode."
-          }
-
           Write-Host 'bybit_wsl_scheduler_wake_request=PASS'
