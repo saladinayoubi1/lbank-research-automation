@@ -76,6 +76,8 @@ $target = [IO.Path]::GetFullPath($OutputPath)
 $repository = [string]$env:GITHUB_REPOSITORY
 $runnerRoot = '/opt/nexus-bybit-runner'
 $taskName = 'NEXUS Bybit WSL Runner'
+$serviceName = 'nexus-bybit-runner.service'
+$servicePath = "/etc/systemd/system/$serviceName"
 $launcherRoot = Join-Path $env:ProgramData 'NEXUS\BybitWSL'
 $launcherPath = Join-Path $launcherRoot 'start-nexus-bybit-wsl-runner.cmd'
 $schtasks = Join-Path $env:SystemRoot 'System32\schtasks.exe'
@@ -91,7 +93,7 @@ foreach ($value in @($Distribution, $RunnerName, $RunnerLabel)) {
 }
 
 $evidence = [ordered]@{
-    schema_version = 1
+    schema_version = 2
     generated_at_utc = [DateTime]::UtcNow.ToString('o')
     source_sha = $env:GITHUB_SHA
     run_id = $env:GITHUB_RUN_ID
@@ -111,6 +113,15 @@ $evidence = [ordered]@{
     task_run_exit_code = $null
     task_query_exit_code = $null
     task_state = $null
+    systemd_service_name = $serviceName
+    systemd_service_path = $servicePath
+    systemd_unit_installed = $false
+    systemd_enabled = $false
+    systemd_active = $false
+    systemd_pid1 = $false
+    wsl_systemd_configured = $false
+    wsl_restart_required = $false
+    service_activation_deferred_existing_listener = $false
     github_runner_status = $null
     github_runner_busy = $null
     github_runner_labels = @()
@@ -136,6 +147,10 @@ function Complete-Start {
     $digest = (Get-FileHash -LiteralPath $target -Algorithm SHA256).Hash.ToLowerInvariant()
     Write-Host "bybit_wsl_native_start_decision=$Decision"
     Write-Host "task_scheduler_backend=$($evidence.task_scheduler_backend)"
+    Write-Host "systemd_unit_installed=$($evidence.systemd_unit_installed.ToString().ToLowerInvariant())"
+    Write-Host "systemd_enabled=$($evidence.systemd_enabled.ToString().ToLowerInvariant())"
+    Write-Host "systemd_active=$($evidence.systemd_active.ToString().ToLowerInvariant())"
+    Write-Host "wsl_restart_required=$($evidence.wsl_restart_required.ToString().ToLowerInvariant())"
     Write-Host "github_runner_status=$($evidence.github_runner_status)"
     Write-Host 'windows_runner_paths_modified=false'
     Write-Host 'windows_runner_service_modified=false'
@@ -167,7 +182,7 @@ if (-not (Test-Path -LiteralPath $schtasks -PathType Leaf)) {
 
 $configuredProbe = Invoke-Wsl -Arguments @(
     '-d', $Distribution, '-u', 'root', '--', 'bash', '-lc',
-    "test -x '$runnerRoot/run.sh' && test -f '$runnerRoot/.runner'"
+    "test -x '$runnerRoot/run.sh' && test -f '$runnerRoot/.runner' && grep -Eq '\"agentName\"[[:space:]]*:[[:space:]]*\"$RunnerName\"' '$runnerRoot/.runner'"
 )
 if ($configuredProbe.exit_code -ne 0) {
     Complete-Start -Decision 'REGISTERED_RUNNER_FILES_REQUIRED' -ExitCode 1 -ErrorClass 'InvalidOperationException'
@@ -175,11 +190,106 @@ if ($configuredProbe.exit_code -ne 0) {
 $evidence.runner_package_installed = $true
 $evidence.runner_registered = $true
 
+$unitText = @"
+[Unit]
+Description=NEXUS Bybit GitHub Actions Runner
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=$runnerRoot
+Environment=RUNNER_ALLOW_RUNASROOT=1
+ExecStart=$runnerRoot/run.sh
+Restart=always
+RestartSec=10
+KillSignal=SIGINT
+TimeoutStopSec=300
+User=root
+
+[Install]
+WantedBy=multi-user.target
+"@
+$unitBase64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($unitText))
+$installUnitCommand = "set -e; printf '%s' '$unitBase64' | base64 -d > '$servicePath'; chmod 0644 '$servicePath'; mkdir -p '/etc/systemd/system/multi-user.target.wants'; ln -sfn '$servicePath' '/etc/systemd/system/multi-user.target.wants/$serviceName'"
+$installUnit = Invoke-Wsl -Arguments @('-d', $Distribution, '-u', 'root', '--', 'bash', '-lc', $installUnitCommand)
+if ($installUnit.exit_code -ne 0) {
+    Complete-Start -Decision 'SYSTEMD_UNIT_INSTALL_FAILED' -ExitCode 1 -ErrorClass 'InvalidOperationException'
+}
+$evidence.systemd_unit_installed = $true
+$evidence.systemd_enabled = $true
+
+$configureSystemdCommand = @'
+set -e
+conf=/etc/wsl.conf
+tmp=$(mktemp)
+if [ -f "$conf" ]; then
+  awk '
+    BEGIN { inboot=0; sawboot=0; wrote=0 }
+    /^\[boot\][[:space:]]*$/ { print; inboot=1; sawboot=1; next }
+    /^\[/ {
+      if (inboot && !wrote) { print "systemd=true"; wrote=1 }
+      inboot=0
+      print
+      next
+    }
+    inboot && /^[[:space:]]*systemd[[:space:]]*=/ {
+      if (!wrote) { print "systemd=true"; wrote=1 }
+      next
+    }
+    { print }
+    END {
+      if (inboot && !wrote) { print "systemd=true"; wrote=1 }
+      if (!sawboot) { print ""; print "[boot]"; print "systemd=true" }
+    }
+  ' "$conf" > "$tmp"
+else
+  printf '[boot]\nsystemd=true\n' > "$tmp"
+fi
+install -m 0644 "$tmp" "$conf"
+rm -f "$tmp"
+'@
+$configureSystemd = Invoke-Wsl -Arguments @('-d', $Distribution, '-u', 'root', '--', 'bash', '-lc', $configureSystemdCommand)
+if ($configureSystemd.exit_code -ne 0) {
+    Complete-Start -Decision 'WSL_SYSTEMD_CONFIGURATION_FAILED' -ExitCode 1 -ErrorClass 'InvalidOperationException'
+}
+$evidence.wsl_systemd_configured = $true
+
+$pid1Probe = Invoke-Wsl -Arguments @('-d', $Distribution, '-u', 'root', '--', 'bash', '-lc', "test \"`$(ps -p 1 -o comm= | tr -d '[:space:]')\" = systemd")
+$evidence.systemd_pid1 = ($pid1Probe.exit_code -eq 0)
+if ($evidence.systemd_pid1) {
+    $reload = Invoke-Wsl -Arguments @('-d', $Distribution, '-u', 'root', '--', 'bash', '-lc', "systemctl daemon-reload && systemctl enable '$serviceName'")
+    if ($reload.exit_code -ne 0) {
+        Complete-Start -Decision 'SYSTEMD_ENABLE_FAILED' -ExitCode 1 -ErrorClass 'InvalidOperationException'
+    }
+
+    $listenerProbe = Invoke-Wsl -Arguments @('-d', $Distribution, '-u', 'root', '--', 'bash', '-lc', "pgrep -f '$runnerRoot/bin/Runner.Listener' >/dev/null 2>&1")
+    if ($listenerProbe.exit_code -eq 0) {
+        # Preserve the current listener/job. The enabled service takes ownership
+        # after the next WSL/Windows restart instead of creating a duplicate
+        # GitHub session from the same runner registration.
+        $evidence.service_activation_deferred_existing_listener = $true
+    }
+    else {
+        $startService = Invoke-Wsl -Arguments @('-d', $Distribution, '-u', 'root', '--', 'bash', '-lc', "systemctl start '$serviceName' && systemctl is-active --quiet '$serviceName'")
+        if ($startService.exit_code -ne 0) {
+            Complete-Start -Decision 'SYSTEMD_SERVICE_START_FAILED' -ExitCode 1 -ErrorClass 'InvalidOperationException'
+        }
+        $evidence.systemd_active = $true
+    }
+}
+else {
+    # /etc/wsl.conf is now prepared. Do not call wsl --shutdown automatically:
+    # that could interrupt a current Paper job. The next normal Windows/WSL
+    # restart activates systemd and the enabled service.
+    $evidence.wsl_restart_required = $true
+}
+
 New-Item -ItemType Directory -Path $launcherRoot -Force | Out-Null
 $launcher = @"
 @echo off
 set "RUNNER_TRACKING_ID="
-"$env:SystemRoot\System32\wsl.exe" -d $Distribution -u root -- bash -lc "cd $runnerRoot && export RUNNER_ALLOW_RUNASROOT=1 && exec ./run.sh"
+"$env:SystemRoot\System32\wsl.exe" -d $Distribution -u root -- bash -lc "if [ \"`$(ps -p 1 -o comm= | tr -d '[:space:]')\" = systemd ]; then systemctl start $serviceName; else cd $runnerRoot && export RUNNER_ALLOW_RUNASROOT=1 && exec ./run.sh; fi"
 "@
 [IO.File]::WriteAllText($launcherPath, $launcher, (New-Object Text.ASCIIEncoding))
 
@@ -200,6 +310,10 @@ if ($create.exit_code -ne 0) {
 }
 $evidence.autostart_installed = $true
 
+# Starting the updated task is safe. With systemd active it is idempotent; on
+# older/not-yet-restarted WSL it retains the direct run.sh fallback. If the old
+# task instance is already running, Task Scheduler may report it as already
+# running and the current listener remains untouched.
 $runTask = Invoke-Native -FilePath $schtasks -Arguments @('/Run', '/TN', $taskName)
 $evidence.task_run_exit_code = $runTask.exit_code
 if ($runTask.output) {
@@ -220,6 +334,11 @@ if ($queryTask.exit_code -ne 0) {
     Complete-Start -Decision 'SCHTASKS_QUERY_FAILED' -ExitCode 1 -ErrorClass 'InvalidOperationException'
 }
 $evidence.task_state = 'registered_and_started'
+
+if ($evidence.systemd_pid1) {
+    $activeProbe = Invoke-Wsl -Arguments @('-d', $Distribution, '-u', 'root', '--', 'bash', '-lc', "systemctl is-active --quiet '$serviceName'")
+    $evidence.systemd_active = ($activeProbe.exit_code -eq 0)
+}
 
 $gh = Resolve-Gh
 if (-not $gh) {
