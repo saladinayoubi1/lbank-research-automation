@@ -1,0 +1,6 @@
+purpose=force_exact_main_windows_dr_bootstrap_after_schedule_lag
+paper_only=true
+live_trading_authority=false
+runner_registration_modified=false
+runner_credentials_modified=false
+other_runner_paths_modified=false
