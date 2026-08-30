@@ -95,6 +95,18 @@ jobs:
           -ExpectedGitHubUrl "https://github.com/saladinayoubi1/lbank-research-automation"
           -OutputPath "build\windows-dr-autostart\evidence.json"
 
+      - name: Require exact target claim and successful persistence install
+        shell: powershell
+        run: |
+          $evidence = Get-Content 'build\windows-dr-autostart\evidence.json' -Raw | ConvertFrom-Json
+          if ($evidence.decision -ne 'SUCCESS') { throw "Persistence was not installed by the exact target runner: $($evidence.decision)" }
+          if ($evidence.current_runner_name -ne 'NEXUS-WINDOWS-DR') { throw "Unexpected runner claim: $($evidence.current_runner_name)" }
+          if ($evidence.expected_runner_name -ne 'NEXUS-WINDOWS-DR') { throw "Unexpected expected runner: $($evidence.expected_runner_name)" }
+          if ($evidence.runner_registration_modified -ne $false) { throw 'Runner registration mutation must remain false.' }
+          if ($evidence.runner_credentials_modified -ne $false) { throw 'Runner credential mutation must remain false.' }
+          if ($evidence.other_runner_paths_modified -ne $false) { throw 'Other runner path mutation must remain false.' }
+          if ($evidence.live_trading_authority -ne $false) { throw 'Live authority must remain false.' }
+
       - name: Upload sanitized persistence evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
