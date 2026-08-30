@@ -34,29 +34,55 @@ def test_recovery_preserves_existing_runner_registration() -> None:
         assert forbidden not in text
 
 
-def test_recovery_uses_per_user_startup_and_bounded_watchdog() -> None:
+def test_recovery_uses_per_user_startup_and_managed_child_watchdog() -> None:
     text = _text()
     assert "GetFolderPath('Startup')" in text
     assert "BybitWSLUserStartup" in text
     assert "-Mode Watch" in text
     assert "Start-Sleep -Seconds 15" in text
     assert "Local\\NEXUS-Bybit-WSL-Watchdog-v" in text
-    assert "$watchdogGeneration = 2" in text
-    assert "pgrep -f '$RunnerRoot/bin/[R]unner.Listener'" in text
-    assert "nohup ./run.sh" in text
+    assert "$watchdogGeneration = 3" in text
+    assert "Start-ManagedRunnerProcess" in text
+    assert "exec ./run.sh" in text
     assert "RUNNER_ALLOW_RUNASROOT=1" in text
     assert "RUNNER_TRACKING_ID=" in text
+    assert "watchdog_owns_wsl_child = $true" in text
+    assert "watchdog_owns_wsl_child=true" in text
+    assert "nohup ./run.sh" not in text
 
 
-def test_wsl_interop_is_timeout_bounded_and_stale_generation_cannot_block_repair() -> None:
+def test_wsl_probe_interop_is_timeout_bounded() -> None:
     text = _text()
     assert "$wslTimeoutMilliseconds = 10000" in text
     assert "WaitForExit($wslTimeoutMilliseconds)" in text
     assert "exit_code = 124" in text
     assert "wsl_timeout" in text
-    assert "listener_probe_timeout=true" in text
+    assert "runner_process_probe_timeout=true" in text
     assert "watchdog_generation = $watchdogGeneration" in text
     assert "wsl_call_timeout_seconds" in text
+
+
+def test_watchdog_recycles_only_idle_external_listener() -> None:
+    text = _text()
+    assert "Stop-IdleExternalListener" in text
+    assert "Runner.Worker" in text
+    assert "exit 3" in text
+    assert "active_worker_interrupt_allowed = $false" in text
+    assert "active_worker_interrupt_allowed=false" in text
+    assert "stale_idle_listener_recycle = $true" in text
+    assert "stale_idle_listener_recycle=true" in text
+    assert "existing_runner_worker_active_waiting=true" in text
+
+
+def test_upgrade_cleans_only_prior_same_user_watchdog_process() -> None:
+    text = _text()
+    assert "Stop-PreviousUserWatchdogs" in text
+    assert "System.Management.ManagementObjectSearcher" in text
+    assert "Win32_Process WHERE Name='powershell.exe'" in text
+    assert "IndexOf($stableScript" in text
+    assert "-Mode\\s+Watch" in text
+    assert "previous_watchdog_terminated_pid=" in text
+    assert "Stop-Process" not in text
 
 
 def test_recovery_startup_launcher_is_fully_hidden() -> None:
@@ -66,7 +92,7 @@ def test_recovery_startup_launcher_is_fully_hidden() -> None:
     assert 'shell.Run "' in text
     assert '", 0, False' in text
     assert "popup_launcher_used = $false" in text
-    assert "NEXUS-Bybit-WSL-User-Startup.cmd" in text  # cleanup of the superseded launcher
+    assert "NEXUS-Bybit-WSL-User-Startup.cmd" in text
     assert "Remove-Item -LiteralPath $legacyStartupCmd -Force" in text
 
 
@@ -85,7 +111,7 @@ def test_recovery_script_parses_on_windows_powershell() -> None:
         return
     command = (
         "$errors=$null;"
-        "[System.Management.Automation.Language.Parser]::ParseFile(" 
+        "[System.Management.Automation.Language.Parser]::ParseFile("
         f"'{SCRIPT.as_posix()}',[ref]$null,[ref]$errors) | Out-Null;"
         "if($errors.Count -ne 0){$errors | ForEach-Object { Write-Error $_ }; exit 1}"
     )
