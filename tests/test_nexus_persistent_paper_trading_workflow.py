@@ -215,3 +215,6 @@ def test_lifecycle_implementation_paths_retrigger_the_persistent_runtime() -> No
         '"nexus_strategy_discovery_health_trigger.py"',
     ):
         assert text.count(path) >= 2
+
+
+# Semantic no-op: exact-main physical Paper trigger after user-context WSL recovery.
