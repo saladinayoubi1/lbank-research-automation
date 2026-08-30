@@ -27,8 +27,8 @@
     "owner_override_required_for_priority_change": true
   },
   "runtime_status": {
-    "agent_execution_state": "trading_engine_first_current_exact_sha_demo_verified_physical_windows_final_proof_pending",
-    "laptop_state": "historical_physical_phase7_proof_verified_current_fixed_sha_physical_execution_required",
+    "agent_execution_state": "trading_engine_first_physical_execution_plane_recovered_runtime_acceptance_6_cell_pending",
+    "laptop_state": "physical_windows_dr_verified_generic_hourly_worker_isolated_from_windows_runner",
     "internet_outage_state": "not_assumed_from_laptop_state",
     "laptop_offline_is_not_internet_outage": true,
     "runner_registration_modified_by_phase7_cleanup": false,
@@ -79,18 +79,18 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "7820c7cb2ae79ccec5e4380bb9fd44430e7dd7f2",
-    "observed_at_utc": "2026-08-27T20:29:30Z",
-    "state_commit_relationship": "observed_main_sha is the exact main snapshot before this Mission Lock integration; merging this state necessarily advances main and the Project Memory validator permits only that direct one-hop integration before the snapshot becomes stale again",
+    "observed_main_sha": "0464c166954377816fb13c10248989e30f62ae8d",
+    "observed_at_utc": "2026-08-30T11:48:11Z",
+    "state_commit_relationship": "observed_main_sha is the exact authoritative main snapshot before this Project Memory reconciliation; merging this state necessarily advances main, and any later repository/runtime evidence supersedes this snapshot",
     "latest_main_change": {
-      "pr": 1025,
-      "summary": "Canonical Project Memory was reconciled with synchronized regime/Paper integration and then exact-merge-SHA Demo proof was executed successfully on main.",
+      "pr": 1149,
+      "summary": "The generic hourly Runtime Worker no longer claims the physical self-hosted Windows runner; laptop-worker is explicit owner workflow_dispatch only, while GitHub-hosted preflight remains scheduled. This reduces execution-plane contention without changing runner registration or trading authority.",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true
     },
     "same_sha_demo_proof": {
-      "status": "VERIFIED",
+      "status": "VERIFIED_HISTORICAL",
       "source_sha": "7820c7cb2ae79ccec5e4380bb9fd44430e7dd7f2",
       "workflow": "NEXUS Demo strategy matrix",
       "run_id": 33106762868,
@@ -130,7 +130,7 @@
       "production_approval": false
     },
     "integration_cycle": {
-      "status": "stages_6_7_operational_stage_8_cloud_exact_sha_demo_verified_physical_windows_pending",
+      "status": "physical_execution_plane_recovered_persistent_paper_runtime_acceptance_6_cell_pending",
       "strategy_paper_supervisor_pr": 956,
       "paper_drift_quarantine_pr": 957,
       "paper_mission_control_pr": 958,
@@ -147,10 +147,10 @@
       "project_memory_reconciliation_pr": 1025,
       "paper_only": true,
       "live_trading_authority": false,
-      "remaining_acceptance": "Mission Lock makes the persistent autonomous Paper trading loop the first delivery priority. Physical Windows exact-SHA proof remains a supporting acceptance gate. The prospective Paper gate #984 must independently accumulate its real 30-day/180-bar window. Production gate #43 remains deny-by-default."
+      "remaining_acceptance": "Issue #1041 requires one exact-current-main physical Paper run to advance all 6 fresh cells and execute the fresh Regime/lifecycle/performance/Strategy Discovery/replay chain. The latest proven Paper run 33306786196 on source d0590f7841838e8661788dbad5d8505dd90ec155 restored prior state and uploaded artifact 9730906556 but reached only 4/6 fresh cells because approved public Bybit Mainnet REST requests were partially HTTP 403 fail-closed. Issue #984 independently remains at 24/180 verified four-hour bars and must satisfy the real 30-day window. Production gate #43 remains deny-by-default."
     },
     "multitimeframe_strategy_runtime": {
-      "status": "operational_components_persistent_autonomous_portfolio_loop_not_yet_claimed_complete",
+      "status": "operational_components_physical_runtime_active_persistent_autonomous_portfolio_loop_acceptance_pending",
       "symbols": ["BTCUSDT", "ETHUSDT"],
       "timeframes": ["minute15", "hour1", "hour4"],
       "families": ["momentum", "trend_breakout", "mean_reversion"],
@@ -184,11 +184,11 @@
       "start_not_before": "2026-08-26T00:00:00Z",
       "required_elapsed_days": 30,
       "required_completed_hour4_bars": 180,
-      "verified_completed_hour4_bars": 8,
-      "latest_verified_execution": "2026-08-27T04:00:00Z",
-      "latest_verified_workflow_run": 33060482522,
-      "latest_verified_artifact_id": 9641486969,
-      "latest_verified_artifact_digest": "sha256:bbb5f02ea9572d55f8f70879828146b8ee0a5b4366c860d49bfbe96a8c32e431",
+      "verified_completed_hour4_bars": 24,
+      "latest_verified_execution": "2026-08-29T20:00:00Z",
+      "latest_verified_workflow_run": 33283170534,
+      "latest_verified_artifact_id": 9723597334,
+      "latest_verified_artifact_digest": "sha256:a6672616632d36319403da8004979f2f0217e7ca108af993a716c9c24f057cac",
       "orders": 0,
       "fills": 0,
       "paper_only": true,
@@ -198,8 +198,8 @@
       "may_be_accelerated_or_fabricated": false
     },
     "final_proof_candidate": {
-      "status": "cloud_and_demo_exact_sha_evidence_verified_physical_windows_execution_pending",
-      "observed_parent_sha": "7820c7cb2ae79ccec5e4380bb9fd44430e7dd7f2",
+      "status": "physical_execution_plane_recovered_current_runtime_6_cell_acceptance_pending",
+      "observed_parent_sha": "d0590f7841838e8661788dbad5d8505dd90ec155",
       "regime_cycle_required": true,
       "windows_physical_execution_required": true,
       "historical_windows_proof_reusable_for_new_sha": false,
@@ -210,12 +210,12 @@
   "open_gates": {
     "primary_delivery": {
       "state": "open",
-      "reason": "persistent autonomous multi-pair x multi-timeframe x multi-strategy Paper portfolio loop must be completed before support work can dominate"
+      "reason": "persistent autonomous multi-pair x multi-timeframe x multi-strategy Paper portfolio loop has not yet produced the exact-current-main 6/6 fresh-cell Regime/lifecycle/performance/discovery/replay acceptance evidence required by issue #1041"
     },
     "prospective_paper": {
       "issue": 984,
       "state": "open",
-      "reason": "hard real-time acceptance gate; verified evidence is 8/180 hour4 bars and less than 30 elapsed days"
+      "reason": "hard real-time acceptance gate; latest verified evidence is 24/180 hour4 bars and the 30-day elapsed-time threshold has not been satisfied"
     },
     "production_release": {
       "issue": 43,
@@ -224,8 +224,8 @@
       "reason": "production signing identity/trust root/key custody/environment approval and human go-no-go remain intentionally ungranted"
     },
     "physical_windows_final_proof": {
-      "state": "required_before_installation_acceptance",
-      "reason": "historical Phase 7 physical proof cannot be reused for a newer source SHA"
+      "state": "execution_plane_verified_runtime_acceptance_still_required",
+      "reason": "physical Windows/WSL execution is proven, but historical proof and the 4/6 fresh-cell run cannot substitute for the exact-current-main 6-cell runtime acceptance required by issue #1041"
     }
   },
   "authority": {
