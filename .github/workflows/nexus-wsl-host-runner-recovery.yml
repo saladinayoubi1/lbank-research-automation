@@ -1,0 +1,50 @@
+name: NEXUS WSL Host Runner Recovery
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/nexus-wsl-host-runner-recovery.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nexus-wsl-host-runner-recovery
+  cancel-in-progress: false
+
+jobs:
+  wake-windows-runner:
+    runs-on: nexus-bybit-network
+    timeout-minutes: 5
+    steps:
+      - name: Start existing Windows Actions runner through WSL interop
+        shell: bash
+        run: |
+          set -euo pipefail
+          PS_EXE='/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe'
+          if [ ! -f "$PS_EXE" ]; then
+            echo 'windows_powershell_interop=missing' >&2
+            exit 2
+          fi
+          "$PS_EXE" -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command '
+            $ErrorActionPreference = "Stop"
+            $runnerRoot = "C:\actions-runner\actions-runner"
+            $runnerCmd = Join-Path $runnerRoot "run.cmd"
+            if (-not (Test-Path -LiteralPath $runnerCmd -PathType Leaf)) {
+              throw "existing Windows runner entrypoint missing: $runnerCmd"
+            }
+            $alreadyRunning = @(Get-Process -Name "Runner.Listener" -ErrorAction SilentlyContinue).Count -gt 0
+            if (-not $alreadyRunning) {
+              Start-Process -FilePath $runnerCmd -WorkingDirectory $runnerRoot -WindowStyle Hidden
+              Start-Sleep -Seconds 8
+            }
+            $running = @(Get-Process -Name "Runner.Listener" -ErrorAction SilentlyContinue).Count -gt 0
+            if (-not $running) {
+              throw "Windows Runner.Listener did not start"
+            }
+            Write-Host "NEXUS_WINDOWS_RUNNER_WAKE=SUCCESS"
+            Write-Host "NEXUS_WINDOWS_RUNNER_REGISTRATION_CHANGED=false"
+            Write-Host "NEXUS_WINDOWS_RUNNER_CREDENTIALS_CHANGED=false"
+          '
