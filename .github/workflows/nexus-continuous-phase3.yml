@@ -24,10 +24,12 @@ permissions:
 jobs:
   local-worker:
     name: Bounded local Phase 3 worker
+    # Keep the physical Windows runner free for DR/Bybit recovery unless the
+    # repository owner explicitly dispatches this worker from the default branch.
     if: >-
-      github.event_name != 'workflow_dispatch' ||
-      (github.actor == github.repository_owner &&
-       github.ref_name == github.event.repository.default_branch)
+      github.event_name == 'workflow_dispatch' &&
+      github.actor == github.repository_owner &&
+      github.ref_name == github.event.repository.default_branch
     runs-on: [self-hosted, Windows]
     timeout-minutes: 12
     steps:
