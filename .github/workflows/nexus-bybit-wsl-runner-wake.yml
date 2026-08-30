@@ -7,15 +7,13 @@ on:
   push:
     branches: [main]
     paths:
-      - scripts/start_nexus_bybit_wsl_runner_native.ps1
+      - scripts/trigger_nexus_bybit_wsl_runner_task.ps1
       - .github/workflows/nexus-bybit-wsl-runner-wake.yml
 
-# Bootstrap-safe recovery path: the physical Windows runner wakes the already
-# configured WSL Bybit runner. This workflow never registers or replaces a
-# GitHub runner and never changes Paper/Live trading authority. The scheduled
-# probe is safe while the physical runner is offline because concurrency keeps
-# only the current wake attempt; once Windows is back, WSL is recovered without
-# requiring another manual workflow dispatch.
+# Recovery boundary: the Windows GitHub runner is a service account and must
+# not invoke WSL directly because WSL distributions are user-context scoped.
+# This workflow only requests an already-registered user-context Scheduled Task.
+# It never creates/replaces tasks or runners and never changes Paper/Live authority.
 permissions:
   contents: read
 
@@ -26,9 +24,6 @@ concurrency:
 jobs:
   wake:
     if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') || (github.event_name == 'push' && contains(github.event.head_commit.message, '[wake-bybit-wsl]'))
-    # Match the label contract already proven by NEXUS-WINDOWS-DR runtime jobs.
-    # Do not require an architecture label that is not needed by this workflow;
-    # the recovery script itself remains fail-closed on the expected WSL runner.
     runs-on: [self-hosted, Windows]
     timeout-minutes: 15
     defaults:
@@ -49,18 +44,15 @@ jobs:
           if /I not "%CHECKED_OUT_SHA%"=="%GITHUB_SHA%" exit /b 1
           echo exact_trigger_sha=%CHECKED_OUT_SHA%
 
-      - name: Parse bounded Windows-to-WSL wake script
+      - name: Parse bounded task-context wake script
         run: >-
           powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command
-          "$tokens=$null;$errors=$null;[void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path 'scripts\start_nexus_bybit_wsl_runner_native.ps1'),[ref]$tokens,[ref]$errors);if($errors.Count -gt 0){$errors | ForEach-Object { Write-Error $_.Message };exit 1}"
+          "$tokens=$null;$errors=$null;[void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path 'scripts\trigger_nexus_bybit_wsl_runner_task.ps1'),[ref]$tokens,[ref]$errors);if($errors.Count -gt 0){$errors | ForEach-Object { Write-Error $_.Message };exit 1}"
 
-      - name: Wake already-configured Bybit WSL runner
+      - name: Request existing user-context Bybit WSL task
         run: >-
           powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass
-          -File scripts\start_nexus_bybit_wsl_runner_native.ps1
-          -Distribution Ubuntu
-          -RunnerName NEXUS-BYBIT-WSL
-          -RunnerLabel nexus-bybit-network
+          -File scripts\trigger_nexus_bybit_wsl_runner_task.ps1
           -OutputPath "build\bybit-wsl-runner-wake\evidence.json"
 
       - name: Upload sanitized wake evidence
