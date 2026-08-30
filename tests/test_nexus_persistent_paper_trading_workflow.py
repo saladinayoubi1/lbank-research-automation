@@ -23,13 +23,17 @@ def test_persistent_loop_runs_on_closed_candle_cadence_and_restores_state() -> N
     assert "if: always()" in text
 
 
-def test_pr_contract_concurrency_isolated_from_serial_main_paper_runtime() -> None:
+def test_pr_contract_isolated_and_new_main_push_supersedes_stale_runtime() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     concurrency = text.split("concurrency:", 1)[1].split("jobs:", 1)[0]
     assert "github.event_name == 'pull_request'" in concurrency
     assert "github.event.pull_request.number" in concurrency
     assert "|| 'main'" in concurrency
-    assert "cancel-in-progress: false" in concurrency
+    assert "cancel-in-progress: ${{ github.event_name == 'push' }}" in concurrency
+
+    paper = _paper_job(text)
+    assert "timeout-minutes: 20" in paper
+    assert "timeout-minutes: 50" not in paper
 
 
 def test_persistent_loop_is_public_data_not_historical_archive_replay() -> None:
