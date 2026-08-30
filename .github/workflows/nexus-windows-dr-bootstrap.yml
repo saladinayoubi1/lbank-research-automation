@@ -1,0 +1,108 @@
+name: NEXUS Windows DR Bootstrap
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '3,23,43 * * * *'
+  pull_request:
+    branches: [main]
+    paths:
+      - scripts/wake_nexus_windows_dr_runner.ps1
+      - .github/workflows/nexus-windows-dr-bootstrap.yml
+  push:
+    branches: [main]
+    paths:
+      - scripts/wake_nexus_windows_dr_runner.ps1
+      - .github/workflows/nexus-windows-dr-bootstrap.yml
+      - .nexus/windows-dr-bootstrap-trigger.txt
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nexus-windows-dr-bootstrap-${{ github.event_name == 'pull_request' && 'contract' || 'runtime' }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          clean: true
+          fetch-depth: 1
+
+      - name: Parse bounded bootstrap script
+        shell: powershell
+        run: |
+          $tokens=$null
+          $errors=$null
+          $path=(Resolve-Path 'scripts\wake_nexus_windows_dr_runner.ps1')
+          [void][System.Management.Automation.Language.Parser]::ParseFile($path,[ref]$tokens,[ref]$errors)
+          if($errors.Count -gt 0){$errors | ForEach-Object { Write-Error $_.Message }; exit 1}
+
+      - name: Verify non-mutating safety contract
+        shell: powershell
+        run: |
+          $text = Get-Content 'scripts\wake_nexus_windows_dr_runner.ps1' -Raw
+          foreach ($forbidden in @('config.cmd','remove.cmd','.credentials','Register-ScheduledTask','New-Service','sc.exe')) {
+            if ($text -match [regex]::Escape($forbidden)) { throw "Forbidden runner mutation token present: $forbidden" }
+          }
+          foreach ($required in @('runner_registration_modified = $false','runner_credentials_modified = $false','other_runner_paths_modified = $false','live_trading_authority = $false','NEXUS-WINDOWS-DR')) {
+            if (-not $text.Contains($required)) { throw "Required fail-closed contract missing: $required" }
+          }
+
+  bootstrap:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 5
+    defaults:
+      run:
+        shell: cmd
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 1
+
+      - name: Verify exact trigger SHA
+        run: |
+          for /f %%S in ('git rev-parse HEAD') do set "CHECKED_OUT_SHA=%%S"
+          if /I not "%CHECKED_OUT_SHA%"=="%GITHUB_SHA%" exit /b 1
+          echo exact_trigger_sha=%CHECKED_OUT_SHA%
+
+      - name: Wake exact existing NEXUS-WINDOWS-DR registration
+        run: >-
+          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass
+          -File scripts\wake_nexus_windows_dr_runner.ps1
+          -RunnerRoot "C:\actions-runner\actions-runner"
+          -ExpectedRunnerName "NEXUS-WINDOWS-DR"
+          -ExpectedGitHubUrl "https://github.com/saladinayoubi1/lbank-research-automation"
+          -WaitSeconds 30
+          -OutputPath "build\windows-dr-bootstrap\evidence.json"
+
+      - name: Require safe bootstrap evidence
+        shell: powershell
+        run: |
+          $evidence = Get-Content 'build\windows-dr-bootstrap\evidence.json' -Raw | ConvertFrom-Json
+          if ($evidence.decision -notin @('STARTED','ALREADY_RUNNING','TARGET_ALREADY_ACTIVE')) { throw "Unsafe or incomplete bootstrap decision: $($evidence.decision)" }
+          if ($evidence.expected_runner_name -ne 'NEXUS-WINDOWS-DR') { throw 'Unexpected target runner name.' }
+          if ($evidence.runner_registration_modified -ne $false) { throw 'Runner registration mutation must remain false.' }
+          if ($evidence.runner_credentials_modified -ne $false) { throw 'Runner credential mutation must remain false.' }
+          if ($evidence.other_runner_paths_modified -ne $false) { throw 'Other runner path mutation must remain false.' }
+          if ($evidence.live_trading_authority -ne $false) { throw 'Live authority must remain false.' }
+
+      - name: Upload sanitized bootstrap evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-windows-dr-bootstrap-${{ github.run_id }}-${{ github.run_attempt }}
+          path: build/windows-dr-bootstrap/evidence.json
+          if-no-files-found: error
+          retention-days: 14
