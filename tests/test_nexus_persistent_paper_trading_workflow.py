@@ -218,3 +218,4 @@ def test_lifecycle_implementation_paths_retrigger_the_persistent_runtime() -> No
 
 
 # Semantic no-op: exact-main physical Paper trigger after user-context WSL recovery.
+# Semantic no-op: exact-main physical Paper trigger after watchdog generation 2 recovery.
