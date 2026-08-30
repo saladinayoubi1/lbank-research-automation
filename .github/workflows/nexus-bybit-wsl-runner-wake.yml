@@ -7,15 +7,17 @@ on:
   push:
     branches: [main]
     paths:
-      - scripts/start_nexus_bybit_wsl_runner_native.ps1
       - .github/workflows/nexus-bybit-wsl-runner-wake.yml
 
-# Bootstrap-safe recovery path: the physical Windows runner wakes the already
-# configured WSL Bybit runner. This workflow never registers or replaces a
-# GitHub runner and never changes Paper/Live trading authority. The scheduled
-# probe is safe while the physical runner is offline because concurrency keeps
-# only the current wake attempt; once Windows is back, WSL is recovered without
-# requiring another manual workflow dispatch.
+# Bootstrap-safe recovery path. The GitHub Windows service runner cannot rely on
+# visibility of a WSL distribution that belongs to the interactive Windows user.
+# It therefore requests an already-configured Scheduled Task, which executes
+# under its existing principal and owns the Windows -> WSL boundary. This job
+# never creates, edits, deletes, or re-registers tasks/runners and never changes
+# Paper/Live trading authority.
+#
+# Deliberately contains no `uses:` steps. GitHub pre-downloads actions before any
+# step executes; a transient action-download failure must not prevent recovery.
 permissions:
   contents: read
 
@@ -25,49 +27,51 @@ concurrency:
 
 jobs:
   wake:
-    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') || (github.event_name == 'push' && contains(github.event.head_commit.message, '[wake-bybit-wsl]'))
-    # Match the label contract already proven by NEXUS-WINDOWS-DR runtime jobs.
-    # Do not require an architecture label that is not needed by this workflow;
-    # the recovery script itself remains fail-closed on the expected WSL runner.
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') || github.event_name == 'push'
     runs-on: [self-hosted, Windows]
-    timeout-minutes: 15
-    defaults:
-      run:
-        shell: cmd
+    timeout-minutes: 5
     steps:
-      - name: Checkout exact source
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-          clean: true
-          fetch-depth: 1
-
-      - name: Verify exact trigger SHA
+      - name: Request existing scheduled Bybit WSL recovery
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
         run: |
-          for /f %%S in ('git rev-parse HEAD') do set "CHECKED_OUT_SHA=%%S"
-          if /I not "%CHECKED_OUT_SHA%"=="%GITHUB_SHA%" exit /b 1
-          echo exact_trigger_sha=%CHECKED_OUT_SHA%
+          $ErrorActionPreference = 'Stop'
+          $ProgressPreference = 'SilentlyContinue'
 
-      - name: Parse bounded Windows-to-WSL wake script
-        run: >-
-          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command
-          "$tokens=$null;$errors=$null;[void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path 'scripts\start_nexus_bybit_wsl_runner_native.ps1'),[ref]$tokens,[ref]$errors);if($errors.Count -gt 0){$errors | ForEach-Object { Write-Error $_.Message };exit 1}"
+          $schtasks = Join-Path $env:SystemRoot 'System32\schtasks.exe'
+          if (-not (Test-Path -LiteralPath $schtasks -PathType Leaf)) {
+            throw 'schtasks.exe is required for bootstrap-safe Bybit WSL recovery.'
+          }
 
-      - name: Wake already-configured Bybit WSL runner
-        run: >-
-          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass
-          -File scripts\start_nexus_bybit_wsl_runner_native.ps1
-          -Distribution Ubuntu
-          -RunnerName NEXUS-BYBIT-WSL
-          -RunnerLabel nexus-bybit-network
-          -OutputPath "build\bybit-wsl-runner-wake\evidence.json"
+          $candidates = @(
+            'NEXUS Bybit WSL Runner Persistent',
+            'NEXUS Bybit WSL Runner'
+          )
+          $selected = $null
+          foreach ($taskName in $candidates) {
+            $null = @(& $schtasks /Query /TN $taskName 2>&1)
+            $queryCode = $LASTEXITCODE
+            if ($queryCode -eq 0) {
+              $selected = $taskName
+              break
+            }
+          }
 
-      - name: Upload sanitized wake evidence
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        with:
-          name: nexus-bybit-wsl-runner-wake-${{ github.run_id }}-${{ github.run_attempt }}
-          path: build/bybit-wsl-runner-wake/evidence.json
-          if-no-files-found: error
-          retention-days: 14
+          if (-not $selected) {
+            throw 'No approved NEXUS Bybit WSL Scheduled Task is visible from the Windows runner.'
+          }
+
+          Write-Host "source_sha=$env:GITHUB_SHA"
+          Write-Host "selected_recovery_task=$selected"
+          Write-Host 'task_mutation_performed=false'
+          Write-Host 'runner_registration_mutated=false'
+          Write-Host 'live_trading_authority_changed=false'
+
+          $runOutput = @(& $schtasks /Run /TN $selected 2>&1)
+          $runCode = $LASTEXITCODE
+          $sanitized = (($runOutput | ForEach-Object { $_.ToString() }) | Out-String).Trim()
+          if ($sanitized) { Write-Host "scheduler_response=$sanitized" }
+          if ($runCode -ne 0) {
+            throw "Scheduled recovery request failed with exit code $runCode."
+          }
+
+          Write-Host 'bybit_wsl_scheduler_wake_request=PASS'

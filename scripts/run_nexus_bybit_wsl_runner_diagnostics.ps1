@@ -15,6 +15,7 @@ if ($RunnerName -ne 'NEXUS-BYBIT-WSL') { throw 'RunnerName must remain pinned.' 
 
 $wsl = Join-Path $env:SystemRoot 'System32\wsl.exe'
 if (-not (Test-Path -LiteralPath $wsl -PathType Leaf)) { throw 'wsl.exe is required.' }
+$schTasks = Join-Path $env:SystemRoot 'System32\schtasks.exe'
 
 function Invoke-WslNative {
     param([Parameter(Mandatory = $true)][string[]]$Arguments)
@@ -37,11 +38,42 @@ function Invoke-WslNative {
     }
 }
 
-function Write-ResolutionFailure {
-    param([string]$Decision, [int]$CandidateCount = 0, [int]$MatchCount = 0)
+function Get-VisibleRecoveryTask {
+    if (-not (Test-Path -LiteralPath $schTasks -PathType Leaf)) {
+        return [ordered]@{ found = $false; name = '' }
+    }
+
+    foreach ($taskName in @('NEXUS Bybit WSL Runner Persistent', 'NEXUS Bybit WSL Runner')) {
+        $previous = $ErrorActionPreference
+        try {
+            $ErrorActionPreference = 'Continue'
+            $null = @(& $schTasks /Query /TN $taskName 2>&1)
+            $code = $LASTEXITCODE
+        }
+        catch {
+            $code = -1
+        }
+        finally {
+            $ErrorActionPreference = $previous
+        }
+        if ($code -eq 0) {
+            return [ordered]@{ found = $true; name = $taskName }
+        }
+    }
+
+    return [ordered]@{ found = $false; name = '' }
+}
+
+function Get-EvidenceTarget {
     $target = [IO.Path]::GetFullPath($OutputPath)
     $parent = Split-Path -Parent $target
     New-Item -ItemType Directory -Path $parent -Force | Out-Null
+    return $target
+}
+
+function Write-ResolutionFailure {
+    param([string]$Decision, [int]$CandidateCount = 0, [int]$MatchCount = 0)
+    $target = Get-EvidenceTarget
     $payload = [ordered]@{
         schema_version = 1
         generated_at_utc = [DateTime]::UtcNow.ToString('o')
@@ -53,6 +85,8 @@ function Write-ResolutionFailure {
         runner_root = $RunnerRoot
         distribution_candidate_count = $CandidateCount
         distribution_match_count = $MatchCount
+        runner_health_verified = $false
+        recovery_request_performed = $false
         runner_mutation_performed = $false
         windows_runner_paths_modified = $false
         bybit_private_credentials_used = $false
@@ -63,21 +97,72 @@ function Write-ResolutionFailure {
     [IO.File]::WriteAllText($target, $json, (New-Object Text.UTF8Encoding($false)))
 }
 
-$inventory = Invoke-WslNative -Arguments @('-l', '-q')
-if ($inventory.exit_code -ne 0) {
-    Write-ResolutionFailure -Decision 'WSL_DISTRIBUTION_INVENTORY_FAILED'
-    throw 'Unable to enumerate WSL distributions.'
+function Write-ContextLimitedEvidence {
+    param(
+        [Parameter(Mandatory = $true)][string]$ScheduledTaskName,
+        [int]$InventoryExitCode = 0
+    )
+    $target = Get-EvidenceTarget
+    $payload = [ordered]@{
+        schema_version = 1
+        generated_at_utc = [DateTime]::UtcNow.ToString('o')
+        source_run_id = if ($SourceRunId) { $SourceRunId } else { [string]$env:GITHUB_RUN_ID }
+        source_sha = if ($SourceSha) { $SourceSha } else { [string]$env:GITHUB_SHA }
+        source_conclusion = if ($SourceConclusion) { $SourceConclusion } else { 'diagnostic_push' }
+        repository = [string]$env:GITHUB_REPOSITORY
+        runner_name = $RunnerName
+        runner_root = $RunnerRoot
+        wsl_inventory_exit_code = $InventoryExitCode
+        distribution_candidate_count = 0
+        distribution_match_count = 0
+        scheduled_recovery_task_visible = $true
+        scheduled_recovery_task_name = $ScheduledTaskName
+        runner_health_verified = $false
+        recovery_request_performed = $false
+        runner_mutation_performed = $false
+        windows_runner_paths_modified = $false
+        bybit_private_credentials_used = $false
+        raw_diagnostic_files_uploaded = $false
+        decision = 'WSL_DISTRIBUTION_NOT_VISIBLE_FROM_WINDOWS_RUNNER_CONTEXT'
+    }
+    $json = $payload | ConvertTo-Json -Depth 8
+    [IO.File]::WriteAllText($target, $json, (New-Object Text.UTF8Encoding($false)))
 }
 
-$candidates = @(
-    $inventory.output -split "`r?`n" |
-        ForEach-Object { $_.Trim() } |
-        Where-Object { $_ -and $_ -match '^[A-Za-z0-9._ -]+$' } |
-        Select-Object -Unique
-)
-if (-not $candidates) {
+$inventory = Invoke-WslNative -Arguments @('-l', '-q')
+$candidates = @()
+if ($inventory.exit_code -eq 0) {
+    $candidates = @(
+        $inventory.output -split "`r?`n" |
+            ForEach-Object { $_.Trim() } |
+            Where-Object { $_ -and $_ -match '^[A-Za-z0-9._ -]+$' } |
+            Select-Object -Unique
+    )
+}
+
+if ($inventory.exit_code -ne 0 -or -not $candidates) {
+    # WSL distributions are registered per Windows user. NEXUS-WINDOWS-DR runs
+    # as a Windows service, so an empty inventory does not prove that the
+    # interactive user's Ubuntu/Bybit runner is absent. In that context we only
+    # record the visibility boundary and the pre-existing Scheduled Task that
+    # owns recovery. We do not claim runner health and we do not mutate it here.
+    $recoveryTask = Get-VisibleRecoveryTask
+    if ($recoveryTask.found) {
+        Write-ContextLimitedEvidence -ScheduledTaskName $recoveryTask.name -InventoryExitCode $inventory.exit_code
+        Write-Host "scheduled_recovery_task=$($recoveryTask.name)"
+        Write-Host 'diagnostic_decision=WSL_DISTRIBUTION_NOT_VISIBLE_FROM_WINDOWS_RUNNER_CONTEXT'
+        Write-Host 'runner_health_verified=false'
+        Write-Host 'bybit_wsl_runner_diagnostics_validation=CONTEXT_LIMITED'
+        exit 0
+    }
+
+    if ($inventory.exit_code -ne 0) {
+        Write-ResolutionFailure -Decision 'WSL_DISTRIBUTION_INVENTORY_FAILED'
+        throw 'Unable to enumerate WSL distributions and no approved recovery task is visible.'
+    }
+
     Write-ResolutionFailure -Decision 'WSL_DISTRIBUTION_INVENTORY_EMPTY'
-    throw 'No WSL distributions were found.'
+    throw 'No WSL distributions or approved recovery tasks were found.'
 }
 
 $matches = New-Object System.Collections.Generic.List[string]
