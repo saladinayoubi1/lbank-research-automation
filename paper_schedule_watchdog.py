@@ -66,6 +66,20 @@ def latest_identity(runs: list[dict[str, Any]]) -> dict[str, Any] | None:
     }
 
 
+def run_age_minutes(run: dict[str, Any], *, now: datetime) -> float | None:
+    created_raw = run.get("created_at")
+    if not isinstance(created_raw, str) or not created_raw:
+        return None
+    try:
+        created_at = parse_utc(created_raw)
+    except (TypeError, ValueError):
+        return None
+    return max(
+        0.0,
+        (now.astimezone(timezone.utc) - created_at).total_seconds() / 60.0,
+    )
+
+
 def evaluate_runs(
     runs: list[dict[str, Any]],
     *,
@@ -150,6 +164,54 @@ def evaluate_runs(
     }
 
 
+def stale_predecessor_candidates(
+    runs: list[dict[str, Any]],
+    *,
+    now: datetime,
+    stale_minutes: int,
+    current_sha: str | None,
+) -> list[dict[str, Any]]:
+    """Return only old unstarted runs that can block a newer exact-main run.
+
+    The newest run must already be active on the current SHA. This prevents the
+    cleanup path from manufacturing a new run or cancelling the current proof.
+    """
+    if not current_sha or len(runs) < 2:
+        return []
+
+    newest = runs[0]
+    newest_status = str(newest.get("status") or "").lower()
+    newest_sha = str(newest.get("head_sha") or "")
+    if newest_status not in ACTIVE_STATUSES or newest_sha != current_sha:
+        return []
+
+    candidates: list[dict[str, Any]] = []
+    for run in runs[1:]:
+        status = str(run.get("status") or "").lower()
+        head_sha = str(run.get("head_sha") or "")
+        run_id = run.get("id")
+        age_minutes = run_age_minutes(run, now=now)
+        if status not in UNSTARTED_STATUSES:
+            continue
+        if not head_sha or head_sha == current_sha:
+            continue
+        if not isinstance(run_id, int) or age_minutes is None:
+            continue
+        if age_minutes <= stale_minutes:
+            continue
+        candidates.append(
+            {
+                "id": run_id,
+                "status": status,
+                "head_sha": head_sha,
+                "created_at": run.get("created_at"),
+                "age_minutes": round(age_minutes, 3),
+                "html_url": run.get("html_url"),
+            }
+        )
+    return candidates
+
+
 def paper_run_safe_to_cancel(run_id: int) -> tuple[bool, str]:
     payload = api_json(f"actions/runs/{run_id}/jobs?filter=latest&per_page=100")
     jobs = list(payload.get("jobs", []))
@@ -224,6 +286,7 @@ def requires_write(decision: str) -> bool:
 def watch_once(*, stale_minutes: int = DEFAULT_STALE_MINUTES) -> dict[str, Any]:
     now = utcnow()
     current_sha = os.environ.get("GITHUB_SHA") or None
+    current_ref = os.environ.get("GITHUB_REF_NAME")
     first_runs = get_workflow_runs()
     first = evaluate_runs(
         first_runs,
@@ -232,7 +295,7 @@ def watch_once(*, stale_minutes: int = DEFAULT_STALE_MINUTES) -> dict[str, Any]:
         current_sha=current_sha,
     )
     evidence: dict[str, Any] = {
-        "schema_version": 2,
+        "schema_version": 3,
         "generated_at_utc": now.isoformat(),
         "repo": REPO,
         "workflow": WORKFLOW,
@@ -248,6 +311,69 @@ def watch_once(*, stale_minutes: int = DEFAULT_STALE_MINUTES) -> dict[str, Any]:
         "dispatch_ok": False,
         "dispatch_detail": None,
     }
+
+    predecessors = stale_predecessor_candidates(
+        first_runs,
+        now=now,
+        stale_minutes=stale_minutes,
+        current_sha=current_sha,
+    )
+    if predecessors:
+        evidence["stale_predecessor_candidates"] = predecessors
+        if current_ref and current_ref != DEFAULT_BRANCH:
+            evidence["decision"] = "FAIL_CLOSED_NON_DEFAULT_REF"
+            return evidence
+
+        safety: list[dict[str, Any]] = []
+        all_safe = True
+        for candidate in predecessors:
+            safe, detail = paper_run_safe_to_cancel(candidate["id"])
+            safety.append(
+                {
+                    "run_id": candidate["id"],
+                    "safe": safe,
+                    "detail": detail,
+                }
+            )
+            all_safe = all_safe and safe
+        evidence["stale_predecessor_safety"] = safety
+        if not all_safe:
+            evidence["decision"] = "FAIL_CLOSED_STALE_PREDECESSOR_NOT_SAFE_TO_CANCEL"
+            return evidence
+
+        cancellations: list[dict[str, Any]] = []
+        evidence["cancel_attempted"] = True
+        for candidate in predecessors:
+            cancel_ok, cancel_detail = cancel_workflow_run(candidate["id"])
+            cancellations.append(
+                {
+                    "run_id": candidate["id"],
+                    "ok": cancel_ok,
+                    "detail": cancel_detail,
+                }
+            )
+            if not cancel_ok:
+                evidence["cancel_ok"] = False
+                evidence["cancel_detail"] = cancellations
+                evidence["decision"] = "STALE_PREDECESSOR_CANCEL_FAILED"
+                return evidence
+        evidence["cancel_ok"] = True
+        evidence["cancel_detail"] = cancellations
+
+        refreshed_runs = get_workflow_runs()
+        refreshed = evaluate_runs(
+            refreshed_runs,
+            now=utcnow(),
+            stale_minutes=stale_minutes,
+            current_sha=current_sha,
+        )
+        evidence["after_predecessor_recovery"] = refreshed
+        if refreshed["decision"] == "HEALTHY_ACTIVE_RUN":
+            evidence["decision"] = "STALE_PREDECESSORS_CANCELLED_CURRENT_ACTIVE"
+            return evidence
+        first_runs = refreshed_runs
+        first = refreshed
+        evidence["decision"] = first["decision"]
 
     if not requires_write(str(first["decision"])):
         return evidence
@@ -267,7 +393,6 @@ def watch_once(*, stale_minutes: int = DEFAULT_STALE_MINUTES) -> dict[str, Any]:
         evidence["decision"] = "WRITE_SUPPRESSED_AFTER_RECHECK"
         return evidence
 
-    current_ref = os.environ.get("GITHUB_REF_NAME")
     if current_ref and current_ref != DEFAULT_BRANCH:
         evidence["decision"] = "FAIL_CLOSED_NON_DEFAULT_REF"
         return evidence
@@ -320,7 +445,7 @@ def main() -> int:
         evidence = watch_once(stale_minutes=stale_minutes)
     except Exception as exc:  # fail closed while preserving coordinator evidence
         evidence = {
-            "schema_version": 2,
+            "schema_version": 3,
             "generated_at_utc": utcnow().isoformat(),
             "repo": REPO,
             "workflow": WORKFLOW,
