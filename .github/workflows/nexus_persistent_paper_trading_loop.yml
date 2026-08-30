@@ -71,7 +71,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: nexus-persistent-paper-trading-loop
+  group: nexus-persistent-paper-trading-loop-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'main' }}
   cancel-in-progress: false
 
 jobs:
