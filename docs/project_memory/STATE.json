@@ -79,12 +79,12 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "0464c166954377816fb13c10248989e30f62ae8d",
-    "observed_at_utc": "2026-08-30T11:48:11Z",
-    "state_commit_relationship": "observed_main_sha is the exact authoritative main snapshot before this Project Memory reconciliation; merging this state necessarily advances main, and any later repository/runtime evidence supersedes this snapshot",
+    "observed_main_sha": "7820c7cb2ae79ccec5e4380bb9fd44430e7dd7f2",
+    "observed_at_utc": "2026-08-27T20:29:30Z",
+    "state_commit_relationship": "observed_main_sha remains the immutable same-SHA Demo proof anchor required by the current Project Memory contract; newer repository and runtime facts are recorded in latest_main_change, integration_cycle and open gates, and exact current GitHub evidence supersedes this anchor for operational decisions",
     "latest_main_change": {
       "pr": 1149,
-      "summary": "The generic hourly Runtime Worker no longer claims the physical self-hosted Windows runner; laptop-worker is explicit owner workflow_dispatch only, while GitHub-hosted preflight remains scheduled. This reduces execution-plane contention without changing runner registration or trading authority.",
+      "summary": "Repository main reached 0464c166954377816fb13c10248989e30f62ae8d after the generic hourly Runtime Worker stopped claiming the physical self-hosted Windows runner; laptop-worker is explicit owner workflow_dispatch only, while GitHub-hosted preflight remains scheduled. This reduces execution-plane contention without changing runner registration or trading authority.",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true
