@@ -33,22 +33,45 @@ $evidencePath = Join-Path $stateRoot 'evidence.json'
 $startupRoot = [Environment]::GetFolderPath('Startup')
 $startupVbs = Join-Path $startupRoot 'NEXUS-Bybit-WSL-User-Startup.vbs'
 $legacyStartupCmd = Join-Path $startupRoot 'NEXUS-Bybit-WSL-User-Startup.cmd'
+$wslTimeoutMilliseconds = 10000
+$watchdogGeneration = 2
 
 function Invoke-WslNative {
     param([Parameter(Mandatory = $true)][string]$Command)
-    $previous = $ErrorActionPreference
+
+    # Invoke wsl.exe through a bounded child process. A stalled WSL interop call
+    # must never pin the watchdog forever and prevent future self-heal attempts.
+    $encoded = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($Command))
+    $bashCommand = "printf '%s' '$encoded' | base64 -d | bash"
+    $psi = New-Object Diagnostics.ProcessStartInfo
+    $psi.FileName = $wsl
+    $psi.Arguments = '-d ' + $Distribution + ' -u root -- bash -lc "' + $bashCommand + '"'
+    $psi.UseShellExecute = $false
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError = $true
+    $psi.CreateNoWindow = $true
+    $psi.WindowStyle = [Diagnostics.ProcessWindowStyle]::Hidden
+
+    $proc = New-Object Diagnostics.Process
+    $proc.StartInfo = $psi
     try {
-        $ErrorActionPreference = 'Continue'
-        $raw = @(& $wsl -d $Distribution -u root -- bash -lc $Command 2>&1)
-        $code = $LASTEXITCODE
-        $text = (($raw | ForEach-Object { $_.ToString() }) | Out-String).Trim()
-        return [ordered]@{ exit_code = if ($null -eq $code) { -1 } else { [int]$code }; output = $text }
+        if (-not $proc.Start()) {
+            return [ordered]@{ exit_code = -1; output = 'wsl_process_start_failed' }
+        }
+        if (-not $proc.WaitForExit($wslTimeoutMilliseconds)) {
+            try { $proc.Kill() } catch { }
+            return [ordered]@{ exit_code = 124; output = 'wsl_timeout' }
+        }
+        $stdout = $proc.StandardOutput.ReadToEnd()
+        $stderr = $proc.StandardError.ReadToEnd()
+        $text = (($stdout + [Environment]::NewLine + $stderr).Trim())
+        return [ordered]@{ exit_code = [int]$proc.ExitCode; output = $text }
     }
     catch {
         return [ordered]@{ exit_code = -1; output = $_.Exception.GetType().Name }
     }
     finally {
-        $ErrorActionPreference = $previous
+        $proc.Dispose()
     }
 }
 
@@ -66,6 +89,9 @@ function Test-ExistingRegistration {
 
 function Test-Listener {
     $probe = Invoke-WslNative "pgrep -f '$RunnerRoot/bin/[R]unner.Listener' >/dev/null 2>&1"
+    if ($probe.exit_code -eq 124) {
+        Write-Log 'listener_probe_timeout=true'
+    }
     return ($probe.exit_code -eq 0)
 }
 
@@ -84,7 +110,7 @@ function Start-ListenerIfMissing {
 function Write-Evidence([string]$Decision, [bool]$ListenerObserved) {
     New-Item -ItemType Directory -Path $stateRoot -Force | Out-Null
     $payload = [ordered]@{
-        schema_version = 1
+        schema_version = 2
         generated_at_utc = [DateTime]::UtcNow.ToString('o')
         decision = $Decision
         windows_identity = [string]$identity.Name
@@ -95,6 +121,8 @@ function Write-Evidence([string]$Decision, [bool]$ListenerObserved) {
         listener_observed = $ListenerObserved
         startup_path = $startupVbs
         stable_watchdog_path = $stableScript
+        watchdog_generation = $watchdogGeneration
+        wsl_call_timeout_seconds = [int]($wslTimeoutMilliseconds / 1000)
         administrator_required = $false
         task_scheduler_used = $false
         runner_registration_modified = $false
@@ -112,10 +140,13 @@ function Run-Watchdog {
     Test-ExistingRegistration
     New-Item -ItemType Directory -Path $stateRoot -Force | Out-Null
     $createdNew = $false
-    $mutex = New-Object Threading.Mutex($true, ('Local\NEXUS-Bybit-WSL-Watchdog-' + $sid), [ref]$createdNew)
+    # Version the mutex so a watchdog from an older implementation that is
+    # already stuck inside WSL interop cannot block a repaired watchdog forever.
+    $mutexName = 'Local\NEXUS-Bybit-WSL-Watchdog-v' + $watchdogGeneration + '-' + $sid
+    $mutex = New-Object Threading.Mutex($true, $mutexName, [ref]$createdNew)
     if (-not $createdNew) { return }
     try {
-        Write-Log 'watchdog_started=true'
+        Write-Log ('watchdog_started=true generation=' + $watchdogGeneration)
         while ($true) {
             try {
                 if (-not (Test-Listener)) {
@@ -175,6 +206,8 @@ if (-not $listener) { throw 'Watchdog started but NEXUS-BYBIT-WSL listener was n
 Write-Host 'bybit_wsl_user_startup_recovery=PASS'
 Write-Host "startup_path=$startupVbs"
 Write-Host "watchdog_path=$stableScript"
+Write-Host ('watchdog_generation=' + $watchdogGeneration)
+Write-Host ('wsl_call_timeout_seconds=' + [int]($wslTimeoutMilliseconds / 1000))
 Write-Host 'administrator_required=false'
 Write-Host 'task_scheduler_used=false'
 Write-Host 'runner_registration_modified=false'
