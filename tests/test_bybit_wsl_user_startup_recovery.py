@@ -1,4 +1,6 @@
+import os
 from pathlib import Path
+import subprocess
 
 
 SCRIPT = Path("scripts/install_nexus_bybit_wsl_user_startup.ps1")
@@ -76,3 +78,18 @@ def test_recovery_does_not_expand_trading_or_windows_authority() -> None:
     assert "live_trading_authority_changed = $false" in text
     for forbidden in ("icacls", "sc.exe", "New-Service", "Set-Acl", "api_key", "api_secret"):
         assert forbidden.lower() not in text.lower()
+
+
+def test_recovery_script_parses_on_windows_powershell() -> None:
+    if os.name != "nt":
+        return
+    command = (
+        "$errors=$null;"
+        "[System.Management.Automation.Language.Parser]::ParseFile(" 
+        f"'{SCRIPT.as_posix()}',[ref]$null,[ref]$errors) | Out-Null;"
+        "if($errors.Count -ne 0){$errors | ForEach-Object { Write-Error $_ }; exit 1}"
+    )
+    subprocess.run(
+        ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", command],
+        check=True,
+    )
