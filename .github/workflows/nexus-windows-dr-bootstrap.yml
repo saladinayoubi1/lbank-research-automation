@@ -88,7 +88,7 @@ jobs:
           -OutputPath "build\windows-dr-bootstrap\evidence.json"
 
       - name: Require safe bootstrap evidence
-        shell: powershell
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
         run: |
           $evidence = Get-Content 'build\windows-dr-bootstrap\evidence.json' -Raw | ConvertFrom-Json
           if ($evidence.decision -notin @('STARTED','ALREADY_RUNNING','TARGET_ALREADY_ACTIVE')) { throw "Unsafe or incomplete bootstrap decision: $($evidence.decision)" }
