@@ -72,7 +72,9 @@ permissions:
 
 concurrency:
   group: nexus-persistent-paper-trading-loop-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'main' }}
-  cancel-in-progress: false
+  # A new exact-main push supersedes an older main runtime. Scheduled cycles
+  # remain serial and never cancel one another.
+  cancel-in-progress: ${{ github.event_name == 'push' }}
 
 jobs:
   contract-test:
@@ -110,7 +112,7 @@ jobs:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: contract-test
     runs-on: nexus-bybit-network
-    timeout-minutes: 50
+    timeout-minutes: 20
     outputs:
       state_archive_b64: ${{ steps.package.outputs.state_archive_b64 }}
       state_archive_sha256: ${{ steps.package.outputs.state_archive_sha256 }}
