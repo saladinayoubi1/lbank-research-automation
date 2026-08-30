@@ -15,6 +15,7 @@ WORKFLOW = "nexus_persistent_paper_trading_loop.yml"
 DEFAULT_BRANCH = "main"
 DEFAULT_STALE_MINUTES = 45
 ACTIVE_STATUSES = {"queued", "in_progress", "waiting", "pending", "requested"}
+UNSTARTED_STATUSES = {"queued", "waiting", "pending", "requested"}
 
 
 def utcnow() -> datetime:
@@ -66,22 +67,17 @@ def latest_identity(runs: list[dict[str, Any]]) -> dict[str, Any] | None:
 
 
 def evaluate_runs(
-    runs: list[dict[str, Any]], *, now: datetime, stale_minutes: int
+    runs: list[dict[str, Any]],
+    *,
+    now: datetime,
+    stale_minutes: int,
+    current_sha: str | None = None,
 ) -> dict[str, Any]:
     latest = latest_identity(runs)
     if latest is None:
         return {
             "decision": "DISPATCH_REQUIRED_NO_HISTORY",
             "latest": None,
-            "age_minutes": None,
-        }
-
-    status = str(latest.get("status") or "").lower()
-    conclusion = str(latest.get("conclusion") or "").lower()
-    if status in ACTIVE_STATUSES:
-        return {
-            "decision": "HEALTHY_ACTIVE_RUN",
-            "latest": latest,
             "age_minutes": None,
         }
 
@@ -101,47 +97,85 @@ def evaluate_runs(
             "age_minutes": None,
         }
 
-    age_minutes = max(0.0, (now.astimezone(timezone.utc) - created_at).total_seconds() / 60.0)
+    age_minutes = max(
+        0.0,
+        (now.astimezone(timezone.utc) - created_at).total_seconds() / 60.0,
+    )
+    rounded_age = round(age_minutes, 3)
+    status = str(latest.get("status") or "").lower()
+    conclusion = str(latest.get("conclusion") or "").lower()
+
+    if status in ACTIVE_STATUSES:
+        latest_sha = str(latest.get("head_sha") or "")
+        if (
+            status in UNSTARTED_STATUSES
+            and current_sha
+            and latest_sha
+            and latest_sha != current_sha
+            and age_minutes > stale_minutes
+        ):
+            return {
+                "decision": "RECOVER_STALE_NONCURRENT_ACTIVE",
+                "latest": latest,
+                "age_minutes": rounded_age,
+            }
+        return {
+            "decision": "HEALTHY_ACTIVE_RUN",
+            "latest": latest,
+            "age_minutes": rounded_age,
+        }
+
     if status != "completed":
         return {
             "decision": "FAIL_CLOSED_UNKNOWN_STATUS",
             "latest": latest,
-            "age_minutes": round(age_minutes, 3),
+            "age_minutes": rounded_age,
         }
     if conclusion != "success":
         return {
             "decision": "FAIL_CLOSED_LAST_RUN_UNSUCCESSFUL",
             "latest": latest,
-            "age_minutes": round(age_minutes, 3),
+            "age_minutes": rounded_age,
         }
     if age_minutes <= stale_minutes:
         return {
             "decision": "HEALTHY_RECENT_SUCCESS",
             "latest": latest,
-            "age_minutes": round(age_minutes, 3),
+            "age_minutes": rounded_age,
         }
     return {
         "decision": "DISPATCH_REQUIRED_STALE_SUCCESS",
         "latest": latest,
-        "age_minutes": round(age_minutes, 3),
+        "age_minutes": rounded_age,
     }
 
 
-def dispatch_workflow() -> tuple[bool, str]:
+def paper_run_safe_to_cancel(run_id: int) -> tuple[bool, str]:
+    payload = api_json(f"actions/runs/{run_id}/jobs?filter=latest&per_page=100")
+    jobs = list(payload.get("jobs", []))
+    if not jobs:
+        return True, "workflow_pending_before_job_creation"
+
+    paper_jobs = [job for job in jobs if job.get("name") == "paper-loop"]
+    if len(paper_jobs) != 1:
+        return False, f"paper_loop_job_count={len(paper_jobs)}"
+
+    paper_job = paper_jobs[0]
+    status = str(paper_job.get("status") or "").lower()
+    steps = paper_job.get("steps")
+    if status not in UNSTARTED_STATUSES:
+        return False, f"paper_loop_status={status or 'missing'}"
+    if steps not in (None, []):
+        return False, "paper_loop_has_steps"
+    return True, f"paper_loop_unstarted_status={status}"
+
+
+def run_gh(args: list[str]) -> tuple[bool, str]:
     gh = shutil.which("gh")
     if not gh:
         return False, "gh_cli_unavailable"
     completed = subprocess.run(
-        [
-            gh,
-            "workflow",
-            "run",
-            WORKFLOW,
-            "--repo",
-            REPO,
-            "--ref",
-            DEFAULT_BRANCH,
-        ],
+        [gh, *args],
         text=True,
         capture_output=True,
         timeout=20,
@@ -151,6 +185,31 @@ def dispatch_workflow() -> tuple[bool, str]:
     return completed.returncode == 0, detail
 
 
+def cancel_workflow_run(run_id: int) -> tuple[bool, str]:
+    return run_gh(
+        [
+            "api",
+            "--method",
+            "POST",
+            f"repos/{REPO}/actions/runs/{run_id}/cancel",
+        ]
+    )
+
+
+def dispatch_workflow() -> tuple[bool, str]:
+    return run_gh(
+        [
+            "workflow",
+            "run",
+            WORKFLOW,
+            "--repo",
+            REPO,
+            "--ref",
+            DEFAULT_BRANCH,
+        ]
+    )
+
+
 def write_json(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temp = path.with_suffix(path.suffix + ".tmp")
@@ -158,35 +217,54 @@ def write_json(path: Path, payload: dict[str, Any]) -> None:
     os.replace(temp, path)
 
 
+def requires_write(decision: str) -> bool:
+    return decision.startswith("DISPATCH_REQUIRED_") or decision == "RECOVER_STALE_NONCURRENT_ACTIVE"
+
+
 def watch_once(*, stale_minutes: int = DEFAULT_STALE_MINUTES) -> dict[str, Any]:
     now = utcnow()
+    current_sha = os.environ.get("GITHUB_SHA") or None
     first_runs = get_workflow_runs()
-    first = evaluate_runs(first_runs, now=now, stale_minutes=stale_minutes)
+    first = evaluate_runs(
+        first_runs,
+        now=now,
+        stale_minutes=stale_minutes,
+        current_sha=current_sha,
+    )
     evidence: dict[str, Any] = {
-        "schema_version": 1,
+        "schema_version": 2,
         "generated_at_utc": now.isoformat(),
         "repo": REPO,
         "workflow": WORKFLOW,
         "branch": DEFAULT_BRANCH,
+        "current_sha": current_sha,
         "stale_minutes": stale_minutes,
         "initial": first,
         "decision": first["decision"],
+        "cancel_attempted": False,
+        "cancel_ok": False,
+        "cancel_detail": None,
         "dispatch_attempted": False,
         "dispatch_ok": False,
         "dispatch_detail": None,
     }
 
-    if not str(first["decision"]).startswith("DISPATCH_REQUIRED_"):
+    if not requires_write(str(first["decision"])):
         return evidence
 
     # Re-read authoritative workflow history immediately before any write. This
     # prevents two coordinator iterations from dispatching duplicate Paper runs
-    # when a scheduled or previously-dispatched run appears between checks.
+    # or cancelling a run whose state changed after the first observation.
     second_runs = get_workflow_runs()
-    second = evaluate_runs(second_runs, now=utcnow(), stale_minutes=stale_minutes)
+    second = evaluate_runs(
+        second_runs,
+        now=utcnow(),
+        stale_minutes=stale_minutes,
+        current_sha=current_sha,
+    )
     evidence["authoritative_recheck"] = second
-    if not str(second["decision"]).startswith("DISPATCH_REQUIRED_"):
-        evidence["decision"] = "DISPATCH_SUPPRESSED_AFTER_RECHECK"
+    if not requires_write(str(second["decision"])):
+        evidence["decision"] = "WRITE_SUPPRESSED_AFTER_RECHECK"
         return evidence
 
     current_ref = os.environ.get("GITHUB_REF_NAME")
@@ -194,11 +272,35 @@ def watch_once(*, stale_minutes: int = DEFAULT_STALE_MINUTES) -> dict[str, Any]:
         evidence["decision"] = "FAIL_CLOSED_NON_DEFAULT_REF"
         return evidence
 
+    if second["decision"] == "RECOVER_STALE_NONCURRENT_ACTIVE":
+        latest = second.get("latest") or {}
+        run_id = latest.get("id")
+        if not isinstance(run_id, int):
+            evidence["decision"] = "FAIL_CLOSED_STALE_ACTIVE_MISSING_RUN_ID"
+            return evidence
+
+        safe, detail = paper_run_safe_to_cancel(run_id)
+        evidence["cancel_safety"] = {"safe": safe, "detail": detail, "run_id": run_id}
+        if not safe:
+            evidence["decision"] = "FAIL_CLOSED_STALE_ACTIVE_NOT_SAFE_TO_CANCEL"
+            return evidence
+
+        cancel_ok, cancel_detail = cancel_workflow_run(run_id)
+        evidence["cancel_attempted"] = True
+        evidence["cancel_ok"] = cancel_ok
+        evidence["cancel_detail"] = cancel_detail
+        if not cancel_ok:
+            evidence["decision"] = "STALE_ACTIVE_CANCEL_FAILED"
+            return evidence
+
     ok, detail = dispatch_workflow()
     evidence["dispatch_attempted"] = True
     evidence["dispatch_ok"] = ok
     evidence["dispatch_detail"] = detail
-    evidence["decision"] = "DISPATCHED" if ok else "DISPATCH_FAILED"
+    if ok and evidence["cancel_attempted"]:
+        evidence["decision"] = "STALE_ACTIVE_CANCELLED_AND_DISPATCHED"
+    else:
+        evidence["decision"] = "DISPATCHED" if ok else "DISPATCH_FAILED"
     return evidence
 
 
@@ -218,7 +320,7 @@ def main() -> int:
         evidence = watch_once(stale_minutes=stale_minutes)
     except Exception as exc:  # fail closed while preserving coordinator evidence
         evidence = {
-            "schema_version": 1,
+            "schema_version": 2,
             "generated_at_utc": utcnow().isoformat(),
             "repo": REPO,
             "workflow": WORKFLOW,
@@ -226,6 +328,8 @@ def main() -> int:
             "decision": "FAIL_CLOSED_WATCHDOG_EXCEPTION",
             "error_class": type(exc).__name__,
             "error_message": str(exc),
+            "cancel_attempted": False,
+            "cancel_ok": False,
             "dispatch_attempted": False,
             "dispatch_ok": False,
         }
