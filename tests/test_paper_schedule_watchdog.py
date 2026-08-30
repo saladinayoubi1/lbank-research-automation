@@ -78,7 +78,7 @@ def test_unsuccessful_latest_run_fails_closed_instead_of_looping():
     assert result["decision"] == "FAIL_CLOSED_LAST_RUN_UNSUCCESSFUL"
 
 
-def test_current_active_run_exposes_only_stale_noncurrent_unstarted_predecessors():
+def test_newest_unstarted_run_exposes_only_stale_unstarted_predecessors():
     runs = [
         run(minutes_ago=2, status="pending", conclusion=None, head_sha="new", run_id=200),
         run(minutes_ago=90, status="queued", conclusion=None, head_sha="old", run_id=100),
@@ -94,18 +94,33 @@ def test_current_active_run_exposes_only_stale_noncurrent_unstarted_predecessors
         current_sha="new",
     )
 
-    assert [candidate["id"] for candidate in candidates] == [100]
+    assert [candidate["id"] for candidate in candidates] == [100, 97]
 
 
-def test_no_predecessor_cleanup_without_current_active_head():
+def test_predecessor_cleanup_survives_main_advancing_after_newest_dispatch():
     candidates = watchdog.stale_predecessor_candidates(
         [
-            run(minutes_ago=2, status="pending", conclusion=None, head_sha="old", run_id=200),
+            run(minutes_ago=2, status="pending", conclusion=None, head_sha="previous-main", run_id=200),
             run(minutes_ago=90, status="queued", conclusion=None, head_sha="older", run_id=100),
         ],
         now=NOW,
         stale_minutes=30,
-        current_sha="new",
+        current_sha="new-current-main",
+    )
+    assert [candidate["id"] for candidate in candidates] == [100]
+    assert candidates[0]["newest_run_id"] == 200
+    assert candidates[0]["coordinator_current_sha"] == "new-current-main"
+
+
+def test_no_predecessor_cleanup_when_newest_run_has_started():
+    candidates = watchdog.stale_predecessor_candidates(
+        [
+            run(minutes_ago=2, status="in_progress", conclusion=None, head_sha="previous-main", run_id=200),
+            run(minutes_ago=90, status="queued", conclusion=None, head_sha="older", run_id=100),
+        ],
+        now=NOW,
+        stale_minutes=30,
+        current_sha="new-current-main",
     )
     assert candidates == []
 
@@ -177,10 +192,56 @@ def test_current_exact_main_pending_releases_safe_stale_predecessor_without_disp
 
     evidence = watchdog.watch_once(stale_minutes=30)
 
-    assert evidence["decision"] == "STALE_PREDECESSORS_CANCELLED_CURRENT_ACTIVE"
+    assert evidence["decision"] == "STALE_PREDECESSORS_CANCELLED_NEWEST_ACTIVE"
     assert cancellations == [100]
     assert evidence["cancel_attempted"] is True
     assert evidence["cancel_ok"] is True
+    assert evidence["dispatch_attempted"] is False
+    assert dispatches == []
+
+
+def test_previous_main_pending_releases_safe_stale_predecessor_without_dispatch(monkeypatch):
+    monkeypatch.setenv("GITHUB_REF_NAME", "main")
+    monkeypatch.setenv("GITHUB_SHA", "new-current-main")
+    newest = run(
+        minutes_ago=2,
+        status="pending",
+        conclusion=None,
+        head_sha="previous-main",
+        run_id=200,
+    )
+    old = run(
+        minutes_ago=90,
+        status="queued",
+        conclusion=None,
+        head_sha="old",
+        run_id=100,
+    )
+    histories = iter([[newest, old], [newest]])
+    monkeypatch.setattr(watchdog, "utcnow", lambda: NOW)
+    monkeypatch.setattr(watchdog, "get_workflow_runs", lambda: next(histories))
+    monkeypatch.setattr(
+        watchdog,
+        "paper_run_safe_to_cancel",
+        lambda run_id: (True, "paper_loop_unstarted_status=queued"),
+    )
+    cancellations: list[int] = []
+    monkeypatch.setattr(
+        watchdog,
+        "cancel_workflow_run",
+        lambda run_id: (cancellations.append(run_id) or True, "cancelled"),
+    )
+    dispatches: list[bool] = []
+    monkeypatch.setattr(
+        watchdog,
+        "dispatch_workflow",
+        lambda: (dispatches.append(True) or True, "unexpected"),
+    )
+
+    evidence = watchdog.watch_once(stale_minutes=30)
+
+    assert evidence["decision"] == "STALE_PREDECESSORS_CANCELLED_NEWEST_ACTIVE"
+    assert cancellations == [100]
     assert evidence["dispatch_attempted"] is False
     assert dispatches == []
 
