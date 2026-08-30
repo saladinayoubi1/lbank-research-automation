@@ -1,4 +1,6 @@
+import os
 from pathlib import Path
+import subprocess
 
 
 SCRIPT = Path("scripts/install_nexus_bybit_wsl_user_startup.ps1")
@@ -38,11 +40,23 @@ def test_recovery_uses_per_user_startup_and_bounded_watchdog() -> None:
     assert "BybitWSLUserStartup" in text
     assert "-Mode Watch" in text
     assert "Start-Sleep -Seconds 15" in text
-    assert "Local\\NEXUS-Bybit-WSL-Watchdog-" in text
+    assert "Local\\NEXUS-Bybit-WSL-Watchdog-v" in text
+    assert "$watchdogGeneration = 2" in text
     assert "pgrep -f '$RunnerRoot/bin/[R]unner.Listener'" in text
     assert "nohup ./run.sh" in text
     assert "RUNNER_ALLOW_RUNASROOT=1" in text
     assert "RUNNER_TRACKING_ID=" in text
+
+
+def test_wsl_interop_is_timeout_bounded_and_stale_generation_cannot_block_repair() -> None:
+    text = _text()
+    assert "$wslTimeoutMilliseconds = 10000" in text
+    assert "WaitForExit($wslTimeoutMilliseconds)" in text
+    assert "exit_code = 124" in text
+    assert "wsl_timeout" in text
+    assert "listener_probe_timeout=true" in text
+    assert "watchdog_generation = $watchdogGeneration" in text
+    assert "wsl_call_timeout_seconds" in text
 
 
 def test_recovery_startup_launcher_is_fully_hidden() -> None:
@@ -64,3 +78,18 @@ def test_recovery_does_not_expand_trading_or_windows_authority() -> None:
     assert "live_trading_authority_changed = $false" in text
     for forbidden in ("icacls", "sc.exe", "New-Service", "Set-Acl", "api_key", "api_secret"):
         assert forbidden.lower() not in text.lower()
+
+
+def test_recovery_script_parses_on_windows_powershell() -> None:
+    if os.name != "nt":
+        return
+    command = (
+        "$errors=$null;"
+        "[System.Management.Automation.Language.Parser]::ParseFile(" 
+        f"'{SCRIPT.as_posix()}',[ref]$null,[ref]$errors) | Out-Null;"
+        "if($errors.Count -ne 0){$errors | ForEach-Object { Write-Error $_ }; exit 1}"
+    )
+    subprocess.run(
+        ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", command],
+        check=True,
+    )
