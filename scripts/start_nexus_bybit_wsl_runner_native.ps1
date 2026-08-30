@@ -182,7 +182,7 @@ if (-not (Test-Path -LiteralPath $schtasks -PathType Leaf)) {
 
 $configuredProbe = Invoke-Wsl -Arguments @(
     '-d', $Distribution, '-u', 'root', '--', 'bash', '-lc',
-    "test -x '$runnerRoot/run.sh' && test -f '$runnerRoot/.runner' && grep -Eq '\"agentName\"[[:space:]]*:[[:space:]]*\"$RunnerName\"' '$runnerRoot/.runner'"
+    "test -x '$runnerRoot/run.sh' && test -f '$runnerRoot/.runner' && grep -Eq 'agentName[^,]*$RunnerName' '$runnerRoot/.runner'"
 )
 if ($configuredProbe.exit_code -ne 0) {
     Complete-Start -Decision 'REGISTERED_RUNNER_FILES_REQUIRED' -ExitCode 1 -ErrorClass 'InvalidOperationException'
@@ -249,13 +249,16 @@ fi
 install -m 0644 "$tmp" "$conf"
 rm -f "$tmp"
 '@
+# The command above is a literal PowerShell here-string. Convert the defensive
+# escaped double quotes to normal shell quotes before handing it to bash.
+$configureSystemdCommand = $configureSystemdCommand.Replace('\"', '"')
 $configureSystemd = Invoke-Wsl -Arguments @('-d', $Distribution, '-u', 'root', '--', 'bash', '-lc', $configureSystemdCommand)
 if ($configureSystemd.exit_code -ne 0) {
     Complete-Start -Decision 'WSL_SYSTEMD_CONFIGURATION_FAILED' -ExitCode 1 -ErrorClass 'InvalidOperationException'
 }
 $evidence.wsl_systemd_configured = $true
 
-$pid1Probe = Invoke-Wsl -Arguments @('-d', $Distribution, '-u', 'root', '--', 'bash', '-lc', "test \"`$(ps -p 1 -o comm= | tr -d '[:space:]')\" = systemd")
+$pid1Probe = Invoke-Wsl -Arguments @('-d', $Distribution, '-u', 'root', '--', 'bash', '-lc', "ps -p 1 -o comm= | grep -qx '[[:space:]]*systemd[[:space:]]*'")
 $evidence.systemd_pid1 = ($pid1Probe.exit_code -eq 0)
 if ($evidence.systemd_pid1) {
     $reload = Invoke-Wsl -Arguments @('-d', $Distribution, '-u', 'root', '--', 'bash', '-lc', "systemctl daemon-reload && systemctl enable '$serviceName'")
@@ -289,7 +292,7 @@ New-Item -ItemType Directory -Path $launcherRoot -Force | Out-Null
 $launcher = @"
 @echo off
 set "RUNNER_TRACKING_ID="
-"$env:SystemRoot\System32\wsl.exe" -d $Distribution -u root -- bash -lc "if [ \"`$(ps -p 1 -o comm= | tr -d '[:space:]')\" = systemd ]; then systemctl start $serviceName; else cd $runnerRoot && export RUNNER_ALLOW_RUNASROOT=1 && exec ./run.sh; fi"
+"$env:SystemRoot\System32\wsl.exe" -d $Distribution -u root -- bash -lc "if ps -p 1 -o comm= | grep -qx '[[:space:]]*systemd[[:space:]]*'; then systemctl start $serviceName; else cd $runnerRoot && export RUNNER_ALLOW_RUNASROOT=1 && exec ./run.sh; fi"
 "@
 [IO.File]::WriteAllText($launcherPath, $launcher, (New-Object Text.ASCIIEncoding))
 
