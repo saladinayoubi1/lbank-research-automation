@@ -31,7 +31,8 @@ $stableScript = Join-Path $stateRoot 'bybit-wsl-user-watchdog.ps1'
 $logPath = Join-Path $stateRoot 'watchdog.log'
 $evidencePath = Join-Path $stateRoot 'evidence.json'
 $startupRoot = [Environment]::GetFolderPath('Startup')
-$startupCmd = Join-Path $startupRoot 'NEXUS-Bybit-WSL-User-Startup.cmd'
+$startupVbs = Join-Path $startupRoot 'NEXUS-Bybit-WSL-User-Startup.vbs'
+$legacyStartupCmd = Join-Path $startupRoot 'NEXUS-Bybit-WSL-User-Startup.cmd'
 
 function Invoke-WslNative {
     param([Parameter(Mandatory = $true)][string]$Command)
@@ -92,7 +93,7 @@ function Write-Evidence([string]$Decision, [bool]$ListenerObserved) {
         runner_root = $RunnerRoot
         expected_runner_name = $ExpectedRunnerName
         listener_observed = $ListenerObserved
-        startup_path = $startupCmd
+        startup_path = $startupVbs
         stable_watchdog_path = $stableScript
         administrator_required = $false
         task_scheduler_used = $false
@@ -102,6 +103,7 @@ function Write-Evidence([string]$Decision, [bool]$ListenerObserved) {
         windows_service_modified = $false
         private_exchange_credentials_used = $false
         live_trading_authority_changed = $false
+        popup_launcher_used = $false
     }
     $payload | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $evidencePath -Encoding UTF8
 }
@@ -147,12 +149,13 @@ if (-not $source.Equals([IO.Path]::GetFullPath($stableScript), [StringComparison
     Copy-Item -LiteralPath $source -Destination $stableScript -Force
 }
 
-$cmd = @"
-@echo off
-start "" /min powershell.exe -NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File "$stableScript" -Mode Watch
-exit /b 0
-"@
-[IO.File]::WriteAllText($startupCmd, $cmd, (New-Object Text.ASCIIEncoding))
+$watchCommand = 'powershell.exe -NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File "' + $stableScript + '" -Mode Watch'
+$escapedWatchCommand = $watchCommand.Replace('"', '""')
+$vbs = 'Set shell = CreateObject("WScript.Shell")' + "`r`n" + 'shell.Run "' + $escapedWatchCommand + '", 0, False' + "`r`n"
+[IO.File]::WriteAllText($startupVbs, $vbs, (New-Object Text.ASCIIEncoding))
+if (Test-Path -LiteralPath $legacyStartupCmd -PathType Leaf) {
+    Remove-Item -LiteralPath $legacyStartupCmd -Force
+}
 
 $psi = New-Object Diagnostics.ProcessStartInfo
 $psi.FileName = 'powershell.exe'
@@ -170,11 +173,12 @@ Write-Evidence -Decision $(if ($listener) { 'USER_CONTEXT_SELF_HEAL_ACTIVE' } el
 if (-not $listener) { throw 'Watchdog started but NEXUS-BYBIT-WSL listener was not observed.' }
 
 Write-Host 'bybit_wsl_user_startup_recovery=PASS'
-Write-Host "startup_path=$startupCmd"
+Write-Host "startup_path=$startupVbs"
 Write-Host "watchdog_path=$stableScript"
 Write-Host 'administrator_required=false'
 Write-Host 'task_scheduler_used=false'
 Write-Host 'runner_registration_modified=false'
 Write-Host 'windows_acl_modified=false'
 Write-Host 'live_trading_authority_changed=false'
+Write-Host 'popup_launcher_used=false'
 exit 0

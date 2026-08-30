@@ -45,6 +45,17 @@ def test_recovery_uses_per_user_startup_and_bounded_watchdog() -> None:
     assert "RUNNER_TRACKING_ID=" in text
 
 
+def test_recovery_startup_launcher_is_fully_hidden() -> None:
+    text = _text()
+    assert "NEXUS-Bybit-WSL-User-Startup.vbs" in text
+    assert 'CreateObject("WScript.Shell")' in text
+    assert 'shell.Run "' in text
+    assert '", 0, False' in text
+    assert "popup_launcher_used = $false" in text
+    assert "NEXUS-Bybit-WSL-User-Startup.cmd" in text  # cleanup of the superseded launcher
+    assert "Remove-Item -LiteralPath $legacyStartupCmd -Force" in text
+
+
 def test_recovery_does_not_expand_trading_or_windows_authority() -> None:
     text = _text()
     assert "windows_acl_modified = $false" in text
