@@ -1,0 +1,86 @@
+name: NEXUS Windows User Context Probe
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/nexus-windows-user-context-probe.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nexus-windows-user-context-probe
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    runs-on: [self-hosted, Windows]
+    timeout-minutes: 5
+    steps:
+      - name: Probe service-to-interactive-user boundary read-only
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $ProgressPreference = 'SilentlyContinue'
+
+          Add-Type @'
+          using System;
+          using System.Runtime.InteropServices;
+          public static class NexusWtsProbe {
+              [DllImport("kernel32.dll")]
+              public static extern UInt32 WTSGetActiveConsoleSessionId();
+
+              [DllImport("wtsapi32.dll", SetLastError=true)]
+              [return: MarshalAs(UnmanagedType.Bool)]
+              public static extern bool WTSQueryUserToken(UInt32 SessionId, out IntPtr phToken);
+
+              [DllImport("kernel32.dll", SetLastError=true)]
+              [return: MarshalAs(UnmanagedType.Bool)]
+              public static extern bool CloseHandle(IntPtr hObject);
+          }
+          '@
+
+          $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+          $sid = $identity.User.Value
+          $runnerClass = switch ($sid) {
+            'S-1-5-18' { 'LOCAL_SYSTEM' }
+            'S-1-5-19' { 'LOCAL_SERVICE' }
+            'S-1-5-20' { 'NETWORK_SERVICE' }
+            default { 'OTHER_ACCOUNT' }
+          }
+
+          $sessionId = [NexusWtsProbe]::WTSGetActiveConsoleSessionId()
+          $hasInteractiveSession = ($sessionId -ne [UInt32]::MaxValue)
+          $tokenAvailable = $false
+          $tokenError = 0
+          $token = [IntPtr]::Zero
+          if ($hasInteractiveSession) {
+            $tokenAvailable = [NexusWtsProbe]::WTSQueryUserToken($sessionId, [ref]$token)
+            if (-not $tokenAvailable) {
+              $tokenError = [Runtime.InteropServices.Marshal]::GetLastWin32Error()
+            }
+            elseif ($token -ne [IntPtr]::Zero) {
+              [void][NexusWtsProbe]::CloseHandle($token)
+            }
+          }
+
+          $watchdogPath = 'C:\ProgramData\NEXUS\BybitWSL\watchdog.ps1'
+          $launcherRoot = 'C:\ProgramData\NEXUS\BybitWSL'
+          $explorerPresent = @(Get-Process -Name explorer -ErrorAction SilentlyContinue).Count -gt 0
+
+          Write-Host "source_sha=$env:GITHUB_SHA"
+          Write-Host "runner_identity_class=$runnerClass"
+          Write-Host "interactive_console_session_present=$($hasInteractiveSession.ToString().ToLowerInvariant())"
+          Write-Host "interactive_explorer_present=$($explorerPresent.ToString().ToLowerInvariant())"
+          Write-Host "wts_user_token_available=$($tokenAvailable.ToString().ToLowerInvariant())"
+          Write-Host "wts_user_token_error=$tokenError"
+          Write-Host "bybit_watchdog_path_exists=$((Test-Path -LiteralPath $watchdogPath -PathType Leaf).ToString().ToLowerInvariant())"
+          Write-Host "bybit_launcher_root_exists=$((Test-Path -LiteralPath $launcherRoot -PathType Container).ToString().ToLowerInvariant())"
+          Write-Host 'runner_registration_mutated=false'
+          Write-Host 'scheduled_task_mutated=false'
+          Write-Host 'wsl_invoked=false'
+          Write-Host 'credentials_used=false'
+          Write-Host 'windows_user_context_probe=PASS'
