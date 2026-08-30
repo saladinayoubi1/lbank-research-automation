@@ -140,8 +140,20 @@ jobs:
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           git clean -ffdx
 
-          tool_root="${RUNNER_TOOL_CACHE:-/opt/nexus-bybit-runner/_work/_tool}/Python"
-          python_bin="$(find "$tool_root" -type f -path '*/3.12.*/x64/bin/python' -perm -u+x 2>/dev/null | sort -V | tail -n 1)"
+          known_python="/opt/nexus-bybit-runner/_work/_tool/Python/3.12.14/x64/bin/python"
+          python_bin=""
+          if [ -x "$known_python" ]; then
+            python_bin="$known_python"
+          fi
+          if [ -z "$python_bin" ]; then
+            tool_root="${RUNNER_TOOL_CACHE:-/opt/nexus-bybit-runner/_work/_tool}"
+            if [ "$(basename "$tool_root")" = "Python" ]; then
+              python_root="$tool_root"
+            else
+              python_root="$tool_root/Python"
+            fi
+            python_bin="$(find "$python_root" -type f -path '*/3.12.*/x64/bin/python' 2>/dev/null | sort -V | tail -n 1 || true)"
+          fi
           if [ -z "$python_bin" ]; then
             echo "::error::No pre-provisioned CPython 3.12 exists on the physical runner."
             exit 1
@@ -149,6 +161,7 @@ jobs:
           "$python_bin" -c "import sys; assert sys.version_info[:2] == (3, 12), sys.version"
           printf 'PYTHON_BIN=%s\n' "$python_bin" >> "$GITHUB_ENV"
           printf 'NATIVE_PREPARED=true\n' >> "$GITHUB_ENV"
+          echo "physical_python_bin=$python_bin"
           echo "physical_checkout_sha=$(git rev-parse HEAD)"
 
       - name: Enforce eligible Bybit network execution plane
