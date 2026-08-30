@@ -1,7 +1,6 @@
 name: NEXUS WSL Host Runner Recovery
 
 on:
-  workflow_dispatch:
   push:
     branches: [main]
     paths:
