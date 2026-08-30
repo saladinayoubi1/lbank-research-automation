@@ -27,14 +27,14 @@
     "owner_override_required_for_priority_change": true
   },
   "runtime_status": {
-    "agent_execution_state": "trading_engine_first_current_exact_sha_demo_verified_physical_windows_final_proof_pending",
-    "laptop_state": "historical_physical_phase7_proof_verified_current_fixed_sha_physical_execution_required",
+    "agent_execution_state": "physical_execution_plane_recovered_exact_current_main_paper_acceptance_pending",
+    "laptop_state": "windows_dr_and_bybit_wsl_runners_recovered_recent_physical_paper_execution_verified",
     "internet_outage_state": "not_assumed_from_laptop_state",
     "laptop_offline_is_not_internet_outage": true,
-    "runner_registration_modified_by_phase7_cleanup": false,
-    "watchdog_required": false,
-    "self_heal_reintroduced": false,
-    "open_pull_requests_before_mission_lock_pr": 0
+    "runner_registration_modified_by_recent_recovery": false,
+    "scheduled_generic_windows_runtime_worker_disabled": true,
+    "watchdog_model": "windows_task_scheduler_hidden_powershell_to_wsl_run_sh",
+    "self_heal_authority_expanded": false
   },
   "data_policy": {
     "research_only": true,
@@ -49,7 +49,14 @@
     "deterministic_risk_final_authority": true,
     "primary_market_data_source": "Bybit",
     "secondary_market_data_source": "Binance",
-    "legacy_market_data_source": "LBank"
+    "legacy_market_data_source": "LBank",
+    "approved_bybit_mainnet_hosts": [
+      "api.bybit.com",
+      "api.bytick.com"
+    ],
+    "proxy_vpn_geographic_circumvention_allowed": false,
+    "testnet_substitution_allowed": false,
+    "cross_exchange_substitution_allowed_for_runtime_acceptance": false
   },
   "continuity": {
     "required_reads": [
@@ -79,84 +86,73 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "7820c7cb2ae79ccec5e4380bb9fd44430e7dd7f2",
-    "observed_at_utc": "2026-08-27T20:29:30Z",
-    "state_commit_relationship": "observed_main_sha is the exact main snapshot before this Mission Lock integration; merging this state necessarily advances main and the Project Memory validator permits only that direct one-hop integration before the snapshot becomes stale again",
+    "observed_main_sha": "0464c166954377816fb13c10248989e30f62ae8d",
+    "observed_at_utc": "2026-08-30T11:46:30Z",
+    "state_commit_relationship": "observed_main_sha is the exact authoritative main snapshot immediately before this bounded Project Memory reconciliation; the validator permits only the direct integration commit that changes canonical STATE.json before this snapshot becomes stale again",
     "latest_main_change": {
-      "pr": 1025,
-      "summary": "Canonical Project Memory was reconciled with synchronized regime/Paper integration and then exact-merge-SHA Demo proof was executed successfully on main.",
+      "pr": 1149,
+      "merge_sha": "0464c166954377816fb13c10248989e30f62ae8d",
+      "summary": "Removed the unrelated hourly scheduled claim on the physical Windows runner while preserving GitHub-hosted hourly preflight and explicit owner-dispatched Windows work.",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
-      "meaningful_operational_change_observed": true
+      "meaningful_operational_change_observed": true,
+      "authority_expansion_observed": false
     },
-    "same_sha_demo_proof": {
-      "status": "VERIFIED",
-      "source_sha": "7820c7cb2ae79ccec5e4380bb9fd44430e7dd7f2",
-      "workflow": "NEXUS Demo strategy matrix",
-      "run_id": 33106762868,
-      "artifact_id": 9660809840,
-      "artifact_name": "nexus-demo-strategy-matrix-state",
-      "verified_cell_count": 6,
+    "physical_execution_plane": {
+      "status": "RECOVERED_RUNTIME_ACCEPTANCE_PENDING",
+      "windows_dr_runner": "NEXUS-WINDOWS-DR",
+      "bybit_wsl_runner": "NEXUS-BYBIT-WSL",
+      "machine": "DESKTOP-1R1081M",
+      "bybit_label": "nexus-bybit-network",
+      "latest_physical_paper_run": 33306786196,
+      "latest_physical_paper_source_sha": "d0590f7841838e8661788dbad5d8505dd90ec155",
+      "latest_physical_paper_job": 99244698180,
+      "latest_state_artifact": 9730906556,
+      "latest_state_artifact_digest": "sha256:7d44bb69f55ef276eb434e81087d6c0beace8e6c36c3c6fec1af70bd064bfe7d",
+      "latest_physical_run_is_exact_current_main": false,
+      "reason_not_exact_current_main": "PR #1149 advanced main after the latest physical Paper run",
+      "scheduled_generic_windows_runtime_worker_disabled_by_pr": 1149,
+      "runner_registration_changed": false,
+      "user_action_required": false
+    },
+    "runtime_acceptance_gate": {
+      "issue": 1041,
+      "issue_state": "open",
+      "status": "WAITING_FOR_EXACT_CURRENT_MAIN_COMPLETE_6_CELL_PHYSICAL_EVIDENCE",
+      "latest_historical_fresh_cell_count": 4,
       "expected_cell_count": 6,
       "expected_lane_count": 18,
+      "latest_matrix_verified_cells": 5,
+      "latest_matrix_blocked_cells": 1,
+      "blocked_cell": "BTCUSDT:hour4",
+      "blocked_reason": "StrategyPaperSupervisorError after sanitized unclassified public Bybit HTTP 403 responses",
+      "historical_skipped_cell": "ETHUSDT:hour4",
+      "historical_skipped_reason": "SKIPPED_NO_NEW_BAR",
+      "regime_lifecycle_performance_discovery_replay_complete_on_exact_current_main": false,
+      "persistent_autonomous_closed_candle_loop_complete": false,
       "paper_only": true,
       "live_trading_authority": false,
       "private_credentials_used": false,
       "automatic_strategy_promotion": false,
-      "deterministic_risk_final_authority": true,
-      "frozen_prospective_hour4_lane_mutated": false,
-      "paper_position_maintenance": {
-        "closed_count": 0,
-        "held_count": 1,
-        "flat_count": 17,
-        "exposure_increased": false
-      },
-      "regime_result": {
-        "cells": 6,
-        "all_cells_cash_weight": "1.000000",
-        "safe_no_action_is_valid": true
-      }
-    },
-    "android_v4_release_evidence": {
-      "status": "verified_unsigned_non_production_build_evidence",
-      "pr": 1023,
-      "source_sha": "ab3c7491d7ee57458fb6cd3eb93fc012f12d4e6c",
-      "apk_name": "NEXUS_PERSONAL_PRO_4_0_0.apk",
-      "apk_sha256": "c1776964b956dedc306ae6cac031c9646676937b80844097e327f2bb2471974e",
-      "artifact_manifest": true,
-      "cyclonedx_sbom": true,
-      "provenance": true,
-      "release_gate": "pass_for_ci_build_evidence_only",
-      "production_approval": false
-    },
-    "integration_cycle": {
-      "status": "stages_6_7_operational_stage_8_cloud_exact_sha_demo_verified_physical_windows_pending",
-      "strategy_paper_supervisor_pr": 956,
-      "paper_drift_quarantine_pr": 957,
-      "paper_mission_control_pr": 958,
-      "regime_selector_runtime_pr": 987,
-      "regime_runtime_drift_pr": 988,
-      "demo_matrix_pr": 996,
-      "demo_state_recovery_pr": 1003,
-      "regime_lane_adapter_pr": 1004,
-      "synchronized_regime_cycle_pr": 1016,
-      "final_proof_regime_binding_pr": 1017,
-      "exact_sha_final_candidate_trigger_pr": 1018,
-      "android_release_evidence_pr": 1023,
-      "release_to_demo_exact_sha_trigger_pr": 1024,
-      "project_memory_reconciliation_pr": 1025,
-      "paper_only": true,
-      "live_trading_authority": false,
-      "remaining_acceptance": "Mission Lock makes the persistent autonomous Paper trading loop the first delivery priority. Physical Windows exact-SHA proof remains a supporting acceptance gate. The prospective Paper gate #984 must independently accumulate its real 30-day/180-bar window. Production gate #43 remains deny-by-default."
+      "deterministic_risk_final_authority": true
     },
     "multitimeframe_strategy_runtime": {
-      "status": "operational_components_persistent_autonomous_portfolio_loop_not_yet_claimed_complete",
-      "symbols": ["BTCUSDT", "ETHUSDT"],
-      "timeframes": ["minute15", "hour1", "hour4"],
-      "families": ["momentum", "trend_breakout", "mean_reversion"],
+      "status": "operational_components_persistent_autonomous_portfolio_loop_not_yet_accepted_complete",
+      "symbols": [
+        "BTCUSDT",
+        "ETHUSDT"
+      ],
+      "timeframes": [
+        "minute15",
+        "hour1",
+        "hour4"
+      ],
+      "families": [
+        "momentum",
+        "trend_breakout",
+        "mean_reversion"
+      ],
       "comparison_surface": "2 symbols x 3 timeframes x 3 strategy families = 18 isolated comparison lanes",
-      "immutable_archive_artifact_id": 8867026863,
-      "immutable_archive_sha256": "5f1173467c2296201940c3b7786b7cc3e5442244e07289769ab4867ace41d668",
       "persistent_autonomous_closed_candle_loop_complete": false,
       "continuous_strategy_factory_required": true,
       "paper_only": true,
@@ -166,11 +162,7 @@
     },
     "strategy_discovery": {
       "status": "integrated_research_only_continuous_discovery_required_by_mission_lock",
-      "discovery_pr": 1013,
-      "archive_binding_pr": 1014,
       "scope": "BTCUSDT/ETHUSDT x minute15/hour1/hour4 x momentum/trend_breakout/mean_reversion",
-      "selection": "training_only",
-      "challenge": "locked chronological holdout with conservative and stress costs",
       "output_authority": "RESEARCH_PROPOSAL_ONLY",
       "independent_runtime_requalification_required": true,
       "automatic_candidate_or_paper_promotion": false,
@@ -184,48 +176,45 @@
       "start_not_before": "2026-08-26T00:00:00Z",
       "required_elapsed_days": 30,
       "required_completed_hour4_bars": 180,
-      "verified_completed_hour4_bars": 8,
-      "latest_verified_execution": "2026-08-27T04:00:00Z",
-      "latest_verified_workflow_run": 33060482522,
-      "latest_verified_artifact_id": 9641486969,
-      "latest_verified_artifact_digest": "sha256:bbb5f02ea9572d55f8f70879828146b8ee0a5b4366c860d49bfbe96a8c32e431",
-      "orders": 0,
-      "fills": 0,
+      "verified_completed_hour4_bars": 24,
+      "latest_verified_execution": "2026-08-29T20:00:00Z",
+      "latest_verified_workflow_run": 33283170534,
+      "latest_verified_source_sha": "d35c59692250447c7a5e1390e92de3e45c3b8cc7",
+      "latest_verified_artifact_id": 9723597334,
+      "latest_verified_state_digest": "efc435cb2835a3174741f8c26e1b4f1f1d4b43f4b9dc55c526a59593c74a58b2",
+      "latest_verified_artifact_digest": "sha256:a6672616632d36319403da8004979f2f0217e7ca108af993a716c9c24f057cac",
       "paper_only": true,
       "live_trading_authority": false,
       "private_credentials_used": false,
       "automatic_live_promotion": false,
       "may_be_accelerated_or_fabricated": false
     },
-    "final_proof_candidate": {
-      "status": "cloud_and_demo_exact_sha_evidence_verified_physical_windows_execution_pending",
-      "observed_parent_sha": "7820c7cb2ae79ccec5e4380bb9fd44430e7dd7f2",
-      "regime_cycle_required": true,
-      "windows_physical_execution_required": true,
-      "historical_windows_proof_reusable_for_new_sha": false,
-      "paper_only": true,
-      "live_trading_authority": false
+    "historical_phase7_physical_proof": {
+      "status": "VERIFIED_HISTORICAL_ACCEPTANCE",
+      "reusable_as_exact_current_runtime_acceptance": false,
+      "note": "Historical Phase 7 physical proof remains valid historical provenance but does not replace the exact-current-main runtime gate in issue #1041."
     }
   },
   "open_gates": {
     "primary_delivery": {
       "state": "open",
-      "reason": "persistent autonomous multi-pair x multi-timeframe x multi-strategy Paper portfolio loop must be completed before support work can dominate"
+      "reason": "persistent autonomous multi-pair x multi-timeframe x multi-strategy Paper portfolio loop must be accepted end-to-end on exact current main before completion is claimed"
+    },
+    "runtime_acceptance": {
+      "issue": 1041,
+      "state": "open",
+      "reason": "requires one exact-current-main physical Paper run with all 6 fresh cells and downstream Regime/lifecycle/performance/discovery/replay evidence"
     },
     "prospective_paper": {
       "issue": 984,
       "state": "open",
-      "reason": "hard real-time acceptance gate; verified evidence is 8/180 hour4 bars and less than 30 elapsed days"
+      "reason": "hard real-time acceptance gate; latest verified evidence is 24/180 hour4 bars and less than 30 elapsed days"
     },
     "production_release": {
       "issue": 43,
       "state": "open",
       "deny_by_default": true,
       "reason": "production signing identity/trust root/key custody/environment approval and human go-no-go remain intentionally ungranted"
-    },
-    "physical_windows_final_proof": {
-      "state": "required_before_installation_acceptance",
-      "reason": "historical Phase 7 physical proof cannot be reused for a newer source SHA"
     }
   },
   "authority": {
@@ -244,9 +233,9 @@
   },
   "history_compaction": {
     "compacted": true,
-    "reason": "Replace stale operational assertions with a bounded current snapshot while preserving the complete prior STATE through immutable Git history.",
-    "prior_state_blob_sha": "ef0b6f8c813b5d906a26b21eb5eaa64ea32512ff",
-    "prior_state_observed_main_sha": "b21df8e6e06b930a5267adea1c8a5806094aba40",
+    "reason": "Refresh the bounded current operational snapshot after runner recovery and PR #1149 while preserving all prior STATE detail through immutable Git history.",
+    "prior_state_blob_sha": "5ed4e40eee4746db80d70f3e7c02c6dd9aafee68",
+    "prior_state_observed_main_sha": "7820c7cb2ae79ccec5e4380bb9fd44430e7dd7f2",
     "historical_detail_preserved_via_git_history": true,
     "do_not_treat_compaction_as_authority_expansion": true
   }
