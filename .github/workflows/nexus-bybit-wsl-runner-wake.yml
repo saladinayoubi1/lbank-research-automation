@@ -2,6 +2,8 @@ name: NEXUS Bybit WSL Runner Wake
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '11,41 * * * *'
   push:
     branches: [main]
     paths:
@@ -10,7 +12,10 @@ on:
 
 # Bootstrap-safe recovery path: the physical Windows runner wakes the already
 # configured WSL Bybit runner. This workflow never registers or replaces a
-# GitHub runner and never changes Paper/Live trading authority.
+# GitHub runner and never changes Paper/Live trading authority. The scheduled
+# probe is safe while the physical runner is offline because concurrency keeps
+# only the current wake attempt; once Windows is back, WSL is recovered without
+# requiring another manual workflow dispatch.
 permissions:
   contents: read
 
@@ -20,7 +25,7 @@ concurrency:
 
 jobs:
   wake:
-    if: (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') || (github.event_name == 'push' && contains(github.event.head_commit.message, '[wake-bybit-wsl]'))
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') || (github.event_name == 'push' && contains(github.event.head_commit.message, '[wake-bybit-wsl]'))
     runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 15
     defaults:
