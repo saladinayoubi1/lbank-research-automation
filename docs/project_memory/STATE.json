@@ -90,7 +90,7 @@
       "meaningful_operational_change_observed": true
     },
     "same_sha_demo_proof": {
-      "status": "VERIFIED_HISTORICAL",
+      "status": "VERIFIED",
       "source_sha": "7820c7cb2ae79ccec5e4380bb9fd44430e7dd7f2",
       "workflow": "NEXUS Demo strategy matrix",
       "run_id": 33106762868,
@@ -224,7 +224,7 @@
       "reason": "production signing identity/trust root/key custody/environment approval and human go-no-go remain intentionally ungranted"
     },
     "physical_windows_final_proof": {
-      "state": "execution_plane_verified_runtime_acceptance_still_required",
+      "state": "required_before_installation_acceptance",
       "reason": "physical Windows/WSL execution is proven, but historical proof and the 4/6 fresh-cell run cannot substitute for the exact-current-main 6-cell runtime acceptance required by issue #1041"
     }
   },
