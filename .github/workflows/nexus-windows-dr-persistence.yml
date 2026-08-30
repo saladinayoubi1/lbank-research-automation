@@ -1,0 +1,65 @@
+name: NEXUS Windows DR Persistence
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - scripts/install_nexus_windows_dr_autostart.ps1
+      - .github/workflows/nexus-windows-dr-persistence.yml
+  schedule:
+    - cron: '7,27,47 * * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nexus-windows-dr-persistence
+  cancel-in-progress: true
+
+jobs:
+  persist:
+    if: github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: cmd
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 1
+
+      - name: Verify exact trigger SHA
+        run: |
+          for /f %%S in ('git rev-parse HEAD') do set "CHECKED_OUT_SHA=%%S"
+          if /I not "%CHECKED_OUT_SHA%"=="%GITHUB_SHA%" exit /b 1
+          echo exact_trigger_sha=%CHECKED_OUT_SHA%
+
+      - name: Parse targeted Windows DR persistence script
+        run: >-
+          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command
+          "$tokens=$null;$errors=$null;[void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path 'scripts\install_nexus_windows_dr_autostart.ps1'),[ref]$tokens,[ref]$errors);if($errors.Count -gt 0){$errors | ForEach-Object { Write-Error $_.Message };exit 1}"
+
+      - name: Install persistence only when claimed by NEXUS-WINDOWS-DR
+        run: >-
+          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass
+          -File scripts\install_nexus_windows_dr_autostart.ps1
+          -Mode Install
+          -RunnerRoot "C:\actions-runner\actions-runner"
+          -ExpectedRunnerName "NEXUS-WINDOWS-DR"
+          -ExpectedGitHubUrl "https://github.com/saladinayoubi1/lbank-research-automation"
+          -OutputPath "build\windows-dr-autostart\evidence.json"
+
+      - name: Upload sanitized persistence evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-windows-dr-persistence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: build/windows-dr-autostart/evidence.json
+          if-no-files-found: error
+          retention-days: 14
