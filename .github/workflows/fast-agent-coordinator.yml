@@ -71,6 +71,7 @@ jobs:
       - name: Recover stale persistent Paper schedule without widening authority
         run: >-
           python paper_schedule_watchdog.py
+          --stale-minutes 30
           --output data/agent_coordination/paper_schedule_watchdog.json
 
       - name: Export portable Mission Control snapshot
