@@ -245,12 +245,11 @@ jobs:
 
   laptop-worker:
     if: >-
-      github.event_name != 'pull_request' &&
-      (github.event_name != 'workflow_dispatch' ||
-       (github.actor == github.repository_owner &&
-        github.ref_name == github.event.repository.default_branch &&
-        (github.event.inputs.payload_b64 == '' ||
-         github.event.inputs.transport == 'windows')))
+      github.event_name == 'workflow_dispatch' &&
+      github.actor == github.repository_owner &&
+      github.ref_name == github.event.repository.default_branch &&
+      (github.event.inputs.payload_b64 == '' ||
+       github.event.inputs.transport == 'windows')
     needs: preflight
     runs-on: [self-hosted, Windows]
     timeout-minutes: 58
@@ -292,10 +291,6 @@ jobs:
           path: ${{ env.RESULT_PATH }}
           if-no-files-found: error
           retention-days: 14
-      - name: Run scheduled NEXUS worker once
-        if: github.event_name == 'schedule'
-        shell: cmd
-        run: node scripts\nexus_runtime_worker.js --once
       - name: Start continuous NEXUS worker on explicit request
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.payload_b64 == ''
         shell: cmd
