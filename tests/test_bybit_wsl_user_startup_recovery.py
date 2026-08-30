@@ -38,11 +38,23 @@ def test_recovery_uses_per_user_startup_and_bounded_watchdog() -> None:
     assert "BybitWSLUserStartup" in text
     assert "-Mode Watch" in text
     assert "Start-Sleep -Seconds 15" in text
-    assert "Local\\NEXUS-Bybit-WSL-Watchdog-" in text
+    assert "Local\\NEXUS-Bybit-WSL-Watchdog-v" in text
+    assert "$watchdogGeneration = 2" in text
     assert "pgrep -f '$RunnerRoot/bin/[R]unner.Listener'" in text
     assert "nohup ./run.sh" in text
     assert "RUNNER_ALLOW_RUNASROOT=1" in text
     assert "RUNNER_TRACKING_ID=" in text
+
+
+def test_wsl_interop_is_timeout_bounded_and_stale_generation_cannot_block_repair() -> None:
+    text = _text()
+    assert "$wslTimeoutMilliseconds = 10000" in text
+    assert "WaitForExit($wslTimeoutMilliseconds)" in text
+    assert "exit_code = 124" in text
+    assert "wsl_timeout" in text
+    assert "listener_probe_timeout=true" in text
+    assert "watchdog_generation = $watchdogGeneration" in text
+    assert "wsl_call_timeout_seconds" in text
 
 
 def test_recovery_startup_launcher_is_fully_hidden() -> None:
