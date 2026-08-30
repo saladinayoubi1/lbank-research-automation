@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - scripts/capture_nexus_bybit_wsl_runner_diagnostics.ps1
+      - scripts/run_nexus_bybit_wsl_runner_diagnostics.ps1
       - .github/workflows/nexus-bybit-wsl-runner-diagnostics.yml
   workflow_run:
     workflows: ["NEXUS persistent Paper trading loop"]
@@ -37,7 +38,7 @@ jobs:
           $sourceRunId = if ($env:SOURCE_RUN_ID) { $env:SOURCE_RUN_ID } else { $env:GITHUB_RUN_ID }
           $sourceSha = if ($env:SOURCE_HEAD_SHA) { $env:SOURCE_HEAD_SHA } else { $env:GITHUB_SHA }
           $sourceConclusion = if ($env:SOURCE_CONCLUSION) { $env:SOURCE_CONCLUSION } else { 'diagnostic_push' }
-          .\scripts\capture_nexus_bybit_wsl_runner_diagnostics.ps1 `
+          .\scripts\run_nexus_bybit_wsl_runner_diagnostics.ps1 `
             -SourceRunId $sourceRunId `
             -SourceSha $sourceSha `
             -SourceConclusion $sourceConclusion
