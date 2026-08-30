@@ -4,6 +4,10 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '*/5 * * * *'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fast-agent-coordinator.yml'
 
 permissions:
   contents: read
@@ -20,6 +24,21 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
+      - name: Release stale WSL recovery lock on explicit recovery commit
+        if: github.event_name == 'push' && contains(github.event.head_commit.message, '[recover-wsl-runner-lock]')
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t stale_ids < <(
+            gh api --paginate "repos/$GITHUB_REPOSITORY/actions/workflows/345630835/runs?per_page=100" \
+              --jq '[.workflow_runs[] | select(.status == "in_progress" or .status == "queued" or .status == "pending")] | sort_by(.created_at) | reverse | .[1:][] | .id'
+          )
+          for run_id in "${stale_ids[@]}"; do
+            [ -z "$run_id" ] && continue
+            echo "cancelling_stale_wsl_recovery_run=$run_id"
+            gh api --method POST "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/cancel" || true
+          done
+
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
