@@ -171,31 +171,30 @@ def stale_predecessor_candidates(
     stale_minutes: int,
     current_sha: str | None,
 ) -> list[dict[str, Any]]:
-    """Return only old unstarted runs that can block a newer exact-main run.
+    """Return only stale unstarted predecessors behind a newer unstarted run.
 
-    The newest run must already be active on the current SHA. This prevents the
-    cleanup path from manufacturing a new run or cancelling the current proof.
+    The newest workflow run must itself still be unstarted. Its SHA may be one
+    or more main commits behind the coordinator's current SHA because main can
+    advance after the Paper run was dispatched. We never cancel that newest run;
+    only older stale unstarted runs can be selected as blockers.
     """
-    if not current_sha or len(runs) < 2:
+    if len(runs) < 2:
         return []
 
     newest = runs[0]
     newest_status = str(newest.get("status") or "").lower()
-    newest_sha = str(newest.get("head_sha") or "")
-    if newest_status not in ACTIVE_STATUSES or newest_sha != current_sha:
+    newest_id = newest.get("id")
+    if newest_status not in UNSTARTED_STATUSES or not isinstance(newest_id, int):
         return []
 
     candidates: list[dict[str, Any]] = []
     for run in runs[1:]:
         status = str(run.get("status") or "").lower()
-        head_sha = str(run.get("head_sha") or "")
         run_id = run.get("id")
         age_minutes = run_age_minutes(run, now=now)
         if status not in UNSTARTED_STATUSES:
             continue
-        if not head_sha or head_sha == current_sha:
-            continue
-        if not isinstance(run_id, int) or age_minutes is None:
+        if not isinstance(run_id, int) or run_id == newest_id or age_minutes is None:
             continue
         if age_minutes <= stale_minutes:
             continue
@@ -203,10 +202,13 @@ def stale_predecessor_candidates(
             {
                 "id": run_id,
                 "status": status,
-                "head_sha": head_sha,
+                "head_sha": run.get("head_sha"),
                 "created_at": run.get("created_at"),
                 "age_minutes": round(age_minutes, 3),
                 "html_url": run.get("html_url"),
+                "newest_run_id": newest_id,
+                "newest_head_sha": newest.get("head_sha"),
+                "coordinator_current_sha": current_sha,
             }
         )
     return candidates
@@ -295,7 +297,7 @@ def watch_once(*, stale_minutes: int = DEFAULT_STALE_MINUTES) -> dict[str, Any]:
         current_sha=current_sha,
     )
     evidence: dict[str, Any] = {
-        "schema_version": 3,
+        "schema_version": 4,
         "generated_at_utc": now.isoformat(),
         "repo": REPO,
         "workflow": WORKFLOW,
@@ -369,7 +371,7 @@ def watch_once(*, stale_minutes: int = DEFAULT_STALE_MINUTES) -> dict[str, Any]:
         )
         evidence["after_predecessor_recovery"] = refreshed
         if refreshed["decision"] == "HEALTHY_ACTIVE_RUN":
-            evidence["decision"] = "STALE_PREDECESSORS_CANCELLED_CURRENT_ACTIVE"
+            evidence["decision"] = "STALE_PREDECESSORS_CANCELLED_NEWEST_ACTIVE"
             return evidence
         first_runs = refreshed_runs
         first = refreshed
@@ -445,7 +447,7 @@ def main() -> int:
         evidence = watch_once(stale_minutes=stale_minutes)
     except Exception as exc:  # fail closed while preserving coordinator evidence
         evidence = {
-            "schema_version": 3,
+            "schema_version": 4,
             "generated_at_utc": utcnow().isoformat(),
             "repo": REPO,
             "workflow": WORKFLOW,
