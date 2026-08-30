@@ -19,6 +19,15 @@ def test_persistent_loop_runs_on_closed_candle_cadence_and_restores_state() -> N
     assert "if: always()" in text
 
 
+def test_pr_contract_concurrency_isolated_from_serial_main_paper_runtime() -> None:
+    text = WORKFLOW.read_text(encoding="utf-8")
+    concurrency = text.split("concurrency:", 1)[1].split("jobs:", 1)[0]
+    assert "github.event_name == 'pull_request'" in concurrency
+    assert "github.event.pull_request.number" in concurrency
+    assert "|| 'main'" in concurrency
+    assert "cancel-in-progress: false" in concurrency
+
+
 def test_persistent_loop_is_public_data_not_historical_archive_replay() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     for forbidden in (
@@ -74,6 +83,19 @@ def test_wsl1_node20_compatibility_exception_is_scoped_to_physical_paper_job() -
     assert "actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065" in paper
     assert "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02" in paper
     assert "Node 24 Linux binaries fail with Exec format error on WSL1" in paper
+
+
+def test_wsl1_python_selection_avoids_network_cache_restore_and_checks_version() -> None:
+    text = WORKFLOW.read_text(encoding="utf-8")
+    contract, paper = text.split("  paper-loop:", 1)
+    assert "cache: pip" in contract
+    assert "Select pre-provisioned Python 3.12 without cache restore" in paper
+    setup = paper.split("Select pre-provisioned Python 3.12 without cache restore", 1)[1].split(
+        "Enforce eligible Bybit network execution plane", 1
+    )[0]
+    assert 'python-version: "3.12"' in setup
+    assert "cache: pip" not in setup
+    assert "sys.version_info[:2] == (3, 12)" in paper
 
 
 def test_wsl1_state_restore_uses_python_stdlib_not_unprovisioned_cli_tools() -> None:
