@@ -1,0 +1,321 @@
+name: NEXUS Paper boundary discovery feedback
+
+on:
+  workflow_run:
+    workflows: ["NEXUS persistent Paper trading loop"]
+    types: [completed]
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - "nexus_paper_boundary_discovery_feedback.py"
+      - "tests/test_nexus_paper_boundary_discovery_feedback.py"
+      - "tests/test_nexus_paper_boundary_discovery_feedback_workflow.py"
+      - ".github/workflows/nexus_paper_boundary_discovery_feedback.yml"
+  push:
+    branches: [main]
+    paths:
+      - "nexus_paper_boundary_discovery_feedback.py"
+      - "tests/test_nexus_paper_boundary_discovery_feedback.py"
+      - "tests/test_nexus_paper_boundary_discovery_feedback_workflow.py"
+      - ".github/workflows/nexus_paper_boundary_discovery_feedback.yml"
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: nexus-paper-boundary-discovery-feedback-${{ github.event.workflow_run.id || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  contract-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements-dev.lock
+      - run: python -m pip check
+      - name: Verify exact Paper boundary feedback contracts
+        run: >-
+          python -m pytest -q
+          tests/test_nexus_paper_boundary_discovery_feedback.py
+          tests/test_nexus_paper_boundary_discovery_feedback_workflow.py
+
+  gate-paper-boundary:
+    if: >-
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main'
+    needs: contract-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TRIGGER_RUN_ID: ${{ github.event.workflow_run.id }}
+      TRIGGER_SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+      PAPER_STATE_ARTIFACT: nexus-persistent-paper-trading-state
+    outputs:
+      should_dispatch: ${{ steps.health.outputs.should_dispatch }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements.lock
+      - run: python -m pip check
+      - name: Restore exact triggering Paper artifact
+        run: |
+          set -euo pipefail
+          rm -rf build/paper-boundary-feedback build/trigger-paper.zip
+          mkdir -p build/paper-boundary-feedback/trigger-state
+          artifact_id="$(gh api \
+            -H 'Accept: application/vnd.github+json' \
+            "repos/$GITHUB_REPOSITORY/actions/runs/$TRIGGER_RUN_ID/artifacts?per_page=100" \
+            --jq ".artifacts[] | select(.name == \"$PAPER_STATE_ARTIFACT\") | .id" \
+            | head -n 1)"
+          test -n "$artifact_id"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" \
+            > build/trigger-paper.zip
+          unzip -q build/trigger-paper.zip -d build/paper-boundary-feedback/trigger-state
+          snapshot="$(find build/paper-boundary-feedback/trigger-state -type f \
+            -path '*/demo/persistent-paper-trading-loop.json' -print -quit)"
+          matrix="$(find build/paper-boundary-feedback/trigger-state -type f \
+            -name matrix-state.json -print -quit)"
+          test -n "$snapshot"
+          test -n "$matrix"
+          printf '%s\n' "$snapshot" > build/paper-boundary-feedback/snapshot-path.txt
+          printf '%s\n' "$matrix" > build/paper-boundary-feedback/matrix-path.txt
+      - name: Verify health-driven dispatch requirement
+        id: health
+        run: |
+          set -euo pipefail
+          python nexus_strategy_discovery_health_trigger.py \
+            --loop-snapshot "$(cat build/paper-boundary-feedback/snapshot-path.txt)" \
+            --output build/paper-boundary-feedback/health-trigger.json
+          should_dispatch="$(python -c 'import json; print(str(json.load(open("build/paper-boundary-feedback/health-trigger.json"))["should_dispatch"]).lower())')"
+          echo "should_dispatch=$should_dispatch" >> "$GITHUB_OUTPUT"
+      - name: Bind exact verified BTC/ETH 4h boundary
+        if: steps.health.outputs.should_dispatch == 'true'
+        run: |
+          set -euo pipefail
+          python nexus_paper_boundary_discovery_feedback.py context \
+            --loop-snapshot "$(cat build/paper-boundary-feedback/snapshot-path.txt)" \
+            --matrix-state "$(cat build/paper-boundary-feedback/matrix-path.txt)" \
+            --output build/paper-boundary-feedback/boundary-context.json
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from nexus_paper_boundary_discovery_feedback import verify_boundary_context
+          path = Path("build/paper-boundary-feedback/boundary-context.json")
+          value = json.loads(path.read_text())
+          verification = verify_boundary_context(value)
+          assert verification["decision"] == "pass", verification
+          assert value["source_sha"] == os.environ["TRIGGER_SOURCE_SHA"]
+          assert value["paper_run_id"] == os.environ["TRIGGER_RUN_ID"]
+          print(json.dumps({
+              "hour4_boundary_ms": value["hour4_boundary_ms"],
+              "hour4_boundary_digest": value["hour4_boundary_digest"],
+              "context_digest": value["context_digest"],
+          }, sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: steps.health.outputs.should_dispatch == 'true'
+        with:
+          name: nexus-paper-boundary-context-${{ github.run_id }}
+          path: |
+            build/paper-boundary-feedback/boundary-context.json
+            build/paper-boundary-feedback/health-trigger.json
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+  discover-boundary-proposals:
+    if: needs.gate-paper-boundary.outputs.should_dispatch == 'true'
+    needs: gate-paper-boundary
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TRIGGER_SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+      CONTEXT_ARTIFACT: nexus-paper-boundary-context-${{ github.run_id }}
+      IMMUTABLE_ARCHIVE_ARTIFACT_ID: "8867026863"
+      EXPECTED_ARCHIVE_SHA256: "5f1173467c2296201940c3b7786b7cc3e5442244e07289769ab4867ace41d668"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements-dev.lock
+      - run: python -m pip check
+      - name: Restore exact Paper boundary context from this run
+        run: |
+          set -euo pipefail
+          rm -rf build/boundary-context build/context.zip
+          mkdir -p build/boundary-context
+          artifact_id="$(gh api \
+            -H 'Accept: application/vnd.github+json' \
+            "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100" \
+            --jq ".artifacts[] | select(.name == \"$CONTEXT_ARTIFACT\") | .id" \
+            | head -n 1)"
+          test -n "$artifact_id"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" > build/context.zip
+          unzip -q build/context.zip -d build/boundary-context
+          context="$(find build/boundary-context -type f -name boundary-context.json -print -quit)"
+          test -n "$context"
+          printf '%s\n' "$context" > build/context-path.txt
+      - name: Restore immutable Bybit archive
+        run: |
+          set -euo pipefail
+          rm -rf build/final_delivery build/bybit_dataset build/final_delivery.zip
+          mkdir -p build/final_delivery build/bybit_dataset
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$IMMUTABLE_ARCHIVE_ARTIFACT_ID/zip" \
+            > build/final_delivery.zip
+          unzip -q build/final_delivery.zip -d build/final_delivery
+          archive="build/final_delivery/BYBIT_full_history_2022-12-01_to_2026-07-31.zip"
+          test "$(sha256sum "$archive" | awk '{print $1}')" = "$EXPECTED_ARCHIVE_SHA256"
+          unzip -q "$archive" -d build/bybit_dataset
+      - name: Run leakage-resistant Strategy Discovery at exact Paper source SHA
+        run: |
+          set -euo pipefail
+          rm -rf build/nexus_multitimeframe_strategy_discovery
+          python nexus_multitimeframe_verified_archive_discovery.py \
+            --manifest experiments/nexus_multitimeframe_strategy_discovery_v1.json \
+            --source-sha "$TRIGGER_SOURCE_SHA" \
+            --output build/nexus_multitimeframe_strategy_discovery
+          cp "$(cat build/context-path.txt)" \
+            build/nexus_multitimeframe_strategy_discovery/paper-boundary-context.json
+      - name: Verify discovery and exact source binding
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from nexus_multitimeframe_strategy_discovery import verify_discovery
+          from nexus_paper_boundary_discovery_feedback import verify_boundary_context
+          root = Path("build/nexus_multitimeframe_strategy_discovery")
+          discovery = json.loads((root / "multitimeframe_strategy_discovery.json").read_text())
+          context = json.loads((root / "paper-boundary-context.json").read_text())
+          assert verify_discovery(discovery)["decision"] == "pass"
+          assert verify_boundary_context(context)["decision"] == "pass"
+          assert discovery["source_sha"] == os.environ["TRIGGER_SOURCE_SHA"]
+          assert context["source_sha"] == discovery["source_sha"]
+          assert discovery["research_only"] is True
+          assert discovery["paper_only"] is True
+          assert discovery["live_trading_authority"] is False
+          assert discovery["automatic_strategy_promotion"] is False
+          assert discovery["automatic_paper_forward_started"] is False
+          print(json.dumps({
+              "paper_context_digest": context["context_digest"],
+              "discovery_digest": discovery["discovery_digest"],
+              "proposal_count": discovery["research_proposal_count"],
+          }, sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-paper-boundary-discovery-${{ github.run_id }}
+          path: build/nexus_multitimeframe_strategy_discovery
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+  requalify-boundary-proposals:
+    if: needs.gate-paper-boundary.outputs.should_dispatch == 'true'
+    needs: [gate-paper-boundary, discover-boundary-proposals]
+    runs-on: nexus-bybit-network
+    timeout-minutes: 55
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TRIGGER_SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+      DISCOVERY_ARTIFACT: nexus-paper-boundary-discovery-${{ github.run_id }}
+      OUTPUT_ROOT: build/nexus_paper_boundary_discovery_feedback
+      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 1
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Enforce eligible Bybit network execution plane
+        run: >-
+          python -c "assert '${{ runner.environment }}' == 'self-hosted'; assert '${{ runner.os }}' == 'Linux'; print('bybit_network_execution_plane=self-hosted:nexus-bybit-network')"
+      - run: python -m pip install -r requirements.lock
+      - run: python -m pip check
+      - name: Restore exact same-run Discovery evidence
+        run: |
+          set -euo pipefail
+          rm -rf build/discovery-trigger build/discovery-trigger.zip "$OUTPUT_ROOT"
+          mkdir -p build/discovery-trigger "$OUTPUT_ROOT"
+          artifact_id="$(gh api \
+            -H 'Accept: application/vnd.github+json' \
+            "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100" \
+            --jq ".artifacts[] | select(.name == \"$DISCOVERY_ARTIFACT\") | .id" \
+            | head -n 1)"
+          test -n "$artifact_id"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" \
+            > build/discovery-trigger.zip
+          unzip -q build/discovery-trigger.zip -d build/discovery-trigger
+          discovery="$(find build/discovery-trigger -type f -name multitimeframe_strategy_discovery.json -print -quit)"
+          queue="$(find build/discovery-trigger -type f -name research_proposals.json -print -quit)"
+          context="$(find build/discovery-trigger -type f -name paper-boundary-context.json -print -quit)"
+          test -n "$discovery"
+          test -n "$queue"
+          test -n "$context"
+          printf '%s\n' "$discovery" > build/discovery-path.txt
+          printf '%s\n' "$queue" > build/queue-path.txt
+          printf '%s\n' "$context" > build/context-path.txt
+          cp "$context" "$OUTPUT_ROOT/paper-boundary-context.json"
+      - name: Requalify proposals on canonical public closed Bybit data
+        run: |
+          set -euo pipefail
+          python nexus_strategy_proposal_runtime_requalification.py \
+            --discovery "$(cat build/discovery-path.txt)" \
+            --queue "$(cat build/queue-path.txt)" \
+            --source-sha "$TRIGGER_SOURCE_SHA" \
+            --discovery-source-sha "$TRIGGER_SOURCE_SHA" \
+            --state-root "$OUTPUT_ROOT/state" \
+            --output "$OUTPUT_ROOT/runtime-requalification.json"
+      - name: Require exact Paper 4h boundary coverage
+        run: |
+          set -euo pipefail
+          python nexus_paper_boundary_discovery_feedback.py feedback \
+            --context "$(cat build/context-path.txt)" \
+            --discovery "$(cat build/discovery-path.txt)" \
+            --requalification "$OUTPUT_ROOT/runtime-requalification.json" \
+            --output "$OUTPUT_ROOT/paper-boundary-discovery-feedback.json"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: nexus-paper-boundary-discovery-feedback-${{ github.run_id }}
+          path: build/nexus_paper_boundary_discovery_feedback
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
