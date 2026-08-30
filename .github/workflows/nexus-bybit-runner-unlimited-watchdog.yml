@@ -1,0 +1,97 @@
+name: NEXUS Bybit Runner Unlimited Watchdog
+
+on:
+  push:
+    branches:
+      - ops/bybit-runner-unlimited-watchdog-20260830
+    paths:
+      - .github/workflows/nexus-bybit-runner-unlimited-watchdog.yml
+
+permissions:
+  contents: read
+
+jobs:
+  repair:
+    runs-on: [nexus-bybit-network]
+    timeout-minutes: 10
+    steps:
+      - name: Install unlimited Windows watchdog from elevated WSL host
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/nexus-bybit-watchdog-repair.ps1 <<'PS1'
+          $ErrorActionPreference = 'Stop'
+          $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+          $principalCheck = New-Object Security.Principal.WindowsPrincipal($identity)
+          $isAdmin = $principalCheck.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+          Write-Host "windows_identity=$($identity.Name)"
+          Write-Host "administrator=$($isAdmin.ToString().ToLowerInvariant())"
+          if (-not $isAdmin) { throw 'Elevated Windows token is required for Task Scheduler repair.' }
+
+          $root = 'C:\ProgramData\NEXUS\BybitWSL'
+          $watchdogPath = Join-Path $root 'watchdog.ps1'
+          New-Item -ItemType Directory -Path $root -Force | Out-Null
+
+          $watchdog = @'
+          $ErrorActionPreference = 'Continue'
+          $wsl = Join-Path $env:SystemRoot 'System32\wsl.exe'
+          & $wsl -d Ubuntu -u root -- bash -lc "pgrep -f '/opt/nexus-bybit-runner/bin/[R]unner.Listener' >/dev/null 2>&1"
+          if ($LASTEXITCODE -ne 0) {
+              & $wsl -d Ubuntu -u root -- bash -lc "cd /opt/nexus-bybit-runner && export RUNNER_ALLOW_RUNASROOT=1 && nohup ./run.sh >>/tmp/nexus-bybit-runner.log 2>&1 </dev/null &"
+              Start-Sleep -Seconds 3
+              & $wsl -d Ubuntu -u root -- bash -lc "pgrep -f '/opt/nexus-bybit-runner/bin/[R]unner.Listener' >/dev/null 2>&1"
+              if ($LASTEXITCODE -ne 0) { exit 1 }
+          }
+          exit 0
+          '@
+          [IO.File]::WriteAllText($watchdogPath, $watchdog, (New-Object Text.UTF8Encoding($false)))
+
+          $service = New-Object -ComObject 'Schedule.Service'
+          $service.Connect()
+          $folder = $service.GetFolder('\')
+          $taskName = 'NEXUS Bybit WSL Runner Persistent'
+          $definition = $service.NewTask(0)
+          $definition.RegistrationInfo.Description = 'Unlimited battery-safe NEXUS Bybit WSL runner watchdog.'
+          $definition.Settings.Enabled = $true
+          $definition.Settings.StartWhenAvailable = $true
+          $definition.Settings.DisallowStartIfOnBatteries = $false
+          $definition.Settings.StopIfGoingOnBatteries = $false
+          $definition.Settings.ExecutionTimeLimit = 'PT0S'
+          $definition.Settings.MultipleInstances = 2
+          $definition.Settings.RestartCount = 999
+          $definition.Settings.RestartInterval = 'PT1M'
+          $definition.Principal.UserId = $identity.User.Value
+          $definition.Principal.LogonType = 3
+          $definition.Principal.RunLevel = 1
+
+          $logon = $definition.Triggers.Create(9)
+          $logon.Enabled = $true
+          $logon.UserId = $identity.Name
+
+          $time = $definition.Triggers.Create(1)
+          $time.Enabled = $true
+          $time.StartBoundary = (Get-Date).AddMinutes(1).ToString('s')
+          $time.Repetition.Interval = 'PT1M'
+          $time.Repetition.Duration = 'P3650D'
+          $time.Repetition.StopAtDurationEnd = $false
+
+          $action = $definition.Actions.Create(0)
+          $action.Path = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+          $action.Arguments = '-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "C:\ProgramData\NEXUS\BybitWSL\watchdog.ps1"'
+
+          [void]$folder.RegisterTaskDefinition($taskName, $definition, 6, $null, $null, 3, $null)
+          $registered = $folder.GetTask($taskName)
+          [void]$registered.Run($null)
+          Start-Sleep -Seconds 2
+          $saved = $registered.Definition.Settings
+          Write-Host "task_name=$taskName"
+          Write-Host "battery_start_blocked=$($saved.DisallowStartIfOnBatteries.ToString().ToLowerInvariant())"
+          Write-Host "battery_stop=$($saved.StopIfGoingOnBatteries.ToString().ToLowerInvariant())"
+          Write-Host "execution_time_limit=$($saved.ExecutionTimeLimit)"
+          Write-Host "restart_count=$($saved.RestartCount)"
+          Write-Host "restart_interval=$($saved.RestartInterval)"
+          PS1
+
+          WIN_PS='/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe'
+          WIN_SCRIPT=$(wslpath -w /tmp/nexus-bybit-watchdog-repair.ps1)
+          "$WIN_PS" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$WIN_SCRIPT"
