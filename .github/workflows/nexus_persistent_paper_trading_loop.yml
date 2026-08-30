@@ -111,31 +111,55 @@ jobs:
     needs: contract-test
     runs-on: nexus-bybit-network
     timeout-minutes: 50
+    outputs:
+      state_archive_b64: ${{ steps.package.outputs.state_archive_b64 }}
+      state_archive_sha256: ${{ steps.package.outputs.state_archive_sha256 }}
     env:
       GH_TOKEN: ${{ github.token }}
       STATE_ARTIFACT: nexus-persistent-paper-trading-state
       STATE_ROOT: build/nexus_persistent_paper_trading_state
-      # Bounded compatibility exception for the physical WSL1 execution plane.
-      # Node 24 Linux binaries fail with Exec format error on WSL1. Remove this
-      # exception when the physical runner moves to a Node-24-capable Linux plane.
-      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-      - name: Select pre-provisioned Python 3.12 without cache restore
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
-        with:
-          python-version: "3.12"
+      - name: Prepare exact repository and pre-provisioned Python 3.12 without JavaScript actions
+        run: |
+          set -euo pipefail
+          repo_url="https://github.com/${GITHUB_REPOSITORY}.git"
+          if [ -d .git ]; then
+            git remote set-url origin "$repo_url"
+            git reset --hard
+            git clean -ffdx
+          else
+            find . -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
+            git init .
+            git remote add origin "$repo_url"
+          fi
+          git config --local --unset-all http.https://github.com/.extraheader || true
+          git fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"
+          git checkout --detach --force FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git clean -ffdx
+
+          tool_root="${RUNNER_TOOL_CACHE:-/opt/nexus-bybit-runner/_work/_tool}/Python"
+          python_bin="$(find "$tool_root" -type f -path '*/3.12.*/x64/bin/python' -perm -u+x 2>/dev/null | sort -V | tail -n 1)"
+          if [ -z "$python_bin" ]; then
+            echo "::error::No pre-provisioned CPython 3.12 exists on the physical runner."
+            exit 1
+          fi
+          "$python_bin" -c "import sys; assert sys.version_info[:2] == (3, 12), sys.version"
+          printf 'PYTHON_BIN=%s\n' "$python_bin" >> "$GITHUB_ENV"
+          printf 'NATIVE_PREPARED=true\n' >> "$GITHUB_ENV"
+          echo "physical_checkout_sha=$(git rev-parse HEAD)"
+
       - name: Enforce eligible Bybit network execution plane
         run: >-
-          python -c "assert '${{ runner.environment }}' == 'self-hosted'; assert '${{ runner.os }}' == 'Linux'; import sys; assert sys.version_info[:2] == (3, 12); print('bybit_network_execution_plane=self-hosted:nexus-bybit-network')"
-      - run: python -m pip install -r requirements.lock
-      - run: python -m pip check
+          "$PYTHON_BIN" -c "assert '${{ runner.environment }}' == 'self-hosted'; assert '${{ runner.os }}' == 'Linux'; import sys; assert sys.version_info[:2] == (3, 12); print('bybit_network_execution_plane=self-hosted:nexus-bybit-network')"
+      - run: '"$PYTHON_BIN" -m pip install -r requirements.lock'
+      - run: '"$PYTHON_BIN" -m pip check'
       - name: Restore newest persistent Paper state
         run: |
           set -euo pipefail
           rm -rf "$STATE_ROOT" build/persistent-state.zip
           mkdir -p "$STATE_ROOT"
-          python - <<'PY'
+          "$PYTHON_BIN" - <<'PY'
           import json
           import os
           import shutil
@@ -209,7 +233,7 @@ jobs:
       - name: Advance public closed-candle Paper portfolio loop
         run: |
           set -euo pipefail
-          python nexus_persistent_paper_trading_loop.py \
+          "$PYTHON_BIN" nexus_persistent_paper_trading_loop.py \
             --repo-root . \
             --state-root "$STATE_ROOT" \
             --source-sha "$GITHUB_SHA" \
@@ -217,7 +241,7 @@ jobs:
       - name: Independently enforce Paper authority and mission truth
         run: |
           set -euo pipefail
-          python - <<'PY'
+          "$PYTHON_BIN" - <<'PY'
           import json
           from pathlib import Path
           from nexus_persistent_paper_trading_loop import verify_loop_snapshot
@@ -253,8 +277,82 @@ jobs:
               "loop_digest": snapshot["loop_digest"],
           }, sort_keys=True))
           PY
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - name: Package Paper state for hosted artifact persistence
+        id: package
         if: always()
+        run: |
+          set -euo pipefail
+          if [ "${NATIVE_PREPARED:-false}" != "true" ] || [ ! -d "$STATE_ROOT" ]; then
+            echo "state_archive_b64=" >> "$GITHUB_OUTPUT"
+            echo "state_archive_sha256=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          "$PYTHON_BIN" - <<'PY'
+          import os
+          import zipfile
+          from pathlib import Path
+
+          root = Path(os.environ["STATE_ROOT"])
+          output = Path("build/persistent-state-handoff.zip")
+          output.parent.mkdir(parents=True, exist_ok=True)
+          with zipfile.ZipFile(
+              output, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9
+          ) as archive:
+              for path in sorted(root.rglob("*")):
+                  if path.is_file():
+                      archive.write(path, path.relative_to(root).as_posix())
+          print(f"state_handoff_zip_bytes={output.stat().st_size}")
+          PY
+          state_sha="$(sha256sum build/persistent-state-handoff.zip | awk '{print $1}')"
+          state_b64="$(base64 -w 0 build/persistent-state-handoff.zip)"
+          state_b64_bytes="${#state_b64}"
+          if [ "$state_b64_bytes" -gt 450000 ]; then
+            echo "::error::Packed Paper state exceeds bounded job-output handoff."
+            exit 1
+          fi
+          {
+            echo "state_archive_b64<<__NEXUS_STATE__"
+            printf '%s\n' "$state_b64"
+            echo "__NEXUS_STATE__"
+            echo "state_archive_sha256=$state_sha"
+          } >> "$GITHUB_OUTPUT"
+          echo "state_handoff_base64_bytes=$state_b64_bytes"
+
+  persist-state:
+    if: ${{ always() && needs.paper-loop.outputs.state_archive_b64 != '' }}
+    needs: paper-loop
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      STATE_ARCHIVE_B64: ${{ needs.paper-loop.outputs.state_archive_b64 }}
+      STATE_ARCHIVE_SHA256: ${{ needs.paper-loop.outputs.state_archive_sha256 }}
+      STATE_ROOT: build/nexus_persistent_paper_trading_state
+    steps:
+      - name: Rehydrate physical Paper state handoff
+        run: |
+          set -euo pipefail
+          rm -rf "$STATE_ROOT" build/persistent-state-handoff.zip
+          mkdir -p "$STATE_ROOT"
+          printf '%s' "$STATE_ARCHIVE_B64" | base64 --decode > build/persistent-state-handoff.zip
+          actual_sha="$(sha256sum build/persistent-state-handoff.zip | awk '{print $1}')"
+          test "$actual_sha" = "$STATE_ARCHIVE_SHA256"
+          python - <<'PY'
+          import os
+          import zipfile
+          from pathlib import Path
+
+          state_root = Path(os.environ["STATE_ROOT"])
+          archive_path = Path("build/persistent-state-handoff.zip")
+          root = state_root.resolve()
+          with zipfile.ZipFile(archive_path) as archive:
+              for member in archive.infolist():
+                  target = (state_root / member.filename).resolve()
+                  if target != root and root not in target.parents:
+                      raise RuntimeError(f"unsafe state handoff path: {member.filename}")
+              archive.extractall(state_root)
+          print("hosted_state_handoff_verification=PASS")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: nexus-persistent-paper-trading-state
           path: build/nexus_persistent_paper_trading_state
