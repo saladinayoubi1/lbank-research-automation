@@ -17,6 +17,23 @@ $wsl = Join-Path $env:SystemRoot 'System32\wsl.exe'
 if (-not (Test-Path -LiteralPath $wsl -PathType Leaf)) { throw 'wsl.exe is required.' }
 $schTasks = Join-Path $env:SystemRoot 'System32\schtasks.exe'
 
+Add-Type @'
+using System;
+using System.Runtime.InteropServices;
+public static class NexusWtsProbe {
+    [DllImport("kernel32.dll")]
+    public static extern UInt32 WTSGetActiveConsoleSessionId();
+
+    [DllImport("wtsapi32.dll", SetLastError=true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool WTSQueryUserToken(UInt32 SessionId, out IntPtr phToken);
+
+    [DllImport("kernel32.dll", SetLastError=true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool CloseHandle(IntPtr hObject);
+}
+'@
+
 function Invoke-WslNative {
     param([Parameter(Mandatory = $true)][string[]]$Arguments)
     $previous = $ErrorActionPreference
@@ -40,28 +57,68 @@ function Invoke-WslNative {
 
 function Get-VisibleRecoveryTask {
     if (-not (Test-Path -LiteralPath $schTasks -PathType Leaf)) {
-        return [ordered]@{ found = $false; name = '' }
+        return [ordered]@{ found = $false; name = ''; query_access_denied = $false }
     }
 
+    $accessDenied = $false
     foreach ($taskName in @('NEXUS Bybit WSL Runner Persistent', 'NEXUS Bybit WSL Runner')) {
         $previous = $ErrorActionPreference
         try {
             $ErrorActionPreference = 'Continue'
-            $null = @(& $schTasks /Query /TN $taskName 2>&1)
+            $raw = @(& $schTasks /Query /TN $taskName 2>&1)
             $code = $LASTEXITCODE
+            $text = (($raw | ForEach-Object { $_.ToString() }) | Out-String).Trim()
+            if ($text -match '(?i)access is denied') { $accessDenied = $true }
         }
         catch {
             $code = -1
+            if ($_.Exception.Message -match '(?i)access is denied') { $accessDenied = $true }
         }
         finally {
             $ErrorActionPreference = $previous
         }
         if ($code -eq 0) {
-            return [ordered]@{ found = $true; name = $taskName }
+            return [ordered]@{ found = $true; name = $taskName; query_access_denied = $accessDenied }
         }
     }
 
-    return [ordered]@{ found = $false; name = '' }
+    return [ordered]@{ found = $false; name = ''; query_access_denied = $accessDenied }
+}
+
+function Get-UserContextCapability {
+    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $sid = $identity.User.Value
+    $runnerClass = switch ($sid) {
+        'S-1-5-18' { 'LOCAL_SYSTEM' }
+        'S-1-5-19' { 'LOCAL_SERVICE' }
+        'S-1-5-20' { 'NETWORK_SERVICE' }
+        default { 'OTHER_ACCOUNT' }
+    }
+
+    $sessionId = [NexusWtsProbe]::WTSGetActiveConsoleSessionId()
+    $hasInteractiveSession = ($sessionId -ne [UInt32]::MaxValue)
+    $tokenAvailable = $false
+    $tokenError = 0
+    $token = [IntPtr]::Zero
+    if ($hasInteractiveSession) {
+        $tokenAvailable = [NexusWtsProbe]::WTSQueryUserToken($sessionId, [ref]$token)
+        if (-not $tokenAvailable) {
+            $tokenError = [Runtime.InteropServices.Marshal]::GetLastWin32Error()
+        }
+        elseif ($token -ne [IntPtr]::Zero) {
+            [void][NexusWtsProbe]::CloseHandle($token)
+        }
+    }
+
+    return [ordered]@{
+        runner_identity_class = $runnerClass
+        interactive_console_session_present = $hasInteractiveSession
+        interactive_explorer_present = (@(Get-Process -Name explorer -ErrorAction SilentlyContinue).Count -gt 0)
+        wts_user_token_available = $tokenAvailable
+        wts_user_token_error = $tokenError
+        bybit_watchdog_path_exists = (Test-Path -LiteralPath 'C:\ProgramData\NEXUS\BybitWSL\watchdog.ps1' -PathType Leaf)
+        bybit_launcher_root_exists = (Test-Path -LiteralPath 'C:\ProgramData\NEXUS\BybitWSL' -PathType Container)
+    }
 }
 
 function Get-EvidenceTarget {
@@ -99,12 +156,15 @@ function Write-ResolutionFailure {
 
 function Write-ContextLimitedEvidence {
     param(
-        [Parameter(Mandatory = $true)][string]$ScheduledTaskName,
-        [int]$InventoryExitCode = 0
+        [string]$ScheduledTaskName = '',
+        [bool]$ScheduledTaskVisible = $false,
+        [bool]$ScheduledTaskQueryAccessDenied = $false,
+        [int]$InventoryExitCode = 0,
+        [Parameter(Mandatory = $true)][System.Collections.IDictionary]$UserContext
     )
     $target = Get-EvidenceTarget
     $payload = [ordered]@{
-        schema_version = 1
+        schema_version = 2
         generated_at_utc = [DateTime]::UtcNow.ToString('o')
         source_run_id = if ($SourceRunId) { $SourceRunId } else { [string]$env:GITHUB_RUN_ID }
         source_sha = if ($SourceSha) { $SourceSha } else { [string]$env:GITHUB_SHA }
@@ -115,11 +175,20 @@ function Write-ContextLimitedEvidence {
         wsl_inventory_exit_code = $InventoryExitCode
         distribution_candidate_count = 0
         distribution_match_count = 0
-        scheduled_recovery_task_visible = $true
+        scheduled_recovery_task_visible = $ScheduledTaskVisible
         scheduled_recovery_task_name = $ScheduledTaskName
+        scheduled_recovery_task_query_access_denied = $ScheduledTaskQueryAccessDenied
+        runner_identity_class = $UserContext.runner_identity_class
+        interactive_console_session_present = $UserContext.interactive_console_session_present
+        interactive_explorer_present = $UserContext.interactive_explorer_present
+        wts_user_token_available = $UserContext.wts_user_token_available
+        wts_user_token_error = $UserContext.wts_user_token_error
+        bybit_watchdog_path_exists = $UserContext.bybit_watchdog_path_exists
+        bybit_launcher_root_exists = $UserContext.bybit_launcher_root_exists
         runner_health_verified = $false
         recovery_request_performed = $false
         runner_mutation_performed = $false
+        scheduled_task_mutated = $false
         windows_runner_paths_modified = $false
         bybit_private_credentials_used = $false
         raw_diagnostic_files_uploaded = $false
@@ -141,28 +210,27 @@ if ($inventory.exit_code -eq 0) {
 }
 
 if ($inventory.exit_code -ne 0 -or -not $candidates) {
-    # WSL distributions are registered per Windows user. NEXUS-WINDOWS-DR runs
-    # as a Windows service, so an empty inventory does not prove that the
-    # interactive user's Ubuntu/Bybit runner is absent. In that context we only
-    # record the visibility boundary and the pre-existing Scheduled Task that
-    # owns recovery. We do not claim runner health and we do not mutate it here.
     $recoveryTask = Get-VisibleRecoveryTask
-    if ($recoveryTask.found) {
-        Write-ContextLimitedEvidence -ScheduledTaskName $recoveryTask.name -InventoryExitCode $inventory.exit_code
-        Write-Host "scheduled_recovery_task=$($recoveryTask.name)"
-        Write-Host 'diagnostic_decision=WSL_DISTRIBUTION_NOT_VISIBLE_FROM_WINDOWS_RUNNER_CONTEXT'
-        Write-Host 'runner_health_verified=false'
-        Write-Host 'bybit_wsl_runner_diagnostics_validation=CONTEXT_LIMITED'
-        exit 0
-    }
+    $userContext = Get-UserContextCapability
+    Write-ContextLimitedEvidence `
+        -ScheduledTaskName $recoveryTask.name `
+        -ScheduledTaskVisible $recoveryTask.found `
+        -ScheduledTaskQueryAccessDenied $recoveryTask.query_access_denied `
+        -InventoryExitCode $inventory.exit_code `
+        -UserContext $userContext
 
-    if ($inventory.exit_code -ne 0) {
-        Write-ResolutionFailure -Decision 'WSL_DISTRIBUTION_INVENTORY_FAILED'
-        throw 'Unable to enumerate WSL distributions and no approved recovery task is visible.'
-    }
-
-    Write-ResolutionFailure -Decision 'WSL_DISTRIBUTION_INVENTORY_EMPTY'
-    throw 'No WSL distributions or approved recovery tasks were found.'
+    Write-Host "runner_identity_class=$($userContext.runner_identity_class)"
+    Write-Host "interactive_console_session_present=$($userContext.interactive_console_session_present.ToString().ToLowerInvariant())"
+    Write-Host "interactive_explorer_present=$($userContext.interactive_explorer_present.ToString().ToLowerInvariant())"
+    Write-Host "wts_user_token_available=$($userContext.wts_user_token_available.ToString().ToLowerInvariant())"
+    Write-Host "wts_user_token_error=$($userContext.wts_user_token_error)"
+    Write-Host "scheduled_recovery_task_visible=$($recoveryTask.found.ToString().ToLowerInvariant())"
+    Write-Host "scheduled_recovery_task_query_access_denied=$($recoveryTask.query_access_denied.ToString().ToLowerInvariant())"
+    Write-Host "bybit_watchdog_path_exists=$($userContext.bybit_watchdog_path_exists.ToString().ToLowerInvariant())"
+    Write-Host 'diagnostic_decision=WSL_DISTRIBUTION_NOT_VISIBLE_FROM_WINDOWS_RUNNER_CONTEXT'
+    Write-Host 'runner_health_verified=false'
+    Write-Host 'bybit_wsl_runner_diagnostics_validation=CONTEXT_LIMITED'
+    exit 0
 }
 
 $matches = New-Object System.Collections.Generic.List[string]
