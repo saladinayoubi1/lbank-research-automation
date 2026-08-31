@@ -96,20 +96,38 @@ jobs:
       - uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d
         with:
           gradle-version: '8.9'
+      - name: Verify and capture Android toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          java_version="$(java -XshowSettings:properties -version 2>&1 | awk -F'= ' '/java.specification.version =/{print $2; exit}')"
+          gradle_version="$(gradle --version | awk '/^Gradle /{print $2; exit}')"
+          if [[ "$java_version" != "17" ]]; then
+            echo "Unexpected Java specification version: $java_version" >&2
+            exit 1
+          fi
+          if [[ "$gradle_version" != "8.9" ]]; then
+            echo "Unexpected Gradle version: $gradle_version" >&2
+            exit 1
+          fi
+          echo "NEXUS_RELEASE_JAVA=$java_version" >> "$GITHUB_ENV"
+          echo "NEXUS_RELEASE_GRADLE=$gradle_version" >> "$GITHUB_ENV"
       - name: Build debug APK
         run: gradle --no-daemon assembleDebug
       - name: Build unsigned Android evidence bundle
         working-directory: ${{ github.workspace }}
-        run: >-
-          python scripts/build_release_evidence.py
-          --bundle-dir release-evidence/android
-          --artifact-glob 'android/lbank-mobile/app/build/outputs/apk/debug/*.apk'
-          --source-commit '${{ github.sha }}'
-          --builder 'github-actions/nexus-build-verification/android-apk'
-          --build-parameter 'platform=android'
-          --build-parameter 'package_profile=debug-apk'
-          --build-parameter 'java=17'
-          --build-parameter 'gradle=8.9'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/build_release_evidence.py \
+            --bundle-dir release-evidence/android \
+            --artifact-glob 'android/lbank-mobile/app/build/outputs/apk/debug/*.apk' \
+            --source-commit '${{ github.sha }}' \
+            --builder 'github-actions/nexus-build-verification/android-apk' \
+            --build-parameter 'platform=android' \
+            --build-parameter 'package_profile=debug-apk' \
+            --build-parameter "java=$NEXUS_RELEASE_JAVA" \
+            --build-parameter "gradle=$NEXUS_RELEASE_GRADLE"
       - name: Fail-closed verify Android evidence bundle
         working-directory: ${{ github.workspace }}
         run: >-
@@ -143,6 +161,18 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: '22'
+      - name: Verify and capture Windows build identity
+        shell: pwsh
+        run: |
+          $pythonVersion = (python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')").Trim()
+          $nodeMajor = ((node --version).Trim().TrimStart('v').Split('.')[0])
+          $productVersion = (node -p "require('./desktop/nexus-product/package.json').version").Trim()
+          if ($pythonVersion -ne '3.12') { throw "Unexpected Python version: $pythonVersion" }
+          if ($nodeMajor -ne '22') { throw "Unexpected Node major version: $nodeMajor" }
+          if ($productVersion -ne '5.1.0') { throw "Unexpected product version: $productVersion" }
+          "NEXUS_RELEASE_PYTHON=$pythonVersion" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "NEXUS_RELEASE_NODE=$nodeMajor" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "NEXUS_RELEASE_PRODUCT_VERSION=$productVersion" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
       - name: Install canonical product build dependencies
         run: |
           python -m pip install -r requirements-dev.lock
@@ -193,6 +223,15 @@ jobs:
           if ((Get-Content "$root/source-sha.txt" -Raw).Trim() -ne $env:GITHUB_SHA) { throw 'Packaged source SHA mismatch' }
           if (!(Get-ChildItem 'desktop/nexus-product/dist/NEXUS_Personal_Pro_Setup_5.1.0_*.exe' -ErrorAction SilentlyContinue)) { throw 'Setup EXE missing' }
           if (!(Get-ChildItem 'desktop/nexus-product/dist/NEXUS_Personal_Pro_Portable_5.1.0_*.exe' -ErrorAction SilentlyContinue)) { throw 'Portable EXE missing' }
+          $packageFiles = Get-ChildItem 'desktop/nexus-product/dist/*.exe' | Sort-Object Name
+          if (-not $packageFiles) { throw 'No Windows .exe artifacts were produced' }
+          foreach ($file in $packageFiles) {
+            $signature = Get-AuthenticodeSignature -LiteralPath $file.FullName
+            if ($signature.Status.ToString() -ne 'NotSigned') {
+              throw "Windows package signing state does not match disabled policy: $($file.Name) status=$($signature.Status)"
+            }
+          }
+          "NEXUS_RELEASE_CODE_SIGNING=disabled" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
       - name: Generate Windows SHA-256 checksums
         shell: pwsh
         run: |
@@ -204,19 +243,20 @@ jobs:
           }
           $lines | Set-Content -Encoding ascii 'desktop/nexus-product/dist/SHA256SUMS.txt'
       - name: Build unsigned Windows evidence bundle
-        run: >-
-          python scripts/build_release_evidence.py
-          --bundle-dir release-evidence/windows
-          --artifact-glob 'desktop/nexus-product/dist/*.exe'
-          --artifact-glob 'desktop/nexus-product/dist/SHA256SUMS.txt'
-          --source-commit '${{ github.sha }}'
-          --builder 'github-actions/nexus-build-verification/windows-desktop'
-          --build-parameter 'platform=windows'
-          --build-parameter 'package_profile=electron-nsis-portable'
-          --build-parameter 'product_version=5.1.0'
-          --build-parameter 'python=3.12'
-          --build-parameter 'node=22'
-          --build-parameter 'code_signing=disabled'
+        shell: pwsh
+        run: |
+          python scripts/build_release_evidence.py `
+            --bundle-dir release-evidence/windows `
+            --artifact-glob 'desktop/nexus-product/dist/*.exe' `
+            --artifact-glob 'desktop/nexus-product/dist/SHA256SUMS.txt' `
+            --source-commit '${{ github.sha }}' `
+            --builder 'github-actions/nexus-build-verification/windows-desktop' `
+            --build-parameter 'platform=windows' `
+            --build-parameter 'package_profile=electron-nsis-portable' `
+            --build-parameter "product_version=$env:NEXUS_RELEASE_PRODUCT_VERSION" `
+            --build-parameter "python=$env:NEXUS_RELEASE_PYTHON" `
+            --build-parameter "node=$env:NEXUS_RELEASE_NODE" `
+            --build-parameter "code_signing=$env:NEXUS_RELEASE_CODE_SIGNING"
       - name: Fail-closed verify Windows evidence bundle
         run: >-
           python scripts/release_gate.py release-evidence/windows
