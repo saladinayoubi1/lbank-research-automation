@@ -167,7 +167,7 @@ jobs:
       - name: Enforce eligible Bybit network execution plane
         run: >-
           "$PYTHON_BIN" -c "assert '${{ runner.environment }}' == 'self-hosted'; assert '${{ runner.os }}' == 'Linux'; import sys; assert sys.version_info[:2] == (3, 12); print('bybit_network_execution_plane=self-hosted:nexus-bybit-network')"
-      - run: '"$PYTHON_BIN" -m pip install -r requirements.lock'
+      - run: '"$PYTHON_BIN" -m ensurepip --upgrade && "$PYTHON_BIN" -m pip install -r requirements.lock'
       - run: '"$PYTHON_BIN" -m pip check'
       - name: Restore newest persistent Paper state
         run: |
