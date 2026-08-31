@@ -100,7 +100,7 @@ def test_original_success_routes_to_distinct_architecture_verifier(monkeypatch):
     assert task["verifier"] != task["producer"]
 
 
-def test_existing_execution_workers_win_current_dag_ties(monkeypatch):
+def test_load_aware_producers_still_get_independent_verifiers(monkeypatch):
     monkeypatch.delenv("NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED", raising=False)
     config = am.load_config()
     runner.apply_provider_gates(config)
@@ -115,7 +115,13 @@ def test_existing_execution_workers_win_current_dag_ties(monkeypatch):
     am.assign_ready_tasks(config, datetime(2026, 8, 31, 3, 2, tzinfo=timezone.utc))
 
     assert mgr2["assigned_worker"] == "qa-verifier-agent"
-    assert ui["assigned_worker"] == "qa-verifier-agent"
+    assert ui["assigned_worker"] == "verification-agent-independent"
+
+    ui_producer = ui["assigned_worker"]
+    am.record_result(config, "P4-UI-001", ui_producer, "success", {"tests": "pass"})
+    assert ui["status"] == "VERIFYING"
+    assert ui["verifier"] == "qa-verifier-agent"
+    assert ui["verifier"] != ui["producer"]
 
 
 def test_closed_deepseek_gate_does_not_make_independent_verifier_a_deepseek_fallback(monkeypatch):
