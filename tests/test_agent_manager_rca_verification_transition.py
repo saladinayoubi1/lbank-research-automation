@@ -27,6 +27,15 @@ def test_successful_root_cause_analysis_requeues_original_task(monkeypatch):
             "lease_id": "rca-lease",
             "dispatch_id": "rca-dispatch",
             "dispatch_transport": "github-cloud",
+            "external_wait_timeline": [
+                {
+                    "started_at": "2026-08-31T02:59:00+00:00",
+                    "dispatch_id": "rca-dispatch",
+                    "worker_id": "qa-verifier-agent",
+                    "transport": "github-cloud",
+                    "outcome": "success",
+                }
+            ],
             "blocked_reason": None,
         }
     )
@@ -37,6 +46,7 @@ def test_successful_root_cause_analysis_requeues_original_task(monkeypatch):
     assert task["triage_mode"] is None
     assert task["result_evidence"] is None
     assert task["triage_evidence"]["evidence"]["tests"] == "36 passed"
+    assert task["triage_evidence"]["worker_id"] == "qa-verifier-agent"
 
     am.cycle(config, datetime(2026, 8, 31, 3, 1, tzinfo=timezone.utc))
     assert task["status"] == "LEASED"
