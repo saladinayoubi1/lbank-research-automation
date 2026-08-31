@@ -176,7 +176,7 @@ jobs:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: [contract-test, runtime-wheelhouse]
     runs-on: nexus-bybit-network
-    timeout-minutes: 30
+    timeout-minutes: 45
     outputs:
       state_archive_chunk_count: ${{ steps.package.outputs.state_archive_chunk_count }}
       state_archive_b64_len: ${{ steps.package.outputs.state_archive_b64_len }}
@@ -199,6 +199,18 @@ jobs:
       - name: Prepare exact repository and pre-provisioned Python 3.12 without JavaScript actions
         run: |
           set -euo pipefail
+          cache_root="$HOME/.cache/nexus-paper-runtime-wheelhouse-verified"
+          cache_dir="$cache_root/$WHEELHOUSE_ARCHIVE_SHA256"
+          if [ -d build/nexus-paper-runtime-wheelhouse ] && [ ! -L build/nexus-paper-runtime-wheelhouse ]; then
+            mkdir -p "$cache_root"
+            seed_dir="$cache_root/.${WHEELHOUSE_ARCHIVE_SHA256}.seed.$$"
+            rm -rf "$seed_dir"
+            cp -a build/nexus-paper-runtime-wheelhouse "$seed_dir"
+            rm -rf "$cache_dir"
+            mv "$seed_dir" "$cache_dir"
+            echo "preserved_previous_wheelhouse_seed=$cache_dir"
+          fi
+
           repo_url="https://github.com/${GITHUB_REPOSITORY}.git"
           if [ -d .git ]; then
             git remote set-url origin "$repo_url"
@@ -258,14 +270,53 @@ jobs:
       - name: Restore digest-pinned current-run runtime wheelhouse without JavaScript actions
         run: |
           set -euo pipefail
-          "$PYTHON_BIN" scripts/nexus_runtime_wheelhouse.py restore-current-run \
-            --repository "$GITHUB_REPOSITORY" \
-            --run-id "$GITHUB_RUN_ID" \
-            --artifact-name "$WHEELHOUSE_ARTIFACT" \
-            --expected-sha256 "$WHEELHOUSE_ARCHIVE_SHA256" \
-            --repository-lock requirements.lock \
-            --destination build/nexus-paper-runtime-wheelhouse \
-            --work-root build/runtime-wheelhouse-restore
+          cache_root="$HOME/.cache/nexus-paper-runtime-wheelhouse-verified"
+          cache_dir="$cache_root/$WHEELHOUSE_ARCHIVE_SHA256"
+          wheelhouse="$PWD/build/nexus-paper-runtime-wheelhouse"
+          cache_probe="$PWD/build/nexus-paper-runtime-wheelhouse-cache-probe.zip"
+          rm -rf "$wheelhouse"
+          rm -f "$cache_probe"
+
+          cache_hit=false
+          if [ -d "$cache_dir" ] && [ ! -L "$cache_dir" ]; then
+            if ! find "$cache_dir" -type l -print -quit | grep -q .; then
+              if "$PYTHON_BIN" scripts/nexus_runtime_wheelhouse.py pack \
+                --root "$cache_dir" \
+                --output "$cache_probe" >/dev/null 2>&1; then
+                cache_sha="$(sha256sum "$cache_probe" | awk '{print $1}')"
+                if [ "$cache_sha" = "$WHEELHOUSE_ARCHIVE_SHA256" ] \
+                  && cmp requirements.lock "$cache_dir/requirements.lock" \
+                  && find "$cache_dir" -maxdepth 1 -type f -name '*.whl' -print -quit | grep -q .; then
+                  cache_hit=true
+                fi
+              fi
+            fi
+          fi
+
+          if [ "$cache_hit" = true ]; then
+            mkdir -p "$wheelhouse"
+            cp -a "$cache_dir/." "$wheelhouse/"
+            rm -f "$cache_probe"
+            echo "runtime_wheelhouse_verified_cache=HIT"
+          else
+            rm -rf "$cache_dir"
+            rm -f "$cache_probe"
+            "$PYTHON_BIN" scripts/nexus_runtime_wheelhouse.py restore-current-run \
+              --repository "$GITHUB_REPOSITORY" \
+              --run-id "$GITHUB_RUN_ID" \
+              --artifact-name "$WHEELHOUSE_ARTIFACT" \
+              --expected-sha256 "$WHEELHOUSE_ARCHIVE_SHA256" \
+              --repository-lock requirements.lock \
+              --destination "$wheelhouse" \
+              --work-root build/runtime-wheelhouse-restore
+            mkdir -p "$cache_root"
+            staging_dir="$cache_root/.${WHEELHOUSE_ARCHIVE_SHA256}.tmp.$$"
+            rm -rf "$staging_dir"
+            cp -a "$wheelhouse" "$staging_dir"
+            rm -rf "$cache_dir"
+            mv "$staging_dir" "$cache_dir"
+            echo "runtime_wheelhouse_verified_cache=MISS_POPULATED"
+          fi
       - name: Provision locked runtime dependencies from verified hosted wheelhouse
         run: |
           set -euo pipefail
