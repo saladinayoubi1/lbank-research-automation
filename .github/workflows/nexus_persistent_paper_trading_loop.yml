@@ -167,7 +167,32 @@ jobs:
       - name: Enforce eligible Bybit network execution plane
         run: >-
           "$PYTHON_BIN" -c "assert '${{ runner.environment }}' == 'self-hosted'; assert '${{ runner.os }}' == 'Linux'; import sys; assert sys.version_info[:2] == (3, 12); print('bybit_network_execution_plane=self-hosted:nexus-bybit-network')"
-      - run: '"$PYTHON_BIN" -m ensurepip --upgrade && "$PYTHON_BIN" -m pip install -r requirements.lock'
+      - name: Provision locked runtime dependencies from bundled pip wheel
+        run: |
+          set -euo pipefail
+          pip_wheel="$("$PYTHON_BIN" - <<'PY'
+          import ensurepip
+          from pathlib import Path
+
+          bundled = Path(ensurepip.__file__).resolve().parent / "_bundled"
+          wheels = sorted(bundled.glob("pip-*.whl"))
+          if not wheels:
+              raise SystemExit("bundled pip wheel missing")
+          print(wheels[-1].resolve())
+          PY
+          )"
+          test -f "$pip_wheel"
+          runtime_site="$PWD/.nexus-paper-site"
+          rm -rf "$runtime_site"
+          mkdir -p "$runtime_site"
+          PYTHONPATH="$pip_wheel" "$PYTHON_BIN" -m pip install \
+            --disable-pip-version-check \
+            --no-cache-dir \
+            --target "$runtime_site" \
+            -r requirements.lock
+          printf 'PYTHONPATH=%s:%s\n' "$pip_wheel" "$runtime_site" >> "$GITHUB_ENV"
+          echo "physical_runtime_site=$runtime_site"
+          echo "bundled_pip_bootstrap=PASS"
       - run: '"$PYTHON_BIN" -m pip check'
       - name: Restore newest persistent Paper state
         run: |
