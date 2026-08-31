@@ -143,20 +143,31 @@ def test_state_restore_never_forwards_github_token_to_artifact_storage_redirect(
     assert "token" not in storage_block
 
 
-def test_physical_state_handoff_is_bounded_digest_checked_and_hosted_persisted() -> None:
+def test_physical_state_handoff_is_bounded_chunked_digest_checked_and_hosted_persisted() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     paper = _paper_job(text)
     persist = text.split("  persist-state:", 1)[1]
 
     assert "Package Paper state for hosted artifact persistence" in paper
-    assert "state_archive_b64" in paper
+    assert "state_archive_chunk_count" in paper
+    assert "state_archive_b64_len" in paper
+    for index in range(8):
+        assert f"state_archive_chunk_{index}" in paper
+        assert f"needs.paper-loop.outputs.state_archive_chunk_{index}" in persist
     assert "state_archive_sha256" in paper
     assert "persistent-state-handoff.zip" in paper
     assert 'state_b64_bytes" -gt 450000' in paper
+    assert "chunk_size=60000" in paper
+    assert "max_chunks=8" in paper
     assert "compression=zipfile.ZIP_DEFLATED" in paper
     assert "compresslevel=9" in paper
 
-    assert "needs.paper-loop.outputs.state_archive_b64" in persist
+    assert "STATE_ARCHIVE_B64:" not in persist
+    assert "STATE_ARCHIVE_CHUNK_COUNT" in persist
+    assert "STATE_ARCHIVE_B64_LEN" in persist
+    assert '"${#state_b64}" -ne "$STATE_ARCHIVE_B64_LEN"' in persist
+    assert "Paper state handoff chunk exceeds bound." in persist
+    assert "Unexpected trailing Paper state handoff chunk." in persist
     assert "STATE_ARCHIVE_SHA256" in persist
     assert "sha256sum build/persistent-state-handoff.zip" in persist
     assert "unsafe state handoff path" in persist
