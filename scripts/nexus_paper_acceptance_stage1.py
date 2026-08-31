@@ -3,8 +3,10 @@
 This verifier intentionally proves only the first acceptance stage from one durable
 Paper state root: 6/6 exact-source cells, 18/18 exact-source Strategy Paper lanes,
 and same-run maintenance/performance/regime evidence with Paper-only authority.
-It does NOT claim Strategy Discovery/runtime-requalification completion and does
-NOT prove restart/replay; those require their distinct workflow evidence chains.
+It also requires the verified 4h boundary to have reached the operational health-
+feedback/Discovery-trigger handoff. It does NOT claim Strategy Discovery/runtime-
+requalification completion and does NOT prove restart/replay; those require their
+distinct workflow evidence chains.
 """
 from __future__ import annotations
 
@@ -155,13 +157,22 @@ def audit_state_root(*, state_root: Path, manifest_path: Path, source_sha: str) 
         or set(loop.get("fresh_cells", [])) != expected_cells
         or loop.get("expected_cell_count") != 6
         or loop.get("expected_lane_count") != 18
+        or loop.get("regime_status") != "VERIFIED"
+        or loop.get("performance_health_feedback_operational") is not True
+        or loop.get("regime_selected_rebalance_operational") is not True
+        or loop.get("regime_selected_exposure_increase_operational") is not True
+        or loop.get("strategy_research_required") is not True
+        or loop.get("strategy_discovery_health_trigger_requested") is not True
+        or loop.get("remaining_core_gap") != "RUNTIME_EVIDENCE_AND_DISCOVERY_FEEDBACK_PROOF"
         or loop.get("paper_only") is not True
         or loop.get("live_trading_authority") is not False
         or loop.get("private_credentials_used") is not False
         or loop.get("automatic_strategy_promotion") is not False
         or loop.get("deterministic_risk_final_authority") is not True
     ):
-        raise PaperAcceptanceStage1Error("loop does not prove exact-source 6/6 Paper authority")
+        raise PaperAcceptanceStage1Error(
+            "loop does not prove an operational exact-source 6/6 boundary handoff"
+        )
 
     maintenance = _read_json(root / "demo" / "paper-position-maintenance.json")
     maintenance_digest = _verify_digest(maintenance, "maintenance_digest")
@@ -215,6 +226,7 @@ def audit_state_root(*, state_root: Path, manifest_path: Path, source_sha: str) 
         "maintenance_digest": maintenance_digest,
         "performance_refresh_digest": performance_digest,
         "regime_cycle_digest": regime["cycle_digest"],
+        "health_trigger_requested": True,
         "stage1_only": True,
         "discovery_runtime_requalification_proven": False,
         "restart_replay_proven": False,
