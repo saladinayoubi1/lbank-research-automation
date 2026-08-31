@@ -3,9 +3,10 @@
 
 This tool produces artifact-manifest.json, CycloneDX SBOM metadata, and provenance
 bound to an exact source commit, builder, and optional explicit build parameters.
-It deliberately does not sign or approve a production release. The resulting
-bundle must still pass release_gate.py with --allow-unsigned before it is uploaded
-as CI evidence.
+The manifest also digest-binds the SBOM and provenance so a future trusted
+signature over the manifest covers the complete evidence tuple. It deliberately
+does not sign or approve a production release. The resulting bundle must still
+pass release_gate.py with --allow-unsigned before it is uploaded as CI evidence.
 """
 from __future__ import annotations
 
@@ -25,6 +26,12 @@ def sha256(path: Path) -> str:
         for chunk in iter(lambda: fh.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def evidence_descriptor(path: Path) -> dict[str, object]:
+    if path.is_symlink() or not path.is_file():
+        raise ValueError(f"evidence file must be a regular non-symlink file: {path.name}")
+    return {"sha256": sha256(path), "size": path.stat().st_size}
 
 
 def expand_globs(patterns: list[str]) -> list[Path]:
@@ -125,16 +132,6 @@ def build_bundle(
         subjects.append({"path": relative, "sha256": digest})
 
     timestamp = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-    manifest = {
-        "schema": "nexus-artifact-manifest/v1",
-        "purpose": "ci-build-evidence",
-        "production_approval": False,
-        "artifacts": entries,
-    }
-    (bundle_dir / "artifact-manifest.json").write_text(
-        json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-    )
-
     serial = f"urn:uuid:{uuid4()}"
     sbom = {
         "bomFormat": "CycloneDX",
@@ -166,8 +163,26 @@ def build_bundle(
         "sbom_sha256": sha256(sbom_path),
         "subjects": subjects,
     }
-    (bundle_dir / "provenance.json").write_text(
+    provenance_path = bundle_dir / "provenance.json"
+    provenance_path.write_text(
         json.dumps(provenance, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+
+    # The manifest is the future signature surface. Write it only after the SBOM
+    # and provenance exist so its digests transitively bind builder/source/build
+    # parameters and the SBOM to any future trusted manifest signature.
+    manifest = {
+        "schema": "nexus-artifact-manifest/v1",
+        "purpose": "ci-build-evidence",
+        "production_approval": False,
+        "artifacts": entries,
+        "evidence": {
+            "provenance.json": evidence_descriptor(provenance_path),
+            "sbom.cdx.json": evidence_descriptor(sbom_path),
+        },
+    }
+    (bundle_dir / "artifact-manifest.json").write_text(
+        json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
 
 
