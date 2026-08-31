@@ -41,7 +41,7 @@ def test_recovery_uses_per_user_startup_and_managed_child_watchdog() -> None:
     assert "-Mode Watch" in text
     assert "Start-Sleep -Seconds 15" in text
     assert "Local\\NEXUS-Bybit-WSL-Watchdog-v" in text
-    assert "$watchdogGeneration = 3" in text
+    assert "$watchdogGeneration = 4" in text
     assert "Start-ManagedRunnerProcess" in text
     assert "exec ./run.sh" in text
     assert "RUNNER_ALLOW_RUNASROOT=1" in text
@@ -72,6 +72,29 @@ def test_watchdog_recycles_only_idle_external_listener() -> None:
     assert "stale_idle_listener_recycle = $true" in text
     assert "stale_idle_listener_recycle=true" in text
     assert "existing_runner_worker_active_waiting=true" in text
+
+
+def test_managed_child_is_liveness_probed_without_interrupting_worker_or_unknown_state() -> None:
+    text = _text()
+    assert "$managedChildMissingListenerThreshold = 3" in text
+    assert "managed_child_liveness_probe = $true" in text
+    assert "managed_child_liveness_probe=true" in text
+    assert "missing_listener_recycle_after_probes" in text
+    assert "$managedState = Get-RunnerProcessState" in text
+    assert "managed_child_state_unknown_no_interrupt=true" in text
+    assert "managed_child_worker_active_no_interrupt=true" in text
+    assert "managed_child_missing_listener_probe=" in text
+    assert "managed_child_stale_recycle=true" in text
+    assert "unknown_probe_interrupt_allowed = $false" in text
+    assert "unknown_probe_interrupt_allowed=false" in text
+    worker_guard = text.split("elseif ($managedState.worker)", 1)[1].split(
+        "elseif ($managedState.listener)", 1
+    )[0]
+    assert "$managedRunner.Kill()" not in worker_guard
+    unknown_guard = text.split("if (-not $managedState.known)", 1)[1].split(
+        "elseif ($managedState.worker)", 1
+    )[0]
+    assert "$managedRunner.Kill()" not in unknown_guard
 
 
 def test_upgrade_cleans_only_prior_same_user_watchdog_process() -> None:

@@ -34,8 +34,9 @@ $startupRoot = [Environment]::GetFolderPath('Startup')
 $startupVbs = Join-Path $startupRoot 'NEXUS-Bybit-WSL-User-Startup.vbs'
 $legacyStartupCmd = Join-Path $startupRoot 'NEXUS-Bybit-WSL-User-Startup.cmd'
 $wslTimeoutMilliseconds = 10000
-$watchdogGeneration = 3
+$watchdogGeneration = 4
 $managedRunnerLog = '/tmp/nexus-bybit-runner.log'
+$managedChildMissingListenerThreshold = 3
 
 function New-WslProcessStartInfo {
     param(
@@ -194,7 +195,7 @@ function Stop-PreviousUserWatchdogs {
 function Write-Evidence([string]$Decision, [bool]$ListenerObserved) {
     New-Item -ItemType Directory -Path $stateRoot -Force | Out-Null
     $payload = [ordered]@{
-        schema_version = 3
+        schema_version = 4
         generated_at_utc = [DateTime]::UtcNow.ToString('o')
         decision = $Decision
         windows_identity = [string]$identity.Name
@@ -207,8 +208,11 @@ function Write-Evidence([string]$Decision, [bool]$ListenerObserved) {
         stable_watchdog_path = $stableScript
         watchdog_generation = $watchdogGeneration
         watchdog_owns_wsl_child = $true
+        managed_child_liveness_probe = $true
+        missing_listener_recycle_after_probes = $managedChildMissingListenerThreshold
         stale_idle_listener_recycle = $true
         active_worker_interrupt_allowed = $false
+        unknown_probe_interrupt_allowed = $false
         wsl_call_timeout_seconds = [int]($wslTimeoutMilliseconds / 1000)
         administrator_required = $false
         task_scheduler_used = $false
@@ -232,8 +236,9 @@ function Run-Watchdog {
     if (-not $createdNew) { return }
 
     $managedRunner = $null
+    $managedMissingListenerProbes = 0
     try {
-        Write-Log ('watchdog_started=true generation=' + $watchdogGeneration + ' managed_child=true')
+        Write-Log ('watchdog_started=true generation=' + $watchdogGeneration + ' managed_child=true liveness_probe=true')
         while ($true) {
             try {
                 if ($null -ne $managedRunner) {
@@ -241,6 +246,43 @@ function Run-Watchdog {
                         Write-Log ('managed_runner_exit=' + $managedRunner.ExitCode)
                         $managedRunner.Dispose()
                         $managedRunner = $null
+                        $managedMissingListenerProbes = 0
+                    }
+                    else {
+                        # A Windows wsl.exe child can remain alive even when the
+                        # pinned Linux runner is no longer listening. Verify the
+                        # actual Listener/Worker state on every watchdog cycle.
+                        $managedState = Get-RunnerProcessState
+                        if (-not $managedState.known) {
+                            # Fail closed: an unknown probe must never interrupt a
+                            # potentially active Worker.
+                            $managedMissingListenerProbes = 0
+                            Write-Log 'managed_child_state_unknown_no_interrupt=true'
+                        }
+                        elseif ($managedState.worker) {
+                            $managedMissingListenerProbes = 0
+                            Write-Log 'managed_child_worker_active_no_interrupt=true'
+                        }
+                        elseif ($managedState.listener) {
+                            $managedMissingListenerProbes = 0
+                        }
+                        else {
+                            $managedMissingListenerProbes += 1
+                            Write-Log ('managed_child_missing_listener_probe=' + $managedMissingListenerProbes)
+                            if ($managedMissingListenerProbes -ge $managedChildMissingListenerThreshold) {
+                                Write-Log 'managed_child_stale_recycle=true'
+                                try {
+                                    $managedRunner.Kill()
+                                    [void]$managedRunner.WaitForExit(5000)
+                                }
+                                catch {
+                                    Write-Log ('managed_child_stale_recycle_error=' + $_.Exception.GetType().Name)
+                                }
+                                try { $managedRunner.Dispose() } catch { }
+                                $managedRunner = $null
+                                $managedMissingListenerProbes = 0
+                            }
+                        }
                     }
                 }
 
@@ -269,9 +311,12 @@ function Run-Watchdog {
             catch {
                 Write-Log ('watchdog_iteration_error=' + $_.Exception.GetType().Name)
                 if ($null -ne $managedRunner) {
+                    # Do not kill a child in the generic error path. A probe or
+                    # bookkeeping error is not proof that Runner.Worker is idle.
                     try { $managedRunner.Dispose() } catch { }
                     $managedRunner = $null
                 }
+                $managedMissingListenerProbes = 0
             }
             Start-Sleep -Seconds 15
         }
@@ -327,7 +372,7 @@ $proc.Dispose()
 
 Start-Sleep -Seconds 10
 $listener = Test-Listener
-Write-Evidence -Decision $(if ($listener) { 'USER_CONTEXT_MANAGED_CHILD_SELF_HEAL_ACTIVE' } else { 'WATCHDOG_STARTED_LISTENER_NOT_YET_OBSERVED' }) -ListenerObserved $listener
+Write-Evidence -Decision $(if ($listener) { 'USER_CONTEXT_MANAGED_CHILD_LIVENESS_SELF_HEAL_ACTIVE' } else { 'WATCHDOG_STARTED_LISTENER_NOT_YET_OBSERVED' }) -ListenerObserved $listener
 if (-not $listener) { throw 'Watchdog started but NEXUS-BYBIT-WSL listener was not observed.' }
 
 Write-Host 'bybit_wsl_user_startup_recovery=PASS'
@@ -335,8 +380,11 @@ Write-Host "startup_path=$startupVbs"
 Write-Host "watchdog_path=$stableScript"
 Write-Host ('watchdog_generation=' + $watchdogGeneration)
 Write-Host 'watchdog_owns_wsl_child=true'
+Write-Host 'managed_child_liveness_probe=true'
+Write-Host ('missing_listener_recycle_after_probes=' + $managedChildMissingListenerThreshold)
 Write-Host 'stale_idle_listener_recycle=true'
 Write-Host 'active_worker_interrupt_allowed=false'
+Write-Host 'unknown_probe_interrupt_allowed=false'
 Write-Host ('wsl_call_timeout_seconds=' + [int]($wslTimeoutMilliseconds / 1000))
 Write-Host 'administrator_required=false'
 Write-Host 'task_scheduler_used=false'
