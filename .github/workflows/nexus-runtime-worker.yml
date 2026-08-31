@@ -75,8 +75,12 @@ jobs:
   preflight:
     if: >-
       github.event_name != 'workflow_dispatch' ||
-      (github.actor == github.repository_owner &&
-       github.ref_name == github.event.repository.default_branch)
+      (github.ref_name == github.event.repository.default_branch &&
+       (github.actor == github.repository_owner ||
+        (github.actor == 'github-actions[bot]' &&
+         github.event.inputs.payload_b64 != '' &&
+         github.event.inputs.lease_id != '' &&
+         github.event.inputs.transport != '')))
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
