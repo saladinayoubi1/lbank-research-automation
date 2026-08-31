@@ -8,6 +8,7 @@ on:
       - scripts/capture_nexus_bybit_wsl_runner_diagnostics.ps1
       - scripts/run_nexus_bybit_wsl_runner_diagnostics.ps1
       - .github/workflows/nexus-bybit-wsl-runner-diagnostics.yml
+      - tests/test_nexus_bybit_wsl_runner_diagnostics_workflow.py
   workflow_run:
     workflows: ["NEXUS persistent Paper trading loop"]
     types: [completed]
@@ -25,8 +26,38 @@ jobs:
     runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 10
     steps:
-      - name: Checkout diagnostic source
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Prepare exact diagnostic source without JavaScript actions
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $ProgressPreference = 'SilentlyContinue'
+          Set-Location -LiteralPath $env:GITHUB_WORKSPACE
+          $repoUrl = "https://github.com/$env:GITHUB_REPOSITORY.git"
+          if (-not (Test-Path -LiteralPath '.git' -PathType Container)) {
+            git init .
+            if ($LASTEXITCODE -ne 0) { throw 'git init failed.' }
+            git remote add origin $repoUrl
+            if ($LASTEXITCODE -ne 0) { throw 'git remote add failed.' }
+          }
+          else {
+            $origin = (git remote get-url origin 2>$null | Out-String).Trim()
+            if ($LASTEXITCODE -ne 0 -or -not $origin) {
+              git remote add origin $repoUrl
+              if ($LASTEXITCODE -ne 0) { throw 'git remote add failed.' }
+            }
+            elseif ($origin -ne $repoUrl) {
+              git remote set-url origin $repoUrl
+              if ($LASTEXITCODE -ne 0) { throw 'git remote set-url failed.' }
+            }
+          }
+          git fetch --no-tags --prune --depth=1 origin $env:GITHUB_SHA
+          if ($LASTEXITCODE -ne 0) { throw 'exact diagnostic source fetch failed.' }
+          git checkout --force --detach FETCH_HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'exact diagnostic source checkout failed.' }
+          $head = (git rev-parse HEAD | Out-String).Trim()
+          if ($head -ne $env:GITHUB_SHA) { throw "diagnostic source SHA mismatch: $head" }
+          Write-Host "diagnostic_checkout_sha=$head"
+          Write-Host 'diagnostic_javascript_actions_used=false'
 
       - name: Capture read-only WSL runner diagnostics
         shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
@@ -43,11 +74,24 @@ jobs:
             -SourceSha $sourceSha `
             -SourceConclusion $sourceConclusion
 
-      - name: Upload sanitized runner diagnostics
+      - name: Publish sanitized runner diagnostics to job log
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: nexus-bybit-wsl-runner-diagnostics-${{ github.run_id }}
-          path: build/bybit-wsl-runner-diagnostics/evidence.json
-          if-no-files-found: error
-          retention-days: 30
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $target = Join-Path $env:GITHUB_WORKSPACE 'build\bybit-wsl-runner-diagnostics\evidence.json'
+          if (-not (Test-Path -LiteralPath $target -PathType Leaf)) {
+            throw 'Sanitized diagnostics evidence was not produced.'
+          }
+          $evidence = Get-Content -LiteralPath $target -Raw | ConvertFrom-Json
+          if ($evidence.runner_mutation_performed -ne $false) { throw 'Diagnostics evidence reports runner mutation.' }
+          if ($evidence.windows_runner_paths_modified -ne $false) { throw 'Diagnostics evidence reports Windows runner path mutation.' }
+          if ($evidence.bybit_private_credentials_used -ne $false) { throw 'Diagnostics evidence reports private credential use.' }
+          if ($evidence.raw_diagnostic_files_uploaded -ne $false) { throw 'Raw diagnostic upload is forbidden.' }
+          Write-Host 'sanitized_diagnostics_log_begin'
+          Get-Content -LiteralPath $target | ForEach-Object { Write-Host $_ }
+          Write-Host 'sanitized_diagnostics_log_end'
+          Write-Host 'raw_diagnostic_files_uploaded=false'
+          Write-Host 'runner_mutation_performed=false'
+          Write-Host 'windows_runner_paths_modified=false'
+          Write-Host 'bybit_private_credentials_used=false'

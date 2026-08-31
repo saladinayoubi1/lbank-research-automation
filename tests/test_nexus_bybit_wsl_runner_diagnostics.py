@@ -41,6 +41,18 @@ def test_runner_diagnostics_workflow_is_bounded_to_failures_and_physical_windows
     assert "runs-on: [self-hosted, Windows, X64]" in text
     assert "permissions:\n  contents: read" in text
     assert "cancel-in-progress: false" in text
-    assert "actions/checkout@11d5960a326750d5838078e36cf38b85af677262" in text
-    assert "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02" in text
+    assert "uses:" not in text.split("  capture:", 1)[1]
+    assert "actions/checkout@" not in text
+    assert "actions/upload-artifact@" not in text
+    assert "Prepare exact diagnostic source without JavaScript actions" in text
+    assert 'git fetch --no-tags --prune --depth=1 origin $env:GITHUB_SHA' in text
+    assert "git checkout --force --detach FETCH_HEAD" in text
+    assert "diagnostic_javascript_actions_used=false" in text
+    assert "Publish sanitized runner diagnostics to job log" in text
+    assert "sanitized_diagnostics_log_begin" in text
+    assert "sanitized_diagnostics_log_end" in text
+    assert "raw_diagnostic_files_uploaded=false" in text
+    assert "runner_mutation_performed=false" in text
+    assert "windows_runner_paths_modified=false" in text
+    assert "bybit_private_credentials_used=false" in text
     assert "capture_nexus_bybit_wsl_runner_diagnostics.ps1" in text
