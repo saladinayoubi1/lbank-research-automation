@@ -2,6 +2,7 @@ from pathlib import Path
 
 
 WORKFLOW = Path(".github/workflows/nexus-bybit-wsl-runner-diagnostics.yml")
+CAPTURE = Path("scripts/capture_nexus_bybit_wsl_runner_diagnostics.ps1")
 
 
 def _capture_job(text: str) -> str:
@@ -53,3 +54,27 @@ def test_diagnostics_remain_read_only_and_failure_triggered() -> None:
     assert "github.event.workflow_run.conclusion == 'failure'" in text
     assert "github.event.workflow_run.conclusion == 'cancelled'" in text
     assert "runs-on: [self-hosted, Windows, X64]" in text
+
+
+def test_linux_diagnostics_support_minimal_wsl_without_coreutils_process_tools() -> None:
+    text = CAPTURE.read_text(encoding="utf-8")
+    forbidden = (
+        "ps -",
+        "| sort",
+        "| uniq",
+        "tail -n",
+        "head -n",
+        "find '$RunnerRoot",
+        "grep -",
+        "df -",
+    )
+    for fragment in forbidden:
+        assert fragment not in text
+    assert "/proc/[0-9]*" in text
+    assert "/proc/meminfo" in text
+    assert "/proc/loadavg" in text
+    assert "/proc/uptime" in text
+    assert "Runner.Listener|Runner.Worker|dotnet" in text
+    assert "runner_mutation_performed = $false" in text
+    assert "windows_runner_paths_modified = $false" in text
+    assert "bybit_private_credentials_used = $false" in text
