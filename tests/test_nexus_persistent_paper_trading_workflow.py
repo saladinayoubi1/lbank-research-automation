@@ -32,7 +32,7 @@ def test_pr_contract_isolated_and_new_main_push_supersedes_stale_runtime() -> No
     assert "cancel-in-progress: ${{ github.event_name == 'push' }}" in concurrency
 
     paper = _paper_job(text)
-    assert "timeout-minutes: 30" in paper
+    assert "timeout-minutes: 45" in paper
     assert "timeout-minutes: 50" not in paper
 
 
@@ -132,6 +132,12 @@ def test_hosted_wheelhouse_is_digest_pinned_and_physical_install_is_offline() ->
     assert "scripts/nexus_runtime_wheelhouse.py restore-current-run" in restore
     assert '--run-id "$GITHUB_RUN_ID"' in restore
     assert '--expected-sha256 "$WHEELHOUSE_ARCHIVE_SHA256"' in restore
+    assert 'cache_root="$HOME/.cache/nexus-paper-runtime-wheelhouse-verified"' in paper
+    assert "scripts/nexus_runtime_wheelhouse.py pack" in restore
+    assert 'find "$cache_dir" -type l' in restore
+    assert 'cmp requirements.lock "$cache_dir/requirements.lock"' in restore
+    assert "runtime_wheelhouse_verified_cache=HIT" in restore
+    assert "runtime_wheelhouse_verified_cache=MISS_POPULATED" in restore
     assert "--no-index" in provision
     assert '--find-links "$wheelhouse"' in provision
     assert "--no-cache-dir" in provision
