@@ -78,12 +78,14 @@
       "docs/project_memory/RECOVERY_PLAYBOOK.md": "a5b0658d416c1272b488d63d594ba1257ee0e989"
     },
     "canonical_state_transient_fields_known_stale": true,
-    "includes_this_staged_reconciliation_event": true,
+    "snapshot_contains_pre_drive_binding_event_blob": "3deb421ae983a2aace5b82fbbe0151d147dec9c2",
+    "snapshot_contains_current_event_blob": false,
+    "non_circular_binding_intentional": true,
     "legacy_snapshots_preserved": true,
     "secondary_only": true,
     "may_authorize_production_recovery": false,
     "secrets_included": false,
-    "summary": "A new Drive snapshot was created instead of overwriting the historical 2026-08-26 copies. Native readback and a real provider text export succeeded; the export digest was independently computed. Repository Project Memory remains authoritative, and canonical STATE must still be reconciled after the exact-main Paper acceptance attempt before this branch may merge."
+    "summary": "A new Drive snapshot was created instead of overwriting the historical 2026-08-26 copies. Native readback and a real provider text export succeeded; the export digest was independently computed. To avoid a self-referential snapshot loop, Drive stores the pre-binding event blob and this later repository event binds the Drive tuple. Repository Project Memory remains authoritative, and canonical STATE must still be reconciled after the exact-main Paper acceptance attempt before this branch may merge."
   },
   "authority": {
     "research": true,
