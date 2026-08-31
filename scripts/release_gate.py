@@ -17,6 +17,7 @@ from typing import Any
 from uuid import UUID
 
 REQUIRED = ("artifact-manifest.json", "sbom.cdx.json", "provenance.json")
+BOUND_EVIDENCE_FILES = ("provenance.json", "sbom.cdx.json")
 RESERVED_BUNDLE_FILES = set(REQUIRED) | {"artifact-manifest.sig", "artifact-manifest.pem"}
 MAX_JSON_BYTES = 5 * 1024 * 1024
 MAX_EVIDENCE_AGE = timedelta(hours=24)
@@ -195,6 +196,33 @@ def verify_sbom(sbom: Any, now: datetime) -> tuple[str, str, datetime]:
     return completeness, serial, timestamp
 
 
+def verify_bound_evidence(manifest: Any, bundle: Path) -> None:
+    if not isinstance(manifest, dict):
+        fail("artifact manifest must be an object")
+    evidence = manifest.get("evidence")
+    if not isinstance(evidence, dict):
+        fail("artifact manifest must bind provenance and SBOM evidence")
+    if set(evidence) != set(BOUND_EVIDENCE_FILES):
+        fail("artifact manifest evidence set must exactly bind provenance.json and sbom.cdx.json")
+    for name in BOUND_EVIDENCE_FILES:
+        descriptor = evidence.get(name)
+        if not isinstance(descriptor, dict):
+            fail(f"artifact manifest evidence descriptor must be an object: {name}")
+        if set(descriptor) != {"sha256", "size"}:
+            fail(f"artifact manifest evidence descriptor fields are invalid: {name}")
+        digest = descriptor.get("sha256")
+        size = descriptor.get("size")
+        target = bundle / name
+        if target.is_symlink() or not target.is_file():
+            fail(f"bound evidence must be a regular non-symlink file: {name}")
+        if not valid_sha256(digest):
+            fail(f"invalid bound evidence SHA-256: {name}")
+        if sha256(target) != digest:
+            fail(f"bound evidence digest mismatch: {name}")
+        if not isinstance(size, int) or size < 0 or target.stat().st_size != size:
+            fail(f"bound evidence size mismatch: {name}")
+
+
 def verify_bundle_inventory(bundle: Path, manifested: set[str]) -> None:
     """Reject any undeclared content or symlink anywhere in the prepared bundle."""
     for path in sorted(bundle.rglob("*")):
@@ -250,6 +278,7 @@ def verify(
         if not isinstance(size, int) or size < 0 or target.stat().st_size != size:
             fail(f"size mismatch: {name}")
 
+    verify_bound_evidence(manifest, bundle)
     verify_bundle_inventory(bundle, seen)
 
     sbom_path = bundle / "sbom.cdx.json"
@@ -313,7 +342,14 @@ def verify(
             fail("signature and signer certificate are required for production release")
         fail("signature identity policy is not configured; production verification is blocked")
 
-    checks = ["manifest", "bundle-inventory", f"sbom-{completeness}", "provenance-fresh", "artifact-digests"]
+    checks = [
+        "manifest",
+        "bound-evidence-digests",
+        "bundle-inventory",
+        f"sbom-{completeness}",
+        "provenance-fresh",
+        "artifact-digests",
+    ]
     if expected_build_parameters is not None:
         checks.append("provenance-build-parameters")
     return checks
