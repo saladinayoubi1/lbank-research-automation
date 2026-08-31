@@ -90,6 +90,24 @@ def test_original_success_routes_to_distinct_architecture_verifier(monkeypatch):
     assert task["verifier"] != task["producer"]
 
 
+def test_existing_execution_workers_win_current_dag_ties(monkeypatch):
+    monkeypatch.delenv("NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED", raising=False)
+    config = am.load_config()
+    runner.apply_provider_gates(config)
+
+    mgr2 = _task(config, "P4-MGR-002")
+    mgr2["dependencies"] = []
+    mgr2["status"] = "READY"
+    ui = _task(config, "P4-UI-001")
+    ui["dependencies"] = []
+    ui["status"] = "READY"
+
+    am.assign_ready_tasks(config, datetime(2026, 8, 31, 3, 2, tzinfo=timezone.utc))
+
+    assert mgr2["assigned_worker"] == "qa-verifier-agent"
+    assert ui["assigned_worker"] == "qa-verifier-agent"
+
+
 def test_closed_deepseek_gate_does_not_make_independent_verifier_a_deepseek_fallback(monkeypatch):
     monkeypatch.delenv("NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED", raising=False)
     config = am.load_config()
@@ -97,7 +115,7 @@ def test_closed_deepseek_gate_does_not_make_independent_verifier_a_deepseek_fall
     task = _task(config, "P4-DEEPSEEK-001")
     task["status"] = "READY"
 
-    am.assign_ready_tasks(config, datetime(2026, 8, 31, 3, 2, tzinfo=timezone.utc))
+    am.assign_ready_tasks(config, datetime(2026, 8, 31, 3, 3, tzinfo=timezone.utc))
 
     assert task["status"] == "READY"
     assert task.get("assigned_worker") is None
