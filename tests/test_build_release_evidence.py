@@ -1,3 +1,4 @@
+import hashlib
 import json
 import tempfile
 import unittest
@@ -30,6 +31,16 @@ class BuildReleaseEvidenceTests(unittest.TestCase):
             self.assertEqual(manifest["purpose"], "ci-build-evidence")
             self.assertFalse(manifest["production_approval"])
             self.assertEqual(len(manifest["artifacts"]), 1)
+            self.assertEqual(set(manifest["evidence"]), {"provenance.json", "sbom.cdx.json"})
+            for name in ("provenance.json", "sbom.cdx.json"):
+                path = bundle / name
+                self.assertEqual(
+                    manifest["evidence"][name],
+                    {
+                        "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                        "size": path.stat().st_size,
+                    },
+                )
 
             checks = verify(
                 bundle,
@@ -38,6 +49,7 @@ class BuildReleaseEvidenceTests(unittest.TestCase):
                 expected_builder=BUILDER,
             )
             self.assertIn("manifest", checks)
+            self.assertIn("bound-evidence-digests", checks)
             self.assertIn("sbom-unknown", checks)
             self.assertIn("provenance-fresh", checks)
 
