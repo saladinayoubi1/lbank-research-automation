@@ -114,7 +114,16 @@ jobs:
     runs-on: nexus-bybit-network
     timeout-minutes: 20
     outputs:
-      state_archive_b64: ${{ steps.package.outputs.state_archive_b64 }}
+      state_archive_chunk_count: ${{ steps.package.outputs.state_archive_chunk_count }}
+      state_archive_b64_len: ${{ steps.package.outputs.state_archive_b64_len }}
+      state_archive_chunk_0: ${{ steps.package.outputs.state_archive_chunk_0 }}
+      state_archive_chunk_1: ${{ steps.package.outputs.state_archive_chunk_1 }}
+      state_archive_chunk_2: ${{ steps.package.outputs.state_archive_chunk_2 }}
+      state_archive_chunk_3: ${{ steps.package.outputs.state_archive_chunk_3 }}
+      state_archive_chunk_4: ${{ steps.package.outputs.state_archive_chunk_4 }}
+      state_archive_chunk_5: ${{ steps.package.outputs.state_archive_chunk_5 }}
+      state_archive_chunk_6: ${{ steps.package.outputs.state_archive_chunk_6 }}
+      state_archive_chunk_7: ${{ steps.package.outputs.state_archive_chunk_7 }}
       state_archive_sha256: ${{ steps.package.outputs.state_archive_sha256 }}
     env:
       GH_TOKEN: ${{ github.token }}
@@ -336,8 +345,14 @@ jobs:
         run: |
           set -euo pipefail
           if [ "${NATIVE_PREPARED:-false}" != "true" ] || [ ! -d "$STATE_ROOT" ]; then
-            echo "state_archive_b64=" >> "$GITHUB_OUTPUT"
-            echo "state_archive_sha256=" >> "$GITHUB_OUTPUT"
+            {
+              echo "state_archive_chunk_count=0"
+              echo "state_archive_b64_len=0"
+              echo "state_archive_sha256="
+              for index in 0 1 2 3 4 5 6 7; do
+                echo "state_archive_chunk_${index}="
+              done
+            } >> "$GITHUB_OUTPUT"
             exit 0
           fi
           "$PYTHON_BIN" - <<'PY'
@@ -359,25 +374,50 @@ jobs:
           state_sha="$(sha256sum build/persistent-state-handoff.zip | awk '{print $1}')"
           state_b64="$(base64 -w 0 build/persistent-state-handoff.zip)"
           state_b64_bytes="${#state_b64}"
+          chunk_size=60000
+          max_chunks=8
           if [ "$state_b64_bytes" -gt 450000 ]; then
             echo "::error::Packed Paper state exceeds bounded job-output handoff."
             exit 1
           fi
+          chunk_count=$(( (state_b64_bytes + chunk_size - 1) / chunk_size ))
+          if [ "$chunk_count" -lt 1 ] || [ "$chunk_count" -gt "$max_chunks" ]; then
+            echo "::error::Packed Paper state has invalid chunk count: $chunk_count"
+            exit 1
+          fi
           {
-            echo "state_archive_b64<<__NEXUS_STATE__"
-            printf '%s\n' "$state_b64"
-            echo "__NEXUS_STATE__"
+            echo "state_archive_chunk_count=$chunk_count"
+            echo "state_archive_b64_len=$state_b64_bytes"
             echo "state_archive_sha256=$state_sha"
+            for index in 0 1 2 3 4 5 6 7; do
+              if [ "$index" -lt "$chunk_count" ]; then
+                offset=$(( index * chunk_size ))
+                chunk="${state_b64:offset:chunk_size}"
+              else
+                chunk=""
+              fi
+              printf 'state_archive_chunk_%s=%s\n' "$index" "$chunk"
+            done
           } >> "$GITHUB_OUTPUT"
           echo "state_handoff_base64_bytes=$state_b64_bytes"
+          echo "state_handoff_chunk_count=$chunk_count"
 
   persist-state:
-    if: ${{ always() && needs.paper-loop.outputs.state_archive_b64 != '' }}
+    if: ${{ always() && needs.paper-loop.outputs.state_archive_chunk_count != '0' }}
     needs: paper-loop
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      STATE_ARCHIVE_B64: ${{ needs.paper-loop.outputs.state_archive_b64 }}
+      STATE_ARCHIVE_CHUNK_COUNT: ${{ needs.paper-loop.outputs.state_archive_chunk_count }}
+      STATE_ARCHIVE_B64_LEN: ${{ needs.paper-loop.outputs.state_archive_b64_len }}
+      STATE_ARCHIVE_CHUNK_0: ${{ needs.paper-loop.outputs.state_archive_chunk_0 }}
+      STATE_ARCHIVE_CHUNK_1: ${{ needs.paper-loop.outputs.state_archive_chunk_1 }}
+      STATE_ARCHIVE_CHUNK_2: ${{ needs.paper-loop.outputs.state_archive_chunk_2 }}
+      STATE_ARCHIVE_CHUNK_3: ${{ needs.paper-loop.outputs.state_archive_chunk_3 }}
+      STATE_ARCHIVE_CHUNK_4: ${{ needs.paper-loop.outputs.state_archive_chunk_4 }}
+      STATE_ARCHIVE_CHUNK_5: ${{ needs.paper-loop.outputs.state_archive_chunk_5 }}
+      STATE_ARCHIVE_CHUNK_6: ${{ needs.paper-loop.outputs.state_archive_chunk_6 }}
+      STATE_ARCHIVE_CHUNK_7: ${{ needs.paper-loop.outputs.state_archive_chunk_7 }}
       STATE_ARCHIVE_SHA256: ${{ needs.paper-loop.outputs.state_archive_sha256 }}
       STATE_ROOT: build/nexus_persistent_paper_trading_state
     steps:
@@ -386,7 +426,39 @@ jobs:
           set -euo pipefail
           rm -rf "$STATE_ROOT" build/persistent-state-handoff.zip
           mkdir -p "$STATE_ROOT"
-          printf '%s' "$STATE_ARCHIVE_B64" | base64 --decode > build/persistent-state-handoff.zip
+          case "$STATE_ARCHIVE_CHUNK_COUNT" in
+            1|2|3|4|5|6|7|8) ;;
+            *) echo "::error::Invalid Paper state handoff chunk count."; exit 1 ;;
+          esac
+          chunks=(
+            "$STATE_ARCHIVE_CHUNK_0"
+            "$STATE_ARCHIVE_CHUNK_1"
+            "$STATE_ARCHIVE_CHUNK_2"
+            "$STATE_ARCHIVE_CHUNK_3"
+            "$STATE_ARCHIVE_CHUNK_4"
+            "$STATE_ARCHIVE_CHUNK_5"
+            "$STATE_ARCHIVE_CHUNK_6"
+            "$STATE_ARCHIVE_CHUNK_7"
+          )
+          state_b64=""
+          for ((index=0; index<STATE_ARCHIVE_CHUNK_COUNT; index++)); do
+            if [ "${#chunks[$index]}" -gt 60000 ]; then
+              echo "::error::Paper state handoff chunk exceeds bound."
+              exit 1
+            fi
+            state_b64+="${chunks[$index]}"
+          done
+          for ((index=STATE_ARCHIVE_CHUNK_COUNT; index<8; index++)); do
+            if [ -n "${chunks[$index]}" ]; then
+              echo "::error::Unexpected trailing Paper state handoff chunk."
+              exit 1
+            fi
+          done
+          if [ "${#state_b64}" -ne "$STATE_ARCHIVE_B64_LEN" ]; then
+            echo "::error::Paper state handoff length mismatch."
+            exit 1
+          fi
+          printf '%s' "$state_b64" | base64 --decode > build/persistent-state-handoff.zip
           actual_sha="$(sha256sum build/persistent-state-handoff.zip | awk '{print $1}')"
           test "$actual_sha" = "$STATE_ARCHIVE_SHA256"
           python - <<'PY'
