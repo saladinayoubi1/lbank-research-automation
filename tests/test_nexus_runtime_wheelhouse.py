@@ -144,6 +144,43 @@ def test_resumable_storage_retry_uses_fresh_signed_url_and_never_forwards_token(
     assert storage_requests[1].get_header("Range") == "bytes=3-"
 
 
+def test_cross_attempt_resume_keeps_existing_partial_without_forwarding_token(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    opener = _RedirectingOpener()
+    storage_requests = []
+    monkeypatch.setattr(urllib.request, "build_opener", lambda *_args, **_kwargs: opener)
+
+    def fake_urlopen(request, timeout: int):
+        assert timeout == 1
+        storage_requests.append(request)
+        return _Response(
+            206,
+            headers={"Content-Range": "bytes 3-5/6"},
+            chunks=[b"def"],
+        )
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    output = tmp_path / "artifact.zip"
+    output.write_bytes(b"abc")
+
+    _download_with_redirect_boundary(
+        "https://api.github.com/repos/example/repo/actions/artifacts/1/zip",
+        {"Authorization": "Bearer secret", "User-Agent": "test"},
+        output,
+        expected_size=6,
+        timeout=1,
+        retry_delays=(),
+        preserve_existing=True,
+    )
+
+    assert output.read_bytes() == b"abcdef"
+    assert opener.calls == 1
+    assert len(storage_requests) == 1
+    assert storage_requests[0].get_header("Authorization") is None
+    assert storage_requests[0].get_header("Range") == "bytes=3-"
+
+
 def test_content_range_is_fail_closed_for_wrong_resume_offset() -> None:
     with pytest.raises(RuntimeError, match="start mismatch"):
         _validate_content_range("bytes 2-5/6", expected_start=3, expected_total=6)
