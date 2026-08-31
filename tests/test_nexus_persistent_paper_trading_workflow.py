@@ -110,6 +110,22 @@ def test_wsl1_python_selection_is_preprovisioned_and_checks_version() -> None:
     assert "cache: pip" not in paper
 
 
+def test_physical_pip_bootstrap_has_bounded_network_resilience_without_mirror_or_cache() -> None:
+    text = WORKFLOW.read_text(encoding="utf-8")
+    paper = _paper_job(text)
+    provision = paper.split(
+        "Provision locked runtime dependencies from bundled pip wheel", 1
+    )[1].split('      - run: \'"$PYTHON_BIN" -m pip check\'', 1)[0]
+    assert "--timeout 120" in provision
+    assert "--retries 3" in provision
+    assert "--no-cache-dir" in provision
+    assert "--target \"$runtime_site\"" in provision
+    assert "-r requirements.lock" in provision
+    assert "--index-url" not in provision
+    assert "--extra-index-url" not in provision
+    assert "--trusted-host" not in provision
+
+
 def test_wsl1_state_restore_uses_python_stdlib_not_unprovisioned_cli_tools() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     paper = _paper_job(text)
