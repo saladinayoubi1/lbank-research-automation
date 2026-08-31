@@ -73,6 +73,33 @@ def verify_freshness(timestamp: datetime, now: datetime, field: str) -> None:
         fail(f"{field} is stale")
 
 
+def normalize_build_parameters(value: Any, field: str = "provenance build_parameters") -> dict[str, str]:
+    if value is None:
+        return {}
+    if not isinstance(value, dict):
+        fail(f"{field} must be an object")
+    normalized: dict[str, str] = {}
+    for key, parameter in value.items():
+        if not isinstance(key, str) or not key.strip() or key != key.strip():
+            fail(f"{field} key must be a non-empty trimmed string")
+        if not isinstance(parameter, str) or not parameter.strip() or parameter != parameter.strip():
+            fail(f"{field} value must be a non-empty trimmed string: {key}")
+        normalized[key] = parameter
+    return dict(sorted(normalized.items()))
+
+
+def parse_build_parameter_args(values: list[str] | None) -> dict[str, str]:
+    parsed: dict[str, str] = {}
+    for raw in values or []:
+        if "=" not in raw:
+            fail("expected build parameter must use key=value syntax")
+        key, value = raw.split("=", 1)
+        if key in parsed:
+            fail(f"duplicate expected build parameter: {key}")
+        parsed[key] = value
+    return normalize_build_parameters(parsed, "expected build parameters")
+
+
 def verify_sbom(sbom: Any, now: datetime) -> tuple[str, str, datetime]:
     if not isinstance(sbom, dict) or sbom.get("bomFormat") != "CycloneDX":
         fail("SBOM must be CycloneDX JSON")
@@ -185,6 +212,7 @@ def verify(
     now: datetime | None = None,
     expected_source_commit: str | None = None,
     expected_builder: str | None = None,
+    expected_build_parameters: dict[str, str] | None = None,
 ) -> list[str]:
     now = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
     if bundle.is_symlink() or not bundle.is_dir():
@@ -241,6 +269,12 @@ def verify(
     if expected_builder is not None and builder != expected_builder:
         fail("provenance builder mismatch")
 
+    build_parameters = normalize_build_parameters(provenance.get("build_parameters"))
+    if expected_build_parameters is not None:
+        expected_parameters = normalize_build_parameters(expected_build_parameters, "expected build parameters")
+        if build_parameters != expected_parameters:
+            fail("provenance build_parameters mismatch")
+
     issued_at = parse_time(provenance.get("issued_at"), "provenance issued_at")
     verify_freshness(issued_at, now, "provenance issued_at")
     if abs((issued_at - sbom_timestamp).total_seconds()) > MAX_FUTURE_SKEW.total_seconds():
@@ -279,7 +313,10 @@ def verify(
             fail("signature and signer certificate are required for production release")
         fail("signature identity policy is not configured; production verification is blocked")
 
-    return ["manifest", "bundle-inventory", f"sbom-{completeness}", "provenance-fresh", "artifact-digests"]
+    checks = ["manifest", "bundle-inventory", f"sbom-{completeness}", "provenance-fresh", "artifact-digests"]
+    if expected_build_parameters is not None:
+        checks.append("provenance-build-parameters")
+    return checks
 
 
 def main() -> int:
@@ -288,13 +325,26 @@ def main() -> int:
     parser.add_argument("--allow-unsigned", action="store_true", help="CI validation only; never production approval")
     parser.add_argument("--expected-source-commit")
     parser.add_argument("--expected-builder")
+    parser.add_argument(
+        "--expected-build-parameter",
+        action="append",
+        default=[],
+        metavar="KEY=VALUE",
+        help="repeatable exact build parameter required from provenance",
+    )
     args = parser.parse_args()
     try:
+        expected_parameters = (
+            parse_build_parameter_args(args.expected_build_parameter)
+            if args.expected_build_parameter
+            else None
+        )
         checks = verify(
             args.bundle,
             require_signature=not args.allow_unsigned,
             expected_source_commit=args.expected_source_commit,
             expected_builder=args.expected_builder,
+            expected_build_parameters=expected_parameters,
         )
     except ValueError as exc:
         print(f"RELEASE_GATE=BLOCKED reason={exc}", file=sys.stderr)
