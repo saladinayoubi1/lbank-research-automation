@@ -1,3 +1,4 @@
+import hashlib
 import json
 from pathlib import Path
 
@@ -31,6 +32,17 @@ def _bundle(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return bundle
 
 
+def _rebind_manifest_provenance(bundle: Path) -> None:
+    manifest_path = bundle / "artifact-manifest.json"
+    provenance_path = bundle / "provenance.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["evidence"]["provenance.json"] = {
+        "sha256": hashlib.sha256(provenance_path.read_bytes()).hexdigest(),
+        "size": provenance_path.stat().st_size,
+    }
+    manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
 def test_build_parameters_are_canonical_and_exactly_verified(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     bundle = _bundle(tmp_path, monkeypatch)
     provenance = json.loads((bundle / "provenance.json").read_text(encoding="utf-8"))
@@ -43,6 +55,7 @@ def test_build_parameters_are_canonical_and_exactly_verified(tmp_path: Path, mon
         expected_builder=BUILDER,
         expected_build_parameters=PARAMETERS,
     )
+    assert "bound-evidence-digests" in checks
     assert "provenance-build-parameters" in checks
 
 
@@ -63,12 +76,28 @@ def test_build_parameter_extra_actual_value_fails_closed(tmp_path: Path, monkeyp
         verify(bundle, require_signature=False, expected_build_parameters=expected)
 
 
-def test_build_parameter_tampering_cannot_be_silently_accepted(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_build_parameter_tamper_fails_manifest_binding_before_semantic_verification(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     bundle = _bundle(tmp_path, monkeypatch)
     provenance_path = bundle / "provenance.json"
     provenance = json.loads(provenance_path.read_text(encoding="utf-8"))
     provenance["build_parameters"]["signing"] = "enabled"
     provenance_path.write_text(json.dumps(provenance, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="bound evidence digest mismatch: provenance.json"):
+        verify(bundle, require_signature=False, expected_build_parameters=PARAMETERS)
+
+
+def test_build_parameter_tamper_still_fails_if_unsigned_manifest_is_rebound(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    bundle = _bundle(tmp_path, monkeypatch)
+    provenance_path = bundle / "provenance.json"
+    provenance = json.loads(provenance_path.read_text(encoding="utf-8"))
+    provenance["build_parameters"]["signing"] = "enabled"
+    provenance_path.write_text(json.dumps(provenance, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    _rebind_manifest_provenance(bundle)
 
     with pytest.raises(ValueError, match="provenance build_parameters mismatch"):
         verify(bundle, require_signature=False, expected_build_parameters=PARAMETERS)
