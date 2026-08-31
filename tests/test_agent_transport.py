@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from pathlib import Path
 
 import pytest
 
@@ -189,3 +190,17 @@ def test_result_poll_can_finish_before_stale_lease_triage(monkeypatch):
     monkeypatch.setattr(at, "find_result", lambda lease_id: deepcopy(result))
     assert at.poll_results(cfg) == 1
     assert t["status"] == "VERIFYING"
+
+
+def test_runtime_worker_preflight_allows_only_bounded_internal_bot_dispatch():
+    workflow = Path(".github/workflows/nexus-runtime-worker.yml").read_text(encoding="utf-8")
+    preflight = workflow.split("  preflight:\n", 1)[1].split("    runs-on:", 1)[0]
+    assert "github.actor == github.repository_owner" in preflight
+    assert "github.actor == 'github-actions[bot]'" in preflight
+    assert "github.event.inputs.payload_b64 != ''" in preflight
+    assert "github.event.inputs.lease_id != ''" in preflight
+    assert "github.event.inputs.transport != ''" in preflight
+
+    laptop = workflow.split("  laptop-worker:\n", 1)[1].split("    needs:", 1)[0]
+    assert "github.actor == github.repository_owner" in laptop
+    assert "github-actions[bot]" not in laptop
