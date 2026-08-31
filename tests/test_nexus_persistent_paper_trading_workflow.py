@@ -32,7 +32,7 @@ def test_pr_contract_isolated_and_new_main_push_supersedes_stale_runtime() -> No
     assert "cancel-in-progress: ${{ github.event_name == 'push' }}" in concurrency
 
     paper = _paper_job(text)
-    assert "timeout-minutes: 20" in paper
+    assert "timeout-minutes: 30" in paper
     assert "timeout-minutes: 50" not in paper
 
 
@@ -81,13 +81,10 @@ def test_physical_wsl_job_avoids_javascript_actions_and_codeload_dependency() ->
     paper = _paper_job(text)
     persist = text.split("  persist-state:", 1)[1]
 
-    # Hosted jobs retain immutable JavaScript actions on a Node-24-capable plane.
     assert "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" in contract
     assert "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97" in contract
     assert "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02" in persist
 
-    # The physical WSL1 job has zero `uses:` steps, so runner preparation never
-    # depends on codeload.github.com or a JavaScript runtime.
     assert "uses:" not in paper
     assert "actions/checkout@" not in paper
     assert "actions/setup-python@" not in paper
