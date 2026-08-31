@@ -90,6 +90,16 @@ def apply_provider_gates(config: dict[str, Any]) -> None:
             worker["enabled"] = False
 
 
+def _latest_external_worker(task: dict[str, Any]) -> str | None:
+    timeline = task.get("external_wait_timeline")
+    if isinstance(timeline, list) and timeline:
+        latest = timeline[-1]
+        if isinstance(latest, dict) and isinstance(latest.get("worker_id"), str):
+            return latest["worker_id"]
+    worker = task.get("assigned_worker")
+    return worker if isinstance(worker, str) else None
+
+
 def recover_completed_root_cause_analysis(config: dict[str, Any]) -> int:
     """Turn successful RCA work back into original-task work instead of false completion."""
     recovered = 0
@@ -103,7 +113,7 @@ def recover_completed_root_cause_analysis(config: dict[str, Any]) -> int:
             continue
 
         task["triage_evidence"] = {
-            "worker_id": task.get("assigned_worker"),
+            "worker_id": _latest_external_worker(task),
             "received_at": task.get("result_received_at"),
             "evidence": deepcopy(evidence),
         }
