@@ -64,6 +64,33 @@ def _loop() -> dict:
     }
 
 
+def _write_ledgers(root: Path, *, substitute: bool = False) -> None:
+    for symbol in SYMBOLS:
+        for timeframe in TIMEFRAMES:
+            tasks = [
+                {
+                    "family": family,
+                    "task_id": f"task-{family}",
+                    "status": "qualification_killed",
+                    "evidence_digest": "c" * 64,
+                }
+                for family in FAMILIES
+            ]
+            if substitute and symbol == "BTCUSDT" and timeframe == "hour1":
+                tasks[0]["evidence_digest"] = "d" * 64
+            _write_json(
+                root / "cells" / symbol.lower() / timeframe / "supervisor-ledger.json",
+                {
+                    "source_sha": SOURCE_SHA,
+                    "symbol": symbol,
+                    "timeframe": timeframe,
+                    "paper_only": True,
+                    "live_trading_authority": False,
+                    "tasks": tasks,
+                },
+            )
+
+
 def test_stage1_rejects_one_stale_source_cell(monkeypatch, tmp_path: Path) -> None:
     matrix = _matrix()
     matrix["cells"]["BTCUSDT:hour1"]["source_sha"] = STALE_SHA
@@ -87,31 +114,7 @@ def test_stage1_rejects_lane_ledger_substitution(monkeypatch, tmp_path: Path) ->
     monkeypatch.setattr(audit, "verify_loop_snapshot", lambda _value: {"decision": "pass"})
     monkeypatch.setattr(audit, "verify_ledger", lambda _value: {"decision": "pass"})
     _write_json(tmp_path / "demo" / "persistent-paper-trading-loop.json", _loop())
-
-    for symbol in SYMBOLS:
-        for timeframe in TIMEFRAMES:
-            tasks = [
-                {
-                    "family": family,
-                    "task_id": f"task-{family}",
-                    "status": "qualification_killed",
-                    "evidence_digest": "c" * 64,
-                }
-                for family in FAMILIES
-            ]
-            if symbol == "BTCUSDT" and timeframe == "hour1":
-                tasks[0]["evidence_digest"] = "d" * 64
-            _write_json(
-                tmp_path / "cells" / symbol.lower() / timeframe / "supervisor-ledger.json",
-                {
-                    "source_sha": SOURCE_SHA,
-                    "symbol": symbol,
-                    "timeframe": timeframe,
-                    "paper_only": True,
-                    "live_trading_authority": False,
-                    "tasks": tasks,
-                },
-            )
+    _write_ledgers(tmp_path, substitute=True)
 
     with pytest.raises(audit.PaperAcceptanceStage1Error, match="lane/ledger substitution"):
         audit.audit_state_root(
@@ -119,3 +122,81 @@ def test_stage1_rejects_lane_ledger_substitution(monkeypatch, tmp_path: Path) ->
             manifest_path=tmp_path / "manifest.json",
             source_sha=SOURCE_SHA,
         )
+
+
+def test_stage1_accepts_exact_operational_boundary_chain(monkeypatch, tmp_path: Path) -> None:
+    matrix = _matrix()
+    monkeypatch.setattr(audit, "load_manifest", lambda _path: _manifest())
+    monkeypatch.setattr(audit, "load_state", lambda _path, _manifest: matrix)
+    monkeypatch.setattr(audit, "verify_loop_snapshot", lambda _value: {"decision": "pass"})
+    monkeypatch.setattr(audit, "verify_ledger", lambda _value: {"decision": "pass"})
+    monkeypatch.setattr(audit, "verify_cycle_snapshot", lambda _value: {"decision": "pass"})
+    _write_ledgers(tmp_path)
+
+    maintenance_core = {
+        "source_sha": SOURCE_SHA,
+        "cell_count": 6,
+        "task_count": 18,
+        "paper_only": True,
+        "live_trading_authority": False,
+        "private_credentials_used": False,
+        "automatic_strategy_promotion": False,
+        "exposure_increased": False,
+    }
+    maintenance = {
+        **maintenance_core,
+        "maintenance_digest": audit._digest(maintenance_core),
+    }
+    performance_core = {
+        "source_sha": SOURCE_SHA,
+        "cell_count": 6,
+        "paper_only": True,
+        "live_trading_authority": False,
+        "automatic_strategy_promotion": False,
+    }
+    performance = {
+        **performance_core,
+        "refresh_digest": audit._digest(performance_core),
+    }
+    regime = {
+        "source_sha": SOURCE_SHA,
+        "expected_cell_count": 6,
+        "verified_cell_count": 6,
+        "paper_only": True,
+        "live_trading_authority": False,
+        "private_credentials_used": False,
+        "automatic_strategy_promotion": False,
+        "deterministic_risk_final_authority": True,
+        "cycle_digest": "e" * 64,
+    }
+    loop = {
+        **_loop(),
+        "regime_status": "VERIFIED",
+        "performance_health_feedback_operational": True,
+        "regime_selected_rebalance_operational": True,
+        "regime_selected_exposure_increase_operational": True,
+        "strategy_research_required": True,
+        "strategy_discovery_health_trigger_requested": True,
+        "remaining_core_gap": "RUNTIME_EVIDENCE_AND_DISCOVERY_FEEDBACK_PROOF",
+        "maintenance_digest": maintenance["maintenance_digest"],
+        "performance_refresh_digest": performance["refresh_digest"],
+        "regime_cycle_digest": regime["cycle_digest"],
+    }
+    _write_json(tmp_path / "demo" / "persistent-paper-trading-loop.json", loop)
+    _write_json(tmp_path / "demo" / "paper-position-maintenance.json", maintenance)
+    _write_json(tmp_path / "demo" / "paper-performance-refresh.json", performance)
+    _write_json(tmp_path / "demo" / "regime-cycle.json", regime)
+
+    result = audit.audit_state_root(
+        state_root=tmp_path,
+        manifest_path=tmp_path / "manifest.json",
+        source_sha=SOURCE_SHA,
+    )
+
+    assert result["decision"] == "pass"
+    assert result["verified_cell_count"] == 6
+    assert result["verified_lane_count"] == 18
+    assert result["health_trigger_requested"] is True
+    assert result["stage1_only"] is True
+    assert result["discovery_runtime_requalification_proven"] is False
+    assert result["restart_replay_proven"] is False
