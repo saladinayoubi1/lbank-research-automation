@@ -248,3 +248,104 @@ def test_cycle_snapshot_is_digest_bound_and_preserves_authority() -> None:
     tampered = deepcopy(snapshot)
     tampered["frozen_prospective_hour4_lane_mutated"] = True
     assert verify_cycle_snapshot(tampered)["decision"] == "reject"
+
+
+def _health_inputs(
+    *,
+    supervisor_status: str = "no_open_signal",
+    performance_status: str = "HEALTHY",
+    lifecycle_state: str = "PAPER",
+    task_family: str = "momentum",
+    performance_family: str = "momentum",
+    task_strategy_id: str = "momentum-canonical-v1",
+    performance_strategy_id: str = "momentum-canonical-v1",
+) -> tuple[dict, dict]:
+    ledger = {
+        "tasks": [{
+            "family": task_family,
+            "status": supervisor_status,
+            "research_result": {
+                "strategy_record": {
+                    "strategy_id": task_strategy_id,
+                    "family": task_family,
+                    "record_digest": "d" * 64,
+                },
+                "qualification": {
+                    "family": task_family,
+                    "strategy_version": "momentum-product-v1",
+                },
+            },
+        }]
+    }
+    performance = {
+        "strategies": [{
+            "family": performance_family,
+            "strategy_id": performance_strategy_id,
+            "status": performance_status,
+            "lifecycle_state": lifecycle_state,
+            "monitor_digest": "e" * 64,
+        }]
+    }
+    return ledger, performance
+
+
+def test_flat_no_open_signal_with_bound_paper_evidence_is_eligible() -> None:
+    ledger, performance = _health_inputs()
+
+    eligible = regime_cycle._eligible_health_rows(ledger, performance)
+
+    assert eligible == {
+        "momentum": {
+            "family": "momentum",
+            "canonical_strategy_id": "momentum-canonical-v1",
+            "strategy_version": "momentum-product-v1",
+            "record_digest": "d" * 64,
+            "health_state": "HEALTHY",
+            "health_digest": "e" * 64,
+            "lifecycle_state": "PAPER",
+        }
+    }
+
+
+def test_flat_no_open_signal_still_rejects_strategy_identity_substitution() -> None:
+    ledger, performance = _health_inputs(
+        performance_strategy_id="substituted-strategy-v1"
+    )
+
+    with pytest.raises(DemoRegimeCycleError, match="identity substitution"):
+        regime_cycle._eligible_health_rows(ledger, performance)
+
+
+def test_unrecognized_supervisor_status_remains_fail_closed() -> None:
+    ledger, performance = _health_inputs(supervisor_status="paused")
+
+    with pytest.raises(DemoRegimeCycleError, match="active verified Supervisor evidence"):
+        regime_cycle._eligible_health_rows(ledger, performance)
+
+
+def test_flat_insufficient_evidence_cannot_become_selector_health() -> None:
+    ledger, performance = _health_inputs(performance_status="INSUFFICIENT_EVIDENCE")
+
+    assert regime_cycle._eligible_health_rows(ledger, performance) == {}
+
+
+def test_performance_projection_authority_remains_paper_only() -> None:
+    verification_digest = "f" * 64
+    core = {
+        "contract_version": "nexus.mission-control.paper-performance.v1",
+        "supervisor_verification_digest": verification_digest,
+        "paper_only": True,
+        "live_trading_authority": False,
+        "strategy_count": 0,
+        "status_counts": {},
+        "strategies": [],
+    }
+    projection = {**core, "projection_digest": _digest(core)}
+    assert regime_cycle._validate_performance_projection(
+        projection, verification_digest
+    )["live_trading_authority"] is False
+
+    live_core = {**core, "live_trading_authority": True}
+    live_projection = {**live_core, "projection_digest": _digest(live_core)}
+    with pytest.raises(DemoRegimeCycleError, match="verification failed"):
+        regime_cycle._validate_performance_projection(live_projection, verification_digest)
