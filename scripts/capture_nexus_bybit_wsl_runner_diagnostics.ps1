@@ -98,11 +98,102 @@ catch {
     $taskErrorClass = $_.Exception.GetType().FullName
 }
 
-$wslStatus = Invoke-WslCapture -Command "printf 'kernel='; uname -r; printf 'pid1='; ps -p 1 -o comm=; printf 'runner_root='; test -d '$RunnerRoot' && echo present || echo missing"
-$processStatus = Invoke-WslCapture -Command "ps -eo comm= 2>/dev/null | grep -E '^(Runner\\.(Listener|Worker)|dotnet)$' | sort | uniq -c || true"
-$resourceStatus = Invoke-WslCapture -Command "df -Pk '$RunnerRoot' 2>/dev/null | tail -n 1; awk '/MemTotal:|MemAvailable:/ {print `$1, `$2}' /proc/meminfo 2>/dev/null"
-$diagInventory = Invoke-WslCapture -Command "if [ -d '$RunnerRoot/_diag' ]; then find '$RunnerRoot/_diag' -maxdepth 1 -type f -name '*.log' -printf '%T@ %f %s\\n' 2>/dev/null | sort -nr | head -n 12; else echo diag_directory_missing; fi"
-$diagSignals = Invoke-WslCapture -Command "if [ -d '$RunnerRoot/_diag' ]; then grep -hEia 'error|exception|failed|failure|exit code|terminated|killed|out of memory|segmentation|permission denied|no space left|resource temporarily unavailable|Runner\\.Worker|Runner\\.Listener|job message|connection' '$RunnerRoot'/_diag/*.log 2>/dev/null | tail -n 240 || true; fi"
+# The physical Bybit WSL instance can be intentionally minimal. Keep every Linux
+# diagnostic probe read-only and dependent only on bash builtins plus procfs so
+# missing coreutils cannot hide the runner state we are trying to observe.
+$wslStatusCommand = @'
+printf 'kernel='
+if [ -r /proc/sys/kernel/osrelease ] && IFS= read -r kernel < /proc/sys/kernel/osrelease; then printf '%s\n' "$kernel"; else printf 'unknown\n'; fi
+printf 'pid1='
+if [ -r /proc/1/comm ] && IFS= read -r pid1 < /proc/1/comm; then printf '%s\n' "$pid1"; else printf 'unknown\n'; fi
+printf 'runner_root='
+if [ -d '__RUNNER_ROOT__' ]; then printf 'present\n'; else printf 'missing\n'; fi
+'@
+$wslStatusCommand = $wslStatusCommand.Replace('__RUNNER_ROOT__', $RunnerRoot)
+
+$processStatusCommand = @'
+found=0
+for proc in /proc/[0-9]*; do
+    [ -r "$proc/comm" ] || continue
+    comm=''
+    IFS= read -r comm < "$proc/comm" || true
+    case "$comm" in
+        Runner.Listener|Runner.Worker|dotnet)
+            pid=${proc##*/}
+            printf '%s pid=%s\n' "$comm" "$pid"
+            found=1
+            ;;
+    esac
+done
+if [ "$found" -eq 0 ]; then printf 'no_runner_processes_detected\n'; fi
+'@
+
+$resourceStatusCommand = @'
+printf '[loadavg]\n'
+if [ -r /proc/loadavg ] && IFS= read -r line < /proc/loadavg; then printf '%s\n' "$line"; else printf 'unavailable\n'; fi
+printf '[uptime]\n'
+if [ -r /proc/uptime ] && IFS= read -r line < /proc/uptime; then printf '%s\n' "$line"; else printf 'unavailable\n'; fi
+printf '[meminfo]\n'
+if [ -r /proc/meminfo ]; then
+    count=0
+    while IFS= read -r line || [ -n "$line" ]; do
+        case "$line" in
+            MemTotal:*|MemAvailable:*|MemFree:*|SwapTotal:*|SwapFree:*)
+                printf '%s\n' "$line"
+                count=$((count + 1))
+                ;;
+        esac
+        [ "$count" -ge 5 ] && break
+    done < /proc/meminfo
+else
+    printf 'unavailable\n'
+fi
+printf 'runner_root_writable='
+if [ -w '__RUNNER_ROOT__' ]; then printf 'yes\n'; else printf 'no\n'; fi
+'@
+$resourceStatusCommand = $resourceStatusCommand.Replace('__RUNNER_ROOT__', $RunnerRoot)
+
+$diagInventoryCommand = @'
+if [ -d '__RUNNER_ROOT__/_diag' ]; then
+    count=0
+    for file in '__RUNNER_ROOT__'/_diag/*.log; do
+        [ -f "$file" ] || continue
+        printf '%s\n' "${file##*/}"
+        count=$((count + 1))
+        [ "$count" -ge 300 ] && break
+    done
+    if [ "$count" -eq 0 ]; then printf 'diag_logs_missing\n'; fi
+else
+    printf 'diag_directory_missing\n'
+fi
+'@
+$diagInventoryCommand = $diagInventoryCommand.Replace('__RUNNER_ROOT__', $RunnerRoot)
+
+$diagSignalsCommand = @'
+shopt -s nocasematch
+signals=()
+if [ -d '__RUNNER_ROOT__/_diag' ]; then
+    for file in '__RUNNER_ROOT__'/_diag/*.log; do
+        [ -f "$file" ] || continue
+        while IFS= read -r line || [ -n "$line" ]; do
+            if [[ "$line" =~ error|exception|failed|failure|exit[[:space:]]+code|terminated|killed|out[[:space:]]+of[[:space:]]+memory|segmentation|permission[[:space:]]+denied|no[[:space:]]+space[[:space:]]+left|resource[[:space:]]+temporarily[[:space:]]+unavailable|Runner\.Worker|Runner\.Listener|job[[:space:]]+message|connection ]]; then
+                signals+=("$line")
+                if [ "${#signals[@]}" -gt 240 ]; then
+                    signals=("${signals[@]:1}")
+                fi
+            fi
+        done < "$file"
+    done
+fi
+if [ "${#signals[@]}" -gt 0 ]; then printf '%s\n' "${signals[@]}"; fi
+'@
+$diagSignalsCommand = $diagSignalsCommand.Replace('__RUNNER_ROOT__', $RunnerRoot)
+
+$wslStatus = Invoke-WslCapture -Command $wslStatusCommand
+$processStatus = Invoke-WslCapture -Command $processStatusCommand
+$resourceStatus = Invoke-WslCapture -Command $resourceStatusCommand
+$diagInventory = Invoke-WslCapture -Command $diagInventoryCommand
+$diagSignals = Invoke-WslCapture -Command $diagSignalsCommand
 
 $safeSignals = Protect-DiagnosticOutput -Text $diagSignals.output -Limit 240
 $signalText = ($safeSignals -join "`n").ToLowerInvariant()
