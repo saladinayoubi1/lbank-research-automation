@@ -8,6 +8,12 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/fast-agent-coordinator.yml'
+      - '.github/workflows/nexus-runtime-worker.yml'
+      - 'agent_manager.py'
+      - 'agent_manager_runner.py'
+      - 'agent_transport.py'
+      - 'config/nexus-agent-manager.json'
+      - 'scripts/agent_task_executor.py'
       - 'paper_schedule_watchdog.py'
 
 permissions:
