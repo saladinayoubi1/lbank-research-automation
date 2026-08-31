@@ -23,12 +23,15 @@ on:
       - "nexus_strategy_paper_supervisor.py"
       - "nexus_paper_performance_pipeline.py"
       - "scripts/nexus_strategy_discovery_controller.py"
+      - "scripts/nexus_runtime_wheelhouse.py"
       - "config/nexus-demo-strategy-matrix-v1.json"
       - "config/nexus-regime-strategy-policy-v1.json"
       - "research/strategy_family_catalog.json"
+      - "requirements.lock"
       - "tests/test_bybit_public_klines.py"
       - "tests/test_nexus_persistent_paper_trading_loop.py"
       - "tests/test_nexus_persistent_paper_trading_workflow.py"
+      - "tests/test_nexus_runtime_wheelhouse.py"
       - "tests/test_nexus_regime_selected_position_rebalance.py"
       - "tests/test_nexus_regime_selected_exposure_increase.py"
       - "tests/test_nexus_strategy_discovery_health_trigger.py"
@@ -53,12 +56,15 @@ on:
       - "nexus_strategy_paper_supervisor.py"
       - "nexus_paper_performance_pipeline.py"
       - "scripts/nexus_strategy_discovery_controller.py"
+      - "scripts/nexus_runtime_wheelhouse.py"
       - "config/nexus-demo-strategy-matrix-v1.json"
       - "config/nexus-regime-strategy-policy-v1.json"
       - "research/strategy_family_catalog.json"
+      - "requirements.lock"
       - "tests/test_bybit_public_klines.py"
       - "tests/test_nexus_persistent_paper_trading_loop.py"
       - "tests/test_nexus_persistent_paper_trading_workflow.py"
+      - "tests/test_nexus_runtime_wheelhouse.py"
       - "tests/test_nexus_regime_selected_position_rebalance.py"
       - "tests/test_nexus_regime_selected_exposure_increase.py"
       - "tests/test_nexus_strategy_discovery_health_trigger.py"
@@ -94,6 +100,7 @@ jobs:
           tests/test_bybit_public_klines.py
           tests/test_nexus_persistent_paper_trading_loop.py
           tests/test_nexus_persistent_paper_trading_workflow.py
+          tests/test_nexus_runtime_wheelhouse.py
           tests/test_nexus_regime_selected_position_rebalance.py
           tests/test_nexus_regime_selected_exposure_increase.py
           tests/test_nexus_strategy_discovery_health_trigger.py
@@ -108,9 +115,66 @@ jobs:
           tests/test_nexus_strategy_paper_supervisor.py
           tests/test_nexus_strategy_discovery_controller.py
 
+  runtime-wheelhouse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      archive_sha256: ${{ steps.pack.outputs.archive_sha256 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Build locked CPython 3.12 Linux runtime wheelhouse
+        run: |
+          set -euo pipefail
+          wheelhouse="$PWD/build/nexus-paper-runtime-wheelhouse"
+          smoke="$PWD/build/nexus-paper-runtime-wheelhouse-smoke"
+          rm -rf "$wheelhouse" "$smoke" build/nexus-paper-runtime-wheelhouse.zip
+          mkdir -p "$wheelhouse" "$smoke"
+          python -m pip download \
+            --disable-pip-version-check \
+            --only-binary=:all: \
+            --dest "$wheelhouse" \
+            -r requirements.lock
+          cp requirements.lock "$wheelhouse/requirements.lock"
+          python -m pip install \
+            --disable-pip-version-check \
+            --no-index \
+            --find-links "$wheelhouse" \
+            --target "$smoke" \
+            -r requirements.lock
+          PYTHONPATH="$smoke" python - <<'PY'
+          import numpy
+          import pandas
+          import pyarrow
+          import requests
+          import tenacity
+          import yaml
+          print("hosted_runtime_wheelhouse_smoke=PASS")
+          PY
+          rm -rf "$smoke"
+      - name: Pack deterministic runtime wheelhouse and emit digest
+        id: pack
+        run: |
+          set -euo pipefail
+          python scripts/nexus_runtime_wheelhouse.py pack \
+            --root build/nexus-paper-runtime-wheelhouse \
+            --output build/nexus-paper-runtime-wheelhouse.zip \
+            --digest-output build/runtime-wheelhouse-sha.txt
+          echo "archive_sha256=$(cat build/runtime-wheelhouse-sha.txt)" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: nexus-paper-runtime-wheelhouse-${{ github.sha }}
+          path: build/nexus-paper-runtime-wheelhouse.zip
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+
   paper-loop:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-    needs: contract-test
+    needs: [contract-test, runtime-wheelhouse]
     runs-on: nexus-bybit-network
     timeout-minutes: 20
     outputs:
@@ -129,6 +193,8 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       STATE_ARTIFACT: nexus-persistent-paper-trading-state
       STATE_ROOT: build/nexus_persistent_paper_trading_state
+      WHEELHOUSE_ARTIFACT: nexus-paper-runtime-wheelhouse-${{ github.sha }}
+      WHEELHOUSE_ARCHIVE_SHA256: ${{ needs.runtime-wheelhouse.outputs.archive_sha256 }}
     steps:
       - name: Prepare exact repository and pre-provisioned Python 3.12 without JavaScript actions
         run: |
@@ -189,7 +255,18 @@ jobs:
       - name: Enforce eligible Bybit network execution plane
         run: >-
           "$PYTHON_BIN" -c "assert '${{ runner.environment }}' == 'self-hosted'; assert '${{ runner.os }}' == 'Linux'; import sys; assert sys.version_info[:2] == (3, 12); print('bybit_network_execution_plane=self-hosted:nexus-bybit-network')"
-      - name: Provision locked runtime dependencies from bundled pip wheel
+      - name: Restore digest-pinned current-run runtime wheelhouse without JavaScript actions
+        run: |
+          set -euo pipefail
+          "$PYTHON_BIN" scripts/nexus_runtime_wheelhouse.py restore-current-run \
+            --repository "$GITHUB_REPOSITORY" \
+            --run-id "$GITHUB_RUN_ID" \
+            --artifact-name "$WHEELHOUSE_ARTIFACT" \
+            --expected-sha256 "$WHEELHOUSE_ARCHIVE_SHA256" \
+            --repository-lock requirements.lock \
+            --destination build/nexus-paper-runtime-wheelhouse \
+            --work-root build/runtime-wheelhouse-restore
+      - name: Provision locked runtime dependencies from verified hosted wheelhouse
         run: |
           set -euo pipefail
           pip_wheel="$("$PYTHON_BIN" - <<'PY'
@@ -204,19 +281,22 @@ jobs:
           PY
           )"
           test -f "$pip_wheel"
+          wheelhouse="$PWD/build/nexus-paper-runtime-wheelhouse"
+          test -f "$wheelhouse/requirements.lock"
+          cmp requirements.lock "$wheelhouse/requirements.lock"
           runtime_site="$PWD/.nexus-paper-site"
           rm -rf "$runtime_site"
           mkdir -p "$runtime_site"
           PYTHONPATH="$pip_wheel" "$PYTHON_BIN" -m pip install \
             --disable-pip-version-check \
-            --timeout 120 \
-            --retries 3 \
+            --no-index \
+            --find-links "$wheelhouse" \
             --no-cache-dir \
             --target "$runtime_site" \
             -r requirements.lock
           printf 'PYTHONPATH=%s:%s\n' "$pip_wheel" "$runtime_site" >> "$GITHUB_ENV"
           echo "physical_runtime_site=$runtime_site"
-          echo "bundled_pip_bootstrap=PASS"
+          echo "offline_wheelhouse_bootstrap=PASS"
       - run: '"$PYTHON_BIN" -m pip check'
       - name: Restore newest persistent Paper state
         run: |
