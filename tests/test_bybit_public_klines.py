@@ -2,9 +2,11 @@ import json
 
 import pytest
 
+import bybit_public_klines as bybit_klines
 from bybit_public_klines import (
     BybitKlineError,
     OFFICIAL_MAINNET_BASE_URLS,
+    UNCLASSIFIED_403_RETRY_DELAYS_SECONDS,
     fetch_closed_klines,
     normalize_closed_klines,
 )
@@ -232,12 +234,17 @@ def test_json_api_rate_limit_10006_suppresses_repeated_requests(capsys):
     assert raw_message not in output
 
 
-def test_unknown_json_403_does_not_leak_ret_msg_and_remains_bounded(capsys):
+def test_unknown_json_403_does_not_leak_ret_msg_and_remains_bounded(capsys, monkeypatch):
     raw_message = "provider-private-diagnostic-that-must-not-leak"
     first = {"retCode": 54321, "retMsg": raw_message, "result": {}}
+    sleeps = []
+    monkeypatch.setattr(bybit_klines.time, "sleep", sleeps.append)
+    request_count = len(OFFICIAL_MAINNET_BASE_URLS) * (
+        len(UNCLASSIFIED_403_RETRY_DELAYS_SECONDS) + 1
+    )
     session = _Session([
-        _Response(403, payload=first, headers={"Content-Type": "application/json"}),
-        _Response(403, payload=first, headers={"Content-Type": "application/json"}),
+        _Response(403, payload=first, headers={"Content-Type": "application/json"})
+        for _ in range(request_count)
     ])
     with pytest.raises(BybitKlineError, match="all approved Bybit Mainnet endpoints"):
         fetch_closed_klines(
@@ -249,17 +256,51 @@ def test_unknown_json_403_does_not_leak_ret_msg_and_remains_bounded(capsys):
             limit=2,
             session=session,
         )
-    assert len(session.urls) == len(OFFICIAL_MAINNET_BASE_URLS)
+    assert len(session.urls) == request_count
+    assert sleeps == list(UNCLASSIFIED_403_RETRY_DELAYS_SECONDS)
     output = capsys.readouterr().out
-    assert output.count('"classification":"unclassified"') == 2
-    assert output.count('"ret_code":54321') == 2
-    assert output.count('"ret_code_category":"unknown"') == 2
-    assert output.count('"ret_msg_category":"other"') == 2
+    assert output.count('"classification":"unclassified"') == request_count
+    assert output.count('"ret_code":54321') == request_count
+    assert output.count('"ret_code_category":"unknown"') == request_count
+    assert output.count('"ret_msg_category":"other"') == request_count
     assert raw_message not in output
 
 
-def test_dual_unclassified_403_still_fails_closed_without_extra_rounds():
-    session = _Session([_Response(403), _Response(403)])
+def test_all_host_unclassified_403_gets_one_bounded_retry_round_and_recovers(monkeypatch):
+    sleeps = []
+    monkeypatch.setattr(bybit_klines.time, "sleep", sleeps.append)
+    session = _Session([
+        _Response(403),
+        _Response(403),
+        _Response(200, _payload(_rows())),
+    ])
+    result = fetch_closed_klines(
+        "BTCUSDT",
+        "15",
+        now_ms=1710002000000,
+        start_time_ms=1710000000000,
+        end_time_ms=1710000900000,
+        limit=2,
+        session=session,
+    )
+    assert len(result) == 2
+    assert session.urls == [
+        OFFICIAL_MAINNET_BASE_URLS[0] + "/v5/market/kline",
+        OFFICIAL_MAINNET_BASE_URLS[1] + "/v5/market/kline",
+        OFFICIAL_MAINNET_BASE_URLS[0] + "/v5/market/kline",
+    ]
+    assert sleeps == [UNCLASSIFIED_403_RETRY_DELAYS_SECONDS[0]]
+    request_ids = [row["headers"]["cdn-request-id"] for row in session.requests]
+    assert len(request_ids) == len(set(request_ids))
+
+
+def test_unclassified_403_still_fails_closed_after_bounded_retry_rounds(monkeypatch):
+    sleeps = []
+    monkeypatch.setattr(bybit_klines.time, "sleep", sleeps.append)
+    request_count = len(OFFICIAL_MAINNET_BASE_URLS) * (
+        len(UNCLASSIFIED_403_RETRY_DELAYS_SECONDS) + 1
+    )
+    session = _Session([_Response(403) for _ in range(request_count)])
     with pytest.raises(BybitKlineError, match="all approved Bybit Mainnet endpoints"):
         fetch_closed_klines(
             "ETHUSDT",
@@ -270,7 +311,8 @@ def test_dual_unclassified_403_still_fails_closed_without_extra_rounds():
             limit=2,
             session=session,
         )
-    assert len(session.urls) == len(OFFICIAL_MAINNET_BASE_URLS)
+    assert len(session.urls) == request_count
+    assert sleeps == list(UNCLASSIFIED_403_RETRY_DELAYS_SECONDS)
 
 
 def test_non_geographic_http_failure_does_not_fall_through_to_another_host():
