@@ -21,7 +21,10 @@ def test_physical_windows_diagnostics_avoid_javascript_action_predownload() -> N
 def test_diagnostics_native_checkout_is_exact_sha_bound() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     capture = _capture_job(text)
-    assert 'git fetch --no-tags --prune --depth=1 origin $env:GITHUB_SHA' in capture
+    assert "git -c credential.helper= -c http.https://github.com/.extraheader= fetch --no-tags --prune --depth=1 $repoUrl $env:GITHUB_SHA" in capture
+    assert "$env:GIT_TERMINAL_PROMPT = '0'" in capture
+    assert "$env:GCM_INTERACTIVE = 'Never'" in capture
+    assert "diagnostic_anonymous_public_fetch=true" in capture
     assert "git checkout --force --detach FETCH_HEAD" in capture
     assert "git rev-parse HEAD" in capture
     assert "$head -ne $env:GITHUB_SHA" in capture
