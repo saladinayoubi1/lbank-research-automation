@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
@@ -80,6 +81,15 @@ def merge_definition(template: dict[str, Any], runtime: dict[str, Any] | None) -
     return merged
 
 
+def apply_provider_gates(config: dict[str, Any]) -> None:
+    """Keep paid providers unavailable unless the coordinator has explicit authority."""
+    if os.environ.get("NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED") == "1":
+        return
+    for worker in config.get("workers", []):
+        if "deepseek" in worker.get("resources", []):
+            worker["enabled"] = False
+
+
 def load_runtime(path: Path) -> dict[str, Any] | None:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
@@ -96,6 +106,7 @@ def main() -> int:
 
     template = am.load_config(Path(args.config))
     config = merge_definition(template, load_runtime(Path(args.runtime)))
+    apply_provider_gates(config)
     summary = am.cycle(config)
     am.atomic_json(Path(args.runtime), config)
     am.atomic_json(Path(args.summary), summary)
