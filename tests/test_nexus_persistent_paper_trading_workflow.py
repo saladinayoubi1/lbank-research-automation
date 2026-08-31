@@ -110,20 +110,42 @@ def test_wsl1_python_selection_is_preprovisioned_and_checks_version() -> None:
     assert "cache: pip" not in paper
 
 
-def test_physical_pip_bootstrap_has_bounded_network_resilience_without_mirror_or_cache() -> None:
+def test_hosted_wheelhouse_is_digest_pinned_and_physical_install_is_offline() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
+    hosted = text.split("  runtime-wheelhouse:", 1)[1].split("  paper-loop:", 1)[0]
     paper = _paper_job(text)
+    restore = paper.split(
+        "Restore digest-pinned current-run runtime wheelhouse without JavaScript actions", 1
+    )[1].split("Provision locked runtime dependencies from verified hosted wheelhouse", 1)[0]
     provision = paper.split(
-        "Provision locked runtime dependencies from bundled pip wheel", 1
+        "Provision locked runtime dependencies from verified hosted wheelhouse", 1
     )[1].split('      - run: \'"$PYTHON_BIN" -m pip check\'', 1)[0]
-    assert "--timeout 120" in provision
-    assert "--retries 3" in provision
+
+    assert "runs-on: ubuntu-latest" in hosted
+    assert "python -m pip download" in hosted
+    assert "--only-binary=:all:" in hosted
+    assert "-r requirements.lock" in hosted
+    assert "hosted_runtime_wheelhouse_smoke=PASS" in hosted
+    assert "scripts/nexus_runtime_wheelhouse.py pack" in hosted
+    assert "archive_sha256" in hosted
+    assert "compression-level: 0" in hosted
+
+    assert "needs: [contract-test, runtime-wheelhouse]" in paper
+    assert "WHEELHOUSE_ARCHIVE_SHA256: ${{ needs.runtime-wheelhouse.outputs.archive_sha256 }}" in paper
+    assert "scripts/nexus_runtime_wheelhouse.py restore-current-run" in restore
+    assert '--run-id "$GITHUB_RUN_ID"' in restore
+    assert '--expected-sha256 "$WHEELHOUSE_ARCHIVE_SHA256"' in restore
+    assert "--no-index" in provision
+    assert '--find-links "$wheelhouse"' in provision
     assert "--no-cache-dir" in provision
-    assert "--target \"$runtime_site\"" in provision
+    assert '--target "$runtime_site"' in provision
     assert "-r requirements.lock" in provision
+    assert "--timeout" not in provision
+    assert "--retries" not in provision
     assert "--index-url" not in provision
     assert "--extra-index-url" not in provision
     assert "--trusted-host" not in provision
+    assert "offline_wheelhouse_bootstrap=PASS" in provision
 
 
 def test_wsl1_state_restore_uses_python_stdlib_not_unprovisioned_cli_tools() -> None:
@@ -216,6 +238,7 @@ def test_persistent_loop_contract_suite_covers_full_lifecycle_risk_health_and_di
     for test_path in (
         "tests/test_bybit_public_klines.py",
         "tests/test_nexus_persistent_paper_trading_loop.py",
+        "tests/test_nexus_runtime_wheelhouse.py",
         "tests/test_nexus_regime_selected_position_rebalance.py",
         "tests/test_nexus_regime_selected_exposure_increase.py",
         "tests/test_nexus_strategy_discovery_health_trigger.py",
