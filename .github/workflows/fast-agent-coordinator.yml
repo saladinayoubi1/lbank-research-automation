@@ -59,7 +59,7 @@ jobs:
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: data/agent_coordination
-          key: nexus-agent-manager-${{ github.run_id }}
+          key: nexus-agent-manager-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
             nexus-agent-manager-
 
@@ -96,7 +96,7 @@ jobs:
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: data/agent_coordination
-          key: nexus-agent-manager-${{ github.run_id }}
+          key: nexus-agent-manager-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Publish coordinator and manager evidence
         if: always()
