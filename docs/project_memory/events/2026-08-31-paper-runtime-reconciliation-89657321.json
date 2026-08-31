@@ -1,0 +1,91 @@
+{
+  "schema_version": "1.0",
+  "event_id": "2026-08-31-paper-runtime-reconciliation-89657321",
+  "event_type": "paper_runtime_and_continuity_reconciliation",
+  "observed_main_sha": "896573210b6fd5a87a62562927898445f97f43ed",
+  "observed_at_utc": "2026-08-31T21:56:00Z",
+  "changes": [
+    {
+      "merged_pr": 1227,
+      "merge_commit": "896573210b6fd5a87a62562927898445f97f43ed",
+      "summary": "Physical EEA Paper data routing now prefers the approved official Bybit EU public endpoint and retains bounded approved global fallback without changing trading authority."
+    },
+    {
+      "issue": 1041,
+      "status": "OPEN_5_OF_6_EXACT_MAIN_CELLS",
+      "workflow_run_id": 33437816607,
+      "runner": "NEXUS-BYBIT-WSL",
+      "artifact_id": 9776694741,
+      "artifact_digest": "sha256:6cabfa793827844f9b9ee5340e1a8f99ac1373570694e8398d1504d354731faf",
+      "loop_digest": "b5926ffa19751dcbbaa1c74b5bb2d2d4b634c66b03e26aa1af54452089b094a2",
+      "persistent_state_digest": "9ebd5bb67d552091f67acbc354dadfab0d1d169b132d4714cc83bbd59acb593b",
+      "matrix_snapshot_digest": "142503ca07d22268a8a39f59b0e6a89b9a57a462f88b9393f2a36c13ec578fbd",
+      "fresh_cell_count": 5,
+      "expected_cell_count": 6,
+      "remaining_cell": "ETHUSDT:hour4",
+      "remaining_cell_source_sha": "642dd5d1691d934818623112fcf9f00ddbec14ce",
+      "expected_lane_count": 18,
+      "current_source_bound_lane_count": 15,
+      "summary": "Independent artifact inspection confirms five exact-main cells and fifteen exact-main strategy lanes; only ETHUSDT:hour4 and its three strategy lanes remain stale. The remaining gap is closed-candle/data-bound, not a runner protocol failure."
+    },
+    {
+      "issue": 984,
+      "status": "COLLECTING",
+      "completed_hour4_bars": 35,
+      "required_completed_hour4_bars": 180,
+      "required_elapsed_days": 30,
+      "workflow_run_id": 33434395829,
+      "source_sha": "5a4637522cb00d4bee80ab94d217560735e1d8d2",
+      "artifact_id": 9773844184,
+      "artifact_digest": "sha256:f523b22a74acccec0d7cef4db9bfd9753f5f50e8d8dd6a2e387884a6b60fbb72",
+      "state_digest": "a7eb024cc01424158b1795c0e9a5516963817bad3dca8a5acd3541256303828c",
+      "summary": "The immutable prospective Bybit Paper gate remains independent and cannot be accelerated or synthesized."
+    },
+    {
+      "issue": 43,
+      "status": "OPEN_DENY_BY_DEFAULT_RECONCILED",
+      "summary": "The production-release gate body was reconciled to current bounded manifest/SBOM/provenance, cross-platform release/recovery, reproducibility/rollback and DR evidence. Production signing/trust root, protected approval, production-package reproducibility, immutable protected previous-valid storage and production-scope recovery remain ungranted."
+    }
+  ],
+  "windows_recovery": {
+    "windows_dr_persistence_run_id": 33437850781,
+    "windows_dr_persistence_decision": "BLOCKED_USER_CONTEXT_REQUIRED",
+    "windows_dr_persistence_error": "An interactive signed-in Windows user is required.",
+    "bybit_wsl_wake_run_id": 33439446453,
+    "bybit_wsl_wake_decision": "BLOCKED_SCHEDULED_TASKS_DISABLED",
+    "bybit_wsl_runner_subsequently_proven_operational": true,
+    "privilege_acl_service_account_change_authorized": false,
+    "task_mutation_performed_by_wake_workflow": false,
+    "runner_registration_mutated": false,
+    "summary": "Recovery gaps remain fail-closed and supporting-only. Do not weaken Windows user-context, ACL, service-account or runner-registration boundaries merely to force green recovery workflows."
+  },
+  "authority": {
+    "research": true,
+    "backtest": true,
+    "paper": true,
+    "live": false,
+    "l4": false,
+    "real_exchange_orders": false,
+    "private_exchange_credentials": false,
+    "automatic_strategy_promotion": false,
+    "production_signing": false,
+    "production_deployment": false,
+    "deterministic_risk_final_authority": true
+  },
+  "continuation": {
+    "keep_main_stable_until_issue_1041_exact_main_acceptance": true,
+    "next_genuine_hour4_boundary_utc": "2026-09-01T00:00:00Z",
+    "post_boundary_continuation_not_before_utc": "2026-09-01T00:05:00Z",
+    "after_6_of_6_verify": [
+      "18 strategy lanes",
+      "Regime",
+      "lifecycle",
+      "performance",
+      "Strategy Discovery and runtime requalification",
+      "restart and replay",
+      "authority invariants"
+    ],
+    "state_json_requires_final_reconciliation_before_this_branch_merges": true
+  },
+  "secrets_included": false
+}
