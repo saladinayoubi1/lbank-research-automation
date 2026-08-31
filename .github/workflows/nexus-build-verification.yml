@@ -106,6 +106,10 @@ jobs:
           --artifact-glob 'android/lbank-mobile/app/build/outputs/apk/debug/*.apk'
           --source-commit '${{ github.sha }}'
           --builder 'github-actions/nexus-build-verification/android-apk'
+          --build-parameter 'platform=android'
+          --build-parameter 'package_profile=debug-apk'
+          --build-parameter 'java=17'
+          --build-parameter 'gradle=8.9'
       - name: Fail-closed verify Android evidence bundle
         working-directory: ${{ github.workspace }}
         run: >-
@@ -113,6 +117,10 @@ jobs:
           --allow-unsigned
           --expected-source-commit '${{ github.sha }}'
           --expected-builder 'github-actions/nexus-build-verification/android-apk'
+          --expected-build-parameter 'platform=android'
+          --expected-build-parameter 'package_profile=debug-apk'
+          --expected-build-parameter 'java=17'
+          --expected-build-parameter 'gradle=8.9'
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: nexus-android-debug-apk
@@ -203,12 +211,24 @@ jobs:
           --artifact-glob 'desktop/nexus-product/dist/SHA256SUMS.txt'
           --source-commit '${{ github.sha }}'
           --builder 'github-actions/nexus-build-verification/windows-desktop'
+          --build-parameter 'platform=windows'
+          --build-parameter 'package_profile=electron-nsis-portable'
+          --build-parameter 'product_version=5.1.0'
+          --build-parameter 'python=3.12'
+          --build-parameter 'node=22'
+          --build-parameter 'code_signing=disabled'
       - name: Fail-closed verify Windows evidence bundle
         run: >-
           python scripts/release_gate.py release-evidence/windows
           --allow-unsigned
           --expected-source-commit '${{ github.sha }}'
           --expected-builder 'github-actions/nexus-build-verification/windows-desktop'
+          --expected-build-parameter 'platform=windows'
+          --expected-build-parameter 'package_profile=electron-nsis-portable'
+          --expected-build-parameter 'product_version=5.1.0'
+          --expected-build-parameter 'python=3.12'
+          --expected-build-parameter 'node=22'
+          --expected-build-parameter 'code_signing=disabled'
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: nexus-windows-final-mission-control-packages
