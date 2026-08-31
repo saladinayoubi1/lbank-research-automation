@@ -31,6 +31,8 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $ProgressPreference = 'SilentlyContinue'
+          $env:GIT_TERMINAL_PROMPT = '0'
+          $env:GCM_INTERACTIVE = 'Never'
           Set-Location -LiteralPath $env:GITHUB_WORKSPACE
           $repoUrl = "https://github.com/$env:GITHUB_REPOSITORY.git"
           if (-not (Test-Path -LiteralPath '.git' -PathType Container)) {
@@ -50,13 +52,14 @@ jobs:
               if ($LASTEXITCODE -ne 0) { throw 'git remote set-url failed.' }
             }
           }
-          git fetch --no-tags --prune --depth=1 origin $env:GITHUB_SHA
+          git -c credential.helper= -c http.https://github.com/.extraheader= fetch --no-tags --prune --depth=1 $repoUrl $env:GITHUB_SHA
           if ($LASTEXITCODE -ne 0) { throw 'exact diagnostic source fetch failed.' }
           git checkout --force --detach FETCH_HEAD
           if ($LASTEXITCODE -ne 0) { throw 'exact diagnostic source checkout failed.' }
           $head = (git rev-parse HEAD | Out-String).Trim()
           if ($head -ne $env:GITHUB_SHA) { throw "diagnostic source SHA mismatch: $head" }
           Write-Host "diagnostic_checkout_sha=$head"
+          Write-Host 'diagnostic_anonymous_public_fetch=true'
           Write-Host 'diagnostic_javascript_actions_used=false'
 
       - name: Capture read-only WSL runner diagnostics
