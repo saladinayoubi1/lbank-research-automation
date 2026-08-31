@@ -142,3 +142,5 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+# Semantic no-op: exact-main physical Paper proof trigger after coordinator durability fix.
