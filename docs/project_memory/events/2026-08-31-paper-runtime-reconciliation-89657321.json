@@ -59,6 +59,32 @@
     "runner_registration_mutated": false,
     "summary": "Recovery gaps remain fail-closed and supporting-only. Do not weaken Windows user-context, ACL, service-account or runner-registration boundaries merely to force green recovery workflows."
   },
+  "drive_secondary_snapshot": {
+    "status": "REFRESHED_AND_PROVIDER_READBACK_VERIFIED_PENDING_CANONICAL_STATE_MERGE",
+    "folder_id": "1k073A28c5o9Gh3l_fwtFZIpf4598Esun",
+    "snapshot_document_id": "1uMX_oJKuxr0iGUDsEWnsHo9eWtgY6e5P8b7fPZEJPNM",
+    "snapshot_title": "NEXUS Project Memory Backup — Durable — 2026-08-31 — 89657321",
+    "snapshot_revision_id": "ANLCKQlcRc9aQ42QLepwOC3yJ1nwYvdUy1ZS2NunJA1MXuhjB-_RQFpk_QfsdxWt3A5G5JonKPhlUHO36Yml3vr5LGWDCXziPEnrjkxx9-c",
+    "provider_export_mime_type": "text/plain",
+    "provider_export_size_bytes": 51815,
+    "provider_export_sha256": "e3358819b23d1b12b612236f911cdff97c36c12d90b67fd1709b1aa7f353992d",
+    "manifest_document_id": "1Rmc-YD-nGwZD-jkXdX72gQYqNlejRCtBRYRfjHkL1Dc",
+    "manifest_revision_id": "ANLCKQlOdNLcRuj9pvn2hX96p-WU5WR48-kSpkcSf9IUoCpcRBTxAoIApXwH_KVsBc7Fz9RGdFS85XtubW3DN5oYI9Rkxlj2MFKovAt1lEs",
+    "source_main_sha": "896573210b6fd5a87a62562927898445f97f43ed",
+    "canonical_main_blobs": {
+      "docs/project_memory/PROJECT_MEMORY.md": "79f1dff3c5d5e033f6aea900ef9fb9e1540c9331",
+      "docs/project_memory/STATE.json": "77c7f0d043d922abf5f269cda203b96eda9b615a",
+      "docs/project_memory/DECISIONS.md": "49b24bc8d7b9afcd00d8f9a1ccb133d610b8c221",
+      "docs/project_memory/RECOVERY_PLAYBOOK.md": "a5b0658d416c1272b488d63d594ba1257ee0e989"
+    },
+    "canonical_state_transient_fields_known_stale": true,
+    "includes_this_staged_reconciliation_event": true,
+    "legacy_snapshots_preserved": true,
+    "secondary_only": true,
+    "may_authorize_production_recovery": false,
+    "secrets_included": false,
+    "summary": "A new Drive snapshot was created instead of overwriting the historical 2026-08-26 copies. Native readback and a real provider text export succeeded; the export digest was independently computed. Repository Project Memory remains authoritative, and canonical STATE must still be reconciled after the exact-main Paper acceptance attempt before this branch may merge."
+  },
   "authority": {
     "research": true,
     "backtest": true,
