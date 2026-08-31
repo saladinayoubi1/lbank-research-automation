@@ -176,7 +176,7 @@ jobs:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: [contract-test, runtime-wheelhouse]
     runs-on: nexus-bybit-network
-    timeout-minutes: 20
+    timeout-minutes: 30
     outputs:
       state_archive_chunk_count: ${{ steps.package.outputs.state_archive_chunk_count }}
       state_archive_b64_len: ${{ steps.package.outputs.state_archive_b64_len }}
