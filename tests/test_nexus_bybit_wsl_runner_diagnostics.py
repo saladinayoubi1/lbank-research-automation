@@ -10,8 +10,8 @@ def test_runner_diagnostics_are_read_only_and_redacted():
     text = SCRIPT.read_text(encoding="utf-8")
     assert "NEXUS Bybit WSL Runner" in text
     assert "/opt/nexus-bybit-runner/_diag" not in text  # constructed only from pinned runner root
-    assert "Runner" in text and "Listener|Worker" in text
-    assert "Runner\\\\.Worker" in text and "Runner\\\\.Listener" in text
+    assert "Runner.Listener|Runner.Worker|dotnet" in text
+    assert "Runner\\.Worker" in text and "Runner\\.Listener" in text
     assert "Protect-DiagnosticLine" in text
     assert "[redacted]" in text
     assert "[opaque]" in text
