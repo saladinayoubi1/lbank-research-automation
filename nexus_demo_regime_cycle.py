@@ -199,7 +199,9 @@ def _eligible_health_rows(
     eligible: dict[str, dict[str, Any]] = {}
     for family, row in perf_by_family.items():
         task = task_by_family.get(family)
-        if task is None or task.get("status") not in {"paper_executed", "position_exists"}:
+        if task is None or task.get("status") not in {
+            "paper_executed", "position_exists", "no_open_signal"
+        }:
             raise DemoRegimeCycleError("performance row lacks active verified Supervisor evidence")
         research = task.get("research_result")
         if not isinstance(research, Mapping):
