@@ -103,12 +103,18 @@ def _download_with_redirect_boundary(
     expected_size: int,
     timeout: int = STORAGE_READ_TIMEOUT_SECONDS,
     retry_delays: tuple[float, ...] = STORAGE_RETRY_DELAYS_SECONDS,
+    preserve_existing: bool = False,
 ) -> None:
     if expected_size <= 0 or expected_size > MAX_ARTIFACT_BYTES:
         raise RuntimeError("runtime wheelhouse artifact size is outside bounds")
 
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.unlink(missing_ok=True)
+    if output.is_symlink():
+        raise RuntimeError("runtime wheelhouse resume cache must not be a symlink")
+    if not preserve_existing:
+        output.unlink(missing_ok=True)
+    elif output.exists() and not output.is_file():
+        raise RuntimeError("runtime wheelhouse resume cache must be a regular file")
     opener = urllib.request.build_opener(NoRedirect)
     retryable_errors = (
         TimeoutError,
@@ -211,6 +217,20 @@ def _download_with_redirect_boundary(
     ) from last_error
 
 
+def _cross_attempt_resume_path(*, run_id: str, artifact_id: int, expected_sha256: str) -> Path:
+    cache_root = Path.home() / ".cache" / "nexus-paper-runtime-wheelhouse"
+    cache_root.mkdir(parents=True, exist_ok=True, mode=0o700)
+    try:
+        cache_root.chmod(0o700)
+    except OSError:
+        pass
+    current = cache_root / f"{run_id}-{artifact_id}-{expected_sha256}.zip.part"
+    for stale in cache_root.glob("*.zip.part"):
+        if stale != current and stale.is_file() and not stale.is_symlink():
+            stale.unlink(missing_ok=True)
+    return current
+
+
 def restore_current_run_artifact(
     *,
     repository: str,
@@ -227,7 +247,6 @@ def restore_current_run_artifact(
         raise RuntimeError("invalid runtime wheelhouse expected SHA-256")
 
     work_root.mkdir(parents=True, exist_ok=True)
-    outer_zip = work_root / "runtime-wheelhouse-artifact.zip"
     outer_root = work_root / "outer"
     inner_zip = outer_root / "nexus-paper-runtime-wheelhouse.zip"
     shutil.rmtree(outer_root, ignore_errors=True)
@@ -259,29 +278,47 @@ def restore_current_run_artifact(
 
     artifact_id = int(artifacts[0]["id"])
     artifact_size = int(artifacts[0].get("size_in_bytes") or 0)
-    download_url = f"https://api.github.com/repos/{repository}/actions/artifacts/{artifact_id}/zip"
-    _download_with_redirect_boundary(
-        download_url,
-        headers,
-        outer_zip,
-        expected_size=artifact_size,
+    outer_zip = _cross_attempt_resume_path(
+        run_id=run_id,
+        artifact_id=artifact_id,
+        expected_sha256=expected_sha256,
     )
-    safe_extract_flat_archive(outer_zip, outer_root, allow_zip_only=True)
-    extracted = sorted(path for path in outer_root.iterdir() if path.is_file())
-    if extracted != [inner_zip]:
-        raise RuntimeError("runtime wheelhouse artifact must contain exactly one inner archive")
+    download_url = f"https://api.github.com/repos/{repository}/actions/artifacts/{artifact_id}/zip"
+    try:
+        _download_with_redirect_boundary(
+            download_url,
+            headers,
+            outer_zip,
+            expected_size=artifact_size,
+            preserve_existing=True,
+        )
+        safe_extract_flat_archive(outer_zip, outer_root, allow_zip_only=True)
+        extracted = sorted(path for path in outer_root.iterdir() if path.is_file())
+        if extracted != [inner_zip]:
+            raise RuntimeError("runtime wheelhouse artifact must contain exactly one inner archive")
 
-    actual_sha256 = sha256_file(inner_zip)
-    if actual_sha256 != expected_sha256:
-        raise RuntimeError("runtime wheelhouse archive SHA-256 mismatch")
-    safe_extract_flat_archive(inner_zip, destination)
+        actual_sha256 = sha256_file(inner_zip)
+        if actual_sha256 != expected_sha256:
+            raise RuntimeError("runtime wheelhouse archive SHA-256 mismatch")
+        safe_extract_flat_archive(inner_zip, destination)
 
-    embedded_lock = destination / "requirements.lock"
-    if embedded_lock.read_bytes() != repository_lock.read_bytes():
-        raise RuntimeError("runtime wheelhouse requirements.lock mismatch")
-    wheels = sorted(destination.glob("*.whl"))
-    if not wheels:
-        raise RuntimeError("runtime wheelhouse contains no wheels")
+        embedded_lock = destination / "requirements.lock"
+        if embedded_lock.read_bytes() != repository_lock.read_bytes():
+            raise RuntimeError("runtime wheelhouse requirements.lock mismatch")
+        wheels = sorted(destination.glob("*.whl"))
+        if not wheels:
+            raise RuntimeError("runtime wheelhouse contains no wheels")
+    except Exception:
+        if outer_zip.exists() and outer_zip.stat().st_size >= artifact_size > 0:
+            outer_zip.unlink(missing_ok=True)
+        raise
+    else:
+        outer_zip.unlink(missing_ok=True)
+        try:
+            outer_zip.parent.rmdir()
+        except OSError:
+            pass
+
     return {
         "artifact_id": artifact_id,
         "artifact_size": artifact_size,
