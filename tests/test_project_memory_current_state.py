@@ -6,6 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 STATE = ROOT / "docs/project_memory/STATE.json"
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+SHA256_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 
 def _state() -> dict:
@@ -30,7 +31,12 @@ def test_project_memory_preserves_paper_only_authority() -> None:
     assert authority["deterministic_risk_final_authority"] is True
     assert policy["real_trading"] is False
     assert policy["fabricated_market_data"] is False
-    assert policy["approved_public_bybit_mainnet_hosts"] == ["api.bybit.com", "api.bytick.com"]
+    assert policy["approved_public_bybit_mainnet_hosts"] == [
+        "api.bybit.eu",
+        "api.bybit.com",
+        "api.bytick.com",
+    ]
+    assert policy["physical_eea_endpoint_order"] == policy["approved_public_bybit_mainnet_hosts"]
     assert policy["proxy_vpn_geographic_circumvention_allowed"] is False
     assert policy["testnet_substitution_allowed"] is False
     assert policy["synthetic_market_data_substitution_allowed"] is False
@@ -45,12 +51,18 @@ def test_project_memory_current_paper_acceptance_is_fail_closed_and_provenance_b
     assert SHA_RE.fullmatch(evidence["observed_main_sha"])
     assert paper["issue"] == 1041
     assert paper["issue_state"] == "open"
-    assert paper["status"] == "WAITING_FOR_EXACT_CURRENT_MAIN_PHYSICAL_6_CELL_ACCEPTANCE"
+    assert paper["status"] == "WAITING_FOR_NEXT_GENUINE_HOUR4_BOUNDARY_WITH_5_OF_6_EXACT_MAIN_CELLS"
+    assert paper["fresh_cell_count"] == 5
     assert paper["fresh_cell_count"] < paper["expected_cell_count"] == 6
+    assert paper["remaining_cell"] == "ETHUSDT:hour4"
+    assert SHA_RE.fullmatch(paper["remaining_cell_source_sha"])
+    assert paper["remaining_cell_source_sha"] != evidence["observed_main_sha"]
+    assert paper["source_bound_lane_count"] == 15
     assert paper["expected_lane_count"] == 18
     assert paper["trading_engine_complete"] is False
-    assert paper["historical_run_cannot_satisfy_current_exact_sha"] is True
-    assert paper["latest_physical_run_source_sha"] != evidence["observed_main_sha"]
+    assert paper["latest_physical_run_source_sha"] == evidence["observed_main_sha"]
+    assert SHA256_RE.fullmatch(paper["latest_physical_state_artifact_digest"])
+    assert paper["remaining_gap_classification"] == "temporal_closed_candle_and_public_data_availability_bound"
     assert paper["paper_only"] is True
     assert paper["live_trading_authority"] is False
     assert paper["private_credentials_used"] is False
@@ -58,22 +70,26 @@ def test_project_memory_current_paper_acceptance_is_fail_closed_and_provenance_b
     assert paper["deterministic_risk_final_authority"] is True
 
 
-def test_project_memory_current_windows_probe_is_exact_sha_and_context_limited() -> None:
+def test_project_memory_current_windows_recovery_is_fail_closed_without_authority_expansion() -> None:
     state = _state()
     evidence = state["current_evidence"]
-    probe = evidence["windows_recovery_probe"]
+    recovery = evidence["windows_recovery"]
+    runtime = state["runtime_status"]
 
-    assert probe["status"] == "CONTEXT_LIMITED_SECURITY_BOUNDARY_PROVEN"
-    assert probe["source_sha"] == evidence["observed_main_sha"]
-    assert probe["runner_identity_class"] == "NETWORK_SERVICE"
-    assert probe["interactive_console_session_present"] is True
-    assert probe["wts_user_token_available"] is False
-    assert probe["wts_user_token_error"] == 1314
-    assert probe["scheduled_recovery_task_visible"] is False
-    assert probe["scheduled_recovery_task_query_access_denied"] is True
-    assert probe["bybit_watchdog_path_exists"] is True
-    assert probe["privilege_acl_service_account_change_authorized"] is False
-    assert probe["runner_reregistration_authorized"] is False
+    assert recovery["status"] == "SUPPORTING_GAPS_FAIL_CLOSED_CURRENT_PAPER_RUNNER_OPERATIONAL"
+    assert recovery["windows_dr_persistence_decision"] == "BLOCKED_USER_CONTEXT_REQUIRED"
+    assert recovery["bybit_wsl_wake_decision"] == "BLOCKED_SCHEDULED_TASKS_DISABLED"
+    assert recovery["bybit_wsl_runner_subsequently_proven_operational"] is True
+    assert recovery["privilege_acl_service_account_change_authorized"] is False
+    assert recovery["runner_reregistration_authorized"] is False
+    assert recovery["task_mutation_performed_by_wake_workflow"] is False
+    assert runtime["windows_runner_identity_class"] == "NETWORK_SERVICE"
+    assert runtime["windows_user_context_token_available"] is False
+    assert runtime["windows_user_context_token_error"] == 1314
+    assert runtime["windows_dr_persistence_requires_interactive_signed_in_user"] is True
+    assert runtime["bybit_wsl_wake_scheduled_tasks_enabled"] is False
+    assert runtime["runner_registration_modified_by_recovery_work"] is False
+    assert runtime["security_authority_expanded_by_recovery_work"] is False
 
 
 def test_project_memory_keeps_runtime_real_time_and_production_gates_fail_closed() -> None:
