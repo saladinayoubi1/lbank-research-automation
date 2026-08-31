@@ -209,6 +209,8 @@ jobs:
           mkdir -p "$runtime_site"
           PYTHONPATH="$pip_wheel" "$PYTHON_BIN" -m pip install \
             --disable-pip-version-check \
+            --timeout 120 \
+            --retries 3 \
             --no-cache-dir \
             --target "$runtime_site" \
             -r requirements.lock
