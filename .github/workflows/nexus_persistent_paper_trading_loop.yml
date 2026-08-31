@@ -159,9 +159,22 @@ jobs:
             exit 1
           fi
           "$python_bin" -c "import sys; assert sys.version_info[:2] == (3, 12), sys.version"
+          python_prefix="$("$python_bin" -c 'import sys; print(sys.prefix)')"
+          python_lib="$python_prefix/lib"
+          if [ ! -d "$python_lib" ]; then
+            echo "::error::Pre-provisioned CPython library directory is missing."
+            exit 1
+          fi
+          effective_ld_library_path="$python_lib"
+          if [ -n "${LD_LIBRARY_PATH:-}" ]; then
+            effective_ld_library_path="$python_lib:$LD_LIBRARY_PATH"
+          fi
+          LD_LIBRARY_PATH="$effective_ld_library_path" "$python_bin" -c "import ctypes; print('physical_python_dynamic_stdlib=PASS')"
           printf 'PYTHON_BIN=%s\n' "$python_bin" >> "$GITHUB_ENV"
+          printf 'LD_LIBRARY_PATH=%s\n' "$effective_ld_library_path" >> "$GITHUB_ENV"
           printf 'NATIVE_PREPARED=true\n' >> "$GITHUB_ENV"
           echo "physical_python_bin=$python_bin"
+          echo "physical_python_prefix=$python_prefix"
           echo "physical_checkout_sha=$(git rev-parse HEAD)"
 
       - name: Enforce eligible Bybit network execution plane
