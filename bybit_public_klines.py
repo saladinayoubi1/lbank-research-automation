@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import time
 import uuid
 from decimal import Decimal, InvalidOperation
 from typing import Any
@@ -12,13 +13,16 @@ import requests
 # Bybit documents both hosts as equivalent public Mainnet REST endpoints. The
 # ordered pair is intentionally fixed and bounded. HTTP 403 is ambiguous in the
 # provider contract (IP frequency, regional restriction, or malformed request),
-# so the collector classifies only explicit public-response evidence and never
-# converts a 403 into successful market data. No third-party proxy, exchange
-# substitution, private credential or testnet endpoint is permitted.
+# so the collector classifies explicit public-response evidence first. Only an
+# all-host round of unclassified 403 responses is eligible for the historical,
+# bounded retry path; classified access/rate/region/compliance failures remain
+# fail-fast. No third-party proxy, exchange substitution, private credential or
+# testnet endpoint is permitted.
 OFFICIAL_MAINNET_BASE_URLS = (
     "https://api.bybit.com",
     "https://api.bytick.com",
 )
+UNCLASSIFIED_403_RETRY_DELAYS_SECONDS = (2.0, 5.0)
 BASE_URL = OFFICIAL_MAINNET_BASE_URLS[0]
 KLINES_PATH = "/v5/market/kline"
 INTERVAL_MS = {"15": 15 * 60 * 1000, "60": 60 * 60 * 1000, "240": 4 * 60 * 60 * 1000}
@@ -339,69 +343,88 @@ def fetch_closed_klines(
 
     client = session or requests.Session()
     rejected_hosts: list[str] = []
-    for base_url in OFFICIAL_MAINNET_BASE_URLS:
-        try:
-            response, cdn_request_id = _request_one_official_mainnet_host(
-                client,
-                base_url,
+    retry_rounds = len(UNCLASSIFIED_403_RETRY_DELAYS_SECONDS) + 1
+    for round_index in range(retry_rounds):
+        round_rejections: list[str] = []
+        unclassified_403_count = 0
+        for base_url in OFFICIAL_MAINNET_BASE_URLS:
+            try:
+                response, cdn_request_id = _request_one_official_mainnet_host(
+                    client,
+                    base_url,
+                    symbol=normalized_symbol,
+                    interval=interval,
+                    start_time_ms=start_time_ms,
+                    end_time_ms=end_time_ms,
+                    limit=limit,
+                    timeout_seconds=timeout_seconds,
+                )
+            except requests.RequestException as exc:
+                round_rejections.append(f"{base_url}:transport:{type(exc).__name__}")
+                continue
+
+            if response.status_code == 403:
+                reason, ret_code, ret_code_category, ret_msg_category = _classify_403(response)
+                _emit_403_diagnostic(
+                    response,
+                    base_url=base_url,
+                    symbol=normalized_symbol,
+                    interval=interval,
+                    cdn_request_id=cdn_request_id,
+                    reason=reason,
+                    ret_code=ret_code,
+                    ret_code_category=ret_code_category,
+                    ret_msg_category=ret_msg_category,
+                )
+                round_rejections.append(f"{base_url}:http403:{reason}")
+                if reason in {
+                    "access_too_frequent",
+                    "api_rate_limited",
+                    "ip_banned",
+                    "region_restricted",
+                    "unmatched_ip",
+                    "compliance_restricted",
+                }:
+                    close = getattr(client, "close", None)
+                    if callable(close):
+                        close()
+                    raise BybitKlineError(
+                        f"Bybit Mainnet access is blocked (HTTP 403 {reason}); "
+                        "repeated requests suppressed"
+                    )
+                if reason == "unclassified":
+                    unclassified_403_count += 1
+                continue
+            if response.status_code != 200:
+                raise BybitKlineError(f"Bybit kline request failed with HTTP {response.status_code}")
+            if len(response.content) > MAX_RESPONSE_BYTES:
+                raise BybitKlineError("Bybit kline response exceeds size limit")
+            try:
+                payload = response.json()
+            except ValueError as exc:
+                raise BybitKlineError("Bybit kline response is not valid JSON") from exc
+            return normalize_closed_klines(
+                payload,
                 symbol=normalized_symbol,
                 interval=interval,
+                now_ms=now_ms,
                 start_time_ms=start_time_ms,
                 end_time_ms=end_time_ms,
-                limit=limit,
-                timeout_seconds=timeout_seconds,
+                require_complete_window=True,
             )
-        except requests.RequestException as exc:
-            rejected_hosts.append(f"{base_url}:transport:{type(exc).__name__}")
-            continue
 
-        if response.status_code == 403:
-            reason, ret_code, ret_code_category, ret_msg_category = _classify_403(response)
-            _emit_403_diagnostic(
-                response,
-                base_url=base_url,
-                symbol=normalized_symbol,
-                interval=interval,
-                cdn_request_id=cdn_request_id,
-                reason=reason,
-                ret_code=ret_code,
-                ret_code_category=ret_code_category,
-                ret_msg_category=ret_msg_category,
-            )
-            rejected_hosts.append(f"{base_url}:http403:{reason}")
-            if reason in {
-                "access_too_frequent",
-                "api_rate_limited",
-                "ip_banned",
-                "region_restricted",
-                "unmatched_ip",
-                "compliance_restricted",
-            }:
-                close = getattr(client, "close", None)
-                if callable(close):
-                    close()
-                raise BybitKlineError(
-                    f"Bybit Mainnet access is blocked (HTTP 403 {reason}); "
-                    "repeated requests suppressed"
-                )
-            continue
-        if response.status_code != 200:
-            raise BybitKlineError(f"Bybit kline request failed with HTTP {response.status_code}")
-        if len(response.content) > MAX_RESPONSE_BYTES:
-            raise BybitKlineError("Bybit kline response exceeds size limit")
-        try:
-            payload = response.json()
-        except ValueError as exc:
-            raise BybitKlineError("Bybit kline response is not valid JSON") from exc
-        return normalize_closed_klines(
-            payload,
-            symbol=normalized_symbol,
-            interval=interval,
-            now_ms=now_ms,
-            start_time_ms=start_time_ms,
-            end_time_ms=end_time_ms,
-            require_complete_window=True,
+        rejected_hosts.extend(round_rejections)
+        all_hosts_unclassified_403 = (
+            len(round_rejections) == len(OFFICIAL_MAINNET_BASE_URLS)
+            and unclassified_403_count == len(OFFICIAL_MAINNET_BASE_URLS)
         )
+        if (
+            all_hosts_unclassified_403
+            and round_index < len(UNCLASSIFIED_403_RETRY_DELAYS_SECONDS)
+        ):
+            time.sleep(UNCLASSIFIED_403_RETRY_DELAYS_SECONDS[round_index])
+            continue
+        break
 
     detail = ",".join(rejected_hosts)
     raise BybitKlineError(
