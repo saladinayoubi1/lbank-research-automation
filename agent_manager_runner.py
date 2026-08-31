@@ -90,6 +90,30 @@ def apply_provider_gates(config: dict[str, Any]) -> None:
             worker["enabled"] = False
 
 
+def reconcile_blocked_successful_result(config: dict[str, Any]) -> None:
+    """Bind a successful triage result to its actual producer before independent verification."""
+    for task in config.get("tasks", []):
+        if task.get("status") != "BLOCKED":
+            continue
+        if task.get("blocked_reason") != "independent verifier unavailable":
+            continue
+        result_worker = task.get("assigned_worker")
+        if not result_worker or "result_evidence" not in task:
+            continue
+        if result_worker == task.get("producer"):
+            continue
+        prior_producer = task.get("producer")
+        task["producer"] = result_worker
+        task.pop("blocked_reason", None)
+        am.emit(
+            "result_producer_reconciled",
+            task_id=task["id"],
+            prior_producer=prior_producer,
+            producer=result_worker,
+        )
+        am.request_verification(config, task, am.utcnow())
+
+
 def load_runtime(path: Path) -> dict[str, Any] | None:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
@@ -107,6 +131,7 @@ def main() -> int:
     template = am.load_config(Path(args.config))
     config = merge_definition(template, load_runtime(Path(args.runtime)))
     apply_provider_gates(config)
+    reconcile_blocked_successful_result(config)
     summary = am.cycle(config)
     am.atomic_json(Path(args.runtime), config)
     am.atomic_json(Path(args.summary), summary)
