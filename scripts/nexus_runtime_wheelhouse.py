@@ -2,14 +2,24 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import http.client
 import json
 import os
+import re
 import shutil
+import socket
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
 import zipfile
 from pathlib import Path
+
+
+STORAGE_RETRY_DELAYS_SECONDS = (2.0, 5.0, 10.0, 20.0)
+STORAGE_READ_TIMEOUT_SECONDS = 90
+MAX_ARTIFACT_BYTES = 250 * 1024 * 1024
+COPY_CHUNK_BYTES = 1024 * 1024
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -59,30 +69,146 @@ def deterministic_pack(root: Path, output: Path) -> str:
     return sha256_file(output)
 
 
-def _download_with_redirect_boundary(url: str, headers: dict[str, str], output: Path, *, timeout: int) -> None:
+def _validate_content_range(value: str | None, *, expected_start: int, expected_total: int) -> None:
+    if not value:
+        raise RuntimeError("resumed artifact response missing Content-Range")
+    match = re.fullmatch(r"bytes (\d+)-(\d+)/(\d+)", value.strip())
+    if not match:
+        raise RuntimeError("invalid artifact Content-Range")
+    start, end, total = (int(part) for part in match.groups())
+    if start != expected_start:
+        raise RuntimeError("artifact Content-Range start mismatch")
+    if end < start:
+        raise RuntimeError("artifact Content-Range end precedes start")
+    if total != expected_total:
+        raise RuntimeError("artifact Content-Range total mismatch")
+
+
+def _stream_to_file(response, output: Path, *, mode: str, expected_size: int) -> None:
+    with output.open(mode) as handle:
+        while True:
+            chunk = response.read(COPY_CHUNK_BYTES)
+            if not chunk:
+                break
+            handle.write(chunk)
+            if handle.tell() > expected_size:
+                raise RuntimeError("artifact download exceeds declared size")
+
+
+def _download_with_redirect_boundary(
+    url: str,
+    headers: dict[str, str],
+    output: Path,
+    *,
+    expected_size: int,
+    timeout: int = STORAGE_READ_TIMEOUT_SECONDS,
+    retry_delays: tuple[float, ...] = STORAGE_RETRY_DELAYS_SECONDS,
+) -> None:
+    if expected_size <= 0 or expected_size > MAX_ARTIFACT_BYTES:
+        raise RuntimeError("runtime wheelhouse artifact size is outside bounds")
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.unlink(missing_ok=True)
     opener = urllib.request.build_opener(NoRedirect)
-    try:
-        with opener.open(urllib.request.Request(url, headers=headers), timeout=60) as response, output.open("wb") as handle:
-            if response.status != 200:
-                raise RuntimeError(f"unexpected artifact response: {response.status}")
-            shutil.copyfileobj(response, handle)
-    except urllib.error.HTTPError as exc:
-        if exc.code not in (301, 302, 303, 307, 308):
-            raise
-        location = exc.headers.get("Location")
-        if not location:
-            raise RuntimeError("artifact redirect missing Location") from exc
-        parsed = urllib.parse.urlparse(location)
-        if parsed.scheme != "https" or not parsed.hostname:
-            raise RuntimeError("artifact redirect must be absolute HTTPS") from exc
-        # Signed object storage is a separate trust boundary. Never forward the
-        # GitHub bearer token to the redirected storage request.
-        storage_request = urllib.request.Request(
-            location,
-            headers={"User-Agent": "nexus-runtime-wheelhouse"},
-        )
-        with urllib.request.urlopen(storage_request, timeout=timeout) as response, output.open("wb") as handle:
-            shutil.copyfileobj(response, handle)
+    retryable_errors = (
+        TimeoutError,
+        socket.timeout,
+        ConnectionResetError,
+        http.client.IncompleteRead,
+        urllib.error.URLError,
+    )
+    last_error: BaseException | None = None
+
+    for attempt in range(len(retry_delays) + 1):
+        offset = output.stat().st_size if output.exists() else 0
+        if offset > expected_size:
+            raise RuntimeError("partial artifact exceeds declared size")
+        if offset == expected_size:
+            return
+
+        try:
+            try:
+                direct_response = opener.open(
+                    urllib.request.Request(url, headers=headers),
+                    timeout=60,
+                )
+            except urllib.error.HTTPError as exc:
+                if exc.code not in (301, 302, 303, 307, 308):
+                    raise
+                location = exc.headers.get("Location")
+                if not location:
+                    raise RuntimeError("artifact redirect missing Location") from exc
+                parsed = urllib.parse.urlparse(location)
+                if parsed.scheme != "https" or not parsed.hostname:
+                    raise RuntimeError("artifact redirect must be absolute HTTPS") from exc
+
+                storage_headers = {"User-Agent": "nexus-runtime-wheelhouse"}
+                mode = "wb"
+                if offset:
+                    storage_headers["Range"] = f"bytes={offset}-"
+                    mode = "ab"
+
+                # Signed object storage is a separate trust boundary. Never
+                # forward the GitHub bearer token to the redirected request.
+                storage_request = urllib.request.Request(location, headers=storage_headers)
+                with urllib.request.urlopen(storage_request, timeout=timeout) as response:
+                    if offset:
+                        if response.status != 206:
+                            raise RuntimeError("resumed artifact request requires HTTP 206")
+                        _validate_content_range(
+                            response.headers.get("Content-Range"),
+                            expected_start=offset,
+                            expected_total=expected_size,
+                        )
+                    else:
+                        if response.status not in (200, 206):
+                            raise RuntimeError(f"unexpected artifact storage response: {response.status}")
+                        if response.status == 206:
+                            _validate_content_range(
+                                response.headers.get("Content-Range"),
+                                expected_start=0,
+                                expected_total=expected_size,
+                            )
+                    _stream_to_file(
+                        response,
+                        output,
+                        mode=mode,
+                        expected_size=expected_size,
+                    )
+            else:
+                with direct_response as response:
+                    if response.status != 200:
+                        raise RuntimeError(f"unexpected artifact response: {response.status}")
+                    # Direct GitHub responses are trusted, but resumability is
+                    # defined only across the signed object-storage boundary.
+                    output.unlink(missing_ok=True)
+                    _stream_to_file(
+                        response,
+                        output,
+                        mode="wb",
+                        expected_size=expected_size,
+                    )
+
+            actual_size = output.stat().st_size if output.exists() else 0
+            if actual_size == expected_size:
+                return
+            if actual_size > expected_size:
+                raise RuntimeError("artifact download exceeds declared size")
+            last_error = RuntimeError(
+                f"artifact download ended early at {actual_size}/{expected_size} bytes"
+            )
+        except retryable_errors as exc:
+            last_error = exc
+
+        if attempt >= len(retry_delays):
+            break
+        time.sleep(retry_delays[attempt])
+
+    actual_size = output.stat().st_size if output.exists() else 0
+    raise RuntimeError(
+        "runtime wheelhouse artifact download failed after bounded resumable retries "
+        f"({actual_size}/{expected_size} bytes)"
+    ) from last_error
 
 
 def restore_current_run_artifact(
@@ -117,7 +243,9 @@ def restore_current_run_artifact(
     }
     query = urllib.parse.urlencode({"name": artifact_name, "per_page": 100})
     list_url = f"https://api.github.com/repos/{repository}/actions/runs/{run_id}/artifacts?{query}"
-    with urllib.request.urlopen(urllib.request.Request(list_url, headers=headers), timeout=60) as response:
+    with urllib.request.urlopen(
+        urllib.request.Request(list_url, headers=headers), timeout=60
+    ) as response:
         payload = json.load(response)
     artifacts = [
         artifact
@@ -125,11 +253,19 @@ def restore_current_run_artifact(
         if artifact.get("name") == artifact_name and not artifact.get("expired", False)
     ]
     if len(artifacts) != 1:
-        raise RuntimeError(f"expected exactly one current-run runtime wheelhouse artifact, got {len(artifacts)}")
+        raise RuntimeError(
+            f"expected exactly one current-run runtime wheelhouse artifact, got {len(artifacts)}"
+        )
 
     artifact_id = int(artifacts[0]["id"])
+    artifact_size = int(artifacts[0].get("size_in_bytes") or 0)
     download_url = f"https://api.github.com/repos/{repository}/actions/artifacts/{artifact_id}/zip"
-    _download_with_redirect_boundary(download_url, headers, outer_zip, timeout=180)
+    _download_with_redirect_boundary(
+        download_url,
+        headers,
+        outer_zip,
+        expected_size=artifact_size,
+    )
     safe_extract_flat_archive(outer_zip, outer_root, allow_zip_only=True)
     extracted = sorted(path for path in outer_root.iterdir() if path.is_file())
     if extracted != [inner_zip]:
@@ -148,6 +284,7 @@ def restore_current_run_artifact(
         raise RuntimeError("runtime wheelhouse contains no wheels")
     return {
         "artifact_id": artifact_id,
+        "artifact_size": artifact_size,
         "archive_sha256": actual_sha256,
         "wheel_count": len(wheels),
     }
@@ -194,6 +331,7 @@ def main() -> int:
         work_root=Path(args.work_root),
     )
     print(f"runtime_wheelhouse_artifact_id={result['artifact_id']}")
+    print(f"runtime_wheelhouse_artifact_size={result['artifact_size']}")
     print(f"runtime_wheelhouse_archive_sha256={result['archive_sha256']}")
     print(f"runtime_wheelhouse_wheel_count={result['wheel_count']}")
     print("runtime_wheelhouse_verification=PASS")
