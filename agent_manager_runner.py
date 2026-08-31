@@ -47,7 +47,7 @@ def merge_definition(template: dict[str, Any], runtime: dict[str, Any] | None) -
     runtime_keys = {
         "status", "ready_at", "assigned_worker", "producer", "verifier", "lease_id",
         "leased_at", "heartbeat_at", "lease_expires_at", "attempt", "transient_retries",
-        "triage_reason", "triage_started_at", "triage_mode", "required_output",
+        "triage_reason", "triage_started_at", "triage_mode", "triage_evidence", "required_output",
         "failure_class", "failure_evidence", "result_evidence", "verification_evidence",
         "verified_at", "blocked_reason", "dispatch_id", "dispatch_transport", "dispatched_at",
         "dispatch_mode", "offline_dispatch_digest", "offline_dispatch_bundle_created_at",
@@ -90,6 +90,47 @@ def apply_provider_gates(config: dict[str, Any]) -> None:
             worker["enabled"] = False
 
 
+def recover_completed_root_cause_analysis(config: dict[str, Any]) -> int:
+    """Turn successful RCA work back into original-task work instead of false completion."""
+    recovered = 0
+    for task in config.get("tasks", []):
+        if task.get("triage_mode") != "root_cause_first":
+            continue
+        if task.get("status") not in {"VERIFYING", "BLOCKED"}:
+            continue
+        evidence = task.get("result_evidence")
+        if not isinstance(evidence, dict):
+            continue
+
+        task["triage_evidence"] = {
+            "worker_id": task.get("assigned_worker"),
+            "received_at": task.get("result_received_at"),
+            "evidence": deepcopy(evidence),
+        }
+        task["status"] = "READY"
+        task["ready_at"] = am.iso()
+        task["assigned_worker"] = None
+        task["verifier"] = None
+        task["lease_id"] = None
+        task["leased_at"] = None
+        task["heartbeat_at"] = None
+        task["lease_expires_at"] = None
+        task["blocked_reason"] = None
+        task["triage_mode"] = None
+        task["required_output"] = None
+        task["result_evidence"] = None
+        task["result_artifact_ingested"] = False
+        task["result_received_at"] = None
+        task["dispatch_id"] = None
+        task["dispatch_transport"] = None
+        task["dispatched_at"] = None
+        task["external_wait_state"] = None
+        task["external_wait_started_at"] = None
+        am.emit("root_cause_completed_requeue", task_id=task["id"])
+        recovered += 1
+    return recovered
+
+
 def load_runtime(path: Path) -> dict[str, Any] | None:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
@@ -107,6 +148,7 @@ def main() -> int:
     template = am.load_config(Path(args.config))
     config = merge_definition(template, load_runtime(Path(args.runtime)))
     apply_provider_gates(config)
+    recover_completed_root_cause_analysis(config)
     summary = am.cycle(config)
     am.atomic_json(Path(args.runtime), config)
     am.atomic_json(Path(args.summary), summary)
