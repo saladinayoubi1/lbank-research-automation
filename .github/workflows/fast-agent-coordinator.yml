@@ -30,6 +30,7 @@ jobs:
     timeout-minutes: 5
     env:
       GH_TOKEN: ${{ github.token }}
+      NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: ${{ vars.NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED }}
     steps:
       - name: Release stale WSL recovery lock on explicit recovery commit
         if: github.event_name == 'push' && contains(github.event.head_commit.message, '[recover-wsl-runner-lock]')
