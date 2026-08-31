@@ -76,6 +76,15 @@
       "enabled": true,
       "verifier": false,
       "max_concurrent_tasks": 2
+    },
+    {
+      "id": "verification-agent-independent",
+      "capabilities": ["architecture", "contract_review", "adversarial_tests", "recovery_tests", "ui_validation", "diagnostics"],
+      "resources": ["github-cloud"],
+      "authority_max": 3,
+      "enabled": true,
+      "verifier": true,
+      "max_concurrent_tasks": 2
     }
   ],
   "tasks": [
