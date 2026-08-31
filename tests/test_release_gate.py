@@ -15,12 +15,23 @@ SBOM_SERIAL = "urn:uuid:12345678-1234-5678-1234-567812345678"
 
 
 class ReleaseGateTests(unittest.TestCase):
+    def rebind_manifest_evidence(self, root: Path) -> None:
+        manifest_path = root / "artifact-manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest["evidence"] = {}
+        for name in ("provenance.json", "sbom.cdx.json"):
+            path = root / name
+            manifest["evidence"][name] = {
+                "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                "size": path.stat().st_size,
+            }
+        manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
     def bundle(self) -> Path:
         root = Path(tempfile.mkdtemp())
         artifact = root / "dataset.bin"
         artifact.write_bytes(b"deterministic-release-payload\n")
         digest = hashlib.sha256(artifact.read_bytes()).hexdigest()
-        (root / "artifact-manifest.json").write_text(json.dumps({"artifacts": [{"path": "dataset.bin", "sha256": digest, "size": artifact.stat().st_size}]}), encoding="utf-8")
         sbom = {
             "bomFormat": "CycloneDX",
             "specVersion": "1.5",
@@ -49,6 +60,14 @@ class ReleaseGateTests(unittest.TestCase):
             "subjects": [{"path": "dataset.bin", "sha256": digest}],
         }
         (root / "provenance.json").write_text(json.dumps(provenance), encoding="utf-8")
+        (root / "artifact-manifest.json").write_text(
+            json.dumps({
+                "artifacts": [{"path": "dataset.bin", "sha256": digest, "size": artifact.stat().st_size}],
+                "evidence": {},
+            }),
+            encoding="utf-8",
+        )
+        self.rebind_manifest_evidence(root)
         return root
 
     def mutate_sbom(self, root: Path, fn, *, rebind: bool = False) -> None:
@@ -62,12 +81,15 @@ class ReleaseGateTests(unittest.TestCase):
             provenance["sbom_serial_number"] = sbom.get("serialNumber")
             provenance["sbom_sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
             provenance_path.write_text(json.dumps(provenance), encoding="utf-8")
+            self.rebind_manifest_evidence(root)
 
-    def mutate_provenance(self, root: Path, fn) -> None:
+    def mutate_provenance(self, root: Path, fn, *, rebind: bool = True) -> None:
         path = root / "provenance.json"
         provenance = json.loads(path.read_text())
         fn(provenance)
         path.write_text(json.dumps(provenance), encoding="utf-8")
+        if rebind:
+            self.rebind_manifest_evidence(root)
 
     def verify_ci(self, root: Path):
         return verify(
@@ -79,7 +101,17 @@ class ReleaseGateTests(unittest.TestCase):
         )
 
     def test_unsigned_ci_bundle_passes_internal_consistency(self):
-        self.assertEqual(self.verify_ci(self.bundle()), ["manifest", "bundle-inventory", "sbom-complete", "provenance-fresh", "artifact-digests"])
+        self.assertEqual(
+            self.verify_ci(self.bundle()),
+            [
+                "manifest",
+                "bound-evidence-digests",
+                "bundle-inventory",
+                "sbom-complete",
+                "provenance-fresh",
+                "artifact-digests",
+            ],
+        )
 
     def test_production_fails_closed_without_signature_policy(self):
         with self.assertRaisesRegex(ValueError, "signature"):
@@ -95,6 +127,36 @@ class ReleaseGateTests(unittest.TestCase):
         root = self.bundle()
         (root / "sbom.cdx.json").unlink()
         with self.assertRaisesRegex(ValueError, "missing required file"):
+            self.verify_ci(root)
+
+    def test_missing_manifest_evidence_binding_fails_closed(self):
+        root = self.bundle()
+        manifest_path = root / "artifact-manifest.json"
+        manifest = json.loads(manifest_path.read_text())
+        manifest.pop("evidence")
+        manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "must bind provenance and SBOM"):
+            self.verify_ci(root)
+
+    def test_incomplete_manifest_evidence_set_fails_closed(self):
+        root = self.bundle()
+        manifest_path = root / "artifact-manifest.json"
+        manifest = json.loads(manifest_path.read_text())
+        manifest["evidence"].pop("provenance.json")
+        manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "evidence set must exactly bind"):
+            self.verify_ci(root)
+
+    def test_unrebound_provenance_tamper_fails_manifest_digest_binding(self):
+        root = self.bundle()
+        self.mutate_provenance(root, lambda p: p.update({"builder": "tampered"}), rebind=False)
+        with self.assertRaisesRegex(ValueError, "bound evidence digest mismatch: provenance.json"):
+            self.verify_ci(root)
+
+    def test_unrebound_sbom_tamper_fails_manifest_digest_binding(self):
+        root = self.bundle()
+        self.mutate_sbom(root, lambda s: s["components"][0].update({"name": "tampered"}))
+        with self.assertRaisesRegex(ValueError, "bound evidence digest mismatch: sbom.cdx.json"):
             self.verify_ci(root)
 
     def test_path_traversal_fails_closed(self):
@@ -198,14 +260,14 @@ class ReleaseGateTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "non-empty"):
             self.verify_ci(root)
 
-    def test_stale_sbom_is_rejected_even_when_digest_is_rebound(self):
+    def test_stale_sbom_is_rejected_even_when_digests_are_rebound(self):
         root = self.bundle()
         stale = (NOW - timedelta(hours=25)).isoformat().replace("+00:00", "Z")
         self.mutate_sbom(root, lambda s: s["metadata"].update({"timestamp": stale}), rebind=True)
         with self.assertRaisesRegex(ValueError, "SBOM metadata.timestamp is stale"):
             self.verify_ci(root)
 
-    def test_stale_provenance_is_rejected(self):
+    def test_stale_provenance_is_rejected_even_when_manifest_is_rebound(self):
         root = self.bundle()
         stale = (NOW - timedelta(hours=25)).isoformat().replace("+00:00", "Z")
         self.mutate_provenance(root, lambda p: p.update({"issued_at": stale}))
@@ -231,9 +293,10 @@ class ReleaseGateTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "builder mismatch"):
             self.verify_ci(root)
 
-    def test_sbom_substitution_is_rejected(self):
+    def test_sbom_substitution_is_rejected_even_if_manifest_is_rebound(self):
         root = self.bundle()
         self.mutate_sbom(root, lambda s: s["components"][0].update({"name": "substituted"}))
+        self.rebind_manifest_evidence(root)
         with self.assertRaisesRegex(ValueError, "SBOM digest mismatch"):
             self.verify_ci(root)
 
