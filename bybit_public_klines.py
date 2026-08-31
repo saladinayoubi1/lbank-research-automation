@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import time
 import uuid
@@ -10,18 +11,31 @@ from typing import Any
 
 import requests
 
-# Bybit documents both hosts as equivalent public Mainnet REST endpoints. The
-# ordered pair is intentionally fixed and bounded. HTTP 403 is ambiguous in the
-# provider contract (IP frequency, regional restriction, or malformed request),
-# so the collector classifies explicit public-response evidence first. Only an
-# all-host round of unclassified 403 responses is eligible for the historical,
-# bounded retry path; classified access/rate/region/compliance failures remain
-# fail-fast. No third-party proxy, exchange substitution, private credential or
-# testnet endpoint is permitted.
+# Bybit documents the two global hosts as equivalent public Mainnet REST
+# endpoints and also publishes region-specific Mainnet endpoints. The global
+# pair remains the default everywhere. A regional endpoint can only be enabled
+# through the strict selector below (or the exact physical-runner hint); no
+# caller-supplied URL is ever accepted. Classified access/rate/region/compliance
+# failures remain fail-fast. No third-party proxy, exchange substitution,
+# private credential or testnet endpoint is permitted.
 OFFICIAL_MAINNET_BASE_URLS = (
     "https://api.bybit.com",
     "https://api.bytick.com",
 )
+OFFICIAL_REGIONAL_MAINNET_BASE_URLS = {
+    "EEA": ("https://api.bybit.eu",),
+}
+RUNNER_REGION_HINTS = {
+    "NEXUS-BYBIT-WSL": "EEA",
+}
+_ALL_APPROVED_MAINNET_BASE_URLS = tuple(dict.fromkeys(
+    OFFICIAL_MAINNET_BASE_URLS
+    + tuple(
+        base_url
+        for regional_urls in OFFICIAL_REGIONAL_MAINNET_BASE_URLS.values()
+        for base_url in regional_urls
+    )
+))
 UNCLASSIFIED_403_RETRY_DELAYS_SECONDS = (2.0, 5.0)
 BASE_URL = OFFICIAL_MAINNET_BASE_URLS[0]
 KLINES_PATH = "/v5/market/kline"
@@ -42,6 +56,22 @@ def _normalize_symbol(symbol: str) -> str:
     if not normalized or not normalized.isalnum() or len(normalized) > 32:
         raise BybitKlineError("unsupported Bybit symbol")
     return normalized
+
+
+def _active_mainnet_base_urls() -> tuple[str, tuple[str, ...]]:
+    configured = os.environ.get("NEXUS_BYBIT_PUBLIC_REGION")
+    if configured is None or not configured.strip():
+        runner_name = os.environ.get("RUNNER_NAME", "").strip()
+        region = RUNNER_REGION_HINTS.get(runner_name, "GLOBAL")
+    else:
+        region = configured.strip().upper()
+
+    if region == "GLOBAL":
+        return region, OFFICIAL_MAINNET_BASE_URLS
+    regional_urls = OFFICIAL_REGIONAL_MAINNET_BASE_URLS.get(region)
+    if regional_urls is None:
+        raise BybitKlineError("unsupported Bybit public region selector")
+    return region, tuple(dict.fromkeys((*regional_urls, *OFFICIAL_MAINNET_BASE_URLS)))
 
 
 def _decimal(value: Any, field: str) -> Decimal:
@@ -289,7 +319,7 @@ def _request_one_official_mainnet_host(
     limit: int,
     timeout_seconds: float,
 ):
-    if base_url not in OFFICIAL_MAINNET_BASE_URLS:
+    if base_url not in _ALL_APPROVED_MAINNET_BASE_URLS:
         raise BybitKlineError("unapproved Bybit Mainnet endpoint")
     cdn_request_id = _new_cdn_request_id()
     response = client.get(
@@ -341,13 +371,20 @@ def fetch_closed_klines(
     if expected[-1] + interval_ms - 1 >= now_ms:
         raise BybitKlineError("requested window includes an open/incomplete candle")
 
+    region, base_urls = _active_mainnet_base_urls()
+    if region != "GLOBAL":
+        print("bybit_public_endpoint_selection=" + json.dumps(
+            {"region": region, "base_urls": list(base_urls)},
+            sort_keys=True, separators=(",", ":"), ensure_ascii=True,
+        ))
+
     client = session or requests.Session()
     rejected_hosts: list[str] = []
     retry_rounds = len(UNCLASSIFIED_403_RETRY_DELAYS_SECONDS) + 1
     for round_index in range(retry_rounds):
         round_rejections: list[str] = []
         unclassified_403_count = 0
-        for base_url in OFFICIAL_MAINNET_BASE_URLS:
+        for base_url in base_urls:
             try:
                 response, cdn_request_id = _request_one_official_mainnet_host(
                     client,
@@ -415,8 +452,8 @@ def fetch_closed_klines(
 
         rejected_hosts.extend(round_rejections)
         all_hosts_unclassified_403 = (
-            len(round_rejections) == len(OFFICIAL_MAINNET_BASE_URLS)
-            and unclassified_403_count == len(OFFICIAL_MAINNET_BASE_URLS)
+            len(round_rejections) == len(base_urls)
+            and unclassified_403_count == len(base_urls)
         )
         if (
             all_hosts_unclassified_403
