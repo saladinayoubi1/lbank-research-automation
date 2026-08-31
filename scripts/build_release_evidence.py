@@ -2,9 +2,10 @@
 """Create an unsigned CI evidence bundle for built artifacts.
 
 This tool produces artifact-manifest.json, CycloneDX SBOM metadata, and provenance
-bound to an exact source commit and builder. It deliberately does not sign or
-approve a production release. The resulting bundle must still pass release_gate.py
-with --allow-unsigned before it is uploaded as CI evidence.
+bound to an exact source commit, builder, and optional explicit build parameters.
+It deliberately does not sign or approve a production release. The resulting
+bundle must still pass release_gate.py with --allow-unsigned before it is uploaded
+as CI evidence.
 """
 from __future__ import annotations
 
@@ -45,11 +46,49 @@ def expand_globs(patterns: list[str]) -> list[Path]:
     return files
 
 
-def build_bundle(bundle_dir: Path, artifact_globs: list[str], source_commit: str, builder: str) -> None:
+def normalize_build_parameters(build_parameters: dict[str, str] | None) -> dict[str, str]:
+    if build_parameters is None:
+        return {}
+    if not isinstance(build_parameters, dict):
+        raise ValueError("build parameters must be a mapping")
+    normalized: dict[str, str] = {}
+    for key, value in build_parameters.items():
+        if not isinstance(key, str) or not key.strip():
+            raise ValueError("build parameter key must be a non-empty string")
+        if key != key.strip():
+            raise ValueError(f"build parameter key must not have surrounding whitespace: {key!r}")
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"build parameter value must be a non-empty string: {key}")
+        if value != value.strip():
+            raise ValueError(f"build parameter value must not have surrounding whitespace: {key}")
+        normalized[key] = value
+    return dict(sorted(normalized.items()))
+
+
+def parse_build_parameter_args(values: list[str] | None) -> dict[str, str]:
+    parsed: dict[str, str] = {}
+    for raw in values or []:
+        if "=" not in raw:
+            raise ValueError("build parameter must use key=value syntax")
+        key, value = raw.split("=", 1)
+        if key in parsed:
+            raise ValueError(f"duplicate build parameter: {key}")
+        parsed[key] = value
+    return normalize_build_parameters(parsed)
+
+
+def build_bundle(
+    bundle_dir: Path,
+    artifact_globs: list[str],
+    source_commit: str,
+    builder: str,
+    build_parameters: dict[str, str] | None = None,
+) -> None:
     if len(source_commit) != 40 or any(c not in "0123456789abcdef" for c in source_commit):
         raise ValueError("source commit must be a lowercase 40-character Git SHA")
     if not builder.strip():
         raise ValueError("builder is required")
+    parameters = normalize_build_parameters(build_parameters)
     if bundle_dir.exists():
         if bundle_dir.is_symlink():
             raise ValueError("bundle directory must not be a symlink")
@@ -121,6 +160,7 @@ def build_bundle(bundle_dir: Path, artifact_globs: list[str], source_commit: str
         "production_approval": False,
         "source_commit": source_commit,
         "builder": builder,
+        "build_parameters": parameters,
         "issued_at": timestamp,
         "sbom_serial_number": serial,
         "sbom_sha256": sha256(sbom_path),
@@ -137,9 +177,22 @@ def main() -> int:
     parser.add_argument("--artifact-glob", action="append", required=True)
     parser.add_argument("--source-commit", required=True)
     parser.add_argument("--builder", required=True)
+    parser.add_argument(
+        "--build-parameter",
+        action="append",
+        default=[],
+        metavar="KEY=VALUE",
+        help="repeatable exact build parameter recorded in provenance",
+    )
     args = parser.parse_args()
     try:
-        build_bundle(args.bundle_dir, args.artifact_glob, args.source_commit, args.builder)
+        build_bundle(
+            args.bundle_dir,
+            args.artifact_glob,
+            args.source_commit,
+            args.builder,
+            parse_build_parameter_args(args.build_parameter),
+        )
     except ValueError as exc:
         parser.error(str(exc))
     return 0
