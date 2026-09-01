@@ -509,7 +509,7 @@ jobs:
           state_b64_bytes="${#state_b64}"
           chunk_size=60000
           max_chunks=8
-          if [ "$state_b64_bytes" -gt 450000 ]; then
+          if [ "$state_b64_bytes" -gt 480000 ]; then
             echo "::error::Packed Paper state exceeds bounded job-output handoff."
             exit 1
           fi
