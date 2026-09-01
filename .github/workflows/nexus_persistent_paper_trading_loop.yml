@@ -8,6 +8,7 @@ on:
     branches: [main]
     paths:
       - "bybit_public_klines.py"
+      - "nexus_bybit_same_interval_chunk_fallback.py"
       - "nexus_persistent_paper_trading_loop.py"
       - "nexus_public_regime_cycle.py"
       - "nexus_regime_selected_position_rebalance.py"
@@ -29,6 +30,7 @@ on:
       - "research/strategy_family_catalog.json"
       - "requirements.lock"
       - "tests/test_bybit_public_klines.py"
+      - "tests/test_nexus_bybit_same_interval_chunk_fallback.py"
       - "tests/test_nexus_persistent_paper_trading_loop.py"
       - "tests/test_nexus_persistent_paper_trading_workflow.py"
       - "tests/test_nexus_runtime_wheelhouse.py"
@@ -41,6 +43,7 @@ on:
   pull_request:
     paths:
       - "bybit_public_klines.py"
+      - "nexus_bybit_same_interval_chunk_fallback.py"
       - "nexus_persistent_paper_trading_loop.py"
       - "nexus_public_regime_cycle.py"
       - "nexus_regime_selected_position_rebalance.py"
@@ -62,6 +65,7 @@ on:
       - "research/strategy_family_catalog.json"
       - "requirements.lock"
       - "tests/test_bybit_public_klines.py"
+      - "tests/test_nexus_bybit_same_interval_chunk_fallback.py"
       - "tests/test_nexus_persistent_paper_trading_loop.py"
       - "tests/test_nexus_persistent_paper_trading_workflow.py"
       - "tests/test_nexus_runtime_wheelhouse.py"
@@ -98,6 +102,7 @@ jobs:
         run: >-
           python -m pytest -q
           tests/test_bybit_public_klines.py
+          tests/test_nexus_bybit_same_interval_chunk_fallback.py
           tests/test_nexus_persistent_paper_trading_loop.py
           tests/test_nexus_persistent_paper_trading_workflow.py
           tests/test_nexus_runtime_wheelhouse.py
