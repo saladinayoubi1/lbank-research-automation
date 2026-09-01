@@ -10,7 +10,9 @@ from scripts import nexus_paper_acceptance_stage1 as audit
 
 SOURCE_SHA = "a" * 40
 STALE_SHA = "b" * 40
+RUN_ID = "123456"
 VERIFICATION_DIGEST = "f" * 64
+MATRIX_SNAPSHOT_DIGEST = "9" * 64
 FAMILIES = ["momentum", "trend_breakout", "mean_reversion"]
 SYMBOLS = ["BTCUSDT", "ETHUSDT"]
 TIMEFRAMES = ["minute15", "hour1", "hour4"]
@@ -31,6 +33,7 @@ def _matrix(source_sha: str = SOURCE_SHA) -> dict:
                 "timeframe": timeframe,
                 "status": "VERIFIED",
                 "source_sha": source_sha,
+                "run_id": RUN_ID,
                 "lanes": [
                     {
                         "family": family,
@@ -52,7 +55,9 @@ def _write_json(path: Path, value: dict) -> None:
 def _loop() -> dict:
     return {
         "source_sha": SOURCE_SHA,
+        "run_id": RUN_ID,
         "status": "PAPER_LOOP_ACTIVE",
+        "matrix_snapshot_digest": MATRIX_SNAPSHOT_DIGEST,
         "fresh_cell_count": 6,
         "fresh_cells": [f"{s}:{t}" for s in SYMBOLS for t in TIMEFRAMES],
         "expected_cell_count": 6,
@@ -63,6 +68,28 @@ def _loop() -> dict:
         "automatic_strategy_promotion": False,
         "deterministic_risk_final_authority": True,
     }
+
+
+def _matrix_snapshot() -> dict:
+    return {
+        "source_sha": SOURCE_SHA,
+        "run_id": RUN_ID,
+        "status": "VERIFIED",
+        "snapshot_digest": MATRIX_SNAPSHOT_DIGEST,
+        "expected_cell_count": 6,
+        "verified_cell_count": 6,
+        "blocked_cell_count": 0,
+        "expected_lane_count": 18,
+        "paper_only": True,
+        "live_trading_authority": False,
+        "private_credentials_used": False,
+        "automatic_strategy_promotion": False,
+    }
+
+
+def _write_top_level(root: Path) -> None:
+    _write_json(root / "demo" / "persistent-paper-trading-loop.json", _loop())
+    _write_json(root / "demo" / "strategy-matrix.json", _matrix_snapshot())
 
 
 def _write_ledgers(root: Path, *, substitute: bool = False) -> None:
@@ -115,10 +142,16 @@ def _bind_matrix_evidence(matrix: dict, root: Path) -> None:
             cell["ledger_digest"] = ledger["ledger_digest"]
             cell["verification_digest"] = VERIFICATION_DIGEST
             cell["analysis_digest"] = analysis["projection_digest"]
+            cell["analysis_status_counts"] = analysis["status_counts"]
 
 
 def _mock_verification(_value: dict) -> dict:
     return {"decision": "pass", "verification_digest": VERIFICATION_DIGEST}
+
+
+def _patch_snapshot_verifiers(monkeypatch) -> None:
+    monkeypatch.setattr(audit, "verify_loop_snapshot", lambda _value: {"decision": "pass"})
+    monkeypatch.setattr(audit, "verify_snapshot", lambda _value: {"decision": "pass"})
 
 
 def test_stage1_rejects_one_stale_source_cell(monkeypatch, tmp_path: Path) -> None:
@@ -126,15 +159,23 @@ def test_stage1_rejects_one_stale_source_cell(monkeypatch, tmp_path: Path) -> No
     matrix["cells"]["BTCUSDT:hour1"]["source_sha"] = STALE_SHA
     monkeypatch.setattr(audit, "load_manifest", lambda _path: _manifest())
     monkeypatch.setattr(audit, "load_state", lambda _path, _manifest: matrix)
-    monkeypatch.setattr(audit, "verify_loop_snapshot", lambda _value: {"decision": "pass"})
-    _write_json(tmp_path / "demo" / "persistent-paper-trading-loop.json", _loop())
+    _patch_snapshot_verifiers(monkeypatch)
+    _write_top_level(tmp_path)
 
-    with pytest.raises(audit.PaperAcceptanceStage1Error, match="exact-source VERIFIED"):
-        audit.audit_state_root(
-            state_root=tmp_path,
-            manifest_path=tmp_path / "manifest.json",
-            source_sha=SOURCE_SHA,
-        )
+    with pytest.raises(audit.PaperAcceptanceStage1Error, match="same-run VERIFIED"):
+        audit.audit_state_root(state_root=tmp_path, manifest_path=tmp_path / "manifest.json", source_sha=SOURCE_SHA)
+
+
+def test_stage1_rejects_cross_run_cell_substitution(monkeypatch, tmp_path: Path) -> None:
+    matrix = _matrix()
+    matrix["cells"]["ETHUSDT:hour4"]["run_id"] = "999999"
+    monkeypatch.setattr(audit, "load_manifest", lambda _path: _manifest())
+    monkeypatch.setattr(audit, "load_state", lambda _path, _manifest: matrix)
+    _patch_snapshot_verifiers(monkeypatch)
+    _write_top_level(tmp_path)
+
+    with pytest.raises(audit.PaperAcceptanceStage1Error, match="same-run VERIFIED"):
+        audit.audit_state_root(state_root=tmp_path, manifest_path=tmp_path / "manifest.json", source_sha=SOURCE_SHA)
 
 
 def test_stage1_rejects_detached_supervisor_ledger_binding(monkeypatch, tmp_path: Path) -> None:
@@ -144,16 +185,12 @@ def test_stage1_rejects_detached_supervisor_ledger_binding(monkeypatch, tmp_path
     matrix["cells"]["BTCUSDT:hour1"]["ledger_digest"] = "0" * 64
     monkeypatch.setattr(audit, "load_manifest", lambda _path: _manifest())
     monkeypatch.setattr(audit, "load_state", lambda _path, _manifest: matrix)
-    monkeypatch.setattr(audit, "verify_loop_snapshot", lambda _value: {"decision": "pass"})
+    _patch_snapshot_verifiers(monkeypatch)
     monkeypatch.setattr(audit, "verify_ledger", _mock_verification)
-    _write_json(tmp_path / "demo" / "persistent-paper-trading-loop.json", _loop())
+    _write_top_level(tmp_path)
 
     with pytest.raises(audit.PaperAcceptanceStage1Error, match="ledger digest binding mismatch"):
-        audit.audit_state_root(
-            state_root=tmp_path,
-            manifest_path=tmp_path / "manifest.json",
-            source_sha=SOURCE_SHA,
-        )
+        audit.audit_state_root(state_root=tmp_path, manifest_path=tmp_path / "manifest.json", source_sha=SOURCE_SHA)
 
 
 def test_stage1_rejects_detached_performance_binding(monkeypatch, tmp_path: Path) -> None:
@@ -163,16 +200,12 @@ def test_stage1_rejects_detached_performance_binding(monkeypatch, tmp_path: Path
     matrix["cells"]["BTCUSDT:hour1"]["analysis_digest"] = "0" * 64
     monkeypatch.setattr(audit, "load_manifest", lambda _path: _manifest())
     monkeypatch.setattr(audit, "load_state", lambda _path, _manifest: matrix)
-    monkeypatch.setattr(audit, "verify_loop_snapshot", lambda _value: {"decision": "pass"})
+    _patch_snapshot_verifiers(monkeypatch)
     monkeypatch.setattr(audit, "verify_ledger", _mock_verification)
-    _write_json(tmp_path / "demo" / "persistent-paper-trading-loop.json", _loop())
+    _write_top_level(tmp_path)
 
     with pytest.raises(audit.PaperAcceptanceStage1Error, match="per-cell performance binding mismatch"):
-        audit.audit_state_root(
-            state_root=tmp_path,
-            manifest_path=tmp_path / "manifest.json",
-            source_sha=SOURCE_SHA,
-        )
+        audit.audit_state_root(state_root=tmp_path, manifest_path=tmp_path / "manifest.json", source_sha=SOURCE_SHA)
 
 
 def test_stage1_rejects_lane_ledger_substitution(monkeypatch, tmp_path: Path) -> None:
@@ -181,16 +214,12 @@ def test_stage1_rejects_lane_ledger_substitution(monkeypatch, tmp_path: Path) ->
     _bind_matrix_evidence(matrix, tmp_path)
     monkeypatch.setattr(audit, "load_manifest", lambda _path: _manifest())
     monkeypatch.setattr(audit, "load_state", lambda _path, _manifest: matrix)
-    monkeypatch.setattr(audit, "verify_loop_snapshot", lambda _value: {"decision": "pass"})
+    _patch_snapshot_verifiers(monkeypatch)
     monkeypatch.setattr(audit, "verify_ledger", _mock_verification)
-    _write_json(tmp_path / "demo" / "persistent-paper-trading-loop.json", _loop())
+    _write_top_level(tmp_path)
 
     with pytest.raises(audit.PaperAcceptanceStage1Error, match="lane/ledger substitution"):
-        audit.audit_state_root(
-            state_root=tmp_path,
-            manifest_path=tmp_path / "manifest.json",
-            source_sha=SOURCE_SHA,
-        )
+        audit.audit_state_root(state_root=tmp_path, manifest_path=tmp_path / "manifest.json", source_sha=SOURCE_SHA)
 
 
 def test_stage1_rejects_nonterminal_lane_outcome(monkeypatch, tmp_path: Path) -> None:
@@ -206,16 +235,12 @@ def test_stage1_rejects_nonterminal_lane_outcome(monkeypatch, tmp_path: Path) ->
     _bind_matrix_evidence(matrix, tmp_path)
     monkeypatch.setattr(audit, "load_manifest", lambda _path: _manifest())
     monkeypatch.setattr(audit, "load_state", lambda _path, _manifest: matrix)
-    monkeypatch.setattr(audit, "verify_loop_snapshot", lambda _value: {"decision": "pass"})
+    _patch_snapshot_verifiers(monkeypatch)
     monkeypatch.setattr(audit, "verify_ledger", _mock_verification)
-    _write_json(tmp_path / "demo" / "persistent-paper-trading-loop.json", _loop())
+    _write_top_level(tmp_path)
 
     with pytest.raises(audit.PaperAcceptanceStage1Error, match="nonterminal or unapproved lane outcome"):
-        audit.audit_state_root(
-            state_root=tmp_path,
-            manifest_path=tmp_path / "manifest.json",
-            source_sha=SOURCE_SHA,
-        )
+        audit.audit_state_root(state_root=tmp_path, manifest_path=tmp_path / "manifest.json", source_sha=SOURCE_SHA)
 
 
 def test_stage1_accepts_exact_operational_boundary_chain(monkeypatch, tmp_path: Path) -> None:
@@ -224,7 +249,7 @@ def test_stage1_accepts_exact_operational_boundary_chain(monkeypatch, tmp_path: 
     _bind_matrix_evidence(matrix, tmp_path)
     monkeypatch.setattr(audit, "load_manifest", lambda _path: _manifest())
     monkeypatch.setattr(audit, "load_state", lambda _path, _manifest: matrix)
-    monkeypatch.setattr(audit, "verify_loop_snapshot", lambda _value: {"decision": "pass"})
+    _patch_snapshot_verifiers(monkeypatch)
     monkeypatch.setattr(audit, "verify_ledger", _mock_verification)
     monkeypatch.setattr(audit, "verify_cycle_snapshot", lambda _value: {"decision": "pass"})
 
@@ -272,17 +297,16 @@ def test_stage1_accepts_exact_operational_boundary_chain(monkeypatch, tmp_path: 
         "regime_cycle_digest": regime["cycle_digest"],
     }
     _write_json(tmp_path / "demo" / "persistent-paper-trading-loop.json", loop)
+    _write_json(tmp_path / "demo" / "strategy-matrix.json", _matrix_snapshot())
     _write_json(tmp_path / "demo" / "paper-position-maintenance.json", maintenance)
     _write_json(tmp_path / "demo" / "paper-performance-refresh.json", performance)
     _write_json(tmp_path / "demo" / "regime-cycle.json", regime)
 
-    result = audit.audit_state_root(
-        state_root=tmp_path,
-        manifest_path=tmp_path / "manifest.json",
-        source_sha=SOURCE_SHA,
-    )
+    result = audit.audit_state_root(state_root=tmp_path, manifest_path=tmp_path / "manifest.json", source_sha=SOURCE_SHA)
 
     assert result["decision"] == "pass"
+    assert result["run_id"] == RUN_ID
+    assert result["matrix_snapshot_digest"] == MATRIX_SNAPSHOT_DIGEST
     assert result["verified_cell_count"] == 6
     assert result["verified_lane_count"] == 18
     assert result["health_trigger_requested"] is True
