@@ -146,6 +146,18 @@ def evaluate_runs(
             "age_minutes": rounded_age,
         }
     if conclusion != "success":
+        latest_sha = str(latest.get("head_sha") or "")
+        if (
+            current_sha
+            and latest_sha
+            and latest_sha != current_sha
+            and age_minutes > stale_minutes
+        ):
+            return {
+                "decision": "DISPATCH_REQUIRED_FAILED_NONCURRENT",
+                "latest": latest,
+                "age_minutes": rounded_age,
+            }
         return {
             "decision": "FAIL_CLOSED_LAST_RUN_UNSUCCESSFUL",
             "latest": latest,
