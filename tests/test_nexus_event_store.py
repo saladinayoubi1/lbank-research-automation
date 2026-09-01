@@ -10,6 +10,7 @@ import nexus_event_store as store
 
 
 SOURCE = "896573210b6fd5a87a62562927898445f97f43ed"
+OTHER_SOURCE = "0" * 40
 NOW = datetime(2026, 9, 1, 4, 30, tzinfo=timezone.utc)
 
 
@@ -123,7 +124,7 @@ def test_mixed_source_chain_fails_closed_even_with_valid_digest(tmp_path: Path):
     path = tmp_path / "events.jsonl"
     seed(path)
     events = read_raw(path)
-    events[1]["source_sha"] = "different-source"
+    events[1]["source_sha"] = OTHER_SOURCE
     events[1]["event_digest"] = store.compute_event_digest(events[1])
     write_raw(path, events)
 
@@ -136,7 +137,7 @@ def test_expected_source_mismatch_fails_closed(tmp_path: Path):
     seed(path)
 
     with pytest.raises(store.EventStoreError, match="expected source"):
-        store.replay_state(path, expected_source_sha="wrong-sha")
+        store.replay_state(path, expected_source_sha=OTHER_SOURCE)
 
 
 def test_append_refuses_to_extend_corrupt_existing_store(tmp_path: Path):
@@ -192,15 +193,25 @@ def test_unsupported_event_type_and_invalid_source_fail_closed():
             recorded_at=NOW,
         )
 
-    with pytest.raises(store.EventStoreError, match="source_sha"):
-        store.build_event(
-            sequence=1,
-            event_type="state_replace",
-            source_sha="",
-            payload={"state": {}},
-            previous_event_digest=None,
-            recorded_at=NOW,
-        )
+    for invalid_source in ("", "not-a-sha", "A" * 40, "a" * 39, "a" * 41):
+        with pytest.raises(store.EventStoreError, match="source_sha"):
+            store.build_event(
+                sequence=1,
+                event_type="state_replace",
+                source_sha=invalid_source,
+                payload={"state": {}},
+                previous_event_digest=None,
+                recorded_at=NOW,
+            )
+
+
+def test_invalid_expected_source_sha_fails_closed_before_replay(tmp_path: Path):
+    path = tmp_path / "events.jsonl"
+    seed(path)
+
+    for invalid_source in ("wrong-sha", "A" * 40, "f" * 39):
+        with pytest.raises(store.EventStoreError, match="expected_source_sha"):
+            store.replay_state(path, expected_source_sha=invalid_source)
 
 
 def test_blank_record_and_noncanonical_schema_fail_closed(tmp_path: Path):
