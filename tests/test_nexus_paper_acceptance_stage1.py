@@ -168,7 +168,7 @@ def test_stage1_rejects_one_stale_source_cell(monkeypatch, tmp_path: Path) -> No
 
 def test_stage1_rejects_cross_run_cell_substitution(monkeypatch, tmp_path: Path) -> None:
     matrix = _matrix()
-    matrix["cells"]["ETHUSDT:hour4"]["run_id"] = "999999"
+    matrix["cells"]["BTCUSDT:hour1"]["run_id"] = "999999"
     monkeypatch.setattr(audit, "load_manifest", lambda _path: _manifest())
     monkeypatch.setattr(audit, "load_state", lambda _path, _manifest: matrix)
     _patch_snapshot_verifiers(monkeypatch)
