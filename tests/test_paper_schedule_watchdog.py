@@ -71,9 +71,33 @@ def test_stale_success_requires_bounded_dispatch():
     assert result["age_minutes"] == 90.0
 
 
-def test_unsuccessful_latest_run_fails_closed_instead_of_looping():
+def test_unsuccessful_latest_run_on_current_sha_fails_closed_instead_of_looping():
     result = watchdog.evaluate_runs(
-        [run(minutes_ago=90, conclusion="failure")], now=NOW, stale_minutes=45
+        [run(minutes_ago=90, conclusion="failure", head_sha="same")],
+        now=NOW,
+        stale_minutes=45,
+        current_sha="same",
+    )
+    assert result["decision"] == "FAIL_CLOSED_LAST_RUN_UNSUCCESSFUL"
+
+
+def test_stale_unsuccessful_noncurrent_run_requests_one_bounded_dispatch():
+    result = watchdog.evaluate_runs(
+        [run(minutes_ago=90, conclusion="failure", head_sha="old")],
+        now=NOW,
+        stale_minutes=45,
+        current_sha="new",
+    )
+    assert result["decision"] == "DISPATCH_REQUIRED_FAILED_NONCURRENT"
+    assert result["age_minutes"] == 90.0
+
+
+def test_recent_unsuccessful_noncurrent_run_still_fails_closed():
+    result = watchdog.evaluate_runs(
+        [run(minutes_ago=20, conclusion="failure", head_sha="old")],
+        now=NOW,
+        stale_minutes=45,
+        current_sha="new",
     )
     assert result["decision"] == "FAIL_CLOSED_LAST_RUN_UNSUCCESSFUL"
 
