@@ -36,7 +36,7 @@ _ALL_APPROVED_MAINNET_BASE_URLS = tuple(dict.fromkeys(
         for base_url in regional_urls
     )
 ))
-UNCLASSIFIED_403_RETRY_DELAYS_SECONDS = (2.0, 5.0)
+UNCLASSIFIED_403_RETRY_DELAYS_SECONDS = (2.0, 5.0, 15.0, 30.0)
 BASE_URL = OFFICIAL_MAINNET_BASE_URLS[0]
 KLINES_PATH = "/v5/market/kline"
 INTERVAL_MS = {"15": 15 * 60 * 1000, "60": 60 * 60 * 1000, "240": 4 * 60 * 60 * 1000}

@@ -328,3 +328,35 @@ def test_non_geographic_http_failure_does_not_fall_through_to_another_host():
             session=session,
         )
     assert session.urls == [OFFICIAL_MAINNET_BASE_URLS[0] + "/v5/market/kline"]
+
+
+def test_unclassified_403_backoff_is_explicitly_bounded():
+    assert UNCLASSIFIED_403_RETRY_DELAYS_SECONDS == (2.0, 5.0, 15.0, 30.0)
+
+
+def test_classified_403_after_unclassified_round_still_fails_fast(monkeypatch):
+    sleeps = []
+    monkeypatch.setattr(bybit_klines.time, "sleep", sleeps.append)
+    classified = {
+        "retCode": 10009,
+        "retMsg": "Service Restricted: unavailable for this region.",
+        "result": {},
+    }
+    session = _Session([
+        *[_Response(403) for _ in OFFICIAL_MAINNET_BASE_URLS],
+        _Response(403, payload=classified, headers={"Content-Type": "application/json"}),
+        _Response(200, _payload(_rows())),
+    ])
+    with pytest.raises(BybitKlineError, match="HTTP 403 region_restricted"):
+        fetch_closed_klines(
+            "BTCUSDT",
+            "60",
+            now_ms=1710010000000,
+            start_time_ms=1710000000000,
+            end_time_ms=1710000000000,
+            limit=1,
+            session=session,
+        )
+    assert len(session.urls) == len(OFFICIAL_MAINNET_BASE_URLS) + 1
+    assert sleeps == [UNCLASSIFIED_403_RETRY_DELAYS_SECONDS[0]]
+    assert session.closed is True
