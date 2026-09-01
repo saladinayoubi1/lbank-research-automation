@@ -10,6 +10,7 @@ from scripts import nexus_paper_acceptance_stage1 as audit
 
 SOURCE_SHA = "a" * 40
 STALE_SHA = "b" * 40
+VERIFICATION_DIGEST = "f" * 64
 FAMILIES = ["momentum", "trend_breakout", "mean_reversion"]
 SYMBOLS = ["BTCUSDT", "ETHUSDT"]
 TIMEFRAMES = ["minute15", "hour1", "hour4"]
@@ -78,17 +79,37 @@ def _write_ledgers(root: Path, *, substitute: bool = False) -> None:
             ]
             if substitute and symbol == "BTCUSDT" and timeframe == "hour1":
                 tasks[0]["evidence_digest"] = "d" * 64
+            ledger = {
+                "source_sha": SOURCE_SHA,
+                "symbol": symbol,
+                "timeframe": timeframe,
+                "paper_only": True,
+                "live_trading_authority": False,
+                "tasks": tasks,
+                "final_status": "VERIFIED",
+            }
+            ledger["ledger_digest"] = audit._digest(ledger)
             _write_json(
                 root / "cells" / symbol.lower() / timeframe / "supervisor-ledger.json",
-                {
-                    "source_sha": SOURCE_SHA,
-                    "symbol": symbol,
-                    "timeframe": timeframe,
-                    "paper_only": True,
-                    "live_trading_authority": False,
-                    "tasks": tasks,
-                },
+                ledger,
             )
+
+
+def _bind_matrix_ledgers(matrix: dict, root: Path) -> None:
+    for symbol in SYMBOLS:
+        for timeframe in TIMEFRAMES:
+            ledger = json.loads(
+                (root / "cells" / symbol.lower() / timeframe / "supervisor-ledger.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            cell = matrix["cells"][f"{symbol}:{timeframe}"]
+            cell["ledger_digest"] = ledger["ledger_digest"]
+            cell["verification_digest"] = VERIFICATION_DIGEST
+
+
+def _mock_verification(_value: dict) -> dict:
+    return {"decision": "pass", "verification_digest": VERIFICATION_DIGEST}
 
 
 def test_stage1_rejects_one_stale_source_cell(monkeypatch, tmp_path: Path) -> None:
@@ -107,14 +128,34 @@ def test_stage1_rejects_one_stale_source_cell(monkeypatch, tmp_path: Path) -> No
         )
 
 
-def test_stage1_rejects_lane_ledger_substitution(monkeypatch, tmp_path: Path) -> None:
+def test_stage1_rejects_detached_supervisor_ledger_binding(monkeypatch, tmp_path: Path) -> None:
     matrix = _matrix()
+    _write_ledgers(tmp_path)
+    _bind_matrix_ledgers(matrix, tmp_path)
+    matrix["cells"]["BTCUSDT:hour1"]["ledger_digest"] = "0" * 64
     monkeypatch.setattr(audit, "load_manifest", lambda _path: _manifest())
     monkeypatch.setattr(audit, "load_state", lambda _path, _manifest: matrix)
     monkeypatch.setattr(audit, "verify_loop_snapshot", lambda _value: {"decision": "pass"})
-    monkeypatch.setattr(audit, "verify_ledger", lambda _value: {"decision": "pass"})
+    monkeypatch.setattr(audit, "verify_ledger", _mock_verification)
     _write_json(tmp_path / "demo" / "persistent-paper-trading-loop.json", _loop())
+
+    with pytest.raises(audit.PaperAcceptanceStage1Error, match="ledger digest binding mismatch"):
+        audit.audit_state_root(
+            state_root=tmp_path,
+            manifest_path=tmp_path / "manifest.json",
+            source_sha=SOURCE_SHA,
+        )
+
+
+def test_stage1_rejects_lane_ledger_substitution(monkeypatch, tmp_path: Path) -> None:
+    matrix = _matrix()
     _write_ledgers(tmp_path, substitute=True)
+    _bind_matrix_ledgers(matrix, tmp_path)
+    monkeypatch.setattr(audit, "load_manifest", lambda _path: _manifest())
+    monkeypatch.setattr(audit, "load_state", lambda _path, _manifest: matrix)
+    monkeypatch.setattr(audit, "verify_loop_snapshot", lambda _value: {"decision": "pass"})
+    monkeypatch.setattr(audit, "verify_ledger", _mock_verification)
+    _write_json(tmp_path / "demo" / "persistent-paper-trading-loop.json", _loop())
 
     with pytest.raises(audit.PaperAcceptanceStage1Error, match="lane/ledger substitution"):
         audit.audit_state_root(
@@ -127,16 +168,19 @@ def test_stage1_rejects_lane_ledger_substitution(monkeypatch, tmp_path: Path) ->
 def test_stage1_rejects_nonterminal_lane_outcome(monkeypatch, tmp_path: Path) -> None:
     matrix = _matrix()
     matrix["cells"]["BTCUSDT:hour1"]["lanes"][0]["status"] = "WAITING"
-    monkeypatch.setattr(audit, "load_manifest", lambda _path: _manifest())
-    monkeypatch.setattr(audit, "load_state", lambda _path, _manifest: matrix)
-    monkeypatch.setattr(audit, "verify_loop_snapshot", lambda _value: {"decision": "pass"})
-    monkeypatch.setattr(audit, "verify_ledger", lambda _value: {"decision": "pass"})
-    _write_json(tmp_path / "demo" / "persistent-paper-trading-loop.json", _loop())
     _write_ledgers(tmp_path)
     ledger_path = tmp_path / "cells" / "btcusdt" / "hour1" / "supervisor-ledger.json"
     ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
     ledger["tasks"][0]["status"] = "WAITING"
+    ledger.pop("ledger_digest")
+    ledger["ledger_digest"] = audit._digest(ledger)
     _write_json(ledger_path, ledger)
+    _bind_matrix_ledgers(matrix, tmp_path)
+    monkeypatch.setattr(audit, "load_manifest", lambda _path: _manifest())
+    monkeypatch.setattr(audit, "load_state", lambda _path, _manifest: matrix)
+    monkeypatch.setattr(audit, "verify_loop_snapshot", lambda _value: {"decision": "pass"})
+    monkeypatch.setattr(audit, "verify_ledger", _mock_verification)
+    _write_json(tmp_path / "demo" / "persistent-paper-trading-loop.json", _loop())
 
     with pytest.raises(audit.PaperAcceptanceStage1Error, match="nonterminal or unapproved lane outcome"):
         audit.audit_state_root(
@@ -148,12 +192,13 @@ def test_stage1_rejects_nonterminal_lane_outcome(monkeypatch, tmp_path: Path) ->
 
 def test_stage1_accepts_exact_operational_boundary_chain(monkeypatch, tmp_path: Path) -> None:
     matrix = _matrix()
+    _write_ledgers(tmp_path)
+    _bind_matrix_ledgers(matrix, tmp_path)
     monkeypatch.setattr(audit, "load_manifest", lambda _path: _manifest())
     monkeypatch.setattr(audit, "load_state", lambda _path, _manifest: matrix)
     monkeypatch.setattr(audit, "verify_loop_snapshot", lambda _value: {"decision": "pass"})
-    monkeypatch.setattr(audit, "verify_ledger", lambda _value: {"decision": "pass"})
+    monkeypatch.setattr(audit, "verify_ledger", _mock_verification)
     monkeypatch.setattr(audit, "verify_cycle_snapshot", lambda _value: {"decision": "pass"})
-    _write_ledgers(tmp_path)
 
     maintenance_core = {
         "source_sha": SOURCE_SHA,
