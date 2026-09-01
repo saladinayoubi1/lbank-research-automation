@@ -39,7 +39,8 @@
     "bybit_wsl_wake_scheduled_tasks_enabled": false,
     "bybit_wsl_runner_subsequently_proven_operational": true,
     "post_boundary_paper_job_queued_without_steps": true,
-    "post_boundary_windows_wake_job_queued_without_steps": true,
+    "post_boundary_windows_wake_job_queued_without_steps": false,
+    "post_boundary_windows_wake_job_cancelled_without_steps": true,
     "runner_registration_modified_by_recovery_work": false,
     "security_authority_expanded_by_recovery_work": false
   },
@@ -97,7 +98,7 @@
   },
   "current_evidence": {
     "observed_main_sha": "896573210b6fd5a87a62562927898445f97f43ed",
-    "observed_at_utc": "2026-09-01T01:00:04Z",
+    "observed_at_utc": "2026-09-01T01:23:38Z",
     "state_commit_relationship": "observed_main_sha remains the exact stable main intentionally held for issue #1041 acceptance; this Project Memory branch is Draft and must not merge until the physical execution-plane blocker and acceptance result are reconciled",
     "latest_main_change": {
       "pr": 1227,
@@ -157,7 +158,8 @@
       "bybit_wsl_wake_run_id": 33439446453,
       "bybit_wsl_wake_decision": "BLOCKED_SCHEDULED_TASKS_DISABLED",
       "post_boundary_wake_retry_job_id": 99690372170,
-      "post_boundary_wake_retry_job_status": "queued",
+      "post_boundary_wake_retry_job_status": "completed",
+      "post_boundary_wake_retry_job_conclusion": "cancelled",
       "post_boundary_wake_retry_job_steps_observed": 0,
       "current_control_plane_liveness_proven": false,
       "bybit_wsl_runner_subsequently_proven_operational": true,
@@ -224,7 +226,7 @@
     "paper_runtime_acceptance": {
       "issue": 1041,
       "state": "open",
-      "reason": "the genuine 4h boundary has passed, but the post-boundary scheduled Paper job was never claimed and a bounded same-SHA retry remains queued with zero steps; exact-current-main evidence therefore remains 5/6 until the self-hosted execution plane returns"
+      "reason": "the genuine 4h boundary has passed, but the post-boundary scheduled Paper job was never claimed and the bounded same-SHA Paper retry remains queued with zero steps; exact-current-main evidence therefore remains 5/6 until the self-hosted execution plane returns"
     },
     "prospective_paper": {
       "issue": 984,
@@ -239,7 +241,7 @@
     },
     "windows_user_context_recovery": {
       "state": "supporting_blocker_not_primary_delivery_gate",
-      "reason": "per-user Windows DR persistence still requires an interactive signed-in user and the allowlisted WSL wake Scheduled Tasks were observed disabled; post-boundary both the Paper retry and Windows wake retry are currently unclaimed, so current listener liveness is not proven and privilege/ACL/service-account/runner-registration boundaries must remain unchanged"
+      "reason": "per-user Windows DR persistence still requires an interactive signed-in user and the allowlisted WSL wake Scheduled Tasks were observed disabled; the post-boundary wake retry was cancelled without any step or runner assignment while the Paper retry remains queued, so current listener liveness is not proven and privilege/ACL/service-account/runner-registration boundaries must remain unchanged"
     }
   },
   "authority": {
