@@ -61,6 +61,14 @@ def _is_digest(value: Any) -> bool:
     )
 
 
+def _is_source_sha(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 40
+        and all(character in "0123456789abcdef" for character in value)
+    )
+
+
 def _event_body(event: dict[str, Any]) -> dict[str, Any]:
     return {
         "schema_version": event.get("schema_version"),
@@ -127,8 +135,8 @@ def _validate_event_shape(event: dict[str, Any], *, require_digest: bool = True)
     if event_type not in SUPPORTED_EVENT_TYPES:
         raise EventStoreError(f"unsupported event_type: {event_type}")
     source_sha = event.get("source_sha")
-    if not isinstance(source_sha, str) or not source_sha.strip():
-        raise EventStoreError("source_sha must be a non-empty string")
+    if not _is_source_sha(source_sha):
+        raise EventStoreError("source_sha must be a lowercase 40-character Git commit SHA")
     _parse_utc(event.get("recorded_at_utc"))
     payload = event.get("payload")
     if not isinstance(payload, dict):
@@ -153,8 +161,8 @@ def validate_chain(
     rows = list(events)
     if not rows:
         raise EventStoreError("event store is empty")
-    if expected_source_sha is not None and not expected_source_sha.strip():
-        raise EventStoreError("expected_source_sha must be non-empty when provided")
+    if expected_source_sha is not None and not _is_source_sha(expected_source_sha):
+        raise EventStoreError("expected_source_sha must be a lowercase 40-character Git commit SHA")
 
     chain_source: str | None = None
     previous_digest: str | None = GENESIS_DIGEST
@@ -231,8 +239,8 @@ def append_state(
     recorded_at: datetime | None = None,
 ) -> dict[str, Any]:
     """Append one full state snapshot after validating all prior evidence."""
-    if not isinstance(source_sha, str) or not source_sha.strip():
-        raise EventStoreError("source_sha must be a non-empty string")
+    if not _is_source_sha(source_sha):
+        raise EventStoreError("source_sha must be a lowercase 40-character Git commit SHA")
     if not isinstance(state, dict):
         raise EventStoreError("state must be an object")
     canonical_json(state)
