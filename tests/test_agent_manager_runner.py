@@ -101,6 +101,7 @@ def test_specialized_reasoning_failure_is_blocked_instead_of_blind_redispatch():
             "id": "P4-UI-001",
             "status": "READY",
             "failure_class": "specialized_reasoning_provider_required",
+            "failure_evidence": {"reason": "specialized provider required"},
             "assigned_worker": None,
             "dispatch_id": "stale-dispatch",
             "dispatch_transport": "github-cloud",
@@ -115,9 +116,11 @@ def test_specialized_reasoning_failure_is_blocked_instead_of_blind_redispatch():
     assert task["status"] == "BLOCKED"
     assert task["blocked_reason"] == SPECIALIZED_REASONING_BLOCK_REASON
     assert task["assigned_worker"] is None
-    assert task["dispatch_id"] is None
-    assert task["dispatch_transport"] is None
+    assert task["dispatch_id"] == "stale-dispatch"
+    assert task["dispatch_transport"] == "github-cloud"
+    assert task["failure_evidence"] == {"reason": "specialized provider required"}
     assert task["external_wait_state"] is None
+    assert task["triage_mode"] == "fail_closed_specialized_reasoning_provider"
 
 
 def test_completed_rca_does_not_requeue_specialized_failure_to_deterministic_worker():
