@@ -268,6 +268,15 @@ def run_persistent_cycle(
         performance = run_performance_refresh(
             manifest=manifest, state_root=root, source_sha=source_sha
         )
+        if performance.get("schema_version") == "nexus.demo-paper-performance-refresh.v1":
+            rebound_state = performance.pop("_rebound_matrix_state", None)
+            rebound_snapshot = performance.pop("_rebound_matrix_snapshot", None)
+            if not isinstance(rebound_state, dict) or not isinstance(rebound_snapshot, dict):
+                raise PersistentPaperTradingLoopError("performance refresh omitted rebound matrix evidence")
+            if verify_snapshot(rebound_snapshot).get("decision") != "pass":
+                raise PersistentPaperTradingLoopError("rebound matrix snapshot failed verification")
+            next_matrix_state = rebound_state
+            matrix_snapshot = rebound_snapshot
         boundary = _regime_boundary(next_matrix_state, list(manifest["symbols"]))
         boundary_digest = _digest(boundary)
         regime_path = root / "demo" / "regime-cycle.json"
