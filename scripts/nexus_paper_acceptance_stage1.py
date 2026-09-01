@@ -34,6 +34,7 @@ _TERMINAL_LANE_STATUSES = frozenset(
         "risk_rejected",
     }
 )
+_MAINTENANCE_STATUSES = frozenset({"CLOSED", "HELD", "FLAT"})
 
 
 class PaperAcceptanceStage1Error(RuntimeError):
@@ -119,6 +120,8 @@ def audit_state_root(*, state_root: Path, manifest_path: Path, source_sha: str) 
 
     lane_count = 0
     lane_status_counts: dict[str, int] = {}
+    expected_performance_rows: dict[str, dict[str, Any]] = {}
+    expected_maintenance_rows: dict[tuple[str, str, str], dict[str, Any]] = {}
     for cell_id in sorted(expected_cells):
         cell = cells[cell_id]
         if not isinstance(cell, Mapping):
@@ -161,15 +164,64 @@ def audit_state_root(*, state_root: Path, manifest_path: Path, source_sha: str) 
 
         analysis = _read_json(cell_root / "analysis" / "paper-performance.json")
         analysis_digest = _verify_digest(analysis, "projection_digest")
+        strategy_count = analysis.get("strategy_count")
+        status_counts = analysis.get("status_counts")
         if (
             cell.get("analysis_digest") != analysis_digest
-            or cell.get("analysis_status_counts") != analysis.get("status_counts")
+            or cell.get("analysis_status_counts") != status_counts
             or analysis.get("supervisor_verification_digest")
             != ledger_verification.get("verification_digest")
+            or isinstance(strategy_count, bool)
+            or not isinstance(strategy_count, int)
+            or strategy_count < 0
+            or not isinstance(status_counts, Mapping)
             or analysis.get("paper_only") is not True
             or analysis.get("live_trading_authority") is not False
         ):
             raise PaperAcceptanceStage1Error(f"per-cell performance binding mismatch: {cell_id}")
+        expected_performance_rows[cell_id] = {
+            "symbol": symbol,
+            "timeframe": timeframe,
+            "strategy_count": strategy_count,
+            "status_counts": dict(status_counts),
+            "projection_digest": analysis_digest,
+        }
+
+        cell_maintenance = _read_json(cell_root / "analysis" / "paper-position-maintenance.json")
+        maintenance_rows = cell_maintenance.get("rows")
+        if (
+            cell_maintenance.get("source_sha") != source_sha
+            or cell_maintenance.get("symbol") != symbol
+            or cell_maintenance.get("timeframe") != timeframe
+            or cell_maintenance.get("paper_only") is not True
+            or cell_maintenance.get("live_trading_authority") is not False
+            or not isinstance(maintenance_rows, list)
+        ):
+            raise PaperAcceptanceStage1Error(f"per-cell maintenance binding mismatch: {cell_id}")
+        maintenance_by_family = {
+            str(row.get("family")): row for row in maintenance_rows if isinstance(row, Mapping)
+        }
+        if (
+            set(maintenance_by_family) != set(manifest["families"])
+            or len(maintenance_by_family) != len(maintenance_rows)
+        ):
+            raise PaperAcceptanceStage1Error(f"per-cell maintenance family surface mismatch: {cell_id}")
+        for family in sorted(manifest["families"]):
+            row = maintenance_by_family[family]
+            _verify_digest(row, "maintenance_digest")
+            if (
+                row.get("family") != family
+                or row.get("symbol") != symbol
+                or row.get("timeframe") != timeframe
+                or row.get("status") not in _MAINTENANCE_STATUSES
+                or row.get("paper_only") is not True
+                or row.get("live_trading_authority") is not False
+                or row.get("exposure_increased") is not False
+            ):
+                raise PaperAcceptanceStage1Error(
+                    f"per-cell maintenance row mismatch: {cell_id}/{family}"
+                )
+            expected_maintenance_rows[(symbol, timeframe, family)] = dict(row)
 
         tasks = ledger.get("tasks")
         lanes = cell.get("lanes")
@@ -235,11 +287,14 @@ def audit_state_root(*, state_root: Path, manifest_path: Path, source_sha: str) 
 
     maintenance = _read_json(root / "demo" / "paper-position-maintenance.json")
     maintenance_digest = _verify_digest(maintenance, "maintenance_digest")
+    maintenance_rows = maintenance.get("rows")
     if (
         maintenance_digest != loop.get("maintenance_digest")
         or maintenance.get("source_sha") != source_sha
         or maintenance.get("cell_count") != 6
         or maintenance.get("task_count") != 18
+        or not isinstance(maintenance_rows, list)
+        or len(maintenance_rows) != 18
         or maintenance.get("paper_only") is not True
         or maintenance.get("live_trading_authority") is not False
         or maintenance.get("private_credentials_used") is not False
@@ -247,18 +302,55 @@ def audit_state_root(*, state_root: Path, manifest_path: Path, source_sha: str) 
         or maintenance.get("exposure_increased") is not False
     ):
         raise PaperAcceptanceStage1Error("maintenance evidence is not exact-source/risk-reducing")
+    top_maintenance_by_key = {
+        (str(row.get("symbol")), str(row.get("timeframe")), str(row.get("family"))): row
+        for row in maintenance_rows
+        if isinstance(row, Mapping)
+    }
+    if (
+        set(top_maintenance_by_key) != set(expected_maintenance_rows)
+        or len(top_maintenance_by_key) != len(maintenance_rows)
+        or any(
+            dict(top_maintenance_by_key[key]) != expected_maintenance_rows[key]
+            for key in expected_maintenance_rows
+        )
+        or maintenance.get("closed_count")
+        != sum(row.get("status") == "CLOSED" for row in maintenance_rows if isinstance(row, Mapping))
+        or maintenance.get("held_count")
+        != sum(row.get("status") == "HELD" for row in maintenance_rows if isinstance(row, Mapping))
+        or maintenance.get("flat_count")
+        != sum(row.get("status") == "FLAT" for row in maintenance_rows if isinstance(row, Mapping))
+    ):
+        raise PaperAcceptanceStage1Error("maintenance top-level/per-cell substitution detected")
 
     performance = _read_json(root / "demo" / "paper-performance-refresh.json")
     performance_digest = _verify_digest(performance, "refresh_digest")
+    performance_rows = performance.get("rows")
     if (
         performance_digest != loop.get("performance_refresh_digest")
         or performance.get("source_sha") != source_sha
         or performance.get("cell_count") != 6
+        or not isinstance(performance_rows, list)
+        or len(performance_rows) != 6
         or performance.get("paper_only") is not True
         or performance.get("live_trading_authority") is not False
         or performance.get("automatic_strategy_promotion") is not False
     ):
         raise PaperAcceptanceStage1Error("performance evidence is not exact-source Paper evidence")
+    top_performance_by_cell = {
+        f"{row.get('symbol')}:{row.get('timeframe')}": row
+        for row in performance_rows
+        if isinstance(row, Mapping)
+    }
+    if (
+        set(top_performance_by_cell) != expected_cells
+        or len(top_performance_by_cell) != len(performance_rows)
+        or any(
+            dict(top_performance_by_cell[cell_id]) != expected_performance_rows[cell_id]
+            for cell_id in expected_cells
+        )
+    ):
+        raise PaperAcceptanceStage1Error("performance top-level/per-cell substitution detected")
 
     regime = _read_json(root / "demo" / "regime-cycle.json")
     if verify_cycle_snapshot(regime).get("decision") != "pass":
