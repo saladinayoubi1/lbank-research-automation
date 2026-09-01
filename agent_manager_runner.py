@@ -158,6 +158,9 @@ def block_unroutable_specialized_reasoning(config: dict[str, Any]) -> int:
             continue
 
         prior_worker = task.get("assigned_worker")
+        prior_dispatch_id = task.get("dispatch_id")
+        prior_dispatch_transport = task.get("dispatch_transport")
+        prior_dispatched_at = task.get("dispatched_at")
         task["status"] = "BLOCKED"
         task["blocked_reason"] = SPECIALIZED_REASONING_BLOCK_REASON
         task["triage_mode"] = "fail_closed_specialized_reasoning_provider"
@@ -167,6 +170,9 @@ def block_unroutable_specialized_reasoning(config: dict[str, Any]) -> int:
         task["leased_at"] = None
         task["heartbeat_at"] = None
         task["lease_expires_at"] = None
+        task["dispatch_id"] = None
+        task["dispatch_transport"] = None
+        task["dispatched_at"] = None
         task["external_wait_state"] = None
         task["external_wait_started_at"] = None
         am.emit(
@@ -174,7 +180,9 @@ def block_unroutable_specialized_reasoning(config: dict[str, Any]) -> int:
             task_id=task["id"],
             prior_worker=prior_worker,
             failure_class=SPECIALIZED_REASONING_FAILURE,
-            dispatch_id=task.get("dispatch_id"),
+            dispatch_id=prior_dispatch_id,
+            dispatch_transport=prior_dispatch_transport,
+            dispatched_at=prior_dispatched_at,
         )
         blocked += 1
     return blocked
