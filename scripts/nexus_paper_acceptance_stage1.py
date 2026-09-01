@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from nexus_demo_regime_cycle import verify_cycle_snapshot
-from nexus_demo_strategy_matrix import load_manifest, load_state
+from nexus_demo_strategy_matrix import load_manifest, load_state, verify_snapshot
 from nexus_persistent_paper_trading_loop import verify_loop_snapshot
 from nexus_strategy_paper_supervisor import verify_ledger
 
@@ -85,6 +85,28 @@ def audit_state_root(*, state_root: Path, manifest_path: Path, source_sha: str) 
     loop = _read_json(root / "demo" / "persistent-paper-trading-loop.json")
     if verify_loop_snapshot(loop).get("decision") != "pass":
         raise PaperAcceptanceStage1Error("persistent Paper loop snapshot verification failed")
+    loop_run_id = str(loop.get("run_id", ""))
+    if not loop_run_id.isdigit():
+        raise PaperAcceptanceStage1Error("persistent Paper loop run_id is invalid")
+
+    matrix_snapshot = _read_json(root / "demo" / "strategy-matrix.json")
+    if verify_snapshot(matrix_snapshot).get("decision") != "pass":
+        raise PaperAcceptanceStage1Error("strategy matrix snapshot verification failed")
+    if (
+        matrix_snapshot.get("snapshot_digest") != loop.get("matrix_snapshot_digest")
+        or matrix_snapshot.get("source_sha") != source_sha
+        or str(matrix_snapshot.get("run_id", "")) != loop_run_id
+        or matrix_snapshot.get("status") != "VERIFIED"
+        or matrix_snapshot.get("expected_cell_count") != 6
+        or matrix_snapshot.get("verified_cell_count") != 6
+        or matrix_snapshot.get("blocked_cell_count") != 0
+        or matrix_snapshot.get("expected_lane_count") != 18
+        or matrix_snapshot.get("paper_only") is not True
+        or matrix_snapshot.get("live_trading_authority") is not False
+        or matrix_snapshot.get("private_credentials_used") is not False
+        or matrix_snapshot.get("automatic_strategy_promotion") is not False
+    ):
+        raise PaperAcceptanceStage1Error("loop/matrix snapshot chain binding mismatch")
 
     expected_cells = {
         f"{symbol}:{timeframe}"
@@ -105,10 +127,11 @@ def audit_state_root(*, state_root: Path, manifest_path: Path, source_sha: str) 
         if (
             cell.get("status") != "VERIFIED"
             or cell.get("source_sha") != source_sha
+            or str(cell.get("run_id", "")) != loop_run_id
             or cell.get("symbol") != symbol
             or cell.get("timeframe") != timeframe
         ):
-            raise PaperAcceptanceStage1Error(f"cell is not exact-source VERIFIED: {cell_id}")
+            raise PaperAcceptanceStage1Error(f"cell is not exact-source same-run VERIFIED: {cell_id}")
 
         cell_root = root / "cells" / symbol.lower() / timeframe
         ledger = _read_json(cell_root / "supervisor-ledger.json")
@@ -140,6 +163,7 @@ def audit_state_root(*, state_root: Path, manifest_path: Path, source_sha: str) 
         analysis_digest = _verify_digest(analysis, "projection_digest")
         if (
             cell.get("analysis_digest") != analysis_digest
+            or cell.get("analysis_status_counts") != analysis.get("status_counts")
             or analysis.get("supervisor_verification_digest")
             != ledger_verification.get("verification_digest")
             or analysis.get("paper_only") is not True
@@ -255,9 +279,11 @@ def audit_state_root(*, state_root: Path, manifest_path: Path, source_sha: str) 
     return {
         "decision": "pass",
         "source_sha": source_sha,
+        "run_id": loop_run_id,
         "verified_cell_count": 6,
         "verified_lane_count": lane_count,
         "lane_status_counts": dict(sorted(lane_status_counts.items())),
+        "matrix_snapshot_digest": matrix_snapshot["snapshot_digest"],
         "maintenance_digest": maintenance_digest,
         "performance_refresh_digest": performance_digest,
         "regime_cycle_digest": regime["cycle_digest"],
