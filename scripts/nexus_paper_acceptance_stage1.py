@@ -110,7 +110,8 @@ def audit_state_root(*, state_root: Path, manifest_path: Path, source_sha: str) 
         ):
             raise PaperAcceptanceStage1Error(f"cell is not exact-source VERIFIED: {cell_id}")
 
-        ledger = _read_json(root / "cells" / symbol.lower() / timeframe / "supervisor-ledger.json")
+        cell_root = root / "cells" / symbol.lower() / timeframe
+        ledger = _read_json(cell_root / "supervisor-ledger.json")
         ledger_verification = verify_ledger(ledger)
         if ledger_verification.get("decision") != "pass":
             raise PaperAcceptanceStage1Error(f"Supervisor ledger rejected: {cell_id}")
@@ -134,6 +135,17 @@ def audit_state_root(*, state_root: Path, manifest_path: Path, source_sha: str) 
             or ledger.get("live_trading_authority") is not False
         ):
             raise PaperAcceptanceStage1Error(f"Supervisor ledger authority/source mismatch: {cell_id}")
+
+        analysis = _read_json(cell_root / "analysis" / "paper-performance.json")
+        analysis_digest = _verify_digest(analysis, "projection_digest")
+        if (
+            cell.get("analysis_digest") != analysis_digest
+            or analysis.get("supervisor_verification_digest")
+            != ledger_verification.get("verification_digest")
+            or analysis.get("paper_only") is not True
+            or analysis.get("live_trading_authority") is not False
+        ):
+            raise PaperAcceptanceStage1Error(f"per-cell performance binding mismatch: {cell_id}")
 
         tasks = ledger.get("tasks")
         lanes = cell.get("lanes")
