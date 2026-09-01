@@ -148,7 +148,7 @@ def test_completed_rca_does_not_requeue_specialized_failure_to_deterministic_wor
     assert config["tasks"][0]["triage_evidence"]["evidence"]["root_cause"] == "reasoning provider required"
 
 
-def test_bounded_event_recovery_workload_is_not_blocked_by_stale_specialized_failure():
+def test_p4_event_specialized_failure_stays_blocked_until_matching_contract_is_available():
     config = {
         "tasks": [{
             "id": "P4-EVENT-001",
@@ -158,8 +158,9 @@ def test_bounded_event_recovery_workload_is_not_blocked_by_stale_specialized_fai
         }]
     }
 
-    assert block_unroutable_specialized_reasoning(config) == 0
-    assert config["tasks"][0]["status"] == "READY"
+    assert block_unroutable_specialized_reasoning(config) == 1
+    assert config["tasks"][0]["status"] == "BLOCKED"
+    assert config["tasks"][0]["blocked_reason"] == SPECIALIZED_REASONING_BLOCK_REASON
 
 
 def test_specialized_reasoning_block_is_idempotent():
