@@ -145,7 +145,7 @@ def recover_completed_root_cause_analysis(config: dict[str, Any]) -> int:
 
 
 def block_unroutable_specialized_reasoning(config: dict[str, Any]) -> int:
-    """Stop deterministic redispatch loops when the executor requires a reasoning provider."""
+    """Stop deterministic redispatch loops while preserving prior dispatch/failure audit evidence."""
     blocked = 0
     for task in config.get("tasks", []):
         if task.get("failure_class") != SPECIALIZED_REASONING_FAILURE:
@@ -157,23 +157,24 @@ def block_unroutable_specialized_reasoning(config: dict[str, Any]) -> int:
         if task.get("status") == "BLOCKED" and task.get("blocked_reason") == SPECIALIZED_REASONING_BLOCK_REASON:
             continue
 
+        prior_worker = task.get("assigned_worker")
         task["status"] = "BLOCKED"
         task["blocked_reason"] = SPECIALIZED_REASONING_BLOCK_REASON
+        task["triage_mode"] = "fail_closed_specialized_reasoning_provider"
         task["assigned_worker"] = None
         task["verifier"] = None
         task["lease_id"] = None
         task["leased_at"] = None
         task["heartbeat_at"] = None
         task["lease_expires_at"] = None
-        task["dispatch_id"] = None
-        task["dispatch_transport"] = None
-        task["dispatched_at"] = None
         task["external_wait_state"] = None
         task["external_wait_started_at"] = None
         am.emit(
             "specialized_reasoning_blocked",
             task_id=task["id"],
+            prior_worker=prior_worker,
             failure_class=SPECIALIZED_REASONING_FAILURE,
+            dispatch_id=task.get("dispatch_id"),
         )
         blocked += 1
     return blocked
