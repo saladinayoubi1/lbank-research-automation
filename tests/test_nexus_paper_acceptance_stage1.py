@@ -124,6 +124,28 @@ def test_stage1_rejects_lane_ledger_substitution(monkeypatch, tmp_path: Path) ->
         )
 
 
+def test_stage1_rejects_nonterminal_lane_outcome(monkeypatch, tmp_path: Path) -> None:
+    matrix = _matrix()
+    matrix["cells"]["BTCUSDT:hour1"]["lanes"][0]["status"] = "WAITING"
+    monkeypatch.setattr(audit, "load_manifest", lambda _path: _manifest())
+    monkeypatch.setattr(audit, "load_state", lambda _path, _manifest: matrix)
+    monkeypatch.setattr(audit, "verify_loop_snapshot", lambda _value: {"decision": "pass"})
+    monkeypatch.setattr(audit, "verify_ledger", lambda _value: {"decision": "pass"})
+    _write_json(tmp_path / "demo" / "persistent-paper-trading-loop.json", _loop())
+    _write_ledgers(tmp_path)
+    ledger_path = tmp_path / "cells" / "btcusdt" / "hour1" / "supervisor-ledger.json"
+    ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+    ledger["tasks"][0]["status"] = "WAITING"
+    _write_json(ledger_path, ledger)
+
+    with pytest.raises(audit.PaperAcceptanceStage1Error, match="nonterminal or unapproved lane outcome"):
+        audit.audit_state_root(
+            state_root=tmp_path,
+            manifest_path=tmp_path / "manifest.json",
+            source_sha=SOURCE_SHA,
+        )
+
+
 def test_stage1_accepts_exact_operational_boundary_chain(monkeypatch, tmp_path: Path) -> None:
     matrix = _matrix()
     monkeypatch.setattr(audit, "load_manifest", lambda _path: _manifest())
