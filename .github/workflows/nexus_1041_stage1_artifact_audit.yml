@@ -25,6 +25,11 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 1
+      - name: Install verifier runtime dependencies
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check -r requirements.txt
+          python3 -m pip check
       - name: Bind exact acceptance artifact metadata
         run: |
           set -euo pipefail
