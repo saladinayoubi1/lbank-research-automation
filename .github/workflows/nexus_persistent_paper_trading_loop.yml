@@ -10,6 +10,7 @@ on:
       - "bybit_public_klines.py"
       - "nexus_bybit_same_interval_chunk_fallback.py"
       - "nexus_persistent_paper_trading_loop.py"
+      - "nexus_persistent_paper_bounded_cycle.py"
       - "nexus_public_regime_cycle.py"
       - "nexus_regime_selected_position_rebalance.py"
       - "nexus_regime_selected_exposure_increase.py"
@@ -32,6 +33,7 @@ on:
       - "tests/test_bybit_public_klines.py"
       - "tests/test_nexus_bybit_same_interval_chunk_fallback.py"
       - "tests/test_nexus_persistent_paper_trading_loop.py"
+      - "tests/test_nexus_persistent_paper_bounded_cycle.py"
       - "tests/test_nexus_persistent_paper_trading_workflow.py"
       - "tests/test_nexus_runtime_wheelhouse.py"
       - "tests/test_nexus_regime_selected_position_rebalance.py"
@@ -45,6 +47,7 @@ on:
       - "bybit_public_klines.py"
       - "nexus_bybit_same_interval_chunk_fallback.py"
       - "nexus_persistent_paper_trading_loop.py"
+      - "nexus_persistent_paper_bounded_cycle.py"
       - "nexus_public_regime_cycle.py"
       - "nexus_regime_selected_position_rebalance.py"
       - "nexus_regime_selected_exposure_increase.py"
@@ -67,6 +70,7 @@ on:
       - "tests/test_bybit_public_klines.py"
       - "tests/test_nexus_bybit_same_interval_chunk_fallback.py"
       - "tests/test_nexus_persistent_paper_trading_loop.py"
+      - "tests/test_nexus_persistent_paper_bounded_cycle.py"
       - "tests/test_nexus_persistent_paper_trading_workflow.py"
       - "tests/test_nexus_runtime_wheelhouse.py"
       - "tests/test_nexus_regime_selected_position_rebalance.py"
@@ -104,6 +108,7 @@ jobs:
           tests/test_bybit_public_klines.py
           tests/test_nexus_bybit_same_interval_chunk_fallback.py
           tests/test_nexus_persistent_paper_trading_loop.py
+          tests/test_nexus_persistent_paper_bounded_cycle.py
           tests/test_nexus_persistent_paper_trading_workflow.py
           tests/test_nexus_runtime_wheelhouse.py
           tests/test_nexus_regime_selected_position_rebalance.py
@@ -433,7 +438,7 @@ jobs:
       - name: Advance public closed-candle Paper portfolio loop
         run: |
           set -euo pipefail
-          "$PYTHON_BIN" nexus_persistent_paper_trading_loop.py \
+          "$PYTHON_BIN" nexus_persistent_paper_bounded_cycle.py \
             --repo-root . \
             --state-root "$STATE_ROOT" \
             --source-sha "$GITHUB_SHA" \
