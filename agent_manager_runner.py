@@ -13,7 +13,6 @@ RUNTIME_PATH = Path("data/agent_coordination/agent_manager_runtime.json")
 SUMMARY_PATH = Path("data/agent_coordination/manager_state.json")
 SPECIALIZED_REASONING_FAILURE = "specialized_reasoning_provider_required"
 SPECIALIZED_REASONING_BLOCK_REASON = "specialized reasoning provider required; no authorized reasoning route available"
-DETERMINISTIC_SPECIALIZED_RECOVERY_WORKLOADS = {"P4-EVENT-001"}
 STATE_BINDING_KEYS = (
     "phase",
     "gate",
@@ -149,8 +148,6 @@ def block_unroutable_specialized_reasoning(config: dict[str, Any]) -> int:
     blocked = 0
     for task in config.get("tasks", []):
         if task.get("failure_class") != SPECIALIZED_REASONING_FAILURE:
-            continue
-        if task.get("id") in DETERMINISTIC_SPECIALIZED_RECOVERY_WORKLOADS:
             continue
         if task.get("status") not in {"TRIAGE", "READY", "BLOCKED"}:
             continue
