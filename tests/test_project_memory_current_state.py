@@ -51,7 +51,8 @@ def test_project_memory_current_paper_acceptance_is_fail_closed_and_provenance_b
     assert SHA_RE.fullmatch(evidence["observed_main_sha"])
     assert paper["issue"] == 1041
     assert paper["issue_state"] == "open"
-    assert paper["status"] == "WAITING_FOR_NEXT_GENUINE_HOUR4_BOUNDARY_WITH_5_OF_6_EXACT_MAIN_CELLS"
+    assert paper["status"] == "POST_BOUNDARY_BLOCKED_SELF_HOSTED_EXECUTION_PLANE_UNCLAIMED"
+    assert paper["genuine_hour4_boundary_reached"] is True
     assert paper["fresh_cell_count"] == 5
     assert paper["fresh_cell_count"] < paper["expected_cell_count"] == 6
     assert paper["remaining_cell"] == "ETHUSDT:hour4"
@@ -62,7 +63,12 @@ def test_project_memory_current_paper_acceptance_is_fail_closed_and_provenance_b
     assert paper["trading_engine_complete"] is False
     assert paper["latest_physical_run_source_sha"] == evidence["observed_main_sha"]
     assert SHA256_RE.fullmatch(paper["latest_physical_state_artifact_digest"])
-    assert paper["remaining_gap_classification"] == "temporal_closed_candle_and_public_data_availability_bound"
+    assert paper["post_boundary_scheduled_run_conclusion"] == "cancelled"
+    assert paper["post_boundary_scheduled_paper_job_claimed"] is False
+    assert paper["post_boundary_bounded_retry_job_status"] == "queued"
+    assert paper["post_boundary_bounded_retry_job_steps_observed"] == 0
+    assert paper["post_boundary_state_artifact_proven"] is False
+    assert paper["remaining_gap_classification"] == "self_hosted_execution_plane_unavailable_after_genuine_hour4_boundary"
     assert paper["paper_only"] is True
     assert paper["live_trading_authority"] is False
     assert paper["private_credentials_used"] is False
@@ -76,18 +82,24 @@ def test_project_memory_current_windows_recovery_is_fail_closed_without_authorit
     recovery = evidence["windows_recovery"]
     runtime = state["runtime_status"]
 
-    assert recovery["status"] == "SUPPORTING_GAPS_FAIL_CLOSED_CURRENT_PAPER_RUNNER_OPERATIONAL"
+    assert recovery["status"] == "SELF_HOSTED_CONTROL_PLANE_UNAVAILABLE_POST_BOUNDARY"
     assert recovery["windows_dr_persistence_decision"] == "BLOCKED_USER_CONTEXT_REQUIRED"
     assert recovery["bybit_wsl_wake_decision"] == "BLOCKED_SCHEDULED_TASKS_DISABLED"
+    assert recovery["post_boundary_wake_retry_job_status"] == "queued"
+    assert recovery["post_boundary_wake_retry_job_steps_observed"] == 0
+    assert recovery["current_control_plane_liveness_proven"] is False
     assert recovery["bybit_wsl_runner_subsequently_proven_operational"] is True
     assert recovery["privilege_acl_service_account_change_authorized"] is False
     assert recovery["runner_reregistration_authorized"] is False
     assert recovery["task_mutation_performed_by_wake_workflow"] is False
+    assert runtime["current_self_hosted_listener_liveness_proven"] is False
     assert runtime["windows_runner_identity_class"] == "NETWORK_SERVICE"
     assert runtime["windows_user_context_token_available"] is False
     assert runtime["windows_user_context_token_error"] == 1314
     assert runtime["windows_dr_persistence_requires_interactive_signed_in_user"] is True
     assert runtime["bybit_wsl_wake_scheduled_tasks_enabled"] is False
+    assert runtime["post_boundary_paper_job_queued_without_steps"] is True
+    assert runtime["post_boundary_windows_wake_job_queued_without_steps"] is True
     assert runtime["runner_registration_modified_by_recovery_work"] is False
     assert runtime["security_authority_expanded_by_recovery_work"] is False
 
@@ -102,6 +114,10 @@ def test_project_memory_keeps_runtime_real_time_and_production_gates_fail_closed
     assert prospective["issue"] == 984
     assert prospective["status"] == "COLLECTING"
     assert prospective["verified_completed_hour4_bars"] < prospective["required_completed_hour4_bars"]
+    assert prospective["latest_verified_workflow_run"] == 33452499286
+    assert prospective["latest_verified_source_sha"] == state["current_evidence"]["observed_main_sha"]
+    assert prospective["latest_verified_artifact_id"] == 9780274451
+    assert SHA256_RE.fullmatch(prospective["latest_verified_artifact_digest"])
     assert prospective["may_be_accelerated_or_fabricated"] is False
     assert gates["prospective_paper"]["state"] == "open"
     assert gates["production_release"]["issue"] == 43
