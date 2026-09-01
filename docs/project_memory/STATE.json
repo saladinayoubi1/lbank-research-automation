@@ -27,16 +27,19 @@
     "owner_override_required_for_priority_change": true
   },
   "runtime_status": {
-    "agent_execution_state": "paper_runtime_acceptance_5_of_6_exact_main_cells_windows_recovery_supporting_gaps",
-    "laptop_state": "physical_windows_runner_verified_and_exact_main_bybit_wsl_paper_runner_operational",
+    "agent_execution_state": "paper_runtime_acceptance_post_boundary_blocked_self_hosted_execution_plane_unclaimed",
+    "laptop_state": "self_hosted_execution_plane_currently_unavailable_or_unclaimed_from_github",
     "internet_outage_state": "not_assumed_from_laptop_state",
     "laptop_offline_is_not_internet_outage": true,
+    "current_self_hosted_listener_liveness_proven": false,
     "windows_runner_identity_class": "NETWORK_SERVICE",
     "windows_user_context_token_available": false,
     "windows_user_context_token_error": 1314,
     "windows_dr_persistence_requires_interactive_signed_in_user": true,
     "bybit_wsl_wake_scheduled_tasks_enabled": false,
     "bybit_wsl_runner_subsequently_proven_operational": true,
+    "post_boundary_paper_job_queued_without_steps": true,
+    "post_boundary_windows_wake_job_queued_without_steps": true,
     "runner_registration_modified_by_recovery_work": false,
     "security_authority_expanded_by_recovery_work": false
   },
@@ -85,7 +88,7 @@
       "may_authorize_production_recovery": false,
       "status": "provider_readback_verified_secondary_snapshot_pending_post_acceptance_refresh",
       "refresh_required": true,
-      "refresh_reason": "exact-main Paper acceptance is still 5/6 and canonical STATE must be finalized after the next genuine 4h-boundary attempt",
+      "refresh_reason": "post-boundary issue #1041 is now blocked by the unavailable self-hosted execution plane; refresh after physical recovery and the next verified acceptance result",
       "fixed_source_sha": "896573210b6fd5a87a62562927898445f97f43ed",
       "provider_export_size_bytes": 51815,
       "provider_export_sha256": "e3358819b23d1b12b612236f911cdff97c36c12d90b67fd1709b1aa7f353992d",
@@ -94,8 +97,8 @@
   },
   "current_evidence": {
     "observed_main_sha": "896573210b6fd5a87a62562927898445f97f43ed",
-    "observed_at_utc": "2026-08-31T22:06:00Z",
-    "state_commit_relationship": "observed_main_sha is the exact stable main intentionally held for issue #1041 acceptance; this Project Memory branch is Draft and must not merge until the exact-main Paper acceptance attempt is resolved and this state is finalized",
+    "observed_at_utc": "2026-09-01T01:00:04Z",
+    "state_commit_relationship": "observed_main_sha remains the exact stable main intentionally held for issue #1041 acceptance; this Project Memory branch is Draft and must not merge until the physical execution-plane blocker and acceptance result are reconciled",
     "latest_main_change": {
       "pr": 1227,
       "summary": "Physical EEA Paper data now prefers the approved official api.bybit.eu public endpoint with bounded approved global fallback; no proxy, credentials, Live/L4 authority or exchange substitution was added.",
@@ -106,7 +109,8 @@
     "paper_runtime_acceptance": {
       "issue": 1041,
       "issue_state": "open",
-      "status": "WAITING_FOR_NEXT_GENUINE_HOUR4_BOUNDARY_WITH_5_OF_6_EXACT_MAIN_CELLS",
+      "status": "POST_BOUNDARY_BLOCKED_SELF_HOSTED_EXECUTION_PLANE_UNCLAIMED",
+      "genuine_hour4_boundary_reached": true,
       "latest_physical_run_id": 33437816607,
       "latest_physical_run_source_sha": "896573210b6fd5a87a62562927898445f97f43ed",
       "latest_physical_runner": "NEXUS-BYBIT-WSL",
@@ -115,6 +119,14 @@
       "latest_loop_digest": "b5926ffa19751dcbbaa1c74b5bb2d2d4b634c66b03e26aa1af54452089b094a2",
       "latest_persistent_state_digest": "9ebd5bb67d552091f67acbc354dadfab0d1d169b132d4714cc83bbd59acb593b",
       "latest_matrix_snapshot_digest": "142503ca07d22268a8a39f59b0e6a89b9a57a462f88b9393f2a36c13ec578fbd",
+      "post_boundary_scheduled_run_id": 33450703109,
+      "post_boundary_scheduled_run_conclusion": "cancelled",
+      "post_boundary_scheduled_paper_job_id": 99679826639,
+      "post_boundary_scheduled_paper_job_claimed": false,
+      "post_boundary_bounded_retry_job_id": 99689667665,
+      "post_boundary_bounded_retry_job_status": "queued",
+      "post_boundary_bounded_retry_job_steps_observed": 0,
+      "post_boundary_state_artifact_proven": false,
       "fresh_cell_count": 5,
       "expected_cell_count": 6,
       "fresh_cells": [
@@ -129,8 +141,8 @@
       "source_bound_lane_count": 15,
       "expected_lane_count": 18,
       "trading_engine_complete": false,
-      "remaining_gap_classification": "temporal_closed_candle_and_public_data_availability_bound",
-      "observed_public_bybit_failure": "intermittent sanitized CloudFront HTTP 403 on approved public hosts; bounded fallback/retry remains fail-closed",
+      "remaining_gap_classification": "self_hosted_execution_plane_unavailable_after_genuine_hour4_boundary",
+      "observed_public_bybit_failure": "intermittent sanitized CloudFront HTTP 403 on approved public hosts remains a historical data-plane risk, but the current post-boundary blocker occurs before the physical Paper job starts",
       "paper_only": true,
       "live_trading_authority": false,
       "private_credentials_used": false,
@@ -138,19 +150,23 @@
       "deterministic_risk_final_authority": true
     },
     "windows_recovery": {
-      "status": "SUPPORTING_GAPS_FAIL_CLOSED_CURRENT_PAPER_RUNNER_OPERATIONAL",
+      "status": "SELF_HOSTED_CONTROL_PLANE_UNAVAILABLE_POST_BOUNDARY",
       "windows_dr_persistence_run_id": 33437850781,
       "windows_dr_persistence_decision": "BLOCKED_USER_CONTEXT_REQUIRED",
       "windows_dr_persistence_error": "An interactive signed-in Windows user is required.",
       "bybit_wsl_wake_run_id": 33439446453,
       "bybit_wsl_wake_decision": "BLOCKED_SCHEDULED_TASKS_DISABLED",
+      "post_boundary_wake_retry_job_id": 99690372170,
+      "post_boundary_wake_retry_job_status": "queued",
+      "post_boundary_wake_retry_job_steps_observed": 0,
+      "current_control_plane_liveness_proven": false,
       "bybit_wsl_runner_subsequently_proven_operational": true,
       "privilege_acl_service_account_change_authorized": false,
       "runner_reregistration_authorized": false,
       "task_mutation_performed_by_wake_workflow": false
     },
     "multitimeframe_strategy_runtime": {
-      "status": "5_of_6_exact_main_cells_and_15_of_18_source_bound_strategy_lanes",
+      "status": "5_of_6_exact_main_cells_and_15_of_18_source_bound_lanes_blocked_self_hosted_plane",
       "symbols": ["BTCUSDT", "ETHUSDT"],
       "timeframes": ["minute15", "hour1", "hour4"],
       "families": ["momentum", "trend_breakout", "mean_reversion"],
@@ -182,11 +198,12 @@
       "required_completed_hour4_bars": 180,
       "verified_completed_hour4_bars": 35,
       "latest_verified_execution": "2026-08-31T16:00:00Z",
-      "latest_verified_workflow_run": 33434395829,
-      "latest_verified_source_sha": "5a4637522cb00d4bee80ab94d217560735e1d8d2",
-      "latest_verified_artifact_id": 9773844184,
-      "latest_verified_state_digest": "a7eb024cc01424158b1795c0e9a5516963817bad3dca8a5acd3541256303828c",
-      "latest_verified_artifact_digest": "sha256:f523b22a74acccec0d7cef4db9bfd9753f5f50e8d8dd6a2e387884a6b60fbb72",
+      "latest_verified_workflow_run": 33452499286,
+      "latest_verified_source_sha": "896573210b6fd5a87a62562927898445f97f43ed",
+      "latest_verified_artifact_id": 9780274451,
+      "latest_verified_state_digest": "0e0ad2de10f9e5b0b2ab974a1969dd74b328249150245fba529a7c23c3c75f6c",
+      "latest_verified_artifact_digest": "sha256:553ee4e60d48224ae0c99de229b30d85783f4b58fac184ae1a1539439bdfa257",
+      "latest_verified_tail_event_digest": "2c224c887b06181301bb7688845e869c9ffce5ae16305fc743d1ac7af7fe1302",
       "paper_only": true,
       "live_trading_authority": false,
       "private_credentials_used": false,
@@ -207,12 +224,12 @@
     "paper_runtime_acceptance": {
       "issue": 1041,
       "state": "open",
-      "reason": "exact-current-main physical Bybit evidence is 5/6 cells; ETHUSDT:hour4 and its three strategy lanes require the next genuine closed 4h boundary before downstream Regime/lifecycle/performance/discovery/replay acceptance can finish"
+      "reason": "the genuine 4h boundary has passed, but the post-boundary scheduled Paper job was never claimed and a bounded same-SHA retry remains queued with zero steps; exact-current-main evidence therefore remains 5/6 until the self-hosted execution plane returns"
     },
     "prospective_paper": {
       "issue": 984,
       "state": "open",
-      "reason": "hard real-time acceptance gate; latest independently verified evidence is 35/180 completed hour4 bars and less than 30 elapsed days"
+      "reason": "hard real-time acceptance gate; latest independently verified evidence remains 35/180 completed hour4 bars and less than 30 elapsed days"
     },
     "production_release": {
       "issue": 43,
@@ -222,7 +239,7 @@
     },
     "windows_user_context_recovery": {
       "state": "supporting_blocker_not_primary_delivery_gate",
-      "reason": "per-user Windows DR persistence requires an interactive signed-in user and the allowlisted WSL wake Scheduled Tasks are currently disabled; current WSL Paper runner was subsequently proven operational, and privilege/ACL/service-account/runner-registration boundaries must not be weakened merely to force recovery green"
+      "reason": "per-user Windows DR persistence still requires an interactive signed-in user and the allowlisted WSL wake Scheduled Tasks were observed disabled; post-boundary both the Paper retry and Windows wake retry are currently unclaimed, so current listener liveness is not proven and privilege/ACL/service-account/runner-registration boundaries must remain unchanged"
     }
   },
   "authority": {
@@ -241,7 +258,7 @@
   },
   "history_compaction": {
     "compacted": true,
-    "reason": "Reconcile canonical STATE with exact-current-main Paper, prospective, production-release, Windows recovery and secondary continuity evidence while preserving all prior operational detail through immutable Git history and the staged event.",
+    "reason": "Reconcile canonical STATE with exact-current-main Paper, prospective, production-release, Windows recovery and secondary continuity evidence while preserving all prior operational detail through immutable Git history and staged events.",
     "prior_state_blob_sha": "77c7f0d043d922abf5f269cda203b96eda9b615a",
     "prior_state_observed_main_sha": "1fa20ee5094e6739c5f9cacfb15aa6f1685d5657",
     "historical_detail_preserved_via_git_history": true,
