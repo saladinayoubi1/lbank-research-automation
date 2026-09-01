@@ -1,0 +1,76 @@
+{
+  "schema_version": "1.0",
+  "event_id": "2026-09-01-post-boundary-self-hosted-blocker-89657321",
+  "event_type": "paper_runtime_post_boundary_execution_plane_blocker",
+  "observed_main_sha": "896573210b6fd5a87a62562927898445f97f43ed",
+  "observed_at_utc": "2026-09-01T01:00:04Z",
+  "issue_1041": {
+    "state": "open",
+    "genuine_hour4_boundary_reached": true,
+    "pre_boundary_fresh_cell_count": 5,
+    "expected_cell_count": 6,
+    "pre_boundary_source_bound_lane_count": 15,
+    "expected_lane_count": 18,
+    "remaining_cell": "ETHUSDT:hour4",
+    "scheduled_run_id": 33450703109,
+    "scheduled_run_conclusion": "cancelled",
+    "scheduled_paper_job_id": 99679826639,
+    "scheduled_paper_job_claimed": false,
+    "bounded_retry_job_id": 99689667665,
+    "bounded_retry_job_status": "queued",
+    "bounded_retry_steps_observed": 0,
+    "new_post_boundary_state_artifact_proven": false,
+    "current_blocker": "self_hosted_execution_plane_unavailable_or_unclaimed",
+    "summary": "The genuine 4h boundary passed, but no physical Paper job started. The scheduled run completed with the physical paper-loop unclaimed/cancelled, and the bounded same-SHA retry remains queued with zero steps. The last durable accepted Paper state therefore remains 5/6; no synthetic advancement is permitted."
+  },
+  "windows_control_plane": {
+    "prior_wake_run_id": 33439446453,
+    "prior_wake_decision": "BLOCKED_SCHEDULED_TASKS_DISABLED",
+    "post_boundary_wake_retry_job_id": 99690372170,
+    "post_boundary_wake_retry_job_status": "queued",
+    "post_boundary_wake_retry_steps_observed": 0,
+    "current_listener_liveness_proven": false,
+    "task_enablement_mutated": false,
+    "runner_registration_mutated": false,
+    "credential_or_acl_mutation_performed": false,
+    "summary": "The post-boundary Windows wake probe is also unclaimed, so current self-hosted control-plane liveness is not proven. Existing privilege, task-state, runner-registration and credential boundaries remain unchanged."
+  },
+  "issue_984": {
+    "state": "open",
+    "status": "COLLECTING",
+    "completed_hour4_bars": 35,
+    "required_completed_hour4_bars": 180,
+    "producer_workflow_run": 33452499286,
+    "producer_source_sha": "896573210b6fd5a87a62562927898445f97f43ed",
+    "artifact_id": 9780274451,
+    "artifact_digest": "sha256:553ee4e60d48224ae0c99de229b30d85783f4b58fac184ae1a1539439bdfa257",
+    "state_digest": "0e0ad2de10f9e5b0b2ab974a1969dd74b328249150245fba529a7c23c3c75f6c",
+    "tail_event_digest": "2c224c887b06181301bb7688845e869c9ffce5ae16305fc743d1ac7af7fe1302",
+    "summary": "The latest producer ran before the new four-hour boundary and correctly preserved 35/180; no wall-clock or recovery event may synthesize a bar."
+  },
+  "acceptance_verifier_staging": {
+    "pull_request": 1236,
+    "draft": true,
+    "base_sha": "896573210b6fd5a87a62562927898445f97f43ed",
+    "purpose": "Fail-closed stage-1 verification of exact 6/6 cells, canonical terminal lane outcomes, matrix-to-supervisor digest bindings, Regime/lifecycle/performance and Paper authority without claiming Discovery/requalification or restart/replay completion.",
+    "merge_before_issue_1041_acceptance_allowed": false
+  },
+  "authority": {
+    "research": true,
+    "backtest": true,
+    "paper": true,
+    "live": false,
+    "l4": false,
+    "private_exchange_credentials": false,
+    "automatic_strategy_promotion": false,
+    "deterministic_risk_final_authority": true
+  },
+  "continuation": {
+    "keep_main_stable": true,
+    "next_required_physical_condition": "self-hosted runner returns and claims the bounded exact-main Paper job",
+    "after_first_6_of_6_require_distinct_restart_replay_execution": true,
+    "do_not_enable_windows_tasks_or_mutate_runner_privilege_state_autonomously": true,
+    "do_not_synthesize_market_data_or_prospective_bars": true
+  },
+  "secrets_included": false
+}
