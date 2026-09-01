@@ -1,6 +1,10 @@
 from __future__ import annotations
 
-from agent_manager_runner import merge_definition
+from agent_manager_runner import (
+    SPECIALIZED_REASONING_BLOCK_REASON,
+    block_unroutable_specialized_reasoning,
+    merge_definition,
+)
 
 
 def test_runtime_state_survives_non_security_definition_refresh():
@@ -88,3 +92,56 @@ def test_removed_runtime_task_is_quarantined_not_silently_dropped():
     merged = merge_definition(template, runtime)
     assert merged["tasks"][0]["id"] == "OLD"
     assert merged["tasks"][0]["status"] == "QUARANTINED"
+
+
+def test_specialized_reasoning_failure_is_blocked_instead_of_blind_redispatch():
+    config = {
+        "tasks": [{
+            "id": "P4-UI-001",
+            "status": "READY",
+            "failure_class": "specialized_reasoning_provider_required",
+            "assigned_worker": None,
+            "dispatch_id": "stale-dispatch",
+            "dispatch_transport": "github-cloud",
+            "external_wait_state": "WAITING_EXTERNAL",
+        }]
+    }
+
+    blocked = block_unroutable_specialized_reasoning(config)
+    task = config["tasks"][0]
+
+    assert blocked == 1
+    assert task["status"] == "BLOCKED"
+    assert task["blocked_reason"] == SPECIALIZED_REASONING_BLOCK_REASON
+    assert task["assigned_worker"] is None
+    assert task["dispatch_id"] is None
+    assert task["dispatch_transport"] is None
+    assert task["external_wait_state"] is None
+
+
+def test_specialized_reasoning_block_is_idempotent():
+    config = {
+        "tasks": [{
+            "id": "P4-UI-001",
+            "status": "BLOCKED",
+            "failure_class": "specialized_reasoning_provider_required",
+            "blocked_reason": SPECIALIZED_REASONING_BLOCK_REASON,
+        }]
+    }
+
+    assert block_unroutable_specialized_reasoning(config) == 0
+    assert config["tasks"][0]["status"] == "BLOCKED"
+
+
+def test_specialized_reasoning_guard_does_not_change_transient_triage():
+    config = {
+        "tasks": [{
+            "id": "A",
+            "status": "TRIAGE",
+            "failure_class": "timed_out",
+            "assigned_worker": None,
+        }]
+    }
+
+    assert block_unroutable_specialized_reasoning(config) == 0
+    assert config["tasks"][0]["status"] == "TRIAGE"
