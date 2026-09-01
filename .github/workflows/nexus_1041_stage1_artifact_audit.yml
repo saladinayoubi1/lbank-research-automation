@@ -19,6 +19,7 @@ jobs:
       ACCEPTANCE_RUN_ID: "33460976830"
       ACCEPTANCE_ARTIFACT_ID: "9796178437"
       ACCEPTANCE_ARTIFACT_NAME: nexus-persistent-paper-trading-state
+      PYTHONPATH: ${{ github.workspace }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
