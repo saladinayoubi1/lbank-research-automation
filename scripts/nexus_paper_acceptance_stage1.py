@@ -114,6 +114,18 @@ def audit_state_root(*, state_root: Path, manifest_path: Path, source_sha: str) 
         ledger_verification = verify_ledger(ledger)
         if ledger_verification.get("decision") != "pass":
             raise PaperAcceptanceStage1Error(f"Supervisor ledger rejected: {cell_id}")
+        ledger_digest = ledger.get("ledger_digest")
+        ledger_core = dict(ledger)
+        ledger_core.pop("ledger_digest", None)
+        if (
+            ledger.get("final_status") != "VERIFIED"
+            or not isinstance(ledger_digest, str)
+            or not _SHA256_RE.fullmatch(ledger_digest)
+            or ledger_digest != _digest(ledger_core)
+            or cell.get("ledger_digest") != ledger_digest
+            or cell.get("verification_digest") != ledger_verification.get("verification_digest")
+        ):
+            raise PaperAcceptanceStage1Error(f"Supervisor ledger digest binding mismatch: {cell_id}")
         if (
             ledger.get("source_sha") != source_sha
             or ledger.get("symbol") != symbol
