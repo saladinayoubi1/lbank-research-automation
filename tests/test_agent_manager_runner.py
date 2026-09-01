@@ -4,6 +4,7 @@ from agent_manager_runner import (
     SPECIALIZED_REASONING_BLOCK_REASON,
     block_unroutable_specialized_reasoning,
     merge_definition,
+    recover_completed_root_cause_analysis,
 )
 
 
@@ -117,6 +118,29 @@ def test_specialized_reasoning_failure_is_blocked_instead_of_blind_redispatch():
     assert task["dispatch_id"] is None
     assert task["dispatch_transport"] is None
     assert task["external_wait_state"] is None
+
+
+def test_completed_rca_does_not_requeue_specialized_failure_to_deterministic_worker():
+    config = {
+        "tasks": [{
+            "id": "P4-UI-001",
+            "status": "VERIFYING",
+            "failure_class": "specialized_reasoning_provider_required",
+            "triage_mode": "root_cause_first",
+            "assigned_worker": "qa-verifier-agent",
+            "producer": "architect-agent",
+            "result_evidence": {"root_cause": "reasoning provider required"},
+            "result_received_at": "2026-09-01T04:00:00+00:00",
+            "dispatch_id": "rca-dispatch",
+            "dispatch_transport": "github-cloud",
+        }]
+    }
+
+    assert recover_completed_root_cause_analysis(config) == 1
+    assert config["tasks"][0]["status"] == "READY"
+    assert block_unroutable_specialized_reasoning(config) == 1
+    assert config["tasks"][0]["status"] == "BLOCKED"
+    assert config["tasks"][0]["triage_evidence"]["evidence"]["root_cause"] == "reasoning provider required"
 
 
 def test_specialized_reasoning_block_is_idempotent():
