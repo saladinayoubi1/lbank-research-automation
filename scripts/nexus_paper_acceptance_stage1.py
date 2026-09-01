@@ -25,6 +25,15 @@ from nexus_strategy_paper_supervisor import verify_ledger
 _SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _MAX_JSON_BYTES = 20_000_000
+_TERMINAL_LANE_STATUSES = frozenset(
+    {
+        "paper_executed",
+        "qualification_killed",
+        "no_open_signal",
+        "position_exists",
+        "risk_rejected",
+    }
+)
 
 
 class PaperAcceptanceStage1Error(RuntimeError):
@@ -142,8 +151,10 @@ def audit_state_root(*, state_root: Path, manifest_path: Path, source_sha: str) 
             if not isinstance(digest, str) or not _SHA256_RE.fullmatch(digest):
                 raise PaperAcceptanceStage1Error(f"invalid lane evidence digest: {cell_id}/{family}")
             status = str(lane.get("status", ""))
-            if not status:
-                raise PaperAcceptanceStage1Error(f"empty lane outcome: {cell_id}/{family}")
+            if status not in _TERMINAL_LANE_STATUSES:
+                raise PaperAcceptanceStage1Error(
+                    f"nonterminal or unapproved lane outcome: {cell_id}/{family}: {status or '<empty>'}"
+                )
             lane_status_counts[status] = lane_status_counts.get(status, 0) + 1
             lane_count += 1
 
