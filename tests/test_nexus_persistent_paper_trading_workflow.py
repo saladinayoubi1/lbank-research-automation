@@ -197,7 +197,7 @@ def test_physical_state_handoff_is_bounded_chunked_digest_checked_and_hosted_per
         assert f"needs.paper-loop.outputs.state_archive_chunk_{index}" in persist
     assert "state_archive_sha256" in paper
     assert "persistent-state-handoff.zip" in paper
-    assert 'state_b64_bytes" -gt 450000' in paper
+    assert 'state_b64_bytes" -gt 480000' in paper
     assert "chunk_size=60000" in paper
     assert "max_chunks=8" in paper
     assert "compression=zipfile.ZIP_DEFLATED" in paper
