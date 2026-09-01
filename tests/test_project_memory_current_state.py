@@ -85,7 +85,8 @@ def test_project_memory_current_windows_recovery_is_fail_closed_without_authorit
     assert recovery["status"] == "SELF_HOSTED_CONTROL_PLANE_UNAVAILABLE_POST_BOUNDARY"
     assert recovery["windows_dr_persistence_decision"] == "BLOCKED_USER_CONTEXT_REQUIRED"
     assert recovery["bybit_wsl_wake_decision"] == "BLOCKED_SCHEDULED_TASKS_DISABLED"
-    assert recovery["post_boundary_wake_retry_job_status"] == "queued"
+    assert recovery["post_boundary_wake_retry_job_status"] == "completed"
+    assert recovery["post_boundary_wake_retry_job_conclusion"] == "cancelled"
     assert recovery["post_boundary_wake_retry_job_steps_observed"] == 0
     assert recovery["current_control_plane_liveness_proven"] is False
     assert recovery["bybit_wsl_runner_subsequently_proven_operational"] is True
@@ -99,7 +100,8 @@ def test_project_memory_current_windows_recovery_is_fail_closed_without_authorit
     assert runtime["windows_dr_persistence_requires_interactive_signed_in_user"] is True
     assert runtime["bybit_wsl_wake_scheduled_tasks_enabled"] is False
     assert runtime["post_boundary_paper_job_queued_without_steps"] is True
-    assert runtime["post_boundary_windows_wake_job_queued_without_steps"] is True
+    assert runtime["post_boundary_windows_wake_job_queued_without_steps"] is False
+    assert runtime["post_boundary_windows_wake_job_cancelled_without_steps"] is True
     assert runtime["runner_registration_modified_by_recovery_work"] is False
     assert runtime["security_authority_expanded_by_recovery_work"] is False
 
