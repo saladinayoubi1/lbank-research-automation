@@ -122,7 +122,8 @@ def _write_ledgers(root: Path, *, substitute: bool = False) -> None:
             )
 
 
-def _bind_matrix_evidence(matrix: dict, root: Path) -> None:
+def _bind_matrix_evidence(matrix: dict, root: Path) -> list[dict]:
+    rows: list[dict] = []
     for symbol in SYMBOLS:
         for timeframe in TIMEFRAMES:
             cell_root = root / "cells" / symbol.lower() / timeframe
@@ -143,6 +144,52 @@ def _bind_matrix_evidence(matrix: dict, root: Path) -> None:
             cell["verification_digest"] = VERIFICATION_DIGEST
             cell["analysis_digest"] = analysis["projection_digest"]
             cell["analysis_status_counts"] = analysis["status_counts"]
+            rows.append(
+                {
+                    "symbol": symbol,
+                    "timeframe": timeframe,
+                    "strategy_count": analysis["strategy_count"],
+                    "status_counts": analysis["status_counts"],
+                    "projection_digest": analysis["projection_digest"],
+                }
+            )
+    return rows
+
+
+def _write_cell_maintenance(root: Path) -> list[dict]:
+    all_rows: list[dict] = []
+    for symbol in SYMBOLS:
+        for timeframe in TIMEFRAMES:
+            cell_rows: list[dict] = []
+            for family in FAMILIES:
+                core = {
+                    "schema_version": "nexus.demo-paper-position-maintenance-cell.v1",
+                    "family": family,
+                    "symbol": symbol,
+                    "timeframe": timeframe,
+                    "status": "FLAT",
+                    "reason_code": "NO_EXISTING_POSITION",
+                    "event_count_added": 0,
+                    "paper_only": True,
+                    "live_trading_authority": False,
+                    "exposure_increased": False,
+                }
+                row = {**core, "maintenance_digest": audit._digest(core)}
+                cell_rows.append(row)
+                all_rows.append(row)
+            _write_json(
+                root / "cells" / symbol.lower() / timeframe / "analysis" / "paper-position-maintenance.json",
+                {
+                    "schema_version": "nexus.demo-paper-position-maintenance.v1",
+                    "source_sha": SOURCE_SHA,
+                    "symbol": symbol,
+                    "timeframe": timeframe,
+                    "rows": cell_rows,
+                    "paper_only": True,
+                    "live_trading_authority": False,
+                },
+            )
+    return all_rows
 
 
 def _mock_verification(_value: dict) -> dict:
@@ -152,6 +199,79 @@ def _mock_verification(_value: dict) -> dict:
 def _patch_snapshot_verifiers(monkeypatch) -> None:
     monkeypatch.setattr(audit, "verify_loop_snapshot", lambda _value: {"decision": "pass"})
     monkeypatch.setattr(audit, "verify_snapshot", lambda _value: {"decision": "pass"})
+
+
+def _write_valid_boundary(monkeypatch, tmp_path: Path) -> dict:
+    matrix = _matrix()
+    _write_ledgers(tmp_path)
+    performance_rows = _bind_matrix_evidence(matrix, tmp_path)
+    maintenance_rows = _write_cell_maintenance(tmp_path)
+    monkeypatch.setattr(audit, "load_manifest", lambda _path: _manifest())
+    monkeypatch.setattr(audit, "load_state", lambda _path, _manifest: matrix)
+    _patch_snapshot_verifiers(monkeypatch)
+    monkeypatch.setattr(audit, "verify_ledger", _mock_verification)
+    monkeypatch.setattr(audit, "verify_cycle_snapshot", lambda _value: {"decision": "pass"})
+
+    maintenance_core = {
+        "source_sha": SOURCE_SHA,
+        "cell_count": 6,
+        "task_count": 18,
+        "closed_count": 0,
+        "held_count": 0,
+        "flat_count": 18,
+        "rows": maintenance_rows,
+        "paper_only": True,
+        "live_trading_authority": False,
+        "private_credentials_used": False,
+        "automatic_strategy_promotion": False,
+        "exposure_increased": False,
+    }
+    maintenance = {**maintenance_core, "maintenance_digest": audit._digest(maintenance_core)}
+    performance_core = {
+        "source_sha": SOURCE_SHA,
+        "cell_count": 6,
+        "rows": performance_rows,
+        "paper_only": True,
+        "live_trading_authority": False,
+        "automatic_strategy_promotion": False,
+    }
+    performance = {**performance_core, "refresh_digest": audit._digest(performance_core)}
+    regime = {
+        "source_sha": SOURCE_SHA,
+        "expected_cell_count": 6,
+        "verified_cell_count": 6,
+        "paper_only": True,
+        "live_trading_authority": False,
+        "private_credentials_used": False,
+        "automatic_strategy_promotion": False,
+        "deterministic_risk_final_authority": True,
+        "cycle_digest": "e" * 64,
+    }
+    loop = {
+        **_loop(),
+        "regime_status": "VERIFIED",
+        "performance_health_feedback_operational": True,
+        "regime_selected_rebalance_operational": True,
+        "regime_selected_exposure_increase_operational": True,
+        "strategy_research_required": True,
+        "strategy_discovery_health_trigger_requested": True,
+        "remaining_core_gap": "RUNTIME_EVIDENCE_AND_DISCOVERY_FEEDBACK_PROOF",
+        "maintenance_digest": maintenance["maintenance_digest"],
+        "performance_refresh_digest": performance["refresh_digest"],
+        "regime_cycle_digest": regime["cycle_digest"],
+    }
+    _write_json(tmp_path / "demo" / "persistent-paper-trading-loop.json", loop)
+    _write_json(tmp_path / "demo" / "strategy-matrix.json", _matrix_snapshot())
+    _write_json(tmp_path / "demo" / "paper-position-maintenance.json", maintenance)
+    _write_json(tmp_path / "demo" / "paper-performance-refresh.json", performance)
+    _write_json(tmp_path / "demo" / "regime-cycle.json", regime)
+    return {
+        "matrix": matrix,
+        "loop": loop,
+        "maintenance": maintenance,
+        "performance": performance,
+        "regime": regime,
+    }
 
 
 def test_stage1_rejects_one_stale_source_cell(monkeypatch, tmp_path: Path) -> None:
@@ -243,64 +363,42 @@ def test_stage1_rejects_nonterminal_lane_outcome(monkeypatch, tmp_path: Path) ->
         audit.audit_state_root(state_root=tmp_path, manifest_path=tmp_path / "manifest.json", source_sha=SOURCE_SHA)
 
 
-def test_stage1_accepts_exact_operational_boundary_chain(monkeypatch, tmp_path: Path) -> None:
-    matrix = _matrix()
-    _write_ledgers(tmp_path)
-    _bind_matrix_evidence(matrix, tmp_path)
-    monkeypatch.setattr(audit, "load_manifest", lambda _path: _manifest())
-    monkeypatch.setattr(audit, "load_state", lambda _path, _manifest: matrix)
-    _patch_snapshot_verifiers(monkeypatch)
-    monkeypatch.setattr(audit, "verify_ledger", _mock_verification)
-    monkeypatch.setattr(audit, "verify_cycle_snapshot", lambda _value: {"decision": "pass"})
-
-    maintenance_core = {
-        "source_sha": SOURCE_SHA,
-        "cell_count": 6,
-        "task_count": 18,
-        "paper_only": True,
-        "live_trading_authority": False,
-        "private_credentials_used": False,
-        "automatic_strategy_promotion": False,
-        "exposure_increased": False,
-    }
-    maintenance = {**maintenance_core, "maintenance_digest": audit._digest(maintenance_core)}
-    performance_core = {
-        "source_sha": SOURCE_SHA,
-        "cell_count": 6,
-        "paper_only": True,
-        "live_trading_authority": False,
-        "automatic_strategy_promotion": False,
-    }
-    performance = {**performance_core, "refresh_digest": audit._digest(performance_core)}
-    regime = {
-        "source_sha": SOURCE_SHA,
-        "expected_cell_count": 6,
-        "verified_cell_count": 6,
-        "paper_only": True,
-        "live_trading_authority": False,
-        "private_credentials_used": False,
-        "automatic_strategy_promotion": False,
-        "deterministic_risk_final_authority": True,
-        "cycle_digest": "e" * 64,
-    }
-    loop = {
-        **_loop(),
-        "regime_status": "VERIFIED",
-        "performance_health_feedback_operational": True,
-        "regime_selected_rebalance_operational": True,
-        "regime_selected_exposure_increase_operational": True,
-        "strategy_research_required": True,
-        "strategy_discovery_health_trigger_requested": True,
-        "remaining_core_gap": "RUNTIME_EVIDENCE_AND_DISCOVERY_FEEDBACK_PROOF",
-        "maintenance_digest": maintenance["maintenance_digest"],
-        "performance_refresh_digest": performance["refresh_digest"],
-        "regime_cycle_digest": regime["cycle_digest"],
-    }
+def test_stage1_rejects_top_level_performance_projection_substitution(monkeypatch, tmp_path: Path) -> None:
+    evidence = _write_valid_boundary(monkeypatch, tmp_path)
+    performance = evidence["performance"]
+    performance["rows"][0] = {**performance["rows"][0], "projection_digest": "0" * 64}
+    performance.pop("refresh_digest")
+    performance["refresh_digest"] = audit._digest(performance)
+    loop = evidence["loop"]
+    loop["performance_refresh_digest"] = performance["refresh_digest"]
     _write_json(tmp_path / "demo" / "persistent-paper-trading-loop.json", loop)
-    _write_json(tmp_path / "demo" / "strategy-matrix.json", _matrix_snapshot())
-    _write_json(tmp_path / "demo" / "paper-position-maintenance.json", maintenance)
     _write_json(tmp_path / "demo" / "paper-performance-refresh.json", performance)
-    _write_json(tmp_path / "demo" / "regime-cycle.json", regime)
+
+    with pytest.raises(audit.PaperAcceptanceStage1Error, match="performance top-level/per-cell substitution"):
+        audit.audit_state_root(state_root=tmp_path, manifest_path=tmp_path / "manifest.json", source_sha=SOURCE_SHA)
+
+
+def test_stage1_rejects_top_level_maintenance_row_substitution(monkeypatch, tmp_path: Path) -> None:
+    evidence = _write_valid_boundary(monkeypatch, tmp_path)
+    maintenance = evidence["maintenance"]
+    row = dict(maintenance["rows"][0])
+    row.pop("maintenance_digest")
+    row["reason_code"] = "SUBSTITUTED_REASON"
+    row["maintenance_digest"] = audit._digest(row)
+    maintenance["rows"][0] = row
+    maintenance.pop("maintenance_digest")
+    maintenance["maintenance_digest"] = audit._digest(maintenance)
+    loop = evidence["loop"]
+    loop["maintenance_digest"] = maintenance["maintenance_digest"]
+    _write_json(tmp_path / "demo" / "persistent-paper-trading-loop.json", loop)
+    _write_json(tmp_path / "demo" / "paper-position-maintenance.json", maintenance)
+
+    with pytest.raises(audit.PaperAcceptanceStage1Error, match="maintenance top-level/per-cell substitution"):
+        audit.audit_state_root(state_root=tmp_path, manifest_path=tmp_path / "manifest.json", source_sha=SOURCE_SHA)
+
+
+def test_stage1_accepts_exact_operational_boundary_chain(monkeypatch, tmp_path: Path) -> None:
+    _write_valid_boundary(monkeypatch, tmp_path)
 
     result = audit.audit_state_root(state_root=tmp_path, manifest_path=tmp_path / "manifest.json", source_sha=SOURCE_SHA)
 
