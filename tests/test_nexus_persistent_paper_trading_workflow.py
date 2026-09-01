@@ -53,10 +53,12 @@ def test_persistent_loop_is_public_data_not_historical_archive_replay() -> None:
 def test_public_bybit_collector_changes_retrigger_and_are_contract_tested() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     assert text.count('"bybit_public_klines.py"') >= 2
+    assert text.count('"nexus_bybit_same_interval_chunk_fallback.py"') >= 2
     assert text.count('"tests/test_bybit_public_klines.py"') >= 2
-    assert "tests/test_bybit_public_klines.py" in text.split(
-        "Verify persistent Trading Engine contracts", 1
-    )[1]
+    assert text.count('"tests/test_nexus_bybit_same_interval_chunk_fallback.py"') >= 2
+    contract = text.split("Verify persistent Trading Engine contracts", 1)[1]
+    assert "tests/test_bybit_public_klines.py" in contract
+    assert "tests/test_nexus_bybit_same_interval_chunk_fallback.py" in contract
 
 
 def test_network_eligible_runner_is_pinned_and_fail_closed() -> None:
@@ -240,6 +242,7 @@ def test_persistent_loop_contract_suite_covers_full_lifecycle_risk_health_and_di
     text = WORKFLOW.read_text(encoding="utf-8")
     for test_path in (
         "tests/test_bybit_public_klines.py",
+        "tests/test_nexus_bybit_same_interval_chunk_fallback.py",
         "tests/test_nexus_persistent_paper_trading_loop.py",
         "tests/test_nexus_runtime_wheelhouse.py",
         "tests/test_nexus_regime_selected_position_rebalance.py",
@@ -263,6 +266,7 @@ def test_lifecycle_implementation_paths_retrigger_the_persistent_runtime() -> No
     text = WORKFLOW.read_text(encoding="utf-8")
     for path in (
         '"bybit_public_klines.py"',
+        '"nexus_bybit_same_interval_chunk_fallback.py"',
         '"nexus_regime_selected_position_rebalance.py"',
         '"nexus_regime_selected_exposure_increase.py"',
         '"nexus_strategy_discovery_health_trigger.py"',
