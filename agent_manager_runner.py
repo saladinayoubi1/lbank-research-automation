@@ -11,6 +11,8 @@ import agent_manager as am
 
 RUNTIME_PATH = Path("data/agent_coordination/agent_manager_runtime.json")
 SUMMARY_PATH = Path("data/agent_coordination/manager_state.json")
+SPECIALIZED_REASONING_FAILURE = "specialized_reasoning_provider_required"
+SPECIALIZED_REASONING_BLOCK_REASON = "specialized reasoning provider required; no authorized reasoning route available"
 STATE_BINDING_KEYS = (
     "phase",
     "gate",
@@ -141,6 +143,39 @@ def recover_completed_root_cause_analysis(config: dict[str, Any]) -> int:
     return recovered
 
 
+def block_unroutable_specialized_reasoning(config: dict[str, Any]) -> int:
+    """Stop deterministic redispatch loops when the executor requires a reasoning provider."""
+    blocked = 0
+    for task in config.get("tasks", []):
+        if task.get("failure_class") != SPECIALIZED_REASONING_FAILURE:
+            continue
+        if task.get("status") not in {"TRIAGE", "READY", "BLOCKED"}:
+            continue
+        if task.get("status") == "BLOCKED" and task.get("blocked_reason") == SPECIALIZED_REASONING_BLOCK_REASON:
+            continue
+
+        task["status"] = "BLOCKED"
+        task["blocked_reason"] = SPECIALIZED_REASONING_BLOCK_REASON
+        task["assigned_worker"] = None
+        task["verifier"] = None
+        task["lease_id"] = None
+        task["leased_at"] = None
+        task["heartbeat_at"] = None
+        task["lease_expires_at"] = None
+        task["dispatch_id"] = None
+        task["dispatch_transport"] = None
+        task["dispatched_at"] = None
+        task["external_wait_state"] = None
+        task["external_wait_started_at"] = None
+        am.emit(
+            "specialized_reasoning_blocked",
+            task_id=task["id"],
+            failure_class=SPECIALIZED_REASONING_FAILURE,
+        )
+        blocked += 1
+    return blocked
+
+
 def load_runtime(path: Path) -> dict[str, Any] | None:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
@@ -159,6 +194,7 @@ def main() -> int:
     config = merge_definition(template, load_runtime(Path(args.runtime)))
     apply_provider_gates(config)
     recover_completed_root_cause_analysis(config)
+    block_unroutable_specialized_reasoning(config)
     summary = am.cycle(config)
     am.atomic_json(Path(args.runtime), config)
     am.atomic_json(Path(args.summary), summary)
