@@ -56,6 +56,15 @@ def _exact_kwargs() -> dict[str, object]:
     }
 
 
+def _end_sentinel() -> dict[str, object]:
+    return {
+        "binding_sha256": "e" * 64,
+        "source": "Bybit",
+        "source_role": "primary",
+        "market": "spot",
+    }
+
+
 def test_direct_success_remains_authoritative(monkeypatch):
     sentinel = {"binding_sha256": "a" * 64, "source": "Bybit"}
     monkeypatch.setattr(fallback, "_fetch_bind_direct", lambda **_: deepcopy(sentinel))
@@ -63,6 +72,11 @@ def test_direct_success_remains_authoritative(monkeypatch):
         fallback,
         "fetch_closed_klines",
         lambda *args, **kwargs: pytest.fail("chunk fallback must not run after direct success"),
+    )
+    monkeypatch.setattr(
+        fallback,
+        "_fetch_end_anchored_dataset",
+        lambda **kwargs: pytest.fail("request-shape fallback must not run after direct success"),
     )
     assert fallback.fetch_bind_bybit_dataset(**_exact_kwargs()) == sentinel
 
@@ -77,6 +91,11 @@ def test_exact_eth_4h_unclassified_403_uses_four_same_interval_chunks(monkeypatc
         return _rows(symbol, kwargs["start_time_ms"], kwargs["end_time_ms"])
 
     monkeypatch.setattr(fallback, "fetch_closed_klines", fetch)
+    monkeypatch.setattr(
+        fallback,
+        "_fetch_end_anchored_dataset",
+        lambda **kwargs: pytest.fail("end-anchored fallback is second stage, not first stage"),
+    )
     result = fallback.fetch_bind_bybit_dataset(**_exact_kwargs())
 
     assert result["source"] == "Bybit"
@@ -97,7 +116,29 @@ def test_exact_eth_4h_unclassified_403_uses_four_same_interval_chunks(monkeypatc
     assert '"trigger":"all_approved_hosts_unclassified_http403"' in output
 
 
-def test_classified_access_failure_never_enters_chunk_fallback(monkeypatch):
+def test_eth_4h_chunk_terminal_can_enter_end_anchored_second_stage(monkeypatch):
+    sentinel = _end_sentinel()
+    monkeypatch.setattr(fallback, "_fetch_bind_direct", _direct_terminal)
+    monkeypatch.setattr(
+        fallback,
+        "fetch_closed_klines",
+        lambda *args, **kwargs: (_ for _ in ()).throw(BybitKlineError(TERMINAL)),
+    )
+    calls = []
+
+    def end_anchored(**kwargs):
+        calls.append(dict(kwargs))
+        return deepcopy(sentinel)
+
+    monkeypatch.setattr(fallback, "_fetch_end_anchored_dataset", end_anchored)
+    assert fallback.fetch_bind_bybit_dataset(**_exact_kwargs()) == sentinel
+    assert len(calls) == 1
+    assert calls[0]["source_symbol"] == "ETHUSDT"
+    assert calls[0]["interval"] == "240"
+    assert calls[0]["limit"] == 240
+
+
+def test_classified_access_failure_never_enters_fallbacks(monkeypatch):
     def classified(**_):
         raise BybitKlineError(
             "Bybit Mainnet access is blocked (HTTP 403 region_restricted); repeated requests suppressed"
@@ -109,11 +150,16 @@ def test_classified_access_failure_never_enters_chunk_fallback(monkeypatch):
         "fetch_closed_klines",
         lambda *args, **kwargs: pytest.fail("classified access failure must remain fail-fast"),
     )
+    monkeypatch.setattr(
+        fallback,
+        "_fetch_end_anchored_dataset",
+        lambda **kwargs: pytest.fail("classified access failure must not change request shape"),
+    )
     with pytest.raises(BybitKlineError, match="region_restricted"):
         fallback.fetch_bind_bybit_dataset(**_exact_kwargs())
 
 
-def test_mixed_transport_terminal_never_enters_chunk_fallback(monkeypatch):
+def test_mixed_transport_terminal_never_enters_fallbacks(monkeypatch):
     mixed = (
         "all approved Bybit Mainnet endpoints were unavailable or geographically rejected: "
         "https://api.bybit.eu:http403:unclassified,"
@@ -129,34 +175,58 @@ def test_mixed_transport_terminal_never_enters_chunk_fallback(monkeypatch):
         "fetch_closed_klines",
         lambda *args, **kwargs: pytest.fail("mixed transport failure must remain fail-closed"),
     )
+    monkeypatch.setattr(
+        fallback,
+        "_fetch_end_anchored_dataset",
+        lambda **kwargs: pytest.fail("mixed transport failure must not change request shape"),
+    )
     with pytest.raises(BybitKlineError, match="all approved Bybit Mainnet endpoints"):
         fallback.fetch_bind_bybit_dataset(**_exact_kwargs())
 
 
-def test_btc_4h_terminal_failure_never_uses_eth_fallback(monkeypatch):
+@pytest.mark.parametrize(
+    ("canonical_symbol", "source_symbol", "interval"),
+    [
+        ("BTC/USDT", "BTCUSDT", "15"),
+        ("BTC/USDT", "BTCUSDT", "60"),
+        ("BTC/USDT", "BTCUSDT", "240"),
+        ("ETH/USDT", "ETHUSDT", "15"),
+        ("ETH/USDT", "ETHUSDT", "60"),
+    ],
+)
+def test_other_canonical_matrix_cells_use_end_anchored_shape_only_after_terminal_403(
+    monkeypatch, canonical_symbol, source_symbol, interval
+):
+    sentinel = _end_sentinel()
     monkeypatch.setattr(fallback, "_fetch_bind_direct", _direct_terminal)
     monkeypatch.setattr(
         fallback,
         "fetch_closed_klines",
-        lambda *args, **kwargs: pytest.fail("BTC path must not enter ETH-specific fallback"),
+        lambda *args, **kwargs: pytest.fail("non-ETH4 cells must not enter the chunk path"),
     )
-    kwargs = _exact_kwargs()
-    kwargs.update(canonical_symbol="BTC/USDT", source_symbol="BTCUSDT")
-    with pytest.raises(BybitKlineError, match="all approved Bybit Mainnet endpoints"):
-        fallback.fetch_bind_bybit_dataset(**kwargs)
+    calls = []
 
+    def end_anchored(**kwargs):
+        calls.append(dict(kwargs))
+        return deepcopy(sentinel)
 
-def test_non_4h_terminal_failure_never_uses_fallback(monkeypatch):
-    monkeypatch.setattr(fallback, "_fetch_bind_direct", _direct_terminal)
-    monkeypatch.setattr(
-        fallback,
-        "fetch_closed_klines",
-        lambda *args, **kwargs: pytest.fail("fallback must be restricted to interval 240"),
-    )
-    kwargs = _exact_kwargs()
-    kwargs.update(interval="60")
-    with pytest.raises(BybitKlineError, match="all approved Bybit Mainnet endpoints"):
-        fallback.fetch_bind_bybit_dataset(**kwargs)
+    monkeypatch.setattr(fallback, "_fetch_end_anchored_dataset", end_anchored)
+    step = INTERVAL_MS[interval]
+    kwargs = {
+        "canonical_symbol": canonical_symbol,
+        "source_symbol": source_symbol,
+        "interval": interval,
+        "now_ms": 241 * step,
+        "start_time_ms": 0,
+        "end_time_ms": 239 * step,
+        "limit": 240,
+    }
+    assert fallback.fetch_bind_bybit_dataset(**kwargs) == sentinel
+    assert len(calls) == 1
+    assert calls[0]["canonical_symbol"] == canonical_symbol
+    assert calls[0]["source_symbol"] == source_symbol
+    assert calls[0]["interval"] == interval
+    assert calls[0]["limit"] == 240
 
 
 def test_non_240_history_surface_never_uses_fallback(monkeypatch):
@@ -165,6 +235,11 @@ def test_non_240_history_surface_never_uses_fallback(monkeypatch):
         fallback,
         "fetch_closed_klines",
         lambda *args, **kwargs: pytest.fail("non-current history surface must not enter fallback"),
+    )
+    monkeypatch.setattr(
+        fallback,
+        "_fetch_end_anchored_dataset",
+        lambda **kwargs: pytest.fail("non-240 surface must not change request shape"),
     )
     kwargs = _exact_kwargs()
     kwargs.update(end_time_ms=119 * STEP, limit=120, now_ms=121 * STEP)
@@ -222,3 +297,105 @@ def test_chunk_fallback_rejects_off_grid_window_before_network(monkeypatch):
     kwargs.update(start_time_ms=1, end_time_ms=239 * STEP + 1)
     with pytest.raises(BybitKlineError, match="off the 4h UTC grid"):
         fallback.fetch_bind_bybit_dataset(**kwargs)
+
+
+class _Response:
+    status_code = 200
+    content = b"{}"
+
+    def __init__(self, payload):
+        self._payload = payload
+        self.headers = {"Content-Type": "application/json"}
+
+    def json(self):
+        return deepcopy(self._payload)
+
+
+class _Session:
+    def __init__(self, payload):
+        self.payload = payload
+        self.calls = []
+
+    def get(self, url, **kwargs):
+        self.calls.append((url, deepcopy(kwargs)))
+        return _Response(self.payload)
+
+
+def _raw_payload(interval: str, start: int, count: int) -> dict[str, object]:
+    step = INTERVAL_MS[interval]
+    rows = []
+    for index in reversed(range(count)):
+        stamp = start + index * step
+        value = 100 + index
+        rows.append(
+            [
+                str(stamp),
+                str(value),
+                str(value + 2),
+                str(value - 1),
+                str(value + 1),
+                "10",
+                str((value + 1) * 10),
+            ]
+        )
+    return {"retCode": 0, "retMsg": "OK", "result": {"list": rows}}
+
+
+def test_end_anchored_request_omits_only_start_and_revalidates_exact_surface(monkeypatch):
+    interval = "15"
+    step = INTERVAL_MS[interval]
+    payload = _raw_payload(interval, 0, 240)
+    session = _Session(payload)
+    monkeypatch.setattr(
+        fallback,
+        "_active_mainnet_base_urls",
+        lambda: ("GLOBAL", ("https://api.bybit.com",)),
+    )
+
+    rows = fallback._fetch_end_anchored_closed_klines(
+        source_symbol="BTCUSDT",
+        interval=interval,
+        now_ms=241 * step,
+        start_time_ms=0,
+        end_time_ms=239 * step,
+        limit=240,
+        timeout_seconds=1.0,
+        session=session,
+    )
+
+    assert len(rows) == 240
+    assert [row["open_time_ms"] for row in rows] == list(range(0, 240 * step, step))
+    assert len(session.calls) == 1
+    url, request = session.calls[0]
+    assert url == "https://api.bybit.com/v5/market/kline"
+    assert request["params"] == {
+        "category": "spot",
+        "symbol": "BTCUSDT",
+        "interval": "15",
+        "end": 239 * step,
+        "limit": 240,
+    }
+    assert "start" not in request["params"]
+    assert request["allow_redirects"] is False
+
+
+def test_end_anchored_response_cannot_smuggle_incomplete_history(monkeypatch):
+    interval = "60"
+    step = INTERVAL_MS[interval]
+    session = _Session(_raw_payload(interval, step, 239))
+    monkeypatch.setattr(
+        fallback,
+        "_active_mainnet_base_urls",
+        lambda: ("GLOBAL", ("https://api.bybit.com",)),
+    )
+    with pytest.raises(BybitKlineError, match="outside requested bounds|incomplete or substituted"):
+        fallback._fetch_end_anchored_closed_klines(
+            source_symbol="ETHUSDT",
+            interval=interval,
+            now_ms=241 * step,
+            start_time_ms=0,
+            end_time_ms=239 * step,
+            limit=240,
+            timeout_seconds=1.0,
+            session=session,
+        )
