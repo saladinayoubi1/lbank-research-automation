@@ -453,6 +453,25 @@ def route_triage(config: dict[str, Any], now: datetime) -> None:
             emit("owner_boundary_enforced", task_id=task["id"], prior_status="TRIAGE")
             continue
         failure_class = task.get("failure_class", "unknown")
+        if failure_class == "specialized_reasoning_provider_required":
+            prior_worker = task.get("assigned_worker")
+            task["status"] = "BLOCKED"
+            task["blocked_reason"] = "specialized reasoning provider required; no approved automatic provider available"
+            task["assigned_worker"] = None
+            task["lease_id"] = None
+            task["leased_at"] = None
+            task["heartbeat_at"] = None
+            task["lease_expires_at"] = None
+            task["external_wait_state"] = None
+            task["external_wait_started_at"] = None
+            task["triage_mode"] = "fail_closed_specialized_reasoning_provider"
+            emit(
+                "triage_blocked_specialized_reasoning",
+                task_id=task["id"],
+                prior_worker=prior_worker,
+                failure_class=failure_class,
+            )
+            continue
         if failure_class in {"startup_failure", "timed_out", "transient_network"} and int(task.get("transient_retries", 0)) < 1:
             task["transient_retries"] = int(task.get("transient_retries", 0)) + 1
             task["status"] = "READY"
