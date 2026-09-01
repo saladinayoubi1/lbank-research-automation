@@ -232,3 +232,46 @@ def test_blank_record_and_noncanonical_schema_fail_closed(tmp_path: Path):
     path.write_text(store.canonical_json(event) + "\n", encoding="utf-8")
     with pytest.raises(store.EventStoreError, match="canonical schema"):
         store.load_events(path, expected_source_sha=SOURCE)
+
+
+def test_duplicate_keys_and_noncanonical_json_fail_closed(tmp_path: Path):
+    path = tmp_path / "events.jsonl"
+    event = store.build_event(
+        sequence=1,
+        event_type="state_replace",
+        source_sha=SOURCE,
+        payload={"state": {"ok": True}},
+        previous_event_digest=None,
+        recorded_at=NOW,
+    )
+    canonical = store.canonical_json(event)
+
+    path.write_text(canonical[:-1] + ',"sequence":1}\n', encoding="utf-8")
+    with pytest.raises(store.EventStoreError, match="noncanonical event JSON"):
+        store.load_events(path, expected_source_sha=SOURCE)
+
+    path.write_text(json.dumps(event, sort_keys=True) + "\n", encoding="utf-8")
+    with pytest.raises(store.EventStoreError, match="noncanonical event JSON"):
+        store.load_events(path, expected_source_sha=SOURCE)
+
+
+@pytest.mark.parametrize(
+    "recorded_at_utc",
+    ["2026-09-01T04:30:00+00:00", "2026-09-01T05:30:00+01:00"],
+)
+def test_noncanonical_or_non_utc_recorded_at_fails_closed(tmp_path: Path, recorded_at_utc: str):
+    path = tmp_path / "events.jsonl"
+    event = store.build_event(
+        sequence=1,
+        event_type="state_replace",
+        source_sha=SOURCE,
+        payload={"state": {"ok": True}},
+        previous_event_digest=None,
+        recorded_at=NOW,
+    )
+    event["recorded_at_utc"] = recorded_at_utc
+    event["event_digest"] = store.compute_event_digest(event)
+    write_raw(path, [event])
+
+    with pytest.raises(store.EventStoreError, match="recorded_at_utc"):
+        store.load_events(path, expected_source_sha=SOURCE)
