@@ -41,9 +41,12 @@ def _parse_utc(value: str) -> datetime:
         parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError as exc:
         raise EventStoreError("recorded_at_utc is not valid ISO-8601") from exc
-    if parsed.tzinfo is None:
-        raise EventStoreError("recorded_at_utc must be timezone-aware")
-    return parsed.astimezone(timezone.utc)
+    if parsed.tzinfo is None or parsed.utcoffset() != timezone.utc.utcoffset(parsed):
+        raise EventStoreError("recorded_at_utc must be UTC")
+    normalized = parsed.astimezone(timezone.utc)
+    if _utc_iso(normalized) != value:
+        raise EventStoreError("recorded_at_utc must use canonical UTC ISO-8601 form")
+    return normalized
 
 
 def _utc_iso(value: datetime | None = None) -> str:
@@ -212,6 +215,8 @@ def load_events(
             raise EventStoreError(f"malformed event JSON at line {line_number}") from exc
         if not isinstance(event, dict):
             raise EventStoreError(f"event at line {line_number} must be an object")
+        if line != canonical_json(event):
+            raise EventStoreError(f"noncanonical event JSON at line {line_number}")
         events.append(event)
     return validate_chain(events, expected_source_sha=expected_source_sha)
 
