@@ -1,1 +1,775 @@
-awk: cannot open "--" (No such file or directory)
+name: NEXUS Paper boundary discovery feedback
+
+on:
+  workflow_run:
+    workflows: ["NEXUS persistent Paper trading loop"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      recovery_paper_run_id:
+        description: "Successful main Paper run to recover after a failed feedback workflow"
+        required: false
+        type: string
+  pull_request:
+    branches: [main]
+    paths:
+      - "nexus_paper_boundary_discovery_feedback.py"
+      - "tests/test_nexus_paper_boundary_discovery_feedback.py"
+      - "tests/test_nexus_paper_boundary_discovery_feedback_workflow.py"
+      - ".github/workflows/nexus_paper_boundary_discovery_feedback.yml"
+      - ".nexus/recovery/paper-boundary-feedback-v1.json"
+  push:
+    branches: [main]
+    paths:
+      - "nexus_paper_boundary_discovery_feedback.py"
+      - "tests/test_nexus_paper_boundary_discovery_feedback.py"
+      - "tests/test_nexus_paper_boundary_discovery_feedback_workflow.py"
+      - ".github/workflows/nexus_paper_boundary_discovery_feedback.yml"
+      - ".nexus/recovery/paper-boundary-feedback-v1.json"
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: nexus-paper-boundary-discovery-feedback-${{ github.event.workflow_run.id || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  contract-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements-dev.lock
+      - run: python -m pip check
+      - name: Verify exact Paper boundary feedback contracts
+        run: >-
+          python -m pytest -q
+          tests/test_nexus_paper_boundary_discovery_feedback.py
+          tests/test_nexus_paper_boundary_discovery_feedback_workflow.py
+
+  gate-paper-boundary:
+    if: >-
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main') ||
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push'
+    needs: contract-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EVENT_TRIGGER_RUN_ID: ${{ github.event.workflow_run.id }}
+      EVENT_TRIGGER_SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+      DISPATCH_TRIGGER_RUN_ID: ${{ inputs.recovery_paper_run_id }}
+      RECOVERY_MANIFEST: .nexus/recovery/paper-boundary-feedback-v1.json
+      PAPER_STATE_ARTIFACT: nexus-persistent-paper-trading-state
+    outputs:
+      should_dispatch: ${{ steps.health.outputs.should_dispatch }}
+      trigger_run_id: ${{ steps.trigger.outputs.trigger_run_id }}
+      trigger_source_sha: ${{ steps.trigger.outputs.trigger_source_sha }}
+    steps:
+      - name: Check out trusted workflow trigger revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 1
+      - name: Resolve and validate exact successful main Paper completion
+        id: trigger
+        env:
+          TRIGGER_EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          trigger_run_id=""
+          manifest_expected_sha=""
+          manifest_state_artifact_id=""
+          manifest_state_artifact_sha256=""
+          case "$TRIGGER_EVENT_NAME" in
+            workflow_run)
+              trigger_run_id="$EVENT_TRIGGER_RUN_ID"
+              ;;
+            workflow_dispatch)
+              trigger_run_id="$DISPATCH_TRIGGER_RUN_ID"
+              if [ -z "$trigger_run_id" ]; then
+                echo "eligible=false" >> "$GITHUB_OUTPUT"
+                echo "No recovery run id was supplied; manual contract-only dispatch is complete."
+                exit 0
+              fi
+              ;;
+            push)
+              if [ ! -f "$RECOVERY_MANIFEST" ]; then
+                echo "eligible=false" >> "$GITHUB_OUTPUT"
+                echo "No repository recovery manifest is present; push recovery is inactive."
+                exit 0
+              fi
+              read -r trigger_run_id manifest_expected_sha manifest_state_artifact_id manifest_state_artifact_sha256 <<EOF
+          $(python - <<'PY'
+          import json
+          import re
+          from pathlib import Path
+
+          path = Path(".nexus/recovery/paper-boundary-feedback-v1.json")
+          value = json.loads(path.read_text())
+          if value.get("schema") != "nexus-paper-boundary-recovery/v1":
+              raise SystemExit("invalid Paper boundary recovery schema")
+          run_id = str(value.get("paper_run_id", ""))
+          source_sha = str(value.get("expected_source_sha", ""))
+          artifact_id = str(value.get("paper_state_artifact_id", ""))
+          artifact_sha256 = str(value.get("paper_state_artifact_sha256", ""))
+          reason = str(value.get("reason", ""))
+          if not re.fullmatch(r"[1-9][0-9]{5,19}", run_id):
+              raise SystemExit("invalid Paper boundary recovery run id")
+          if not re.fullmatch(r"[0-9a-f]{40}", source_sha):
+              raise SystemExit("invalid Paper boundary recovery source SHA")
+          if not re.fullmatch(r"[1-9][0-9]{5,19}", artifact_id):
+              raise SystemExit("invalid Paper boundary recovery artifact id")
+          if not re.fullmatch(r"[0-9a-f]{64}", artifact_sha256):
+              raise SystemExit("invalid Paper boundary recovery artifact digest")
+          if not 1 <= len(reason) <= 500:
+              raise SystemExit("invalid Paper boundary recovery reason")
+          print(run_id, source_sha, artifact_id, artifact_sha256)
+          PY
+          )
+          EOF
+              ;;
+            *)
+              echo "eligible=false" >> "$GITHUB_OUTPUT"
+              exit 0
+              ;;
+          esac
+
+          if ! [[ "$trigger_run_id" =~ ^[1-9][0-9]{5,19}$ ]]; then
+            echo "::error::Recovery Paper run id is missing or invalid."
+            exit 1
+          fi
+          metadata="build/paper-boundary-trigger-run.json"
+          mkdir -p build
+          gh api -H 'Accept: application/vnd.github+json' \
+            "repos/$GITHUB_REPOSITORY/actions/runs/$trigger_run_id" > "$metadata"
+          trigger_source_sha="$(python - <<'PY'
+          import json
+          import os
+          import re
+          from pathlib import Path
+
+          value = json.loads(Path("build/paper-boundary-trigger-run.json").read_text())
+          expected_repo = os.environ["GITHUB_REPOSITORY"]
+          if value.get("name") != "NEXUS persistent Paper trading loop":
+              raise SystemExit("recovery run is not the persistent Paper workflow")
+          if value.get("path") != ".github/workflows/nexus_persistent_paper_trading_loop.yml":
+              raise SystemExit("recovery run has an unexpected workflow path")
+          if value.get("status") != "completed" or value.get("conclusion") != "success":
+              raise SystemExit("recovery Paper run is not successfully completed")
+          if value.get("head_branch") != "main":
+              raise SystemExit("recovery Paper run did not execute on main")
+          if value.get("event") not in {"push", "schedule", "workflow_dispatch"}:
+              raise SystemExit("recovery Paper run has an ineligible event")
+          if (value.get("repository") or {}).get("full_name") != expected_repo:
+              raise SystemExit("recovery Paper run repository mismatch")
+          if (value.get("head_repository") or {}).get("full_name") != expected_repo:
+              raise SystemExit("recovery Paper head repository mismatch")
+          source_sha = str(value.get("head_sha", ""))
+          if not re.fullmatch(r"[0-9a-f]{40}", source_sha):
+              raise SystemExit("recovery Paper run has an invalid source SHA")
+          print(source_sha)
+          PY
+          )"
+          if [ -n "$manifest_expected_sha" ] && [ "$trigger_source_sha" != "$manifest_expected_sha" ]; then
+            echo "::error::Recovery manifest source SHA does not match the Paper run."
+            exit 1
+          fi
+          if [ "$TRIGGER_EVENT_NAME" = "workflow_run" ] && \
+             [ "$trigger_source_sha" != "$EVENT_TRIGGER_SOURCE_SHA" ]; then
+            echo "::error::workflow_run source SHA does not match its GitHub run metadata."
+            exit 1
+          fi
+          if [ -n "$manifest_state_artifact_id" ]; then
+            gh api -H 'Accept: application/vnd.github+json' \
+              "repos/$GITHUB_REPOSITORY/actions/runs/$trigger_run_id/artifacts?per_page=100" \
+              > build/paper-boundary-trigger-artifacts.json
+            PAPER_STATE_ARTIFACT_ID="$manifest_state_artifact_id" \
+            PAPER_STATE_ARTIFACT_SHA256="$manifest_state_artifact_sha256" \
+            TRIGGER_RUN_ID="$trigger_run_id" \
+            TRIGGER_SOURCE_SHA="$trigger_source_sha" \
+            python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          payload = json.loads(Path("build/paper-boundary-trigger-artifacts.json").read_text())
+          artifact_id = int(os.environ["PAPER_STATE_ARTIFACT_ID"])
+          matches = [row for row in payload.get("artifacts", []) if int(row.get("id", 0)) == artifact_id]
+          if len(matches) != 1:
+              raise SystemExit("recovery Paper state artifact is not unique in the exact run")
+          row = matches[0]
+          if row.get("name") != "nexus-persistent-paper-trading-state":
+              raise SystemExit("recovery artifact is not the Paper state artifact")
+          if row.get("expired") is not False:
+              raise SystemExit("recovery Paper state artifact is expired")
+          if row.get("digest") != "sha256:" + os.environ["PAPER_STATE_ARTIFACT_SHA256"]:
+              raise SystemExit("recovery Paper state artifact digest mismatch")
+          binding = row.get("workflow_run") or {}
+          if str(binding.get("id")) != os.environ["TRIGGER_RUN_ID"]:
+              raise SystemExit("recovery Paper state artifact run binding mismatch")
+          if binding.get("head_branch") != "main":
+              raise SystemExit("recovery Paper state artifact branch binding mismatch")
+          if binding.get("head_sha") != os.environ["TRIGGER_SOURCE_SHA"]:
+              raise SystemExit("recovery Paper state artifact source binding mismatch")
+          print("recovery_paper_state_artifact_binding=PASS")
+          PY
+            {
+              echo "PAPER_STATE_ARTIFACT_ID=$manifest_state_artifact_id"
+              echo "PAPER_STATE_ARTIFACT_SHA256=$manifest_state_artifact_sha256"
+            } >> "$GITHUB_ENV"
+          fi
+          {
+            echo "TRIGGER_RUN_ID=$trigger_run_id"
+            echo "TRIGGER_SOURCE_SHA=$trigger_source_sha"
+          } >> "$GITHUB_ENV"
+          {
+            echo "eligible=true"
+            echo "trigger_run_id=$trigger_run_id"
+            echo "trigger_source_sha=$trigger_source_sha"
+          } >> "$GITHUB_OUTPUT"
+          echo "validated_paper_recovery_trigger=PASS run_id=$trigger_run_id source_sha=$trigger_source_sha"
+      - name: Check out exact validated Paper source SHA
+        if: steps.trigger.outputs.eligible == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ steps.trigger.outputs.trigger_source_sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        if: steps.trigger.outputs.eligible == 'true'
+        with:
+          python-version: "3.12"
+          cache: pip
+      - if: steps.trigger.outputs.eligible == 'true'
+        run: python -m pip install -r requirements.lock
+      - if: steps.trigger.outputs.eligible == 'true'
+        run: python -m pip check
+      - name: Restore exact triggering Paper artifact
+        if: steps.trigger.outputs.eligible == 'true'
+        run: |
+          set -euo pipefail
+          rm -rf build/paper-boundary-feedback build/trigger-paper.zip
+          mkdir -p build/paper-boundary-feedback/trigger-state
+          artifact_id="${PAPER_STATE_ARTIFACT_ID:-}"
+          if [ -z "$artifact_id" ]; then
+            artifact_id="$(gh api \
+              -H 'Accept: application/vnd.github+json' \
+              "repos/$GITHUB_REPOSITORY/actions/runs/$TRIGGER_RUN_ID/artifacts?per_page=100" \
+              --jq ".artifacts[] | select(.name == \"$PAPER_STATE_ARTIFACT\") | .id" \
+              | head -n 1)"
+          fi
+          test -n "$artifact_id"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" \
+            > build/trigger-paper.zip
+          if [ -n "${PAPER_STATE_ARTIFACT_SHA256:-}" ]; then
+            test "$(sha256sum build/trigger-paper.zip | awk '{print $1}')" = "$PAPER_STATE_ARTIFACT_SHA256"
+          fi
+          unzip -q build/trigger-paper.zip -d build/paper-boundary-feedback/trigger-state
+          snapshot="$(find build/paper-boundary-feedback/trigger-state -type f \
+            -path '*/demo/persistent-paper-trading-loop.json' -print -quit)"
+          matrix="$(find build/paper-boundary-feedback/trigger-state -type f \
+            -name matrix-state.json -print -quit)"
+          test -n "$snapshot"
+          test -n "$matrix"
+          printf '%s\n' "$snapshot" > build/paper-boundary-feedback/snapshot-path.txt
+          printf '%s\n' "$matrix" > build/paper-boundary-feedback/matrix-path.txt
+      - name: Verify health-driven dispatch requirement
+        if: steps.trigger.outputs.eligible == 'true'
+        id: health
+        run: |
+          set -euo pipefail
+          python nexus_strategy_discovery_health_trigger.py \
+            --loop-snapshot "$(cat build/paper-boundary-feedback/snapshot-path.txt)" \
+            --output build/paper-boundary-feedback/health-trigger.json
+          should_dispatch="$(python -c 'import json; print(str(json.load(open("build/paper-boundary-feedback/health-trigger.json"))["should_dispatch"]).lower())')"
+          echo "should_dispatch=$should_dispatch" >> "$GITHUB_OUTPUT"
+      - name: Bind exact verified BTC/ETH 4h boundary
+        if: steps.trigger.outputs.eligible == 'true' && steps.health.outputs.should_dispatch == 'true'
+        run: |
+          set -euo pipefail
+          python nexus_paper_boundary_discovery_feedback.py context \
+            --loop-snapshot "$(cat build/paper-boundary-feedback/snapshot-path.txt)" \
+            --matrix-state "$(cat build/paper-boundary-feedback/matrix-path.txt)" \
+            --output build/paper-boundary-feedback/boundary-context.json
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from nexus_paper_boundary_discovery_feedback import verify_boundary_context
+          path = Path("build/paper-boundary-feedback/boundary-context.json")
+          value = json.loads(path.read_text())
+          verification = verify_boundary_context(value)
+          assert verification["decision"] == "pass", verification
+          assert value["source_sha"] == os.environ["TRIGGER_SOURCE_SHA"]
+          assert value["paper_run_id"] == os.environ["TRIGGER_RUN_ID"]
+          print(json.dumps({
+              "hour4_boundary_ms": value["hour4_boundary_ms"],
+              "hour4_boundary_digest": value["hour4_boundary_digest"],
+              "context_digest": value["context_digest"],
+          }, sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: steps.trigger.outputs.eligible == 'true' && steps.health.outputs.should_dispatch == 'true'
+        with:
+          name: nexus-paper-boundary-context-${{ github.run_id }}
+          path: |
+            build/paper-boundary-feedback/boundary-context.json
+            build/paper-boundary-feedback/health-trigger.json
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+  discover-boundary-proposals:
+    if: needs.gate-paper-boundary.outputs.should_dispatch == 'true'
+    needs: gate-paper-boundary
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TRIGGER_SOURCE_SHA: ${{ needs.gate-paper-boundary.outputs.trigger_source_sha }}
+      CONTEXT_ARTIFACT: nexus-paper-boundary-context-${{ github.run_id }}
+      IMMUTABLE_ARCHIVE_ARTIFACT_ID: "8867026863"
+      EXPECTED_ARCHIVE_SHA256: "5f1173467c2296201940c3b7786b7cc3e5442244e07289769ab4867ace41d668"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ needs.gate-paper-boundary.outputs.trigger_source_sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements-dev.lock
+      - run: python -m pip check
+      - name: Restore exact Paper boundary context from this run
+        run: |
+          set -euo pipefail
+          rm -rf build/boundary-context build/context.zip
+          mkdir -p build/boundary-context
+          artifact_id="$(gh api \
+            -H 'Accept: application/vnd.github+json' \
+            "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100" \
+            --jq ".artifacts[] | select(.name == \"$CONTEXT_ARTIFACT\") | .id" \
+            | head -n 1)"
+          test -n "$artifact_id"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" > build/context.zip
+          unzip -q build/context.zip -d build/boundary-context
+          context="$(find build/boundary-context -type f -name boundary-context.json -print -quit)"
+          test -n "$context"
+          printf '%s\n' "$context" > build/context-path.txt
+      - name: Restore immutable Bybit archive
+        run: |
+          set -euo pipefail
+          rm -rf build/final_delivery build/bybit_dataset build/final_delivery.zip
+          mkdir -p build/final_delivery build/bybit_dataset
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$IMMUTABLE_ARCHIVE_ARTIFACT_ID/zip" \
+            > build/final_delivery.zip
+          unzip -q build/final_delivery.zip -d build/final_delivery
+          archive="build/final_delivery/BYBIT_full_history_2022-12-01_to_2026-07-31.zip"
+          test "$(sha256sum "$archive" | awk '{print $1}')" = "$EXPECTED_ARCHIVE_SHA256"
+          unzip -q "$archive" -d build/bybit_dataset
+      - name: Run leakage-resistant Strategy Discovery at exact Paper source SHA
+        run: |
+          set -euo pipefail
+          rm -rf build/nexus_multitimeframe_strategy_discovery
+          python nexus_multitimeframe_verified_archive_discovery.py \
+            --manifest experiments/nexus_multitimeframe_strategy_discovery_v1.json \
+            --source-sha "$TRIGGER_SOURCE_SHA" \
+            --output build/nexus_multitimeframe_strategy_discovery
+          cp "$(cat build/context-path.txt)" \
+            build/nexus_multitimeframe_strategy_discovery/paper-boundary-context.json
+      - name: Verify discovery and exact source binding
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from nexus_multitimeframe_strategy_discovery import verify_discovery
+          from nexus_paper_boundary_discovery_feedback import verify_boundary_context
+          root = Path("build/nexus_multitimeframe_strategy_discovery")
+          discovery = json.loads((root / "multitimeframe_strategy_discovery.json").read_text())
+          context = json.loads((root / "paper-boundary-context.json").read_text())
+          assert verify_discovery(discovery)["decision"] == "pass"
+          assert verify_boundary_context(context)["decision"] == "pass"
+          assert discovery["source_sha"] == os.environ["TRIGGER_SOURCE_SHA"]
+          assert context["source_sha"] == discovery["source_sha"]
+          assert discovery["research_only"] is True
+          assert discovery["paper_only"] is True
+          assert discovery["live_trading_authority"] is False
+          assert discovery["automatic_strategy_promotion"] is False
+          assert discovery["automatic_paper_forward_started"] is False
+          print(json.dumps({
+              "paper_context_digest": context["context_digest"],
+              "discovery_digest": discovery["discovery_digest"],
+              "proposal_count": discovery["research_proposal_count"],
+          }, sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-paper-boundary-discovery-${{ github.run_id }}
+          path: build/nexus_multitimeframe_strategy_discovery
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+  requalify-boundary-proposals:
+    if: needs.gate-paper-boundary.outputs.should_dispatch == 'true'
+    needs: [gate-paper-boundary, discover-boundary-proposals]
+    runs-on: nexus-bybit-network
+    timeout-minutes: 55
+    outputs:
+      feedback_archive_chunk_count: ${{ steps.package.outputs.feedback_archive_chunk_count }}
+      feedback_archive_b64_len: ${{ steps.package.outputs.feedback_archive_b64_len }}
+      feedback_archive_sha256: ${{ steps.package.outputs.feedback_archive_sha256 }}
+      feedback_archive_chunk_0: ${{ steps.package.outputs.feedback_archive_chunk_0 }}
+      feedback_archive_chunk_1: ${{ steps.package.outputs.feedback_archive_chunk_1 }}
+      feedback_archive_chunk_2: ${{ steps.package.outputs.feedback_archive_chunk_2 }}
+      feedback_archive_chunk_3: ${{ steps.package.outputs.feedback_archive_chunk_3 }}
+      feedback_archive_chunk_4: ${{ steps.package.outputs.feedback_archive_chunk_4 }}
+      feedback_archive_chunk_5: ${{ steps.package.outputs.feedback_archive_chunk_5 }}
+      feedback_archive_chunk_6: ${{ steps.package.outputs.feedback_archive_chunk_6 }}
+      feedback_archive_chunk_7: ${{ steps.package.outputs.feedback_archive_chunk_7 }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TRIGGER_SOURCE_SHA: ${{ needs.gate-paper-boundary.outputs.trigger_source_sha }}
+      TRIGGER_RUN_ID: ${{ needs.gate-paper-boundary.outputs.trigger_run_id }}
+      DISCOVERY_ARTIFACT: nexus-paper-boundary-discovery-${{ github.run_id }}
+      WHEELHOUSE_ARTIFACT: nexus-paper-runtime-wheelhouse-${{ needs.gate-paper-boundary.outputs.trigger_source_sha }}
+      OUTPUT_ROOT: build/nexus_paper_boundary_discovery_feedback
+    steps:
+      - name: Prepare exact repository and pre-provisioned Python 3.12 without JavaScript actions
+        run: |
+          set -euo pipefail
+          repo_url="https://github.com/${GITHUB_REPOSITORY}.git"
+          if [ -d .git ]; then
+            git remote set-url origin "$repo_url"
+            git reset --hard
+            git clean -ffdx
+          else
+            find . -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
+            git init .
+            git remote add origin "$repo_url"
+          fi
+          git config --local --unset-all http.https://github.com/.extraheader || true
+          git fetch --no-tags --prune --depth=1 origin "$TRIGGER_SOURCE_SHA"
+          git checkout --detach --force FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "$TRIGGER_SOURCE_SHA"
+          git clean -ffdx
+
+          known_python="/opt/nexus-bybit-runner/_work/_tool/Python/3.12.14/x64/bin/python"
+          python_bin=""
+          if [ -x "$known_python" ]; then
+            python_bin="$known_python"
+          fi
+          if [ -z "$python_bin" ]; then
+            tool_root="${RUNNER_TOOL_CACHE:-/opt/nexus-bybit-runner/_work/_tool}"
+            if [ "$(basename "$tool_root")" = "Python" ]; then
+              python_root="$tool_root"
+            else
+              python_root="$tool_root/Python"
+            fi
+            python_bin="$(find "$python_root" -type f -path '*/3.12.*/x64/bin/python' 2>/dev/null | sort -V | tail -n 1 || true)"
+          fi
+          if [ -z "$python_bin" ]; then
+            echo "::error::No pre-provisioned CPython 3.12 exists on the physical runner."
+            exit 1
+          fi
+          "$python_bin" -c "import sys; assert sys.version_info[:2] == (3, 12), sys.version"
+          python_prefix="$("$python_bin" -c 'import sys; print(sys.prefix)')"
+          python_lib="$python_prefix/lib"
+          test -d "$python_lib"
+          effective_ld_library_path="$python_lib"
+          if [ -n "${LD_LIBRARY_PATH:-}" ]; then
+            effective_ld_library_path="$python_lib:$LD_LIBRARY_PATH"
+          fi
+          LD_LIBRARY_PATH="$effective_ld_library_path" "$python_bin" -c "import ctypes; print('physical_python_dynamic_stdlib=PASS')"
+          printf 'PYTHON_BIN=%s\n' "$python_bin" >> "$GITHUB_ENV"
+          printf 'LD_LIBRARY_PATH=%s\n' "$effective_ld_library_path" >> "$GITHUB_ENV"
+          echo "physical_checkout_sha=$(git rev-parse HEAD)"
+      - name: Enforce eligible Bybit network execution plane
+        run: >-
+          "$PYTHON_BIN" -c "assert '${{ runner.environment }}' == 'self-hosted'; assert '${{ runner.os }}' == 'Linux'; import sys; assert sys.version_info[:2] == (3, 12); print('bybit_network_execution_plane=self-hosted:nexus-bybit-network')"
+      - name: Restore GitHub-digest-pinned Paper runtime wheelhouse
+        run: |
+          set -euo pipefail
+          rm -rf build/requalification-wheelhouse build/requalification-wheelhouse-outer
+          rm -f build/requalification-wheelhouse-artifact.zip build/requalification-wheelhouse-metadata.json
+          mkdir -p build/requalification-wheelhouse build/requalification-wheelhouse-outer
+          gh api -H 'Accept: application/vnd.github+json' \
+            "repos/$GITHUB_REPOSITORY/actions/runs/$TRIGGER_RUN_ID/artifacts?per_page=100" \
+            > build/requalification-wheelhouse-metadata.json
+          read -r artifact_id artifact_size artifact_digest <<EOF
+          $("$PYTHON_BIN" - <<'PY'
+          import json
+          import os
+          import re
+          from pathlib import Path
+
+          payload = json.loads(Path("build/requalification-wheelhouse-metadata.json").read_text())
+          matches = [
+              row for row in payload.get("artifacts", [])
+              if row.get("name") == os.environ["WHEELHOUSE_ARTIFACT"]
+              and row.get("expired") is False
+          ]
+          if len(matches) != 1:
+              raise SystemExit(f"expected one exact Paper wheelhouse artifact, got {len(matches)}")
+          row = matches[0]
+          digest = str(row.get("digest", ""))
+          if not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
+              raise SystemExit("wheelhouse artifact has no valid GitHub SHA-256 digest")
+          size = int(row.get("size_in_bytes") or 0)
+          if not 0 < size <= 250 * 1024 * 1024:
+              raise SystemExit("wheelhouse artifact size is outside bounds")
+          print(int(row["id"]), size, digest.removeprefix("sha256:"))
+          PY
+          )
+          EOF
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" \
+            > build/requalification-wheelhouse-artifact.zip
+          test "$(stat -c '%s' build/requalification-wheelhouse-artifact.zip)" -le $((250 * 1024 * 1024))
+          test "$(sha256sum build/requalification-wheelhouse-artifact.zip | awk '{print $1}')" = "$artifact_digest"
+          "$PYTHON_BIN" - <<'PY'
+          from pathlib import Path
+          from scripts.nexus_runtime_wheelhouse import safe_extract_flat_archive
+
+          outer = Path("build/requalification-wheelhouse-artifact.zip")
+          outer_root = Path("build/requalification-wheelhouse-outer")
+          destination = Path("build/requalification-wheelhouse")
+          safe_extract_flat_archive(outer, outer_root, allow_zip_only=True)
+          inner = outer_root / "nexus-paper-runtime-wheelhouse.zip"
+          if sorted(outer_root.iterdir()) != [inner]:
+              raise SystemExit("Paper wheelhouse artifact must contain exactly one inner archive")
+          safe_extract_flat_archive(inner, destination)
+          if (destination / "requirements.lock").read_bytes() != Path("requirements.lock").read_bytes():
+              raise SystemExit("Paper wheelhouse lock mismatch")
+          if not list(destination.glob("*.whl")):
+              raise SystemExit("Paper wheelhouse contains no wheels")
+          print("requalification_wheelhouse_verification=PASS")
+          PY
+      - name: Provision locked runtime dependencies from verified Paper wheelhouse
+        run: |
+          set -euo pipefail
+          pip_wheel="$("$PYTHON_BIN" - <<'PY'
+          import ensurepip
+          from pathlib import Path
+
+          bundled = Path(ensurepip.__file__).resolve().parent / "_bundled"
+          wheels = sorted(bundled.glob("pip-*.whl"))
+          if not wheels:
+              raise SystemExit("bundled pip wheel missing")
+          print(wheels[-1].resolve())
+          PY
+          )"
+          runtime_site="$PWD/.nexus-requalification-site"
+          rm -rf "$runtime_site"
+          mkdir -p "$runtime_site"
+          PYTHONPATH="$pip_wheel" "$PYTHON_BIN" -m pip install \
+            --disable-pip-version-check \
+            --no-index \
+            --find-links "$PWD/build/requalification-wheelhouse" \
+            --no-cache-dir \
+            --target "$runtime_site" \
+            -r requirements.lock
+          printf 'PYTHONPATH=%s:%s\n' "$pip_wheel" "$runtime_site" >> "$GITHUB_ENV"
+          echo "offline_wheelhouse_bootstrap=PASS"
+      - run: '"$PYTHON_BIN" -m pip check'
+      - name: Restore exact same-run Discovery evidence
+        run: |
+          set -euo pipefail
+          rm -rf build/discovery-trigger build/discovery-trigger.zip "$OUTPUT_ROOT"
+          mkdir -p build/discovery-trigger "$OUTPUT_ROOT"
+          artifact_id="$(gh api \
+            -H 'Accept: application/vnd.github+json' \
+            "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100" \
+            --jq ".artifacts[] | select(.name == \"$DISCOVERY_ARTIFACT\") | .id" \
+            | head -n 1)"
+          test -n "$artifact_id"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" \
+            > build/discovery-trigger.zip
+          unzip -q build/discovery-trigger.zip -d build/discovery-trigger
+          discovery="$(find build/discovery-trigger -type f -name multitimeframe_strategy_discovery.json -print -quit)"
+          queue="$(find build/discovery-trigger -type f -name research_proposals.json -print -quit)"
+          context="$(find build/discovery-trigger -type f -name paper-boundary-context.json -print -quit)"
+          test -n "$discovery"
+          test -n "$queue"
+          test -n "$context"
+          printf '%s\n' "$discovery" > build/discovery-path.txt
+          printf '%s\n' "$queue" > build/queue-path.txt
+          printf '%s\n' "$context" > build/context-path.txt
+          cp "$context" "$OUTPUT_ROOT/paper-boundary-context.json"
+      - name: Requalify proposals on canonical public closed Bybit data
+        run: |
+          set -euo pipefail
+          "$PYTHON_BIN" nexus_strategy_proposal_runtime_requalification.py \
+            --discovery "$(cat build/discovery-path.txt)" \
+            --queue "$(cat build/queue-path.txt)" \
+            --source-sha "$TRIGGER_SOURCE_SHA" \
+            --discovery-source-sha "$TRIGGER_SOURCE_SHA" \
+            --state-root "$OUTPUT_ROOT/state" \
+            --output "$OUTPUT_ROOT/runtime-requalification.json"
+      - name: Require exact Paper 4h boundary coverage
+        run: |
+          set -euo pipefail
+          "$PYTHON_BIN" nexus_paper_boundary_discovery_feedback.py feedback \
+            --context "$(cat build/context-path.txt)" \
+            --discovery "$(cat build/discovery-path.txt)" \
+            --requalification "$OUTPUT_ROOT/runtime-requalification.json" \
+            --output "$OUTPUT_ROOT/paper-boundary-discovery-feedback.json"
+      - name: Package physical feedback for hosted persistence
+        id: package
+        if: always()
+        run: |
+          set -euo pipefail
+          if [ ! -d "$OUTPUT_ROOT" ] || ! find "$OUTPUT_ROOT" -type f -print -quit | grep -q .; then
+            {
+              echo "feedback_archive_chunk_count=0"
+              echo "feedback_archive_b64_len=0"
+              echo "feedback_archive_sha256="
+              for index in 0 1 2 3 4 5 6 7; do
+                echo "feedback_archive_chunk_${index}="
+              done
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          "$PYTHON_BIN" - <<'PY'
+          import os
+          import zipfile
+          from pathlib import Path
+
+          root = Path(os.environ["OUTPUT_ROOT"])
+          output = Path("build/paper-boundary-feedback-handoff.zip")
+          with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_LZMA) as archive:
+              for path in sorted(root.rglob("*")):
+                  if path.is_file():
+                      archive.write(path, path.relative_to(root).as_posix())
+          print(f"feedback_handoff_zip_bytes={output.stat().st_size}")
+          PY
+          feedback_sha="$(sha256sum build/paper-boundary-feedback-handoff.zip | awk '{print $1}')"
+          feedback_b64="$(base64 -w 0 build/paper-boundary-feedback-handoff.zip)"
+          feedback_b64_bytes="${#feedback_b64}"
+          chunk_size=60000
+          max_chunks=8
+          if [ "$feedback_b64_bytes" -gt 480000 ]; then
+            echo "::error::Packed boundary feedback exceeds bounded job-output handoff."
+            exit 1
+          fi
+          chunk_count=$(( (feedback_b64_bytes + chunk_size - 1) / chunk_size ))
+          if [ "$chunk_count" -lt 1 ] || [ "$chunk_count" -gt "$max_chunks" ]; then
+            echo "::error::Packed boundary feedback has invalid chunk count: $chunk_count"
+            exit 1
+          fi
+          {
+            echo "feedback_archive_chunk_count=$chunk_count"
+            echo "feedback_archive_b64_len=$feedback_b64_bytes"
+            echo "feedback_archive_sha256=$feedback_sha"
+            for index in 0 1 2 3 4 5 6 7; do
+              if [ "$index" -lt "$chunk_count" ]; then
+                offset=$(( index * chunk_size ))
+                chunk="${feedback_b64:offset:chunk_size}"
+              else
+                chunk=""
+              fi
+              printf 'feedback_archive_chunk_%s=%s\n' "$index" "$chunk"
+            done
+          } >> "$GITHUB_OUTPUT"
+          echo "feedback_handoff_base64_bytes=$feedback_b64_bytes"
+          echo "feedback_handoff_chunk_count=$chunk_count"
+
+  persist-boundary-feedback:
+    if: ${{ always() && needs.requalify-boundary-proposals.outputs.feedback_archive_chunk_count != '0' }}
+    needs: requalify-boundary-proposals
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      FEEDBACK_ARCHIVE_CHUNK_COUNT: ${{ needs.requalify-boundary-proposals.outputs.feedback_archive_chunk_count }}
+      FEEDBACK_ARCHIVE_B64_LEN: ${{ needs.requalify-boundary-proposals.outputs.feedback_archive_b64_len }}
+      FEEDBACK_ARCHIVE_SHA256: ${{ needs.requalify-boundary-proposals.outputs.feedback_archive_sha256 }}
+      FEEDBACK_ARCHIVE_CHUNK_0: ${{ needs.requalify-boundary-proposals.outputs.feedback_archive_chunk_0 }}
+      FEEDBACK_ARCHIVE_CHUNK_1: ${{ needs.requalify-boundary-proposals.outputs.feedback_archive_chunk_1 }}
+      FEEDBACK_ARCHIVE_CHUNK_2: ${{ needs.requalify-boundary-proposals.outputs.feedback_archive_chunk_2 }}
+      FEEDBACK_ARCHIVE_CHUNK_3: ${{ needs.requalify-boundary-proposals.outputs.feedback_archive_chunk_3 }}
+      FEEDBACK_ARCHIVE_CHUNK_4: ${{ needs.requalify-boundary-proposals.outputs.feedback_archive_chunk_4 }}
+      FEEDBACK_ARCHIVE_CHUNK_5: ${{ needs.requalify-boundary-proposals.outputs.feedback_archive_chunk_5 }}
+      FEEDBACK_ARCHIVE_CHUNK_6: ${{ needs.requalify-boundary-proposals.outputs.feedback_archive_chunk_6 }}
+      FEEDBACK_ARCHIVE_CHUNK_7: ${{ needs.requalify-boundary-proposals.outputs.feedback_archive_chunk_7 }}
+      OUTPUT_ROOT: build/nexus_paper_boundary_discovery_feedback
+    steps:
+      - name: Rehydrate physical boundary feedback handoff
+        run: |
+          set -euo pipefail
+          rm -rf "$OUTPUT_ROOT" build/paper-boundary-feedback-handoff.zip
+          mkdir -p "$OUTPUT_ROOT"
+          case "$FEEDBACK_ARCHIVE_CHUNK_COUNT" in
+            1|2|3|4|5|6|7|8) ;;
+            *) echo "::error::Invalid boundary feedback handoff chunk count."; exit 1 ;;
+          esac
+          chunks=(
+            "$FEEDBACK_ARCHIVE_CHUNK_0"
+            "$FEEDBACK_ARCHIVE_CHUNK_1"
+            "$FEEDBACK_ARCHIVE_CHUNK_2"
+            "$FEEDBACK_ARCHIVE_CHUNK_3"
+            "$FEEDBACK_ARCHIVE_CHUNK_4"
+            "$FEEDBACK_ARCHIVE_CHUNK_5"
+            "$FEEDBACK_ARCHIVE_CHUNK_6"
+            "$FEEDBACK_ARCHIVE_CHUNK_7"
+          )
+          feedback_b64=""
+          for ((index=0; index<FEEDBACK_ARCHIVE_CHUNK_COUNT; index++)); do
+            if [ "${#chunks[$index]}" -gt 60000 ]; then
+              echo "::error::Boundary feedback handoff chunk exceeds bound."
+              exit 1
+            fi
+            feedback_b64+="${chunks[$index]}"
+          done
+          for ((index=FEEDBACK_ARCHIVE_CHUNK_COUNT; index<8; index++)); do
+            if [ -n "${chunks[$index]}" ]; then
+              echo "::error::Unexpected trailing boundary feedback handoff chunk."
+              exit 1
+            fi
+          done
+          test "${#feedback_b64}" -eq "$FEEDBACK_ARCHIVE_B64_LEN"
+          printf '%s' "$feedback_b64" | base64 --decode > build/paper-boundary-feedback-handoff.zip
+          test "$(sha256sum build/paper-boundary-feedback-handoff.zip | awk '{print $1}')" = "$FEEDBACK_ARCHIVE_SHA256"
+          python - <<'PY'
+          import os
+          import zipfile
+          from pathlib import Path
+
+          root = Path(os.environ["OUTPUT_ROOT"])
+          resolved = root.resolve()
+          with zipfile.ZipFile("build/paper-boundary-feedback-handoff.zip") as archive:
+              for member in archive.infolist():
+                  target = (root / member.filename).resolve()
+                  if target != resolved and resolved not in target.parents:
+                      raise RuntimeError(f"unsafe feedback handoff path: {member.filename}")
+              archive.extractall(root)
+          print("hosted_feedback_handoff_verification=PASS")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: nexus-paper-boundary-discovery-feedback-${{ github.run_id }}
+          path: build/nexus_paper_boundary_discovery_feedback
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
