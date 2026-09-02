@@ -202,8 +202,8 @@ def test_physical_state_handoff_is_bounded_chunked_digest_checked_and_hosted_per
     assert 'state_b64_bytes" -gt 480000' in paper
     assert "chunk_size=60000" in paper
     assert "max_chunks=8" in paper
-    assert "compression=zipfile.ZIP_DEFLATED" in paper
-    assert "compresslevel=9" in paper
+    assert "compression=zipfile.ZIP_LZMA" in paper
+    assert "compression=zipfile.ZIP_DEFLATED" not in paper
 
     assert "STATE_ARCHIVE_B64:" not in persist
     assert "STATE_ARCHIVE_CHUNK_COUNT" in persist
