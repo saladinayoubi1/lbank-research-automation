@@ -70,6 +70,7 @@ def _discovery() -> dict:
     return {
         "source_sha": SOURCE_SHA,
         "discovery_digest": DISCOVERY_DIGEST,
+        "research_proposal_count": 1,
     }
 
 
@@ -145,6 +146,7 @@ def test_feedback_proves_runtime_data_covers_exact_paper_boundary(monkeypatch) -
     result = feedback.build_feedback(context, _discovery(), _requalification())
     assert result["status"] == "VERIFIED_BOUNDARY_FEEDBACK"
     assert result["boundary_coverage_verified"] is True
+    assert result["discovery_feedback_verified"] is True
     assert result["required_runtime_evaluation_count"] == 2
     assert result["boundary_covered_runtime_evaluation_count"] == 2
     assert result["candidate_state_created"] is False
@@ -166,6 +168,7 @@ def test_feedback_fails_closed_when_runtime_data_is_older_than_boundary(monkeypa
     )
     assert result["status"] == "RUNTIME_BOUNDARY_NOT_COVERED"
     assert result["boundary_coverage_verified"] is False
+    assert result["discovery_feedback_verified"] is False
     assert result["boundary_covered_runtime_evaluation_count"] == 1
     assert feedback.verify_feedback(result)["decision"] == "pass"
 
@@ -191,7 +194,36 @@ def test_feedback_waits_when_requalification_is_runtime_blocked(monkeypatch) -> 
     result = feedback.build_feedback(context, _discovery(), blocked)
     assert result["status"] == "WAITING_FOR_RUNTIME_DATA"
     assert result["boundary_coverage_verified"] is False
+    assert result["discovery_feedback_verified"] is False
     assert result["required_runtime_evaluation_count"] == 0
+    assert feedback.verify_feedback(result)["decision"] == "pass"
+
+
+def test_feedback_verifies_exact_boundary_discovery_with_no_proposals(monkeypatch) -> None:
+    context = _context(monkeypatch)
+    monkeypatch.setattr(feedback, "verify_discovery", lambda _value: {"decision": "pass"})
+    monkeypatch.setattr(
+        feedback, "verify_requalification", lambda _value: {"decision": "pass"}
+    )
+    discovery = _discovery()
+    discovery["research_proposal_count"] = 0
+    requalification = _requalification()
+    requalification.update(
+        {
+            "status": "NO_WORK",
+            "proposal_count": 0,
+            "qualified_for_review_count": 0,
+            "rejected_count": 0,
+            "proposal_results": [],
+        }
+    )
+    result = feedback.build_feedback(context, discovery, requalification)
+    assert result["status"] == "VERIFIED_NO_RESEARCH_PROPOSALS"
+    assert result["boundary_coverage_verified"] is False
+    assert result["discovery_feedback_verified"] is True
+    assert result["runtime_requalification_status"] == "NO_WORK"
+    assert result["required_runtime_evaluation_count"] == 0
+    assert result["boundary_covered_runtime_evaluation_count"] == 0
     assert feedback.verify_feedback(result)["decision"] == "pass"
 
 

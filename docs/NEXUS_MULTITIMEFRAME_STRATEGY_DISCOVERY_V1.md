@@ -23,6 +23,13 @@ The discovery lane is **Research-only** and **Paper-bounded**. It cannot:
 
 A successful discovery result is only a `RESEARCH_PROPOSAL` and explicitly requires independent runtime requalification before any later lifecycle transition.
 
+When every hypothesis fails the locked conservative/stress gates, an empty
+proposal queue is a valid fail-closed research outcome. The boundary-feedback
+lane records that outcome as verified only when Discovery and the `NO_WORK`
+runtime-requalification result are both digest- and source-bound to the exact
+fresh Paper 4h context. It does not claim runtime boundary coverage when no
+proposal exists.
+
 ## Dataset binding
 
 The GitHub workflow restores the immutable Bybit archive and verifies the exact archive SHA-256 before extraction. The engine then independently requires:

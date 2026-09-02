@@ -100,7 +100,7 @@ def test_workflow_requalification_uses_physical_bybit_linux_plane() -> None:
     assert '--no-index' in section
     assert "nexus_strategy_proposal_runtime_requalification.py" in section
     assert "nexus_paper_boundary_discovery_feedback.py feedback" in section
-    assert "Require exact Paper 4h boundary coverage" in section
+    assert "Require verified Paper-bound Discovery feedback" in section
 
 
 def test_physical_feedback_is_bounded_and_persisted_by_hosted_job() -> None:

@@ -678,7 +678,7 @@ jobs:
             --discovery-source-sha "$TRIGGER_SOURCE_SHA" \
             --state-root "$OUTPUT_ROOT/state" \
             --output "$OUTPUT_ROOT/runtime-requalification.json"
-      - name: Require exact Paper 4h boundary coverage
+      - name: Require verified Paper-bound Discovery feedback
         run: |
           set -euo pipefail
           "$PYTHON_BIN" nexus_paper_boundary_discovery_feedback.py feedback \
