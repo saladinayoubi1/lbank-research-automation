@@ -86,6 +86,11 @@ def test_workflow_requalification_uses_physical_bybit_linux_plane() -> None:
     assert "actions/checkout" not in section
     assert "actions/setup-python" not in section
     assert "actions/upload-artifact" not in section
+    assert "gh api" not in section
+    assert "curl --fail --silent --show-error --location" in section
+    assert 'Authorization: Bearer $GH_TOKEN' in section
+    assert "--retry 3 --retry-all-errors" in section
+    assert "expected one exact same-run Discovery artifact" in section
     assert "requalification_wheelhouse_verification=PASS" in section
     assert "offline_wheelhouse_bootstrap=PASS" in section
     assert '--no-index' in section
