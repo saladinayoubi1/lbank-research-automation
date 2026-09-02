@@ -247,28 +247,162 @@ jobs:
     needs: [gate-paper-boundary, discover-boundary-proposals]
     runs-on: nexus-bybit-network
     timeout-minutes: 55
+    outputs:
+      feedback_archive_chunk_count: ${{ steps.package.outputs.feedback_archive_chunk_count }}
+      feedback_archive_b64_len: ${{ steps.package.outputs.feedback_archive_b64_len }}
+      feedback_archive_sha256: ${{ steps.package.outputs.feedback_archive_sha256 }}
+      feedback_archive_chunk_0: ${{ steps.package.outputs.feedback_archive_chunk_0 }}
+      feedback_archive_chunk_1: ${{ steps.package.outputs.feedback_archive_chunk_1 }}
+      feedback_archive_chunk_2: ${{ steps.package.outputs.feedback_archive_chunk_2 }}
+      feedback_archive_chunk_3: ${{ steps.package.outputs.feedback_archive_chunk_3 }}
+      feedback_archive_chunk_4: ${{ steps.package.outputs.feedback_archive_chunk_4 }}
+      feedback_archive_chunk_5: ${{ steps.package.outputs.feedback_archive_chunk_5 }}
+      feedback_archive_chunk_6: ${{ steps.package.outputs.feedback_archive_chunk_6 }}
+      feedback_archive_chunk_7: ${{ steps.package.outputs.feedback_archive_chunk_7 }}
     env:
       GH_TOKEN: ${{ github.token }}
       TRIGGER_SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+      TRIGGER_RUN_ID: ${{ github.event.workflow_run.id }}
       DISCOVERY_ARTIFACT: nexus-paper-boundary-discovery-${{ github.run_id }}
+      WHEELHOUSE_ARTIFACT: nexus-paper-runtime-wheelhouse-${{ github.event.workflow_run.head_sha }}
       OUTPUT_ROOT: build/nexus_paper_boundary_discovery_feedback
-      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
-          persist-credentials: false
-          clean: true
-          fetch-depth: 1
-      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
-        with:
-          python-version: "3.12"
-          cache: pip
+      - name: Prepare exact repository and pre-provisioned Python 3.12 without JavaScript actions
+        run: |
+          set -euo pipefail
+          repo_url="https://github.com/${GITHUB_REPOSITORY}.git"
+          if [ -d .git ]; then
+            git remote set-url origin "$repo_url"
+            git reset --hard
+            git clean -ffdx
+          else
+            find . -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
+            git init .
+            git remote add origin "$repo_url"
+          fi
+          git config --local --unset-all http.https://github.com/.extraheader || true
+          git fetch --no-tags --prune --depth=1 origin "$TRIGGER_SOURCE_SHA"
+          git checkout --detach --force FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "$TRIGGER_SOURCE_SHA"
+          git clean -ffdx
+
+          known_python="/opt/nexus-bybit-runner/_work/_tool/Python/3.12.14/x64/bin/python"
+          python_bin=""
+          if [ -x "$known_python" ]; then
+            python_bin="$known_python"
+          fi
+          if [ -z "$python_bin" ]; then
+            tool_root="${RUNNER_TOOL_CACHE:-/opt/nexus-bybit-runner/_work/_tool}"
+            if [ "$(basename "$tool_root")" = "Python" ]; then
+              python_root="$tool_root"
+            else
+              python_root="$tool_root/Python"
+            fi
+            python_bin="$(find "$python_root" -type f -path '*/3.12.*/x64/bin/python' 2>/dev/null | sort -V | tail -n 1 || true)"
+          fi
+          if [ -z "$python_bin" ]; then
+            echo "::error::No pre-provisioned CPython 3.12 exists on the physical runner."
+            exit 1
+          fi
+          "$python_bin" -c "import sys; assert sys.version_info[:2] == (3, 12), sys.version"
+          python_prefix="$("$python_bin" -c 'import sys; print(sys.prefix)')"
+          python_lib="$python_prefix/lib"
+          test -d "$python_lib"
+          effective_ld_library_path="$python_lib"
+          if [ -n "${LD_LIBRARY_PATH:-}" ]; then
+            effective_ld_library_path="$python_lib:$LD_LIBRARY_PATH"
+          fi
+          LD_LIBRARY_PATH="$effective_ld_library_path" "$python_bin" -c "import ctypes; print('physical_python_dynamic_stdlib=PASS')"
+          printf 'PYTHON_BIN=%s\n' "$python_bin" >> "$GITHUB_ENV"
+          printf 'LD_LIBRARY_PATH=%s\n' "$effective_ld_library_path" >> "$GITHUB_ENV"
+          echo "physical_checkout_sha=$(git rev-parse HEAD)"
       - name: Enforce eligible Bybit network execution plane
         run: >-
-          python -c "assert '${{ runner.environment }}' == 'self-hosted'; assert '${{ runner.os }}' == 'Linux'; print('bybit_network_execution_plane=self-hosted:nexus-bybit-network')"
-      - run: python -m pip install -r requirements.lock
-      - run: python -m pip check
+          "$PYTHON_BIN" -c "assert '${{ runner.environment }}' == 'self-hosted'; assert '${{ runner.os }}' == 'Linux'; import sys; assert sys.version_info[:2] == (3, 12); print('bybit_network_execution_plane=self-hosted:nexus-bybit-network')"
+      - name: Restore GitHub-digest-pinned Paper runtime wheelhouse
+        run: |
+          set -euo pipefail
+          rm -rf build/requalification-wheelhouse build/requalification-wheelhouse-outer
+          rm -f build/requalification-wheelhouse-artifact.zip build/requalification-wheelhouse-metadata.json
+          mkdir -p build/requalification-wheelhouse build/requalification-wheelhouse-outer
+          gh api -H 'Accept: application/vnd.github+json' \
+            "repos/$GITHUB_REPOSITORY/actions/runs/$TRIGGER_RUN_ID/artifacts?per_page=100" \
+            > build/requalification-wheelhouse-metadata.json
+          read -r artifact_id artifact_size artifact_digest <<EOF
+          $("$PYTHON_BIN" - <<'PY'
+          import json
+          import os
+          import re
+          from pathlib import Path
+
+          payload = json.loads(Path("build/requalification-wheelhouse-metadata.json").read_text())
+          matches = [
+              row for row in payload.get("artifacts", [])
+              if row.get("name") == os.environ["WHEELHOUSE_ARTIFACT"]
+              and row.get("expired") is False
+          ]
+          if len(matches) != 1:
+              raise SystemExit(f"expected one exact Paper wheelhouse artifact, got {len(matches)}")
+          row = matches[0]
+          digest = str(row.get("digest", ""))
+          if not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
+              raise SystemExit("wheelhouse artifact has no valid GitHub SHA-256 digest")
+          size = int(row.get("size_in_bytes") or 0)
+          if not 0 < size <= 250 * 1024 * 1024:
+              raise SystemExit("wheelhouse artifact size is outside bounds")
+          print(int(row["id"]), size, digest.removeprefix("sha256:"))
+          PY
+          )
+          EOF
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" \
+            > build/requalification-wheelhouse-artifact.zip
+          test "$(stat -c '%s' build/requalification-wheelhouse-artifact.zip)" -le $((250 * 1024 * 1024))
+          test "$(sha256sum build/requalification-wheelhouse-artifact.zip | awk '{print $1}')" = "$artifact_digest"
+          "$PYTHON_BIN" - <<'PY'
+          from pathlib import Path
+          from scripts.nexus_runtime_wheelhouse import safe_extract_flat_archive
+
+          outer = Path("build/requalification-wheelhouse-artifact.zip")
+          outer_root = Path("build/requalification-wheelhouse-outer")
+          destination = Path("build/requalification-wheelhouse")
+          safe_extract_flat_archive(outer, outer_root, allow_zip_only=True)
+          inner = outer_root / "nexus-paper-runtime-wheelhouse.zip"
+          if sorted(outer_root.iterdir()) != [inner]:
+              raise SystemExit("Paper wheelhouse artifact must contain exactly one inner archive")
+          safe_extract_flat_archive(inner, destination)
+          if (destination / "requirements.lock").read_bytes() != Path("requirements.lock").read_bytes():
+              raise SystemExit("Paper wheelhouse lock mismatch")
+          if not list(destination.glob("*.whl")):
+              raise SystemExit("Paper wheelhouse contains no wheels")
+          print("requalification_wheelhouse_verification=PASS")
+          PY
+      - name: Provision locked runtime dependencies from verified Paper wheelhouse
+        run: |
+          set -euo pipefail
+          pip_wheel="$("$PYTHON_BIN" - <<'PY'
+          import ensurepip
+          from pathlib import Path
+
+          bundled = Path(ensurepip.__file__).resolve().parent / "_bundled"
+          wheels = sorted(bundled.glob("pip-*.whl"))
+          if not wheels:
+              raise SystemExit("bundled pip wheel missing")
+          print(wheels[-1].resolve())
+          PY
+          )"
+          runtime_site="$PWD/.nexus-requalification-site"
+          rm -rf "$runtime_site"
+          mkdir -p "$runtime_site"
+          PYTHONPATH="$pip_wheel" "$PYTHON_BIN" -m pip install \
+            --disable-pip-version-check \
+            --no-index \
+            --find-links "$PWD/build/requalification-wheelhouse" \
+            --no-cache-dir \
+            --target "$runtime_site" \
+            -r requirements.lock
+          printf 'PYTHONPATH=%s:%s\n' "$pip_wheel" "$runtime_site" >> "$GITHUB_ENV"
+          echo "offline_wheelhouse_bootstrap=PASS"
+      - run: '"$PYTHON_BIN" -m pip check'
       - name: Restore exact same-run Discovery evidence
         run: |
           set -euo pipefail
@@ -296,7 +430,7 @@ jobs:
       - name: Requalify proposals on canonical public closed Bybit data
         run: |
           set -euo pipefail
-          python nexus_strategy_proposal_runtime_requalification.py \
+          "$PYTHON_BIN" nexus_strategy_proposal_runtime_requalification.py \
             --discovery "$(cat build/discovery-path.txt)" \
             --queue "$(cat build/queue-path.txt)" \
             --source-sha "$TRIGGER_SOURCE_SHA" \
@@ -306,13 +440,142 @@ jobs:
       - name: Require exact Paper 4h boundary coverage
         run: |
           set -euo pipefail
-          python nexus_paper_boundary_discovery_feedback.py feedback \
+          "$PYTHON_BIN" nexus_paper_boundary_discovery_feedback.py feedback \
             --context "$(cat build/context-path.txt)" \
             --discovery "$(cat build/discovery-path.txt)" \
             --requalification "$OUTPUT_ROOT/runtime-requalification.json" \
             --output "$OUTPUT_ROOT/paper-boundary-discovery-feedback.json"
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      - name: Package physical feedback for hosted persistence
+        id: package
         if: always()
+        run: |
+          set -euo pipefail
+          if [ ! -d "$OUTPUT_ROOT" ] || ! find "$OUTPUT_ROOT" -type f -print -quit | grep -q .; then
+            {
+              echo "feedback_archive_chunk_count=0"
+              echo "feedback_archive_b64_len=0"
+              echo "feedback_archive_sha256="
+              for index in 0 1 2 3 4 5 6 7; do
+                echo "feedback_archive_chunk_${index}="
+              done
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          "$PYTHON_BIN" - <<'PY'
+          import os
+          import zipfile
+          from pathlib import Path
+
+          root = Path(os.environ["OUTPUT_ROOT"])
+          output = Path("build/paper-boundary-feedback-handoff.zip")
+          with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_LZMA) as archive:
+              for path in sorted(root.rglob("*")):
+                  if path.is_file():
+                      archive.write(path, path.relative_to(root).as_posix())
+          print(f"feedback_handoff_zip_bytes={output.stat().st_size}")
+          PY
+          feedback_sha="$(sha256sum build/paper-boundary-feedback-handoff.zip | awk '{print $1}')"
+          feedback_b64="$(base64 -w 0 build/paper-boundary-feedback-handoff.zip)"
+          feedback_b64_bytes="${#feedback_b64}"
+          chunk_size=60000
+          max_chunks=8
+          if [ "$feedback_b64_bytes" -gt 480000 ]; then
+            echo "::error::Packed boundary feedback exceeds bounded job-output handoff."
+            exit 1
+          fi
+          chunk_count=$(( (feedback_b64_bytes + chunk_size - 1) / chunk_size ))
+          if [ "$chunk_count" -lt 1 ] || [ "$chunk_count" -gt "$max_chunks" ]; then
+            echo "::error::Packed boundary feedback has invalid chunk count: $chunk_count"
+            exit 1
+          fi
+          {
+            echo "feedback_archive_chunk_count=$chunk_count"
+            echo "feedback_archive_b64_len=$feedback_b64_bytes"
+            echo "feedback_archive_sha256=$feedback_sha"
+            for index in 0 1 2 3 4 5 6 7; do
+              if [ "$index" -lt "$chunk_count" ]; then
+                offset=$(( index * chunk_size ))
+                chunk="${feedback_b64:offset:chunk_size}"
+              else
+                chunk=""
+              fi
+              printf 'feedback_archive_chunk_%s=%s\n' "$index" "$chunk"
+            done
+          } >> "$GITHUB_OUTPUT"
+          echo "feedback_handoff_base64_bytes=$feedback_b64_bytes"
+          echo "feedback_handoff_chunk_count=$chunk_count"
+
+  persist-boundary-feedback:
+    if: ${{ always() && needs.requalify-boundary-proposals.outputs.feedback_archive_chunk_count != '0' }}
+    needs: requalify-boundary-proposals
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      FEEDBACK_ARCHIVE_CHUNK_COUNT: ${{ needs.requalify-boundary-proposals.outputs.feedback_archive_chunk_count }}
+      FEEDBACK_ARCHIVE_B64_LEN: ${{ needs.requalify-boundary-proposals.outputs.feedback_archive_b64_len }}
+      FEEDBACK_ARCHIVE_SHA256: ${{ needs.requalify-boundary-proposals.outputs.feedback_archive_sha256 }}
+      FEEDBACK_ARCHIVE_CHUNK_0: ${{ needs.requalify-boundary-proposals.outputs.feedback_archive_chunk_0 }}
+      FEEDBACK_ARCHIVE_CHUNK_1: ${{ needs.requalify-boundary-proposals.outputs.feedback_archive_chunk_1 }}
+      FEEDBACK_ARCHIVE_CHUNK_2: ${{ needs.requalify-boundary-proposals.outputs.feedback_archive_chunk_2 }}
+      FEEDBACK_ARCHIVE_CHUNK_3: ${{ needs.requalify-boundary-proposals.outputs.feedback_archive_chunk_3 }}
+      FEEDBACK_ARCHIVE_CHUNK_4: ${{ needs.requalify-boundary-proposals.outputs.feedback_archive_chunk_4 }}
+      FEEDBACK_ARCHIVE_CHUNK_5: ${{ needs.requalify-boundary-proposals.outputs.feedback_archive_chunk_5 }}
+      FEEDBACK_ARCHIVE_CHUNK_6: ${{ needs.requalify-boundary-proposals.outputs.feedback_archive_chunk_6 }}
+      FEEDBACK_ARCHIVE_CHUNK_7: ${{ needs.requalify-boundary-proposals.outputs.feedback_archive_chunk_7 }}
+      OUTPUT_ROOT: build/nexus_paper_boundary_discovery_feedback
+    steps:
+      - name: Rehydrate physical boundary feedback handoff
+        run: |
+          set -euo pipefail
+          rm -rf "$OUTPUT_ROOT" build/paper-boundary-feedback-handoff.zip
+          mkdir -p "$OUTPUT_ROOT"
+          case "$FEEDBACK_ARCHIVE_CHUNK_COUNT" in
+            1|2|3|4|5|6|7|8) ;;
+            *) echo "::error::Invalid boundary feedback handoff chunk count."; exit 1 ;;
+          esac
+          chunks=(
+            "$FEEDBACK_ARCHIVE_CHUNK_0"
+            "$FEEDBACK_ARCHIVE_CHUNK_1"
+            "$FEEDBACK_ARCHIVE_CHUNK_2"
+            "$FEEDBACK_ARCHIVE_CHUNK_3"
+            "$FEEDBACK_ARCHIVE_CHUNK_4"
+            "$FEEDBACK_ARCHIVE_CHUNK_5"
+            "$FEEDBACK_ARCHIVE_CHUNK_6"
+            "$FEEDBACK_ARCHIVE_CHUNK_7"
+          )
+          feedback_b64=""
+          for ((index=0; index<FEEDBACK_ARCHIVE_CHUNK_COUNT; index++)); do
+            if [ "${#chunks[$index]}" -gt 60000 ]; then
+              echo "::error::Boundary feedback handoff chunk exceeds bound."
+              exit 1
+            fi
+            feedback_b64+="${chunks[$index]}"
+          done
+          for ((index=FEEDBACK_ARCHIVE_CHUNK_COUNT; index<8; index++)); do
+            if [ -n "${chunks[$index]}" ]; then
+              echo "::error::Unexpected trailing boundary feedback handoff chunk."
+              exit 1
+            fi
+          done
+          test "${#feedback_b64}" -eq "$FEEDBACK_ARCHIVE_B64_LEN"
+          printf '%s' "$feedback_b64" | base64 --decode > build/paper-boundary-feedback-handoff.zip
+          test "$(sha256sum build/paper-boundary-feedback-handoff.zip | awk '{print $1}')" = "$FEEDBACK_ARCHIVE_SHA256"
+          python - <<'PY'
+          import os
+          import zipfile
+          from pathlib import Path
+
+          root = Path(os.environ["OUTPUT_ROOT"])
+          resolved = root.resolve()
+          with zipfile.ZipFile("build/paper-boundary-feedback-handoff.zip") as archive:
+              for member in archive.infolist():
+                  target = (root / member.filename).resolve()
+                  if target != resolved and resolved not in target.parents:
+                      raise RuntimeError(f"unsafe feedback handoff path: {member.filename}")
+              archive.extractall(root)
+          print("hosted_feedback_handoff_verification=PASS")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: nexus-paper-boundary-discovery-feedback-${{ github.run_id }}
           path: build/nexus_paper_boundary_discovery_feedback

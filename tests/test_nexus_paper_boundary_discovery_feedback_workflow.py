@@ -32,15 +32,48 @@ def test_workflow_binds_discovery_to_triggering_paper_sha() -> None:
 
 def test_workflow_requalification_uses_physical_bybit_linux_plane() -> None:
     text = _text()
-    section = text.split("requalify-boundary-proposals:", 1)[1]
+    section = text.split("requalify-boundary-proposals:", 1)[1].split(
+        "persist-boundary-feedback:", 1
+    )[0]
     assert "runs-on: nexus-bybit-network" in section
     assert "runner.environment" in section
     assert "runner.os" in section
     assert "self-hosted" in section
     assert "Linux" in section
+    assert "Prepare exact repository and pre-provisioned Python 3.12 without JavaScript actions" in section
+    assert "actions/checkout" not in section
+    assert "actions/setup-python" not in section
+    assert "actions/upload-artifact" not in section
+    assert "requalification_wheelhouse_verification=PASS" in section
+    assert "offline_wheelhouse_bootstrap=PASS" in section
+    assert '--no-index' in section
     assert "nexus_strategy_proposal_runtime_requalification.py" in section
     assert "nexus_paper_boundary_discovery_feedback.py feedback" in section
     assert "Require exact Paper 4h boundary coverage" in section
+
+
+def test_physical_feedback_is_bounded_and_persisted_by_hosted_job() -> None:
+    text = _text()
+    physical = text.split("requalify-boundary-proposals:", 1)[1].split(
+        "persist-boundary-feedback:", 1
+    )[0]
+    hosted = text.split("persist-boundary-feedback:", 1)[1]
+
+    assert "Package physical feedback for hosted persistence" in physical
+    assert "compression=zipfile.ZIP_LZMA" in physical
+    assert "feedback_archive_chunk_count" in physical
+    assert 'feedback_b64_bytes" -gt 480000' in physical
+    assert "chunk_size=60000" in physical
+    assert "max_chunks=8" in physical
+    for index in range(8):
+        assert f"feedback_archive_chunk_{index}" in physical
+        assert f"needs.requalify-boundary-proposals.outputs.feedback_archive_chunk_{index}" in hosted
+
+    assert "runs-on: ubuntu-latest" in hosted
+    assert "hosted_feedback_handoff_verification=PASS" in hosted
+    assert "FEEDBACK_ARCHIVE_SHA256" in hosted
+    assert "unsafe feedback handoff path" in hosted
+    assert "nexus-paper-boundary-discovery-feedback-${{ github.run_id }}" in hosted
 
 
 def test_workflow_uses_only_approved_immutable_discovery_archive() -> None:
