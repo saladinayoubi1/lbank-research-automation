@@ -87,10 +87,14 @@ def test_workflow_requalification_uses_physical_bybit_linux_plane() -> None:
     assert "actions/setup-python" not in section
     assert "actions/upload-artifact" not in section
     assert "gh api" not in section
+    assert "unzip " not in section
     assert "curl --fail --silent --show-error --location" in section
     assert 'Authorization: Bearer $GH_TOKEN' in section
     assert "--retry 3 --retry-all-errors" in section
     assert "expected one exact same-run Discovery artifact" in section
+    assert "physical_discovery_artifact_extraction=PASS" in section
+    assert "unsafe Discovery artifact path" in section
+    assert "Discovery artifact member size is outside bounds" in section
     assert "requalification_wheelhouse_verification=PASS" in section
     assert "offline_wheelhouse_bootstrap=PASS" in section
     assert '--no-index' in section
