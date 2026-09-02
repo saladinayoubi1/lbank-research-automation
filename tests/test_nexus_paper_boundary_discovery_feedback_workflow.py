@@ -1,4 +1,3 @@
-import json
 from pathlib import Path
 
 
@@ -22,7 +21,7 @@ def test_workflow_is_health_driven_from_exact_paper_completion() -> None:
     assert "steps.health.outputs.should_dispatch == 'true'" in text
 
 
-def test_recovery_trigger_is_repository_bound_and_fail_closed() -> None:
+def test_recovery_trigger_is_repository_bound_and_inactive_without_manifest() -> None:
     text = _text()
     assert "recovery_paper_run_id:" in text
     assert ".nexus/recovery/paper-boundary-feedback-v1.json" in text
@@ -47,17 +46,7 @@ def test_recovery_trigger_is_repository_bound_and_fail_closed() -> None:
     assert "validated_paper_recovery_trigger=PASS" in text
     assert "steps.trigger.outputs.eligible == 'true'" in text
 
-    recovery = json.loads(RECOVERY.read_text(encoding="utf-8"))
-    assert recovery["schema"] == "nexus-paper-boundary-recovery/v1"
-    assert recovery["paper_run_id"] == 33578362809
-    assert recovery["expected_source_sha"] == (
-        "662a0d325d6648f0d57c2b252645082f83c42737"
-    )
-    assert recovery["paper_state_artifact_id"] == 9827586931
-    assert recovery["paper_state_artifact_sha256"] == (
-        "b56106750a758ebc21b3414dddf15b436a753c32e9c6ad334e5ba2cfd3e35e9f"
-    )
-    assert "33578757046" in recovery["reason"]
+    assert not RECOVERY.exists()
 
 
 def test_workflow_binds_discovery_to_triggering_paper_sha() -> None:
