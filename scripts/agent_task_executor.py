@@ -15,6 +15,17 @@ DISPATCH_KEYS = {
 }
 AGENT_REVIEW_PREFIX = "You are a bounded NEXUS repository reviewer."
 
+# Phase 4 fixed proof workloads are deliberately hard-coded. A dispatch may
+# select one of these identifiers, but it cannot inject a path or command.
+# P4-EVENT-001 maps directly to its canonical event-store acceptance contract.
+PHASE4_WORKLOADS: dict[str, dict[str, Any]] = {
+    "P4-EVENT-001": {
+        "transports": ("github-cloud",),
+        "suite": ("tests/test_nexus_event_store.py",),
+        "purpose": "source-bound-event-store-canonical-chain-replay-and-corruption-proof",
+    },
+}
+
 # Phase 7 proof workloads are deliberately hard-coded. A dispatch may select one
 # of these identifiers, but it cannot inject a path or command. This keeps the
 # worker useful for real resource consumption while preserving the execution
@@ -112,14 +123,20 @@ def run(cmd: list[str], timeout: int = 600) -> dict[str, Any]:
     }
 
 
-def _phase7_pytest_workload(payload: dict[str, Any], transport: str, spec: dict[str, Any]) -> tuple[str, dict[str, Any]]:
+def _bounded_pytest_workload(
+    payload: dict[str, Any],
+    transport: str,
+    spec: dict[str, Any],
+    *,
+    expected_phase: int,
+) -> tuple[str, dict[str, Any]]:
     task_id = payload["task_id"]
-    if payload.get("phase") != 7:
+    if payload.get("phase") != expected_phase:
         return "failure", {
             "failure_class": "workload_phase_mismatch",
             "executor": "bounded-pytest",
             "workload_id": task_id,
-            "expected_phase": 7,
+            "expected_phase": expected_phase,
             "observed_phase": payload.get("phase"),
         }
     allowed = tuple(spec["transports"])
@@ -139,16 +156,24 @@ def _phase7_pytest_workload(payload: dict[str, Any], transport: str, spec: dict[
         "workload_id": task_id,
         "purpose": spec["purpose"],
         "suite": list(suite),
-        "offline_capable": bool(spec["offline_capable"]),
-        "network_required": bool(spec["network_required"]),
         "transport": transport,
         "tests": result,
         "failure_class": None if ok else "deterministic_test_failure",
     }
 
 
+def _phase7_pytest_workload(payload: dict[str, Any], transport: str, spec: dict[str, Any]) -> tuple[str, dict[str, Any]]:
+    outcome, evidence = _bounded_pytest_workload(payload, transport, spec, expected_phase=7)
+    evidence["offline_capable"] = bool(spec["offline_capable"])
+    evidence["network_required"] = bool(spec["network_required"])
+    return outcome, evidence
+
+
 def deterministic_execution(payload: dict[str, Any], transport: str) -> tuple[str, dict[str, Any]]:
     task_id = payload["task_id"]
+    phase4 = PHASE4_WORKLOADS.get(task_id)
+    if phase4 is not None:
+        return _bounded_pytest_workload(payload, transport, phase4, expected_phase=4)
     phase7 = PHASE7_WORKLOADS.get(task_id)
     if phase7 is not None:
         return _phase7_pytest_workload(payload, transport, phase7)
