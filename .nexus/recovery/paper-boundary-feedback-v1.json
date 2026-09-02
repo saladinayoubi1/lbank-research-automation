@@ -1,1 +1,8 @@
-awk: cannot open "--" (No such file or directory)
+{
+  "schema": "nexus-paper-boundary-recovery/v1",
+  "paper_run_id": 33578362809,
+  "expected_source_sha": "662a0d325d6648f0d57c2b252645082f83c42737",
+  "paper_state_artifact_id": 9827586931,
+  "paper_state_artifact_sha256": "b56106750a758ebc21b3414dddf15b436a753c32e9c6ad334e5ba2cfd3e35e9f",
+  "reason": "Recover the verified 6/6 Paper boundary whose feedback run 33578757046 failed before physical requalification because the shared pip cache and Node action runtime were unusable on NEXUS-BYBIT-WSL."
+}
