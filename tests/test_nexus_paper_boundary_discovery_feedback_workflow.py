@@ -1,7 +1,9 @@
+import json
 from pathlib import Path
 
 
 WORKFLOW = Path(".github/workflows/nexus_paper_boundary_discovery_feedback.yml")
+RECOVERY = Path(".nexus/recovery/paper-boundary-feedback-v1.json")
 
 
 def _text() -> str:
@@ -20,10 +22,50 @@ def test_workflow_is_health_driven_from_exact_paper_completion() -> None:
     assert "steps.health.outputs.should_dispatch == 'true'" in text
 
 
+def test_recovery_trigger_is_repository_bound_and_fail_closed() -> None:
+    text = _text()
+    assert "recovery_paper_run_id:" in text
+    assert ".nexus/recovery/paper-boundary-feedback-v1.json" in text
+    assert "Resolve and validate exact successful main Paper completion" in text
+    assert 'value.get("name") != "NEXUS persistent Paper trading loop"' in text
+    assert (
+        'value.get("path") != ".github/workflows/nexus_persistent_paper_trading_loop.yml"'
+        in text
+    )
+    assert 'value.get("head_branch") != "main"' in text
+    assert 'value.get("event") not in {"push", "schedule", "workflow_dispatch"}' in text
+    assert "recovery Paper run repository mismatch" in text
+    assert "recovery Paper head repository mismatch" in text
+    assert "Recovery manifest source SHA does not match the Paper run" in text
+    assert "recovery_paper_state_artifact_binding=PASS" in text
+    assert "recovery Paper state artifact digest mismatch" in text
+    assert "recovery Paper state artifact run binding mismatch" in text
+    assert "recovery Paper state artifact source binding mismatch" in text
+    assert 'artifact_id="${PAPER_STATE_ARTIFACT_ID:-}"' in text
+    assert 'sha256sum build/trigger-paper.zip' in text
+    assert "workflow_run source SHA does not match its GitHub run metadata" in text
+    assert "validated_paper_recovery_trigger=PASS" in text
+    assert "steps.trigger.outputs.eligible == 'true'" in text
+
+    recovery = json.loads(RECOVERY.read_text(encoding="utf-8"))
+    assert recovery["schema"] == "nexus-paper-boundary-recovery/v1"
+    assert recovery["paper_run_id"] == 33578362809
+    assert recovery["expected_source_sha"] == (
+        "662a0d325d6648f0d57c2b252645082f83c42737"
+    )
+    assert recovery["paper_state_artifact_id"] == 9827586931
+    assert recovery["paper_state_artifact_sha256"] == (
+        "b56106750a758ebc21b3414dddf15b436a753c32e9c6ad334e5ba2cfd3e35e9f"
+    )
+    assert "33578757046" in recovery["reason"]
+
+
 def test_workflow_binds_discovery_to_triggering_paper_sha() -> None:
     text = _text()
-    binding = "github.event.workflow_run.head_sha"
-    assert text.count(binding) >= 5
+    binding = "needs.gate-paper-boundary.outputs.trigger_source_sha"
+    assert text.count(binding) >= 4
+    assert "trigger_source_sha: ${{ steps.trigger.outputs.trigger_source_sha }}" in text
+    assert "trigger_run_id: ${{ steps.trigger.outputs.trigger_run_id }}" in text
     assert '--source-sha "$TRIGGER_SOURCE_SHA"' in text
     assert "paper-boundary-context.json" in text
     assert "hour4_boundary_digest" in text
