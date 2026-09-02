@@ -100,7 +100,7 @@ def test_removed_runtime_task_is_quarantined_not_silently_dropped():
 def test_specialized_reasoning_failure_is_blocked_instead_of_blind_redispatch():
     config = {
         "tasks": [{
-            "id": "P4-UI-001",
+            "id": "P4-DEEPSEEK-001",
             "status": "READY",
             "failure_class": "specialized_reasoning_provider_required",
             "failure_evidence": {"reason": "specialized provider required"},
@@ -128,7 +128,7 @@ def test_specialized_reasoning_failure_is_blocked_instead_of_blind_redispatch():
 def test_completed_rca_does_not_requeue_specialized_failure_to_deterministic_worker():
     config = {
         "tasks": [{
-            "id": "P4-UI-001",
+            "id": "P4-DEEPSEEK-001",
             "status": "VERIFYING",
             "failure_class": "specialized_reasoning_provider_required",
             "triage_mode": "root_cause_first",
@@ -160,7 +160,7 @@ def test_p4_event_matching_deterministic_contract_is_not_blocked():
         }]
     }
 
-    assert DETERMINISTIC_SPECIALIZED_RECOVERY_WORKLOADS == {"P4-EVENT-001"}
+    assert DETERMINISTIC_SPECIALIZED_RECOVERY_WORKLOADS == {"P4-EVENT-001", "P4-UI-001"}
     assert block_unroutable_specialized_reasoning(config) == 0
     assert config["tasks"][0]["status"] == "READY"
 
@@ -188,10 +188,27 @@ def test_exact_prior_p4_event_block_is_released_for_bounded_proof(monkeypatch):
     assert recover_bounded_specialized_reasoning(config) == 0
 
 
-def test_p4_ui_cannot_use_event_store_recovery_allowlist():
+def test_exact_prior_p4_ui_block_is_released_for_bounded_proof(monkeypatch):
+    monkeypatch.setattr("agent_manager_runner.am.iso", lambda: "2026-09-02T06:15:00+00:00")
     config = {
         "tasks": [{
             "id": "P4-UI-001",
+            "status": "BLOCKED",
+            "failure_class": "specialized_reasoning_provider_required",
+            "blocked_reason": SPECIALIZED_REASONING_BLOCK_REASON,
+        }]
+    }
+
+    assert recover_bounded_specialized_reasoning(config) == 1
+    assert config["tasks"][0]["status"] == "READY"
+    assert config["tasks"][0]["ready_at"] == "2026-09-02T06:15:00+00:00"
+    assert config["tasks"][0]["blocked_reason"] is None
+
+
+def test_p4_deepseek_cannot_use_deterministic_recovery_allowlist():
+    config = {
+        "tasks": [{
+            "id": "P4-DEEPSEEK-001",
             "status": "BLOCKED",
             "failure_class": "specialized_reasoning_provider_required",
             "blocked_reason": SPECIALIZED_REASONING_BLOCK_REASON,

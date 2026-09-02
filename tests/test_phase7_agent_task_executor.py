@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import sys
+
 import base64
 import json
 
@@ -52,7 +54,7 @@ def test_laptop_canonical_executes_only_offline_windows_suite(monkeypatch) -> No
         "tests/test_canonical_backtest_boundary.py",
         "tests/test_product_offline_runtime.py",
     ]
-    assert calls == [(["python", "-m", "pytest", "-q", *evidence["suite"]], 900)]
+    assert calls == [([sys.executable, "-m", "pytest", "-q", *evidence["suite"]], 900)]
 
 
 def test_laptop_canonical_refuses_cloud_substitution_without_execution(monkeypatch) -> None:
