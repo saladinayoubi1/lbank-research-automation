@@ -15,6 +15,7 @@ on:
       - 'config/nexus-agent-manager.json'
       - 'scripts/agent_task_executor.py'
       - 'paper_schedule_watchdog.py'
+      - 'prospective_paper_schedule_watchdog.py'
 
 permissions:
   contents: read
@@ -80,6 +81,12 @@ jobs:
           python paper_schedule_watchdog.py
           --stale-minutes 30
           --output data/agent_coordination/paper_schedule_watchdog.json
+
+      - name: Recover stale prospective Paper schedule without widening authority
+        run: >-
+          python prospective_paper_schedule_watchdog.py
+          --stale-minutes 150
+          --output data/agent_coordination/prospective_paper_schedule_watchdog.json
 
       - name: Export portable Mission Control snapshot
         if: always()
