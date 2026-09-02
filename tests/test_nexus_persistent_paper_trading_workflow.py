@@ -94,8 +94,44 @@ def test_physical_wsl_job_avoids_javascript_actions_and_codeload_dependency() ->
     assert "ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION" not in paper
     assert "Prepare exact repository and pre-provisioned Python 3.12 without JavaScript actions" in paper
     assert 'repo_url="https://github.com/${GITHUB_REPOSITORY}.git"' in paper
-    assert 'git fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"' in paper
+    assert 'git -c http.version=HTTP/1.1 fetch \\\n' in paper
+    assert '--no-tags --prune --depth=1 origin "$GITHUB_SHA"' in paper
     assert 'test "$(git rev-parse HEAD)" = "$GITHUB_SHA"' in paper
+
+
+def test_physical_checkout_retries_transient_fetch_failures_only_with_a_bounded_budget() -> None:
+    text = WORKFLOW.read_text(encoding="utf-8")
+    paper = _paper_job(text)
+    prepare = paper.split(
+        "Prepare exact repository and pre-provisioned Python 3.12 without JavaScript actions", 1
+    )[1].split("Enforce eligible Bybit network execution plane", 1)[0]
+
+    assert "fetch_max_attempts=3" in prepare
+    assert "for fetch_attempt in 1 2 3; do" in prepare
+    assert "sleep \"$((fetch_attempt * 5))\"" in prepare
+    assert 'if [ "$fetch_attempt" -lt "$fetch_max_attempts" ]; then' in prepare
+    assert 'if [ "$fetch_ok" != true ]; then' in prepare
+    assert "Exact repository fetch failed after ${fetch_max_attempts} bounded attempts." in prepare
+    assert "exit 1" in prepare
+
+
+def test_physical_checkout_retry_preserves_anonymous_exact_sha_fail_closed_contract() -> None:
+    text = WORKFLOW.read_text(encoding="utf-8")
+    paper = _paper_job(text)
+    prepare = paper.split(
+        "Prepare exact repository and pre-provisioned Python 3.12 without JavaScript actions", 1
+    )[1].split("Enforce eligible Bybit network execution plane", 1)[0]
+
+    assert "git config --local --unset-all http.https://github.com/.extraheader || true" in prepare
+    assert 'repo_url="https://github.com/${GITHUB_REPOSITORY}.git"' in prepare
+    assert "x-access-token" not in prepare
+    assert "Authorization" not in prepare
+    assert "http.extraHeader" not in prepare
+    assert 'git checkout --detach --force FETCH_HEAD' in prepare
+    assert 'test "$(git rev-parse HEAD)" = "$GITHUB_SHA"' in prepare
+    assert prepare.index('if [ "$fetch_ok" != true ]; then') < prepare.index(
+        "git checkout --detach --force FETCH_HEAD"
+    )
 
 
 def test_wsl1_python_selection_is_preprovisioned_and_checks_version() -> None:
