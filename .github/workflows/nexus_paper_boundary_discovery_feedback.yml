@@ -452,6 +452,7 @@ jobs:
       feedback_archive_chunk_7: ${{ steps.package.outputs.feedback_archive_chunk_7 }}
     env:
       GH_TOKEN: ${{ github.token }}
+      CONTROLLER_SOURCE_SHA: ${{ github.sha }}
       TRIGGER_SOURCE_SHA: ${{ needs.gate-paper-boundary.outputs.trigger_source_sha }}
       TRIGGER_RUN_ID: ${{ needs.gate-paper-boundary.outputs.trigger_run_id }}
       DISCOVERY_ARTIFACT: nexus-paper-boundary-discovery-${{ github.run_id }}
@@ -476,6 +477,13 @@ jobs:
           git checkout --detach --force FETCH_HEAD
           test "$(git rev-parse HEAD)" = "$TRIGGER_SOURCE_SHA"
           git clean -ffdx
+
+          git fetch --no-tags --depth=1 origin "$CONTROLLER_SOURCE_SHA"
+          controller_blob="$(git rev-parse 'FETCH_HEAD:nexus_paper_boundary_discovery_feedback.py')"
+          git show 'FETCH_HEAD:nexus_paper_boundary_discovery_feedback.py' \
+            > nexus_paper_boundary_discovery_feedback.py
+          test "$(git hash-object nexus_paper_boundary_discovery_feedback.py)" = "$controller_blob"
+          test "$(git rev-parse HEAD)" = "$TRIGGER_SOURCE_SHA"
 
           known_python="/opt/nexus-bybit-runner/_work/_tool/Python/3.12.14/x64/bin/python"
           python_bin=""
@@ -507,6 +515,7 @@ jobs:
           printf 'PYTHON_BIN=%s\n' "$python_bin" >> "$GITHUB_ENV"
           printf 'LD_LIBRARY_PATH=%s\n' "$effective_ld_library_path" >> "$GITHUB_ENV"
           echo "physical_checkout_sha=$(git rev-parse HEAD)"
+          echo "feedback_controller_sha=$CONTROLLER_SOURCE_SHA"
       - name: Enforce eligible Bybit network execution plane
         run: >-
           "$PYTHON_BIN" -c "assert '${{ runner.environment }}' == 'self-hosted'; assert '${{ runner.os }}' == 'Linux'; import sys; assert sys.version_info[:2] == (3, 12); print('bybit_network_execution_plane=self-hosted:nexus-bybit-network')"

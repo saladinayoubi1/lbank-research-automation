@@ -83,6 +83,12 @@ def test_workflow_requalification_uses_physical_bybit_linux_plane() -> None:
     assert "self-hosted" in section
     assert "Linux" in section
     assert "Prepare exact repository and pre-provisioned Python 3.12 without JavaScript actions" in section
+    assert "CONTROLLER_SOURCE_SHA: ${{ github.sha }}" in section
+    assert 'git fetch --no-tags --depth=1 origin "$CONTROLLER_SOURCE_SHA"' in section
+    assert "FETCH_HEAD:nexus_paper_boundary_discovery_feedback.py" in section
+    assert "git hash-object nexus_paper_boundary_discovery_feedback.py" in section
+    assert 'test "$(git rev-parse HEAD)" = "$TRIGGER_SOURCE_SHA"' in section
+    assert "feedback_controller_sha=$CONTROLLER_SOURCE_SHA" in section
     assert "actions/checkout" not in section
     assert "actions/setup-python" not in section
     assert "actions/upload-artifact" not in section
