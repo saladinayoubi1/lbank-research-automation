@@ -86,6 +86,7 @@ jobs:
           "$tokens=$null;$errors=$null;[void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path 'scripts\install_nexus_windows_dr_autostart.ps1'),[ref]$tokens,[ref]$errors);if($errors.Count -gt 0){$errors | ForEach-Object { Write-Error $_.Message };exit 1}"
 
       - name: Install persistence only when claimed by NEXUS-WINDOWS-DR
+        continue-on-error: true
         run: >-
           powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass
           -File scripts\install_nexus_windows_dr_autostart.ps1
@@ -96,10 +97,15 @@ jobs:
           -OutputPath "build\windows-dr-autostart\evidence.json"
 
       - name: Require exact target claim and successful persistence install
+        if: always()
         shell: powershell
         run: |
+          if (-not (Test-Path 'build\windows-dr-autostart\evidence.json' -PathType Leaf)) { throw 'Persistence evidence is missing.' }
           $evidence = Get-Content 'build\windows-dr-autostart\evidence.json' -Raw | ConvertFrom-Json
-          if ($evidence.decision -ne 'SUCCESS') { throw "Persistence was not installed by the exact target runner: $($evidence.decision)" }
+          if ($evidence.decision -ne 'SUCCESS') {
+            $detail = if ($evidence.error) { [string]$evidence.error } else { 'no error detail recorded' }
+            throw "Persistence was not installed by the exact target runner: $($evidence.decision); error=$detail"
+          }
           if ($evidence.current_runner_name -ne 'NEXUS-WINDOWS-DR') { throw "Unexpected runner claim: $($evidence.current_runner_name)" }
           if ($evidence.expected_runner_name -ne 'NEXUS-WINDOWS-DR') { throw "Unexpected expected runner: $($evidence.expected_runner_name)" }
           if ($evidence.runner_registration_modified -ne $false) { throw 'Runner registration mutation must remain false.' }
