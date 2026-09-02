@@ -21,7 +21,7 @@ from nexus_strategy_proposal_runtime_requalification import verify_requalificati
 
 
 CONTEXT_SCHEMA = "nexus.paper-boundary-discovery-context.v1"
-FEEDBACK_SCHEMA = "nexus.paper-boundary-discovery-feedback.v1"
+FEEDBACK_SCHEMA = "nexus.paper-boundary-discovery-feedback.v2"
 _SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 _HEX64_RE = re.compile(r"^[0-9a-f]{64}$")
 
@@ -199,7 +199,7 @@ def build_feedback(
     discovery: Mapping[str, Any],
     requalification: Mapping[str, Any],
 ) -> dict[str, Any]:
-    """Prove that runtime requalification covered the Paper cycle's exact 4h boundary."""
+    """Prove exact-boundary requalification or a verified empty Discovery result."""
     if verify_boundary_context(context).get("decision") != "pass":
         raise PaperBoundaryDiscoveryFeedbackError("Paper boundary context failed verification")
     if verify_discovery(discovery).get("decision") != "pass":
@@ -260,8 +260,10 @@ def build_feedback(
 
     proposal_count = requalification.get("proposal_count")
     blocked_count = requalification.get("blocked_runtime_data_count")
+    requalification_status = requalification.get("status")
+    discovery_proposal_count = discovery.get("research_proposal_count")
     coverage_verified = bool(
-        requalification.get("status") == "EVALUATED"
+        requalification_status == "EVALUATED"
         and isinstance(proposal_count, int)
         and not isinstance(proposal_count, bool)
         and proposal_count > 0
@@ -270,8 +272,26 @@ def build_feedback(
         and covered_evaluations == required_evaluations
         and all_covered
     )
+    zero_work_verified = bool(
+        requalification_status == "NO_WORK"
+        and isinstance(proposal_count, int)
+        and not isinstance(proposal_count, bool)
+        and proposal_count == 0
+        and isinstance(discovery_proposal_count, int)
+        and not isinstance(discovery_proposal_count, bool)
+        and discovery_proposal_count == 0
+        and requalification.get("qualified_for_review_count") == 0
+        and requalification.get("rejected_count") == 0
+        and blocked_count == 0
+        and rows == []
+        and required_evaluations == 0
+        and covered_evaluations == 0
+    )
+    discovery_feedback_verified = coverage_verified or zero_work_verified
     if coverage_verified:
         status = "VERIFIED_BOUNDARY_FEEDBACK"
+    elif zero_work_verified:
+        status = "VERIFIED_NO_RESEARCH_PROPOSALS"
     elif proposal_count == 0:
         status = "NO_RESEARCH_PROPOSALS"
     elif blocked_count:
@@ -289,6 +309,7 @@ def build_feedback(
         "hour4_boundary_digest": context["hour4_boundary_digest"],
         "discovery_digest": discovery_digest,
         "requalification_digest": requalification_digest,
+        "runtime_requalification_status": requalification_status,
         "proposal_count": proposal_count,
         "qualified_for_review_count": requalification.get("qualified_for_review_count"),
         "rejected_count": requalification.get("rejected_count"),
@@ -296,6 +317,7 @@ def build_feedback(
         "required_runtime_evaluation_count": required_evaluations,
         "boundary_covered_runtime_evaluation_count": covered_evaluations,
         "boundary_coverage_verified": coverage_verified,
+        "discovery_feedback_verified": discovery_feedback_verified,
         "status": status,
         "candidate_state_created": False,
         "paper_execution_started": False,
@@ -326,6 +348,8 @@ def verify_feedback(value: Mapping[str, Any]) -> dict[str, Any]:
         required = core.get("required_runtime_evaluation_count")
         covered = core.get("boundary_covered_runtime_evaluation_count")
         coverage = core.get("boundary_coverage_verified")
+        feedback_verified = core.get("discovery_feedback_verified")
+        requalification_status = core.get("runtime_requalification_status")
         status = core.get("status")
         checks["schema"] = core.get("schema_version") == FEEDBACK_SCHEMA
         checks["digest"] = isinstance(claimed, str) and claimed == _digest(core)
@@ -378,9 +402,22 @@ def verify_feedback(value: Mapping[str, Any]) -> dict[str, Any]:
             and core.get("automatic_strategy_promotion") is False
             and core.get("deterministic_risk_final_authority") is True
         )
+        zero_work_verified = bool(
+            feedback_verified is True
+            and coverage is False
+            and proposal_count == 0
+            and requalification_status == "NO_WORK"
+            and core.get("qualified_for_review_count") == 0
+            and core.get("rejected_count") == 0
+            and core.get("blocked_runtime_data_count") == 0
+            and required == 0
+            and covered == 0
+        )
         expected_status = (
             "VERIFIED_BOUNDARY_FEEDBACK"
-            if coverage is True
+            if feedback_verified is True and coverage is True
+            else "VERIFIED_NO_RESEARCH_PROPOSALS"
+            if zero_work_verified
             else "NO_RESEARCH_PROPOSALS"
             if proposal_count == 0
             else "WAITING_FOR_RUNTIME_DATA"
@@ -389,15 +426,20 @@ def verify_feedback(value: Mapping[str, Any]) -> dict[str, Any]:
         )
         checks["status"] = bool(
             isinstance(coverage, bool)
+            and isinstance(feedback_verified, bool)
             and status == expected_status
             and (
-                coverage is False
+                (feedback_verified is False and coverage is False)
                 or (
-                    proposal_count > 0
+                    feedback_verified is True
+                    and coverage is True
+                    and requalification_status == "EVALUATED"
+                    and proposal_count > 0
                     and core.get("blocked_runtime_data_count") == 0
                     and required == proposal_count * len(APPROVED_SYMBOLS)
                     and covered == required
                 )
+                or zero_work_verified
             )
         )
     except (TypeError, ValueError, KeyError):
@@ -440,7 +482,7 @@ def main() -> int:
         raise PaperBoundaryDiscoveryFeedbackError("generated feedback failed verification")
     _atomic_json(args.output, value)
     print(json.dumps(value, sort_keys=True))
-    return 0 if value["boundary_coverage_verified"] else 2
+    return 0 if value["discovery_feedback_verified"] else 2
 
 
 if __name__ == "__main__":
