@@ -227,7 +227,23 @@ jobs:
             git remote add origin "$repo_url"
           fi
           git config --local --unset-all http.https://github.com/.extraheader || true
-          git fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"
+          fetch_ok=false
+          fetch_max_attempts=3
+          for fetch_attempt in 1 2 3; do
+            if git -c http.version=HTTP/1.1 fetch \
+              --no-tags --prune --depth=1 origin "$GITHUB_SHA"; then
+              fetch_ok=true
+              break
+            fi
+            echo "::warning::Exact repository fetch attempt ${fetch_attempt}/${fetch_max_attempts} failed."
+            if [ "$fetch_attempt" -lt "$fetch_max_attempts" ]; then
+              sleep "$((fetch_attempt * 5))"
+            fi
+          done
+          if [ "$fetch_ok" != true ]; then
+            echo "::error::Exact repository fetch failed after ${fetch_max_attempts} bounded attempts."
+            exit 1
+          fi
           git checkout --detach --force FETCH_HEAD
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           git clean -ffdx
