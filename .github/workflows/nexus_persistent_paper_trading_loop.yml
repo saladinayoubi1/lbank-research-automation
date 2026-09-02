@@ -502,7 +502,7 @@ jobs:
           output = Path("build/persistent-state-handoff.zip")
           output.parent.mkdir(parents=True, exist_ok=True)
           with zipfile.ZipFile(
-              output, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9
+              output, "w", compression=zipfile.ZIP_LZMA
           ) as archive:
               for path in sorted(root.rglob("*")):
                   if path.is_file():
