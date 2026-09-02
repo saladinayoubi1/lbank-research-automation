@@ -98,7 +98,7 @@ jobs:
 
       - name: Require exact target claim and successful persistence install
         if: always()
-        shell: powershell
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
         run: |
           if (-not (Test-Path 'build\windows-dr-autostart\evidence.json' -PathType Leaf)) { throw 'Persistence evidence is missing.' }
           $evidence = Get-Content 'build\windows-dr-autostart\evidence.json' -Raw | ConvertFrom-Json
