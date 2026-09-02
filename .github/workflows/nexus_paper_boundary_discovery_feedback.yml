@@ -513,11 +513,19 @@ jobs:
       - name: Restore GitHub-digest-pinned Paper runtime wheelhouse
         run: |
           set -euo pipefail
+          github_api() {
+            curl --fail --silent --show-error --location \
+              --retry 3 --retry-all-errors --connect-timeout 20 --max-time 900 \
+              -H 'Accept: application/vnd.github+json' \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "$1"
+          }
           rm -rf build/requalification-wheelhouse build/requalification-wheelhouse-outer
           rm -f build/requalification-wheelhouse-artifact.zip build/requalification-wheelhouse-metadata.json
           mkdir -p build/requalification-wheelhouse build/requalification-wheelhouse-outer
-          gh api -H 'Accept: application/vnd.github+json' \
-            "repos/$GITHUB_REPOSITORY/actions/runs/$TRIGGER_RUN_ID/artifacts?per_page=100" \
+          github_api \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs/$TRIGGER_RUN_ID/artifacts?per_page=100" \
             > build/requalification-wheelhouse-metadata.json
           read -r artifact_id artifact_size artifact_digest <<EOF
           $("$PYTHON_BIN" - <<'PY'
@@ -545,7 +553,8 @@ jobs:
           PY
           )
           EOF
-          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" \
+          github_api \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" \
             > build/requalification-wheelhouse-artifact.zip
           test "$(stat -c '%s' build/requalification-wheelhouse-artifact.zip)" -le $((250 * 1024 * 1024))
           test "$(sha256sum build/requalification-wheelhouse-artifact.zip | awk '{print $1}')" = "$artifact_digest"
@@ -597,15 +606,38 @@ jobs:
       - name: Restore exact same-run Discovery evidence
         run: |
           set -euo pipefail
+          github_api() {
+            curl --fail --silent --show-error --location \
+              --retry 3 --retry-all-errors --connect-timeout 20 --max-time 900 \
+              -H 'Accept: application/vnd.github+json' \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "$1"
+          }
           rm -rf build/discovery-trigger build/discovery-trigger.zip "$OUTPUT_ROOT"
           mkdir -p build/discovery-trigger "$OUTPUT_ROOT"
-          artifact_id="$(gh api \
-            -H 'Accept: application/vnd.github+json' \
-            "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100" \
-            --jq ".artifacts[] | select(.name == \"$DISCOVERY_ARTIFACT\") | .id" \
-            | head -n 1)"
+          github_api \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100" \
+            > build/discovery-trigger-metadata.json
+          artifact_id="$("$PYTHON_BIN" - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          payload = json.loads(Path("build/discovery-trigger-metadata.json").read_text())
+          matches = [
+              row for row in payload.get("artifacts", [])
+              if row.get("name") == os.environ["DISCOVERY_ARTIFACT"]
+              and row.get("expired") is False
+          ]
+          if len(matches) != 1:
+              raise SystemExit(f"expected one exact same-run Discovery artifact, got {len(matches)}")
+          print(int(matches[0]["id"]))
+          PY
+          )"
           test -n "$artifact_id"
-          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" \
+          github_api \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" \
             > build/discovery-trigger.zip
           unzip -q build/discovery-trigger.zip -d build/discovery-trigger
           discovery="$(find build/discovery-trigger -type f -name multitimeframe_strategy_discovery.json -print -quit)"
