@@ -109,6 +109,17 @@ def test_phase4_shell_has_explicit_blocked_degraded_and_empty_states():
         assert f'data-state="{state}"' in html
 
 
+def test_phase4_shell_has_mobile_first_responsive_contract():
+    base = Path("web_ui/styles.css").read_text(encoding="utf-8").replace(" ", "")
+    phase4 = Path("web_ui/phase4.css").read_text(encoding="utf-8").replace(" ", "")
+    assert "@media(max-width:900px)" in base
+    assert "@media(max-width:580px)" in base
+    assert "@media(max-width:900px)" in phase4
+    assert "@media(max-width:580px)" in phase4
+    assert ".workspace-grid{grid-template-columns:1fr}" in phase4
+    assert ".stage-grid,.policy-grid{grid-template-columns:1fr}" in phase4
+
+
 def test_phase4_navigation_fails_safe_for_untrusted_url_fragments():
     script = Path("web_ui/app.js").read_text(encoding="utf-8")
     assert "surfaces.has(name) ? name : 'mission'" in script

@@ -106,9 +106,29 @@ def test_phase4_event_workload_rejects_transport_substitution(tmp_path):
     assert result["evidence"]["allowed_transports"] == ["github-cloud"]
 
 
-def test_unmapped_phase4_ui_task_still_requires_specialized_reasoning(tmp_path):
+def test_phase4_ui_workload_runs_only_canonical_shell_contract(tmp_path):
     proc, result = _execute(tmp_path, task_id="P4-UI-001")
+
+    assert proc.returncode == 0, proc.stderr
+    assert result["outcome"] == "success"
+    assert result["evidence"]["executor"] == "bounded-pytest"
+    assert result["evidence"]["suite"] == ["tests/test_web_ui.py"]
+    assert result["evidence"]["purpose"] == "source-bound-responsive-read-only-shell-and-degraded-state-proof"
+
+
+def test_phase4_ui_workload_rejects_phase_substitution(tmp_path):
+    proc, result = _execute(tmp_path, task_id="P4-UI-001", phase=7)
 
     assert proc.returncode == 2
     assert result["outcome"] == "failure"
-    assert result["evidence"]["failure_class"] == "specialized_reasoning_provider_required"
+    assert result["evidence"]["failure_class"] == "workload_phase_mismatch"
+    assert result["evidence"]["expected_phase"] == 4
+
+
+def test_phase4_ui_workload_rejects_transport_substitution(tmp_path):
+    proc, result = _execute(tmp_path, task_id="P4-UI-001", transport="windows")
+
+    assert proc.returncode == 2
+    assert result["outcome"] == "failure"
+    assert result["evidence"]["failure_class"] == "workload_transport_mismatch"
+    assert result["evidence"]["allowed_transports"] == ["github-cloud"]

@@ -5,6 +5,7 @@ import base64
 import json
 import os
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -17,8 +18,14 @@ AGENT_REVIEW_PREFIX = "You are a bounded NEXUS repository reviewer."
 
 # Phase 4 fixed proof workloads are deliberately hard-coded. A dispatch may
 # select one of these identifiers, but it cannot inject a path or command.
-# P4-EVENT-001 maps directly to its canonical event-store acceptance contract.
+# Each mapped task runs only its canonical acceptance contract; dispatch input
+# cannot substitute a path, command, phase, or transport.
 PHASE4_WORKLOADS: dict[str, dict[str, Any]] = {
+    "P4-UI-001": {
+        "transports": ("github-cloud",),
+        "suite": ("tests/test_web_ui.py",),
+        "purpose": "source-bound-responsive-read-only-shell-and-degraded-state-proof",
+    },
     "P4-EVENT-001": {
         "transports": ("github-cloud",),
         "suite": ("tests/test_nexus_event_store.py",),
@@ -149,7 +156,7 @@ def _bounded_pytest_workload(
             "observed_transport": transport,
         }
     suite = tuple(spec["suite"])
-    result = run(["python", "-m", "pytest", "-q", *suite], timeout=900)
+    result = run([sys.executable, "-m", "pytest", "-q", *suite], timeout=900)
     ok = bool(result["ok"])
     return ("success" if ok else "failure"), {
         "executor": "bounded-pytest",
@@ -178,7 +185,7 @@ def deterministic_execution(payload: dict[str, Any], transport: str) -> tuple[st
     if phase7 is not None:
         return _phase7_pytest_workload(payload, transport, phase7)
     if task_id in {"P4-MGR-001", "P4-MGR-002"}:
-        result = run(["python", "-m", "pytest", "-q", "tests/test_agent_manager.py", "tests/test_agent_manager_runner.py", "tests/test_agent_transport.py"])
+        result = run([sys.executable, "-m", "pytest", "-q", "tests/test_agent_manager.py", "tests/test_agent_manager_runner.py", "tests/test_agent_transport.py"])
         return ("success" if result["ok"] else "failure", {"executor": "pytest", "tests": result, "failure_class": "deterministic_test_failure" if not result["ok"] else None})
     if task_id == "P4-DATA-001":
         checks = []
