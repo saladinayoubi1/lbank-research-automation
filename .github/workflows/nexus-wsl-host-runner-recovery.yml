@@ -80,7 +80,7 @@ jobs:
             if ($existing.Count -gt 0) {
               $oldPids = @($existing | ForEach-Object { $_.Id })
               Write-Host "NEXUS_WINDOWS_RUNNER_STALE_LISTENER_COUNT=$($existing.Count)"
-              Write-Host "NEXUS_WINDOWS_RUNNER_OLD_PIDS=$($oldPids -join ',')"
+              Write-Host "NEXUS_WINDOWS_RUNNER_OLD_PIDS=$($oldPids -join ",")"
               foreach ($proc in $existing) {
                 Stop-Process -Id $proc.Id -Force -ErrorAction Stop
               }
