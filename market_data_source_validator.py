@@ -111,7 +111,7 @@ def _preflight_yaml(raw: bytes) -> None:
 
 def validate_source_registry(payload: Any) -> None:
     root = _mapping(payload, "registry"); _exact_keys(root, ROOT_KEYS, "registry")
-    expected_root = {"registry_version":"1.1.0","status":"proposed","scope":"research_and_paper_trading_only","issue":131,"adr":"docs/architecture/ADR-009A-provenance-semantic-binding.md","parent_adr":"docs/architecture/ADR-009-market-data-source-hierarchy.md"}
+    expected_root = {"registry_version":"1.2.0","status":"proposed","scope":"research_and_paper_trading_only","issue":131,"adr":"docs/architecture/ADR-009A-provenance-semantic-binding.md","parent_adr":"docs/architecture/ADR-009-market-data-source-hierarchy.md"}
     for key, expected in expected_root.items():
         if root[key] != expected: raise SourceContractValidationError(f"{key} must equal {expected!r}")
     semantic_binding = _mapping(root["semantic_binding"], "semantic_binding"); _exact_keys(semantic_binding, SEMANTIC_BINDING_KEYS, "semantic_binding")
