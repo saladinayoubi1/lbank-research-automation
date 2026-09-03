@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import hashlib
+import io
+import json
+import shutil
 import urllib.error
 import urllib.request
 import zipfile
@@ -97,6 +100,116 @@ def test_safe_extract_rejects_unexpected_wheelhouse_member(tmp_path: Path) -> No
 
     with pytest.raises(RuntimeError, match="unexpected wheelhouse member"):
         safe_extract_flat_archive(archive_path, tmp_path / "out")
+
+
+def test_restore_accepts_one_digest_pinned_inner_archive_with_nonlegacy_name(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repository_lock = tmp_path / "requirements.lock"
+    repository_lock.write_text("demo==1.0\n", encoding="utf-8")
+    wheelhouse_root = tmp_path / "wheelhouse-source"
+    wheelhouse_root.mkdir()
+    (wheelhouse_root / "requirements.lock").write_bytes(repository_lock.read_bytes())
+    (wheelhouse_root / "demo-1.0-py3-none-any.whl").write_bytes(b"wheel-bytes")
+    inner = tmp_path / "nexus-multipair-continuity-wheelhouse.zip"
+    expected_sha256 = deterministic_pack(wheelhouse_root, inner)
+    outer = tmp_path / "github-artifact-wrapper.zip"
+    with zipfile.ZipFile(outer, "w", compression=zipfile.ZIP_STORED) as archive:
+        archive.writestr(inner.name, inner.read_bytes())
+
+    payload = {
+        "artifacts": [
+            {
+                "id": 17,
+                "name": "nexus-multipair-continuity-wheelhouse-deadbeef",
+                "expired": False,
+                "size_in_bytes": outer.stat().st_size,
+            }
+        ]
+    }
+
+    monkeypatch.setattr(
+        urllib.request,
+        "urlopen",
+        lambda *_args, **_kwargs: io.BytesIO(json.dumps(payload).encode("utf-8")),
+    )
+    download_target = tmp_path / "download.zip.part"
+    monkeypatch.setattr(
+        wheelhouse,
+        "_cross_attempt_resume_path",
+        lambda **_kwargs: download_target,
+    )
+
+    def fake_download(_url, _headers, output: Path, **_kwargs) -> None:
+        shutil.copyfile(outer, output)
+
+    monkeypatch.setattr(wheelhouse, "_download_with_redirect_boundary", fake_download)
+
+    destination = tmp_path / "restored"
+    result = wheelhouse.restore_current_run_artifact(
+        repository="example/repo",
+        run_id="123456",
+        token="token",
+        artifact_name="nexus-multipair-continuity-wheelhouse-deadbeef",
+        expected_sha256=expected_sha256,
+        repository_lock=repository_lock,
+        destination=destination,
+        work_root=tmp_path / "work",
+    )
+
+    assert result["archive_sha256"] == expected_sha256
+    assert result["wheel_count"] == 1
+    assert (destination / "requirements.lock").read_bytes() == repository_lock.read_bytes()
+    assert (destination / "demo-1.0-py3-none-any.whl").read_bytes() == b"wheel-bytes"
+
+
+def test_restore_still_rejects_multiple_inner_archives(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repository_lock = tmp_path / "requirements.lock"
+    repository_lock.write_text("demo==1.0\n", encoding="utf-8")
+    outer = tmp_path / "github-artifact-wrapper.zip"
+    with zipfile.ZipFile(outer, "w", compression=zipfile.ZIP_STORED) as archive:
+        archive.writestr("one.zip", b"PK\x05\x06" + b"\x00" * 18)
+        archive.writestr("two.zip", b"PK\x05\x06" + b"\x00" * 18)
+    payload = {
+        "artifacts": [
+            {
+                "id": 18,
+                "name": "multi",
+                "expired": False,
+                "size_in_bytes": outer.stat().st_size,
+            }
+        ]
+    }
+    monkeypatch.setattr(
+        urllib.request,
+        "urlopen",
+        lambda *_args, **_kwargs: io.BytesIO(json.dumps(payload).encode("utf-8")),
+    )
+    download_target = tmp_path / "download.zip.part"
+    monkeypatch.setattr(
+        wheelhouse,
+        "_cross_attempt_resume_path",
+        lambda **_kwargs: download_target,
+    )
+    monkeypatch.setattr(
+        wheelhouse,
+        "_download_with_redirect_boundary",
+        lambda _url, _headers, output, **_kwargs: shutil.copyfile(outer, output),
+    )
+
+    with pytest.raises(RuntimeError, match="exactly one inner archive"):
+        wheelhouse.restore_current_run_artifact(
+            repository="example/repo",
+            run_id="123456",
+            token="token",
+            artifact_name="multi",
+            expected_sha256="0" * 64,
+            repository_lock=repository_lock,
+            destination=tmp_path / "restored",
+            work_root=tmp_path / "work",
+        )
 
 
 def test_resumable_storage_retry_uses_fresh_signed_url_and_never_forwards_token(
