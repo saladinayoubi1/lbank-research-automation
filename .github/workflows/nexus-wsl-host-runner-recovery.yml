@@ -20,7 +20,7 @@ jobs:
     runs-on: nexus-bybit-network
     timeout-minutes: 5
     steps:
-      - name: Start existing Windows Actions runner through WSL interop
+      - name: Recover existing Windows Actions runner through WSL interop
         shell: bash
         run: |
           set -euo pipefail
@@ -34,8 +34,75 @@ jobs:
             $taskName = "NEXUS-GitHub-Runner-Autostart"
             $runnerRoot = "C:\actions-runner\actions-runner"
             $runnerCmd = Join-Path $runnerRoot "run.cmd"
-            $listener = @(Get-Process -Name "Runner.Listener" -ErrorAction SilentlyContinue)
-            if ($listener.Count -eq 0) {
+            $diagRoot = Join-Path $runnerRoot "_diag"
+            $rootPrefix = [IO.Path]::GetFullPath($runnerRoot).TrimEnd("\") + "\"
+
+            function Get-TargetListener {
+              foreach ($proc in Get-Process -Name "Runner.Listener" -ErrorAction SilentlyContinue) {
+                try {
+                  $path = [string]$proc.Path
+                  if ($path -and ([IO.Path]::GetFullPath($path)).StartsWith($rootPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+                    return $proc
+                  }
+                }
+                catch { }
+              }
+              return $null
+            }
+
+            function Test-ListenerHealthy {
+              param([System.Diagnostics.Process]$Listener)
+              if (-not $Listener) { return $false }
+              if (-not (Test-Path -LiteralPath $diagRoot -PathType Container)) { return $false }
+              $latest = Get-ChildItem -LiteralPath $diagRoot -Filter "Runner_*.log" -File -ErrorAction SilentlyContinue |
+                Sort-Object LastWriteTimeUtc -Descending |
+                Select-Object -First 1
+              if (-not $latest) { return $false }
+              $age = ([DateTime]::UtcNow - $latest.LastWriteTimeUtc).TotalSeconds
+              if ($age -gt 180) { return $false }
+              $lines = @(Get-Content -LiteralPath $latest.FullName -Tail 300 -ErrorAction Stop)
+              $sessionIndex = -1
+              $listenIndex = -1
+              $failureIndex = -1
+              for ($i = 0; $i -lt $lines.Count; $i++) {
+                $line = [string]$lines[$i]
+                if ($line -match "BrokerMessageListener\] Session created\." -or $line -match "Connected to GitHub") { $sessionIndex = $i }
+                if ($line -match "Listening for Jobs") { $listenIndex = $i }
+                if ($line -match "Runner connect error" -or $line -match "Failed to get job message" -or $line -match "Runner listener exit") { $failureIndex = $i }
+              }
+              if ($sessionIndex -lt 0 -or $listenIndex -lt 0) { return $false }
+              $successIndex = [Math]::Min($sessionIndex, $listenIndex)
+              if ($failureIndex -gt $successIndex) { return $false }
+              try {
+                if ($latest.LastWriteTimeUtc -lt $Listener.StartTime.ToUniversalTime().AddSeconds(-10)) { return $false }
+              }
+              catch { return $false }
+              return $true
+            }
+
+            function Start-ExistingRunner {
+              if (-not (Test-Path -LiteralPath $runnerCmd -PathType Leaf)) {
+                throw "existing Windows runner entrypoint missing"
+              }
+              $cmd = Join-Path $env:SystemRoot "System32\cmd.exe"
+              $arguments = "/d /s /c start `"NEXUS Actions Runner`" /min `"$runnerCmd`""
+              Start-Process -FilePath $cmd -ArgumentList $arguments -WorkingDirectory $runnerRoot -WindowStyle Hidden
+              Write-Host "NEXUS_WINDOWS_RUNNER_WAKE_METHOD=detached-cmd-start"
+            }
+
+            $listener = Get-TargetListener
+            if ($listener -and -not (Test-ListenerHealthy -Listener $listener)) {
+              $workers = @(Get-Process -Name "Runner.Worker" -ErrorAction SilentlyContinue)
+              if ($workers.Count -gt 0) {
+                throw "refusing stale-listener restart while a Runner.Worker is active"
+              }
+              Stop-Process -Id $listener.Id -Force -ErrorAction Stop
+              Write-Host "NEXUS_WINDOWS_RUNNER_STALE_LISTENER_RESTARTED=true"
+              Start-Sleep -Seconds 3
+              $listener = $null
+            }
+
+            if (-not $listener) {
               $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
               if ($task) {
                 try {
@@ -43,26 +110,32 @@ jobs:
                   Write-Host "NEXUS_WINDOWS_RUNNER_WAKE_METHOD=scheduled-task"
                 }
                 catch {
-                  Write-Host "NEXUS_WINDOWS_RUNNER_TASK_START_ERROR=$($_.Exception.Message)"
+                  Write-Host "NEXUS_WINDOWS_RUNNER_TASK_START_FAILED=true"
                 }
-                Start-Sleep -Seconds 12
-                $listener = @(Get-Process -Name "Runner.Listener" -ErrorAction SilentlyContinue)
+                Start-Sleep -Seconds 10
+                $listener = Get-TargetListener
               }
             }
-            if ($listener.Count -eq 0) {
-              if (-not (Test-Path -LiteralPath $runnerCmd -PathType Leaf)) {
-                throw "existing Windows runner entrypoint missing: $runnerCmd"
+
+            if (-not $listener) {
+              Start-ExistingRunner
+            }
+
+            $healthy = $false
+            for ($attempt = 1; $attempt -le 15; $attempt++) {
+              Start-Sleep -Seconds 3
+              $listener = Get-TargetListener
+              if ($listener -and (Test-ListenerHealthy -Listener $listener)) {
+                $healthy = $true
+                break
               }
-              $cmd = Join-Path $env:SystemRoot "System32\cmd.exe"
-              $arguments = "/d /s /c start `"NEXUS Actions Runner`" /min `"$runnerCmd`""
-              Start-Process -FilePath $cmd -ArgumentList $arguments -WorkingDirectory $runnerRoot -WindowStyle Hidden
-              Write-Host "NEXUS_WINDOWS_RUNNER_WAKE_METHOD=detached-cmd-start"
-              Start-Sleep -Seconds 12
-              $listener = @(Get-Process -Name "Runner.Listener" -ErrorAction SilentlyContinue)
             }
-            if ($listener.Count -eq 0) {
-              throw "Windows Runner.Listener did not start"
+            if (-not $healthy) {
+              throw "Windows runner did not reach a fresh connected/listening session"
             }
+
+            Write-Host "NEXUS_WINDOWS_RUNNER_SESSION_CONNECTED=true"
+            Write-Host "NEXUS_WINDOWS_RUNNER_LISTENING_FOR_JOBS=true"
             Write-Host "NEXUS_WINDOWS_RUNNER_WAKE=SUCCESS"
             Write-Host "NEXUS_WINDOWS_RUNNER_REGISTRATION_CHANGED=false"
             Write-Host "NEXUS_WINDOWS_RUNNER_CREDENTIALS_CHANGED=false"
