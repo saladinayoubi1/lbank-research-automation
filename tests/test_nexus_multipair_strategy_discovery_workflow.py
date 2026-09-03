@@ -71,6 +71,20 @@ def test_discovery_v2_uses_safe_external_ephemeral_state_and_canonical_wheelhous
     assert 'rm -rf "$STATE_ROOT"' in text
 
 
+def test_physical_python_bootstrap_uses_bundled_pip_for_install_and_check() -> None:
+    text = _text()
+    discover = _physical_section(text, "discover-physical", "requalify-physical")
+    requalify = _physical_section(text, "requalify-physical", "persist-proof")
+    assert 'bundled = Path(ensurepip.__file__).resolve().parent / "_bundled"' in discover
+    assert 'PYTHONPATH="$pip_wheel" "$PYTHON_BIN" -m pip install' in discover
+    assert "printf 'PYTHONPATH=%s:%s\\n' \"$pip_wheel\" \"$runtime_site\" >> \"$GITHUB_ENV\"" in discover
+    assert "name: Verify isolated runtime dependency consistency" in discover
+    assert 'bundled = Path(ensurepip.__file__).resolve().parent / "_bundled"' in requalify
+    assert 'test -f "$pip_wheel"' in requalify
+    assert "printf 'PYTHONPATH=%s:%s\\n' \"$pip_wheel\" \"$state_root/runtime-site\" >> \"$GITHUB_ENV\"" in requalify
+    assert "name: Verify recovered isolated runtime dependency consistency" in requalify
+
+
 def test_discover_job_collects_verified_exact_four_symbol_snapshot() -> None:
     text = _text()
     discover = _physical_section(text, "discover-physical", "requalify-physical")
