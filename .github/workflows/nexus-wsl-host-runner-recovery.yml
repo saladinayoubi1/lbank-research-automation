@@ -20,7 +20,7 @@ jobs:
     runs-on: nexus-bybit-network
     timeout-minutes: 5
     steps:
-      - name: Start existing Windows Actions runner through WSL interop
+      - name: Recover exact existing Windows Actions runner through WSL interop
         shell: bash
         run: |
           set -euo pipefail
@@ -31,39 +31,94 @@ jobs:
           fi
           "$PS_EXE" -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command '
             $ErrorActionPreference = "Stop"
-            $taskName = "NEXUS-GitHub-Runner-Autostart"
+            Set-StrictMode -Version 2.0
+
             $runnerRoot = "C:\actions-runner\actions-runner"
             $runnerCmd = Join-Path $runnerRoot "run.cmd"
-            $listener = @(Get-Process -Name "Runner.Listener" -ErrorAction SilentlyContinue)
-            if ($listener.Count -eq 0) {
-              $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
-              if ($task) {
+            $runnerConfig = Join-Path $runnerRoot ".runner"
+            $listenerExe = Join-Path $runnerRoot "bin\Runner.Listener.exe"
+            $expectedRunnerName = "NEXUS-WINDOWS-DR"
+            $expectedGitHubUrl = "https://github.com/saladinayoubi1/lbank-research-automation"
+
+            function Normalize-Url([string]$Value) {
+              if (-not $Value) { return "" }
+              return $Value.Trim().TrimEnd("/").ToLowerInvariant()
+            }
+
+            foreach ($requiredPath in @($runnerCmd, $runnerConfig, $listenerExe)) {
+              if (-not (Test-Path -LiteralPath $requiredPath -PathType Leaf)) {
+                throw "exact Windows runner file missing: $requiredPath"
+              }
+            }
+
+            $config = Get-Content -LiteralPath $runnerConfig -Raw | ConvertFrom-Json
+            if ([string]$config.agentName -ne $expectedRunnerName) {
+              throw "exact Windows runner name mismatch"
+            }
+            if ((Normalize-Url ([string]$config.gitHubUrl)) -ne (Normalize-Url $expectedGitHubUrl)) {
+              throw "exact Windows runner repository binding mismatch"
+            }
+            Write-Host "NEXUS_WINDOWS_RUNNER_TARGET_VERIFIED=true"
+
+            $rootPrefix = ([IO.Path]::GetFullPath($runnerRoot).TrimEnd("\") + "\")
+            function Get-ExactTargetListeners {
+              $matches = @()
+              foreach ($proc in Get-Process -Name "Runner.Listener" -ErrorAction SilentlyContinue) {
                 try {
-                  Start-ScheduledTask -TaskName $taskName -ErrorAction Stop
-                  Write-Host "NEXUS_WINDOWS_RUNNER_WAKE_METHOD=scheduled-task"
+                  $path = [string]$proc.Path
+                  if ($path -and ([IO.Path]::GetFullPath($path)).StartsWith($rootPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+                    $matches += $proc
+                  }
                 }
-                catch {
-                  Write-Host "NEXUS_WINDOWS_RUNNER_TASK_START_ERROR=$($_.Exception.Message)"
-                }
-                Start-Sleep -Seconds 12
-                $listener = @(Get-Process -Name "Runner.Listener" -ErrorAction SilentlyContinue)
+                catch { }
+              }
+              return @($matches)
+            }
+
+            $existing = @(Get-ExactTargetListeners)
+            $restartPerformed = $false
+            if ($existing.Count -gt 0) {
+              $oldPids = @($existing | ForEach-Object { $_.Id })
+              Write-Host "NEXUS_WINDOWS_RUNNER_STALE_LISTENER_COUNT=$($existing.Count)"
+              Write-Host "NEXUS_WINDOWS_RUNNER_OLD_PIDS=$($oldPids -join ',')"
+              foreach ($proc in $existing) {
+                Stop-Process -Id $proc.Id -Force -ErrorAction Stop
+              }
+              $restartPerformed = $true
+              $stopDeadline = [DateTime]::UtcNow.AddSeconds(15)
+              while ([DateTime]::UtcNow -lt $stopDeadline) {
+                if (@(Get-ExactTargetListeners).Count -eq 0) { break }
+                Start-Sleep -Seconds 1
+              }
+              if (@(Get-ExactTargetListeners).Count -ne 0) {
+                throw "exact Windows runner listener did not stop within bounded timeout"
               }
             }
-            if ($listener.Count -eq 0) {
-              if (-not (Test-Path -LiteralPath $runnerCmd -PathType Leaf)) {
-                throw "existing Windows runner entrypoint missing: $runnerCmd"
+
+            $cmd = Join-Path $env:SystemRoot "System32\cmd.exe"
+            $arguments = "/d /s /c start `"NEXUS Actions Runner`" /min `"$runnerCmd`""
+            Start-Process -FilePath $cmd -ArgumentList $arguments -WorkingDirectory $runnerRoot -WindowStyle Hidden
+            Write-Host "NEXUS_WINDOWS_RUNNER_WAKE_METHOD=exact-detached-cmd-start"
+
+            $deadline = [DateTime]::UtcNow.AddSeconds(30)
+            $listener = $null
+            while ([DateTime]::UtcNow -lt $deadline) {
+              Start-Sleep -Seconds 1
+              $candidate = @(Get-ExactTargetListeners)
+              if ($candidate.Count -gt 0) {
+                $listener = $candidate[0]
+                break
               }
-              $cmd = Join-Path $env:SystemRoot "System32\cmd.exe"
-              $arguments = "/d /s /c start `"NEXUS Actions Runner`" /min `"$runnerCmd`""
-              Start-Process -FilePath $cmd -ArgumentList $arguments -WorkingDirectory $runnerRoot -WindowStyle Hidden
-              Write-Host "NEXUS_WINDOWS_RUNNER_WAKE_METHOD=detached-cmd-start"
-              Start-Sleep -Seconds 12
-              $listener = @(Get-Process -Name "Runner.Listener" -ErrorAction SilentlyContinue)
             }
-            if ($listener.Count -eq 0) {
-              throw "Windows Runner.Listener did not start"
+            if (-not $listener) {
+              throw "exact Windows Runner.Listener did not start within bounded timeout"
             }
+
+            Write-Host "NEXUS_WINDOWS_RUNNER_NEW_PID=$($listener.Id)"
+            Write-Host "NEXUS_WINDOWS_RUNNER_RESTARTED=$($restartPerformed.ToString().ToLowerInvariant())"
             Write-Host "NEXUS_WINDOWS_RUNNER_WAKE=SUCCESS"
             Write-Host "NEXUS_WINDOWS_RUNNER_REGISTRATION_CHANGED=false"
             Write-Host "NEXUS_WINDOWS_RUNNER_CREDENTIALS_CHANGED=false"
+            Write-Host "NEXUS_WINDOWS_RUNNER_OTHER_PATHS_CHANGED=false"
+            Write-Host "NEXUS_LIVE_TRADING_AUTHORITY_CHANGED=false"
           '
