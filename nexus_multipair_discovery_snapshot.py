@@ -82,6 +82,19 @@ def _frame_rows(dataset: Mapping[str, Any], symbol: str, timeframe: str) -> list
     return normalized
 
 
+def _stored_rows(frame: pd.DataFrame) -> list[dict[str, Any]]:
+    return [{
+        "timestamp": pd.Timestamp(item.timestamp).isoformat(),
+        "open": str(item.open),
+        "high": str(item.high),
+        "low": str(item.low),
+        "close": str(item.close),
+        "volume": str(item.volume),
+        "symbol": str(item.symbol),
+        "timeframe": str(item.timeframe),
+    } for item in frame.itertuples(index=False)]
+
+
 def _write_frame(path: Path, rows: list[dict[str, Any]]) -> str:
     frame = pd.DataFrame(rows)
     frame["timestamp"] = pd.to_datetime(frame["timestamp"], utc=True)
@@ -89,7 +102,7 @@ def _write_frame(path: Path, rows: list[dict[str, Any]]) -> str:
         frame[field] = pd.to_numeric(frame[field], errors="raise")
     path.parent.mkdir(parents=True, exist_ok=True)
     frame.to_parquet(path, index=False)
-    return _digest(rows)
+    return _digest(_stored_rows(frame))
 
 
 def collect_snapshot(
@@ -233,13 +246,7 @@ def verify_snapshot(root: str | Path, value: Mapping[str, Any]) -> dict[str, Any
             if frame.columns.tolist() != required or len(frame) != row.get("row_count"):
                 frames_ok = False
                 break
-            rows = [{
-                "timestamp": pd.Timestamp(item.timestamp).isoformat(),
-                "open": str(item.open), "high": str(item.high), "low": str(item.low),
-                "close": str(item.close), "volume": str(item.volume),
-                "symbol": str(item.symbol), "timeframe": str(item.timeframe),
-            } for item in frame.itertuples(index=False)]
-            if _digest(rows) != row.get("frame_digest"):
+            if _digest(_stored_rows(frame)) != row.get("frame_digest"):
                 frames_ok = False
                 break
             timestamps = pd.to_datetime(frame["timestamp"], utc=True)
