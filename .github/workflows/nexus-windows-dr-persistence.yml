@@ -34,6 +34,30 @@ jobs:
           clean: true
           fetch-depth: 1
 
+      - name: Verify physical exact-fetch contract
+        shell: powershell
+        run: |
+          $text = Get-Content '.github\workflows\nexus-windows-dr-persistence.yml' -Raw
+          $parts = [regex]::Split($text, '(?m)^  persist:\s*$', 2)
+          if ($parts.Count -ne 2) { throw 'Unable to isolate physical persistence job.' }
+          $persist = $parts[1]
+          if ($persist -match 'uses:\s+actions/checkout@') { throw 'Physical persistence job must not use actions/checkout.' }
+          foreach ($required in @(
+            'https://github.com/${env:GITHUB_REPOSITORY}.git',
+            'git config --local --unset-all http.https://github.com/.extraheader',
+            'http.version=HTTP/1.1',
+            '$fetchMaxAttempts = 3',
+            'for ($fetchAttempt = 1; $fetchAttempt -le $fetchMaxAttempts; $fetchAttempt++)',
+            '--no-tags --prune --depth=1 origin $env:GITHUB_SHA',
+            'git checkout --detach --force FETCH_HEAD',
+            'exact_trigger_sha='
+          )) {
+            if (-not $persist.Contains($required)) { throw "Required physical exact-fetch marker missing: $required" }
+          }
+          foreach ($forbidden in @('x-access-token', 'Authorization: Bearer', 'http.extraHeader')) {
+            if ($persist.Contains($forbidden)) { throw "Forbidden physical checkout credential marker present: $forbidden" }
+          }
+
       - name: Parse targeted persistence script
         shell: powershell
         run: |
@@ -66,19 +90,56 @@ jobs:
       run:
         shell: cmd
     steps:
-      - name: Checkout exact source
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-          clean: true
-          fetch-depth: 1
-
-      - name: Verify exact trigger SHA
+      - name: Prepare anonymous exact source with bounded HTTP/1.1 retries
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
         run: |
-          for /f %%S in ('git rev-parse HEAD') do set "CHECKED_OUT_SHA=%%S"
-          if /I not "%CHECKED_OUT_SHA%"=="%GITHUB_SHA%" exit /b 1
-          echo exact_trigger_sha=%CHECKED_OUT_SHA%
+          $ErrorActionPreference = 'Stop'
+          Set-StrictMode -Version 2.0
+
+          $repoUrl = "https://github.com/${env:GITHUB_REPOSITORY}.git"
+          if (Test-Path '.git' -PathType Container) {
+            & git remote set-url origin $repoUrl
+            if ($LASTEXITCODE -ne 0) { throw 'Failed to bind existing workspace to anonymous repository URL.' }
+            & git reset --hard
+            if ($LASTEXITCODE -ne 0) { throw 'Failed to reset existing physical workspace.' }
+            & git clean -ffdx
+            if ($LASTEXITCODE -ne 0) { throw 'Failed to clean existing physical workspace.' }
+          }
+          else {
+            Get-ChildItem -Force | Remove-Item -Recurse -Force
+            & git init .
+            if ($LASTEXITCODE -ne 0) { throw 'Failed to initialize physical workspace.' }
+            & git remote add origin $repoUrl
+            if ($LASTEXITCODE -ne 0) { throw 'Failed to add anonymous repository remote.' }
+          }
+
+          & git config --local --unset-all http.https://github.com/.extraheader
+          $fetchOk = $false
+          $fetchMaxAttempts = 3
+          for ($fetchAttempt = 1; $fetchAttempt -le $fetchMaxAttempts; $fetchAttempt++) {
+            & git -c 'http.version=HTTP/1.1' fetch --no-tags --prune --depth=1 origin $env:GITHUB_SHA
+            if ($LASTEXITCODE -eq 0) {
+              $fetchOk = $true
+              break
+            }
+            Write-Warning "Exact repository fetch attempt $fetchAttempt/$fetchMaxAttempts failed."
+            if ($fetchAttempt -lt $fetchMaxAttempts) {
+              Start-Sleep -Seconds ($fetchAttempt * 5)
+            }
+          }
+          if (-not $fetchOk) {
+            throw "Exact repository fetch failed after $fetchMaxAttempts bounded attempts."
+          }
+
+          & git checkout --detach --force FETCH_HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'Exact repository checkout failed.' }
+          $checkedOutSha = (& git rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0 -or $checkedOutSha -ne $env:GITHUB_SHA) {
+            throw "Exact trigger SHA mismatch: expected=$env:GITHUB_SHA actual=$checkedOutSha"
+          }
+          & git clean -ffdx
+          if ($LASTEXITCODE -ne 0) { throw 'Post-checkout workspace clean failed.' }
+          Write-Host "exact_trigger_sha=$checkedOutSha"
 
       - name: Parse targeted Windows DR persistence script
         run: >-
