@@ -27,8 +27,8 @@
     "owner_override_required_for_priority_change": true
   },
   "runtime_status": {
-    "agent_execution_state": "paper_runtime_acceptance_open_windows_recovery_context_limited",
-    "laptop_state": "physical_windows_runner_verified_linux_paper_runner_historically_verified_current_exact_sha_paper_acceptance_pending",
+    "agent_execution_state": "paper_runtime_environment_faithful_acceptance_complete_windows_persistence_verified",
+    "laptop_state": "physical_windows_runner_verified_and_persistence_installed_on_exact_current_main",
     "internet_outage_state": "not_assumed_from_laptop_state",
     "laptop_offline_is_not_internet_outage": true,
     "windows_runner_identity_class": "NETWORK_SERVICE",
@@ -87,40 +87,54 @@
     }
   },
   "current_evidence": {
-    "observed_main_sha": "1fa20ee5094e6739c5f9cacfb15aa6f1685d5657",
-    "observed_at_utc": "2026-08-30T14:48:00Z",
+    "observed_main_sha": "987b4212d252d993cf1065e11d8bc112f11e6172",
+    "observed_at_utc": "2026-09-03T21:05:37Z",
     "state_commit_relationship": "observed_main_sha is the exact main snapshot before this Project Memory reconciliation; merging this state advances main by one direct integration commit and the validator permits only that direct one-hop integration before the snapshot becomes stale again",
     "latest_main_change": {
-      "pr": 1172,
-      "summary": "Added a bounded read-only Windows user-context capability probe; exact-current-main diagnostics proved NETWORK_SERVICE cannot obtain the interactive user WTS token or query the user-owned recovery Scheduled Task.",
+      "pr": 1303,
+      "summary": "Hardened the physical Windows DR persistence job to fetch anonymous exact source with bounded retries; exact-main run 33805581549 then completed successfully on NEXUS-WINDOWS-DR and uploaded sanitized persistence evidence.",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true
     },
     "paper_runtime_acceptance": {
       "issue": 1041,
-      "issue_state": "open",
-      "status": "WAITING_FOR_EXACT_CURRENT_MAIN_PHYSICAL_6_CELL_ACCEPTANCE",
-      "latest_physical_run_id": 33313258994,
-      "latest_physical_run_source_sha": "546f99e297c1bdf135a66b1e5748a2912f847852",
-      "latest_physical_runner": "NEXUS-BYBIT-WSL",
-      "latest_physical_machine": "DESKTOP-1R1081M",
-      "latest_physical_state_artifact_id": 9732897292,
-      "latest_physical_state_artifact_digest": "sha256:f50253c427268a9f03f67df3e379eb5f0f37c06010054158ec27cef53f322893",
-      "fresh_cell_count": 2,
+      "issue_state": "closed",
+      "status": "ACCEPTED_6_OF_6_ENVIRONMENT_FAITHFUL",
+      "acceptance_source_sha": "9bcabb6ff911cee53e862180488ee58249541945",
+      "acceptance_workflow_run": 33668566091,
+      "acceptance_runner": "NEXUS-WINDOWS-DR",
+      "acceptance_machine": "DESKTOP-1R1081M",
+      "accepted_cell_count": 6,
       "expected_cell_count": 6,
       "expected_lane_count": 18,
-      "trading_engine_complete": false,
-      "observed_public_bybit_failure": "sanitized unclassified HTTP 403 on approved Mainnet hosts for required fresh cells",
-      "historical_run_cannot_satisfy_current_exact_sha": true,
+      "restart_replay_proven": true,
+      "paper_runtime_acceptance_complete": true,
+      "runtime_revision": 1,
+      "trading_engine_complete_for_bounded_acceptance_scope": true,
       "paper_only": true,
       "live_trading_authority": false,
       "private_credentials_used": false,
       "automatic_strategy_promotion": false,
       "deterministic_risk_final_authority": true
     },
+    "windows_dr_persistence": {
+      "status": "SUCCESS_EXACT_CURRENT_MAIN_PHYSICAL",
+      "run_id": 33805581549,
+      "source_sha": "987b4212d252d993cf1065e11d8bc112f11e6172",
+      "runner": "NEXUS-WINDOWS-DR",
+      "machine": "DESKTOP-1R1081M",
+      "artifact_id": 9912832252,
+      "artifact_digest": "sha256:b9bfeb9ae77e1e9790b8a51db61bed8b4daa2a6f850c8715f9b1c78bdd01314a",
+      "exact_source_fetch_verified": true,
+      "persistence_install_decision": "SUCCESS",
+      "runner_registration_modified": false,
+      "runner_credentials_modified": false,
+      "other_runner_paths_modified": false,
+      "live_trading_authority": false
+    },
     "windows_recovery_probe": {
-      "status": "CONTEXT_LIMITED_SECURITY_BOUNDARY_PROVEN",
+      "status": "CONTEXT_LIMITED_SECURITY_BOUNDARY_CONFIRMED_NOT_BLOCKING_CURRENT_WINDOWS_DR_PERSISTENCE",
       "run_id": 33316749061,
       "source_sha": "1fa20ee5094e6739c5f9cacfb15aa6f1685d5657",
       "runner": "NEXUS-WINDOWS-DR",
@@ -139,25 +153,33 @@
       "runner_reregistration_authorized": false
     },
     "multitimeframe_strategy_runtime": {
-      "status": "operational_components_full_fresh_persistent_acceptance_not_yet_proven",
+      "status": "environment_faithful_6_cell_acceptance_proven_current_expansion_audit_required",
       "symbols": ["BTCUSDT", "ETHUSDT"],
       "timeframes": ["minute15", "hour1", "hour4"],
       "families": ["momentum", "trend_breakout", "mean_reversion"],
       "comparison_surface": "2 symbols x 3 timeframes x 3 strategy families = 18 isolated comparison lanes",
-      "persistent_autonomous_closed_candle_loop_complete": false,
+      "environment_faithful_acceptance_complete": true,
+      "restart_replay_proven": true,
       "continuous_strategy_factory_required": true,
+      "multi_pair_expansion_beyond_btc_eth_not_claimed": true,
       "paper_only": true,
       "live_trading_authority": false,
       "automatic_strategy_promotion": false,
       "deterministic_risk_final_authority": true
     },
     "strategy_discovery": {
-      "status": "integrated_research_only_continuous_discovery_required_by_mission_lock",
+      "status": "boundary_bound_runtime_discovery_and_requalification_verified_current_scope_expansion_still_required",
       "scope": "BTCUSDT/ETHUSDT x minute15/hour1/hour4 x momentum/trend_breakout/mean_reversion",
       "selection": "training_only",
       "challenge": "locked chronological holdout with conservative and stress costs",
       "output_authority": "RESEARCH_PROPOSAL_ONLY",
-      "independent_runtime_requalification_required": true,
+      "runtime_feedback_workflow_run": 33588953610,
+      "runtime_feedback_artifact_id": 9831324417,
+      "runtime_feedback_artifact_digest": "sha256:c70004fa5d288b7e9837878e515f7fe3bc96271e5bd9f36ed093a2dce0ffe800",
+      "leakage_resistant_discovery_cells_executed": 9,
+      "runtime_requalification_result": "NO_WORK",
+      "verified_feedback": "VERIFIED_NO_RESEARCH_PROPOSALS",
+      "discovery_feedback_verified": true,
       "automatic_candidate_or_paper_promotion": false,
       "live_trading_authority": false
     },
@@ -169,13 +191,13 @@
       "start_not_before": "2026-08-26T00:00:00Z",
       "required_elapsed_days": 30,
       "required_completed_hour4_bars": 180,
-      "verified_completed_hour4_bars": 24,
-      "latest_verified_execution": "2026-08-29T20:00:00Z",
-      "latest_verified_workflow_run": 33283170534,
-      "latest_verified_source_sha": "d35c59692250447c7a5e1390e92de3e45c3b8cc7",
-      "latest_verified_artifact_id": 9723597334,
-      "latest_verified_state_digest": "efc435cb2835a3174741f8c26e1b4f1f1d4b43f4b9dc55c526a59593c74a58b2",
-      "latest_verified_artifact_digest": "sha256:a6672616632d36319403da8004979f2f0217e7ca108af993a716c9c24f057cac",
+      "verified_completed_hour4_bars": 53,
+      "latest_verified_execution": "2026-09-03T16:00:00Z",
+      "latest_verified_workflow_run": 33805936523,
+      "latest_verified_source_sha": "987b4212d252d993cf1065e11d8bc112f11e6172",
+      "latest_verified_artifact_id": 9912925550,
+      "latest_verified_state_digest": "559d9fd3507c00c340dccd96c28f73afea142bb29b8759a76e53e17c6d11bf2d",
+      "latest_verified_artifact_digest": "sha256:e52826756e20f4e79c0a2e23d87461af5e048c9e930f63d07075ce9ea4bbbdbf",
       "paper_only": true,
       "live_trading_authority": false,
       "private_credentials_used": false,
@@ -186,13 +208,13 @@
   "open_gates": {
     "paper_runtime_acceptance": {
       "issue": 1041,
-      "state": "open",
-      "reason": "exact-current-main physical Bybit run has not yet advanced all 6 fresh cells and executed the full regime/lifecycle/performance/discovery/replay acceptance chain"
+      "state": "closed",
+      "reason": "all 6 environment-faithful acceptance criteria, including physical restart/replay on NEXUS-WINDOWS-DR, were accepted; this historical gate no longer blocks Paper runtime"
     },
     "prospective_paper": {
       "issue": 984,
       "state": "open",
-      "reason": "hard real-time acceptance gate; latest verified evidence is 24/180 completed hour4 bars and less than 30 elapsed days"
+      "reason": "hard real-time acceptance gate; latest exact-main evidence is 53/180 completed hour4 bars and the 30-day threshold is not yet satisfied"
     },
     "production_release": {
       "issue": 43,
@@ -201,8 +223,8 @@
       "reason": "production signing identity/trust root/key custody/environment approval and human go-no-go remain intentionally ungranted"
     },
     "windows_user_context_recovery": {
-      "state": "supporting_blocker_not_primary_delivery_gate",
-      "reason": "NETWORK_SERVICE cannot obtain the interactive user WTS token (1314) or query the user-owned recovery Scheduled Task; do not weaken privilege/ACL/service-account boundaries merely to force recovery"
+      "state": "historical_context_limit_not_current_persistence_blocker",
+      "reason": "NETWORK_SERVICE user-token/task-query limitations remain documented, but exact-current-main physical Windows DR persistence succeeded without weakening privilege, ACL, service-account, registration, or credential boundaries"
     }
   },
   "authority": {
@@ -219,11 +241,22 @@
     "production_deployment": false,
     "deterministic_risk_final_authority": true
   },
+  "next_autonomous_work": {
+    "priority": "trading_engine_first",
+    "order": [
+      "expand canonical multi-pair Research/Backtest/Paper coverage beyond the accepted BTCUSDT/ETHUSDT surface using explicit registry mappings and fail-closed semantic validation",
+      "expand the already-verified boundary-bound Discovery engine beyond its current BTCUSDT/ETHUSDT and three-family hypothesis surface without weakening leakage, holdout, stress, or deterministic Risk gates",
+      "continue immutable #984 prospective Paper collection without inferred or fabricated bars",
+      "keep #43 production release deny-by-default and do not create Live, signing, credential, or deployment authority"
+    ],
+    "approval_required_for_reversible_research_backtest_paper_hardening": false,
+    "approval_required_for_live_credentials_production_or_irreversible_actions": true
+  },
   "history_compaction": {
     "compacted": true,
     "reason": "Reconcile canonical STATE with current GitHub evidence while preserving all prior operational detail through immutable Git history.",
-    "prior_state_blob_sha": "5ed4e40eee4746db80d70f3e7c02c6dd9aafee68",
-    "prior_state_observed_main_sha": "7820c7cb2ae79ccec5e4380bb9fd44430e7dd7f2",
+    "prior_state_blob_sha": "77c7f0d043d922abf5f269cda203b96eda9b615a",
+    "prior_state_observed_main_sha": "1fa20ee5094e6739c5f9cacfb15aa6f1685d5657",
     "historical_detail_preserved_via_git_history": true,
     "do_not_treat_compaction_as_authority_expansion": true
   }
