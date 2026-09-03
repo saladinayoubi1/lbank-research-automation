@@ -87,6 +87,15 @@ function Get-TargetListener {
     return $null
 }
 
+function Get-SignedInWindowsUser {
+    $computerSystem = Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction Stop
+    $user = [string]$computerSystem.UserName
+    if ([string]::IsNullOrWhiteSpace($user)) {
+        throw 'An interactive signed-in Windows user is required.'
+    }
+    return $user.Trim()
+}
+
 function Start-TargetRunnerHidden {
     $fullRoot = Assert-TargetRunnerFiles
     if (Get-TargetListener) { return $false }
@@ -122,11 +131,16 @@ function Run-Supervisor {
 }
 
 function Install-TargetTask {
-    if (-not [Environment]::UserInteractive) { throw 'An interactive signed-in Windows user is required.' }
     if ([string]$env:RUNNER_NAME -ne $ExpectedRunnerName) {
         Write-Evidence 'SKIPPED_WRONG_RUNNER' @{ target_task_registered = $false; target_task_started = $false }
         Write-Host "windows_dr_autostart_decision=SKIPPED_WRONG_RUNNER current=$env:RUNNER_NAME expected=$ExpectedRunnerName"
         return
+    }
+
+    $signedInUser = Get-SignedInWindowsUser
+    $currentIdentity = [string][Security.Principal.WindowsIdentity]::GetCurrent().Name
+    if ([string]::IsNullOrWhiteSpace($currentIdentity) -or -not $currentIdentity.Equals($signedInUser, [StringComparison]::OrdinalIgnoreCase)) {
+        throw 'The target runner must run under the signed-in Windows user.'
     }
 
     $fullRoot = Assert-TargetRunnerFiles
@@ -140,7 +154,7 @@ function Install-TargetTask {
     if (-not (Test-Path -LiteralPath $powershell -PathType Leaf)) {
         $powershell = (Get-Command powershell.exe -ErrorAction Stop).Source
     }
-    $user = "$env:USERDOMAIN\$env:USERNAME"
+    $user = $signedInUser
     $service = New-Object -ComObject 'Schedule.Service'
     $service.Connect()
     $folder = $service.GetFolder('\')
@@ -176,6 +190,7 @@ function Install-TargetTask {
     Write-Evidence 'SUCCESS' @{
         target_task_registered = $true
         target_task_started = $true
+        signed_in_user_verified = $true
         stable_script = $StableScript
         target_listener_observed = [bool](Get-TargetListener)
     }
