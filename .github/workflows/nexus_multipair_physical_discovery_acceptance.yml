@@ -1,0 +1,392 @@
+name: NEXUS Multi-Pair physical Discovery acceptance
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "nexus_multipair_discovery_snapshot.py"
+      - "nexus_multipair_strategy_discovery.py"
+      - "nexus_multipair_strategy_proposal_requalification.py"
+      - "nexus_multipair_trusted_surface.py"
+      - "nexus_multipair_physical_discovery_acceptance.py"
+      - "experiments/nexus_multipair_strategy_discovery_v2.json"
+      - "docs/architecture/market-data-source-registry.yaml"
+      - "market_data_source_validator.py"
+      - "phase5_data_binding.py"
+      - "phase6_research_pipeline.py"
+      - "product_research_runtime.py"
+      - "scripts/nexus_runtime_wheelhouse.py"
+      - "requirements.lock"
+      - "tests/test_nexus_multipair_strategy_discovery.py"
+      - "tests/test_nexus_multipair_trusted_surface.py"
+      - "tests/test_nexus_multipair_physical_discovery_acceptance.py"
+      - "tests/test_nexus_multipair_physical_discovery_acceptance_workflow.py"
+      - ".github/workflows/nexus_multipair_physical_discovery_acceptance.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "nexus_multipair_discovery_snapshot.py"
+      - "nexus_multipair_strategy_discovery.py"
+      - "nexus_multipair_strategy_proposal_requalification.py"
+      - "nexus_multipair_trusted_surface.py"
+      - "nexus_multipair_physical_discovery_acceptance.py"
+      - "experiments/nexus_multipair_strategy_discovery_v2.json"
+      - "docs/architecture/market-data-source-registry.yaml"
+      - "market_data_source_validator.py"
+      - "phase5_data_binding.py"
+      - "phase6_research_pipeline.py"
+      - "product_research_runtime.py"
+      - "scripts/nexus_runtime_wheelhouse.py"
+      - "requirements.lock"
+      - "tests/test_nexus_multipair_strategy_discovery.py"
+      - "tests/test_nexus_multipair_trusted_surface.py"
+      - "tests/test_nexus_multipair_physical_discovery_acceptance.py"
+      - "tests/test_nexus_multipair_physical_discovery_acceptance_workflow.py"
+      - ".github/workflows/nexus_multipair_physical_discovery_acceptance.yml"
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: nexus-multipair-physical-discovery-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'main' }}
+  cancel-in-progress: false
+
+jobs:
+  contract-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements-dev.lock
+      - run: python -m pip check
+      - name: Verify Multi-Pair Discovery acceptance contracts
+        run: >-
+          python -m pytest -q
+          tests/test_nexus_multipair_trusted_surface.py
+          tests/test_nexus_multipair_strategy_discovery.py
+          tests/test_nexus_multipair_physical_discovery_acceptance.py
+          tests/test_nexus_multipair_physical_discovery_acceptance_workflow.py
+
+  runtime-wheelhouse:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      archive_sha256: ${{ steps.pack.outputs.archive_sha256 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Build locked CPython 3.12 Linux runtime wheelhouse
+        run: |
+          set -euo pipefail
+          wheelhouse="$PWD/build/nexus-multipair-discovery-wheelhouse"
+          smoke="$PWD/build/nexus-multipair-discovery-wheelhouse-smoke"
+          rm -rf "$wheelhouse" "$smoke" build/nexus-paper-runtime-wheelhouse.zip
+          mkdir -p "$wheelhouse" "$smoke"
+          python -m pip download \
+            --disable-pip-version-check \
+            --only-binary=:all: \
+            --dest "$wheelhouse" \
+            -r requirements.lock
+          cp requirements.lock "$wheelhouse/requirements.lock"
+          python -m pip install \
+            --disable-pip-version-check \
+            --no-index \
+            --find-links "$wheelhouse" \
+            --target "$smoke" \
+            -r requirements.lock
+          PYTHONPATH="$smoke" python - <<'PY'
+          import numpy
+          import pandas
+          import pyarrow
+          import requests
+          import tenacity
+          import yaml
+          print("hosted_multipair_discovery_wheelhouse_smoke=PASS")
+          PY
+          rm -rf "$smoke"
+      - name: Pack deterministic runtime wheelhouse and emit digest
+        id: pack
+        run: |
+          set -euo pipefail
+          python scripts/nexus_runtime_wheelhouse.py pack \
+            --root build/nexus-multipair-discovery-wheelhouse \
+            --output build/nexus-paper-runtime-wheelhouse.zip \
+            --digest-output build/nexus-multipair-discovery-wheelhouse-sha.txt
+          echo "archive_sha256=$(cat build/nexus-multipair-discovery-wheelhouse-sha.txt)" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: nexus-multipair-discovery-wheelhouse-${{ github.sha }}
+          path: build/nexus-paper-runtime-wheelhouse.zip
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+
+  physical-discovery:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: [contract-test, runtime-wheelhouse]
+    runs-on: nexus-bybit-network
+    timeout-minutes: 55
+    outputs:
+      proof_b64: ${{ steps.proof.outputs.proof_b64 }}
+      proof_sha256: ${{ steps.proof.outputs.proof_sha256 }}
+      runner_name: ${{ steps.proof.outputs.runner_name }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      WHEELHOUSE_ARTIFACT: nexus-multipair-discovery-wheelhouse-${{ github.sha }}
+      WHEELHOUSE_ARCHIVE_SHA256: ${{ needs.runtime-wheelhouse.outputs.archive_sha256 }}
+    steps:
+      - name: Prepare exact source and isolated physical state root
+        run: |
+          set -euo pipefail
+          repo_url="https://github.com/${GITHUB_REPOSITORY}.git"
+          if [ -d .git ]; then
+            git remote set-url origin "$repo_url"
+            git reset --hard
+            git clean -ffdx
+          else
+            find . -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
+            git init .
+            git remote add origin "$repo_url"
+          fi
+          git config --local --unset-all http.https://github.com/.extraheader || true
+          fetch_ok=false
+          for fetch_attempt in 1 2 3; do
+            if git -c http.version=HTTP/1.1 fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"; then
+              fetch_ok=true
+              break
+            fi
+            echo "::warning::Exact repository fetch attempt ${fetch_attempt}/3 failed."
+            if [ "$fetch_attempt" -lt 3 ]; then sleep "$((fetch_attempt * 5))"; fi
+          done
+          if [ "$fetch_ok" != true ]; then
+            echo "::error::Exact repository fetch failed after bounded attempts."
+            exit 1
+          fi
+          git checkout --detach --force FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git clean -ffdx
+
+          known_python="/opt/nexus-bybit-runner/_work/_tool/Python/3.12.14/x64/bin/python"
+          python_bin=""
+          if [ -x "$known_python" ]; then python_bin="$known_python"; fi
+          if [ -z "$python_bin" ]; then
+            tool_root="${RUNNER_TOOL_CACHE:-/opt/nexus-bybit-runner/_work/_tool}"
+            if [ "$(basename "$tool_root")" = "Python" ]; then python_root="$tool_root"; else python_root="$tool_root/Python"; fi
+            python_bin="$(find "$python_root" -type f -path '*/3.12.*/x64/bin/python' 2>/dev/null | sort -V | tail -n 1 || true)"
+          fi
+          test -n "$python_bin"
+          "$python_bin" -c "import sys; assert sys.version_info[:2] == (3, 12), sys.version"
+          python_prefix="$("$python_bin" -c 'import sys; print(sys.prefix)')"
+          python_lib="$python_prefix/lib"
+          test -d "$python_lib"
+          effective_ld_library_path="$python_lib"
+          if [ -n "${LD_LIBRARY_PATH:-}" ]; then effective_ld_library_path="$python_lib:$LD_LIBRARY_PATH"; fi
+          LD_LIBRARY_PATH="$effective_ld_library_path" "$python_bin" -c "import ctypes; print('multipair_discovery_physical_python=PASS')"
+
+          state_root="$HOME/.local/share/nexus/multipair-discovery-acceptance/$GITHUB_RUN_ID"
+          case "$state_root" in
+            "$HOME"/.local/share/nexus/multipair-discovery-acceptance/*) ;;
+            *) echo "::error::Unsafe external Discovery acceptance state root."; exit 1 ;;
+          esac
+          rm -rf "$state_root"
+          mkdir -p "$state_root/work" "$state_root/proof"
+          printf 'PYTHON_BIN=%s\n' "$python_bin" >> "$GITHUB_ENV"
+          printf 'LD_LIBRARY_PATH=%s\n' "$effective_ld_library_path" >> "$GITHUB_ENV"
+          printf 'STATE_ROOT=%s\n' "$state_root" >> "$GITHUB_ENV"
+          echo "physical_discovery_checkout_sha=$(git rev-parse HEAD)"
+          echo "discovery_state_storage=physical_external_runtime_path"
+
+      - name: Enforce eligible physical Bybit execution plane
+        run: >-
+          "$PYTHON_BIN" -c "assert '${{ runner.environment }}' == 'self-hosted'; assert '${{ runner.os }}' == 'Linux'; print('multipair_discovery_execution_plane=self-hosted:nexus-bybit-network')"
+
+      - name: Restore digest-pinned current-run runtime wheelhouse
+        run: |
+          set -euo pipefail
+          wheelhouse="$PWD/build/nexus-multipair-discovery-wheelhouse"
+          rm -rf "$wheelhouse"
+          "$PYTHON_BIN" scripts/nexus_runtime_wheelhouse.py restore-current-run \
+            --repository "$GITHUB_REPOSITORY" \
+            --run-id "$GITHUB_RUN_ID" \
+            --artifact-name "$WHEELHOUSE_ARTIFACT" \
+            --expected-sha256 "$WHEELHOUSE_ARCHIVE_SHA256" \
+            --repository-lock requirements.lock \
+            --destination "$wheelhouse" \
+            --work-root build/nexus-multipair-discovery-wheelhouse-restore
+
+      - name: Provision locked runtime dependencies
+        run: |
+          set -euo pipefail
+          pip_wheel="$("$PYTHON_BIN" - <<'PY'
+          import ensurepip
+          from pathlib import Path
+          bundled = Path(ensurepip.__file__).resolve().parent / "_bundled"
+          wheels = sorted(bundled.glob("pip-*.whl"))
+          if not wheels:
+              raise SystemExit("bundled pip wheel missing")
+          print(wheels[-1].resolve())
+          PY
+          )"
+          wheelhouse="$PWD/build/nexus-multipair-discovery-wheelhouse"
+          test -f "$wheelhouse/requirements.lock"
+          cmp requirements.lock "$wheelhouse/requirements.lock"
+          runtime_site="$PWD/.nexus-multipair-discovery-site"
+          rm -rf "$runtime_site"
+          mkdir -p "$runtime_site"
+          PYTHONPATH="$pip_wheel" "$PYTHON_BIN" -m pip install \
+            --disable-pip-version-check \
+            --no-index \
+            --find-links "$wheelhouse" \
+            --no-cache-dir \
+            --target "$runtime_site" \
+            -r requirements.lock
+          printf 'PYTHONPATH=%s:%s\n' "$pip_wheel" "$runtime_site" >> "$GITHUB_ENV"
+          echo "multipair_discovery_offline_wheelhouse_bootstrap=PASS"
+
+      - run: '"$PYTHON_BIN" -m pip check'
+
+      - name: Execute exact-source four-symbol Discovery and fresh runtime requalification
+        id: proof
+        env:
+          RUNNER_NAME_EVIDENCE: ${{ runner.name }}
+          RUNNER_OS_EVIDENCE: ${{ runner.os }}
+          RUNNER_ENVIRONMENT_EVIDENCE: ${{ runner.environment }}
+        run: |
+          set -euo pipefail
+          now_ms="$("$PYTHON_BIN" -c 'import time; print(int(time.time() * 1000))')"
+          rm -rf build/nexus_multipair_discovery_snapshot
+          "$PYTHON_BIN" nexus_multipair_physical_discovery_acceptance.py \
+            --manifest experiments/nexus_multipair_strategy_discovery_v2.json \
+            --source-sha "$GITHUB_SHA" \
+            --run-id "$GITHUB_RUN_ID" \
+            --now-ms "$now_ms" \
+            --state-root "$STATE_ROOT" \
+            --work-root "$STATE_ROOT/work" \
+            --output "$STATE_ROOT/proof/evidence.json" \
+            --runner-name "$RUNNER_NAME_EVIDENCE" \
+            --runner-os "$RUNNER_OS_EVIDENCE" \
+            --runner-environment "$RUNNER_ENVIRONMENT_EVIDENCE" \
+            --execution-plane nexus-bybit-network \
+            --history-limit 240
+          "$PYTHON_BIN" - "$STATE_ROOT/proof/evidence.json" <<'PY'
+          import hashlib, json, pathlib, sys
+          path = pathlib.Path(sys.argv[1])
+          raw = path.read_bytes()
+          if len(raw) > 45_000:
+              raise SystemExit("physical Discovery proof exceeds compact handoff bound")
+          value = json.loads(raw)
+          core = dict(value)
+          claimed = core.pop("evidence_digest", None)
+          canonical = json.dumps(core, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode()
+          if claimed != hashlib.sha256(canonical).hexdigest():
+              raise SystemExit("physical Discovery evidence digest mismatch")
+          required_false = (
+              "candidate_state_created", "paper_execution_started", "automatic_strategy_promotion",
+              "live_trading_authority", "private_credentials_used", "real_exchange_orders",
+              "issue_984_state_artifact_touched", "persistent_runtime_database_on_github",
+              "silent_exchange_substitution",
+          )
+          if value.get("decision") != "pass" or value.get("snapshot_cell_count") != 12 or value.get("hypothesis_count") != 9:
+              raise SystemExit("physical Discovery evidence shape mismatch")
+          if value.get("symbols") != ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT"]:
+              raise SystemExit("physical Discovery symbol surface mismatch")
+          if value.get("timeframes") != ["minute15", "hour1", "hour4"]:
+              raise SystemExit("physical Discovery timeframe surface mismatch")
+          if value.get("families") != ["momentum", "trend_breakout", "mean_reversion"]:
+              raise SystemExit("physical Discovery family surface mismatch")
+          if value.get("blocked_runtime_data_count") != 0:
+              raise SystemExit("physical Discovery runtime data remained blocked")
+          if any(value.get(key) is not False for key in required_false):
+              raise SystemExit("physical Discovery authority boundary mismatch")
+          required_true = (
+              "training_selection_only", "locked_holdout_after_selection", "conservative_and_stress_costs",
+              "zero_proposals_valid", "research_proposal_only", "fresh_runtime_requalification",
+              "deterministic_risk_final_authority", "state_isolated_from_issue_984",
+          )
+          if any(value.get(key) is not True for key in required_true):
+              raise SystemExit("physical Discovery acceptance invariant mismatch")
+          print("physical_discovery_acceptance_local_verifier=PASS")
+          PY
+          proof_sha256="$(sha256sum "$STATE_ROOT/proof/evidence.json" | awk '{print $1}')"
+          proof_b64="$(base64 -w0 "$STATE_ROOT/proof/evidence.json")"
+          test "${#proof_b64}" -lt 60000
+          echo "proof_sha256=$proof_sha256" >> "$GITHUB_OUTPUT"
+          echo "proof_b64=$proof_b64" >> "$GITHUB_OUTPUT"
+          echo "runner_name=$RUNNER_NAME_EVIDENCE" >> "$GITHUB_OUTPUT"
+          echo "physical_discovery_process_complete=PASS"
+
+  persist-proof:
+    if: needs.physical-discovery.result == 'success' && needs.physical-discovery.outputs.proof_b64 != ''
+    needs: [physical-discovery]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PROOF_B64: ${{ needs.physical-discovery.outputs.proof_b64 }}
+      PROOF_SHA256: ${{ needs.physical-discovery.outputs.proof_sha256 }}
+      EXPECTED_RUNNER_NAME: ${{ needs.physical-discovery.outputs.runner_name }}
+    steps:
+      - name: Rehydrate and independently verify physical Discovery proof
+        run: |
+          set -euo pipefail
+          mkdir -p build/nexus-multipair-physical-discovery-proof
+          printf '%s' "$PROOF_B64" | base64 --decode > build/nexus-multipair-physical-discovery-proof/evidence.json
+          actual_sha256="$(sha256sum build/nexus-multipair-physical-discovery-proof/evidence.json | awk '{print $1}')"
+          test "$actual_sha256" = "$PROOF_SHA256"
+          python - <<'PY'
+          import hashlib, json, os, pathlib
+          path = pathlib.Path("build/nexus-multipair-physical-discovery-proof/evidence.json")
+          value = json.loads(path.read_text(encoding="utf-8"))
+          core = dict(value)
+          claimed = core.pop("evidence_digest", None)
+          canonical = json.dumps(core, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode()
+          assert claimed == hashlib.sha256(canonical).hexdigest()
+          assert value["decision"] == "pass"
+          assert value["source_sha"] == os.environ["GITHUB_SHA"]
+          assert value["run_id"] == os.environ["GITHUB_RUN_ID"]
+          assert value["runner_name"] == os.environ["EXPECTED_RUNNER_NAME"]
+          assert value["runner_os"] == "Linux"
+          assert value["runner_environment"] == "self-hosted"
+          assert value["execution_plane"] == "nexus-bybit-network"
+          assert value["symbols"] == ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT"]
+          assert value["timeframes"] == ["minute15", "hour1", "hour4"]
+          assert value["families"] == ["momentum", "trend_breakout", "mean_reversion"]
+          assert value["snapshot_cell_count"] == 12
+          assert value["hypothesis_count"] == 9
+          assert value["research_proposal_count"] == value["requalification_proposal_count"]
+          assert value["blocked_runtime_data_count"] == 0
+          for key in (
+              "training_selection_only", "locked_holdout_after_selection", "conservative_and_stress_costs",
+              "zero_proposals_valid", "research_proposal_only", "fresh_runtime_requalification",
+              "deterministic_risk_final_authority", "state_isolated_from_issue_984",
+          ):
+              assert value[key] is True, key
+          for key in (
+              "candidate_state_created", "paper_execution_started", "automatic_strategy_promotion",
+              "live_trading_authority", "private_credentials_used", "real_exchange_orders",
+              "issue_984_state_artifact_touched", "persistent_runtime_database_on_github",
+              "silent_exchange_substitution",
+          ):
+              assert value[key] is False, key
+          print("hosted_physical_discovery_proof_verifier=PASS")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: nexus-multipair-physical-discovery-proof-${{ github.sha }}
+          path: build/nexus-multipair-physical-discovery-proof/evidence.json
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
