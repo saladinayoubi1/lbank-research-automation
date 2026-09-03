@@ -41,11 +41,14 @@ def test_unknown_matrix_symbol_fails_before_market_fetch(tmp_path: Path) -> None
         nonlocal called
         called = True
 
-    with pytest.raises(StrategyPaperSupervisorError, match="unsupported matrix symbol"):
+    with pytest.raises(
+        StrategyPaperSupervisorError,
+        match="unsupported or non-canonical matrix symbol/timeframe",
+    ):
         run_once(
             source_sha="a" * 40,
             state_root=tmp_path,
-            symbol="SOLUSDT",
+            symbol="DOGEUSDT",
             timeframe="minute15",
             families=("momentum",),
             now_ms=1_800_000_000_000,
