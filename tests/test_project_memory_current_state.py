@@ -37,20 +37,22 @@ def test_project_memory_preserves_paper_only_authority() -> None:
     assert policy["cross_exchange_substitution_for_acceptance_allowed"] is False
 
 
-def test_project_memory_current_paper_acceptance_is_fail_closed_and_provenance_bound() -> None:
+def test_project_memory_current_paper_acceptance_is_closed_and_provenance_bound() -> None:
     state = _state()
     evidence = state["current_evidence"]
     paper = evidence["paper_runtime_acceptance"]
 
     assert SHA_RE.fullmatch(evidence["observed_main_sha"])
     assert paper["issue"] == 1041
-    assert paper["issue_state"] == "open"
-    assert paper["status"] == "WAITING_FOR_EXACT_CURRENT_MAIN_PHYSICAL_6_CELL_ACCEPTANCE"
-    assert paper["fresh_cell_count"] < paper["expected_cell_count"] == 6
+    assert paper["issue_state"] == "closed"
+    assert paper["status"] == "ACCEPTED_6_OF_6_ENVIRONMENT_FAITHFUL"
+    assert paper["accepted_cell_count"] == paper["expected_cell_count"] == 6
     assert paper["expected_lane_count"] == 18
-    assert paper["trading_engine_complete"] is False
-    assert paper["historical_run_cannot_satisfy_current_exact_sha"] is True
-    assert paper["latest_physical_run_source_sha"] != evidence["observed_main_sha"]
+    assert paper["restart_replay_proven"] is True
+    assert paper["paper_runtime_acceptance_complete"] is True
+    assert paper["trading_engine_complete_for_bounded_acceptance_scope"] is True
+    assert SHA_RE.fullmatch(paper["acceptance_source_sha"])
+    assert isinstance(paper["acceptance_workflow_run"], int) and paper["acceptance_workflow_run"] > 0
     assert paper["paper_only"] is True
     assert paper["live_trading_authority"] is False
     assert paper["private_credentials_used"] is False
@@ -58,13 +60,14 @@ def test_project_memory_current_paper_acceptance_is_fail_closed_and_provenance_b
     assert paper["deterministic_risk_final_authority"] is True
 
 
-def test_project_memory_current_windows_probe_is_exact_sha_and_context_limited() -> None:
+def test_project_memory_current_windows_persistence_is_exact_main_and_historical_probe_remains_bounded() -> None:
     state = _state()
     evidence = state["current_evidence"]
     probe = evidence["windows_recovery_probe"]
+    persistence = evidence["windows_dr_persistence"]
 
-    assert probe["status"] == "CONTEXT_LIMITED_SECURITY_BOUNDARY_PROVEN"
-    assert probe["source_sha"] == evidence["observed_main_sha"]
+    assert probe["status"] == "CONTEXT_LIMITED_SECURITY_BOUNDARY_CONFIRMED_NOT_BLOCKING_CURRENT_WINDOWS_DR_PERSISTENCE"
+    assert SHA_RE.fullmatch(probe["source_sha"])
     assert probe["runner_identity_class"] == "NETWORK_SERVICE"
     assert probe["interactive_console_session_present"] is True
     assert probe["wts_user_token_available"] is False
@@ -75,14 +78,37 @@ def test_project_memory_current_windows_probe_is_exact_sha_and_context_limited()
     assert probe["privilege_acl_service_account_change_authorized"] is False
     assert probe["runner_reregistration_authorized"] is False
 
+    assert persistence["status"] == "SUCCESS_EXACT_CURRENT_MAIN_PHYSICAL"
+    assert persistence["source_sha"] == evidence["observed_main_sha"]
+    assert persistence["runner"] == "NEXUS-WINDOWS-DR"
+    assert persistence["persistence_install_decision"] == "SUCCESS"
+    assert persistence["exact_source_fetch_verified"] is True
+    assert persistence["runner_registration_modified"] is False
+    assert persistence["runner_credentials_modified"] is False
+    assert persistence["other_runner_paths_modified"] is False
+    assert persistence["live_trading_authority"] is False
 
-def test_project_memory_keeps_runtime_real_time_and_production_gates_fail_closed() -> None:
+
+def test_project_memory_records_verified_boundary_discovery_without_promotion_authority() -> None:
+    state = _state()
+    discovery = state["current_evidence"]["strategy_discovery"]
+
+    assert discovery["discovery_feedback_verified"] is True
+    assert discovery["leakage_resistant_discovery_cells_executed"] == 9
+    assert discovery["runtime_requalification_result"] == "NO_WORK"
+    assert discovery["verified_feedback"] == "VERIFIED_NO_RESEARCH_PROPOSALS"
+    assert discovery["output_authority"] == "RESEARCH_PROPOSAL_ONLY"
+    assert discovery["automatic_candidate_or_paper_promotion"] is False
+    assert discovery["live_trading_authority"] is False
+
+
+def test_project_memory_keeps_real_time_and_production_gates_fail_closed() -> None:
     state = _state()
     prospective = state["current_evidence"]["prospective_paper_gate"]
     gates = state["open_gates"]
 
     assert gates["paper_runtime_acceptance"]["issue"] == 1041
-    assert gates["paper_runtime_acceptance"]["state"] == "open"
+    assert gates["paper_runtime_acceptance"]["state"] == "closed"
     assert prospective["issue"] == 984
     assert prospective["status"] == "COLLECTING"
     assert prospective["verified_completed_hour4_bars"] < prospective["required_completed_hour4_bars"]
@@ -91,7 +117,7 @@ def test_project_memory_keeps_runtime_real_time_and_production_gates_fail_closed
     assert gates["production_release"]["issue"] == 43
     assert gates["production_release"]["state"] == "open"
     assert gates["production_release"]["deny_by_default"] is True
-    assert gates["windows_user_context_recovery"]["state"] == "supporting_blocker_not_primary_delivery_gate"
+    assert gates["windows_user_context_recovery"]["state"] == "historical_context_limit_not_current_persistence_blocker"
 
 
 def test_project_memory_compaction_retains_prior_state_by_git_identity() -> None:
