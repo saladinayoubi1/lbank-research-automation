@@ -1,22 +1,24 @@
 """Fail-closed four-symbol extension for the NEXUS Demo Paper strategy matrix.
 
 This module deliberately stages the BTC/ETH -> BTC/ETH/SOL/XRP expansion without
-silently reinterpreting durable v1 state.  The existing matrix engine remains the
-execution primitive; this layer validates the v2 manifest and performs exactly one
-bounded migration from a digest-valid v1 state before any new-pair cell can run.
+silently reinterpreting durable v1 state. The existing matrix engine remains the
+execution primitive; this layer validates the v2 manifest, performs exactly one
+bounded migration from digest-valid v1 state, and independently verifies the v2
+snapshot/state surface before any result is accepted.
 
-Authority remains Research/Backtest/Paper only.  No Live/private-credential or
+Authority remains Research/Backtest/Paper only. No Live/private-credential or
 automatic-promotion authority is introduced here.
 """
 from __future__ import annotations
 
 import argparse
 import json
-import os
+import re
 from pathlib import Path
 from typing import Any, Mapping
 
 from nexus_demo_strategy_matrix import (
+    SNAPSHOT_SCHEMA,
     STATE_SCHEMA,
     DemoStrategyMatrixError,
     _atomic_json,
@@ -24,7 +26,6 @@ from nexus_demo_strategy_matrix import (
     load_manifest as load_legacy_manifest,
     load_state as load_matrix_state,
     run_matrix_cycle,
-    verify_snapshot,
 )
 
 
@@ -34,6 +35,7 @@ APPROVED_SYMBOLS = ("BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT")
 LEGACY_SYMBOLS = ("BTCUSDT", "ETHUSDT")
 TIMEFRAMES = ("minute15", "hour1", "hour4")
 FAMILIES = ("momentum", "trend_breakout", "mean_reversion")
+_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 AUTHORITY = {
     "paper_only": True,
     "live_trading_authority": False,
@@ -97,6 +99,19 @@ def load_manifest(path: str | Path) -> dict[str, Any]:
     if raw.get("migration") != MIGRATION_POLICY:
         raise MultiPairMatrixError("multi-pair migration policy mismatch")
     return raw
+
+
+def _allowed_cell_ids() -> set[str]:
+    return {f"{symbol}:{timeframe}" for symbol in APPROVED_SYMBOLS for timeframe in TIMEFRAMES}
+
+
+def _allowed_lane_ids() -> set[tuple[str, str, str]]:
+    return {
+        (symbol, timeframe, family)
+        for symbol in APPROVED_SYMBOLS
+        for timeframe in TIMEFRAMES
+        for family in FAMILIES
+    }
 
 
 def _validate_legacy_cells(cells: Mapping[str, Any]) -> None:
@@ -199,7 +214,9 @@ def load_or_migrate_state(
         return _new_state(target_manifest), None
 
     try:
-        return load_matrix_state(target, target_manifest), None
+        state = load_matrix_state(target, target_manifest)
+        _verify_v2_state(state, target_manifest)
+        return state, None
     except DemoStrategyMatrixError:
         pass
 
@@ -213,6 +230,146 @@ def load_or_migrate_state(
         legacy_manifest=legacy_manifest,
         target_manifest=target_manifest,
     )
+
+
+def _verify_v2_state(state: Mapping[str, Any], manifest: Mapping[str, Any]) -> None:
+    core = dict(state)
+    claimed = core.pop("state_digest", None)
+    cells = core.get("cells")
+    if (
+        core.get("schema_version") != STATE_SCHEMA
+        or core.get("matrix_id") != manifest["matrix_id"]
+        or core.get("manifest_sha256") != _digest(manifest)
+        or core.get("paper_only") is not True
+        or core.get("live_trading_authority") is not False
+        or core.get("private_credentials_used") is not False
+        or core.get("automatic_strategy_promotion") is not False
+        or claimed != _digest(core)
+        or not isinstance(cells, Mapping)
+        or any(cell_id not in _allowed_cell_ids() for cell_id in cells)
+    ):
+        raise MultiPairMatrixError("v2 matrix state verification failed")
+    for cell_id, raw in cells.items():
+        if not isinstance(raw, Mapping):
+            raise MultiPairMatrixError("v2 matrix cell is not an object")
+        symbol, timeframe = cell_id.split(":", 1)
+        if (
+            raw.get("cell_id") != cell_id
+            or raw.get("symbol") != symbol
+            or raw.get("timeframe") != timeframe
+            or raw.get("status") not in {"VERIFIED", "BLOCKED"}
+        ):
+            raise MultiPairMatrixError("v2 matrix cell identity/status mismatch")
+        lanes = raw.get("lanes", [])
+        if not isinstance(lanes, list) or len(lanes) > len(FAMILIES):
+            raise MultiPairMatrixError("v2 matrix cell lanes are invalid")
+        seen: set[str] = set()
+        for lane in lanes:
+            if not isinstance(lane, Mapping):
+                raise MultiPairMatrixError("v2 matrix lane is not an object")
+            family = lane.get("family")
+            if family not in FAMILIES or family in seen:
+                raise MultiPairMatrixError("v2 matrix lane family is invalid or duplicated")
+            seen.add(str(family))
+
+
+def verify_v2_snapshot(
+    value: Mapping[str, Any],
+    *,
+    manifest: Mapping[str, Any],
+    state: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Independently verify the exact approved 4 x 3 x 3 Paper snapshot.
+
+    The legacy verifier remains unchanged for v1. This verifier binds v2 evidence
+    to the approved manifest, validates the state digest/cell namespace, and
+    requires a complete 12-cell/36-lane surface whenever status is VERIFIED.
+    """
+    checks: dict[str, bool] = {}
+    try:
+        _verify_v2_state(state, manifest)
+        state_ok = True
+    except MultiPairMatrixError:
+        state_ok = False
+    checks["state"] = state_ok
+
+    core = dict(value)
+    claimed = core.pop("snapshot_digest", None)
+    checks.update({
+        "schema": core.get("schema_version") == SNAPSHOT_SCHEMA,
+        "digest": claimed == _digest(core),
+        "matrix_id": core.get("matrix_id") == manifest["matrix_id"],
+        "source_sha": isinstance(core.get("source_sha"), str) and bool(_SHA_RE.fullmatch(core["source_sha"])),
+        "run_id": isinstance(core.get("run_id"), str) and core["run_id"].isdigit(),
+        "paper_only": core.get("paper_only") is True,
+        "live_disabled": core.get("live_trading_authority") is False,
+        "credentials_disabled": core.get("private_credentials_used") is False,
+        "promotion_disabled": core.get("automatic_strategy_promotion") is False,
+        "risk_final": core.get("deterministic_risk_final_authority") is True,
+        "state_digest": core.get("state_digest") == state.get("state_digest"),
+        "symbols": core.get("symbols") == list(APPROVED_SYMBOLS),
+        "timeframes": core.get("timeframes") == list(TIMEFRAMES),
+        "families": core.get("families") == list(FAMILIES),
+        "matrix_shape": core.get("expected_cell_count") == 12 and core.get("expected_lane_count") == 36,
+    })
+
+    cycle = core.get("cycle")
+    allowed_cells = _allowed_cell_ids()
+    cycle_ok = isinstance(cycle, list) and len(cycle) == 12
+    cycle_ids: list[str] = []
+    if cycle_ok:
+        for row in cycle:
+            if not isinstance(row, Mapping):
+                cycle_ok = False
+                break
+            cell_id = row.get("cell_id")
+            status = row.get("status")
+            if cell_id not in allowed_cells or status not in {"VERIFIED", "BLOCKED", "SKIPPED_NO_NEW_BAR"}:
+                cycle_ok = False
+                break
+            cycle_ids.append(str(cell_id))
+        cycle_ok = cycle_ok and len(set(cycle_ids)) == 12 and set(cycle_ids) == allowed_cells
+    checks["cycle_surface"] = cycle_ok
+
+    lanes = core.get("lanes")
+    lane_ok = isinstance(lanes, list) and core.get("reported_lane_count") == len(lanes)
+    lane_ids: list[tuple[str, str, str]] = []
+    if lane_ok:
+        for lane in lanes:
+            if not isinstance(lane, Mapping):
+                lane_ok = False
+                break
+            lane_id = (lane.get("symbol"), lane.get("timeframe"), lane.get("family"))
+            if lane_id not in _allowed_lane_ids():
+                lane_ok = False
+                break
+            lane_ids.append((str(lane_id[0]), str(lane_id[1]), str(lane_id[2])))
+        lane_ok = lane_ok and len(set(lane_ids)) == len(lane_ids) and len(lane_ids) <= 36
+    checks["lane_namespace"] = lane_ok
+
+    verified = core.get("verified_cell_count")
+    blocked = core.get("blocked_cell_count")
+    counts_ok = (
+        isinstance(verified, int) and not isinstance(verified, bool)
+        and isinstance(blocked, int) and not isinstance(blocked, bool)
+        and 0 <= verified <= 12 and 0 <= blocked <= 12
+        and verified + blocked == 12
+    )
+    checks["cell_counts"] = counts_ok
+
+    if core.get("status") == "VERIFIED":
+        checks["verified_completeness"] = (
+            verified == 12
+            and blocked == 0
+            and core.get("reported_lane_count") == 36
+            and set(lane_ids) == _allowed_lane_ids()
+        )
+    elif core.get("status") == "DEGRADED":
+        checks["verified_completeness"] = counts_ok and (verified != 12 or blocked != 0)
+    else:
+        checks["verified_completeness"] = False
+
+    return {"decision": "pass" if all(checks.values()) else "reject", "checks": checks}
 
 
 def run_cycle(
@@ -249,7 +406,8 @@ def run_cycle(
     if analyzer is not None:
         kwargs["analyzer"] = analyzer
     next_state, snapshot = run_matrix_cycle(**kwargs)
-    if verify_snapshot(snapshot).get("decision") != "pass":
+    verification = verify_v2_snapshot(snapshot, manifest=manifest, state=next_state)
+    if verification.get("decision") != "pass":
         raise MultiPairMatrixError("multi-pair matrix snapshot failed independent verification")
     return next_state, snapshot, migration
 
