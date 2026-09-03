@@ -91,12 +91,23 @@ function Get-TargetListener {
 }
 
 function Get-SignedInWindowsUser {
-    $computerSystem = Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction Stop
-    $user = [string]$computerSystem.UserName
-    if ([string]::IsNullOrWhiteSpace($user)) {
-        throw 'An interactive signed-in Windows user is required.'
+    $identity = [string][Security.Principal.WindowsIdentity]::GetCurrent().Name
+    if ([string]::IsNullOrWhiteSpace($identity)) {
+        throw 'The target runner Windows identity could not be resolved.'
     }
-    return $user.Trim()
+    if ($identity.StartsWith('NT AUTHORITY\', [StringComparison]::OrdinalIgnoreCase) -or
+        $identity.StartsWith('NT SERVICE\', [StringComparison]::OrdinalIgnoreCase)) {
+        throw 'The target runner must run under a signed-in Windows user, not a service identity.'
+    }
+
+    $runnerSessionId = (Get-Process -Id $PID -ErrorAction Stop).SessionId
+    $interactiveExplorer = Get-Process -Name 'explorer' -ErrorAction SilentlyContinue |
+        Where-Object { $_.SessionId -eq $runnerSessionId } |
+        Select-Object -First 1
+    if (-not $interactiveExplorer) {
+        throw 'An interactive signed-in Windows desktop session is required.'
+    }
+    return $identity.Trim()
 }
 
 function Start-TargetRunnerHidden {
