@@ -15,6 +15,9 @@ $TaskName = 'NEXUS-WINDOWS-DR-Autostart'
 $StateRoot = Join-Path $env:LOCALAPPDATA 'NEXUS\WindowsDRAutostart'
 $StableScript = Join-Path $StateRoot 'windows-dr-autostart.ps1'
 $LogPath = Join-Path $StateRoot 'windows-dr-autostart.log'
+$script:InstallStage = 'initial'
+$script:TaskRegistered = $false
+$script:TaskStarted = $false
 
 function Normalize-Url([string]$Value) {
     if (-not $Value) { return '' }
@@ -137,13 +140,17 @@ function Install-TargetTask {
         return
     }
 
+    $script:InstallStage = 'signed_in_user_lookup'
     $signedInUser = Get-SignedInWindowsUser
+    $script:InstallStage = 'runner_identity_check'
     $currentIdentity = [string][Security.Principal.WindowsIdentity]::GetCurrent().Name
     if ([string]::IsNullOrWhiteSpace($currentIdentity) -or -not $currentIdentity.Equals($signedInUser, [StringComparison]::OrdinalIgnoreCase)) {
         throw 'The target runner must run under the signed-in Windows user.'
     }
 
+    $script:InstallStage = 'target_runner_validation'
     $fullRoot = Assert-TargetRunnerFiles
+    $script:InstallStage = 'state_script_copy'
     Ensure-StateRoot
     $source = (Resolve-Path -LiteralPath $PSCommandPath).Path
     if (-not $source.Equals([IO.Path]::GetFullPath($StableScript), [StringComparison]::OrdinalIgnoreCase)) {
@@ -155,9 +162,13 @@ function Install-TargetTask {
         $powershell = (Get-Command powershell.exe -ErrorAction Stop).Source
     }
     $user = $signedInUser
+
+    $script:InstallStage = 'scheduler_connect'
     $service = New-Object -ComObject 'Schedule.Service'
     $service.Connect()
+    $script:InstallStage = 'scheduler_root_folder'
     $folder = $service.GetFolder('\')
+    $script:InstallStage = 'scheduler_definition'
     $definition = $service.NewTask(0)
     $definition.RegistrationInfo.Description = 'Keeps only the existing NEXUS-WINDOWS-DR GitHub Actions runner available without modifying registration or credentials.'
     $definition.RegistrationInfo.Author = 'NEXUS'
@@ -173,20 +184,27 @@ function Install-TargetTask {
     $definition.Settings.RestartCount = 999
     $definition.Settings.ExecutionTimeLimit = 'PT0S'
 
+    $script:InstallStage = 'scheduler_trigger'
     $trigger = $definition.Triggers.Create(9)
     $trigger.Enabled = $true
     $trigger.UserId = $user
 
+    $script:InstallStage = 'scheduler_action'
     $action = $definition.Actions.Create(0)
     $action.Path = $powershell
     $action.Arguments = "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$StableScript`" -Mode Run -RunnerRoot `"$fullRoot`" -ExpectedRunnerName `"$ExpectedRunnerName`" -ExpectedGitHubUrl `"$ExpectedGitHubUrl`""
     $action.WorkingDirectory = $fullRoot
 
+    $script:InstallStage = 'scheduler_register'
     $registered = $folder.RegisterTaskDefinition("\$TaskName", $definition, 6, $null, $null, 3, $null)
     if (-not $registered) { throw 'Task Scheduler did not return the target task.' }
+    $script:TaskRegistered = $true
+    $script:InstallStage = 'scheduler_run'
     [void]$registered.Run($null)
+    $script:TaskStarted = $true
     Start-Sleep -Seconds 2
 
+    $script:InstallStage = 'evidence_success'
     Write-Evidence 'SUCCESS' @{
         target_task_registered = $true
         target_task_started = $true
@@ -208,8 +226,19 @@ try {
 }
 catch {
     $message = $_.Exception.Message
-    try { Write-Log ('install_decision=BLOCKED error=' + $message) } catch { }
-    try { Write-Evidence 'BLOCKED' @{ error = $message; target_task_registered = $false } } catch { }
-    Write-Host ('windows_dr_autostart_decision=BLOCKED error=' + $message)
+    $errorType = $_.Exception.GetType().FullName
+    $errorHResult = [int]$_.Exception.HResult
+    try { Write-Log ('install_decision=BLOCKED stage=' + $script:InstallStage + ' error_type=' + $errorType) } catch { }
+    try {
+        Write-Evidence 'BLOCKED' @{
+            error = $message
+            error_stage = $script:InstallStage
+            error_type = $errorType
+            error_hresult = $errorHResult
+            target_task_registered = [bool]$script:TaskRegistered
+            target_task_started = [bool]$script:TaskStarted
+        }
+    } catch { }
+    Write-Host ('windows_dr_autostart_decision=BLOCKED stage=' + $script:InstallStage + ' error=' + $message)
     exit 1
 }
