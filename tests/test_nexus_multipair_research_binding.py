@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import pytest
 
-from phase6_research_pipeline import bind_bybit_closed_dataset
+from phase6_research_pipeline import Phase6PipelineError, bind_bybit_closed_dataset
 
 
-START = 1_700_000_000_000
+START = 1_699_992_000_000
 SEMANTICS = {
     "15": ("minute15", 900_000),
     "60": ("hour1", 3_600_000),
@@ -69,7 +69,7 @@ def test_new_pairs_bind_to_exact_bybit_primary_semantics(canonical: str, source:
 def test_new_pair_namespace_substitution_is_rejected() -> None:
     candles = _candles("SOLUSDT", "15")
     candles[0]["symbol"] = "XRPUSDT"
-    with pytest.raises(Exception):
+    with pytest.raises(Phase6PipelineError, match="namespace"):
         bind_bybit_closed_dataset(
             candles,
             canonical_symbol="SOL/USDT",
