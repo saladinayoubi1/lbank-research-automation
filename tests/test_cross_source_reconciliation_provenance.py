@@ -76,7 +76,7 @@ def test_binding_is_deterministic_and_validates_both_source_manifests():
     assert first["schema"] == "nexus.cross-source-reconciliation-provenance.v2"
     assert first["binding_sha256"]
     assert first["semantic_tuple"] == {
-        "registry_version": "1.1.0",
+        "registry_version": "1.2.0",
         "mapping_id": "btc-usdt-spot-minute15-v1",
         "candidate_timeframe": "minute15",
         "manifest_timeframe": "15m",
