@@ -193,6 +193,10 @@ jobs:
       state_archive_chunk_5: ${{ steps.package.outputs.state_archive_chunk_5 }}
       state_archive_chunk_6: ${{ steps.package.outputs.state_archive_chunk_6 }}
       state_archive_chunk_7: ${{ steps.package.outputs.state_archive_chunk_7 }}
+      state_archive_chunk_8: ${{ steps.package.outputs.state_archive_chunk_8 }}
+      state_archive_chunk_9: ${{ steps.package.outputs.state_archive_chunk_9 }}
+      state_archive_chunk_10: ${{ steps.package.outputs.state_archive_chunk_10 }}
+      state_archive_chunk_11: ${{ steps.package.outputs.state_archive_chunk_11 }}
       state_archive_sha256: ${{ steps.package.outputs.state_archive_sha256 }}
     env:
       GH_TOKEN: ${{ github.token }}
@@ -503,7 +507,7 @@ jobs:
               echo "state_archive_chunk_count=0"
               echo "state_archive_b64_len=0"
               echo "state_archive_sha256="
-              for index in 0 1 2 3 4 5 6 7; do
+              for index in 0 1 2 3 4 5 6 7 8 9 10 11; do
                 echo "state_archive_chunk_${index}="
               done
             } >> "$GITHUB_OUTPUT"
@@ -529,8 +533,8 @@ jobs:
           state_b64="$(base64 -w 0 build/persistent-state-handoff.zip)"
           state_b64_bytes="${#state_b64}"
           chunk_size=60000
-          max_chunks=8
-          if [ "$state_b64_bytes" -gt 480000 ]; then
+          max_chunks=12
+          if [ "$state_b64_bytes" -gt 720000 ]; then
             echo "::error::Packed Paper state exceeds bounded job-output handoff."
             exit 1
           fi
@@ -543,7 +547,7 @@ jobs:
             echo "state_archive_chunk_count=$chunk_count"
             echo "state_archive_b64_len=$state_b64_bytes"
             echo "state_archive_sha256=$state_sha"
-            for index in 0 1 2 3 4 5 6 7; do
+            for index in 0 1 2 3 4 5 6 7 8 9 10 11; do
               if [ "$index" -lt "$chunk_count" ]; then
                 offset=$(( index * chunk_size ))
                 chunk="${state_b64:offset:chunk_size}"
@@ -572,6 +576,10 @@ jobs:
       STATE_ARCHIVE_CHUNK_5: ${{ needs.paper-loop.outputs.state_archive_chunk_5 }}
       STATE_ARCHIVE_CHUNK_6: ${{ needs.paper-loop.outputs.state_archive_chunk_6 }}
       STATE_ARCHIVE_CHUNK_7: ${{ needs.paper-loop.outputs.state_archive_chunk_7 }}
+      STATE_ARCHIVE_CHUNK_8: ${{ needs.paper-loop.outputs.state_archive_chunk_8 }}
+      STATE_ARCHIVE_CHUNK_9: ${{ needs.paper-loop.outputs.state_archive_chunk_9 }}
+      STATE_ARCHIVE_CHUNK_10: ${{ needs.paper-loop.outputs.state_archive_chunk_10 }}
+      STATE_ARCHIVE_CHUNK_11: ${{ needs.paper-loop.outputs.state_archive_chunk_11 }}
       STATE_ARCHIVE_SHA256: ${{ needs.paper-loop.outputs.state_archive_sha256 }}
       STATE_ROOT: build/nexus_persistent_paper_trading_state
     steps:
@@ -581,7 +589,7 @@ jobs:
           rm -rf "$STATE_ROOT" build/persistent-state-handoff.zip
           mkdir -p "$STATE_ROOT"
           case "$STATE_ARCHIVE_CHUNK_COUNT" in
-            1|2|3|4|5|6|7|8) ;;
+            1|2|3|4|5|6|7|8|9|10|11|12) ;;
             *) echo "::error::Invalid Paper state handoff chunk count."; exit 1 ;;
           esac
           chunks=(
@@ -593,6 +601,10 @@ jobs:
             "$STATE_ARCHIVE_CHUNK_5"
             "$STATE_ARCHIVE_CHUNK_6"
             "$STATE_ARCHIVE_CHUNK_7"
+            "$STATE_ARCHIVE_CHUNK_8"
+            "$STATE_ARCHIVE_CHUNK_9"
+            "$STATE_ARCHIVE_CHUNK_10"
+            "$STATE_ARCHIVE_CHUNK_11"
           )
           state_b64=""
           for ((index=0; index<STATE_ARCHIVE_CHUNK_COUNT; index++)); do
@@ -602,7 +614,7 @@ jobs:
             fi
             state_b64+="${chunks[$index]}"
           done
-          for ((index=STATE_ARCHIVE_CHUNK_COUNT; index<8; index++)); do
+          for ((index=STATE_ARCHIVE_CHUNK_COUNT; index<12; index++)); do
             if [ -n "${chunks[$index]}" ]; then
               echo "::error::Unexpected trailing Paper state handoff chunk."
               exit 1
