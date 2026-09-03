@@ -61,6 +61,14 @@ def test_restart_replay_requires_same_runner_exact_sha_and_bounded_fetch() -> No
         assert "uses: actions/upload-artifact" not in section
 
 
+def test_restart_replay_wheelhouse_matches_restore_helper_inner_name_contract() -> None:
+    text = _text()
+    assert "--output build/nexus-paper-runtime-wheelhouse.zip" in text
+    assert "path: build/nexus-paper-runtime-wheelhouse.zip" in text
+    assert "--output build/nexus-multipair-continuity-wheelhouse.zip" not in text
+    assert "path: build/nexus-multipair-continuity-wheelhouse.zip" not in text
+
+
 def test_restart_replay_proves_no_duplicate_bar_execution() -> None:
     text = _text()
     assert '--now-ms "$REPLAY_NOW_MS"' in text
