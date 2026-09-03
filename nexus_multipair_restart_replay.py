@@ -15,7 +15,11 @@ import re
 from pathlib import Path
 from typing import Any, Mapping
 
-from nexus_multipair_demo_strategy_matrix import load_manifest, verify_v2_snapshot
+from nexus_multipair_demo_strategy_matrix import (
+    MultiPairMatrixError,
+    load_manifest,
+    verify_v2_snapshot,
+)
 
 CAPTURE_SCHEMA = "nexus.multipair-restart-seed.v1"
 PROOF_SCHEMA = "nexus.multipair-restart-replay-proof.v1"
@@ -286,7 +290,7 @@ def main() -> int:
                 output_path=args.output,
             )
             print(json.dumps({"proof_digest": result["proof_digest"], "state_digest_preserved": True, "skipped_no_new_bar_count": 12}, sort_keys=True))
-    except (OSError, MultiPairRestartReplayError) as exc:
+    except (OSError, MultiPairMatrixError, MultiPairRestartReplayError) as exc:
         parser.exit(1, f"NEXUS multi-pair restart/replay failed closed: {exc}\n")
     return 0
 
