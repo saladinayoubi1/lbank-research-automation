@@ -248,7 +248,6 @@ def restore_current_run_artifact(
 
     work_root.mkdir(parents=True, exist_ok=True)
     outer_root = work_root / "outer"
-    inner_zip = outer_root / "nexus-paper-runtime-wheelhouse.zip"
     shutil.rmtree(outer_root, ignore_errors=True)
     shutil.rmtree(destination, ignore_errors=True)
     outer_root.mkdir(parents=True, exist_ok=True)
@@ -294,8 +293,9 @@ def restore_current_run_artifact(
         )
         safe_extract_flat_archive(outer_zip, outer_root, allow_zip_only=True)
         extracted = sorted(path for path in outer_root.iterdir() if path.is_file())
-        if extracted != [inner_zip]:
+        if len(extracted) != 1 or extracted[0].suffix.lower() != ".zip":
             raise RuntimeError("runtime wheelhouse artifact must contain exactly one inner archive")
+        inner_zip = extracted[0]
 
         actual_sha256 = sha256_file(inner_zip)
         if actual_sha256 != expected_sha256:
