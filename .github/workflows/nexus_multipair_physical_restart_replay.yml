@@ -79,7 +79,7 @@ jobs:
           set -euo pipefail
           wheelhouse="$PWD/build/nexus-multipair-continuity-wheelhouse"
           smoke="$PWD/build/nexus-multipair-continuity-wheelhouse-smoke"
-          rm -rf "$wheelhouse" "$smoke" build/nexus-multipair-continuity-wheelhouse.zip
+          rm -rf "$wheelhouse" "$smoke" build/nexus-paper-runtime-wheelhouse.zip
           mkdir -p "$wheelhouse" "$smoke"
           python -m pip download \
             --disable-pip-version-check \
@@ -109,13 +109,13 @@ jobs:
           set -euo pipefail
           python scripts/nexus_runtime_wheelhouse.py pack \
             --root build/nexus-multipair-continuity-wheelhouse \
-            --output build/nexus-multipair-continuity-wheelhouse.zip \
+            --output build/nexus-paper-runtime-wheelhouse.zip \
             --digest-output build/nexus-multipair-continuity-wheelhouse-sha.txt
           echo "archive_sha256=$(cat build/nexus-multipair-continuity-wheelhouse-sha.txt)" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: nexus-multipair-continuity-wheelhouse-${{ github.sha }}
-          path: build/nexus-multipair-continuity-wheelhouse.zip
+          path: build/nexus-paper-runtime-wheelhouse.zip
           if-no-files-found: error
           retention-days: 7
           compression-level: 0
