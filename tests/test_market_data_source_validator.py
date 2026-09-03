@@ -76,16 +76,25 @@ def write_candidate(tmp_path: Path, text: str) -> Path:
     return candidate
 
 
-def test_current_registry_is_valid_and_authorizes_only_reviewed_btc_eth_spot_mappings() -> None:
+def test_current_registry_is_valid_and_authorizes_reviewed_four_symbol_spot_mappings() -> None:
     payload = current_payload()
     mappings = payload["mappings"]
-    assert len(mappings) == 6
-    assert {item["canonical_symbol"] for item in mappings} == {"BTC/USDT", "ETH/USDT"}
+    assert payload["registry_version"] == "1.2.0"
+    assert len(mappings) == 12
+    assert {item["canonical_symbol"] for item in mappings} == {
+        "BTC/USDT", "ETH/USDT", "SOL/USDT", "XRP/USDT"
+    }
     assert {item["timeframe"] for item in mappings} == {"minute15", "hour1", "hour4"}
     assert all(item["market_category"] == "spot" for item in mappings)
     assert all(item["candle_finality"] == "closed_only" for item in mappings)
     assert all([source["exchange"] for source in item["sources"]] == ["Bybit", "Binance", "LBank"] for item in mappings)
     assert all([source["role"] for source in item["sources"]] == ["primary", "secondary", "tertiary"] for item in mappings)
+    for symbol in ("SOL/USDT", "XRP/USDT"):
+        rows = [item for item in mappings if item["canonical_symbol"] == symbol]
+        assert len(rows) == 3
+        assert {row["timeframe"] for row in rows} == {"minute15", "hour1", "hour4"}
+        assert all(row["sources"][0]["exchange"] == "Bybit" for row in rows)
+        assert all(row["sources"][0]["status"] == "compatible" for row in rows)
     load_and_validate(REGISTRY)
 
 
@@ -175,7 +184,7 @@ def test_non_utc_listing_timestamp_fails_closed() -> None:
 @pytest.mark.parametrize(
     "text",
     [
-        "registry_version: 1.1.0\nregistry_version: 1.1.0\n",
+        "registry_version: 1.2.0\nregistry_version: 1.2.0\n",
         "authority:\n  primary: Bybit\n  primary: Binance\n",
     ],
 )
@@ -189,7 +198,7 @@ def test_duplicate_yaml_keys_fail_closed(tmp_path: Path, text: str) -> None:
     [
         ("base: &policy\n  primary: Bybit\nauthority: *policy\n", "anchors|aliases"),
         ("---\na: 1\n---\nb: 2\n", "multiple YAML documents"),
-        ("registry_version: !unsafe 1.1.0\n", "custom YAML tags"),
+        ("registry_version: !unsafe 1.2.0\n", "custom YAML tags"),
     ],
 )
 def test_special_yaml_structures_fail_closed(tmp_path: Path, text: str, message: str) -> None:
