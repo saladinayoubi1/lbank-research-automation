@@ -9,11 +9,13 @@ on:
       - "phase6_research_pipeline.py"
       - "nexus_demo_strategy_matrix.py"
       - "nexus_multipair_demo_strategy_matrix.py"
+      - "nexus_strategy_paper_supervisor.py"
       - "config/nexus-demo-strategy-matrix-v1.json"
       - "config/nexus-demo-strategy-matrix-v2.json"
       - "tests/test_market_data_source_validator.py"
       - "tests/test_nexus_multipair_research_binding.py"
       - "tests/test_nexus_multipair_demo_strategy_matrix.py"
+      - "tests/test_nexus_strategy_paper_supervisor_multipair.py"
       - ".github/workflows/nexus-multipair-contract.yml"
   push:
     branches: [main]
@@ -24,11 +26,13 @@ on:
       - "phase6_research_pipeline.py"
       - "nexus_demo_strategy_matrix.py"
       - "nexus_multipair_demo_strategy_matrix.py"
+      - "nexus_strategy_paper_supervisor.py"
       - "config/nexus-demo-strategy-matrix-v1.json"
       - "config/nexus-demo-strategy-matrix-v2.json"
       - "tests/test_market_data_source_validator.py"
       - "tests/test_nexus_multipair_research_binding.py"
       - "tests/test_nexus_multipair_demo_strategy_matrix.py"
+      - "tests/test_nexus_strategy_paper_supervisor_multipair.py"
       - ".github/workflows/nexus-multipair-contract.yml"
   workflow_dispatch:
 
@@ -49,7 +53,7 @@ jobs:
           cache: pip
       - run: python -m pip install -r requirements-dev.lock
       - run: python -m pip check
-      - name: Verify registry, canonical binding, and v1-to-v2 state migration
+      - name: Verify registry, canonical binding, Supervisor routing, and v1-to-v2 state migration
         run: >-
           python -m pytest -q
           tests/test_market_data_source_validator.py
@@ -57,3 +61,4 @@ jobs:
           tests/test_nexus_multipair_research_binding.py
           tests/test_nexus_demo_strategy_matrix.py
           tests/test_nexus_multipair_demo_strategy_matrix.py
+          tests/test_nexus_strategy_paper_supervisor_multipair.py
