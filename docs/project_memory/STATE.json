@@ -168,12 +168,18 @@
       "deterministic_risk_final_authority": true
     },
     "strategy_discovery": {
-      "status": "integrated_research_only_continuous_discovery_runtime_requalification_audit_required",
+      "status": "boundary_bound_runtime_discovery_and_requalification_verified_current_scope_expansion_still_required",
       "scope": "BTCUSDT/ETHUSDT x minute15/hour1/hour4 x momentum/trend_breakout/mean_reversion",
       "selection": "training_only",
       "challenge": "locked chronological holdout with conservative and stress costs",
       "output_authority": "RESEARCH_PROPOSAL_ONLY",
-      "independent_runtime_requalification_required": true,
+      "runtime_feedback_workflow_run": 33588953610,
+      "runtime_feedback_artifact_id": 9831324417,
+      "runtime_feedback_artifact_digest": "sha256:c70004fa5d288b7e9837878e515f7fe3bc96271e5bd9f36ed093a2dce0ffe800",
+      "leakage_resistant_discovery_cells_executed": 9,
+      "runtime_requalification_result": "NO_WORK",
+      "verified_feedback": "VERIFIED_NO_RESEARCH_PROPOSALS",
+      "discovery_feedback_verified": true,
       "automatic_candidate_or_paper_promotion": false,
       "live_trading_authority": false
     },
@@ -238,8 +244,8 @@
   "next_autonomous_work": {
     "priority": "trading_engine_first",
     "order": [
-      "audit current real multi-pair Paper/runtime coverage beyond the accepted BTCUSDT/ETHUSDT surface and identify the smallest evidence-backed expansion gap",
-      "audit Agent Room / strategy-discovery runtime candidate injection, independent requalification, adverse-risk blocking, and suppression paths using current repository truth",
+      "expand canonical multi-pair Research/Backtest/Paper coverage beyond the accepted BTCUSDT/ETHUSDT surface using explicit registry mappings and fail-closed semantic validation",
+      "expand the already-verified boundary-bound Discovery engine beyond its current BTCUSDT/ETHUSDT and three-family hypothesis surface without weakening leakage, holdout, stress, or deterministic Risk gates",
       "continue immutable #984 prospective Paper collection without inferred or fabricated bars",
       "keep #43 production release deny-by-default and do not create Live, signing, credential, or deployment authority"
     ],
