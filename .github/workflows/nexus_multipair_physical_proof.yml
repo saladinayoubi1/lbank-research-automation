@@ -1,0 +1,401 @@
+name: NEXUS Multi-Pair physical Paper proof
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "nexus_multipair_demo_strategy_matrix.py"
+      - "nexus_strategy_paper_supervisor.py"
+      - "docs/architecture/market-data-source-registry.yaml"
+      - "market_data_source_validator.py"
+      - "config/nexus-demo-strategy-matrix-v2.json"
+      - "scripts/nexus_runtime_wheelhouse.py"
+      - "requirements.lock"
+      - "tests/test_nexus_multipair_physical_proof_workflow.py"
+      - ".github/workflows/nexus_multipair_physical_proof.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "nexus_multipair_demo_strategy_matrix.py"
+      - "nexus_strategy_paper_supervisor.py"
+      - "docs/architecture/market-data-source-registry.yaml"
+      - "market_data_source_validator.py"
+      - "config/nexus-demo-strategy-matrix-v2.json"
+      - "scripts/nexus_runtime_wheelhouse.py"
+      - "requirements.lock"
+      - "tests/test_nexus_multipair_physical_proof_workflow.py"
+      - ".github/workflows/nexus_multipair_physical_proof.yml"
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: nexus-multipair-physical-proof-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'main' }}
+  cancel-in-progress: false
+
+jobs:
+  contract-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements-dev.lock
+      - run: python -m pip check
+      - name: Verify physical proof contract
+        run: >-
+          python -m pytest -q
+          tests/test_nexus_multipair_demo_strategy_matrix.py
+          tests/test_nexus_strategy_paper_supervisor_multipair.py
+          tests/test_nexus_multipair_physical_proof_workflow.py
+
+  runtime-wheelhouse:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      archive_sha256: ${{ steps.pack.outputs.archive_sha256 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Build locked CPython 3.12 Linux runtime wheelhouse
+        run: |
+          set -euo pipefail
+          wheelhouse="$PWD/build/nexus-multipair-runtime-wheelhouse"
+          smoke="$PWD/build/nexus-multipair-runtime-wheelhouse-smoke"
+          rm -rf "$wheelhouse" "$smoke" build/nexus-multipair-runtime-wheelhouse.zip
+          mkdir -p "$wheelhouse" "$smoke"
+          python -m pip download \
+            --disable-pip-version-check \
+            --only-binary=:all: \
+            --dest "$wheelhouse" \
+            -r requirements.lock
+          cp requirements.lock "$wheelhouse/requirements.lock"
+          python -m pip install \
+            --disable-pip-version-check \
+            --no-index \
+            --find-links "$wheelhouse" \
+            --target "$smoke" \
+            -r requirements.lock
+          PYTHONPATH="$smoke" python - <<'PY'
+          import numpy
+          import pandas
+          import pyarrow
+          import requests
+          import tenacity
+          import yaml
+          print("hosted_multipair_runtime_wheelhouse_smoke=PASS")
+          PY
+          rm -rf "$smoke"
+      - name: Pack deterministic runtime wheelhouse and emit digest
+        id: pack
+        run: |
+          set -euo pipefail
+          python scripts/nexus_runtime_wheelhouse.py pack \
+            --root build/nexus-multipair-runtime-wheelhouse \
+            --output build/nexus-multipair-runtime-wheelhouse.zip \
+            --digest-output build/nexus-multipair-runtime-wheelhouse-sha.txt
+          echo "archive_sha256=$(cat build/nexus-multipair-runtime-wheelhouse-sha.txt)" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: nexus-multipair-runtime-wheelhouse-${{ github.sha }}
+          path: build/nexus-multipair-runtime-wheelhouse.zip
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+
+  physical-proof:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: [contract-test, runtime-wheelhouse]
+    runs-on: nexus-bybit-network
+    timeout-minutes: 55
+    outputs:
+      proof_b64: ${{ steps.proof.outputs.proof_b64 }}
+      proof_sha256: ${{ steps.proof.outputs.proof_sha256 }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      WHEELHOUSE_ARTIFACT: nexus-multipair-runtime-wheelhouse-${{ github.sha }}
+      WHEELHOUSE_ARCHIVE_SHA256: ${{ needs.runtime-wheelhouse.outputs.archive_sha256 }}
+      STATE_ROOT: build/nexus_multipair_physical_proof_state
+    steps:
+      - name: Prepare exact repository and pre-provisioned Python 3.12 without JavaScript actions
+        run: |
+          set -euo pipefail
+          repo_url="https://github.com/${GITHUB_REPOSITORY}.git"
+          if [ -d .git ]; then
+            git remote set-url origin "$repo_url"
+            git reset --hard
+            git clean -ffdx
+          else
+            find . -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
+            git init .
+            git remote add origin "$repo_url"
+          fi
+          git config --local --unset-all http.https://github.com/.extraheader || true
+          fetch_ok=false
+          for fetch_attempt in 1 2 3; do
+            if git -c http.version=HTTP/1.1 fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"; then
+              fetch_ok=true
+              break
+            fi
+            echo "::warning::Exact repository fetch attempt ${fetch_attempt}/3 failed."
+            if [ "$fetch_attempt" -lt 3 ]; then sleep "$((fetch_attempt * 5))"; fi
+          done
+          if [ "$fetch_ok" != true ]; then
+            echo "::error::Exact repository fetch failed after bounded attempts."
+            exit 1
+          fi
+          git checkout --detach --force FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git clean -ffdx
+
+          known_python="/opt/nexus-bybit-runner/_work/_tool/Python/3.12.14/x64/bin/python"
+          python_bin=""
+          if [ -x "$known_python" ]; then python_bin="$known_python"; fi
+          if [ -z "$python_bin" ]; then
+            tool_root="${RUNNER_TOOL_CACHE:-/opt/nexus-bybit-runner/_work/_tool}"
+            if [ "$(basename "$tool_root")" = "Python" ]; then python_root="$tool_root"; else python_root="$tool_root/Python"; fi
+            python_bin="$(find "$python_root" -type f -path '*/3.12.*/x64/bin/python' 2>/dev/null | sort -V | tail -n 1 || true)"
+          fi
+          test -n "$python_bin"
+          "$python_bin" -c "import sys; assert sys.version_info[:2] == (3, 12), sys.version"
+          python_prefix="$("$python_bin" -c 'import sys; print(sys.prefix)')"
+          python_lib="$python_prefix/lib"
+          test -d "$python_lib"
+          effective_ld_library_path="$python_lib"
+          if [ -n "${LD_LIBRARY_PATH:-}" ]; then effective_ld_library_path="$python_lib:$LD_LIBRARY_PATH"; fi
+          LD_LIBRARY_PATH="$effective_ld_library_path" "$python_bin" -c "import ctypes; print('physical_python_dynamic_stdlib=PASS')"
+          printf 'PYTHON_BIN=%s\n' "$python_bin" >> "$GITHUB_ENV"
+          printf 'LD_LIBRARY_PATH=%s\n' "$effective_ld_library_path" >> "$GITHUB_ENV"
+          echo "physical_checkout_sha=$(git rev-parse HEAD)"
+
+      - name: Enforce eligible physical Bybit execution plane
+        run: >-
+          "$PYTHON_BIN" -c "assert '${{ runner.environment }}' == 'self-hosted'; assert '${{ runner.os }}' == 'Linux'; print('multipair_execution_plane=self-hosted:nexus-bybit-network')"
+
+      - name: Restore digest-pinned current-run runtime wheelhouse
+        run: |
+          set -euo pipefail
+          cache_root="$HOME/.cache/nexus-paper-runtime-wheelhouse-verified"
+          cache_dir="$cache_root/$WHEELHOUSE_ARCHIVE_SHA256"
+          wheelhouse="$PWD/build/nexus-multipair-runtime-wheelhouse"
+          cache_probe="$PWD/build/nexus-multipair-runtime-wheelhouse-cache-probe.zip"
+          rm -rf "$wheelhouse" "$cache_probe"
+          cache_hit=false
+          if [ -d "$cache_dir" ] && [ ! -L "$cache_dir" ] && ! find "$cache_dir" -type l -print -quit | grep -q .; then
+            if "$PYTHON_BIN" scripts/nexus_runtime_wheelhouse.py pack --root "$cache_dir" --output "$cache_probe" >/dev/null 2>&1; then
+              cache_sha="$(sha256sum "$cache_probe" | awk '{print $1}')"
+              if [ "$cache_sha" = "$WHEELHOUSE_ARCHIVE_SHA256" ] \
+                && cmp requirements.lock "$cache_dir/requirements.lock" \
+                && find "$cache_dir" -maxdepth 1 -type f -name '*.whl' -print -quit | grep -q .; then
+                cache_hit=true
+              fi
+            fi
+          fi
+          if [ "$cache_hit" = true ]; then
+            mkdir -p "$wheelhouse"
+            cp -a "$cache_dir/." "$wheelhouse/"
+            echo "multipair_runtime_wheelhouse_verified_cache=HIT"
+          else
+            rm -rf "$cache_dir" "$cache_probe"
+            "$PYTHON_BIN" scripts/nexus_runtime_wheelhouse.py restore-current-run \
+              --repository "$GITHUB_REPOSITORY" \
+              --run-id "$GITHUB_RUN_ID" \
+              --artifact-name "$WHEELHOUSE_ARTIFACT" \
+              --expected-sha256 "$WHEELHOUSE_ARCHIVE_SHA256" \
+              --repository-lock requirements.lock \
+              --destination "$wheelhouse" \
+              --work-root build/nexus-multipair-runtime-wheelhouse-restore
+            mkdir -p "$cache_root"
+            staging_dir="$cache_root/.${WHEELHOUSE_ARCHIVE_SHA256}.multipair.$$"
+            rm -rf "$staging_dir"
+            cp -a "$wheelhouse" "$staging_dir"
+            rm -rf "$cache_dir"
+            mv "$staging_dir" "$cache_dir"
+            echo "multipair_runtime_wheelhouse_verified_cache=MISS_POPULATED"
+          fi
+          rm -f "$cache_probe"
+
+      - name: Provision locked runtime dependencies
+        run: |
+          set -euo pipefail
+          pip_wheel="$("$PYTHON_BIN" - <<'PY'
+          import ensurepip
+          from pathlib import Path
+          bundled = Path(ensurepip.__file__).resolve().parent / "_bundled"
+          wheels = sorted(bundled.glob("pip-*.whl"))
+          if not wheels:
+              raise SystemExit("bundled pip wheel missing")
+          print(wheels[-1].resolve())
+          PY
+          )"
+          wheelhouse="$PWD/build/nexus-multipair-runtime-wheelhouse"
+          test -f "$wheelhouse/requirements.lock"
+          cmp requirements.lock "$wheelhouse/requirements.lock"
+          runtime_site="$PWD/.nexus-multipair-site"
+          rm -rf "$runtime_site"
+          mkdir -p "$runtime_site"
+          PYTHONPATH="$pip_wheel" "$PYTHON_BIN" -m pip install \
+            --disable-pip-version-check \
+            --no-index \
+            --find-links "$wheelhouse" \
+            --no-cache-dir \
+            --target "$runtime_site" \
+            -r requirements.lock
+          printf 'PYTHONPATH=%s:%s\n' "$pip_wheel" "$runtime_site" >> "$GITHUB_ENV"
+          echo "multipair_offline_wheelhouse_bootstrap=PASS"
+
+      - run: '"$PYTHON_BIN" -m pip check'
+
+      - name: Execute isolated four-symbol physical Paper matrix
+        run: |
+          set -euo pipefail
+          rm -rf "$STATE_ROOT"
+          mkdir -p "$STATE_ROOT/demo"
+          now_ms="$("$PYTHON_BIN" -c 'import time; print(int(time.time() * 1000))')"
+          "$PYTHON_BIN" nexus_multipair_demo_strategy_matrix.py \
+            --manifest config/nexus-demo-strategy-matrix-v2.json \
+            --legacy-manifest config/nexus-demo-strategy-matrix-v1.json \
+            --state "$STATE_ROOT/matrix-state.json" \
+            --state-root "$STATE_ROOT" \
+            --source-sha "$GITHUB_SHA" \
+            --run-id "$GITHUB_RUN_ID" \
+            --now-ms "$now_ms" \
+            --snapshot "$STATE_ROOT/demo/strategy-matrix.json" \
+            --migration-evidence "$STATE_ROOT/demo/migration.json"
+
+      - name: Independently enforce 12-cell 36-lane Paper proof
+        id: proof
+        env:
+          RUNNER_NAME_EVIDENCE: ${{ runner.name }}
+          RUNNER_OS_EVIDENCE: ${{ runner.os }}
+          RUNNER_ENVIRONMENT_EVIDENCE: ${{ runner.environment }}
+        run: |
+          set -euo pipefail
+          "$PYTHON_BIN" - <<'PY'
+          import hashlib
+          import json
+          import os
+          from datetime import datetime, timezone
+          from pathlib import Path
+          from nexus_multipair_demo_strategy_matrix import load_manifest, verify_v2_snapshot
+
+          root = Path(os.environ["STATE_ROOT"])
+          manifest = load_manifest("config/nexus-demo-strategy-matrix-v2.json")
+          state = json.loads((root / "matrix-state.json").read_text(encoding="utf-8"))
+          snapshot = json.loads((root / "demo" / "strategy-matrix.json").read_text(encoding="utf-8"))
+          verification = verify_v2_snapshot(snapshot, manifest=manifest, state=state)
+          assert verification["decision"] == "pass", verification
+          assert snapshot["status"] == "VERIFIED", snapshot
+          assert snapshot["expected_cell_count"] == 12
+          assert snapshot["verified_cell_count"] == 12
+          assert snapshot["blocked_cell_count"] == 0
+          assert snapshot["expected_lane_count"] == 36
+          assert snapshot["reported_lane_count"] == 36
+          assert snapshot["symbols"] == ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT"]
+          assert snapshot["timeframes"] == ["minute15", "hour1", "hour4"]
+          assert snapshot["families"] == ["momentum", "trend_breakout", "mean_reversion"]
+          assert snapshot["paper_only"] is True
+          assert snapshot["live_trading_authority"] is False
+          assert snapshot["private_credentials_used"] is False
+          assert snapshot["automatic_strategy_promotion"] is False
+          assert snapshot["deterministic_risk_final_authority"] is True
+          proof = {
+              "schema_version": "nexus.multipair-physical-paper-proof.v1",
+              "generated_at_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+              "source_sha": os.environ["GITHUB_SHA"],
+              "run_id": os.environ["GITHUB_RUN_ID"],
+              "runner_name": os.environ["RUNNER_NAME_EVIDENCE"],
+              "runner_os": os.environ["RUNNER_OS_EVIDENCE"],
+              "runner_environment": os.environ["RUNNER_ENVIRONMENT_EVIDENCE"],
+              "execution_plane": "nexus-bybit-network",
+              "snapshot_digest": snapshot["snapshot_digest"],
+              "state_digest": state["state_digest"],
+              "expected_cell_count": 12,
+              "verified_cell_count": 12,
+              "blocked_cell_count": 0,
+              "expected_lane_count": 36,
+              "reported_lane_count": 36,
+              "symbols": snapshot["symbols"],
+              "timeframes": snapshot["timeframes"],
+              "families": snapshot["families"],
+              "paper_only": True,
+              "live_trading_authority": False,
+              "real_exchange_orders": False,
+              "private_credentials_used": False,
+              "automatic_strategy_promotion": False,
+              "deterministic_risk_final_authority": True,
+              "state_isolated_from_issue_984": True,
+              "issue_984_state_artifact_name": "nexus-persistent-paper-trading-state",
+              "persistent_state_enabled": False,
+          }
+          target = Path("build/nexus-multipair-physical-proof.json")
+          target.write_text(json.dumps(proof, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          print(json.dumps(proof, sort_keys=True))
+          PY
+          proof_sha="$(sha256sum build/nexus-multipair-physical-proof.json | awk '{print $1}')"
+          proof_b64="$(base64 -w 0 build/nexus-multipair-physical-proof.json)"
+          if [ "${#proof_b64}" -gt 40000 ]; then
+            echo "::error::Physical proof exceeds bounded job-output size."
+            exit 1
+          fi
+          {
+            echo "proof_sha256=$proof_sha"
+            echo "proof_b64=$proof_b64"
+          } >> "$GITHUB_OUTPUT"
+
+  persist-proof:
+    if: ${{ always() && needs.physical-proof.result == 'success' && needs.physical-proof.outputs.proof_b64 != '' }}
+    needs: physical-proof
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PROOF_B64: ${{ needs.physical-proof.outputs.proof_b64 }}
+      PROOF_SHA256: ${{ needs.physical-proof.outputs.proof_sha256 }}
+    steps:
+      - name: Rehydrate and verify physical proof
+        run: |
+          set -euo pipefail
+          mkdir -p build/nexus-multipair-physical-proof
+          printf '%s' "$PROOF_B64" | base64 --decode > build/nexus-multipair-physical-proof/evidence.json
+          test "$(sha256sum build/nexus-multipair-physical-proof/evidence.json | awk '{print $1}')" = "$PROOF_SHA256"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          value = json.loads(Path("build/nexus-multipair-physical-proof/evidence.json").read_text(encoding="utf-8"))
+          assert value["schema_version"] == "nexus.multipair-physical-paper-proof.v1"
+          assert value["runner_environment"] == "self-hosted"
+          assert value["runner_os"] == "Linux"
+          assert value["execution_plane"] == "nexus-bybit-network"
+          assert value["expected_cell_count"] == value["verified_cell_count"] == 12
+          assert value["blocked_cell_count"] == 0
+          assert value["expected_lane_count"] == value["reported_lane_count"] == 36
+          assert value["paper_only"] is True
+          assert value["live_trading_authority"] is False
+          assert value["real_exchange_orders"] is False
+          assert value["private_credentials_used"] is False
+          assert value["automatic_strategy_promotion"] is False
+          assert value["deterministic_risk_final_authority"] is True
+          assert value["state_isolated_from_issue_984"] is True
+          assert value["persistent_state_enabled"] is False
+          print("hosted_multipair_physical_proof_verification=PASS")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: nexus-multipair-physical-proof-${{ github.sha }}
+          path: build/nexus-multipair-physical-proof
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
