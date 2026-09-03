@@ -1,8 +1,8 @@
 """Persistent Supervisor cycle for canonical Strategy research and isolated Paper.
 
-The runtime is intentionally bounded to public Bybit data and Paper-only state.
-Each strategy family receives its own fenced task and isolated Paper portfolio.
-No result is complete until the independent ledger verifier accepts it.
+The runtime is intentionally bounded to canonical public Bybit data and Paper-only
+state. Each strategy family receives its own fenced task and isolated Paper
+portfolio. No result is complete until the independent ledger verifier accepts it.
 """
 from __future__ import annotations
 
@@ -16,15 +16,22 @@ from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
 import phase5_attempts as attempts
+from market_data_source_validator import load_and_validate
 from nexus_bybit_same_interval_chunk_fallback import fetch_bind_bybit_dataset
-from product_research_runtime import ProductResearchRuntime, STRATEGY_PRESETS, TIMEFRAMES, _utc_ms
+from product_research_runtime import (
+    ProductResearchRuntime,
+    STRATEGY_PRESETS,
+    TIMEFRAMES,
+    _public_mapping,
+    _registry_path,
+    _utc_ms,
+)
 from product_runtime import ProductRuntime
 
 SCHEMA = "nexus.strategy-paper-supervisor.v1"
 VERIFICATION_SCHEMA = "nexus.strategy-paper-supervisor-verification.v1"
 DEFAULT_STATE_ROOT = Path(os.environ.get("NEXUS_STATE_DIR", ".nexus-runtime")) / "strategy-paper"
 _SHA_RE = re.compile(r"^[0-9a-f]{40}$")
-_CANONICAL_SYMBOLS = {"BTCUSDT": "BTC/USDT", "ETHUSDT": "ETH/USDT"}
 DatasetFetcher = Callable[..., Mapping[str, Any]]
 ResearchFactory = Callable[[ProductRuntime, str, Mapping[str, Any], int], ProductResearchRuntime]
 
@@ -68,6 +75,28 @@ def _families(values: Sequence[str]) -> tuple[str, ...]:
     if not result or any(value not in STRATEGY_PRESETS for value in result):
         raise StrategyPaperSupervisorError("strategy families must be unique approved families")
     return result
+
+
+def _canonical_symbol_from_registry(symbol: str, timeframe: str) -> str:
+    """Resolve one exact compatible Bybit primary mapping or fail closed."""
+    try:
+        registry = load_and_validate(_registry_path())
+        mapping, source = _public_mapping(registry, symbol, timeframe)
+    except Exception as exc:
+        raise StrategyPaperSupervisorError(
+            f"unsupported or non-canonical matrix symbol/timeframe: {exc}"
+        ) from exc
+    canonical_symbol = mapping.get("canonical_symbol")
+    if (
+        not isinstance(canonical_symbol, str)
+        or not canonical_symbol
+        or source.get("exchange") != "Bybit"
+        or source.get("role") != "primary"
+        or source.get("status") != "compatible"
+        or source.get("symbol") != symbol
+    ):
+        raise StrategyPaperSupervisorError("canonical Bybit primary mapping verification failed")
+    return canonical_symbol
 
 
 def _task(family: str, source_sha: str, dataset_sha: str) -> dict[str, Any]:
@@ -171,11 +200,9 @@ def run_once(
     source_sha = _source_sha(source_sha)
     families = _families(families)
     symbol = str(symbol).strip().upper()
-    canonical_symbol = _CANONICAL_SYMBOLS.get(symbol)
-    if canonical_symbol is None:
-        raise StrategyPaperSupervisorError("unsupported matrix symbol")
     if timeframe not in TIMEFRAMES:
         raise StrategyPaperSupervisorError("unsupported timeframe")
+    canonical_symbol = _canonical_symbol_from_registry(symbol, timeframe)
     if isinstance(limit, bool) or not isinstance(limit, int) or not 30 <= limit <= 1000:
         raise StrategyPaperSupervisorError("limit must be between 30 and 1000")
     if now_ms is None:
