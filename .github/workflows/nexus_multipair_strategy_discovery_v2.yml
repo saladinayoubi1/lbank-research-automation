@@ -180,7 +180,6 @@ jobs:
           git checkout --detach --force FETCH_HEAD
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           git clean -ffdx
-
           known_python="/opt/nexus-bybit-runner/_work/_tool/Python/3.12.14/x64/bin/python"
           python_bin=""
           if [ -x "$known_python" ]; then python_bin="$known_python"; fi
@@ -197,7 +196,6 @@ jobs:
           effective_ld_library_path="$python_lib"
           if [ -n "${LD_LIBRARY_PATH:-}" ]; then effective_ld_library_path="$python_lib:$LD_LIBRARY_PATH"; fi
           LD_LIBRARY_PATH="$effective_ld_library_path" "$python_bin" -c "import ctypes; print('multipair_discovery_physical_python=PASS')"
-
           state_root="$HOME/.local/share/nexus/multipair-discovery-v2/$GITHUB_RUN_ID"
           case "$state_root" in
             "$HOME"/.local/share/nexus/multipair-discovery-v2/*) ;;
@@ -255,10 +253,12 @@ jobs:
             --target "$runtime_site" \
             -r requirements.lock
           cp requirements.lock "$STATE_ROOT/requirements.lock"
-          printf 'PYTHONPATH=%s\n' "$runtime_site" >> "$GITHUB_ENV"
+          printf 'PIP_WHEEL=%s\n' "$pip_wheel" >> "$GITHUB_ENV"
+          printf 'PYTHONPATH=%s:%s\n' "$pip_wheel" "$runtime_site" >> "$GITHUB_ENV"
           echo "multipair_discovery_offline_wheelhouse_bootstrap=PASS"
 
-      - run: '"$PYTHON_BIN" -m pip check'
+      - name: Verify isolated runtime dependency consistency
+        run: '"$PYTHON_BIN" -m pip check'
 
       - name: Collect canonical four-symbol snapshot and run leakage-resistant Discovery
         id: discovery
@@ -272,11 +272,9 @@ jobs:
           import json
           import os
           from pathlib import Path
-
           from nexus_multipair_discovery_snapshot import collect_snapshot, verify_snapshot
           from nexus_multipair_strategy_discovery import run as run_discovery, verify_discovery
           from nexus_multipair_trusted_surface import FAMILIES, SYMBOLS, TIMEFRAMES
-
           state_root = Path(os.environ["STATE_ROOT"])
           source_sha = os.environ["GITHUB_SHA"]
           snapshot_root = state_root / "snapshot"
@@ -298,7 +296,6 @@ jobs:
           assert snapshot["private_credentials_used"] is False
           assert snapshot["automatic_strategy_promotion"] is False
           assert snapshot["silent_exchange_substitution"] is False
-
           source_manifest = Path("experiments/nexus_multipair_strategy_discovery_v2.json")
           manifest = json.loads(source_manifest.read_text(encoding="utf-8"))
           manifest["dataset"]["dataset_root"] = str(snapshot_root)
@@ -382,7 +379,6 @@ jobs:
           git checkout --detach --force FETCH_HEAD
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           git clean -ffdx
-
           known_python="/opt/nexus-bybit-runner/_work/_tool/Python/3.12.14/x64/bin/python"
           python_bin=""
           if [ -x "$known_python" ]; then python_bin="$known_python"; fi
@@ -398,7 +394,6 @@ jobs:
           test -d "$python_lib"
           effective_ld_library_path="$python_lib"
           if [ -n "${LD_LIBRARY_PATH:-}" ]; then effective_ld_library_path="$python_lib:$LD_LIBRARY_PATH"; fi
-
           state_root="$HOME/.local/share/nexus/multipair-discovery-v2/$GITHUB_RUN_ID"
           case "$state_root" in
             "$HOME"/.local/share/nexus/multipair-discovery-v2/*) ;;
@@ -410,10 +405,22 @@ jobs:
           test -f "$state_root/discovery/multipair_strategy_discovery.json"
           test -f "$state_root/discovery/research_proposals.json"
           cmp requirements.lock "$state_root/requirements.lock"
+          pip_wheel="$("$python_bin" - <<'PY'
+          import ensurepip
+          from pathlib import Path
+          bundled = Path(ensurepip.__file__).resolve().parent / "_bundled"
+          wheels = sorted(bundled.glob("pip-*.whl"))
+          if not wheels:
+              raise SystemExit("bundled pip wheel missing")
+          print(wheels[-1].resolve())
+          PY
+          )"
+          test -f "$pip_wheel"
           printf 'PYTHON_BIN=%s\n' "$python_bin" >> "$GITHUB_ENV"
           printf 'LD_LIBRARY_PATH=%s\n' "$effective_ld_library_path" >> "$GITHUB_ENV"
           printf 'STATE_ROOT=%s\n' "$state_root" >> "$GITHUB_ENV"
-          printf 'PYTHONPATH=%s\n' "$state_root/runtime-site" >> "$GITHUB_ENV"
+          printf 'PIP_WHEEL=%s\n' "$pip_wheel" >> "$GITHUB_ENV"
+          printf 'PYTHONPATH=%s:%s\n' "$pip_wheel" "$state_root/runtime-site" >> "$GITHUB_ENV"
           echo "multipair_requalification_checkout_sha=$(git rev-parse HEAD)"
           echo "multipair_discovery_state_recovered_from_external_path=PASS"
 
@@ -423,7 +430,8 @@ jobs:
         run: >-
           "$PYTHON_BIN" -c "assert '${{ runner.environment }}' == 'self-hosted'; assert '${{ runner.os }}' == 'Linux'; assert '$CURRENT_RUNNER_NAME' == '$EXPECTED_DISCOVERY_RUNNER_NAME'; print('multipair_requalification_execution_plane=self-hosted:nexus-bybit-network')"
 
-      - run: '"$PYTHON_BIN" -m pip check'
+      - name: Verify recovered isolated runtime dependency consistency
+        run: '"$PYTHON_BIN" -m pip check'
 
       - name: Independently requalify exact Discovery proposals on fresh public data
         run: |
@@ -433,9 +441,7 @@ jobs:
           import os
           import time
           from pathlib import Path
-
           from nexus_multipair_strategy_proposal_requalification import run, verify_requalification
-
           root = Path(os.environ["STATE_ROOT"])
           output = root / "requalification" / "runtime-requalification.json"
           result = run(
@@ -484,12 +490,10 @@ jobs:
           import json
           import os
           from pathlib import Path
-
           from nexus_multipair_discovery_snapshot import verify_snapshot
           from nexus_multipair_strategy_discovery import verify_discovery
           from nexus_multipair_strategy_proposal_requalification import verify_requalification
           from nexus_multipair_trusted_surface import FAMILIES, SYMBOLS, TIMEFRAMES
-
           root = Path(os.environ["STATE_ROOT"])
           snapshot = json.loads((root / "snapshot" / "snapshot-manifest.json").read_text())
           discovery = json.loads((root / "discovery" / "multipair_strategy_discovery.json").read_text())
@@ -516,7 +520,6 @@ jobs:
           assert requalification["live_trading_authority"] is False
           assert requalification["private_credentials_used"] is False
           assert requalification["deterministic_risk_final_authority"] is True
-
           evidence = {
               "schema_version": "nexus.multipair-discovery-v2-physical-proof.v1",
               "source_sha": os.environ["GITHUB_SHA"],
@@ -597,7 +600,6 @@ jobs:
           python - <<'PY'
           import json
           from pathlib import Path
-
           evidence = json.loads(Path("build/nexus-multipair-discovery-v2-proof/evidence.json").read_text())
           assert evidence["schema_version"] == "nexus.multipair-discovery-v2-physical-proof.v1"
           assert evidence["physical_runner_environment"] == "self-hosted"
