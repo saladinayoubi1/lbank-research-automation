@@ -1,8 +1,9 @@
 """Build and verify a bounded four-symbol Bybit discovery snapshot.
 
-The snapshot is Research-only evidence. It uses the canonical registry and public
-closed-candle Bybit boundary already used by Phase 5/6. No private credentials,
-Paper execution, Live authority, or exchange substitution are available here.
+The snapshot is Research-only evidence. Its symbol/timeframe surface is derived
+from the validated Demo matrix v2, while source semantics come from the canonical
+registry and Phase 5/6 public-data boundary. No private credentials, Paper
+execution, Live authority, or silent exchange substitution are available here.
 """
 from __future__ import annotations
 
@@ -16,14 +17,13 @@ from typing import Any, Callable, Mapping
 import pandas as pd
 
 from market_data_source_validator import load_and_validate
+from nexus_multipair_trusted_surface import SYMBOLS, TIMEFRAMES as TIMEFRAME_NAMES
 from phase5_data_binding import validate_canonical_dataset
 from phase6_research_pipeline import fetch_bind_bybit_dataset
-from product_research_runtime import TIMEFRAMES, _public_mapping, _registry_path
+from product_research_runtime import TIMEFRAMES as RUNTIME_TIMEFRAMES, _public_mapping, _registry_path
 
 
 SCHEMA = "nexus.multipair-discovery-snapshot.v1"
-SYMBOLS = ("BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT")
-TIMEFRAME_NAMES = ("minute15", "hour1", "hour4")
 DEFAULT_LIMIT = 500
 _SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 _HEX64_RE = re.compile(r"^[0-9a-f]{64}$")
@@ -129,7 +129,7 @@ def collect_snapshot(
     for symbol in SYMBOLS:
         for timeframe in TIMEFRAME_NAMES:
             mapping, source = _public_mapping(registry, symbol, timeframe)
-            spec = TIMEFRAMES[timeframe]
+            spec = RUNTIME_TIMEFRAMES[timeframe]
             step_ms = int(spec["step_ms"])
             end_ms = ((now_ms - step_ms) // step_ms) * step_ms
             start_ms = end_ms - (limit - 1) * step_ms
@@ -178,7 +178,7 @@ def collect_snapshot(
         "registry_version": registry.get("registry_version"),
         "symbols": list(SYMBOLS),
         "timeframes": list(TIMEFRAME_NAMES),
-        "cell_count": 12,
+        "cell_count": len(SYMBOLS) * len(TIMEFRAME_NAMES),
         "history_limit": limit,
         "cells": sorted(cells, key=lambda row: (row["symbol"], row["timeframe"])),
         "data_origin": "canonical_public_bybit_closed_candles",
@@ -213,13 +213,27 @@ def verify_snapshot(root: str | Path, value: Mapping[str, Any]) -> dict[str, Any
         checks["digest"] = claimed == _digest(core)
         cells = core.get("cells")
         expected = {(symbol, timeframe) for symbol in SYMBOLS for timeframe in TIMEFRAME_NAMES}
+        history_limit = core.get("history_limit")
         checks["shape"] = bool(
             core.get("symbols") == list(SYMBOLS)
             and core.get("timeframes") == list(TIMEFRAME_NAMES)
-            and core.get("cell_count") == 12
+            and core.get("cell_count") == len(expected) == 12
+            and isinstance(history_limit, int) and not isinstance(history_limit, bool)
+            and 160 <= history_limit <= 500
             and isinstance(cells, list)
-            and len(cells) == 12
+            and len(cells) == len(expected)
             and {(row.get("symbol"), row.get("timeframe")) for row in cells if isinstance(row, Mapping)} == expected
+            and all(
+                isinstance(row, Mapping)
+                and row.get("source_exchange") == "Bybit"
+                and row.get("source_symbol") == row.get("symbol")
+                and isinstance(row.get("mapping_id"), str) and bool(row.get("mapping_id"))
+                and row.get("row_count") == history_limit
+                and _HEX64_RE.fullmatch(str(row.get("dataset_binding_sha256", "")))
+                and _HEX64_RE.fullmatch(str(row.get("provenance_manifest_sha256", "")))
+                and _HEX64_RE.fullmatch(str(row.get("frame_digest", "")))
+                for row in cells
+            )
         )
         checks["authority"] = bool(
             core.get("research_only") is True
@@ -250,7 +264,7 @@ def verify_snapshot(root: str | Path, value: Mapping[str, Any]) -> dict[str, Any
                 frames_ok = False
                 break
             timestamps = pd.to_datetime(frame["timestamp"], utc=True)
-            step = int(TIMEFRAMES[timeframe]["step_ms"])
+            step = int(RUNTIME_TIMEFRAMES[timeframe]["step_ms"])
             open_ms = timestamps.map(lambda value: value.value // 1_000_000).astype("int64")
             if (
                 set(frame["symbol"].astype(str)) != {symbol}
@@ -258,6 +272,8 @@ def verify_snapshot(root: str | Path, value: Mapping[str, Any]) -> dict[str, Any
                 or open_ms.duplicated().any()
                 or not open_ms.is_monotonic_increasing
                 or not (open_ms.diff().dropna() == step).all()
+                or int(open_ms.iloc[0]) != row.get("first_open_time_ms")
+                or int(open_ms.iloc[-1]) != row.get("last_open_time_ms")
             ):
                 frames_ok = False
                 break
