@@ -1,4 +1,4 @@
-registry_version: "1.1.0"
+registry_version: "1.2.0"
 status: proposed
 scope: research_and_paper_trading_only
 issue: 131
@@ -245,4 +245,220 @@ mappings:
         symbol: eth_usdt
         category: spot
         endpoint_contract: "/v2/kline.do?symbol=eth_usdt&type=hour4"
+        status: compatible
+  - mapping_id: sol-usdt-spot-minute15-v1
+    canonical_symbol: SOL/USDT
+    market_category: spot
+    quote_asset: USDT
+    settlement_asset: USDT
+    timeframe: minute15
+    manifest_timeframe: 15m
+    timestamp_convention: open_time_utc
+    timestamp_grid_ms: 900000
+    candle_finality: closed_only
+    listing_start_utc: "2023-01-01T00:00:00Z"
+    listing_end_utc: null
+    volume_semantics: "venue-local base-asset volume; not cross-source equality evidence"
+    mapping_policy_version: "1.0.0"
+    sources:
+      - exchange: Bybit
+        role: primary
+        symbol: SOLUSDT
+        category: spot
+        interval: "15"
+        endpoint_contract: "/v5/market/kline?category=spot&symbol=SOLUSDT&interval=15"
+        status: compatible
+      - exchange: Binance
+        role: secondary
+        symbol: SOLUSDT
+        category: spot
+        market: spot
+        interval: 15m
+        endpoint_contract: "/api/v3/klines?symbol=SOLUSDT&interval=15m"
+        status: compatible
+      - exchange: LBank
+        role: tertiary
+        symbol: sol_usdt
+        category: spot
+        endpoint_contract: "/v2/kline.do?symbol=sol_usdt&type=minute15"
+        status: compatible
+  - mapping_id: sol-usdt-spot-hour1-v1
+    canonical_symbol: SOL/USDT
+    market_category: spot
+    quote_asset: USDT
+    settlement_asset: USDT
+    timeframe: hour1
+    manifest_timeframe: 1h
+    timestamp_convention: open_time_utc
+    timestamp_grid_ms: 3600000
+    candle_finality: closed_only
+    listing_start_utc: "2023-01-01T00:00:00Z"
+    listing_end_utc: null
+    volume_semantics: "venue-local base-asset volume; not cross-source equality evidence"
+    mapping_policy_version: "1.0.0"
+    sources:
+      - exchange: Bybit
+        role: primary
+        symbol: SOLUSDT
+        category: spot
+        interval: "60"
+        endpoint_contract: "/v5/market/kline?category=spot&symbol=SOLUSDT&interval=60"
+        status: compatible
+      - exchange: Binance
+        role: secondary
+        symbol: SOLUSDT
+        category: spot
+        market: spot
+        interval: 1h
+        endpoint_contract: "/api/v3/klines?symbol=SOLUSDT&interval=1h"
+        status: compatible
+      - exchange: LBank
+        role: tertiary
+        symbol: sol_usdt
+        category: spot
+        endpoint_contract: "/v2/kline.do?symbol=sol_usdt&type=hour1"
+        status: compatible
+  - mapping_id: sol-usdt-spot-hour4-v1
+    canonical_symbol: SOL/USDT
+    market_category: spot
+    quote_asset: USDT
+    settlement_asset: USDT
+    timeframe: hour4
+    manifest_timeframe: 4h
+    timestamp_convention: open_time_utc
+    timestamp_grid_ms: 14400000
+    candle_finality: closed_only
+    listing_start_utc: "2023-01-01T00:00:00Z"
+    listing_end_utc: null
+    volume_semantics: "venue-local base-asset volume; not cross-source equality evidence"
+    mapping_policy_version: "1.0.0"
+    sources:
+      - exchange: Bybit
+        role: primary
+        symbol: SOLUSDT
+        category: spot
+        interval: "240"
+        endpoint_contract: "/v5/market/kline?category=spot&symbol=SOLUSDT&interval=240"
+        status: compatible
+      - exchange: Binance
+        role: secondary
+        symbol: SOLUSDT
+        category: spot
+        market: spot
+        interval: 4h
+        endpoint_contract: "/api/v3/klines?symbol=SOLUSDT&interval=4h"
+        status: compatible
+      - exchange: LBank
+        role: tertiary
+        symbol: sol_usdt
+        category: spot
+        endpoint_contract: "/v2/kline.do?symbol=sol_usdt&type=hour4"
+        status: compatible
+  - mapping_id: xrp-usdt-spot-minute15-v1
+    canonical_symbol: XRP/USDT
+    market_category: spot
+    quote_asset: USDT
+    settlement_asset: USDT
+    timeframe: minute15
+    manifest_timeframe: 15m
+    timestamp_convention: open_time_utc
+    timestamp_grid_ms: 900000
+    candle_finality: closed_only
+    listing_start_utc: "2023-01-01T00:00:00Z"
+    listing_end_utc: null
+    volume_semantics: "venue-local base-asset volume; not cross-source equality evidence"
+    mapping_policy_version: "1.0.0"
+    sources:
+      - exchange: Bybit
+        role: primary
+        symbol: XRPUSDT
+        category: spot
+        interval: "15"
+        endpoint_contract: "/v5/market/kline?category=spot&symbol=XRPUSDT&interval=15"
+        status: compatible
+      - exchange: Binance
+        role: secondary
+        symbol: XRPUSDT
+        category: spot
+        market: spot
+        interval: 15m
+        endpoint_contract: "/api/v3/klines?symbol=XRPUSDT&interval=15m"
+        status: compatible
+      - exchange: LBank
+        role: tertiary
+        symbol: xrp_usdt
+        category: spot
+        endpoint_contract: "/v2/kline.do?symbol=xrp_usdt&type=minute15"
+        status: compatible
+  - mapping_id: xrp-usdt-spot-hour1-v1
+    canonical_symbol: XRP/USDT
+    market_category: spot
+    quote_asset: USDT
+    settlement_asset: USDT
+    timeframe: hour1
+    manifest_timeframe: 1h
+    timestamp_convention: open_time_utc
+    timestamp_grid_ms: 3600000
+    candle_finality: closed_only
+    listing_start_utc: "2023-01-01T00:00:00Z"
+    listing_end_utc: null
+    volume_semantics: "venue-local base-asset volume; not cross-source equality evidence"
+    mapping_policy_version: "1.0.0"
+    sources:
+      - exchange: Bybit
+        role: primary
+        symbol: XRPUSDT
+        category: spot
+        interval: "60"
+        endpoint_contract: "/v5/market/kline?category=spot&symbol=XRPUSDT&interval=60"
+        status: compatible
+      - exchange: Binance
+        role: secondary
+        symbol: XRPUSDT
+        category: spot
+        market: spot
+        interval: 1h
+        endpoint_contract: "/api/v3/klines?symbol=XRPUSDT&interval=1h"
+        status: compatible
+      - exchange: LBank
+        role: tertiary
+        symbol: xrp_usdt
+        category: spot
+        endpoint_contract: "/v2/kline.do?symbol=xrp_usdt&type=hour1"
+        status: compatible
+  - mapping_id: xrp-usdt-spot-hour4-v1
+    canonical_symbol: XRP/USDT
+    market_category: spot
+    quote_asset: USDT
+    settlement_asset: USDT
+    timeframe: hour4
+    manifest_timeframe: 4h
+    timestamp_convention: open_time_utc
+    timestamp_grid_ms: 14400000
+    candle_finality: closed_only
+    listing_start_utc: "2023-01-01T00:00:00Z"
+    listing_end_utc: null
+    volume_semantics: "venue-local base-asset volume; not cross-source equality evidence"
+    mapping_policy_version: "1.0.0"
+    sources:
+      - exchange: Bybit
+        role: primary
+        symbol: XRPUSDT
+        category: spot
+        interval: "240"
+        endpoint_contract: "/v5/market/kline?category=spot&symbol=XRPUSDT&interval=240"
+        status: compatible
+      - exchange: Binance
+        role: secondary
+        symbol: XRPUSDT
+        category: spot
+        market: spot
+        interval: 4h
+        endpoint_contract: "/api/v3/klines?symbol=XRPUSDT&interval=4h"
+        status: compatible
+      - exchange: LBank
+        role: tertiary
+        symbol: xrp_usdt
+        category: spot
+        endpoint_contract: "/v2/kline.do?symbol=xrp_usdt&type=hour4"
         status: compatible

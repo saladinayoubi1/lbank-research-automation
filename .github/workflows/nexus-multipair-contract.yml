@@ -1,0 +1,59 @@
+name: NEXUS Multi-Pair Contract
+
+on:
+  pull_request:
+    paths:
+      - "docs/architecture/market-data-source-registry.yaml"
+      - "market_data_source_validator.py"
+      - "phase5_data_binding.py"
+      - "phase6_research_pipeline.py"
+      - "nexus_demo_strategy_matrix.py"
+      - "nexus_multipair_demo_strategy_matrix.py"
+      - "config/nexus-demo-strategy-matrix-v1.json"
+      - "config/nexus-demo-strategy-matrix-v2.json"
+      - "tests/test_market_data_source_validator.py"
+      - "tests/test_nexus_multipair_research_binding.py"
+      - "tests/test_nexus_multipair_demo_strategy_matrix.py"
+      - ".github/workflows/nexus-multipair-contract.yml"
+  push:
+    branches: [main]
+    paths:
+      - "docs/architecture/market-data-source-registry.yaml"
+      - "market_data_source_validator.py"
+      - "phase5_data_binding.py"
+      - "phase6_research_pipeline.py"
+      - "nexus_demo_strategy_matrix.py"
+      - "nexus_multipair_demo_strategy_matrix.py"
+      - "config/nexus-demo-strategy-matrix-v1.json"
+      - "config/nexus-demo-strategy-matrix-v2.json"
+      - "tests/test_market_data_source_validator.py"
+      - "tests/test_nexus_multipair_research_binding.py"
+      - "tests/test_nexus_multipair_demo_strategy_matrix.py"
+      - ".github/workflows/nexus-multipair-contract.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements-dev.lock
+      - run: python -m pip check
+      - name: Verify registry, canonical binding, and v1-to-v2 state migration
+        run: >-
+          python -m pytest -q
+          tests/test_market_data_source_validator.py
+          tests/test_phase5_data_binding.py
+          tests/test_nexus_multipair_research_binding.py
+          tests/test_nexus_demo_strategy_matrix.py
+          tests/test_nexus_multipair_demo_strategy_matrix.py

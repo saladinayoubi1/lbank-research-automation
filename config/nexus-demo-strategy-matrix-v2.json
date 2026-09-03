@@ -1,0 +1,35 @@
+{
+  "schema_version": "nexus.demo-strategy-matrix.v2",
+  "matrix_id": "nexus-demo-btc-eth-sol-xrp-3tf-3strategy-v2",
+  "symbols": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "SOLUSDT",
+    "XRPUSDT"
+  ],
+  "timeframes": [
+    "minute15",
+    "hour1",
+    "hour4"
+  ],
+  "families": [
+    "momentum",
+    "trend_breakout",
+    "mean_reversion"
+  ],
+  "history_limit": 240,
+  "authority": {
+    "paper_only": true,
+    "live_trading_authority": false,
+    "private_credentials_allowed": false,
+    "automatic_strategy_promotion": false,
+    "deterministic_risk_final_authority": true
+  },
+  "migration": {
+    "from_schema_version": "nexus.demo-strategy-matrix.v1",
+    "from_matrix_id": "nexus-demo-btc-eth-3tf-3strategy-v1",
+    "preserve_verified_legacy_cells": true,
+    "new_symbols_start_without_inherited_evidence": true,
+    "silent_state_reinterpretation": false
+  }
+}
