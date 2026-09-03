@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import yaml
+
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / ".github" / "workflows" / "nexus_multipair_physical_proof.yml"
@@ -9,6 +11,17 @@ WORKFLOW = ROOT / ".github" / "workflows" / "nexus_multipair_physical_proof.yml"
 
 def _text() -> str:
     return WORKFLOW.read_text(encoding="utf-8")
+
+
+def test_physical_proof_workflow_yaml_is_valid_and_has_bounded_jobs() -> None:
+    document = yaml.safe_load(_text())
+    assert isinstance(document, dict)
+    assert set(document["jobs"]) == {
+        "contract-test",
+        "runtime-wheelhouse",
+        "physical-proof",
+        "persist-proof",
+    }
 
 
 def test_physical_proof_is_main_only_one_shot_and_not_scheduled() -> None:
