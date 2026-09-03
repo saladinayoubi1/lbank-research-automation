@@ -1,6 +1,7 @@
 name: NEXUS WSL Host Runner Recovery
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths:
@@ -15,6 +16,7 @@ concurrency:
 
 jobs:
   wake-windows-runner:
+    if: github.ref == 'refs/heads/main'
     runs-on: nexus-bybit-network
     timeout-minutes: 5
     steps:
