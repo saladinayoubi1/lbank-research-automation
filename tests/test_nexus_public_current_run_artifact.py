@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 import zipfile
@@ -7,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+import nexus_multipair_recent_archive_runtime_snapshot as recent
 from scripts import nexus_public_current_run_artifact as transport
 
 
@@ -108,6 +110,76 @@ def test_digest_sidecar_must_match_exact_expected(tmp_path: Path) -> None:
     sidecar.write_text("c" * 64 + "\n", encoding="ascii")
     with pytest.raises(RuntimeError, match="sidecar mismatch"):
         transport._read_digest(sidecar, ARCHIVE_SHA)
+
+
+def test_recent_restore_uses_bounded_physical_transport_window(monkeypatch, tmp_path: Path) -> None:
+    acquired_at_ms = 1_000_000
+    data_as_of_ms = 500_000
+    snapshot_digest = "d" * 64
+    work = tmp_path / "work"
+    inner = tmp_path / recent.INNER_ARCHIVE_NAME
+    sidecar = tmp_path / "nexus-multipair-recent-runtime-snapshot.sha256"
+    inner.write_bytes(b"inner")
+    sidecar.write_text(ARCHIVE_SHA + "\n", encoding="ascii")
+    captured: dict[str, int] = {}
+
+    monkeypatch.setattr(
+        transport,
+        "_artifact",
+        lambda repository, run_id, artifact_name, source_sha, token: {
+            "id": 17,
+            "size_in_bytes": 5,
+        },
+    )
+    monkeypatch.setattr(transport, "_download_outer", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        transport,
+        "_extract_exact_outer",
+        lambda outer, root, expected_names: {
+            recent.INNER_ARCHIVE_NAME: inner,
+            "nexus-multipair-recent-runtime-snapshot.sha256": sidecar,
+        },
+    )
+    monkeypatch.setattr(transport.historical_artifact, "_sha256_file", lambda path: ARCHIVE_SHA)
+
+    def fake_extract(inner_path: Path, destination: Path) -> None:
+        destination.mkdir(parents=True, exist_ok=True)
+        (destination / transport.historical_artifact.MANIFEST_NAME).write_text(
+            json.dumps(
+                {
+                    "snapshot_digest": snapshot_digest,
+                    "acquired_at_ms": acquired_at_ms,
+                    "data_as_of_ms": data_as_of_ms,
+                    "live_freshness_claimed": False,
+                }
+            ),
+            encoding="utf-8",
+        )
+
+    monkeypatch.setattr(transport.historical_artifact, "_extract_inner", fake_extract)
+
+    def fake_verify(root, value, *, source_sha, now_ms, max_transport_age_ms):
+        captured["max_transport_age_ms"] = max_transport_age_ms
+        return {"decision": "pass", "checks": {"transport_age": True}}
+
+    monkeypatch.setattr(recent, "verify_recent_archive_runtime_snapshot", fake_verify)
+    result = transport.restore_recent(
+        repository="owner/repo",
+        run_id="12",
+        artifact_name="recent",
+        source_sha=SOURCE_SHA,
+        expected_sha256=ARCHIVE_SHA,
+        expected_snapshot_digest=snapshot_digest,
+        expected_acquired_at_ms=acquired_at_ms,
+        expected_data_as_of_ms=data_as_of_ms,
+        now_ms=acquired_at_ms + 21 * 60 * 1000,
+        destination=tmp_path / "destination",
+        work_root=work,
+        token=TOKEN,
+    )
+    assert result["snapshot_digest"] == snapshot_digest
+    assert captured["max_transport_age_ms"] == 45 * 60 * 1000
+    assert transport.PHYSICAL_RECENT_TRANSPORT_AGE_MS < recent.MAX_SOURCE_LAG_MS
 
 
 def test_sha_parser_is_fail_closed() -> None:
