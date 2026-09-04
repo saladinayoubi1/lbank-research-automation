@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import io
 import json
+import subprocess
+import sys
 import zipfile
 from pathlib import Path
 
@@ -62,3 +64,17 @@ def test_sha_parser_is_fail_closed() -> None:
     assert transport._sha(SOURCE_SHA.upper(), transport._SHA40, "source SHA") == SOURCE_SHA
     with pytest.raises(RuntimeError, match="invalid source SHA"):
         transport._sha("not-a-sha", transport._SHA40, "source SHA")
+
+
+def test_direct_script_help_bootstraps_repository_import_path() -> None:
+    root = Path(__file__).resolve().parents[1]
+    script = root / "scripts" / "nexus_public_current_run_artifact.py"
+    result = subprocess.run(
+        [sys.executable, str(script), "--help"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "usage:" in result.stdout.lower()
