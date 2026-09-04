@@ -22,6 +22,7 @@ from scripts import nexus_snapshot_artifact as historical_artifact
 API_VERSION = "2022-11-28"
 _SHA40 = re.compile(r"^[0-9a-f]{40}$")
 _SHA64 = re.compile(r"^[0-9a-f]{64}$")
+PHYSICAL_RECENT_TRANSPORT_AGE_MS = 45 * 60 * 1000
 
 
 def _headers(token: str = "") -> dict[str, str]:
@@ -252,10 +253,17 @@ def restore_recent(
     ):
         raise RuntimeError("recent artifact identity mismatch")
     verification = recent.verify_recent_archive_runtime_snapshot(
-        destination, manifest, source_sha=source_sha, now_ms=now_ms
+        destination,
+        manifest,
+        source_sha=source_sha,
+        now_ms=now_ms,
+        max_transport_age_ms=PHYSICAL_RECENT_TRANSPORT_AGE_MS,
     )
     if verification.get("decision") != "pass":
-        raise RuntimeError("recent snapshot verifier rejected artifact")
+        raise RuntimeError(
+            "recent snapshot verifier rejected artifact: "
+            + json.dumps(verification.get("checks", {}), sort_keys=True)
+        )
     return {
         "artifact_id": int(artifact["id"]),
         "archive_sha256": actual,
