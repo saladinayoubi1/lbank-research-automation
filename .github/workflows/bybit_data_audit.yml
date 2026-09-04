@@ -7,9 +7,23 @@ on:
       - "bybit_data_audit.py"
       - "bybit_spot_archive_audit.py"
       - "run_bybit_spot_archive_audit.py"
+      - "nexus_multipair_bybit_archive_probe.py"
+      - "nexus_multipair_trusted_surface.py"
+      - "config/nexus-demo-strategy-matrix-v2.json"
       - "tests/test_bybit_data_audit.py"
       - "tests/test_bybit_spot_archive_audit.py"
+      - "tests/test_nexus_multipair_bybit_archive_probe.py"
       - "main.py"
+      - "requirements.lock"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/bybit_data_audit.yml"
+      - "bybit_spot_archive_audit.py"
+      - "run_bybit_spot_archive_audit.py"
+      - "nexus_multipair_bybit_archive_probe.py"
+      - "nexus_multipair_trusted_surface.py"
+      - "config/nexus-demo-strategy-matrix-v2.json"
       - "requirements.lock"
   workflow_dispatch:
 
@@ -19,7 +33,7 @@ permissions:
 jobs:
   audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       - name: Check out repository
@@ -46,12 +60,27 @@ jobs:
           --max-attempts 5
           --clean
 
+      - name: Probe official four-symbol Spot archive transport
+        if: github.event_name != 'pull_request'
+        run: >-
+          python nexus_multipair_bybit_archive_probe.py
+          --audit-date 2026-07-01
+          --cache-root build/nexus_multipair_archive_probe_cache
+          --output-root build/nexus_multipair_archive_probe
+          --max-attempts 5
+
+      - name: Remove raw Multi-Pair probe archives before persistence
+        if: always() && github.event_name != 'pull_request'
+        run: rm -rf build/nexus_multipair_archive_probe_cache
+
       - name: Upload Bybit audit evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: bybit-public-data-audit-${{ github.sha }}
-          path: build/bybit_spot_archive_audit
+          path: |
+            build/bybit_spot_archive_audit
+            build/nexus_multipair_archive_probe
           if-no-files-found: error
           retention-days: 7
           compression-level: 9
