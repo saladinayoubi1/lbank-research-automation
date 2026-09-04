@@ -1,4 +1,4 @@
-name: NEXUS Multi-Pair Discovery v2 physical proof
+name: NEXUS Multi-Pair Discovery v3 physical proof
 
 on:
   workflow_dispatch:
@@ -10,6 +10,7 @@ on:
       - "nexus_multipair_archive_snapshot.py"
       - "nexus_multipair_strategy_discovery.py"
       - "nexus_multipair_strategy_proposal_requalification.py"
+      - "nexus_multipair_runtime_requalification_snapshot.py"
       - "nexus_multipair_demo_strategy_matrix.py"
       - "config/nexus-demo-strategy-matrix-v2.json"
       - "experiments/nexus_multipair_strategy_discovery_v2.json"
@@ -24,11 +25,14 @@ on:
       - "bybit_spot_backfill.py"
       - "scripts/nexus_runtime_wheelhouse.py"
       - "scripts/nexus_snapshot_artifact.py"
+      - "scripts/nexus_runtime_snapshot_artifact.py"
       - "requirements.lock"
       - "tests/test_nexus_multipair_strategy_discovery.py"
       - "tests/test_nexus_multipair_strategy_discovery_archive.py"
       - "tests/test_nexus_multipair_archive_snapshot.py"
       - "tests/test_nexus_snapshot_artifact.py"
+      - "tests/test_nexus_multipair_runtime_requalification_snapshot.py"
+      - "tests/test_nexus_runtime_snapshot_artifact.py"
       - "tests/test_nexus_multipair_trusted_surface.py"
       - "tests/test_nexus_multipair_strategy_discovery_workflow.py"
       - ".github/workflows/nexus_multipair_strategy_discovery_v2.yml"
@@ -40,6 +44,7 @@ on:
       - "nexus_multipair_archive_snapshot.py"
       - "nexus_multipair_strategy_discovery.py"
       - "nexus_multipair_strategy_proposal_requalification.py"
+      - "nexus_multipair_runtime_requalification_snapshot.py"
       - "nexus_multipair_demo_strategy_matrix.py"
       - "config/nexus-demo-strategy-matrix-v2.json"
       - "experiments/nexus_multipair_strategy_discovery_v2.json"
@@ -54,11 +59,14 @@ on:
       - "bybit_spot_backfill.py"
       - "scripts/nexus_runtime_wheelhouse.py"
       - "scripts/nexus_snapshot_artifact.py"
+      - "scripts/nexus_runtime_snapshot_artifact.py"
       - "requirements.lock"
       - "tests/test_nexus_multipair_strategy_discovery.py"
       - "tests/test_nexus_multipair_strategy_discovery_archive.py"
       - "tests/test_nexus_multipair_archive_snapshot.py"
       - "tests/test_nexus_snapshot_artifact.py"
+      - "tests/test_nexus_multipair_runtime_requalification_snapshot.py"
+      - "tests/test_nexus_runtime_snapshot_artifact.py"
       - "tests/test_nexus_multipair_trusted_surface.py"
       - "tests/test_nexus_multipair_strategy_discovery_workflow.py"
       - ".github/workflows/nexus_multipair_strategy_discovery_v2.yml"
@@ -68,37 +76,13 @@ permissions:
   actions: read
 
 concurrency:
-  group: nexus-multipair-discovery-v2-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'main' }}
+  group: nexus-multipair-discovery-v3-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'main' }}
   cancel-in-progress: false
 
 jobs:
   contract-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
-        with:
-          python-version: "3.12"
-          cache: pip
-      - run: python -m pip install -r requirements-dev.lock
-      - run: python -m pip check
-      - name: Verify Multi-Pair Discovery v2 contracts
-        run: >-
-          python -m pytest -q
-          tests/test_nexus_multipair_strategy_discovery.py
-          tests/test_nexus_multipair_strategy_discovery_archive.py
-          tests/test_nexus_multipair_archive_snapshot.py
-          tests/test_nexus_snapshot_artifact.py
-          tests/test_nexus_multipair_trusted_surface.py
-          tests/test_nexus_multipair_strategy_discovery_workflow.py
-
-  runtime-wheelhouse:
-    if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 55
     outputs:
       archive_sha256: ${{ steps.pack.outputs.archive_sha256 }}
       snapshot_archive_sha256: ${{ steps.archive.outputs.snapshot_archive_sha256 }}
@@ -111,95 +95,86 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
+      - run: python -m pip install -r requirements-dev.lock
+      - run: python -m pip check
+      - name: Verify Multi-Pair Discovery v3 contracts
+        run: >-
+          python -m pytest -q
+          tests/test_nexus_multipair_strategy_discovery.py
+          tests/test_nexus_multipair_strategy_discovery_archive.py
+          tests/test_nexus_multipair_archive_snapshot.py
+          tests/test_nexus_snapshot_artifact.py
+          tests/test_nexus_multipair_runtime_requalification_snapshot.py
+          tests/test_nexus_runtime_snapshot_artifact.py
+          tests/test_nexus_multipair_trusted_surface.py
+          tests/test_nexus_multipair_strategy_discovery_workflow.py
       - name: Build locked CPython 3.12 Linux runtime wheelhouse
+        if: github.event_name != 'pull_request'
         run: |
           set -euo pipefail
-          wheelhouse="$PWD/build/nexus-multipair-discovery-v2-wheelhouse"
-          smoke="$PWD/build/nexus-multipair-discovery-v2-wheelhouse-smoke"
+          wheelhouse="$PWD/build/nexus-multipair-discovery-v3-wheelhouse"
+          smoke="$PWD/build/nexus-multipair-discovery-v3-wheelhouse-smoke"
           rm -rf "$wheelhouse" "$smoke" build/nexus-paper-runtime-wheelhouse.zip
           mkdir -p "$wheelhouse" "$smoke"
-          python -m pip download \
-            --disable-pip-version-check \
-            --only-binary=:all: \
-            --dest "$wheelhouse" \
-            -r requirements.lock
+          python -m pip download --disable-pip-version-check --only-binary=:all: --dest "$wheelhouse" -r requirements.lock
           cp requirements.lock "$wheelhouse/requirements.lock"
-          python -m pip install \
-            --disable-pip-version-check \
-            --no-index \
-            --find-links "$wheelhouse" \
-            --target "$smoke" \
-            -r requirements.lock
+          python -m pip install --disable-pip-version-check --no-index --find-links "$wheelhouse" --target "$smoke" -r requirements.lock
           PYTHONPATH="$smoke" python - <<'PY'
-          import numpy
-          import pandas
-          import pyarrow
-          import requests
-          import tenacity
-          import yaml
-          print("hosted_multipair_discovery_wheelhouse_smoke=PASS")
+          import numpy, pandas, pyarrow, requests, tenacity, yaml
+          print("hosted_multipair_discovery_v3_wheelhouse_smoke=PASS")
           PY
           rm -rf "$smoke"
       - name: Pack deterministic runtime wheelhouse and emit digest
+        if: github.event_name != 'pull_request'
         id: pack
         run: |
           set -euo pipefail
           python scripts/nexus_runtime_wheelhouse.py pack \
-            --root build/nexus-multipair-discovery-v2-wheelhouse \
+            --root build/nexus-multipair-discovery-v3-wheelhouse \
             --output build/nexus-paper-runtime-wheelhouse.zip \
-            --digest-output build/nexus-multipair-discovery-v2-wheelhouse-sha.txt
-          echo "archive_sha256=$(cat build/nexus-multipair-discovery-v2-wheelhouse-sha.txt)" >> "$GITHUB_OUTPUT"
+            --digest-output build/nexus-multipair-discovery-v3-wheelhouse-sha.txt
+          echo "archive_sha256=$(cat build/nexus-multipair-discovery-v3-wheelhouse-sha.txt)" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: github.event_name != 'pull_request'
         with:
-          name: nexus-multipair-discovery-v2-wheelhouse-${{ github.sha }}
+          name: nexus-multipair-discovery-v3-wheelhouse-${{ github.sha }}
           path: build/nexus-paper-runtime-wheelhouse.zip
           if-no-files-found: error
           retention-days: 7
           compression-level: 0
       - name: Acquire immutable official Bybit Spot archive snapshot
+        if: github.event_name != 'pull_request'
         id: archive
         run: |
           set -euo pipefail
-          wheelhouse="$PWD/build/nexus-multipair-discovery-v2-wheelhouse"
-          acquire_site="$PWD/build/nexus-multipair-discovery-v2-acquire-site"
-          state="$PWD/build/nexus-multipair-discovery-v2-archive-state"
-          cache="$PWD/build/nexus-multipair-discovery-v2-archive-cache"
-          snapshot="$PWD/build/nexus-multipair-discovery-v2-archive-snapshot"
+          wheelhouse="$PWD/build/nexus-multipair-discovery-v3-wheelhouse"
+          acquire_site="$PWD/build/nexus-multipair-discovery-v3-acquire-site"
+          state="$PWD/build/nexus-multipair-discovery-v3-archive-state"
+          cache="$PWD/build/nexus-multipair-discovery-v3-archive-cache"
+          snapshot="$PWD/build/nexus-multipair-discovery-v3-archive-snapshot"
           archive="$PWD/build/nexus-multipair-archive-snapshot.zip"
           digest="$PWD/build/nexus-multipair-archive-snapshot.sha256"
           rm -rf "$acquire_site" "$state" "$cache" "$snapshot" "$archive" "$digest"
           mkdir -p "$acquire_site"
-          python -m pip install \
-            --disable-pip-version-check \
-            --no-index \
-            --find-links "$wheelhouse" \
-            --no-cache-dir \
-            --target "$acquire_site" \
-            -r requirements.lock
+          python -m pip install --disable-pip-version-check --no-index --find-links "$wheelhouse" --no-cache-dir --target "$acquire_site" -r requirements.lock
           PYTHONPATH="$acquire_site" python nexus_multipair_archive_snapshot.py \
-            --state-root "$state" \
-            --cache-root "$cache" \
-            --output-root "$snapshot" \
-            --archive-output "$archive" \
-            --digest-output "$digest" \
-            --source-sha "$GITHUB_SHA"
+            --state-root "$state" --cache-root "$cache" --output-root "$snapshot" \
+            --archive-output "$archive" --digest-output "$digest" --source-sha "$GITHUB_SHA"
           snapshot_digest="$(PYTHONPATH="$acquire_site" python - <<'PY'
           import json
           from pathlib import Path
-          value = json.loads(Path("build/nexus-multipair-discovery-v2-archive-snapshot/snapshot-manifest.json").read_text(encoding="utf-8"))
+          value = json.loads(Path("build/nexus-multipair-discovery-v3-archive-snapshot/snapshot-manifest.json").read_text(encoding="utf-8"))
           print(value["snapshot_digest"])
           PY
           )"
-          snapshot_archive_sha256="$(cat "$digest")"
-          test -n "$snapshot_digest"
-          test -n "$snapshot_archive_sha256"
           echo "snapshot_digest=$snapshot_digest" >> "$GITHUB_OUTPUT"
-          echo "snapshot_archive_sha256=$snapshot_archive_sha256" >> "$GITHUB_OUTPUT"
+          echo "snapshot_archive_sha256=$(cat "$digest")" >> "$GITHUB_OUTPUT"
           rm -rf "$acquire_site" "$state" "$cache" "$snapshot"
-          echo "hosted_official_bybit_archive_snapshot=PASS digest=$snapshot_digest archive=$snapshot_archive_sha256"
+          echo "hosted_official_bybit_archive_snapshot=PASS digest=$snapshot_digest"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: github.event_name != 'pull_request'
         with:
-          name: nexus-multipair-discovery-v2-archive-snapshot-${{ github.sha }}
+          name: nexus-multipair-discovery-v3-archive-snapshot-${{ github.sha }}
           path: build/nexus-multipair-archive-snapshot.zip
           if-no-files-found: error
           retention-days: 7
@@ -207,7 +182,7 @@ jobs:
 
   discover-physical:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-    needs: [contract-test, runtime-wheelhouse]
+    needs: contract-test
     runs-on: nexus-bybit-network
     timeout-minutes: 55
     outputs:
@@ -216,42 +191,32 @@ jobs:
       proposal_count: ${{ steps.discovery.outputs.proposal_count }}
     env:
       GH_TOKEN: ${{ github.token }}
-      WHEELHOUSE_ARTIFACT: nexus-multipair-discovery-v2-wheelhouse-${{ github.sha }}
-      WHEELHOUSE_ARCHIVE_SHA256: ${{ needs.runtime-wheelhouse.outputs.archive_sha256 }}
-      SNAPSHOT_ARTIFACT: nexus-multipair-discovery-v2-archive-snapshot-${{ github.sha }}
-      SNAPSHOT_ARCHIVE_SHA256: ${{ needs.runtime-wheelhouse.outputs.snapshot_archive_sha256 }}
-      EXPECTED_HOSTED_SNAPSHOT_DIGEST: ${{ needs.runtime-wheelhouse.outputs.snapshot_digest }}
+      WHEELHOUSE_ARTIFACT: nexus-multipair-discovery-v3-wheelhouse-${{ github.sha }}
+      WHEELHOUSE_ARCHIVE_SHA256: ${{ needs.contract-test.outputs.archive_sha256 }}
+      SNAPSHOT_ARTIFACT: nexus-multipair-discovery-v3-archive-snapshot-${{ github.sha }}
+      SNAPSHOT_ARCHIVE_SHA256: ${{ needs.contract-test.outputs.snapshot_archive_sha256 }}
+      EXPECTED_HOSTED_SNAPSHOT_DIGEST: ${{ needs.contract-test.outputs.snapshot_digest }}
     steps:
-      - name: Prepare exact source and ephemeral external Research state
+      - name: Prepare isolated exact source without touching shared runner workspace
         run: |
           set -euo pipefail
+          state_root="$HOME/.local/share/nexus/multipair-discovery-v3/$GITHUB_RUN_ID"
+          case "$state_root" in "$HOME"/.local/share/nexus/multipair-discovery-v3/*) ;; *) exit 1 ;; esac
+          rm -rf "$state_root"
+          mkdir -p "$state_root/repo"
+          repo_root="$state_root/repo"
           repo_url="https://github.com/${GITHUB_REPOSITORY}.git"
-          if [ -d .git ]; then
-            git remote set-url origin "$repo_url"
-            git reset --hard
-            git clean -ffdx
-          else
-            find . -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
-            git init .
-            git remote add origin "$repo_url"
-          fi
-          git config --local --unset-all http.https://github.com/.extraheader || true
+          git -C "$repo_root" init
+          git -C "$repo_root" remote add origin "$repo_url"
+          git -C "$repo_root" config --local --unset-all http.https://github.com/.extraheader || true
           fetch_ok=false
           for fetch_attempt in 1 2 3; do
-            if git -c http.version=HTTP/1.1 fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"; then
-              fetch_ok=true
-              break
-            fi
-            echo "::warning::Exact repository fetch attempt ${fetch_attempt}/3 failed."
+            if git -C "$repo_root" -c http.version=HTTP/1.1 fetch --no-tags --depth=1 origin "$GITHUB_SHA"; then fetch_ok=true; break; fi
             if [ "$fetch_attempt" -lt 3 ]; then sleep "$((fetch_attempt * 5))"; fi
           done
-          if [ "$fetch_ok" != true ]; then
-            echo "::error::Exact repository fetch failed after bounded attempts."
-            exit 1
-          fi
-          git checkout --detach --force FETCH_HEAD
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          git clean -ffdx
+          test "$fetch_ok" = true
+          git -C "$repo_root" checkout --detach --force FETCH_HEAD
+          test "$(git -C "$repo_root" rev-parse HEAD)" = "$GITHUB_SHA"
           known_python="/opt/nexus-bybit-runner/_work/_tool/Python/3.12.14/x64/bin/python"
           python_bin=""
           if [ -x "$known_python" ]; then python_bin="$known_python"; fi
@@ -265,150 +230,89 @@ jobs:
           python_prefix="$("$python_bin" -c 'import sys; print(sys.prefix)')"
           python_lib="$python_prefix/lib"
           test -d "$python_lib"
-          effective_ld_library_path="$python_lib"
-          if [ -n "${LD_LIBRARY_PATH:-}" ]; then effective_ld_library_path="$python_lib:$LD_LIBRARY_PATH"; fi
-          LD_LIBRARY_PATH="$effective_ld_library_path" "$python_bin" -c "import ctypes; print('multipair_discovery_physical_python=PASS')"
-          state_root="$HOME/.local/share/nexus/multipair-discovery-v2/$GITHUB_RUN_ID"
-          case "$state_root" in
-            "$HOME"/.local/share/nexus/multipair-discovery-v2/*) ;;
-            *) echo "::error::Unsafe Multi-Pair Discovery state root."; exit 1 ;;
-          esac
-          rm -rf "$state_root"
-          mkdir -p "$state_root"
+          effective_ld_library_path="$python_lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
           printf 'PYTHON_BIN=%s\n' "$python_bin" >> "$GITHUB_ENV"
           printf 'LD_LIBRARY_PATH=%s\n' "$effective_ld_library_path" >> "$GITHUB_ENV"
           printf 'STATE_ROOT=%s\n' "$state_root" >> "$GITHUB_ENV"
-          echo "multipair_discovery_checkout_sha=$(git rev-parse HEAD)"
-          echo "multipair_discovery_state_storage=physical_external_ephemeral_path"
-
+          printf 'REPO_ROOT=%s\n' "$repo_root" >> "$GITHUB_ENV"
+          echo "multipair_discovery_v3_isolated_checkout=PASS"
       - name: Enforce eligible physical Bybit Research execution plane
         run: >-
           "$PYTHON_BIN" -c "assert '${{ runner.environment }}' == 'self-hosted'; assert '${{ runner.os }}' == 'Linux'; print('multipair_discovery_execution_plane=self-hosted:nexus-bybit-network')"
-
-      - name: Restore digest-pinned current-run runtime wheelhouse
+      - name: Restore digest-pinned runtime wheelhouse
         run: |
           set -euo pipefail
-          wheelhouse="$STATE_ROOT/wheelhouse"
+          cd "$REPO_ROOT"
           "$PYTHON_BIN" scripts/nexus_runtime_wheelhouse.py restore-current-run \
-            --repository "$GITHUB_REPOSITORY" \
-            --run-id "$GITHUB_RUN_ID" \
-            --artifact-name "$WHEELHOUSE_ARTIFACT" \
-            --expected-sha256 "$WHEELHOUSE_ARCHIVE_SHA256" \
-            --repository-lock requirements.lock \
-            --destination "$wheelhouse" \
-            --work-root "$STATE_ROOT/wheelhouse-restore"
-
-      - name: Restore digest-pinned official Bybit archive snapshot
+            --repository "$GITHUB_REPOSITORY" --run-id "$GITHUB_RUN_ID" \
+            --artifact-name "$WHEELHOUSE_ARTIFACT" --expected-sha256 "$WHEELHOUSE_ARCHIVE_SHA256" \
+            --repository-lock requirements.lock --destination "$STATE_ROOT/wheelhouse" --work-root "$STATE_ROOT/wheelhouse-restore"
+      - name: Restore digest-pinned historical Bybit archive snapshot
         run: |
           set -euo pipefail
+          cd "$REPO_ROOT"
           "$PYTHON_BIN" scripts/nexus_snapshot_artifact.py \
-            --repository "$GITHUB_REPOSITORY" \
-            --run-id "$GITHUB_RUN_ID" \
-            --artifact-name "$SNAPSHOT_ARTIFACT" \
-            --expected-sha256 "$SNAPSHOT_ARCHIVE_SHA256" \
-            --expected-source-sha "$GITHUB_SHA" \
-            --expected-snapshot-digest "$EXPECTED_HOSTED_SNAPSHOT_DIGEST" \
-            --destination "$STATE_ROOT/snapshot" \
-            --work-root "$STATE_ROOT/snapshot-restore"
-
+            --repository "$GITHUB_REPOSITORY" --run-id "$GITHUB_RUN_ID" \
+            --artifact-name "$SNAPSHOT_ARTIFACT" --expected-sha256 "$SNAPSHOT_ARCHIVE_SHA256" \
+            --expected-source-sha "$GITHUB_SHA" --expected-snapshot-digest "$EXPECTED_HOSTED_SNAPSHOT_DIGEST" \
+            --destination "$STATE_ROOT/historical-snapshot" --work-root "$STATE_ROOT/historical-snapshot-restore"
       - name: Provision locked external runtime dependencies
         run: |
           set -euo pipefail
+          cd "$REPO_ROOT"
           pip_wheel="$("$PYTHON_BIN" - <<'PY'
           import ensurepip
           from pathlib import Path
-          bundled = Path(ensurepip.__file__).resolve().parent / "_bundled"
-          wheels = sorted(bundled.glob("pip-*.whl"))
-          if not wheels:
-              raise SystemExit("bundled pip wheel missing")
+          wheels = sorted((Path(ensurepip.__file__).resolve().parent / "_bundled").glob("pip-*.whl"))
+          if not wheels: raise SystemExit("bundled pip wheel missing")
           print(wheels[-1].resolve())
           PY
           )"
-          wheelhouse="$STATE_ROOT/wheelhouse"
           runtime_site="$STATE_ROOT/runtime-site"
-          test -f "$wheelhouse/requirements.lock"
-          cmp requirements.lock "$wheelhouse/requirements.lock"
-          rm -rf "$runtime_site"
-          mkdir -p "$runtime_site"
-          PYTHONPATH="$pip_wheel" "$PYTHON_BIN" -m pip install \
-            --disable-pip-version-check \
-            --no-index \
-            --find-links "$wheelhouse" \
-            --no-cache-dir \
-            --target "$runtime_site" \
-            -r requirements.lock
+          rm -rf "$runtime_site" && mkdir -p "$runtime_site"
+          cmp requirements.lock "$STATE_ROOT/wheelhouse/requirements.lock"
+          PYTHONPATH="$pip_wheel" "$PYTHON_BIN" -m pip install --disable-pip-version-check --no-index \
+            --find-links "$STATE_ROOT/wheelhouse" --no-cache-dir --target "$runtime_site" -r requirements.lock
           cp requirements.lock "$STATE_ROOT/requirements.lock"
           printf 'PIP_WHEEL=%s\n' "$pip_wheel" >> "$GITHUB_ENV"
           printf 'PYTHONPATH=%s:%s\n' "$pip_wheel" "$runtime_site" >> "$GITHUB_ENV"
-          echo "multipair_discovery_offline_wheelhouse_bootstrap=PASS"
-
-      - name: Verify isolated runtime dependency consistency
-        run: '"$PYTHON_BIN" -m pip check'
-
-      - name: Verify transported archive and run leakage-resistant Discovery
+          echo "multipair_discovery_v3_offline_bootstrap=PASS"
+      - name: Run leakage-resistant historical Discovery
         id: discovery
         env:
           RUNNER_NAME_EVIDENCE: ${{ runner.name }}
         run: |
           set -euo pipefail
+          cd "$REPO_ROOT"
           "$PYTHON_BIN" - <<'PY'
-          import json
-          import os
+          import json, os
           from pathlib import Path
           from nexus_multipair_archive_snapshot import verify_snapshot
           from nexus_multipair_strategy_discovery import run as run_discovery, verify_discovery
           from nexus_multipair_trusted_surface import FAMILIES, SYMBOLS, TIMEFRAMES
-          state_root = Path(os.environ["STATE_ROOT"])
-          source_sha = os.environ["GITHUB_SHA"]
-          snapshot_root = state_root / "snapshot"
-          snapshot = json.loads((snapshot_root / "snapshot-manifest.json").read_text(encoding="utf-8"))
-          snapshot_verification = verify_snapshot(snapshot_root, snapshot)
-          assert snapshot_verification["decision"] == "pass", snapshot_verification
-          assert snapshot["source_sha"] == source_sha
+          state = Path(os.environ["STATE_ROOT"])
+          snapshot_root = state / "historical-snapshot"
+          snapshot = json.loads((snapshot_root / "snapshot-manifest.json").read_text())
+          assert verify_snapshot(snapshot_root, snapshot)["decision"] == "pass"
+          assert snapshot["source_sha"] == os.environ["GITHUB_SHA"]
           assert snapshot["snapshot_digest"] == os.environ["EXPECTED_HOSTED_SNAPSHOT_DIGEST"]
           assert snapshot["cell_count"] == 12
           assert snapshot["symbols"] == list(SYMBOLS)
           assert snapshot["timeframes"] == list(TIMEFRAMES)
-          assert snapshot["data_origin"] == "official_public_bybit_spot_trade_archive_aggregated"
           assert snapshot["runtime_freshness_claimed"] is False
-          assert snapshot["research_only"] is True
-          assert snapshot["paper_execution_started"] is False
-          assert snapshot["live_trading_authority"] is False
-          assert snapshot["private_credentials_used"] is False
-          assert snapshot["real_exchange_orders"] is False
-          assert snapshot["automatic_strategy_promotion"] is False
-          assert snapshot["silent_exchange_substitution"] is False
-          assert snapshot["third_party_proxy_used"] is False
-          assert snapshot["issue_984_state_touched"] is False
-          source_manifest = Path("experiments/nexus_multipair_strategy_discovery_v2.json")
-          manifest = json.loads(source_manifest.read_text(encoding="utf-8"))
+          manifest = json.loads(Path("experiments/nexus_multipair_strategy_discovery_v2.json").read_text())
           manifest["dataset"]["dataset_root"] = str(snapshot_root)
-          manifest_path = state_root / "discovery-manifest.json"
-          manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-          output_root = state_root / "discovery"
-          result = run_discovery(manifest_path, output_root, source_sha=source_sha)
-          verification = verify_discovery(result)
-          assert verification["decision"] == "pass", verification
-          assert result["snapshot_schema_version"] == snapshot["schema_version"]
-          assert result["snapshot_data_origin"] == snapshot["data_origin"]
-          assert result["snapshot_runtime_freshness_claimed"] is False
+          manifest_path = state / "discovery-manifest.json"
+          manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+          output_root = state / "discovery"
+          result = run_discovery(manifest_path, output_root, source_sha=os.environ["GITHUB_SHA"])
+          assert verify_discovery(result)["decision"] == "pass"
           assert result["symbols"] == list(SYMBOLS)
           assert result["timeframes"] == list(TIMEFRAMES)
           assert result["families"] == list(FAMILIES)
-          assert result["hypothesis_count"] == 9
-          assert len(result["cells"]) == 9
-          assert all(row["selection_source"] == "training_only" for row in result["cells"])
-          assert result["research_only"] is True
-          assert result["paper_only"] is True
-          assert result["live_trading_authority"] is False
-          assert result["private_credentials_used"] is False
-          assert result["automatic_strategy_promotion"] is False
-          assert result["automatic_paper_forward_started"] is False
-          (state_root / "discovery-summary.json").write_text(json.dumps({
-              "snapshot_digest": snapshot["snapshot_digest"],
-              "proposal_count": result["research_proposal_count"],
-              "discovery_digest": result["discovery_digest"],
-          }, sort_keys=True) + "\n", encoding="utf-8")
+          assert result["snapshot_runtime_freshness_claimed"] is False
+          summary = {"snapshot_digest": snapshot["snapshot_digest"], "proposal_count": result["research_proposal_count"], "discovery_digest": result["discovery_digest"]}
+          (state / "discovery-summary.json").write_text(json.dumps(summary, sort_keys=True) + "\n")
           PY
           read -r snapshot_digest proposal_count <<EOF
           $("$PYTHON_BIN" - <<'PY'
@@ -422,50 +326,98 @@ jobs:
           echo "runner_name=$RUNNER_NAME_EVIDENCE" >> "$GITHUB_OUTPUT"
           echo "snapshot_digest=$snapshot_digest" >> "$GITHUB_OUTPUT"
           echo "proposal_count=$proposal_count" >> "$GITHUB_OUTPUT"
-          echo "multipair_archive_discovery_physical=PASS proposals=$proposal_count snapshot=$snapshot_digest"
+          echo "multipair_historical_discovery_physical=PASS proposals=$proposal_count"
+
+  runtime-wheelhouse:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: discover-physical
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      runtime_snapshot_archive_sha256: ${{ steps.fresh.outputs.runtime_snapshot_archive_sha256 }}
+      runtime_snapshot_digest: ${{ steps.fresh.outputs.runtime_snapshot_digest }}
+      runtime_snapshot_as_of_ms: ${{ steps.fresh.outputs.runtime_snapshot_as_of_ms }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install locked runtime dependencies
+        run: |
+          python -m pip install -r requirements.lock
+          python -m pip check
+      - name: Acquire fresh canonical public Bybit requalification snapshot
+        id: fresh
+        run: |
+          set -euo pipefail
+          now_ms="$(python - <<'PY'
+          import time
+          print(int(time.time() * 1000))
+          PY
+          )"
+          root="$PWD/build/nexus-multipair-runtime-snapshot"
+          archive="$PWD/build/nexus-multipair-runtime-requalification-snapshot.zip"
+          digest="$PWD/build/nexus-multipair-runtime-requalification-snapshot.sha256"
+          rm -rf "$root" "$archive" "$digest"
+          python nexus_multipair_runtime_requalification_snapshot.py acquire \
+            --output-root "$root" --archive-output "$archive" --digest-output "$digest" \
+            --source-sha "$GITHUB_SHA" --now-ms "$now_ms"
+          read -r snapshot_digest snapshot_as_of <<EOF
+          $(python - <<'PY'
+          import json
+          from pathlib import Path
+          value = json.loads(Path("build/nexus-multipair-runtime-snapshot/snapshot-manifest.json").read_text())
+          print(value["snapshot_digest"], value["as_of_ms"])
+          PY
+          )
+          EOF
+          echo "runtime_snapshot_archive_sha256=$(cat "$digest")" >> "$GITHUB_OUTPUT"
+          echo "runtime_snapshot_digest=$snapshot_digest" >> "$GITHUB_OUTPUT"
+          echo "runtime_snapshot_as_of_ms=$snapshot_as_of" >> "$GITHUB_OUTPUT"
+          rm -rf "$root"
+          echo "hosted_fresh_bybit_runtime_snapshot=PASS digest=$snapshot_digest as_of=$snapshot_as_of"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: nexus-multipair-requalification-fresh-snapshot-${{ github.sha }}
+          path: build/nexus-multipair-runtime-requalification-snapshot.zip
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
 
   requalify-physical:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-    needs: discover-physical
+    needs: [discover-physical, runtime-wheelhouse]
     runs-on: nexus-bybit-network
-    timeout-minutes: 55
+    timeout-minutes: 40
     outputs:
       proof_b64: ${{ steps.proof.outputs.proof_b64 }}
       proof_sha256: ${{ steps.proof.outputs.proof_sha256 }}
     env:
+      GH_TOKEN: ${{ github.token }}
       EXPECTED_DISCOVERY_RUNNER_NAME: ${{ needs.discover-physical.outputs.runner_name }}
-      EXPECTED_SNAPSHOT_DIGEST: ${{ needs.discover-physical.outputs.snapshot_digest }}
+      EXPECTED_HISTORICAL_SNAPSHOT_DIGEST: ${{ needs.discover-physical.outputs.snapshot_digest }}
+      RUNTIME_SNAPSHOT_ARTIFACT: nexus-multipair-requalification-fresh-snapshot-${{ github.sha }}
+      RUNTIME_SNAPSHOT_ARCHIVE_SHA256: ${{ needs.runtime-wheelhouse.outputs.runtime_snapshot_archive_sha256 }}
+      EXPECTED_RUNTIME_SNAPSHOT_DIGEST: ${{ needs.runtime-wheelhouse.outputs.runtime_snapshot_digest }}
+      EXPECTED_RUNTIME_SNAPSHOT_AS_OF_MS: ${{ needs.runtime-wheelhouse.outputs.runtime_snapshot_as_of_ms }}
     steps:
-      - name: Prepare fresh exact-source requalification process
+      - name: Recover isolated exact-source Research state without workspace clean
+        env:
+          CURRENT_RUNNER_NAME: ${{ runner.name }}
         run: |
           set -euo pipefail
-          repo_url="https://github.com/${GITHUB_REPOSITORY}.git"
-          if [ -d .git ]; then
-            git remote set-url origin "$repo_url"
-            git reset --hard
-            git clean -ffdx
-          else
-            find . -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
-            git init .
-            git remote add origin "$repo_url"
-          fi
-          git config --local --unset-all http.https://github.com/.extraheader || true
-          fetch_ok=false
-          for fetch_attempt in 1 2 3; do
-            if git -c http.version=HTTP/1.1 fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"; then
-              fetch_ok=true
-              break
-            fi
-            echo "::warning::Exact repository fetch attempt ${fetch_attempt}/3 failed."
-            if [ "$fetch_attempt" -lt 3 ]; then sleep "$((fetch_attempt * 5))"; fi
-          done
-          if [ "$fetch_ok" != true ]; then
-            echo "::error::Exact repository fetch failed after bounded attempts."
-            exit 1
-          fi
-          git checkout --detach --force FETCH_HEAD
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          git clean -ffdx
+          test "$CURRENT_RUNNER_NAME" = "$EXPECTED_DISCOVERY_RUNNER_NAME"
+          state_root="$HOME/.local/share/nexus/multipair-discovery-v3/$GITHUB_RUN_ID"
+          case "$state_root" in "$HOME"/.local/share/nexus/multipair-discovery-v3/*) ;; *) exit 1 ;; esac
+          repo_root="$state_root/repo"
+          test -d "$repo_root/.git"
+          test "$(git -C "$repo_root" rev-parse HEAD)" = "$GITHUB_SHA"
+          test -d "$state_root/runtime-site"
+          test -f "$state_root/discovery/multipair_strategy_discovery.json"
+          test -f "$state_root/discovery/research_proposals.json"
           known_python="/opt/nexus-bybit-runner/_work/_tool/Python/3.12.14/x64/bin/python"
           python_bin=""
           if [ -x "$known_python" ]; then python_bin="$known_python"; fi
@@ -475,97 +427,70 @@ jobs:
             python_bin="$(find "$python_root" -type f -path '*/3.12.*/x64/bin/python' 2>/dev/null | sort -V | tail -n 1 || true)"
           fi
           test -n "$python_bin"
-          "$python_bin" -c "import sys; assert sys.version_info[:2] == (3, 12), sys.version"
           python_prefix="$("$python_bin" -c 'import sys; print(sys.prefix)')"
-          python_lib="$python_prefix/lib"
-          test -d "$python_lib"
-          effective_ld_library_path="$python_lib"
-          if [ -n "${LD_LIBRARY_PATH:-}" ]; then effective_ld_library_path="$python_lib:$LD_LIBRARY_PATH"; fi
-          state_root="$HOME/.local/share/nexus/multipair-discovery-v2/$GITHUB_RUN_ID"
-          case "$state_root" in
-            "$HOME"/.local/share/nexus/multipair-discovery-v2/*) ;;
-            *) echo "::error::Unsafe Multi-Pair Discovery state root."; exit 1 ;;
-          esac
-          test -d "$state_root/runtime-site"
-          test -f "$state_root/requirements.lock"
-          test -f "$state_root/snapshot/snapshot-manifest.json"
-          test -f "$state_root/discovery/multipair_strategy_discovery.json"
-          test -f "$state_root/discovery/research_proposals.json"
-          cmp requirements.lock "$state_root/requirements.lock"
+          effective_ld_library_path="$python_prefix/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
           pip_wheel="$("$python_bin" - <<'PY'
           import ensurepip
           from pathlib import Path
-          bundled = Path(ensurepip.__file__).resolve().parent / "_bundled"
-          wheels = sorted(bundled.glob("pip-*.whl"))
-          if not wheels:
-              raise SystemExit("bundled pip wheel missing")
+          wheels = sorted((Path(ensurepip.__file__).resolve().parent / "_bundled").glob("pip-*.whl"))
+          if not wheels: raise SystemExit("bundled pip wheel missing")
           print(wheels[-1].resolve())
           PY
           )"
-          test -f "$pip_wheel"
           printf 'PYTHON_BIN=%s\n' "$python_bin" >> "$GITHUB_ENV"
           printf 'LD_LIBRARY_PATH=%s\n' "$effective_ld_library_path" >> "$GITHUB_ENV"
           printf 'STATE_ROOT=%s\n' "$state_root" >> "$GITHUB_ENV"
-          printf 'PIP_WHEEL=%s\n' "$pip_wheel" >> "$GITHUB_ENV"
+          printf 'REPO_ROOT=%s\n' "$repo_root" >> "$GITHUB_ENV"
           printf 'PYTHONPATH=%s:%s\n' "$pip_wheel" "$state_root/runtime-site" >> "$GITHUB_ENV"
-          echo "multipair_requalification_checkout_sha=$(git rev-parse HEAD)"
-          echo "multipair_discovery_state_recovered_from_external_path=PASS"
-
-      - name: Enforce same physical runner and Bybit execution plane
-        env:
-          CURRENT_RUNNER_NAME: ${{ runner.name }}
-        run: >-
-          "$PYTHON_BIN" -c "assert '${{ runner.environment }}' == 'self-hosted'; assert '${{ runner.os }}' == 'Linux'; assert '$CURRENT_RUNNER_NAME' == '$EXPECTED_DISCOVERY_RUNNER_NAME'; print('multipair_requalification_execution_plane=self-hosted:nexus-bybit-network')"
-
-      - name: Verify recovered isolated runtime dependency consistency
-        run: '"$PYTHON_BIN" -m pip check'
-
-      - name: Independently requalify exact Discovery proposals on fresh public data
+          echo "multipair_requalification_v3_state_recovery=PASS"
+      - name: Restore and verify fresh digest-pinned Bybit runtime snapshot
+        id: fresh_restore
         run: |
           set -euo pipefail
-          "$PYTHON_BIN" - <<'PY'
-          import json
-          import os
+          cd "$REPO_ROOT"
+          now_ms="$("$PYTHON_BIN" - <<'PY'
           import time
+          print(int(time.time() * 1000))
+          PY
+          )"
+          "$PYTHON_BIN" scripts/nexus_runtime_snapshot_artifact.py \
+            --repository "$GITHUB_REPOSITORY" --run-id "$GITHUB_RUN_ID" \
+            --artifact-name "$RUNTIME_SNAPSHOT_ARTIFACT" --expected-sha256 "$RUNTIME_SNAPSHOT_ARCHIVE_SHA256" \
+            --expected-source-sha "$GITHUB_SHA" --expected-snapshot-digest "$EXPECTED_RUNTIME_SNAPSHOT_DIGEST" \
+            --expected-as-of-ms "$EXPECTED_RUNTIME_SNAPSHOT_AS_OF_MS" --now-ms "$now_ms" \
+            --destination "$STATE_ROOT/runtime-snapshot" --work-root "$STATE_ROOT/runtime-snapshot-restore"
+          echo "now_ms=$now_ms" >> "$GITHUB_OUTPUT"
+      - name: Independently requalify Discovery proposals on transported fresh Bybit data
+        run: |
+          set -euo pipefail
+          cd "$REPO_ROOT"
+          "$PYTHON_BIN" nexus_multipair_runtime_requalification_snapshot.py requalify \
+            --snapshot-root "$STATE_ROOT/runtime-snapshot" \
+            --discovery "$STATE_ROOT/discovery/multipair_strategy_discovery.json" \
+            --queue "$STATE_ROOT/discovery/research_proposals.json" \
+            --source-sha "$GITHUB_SHA" --state-root "$STATE_ROOT/requalification-state" \
+            --output "$STATE_ROOT/requalification/runtime-requalification.json" \
+            --now-ms "${{ steps.fresh_restore.outputs.now_ms }}"
+          "$PYTHON_BIN" - <<'PY'
+          import json, os
           from pathlib import Path
-          from nexus_multipair_strategy_proposal_requalification import run, verify_requalification
+          from nexus_multipair_strategy_proposal_requalification import verify_requalification
           root = Path(os.environ["STATE_ROOT"])
-          output = root / "requalification" / "runtime-requalification.json"
-          result = run(
-              root / "discovery" / "multipair_strategy_discovery.json",
-              root / "discovery" / "research_proposals.json",
-              source_sha=os.environ["GITHUB_SHA"],
-              discovery_source_sha=os.environ["GITHUB_SHA"],
-              state_root=root / "requalification-state",
-              output=output,
-              now_ms=int(time.time() * 1000),
-          )
-          verification = verify_requalification(result)
-          assert verification["decision"] == "pass", verification
-          assert result["blocked_runtime_data_count"] == 0, result
-          assert result["status"] in {"NO_WORK", "EVALUATED"}, result
-          if result["status"] == "EVALUATED":
-              assert result["qualified_for_review_count"] + result["rejected_count"] == result["proposal_count"]
-          assert result["runtime_data_is_fresh_not_snapshot_reuse"] is True
+          result = json.loads((root / "requalification/runtime-requalification.json").read_text())
+          assert verify_requalification(result)["decision"] == "pass"
+          assert result["blocked_runtime_data_count"] == 0
+          assert result["status"] in {"NO_WORK", "EVALUATED"}
+          assert result["runtime_snapshot_digest"] == os.environ["EXPECTED_RUNTIME_SNAPSHOT_DIGEST"]
+          assert result["runtime_snapshot_distinct_from_discovery"] is True
+          assert result["historical_discovery_snapshot_reused"] is False
           assert result["candidate_creation_authority"] is False
           assert result["promotion_authority"] is False
-          assert result["research_only"] is True
-          assert result["paper_only"] is True
           assert result["paper_execution_started"] is False
-          assert result["live_trading_authority"] is False
-          assert result["private_credentials_used"] is False
           assert result["automatic_strategy_promotion"] is False
+          assert result["live_trading_authority"] is False
           assert result["deterministic_risk_final_authority"] is True
-          print(json.dumps({
-              "status": result["status"],
-              "proposal_count": result["proposal_count"],
-              "qualified": result["qualified_for_review_count"],
-              "rejected": result["rejected_count"],
-              "digest": result["requalification_digest"],
-          }, sort_keys=True))
           PY
-
-      - name: Verify complete physical Discovery path and package compact proof
+      - name: Package compact physical Multi-Pair v3 proof
         id: proof
         env:
           RUNNER_NAME_EVIDENCE: ${{ runner.name }}
@@ -573,108 +498,79 @@ jobs:
           RUNNER_ENVIRONMENT_EVIDENCE: ${{ runner.environment }}
         run: |
           set -euo pipefail
+          cd "$REPO_ROOT"
           "$PYTHON_BIN" - <<'PY'
-          import json
-          import os
+          import json, os
           from pathlib import Path
-          from nexus_multipair_archive_snapshot import verify_snapshot
+          from nexus_multipair_archive_snapshot import verify_snapshot as verify_archive
+          from nexus_multipair_runtime_requalification_snapshot import verify_fresh_runtime_snapshot
           from nexus_multipair_strategy_discovery import verify_discovery
           from nexus_multipair_strategy_proposal_requalification import verify_requalification
           from nexus_multipair_trusted_surface import FAMILIES, SYMBOLS, TIMEFRAMES
           root = Path(os.environ["STATE_ROOT"])
-          snapshot = json.loads((root / "snapshot" / "snapshot-manifest.json").read_text())
-          discovery = json.loads((root / "discovery" / "multipair_strategy_discovery.json").read_text())
-          requalification = json.loads((root / "requalification" / "runtime-requalification.json").read_text())
-          assert verify_snapshot(root / "snapshot", snapshot)["decision"] == "pass"
+          historical = json.loads((root / "historical-snapshot/snapshot-manifest.json").read_text())
+          fresh = json.loads((root / "runtime-snapshot/snapshot-manifest.json").read_text())
+          discovery = json.loads((root / "discovery/multipair_strategy_discovery.json").read_text())
+          req = json.loads((root / "requalification/runtime-requalification.json").read_text())
+          now_ms = int(os.environ.get("EXPECTED_RUNTIME_SNAPSHOT_AS_OF_MS", "0"))
+          assert verify_archive(root / "historical-snapshot", historical)["decision"] == "pass"
           assert verify_discovery(discovery)["decision"] == "pass"
-          assert verify_requalification(requalification)["decision"] == "pass"
-          assert snapshot["snapshot_digest"] == os.environ["EXPECTED_SNAPSHOT_DIGEST"]
-          assert snapshot["source_sha"] == discovery["source_sha"] == requalification["source_sha"] == os.environ["GITHUB_SHA"]
-          assert snapshot["symbols"] == discovery["symbols"] == requalification["symbols"] == list(SYMBOLS)
-          assert snapshot["timeframes"] == discovery["timeframes"] == list(TIMEFRAMES)
-          assert discovery["families"] == list(FAMILIES)
-          assert snapshot["cell_count"] == 12
-          assert snapshot["data_origin"] == "official_public_bybit_spot_trade_archive_aggregated"
-          assert snapshot["runtime_freshness_claimed"] is False
-          assert discovery["snapshot_schema_version"] == snapshot["schema_version"]
-          assert discovery["snapshot_runtime_freshness_claimed"] is False
-          assert discovery["hypothesis_count"] == 9
-          assert requalification["blocked_runtime_data_count"] == 0
-          assert requalification["status"] in {"NO_WORK", "EVALUATED"}
-          assert discovery["research_only"] is True
-          assert discovery["paper_only"] is True
-          assert discovery["live_trading_authority"] is False
-          assert discovery["private_credentials_used"] is False
-          assert discovery["automatic_strategy_promotion"] is False
-          assert requalification["paper_execution_started"] is False
-          assert requalification["automatic_strategy_promotion"] is False
-          assert requalification["live_trading_authority"] is False
-          assert requalification["private_credentials_used"] is False
-          assert requalification["deterministic_risk_final_authority"] is True
+          assert verify_requalification(req)["decision"] == "pass"
+          assert historical["snapshot_digest"] == os.environ["EXPECTED_HISTORICAL_SNAPSHOT_DIGEST"]
+          assert fresh["snapshot_digest"] == os.environ["EXPECTED_RUNTIME_SNAPSHOT_DIGEST"]
+          assert fresh["snapshot_digest"] != historical["snapshot_digest"]
+          assert req["runtime_snapshot_distinct_from_discovery"] is True
+          assert req["blocked_runtime_data_count"] == 0
           evidence = {
-              "schema_version": "nexus.multipair-discovery-v2-physical-proof.v1",
+              "schema_version": "nexus.multipair-discovery-v3-physical-proof.v1",
               "source_sha": os.environ["GITHUB_SHA"],
               "run_id": os.environ["GITHUB_RUN_ID"],
               "physical_runner_name": os.environ["RUNNER_NAME_EVIDENCE"],
               "physical_runner_os": os.environ["RUNNER_OS_EVIDENCE"],
               "physical_runner_environment": os.environ["RUNNER_ENVIRONMENT_EVIDENCE"],
               "execution_plane": "nexus-bybit-network",
-              "trusted_surface_source": "config/nexus-demo-strategy-matrix-v2.json",
-              "symbols": list(SYMBOLS),
-              "timeframes": list(TIMEFRAMES),
-              "families": list(FAMILIES),
-              "snapshot_transport": "digest_pinned_current_run_github_artifact",
-              "snapshot_data_origin": snapshot["data_origin"],
-              "snapshot_runtime_freshness_claimed": snapshot["runtime_freshness_claimed"],
-              "snapshot_cell_count": snapshot["cell_count"],
-              "snapshot_history_limit": snapshot["history_limit"],
-              "snapshot_as_of_ms": discovery["snapshot_as_of_ms"],
-              "snapshot_digest": snapshot["snapshot_digest"],
+              "symbols": list(SYMBOLS), "timeframes": list(TIMEFRAMES), "families": list(FAMILIES),
+              "historical_snapshot_digest": historical["snapshot_digest"],
+              "historical_snapshot_data_origin": historical["data_origin"],
+              "historical_snapshot_runtime_freshness_claimed": historical["runtime_freshness_claimed"],
+              "fresh_runtime_snapshot_transport": req["runtime_data_transport"],
+              "fresh_runtime_snapshot_digest": fresh["snapshot_digest"],
+              "fresh_runtime_snapshot_as_of_ms": fresh["as_of_ms"],
+              "fresh_runtime_snapshot_history_limit": fresh["history_limit"],
+              "fresh_runtime_snapshot_distinct_from_discovery": req["runtime_snapshot_distinct_from_discovery"],
+              "historical_discovery_snapshot_reused_for_requalification": req["historical_discovery_snapshot_reused"],
               "discovery_digest": discovery["discovery_digest"],
-              "discovery_hypothesis_count": discovery["hypothesis_count"],
               "research_proposal_count": discovery["research_proposal_count"],
-              "selection_policy": discovery["selection_policy"],
-              "multiplicity_policy": discovery["multiplicity_policy"],
-              "requalification_digest": requalification["requalification_digest"],
-              "requalification_status": requalification["status"],
-              "qualified_for_review_count": requalification["qualified_for_review_count"],
-              "rejected_count": requalification["rejected_count"],
-              "blocked_runtime_data_count": requalification["blocked_runtime_data_count"],
-              "runtime_data_is_fresh_not_snapshot_reuse": requalification["runtime_data_is_fresh_not_snapshot_reuse"],
-              "zero_proposal_result_is_valid": True,
-              "research_only": True,
-              "paper_only": True,
-              "paper_execution_started": False,
-              "live_trading_authority": False,
-              "private_credentials_used": False,
-              "real_exchange_orders": False,
-              "automatic_strategy_promotion": False,
+              "requalification_digest": req["requalification_digest"],
+              "requalification_status": req["status"],
+              "qualified_for_review_count": req["qualified_for_review_count"],
+              "rejected_count": req["rejected_count"],
+              "blocked_runtime_data_count": req["blocked_runtime_data_count"],
+              "research_only": True, "paper_only": True, "paper_execution_started": False,
+              "live_trading_authority": False, "private_credentials_used": False,
+              "real_exchange_orders": False, "automatic_strategy_promotion": False,
               "deterministic_risk_final_authority": True,
               "state_storage": "physical_external_ephemeral_path",
-              "state_isolated_from_issue_984": True,
               "issue_984_state_artifact_touched": False,
               "persistent_runtime_database_on_github": False,
-              "legacy_btc_eth_discovery_archive_used": False,
+              "shared_runner_workspace_cleaned": False,
           }
-          target = root / "physical-discovery-v2-evidence.json"
-          target.write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          target = root / "physical-discovery-v3-evidence.json"
+          target.write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n")
           PY
-          proof_file="$STATE_ROOT/physical-discovery-v2-evidence.json"
+          proof_file="$STATE_ROOT/physical-discovery-v3-evidence.json"
           proof_sha="$(sha256sum "$proof_file" | awk '{print $1}')"
           proof_b64="$(base64 -w 0 "$proof_file")"
           test "${#proof_b64}" -lt 60000
           echo "proof_sha256=$proof_sha" >> "$GITHUB_OUTPUT"
           echo "proof_b64=$proof_b64" >> "$GITHUB_OUTPUT"
-          echo "multipair_discovery_v2_physical_verification=PASS"
-
+          echo "multipair_discovery_v3_physical_verification=PASS"
       - name: Remove ephemeral physical Research state after proof capture
         if: always()
         run: |
           set -euo pipefail
-          case "$STATE_ROOT" in
-            "$HOME"/.local/share/nexus/multipair-discovery-v2/*) rm -rf "$STATE_ROOT" ;;
-            *) echo "::error::Refusing unsafe Research cleanup path."; exit 1 ;;
-          esac
+          state_root="${STATE_ROOT:-$HOME/.local/share/nexus/multipair-discovery-v3/$GITHUB_RUN_ID}"
+          case "$state_root" in "$HOME"/.local/share/nexus/multipair-discovery-v3/*) rm -rf "$state_root" ;; *) exit 1 ;; esac
 
   persist-proof:
     if: ${{ always() && needs.requalify-physical.result == 'success' && needs.requalify-physical.outputs.proof_b64 != '' }}
@@ -685,57 +581,51 @@ jobs:
       PROOF_B64: ${{ needs.requalify-physical.outputs.proof_b64 }}
       PROOF_SHA256: ${{ needs.requalify-physical.outputs.proof_sha256 }}
     steps:
-      - name: Rehydrate and independently enforce physical Discovery v2 proof
+      - name: Rehydrate and independently enforce physical Discovery v3 proof
         run: |
           set -euo pipefail
-          mkdir -p build/nexus-multipair-discovery-v2-proof
-          printf '%s' "$PROOF_B64" | base64 --decode > build/nexus-multipair-discovery-v2-proof/evidence.json
-          test "$(sha256sum build/nexus-multipair-discovery-v2-proof/evidence.json | awk '{print $1}')" = "$PROOF_SHA256"
+          mkdir -p build/nexus-multipair-discovery-v3-proof
+          printf '%s' "$PROOF_B64" | base64 --decode > build/nexus-multipair-discovery-v3-proof/evidence.json
+          test "$(sha256sum build/nexus-multipair-discovery-v3-proof/evidence.json | awk '{print $1}')" = "$PROOF_SHA256"
           python - <<'PY'
           import json
           from pathlib import Path
-          evidence = json.loads(Path("build/nexus-multipair-discovery-v2-proof/evidence.json").read_text())
-          assert evidence["schema_version"] == "nexus.multipair-discovery-v2-physical-proof.v1"
+          evidence = json.loads(Path("build/nexus-multipair-discovery-v3-proof/evidence.json").read_text())
+          assert evidence["schema_version"] == "nexus.multipair-discovery-v3-physical-proof.v1"
           assert evidence["physical_runner_environment"] == "self-hosted"
           assert evidence["physical_runner_os"] == "Linux"
           assert evidence["execution_plane"] == "nexus-bybit-network"
-          assert evidence["trusted_surface_source"] == "config/nexus-demo-strategy-matrix-v2.json"
           assert evidence["symbols"] == ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT"]
           assert evidence["timeframes"] == ["minute15", "hour1", "hour4"]
           assert evidence["families"] == ["momentum", "trend_breakout", "mean_reversion"]
-          assert evidence["snapshot_transport"] == "digest_pinned_current_run_github_artifact"
-          assert evidence["snapshot_data_origin"] == "official_public_bybit_spot_trade_archive_aggregated"
-          assert evidence["snapshot_runtime_freshness_claimed"] is False
-          assert evidence["snapshot_cell_count"] == 12
-          assert evidence["snapshot_history_limit"] == 500
-          assert evidence["discovery_hypothesis_count"] == 9
+          assert evidence["historical_snapshot_data_origin"] == "official_public_bybit_spot_trade_archive_aggregated"
+          assert evidence["historical_snapshot_runtime_freshness_claimed"] is False
+          assert evidence["fresh_runtime_snapshot_transport"] == "digest_pinned_hosted_bybit_rest_snapshot"
+          assert evidence["fresh_runtime_snapshot_history_limit"] == 240
+          assert evidence["fresh_runtime_snapshot_distinct_from_discovery"] is True
+          assert evidence["historical_discovery_snapshot_reused_for_requalification"] is False
           assert evidence["blocked_runtime_data_count"] == 0
           assert evidence["requalification_status"] in {"NO_WORK", "EVALUATED"}
-          assert evidence["runtime_data_is_fresh_not_snapshot_reuse"] is True
-          assert evidence["zero_proposal_result_is_valid"] is True
-          assert evidence["research_only"] is True
-          assert evidence["paper_only"] is True
+          assert evidence["research_only"] is True and evidence["paper_only"] is True
           assert evidence["paper_execution_started"] is False
           assert evidence["live_trading_authority"] is False
           assert evidence["private_credentials_used"] is False
           assert evidence["real_exchange_orders"] is False
           assert evidence["automatic_strategy_promotion"] is False
           assert evidence["deterministic_risk_final_authority"] is True
-          assert evidence["state_storage"] == "physical_external_ephemeral_path"
-          assert evidence["state_isolated_from_issue_984"] is True
           assert evidence["issue_984_state_artifact_touched"] is False
           assert evidence["persistent_runtime_database_on_github"] is False
-          assert evidence["legacy_btc_eth_discovery_archive_used"] is False
+          assert evidence["shared_runner_workspace_cleaned"] is False
           if evidence["requalification_status"] == "EVALUATED":
               assert evidence["qualified_for_review_count"] + evidence["rejected_count"] == evidence["research_proposal_count"]
           else:
               assert evidence["research_proposal_count"] == 0
-          print("hosted_multipair_discovery_v2_proof_verification=PASS")
+          print("hosted_multipair_discovery_v3_proof_verification=PASS")
           PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: nexus-multipair-discovery-v2-proof-${{ github.sha }}
-          path: build/nexus-multipair-discovery-v2-proof/evidence.json
+          name: nexus-multipair-discovery-v3-proof-${{ github.sha }}
+          path: build/nexus-multipair-discovery-v3-proof/evidence.json
           if-no-files-found: error
           retention-days: 90
           compression-level: 9
