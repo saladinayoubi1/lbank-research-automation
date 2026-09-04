@@ -1,0 +1,587 @@
+name: NEXUS Multi-Pair physical restart replay — recent archive
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "nexus_multipair_recent_archive_paper_matrix.py"
+      - "nexus_multipair_restart_replay.py"
+      - "nexus_multipair_recent_archive_runtime_snapshot.py"
+      - "nexus_multipair_runtime_requalification_snapshot.py"
+      - "nexus_multipair_demo_strategy_matrix.py"
+      - "nexus_demo_strategy_matrix.py"
+      - "nexus_strategy_paper_supervisor.py"
+      - "scripts/nexus_public_current_run_artifact.py"
+      - "scripts/nexus_runtime_wheelhouse.py"
+      - "config/nexus-demo-strategy-matrix-v2.json"
+      - "docs/architecture/market-data-source-registry.yaml"
+      - "requirements.lock"
+      - "tests/test_nexus_multipair_recent_archive_paper_matrix.py"
+      - "tests/test_nexus_multipair_restart_replay.py"
+      - "tests/test_nexus_multipair_physical_restart_replay_archive_workflow.py"
+      - ".github/workflows/nexus_multipair_physical_restart_replay_archive.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "nexus_multipair_recent_archive_paper_matrix.py"
+      - "nexus_multipair_restart_replay.py"
+      - "nexus_multipair_recent_archive_runtime_snapshot.py"
+      - "nexus_multipair_runtime_requalification_snapshot.py"
+      - "nexus_multipair_demo_strategy_matrix.py"
+      - "nexus_demo_strategy_matrix.py"
+      - "nexus_strategy_paper_supervisor.py"
+      - "scripts/nexus_public_current_run_artifact.py"
+      - "scripts/nexus_runtime_wheelhouse.py"
+      - "config/nexus-demo-strategy-matrix-v2.json"
+      - "docs/architecture/market-data-source-registry.yaml"
+      - "requirements.lock"
+      - "tests/test_nexus_multipair_recent_archive_paper_matrix.py"
+      - "tests/test_nexus_multipair_restart_replay.py"
+      - "tests/test_nexus_multipair_physical_restart_replay_archive_workflow.py"
+      - ".github/workflows/nexus_multipair_physical_restart_replay_archive.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nexus-multipair-physical-restart-replay-archive-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'main' }}
+  cancel-in-progress: false
+
+jobs:
+  contract-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements-dev.lock
+      - run: python -m pip check
+      - name: Verify recent-archive restart replay contracts
+        run: >-
+          python -m pytest -q
+          tests/test_nexus_multipair_recent_archive_paper_matrix.py
+          tests/test_nexus_multipair_restart_replay.py
+          tests/test_nexus_multipair_physical_restart_replay_archive_workflow.py
+
+  acquire-runtime:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    outputs:
+      wheelhouse_sha256: ${{ steps.wheelhouse.outputs.sha256 }}
+      recent_archive_sha256: ${{ steps.recent.outputs.archive_sha256 }}
+      recent_snapshot_digest: ${{ steps.recent.outputs.snapshot_digest }}
+      recent_acquired_at_ms: ${{ steps.recent.outputs.acquired_at_ms }}
+      recent_data_as_of_ms: ${{ steps.recent.outputs.data_as_of_ms }}
+      recent_latest_complete_date: ${{ steps.recent.outputs.latest_complete_date }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements.lock
+      - run: python -m pip check
+
+      - name: Build deterministic offline continuity wheelhouse
+        id: wheelhouse
+        run: |
+          set -euo pipefail
+          root="$PWD/build/continuity-wheelhouse"
+          archive="$PWD/build/nexus-paper-runtime-wheelhouse.zip"
+          digest="$PWD/build/continuity-wheelhouse.sha256"
+          rm -rf "$root" "$archive" "$digest"
+          mkdir -p "$root"
+          python -m pip download --disable-pip-version-check --only-binary=:all: --dest "$root" -r requirements.lock
+          cp requirements.lock "$root/requirements.lock"
+          python scripts/nexus_runtime_wheelhouse.py pack --root "$root" --output "$archive" --digest-output "$digest"
+          echo "sha256=$(cat "$digest")" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: nexus-multipair-continuity-wheelhouse-${{ github.sha }}
+          path: build/nexus-paper-runtime-wheelhouse.zip
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+
+      - name: Acquire bounded-recent official Bybit archive snapshot for continuity
+        id: recent
+        run: |
+          set -euo pipefail
+          now_ms="$(python -c 'import time; print(int(time.time() * 1000))')"
+          python nexus_multipair_recent_archive_runtime_snapshot.py acquire \
+            --state-root build/recent-state \
+            --cache-root build/recent-cache \
+            --output-root build/recent-snapshot \
+            --archive-output build/nexus-multipair-runtime-requalification-snapshot.zip \
+            --digest-output build/nexus-multipair-recent-runtime-snapshot.sha256 \
+            --source-sha "$GITHUB_SHA" \
+            --now-ms "$now_ms"
+          VERIFY_NOW_MS="$now_ms" python - <<'PY'
+          import json, os
+          from pathlib import Path
+          import nexus_multipair_recent_archive_runtime_snapshot as recent
+          root = Path("build/recent-snapshot")
+          value = json.loads((root / "snapshot-manifest.json").read_text())
+          verification = recent.verify_recent_archive_runtime_snapshot(
+              root, value, source_sha=os.environ["GITHUB_SHA"], now_ms=int(os.environ["VERIFY_NOW_MS"])
+          )
+          assert verification["decision"] == "pass", verification
+          assert value["cell_count"] == 12 and value["history_limit"] == 240
+          assert value["runtime_requalification_recency_verified"] is True
+          assert value["live_freshness_claimed"] is False
+          assert value["research_only"] is True
+          assert value["paper_execution_started"] is False
+          assert value["live_trading_authority"] is False
+          assert value["private_credentials_used"] is False
+          assert value["real_exchange_orders"] is False
+          assert value["automatic_strategy_promotion"] is False
+          assert value["issue_984_state_touched"] is False
+          print("hosted_continuity_recent_archive_verification=PASS")
+          PY
+          python - <<'PY' > build/recent-meta.env
+          import json
+          from pathlib import Path
+          value = json.loads(Path("build/recent-snapshot/snapshot-manifest.json").read_text())
+          print(f"snapshot_digest={value['snapshot_digest']}")
+          print(f"archive_sha256={Path('build/nexus-multipair-recent-runtime-snapshot.sha256').read_text().strip()}")
+          print(f"acquired_at_ms={value['acquired_at_ms']}")
+          print(f"data_as_of_ms={value['data_as_of_ms']}")
+          print(f"latest_complete_date={value['latest_common_complete_date']}")
+          PY
+          cat build/recent-meta.env >> "$GITHUB_OUTPUT"
+      - name: Remove raw recent archive material
+        if: always()
+        run: rm -rf build/recent-state build/recent-cache
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: nexus-multipair-continuity-recent-snapshot-${{ github.sha }}
+          path: |
+            build/nexus-multipair-runtime-requalification-snapshot.zip
+            build/nexus-multipair-recent-runtime-snapshot.sha256
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+
+  seed-physical:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: [contract-test, acquire-runtime]
+    runs-on: nexus-bybit-network
+    timeout-minutes: 90
+    outputs:
+      replay_now_ms: ${{ steps.seed.outputs.replay_now_ms }}
+      runner_name: ${{ steps.seed.outputs.runner_name }}
+    env:
+      EXPECTED_WHEELHOUSE_SHA256: ${{ needs.acquire-runtime.outputs.wheelhouse_sha256 }}
+      EXPECTED_RECENT_ARCHIVE_SHA256: ${{ needs.acquire-runtime.outputs.recent_archive_sha256 }}
+      EXPECTED_RECENT_SNAPSHOT_DIGEST: ${{ needs.acquire-runtime.outputs.recent_snapshot_digest }}
+      EXPECTED_RECENT_ACQUIRED_AT_MS: ${{ needs.acquire-runtime.outputs.recent_acquired_at_ms }}
+      EXPECTED_RECENT_DATA_AS_OF_MS: ${{ needs.acquire-runtime.outputs.recent_data_as_of_ms }}
+      EXPECTED_RECENT_LATEST_COMPLETE_DATE: ${{ needs.acquire-runtime.outputs.recent_latest_complete_date }}
+    steps:
+      - name: Prepare isolated exact source and external continuity state
+        run: |
+          set -euo pipefail
+          source_root="$HOME/.local/share/nexus/multipair-restart-replay-source/$GITHUB_RUN_ID/seed"
+          state_root="$HOME/.local/share/nexus/multipair-restart-replay/$GITHUB_RUN_ID"
+          case "$source_root" in "$HOME"/.local/share/nexus/multipair-restart-replay-source/*) ;; *) exit 1;; esac
+          case "$state_root" in "$HOME"/.local/share/nexus/multipair-restart-replay/*) ;; *) exit 1;; esac
+          rm -rf "$source_root" "$state_root"
+          mkdir -p "$source_root" "$state_root/demo"
+          cd "$source_root"
+          git init .
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git config --local --unset-all http.https://github.com/.extraheader || true
+          fetch_ok=false
+          for attempt in 1 2 3; do
+            if timeout 180s git -c credential.helper= -c http.version=HTTP/1.1 fetch --no-tags --depth=1 origin "$GITHUB_SHA"; then fetch_ok=true; break; fi
+            if [ "$attempt" -lt 3 ]; then sleep "$((attempt * 5))"; fi
+          done
+          test "$fetch_ok" = true
+          git checkout --detach --force FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          python_bin="/opt/nexus-bybit-runner/_work/_tool/Python/3.12.14/x64/bin/python"
+          if [ ! -x "$python_bin" ]; then
+            tool_root="${RUNNER_TOOL_CACHE:-/opt/nexus-bybit-runner/_work/_tool}"
+            python_bin="$(find "$tool_root" -type f -path '*/Python/3.12.*/x64/bin/python' 2>/dev/null | sort -V | tail -n 1 || true)"
+          fi
+          test -x "$python_bin"
+          "$python_bin" -c "import sys; assert sys.version_info[:2] == (3, 12)"
+          python_lib="$("$python_bin" -c 'import sys; print(sys.prefix)')/lib"
+          test -d "$python_lib"
+          printf 'SOURCE_ROOT=%s\nSTATE_ROOT=%s\nPYTHON_BIN=%s\nLD_LIBRARY_PATH=%s%s\n' \
+            "$source_root" "$state_root" "$python_bin" "$python_lib" "${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" >> "$GITHUB_ENV"
+          echo "continuity_seed_exact_source=PASS"
+          echo "continuity_state_storage=physical_external_runtime_path"
+          echo "continuity_physical_javascript_artifact_actions=false"
+
+      - name: Enforce physical Bybit execution plane
+        run: >-
+          "$PYTHON_BIN" -c "assert '${{ runner.environment }}' == 'self-hosted'; assert '${{ runner.os }}' == 'Linux'; print('multipair_continuity_execution_plane=self-hosted:nexus-bybit-network')"
+
+      - name: Restore deterministic wheelhouse without JavaScript actions
+        run: |
+          set -euo pipefail
+          cd "$SOURCE_ROOT"
+          "$PYTHON_BIN" scripts/nexus_public_current_run_artifact.py wheelhouse \
+            --repository "$GITHUB_REPOSITORY" \
+            --run-id "$GITHUB_RUN_ID" \
+            --artifact-name "nexus-multipair-continuity-wheelhouse-$GITHUB_SHA" \
+            --source-sha "$GITHUB_SHA" \
+            --expected-sha256 "$EXPECTED_WHEELHOUSE_SHA256" \
+            --repository-lock requirements.lock \
+            --destination "$STATE_ROOT/wheelhouse" \
+            --work-root "$STATE_ROOT/wheelhouse-restore"
+
+      - name: Provision locked offline runtime
+        run: |
+          set -euo pipefail
+          cd "$SOURCE_ROOT"
+          wheelhouse="$STATE_ROOT/wheelhouse"
+          cmp requirements.lock "$wheelhouse/requirements.lock"
+          pip_wheel="$("$PYTHON_BIN" - <<'PY'
+          import ensurepip
+          from pathlib import Path
+          wheels = sorted((Path(ensurepip.__file__).resolve().parent / '_bundled').glob('pip-*.whl'))
+          if not wheels: raise SystemExit(1)
+          print(wheels[-1])
+          PY
+          )"
+          runtime_site="$STATE_ROOT/runtime-site-seed"
+          rm -rf "$runtime_site"
+          mkdir -p "$runtime_site"
+          PYTHONPATH="$pip_wheel" "$PYTHON_BIN" -m pip install \
+            --disable-pip-version-check --no-index --find-links "$wheelhouse" --no-cache-dir \
+            --target "$runtime_site" -r requirements.lock
+          printf 'PYTHONPATH=%s:%s:%s\n' "$pip_wheel" "$runtime_site" "$SOURCE_ROOT" >> "$GITHUB_ENV"
+          PYTHONPATH="$pip_wheel:$runtime_site:$SOURCE_ROOT" "$PYTHON_BIN" -m pip check
+          echo "continuity_seed_offline_runtime=PASS"
+
+      - name: Restore and independently verify bounded-recent official Bybit snapshot
+        id: restore_recent
+        run: |
+          set -euo pipefail
+          cd "$SOURCE_ROOT"
+          consume_now_ms="$("$PYTHON_BIN" -c 'import time; print(int(time.time() * 1000))')"
+          printf 'SEED_NOW_MS=%s\n' "$consume_now_ms" >> "$GITHUB_ENV"
+          "$PYTHON_BIN" scripts/nexus_public_current_run_artifact.py recent \
+            --repository "$GITHUB_REPOSITORY" \
+            --run-id "$GITHUB_RUN_ID" \
+            --artifact-name "nexus-multipair-continuity-recent-snapshot-$GITHUB_SHA" \
+            --source-sha "$GITHUB_SHA" \
+            --expected-sha256 "$EXPECTED_RECENT_ARCHIVE_SHA256" \
+            --expected-snapshot-digest "$EXPECTED_RECENT_SNAPSHOT_DIGEST" \
+            --expected-acquired-at-ms "$EXPECTED_RECENT_ACQUIRED_AT_MS" \
+            --expected-data-as-of-ms "$EXPECTED_RECENT_DATA_AS_OF_MS" \
+            --now-ms "$consume_now_ms" \
+            --destination "$STATE_ROOT/recent-runtime-snapshot" \
+            --work-root "$STATE_ROOT/recent-restore"
+          "$PYTHON_BIN" - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ["STATE_ROOT"])
+          value = json.loads((root / "recent-runtime-snapshot/snapshot-manifest.json").read_text())
+          assert value["snapshot_digest"] == os.environ["EXPECTED_RECENT_SNAPSHOT_DIGEST"]
+          assert value["data_as_of_ms"] == int(os.environ["EXPECTED_RECENT_DATA_AS_OF_MS"])
+          assert value["latest_common_complete_date"] == os.environ["EXPECTED_RECENT_LATEST_COMPLETE_DATE"]
+          assert value["runtime_requalification_recency_verified"] is True
+          assert value["live_freshness_claimed"] is False
+          print("continuity_seed_recent_snapshot_transport=PASS")
+          PY
+
+      - name: Execute physical 12-cell/36-lane seed from verified recent archive
+        id: seed
+        env:
+          RUNNER_NAME_EVIDENCE: ${{ runner.name }}
+        run: |
+          set -euo pipefail
+          cd "$SOURCE_ROOT"
+          "$PYTHON_BIN" nexus_multipair_recent_archive_paper_matrix.py \
+            --manifest config/nexus-demo-strategy-matrix-v2.json \
+            --legacy-manifest config/nexus-demo-strategy-matrix-v1.json \
+            --state "$STATE_ROOT/matrix-state.json" \
+            --state-root "$STATE_ROOT" \
+            --snapshot-root "$STATE_ROOT/recent-runtime-snapshot" \
+            --expected-snapshot-digest "$EXPECTED_RECENT_SNAPSHOT_DIGEST" \
+            --source-sha "$GITHUB_SHA" \
+            --run-id "$GITHUB_RUN_ID" \
+            --now-ms "$SEED_NOW_MS" \
+            --snapshot "$STATE_ROOT/demo/seed-snapshot.json" \
+            --migration-evidence "$STATE_ROOT/demo/migration.json"
+          "$PYTHON_BIN" nexus_multipair_restart_replay.py capture \
+            --manifest config/nexus-demo-strategy-matrix-v2.json \
+            --state "$STATE_ROOT/matrix-state.json" \
+            --snapshot "$STATE_ROOT/demo/seed-snapshot.json" \
+            --source-sha "$GITHUB_SHA" \
+            --run-id "$GITHUB_RUN_ID" \
+            --now-ms "$SEED_NOW_MS" \
+            --output "$STATE_ROOT/restart-seed.json"
+          "$PYTHON_BIN" - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ["STATE_ROOT"])
+          state = json.loads((root / "matrix-state.json").read_text())
+          snapshot = json.loads((root / "demo/seed-snapshot.json").read_text())
+          assert snapshot["status"] == "VERIFIED"
+          assert snapshot["verified_cell_count"] == 12 and snapshot["reported_lane_count"] == 36
+          assert snapshot["data_mode"] == "digest_pinned_recent_official_bybit_spot_archive_snapshot"
+          assert snapshot["dataset_sha256"] == os.environ["EXPECTED_RECENT_SNAPSHOT_DIGEST"]
+          assert state["dataset_sha256"] == os.environ["EXPECTED_RECENT_SNAPSHOT_DIGEST"]
+          print("continuity_recent_archive_seed_12x36=PASS")
+          PY
+          echo "replay_now_ms=$SEED_NOW_MS" >> "$GITHUB_OUTPUT"
+          echo "runner_name=$RUNNER_NAME_EVIDENCE" >> "$GITHUB_OUTPUT"
+          echo "seed_process_complete=PASS"
+
+  replay-physical:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: [acquire-runtime, seed-physical]
+    runs-on: nexus-bybit-network
+    timeout-minutes: 60
+    outputs:
+      proof_b64: ${{ steps.proof.outputs.proof_b64 }}
+      proof_sha256: ${{ steps.proof.outputs.proof_sha256 }}
+    env:
+      EXPECTED_WHEELHOUSE_SHA256: ${{ needs.acquire-runtime.outputs.wheelhouse_sha256 }}
+      EXPECTED_RECENT_SNAPSHOT_DIGEST: ${{ needs.acquire-runtime.outputs.recent_snapshot_digest }}
+      EXPECTED_RECENT_DATA_AS_OF_MS: ${{ needs.acquire-runtime.outputs.recent_data_as_of_ms }}
+      REPLAY_NOW_MS: ${{ needs.seed-physical.outputs.replay_now_ms }}
+      EXPECTED_SEED_RUNNER_NAME: ${{ needs.seed-physical.outputs.runner_name }}
+    steps:
+      - name: Prepare fresh exact-source process and recover external state
+        run: |
+          set -euo pipefail
+          source_root="$HOME/.local/share/nexus/multipair-restart-replay-source/$GITHUB_RUN_ID/replay"
+          state_root="$HOME/.local/share/nexus/multipair-restart-replay/$GITHUB_RUN_ID"
+          case "$source_root" in "$HOME"/.local/share/nexus/multipair-restart-replay-source/*) ;; *) exit 1;; esac
+          case "$state_root" in "$HOME"/.local/share/nexus/multipair-restart-replay/*) ;; *) exit 1;; esac
+          rm -rf "$source_root"
+          mkdir -p "$source_root"
+          test -f "$state_root/matrix-state.json"
+          test -f "$state_root/restart-seed.json"
+          test -f "$state_root/recent-runtime-snapshot/snapshot-manifest.json"
+          cd "$source_root"
+          git init .
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git config --local --unset-all http.https://github.com/.extraheader || true
+          fetch_ok=false
+          for attempt in 1 2 3; do
+            if timeout 180s git -c credential.helper= -c http.version=HTTP/1.1 fetch --no-tags --depth=1 origin "$GITHUB_SHA"; then fetch_ok=true; break; fi
+            if [ "$attempt" -lt 3 ]; then sleep "$((attempt * 5))"; fi
+          done
+          test "$fetch_ok" = true
+          git checkout --detach --force FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          python_bin="/opt/nexus-bybit-runner/_work/_tool/Python/3.12.14/x64/bin/python"
+          if [ ! -x "$python_bin" ]; then
+            tool_root="${RUNNER_TOOL_CACHE:-/opt/nexus-bybit-runner/_work/_tool}"
+            python_bin="$(find "$tool_root" -type f -path '*/Python/3.12.*/x64/bin/python' 2>/dev/null | sort -V | tail -n 1 || true)"
+          fi
+          test -x "$python_bin"
+          python_lib="$("$python_bin" -c 'import sys; print(sys.prefix)')/lib"
+          test -d "$python_lib"
+          printf 'SOURCE_ROOT=%s\nSTATE_ROOT=%s\nPYTHON_BIN=%s\nLD_LIBRARY_PATH=%s%s\n' \
+            "$source_root" "$state_root" "$python_bin" "$python_lib" "${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" >> "$GITHUB_ENV"
+          echo "continuity_replay_exact_source=PASS"
+          echo "continuity_state_recovered_from_external_path=PASS"
+
+      - name: Enforce same physical runner and execution plane
+        env:
+          CURRENT_RUNNER_NAME: ${{ runner.name }}
+        run: >-
+          "$PYTHON_BIN" -c "assert '${{ runner.environment }}' == 'self-hosted'; assert '${{ runner.os }}' == 'Linux'; assert '$CURRENT_RUNNER_NAME' == '$EXPECTED_SEED_RUNNER_NAME'; print('multipair_restart_execution_plane=self-hosted:nexus-bybit-network')"
+
+      - name: Restore deterministic wheelhouse without JavaScript actions
+        run: |
+          set -euo pipefail
+          cd "$SOURCE_ROOT"
+          "$PYTHON_BIN" scripts/nexus_public_current_run_artifact.py wheelhouse \
+            --repository "$GITHUB_REPOSITORY" \
+            --run-id "$GITHUB_RUN_ID" \
+            --artifact-name "nexus-multipair-continuity-wheelhouse-$GITHUB_SHA" \
+            --source-sha "$GITHUB_SHA" \
+            --expected-sha256 "$EXPECTED_WHEELHOUSE_SHA256" \
+            --repository-lock requirements.lock \
+            --destination "$STATE_ROOT/wheelhouse-replay" \
+            --work-root "$STATE_ROOT/wheelhouse-replay-restore"
+
+      - name: Provision fresh locked offline runtime
+        run: |
+          set -euo pipefail
+          cd "$SOURCE_ROOT"
+          wheelhouse="$STATE_ROOT/wheelhouse-replay"
+          cmp requirements.lock "$wheelhouse/requirements.lock"
+          pip_wheel="$("$PYTHON_BIN" - <<'PY'
+          import ensurepip
+          from pathlib import Path
+          wheels = sorted((Path(ensurepip.__file__).resolve().parent / '_bundled').glob('pip-*.whl'))
+          if not wheels: raise SystemExit(1)
+          print(wheels[-1])
+          PY
+          )"
+          runtime_site="$STATE_ROOT/runtime-site-replay"
+          rm -rf "$runtime_site"
+          mkdir -p "$runtime_site"
+          PYTHONPATH="$pip_wheel" "$PYTHON_BIN" -m pip install \
+            --disable-pip-version-check --no-index --find-links "$wheelhouse" --no-cache-dir \
+            --target "$runtime_site" -r requirements.lock
+          printf 'PYTHONPATH=%s:%s:%s\n' "$pip_wheel" "$runtime_site" "$SOURCE_ROOT" >> "$GITHUB_ENV"
+          PYTHONPATH="$pip_wheel:$runtime_site:$SOURCE_ROOT" "$PYTHON_BIN" -m pip check
+          echo "continuity_replay_offline_runtime=PASS"
+
+      - name: Replay exact same archive-bound clock in fresh physical job
+        run: |
+          set -euo pipefail
+          cd "$SOURCE_ROOT"
+          "$PYTHON_BIN" nexus_multipair_recent_archive_paper_matrix.py \
+            --manifest config/nexus-demo-strategy-matrix-v2.json \
+            --legacy-manifest config/nexus-demo-strategy-matrix-v1.json \
+            --state "$STATE_ROOT/matrix-state.json" \
+            --state-root "$STATE_ROOT" \
+            --snapshot-root "$STATE_ROOT/recent-runtime-snapshot" \
+            --expected-snapshot-digest "$EXPECTED_RECENT_SNAPSHOT_DIGEST" \
+            --source-sha "$GITHUB_SHA" \
+            --run-id "$GITHUB_RUN_ID" \
+            --now-ms "$REPLAY_NOW_MS" \
+            --snapshot "$STATE_ROOT/demo/restart-snapshot.json" \
+            --migration-evidence "$STATE_ROOT/demo/restart-migration.json"
+          echo "fresh_process_same_archive_clock_replay=PASS"
+
+      - name: Independently verify continuity and emit compact physical proof
+        id: proof
+        env:
+          RUNNER_NAME_EVIDENCE: ${{ runner.name }}
+          RUNNER_OS_EVIDENCE: ${{ runner.os }}
+          RUNNER_ENVIRONMENT_EVIDENCE: ${{ runner.environment }}
+        run: |
+          set -euo pipefail
+          cd "$SOURCE_ROOT"
+          "$PYTHON_BIN" nexus_multipair_restart_replay.py verify \
+            --manifest config/nexus-demo-strategy-matrix-v2.json \
+            --seed "$STATE_ROOT/restart-seed.json" \
+            --state "$STATE_ROOT/matrix-state.json" \
+            --snapshot "$STATE_ROOT/demo/restart-snapshot.json" \
+            --source-sha "$GITHUB_SHA" \
+            --run-id "$GITHUB_RUN_ID" \
+            --output "$STATE_ROOT/restart-replay-proof.json"
+          "$PYTHON_BIN" - <<'PY'
+          import json, os
+          from pathlib import Path
+          import nexus_multipair_recent_archive_runtime_snapshot as recent
+          root = Path(os.environ["STATE_ROOT"])
+          proof = json.loads((root / "restart-replay-proof.json").read_text())
+          state = json.loads((root / "matrix-state.json").read_text())
+          restart = json.loads((root / "demo/restart-snapshot.json").read_text())
+          source_snapshot = json.loads((root / "recent-runtime-snapshot/snapshot-manifest.json").read_text())
+          assert proof["verified_cell_count"] == 12
+          assert proof["blocked_cell_count"] == 0
+          assert proof["reported_lane_count"] == 36
+          assert proof["duplicate_bar_execution_count"] == 0
+          assert proof["skipped_no_new_bar_count"] == 12
+          assert proof["state_digest_preserved"] is True
+          assert proof["cell_cursors_preserved"] is True
+          assert proof["lane_identity_preserved"] is True
+          assert proof["paper_only"] is True
+          assert proof["live_trading_authority"] is False
+          assert proof["private_credentials_used"] is False
+          assert proof["automatic_strategy_promotion"] is False
+          assert proof["deterministic_risk_final_authority"] is True
+          assert restart["data_mode"] == recent.TRANSPORT_ORIGIN
+          assert restart["dataset_sha256"] == os.environ["EXPECTED_RECENT_SNAPSHOT_DIGEST"]
+          assert state["dataset_sha256"] == os.environ["EXPECTED_RECENT_SNAPSHOT_DIGEST"]
+          assert source_snapshot["snapshot_digest"] == os.environ["EXPECTED_RECENT_SNAPSHOT_DIGEST"]
+          assert source_snapshot["data_as_of_ms"] == int(os.environ["EXPECTED_RECENT_DATA_AS_OF_MS"])
+          assert source_snapshot["live_freshness_claimed"] is False
+          evidence = {
+              **proof,
+              "physical_runner_name": os.environ["RUNNER_NAME_EVIDENCE"],
+              "physical_runner_os": os.environ["RUNNER_OS_EVIDENCE"],
+              "physical_runner_environment": os.environ["RUNNER_ENVIRONMENT_EVIDENCE"],
+              "execution_plane": "nexus-bybit-network",
+              "state_storage": "physical_external_runtime_path",
+              "runtime_data_transport": recent.TRANSPORT_ORIGIN,
+              "runtime_snapshot_digest": source_snapshot["snapshot_digest"],
+              "runtime_data_as_of_ms": source_snapshot["data_as_of_ms"],
+              "runtime_live_freshness_claimed": False,
+              "snapshot_recency_verified_at_seed": True,
+              "direct_bybit_rest_used_on_physical_runner": False,
+              "javascript_artifact_actions_used_on_physical_runner": False,
+              "state_isolated_from_issue_984": True,
+              "issue_984_state_artifact_touched": False,
+              "real_exchange_orders": False,
+              "persistent_runtime_database_on_github": False,
+          }
+          target = root / "physical-restart-replay-evidence.json"
+          target.write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n")
+          print("physical_recent_archive_restart_replay_verification=PASS")
+          PY
+          proof_file="$STATE_ROOT/physical-restart-replay-evidence.json"
+          proof_sha="$(sha256sum "$proof_file" | awk '{print $1}')"
+          proof_b64="$(base64 -w 0 "$proof_file")"
+          test "${#proof_b64}" -lt 60000
+          echo "proof_sha256=$proof_sha" >> "$GITHUB_OUTPUT"
+          echo "proof_b64=$proof_b64" >> "$GITHUB_OUTPUT"
+          echo "NEXUS_RESTART_REPLAY_PROOF_SHA256=$proof_sha"
+          echo "NEXUS_RESTART_REPLAY_PROOF_BASE64=$proof_b64"
+
+  persist-proof:
+    if: ${{ always() && needs.replay-physical.result == 'success' && needs.replay-physical.outputs.proof_b64 != '' }}
+    needs: replay-physical
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PROOF_B64: ${{ needs.replay-physical.outputs.proof_b64 }}
+      PROOF_SHA256: ${{ needs.replay-physical.outputs.proof_sha256 }}
+    steps:
+      - name: Rehydrate and independently enforce physical restart proof
+        run: |
+          set -euo pipefail
+          mkdir -p build/nexus-multipair-restart-replay-proof
+          printf '%s' "$PROOF_B64" | base64 --decode > build/nexus-multipair-restart-replay-proof/evidence.json
+          test "$(sha256sum build/nexus-multipair-restart-replay-proof/evidence.json | awk '{print $1}')" = "$PROOF_SHA256"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          evidence = json.loads(Path("build/nexus-multipair-restart-replay-proof/evidence.json").read_text())
+          assert evidence["verified_cell_count"] == 12
+          assert evidence["blocked_cell_count"] == 0
+          assert evidence["reported_lane_count"] == 36
+          assert evidence["duplicate_bar_execution_count"] == 0
+          assert evidence["skipped_no_new_bar_count"] == 12
+          assert evidence["state_digest_preserved"] is True
+          assert evidence["cell_cursors_preserved"] is True
+          assert evidence["lane_identity_preserved"] is True
+          assert evidence["paper_only"] is True
+          assert evidence["live_trading_authority"] is False
+          assert evidence["private_credentials_used"] is False
+          assert evidence["automatic_strategy_promotion"] is False
+          assert evidence["deterministic_risk_final_authority"] is True
+          assert evidence["runtime_data_transport"] == "digest_pinned_recent_official_bybit_spot_archive_snapshot"
+          assert evidence["runtime_live_freshness_claimed"] is False
+          assert evidence["snapshot_recency_verified_at_seed"] is True
+          assert evidence["direct_bybit_rest_used_on_physical_runner"] is False
+          assert evidence["javascript_artifact_actions_used_on_physical_runner"] is False
+          assert evidence["state_isolated_from_issue_984"] is True
+          assert evidence["issue_984_state_artifact_touched"] is False
+          assert evidence["real_exchange_orders"] is False
+          assert evidence["persistent_runtime_database_on_github"] is False
+          assert evidence["execution_plane"] == "nexus-bybit-network"
+          assert evidence["physical_runner_environment"] == "self-hosted"
+          assert evidence["physical_runner_os"] == "Linux"
+          print("hosted_recent_archive_restart_replay_proof_verification=PASS")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: nexus-multipair-restart-replay-recent-archive-proof-${{ github.sha }}
+          path: build/nexus-multipair-restart-replay-proof/evidence.json
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
