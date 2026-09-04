@@ -10,6 +10,7 @@ on:
       - "nexus_multipair_archive_snapshot.py"
       - "nexus_multipair_strategy_discovery.py"
       - "nexus_multipair_strategy_proposal_requalification.py"
+      - "nexus_multipair_runtime_requalification_snapshot.py"
       - "nexus_multipair_demo_strategy_matrix.py"
       - "config/nexus-demo-strategy-matrix-v2.json"
       - "experiments/nexus_multipair_strategy_discovery_v2.json"
@@ -24,11 +25,15 @@ on:
       - "bybit_spot_backfill.py"
       - "scripts/nexus_runtime_wheelhouse.py"
       - "scripts/nexus_snapshot_artifact.py"
+      - "scripts/nexus_runtime_snapshot_artifact.py"
       - "requirements.lock"
       - "tests/test_nexus_multipair_strategy_discovery.py"
       - "tests/test_nexus_multipair_strategy_discovery_archive.py"
       - "tests/test_nexus_multipair_archive_snapshot.py"
       - "tests/test_nexus_snapshot_artifact.py"
+      - "tests/test_nexus_multipair_runtime_requalification_snapshot.py"
+      - "tests/test_nexus_multipair_runtime_requalification_snapshot_contract.py"
+      - "tests/test_nexus_runtime_snapshot_artifact.py"
       - "tests/test_nexus_multipair_trusted_surface.py"
       - "tests/test_nexus_multipair_strategy_discovery_workflow.py"
       - ".github/workflows/nexus_multipair_strategy_discovery_v2.yml"
@@ -40,6 +45,7 @@ on:
       - "nexus_multipair_archive_snapshot.py"
       - "nexus_multipair_strategy_discovery.py"
       - "nexus_multipair_strategy_proposal_requalification.py"
+      - "nexus_multipair_runtime_requalification_snapshot.py"
       - "nexus_multipair_demo_strategy_matrix.py"
       - "config/nexus-demo-strategy-matrix-v2.json"
       - "experiments/nexus_multipair_strategy_discovery_v2.json"
@@ -54,11 +60,15 @@ on:
       - "bybit_spot_backfill.py"
       - "scripts/nexus_runtime_wheelhouse.py"
       - "scripts/nexus_snapshot_artifact.py"
+      - "scripts/nexus_runtime_snapshot_artifact.py"
       - "requirements.lock"
       - "tests/test_nexus_multipair_strategy_discovery.py"
       - "tests/test_nexus_multipair_strategy_discovery_archive.py"
       - "tests/test_nexus_multipair_archive_snapshot.py"
       - "tests/test_nexus_snapshot_artifact.py"
+      - "tests/test_nexus_multipair_runtime_requalification_snapshot.py"
+      - "tests/test_nexus_multipair_runtime_requalification_snapshot_contract.py"
+      - "tests/test_nexus_runtime_snapshot_artifact.py"
       - "tests/test_nexus_multipair_trusted_surface.py"
       - "tests/test_nexus_multipair_strategy_discovery_workflow.py"
       - ".github/workflows/nexus_multipair_strategy_discovery_v2.yml"
@@ -92,6 +102,9 @@ jobs:
           tests/test_nexus_multipair_strategy_discovery_archive.py
           tests/test_nexus_multipair_archive_snapshot.py
           tests/test_nexus_snapshot_artifact.py
+          tests/test_nexus_multipair_runtime_requalification_snapshot.py
+          tests/test_nexus_multipair_runtime_requalification_snapshot_contract.py
+          tests/test_nexus_runtime_snapshot_artifact.py
           tests/test_nexus_multipair_trusted_surface.py
           tests/test_nexus_multipair_strategy_discovery_workflow.py
 
@@ -424,48 +437,137 @@ jobs:
           echo "proposal_count=$proposal_count" >> "$GITHUB_OUTPUT"
           echo "multipair_archive_discovery_physical=PASS proposals=$proposal_count snapshot=$snapshot_digest"
 
-  requalify-physical:
+  runtime-snapshot:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: discover-physical
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      runtime_snapshot_archive_sha256: ${{ steps.acquire.outputs.runtime_snapshot_archive_sha256 }}
+      runtime_snapshot_digest: ${{ steps.acquire.outputs.runtime_snapshot_digest }}
+      runtime_snapshot_as_of_ms: ${{ steps.acquire.outputs.runtime_snapshot_as_of_ms }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements.lock
+      - run: python -m pip check
+      - name: Acquire fresh canonical public Bybit runtime snapshot
+        id: acquire
+        run: |
+          set -euo pipefail
+          root="$PWD/build/nexus-multipair-runtime-requalification-snapshot"
+          archive="$PWD/build/nexus-multipair-runtime-requalification-snapshot.zip"
+          digest="$PWD/build/nexus-multipair-runtime-requalification-snapshot.sha256"
+          rm -rf "$root" "$archive" "$digest"
+          now_ms="$(python -c 'import time; print(int(time.time() * 1000))')"
+          python nexus_multipair_runtime_requalification_snapshot.py acquire \
+            --output-root "$root" \
+            --archive-output "$archive" \
+            --digest-output "$digest" \
+            --source-sha "$GITHUB_SHA" \
+            --now-ms "$now_ms"
+          read -r runtime_snapshot_digest runtime_snapshot_as_of_ms <<EOF
+          $(python - <<'PY'
+          import json
+          from pathlib import Path
+          value = json.loads(Path("build/nexus-multipair-runtime-requalification-snapshot/snapshot-manifest.json").read_text(encoding="utf-8"))
+          print(value["snapshot_digest"], value["as_of_ms"])
+          PY
+          )
+          EOF
+          runtime_snapshot_archive_sha256="$(cat "$digest")"
+          test -n "$runtime_snapshot_archive_sha256"
+          test -n "$runtime_snapshot_digest"
+          test -n "$runtime_snapshot_as_of_ms"
+          echo "runtime_snapshot_archive_sha256=$runtime_snapshot_archive_sha256" >> "$GITHUB_OUTPUT"
+          echo "runtime_snapshot_digest=$runtime_snapshot_digest" >> "$GITHUB_OUTPUT"
+          echo "runtime_snapshot_as_of_ms=$runtime_snapshot_as_of_ms" >> "$GITHUB_OUTPUT"
+          rm -rf "$root"
+          echo "hosted_fresh_multipair_runtime_snapshot=PASS digest=$runtime_snapshot_digest as_of_ms=$runtime_snapshot_as_of_ms archive=$runtime_snapshot_archive_sha256"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: nexus-multipair-runtime-requalification-snapshot-${{ github.sha }}
+          path: build/nexus-multipair-runtime-requalification-snapshot.zip
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+
+  requalify-physical:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: [discover-physical, runtime-snapshot]
     runs-on: nexus-bybit-network
     timeout-minutes: 55
     outputs:
       proof_b64: ${{ steps.proof.outputs.proof_b64 }}
       proof_sha256: ${{ steps.proof.outputs.proof_sha256 }}
     env:
+      GH_TOKEN: ${{ github.token }}
       EXPECTED_DISCOVERY_RUNNER_NAME: ${{ needs.discover-physical.outputs.runner_name }}
       EXPECTED_SNAPSHOT_DIGEST: ${{ needs.discover-physical.outputs.snapshot_digest }}
+      RUNTIME_SNAPSHOT_ARTIFACT: nexus-multipair-runtime-requalification-snapshot-${{ github.sha }}
+      RUNTIME_SNAPSHOT_ARCHIVE_SHA256: ${{ needs.runtime-snapshot.outputs.runtime_snapshot_archive_sha256 }}
+      EXPECTED_RUNTIME_SNAPSHOT_DIGEST: ${{ needs.runtime-snapshot.outputs.runtime_snapshot_digest }}
+      EXPECTED_RUNTIME_SNAPSHOT_AS_OF_MS: ${{ needs.runtime-snapshot.outputs.runtime_snapshot_as_of_ms }}
     steps:
-      - name: Prepare fresh exact-source requalification process
+      - name: Initialize safe external requalification roots
         run: |
           set -euo pipefail
+          state_root="$HOME/.local/share/nexus/multipair-discovery-v2/$GITHUB_RUN_ID"
+          source_root="$HOME/.local/share/nexus/multipair-requalification-source/$GITHUB_RUN_ID"
+          case "$state_root" in
+            "$HOME"/.local/share/nexus/multipair-discovery-v2/*) ;;
+            *) echo "::error::Unsafe Multi-Pair Discovery state root."; exit 1 ;;
+          esac
+          case "$source_root" in
+            "$HOME"/.local/share/nexus/multipair-requalification-source/*) ;;
+            *) echo "::error::Unsafe Multi-Pair requalification source root."; exit 1 ;;
+          esac
+          test -d "$state_root/runtime-site"
+          test -f "$state_root/requirements.lock"
+          test -f "$state_root/snapshot/snapshot-manifest.json"
+          test -f "$state_root/discovery/multipair_strategy_discovery.json"
+          test -f "$state_root/discovery/research_proposals.json"
+          rm -rf "$source_root"
+          mkdir -p "$source_root"
+          printf 'STATE_ROOT=%s\n' "$state_root" >> "$GITHUB_ENV"
+          printf 'SOURCE_ROOT=%s\n' "$source_root" >> "$GITHUB_ENV"
+          echo "multipair_requalification_external_roots=PASS"
+
+      - name: Prepare fresh exact-source requalification checkout
+        run: |
+          set -euo pipefail
+          source_root="$SOURCE_ROOT"
           repo_url="https://github.com/${GITHUB_REPOSITORY}.git"
-          if [ -d .git ]; then
-            git remote set-url origin "$repo_url"
-            git reset --hard
-            git clean -ffdx
-          else
-            find . -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
-            git init .
-            git remote add origin "$repo_url"
-          fi
-          git config --local --unset-all http.https://github.com/.extraheader || true
+          git -C "$source_root" init .
+          git -C "$source_root" remote add origin "$repo_url"
+          git -C "$source_root" config --local --unset-all http.https://github.com/.extraheader || true
           fetch_ok=false
           for fetch_attempt in 1 2 3; do
-            if git -c http.version=HTTP/1.1 fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"; then
+            if timeout 180s git -C "$source_root" -c http.version=HTTP/1.1 fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"; then
               fetch_ok=true
               break
             fi
-            echo "::warning::Exact repository fetch attempt ${fetch_attempt}/3 failed."
+            echo "::warning::Exact requalification source fetch attempt ${fetch_attempt}/3 failed."
             if [ "$fetch_attempt" -lt 3 ]; then sleep "$((fetch_attempt * 5))"; fi
           done
           if [ "$fetch_ok" != true ]; then
-            echo "::error::Exact repository fetch failed after bounded attempts."
+            echo "::error::Exact requalification source fetch failed after bounded attempts."
             exit 1
           fi
-          git checkout --detach --force FETCH_HEAD
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          git clean -ffdx
+          git -C "$source_root" checkout --detach --force FETCH_HEAD
+          test "$(git -C "$source_root" rev-parse HEAD)" = "$GITHUB_SHA"
+          echo "multipair_requalification_fresh_source_checkout=PASS sha=$(git -C "$source_root" rev-parse HEAD)"
+
+      - name: Recover exact Python and isolated dependencies
+        run: |
+          set -euo pipefail
+          state_root="$STATE_ROOT"
+          source_root="$SOURCE_ROOT"
           known_python="/opt/nexus-bybit-runner/_work/_tool/Python/3.12.14/x64/bin/python"
           python_bin=""
           if [ -x "$known_python" ]; then python_bin="$known_python"; fi
@@ -481,17 +583,7 @@ jobs:
           test -d "$python_lib"
           effective_ld_library_path="$python_lib"
           if [ -n "${LD_LIBRARY_PATH:-}" ]; then effective_ld_library_path="$python_lib:$LD_LIBRARY_PATH"; fi
-          state_root="$HOME/.local/share/nexus/multipair-discovery-v2/$GITHUB_RUN_ID"
-          case "$state_root" in
-            "$HOME"/.local/share/nexus/multipair-discovery-v2/*) ;;
-            *) echo "::error::Unsafe Multi-Pair Discovery state root."; exit 1 ;;
-          esac
-          test -d "$state_root/runtime-site"
-          test -f "$state_root/requirements.lock"
-          test -f "$state_root/snapshot/snapshot-manifest.json"
-          test -f "$state_root/discovery/multipair_strategy_discovery.json"
-          test -f "$state_root/discovery/research_proposals.json"
-          cmp requirements.lock "$state_root/requirements.lock"
+          cmp "$SOURCE_ROOT/requirements.lock" "$state_root/requirements.lock"
           pip_wheel="$("$python_bin" - <<'PY'
           import ensurepip
           from pathlib import Path
@@ -505,10 +597,8 @@ jobs:
           test -f "$pip_wheel"
           printf 'PYTHON_BIN=%s\n' "$python_bin" >> "$GITHUB_ENV"
           printf 'LD_LIBRARY_PATH=%s\n' "$effective_ld_library_path" >> "$GITHUB_ENV"
-          printf 'STATE_ROOT=%s\n' "$state_root" >> "$GITHUB_ENV"
           printf 'PIP_WHEEL=%s\n' "$pip_wheel" >> "$GITHUB_ENV"
-          printf 'PYTHONPATH=%s:%s\n' "$pip_wheel" "$state_root/runtime-site" >> "$GITHUB_ENV"
-          echo "multipair_requalification_checkout_sha=$(git rev-parse HEAD)"
+          printf 'PYTHONPATH=%s:%s:%s\n' "$pip_wheel" "$state_root/runtime-site" "$source_root" >> "$GITHUB_ENV"
           echo "multipair_discovery_state_recovered_from_external_path=PASS"
 
       - name: Enforce same physical runner and Bybit execution plane
@@ -520,33 +610,70 @@ jobs:
       - name: Verify recovered isolated runtime dependency consistency
         run: '"$PYTHON_BIN" -m pip check'
 
-      - name: Independently requalify exact Discovery proposals on fresh public data
+      - name: Restore and independently verify fresh digest-pinned runtime snapshot
         run: |
           set -euo pipefail
+          consume_now_ms="$("$PYTHON_BIN" -c 'import time; print(int(time.time() * 1000))')"
+          cd "$SOURCE_ROOT"
+          "$PYTHON_BIN" scripts/nexus_runtime_snapshot_artifact.py \
+            --repository "$GITHUB_REPOSITORY" \
+            --run-id "$GITHUB_RUN_ID" \
+            --artifact-name "$RUNTIME_SNAPSHOT_ARTIFACT" \
+            --expected-sha256 "$RUNTIME_SNAPSHOT_ARCHIVE_SHA256" \
+            --expected-source-sha "$GITHUB_SHA" \
+            --expected-snapshot-digest "$EXPECTED_RUNTIME_SNAPSHOT_DIGEST" \
+            --expected-as-of-ms "$EXPECTED_RUNTIME_SNAPSHOT_AS_OF_MS" \
+            --now-ms "$consume_now_ms" \
+            --destination "$STATE_ROOT/runtime-snapshot" \
+            --work-root "$STATE_ROOT/runtime-snapshot-restore"
+          printf 'RUNTIME_CONSUME_NOW_MS=%s\n' "$consume_now_ms" >> "$GITHUB_ENV"
+          echo "multipair_runtime_snapshot_physical_restore=PASS"
+
+      - name: Independently requalify exact Discovery proposals on transported fresh Bybit data
+        run: |
+          set -euo pipefail
+          cd "$SOURCE_ROOT"
+          "$PYTHON_BIN" nexus_multipair_runtime_requalification_snapshot.py requalify \
+            --snapshot-root "$STATE_ROOT/runtime-snapshot" \
+            --discovery "$STATE_ROOT/discovery/multipair_strategy_discovery.json" \
+            --queue "$STATE_ROOT/discovery/research_proposals.json" \
+            --source-sha "$GITHUB_SHA" \
+            --state-root "$STATE_ROOT/requalification-state" \
+            --output "$STATE_ROOT/requalification/runtime-requalification.json" \
+            --now-ms "$RUNTIME_CONSUME_NOW_MS"
           "$PYTHON_BIN" - <<'PY'
           import json
           import os
-          import time
           from pathlib import Path
-          from nexus_multipair_strategy_proposal_requalification import run, verify_requalification
+          from nexus_multipair_runtime_requalification_snapshot import TRANSPORT_ORIGIN, verify_fresh_runtime_snapshot
+          from nexus_multipair_strategy_proposal_requalification import verify_requalification
           root = Path(os.environ["STATE_ROOT"])
-          output = root / "requalification" / "runtime-requalification.json"
-          result = run(
-              root / "discovery" / "multipair_strategy_discovery.json",
-              root / "discovery" / "research_proposals.json",
-              source_sha=os.environ["GITHUB_SHA"],
-              discovery_source_sha=os.environ["GITHUB_SHA"],
-              state_root=root / "requalification-state",
-              output=output,
-              now_ms=int(time.time() * 1000),
-          )
+          result = json.loads((root / "requalification" / "runtime-requalification.json").read_text())
+          runtime_snapshot = json.loads((root / "runtime-snapshot" / "snapshot-manifest.json").read_text())
+          discovery = json.loads((root / "discovery" / "multipair_strategy_discovery.json").read_text())
           verification = verify_requalification(result)
           assert verification["decision"] == "pass", verification
+          fresh = verify_fresh_runtime_snapshot(
+              root / "runtime-snapshot",
+              runtime_snapshot,
+              source_sha=os.environ["GITHUB_SHA"],
+              now_ms=int(os.environ["RUNTIME_CONSUME_NOW_MS"]),
+          )
+          assert fresh["decision"] == "pass", fresh
+          assert runtime_snapshot["snapshot_digest"] == os.environ["EXPECTED_RUNTIME_SNAPSHOT_DIGEST"]
+          assert runtime_snapshot["as_of_ms"] == int(os.environ["EXPECTED_RUNTIME_SNAPSHOT_AS_OF_MS"])
+          assert runtime_snapshot["snapshot_digest"] != discovery["dataset_snapshot_sha256"]
           assert result["blocked_runtime_data_count"] == 0, result
           assert result["status"] in {"NO_WORK", "EVALUATED"}, result
           if result["status"] == "EVALUATED":
               assert result["qualified_for_review_count"] + result["rejected_count"] == result["proposal_count"]
           assert result["runtime_data_is_fresh_not_snapshot_reuse"] is True
+          assert result["runtime_snapshot_distinct_from_discovery"] is True
+          assert result["historical_discovery_snapshot_reused"] is False
+          assert result["runtime_data_transport"] == TRANSPORT_ORIGIN
+          assert result["runtime_snapshot_digest"] == runtime_snapshot["snapshot_digest"]
+          assert result["runtime_snapshot_as_of_ms"] == runtime_snapshot["as_of_ms"]
+          assert result["runtime_snapshot_history_limit"] == 240
           assert result["candidate_creation_authority"] is False
           assert result["promotion_authority"] is False
           assert result["research_only"] is True
@@ -561,11 +688,12 @@ jobs:
               "proposal_count": result["proposal_count"],
               "qualified": result["qualified_for_review_count"],
               "rejected": result["rejected_count"],
+              "runtime_snapshot_digest": result["runtime_snapshot_digest"],
               "digest": result["requalification_digest"],
           }, sort_keys=True))
           PY
 
-      - name: Verify complete physical Discovery path and package compact proof
+      - name: Verify complete physical Discovery and fresh requalification path and package compact proof
         id: proof
         env:
           RUNNER_NAME_EVIDENCE: ${{ runner.name }}
@@ -573,27 +701,43 @@ jobs:
           RUNNER_ENVIRONMENT_EVIDENCE: ${{ runner.environment }}
         run: |
           set -euo pipefail
+          cd "$SOURCE_ROOT"
           "$PYTHON_BIN" - <<'PY'
           import json
           import os
           from pathlib import Path
           from nexus_multipair_archive_snapshot import verify_snapshot
+          from nexus_multipair_runtime_requalification_snapshot import TRANSPORT_ORIGIN, verify_fresh_runtime_snapshot
           from nexus_multipair_strategy_discovery import verify_discovery
           from nexus_multipair_strategy_proposal_requalification import verify_requalification
           from nexus_multipair_trusted_surface import FAMILIES, SYMBOLS, TIMEFRAMES
           root = Path(os.environ["STATE_ROOT"])
           snapshot = json.loads((root / "snapshot" / "snapshot-manifest.json").read_text())
+          runtime_snapshot = json.loads((root / "runtime-snapshot" / "snapshot-manifest.json").read_text())
           discovery = json.loads((root / "discovery" / "multipair_strategy_discovery.json").read_text())
           requalification = json.loads((root / "requalification" / "runtime-requalification.json").read_text())
           assert verify_snapshot(root / "snapshot", snapshot)["decision"] == "pass"
           assert verify_discovery(discovery)["decision"] == "pass"
           assert verify_requalification(requalification)["decision"] == "pass"
+          fresh = verify_fresh_runtime_snapshot(
+              root / "runtime-snapshot",
+              runtime_snapshot,
+              source_sha=os.environ["GITHUB_SHA"],
+              now_ms=int(os.environ["RUNTIME_CONSUME_NOW_MS"]),
+          )
+          assert fresh["decision"] == "pass", fresh
           assert snapshot["snapshot_digest"] == os.environ["EXPECTED_SNAPSHOT_DIGEST"]
-          assert snapshot["source_sha"] == discovery["source_sha"] == requalification["source_sha"] == os.environ["GITHUB_SHA"]
-          assert snapshot["symbols"] == discovery["symbols"] == requalification["symbols"] == list(SYMBOLS)
-          assert snapshot["timeframes"] == discovery["timeframes"] == list(TIMEFRAMES)
+          assert runtime_snapshot["snapshot_digest"] == os.environ["EXPECTED_RUNTIME_SNAPSHOT_DIGEST"]
+          assert runtime_snapshot["as_of_ms"] == int(os.environ["EXPECTED_RUNTIME_SNAPSHOT_AS_OF_MS"])
+          assert snapshot["source_sha"] == runtime_snapshot["source_sha"] == discovery["source_sha"] == requalification["source_sha"] == os.environ["GITHUB_SHA"]
+          assert snapshot["symbols"] == runtime_snapshot["symbols"] == discovery["symbols"] == requalification["symbols"] == list(SYMBOLS)
+          assert snapshot["timeframes"] == runtime_snapshot["timeframes"] == discovery["timeframes"] == list(TIMEFRAMES)
           assert discovery["families"] == list(FAMILIES)
           assert snapshot["cell_count"] == 12
+          assert runtime_snapshot["cell_count"] == 12
+          assert runtime_snapshot["history_limit"] == 240
+          assert runtime_snapshot["data_origin"] == "canonical_public_bybit_closed_candles"
+          assert runtime_snapshot["snapshot_digest"] != snapshot["snapshot_digest"]
           assert snapshot["data_origin"] == "official_public_bybit_spot_trade_archive_aggregated"
           assert snapshot["runtime_freshness_claimed"] is False
           assert discovery["snapshot_schema_version"] == snapshot["schema_version"]
@@ -601,6 +745,11 @@ jobs:
           assert discovery["hypothesis_count"] == 9
           assert requalification["blocked_runtime_data_count"] == 0
           assert requalification["status"] in {"NO_WORK", "EVALUATED"}
+          assert requalification["runtime_data_transport"] == TRANSPORT_ORIGIN
+          assert requalification["runtime_snapshot_digest"] == runtime_snapshot["snapshot_digest"]
+          assert requalification["runtime_snapshot_as_of_ms"] == runtime_snapshot["as_of_ms"]
+          assert requalification["runtime_snapshot_distinct_from_discovery"] is True
+          assert requalification["historical_discovery_snapshot_reused"] is False
           assert discovery["research_only"] is True
           assert discovery["paper_only"] is True
           assert discovery["live_trading_authority"] is False
@@ -635,6 +784,14 @@ jobs:
               "research_proposal_count": discovery["research_proposal_count"],
               "selection_policy": discovery["selection_policy"],
               "multiplicity_policy": discovery["multiplicity_policy"],
+              "runtime_snapshot_transport": requalification["runtime_data_transport"],
+              "runtime_snapshot_digest": runtime_snapshot["snapshot_digest"],
+              "runtime_snapshot_as_of_ms": runtime_snapshot["as_of_ms"],
+              "runtime_snapshot_history_limit": runtime_snapshot["history_limit"],
+              "runtime_snapshot_data_origin": runtime_snapshot["data_origin"],
+              "runtime_snapshot_distinct_from_discovery": requalification["runtime_snapshot_distinct_from_discovery"],
+              "historical_discovery_snapshot_reused": requalification["historical_discovery_snapshot_reused"],
+              "runtime_snapshot_freshness_verified": True,
               "requalification_digest": requalification["requalification_digest"],
               "requalification_status": requalification["status"],
               "qualified_for_review_count": requalification["qualified_for_review_count"],
@@ -667,13 +824,19 @@ jobs:
           echo "proof_b64=$proof_b64" >> "$GITHUB_OUTPUT"
           echo "multipair_discovery_v2_physical_verification=PASS"
 
-      - name: Remove ephemeral physical Research state after proof capture
+      - name: Remove ephemeral physical Research state and source after proof capture
         if: always()
         run: |
           set -euo pipefail
-          case "$STATE_ROOT" in
-            "$HOME"/.local/share/nexus/multipair-discovery-v2/*) rm -rf "$STATE_ROOT" ;;
+          state_root="${STATE_ROOT:-$HOME/.local/share/nexus/multipair-discovery-v2/$GITHUB_RUN_ID}"
+          source_root="${SOURCE_ROOT:-$HOME/.local/share/nexus/multipair-requalification-source/$GITHUB_RUN_ID}"
+          case "$state_root" in
+            "$HOME"/.local/share/nexus/multipair-discovery-v2/*) rm -rf "$state_root" ;;
             *) echo "::error::Refusing unsafe Research cleanup path."; exit 1 ;;
+          esac
+          case "$source_root" in
+            "$HOME"/.local/share/nexus/multipair-requalification-source/*) rm -rf "$source_root" ;;
+            *) echo "::error::Refusing unsafe requalification source cleanup path."; exit 1 ;;
           esac
 
   persist-proof:
@@ -709,6 +872,13 @@ jobs:
           assert evidence["snapshot_cell_count"] == 12
           assert evidence["snapshot_history_limit"] == 500
           assert evidence["discovery_hypothesis_count"] == 9
+          assert evidence["runtime_snapshot_transport"] == "digest_pinned_hosted_bybit_rest_snapshot"
+          assert evidence["runtime_snapshot_data_origin"] == "canonical_public_bybit_closed_candles"
+          assert evidence["runtime_snapshot_history_limit"] == 240
+          assert evidence["runtime_snapshot_digest"] != evidence["snapshot_digest"]
+          assert evidence["runtime_snapshot_distinct_from_discovery"] is True
+          assert evidence["historical_discovery_snapshot_reused"] is False
+          assert evidence["runtime_snapshot_freshness_verified"] is True
           assert evidence["blocked_runtime_data_count"] == 0
           assert evidence["requalification_status"] in {"NO_WORK", "EVALUATED"}
           assert evidence["runtime_data_is_fresh_not_snapshot_reuse"] is True
