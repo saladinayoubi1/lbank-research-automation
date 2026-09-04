@@ -66,6 +66,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: read
   contents: read
 
 concurrency:
@@ -211,6 +212,7 @@ jobs:
     runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || 'nexus-bybit-network' }}
     timeout-minutes: 90
     env:
+      GH_TOKEN: ${{ github.token }}
       EXPECTED_WHEELHOUSE_SHA256: ${{ needs.acquire-snapshot.outputs.wheelhouse_sha256 }}
       EXPECTED_HISTORICAL_ARCHIVE_SHA256: ${{ needs.acquire-snapshot.outputs.historical_archive_sha256 }}
       EXPECTED_HISTORICAL_SNAPSHOT_DIGEST: ${{ needs.acquire-snapshot.outputs.historical_snapshot_digest }}
@@ -446,7 +448,7 @@ jobs:
               "run_id": os.environ["GITHUB_RUN_ID"],
               "physical_runner_name": os.environ["PHYSICAL_RUNNER_NAME"],
               "execution_plane": "nexus-bybit-network",
-              "artifact_transport": "anonymous_public_github_api_digest_pinned_node_free",
+              "artifact_transport": "github_actions_read_token_digest_pinned_node_free",
               "javascript_artifact_actions_used_on_physical_runner": False,
               "symbols": list(SYMBOLS),
               "timeframes": list(TIMEFRAMES),
