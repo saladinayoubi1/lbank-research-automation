@@ -235,36 +235,41 @@ jobs:
       SNAPSHOT_ARCHIVE_SHA256: ${{ needs.runtime-wheelhouse.outputs.snapshot_archive_sha256 }}
       EXPECTED_HOSTED_SNAPSHOT_DIGEST: ${{ needs.runtime-wheelhouse.outputs.snapshot_digest }}
     steps:
-      - name: Prepare exact source and ephemeral external Research state
+      - name: Prepare isolated exact source and ephemeral external Research state
         run: |
           set -euo pipefail
           repo_url="https://github.com/${GITHUB_REPOSITORY}.git"
-          if [ -d .git ]; then
-            git remote set-url origin "$repo_url"
-            git reset --hard
-            git clean -ffdx
-          else
-            find . -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
-            git init .
-            git remote add origin "$repo_url"
-          fi
+          source_root="$HOME/.local/share/nexus/multipair-discovery-source/$GITHUB_RUN_ID"
+          state_root="$HOME/.local/share/nexus/multipair-discovery-v2/$GITHUB_RUN_ID"
+          case "$source_root" in
+            "$HOME"/.local/share/nexus/multipair-discovery-source/*) ;;
+            *) echo "::error::Unsafe Multi-Pair Discovery source root."; exit 1 ;;
+          esac
+          case "$state_root" in
+            "$HOME"/.local/share/nexus/multipair-discovery-v2/*) ;;
+            *) echo "::error::Unsafe Multi-Pair Discovery state root."; exit 1 ;;
+          esac
+          rm -rf "$source_root" "$state_root"
+          mkdir -p "$source_root" "$state_root"
+          cd "$source_root"
+          git init .
+          git remote add origin "$repo_url"
           git config --local --unset-all http.https://github.com/.extraheader || true
           fetch_ok=false
           for fetch_attempt in 1 2 3; do
-            if git -c http.version=HTTP/1.1 fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"; then
+            if timeout 180s git -c http.version=HTTP/1.1 fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"; then
               fetch_ok=true
               break
             fi
-            echo "::warning::Exact repository fetch attempt ${fetch_attempt}/3 failed."
+            echo "::warning::Exact isolated Discovery source fetch attempt ${fetch_attempt}/3 failed."
             if [ "$fetch_attempt" -lt 3 ]; then sleep "$((fetch_attempt * 5))"; fi
           done
           if [ "$fetch_ok" != true ]; then
-            echo "::error::Exact repository fetch failed after bounded attempts."
+            echo "::error::Exact isolated Discovery source fetch failed after bounded attempts."
             exit 1
           fi
           git checkout --detach --force FETCH_HEAD
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          git clean -ffdx
           known_python="/opt/nexus-bybit-runner/_work/_tool/Python/3.12.14/x64/bin/python"
           python_bin=""
           if [ -x "$known_python" ]; then python_bin="$known_python"; fi
@@ -281,17 +286,12 @@ jobs:
           effective_ld_library_path="$python_lib"
           if [ -n "${LD_LIBRARY_PATH:-}" ]; then effective_ld_library_path="$python_lib:$LD_LIBRARY_PATH"; fi
           LD_LIBRARY_PATH="$effective_ld_library_path" "$python_bin" -c "import ctypes; print('multipair_discovery_physical_python=PASS')"
-          state_root="$HOME/.local/share/nexus/multipair-discovery-v2/$GITHUB_RUN_ID"
-          case "$state_root" in
-            "$HOME"/.local/share/nexus/multipair-discovery-v2/*) ;;
-            *) echo "::error::Unsafe Multi-Pair Discovery state root."; exit 1 ;;
-          esac
-          rm -rf "$state_root"
-          mkdir -p "$state_root"
           printf 'PYTHON_BIN=%s\n' "$python_bin" >> "$GITHUB_ENV"
           printf 'LD_LIBRARY_PATH=%s\n' "$effective_ld_library_path" >> "$GITHUB_ENV"
+          printf 'SOURCE_ROOT=%s\n' "$source_root" >> "$GITHUB_ENV"
           printf 'STATE_ROOT=%s\n' "$state_root" >> "$GITHUB_ENV"
           echo "multipair_discovery_checkout_sha=$(git rev-parse HEAD)"
+          echo "multipair_discovery_fresh_source_checkout=PASS"
           echo "multipair_discovery_state_storage=physical_external_ephemeral_path"
 
       - name: Enforce eligible physical Bybit Research execution plane
@@ -301,6 +301,7 @@ jobs:
       - name: Restore digest-pinned current-run runtime wheelhouse
         run: |
           set -euo pipefail
+          cd "$SOURCE_ROOT"
           wheelhouse="$STATE_ROOT/wheelhouse"
           "$PYTHON_BIN" scripts/nexus_runtime_wheelhouse.py restore-current-run \
             --repository "$GITHUB_REPOSITORY" \
@@ -314,6 +315,7 @@ jobs:
       - name: Restore digest-pinned official Bybit archive snapshot
         run: |
           set -euo pipefail
+          cd "$SOURCE_ROOT"
           "$PYTHON_BIN" scripts/nexus_snapshot_artifact.py \
             --repository "$GITHUB_REPOSITORY" \
             --run-id "$GITHUB_RUN_ID" \
@@ -327,6 +329,7 @@ jobs:
       - name: Provision locked external runtime dependencies
         run: |
           set -euo pipefail
+          cd "$SOURCE_ROOT"
           pip_wheel="$("$PYTHON_BIN" - <<'PY'
           import ensurepip
           from pathlib import Path
@@ -352,7 +355,7 @@ jobs:
             -r requirements.lock
           cp requirements.lock "$STATE_ROOT/requirements.lock"
           printf 'PIP_WHEEL=%s\n' "$pip_wheel" >> "$GITHUB_ENV"
-          printf 'PYTHONPATH=%s:%s\n' "$pip_wheel" "$runtime_site" >> "$GITHUB_ENV"
+          printf 'PYTHONPATH=%s:%s:%s\n' "$pip_wheel" "$runtime_site" "$SOURCE_ROOT" >> "$GITHUB_ENV"
           echo "multipair_discovery_offline_wheelhouse_bootstrap=PASS"
 
       - name: Verify isolated runtime dependency consistency
@@ -364,6 +367,7 @@ jobs:
           RUNNER_NAME_EVIDENCE: ${{ runner.name }}
         run: |
           set -euo pipefail
+          cd "$SOURCE_ROOT"
           "$PYTHON_BIN" - <<'PY'
           import json
           import os
@@ -436,6 +440,16 @@ jobs:
           echo "snapshot_digest=$snapshot_digest" >> "$GITHUB_OUTPUT"
           echo "proposal_count=$proposal_count" >> "$GITHUB_OUTPUT"
           echo "multipair_archive_discovery_physical=PASS proposals=$proposal_count snapshot=$snapshot_digest"
+
+      - name: Remove isolated Discovery source after use
+        if: always()
+        run: |
+          set -euo pipefail
+          source_root="${SOURCE_ROOT:-$HOME/.local/share/nexus/multipair-discovery-source/$GITHUB_RUN_ID}"
+          case "$source_root" in
+            "$HOME"/.local/share/nexus/multipair-discovery-source/*) rm -rf "$source_root" ;;
+            *) echo "::error::Refusing unsafe Discovery source cleanup path."; exit 1 ;;
+          esac
 
   runtime-snapshot:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
