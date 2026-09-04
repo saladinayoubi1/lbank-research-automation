@@ -1,0 +1,444 @@
+name: NEXUS persistent Paper trading loop
+
+on:
+  schedule:
+    - cron: "7,22,37,52 * * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: &runtime_paths
+      - "bybit_public_klines.py"
+      - "nexus_bybit_same_interval_chunk_fallback.py"
+      - "nexus_multipair_persistent_paper_runtime.py"
+      - "nexus_persistent_paper_trading_loop.py"
+      - "nexus_multipair_demo_strategy_matrix.py"
+      - "nexus_demo_strategy_matrix.py"
+      - "nexus_public_regime_cycle.py"
+      - "nexus_demo_regime_cycle.py"
+      - "nexus_regime_selected_position_rebalance.py"
+      - "nexus_regime_selected_exposure_increase.py"
+      - "nexus_strategy_discovery_health_trigger.py"
+      - "nexus_demo_paper_position_maintenance.py"
+      - "nexus_demo_paper_performance_refresh.py"
+      - "nexus_regime_paper_lane.py"
+      - "nexus_regime_strategy_selector.py"
+      - "nexus_regime_strategy_runtime.py"
+      - "nexus_strategy_paper_supervisor.py"
+      - "nexus_paper_performance_pipeline.py"
+      - "scripts/nexus_strategy_discovery_controller.py"
+      - "scripts/nexus_runtime_wheelhouse.py"
+      - "scripts/nexus_public_current_run_artifact.py"
+      - "scripts/nexus_persistent_state_transport.py"
+      - "scripts/nexus_persistent_state_handoff.py"
+      - "config/nexus-demo-strategy-matrix-v1.json"
+      - "config/nexus-demo-strategy-matrix-v2.json"
+      - "config/nexus-regime-strategy-policy-v1.json"
+      - "research/strategy_family_catalog.json"
+      - "requirements.lock"
+      - "requirements-dev.lock"
+      - "tests/test_bybit_public_klines.py"
+      - "tests/test_nexus_bybit_same_interval_chunk_fallback.py"
+      - "tests/test_nexus_multipair_persistent_paper_runtime.py"
+      - "tests/test_nexus_persistent_state_transport.py"
+      - "tests/test_nexus_persistent_paper_trading_loop.py"
+      - "tests/test_nexus_persistent_paper_trading_workflow.py"
+      - "tests/test_nexus_runtime_wheelhouse.py"
+      - "tests/test_nexus_regime_selected_position_rebalance.py"
+      - "tests/test_nexus_regime_selected_exposure_increase.py"
+      - "tests/test_nexus_strategy_discovery_health_trigger.py"
+      - "tests/test_nexus_multipair_demo_strategy_matrix.py"
+      - "tests/test_nexus_demo_strategy_matrix.py"
+      - "tests/test_nexus_demo_paper_position_maintenance.py"
+      - "tests/test_nexus_demo_paper_lifecycle_persistence.py"
+      - "tests/test_nexus_paper_performance_pipeline.py"
+      - "tests/test_nexus_demo_regime_cycle.py"
+      - "tests/test_nexus_regime_paper_lane.py"
+      - "tests/test_nexus_regime_strategy_selector.py"
+      - "tests/test_nexus_regime_strategy_runtime.py"
+      - "tests/test_nexus_strategy_paper_supervisor.py"
+      - ".github/workflows/nexus_persistent_paper_trading_loop.yml"
+  pull_request:
+    paths: *runtime_paths
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: nexus-persistent-paper-trading-loop-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'main' }}
+  # A new exact-main push supersedes an older main runtime. Scheduled cycles
+  # remain serial and never cancel one another.
+  cancel-in-progress: ${{ github.event_name == 'push' }}
+
+jobs:
+  contract-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements-dev.lock
+      - run: python -m pip check
+      - name: Verify persistent four-symbol Trading Engine contracts
+        run: >-
+          python -m pytest -q
+          tests/test_bybit_public_klines.py
+          tests/test_nexus_bybit_same_interval_chunk_fallback.py
+          tests/test_nexus_multipair_persistent_paper_runtime.py
+          tests/test_nexus_persistent_state_transport.py
+          tests/test_nexus_persistent_paper_trading_loop.py
+          tests/test_nexus_persistent_paper_trading_workflow.py
+          tests/test_nexus_runtime_wheelhouse.py
+          tests/test_nexus_regime_selected_position_rebalance.py
+          tests/test_nexus_regime_selected_exposure_increase.py
+          tests/test_nexus_strategy_discovery_health_trigger.py
+          tests/test_nexus_multipair_demo_strategy_matrix.py
+          tests/test_nexus_demo_strategy_matrix.py
+          tests/test_nexus_demo_paper_position_maintenance.py
+          tests/test_nexus_demo_paper_lifecycle_persistence.py
+          tests/test_nexus_paper_performance_pipeline.py
+          tests/test_nexus_demo_regime_cycle.py
+          tests/test_nexus_regime_paper_lane.py
+          tests/test_nexus_regime_strategy_selector.py
+          tests/test_nexus_regime_strategy_runtime.py
+          tests/test_nexus_strategy_paper_supervisor.py
+
+  runtime-wheelhouse:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    outputs:
+      archive_sha256: ${{ steps.wheelhouse.outputs.archive_sha256 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Build deterministic offline runtime wheelhouse
+        id: wheelhouse
+        run: |
+          set -euo pipefail
+          root="$PWD/build/persistent-wheelhouse"
+          archive="$PWD/build/nexus-persistent-paper-runtime-wheelhouse.zip"
+          digest="$PWD/build/nexus-persistent-paper-runtime-wheelhouse.sha256"
+          rm -rf "$root" "$archive" "$digest"
+          mkdir -p "$root"
+          python -m pip download --disable-pip-version-check --only-binary=:all: --dest "$root" -r requirements.lock
+          cp requirements.lock "$root/requirements.lock"
+          python scripts/nexus_runtime_wheelhouse.py pack \
+            --root "$root" \
+            --output "$archive" \
+            --digest-output "$digest"
+          echo "archive_sha256=$(cat "$digest")" >> "$GITHUB_OUTPUT"
+          echo "hosted_persistent_runtime_wheelhouse=PASS"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: nexus-persistent-paper-runtime-wheelhouse-${{ github.sha }}
+          path: build/nexus-persistent-paper-runtime-wheelhouse.zip
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+
+  paper-loop:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: [contract-test, runtime-wheelhouse]
+    runs-on: nexus-bybit-network
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      STATE_ARTIFACT: nexus-persistent-paper-trading-state
+      WHEELHOUSE_ARTIFACT: nexus-persistent-paper-runtime-wheelhouse-${{ github.sha }}
+      WHEELHOUSE_ARCHIVE_SHA256: ${{ needs.runtime-wheelhouse.outputs.archive_sha256 }}
+    outputs:
+      state_archive_chunk_count: ${{ steps.package.outputs.state_archive_chunk_count }}
+      state_archive_b64_len: ${{ steps.package.outputs.state_archive_b64_len }}
+      state_archive_sha256: ${{ steps.package.outputs.state_archive_sha256 }}
+      state_archive_chunk_0: ${{ steps.package.outputs.state_archive_chunk_0 }}
+      state_archive_chunk_1: ${{ steps.package.outputs.state_archive_chunk_1 }}
+      state_archive_chunk_2: ${{ steps.package.outputs.state_archive_chunk_2 }}
+      state_archive_chunk_3: ${{ steps.package.outputs.state_archive_chunk_3 }}
+      state_archive_chunk_4: ${{ steps.package.outputs.state_archive_chunk_4 }}
+      state_archive_chunk_5: ${{ steps.package.outputs.state_archive_chunk_5 }}
+      state_archive_chunk_6: ${{ steps.package.outputs.state_archive_chunk_6 }}
+      state_archive_chunk_7: ${{ steps.package.outputs.state_archive_chunk_7 }}
+      state_archive_chunk_8: ${{ steps.package.outputs.state_archive_chunk_8 }}
+      state_archive_chunk_9: ${{ steps.package.outputs.state_archive_chunk_9 }}
+      state_archive_chunk_10: ${{ steps.package.outputs.state_archive_chunk_10 }}
+      state_archive_chunk_11: ${{ steps.package.outputs.state_archive_chunk_11 }}
+    steps:
+      - name: Prepare exact repository and pre-provisioned Python 3.12 without JavaScript actions
+        run: |
+          set -euo pipefail
+          source_root="$HOME/.local/share/nexus/persistent-paper-source/$GITHUB_RUN_ID"
+          state_root="$HOME/.local/share/nexus/persistent-paper-v2"
+          case "$source_root" in "$HOME"/.local/share/nexus/persistent-paper-source/*) ;; *) exit 1;; esac
+          case "$state_root" in "$HOME"/.local/share/nexus/persistent-paper-v2) ;; *) exit 1;; esac
+          rm -rf "$source_root"
+          mkdir -p "$source_root" "$state_root"
+          cd "$source_root"
+          git init .
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git config --local --unset-all http.https://github.com/.extraheader || true
+          fetch_ok=false
+          fetch_max_attempts=3
+          for fetch_attempt in 1 2 3; do
+            if timeout 180s git -c credential.helper= -c http.version=HTTP/1.1 fetch \
+              --no-tags --prune --depth=1 origin "$GITHUB_SHA"; then
+              fetch_ok=true
+              break
+            fi
+            if [ "$fetch_attempt" -lt "$fetch_max_attempts" ]; then
+              sleep "$((fetch_attempt * 5))"
+            fi
+          done
+          if [ "$fetch_ok" != true ]; then
+            echo "::error::Exact repository fetch failed after ${fetch_max_attempts} bounded attempts."
+            exit 1
+          fi
+          git checkout --detach --force FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+
+          python_bin="/opt/nexus-bybit-runner/_work/_tool/Python/3.12.14/x64/bin/python"
+          if [ ! -x "$python_bin" ]; then
+            tool_root="${RUNNER_TOOL_CACHE:-/opt/nexus-bybit-runner/_work/_tool}"
+            python_bin="$(find "$tool_root" -type f -path '*/Python/3.12.*/x64/bin/python' 2>/dev/null | sort -V | tail -n 1 || true)"
+          fi
+          if [ ! -x "$python_bin" ]; then
+            echo "::error::No pre-provisioned CPython 3.12 exists on the physical runner."
+            exit 1
+          fi
+          "$python_bin" -c 'import sys; assert sys.version_info[:2] == (3, 12)'
+          python_lib="$("$python_bin" -c 'import sys; print(sys.prefix)')/lib"
+          test -d "$python_lib"
+          printf 'SOURCE_ROOT=%s\nSTATE_ROOT=%s\nPYTHON_BIN=%s\nLD_LIBRARY_PATH=%s%s\n' \
+            "$source_root" "$state_root" "$python_bin" "$python_lib" "${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" >> "$GITHUB_ENV"
+          echo "persistent_multipair_exact_source=PASS"
+          echo "persistent_state_storage=physical_external_runtime_path"
+          echo "persistent_physical_javascript_actions=false"
+
+      - name: Enforce eligible Bybit network execution plane
+        run: >-
+          "$PYTHON_BIN" -c "assert '${{ runner.environment }}' == 'self-hosted'; assert '${{ runner.os }}' == 'Linux'; print('bybit_network_execution_plane=self-hosted:nexus-bybit-network')"
+
+      - name: Restore digest-pinned current-run runtime wheelhouse without JavaScript actions
+        run: |
+          set -euo pipefail
+          cd "$SOURCE_ROOT"
+          "$PYTHON_BIN" scripts/nexus_public_current_run_artifact.py wheelhouse \
+            --repository "$GITHUB_REPOSITORY" \
+            --run-id "$GITHUB_RUN_ID" \
+            --artifact-name "$WHEELHOUSE_ARTIFACT" \
+            --source-sha "$GITHUB_SHA" \
+            --expected-sha256 "$WHEELHOUSE_ARCHIVE_SHA256" \
+            --repository-lock requirements.lock \
+            --destination "$SOURCE_ROOT/build/runtime-wheelhouse" \
+            --work-root "$SOURCE_ROOT/build/runtime-wheelhouse-restore"
+
+      - name: Provision locked runtime dependencies from verified hosted wheelhouse
+        run: |
+          set -euo pipefail
+          cd "$SOURCE_ROOT"
+          wheelhouse="$SOURCE_ROOT/build/runtime-wheelhouse"
+          cmp requirements.lock "$wheelhouse/requirements.lock"
+          pip_wheel="$("$PYTHON_BIN" - <<'PY'
+          import ensurepip
+          from pathlib import Path
+          wheels = sorted((Path(ensurepip.__file__).resolve().parent / '_bundled').glob('pip-*.whl'))
+          if not wheels:
+              raise SystemExit('bundled pip wheel missing')
+          print(wheels[-1])
+          PY
+          )"
+          runtime_site="$SOURCE_ROOT/.nexus-paper-site"
+          rm -rf "$runtime_site"
+          mkdir -p "$runtime_site"
+          PYTHONPATH="$pip_wheel" "$PYTHON_BIN" -m pip install \
+            --disable-pip-version-check \
+            --no-index \
+            --find-links "$wheelhouse" \
+            --no-cache-dir \
+            --target "$runtime_site" \
+            -r requirements.lock
+          printf 'PYTHONPATH=%s:%s:%s\n' "$pip_wheel" "$runtime_site" "$SOURCE_ROOT" >> "$GITHUB_ENV"
+          PYTHONPATH="$pip_wheel:$runtime_site:$SOURCE_ROOT" "$PYTHON_BIN" -m pip check
+          echo "offline_wheelhouse_bootstrap=PASS"
+
+      - name: Restore newest persistent Paper state only when physical state is empty
+        run: |
+          set -euo pipefail
+          cd "$SOURCE_ROOT"
+          "$PYTHON_BIN" scripts/nexus_persistent_state_transport.py restore-latest \
+            --repository "$GITHUB_REPOSITORY" \
+            --artifact-name "$STATE_ARTIFACT" \
+            --destination "$STATE_ROOT" \
+            --work-root "$SOURCE_ROOT/build/persistent-state-restore"
+
+      - name: Advance public closed-candle four-symbol Paper portfolio loop
+        run: |
+          set -euo pipefail
+          cd "$SOURCE_ROOT"
+          "$PYTHON_BIN" nexus_multipair_persistent_paper_runtime.py \
+            --repo-root . \
+            --state-root "$STATE_ROOT" \
+            --source-sha "$GITHUB_SHA" \
+            --run-id "$GITHUB_RUN_ID" \
+            --manifest config/nexus-demo-strategy-matrix-v2.json \
+            --legacy-manifest config/nexus-demo-strategy-matrix-v1.json
+
+      - name: Independently enforce four-symbol Paper authority and emit immutable proof
+        env:
+          PHYSICAL_RUNNER_NAME: ${{ runner.name }}
+          PHYSICAL_RUNNER_OS: ${{ runner.os }}
+          PHYSICAL_RUNNER_ENVIRONMENT: ${{ runner.environment }}
+        run: |
+          set -euo pipefail
+          cd "$SOURCE_ROOT"
+          "$PYTHON_BIN" - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          from nexus_multipair_persistent_paper_runtime import verify_loop_snapshot_v2
+
+          root = Path(os.environ["STATE_ROOT"])
+          snapshot = json.loads(
+              (root / "demo" / "persistent-paper-trading-loop.json").read_text(encoding="utf-8")
+          )
+          state = json.loads((root / "matrix-state.json").read_text(encoding="utf-8"))
+          verification = verify_loop_snapshot_v2(snapshot)
+          assert verification["decision"] == "pass", verification
+          assert snapshot["data_mode"] == "public_bybit_closed_candles"
+          assert snapshot["expected_cell_count"] == 12
+          assert snapshot["expected_lane_count"] == 36
+          assert state["matrix_id"] == "nexus-demo-btc-eth-sol-xrp-3tf-3strategy-v2"
+          assert snapshot["paper_only"] is True
+          assert snapshot["live_trading_authority"] is False
+          assert snapshot["private_credentials_used"] is False
+          assert snapshot["automatic_strategy_promotion"] is False
+          assert snapshot["deterministic_risk_final_authority"] is True
+          assert snapshot["trading_engine_complete"] is False
+          assert ".nexus_paper_state" not in str(root)
+          migration_path = root / "demo" / "matrix-v2-migration.json"
+          migration_performed = migration_path.is_file()
+          if migration_performed:
+              migration = json.loads(migration_path.read_text(encoding="utf-8"))
+              assert migration["new_symbols"] == ["SOLUSDT", "XRPUSDT"]
+              assert migration["new_symbol_inherited_cell_count"] == 0
+              assert migration["live_trading_authority"] is False
+              assert migration["automatic_strategy_promotion"] is False
+          proof = {
+              "schema_version": "nexus.persistent-multipair-paper-proof.v1",
+              "source_sha": os.environ["GITHUB_SHA"],
+              "run_id": os.environ["GITHUB_RUN_ID"],
+              "physical_runner_name": os.environ["PHYSICAL_RUNNER_NAME"],
+              "physical_runner_os": os.environ["PHYSICAL_RUNNER_OS"],
+              "physical_runner_environment": os.environ["PHYSICAL_RUNNER_ENVIRONMENT"],
+              "execution_plane": "nexus-bybit-network",
+              "state_storage": "physical_external_runtime_path",
+              "artifact_backup_transport": "github_actions_read_token_bounded_digest_checked",
+              "matrix_id": state["matrix_id"],
+              "expected_cell_count": 12,
+              "expected_lane_count": 36,
+              "fresh_cell_count": snapshot["fresh_cell_count"],
+              "loop_status": snapshot["status"],
+              "regime_status": snapshot["regime_status"],
+              "loop_digest": snapshot["loop_digest"],
+              "matrix_state_digest": state["state_digest"],
+              "migration_performed": migration_performed,
+              "new_symbol_inherited_cell_count": 0,
+              "paper_only": True,
+              "live_trading_authority": False,
+              "private_credentials_used": False,
+              "real_exchange_orders": False,
+              "automatic_strategy_promotion": False,
+              "deterministic_risk_final_authority": True,
+              "issue_984_state_touched": False,
+              "persistent_runtime_database_on_github": False,
+              "javascript_artifact_actions_used_on_physical_runner": False,
+          }
+          encoded = json.dumps(proof, sort_keys=True, separators=(",", ":")).encode()
+          digest = hashlib.sha256(encoded).hexdigest()
+          print("persistent_multipair_v2_proof_json=" + encoded.decode())
+          print("persistent_multipair_v2_proof_sha256=" + digest)
+          print("persistent_multipair_v2_physical_acceptance=PASS")
+          PY
+
+      - name: Package Paper state for hosted backup persistence
+        id: package
+        if: always()
+        run: |
+          set -euo pipefail
+          if [ -z "${STATE_ROOT:-}" ] || [ -z "${PYTHON_BIN:-}" ] || [ ! -d "$STATE_ROOT" ] || ! find "$STATE_ROOT" -type f -print -quit | grep -q .; then
+            {
+              echo "state_archive_chunk_count=0"
+              echo "state_archive_b64_len=0"
+              echo "state_archive_sha256="
+              for index in 0 1 2 3 4 5 6 7 8 9 10 11; do
+                echo "state_archive_chunk_${index}="
+              done
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          cd "$SOURCE_ROOT"
+          "$PYTHON_BIN" scripts/nexus_persistent_state_handoff.py pack \
+            --state-root "$STATE_ROOT" \
+            --output "$SOURCE_ROOT/build/persistent-state-handoff.zip" \
+            --github-output "$GITHUB_OUTPUT"
+
+      - name: Remove ephemeral exact-source runtime only
+        if: always()
+        run: |
+          set -euo pipefail
+          source_root="${SOURCE_ROOT:-$HOME/.local/share/nexus/persistent-paper-source/$GITHUB_RUN_ID}"
+          case "$source_root" in "$HOME"/.local/share/nexus/persistent-paper-source/*) rm -rf "$source_root" ;; *) exit 1;; esac
+          echo "persistent_external_state_preserved=PASS"
+
+  persist-state:
+    if: ${{ always() && needs.paper-loop.outputs.state_archive_chunk_count != '0' && needs.paper-loop.outputs.state_archive_chunk_count != '' }}
+    needs: paper-loop
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      STATE_ARCHIVE_CHUNK_COUNT: ${{ needs.paper-loop.outputs.state_archive_chunk_count }}
+      STATE_ARCHIVE_B64_LEN: ${{ needs.paper-loop.outputs.state_archive_b64_len }}
+      STATE_ARCHIVE_SHA256: ${{ needs.paper-loop.outputs.state_archive_sha256 }}
+      STATE_ARCHIVE_CHUNK_0: ${{ needs.paper-loop.outputs.state_archive_chunk_0 }}
+      STATE_ARCHIVE_CHUNK_1: ${{ needs.paper-loop.outputs.state_archive_chunk_1 }}
+      STATE_ARCHIVE_CHUNK_2: ${{ needs.paper-loop.outputs.state_archive_chunk_2 }}
+      STATE_ARCHIVE_CHUNK_3: ${{ needs.paper-loop.outputs.state_archive_chunk_3 }}
+      STATE_ARCHIVE_CHUNK_4: ${{ needs.paper-loop.outputs.state_archive_chunk_4 }}
+      STATE_ARCHIVE_CHUNK_5: ${{ needs.paper-loop.outputs.state_archive_chunk_5 }}
+      STATE_ARCHIVE_CHUNK_6: ${{ needs.paper-loop.outputs.state_archive_chunk_6 }}
+      STATE_ARCHIVE_CHUNK_7: ${{ needs.paper-loop.outputs.state_archive_chunk_7 }}
+      STATE_ARCHIVE_CHUNK_8: ${{ needs.paper-loop.outputs.state_archive_chunk_8 }}
+      STATE_ARCHIVE_CHUNK_9: ${{ needs.paper-loop.outputs.state_archive_chunk_9 }}
+      STATE_ARCHIVE_CHUNK_10: ${{ needs.paper-loop.outputs.state_archive_chunk_10 }}
+      STATE_ARCHIVE_CHUNK_11: ${{ needs.paper-loop.outputs.state_archive_chunk_11 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Rehydrate and independently verify physical Paper state backup
+        run: |
+          set -euo pipefail
+          python scripts/nexus_persistent_state_handoff.py rehydrate \
+            --output build/persistent-state-handoff.zip \
+            --extract-root build/persistent-state
+          test -f build/persistent-state/matrix-state.json
+          test -f build/persistent-state/demo/persistent-paper-trading-loop.json
+          echo "hosted_state_handoff_verification=PASS"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: nexus-persistent-paper-trading-state
+          path: build/persistent-state
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
