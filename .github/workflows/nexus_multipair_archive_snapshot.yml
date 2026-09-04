@@ -406,7 +406,8 @@ jobs:
             --source-sha "$GITHUB_SHA" \
             --state-root "$STATE_ROOT/requalification-state" \
             --output "$STATE_ROOT/requalification/runtime-requalification.json" \
-            --now-ms "$CONSUME_NOW_MS"
+            --now-ms "$CONSUME_NOW_MS" \
+            --max-transport-age-ms 2700000
 
       - name: Verify physical acceptance and emit immutable proof to log
         id: proof
