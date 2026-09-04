@@ -7,6 +7,12 @@ on:
     paths:
       - 'android-nursery/**'
       - '.github/workflows/nursery-android-apk.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'android-nursery/**'
+      - '.github/workflows/nursery-android-apk.yml'
   workflow_dispatch:
 
 permissions:
