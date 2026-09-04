@@ -45,6 +45,8 @@ _TERMINAL_PREFIX = (
 _CANONICAL_SURFACE = {
     ("BTC/USDT", "BTCUSDT"),
     ("ETH/USDT", "ETHUSDT"),
+    ("SOL/USDT", "SOLUSDT"),
+    ("XRP/USDT", "XRPUSDT"),
 }
 _REQUEST_SHAPE_INTERVALS = frozenset({"15", "60", "240"})
 _FAIL_FAST_403 = frozenset(
@@ -407,15 +409,16 @@ def fetch_bind_bybit_dataset(
     limit: int = 1000,
     timeout_seconds: float = 30.0,
 ) -> dict[str, Any]:
-    """Fetch the six-cell canonical Bybit surface with bounded REST fallbacks.
+    """Fetch the 12-cell canonical Bybit surface with bounded REST fallbacks.
 
     Direct start+end acquisition stays authoritative. ETH Spot 4h retains its
     physically motivated same-interval chunk attempt. If that attempt, or any
-    other approved BTC/ETH 15m/1h/4h 240-candle direct request, ends only in
-    unclassified 403s across the approved official hosts, one second request
+    other approved BTC/ETH/SOL/XRP 15m/1h/4h 240-candle direct request, ends only
+    in unclassified 403s across the approved official hosts, one second request
     shape is allowed: same endpoint/category/symbol/interval with `end+limit`
     and no optional `start`. Exact candle timestamps are revalidated before the
-    canonical binder can accept the result.
+    canonical binder can accept the result. This request-shape fallback does not
+    bypass a regional 403 when the same official Bybit hosts reject both shapes.
     """
     try:
         return _fetch_bind_direct(
