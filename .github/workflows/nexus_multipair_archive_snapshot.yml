@@ -12,6 +12,7 @@ on:
       - "run_bybit_spot_archive_audit.py"
       - "config/nexus-demo-strategy-matrix-v2.json"
       - "requirements.lock"
+      - "requirements-dev.lock"
       - "tests/test_nexus_multipair_archive_snapshot.py"
       - "security/workflow-permissions-policy-v1.json"
   push:
@@ -26,6 +27,7 @@ on:
       - "run_bybit_spot_archive_audit.py"
       - "config/nexus-demo-strategy-matrix-v2.json"
       - "requirements.lock"
+      - "requirements-dev.lock"
       - "tests/test_nexus_multipair_archive_snapshot.py"
       - "security/workflow-permissions-policy-v1.json"
   workflow_dispatch:
@@ -42,8 +44,8 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: "3.12"
-      - name: Install locked dependencies
-        run: python -m pip install -r requirements.lock
+      - name: Install locked test dependencies
+        run: python -m pip install -r requirements-dev.lock
       - name: Verify dependency consistency
         run: python -m pip check
       - name: Verify official archive snapshot contract
@@ -59,7 +61,7 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: "3.12"
-      - name: Install locked dependencies
+      - name: Install locked runtime dependencies
         run: python -m pip install -r requirements.lock
       - name: Verify dependency consistency
         run: python -m pip check
