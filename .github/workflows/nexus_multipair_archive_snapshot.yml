@@ -160,7 +160,7 @@ jobs:
             --state-root build/recent-state \
             --cache-root build/recent-cache \
             --output-root build/recent-snapshot \
-            --archive-output build/nexus-multipair-recent-runtime-snapshot.zip \
+            --archive-output build/nexus-multipair-runtime-requalification-snapshot.zip \
             --digest-output build/nexus-multipair-recent-runtime-snapshot.sha256 \
             --source-sha "$GITHUB_SHA" \
             --now-ms "$now_ms"
@@ -200,7 +200,7 @@ jobs:
         with:
           name: nexus-multipair-recent-runtime-snapshot-${{ github.sha }}
           path: |
-            build/nexus-multipair-recent-runtime-snapshot.zip
+            build/nexus-multipair-runtime-requalification-snapshot.zip
             build/nexus-multipair-recent-runtime-snapshot.sha256
           if-no-files-found: error
           retention-days: 7
