@@ -243,6 +243,40 @@ def test_consumer_rejects_recent_archive_after_source_lag_bound(tmp_path: Path) 
     assert verification["checks"]["source_recency"] is False
 
 
+def test_evaluator_requires_explicit_bounded_extension_for_physical_transport_delay(tmp_path: Path) -> None:
+    state, report = _seed(tmp_path)
+    output = tmp_path / "snapshot"
+    value = recent.build_snapshot_from_backfill(
+        state_root=state,
+        output_root=output,
+        report=report,
+        source_sha=SOURCE_SHA,
+        acquired_at_ms=ACQUIRED_MS,
+        latest_common_complete_date=LATEST,
+    )
+    delayed_now = ACQUIRED_MS + 25 * 60 * 1000
+    with pytest.raises(recent.MultiPairRecentArchiveRuntimeError, match="not verified"):
+        recent.RecentArchiveRuntimeEvaluator(
+            output, value, source_sha=SOURCE_SHA, now_ms=delayed_now
+        )
+    evaluator = recent.RecentArchiveRuntimeEvaluator(
+        output,
+        value,
+        source_sha=SOURCE_SHA,
+        now_ms=delayed_now,
+        max_transport_age_ms=45 * 60 * 1000,
+    )
+    assert evaluator.max_transport_age_ms == 45 * 60 * 1000
+    with pytest.raises(recent.MultiPairRecentArchiveRuntimeError, match="source-lag bound"):
+        recent.RecentArchiveRuntimeEvaluator(
+            output,
+            value,
+            source_sha=SOURCE_SHA,
+            now_ms=delayed_now,
+            max_transport_age_ms=recent.MAX_SOURCE_LAG_MS + 1,
+        )
+
+
 def test_live_freshness_claim_tamper_is_rejected(tmp_path: Path) -> None:
     state, report = _seed(tmp_path)
     output = tmp_path / "snapshot"
