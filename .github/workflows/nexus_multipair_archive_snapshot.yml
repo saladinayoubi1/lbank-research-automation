@@ -220,7 +220,7 @@ jobs:
       EXPECTED_RECENT_SNAPSHOT_DIGEST: ${{ needs.acquire-snapshot.outputs.recent_snapshot_digest }}
       EXPECTED_RECENT_ACQUIRED_AT_MS: ${{ needs.acquire-snapshot.outputs.recent_acquired_at_ms }}
       EXPECTED_RECENT_DATA_AS_OF_MS: ${{ needs.acquire-snapshot.outputs.recent_data_as_of_ms }}
-      EXPECTED_RECENT_LATEST_COMPLETE_DATE: ${{ needs.acquire-snapshot.outputs.latest_complete_date }}
+      EXPECTED_RECENT_LATEST_COMPLETE_DATE: ${{ needs.acquire-snapshot.outputs.recent_latest_complete_date }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         if: github.event_name == 'pull_request'
