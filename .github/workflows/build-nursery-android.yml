@@ -36,17 +36,20 @@ jobs:
         with:
           gradle-version: "8.11.1"
 
-      - name: Restore embedded app
+      - name: Restore fast-entry app
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import base64, gzip
-          src = Path('app_payload.html.gz.b64').read_text().strip()
+          parts = sorted(Path('payload_v110').glob('part*.txt'))
+          if not parts:
+              raise SystemExit('payload parts missing')
+          src = ''.join(p.read_text().strip() for p in parts)
           raw = gzip.decompress(base64.b64decode(src))
           out = Path('app/src/main/assets/index.html')
           out.parent.mkdir(parents=True, exist_ok=True)
           out.write_bytes(raw)
-          print('restored', len(raw), 'bytes')
+          print('restored', len(raw), 'bytes from', len(parts), 'parts')
           PY
 
       - name: Build installable debug APK
@@ -58,12 +61,12 @@ jobs:
           test -s "$APK"
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | head -n 5
           sha256sum "$APK"
-          cp "$APK" NurseryDaily-Android-v1.0.0.apk
+          cp "$APK" NurseryDaily-Android-v1.1.0.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: NurseryDaily-Android-v1.0.0
-          path: android-nursery/NurseryDaily-Android-v1.0.0.apk
+          name: NurseryDaily-Android-v1.1.0-fast-entry
+          path: android-nursery/NurseryDaily-Android-v1.1.0.apk
           if-no-files-found: error
           retention-days: 30
