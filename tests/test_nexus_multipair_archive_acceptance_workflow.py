@@ -4,6 +4,8 @@ from pathlib import Path
 
 import yaml
 
+import nexus_multipair_recent_archive_runtime_snapshot as recent
+
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / ".github" / "workflows" / "nexus_multipair_archive_snapshot.yml"
@@ -30,6 +32,13 @@ def test_recent_artifact_inner_archive_matches_consumer_contract() -> None:
     assert f"--archive-output {canonical}" in text
     assert text.count(canonical) == 2
     assert "--archive-output build/nexus-multipair-recent-runtime-snapshot.zip" not in text
+
+
+def test_physical_requalification_uses_bounded_extended_transport_window() -> None:
+    physical = _physical_section()
+    physical_window_ms = 2_700_000
+    assert f"--max-transport-age-ms {physical_window_ms}" in physical
+    assert recent.MAX_TRANSPORT_AGE_MS < physical_window_ms < recent.MAX_SOURCE_LAG_MS
 
 
 def test_physical_acceptance_uses_no_javascript_artifact_action() -> None:

@@ -640,13 +640,34 @@ def deterministic_pack(root: str | Path, output: str | Path) -> str:
 
 
 class RecentArchiveRuntimeEvaluator:
-    def __init__(self, root: str | Path, snapshot: Mapping[str, Any], *, source_sha: str, now_ms: int) -> None:
+    def __init__(
+        self,
+        root: str | Path,
+        snapshot: Mapping[str, Any],
+        *,
+        source_sha: str,
+        now_ms: int,
+        max_transport_age_ms: int = MAX_TRANSPORT_AGE_MS,
+    ) -> None:
         self.root = Path(root).resolve()
         self.snapshot = dict(snapshot)
         self.source_sha = str(source_sha).strip().lower()
         self.now_ms = int(now_ms)
+        if (
+            isinstance(max_transport_age_ms, bool)
+            or not isinstance(max_transport_age_ms, int)
+            or not 0 < max_transport_age_ms <= MAX_SOURCE_LAG_MS
+        ):
+            raise MultiPairRecentArchiveRuntimeError(
+                "max_transport_age_ms must be a positive integer no greater than the source-lag bound"
+            )
+        self.max_transport_age_ms = max_transport_age_ms
         verification = verify_recent_archive_runtime_snapshot(
-            self.root, self.snapshot, source_sha=self.source_sha, now_ms=self.now_ms
+            self.root,
+            self.snapshot,
+            source_sha=self.source_sha,
+            now_ms=self.now_ms,
+            max_transport_age_ms=self.max_transport_age_ms,
         )
         if verification["decision"] != "pass":
             raise MultiPairRecentArchiveRuntimeError("transported recent archive snapshot is not verified")
@@ -728,12 +749,17 @@ def run_requalification_from_snapshot(
     state_root: str | Path,
     output: str | Path,
     now_ms: int,
+    max_transport_age_ms: int = MAX_TRANSPORT_AGE_MS,
 ) -> dict[str, Any]:
     discovery = rest_runtime._load_json(discovery_path)
     queue = rest_runtime._load_json(queue_path)
     snapshot = rest_runtime._load_json(Path(snapshot_root) / "snapshot-manifest.json")
     evaluator = RecentArchiveRuntimeEvaluator(
-        snapshot_root, snapshot, source_sha=source_sha, now_ms=now_ms
+        snapshot_root,
+        snapshot,
+        source_sha=source_sha,
+        now_ms=now_ms,
+        max_transport_age_ms=max_transport_age_ms,
     )
     result = multipair_requal.build_requalification(
         discovery,
@@ -810,6 +836,7 @@ def main() -> int:
     requalify.add_argument("--state-root", type=Path, required=True)
     requalify.add_argument("--output", type=Path, required=True)
     requalify.add_argument("--now-ms", type=int, required=True)
+    requalify.add_argument("--max-transport-age-ms", type=int, default=MAX_TRANSPORT_AGE_MS)
 
     args = parser.parse_args()
     if args.command == "acquire":
@@ -850,6 +877,7 @@ def main() -> int:
         state_root=args.state_root,
         output=args.output,
         now_ms=args.now_ms,
+        max_transport_age_ms=args.max_transport_age_ms,
     )
     print(
         json.dumps(
