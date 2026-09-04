@@ -36,20 +36,24 @@ jobs:
         with:
           gradle-version: "8.11.1"
 
-      - name: Restore fast-entry app
+      - name: Restore verified fast-entry app
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          import base64, gzip
-          parts = sorted(Path('payload_v110').glob('part*.txt'))
-          if not parts:
-              raise SystemExit('payload parts missing')
+          import base64, gzip, hashlib
+          parts = sorted(Path('payload_v111').glob('part*.txt'))
+          if len(parts) != 4:
+              raise SystemExit(f'expected 4 payload parts, got {len(parts)}')
           src = ''.join(p.read_text().strip() for p in parts)
           raw = gzip.decompress(base64.b64decode(src))
+          digest = hashlib.sha256(raw).hexdigest()
+          expected = '00085101cf914c5f5e0bff2fcae89c7081825fcf332f696bdb34e499bd3a3d40'
+          if digest != expected:
+              raise SystemExit(f'payload SHA mismatch: {digest}')
           out = Path('app/src/main/assets/index.html')
           out.parent.mkdir(parents=True, exist_ok=True)
           out.write_bytes(raw)
-          print('restored', len(raw), 'bytes from', len(parts), 'parts')
+          print('restored', len(raw), 'bytes; sha256=', digest)
           PY
 
       - name: Build installable debug APK
