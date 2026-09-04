@@ -38,15 +38,23 @@ def _manifest() -> dict:
     }
 
 
+def _write(archive: zipfile.ZipFile, name: str, data: str | bytes) -> None:
+    info = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
+    info.compress_type = zipfile.ZIP_STORED
+    info.create_system = 3
+    info.external_attr = 0o100644 << 16
+    archive.writestr(info, data)
+
+
 def _inner(path: Path, *, extra: str | None = None, traversal: bool = False) -> Path:
     with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_STORED) as archive:
-        archive.writestr(artifact.MANIFEST_NAME, json.dumps(_manifest()))
+        _write(archive, artifact.MANIFEST_NAME, json.dumps(_manifest()))
         for name in sorted(artifact._expected_members() - {artifact.MANIFEST_NAME}):
-            archive.writestr(name, b"parquet-placeholder")
+            _write(archive, name, b"parquet-placeholder")
         if extra is not None:
-            archive.writestr(extra, b"unexpected")
+            _write(archive, extra, b"unexpected")
         if traversal:
-            archive.writestr("../escape", b"bad")
+            _write(archive, "../escape", b"bad")
     return path
 
 
