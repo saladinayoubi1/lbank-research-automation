@@ -178,7 +178,8 @@ def test_requalification_restores_fresh_digest_pinned_snapshot_and_never_calls_r
     assert 'assert result["runtime_data_is_fresh_not_snapshot_reuse"] is True' in requalify
     assert 'assert result["runtime_snapshot_distinct_from_discovery"] is True' in requalify
     assert 'assert result["historical_discovery_snapshot_reused"] is False' in requalify
-    assert 'assert result["runtime_data_transport"] == "digest_pinned_hosted_bybit_rest_snapshot"' in requalify
+    assert "from nexus_multipair_runtime_requalification_snapshot import TRANSPORT_ORIGIN, verify_fresh_runtime_snapshot" in requalify
+    assert 'assert result["runtime_data_transport"] == TRANSPORT_ORIGIN' in requalify
     assert 'assert result["candidate_creation_authority"] is False' in requalify
     assert 'assert result["paper_execution_started"] is False' in requalify
     assert 'assert result["automatic_strategy_promotion"] is False' in requalify
