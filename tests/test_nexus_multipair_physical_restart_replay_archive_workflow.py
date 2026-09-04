@@ -30,15 +30,16 @@ def test_recent_archive_restart_workflow_is_bounded_main_only_and_read_only() ->
         "replay-physical",
         "persist-proof",
     }
-    assert value["permissions"] == {"contents": "read"}
+    assert value["permissions"] == {"actions": "read", "contents": "read"}
     assert "schedule:" not in text
     assert "workflow_dispatch:" in text
     assert text.count("runs-on: nexus-bybit-network") == 2
     assert text.count("github.event_name != 'pull_request' && github.ref == 'refs/heads/main'") == 3
 
 
-def test_recent_archive_restart_uses_official_snapshot_and_exact_public_transport() -> None:
+def test_recent_archive_restart_uses_official_snapshot_and_exact_read_token_transport() -> None:
     text = _text()
+    seed, replay = _physical(text)
     assert "nexus_multipair_recent_archive_runtime_snapshot.py acquire" in text
     assert "build/nexus-multipair-runtime-requalification-snapshot.zip" in text
     assert "build/nexus-multipair-recent-runtime-snapshot.sha256" in text
@@ -48,6 +49,8 @@ def test_recent_archive_restart_uses_official_snapshot_and_exact_public_transpor
     assert '--expected-data-as-of-ms "$EXPECTED_RECENT_DATA_AS_OF_MS"' in text
     assert "runtime_requalification_recency_verified" in text
     assert 'live_freshness_claimed"] is False' in text
+    assert 'GH_TOKEN: ${{ github.token }}' in seed
+    assert 'GH_TOKEN: ${{ github.token }}' in replay
 
 
 def test_both_physical_jobs_are_node_free_and_exact_source_bound() -> None:
