@@ -28,8 +28,23 @@ from nexus_strategy_paper_supervisor import run_once as run_supervisor_once
 from product_research_runtime import TIMEFRAMES
 
 
+PHYSICAL_CONTINUITY_TRANSPORT_AGE_MS = 45 * 60 * 1000
+
+
 class MultiPairRecentArchivePaperError(RuntimeError):
     pass
+
+
+def _validated_transport_age_ms(value: int) -> int:
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, int)
+        or not 0 < value <= recent.MAX_SOURCE_LAG_MS
+    ):
+        raise MultiPairRecentArchivePaperError(
+            "max_transport_age_ms must be a positive integer no greater than the source-lag bound"
+        )
+    return value
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -51,14 +66,20 @@ def load_verified_snapshot(
     expected_snapshot_digest: str,
     source_sha: str,
     now_ms: int,
+    max_transport_age_ms: int = recent.MAX_TRANSPORT_AGE_MS,
 ) -> dict[str, Any]:
     root = Path(snapshot_root).resolve()
     value = _load_json(root / "snapshot-manifest.json")
     expected = str(expected_snapshot_digest).strip().lower()
     if value.get("snapshot_digest") != expected:
         raise MultiPairRecentArchivePaperError("recent archive snapshot digest mismatch")
+    transport_age_ms = _validated_transport_age_ms(max_transport_age_ms)
     verification = recent.verify_recent_archive_runtime_snapshot(
-        root, value, source_sha=source_sha, now_ms=now_ms
+        root,
+        value,
+        source_sha=source_sha,
+        now_ms=now_ms,
+        max_transport_age_ms=transport_age_ms,
     )
     if verification.get("decision") != "pass":
         raise MultiPairRecentArchivePaperError("recent archive snapshot failed independent verification")
@@ -147,6 +168,7 @@ def run_recent_archive_paper_cycle(
     source_sha: str,
     run_id: str,
     now_ms: int,
+    max_transport_age_ms: int = recent.MAX_TRANSPORT_AGE_MS,
 ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any] | None]:
     if isinstance(now_ms, bool) or not isinstance(now_ms, int) or now_ms <= 0:
         raise MultiPairRecentArchivePaperError("now_ms must be a positive integer")
@@ -159,6 +181,7 @@ def run_recent_archive_paper_cycle(
         expected_snapshot_digest=expected_snapshot_digest,
         source_sha=source_sha,
         now_ms=now_ms,
+        max_transport_age_ms=max_transport_age_ms,
     )
     data_as_of_ms = snapshot.get("data_as_of_ms")
     if isinstance(data_as_of_ms, bool) or not isinstance(data_as_of_ms, int) or data_as_of_ms <= 0:
@@ -221,6 +244,11 @@ def main() -> int:
     parser.add_argument("--source-sha", required=True)
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--now-ms", type=int, required=True)
+    parser.add_argument(
+        "--max-transport-age-ms",
+        type=int,
+        default=PHYSICAL_CONTINUITY_TRANSPORT_AGE_MS,
+    )
     parser.add_argument("--snapshot", type=Path, required=True)
     parser.add_argument("--migration-evidence", type=Path)
     args = parser.parse_args()
@@ -236,6 +264,7 @@ def main() -> int:
             source_sha=args.source_sha,
             run_id=args.run_id,
             now_ms=args.now_ms,
+            max_transport_age_ms=args.max_transport_age_ms,
         )
         _atomic_json(args.state, next_state)
         _atomic_json(args.snapshot, matrix_snapshot)
