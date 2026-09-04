@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 import pytest
@@ -66,6 +67,88 @@ def test_load_verified_snapshot_requires_digest_and_authority(tmp_path: Path, mo
             source_sha=SOURCE_SHA,
             now_ms=DATA_AS_OF_MS + 1,
         )
+
+
+def test_physical_continuity_transport_window_is_scoped_and_bounded(tmp_path: Path, monkeypatch) -> None:
+    root = tmp_path / "snapshot"
+    root.mkdir()
+    (root / "snapshot-manifest.json").write_text(json.dumps(_snapshot()), encoding="utf-8")
+    seen: list[int] = []
+
+    def verify(*args, max_transport_age_ms=paper.recent.MAX_TRANSPORT_AGE_MS, **kwargs):
+        del args, kwargs
+        seen.append(max_transport_age_ms)
+        return {"decision": "pass"}
+
+    monkeypatch.setattr(paper.recent, "verify_recent_archive_runtime_snapshot", verify)
+    paper.load_verified_snapshot(
+        root,
+        expected_snapshot_digest=SNAPSHOT_DIGEST,
+        source_sha=SOURCE_SHA,
+        now_ms=DATA_AS_OF_MS + 1,
+    )
+    assert seen[-1] == paper.recent.MAX_TRANSPORT_AGE_MS
+
+    paper.load_verified_snapshot(
+        root,
+        expected_snapshot_digest=SNAPSHOT_DIGEST,
+        source_sha=SOURCE_SHA,
+        now_ms=DATA_AS_OF_MS + 25 * 60 * 1000,
+        max_transport_age_ms=paper.PHYSICAL_CONTINUITY_TRANSPORT_AGE_MS,
+    )
+    assert seen[-1] == 45 * 60 * 1000
+    assert (
+        paper.recent.MAX_TRANSPORT_AGE_MS
+        < paper.PHYSICAL_CONTINUITY_TRANSPORT_AGE_MS
+        < paper.recent.MAX_SOURCE_LAG_MS
+    )
+
+    with pytest.raises(paper.MultiPairRecentArchivePaperError, match="source-lag bound"):
+        paper.load_verified_snapshot(
+            root,
+            expected_snapshot_digest=SNAPSHOT_DIGEST,
+            source_sha=SOURCE_SHA,
+            now_ms=DATA_AS_OF_MS + 1,
+            max_transport_age_ms=paper.recent.MAX_SOURCE_LAG_MS + 1,
+        )
+
+
+def test_physical_cli_defaults_to_bounded_continuity_window(tmp_path: Path, monkeypatch) -> None:
+    seen: dict[str, int] = {}
+    matrix_snapshot = {
+        "status": "VERIFIED",
+        "expected_cell_count": 12,
+        "expected_lane_count": 36,
+        "data_mode": paper.recent.TRANSPORT_ORIGIN,
+        "dataset_sha256": SNAPSHOT_DIGEST,
+        "paper_only": True,
+        "live_trading_authority": False,
+    }
+
+    def cycle(**kwargs):
+        seen["max_transport_age_ms"] = kwargs["max_transport_age_ms"]
+        return {}, matrix_snapshot, None
+
+    monkeypatch.setattr(paper, "run_recent_archive_paper_cycle", cycle)
+    monkeypatch.setattr(paper, "_atomic_json", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "paper",
+            "--state", str(tmp_path / "state.json"),
+            "--state-root", str(tmp_path),
+            "--snapshot-root", str(tmp_path / "recent"),
+            "--expected-snapshot-digest", SNAPSHOT_DIGEST,
+            "--source-sha", SOURCE_SHA,
+            "--run-id", "123",
+            "--now-ms", str(DATA_AS_OF_MS + 25 * 60 * 1000),
+            "--snapshot", str(tmp_path / "matrix.json"),
+        ],
+    )
+
+    assert paper.main() == 0
+    assert seen["max_transport_age_ms"] == paper.PHYSICAL_CONTINUITY_TRANSPORT_AGE_MS
 
 
 def test_snapshot_dataset_fetcher_rebinds_exact_requested_window(tmp_path: Path, monkeypatch) -> None:
