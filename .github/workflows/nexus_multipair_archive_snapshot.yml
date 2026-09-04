@@ -399,7 +399,7 @@ jobs:
         run: |
           set -euo pipefail
           cd "$SOURCE_ROOT"
-          "$PYTHON_BIN" nexus_multipair_recent_archive_runtime_snapshot.py requalify \
+          "$PYTHON_BIN" scripts/nexus_recent_archive_physical_requalification.py requalify \
             --snapshot-root "$STATE_ROOT/recent-runtime-snapshot" \
             --discovery "$STATE_ROOT/discovery/multipair_strategy_discovery.json" \
             --queue "$STATE_ROOT/discovery/research_proposals.json" \
