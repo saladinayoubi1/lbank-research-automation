@@ -24,6 +24,15 @@ def test_archive_acceptance_workflow_keeps_policy_job_inventory_and_read_only_pe
     assert value["permissions"] == {"actions": "read", "contents": "read"}
 
 
+def test_recent_artifact_outer_surface_matches_node_free_restorer_contract() -> None:
+    text = _text()
+    inner = "build/nexus-multipair-runtime-requalification-snapshot.zip"
+    assert text.count(inner) == 2
+    assert "--archive-output " + inner in text
+    assert "build/nexus-multipair-recent-runtime-snapshot.zip" not in text
+    assert "build/nexus-multipair-recent-runtime-snapshot.sha256" in text
+
+
 def test_physical_acceptance_uses_no_javascript_artifact_action() -> None:
     physical = _physical_section()
     assert "actions/download-artifact" not in physical
