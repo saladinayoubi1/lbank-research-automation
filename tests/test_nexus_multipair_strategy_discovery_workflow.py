@@ -104,6 +104,19 @@ def test_physical_jobs_are_main_only_exact_source_and_native() -> None:
     assert "assert '$CURRENT_RUNNER_NAME' == '$EXPECTED_DISCOVERY_RUNNER_NAME'" in requalify
 
 
+def test_discovery_uses_fresh_source_root_and_never_mutates_shared_workspace_git() -> None:
+    discover = _section(_text(), "discover-physical", "runtime-snapshot")
+    expected_source_root = '$HOME/.local/share/nexus/multipair-discovery-source/$GITHUB_RUN_ID'
+    assert expected_source_root in discover
+    assert '"$HOME"/.local/share/nexus/multipair-discovery-source/*)' in discover
+    assert 'cd "$source_root"' in discover
+    assert 'git init .' in discover
+    assert 'git clean -ffdx' not in discover
+    assert 'git reset --hard' not in discover
+    assert "multipair_discovery_fresh_source_checkout=PASS" in discover
+    assert "Remove isolated Discovery source after use" in discover
+
+
 def test_requalification_uses_fresh_source_root_and_never_cleans_shared_workspace() -> None:
     requalify = _section(_text(), "requalify-physical", "persist-proof")
     expected_source_root = '$HOME/.local/share/nexus/multipair-requalification-source/$GITHUB_RUN_ID'
@@ -135,7 +148,7 @@ def test_physical_python_bootstrap_uses_bundled_pip_for_install_and_check() -> N
     requalify = _section(text, "requalify-physical", "persist-proof")
     assert 'bundled = Path(ensurepip.__file__).resolve().parent / "_bundled"' in discover
     assert 'PYTHONPATH="$pip_wheel" "$PYTHON_BIN" -m pip install' in discover
-    assert "printf 'PYTHONPATH=%s:%s\\n' \"$pip_wheel\" \"$runtime_site\" >> \"$GITHUB_ENV\"" in discover
+    assert "printf 'PYTHONPATH=%s:%s:%s\\n' \"$pip_wheel\" \"$runtime_site\" \"$SOURCE_ROOT\" >> \"$GITHUB_ENV\"" in discover
     assert "name: Verify isolated runtime dependency consistency" in discover
     assert 'bundled = Path(ensurepip.__file__).resolve().parent / "_bundled"' in requalify
     assert 'test -f "$pip_wheel"' in requalify
