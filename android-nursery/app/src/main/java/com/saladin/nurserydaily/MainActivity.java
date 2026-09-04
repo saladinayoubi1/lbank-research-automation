@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Base64;
 import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
@@ -23,7 +24,7 @@ public class MainActivity extends Activity {
     private ValueCallback<Uri[]> filePathCallback;
     private String pendingFileName;
     private String pendingMime;
-    private String pendingText;
+    private byte[] pendingBytes;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,25 +78,40 @@ public class MainActivity extends Activity {
     public final class AndroidBridge {
         @JavascriptInterface
         public void saveFile(String name, String text, String mime) {
-            pendingFileName = sanitizeName(name);
-            pendingText = text == null ? "" : text;
-            pendingMime = (mime == null || mime.trim().isEmpty()) ? "text/plain" : mime;
-            runOnUiThread(() -> {
-                Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
-                intent.addCategory(Intent.CATEGORY_OPENABLE);
-                intent.setType(pendingMime);
-                intent.putExtra(Intent.EXTRA_TITLE, pendingFileName);
-                try {
-                    startActivityForResult(intent, REQ_SAVE);
-                } catch (Exception ex) {
-                    Toast.makeText(MainActivity.this, "امکان ذخیره فایل نیست", Toast.LENGTH_LONG).show();
-                }
-            });
+            byte[] bytes = (text == null ? "" : text).getBytes(StandardCharsets.UTF_8);
+            queueSave(name, mime, bytes);
+        }
+
+        @JavascriptInterface
+        public void saveBase64File(String name, String base64, String mime) {
+            try {
+                byte[] bytes = Base64.decode(base64 == null ? "" : base64, Base64.DEFAULT);
+                queueSave(name, mime, bytes);
+            } catch (Exception ex) {
+                runOnUiThread(() -> Toast.makeText(MainActivity.this, "خطا در آماده‌سازی فایل", Toast.LENGTH_LONG).show());
+            }
         }
     }
 
+    private void queueSave(String name, String mime, byte[] bytes) {
+        pendingFileName = sanitizeName(name);
+        pendingBytes = bytes == null ? new byte[0] : bytes;
+        pendingMime = (mime == null || mime.trim().isEmpty()) ? "application/octet-stream" : mime;
+        runOnUiThread(() -> {
+            Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            intent.setType(pendingMime);
+            intent.putExtra(Intent.EXTRA_TITLE, pendingFileName);
+            try {
+                startActivityForResult(intent, REQ_SAVE);
+            } catch (Exception ex) {
+                Toast.makeText(MainActivity.this, "امکان ذخیره فایل نیست", Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
     private String sanitizeName(String name) {
-        String value = (name == null || name.trim().isEmpty()) ? "nursery_export.txt" : name.trim();
+        String value = (name == null || name.trim().isEmpty()) ? "nursery_export.bin" : name.trim();
         return value.replace('/', '_').replace('\\', '_');
     }
 
@@ -121,7 +137,7 @@ public class MainActivity extends Activity {
                 Uri uri = data.getData();
                 try (OutputStream out = getContentResolver().openOutputStream(uri, "w")) {
                     if (out == null) throw new IllegalStateException("output stream is null");
-                    out.write(pendingText.getBytes(StandardCharsets.UTF_8));
+                    out.write(pendingBytes == null ? new byte[0] : pendingBytes);
                     out.flush();
                     Toast.makeText(this, "فایل ذخیره شد", Toast.LENGTH_SHORT).show();
                 } catch (Exception ex) {
@@ -130,7 +146,7 @@ public class MainActivity extends Activity {
             }
             pendingFileName = null;
             pendingMime = null;
-            pendingText = null;
+            pendingBytes = null;
         }
     }
 
