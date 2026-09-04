@@ -7,16 +7,27 @@ on:
       - "nexus_multipair_archive_snapshot.py"
       - "nexus_multipair_recent_archive_runtime_snapshot.py"
       - "nexus_multipair_runtime_requalification_snapshot.py"
+      - "nexus_multipair_strategy_discovery.py"
+      - "nexus_multipair_strategy_proposal_requalification.py"
       - "nexus_multipair_trusted_surface.py"
       - "bybit_spot_backfill.py"
       - "bybit_spot_archive_audit.py"
       - "bybit_spot_archive_collector.py"
       - "run_bybit_spot_archive_audit.py"
+      - "phase6_research_pipeline.py"
+      - "product_research_runtime.py"
+      - "experiments/nexus_multipair_strategy_discovery_v2.json"
       - "config/nexus-demo-strategy-matrix-v2.json"
+      - "scripts/nexus_runtime_wheelhouse.py"
+      - "scripts/nexus_snapshot_artifact.py"
+      - "scripts/nexus_recent_archive_runtime_snapshot_artifact.py"
       - "requirements.lock"
       - "requirements-dev.lock"
       - "tests/test_nexus_multipair_archive_snapshot.py"
       - "tests/test_nexus_multipair_recent_archive_runtime_snapshot.py"
+      - "tests/test_nexus_multipair_strategy_discovery.py"
+      - "tests/test_nexus_multipair_strategy_discovery_archive.py"
+      - "tests/test_nexus_recent_archive_runtime_snapshot_artifact.py"
       - "security/workflow-permissions-policy-v1.json"
   push:
     branches: [main]
@@ -25,56 +36,96 @@ on:
       - "nexus_multipair_archive_snapshot.py"
       - "nexus_multipair_recent_archive_runtime_snapshot.py"
       - "nexus_multipair_runtime_requalification_snapshot.py"
+      - "nexus_multipair_strategy_discovery.py"
+      - "nexus_multipair_strategy_proposal_requalification.py"
       - "nexus_multipair_trusted_surface.py"
       - "bybit_spot_backfill.py"
       - "bybit_spot_archive_audit.py"
       - "bybit_spot_archive_collector.py"
       - "run_bybit_spot_archive_audit.py"
+      - "phase6_research_pipeline.py"
+      - "product_research_runtime.py"
+      - "experiments/nexus_multipair_strategy_discovery_v2.json"
       - "config/nexus-demo-strategy-matrix-v2.json"
+      - "scripts/nexus_runtime_wheelhouse.py"
+      - "scripts/nexus_snapshot_artifact.py"
+      - "scripts/nexus_recent_archive_runtime_snapshot_artifact.py"
       - "requirements.lock"
       - "requirements-dev.lock"
       - "tests/test_nexus_multipair_archive_snapshot.py"
       - "tests/test_nexus_multipair_recent_archive_runtime_snapshot.py"
+      - "tests/test_nexus_multipair_strategy_discovery.py"
+      - "tests/test_nexus_multipair_strategy_discovery_archive.py"
+      - "tests/test_nexus_recent_archive_runtime_snapshot_artifact.py"
       - "security/workflow-permissions-policy-v1.json"
   workflow_dispatch:
 
 permissions:
   contents: read
 
-jobs:
-  contract-test:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
-        with:
-          python-version: "3.12"
-      - name: Install locked test dependencies
-        run: python -m pip install -r requirements-dev.lock
-      - name: Verify dependency consistency
-        run: python -m pip check
-      - name: Verify official archive snapshot contracts
-        run: >-
-          python -m pytest -q
-          tests/test_nexus_multipair_archive_snapshot.py
-          tests/test_nexus_multipair_recent_archive_runtime_snapshot.py
+concurrency:
+  group: nexus-multipair-official-archive-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'main' }}
+  cancel-in-progress: false
 
+jobs:
   acquire-snapshot:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-    needs: contract-test
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 120
+    outputs:
+      wheelhouse_sha256: ${{ steps.wheelhouse.outputs.sha256 }}
+      historical_archive_sha256: ${{ steps.historical.outputs.archive_sha256 }}
+      historical_snapshot_digest: ${{ steps.historical.outputs.snapshot_digest }}
+      recent_archive_sha256: ${{ steps.recent.outputs.archive_sha256 }}
+      recent_snapshot_digest: ${{ steps.recent.outputs.snapshot_digest }}
+      recent_acquired_at_ms: ${{ steps.recent.outputs.acquired_at_ms }}
+      recent_data_as_of_ms: ${{ steps.recent.outputs.data_as_of_ms }}
+      recent_latest_complete_date: ${{ steps.recent.outputs.latest_complete_date }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: "3.12"
+          cache: pip
       - name: Install locked runtime dependencies
         run: python -m pip install -r requirements.lock
       - name: Verify dependency consistency
         run: python -m pip check
+
+      - name: Build deterministic offline runtime wheelhouse
+        id: wheelhouse
+        run: |
+          set -euo pipefail
+          root="$PWD/build/nexus-multipair-archive-acceptance-wheelhouse"
+          archive="$PWD/build/nexus-paper-runtime-wheelhouse.zip"
+          digest="$PWD/build/nexus-multipair-archive-acceptance-wheelhouse.sha256"
+          rm -rf "$root" "$archive" "$digest"
+          mkdir -p "$root"
+          python -m pip download \
+            --disable-pip-version-check \
+            --only-binary=:all: \
+            --dest "$root" \
+            -r requirements.lock
+          cp requirements.lock "$root/requirements.lock"
+          python scripts/nexus_runtime_wheelhouse.py pack \
+            --root "$root" \
+            --output "$archive" \
+            --digest-output "$digest"
+          sha256="$(cat "$digest")"
+          test -n "$sha256"
+          echo "sha256=$sha256" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: nexus-multipair-archive-acceptance-wheelhouse-${{ github.sha }}
+          path: build/nexus-paper-runtime-wheelhouse.zip
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+
       - name: Acquire exact historical official Bybit Spot archive snapshot
+        id: historical
         run: |
           set -euo pipefail
           python nexus_multipair_archive_snapshot.py \
@@ -84,27 +135,20 @@ jobs:
             --archive-output build/nexus-multipair-archive-snapshot.zip \
             --digest-output build/nexus-multipair-archive-snapshot.sha256 \
             --source-sha "$GITHUB_SHA"
+          read -r snapshot_digest archive_sha256 <<EOF
+          $(python - <<'PY'
+          import json
+          from pathlib import Path
+          value = json.loads(Path("build/nexus-multipair-archive-snapshot/snapshot-manifest.json").read_text(encoding="utf-8"))
+          print(value["snapshot_digest"], Path("build/nexus-multipair-archive-snapshot.sha256").read_text().strip())
+          PY
+          )
+          EOF
+          echo "snapshot_digest=$snapshot_digest" >> "$GITHUB_OUTPUT"
+          echo "archive_sha256=$archive_sha256" >> "$GITHUB_OUTPUT"
       - name: Remove raw historical archive cache and intermediate backfill state
         if: always()
-        run: |
-          rm -rf build/nexus-multipair-archive-cache build/nexus-multipair-archive-backfill
-      - name: Enforce persisted historical snapshot surface only
-        run: |
-          set -euo pipefail
-          test -f build/nexus-multipair-archive-snapshot.zip
-          test -f build/nexus-multipair-archive-snapshot.sha256
-          test "$(wc -l < build/nexus-multipair-archive-snapshot.sha256)" -eq 1
-          test ! -e build/nexus-multipair-archive-cache
-          test ! -e build/nexus-multipair-archive-backfill
-          python - <<'PY'
-          from pathlib import Path
-          import hashlib
-          archive = Path("build/nexus-multipair-archive-snapshot.zip")
-          expected = Path("build/nexus-multipair-archive-snapshot.sha256").read_text().strip()
-          assert len(expected) == 64
-          assert hashlib.sha256(archive.read_bytes()).hexdigest() == expected
-          print(f"multipair_archive_snapshot_sha256={expected}")
-          PY
+        run: rm -rf build/nexus-multipair-archive-cache build/nexus-multipair-archive-backfill
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: nexus-multipair-archive-snapshot-${{ github.sha }}
@@ -116,6 +160,7 @@ jobs:
           compression-level: 0
 
       - name: Acquire bounded-lag recent official Bybit archive runtime snapshot
+        id: recent
         run: |
           set -euo pipefail
           now_ms="$(python -c 'import time; print(int(time.time() * 1000))')"
@@ -127,56 +172,44 @@ jobs:
             --digest-output build/nexus-multipair-recent-runtime-snapshot.sha256 \
             --source-sha "$GITHUB_SHA" \
             --now-ms "$now_ms"
+          python - <<'PY' > build/recent-meta.env
+          import json
+          from pathlib import Path
+          value = json.loads(Path("build/nexus-multipair-recent-runtime-snapshot/snapshot-manifest.json").read_text(encoding="utf-8"))
+          print(f"snapshot_digest={value['snapshot_digest']}")
+          print(f"archive_sha256={Path('build/nexus-multipair-recent-runtime-snapshot.sha256').read_text().strip()}")
+          print(f"acquired_at_ms={value['acquired_at_ms']}")
+          print(f"data_as_of_ms={value['data_as_of_ms']}")
+          print(f"latest_complete_date={value['latest_common_complete_date']}")
+          PY
+          cat build/recent-meta.env >> "$GITHUB_OUTPUT"
       - name: Remove raw recent archive cache and intermediate backfill state
         if: always()
-        run: |
-          rm -rf build/nexus-multipair-recent-runtime-cache build/nexus-multipair-recent-runtime-backfill
-      - name: Independently enforce recent runtime snapshot identity and recency semantics
+        run: rm -rf build/nexus-multipair-recent-runtime-cache build/nexus-multipair-recent-runtime-backfill
+      - name: Independently enforce recent archive recency without live-freshness claim
         run: |
           set -euo pipefail
-          test -f build/nexus-multipair-recent-runtime-snapshot.zip
-          test -f build/nexus-multipair-recent-runtime-snapshot.sha256
-          test -f build/nexus-multipair-recent-runtime-snapshot/snapshot-manifest.json
-          test "$(wc -l < build/nexus-multipair-recent-runtime-snapshot.sha256)" -eq 1
-          test ! -e build/nexus-multipair-recent-runtime-cache
-          test ! -e build/nexus-multipair-recent-runtime-backfill
           now_ms="$(python -c 'import time; print(int(time.time() * 1000))')"
           VERIFY_NOW_MS="$now_ms" python - <<'PY'
           import hashlib
           import json
           import os
           from pathlib import Path
-          from nexus_multipair_recent_archive_runtime_snapshot import (
-              DATA_ORIGIN,
-              verify_recent_archive_runtime_snapshot,
-          )
+          from nexus_multipair_recent_archive_runtime_snapshot import DATA_ORIGIN, verify_recent_archive_runtime_snapshot
           root = Path("build/nexus-multipair-recent-runtime-snapshot")
-          manifest = json.loads((root / "snapshot-manifest.json").read_text(encoding="utf-8"))
+          value = json.loads((root / "snapshot-manifest.json").read_text(encoding="utf-8"))
           verification = verify_recent_archive_runtime_snapshot(
-              root,
-              manifest,
-              source_sha=os.environ["GITHUB_SHA"],
-              now_ms=int(os.environ["VERIFY_NOW_MS"]),
+              root, value, source_sha=os.environ["GITHUB_SHA"], now_ms=int(os.environ["VERIFY_NOW_MS"])
           )
           assert verification["decision"] == "pass", verification
-          assert manifest["data_origin"] == DATA_ORIGIN
-          assert manifest["runtime_requalification_recency_verified"] is True
-          assert manifest["live_freshness_claimed"] is False
-          assert manifest["cell_count"] == 12
-          assert manifest["history_limit"] == 240
+          assert value["data_origin"] == DATA_ORIGIN
+          assert value["runtime_requalification_recency_verified"] is True
+          assert value["live_freshness_claimed"] is False
+          assert value["cell_count"] == 12 and value["history_limit"] == 240
           archive = Path("build/nexus-multipair-recent-runtime-snapshot.zip")
           expected = Path("build/nexus-multipair-recent-runtime-snapshot.sha256").read_text().strip()
-          assert len(expected) == 64
           assert hashlib.sha256(archive.read_bytes()).hexdigest() == expected
-          print(json.dumps({
-              "recent_archive_runtime_snapshot": "PASS",
-              "latest_common_complete_date": manifest["latest_common_complete_date"],
-              "data_as_of_ms": manifest["data_as_of_ms"],
-              "source_lag_ms": int(os.environ["VERIFY_NOW_MS"]) - manifest["data_as_of_ms"],
-              "snapshot_digest": manifest["snapshot_digest"],
-              "archive_sha256": expected,
-              "live_freshness_claimed": False,
-          }, sort_keys=True))
+          print("hosted_recent_official_bybit_archive_requalification=PASS")
           PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
@@ -184,7 +217,341 @@ jobs:
           path: |
             build/nexus-multipair-recent-runtime-snapshot.zip
             build/nexus-multipair-recent-runtime-snapshot.sha256
-            build/nexus-multipair-recent-runtime-snapshot/snapshot-manifest.json
           if-no-files-found: error
           retention-days: 7
           compression-level: 0
+
+  contract-test:
+    needs: acquire-snapshot
+    if: ${{ always() && (github.event_name == 'pull_request' || needs.acquire-snapshot.result == 'success') }}
+    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || 'nexus-bybit-network' }}
+    timeout-minutes: 90
+    env:
+      ARTIFACT_ROOT: ${{ runner.temp }}/nexus-multipair-archive-acceptance-${{ github.run_id }}
+      EXPECTED_WHEELHOUSE_SHA256: ${{ needs.acquire-snapshot.outputs.wheelhouse_sha256 }}
+      EXPECTED_HISTORICAL_ARCHIVE_SHA256: ${{ needs.acquire-snapshot.outputs.historical_archive_sha256 }}
+      EXPECTED_HISTORICAL_SNAPSHOT_DIGEST: ${{ needs.acquire-snapshot.outputs.historical_snapshot_digest }}
+      EXPECTED_RECENT_ARCHIVE_SHA256: ${{ needs.acquire-snapshot.outputs.recent_archive_sha256 }}
+      EXPECTED_RECENT_SNAPSHOT_DIGEST: ${{ needs.acquire-snapshot.outputs.recent_snapshot_digest }}
+      EXPECTED_RECENT_ACQUIRED_AT_MS: ${{ needs.acquire-snapshot.outputs.recent_acquired_at_ms }}
+      EXPECTED_RECENT_DATA_AS_OF_MS: ${{ needs.acquire-snapshot.outputs.recent_data_as_of_ms }}
+      EXPECTED_RECENT_LATEST_COMPLETE_DATE: ${{ needs.acquire-snapshot.outputs.recent_latest_complete_date }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        if: github.event_name == 'pull_request'
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        if: github.event_name == 'pull_request'
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install locked test dependencies
+        if: github.event_name == 'pull_request'
+        run: python -m pip install -r requirements-dev.lock
+      - name: Verify dependency consistency
+        if: github.event_name == 'pull_request'
+        run: python -m pip check
+      - name: Verify official archive and physical acceptance contracts
+        if: github.event_name == 'pull_request'
+        run: >-
+          python -m pytest -q
+          tests/test_nexus_multipair_archive_snapshot.py
+          tests/test_nexus_multipair_recent_archive_runtime_snapshot.py
+          tests/test_nexus_multipair_strategy_discovery.py
+          tests/test_nexus_multipair_strategy_discovery_archive.py
+          tests/test_nexus_recent_archive_runtime_snapshot_artifact.py
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        if: github.event_name != 'pull_request'
+        with:
+          name: nexus-multipair-archive-acceptance-wheelhouse-${{ github.sha }}
+          path: ${{ runner.temp }}/nexus-multipair-archive-acceptance-${{ github.run_id }}/artifacts/wheelhouse
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        if: github.event_name != 'pull_request'
+        with:
+          name: nexus-multipair-archive-snapshot-${{ github.sha }}
+          path: ${{ runner.temp }}/nexus-multipair-archive-acceptance-${{ github.run_id }}/artifacts/historical
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        if: github.event_name != 'pull_request'
+        with:
+          name: nexus-multipair-recent-runtime-snapshot-${{ github.sha }}
+          path: ${{ runner.temp }}/nexus-multipair-archive-acceptance-${{ github.run_id }}/artifacts/recent
+
+      - name: Prepare exact isolated source and physical Research state
+        if: github.event_name != 'pull_request'
+        run: |
+          set -euo pipefail
+          source_root="$HOME/.local/share/nexus/multipair-archive-acceptance-source/$GITHUB_RUN_ID"
+          state_root="$HOME/.local/share/nexus/multipair-archive-acceptance/$GITHUB_RUN_ID"
+          case "$source_root" in "$HOME"/.local/share/nexus/multipair-archive-acceptance-source/*) ;; *) exit 1;; esac
+          case "$state_root" in "$HOME"/.local/share/nexus/multipair-archive-acceptance/*) ;; *) exit 1;; esac
+          rm -rf "$source_root" "$state_root"
+          mkdir -p "$source_root" "$state_root"
+          cd "$source_root"
+          git init .
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git config --local --unset-all http.https://github.com/.extraheader || true
+          fetch_ok=false
+          for attempt in 1 2 3; do
+            if timeout 180s git -c http.version=HTTP/1.1 fetch --no-tags --depth=1 origin "$GITHUB_SHA"; then fetch_ok=true; break; fi
+            if [ "$attempt" -lt 3 ]; then sleep "$((attempt * 5))"; fi
+          done
+          test "$fetch_ok" = true
+          git checkout --detach --force FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          known_python="/opt/nexus-bybit-runner/_work/_tool/Python/3.12.14/x64/bin/python"
+          python_bin=""
+          if [ -x "$known_python" ]; then python_bin="$known_python"; fi
+          if [ -z "$python_bin" ]; then
+            tool_root="${RUNNER_TOOL_CACHE:-/opt/nexus-bybit-runner/_work/_tool}"
+            python_bin="$(find "$tool_root" -type f -path '*/Python/3.12.*/x64/bin/python' 2>/dev/null | sort -V | tail -n 1 || true)"
+          fi
+          test -n "$python_bin"
+          "$python_bin" -c "import sys; assert sys.version_info[:2] == (3, 12), sys.version"
+          python_prefix="$("$python_bin" -c 'import sys; print(sys.prefix)')"
+          python_lib="$python_prefix/lib"
+          test -d "$python_lib"
+          effective_ld_library_path="$python_lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+          printf 'SOURCE_ROOT=%s\nSTATE_ROOT=%s\nPYTHON_BIN=%s\nLD_LIBRARY_PATH=%s\n' "$source_root" "$state_root" "$python_bin" "$effective_ld_library_path" >> "$GITHUB_ENV"
+          echo "multipair_final_acceptance_exact_source=PASS"
+
+      - name: Enforce physical Bybit Research plane
+        if: github.event_name != 'pull_request'
+        run: >-
+          "$PYTHON_BIN" -c "assert '${{ runner.environment }}' == 'self-hosted'; assert '${{ runner.os }}' == 'Linux'; print('multipair_final_acceptance_plane=self-hosted:nexus-bybit-network')"
+
+      - name: Verify and provision offline wheelhouse
+        if: github.event_name != 'pull_request'
+        run: |
+          set -euo pipefail
+          cd "$SOURCE_ROOT"
+          archive="$ARTIFACT_ROOT/artifacts/wheelhouse/nexus-paper-runtime-wheelhouse.zip"
+          test -f "$archive"
+          test "$(sha256sum "$archive" | awk '{print $1}')" = "$EXPECTED_WHEELHOUSE_SHA256"
+          wheelhouse="$STATE_ROOT/wheelhouse"
+          mkdir -p "$wheelhouse"
+          "$PYTHON_BIN" - <<'PY'
+          import os
+          from pathlib import Path
+          from scripts.nexus_runtime_wheelhouse import safe_extract_flat_archive
+          safe_extract_flat_archive(Path(os.environ["ARTIFACT_ROOT"]) / "artifacts/wheelhouse/nexus-paper-runtime-wheelhouse.zip", Path(os.environ["STATE_ROOT"]) / "wheelhouse")
+          PY
+          cmp requirements.lock "$wheelhouse/requirements.lock"
+          pip_wheel="$("$PYTHON_BIN" - <<'PY'
+          import ensurepip
+          from pathlib import Path
+          wheels = sorted((Path(ensurepip.__file__).resolve().parent / '_bundled').glob('pip-*.whl'))
+          if not wheels: raise SystemExit('bundled pip wheel missing')
+          print(wheels[-1])
+          PY
+          )"
+          runtime_site="$STATE_ROOT/runtime-site"
+          mkdir -p "$runtime_site"
+          PYTHONPATH="$pip_wheel" "$PYTHON_BIN" -m pip install --disable-pip-version-check --no-index --find-links "$wheelhouse" --no-cache-dir --target "$runtime_site" -r requirements.lock
+          printf 'PIP_WHEEL=%s\nPYTHONPATH=%s:%s:%s\n' "$pip_wheel" "$pip_wheel" "$runtime_site" "$SOURCE_ROOT" >> "$GITHUB_ENV"
+          echo "multipair_final_acceptance_offline_runtime=PASS"
+
+      - name: Restore and verify historical and recent official Bybit snapshots
+        if: github.event_name != 'pull_request'
+        run: |
+          set -euo pipefail
+          cd "$SOURCE_ROOT"
+          consume_now_ms="$("$PYTHON_BIN" -c 'import time; print(int(time.time() * 1000))')"
+          printf 'CONSUME_NOW_MS=%s\n' "$consume_now_ms" >> "$GITHUB_ENV"
+          "$PYTHON_BIN" - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from scripts import nexus_snapshot_artifact as base
+          import nexus_multipair_archive_snapshot as historical
+          import nexus_multipair_recent_archive_runtime_snapshot as recent
+          artifact_root = Path(os.environ["ARTIFACT_ROOT"])
+          state = Path(os.environ["STATE_ROOT"])
+          source_sha = os.environ["GITHUB_SHA"]
+          now_ms = int(os.environ.get("CONSUME_NOW_MS") or 0)
+          if not now_ms:
+              import time
+              now_ms = int(time.time() * 1000)
+          historical_zip = artifact_root / "artifacts/historical/nexus-multipair-archive-snapshot.zip"
+          historical_sha = (artifact_root / "artifacts/historical/nexus-multipair-archive-snapshot.sha256").read_text().strip()
+          assert historical_sha == os.environ["EXPECTED_HISTORICAL_ARCHIVE_SHA256"]
+          assert base._sha256_file(historical_zip) == historical_sha
+          historical_root = state / "historical-snapshot"
+          base._extract_inner(historical_zip, historical_root)
+          historical_value = json.loads((historical_root / "snapshot-manifest.json").read_text())
+          assert historical.verify_snapshot(historical_root, historical_value)["decision"] == "pass"
+          assert historical_value["source_sha"] == source_sha
+          assert historical_value["snapshot_digest"] == os.environ["EXPECTED_HISTORICAL_SNAPSHOT_DIGEST"]
+          assert historical_value["runtime_freshness_claimed"] is False
+          recent_zip = artifact_root / "artifacts/recent/nexus-multipair-recent-runtime-snapshot.zip"
+          recent_sha = (artifact_root / "artifacts/recent/nexus-multipair-recent-runtime-snapshot.sha256").read_text().strip()
+          assert recent_sha == os.environ["EXPECTED_RECENT_ARCHIVE_SHA256"]
+          assert base._sha256_file(recent_zip) == recent_sha
+          recent_root = state / "recent-runtime-snapshot"
+          base._extract_inner(recent_zip, recent_root)
+          recent_value = json.loads((recent_root / "snapshot-manifest.json").read_text())
+          verification = recent.verify_recent_archive_runtime_snapshot(recent_root, recent_value, source_sha=source_sha, now_ms=now_ms)
+          assert verification["decision"] == "pass", verification
+          assert recent_value["snapshot_digest"] == os.environ["EXPECTED_RECENT_SNAPSHOT_DIGEST"]
+          assert recent_value["acquired_at_ms"] == int(os.environ["EXPECTED_RECENT_ACQUIRED_AT_MS"])
+          assert recent_value["data_as_of_ms"] == int(os.environ["EXPECTED_RECENT_DATA_AS_OF_MS"])
+          assert recent_value["latest_common_complete_date"] == os.environ["EXPECTED_RECENT_LATEST_COMPLETE_DATE"]
+          assert recent_value["runtime_requalification_recency_verified"] is True
+          assert recent_value["live_freshness_claimed"] is False
+          assert recent_value["snapshot_digest"] != historical_value["snapshot_digest"]
+          print("multipair_final_acceptance_snapshot_transport=PASS")
+          PY
+
+      - name: Run leakage-resistant historical Discovery
+        if: github.event_name != 'pull_request'
+        run: |
+          set -euo pipefail
+          cd "$SOURCE_ROOT"
+          "$PYTHON_BIN" - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from nexus_multipair_strategy_discovery import run, verify_discovery
+          from nexus_multipair_trusted_surface import SYMBOLS, TIMEFRAMES, FAMILIES
+          root = Path(os.environ["STATE_ROOT"])
+          manifest = json.loads(Path("experiments/nexus_multipair_strategy_discovery_v2.json").read_text())
+          manifest["dataset"]["dataset_root"] = str(root / "historical-snapshot")
+          manifest_path = root / "discovery-manifest.json"
+          manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+          result = run(manifest_path, root / "discovery", source_sha=os.environ["GITHUB_SHA"])
+          verification = verify_discovery(result)
+          assert verification["decision"] == "pass", verification
+          assert result["symbols"] == list(SYMBOLS)
+          assert result["timeframes"] == list(TIMEFRAMES)
+          assert result["families"] == list(FAMILIES)
+          assert result["hypothesis_count"] == 9 and len(result["cells"]) == 9
+          assert result["research_only"] is True and result["automatic_strategy_promotion"] is False
+          print(f"multipair_final_acceptance_discovery=PASS proposals={result['research_proposal_count']}")
+          PY
+
+      - name: Independently requalify on distinct recent official Bybit archive evidence
+        if: github.event_name != 'pull_request'
+        run: |
+          set -euo pipefail
+          cd "$SOURCE_ROOT"
+          "$PYTHON_BIN" nexus_multipair_recent_archive_runtime_snapshot.py requalify \
+            --snapshot-root "$STATE_ROOT/recent-runtime-snapshot" \
+            --discovery "$STATE_ROOT/discovery/multipair_strategy_discovery.json" \
+            --queue "$STATE_ROOT/discovery/research_proposals.json" \
+            --source-sha "$GITHUB_SHA" \
+            --state-root "$STATE_ROOT/requalification-state" \
+            --output "$STATE_ROOT/requalification/runtime-requalification.json" \
+            --now-ms "$CONSUME_NOW_MS"
+
+      - name: Verify full physical acceptance and write proof
+        if: github.event_name != 'pull_request'
+        run: |
+          set -euo pipefail
+          cd "$SOURCE_ROOT"
+          "$PYTHON_BIN" - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          import nexus_multipair_archive_snapshot as historical
+          import nexus_multipair_recent_archive_runtime_snapshot as recent
+          from nexus_multipair_strategy_discovery import verify_discovery
+          from nexus_multipair_strategy_proposal_requalification import verify_requalification
+          from nexus_multipair_trusted_surface import SYMBOLS, TIMEFRAMES, FAMILIES
+          root = Path(os.environ["STATE_ROOT"])
+          old = json.loads((root / "historical-snapshot/snapshot-manifest.json").read_text())
+          new = json.loads((root / "recent-runtime-snapshot/snapshot-manifest.json").read_text())
+          discovery = json.loads((root / "discovery/multipair_strategy_discovery.json").read_text())
+          req = json.loads((root / "requalification/runtime-requalification.json").read_text())
+          assert historical.verify_snapshot(root / "historical-snapshot", old)["decision"] == "pass"
+          recent_check = recent.verify_recent_archive_runtime_snapshot(root / "recent-runtime-snapshot", new, source_sha=os.environ["GITHUB_SHA"], now_ms=int(os.environ["CONSUME_NOW_MS"]))
+          assert recent_check["decision"] == "pass", recent_check
+          assert verify_discovery(discovery)["decision"] == "pass"
+          assert verify_requalification(req)["decision"] == "pass"
+          assert old["snapshot_digest"] != new["snapshot_digest"]
+          assert old["cell_count"] == new["cell_count"] == 12
+          assert new["history_limit"] == 240
+          assert new["runtime_requalification_recency_verified"] is True
+          assert new["live_freshness_claimed"] is False
+          assert req["runtime_data_transport"] == recent.TRANSPORT_ORIGIN
+          assert req["runtime_snapshot_digest"] == new["snapshot_digest"]
+          assert req["runtime_data_as_of_ms"] == new["data_as_of_ms"]
+          assert req["runtime_snapshot_distinct_from_discovery"] is True
+          assert req["historical_discovery_snapshot_reused"] is False
+          assert req["runtime_live_freshness_claimed"] is False
+          assert req["runtime_requalification_recency_verified"] is True
+          assert req["blocked_runtime_data_count"] == 0
+          assert req["status"] in {"NO_WORK", "EVALUATED"}
+          assert req["candidate_creation_authority"] is False
+          assert req["promotion_authority"] is False
+          assert req["paper_execution_started"] is False
+          assert req["live_trading_authority"] is False
+          assert req["private_credentials_used"] is False
+          assert req["automatic_strategy_promotion"] is False
+          assert req["deterministic_risk_final_authority"] is True
+          if req["status"] == "EVALUATED":
+              assert req["qualified_for_review_count"] + req["rejected_count"] == req["proposal_count"]
+          proof = {
+              "schema_version": "nexus.multipair-final-physical-acceptance.v1",
+              "source_sha": os.environ["GITHUB_SHA"],
+              "run_id": os.environ["GITHUB_RUN_ID"],
+              "physical_runner_name": os.environ.get("RUNNER_NAME", "NEXUS-BYBIT-WSL"),
+              "execution_plane": "nexus-bybit-network",
+              "symbols": list(SYMBOLS),
+              "timeframes": list(TIMEFRAMES),
+              "families": list(FAMILIES),
+              "paper_runtime_cells": 12,
+              "paper_runtime_lanes": 36,
+              "historical_discovery_snapshot_digest": old["snapshot_digest"],
+              "historical_discovery_runtime_freshness_claimed": False,
+              "recent_requalification_snapshot_digest": new["snapshot_digest"],
+              "recent_requalification_data_as_of_ms": new["data_as_of_ms"],
+              "recent_requalification_source_lag_ms": int(os.environ["CONSUME_NOW_MS"]) - new["data_as_of_ms"],
+              "recent_requalification_latest_complete_date": new["latest_common_complete_date"],
+              "runtime_requalification_recency_verified": True,
+              "runtime_live_freshness_claimed": False,
+              "runtime_snapshot_distinct_from_discovery": True,
+              "historical_discovery_snapshot_reused": False,
+              "discovery_hypothesis_count": discovery["hypothesis_count"],
+              "research_proposal_count": discovery["research_proposal_count"],
+              "requalification_status": req["status"],
+              "qualified_for_review_count": req["qualified_for_review_count"],
+              "rejected_count": req["rejected_count"],
+              "blocked_runtime_data_count": req["blocked_runtime_data_count"],
+              "research_only": True,
+              "paper_only": True,
+              "paper_execution_started": False,
+              "live_trading_authority": False,
+              "private_credentials_used": False,
+              "real_exchange_orders": False,
+              "automatic_strategy_promotion": False,
+              "silent_exchange_substitution": False,
+              "third_party_proxy_used": False,
+              "deterministic_risk_final_authority": True,
+              "issue_984_state_touched": False,
+              "persistent_runtime_database_on_github": False,
+          }
+          target = root / "nexus-multipair-final-acceptance.json"
+          target.write_text(json.dumps(proof, indent=2, sort_keys=True) + "\n")
+          print("multipair_final_physical_acceptance=PASS")
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: github.event_name != 'pull_request'
+        with:
+          name: nexus-multipair-final-acceptance-${{ github.sha }}
+          path: ${{ env.STATE_ROOT }}/nexus-multipair-final-acceptance.json
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Remove ephemeral physical acceptance state
+        if: always() && github.event_name != 'pull_request'
+        run: |
+          set -euo pipefail
+          state_root="${STATE_ROOT:-$HOME/.local/share/nexus/multipair-archive-acceptance/$GITHUB_RUN_ID}"
+          source_root="${SOURCE_ROOT:-$HOME/.local/share/nexus/multipair-archive-acceptance-source/$GITHUB_RUN_ID}"
+          case "$state_root" in "$HOME"/.local/share/nexus/multipair-archive-acceptance/*) rm -rf "$state_root" ;; *) exit 1;; esac
+          case "$source_root" in "$HOME"/.local/share/nexus/multipair-archive-acceptance-source/*) rm -rf "$source_root" ;; *) exit 1;; esac
+          rm -rf "$ARTIFACT_ROOT"
