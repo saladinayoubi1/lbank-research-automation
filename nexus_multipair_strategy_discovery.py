@@ -15,16 +15,15 @@ from typing import Any, Mapping, Sequence
 import pandas as pd
 
 import nexus_multitimeframe_strategy_discovery as legacy
-from nexus_multipair_discovery_snapshot import (
-    SYMBOLS,
-    TIMEFRAME_NAMES,
-    verify_snapshot,
-)
+import nexus_multipair_archive_snapshot as archive_snapshot
+import nexus_multipair_discovery_snapshot as rest_snapshot
+from nexus_multipair_discovery_snapshot import SYMBOLS, TIMEFRAME_NAMES
 
 
 SCHEMA = "nexus.multipair-strategy-discovery.v1"
 MANIFEST_SCHEMA = "nexus.multipair-strategy-discovery-manifest.v1"
 FAMILIES = ("momentum", "trend_breakout", "mean_reversion")
+SUPPORTED_SNAPSHOT_SCHEMAS = (rest_snapshot.SCHEMA, archive_snapshot.SCHEMA)
 
 
 class MultiPairStrategyDiscoveryError(RuntimeError):
@@ -111,6 +110,44 @@ def load_manifest(path: str | Path) -> dict[str, Any]:
     return value
 
 
+def _verify_snapshot_by_schema(root: Path, value: Mapping[str, Any]) -> dict[str, Any]:
+    schema = value.get("schema_version")
+    if schema == rest_snapshot.SCHEMA:
+        return rest_snapshot.verify_snapshot(root, value)
+    if schema == archive_snapshot.SCHEMA:
+        return archive_snapshot.verify_snapshot(root, value)
+    raise MultiPairStrategyDiscoveryError("unsupported multi-pair snapshot schema")
+
+
+def _snapshot_as_of_ms(value: Mapping[str, Any]) -> int:
+    if value.get("schema_version") == rest_snapshot.SCHEMA:
+        raw = value.get("as_of_ms")
+        if isinstance(raw, bool) or not isinstance(raw, int) or raw <= 0:
+            raise MultiPairStrategyDiscoveryError("REST snapshot as_of_ms is invalid")
+        return raw
+    if value.get("schema_version") == archive_snapshot.SCHEMA:
+        cells = value.get("cells")
+        if not isinstance(cells, list) or len(cells) != len(SYMBOLS) * len(TIMEFRAME_NAMES):
+            raise MultiPairStrategyDiscoveryError("archive snapshot cells are invalid")
+        opens = [row.get("last_open_time_ms") for row in cells if isinstance(row, Mapping)]
+        if len(opens) != len(cells) or any(isinstance(item, bool) or not isinstance(item, int) or item <= 0 for item in opens):
+            raise MultiPairStrategyDiscoveryError("archive snapshot as-of boundary is invalid")
+        return max(opens)
+    raise MultiPairStrategyDiscoveryError("unsupported multi-pair snapshot schema")
+
+
+def _snapshot_data_origin(value: Mapping[str, Any]) -> str:
+    schema = value.get("schema_version")
+    if schema == archive_snapshot.SCHEMA:
+        origin = value.get("data_origin")
+        if origin != "official_public_bybit_spot_trade_archive_aggregated":
+            raise MultiPairStrategyDiscoveryError("archive snapshot data origin mismatch")
+        return str(origin)
+    if schema == rest_snapshot.SCHEMA:
+        return "canonical_public_bybit_rest_closed_candles"
+    raise MultiPairStrategyDiscoveryError("unsupported multi-pair snapshot schema")
+
+
 def _load_snapshot(manifest: Mapping[str, Any], *, source_sha: str) -> tuple[Path, dict[str, Any]]:
     root = Path(str(manifest["dataset"]["dataset_root"])).resolve()
     snapshot_path = root / str(manifest["dataset"]["snapshot_manifest"])
@@ -118,13 +155,19 @@ def _load_snapshot(manifest: Mapping[str, Any], *, source_sha: str) -> tuple[Pat
         value = json.loads(snapshot_path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         raise MultiPairStrategyDiscoveryError("verified multi-pair snapshot manifest is unavailable") from exc
-    verification = verify_snapshot(root, value)
+    if not isinstance(value, dict):
+        raise MultiPairStrategyDiscoveryError("verified multi-pair snapshot manifest is invalid")
+    verification = _verify_snapshot_by_schema(root, value)
     if verification.get("decision") != "pass":
         raise MultiPairStrategyDiscoveryError("multi-pair discovery snapshot verification failed")
     if value.get("source_sha") != source_sha:
         raise MultiPairStrategyDiscoveryError("snapshot source SHA does not match discovery source SHA")
     if value.get("symbols") != list(SYMBOLS) or value.get("timeframes") != list(TIMEFRAME_NAMES):
         raise MultiPairStrategyDiscoveryError("snapshot surface does not match discovery surface")
+    if value.get("schema_version") == archive_snapshot.SCHEMA and value.get("runtime_freshness_claimed") is not False:
+        raise MultiPairStrategyDiscoveryError("historical archive snapshot cannot claim runtime freshness")
+    _snapshot_as_of_ms(value)
+    _snapshot_data_origin(value)
     return root, value
 
 
@@ -263,12 +306,16 @@ def discover(manifest: Mapping[str, Any], *, source_sha: str) -> dict[str, Any]:
                 }
                 proposals.append({**proposal_core, "proposal_digest": _digest(proposal_core)})
 
+    snapshot_schema = str(snapshot["schema_version"])
     core = {
         "schema_version": SCHEMA,
         "source_sha": source_sha,
         "experiment_id": manifest["experiment_id"],
         "dataset_snapshot_sha256": snapshot["snapshot_digest"],
-        "snapshot_as_of_ms": snapshot["as_of_ms"],
+        "snapshot_schema_version": snapshot_schema,
+        "snapshot_data_origin": _snapshot_data_origin(snapshot),
+        "snapshot_runtime_freshness_claimed": snapshot.get("runtime_freshness_claimed") if snapshot_schema == archive_snapshot.SCHEMA else True,
+        "snapshot_as_of_ms": _snapshot_as_of_ms(snapshot),
         "snapshot_history_limit": snapshot["history_limit"],
         "symbols": list(SYMBOLS),
         "timeframes": list(TIMEFRAME_NAMES),
@@ -290,7 +337,7 @@ def discover(manifest: Mapping[str, Any], *, source_sha: str) -> dict[str, Any]:
 
 
 def verify_discovery(value: Mapping[str, Any]) -> dict[str, Any]:
-    checks = {"schema": False, "digest": False, "authority": False, "shape": False, "proposals": False}
+    checks = {"schema": False, "digest": False, "authority": False, "shape": False, "proposals": False, "snapshot": False}
     try:
         core = dict(value)
         claimed = core.pop("discovery_digest", None)
@@ -308,6 +355,27 @@ def verify_discovery(value: Mapping[str, Any]) -> dict[str, Any]:
                 == {(timeframe, family) for timeframe in TIMEFRAME_NAMES for family in FAMILIES}
             and isinstance(proposals, list)
             and core.get("research_proposal_count") == len(proposals)
+        )
+        snapshot_schema = core.get("snapshot_schema_version")
+        checks["snapshot"] = bool(
+            snapshot_schema in SUPPORTED_SNAPSHOT_SCHEMAS
+            and isinstance(core.get("snapshot_as_of_ms"), int)
+            and not isinstance(core.get("snapshot_as_of_ms"), bool)
+            and int(core.get("snapshot_as_of_ms")) > 0
+            and isinstance(core.get("snapshot_history_limit"), int)
+            and int(core.get("snapshot_history_limit")) >= 160
+            and (
+                (
+                    snapshot_schema == archive_snapshot.SCHEMA
+                    and core.get("snapshot_data_origin") == "official_public_bybit_spot_trade_archive_aggregated"
+                    and core.get("snapshot_runtime_freshness_claimed") is False
+                )
+                or (
+                    snapshot_schema == rest_snapshot.SCHEMA
+                    and core.get("snapshot_data_origin") == "canonical_public_bybit_rest_closed_candles"
+                    and core.get("snapshot_runtime_freshness_claimed") is True
+                )
+            )
         )
         checks["authority"] = bool(
             core.get("research_only") is True
