@@ -38,23 +38,27 @@ def _manifest() -> dict:
     }
 
 
+def _regular_member(name: str) -> zipfile.ZipInfo:
+    info = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
+    info.compress_type = zipfile.ZIP_STORED
+    info.create_system = 3
+    info.external_attr = 0o100644 << 16
+    return info
+
+
 def _inner(tmp_path: Path) -> tuple[Path, str]:
     path = tmp_path / artifact.INNER_ARCHIVE_NAME
     with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_STORED) as archive:
-        archive.writestr("snapshot-manifest.json", json.dumps(_manifest()))
+        archive.writestr(_regular_member("snapshot-manifest.json"), json.dumps(_manifest()))
         for symbol in SYMBOLS:
             for timeframe in TIMEFRAMES:
-                archive.writestr(f"bybit_market/{symbol}/{timeframe}.parquet", b"x")
+                archive.writestr(_regular_member(f"bybit_market/{symbol}/{timeframe}.parquet"), b"x")
     return path, hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def _outer(path: Path, inner: Path, *, name: str | None = None) -> Path:
     with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_STORED) as archive:
-        info = zipfile.ZipInfo(name or artifact.INNER_ARCHIVE_NAME, date_time=(1980, 1, 1, 0, 0, 0))
-        info.compress_type = zipfile.ZIP_STORED
-        info.create_system = 3
-        info.external_attr = 0o100644 << 16
-        archive.writestr(info, inner.read_bytes())
+        archive.writestr(_regular_member(name or artifact.INNER_ARCHIVE_NAME), inner.read_bytes())
     return path
 
 
