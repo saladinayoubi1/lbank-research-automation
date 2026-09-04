@@ -42,6 +42,7 @@ on:
       - ".github/workflows/nexus_multipair_physical_restart_replay_archive.yml"
 
 permissions:
+  actions: read
   contents: read
 
 concurrency:
@@ -180,6 +181,7 @@ jobs:
       replay_now_ms: ${{ steps.seed.outputs.replay_now_ms }}
       runner_name: ${{ steps.seed.outputs.runner_name }}
     env:
+      GH_TOKEN: ${{ github.token }}
       EXPECTED_WHEELHOUSE_SHA256: ${{ needs.acquire-runtime.outputs.wheelhouse_sha256 }}
       EXPECTED_RECENT_ARCHIVE_SHA256: ${{ needs.acquire-runtime.outputs.recent_archive_sha256 }}
       EXPECTED_RECENT_SNAPSHOT_DIGEST: ${{ needs.acquire-runtime.outputs.recent_snapshot_digest }}
@@ -350,6 +352,7 @@ jobs:
       proof_b64: ${{ steps.proof.outputs.proof_b64 }}
       proof_sha256: ${{ steps.proof.outputs.proof_sha256 }}
     env:
+      GH_TOKEN: ${{ github.token }}
       EXPECTED_WHEELHOUSE_SHA256: ${{ needs.acquire-runtime.outputs.wheelhouse_sha256 }}
       EXPECTED_RECENT_SNAPSHOT_DIGEST: ${{ needs.acquire-runtime.outputs.recent_snapshot_digest }}
       EXPECTED_RECENT_DATA_AS_OF_MS: ${{ needs.acquire-runtime.outputs.recent_data_as_of_ms }}
@@ -507,6 +510,7 @@ jobs:
               "physical_runner_environment": os.environ["RUNNER_ENVIRONMENT_EVIDENCE"],
               "execution_plane": "nexus-bybit-network",
               "state_storage": "physical_external_runtime_path",
+              "artifact_transport": "github_actions_read_token_digest_pinned_node_free",
               "runtime_data_transport": recent.TRANSPORT_ORIGIN,
               "runtime_snapshot_digest": source_snapshot["snapshot_digest"],
               "runtime_data_as_of_ms": source_snapshot["data_as_of_ms"],
@@ -564,6 +568,7 @@ jobs:
           assert evidence["private_credentials_used"] is False
           assert evidence["automatic_strategy_promotion"] is False
           assert evidence["deterministic_risk_final_authority"] is True
+          assert evidence["artifact_transport"] == "github_actions_read_token_digest_pinned_node_free"
           assert evidence["runtime_data_transport"] == "digest_pinned_recent_official_bybit_spot_archive_snapshot"
           assert evidence["runtime_live_freshness_claimed"] is False
           assert evidence["snapshot_recency_verified_at_seed"] is True
