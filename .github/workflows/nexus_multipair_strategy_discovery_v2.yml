@@ -7,6 +7,7 @@ on:
     paths:
       - "nexus_multipair_trusted_surface.py"
       - "nexus_multipair_discovery_snapshot.py"
+      - "nexus_multipair_archive_snapshot.py"
       - "nexus_multipair_strategy_discovery.py"
       - "nexus_multipair_strategy_proposal_requalification.py"
       - "nexus_multipair_demo_strategy_matrix.py"
@@ -18,9 +19,16 @@ on:
       - "phase6_research_pipeline.py"
       - "product_research_runtime.py"
       - "bybit_public_klines.py"
+      - "bybit_spot_archive_audit.py"
+      - "bybit_spot_archive_collector.py"
+      - "bybit_spot_backfill.py"
       - "scripts/nexus_runtime_wheelhouse.py"
+      - "scripts/nexus_snapshot_artifact.py"
       - "requirements.lock"
       - "tests/test_nexus_multipair_strategy_discovery.py"
+      - "tests/test_nexus_multipair_strategy_discovery_archive.py"
+      - "tests/test_nexus_multipair_archive_snapshot.py"
+      - "tests/test_nexus_snapshot_artifact.py"
       - "tests/test_nexus_multipair_trusted_surface.py"
       - "tests/test_nexus_multipair_strategy_discovery_workflow.py"
       - ".github/workflows/nexus_multipair_strategy_discovery_v2.yml"
@@ -29,6 +37,7 @@ on:
     paths:
       - "nexus_multipair_trusted_surface.py"
       - "nexus_multipair_discovery_snapshot.py"
+      - "nexus_multipair_archive_snapshot.py"
       - "nexus_multipair_strategy_discovery.py"
       - "nexus_multipair_strategy_proposal_requalification.py"
       - "nexus_multipair_demo_strategy_matrix.py"
@@ -40,9 +49,16 @@ on:
       - "phase6_research_pipeline.py"
       - "product_research_runtime.py"
       - "bybit_public_klines.py"
+      - "bybit_spot_archive_audit.py"
+      - "bybit_spot_archive_collector.py"
+      - "bybit_spot_backfill.py"
       - "scripts/nexus_runtime_wheelhouse.py"
+      - "scripts/nexus_snapshot_artifact.py"
       - "requirements.lock"
       - "tests/test_nexus_multipair_strategy_discovery.py"
+      - "tests/test_nexus_multipair_strategy_discovery_archive.py"
+      - "tests/test_nexus_multipair_archive_snapshot.py"
+      - "tests/test_nexus_snapshot_artifact.py"
       - "tests/test_nexus_multipair_trusted_surface.py"
       - "tests/test_nexus_multipair_strategy_discovery_workflow.py"
       - ".github/workflows/nexus_multipair_strategy_discovery_v2.yml"
@@ -73,15 +89,20 @@ jobs:
         run: >-
           python -m pytest -q
           tests/test_nexus_multipair_strategy_discovery.py
+          tests/test_nexus_multipair_strategy_discovery_archive.py
+          tests/test_nexus_multipair_archive_snapshot.py
+          tests/test_nexus_snapshot_artifact.py
           tests/test_nexus_multipair_trusted_surface.py
           tests/test_nexus_multipair_strategy_discovery_workflow.py
 
   runtime-wheelhouse:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 35
     outputs:
       archive_sha256: ${{ steps.pack.outputs.archive_sha256 }}
+      snapshot_archive_sha256: ${{ steps.archive.outputs.snapshot_archive_sha256 }}
+      snapshot_digest: ${{ steps.archive.outputs.snapshot_digest }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -135,6 +156,54 @@ jobs:
           if-no-files-found: error
           retention-days: 7
           compression-level: 0
+      - name: Acquire immutable official Bybit Spot archive snapshot
+        id: archive
+        run: |
+          set -euo pipefail
+          wheelhouse="$PWD/build/nexus-multipair-discovery-v2-wheelhouse"
+          acquire_site="$PWD/build/nexus-multipair-discovery-v2-acquire-site"
+          state="$PWD/build/nexus-multipair-discovery-v2-archive-state"
+          cache="$PWD/build/nexus-multipair-discovery-v2-archive-cache"
+          snapshot="$PWD/build/nexus-multipair-discovery-v2-archive-snapshot"
+          archive="$PWD/build/nexus-multipair-archive-snapshot.zip"
+          digest="$PWD/build/nexus-multipair-archive-snapshot.sha256"
+          rm -rf "$acquire_site" "$state" "$cache" "$snapshot" "$archive" "$digest"
+          mkdir -p "$acquire_site"
+          python -m pip install \
+            --disable-pip-version-check \
+            --no-index \
+            --find-links "$wheelhouse" \
+            --no-cache-dir \
+            --target "$acquire_site" \
+            -r requirements.lock
+          PYTHONPATH="$acquire_site" python nexus_multipair_archive_snapshot.py \
+            --state-root "$state" \
+            --cache-root "$cache" \
+            --output-root "$snapshot" \
+            --archive-output "$archive" \
+            --digest-output "$digest" \
+            --source-sha "$GITHUB_SHA"
+          snapshot_digest="$(PYTHONPATH="$acquire_site" python - <<'PY'
+          import json
+          from pathlib import Path
+          value = json.loads(Path("build/nexus-multipair-discovery-v2-archive-snapshot/snapshot-manifest.json").read_text(encoding="utf-8"))
+          print(value["snapshot_digest"])
+          PY
+          )"
+          snapshot_archive_sha256="$(cat "$digest")"
+          test -n "$snapshot_digest"
+          test -n "$snapshot_archive_sha256"
+          echo "snapshot_digest=$snapshot_digest" >> "$GITHUB_OUTPUT"
+          echo "snapshot_archive_sha256=$snapshot_archive_sha256" >> "$GITHUB_OUTPUT"
+          rm -rf "$acquire_site" "$state" "$cache" "$snapshot"
+          echo "hosted_official_bybit_archive_snapshot=PASS digest=$snapshot_digest archive=$snapshot_archive_sha256"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: nexus-multipair-discovery-v2-archive-snapshot-${{ github.sha }}
+          path: build/nexus-multipair-archive-snapshot.zip
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
 
   discover-physical:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
@@ -149,6 +218,9 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       WHEELHOUSE_ARTIFACT: nexus-multipair-discovery-v2-wheelhouse-${{ github.sha }}
       WHEELHOUSE_ARCHIVE_SHA256: ${{ needs.runtime-wheelhouse.outputs.archive_sha256 }}
+      SNAPSHOT_ARTIFACT: nexus-multipair-discovery-v2-archive-snapshot-${{ github.sha }}
+      SNAPSHOT_ARCHIVE_SHA256: ${{ needs.runtime-wheelhouse.outputs.snapshot_archive_sha256 }}
+      EXPECTED_HOSTED_SNAPSHOT_DIGEST: ${{ needs.runtime-wheelhouse.outputs.snapshot_digest }}
     steps:
       - name: Prepare exact source and ephemeral external Research state
         run: |
@@ -226,6 +298,19 @@ jobs:
             --destination "$wheelhouse" \
             --work-root "$STATE_ROOT/wheelhouse-restore"
 
+      - name: Restore digest-pinned official Bybit archive snapshot
+        run: |
+          set -euo pipefail
+          "$PYTHON_BIN" scripts/nexus_snapshot_artifact.py \
+            --repository "$GITHUB_REPOSITORY" \
+            --run-id "$GITHUB_RUN_ID" \
+            --artifact-name "$SNAPSHOT_ARTIFACT" \
+            --expected-sha256 "$SNAPSHOT_ARCHIVE_SHA256" \
+            --expected-source-sha "$GITHUB_SHA" \
+            --expected-snapshot-digest "$EXPECTED_HOSTED_SNAPSHOT_DIGEST" \
+            --destination "$STATE_ROOT/snapshot" \
+            --work-root "$STATE_ROOT/snapshot-restore"
+
       - name: Provision locked external runtime dependencies
         run: |
           set -euo pipefail
@@ -260,42 +345,41 @@ jobs:
       - name: Verify isolated runtime dependency consistency
         run: '"$PYTHON_BIN" -m pip check'
 
-      - name: Collect canonical four-symbol snapshot and run leakage-resistant Discovery
+      - name: Verify transported archive and run leakage-resistant Discovery
         id: discovery
         env:
           RUNNER_NAME_EVIDENCE: ${{ runner.name }}
         run: |
           set -euo pipefail
-          now_ms="$("$PYTHON_BIN" -c 'import time; print(int(time.time() * 1000))')"
-          export DISCOVERY_NOW_MS="$now_ms"
           "$PYTHON_BIN" - <<'PY'
           import json
           import os
           from pathlib import Path
-          from nexus_multipair_discovery_snapshot import collect_snapshot, verify_snapshot
+          from nexus_multipair_archive_snapshot import verify_snapshot
           from nexus_multipair_strategy_discovery import run as run_discovery, verify_discovery
           from nexus_multipair_trusted_surface import FAMILIES, SYMBOLS, TIMEFRAMES
           state_root = Path(os.environ["STATE_ROOT"])
           source_sha = os.environ["GITHUB_SHA"]
           snapshot_root = state_root / "snapshot"
-          snapshot = collect_snapshot(
-              output_root=snapshot_root,
-              source_sha=source_sha,
-              now_ms=int(os.environ["DISCOVERY_NOW_MS"]),
-              limit=500,
-          )
+          snapshot = json.loads((snapshot_root / "snapshot-manifest.json").read_text(encoding="utf-8"))
           snapshot_verification = verify_snapshot(snapshot_root, snapshot)
           assert snapshot_verification["decision"] == "pass", snapshot_verification
+          assert snapshot["source_sha"] == source_sha
+          assert snapshot["snapshot_digest"] == os.environ["EXPECTED_HOSTED_SNAPSHOT_DIGEST"]
           assert snapshot["cell_count"] == 12
           assert snapshot["symbols"] == list(SYMBOLS)
           assert snapshot["timeframes"] == list(TIMEFRAMES)
-          assert snapshot["data_origin"] == "canonical_public_bybit_closed_candles"
+          assert snapshot["data_origin"] == "official_public_bybit_spot_trade_archive_aggregated"
+          assert snapshot["runtime_freshness_claimed"] is False
           assert snapshot["research_only"] is True
           assert snapshot["paper_execution_started"] is False
           assert snapshot["live_trading_authority"] is False
           assert snapshot["private_credentials_used"] is False
+          assert snapshot["real_exchange_orders"] is False
           assert snapshot["automatic_strategy_promotion"] is False
           assert snapshot["silent_exchange_substitution"] is False
+          assert snapshot["third_party_proxy_used"] is False
+          assert snapshot["issue_984_state_touched"] is False
           source_manifest = Path("experiments/nexus_multipair_strategy_discovery_v2.json")
           manifest = json.loads(source_manifest.read_text(encoding="utf-8"))
           manifest["dataset"]["dataset_root"] = str(snapshot_root)
@@ -305,6 +389,9 @@ jobs:
           result = run_discovery(manifest_path, output_root, source_sha=source_sha)
           verification = verify_discovery(result)
           assert verification["decision"] == "pass", verification
+          assert result["snapshot_schema_version"] == snapshot["schema_version"]
+          assert result["snapshot_data_origin"] == snapshot["data_origin"]
+          assert result["snapshot_runtime_freshness_claimed"] is False
           assert result["symbols"] == list(SYMBOLS)
           assert result["timeframes"] == list(TIMEFRAMES)
           assert result["families"] == list(FAMILIES)
@@ -335,7 +422,7 @@ jobs:
           echo "runner_name=$RUNNER_NAME_EVIDENCE" >> "$GITHUB_OUTPUT"
           echo "snapshot_digest=$snapshot_digest" >> "$GITHUB_OUTPUT"
           echo "proposal_count=$proposal_count" >> "$GITHUB_OUTPUT"
-          echo "multipair_discovery_physical=PASS proposals=$proposal_count snapshot=$snapshot_digest"
+          echo "multipair_archive_discovery_physical=PASS proposals=$proposal_count snapshot=$snapshot_digest"
 
   requalify-physical:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
@@ -490,7 +577,7 @@ jobs:
           import json
           import os
           from pathlib import Path
-          from nexus_multipair_discovery_snapshot import verify_snapshot
+          from nexus_multipair_archive_snapshot import verify_snapshot
           from nexus_multipair_strategy_discovery import verify_discovery
           from nexus_multipair_strategy_proposal_requalification import verify_requalification
           from nexus_multipair_trusted_surface import FAMILIES, SYMBOLS, TIMEFRAMES
@@ -507,6 +594,10 @@ jobs:
           assert snapshot["timeframes"] == discovery["timeframes"] == list(TIMEFRAMES)
           assert discovery["families"] == list(FAMILIES)
           assert snapshot["cell_count"] == 12
+          assert snapshot["data_origin"] == "official_public_bybit_spot_trade_archive_aggregated"
+          assert snapshot["runtime_freshness_claimed"] is False
+          assert discovery["snapshot_schema_version"] == snapshot["schema_version"]
+          assert discovery["snapshot_runtime_freshness_claimed"] is False
           assert discovery["hypothesis_count"] == 9
           assert requalification["blocked_runtime_data_count"] == 0
           assert requalification["status"] in {"NO_WORK", "EVALUATED"}
@@ -532,9 +623,12 @@ jobs:
               "symbols": list(SYMBOLS),
               "timeframes": list(TIMEFRAMES),
               "families": list(FAMILIES),
+              "snapshot_transport": "digest_pinned_current_run_github_artifact",
+              "snapshot_data_origin": snapshot["data_origin"],
+              "snapshot_runtime_freshness_claimed": snapshot["runtime_freshness_claimed"],
               "snapshot_cell_count": snapshot["cell_count"],
               "snapshot_history_limit": snapshot["history_limit"],
-              "snapshot_as_of_ms": snapshot["as_of_ms"],
+              "snapshot_as_of_ms": discovery["snapshot_as_of_ms"],
               "snapshot_digest": snapshot["snapshot_digest"],
               "discovery_digest": discovery["discovery_digest"],
               "discovery_hypothesis_count": discovery["hypothesis_count"],
@@ -609,6 +703,9 @@ jobs:
           assert evidence["symbols"] == ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT"]
           assert evidence["timeframes"] == ["minute15", "hour1", "hour4"]
           assert evidence["families"] == ["momentum", "trend_breakout", "mean_reversion"]
+          assert evidence["snapshot_transport"] == "digest_pinned_current_run_github_artifact"
+          assert evidence["snapshot_data_origin"] == "official_public_bybit_spot_trade_archive_aggregated"
+          assert evidence["snapshot_runtime_freshness_claimed"] is False
           assert evidence["snapshot_cell_count"] == 12
           assert evidence["snapshot_history_limit"] == 500
           assert evidence["discovery_hypothesis_count"] == 9
