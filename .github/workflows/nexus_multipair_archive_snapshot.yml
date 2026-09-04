@@ -5,6 +5,8 @@ on:
     paths:
       - ".github/workflows/nexus_multipair_archive_snapshot.yml"
       - "nexus_multipair_archive_snapshot.py"
+      - "nexus_multipair_recent_archive_runtime_snapshot.py"
+      - "nexus_multipair_runtime_requalification_snapshot.py"
       - "nexus_multipair_trusted_surface.py"
       - "bybit_spot_backfill.py"
       - "bybit_spot_archive_audit.py"
@@ -14,12 +16,15 @@ on:
       - "requirements.lock"
       - "requirements-dev.lock"
       - "tests/test_nexus_multipair_archive_snapshot.py"
+      - "tests/test_nexus_multipair_recent_archive_runtime_snapshot.py"
       - "security/workflow-permissions-policy-v1.json"
   push:
     branches: [main]
     paths:
       - ".github/workflows/nexus_multipair_archive_snapshot.yml"
       - "nexus_multipair_archive_snapshot.py"
+      - "nexus_multipair_recent_archive_runtime_snapshot.py"
+      - "nexus_multipair_runtime_requalification_snapshot.py"
       - "nexus_multipair_trusted_surface.py"
       - "bybit_spot_backfill.py"
       - "bybit_spot_archive_audit.py"
@@ -29,6 +34,7 @@ on:
       - "requirements.lock"
       - "requirements-dev.lock"
       - "tests/test_nexus_multipair_archive_snapshot.py"
+      - "tests/test_nexus_multipair_recent_archive_runtime_snapshot.py"
       - "security/workflow-permissions-policy-v1.json"
   workflow_dispatch:
 
@@ -48,14 +54,17 @@ jobs:
         run: python -m pip install -r requirements-dev.lock
       - name: Verify dependency consistency
         run: python -m pip check
-      - name: Verify official archive snapshot contract
-        run: python -m pytest -q tests/test_nexus_multipair_archive_snapshot.py
+      - name: Verify official archive snapshot contracts
+        run: >-
+          python -m pytest -q
+          tests/test_nexus_multipair_archive_snapshot.py
+          tests/test_nexus_multipair_recent_archive_runtime_snapshot.py
 
   acquire-snapshot:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: contract-test
     runs-on: ubuntu-latest
-    timeout-minutes: 55
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
@@ -65,7 +74,7 @@ jobs:
         run: python -m pip install -r requirements.lock
       - name: Verify dependency consistency
         run: python -m pip check
-      - name: Acquire exact official Bybit Spot archive snapshot
+      - name: Acquire exact historical official Bybit Spot archive snapshot
         run: |
           set -euo pipefail
           python nexus_multipair_archive_snapshot.py \
@@ -75,11 +84,11 @@ jobs:
             --archive-output build/nexus-multipair-archive-snapshot.zip \
             --digest-output build/nexus-multipair-archive-snapshot.sha256 \
             --source-sha "$GITHUB_SHA"
-      - name: Remove raw official archive cache and intermediate backfill state
+      - name: Remove raw historical archive cache and intermediate backfill state
         if: always()
         run: |
           rm -rf build/nexus-multipair-archive-cache build/nexus-multipair-archive-backfill
-      - name: Enforce persisted snapshot surface only
+      - name: Enforce persisted historical snapshot surface only
         run: |
           set -euo pipefail
           test -f build/nexus-multipair-archive-snapshot.zip
@@ -102,6 +111,80 @@ jobs:
           path: |
             build/nexus-multipair-archive-snapshot.zip
             build/nexus-multipair-archive-snapshot.sha256
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+
+      - name: Acquire bounded-lag recent official Bybit archive runtime snapshot
+        run: |
+          set -euo pipefail
+          now_ms="$(python -c 'import time; print(int(time.time() * 1000))')"
+          python nexus_multipair_recent_archive_runtime_snapshot.py acquire \
+            --state-root build/nexus-multipair-recent-runtime-backfill \
+            --cache-root build/nexus-multipair-recent-runtime-cache \
+            --output-root build/nexus-multipair-recent-runtime-snapshot \
+            --archive-output build/nexus-multipair-recent-runtime-snapshot.zip \
+            --digest-output build/nexus-multipair-recent-runtime-snapshot.sha256 \
+            --source-sha "$GITHUB_SHA" \
+            --now-ms "$now_ms"
+      - name: Remove raw recent archive cache and intermediate backfill state
+        if: always()
+        run: |
+          rm -rf build/nexus-multipair-recent-runtime-cache build/nexus-multipair-recent-runtime-backfill
+      - name: Independently enforce recent runtime snapshot identity and recency semantics
+        run: |
+          set -euo pipefail
+          test -f build/nexus-multipair-recent-runtime-snapshot.zip
+          test -f build/nexus-multipair-recent-runtime-snapshot.sha256
+          test -f build/nexus-multipair-recent-runtime-snapshot/snapshot-manifest.json
+          test "$(wc -l < build/nexus-multipair-recent-runtime-snapshot.sha256)" -eq 1
+          test ! -e build/nexus-multipair-recent-runtime-cache
+          test ! -e build/nexus-multipair-recent-runtime-backfill
+          now_ms="$(python -c 'import time; print(int(time.time() * 1000))')"
+          VERIFY_NOW_MS="$now_ms" python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          from nexus_multipair_recent_archive_runtime_snapshot import (
+              DATA_ORIGIN,
+              verify_recent_archive_runtime_snapshot,
+          )
+          root = Path("build/nexus-multipair-recent-runtime-snapshot")
+          manifest = json.loads((root / "snapshot-manifest.json").read_text(encoding="utf-8"))
+          verification = verify_recent_archive_runtime_snapshot(
+              root,
+              manifest,
+              source_sha=os.environ["GITHUB_SHA"],
+              now_ms=int(os.environ["VERIFY_NOW_MS"]),
+          )
+          assert verification["decision"] == "pass", verification
+          assert manifest["data_origin"] == DATA_ORIGIN
+          assert manifest["runtime_requalification_recency_verified"] is True
+          assert manifest["live_freshness_claimed"] is False
+          assert manifest["cell_count"] == 12
+          assert manifest["history_limit"] == 240
+          archive = Path("build/nexus-multipair-recent-runtime-snapshot.zip")
+          expected = Path("build/nexus-multipair-recent-runtime-snapshot.sha256").read_text().strip()
+          assert len(expected) == 64
+          assert hashlib.sha256(archive.read_bytes()).hexdigest() == expected
+          print(json.dumps({
+              "recent_archive_runtime_snapshot": "PASS",
+              "latest_common_complete_date": manifest["latest_common_complete_date"],
+              "data_as_of_ms": manifest["data_as_of_ms"],
+              "source_lag_ms": int(os.environ["VERIFY_NOW_MS"]) - manifest["data_as_of_ms"],
+              "snapshot_digest": manifest["snapshot_digest"],
+              "archive_sha256": expected,
+              "live_freshness_claimed": False,
+          }, sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: nexus-multipair-recent-runtime-snapshot-${{ github.sha }}
+          path: |
+            build/nexus-multipair-recent-runtime-snapshot.zip
+            build/nexus-multipair-recent-runtime-snapshot.sha256
+            build/nexus-multipair-recent-runtime-snapshot/snapshot-manifest.json
           if-no-files-found: error
           retention-days: 7
           compression-level: 0
