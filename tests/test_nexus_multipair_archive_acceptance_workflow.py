@@ -24,6 +24,14 @@ def test_archive_acceptance_workflow_keeps_policy_job_inventory_and_read_only_pe
     assert value["permissions"] == {"actions": "read", "contents": "read"}
 
 
+def test_recent_artifact_inner_archive_matches_consumer_contract() -> None:
+    text = _text()
+    canonical = "build/nexus-multipair-runtime-requalification-snapshot.zip"
+    assert f"--archive-output {canonical}" in text
+    assert text.count(canonical) == 2
+    assert "--archive-output build/nexus-multipair-recent-runtime-snapshot.zip" not in text
+
+
 def test_physical_acceptance_uses_no_javascript_artifact_action() -> None:
     physical = _physical_section()
     assert "actions/download-artifact" not in physical
