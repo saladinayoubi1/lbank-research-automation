@@ -1,0 +1,105 @@
+name: NEXUS Multi-Pair official Bybit archive snapshot
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/nexus_multipair_archive_snapshot.yml"
+      - "nexus_multipair_archive_snapshot.py"
+      - "nexus_multipair_trusted_surface.py"
+      - "bybit_spot_backfill.py"
+      - "bybit_spot_archive_audit.py"
+      - "bybit_spot_archive_collector.py"
+      - "run_bybit_spot_archive_audit.py"
+      - "config/nexus-demo-strategy-matrix-v2.json"
+      - "requirements.lock"
+      - "tests/test_nexus_multipair_archive_snapshot.py"
+      - "security/workflow-permissions-policy-v1.json"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/nexus_multipair_archive_snapshot.yml"
+      - "nexus_multipair_archive_snapshot.py"
+      - "nexus_multipair_trusted_surface.py"
+      - "bybit_spot_backfill.py"
+      - "bybit_spot_archive_audit.py"
+      - "bybit_spot_archive_collector.py"
+      - "run_bybit_spot_archive_audit.py"
+      - "config/nexus-demo-strategy-matrix-v2.json"
+      - "requirements.lock"
+      - "tests/test_nexus_multipair_archive_snapshot.py"
+      - "security/workflow-permissions-policy-v1.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+      - name: Install locked dependencies
+        run: python -m pip install -r requirements.lock
+      - name: Verify dependency consistency
+        run: python -m pip check
+      - name: Verify official archive snapshot contract
+        run: python -m pytest -q tests/test_nexus_multipair_archive_snapshot.py
+
+  acquire-snapshot:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: contract-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+      - name: Install locked dependencies
+        run: python -m pip install -r requirements.lock
+      - name: Verify dependency consistency
+        run: python -m pip check
+      - name: Acquire exact official Bybit Spot archive snapshot
+        run: |
+          set -euo pipefail
+          python nexus_multipair_archive_snapshot.py \
+            --state-root build/nexus-multipair-archive-backfill \
+            --cache-root build/nexus-multipair-archive-cache \
+            --output-root build/nexus-multipair-archive-snapshot \
+            --archive-output build/nexus-multipair-archive-snapshot.zip \
+            --digest-output build/nexus-multipair-archive-snapshot.sha256 \
+            --source-sha "$GITHUB_SHA"
+      - name: Remove raw official archive cache and intermediate backfill state
+        if: always()
+        run: |
+          rm -rf build/nexus-multipair-archive-cache build/nexus-multipair-archive-backfill
+      - name: Enforce persisted snapshot surface only
+        run: |
+          set -euo pipefail
+          test -f build/nexus-multipair-archive-snapshot.zip
+          test -f build/nexus-multipair-archive-snapshot.sha256
+          test "$(wc -l < build/nexus-multipair-archive-snapshot.sha256)" -eq 1
+          test ! -e build/nexus-multipair-archive-cache
+          test ! -e build/nexus-multipair-archive-backfill
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          archive = Path("build/nexus-multipair-archive-snapshot.zip")
+          expected = Path("build/nexus-multipair-archive-snapshot.sha256").read_text().strip()
+          assert len(expected) == 64
+          assert hashlib.sha256(archive.read_bytes()).hexdigest() == expected
+          print(f"multipair_archive_snapshot_sha256={expected}")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: nexus-multipair-archive-snapshot-${{ github.sha }}
+          path: |
+            build/nexus-multipair-archive-snapshot.zip
+            build/nexus-multipair-archive-snapshot.sha256
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
