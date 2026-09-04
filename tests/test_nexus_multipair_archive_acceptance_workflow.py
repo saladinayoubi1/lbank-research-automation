@@ -18,10 +18,10 @@ def _physical_section() -> str:
     return text.split("  contract-test:", 1)[1]
 
 
-def test_archive_acceptance_workflow_keeps_policy_job_inventory_and_read_only_contents() -> None:
+def test_archive_acceptance_workflow_keeps_policy_job_inventory_and_read_only_permissions() -> None:
     value = yaml.safe_load(_text())
     assert set(value["jobs"]) == {"acquire-snapshot", "contract-test"}
-    assert value["permissions"] == {"contents": "read"}
+    assert value["permissions"] == {"actions": "read", "contents": "read"}
 
 
 def test_physical_acceptance_uses_no_javascript_artifact_action() -> None:
@@ -34,8 +34,9 @@ def test_physical_acceptance_uses_no_javascript_artifact_action() -> None:
     assert "multipair_final_acceptance_javascript_artifact_actions=false" in physical
 
 
-def test_public_artifact_transport_is_digest_and_exact_run_bound() -> None:
+def test_public_artifact_transport_is_digest_exact_run_and_read_token_bound() -> None:
     physical = _physical_section()
+    assert 'GH_TOKEN: ${{ github.token }}' in physical
     assert '--run-id "$GITHUB_RUN_ID"' in physical
     assert '--source-sha "$GITHUB_SHA"' in physical
     assert '--expected-sha256 "$EXPECTED_WHEELHOUSE_SHA256"' in physical
