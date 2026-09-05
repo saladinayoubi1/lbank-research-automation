@@ -105,7 +105,26 @@ function Get-RunnerProcessState {
     # intermittent failures launching external userland tools such as pgrep, so
     # runner liveness must not depend on those tools. The probe remains bounded
     # by Invoke-WslNative and fails closed when procfs itself cannot be read.
-    $command = "self_exe=''; if ! IFS= read -r -d '' self_exe < /proc/self/cmdline; then exit 20; fi; listener=0; worker=0; for proc in /proc/[0-9]*; do [ -r \"`$proc/cmdline\" ] || continue; exe=''; IFS= read -r -d '' exe < \"`$proc/cmdline\" || continue; case \"`$exe\" in '$RunnerRoot/bin/Runner.Listener') listener=1 ;; '$RunnerRoot/bin/Runner.Worker') worker=1 ;; esac; done; echo listener=`$listener; echo worker=`$worker"
+    $command = @'
+self_exe=''
+if ! IFS= read -r -d '' self_exe < /proc/self/cmdline; then
+  exit 20
+fi
+listener=0
+worker=0
+for proc in /proc/[0-9]*; do
+  [ -r "$proc/cmdline" ] || continue
+  exe=''
+  IFS= read -r -d '' exe < "$proc/cmdline" || continue
+  case "$exe" in
+    '__RUNNER_ROOT__/bin/Runner.Listener') listener=1 ;;
+    '__RUNNER_ROOT__/bin/Runner.Worker') worker=1 ;;
+  esac
+done
+echo "listener=$listener"
+echo "worker=$worker"
+'@
+    $command = $command.Replace('__RUNNER_ROOT__', $RunnerRoot)
     $probe = Invoke-WslNative $command
     if ($probe.exit_code -eq 124) {
         Write-Log 'runner_process_probe_timeout=true'
@@ -139,7 +158,42 @@ function Stop-IdleExternalListener {
     # Never recycle a listener while a Runner.Worker is active. Use exact
     # procfs argv[0] matching and re-check Worker immediately before each kill
     # so a Worker that appears after the first scan still blocks interruption.
-    $command = "self_exe=''; if ! IFS= read -r -d '' self_exe < /proc/self/cmdline; then exit 23; fi; worker_present() { for proc in /proc/[0-9]*; do [ -r \"`$proc/cmdline\" ] || continue; exe=''; IFS= read -r -d '' exe < \"`$proc/cmdline\" || continue; [ \"`$exe\" = '$RunnerRoot/bin/Runner.Worker' ] && return 0; done; return 1; }; if worker_present; then exit 3; fi; for proc in /proc/[0-9]*; do [ -r \"`$proc/cmdline\" ] || continue; exe=''; IFS= read -r -d '' exe < \"`$proc/cmdline\" || continue; [ \"`$exe\" = '$RunnerRoot/bin/Runner.Listener' ] || continue; if worker_present; then exit 3; fi; pid=`${proc##*/}; kill -TERM \"`$pid\" >/dev/null 2>&1 || exit 24; done; exit 0"
+    $command = @'
+self_exe=''
+if ! IFS= read -r -d '' self_exe < /proc/self/cmdline; then
+  exit 23
+fi
+worker_present() {
+  for proc in /proc/[0-9]*; do
+    [ -r "$proc/cmdline" ] || continue
+    exe=''
+    IFS= read -r -d '' exe < "$proc/cmdline" || continue
+    case "$exe" in
+      '__RUNNER_ROOT__/bin/Runner.Worker') return 0 ;;
+    esac
+  done
+  return 1
+}
+if worker_present; then
+  exit 3
+fi
+for proc in /proc/[0-9]*; do
+  [ -r "$proc/cmdline" ] || continue
+  exe=''
+  IFS= read -r -d '' exe < "$proc/cmdline" || continue
+  case "$exe" in
+    '__RUNNER_ROOT__/bin/Runner.Listener') ;;
+    *) continue ;;
+  esac
+  if worker_present; then
+    exit 3
+  fi
+  pid=${proc##*/}
+  kill -TERM "$pid" >/dev/null 2>&1 || exit 24
+done
+exit 0
+'@
+    $command = $command.Replace('__RUNNER_ROOT__', $RunnerRoot)
     $result = Invoke-WslNative $command
     if ($result.exit_code -eq 3) { return 'BUSY' }
     if ($result.exit_code -ne 0) {
