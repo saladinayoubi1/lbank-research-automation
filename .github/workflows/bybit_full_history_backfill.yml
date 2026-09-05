@@ -2,6 +2,12 @@ name: Extend Bybit Spot history
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/bybit_full_history_backfill.yml'
+      - 'scripts/build_nexus_bybit_replay_package.py'
+      - 'scripts/select_nexus_bybit_replay_artifact.py'
 
 permissions:
   contents: read
