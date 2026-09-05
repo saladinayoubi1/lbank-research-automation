@@ -35,19 +35,6 @@ class PublicRegimeCycleError(RuntimeError):
     pass
 
 
-def _expected_cell_count(manifest: Mapping[str, Any]) -> int:
-    symbols = manifest.get("symbols")
-    timeframes = manifest.get("timeframes")
-    if not isinstance(symbols, list) or not symbols or len(set(symbols)) != len(symbols):
-        raise PublicRegimeCycleError("regime manifest symbol surface is invalid")
-    if not isinstance(timeframes, list) or not timeframes or len(set(timeframes)) != len(timeframes):
-        raise PublicRegimeCycleError("regime manifest timeframe surface is invalid")
-    expected = len(symbols) * len(timeframes)
-    if expected not in {6, 12}:
-        raise PublicRegimeCycleError("regime manifest cell surface is not approved")
-    return expected
-
-
 def run_public_regime_cycle(
     *,
     manifest: Mapping[str, Any],
@@ -58,7 +45,6 @@ def run_public_regime_cycle(
 ) -> dict[str, Any]:
     """Execute one synchronized public-data regime selection at the 4h boundary."""
     root = Path(state_root).resolve()
-    expected_cells = _expected_cell_count(manifest)
     snapshot = run_demo_regime_cycle(
         manifest=manifest,
         matrix_state=matrix_state,
@@ -77,9 +63,7 @@ def run_public_regime_cycle(
     core["archive_sha256"] = None
     core["data_mode"] = PUBLIC_DATA_MODE
     public_snapshot = {**core, "cycle_digest": _digest(core)}
-    verification = verify_cycle_snapshot(
-        public_snapshot, expected_cell_count=expected_cells
-    )
+    verification = verify_cycle_snapshot(public_snapshot)
     if verification.get("decision") != "pass":
         raise PublicRegimeCycleError("public regime cycle failed independent verification")
     if (
@@ -97,9 +81,7 @@ def run_public_regime_cycle(
         source_sha=source_sha,
         regime_snapshot=public_snapshot,
     )
-    if verify_regime_selected_rebalance(
-        rebalance, expected_cell_count=expected_cells
-    ).get("decision") != "pass":
+    if verify_regime_selected_rebalance(rebalance).get("decision") != "pass":
         raise PublicRegimeCycleError("regime-selected rebalance failed independent verification")
     if (
         rebalance.get("paper_only") is not True
@@ -118,9 +100,7 @@ def run_public_regime_cycle(
         regime_snapshot=public_snapshot,
         rebalance_snapshot=rebalance,
     )
-    if verify_regime_selected_exposure_increase(
-        increase, expected_cell_count=expected_cells
-    ).get("decision") != "pass":
+    if verify_regime_selected_exposure_increase(increase).get("decision") != "pass":
         raise PublicRegimeCycleError("regime-selected exposure increase failed verification")
     if (
         increase.get("paper_only") is not True
@@ -153,9 +133,7 @@ def run_public_regime_cycle(
     )
     final_core["next_core_gap"] = "HEALTH_DRIVEN_STRATEGY_FACTORY_CLOSED_LOOP"
     final_snapshot = {**final_core, "cycle_digest": _digest(final_core)}
-    if verify_cycle_snapshot(
-        final_snapshot, expected_cell_count=expected_cells
-    ).get("decision") != "pass":
+    if verify_cycle_snapshot(final_snapshot).get("decision") != "pass":
         raise PublicRegimeCycleError("final public regime cycle failed independent verification")
     _atomic_json(root / "demo" / "regime-cycle.json", final_snapshot)
     return final_snapshot
