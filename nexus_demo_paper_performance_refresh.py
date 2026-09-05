@@ -33,6 +33,7 @@ from nexus_strategy_paper_supervisor import verify_ledger
 SCHEMA = "nexus.demo-paper-performance-refresh.v1"
 _ELIGIBLE_LEDGER_STATUSES = {"paper_executed", "position_exists", "no_open_signal"}
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+_V2_MATRIX_SCHEMA = "nexus.demo-strategy-matrix.v2"
 
 
 class DemoPaperPerformanceRefreshError(RuntimeError):
@@ -47,8 +48,29 @@ MatrixSnapshotVerifier = Callable[
 def _legacy_snapshot_verifier(
     snapshot: Mapping[str, Any], _state: Mapping[str, Any]
 ) -> Mapping[str, Any]:
-    """Preserve the legacy six-cell verifier as the default contract."""
+    """Preserve the legacy six-cell verifier as the default v1 contract."""
     return verify_snapshot(snapshot)
+
+
+def _snapshot_verifier_for(
+    manifest: Mapping[str, Any],
+    snapshot_verifier: MatrixSnapshotVerifier | None,
+) -> MatrixSnapshotVerifier:
+    if snapshot_verifier is not None:
+        return snapshot_verifier
+    if manifest.get("schema_version") != _V2_MATRIX_SCHEMA:
+        return _legacy_snapshot_verifier
+
+    # Import lazily so the legacy CLI and v1 contract remain coupled only to the
+    # unchanged six-cell verifier. The v2 verifier additionally binds exact state.
+    from nexus_multipair_demo_strategy_matrix import verify_v2_snapshot
+
+    def verify_v2(
+        snapshot: Mapping[str, Any], state: Mapping[str, Any]
+    ) -> Mapping[str, Any]:
+        return verify_v2_snapshot(snapshot, manifest=manifest, state=state)
+
+    return verify_v2
 
 
 def _canonical(value: Any) -> bytes:
@@ -196,9 +218,10 @@ def run_performance_refresh(
     manifest: Mapping[str, Any],
     state_root: str | Path,
     source_sha: str,
-    snapshot_verifier: MatrixSnapshotVerifier = _legacy_snapshot_verifier,
+    snapshot_verifier: MatrixSnapshotVerifier | None = None,
 ) -> dict[str, Any]:
     root = Path(state_root).resolve()
+    resolved_verifier = _snapshot_verifier_for(manifest, snapshot_verifier)
     rows: list[dict[str, Any]] = []
     for symbol in manifest["symbols"]:
         for timeframe in manifest["timeframes"]:
@@ -222,7 +245,7 @@ def run_performance_refresh(
         root=root,
         source_sha=source_sha,
         rows=rows,
-        snapshot_verifier=snapshot_verifier,
+        snapshot_verifier=resolved_verifier,
     )
     core = {
         "schema_version": SCHEMA,
