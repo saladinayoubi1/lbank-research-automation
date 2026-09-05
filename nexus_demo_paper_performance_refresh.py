@@ -14,7 +14,7 @@ import os
 import re
 from copy import deepcopy
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any, Callable, Mapping, Sequence
 
 from nexus_demo_strategy_matrix import (
     _baseline,
@@ -37,6 +37,18 @@ _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
 class DemoPaperPerformanceRefreshError(RuntimeError):
     pass
+
+
+MatrixSnapshotVerifier = Callable[
+    [Mapping[str, Any], Mapping[str, Any]], Mapping[str, Any]
+]
+
+
+def _legacy_snapshot_verifier(
+    snapshot: Mapping[str, Any], _state: Mapping[str, Any]
+) -> Mapping[str, Any]:
+    """Preserve the legacy six-cell verifier as the default contract."""
+    return verify_snapshot(snapshot)
 
 
 def _canonical(value: Any) -> bytes:
@@ -71,6 +83,7 @@ def _rebind_matrix_performance(
     root: Path,
     source_sha: str,
     rows: Sequence[Mapping[str, Any]],
+    snapshot_verifier: MatrixSnapshotVerifier = _legacy_snapshot_verifier,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Atomically rebind refreshed per-cell analysis into matrix state/snapshot digests."""
     state_path = root / "matrix-state.json"
@@ -82,7 +95,10 @@ def _rebind_matrix_performance(
         snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         raise DemoPaperPerformanceRefreshError("strategy matrix snapshot is unreadable") from exc
-    if not isinstance(snapshot, dict) or verify_snapshot(snapshot).get("decision") != "pass":
+    if (
+        not isinstance(snapshot, dict)
+        or snapshot_verifier(snapshot, state).get("decision") != "pass"
+    ):
         raise DemoPaperPerformanceRefreshError("strategy matrix snapshot is not verified")
     if (
         snapshot.get("source_sha") != source_sha
@@ -138,7 +154,7 @@ def _rebind_matrix_performance(
     snapshot_core.pop("snapshot_digest", None)
     snapshot_core["state_digest"] = rebound_state["state_digest"]
     rebound_snapshot = {**snapshot_core, "snapshot_digest": _matrix_digest(snapshot_core)}
-    if verify_snapshot(rebound_snapshot).get("decision") != "pass":
+    if snapshot_verifier(rebound_snapshot, rebound_state).get("decision") != "pass":
         raise DemoPaperPerformanceRefreshError("rebound strategy matrix snapshot failed verification")
 
     _atomic_json(state_path, rebound_state)
@@ -180,6 +196,7 @@ def run_performance_refresh(
     manifest: Mapping[str, Any],
     state_root: str | Path,
     source_sha: str,
+    snapshot_verifier: MatrixSnapshotVerifier = _legacy_snapshot_verifier,
 ) -> dict[str, Any]:
     root = Path(state_root).resolve()
     rows: list[dict[str, Any]] = []
@@ -205,6 +222,7 @@ def run_performance_refresh(
         root=root,
         source_sha=source_sha,
         rows=rows,
+        snapshot_verifier=snapshot_verifier,
     )
     core = {
         "schema_version": SCHEMA,
