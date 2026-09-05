@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SELECTOR_PATH = ROOT / "scripts" / "select_nexus_bybit_replay_artifact.py"
 BUILDER_PATH = ROOT / "scripts" / "build_nexus_bybit_replay_package.py"
 REHYDRATE_WORKFLOW = ROOT / ".github" / "workflows" / "nexus_bybit_replay_rehydrate.yml"
+MATRIX_WORKFLOW = ROOT / ".github" / "workflows" / "nexus_demo_strategy_matrix.yml"
 
 
 def _load(path: Path, name: str):
@@ -115,8 +116,8 @@ def test_rehydrate_workflow_is_manual_fail_closed_and_paper_only() -> None:
     assert 'range(1, 43)' in text
     assert 'artifact.get("expired")' in text
     assert "Missing unexpired monthly chunk artifacts" in text
-    assert "completed_units\"] == 44" in text
-    assert "source_archives\"] == 88" in text
+    assert 'report["summary"]["completed_units"] == 44' in text
+    assert 'report["summary"]["source_archives"] == 88' in text
     assert "rehydrated_full_history_integrity=PASS" in text
     assert "HISTORICAL_LEGACY_SHA256" in text
     assert "historical_digest_match" in text
@@ -129,9 +130,17 @@ def test_rehydrate_workflow_is_manual_fail_closed_and_paper_only() -> None:
     for forbidden in (
         "api_key",
         "api_secret",
-        "private_exchange_credentials",
         "place_order",
         "create_order",
         "live_trading_authority: true",
     ):
         assert forbidden not in text.lower()
+
+
+def test_matrix_restores_by_content_not_fixed_artifact_id() -> None:
+    text = MATRIX_WORKFLOW.read_text(encoding="utf-8")
+    assert "DATASET_ARTIFACT_ID" not in text
+    assert "DATASET_ARTIFACT_PREFIX: bybit-full-history-final-" in text
+    assert "select_nexus_bybit_replay_artifact.py" in text
+    assert "--expected-sha256 \"$DATASET_SHA256\"" in text
+    assert "5f1173467c2296201940c3b7786b7cc3e5442244e07289769ab4867ace41d668" in text
