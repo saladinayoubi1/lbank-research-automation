@@ -1,0 +1,266 @@
+name: NEXUS Bybit replay dataset rehydrate
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: nexus-bybit-replay-dataset-rehydrate
+  cancel-in-progress: false
+
+jobs:
+  rehydrate:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      LEGACY_FILE: BYBIT_full_history_2022-12-01_to_2026-07-31.zip
+      HISTORICAL_LEGACY_SHA256: 5f1173467c2296201940c3b7786b7cc3e5442244e07289769ab4867ace41d668
+      V2_FILE: NEXUS_BYBIT_replay_v2_2022-12-01_to_2026-07-31.zip
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements.lock
+      - run: python -m pip check
+
+      - name: Rebuild verified two-month base from official public Bybit archives
+        run: |
+          set -euo pipefail
+          rm -rf build/bybit_artifacts build/base-cache build/bybit_full_history build/rehydrated-delivery
+          mkdir -p build/bybit_artifacts build/rehydrated-delivery
+          python bybit_spot_backfill.py \
+            --start-date 2022-12-01 \
+            --end-date 2023-01-31 \
+            --state-root build/bybit_artifacts/base-current \
+            --cache-root build/base-cache \
+            --max-archives-per-run 4 \
+            --clean
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(Path("build/bybit_artifacts/base-current/_backfill_report.json").read_text())
+          summary = report["summary"]
+          assert summary["backfill_complete"] is True
+          assert summary["completed_units"] == 2
+          assert summary["remaining_units"] == 0
+          assert summary["run_failures"] == 0
+          assert summary["current_dataset_integrity_ok"] is True
+          assert len(report["statuses"]) == 6
+          assert all(item["integrity_ok"] is True and item["status"] == "ready" for item in report["statuses"])
+          sources = json.loads(Path("build/bybit_artifacts/base-current/_source_manifest.json").read_text())
+          assert len(sources) == 4
+          print("rehydrated_base_verified=true")
+          print("rehydrated_base_units=2")
+          print("rehydrated_base_source_archives=4")
+          PY
+
+      - name: Download latest unexpired verified monthly chunks 01 through 42
+        run: |
+          set -euo pipefail
+          gh api --paginate --slurp \
+            "repos/$GITHUB_REPOSITORY/actions/artifacts?per_page=100" \
+            > build/artifact-pages.json
+          python - <<'PY'
+          import json
+          import os
+          import re
+          import urllib.request
+          import zipfile
+          from pathlib import Path, PurePosixPath
+
+          pages = json.loads(Path("build/artifact-pages.json").read_text())
+          artifacts = []
+          for page in pages:
+              artifacts.extend(page.get("artifacts", []))
+          pattern = re.compile(r"^bybit-chunk-(\d{2})-attempt-\d+$")
+          latest = {}
+          required = {f"{number:02d}" for number in range(1, 43)}
+          for artifact in artifacts:
+              if artifact.get("expired"):
+                  continue
+              match = pattern.match(str(artifact.get("name", "")))
+              if not match or match.group(1) not in required:
+                  continue
+              chunk = match.group(1)
+              key = (str(artifact.get("created_at", "")), int(artifact.get("id", 0)))
+              if chunk not in latest or key > latest[chunk][0]:
+                  latest[chunk] = (key, artifact)
+          missing = sorted(required - set(latest))
+          print(f"unexpired_chunk_count={len(latest)}")
+          print(f"missing_chunks={','.join(missing)}")
+          if missing:
+              raise SystemExit("Missing unexpired monthly chunk artifacts: " + ",".join(missing))
+
+          token = os.environ["GH_TOKEN"]
+          repository = os.environ["GITHUB_REPOSITORY"]
+          headers = {
+              "Authorization": f"Bearer {token}",
+              "Accept": "application/vnd.github+json",
+              "X-GitHub-Api-Version": "2022-11-28",
+              "User-Agent": "nexus-bybit-rehydrate",
+          }
+          root = Path("build/bybit_artifacts")
+          for chunk in sorted(latest):
+              artifact = latest[chunk][1]
+              artifact_id = int(artifact["id"])
+              request = urllib.request.Request(
+                  f"https://api.github.com/repos/{repository}/actions/artifacts/{artifact_id}/zip",
+                  headers=headers,
+              )
+              with urllib.request.urlopen(request, timeout=180) as response:
+                  payload = response.read()
+              outer = root / f"chunk-{chunk}-{artifact_id}.zip"
+              outer.write_bytes(payload)
+              destination = root / f"chunk-{chunk}-{artifact_id}"
+              destination.mkdir(parents=True, exist_ok=True)
+              with zipfile.ZipFile(outer) as handle:
+                  for info in handle.infolist():
+                      member = PurePosixPath(info.filename)
+                      if member.is_absolute() or ".." in member.parts:
+                          raise SystemExit(f"Unsafe chunk artifact member: {info.filename}")
+                  handle.extractall(destination)
+              outer.unlink()
+              print(f"selected_chunk_{chunk}={artifact_id}:{artifact['name']}")
+          PY
+
+      - name: Aggregate and enforce complete immutable replay range integrity
+        run: |
+          set -euo pipefail
+          python aggregate_bybit_artifacts.py \
+            --input-root build/bybit_artifacts \
+            --output-root build/bybit_full_history \
+            --zip-path build/preliminary-full-history.zip \
+            --start-date 2022-12-01 \
+            --end-date 2026-07-31 \
+            --clean
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report_path = Path("build/bybit_full_history/_backfill_report.json")
+          report = json.loads(report_path.read_text())
+          expected = {"minute15": 128544, "hour1": 32136, "hour4": 8034}
+          assert report["summary"]["full_history_ready"] is True
+          assert report["summary"]["completed_units"] == 44
+          assert report["summary"]["source_archives"] == 88
+          assert report["summary"]["ready_series"] == 6
+          assert len(report["statuses"]) == 6
+          for item in report["statuses"]:
+              assert item["rows"] == expected[item["timeframe"]], item
+              assert item["expected_rows"] == expected[item["timeframe"]], item
+              assert item["missing_candles"] == 0, item
+              assert item["gap_count"] == 0, item
+              assert item["duplicate_count"] == 0, item
+              assert item["off_grid_count"] == 0, item
+              assert item["invalid_ohlc_count"] == 0, item
+              assert item["integrity_ok"] is True, item
+              assert item["status"] == "ready", item
+          report.pop("snapshot_zip", None)
+          report["packaging"] = {
+              "archive_name": "BYBIT_full_history_2022-12-01_to_2026-07-31.zip",
+              "archive_sha256_location": "external sidecar and delivery manifest",
+          }
+          report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+          print("rehydrated_full_history_integrity=PASS")
+          PY
+
+      - name: Rebuild legacy-format replay package for historical digest comparison
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import aggregate_bybit_artifacts as aggregate
+
+          root = Path("build/bybit_full_history")
+          aggregate.write_json(root / "_snapshot_manifest.json", aggregate.build_inventory(root))
+          aggregate.write_sha256s(root)
+          PY
+          rm -f "build/$LEGACY_FILE"
+          (cd build/bybit_full_history && zip -q -r "../$LEGACY_FILE" .)
+          sha256sum "build/$LEGACY_FILE" | tee "build/${LEGACY_FILE}.sha256"
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          archive = Path("build") / os.environ["LEGACY_FILE"]
+          digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+          expected = os.environ["HISTORICAL_LEGACY_SHA256"].lower()
+          report = json.loads(Path("build/bybit_full_history/_backfill_report.json").read_text())
+          delivery = {
+              "schema_version": 1,
+              "file_name": archive.name,
+              "size_bytes": archive.stat().st_size,
+              "sha256": digest,
+              "historical_expected_sha256": expected,
+              "historical_digest_match": digest == expected,
+              "range": "2022-12-01 through 2026-07-31 UTC",
+              "ready_series": report["summary"]["ready_series"],
+              "completed_units": report["summary"]["completed_units"],
+              "source_archives": report["summary"]["source_archives"],
+              "statuses": report["statuses"],
+              "paper_replay_only": True,
+              "live_trading_authority": False,
+              "private_credentials_used": False,
+          }
+          Path("build/rehydrated-delivery/BYBIT_full_history_delivery.json").write_text(
+              json.dumps(delivery, indent=2, sort_keys=True) + "\n"
+          )
+          print(f"rehydrated_legacy_sha256={digest}")
+          print(f"historical_legacy_sha256={expected}")
+          print(f"historical_digest_match={str(digest == expected).lower()}")
+          PY
+          unzip -t "build/$LEGACY_FILE"
+
+      - name: Build deterministic replay v2 package and semantic content digest
+        run: |
+          set -euo pipefail
+          python scripts/build_nexus_bybit_replay_package.py \
+            --root build/bybit_full_history \
+            --output-zip "build/$V2_FILE" \
+            --delivery build/rehydrated-delivery/NEXUS_BYBIT_replay_v2_delivery.json
+          sha256sum "build/$V2_FILE" | tee "build/${V2_FILE}.sha256"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          delivery = json.loads(Path("build/rehydrated-delivery/NEXUS_BYBIT_replay_v2_delivery.json").read_text())
+          assert delivery["schema_version"] == 2
+          assert delivery["series_count"] == 6
+          assert delivery["paper_replay_only"] is True
+          assert delivery["live_trading_authority"] is False
+          assert delivery["private_credentials_used"] is False
+          print("rehydrated_v2_package=PASS")
+          print("semantic_dataset_sha256=" + delivery["semantic_dataset_sha256"])
+          print("deterministic_replay_sha256=" + delivery["sha256"])
+          PY
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: bybit-full-history-final-rehydrated-${{ github.run_id }}
+          path: |
+            build/BYBIT_full_history_2022-12-01_to_2026-07-31.zip
+            build/BYBIT_full_history_2022-12-01_to_2026-07-31.zip.sha256
+            build/NEXUS_BYBIT_replay_v2_2022-12-01_to_2026-07-31.zip
+            build/NEXUS_BYBIT_replay_v2_2022-12-01_to_2026-07-31.zip.sha256
+            build/rehydrated-delivery/BYBIT_full_history_delivery.json
+            build/rehydrated-delivery/NEXUS_BYBIT_replay_v2_delivery.json
+            build/bybit_full_history/_backfill_report.json
+            build/bybit_full_history/_backfill_report.md
+            build/bybit_full_history/_backfill_status.csv
+            build/bybit_full_history/_source_manifest.json
+            build/bybit_full_history/_snapshot_manifest.json
+            build/bybit_full_history/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
