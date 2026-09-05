@@ -550,7 +550,7 @@ jobs:
 
       - name: Package Paper state for hosted artifact persistence
         id: package
-        if: always()
+        if: success()
         run: |
           set -euo pipefail
           if [ "${NATIVE_PREPARED:-false}" != "true" ] || [ ! -d "$STATE_ROOT" ]; then
@@ -567,22 +567,49 @@ jobs:
           cd "$SOURCE_ROOT"
           "$PYTHON_BIN" - <<'PY'
           import os
-          import zipfile
+          import tarfile
           from pathlib import Path
 
-          root = Path(os.environ["STATE_ROOT"])
-          output = Path("build/persistent-state-handoff.zip")
+          root = Path(os.environ["STATE_ROOT"]).resolve()
+          if root.is_symlink() or not root.is_dir():
+              raise RuntimeError("Paper state root is unavailable or unsafe")
+          output = Path("build/persistent-state-handoff.tar.xz")
           output.parent.mkdir(parents=True, exist_ok=True)
-          with zipfile.ZipFile(
-              output, "w", compression=zipfile.ZIP_LZMA
-          ) as archive:
+          output.unlink(missing_ok=True)
+          file_count = 0
+          total_bytes = 0
+          with tarfile.open(output, "w:xz", preset=9) as archive:
               for path in sorted(root.rglob("*")):
-                  if path.is_file():
-                      archive.write(path, path.relative_to(root).as_posix())
-          print(f"state_handoff_zip_bytes={output.stat().st_size}")
+                  if path.is_symlink():
+                      raise RuntimeError(f"Paper state contains symlink: {path}")
+                  if path.is_dir():
+                      continue
+                  if not path.is_file():
+                      raise RuntimeError(f"Paper state contains non-regular entry: {path}")
+                  file_count += 1
+                  total_bytes += path.stat().st_size
+                  if file_count > 10_000 or total_bytes > 100_000_000:
+                      raise RuntimeError("Paper state exceeds bounded packing surface")
+                  relative = path.relative_to(root).as_posix()
+                  info = archive.gettarinfo(str(path), arcname=relative)
+                  if not info.isfile():
+                      raise RuntimeError(f"Paper state tar member is not regular: {relative}")
+                  info.uid = 0
+                  info.gid = 0
+                  info.uname = ""
+                  info.gname = ""
+                  info.mtime = 0
+                  info.mode = 0o600
+                  with path.open("rb") as handle:
+                      archive.addfile(info, handle)
+          if file_count < 1:
+              raise RuntimeError("Paper state contains no files")
+          print(f"state_handoff_file_count={file_count}")
+          print(f"state_handoff_uncompressed_bytes={total_bytes}")
+          print(f"state_handoff_tar_xz_bytes={output.stat().st_size}")
           PY
-          state_sha="$(sha256sum build/persistent-state-handoff.zip | awk '{print $1}')"
-          state_b64="$(base64 -w 0 build/persistent-state-handoff.zip)"
+          state_sha="$(sha256sum build/persistent-state-handoff.tar.xz | awk '{print $1}')"
+          state_b64="$(base64 -w 0 build/persistent-state-handoff.tar.xz)"
           state_b64_bytes="${#state_b64}"
           chunk_size=60000
           max_chunks=12
@@ -622,7 +649,7 @@ jobs:
           case "$state_root" in "$HOME"/.local/share/nexus/persistent-paper-state/*) rm -rf "$state_root" ;; *) exit 1;; esac
 
   persist-state:
-    if: ${{ always() && needs.paper-loop.outputs.state_archive_chunk_count != '0' }}
+    if: ${{ always() && needs.paper-loop.result == 'success' && needs.paper-loop.outputs.state_archive_chunk_count != '0' }}
     needs: paper-loop
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -647,7 +674,7 @@ jobs:
       - name: Rehydrate physical Paper state handoff
         run: |
           set -euo pipefail
-          rm -rf "$STATE_ROOT" build/persistent-state-handoff.zip
+          rm -rf "$STATE_ROOT" build/persistent-state-handoff.tar.xz
           mkdir -p "$STATE_ROOT"
           case "$STATE_ARCHIVE_CHUNK_COUNT" in
             1|2|3|4|5|6|7|8|9|10|11|12) ;;
@@ -685,23 +712,54 @@ jobs:
             echo "::error::Paper state handoff length mismatch."
             exit 1
           fi
-          printf '%s' "$state_b64" | base64 --decode > build/persistent-state-handoff.zip
-          actual_sha="$(sha256sum build/persistent-state-handoff.zip | awk '{print $1}')"
+          printf '%s' "$state_b64" | base64 --decode > build/persistent-state-handoff.tar.xz
+          actual_sha="$(sha256sum build/persistent-state-handoff.tar.xz | awk '{print $1}')"
           test "$actual_sha" = "$STATE_ARCHIVE_SHA256"
           python - <<'PY'
           import os
-          import zipfile
-          from pathlib import Path
+          import shutil
+          import tarfile
+          from pathlib import Path, PurePosixPath
 
-          state_root = Path(os.environ["STATE_ROOT"])
-          archive_path = Path("build/persistent-state-handoff.zip")
-          root = state_root.resolve()
-          with zipfile.ZipFile(archive_path) as archive:
-              for member in archive.infolist():
-                  target = (state_root / member.filename).resolve()
-                  if target != root and root not in target.parents:
-                      raise RuntimeError(f"unsafe state handoff path: {member.filename}")
-              archive.extractall(state_root)
+          state_root = Path(os.environ["STATE_ROOT"]).resolve()
+          archive_path = Path("build/persistent-state-handoff.tar.xz")
+          seen: set[str] = set()
+          file_count = 0
+          total_bytes = 0
+          with tarfile.open(archive_path, "r:xz") as archive:
+              for member in archive:
+                  if member.isdir():
+                      continue
+                  if member.issym() or member.islnk() or not member.isfile():
+                      raise RuntimeError(f"unsafe state handoff member type: {member.name}")
+                  relative = PurePosixPath(member.name)
+                  if (
+                      relative.is_absolute()
+                      or not relative.parts
+                      or any(part in {"", ".", ".."} for part in relative.parts)
+                  ):
+                      raise RuntimeError(f"unsafe state handoff path: {member.name}")
+                  normalized = relative.as_posix()
+                  if normalized in seen:
+                      raise RuntimeError(f"duplicate state handoff path: {member.name}")
+                  seen.add(normalized)
+                  file_count += 1
+                  total_bytes += member.size
+                  if file_count > 10_000 or total_bytes > 100_000_000:
+                      raise RuntimeError("state handoff exceeds bounded extraction surface")
+                  target = state_root.joinpath(*relative.parts).resolve()
+                  if target == state_root or state_root not in target.parents:
+                      raise RuntimeError(f"unsafe state handoff path: {member.name}")
+                  source = archive.extractfile(member)
+                  if source is None:
+                      raise RuntimeError(f"state handoff member is unreadable: {member.name}")
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  with source, target.open("wb") as output:
+                      shutil.copyfileobj(source, output)
+          if file_count < 1:
+              raise RuntimeError("state handoff contains no files")
+          print(f"hosted_state_handoff_file_count={file_count}")
+          print(f"hosted_state_handoff_uncompressed_bytes={total_bytes}")
           print("hosted_state_handoff_verification=PASS")
           PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

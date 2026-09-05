@@ -3,6 +3,8 @@ from __future__ import annotations
 from copy import deepcopy
 from pathlib import Path
 
+import nexus_demo_paper_performance_refresh as performance_refresh
+import nexus_multipair_demo_strategy_matrix as multipair_matrix
 import nexus_multipair_persistent_paper_trading_loop as loop
 
 
@@ -181,3 +183,26 @@ def test_v2_loop_verifier_rejects_legacy_shape_and_authority_widening(monkeypatc
     unsigned.pop("loop_digest")
     widened["loop_digest"] = loop._digest(unsigned)
     assert loop.verify_loop_snapshot(widened)["decision"] == "reject"
+
+
+def test_performance_refresh_dispatches_v2_without_weakening_legacy_default(monkeypatch) -> None:
+    legacy_manifest = {"schema_version": "nexus.demo-strategy-matrix.v1"}
+    legacy_verifier = performance_refresh._snapshot_verifier_for(legacy_manifest, None)
+    assert legacy_verifier is performance_refresh._legacy_snapshot_verifier
+
+    calls: list[tuple[dict, dict, dict]] = []
+
+    def fake_v2(snapshot, *, manifest, state):
+        calls.append((dict(snapshot), dict(manifest), dict(state)))
+        return {"decision": "pass"}
+
+    monkeypatch.setattr(multipair_matrix, "verify_v2_snapshot", fake_v2)
+    manifest = _manifest()
+    verifier = performance_refresh._snapshot_verifier_for(manifest, None)
+    snapshot = {"expected_cell_count": 12}
+    state = {"cells": {"sentinel": {}}}
+    assert verifier(snapshot, state)["decision"] == "pass"
+    assert calls == [(snapshot, manifest, state)]
+
+    explicit = lambda _snapshot, _state: {"decision": "reject"}
+    assert performance_refresh._snapshot_verifier_for(manifest, explicit) is explicit

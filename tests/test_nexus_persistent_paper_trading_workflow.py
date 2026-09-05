@@ -234,12 +234,13 @@ def test_physical_state_handoff_is_bounded_chunked_digest_checked_and_hosted_per
         assert f"state_archive_chunk_{index}" in paper
         assert f"needs.paper-loop.outputs.state_archive_chunk_{index}" in persist
     assert "state_archive_sha256" in paper
-    assert "persistent-state-handoff.zip" in paper
+    assert "persistent-state-handoff.tar.xz" in paper
     assert 'state_b64_bytes" -gt 720000' in paper
     assert "chunk_size=60000" in paper
     assert "max_chunks=12" in paper
-    assert "compression=zipfile.ZIP_LZMA" in paper
-    assert "compression=zipfile.ZIP_DEFLATED" not in paper
+    assert 'tarfile.open(output, "w:xz", preset=9)' in paper
+    assert "zipfile.ZIP_LZMA" not in paper
+    assert "zipfile.ZIP_DEFLATED" not in paper
 
     assert "STATE_ARCHIVE_B64:" not in persist
     assert "STATE_ARCHIVE_CHUNK_COUNT" in persist
@@ -248,8 +249,9 @@ def test_physical_state_handoff_is_bounded_chunked_digest_checked_and_hosted_per
     assert "Paper state handoff chunk exceeds bound." in persist
     assert "Unexpected trailing Paper state handoff chunk." in persist
     assert "STATE_ARCHIVE_SHA256" in persist
-    assert "sha256sum build/persistent-state-handoff.zip" in persist
+    assert "sha256sum build/persistent-state-handoff.tar.xz" in persist
     assert "unsafe state handoff path" in persist
+    assert 'tarfile.open(archive_path, "r:xz")' in persist
     assert "hosted_state_handoff_verification=PASS" in persist
     assert "nexus-persistent-paper-trading-state" in persist
 

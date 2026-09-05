@@ -91,3 +91,29 @@ def test_v2_implementation_and_manifest_changes_retrigger_push_and_pr() -> None:
         '"tests/test_nexus_multipair_demo_strategy_matrix.py"',
     ):
         assert text.count(path) >= 2
+
+
+def test_state_handoff_keeps_full_state_but_uses_bounded_cross_file_xz_compression() -> None:
+    text = _text()
+    paper = _paper_job()
+    package = paper.split("Package Paper state for hosted artifact persistence", 1)[1]
+    persist = text.split("  persist-state:", 1)[1]
+    assert "persistent-state-handoff.tar.xz" in package
+    assert 'tarfile.open(output, "w:xz", preset=9)' in package
+    assert "state_handoff_tar_xz_bytes=" in package
+    assert 'state_b64_bytes" -gt 720000' in package
+    assert "zipfile.ZIP_LZMA" not in package
+    assert "persistent-state-handoff.tar.xz" in persist
+    assert 'tarfile.open(archive_path, "r:xz")' in persist
+    assert "archive.extractall" not in persist
+    assert "member.issym()" in persist
+    assert "member.islnk()" in persist
+
+
+def test_failed_physical_runtime_cannot_persist_partial_state() -> None:
+    text = _text()
+    paper = _paper_job()
+    package = paper.split("Package Paper state for hosted artifact persistence", 1)[1]
+    persist_header = text.split("  persist-state:", 1)[1].split("    env:", 1)[0]
+    assert "if: success()" in package
+    assert "needs.paper-loop.result == 'success'" in persist_header
