@@ -37,11 +37,14 @@ on:
       - "android/lbank-mobile/**"
       - "scripts/build_release_evidence.py"
       - "scripts/release_gate.py"
+      - "scripts/select_nexus_bybit_replay_artifact.py"
       - "tests/test_nexus_demo_regime_lifecycle_bridge.py"
+      - "tests/test_nexus_bybit_replay_artifact_lifecycle.py"
       - "tests/test_mobile_delivery_surface.py"
       - ".github/workflows/build_lbank_mobile_apk.yml"
       - ".github/workflows/nexus_demo_regime_lifecycle_bridge.yml"
       - ".github/workflows/nexus_demo_strategy_matrix.yml"
+      - ".github/workflows/nexus_bybit_replay_rehydrate.yml"
   pull_request:
     paths:
       - "nexus_demo_strategy_matrix.py"
@@ -85,16 +88,20 @@ on:
       - "tests/test_nexus_final_proof_mission.py"
       - "tests/test_nexus_final_proof_assembler.py"
       - "tests/test_product_demo_matrix_surface.py"
+      - "tests/test_nexus_bybit_replay_artifact_lifecycle.py"
       - "product_web_server.py"
       - "product_ui/index.html"
       - "product_ui/product.js"
       - "android/lbank-mobile/**"
       - "scripts/build_release_evidence.py"
       - "scripts/release_gate.py"
+      - "scripts/select_nexus_bybit_replay_artifact.py"
+      - "scripts/build_nexus_bybit_replay_package.py"
       - "tests/test_mobile_delivery_surface.py"
       - ".github/workflows/build_lbank_mobile_apk.yml"
       - ".github/workflows/nexus_demo_regime_lifecycle_bridge.yml"
       - ".github/workflows/nexus_demo_strategy_matrix.yml"
+      - ".github/workflows/nexus_bybit_replay_rehydrate.yml"
 
 permissions:
   contents: read
@@ -131,6 +138,7 @@ jobs:
           tests/test_nexus_regime_paper_lane.py
           tests/test_nexus_regime_strategy_selector.py
           tests/test_product_demo_matrix_surface.py
+          tests/test_nexus_bybit_replay_artifact_lifecycle.py
 
   matrix-cycle:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
@@ -140,7 +148,8 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       STATE_ARTIFACT: nexus-demo-strategy-matrix-state
-      DATASET_ARTIFACT_ID: "8867026863"
+      DATASET_FILE: BYBIT_full_history_2022-12-01_to_2026-07-31.zip
+      DATASET_ARTIFACT_PREFIX: bybit-full-history-final-
       DATASET_SHA256: "5f1173467c2296201940c3b7786b7cc3e5442244e07289769ab4867ace41d668"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -165,11 +174,15 @@ jobs:
       - name: Restore verified immutable Bybit replay dataset
         run: |
           set -euo pipefail
+          rm -rf build/nexus_demo_archive build/nexus_demo_delivery
           mkdir -p build/nexus_demo_archive build/nexus_demo_delivery
-          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$DATASET_ARTIFACT_ID/zip" \
-            > build/nexus_demo_delivery.zip
-          unzip -q build/nexus_demo_delivery.zip -d build/nexus_demo_delivery
-          archive="build/nexus_demo_delivery/BYBIT_full_history_2022-12-01_to_2026-07-31.zip"
+          python scripts/select_nexus_bybit_replay_artifact.py \
+            --repository "$GITHUB_REPOSITORY" \
+            --output-dir build/nexus_demo_delivery \
+            --expected-file-name "$DATASET_FILE" \
+            --expected-sha256 "$DATASET_SHA256" \
+            --artifact-prefix "$DATASET_ARTIFACT_PREFIX"
+          archive="build/nexus_demo_delivery/$DATASET_FILE"
           test "$(sha256sum "$archive" | awk '{print $1}')" = "$DATASET_SHA256"
           unzip -q "$archive" -d build/nexus_demo_archive
       - name: Quarantine incompatible bootstrap-only replay journals
