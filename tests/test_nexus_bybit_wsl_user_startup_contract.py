@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from pathlib import Path
+import subprocess
+import sys
 
 
 SCRIPT = (
@@ -18,6 +20,13 @@ def _function(text: str, name: str, next_name: str) -> str:
     start = text.index(f"function {name}")
     end = text.index(f"function {next_name}", start)
     return text[start:end]
+
+
+def _command_here_string(function_block: str) -> str:
+    start_marker = "$command = @'\n"
+    start = function_block.index(start_marker) + len(start_marker)
+    end = function_block.index("\n'@", start)
+    return function_block[start:end]
 
 
 def test_process_liveness_probe_uses_procfs_exact_argv0_without_pgrep() -> None:
@@ -53,6 +62,47 @@ def test_idle_listener_recycle_rechecks_worker_before_each_kill() -> None:
     assert second_worker_guard < kill
     assert "exit 23" in recycle
     assert "exit 24" in recycle
+
+
+def test_embedded_bash_probe_commands_parse_on_unix() -> None:
+    if sys.platform == "win32":
+        return
+
+    text = _script()
+    blocks = (
+        _function(text, "Get-RunnerProcessState", "Test-Listener"),
+        _function(text, "Stop-IdleExternalListener", "Start-ManagedRunnerProcess"),
+    )
+    for block in blocks:
+        command = _command_here_string(block).replace(
+            "__RUNNER_ROOT__", "/opt/nexus-bybit-runner"
+        )
+        subprocess.run(
+            ["bash", "-n", "-c", command],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+
+def test_startup_script_parses_with_windows_powershell() -> None:
+    if sys.platform != "win32":
+        return
+
+    path = str(SCRIPT).replace("'", "''")
+    command = (
+        "$tokens=$null; $errors=$null; "
+        f"[System.Management.Automation.Language.Parser]::ParseFile('{path}', "
+        "[ref]$tokens, [ref]$errors) | Out-Null; "
+        "if ($errors.Count -ne 0) { "
+        "$errors | ForEach-Object { Write-Error $_.Message }; exit 1 }"
+    )
+    subprocess.run(
+        ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", command],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
 
 
 def test_unknown_probe_and_active_worker_paths_remain_fail_closed() -> None:
