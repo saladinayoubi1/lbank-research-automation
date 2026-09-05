@@ -14,7 +14,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 SELECTOR_PATH = ROOT / "scripts" / "select_nexus_bybit_replay_artifact.py"
 BUILDER_PATH = ROOT / "scripts" / "build_nexus_bybit_replay_package.py"
-REHYDRATE_WORKFLOW = ROOT / ".github" / "workflows" / "nexus_bybit_replay_rehydrate.yml"
+REHYDRATE_WORKFLOW = ROOT / ".github" / "workflows" / "bybit_full_history_backfill.yml"
 MATRIX_WORKFLOW = ROOT / ".github" / "workflows" / "nexus_demo_strategy_matrix.yml"
 
 
