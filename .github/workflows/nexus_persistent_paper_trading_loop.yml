@@ -23,9 +23,14 @@ on:
       - "nexus_regime_strategy_runtime.py"
       - "nexus_strategy_paper_supervisor.py"
       - "nexus_paper_performance_pipeline.py"
+      - "nexus_multipair_persistent_paper_trading_loop.py"
+      - "nexus_multipair_public_regime_cycle.py"
+      - "nexus_multipair_regime_lifecycle.py"
+      - "nexus_multipair_demo_strategy_matrix.py"
       - "scripts/nexus_strategy_discovery_controller.py"
       - "scripts/nexus_runtime_wheelhouse.py"
       - "config/nexus-demo-strategy-matrix-v1.json"
+      - "config/nexus-demo-strategy-matrix-v2.json"
       - "config/nexus-regime-strategy-policy-v1.json"
       - "research/strategy_family_catalog.json"
       - "requirements.lock"
@@ -33,6 +38,10 @@ on:
       - "tests/test_nexus_bybit_same_interval_chunk_fallback.py"
       - "tests/test_nexus_persistent_paper_trading_loop.py"
       - "tests/test_nexus_persistent_paper_trading_workflow.py"
+      - "tests/test_nexus_multipair_persistent_paper_trading_loop.py"
+      - "tests/test_nexus_multipair_persistent_paper_workflow.py"
+      - "tests/test_nexus_multipair_regime_lifecycle.py"
+      - "tests/test_nexus_multipair_demo_strategy_matrix.py"
       - "tests/test_nexus_runtime_wheelhouse.py"
       - "tests/test_nexus_regime_selected_position_rebalance.py"
       - "tests/test_nexus_regime_selected_exposure_increase.py"
@@ -58,9 +67,14 @@ on:
       - "nexus_regime_strategy_runtime.py"
       - "nexus_strategy_paper_supervisor.py"
       - "nexus_paper_performance_pipeline.py"
+      - "nexus_multipair_persistent_paper_trading_loop.py"
+      - "nexus_multipair_public_regime_cycle.py"
+      - "nexus_multipair_regime_lifecycle.py"
+      - "nexus_multipair_demo_strategy_matrix.py"
       - "scripts/nexus_strategy_discovery_controller.py"
       - "scripts/nexus_runtime_wheelhouse.py"
       - "config/nexus-demo-strategy-matrix-v1.json"
+      - "config/nexus-demo-strategy-matrix-v2.json"
       - "config/nexus-regime-strategy-policy-v1.json"
       - "research/strategy_family_catalog.json"
       - "requirements.lock"
@@ -68,6 +82,10 @@ on:
       - "tests/test_nexus_bybit_same_interval_chunk_fallback.py"
       - "tests/test_nexus_persistent_paper_trading_loop.py"
       - "tests/test_nexus_persistent_paper_trading_workflow.py"
+      - "tests/test_nexus_multipair_persistent_paper_trading_loop.py"
+      - "tests/test_nexus_multipair_persistent_paper_workflow.py"
+      - "tests/test_nexus_multipair_regime_lifecycle.py"
+      - "tests/test_nexus_multipair_demo_strategy_matrix.py"
       - "tests/test_nexus_runtime_wheelhouse.py"
       - "tests/test_nexus_regime_selected_position_rebalance.py"
       - "tests/test_nexus_regime_selected_exposure_increase.py"
@@ -105,6 +123,10 @@ jobs:
           tests/test_nexus_bybit_same_interval_chunk_fallback.py
           tests/test_nexus_persistent_paper_trading_loop.py
           tests/test_nexus_persistent_paper_trading_workflow.py
+          tests/test_nexus_multipair_persistent_paper_trading_loop.py
+          tests/test_nexus_multipair_persistent_paper_workflow.py
+          tests/test_nexus_multipair_regime_lifecycle.py
+          tests/test_nexus_multipair_demo_strategy_matrix.py
           tests/test_nexus_runtime_wheelhouse.py
           tests/test_nexus_regime_selected_position_rebalance.py
           tests/test_nexus_regime_selected_exposure_increase.py
@@ -208,28 +230,18 @@ jobs:
       - name: Prepare exact repository and pre-provisioned Python 3.12 without JavaScript actions
         run: |
           set -euo pipefail
-          cache_root="$HOME/.cache/nexus-paper-runtime-wheelhouse-verified"
-          cache_dir="$cache_root/$WHEELHOUSE_ARCHIVE_SHA256"
-          if [ -d build/nexus-paper-runtime-wheelhouse ] && [ ! -L build/nexus-paper-runtime-wheelhouse ]; then
-            mkdir -p "$cache_root"
-            seed_dir="$cache_root/.${WHEELHOUSE_ARCHIVE_SHA256}.seed.$$"
-            rm -rf "$seed_dir"
-            cp -a build/nexus-paper-runtime-wheelhouse "$seed_dir"
-            rm -rf "$cache_dir"
-            mv "$seed_dir" "$cache_dir"
-            echo "preserved_previous_wheelhouse_seed=$cache_dir"
-          fi
-
+          source_root="$HOME/.local/share/nexus/persistent-paper-source/$GITHUB_RUN_ID"
+          state_root="$HOME/.local/share/nexus/persistent-paper-state/$GITHUB_RUN_ID"
+          case "$source_root" in "$HOME"/.local/share/nexus/persistent-paper-source/*) ;; *) exit 1;; esac
+          case "$state_root" in "$HOME"/.local/share/nexus/persistent-paper-state/*) ;; *) exit 1;; esac
+          rm -rf "$source_root"
+          rm -rf "$state_root"
+          mkdir -p "$source_root"
+          mkdir -p "$state_root"
+          cd "$source_root"
+          git init .
           repo_url="https://github.com/${GITHUB_REPOSITORY}.git"
-          if [ -d .git ]; then
-            git remote set-url origin "$repo_url"
-            git reset --hard
-            git clean -ffdx
-          else
-            find . -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
-            git init .
-            git remote add origin "$repo_url"
-          fi
+          git remote add origin "$repo_url"
           git config --local --unset-all http.https://github.com/.extraheader || true
           fetch_ok=false
           fetch_max_attempts=3
@@ -250,7 +262,6 @@ jobs:
           fi
           git checkout --detach --force FETCH_HEAD
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          git clean -ffdx
 
           known_python="/opt/nexus-bybit-runner/_work/_tool/Python/3.12.14/x64/bin/python"
           python_bin=""
@@ -282,23 +293,28 @@ jobs:
             effective_ld_library_path="$python_lib:$LD_LIBRARY_PATH"
           fi
           LD_LIBRARY_PATH="$effective_ld_library_path" "$python_bin" -c "import ctypes; print('physical_python_dynamic_stdlib=PASS')"
+          printf 'SOURCE_ROOT=%s\n' "$source_root" >> "$GITHUB_ENV"
+          printf 'STATE_ROOT=%s\n' "$state_root" >> "$GITHUB_ENV"
           printf 'PYTHON_BIN=%s\n' "$python_bin" >> "$GITHUB_ENV"
           printf 'LD_LIBRARY_PATH=%s\n' "$effective_ld_library_path" >> "$GITHUB_ENV"
           printf 'NATIVE_PREPARED=true\n' >> "$GITHUB_ENV"
           echo "physical_python_bin=$python_bin"
           echo "physical_python_prefix=$python_prefix"
           echo "physical_checkout_sha=$(git rev-parse HEAD)"
+          echo "physical_source_root=$source_root"
 
       - name: Enforce eligible Bybit network execution plane
         run: >-
           "$PYTHON_BIN" -c "assert '${{ runner.environment }}' == 'self-hosted'; assert '${{ runner.os }}' == 'Linux'; import sys; assert sys.version_info[:2] == (3, 12); print('bybit_network_execution_plane=self-hosted:nexus-bybit-network')"
+
       - name: Restore digest-pinned current-run runtime wheelhouse without JavaScript actions
         run: |
           set -euo pipefail
+          cd "$SOURCE_ROOT"
           cache_root="$HOME/.cache/nexus-paper-runtime-wheelhouse-verified"
           cache_dir="$cache_root/$WHEELHOUSE_ARCHIVE_SHA256"
-          wheelhouse="$PWD/build/nexus-paper-runtime-wheelhouse"
-          cache_probe="$PWD/build/nexus-paper-runtime-wheelhouse-cache-probe.zip"
+          wheelhouse="$SOURCE_ROOT/build/nexus-paper-runtime-wheelhouse"
+          cache_probe="$SOURCE_ROOT/build/nexus-paper-runtime-wheelhouse-cache-probe.zip"
           rm -rf "$wheelhouse"
           rm -f "$cache_probe"
 
@@ -333,7 +349,7 @@ jobs:
               --expected-sha256 "$WHEELHOUSE_ARCHIVE_SHA256" \
               --repository-lock requirements.lock \
               --destination "$wheelhouse" \
-              --work-root build/runtime-wheelhouse-restore
+              --work-root "$SOURCE_ROOT/build/runtime-wheelhouse-restore"
             mkdir -p "$cache_root"
             staging_dir="$cache_root/.${WHEELHOUSE_ARCHIVE_SHA256}.tmp.$$"
             rm -rf "$staging_dir"
@@ -342,9 +358,11 @@ jobs:
             mv "$staging_dir" "$cache_dir"
             echo "runtime_wheelhouse_verified_cache=MISS_POPULATED"
           fi
+
       - name: Provision locked runtime dependencies from verified hosted wheelhouse
         run: |
           set -euo pipefail
+          cd "$SOURCE_ROOT"
           pip_wheel="$("$PYTHON_BIN" - <<'PY'
           import ensurepip
           from pathlib import Path
@@ -357,10 +375,10 @@ jobs:
           PY
           )"
           test -f "$pip_wheel"
-          wheelhouse="$PWD/build/nexus-paper-runtime-wheelhouse"
+          wheelhouse="$SOURCE_ROOT/build/nexus-paper-runtime-wheelhouse"
           test -f "$wheelhouse/requirements.lock"
           cmp requirements.lock "$wheelhouse/requirements.lock"
-          runtime_site="$PWD/.nexus-paper-site"
+          runtime_site="$SOURCE_ROOT/.nexus-paper-site"
           rm -rf "$runtime_site"
           mkdir -p "$runtime_site"
           PYTHONPATH="$pip_wheel" "$PYTHON_BIN" -m pip install \
@@ -370,13 +388,15 @@ jobs:
             --no-cache-dir \
             --target "$runtime_site" \
             -r requirements.lock
-          printf 'PYTHONPATH=%s:%s\n' "$pip_wheel" "$runtime_site" >> "$GITHUB_ENV"
+          printf 'PYTHONPATH=%s:%s:%s\n' "$pip_wheel" "$runtime_site" "$SOURCE_ROOT" >> "$GITHUB_ENV"
           echo "physical_runtime_site=$runtime_site"
           echo "offline_wheelhouse_bootstrap=PASS"
       - run: '"$PYTHON_BIN" -m pip check'
+
       - name: Restore newest persistent Paper state
         run: |
           set -euo pipefail
+          cd "$SOURCE_ROOT"
           rm -rf "$STATE_ROOT" build/persistent-state.zip
           mkdir -p "$STATE_ROOT"
           "$PYTHON_BIN" - <<'PY'
@@ -450,36 +470,61 @@ jobs:
           else:
               print("restored_paper_state_artifact_id=none")
           PY
+
       - name: Advance public closed-candle Paper portfolio loop
         run: |
           set -euo pipefail
-          "$PYTHON_BIN" nexus_persistent_paper_trading_loop.py \
+          cd "$SOURCE_ROOT"
+          "$PYTHON_BIN" nexus_multipair_persistent_paper_trading_loop.py \
             --repo-root . \
             --state-root "$STATE_ROOT" \
             --source-sha "$GITHUB_SHA" \
-            --run-id "$GITHUB_RUN_ID"
+            --run-id "$GITHUB_RUN_ID" \
+            --manifest config/nexus-demo-strategy-matrix-v2.json \
+            --legacy-manifest config/nexus-demo-strategy-matrix-v1.json
+
       - name: Independently enforce Paper authority and mission truth
         run: |
           set -euo pipefail
+          cd "$SOURCE_ROOT"
           "$PYTHON_BIN" - <<'PY'
           import json
+          import os
           from pathlib import Path
-          from nexus_persistent_paper_trading_loop import verify_loop_snapshot
+          from nexus_multipair_persistent_paper_trading_loop import (
+              MIGRATION_EVIDENCE_NAME,
+              _verify_migration,
+              verify_loop_snapshot,
+          )
 
-          root = Path("build/nexus_persistent_paper_trading_state")
+          root = Path(os.environ["STATE_ROOT"])
           snapshot = json.loads(
               (root / "demo" / "persistent-paper-trading-loop.json").read_text(encoding="utf-8")
           )
           verification = verify_loop_snapshot(snapshot)
           assert verification["decision"] == "pass", verification
           assert snapshot["data_mode"] == "public_bybit_closed_candles"
-          assert snapshot["expected_cell_count"] == 6
-          assert snapshot["expected_lane_count"] == 18
+          assert snapshot["matrix_id"] == "nexus-demo-btc-eth-sol-xrp-3tf-3strategy-v2"
+          assert snapshot["expected_cell_count"] == 12
+          assert snapshot["expected_lane_count"] == 36
+          assert snapshot["fresh_cell_count"] == 12
+          assert snapshot["matrix_migration_status"] in {"PERFORMED", "ALREADY_V2"}
+          assert snapshot["new_symbol_inherited_cell_count"] == 0
+          migration = json.loads(
+              (root / "demo" / MIGRATION_EVIDENCE_NAME).read_text(encoding="utf-8")
+          )
+          migration_verification = _verify_migration(migration)
+          assert migration_verification["decision"] == "pass", migration_verification
+          assert snapshot["matrix_migration_digest"] == migration["migration_digest"]
           assert snapshot["paper_only"] is True
           assert snapshot["live_trading_authority"] is False
           assert snapshot["private_credentials_used"] is False
+          assert snapshot["real_exchange_orders"] is False
           assert snapshot["automatic_strategy_promotion"] is False
           assert snapshot["deterministic_risk_final_authority"] is True
+          assert snapshot["persistent_runtime_database_on_github"] is False
+          assert snapshot["state_isolated_from_issue_984"] is True
+          assert snapshot["issue_984_state_artifact_touched"] is False
           assert snapshot["trading_engine_complete"] is False
           assert isinstance(snapshot["regime_selected_rebalance_operational"], bool)
           assert isinstance(snapshot["regime_selected_exposure_increase_operational"], bool)
@@ -488,6 +533,11 @@ jobs:
           print(json.dumps({
               "status": snapshot["status"],
               "fresh_cells": snapshot["fresh_cell_count"],
+              "expected_cells": snapshot["expected_cell_count"],
+              "expected_lanes": snapshot["expected_lane_count"],
+              "migration_status": snapshot["matrix_migration_status"],
+              "migration_digest": snapshot["matrix_migration_digest"],
+              "new_symbol_inherited_cell_count": snapshot["new_symbol_inherited_cell_count"],
               "regime_status": snapshot["regime_status"],
               "rebalance_operational": snapshot["regime_selected_rebalance_operational"],
               "performance_health_feedback_operational": snapshot["performance_health_feedback_operational"],
@@ -497,6 +547,7 @@ jobs:
               "loop_digest": snapshot["loop_digest"],
           }, sort_keys=True))
           PY
+
       - name: Package Paper state for hosted artifact persistence
         id: package
         if: always()
@@ -513,6 +564,7 @@ jobs:
             } >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          cd "$SOURCE_ROOT"
           "$PYTHON_BIN" - <<'PY'
           import os
           import zipfile
@@ -559,6 +611,15 @@ jobs:
           } >> "$GITHUB_OUTPUT"
           echo "state_handoff_base64_bytes=$state_b64_bytes"
           echo "state_handoff_chunk_count=$chunk_count"
+
+      - name: Cleanup isolated physical source and state
+        if: always()
+        run: |
+          set -euo pipefail
+          source_root="${SOURCE_ROOT:-$HOME/.local/share/nexus/persistent-paper-source/$GITHUB_RUN_ID}"
+          state_root="${STATE_ROOT:-$HOME/.local/share/nexus/persistent-paper-state/$GITHUB_RUN_ID}"
+          case "$source_root" in "$HOME"/.local/share/nexus/persistent-paper-source/*) rm -rf "$source_root" ;; *) exit 1;; esac
+          case "$state_root" in "$HOME"/.local/share/nexus/persistent-paper-state/*) rm -rf "$state_root" ;; *) exit 1;; esac
 
   persist-state:
     if: ${{ always() && needs.paper-loop.outputs.state_archive_chunk_count != '0' }}
