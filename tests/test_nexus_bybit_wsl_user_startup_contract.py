@@ -29,6 +29,19 @@ def _command_here_string(function_block: str) -> str:
     return function_block[start:end]
 
 
+
+def test_wsl_transport_uses_stdin_without_external_base64_dependency() -> None:
+    text = _script()
+    transport = _function(text, "New-WslProcessStartInfo", "Invoke-WslNative")
+    invoke = _function(text, "Invoke-WslNative", "Write-Log")
+    managed = _function(text, "Start-ManagedRunnerProcess", "Stop-PreviousUserWatchdogs")
+    assert "$psi.RedirectStandardInput = $true" in transport
+    assert "-u root -- bash'" in transport
+    assert "base64 -d" not in text
+    assert "Write-WslCommandInput -Process $proc -Command $Command" in invoke
+    assert "Write-WslCommandInput -Process $proc -Command $command" in managed
+    assert "$Process.StandardInput.Close()" in text
+
 def test_process_liveness_probe_uses_procfs_exact_argv0_without_pgrep() -> None:
     text = _script()
     probe = _function(text, "Get-RunnerProcessState", "Test-Listener")
