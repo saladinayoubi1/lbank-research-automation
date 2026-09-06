@@ -72,6 +72,11 @@ def expected_index(step: pd.Timedelta) -> pd.DatetimeIndex:
     return pd.date_range(start, end, freq=step, inclusive="left")
 
 
+def canonical_timestamp_index(values: Any) -> pd.DatetimeIndex:
+    """Normalize equivalent UTC timestamps to one representation before strict comparison."""
+    return pd.DatetimeIndex(values).as_unit("ns")
+
+
 def validate_series(path: Path, symbol: str, timeframe: str) -> dict[str, Any]:
     step, expected_rows = TIMEFRAMES[timeframe]
     frame = pd.read_parquet(path)
@@ -81,8 +86,9 @@ def validate_series(path: Path, symbol: str, timeframe: str) -> dict[str, Any]:
     frame = frame.loc[:, CANONICAL_COLUMNS].copy()
     frame["timestamp"] = pd.to_datetime(frame["timestamp"], utc=True, errors="raise")
     frame = frame.sort_values("timestamp").reset_index(drop=True)
-    timestamps = pd.DatetimeIndex(frame["timestamp"])
-    expected = expected_index(step)
+    timestamps = canonical_timestamp_index(frame["timestamp"])
+    expected = canonical_timestamp_index(expected_index(step))
+    frame["timestamp"] = timestamps
     if len(frame) != expected_rows or len(frame) != len(expected):
         raise ReplayPackageError(
             f"{path} row count {len(frame)} does not match expected {expected_rows}"
