@@ -15,7 +15,7 @@
     ".github/workflows/bybit_derivatives_validation_v1.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"validate":{"policy_version":1}}},
     ".github/workflows/bybit_final_aggregate.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"aggregate":{"policy_version":1}}},
     ".github/workflows/bybit_finalize.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"finalize":{"policy_version":1}}},
-    ".github/workflows/bybit_full_history_backfill.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"notice":{"policy_version":1}}},
+    ".github/workflows/bybit_full_history_backfill.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"finalize":{"policy_version":1},"plan":{"policy_version":1},"rebuild-missing":{"policy_version":1}}},
     ".github/workflows/bybit_heavy_months.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"build-part":{"policy_version":1},"combine-month":{"policy_version":1}}},
     ".github/workflows/bybit_long_short_search_v4.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"search":{"policy_version":1}}},
     ".github/workflows/bybit_neighborhood_validation_v7.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"validate":{"policy_version":1}}},
