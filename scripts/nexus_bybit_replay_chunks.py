@@ -4,15 +4,49 @@ import argparse
 import calendar
 from dataclasses import asdict, dataclass
 import json
+import os
 from pathlib import Path
 import re
 from typing import Any, Iterable
+from urllib.parse import urlsplit
+import urllib.request
 
 
-ARTIFACT_PATTERN = re.compile(r"^bybit-chunk-(\d{2})-attempt-\d+$")
+LEGACY_ARTIFACT_PATTERN = re.compile(r"^bybit-chunk-(\d{2})-attempt-\d+$")
+REHYDRATED_ARTIFACT_PATTERN = re.compile(r"^bybit-rehydrated-chunk-(\d{2})-\d+$")
+ARTIFACT_PATTERN = LEGACY_ARTIFACT_PATTERN
 CHUNK_IDS = tuple(f"{number:02d}" for number in range(27, 43)) + tuple(
     f"{number:02d}" for number in range(1, 27)
 )
+
+
+class _CrossHostAuthStrippingRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Preserve auth on same-origin redirects, but never leak it to artifact blob hosts."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        redirected = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if redirected is None:
+            return None
+        source = urlsplit(req.full_url)
+        target = urlsplit(newurl)
+        if (source.scheme.lower(), source.netloc.lower()) != (
+            target.scheme.lower(),
+            target.netloc.lower(),
+        ):
+            redirected.remove_header("Authorization")
+        return redirected
+
+
+def _install_safe_artifact_redirect_opener() -> None:
+    # The GitHub artifact archive endpoint redirects to a signed Azure Blob URL.
+    # urllib otherwise forwards the GitHub Authorization header across origins,
+    # causing Azure to reject the otherwise-valid signed URL with HTTP 401.
+    urllib.request.install_opener(
+        urllib.request.build_opener(_CrossHostAuthStrippingRedirectHandler())
+    )
+
+
+_install_safe_artifact_redirect_opener()
 
 
 @dataclass(frozen=True)
@@ -67,17 +101,31 @@ def _iter_artifacts(payload: Any) -> Iterable[dict[str, Any]]:
                 yield artifact
 
 
+def _artifact_chunk_id(name: str) -> str | None:
+    for pattern in (LEGACY_ARTIFACT_PATTERN, REHYDRATED_ARTIFACT_PATTERN):
+        match = pattern.match(name)
+        if match:
+            return match.group(1)
+    return None
+
+
+def _workflow_compatible_artifact_name(chunk_id: str, artifact_name: str) -> str:
+    if LEGACY_ARTIFACT_PATTERN.match(artifact_name):
+        return artifact_name
+    if REHYDRATED_ARTIFACT_PATTERN.match(artifact_name):
+        return f"bybit-chunk-{chunk_id}-attempt-rehydrated"
+    raise ValueError(f"Unsupported replay artifact name: {artifact_name}")
+
+
 def select_latest_unexpired(payload: Any) -> dict[str, dict[str, Any]]:
     latest: dict[str, tuple[tuple[str, int], dict[str, Any]]] = {}
     required = set(CANONICAL_CHUNK_MAP)
     for artifact in _iter_artifacts(payload):
         if artifact.get("expired"):
             continue
-        match = ARTIFACT_PATTERN.match(str(artifact.get("name", "")))
-        if not match:
-            continue
-        chunk_id = match.group(1)
-        if chunk_id not in required:
+        artifact_name = str(artifact.get("name", ""))
+        chunk_id = _artifact_chunk_id(artifact_name)
+        if chunk_id is None or chunk_id not in required:
             continue
         key = (str(artifact.get("created_at", "")), int(artifact.get("id", 0)))
         current = latest.get(chunk_id)
@@ -89,14 +137,15 @@ def select_latest_unexpired(payload: Any) -> dict[str, dict[str, Any]]:
 def build_plan(payload: Any) -> dict[str, Any]:
     selected = select_latest_unexpired(payload)
     missing = [chunk for chunk in CANONICAL_CHUNKS if chunk.id not in selected]
-    reusable = {
-        chunk_id: {
+    reusable = {}
+    for chunk_id, artifact in sorted(selected.items()):
+        source_name = str(artifact["name"])
+        reusable[chunk_id] = {
             "artifact_id": int(artifact["id"]),
-            "name": str(artifact["name"]),
+            "name": _workflow_compatible_artifact_name(chunk_id, source_name),
+            "source_name": source_name,
             "created_at": str(artifact.get("created_at", "")),
         }
-        for chunk_id, artifact in sorted(selected.items())
-    }
     return {
         "schema_version": 1,
         "required_chunk_count": len(CANONICAL_CHUNKS),
