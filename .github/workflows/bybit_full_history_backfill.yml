@@ -8,6 +8,11 @@ on:
       - '.github/workflows/bybit_full_history_backfill.yml'
       - 'scripts/build_nexus_bybit_replay_package.py'
       - 'scripts/select_nexus_bybit_replay_artifact.py'
+      - 'scripts/nexus_bybit_replay_chunks.py'
+      - 'scripts/rehydrate_nexus_bybit_chunk.py'
+      - 'stream_bybit_symbol_month.py'
+      - 'bybit_spot_backfill.py'
+      - 'aggregate_bybit_artifacts.py'
 
 permissions:
   contents: read
@@ -18,11 +23,81 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  notice:
-    name: Rehydrate immutable replay dataset
+  plan:
+    name: Plan immutable replay rehydration
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+    outputs:
+      missing_count: ${{ steps.plan.outputs.missing_count }}
+      missing_ids: ${{ steps.plan.outputs.missing_ids }}
+      missing_matrix: ${{ steps.plan.outputs.missing_matrix }}
+      reusable_artifacts: ${{ steps.plan.outputs.reusable_artifacts }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Discover reusable chunks and exact missing-month matrix
+        id: plan
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          gh api --paginate --slurp \
+            "repos/$GITHUB_REPOSITORY/actions/artifacts?per_page=100" \
+            > build/artifact-pages.json
+          python scripts/nexus_bybit_replay_chunks.py \
+            --artifact-pages build/artifact-pages.json \
+            --plan-output build/replay-rehydrate-plan.json \
+            --github-output "$GITHUB_OUTPUT"
+
+  rebuild-missing:
+    name: Rebuild expired chunk-${{ matrix.id }}
+    needs: plan
+    if: needs.plan.outputs.missing_count != '0'
+    runs-on: ubuntu-latest
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix: ${{ fromJson(needs.plan.outputs.missing_matrix) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements.lock
+      - run: python -m pip check
+      - name: Stream official public Bybit archives into one verified month
+        run: |
+          set -euo pipefail
+          python scripts/rehydrate_nexus_bybit_chunk.py \
+            --chunk-id "${{ matrix.id }}" \
+            --start-date "${{ matrix.start }}" \
+            --end-date "${{ matrix.end }}" \
+            --output-root "build/chunk-${{ matrix.id }}" \
+            --cache-root "build/cache-${{ matrix.id }}"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: bybit-rehydrated-chunk-${{ matrix.id }}-${{ github.run_id }}
+          path: build/chunk-${{ matrix.id }}
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 9
+
+  finalize:
+    name: Rehydrate immutable replay dataset
+    needs: [plan, rebuild-missing]
+    if: >-
+      always() &&
+      needs.plan.result == 'success' &&
+      (needs.rebuild-missing.result == 'success' || needs.rebuild-missing.result == 'skipped')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
     env:
       GH_TOKEN: ${{ github.token }}
       LEGACY_FILE: BYBIT_full_history_2022-12-01_to_2026-07-31.zip
@@ -71,42 +146,38 @@ jobs:
           print("rehydrated_base_source_archives=4")
           PY
 
-      - name: Download latest unexpired verified monthly chunks 01 through 42
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        if: needs.plan.outputs.missing_count != '0'
+        with:
+          pattern: bybit-rehydrated-chunk-*-${{ github.run_id }}
+          path: build/bybit_artifacts
+
+      - name: Download exact reusable unexpired chunks selected by the plan
+        env:
+          REUSABLE_ARTIFACTS_JSON: ${{ needs.plan.outputs.reusable_artifacts }}
+          MISSING_IDS: ${{ needs.plan.outputs.missing_ids }}
         run: |
           set -euo pipefail
-          gh api --paginate --slurp \
-            "repos/$GITHUB_REPOSITORY/actions/artifacts?per_page=100" \
-            > build/artifact-pages.json
           python - <<'PY'
           import json
           import os
-          import re
+          from pathlib import Path, PurePosixPath
           import urllib.request
           import zipfile
-          from pathlib import Path, PurePosixPath
 
-          pages = json.loads(Path("build/artifact-pages.json").read_text())
-          artifacts = []
-          for page in pages:
-              artifacts.extend(page.get("artifacts", []))
-          pattern = re.compile(r"^bybit-chunk-(\d{2})-attempt-\d+$")
-          latest = {}
-          required = {f"{number:02d}" for number in range(1, 43)}
-          for artifact in artifacts:
-              if artifact.get("expired"):
-                  continue
-              match = pattern.match(str(artifact.get("name", "")))
-              if not match or match.group(1) not in required:
-                  continue
-              chunk = match.group(1)
-              key = (str(artifact.get("created_at", "")), int(artifact.get("id", 0)))
-              if chunk not in latest or key > latest[chunk][0]:
-                  latest[chunk] = (key, artifact)
-          missing = sorted(required - set(latest))
-          print(f"unexpired_chunk_count={len(latest)}")
-          print(f"missing_chunks={','.join(missing)}")
-          if missing:
-              raise SystemExit("Missing unexpired monthly chunk artifacts: " + ",".join(missing))
+          from scripts.nexus_bybit_replay_chunks import CANONICAL_CHUNK_MAP
+
+          reusable = json.loads(os.environ["REUSABLE_ARTIFACTS_JSON"])
+          missing = {value for value in os.environ.get("MISSING_IDS", "").split(",") if value}
+          required = set(CANONICAL_CHUNK_MAP)
+          selected = set(reusable)
+          if selected & missing:
+              raise SystemExit("Replay plan contains a chunk in both reusable and missing sets")
+          if selected | missing != required:
+              raise SystemExit(
+                  "Replay plan does not partition all canonical chunks: "
+                  f"missing_plan={sorted(required - (selected | missing))}"
+              )
 
           token = os.environ["GH_TOKEN"]
           repository = os.environ["GITHUB_REPOSITORY"]
@@ -117,18 +188,21 @@ jobs:
               "User-Agent": "nexus-bybit-rehydrate",
           }
           root = Path("build/bybit_artifacts")
-          for chunk in sorted(latest):
-              artifact = latest[chunk][1]
-              artifact_id = int(artifact["id"])
+          for chunk in sorted(reusable):
+              metadata = reusable[chunk]
+              artifact_id = int(metadata["artifact_id"])
+              expected_name = str(metadata["name"])
+              if not expected_name.startswith(f"bybit-chunk-{chunk}-attempt-"):
+                  raise SystemExit(f"Unexpected reusable artifact name for {chunk}: {expected_name}")
               request = urllib.request.Request(
                   f"https://api.github.com/repos/{repository}/actions/artifacts/{artifact_id}/zip",
                   headers=headers,
               )
               with urllib.request.urlopen(request, timeout=180) as response:
                   payload = response.read()
-              outer = root / f"chunk-{chunk}-{artifact_id}.zip"
+              outer = root / f"reused-chunk-{chunk}-{artifact_id}.zip"
               outer.write_bytes(payload)
-              destination = root / f"chunk-{chunk}-{artifact_id}"
+              destination = root / f"reused-chunk-{chunk}-{artifact_id}"
               destination.mkdir(parents=True, exist_ok=True)
               with zipfile.ZipFile(outer) as handle:
                   for info in handle.infolist():
@@ -137,7 +211,59 @@ jobs:
                           raise SystemExit(f"Unsafe chunk artifact member: {info.filename}")
                   handle.extractall(destination)
               outer.unlink()
-              print(f"selected_chunk_{chunk}={artifact_id}:{artifact['name']}")
+              print(f"reused_chunk_{chunk}={artifact_id}:{expected_name}")
+          PY
+
+      - name: Validate exact 42-month canonical chunk coverage before aggregation
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          from scripts.nexus_bybit_replay_chunks import CANONICAL_CHUNKS
+
+          root = Path("build/bybit_artifacts")
+          expected = {(chunk.start, chunk.end): chunk.id for chunk in CANONICAL_CHUNKS}
+          found = {}
+          for report_path in root.rglob("_backfill_report.json"):
+              report = json.loads(report_path.read_text())
+              summary = report.get("summary", {})
+              configuration = report.get("configuration", {})
+              if summary.get("completed_units") != 1:
+                  continue
+              key = (str(configuration.get("start_date", "")), str(configuration.get("end_date", "")))
+              if key not in expected:
+                  continue
+              chunk = expected[key]
+              if chunk in found:
+                  raise SystemExit(f"Duplicate canonical replay chunk {chunk}: {found[chunk]} and {report_path}")
+              if not (
+                  summary.get("backfill_complete") is True
+                  and summary.get("remaining_units") == 0
+                  and summary.get("run_failures") == 0
+                  and summary.get("current_dataset_integrity_ok") is True
+                  and len(report.get("statuses", [])) == 6
+                  and all(
+                      item.get("integrity_ok") is True and item.get("status") == "ready"
+                      for item in report["statuses"]
+                  )
+              ):
+                  raise SystemExit(f"Canonical chunk {chunk} failed content validation: {report_path}")
+              manifest_path = report_path.with_name("_source_manifest.json")
+              sources = json.loads(manifest_path.read_text())
+              if len(sources) != 2:
+                  raise SystemExit(f"Canonical chunk {chunk} does not contain two official source archives")
+              found[chunk] = str(report_path)
+
+          required = {chunk.id for chunk in CANONICAL_CHUNKS}
+          missing = sorted(required - set(found))
+          extra = sorted(set(found) - required)
+          print(f"validated_monthly_chunk_count={len(found)}")
+          print(f"validated_missing_chunks={','.join(missing)}")
+          if missing or extra or len(found) != 42:
+              raise SystemExit(f"Canonical monthly replay coverage incomplete: missing={missing} extra={extra}")
+          print("canonical_monthly_chunk_coverage=PASS")
           PY
 
       - name: Aggregate and enforce complete immutable replay range integrity
