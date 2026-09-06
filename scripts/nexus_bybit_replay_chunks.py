@@ -9,8 +9,7 @@ import re
 from typing import Any, Iterable
 
 
-LEGACY_ARTIFACT_PATTERN = re.compile(r"^bybit-chunk-(\d{2})-attempt-\d+$")
-REHYDRATED_ARTIFACT_PATTERN = re.compile(r"^bybit-rehydrated-chunk-(\d{2})-\d+$")
+ARTIFACT_PATTERN = re.compile(r"^bybit-chunk-(\d{2})-attempt-\d+$")
 CHUNK_IDS = tuple(f"{number:02d}" for number in range(27, 43)) + tuple(
     f"{number:02d}" for number in range(1, 27)
 )
@@ -58,14 +57,6 @@ CANONICAL_CHUNKS = canonical_chunks()
 CANONICAL_CHUNK_MAP = {chunk.id: chunk for chunk in CANONICAL_CHUNKS}
 
 
-def artifact_chunk_id(name: str) -> str | None:
-    for pattern in (LEGACY_ARTIFACT_PATTERN, REHYDRATED_ARTIFACT_PATTERN):
-        match = pattern.match(name)
-        if match:
-            return match.group(1)
-    return None
-
-
 def _iter_artifacts(payload: Any) -> Iterable[dict[str, Any]]:
     pages = payload if isinstance(payload, list) else [payload]
     for page in pages:
@@ -82,8 +73,11 @@ def select_latest_unexpired(payload: Any) -> dict[str, dict[str, Any]]:
     for artifact in _iter_artifacts(payload):
         if artifact.get("expired"):
             continue
-        chunk_id = artifact_chunk_id(str(artifact.get("name", "")))
-        if chunk_id is None or chunk_id not in required:
+        match = ARTIFACT_PATTERN.match(str(artifact.get("name", "")))
+        if not match:
+            continue
+        chunk_id = match.group(1)
+        if chunk_id not in required:
             continue
         key = (str(artifact.get("created_at", "")), int(artifact.get("id", 0)))
         current = latest.get(chunk_id)
