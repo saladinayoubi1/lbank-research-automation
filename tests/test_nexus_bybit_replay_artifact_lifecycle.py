@@ -5,6 +5,7 @@ import importlib.util
 import json
 from pathlib import Path
 import sys
+import urllib.request
 import zipfile
 
 import pandas as pd
@@ -152,6 +153,12 @@ def test_rehydrate_plan_reuses_latest_unexpired_and_rebuilds_missing() -> None:
                     "created_at": "2026-09-02T00:00:00Z",
                 },
                 {
+                    "id": 14,
+                    "name": "bybit-rehydrated-chunk-01-34062636033",
+                    "expired": False,
+                    "created_at": "2026-09-05T00:00:00Z",
+                },
+                {
                     "id": 12,
                     "name": "bybit-chunk-02-attempt-1",
                     "expired": True,
@@ -169,11 +176,43 @@ def test_rehydrate_plan_reuses_latest_unexpired_and_rebuilds_missing() -> None:
     plan = chunks.build_plan(payload)
     assert plan["required_chunk_count"] == 42
     assert plan["reusable_chunk_count"] == 1
-    assert plan["reusable_artifacts"]["01"]["artifact_id"] == 11
+    assert plan["reusable_artifacts"]["01"]["artifact_id"] == 14
+    assert plan["reusable_artifacts"]["01"]["name"] == "bybit-chunk-01-attempt-rehydrated"
+    assert plan["reusable_artifacts"]["01"]["source_name"] == "bybit-rehydrated-chunk-01-34062636033"
     assert plan["missing_chunk_count"] == 41
     assert "02" in plan["missing_ids"]
     entry = next(item for item in plan["missing_matrix"]["include"] if item["id"] == "02")
     assert entry == {"id": "02", "start": "2024-07-01", "end": "2024-07-31"}
+
+
+def test_cross_host_redirect_strips_github_authorization() -> None:
+    chunks = _load(CHUNK_MAP_PATH, "nexus_replay_redirect_contract_test")
+    handler = chunks._CrossHostAuthStrippingRedirectHandler()
+    request = urllib.request.Request(
+        "https://api.github.com/repos/example/repo/actions/artifacts/1/zip",
+        headers={"Authorization": "Bearer test-token"},
+    )
+    redirected = handler.redirect_request(
+        request,
+        None,
+        302,
+        "Found",
+        {},
+        "https://productionresultssa8.blob.core.windows.net/actions-results/file.zip?sig=signed",
+    )
+    assert redirected is not None
+    assert redirected.get_header("Authorization") is None
+
+    same_origin = handler.redirect_request(
+        request,
+        None,
+        302,
+        "Found",
+        {},
+        "https://api.github.com/repos/example/repo/actions/artifacts/1/redirected",
+    )
+    assert same_origin is not None
+    assert same_origin.get_header("Authorization") == "Bearer test-token"
 
 
 def test_chunk_rehydrator_rejects_noncanonical_dates_before_network_access() -> None:
