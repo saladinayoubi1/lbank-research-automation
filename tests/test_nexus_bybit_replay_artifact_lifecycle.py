@@ -14,6 +14,8 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 SELECTOR_PATH = ROOT / "scripts" / "select_nexus_bybit_replay_artifact.py"
 BUILDER_PATH = ROOT / "scripts" / "build_nexus_bybit_replay_package.py"
+CHUNK_MAP_PATH = ROOT / "scripts" / "nexus_bybit_replay_chunks.py"
+CHUNK_REHYDRATOR_PATH = ROOT / "scripts" / "rehydrate_nexus_bybit_chunk.py"
 REHYDRATE_WORKFLOW = ROOT / ".github" / "workflows" / "bybit_full_history_backfill.yml"
 MATRIX_WORKFLOW = ROOT / ".github" / "workflows" / "nexus_demo_strategy_matrix.yml"
 
@@ -106,16 +108,98 @@ def test_deterministic_zip_is_byte_identical_for_same_inputs(tmp_path: Path) -> 
     assert first.read_bytes() == second.read_bytes()
 
 
-def test_rehydrate_workflow_is_manual_fail_closed_and_paper_only() -> None:
+def test_canonical_replay_chunk_map_is_complete_contiguous_and_matches_anchors() -> None:
+    chunks = _load(CHUNK_MAP_PATH, "nexus_replay_chunks_contract_test")
+    values = chunks.CANONICAL_CHUNKS
+    assert len(values) == 42
+    assert len({item.id for item in values}) == 42
+
+    expected = {
+        "27": ("2023-02-01", "2023-02-28"),
+        "42": ("2024-05-01", "2024-05-31"),
+        "01": ("2024-06-01", "2024-06-30"),
+        "02": ("2024-07-01", "2024-07-31"),
+        "03": ("2024-08-01", "2024-08-31"),
+        "05": ("2024-10-01", "2024-10-31"),
+        "18": ("2025-11-01", "2025-11-30"),
+        "21": ("2026-02-01", "2026-02-28"),
+        "22": ("2026-03-01", "2026-03-31"),
+        "26": ("2026-07-01", "2026-07-31"),
+    }
+    for chunk_id, (start, end) in expected.items():
+        item = chunks.CANONICAL_CHUNK_MAP[chunk_id]
+        assert (item.start, item.end) == (start, end)
+
+    for previous, current in zip(values, values[1:]):
+        assert pd.Timestamp(previous.end) + pd.Timedelta(days=1) == pd.Timestamp(current.start)
+
+
+def test_rehydrate_plan_reuses_latest_unexpired_and_rebuilds_missing() -> None:
+    chunks = _load(CHUNK_MAP_PATH, "nexus_replay_chunks_plan_test")
+    payload = [
+        {
+            "artifacts": [
+                {
+                    "id": 10,
+                    "name": "bybit-chunk-01-attempt-1",
+                    "expired": False,
+                    "created_at": "2026-09-01T00:00:00Z",
+                },
+                {
+                    "id": 11,
+                    "name": "bybit-chunk-01-attempt-2",
+                    "expired": False,
+                    "created_at": "2026-09-02T00:00:00Z",
+                },
+                {
+                    "id": 12,
+                    "name": "bybit-chunk-02-attempt-1",
+                    "expired": True,
+                    "created_at": "2026-09-03T00:00:00Z",
+                },
+                {
+                    "id": 13,
+                    "name": "not-a-replay-artifact",
+                    "expired": False,
+                    "created_at": "2026-09-04T00:00:00Z",
+                },
+            ]
+        }
+    ]
+    plan = chunks.build_plan(payload)
+    assert plan["required_chunk_count"] == 42
+    assert plan["reusable_chunk_count"] == 1
+    assert plan["reusable_artifacts"]["01"]["artifact_id"] == 11
+    assert plan["missing_chunk_count"] == 41
+    assert "02" in plan["missing_ids"]
+    entry = next(item for item in plan["missing_matrix"]["include"] if item["id"] == "02")
+    assert entry == {"id": "02", "start": "2024-07-01", "end": "2024-07-31"}
+
+
+def test_chunk_rehydrator_rejects_noncanonical_dates_before_network_access() -> None:
+    rehydrator = _load(CHUNK_REHYDRATOR_PATH, "nexus_replay_chunk_rehydrator_contract_test")
+    rehydrator._validate_chunk_request("01", "2024-06-01", "2024-06-30")
+    with pytest.raises(SystemExit, match="date mismatch"):
+        rehydrator._validate_chunk_request("01", "2024-06-02", "2024-06-30")
+    with pytest.raises(SystemExit, match="Unknown replay chunk id"):
+        rehydrator._validate_chunk_request("99", "2024-06-01", "2024-06-30")
+
+
+def test_rehydrate_workflow_rebuilds_missing_chunks_fail_closed_and_paper_only() -> None:
     text = REHYDRATE_WORKFLOW.read_text(encoding="utf-8")
     assert "workflow_dispatch:" in text
     assert "cancel-in-progress: false" in text
+    assert "scripts/nexus_bybit_replay_chunks.py" in text
+    assert "scripts/rehydrate_nexus_bybit_chunk.py" in text
+    assert "missing_matrix" in text
+    assert "reusable_artifacts" in text
+    assert "max-parallel: 6" in text
+    assert "bybit-rehydrated-chunk-" in text
+    assert "canonical_monthly_chunk_coverage=PASS" in text
+    assert "validated_monthly_chunk_count=" in text
     assert "--start-date 2022-12-01" in text
     assert "--end-date 2023-01-31" in text
     assert "--max-archives-per-run 4" in text
-    assert 'range(1, 43)' in text
-    assert 'artifact.get("expired")' in text
-    assert "Missing unexpired monthly chunk artifacts" in text
     assert 'report["summary"]["completed_units"] == 44' in text
     assert 'report["summary"]["source_archives"] == 88' in text
     assert "rehydrated_full_history_integrity=PASS" in text
@@ -123,10 +207,13 @@ def test_rehydrate_workflow_is_manual_fail_closed_and_paper_only() -> None:
     assert "historical_digest_match" in text
     assert "build_nexus_bybit_replay_package.py" in text
     assert "semantic_dataset_sha256=" in text
+    assert "retention-days: 7" in text
     assert "retention-days: 90" in text
     assert '"paper_replay_only": True' in text
     assert '"live_trading_authority": False' in text
     assert '"private_credentials_used": False' in text
+    assert "BASE_ARTIFACT_ID" not in text
+    assert "Missing unexpired monthly chunk artifacts" not in text
     for forbidden in (
         "api_key",
         "api_secret",
