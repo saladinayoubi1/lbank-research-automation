@@ -91,6 +91,44 @@ def test_semantic_digest_is_data_stable_and_changes_with_market_values() -> None
     assert builder.semantic_series_digest(changed) != first
 
 
+def test_replay_timestamp_grid_normalizes_equivalent_storage_units() -> None:
+    builder = _load(BUILDER_PATH, "nexus_replay_builder_timestamp_unit_test")
+    expected = pd.date_range("2026-01-01", periods=8, freq="15min", tz="UTC").as_unit("ns")
+    parquet_style = expected.as_unit("us")
+    assert expected.difference(parquet_style).empty
+    assert parquet_style.difference(expected).empty
+    assert not parquet_style.equals(expected)
+    assert builder.canonical_timestamp_index(parquet_style).equals(expected)
+
+
+def test_validate_series_accepts_microsecond_parquet_timestamps(tmp_path: Path) -> None:
+    builder = _load(BUILDER_PATH, "nexus_replay_builder_validate_timestamp_unit_test")
+    builder.START_DATE = "2026-01-01"
+    builder.END_DATE = "2026-01-01"
+    builder.TIMEFRAMES = {"minute15": (pd.Timedelta(minutes=15), 96)}
+    timestamps = pd.date_range(
+        "2026-01-01T00:00:00Z", periods=96, freq="15min"
+    ).as_unit("us")
+    frame = pd.DataFrame(
+        {
+            "timestamp": timestamps,
+            "open": 100.0,
+            "high": 101.0,
+            "low": 99.0,
+            "close": 100.5,
+            "volume": 1.0,
+            "symbol": "btc_usdt",
+            "timeframe": "minute15",
+        }
+    )
+    path = tmp_path / "minute15.parquet"
+    frame.to_parquet(path, index=False)
+    result = builder.validate_series(path, "btc_usdt", "minute15")
+    assert result["rows"] == 96
+    assert result["first_timestamp"] == "2026-01-01T00:00:00+00:00"
+    assert result["last_timestamp"] == "2026-01-01T23:45:00+00:00"
+
+
 def test_deterministic_zip_is_byte_identical_for_same_inputs(tmp_path: Path) -> None:
     builder = _load(BUILDER_PATH, "nexus_replay_builder_zip_test")
     root = tmp_path / "root"
