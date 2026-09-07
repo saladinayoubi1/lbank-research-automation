@@ -16,30 +16,50 @@ jobs:
     runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 2
     steps:
-      - name: Read-only Remote Commander ACL diagnostics
+      - name: Inspect Remote Commander execution contract safely
         shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
         run: |
-          $ErrorActionPreference='Continue'
+          $ErrorActionPreference='Stop'
           $root='C:\Users\afaq\AppData\Local\NEXUS\RemoteCommander'
-          $file=Join-Path $root 'nexus-remote-commander-watchdog.ps1'
+          $watchdog=Join-Path $root 'nexus-remote-commander-watchdog.ps1'
+          $taskXml=Join-Path $root 'task.xml'
           Write-Host ("whoami={0}" -f (& whoami.exe))
-          Write-Host 'attrib_begin'
-          & attrib.exe $file 2>&1 | ForEach-Object { Write-Host $_ }
-          Write-Host ("attrib_exit={0}" -f $LASTEXITCODE)
-          Write-Host 'attrib_end'
-          Write-Host 'root_icacls_begin'
-          & icacls.exe $root 2>&1 | ForEach-Object { Write-Host $_ }
-          Write-Host ("root_icacls_exit={0}" -f $LASTEXITCODE)
-          Write-Host 'root_icacls_end'
-          Write-Host 'file_icacls_begin'
-          & icacls.exe $file 2>&1 | ForEach-Object { Write-Host $_ }
-          Write-Host ("file_icacls_exit={0}" -f $LASTEXITCODE)
-          Write-Host 'file_icacls_end'
-          Write-Host 'cipher_begin'
-          & cipher.exe /c $file 2>&1 | Select-Object -First 25 | ForEach-Object { Write-Host $_ }
-          Write-Host ("cipher_exit={0}" -f $LASTEXITCODE)
-          Write-Host 'cipher_end'
-          Write-Host 'acl_modified=false'
-          Write-Host 'file_contents_read=false'
+          Write-Host ("session={0}" -f $env:SESSIONNAME)
+
+          Write-Host 'watchdog_ast_begin'
+          $tokens=$null; $errors=$null
+          $ast=[System.Management.Automation.Language.Parser]::ParseFile($watchdog,[ref]$tokens,[ref]$errors)
+          Write-Host ("parse_errors={0}" -f $errors.Count)
+          $commands=$ast.FindAll({param($n) $n -is [System.Management.Automation.Language.CommandAst]},$true) |
+            ForEach-Object { $_.GetCommandName() } | Where-Object { $_ } | Sort-Object -Unique
+          foreach($cmd in $commands){ Write-Host ("command={0}" -f $cmd) }
+          $vars=$ast.FindAll({param($n) $n -is [System.Management.Automation.Language.VariableExpressionAst]},$true) |
+            ForEach-Object { $_.VariablePath.UserPath } | Sort-Object -Unique
+          foreach($v in $vars){ if($v -match '(?i)token|auth|secret|password|credential|url|runtime|state|log|process|pid|sleep|retry|backoff|commander'){ Write-Host ("variable={0}" -f $v) } }
+          Write-Host 'watchdog_ast_end'
+
+          Write-Host 'task_contract_begin'
+          if(Test-Path -LiteralPath $taskXml -PathType Leaf){
+            [xml]$xml=Get-Content -LiteralPath $taskXml -Raw
+            $ns=New-Object System.Xml.XmlNamespaceManager($xml.NameTable)
+            $ns.AddNamespace('t','http://schemas.microsoft.com/windows/2004/02/mit/task')
+            $principal=$xml.SelectSingleNode('//t:Principal',$ns)
+            $exec=$xml.SelectSingleNode('//t:Actions/t:Exec',$ns)
+            $triggerNames=$xml.SelectNodes('//t:Triggers/*',$ns) | ForEach-Object { $_.LocalName }
+            if($principal){
+              Write-Host ("principal_logon_type={0}" -f $principal.LogonType)
+              Write-Host ("principal_run_level={0}" -f $principal.RunLevel)
+            }
+            Write-Host ("trigger_types={0}" -f (($triggerNames | Sort-Object -Unique) -join ','))
+            if($exec){
+              $cmd=[string]$exec.Command
+              $args=[string]$exec.Arguments
+              $cmd=$cmd -replace '(?i)(token|secret|password|credential)=\S+','$1=REDACTED'
+              $args=$args -replace '(?i)(token|secret|password|credential)=\S+','$1=REDACTED'
+              Write-Host ("task_command={0}" -f $cmd)
+              Write-Host ("task_arguments={0}" -f $args)
+            }
+          } else { Write-Host 'task_xml_missing=true' }
+          Write-Host 'task_contract_end'
           Write-Host 'mutation_performed=false'
           Write-Host 'live_trading_authority_changed=false'
