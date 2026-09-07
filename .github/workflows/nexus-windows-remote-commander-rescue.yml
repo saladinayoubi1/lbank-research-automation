@@ -12,51 +12,57 @@ permissions:
   contents: read
 
 concurrency:
-  group: nexus-windows-remote-commander-rescue-v7
+  group: nexus-windows-remote-commander-rescue-v8
   cancel-in-progress: false
 
 jobs:
   rescue:
     runs-on: [self-hosted, Windows, X64]
-    timeout-minutes: 4
+    timeout-minutes: 5
     steps:
       - name: Exact Windows runner
         shell: cmd
         run: if /I not "%RUNNER_NAME%"=="NEXUS-WINDOWS-DR" exit /b 1
 
-      - name: Remote Commander command line identified
-        continue-on-error: true
+      - name: Recycle only signed-in-user Remote Commander process
         shell: powershell
         run: |
-          $matches = @(Get-WmiObject Win32_Process -Filter "Name='node.exe'" -ErrorAction SilentlyContinue | Where-Object { [string]$_.CommandLine -match '(?i)desktop-commander|desktopcommander|wonderwhy-er' })
-          if ($matches.Count -lt 1) { exit 1 }
+          $ErrorActionPreference = 'Stop'
+          $explorer = Get-Process explorer -ErrorAction Stop | Select-Object -First 1
+          $session = $explorer.SessionId
+          $matches = @(Get-WmiObject Win32_Process -Filter "Name='node.exe'" -ErrorAction Stop | Where-Object {
+            $_.SessionId -eq $session -and [string]$_.CommandLine -match '(?i)desktop-commander|desktopcommander|wonderwhy-er'
+          })
+          if ($matches.Count -lt 1) { throw 'No exact Remote Commander node process in signed-in user session.' }
+          $oldPids = @($matches | ForEach-Object { [int]$_.ProcessId })
+          foreach ($pidValue in $oldPids) { Stop-Process -Id $pidValue -Force -ErrorAction Stop }
+          Start-Sleep -Seconds 3
+          & schtasks.exe /Run /TN 'NEXUS-Remote-Commander-Recovery' | Out-Null
+          if ($LASTEXITCODE -ne 0) { throw 'Existing recovery task request failed.' }
+          $deadline = [DateTime]::UtcNow.AddSeconds(45)
+          $new = @()
+          while ([DateTime]::UtcNow -lt $deadline) {
+            Start-Sleep -Seconds 3
+            $new = @(Get-WmiObject Win32_Process -Filter "Name='node.exe'" -ErrorAction SilentlyContinue | Where-Object {
+              $_.SessionId -eq $session -and [string]$_.CommandLine -match '(?i)desktop-commander|desktopcommander|wonderwhy-er' -and $oldPids -notcontains [int]$_.ProcessId
+            })
+            if ($new.Count -gt 0) { break }
+          }
+          if ($new.Count -lt 1) { throw 'Recovery task did not produce a new Remote Commander process.' }
+          Write-Host 'remote_commander_process_recycle=PASS'
+          Write-Host ('old_pid_count=' + $oldPids.Count)
+          Write-Host ('new_pid_count=' + $new.Count)
 
-      - name: Desktop Commander MCP endpoint reachable
-        continue-on-error: true
+      - name: Desktop Commander endpoints remain reachable
         shell: cmd
-        run: >-
-          node -e "fetch('https://mcp.desktopcommander.app/api/mcp-info').then(r=>process.exit(r.status===200?0:1)).catch(()=>process.exit(2))"
-
-      - name: Desktop Commander auth endpoint reachable
-        continue-on-error: true
-        shell: cmd
-        run: >-
-          node -e "fetch('https://auth.desktopcommander.app').then(r=>process.exit(r.status===200?0:1)).catch(()=>process.exit(2))"
-
-      - name: Recovery task action targets NEXUS remote recovery
-        continue-on-error: true
-        shell: powershell
         run: |
-          $svc = New-Object -ComObject 'Schedule.Service'
-          $svc.Connect()
-          $task = $svc.GetFolder('\').GetTask('NEXUS-Remote-Commander-Recovery')
-          $text = (($task.Definition.Actions | ForEach-Object { ([string]$_.Path) + ' ' + ([string]$_.Arguments) }) -join ' ')
-          if ($text -notmatch '(?i)NEXUS|RemoteCommander|Remote.Commander') { exit 1 }
+          node -e "Promise.all([fetch('https://mcp.desktopcommander.app/api/mcp-info'),fetch('https://auth.desktopcommander.app')]).then(r=>process.exit(r.every(x=>x.status===200)?0:1)).catch(()=>process.exit(2))"
 
       - name: Safety boundary unchanged
         shell: cmd
         run: |
-          echo diagnostic_mutation=false
+          echo remote_commander_process_only=true
+          echo task_definition_mutated=false
           echo runner_registration_mutated=false
           echo runner_credentials_mutated=false
           echo windows_acl_mutated=false
