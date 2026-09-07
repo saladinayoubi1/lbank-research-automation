@@ -20,6 +20,7 @@ concurrency:
 jobs:
   rescue:
     name: Rescue user-context Remote Commander
+    if: github.event_name != 'workflow_dispatch' || github.ref_name == github.event.repository.default_branch
     runs-on: [self-hosted, Windows, X64, nexus-remote-rescue]
     timeout-minutes: 5
     steps:
