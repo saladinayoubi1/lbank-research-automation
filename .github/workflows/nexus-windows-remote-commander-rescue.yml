@@ -1,0 +1,46 @@
+name: NEXUS Windows Remote Commander Rescue
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - codex/nexus-windows-remote-rescue-20260907
+    paths:
+      - .github/workflows/nexus-windows-remote-commander-rescue.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nexus-windows-remote-commander-rescue
+  cancel-in-progress: false
+
+jobs:
+  rescue:
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 5
+    steps:
+      - name: Verify exact existing Windows runner
+        shell: cmd
+        run: |
+          if /I not "%RUNNER_NAME%"=="NEXUS-WINDOWS-DR" exit /b 1
+          echo exact_windows_runner=NEXUS-WINDOWS-DR
+      - name: Request existing Remote Commander recovery task
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $task = 'NEXUS-Remote-Commander-Recovery'
+          & schtasks.exe /Query /TN $task /FO LIST /V
+          if ($LASTEXITCODE -ne 0) { throw 'Existing Remote Commander recovery task is not queryable.' }
+          & schtasks.exe /Run /TN $task
+          if ($LASTEXITCODE -ne 0) { throw 'Existing Remote Commander recovery task could not be requested.' }
+          Start-Sleep -Seconds 10
+          & schtasks.exe /Query /TN $task /FO LIST /V
+          if ($LASTEXITCODE -ne 0) { throw 'Existing Remote Commander recovery task could not be re-queried.' }
+          Write-Host 'remote_commander_recovery_request=PASS'
+          Write-Host 'task_definition_mutated=false'
+          Write-Host 'runner_registration_mutated=false'
+          Write-Host 'runner_credentials_mutated=false'
+          Write-Host 'windows_acl_mutated=false'
+          Write-Host 'windows_service_identity_mutated=false'
+          Write-Host 'live_trading_authority_changed=false'
