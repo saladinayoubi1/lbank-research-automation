@@ -256,6 +256,8 @@ def _classify_403(response: Any) -> tuple[str, int | None, str, str]:
         return ret_msg_category, ret_code, ret_code_category, ret_msg_category
 
     content = bytes(getattr(response, "content", b""))[:_DIAGNOSTIC_BODY_LIMIT].lower()
+    if b"block access from your country" in content:
+        return "edge_country_restricted", ret_code, ret_code_category, ret_msg_category
     if b"access too frequent" in content:
         return "access_too_frequent", ret_code, ret_code_category, ret_msg_category
     if b"service restricted" in content or (b"restricted" in content and b"region" in content):
@@ -383,7 +385,7 @@ def fetch_closed_klines(
     retry_rounds = len(UNCLASSIFIED_403_RETRY_DELAYS_SECONDS) + 1
     for round_index in range(retry_rounds):
         round_rejections: list[str] = []
-        unclassified_403_count = 0
+        retryable_403_count = 0
         for base_url in base_urls:
             try:
                 response, cdn_request_id = _request_one_official_mainnet_host(
@@ -429,8 +431,8 @@ def fetch_closed_klines(
                         f"Bybit Mainnet access is blocked (HTTP 403 {reason}); "
                         "repeated requests suppressed"
                     )
-                if reason == "unclassified":
-                    unclassified_403_count += 1
+                if reason in {"unclassified", "edge_country_restricted"}:
+                    retryable_403_count += 1
                 continue
             if response.status_code != 200:
                 raise BybitKlineError(f"Bybit kline request failed with HTTP {response.status_code}")
@@ -451,14 +453,17 @@ def fetch_closed_klines(
             )
 
         rejected_hosts.extend(round_rejections)
-        all_hosts_unclassified_403 = (
+        all_hosts_retryable_403 = (
             len(round_rejections) == len(base_urls)
-            and unclassified_403_count == len(base_urls)
+            and retryable_403_count == len(base_urls)
         )
         if (
-            all_hosts_unclassified_403
+            all_hosts_retryable_403
             and round_index < len(UNCLASSIFIED_403_RETRY_DELAYS_SECONDS)
         ):
+            close = getattr(client, "close", None)
+            if callable(close):
+                close()
             time.sleep(UNCLASSIFIED_403_RETRY_DELAYS_SECONDS[round_index])
             continue
         break

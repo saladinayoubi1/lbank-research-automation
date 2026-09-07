@@ -146,6 +146,27 @@ def test_fetch_tries_second_official_host_after_unclassified_403(capsys):
     assert "Forbidden" not in line
 
 
+def test_cloudfront_country_block_falls_through_to_next_host(capsys):
+    body = b"The Amazon CloudFront distribution is configured to block access from your country"
+    session = _Session([
+        _Response(403, content=body, headers={"Server": "CloudFront", "Content-Type": "application/json"}),
+        _Response(200, _payload(_rows())),
+    ])
+    result = fetch_closed_klines(
+        "BTCUSDT", "15", now_ms=1710002000000,
+        start_time_ms=1710000000000, end_time_ms=1710000900000,
+        limit=2, session=session,
+    )
+    assert len(result) == 2
+    assert session.urls == [
+        OFFICIAL_MAINNET_BASE_URLS[0] + "/v5/market/kline",
+        OFFICIAL_MAINNET_BASE_URLS[1] + "/v5/market/kline",
+    ]
+    output = capsys.readouterr().out
+    assert '"classification":"edge_country_restricted"' in output
+    assert "block access from your country" not in output.lower()
+
+
 def test_access_too_frequent_403_closes_session_and_does_not_retry(capsys):
     session = _Session([
         _Response(
@@ -290,6 +311,7 @@ def test_all_host_unclassified_403_gets_one_bounded_retry_round_and_recovers(mon
         OFFICIAL_MAINNET_BASE_URLS[0] + "/v5/market/kline",
     ]
     assert sleeps == [UNCLASSIFIED_403_RETRY_DELAYS_SECONDS[0]]
+    assert session.closed is True
     request_ids = [row["headers"]["cdn-request-id"] for row in session.requests]
     assert len(request_ids) == len(set(request_ids))
 
