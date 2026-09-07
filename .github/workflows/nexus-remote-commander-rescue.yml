@@ -23,15 +23,15 @@ jobs:
     runs-on: [self-hosted, Windows, X64, nexus-remote-rescue]
     timeout-minutes: 5
     steps:
-      - name: Verify physical runner identity
+      - name: Verify physical host identity
         shell: powershell
         run: |
-          $actual = [string]$env:RUNNER_NAME
-          Write-Host ("runner_name=" + $actual)
-          if ($actual.Trim() -ne 'NEXUS-WINDOWS-DR') {
-            throw "Unexpected runner: $actual"
+          $actual = [string]$env:COMPUTERNAME
+          Write-Host ("computer_name=" + $actual)
+          if ($actual.Trim() -ne 'DESKTOP-1R1081M') {
+            throw "Unexpected physical host: $actual"
           }
-          Write-Host 'runner_identity=PASS'
+          Write-Host 'physical_host_identity=PASS'
 
       - name: Start or confirm user-context recovery task
         shell: powershell
