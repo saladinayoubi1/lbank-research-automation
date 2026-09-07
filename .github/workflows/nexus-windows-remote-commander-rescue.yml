@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: nexus-windows-remote-commander-rescue-v6
+  group: nexus-windows-remote-commander-rescue-v7
   cancel-in-progress: false
 
 jobs:
@@ -24,53 +24,39 @@ jobs:
         shell: cmd
         run: if /I not "%RUNNER_NAME%"=="NEXUS-WINDOWS-DR" exit /b 1
 
-      - name: Recovery task queryable
+      - name: Remote Commander command line identified
         continue-on-error: true
         shell: powershell
         run: |
-          & schtasks.exe /Query /TN 'NEXUS-Remote-Commander-Recovery' /FO LIST /V | Out-Null
-          if ($LASTEXITCODE -ne 0) { exit 1 }
+          $matches = @(Get-WmiObject Win32_Process -Filter "Name='node.exe'" -ErrorAction SilentlyContinue | Where-Object { [string]$_.CommandLine -match '(?i)desktop-commander|desktopcommander|wonderwhy-er' })
+          if ($matches.Count -lt 1) { exit 1 }
 
-      - name: Recovery task last result healthy
+      - name: Desktop Commander MCP endpoint reachable
+        continue-on-error: true
+        shell: cmd
+        run: >-
+          node -e "fetch('https://mcp.desktopcommander.app/api/mcp-info').then(r=>process.exit(r.status===200?0:1)).catch(()=>process.exit(2))"
+
+      - name: Desktop Commander auth endpoint reachable
+        continue-on-error: true
+        shell: cmd
+        run: >-
+          node -e "fetch('https://auth.desktopcommander.app').then(r=>process.exit(r.status===200?0:1)).catch(()=>process.exit(2))"
+
+      - name: Recovery task action targets NEXUS remote recovery
         continue-on-error: true
         shell: powershell
         run: |
           $svc = New-Object -ComObject 'Schedule.Service'
           $svc.Connect()
           $task = $svc.GetFolder('\').GetTask('NEXUS-Remote-Commander-Recovery')
-          if ($task.LastTaskResult -notin @(0,267009)) { exit 1 }
-
-      - name: Signed-in user session exists
-        continue-on-error: true
-        shell: powershell
-        run: |
-          $explorer = Get-Process explorer -ErrorAction SilentlyContinue | Select-Object -First 1
-          if (-not $explorer) { exit 1 }
-
-      - name: Remote Commander node exists in user session
-        continue-on-error: true
-        shell: powershell
-        run: |
-          $explorer = Get-Process explorer -ErrorAction SilentlyContinue | Select-Object -First 1
-          if (-not $explorer) { exit 1 }
-          $nodes = @(Get-Process node -ErrorAction SilentlyContinue | Where-Object { $_.SessionId -eq $explorer.SessionId })
-          if ($nodes.Count -lt 1) { exit 1 }
-
-      - name: Manual recovery launcher exists
-        continue-on-error: true
-        shell: powershell
-        run: |
-          if (-not (Test-Path -LiteralPath 'C:\Users\afaq\Desktop\NEXUS_REMOTE_CONNECT.cmd')) { exit 1 }
-
-      - name: Local NEXUS recovery root exists
-        continue-on-error: true
-        shell: powershell
-        run: |
-          if (-not (Test-Path -LiteralPath 'C:\Users\afaq\AppData\Local\NEXUS')) { exit 1 }
+          $text = (($task.Definition.Actions | ForEach-Object { ([string]$_.Path) + ' ' + ([string]$_.Arguments) }) -join ' ')
+          if ($text -notmatch '(?i)NEXUS|RemoteCommander|Remote.Commander') { exit 1 }
 
       - name: Safety boundary unchanged
         shell: cmd
         run: |
+          echo diagnostic_mutation=false
           echo runner_registration_mutated=false
           echo runner_credentials_mutated=false
           echo windows_acl_mutated=false
