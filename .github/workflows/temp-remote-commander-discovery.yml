@@ -1,0 +1,89 @@
+name: TEMP Remote Commander Discovery
+
+on:
+  push:
+    branches: [codex/nexus-warp-disconnect-recovery-20260908]
+    paths:
+      - .github/workflows/temp-remote-commander-discovery.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    if: github.ref == 'refs/heads/codex/nexus-warp-disconnect-recovery-20260908'
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 5
+    steps:
+      - name: Read-only discover Remote Commander launcher
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
+        run: |
+          $ErrorActionPreference = 'Continue'
+          $warp = 'C:\Program Files\Cloudflare\Cloudflare WARP\warp-cli.exe'
+          if (Test-Path -LiteralPath $warp -PathType Leaf) { & $warp disconnect | Out-Null }
+          Write-Host "user=$env:USERNAME"
+          Write-Host "userprofile=$env:USERPROFILE"
+          Write-Host "localappdata=$env:LOCALAPPDATA"
+          Write-Host 'matching_processes_begin'
+          Get-Process -ErrorAction SilentlyContinue |
+            Where-Object { $_.ProcessName -match '(?i)remote|commander|desktop|electron' } |
+            ForEach-Object {
+              $p = $null
+              try { $p = $_.Path } catch {}
+              Write-Host ("process={0};pid={1};path={2}" -f $_.ProcessName,$_.Id,$p)
+            }
+          Write-Host 'matching_processes_end'
+
+          Write-Host 'uninstall_entries_begin'
+          foreach ($root in @(
+            'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*',
+            'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*',
+            'HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
+          )) {
+            Get-ItemProperty $root -ErrorAction SilentlyContinue |
+              Where-Object { $_.DisplayName -match '(?i)remote.*commander|desktop.*commander|commander' } |
+              ForEach-Object { Write-Host ("app={0};location={1};icon={2}" -f $_.DisplayName,$_.InstallLocation,$_.DisplayIcon) }
+          }
+          Write-Host 'uninstall_entries_end'
+
+          Write-Host 'startup_shortcuts_begin'
+          $shell = New-Object -ComObject WScript.Shell
+          foreach ($folder in @(
+            "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup",
+            "$env:ProgramData\Microsoft\Windows\Start Menu\Programs\Startup",
+            "$env:USERPROFILE\Desktop"
+          )) {
+            if (-not (Test-Path -LiteralPath $folder)) { continue }
+            Get-ChildItem -LiteralPath $folder -Filter '*.lnk' -ErrorAction SilentlyContinue |
+              Where-Object { $_.Name -match '(?i)remote|commander|desktop' } |
+              ForEach-Object {
+                try {
+                  $s = $shell.CreateShortcut($_.FullName)
+                  Write-Host ("shortcut={0};target={1};workingdir={2}" -f $_.FullName,$s.TargetPath,$s.WorkingDirectory)
+                } catch {}
+              }
+          }
+          Write-Host 'startup_shortcuts_end'
+
+          Write-Host 'nexus_local_files_begin'
+          $nexus = Join-Path $env:LOCALAPPDATA 'NEXUS'
+          if (Test-Path -LiteralPath $nexus) {
+            Get-ChildItem -LiteralPath $nexus -Recurse -File -ErrorAction SilentlyContinue |
+              Where-Object { $_.Name -match '(?i)remote|commander|watchdog|recovery' } |
+              Select-Object -First 80 |
+              ForEach-Object { Write-Host ("file={0}" -f $_.FullName) }
+          }
+          Write-Host 'nexus_local_files_end'
+
+          Write-Host 'commander_executables_begin'
+          foreach ($root in @("$env:LOCALAPPDATA\Programs",$env:LOCALAPPDATA,$env:ProgramFiles,${env:ProgramFiles(x86)})) {
+            if (-not $root -or -not (Test-Path -LiteralPath $root)) { continue }
+            Get-ChildItem -LiteralPath $root -Recurse -File -Filter '*.exe' -ErrorAction SilentlyContinue |
+              Where-Object { $_.Name -match '(?i)commander|remote.*desktop|desktop.*remote' -or $_.FullName -match '(?i)remote[-_ ]?desktop[-_ ]?commander' } |
+              Select-Object -First 40 |
+              ForEach-Object { Write-Host ("exe={0}" -f $_.FullName) }
+          }
+          Write-Host 'commander_executables_end'
+          Write-Host 'mutation_performed=false'
+          Write-Host 'live_trading_authority_changed=false'
