@@ -24,10 +24,8 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Confirm dedicated rescue lane
-        shell: powershell
-        run: |
-          Write-Host 'dedicated_rescue_label=nexus-remote-rescue'
-          Write-Host 'physical_host_identity=BOUNDED_BY_RUNNER_LABEL'
+        shell: cmd
+        run: echo dedicated_rescue_label=nexus-remote-rescue
 
       - name: Start or confirm user-context recovery task
         shell: powershell
