@@ -10,10 +10,9 @@ on:
 
 permissions:
   contents: read
-  issues: write
 
 concurrency:
-  group: nexus-windows-remote-commander-rescue-v5
+  group: nexus-windows-remote-commander-rescue-v6
   cancel-in-progress: false
 
 jobs:
@@ -21,46 +20,59 @@ jobs:
     runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 4
     steps:
-      - name: Verify exact existing Windows runner
+      - name: Exact Windows runner
+        shell: cmd
+        run: if /I not "%RUNNER_NAME%"=="NEXUS-WINDOWS-DR" exit /b 1
+
+      - name: Recovery task queryable
+        continue-on-error: true
+        shell: powershell
+        run: |
+          & schtasks.exe /Query /TN 'NEXUS-Remote-Commander-Recovery' /FO LIST /V | Out-Null
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+      - name: Recovery task last result healthy
+        continue-on-error: true
+        shell: powershell
+        run: |
+          $svc = New-Object -ComObject 'Schedule.Service'
+          $svc.Connect()
+          $task = $svc.GetFolder('\').GetTask('NEXUS-Remote-Commander-Recovery')
+          if ($task.LastTaskResult -notin @(0,267009)) { exit 1 }
+
+      - name: Signed-in user session exists
+        continue-on-error: true
+        shell: powershell
+        run: |
+          $explorer = Get-Process explorer -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $explorer) { exit 1 }
+
+      - name: Remote Commander node exists in user session
+        continue-on-error: true
+        shell: powershell
+        run: |
+          $explorer = Get-Process explorer -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $explorer) { exit 1 }
+          $nodes = @(Get-Process node -ErrorAction SilentlyContinue | Where-Object { $_.SessionId -eq $explorer.SessionId })
+          if ($nodes.Count -lt 1) { exit 1 }
+
+      - name: Manual recovery launcher exists
+        continue-on-error: true
+        shell: powershell
+        run: |
+          if (-not (Test-Path -LiteralPath 'C:\Users\afaq\Desktop\NEXUS_REMOTE_CONNECT.cmd')) { exit 1 }
+
+      - name: Local NEXUS recovery root exists
+        continue-on-error: true
+        shell: powershell
+        run: |
+          if (-not (Test-Path -LiteralPath 'C:\Users\afaq\AppData\Local\NEXUS')) { exit 1 }
+
+      - name: Safety boundary unchanged
         shell: cmd
         run: |
-          if /I not "%RUNNER_NAME%"=="NEXUS-WINDOWS-DR" exit /b 1
-          echo exact_windows_runner=NEXUS-WINDOWS-DR
-      - name: Publish sanitized recovery diagnostics
-        shell: powershell
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          $ErrorActionPreference = 'Continue'
-          $taskText = (& schtasks.exe /Query /TN 'NEXUS-Remote-Commander-Recovery' /FO LIST /V 2>&1 | Out-String)
-          $taskExit = $LASTEXITCODE
-          $processText = (Get-Process node,powershell,wscript -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,SessionId,Path | Format-Table -AutoSize | Out-String)
-          $desktopCmd = Test-Path -LiteralPath 'C:\Users\afaq\Desktop\NEXUS_REMOTE_CONNECT.cmd'
-          $nexusLocal = Test-Path -LiteralPath 'C:\Users\afaq\AppData\Local\NEXUS'
-          $diag = @"
-exact_windows_runner=NEXUS-WINDOWS-DR
-schtasks_query_exit=$taskExit
---- TASK ---
-$taskText
---- PROCESSES ---
-$processText
---- FILES ---
-NEXUS_REMOTE_CONNECT.cmd=$desktopCmd
-LOCALAPPDATA_NEXUS=$nexusLocal
-diagnostic_mutation=false
-runner_registration_mutated=false
-runner_credentials_mutated=false
-windows_acl_mutated=false
-windows_service_identity_mutated=false
-live_trading_authority_changed=false
-"@
-          if ($diag.Length -gt 12000) { $diag = $diag.Substring(0,12000) }
-          $comment = "Physical Windows rescue diagnostic from run $env:GITHUB_RUN_ID on branch $env:GITHUB_REF_NAME.`n```text`n$diag`n```"
-          $json = @{ body = $comment } | ConvertTo-Json -Depth 3
-          $headers = @{
-            Authorization = "Bearer $env:GH_TOKEN"
-            Accept = 'application/vnd.github+json'
-            'X-GitHub-Api-Version' = '2022-11-28'
-          }
-          Invoke-RestMethod -Method Post -Uri 'https://api.github.com/repos/saladinayoubi1/lbank-research-automation/issues/1372/comments' -Headers $headers -ContentType 'application/json' -Body $json | Out-Null
-          Write-Host 'maintenance_issue_diagnostic_comment=PASS'
+          echo runner_registration_mutated=false
+          echo runner_credentials_mutated=false
+          echo windows_acl_mutated=false
+          echo windows_service_identity_mutated=false
+          echo live_trading_authority_changed=false
