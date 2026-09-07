@@ -26,8 +26,10 @@ def test_recovery_preserves_existing_runner_registration() -> None:
     text = _text()
     assert "'/opt/nexus-bybit-runner'" in text
     assert "'NEXUS-BYBIT-WSL'" in text
-    assert "test -x '$RunnerRoot/run.sh'" in text
-    assert "test -f '$RunnerRoot/.runner'" in text
+    assert "test -x '__RUNNER_ROOT__/run.sh'" in text
+    assert "test -f '__RUNNER_ROOT__/.runner'" in text
+    assert "while IFS= read -r line; do" in text
+    assert "grep -E" not in text
     assert "runner_registration_modified = $false" in text
     assert "runner_credentials_modified = $false" in text
     for forbidden in ("config.sh", "--token", "registration-token", "remove.sh"):
@@ -41,7 +43,7 @@ def test_recovery_uses_per_user_startup_and_managed_child_watchdog() -> None:
     assert "-Mode Watch" in text
     assert "Start-Sleep -Seconds 15" in text
     assert "Local\\NEXUS-Bybit-WSL-Watchdog-v" in text
-    assert "$watchdogGeneration = 4" in text
+    assert "$watchdogGeneration = 5" in text
     assert "Start-ManagedRunnerProcess" in text
     assert "exec ./run.sh" in text
     assert "RUNNER_ALLOW_RUNASROOT=1" in text
@@ -60,6 +62,12 @@ def test_wsl_probe_interop_is_timeout_bounded() -> None:
     assert "runner_process_probe_timeout=true" in text
     assert "watchdog_generation = $watchdogGeneration" in text
     assert "wsl_call_timeout_seconds" in text
+    assert "$psi.RedirectStandardInput = $true" in text
+    assert "$normalizedCommand = $Command.Replace(\"`r`n\", \"`n\").Replace(\"`r\", \"`n\")" in text
+    assert '$Process.StandardInput.Write("`n")' in text
+    assert "$Process.StandardInput.Close()" in text
+    assert "base64 -d" not in text
+    assert "-u root -- bash'" in text
 
 
 def test_watchdog_recycles_only_idle_external_listener() -> None:

@@ -34,24 +34,20 @@ $startupRoot = [Environment]::GetFolderPath('Startup')
 $startupVbs = Join-Path $startupRoot 'NEXUS-Bybit-WSL-User-Startup.vbs'
 $legacyStartupCmd = Join-Path $startupRoot 'NEXUS-Bybit-WSL-User-Startup.cmd'
 $wslTimeoutMilliseconds = 10000
-$watchdogGeneration = 4
+$watchdogGeneration = 5
 $managedRunnerLog = '/tmp/nexus-bybit-runner.log'
 $managedChildMissingListenerThreshold = 3
 
 function New-WslProcessStartInfo {
-    param(
-        [Parameter(Mandatory = $true)][string]$Command,
-        [bool]$RedirectOutput = $false
-    )
+    param([bool]$RedirectOutput = $false)
 
-    $encoded = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($Command))
-    $bashCommand = "printf '%s' '$encoded' | base64 -d | bash"
     $psi = New-Object Diagnostics.ProcessStartInfo
     $psi.FileName = $wsl
-    $psi.Arguments = '-d ' + $Distribution + ' -u root -- bash -lc "' + $bashCommand + '"'
+    $psi.Arguments = '-d ' + $Distribution + ' -u root -- bash'
     $psi.UseShellExecute = $false
     $psi.CreateNoWindow = $true
     $psi.WindowStyle = [Diagnostics.ProcessWindowStyle]::Hidden
+    $psi.RedirectStandardInput = $true
     if ($RedirectOutput) {
         $psi.RedirectStandardOutput = $true
         $psi.RedirectStandardError = $true
@@ -59,18 +55,30 @@ function New-WslProcessStartInfo {
     return $psi
 }
 
+function Write-WslCommandInput {
+    param(
+        [Parameter(Mandatory = $true)][Diagnostics.Process]$Process,
+        [Parameter(Mandatory = $true)][string]$Command
+    )
+    $normalizedCommand = $Command.Replace("`r`n", "`n").Replace("`r", "`n")
+    $Process.StandardInput.Write($normalizedCommand)
+    $Process.StandardInput.Write("`n")
+    $Process.StandardInput.Close()
+}
+
 function Invoke-WslNative {
     param([Parameter(Mandatory = $true)][string]$Command)
 
     # All probe/mutation calls are bounded. The long-lived managed runner uses a
     # separate watchdog-owned wsl.exe child and is never routed through here.
-    $psi = New-WslProcessStartInfo -Command $Command -RedirectOutput $true
+    $psi = New-WslProcessStartInfo -RedirectOutput $true
     $proc = New-Object Diagnostics.Process
     $proc.StartInfo = $psi
     try {
         if (-not $proc.Start()) {
             return [ordered]@{ exit_code = -1; output = 'wsl_process_start_failed' }
         }
+        Write-WslCommandInput -Process $proc -Command $Command
         if (-not $proc.WaitForExit($wslTimeoutMilliseconds)) {
             try { $proc.Kill() } catch { }
             return [ordered]@{ exit_code = 124; output = 'wsl_timeout' }
@@ -94,7 +102,19 @@ function Write-Log([string]$Message) {
 }
 
 function Test-ExistingRegistration {
-    $probe = Invoke-WslNative "test -x '$RunnerRoot/run.sh' && test -f '$RunnerRoot/.runner' && grep -Eq 'agentName[^,]*$ExpectedRunnerName' '$RunnerRoot/.runner'"
+    $command = @'
+test -x '__RUNNER_ROOT__/run.sh' || exit 10
+test -f '__RUNNER_ROOT__/.runner' || exit 11
+found=0
+while IFS= read -r line; do
+  case "$line" in
+    *'"agentName"'*'__EXPECTED_RUNNER_NAME__'*) found=1 ;;
+  esac
+done < '__RUNNER_ROOT__/.runner'
+[ "$found" -eq 1 ]
+'@
+    $command = $command.Replace('__RUNNER_ROOT__', $RunnerRoot).Replace('__EXPECTED_RUNNER_NAME__', $ExpectedRunnerName)
+    $probe = Invoke-WslNative $command
     if ($probe.exit_code -ne 0) {
         throw 'Existing NEXUS-BYBIT-WSL registration was not found; this script will not create or replace it.'
     }
@@ -207,7 +227,7 @@ exit 0
 function Start-ManagedRunnerProcess {
     Test-ExistingRegistration
     $command = "cd '$RunnerRoot' && export RUNNER_ALLOW_RUNASROOT=1 && export RUNNER_TRACKING_ID= && exec ./run.sh >>'$managedRunnerLog' 2>&1"
-    $psi = New-WslProcessStartInfo -Command $command -RedirectOutput $false
+    $psi = New-WslProcessStartInfo -RedirectOutput $false
     $proc = New-Object Diagnostics.Process
     $proc.StartInfo = $psi
     try {
@@ -215,6 +235,7 @@ function Start-ManagedRunnerProcess {
             $proc.Dispose()
             return $null
         }
+        Write-WslCommandInput -Process $proc -Command $command
         Start-Sleep -Seconds 5
         if ($proc.HasExited) {
             Write-Log ('managed_runner_early_exit=' + $proc.ExitCode)
