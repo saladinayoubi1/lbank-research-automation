@@ -26,8 +26,10 @@ def test_recovery_preserves_existing_runner_registration() -> None:
     text = _text()
     assert "'/opt/nexus-bybit-runner'" in text
     assert "'NEXUS-BYBIT-WSL'" in text
-    assert "test -x '$RunnerRoot/run.sh'" in text
-    assert "test -f '$RunnerRoot/.runner'" in text
+    assert "test -x '__RUNNER_ROOT__/run.sh'" in text
+    assert "test -f '__RUNNER_ROOT__/.runner'" in text
+    assert "while IFS= read -r line; do" in text
+    assert "grep -E" not in text
     assert "runner_registration_modified = $false" in text
     assert "runner_credentials_modified = $false" in text
     for forbidden in ("config.sh", "--token", "registration-token", "remove.sh"):
@@ -61,7 +63,8 @@ def test_wsl_probe_interop_is_timeout_bounded() -> None:
     assert "watchdog_generation = $watchdogGeneration" in text
     assert "wsl_call_timeout_seconds" in text
     assert "$psi.RedirectStandardInput = $true" in text
-    assert "$Process.StandardInput.Write($Command)" in text
+    assert "$normalizedCommand = $Command.Replace(\"`r`n\", \"`n\").Replace(\"`r\", \"`n\")" in text
+    assert '$Process.StandardInput.Write("`n")' in text
     assert "$Process.StandardInput.Close()" in text
     assert "base64 -d" not in text
     assert "-u root -- bash'" in text

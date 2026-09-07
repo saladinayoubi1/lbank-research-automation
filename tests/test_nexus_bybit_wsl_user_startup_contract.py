@@ -40,7 +40,19 @@ def test_wsl_transport_uses_stdin_without_external_base64_dependency() -> None:
     assert "base64 -d" not in text
     assert "Write-WslCommandInput -Process $proc -Command $Command" in invoke
     assert "Write-WslCommandInput -Process $proc -Command $command" in managed
+    assert '$normalizedCommand = $Command.Replace("`r`n", "`n").Replace("`r", "`n")' in text
+    assert '$Process.StandardInput.Write("`n")' in text
     assert "$Process.StandardInput.Close()" in text
+
+def test_registration_probe_uses_bash_builtins_only() -> None:
+    text = _script()
+    registration = _function(text, "Test-ExistingRegistration", "Get-RunnerProcessState")
+    assert "test -x '__RUNNER_ROOT__/run.sh'" in registration
+    assert "test -f '__RUNNER_ROOT__/.runner'" in registration
+    assert "while IFS= read -r line; do" in registration
+    assert 'case "$line" in' in registration
+    assert "grep " not in registration
+
 
 def test_process_liveness_probe_uses_procfs_exact_argv0_without_pgrep() -> None:
     text = _script()

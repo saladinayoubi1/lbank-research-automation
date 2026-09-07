@@ -60,8 +60,9 @@ function Write-WslCommandInput {
         [Parameter(Mandatory = $true)][Diagnostics.Process]$Process,
         [Parameter(Mandatory = $true)][string]$Command
     )
-    $Process.StandardInput.Write($Command)
-    $Process.StandardInput.Write([Environment]::NewLine)
+    $normalizedCommand = $Command.Replace("`r`n", "`n").Replace("`r", "`n")
+    $Process.StandardInput.Write($normalizedCommand)
+    $Process.StandardInput.Write("`n")
     $Process.StandardInput.Close()
 }
 
@@ -101,7 +102,19 @@ function Write-Log([string]$Message) {
 }
 
 function Test-ExistingRegistration {
-    $probe = Invoke-WslNative "test -x '$RunnerRoot/run.sh' && test -f '$RunnerRoot/.runner' && grep -Eq 'agentName[^,]*$ExpectedRunnerName' '$RunnerRoot/.runner'"
+    $command = @'
+test -x '__RUNNER_ROOT__/run.sh' || exit 10
+test -f '__RUNNER_ROOT__/.runner' || exit 11
+found=0
+while IFS= read -r line; do
+  case "$line" in
+    *'"agentName"'*'__EXPECTED_RUNNER_NAME__'*) found=1 ;;
+  esac
+done < '__RUNNER_ROOT__/.runner'
+[ "$found" -eq 1 ]
+'@
+    $command = $command.Replace('__RUNNER_ROOT__', $RunnerRoot).Replace('__EXPECTED_RUNNER_NAME__', $ExpectedRunnerName)
+    $probe = Invoke-WslNative $command
     if ($probe.exit_code -ne 0) {
         throw 'Existing NEXUS-BYBIT-WSL registration was not found; this script will not create or replace it.'
     }
