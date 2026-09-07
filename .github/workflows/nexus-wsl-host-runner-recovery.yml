@@ -2,6 +2,8 @@ name: NEXUS WSL Host Runner Recovery
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '7,22,37,52 * * * *'
   push:
     branches: [main]
     paths:
@@ -21,6 +23,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Recover exact existing Windows Actions runner through WSL interop
+        if: github.event_name != 'schedule'
         shell: bash
         run: |
           set -euo pipefail
@@ -122,3 +125,11 @@ jobs:
             Write-Host "NEXUS_WINDOWS_RUNNER_OTHER_PATHS_CHANGED=false"
             Write-Host "NEXUS_LIVE_TRADING_AUTHORITY_CHANGED=false"
           '
+
+      - name: Request existing Remote Commander user-context recovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          WINPS='/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe'
+          test -x "$WINPS"
+          "$WINPS" -NoProfile -NonInteractive -Command '$task="NEXUS-Remote-Commander-Recovery"; & schtasks.exe /Query /TN $task /FO LIST /V; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; & schtasks.exe /Run /TN $task; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; Start-Sleep -Seconds 5; & schtasks.exe /Query /TN $task /FO LIST /V; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; Write-Host "remote_commander_rescue_request=PASS"; Write-Host "remote_commander_task_mutated=false"; Write-Host "runner_registration_mutated=false"; Write-Host "live_trading_authority_changed=false"'
