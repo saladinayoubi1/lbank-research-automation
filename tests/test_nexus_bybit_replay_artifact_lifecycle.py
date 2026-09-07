@@ -88,6 +88,55 @@ def test_selector_cross_host_redirect_strips_github_authorization() -> None:
     assert same_origin.get_header("Authorization") == "Bearer test-token"
 
 
+def test_selector_accepts_v2_semantic_identity_without_pinning_container_bytes(tmp_path: Path) -> None:
+    selector = _load(SELECTOR_PATH, "nexus_replay_selector_semantic_test")
+    root = tmp_path / "candidate-v2"
+    root.mkdir()
+    replay = root / "NEXUS_BYBIT_replay_v2_2022-12-01_to_2026-07-31.zip"
+    semantic = "2" * 64
+    manifest_core = {
+        "schema_version": 2,
+        "semantic_dataset_sha256": semantic,
+        "series_count": 1,
+        "files": [],
+    }
+    manifest_sha = hashlib.sha256(selector._canonical_json_bytes(manifest_core)).hexdigest()
+    manifest = {**manifest_core, "manifest_sha256": manifest_sha}
+    with zipfile.ZipFile(replay, "w") as handle:
+        handle.writestr(selector.REPLAY_V2_MANIFEST, json.dumps(manifest))
+    replay_sha = hashlib.sha256(replay.read_bytes()).hexdigest()
+    delivery_name = "NEXUS_BYBIT_replay_v2_delivery.json"
+    (root / delivery_name).write_text(
+        json.dumps({
+            "schema_version": 2,
+            "file_name": replay.name,
+            "sha256": replay_sha,
+            "semantic_dataset_sha256": semantic,
+            "dataset_manifest_sha256": manifest_sha,
+            "series_count": 1,
+            "paper_replay_only": True,
+            "live_trading_authority": False,
+            "private_credentials_used": False,
+        }),
+        encoding="utf-8",
+    )
+    selected, delivery = selector.validate_candidate(
+        root,
+        replay.name,
+        expected_semantic_sha256=semantic,
+        delivery_name=delivery_name,
+    )
+    assert selected == replay
+    assert delivery.name == delivery_name
+    with pytest.raises(selector.ReplayArtifactError, match="semantic replay SHA mismatch"):
+        selector.validate_candidate(
+            root,
+            replay.name,
+            expected_semantic_sha256="3" * 64,
+            delivery_name=delivery_name,
+        )
+
+
 def test_semantic_digest_is_data_stable_and_changes_with_market_values() -> None:
     builder = _load(BUILDER_PATH, "nexus_replay_builder_digest_test")
     frame = pd.DataFrame(
