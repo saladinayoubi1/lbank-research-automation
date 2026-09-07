@@ -16,23 +16,24 @@ jobs:
     runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 2
     steps:
-      - name: Compare Windows runner identity and user paths
+      - name: List RemoteCommander launcher candidates only
         shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
         run: |
-          $ErrorActionPreference='Continue'
-          Write-Host ("whoami={0}" -f (& whoami.exe))
-          Write-Host ("username={0}" -f $env:USERNAME)
-          Write-Host ("userprofile={0}" -f $env:USERPROFILE)
-          Write-Host ("localappdata={0}" -f $env:LOCALAPPDATA)
-          Write-Host ("sessionname={0}" -f $env:SESSIONNAME)
-          $envRoot=Join-Path $env:LOCALAPPDATA 'NEXUS\RemoteCommander'
-          $afaqRoot='C:\Users\afaq\AppData\Local\NEXUS\RemoteCommander'
-          Write-Host ("env_remote_exists={0};path={1}" -f (Test-Path -LiteralPath $envRoot -PathType Container),$envRoot)
-          Write-Host ("afaq_remote_exists={0};path={1}" -f (Test-Path -LiteralPath $afaqRoot -PathType Container),$afaqRoot)
-          Write-Host ("afaq_nexus_exists={0}" -f (Test-Path -LiteralPath 'C:\Users\afaq\AppData\Local\NEXUS' -PathType Container))
-          if(Test-Path -LiteralPath 'C:\Users\afaq\AppData\Local\NEXUS' -PathType Container){
-            Get-ChildItem -LiteralPath 'C:\Users\afaq\AppData\Local\NEXUS' -Directory -Force -ErrorAction SilentlyContinue | Sort-Object Name | ForEach-Object { Write-Host ("afaq_nexus_dir={0}" -f $_.Name) }
+          $ErrorActionPreference='Stop'
+          $root='C:\Users\afaq\AppData\Local\NEXUS\RemoteCommander'
+          if(-not (Test-Path -LiteralPath $root -PathType Container)){ throw 'RemoteCommander directory missing.' }
+          Write-Host 'root_entries_begin'
+          Get-ChildItem -LiteralPath $root -Force -ErrorAction Stop | Sort-Object Name | ForEach-Object {
+            $type=if($_.PSIsContainer){'dir'}else{'file'}
+            Write-Host ("entry={0};type={1};bytes={2};modified={3:o}" -f $_.FullName,$type,$_.Length,$_.LastWriteTimeUtc)
           }
-          Write-Host 'mutation_performed=false'
+          Write-Host 'root_entries_end'
+          Write-Host 'launcher_candidates_begin'
+          Get-ChildItem -LiteralPath $root -File -Recurse -Force -ErrorAction SilentlyContinue |
+            Where-Object { $_.Extension.ToLowerInvariant() -in @('.ps1','.cmd','.bat','.exe','.lnk') } |
+            Select-Object -First 40 |
+            ForEach-Object { Write-Host ("candidate={0};bytes={1};modified={2:o}" -f $_.FullName,$_.Length,$_.LastWriteTimeUtc) }
+          Write-Host 'launcher_candidates_end'
           Write-Host 'file_contents_read=false'
+          Write-Host 'mutation_performed=false'
           Write-Host 'live_trading_authority_changed=false'
