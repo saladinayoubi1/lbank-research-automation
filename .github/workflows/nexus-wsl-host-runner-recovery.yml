@@ -42,6 +42,7 @@ jobs:
             $listenerExe = Join-Path $runnerRoot "bin\Runner.Listener.exe"
             $expectedRunnerName = "NEXUS-WINDOWS-DR"
             $expectedGitHubUrl = "https://github.com/saladinayoubi1/lbank-research-automation"
+            $expectedServiceName = "actions.runner.saladinayoubi1-lbank-research-automation.NEXUS-WINDOWS-DR"
 
             function Normalize-Url([string]$Value) {
               if (-not $Value) { return "" }
@@ -78,6 +79,46 @@ jobs:
               return @($matches)
             }
 
+            # The physical NEXUS-WINDOWS-DR registration is installed as a Windows
+            # service. Never compete with that service by stopping its Listener and
+            # launching a second detached run.cmd session. A service-managed target
+            # is observed only; a stopped/unhealthy service fails closed so this
+            # workflow does not change service state, identity, or privileges.
+            $service = Get-Service -Name $expectedServiceName -ErrorAction SilentlyContinue
+            if ($null -ne $service) {
+              Write-Host "NEXUS_WINDOWS_RUNNER_SERVICE_REGISTERED=true"
+              Write-Host "NEXUS_WINDOWS_RUNNER_SERVICE_STATE=$($service.Status)"
+              if ($service.Status -ne [ServiceProcess.ServiceControllerStatus]::Running) {
+                throw "exact Windows runner service exists but is not running; refusing detached fallback"
+              }
+
+              $deadline = [DateTime]::UtcNow.AddSeconds(30)
+              $listeners = @()
+              while ([DateTime]::UtcNow -lt $deadline) {
+                $listeners = @(Get-ExactTargetListeners)
+                if ($listeners.Count -gt 0) { break }
+                Start-Sleep -Seconds 1
+              }
+              if ($listeners.Count -eq 0) {
+                throw "service-managed exact Windows Runner.Listener was not observed"
+              }
+              if ($listeners.Count -ne 1) {
+                throw "multiple exact Windows Runner.Listener processes observed; refusing to mutate service-managed target"
+              }
+
+              Write-Host "NEXUS_WINDOWS_RUNNER_NEW_PID=$($listeners[0].Id)"
+              Write-Host "NEXUS_WINDOWS_RUNNER_RESTARTED=false"
+              Write-Host "NEXUS_WINDOWS_RUNNER_WAKE_METHOD=existing-windows-service-observed"
+              Write-Host "NEXUS_WINDOWS_RUNNER_WAKE=SUCCESS"
+              Write-Host "NEXUS_WINDOWS_RUNNER_SERVICE_MUTATED=false"
+              Write-Host "NEXUS_WINDOWS_RUNNER_REGISTRATION_CHANGED=false"
+              Write-Host "NEXUS_WINDOWS_RUNNER_CREDENTIALS_CHANGED=false"
+              Write-Host "NEXUS_WINDOWS_RUNNER_OTHER_PATHS_CHANGED=false"
+              Write-Host "NEXUS_LIVE_TRADING_AUTHORITY_CHANGED=false"
+              exit 0
+            }
+
+            Write-Host "NEXUS_WINDOWS_RUNNER_SERVICE_REGISTERED=false"
             $existing = @(Get-ExactTargetListeners)
             $restartPerformed = $false
             if ($existing.Count -gt 0) {
@@ -120,6 +161,7 @@ jobs:
             Write-Host "NEXUS_WINDOWS_RUNNER_NEW_PID=$($listener.Id)"
             Write-Host "NEXUS_WINDOWS_RUNNER_RESTARTED=$($restartPerformed.ToString().ToLowerInvariant())"
             Write-Host "NEXUS_WINDOWS_RUNNER_WAKE=SUCCESS"
+            Write-Host "NEXUS_WINDOWS_RUNNER_SERVICE_MUTATED=false"
             Write-Host "NEXUS_WINDOWS_RUNNER_REGISTRATION_CHANGED=false"
             Write-Host "NEXUS_WINDOWS_RUNNER_CREDENTIALS_CHANGED=false"
             Write-Host "NEXUS_WINDOWS_RUNNER_OTHER_PATHS_CHANGED=false"
