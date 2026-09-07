@@ -31,11 +31,6 @@ jobs:
       - name: Start or confirm Windows user-context recovery task
         shell: bash
         run: |
-          set -euo pipefail
-          WINCMD='/mnt/c/Windows/System32/cmd.exe'
-          test -x "$WINCMD"
-          timeout 20s "$WINCMD" /d /s /c 'schtasks.exe /Query /TN "NEXUS-Remote-Commander-Recovery" /FO LIST /V'
-          timeout 20s "$WINCMD" /d /s /c 'schtasks.exe /Run /TN "NEXUS-Remote-Commander-Recovery"'
-          sleep 5
-          timeout 20s "$WINCMD" /d /s /c 'schtasks.exe /Query /TN "NEXUS-Remote-Commander-Recovery" /FO LIST /V'
-          echo 'remote_commander_rescue_request=PASS'
+          WINPS='/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe'
+          test -x "$WINPS"
+          "$WINPS" -NoProfile -NonInteractive -Command '$task="NEXUS-Remote-Commander-Recovery"; & schtasks.exe /Query /TN $task /FO LIST /V; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; & schtasks.exe /Run /TN $task; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; Start-Sleep -Seconds 5; & schtasks.exe /Query /TN $task /FO LIST /V; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; Write-Host "remote_commander_rescue_request=PASS"'
