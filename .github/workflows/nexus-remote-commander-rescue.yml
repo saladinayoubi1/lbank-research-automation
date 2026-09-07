@@ -28,20 +28,13 @@ jobs:
         run: echo dedicated_rescue_label=nexus-remote-rescue
 
       - name: Start or confirm user-context recovery task
-        shell: powershell
+        shell: cmd
         run: |
-          $taskName = 'NEXUS-Remote-Commander-Recovery'
-          & schtasks.exe /Query /TN $taskName /FO LIST /V
-          if ($LASTEXITCODE -ne 0) {
-            throw "Recovery task not available: $taskName"
-          }
-          & schtasks.exe /Run /TN $taskName
-          if ($LASTEXITCODE -ne 0) {
-            throw "Failed to request recovery task: $taskName"
-          }
-          Start-Sleep -Seconds 5
-          & schtasks.exe /Query /TN $taskName /FO LIST /V
-          if ($LASTEXITCODE -ne 0) {
-            throw "Recovery task query failed after start: $taskName"
-          }
-          Write-Host 'remote_commander_rescue_request=PASS'
+          schtasks.exe /Query /TN "NEXUS-Remote-Commander-Recovery" /FO LIST /V
+          if errorlevel 1 exit /b 1
+          schtasks.exe /Run /TN "NEXUS-Remote-Commander-Recovery"
+          if errorlevel 1 exit /b 1
+          ping 127.0.0.1 -n 6 >nul
+          schtasks.exe /Query /TN "NEXUS-Remote-Commander-Recovery" /FO LIST /V
+          if errorlevel 1 exit /b 1
+          echo remote_commander_rescue_request=PASS
