@@ -16,50 +16,30 @@ jobs:
     runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 2
     steps:
-      - name: Inspect sanitized Remote Commander watchdog state
+      - name: Read-only Remote Commander ACL diagnostics
         shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
         run: |
-          $ErrorActionPreference='Stop'
+          $ErrorActionPreference='Continue'
           $root='C:\Users\afaq\AppData\Local\NEXUS\RemoteCommander'
-          $watchdog=Join-Path $root 'nexus-remote-commander-watchdog.ps1'
-          $state=Join-Path $root 'state.json'
-          $log=Join-Path $root 'watchdog.log'
-          if(-not (Test-Path -LiteralPath $watchdog -PathType Leaf)){ throw 'Watchdog missing.' }
-          $hash=(Get-FileHash -LiteralPath $watchdog -Algorithm SHA256).Hash.ToLowerInvariant()
-          $text=Get-Content -LiteralPath $watchdog -Raw
-          Write-Host ("watchdog_sha256={0}" -f $hash)
-          foreach($marker in @('Start-Process','desktop-commander','node','state.json','while','Test-NetConnection','Invoke-WebRequest')){
-            Write-Host ("watchdog_contains_{0}={1}" -f ($marker -replace '[^A-Za-z0-9]','_'),$text.Contains($marker))
-          }
-          Write-Host 'state_begin'
-          if(Test-Path -LiteralPath $state -PathType Leaf){
-            try{
-              $obj=Get-Content -LiteralPath $state -Raw | ConvertFrom-Json
-              foreach($p in $obj.PSObject.Properties){
-                if($p.Name -match '(?i)token|auth|secret|password|credential|license|private|key'){
-                  Write-Host ("state_{0}=REDACTED" -f $p.Name)
-                } elseif($p.Value -is [string] -or $p.Value -is [ValueType]){
-                  $v=[string]$p.Value
-                  if($v.Length -gt 180){$v=$v.Substring(0,180)+'...'}
-                  Write-Host ("state_{0}={1}" -f $p.Name,$v)
-                } else {
-                  Write-Host ("state_{0}=<complex>" -f $p.Name)
-                }
-              }
-            } catch { Write-Host ("state_parse_error={0}" -f $_.Exception.GetType().Name) }
-          } else { Write-Host 'state_missing=true' }
-          Write-Host 'state_end'
-          Write-Host 'watchdog_log_filtered_begin'
-          if(Test-Path -LiteralPath $log -PathType Leaf){
-            Get-Content -LiteralPath $log -Tail 120 | Where-Object { $_ -match '(?i)error|fail|exit|start|stop|connect|disconnect|online|offline|network|status|restart|backoff|healthy|unhealthy' } | ForEach-Object {
-              $line=$_
-              $line=$line -replace '(?i)(token|authorization|auth|secret|password|credential|license|private[_ -]?key)\s*[:=]\s*[^\s,;]+','$1=REDACTED'
-              $line=$line -replace '(https?://[^\s?]+)\?[^\s]+','$1?REDACTED'
-              $line=$line -replace '\b[A-Fa-f0-9]{32,}\b','REDACTED_LONG_HEX'
-              Write-Host $line
-            }
-          } else { Write-Host 'watchdog_log_missing=true' }
-          Write-Host 'watchdog_log_filtered_end'
-          Write-Host 'sensitive_values_emitted=false'
+          $file=Join-Path $root 'nexus-remote-commander-watchdog.ps1'
+          Write-Host ("whoami={0}" -f (& whoami.exe))
+          Write-Host 'attrib_begin'
+          & attrib.exe $file 2>&1 | ForEach-Object { Write-Host $_ }
+          Write-Host ("attrib_exit={0}" -f $LASTEXITCODE)
+          Write-Host 'attrib_end'
+          Write-Host 'root_icacls_begin'
+          & icacls.exe $root 2>&1 | ForEach-Object { Write-Host $_ }
+          Write-Host ("root_icacls_exit={0}" -f $LASTEXITCODE)
+          Write-Host 'root_icacls_end'
+          Write-Host 'file_icacls_begin'
+          & icacls.exe $file 2>&1 | ForEach-Object { Write-Host $_ }
+          Write-Host ("file_icacls_exit={0}" -f $LASTEXITCODE)
+          Write-Host 'file_icacls_end'
+          Write-Host 'cipher_begin'
+          & cipher.exe /c $file 2>&1 | Select-Object -First 25 | ForEach-Object { Write-Host $_ }
+          Write-Host ("cipher_exit={0}" -f $LASTEXITCODE)
+          Write-Host 'cipher_end'
+          Write-Host 'acl_modified=false'
+          Write-Host 'file_contents_read=false'
           Write-Host 'mutation_performed=false'
           Write-Host 'live_trading_authority_changed=false'
