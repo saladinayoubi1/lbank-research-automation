@@ -1,4 +1,4 @@
-"""Deterministic gradual replay over the verified immutable Bybit archive."""
+"""Deterministic gradual replay over the verified immutable Bybit replay-v2 dataset."""
 from __future__ import annotations
 
 import re
@@ -11,7 +11,9 @@ from market_data_provenance_manifest import build_provenance_manifest
 from phase5_data_binding import bind_canonical_dataset
 
 
-ARCHIVE_SHA256 = "5f1173467c2296201940c3b7786b7cc3e5442244e07289769ab4867ace41d668"
+# Canonical semantic identity from REPLAY_DATASET_MANIFEST.json.  The legacy
+# aggregate ZIP byte digest is representation-sensitive and is not the replay-v2 identity.
+ARCHIVE_SHA256 = "2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422"
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _TIMEFRAMES = {
     "minute15": ("15", "15m", 900_000),

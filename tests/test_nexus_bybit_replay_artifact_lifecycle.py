@@ -58,6 +58,85 @@ def test_selector_safe_extract_rejects_path_traversal(tmp_path: Path) -> None:
         selector.safe_extract(archive, tmp_path / "out")
 
 
+def test_selector_cross_host_redirect_strips_github_authorization() -> None:
+    selector = _load(SELECTOR_PATH, "nexus_replay_selector_redirect_test")
+    handler = selector._CrossHostAuthStrippingRedirectHandler()
+    request = urllib.request.Request(
+        "https://api.github.com/repos/example/repo/actions/artifacts/1/zip",
+        headers={"Authorization": "Bearer test-token"},
+    )
+    redirected = handler.redirect_request(
+        request,
+        None,
+        302,
+        "Found",
+        {},
+        "https://productionresultssa8.blob.core.windows.net/actions-results/file.zip?sig=signed",
+    )
+    assert redirected is not None
+    assert redirected.get_header("Authorization") is None
+
+    same_origin = handler.redirect_request(
+        request,
+        None,
+        302,
+        "Found",
+        {},
+        "https://api.github.com/repos/example/repo/actions/artifacts/1/redirected",
+    )
+    assert same_origin is not None
+    assert same_origin.get_header("Authorization") == "Bearer test-token"
+
+
+def test_selector_accepts_v2_semantic_identity_without_pinning_container_bytes(tmp_path: Path) -> None:
+    selector = _load(SELECTOR_PATH, "nexus_replay_selector_semantic_test")
+    root = tmp_path / "candidate-v2"
+    root.mkdir()
+    replay = root / "NEXUS_BYBIT_replay_v2_2022-12-01_to_2026-07-31.zip"
+    semantic = "2" * 64
+    manifest_core = {
+        "schema_version": 2,
+        "semantic_dataset_sha256": semantic,
+        "series_count": 1,
+        "files": [],
+    }
+    manifest_sha = hashlib.sha256(selector._canonical_json_bytes(manifest_core)).hexdigest()
+    manifest = {**manifest_core, "manifest_sha256": manifest_sha}
+    with zipfile.ZipFile(replay, "w") as handle:
+        handle.writestr(selector.REPLAY_V2_MANIFEST, json.dumps(manifest))
+    replay_sha = hashlib.sha256(replay.read_bytes()).hexdigest()
+    delivery_name = "NEXUS_BYBIT_replay_v2_delivery.json"
+    (root / delivery_name).write_text(
+        json.dumps({
+            "schema_version": 2,
+            "file_name": replay.name,
+            "sha256": replay_sha,
+            "semantic_dataset_sha256": semantic,
+            "dataset_manifest_sha256": manifest_sha,
+            "series_count": 1,
+            "paper_replay_only": True,
+            "live_trading_authority": False,
+            "private_credentials_used": False,
+        }),
+        encoding="utf-8",
+    )
+    selected, delivery = selector.validate_candidate(
+        root,
+        replay.name,
+        expected_semantic_sha256=semantic,
+        delivery_name=delivery_name,
+    )
+    assert selected == replay
+    assert delivery.name == delivery_name
+    with pytest.raises(selector.ReplayArtifactError, match="semantic replay SHA mismatch"):
+        selector.validate_candidate(
+            root,
+            replay.name,
+            expected_semantic_sha256="3" * 64,
+            delivery_name=delivery_name,
+        )
+
+
 def test_semantic_digest_is_data_stable_and_changes_with_market_values() -> None:
     builder = _load(BUILDER_PATH, "nexus_replay_builder_digest_test")
     frame = pd.DataFrame(
@@ -301,10 +380,14 @@ def test_rehydrate_workflow_rebuilds_missing_chunks_fail_closed_and_paper_only()
         assert forbidden not in text.lower()
 
 
-def test_matrix_restores_by_content_not_fixed_artifact_id() -> None:
+def test_matrix_restores_replay_v2_by_semantic_content_not_fixed_artifact_id() -> None:
     text = MATRIX_WORKFLOW.read_text(encoding="utf-8")
     assert "DATASET_ARTIFACT_ID" not in text
     assert "DATASET_ARTIFACT_PREFIX: bybit-full-history-final-" in text
+    assert "DATASET_FILE: NEXUS_BYBIT_replay_v2_2022-12-01_to_2026-07-31.zip" in text
+    assert "DATASET_DELIVERY: NEXUS_BYBIT_replay_v2_delivery.json" in text
     assert "select_nexus_bybit_replay_artifact.py" in text
-    assert "--expected-sha256 \"$DATASET_SHA256\"" in text
-    assert "5f1173467c2296201940c3b7786b7cc3e5442244e07289769ab4867ace41d668" in text
+    assert "--expected-semantic-sha256 \"$DATASET_SHA256\"" in text
+    assert "--delivery-name \"$DATASET_DELIVERY\"" in text
+    assert "2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422" in text
+    assert "5f1173467c2296201940c3b7786b7cc3e5442244e07289769ab4867ace41d668" not in text

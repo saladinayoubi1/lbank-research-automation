@@ -148,9 +148,10 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       STATE_ARTIFACT: nexus-demo-strategy-matrix-state
-      DATASET_FILE: BYBIT_full_history_2022-12-01_to_2026-07-31.zip
+      DATASET_FILE: NEXUS_BYBIT_replay_v2_2022-12-01_to_2026-07-31.zip
+      DATASET_DELIVERY: NEXUS_BYBIT_replay_v2_delivery.json
       DATASET_ARTIFACT_PREFIX: bybit-full-history-final-
-      DATASET_SHA256: "5f1173467c2296201940c3b7786b7cc3e5442244e07289769ab4867ace41d668"
+      DATASET_SHA256: "2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
@@ -171,7 +172,7 @@ jobs:
             gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" > build/matrix-state.zip
             unzip -q build/matrix-state.zip -d build/nexus_demo_strategy_matrix_state
           fi
-      - name: Restore verified immutable Bybit replay dataset
+      - name: Restore verified immutable Bybit replay-v2 dataset
         run: |
           set -euo pipefail
           rm -rf build/nexus_demo_archive build/nexus_demo_delivery
@@ -180,10 +181,11 @@ jobs:
             --repository "$GITHUB_REPOSITORY" \
             --output-dir build/nexus_demo_delivery \
             --expected-file-name "$DATASET_FILE" \
-            --expected-sha256 "$DATASET_SHA256" \
+            --expected-semantic-sha256 "$DATASET_SHA256" \
+            --delivery-name "$DATASET_DELIVERY" \
             --artifact-prefix "$DATASET_ARTIFACT_PREFIX"
           archive="build/nexus_demo_delivery/$DATASET_FILE"
-          test "$(sha256sum "$archive" | awk '{print $1}')" = "$DATASET_SHA256"
+          test -s "$archive"
           unzip -q "$archive" -d build/nexus_demo_archive
       - name: Quarantine incompatible bootstrap-only replay journals
         run: |
