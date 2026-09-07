@@ -58,6 +58,36 @@ def test_selector_safe_extract_rejects_path_traversal(tmp_path: Path) -> None:
         selector.safe_extract(archive, tmp_path / "out")
 
 
+def test_selector_cross_host_redirect_strips_github_authorization() -> None:
+    selector = _load(SELECTOR_PATH, "nexus_replay_selector_redirect_test")
+    handler = selector._CrossHostAuthStrippingRedirectHandler()
+    request = urllib.request.Request(
+        "https://api.github.com/repos/example/repo/actions/artifacts/1/zip",
+        headers={"Authorization": "Bearer test-token"},
+    )
+    redirected = handler.redirect_request(
+        request,
+        None,
+        302,
+        "Found",
+        {},
+        "https://productionresultssa8.blob.core.windows.net/actions-results/file.zip?sig=signed",
+    )
+    assert redirected is not None
+    assert redirected.get_header("Authorization") is None
+
+    same_origin = handler.redirect_request(
+        request,
+        None,
+        302,
+        "Found",
+        {},
+        "https://api.github.com/repos/example/repo/actions/artifacts/1/redirected",
+    )
+    assert same_origin is not None
+    assert same_origin.get_header("Authorization") == "Bearer test-token"
+
+
 def test_semantic_digest_is_data_stable_and_changes_with_market_values() -> None:
     builder = _load(BUILDER_PATH, "nexus_replay_builder_digest_test")
     frame = pd.DataFrame(
