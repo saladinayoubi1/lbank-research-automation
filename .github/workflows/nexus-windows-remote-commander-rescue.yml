@@ -12,41 +12,48 @@ permissions:
   contents: read
 
 concurrency:
-  group: nexus-windows-remote-commander-rescue-v3
+  group: nexus-windows-remote-commander-rescue-v4
   cancel-in-progress: false
 
 jobs:
   rescue:
     runs-on: [self-hosted, Windows, X64]
-    timeout-minutes: 3
+    timeout-minutes: 4
     steps:
       - name: Verify exact existing Windows runner
         shell: cmd
         run: |
           if /I not "%RUNNER_NAME%"=="NEXUS-WINDOWS-DR" exit /b 1
           echo exact_windows_runner=NEXUS-WINDOWS-DR
-      - name: Inspect existing Remote Commander recovery state
+      - name: Collect sanitized recovery diagnostics
         shell: powershell
         run: |
           $ErrorActionPreference = 'Continue'
-          Write-Host '--- TASK ---'
-          & schtasks.exe /Query /TN 'NEXUS-Remote-Commander-Recovery' /FO LIST /V
-          Write-Host '--- PROCESSES ---'
-          Get-Process node,powershell,wscript -ErrorAction SilentlyContinue |
-            Select-Object Id,ProcessName,SessionId,Path |
-            Format-Table -AutoSize
-          Write-Host '--- USER SESSION ---'
-          & query.exe user
-          Write-Host '--- KNOWN RECOVERY FILES ---'
-          foreach ($path in @(
-            'C:\Users\afaq\Desktop\NEXUS_REMOTE_CONNECT.cmd',
-            'C:\Users\afaq\AppData\Local\NEXUS'
-          )) {
-            Write-Host ("{0}={1}" -f $path,(Test-Path -LiteralPath $path))
+          $dir = Join-Path $env:RUNNER_TEMP 'nexus-remote-commander-diag'
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          $file = Join-Path $dir 'diagnostic.txt'
+          'exact_windows_runner=NEXUS-WINDOWS-DR' | Set-Content -LiteralPath $file -Encoding UTF8
+          '--- TASK ---' | Add-Content -LiteralPath $file
+          (& schtasks.exe /Query /TN 'NEXUS-Remote-Commander-Recovery' /FO LIST /V 2>&1 | Out-String) | Add-Content -LiteralPath $file
+          ('schtasks_query_exit=' + $LASTEXITCODE) | Add-Content -LiteralPath $file
+          '--- PROCESSES ---' | Add-Content -LiteralPath $file
+          (Get-Process node,powershell,wscript -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,SessionId,Path | Format-Table -AutoSize | Out-String) | Add-Content -LiteralPath $file
+          '--- FILES ---' | Add-Content -LiteralPath $file
+          foreach ($path in @('C:\Users\afaq\Desktop\NEXUS_REMOTE_CONNECT.cmd','C:\Users\afaq\AppData\Local\NEXUS')) {
+            ("{0}={1}" -f $path,(Test-Path -LiteralPath $path)) | Add-Content -LiteralPath $file
           }
-          Write-Host 'diagnostic_mutation=false'
-          Write-Host 'runner_registration_mutated=false'
-          Write-Host 'runner_credentials_mutated=false'
-          Write-Host 'windows_acl_mutated=false'
-          Write-Host 'windows_service_identity_mutated=false'
-          Write-Host 'live_trading_authority_changed=false'
+          'diagnostic_mutation=false' | Add-Content -LiteralPath $file
+          'runner_registration_mutated=false' | Add-Content -LiteralPath $file
+          'runner_credentials_mutated=false' | Add-Content -LiteralPath $file
+          'windows_acl_mutated=false' | Add-Content -LiteralPath $file
+          'windows_service_identity_mutated=false' | Add-Content -LiteralPath $file
+          'live_trading_authority_changed=false' | Add-Content -LiteralPath $file
+          Get-Content -LiteralPath $file
+          exit 0
+      - name: Upload sanitized diagnostics
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-remote-commander-diag-${{ github.run_id }}
+          path: ${{ runner.temp }}/nexus-remote-commander-diag/diagnostic.txt
+          if-no-files-found: error
+          retention-days: 3
