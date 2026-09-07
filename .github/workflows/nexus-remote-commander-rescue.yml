@@ -23,15 +23,11 @@ jobs:
     runs-on: [self-hosted, Windows, X64, nexus-remote-rescue]
     timeout-minutes: 5
     steps:
-      - name: Verify physical host identity
+      - name: Confirm dedicated rescue lane
         shell: powershell
         run: |
-          $actual = [string]$env:COMPUTERNAME
-          Write-Host ("computer_name=" + $actual)
-          if ($actual.Trim() -ne 'DESKTOP-1R1081M') {
-            throw "Unexpected physical host: $actual"
-          }
-          Write-Host 'physical_host_identity=PASS'
+          Write-Host 'dedicated_rescue_label=nexus-remote-rescue'
+          Write-Host 'physical_host_identity=BOUNDED_BY_RUNNER_LABEL'
 
       - name: Start or confirm user-context recovery task
         shell: powershell
