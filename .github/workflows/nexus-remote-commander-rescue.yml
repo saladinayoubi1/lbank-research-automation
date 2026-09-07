@@ -1,0 +1,48 @@
+name: NEXUS Remote Commander Rescue
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
+  push:
+    branches:
+      - codex/nexus-remote-commander-rescue-20260907
+    paths:
+      - .github/workflows/nexus-remote-commander-rescue.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nexus-remote-commander-rescue
+  cancel-in-progress: false
+
+jobs:
+  rescue:
+    name: Rescue user-context Remote Commander
+    runs-on: [self-hosted, Windows, X64, nexus-remote-rescue]
+    timeout-minutes: 5
+    steps:
+      - name: Verify physical runner identity
+        shell: powershell
+        run: |
+          if ('${{ runner.name }}' -ne 'NEXUS-WINDOWS-DR') {
+            throw "Unexpected runner: ${{ runner.name }}"
+          }
+          Write-Host 'runner_identity=PASS'
+
+      - name: Start or confirm user-context recovery task
+        shell: powershell
+        run: |
+          $taskName = 'NEXUS-Remote-Commander-Recovery'
+          & schtasks.exe /Query /TN $taskName /FO LIST /V
+          if ($LASTEXITCODE -ne 0) {
+            throw "Recovery task not available: $taskName"
+          }
+          & schtasks.exe /Run /TN $taskName
+          if ($LASTEXITCODE -ne 0) {
+            throw "Failed to request recovery task: $taskName"
+          }
+          Start-Sleep -Seconds 3
+          & schtasks.exe /Query /TN $taskName /FO LIST /V
+          Write-Host 'remote_commander_rescue_request=PASS'
