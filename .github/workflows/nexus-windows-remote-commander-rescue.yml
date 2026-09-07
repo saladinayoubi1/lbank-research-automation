@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: nexus-windows-remote-commander-rescue-v2
+  group: nexus-windows-remote-commander-rescue-v3
   cancel-in-progress: false
 
 jobs:
@@ -25,32 +25,26 @@ jobs:
         run: |
           if /I not "%RUNNER_NAME%"=="NEXUS-WINDOWS-DR" exit /b 1
           echo exact_windows_runner=NEXUS-WINDOWS-DR
-      - name: Request existing Remote Commander recovery task bounded
+      - name: Inspect existing Remote Commander recovery state
         shell: powershell
         run: |
-          $ErrorActionPreference = 'Stop'
-          $psi = New-Object System.Diagnostics.ProcessStartInfo
-          $psi.FileName = "$env:SystemRoot\System32\schtasks.exe"
-          $psi.Arguments = '/Run /TN "NEXUS-Remote-Commander-Recovery"'
-          $psi.UseShellExecute = $false
-          $psi.CreateNoWindow = $true
-          $psi.RedirectStandardOutput = $true
-          $psi.RedirectStandardError = $true
-          $p = New-Object System.Diagnostics.Process
-          $p.StartInfo = $psi
-          if (-not $p.Start()) { throw 'schtasks process did not start.' }
-          if (-not $p.WaitForExit(15000)) {
-            try { $p.Kill() } catch { }
-            throw 'schtasks /Run exceeded bounded timeout.'
+          $ErrorActionPreference = 'Continue'
+          Write-Host '--- TASK ---'
+          & schtasks.exe /Query /TN 'NEXUS-Remote-Commander-Recovery' /FO LIST /V
+          Write-Host '--- PROCESSES ---'
+          Get-Process node,powershell,wscript -ErrorAction SilentlyContinue |
+            Select-Object Id,ProcessName,SessionId,Path |
+            Format-Table -AutoSize
+          Write-Host '--- USER SESSION ---'
+          & query.exe user
+          Write-Host '--- KNOWN RECOVERY FILES ---'
+          foreach ($path in @(
+            'C:\Users\afaq\Desktop\NEXUS_REMOTE_CONNECT.cmd',
+            'C:\Users\afaq\AppData\Local\NEXUS'
+          )) {
+            Write-Host ("{0}={1}" -f $path,(Test-Path -LiteralPath $path))
           }
-          $stdout = $p.StandardOutput.ReadToEnd()
-          $stderr = $p.StandardError.ReadToEnd()
-          Write-Host $stdout
-          if ($stderr) { Write-Host $stderr }
-          if ($p.ExitCode -ne 0) { throw "schtasks /Run failed with exit $($p.ExitCode)." }
-          Start-Sleep -Seconds 15
-          Write-Host 'remote_commander_recovery_request=PASS'
-          Write-Host 'task_definition_mutated=false'
+          Write-Host 'diagnostic_mutation=false'
           Write-Host 'runner_registration_mutated=false'
           Write-Host 'runner_credentials_mutated=false'
           Write-Host 'windows_acl_mutated=false'
