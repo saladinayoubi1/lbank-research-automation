@@ -107,30 +107,34 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-  warp-network-recovery:
+  remote-commander-recovery:
     if: github.ref == 'refs/heads/codex/nexus-warp-disconnect-recovery-20260908'
     runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 5
     steps:
-      - name: Disconnect already-installed WARP only
+      - name: Keep WARP disconnected and recycle existing Remote Commander watchdog
         shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
         run: |
           $ErrorActionPreference = 'Stop'
           $warp = 'C:\Program Files\Cloudflare\Cloudflare WARP\warp-cli.exe'
-          if (-not (Test-Path -LiteralPath $warp -PathType Leaf)) { throw 'WARP CLI not found.' }
-          Write-Host 'warp_status_before_begin'
-          & $warp status
-          Write-Host 'warp_status_before_end'
-          & $warp disconnect
-          if ($LASTEXITCODE -ne 0) { throw "warp-cli disconnect failed with exit $LASTEXITCODE" }
-          Start-Sleep -Seconds 3
-          Write-Host 'warp_status_after_begin'
-          & $warp status
-          Write-Host 'warp_status_after_end'
-          Write-Host 'warp_recovery_action=disconnect_only'
+          if (Test-Path -LiteralPath $warp -PathType Leaf) {
+            & $warp disconnect | Out-Host
+          }
+          $task = '\NEXUS-Remote-Commander-Recovery'
+          Write-Host 'remote_commander_task_before_begin'
+          & schtasks.exe /Query /TN $task /V /FO LIST | Out-Host
+          Write-Host 'remote_commander_task_before_end'
+          & schtasks.exe /End /TN $task 2>$null | Out-Host
+          Start-Sleep -Seconds 2
+          & schtasks.exe /Run /TN $task | Out-Host
+          if ($LASTEXITCODE -ne 0) { throw "Failed to start existing Remote Commander recovery task: $LASTEXITCODE" }
+          Start-Sleep -Seconds 8
+          Write-Host 'remote_commander_task_after_begin'
+          & schtasks.exe /Query /TN $task /V /FO LIST | Out-Host
+          Write-Host 'remote_commander_task_after_end'
+          Write-Host 'remote_commander_task_definition_modified=false'
           Write-Host 'runner_registration_modified=false'
           Write-Host 'runner_credentials_modified=false'
-          Write-Host 'scheduled_tasks_modified=false'
           Write-Host 'windows_acl_modified=false'
           Write-Host 'windows_services_modified=false'
           Write-Host 'live_trading_authority_changed=false'
