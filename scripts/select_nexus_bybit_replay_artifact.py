@@ -24,6 +24,26 @@ class ReplayArtifactError(RuntimeError):
     pass
 
 
+class _CrossHostAuthStrippingRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Preserve GitHub auth on same-origin redirects, never forward it to blob hosts."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        redirected = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if redirected is None:
+            return None
+        source = urllib.parse.urlsplit(req.full_url)
+        target = urllib.parse.urlsplit(newurl)
+        if (source.scheme.lower(), source.netloc.lower()) != (
+            target.scheme.lower(),
+            target.netloc.lower(),
+        ):
+            redirected.remove_header("Authorization")
+        return redirected
+
+
+_ARTIFACT_OPENER = urllib.request.build_opener(_CrossHostAuthStrippingRedirectHandler())
+
+
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -56,7 +76,7 @@ def _download(url: str, token: str, destination: Path) -> None:
             "User-Agent": "nexus-bybit-replay-selector",
         },
     )
-    with urllib.request.urlopen(request, timeout=180) as response:
+    with _ARTIFACT_OPENER.open(request, timeout=180) as response:
         destination.write_bytes(response.read())
 
 
