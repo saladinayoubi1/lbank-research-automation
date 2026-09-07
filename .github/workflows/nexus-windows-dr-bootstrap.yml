@@ -10,7 +10,7 @@ on:
       - scripts/wake_nexus_windows_dr_runner.ps1
       - .github/workflows/nexus-windows-dr-bootstrap.yml
   push:
-    branches: [main]
+    branches: [main, codex/nexus-warp-disconnect-recovery-20260908]
     paths:
       - scripts/wake_nexus_windows_dr_runner.ps1
       - .github/workflows/nexus-windows-dr-bootstrap.yml
@@ -106,3 +106,31 @@ jobs:
           path: build/windows-dr-bootstrap/evidence.json
           if-no-files-found: error
           retention-days: 14
+
+  warp-network-recovery:
+    if: github.ref == 'refs/heads/codex/nexus-warp-disconnect-recovery-20260908'
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 5
+    steps:
+      - name: Disconnect already-installed WARP only
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $warp = 'C:\Program Files\Cloudflare\Cloudflare WARP\warp-cli.exe'
+          if (-not (Test-Path -LiteralPath $warp -PathType Leaf)) { throw 'WARP CLI not found.' }
+          Write-Host 'warp_status_before_begin'
+          & $warp status
+          Write-Host 'warp_status_before_end'
+          & $warp disconnect
+          if ($LASTEXITCODE -ne 0) { throw "warp-cli disconnect failed with exit $LASTEXITCODE" }
+          Start-Sleep -Seconds 3
+          Write-Host 'warp_status_after_begin'
+          & $warp status
+          Write-Host 'warp_status_after_end'
+          Write-Host 'warp_recovery_action=disconnect_only'
+          Write-Host 'runner_registration_modified=false'
+          Write-Host 'runner_credentials_modified=false'
+          Write-Host 'scheduled_tasks_modified=false'
+          Write-Host 'windows_acl_modified=false'
+          Write-Host 'windows_services_modified=false'
+          Write-Host 'live_trading_authority_changed=false'
