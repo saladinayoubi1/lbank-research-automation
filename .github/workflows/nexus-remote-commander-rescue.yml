@@ -21,21 +21,16 @@ jobs:
   rescue:
     name: Rescue user-context Remote Commander
     if: github.event_name != 'workflow_dispatch' || github.ref_name == github.event.repository.default_branch
-    runs-on: [self-hosted, Windows, X64, nexus-remote-rescue]
+    runs-on: [self-hosted, Linux, X64, nexus-bybit-network]
     timeout-minutes: 5
     steps:
-      - name: Confirm dedicated rescue lane
-        shell: cmd
-        run: echo dedicated_rescue_label=nexus-remote-rescue
+      - name: Confirm physical WSL rescue lane
+        shell: bash
+        run: echo 'dedicated_rescue_lane=nexus-bybit-network'
 
-      - name: Start or confirm user-context recovery task
-        shell: cmd
+      - name: Start or confirm Windows user-context recovery task
+        shell: bash
         run: |
-          schtasks.exe /Query /TN "NEXUS-Remote-Commander-Recovery" /FO LIST /V
-          if errorlevel 1 exit /b 1
-          schtasks.exe /Run /TN "NEXUS-Remote-Commander-Recovery"
-          if errorlevel 1 exit /b 1
-          ping 127.0.0.1 -n 6 >nul
-          schtasks.exe /Query /TN "NEXUS-Remote-Commander-Recovery" /FO LIST /V
-          if errorlevel 1 exit /b 1
-          echo remote_commander_rescue_request=PASS
+          WINPS='/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe'
+          test -x "$WINPS"
+          "$WINPS" -NoProfile -NonInteractive -Command '$task="NEXUS-Remote-Commander-Recovery"; & schtasks.exe /Query /TN $task /FO LIST /V; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; & schtasks.exe /Run /TN $task; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; Start-Sleep -Seconds 5; & schtasks.exe /Query /TN $task /FO LIST /V; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; Write-Host "remote_commander_rescue_request=PASS"'
