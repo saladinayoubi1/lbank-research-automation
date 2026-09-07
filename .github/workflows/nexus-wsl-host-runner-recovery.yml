@@ -163,7 +163,7 @@ jobs:
           }
 
           & schtasks.exe /Query /TN $task /FO LIST /V
-          if ($LASTEXITCODE -ne 0) { throw 'existing Remote Commander recovery task missing' }
+          if ($LASTEXITCODE -ne 0) { throw 'existing Remote Commander recovery task missing or inaccessible' }
           & schtasks.exe /Run /TN $task
           if ($LASTEXITCODE -ne 0) { throw 'Remote Commander recovery task request failed' }
           Start-Sleep -Seconds 5
@@ -177,3 +177,46 @@ jobs:
           Write-Host 'windows_acl_modified=false'
           Write-Host 'windows_service_modified=false'
           Write-Host 'live_trading_authority_changed=false'
+
+      - name: Capture bounded Windows rescue diagnostics
+        if: matrix.target == 'windows' && failure()
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Continue'
+          $out = Join-Path $env:RUNNER_TEMP 'nexus-remote-rescue-diagnostic.txt'
+          "generated_at_utc=$([DateTime]::UtcNow.ToString('o'))" | Set-Content -LiteralPath $out -Encoding UTF8
+          "runner_name=$env:RUNNER_NAME" | Add-Content -LiteralPath $out -Encoding UTF8
+          "runner_arch=$env:RUNNER_ARCH" | Add-Content -LiteralPath $out -Encoding UTF8
+          "identity=$([Security.Principal.WindowsIdentity]::GetCurrent().Name)" | Add-Content -LiteralPath $out -Encoding UTF8
+          "session_id=$([Diagnostics.Process]::GetCurrentProcess().SessionId)" | Add-Content -LiteralPath $out -Encoding UTF8
+          '--- task-query ---' | Add-Content -LiteralPath $out -Encoding UTF8
+          $taskText = & schtasks.exe /Query /TN 'NEXUS-Remote-Commander-Recovery' /FO LIST /V 2>&1
+          $taskExit = $LASTEXITCODE
+          $taskText | Out-String | Add-Content -LiteralPath $out -Encoding UTF8
+          "task_query_exit=$taskExit" | Add-Content -LiteralPath $out -Encoding UTF8
+          '--- user-sessions ---' | Add-Content -LiteralPath $out -Encoding UTF8
+          (& query.exe user 2>&1 | Out-String) | Add-Content -LiteralPath $out -Encoding UTF8
+          '--- wsl-visible-to-runner ---' | Add-Content -LiteralPath $out -Encoding UTF8
+          $wslText = & "$env:SystemRoot\System32\wsl.exe" -l -v 2>&1
+          $wslExit = $LASTEXITCODE
+          $wslText | Out-String | Add-Content -LiteralPath $out -Encoding UTF8
+          "wsl_list_exit=$wslExit" | Add-Content -LiteralPath $out -Encoding UTF8
+          '--- relevant-processes ---' | Add-Content -LiteralPath $out -Encoding UTF8
+          Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -in @('node.exe','powershell.exe','wsl.exe','Runner.Listener.exe') } |
+            Select-Object Name,ProcessId,SessionId,ExecutablePath |
+            Format-Table -AutoSize | Out-String | Add-Content -LiteralPath $out -Encoding UTF8
+          'diagnostic_mutation=false' | Add-Content -LiteralPath $out -Encoding UTF8
+          'runner_registration_mutated=false' | Add-Content -LiteralPath $out -Encoding UTF8
+          'windows_acl_modified=false' | Add-Content -LiteralPath $out -Encoding UTF8
+          'windows_service_modified=false' | Add-Content -LiteralPath $out -Encoding UTF8
+          'live_trading_authority_changed=false' | Add-Content -LiteralPath $out -Encoding UTF8
+
+      - name: Upload bounded Windows rescue diagnostics
+        if: matrix.target == 'windows' && failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-remote-rescue-diagnostic-${{ github.run_id }}
+          path: ${{ runner.temp }}/nexus-remote-rescue-diagnostic.txt
+          if-no-files-found: error
+          retention-days: 3
