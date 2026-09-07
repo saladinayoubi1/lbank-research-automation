@@ -1,0 +1,44 @@
+name: TEMP Remote Commander Folder Inventory
+
+on:
+  push:
+    branches: [codex/nexus-warp-disconnect-recovery-20260908]
+    paths:
+      - .github/workflows/temp-remote-commander-folder.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inventory:
+    if: github.ref == 'refs/heads/codex/nexus-warp-disconnect-recovery-20260908'
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 2
+    steps:
+      - name: Inventory RemoteCommander directory only
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
+        run: |
+          $ErrorActionPreference='Stop'
+          $warp='C:\Program Files\Cloudflare\Cloudflare WARP\warp-cli.exe'
+          if(Test-Path -LiteralPath $warp -PathType Leaf){ & $warp disconnect | Out-Null }
+          $root=Join-Path $env:LOCALAPPDATA 'NEXUS\RemoteCommander'
+          if(-not (Test-Path -LiteralPath $root -PathType Container)){ throw 'RemoteCommander directory missing.' }
+          Write-Host ("root={0}" -f $root)
+          Write-Host 'directories_begin'
+          Get-ChildItem -LiteralPath $root -Directory -Recurse -Force -ErrorAction SilentlyContinue |
+            Sort-Object FullName |
+            ForEach-Object { Write-Host ("dir={0}" -f $_.FullName) }
+          Write-Host 'directories_end'
+          Write-Host 'files_begin'
+          Get-ChildItem -LiteralPath $root -File -Recurse -Force -ErrorAction SilentlyContinue |
+            Sort-Object FullName |
+            ForEach-Object {
+              $ext=$_.Extension.ToLowerInvariant()
+              $kind = if($ext -in @('.ps1','.cmd','.bat','.exe','.lnk')){'launcher_candidate'} elseif($ext -in @('.json','.env','.pem','.key','.config')){'sensitive_metadata'} else {'other'}
+              Write-Host ("file={0};bytes={1};modified={2:o};kind={3}" -f $_.FullName,$_.Length,$_.LastWriteTimeUtc,$kind)
+            }
+          Write-Host 'files_end'
+          Write-Host 'file_contents_read=false'
+          Write-Host 'mutation_performed=false'
+          Write-Host 'live_trading_authority_changed=false'
