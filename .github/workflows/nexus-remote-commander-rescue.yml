@@ -26,8 +26,10 @@ jobs:
       - name: Verify physical runner identity
         shell: powershell
         run: |
-          if ('${{ runner.name }}' -ne 'NEXUS-WINDOWS-DR') {
-            throw "Unexpected runner: ${{ runner.name }}"
+          $actual = [string]$env:RUNNER_NAME
+          Write-Host ("runner_name=" + $actual)
+          if ($actual.Trim() -ne 'NEXUS-WINDOWS-DR') {
+            throw "Unexpected runner: $actual"
           }
           Write-Host 'runner_identity=PASS'
 
@@ -43,6 +45,9 @@ jobs:
           if ($LASTEXITCODE -ne 0) {
             throw "Failed to request recovery task: $taskName"
           }
-          Start-Sleep -Seconds 3
+          Start-Sleep -Seconds 5
           & schtasks.exe /Query /TN $taskName /FO LIST /V
+          if ($LASTEXITCODE -ne 0) {
+            throw "Recovery task query failed after start: $taskName"
+          }
           Write-Host 'remote_commander_rescue_request=PASS'
