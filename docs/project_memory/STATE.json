@@ -8,7 +8,10 @@
     "core_goals_agent_editable": false,
     "high_impact_actions_require_human_approval": true,
     "important_or_owner_action_notifications_use_red_marker": true,
-    "unacknowledged_red_notifications_repeat_in_reports": true
+    "unacknowledged_red_notifications_repeat_in_reports": true,
+    "checkpoint_after_each_material_milestone": true,
+    "new_chats_must_not_repeat_checkpointed_work_without_contradicting_repository_evidence": true,
+    "verification_alone_is_not_a_reason_to_repeat_completed_work": true
   },
   "objectives": [
     "durable project continuity independent of chat sessions",
@@ -37,7 +40,9 @@
     "windows_scheduled_recovery_task_query_access_denied": true,
     "bybit_wsl_watchdog_path_exists": true,
     "runner_registration_modified_by_recovery_work": false,
-    "security_authority_expanded_by_recovery_work": false
+    "security_authority_expanded_by_recovery_work": false,
+    "bybit_wsl_user_context_self_heal_verified": true,
+    "post_self_heal_paper_success": true
   },
   "data_policy": {
     "research_only": true,
@@ -74,6 +79,12 @@
       "exact current GitHub pull requests and CI evidence",
       "Google Drive backup only after repository evidence"
     ],
+    "startup_rule": {
+      "read_project_memory_before_execution": true,
+      "prefer_exact_repository_evidence_over_chat_recollection": true,
+      "treat_checkpointed_completed_milestones_as_completed": true,
+      "rerun_completed_work_only_when_new_repository_evidence_shows_regression_or_acceptance_requires_new_proof": true
+    },
     "drive_backup": {
       "provider": "Google Drive",
       "document": "NEXUS Project Memory Backup — Durable — 2026-08-26 — 028715b9",
@@ -86,13 +97,45 @@
       "fixed_source_sha": "028715b9f99bd7107b3ff53b03e432d42eccfbdb"
     }
   },
+  "latest_checkpoint": {
+    "checkpoint_date": "2026-09-08",
+    "observed_main_sha": "e25e2e9fe900f627d6eedbbb6ab438053e216714",
+    "continuity_only": true,
+    "completed_milestones": [
+      "PR #1406 merged after required macOS/Ubuntu/Windows/audit/control checks passed; bounded Bybit edge-country HTTP 403 handling and connection refresh are now on main",
+      "exact-main physical Paper run 34171102929 succeeded on NEXUS-BYBIT-WSL with ALREADY_V2, 12/12 fresh cells, 36 lanes and durable state persistence",
+      "approved signed-in-user WSL self-heal returned PASS with USER_CONTEXT_MANAGED_CHILD_LIVENESS_SELF_HEAL_ACTIVE and listener_observed=true",
+      "post-self-heal exact-main physical Paper run 34172045769 succeeded on NEXUS-BYBIT-WSL, restored prior state, verified ALREADY_V2, 12/12 fresh cells, 36 lanes, Paper authority constraints and durable state artifact 10036225109",
+      "maintenance issue #1372 closed completed with final acceptance evidence",
+      "exact-main Windows DR bootstrap revalidation run 34171177267 succeeded on NEXUS-WINDOWS-DR and persisted sanitized artifact 10035821661"
+    ],
+    "do_not_repeat_without_regression_evidence": [
+      "WSL rootfs ownership/DACL recovery",
+      "WSL DNS stub-resolver recovery",
+      "Remote Commander/WARP recovery",
+      "NEXUS-BYBIT-WSL registration recovery",
+      "issue #1372 self-heal acceptance proof",
+      "PR #1406 Bybit 403 fallback patch and its already-passed CI",
+      "12-cell/36-lane ALREADY_V2 physical Paper acceptance proof",
+      "Windows DR exact-main bootstrap revalidation for e25e2e9fe900f627d6eedbbb6ab438053e216714"
+    ],
+    "current_blocker": {
+      "area": "Multi-Pair Discovery v2 runtime requalification snapshot",
+      "workflow_run": 34171102952,
+      "physical_discovery": "SUCCESS",
+      "hosted_runtime_snapshot": "FAIL_CLOSED",
+      "reason": "GitHub-hosted runtime-snapshot is geographically rejected by Bybit public endpoints with HTTP 403",
+      "required_fix": "repair the execution-plane/data-handoff design so the already-verified physical Discovery path supplies or produces the runtime snapshot without blind reruns or geographic circumvention"
+    },
+    "canonical_authority_fields_preserved": true
+  },
   "current_evidence": {
-    "observed_main_sha": "987b4212d252d993cf1065e11d8bc112f11e6172",
-    "observed_at_utc": "2026-09-03T21:05:37Z",
-    "state_commit_relationship": "observed_main_sha is the exact main snapshot before this Project Memory reconciliation; merging this state advances main by one direct integration commit and the validator permits only that direct one-hop integration before the snapshot becomes stale again",
+    "observed_main_sha": "e25e2e9fe900f627d6eedbbb6ab438053e216714",
+    "observed_at_utc": "2026-09-08T00:39:00Z",
+    "state_commit_relationship": "observed_main_sha is the exact base main snapshot before this continuity-only Project Memory PR; the checkpoint preserves historical acceptance contracts and adds newer evidence without redefining prior authority",
     "latest_main_change": {
-      "pr": 1303,
-      "summary": "Hardened the physical Windows DR persistence job to fetch anonymous exact source with bounded retries; exact-main run 33805581549 then completed successfully on NEXUS-WINDOWS-DR and uploaded sanitized persistence evidence.",
+      "pr": 1406,
+      "summary": "Merged bounded Bybit edge-country HTTP 403 host fallback and connection refresh; exact-main physical Paper and Windows DR revalidation evidence succeeded afterward.",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true
@@ -120,14 +163,17 @@
     },
     "windows_dr_persistence": {
       "status": "SUCCESS_EXACT_CURRENT_MAIN_PHYSICAL",
-      "run_id": 33805581549,
-      "source_sha": "987b4212d252d993cf1065e11d8bc112f11e6172",
+      "run_id": 34171177267,
+      "source_sha": "e25e2e9fe900f627d6eedbbb6ab438053e216714",
       "runner": "NEXUS-WINDOWS-DR",
       "machine": "DESKTOP-1R1081M",
-      "artifact_id": 9912832252,
-      "artifact_digest": "sha256:b9bfeb9ae77e1e9790b8a51db61bed8b4daa2a6f850c8715f9b1c78bdd01314a",
+      "artifact_id": 10035821661,
+      "artifact_digest": "sha256:9661b94f2417a36a12868c82b960e48a61eb98c3261499622fdf132d7ae74612",
       "exact_source_fetch_verified": true,
       "persistence_install_decision": "SUCCESS",
+      "persistence_install_source_sha": "987b4212d252d993cf1065e11d8bc112f11e6172",
+      "persistence_install_run_id": 33805581549,
+      "current_main_bootstrap_decision": "ALREADY_RUNNING",
       "runner_registration_modified": false,
       "runner_credentials_modified": false,
       "other_runner_paths_modified": false,
@@ -203,6 +249,73 @@
       "private_credentials_used": false,
       "automatic_live_promotion": false,
       "may_be_accelerated_or_fabricated": false
+    },
+    "wsl_user_context_self_heal": {
+      "issue": 1372,
+      "issue_state": "closed",
+      "exact_main_sha": "e25e2e9fe900f627d6eedbbb6ab438053e216714",
+      "status": "USER_CONTEXT_MANAGED_CHILD_LIVENESS_SELF_HEAL_ACTIVE",
+      "recovery": "PASS",
+      "listener_observed": true,
+      "runner": "NEXUS-BYBIT-WSL",
+      "machine": "DESKTOP-1R1081M",
+      "administrator_required": false,
+      "task_scheduler_used": false,
+      "runner_registration_modified": false,
+      "runner_credentials_modified": false,
+      "windows_service_modified": false,
+      "live_trading_authority_changed": false,
+      "post_self_heal_paper_run": 34172045769,
+      "post_self_heal_paper_run_result": "SUCCESS"
+    },
+    "post_self_heal_paper_runtime": {
+      "status": "EXACT_MAIN_PHYSICAL_12_CELL_36_LANE_POST_SELF_HEAL_ACCEPTED",
+      "source_sha": "e25e2e9fe900f627d6eedbbb6ab438053e216714",
+      "workflow_run": 34172045769,
+      "runner": "NEXUS-BYBIT-WSL",
+      "machine": "DESKTOP-1R1081M",
+      "restored_state_artifact_id": 10035928575,
+      "migration_status": "ALREADY_V2",
+      "expected_cell_count": 12,
+      "fresh_cell_count": 12,
+      "expected_lane_count": 36,
+      "state_artifact_id": 10036225109,
+      "state_artifact_digest": "sha256:c397679c8f2ed9550e7bc0b9466d1409719eb10847c721a4773531975409c097",
+      "paper_only": true,
+      "live_trading_authority": false,
+      "private_credentials_used": false,
+      "real_exchange_orders": false,
+      "automatic_strategy_promotion": false,
+      "deterministic_risk_final_authority": true,
+      "persistent_runtime_database_on_github": false,
+      "issue_984_state_artifact_touched": false
+    },
+    "multitimeframe_strategy_runtime_latest": {
+      "status": "exact_main_4_symbol_3_timeframe_3_strategy_paper_matrix_proven",
+      "source_sha": "e25e2e9fe900f627d6eedbbb6ab438053e216714",
+      "symbols": ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT"],
+      "timeframes": ["minute15", "hour1", "hour4"],
+      "families": ["momentum", "trend_breakout", "mean_reversion"],
+      "comparison_surface": "4 symbols x 3 timeframes x 3 strategy families = 36 isolated comparison lanes",
+      "expected_cell_count": 12,
+      "expected_lane_count": 36,
+      "multi_pair_expansion_beyond_btc_eth_proven": true,
+      "paper_only": true,
+      "live_trading_authority": false,
+      "automatic_strategy_promotion": false,
+      "deterministic_risk_final_authority": true
+    },
+    "strategy_discovery_latest_runtime": {
+      "physical_proof_workflow_run": 34171102952,
+      "physical_discovery_job": "discover-physical",
+      "physical_discovery_result": "SUCCESS",
+      "runtime_snapshot_job": "runtime-snapshot",
+      "runtime_snapshot_result": "FAIL_CLOSED",
+      "blocker": "GitHub-hosted runner Bybit public endpoints geographically rejected with HTTP 403; do not loop on blind reruns",
+      "required_fix": "repair execution-plane/data-handoff while preserving geographic and authority boundaries",
+      "output_authority": "RESEARCH_PROPOSAL_ONLY",
+      "automatic_candidate_or_paper_promotion": false,
+      "live_trading_authority": false
     }
   },
   "open_gates": {
@@ -225,6 +338,16 @@
     "windows_user_context_recovery": {
       "state": "historical_context_limit_not_current_persistence_blocker",
       "reason": "NETWORK_SERVICE user-token/task-query limitations remain documented, but exact-current-main physical Windows DR persistence succeeded without weakening privilege, ACL, service-account, registration, or credential boundaries"
+    },
+    "wsl_user_context_self_heal": {
+      "issue": 1372,
+      "state": "closed",
+      "reason": "approved signed-in-user self-heal PASS and subsequent exact-main physical ALREADY_V2 12-cell/36-lane Paper persistence proof completed"
+    },
+    "strategy_discovery_runtime_snapshot": {
+      "state": "open_blocker",
+      "workflow_run": 34171102952,
+      "reason": "physical discovery succeeded but GitHub-hosted runtime snapshot failed closed on Bybit geographic HTTP 403"
     }
   },
   "authority": {
@@ -244,10 +367,10 @@
   "next_autonomous_work": {
     "priority": "trading_engine_first",
     "order": [
-      "expand canonical multi-pair Research/Backtest/Paper coverage beyond the accepted BTCUSDT/ETHUSDT surface using explicit registry mappings and fail-closed semantic validation",
-      "expand the already-verified boundary-bound Discovery engine beyond its current BTCUSDT/ETHUSDT and three-family hypothesis surface without weakening leakage, holdout, stress, or deterministic Risk gates",
+      "repair Multi-Pair Discovery runtime-snapshot execution-plane/data-handoff so hosted geographic Bybit HTTP 403 cannot block the already-verified physical Discovery path; do not use blind reruns as a fix",
+      "complete Strategy Discovery -> evaluation -> Paper feedback proof while preserving leakage, holdout, stress and deterministic Risk gates",
       "continue immutable #984 prospective Paper collection without inferred or fabricated bars",
-      "keep #43 production release deny-by-default and do not create Live, signing, credential, or deployment authority"
+      "keep #43 production release deny-by-default and do not create Live, signing, credential or deployment authority"
     ],
     "approval_required_for_reversible_research_backtest_paper_hardening": false,
     "approval_required_for_live_credentials_production_or_irreversible_actions": true
