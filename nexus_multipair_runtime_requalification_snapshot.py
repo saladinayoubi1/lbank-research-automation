@@ -1,10 +1,10 @@
 """Fresh canonical Bybit snapshot transport for Multi-Pair runtime requalification.
 
-The physical Bybit runner may be unable to reach Bybit public REST endpoints from its
-network region. This module keeps data semantics unchanged: a GitHub-hosted job acquires
-fresh canonical public Bybit REST closed candles, packages the verified 12-cell snapshot,
-and a physical job re-binds those exact transported candles to the canonical registry
-before independently re-running Strategy Factory qualification.
+The approved physical Bybit Research execution plane acquires fresh canonical public
+Bybit REST closed candles, packages the verified 12-cell snapshot as a digest-pinned
+current-run artifact, and the subsequent physical job re-binds those exact transported
+candles to the canonical registry before independently re-running Strategy Factory
+qualification. GitHub-hosted runners never acquire the fresh runtime Bybit snapshot.
 
 The transported snapshot is distinct from the immutable historical Discovery archive.
 It is Research/Paper scoped only and grants no Candidate, promotion, order, or Live
@@ -40,7 +40,7 @@ from product_research_runtime import (
 
 HISTORY_LIMIT = 240
 MAX_SNAPSHOT_TRANSPORT_AGE_MS = 20 * 60 * 1000
-TRANSPORT_ORIGIN = "digest_pinned_hosted_bybit_rest_snapshot"
+TRANSPORT_ORIGIN = "digest_pinned_physical_bybit_rest_snapshot"
 INNER_ARCHIVE_NAME = "nexus-multipair-runtime-requalification-snapshot.zip"
 _HEX40 = re.compile(r"^[0-9a-f]{40}$")
 _HEX64 = re.compile(r"^[0-9a-f]{64}$")

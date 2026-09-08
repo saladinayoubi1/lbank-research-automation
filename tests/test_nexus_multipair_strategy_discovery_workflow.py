@@ -68,32 +68,38 @@ def test_hosted_job_builds_wheelhouse_and_immutable_official_archive_snapshot() 
     assert 'rm -rf "$acquire_site" "$state" "$cache" "$snapshot"' in hosted
 
 
-def test_fresh_runtime_snapshot_is_acquired_hosted_only_after_historical_discovery() -> None:
+def test_fresh_runtime_snapshot_is_acquired_on_same_physical_plane_after_historical_discovery() -> None:
     runtime = _section(_text(), "runtime-snapshot", "requalify-physical")
     assert "needs: discover-physical" in runtime
-    assert "runs-on: ubuntu-latest" in runtime
-    assert "timeout-minutes: 20" in runtime
-    assert "python -m pip install -r requirements.lock" in runtime
-    assert "python nexus_multipair_runtime_requalification_snapshot.py acquire" in runtime
+    assert "runs-on: nexus-bybit-network" in runtime
+    assert "timeout-minutes: 30" in runtime
+    assert "uses: actions/checkout" not in runtime
+    assert "uses: actions/setup-python" not in runtime
+    assert "EXPECTED_DISCOVERY_RUNNER_NAME" in runtime
+    assert "assert '$CURRENT_RUNNER_NAME' == '$EXPECTED_DISCOVERY_RUNNER_NAME'" in runtime
+    assert 'git -C "$SOURCE_ROOT" -c http.version=HTTP/1.1 fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"' in runtime
+    assert 'test "$(git -C "$SOURCE_ROOT" rev-parse HEAD)" = "$GITHUB_SHA"' in runtime
+    assert '"$PYTHON_BIN" nexus_multipair_runtime_requalification_snapshot.py acquire' in runtime
     assert '--source-sha "$GITHUB_SHA"' in runtime
     assert '--now-ms "$now_ms"' in runtime
     assert "runtime_snapshot_digest:" in runtime
     assert "runtime_snapshot_as_of_ms:" in runtime
     assert "runtime_snapshot_archive_sha256:" in runtime
     assert "nexus-multipair-runtime-requalification-snapshot-${{ github.sha }}" in runtime
-    assert "path: build/nexus-multipair-runtime-requalification-snapshot.zip" in runtime
-    assert "hosted_fresh_multipair_runtime_snapshot=PASS" in runtime
-
+    assert "physical_fresh_multipair_runtime_snapshot=PASS" in runtime
+    assert "hosted_fresh_multipair_runtime_snapshot" not in runtime
 
 def test_physical_jobs_are_main_only_exact_source_and_native() -> None:
     text = _text()
     discover = _section(text, "discover-physical", "runtime-snapshot")
+    runtime = _section(text, "runtime-snapshot", "requalify-physical")
     requalify = _section(text, "requalify-physical", "persist-proof")
-    for section in (discover, requalify):
+    for section in (discover, runtime, requalify):
         assert "github.event_name != 'pull_request' && github.ref == 'refs/heads/main'" in section
         assert "runs-on: nexus-bybit-network" in section
         assert "uses: actions/checkout" not in section
         assert "uses: actions/setup-python" not in section
+    for section in (discover, requalify):
         assert "uses: actions/upload-artifact" not in section
     assert 'git -c http.version=HTTP/1.1 fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"' in discover
     assert 'test "$(git rev-parse HEAD)" = "$GITHUB_SHA"' in discover
