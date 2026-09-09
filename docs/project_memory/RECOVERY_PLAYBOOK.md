@@ -38,3 +38,10 @@ Keep at least two independent durable copies of essential project knowledge: rep
 - For the locked runtime wheelhouse, a persistent cache is only a hint. Reject symlinks; deterministically repack it; require the exact hosted digest, repository `requirements.lock`, and wheel presence. On any mismatch, delete it and use current-run artifact restore.
 - A failed-jobs retry cannot reconstruct an ephemeral same-run chain after cleanup deleted its source/state roots. Prefer a new reviewed architecture fix and a new exact-main run.
 - If a physical Paper loop returns `WAITING_FOR_FRESH_CELLS`, require the engine and independent verifier to pass, require `fresh_cell_count < expected_cell_count`, require the waiting mission gap, and require maintenance, regime, rebalance, exposure increase, performance feedback and health-trigger effects to remain inactive. Persist the complete verification-valid waiting state so source-SHA lineage can converge on the next natural candle boundary. Require the full configured fresh-cell count only for `PAPER_LOOP_ACTIVE`; never fabricate cells, relabel waiting as active, infer data or silently substitute exchanges.
+
+## Rotating GitHub replay-artifact recovery
+- Never use a fixed GitHub Actions artifact ID as durable replay transport; artifacts expire even when repository history remains valid.
+- Select only unexpired artifacts matching the reviewed prefix, then independently require the exact replay filename, delivery manifest, zip payload, embedded manifest, and canonical semantic dataset identity.
+- If an operator supplies an artifact ID, use it only to filter the candidate set; all content and semantic checks remain mandatory.
+- Treat HTTP 410 for a fixed artifact as evidence to repair transport architecture. Do not blindly replace it with another fixed ID or relax integrity checks.
+- A positive Strategy Factory research gate stops at its declared review boundary. Preserve `automatic_paper_forward_started=false` until an independent human review explicitly authorizes the next bounded Research/Paper step; never infer Live or private-credential authority.
