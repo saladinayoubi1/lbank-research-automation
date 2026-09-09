@@ -57,6 +57,12 @@ SEARCH_STAGES: tuple[dict[str, str], ...] = (
         "experiment": "experiments/nexus_multitimeframe_strategy_discovery_v1.json",
         "workflow": ".github/workflows/nexus_multitimeframe_strategy_discovery.yml",
     },
+    {
+        "stage": "nexus_multipair_strategy_discovery_v2",
+        "engine": "nexus_multipair_strategy_discovery.py",
+        "experiment": "experiments/nexus_multipair_strategy_discovery_v2.json",
+        "workflow": ".github/workflows/nexus_multipair_strategy_discovery_v2.yml",
+    },
 )
 
 
