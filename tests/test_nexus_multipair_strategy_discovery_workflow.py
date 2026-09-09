@@ -58,6 +58,12 @@ def test_hosted_job_builds_wheelhouse_and_immutable_official_archive_snapshot() 
     hosted = _section(_text(), "runtime-wheelhouse", "discover-physical")
     assert "runs-on: ubuntu-latest" in hosted
     assert "timeout-minutes: 35" in hosted
+    assert "source_archive_sha256:" in hosted
+    assert "Pack exact commit source for the Node-free physical jobs" in hosted
+    assert "git archive --format=zip" in hosted
+    assert "nexus-multipair-discovery-v2-source-${{ github.sha }}" in hosted
+    assert "build/nexus-multipair-exact-source.zip" in hosted
+    assert "build/nexus-multipair-exact-source.commit-sha" in hosted
     assert "snapshot_archive_sha256:" in hosted
     assert "snapshot_digest:" in hosted
     assert "python nexus_multipair_archive_snapshot.py" in hosted
@@ -78,8 +84,10 @@ def test_fresh_runtime_snapshot_is_acquired_on_same_physical_plane_after_histori
     assert "uses: actions/setup-python" not in runtime
     assert "EXPECTED_DISCOVERY_RUNNER_NAME" in runtime
     assert "assert '$CURRENT_RUNNER_NAME' == '$EXPECTED_DISCOVERY_RUNNER_NAME'" in runtime
-    assert 'git -C "$SOURCE_ROOT" -c http.version=HTTP/1.1 fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"' in runtime
-    assert 'test "$(git -C "$SOURCE_ROOT" rev-parse HEAD)" = "$GITHUB_SHA"' in runtime
+    assert "git fetch" not in runtime
+    assert "git init" not in runtime
+    assert 'test "$(cat "$source_root/.nexus-exact-source-sha")" = "$GITHUB_SHA"' in runtime
+    assert "multipair_runtime_snapshot_retained_exact_source=PASS" in runtime
     assert '"$PYTHON_BIN" nexus_multipair_runtime_requalification_snapshot.py acquire' in runtime
     assert '--source-sha "$GITHUB_SHA"' in runtime
     assert '--now-ms "$now_ms"' in runtime
@@ -124,11 +132,17 @@ def test_physical_jobs_are_main_only_exact_source_and_native() -> None:
         assert "uses: actions/setup-python" not in section
     for section in (discover, runtime, requalify):
         assert "uses: actions/upload-artifact" not in section
-    assert 'git -c http.version=HTTP/1.1 fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"' in discover
-    assert 'test "$(git rev-parse HEAD)" = "$GITHUB_SHA"' in discover
-    assert "for fetch_attempt in 1 2 3" in discover
-    assert "git fetch" not in requalify
-    assert 'test "$(git -C "$source_root" rev-parse HEAD)" = "$GITHUB_SHA"' in requalify
+    for section in (discover, runtime, requalify):
+        assert "git fetch" not in section
+        assert "git init" not in section
+    assert "SOURCE_ARTIFACT: nexus-multipair-discovery-v2-source-${{ github.sha }}" in discover
+    assert "SOURCE_ARCHIVE_SHA256" in discover
+    assert "source handoff workflow identity mismatch" in discover
+    assert "source artifact has no valid GitHub SHA-256 digest" in discover
+    assert "source artifact outer surface mismatch" in discover
+    assert "source archive digest mismatch" in discover
+    assert "physical_exact_source_artifact_restore=PASS" in discover
+    assert 'test "$(cat "$source_root/.nexus-exact-source-sha")" = "$GITHUB_SHA"' in requalify
     assert "multipair_requalification_retained_exact_source=PASS" in requalify
     assert "assert '$CURRENT_RUNNER_NAME' == '$EXPECTED_DISCOVERY_RUNNER_NAME'" in requalify
 
@@ -138,21 +152,26 @@ def test_discovery_uses_fresh_source_root_and_never_mutates_shared_workspace_git
     expected_source_root = '$HOME/.local/share/nexus/multipair-discovery-source/$GITHUB_RUN_ID'
     assert expected_source_root in discover
     assert '"$HOME"/.local/share/nexus/multipair-discovery-source/*)' in discover
-    assert 'cd "$source_root"' in discover
-    assert 'git init .' in discover
+    assert "nexus-multipair-discovery-v2-source-${{ github.sha }}" in discover
+    assert 'git init .' not in discover
+    assert "git fetch" not in discover
     assert 'git clean -ffdx' not in discover
     assert 'git reset --hard' not in discover
-    assert "multipair_discovery_fresh_source_checkout=PASS" in discover
-    assert "Remove isolated Discovery source after use" in discover
+    assert "physical_exact_source_artifact_restore=PASS" in discover
+    assert "multipair_discovery_exact_source_artifact=PASS" in discover
+    assert "Remove isolated Discovery source after failure" in discover
 
 
 def test_requalification_reuses_exact_runtime_snapshot_source_and_never_cleans_shared_workspace() -> None:
     requalify = _section(_text(), "requalify-physical", "persist-proof")
-    expected_source_root = '$HOME/.local/share/nexus/multipair-runtime-snapshot-source/$GITHUB_RUN_ID'
+    expected_source_root = '$HOME/.local/share/nexus/multipair-discovery-source/$GITHUB_RUN_ID'
     assert expected_source_root in requalify
-    assert '"$HOME"/.local/share/nexus/multipair-runtime-snapshot-source/*)' in requalify
-    assert 'test -d "$source_root/.git"' in requalify
+    assert '"$HOME"/.local/share/nexus/multipair-discovery-source/*)' in requalify
+    assert 'test "$(cat "$source_root/.nexus-exact-source-sha")" = "$GITHUB_SHA"' in requalify
+    assert 'test -f "$source_root/requirements.lock"' in requalify
+    assert 'test -f "$source_root/nexus_multipair_runtime_requalification_snapshot.py"' in requalify
     assert 'git -C "$source_root" init .' not in requalify
+    assert "git fetch" not in requalify
     assert 'git clean -ffdx' not in requalify
     assert 'git reset --hard' not in requalify
     assert "multipair_requalification_retained_exact_source=PASS" in requalify

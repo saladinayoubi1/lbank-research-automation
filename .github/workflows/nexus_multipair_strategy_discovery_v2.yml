@@ -114,6 +114,7 @@ jobs:
     timeout-minutes: 35
     outputs:
       archive_sha256: ${{ steps.pack.outputs.archive_sha256 }}
+      source_archive_sha256: ${{ steps.source.outputs.source_archive_sha256 }}
       snapshot_archive_sha256: ${{ steps.archive.outputs.snapshot_archive_sha256 }}
       snapshot_digest: ${{ steps.archive.outputs.snapshot_digest }}
     steps:
@@ -124,6 +125,28 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
+      - name: Pack exact commit source for the Node-free physical jobs
+        id: source
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          git archive --format=zip \
+            --output build/nexus-multipair-exact-source.zip \
+            "$GITHUB_SHA"
+          printf '%s\n' "$GITHUB_SHA" > build/nexus-multipair-exact-source.commit-sha
+          source_archive_sha256="$(sha256sum build/nexus-multipair-exact-source.zip | awk '{print $1}')"
+          test -n "$source_archive_sha256"
+          echo "source_archive_sha256=$source_archive_sha256" >> "$GITHUB_OUTPUT"
+          echo "hosted_exact_source_archive=PASS sha=$GITHUB_SHA archive=$source_archive_sha256"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: nexus-multipair-discovery-v2-source-${{ github.sha }}
+          path: |
+            build/nexus-multipair-exact-source.zip
+            build/nexus-multipair-exact-source.commit-sha
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
       - name: Build locked CPython 3.12 Linux runtime wheelhouse
         run: |
           set -euo pipefail
@@ -229,6 +252,8 @@ jobs:
       proposal_count: ${{ steps.discovery.outputs.proposal_count }}
     env:
       GH_TOKEN: ${{ github.token }}
+      SOURCE_ARTIFACT: nexus-multipair-discovery-v2-source-${{ github.sha }}
+      SOURCE_ARCHIVE_SHA256: ${{ needs.runtime-wheelhouse.outputs.source_archive_sha256 }}
       WHEELHOUSE_ARTIFACT: nexus-multipair-discovery-v2-wheelhouse-${{ github.sha }}
       WHEELHOUSE_ARCHIVE_SHA256: ${{ needs.runtime-wheelhouse.outputs.archive_sha256 }}
       SNAPSHOT_ARTIFACT: nexus-multipair-discovery-v2-archive-snapshot-${{ github.sha }}
@@ -238,7 +263,6 @@ jobs:
       - name: Prepare isolated exact source and ephemeral external Research state
         run: |
           set -euo pipefail
-          repo_url="https://github.com/${GITHUB_REPOSITORY}.git"
           source_root="$HOME/.local/share/nexus/multipair-discovery-source/$GITHUB_RUN_ID"
           state_root="$HOME/.local/share/nexus/multipair-discovery-v2/$GITHUB_RUN_ID"
           case "$source_root" in
@@ -251,25 +275,6 @@ jobs:
           esac
           rm -rf "$source_root" "$state_root"
           mkdir -p "$source_root" "$state_root"
-          cd "$source_root"
-          git init .
-          git remote add origin "$repo_url"
-          git config --local --unset-all http.https://github.com/.extraheader || true
-          fetch_ok=false
-          for fetch_attempt in 1 2 3; do
-            if timeout 180s git -c http.version=HTTP/1.1 fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"; then
-              fetch_ok=true
-              break
-            fi
-            echo "::warning::Exact isolated Discovery source fetch attempt ${fetch_attempt}/3 failed."
-            if [ "$fetch_attempt" -lt 3 ]; then sleep "$((fetch_attempt * 5))"; fi
-          done
-          if [ "$fetch_ok" != true ]; then
-            echo "::error::Exact isolated Discovery source fetch failed after bounded attempts."
-            exit 1
-          fi
-          git checkout --detach --force FETCH_HEAD
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           known_python="/opt/nexus-bybit-runner/_work/_tool/Python/3.12.14/x64/bin/python"
           python_bin=""
           if [ -x "$known_python" ]; then python_bin="$known_python"; fi
@@ -286,12 +291,124 @@ jobs:
           effective_ld_library_path="$python_lib"
           if [ -n "${LD_LIBRARY_PATH:-}" ]; then effective_ld_library_path="$python_lib:$LD_LIBRARY_PATH"; fi
           LD_LIBRARY_PATH="$effective_ld_library_path" "$python_bin" -c "import ctypes; print('multipair_discovery_physical_python=PASS')"
+
+          github_api() {
+            curl --fail --silent --show-error --location \
+              --retry 3 --retry-all-errors --connect-timeout 20 --max-time 900 \
+              -H 'Accept: application/vnd.github+json' \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "$1"
+          }
+          run_metadata="$state_root/source-run-metadata.json"
+          artifact_metadata="$state_root/source-artifact-metadata.json"
+          outer_archive="$state_root/source-artifact.zip"
+          inner_archive="$state_root/nexus-multipair-exact-source.zip"
+          github_api "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" > "$run_metadata"
+          github_api "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100" > "$artifact_metadata"
+          read -r artifact_id artifact_size artifact_digest <<EOF
+          $(RUN_METADATA="$run_metadata" ARTIFACT_METADATA="$artifact_metadata" "$python_bin" - <<'PY'
+          import json
+          import os
+          import re
+          from pathlib import Path
+
+          run = json.loads(Path(os.environ["RUN_METADATA"]).read_text(encoding="utf-8"))
+          if (
+              str(run.get("id")) != os.environ["GITHUB_RUN_ID"]
+              or run.get("head_sha") != os.environ["GITHUB_SHA"]
+              or run.get("head_branch") != "main"
+              or run.get("event") not in {"push", "workflow_dispatch"}
+          ):
+              raise SystemExit("source handoff workflow identity mismatch")
+          payload = json.loads(Path(os.environ["ARTIFACT_METADATA"]).read_text(encoding="utf-8"))
+          matches = [
+              row for row in payload.get("artifacts", [])
+              if row.get("name") == os.environ["SOURCE_ARTIFACT"]
+              and row.get("expired") is False
+          ]
+          if len(matches) != 1:
+              raise SystemExit(f"expected one exact source artifact, got {len(matches)}")
+          row = matches[0]
+          digest = str(row.get("digest", ""))
+          size = int(row.get("size_in_bytes") or 0)
+          if not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
+              raise SystemExit("source artifact has no valid GitHub SHA-256 digest")
+          if not 0 < size <= 100 * 1024 * 1024:
+              raise SystemExit("source artifact size is outside bounds")
+          print(int(row["id"]), size, digest.removeprefix("sha256:"))
+          PY
+          )
+          EOF
+          github_api "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" > "$outer_archive"
+          test "$(stat -c '%s' "$outer_archive")" -eq "$artifact_size"
+          test "$(sha256sum "$outer_archive" | awk '{print $1}')" = "$artifact_digest"
+          SOURCE_ROOT="$source_root" OUTER_ARCHIVE="$outer_archive" INNER_ARCHIVE="$inner_archive" "$python_bin" - <<'PY'
+          import hashlib
+          import os
+          import shutil
+          import stat
+          import zipfile
+          from pathlib import Path, PurePosixPath
+
+          outer = Path(os.environ["OUTER_ARCHIVE"])
+          inner = Path(os.environ["INNER_ARCHIVE"])
+          root = Path(os.environ["SOURCE_ROOT"]).resolve()
+          with zipfile.ZipFile(outer) as archive:
+              members = archive.infolist()
+              expected = {"nexus-multipair-exact-source.zip", "nexus-multipair-exact-source.commit-sha"}
+              if {row.filename for row in members} != expected or len(members) != 2:
+                  raise SystemExit("source artifact outer surface mismatch")
+              for row in members:
+                  mode = (row.external_attr >> 16) & 0xFFFF
+                  if row.is_dir() or (mode and not stat.S_ISREG(mode)):
+                      raise SystemExit("source artifact outer member is not a regular file")
+                  target = inner if row.filename.endswith(".zip") else inner.with_suffix(".commit-sha")
+                  with archive.open(row) as source, target.open("wb") as output:
+                      shutil.copyfileobj(source, output, length=1024 * 1024)
+          if inner.with_suffix(".commit-sha").read_text(encoding="utf-8").strip() != os.environ["GITHUB_SHA"]:
+              raise SystemExit("source artifact commit identity mismatch")
+          digest = hashlib.sha256(inner.read_bytes()).hexdigest()
+          if digest != os.environ["SOURCE_ARCHIVE_SHA256"]:
+              raise SystemExit("source archive digest mismatch")
+          total = 0
+          with zipfile.ZipFile(inner) as archive:
+              names = [row.filename for row in archive.infolist()]
+              if len(names) != len(set(names)):
+                  raise SystemExit("duplicate source archive member")
+              for row in archive.infolist():
+                  pure = PurePosixPath(row.filename)
+                  if pure.is_absolute() or ".." in pure.parts or "\\" in row.filename or ".git" in pure.parts:
+                      raise SystemExit(f"unsafe source archive path: {row.filename}")
+                  mode = (row.external_attr >> 16) & 0xFFFF
+                  if row.is_dir():
+                      (root / Path(*pure.parts)).mkdir(parents=True, exist_ok=True)
+                      continue
+                  if mode and not stat.S_ISREG(mode):
+                      raise SystemExit(f"source archive member is not regular: {row.filename}")
+                  if row.file_size < 0 or row.file_size > 50 * 1024 * 1024:
+                      raise SystemExit(f"source archive member size is outside bounds: {row.filename}")
+                  total += row.file_size
+                  if total > 250 * 1024 * 1024:
+                      raise SystemExit("source archive extracted size exceeds bound")
+                  target = (root / Path(*pure.parts)).resolve()
+                  if root not in target.parents:
+                      raise SystemExit(f"unsafe source extraction target: {row.filename}")
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  with archive.open(row) as source, target.open("wb") as output:
+                      shutil.copyfileobj(source, output, length=1024 * 1024)
+          (root / ".nexus-exact-source-sha").write_text(os.environ["GITHUB_SHA"] + "\n", encoding="utf-8")
+          print(f"physical_exact_source_artifact_restore=PASS files={len(names)} bytes={total}")
+          PY
+          test "$(cat "$source_root/.nexus-exact-source-sha")" = "$GITHUB_SHA"
+          test -f "$source_root/requirements.lock"
+          test -f "$source_root/nexus_multipair_runtime_requalification_snapshot.py"
           printf 'PYTHON_BIN=%s\n' "$python_bin" >> "$GITHUB_ENV"
           printf 'LD_LIBRARY_PATH=%s\n' "$effective_ld_library_path" >> "$GITHUB_ENV"
           printf 'SOURCE_ROOT=%s\n' "$source_root" >> "$GITHUB_ENV"
           printf 'STATE_ROOT=%s\n' "$state_root" >> "$GITHUB_ENV"
-          echo "multipair_discovery_checkout_sha=$(git rev-parse HEAD)"
-          echo "multipair_discovery_fresh_source_checkout=PASS"
+          echo "multipair_discovery_source_sha=$GITHUB_SHA"
+          echo "multipair_discovery_exact_source_artifact=PASS"
           echo "multipair_discovery_state_storage=physical_external_ephemeral_path"
 
       - name: Enforce eligible physical Bybit Research execution plane
@@ -441,8 +558,8 @@ jobs:
           echo "proposal_count=$proposal_count" >> "$GITHUB_OUTPUT"
           echo "multipair_archive_discovery_physical=PASS proposals=$proposal_count snapshot=$snapshot_digest"
 
-      - name: Remove isolated Discovery source after use
-        if: always()
+      - name: Remove isolated Discovery source after failure
+        if: failure()
         run: |
           set -euo pipefail
           source_root="${SOURCE_ROOT:-$HOME/.local/share/nexus/multipair-discovery-source/$GITHUB_RUN_ID}"
@@ -477,47 +594,25 @@ jobs:
         run: |
           set -euo pipefail
           state_root="$HOME/.local/share/nexus/multipair-discovery-v2/$GITHUB_RUN_ID"
-          source_root="$HOME/.local/share/nexus/multipair-runtime-snapshot-source/$GITHUB_RUN_ID"
+          source_root="$HOME/.local/share/nexus/multipair-discovery-source/$GITHUB_RUN_ID"
           case "$state_root" in
             "$HOME"/.local/share/nexus/multipair-discovery-v2/*) ;;
             *) echo "::error::Unsafe Multi-Pair Discovery state root."; exit 1 ;;
           esac
           case "$source_root" in
-            "$HOME"/.local/share/nexus/multipair-runtime-snapshot-source/*) ;;
-            *) echo "::error::Unsafe runtime snapshot source root."; exit 1 ;;
+            "$HOME"/.local/share/nexus/multipair-discovery-source/*) ;;
+            *) echo "::error::Unsafe retained Discovery source root."; exit 1 ;;
           esac
           test -d "$state_root/runtime-site"
           test -f "$state_root/requirements.lock"
           test -f "$state_root/discovery/multipair_strategy_discovery.json"
-          rm -rf "$source_root"
-          mkdir -p "$source_root"
+          test "$(cat "$source_root/.nexus-exact-source-sha")" = "$GITHUB_SHA"
+          test -f "$source_root/requirements.lock"
+          test -f "$source_root/nexus_multipair_runtime_requalification_snapshot.py"
           printf 'STATE_ROOT=%s\n' "$state_root" >> "$GITHUB_ENV"
           printf 'SOURCE_ROOT=%s\n' "$source_root" >> "$GITHUB_ENV"
           echo "multipair_runtime_snapshot_external_roots=PASS"
-
-      - name: Prepare fresh exact-source runtime snapshot checkout
-        run: |
-          set -euo pipefail
-          repo_url="https://github.com/${GITHUB_REPOSITORY}.git"
-          git -C "$SOURCE_ROOT" init .
-          git -C "$SOURCE_ROOT" remote add origin "$repo_url"
-          git -C "$SOURCE_ROOT" config --local --unset-all http.https://github.com/.extraheader || true
-          fetch_ok=false
-          for fetch_attempt in 1 2 3; do
-            if timeout 180s git -C "$SOURCE_ROOT" -c http.version=HTTP/1.1 fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"; then
-              fetch_ok=true
-              break
-            fi
-            echo "::warning::Exact runtime snapshot source fetch attempt ${fetch_attempt}/3 failed."
-            if [ "$fetch_attempt" -lt 3 ]; then sleep "$((fetch_attempt * 5))"; fi
-          done
-          if [ "$fetch_ok" != true ]; then
-            echo "::error::Exact runtime snapshot source fetch failed after bounded attempts."
-            exit 1
-          fi
-          git -C "$SOURCE_ROOT" checkout --detach --force FETCH_HEAD
-          test "$(git -C "$SOURCE_ROOT" rev-parse HEAD)" = "$GITHUB_SHA"
-          echo "multipair_runtime_snapshot_fresh_source_checkout=PASS sha=$(git -C "$SOURCE_ROOT" rev-parse HEAD)"
+          echo "multipair_runtime_snapshot_retained_exact_source=PASS sha=$GITHUB_SHA"
 
       - name: Recover exact Python and isolated dependencies
         run: |
@@ -631,10 +726,10 @@ jobs:
         if: failure()
         run: |
           set -euo pipefail
-          source_root="${SOURCE_ROOT:-$HOME/.local/share/nexus/multipair-runtime-snapshot-source/$GITHUB_RUN_ID}"
+          source_root="${SOURCE_ROOT:-$HOME/.local/share/nexus/multipair-discovery-source/$GITHUB_RUN_ID}"
           case "$source_root" in
-            "$HOME"/.local/share/nexus/multipair-runtime-snapshot-source/*) rm -rf "$source_root" ;;
-            *) echo "::error::Refusing unsafe runtime snapshot source cleanup path."; exit 1 ;;
+            "$HOME"/.local/share/nexus/multipair-discovery-source/*) rm -rf "$source_root" ;;
+            *) echo "::error::Refusing unsafe retained Discovery source cleanup path."; exit 1 ;;
           esac
 
   persist-runtime-snapshot:
@@ -722,25 +817,26 @@ jobs:
         run: |
           set -euo pipefail
           state_root="$HOME/.local/share/nexus/multipair-discovery-v2/$GITHUB_RUN_ID"
-          source_root="$HOME/.local/share/nexus/multipair-runtime-snapshot-source/$GITHUB_RUN_ID"
+          source_root="$HOME/.local/share/nexus/multipair-discovery-source/$GITHUB_RUN_ID"
           case "$state_root" in
             "$HOME"/.local/share/nexus/multipair-discovery-v2/*) ;;
             *) echo "::error::Unsafe Multi-Pair Discovery state root."; exit 1 ;;
           esac
           case "$source_root" in
-            "$HOME"/.local/share/nexus/multipair-runtime-snapshot-source/*) ;;
-            *) echo "::error::Unsafe retained runtime snapshot source root."; exit 1 ;;
+            "$HOME"/.local/share/nexus/multipair-discovery-source/*) ;;
+            *) echo "::error::Unsafe retained Discovery source root."; exit 1 ;;
           esac
           test -d "$state_root/runtime-site"
           test -f "$state_root/requirements.lock"
           test -f "$state_root/snapshot/snapshot-manifest.json"
           test -f "$state_root/discovery/multipair_strategy_discovery.json"
           test -f "$state_root/discovery/research_proposals.json"
-          test -d "$source_root/.git"
-          test "$(git -C "$source_root" rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(cat "$source_root/.nexus-exact-source-sha")" = "$GITHUB_SHA"
+          test -f "$source_root/requirements.lock"
+          test -f "$source_root/nexus_multipair_runtime_requalification_snapshot.py"
           printf 'STATE_ROOT=%s\n' "$state_root" >> "$GITHUB_ENV"
           printf 'SOURCE_ROOT=%s\n' "$source_root" >> "$GITHUB_ENV"
-          echo "multipair_requalification_retained_exact_source=PASS sha=$(git -C "$source_root" rev-parse HEAD)"
+          echo "multipair_requalification_retained_exact_source=PASS sha=$GITHUB_SHA"
 
       - name: Recover exact Python and isolated dependencies
         run: |
@@ -1008,14 +1104,14 @@ jobs:
         run: |
           set -euo pipefail
           state_root="${STATE_ROOT:-$HOME/.local/share/nexus/multipair-discovery-v2/$GITHUB_RUN_ID}"
-          source_root="${SOURCE_ROOT:-$HOME/.local/share/nexus/multipair-runtime-snapshot-source/$GITHUB_RUN_ID}"
+          source_root="${SOURCE_ROOT:-$HOME/.local/share/nexus/multipair-discovery-source/$GITHUB_RUN_ID}"
           case "$state_root" in
             "$HOME"/.local/share/nexus/multipair-discovery-v2/*) rm -rf "$state_root" ;;
             *) echo "::error::Refusing unsafe Research cleanup path."; exit 1 ;;
           esac
           case "$source_root" in
-            "$HOME"/.local/share/nexus/multipair-runtime-snapshot-source/*) rm -rf "$source_root" ;;
-            *) echo "::error::Refusing unsafe retained runtime snapshot source cleanup path."; exit 1 ;;
+            "$HOME"/.local/share/nexus/multipair-discovery-source/*) rm -rf "$source_root" ;;
+            *) echo "::error::Refusing unsafe retained Discovery source cleanup path."; exit 1 ;;
           esac
 
   persist-proof:
