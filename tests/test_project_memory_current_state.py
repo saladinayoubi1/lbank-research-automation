@@ -135,16 +135,18 @@ def test_project_memory_keeps_real_time_and_production_gates_fail_closed() -> No
     latest_paper = state["current_evidence"]["persistent_paper_runtime_latest"]
     assert latest_paper["status"] == "VERIFIED_WAITING_FOR_FRESH_CELLS_PERSISTED"
     assert SHA_RE.fullmatch(latest_paper["source_sha"])
-    assert latest_paper["source_sha"] != state["current_evidence"]["observed_main_sha"]
-    assert latest_paper["workflow_run"] == 34397395277
+    assert latest_paper["source_sha"] == state["current_evidence"]["observed_main_sha"]
+    assert latest_paper["workflow_run"] == 34413401197
     assert latest_paper["workflow_conclusion"] == "success"
-    assert latest_paper["fresh_cell_count"] == 8
+    assert latest_paper["persisted_state_artifact_id"] == 10128322177
+    assert latest_paper["fresh_cell_count"] == 4
     assert latest_paper["expected_cell_count"] == 12
     assert latest_paper["engine_verification_decision"] == "pass"
     assert latest_paper["independent_workflow_verification_decision"] == "pass"
     assert latest_paper["verification_valid_waiting_state_persisted"] is True
     assert latest_paper["unverified_partial_state_persisted"] is False
     assert latest_paper["endpoint_http403_root_cause_of_eight_of_twelve"] is False
+    assert latest_paper["endpoint_http403_root_cause_of_latest_freshness_shortfall"] is False
     assert latest_paper["regime_selected_rebalance_operational"] is False
     assert latest_paper["regime_selected_exposure_increase_operational"] is False
     assert latest_paper["performance_health_feedback_operational"] is False
@@ -160,9 +162,10 @@ def test_project_memory_records_exact_main_strategy_factory_review_boundary() ->
     lifecycle = evidence["demo_regime_lifecycle_latest"]
     gate = state["open_gates"]["strategy_factory_candidate_review"]
 
-    assert evidence["observed_main_sha"] == "50ac6ea8a331c08dca3e8be184ed0717380ff7f6"
+    assert evidence["observed_main_sha"] == "21af398b9e73896f98c792a99230cf1562f7a04b"
     assert factory["status"] == "EXACT_MAIN_REPLAY_V2_ROTATION_AND_RESEARCH_RUNS_VERIFIED"
-    assert factory["source_sha"] == evidence["observed_main_sha"]
+    assert factory["source_sha"] == "50ac6ea8a331c08dca3e8be184ed0717380ff7f6"
+    assert factory["source_sha"] != evidence["observed_main_sha"]
     assert factory["controller_stage_count"] == 8
     assert factory["controller_ready_stage_count"] == 8
     assert factory["replay_semantic_dataset_sha256"] == "2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422"
@@ -177,7 +180,7 @@ def test_project_memory_records_exact_main_strategy_factory_review_boundary() ->
     assert factory["deterministic_risk_final_authority"] is True
     assert factory["issue_984_state_touched"] is False
 
-    assert lifecycle["source_sha"] == evidence["observed_main_sha"]
+    assert lifecycle["source_sha"] == factory["source_sha"]
     assert lifecycle["verification_decision"] == "pass"
     assert lifecycle["deterministic_risk_final_authority"] is True
     assert lifecycle["automatic_strategy_promotion"] is False
@@ -186,6 +189,45 @@ def test_project_memory_records_exact_main_strategy_factory_review_boundary() ->
     assert gate["state"] == "human_review_required_no_automatic_forward"
     assert gate["workflow_run"] == factory["neighborhood_v7"]["workflow_run"]
     assert gate["artifact_id"] == factory["neighborhood_v7"]["artifact_id"]
+
+
+def test_project_memory_records_repaired_exact_main_multipair_feedback_boundary() -> None:
+    state = _state()
+    evidence = state["current_evidence"]
+    source_sha = evidence["observed_main_sha"]
+    discovery = evidence["strategy_discovery_latest_runtime"]
+    paper = evidence["persistent_paper_runtime_latest"]
+    feedback = evidence["multipair_paper_boundary_feedback_latest"]
+    gate = state["open_gates"]["multipair_paper_boundary_feedback_runtime"]
+
+    assert source_sha == "21af398b9e73896f98c792a99230cf1562f7a04b"
+    assert paper["source_sha"] == discovery["source_sha"] == feedback["source_sha"] == source_sha
+    assert paper["workflow_run"] == feedback["paper_workflow_run"] == 34413401197
+    assert discovery["physical_proof_workflow_run"] == feedback["discovery_workflow_run"] == 34413429714
+    assert discovery["research_proposal_count"] == 0
+    assert discovery["requalification_result"] == "NO_WORK"
+    assert discovery["proof_artifact_id"] == feedback["discovery_proof_artifact_id"] == 10128592404
+    assert feedback["workflow_run"] == 34414723066
+    assert feedback["workflow_conclusion"] == "success"
+    assert feedback["runtime_dependency_fix_pr"] == 1430
+    assert feedback["runtime_dependency_install"] == "requirements.lock"
+    assert feedback["runtime_dependency_check"] == "pass"
+    assert feedback["exact_sha_pair_resolution"] == "pass"
+    assert feedback["exact_run_artifact_binding"] == "pass"
+    assert feedback["boundary_eligibility"] is False
+    assert feedback["boundary_decision"] == "NO_OP_NOT_ELIGIBLE"
+    assert feedback["feedback_artifact_created"] is False
+    assert feedback["candidate_state_created"] is False
+    assert feedback["paper_execution_started"] is False
+    assert feedback["automatic_strategy_promotion"] is False
+    assert feedback["live_trading_authority"] is False
+    assert feedback["private_credentials_used"] is False
+    assert feedback["real_exchange_orders"] is False
+    assert feedback["deterministic_risk_final_authority"] is True
+    assert feedback["issue_984_state_touched"] is False
+    assert gate["state"] == "closed_dependency_provisioning_repaired"
+    assert gate["workflow_run"] == feedback["workflow_run"]
+    assert gate["source_sha"] == source_sha
 
 
 def test_project_memory_compaction_retains_prior_state_by_git_identity() -> None:
