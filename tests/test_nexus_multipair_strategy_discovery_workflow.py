@@ -191,6 +191,18 @@ def test_discovery_v2_uses_safe_external_ephemeral_state_and_canonical_wheelhous
     assert 'rm -rf "$source_root"' in text
 
 
+def test_discovery_reuses_only_a_repacked_digest_verified_wheelhouse_cache() -> None:
+    discover = _section(_text(), "discover-physical", "runtime-snapshot")
+    assert 'cache_root="$HOME/.cache/nexus-paper-runtime-wheelhouse-verified"' in discover
+    assert 'cache_dir="$cache_root/$WHEELHOUSE_ARCHIVE_SHA256"' in discover
+    assert 'scripts/nexus_runtime_wheelhouse.py pack' in discover
+    assert 'cache_sha="$(sha256sum "$cache_probe"' in discover
+    assert 'cmp requirements.lock "$cache_dir/requirements.lock"' in discover
+    assert "find \"$cache_dir\" -type l" in discover
+    assert "multipair_runtime_wheelhouse_verified_cache=HIT" in discover
+    assert "multipair_runtime_wheelhouse_verified_cache=MISS_POPULATED" in discover
+
+
 def test_physical_python_bootstrap_uses_bundled_pip_for_install_and_check() -> None:
     text = _text()
     discover = _section(text, "discover-physical", "runtime-snapshot")
