@@ -89,6 +89,14 @@ def test_fresh_runtime_snapshot_is_acquired_on_same_physical_plane_after_histori
     assert "physical_fresh_multipair_runtime_snapshot=PASS" in runtime
     assert "hosted_fresh_multipair_runtime_snapshot" not in runtime
 
+
+def test_runtime_snapshot_scopes_node20_compatibility_to_physical_artifact_transport() -> None:
+    text = _text()
+    runtime = _section(text, "runtime-snapshot", "requalify-physical")
+    assert 'ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"' in runtime
+    assert text.count('ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"') == 1
+    assert "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02" in runtime
+
 def test_physical_jobs_are_main_only_exact_source_and_native() -> None:
     text = _text()
     discover = _section(text, "discover-physical", "runtime-snapshot")
