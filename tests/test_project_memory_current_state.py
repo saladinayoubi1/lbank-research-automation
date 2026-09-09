@@ -96,7 +96,9 @@ def test_project_memory_records_verified_boundary_discovery_without_promotion_au
     discovery = state["current_evidence"]["strategy_discovery"]
 
     assert discovery["status"] == "EXACT_MAIN_PHYSICAL_MULTIPAIR_DISCOVERY_RUNTIME_REQUALIFICATION_AND_PROOF_VERIFIED"
-    assert discovery["source_sha"] == state["current_evidence"]["observed_main_sha"]
+    assert discovery["evidence_scope"] == "historical_exact_main_at_run"
+    assert SHA_RE.fullmatch(discovery["source_sha"])
+    assert discovery["source_sha"] != state["current_evidence"]["observed_main_sha"]
     assert discovery["workflow_run"] == 34392341610
     assert discovery["workflow_conclusion"] == "success"
     assert discovery["exact_source_restore_verified"] is True
@@ -129,12 +131,24 @@ def test_project_memory_keeps_real_time_and_production_gates_fail_closed() -> No
     assert gates["production_release"]["state"] == "open"
     assert gates["production_release"]["deny_by_default"] is True
     assert gates["strategy_discovery_runtime_snapshot"]["state"] == "closed_completed"
-    assert gates["persistent_paper_freshness"]["state"] == "open_operational_incident"
+    assert gates["persistent_paper_freshness"]["state"] == "closed_contract_reconciled"
     latest_paper = state["current_evidence"]["persistent_paper_runtime_latest"]
-    assert latest_paper["status"] == "FAIL_CLOSED_WAITING_FOR_FRESH_CELLS"
+    assert latest_paper["status"] == "VERIFIED_WAITING_FOR_FRESH_CELLS_PERSISTED"
+    assert latest_paper["source_sha"] == state["current_evidence"]["observed_main_sha"]
+    assert latest_paper["workflow_run"] == 34397395277
+    assert latest_paper["workflow_conclusion"] == "success"
     assert latest_paper["fresh_cell_count"] == 8
     assert latest_paper["expected_cell_count"] == 12
-    assert latest_paper["partial_state_persisted"] is False
+    assert latest_paper["engine_verification_decision"] == "pass"
+    assert latest_paper["independent_workflow_verification_decision"] == "pass"
+    assert latest_paper["verification_valid_waiting_state_persisted"] is True
+    assert latest_paper["unverified_partial_state_persisted"] is False
+    assert latest_paper["endpoint_http403_root_cause_of_eight_of_twelve"] is False
+    assert latest_paper["regime_selected_rebalance_operational"] is False
+    assert latest_paper["regime_selected_exposure_increase_operational"] is False
+    assert latest_paper["performance_health_feedback_operational"] is False
+    assert latest_paper["strategy_discovery_health_trigger_requested"] is False
+    assert latest_paper["issue_984_state_touched"] is False
     assert gates["windows_user_context_recovery"]["state"] == "historical_context_limit_not_current_persistence_blocker"
 
 
