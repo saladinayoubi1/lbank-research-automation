@@ -134,7 +134,8 @@ def test_project_memory_keeps_real_time_and_production_gates_fail_closed() -> No
     assert gates["persistent_paper_freshness"]["state"] == "closed_contract_reconciled"
     latest_paper = state["current_evidence"]["persistent_paper_runtime_latest"]
     assert latest_paper["status"] == "VERIFIED_WAITING_FOR_FRESH_CELLS_PERSISTED"
-    assert latest_paper["source_sha"] == state["current_evidence"]["observed_main_sha"]
+    assert SHA_RE.fullmatch(latest_paper["source_sha"])
+    assert latest_paper["source_sha"] != state["current_evidence"]["observed_main_sha"]
     assert latest_paper["workflow_run"] == 34397395277
     assert latest_paper["workflow_conclusion"] == "success"
     assert latest_paper["fresh_cell_count"] == 8
@@ -150,6 +151,41 @@ def test_project_memory_keeps_real_time_and_production_gates_fail_closed() -> No
     assert latest_paper["strategy_discovery_health_trigger_requested"] is False
     assert latest_paper["issue_984_state_touched"] is False
     assert gates["windows_user_context_recovery"]["state"] == "historical_context_limit_not_current_persistence_blocker"
+
+
+def test_project_memory_records_exact_main_strategy_factory_review_boundary() -> None:
+    state = _state()
+    evidence = state["current_evidence"]
+    factory = evidence["strategy_factory_latest"]
+    lifecycle = evidence["demo_regime_lifecycle_latest"]
+    gate = state["open_gates"]["strategy_factory_candidate_review"]
+
+    assert evidence["observed_main_sha"] == "50ac6ea8a331c08dca3e8be184ed0717380ff7f6"
+    assert factory["status"] == "EXACT_MAIN_REPLAY_V2_ROTATION_AND_RESEARCH_RUNS_VERIFIED"
+    assert factory["source_sha"] == evidence["observed_main_sha"]
+    assert factory["controller_stage_count"] == 8
+    assert factory["controller_ready_stage_count"] == 8
+    assert factory["replay_semantic_dataset_sha256"] == "2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422"
+    assert factory["regime_v6"]["qualifies_for_derivatives_validation_and_prospective_paper_forward"] is False
+    assert factory["neighborhood_v7"]["qualifies_for_derivatives_validation_and_prospective_paper_forward"] is True
+    assert factory["neighborhood_v7"]["automatic_paper_forward_started"] is False
+    assert factory["qualification_authority"] is False
+    assert factory["automatic_strategy_promotion"] is False
+    assert factory["live_trading_authority"] is False
+    assert factory["private_credentials_used"] is False
+    assert factory["real_exchange_orders"] is False
+    assert factory["deterministic_risk_final_authority"] is True
+    assert factory["issue_984_state_touched"] is False
+
+    assert lifecycle["source_sha"] == evidence["observed_main_sha"]
+    assert lifecycle["verification_decision"] == "pass"
+    assert lifecycle["deterministic_risk_final_authority"] is True
+    assert lifecycle["automatic_strategy_promotion"] is False
+    assert lifecycle["live_trading_authority"] is False
+
+    assert gate["state"] == "human_review_required_no_automatic_forward"
+    assert gate["workflow_run"] == factory["neighborhood_v7"]["workflow_run"]
+    assert gate["artifact_id"] == factory["neighborhood_v7"]["artifact_id"]
 
 
 def test_project_memory_compaction_retains_prior_state_by_git_identity() -> None:
