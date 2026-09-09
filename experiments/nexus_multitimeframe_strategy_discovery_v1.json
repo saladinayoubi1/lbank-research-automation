@@ -3,7 +3,7 @@
   "experiment_id": "nexus-bybit-btc-eth-15m-1h-4h-3family-discovery-v1",
   "dataset": {
     "dataset_root": "build/bybit_dataset",
-    "archive_sha256": "5f1173467c2296201940c3b7786b7cc3e5442244e07289769ab4867ace41d668"
+    "archive_sha256": "2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422"
   },
   "symbols": ["BTCUSDT", "ETHUSDT"],
   "timeframes": ["minute15", "hour1", "hour4"],
