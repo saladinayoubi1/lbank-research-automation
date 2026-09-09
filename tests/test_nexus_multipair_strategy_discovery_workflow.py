@@ -93,6 +93,8 @@ def test_fresh_runtime_snapshot_is_acquired_on_same_physical_plane_after_histori
     assert 'runtime_snapshot_archive_b64="$(base64 -w 0 "$archive")"' in runtime
     assert "physical_fresh_multipair_runtime_snapshot=PASS" in runtime
     assert "hosted_fresh_multipair_runtime_snapshot" not in runtime
+    assert "Remove isolated runtime snapshot source after failure" in runtime
+    assert "if: failure()" in runtime
 
 
 def test_runtime_snapshot_relay_is_bounded_digest_verified_and_node24_hosted() -> None:
@@ -125,9 +127,9 @@ def test_physical_jobs_are_main_only_exact_source_and_native() -> None:
     assert 'git -c http.version=HTTP/1.1 fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"' in discover
     assert 'test "$(git rev-parse HEAD)" = "$GITHUB_SHA"' in discover
     assert "for fetch_attempt in 1 2 3" in discover
-    assert 'git -C "$source_root" -c http.version=HTTP/1.1 fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"' in requalify
+    assert "git fetch" not in requalify
     assert 'test "$(git -C "$source_root" rev-parse HEAD)" = "$GITHUB_SHA"' in requalify
-    assert "for fetch_attempt in 1 2 3" in requalify
+    assert "multipair_requalification_retained_exact_source=PASS" in requalify
     assert "assert '$CURRENT_RUNNER_NAME' == '$EXPECTED_DISCOVERY_RUNNER_NAME'" in requalify
 
 
@@ -144,15 +146,16 @@ def test_discovery_uses_fresh_source_root_and_never_mutates_shared_workspace_git
     assert "Remove isolated Discovery source after use" in discover
 
 
-def test_requalification_uses_fresh_source_root_and_never_cleans_shared_workspace() -> None:
+def test_requalification_reuses_exact_runtime_snapshot_source_and_never_cleans_shared_workspace() -> None:
     requalify = _section(_text(), "requalify-physical", "persist-proof")
-    expected_source_root = '$HOME/.local/share/nexus/multipair-requalification-source/$GITHUB_RUN_ID'
+    expected_source_root = '$HOME/.local/share/nexus/multipair-runtime-snapshot-source/$GITHUB_RUN_ID'
     assert expected_source_root in requalify
-    assert '"$HOME"/.local/share/nexus/multipair-requalification-source/*)' in requalify
-    assert 'git -C "$source_root" init .' in requalify
+    assert '"$HOME"/.local/share/nexus/multipair-runtime-snapshot-source/*)' in requalify
+    assert 'test -d "$source_root/.git"' in requalify
+    assert 'git -C "$source_root" init .' not in requalify
     assert 'git clean -ffdx' not in requalify
     assert 'git reset --hard' not in requalify
-    assert "multipair_requalification_fresh_source_checkout=PASS" in requalify
+    assert "multipair_requalification_retained_exact_source=PASS" in requalify
 
 
 def test_discovery_v2_uses_safe_external_ephemeral_state_and_canonical_wheelhouse() -> None:
