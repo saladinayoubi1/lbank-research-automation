@@ -627,8 +627,8 @@ jobs:
           rm -rf "$root"
           echo "physical_fresh_multipair_runtime_snapshot=PASS digest=$runtime_snapshot_digest as_of_ms=$runtime_snapshot_as_of_ms archive=$runtime_snapshot_archive_sha256 chunks=$runtime_snapshot_archive_chunk_count"
 
-      - name: Remove isolated runtime snapshot source after use
-        if: always()
+      - name: Remove isolated runtime snapshot source after failure
+        if: failure()
         run: |
           set -euo pipefail
           source_root="${SOURCE_ROOT:-$HOME/.local/share/nexus/multipair-runtime-snapshot-source/$GITHUB_RUN_ID}"
@@ -722,50 +722,25 @@ jobs:
         run: |
           set -euo pipefail
           state_root="$HOME/.local/share/nexus/multipair-discovery-v2/$GITHUB_RUN_ID"
-          source_root="$HOME/.local/share/nexus/multipair-requalification-source/$GITHUB_RUN_ID"
+          source_root="$HOME/.local/share/nexus/multipair-runtime-snapshot-source/$GITHUB_RUN_ID"
           case "$state_root" in
             "$HOME"/.local/share/nexus/multipair-discovery-v2/*) ;;
             *) echo "::error::Unsafe Multi-Pair Discovery state root."; exit 1 ;;
           esac
           case "$source_root" in
-            "$HOME"/.local/share/nexus/multipair-requalification-source/*) ;;
-            *) echo "::error::Unsafe Multi-Pair requalification source root."; exit 1 ;;
+            "$HOME"/.local/share/nexus/multipair-runtime-snapshot-source/*) ;;
+            *) echo "::error::Unsafe retained runtime snapshot source root."; exit 1 ;;
           esac
           test -d "$state_root/runtime-site"
           test -f "$state_root/requirements.lock"
           test -f "$state_root/snapshot/snapshot-manifest.json"
           test -f "$state_root/discovery/multipair_strategy_discovery.json"
           test -f "$state_root/discovery/research_proposals.json"
-          rm -rf "$source_root"
-          mkdir -p "$source_root"
+          test -d "$source_root/.git"
+          test "$(git -C "$source_root" rev-parse HEAD)" = "$GITHUB_SHA"
           printf 'STATE_ROOT=%s\n' "$state_root" >> "$GITHUB_ENV"
           printf 'SOURCE_ROOT=%s\n' "$source_root" >> "$GITHUB_ENV"
-          echo "multipair_requalification_external_roots=PASS"
-
-      - name: Prepare fresh exact-source requalification checkout
-        run: |
-          set -euo pipefail
-          source_root="$SOURCE_ROOT"
-          repo_url="https://github.com/${GITHUB_REPOSITORY}.git"
-          git -C "$source_root" init .
-          git -C "$source_root" remote add origin "$repo_url"
-          git -C "$source_root" config --local --unset-all http.https://github.com/.extraheader || true
-          fetch_ok=false
-          for fetch_attempt in 1 2 3; do
-            if timeout 180s git -C "$source_root" -c http.version=HTTP/1.1 fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"; then
-              fetch_ok=true
-              break
-            fi
-            echo "::warning::Exact requalification source fetch attempt ${fetch_attempt}/3 failed."
-            if [ "$fetch_attempt" -lt 3 ]; then sleep "$((fetch_attempt * 5))"; fi
-          done
-          if [ "$fetch_ok" != true ]; then
-            echo "::error::Exact requalification source fetch failed after bounded attempts."
-            exit 1
-          fi
-          git -C "$source_root" checkout --detach --force FETCH_HEAD
-          test "$(git -C "$source_root" rev-parse HEAD)" = "$GITHUB_SHA"
-          echo "multipair_requalification_fresh_source_checkout=PASS sha=$(git -C "$source_root" rev-parse HEAD)"
+          echo "multipair_requalification_retained_exact_source=PASS sha=$(git -C "$source_root" rev-parse HEAD)"
 
       - name: Recover exact Python and isolated dependencies
         run: |
@@ -1033,14 +1008,14 @@ jobs:
         run: |
           set -euo pipefail
           state_root="${STATE_ROOT:-$HOME/.local/share/nexus/multipair-discovery-v2/$GITHUB_RUN_ID}"
-          source_root="${SOURCE_ROOT:-$HOME/.local/share/nexus/multipair-requalification-source/$GITHUB_RUN_ID}"
+          source_root="${SOURCE_ROOT:-$HOME/.local/share/nexus/multipair-runtime-snapshot-source/$GITHUB_RUN_ID}"
           case "$state_root" in
             "$HOME"/.local/share/nexus/multipair-discovery-v2/*) rm -rf "$state_root" ;;
             *) echo "::error::Refusing unsafe Research cleanup path."; exit 1 ;;
           esac
           case "$source_root" in
-            "$HOME"/.local/share/nexus/multipair-requalification-source/*) rm -rf "$source_root" ;;
-            *) echo "::error::Refusing unsafe requalification source cleanup path."; exit 1 ;;
+            "$HOME"/.local/share/nexus/multipair-runtime-snapshot-source/*) rm -rf "$source_root" ;;
+            *) echo "::error::Refusing unsafe retained runtime snapshot source cleanup path."; exit 1 ;;
           esac
 
   persist-proof:
