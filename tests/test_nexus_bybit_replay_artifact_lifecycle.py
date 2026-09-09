@@ -22,6 +22,18 @@ MATRIX_WORKFLOW = ROOT / ".github" / "workflows" / "nexus_demo_strategy_matrix.y
 LIFECYCLE_WORKFLOW = (
     ROOT / ".github" / "workflows" / "nexus_demo_regime_lifecycle_bridge.yml"
 )
+STRATEGY_FACTORY_REPLAY_WORKFLOWS = tuple(
+    ROOT / ".github" / "workflows" / name
+    for name in (
+        "bybit_strategy_search_v2.yml",
+        "bybit_portfolio_search_v3.yml",
+        "bybit_long_short_search_v4.yml",
+        "bybit_consensus_search_v5.yml",
+        "bybit_regime_search_v6.yml",
+        "bybit_neighborhood_validation_v7.yml",
+        "nexus_multitimeframe_strategy_discovery.yml",
+    )
+)
 
 
 def _load(path: Path, name: str):
@@ -408,4 +420,67 @@ def test_lifecycle_bridge_restores_replay_v2_by_semantic_content_not_fixed_artif
     assert "2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422" in text
     assert "8867026863" not in text
     assert "5f1173467c2296201940c3b7786b7cc3e5442244e07289769ab4867ace41d668" not in text
+
+
+def test_selector_filters_optional_exact_artifact_id_without_weakening_identity(
+    monkeypatch,
+) -> None:
+    selector = _load(SELECTOR_PATH, "nexus_replay_optional_artifact_filter_test")
+    payload = {
+        "artifacts": [
+            {
+                "id": 11,
+                "name": "bybit-full-history-final-older",
+                "expired": False,
+                "created_at": "2026-09-01T00:00:00Z",
+            },
+            {
+                "id": 12,
+                "name": "bybit-full-history-final-newer",
+                "expired": False,
+                "created_at": "2026-09-02T00:00:00Z",
+            },
+            {
+                "id": 13,
+                "name": "bybit-full-history-final-expired",
+                "expired": True,
+                "created_at": "2026-09-03T00:00:00Z",
+            },
+        ]
+    }
+    monkeypatch.setattr(selector, "_request_json", lambda *_args, **_kwargs: payload)
+
+    selected = selector.list_candidate_artifacts(
+        "example/repo", "token", artifact_id=12
+    )
+    assert [item["id"] for item in selected] == [12]
+    assert selector.list_candidate_artifacts(
+        "example/repo", "token", artifact_id=13
+    ) == []
+
+
+def test_strategy_factory_workflows_rotate_replay_v2_without_fixed_artifact_ids() -> None:
+    for workflow in STRATEGY_FACTORY_REPLAY_WORKFLOWS:
+        text = workflow.read_text(encoding="utf-8")
+        assert 'default: ""' in text
+        assert "DATASET_ARTIFACT_ID" not in text
+        assert "DEFAULT_ARTIFACT_ID" not in text
+        assert "DATASET_ARTIFACT_PREFIX: bybit-full-history-final-" in text
+        assert (
+            "DATASET_FILE: NEXUS_BYBIT_replay_v2_2022-12-01_to_2026-07-31.zip"
+            in text
+        )
+        assert "DATASET_DELIVERY: NEXUS_BYBIT_replay_v2_delivery.json" in text
+        assert "select_nexus_bybit_replay_artifact.py" in text
+        assert '--expected-semantic-sha256 "$DATASET_SHA256"' in text
+        assert '--artifact-id "$DISPATCH_ARTIFACT_ID"' in text
+        assert (
+            "2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422"
+            in text
+        )
+        assert "8867026863" not in text
+        assert (
+            "5f1173467c2296201940c3b7786b7cc3e5442244e07289769ab4867ace41d668"
+            not in text
+        )
 
