@@ -19,6 +19,9 @@ CHUNK_MAP_PATH = ROOT / "scripts" / "nexus_bybit_replay_chunks.py"
 CHUNK_REHYDRATOR_PATH = ROOT / "scripts" / "rehydrate_nexus_bybit_chunk.py"
 REHYDRATE_WORKFLOW = ROOT / ".github" / "workflows" / "bybit_full_history_backfill.yml"
 MATRIX_WORKFLOW = ROOT / ".github" / "workflows" / "nexus_demo_strategy_matrix.yml"
+LIFECYCLE_WORKFLOW = (
+    ROOT / ".github" / "workflows" / "nexus_demo_regime_lifecycle_bridge.yml"
+)
 
 
 def _load(path: Path, name: str):
@@ -391,3 +394,17 @@ def test_matrix_restores_replay_v2_by_semantic_content_not_fixed_artifact_id() -
     assert "--delivery-name \"$DATASET_DELIVERY\"" in text
     assert "2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422" in text
     assert "5f1173467c2296201940c3b7786b7cc3e5442244e07289769ab4867ace41d668" not in text
+
+def test_lifecycle_bridge_restores_replay_v2_by_semantic_content_not_fixed_artifact_id() -> None:
+    text = LIFECYCLE_WORKFLOW.read_text(encoding="utf-8")
+    assert "DATASET_ARTIFACT_ID" not in text
+    assert "DATASET_ARTIFACT_PREFIX: bybit-full-history-final-" in text
+    assert "DATASET_FILE: NEXUS_BYBIT_replay_v2_2022-12-01_to_2026-07-31.zip" in text
+    assert "DATASET_DELIVERY: NEXUS_BYBIT_replay_v2_delivery.json" in text
+    assert "select_nexus_bybit_replay_artifact.py" in text
+    assert '--expected-semantic-sha256 "$DATASET_SHA256"' in text
+    assert '--delivery-name "$DATASET_DELIVERY"' in text
+    assert "2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422" in text
+    assert "8867026863" not in text
+    assert "5f1173467c2296201940c3b7786b7cc3e5442244e07289769ab4867ace41d668" not in text
+
