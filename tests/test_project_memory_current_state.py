@@ -134,7 +134,8 @@ def test_project_memory_keeps_real_time_and_production_gates_fail_closed() -> No
     assert gates["persistent_paper_freshness"]["state"] == "closed_contract_reconciled"
     latest_paper = state["current_evidence"]["persistent_paper_runtime_latest"]
     assert latest_paper["status"] == "VERIFIED_WAITING_FOR_FRESH_CELLS_PERSISTED"
-    assert SHA_RE.fullmatch(latest_paper["source_sha"])\n    assert latest_paper["source_sha"] != state["current_evidence"]["observed_main_sha"]
+    assert SHA_RE.fullmatch(latest_paper["source_sha"])
+    assert latest_paper["source_sha"] != state["current_evidence"]["observed_main_sha"]
     assert latest_paper["workflow_run"] == 34397395277
     assert latest_paper["workflow_conclusion"] == "success"
     assert latest_paper["fresh_cell_count"] == 8
