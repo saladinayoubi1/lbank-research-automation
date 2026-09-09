@@ -30,7 +30,7 @@
     "owner_override_required_for_priority_change": true
   },
   "runtime_status": {
-    "agent_execution_state": "multipair_strategy_discovery_exact_main_verified_paper_runtime_fail_closed_on_partial_freshness",
+    "agent_execution_state": "multipair_strategy_discovery_verified_and_paper_waiting_state_persistence_verified",
     "laptop_state": "physical_windows_and_wsl_runners_verified_latest_windows_persistence_evidence_is_historical",
     "internet_outage_state": "not_assumed_from_laptop_state",
     "laptop_offline_is_not_internet_outage": true,
@@ -102,7 +102,7 @@
   },
   "latest_checkpoint": {
     "checkpoint_date": "2026-09-09",
-    "observed_main_sha": "57f0c4156722fad47125f8e92e66465ee207260a",
+    "observed_main_sha": "d95e126ad58e6bc7dc3ec81a941252030e9e7f73",
     "continuity_only": true,
     "completed_milestones": [
       "PRs #1411-#1416 merged sequentially after required checks; Multi-Pair Discovery v2 moved fresh runtime acquisition to the physical Bybit plane, removed WSL Node actions and all WSL Git fetches, and added digest-verified hosted artifact relays plus verified wheelhouse cache reuse",
@@ -110,7 +110,7 @@
       "physical Discovery restored the exact hosted source artifact, hit only the deterministically repacked digest-verified wheelhouse cache, verified the official Bybit archive snapshot, and produced a valid zero-proposal Research result",
       "physical runtime snapshot acquisition, hosted Node-free persistence, physical requalification and hosted proof persistence all succeeded; NO_WORK with zero proposals is valid",
       "Issue #984 remains immutable and open at 88/180 completed four-hour bars and 14/30 elapsed-day floor",
-      "periodic Paper run 34384929765 failed closed after only 8/12 fresh cells were available; partial state was not persisted and no authority boundary changed"
+      "PR #1418 reconciled the physical Paper verifier with the engine's strict freshness contract; exact-main run 34397395277 accepted a verification-valid 8/12 WAITING_FOR_FRESH_CELLS cycle and durably persisted artifact 10122430632 without activating maintenance, regime, exposure increase, health trigger, private credentials or real orders"
     ],
     "do_not_repeat_without_regression_evidence": [
       "WSL rootfs ownership/DACL recovery",
@@ -123,24 +123,25 @@
       "Windows DR bootstrap revalidation for e25e2e9fe900f627d6eedbbb6ab438053e216714",
       "PR #1412 temporary Node20 compatibility path; it was superseded by the Node-free relay in PR #1413",
       "WSL Git fetch retries for Multi-Pair proof; exact hosted source artifact transport superseded them",
-      "Multi-Pair wheelhouse redownload when the shared cache deterministically repacks to the exact hosted digest and lock"
+      "Multi-Pair wheelhouse redownload when the shared cache deterministically repacks to the exact hosted digest and lock",
+      "classification of the 8/12 Paper state as a Bybit HTTP 403 data-plane outage; exact-main run 34397395277 proved source-SHA/no-new-hour4-bar freshness semantics while endpoint fallbacks still completed"
     ],
     "current_blocker": {
-      "area": "Persistent Paper fresh-cell availability",
-      "workflow_run": 34384929765,
-      "status": "FAIL_CLOSED_TRANSIENT_DATA_PLANE",
-      "evidence": "engine verification passed but only 8 of 12 required cells were fresh; approved Bybit public endpoints returned edge_country_restricted HTTP 403 for missing cells",
-      "required_fix": "recover 12/12 approved public Bybit closed-candle cells and obtain a successful scheduled Paper loop without accepting or persisting partial state, fabricating data, changing exchanges, or weakening deterministic gates"
+      "area": "Persistent Paper freshness contract",
+      "workflow_run": 34397395277,
+      "status": "CLOSED_VERIFIED_WAITING_STATE_PERSISTED",
+      "evidence": "engine and independent workflow verification passed at 8/12 after four hour4 cells correctly remained SKIPPED_NO_NEW_BAR across a main SHA change; the complete verification-valid state was persisted as artifact 10122430632",
+      "required_fix": "none for the waiting contract; continue natural scheduled cycles and require exact 12/12 only for PAPER_LOOP_ACTIVE without fabricating data or weakening deterministic gates"
     },
     "canonical_authority_fields_preserved": true
   },
   "current_evidence": {
-    "observed_main_sha": "57f0c4156722fad47125f8e92e66465ee207260a",
-    "observed_at_utc": "2026-09-09T19:16:22Z",
-    "state_commit_relationship": "observed_main_sha is the exact base main snapshot before this continuity-only Project Memory PR; exact runtime evidence is bound to that same SHA",
+    "observed_main_sha": "d95e126ad58e6bc7dc3ec81a941252030e9e7f73",
+    "observed_at_utc": "2026-09-09T20:00:25Z",
+    "state_commit_relationship": "observed_main_sha is the exact base main snapshot before this continuity-only Project Memory correction; the Paper runtime evidence is bound to that SHA and the earlier Multi-Pair Discovery proof remains historical fixed-SHA evidence",
     "latest_main_change": {
-      "pr": 1416,
-      "summary": "Merged exact hosted source relay and digest-verified shared wheelhouse cache; exact-main Multi-Pair Discovery v2 run 34392341610 completed all seven jobs successfully.",
+      "pr": 1418,
+      "summary": "Reconciled the physical Paper verifier with the engine's verified WAITING_FOR_FRESH_CELLS contract while retaining exact 12/12 acceptance for PAPER_LOOP_ACTIVE; exact-main run 34397395277 succeeded and persisted the waiting state.",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true
@@ -268,7 +269,8 @@
       "real_exchange_orders": false,
       "deterministic_risk_final_authority": true,
       "issue_984_state_touched": false,
-      "historical_archive_snapshot_archive_sha256": "2ebaa3e52d068f2b6cfa41eb3647679f58911d05736062be19bdcc8d9b3aaa1a"
+      "historical_archive_snapshot_archive_sha256": "2ebaa3e52d068f2b6cfa41eb3647679f58911d05736062be19bdcc8d9b3aaa1a",
+      "evidence_scope": "historical_exact_main_at_run"
     },
     "prospective_paper_gate": {
       "issue": 984,
@@ -362,30 +364,49 @@
       "deterministic_risk_final_authority": true
     },
     "strategy_discovery_latest_runtime": {
-      "physical_proof_workflow_run": 34171102952,
+      "physical_proof_workflow_run": 34392341610,
+      "source_sha": "57f0c4156722fad47125f8e92e66465ee207260a",
       "physical_discovery_job": "discover-physical",
       "physical_discovery_result": "SUCCESS",
       "runtime_snapshot_job": "runtime-snapshot",
-      "runtime_snapshot_result": "FAIL_CLOSED",
-      "blocker": "GitHub-hosted runner Bybit public endpoints geographically rejected with HTTP 403; do not loop on blind reruns",
-      "required_fix": "repair execution-plane/data-handoff while preserving geographic and authority boundaries",
+      "runtime_snapshot_result": "SUCCESS",
+      "requalification_result": "NO_WORK",
+      "proof_artifact_id": 10120770458,
+      "blocker": null,
+      "evidence_scope": "historical_exact_main_at_run",
       "output_authority": "RESEARCH_PROPOSAL_ONLY",
       "automatic_candidate_or_paper_promotion": false,
       "live_trading_authority": false
     },
     "persistent_paper_runtime_latest": {
-      "status": "FAIL_CLOSED_WAITING_FOR_FRESH_CELLS",
-      "workflow_run": 34384929765,
-      "source_sha": "9f61c0d9311d785341d8351548f7c80630b2e2ec",
+      "status": "VERIFIED_WAITING_FOR_FRESH_CELLS_PERSISTED",
+      "workflow_run": 34397395277,
+      "workflow_run_attempt": 1,
+      "workflow_conclusion": "success",
+      "source_sha": "d95e126ad58e6bc7dc3ec81a941252030e9e7f73",
+      "physical_runner": "NEXUS-BYBIT-WSL",
       "restored_state_artifact_id": 10115126842,
+      "persisted_state_artifact_id": 10122430632,
+      "persisted_state_artifact_digest": "sha256:d18e52bc11c56cba6d4332c9b3681bf54b95478572bdeb8deafbe7a33f45cad6",
       "expected_cell_count": 12,
       "fresh_cell_count": 8,
       "expected_lane_count": 36,
       "engine_verification_decision": "pass",
+      "independent_workflow_verification_decision": "pass",
       "matrix_migration_status": "ALREADY_V2",
       "regime_status": "WAITING_FOR_FRESH_CELLS",
-      "failure_class": "approved_public_bybit_edge_country_restricted_http_403",
-      "partial_state_persisted": false,
+      "remaining_core_gap": "WAITING_FOR_FRESH_CELLS",
+      "loop_digest": "5776990a72a13ea3fe3ded34899bcd513228ce4535b89d79708f97810a52902c",
+      "freshness_reason": "hour4 cells correctly remained SKIPPED_NO_NEW_BAR until the next naturally completed four-hour boundary after the main source SHA changed",
+      "endpoint_http403_diagnostics_observed": true,
+      "endpoint_http403_root_cause_of_eight_of_twelve": false,
+      "verification_valid_waiting_state_persisted": true,
+      "unverified_partial_state_persisted": false,
+      "maintenance_operational": false,
+      "regime_selected_rebalance_operational": false,
+      "regime_selected_exposure_increase_operational": false,
+      "performance_health_feedback_operational": false,
+      "strategy_discovery_health_trigger_requested": false,
       "paper_only": true,
       "live_trading_authority": false,
       "private_credentials_used": false,
@@ -427,9 +448,10 @@
       "reason": "exact-main physical runtime snapshot acquisition, Node-free hosted persistence, physical requalification and proof persistence all succeeded"
     },
     "persistent_paper_freshness": {
-      "state": "open_operational_incident",
-      "workflow_run": 34384929765,
-      "reason": "latest scheduled physical Paper loop failed closed at 8/12 fresh cells after approved Bybit public endpoints returned regional HTTP 403; partial state was not persisted"
+      "state": "closed_contract_reconciled",
+      "workflow_run": 34397395277,
+      "source_sha": "d95e126ad58e6bc7dc3ec81a941252030e9e7f73",
+      "reason": "PR #1418 retained 12/12 for PAPER_LOOP_ACTIVE and accepted only engine-verified fail-closed WAITING states below 12; exact-main run succeeded at 8/12 and persisted the complete verified state"
     }
   },
   "authority": {
@@ -449,8 +471,8 @@
   "next_autonomous_work": {
     "priority": "trading_engine_first",
     "order": [
-      "restore 12/12 approved public Bybit fresh-cell availability and obtain a successful scheduled persistent Paper loop without accepting or persisting partial state",
       "continue Strategy Discovery -> evaluation -> Paper feedback work from exact-main run 34392341610 while preserving leakage, holdout, stress and Deterministic Risk gates",
+      "continue scheduled persistent Paper cycles from verified artifact 10122430632 and obtain the next natural 12/12 PAPER_LOOP_ACTIVE proof without fabricating cells or weakening WAITING/ACTIVE contracts",
       "continue immutable #984 prospective Paper collection without inferred, accelerated or fabricated bars",
       "keep #43 production release deny-by-default and do not create Live, signing, credential or deployment authority"
     ],
