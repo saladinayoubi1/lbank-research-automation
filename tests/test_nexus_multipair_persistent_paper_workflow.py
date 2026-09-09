@@ -110,6 +110,33 @@ def test_state_handoff_keeps_full_state_but_uses_bounded_cross_file_xz_compressi
     assert "member.islnk()" in persist
 
 
+def test_verified_waiting_for_fresh_cells_is_accepted_without_weakening_active_requirement() -> None:
+    paper = _paper_job()
+    verifier = paper.split('status = snapshot["status"]', 1)[1].split(
+        'assert snapshot["matrix_migration_status"]', 1
+    )[0]
+    assert 'assert status in {"PAPER_LOOP_ACTIVE", "WAITING_FOR_FRESH_CELLS"}' in verifier
+    assert 'if status == "PAPER_LOOP_ACTIVE":' in verifier
+    assert (
+        'assert snapshot["fresh_cell_count"] == snapshot["expected_cell_count"] == 12'
+        in verifier
+    )
+    assert "else:" in verifier
+    assert (
+        'assert 0 <= snapshot["fresh_cell_count"] < snapshot["expected_cell_count"]'
+        in verifier
+    )
+    assert 'assert snapshot["regime_status"] == "WAITING_FOR_FRESH_CELLS"' in verifier
+    assert 'assert snapshot["remaining_core_gap"] == "WAITING_FOR_FRESH_CELLS"' in verifier
+    assert 'assert snapshot["maintenance_digest"] is None' in verifier
+    assert 'assert snapshot["performance_refresh_digest"] is None' in verifier
+    assert 'assert snapshot["regime_cycle_digest"] is None' in verifier
+    assert 'assert snapshot["regime_selected_rebalance_operational"] is False' in verifier
+    assert 'assert snapshot["regime_selected_exposure_increase_operational"] is False' in verifier
+    assert 'assert snapshot["performance_health_feedback_operational"] is False' in verifier
+    assert 'assert snapshot["strategy_discovery_health_trigger_requested"] is False' in verifier
+
+
 def test_failed_physical_runtime_cannot_persist_partial_state() -> None:
     text = _text()
     paper = _paper_job()
