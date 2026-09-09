@@ -25,6 +25,7 @@ def test_discovery_v2_workflow_yaml_is_valid_and_has_exact_jobs() -> None:
         "runtime-wheelhouse",
         "discover-physical",
         "runtime-snapshot",
+        "persist-runtime-snapshot",
         "requalify-physical",
         "persist-proof",
     }
@@ -69,7 +70,7 @@ def test_hosted_job_builds_wheelhouse_and_immutable_official_archive_snapshot() 
 
 
 def test_fresh_runtime_snapshot_is_acquired_on_same_physical_plane_after_historical_discovery() -> None:
-    runtime = _section(_text(), "runtime-snapshot", "requalify-physical")
+    runtime = _section(_text(), "runtime-snapshot", "persist-runtime-snapshot")
     assert "needs: discover-physical" in runtime
     assert "runs-on: nexus-bybit-network" in runtime
     assert "timeout-minutes: 30" in runtime
@@ -85,29 +86,41 @@ def test_fresh_runtime_snapshot_is_acquired_on_same_physical_plane_after_histori
     assert "runtime_snapshot_digest:" in runtime
     assert "runtime_snapshot_as_of_ms:" in runtime
     assert "runtime_snapshot_archive_sha256:" in runtime
-    assert "nexus-multipair-runtime-requalification-snapshot-${{ github.sha }}" in runtime
+    assert "runtime_snapshot_archive_chunk_count:" in runtime
+    assert "runtime_snapshot_archive_b64_len:" in runtime
+    assert "chunk_size=60000" in runtime
+    assert "max_chunks=8" in runtime
+    assert 'runtime_snapshot_archive_b64="$(base64 -w 0 "$archive")"' in runtime
     assert "physical_fresh_multipair_runtime_snapshot=PASS" in runtime
     assert "hosted_fresh_multipair_runtime_snapshot" not in runtime
 
 
-def test_runtime_snapshot_scopes_node20_compatibility_to_physical_artifact_transport() -> None:
+def test_runtime_snapshot_relay_is_bounded_digest_verified_and_node24_hosted() -> None:
     text = _text()
-    runtime = _section(text, "runtime-snapshot", "requalify-physical")
-    assert 'ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"' in runtime
-    assert text.count('ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"') == 1
-    assert "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02" in runtime
+    runtime = _section(text, "runtime-snapshot", "persist-runtime-snapshot")
+    persist = _section(text, "persist-runtime-snapshot", "requalify-physical")
+    assert "ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION" not in text
+    assert "uses: actions/upload-artifact" not in runtime
+    assert "needs: runtime-snapshot" in persist
+    assert "runs-on: ubuntu-latest" in persist
+    assert "timeout-minutes: 10" in persist
+    assert "Rehydrate exact physical runtime snapshot handoff" in persist
+    assert 'test "${#runtime_snapshot_archive_b64}" -eq "$RUNTIME_SNAPSHOT_ARCHIVE_B64_LEN"' in persist
+    assert 'sha256sum "$archive"' in persist
+    assert "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a" in persist
+    assert "nexus-multipair-runtime-requalification-snapshot-${{ github.sha }}" in persist
 
 def test_physical_jobs_are_main_only_exact_source_and_native() -> None:
     text = _text()
     discover = _section(text, "discover-physical", "runtime-snapshot")
-    runtime = _section(text, "runtime-snapshot", "requalify-physical")
+    runtime = _section(text, "runtime-snapshot", "persist-runtime-snapshot")
     requalify = _section(text, "requalify-physical", "persist-proof")
     for section in (discover, runtime, requalify):
         assert "github.event_name != 'pull_request' && github.ref == 'refs/heads/main'" in section
         assert "runs-on: nexus-bybit-network" in section
         assert "uses: actions/checkout" not in section
         assert "uses: actions/setup-python" not in section
-    for section in (discover, requalify):
+    for section in (discover, runtime, requalify):
         assert "uses: actions/upload-artifact" not in section
     assert 'git -c http.version=HTTP/1.1 fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"' in discover
     assert 'test "$(git rev-parse HEAD)" = "$GITHUB_SHA"' in discover
@@ -193,7 +206,7 @@ def test_discover_job_restores_and_independently_verifies_exact_archive_snapshot
 
 def test_requalification_restores_fresh_digest_pinned_snapshot_and_never_calls_rest_directly() -> None:
     requalify = _section(_text(), "requalify-physical", "persist-proof")
-    assert "needs: [discover-physical, runtime-snapshot]" in requalify
+    assert "needs: [discover-physical, runtime-snapshot, persist-runtime-snapshot]" in requalify
     assert "scripts/nexus_runtime_snapshot_artifact.py" in requalify
     assert '--expected-sha256 "$RUNTIME_SNAPSHOT_ARCHIVE_SHA256"' in requalify
     assert '--expected-snapshot-digest "$EXPECTED_RUNTIME_SNAPSHOT_DIGEST"' in requalify

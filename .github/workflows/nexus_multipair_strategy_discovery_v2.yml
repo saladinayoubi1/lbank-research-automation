@@ -460,11 +460,18 @@ jobs:
       runtime_snapshot_archive_sha256: ${{ steps.acquire.outputs.runtime_snapshot_archive_sha256 }}
       runtime_snapshot_digest: ${{ steps.acquire.outputs.runtime_snapshot_digest }}
       runtime_snapshot_as_of_ms: ${{ steps.acquire.outputs.runtime_snapshot_as_of_ms }}
+      runtime_snapshot_archive_chunk_count: ${{ steps.acquire.outputs.runtime_snapshot_archive_chunk_count }}
+      runtime_snapshot_archive_b64_len: ${{ steps.acquire.outputs.runtime_snapshot_archive_b64_len }}
+      runtime_snapshot_archive_chunk_0: ${{ steps.acquire.outputs.runtime_snapshot_archive_chunk_0 }}
+      runtime_snapshot_archive_chunk_1: ${{ steps.acquire.outputs.runtime_snapshot_archive_chunk_1 }}
+      runtime_snapshot_archive_chunk_2: ${{ steps.acquire.outputs.runtime_snapshot_archive_chunk_2 }}
+      runtime_snapshot_archive_chunk_3: ${{ steps.acquire.outputs.runtime_snapshot_archive_chunk_3 }}
+      runtime_snapshot_archive_chunk_4: ${{ steps.acquire.outputs.runtime_snapshot_archive_chunk_4 }}
+      runtime_snapshot_archive_chunk_5: ${{ steps.acquire.outputs.runtime_snapshot_archive_chunk_5 }}
+      runtime_snapshot_archive_chunk_6: ${{ steps.acquire.outputs.runtime_snapshot_archive_chunk_6 }}
+      runtime_snapshot_archive_chunk_7: ${{ steps.acquire.outputs.runtime_snapshot_archive_chunk_7 }}
     env:
       EXPECTED_DISCOVERY_RUNNER_NAME: ${{ needs.discover-physical.outputs.runner_name }}
-      # WSL1 cannot execute the runner's bundled Node 24 binary. Scope the
-      # compatibility exception to this artifact-transport job only.
-      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
     steps:
       - name: Initialize same-run physical runtime snapshot roots
         run: |
@@ -588,19 +595,37 @@ jobs:
           test -n "$runtime_snapshot_archive_sha256"
           test -n "$runtime_snapshot_digest"
           test -n "$runtime_snapshot_as_of_ms"
-          echo "runtime_snapshot_archive_sha256=$runtime_snapshot_archive_sha256" >> "$GITHUB_OUTPUT"
-          echo "runtime_snapshot_digest=$runtime_snapshot_digest" >> "$GITHUB_OUTPUT"
-          echo "runtime_snapshot_as_of_ms=$runtime_snapshot_as_of_ms" >> "$GITHUB_OUTPUT"
+          runtime_snapshot_archive_b64="$(base64 -w 0 "$archive")"
+          runtime_snapshot_archive_b64_len="${#runtime_snapshot_archive_b64}"
+          chunk_size=60000
+          max_chunks=8
+          if [ "$runtime_snapshot_archive_b64_len" -gt 480000 ]; then
+            echo "::error::Runtime snapshot archive exceeds bounded job-output handoff."
+            exit 1
+          fi
+          runtime_snapshot_archive_chunk_count=$(( (runtime_snapshot_archive_b64_len + chunk_size - 1) / chunk_size ))
+          if [ "$runtime_snapshot_archive_chunk_count" -lt 1 ] || [ "$runtime_snapshot_archive_chunk_count" -gt "$max_chunks" ]; then
+            echo "::error::Runtime snapshot archive has invalid handoff chunk count: $runtime_snapshot_archive_chunk_count"
+            exit 1
+          fi
+          {
+            echo "runtime_snapshot_archive_sha256=$runtime_snapshot_archive_sha256"
+            echo "runtime_snapshot_digest=$runtime_snapshot_digest"
+            echo "runtime_snapshot_as_of_ms=$runtime_snapshot_as_of_ms"
+            echo "runtime_snapshot_archive_chunk_count=$runtime_snapshot_archive_chunk_count"
+            echo "runtime_snapshot_archive_b64_len=$runtime_snapshot_archive_b64_len"
+            for index in 0 1 2 3 4 5 6 7; do
+              if [ "$index" -lt "$runtime_snapshot_archive_chunk_count" ]; then
+                offset=$(( index * chunk_size ))
+                chunk="${runtime_snapshot_archive_b64:offset:chunk_size}"
+              else
+                chunk=""
+              fi
+              printf 'runtime_snapshot_archive_chunk_%s=%s\n' "$index" "$chunk"
+            done
+          } >> "$GITHUB_OUTPUT"
           rm -rf "$root"
-          echo "physical_fresh_multipair_runtime_snapshot=PASS digest=$runtime_snapshot_digest as_of_ms=$runtime_snapshot_as_of_ms archive=$runtime_snapshot_archive_sha256"
-
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: nexus-multipair-runtime-requalification-snapshot-${{ github.sha }}
-          path: ${{ env.SOURCE_ROOT }}/build/nexus-multipair-runtime-requalification-snapshot.zip
-          if-no-files-found: error
-          retention-days: 7
-          compression-level: 0
+          echo "physical_fresh_multipair_runtime_snapshot=PASS digest=$runtime_snapshot_digest as_of_ms=$runtime_snapshot_as_of_ms archive=$runtime_snapshot_archive_sha256 chunks=$runtime_snapshot_archive_chunk_count"
 
       - name: Remove isolated runtime snapshot source after use
         if: always()
@@ -612,9 +637,73 @@ jobs:
             *) echo "::error::Refusing unsafe runtime snapshot source cleanup path."; exit 1 ;;
           esac
 
+  persist-runtime-snapshot:
+    if: ${{ always() && needs.runtime-snapshot.result == 'success' && needs.runtime-snapshot.outputs.runtime_snapshot_archive_chunk_count != '0' }}
+    needs: runtime-snapshot
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      RUNTIME_SNAPSHOT_ARCHIVE_CHUNK_COUNT: ${{ needs.runtime-snapshot.outputs.runtime_snapshot_archive_chunk_count }}
+      RUNTIME_SNAPSHOT_ARCHIVE_B64_LEN: ${{ needs.runtime-snapshot.outputs.runtime_snapshot_archive_b64_len }}
+      RUNTIME_SNAPSHOT_ARCHIVE_SHA256: ${{ needs.runtime-snapshot.outputs.runtime_snapshot_archive_sha256 }}
+      RUNTIME_SNAPSHOT_ARCHIVE_CHUNK_0: ${{ needs.runtime-snapshot.outputs.runtime_snapshot_archive_chunk_0 }}
+      RUNTIME_SNAPSHOT_ARCHIVE_CHUNK_1: ${{ needs.runtime-snapshot.outputs.runtime_snapshot_archive_chunk_1 }}
+      RUNTIME_SNAPSHOT_ARCHIVE_CHUNK_2: ${{ needs.runtime-snapshot.outputs.runtime_snapshot_archive_chunk_2 }}
+      RUNTIME_SNAPSHOT_ARCHIVE_CHUNK_3: ${{ needs.runtime-snapshot.outputs.runtime_snapshot_archive_chunk_3 }}
+      RUNTIME_SNAPSHOT_ARCHIVE_CHUNK_4: ${{ needs.runtime-snapshot.outputs.runtime_snapshot_archive_chunk_4 }}
+      RUNTIME_SNAPSHOT_ARCHIVE_CHUNK_5: ${{ needs.runtime-snapshot.outputs.runtime_snapshot_archive_chunk_5 }}
+      RUNTIME_SNAPSHOT_ARCHIVE_CHUNK_6: ${{ needs.runtime-snapshot.outputs.runtime_snapshot_archive_chunk_6 }}
+      RUNTIME_SNAPSHOT_ARCHIVE_CHUNK_7: ${{ needs.runtime-snapshot.outputs.runtime_snapshot_archive_chunk_7 }}
+    steps:
+      - name: Rehydrate exact physical runtime snapshot handoff
+        run: |
+          set -euo pipefail
+          archive="build/nexus-multipair-runtime-requalification-snapshot.zip"
+          rm -f "$archive"
+          mkdir -p build
+          case "$RUNTIME_SNAPSHOT_ARCHIVE_CHUNK_COUNT" in
+            1|2|3|4|5|6|7|8) ;;
+            *) echo "::error::Invalid runtime snapshot handoff chunk count."; exit 1 ;;
+          esac
+          chunks=(
+            "$RUNTIME_SNAPSHOT_ARCHIVE_CHUNK_0"
+            "$RUNTIME_SNAPSHOT_ARCHIVE_CHUNK_1"
+            "$RUNTIME_SNAPSHOT_ARCHIVE_CHUNK_2"
+            "$RUNTIME_SNAPSHOT_ARCHIVE_CHUNK_3"
+            "$RUNTIME_SNAPSHOT_ARCHIVE_CHUNK_4"
+            "$RUNTIME_SNAPSHOT_ARCHIVE_CHUNK_5"
+            "$RUNTIME_SNAPSHOT_ARCHIVE_CHUNK_6"
+            "$RUNTIME_SNAPSHOT_ARCHIVE_CHUNK_7"
+          )
+          runtime_snapshot_archive_b64=""
+          for ((index=0; index<RUNTIME_SNAPSHOT_ARCHIVE_CHUNK_COUNT; index++)); do
+            if [ "${#chunks[$index]}" -gt 60000 ]; then
+              echo "::error::Runtime snapshot handoff chunk exceeds bound."
+              exit 1
+            fi
+            runtime_snapshot_archive_b64+="${chunks[$index]}"
+          done
+          for ((index=RUNTIME_SNAPSHOT_ARCHIVE_CHUNK_COUNT; index<8; index++)); do
+            if [ -n "${chunks[$index]}" ]; then
+              echo "::error::Unexpected trailing runtime snapshot handoff chunk."
+              exit 1
+            fi
+          done
+          test "${#runtime_snapshot_archive_b64}" -eq "$RUNTIME_SNAPSHOT_ARCHIVE_B64_LEN"
+          printf '%s' "$runtime_snapshot_archive_b64" | base64 --decode > "$archive"
+          test "$(sha256sum "$archive" | awk '{print $1}')" = "$RUNTIME_SNAPSHOT_ARCHIVE_SHA256"
+          echo "hosted_runtime_snapshot_handoff_verification=PASS archive=$RUNTIME_SNAPSHOT_ARCHIVE_SHA256"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-multipair-runtime-requalification-snapshot-${{ github.sha }}
+          path: build/nexus-multipair-runtime-requalification-snapshot.zip
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+
   requalify-physical:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-    needs: [discover-physical, runtime-snapshot]
+    needs: [discover-physical, runtime-snapshot, persist-runtime-snapshot]
     runs-on: nexus-bybit-network
     timeout-minutes: 55
     outputs:
