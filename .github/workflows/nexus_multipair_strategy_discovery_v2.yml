@@ -454,42 +454,129 @@ jobs:
   runtime-snapshot:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: discover-physical
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+    runs-on: nexus-bybit-network
+    timeout-minutes: 30
     outputs:
       runtime_snapshot_archive_sha256: ${{ steps.acquire.outputs.runtime_snapshot_archive_sha256 }}
       runtime_snapshot_digest: ${{ steps.acquire.outputs.runtime_snapshot_digest }}
       runtime_snapshot_as_of_ms: ${{ steps.acquire.outputs.runtime_snapshot_as_of_ms }}
+    env:
+      EXPECTED_DISCOVERY_RUNNER_NAME: ${{ needs.discover-physical.outputs.runner_name }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
-        with:
-          python-version: "3.12"
-          cache: pip
-      - run: python -m pip install -r requirements.lock
-      - run: python -m pip check
-      - name: Acquire fresh canonical public Bybit runtime snapshot
+      - name: Initialize same-run physical runtime snapshot roots
+        run: |
+          set -euo pipefail
+          state_root="$HOME/.local/share/nexus/multipair-discovery-v2/$GITHUB_RUN_ID"
+          source_root="$HOME/.local/share/nexus/multipair-runtime-snapshot-source/$GITHUB_RUN_ID"
+          case "$state_root" in
+            "$HOME"/.local/share/nexus/multipair-discovery-v2/*) ;;
+            *) echo "::error::Unsafe Multi-Pair Discovery state root."; exit 1 ;;
+          esac
+          case "$source_root" in
+            "$HOME"/.local/share/nexus/multipair-runtime-snapshot-source/*) ;;
+            *) echo "::error::Unsafe runtime snapshot source root."; exit 1 ;;
+          esac
+          test -d "$state_root/runtime-site"
+          test -f "$state_root/requirements.lock"
+          test -f "$state_root/discovery/multipair_strategy_discovery.json"
+          rm -rf "$source_root"
+          mkdir -p "$source_root"
+          printf 'STATE_ROOT=%s\n' "$state_root" >> "$GITHUB_ENV"
+          printf 'SOURCE_ROOT=%s\n' "$source_root" >> "$GITHUB_ENV"
+          echo "multipair_runtime_snapshot_external_roots=PASS"
+
+      - name: Prepare fresh exact-source runtime snapshot checkout
+        run: |
+          set -euo pipefail
+          repo_url="https://github.com/${GITHUB_REPOSITORY}.git"
+          git -C "$SOURCE_ROOT" init .
+          git -C "$SOURCE_ROOT" remote add origin "$repo_url"
+          git -C "$SOURCE_ROOT" config --local --unset-all http.https://github.com/.extraheader || true
+          fetch_ok=false
+          for fetch_attempt in 1 2 3; do
+            if timeout 180s git -C "$SOURCE_ROOT" -c http.version=HTTP/1.1 fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"; then
+              fetch_ok=true
+              break
+            fi
+            echo "::warning::Exact runtime snapshot source fetch attempt ${fetch_attempt}/3 failed."
+            if [ "$fetch_attempt" -lt 3 ]; then sleep "$((fetch_attempt * 5))"; fi
+          done
+          if [ "$fetch_ok" != true ]; then
+            echo "::error::Exact runtime snapshot source fetch failed after bounded attempts."
+            exit 1
+          fi
+          git -C "$SOURCE_ROOT" checkout --detach --force FETCH_HEAD
+          test "$(git -C "$SOURCE_ROOT" rev-parse HEAD)" = "$GITHUB_SHA"
+          echo "multipair_runtime_snapshot_fresh_source_checkout=PASS sha=$(git -C "$SOURCE_ROOT" rev-parse HEAD)"
+
+      - name: Recover exact Python and isolated dependencies
+        run: |
+          set -euo pipefail
+          known_python="/opt/nexus-bybit-runner/_work/_tool/Python/3.12.14/x64/bin/python"
+          python_bin=""
+          if [ -x "$known_python" ]; then python_bin="$known_python"; fi
+          if [ -z "$python_bin" ]; then
+            tool_root="${RUNNER_TOOL_CACHE:-/opt/nexus-bybit-runner/_work/_tool}"
+            if [ "$(basename "$tool_root")" = "Python" ]; then python_root="$tool_root"; else python_root="$tool_root/Python"; fi
+            python_bin="$(find "$python_root" -type f -path '*/3.12.*/x64/bin/python' 2>/dev/null | sort -V | tail -n 1 || true)"
+          fi
+          test -n "$python_bin"
+          "$python_bin" -c "import sys; assert sys.version_info[:2] == (3, 12), sys.version"
+          python_prefix="$("$python_bin" -c 'import sys; print(sys.prefix)')"
+          python_lib="$python_prefix/lib"
+          test -d "$python_lib"
+          effective_ld_library_path="$python_lib"
+          if [ -n "${LD_LIBRARY_PATH:-}" ]; then effective_ld_library_path="$python_lib:$LD_LIBRARY_PATH"; fi
+          cmp "$SOURCE_ROOT/requirements.lock" "$STATE_ROOT/requirements.lock"
+          pip_wheel="$("$python_bin" - <<'PY'
+          import ensurepip
+          from pathlib import Path
+          bundled = Path(ensurepip.__file__).resolve().parent / "_bundled"
+          wheels = sorted(bundled.glob("pip-*.whl"))
+          if not wheels:
+              raise SystemExit("bundled pip wheel missing")
+          print(wheels[-1].resolve())
+          PY
+          )"
+          test -f "$pip_wheel"
+          printf 'PYTHON_BIN=%s\n' "$python_bin" >> "$GITHUB_ENV"
+          printf 'LD_LIBRARY_PATH=%s\n' "$effective_ld_library_path" >> "$GITHUB_ENV"
+          printf 'PIP_WHEEL=%s\n' "$pip_wheel" >> "$GITHUB_ENV"
+          printf 'PYTHONPATH=%s:%s:%s\n' "$pip_wheel" "$STATE_ROOT/runtime-site" "$SOURCE_ROOT" >> "$GITHUB_ENV"
+          echo "multipair_runtime_snapshot_runtime_recovered=PASS"
+
+      - name: Enforce same physical Bybit execution plane as Discovery
+        env:
+          CURRENT_RUNNER_NAME: ${{ runner.name }}
+        run: >-
+          "$PYTHON_BIN" -c "assert '${{ runner.environment }}' == 'self-hosted'; assert '${{ runner.os }}' == 'Linux'; assert '$CURRENT_RUNNER_NAME' == '$EXPECTED_DISCOVERY_RUNNER_NAME'; print('multipair_runtime_snapshot_execution_plane=self-hosted:nexus-bybit-network')"
+
+      - name: Verify recovered isolated runtime dependency consistency
+        run: '"$PYTHON_BIN" -m pip check'
+
+      - name: Acquire fresh canonical public Bybit runtime snapshot on physical plane
         id: acquire
         run: |
           set -euo pipefail
-          root="$PWD/build/nexus-multipair-runtime-requalification-snapshot"
-          archive="$PWD/build/nexus-multipair-runtime-requalification-snapshot.zip"
-          digest="$PWD/build/nexus-multipair-runtime-requalification-snapshot.sha256"
+          cd "$SOURCE_ROOT"
+          root="$STATE_ROOT/runtime-snapshot-acquire"
+          archive="$SOURCE_ROOT/build/nexus-multipair-runtime-requalification-snapshot.zip"
+          digest="$SOURCE_ROOT/build/nexus-multipair-runtime-requalification-snapshot.sha256"
           rm -rf "$root" "$archive" "$digest"
-          now_ms="$(python -c 'import time; print(int(time.time() * 1000))')"
-          python nexus_multipair_runtime_requalification_snapshot.py acquire \
+          mkdir -p "$SOURCE_ROOT/build"
+          now_ms="$("$PYTHON_BIN" -c 'import time; print(int(time.time() * 1000))')"
+          "$PYTHON_BIN" nexus_multipair_runtime_requalification_snapshot.py acquire \
             --output-root "$root" \
             --archive-output "$archive" \
             --digest-output "$digest" \
             --source-sha "$GITHUB_SHA" \
             --now-ms "$now_ms"
           read -r runtime_snapshot_digest runtime_snapshot_as_of_ms <<EOF
-          $(python - <<'PY'
+          $("$PYTHON_BIN" - <<'PY'
           import json
+          import os
           from pathlib import Path
-          value = json.loads(Path("build/nexus-multipair-runtime-requalification-snapshot/snapshot-manifest.json").read_text(encoding="utf-8"))
+          value = json.loads((Path(os.environ["STATE_ROOT"]) / "runtime-snapshot-acquire" / "snapshot-manifest.json").read_text(encoding="utf-8"))
           print(value["snapshot_digest"], value["as_of_ms"])
           PY
           )
@@ -502,14 +589,25 @@ jobs:
           echo "runtime_snapshot_digest=$runtime_snapshot_digest" >> "$GITHUB_OUTPUT"
           echo "runtime_snapshot_as_of_ms=$runtime_snapshot_as_of_ms" >> "$GITHUB_OUTPUT"
           rm -rf "$root"
-          echo "hosted_fresh_multipair_runtime_snapshot=PASS digest=$runtime_snapshot_digest as_of_ms=$runtime_snapshot_as_of_ms archive=$runtime_snapshot_archive_sha256"
+          echo "physical_fresh_multipair_runtime_snapshot=PASS digest=$runtime_snapshot_digest as_of_ms=$runtime_snapshot_as_of_ms archive=$runtime_snapshot_archive_sha256"
+
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: nexus-multipair-runtime-requalification-snapshot-${{ github.sha }}
-          path: build/nexus-multipair-runtime-requalification-snapshot.zip
+          path: ${{ env.SOURCE_ROOT }}/build/nexus-multipair-runtime-requalification-snapshot.zip
           if-no-files-found: error
           retention-days: 7
           compression-level: 0
+
+      - name: Remove isolated runtime snapshot source after use
+        if: always()
+        run: |
+          set -euo pipefail
+          source_root="${SOURCE_ROOT:-$HOME/.local/share/nexus/multipair-runtime-snapshot-source/$GITHUB_RUN_ID}"
+          case "$source_root" in
+            "$HOME"/.local/share/nexus/multipair-runtime-snapshot-source/*) rm -rf "$source_root" ;;
+            *) echo "::error::Refusing unsafe runtime snapshot source cleanup path."; exit 1 ;;
+          esac
 
   requalify-physical:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
@@ -886,7 +984,7 @@ jobs:
           assert evidence["snapshot_cell_count"] == 12
           assert evidence["snapshot_history_limit"] == 500
           assert evidence["discovery_hypothesis_count"] == 9
-          assert evidence["runtime_snapshot_transport"] == "digest_pinned_hosted_bybit_rest_snapshot"
+          assert evidence["runtime_snapshot_transport"] == "digest_pinned_physical_bybit_rest_snapshot"
           assert evidence["runtime_snapshot_data_origin"] == "canonical_public_bybit_closed_candles"
           assert evidence["runtime_snapshot_history_limit"] == 240
           assert evidence["runtime_snapshot_digest"] != evidence["snapshot_digest"]

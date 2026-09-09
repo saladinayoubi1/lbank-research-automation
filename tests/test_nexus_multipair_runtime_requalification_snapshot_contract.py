@@ -13,7 +13,7 @@ def test_runtime_requalification_snapshot_module_compiles_and_keeps_boundaries()
     ast.parse(text)
     assert 'HISTORY_LIMIT = 240' in text
     assert 'MAX_SNAPSHOT_TRANSPORT_AGE_MS = 20 * 60 * 1000' in text
-    assert 'TRANSPORT_ORIGIN = "digest_pinned_hosted_bybit_rest_snapshot"' in text
+    assert 'TRANSPORT_ORIGIN = "digest_pinned_physical_bybit_rest_snapshot"' in text
     assert 'runtime_snapshot_distinct_from_discovery' in text
     assert 'historical_discovery_snapshot_reused' in text
     assert '"paper_execution_started": False' in text
