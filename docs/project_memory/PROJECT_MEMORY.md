@@ -97,3 +97,8 @@ Operational intent:
 
 ## Continuity rule
 A fresh agent/session should be able to recover direction by reading this directory plus repository history, issues, PRs and CI. If it cannot, the memory system is incomplete and must be repaired before increasing autonomy.
+
+## Current verified operational checkpoint — 2026-09-09
+Exact-main run `34392341610` on source `57f0c4156722fad47125f8e92e66465ee207260a` completed every Multi-Pair Discovery v2 job successfully. The physical WSL runner restored a hosted exact-source artifact without JavaScript actions or Git fetch, reused the shared wheelhouse only after deterministic repack/digest/lock/symlink validation, verified the official Bybit archive snapshot, acquired a fresh 12-cell runtime snapshot on the same physical plane, relayed it to hosted artifact persistence without Node on WSL, and completed physical requalification plus hosted proof persistence. The valid result was `NO_WORK` with zero Research proposals; zero work does not authorize fabricated proposals or automatic promotion.
+
+The latest scheduled persistent Paper run `34384929765` is a separate open operational incident: the engine produced a verification-valid `WAITING_FOR_FRESH_CELLS` state with 8/12 fresh cells after approved Bybit public endpoints returned regional HTTP 403, while the workflow correctly failed closed and did not persist partial state. Issue #984 remains independent, open and immutable at 88/180 bars and a 14/30 elapsed-day floor. All authority remains Research/Backtest/Paper only; Deterministic Risk remains final and Live/private-credential/real-order/automatic-promotion authority remains false.
