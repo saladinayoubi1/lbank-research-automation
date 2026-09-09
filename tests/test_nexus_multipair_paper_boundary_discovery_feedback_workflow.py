@@ -68,3 +68,22 @@ def test_workflow_only_links_natural_eligible_twelve_cell_boundary() -> None:
     assert 'value.get("strategy_research_required") is True' in text
     assert 'value.get("strategy_discovery_health_trigger_requested") is True' in text
     assert "NO_OP_NOT_ELIGIBLE" in text
+
+
+def test_feedback_job_provisions_locked_runtime_before_importing_verifier() -> None:
+    text = _text()
+    feedback = text.split("  link-exact-boundary-feedback:", 1)[1]
+    setup = "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97"
+    install = "python -m pip install -r requirements.lock"
+    check = "python -m pip check"
+    verifier_import = (
+        "from nexus_multipair_persistent_paper_trading_loop import "
+        "verify_loop_snapshot"
+    )
+
+    assert setup in feedback
+    assert install in feedback
+    assert check in feedback
+    assert feedback.index(setup) < feedback.index(install)
+    assert feedback.index(install) < feedback.index(check)
+    assert feedback.index(check) < feedback.index(verifier_import)
