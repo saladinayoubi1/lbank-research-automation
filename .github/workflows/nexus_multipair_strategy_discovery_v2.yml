@@ -462,6 +462,9 @@ jobs:
       runtime_snapshot_as_of_ms: ${{ steps.acquire.outputs.runtime_snapshot_as_of_ms }}
     env:
       EXPECTED_DISCOVERY_RUNNER_NAME: ${{ needs.discover-physical.outputs.runner_name }}
+      # WSL1 cannot execute the runner's bundled Node 24 binary. Scope the
+      # compatibility exception to this artifact-transport job only.
+      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
     steps:
       - name: Initialize same-run physical runtime snapshot roots
         run: |
