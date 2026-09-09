@@ -252,3 +252,14 @@ until another exact provider readback and independent verification succeeds.
 Boundary: Secondary continuity only. This does not authorize Production/Live/L4,
 credentials, signing, billing, deployment, financial action, destructive operations,
 watchdog/self-heal, or self-authorization.
+
+## 2026-09-09 — Exact-source artifact relay replaces WSL Git transport for Multi-Pair proof
+Status: ACTIVE
+
+Evidence: PR #1411 moved fresh runtime acquisition onto the physical Bybit plane. PR #1412 temporarily demonstrated artifact persistence with Node20, then PR #1413 superseded it with a Node-free bounded job-output relay and hosted Node24 artifact persistence. Exact-main run `34372474946` proved that relay but exposed a redundant requalification Git fetch timeout. PR #1414 removed the third fetch; run `34380229055` then proved the first WSL Git fetch was itself a systemic transport blocker. PR #1415 replaced all physical Git fetches with a hosted exact-commit source artifact bound by current-run/main identity, GitHub outer digest, inner archive digest, commit marker, bounded sizes, safe paths and regular-file-only extraction. Run `34384105378` verified the source restore but timed out while downloading the 79MB wheelhouse. PR #1416 added shared cache reuse only after deterministic repack reproduces the exact hosted digest, the repository lock matches, wheels exist and no symlink is present. Exact-main run `34392341610` then completed all seven jobs on first attempt, with exact source restore PASS, verified wheelhouse cache HIT, physical fresh runtime snapshot digest `7bda78b0159b8eb514c0183c08b8cbae6d7bd3b91f767ebb02cba7429224b4c9`, requalification `NO_WORK`, and proof artifact `10120770458` / `sha256:87401cec0c1a129691edb7b83f20b8d319406c8a3320dab2e33823ac53edde97`.
+
+Decision: WSL jobs in this Multi-Pair proof must not depend on JavaScript actions or Git network transport. Exact source and runtime evidence cross trust boundaries only through bounded digest-pinned handoffs, and a persistent dependency cache is usable only after independent deterministic reconstruction proves exact content and lock identity. Failed-job retry is not a substitute for architecture when same-run ephemeral state has been deleted.
+
+Separate current incident: scheduled Paper run `34384929765` failed closed at 8/12 fresh cells because approved public Bybit endpoints returned regional HTTP 403. The engine's `WAITING_FOR_FRESH_CELLS` snapshot verified, but the physical acceptance verifier correctly required 12/12 and partial state was not persisted. Treat this as a public-data-plane incident until a later successful 12/12 scheduled run; do not fabricate cells, change exchanges silently or weaken the verifier.
+
+Boundary: Research/Backtest/Paper only. No private credentials, real exchange orders, Live/L4, signing, deployment, automatic strategy promotion, Issue #984 mutation, destructive authority or self-authorization.
