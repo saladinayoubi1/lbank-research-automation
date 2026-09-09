@@ -90,6 +90,7 @@ def list_candidate_artifacts(
     token: str,
     prefix: str = DEFAULT_PREFIX,
     max_pages: int = 10,
+    artifact_id: int | None = None,
 ) -> list[dict[str, Any]]:
     if "/" not in repository:
         raise ReplayArtifactError("repository must be owner/name")
@@ -107,7 +108,10 @@ def list_candidate_artifacts(
             name = str(artifact.get("name", ""))
             if artifact.get("expired") is True or not name.startswith(prefix):
                 continue
-            if not artifact.get("id"):
+            candidate_id = artifact.get("id")
+            if not candidate_id:
+                continue
+            if artifact_id is not None and int(candidate_id) != artifact_id:
                 continue
             candidates.append(artifact)
         if len(batch) < 100:
@@ -223,10 +227,13 @@ def restore_matching_artifact(
     delivery_name: str = DELIVERY_NAME,
     prefix: str = DEFAULT_PREFIX,
     max_candidates: int = 20,
+    artifact_id: int | None = None,
 ) -> dict[str, Any]:
     if bool(expected_sha256) == bool(expected_semantic_sha256):
         raise ReplayArtifactError("exactly one replay identity mode is required")
-    candidates = list_candidate_artifacts(repository, token, prefix=prefix)
+    candidates = list_candidate_artifacts(
+        repository, token, prefix=prefix, artifact_id=artifact_id
+    )
     if not candidates:
         raise ReplayArtifactError("no unexpired replay artifacts found")
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -288,6 +295,7 @@ def parse_args() -> argparse.Namespace:
     identity.add_argument("--expected-semantic-sha256")
     parser.add_argument("--delivery-name", default=DELIVERY_NAME)
     parser.add_argument("--artifact-prefix", default=DEFAULT_PREFIX)
+    parser.add_argument("--artifact-id", type=int)
     parser.add_argument("--max-candidates", type=int, default=20)
     return parser.parse_args()
 
@@ -299,6 +307,8 @@ def main() -> int:
     expected_identity = args.expected_semantic_sha256 or args.expected_sha256
     if len(expected_identity) != 64 or any(ch not in "0123456789abcdefABCDEF" for ch in expected_identity):
         raise ReplayArtifactError("expected replay identity must be 64 hex characters")
+    if args.artifact_id is not None and args.artifact_id <= 0:
+        raise ReplayArtifactError("artifact ID must be a positive integer")
     restore_matching_artifact(
         repository=args.repository,
         token=args.token,
@@ -309,6 +319,7 @@ def main() -> int:
         delivery_name=args.delivery_name,
         prefix=args.artifact_prefix,
         max_candidates=args.max_candidates,
+        artifact_id=args.artifact_id,
     )
     return 0
 
