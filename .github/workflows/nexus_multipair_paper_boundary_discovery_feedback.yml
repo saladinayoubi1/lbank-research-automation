@@ -1,0 +1,330 @@
+name: NEXUS Multi-Pair Paper boundary Discovery feedback
+
+on:
+  workflow_run:
+    workflows:
+      - "NEXUS persistent Paper trading loop"
+      - "NEXUS Multi-Pair Discovery v2 physical proof"
+    types: [completed]
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - "nexus_multipair_paper_boundary_discovery_feedback.py"
+      - "tests/test_nexus_multipair_paper_boundary_discovery_feedback.py"
+      - "tests/test_nexus_multipair_paper_boundary_discovery_feedback_workflow.py"
+      - ".github/workflows/nexus_multipair_paper_boundary_discovery_feedback.yml"
+  push:
+    branches: [main]
+    paths:
+      - "nexus_multipair_paper_boundary_discovery_feedback.py"
+      - "tests/test_nexus_multipair_paper_boundary_discovery_feedback.py"
+      - "tests/test_nexus_multipair_paper_boundary_discovery_feedback_workflow.py"
+      - ".github/workflows/nexus_multipair_paper_boundary_discovery_feedback.yml"
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: nexus-multipair-paper-feedback-${{ github.event.workflow_run.head_sha || github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  contract-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements-dev.lock
+      - run: python -m pip check
+      - name: Verify Multi-Pair Paper feedback contracts
+        run: >-
+          python -m pytest -q
+          tests/test_nexus_multipair_paper_boundary_discovery_feedback.py
+          tests/test_nexus_multipair_paper_boundary_discovery_feedback_workflow.py
+
+  link-exact-boundary-feedback:
+    if: >-
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main') ||
+      github.event_name == 'workflow_dispatch'
+    needs: contract-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EVENT_NAME: ${{ github.event_name }}
+      EVENT_TRIGGER_RUN_ID: ${{ github.event.workflow_run.id }}
+      EVENT_TRIGGER_WORKFLOW: ${{ github.event.workflow_run.name }}
+      EVENT_SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+      PAPER_WORKFLOW: nexus_persistent_paper_trading_loop.yml
+      DISCOVERY_WORKFLOW: nexus_multipair_strategy_discovery_v2.yml
+      PAPER_ARTIFACT: nexus-persistent-paper-trading-state
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          clean: true
+          fetch-depth: 1
+
+      - name: Resolve exact-SHA successful Paper and Discovery v2 runs
+        id: pair
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "workflow_run" ]; then
+            source_sha="$EVENT_SOURCE_SHA"
+            case "$EVENT_TRIGGER_WORKFLOW" in
+              "NEXUS persistent Paper trading loop"|"NEXUS Multi-Pair Discovery v2 physical proof") ;;
+              *) echo "::error::Unexpected triggering workflow."; exit 1 ;;
+            esac
+            trigger_meta="build/trigger-run.json"
+            mkdir -p build
+            gh api -H 'Accept: application/vnd.github+json' \
+              "repos/$GITHUB_REPOSITORY/actions/runs/$EVENT_TRIGGER_RUN_ID" > "$trigger_meta"
+            SOURCE_SHA="$source_sha" python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          row = json.loads(Path("build/trigger-run.json").read_text())
+          if (
+              row.get("status") != "completed"
+              or row.get("conclusion") != "success"
+              or row.get("head_branch") != "main"
+              or row.get("head_sha") != os.environ["SOURCE_SHA"]
+              or row.get("name") not in {
+                  "NEXUS persistent Paper trading loop",
+                  "NEXUS Multi-Pair Discovery v2 physical proof",
+              }
+          ):
+              raise SystemExit("triggering run identity mismatch")
+          print("exact_trigger_run_identity=PASS")
+          PY
+          else
+            source_sha="$GITHUB_SHA"
+          fi
+          if ! [[ "$source_sha" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Exact source SHA is invalid."
+            exit 1
+          fi
+          mkdir -p build
+          gh api -H 'Accept: application/vnd.github+json' \
+            "repos/$GITHUB_REPOSITORY/actions/workflows/$PAPER_WORKFLOW/runs?branch=main&status=success&head_sha=$source_sha&per_page=100" \
+            > build/paper-runs.json
+          gh api -H 'Accept: application/vnd.github+json' \
+            "repos/$GITHUB_REPOSITORY/actions/workflows/$DISCOVERY_WORKFLOW/runs?branch=main&status=success&head_sha=$source_sha&per_page=100" \
+            > build/discovery-runs.json
+          read -r paper_run_id discovery_run_id <<EOF
+          $(SOURCE_SHA="$source_sha" python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          source_sha = os.environ["SOURCE_SHA"]
+          specs = (
+              ("build/paper-runs.json", "NEXUS persistent Paper trading loop", ".github/workflows/nexus_persistent_paper_trading_loop.yml"),
+              ("build/discovery-runs.json", "NEXUS Multi-Pair Discovery v2 physical proof", ".github/workflows/nexus_multipair_strategy_discovery_v2.yml"),
+          )
+          selected = []
+          for path, name, workflow_path in specs:
+              payload = json.loads(Path(path).read_text())
+              rows = [
+                  row for row in payload.get("workflow_runs", [])
+                  if row.get("name") == name
+                  and row.get("path") == workflow_path
+                  and row.get("head_branch") == "main"
+                  and row.get("head_sha") == source_sha
+                  and row.get("status") == "completed"
+                  and row.get("conclusion") == "success"
+              ]
+              selected.append(str(rows[0]["id"]) if rows else "0")
+          print(*selected)
+          PY
+          )
+          EOF
+          {
+            echo "source_sha=$source_sha"
+            echo "paper_run_id=$paper_run_id"
+            echo "discovery_run_id=$discovery_run_id"
+          } >> "$GITHUB_OUTPUT"
+          if [ "$paper_run_id" = "0" ] || [ "$discovery_run_id" = "0" ]; then
+            echo "paired=false" >> "$GITHUB_OUTPUT"
+            echo "exact_sha_feedback_pair=NOT_READY source_sha=$source_sha paper_run=$paper_run_id discovery_run=$discovery_run_id"
+            exit 0
+          fi
+          echo "paired=true" >> "$GITHUB_OUTPUT"
+          echo "exact_sha_feedback_pair=PASS source_sha=$source_sha paper_run=$paper_run_id discovery_run=$discovery_run_id"
+
+      - name: Restore and verify exact-run Paper and Discovery proof artifacts
+        if: steps.pair.outputs.paired == 'true'
+        id: artifacts
+        env:
+          SOURCE_SHA: ${{ steps.pair.outputs.source_sha }}
+          PAPER_RUN_ID: ${{ steps.pair.outputs.paper_run_id }}
+          DISCOVERY_RUN_ID: ${{ steps.pair.outputs.discovery_run_id }}
+        run: |
+          set -euo pipefail
+          proof_artifact="nexus-multipair-discovery-v2-proof-$SOURCE_SHA"
+          gh api -H 'Accept: application/vnd.github+json' \
+            "repos/$GITHUB_REPOSITORY/actions/runs/$PAPER_RUN_ID/artifacts?per_page=100" \
+            > build/paper-artifacts.json
+          gh api -H 'Accept: application/vnd.github+json' \
+            "repos/$GITHUB_REPOSITORY/actions/runs/$DISCOVERY_RUN_ID/artifacts?per_page=100" \
+            > build/discovery-artifacts.json
+          read -r paper_artifact_id paper_size paper_digest proof_artifact_id proof_size proof_digest <<EOF
+          $(SOURCE_SHA="$SOURCE_SHA" PAPER_RUN_ID="$PAPER_RUN_ID" DISCOVERY_RUN_ID="$DISCOVERY_RUN_ID" PAPER_ARTIFACT="$PAPER_ARTIFACT" PROOF_ARTIFACT="$proof_artifact" python - <<'PY'
+          import json
+          import os
+          import re
+          from pathlib import Path
+
+          def select(path, name, run_id):
+              payload = json.loads(Path(path).read_text())
+              rows = [row for row in payload.get("artifacts", []) if row.get("name") == name and row.get("expired") is False]
+              if len(rows) != 1:
+                  raise SystemExit(f"expected one exact artifact {name}, got {len(rows)}")
+              row = rows[0]
+              digest = str(row.get("digest", ""))
+              size = int(row.get("size_in_bytes") or 0)
+              binding = row.get("workflow_run") or {}
+              if not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
+                  raise SystemExit(f"artifact {name} has invalid GitHub digest")
+              if not 0 < size <= 250 * 1024 * 1024:
+                  raise SystemExit(f"artifact {name} size is outside bounds")
+              if str(binding.get("id")) != str(run_id) or binding.get("head_sha") != os.environ["SOURCE_SHA"] or binding.get("head_branch") != "main":
+                  raise SystemExit(f"artifact {name} run binding mismatch")
+              return int(row["id"]), size, digest.removeprefix("sha256:")
+
+          paper = select("build/paper-artifacts.json", os.environ["PAPER_ARTIFACT"], os.environ["PAPER_RUN_ID"])
+          proof = select("build/discovery-artifacts.json", os.environ["PROOF_ARTIFACT"], os.environ["DISCOVERY_RUN_ID"])
+          print(*paper, *proof)
+          PY
+          )
+          EOF
+          rm -rf build/multipair-feedback
+          mkdir -p build/multipair-feedback/paper build/multipair-feedback/proof build/multipair-feedback/output
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$paper_artifact_id/zip" > build/multipair-feedback/paper.zip
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$proof_artifact_id/zip" > build/multipair-feedback/proof.zip
+          test "$(stat -c '%s' build/multipair-feedback/paper.zip)" -eq "$paper_size"
+          test "$(stat -c '%s' build/multipair-feedback/proof.zip)" -eq "$proof_size"
+          test "$(sha256sum build/multipair-feedback/paper.zip | awk '{print $1}')" = "$paper_digest"
+          test "$(sha256sum build/multipair-feedback/proof.zip | awk '{print $1}')" = "$proof_digest"
+          unzip -q build/multipair-feedback/paper.zip -d build/multipair-feedback/paper
+          unzip -q build/multipair-feedback/proof.zip -d build/multipair-feedback/proof
+          loop_snapshot="$(find build/multipair-feedback/paper -type f -path '*/demo/persistent-paper-trading-loop.json' -print -quit)"
+          matrix_state="$(find build/multipair-feedback/paper -type f -name matrix-state.json -print -quit)"
+          discovery_proof="$(find build/multipair-feedback/proof -type f -name evidence.json -print -quit)"
+          test -n "$loop_snapshot"
+          test -n "$matrix_state"
+          test -n "$discovery_proof"
+          {
+            echo "LOOP_SNAPSHOT=$loop_snapshot"
+            echo "MATRIX_STATE=$matrix_state"
+            echo "DISCOVERY_PROOF=$discovery_proof"
+            echo "PAPER_ARTIFACT_ID=$paper_artifact_id"
+            echo "PAPER_ARTIFACT_DIGEST=$paper_digest"
+            echo "PROOF_ARTIFACT_ID=$proof_artifact_id"
+            echo "PROOF_ARTIFACT_DIGEST=$proof_digest"
+          } >> "$GITHUB_ENV"
+          echo "exact_sha_feedback_artifact_binding=PASS"
+
+      - name: Check natural 12-cell health-boundary eligibility
+        if: steps.pair.outputs.paired == 'true'
+        id: boundary
+        env:
+          SOURCE_SHA: ${{ steps.pair.outputs.source_sha }}
+        run: |
+          set -euo pipefail
+          eligible="$(SOURCE_SHA="$SOURCE_SHA" LOOP_SNAPSHOT="$LOOP_SNAPSHOT" python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from nexus_multipair_persistent_paper_trading_loop import verify_loop_snapshot
+          value = json.loads(Path(os.environ["LOOP_SNAPSHOT"]).read_text())
+          verification = verify_loop_snapshot(value)
+          if verification.get("decision") != "pass":
+              raise SystemExit("exact Paper loop artifact failed verification")
+          eligible = bool(
+              value.get("source_sha") == os.environ["SOURCE_SHA"]
+              and value.get("status") == "PAPER_LOOP_ACTIVE"
+              and value.get("regime_status") == "VERIFIED"
+              and value.get("expected_cell_count") == 12
+              and value.get("fresh_cell_count") == 12
+              and value.get("expected_lane_count") == 36
+              and value.get("strategy_research_required") is True
+              and value.get("strategy_discovery_health_trigger_requested") is True
+              and value.get("regime_selected_rebalance_operational") is True
+              and value.get("performance_health_feedback_operational") is True
+          )
+          print(str(eligible).lower())
+          PY
+          )"
+          echo "eligible=$eligible" >> "$GITHUB_OUTPUT"
+          if [ "$eligible" != "true" ]; then
+            echo "multipair_paper_feedback_boundary=NO_OP_NOT_ELIGIBLE"
+          else
+            echo "multipair_paper_feedback_boundary=ELIGIBLE"
+          fi
+
+      - name: Build exact four-symbol Paper boundary context
+        if: steps.pair.outputs.paired == 'true' && steps.boundary.outputs.eligible == 'true'
+        run: |
+          set -euo pipefail
+          python nexus_multipair_paper_boundary_discovery_feedback.py context \
+            --loop-snapshot "$LOOP_SNAPSHOT" \
+            --matrix-state "$MATRIX_STATE" \
+            --output build/multipair-feedback/output/boundary-context.json
+
+      - name: Link exact Discovery v2 proof and independently verify feedback
+        if: steps.pair.outputs.paired == 'true' && steps.boundary.outputs.eligible == 'true'
+        env:
+          SOURCE_SHA: ${{ steps.pair.outputs.source_sha }}
+          PAPER_RUN_ID: ${{ steps.pair.outputs.paper_run_id }}
+          DISCOVERY_RUN_ID: ${{ steps.pair.outputs.discovery_run_id }}
+        run: |
+          set -euo pipefail
+          python nexus_multipair_paper_boundary_discovery_feedback.py feedback \
+            --context build/multipair-feedback/output/boundary-context.json \
+            --discovery-proof "$DISCOVERY_PROOF" \
+            --output build/multipair-feedback/output/feedback.json
+          SOURCE_SHA="$SOURCE_SHA" PAPER_RUN_ID="$PAPER_RUN_ID" DISCOVERY_RUN_ID="$DISCOVERY_RUN_ID" python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from nexus_multipair_paper_boundary_discovery_feedback import verify_feedback
+          value = json.loads(Path("build/multipair-feedback/output/feedback.json").read_text())
+          verification = verify_feedback(value)
+          assert verification["decision"] == "pass", verification
+          assert value["source_sha"] == os.environ["SOURCE_SHA"]
+          assert value["paper_run_id"] == os.environ["PAPER_RUN_ID"]
+          assert value["discovery_run_id"] == os.environ["DISCOVERY_RUN_ID"]
+          assert value["paper_boundary_coverage_verified"] is True
+          assert value["discovery_feedback_verified"] is True
+          assert value["candidate_state_created"] is False
+          assert value["paper_execution_started"] is False
+          assert value["live_trading_authority"] is False
+          assert value["private_credentials_used"] is False
+          assert value["real_exchange_orders"] is False
+          assert value["automatic_strategy_promotion"] is False
+          assert value["deterministic_risk_final_authority"] is True
+          assert value["issue_984_state_artifact_touched"] is False
+          print("hosted_multipair_paper_boundary_feedback_verification=PASS")
+          PY
+          cat > build/multipair-feedback/output/artifact-lineage.json <<EOF
+          {"source_sha":"$SOURCE_SHA","paper_run_id":"$PAPER_RUN_ID","paper_artifact_id":"$PAPER_ARTIFACT_ID","paper_artifact_sha256":"$PAPER_ARTIFACT_DIGEST","discovery_run_id":"$DISCOVERY_RUN_ID","proof_artifact_id":"$PROOF_ARTIFACT_ID","proof_artifact_sha256":"$PROOF_ARTIFACT_DIGEST","issue_984_state_artifact_touched":false}
+          EOF
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: steps.pair.outputs.paired == 'true' && steps.boundary.outputs.eligible == 'true'
+        with:
+          name: nexus-multipair-paper-boundary-feedback-${{ steps.pair.outputs.source_sha }}
+          path: build/multipair-feedback/output
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
