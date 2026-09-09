@@ -8,7 +8,9 @@ on:
       - "nexus_regime_selected_exposure_increase.py"
       - "nexus_demo_regime_cycle.py"
       - "nexus_demo_archive_replay.py"
+      - "scripts/select_nexus_bybit_replay_artifact.py"
       - "config/nexus-demo-strategy-matrix-v1.json"
+      - "tests/test_nexus_bybit_replay_artifact_lifecycle.py"
       - "tests/test_nexus_demo_regime_lifecycle_bridge.py"
       - "tests/test_nexus_regime_selected_position_rebalance.py"
       - "tests/test_nexus_regime_selected_exposure_increase.py"
@@ -43,6 +45,7 @@ jobs:
           tests/test_nexus_regime_selected_exposure_increase.py
           tests/test_nexus_demo_regime_cycle.py
           tests/test_nexus_demo_archive_replay.py
+          tests/test_nexus_bybit_replay_artifact_lifecycle.py
 
   lifecycle:
     if: >-
@@ -60,8 +63,10 @@ jobs:
       TRIGGER_RUN_ID: ${{ github.event.workflow_run.id }}
       SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
       STATE_ARTIFACT: nexus-demo-strategy-matrix-state
-      DATASET_ARTIFACT_ID: "8867026863"
-      DATASET_SHA256: "5f1173467c2296201940c3b7786b7cc3e5442244e07289769ab4867ace41d668"
+      DATASET_FILE: NEXUS_BYBIT_replay_v2_2022-12-01_to_2026-07-31.zip
+      DATASET_DELIVERY: NEXUS_BYBIT_replay_v2_delivery.json
+      DATASET_ARTIFACT_PREFIX: bybit-full-history-final-
+      DATASET_SHA256: "2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422"
       STATE_ROOT: build/nexus_demo_strategy_matrix_state
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -86,16 +91,20 @@ jobs:
           test -n "$artifact_id"
           gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" > build/trigger-state.zip
           unzip -q build/trigger-state.zip -d "$STATE_ROOT"
-      - name: Restore verified immutable Bybit replay dataset
+      - name: Restore verified immutable Bybit replay-v2 dataset
         run: |
           set -euo pipefail
-          rm -rf build/nexus_demo_archive build/nexus_demo_delivery build/nexus_demo_delivery.zip
+          rm -rf build/nexus_demo_archive build/nexus_demo_delivery
           mkdir -p build/nexus_demo_archive build/nexus_demo_delivery
-          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$DATASET_ARTIFACT_ID/zip" \
-            > build/nexus_demo_delivery.zip
-          unzip -q build/nexus_demo_delivery.zip -d build/nexus_demo_delivery
-          archive="build/nexus_demo_delivery/BYBIT_full_history_2022-12-01_to_2026-07-31.zip"
-          test "$(sha256sum "$archive" | awk '{print $1}')" = "$DATASET_SHA256"
+          python scripts/select_nexus_bybit_replay_artifact.py \
+            --repository "$GITHUB_REPOSITORY" \
+            --output-dir build/nexus_demo_delivery \
+            --expected-file-name "$DATASET_FILE" \
+            --expected-semantic-sha256 "$DATASET_SHA256" \
+            --delivery-name "$DATASET_DELIVERY" \
+            --artifact-prefix "$DATASET_ARTIFACT_PREFIX"
+          archive="build/nexus_demo_delivery/$DATASET_FILE"
+          test -s "$archive"
           unzip -q "$archive" -d build/nexus_demo_archive
       - name: Apply regime-selected close resize and fresh-Risk increase
         run: |
