@@ -1,0 +1,50 @@
+name: NEXUS WSL runner Node runtime diagnostic
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/nexus_runner_node24_diagnostic.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nexus-wsl-runner-node-runtime-diagnostic
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    runs-on: nexus-bybit-network
+    timeout-minutes: 10
+    steps:
+      - name: Inspect runner and embedded Node runtimes without mutation
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "diagnostic_mode=read_only"
+          echo "uname_m=$(uname -m)"
+          echo "uname_a=$(uname -a)"
+          echo "getconf_long_bit=$(getconf LONG_BIT 2>/dev/null || echo unavailable)"
+          echo "runner_arch_env=${RUNNER_ARCH:-unset}"
+          echo "runner_os_env=${RUNNER_OS:-unset}"
+          runner_root="/opt/nexus-bybit-runner"
+          test -d "$runner_root/externals"
+          for runtime in node20 node24; do
+            node="$runner_root/externals/$runtime/bin/node"
+            echo "runtime=$runtime path=$node"
+            if [ ! -e "$node" ]; then
+              echo "runtime=$runtime exists=false"
+              continue
+            fi
+            echo "runtime=$runtime exists=true"
+            file "$node" || true
+            sha256sum "$node" || true
+            set +e
+            "$node" --version
+            rc=$?
+            set -e
+            echo "runtime=$runtime exec_rc=$rc"
+          done
+          echo "nexus_wsl_node_runtime_diagnostic=PASS"
