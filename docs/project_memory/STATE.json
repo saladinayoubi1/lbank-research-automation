@@ -243,7 +243,7 @@
       "physical_runner": "NEXUS-BYBIT-WSL",
       "exact_source_artifact_id": 10120136911,
       "exact_source_artifact_digest": "sha256:8777a5ac1767dcffa41510fc920bfa14d1cce4a830649c29289336641d85fb13",
-      "exact_source_archive_sha256": "3fbad775b53572119258ad497aacba683975729ff1a130c269d9b716423675a6",
+      "exact_source_archive_sha256": "b510d204343487172c55ffecc32cad1b7d6fe5498e6279b4ab22777162ef12d8",
       "exact_source_restore_verified": true,
       "wheelhouse_cache_result": "HIT_AFTER_DETERMINISTIC_REPACK_DIGEST_AND_LOCK_VERIFICATION",
       "historical_archive_snapshot_digest": "a78b54bdb81383f3baa583624629e079ad4d9c00912a12de3449023395b51079",
@@ -267,7 +267,8 @@
       "private_credentials_used": false,
       "real_exchange_orders": false,
       "deterministic_risk_final_authority": true,
-      "issue_984_state_touched": false
+      "issue_984_state_touched": false,
+      "historical_archive_snapshot_archive_sha256": "2ebaa3e52d068f2b6cfa41eb3647679f58911d05736062be19bdcc8d9b3aaa1a"
     },
     "prospective_paper_gate": {
       "issue": 984,
