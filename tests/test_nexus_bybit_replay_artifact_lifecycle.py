@@ -395,6 +395,7 @@ def test_matrix_restores_replay_v2_by_semantic_content_not_fixed_artifact_id() -
     assert "2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422" in text
     assert "5f1173467c2296201940c3b7786b7cc3e5442244e07289769ab4867ace41d668" not in text
 
+
 def test_lifecycle_bridge_restores_replay_v2_by_semantic_content_not_fixed_artifact_id() -> None:
     text = LIFECYCLE_WORKFLOW.read_text(encoding="utf-8")
     assert "DATASET_ARTIFACT_ID" not in text
