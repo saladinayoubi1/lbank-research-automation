@@ -45,3 +45,10 @@ Keep at least two independent durable copies of essential project knowledge: rep
 - If an operator supplies an artifact ID, use it only to filter the candidate set; all content and semantic checks remain mandatory.
 - Treat HTTP 410 for a fixed artifact as evidence to repair transport architecture. Do not blindly replace it with another fixed ID or relax integrity checks.
 - A positive Strategy Factory research gate stops at its declared review boundary. Preserve `automatic_paper_forward_started=false` until an independent human review explicitly authorizes the next bounded Research/Paper step; never infer Live or private-credential authority.
+
+## Isolated feedback verifier recovery
+- Treat GitHub Actions jobs as isolated execution environments. A dependency installation in a contract job does not provision a downstream feedback job.
+- Before importing repository runtime verifiers, provision pinned Python and `requirements.lock` inside the importing job, run `pip check`, and retain regression coverage that enforces this ordering.
+- If verifier import fails because a locked dependency is missing, repair provisioning; never bypass or reimplement the verifier merely to make the workflow green.
+- After repair, reproduce both evidence producers on one exact current-main SHA and require exact-run artifact identities and GitHub digests before evaluating the boundary.
+- A verified `NO_OP_NOT_ELIGIBLE` is complete evidence for a false natural boundary condition. Do not fabricate fresh cells, force eligibility, emit a feedback artifact, or create promotion authority.

@@ -30,7 +30,7 @@
     "owner_override_required_for_priority_change": true
   },
   "runtime_status": {
-    "agent_execution_state": "paper_waiting_persistence_and_strategy_factory_replay_v2_runtime_verified",
+    "agent_execution_state": "paper_waiting_multipair_feedback_runtime_and_strategy_factory_replay_v2_verified",
     "laptop_state": "physical_windows_and_wsl_runners_verified_latest_windows_persistence_evidence_is_historical",
     "internet_outage_state": "not_assumed_from_laptop_state",
     "laptop_offline_is_not_internet_outage": true,
@@ -102,7 +102,7 @@
   },
   "latest_checkpoint": {
     "checkpoint_date": "2026-09-09",
-    "observed_main_sha": "50ac6ea8a331c08dca3e8be184ed0717380ff7f6",
+    "observed_main_sha": "21af398b9e73896f98c792a99230cf1562f7a04b",
     "continuity_only": true,
     "completed_milestones": [
       "PRs #1411-#1416 merged sequentially after required checks; Multi-Pair Discovery v2 moved fresh runtime acquisition to the physical Bybit plane, removed WSL Node actions and all WSL Git fetches, and added digest-verified hosted artifact relays plus verified wheelhouse cache reuse",
@@ -113,7 +113,9 @@
       "PR #1418 reconciled the physical Paper verifier with the engine's strict freshness contract; exact-main run 34397395277 accepted a verification-valid 8/12 WAITING_FOR_FRESH_CELLS cycle and durably persisted artifact 10122430632 without activating maintenance, regime, exposure increase, health trigger, private credentials or real orders",
       "PR #1421 registered Multi-Pair Discovery v2 as the eighth reviewed Strategy Factory stage; rotation runs 34404244680 and 34404548937 verified all eight stages and advanced the durable cursor without qualification authority",
       "PR #1422 removed the expired fixed Demo lifecycle dataset artifact; exact-main lifecycle run 34404429298 selected a manifest-bound replay-v2 artifact and persisted verified lifecycle evidence",
-      "PR #1424 removed expired fixed replay artifact IDs from seven legacy Strategy Factory workflows; exact-main runs 34404244591, 34404244665, 34404358221 and 34404651563 verified search v2, Multi-timeframe discovery, regime v6 and neighborhood v7 on replay-v2"
+      "PR #1424 removed expired fixed replay artifact IDs from seven legacy Strategy Factory workflows; exact-main runs 34404244591, 34404244665, 34404358221 and 34404651563 verified search v2, Multi-timeframe discovery, regime v6 and neighborhood v7 on replay-v2",
+      "PR #1430 provisioned the isolated Multi-Pair Paper feedback job from pinned Python 3.12 and requirements.lock after exact-main run 34412163303 failed closed on a missing pandas import; every exact-head check passed before merge",
+      "exact-main Paper run 34413401197 and Multi-Pair Discovery v2 run 34413429714 succeeded on source 21af398b9e73896f98c792a99230cf1562f7a04b; automatic feedback run 34414723066 verified the exact-SHA pair and both artifact bindings, then correctly stopped at NO_OP_NOT_ELIGIBLE because the natural 12-cell Paper boundary had not been reached"
     ],
     "do_not_repeat_without_regression_evidence": [
       "WSL rootfs ownership/DACL recovery",
@@ -128,7 +130,8 @@
       "WSL Git fetch retries for Multi-Pair proof; exact hosted source artifact transport superseded them",
       "Multi-Pair wheelhouse redownload when the shared cache deterministically repacks to the exact hosted digest and lock",
       "classification of the 8/12 Paper state as a Bybit HTTP 403 data-plane outage; exact-main run 34397395277 proved source-SHA/no-new-hour4-bar freshness semantics while endpoint fallbacks still completed",
-      "fixed Strategy Factory replay artifact ID 8867026863 or representation-sensitive legacy archive digest; use the unexpired manifest-bound replay-v2 selector and canonical semantic identity"
+      "fixed Strategy Factory replay artifact ID 8867026863 or representation-sensitive legacy archive digest; use the unexpired manifest-bound replay-v2 selector and canonical semantic identity",
+      "re-diagnosis of Multi-Pair Paper feedback run 34412163303 as an evidence or Bybit failure; PR #1430 proved it was isolated-job dependency provisioning and exact-main run 34414723066 verified the repair"
     ],
     "current_blocker": {
       "area": "Strategy Factory candidate governance",
@@ -140,12 +143,12 @@
     "canonical_authority_fields_preserved": true
   },
   "current_evidence": {
-    "observed_main_sha": "50ac6ea8a331c08dca3e8be184ed0717380ff7f6",
-    "observed_at_utc": "2026-09-09T21:10:21Z",
-    "state_commit_relationship": "observed_main_sha is the exact base main snapshot before this continuity-only Strategy Factory checkpoint; all new runtime evidence below is bound to that SHA, while earlier Paper and Multi-Pair proofs remain historical fixed-SHA evidence",
+    "observed_main_sha": "21af398b9e73896f98c792a99230cf1562f7a04b",
+    "observed_at_utc": "2026-09-09T22:59:00Z",
+    "state_commit_relationship": "observed_main_sha is the exact base main snapshot before this continuity-only feedback-runtime checkpoint; the latest Paper, Multi-Pair proof and feedback evidence below are bound to that SHA, while Strategy Factory replay-v2 and earlier runtime proofs remain historical fixed-SHA evidence",
     "latest_main_change": {
-      "pr": 1424,
-      "summary": "Rotated seven legacy Strategy Factory workflows from an expired fixed artifact to manifest-bound replay-v2 selection with optional exact-ID verification; exact-main search and discovery runs succeeded.",
+      "pr": 1430,
+      "summary": "Provisioned the isolated Multi-Pair Paper feedback verifier job from pinned Python 3.12 and requirements.lock, with regression coverage that requires setup, install and pip check before verifier import.",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true
@@ -285,14 +288,14 @@
       "required_elapsed_days": 30,
       "verified_elapsed_day_floor": 14,
       "required_completed_hour4_bars": 180,
-      "verified_completed_hour4_bars": 88,
-      "latest_verified_execution": "2026-09-09T12:00:00Z",
-      "latest_verified_workflow_run": 34376889643,
-      "latest_verified_source_sha": "c945e33a0c4673504c2f8b1af304a8b441881387",
-      "latest_verified_artifact_id": 10114266831,
-      "latest_verified_state_digest": "063d0a872bdd853ab13fd4e07139bcd7e084e0f1aab08153b6211f8de35569d5",
-      "latest_verified_artifact_digest": "sha256:699bfeccc56266cf6950a6b464fdfc1a0d95188c9e49c7267a2f4a0306183218",
-      "latest_verified_tail_event_digest": "e12d3378d9c8694c6e8436e07d1d08770fc36cc265b6ac585e2d2ac01f22d0a2",
+      "verified_completed_hour4_bars": 89,
+      "latest_verified_execution": "2026-09-09T16:00:00Z",
+      "latest_verified_workflow_run": 34402168058,
+      "latest_verified_source_sha": "77268e2e87fa36068d0d420b4205dc498ca9ff75",
+      "latest_verified_artifact_id": 10123917893,
+      "latest_verified_state_digest": "91804c633c25139ac85791cedf723ee5cc32b620951b76167103de9538101a15",
+      "latest_verified_artifact_digest": "sha256:6cffc34d5d8e253caa133b78a87dddb12e0f3d8245b0eeaac05b4b75f04e6774",
+      "latest_verified_tail_event_digest": "31d3906e694a20fe5544747b33d87ce08581df64e5bfa5abcbe2c5f5b790fcbe",
       "paper_only": true,
       "live_trading_authority": false,
       "private_credentials_used": false,
@@ -368,42 +371,48 @@
       "deterministic_risk_final_authority": true
     },
     "strategy_discovery_latest_runtime": {
-      "physical_proof_workflow_run": 34392341610,
-      "source_sha": "57f0c4156722fad47125f8e92e66465ee207260a",
+      "physical_proof_workflow_run": 34413429714,
+      "source_sha": "21af398b9e73896f98c792a99230cf1562f7a04b",
       "physical_discovery_job": "discover-physical",
       "physical_discovery_result": "SUCCESS",
       "runtime_snapshot_job": "runtime-snapshot",
       "runtime_snapshot_result": "SUCCESS",
       "requalification_result": "NO_WORK",
-      "proof_artifact_id": 10120770458,
+      "research_proposal_count": 0,
+      "discovery_snapshot_digest": "d90094eac84e30066eb66788a4e59f24fe69bea8de6e605abab4975d6397c4c7",
+      "runtime_snapshot_digest": "a4b5d8b03506245fa1b10c6e6e48041a09ee3161d07779467003ab1f971a8fe3",
+      "requalification_digest": "5e8428375935622845b4a9fa371d464c06eebd155246352ce99fedd9e6302f6b",
+      "proof_artifact_id": 10128592404,
+      "proof_artifact_digest": "sha256:776a1bd95e8742352e50067cac1302a64fc90bdd064b0b90cef4fa1b3b93206d",
       "blocker": null,
-      "evidence_scope": "historical_exact_main_at_run",
+      "evidence_scope": "exact_checkpoint_main",
       "output_authority": "RESEARCH_PROPOSAL_ONLY",
       "automatic_candidate_or_paper_promotion": false,
       "live_trading_authority": false
     },
     "persistent_paper_runtime_latest": {
       "status": "VERIFIED_WAITING_FOR_FRESH_CELLS_PERSISTED",
-      "workflow_run": 34397395277,
+      "workflow_run": 34413401197,
       "workflow_run_attempt": 1,
       "workflow_conclusion": "success",
-      "source_sha": "d95e126ad58e6bc7dc3ec81a941252030e9e7f73",
+      "source_sha": "21af398b9e73896f98c792a99230cf1562f7a04b",
       "physical_runner": "NEXUS-BYBIT-WSL",
-      "restored_state_artifact_id": 10115126842,
-      "persisted_state_artifact_id": 10122430632,
-      "persisted_state_artifact_digest": "sha256:d18e52bc11c56cba6d4332c9b3681bf54b95478572bdeb8deafbe7a33f45cad6",
+      "restored_state_artifact_id": 10127962859,
+      "persisted_state_artifact_id": 10128322177,
+      "persisted_state_artifact_digest": "sha256:b82b4ee02ae271cf13d0ba0dd4cac2d793646e52827aa8043728fd109ad5a98d",
       "expected_cell_count": 12,
-      "fresh_cell_count": 8,
+      "fresh_cell_count": 4,
       "expected_lane_count": 36,
       "engine_verification_decision": "pass",
       "independent_workflow_verification_decision": "pass",
       "matrix_migration_status": "ALREADY_V2",
       "regime_status": "WAITING_FOR_FRESH_CELLS",
       "remaining_core_gap": "WAITING_FOR_FRESH_CELLS",
-      "loop_digest": "5776990a72a13ea3fe3ded34899bcd513228ce4535b89d79708f97810a52902c",
-      "freshness_reason": "hour4 cells correctly remained SKIPPED_NO_NEW_BAR until the next naturally completed four-hour boundary after the main source SHA changed",
+      "loop_digest": "d51bbd950e9a75843ed56cc66e6cf101ddfb2b534e4d8ff4eb0689f79185072d",
+      "freshness_reason": "the exact-main cycle advanced only four naturally closed cells and correctly retained WAITING_FOR_FRESH_CELLS instead of fabricating the remaining eight",
       "endpoint_http403_diagnostics_observed": true,
       "endpoint_http403_root_cause_of_eight_of_twelve": false,
+      "endpoint_http403_root_cause_of_latest_freshness_shortfall": false,
       "verification_valid_waiting_state_persisted": true,
       "unverified_partial_state_persisted": false,
       "maintenance_operational": false,
@@ -412,6 +421,37 @@
       "performance_health_feedback_operational": false,
       "strategy_discovery_health_trigger_requested": false,
       "paper_only": true,
+      "live_trading_authority": false,
+      "private_credentials_used": false,
+      "real_exchange_orders": false,
+      "deterministic_risk_final_authority": true,
+      "issue_984_state_touched": false
+    },
+    "multipair_paper_boundary_feedback_latest": {
+      "status": "EXACT_MAIN_PAIR_AND_ARTIFACT_BINDING_VERIFIED_NO_OP_NOT_ELIGIBLE",
+      "source_sha": "21af398b9e73896f98c792a99230cf1562f7a04b",
+      "workflow_run": 34414723066,
+      "workflow_conclusion": "success",
+      "trigger_event": "workflow_run",
+      "paper_workflow_run": 34413401197,
+      "paper_artifact_id": 10128322177,
+      "paper_artifact_digest": "sha256:b82b4ee02ae271cf13d0ba0dd4cac2d793646e52827aa8043728fd109ad5a98d",
+      "discovery_workflow_run": 34413429714,
+      "discovery_proof_artifact_id": 10128592404,
+      "discovery_proof_artifact_digest": "sha256:776a1bd95e8742352e50067cac1302a64fc90bdd064b0b90cef4fa1b3b93206d",
+      "prior_failed_workflow_run": 34412163303,
+      "prior_failure": "isolated feedback job lacked requirements.lock runtime dependencies and failed closed while importing pandas",
+      "runtime_dependency_fix_pr": 1430,
+      "runtime_dependency_install": "requirements.lock",
+      "runtime_dependency_check": "pass",
+      "exact_sha_pair_resolution": "pass",
+      "exact_run_artifact_binding": "pass",
+      "boundary_eligibility": false,
+      "boundary_decision": "NO_OP_NOT_ELIGIBLE",
+      "feedback_artifact_created": false,
+      "candidate_state_created": false,
+      "paper_execution_started": false,
+      "automatic_strategy_promotion": false,
       "live_trading_authority": false,
       "private_credentials_used": false,
       "real_exchange_orders": false,
@@ -504,7 +544,7 @@
     "prospective_paper": {
       "issue": 984,
       "state": "open",
-      "reason": "hard real-time acceptance gate; latest independently verified evidence is 88/180 completed hour4 bars and a 14/30 elapsed-day floor"
+      "reason": "hard real-time acceptance gate; latest independently verified evidence is 89/180 completed hour4 bars and a 14/30 elapsed-day floor"
     },
     "production_release": {
       "issue": 43,
@@ -523,15 +563,21 @@
     },
     "strategy_discovery_runtime_snapshot": {
       "state": "closed_completed",
-      "workflow_run": 34392341610,
-      "source_sha": "57f0c4156722fad47125f8e92e66465ee207260a",
-      "reason": "exact-main physical runtime snapshot acquisition, Node-free hosted persistence, physical requalification and proof persistence all succeeded"
+      "workflow_run": 34413429714,
+      "source_sha": "21af398b9e73896f98c792a99230cf1562f7a04b",
+      "reason": "current checkpoint main completed exact-source physical Discovery, fresh runtime snapshot acquisition, Node-free hosted persistence, physical requalification and proof persistence across all seven jobs"
     },
     "persistent_paper_freshness": {
       "state": "closed_contract_reconciled",
-      "workflow_run": 34397395277,
-      "source_sha": "d95e126ad58e6bc7dc3ec81a941252030e9e7f73",
-      "reason": "PR #1418 retained 12/12 for PAPER_LOOP_ACTIVE and accepted only engine-verified fail-closed WAITING states below 12; exact-main run succeeded at 8/12 and persisted the complete verified state"
+      "workflow_run": 34413401197,
+      "source_sha": "21af398b9e73896f98c792a99230cf1562f7a04b",
+      "reason": "the current checkpoint main persisted an engine-verified and independently verified 4/12 WAITING_FOR_FRESH_CELLS state while retaining exact 12/12 for PAPER_LOOP_ACTIVE"
+    },
+    "multipair_paper_boundary_feedback_runtime": {
+      "state": "closed_dependency_provisioning_repaired",
+      "workflow_run": 34414723066,
+      "source_sha": "21af398b9e73896f98c792a99230cf1562f7a04b",
+      "reason": "PR #1430 provisioned pinned verifier dependencies in the isolated feedback job; exact-main automation verified pair resolution and artifact binding, then correctly stopped at the natural boundary eligibility gate"
     },
     "strategy_factory_candidate_review": {
       "state": "human_review_required_no_automatic_forward",
@@ -559,7 +605,7 @@
     "order": [
       "independently review Strategy Factory neighborhood-v7 artifact 10125093054 and its exact replay-v2 provenance; do not advance it automatically",
       "continue bounded Strategy Factory rotation from next index 6 across Multi-timeframe and Multi-Pair stages while preserving qualification=false, holdout, stress and Deterministic Risk gates",
-      "continue scheduled persistent Paper cycles from verified artifact 10122430632 without fabricating cells or weakening WAITING/ACTIVE contracts",
+      "continue scheduled persistent Paper cycles from exact-main verified artifact 10128322177 without fabricating cells or weakening WAITING/ACTIVE contracts; allow Multi-Pair boundary feedback to remain a no-op until all 12 cells are naturally eligible",
       "continue immutable #984 prospective Paper collection without inferred, accelerated or fabricated bars",
       "keep #43 production release deny-by-default and do not create Live, signing, credential or deployment authority"
     ],
