@@ -30,8 +30,8 @@
     "owner_override_required_for_priority_change": true
   },
   "runtime_status": {
-    "agent_execution_state": "paper_runtime_environment_faithful_acceptance_complete_windows_persistence_verified",
-    "laptop_state": "physical_windows_runner_verified_and_persistence_installed_on_exact_current_main",
+    "agent_execution_state": "multipair_strategy_discovery_exact_main_verified_paper_runtime_fail_closed_on_partial_freshness",
+    "laptop_state": "physical_windows_and_wsl_runners_verified_latest_windows_persistence_evidence_is_historical",
     "internet_outage_state": "not_assumed_from_laptop_state",
     "laptop_offline_is_not_internet_outage": true,
     "windows_runner_identity_class": "NETWORK_SERVICE",
@@ -58,7 +58,10 @@
     "primary_market_data_source": "Bybit",
     "secondary_market_data_source": "Binance",
     "legacy_market_data_source": "LBank",
-    "approved_public_bybit_mainnet_hosts": ["api.bybit.com", "api.bytick.com"],
+    "approved_public_bybit_mainnet_hosts": [
+      "api.bybit.com",
+      "api.bytick.com"
+    ],
     "proxy_vpn_geographic_circumvention_allowed": false,
     "testnet_substitution_allowed": false,
     "synthetic_market_data_substitution_allowed": false,
@@ -98,16 +101,16 @@
     }
   },
   "latest_checkpoint": {
-    "checkpoint_date": "2026-09-08",
-    "observed_main_sha": "e25e2e9fe900f627d6eedbbb6ab438053e216714",
+    "checkpoint_date": "2026-09-09",
+    "observed_main_sha": "57f0c4156722fad47125f8e92e66465ee207260a",
     "continuity_only": true,
     "completed_milestones": [
-      "PR #1406 merged after required macOS/Ubuntu/Windows/audit/control checks passed; bounded Bybit edge-country HTTP 403 handling and connection refresh are now on main",
-      "exact-main physical Paper run 34171102929 succeeded on NEXUS-BYBIT-WSL with ALREADY_V2, 12/12 fresh cells, 36 lanes and durable state persistence",
-      "approved signed-in-user WSL self-heal returned PASS with USER_CONTEXT_MANAGED_CHILD_LIVENESS_SELF_HEAL_ACTIVE and listener_observed=true",
-      "post-self-heal exact-main physical Paper run 34172045769 succeeded on NEXUS-BYBIT-WSL, restored prior state, verified ALREADY_V2, 12/12 fresh cells, 36 lanes, Paper authority constraints and durable state artifact 10036225109",
-      "maintenance issue #1372 closed completed with final acceptance evidence",
-      "exact-main Windows DR bootstrap revalidation run 34171177267 succeeded on NEXUS-WINDOWS-DR and persisted sanitized artifact 10035821661"
+      "PRs #1411-#1416 merged sequentially after required checks; Multi-Pair Discovery v2 moved fresh runtime acquisition to the physical Bybit plane, removed WSL Node actions and all WSL Git fetches, and added digest-verified hosted artifact relays plus verified wheelhouse cache reuse",
+      "exact-main run 34392341610 succeeded on first attempt for source 57f0c4156722fad47125f8e92e66465ee207260a across all seven jobs",
+      "physical Discovery restored the exact hosted source artifact, hit only the deterministically repacked digest-verified wheelhouse cache, verified the official Bybit archive snapshot, and produced a valid zero-proposal Research result",
+      "physical runtime snapshot acquisition, hosted Node-free persistence, physical requalification and hosted proof persistence all succeeded; NO_WORK with zero proposals is valid",
+      "Issue #984 remains immutable and open at 88/180 completed four-hour bars and 14/30 elapsed-day floor",
+      "periodic Paper run 34384929765 failed closed after only 8/12 fresh cells were available; partial state was not persisted and no authority boundary changed"
     ],
     "do_not_repeat_without_regression_evidence": [
       "WSL rootfs ownership/DACL recovery",
@@ -116,26 +119,28 @@
       "NEXUS-BYBIT-WSL registration recovery",
       "issue #1372 self-heal acceptance proof",
       "PR #1406 Bybit 403 fallback patch and its already-passed CI",
-      "12-cell/36-lane ALREADY_V2 physical Paper acceptance proof",
-      "Windows DR exact-main bootstrap revalidation for e25e2e9fe900f627d6eedbbb6ab438053e216714"
+      "12-cell/36-lane ALREADY_V2 historical physical Paper acceptance proof",
+      "Windows DR bootstrap revalidation for e25e2e9fe900f627d6eedbbb6ab438053e216714",
+      "PR #1412 temporary Node20 compatibility path; it was superseded by the Node-free relay in PR #1413",
+      "WSL Git fetch retries for Multi-Pair proof; exact hosted source artifact transport superseded them",
+      "Multi-Pair wheelhouse redownload when the shared cache deterministically repacks to the exact hosted digest and lock"
     ],
     "current_blocker": {
-      "area": "Multi-Pair Discovery v2 runtime requalification snapshot",
-      "workflow_run": 34171102952,
-      "physical_discovery": "SUCCESS",
-      "hosted_runtime_snapshot": "FAIL_CLOSED",
-      "reason": "GitHub-hosted runtime-snapshot is geographically rejected by Bybit public endpoints with HTTP 403",
-      "required_fix": "repair the execution-plane/data-handoff design so the already-verified physical Discovery path supplies or produces the runtime snapshot without blind reruns or geographic circumvention"
+      "area": "Persistent Paper fresh-cell availability",
+      "workflow_run": 34384929765,
+      "status": "FAIL_CLOSED_TRANSIENT_DATA_PLANE",
+      "evidence": "engine verification passed but only 8 of 12 required cells were fresh; approved Bybit public endpoints returned edge_country_restricted HTTP 403 for missing cells",
+      "required_fix": "recover 12/12 approved public Bybit closed-candle cells and obtain a successful scheduled Paper loop without accepting or persisting partial state, fabricating data, changing exchanges, or weakening deterministic gates"
     },
     "canonical_authority_fields_preserved": true
   },
   "current_evidence": {
-    "observed_main_sha": "e25e2e9fe900f627d6eedbbb6ab438053e216714",
-    "observed_at_utc": "2026-09-08T00:39:00Z",
-    "state_commit_relationship": "observed_main_sha is the exact base main snapshot before this continuity-only Project Memory PR; the checkpoint preserves historical acceptance contracts and adds newer evidence without redefining prior authority",
+    "observed_main_sha": "57f0c4156722fad47125f8e92e66465ee207260a",
+    "observed_at_utc": "2026-09-09T19:16:22Z",
+    "state_commit_relationship": "observed_main_sha is the exact base main snapshot before this continuity-only Project Memory PR; exact runtime evidence is bound to that same SHA",
     "latest_main_change": {
-      "pr": 1406,
-      "summary": "Merged bounded Bybit edge-country HTTP 403 host fallback and connection refresh; exact-main physical Paper and Windows DR revalidation evidence succeeded afterward.",
+      "pr": 1416,
+      "summary": "Merged exact hosted source relay and digest-verified shared wheelhouse cache; exact-main Multi-Pair Discovery v2 run 34392341610 completed all seven jobs successfully.",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true
@@ -162,7 +167,7 @@
       "deterministic_risk_final_authority": true
     },
     "windows_dr_persistence": {
-      "status": "SUCCESS_EXACT_CURRENT_MAIN_PHYSICAL",
+      "status": "SUCCESS_HISTORICAL_FIXED_SHA_PHYSICAL",
       "run_id": 34171177267,
       "source_sha": "e25e2e9fe900f627d6eedbbb6ab438053e216714",
       "runner": "NEXUS-WINDOWS-DR",
@@ -177,7 +182,8 @@
       "runner_registration_modified": false,
       "runner_credentials_modified": false,
       "other_runner_paths_modified": false,
-      "live_trading_authority": false
+      "live_trading_authority": false,
+      "evidence_scope": "historical_fixed_sha"
     },
     "windows_recovery_probe": {
       "status": "CONTEXT_LIMITED_SECURITY_BOUNDARY_CONFIRMED_NOT_BLOCKING_CURRENT_WINDOWS_DR_PERSISTENCE",
@@ -200,9 +206,20 @@
     },
     "multitimeframe_strategy_runtime": {
       "status": "environment_faithful_6_cell_acceptance_proven_current_expansion_audit_required",
-      "symbols": ["BTCUSDT", "ETHUSDT"],
-      "timeframes": ["minute15", "hour1", "hour4"],
-      "families": ["momentum", "trend_breakout", "mean_reversion"],
+      "symbols": [
+        "BTCUSDT",
+        "ETHUSDT"
+      ],
+      "timeframes": [
+        "minute15",
+        "hour1",
+        "hour4"
+      ],
+      "families": [
+        "momentum",
+        "trend_breakout",
+        "mean_reversion"
+      ],
       "comparison_surface": "2 symbols x 3 timeframes x 3 strategy families = 18 isolated comparison lanes",
       "environment_faithful_acceptance_complete": true,
       "restart_replay_proven": true,
@@ -214,20 +231,44 @@
       "deterministic_risk_final_authority": true
     },
     "strategy_discovery": {
-      "status": "boundary_bound_runtime_discovery_and_requalification_verified_current_scope_expansion_still_required",
-      "scope": "BTCUSDT/ETHUSDT x minute15/hour1/hour4 x momentum/trend_breakout/mean_reversion",
+      "status": "EXACT_MAIN_PHYSICAL_MULTIPAIR_DISCOVERY_RUNTIME_REQUALIFICATION_AND_PROOF_VERIFIED",
+      "scope": "BTCUSDT/ETHUSDT/SOLUSDT/XRPUSDT x minute15/hour1/hour4 x momentum/trend_breakout/mean_reversion",
       "selection": "training_only",
       "challenge": "locked chronological holdout with conservative and stress costs",
       "output_authority": "RESEARCH_PROPOSAL_ONLY",
-      "runtime_feedback_workflow_run": 33588953610,
-      "runtime_feedback_artifact_id": 9831324417,
-      "runtime_feedback_artifact_digest": "sha256:c70004fa5d288b7e9837878e515f7fe3bc96271e5bd9f36ed093a2dce0ffe800",
+      "source_sha": "57f0c4156722fad47125f8e92e66465ee207260a",
+      "workflow_run": 34392341610,
+      "workflow_run_attempt": 1,
+      "workflow_conclusion": "success",
+      "physical_runner": "NEXUS-BYBIT-WSL",
+      "exact_source_artifact_id": 10120136911,
+      "exact_source_artifact_digest": "sha256:8777a5ac1767dcffa41510fc920bfa14d1cce4a830649c29289336641d85fb13",
+      "exact_source_archive_sha256": "b510d204343487172c55ffecc32cad1b7d6fe5498e6279b4ab22777162ef12d8",
+      "exact_source_restore_verified": true,
+      "wheelhouse_cache_result": "HIT_AFTER_DETERMINISTIC_REPACK_DIGEST_AND_LOCK_VERIFICATION",
+      "historical_archive_snapshot_digest": "a78b54bdb81383f3baa583624629e079ad4d9c00912a12de3449023395b51079",
+      "runtime_snapshot_digest": "7bda78b0159b8eb514c0183c08b8cbae6d7bd3b91f767ebb02cba7429224b4c9",
+      "runtime_snapshot_as_of_ms": 1788981264576,
+      "runtime_snapshot_archive_sha256": "3fbad775b53572119258ad497aacba683975729ff1a130c269d9b716423675a6",
+      "runtime_snapshot_artifact_id": 10120728360,
+      "runtime_snapshot_artifact_digest": "sha256:5f53b3ff12eb946a6625d12167baf4203102823f80de01c74dcde49cd01ffd58",
+      "proof_artifact_id": 10120770458,
+      "proof_artifact_digest": "sha256:87401cec0c1a129691edb7b83f20b8d319406c8a3320dab2e33823ac53edde97",
       "leakage_resistant_discovery_cells_executed": 9,
+      "research_proposal_count": 0,
       "runtime_requalification_result": "NO_WORK",
+      "runtime_requalification_digest": "819c3df2846e97422307ca68c7d6165e26d257fa3357c3748433f73ea2b3f13b",
       "verified_feedback": "VERIFIED_NO_RESEARCH_PROPOSALS",
       "discovery_feedback_verified": true,
+      "exact_source_reused_without_physical_git_fetch": true,
+      "node_actions_executed_on_physical_runner": false,
       "automatic_candidate_or_paper_promotion": false,
-      "live_trading_authority": false
+      "live_trading_authority": false,
+      "private_credentials_used": false,
+      "real_exchange_orders": false,
+      "deterministic_risk_final_authority": true,
+      "issue_984_state_touched": false,
+      "historical_archive_snapshot_archive_sha256": "2ebaa3e52d068f2b6cfa41eb3647679f58911d05736062be19bdcc8d9b3aaa1a"
     },
     "prospective_paper_gate": {
       "issue": 984,
@@ -236,14 +277,16 @@
       "status": "COLLECTING",
       "start_not_before": "2026-08-26T00:00:00Z",
       "required_elapsed_days": 30,
+      "verified_elapsed_day_floor": 14,
       "required_completed_hour4_bars": 180,
-      "verified_completed_hour4_bars": 53,
-      "latest_verified_execution": "2026-09-03T16:00:00Z",
-      "latest_verified_workflow_run": 33805936523,
-      "latest_verified_source_sha": "987b4212d252d993cf1065e11d8bc112f11e6172",
-      "latest_verified_artifact_id": 9912925550,
-      "latest_verified_state_digest": "559d9fd3507c00c340dccd96c28f73afea142bb29b8759a76e53e17c6d11bf2d",
-      "latest_verified_artifact_digest": "sha256:e52826756e20f4e79c0a2e23d87461af5e048c9e930f63d07075ce9ea4bbbdbf",
+      "verified_completed_hour4_bars": 88,
+      "latest_verified_execution": "2026-09-09T12:00:00Z",
+      "latest_verified_workflow_run": 34376889643,
+      "latest_verified_source_sha": "c945e33a0c4673504c2f8b1af304a8b441881387",
+      "latest_verified_artifact_id": 10114266831,
+      "latest_verified_state_digest": "063d0a872bdd853ab13fd4e07139bcd7e084e0f1aab08153b6211f8de35569d5",
+      "latest_verified_artifact_digest": "sha256:699bfeccc56266cf6950a6b464fdfc1a0d95188c9e49c7267a2f4a0306183218",
+      "latest_verified_tail_event_digest": "e12d3378d9c8694c6e8436e07d1d08770fc36cc265b6ac585e2d2ac01f22d0a2",
       "paper_only": true,
       "live_trading_authority": false,
       "private_credentials_used": false,
@@ -293,9 +336,22 @@
     "multitimeframe_strategy_runtime_latest": {
       "status": "exact_main_4_symbol_3_timeframe_3_strategy_paper_matrix_proven",
       "source_sha": "e25e2e9fe900f627d6eedbbb6ab438053e216714",
-      "symbols": ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT"],
-      "timeframes": ["minute15", "hour1", "hour4"],
-      "families": ["momentum", "trend_breakout", "mean_reversion"],
+      "symbols": [
+        "BTCUSDT",
+        "ETHUSDT",
+        "SOLUSDT",
+        "XRPUSDT"
+      ],
+      "timeframes": [
+        "minute15",
+        "hour1",
+        "hour4"
+      ],
+      "families": [
+        "momentum",
+        "trend_breakout",
+        "mean_reversion"
+      ],
       "comparison_surface": "4 symbols x 3 timeframes x 3 strategy families = 36 isolated comparison lanes",
       "expected_cell_count": 12,
       "expected_lane_count": 36,
@@ -316,6 +372,26 @@
       "output_authority": "RESEARCH_PROPOSAL_ONLY",
       "automatic_candidate_or_paper_promotion": false,
       "live_trading_authority": false
+    },
+    "persistent_paper_runtime_latest": {
+      "status": "FAIL_CLOSED_WAITING_FOR_FRESH_CELLS",
+      "workflow_run": 34384929765,
+      "source_sha": "9f61c0d9311d785341d8351548f7c80630b2e2ec",
+      "restored_state_artifact_id": 10115126842,
+      "expected_cell_count": 12,
+      "fresh_cell_count": 8,
+      "expected_lane_count": 36,
+      "engine_verification_decision": "pass",
+      "matrix_migration_status": "ALREADY_V2",
+      "regime_status": "WAITING_FOR_FRESH_CELLS",
+      "failure_class": "approved_public_bybit_edge_country_restricted_http_403",
+      "partial_state_persisted": false,
+      "paper_only": true,
+      "live_trading_authority": false,
+      "private_credentials_used": false,
+      "real_exchange_orders": false,
+      "deterministic_risk_final_authority": true,
+      "issue_984_state_touched": false
     }
   },
   "open_gates": {
@@ -327,7 +403,7 @@
     "prospective_paper": {
       "issue": 984,
       "state": "open",
-      "reason": "hard real-time acceptance gate; latest exact-main evidence is 53/180 completed hour4 bars and the 30-day threshold is not yet satisfied"
+      "reason": "hard real-time acceptance gate; latest independently verified evidence is 88/180 completed hour4 bars and a 14/30 elapsed-day floor"
     },
     "production_release": {
       "issue": 43,
@@ -337,7 +413,7 @@
     },
     "windows_user_context_recovery": {
       "state": "historical_context_limit_not_current_persistence_blocker",
-      "reason": "NETWORK_SERVICE user-token/task-query limitations remain documented, but exact-current-main physical Windows DR persistence succeeded without weakening privilege, ACL, service-account, registration, or credential boundaries"
+      "reason": "NETWORK_SERVICE user-token/task-query limitations remain documented; the latest Windows DR persistence evidence is a successful historical fixed-SHA proof and is not relabeled as current main"
     },
     "wsl_user_context_self_heal": {
       "issue": 1372,
@@ -345,9 +421,15 @@
       "reason": "approved signed-in-user self-heal PASS and subsequent exact-main physical ALREADY_V2 12-cell/36-lane Paper persistence proof completed"
     },
     "strategy_discovery_runtime_snapshot": {
-      "state": "open_blocker",
-      "workflow_run": 34171102952,
-      "reason": "physical discovery succeeded but GitHub-hosted runtime snapshot failed closed on Bybit geographic HTTP 403"
+      "state": "closed_completed",
+      "workflow_run": 34392341610,
+      "source_sha": "57f0c4156722fad47125f8e92e66465ee207260a",
+      "reason": "exact-main physical runtime snapshot acquisition, Node-free hosted persistence, physical requalification and proof persistence all succeeded"
+    },
+    "persistent_paper_freshness": {
+      "state": "open_operational_incident",
+      "workflow_run": 34384929765,
+      "reason": "latest scheduled physical Paper loop failed closed at 8/12 fresh cells after approved Bybit public endpoints returned regional HTTP 403; partial state was not persisted"
     }
   },
   "authority": {
@@ -367,9 +449,9 @@
   "next_autonomous_work": {
     "priority": "trading_engine_first",
     "order": [
-      "repair Multi-Pair Discovery runtime-snapshot execution-plane/data-handoff so hosted geographic Bybit HTTP 403 cannot block the already-verified physical Discovery path; do not use blind reruns as a fix",
-      "complete Strategy Discovery -> evaluation -> Paper feedback proof while preserving leakage, holdout, stress and deterministic Risk gates",
-      "continue immutable #984 prospective Paper collection without inferred or fabricated bars",
+      "restore 12/12 approved public Bybit fresh-cell availability and obtain a successful scheduled persistent Paper loop without accepting or persisting partial state",
+      "continue Strategy Discovery -> evaluation -> Paper feedback work from exact-main run 34392341610 while preserving leakage, holdout, stress and Deterministic Risk gates",
+      "continue immutable #984 prospective Paper collection without inferred, accelerated or fabricated bars",
       "keep #43 production release deny-by-default and do not create Live, signing, credential or deployment authority"
     ],
     "approval_required_for_reversible_research_backtest_paper_hardening": false,

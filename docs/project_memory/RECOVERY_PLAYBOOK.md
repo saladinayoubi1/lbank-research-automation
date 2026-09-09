@@ -30,3 +30,11 @@ Repository/runtime evidence wins for transient facts. Core mission/safety change
 
 ## Backup principle
 Keep at least two independent durable copies of essential project knowledge: repository history plus an external archive/backup. Backup presence alone is not recovery evidence; verify freshness, source identity, integrity, and content binding before treating a backup as authoritative. Backups must exclude secrets and should include hashes/manifests where practical.
+
+## WSL exact-source and artifact transport recovery
+- Do not run JavaScript actions on the WSL1 physical runner; package/upload artifacts only on a compatible hosted runner.
+- Do not repair WSL Git fetch timeouts with unbounded retries. Package the exact commit on hosted, bind it to the current run/main SHA, and verify the GitHub outer digest, inner archive digest, commit marker, member types, paths and size bounds before extraction.
+- Retain one verified exact-source root across same-run Discovery, runtime snapshot and requalification. Clean it on failure and after the final physical consumer.
+- For the locked runtime wheelhouse, a persistent cache is only a hint. Reject symlinks; deterministically repack it; require the exact hosted digest, repository `requirements.lock`, and wheel presence. On any mismatch, delete it and use current-run artifact restore.
+- A failed-jobs retry cannot reconstruct an ephemeral same-run chain after cleanup deleted its source/state roots. Prefer a new reviewed architecture fix and a new exact-main run.
+- If a physical Paper loop returns `WAITING_FOR_FRESH_CELLS`, preserve fail-closed behavior: require the full configured fresh-cell count for acceptance, do not persist partial state, and do not fabricate, infer or silently substitute exchange data.

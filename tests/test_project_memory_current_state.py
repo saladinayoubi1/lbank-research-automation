@@ -60,7 +60,7 @@ def test_project_memory_current_paper_acceptance_is_closed_and_provenance_bound(
     assert paper["deterministic_risk_final_authority"] is True
 
 
-def test_project_memory_current_windows_persistence_is_exact_main_and_historical_probe_remains_bounded() -> None:
+def test_project_memory_windows_persistence_is_historical_and_probe_remains_bounded() -> None:
     state = _state()
     evidence = state["current_evidence"]
     probe = evidence["windows_recovery_probe"]
@@ -78,8 +78,10 @@ def test_project_memory_current_windows_persistence_is_exact_main_and_historical
     assert probe["privilege_acl_service_account_change_authorized"] is False
     assert probe["runner_reregistration_authorized"] is False
 
-    assert persistence["status"] == "SUCCESS_EXACT_CURRENT_MAIN_PHYSICAL"
-    assert persistence["source_sha"] == evidence["observed_main_sha"]
+    assert persistence["status"] == "SUCCESS_HISTORICAL_FIXED_SHA_PHYSICAL"
+    assert persistence["evidence_scope"] == "historical_fixed_sha"
+    assert SHA_RE.fullmatch(persistence["source_sha"])
+    assert persistence["source_sha"] != evidence["observed_main_sha"]
     assert persistence["runner"] == "NEXUS-WINDOWS-DR"
     assert persistence["persistence_install_decision"] == "SUCCESS"
     assert persistence["exact_source_fetch_verified"] is True
@@ -93,6 +95,15 @@ def test_project_memory_records_verified_boundary_discovery_without_promotion_au
     state = _state()
     discovery = state["current_evidence"]["strategy_discovery"]
 
+    assert discovery["status"] == "EXACT_MAIN_PHYSICAL_MULTIPAIR_DISCOVERY_RUNTIME_REQUALIFICATION_AND_PROOF_VERIFIED"
+    assert discovery["source_sha"] == state["current_evidence"]["observed_main_sha"]
+    assert discovery["workflow_run"] == 34392341610
+    assert discovery["workflow_conclusion"] == "success"
+    assert discovery["exact_source_restore_verified"] is True
+    assert discovery["exact_source_reused_without_physical_git_fetch"] is True
+    assert discovery["node_actions_executed_on_physical_runner"] is False
+    assert discovery["research_proposal_count"] == 0
+    assert discovery["issue_984_state_touched"] is False
     assert discovery["discovery_feedback_verified"] is True
     assert discovery["leakage_resistant_discovery_cells_executed"] == 9
     assert discovery["runtime_requalification_result"] == "NO_WORK"
@@ -117,6 +128,13 @@ def test_project_memory_keeps_real_time_and_production_gates_fail_closed() -> No
     assert gates["production_release"]["issue"] == 43
     assert gates["production_release"]["state"] == "open"
     assert gates["production_release"]["deny_by_default"] is True
+    assert gates["strategy_discovery_runtime_snapshot"]["state"] == "closed_completed"
+    assert gates["persistent_paper_freshness"]["state"] == "open_operational_incident"
+    latest_paper = state["current_evidence"]["persistent_paper_runtime_latest"]
+    assert latest_paper["status"] == "FAIL_CLOSED_WAITING_FOR_FRESH_CELLS"
+    assert latest_paper["fresh_cell_count"] == 8
+    assert latest_paper["expected_cell_count"] == 12
+    assert latest_paper["partial_state_persisted"] is False
     assert gates["windows_user_context_recovery"]["state"] == "historical_context_limit_not_current_persistence_blocker"
 
 
