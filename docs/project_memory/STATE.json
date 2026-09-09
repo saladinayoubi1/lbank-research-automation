@@ -30,7 +30,7 @@
     "owner_override_required_for_priority_change": true
   },
   "runtime_status": {
-    "agent_execution_state": "multipair_strategy_discovery_verified_and_paper_waiting_state_persistence_verified",
+    "agent_execution_state": "paper_waiting_persistence_and_strategy_factory_replay_v2_runtime_verified",
     "laptop_state": "physical_windows_and_wsl_runners_verified_latest_windows_persistence_evidence_is_historical",
     "internet_outage_state": "not_assumed_from_laptop_state",
     "laptop_offline_is_not_internet_outage": true,
@@ -102,7 +102,7 @@
   },
   "latest_checkpoint": {
     "checkpoint_date": "2026-09-09",
-    "observed_main_sha": "d95e126ad58e6bc7dc3ec81a941252030e9e7f73",
+    "observed_main_sha": "50ac6ea8a331c08dca3e8be184ed0717380ff7f6",
     "continuity_only": true,
     "completed_milestones": [
       "PRs #1411-#1416 merged sequentially after required checks; Multi-Pair Discovery v2 moved fresh runtime acquisition to the physical Bybit plane, removed WSL Node actions and all WSL Git fetches, and added digest-verified hosted artifact relays plus verified wheelhouse cache reuse",
@@ -110,7 +110,10 @@
       "physical Discovery restored the exact hosted source artifact, hit only the deterministically repacked digest-verified wheelhouse cache, verified the official Bybit archive snapshot, and produced a valid zero-proposal Research result",
       "physical runtime snapshot acquisition, hosted Node-free persistence, physical requalification and hosted proof persistence all succeeded; NO_WORK with zero proposals is valid",
       "Issue #984 remains immutable and open at 88/180 completed four-hour bars and 14/30 elapsed-day floor",
-      "PR #1418 reconciled the physical Paper verifier with the engine's strict freshness contract; exact-main run 34397395277 accepted a verification-valid 8/12 WAITING_FOR_FRESH_CELLS cycle and durably persisted artifact 10122430632 without activating maintenance, regime, exposure increase, health trigger, private credentials or real orders"
+      "PR #1418 reconciled the physical Paper verifier with the engine's strict freshness contract; exact-main run 34397395277 accepted a verification-valid 8/12 WAITING_FOR_FRESH_CELLS cycle and durably persisted artifact 10122430632 without activating maintenance, regime, exposure increase, health trigger, private credentials or real orders",
+      "PR #1421 registered Multi-Pair Discovery v2 as the eighth reviewed Strategy Factory stage; rotation runs 34404244680 and 34404548937 verified all eight stages and advanced the durable cursor without qualification authority",
+      "PR #1422 removed the expired fixed Demo lifecycle dataset artifact; exact-main lifecycle run 34404429298 selected a manifest-bound replay-v2 artifact and persisted verified lifecycle evidence",
+      "PR #1424 removed expired fixed replay artifact IDs from seven legacy Strategy Factory workflows; exact-main runs 34404244591, 34404244665, 34404358221 and 34404651563 verified search v2, Multi-timeframe discovery, regime v6 and neighborhood v7 on replay-v2"
     ],
     "do_not_repeat_without_regression_evidence": [
       "WSL rootfs ownership/DACL recovery",
@@ -124,24 +127,25 @@
       "PR #1412 temporary Node20 compatibility path; it was superseded by the Node-free relay in PR #1413",
       "WSL Git fetch retries for Multi-Pair proof; exact hosted source artifact transport superseded them",
       "Multi-Pair wheelhouse redownload when the shared cache deterministically repacks to the exact hosted digest and lock",
-      "classification of the 8/12 Paper state as a Bybit HTTP 403 data-plane outage; exact-main run 34397395277 proved source-SHA/no-new-hour4-bar freshness semantics while endpoint fallbacks still completed"
+      "classification of the 8/12 Paper state as a Bybit HTTP 403 data-plane outage; exact-main run 34397395277 proved source-SHA/no-new-hour4-bar freshness semantics while endpoint fallbacks still completed",
+      "fixed Strategy Factory replay artifact ID 8867026863 or representation-sensitive legacy archive digest; use the unexpired manifest-bound replay-v2 selector and canonical semantic identity"
     ],
     "current_blocker": {
-      "area": "Persistent Paper freshness contract",
-      "workflow_run": 34397395277,
-      "status": "CLOSED_VERIFIED_WAITING_STATE_PERSISTED",
-      "evidence": "engine and independent workflow verification passed at 8/12 after four hour4 cells correctly remained SKIPPED_NO_NEW_BAR across a main SHA change; the complete verification-valid state was persisted as artifact 10122430632",
-      "required_fix": "none for the waiting contract; continue natural scheduled cycles and require exact 12/12 only for PAPER_LOOP_ACTIVE without fabricating data or weakening deterministic gates"
+      "area": "Strategy Factory candidate governance",
+      "workflow_run": 34404651563,
+      "status": "HUMAN_REVIEW_REQUIRED_NO_AUTOMATIC_FORWARD",
+      "evidence": "replay-v2 neighborhood validation passed the frozen strategy and parameter plateau with 29 dual-profile passers and reported qualifies_for_derivatives_validation_and_prospective_paper_forward=true, while automatic_paper_forward_started remained false",
+      "required_fix": "independently review artifact 10125093054 and explicitly decide whether bounded derivatives validation or prospective Paper-forward work is authorized; do not auto-promote, touch Issue #984, or create Live/private-credential authority"
     },
     "canonical_authority_fields_preserved": true
   },
   "current_evidence": {
-    "observed_main_sha": "d95e126ad58e6bc7dc3ec81a941252030e9e7f73",
-    "observed_at_utc": "2026-09-09T20:00:25Z",
-    "state_commit_relationship": "observed_main_sha is the exact base main snapshot before this continuity-only Project Memory correction; the Paper runtime evidence is bound to that SHA and the earlier Multi-Pair Discovery proof remains historical fixed-SHA evidence",
+    "observed_main_sha": "50ac6ea8a331c08dca3e8be184ed0717380ff7f6",
+    "observed_at_utc": "2026-09-09T21:10:21Z",
+    "state_commit_relationship": "observed_main_sha is the exact base main snapshot before this continuity-only Strategy Factory checkpoint; all new runtime evidence below is bound to that SHA, while earlier Paper and Multi-Pair proofs remain historical fixed-SHA evidence",
     "latest_main_change": {
-      "pr": 1418,
-      "summary": "Reconciled the physical Paper verifier with the engine's verified WAITING_FOR_FRESH_CELLS contract while retaining exact 12/12 acceptance for PAPER_LOOP_ACTIVE; exact-main run 34397395277 succeeded and persisted the waiting state.",
+      "pr": 1424,
+      "summary": "Rotated seven legacy Strategy Factory workflows from an expired fixed artifact to manifest-bound replay-v2 selection with optional exact-ID verification; exact-main search and discovery runs succeeded.",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true
@@ -413,6 +417,82 @@
       "real_exchange_orders": false,
       "deterministic_risk_final_authority": true,
       "issue_984_state_touched": false
+    },
+    "demo_regime_lifecycle_latest": {
+      "status": "EXACT_MAIN_REPLAY_V2_LIFECYCLE_VERIFIED",
+      "workflow_run": 34404429298,
+      "source_sha": "50ac6ea8a331c08dca3e8be184ed0717380ff7f6",
+      "replay_artifact_id": 10027933872,
+      "replay_semantic_dataset_sha256": "2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422",
+      "selector_candidate_failures": 0,
+      "verification_decision": "pass",
+      "lifecycle_digest": "939649ca7eb2d7de2cc8db41a08f2056fbacfdd6683e2a6033b0ca8a8d152c74",
+      "evidence_artifact_id": 10124774826,
+      "evidence_artifact_digest": "sha256:a28ed649571712808340401472563ab16bad58812dbdb55ba291e355060e0d8c",
+      "paper_only": true,
+      "live_trading_authority": false,
+      "private_credentials_used": false,
+      "automatic_strategy_promotion": false,
+      "deterministic_risk_final_authority": true
+    },
+    "strategy_factory_latest": {
+      "status": "EXACT_MAIN_REPLAY_V2_ROTATION_AND_RESEARCH_RUNS_VERIFIED",
+      "source_sha": "50ac6ea8a331c08dca3e8be184ed0717380ff7f6",
+      "controller_stage_count": 8,
+      "controller_ready_stage_count": 8,
+      "controller_qualification_claimed": false,
+      "replay_artifact_id": 10124793157,
+      "replay_artifact_digest": "sha256:cf1bb7e0823ac50078eb7eb07e7a3afc41ea661601a7104ad149eb53f4fc86b4",
+      "replay_semantic_dataset_sha256": "2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422",
+      "rotation_runs": [
+        34404244680,
+        34404548937
+      ],
+      "rotation_state_artifact_id": 10124816866,
+      "rotation_state_artifact_digest": "sha256:4bb62fb4b7026663c55aae27251fa978cc0953eab3e5ad9d8fa5978d8826bdf6",
+      "next_rotation_index": 6,
+      "search_v2": {
+        "workflow_run": 34404244591,
+        "candidate_count": 4320,
+        "exact_evaluated": 60,
+        "exact_gate_passers": 60,
+        "qualifies_for_paper_forward_review": false,
+        "artifact_id": 10124805268,
+        "artifact_digest": "sha256:733d8c108c2e8b9c38b4da088d93ac176a5b879f413d2ff6eb5467d3d2ad8ce3"
+      },
+      "multitimeframe_discovery": {
+        "workflow_run": 34404244665,
+        "research_proposal_count": 0,
+        "discovery_digest": "6d5c69e0d1eb91bcef5b9465da7da381129db7752bb3468a5fae27770f9584da",
+        "artifact_id": 10124818489,
+        "artifact_digest": "sha256:45d0e765647ab85ad1d482226228a8c0f39ea7087afff497defbb8f99244f996"
+      },
+      "regime_v6": {
+        "workflow_run": 34404358221,
+        "exact_dual_profile_passers": 4,
+        "parameter_plateau_passes": false,
+        "qualifies_for_derivatives_validation_and_prospective_paper_forward": false,
+        "artifact_id": 10124859632,
+        "artifact_digest": "sha256:8bdc7ee9bc25e8f6c32c9bb86fc75eb8b83e76c1a271fbacdc8ad393c958ebdd"
+      },
+      "neighborhood_v7": {
+        "workflow_run": 34404651563,
+        "neighborhood_candidates": 480,
+        "dual_profile_passers": 29,
+        "frozen_strategy_passes": true,
+        "parameter_plateau_passes": true,
+        "qualifies_for_derivatives_validation_and_prospective_paper_forward": true,
+        "automatic_paper_forward_started": false,
+        "artifact_id": 10125093054,
+        "artifact_digest": "sha256:d7465c70bf310406aef76f8b41a111f8b8fc12b62c6d3236af0b5585567845a5"
+      },
+      "qualification_authority": false,
+      "automatic_strategy_promotion": false,
+      "live_trading_authority": false,
+      "private_credentials_used": false,
+      "real_exchange_orders": false,
+      "deterministic_risk_final_authority": true,
+      "issue_984_state_touched": false
     }
   },
   "open_gates": {
@@ -452,6 +532,12 @@
       "workflow_run": 34397395277,
       "source_sha": "d95e126ad58e6bc7dc3ec81a941252030e9e7f73",
       "reason": "PR #1418 retained 12/12 for PAPER_LOOP_ACTIVE and accepted only engine-verified fail-closed WAITING states below 12; exact-main run succeeded at 8/12 and persisted the complete verified state"
+    },
+    "strategy_factory_candidate_review": {
+      "state": "human_review_required_no_automatic_forward",
+      "workflow_run": 34404651563,
+      "artifact_id": 10125093054,
+      "reason": "frozen neighborhood validation and parameter plateau passed, but repository evidence cannot authorize derivatives validation, prospective Paper-forward admission, automatic promotion or Live authority"
     }
   },
   "authority": {
@@ -471,8 +557,9 @@
   "next_autonomous_work": {
     "priority": "trading_engine_first",
     "order": [
-      "continue Strategy Discovery -> evaluation -> Paper feedback work from exact-main run 34392341610 while preserving leakage, holdout, stress and Deterministic Risk gates",
-      "continue scheduled persistent Paper cycles from verified artifact 10122430632 and obtain the next natural 12/12 PAPER_LOOP_ACTIVE proof without fabricating cells or weakening WAITING/ACTIVE contracts",
+      "independently review Strategy Factory neighborhood-v7 artifact 10125093054 and its exact replay-v2 provenance; do not advance it automatically",
+      "continue bounded Strategy Factory rotation from next index 6 across Multi-timeframe and Multi-Pair stages while preserving qualification=false, holdout, stress and Deterministic Risk gates",
+      "continue scheduled persistent Paper cycles from verified artifact 10122430632 without fabricating cells or weakening WAITING/ACTIVE contracts",
       "continue immutable #984 prospective Paper collection without inferred, accelerated or fabricated bars",
       "keep #43 production release deny-by-default and do not create Live, signing, credential or deployment authority"
     ],
