@@ -4,7 +4,7 @@ from copy import deepcopy
 
 import pytest
 
-import nexus_persistent_paper_trading_loop as loop
+import nexus_multipair_persistent_paper_trading_loop as loop
 from nexus_strategy_discovery_health_trigger import (
     StrategyDiscoveryHealthTriggerError,
     build_health_trigger,
@@ -23,11 +23,16 @@ def _snapshot(*, regime_status="VERIFIED", research_required=True):
         "now_ms": 1_728_000_000_000,
         "status": "PAPER_LOOP_ACTIVE",
         "data_mode": "public_bybit_closed_candles",
+        "matrix_id": "nexus-demo-btc-eth-sol-xrp-3tf-3strategy-v2",
         "matrix_snapshot_digest": "1" * 64,
-        "expected_cell_count": 6,
-        "fresh_cell_count": 6,
-        "fresh_cells": [f"cell-{index}" for index in range(6)],
-        "expected_lane_count": 18,
+        "expected_cell_count": loop.EXPECTED_CELLS,
+        "fresh_cell_count": loop.EXPECTED_CELLS,
+        "fresh_cells": [f"cell-{index}" for index in range(loop.EXPECTED_CELLS)],
+        "expected_lane_count": loop.EXPECTED_LANES,
+        "matrix_migration_status": "FRESH_V2",
+        "matrix_migration_digest": None,
+        "legacy_preserved_cell_count": 0,
+        "new_symbol_inherited_cell_count": 0,
         "regime_status": regime_status,
         "regime_cycle_digest": "2" * 64,
         "maintenance_digest": "3" * 64,
@@ -51,19 +56,29 @@ def _snapshot(*, regime_status="VERIFIED", research_required=True):
         "paper_only": True,
         "live_trading_authority": False,
         "private_credentials_used": False,
+        "real_exchange_orders": False,
         "automatic_strategy_promotion": False,
         "deterministic_risk_final_authority": True,
+        "persistent_runtime_database_on_github": False,
+        "state_isolated_from_issue_984": True,
+        "issue_984_state_artifact_touched": False,
     }
     return {**core, "loop_digest": loop._digest(core)}
 
 
 def test_new_verified_cash_or_unhealthy_boundary_requests_bounded_discovery():
-    trigger = build_health_trigger(_snapshot())
+    snapshot = _snapshot()
+    assert snapshot["expected_cell_count"] == 12
+    assert snapshot["expected_lane_count"] == 36
+    assert loop.verify_loop_snapshot(snapshot)["decision"] == "pass"
+
+    trigger = build_health_trigger(snapshot)
     assert trigger["should_dispatch"] is True
     assert trigger["reason_code"] == "NEW_4H_BOUNDARY_RESEARCH_REQUIRED"
     assert trigger["daily_rotation_remains_required"] is True
     assert trigger["qualification_authority"] is False
     assert trigger["automatic_strategy_promotion"] is False
+    assert trigger["live_trading_authority"] is False
     assert verify_health_trigger(trigger)["decision"] == "pass"
 
 
@@ -94,6 +109,20 @@ def test_tampered_loop_authority_or_digest_fails_closed():
     rehashed["loop_digest"] = loop._digest(unsigned)
     with pytest.raises(StrategyDiscoveryHealthTriggerError):
         build_health_trigger(rehashed)
+
+
+def test_legacy_six_cell_snapshot_is_rejected_after_multipair_migration():
+    legacy_shape = deepcopy(_snapshot())
+    legacy_shape["expected_cell_count"] = 6
+    legacy_shape["fresh_cell_count"] = 6
+    legacy_shape["fresh_cells"] = legacy_shape["fresh_cells"][:6]
+    legacy_shape["expected_lane_count"] = 18
+    unsigned = dict(legacy_shape)
+    unsigned.pop("loop_digest")
+    legacy_shape["loop_digest"] = loop._digest(unsigned)
+
+    with pytest.raises(StrategyDiscoveryHealthTriggerError):
+        build_health_trigger(legacy_shape)
 
 
 def test_trigger_tamper_is_rejected_even_after_authority_change():
