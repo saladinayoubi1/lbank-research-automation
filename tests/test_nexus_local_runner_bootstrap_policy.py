@@ -143,6 +143,19 @@ def test_autonomy_schedule_exceeds_bounded_worker_window_and_keeps_push_immediat
     assert 'cancel-in-progress: false' in workflow
 
 
+def test_autonomy_checkout_is_bounded_and_preserves_clean_exact_sha_checkout():
+    workflow = AUTONOMY_WORKFLOW.read_text(encoding='utf-8')
+    checkout = workflow.index('- name: Checkout')
+    verify = workflow.index('- name: Verify exact trigger SHA')
+    block = workflow[checkout:verify]
+    assert 'timeout-minutes: 10' in block
+    assert 'uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1' in block
+    assert 'ref: ${{ github.sha }}' in block
+    assert 'persist-credentials: false' in block
+    assert 'clean: true' in block
+    assert 'fetch-depth: 1' in block
+
+
 def test_owner_autostart_proof_fast_path_skips_heavy_python_and_node_bootstrap():
     workflow = WORKFLOW.read_text(encoding='utf-8')
     skip_expr = "github.event_name != 'push' || !contains(github.event.head_commit.message, '[verify-owner-autostart]')"
