@@ -39,7 +39,6 @@ jobs:
           $wslRunnerRoot = '/opt/nexus-bybit-runner'
           $expectedWslRunnerName = 'NEXUS-BYBIT-WSL'
           $wsl = Join-Path $env:SystemRoot 'System32\wsl.exe'
-          $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 
           if ([string]$env:RUNNER_NAME -ne $expectedWindowsRunnerName) {
             throw "exact local runner name mismatch: $env:RUNNER_NAME"
@@ -57,26 +56,22 @@ jobs:
             throw 'wsl.exe is required for native Bybit runner recovery.'
           }
 
-          function Write-Utf8NoBomStdin {
-            param(
-              [Parameter(Mandatory = $true)][System.IO.StreamWriter]$Writer,
-              [Parameter(Mandatory = $true)][string]$Text
-            )
-            $bytes = $utf8NoBom.GetBytes($Text)
-            $Writer.BaseStream.Write($bytes, 0, $bytes.Length)
-            $Writer.BaseStream.Flush()
-            $Writer.BaseStream.Close()
+          function ConvertTo-WslBashWrapper {
+            param([Parameter(Mandatory = $true)][string]$Command)
+            $normalizedCommand = $Command.Replace("`r`n", "`n").Replace("`r", "`n")
+            $bytes = [System.Text.Encoding]::UTF8.GetBytes($normalizedCommand)
+            $encoded = [Convert]::ToBase64String($bytes)
+            return "printf '%s' '$encoded' | base64 -d | bash"
           }
 
           function Invoke-Wsl {
             param([Parameter(Mandatory = $true)][string]$Command)
-            $normalizedCommand = $Command.Replace("`r`n", "`n").Replace("`r", "`n")
+            $wrappedCommand = ConvertTo-WslBashWrapper -Command $Command
             $psi = New-Object System.Diagnostics.ProcessStartInfo
             $psi.FileName = $wsl
-            $psi.Arguments = '-d ' + $distribution + ' -u root -- bash'
+            $psi.Arguments = "-d $distribution -u root -- bash -lc `"$wrappedCommand`""
             $psi.UseShellExecute = $false
             $psi.CreateNoWindow = $true
-            $psi.RedirectStandardInput = $true
             $psi.RedirectStandardOutput = $true
             $psi.RedirectStandardError = $true
 
@@ -88,8 +83,6 @@ jobs:
             }
 
             try {
-              Write-Utf8NoBomStdin -Writer $process.StandardInput -Text ($normalizedCommand + "`nexit`n")
-
               if (-not $process.WaitForExit(15000)) {
                 try { $process.Kill() } catch {}
                 throw 'Bounded WSL probe timed out after 15 seconds.'
@@ -142,7 +135,7 @@ jobs:
           Write-Host 'runner_credentials_mutated=false'
           Write-Host 'live_trading_authority_changed=false'
           Write-Host 'wsl_probe_timeout_seconds=15'
-          Write-Host 'wsl_stdin_encoding=utf8-no-bom'
+          Write-Host 'wsl_command_transport=base64-argv'
 
           $registrationProbe = @(
             'test -x __RUNNER_ROOT__/run.sh || { printf "registration_check=run_sh_missing\n"; exit 10; }',
@@ -177,13 +170,14 @@ jobs:
           $previousTrackingId = [string]$env:RUNNER_TRACKING_ID
           $env:RUNNER_TRACKING_ID = ''
           $hostStarted = $false
+          $startCommand = "cd '$wslRunnerRoot' && export RUNNER_ALLOW_RUNASROOT=1 && export RUNNER_TRACKING_ID= && exec ./run.sh >>'/tmp/nexus-bybit-runner.log' 2>&1"
+          $wrappedStartCommand = ConvertTo-WslBashWrapper -Command $startCommand
           $psi = New-Object Diagnostics.ProcessStartInfo
           $psi.FileName = $wsl
-          $psi.Arguments = '-d ' + $distribution + ' -u root -- bash'
+          $psi.Arguments = "-d $distribution -u root -- bash -lc `"$wrappedStartCommand`""
           $psi.UseShellExecute = $false
           $psi.CreateNoWindow = $true
           $psi.WindowStyle = [Diagnostics.ProcessWindowStyle]::Hidden
-          $psi.RedirectStandardInput = $true
           $hostProcess = New-Object Diagnostics.Process
           $hostProcess.StartInfo = $psi
 
@@ -192,9 +186,6 @@ jobs:
               throw 'Could not start the existing Bybit WSL runner host process.'
             }
             $hostStarted = $true
-            $startCommand = "cd '$wslRunnerRoot' && export RUNNER_ALLOW_RUNASROOT=1 && export RUNNER_TRACKING_ID= && exec ./run.sh >>'/tmp/nexus-bybit-runner.log' 2>&1"
-            $normalizedStart = $startCommand.Replace("`r`n", "`n").Replace("`r", "`n")
-            Write-Utf8NoBomStdin -Writer $hostProcess.StandardInput -Text ($normalizedStart + "`n")
             Start-Sleep -Seconds 5
             if ($hostProcess.HasExited) {
               throw "Existing Bybit WSL runner exited during startup (exit=$($hostProcess.ExitCode))."
