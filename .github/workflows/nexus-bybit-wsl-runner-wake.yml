@@ -23,7 +23,7 @@ concurrency:
 jobs:
   wake:
     if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') || github.event_name == 'push'
-    runs-on: [self-hosted, Windows, X64, nexus-remote-rescue]
+    runs-on: [self-hosted, Windows, X64, nexus-local]
     timeout-minutes: 5
     steps:
       - name: Verify and wake exact existing Bybit WSL runner
@@ -33,24 +33,24 @@ jobs:
           $ProgressPreference = 'SilentlyContinue'
           Set-StrictMode -Version 2.0
 
-          $windowsRunnerRoot = 'C:\actions-runner\actions-runner'
-          $windowsRunnerConfig = Join-Path $windowsRunnerRoot '.runner'
-          $expectedWindowsRunnerName = 'NEXUS-WINDOWS-DR'
-          $expectedGitHubUrl = 'https://github.com/saladinayoubi1/lbank-research-automation'
+          $expectedWindowsRunnerName = 'NEXUS-LOCAL-RUNNER'
+          $expectedRepository = 'saladinayoubi1/lbank-research-automation'
           $distribution = 'Ubuntu'
           $wslRunnerRoot = '/opt/nexus-bybit-runner'
           $expectedWslRunnerName = 'NEXUS-BYBIT-WSL'
           $wsl = Join-Path $env:SystemRoot 'System32\wsl.exe'
 
-          if (-not (Test-Path -LiteralPath $windowsRunnerConfig -PathType Leaf)) {
-            throw "exact DR runner config missing: $windowsRunnerConfig"
+          if ([string]$env:RUNNER_NAME -ne $expectedWindowsRunnerName) {
+            throw "exact local runner name mismatch: $env:RUNNER_NAME"
           }
-          $windowsConfig = Get-Content -LiteralPath $windowsRunnerConfig -Raw | ConvertFrom-Json
-          if ([string]$windowsConfig.agentName -ne $expectedWindowsRunnerName) {
-            throw "exact DR runner name mismatch: $($windowsConfig.agentName)"
+          if ([string]$env:GITHUB_REPOSITORY -ne $expectedRepository) {
+            throw "exact repository binding mismatch: $env:GITHUB_REPOSITORY"
           }
-          if ([string]$windowsConfig.gitHubUrl -ne $expectedGitHubUrl) {
-            throw 'exact DR runner repository binding mismatch'
+          if ([string]$env:RUNNER_OS -ne 'Windows') {
+            throw "unexpected runner OS: $env:RUNNER_OS"
+          }
+          if ([string]$env:RUNNER_ARCH -ne 'X64') {
+            throw "unexpected runner architecture: $env:RUNNER_ARCH"
           }
           if (-not (Test-Path -LiteralPath $wsl -PathType Leaf)) {
             throw 'wsl.exe is required for native Bybit runner recovery.'
@@ -123,8 +123,9 @@ jobs:
             return [pscustomobject]@{ Known = $false; Listener = $false }
           }
 
-          Write-Host "recovery_runner=$($windowsConfig.agentName)"
-          Write-Host 'recovery_runner_binding=PASS'
+          Write-Host "recovery_runner=$env:RUNNER_NAME"
+          Write-Host "recovery_runner_binding=$env:GITHUB_REPOSITORY"
+          Write-Host 'recovery_runner_identity=PASS'
           Write-Host "source_sha=$env:GITHUB_SHA"
           Write-Host 'legacy_scheduled_tasks_used=false'
           Write-Host 'windows_task_acl_modified=false'
