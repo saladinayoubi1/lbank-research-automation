@@ -41,6 +41,7 @@ jobs:
           $parts = [regex]::Split($text, '(?m)^  persist:\s*$', 2)
           if ($parts.Count -ne 2) { throw 'Unable to isolate physical persistence job.' }
           $persist = $parts[1]
+          if (-not $persist.Contains('runs-on: [self-hosted, Windows, X64, nexus-remote-rescue]')) { throw 'Physical persistence job must target the dedicated DR runner label.' }
           if ($persist -match 'uses:\s+actions/checkout@') { throw 'Physical persistence job must not use actions/checkout.' }
           foreach ($required in @(
             'https://github.com/${env:GITHUB_REPOSITORY}.git',
@@ -84,7 +85,7 @@ jobs:
 
   persist:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-    runs-on: [self-hosted, Windows, X64]
+    runs-on: [self-hosted, Windows, X64, nexus-remote-rescue]
     timeout-minutes: 10
     defaults:
       run:
