@@ -19,6 +19,9 @@ on:
 permissions:
   contents: read
 
+env:
+  NEXUS_DR_WAKE_SCRIPT_BLOB_SHA: d5dfef94c67c7eac369e3a89c034db263c598995
+
 concurrency:
   group: nexus-windows-dr-bootstrap-${{ github.event_name == 'pull_request' && 'contract' || 'runtime' }}
   cancel-in-progress: true
@@ -44,6 +47,15 @@ jobs:
           [void][System.Management.Automation.Language.Parser]::ParseFile($path,[ref]$tokens,[ref]$errors)
           if($errors.Count -gt 0){$errors | ForEach-Object { Write-Error $_.Message }; exit 1}
 
+      - name: Verify pinned runtime script blob
+        shell: powershell
+        run: |
+          $actual = (& git hash-object -- 'scripts\wake_nexus_windows_dr_runner.ps1').Trim().ToLowerInvariant()
+          if ($LASTEXITCODE -ne 0 -or $actual -ne $env:NEXUS_DR_WAKE_SCRIPT_BLOB_SHA.ToLowerInvariant()) {
+            throw "Pinned DR wake script blob is stale: expected=$env:NEXUS_DR_WAKE_SCRIPT_BLOB_SHA actual=$actual"
+          }
+          Write-Host "dr_wake_script_blob=$actual"
+
       - name: Verify non-mutating safety contract
         shell: powershell
         run: |
@@ -59,25 +71,82 @@ jobs:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: [self-hosted, Windows, X64, nexus-local]
     timeout-minutes: 15
-    defaults:
-      run:
-        shell: cmd
+    outputs:
+      evidence_b64: ${{ steps.capture.outputs.evidence_b64 }}
     steps:
-      - name: Checkout exact source
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-          clean: true
-          fetch-depth: 1
-
-      - name: Verify exact trigger SHA
+      - name: Prepare pinned wake script without action downloads
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
         run: |
-          for /f %%S in ('git rev-parse HEAD') do set "CHECKED_OUT_SHA=%%S"
-          if /I not "%CHECKED_OUT_SHA%"=="%GITHUB_SHA%" exit /b 1
-          echo exact_trigger_sha=%CHECKED_OUT_SHA%
+          $ErrorActionPreference = 'Stop'
+          Set-StrictMode -Version 2.0
+          $relativePath = 'scripts\wake_nexus_windows_dr_runner.ps1'
+          $expectedBlob = $env:NEXUS_DR_WAKE_SCRIPT_BLOB_SHA.ToLowerInvariant()
+          $targetSha = [string]$env:GITHUB_SHA
+          $repoUrl = 'https://github.com/saladinayoubi1/lbank-research-automation.git'
+          $rawUrl = "https://raw.githubusercontent.com/saladinayoubi1/lbank-research-automation/$targetSha/scripts/wake_nexus_windows_dr_runner.ps1"
+
+          function Get-GitBlob([string]$Path) {
+            if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return '' }
+            $value = (& git hash-object -- $Path 2>$null)
+            if ($LASTEXITCODE -ne 0 -or -not $value) { return '' }
+            return ([string]$value).Trim().ToLowerInvariant()
+          }
+
+          $source = ''
+          $blob = Get-GitBlob -Path $relativePath
+          if ($blob -eq $expectedBlob) {
+            $source = 'local-pinned-cache'
+          }
+          else {
+            if (Test-Path -LiteralPath '.git') {
+              & git cat-file -e "$targetSha`^{commit}" 2>$null
+              if ($LASTEXITCODE -eq 0) {
+                $temp = Join-Path $env:RUNNER_TEMP 'nexus-dr-wake-script.ps1'
+                & git show "$targetSha`:scripts/wake_nexus_windows_dr_runner.ps1" | Set-Content -LiteralPath $temp -Encoding UTF8
+                if ($LASTEXITCODE -eq 0 -and (Get-GitBlob -Path $temp) -eq $expectedBlob) {
+                  New-Item -ItemType Directory -Path (Split-Path -Parent $relativePath) -Force | Out-Null
+                  Copy-Item -LiteralPath $temp -Destination $relativePath -Force
+                  $source = 'local-target-commit'
+                }
+                Remove-Item -LiteralPath $temp -Force -ErrorAction SilentlyContinue
+              }
+            }
+          }
+
+          if (-not $source) {
+            $download = Join-Path $env:RUNNER_TEMP 'nexus-dr-wake-download.ps1'
+            for ($attempt = 1; $attempt -le 4; $attempt++) {
+              try {
+                Invoke-WebRequest -UseBasicParsing -Uri $rawUrl -OutFile $download -TimeoutSec 20
+                if ((Get-GitBlob -Path $download) -eq $expectedBlob) {
+                  New-Item -ItemType Directory -Path (Split-Path -Parent $relativePath) -Force | Out-Null
+                  Copy-Item -LiteralPath $download -Destination $relativePath -Force
+                  $source = "bounded-raw-fetch-attempt-$attempt"
+                  break
+                }
+                Write-Warning "Downloaded wake script failed pinned blob verification on attempt $attempt."
+              }
+              catch {
+                Write-Warning "Bounded wake script fetch attempt $attempt failed: $($_.Exception.Message)"
+              }
+              finally {
+                Remove-Item -LiteralPath $download -Force -ErrorAction SilentlyContinue
+              }
+              if ($attempt -lt 4) { Start-Sleep -Seconds (2 * $attempt) }
+            }
+          }
+
+          $finalBlob = Get-GitBlob -Path $relativePath
+          if (-not $source -or $finalBlob -ne $expectedBlob) {
+            throw "Exact pinned DR wake script unavailable: expected=$expectedBlob actual=$finalBlob"
+          }
+          Write-Host "physical_source_transport=$source"
+          Write-Host "source_sha=$targetSha"
+          Write-Host "dr_wake_script_blob=$finalBlob"
+          Write-Host 'physical_hosted_actions_used=false'
 
       - name: Wake exact existing NEXUS-WINDOWS-DR registration
+        shell: cmd
         run: >-
           powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass
           -File scripts\wake_nexus_windows_dr_runner.ps1
@@ -97,9 +166,59 @@ jobs:
           if ($evidence.runner_credentials_modified -ne $false) { throw 'Runner credential mutation must remain false.' }
           if ($evidence.other_runner_paths_modified -ne $false) { throw 'Other runner path mutation must remain false.' }
           if ($evidence.live_trading_authority -ne $false) { throw 'Live authority must remain false.' }
+          Write-Host "windows_dr_bootstrap_evidence=PASS decision=$($evidence.decision)"
 
-      - name: Upload sanitized bootstrap evidence
+      - name: Capture sanitized bootstrap evidence for hosted archival
+        id: capture
         if: always()
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
+        run: |
+          $path = 'build\windows-dr-bootstrap\evidence.json'
+          if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+            Write-Host 'bootstrap_evidence_capture=missing'
+            exit 0
+          }
+          $raw = Get-Content -LiteralPath $path -Raw
+          $evidence = $raw | ConvertFrom-Json
+          if ($evidence.runner_registration_modified -ne $false -or
+              $evidence.runner_credentials_modified -ne $false -or
+              $evidence.other_runner_paths_modified -ne $false -or
+              $evidence.live_trading_authority -ne $false) {
+            throw 'Unsafe evidence cannot be archived.'
+          }
+          $encoded = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($raw))
+          $utf8 = New-Object Text.UTF8Encoding($false)
+          [IO.File]::AppendAllText($env:GITHUB_OUTPUT, "evidence_b64=$encoded`n", $utf8)
+          Write-Host "bootstrap_evidence_capture=PASS decision=$($evidence.decision)"
+          Write-Host 'runner_registration_modified=false'
+          Write-Host 'runner_credentials_modified=false'
+          Write-Host 'other_runner_paths_modified=false'
+          Write-Host 'live_trading_authority=false'
+
+  archive-evidence:
+    needs: bootstrap
+    if: always() && needs.bootstrap.outputs.evidence_b64 != ''
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - name: Restore sanitized bootstrap evidence
+        shell: powershell
+        env:
+          EVIDENCE_B64: ${{ needs.bootstrap.outputs.evidence_b64 }}
+        run: |
+          $bytes = [Convert]::FromBase64String($env:EVIDENCE_B64)
+          New-Item -ItemType Directory -Path 'build\windows-dr-bootstrap' -Force | Out-Null
+          [IO.File]::WriteAllBytes('build\windows-dr-bootstrap\evidence.json', $bytes)
+          $evidence = Get-Content 'build\windows-dr-bootstrap\evidence.json' -Raw | ConvertFrom-Json
+          if ($evidence.runner_registration_modified -ne $false -or
+              $evidence.runner_credentials_modified -ne $false -or
+              $evidence.other_runner_paths_modified -ne $false -or
+              $evidence.live_trading_authority -ne $false) {
+            throw 'Hosted archive safety verification failed.'
+          }
+          Write-Host "hosted_evidence_restore=PASS decision=$($evidence.decision)"
+
+      - name: Upload sanitized bootstrap evidence from hosted runner
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: nexus-windows-dr-bootstrap-${{ github.run_id }}-${{ github.run_attempt }}
