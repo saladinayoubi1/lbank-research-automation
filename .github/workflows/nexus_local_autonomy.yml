@@ -31,7 +31,7 @@ jobs:
       (github.actor == github.repository_owner &&
        github.ref_name == github.event.repository.default_branch)
     runs-on: [self-hosted, Windows, X64, nexus-local]
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       NEXUS_WORKER_MAX_SECONDS: '240'
       NEXUS_WORKER_IDLE_SLEEP: '15'
@@ -54,7 +54,7 @@ jobs:
         with:
           node-version: '20'
       - name: Bootstrap portable Python
-        timeout-minutes: 10
+        timeout-minutes: 15
         shell: cmd
         run: call scripts\bootstrap_portable_python.cmd
 
