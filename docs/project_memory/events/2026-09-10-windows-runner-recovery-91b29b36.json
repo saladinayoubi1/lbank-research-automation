@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "event": "windows_runner_recovery_checkpoint",
+  "observed_at_utc": "2026-09-10T14:31:00Z",
+  "observed_main_sha": "91b29b36e38eeb03c45bf52060030fa940206b81",
+  "routing_fix_pr": 1433,
+  "windows_runners": {
+    "NEXUS-LOCAL-RUNNER": {
+      "status": "online",
+      "runner_version": "2.337.0",
+      "routing_label": "nexus-local",
+      "exact_main_workflow_run": 34482924040,
+      "workflow_conclusion": "success",
+      "artifact_id": 10157084959,
+      "artifact_digest": "sha256:69665a8e68ea02eb0971380425f296bdde8910d4eac4bc90fca67fbe70a0d955"
+    },
+    "NEXUS-WINDOWS-DR": {
+      "status": "online",
+      "runner_version": "2.337.0",
+      "routing_label": "nexus-remote-rescue",
+      "exact_main_workflow_run": 34482923984,
+      "workflow_conclusion": "success",
+      "artifact_id": 10156147936,
+      "artifact_digest": "sha256:e39caa5ccb230078e434059efed66859d5338ae33b5739ea5751c55db3d89a54"
+    }
+  },
+  "wsl_runner": {
+    "name": "NEXUS-BYBIT-WSL",
+    "status": "online",
+    "routing_label": "nexus-bybit-network"
+  },
+  "repair": {
+    "root_cause": "Windows runners had GitHub Runner 2.337.0 staged while legacy real bin/externals directories remained active on 2.336.0; self-update migration hit Access denied during directory replacement. Routing ambiguity was separately removed by PR #1433.",
+    "result": "Both Windows roots now use standard bin/externals junctions targeting 2.337.0, exact-main DR persistence and Local Autonomy both succeeded, and all three registered runners were observed online and idle after proof completion.",
+    "runner_registration_modified": false,
+    "runner_credentials_modified": false,
+    "live_trading_authority_changed": false
+  },
+  "safety": {
+    "research_backtest_paper_only": true,
+    "live_l4_authority": false,
+    "private_exchange_credentials_used": false,
+    "real_exchange_orders": false,
+    "automatic_strategy_promotion": false,
+    "deterministic_risk_final_authority": true,
+    "issue_984_modified": false
+  }
+}
