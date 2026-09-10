@@ -9,16 +9,15 @@ on:
     paths:
       - .github/workflows/nexus-bybit-wsl-runner-wake.yml
 
-# Bootstrap-safe recovery path. The GitHub Windows service runner cannot rely on
-# visibility of a WSL distribution that belongs to the interactive Windows user.
-# It therefore requests an already-configured Scheduled Task, which executes
-# under its existing principal and owns the Windows -> WSL boundary. The job may
-# re-enable only the exact allowlisted existing recovery tasks when Windows reports
-# them disabled. It never creates/deletes tasks, re-registers runners, or changes
-# Paper/Live trading authority.
+# Bootstrap-safe recovery path. Use the dedicated Windows DR runner because the
+# local worker service identity can run the allowlisted tasks only when enabled,
+# but is not permitted to re-enable them. The DR runner is independently bound to
+# this repository and already owns the tested Windows persistence recovery path.
+# This job may re-enable only the two exact pre-existing Bybit WSL recovery tasks.
+# It never creates/deletes tasks, re-registers runners, or changes trading authority.
 #
-# Deliberately contains no `uses:` steps. GitHub pre-downloads actions before any
-# step executes; a transient action-download failure must not prevent recovery.
+# Deliberately contains no `uses:` steps so an action-download failure cannot block
+# bootstrap recovery.
 permissions:
   contents: read
 
@@ -29,7 +28,7 @@ concurrency:
 jobs:
   wake:
     if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') || github.event_name == 'push'
-    runs-on: [self-hosted, Windows, nexus-local]
+    runs-on: [self-hosted, Windows, X64, nexus-remote-rescue]
     timeout-minutes: 5
     steps:
       - name: Recover and request existing scheduled Bybit WSL recovery
@@ -37,14 +36,30 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $ProgressPreference = 'SilentlyContinue'
+          Set-StrictMode -Version 2.0
+
+          $runnerRoot = 'C:\actions-runner\actions-runner'
+          $runnerConfig = Join-Path $runnerRoot '.runner'
+          $expectedRunnerName = 'NEXUS-WINDOWS-DR'
+          $expectedGitHubUrl = 'https://github.com/saladinayoubi1/lbank-research-automation'
+          if (-not (Test-Path -LiteralPath $runnerConfig -PathType Leaf)) {
+            throw "exact DR runner config missing: $runnerConfig"
+          }
+          $config = Get-Content -LiteralPath $runnerConfig -Raw | ConvertFrom-Json
+          if ([string]$config.agentName -ne $expectedRunnerName) {
+            throw "exact DR runner name mismatch: $($config.agentName)"
+          }
+          if ([string]$config.gitHubUrl -ne $expectedGitHubUrl) {
+            throw 'exact DR runner repository binding mismatch'
+          }
+          Write-Host "recovery_runner=$($config.agentName)"
+          Write-Host 'recovery_runner_binding=PASS'
 
           $schtasks = Join-Path $env:SystemRoot 'System32\schtasks.exe'
           if (-not (Test-Path -LiteralPath $schtasks -PathType Leaf)) {
             throw 'schtasks.exe is required for bootstrap-safe Bybit WSL recovery.'
           }
 
-          # Exact allowlist only. A task is changed only when /Run returns the
-          # explicit disabled-state error; every other failure remains fail-closed.
           $candidates = @(
             'NEXUS Bybit WSL Runner Persistent',
             'NEXUS Bybit WSL Runner'
