@@ -13,11 +13,11 @@ permissions:
 
 jobs:
   cleanup:
-    name: Cancel exact obsolete queued runs
+    name: Delete exact obsolete queued runs
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Validate and cancel exact historical runs
+      - name: Validate and delete exact historical queued runs
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -38,61 +38,46 @@ jobs:
             expected_sha="${shas[$i]}"
             api="repos/${GH_REPO}/actions/runs/${id}"
 
-            status="$(gh api "${api}" --jq '.status')"
-            head_ref="$(gh api "${api}" --jq '.head_branch')"
-            head_sha="$(gh api "${api}" --jq '.head_sha')"
-            created_at="$(gh api "${api}" --jq '.created_at')"
+            if ! run_json="$(gh api "${api}" 2>/dev/null)"; then
+              echo "run=${id} already absent; no action"
+              continue
+            fi
 
-            echo "run=${id} status=${status} ref=${head_ref} sha=${head_sha} created_at=${created_at}"
+            status="$(jq -r '.status' <<<"${run_json}")"
+            head_ref="$(jq -r '.head_branch' <<<"${run_json}")"
+            head_sha="$(jq -r '.head_sha' <<<"${run_json}")"
+            created_at="$(jq -r '.created_at' <<<"${run_json}")"
+            event="$(jq -r '.event' <<<"${run_json}")"
+
+            echo "run=${id} status=${status} event=${event} ref=${head_ref} sha=${head_sha} created_at=${created_at}"
 
             if [[ "${head_ref}" != "${expected_ref}" || "${head_sha}" != "${expected_sha}" ]]; then
-              echo "Refusing to cancel run ${id}: identity mismatch" >&2
+              echo "Refusing to delete run ${id}: identity mismatch" >&2
               exit 1
             fi
             if [[ "${head_sha}" == "${main_sha}" ]]; then
-              echo "Refusing to cancel run ${id}: points at current main" >&2
+              echo "Refusing to delete run ${id}: points at current main" >&2
+              exit 1
+            fi
+            if [[ "${event}" != "pull_request" ]]; then
+              echo "Refusing to delete run ${id}: event is not pull_request" >&2
               exit 1
             fi
             if [[ "${created_at}" > "2026-08-20T00:00:00Z" ]]; then
-              echo "Refusing to cancel run ${id}: not old enough" >&2
+              echo "Refusing to delete run ${id}: not old enough" >&2
+              exit 1
+            fi
+            if [[ "${status}" != "queued" ]]; then
+              echo "Refusing to delete run ${id}: expected frozen queued status, got ${status}" >&2
               exit 1
             fi
 
-            if [[ "${status}" == "completed" ]]; then
-              echo "run=${id} already terminal; no action"
-              continue
-            fi
-            if [[ "${status}" != "queued" && "${status}" != "in_progress" && "${status}" != "waiting" && "${status}" != "pending" ]]; then
-              echo "Refusing unexpected status for run ${id}: ${status}" >&2
+            echo "deleting exact frozen historical run=${id}"
+            gh api --method DELETE "${api}" >/dev/null
+
+            if gh api "${api}" >/dev/null 2>&1; then
+              echo "Run ${id} still exists after deletion" >&2
               exit 1
             fi
-
-            echo "requesting normal cancellation for run=${id}"
-            gh api --method POST "${api}/cancel" >/dev/null || true
-
-            for attempt in 1 2 3 4 5; do
-              sleep 3
-              status="$(gh api "${api}" --jq '.status')"
-              echo "run=${id} post_cancel_attempt=${attempt} status=${status}"
-              [[ "${status}" == "completed" ]] && break
-            done
-
-            if [[ "${status}" != "completed" ]]; then
-              echo "run=${id} did not terminate after normal cancellation; requesting bounded force-cancel"
-              gh api --method POST "${api}/force-cancel" >/dev/null
-              for attempt in 1 2 3 4 5; do
-                sleep 3
-                status="$(gh api "${api}" --jq '.status')"
-                echo "run=${id} post_force_attempt=${attempt} status=${status}"
-                [[ "${status}" == "completed" ]] && break
-              done
-            fi
-
-            final_status="$(gh api "${api}" --jq '.status')"
-            conclusion="$(gh api "${api}" --jq '.conclusion // ""')"
-            echo "run=${id} final_status=${final_status} conclusion=${conclusion}"
-            if [[ "${final_status}" != "completed" ]]; then
-              echo "Run ${id} is still not terminal after exact bounded cleanup" >&2
-              exit 1
-            fi
+            echo "run=${id} deleted=true"
           done
