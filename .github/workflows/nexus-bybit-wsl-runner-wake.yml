@@ -65,7 +65,8 @@ jobs:
             $previous = $ErrorActionPreference
             try {
               $ErrorActionPreference = 'Continue'
-              $raw = @(& $wsl -d $distribution -u root -- bash -lc $Command 2>&1)
+              $normalizedCommand = $Command.Replace("`r", '')
+              $raw = @(& $wsl -d $distribution -u root -- bash -lc $normalizedCommand 2>&1)
               $code = $LASTEXITCODE
               $text = (($raw | ForEach-Object { $_.ToString() }) | Out-String).Trim()
               return [pscustomobject]@{ Code = [int]$code; Text = $text }
