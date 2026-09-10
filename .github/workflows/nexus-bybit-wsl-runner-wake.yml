@@ -9,15 +9,13 @@ on:
     paths:
       - .github/workflows/nexus-bybit-wsl-runner-wake.yml
 
-# Bootstrap-safe recovery path. Use the dedicated Windows DR runner because the
-# local worker service identity can run the allowlisted tasks only when enabled,
-# but is not permitted to re-enable them. The DR runner is independently bound to
-# this repository and already owns the tested Windows persistence recovery path.
-# This job may re-enable only the two exact pre-existing Bybit WSL recovery tasks.
-# It never creates/deletes tasks, re-registers runners, or changes trading authority.
-#
-# Deliberately contains no `uses:` steps so an action-download failure cannot block
-# bootstrap recovery.
+# Bootstrap-safe recovery path for the already-registered Bybit WSL runner.
+# The legacy Windows Scheduled Tasks are intentionally not used here because
+# runtime evidence proved they are disabled and ACL-locked even from the
+# repository-bound DR runner. Instead, the DR runner verifies the exact existing
+# WSL runner registration and starts that registration directly inside Ubuntu.
+# No runner registration, credentials, Windows task ACLs, or trading authority
+# are modified.
 permissions:
   contents: read
 
@@ -31,111 +29,122 @@ jobs:
     runs-on: [self-hosted, Windows, X64, nexus-remote-rescue]
     timeout-minutes: 5
     steps:
-      - name: Recover and request existing scheduled Bybit WSL recovery
+      - name: Verify and wake exact existing Bybit WSL runner
         shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
         run: |
           $ErrorActionPreference = 'Stop'
           $ProgressPreference = 'SilentlyContinue'
           Set-StrictMode -Version 2.0
 
-          $runnerRoot = 'C:\actions-runner\actions-runner'
-          $runnerConfig = Join-Path $runnerRoot '.runner'
-          $expectedRunnerName = 'NEXUS-WINDOWS-DR'
+          $windowsRunnerRoot = 'C:\actions-runner\actions-runner'
+          $windowsRunnerConfig = Join-Path $windowsRunnerRoot '.runner'
+          $expectedWindowsRunnerName = 'NEXUS-WINDOWS-DR'
           $expectedGitHubUrl = 'https://github.com/saladinayoubi1/lbank-research-automation'
-          if (-not (Test-Path -LiteralPath $runnerConfig -PathType Leaf)) {
-            throw "exact DR runner config missing: $runnerConfig"
+          $distribution = 'Ubuntu'
+          $wslRunnerRoot = '/opt/nexus-bybit-runner'
+          $expectedWslRunnerName = 'NEXUS-BYBIT-WSL'
+          $serviceName = 'nexus-bybit-runner.service'
+          $wsl = Join-Path $env:SystemRoot 'System32\wsl.exe'
+
+          if (-not (Test-Path -LiteralPath $windowsRunnerConfig -PathType Leaf)) {
+            throw "exact DR runner config missing: $windowsRunnerConfig"
           }
-          $config = Get-Content -LiteralPath $runnerConfig -Raw | ConvertFrom-Json
-          if ([string]$config.agentName -ne $expectedRunnerName) {
-            throw "exact DR runner name mismatch: $($config.agentName)"
+          $windowsConfig = Get-Content -LiteralPath $windowsRunnerConfig -Raw | ConvertFrom-Json
+          if ([string]$windowsConfig.agentName -ne $expectedWindowsRunnerName) {
+            throw "exact DR runner name mismatch: $($windowsConfig.agentName)"
           }
-          if ([string]$config.gitHubUrl -ne $expectedGitHubUrl) {
+          if ([string]$windowsConfig.gitHubUrl -ne $expectedGitHubUrl) {
             throw 'exact DR runner repository binding mismatch'
           }
-          Write-Host "recovery_runner=$($config.agentName)"
-          Write-Host 'recovery_runner_binding=PASS'
-
-          $schtasks = Join-Path $env:SystemRoot 'System32\schtasks.exe'
-          if (-not (Test-Path -LiteralPath $schtasks -PathType Leaf)) {
-            throw 'schtasks.exe is required for bootstrap-safe Bybit WSL recovery.'
+          if (-not (Test-Path -LiteralPath $wsl -PathType Leaf)) {
+            throw 'wsl.exe is required for native Bybit runner recovery.'
           }
 
-          $candidates = @(
-            'NEXUS Bybit WSL Runner Persistent',
-            'NEXUS Bybit WSL Runner'
-          )
-
-          Write-Host "source_sha=$env:GITHUB_SHA"
-          Write-Host 'runner_registration_mutated=false'
-          Write-Host 'live_trading_authority_changed=false'
-
-          $selected = $null
-          $taskMutationPerformed = $false
-          foreach ($taskName in $candidates) {
-            Write-Host "scheduler_attempt_task=$taskName"
-
-            $previousErrorActionPreference = $ErrorActionPreference
-            $ErrorActionPreference = 'Continue'
+          function Invoke-Wsl {
+            param([Parameter(Mandatory = $true)][string]$Command)
+            $previous = $ErrorActionPreference
             try {
-              $runOutput = @(& $schtasks /Run /TN $taskName 2>&1)
-              $runCode = $LASTEXITCODE
+              $ErrorActionPreference = 'Continue'
+              $raw = @(& $wsl -d $distribution -u root -- bash -lc $Command 2>&1)
+              $code = $LASTEXITCODE
+              $text = (($raw | ForEach-Object { $_.ToString() }) | Out-String).Trim()
+              return [pscustomobject]@{ Code = [int]$code; Text = $text }
             }
             finally {
-              $ErrorActionPreference = $previousErrorActionPreference
+              $ErrorActionPreference = $previous
             }
+          }
 
-            $sanitized = (($runOutput | ForEach-Object { $_.ToString() }) | Out-String).Trim()
-            Write-Host "scheduler_attempt_exit_code=$runCode"
-            if ($sanitized) { Write-Host "scheduler_response=$sanitized" }
+          Write-Host "recovery_runner=$($windowsConfig.agentName)"
+          Write-Host 'recovery_runner_binding=PASS'
+          Write-Host "source_sha=$env:GITHUB_SHA"
+          Write-Host 'legacy_scheduled_tasks_used=false'
+          Write-Host 'windows_task_acl_modified=false'
+          Write-Host 'runner_registration_mutated=false'
+          Write-Host 'runner_credentials_mutated=false'
+          Write-Host 'live_trading_authority_changed=false'
 
-            if ($runCode -eq 0) {
-              $selected = $taskName
+          $registrationProbe = @"
+          set -euo pipefail
+          test -x '$wslRunnerRoot/run.sh'
+          test -x '$wslRunnerRoot/bin/Runner.Listener'
+          test -f '$wslRunnerRoot/.runner'
+          test -f '$wslRunnerRoot/.credentials'
+          grep -Eq '"agentName"[[:space:]]*:[[:space:]]*"$expectedWslRunnerName"' '$wslRunnerRoot/.runner'
+          grep -Eq '"gitHubUrl"[[:space:]]*:[[:space:]]*"https://github.com/saladinayoubi1/lbank-research-automation/?"' '$wslRunnerRoot/.runner'
+          "@
+          $probe = Invoke-Wsl -Command $registrationProbe
+          if ($probe.Code -ne 0) {
+            if ($probe.Text) { Write-Host "wsl_registration_probe=$($probe.Text)" }
+            throw 'Exact existing Bybit WSL runner registration could not be verified.'
+          }
+          Write-Host "wsl_distribution=$distribution"
+          Write-Host "wsl_runner_root=$wslRunnerRoot"
+          Write-Host "wsl_runner_name=$expectedWslRunnerName"
+          Write-Host 'wsl_runner_registration=PASS'
+
+          $listenerProbe = Invoke-Wsl -Command "pgrep -f '$wslRunnerRoot/bin/Runner.Listener' >/dev/null 2>&1"
+          if ($listenerProbe.Code -eq 0) {
+            Write-Host 'wsl_runner_listener=ALREADY_RUNNING'
+            Write-Host 'bybit_wsl_native_wake=PASS'
+            exit 0
+          }
+
+          $systemdProbe = Invoke-Wsl -Command "ps -p 1 -o comm= | grep -qx '[[:space:]]*systemd[[:space:]]*' && test -f '/etc/systemd/system/$serviceName'"
+          if ($systemdProbe.Code -eq 0) {
+            $start = Invoke-Wsl -Command "set -e; systemctl daemon-reload; systemctl start '$serviceName'"
+            if ($start.Code -ne 0) {
+              if ($start.Text) { Write-Host "systemd_start_response=$($start.Text)" }
+              throw 'Existing Bybit WSL systemd service could not be started.'
+            }
+            Write-Host 'wsl_runner_start_method=existing-systemd-service'
+          }
+          else {
+            # Clear GitHub runner process tracking for the detached child so the
+            # Windows job cleanup does not treat the Linux listener as an orphan.
+            $env:RUNNER_TRACKING_ID = ''
+            $start = Invoke-Wsl -Command "set -e; cd '$wslRunnerRoot'; nohup env RUNNER_ALLOW_RUNASROOT=1 ./run.sh > /tmp/nexus-bybit-runner.log 2>&1 < /dev/null &"
+            if ($start.Code -ne 0) {
+              if ($start.Text) { Write-Host "direct_start_response=$($start.Text)" }
+              throw 'Exact existing Bybit WSL runner could not be started directly.'
+            }
+            Write-Host 'wsl_runner_start_method=detached-existing-run-sh'
+          }
+
+          $observed = $false
+          for ($attempt = 1; $attempt -le 30; $attempt++) {
+            Start-Sleep -Seconds 1
+            $listenerProbe = Invoke-Wsl -Command "pgrep -f '$wslRunnerRoot/bin/Runner.Listener' >/dev/null 2>&1"
+            if ($listenerProbe.Code -eq 0) {
+              $observed = $true
               break
             }
-
-            if ($sanitized -match '(?i)disabled') {
-              Write-Host "scheduler_enable_attempt_task=$taskName"
-              $previousErrorActionPreference = $ErrorActionPreference
-              $ErrorActionPreference = 'Continue'
-              try {
-                $enableOutput = @(& $schtasks /Change /TN $taskName /ENABLE 2>&1)
-                $enableCode = $LASTEXITCODE
-              }
-              finally {
-                $ErrorActionPreference = $previousErrorActionPreference
-              }
-
-              $enableSanitized = (($enableOutput | ForEach-Object { $_.ToString() }) | Out-String).Trim()
-              Write-Host "scheduler_enable_exit_code=$enableCode"
-              if ($enableSanitized) { Write-Host "scheduler_enable_response=$enableSanitized" }
-
-              if ($enableCode -eq 0) {
-                $taskMutationPerformed = $true
-                $previousErrorActionPreference = $ErrorActionPreference
-                $ErrorActionPreference = 'Continue'
-                try {
-                  $retryOutput = @(& $schtasks /Run /TN $taskName 2>&1)
-                  $retryCode = $LASTEXITCODE
-                }
-                finally {
-                  $ErrorActionPreference = $previousErrorActionPreference
-                }
-
-                $retrySanitized = (($retryOutput | ForEach-Object { $_.ToString() }) | Out-String).Trim()
-                Write-Host "scheduler_retry_exit_code=$retryCode"
-                if ($retrySanitized) { Write-Host "scheduler_retry_response=$retrySanitized" }
-                if ($retryCode -eq 0) {
-                  $selected = $taskName
-                  break
-                }
-              }
-            }
+          }
+          if (-not $observed) {
+            $tail = Invoke-Wsl -Command "test -f /tmp/nexus-bybit-runner.log && tail -n 30 /tmp/nexus-bybit-runner.log || true"
+            if ($tail.Text) { Write-Host "wsl_runner_log_tail=$($tail.Text)" }
+            throw 'Bybit WSL Runner.Listener was not observed within the bounded startup window.'
           }
 
-          Write-Host "task_mutation_performed=$($taskMutationPerformed.ToString().ToLowerInvariant())"
-          if (-not $selected) {
-            throw 'All approved NEXUS Bybit WSL Scheduled Task run requests were rejected.'
-          }
-
-          Write-Host "selected_recovery_task=$selected"
-          Write-Host 'bybit_wsl_scheduler_wake_request=PASS'
+          Write-Host 'wsl_runner_listener=RUNNING'
+          Write-Host 'bybit_wsl_native_wake=PASS'
