@@ -52,7 +52,7 @@ concurrency:
 jobs:
   local:
     if: github.ref == 'refs/heads/main'
-    runs-on: [self-hosted, Windows, X64]
+    runs-on: [self-hosted, Windows, X64, nexus-local]
     timeout-minutes: 120
     defaults:
       run:

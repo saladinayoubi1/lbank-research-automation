@@ -255,7 +255,7 @@ jobs:
       (github.event.inputs.payload_b64 == '' ||
        github.event.inputs.transport == 'windows')
     needs: preflight
-    runs-on: [self-hosted, Windows]
+    runs-on: [self-hosted, Windows, nexus-local]
     timeout-minutes: 58
     env:
       NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: '0'

@@ -64,7 +64,7 @@ def test_preflight_workflow_is_bounded_to_main_and_explicit_marker() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     assert "branches:\n      - main" in text
     assert "[diagnose-wsl-virtualization]" in text
-    assert "runs-on: [self-hosted, Windows, X64]" in text
+    assert "runs-on: [self-hosted, Windows, X64, nexus-local]" in text
     assert "permissions:\n  contents: read" in text
     assert "actions: write" not in text
 

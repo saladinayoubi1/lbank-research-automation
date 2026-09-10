@@ -207,14 +207,16 @@ function Get-ServiceForRunner([pscustomobject]$Runner) {
 }
 
 function Get-ListenerProcess([pscustomobject]$Runner) {
+    $expectedRoot = [IO.Path]::GetFullPath($Runner.Root).TrimEnd('\')
+
     if (Test-Path -LiteralPath $ListenerPidPath -PathType Leaf) {
         try {
             $pidValue = [int](Get-Content -LiteralPath $ListenerPidPath -Raw)
-            $row = Get-CimInstance Win32_Process -Filter "ProcessId=$pidValue" -ErrorAction SilentlyContinue
-            if ($row -and $row.Name -eq 'Runner.Listener.exe') {
-                $root = Convert-ExecutableToRunnerRoot ([string]$row.ExecutablePath)
-                if ($root -and (Resolve-Path -LiteralPath $root).Path -eq $Runner.Root) {
-                    return (Get-Process -Id $pidValue -ErrorAction SilentlyContinue)
+            $proc = Get-Process -Id $pidValue -ErrorAction SilentlyContinue
+            if ($proc -and $proc.ProcessName -eq 'Runner.Listener') {
+                $root = Convert-ExecutableToRunnerRoot ([string]$proc.Path)
+                if ($root -and [IO.Path]::GetFullPath($root).TrimEnd('\').Equals($expectedRoot, [StringComparison]::OrdinalIgnoreCase)) {
+                    return $proc
                 }
             }
         }
@@ -222,16 +224,28 @@ function Get-ListenerProcess([pscustomobject]$Runner) {
     }
 
     try {
-        foreach ($row in Get-CimInstance Win32_Process -Filter "Name='Runner.Listener.exe'" -ErrorAction SilentlyContinue) {
-            $root = Convert-ExecutableToRunnerRoot ([string]$row.ExecutablePath)
-            if (-not $root) { continue }
-            if ((Resolve-Path -LiteralPath $root).Path -eq $Runner.Root) {
-                Set-Content -LiteralPath $ListenerPidPath -Encoding ASCII -Value $row.ProcessId
-                return (Get-Process -Id $row.ProcessId -ErrorAction SilentlyContinue)
+        $matches = @()
+        foreach ($proc in Get-Process -Name 'Runner.Listener' -ErrorAction SilentlyContinue) {
+            try {
+                $root = Convert-ExecutableToRunnerRoot ([string]$proc.Path)
+                if (-not $root) { continue }
+                if ([IO.Path]::GetFullPath($root).TrimEnd('\').Equals($expectedRoot, [StringComparison]::OrdinalIgnoreCase)) {
+                    $matches += $proc
+                }
             }
+            catch { }
+        }
+        if ($matches.Count -gt 1) {
+            Write-Log "runner_duplicate_listeners_observed root=$($Runner.Root) count=$($matches.Count)"
+        }
+        if ($matches.Count -gt 0) {
+            $selected = @($matches | Sort-Object Id)[0]
+            Set-Content -LiteralPath $ListenerPidPath -Encoding ASCII -Value $selected.Id
+            return $selected
         }
     }
     catch { }
+
     return $null
 }
 

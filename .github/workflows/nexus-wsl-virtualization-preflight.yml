@@ -19,7 +19,7 @@ concurrency:
 jobs:
   diagnose:
     if: contains(github.event.head_commit.message, '[diagnose-wsl-virtualization]')
-    runs-on: [self-hosted, Windows, X64]
+    runs-on: [self-hosted, Windows, X64, nexus-local]
     timeout-minutes: 15
     defaults:
       run:

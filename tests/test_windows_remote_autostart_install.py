@@ -119,7 +119,7 @@ def test_remote_installer_does_not_add_network_credentials_and_emits_v2_evidence
 
 def test_local_runner_install_trigger_is_main_push_marker_only_and_evidence_backed():
     text = read(WF)
-    assert "runs-on: [self-hosted, Windows, X64]" in text
+    assert "runs-on: [self-hosted, Windows, X64, nexus-local]" in text
     assert "if: github.ref == 'refs/heads/main'" in text
     assert "scripts/install_nexus_autostart_from_runner.ps1" in text
     marker = "github.event_name == 'push' && contains(github.event.head_commit.message, '[install-autostart]')"

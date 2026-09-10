@@ -28,7 +28,7 @@ concurrency:
 jobs:
   wake:
     if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') || github.event_name == 'push'
-    runs-on: [self-hosted, Windows]
+    runs-on: [self-hosted, Windows, nexus-local]
     timeout-minutes: 5
     steps:
       - name: Request existing scheduled Bybit WSL recovery
