@@ -119,6 +119,19 @@ def test_local_runner_checkout_is_bound_to_trigger_sha_and_verified():
     assert 'Checkout SHA mismatch' in workflow
 
 
+def test_local_runner_checkout_is_bounded_and_preserves_clean_exact_sha_checkout():
+    workflow = WORKFLOW.read_text(encoding='utf-8')
+    checkout = workflow.index('- name: Checkout repository')
+    verify = workflow.index('- name: Verify exact trigger SHA')
+    block = workflow[checkout:verify]
+    assert 'timeout-minutes: 10' in block
+    assert 'uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1' in block
+    assert 'ref: ${{ github.sha }}' in block
+    assert 'persist-credentials: false' in block
+    assert 'clean: true' in block
+    assert 'fetch-depth: 1' in block
+
+
 def test_bootstrap_prefers_verified_local_python_before_portable_network_fallback():
     text = _text()
     assert 'bootstrap_source=local_python' in text
