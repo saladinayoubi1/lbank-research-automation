@@ -31,7 +31,7 @@
   },
   "runtime_status": {
     "agent_execution_state": "paper_waiting_multipair_feedback_runtime_and_strategy_factory_replay_v2_verified",
-    "laptop_state": "physical_windows_and_wsl_runners_verified_latest_windows_persistence_evidence_is_historical",
+    "laptop_state": "physical_windows_and_wsl_runners_online_windows_2_337_0_exact_main_dr_and_local_success",
     "internet_outage_state": "not_assumed_from_laptop_state",
     "laptop_offline_is_not_internet_outage": true,
     "windows_runner_identity_class": "NETWORK_SERVICE",
@@ -42,7 +42,9 @@
     "runner_registration_modified_by_recovery_work": false,
     "security_authority_expanded_by_recovery_work": false,
     "bybit_wsl_user_context_self_heal_verified": true,
-    "post_self_heal_paper_success": true
+    "post_self_heal_paper_success": true,
+    "windows_runner_routing_incident_closed": true,
+    "windows_runner_version": "2.337.0"
   },
   "data_policy": {
     "research_only": true,
@@ -101,21 +103,26 @@
     }
   },
   "latest_checkpoint": {
-    "checkpoint_date": "2026-09-09",
-    "observed_main_sha": "21af398b9e73896f98c792a99230cf1562f7a04b",
+    "checkpoint_date": "2026-09-10",
+    "observed_main_sha": "91b29b36e38eeb03c45bf52060030fa940206b81",
     "continuity_only": true,
     "completed_milestones": [
       "PRs #1411-#1416 merged sequentially after required checks; Multi-Pair Discovery v2 moved fresh runtime acquisition to the physical Bybit plane, removed WSL Node actions and all WSL Git fetches, and added digest-verified hosted artifact relays plus verified wheelhouse cache reuse",
       "exact-main run 34392341610 succeeded on first attempt for source 57f0c4156722fad47125f8e92e66465ee207260a across all seven jobs",
       "physical Discovery restored the exact hosted source artifact, hit only the deterministically repacked digest-verified wheelhouse cache, verified the official Bybit archive snapshot, and produced a valid zero-proposal Research result",
       "physical runtime snapshot acquisition, hosted Node-free persistence, physical requalification and hosted proof persistence all succeeded; NO_WORK with zero proposals is valid",
-      "Issue #984 remains immutable and open at 88/180 completed four-hour bars and 14/30 elapsed-day floor",
+      "Issue #984 remains immutable and open at 89/180 completed four-hour bars and 14/30 elapsed-day floor",
       "PR #1418 reconciled the physical Paper verifier with the engine's strict freshness contract; exact-main run 34397395277 accepted a verification-valid 8/12 WAITING_FOR_FRESH_CELLS cycle and durably persisted artifact 10122430632 without activating maintenance, regime, exposure increase, health trigger, private credentials or real orders",
       "PR #1421 registered Multi-Pair Discovery v2 as the eighth reviewed Strategy Factory stage; rotation runs 34404244680 and 34404548937 verified all eight stages and advanced the durable cursor without qualification authority",
       "PR #1422 removed the expired fixed Demo lifecycle dataset artifact; exact-main lifecycle run 34404429298 selected a manifest-bound replay-v2 artifact and persisted verified lifecycle evidence",
       "PR #1424 removed expired fixed replay artifact IDs from seven legacy Strategy Factory workflows; exact-main runs 34404244591, 34404244665, 34404358221 and 34404651563 verified search v2, Multi-timeframe discovery, regime v6 and neighborhood v7 on replay-v2",
       "PR #1430 provisioned the isolated Multi-Pair Paper feedback job from pinned Python 3.12 and requirements.lock after exact-main run 34412163303 failed closed on a missing pandas import; every exact-head check passed before merge",
-      "exact-main Paper run 34413401197 and Multi-Pair Discovery v2 run 34413429714 succeeded on source 21af398b9e73896f98c792a99230cf1562f7a04b; automatic feedback run 34414723066 verified the exact-SHA pair and both artifact bindings, then correctly stopped at NO_OP_NOT_ELIGIBLE because the natural 12-cell Paper boundary had not been reached"
+      "exact-main Paper run 34413401197 and Multi-Pair Discovery v2 run 34413429714 succeeded on source 21af398b9e73896f98c792a99230cf1562f7a04b; automatic feedback run 34414723066 verified the exact-SHA pair and both artifact bindings, then correctly stopped at NO_OP_NOT_ELIGIBLE because the natural 12-cell Paper boundary had not been reached",
+      "PR #1433 bound Windows self-hosted workflows to role-specific labels and removed ambiguous Local/DR routing",
+      "both Windows runner roots were migrated from the incomplete 2.336.0-to-2.337.0 self-update state to standard bin/externals junctions targeting GitHub Runner 2.337.0 without changing registration or credentials",
+      "exact-main Windows DR Persistence run 34482923984 completed successfully and persisted artifact 10156147936 with digest sha256:e39caa5ccb230078e434059efed66859d5338ae33b5739ea5751c55db3d89a54",
+      "exact-main Local Autonomy run 34482924040 completed every step successfully and persisted artifact 10157084959 with digest sha256:69665a8e68ea02eb0971380425f296bdde8910d4eac4bc90fca67fbe70a0d955",
+      "NEXUS-BYBIT-WSL, NEXUS-LOCAL-RUNNER and NEXUS-WINDOWS-DR were all observed online and idle after the exact-main proofs"
     ],
     "do_not_repeat_without_regression_evidence": [
       "WSL rootfs ownership/DACL recovery",
@@ -131,7 +138,8 @@
       "Multi-Pair wheelhouse redownload when the shared cache deterministically repacks to the exact hosted digest and lock",
       "classification of the 8/12 Paper state as a Bybit HTTP 403 data-plane outage; exact-main run 34397395277 proved source-SHA/no-new-hour4-bar freshness semantics while endpoint fallbacks still completed",
       "fixed Strategy Factory replay artifact ID 8867026863 or representation-sensitive legacy archive digest; use the unexpired manifest-bound replay-v2 selector and canonical semantic identity",
-      "re-diagnosis of Multi-Pair Paper feedback run 34412163303 as an evidence or Bybit failure; PR #1430 proved it was isolated-job dependency provisioning and exact-main run 34414723066 verified the repair"
+      "re-diagnosis of Multi-Pair Paper feedback run 34412163303 as an evidence or Bybit failure; PR #1430 proved it was isolated-job dependency provisioning and exact-main run 34414723066 verified the repair",
+      "Windows Local/DR runner routing ambiguity or 2.336.0-to-2.337.0 migration repair unless new exact repository/runtime evidence shows regression"
     ],
     "current_blocker": {
       "area": "Strategy Factory candidate governance",
@@ -143,12 +151,12 @@
     "canonical_authority_fields_preserved": true
   },
   "current_evidence": {
-    "observed_main_sha": "21af398b9e73896f98c792a99230cf1562f7a04b",
-    "observed_at_utc": "2026-09-09T22:59:00Z",
-    "state_commit_relationship": "observed_main_sha is the exact base main snapshot before this continuity-only feedback-runtime checkpoint; the latest Paper, Multi-Pair proof and feedback evidence below are bound to that SHA, while Strategy Factory replay-v2 and earlier runtime proofs remain historical fixed-SHA evidence",
+    "observed_main_sha": "91b29b36e38eeb03c45bf52060030fa940206b81",
+    "observed_at_utc": "2026-09-10T14:31:00Z",
+    "state_commit_relationship": "observed_main_sha is the exact base main snapshot whose Windows runner routing and exact-main post-repair evidence are recorded by this continuity checkpoint; historical Paper, Strategy Factory and prospective-gate evidence remains fixed to its own source SHA and is not relabeled as current",
     "latest_main_change": {
-      "pr": 1430,
-      "summary": "Provisioned the isolated Multi-Pair Paper feedback verifier job from pinned Python 3.12 and requirements.lock, with regression coverage that requires setup, install and pip check before verifier import.",
+      "pr": 1433,
+      "summary": "Bound Windows self-hosted workflows to deterministic role-specific labels and added routing regression coverage without expanding runner, credential, Live or production authority.",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true
@@ -175,23 +183,40 @@
       "deterministic_risk_final_authority": true
     },
     "windows_dr_persistence": {
-      "status": "SUCCESS_HISTORICAL_FIXED_SHA_PHYSICAL",
-      "run_id": 34171177267,
-      "source_sha": "e25e2e9fe900f627d6eedbbb6ab438053e216714",
+      "status": "SUCCESS_EXACT_MAIN_PHYSICAL_CURRENT",
+      "run_id": 34482923984,
+      "source_sha": "91b29b36e38eeb03c45bf52060030fa940206b81",
       "runner": "NEXUS-WINDOWS-DR",
       "machine": "DESKTOP-1R1081M",
-      "artifact_id": 10035821661,
-      "artifact_digest": "sha256:9661b94f2417a36a12868c82b960e48a61eb98c3261499622fdf132d7ae74612",
+      "runner_version": "2.337.0",
+      "routing_label": "nexus-remote-rescue",
+      "artifact_id": 10156147936,
+      "artifact_digest": "sha256:e39caa5ccb230078e434059efed66859d5338ae33b5739ea5751c55db3d89a54",
       "exact_source_fetch_verified": true,
       "persistence_install_decision": "SUCCESS",
-      "persistence_install_source_sha": "987b4212d252d993cf1065e11d8bc112f11e6172",
-      "persistence_install_run_id": 33805581549,
-      "current_main_bootstrap_decision": "ALREADY_RUNNING",
+      "current_main_bootstrap_decision": "SUCCESS",
       "runner_registration_modified": false,
       "runner_credentials_modified": false,
       "other_runner_paths_modified": false,
       "live_trading_authority": false,
-      "evidence_scope": "historical_fixed_sha"
+      "evidence_scope": "exact_checkpoint_main"
+    },
+    "windows_local_autonomy": {
+      "status": "SUCCESS_EXACT_MAIN_PHYSICAL_CURRENT",
+      "run_id": 34482924040,
+      "source_sha": "91b29b36e38eeb03c45bf52060030fa940206b81",
+      "runner": "NEXUS-LOCAL-RUNNER",
+      "machine": "DESKTOP-1R1081M",
+      "runner_version": "2.337.0",
+      "routing_label": "nexus-local",
+      "workflow_conclusion": "success",
+      "bounded_autonomous_queue_completed": true,
+      "artifact_id": 10157084959,
+      "artifact_digest": "sha256:69665a8e68ea02eb0971380425f296bdde8910d4eac4bc90fca67fbe70a0d955",
+      "runner_registration_modified": false,
+      "runner_credentials_modified": false,
+      "live_trading_authority": false,
+      "evidence_scope": "exact_checkpoint_main"
     },
     "windows_recovery_probe": {
       "status": "CONTEXT_LIMITED_SECURITY_BOUNDARY_CONFIRMED_NOT_BLOCKING_CURRENT_WINDOWS_DR_PERSISTENCE",
@@ -554,7 +579,7 @@
     },
     "windows_user_context_recovery": {
       "state": "historical_context_limit_not_current_persistence_blocker",
-      "reason": "NETWORK_SERVICE user-token/task-query limitations remain documented; the latest Windows DR persistence evidence is a successful historical fixed-SHA proof and is not relabeled as current main"
+      "reason": "NETWORK_SERVICE user-token/task-query limitations remain documented; current exact-main DR persistence and Local Autonomy succeeded after the Windows 2.337.0 junction migration"
     },
     "wsl_user_context_self_heal": {
       "issue": 1372,
@@ -584,6 +609,13 @@
       "workflow_run": 34404651563,
       "artifact_id": 10125093054,
       "reason": "frozen neighborhood validation and parameter plateau passed, but repository evidence cannot authorize derivatives validation, prospective Paper-forward admission, automatic promotion or Live authority"
+    },
+    "windows_runner_routing_and_update": {
+      "state": "closed_exact_main_verified",
+      "source_sha": "91b29b36e38eeb03c45bf52060030fa940206b81",
+      "dr_run": 34482923984,
+      "local_run": 34482924040,
+      "reason": "role-specific routing is active and both Windows runners completed exact-main proof on GitHub Runner 2.337.0 after migration to the standard junction layout"
     }
   },
   "authority": {
@@ -615,8 +647,8 @@
   "history_compaction": {
     "compacted": true,
     "reason": "Reconcile canonical STATE with current GitHub evidence while preserving all prior operational detail through immutable Git history.",
-    "prior_state_blob_sha": "77c7f0d043d922abf5f269cda203b96eda9b615a",
-    "prior_state_observed_main_sha": "1fa20ee5094e6739c5f9cacfb15aa6f1685d5657",
+    "prior_state_blob_sha": "5cbe7f90bb0d2cf823502f1c988ef3138c71817a",
+    "prior_state_observed_main_sha": "21af398b9e73896f98c792a99230cf1562f7a04b",
     "historical_detail_preserved_via_git_history": true,
     "do_not_treat_compaction_as_authority_expansion": true
   }
