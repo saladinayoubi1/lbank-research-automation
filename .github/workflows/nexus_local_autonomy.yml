@@ -3,7 +3,9 @@ name: NEXUS Local Autonomy
 on:
   workflow_dispatch:
   schedule:
-    - cron: '*/5 * * * *'
+    # Keep scheduled watchdog cadence above the observed physical checkout/bootstrap
+    # overhead plus the bounded 240s worker window so scheduled runs do not self-queue.
+    - cron: '*/15 * * * *'
   push:
     branches: [main]
     paths:
