@@ -23,7 +23,7 @@ def test_final_sha_cloud_and_physical_proofs_share_trusted_main_trigger_surfaces
     # by changing the already-approved bootstrap trigger path and carrying the
     # existing read-only proof/compatibility markers in its merge message.
     assert "- scripts/bootstrap_portable_python.cmd" in local
-    assert "runs-on: [self-hosted, Windows, X64]" in local
+    assert "runs-on: [self-hosted, Windows, X64, nexus-local]" in local
     assert "ref: ${{ github.sha }}" in local
     assert "persist-credentials: false" in local
     assert "'[verify-owner-autostart]'" in local

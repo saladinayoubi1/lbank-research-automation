@@ -53,7 +53,7 @@ def test_diagnostics_remain_read_only_and_failure_triggered() -> None:
     assert 'workflows: ["NEXUS persistent Paper trading loop"]' in text
     assert "github.event.workflow_run.conclusion == 'failure'" in text
     assert "github.event.workflow_run.conclusion == 'cancelled'" in text
-    assert "runs-on: [self-hosted, Windows, X64]" in text
+    assert "runs-on: [self-hosted, Windows, X64, nexus-local]" in text
 
 
 def test_linux_diagnostics_support_minimal_wsl_without_coreutils_process_tools() -> None:

@@ -12,7 +12,7 @@ def read(path: Path) -> str:
 
 def test_repository_really_uses_windows_x64_self_hosted_runner():
     text = read(WORKFLOW)
-    assert "runs-on: [self-hosted, Windows, X64]" in text
+    assert "runs-on: [self-hosted, Windows, X64, nexus-local]" in text
 
 
 def test_runner_discovery_requires_config_credentials_binary_and_exact_repo_binding():
