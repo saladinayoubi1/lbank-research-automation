@@ -110,6 +110,53 @@ function Get-SignedInWindowsUser {
     return $identity.Trim()
 }
 
+function Test-ExistingTargetTaskDefinition {
+    param(
+        [string]$FullRoot,
+        [string]$PowerShellPath,
+        [string]$ExpectedArguments
+    )
+
+    $schtasks = Join-Path $env:SystemRoot 'System32\schtasks.exe'
+    if (-not (Test-Path -LiteralPath $schtasks -PathType Leaf)) {
+        $schtasks = (Get-Command schtasks.exe -ErrorAction Stop).Source
+    }
+
+    $raw = & $schtasks /Query /TN "\$TaskName" /XML 2>$null
+    if ($LASTEXITCODE -ne 0 -or -not $raw) { return $false }
+
+    try { [xml]$taskXml = ($raw -join "`r`n") }
+    catch { return $false }
+
+    $ns = New-Object System.Xml.XmlNamespaceManager($taskXml.NameTable)
+    $ns.AddNamespace('t', 'http://schemas.microsoft.com/windows/2004/02/mit/task')
+    $commandNode = $taskXml.SelectSingleNode('//t:Actions/t:Exec/t:Command', $ns)
+    $argumentsNode = $taskXml.SelectSingleNode('//t:Actions/t:Exec/t:Arguments', $ns)
+    $workingNode = $taskXml.SelectSingleNode('//t:Actions/t:Exec/t:WorkingDirectory', $ns)
+    $logonNode = $taskXml.SelectSingleNode('//t:Principals/t:Principal/t:LogonType', $ns)
+    $instancesNode = $taskXml.SelectSingleNode('//t:Settings/t:MultipleInstancesPolicy', $ns)
+    $logonTrigger = $taskXml.SelectSingleNode('//t:Triggers/t:LogonTrigger', $ns)
+    if (-not $commandNode -or -not $argumentsNode -or -not $workingNode -or -not $logonNode -or -not $instancesNode -or -not $logonTrigger) {
+        return $false
+    }
+
+    try {
+        $actualCommand = [IO.Path]::GetFullPath([string]$commandNode.InnerText)
+        $expectedCommand = [IO.Path]::GetFullPath($PowerShellPath)
+        $actualWorking = [IO.Path]::GetFullPath([string]$workingNode.InnerText).TrimEnd('\')
+        $expectedWorking = [IO.Path]::GetFullPath($FullRoot).TrimEnd('\')
+    }
+    catch { return $false }
+
+    return (
+        $actualCommand.Equals($expectedCommand, [StringComparison]::OrdinalIgnoreCase) -and
+        ([string]$argumentsNode.InnerText -eq $ExpectedArguments) -and
+        $actualWorking.Equals($expectedWorking, [StringComparison]::OrdinalIgnoreCase) -and
+        ([string]$logonNode.InnerText -eq 'InteractiveToken') -and
+        ([string]$instancesNode.InnerText -eq 'IgnoreNew')
+    )
+}
+
 function Start-TargetRunnerHidden {
     $fullRoot = Assert-TargetRunnerFiles
     if (Get-TargetListener) { return $false }
@@ -173,6 +220,39 @@ function Install-TargetTask {
         $powershell = (Get-Command powershell.exe -ErrorAction Stop).Source
     }
     $user = $signedInUser
+    $actionArguments = "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$StableScript`" -Mode Run -RunnerRoot `"$fullRoot`" -ExpectedRunnerName `"$ExpectedRunnerName`" -ExpectedGitHubUrl `"$ExpectedGitHubUrl`""
+
+    $script:InstallStage = 'scheduler_existing_task_check'
+    if (Test-ExistingTargetTaskDefinition -FullRoot $fullRoot -PowerShellPath $powershell -ExpectedArguments $actionArguments) {
+        $listenerObserved = [bool](Get-TargetListener)
+        if (-not $listenerObserved) {
+            $script:InstallStage = 'scheduler_existing_task_run'
+            $schtasks = Join-Path $env:SystemRoot 'System32\schtasks.exe'
+            if (-not (Test-Path -LiteralPath $schtasks -PathType Leaf)) {
+                $schtasks = (Get-Command schtasks.exe -ErrorAction Stop).Source
+            }
+            & $schtasks /Run /TN "\$TaskName" | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw 'Existing target task could not be started.' }
+            Start-Sleep -Seconds 2
+            $listenerObserved = [bool](Get-TargetListener)
+        }
+        if (-not $listenerObserved) { throw 'Existing target task is exact but target listener was not observed.' }
+
+        $script:TaskRegistered = $true
+        $script:TaskStarted = $true
+        $script:InstallStage = 'evidence_success_reused'
+        Write-Evidence 'SUCCESS' @{
+            target_task_registered = $true
+            target_task_started = $true
+            target_task_reused = $true
+            signed_in_user_verified = $true
+            stable_script = $StableScript
+            target_listener_observed = $true
+        }
+        Write-Log 'install_decision=SUCCESS task_reused=true'
+        Write-Host 'windows_dr_autostart_decision=SUCCESS task_reused=true'
+        return
+    }
 
     $script:InstallStage = 'scheduler_connect'
     $service = New-Object -ComObject 'Schedule.Service'
@@ -203,7 +283,7 @@ function Install-TargetTask {
     $script:InstallStage = 'scheduler_action'
     $action = $definition.Actions.Create(0)
     $action.Path = $powershell
-    $action.Arguments = "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$StableScript`" -Mode Run -RunnerRoot `"$fullRoot`" -ExpectedRunnerName `"$ExpectedRunnerName`" -ExpectedGitHubUrl `"$ExpectedGitHubUrl`""
+    $action.Arguments = $actionArguments
     $action.WorkingDirectory = $fullRoot
 
     $script:InstallStage = 'scheduler_register'
@@ -219,6 +299,7 @@ function Install-TargetTask {
     Write-Evidence 'SUCCESS' @{
         target_task_registered = $true
         target_task_started = $true
+        target_task_reused = $false
         signed_in_user_verified = $true
         stable_script = $StableScript
         target_listener_observed = [bool](Get-TargetListener)

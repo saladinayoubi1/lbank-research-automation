@@ -27,7 +27,7 @@ concurrency:
 jobs:
   provision:
     if: (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') || (github.event_name == 'push' && contains(github.event.head_commit.message, '[provision-bybit-wsl1]'))
-    runs-on: [self-hosted, Windows, X64]
+    runs-on: [self-hosted, Windows, X64, nexus-local]
     timeout-minutes: 120
     defaults:
       run:

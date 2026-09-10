@@ -57,7 +57,7 @@ jobs:
 
   bootstrap:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-    runs-on: [self-hosted, Windows, X64]
+    runs-on: [self-hosted, Windows, X64, nexus-local]
     timeout-minutes: 15
     defaults:
       run:

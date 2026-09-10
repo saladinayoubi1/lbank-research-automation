@@ -23,7 +23,7 @@ concurrency:
 jobs:
   capture:
     if: ${{ (github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/main') && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'failure' || github.event.workflow_run.conclusion == 'cancelled') }}
-    runs-on: [self-hosted, Windows, X64]
+    runs-on: [self-hosted, Windows, X64, nexus-local]
     timeout-minutes: 10
     steps:
       - name: Prepare exact diagnostic source without JavaScript actions

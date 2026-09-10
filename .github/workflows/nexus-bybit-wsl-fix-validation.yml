@@ -19,7 +19,7 @@ concurrency:
 jobs:
   validate:
     if: contains(github.event.head_commit.message, '[verify-bybit-wsl-provision]')
-    runs-on: [self-hosted, Windows, X64]
+    runs-on: [self-hosted, Windows, X64, nexus-local]
     timeout-minutes: 120
     defaults:
       run:
