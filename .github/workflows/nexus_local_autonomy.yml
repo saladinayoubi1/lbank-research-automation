@@ -54,6 +54,7 @@ jobs:
         with:
           node-version: '20'
       - name: Bootstrap portable Python
+        timeout-minutes: 10
         shell: cmd
         run: call scripts\bootstrap_portable_python.cmd
 

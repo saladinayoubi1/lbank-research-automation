@@ -131,7 +131,7 @@ jobs:
           '
 
       - name: Request existing Remote Commander user-context recovery through WSL
-        if: matrix.target == 'wsl'
+        if: matrix.target == 'wsl' && github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           set -euo pipefail

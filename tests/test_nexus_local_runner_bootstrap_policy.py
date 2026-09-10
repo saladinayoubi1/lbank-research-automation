@@ -41,15 +41,27 @@ def test_extracted_interpreter_is_rebuilt_from_verified_archive_each_run():
     text = _text()
     assert 'if not exist "%PYROOT%\\python.exe" (' not in text
     assert 'if exist "%PYROOT%" rmdir /s /q "%PYROOT%"' in text
+    assert 'if exist "%PYROOT%" exit /b 1' in text
     assert text.index('if exist "%PYROOT%" rmdir /s /q "%PYROOT%"') < text.index('tar.exe -xf "%PYZIP%"')
 
 
 def test_bootstrap_network_operations_remain_bounded_fail_closed_and_portable():
     text = _text()
-    assert text.count('--retry 3 --retry-delay 2') >= 2
+    assert 'CURL_TIMEOUTS=--connect-timeout 10 --max-time 120 --retry 2 --retry-delay 2' in text
+    assert text.count('curl.exe -L --fail %CURL_TIMEOUTS%') == 2
     assert '--retry-all-errors' not in text
-    assert '--retries 5 --timeout 60' in text
+    assert 'PIP_TIMEOUTS=--retries 2 --timeout 30 --no-input' in text
+    assert text.count('-m pip install --disable-pip-version-check %PIP_TIMEOUTS% -r requirements-dev.lock') == 2
     assert 'if errorlevel 1 exit /b 1' in text
+
+
+def test_bootstrap_runtime_is_isolated_per_run_and_stale_temp_downloads_are_removed():
+    text = _text()
+    assert 'PYROOT_SUFFIX=%GITHUB_RUN_ID%' in text
+    assert 'if not defined PYROOT_SUFFIX set "PYROOT_SUFFIX=local"' in text
+    assert 'PYROOT=%RUNNER_TEMP%\\python312-%PYROOT_SUFFIX%' in text
+    assert 'if exist "%PYZIP%.tmp" del /f /q "%PYZIP%.tmp"' in text
+    assert 'if exist "%PIP_WHEEL%.tmp" del /f /q "%PIP_WHEEL%.tmp"' in text
 
 
 def test_portable_artifact_cache_survives_runner_temp_cleanup_and_remains_checksum_verified():
