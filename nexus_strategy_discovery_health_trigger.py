@@ -13,7 +13,7 @@ import json
 from pathlib import Path
 from typing import Any, Mapping
 
-from nexus_persistent_paper_trading_loop import verify_loop_snapshot
+from nexus_multipair_persistent_paper_trading_loop import verify_loop_snapshot
 
 
 SCHEMA = "nexus.strategy-discovery-health-trigger.v1"
