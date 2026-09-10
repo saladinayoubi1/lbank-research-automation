@@ -114,7 +114,7 @@ jobs:
             'found=0',
             'while IFS= read -r line; do',
             '  case "$line" in',
-            '    *\"agentName\"*__EXPECTED_RUNNER_NAME__*) found=1 ;;',
+            '    *__EXPECTED_RUNNER_NAME__*) found=1 ;;',
             '  esac',
             'done < __RUNNER_ROOT__/.runner',
             'if [ "$found" -ne 1 ]; then printf "registration_check=runner_name_mismatch\n"; exit 12; fi',
