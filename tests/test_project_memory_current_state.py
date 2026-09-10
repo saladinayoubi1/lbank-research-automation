@@ -60,11 +60,13 @@ def test_project_memory_current_paper_acceptance_is_closed_and_provenance_bound(
     assert paper["deterministic_risk_final_authority"] is True
 
 
-def test_project_memory_windows_persistence_is_historical_and_probe_remains_bounded() -> None:
+def test_project_memory_windows_persistence_is_current_and_probe_remains_bounded() -> None:
     state = _state()
     evidence = state["current_evidence"]
     probe = evidence["windows_recovery_probe"]
     persistence = evidence["windows_dr_persistence"]
+    local = evidence["windows_local_autonomy"]
+    gate = state["open_gates"]["windows_runner_routing_and_update"]
 
     assert probe["status"] == "CONTEXT_LIMITED_SECURITY_BOUNDARY_CONFIRMED_NOT_BLOCKING_CURRENT_WINDOWS_DR_PERSISTENCE"
     assert SHA_RE.fullmatch(probe["source_sha"])
@@ -78,17 +80,39 @@ def test_project_memory_windows_persistence_is_historical_and_probe_remains_boun
     assert probe["privilege_acl_service_account_change_authorized"] is False
     assert probe["runner_reregistration_authorized"] is False
 
-    assert persistence["status"] == "SUCCESS_HISTORICAL_FIXED_SHA_PHYSICAL"
-    assert persistence["evidence_scope"] == "historical_fixed_sha"
-    assert SHA_RE.fullmatch(persistence["source_sha"])
-    assert persistence["source_sha"] != evidence["observed_main_sha"]
+    assert persistence["status"] == "SUCCESS_EXACT_MAIN_PHYSICAL_CURRENT"
+    assert persistence["evidence_scope"] == "exact_checkpoint_main"
+    assert persistence["source_sha"] == evidence["observed_main_sha"]
     assert persistence["runner"] == "NEXUS-WINDOWS-DR"
+    assert persistence["runner_version"] == "2.337.0"
+    assert persistence["routing_label"] == "nexus-remote-rescue"
+    assert persistence["run_id"] == 34482923984
+    assert persistence["artifact_id"] == 10156147936
     assert persistence["persistence_install_decision"] == "SUCCESS"
     assert persistence["exact_source_fetch_verified"] is True
     assert persistence["runner_registration_modified"] is False
     assert persistence["runner_credentials_modified"] is False
     assert persistence["other_runner_paths_modified"] is False
     assert persistence["live_trading_authority"] is False
+
+    assert local["status"] == "SUCCESS_EXACT_MAIN_PHYSICAL_CURRENT"
+    assert local["evidence_scope"] == "exact_checkpoint_main"
+    assert local["source_sha"] == evidence["observed_main_sha"]
+    assert local["runner"] == "NEXUS-LOCAL-RUNNER"
+    assert local["runner_version"] == "2.337.0"
+    assert local["routing_label"] == "nexus-local"
+    assert local["run_id"] == 34482924040
+    assert local["artifact_id"] == 10157084959
+    assert local["workflow_conclusion"] == "success"
+    assert local["bounded_autonomous_queue_completed"] is True
+    assert local["runner_registration_modified"] is False
+    assert local["runner_credentials_modified"] is False
+    assert local["live_trading_authority"] is False
+
+    assert gate["state"] == "closed_exact_main_verified"
+    assert gate["source_sha"] == evidence["observed_main_sha"]
+    assert gate["dr_run"] == persistence["run_id"]
+    assert gate["local_run"] == local["run_id"]
 
 
 def test_project_memory_records_verified_boundary_discovery_without_promotion_authority() -> None:
@@ -135,7 +159,8 @@ def test_project_memory_keeps_real_time_and_production_gates_fail_closed() -> No
     latest_paper = state["current_evidence"]["persistent_paper_runtime_latest"]
     assert latest_paper["status"] == "VERIFIED_WAITING_FOR_FRESH_CELLS_PERSISTED"
     assert SHA_RE.fullmatch(latest_paper["source_sha"])
-    assert latest_paper["source_sha"] == state["current_evidence"]["observed_main_sha"]
+    assert latest_paper["source_sha"] == gates["persistent_paper_freshness"]["source_sha"]
+    assert latest_paper["source_sha"] != state["current_evidence"]["observed_main_sha"]
     assert latest_paper["workflow_run"] == 34413401197
     assert latest_paper["workflow_conclusion"] == "success"
     assert latest_paper["persisted_state_artifact_id"] == 10128322177
@@ -162,7 +187,7 @@ def test_project_memory_records_exact_main_strategy_factory_review_boundary() ->
     lifecycle = evidence["demo_regime_lifecycle_latest"]
     gate = state["open_gates"]["strategy_factory_candidate_review"]
 
-    assert evidence["observed_main_sha"] == "21af398b9e73896f98c792a99230cf1562f7a04b"
+    assert SHA_RE.fullmatch(evidence["observed_main_sha"])
     assert factory["status"] == "EXACT_MAIN_REPLAY_V2_ROTATION_AND_RESEARCH_RUNS_VERIFIED"
     assert factory["source_sha"] == "50ac6ea8a331c08dca3e8be184ed0717380ff7f6"
     assert factory["source_sha"] != evidence["observed_main_sha"]
@@ -194,14 +219,15 @@ def test_project_memory_records_exact_main_strategy_factory_review_boundary() ->
 def test_project_memory_records_repaired_exact_main_multipair_feedback_boundary() -> None:
     state = _state()
     evidence = state["current_evidence"]
-    source_sha = evidence["observed_main_sha"]
     discovery = evidence["strategy_discovery_latest_runtime"]
     paper = evidence["persistent_paper_runtime_latest"]
     feedback = evidence["multipair_paper_boundary_feedback_latest"]
     gate = state["open_gates"]["multipair_paper_boundary_feedback_runtime"]
+    source_sha = feedback["source_sha"]
 
     assert source_sha == "21af398b9e73896f98c792a99230cf1562f7a04b"
-    assert paper["source_sha"] == discovery["source_sha"] == feedback["source_sha"] == source_sha
+    assert source_sha != evidence["observed_main_sha"]
+    assert paper["source_sha"] == discovery["source_sha"] == source_sha
     assert paper["workflow_run"] == feedback["paper_workflow_run"] == 34413401197
     assert discovery["physical_proof_workflow_run"] == feedback["discovery_workflow_run"] == 34413429714
     assert discovery["research_proposal_count"] == 0
