@@ -9,13 +9,10 @@ on:
     paths:
       - .github/workflows/nexus-bybit-wsl-runner-wake.yml
 
-# Bootstrap-safe recovery path for the already-registered Bybit WSL runner.
-# The legacy Windows Scheduled Tasks are intentionally not used here because
-# runtime evidence proved they are disabled and ACL-locked even from the
-# repository-bound DR runner. Instead, the DR runner verifies the exact existing
-# WSL runner registration and starts that registration directly inside Ubuntu.
-# No runner registration, credentials, Windows task ACLs, or trading authority
-# are modified.
+# Bootstrap-safe recovery for the already-registered Bybit WSL runner.
+# Keep the recovery contract aligned with install_nexus_bybit_wsl_user_startup.ps1:
+# exact Ubuntu distribution, exact isolated runner root, exact existing runner name,
+# procfs liveness checks, and no registration/credential/ACL/trading-authority mutation.
 permissions:
   contents: read
 
@@ -43,7 +40,6 @@ jobs:
           $distribution = 'Ubuntu'
           $wslRunnerRoot = '/opt/nexus-bybit-runner'
           $expectedWslRunnerName = 'NEXUS-BYBIT-WSL'
-          $serviceName = 'nexus-bybit-runner.service'
           $wsl = Join-Path $env:SystemRoot 'System32\wsl.exe'
 
           if (-not (Test-Path -LiteralPath $windowsRunnerConfig -PathType Leaf)) {
@@ -65,7 +61,7 @@ jobs:
             $previous = $ErrorActionPreference
             try {
               $ErrorActionPreference = 'Continue'
-              $normalizedCommand = $Command.Replace("`r", '')
+              $normalizedCommand = $Command.Replace("`r`n", "`n").Replace("`r", "`n")
               $raw = @(& $wsl -d $distribution -u root -- bash -lc $normalizedCommand 2>&1)
               $code = $LASTEXITCODE
               $text = (($raw | ForEach-Object { $_.ToString() }) | Out-String).Trim()
@@ -74,6 +70,33 @@ jobs:
             finally {
               $ErrorActionPreference = $previous
             }
+          }
+
+          function Get-ListenerState {
+            $command = @'
+listener=0
+for proc in /proc/[0-9]*; do
+  [ -r "$proc/cmdline" ] || continue
+  exe=''
+  IFS= read -r -d '' exe < "$proc/cmdline" || continue
+  case "$exe" in
+    '__RUNNER_ROOT__/bin/Runner.Listener') listener=1; break ;;
+  esac
+done
+printf 'listener=%s\n' "$listener"
+'@
+            $command = $command.Replace('__RUNNER_ROOT__', $wslRunnerRoot)
+            $probe = Invoke-Wsl -Command $command
+            if ($probe.Code -ne 0) {
+              return [pscustomobject]@{ Known = $false; Listener = $false }
+            }
+            if ($probe.Text -match '(?m)^listener=1$') {
+              return [pscustomobject]@{ Known = $true; Listener = $true }
+            }
+            if ($probe.Text -match '(?m)^listener=0$') {
+              return [pscustomobject]@{ Known = $true; Listener = $false }
+            }
+            return [pscustomobject]@{ Known = $false; Listener = $false }
           }
 
           Write-Host "recovery_runner=$($windowsConfig.agentName)"
@@ -85,67 +108,87 @@ jobs:
           Write-Host 'runner_credentials_mutated=false'
           Write-Host 'live_trading_authority_changed=false'
 
-          $registrationProbe = @"
-          set -euo pipefail
-          test -x '$wslRunnerRoot/run.sh'
-          test -x '$wslRunnerRoot/bin/Runner.Listener'
-          test -f '$wslRunnerRoot/.runner'
-          test -f '$wslRunnerRoot/.credentials'
-          grep -Eq '"agentName"[[:space:]]*:[[:space:]]*"$expectedWslRunnerName"' '$wslRunnerRoot/.runner'
-          grep -Eq '"gitHubUrl"[[:space:]]*:[[:space:]]*"https://github.com/saladinayoubi1/lbank-research-automation/?"' '$wslRunnerRoot/.runner'
-          "@
+          # Match the canonical existing-registration contract used by the user-startup watchdog.
+          $registrationProbe = @'
+test -x '__RUNNER_ROOT__/run.sh' || { printf 'registration_check=run_sh_missing\n'; exit 10; }
+test -f '__RUNNER_ROOT__/.runner' || { printf 'registration_check=runner_config_missing\n'; exit 11; }
+found=0
+while IFS= read -r line; do
+  case "$line" in
+    *'"agentName"'*'__EXPECTED_RUNNER_NAME__'*) found=1 ;;
+  esac
+done < '__RUNNER_ROOT__/.runner'
+if [ "$found" -ne 1 ]; then printf 'registration_check=runner_name_mismatch\n'; exit 12; fi
+printf 'registration_check=pass\n'
+'@
+          $registrationProbe = $registrationProbe.Replace('__RUNNER_ROOT__', $wslRunnerRoot).Replace('__EXPECTED_RUNNER_NAME__', $expectedWslRunnerName)
           $probe = Invoke-Wsl -Command $registrationProbe
           if ($probe.Code -ne 0) {
-            if ($probe.Text) { Write-Host "wsl_registration_probe=$($probe.Text)" }
-            throw 'Exact existing Bybit WSL runner registration could not be verified.'
+            if ($probe.Text) { Write-Host $probe.Text }
+            throw "Exact existing Bybit WSL runner registration could not be verified (exit=$($probe.Code))."
           }
-          Write-Host "wsl_distribution=$distribution"
-          Write-Host "wsl_runner_root=$wslRunnerRoot"
-          Write-Host "wsl_runner_name=$expectedWslRunnerName"
           Write-Host 'wsl_runner_registration=PASS'
 
-          $listenerProbe = Invoke-Wsl -Command "pgrep -f '$wslRunnerRoot/bin/Runner.Listener' >/dev/null 2>&1"
-          if ($listenerProbe.Code -eq 0) {
+          $state = Get-ListenerState
+          if (-not $state.Known) {
+            throw 'Bybit WSL listener state could not be determined safely.'
+          }
+          if ($state.Listener) {
             Write-Host 'wsl_runner_listener=ALREADY_RUNNING'
             Write-Host 'bybit_wsl_native_wake=PASS'
             exit 0
           }
 
-          $systemdProbe = Invoke-Wsl -Command "ps -p 1 -o comm= | grep -qx '[[:space:]]*systemd[[:space:]]*' && test -f '/etc/systemd/system/$serviceName'"
-          if ($systemdProbe.Code -eq 0) {
-            $start = Invoke-Wsl -Command "set -e; systemctl daemon-reload; systemctl start '$serviceName'"
-            if ($start.Code -ne 0) {
-              if ($start.Text) { Write-Host "systemd_start_response=$($start.Text)" }
-              throw 'Existing Bybit WSL systemd service could not be started.'
-            }
-            Write-Host 'wsl_runner_start_method=existing-systemd-service'
-          }
-          else {
-            # Clear GitHub runner process tracking for the detached child so the
-            # Windows job cleanup does not treat the Linux listener as an orphan.
-            $env:RUNNER_TRACKING_ID = ''
-            $start = Invoke-Wsl -Command "set -e; cd '$wslRunnerRoot'; nohup env RUNNER_ALLOW_RUNASROOT=1 ./run.sh > /tmp/nexus-bybit-runner.log 2>&1 < /dev/null &"
-            if ($start.Code -ne 0) {
-              if ($start.Text) { Write-Host "direct_start_response=$($start.Text)" }
-              throw 'Exact existing Bybit WSL runner could not be started directly.'
-            }
-            Write-Host 'wsl_runner_start_method=detached-existing-run-sh'
-          }
+          # Keep a detached Windows wsl.exe host alive for WSL1 compatibility, mirroring
+          # the canonical user-startup watchdog. Clearing RUNNER_TRACKING_ID prevents
+          # GitHub job cleanup from classifying this long-lived host as a job orphan.
+          $previousTrackingId = [string]$env:RUNNER_TRACKING_ID
+          $env:RUNNER_TRACKING_ID = ''
+          $psi = New-Object Diagnostics.ProcessStartInfo
+          $psi.FileName = $wsl
+          $psi.Arguments = '-d ' + $distribution + ' -u root -- bash'
+          $psi.UseShellExecute = $false
+          $psi.CreateNoWindow = $true
+          $psi.WindowStyle = [Diagnostics.ProcessWindowStyle]::Hidden
+          $psi.RedirectStandardInput = $true
+          $hostProcess = New-Object Diagnostics.Process
+          $hostProcess.StartInfo = $psi
 
-          $observed = $false
-          for ($attempt = 1; $attempt -le 30; $attempt++) {
-            Start-Sleep -Seconds 1
-            $listenerProbe = Invoke-Wsl -Command "pgrep -f '$wslRunnerRoot/bin/Runner.Listener' >/dev/null 2>&1"
-            if ($listenerProbe.Code -eq 0) {
-              $observed = $true
-              break
+          try {
+            if (-not $hostProcess.Start()) {
+              throw 'Could not start the existing Bybit WSL runner host process.'
+            }
+            $startCommand = "cd '$wslRunnerRoot' && export RUNNER_ALLOW_RUNASROOT=1 && export RUNNER_TRACKING_ID= && exec ./run.sh >>'/tmp/nexus-bybit-runner.log' 2>&1"
+            $normalizedStart = $startCommand.Replace("`r`n", "`n").Replace("`r", "`n")
+            $hostProcess.StandardInput.Write($normalizedStart)
+            $hostProcess.StandardInput.Write("`n")
+            $hostProcess.StandardInput.Close()
+            Start-Sleep -Seconds 5
+            if ($hostProcess.HasExited) {
+              throw "Existing Bybit WSL runner exited during startup (exit=$($hostProcess.ExitCode))."
+            }
+
+            $observed = $false
+            for ($attempt = 1; $attempt -le 20; $attempt++) {
+              $state = Get-ListenerState
+              if ($state.Known -and $state.Listener) {
+                $observed = $true
+                break
+              }
+              Start-Sleep -Seconds 1
+            }
+            if (-not $observed) {
+              throw 'Bybit WSL Runner.Listener was not observed within the bounded startup window.'
+            }
+
+            Write-Host "wsl_host_pid=$($hostProcess.Id)"
+            Write-Host 'wsl_runner_start_method=managed-existing-run-sh'
+            Write-Host 'wsl_runner_listener=RUNNING'
+            Write-Host 'bybit_wsl_native_wake=PASS'
+          }
+          finally {
+            $env:RUNNER_TRACKING_ID = $previousTrackingId
+            if ($null -ne $hostProcess -and $hostProcess.HasExited) {
+              $hostProcess.Dispose()
             }
           }
-          if (-not $observed) {
-            $tail = Invoke-Wsl -Command "test -f /tmp/nexus-bybit-runner.log && tail -n 30 /tmp/nexus-bybit-runner.log || true"
-            if ($tail.Text) { Write-Host "wsl_runner_log_tail=$($tail.Text)" }
-            throw 'Bybit WSL Runner.Listener was not observed within the bounded startup window.'
-          }
-
-          Write-Host 'wsl_runner_listener=RUNNING'
-          Write-Host 'bybit_wsl_native_wake=PASS'
