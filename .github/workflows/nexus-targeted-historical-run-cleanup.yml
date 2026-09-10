@@ -1,0 +1,98 @@
+name: NEXUS Targeted Historical Run Cleanup
+
+on:
+  push:
+    branches:
+      - maintenance/cancel-stale-runs-20260910
+    paths:
+      - .github/workflows/nexus-targeted-historical-run-cleanup.yml
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  cleanup:
+    name: Cancel exact obsolete queued runs
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Validate and cancel exact historical runs
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          main_sha="$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq '.object.sha')"
+          echo "current_main=${main_sha}"
+
+          ids=(32214132372 31126604518 31126604519)
+          refs=(agent/local-runner-install-status agent/issue-94-contract-validator agent/issue-94-contract-validator)
+          shas=(40b12010816df06cae5fe114fd3bbaf6f9045a31 1cef86d87d0b82d5624bc48f5ea81a9ee4891745 1cef86d87d0b82d5624bc48f5ea81a9ee4891745)
+
+          for i in "${!ids[@]}"; do
+            id="${ids[$i]}"
+            expected_ref="${refs[$i]}"
+            expected_sha="${shas[$i]}"
+            api="repos/${GH_REPO}/actions/runs/${id}"
+
+            status="$(gh api "${api}" --jq '.status')"
+            head_ref="$(gh api "${api}" --jq '.head_branch')"
+            head_sha="$(gh api "${api}" --jq '.head_sha')"
+            created_at="$(gh api "${api}" --jq '.created_at')"
+
+            echo "run=${id} status=${status} ref=${head_ref} sha=${head_sha} created_at=${created_at}"
+
+            if [[ "${head_ref}" != "${expected_ref}" || "${head_sha}" != "${expected_sha}" ]]; then
+              echo "Refusing to cancel run ${id}: identity mismatch" >&2
+              exit 1
+            fi
+            if [[ "${head_sha}" == "${main_sha}" ]]; then
+              echo "Refusing to cancel run ${id}: points at current main" >&2
+              exit 1
+            fi
+            if [[ "${created_at}" > "2026-08-20T00:00:00Z" ]]; then
+              echo "Refusing to cancel run ${id}: not old enough" >&2
+              exit 1
+            fi
+
+            if [[ "${status}" == "completed" ]]; then
+              echo "run=${id} already terminal; no action"
+              continue
+            fi
+            if [[ "${status}" != "queued" && "${status}" != "in_progress" && "${status}" != "waiting" && "${status}" != "pending" ]]; then
+              echo "Refusing unexpected status for run ${id}: ${status}" >&2
+              exit 1
+            fi
+
+            echo "requesting normal cancellation for run=${id}"
+            gh api --method POST "${api}/cancel" >/dev/null || true
+
+            for attempt in 1 2 3 4 5; do
+              sleep 3
+              status="$(gh api "${api}" --jq '.status')"
+              echo "run=${id} post_cancel_attempt=${attempt} status=${status}"
+              [[ "${status}" == "completed" ]] && break
+            done
+
+            if [[ "${status}" != "completed" ]]; then
+              echo "run=${id} did not terminate after normal cancellation; requesting bounded force-cancel"
+              gh api --method POST "${api}/force-cancel" >/dev/null
+              for attempt in 1 2 3 4 5; do
+                sleep 3
+                status="$(gh api "${api}" --jq '.status')"
+                echo "run=${id} post_force_attempt=${attempt} status=${status}"
+                [[ "${status}" == "completed" ]] && break
+              done
+            fi
+
+            final_status="$(gh api "${api}" --jq '.status')"
+            conclusion="$(gh api "${api}" --jq '.conclusion // ""')"
+            echo "run=${id} final_status=${final_status} conclusion=${conclusion}"
+            if [[ "${final_status}" != "completed" ]]; then
+              echo "Run ${id} is still not terminal after exact bounded cleanup" >&2
+              exit 1
+            fi
+          done
