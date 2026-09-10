@@ -2,6 +2,7 @@ from pathlib import Path
 
 
 WORKFLOW = Path('.github/workflows/nexus-local-runner.yml')
+AUTONOMY_WORKFLOW = Path('.github/workflows/nexus_local_autonomy.yml')
 BOOTSTRAP = Path('scripts/bootstrap_portable_python.cmd')
 EXPECTED_PYTHON_SHA256 = '4acbed6dd1c744b0376e3b1cf57ce906f9dc9e95e68824584c8099a63025a3c3'
 EXPECTED_PIP_SHA256 = '382ff9f685ee3bc25864f820aa50505825f10f5458ffff07e30a6d96e5715cab'
@@ -129,6 +130,17 @@ def test_bootstrap_prefers_verified_local_python_before_portable_network_fallbac
     local_index = text.index(':local_python')
     python_download_index = text.index('https://www.python.org/ftp/python/')
     assert local_index < python_download_index
+
+
+def test_autonomy_schedule_exceeds_bounded_worker_window_and_keeps_push_immediate():
+    workflow = AUTONOMY_WORKFLOW.read_text(encoding='utf-8')
+    assert "cron: '*/15 * * * *'" in workflow
+    assert "cron: '*/5 * * * *'" not in workflow
+    assert "NEXUS_WORKER_MAX_SECONDS: '240'" in workflow
+    assert 'push:' in workflow
+    assert 'branches: [main]' in workflow
+    assert 'group: nexus-local-autonomy' in workflow
+    assert 'cancel-in-progress: false' in workflow
 
 
 def test_owner_autostart_proof_fast_path_skips_heavy_python_and_node_bootstrap():
