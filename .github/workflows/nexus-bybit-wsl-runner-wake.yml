@@ -73,18 +73,18 @@ jobs:
           }
 
           function Get-ListenerState {
-            $command = @'
-listener=0
-for proc in /proc/[0-9]*; do
-  [ -r "$proc/cmdline" ] || continue
-  exe=''
-  IFS= read -r -d '' exe < "$proc/cmdline" || continue
-  case "$exe" in
-    '__RUNNER_ROOT__/bin/Runner.Listener') listener=1; break ;;
-  esac
-done
-printf 'listener=%s\n' "$listener"
-'@
+            $command = @(
+              'listener=0',
+              'for proc in /proc/[0-9]*; do',
+              '  [ -r "$proc/cmdline" ] || continue',
+              '  exe=""',
+              '  IFS= read -r -d "" exe < "$proc/cmdline" || continue',
+              '  case "$exe" in',
+              '    __RUNNER_ROOT__/bin/Runner.Listener) listener=1; break ;;',
+              '  esac',
+              'done',
+              'printf "listener=%s\n" "$listener"'
+            ) -join "`n"
             $command = $command.Replace('__RUNNER_ROOT__', $wslRunnerRoot)
             $probe = Invoke-Wsl -Command $command
             if ($probe.Code -ne 0) {
@@ -108,19 +108,18 @@ printf 'listener=%s\n' "$listener"
           Write-Host 'runner_credentials_mutated=false'
           Write-Host 'live_trading_authority_changed=false'
 
-          # Match the canonical existing-registration contract used by the user-startup watchdog.
-          $registrationProbe = @'
-test -x '__RUNNER_ROOT__/run.sh' || { printf 'registration_check=run_sh_missing\n'; exit 10; }
-test -f '__RUNNER_ROOT__/.runner' || { printf 'registration_check=runner_config_missing\n'; exit 11; }
-found=0
-while IFS= read -r line; do
-  case "$line" in
-    *'"agentName"'*'__EXPECTED_RUNNER_NAME__'*) found=1 ;;
-  esac
-done < '__RUNNER_ROOT__/.runner'
-if [ "$found" -ne 1 ]; then printf 'registration_check=runner_name_mismatch\n'; exit 12; fi
-printf 'registration_check=pass\n'
-'@
+          $registrationProbe = @(
+            'test -x __RUNNER_ROOT__/run.sh || { printf "registration_check=run_sh_missing\n"; exit 10; }',
+            'test -f __RUNNER_ROOT__/.runner || { printf "registration_check=runner_config_missing\n"; exit 11; }',
+            'found=0',
+            'while IFS= read -r line; do',
+            '  case "$line" in',
+            '    *\"agentName\"*__EXPECTED_RUNNER_NAME__*) found=1 ;;',
+            '  esac',
+            'done < __RUNNER_ROOT__/.runner',
+            'if [ "$found" -ne 1 ]; then printf "registration_check=runner_name_mismatch\n"; exit 12; fi',
+            'printf "registration_check=pass\n"'
+          ) -join "`n"
           $registrationProbe = $registrationProbe.Replace('__RUNNER_ROOT__', $wslRunnerRoot).Replace('__EXPECTED_RUNNER_NAME__', $expectedWslRunnerName)
           $probe = Invoke-Wsl -Command $registrationProbe
           if ($probe.Code -ne 0) {
@@ -139,11 +138,9 @@ printf 'registration_check=pass\n'
             exit 0
           }
 
-          # Keep a detached Windows wsl.exe host alive for WSL1 compatibility, mirroring
-          # the canonical user-startup watchdog. Clearing RUNNER_TRACKING_ID prevents
-          # GitHub job cleanup from classifying this long-lived host as a job orphan.
           $previousTrackingId = [string]$env:RUNNER_TRACKING_ID
           $env:RUNNER_TRACKING_ID = ''
+          $hostStarted = $false
           $psi = New-Object Diagnostics.ProcessStartInfo
           $psi.FileName = $wsl
           $psi.Arguments = '-d ' + $distribution + ' -u root -- bash'
@@ -158,6 +155,7 @@ printf 'registration_check=pass\n'
             if (-not $hostProcess.Start()) {
               throw 'Could not start the existing Bybit WSL runner host process.'
             }
+            $hostStarted = $true
             $startCommand = "cd '$wslRunnerRoot' && export RUNNER_ALLOW_RUNASROOT=1 && export RUNNER_TRACKING_ID= && exec ./run.sh >>'/tmp/nexus-bybit-runner.log' 2>&1"
             $normalizedStart = $startCommand.Replace("`r`n", "`n").Replace("`r", "`n")
             $hostProcess.StandardInput.Write($normalizedStart)
@@ -188,7 +186,7 @@ printf 'registration_check=pass\n'
           }
           finally {
             $env:RUNNER_TRACKING_ID = $previousTrackingId
-            if ($null -ne $hostProcess -and $hostProcess.HasExited) {
+            if ($hostStarted -and $hostProcess.HasExited) {
               $hostProcess.Dispose()
             }
           }
