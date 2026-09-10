@@ -37,12 +37,13 @@ def test_pip_bootstrap_uses_content_pinned_wheel_instead_of_unverified_script():
     assert '"%PYROOT%\\python.exe" -m pip --version' in text
 
 
-def test_extracted_interpreter_is_rebuilt_from_verified_archive_each_run():
+def test_portable_fallback_is_rebuilt_from_verified_archive_each_run():
     text = _text()
-    assert 'if not exist "%PYROOT%\\python.exe" (' not in text
-    assert 'if exist "%PYROOT%" rmdir /s /q "%PYROOT%"' in text
-    assert 'if exist "%PYROOT%" exit /b 1' in text
-    assert text.index('if exist "%PYROOT%" rmdir /s /q "%PYROOT%"') < text.index('tar.exe -xf "%PYZIP%"')
+    fallback = text.index(':portable_fallback')
+    extract = text.index('tar.exe -xf "%PYZIP%"')
+    assert 'set "PYROOT=%RUN_PYROOT%"' in text[fallback:extract]
+    assert 'if exist "%PYROOT%" rmdir /s /q "%PYROOT%"' in text[fallback:extract]
+    assert 'if exist "%PYROOT%" exit /b 1' in text[fallback:extract]
 
 
 def test_bootstrap_network_operations_remain_bounded_fail_closed_and_portable():
@@ -55,13 +56,47 @@ def test_bootstrap_network_operations_remain_bounded_fail_closed_and_portable():
     assert 'if errorlevel 1 exit /b 1' in text
 
 
-def test_bootstrap_runtime_is_isolated_per_run_and_stale_temp_downloads_are_removed():
+def test_portable_runtime_is_per_run_and_stale_temp_downloads_are_removed():
     text = _text()
     assert 'PYROOT_SUFFIX=%GITHUB_RUN_ID%' in text
     assert 'if not defined PYROOT_SUFFIX set "PYROOT_SUFFIX=local"' in text
-    assert 'PYROOT=%RUNNER_TEMP%\\python312-%PYROOT_SUFFIX%' in text
+    assert 'RUN_PYROOT=%RUNNER_TEMP%\\python312-%PYROOT_SUFFIX%' in text
+    assert 'set "PYROOT=%RUN_PYROOT%"' in text
     assert 'if exist "%PYZIP%.tmp" del /f /q "%PYZIP%.tmp"' in text
     assert 'if exist "%PIP_WHEEL%.tmp" del /f /q "%PIP_WHEEL%.tmp"' in text
+
+
+def test_local_python_env_cache_is_content_addressed_by_both_locks_and_python_version():
+    text = _text()
+    assert 'ENV_CACHE_ROOT=%RUNNER_WORKSPACE%\\_nexus_python_envs' in text
+    assert 'PYROOT=%ENV_CACHE_ROOT%\\py-%ENV_KEY%' in text
+    assert text.count("pathlib.Path('requirements.lock').read_bytes()") == 2
+    assert text.count("pathlib.Path('requirements-dev.lock').read_bytes()") == 2
+    assert "h.update(b'nexus-env-v1\\0')" in text
+    assert "sys.version_info.major" in text
+    assert "sys.version_info.minor" in text
+
+
+def test_local_python_cache_hit_is_validated_before_reuse_and_invalid_cache_rebuilds():
+    text = _text()
+    assert 'if exist "%PYROOT%\\Scripts\\python.exe" if exist "%PYROOT%\\.nexus-ready" goto :try_cached_env' in text
+    assert 'call :validate_local_env' in text
+    assert 'bootstrap_cache_validation=REBUILD' in text
+    assert 'bootstrap_source=content_addressed_env_cache' in text
+    assert '"%PYROOT%\\Scripts\\python.exe" -m pip check >nul 2>&1' in text
+    assert '"%PYROOT%\\Scripts\\python.exe" -c "import numpy,pandas,pyarrow,pytest,yaml" >nul 2>&1' in text
+    validate_index = text.index('call :validate_local_env')
+    hit_index = text.index('bootstrap_source=content_addressed_env_cache')
+    assert validate_index < hit_index
+
+
+def test_local_python_cache_is_marked_ready_only_after_install_and_validation():
+    text = _text()
+    install = text.index('"%PYROOT%\\Scripts\\python.exe" -m pip install')
+    ready = text.index('>"%PYROOT%\\.nexus-ready.tmp" echo env_key=%ENV_KEY%')
+    assert install < ready
+    assert text.index('call :validate_local_env', install) < ready
+    assert 'move /y "%PYROOT%\\.nexus-ready.tmp" "%PYROOT%\\.nexus-ready" >nul' in text
 
 
 def test_portable_artifact_cache_survives_runner_temp_cleanup_and_remains_checksum_verified():
@@ -83,14 +118,15 @@ def test_local_runner_checkout_is_bound_to_trigger_sha_and_verified():
     assert 'Checkout SHA mismatch' in workflow
 
 
-def test_bootstrap_prefers_verified_local_python_with_isolated_venv_before_network_fallback():
+def test_bootstrap_prefers_verified_local_python_before_portable_network_fallback():
     text = _text()
     assert 'bootstrap_source=local_python' in text
+    assert 'bootstrap_source=content_addressed_env_cache' in text
     assert 'sys.version_info >= (3,11)' in text
     assert '-m venv "%PYROOT%"' in text
     assert '"%PYROOT%\\Scripts\\python.exe" -m pip --version' in text
     assert 'bootstrap_source=checksum_pinned_portable_fallback' in text
-    local_index = text.index('bootstrap_source=local_python')
+    local_index = text.index(':local_python')
     python_download_index = text.index('https://www.python.org/ftp/python/')
     assert local_index < python_download_index
 
