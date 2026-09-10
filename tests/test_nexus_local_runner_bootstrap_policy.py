@@ -156,17 +156,24 @@ def test_autonomy_schedule_exceeds_bounded_worker_window_and_keeps_push_immediat
     assert 'cancel-in-progress: false' in workflow
 
 
-def test_autonomy_checkout_is_bounded_and_preserves_clean_exact_sha_checkout():
+def test_autonomy_source_prep_is_bounded_anonymous_and_exact_sha():
     workflow = AUTONOMY_WORKFLOW.read_text(encoding='utf-8')
-    checkout = workflow.index('- name: Checkout')
-    verify = workflow.index('- name: Verify exact trigger SHA')
-    block = workflow[checkout:verify]
+    start = workflow.index('- name: Prepare exact source with local fast-path and bounded HTTP/1.1 fetch')
+    setup_node = workflow.index('- uses: actions/setup-node@', start)
+    block = workflow[start:setup_node]
     assert 'timeout-minutes: 10' in block
-    assert 'uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1' in block
-    assert 'ref: ${{ github.sha }}' in block
-    assert 'persist-credentials: false' in block
-    assert 'clean: true' in block
-    assert 'fetch-depth: 1' in block
+    assert 'actions/checkout' not in block
+    assert 'https://github.com/${env:GITHUB_REPOSITORY}.git' in block
+    assert "--unset-all 'http.https://github.com/.extraheader'" in block
+    assert '$currentSha -eq $targetSha' in block
+    assert 'git reset --hard $targetSha' in block
+    assert 'git clean -ffdx' in block
+    assert '$fetchMaxAttempts = 4' in block
+    assert "http.version=HTTP/1.1" in block
+    assert 'fetch --no-tags --prune --no-recurse-submodules --depth=1 origin $targetSha' in block
+    assert 'git checkout --detach --force FETCH_HEAD' in block
+    assert 'Exact trigger SHA mismatch' in block
+    assert 'exact_trigger_sha=$checkedOutSha' in block
 
 
 def test_owner_autostart_proof_fast_path_skips_heavy_python_and_node_bootstrap():
