@@ -106,7 +106,7 @@ jobs:
           name: nexus-local-autonomy-source-${{ github.run_id }}
           path: ${{ runner.temp }}/nexus-local-autonomy-source
 
-      - name: Verify and restore exact source without git fetch
+      - name: Verify and restore exact source artifact
         timeout-minutes: 5
         shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
         run: |
