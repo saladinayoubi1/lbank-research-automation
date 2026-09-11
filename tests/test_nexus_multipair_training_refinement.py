@@ -171,6 +171,67 @@ def test_non_frontier_training_evidence_does_not_expand_grid() -> None:
     assert refined["authority"]["live_trading_authority"] is False
 
 
+def test_temporal_robust_frontier_owns_family_budget() -> None:
+    manifest = discovery.load_manifest(MANIFEST)
+    base = _base_discovery(frontier=False)
+    for cell in base["cells"]:
+        if cell["family"] != "trend_breakout" or cell["timeframe"] not in {"hour1", "hour4"}:
+            continue
+        cell["training_summary"] = _summary(drawdown=0.10, good=True)
+        if cell["timeframe"] == "hour1":
+            cell["selected_config"] = {"entry_lookback": 30, "exit_lookback": 12}
+            cell["training_robustness"] = {
+                "window_count": 2,
+                "window_policy": "overlapping_chronological_training_only",
+                "window_fraction": 0.75,
+                "all_windows_pass_training_gate": True,
+                "minimum_passed_gate_count": 7,
+                "minimum_score": 0.25,
+                "minimum_positive_ratio": 0.5,
+                "minimum_median_return": 0.002,
+                "windows": [],
+            }
+        else:
+            cell["selected_config"] = {"entry_lookback": 20, "exit_lookback": 10}
+            cell["training_robustness"] = {
+                "window_count": 2,
+                "window_policy": "overlapping_chronological_training_only",
+                "window_fraction": 0.75,
+                "all_windows_pass_training_gate": False,
+                "minimum_passed_gate_count": 5,
+                "minimum_score": -0.05,
+                "minimum_positive_ratio": 0.5,
+                "minimum_median_return": -0.003,
+                "windows": [],
+            }
+    _redigest(base)
+    plan, refined = refinement.build_refinement(manifest, base)
+
+    assert plan["temporal_robustness_used_for_budgeting"] is True
+    assert {
+        (row["timeframe"], row["family"]) for row in plan["training_frontier_cells"]
+    } == {("hour1", "trend_breakout"), ("hour4", "trend_breakout")}
+    assert [(row["timeframe"], row["family"]) for row in plan["targeted_cells"]] == [
+        ("hour1", "trend_breakout")
+    ]
+    trend_variants = refined["variants"]["trend_breakout"]
+    assert {"entry_lookback": 30, "exit_lookback": 12} in trend_variants
+    assert {"entry_lookback": 20, "exit_lookback": 10} not in trend_variants
+    assert len(trend_variants) == refinement.MAX_VARIANTS_PER_FAMILY
+
+
+def test_robust_neighborhood_expands_without_exceeding_family_cap() -> None:
+    base = refinement._neighborhood(  # noqa: SLF001
+        "trend_breakout", {"entry_lookback": 30, "exit_lookback": 12}
+    )
+    robust = refinement._robust_neighborhood(  # noqa: SLF001
+        "trend_breakout", {"entry_lookback": 30, "exit_lookback": 12}
+    )
+    assert len(robust) > len(base)
+    assert len(robust) <= refinement.MAX_VARIANTS_PER_FAMILY
+    assert all(row["exit_lookback"] < row["entry_lookback"] for row in robust)
+
+
 def test_workflow_records_training_only_refinement_diagnostics() -> None:
     workflow = (ROOT / ".github" / "workflows" / "nexus_multipair_strategy_discovery_v2.yml").read_text(encoding="utf-8")
     assert "nexus_multipair_training_refinement" in workflow

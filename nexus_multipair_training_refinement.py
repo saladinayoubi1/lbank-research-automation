@@ -1,9 +1,11 @@
 """Build one bounded next-generation Multi-Pair research manifest from training evidence only.
 
 The planner is deliberately blind to locked/holdout metrics. It may use only the
-selected configuration and training summary produced by the base Discovery run.
-Gates, execution costs, the four-symbol surface, and Research/Paper-only authority
-remain unchanged.
+selected configuration and training evidence produced by the base Discovery run.
+Temporal robustness is used to allocate the bounded variant budget so unstable
+training frontiers cannot crowd out stronger training-only evidence. Gates,
+execution costs, the four-symbol surface, and Research/Paper-only authority remain
+unchanged.
 """
 from __future__ import annotations
 
@@ -106,6 +108,50 @@ def _neighborhood(family: str, config: Mapping[str, Any]) -> list[dict[str, Any]
     return _stable_unique(rows)
 
 
+def _robust_neighborhood(family: str, config: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """Widen only around a frontier that is stable across training-only windows."""
+    rows = _neighborhood(family, config)
+    if family == "momentum":
+        lookback = int(config["lookback"])
+        threshold = float(config["entry_threshold"])
+        rows.extend([
+            {"lookback": _scaled_int(lookback, 1.25, minimum=2), "entry_threshold": _round_float(max(0.0, threshold + 0.0015))},
+            {"lookback": _scaled_int(lookback, 1.75, minimum=2), "entry_threshold": _round_float(max(0.0, threshold + 0.0035))},
+            {"lookback": _scaled_int(lookback, 2.5, minimum=2), "entry_threshold": _round_float(max(0.0, threshold + 0.0060))},
+            {"lookback": _scaled_int(lookback, 3.5, minimum=2), "entry_threshold": _round_float(max(0.0, threshold + 0.0085))},
+            {"lookback": _scaled_int(lookback, 5.0, minimum=2), "entry_threshold": _round_float(max(0.0, threshold + 0.0125))},
+            {"lookback": _scaled_int(lookback, 6.0, minimum=2), "entry_threshold": _round_float(max(0.0, threshold + 0.0150))},
+        ])
+    elif family == "trend_breakout":
+        entry = int(config["entry_lookback"])
+        exit_ = int(config["exit_lookback"])
+        rows.extend([
+            {"entry_lookback": _scaled_int(entry, 1.25, minimum=3), "exit_lookback": _scaled_int(exit_, 0.75, minimum=2)},
+            {"entry_lookback": _scaled_int(entry, 1.75, minimum=3), "exit_lookback": max(2, exit_)},
+            {"entry_lookback": _scaled_int(entry, 2.25, minimum=3), "exit_lookback": max(2, exit_)},
+            {"entry_lookback": _scaled_int(entry, 3.5, minimum=3), "exit_lookback": _scaled_int(exit_, 1.5, minimum=2)},
+            {"entry_lookback": _scaled_int(entry, 5.0, minimum=3), "exit_lookback": _scaled_int(exit_, 2.0, minimum=2)},
+            {"entry_lookback": _scaled_int(entry, 6.0, minimum=3), "exit_lookback": _scaled_int(exit_, 2.5, minimum=2)},
+        ])
+        rows = [row for row in rows if row["exit_lookback"] < row["entry_lookback"]]
+    elif family == "mean_reversion":
+        lookback = int(config["lookback"])
+        entry_z = float(config["entry_z"])
+        exit_z = float(config["exit_z"])
+        rows.extend([
+            {"lookback": _scaled_int(lookback, 1.25, minimum=5), "entry_z": _round_float(entry_z - 0.25), "exit_z": _round_float(exit_z)},
+            {"lookback": _scaled_int(lookback, 1.75, minimum=5), "entry_z": _round_float(entry_z - 0.25), "exit_z": _round_float(exit_z - 0.25)},
+            {"lookback": _scaled_int(lookback, 2.5, minimum=5), "entry_z": _round_float(entry_z - 0.5), "exit_z": _round_float(exit_z - 0.25)},
+            {"lookback": _scaled_int(lookback, 3.5, minimum=5), "entry_z": _round_float(entry_z - 0.75), "exit_z": _round_float(exit_z - 0.5)},
+            {"lookback": _scaled_int(lookback, 5.0, minimum=5), "entry_z": _round_float(entry_z - 1.0), "exit_z": _round_float(exit_z - 0.5)},
+            {"lookback": _scaled_int(lookback, 6.0, minimum=5), "entry_z": _round_float(entry_z - 1.25), "exit_z": _round_float(exit_z - 0.75)},
+        ])
+        rows = [row for row in rows if float(row["entry_z"]) < float(row["exit_z"])]
+    else:
+        raise MultiPairRefinementError(f"unsupported family: {family}")
+    return _stable_unique(rows)
+
+
 def _training_checks(summary: Mapping[str, Any], training_gate: Mapping[str, Any]) -> dict[str, bool]:
     return discovery.legacy._gate(summary, training_gate)  # noqa: SLF001 - same research gate contract
 
@@ -121,6 +167,39 @@ def _is_training_frontier(
     maximum = float(training_gate["maximum_drawdown"])
     drawdown = float(summary["worst_drawdown"])
     return math.isfinite(drawdown) and drawdown <= maximum * 1.5
+
+
+def _robustness_rank(row: Mapping[str, Any]) -> tuple[Any, ...]:
+    robustness = row.get("training_robustness")
+    summary = row["training_summary"]
+    if not isinstance(robustness, Mapping):
+        return (0, 0, float("-inf"), float("-inf"), float("-inf"), float(summary["score"]))
+    return (
+        int(robustness.get("all_windows_pass_training_gate") is True),
+        int(robustness.get("minimum_passed_gate_count", 0)),
+        float(robustness.get("minimum_score", float("-inf"))),
+        float(robustness.get("minimum_positive_ratio", float("-inf"))),
+        float(robustness.get("minimum_median_return", float("-inf"))),
+        float(summary["score"]),
+    )
+
+
+def _expansion_targets(targeted: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    """Allocate each family budget to its strongest temporal training frontier."""
+    selected: list[dict[str, Any]] = []
+    for family in discovery.FAMILIES:
+        family_rows = [dict(row) for row in targeted if row["family"] == family]
+        if not family_rows:
+            continue
+        robust_rows = [
+            row
+            for row in family_rows
+            if isinstance(row.get("training_robustness"), Mapping)
+            and row["training_robustness"].get("all_windows_pass_training_gate") is True
+        ]
+        pool = robust_rows or family_rows
+        selected.append(max(pool, key=_robustness_rank))
+    return selected
 
 
 def build_refinement(
@@ -141,9 +220,6 @@ def build_refinement(
 
     training_gate = manifest["gates"]["training"]
     targeted: list[dict[str, Any]] = []
-    variants_by_family: dict[str, list[dict[str, Any]]] = {
-        family: [] for family in discovery.FAMILIES
-    }
 
     # Deliberately never read locked_profiles. Only training-side evidence can
     # influence the next bounded grid; locked holdout remains one-way validation.
@@ -159,10 +235,6 @@ def build_refinement(
         failed = sorted(key for key, passed in checks.items() if not passed)
         if not _is_training_frontier(training_summary, checks, training_gate):
             continue
-        generated = _neighborhood(family, selected_config)
-        if not generated:
-            continue
-        variants_by_family[family].extend(generated)
         basis_core = {
             "timeframe": timeframe,
             "family": family,
@@ -175,14 +247,32 @@ def build_refinement(
             basis_core["training_robustness"] = copy.deepcopy(dict(training_robustness))
         targeted.append({**basis_core, "basis_digest": _digest(basis_core)})
 
+    expansion_targets = _expansion_targets(targeted)
+    variants_by_family: dict[str, list[dict[str, Any]]] = {
+        family: [] for family in discovery.FAMILIES
+    }
+    for row in expansion_targets:
+        family = str(row["family"])
+        robustness = row.get("training_robustness")
+        robust = (
+            isinstance(robustness, Mapping)
+            and robustness.get("all_windows_pass_training_gate") is True
+        )
+        generator = _robust_neighborhood if robust else _neighborhood
+        variants_by_family[family].extend(generator(family, row["selected_config"]))
+
     final_variants: dict[str, list[dict[str, Any]]] = {}
-    targeted_families = {row["family"] for row in targeted}
+    expansion_families = {row["family"] for row in expansion_targets}
     for family in discovery.FAMILIES:
         generated = _stable_unique(variants_by_family[family])
         base_rows = [dict(row) for row in manifest["variants"][family]]
-        if family in targeted_families:
+        if family in expansion_families:
             controls = _stable_unique(
-                [dict(row["selected_config"]) for row in targeted if row["family"] == family]
+                [
+                    dict(row["selected_config"])
+                    for row in expansion_targets
+                    if row["family"] == family
+                ]
             )
             rows = _stable_unique(controls + generated)
         else:
@@ -192,15 +282,21 @@ def build_refinement(
             rows = _stable_unique(rows + base_rows)[:2]
         final_variants[family] = rows
 
+    targeted_sorted = sorted(targeted, key=lambda row: (row["timeframe"], row["family"]))
+    expansion_sorted = sorted(
+        expansion_targets, key=lambda row: (row["timeframe"], row["family"])
+    )
     training_basis_core = {
         "base_experiment_id": manifest["experiment_id"],
         "dataset_snapshot_sha256": discovery_result["dataset_snapshot_sha256"],
         "training_gate": copy.deepcopy(training_gate),
-        "targeted_cells": sorted(targeted, key=lambda row: (row["timeframe"], row["family"])),
+        "training_frontier_cells": targeted_sorted,
+        "targeted_cells": expansion_sorted,
+        "temporal_robustness_used_for_budgeting": True,
         "variants": final_variants,
     }
     training_basis_digest = _digest(training_basis_core)
-    should_refine = bool(targeted)
+    should_refine = bool(expansion_targets)
 
     refined_manifest = copy.deepcopy(dict(manifest))
     refined_manifest["experiment_id"] = (
@@ -225,8 +321,10 @@ def build_refinement(
         "training_basis_digest": training_basis_digest,
         "selection_basis": "training_only",
         "locked_holdout_used_for_refinement": False,
+        "temporal_robustness_used_for_budgeting": True,
         "should_refine": should_refine,
-        "targeted_cells": training_basis_core["targeted_cells"],
+        "training_frontier_cells": targeted_sorted,
+        "targeted_cells": expansion_sorted,
         "variant_counts": {family: len(final_variants[family]) for family in discovery.FAMILIES},
         "research_only": True,
         "paper_only": True,
