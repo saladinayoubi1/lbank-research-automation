@@ -19,7 +19,7 @@ def test_owner_autostart_evidence_reuses_trusted_bridge_permissions_and_job():
     assert permissions
     assert {
         line.strip() for line in permissions.group("body").splitlines() if line.strip()
-    } == {"contents: read", "actions: read", "issues: write"}
+    } == {"contents: read", "actions: read", "issues: write", "pull-requests: read"}
     jobs = re.findall(r"(?m)^  ([A-Za-z0-9_-]+):\n    (?:if:|runs-on:)", text)
     assert jobs == ["triage"]
 
