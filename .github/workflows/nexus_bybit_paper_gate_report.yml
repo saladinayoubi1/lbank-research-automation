@@ -27,6 +27,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       STATE_ARTIFACT: bybit-prospective-paper-forward-v1-state
       STATE_FILE: bybit_prospective_paper_forward_v1.json
+      ATTESTATION_FILE: runtime_attestation.json
       GATE_ISSUE: "984"
       TRIGGER_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
       TRIGGER_EVENT: ${{ github.event.workflow_run.event }}
@@ -40,7 +41,10 @@ jobs:
           ref: ${{ github.event.workflow_run.head_sha }}
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
-          python-version: "3.12"
+          python-version: "3.12.14"
+          cache: pip
+      - run: python -m pip install -r requirements.lock
+      - run: python -m pip check
       - name: Validate trigger and locate exact state artifact
         id: evidence
         run: |
@@ -105,6 +109,18 @@ jobs:
             > build/nexus_paper_gate_report/state.zip
           unzip -q build/nexus_paper_gate_report/state.zip -d build/nexus_paper_gate_report/state
           test -f "build/nexus_paper_gate_report/state/$STATE_FILE"
+          test -f "build/nexus_paper_gate_report/state/$ATTESTATION_FILE"
+      - name: Independently verify exact Paper runtime attestation
+        run: |
+          set -euo pipefail
+          python nexus_paper_runtime_attestation.py verify \
+            --manifest experiments/bybit_prospective_paper_forward_v1.json \
+            --state "build/nexus_paper_gate_report/state/$STATE_FILE" \
+            --attestation "build/nexus_paper_gate_report/state/$ATTESTATION_FILE" \
+            --lock requirements.lock \
+            --check-installed \
+            | tee build/nexus_paper_gate_report/runtime-verification.json
+          cat build/nexus_paper_gate_report/runtime-verification.json >> "$GITHUB_STEP_SUMMARY"
       - name: Independently verify and render bounded checkpoint
         id: report
         env:
