@@ -43,7 +43,7 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
           git diff --cached --check
-          test "$(git diff --cached --name-only | wc -l)" -eq 4
+          test "$(git diff --cached --name-only | wc -l)" -eq 6
           git diff --cached --name-only | grep -Fx 'nexus_multipair_strategy_discovery.py'
           git diff --cached --name-only | grep -Fx 'nexus_multipair_training_refinement.py'
           git diff --cached --name-only | grep -Fx 'tests/test_nexus_multipair_strategy_discovery.py'
