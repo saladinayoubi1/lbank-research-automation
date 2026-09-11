@@ -11,6 +11,15 @@ def _text() -> str:
     return WORKFLOW.read_text(encoding="utf-8")
 
 
+def test_contract_tests_active_workflow_while_runtime_keeps_trigger_lineage() -> None:
+    text = _text()
+
+    assert "jobs:\n  contract-test:" in text
+    assert "ref: ${{ github.sha }}" in text
+    assert "TRIGGER_SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}" in text
+    assert "ref: ${{ github.event.workflow_run.head_sha }}" in text
+
+
 def test_exact_exhaustion_reuse_is_verified_before_no_work() -> None:
     text = _text()
 
