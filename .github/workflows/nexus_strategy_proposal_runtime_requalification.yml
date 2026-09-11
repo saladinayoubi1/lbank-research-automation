@@ -10,13 +10,17 @@ on:
     paths:
       - "nexus_strategy_proposal_runtime_requalification.py"
       - "nexus_multitimeframe_strategy_discovery.py"
+      - "nexus_multitimeframe_search_exhaustion.py"
       - "tests/test_nexus_strategy_proposal_runtime_requalification.py"
+      - "tests/test_nexus_strategy_proposal_runtime_requalification_workflow.py"
       - ".github/workflows/nexus_strategy_proposal_runtime_requalification.yml"
   pull_request:
     paths:
       - "nexus_strategy_proposal_runtime_requalification.py"
       - "nexus_multitimeframe_strategy_discovery.py"
+      - "nexus_multitimeframe_search_exhaustion.py"
       - "tests/test_nexus_strategy_proposal_runtime_requalification.py"
+      - "tests/test_nexus_strategy_proposal_runtime_requalification_workflow.py"
       - ".github/workflows/nexus_strategy_proposal_runtime_requalification.yml"
 
 permissions:
@@ -45,7 +49,9 @@ jobs:
         run: >-
           python -m pytest -q
           tests/test_nexus_strategy_proposal_runtime_requalification.py
+          tests/test_nexus_strategy_proposal_runtime_requalification_workflow.py
           tests/test_nexus_multitimeframe_strategy_discovery.py
+          tests/test_nexus_multitimeframe_search_exhaustion.py
 
   runtime-requalification:
     if: >-
@@ -75,6 +81,7 @@ jobs:
       - run: python -m pip install -r requirements.lock
       - run: python -m pip check
       - name: Restore exact triggering discovery evidence
+        id: trigger
         run: |
           set -euo pipefail
           rm -rf build/discovery-trigger "$OUTPUT_ROOT" build/discovery-trigger.zip
@@ -89,13 +96,86 @@ jobs:
           gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" \
             > build/discovery-trigger.zip
           unzip -q build/discovery-trigger.zip -d build/discovery-trigger
+
           discovery="$(find build/discovery-trigger -type f -name multitimeframe_strategy_discovery.json -print -quit)"
           queue="$(find build/discovery-trigger -type f -name research_proposals.json -print -quit)"
-          test -n "$discovery"
-          test -n "$queue"
-          printf '%s\n' "$discovery" > build/discovery-path.txt
-          printf '%s\n' "$queue" > build/queue-path.txt
+          if [ -n "$discovery" ] || [ -n "$queue" ]; then
+            test -n "$discovery"
+            test -n "$queue"
+            printf '%s\n' "$discovery" > build/discovery-path.txt
+            printf '%s\n' "$queue" > build/queue-path.txt
+            echo "mode=proposal_queue" >> "$GITHUB_OUTPUT"
+            echo "strategy_proposal_trigger=PASS mode=proposal_queue"
+            exit 0
+          fi
+
+          neighborhood="$(find build/discovery-trigger -type f -name search-neighborhood.json -print -quit)"
+          certificate="$(find build/discovery-trigger -type f -name reused-exhaustion-certificate.json -print -quit)"
+          test -n "$neighborhood"
+          test -n "$certificate"
+          NEIGHBORHOOD="$neighborhood" CERTIFICATE="$certificate" python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          from nexus_multitimeframe_search_exhaustion import (
+              build_neighborhood,
+              certificate_is_reusable,
+              verify_certificate,
+              verify_neighborhood,
+          )
+
+          trigger_source_sha = os.environ["TRIGGER_SOURCE_SHA"].strip().lower()
+          artifact_neighborhood = json.loads(Path(os.environ["NEIGHBORHOOD"]).read_text(encoding="utf-8"))
+          certificate = json.loads(Path(os.environ["CERTIFICATE"]).read_text(encoding="utf-8"))
+          verify_neighborhood(artifact_neighborhood)
+          verify_certificate(certificate)
+          current_neighborhood = build_neighborhood(
+              "experiments/nexus_multitimeframe_strategy_discovery_v1.json",
+              dataset_semantic_sha256="2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422",
+              root=".",
+          )
+          assert artifact_neighborhood == current_neighborhood
+          assert certificate_is_reusable(current_neighborhood, certificate)
+          assert certificate["source_sha"] == trigger_source_sha
+          assert certificate["base_research_proposal_count"] == 0
+          assert certificate["refined_research_proposal_count"] == 0
+          assert certificate["locked_holdout_used_for_refinement"] is False
+          assert certificate["selection_basis"] == "training_only"
+          assert certificate["research_only"] is True
+          assert certificate["paper_only"] is True
+          assert certificate["live_trading_authority"] is False
+          assert certificate["automatic_strategy_promotion"] is False
+
+          core = {
+              "schema_version": "nexus.strategy-proposal-runtime-requalification-no-work.v1",
+              "status": "NO_WORK",
+              "reason": "exact_exhausted_neighborhood_reused",
+              "trigger_run_id": int(os.environ["TRIGGER_RUN_ID"]),
+              "source_sha": trigger_source_sha,
+              "neighborhood_fingerprint": current_neighborhood["neighborhood_fingerprint"],
+              "exhaustion_certificate_digest": certificate["certificate_digest"],
+              "proposal_count": 0,
+              "qualification_claimed": False,
+              "research_only": True,
+              "paper_only": True,
+              "paper_execution_started": False,
+              "live_trading_authority": False,
+              "private_credentials_used": False,
+              "automatic_strategy_promotion": False,
+          }
+          digest = hashlib.sha256(
+              json.dumps(core, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+          ).hexdigest()
+          evidence = {**core, "evidence_digest": digest}
+          output = Path(os.environ["OUTPUT_ROOT"]) / "runtime-requalification-no-work.json"
+          output.write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          print("strategy_proposal_trigger=PASS mode=exact_exhausted_no_work")
+          PY
+          echo "mode=exhausted_reuse" >> "$GITHUB_OUTPUT"
       - name: Requalify proposals on canonical public runtime data
+        if: steps.trigger.outputs.mode == 'proposal_queue'
         run: |
           set -euo pipefail
           python nexus_strategy_proposal_runtime_requalification.py \
@@ -106,6 +186,7 @@ jobs:
             --state-root "$OUTPUT_ROOT/state" \
             --output "$OUTPUT_ROOT/runtime-requalification.json"
       - name: Verify fail-closed authority boundary
+        if: steps.trigger.outputs.mode == 'proposal_queue'
         run: |
           set -euo pipefail
           python - <<'PY'
@@ -129,6 +210,39 @@ jobs:
               "proposal_count": result["proposal_count"],
               "qualified_for_review_count": result["qualified_for_review_count"],
               "digest": result["requalification_digest"],
+          }, sort_keys=True))
+          PY
+      - name: Verify exact exhausted no-work authority boundary
+        if: steps.trigger.outputs.mode == 'exhausted_reuse'
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+          path = Path("build/nexus_strategy_proposal_runtime_requalification/runtime-requalification-no-work.json")
+          result = json.loads(path.read_text(encoding="utf-8"))
+          core = dict(result)
+          claimed = core.pop("evidence_digest")
+          actual = hashlib.sha256(
+              json.dumps(core, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+          ).hexdigest()
+          assert claimed == actual
+          assert result["status"] == "NO_WORK"
+          assert result["reason"] == "exact_exhausted_neighborhood_reused"
+          assert result["proposal_count"] == 0
+          assert result["qualification_claimed"] is False
+          assert result["source_sha"] == "${{ github.event.workflow_run.head_sha }}"
+          assert result["research_only"] is True
+          assert result["paper_only"] is True
+          assert result["paper_execution_started"] is False
+          assert result["live_trading_authority"] is False
+          assert result["private_credentials_used"] is False
+          assert result["automatic_strategy_promotion"] is False
+          print(json.dumps({
+              "status": result["status"],
+              "proposal_count": result["proposal_count"],
+              "digest": result["evidence_digest"],
           }, sort_keys=True))
           PY
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
