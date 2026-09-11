@@ -1,0 +1,86 @@
+name: NEXUS Paper runtime requalification
+
+on:
+  pull_request:
+    paths:
+      - "nexus_paper_runtime_attestation.py"
+      - "tests/test_nexus_paper_runtime_attestation.py"
+      - "requirements.lock"
+      - ".github/workflows/nexus_paper_runtime_requalification.yml"
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: nexus-paper-runtime-requalification-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  contract-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12.14"
+          cache: pip
+      - run: python -m pip install -r requirements-dev.lock
+      - run: python -m pip check
+      - run: python -m pytest -q tests/test_nexus_paper_runtime_attestation.py
+
+  requalify-current-state:
+    needs: contract-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      STATE_ARTIFACT: bybit-prospective-paper-forward-v1-state
+      STATE_FILE: bybit_prospective_paper_forward_v1.json
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12.14"
+          cache: pip
+      - run: python -m pip install -r requirements.lock
+      - run: python -m pip check
+      - name: Restore newest unexpired Paper state read-only
+        run: |
+          set -euo pipefail
+          mkdir -p build/nexus_paper_runtime_requalification/state build/nexus_paper_runtime_requalification/evidence
+          artifact_id="$(gh api \
+            -H 'Accept: application/vnd.github+json' \
+            "repos/$GITHUB_REPOSITORY/actions/artifacts?name=$STATE_ARTIFACT&per_page=100" \
+            --jq '[.artifacts[] | select(.expired == false)][0].id // empty')"
+          test -n "$artifact_id"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" \
+            > build/nexus_paper_runtime_requalification/state.zip
+          unzip -q build/nexus_paper_runtime_requalification/state.zip \
+            -d build/nexus_paper_runtime_requalification/state
+          test -f "build/nexus_paper_runtime_requalification/state/$STATE_FILE"
+          echo "source_artifact_id=$artifact_id" >> "$GITHUB_STEP_SUMMARY"
+      - name: Recalculate every recorded target under exact runtime lock
+        run: |
+          set -euo pipefail
+          python nexus_paper_runtime_attestation.py requalify \
+            --manifest experiments/bybit_prospective_paper_forward_v1.json \
+            --state "build/nexus_paper_runtime_requalification/state/$STATE_FILE" \
+            --lock requirements.lock \
+            --output build/nexus_paper_runtime_requalification/evidence/runtime_attestation.json \
+            | tee build/nexus_paper_runtime_requalification/evidence/requalification-summary.json
+          python nexus_paper_runtime_attestation.py verify \
+            --manifest experiments/bybit_prospective_paper_forward_v1.json \
+            --state "build/nexus_paper_runtime_requalification/state/$STATE_FILE" \
+            --attestation build/nexus_paper_runtime_requalification/evidence/runtime_attestation.json \
+            --lock requirements.lock \
+            --check-installed
+          cat build/nexus_paper_runtime_requalification/evidence/requalification-summary.json >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-paper-runtime-requalification-${{ github.run_id }}
+          path: build/nexus_paper_runtime_requalification/evidence
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
