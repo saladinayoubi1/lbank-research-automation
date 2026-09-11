@@ -29,6 +29,7 @@ def test_windows_package_workflow_is_allowlisted_without_new_job_or_permissions(
         "contents: read",
         "actions: read",
         "issues: write",
+        "pull-requests: read",
     }
 
     jobs = re.findall(r"(?m)^  ([A-Za-z0-9_-]+):\n    (?:if:|runs-on:)", body)
