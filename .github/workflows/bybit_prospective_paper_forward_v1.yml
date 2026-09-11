@@ -13,6 +13,8 @@ on:
       - ".github/workflows/bybit_prospective_paper_forward_v1.yml"
       - "bybit_prospective_paper_forward_v1.py"
       - "nexus_paper_terminal_rebind.py"
+      - "nexus_paper_runtime_attestation.py"
+      - "requirements.lock"
       - "experiments/bybit_prospective_paper_forward_v1.json"
       - "experiments/bybit_frozen_regime_strategy_v1.json"
   pull_request:
@@ -20,10 +22,13 @@ on:
       - ".github/workflows/bybit_prospective_paper_forward_v1.yml"
       - "bybit_prospective_paper_forward_v1.py"
       - "nexus_paper_terminal_rebind.py"
+      - "nexus_paper_runtime_attestation.py"
+      - "requirements.lock"
       - "experiments/bybit_prospective_paper_forward_v1.json"
       - "experiments/bybit_frozen_regime_strategy_v1.json"
       - "tests/test_bybit_prospective_paper_forward_v1.py"
       - "tests/test_nexus_paper_terminal_rebind.py"
+      - "tests/test_nexus_paper_runtime_attestation.py"
       - "docs/BYBIT_PROSPECTIVE_PAPER_FORWARD_V1.md"
 
 permissions:
@@ -42,7 +47,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
-          python-version: "3.12"
+          python-version: "3.12.14"
           cache: pip
       - run: python -m pip install -r requirements-dev.lock
       - run: python -m pip check
@@ -50,6 +55,7 @@ jobs:
           python -m pytest -q
           tests/test_bybit_prospective_paper_forward_v1.py
           tests/test_nexus_paper_terminal_rebind.py
+          tests/test_nexus_paper_runtime_attestation.py
 
   paper-forward:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
@@ -60,13 +66,14 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       STATE_ARTIFACT: bybit-prospective-paper-forward-v1-state
       STATE_FILE: bybit_prospective_paper_forward_v1.json
+      ATTESTATION_FILE: runtime_attestation.json
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
-          python-version: "3.12"
+          python-version: "3.12.14"
           cache: pip
-      - run: python -m pip install -r requirements.txt
+      - run: python -m pip install -r requirements.lock
       - run: python -m pip check
       - name: Restore latest digest-protected Paper state
         run: |
@@ -118,6 +125,30 @@ jobs:
             --source-sha "$GITHUB_SHA" \
             --run-id "$GITHUB_RUN_ID"
           echo "terminal_evidence_frozen=true" >> "$GITHUB_STEP_SUMMARY"
+      - name: Bind exact runtime attestation
+        run: |
+          set -euo pipefail
+          if [ -f "build/prior/$ATTESTATION_FILE" ]; then
+            python nexus_paper_runtime_attestation.py rebind \
+              --manifest experiments/bybit_prospective_paper_forward_v1.json \
+              --previous-state "build/prior/$STATE_FILE" \
+              --state "build/bybit_prospective_paper_forward_v1/$STATE_FILE" \
+              --attestation "build/prior/$ATTESTATION_FILE" \
+              --lock requirements.lock \
+              --output "build/bybit_prospective_paper_forward_v1/$ATTESTATION_FILE"
+          else
+            python nexus_paper_runtime_attestation.py requalify \
+              --manifest experiments/bybit_prospective_paper_forward_v1.json \
+              --state "build/bybit_prospective_paper_forward_v1/$STATE_FILE" \
+              --lock requirements.lock \
+              --output "build/bybit_prospective_paper_forward_v1/$ATTESTATION_FILE"
+          fi
+          python nexus_paper_runtime_attestation.py verify \
+            --manifest experiments/bybit_prospective_paper_forward_v1.json \
+            --state "build/bybit_prospective_paper_forward_v1/$STATE_FILE" \
+            --attestation "build/bybit_prospective_paper_forward_v1/$ATTESTATION_FILE" \
+            --lock requirements.lock \
+            --check-installed
       - name: Enforce Paper-only authority
         run: |
           python - <<'PY'
@@ -142,7 +173,9 @@ jobs:
         if: always()
         with:
           name: bybit-prospective-paper-forward-v1-state
-          path: build/bybit_prospective_paper_forward_v1/bybit_prospective_paper_forward_v1.json
+          path: |
+            build/bybit_prospective_paper_forward_v1/bybit_prospective_paper_forward_v1.json
+            build/bybit_prospective_paper_forward_v1/runtime_attestation.json
           if-no-files-found: warn
           retention-days: 90
           compression-level: 9
