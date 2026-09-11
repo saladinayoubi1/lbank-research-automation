@@ -13,8 +13,8 @@ def test_privileged_workflow_has_exact_frozen_permissions():
     assert 'contents: read' in text
     assert 'actions: read' in text
     assert 'issues: write' in text
+    assert 'pull-requests: read' in text
     assert 'statuses: write' not in text
-    assert 'pull-requests: read' not in text
     for forbidden in ('contents: write', 'actions: write', 'pull-requests: write', 'packages: write', 'id-token: write'):
         assert forbidden not in text
 
@@ -148,7 +148,7 @@ def test_duplicate_delivery_uses_stable_workflow_and_sha_marker():
     assert 'issues.create' in text
 
 
-def test_newer_same_branch_run_retires_older_sha_without_pr_permission():
+def test_newer_same_branch_run_retires_older_sha_without_broad_pr_listing():
     text = _text()
     assert 'const currentBranchSupersedes = (parsed)' in text
     assert 'parsed.workflow === run.name' in text
@@ -168,6 +168,8 @@ def test_historical_pr_cleanup_binds_actions_run_to_open_issue_pr_inventory():
     assert 'historical.head_sha === parsed.sha' in text
     assert "historical.event === 'pull_request'" in text
     assert 'historical.html_url === expectedRepoUrl' in text
+    assert 'github.rest.repos.listPullRequestsAssociatedWithCommit' in text
+    assert 'commit_sha: parsed.sha' in text
     assert 'associatedPrNumbers.every(number => !openPrNumbers.has(number))' in text
     assert 'all pull requests bound to workflow run ${parsed.runId} are closed or merged.' in text
 
@@ -175,6 +177,7 @@ def test_historical_pr_cleanup_binds_actions_run_to_open_issue_pr_inventory():
 def test_historical_cleanup_fails_closed_on_missing_or_mismatched_association():
     text = _text()
     assert 'Preserved triage issue #${issue.number}: historical workflow evidence mismatch.' in text
+    assert 'Preserved triage issue #${issue.number}: exact-commit pull request lookup failed' in text
     assert 'Preserved triage issue #${issue.number}: no independently associated pull request.' in text
     assert 'Preserved triage issue #${issue.number}: historical run verification failed' in text
     assert 'associatedPrNumbers.length === 0' in text
