@@ -45,7 +45,7 @@ class LocalAutonomyWorkflowContractTests(unittest.TestCase):
         self.assertIn("Exact source archive digest mismatch", self.text)
         self.assertIn("Restored exact source is incomplete", self.text)
         self.assertLess(
-            self.text.index("Verify and restore exact source without git fetch"),
+            self.text.index("Verify and restore exact source artifact"),
             self.text.index("Run bounded autonomous queue"),
         )
 
