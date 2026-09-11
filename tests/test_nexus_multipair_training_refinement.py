@@ -70,8 +70,19 @@ def _base_discovery(*, frontier: bool = True) -> dict:
                 "training_gate_passers": 0,
                 "selected_variant_id": "fixture",
                 "selected_config": _config(family),
-                "selection_source": "training_only",
+                "selection_source": "training_only_temporal_robustness",
                 "training_summary": summary,
+                "training_robustness": {
+                    "window_count": 2,
+                    "window_policy": "overlapping_chronological_training_only",
+                    "window_fraction": 0.75,
+                    "all_windows_pass_training_gate": bool(is_frontier),
+                    "minimum_passed_gate_count": 7 if is_frontier else 2,
+                    "minimum_score": summary["score"],
+                    "minimum_positive_ratio": summary["positive_ratio"],
+                    "minimum_median_return": summary["median_return"],
+                    "windows": [],
+                },
                 "locked_profiles": {
                     "conservative": {"summary": _summary(drawdown=0.9, good=False), "gate_checks": {}, "passes": False},
                     "stress": {"summary": _summary(drawdown=0.95, good=False), "gate_checks": {}, "passes": False},
@@ -126,6 +137,7 @@ def test_refinement_is_bounded_and_preserves_gates_costs_and_authority() -> None
         ("hour4", "mean_reversion"),
         ("hour4", "trend_breakout"),
     }
+    assert all("training_robustness" in row for row in plan["targeted_cells"])
     assert refined["gates"] == manifest["gates"]
     assert refined["execution"] == manifest["execution"]
     assert refined["authority"] == manifest["authority"]

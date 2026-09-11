@@ -102,6 +102,39 @@ def test_repository_manifest_is_four_symbol_research_only() -> None:
     }
 
 
+
+def test_training_temporal_robustness_prefers_stable_training_variant() -> None:
+    fragile = {
+        "variant_id": "fragile",
+        "summary": {"score": 9.0},
+        "training_robustness": {
+            "all_windows_pass_training_gate": False,
+            "minimum_passed_gate_count": 6,
+            "minimum_score": -0.5,
+            "minimum_positive_ratio": 0.5,
+            "minimum_median_return": -0.01,
+        },
+    }
+    stable = {
+        "variant_id": "stable",
+        "summary": {"score": 3.0},
+        "training_robustness": {
+            "all_windows_pass_training_gate": True,
+            "minimum_passed_gate_count": 7,
+            "minimum_score": 0.4,
+            "minimum_positive_ratio": 0.75,
+            "minimum_median_return": 0.01,
+        },
+    }
+    assert sorted([fragile, stable], key=discovery._training_rank_key)[0]["variant_id"] == "stable"
+
+
+def test_training_robustness_windows_never_cross_locked_holdout() -> None:
+    windows = discovery._training_robustness_windows({symbol: 350 for symbol in discovery.SYMBOLS})
+    assert windows == [("early", 0, 262), ("late", 88, 350)]
+    assert all(0 <= start < end <= 350 for _, start, end in windows)
+
+
 def test_snapshot_has_exact_12_cells_and_fails_closed_on_tamper(tmp_path: Path) -> None:
     root = _snapshot(tmp_path)
     manifest = json.loads((root / "snapshot-manifest.json").read_text(encoding="utf-8"))

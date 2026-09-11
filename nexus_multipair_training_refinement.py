@@ -152,6 +152,9 @@ def build_refinement(
         family = str(cell["family"])
         selected_config = dict(cell["selected_config"])
         training_summary = dict(cell["training_summary"])
+        training_robustness = cell.get("training_robustness")
+        if training_robustness is not None and not isinstance(training_robustness, Mapping):
+            raise MultiPairRefinementError("training robustness evidence is invalid")
         checks = _training_checks(training_summary, training_gate)
         failed = sorted(key for key, passed in checks.items() if not passed)
         if not _is_training_frontier(training_summary, checks, training_gate):
@@ -168,6 +171,8 @@ def build_refinement(
             "training_gate_checks": checks,
             "failed_training_gates": failed,
         }
+        if training_robustness is not None:
+            basis_core["training_robustness"] = copy.deepcopy(dict(training_robustness))
         targeted.append({**basis_core, "basis_digest": _digest(basis_core)})
 
     final_variants: dict[str, list[dict[str, Any]]] = {}

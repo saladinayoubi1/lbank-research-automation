@@ -24,6 +24,8 @@ SCHEMA = "nexus.multipair-strategy-discovery.v1"
 MANIFEST_SCHEMA = "nexus.multipair-strategy-discovery-manifest.v1"
 FAMILIES = ("momentum", "trend_breakout", "mean_reversion")
 SUPPORTED_SNAPSHOT_SCHEMAS = (rest_snapshot.SCHEMA, archive_snapshot.SCHEMA)
+TRAINING_ROBUSTNESS_WINDOW_FRACTION = 0.75
+TRAINING_ROBUSTNESS_MIN_WINDOW_BARS = 80
 
 
 class MultiPairStrategyDiscoveryError(RuntimeError):
@@ -221,6 +223,75 @@ def _evaluate_variant(
     return legacy._aggregate(rows), rows
 
 
+def _training_robustness_windows(split_by_symbol: Mapping[str, int]) -> list[tuple[str, int, int]]:
+    split_values = {int(value) for value in split_by_symbol.values()}
+    if len(split_values) != 1:
+        raise MultiPairStrategyDiscoveryError("training split is not aligned across symbols")
+    training_end = split_values.pop()
+    if training_end <= 0:
+        raise MultiPairStrategyDiscoveryError("training split is invalid")
+    window = min(
+        training_end,
+        max(TRAINING_ROBUSTNESS_MIN_WINDOW_BARS, int(round(training_end * TRAINING_ROBUSTNESS_WINDOW_FRACTION))),
+    )
+    if window >= training_end:
+        return [("full", 0, training_end)]
+    return [("early", 0, window), ("late", training_end - window, training_end)]
+
+
+def _training_robustness(
+    frames: Mapping[str, pd.DataFrame],
+    family: str,
+    config: Mapping[str, Any],
+    split_by_symbol: Mapping[str, int],
+    profile: Mapping[str, Any],
+    training_gate: Mapping[str, Any],
+    *,
+    timeframe: str,
+) -> dict[str, Any]:
+    windows: list[dict[str, Any]] = []
+    for name, start, end in _training_robustness_windows(split_by_symbol):
+        start_by_symbol = {symbol: start for symbol in SYMBOLS}
+        end_by_symbol = {symbol: end for symbol in SYMBOLS}
+        summary, _ = _evaluate_variant(
+            frames, family, config, start_by_symbol, end_by_symbol, profile, timeframe=timeframe
+        )
+        checks = legacy._gate(summary, training_gate)
+        windows.append({
+            "name": name,
+            "start_index": start,
+            "end_index": end,
+            "summary": summary,
+            "gate_checks": checks,
+            "passed_gate_count": sum(bool(value) for value in checks.values()),
+            "passes_training_gate": all(checks.values()),
+        })
+    return {
+        "window_count": len(windows),
+        "window_policy": "overlapping_chronological_training_only",
+        "window_fraction": TRAINING_ROBUSTNESS_WINDOW_FRACTION,
+        "all_windows_pass_training_gate": all(row["passes_training_gate"] for row in windows),
+        "minimum_passed_gate_count": min(int(row["passed_gate_count"]) for row in windows),
+        "minimum_score": min(float(row["summary"]["score"]) for row in windows),
+        "minimum_positive_ratio": min(float(row["summary"]["positive_ratio"]) for row in windows),
+        "minimum_median_return": min(float(row["summary"]["median_return"]) for row in windows),
+        "windows": windows,
+    }
+
+
+def _training_rank_key(row: Mapping[str, Any]) -> tuple[Any, ...]:
+    robustness = row["training_robustness"]
+    return (
+        -int(bool(robustness["all_windows_pass_training_gate"])),
+        -int(robustness["minimum_passed_gate_count"]),
+        -float(robustness["minimum_score"]),
+        -float(robustness["minimum_positive_ratio"]),
+        -float(robustness["minimum_median_return"]),
+        -float(row["summary"]["score"]),
+        str(row["variant_id"]),
+    )
+
+
 def discover(manifest: Mapping[str, Any], *, source_sha: str) -> dict[str, Any]:
     source_sha = _source_sha(source_sha)
     root, snapshot = _load_snapshot(manifest, source_sha=source_sha)
@@ -245,14 +316,19 @@ def discover(manifest: Mapping[str, Any], *, source_sha: str) -> dict[str, Any]:
                     manifest["execution"]["conservative"], timeframe=timeframe,
                 )
                 checks = legacy._gate(summary, manifest["gates"]["training"])
+                robustness = _training_robustness(
+                    frames, family, config, split, manifest["execution"]["conservative"],
+                    manifest["gates"]["training"], timeframe=timeframe,
+                )
                 training_rows.append({
                     "variant_id": legacy._variant_id(family, config),
                     "config": dict(config),
                     "summary": summary,
                     "gate_checks": checks,
                     "passes_training_gate": all(checks.values()),
+                    "training_robustness": robustness,
                 })
-            training_rows.sort(key=lambda row: (-float(row["summary"]["score"]), row["variant_id"]))
+            training_rows.sort(key=_training_rank_key)
             passers = [row for row in training_rows if row["passes_training_gate"]]
             selected = (passers or training_rows)[0]
             locked_profiles: dict[str, Any] = {}
@@ -279,8 +355,9 @@ def discover(manifest: Mapping[str, Any], *, source_sha: str) -> dict[str, Any]:
                 "training_gate_passers": len(passers),
                 "selected_variant_id": selected["variant_id"],
                 "selected_config": selected["config"],
-                "selection_source": "training_only",
+                "selection_source": "training_only_temporal_robustness",
                 "training_summary": selected["summary"],
+                "training_robustness": selected["training_robustness"],
                 "locked_profiles": locked_profiles,
                 "proposal_eligible": eligible,
                 "automatic_candidate_created": False,
@@ -321,7 +398,7 @@ def discover(manifest: Mapping[str, Any], *, source_sha: str) -> dict[str, Any]:
         "timeframes": list(TIMEFRAME_NAMES),
         "families": list(FAMILIES),
         "hypothesis_count": len(TIMEFRAME_NAMES) * len(FAMILIES),
-        "selection_policy": "Variant selection is training-only; locked chronological holdout is not used for ranking.",
+        "selection_policy": "Variant selection is training-only and ranks full-training gate passers by chronological training-window robustness; locked chronological holdout is not used for ranking.",
         "multiplicity_policy": "All 9 family/timeframe hypotheses are reported across all four symbols; no proposal is automatically promoted.",
         "cells": sorted(cells, key=lambda row: (row["timeframe"], row["family"])),
         "research_proposals": sorted(proposals, key=lambda row: (row["timeframe"], row["family"])),
