@@ -355,7 +355,7 @@ def discover(manifest: Mapping[str, Any], *, source_sha: str) -> dict[str, Any]:
                 "training_gate_passers": len(passers),
                 "selected_variant_id": selected["variant_id"],
                 "selected_config": selected["config"],
-                "selection_source": "training_only_temporal_robustness",
+                "selection_source": "training_only",
                 "training_summary": selected["summary"],
                 "training_robustness": selected["training_robustness"],
                 "locked_profiles": locked_profiles,

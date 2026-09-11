@@ -70,7 +70,7 @@ def _base_discovery(*, frontier: bool = True) -> dict:
                 "training_gate_passers": 0,
                 "selected_variant_id": "fixture",
                 "selected_config": _config(family),
-                "selection_source": "training_only_temporal_robustness",
+                "selection_source": "training_only",
                 "training_summary": summary,
                 "training_robustness": {
                     "window_count": 2,
