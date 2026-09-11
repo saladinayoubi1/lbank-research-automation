@@ -1,6 +1,6 @@
 {
   "schema_version": "nexus.multitimeframe-strategy-discovery-manifest.v1",
-  "experiment_id": "nexus-bybit-btc-eth-15m-1h-4h-3family-bounded-exploration-v2",
+  "experiment_id": "nexus-bybit-btc-eth-15m-1h-4h-3family-discovery-v1",
   "dataset": {
     "dataset_root": "build/bybit_dataset",
     "archive_sha256": "2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422"
@@ -40,31 +40,14 @@
       {"lookback": 12, "entry_threshold": 0.0},
       {"lookback": 12, "entry_threshold": 0.002},
       {"lookback": 20, "entry_threshold": 0.002},
-      {"lookback": 30, "entry_threshold": 0.005},
-      {"lookback": 40, "entry_threshold": 0.0075},
-      {"lookback": 60, "entry_threshold": 0.01},
-      {"lookback": 90, "entry_threshold": 0.0125},
-      {"lookback": 120, "entry_threshold": 0.015},
-      {"lookback": 160, "entry_threshold": 0.02},
-      {"lookback": 240, "entry_threshold": 0.025}
+      {"lookback": 30, "entry_threshold": 0.005}
     ],
     "trend_breakout": [
       {"entry_lookback": 12, "exit_lookback": 6},
       {"entry_lookback": 20, "exit_lookback": 10},
       {"entry_lookback": 30, "exit_lookback": 12},
       {"entry_lookback": 40, "exit_lookback": 20},
-      {"entry_lookback": 60, "exit_lookback": 30},
-      {"entry_lookback": 80, "exit_lookback": 20},
-      {"entry_lookback": 80, "exit_lookback": 40},
-      {"entry_lookback": 100, "exit_lookback": 25},
-      {"entry_lookback": 100, "exit_lookback": 50},
-      {"entry_lookback": 120, "exit_lookback": 30},
-      {"entry_lookback": 120, "exit_lookback": 60},
-      {"entry_lookback": 160, "exit_lookback": 40},
-      {"entry_lookback": 160, "exit_lookback": 80},
-      {"entry_lookback": 200, "exit_lookback": 50},
-      {"entry_lookback": 240, "exit_lookback": 60},
-      {"entry_lookback": 240, "exit_lookback": 120}
+      {"entry_lookback": 60, "exit_lookback": 30}
     ],
     "mean_reversion": [
       {"lookback": 12, "entry_z": -1.0, "exit_z": 0.0},
@@ -72,13 +55,7 @@
       {"lookback": 20, "entry_z": -1.0, "exit_z": 0.0},
       {"lookback": 20, "entry_z": -1.5, "exit_z": 0.0},
       {"lookback": 30, "entry_z": -1.5, "exit_z": 0.0},
-      {"lookback": 40, "entry_z": -2.0, "exit_z": 0.0},
-      {"lookback": 60, "entry_z": -2.0, "exit_z": -0.5},
-      {"lookback": 60, "entry_z": -2.5, "exit_z": 0.0},
-      {"lookback": 80, "entry_z": -2.0, "exit_z": -0.5},
-      {"lookback": 80, "entry_z": -2.5, "exit_z": 0.0},
-      {"lookback": 120, "entry_z": -2.5, "exit_z": -0.5},
-      {"lookback": 160, "entry_z": -3.0, "exit_z": -0.5}
+      {"lookback": 40, "entry_z": -2.0, "exit_z": 0.0}
     ]
   },
   "authority": {
