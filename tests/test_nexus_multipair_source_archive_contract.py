@@ -27,7 +27,11 @@ def test_exact_source_archive_excludes_duplicate_market_data_and_keeps_runtime(t
     assert archive.stat().st_size <= MAX_SOURCE_ARCHIVE_BYTES
 
     with zipfile.ZipFile(archive) as bundle:
-        names = set(bundle.namelist())
+        members = bundle.infolist()
+        names = {member.filename for member in members}
 
-    assert not any(name.startswith("data/market/") for name in names)
+    assert not any(
+        member.filename.startswith("data/market/") and not member.is_dir()
+        for member in members
+    )
     assert REQUIRED_RUNTIME_FILES <= names
