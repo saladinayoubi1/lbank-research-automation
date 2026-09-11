@@ -11,23 +11,27 @@ on:
     branches: [main]
     paths:
       - "nexus_multitimeframe_strategy_discovery.py"
+      - "nexus_multitimeframe_training_refinement.py"
       - "nexus_multitimeframe_verified_archive_discovery.py"
       - "nexus_demo_archive_replay.py"
       - "scripts/select_nexus_bybit_replay_artifact.py"
       - "experiments/nexus_multitimeframe_strategy_discovery_v1.json"
       - "tests/test_nexus_bybit_replay_artifact_lifecycle.py"
       - "tests/test_nexus_multitimeframe_strategy_discovery.py"
+      - "tests/test_nexus_multitimeframe_training_refinement.py"
       - "tests/test_nexus_multitimeframe_verified_archive_discovery.py"
       - ".github/workflows/nexus_multitimeframe_strategy_discovery.yml"
   pull_request:
     paths:
       - "nexus_multitimeframe_strategy_discovery.py"
+      - "nexus_multitimeframe_training_refinement.py"
       - "nexus_multitimeframe_verified_archive_discovery.py"
       - "nexus_demo_archive_replay.py"
       - "scripts/select_nexus_bybit_replay_artifact.py"
       - "experiments/nexus_multitimeframe_strategy_discovery_v1.json"
       - "tests/test_nexus_bybit_replay_artifact_lifecycle.py"
       - "tests/test_nexus_multitimeframe_strategy_discovery.py"
+      - "tests/test_nexus_multitimeframe_training_refinement.py"
       - "tests/test_nexus_multitimeframe_verified_archive_discovery.py"
       - "scripts/nexus_strategy_discovery_controller.py"
       - ".github/workflows/nexus_multitimeframe_strategy_discovery.yml"
@@ -38,7 +42,7 @@ permissions:
 
 concurrency:
   group: nexus-multitimeframe-strategy-discovery-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   contract-test:
@@ -55,6 +59,7 @@ jobs:
       - run: >-
           python -m pytest -q
           tests/test_nexus_multitimeframe_strategy_discovery.py
+          tests/test_nexus_multitimeframe_training_refinement.py
           tests/test_nexus_multitimeframe_verified_archive_discovery.py
           tests/test_nexus_strategy_discovery_controller.py
           tests/test_nexus_bybit_replay_artifact_lifecycle.py
@@ -107,6 +112,26 @@ jobs:
             --manifest experiments/nexus_multitimeframe_strategy_discovery_v1.json \
             --source-sha "$GITHUB_SHA" \
             --output build/nexus_multitimeframe_strategy_discovery
+      - name: Plan bounded training-only refinement
+        id: refinement
+        run: |
+          set -euo pipefail
+          python nexus_multitimeframe_training_refinement.py \
+            --manifest experiments/nexus_multitimeframe_strategy_discovery_v1.json \
+            --discovery build/nexus_multitimeframe_strategy_discovery/multitimeframe_strategy_discovery.json \
+            --output build/nexus_multitimeframe_strategy_discovery/refinement
+          should_refine="$(python -c 'import json; print(str(json.load(open("build/nexus_multitimeframe_strategy_discovery/refinement/refinement-plan.json"))["should_refine"]).lower())')"
+          echo "should_refine=$should_refine" >> "$GITHUB_OUTPUT"
+
+      - name: Run bounded training-only refinement discovery
+        if: steps.refinement.outputs.should_refine == 'true'
+        run: |
+          set -euo pipefail
+          python nexus_multitimeframe_verified_archive_discovery.py \
+            --manifest build/nexus_multitimeframe_strategy_discovery/refinement/refinement-manifest.json \
+            --source-sha "$GITHUB_SHA" \
+            --output build/nexus_multitimeframe_strategy_discovery/refinement/discovery
+
       - name: Verify authority boundary
         run: |
           set -euo pipefail
@@ -126,7 +151,41 @@ jobs:
           assert result["live_trading_authority"] is False
           assert result["automatic_strategy_promotion"] is False
           assert result["automatic_paper_forward_started"] is False
-          print(json.dumps({"proposal_count": result["research_proposal_count"], "digest": result["discovery_digest"]}, sort_keys=True))
+
+          plan = json.loads((root / "refinement" / "refinement-plan.json").read_text())
+          refined_manifest = json.loads((root / "refinement" / "refinement-manifest.json").read_text())
+          base_manifest = json.loads(Path("experiments/nexus_multitimeframe_strategy_discovery_v1.json").read_text())
+          assert plan["selection_basis"] == "training_only"
+          assert plan["locked_holdout_used_for_refinement"] is False
+          assert plan["research_only"] is True
+          assert plan["paper_only"] is True
+          assert plan["live_trading_authority"] is False
+          assert plan["private_credentials_used"] is False
+          assert plan["automatic_strategy_promotion"] is False
+          assert plan["automatic_paper_forward_started"] is False
+          assert refined_manifest["gates"] == base_manifest["gates"]
+          assert refined_manifest["authority"] == base_manifest["authority"]
+
+          refined_count = None
+          if plan["should_refine"]:
+              refined = json.loads((root / "refinement" / "discovery" / "multitimeframe_strategy_discovery.json").read_text())
+              refined_verification = verify_discovery(refined)
+              assert refined_verification["decision"] == "pass", refined_verification
+              assert refined["source_sha"] == "${{ github.sha }}"
+              assert refined["dataset_archive_sha256"] == ARCHIVE_SHA256
+              assert refined["research_only"] is True
+              assert refined["paper_only"] is True
+              assert refined["live_trading_authority"] is False
+              assert refined["automatic_strategy_promotion"] is False
+              assert refined["automatic_paper_forward_started"] is False
+              refined_count = refined["research_proposal_count"]
+
+          print(json.dumps({
+              "base_proposal_count": result["research_proposal_count"],
+              "refinement_started": plan["should_refine"],
+              "refined_proposal_count": refined_count,
+              "training_basis_digest": plan["training_basis_digest"],
+          }, sort_keys=True))
           PY
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
