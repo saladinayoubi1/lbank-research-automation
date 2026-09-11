@@ -4,3 +4,9 @@
 scripts/provision_nexus_bybit_wsl_runner.ps1 text eol=lf
 scripts/prepare_nexus_bybit_wsl1_fallback.ps1 text eol=lf
 scripts/diagnose_nexus_bybit_runner_package.ps1 text eol=lf
+
+# Multi-Pair physical proof transports immutable Bybit market data through a
+# separately digest-pinned snapshot artifact. Keep tracked historical market
+# parquet files out of the exact-source git archive so slow runner links do not
+# repeatedly transfer duplicate data.
+data/market/** export-ignore
