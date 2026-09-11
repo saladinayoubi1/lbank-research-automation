@@ -1,0 +1,222 @@
+--- a/nexus_multipair_strategy_discovery.py
++++ b/nexus_multipair_strategy_discovery.py
+@@ -24,6 +24,8 @@
+ MANIFEST_SCHEMA = "nexus.multipair-strategy-discovery-manifest.v1"
+ FAMILIES = ("momentum", "trend_breakout", "mean_reversion")
+ SUPPORTED_SNAPSHOT_SCHEMAS = (rest_snapshot.SCHEMA, archive_snapshot.SCHEMA)
++TRAINING_ROBUSTNESS_WINDOW_FRACTION = 0.75
++TRAINING_ROBUSTNESS_MIN_WINDOW_BARS = 80
+ 
+ 
+ class MultiPairStrategyDiscoveryError(RuntimeError):
+@@ -221,6 +223,75 @@
+     return legacy._aggregate(rows), rows
+ 
+ 
++def _training_robustness_windows(split_by_symbol: Mapping[str, int]) -> list[tuple[str, int, int]]:
++    split_values = {int(value) for value in split_by_symbol.values()}
++    if len(split_values) != 1:
++        raise MultiPairStrategyDiscoveryError("training split is not aligned across symbols")
++    training_end = split_values.pop()
++    if training_end <= 0:
++        raise MultiPairStrategyDiscoveryError("training split is invalid")
++    window = min(
++        training_end,
++        max(TRAINING_ROBUSTNESS_MIN_WINDOW_BARS, int(round(training_end * TRAINING_ROBUSTNESS_WINDOW_FRACTION))),
++    )
++    if window >= training_end:
++        return [("full", 0, training_end)]
++    return [("early", 0, window), ("late", training_end - window, training_end)]
++
++
++def _training_robustness(
++    frames: Mapping[str, pd.DataFrame],
++    family: str,
++    config: Mapping[str, Any],
++    split_by_symbol: Mapping[str, int],
++    profile: Mapping[str, Any],
++    training_gate: Mapping[str, Any],
++    *,
++    timeframe: str,
++) -> dict[str, Any]:
++    windows: list[dict[str, Any]] = []
++    for name, start, end in _training_robustness_windows(split_by_symbol):
++        start_by_symbol = {symbol: start for symbol in SYMBOLS}
++        end_by_symbol = {symbol: end for symbol in SYMBOLS}
++        summary, _ = _evaluate_variant(
++            frames, family, config, start_by_symbol, end_by_symbol, profile, timeframe=timeframe
++        )
++        checks = legacy._gate(summary, training_gate)
++        windows.append({
++            "name": name,
++            "start_index": start,
++            "end_index": end,
++            "summary": summary,
++            "gate_checks": checks,
++            "passed_gate_count": sum(bool(value) for value in checks.values()),
++            "passes_training_gate": all(checks.values()),
++        })
++    return {
++        "window_count": len(windows),
++        "window_policy": "overlapping_chronological_training_only",
++        "window_fraction": TRAINING_ROBUSTNESS_WINDOW_FRACTION,
++        "all_windows_pass_training_gate": all(row["passes_training_gate"] for row in windows),
++        "minimum_passed_gate_count": min(int(row["passed_gate_count"]) for row in windows),
++        "minimum_score": min(float(row["summary"]["score"]) for row in windows),
++        "minimum_positive_ratio": min(float(row["summary"]["positive_ratio"]) for row in windows),
++        "minimum_median_return": min(float(row["summary"]["median_return"]) for row in windows),
++        "windows": windows,
++    }
++
++
++def _training_rank_key(row: Mapping[str, Any]) -> tuple[Any, ...]:
++    robustness = row["training_robustness"]
++    return (
++        -int(bool(robustness["all_windows_pass_training_gate"])),
++        -int(robustness["minimum_passed_gate_count"]),
++        -float(robustness["minimum_score"]),
++        -float(robustness["minimum_positive_ratio"]),
++        -float(robustness["minimum_median_return"]),
++        -float(row["summary"]["score"]),
++        str(row["variant_id"]),
++    )
++
++
+ def discover(manifest: Mapping[str, Any], *, source_sha: str) -> dict[str, Any]:
+     source_sha = _source_sha(source_sha)
+     root, snapshot = _load_snapshot(manifest, source_sha=source_sha)
+@@ -245,14 +316,19 @@
+                     manifest["execution"]["conservative"], timeframe=timeframe,
+                 )
+                 checks = legacy._gate(summary, manifest["gates"]["training"])
++                robustness = _training_robustness(
++                    frames, family, config, split, manifest["execution"]["conservative"],
++                    manifest["gates"]["training"], timeframe=timeframe,
++                )
+                 training_rows.append({
+                     "variant_id": legacy._variant_id(family, config),
+                     "config": dict(config),
+                     "summary": summary,
+                     "gate_checks": checks,
+                     "passes_training_gate": all(checks.values()),
++                    "training_robustness": robustness,
+                 })
+-            training_rows.sort(key=lambda row: (-float(row["summary"]["score"]), row["variant_id"]))
++            training_rows.sort(key=_training_rank_key)
+             passers = [row for row in training_rows if row["passes_training_gate"]]
+             selected = (passers or training_rows)[0]
+             locked_profiles: dict[str, Any] = {}
+@@ -279,8 +355,9 @@
+                 "training_gate_passers": len(passers),
+                 "selected_variant_id": selected["variant_id"],
+                 "selected_config": selected["config"],
+-                "selection_source": "training_only",
++                "selection_source": "training_only_temporal_robustness",
+                 "training_summary": selected["summary"],
++                "training_robustness": selected["training_robustness"],
+                 "locked_profiles": locked_profiles,
+                 "proposal_eligible": eligible,
+                 "automatic_candidate_created": False,
+@@ -321,7 +398,7 @@
+         "timeframes": list(TIMEFRAME_NAMES),
+         "families": list(FAMILIES),
+         "hypothesis_count": len(TIMEFRAME_NAMES) * len(FAMILIES),
+-        "selection_policy": "Variant selection is training-only; locked chronological holdout is not used for ranking.",
++        "selection_policy": "Variant selection is training-only and ranks full-training gate passers by chronological training-window robustness; locked chronological holdout is not used for ranking.",
+         "multiplicity_policy": "All 9 family/timeframe hypotheses are reported across all four symbols; no proposal is automatically promoted.",
+         "cells": sorted(cells, key=lambda row: (row["timeframe"], row["family"])),
+         "research_proposals": sorted(proposals, key=lambda row: (row["timeframe"], row["family"])),
+--- a/nexus_multipair_training_refinement.py
++++ b/nexus_multipair_training_refinement.py
+@@ -152,6 +152,9 @@
+         family = str(cell["family"])
+         selected_config = dict(cell["selected_config"])
+         training_summary = dict(cell["training_summary"])
++        training_robustness = cell.get("training_robustness")
++        if training_robustness is not None and not isinstance(training_robustness, Mapping):
++            raise MultiPairRefinementError("training robustness evidence is invalid")
+         checks = _training_checks(training_summary, training_gate)
+         failed = sorted(key for key, passed in checks.items() if not passed)
+         if not _is_training_frontier(training_summary, checks, training_gate):
+@@ -168,6 +171,8 @@
+             "training_gate_checks": checks,
+             "failed_training_gates": failed,
+         }
++        if training_robustness is not None:
++            basis_core["training_robustness"] = copy.deepcopy(dict(training_robustness))
+         targeted.append({**basis_core, "basis_digest": _digest(basis_core)})
+ 
+     final_variants: dict[str, list[dict[str, Any]]] = {}
+--- a/tests/test_nexus_multipair_strategy_discovery.py
++++ b/tests/test_nexus_multipair_strategy_discovery.py
+@@ -102,6 +102,39 @@
+     }
+ 
+ 
++
++def test_training_temporal_robustness_prefers_stable_training_variant() -> None:
++    fragile = {
++        "variant_id": "fragile",
++        "summary": {"score": 9.0},
++        "training_robustness": {
++            "all_windows_pass_training_gate": False,
++            "minimum_passed_gate_count": 6,
++            "minimum_score": -0.5,
++            "minimum_positive_ratio": 0.5,
++            "minimum_median_return": -0.01,
++        },
++    }
++    stable = {
++        "variant_id": "stable",
++        "summary": {"score": 3.0},
++        "training_robustness": {
++            "all_windows_pass_training_gate": True,
++            "minimum_passed_gate_count": 7,
++            "minimum_score": 0.4,
++            "minimum_positive_ratio": 0.75,
++            "minimum_median_return": 0.01,
++        },
++    }
++    assert sorted([fragile, stable], key=discovery._training_rank_key)[0]["variant_id"] == "stable"
++
++
++def test_training_robustness_windows_never_cross_locked_holdout() -> None:
++    windows = discovery._training_robustness_windows({symbol: 350 for symbol in discovery.SYMBOLS})
++    assert windows == [("early", 0, 262), ("late", 88, 350)]
++    assert all(0 <= start < end <= 350 for _, start, end in windows)
++
++
+ def test_snapshot_has_exact_12_cells_and_fails_closed_on_tamper(tmp_path: Path) -> None:
+     root = _snapshot(tmp_path)
+     manifest = json.loads((root / "snapshot-manifest.json").read_text(encoding="utf-8"))
+--- a/tests/test_nexus_multipair_training_refinement.py
++++ b/tests/test_nexus_multipair_training_refinement.py
+@@ -70,8 +70,19 @@
+                 "training_gate_passers": 0,
+                 "selected_variant_id": "fixture",
+                 "selected_config": _config(family),
+-                "selection_source": "training_only",
++                "selection_source": "training_only_temporal_robustness",
+                 "training_summary": summary,
++                "training_robustness": {
++                    "window_count": 2,
++                    "window_policy": "overlapping_chronological_training_only",
++                    "window_fraction": 0.75,
++                    "all_windows_pass_training_gate": bool(is_frontier),
++                    "minimum_passed_gate_count": 7 if is_frontier else 2,
++                    "minimum_score": summary["score"],
++                    "minimum_positive_ratio": summary["positive_ratio"],
++                    "minimum_median_return": summary["median_return"],
++                    "windows": [],
++                },
+                 "locked_profiles": {
+                     "conservative": {"summary": _summary(drawdown=0.9, good=False), "gate_checks": {}, "passes": False},
+                     "stress": {"summary": _summary(drawdown=0.95, good=False), "gate_checks": {}, "passes": False},
+@@ -126,6 +137,7 @@
+         ("hour4", "mean_reversion"),
+         ("hour4", "trend_breakout"),
+     }
++    assert all("training_robustness" in row for row in plan["targeted_cells"])
+     assert refined["gates"] == manifest["gates"]
+     assert refined["execution"] == manifest["execution"]
+     assert refined["authority"] == manifest["authority"]
