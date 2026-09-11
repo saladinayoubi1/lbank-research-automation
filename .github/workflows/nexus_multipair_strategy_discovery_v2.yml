@@ -9,6 +9,7 @@ on:
       - "nexus_multipair_discovery_snapshot.py"
       - "nexus_multipair_archive_snapshot.py"
       - "nexus_multipair_strategy_discovery.py"
+      - "nexus_multipair_training_refinement.py"
       - "nexus_multipair_strategy_proposal_requalification.py"
       - "nexus_multipair_runtime_requalification_snapshot.py"
       - "nexus_multipair_demo_strategy_matrix.py"
@@ -28,6 +29,7 @@ on:
       - "scripts/nexus_runtime_snapshot_artifact.py"
       - "requirements.lock"
       - "tests/test_nexus_multipair_strategy_discovery.py"
+      - "tests/test_nexus_multipair_training_refinement.py"
       - "tests/test_nexus_multipair_strategy_discovery_archive.py"
       - "tests/test_nexus_multipair_archive_snapshot.py"
       - "tests/test_nexus_snapshot_artifact.py"
@@ -44,6 +46,7 @@ on:
       - "nexus_multipair_discovery_snapshot.py"
       - "nexus_multipair_archive_snapshot.py"
       - "nexus_multipair_strategy_discovery.py"
+      - "nexus_multipair_training_refinement.py"
       - "nexus_multipair_strategy_proposal_requalification.py"
       - "nexus_multipair_runtime_requalification_snapshot.py"
       - "nexus_multipair_demo_strategy_matrix.py"
@@ -63,6 +66,7 @@ on:
       - "scripts/nexus_runtime_snapshot_artifact.py"
       - "requirements.lock"
       - "tests/test_nexus_multipair_strategy_discovery.py"
+      - "tests/test_nexus_multipair_training_refinement.py"
       - "tests/test_nexus_multipair_strategy_discovery_archive.py"
       - "tests/test_nexus_multipair_archive_snapshot.py"
       - "tests/test_nexus_snapshot_artifact.py"
@@ -99,6 +103,7 @@ jobs:
         run: >-
           python -m pytest -q
           tests/test_nexus_multipair_strategy_discovery.py
+          tests/test_nexus_multipair_training_refinement.py
           tests/test_nexus_multipair_strategy_discovery_archive.py
           tests/test_nexus_multipair_archive_snapshot.py
           tests/test_nexus_snapshot_artifact.py
@@ -529,6 +534,7 @@ jobs:
           from pathlib import Path
           from nexus_multipair_archive_snapshot import verify_snapshot
           from nexus_multipair_strategy_discovery import run as run_discovery, verify_discovery
+          from nexus_multipair_training_refinement import run as run_refinement
           from nexus_multipair_trusted_surface import FAMILIES, SYMBOLS, TIMEFRAMES
           state_root = Path(os.environ["STATE_ROOT"])
           source_sha = os.environ["GITHUB_SHA"]
@@ -557,10 +563,46 @@ jobs:
           manifest["dataset"]["dataset_root"] = str(snapshot_root)
           manifest_path = state_root / "discovery-manifest.json"
           manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+          base_root = state_root / "base-discovery"
+          base = run_discovery(manifest_path, base_root, source_sha=source_sha)
+          base_verification = verify_discovery(base)
+          assert base_verification["decision"] == "pass", base_verification
+          refinement_root = state_root / "refinement"
+          plan = run_refinement(manifest_path, base_root / "multipair_strategy_discovery.json", refinement_root)
+          assert plan["source_discovery_sha"] == source_sha
+          assert plan["source_discovery_digest"] == base["discovery_digest"]
+          assert plan["dataset_snapshot_sha256"] == snapshot["snapshot_digest"]
+          assert plan["selection_basis"] == "training_only"
+          assert plan["locked_holdout_used_for_refinement"] is False
+          assert plan["research_only"] is True
+          assert plan["paper_only"] is True
+          assert plan["live_trading_authority"] is False
+          assert plan["private_credentials_used"] is False
+          assert plan["automatic_strategy_promotion"] is False
+          assert plan["automatic_paper_forward_started"] is False
+
           output_root = state_root / "discovery"
-          result = run_discovery(manifest_path, output_root, source_sha=source_sha)
+          if plan["should_refine"]:
+              refined_manifest_path = refinement_root / "refinement-manifest.json"
+              refined_manifest = json.loads(refined_manifest_path.read_text(encoding="utf-8"))
+              assert refined_manifest["dataset"] == manifest["dataset"]
+              assert refined_manifest["gates"] == manifest["gates"]
+              assert refined_manifest["execution"] == manifest["execution"]
+              assert refined_manifest["authority"] == manifest["authority"]
+              result = run_discovery(refined_manifest_path, output_root, source_sha=source_sha)
+          else:
+              output_root.mkdir(parents=True, exist_ok=True)
+              for name in ("multipair_strategy_discovery.json", "research_proposals.json", "discovery_verification.json"):
+                  source = base_root / name
+                  if source.exists():
+                      (output_root / name).write_bytes(source.read_bytes())
+              result = json.loads((output_root / "multipair_strategy_discovery.json").read_text(encoding="utf-8"))
+
           verification = verify_discovery(result)
           assert verification["decision"] == "pass", verification
+          assert result["source_sha"] == source_sha
+          assert result["dataset_snapshot_sha256"] == snapshot["snapshot_digest"]
           assert result["snapshot_schema_version"] == snapshot["schema_version"]
           assert result["snapshot_data_origin"] == snapshot["data_origin"]
           assert result["snapshot_runtime_freshness_claimed"] is False
@@ -578,8 +620,13 @@ jobs:
           assert result["automatic_paper_forward_started"] is False
           (state_root / "discovery-summary.json").write_text(json.dumps({
               "snapshot_digest": snapshot["snapshot_digest"],
+              "base_proposal_count": base["research_proposal_count"],
               "proposal_count": result["research_proposal_count"],
               "discovery_digest": result["discovery_digest"],
+              "refinement_started": plan["should_refine"],
+              "training_basis_digest": plan["training_basis_digest"],
+              "selection_basis": plan["selection_basis"],
+              "locked_holdout_used_for_refinement": plan["locked_holdout_used_for_refinement"],
           }, sort_keys=True) + "\n", encoding="utf-8")
           PY
           read -r snapshot_digest proposal_count <<EOF
@@ -1028,10 +1075,25 @@ jobs:
           snapshot = json.loads((root / "snapshot" / "snapshot-manifest.json").read_text())
           runtime_snapshot = json.loads((root / "runtime-snapshot" / "snapshot-manifest.json").read_text())
           discovery = json.loads((root / "discovery" / "multipair_strategy_discovery.json").read_text())
+          base_discovery = json.loads((root / "base-discovery" / "multipair_strategy_discovery.json").read_text())
+          refinement = json.loads((root / "refinement" / "refinement-plan.json").read_text())
           requalification = json.loads((root / "requalification" / "runtime-requalification.json").read_text())
           assert verify_snapshot(root / "snapshot", snapshot)["decision"] == "pass"
+          assert verify_discovery(base_discovery)["decision"] == "pass"
           assert verify_discovery(discovery)["decision"] == "pass"
           assert verify_requalification(requalification)["decision"] == "pass"
+          assert refinement["source_discovery_sha"] == os.environ["GITHUB_SHA"]
+          assert refinement["source_discovery_digest"] == base_discovery["discovery_digest"]
+          assert refinement["dataset_snapshot_sha256"] == snapshot["snapshot_digest"]
+          assert refinement["base_research_proposal_count"] == base_discovery["research_proposal_count"]
+          assert refinement["selection_basis"] == "training_only"
+          assert refinement["locked_holdout_used_for_refinement"] is False
+          assert refinement["research_only"] is True
+          assert refinement["paper_only"] is True
+          assert refinement["live_trading_authority"] is False
+          assert refinement["private_credentials_used"] is False
+          assert refinement["automatic_strategy_promotion"] is False
+          assert refinement["automatic_paper_forward_started"] is False
           fresh = verify_fresh_runtime_snapshot(
               root / "runtime-snapshot",
               runtime_snapshot,
@@ -1094,6 +1156,14 @@ jobs:
               "snapshot_digest": snapshot["snapshot_digest"],
               "discovery_digest": discovery["discovery_digest"],
               "discovery_hypothesis_count": discovery["hypothesis_count"],
+              "base_research_proposal_count": base_discovery["research_proposal_count"],
+              "refinement_started": refinement["should_refine"],
+              "refinement_selection_basis": refinement["selection_basis"],
+              "locked_holdout_used_for_refinement": refinement["locked_holdout_used_for_refinement"],
+              "refinement_training_basis_digest": refinement["training_basis_digest"],
+              "refinement_targeted_cells": refinement["targeted_cells"],
+              "refinement_variant_counts": refinement["variant_counts"],
+              "effective_research_proposal_count": discovery["research_proposal_count"],
               "research_proposal_count": discovery["research_proposal_count"],
               "selection_policy": discovery["selection_policy"],
               "multiplicity_policy": discovery["multiplicity_policy"],
@@ -1185,6 +1255,15 @@ jobs:
           assert evidence["snapshot_cell_count"] == 12
           assert evidence["snapshot_history_limit"] == 500
           assert evidence["discovery_hypothesis_count"] == 9
+          assert evidence["base_research_proposal_count"] >= 0
+          assert isinstance(evidence["refinement_started"], bool)
+          assert evidence["refinement_selection_basis"] == "training_only"
+          assert evidence["locked_holdout_used_for_refinement"] is False
+          assert len(evidence["refinement_training_basis_digest"]) == 64
+          assert isinstance(evidence["refinement_targeted_cells"], list)
+          assert len(evidence["refinement_targeted_cells"]) <= 9
+          assert set(evidence["refinement_variant_counts"]) == {"momentum", "trend_breakout", "mean_reversion"}
+          assert evidence["effective_research_proposal_count"] == evidence["research_proposal_count"]
           assert evidence["runtime_snapshot_transport"] == "digest_pinned_physical_bybit_rest_snapshot"
           assert evidence["runtime_snapshot_data_origin"] == "canonical_public_bybit_closed_candles"
           assert evidence["runtime_snapshot_history_limit"] == 240
