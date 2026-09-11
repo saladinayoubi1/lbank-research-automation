@@ -12,15 +12,18 @@ on:
     paths:
       - ".github/workflows/bybit_prospective_paper_forward_v1.yml"
       - "bybit_prospective_paper_forward_v1.py"
+      - "nexus_paper_terminal_rebind.py"
       - "experiments/bybit_prospective_paper_forward_v1.json"
       - "experiments/bybit_frozen_regime_strategy_v1.json"
   pull_request:
     paths:
       - ".github/workflows/bybit_prospective_paper_forward_v1.yml"
       - "bybit_prospective_paper_forward_v1.py"
+      - "nexus_paper_terminal_rebind.py"
       - "experiments/bybit_prospective_paper_forward_v1.json"
       - "experiments/bybit_frozen_regime_strategy_v1.json"
       - "tests/test_bybit_prospective_paper_forward_v1.py"
+      - "tests/test_nexus_paper_terminal_rebind.py"
       - "docs/BYBIT_PROSPECTIVE_PAPER_FORWARD_V1.md"
 
 permissions:
@@ -43,7 +46,10 @@ jobs:
           cache: pip
       - run: python -m pip install -r requirements-dev.lock
       - run: python -m pip check
-      - run: python -m pytest -q tests/test_bybit_prospective_paper_forward_v1.py
+      - run: >-
+          python -m pytest -q
+          tests/test_bybit_prospective_paper_forward_v1.py
+          tests/test_nexus_paper_terminal_rebind.py
 
   paper-forward:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
@@ -76,7 +82,23 @@ jobs:
             test -f "build/prior/$STATE_FILE"
             cp "build/prior/$STATE_FILE" "build/bybit_prospective_paper_forward_v1/$STATE_FILE"
           fi
+      - name: Detect terminal Paper evidence
+        id: terminal
+        run: |
+          set -euo pipefail
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from pathlib import Path
+
+          path = Path("build/prior/bybit_prospective_paper_forward_v1.json")
+          terminal = False
+          if path.is_file():
+              state = json.loads(path.read_text(encoding="utf-8"))
+              terminal = state.get("status") in {"COMPLETE_REVIEW_REQUIRED", "QUARANTINED"}
+          print(f"terminal={str(terminal).lower()}")
+          PY
       - name: Advance prospective Paper evidence
+        if: steps.terminal.outputs.terminal != 'true'
         run: |
           set -euo pipefail
           python bybit_prospective_paper_forward_v1.py \
@@ -85,6 +107,17 @@ jobs:
             --output "build/bybit_prospective_paper_forward_v1/$STATE_FILE" \
             --source-sha "$GITHUB_SHA" \
             --run-id "$GITHUB_RUN_ID"
+      - name: Rebind terminal snapshot without market collection
+        if: steps.terminal.outputs.terminal == 'true'
+        run: |
+          set -euo pipefail
+          python nexus_paper_terminal_rebind.py \
+            --manifest experiments/bybit_prospective_paper_forward_v1.json \
+            --state "build/prior/$STATE_FILE" \
+            --output "build/bybit_prospective_paper_forward_v1/$STATE_FILE" \
+            --source-sha "$GITHUB_SHA" \
+            --run-id "$GITHUB_RUN_ID"
+          echo "terminal_evidence_frozen=true" >> "$GITHUB_STEP_SUMMARY"
       - name: Enforce Paper-only authority
         run: |
           python - <<'PY'
