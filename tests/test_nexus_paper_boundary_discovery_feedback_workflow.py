@@ -148,3 +148,12 @@ def test_workflow_preserves_fail_closed_authority_boundary() -> None:
     assert "live_trading_authority" in text
     assert "automatic_strategy_promotion" in text
     assert "if: always()" in text
+
+
+def test_legacy_feedback_noops_after_multipair_cutover() -> None:
+    text = _text()
+    assert 'v.get("matrix_id") == "nexus-demo-btc-eth-3tf-3strategy-v1"' in text
+    assert 'v.get("expected_cell_count") == 6' in text
+    assert 'v.get("expected_lane_count") == 18' in text
+    assert 'legacy_paper_boundary_feedback=SUPERSEDED_BY_MULTIPAIR' in text
+    assert 'echo "should_dispatch=false" >> "$GITHUB_OUTPUT"' in text

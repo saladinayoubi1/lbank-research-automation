@@ -296,6 +296,13 @@ jobs:
         id: health
         run: |
           set -euo pipefail
+          snapshot_path="$(cat build/paper-boundary-feedback/snapshot-path.txt)"
+          legacy_surface="$(SNAPSHOT_PATH="$snapshot_path" python -c 'import json, os; v=json.load(open(os.environ["SNAPSHOT_PATH"])); print(str(v.get("matrix_id") == "nexus-demo-btc-eth-3tf-3strategy-v1" and v.get("expected_cell_count") == 6 and v.get("expected_lane_count") == 18).lower())')"
+          if [ "$legacy_surface" != "true" ]; then
+            echo "should_dispatch=false" >> "$GITHUB_OUTPUT"
+            echo "legacy_paper_boundary_feedback=SUPERSEDED_BY_MULTIPAIR"
+            exit 0
+          fi
           python nexus_strategy_discovery_health_trigger.py \
             --loop-snapshot "$(cat build/paper-boundary-feedback/snapshot-path.txt)" \
             --output build/paper-boundary-feedback/health-trigger.json
