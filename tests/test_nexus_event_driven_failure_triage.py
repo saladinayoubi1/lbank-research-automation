@@ -116,16 +116,18 @@ def test_success_runs_are_observed_for_cleanup_but_only_failure_like_conclusions
 
 def test_malformed_generic_metadata_fails_closed_before_failure_issue_write():
     text = _text()
-    guard_index = text.index("core.warning('Rejected malformed or non-allow-listed workflow_run metadata")
-    list_index = text.index('github.rest.issues.listForRepo')
-    create_index = text.index('github.rest.issues.create({ owner, repo, title, body })')
+    generic_start = text.index('const run = context.payload.workflow_run;')
+    generic = text[generic_start:]
+    guard_index = generic.index("core.warning('Rejected malformed or non-allow-listed workflow_run metadata")
+    list_index = generic.index('github.rest.issues.listForRepo', guard_index)
+    create_index = generic.index('github.rest.issues.create({ owner, repo, title, body })', guard_index)
     assert guard_index < list_index < create_index
-    assert "ciWorkflows.has(run.name)" in text
-    assert "allowedConclusions.has(run.conclusion)" in text
+    assert "ciWorkflows.has(run.name)" in generic
+    assert "allowedConclusions.has(run.conclusion)" in generic
     assert "^[0-9a-f]{40}$" in text
-    assert "^https:\\/\\/github\\.com\\/" in text
-    assert 'Number.isInteger(run?.run_attempt)' in text
-    assert 'return;' in text[guard_index:list_index]
+    assert "^https:\\/\\/github\\.com\\/" in generic
+    assert 'Number.isInteger(run?.run_attempt)' in generic
+    assert 'return;' in generic[guard_index:list_index]
 
 
 def test_untrusted_display_metadata_is_sanitized_before_markdown_rendering():

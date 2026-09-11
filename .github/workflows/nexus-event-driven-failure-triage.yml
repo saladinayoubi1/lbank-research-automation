@@ -9,6 +9,10 @@ on:
       - NEXUS Local Runner
       - Build NEXUS Desktop Windows
     types: [requested, in_progress, completed]
+  pull_request:
+    branches:
+      - main
+    types: [closed]
   push:
     branches:
       - main
@@ -21,13 +25,14 @@ permissions:
   issues: write
 
 concurrency:
-  group: nexus-failure-triage-${{ github.event_name }}-${{ github.event.workflow_run.id || github.sha }}
+  group: nexus-failure-triage-${{ github.event_name }}-${{ github.event.pull_request.number || github.event.workflow_run.id || github.sha }}
   cancel-in-progress: false
 
 jobs:
   triage:
     if: >-
       github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.action == 'closed') ||
       (github.event_name == 'workflow_run' && (
         (github.event.action == 'completed' && (
           github.event.workflow_run.name == 'Test' ||
@@ -60,6 +65,20 @@ jobs:
             const installMarkerFor = (sha) => `<!-- nexus-zero-touch-install:${sha} -->`;
             const packageMarkerFor = (sha) => `<!-- nexus-windows-main-package:${sha} -->`;
             const ownerProofMarkerFor = (sha) => `<!-- nexus-owner-autostart-proof:${sha} -->`;
+
+            const closeTriageIssue = async (issue, reason) => {
+              const currentBody = issue.body || '';
+              const note = `\n\n---\nClosed automatically by NEXUS CI hygiene: ${reason}`;
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: issue.number,
+                state: 'closed',
+                state_reason: 'not_planned',
+                body: currentBody.includes('Closed automatically by NEXUS CI hygiene:') ? currentBody : currentBody + note
+              });
+              core.info(`Closed superseded triage issue #${issue.number}: ${reason}`);
+            };
 
             const upsertInstallEvidence = async ({ sha, state, lines }) => {
               if (!validSha(sha) || !['PENDING', 'SUCCESS', 'FAILURE'].includes(state)) {
@@ -205,6 +224,68 @@ jobs:
               }
               return true;
             };
+
+            if (context.eventName === 'pull_request') {
+              const pr = context.payload.pull_request;
+              const prNumber = context.payload.number;
+              const expectedRepo = `${owner}/${repo}`;
+              const expectedUrl = Number.isSafeInteger(prNumber) && prNumber > 0
+                ? `https://github.com/${owner}/${repo}/pull/${prNumber}`
+                : '';
+              const validHeadRef = typeof pr?.head?.ref === 'string' &&
+                pr.head.ref.length > 0 &&
+                pr.head.ref.length <= 255 &&
+                !/[\r\n\t`\u0000-\u001f\u007f]/.test(pr.head.ref);
+              if (
+                context.payload.action !== 'closed' ||
+                !Number.isSafeInteger(prNumber) ||
+                prNumber <= 0 ||
+                pr?.number !== prNumber ||
+                !validSha(pr?.head?.sha) ||
+                !validHeadRef ||
+                pr?.base?.ref !== defaultBranch ||
+                pr?.base?.repo?.full_name !== expectedRepo ||
+                pr?.head?.repo?.full_name !== expectedRepo ||
+                pr?.html_url !== expectedUrl
+              ) {
+                core.warning('Rejected malformed, forked, or non-default-branch pull request closure metadata; no issue write performed.');
+                return;
+              }
+
+              const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+                owner,
+                repo,
+                state: 'open',
+                per_page: 100
+              });
+              let closedCount = 0;
+              for (const issue of openIssues) {
+                if (issue.pull_request) continue;
+                const text = issue.body || '';
+                const markerMatch = text.match(/<!-- nexus-ci-triage:([^:]+):([0-9a-f]{40}) -->/);
+                const eventMatch = text.match(/^- event: `([^`]+)`/m);
+                const branchMatch = text.match(/^- branch: `([^`]+)`/m);
+                const allowedWorkflow = markerMatch && [
+                  'Test',
+                  'NEXUS Cloud Fallback',
+                  'NEXUS Build Verification'
+                ].includes(markerMatch[1]);
+                if (
+                  allowedWorkflow &&
+                  markerMatch[2] === pr.head.sha &&
+                  eventMatch?.[1] === 'pull_request' &&
+                  branchMatch?.[1] === pr.head.ref
+                ) {
+                  await closeTriageIssue(
+                    issue,
+                    `pull request #${prNumber} closed for exact head ${pr.head.sha} on branch ${pr.head.ref}.`
+                  );
+                  closedCount += 1;
+                }
+              }
+              core.info(`Pull request #${prNumber} closure cleanup closed ${closedCount} exact-bound triage issue(s).`);
+              return;
+            }
 
             if (context.eventName === 'push') {
               const sha = context.payload.after;
@@ -597,19 +678,7 @@ jobs:
               };
             };
 
-            const closeIssue = async (issue, reason) => {
-              const currentBody = issue.body || '';
-              const note = `\n\n---\nClosed automatically by NEXUS CI hygiene: ${reason}`;
-              await github.rest.issues.update({
-                owner,
-                repo,
-                issue_number: issue.number,
-                state: 'closed',
-                state_reason: 'not_planned',
-                body: currentBody.includes('Closed automatically by NEXUS CI hygiene:') ? currentBody : currentBody + note
-              });
-              core.info(`Closed superseded triage issue #${issue.number}: ${reason}`);
-            };
+            const closeIssue = closeTriageIssue;
 
             const currentBranchSupersedes = (parsed) => (
               parsed.workflow === run.name &&
