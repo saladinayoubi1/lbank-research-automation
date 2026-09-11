@@ -12,11 +12,13 @@ on:
     paths:
       - "nexus_multitimeframe_strategy_discovery.py"
       - "nexus_multitimeframe_training_refinement.py"
+      - "nexus_multitimeframe_search_exhaustion.py"
       - "nexus_multitimeframe_verified_archive_discovery.py"
       - "nexus_demo_archive_replay.py"
       - "scripts/select_nexus_bybit_replay_artifact.py"
       - "experiments/nexus_multitimeframe_strategy_discovery_v1.json"
       - "tests/test_nexus_bybit_replay_artifact_lifecycle.py"
+      - "tests/test_nexus_multitimeframe_search_exhaustion.py"
       - "tests/test_nexus_multitimeframe_strategy_discovery.py"
       - "tests/test_nexus_multitimeframe_training_refinement.py"
       - "tests/test_nexus_multitimeframe_verified_archive_discovery.py"
@@ -25,11 +27,13 @@ on:
     paths:
       - "nexus_multitimeframe_strategy_discovery.py"
       - "nexus_multitimeframe_training_refinement.py"
+      - "nexus_multitimeframe_search_exhaustion.py"
       - "nexus_multitimeframe_verified_archive_discovery.py"
       - "nexus_demo_archive_replay.py"
       - "scripts/select_nexus_bybit_replay_artifact.py"
       - "experiments/nexus_multitimeframe_strategy_discovery_v1.json"
       - "tests/test_nexus_bybit_replay_artifact_lifecycle.py"
+      - "tests/test_nexus_multitimeframe_search_exhaustion.py"
       - "tests/test_nexus_multitimeframe_strategy_discovery.py"
       - "tests/test_nexus_multitimeframe_training_refinement.py"
       - "tests/test_nexus_multitimeframe_verified_archive_discovery.py"
@@ -60,6 +64,8 @@ jobs:
           python -m pytest -q
           tests/test_nexus_multitimeframe_strategy_discovery.py
           tests/test_nexus_multitimeframe_training_refinement.py
+          tests/test_nexus_multitimeframe_search_exhaustion.py
+          tests/test_nexus_multitimeframe_search_exhaustion_workflow.py
           tests/test_nexus_multitimeframe_verified_archive_discovery.py
           tests/test_nexus_strategy_discovery_controller.py
           tests/test_nexus_bybit_replay_artifact_lifecycle.py
@@ -75,6 +81,7 @@ jobs:
       DATASET_DELIVERY: NEXUS_BYBIT_replay_v2_delivery.json
       DATASET_ARTIFACT_PREFIX: bybit-full-history-final-
       DATASET_SHA256: "2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422"
+      EXHAUSTION_ARTIFACT: nexus-multitimeframe-search-exhaustion
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
@@ -83,7 +90,79 @@ jobs:
           cache: pip
       - run: python -m pip install -r requirements-dev.lock
       - run: python -m pip check
+
+      - name: Fingerprint exact search neighborhood
+        run: |
+          set -euo pipefail
+          rm -rf build/nexus_multitimeframe_preflight
+          mkdir -p build/nexus_multitimeframe_preflight
+          python nexus_multitimeframe_search_exhaustion.py fingerprint \
+            --manifest experiments/nexus_multitimeframe_strategy_discovery_v1.json \
+            --dataset-semantic-sha256 "$DATASET_SHA256" \
+            --root . \
+            --output build/nexus_multitimeframe_preflight/search-neighborhood.json
+
+      - name: Reuse exact exhausted neighborhood when unchanged
+        id: exhaustion
+        run: |
+          set -euo pipefail
+          echo "reuse=false" >> "$GITHUB_OUTPUT"
+          rm -rf build/exhaustion-cache
+          mkdir -p build/exhaustion-cache
+          artifact_id="$(gh api \
+            -H 'Accept: application/vnd.github+json' \
+            "repos/$GITHUB_REPOSITORY/actions/artifacts?name=$EXHAUSTION_ARTIFACT&per_page=100" \
+            --jq '.artifacts | map(select(.expired == false)) | sort_by(.created_at) | reverse | .[0].id // empty')"
+          if [ -z "$artifact_id" ]; then
+            echo "search_exhaustion_reuse=MISS reason=no_certificate"
+            exit 0
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" \
+            > build/exhaustion-cache/certificate.zip
+          unzip -q build/exhaustion-cache/certificate.zip -d build/exhaustion-cache/content
+          certificate="$(find build/exhaustion-cache/content -type f -name 'exhaustion-certificate.json' -print -quit)"
+          if [ -z "$certificate" ]; then
+            echo "search_exhaustion_reuse=MISS reason=certificate_missing"
+            exit 0
+          fi
+          reusable="$(python nexus_multitimeframe_search_exhaustion.py check \
+            --neighborhood build/nexus_multitimeframe_preflight/search-neighborhood.json \
+            --certificate "$certificate" \
+            | python -c 'import json,sys; print(str(json.load(sys.stdin)["reusable"]).lower())')"
+          if [ "$reusable" != "true" ]; then
+            echo "search_exhaustion_reuse=MISS reason=fingerprint_changed"
+            exit 0
+          fi
+          mkdir -p build/nexus_multitimeframe_strategy_discovery
+          cp build/nexus_multitimeframe_preflight/search-neighborhood.json \
+            build/nexus_multitimeframe_strategy_discovery/search-neighborhood.json
+          cp "$certificate" \
+            build/nexus_multitimeframe_strategy_discovery/reused-exhaustion-certificate.json
+          echo "reuse=true" >> "$GITHUB_OUTPUT"
+          echo "search_exhaustion_reuse=PASS policy=exact_static_neighborhood_only"
+
+      - name: Verify reused exhaustion remains Research/Paper-only
+        if: steps.exhaustion.outputs.reuse == 'true'
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          certificate = json.loads(
+              Path("build/nexus_multitimeframe_strategy_discovery/reused-exhaustion-certificate.json").read_text()
+          )
+          assert certificate["exhausted"] is True
+          assert certificate["selection_basis"] == "training_only"
+          assert certificate["locked_holdout_used_for_refinement"] is False
+          assert certificate["research_only"] is True
+          assert certificate["paper_only"] is True
+          assert certificate["automatic_strategy_promotion"] is False
+          assert certificate["live_trading_authority"] is False
+          print("search_exhaustion_authority=PASS")
+          PY
+
       - name: Restore verified immutable Bybit replay-v2 dataset
+        if: steps.exhaustion.outputs.reuse != 'true'
         env:
           DISPATCH_ARTIFACT_ID: ${{ github.event.inputs.artifact_id }}
         run: |
@@ -105,14 +184,18 @@ jobs:
           archive="build/final_delivery/$DATASET_FILE"
           test -s "$archive"
           unzip -q "$archive" -d build/bybit_dataset
+
       - name: Run leakage-resistant discovery
+        if: steps.exhaustion.outputs.reuse != 'true'
         run: |
           set -euo pipefail
           python nexus_multitimeframe_verified_archive_discovery.py \
             --manifest experiments/nexus_multitimeframe_strategy_discovery_v1.json \
             --source-sha "$GITHUB_SHA" \
             --output build/nexus_multitimeframe_strategy_discovery
+
       - name: Plan bounded training-only refinement
+        if: steps.exhaustion.outputs.reuse != 'true'
         id: refinement
         run: |
           set -euo pipefail
@@ -124,7 +207,7 @@ jobs:
           echo "should_refine=$should_refine" >> "$GITHUB_OUTPUT"
 
       - name: Run bounded training-only refinement discovery
-        if: steps.refinement.outputs.should_refine == 'true'
+        if: steps.exhaustion.outputs.reuse != 'true' && steps.refinement.outputs.should_refine == 'true'
         run: |
           set -euo pipefail
           python nexus_multitimeframe_verified_archive_discovery.py \
@@ -133,6 +216,7 @@ jobs:
             --output build/nexus_multitimeframe_strategy_discovery/refinement/discovery
 
       - name: Verify authority boundary
+        if: steps.exhaustion.outputs.reuse != 'true'
         run: |
           set -euo pipefail
           python - <<'PY'
@@ -187,10 +271,59 @@ jobs:
               "training_basis_digest": plan["training_basis_digest"],
           }, sort_keys=True))
           PY
+
+      - name: Determine exact search exhaustion
+        if: steps.exhaustion.outputs.reuse != 'true'
+        id: exhaustion-decision
+        run: |
+          set -euo pipefail
+          python - <<'PY' > build/nexus_multitimeframe_preflight/exhaustion-decision.txt
+          import json
+          from pathlib import Path
+          root = Path("build/nexus_multitimeframe_strategy_discovery")
+          base = json.loads((root / "multitimeframe_strategy_discovery.json").read_text())
+          plan = json.loads((root / "refinement" / "refinement-plan.json").read_text())
+          refined_count = None
+          if plan["should_refine"]:
+              refined = json.loads((root / "refinement" / "discovery" / "multitimeframe_strategy_discovery.json").read_text())
+              refined_count = int(refined["research_proposal_count"])
+          should_certify = (
+              int(base["research_proposal_count"]) == 0
+              and plan["should_refine"] is True
+              and refined_count == 0
+          )
+          print(f"should_certify={str(should_certify).lower()}")
+          PY
+          cat build/nexus_multitimeframe_preflight/exhaustion-decision.txt >> "$GITHUB_OUTPUT"
+
+      - name: Certify exact exhausted neighborhood
+        if: steps.exhaustion-decision.outputs.should_certify == 'true'
+        run: |
+          set -euo pipefail
+          cp build/nexus_multitimeframe_preflight/search-neighborhood.json \
+            build/nexus_multitimeframe_strategy_discovery/search-neighborhood.json
+          python nexus_multitimeframe_search_exhaustion.py certify \
+            --neighborhood build/nexus_multitimeframe_preflight/search-neighborhood.json \
+            --base-discovery build/nexus_multitimeframe_strategy_discovery/multitimeframe_strategy_discovery.json \
+            --refinement-plan build/nexus_multitimeframe_strategy_discovery/refinement/refinement-plan.json \
+            --refined-discovery build/nexus_multitimeframe_strategy_discovery/refinement/discovery/multitimeframe_strategy_discovery.json \
+            --output build/nexus_multitimeframe_strategy_discovery/exhaustion-certificate.json
+          echo "search_exhaustion_certificate=PASS"
+
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: nexus-multitimeframe-strategy-discovery-${{ github.run_id }}
           path: build/nexus_multitimeframe_strategy_discovery
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Publish reusable exact exhaustion certificate
+        if: steps.exhaustion-decision.outputs.should_certify == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-multitimeframe-search-exhaustion
+          path: build/nexus_multitimeframe_strategy_discovery/exhaustion-certificate.json
           if-no-files-found: error
           retention-days: 90
           compression-level: 9
