@@ -3,8 +3,7 @@ name: NEXUS Local Autonomy
 on:
   workflow_dispatch:
   schedule:
-    # Keep scheduled watchdog cadence above the observed physical source/bootstrap
-    # overhead plus the bounded 240s worker window so scheduled runs do not self-queue.
+    # Keep scheduled watchdog cadence above the bounded worker window so runs do not self-queue.
     - cron: '*/15 * * * *'
   push:
     branches: [main]
@@ -17,99 +16,137 @@ on:
       - 'scripts/nexus_brain_core.js'
       - 'scripts/deepseek_smoke.py'
       - 'scripts/bootstrap_portable_python.cmd'
+      - 'tests/test_nexus_local_autonomy_workflow.py'
+      - '.github/workflows/nexus_local_autonomy.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.nexus/autonomous-queue.json'
+      - 'config/nexus-mission-queue.json'
+      - 'scripts/nexus_local_worker.py'
+      - 'scripts/nexus_orchestrator.js'
+      - 'scripts/nexus_ai_council.js'
+      - 'scripts/nexus_brain_core.js'
+      - 'scripts/deepseek_smoke.py'
+      - 'scripts/bootstrap_portable_python.cmd'
+      - 'tests/test_nexus_local_autonomy_workflow.py'
       - '.github/workflows/nexus_local_autonomy.yml'
 
 permissions:
   contents: read
 
 concurrency:
-  group: nexus-local-autonomy
+  group: nexus-local-autonomy-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'main' }}
   cancel-in-progress: false
 
 jobs:
+  contract-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12'
+      - name: Verify Local Autonomy source transport contract
+        run: python tests/test_nexus_local_autonomy_workflow.py
+
+  source-prep:
+    needs: contract-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      archive_sha256: ${{ steps.pack.outputs.archive_sha256 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Pack exact commit source without repository history
+        id: pack
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/local-autonomy-source
+          archive='build/local-autonomy-source/nexus-local-autonomy-source.zip'
+          commit_file='build/local-autonomy-source/nexus-local-autonomy-source.commit-sha'
+          git archive --format=zip --output "$archive" "$GITHUB_SHA"
+          printf '%s\n' "$GITHUB_SHA" > "$commit_file"
+          archive_sha256="$(sha256sum "$archive" | awk '{print $1}')"
+          test -n "$archive_sha256"
+          echo "archive_sha256=$archive_sha256" >> "$GITHUB_OUTPUT"
+          echo "local_autonomy_exact_source_pack=PASS sha=$GITHUB_SHA digest=$archive_sha256"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-local-autonomy-source-${{ github.run_id }}
+          path: build/local-autonomy-source/*
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+
   local-worker:
+    needs: [contract-test, source-prep]
     if: >-
-      github.event_name != 'workflow_dispatch' ||
-      (github.actor == github.repository_owner &&
-       github.ref_name == github.event.repository.default_branch)
+      github.event_name != 'pull_request' &&
+      (github.event_name != 'workflow_dispatch' ||
+       (github.actor == github.repository_owner &&
+        github.ref_name == github.event.repository.default_branch))
     runs-on: [self-hosted, Windows, X64, nexus-local]
     timeout-minutes: 30
     env:
       NEXUS_WORKER_MAX_SECONDS: '240'
       NEXUS_WORKER_IDLE_SLEEP: '15'
       NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: '0'
+      EXPECTED_SOURCE_ARCHIVE_SHA256: ${{ needs.source-prep.outputs.archive_sha256 }}
     steps:
-      - name: Prepare exact source with local fast-path and bounded HTTP/1.1 fetch
-        timeout-minutes: 10
+      - name: Download exact current-run source transport
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: nexus-local-autonomy-source-${{ github.run_id }}
+          path: ${{ runner.temp }}/nexus-local-autonomy-source
+
+      - name: Verify and restore exact source artifact
+        timeout-minutes: 5
         shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
         run: |
           $ErrorActionPreference = 'Stop'
           Set-StrictMode -Version 2.0
 
-          $targetSha = [string]$env:GITHUB_SHA
-          $repoUrl = "https://github.com/${env:GITHUB_REPOSITORY}.git"
-          if (-not $targetSha) { throw 'GITHUB_SHA is required.' }
+          $transportRoot = Join-Path $env:RUNNER_TEMP 'nexus-local-autonomy-source'
+          $archive = Join-Path $transportRoot 'nexus-local-autonomy-source.zip'
+          $commitFile = Join-Path $transportRoot 'nexus-local-autonomy-source.commit-sha'
+          $expectedSha = [string]$env:GITHUB_SHA
+          $expectedDigest = ([string]$env:EXPECTED_SOURCE_ARCHIVE_SHA256).ToLowerInvariant()
 
-          if (Test-Path '.git' -PathType Container) {
-            $remotes = @(& git remote)
-            if ($remotes -contains 'origin') {
-              & git remote set-url origin $repoUrl
-              if ($LASTEXITCODE -ne 0) { throw 'Failed to bind existing workspace to anonymous repository URL.' }
-            }
-            else {
-              & git remote add origin $repoUrl
-              if ($LASTEXITCODE -ne 0) { throw 'Failed to add anonymous repository remote.' }
-            }
-          }
-          else {
-            Get-ChildItem -Force | Remove-Item -Recurse -Force
-            & git init .
-            if ($LASTEXITCODE -ne 0) { throw 'Failed to initialize physical workspace.' }
-            & git remote add origin $repoUrl
-            if ($LASTEXITCODE -ne 0) { throw 'Failed to add anonymous repository remote.' }
+          if (-not $expectedSha) { throw 'GITHUB_SHA is required.' }
+          if (-not $expectedDigest) { throw 'Expected source archive SHA256 is required.' }
+          if (-not (Test-Path $archive -PathType Leaf)) { throw 'Exact source archive is missing.' }
+          if (-not (Test-Path $commitFile -PathType Leaf)) { throw 'Exact source commit binding is missing.' }
+
+          $transportSha = (Get-Content -LiteralPath $commitFile -Raw).Trim()
+          if ($transportSha -ne $expectedSha) {
+            throw "Exact source commit mismatch: expected=$expectedSha actual=$transportSha"
           }
 
-          & git config --local --unset-all 'http.https://github.com/.extraheader' 2>$null
-          $currentSha = ''
-          try { $currentSha = ((& git rev-parse HEAD 2>$null) | Select-Object -First 1).Trim() } catch { $currentSha = '' }
-
-          if ($currentSha -eq $targetSha) {
-            & git reset --hard $targetSha
-            if ($LASTEXITCODE -ne 0) { throw 'Failed to reset exact local source.' }
-            & git clean -ffdx
-            if ($LASTEXITCODE -ne 0) { throw 'Failed to clean exact local source.' }
-            Write-Host 'exact_source_mode=local-hit'
-          }
-          else {
-            $fetchOk = $false
-            $fetchMaxAttempts = 4
-            for ($fetchAttempt = 1; $fetchAttempt -le $fetchMaxAttempts; $fetchAttempt++) {
-              & git -c 'http.version=HTTP/1.1' fetch --no-tags --prune --no-recurse-submodules --depth=1 origin $targetSha
-              if ($LASTEXITCODE -eq 0) {
-                $fetchOk = $true
-                break
-              }
-              Write-Warning "Exact repository fetch attempt $fetchAttempt/$fetchMaxAttempts failed."
-              if ($fetchAttempt -lt $fetchMaxAttempts) {
-                Start-Sleep -Seconds ($fetchAttempt * 5)
-              }
-            }
-            if (-not $fetchOk) {
-              throw "Exact repository fetch failed after $fetchMaxAttempts bounded attempts."
-            }
-
-            & git checkout --detach --force FETCH_HEAD
-            if ($LASTEXITCODE -ne 0) { throw 'Exact repository checkout failed.' }
-            & git clean -ffdx
-            if ($LASTEXITCODE -ne 0) { throw 'Post-checkout workspace clean failed.' }
-            Write-Host 'exact_source_mode=bounded-http11-fetch'
+          $actualDigest = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actualDigest -ne $expectedDigest) {
+            throw "Exact source archive digest mismatch: expected=$expectedDigest actual=$actualDigest"
           }
 
-          $checkedOutSha = ((& git rev-parse HEAD) | Select-Object -First 1).Trim()
-          if ($LASTEXITCODE -ne 0 -or $checkedOutSha -ne $targetSha) {
-            throw "Exact trigger SHA mismatch: expected=$targetSha actual=$checkedOutSha"
+          Get-ChildItem -Force -LiteralPath $env:GITHUB_WORKSPACE | Remove-Item -Recurse -Force
+          Expand-Archive -LiteralPath $archive -DestinationPath $env:GITHUB_WORKSPACE -Force
+          Set-Location $env:GITHUB_WORKSPACE
+
+          if (-not (Test-Path 'scripts/nexus_local_worker.py' -PathType Leaf)) {
+            throw 'Restored exact source is incomplete.'
           }
-          Write-Host "exact_trigger_sha=$checkedOutSha"
+          if (-not (Test-Path 'nexus_autonomous_orchestrator.py' -PathType Leaf)) {
+            throw 'Restored exact source is missing the autonomy orchestrator.'
+          }
+          Write-Host "exact_source_mode=digest-pinned-current-run-artifact"
+          Write-Host "exact_trigger_sha=$transportSha"
+          Write-Host "exact_source_archive_sha256=$actualDigest"
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:

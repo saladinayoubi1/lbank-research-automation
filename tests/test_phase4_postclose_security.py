@@ -149,12 +149,20 @@ def test_self_hosted_phase_workflows_pin_trusted_manual_refs_and_credentials():
 
     assert "github.actor == github.repository_owner" in autonomy
     assert "github.ref_name == github.event.repository.default_branch" in autonomy
-    assert "actions/checkout" not in autonomy
-    assert "Prepare exact source with local fast-path and bounded HTTP/1.1 fetch" in autonomy
-    assert "https://github.com/${env:GITHUB_REPOSITORY}.git" in autonomy
-    assert "--unset-all 'http.https://github.com/.extraheader'" in autonomy
-    assert "git rev-parse HEAD" in autonomy
-    assert "Exact trigger SHA mismatch" in autonomy
+    source_start = autonomy.index("  source-prep:")
+    worker_start = autonomy.index("  local-worker:", source_start)
+    source_block = autonomy[source_start:worker_start]
+    worker_block = autonomy[worker_start:]
+    assert "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" in source_block
+    assert "persist-credentials: false" in source_block
+    assert "git archive --format=zip" in source_block
+    assert "nexus-local-autonomy-source-${{ github.run_id }}" in source_block
+    assert "actions/checkout" not in worker_block
+    assert "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093" in worker_block
+    assert "EXPECTED_SOURCE_ARCHIVE_SHA256" in worker_block
+    assert "Exact source commit mismatch" in worker_block
+    assert "Exact source archive digest mismatch" in worker_block
+    assert "git fetch" not in worker_block
 
     assert "github.actor == github.repository_owner" in continuous
     assert "github.ref_name == github.event.repository.default_branch" in continuous

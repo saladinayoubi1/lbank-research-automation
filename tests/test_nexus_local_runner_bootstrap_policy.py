@@ -156,24 +156,33 @@ def test_autonomy_schedule_exceeds_bounded_worker_window_and_keeps_push_immediat
     assert 'cancel-in-progress: false' in workflow
 
 
-def test_autonomy_source_prep_is_bounded_anonymous_and_exact_sha():
+def test_autonomy_source_prep_is_bounded_current_run_artifact_and_exact_sha():
     workflow = AUTONOMY_WORKFLOW.read_text(encoding='utf-8')
-    start = workflow.index('- name: Prepare exact source with local fast-path and bounded HTTP/1.1 fetch')
-    setup_node = workflow.index('- uses: actions/setup-node@', start)
-    block = workflow[start:setup_node]
-    assert 'timeout-minutes: 10' in block
-    assert 'actions/checkout' not in block
-    assert 'https://github.com/${env:GITHUB_REPOSITORY}.git' in block
-    assert "--unset-all 'http.https://github.com/.extraheader'" in block
-    assert '$currentSha -eq $targetSha' in block
-    assert 'git reset --hard $targetSha' in block
-    assert 'git clean -ffdx' in block
-    assert '$fetchMaxAttempts = 4' in block
-    assert "http.version=HTTP/1.1" in block
-    assert 'fetch --no-tags --prune --no-recurse-submodules --depth=1 origin $targetSha' in block
-    assert 'git checkout --detach --force FETCH_HEAD' in block
-    assert 'Exact trigger SHA mismatch' in block
-    assert 'exact_trigger_sha=$checkedOutSha' in block
+    source_start = workflow.index('  source-prep:')
+    worker_start = workflow.index('  local-worker:', source_start)
+    source_block = workflow[source_start:worker_start]
+    worker_block = workflow[worker_start:]
+
+    assert 'runs-on: ubuntu-latest' in source_block
+    assert 'timeout-minutes: 10' in source_block
+    assert 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1' in source_block
+    assert 'persist-credentials: false' in source_block
+    assert 'git archive --format=zip' in source_block
+    assert '"$GITHUB_SHA"' in source_block
+    assert 'nexus-local-autonomy-source.commit-sha' in source_block
+    assert 'sha256sum "$archive"' in source_block
+    assert 'nexus-local-autonomy-source-${{ github.run_id }}' in source_block
+    assert 'retention-days: 1' in source_block
+
+    assert 'actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093' in worker_block
+    assert 'EXPECTED_SOURCE_ARCHIVE_SHA256' in worker_block
+    assert 'Get-FileHash -LiteralPath $archive -Algorithm SHA256' in worker_block
+    assert 'Exact source commit mismatch' in worker_block
+    assert 'Exact source archive digest mismatch' in worker_block
+    assert 'exact_source_mode=digest-pinned-current-run-artifact' in worker_block
+    assert 'git fetch' not in worker_block
+    assert 'git checkout --detach' not in worker_block
+    assert 'git remote set-url' not in worker_block
 
 
 def test_owner_autostart_proof_fast_path_skips_heavy_python_and_node_bootstrap():
