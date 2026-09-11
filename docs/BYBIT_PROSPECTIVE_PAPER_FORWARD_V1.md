@@ -34,6 +34,14 @@ verifies the state, advances only newly completed bars, enforces Paper-only
 authority, and uploads a replacement state artifact. Concurrency prevents two
 writers from advancing the same chain simultaneously.
 
+Once the state reaches `COMPLETE_REVIEW_REQUIRED` or `QUARANTINED`, the evidence
+snapshot is terminal. Later workflow runs do not query new market observations
+or append events. They only rebind the exact terminal snapshot to the newer
+workflow run ID and source SHA, then recompute its canonical state digest so the
+independent reporter can verify the exact triggering run. Event history,
+profiles, completed-bar count, final execution time, status, decision, and all
+authority fields remain frozen pending separate human review.
+
 Pull requests run only the focused contract tests; they do not collect market
 observations.
 
@@ -65,5 +73,5 @@ cannot change the project boundary automatically.
 ## Local verification
 
 ```bash
-python -m pytest -q tests/test_bybit_prospective_paper_forward_v1.py
+python -m pytest -q tests/test_bybit_prospective_paper_forward_v1.py tests/test_nexus_paper_terminal_rebind.py
 ```
