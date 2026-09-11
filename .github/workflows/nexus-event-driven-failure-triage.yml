@@ -19,6 +19,7 @@ permissions:
   contents: read
   actions: read
   issues: write
+  pull-requests: read
 
 concurrency:
   group: nexus-failure-triage-${{ github.event_name }}-${{ github.event.workflow_run.id || github.sha }}
@@ -651,7 +652,7 @@ jobs:
                     historical.head_sha === parsed.sha &&
                     historical.event === 'pull_request' &&
                     historical.html_url === expectedRepoUrl;
-                  const associatedPrNumbers = Array.isArray(historical.pull_requests)
+                  let associatedPrNumbers = Array.isArray(historical.pull_requests)
                     ? historical.pull_requests
                         .map(pr => pr?.number)
                         .filter(number => Number.isSafeInteger(number) && number > 0)
@@ -661,6 +662,30 @@ jobs:
                     core.warning(`Preserved triage issue #${issue.number}: historical workflow evidence mismatch.`);
                     continue;
                   }
+
+                  if (associatedPrNumbers.length === 0) {
+                    try {
+                      const exactCommitPrs = await github.paginate(
+                        github.rest.repos.listPullRequestsAssociatedWithCommit,
+                        {
+                          owner,
+                          repo,
+                          commit_sha: parsed.sha,
+                          per_page: 100
+                        }
+                      );
+                      associatedPrNumbers = [...new Set(
+                        exactCommitPrs
+                          .map(pr => pr?.number)
+                          .filter(number => Number.isSafeInteger(number) && number > 0)
+                      )];
+                      core.info(`Resolved ${associatedPrNumbers.length} pull request(s) from exact commit ${parsed.sha} for triage issue #${issue.number}.`);
+                    } catch (error) {
+                      core.warning(`Preserved triage issue #${issue.number}: exact-commit pull request lookup failed (${error.message}).`);
+                      continue;
+                    }
+                  }
+
                   if (associatedPrNumbers.length === 0) {
                     core.warning(`Preserved triage issue #${issue.number}: no independently associated pull request.`);
                     continue;
