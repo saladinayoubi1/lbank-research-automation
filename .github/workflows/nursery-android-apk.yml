@@ -1,0 +1,76 @@
+name: Nursery Android APK
+
+on:
+  push:
+    branches:
+      - nursery-android-build
+    paths:
+      - 'android-nursery/**'
+      - '.github/workflows/nursery-android-apk.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'android-nursery/**'
+      - '.github/workflows/nursery-android-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout isolated branch
+        uses: actions/checkout@v4
+
+      - name: Restore embedded app payload
+        shell: python
+        run: |
+          import base64, bz2, hashlib
+          from pathlib import Path
+          root = Path('android-nursery')
+          payload = ''.join((root / 'payload' / name).read_text(encoding='utf-8').strip()
+                            for name in ('part00.txt', 'part01.txt'))
+          html = bz2.decompress(base64.b64decode(payload))
+          digest = hashlib.sha256(html).hexdigest()
+          expected = '0987d129f4d09c65483139b6d797b2d5024fa01187f27fa49b3ff76e51e472ca'
+          if digest != expected:
+              raise SystemExit(f'payload SHA256 mismatch: {digest}')
+          assets = root / 'app' / 'src' / 'main' / 'assets'
+          assets.mkdir(parents=True, exist_ok=True)
+          (assets / 'index.html').write_bytes(html)
+          print(f'index.html restored: {len(html)} bytes; sha256={digest}')
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle 8.11.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+
+      - name: Build signed debug APK
+        run: gradle --no-daemon --stacktrace --project-dir android-nursery :app:assembleDebug
+
+      - name: Prepare artifact
+        shell: bash
+        run: |
+          mkdir -p dist
+          cp android-nursery/app/build/outputs/apk/debug/app-debug.apk dist/Nursery-Daily-1.0.0.apk
+          sha256sum dist/Nursery-Daily-1.0.0.apk | tee dist/SHA256SUMS.txt
+
+      - name: Upload installable APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nursery-Daily-Android-1.0.0
+          path: |
+            dist/Nursery-Daily-1.0.0.apk
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
