@@ -81,6 +81,11 @@ def test_workflow_requalification_uses_physical_bybit_linux_plane() -> None:
     assert "actions/checkout" not in section
     assert "actions/setup-python" not in section
     assert "actions/upload-artifact" not in section
+    assert 'source_root="$HOME/.local/share/nexus/paper-boundary-requalification-source/$GITHUB_RUN_ID"' in section
+    assert "paper_boundary_source_isolation=PASS" in section
+    assert "git reset --hard" not in section
+    assert "git clean -ffdx" not in section
+    assert 'cd "$SOURCE_ROOT"' in section
     assert "gh api" not in section
     assert "unzip " not in section
     assert "curl --fail --silent --show-error --location" in section

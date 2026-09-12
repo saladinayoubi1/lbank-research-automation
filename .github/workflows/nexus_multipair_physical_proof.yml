@@ -128,38 +128,29 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       WHEELHOUSE_ARTIFACT: nexus-multipair-runtime-wheelhouse-${{ github.sha }}
       WHEELHOUSE_ARCHIVE_SHA256: ${{ needs.runtime-wheelhouse.outputs.archive_sha256 }}
-      STATE_ROOT: build/nexus_multipair_physical_proof_state
     steps:
       - name: Prepare exact repository and pre-provisioned Python 3.12 without JavaScript actions
         run: |
           set -euo pipefail
-          repo_url="https://github.com/${GITHUB_REPOSITORY}.git"
-          if [ -d .git ]; then
-            git remote set-url origin "$repo_url"
-            git reset --hard
-            git clean -ffdx
-          else
-            find . -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
-            git init .
-            git remote add origin "$repo_url"
-          fi
+          source_root="$HOME/.local/share/nexus/multipair-physical-proof-source/$GITHUB_RUN_ID"
+          state_root="$HOME/.local/share/nexus/multipair-physical-proof-state/$GITHUB_RUN_ID"
+          case "$source_root" in "$HOME"/.local/share/nexus/multipair-physical-proof-source/*) ;; *) echo "::error::Unsafe physical proof source root."; exit 1;; esac
+          case "$state_root" in "$HOME"/.local/share/nexus/multipair-physical-proof-state/*) ;; *) echo "::error::Unsafe physical proof state root."; exit 1;; esac
+          rm -rf "$source_root" "$state_root"
+          mkdir -p "$source_root" "$state_root/demo"
+          cd "$source_root"
+          git init .
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
           git config --local --unset-all http.https://github.com/.extraheader || true
           fetch_ok=false
           for fetch_attempt in 1 2 3; do
-            if git -c http.version=HTTP/1.1 fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"; then
-              fetch_ok=true
-              break
-            fi
+            if git -c credential.helper= -c http.version=HTTP/1.1 fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"; then fetch_ok=true; break; fi
             echo "::warning::Exact repository fetch attempt ${fetch_attempt}/3 failed."
             if [ "$fetch_attempt" -lt 3 ]; then sleep "$((fetch_attempt * 5))"; fi
           done
-          if [ "$fetch_ok" != true ]; then
-            echo "::error::Exact repository fetch failed after bounded attempts."
-            exit 1
-          fi
+          if [ "$fetch_ok" != true ]; then echo "::error::Exact repository fetch failed after bounded attempts."; exit 1; fi
           git checkout --detach --force FETCH_HEAD
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          git clean -ffdx
 
           known_python="/opt/nexus-bybit-runner/_work/_tool/Python/3.12.14/x64/bin/python"
           python_bin=""
@@ -177,9 +168,12 @@ jobs:
           effective_ld_library_path="$python_lib"
           if [ -n "${LD_LIBRARY_PATH:-}" ]; then effective_ld_library_path="$python_lib:$LD_LIBRARY_PATH"; fi
           LD_LIBRARY_PATH="$effective_ld_library_path" "$python_bin" -c "import ctypes; print('physical_python_dynamic_stdlib=PASS')"
+          printf 'SOURCE_ROOT=%s\n' "$source_root" >> "$GITHUB_ENV"
+          printf 'STATE_ROOT=%s\n' "$state_root" >> "$GITHUB_ENV"
           printf 'PYTHON_BIN=%s\n' "$python_bin" >> "$GITHUB_ENV"
           printf 'LD_LIBRARY_PATH=%s\n' "$effective_ld_library_path" >> "$GITHUB_ENV"
           echo "physical_checkout_sha=$(git rev-parse HEAD)"
+          echo "physical_source_isolation=PASS"
 
       - name: Enforce eligible physical Bybit execution plane
         run: >-
@@ -188,6 +182,7 @@ jobs:
       - name: Restore digest-pinned current-run runtime wheelhouse
         run: |
           set -euo pipefail
+          cd "$SOURCE_ROOT"
           cache_root="$HOME/.cache/nexus-paper-runtime-wheelhouse-verified"
           cache_dir="$cache_root/$WHEELHOUSE_ARCHIVE_SHA256"
           wheelhouse="$PWD/build/nexus-multipair-runtime-wheelhouse"
@@ -231,6 +226,7 @@ jobs:
       - name: Provision locked runtime dependencies
         run: |
           set -euo pipefail
+          cd "$SOURCE_ROOT"
           pip_wheel="$("$PYTHON_BIN" - <<'PY'
           import ensurepip
           from pathlib import Path
@@ -257,11 +253,12 @@ jobs:
           printf 'PYTHONPATH=%s:%s\n' "$pip_wheel" "$runtime_site" >> "$GITHUB_ENV"
           echo "multipair_offline_wheelhouse_bootstrap=PASS"
 
-      - run: '"$PYTHON_BIN" -m pip check'
+      - run: 'cd "$SOURCE_ROOT" && "$PYTHON_BIN" -m pip check'
 
       - name: Execute isolated four-symbol physical Paper matrix
         run: |
           set -euo pipefail
+          cd "$SOURCE_ROOT"
           rm -rf "$STATE_ROOT"
           mkdir -p "$STATE_ROOT/demo"
           now_ms="$("$PYTHON_BIN" -c 'import time; print(int(time.time() * 1000))')"
@@ -284,6 +281,7 @@ jobs:
           RUNNER_ENVIRONMENT_EVIDENCE: ${{ runner.environment }}
         run: |
           set -euo pipefail
+          cd "$SOURCE_ROOT"
           "$PYTHON_BIN" - <<'PY'
           import hashlib
           import json

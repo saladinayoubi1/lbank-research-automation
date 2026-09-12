@@ -50,7 +50,7 @@ def test_restart_replay_uses_two_independent_physical_jobs_and_external_state() 
 def test_restart_replay_requires_same_runner_exact_sha_and_bounded_fetch() -> None:
     text = _text()
     assert 'assert \'$CURRENT_RUNNER_NAME\' == \'$EXPECTED_SEED_RUNNER_NAME\'' in text
-    assert text.count('git -c http.version=HTTP/1.1 fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"') == 2
+    assert text.count('git -c credential.helper= -c http.version=HTTP/1.1 fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"') == 2
     assert text.count('test "$(git rev-parse HEAD)" = "$GITHUB_SHA"') == 2
     assert text.count("for fetch_attempt in 1 2 3") == 2
     for section in (
@@ -59,6 +59,11 @@ def test_restart_replay_requires_same_runner_exact_sha_and_bounded_fetch() -> No
     ):
         assert "uses: actions/checkout" not in section
         assert "uses: actions/upload-artifact" not in section
+        assert "git reset --hard" not in section
+        assert "git clean -ffdx" not in section
+        assert 'cd "$SOURCE_ROOT"' in section
+    assert 'source_root="$HOME/.local/share/nexus/multipair-restart-replay-source/$GITHUB_RUN_ID/seed"' in text
+    assert 'source_root="$HOME/.local/share/nexus/multipair-restart-replay-source/$GITHUB_RUN_ID/replay"' in text
 
 
 def test_restart_replay_wheelhouse_matches_restore_helper_inner_name_contract() -> None:
