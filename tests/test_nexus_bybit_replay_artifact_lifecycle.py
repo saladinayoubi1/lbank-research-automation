@@ -459,6 +459,41 @@ def test_selector_filters_optional_exact_artifact_id_without_weakening_identity(
     ) == []
 
 
+def test_selector_discovers_replay_from_source_workflow_before_repo_scan(monkeypatch) -> None:
+    selector = _load(SELECTOR_PATH, "nexus_replay_source_workflow_test")
+    calls: list[str] = []
+
+    def fake_request(url: str, _token: str):
+        calls.append(url)
+        if "/actions/workflows/" in url:
+            return {"workflow_runs": [{"id": 101, "conclusion": "success"}, {"id": 100, "conclusion": "failure"}]}
+        if "/actions/runs/101/artifacts" in url:
+            return {"artifacts": [{"id": 1001, "name": "bybit-full-history-final-rehydrated-101", "expired": False, "created_at": "2026-09-09T00:00:00Z"}]}
+        raise AssertionError(url)
+
+    monkeypatch.setattr(selector, "_request_json", fake_request)
+    selected = selector.list_source_workflow_candidate_artifacts("example/repo", "token")
+    assert [item["id"] for item in selected] == [1001]
+    assert not any("/actions/artifacts?" in url for url in calls)
+
+
+def test_selector_repo_fallback_scans_beyond_legacy_ten_page_cap(monkeypatch) -> None:
+    selector = _load(SELECTOR_PATH, "nexus_replay_deep_pagination_test")
+    pages: list[int] = []
+
+    def fake_request(url: str, _token: str):
+        page = int(url.rsplit("page=", 1)[1])
+        pages.append(page)
+        if page < 14:
+            return {"artifacts": [{"id": page * 100 + i, "name": f"other-{page}-{i}", "expired": False} for i in range(100)]}
+        return {"artifacts": [{"id": 1401, "name": "bybit-full-history-final-rehydrated-archive", "expired": False, "created_at": "2026-09-09T00:00:00Z"}]}
+
+    monkeypatch.setattr(selector, "_request_json", fake_request)
+    selected = selector.list_candidate_artifacts("example/repo", "token", max_pages=20)
+    assert [item["id"] for item in selected] == [1401]
+    assert pages == list(range(1, 15))
+
+
 def test_strategy_factory_workflows_rotate_replay_v2_without_fixed_artifact_ids() -> None:
     for workflow in STRATEGY_FACTORY_REPLAY_WORKFLOWS:
         text = workflow.read_text(encoding="utf-8")
