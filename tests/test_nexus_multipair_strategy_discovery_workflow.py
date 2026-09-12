@@ -289,3 +289,48 @@ def test_persisted_proof_records_historical_and_fresh_runtime_evidence_without_a
     assert "nexus-multipair-discovery-v2-proof-${{ github.sha }}" in text
     assert "build/nexus-multipair-discovery-v2-proof/evidence.json" in text
     assert 'test "${#proof_b64}" -lt 60000' in text
+
+
+def test_exact_exhaustion_reuse_is_fail_closed_and_keeps_fresh_runtime_snapshot() -> None:
+    text = _text()
+    hosted = _section(text, "runtime-wheelhouse", "discover-physical")
+    discover = _section(text, "discover-physical", "runtime-snapshot")
+    runtime = _section(text, "runtime-snapshot", "persist-runtime-snapshot")
+    requalify = _section(text, "requalify-physical", "persist-proof")
+    assert "nexus_multipair_search_exhaustion.py" in text
+    assert "tests/test_nexus_multipair_search_exhaustion.py" in text
+    assert "EXHAUSTION_ARTIFACT: nexus-multipair-search-exhaustion-${{ github.sha }}" in hosted
+    assert "multipair_search_exhaustion_reuse=PASS" in hosted
+    assert "if: steps.exhaustion.outputs.reuse != 'true'" in hosted
+    assert "multipair_archive_discovery_physical=SKIPPED_EXACT_EXHAUSTION" in discover
+    assert 'if: env.EXHAUSTION_REUSE != \'true\'' in discover
+    assert "Acquire fresh canonical public Bybit runtime snapshot on physical plane" in runtime
+    assert 'if [ "$EXHAUSTION_REUSE" = "true" ]; then' in runtime
+    assert "nexus_multipair_search_exhaustion.py bind-runtime" in requalify
+    assert "verify_fresh_runtime_snapshot" in requalify
+    assert "runtime_snapshot_freshness_verified" in requalify
+
+
+def test_exhaustion_certificate_is_only_published_from_full_zero_proposal_proof() -> None:
+    text = _text()
+    persist = text.split("  persist-proof:", 1)[1]
+    assert "Determine exact exhaustion certification eligibility" in persist
+    assert 'e["physical_discovery_skipped_exact_exhaustion"] is False' in persist
+    assert 'e["base_research_proposal_count"] == 0' in persist
+    assert 'e["research_proposal_count"] == 0' in persist
+    assert 'e["requalification_status"] == "NO_WORK"' in persist
+    assert "nexus_multipair_search_exhaustion.py certify" in persist
+    assert "nexus-multipair-search-exhaustion-${{ github.sha }}" in persist
+    assert "multipair_search_exhaustion_certificate=PASS" in persist
+
+
+def test_reuse_proof_explicitly_records_historical_skip_but_no_freshness_skip() -> None:
+    text = _text()
+    assert '"physical_discovery_skipped_exact_exhaustion": True' in text
+    assert '"historical_discovery_result_reused_exact_exhaustion": True' in text
+    assert '"runtime_requalification_skipped_no_proposals": True' in text
+    assert '"runtime_snapshot_freshness_verified": True' in text
+    assert '"historical_discovery_snapshot_reused": requalification["historical_discovery_snapshot_reused"]' in text
+    assert '"runtime_data_is_fresh_not_snapshot_reuse": requalification["runtime_data_is_fresh_not_snapshot_reuse"]' in text
+    assert "EXHAUSTION_REUSE" in text
+    assert "exact_exhaustion_certificate" in text
