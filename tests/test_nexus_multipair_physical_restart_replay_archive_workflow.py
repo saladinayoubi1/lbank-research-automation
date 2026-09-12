@@ -119,4 +119,7 @@ def test_recent_archive_physical_jobs_cleanup_run_scoped_runner_state() -> None:
     assert 'PROOF_OUTCOME: ${{ steps.proof.outcome }}' in replay
     assert "recent_archive_restart_source_cleanup=PASS" in replay
     assert "recent_archive_restart_state_cleanup=PASS" in replay
+    assert 'run_source_root="$HOME/.local/share/nexus/multipair-restart-replay-source/$GITHUB_RUN_ID"' in replay
+    assert 'source_root="$run_source_root/replay"' in replay
+    assert 'rmdir "$run_source_root" 2>/dev/null || true' in replay
     assert 'rm -rf "$state_root"' in replay

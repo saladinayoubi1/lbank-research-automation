@@ -469,9 +469,12 @@ jobs:
           PROOF_OUTCOME: ${{ steps.proof.outcome }}
         run: |
           set -euo pipefail
-          source_root="$HOME/.local/share/nexus/multipair-restart-replay-source/$GITHUB_RUN_ID/replay"
+          run_source_root="$HOME/.local/share/nexus/multipair-restart-replay-source/$GITHUB_RUN_ID"
+          source_root="$run_source_root/replay"
           state_root="$HOME/.local/share/nexus/multipair-restart-replay/$GITHUB_RUN_ID"
+          case "$run_source_root" in "$HOME"/.local/share/nexus/multipair-restart-replay-source/*) ;; *) echo "::error::Unsafe restart source run root."; exit 1;; esac
           rm -rf "$source_root"
+          rmdir "$run_source_root" 2>/dev/null || true
           echo "restart_source_cleanup=PASS"
           if [ "$PROOF_OUTCOME" = "success" ]; then
             rm -rf "$state_root"
