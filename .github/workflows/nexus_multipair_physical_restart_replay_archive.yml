@@ -105,7 +105,7 @@ jobs:
           cp requirements.lock "$root/requirements.lock"
           python scripts/nexus_runtime_wheelhouse.py pack --root "$root" --output "$archive" --digest-output "$digest"
           echo "sha256=$(cat "$digest")" >> "$GITHUB_OUTPUT"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: nexus-multipair-continuity-wheelhouse-${{ github.sha }}
           path: build/nexus-paper-runtime-wheelhouse.zip
@@ -162,7 +162,7 @@ jobs:
       - name: Remove raw recent archive material
         if: always()
         run: rm -rf build/recent-state build/recent-cache
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: nexus-multipair-continuity-recent-snapshot-${{ github.sha }}
           path: |
@@ -583,7 +583,7 @@ jobs:
           assert evidence["physical_runner_os"] == "Linux"
           print("hosted_recent_archive_restart_replay_proof_verification=PASS")
           PY
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: nexus-multipair-restart-replay-recent-archive-proof-${{ github.sha }}
           path: build/nexus-multipair-restart-replay-proof/evidence.json

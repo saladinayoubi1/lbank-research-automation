@@ -154,7 +154,7 @@ jobs:
           test -n "$source_archive_sha256"
           echo "source_archive_sha256=$source_archive_sha256" >> "$GITHUB_OUTPUT"
           echo "hosted_exact_source_archive=PASS sha=$GITHUB_SHA archive=$source_archive_sha256"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: nexus-multipair-discovery-v2-source-${{ github.sha }}
           path: |
@@ -201,7 +201,7 @@ jobs:
             --output build/nexus-paper-runtime-wheelhouse.zip \
             --digest-output build/nexus-multipair-discovery-v2-wheelhouse-sha.txt
           echo "archive_sha256=$(cat build/nexus-multipair-discovery-v2-wheelhouse-sha.txt)" >> "$GITHUB_OUTPUT"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: nexus-multipair-discovery-v2-wheelhouse-${{ github.sha }}
           path: build/nexus-paper-runtime-wheelhouse.zip
@@ -316,7 +316,7 @@ jobs:
           echo "snapshot_archive_sha256=$snapshot_archive_sha256" >> "$GITHUB_OUTPUT"
           rm -rf "$acquire_site" "$state" "$cache" "$snapshot"
           echo "hosted_official_bybit_archive_snapshot=PASS digest=$snapshot_digest archive=$snapshot_archive_sha256"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: steps.exhaustion.outputs.reuse != 'true'
         with:
           name: nexus-multipair-discovery-v2-archive-snapshot-${{ github.sha }}
@@ -1625,7 +1625,7 @@ jobs:
             | python -c 'import json,sys; assert json.load(sys.stdin)["reusable"] is True'
           echo "multipair_search_exhaustion_certificate=PASS"
 
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: nexus-multipair-discovery-v2-proof-${{ github.sha }}
           path: build/nexus-multipair-discovery-v2-proof/evidence.json
@@ -1635,7 +1635,7 @@ jobs:
 
       - name: Publish reusable exact Multi-Pair exhaustion certificate
         if: steps.exhaustion-decision.outputs.should_certify == 'true'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: nexus-multipair-search-exhaustion-${{ github.sha }}
           path: build/nexus-multipair-discovery-v2-proof/exhaustion-certificate.json

@@ -832,7 +832,7 @@ jobs:
               archive.extractall(root)
           print("hosted_feedback_handoff_verification=PASS")
           PY
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: nexus-paper-boundary-discovery-feedback-${{ github.run_id }}
           path: build/nexus_paper_boundary_discovery_feedback

@@ -111,7 +111,7 @@ jobs:
           cp requirements.lock "$root/requirements.lock"
           python scripts/nexus_runtime_wheelhouse.py pack --root "$root" --output "$archive" --digest-output "$digest"
           echo "sha256=$(cat "$digest")" >> "$GITHUB_OUTPUT"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: nexus-multipair-archive-acceptance-wheelhouse-${{ github.sha }}
           path: build/nexus-paper-runtime-wheelhouse.zip
@@ -141,7 +141,7 @@ jobs:
       - name: Remove raw historical archive material
         if: always()
         run: rm -rf build/historical-state build/historical-cache
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: nexus-multipair-archive-snapshot-${{ github.sha }}
           path: |
@@ -196,7 +196,7 @@ jobs:
           assert value["cell_count"] == 12 and value["history_limit"] == 240
           print("hosted_recent_official_bybit_archive_requalification=PASS")
           PY
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: nexus-multipair-recent-runtime-snapshot-${{ github.sha }}
           path: |

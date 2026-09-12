@@ -85,7 +85,7 @@ def test_physical_wsl_job_avoids_javascript_actions_and_codeload_dependency() ->
 
     assert "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" in contract
     assert "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97" in contract
-    assert "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02" in persist
+    assert "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a" in persist
 
     assert "uses:" not in paper
     assert "actions/checkout@" not in paper
