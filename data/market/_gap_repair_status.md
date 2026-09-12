@@ -4,29 +4,29 @@ Successful requests that return no missing candle are classified as `source_unav
 
 | Symbol | Timeframe | Gap start UTC | Status | Recovered | Detail |
 |---|---|---|---|---:|---|
-| aero_usdt | hour1 | 2025-03-30T15:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| aero_usdt | hour1 | 2025-03-30T15:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
 | aero_usdt | hour1 | 2025-04-09T11:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | aero_usdt | hour1 | 2025-04-19T01:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | aero_usdt | hour1 | 2025-04-23T22:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | aero_usdt | hour1 | 2025-05-08T01:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | aero_usdt | hour1 | 2025-05-13T06:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| aero_usdt | hour1 | 2025-05-13T09:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| aero_usdt | hour1 | 2025-05-16T15:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| aero_usdt | hour1 | 2025-05-22T15:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| aero_usdt | hour1 | 2025-08-03T07:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| aero_usdt | hour1 | 2025-12-18T17:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| aero_usdt | hour1 | 2025-05-13T09:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| aero_usdt | hour1 | 2025-05-16T15:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| aero_usdt | hour1 | 2025-05-22T15:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| aero_usdt | hour1 | 2025-08-03T07:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
+| aero_usdt | hour1 | 2025-12-18T17:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
 | aero_usdt | minute15 | 2024-12-19T10:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | aero_usdt | minute15 | 2024-12-19T12:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | aero_usdt | minute15 | 2024-12-20T11:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | aero_usdt | minute15 | 2024-12-22T01:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | aero_usdt | minute15 | 2024-12-25T02:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | aero_usdt | minute15 | 2024-12-25T23:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| aero_usdt | minute15 | 2024-12-26T08:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| aero_usdt | minute15 | 2024-12-27T09:30:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| aero_usdt | minute15 | 2024-12-27T14:30:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| aero_usdt | minute15 | 2024-12-28T15:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| aero_usdt | minute15 | 2024-12-29T19:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| aero_usdt | minute15 | 2024-12-31T16:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| aero_usdt | minute15 | 2024-12-26T08:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| aero_usdt | minute15 | 2024-12-27T09:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| aero_usdt | minute15 | 2024-12-27T14:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| aero_usdt | minute15 | 2024-12-28T15:30:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
+| aero_usdt | minute15 | 2024-12-29T19:30:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
+| aero_usdt | minute15 | 2024-12-31T16:30:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
 | aero_usdt | minute15 | 2025-01-01T22:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | aero_usdt | minute15 | 2025-01-05T11:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | aero_usdt | minute15 | 2025-01-05T14:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
@@ -125,46 +125,19 @@ Successful requests that return no missing candle are classified as `source_unav
 | aero_usdt | minute15 | 2026-02-20T23:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | aero_usdt | minute15 | 2026-05-11T03:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | agt_usdt | hour1 | 2026-06-26T03:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| agt_usdt | minute15 | 2025-05-20T09:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| agt_usdt | minute15 | 2025-05-22T08:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| agt_usdt | minute15 | 2025-05-23T16:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| agt_usdt | minute15 | 2025-05-24T06:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| agt_usdt | minute15 | 2025-05-25T22:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| agt_usdt | minute15 | 2025-06-16T01:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| agt_usdt | minute15 | 2025-06-17T06:45:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| agt_usdt | minute15 | 2025-08-07T19:15:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| agt_usdt | minute15 | 2025-08-26T11:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| agt_usdt | minute15 | 2025-08-31T06:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| agt_usdt | minute15 | 2025-10-16T15:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| agt_usdt | minute15 | 2025-12-29T13:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| agt_usdt | minute15 | 2026-02-02T19:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| agt_usdt | minute15 | 2026-02-05T09:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| agt_usdt | minute15 | 2026-02-07T07:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| agt_usdt | minute15 | 2026-03-22T20:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| agt_usdt | minute15 | 2026-04-11T06:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| agt_usdt | minute15 | 2026-04-28T01:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| agt_usdt | minute15 | 2026-05-04T12:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| agt_usdt | minute15 | 2026-05-16T20:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| agt_usdt | minute15 | 2026-06-26T03:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| agt_usdt | minute15 | 2026-06-27T16:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| agt_usdt | minute15 | 2026-07-13T03:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| agt_usdt | minute15 | 2026-07-17T10:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| agt_usdt | minute15 | 2026-07-22T02:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| agt_usdt | minute15 | 2026-07-24T02:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| agt_usdt | minute15 | 2026-07-24T03:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| agt_usdt | minute15 | 2026-08-06T06:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| agt_usdt | minute15 | 2025-05-20T09:30:00+00:00 | checkpoint_invalid | 0 | checkpoint gap-set identity is stale, reordered, or substituted |
 | btc_usdt | hour1 | 2024-09-11T04:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | btc_usdt | hour1 | 2024-10-03T12:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | btc_usdt | hour1 | 2024-10-09T07:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | btc_usdt | hour1 | 2024-10-10T18:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | btc_usdt | hour1 | 2024-10-17T04:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | btc_usdt | hour1 | 2024-11-07T19:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | hour1 | 2024-11-26T01:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| btc_usdt | hour1 | 2024-11-27T03:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| btc_usdt | hour1 | 2025-04-17T20:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| btc_usdt | hour1 | 2025-05-09T00:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | hour1 | 2025-08-31T05:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | hour1 | 2025-09-13T20:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| btc_usdt | hour1 | 2024-11-26T01:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| btc_usdt | hour1 | 2024-11-27T03:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| btc_usdt | hour1 | 2025-04-17T20:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| btc_usdt | hour1 | 2025-05-09T00:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
+| btc_usdt | hour1 | 2025-08-31T05:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
+| btc_usdt | hour1 | 2025-09-13T20:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
 | btc_usdt | hour1 | 2025-09-24T14:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | btc_usdt | hour1 | 2025-10-03T23:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | btc_usdt | hour1 | 2025-10-05T12:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
@@ -173,198 +146,25 @@ Successful requests that return no missing candle are classified as `source_unav
 | btc_usdt | hour1 | 2026-01-14T11:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | btc_usdt | hour1 | 2026-05-25T00:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | btc_usdt | hour1 | 2026-06-13T01:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | hour4 | 2024-09-11T04:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| btc_usdt | hour4 | 2024-10-17T04:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| btc_usdt | hour4 | 2025-05-09T00:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| btc_usdt | hour4 | 2025-09-13T20:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | hour4 | 2025-10-05T12:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | hour4 | 2025-10-31T20:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-09-09T03:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-09-11T04:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-09-11T18:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-09-12T15:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-09-13T04:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-09-13T15:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-09-14T21:30:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| btc_usdt | minute15 | 2024-09-17T15:15:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| btc_usdt | minute15 | 2024-09-18T21:30:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| btc_usdt | minute15 | 2024-09-19T07:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-09-21T23:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-10-02T22:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-10-03T12:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-10-03T19:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-10-03T21:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-10-07T08:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-10-08T06:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-10-08T15:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-10-09T07:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-10-10T18:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-10-17T04:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-10-17T08:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-10-28T17:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-10-29T10:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-11-05T20:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-11-07T09:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-11-07T13:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-11-07T19:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-11-10T06:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-11-13T04:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-11-16T16:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-11-19T06:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-11-19T10:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-11-19T15:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-11-21T09:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-11-21T20:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-11-22T08:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-11-25T04:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-11-26T01:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-11-27T03:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-11-27T22:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-12-01T21:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-12-03T10:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-12-05T10:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-12-07T16:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-12-09T03:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-12-09T14:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-12-11T16:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-12-15T22:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-12-16T18:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-12-17T02:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-12-19T07:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-12-21T08:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-12-22T06:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-12-25T19:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-12-26T07:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2024-12-26T19:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-01-04T09:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-01-05T15:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-01-06T08:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-01-07T06:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-01-10T15:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-01-13T07:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-01-13T18:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-01-20T15:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-01-21T10:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-01-26T05:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-01-26T18:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-01-27T04:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-01-30T13:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-02-02T12:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-02-04T14:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-02-06T07:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-02-14T13:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-02-15T04:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-02-19T12:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-02-28T07:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-02-28T09:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-03-03T20:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-03-04T11:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-03-06T22:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-03-08T04:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-03-10T17:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-03-13T15:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-03-18T19:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-03-19T10:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-03-20T07:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-03-24T10:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-03-24T22:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-03-29T10:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-03-30T01:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-03-30T21:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-04-01T13:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-04-02T23:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-04-05T04:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-04-10T19:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-04-12T11:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-04-16T15:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-04-16T17:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-04-17T20:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-04-19T06:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-04-19T23:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-04-25T06:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-04-29T11:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-04-29T23:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-05-06T07:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-05-09T00:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-05-12T19:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-05-15T12:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-05-16T08:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-05-17T05:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-05-19T00:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-05-19T07:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-05-20T10:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-05-23T14:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-05-23T21:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-05-24T07:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-05-25T17:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-05-25T21:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-07-07T21:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-08-02T19:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-08-26T17:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-08-27T01:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-08-27T17:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-08-31T05:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-09-05T15:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-09-09T10:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-09-13T20:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-09-16T19:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-09-17T05:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-09-19T04:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-09-24T14:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-09-25T02:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-10-03T23:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-10-05T12:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-10-31T20:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-11-04T15:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-11-05T06:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-11-08T21:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-11-12T14:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-11-28T22:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-11-29T10:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-12-04T22:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-12-13T08:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-12-20T05:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-12-23T16:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2025-12-30T21:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2026-01-04T03:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2026-01-12T21:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2026-01-14T11:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2026-02-06T19:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2026-02-07T08:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2026-02-11T10:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2026-02-13T14:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2026-02-28T10:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2026-03-04T06:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2026-03-11T21:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2026-03-17T20:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2026-03-28T20:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2026-04-08T12:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2026-04-10T13:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2026-04-27T21:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2026-05-02T09:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2026-05-09T21:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2026-05-25T00:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2026-06-13T01:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2026-06-23T15:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2026-06-27T12:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2026-07-04T06:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2026-07-17T20:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2026-07-24T16:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2026-07-29T12:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2026-08-03T19:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| btc_usdt | minute15 | 2026-08-11T00:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| btc_usdt | hour4 | 2024-09-11T04:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| btc_usdt | hour4 | 2024-10-17T04:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| btc_usdt | hour4 | 2025-05-09T00:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| btc_usdt | hour4 | 2025-09-13T20:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
+| btc_usdt | hour4 | 2025-10-05T12:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
+| btc_usdt | hour4 | 2025-10-31T20:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
+| btc_usdt | minute15 | 2024-09-09T03:45:00+00:00 | checkpoint_invalid | 0 | checkpoint gap-set identity is stale, reordered, or substituted |
 | eth_usdt | hour1 | 2024-09-15T23:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | eth_usdt | hour1 | 2024-11-03T23:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | eth_usdt | hour1 | 2024-11-09T14:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | eth_usdt | hour1 | 2024-11-10T07:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | eth_usdt | hour1 | 2024-11-14T20:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | eth_usdt | hour1 | 2024-12-06T05:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | hour1 | 2024-12-20T07:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| eth_usdt | hour1 | 2024-12-23T15:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| eth_usdt | hour1 | 2024-12-31T22:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| eth_usdt | hour1 | 2025-01-10T18:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | hour1 | 2025-01-11T03:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | hour1 | 2025-01-26T23:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| eth_usdt | hour1 | 2024-12-20T07:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| eth_usdt | hour1 | 2024-12-23T15:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| eth_usdt | hour1 | 2024-12-31T22:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| eth_usdt | hour1 | 2025-01-10T18:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
+| eth_usdt | hour1 | 2025-01-11T03:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
+| eth_usdt | hour1 | 2025-01-26T23:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
 | eth_usdt | hour1 | 2025-01-31T15:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | eth_usdt | hour1 | 2025-01-31T20:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | eth_usdt | hour1 | 2025-02-10T21:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
@@ -382,287 +182,26 @@ Successful requests that return no missing candle are classified as `source_unav
 | eth_usdt | hour4 | 2024-11-14T20:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
 | eth_usdt | hour4 | 2025-01-31T20:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
 | eth_usdt | hour4 | 2025-08-30T16:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| eth_usdt | minute15 | 2024-09-15T23:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-09-17T05:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-10-01T19:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-10-03T10:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-10-07T19:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-10-09T08:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-10-10T08:30:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| eth_usdt | minute15 | 2024-10-12T20:45:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| eth_usdt | minute15 | 2024-10-20T08:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| eth_usdt | minute15 | 2024-10-26T06:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-10-26T07:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-10-27T13:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-10-30T20:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-11-02T01:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-11-03T23:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-11-05T16:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-11-06T00:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-11-06T23:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-11-07T04:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-11-08T01:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-11-09T14:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-11-10T07:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-11-11T21:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-11-14T20:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-11-19T08:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-11-22T18:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-11-24T17:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-11-30T07:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-12-01T09:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-12-06T05:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-12-07T05:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-12-08T03:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-12-09T08:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-12-09T14:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-12-10T18:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-12-11T01:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-12-13T09:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-12-16T00:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-12-19T16:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-12-19T19:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-12-20T07:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-12-20T13:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-12-23T15:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-12-26T05:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-12-30T11:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2024-12-31T22:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-01-02T01:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-01-02T18:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-01-08T18:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-01-10T18:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-01-11T03:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-01-12T20:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-01-12T23:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-01-15T13:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-01-17T17:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-01-18T07:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-01-20T06:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-01-20T12:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-01-24T02:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-01-24T12:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-01-24T19:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-01-24T20:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-01-25T03:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-01-26T09:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-01-26T23:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-01-27T16:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-01-29T00:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-01-29T19:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-01-31T01:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-01-31T15:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-01-31T20:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-02-01T13:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-02-02T08:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-02-04T17:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-02-05T19:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-02-07T21:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-02-09T03:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-02-10T21:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-02-12T17:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-02-16T20:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-02-19T07:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-02-19T23:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-02-21T18:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-02-21T19:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-02-21T21:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-02-22T14:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-02-23T08:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-02-23T15:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-02-24T19:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-02-25T00:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-02-26T06:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-02-26T21:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-02-27T05:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-03-01T09:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-03-02T13:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-03-02T14:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-03-03T14:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-03-03T17:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-03-07T00:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-03-10T19:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-03-12T16:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-03-13T16:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-03-13T22:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-03-14T21:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-03-18T19:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-03-19T19:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-03-22T15:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-03-23T23:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-03-29T08:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-03-30T07:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-03-31T09:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-04-01T07:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-04-03T14:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-04-03T14:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-04-05T14:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-04-05T16:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-04-07T20:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-04-08T18:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-04-09T15:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-04-09T17:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-04-10T14:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-04-11T08:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-04-11T20:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-04-12T05:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-04-14T09:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-04-14T10:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-04-16T01:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-04-17T19:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-04-18T16:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-04-19T23:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-04-25T11:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-04-25T18:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-04-29T21:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-04-30T04:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-05-01T02:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-05-01T11:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-05-01T18:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-05-02T19:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-05-03T05:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-05-03T13:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-05-05T23:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-05-11T13:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-05-13T21:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-05-23T21:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-05-25T20:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-05-31T01:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-06-06T07:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-06-21T00:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-07-08T04:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-07-09T22:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-07-12T12:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-07-13T16:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-07-16T19:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-07-22T16:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-07-29T12:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-08-18T10:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-08-18T17:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-08-23T07:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-08-25T11:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-08-29T07:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-08-30T16:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-09-03T14:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-09-05T18:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-09-07T14:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-09-09T07:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-09-09T14:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-09-12T02:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-09-27T05:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-10-09T15:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-10-15T03:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-10-24T19:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-10-26T20:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-10-28T05:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-11-04T00:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-11-08T18:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-11-14T07:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-11-21T23:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-12-03T10:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-12-05T00:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-12-07T21:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-12-20T10:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-12-20T16:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-12-20T16:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2025-12-23T15:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2026-01-02T06:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2026-01-08T00:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2026-01-20T02:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2026-01-25T23:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2026-02-07T11:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2026-02-09T05:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2026-02-09T22:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2026-02-25T23:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2026-03-04T06:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2026-03-07T21:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2026-03-13T19:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2026-03-29T09:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2026-04-05T20:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2026-04-07T19:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2026-04-12T23:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2026-04-22T12:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2026-04-23T21:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2026-05-01T09:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2026-05-04T00:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2026-05-13T18:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2026-06-12T00:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2026-06-12T01:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2026-07-01T04:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2026-07-04T11:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2026-07-12T21:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2026-07-16T07:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| eth_usdt | minute15 | 2026-07-28T22:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | hour1 | 2025-02-11T08:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | hour1 | 2025-02-12T14:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | hour1 | 2025-02-19T18:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| eth_usdt | minute15 | 2024-09-15T23:00:00+00:00 | checkpoint_invalid | 0 | checkpoint gap-set identity is stale, reordered, or substituted |
+| layer_usdt | hour1 | 2025-02-11T08:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
+| layer_usdt | hour1 | 2025-02-12T14:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
+| layer_usdt | hour1 | 2025-02-19T18:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
 | layer_usdt | hour1 | 2025-02-21T11:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | layer_usdt | hour1 | 2025-03-31T21:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | layer_usdt | hour1 | 2025-04-04T17:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | hour1 | 2025-04-11T17:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| layer_usdt | hour1 | 2025-09-28T22:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| layer_usdt | hour1 | 2026-07-22T13:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
+| layer_usdt | hour1 | 2025-04-11T17:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| layer_usdt | hour1 | 2025-09-28T22:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| layer_usdt | hour1 | 2026-07-22T13:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | layer_usdt | hour4 | 2025-02-11T08:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| layer_usdt | minute15 | 2025-02-11T08:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-02-11T19:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-02-12T14:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-02-12T14:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-02-18T04:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-02-19T18:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-02-20T17:45:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| layer_usdt | minute15 | 2025-02-21T11:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| layer_usdt | minute15 | 2025-02-24T18:15:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| layer_usdt | minute15 | 2025-02-26T11:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-03-03T14:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-03-08T10:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-03-13T14:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-03-18T04:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-03-24T17:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-03-25T08:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-03-26T13:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-03-31T11:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-03-31T21:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-04-02T07:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-04-04T16:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-04-04T17:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-04-11T17:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-04-15T02:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-04-15T10:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-04-15T20:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-04-19T21:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-04-21T19:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-04-25T04:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-04-26T18:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-04-30T07:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-05-02T13:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-05-07T10:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-05-08T12:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-05-11T10:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-05-23T10:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-06-21T21:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-09-02T06:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-09-25T21:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-09-28T22:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-10-23T10:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-12-04T01:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2025-12-10T19:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2026-01-21T13:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2026-03-03T15:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2026-03-20T14:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2026-03-23T08:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2026-05-06T14:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2026-07-13T02:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2026-07-22T13:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2026-08-03T07:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| layer_usdt | minute15 | 2026-08-06T13:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| pbu_usdt | hour1 | 2024-11-23T23:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| pbu_usdt | hour1 | 2024-12-02T08:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| pbu_usdt | hour1 | 2024-12-28T11:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| pbu_usdt | hour1 | 2025-01-23T21:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| layer_usdt | minute15 | 2025-02-11T08:00:00+00:00 | checkpoint_invalid | 0 | checkpoint gap-set identity is stale, reordered, or substituted |
+| pbu_usdt | hour1 | 2024-11-23T23:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| pbu_usdt | hour1 | 2024-12-02T08:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
+| pbu_usdt | hour1 | 2024-12-28T11:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
+| pbu_usdt | hour1 | 2025-01-23T21:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
 | pbu_usdt | hour1 | 2025-01-24T12:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | pbu_usdt | hour1 | 2025-02-28T11:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| pbu_usdt | hour1 | 2025-05-13T19:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| pbu_usdt | hour1 | 2026-07-21T23:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
+| pbu_usdt | hour1 | 2025-05-13T19:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| pbu_usdt | hour1 | 2026-07-21T23:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | pbu_usdt | hour4 | 2024-12-02T08:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
 | pbu_usdt | minute15 | 2024-09-12T13:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | pbu_usdt | minute15 | 2024-09-15T17:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
@@ -670,12 +209,12 @@ Successful requests that return no missing candle are classified as `source_unav
 | pbu_usdt | minute15 | 2024-09-26T07:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | pbu_usdt | minute15 | 2024-09-27T06:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | pbu_usdt | minute15 | 2024-09-30T20:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| pbu_usdt | minute15 | 2024-10-06T08:45:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| pbu_usdt | minute15 | 2024-10-07T12:30:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| pbu_usdt | minute15 | 2024-10-10T17:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| pbu_usdt | minute15 | 2024-10-13T04:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| pbu_usdt | minute15 | 2024-10-16T03:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| pbu_usdt | minute15 | 2024-10-26T22:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| pbu_usdt | minute15 | 2024-10-06T08:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| pbu_usdt | minute15 | 2024-10-07T12:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| pbu_usdt | minute15 | 2024-10-10T17:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| pbu_usdt | minute15 | 2024-10-13T04:45:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
+| pbu_usdt | minute15 | 2024-10-16T03:15:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
+| pbu_usdt | minute15 | 2024-10-26T22:45:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
 | pbu_usdt | minute15 | 2024-11-10T04:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | pbu_usdt | minute15 | 2024-11-14T07:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | pbu_usdt | minute15 | 2024-11-16T15:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
@@ -795,12 +334,12 @@ Successful requests that return no missing candle are classified as `source_unav
 | udoge_usdt | hour1 | 2024-10-26T23:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | udoge_usdt | hour1 | 2024-10-28T17:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | udoge_usdt | hour1 | 2024-10-28T23:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| udoge_usdt | hour1 | 2024-11-15T15:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| udoge_usdt | hour1 | 2025-01-26T15:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| udoge_usdt | hour1 | 2025-02-02T00:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| udoge_usdt | hour1 | 2025-02-05T14:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| udoge_usdt | hour1 | 2025-04-08T18:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| udoge_usdt | hour1 | 2025-05-01T03:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| udoge_usdt | hour1 | 2024-11-15T15:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| udoge_usdt | hour1 | 2025-01-26T15:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| udoge_usdt | hour1 | 2025-02-02T00:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| udoge_usdt | hour1 | 2025-02-05T14:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
+| udoge_usdt | hour1 | 2025-04-08T18:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
+| udoge_usdt | hour1 | 2025-05-01T03:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
 | udoge_usdt | hour1 | 2025-09-20T21:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | udoge_usdt | hour1 | 2026-08-04T04:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | udoge_usdt | hour4 | 2024-10-22T04:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
@@ -811,12 +350,12 @@ Successful requests that return no missing candle are classified as `source_unav
 | udoge_usdt | minute15 | 2024-10-21T16:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | udoge_usdt | minute15 | 2024-10-21T19:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | udoge_usdt | minute15 | 2024-10-21T21:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| udoge_usdt | minute15 | 2024-10-21T23:30:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| udoge_usdt | minute15 | 2024-10-22T04:00:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| udoge_usdt | minute15 | 2024-10-22T07:30:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
-| udoge_usdt | minute15 | 2024-10-22T18:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| udoge_usdt | minute15 | 2024-10-23T14:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
-| udoge_usdt | minute15 | 2024-10-23T17:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| udoge_usdt | minute15 | 2024-10-21T23:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| udoge_usdt | minute15 | 2024-10-22T04:00:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| udoge_usdt | minute15 | 2024-10-22T07:30:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
+| udoge_usdt | minute15 | 2024-10-22T18:30:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
+| udoge_usdt | minute15 | 2024-10-23T14:45:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
+| udoge_usdt | minute15 | 2024-10-23T17:30:00+00:00 | source_unavailable | 0 | request succeeded but returned no currently missing candle |
 | udoge_usdt | minute15 | 2024-10-23T18:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | udoge_usdt | minute15 | 2024-10-23T21:45:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
 | udoge_usdt | minute15 | 2024-10-24T03:15:00+00:00 | deferred_budget | 0 | per-series request budget exhausted |
