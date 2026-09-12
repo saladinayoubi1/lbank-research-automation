@@ -108,3 +108,15 @@ def test_restart_proof_preserves_authority_and_issue_984_isolation() -> None:
     assert "contents: write" not in text
     assert "actions: write" not in text
     assert "id-token: write" not in text
+
+
+def test_recent_archive_physical_jobs_cleanup_run_scoped_runner_state() -> None:
+    text = _text()
+    seed, replay = _physical(text)
+    assert "Cleanup isolated recent-archive seed source" in seed
+    assert "recent_archive_seed_source_cleanup=PASS" in seed
+    assert "Cleanup isolated recent-archive replay source and successful continuity state" in replay
+    assert 'PROOF_OUTCOME: ${{ steps.proof.outcome }}' in replay
+    assert "recent_archive_restart_source_cleanup=PASS" in replay
+    assert "recent_archive_restart_state_cleanup=PASS" in replay
+    assert 'rm -rf "$state_root"' in replay

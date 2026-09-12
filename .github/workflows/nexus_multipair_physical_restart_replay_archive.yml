@@ -343,6 +343,14 @@ jobs:
           echo "runner_name=$RUNNER_NAME_EVIDENCE" >> "$GITHUB_OUTPUT"
           echo "seed_process_complete=PASS"
 
+      - name: Cleanup isolated recent-archive seed source
+        if: always()
+        run: |
+          set -euo pipefail
+          source_root="$HOME/.local/share/nexus/multipair-restart-replay-source/$GITHUB_RUN_ID/seed"
+          rm -rf "$source_root"
+          echo "recent_archive_seed_source_cleanup=PASS"
+
   replay-physical:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: [acquire-runtime, seed-physical]
@@ -535,6 +543,21 @@ jobs:
           echo "proof_b64=$proof_b64" >> "$GITHUB_OUTPUT"
           echo "NEXUS_RESTART_REPLAY_PROOF_SHA256=$proof_sha"
           echo "NEXUS_RESTART_REPLAY_PROOF_BASE64=$proof_b64"
+
+      - name: Cleanup isolated recent-archive replay source and successful continuity state
+        if: always()
+        env:
+          PROOF_OUTCOME: ${{ steps.proof.outcome }}
+        run: |
+          set -euo pipefail
+          source_root="$HOME/.local/share/nexus/multipair-restart-replay-source/$GITHUB_RUN_ID/replay"
+          state_root="$HOME/.local/share/nexus/multipair-restart-replay/$GITHUB_RUN_ID"
+          rm -rf "$source_root"
+          echo "recent_archive_restart_source_cleanup=PASS"
+          if [ "$PROOF_OUTCOME" = "success" ]; then
+            rm -rf "$state_root"
+            echo "recent_archive_restart_state_cleanup=PASS"
+          fi
 
   persist-proof:
     if: ${{ always() && needs.replay-physical.result == 'success' && needs.replay-physical.outputs.proof_b64 != '' }}
