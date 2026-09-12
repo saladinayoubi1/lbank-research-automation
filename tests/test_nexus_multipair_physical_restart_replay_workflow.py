@@ -114,3 +114,14 @@ def test_restart_replay_persists_only_compact_proof() -> None:
     assert 'assert evidence["skipped_no_new_bar_count"] == 12' in text
     assert 'assert evidence["state_isolated_from_issue_984"] is True' in text
     assert 'assert evidence["persistent_runtime_database_on_github"] is False' in text
+
+
+def test_restart_replay_cleans_run_scoped_sources_and_success_state() -> None:
+    text = _text()
+    assert "Cleanup isolated seed source" in text
+    assert "seed_source_cleanup=PASS" in text
+    assert "Cleanup isolated replay source and successful continuity state" in text
+    assert "restart_source_cleanup=PASS" in text
+    assert "restart_state_cleanup=PASS" in text
+    assert 'source_root="$HOME/.local/share/nexus/multipair-restart-replay-source/$GITHUB_RUN_ID/seed"' in text
+    assert 'source_root="$HOME/.local/share/nexus/multipair-restart-replay-source/$GITHUB_RUN_ID/replay"' in text

@@ -162,3 +162,13 @@ def test_legacy_feedback_noops_after_multipair_cutover() -> None:
     assert 'v.get("expected_lane_count") == 18' in text
     assert 'legacy_paper_boundary_feedback=SUPERSEDED_BY_MULTIPAIR' in text
     assert 'echo "should_dispatch=false" >> "$GITHUB_OUTPUT"' in text
+
+
+def test_physical_feedback_cleans_run_scoped_source_after_packaging() -> None:
+    text = _text()
+    section = text.split("requalify-boundary-proposals:", 1)[1].split(
+        "persist-boundary-feedback:", 1
+    )[0]
+    assert "Cleanup isolated Paper-boundary source" in section
+    assert 'source_root="$HOME/.local/share/nexus/paper-boundary-requalification-source/$GITHUB_RUN_ID"' in section
+    assert "paper_boundary_source_cleanup=PASS" in section

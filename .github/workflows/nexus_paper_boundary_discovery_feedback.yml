@@ -766,6 +766,14 @@ jobs:
           echo "feedback_handoff_base64_bytes=$feedback_b64_bytes"
           echo "feedback_handoff_chunk_count=$chunk_count"
 
+      - name: Cleanup isolated Paper-boundary source
+        if: always()
+        run: |
+          set -euo pipefail
+          source_root="$HOME/.local/share/nexus/paper-boundary-requalification-source/$GITHUB_RUN_ID"
+          rm -rf "$source_root"
+          echo "paper_boundary_source_cleanup=PASS"
+
   persist-boundary-feedback:
     if: ${{ always() && needs.requalify-boundary-proposals.outputs.feedback_archive_chunk_count != '0' }}
     needs: requalify-boundary-proposals
