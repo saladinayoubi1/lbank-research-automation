@@ -469,21 +469,17 @@ jobs:
       - name: Prepare exact repository and pre-provisioned Python 3.12 without JavaScript actions
         run: |
           set -euo pipefail
-          repo_url="https://github.com/${GITHUB_REPOSITORY}.git"
-          if [ -d .git ]; then
-            git remote set-url origin "$repo_url"
-            git reset --hard
-            git clean -ffdx
-          else
-            find . -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
-            git init .
-            git remote add origin "$repo_url"
-          fi
+          source_root="$HOME/.local/share/nexus/paper-boundary-requalification-source/$GITHUB_RUN_ID"
+          case "$source_root" in "$HOME"/.local/share/nexus/paper-boundary-requalification-source/*) ;; *) echo "::error::Unsafe requalification source root."; exit 1;; esac
+          rm -rf "$source_root"
+          mkdir -p "$source_root"
+          cd "$source_root"
+          git init .
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
           git config --local --unset-all http.https://github.com/.extraheader || true
           git fetch --no-tags --prune --depth=1 origin "$TRIGGER_SOURCE_SHA"
           git checkout --detach --force FETCH_HEAD
           test "$(git rev-parse HEAD)" = "$TRIGGER_SOURCE_SHA"
-          git clean -ffdx
 
           git fetch --no-tags --depth=1 origin "$CONTROLLER_SOURCE_SHA"
           controller_blob="$(git rev-parse 'FETCH_HEAD:nexus_paper_boundary_discovery_feedback.py')"
@@ -519,9 +515,11 @@ jobs:
             effective_ld_library_path="$python_lib:$LD_LIBRARY_PATH"
           fi
           LD_LIBRARY_PATH="$effective_ld_library_path" "$python_bin" -c "import ctypes; print('physical_python_dynamic_stdlib=PASS')"
+          printf 'SOURCE_ROOT=%s\n' "$source_root" >> "$GITHUB_ENV"
           printf 'PYTHON_BIN=%s\n' "$python_bin" >> "$GITHUB_ENV"
           printf 'LD_LIBRARY_PATH=%s\n' "$effective_ld_library_path" >> "$GITHUB_ENV"
           echo "physical_checkout_sha=$(git rev-parse HEAD)"
+          echo "paper_boundary_source_isolation=PASS"
           echo "feedback_controller_sha=$CONTROLLER_SOURCE_SHA"
       - name: Enforce eligible Bybit network execution plane
         run: >-
@@ -529,6 +527,7 @@ jobs:
       - name: Restore GitHub-digest-pinned Paper runtime wheelhouse
         run: |
           set -euo pipefail
+          cd "$SOURCE_ROOT"
           github_api() {
             curl --fail --silent --show-error --location \
               --retry 3 --retry-all-errors --connect-timeout 20 --max-time 900 \
@@ -595,6 +594,7 @@ jobs:
       - name: Provision locked runtime dependencies from verified Paper wheelhouse
         run: |
           set -euo pipefail
+          cd "$SOURCE_ROOT"
           pip_wheel="$("$PYTHON_BIN" - <<'PY'
           import ensurepip
           from pathlib import Path
@@ -618,10 +618,11 @@ jobs:
             -r requirements.lock
           printf 'PYTHONPATH=%s:%s\n' "$pip_wheel" "$runtime_site" >> "$GITHUB_ENV"
           echo "offline_wheelhouse_bootstrap=PASS"
-      - run: '"$PYTHON_BIN" -m pip check'
+      - run: 'cd "$SOURCE_ROOT" && "$PYTHON_BIN" -m pip check'
       - name: Restore exact same-run Discovery evidence
         run: |
           set -euo pipefail
+          cd "$SOURCE_ROOT"
           github_api() {
             curl --fail --silent --show-error --location \
               --retry 3 --retry-all-errors --connect-timeout 20 --max-time 900 \
@@ -687,6 +688,7 @@ jobs:
       - name: Requalify proposals on canonical public closed Bybit data
         run: |
           set -euo pipefail
+          cd "$SOURCE_ROOT"
           "$PYTHON_BIN" nexus_strategy_proposal_runtime_requalification.py \
             --discovery "$(cat build/discovery-path.txt)" \
             --queue "$(cat build/queue-path.txt)" \
@@ -697,6 +699,7 @@ jobs:
       - name: Require verified Paper-bound Discovery feedback
         run: |
           set -euo pipefail
+          cd "$SOURCE_ROOT"
           "$PYTHON_BIN" nexus_paper_boundary_discovery_feedback.py feedback \
             --context "$(cat build/context-path.txt)" \
             --discovery "$(cat build/discovery-path.txt)" \
@@ -707,6 +710,7 @@ jobs:
         if: always()
         run: |
           set -euo pipefail
+          if [ -n "${SOURCE_ROOT:-}" ] && [ -d "$SOURCE_ROOT" ]; then cd "$SOURCE_ROOT"; fi
           if [ ! -d "$OUTPUT_ROOT" ] || ! find "$OUTPUT_ROOT" -type f -print -quit | grep -q .; then
             {
               echo "feedback_archive_chunk_count=0"

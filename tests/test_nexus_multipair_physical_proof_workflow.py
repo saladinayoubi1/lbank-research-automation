@@ -73,9 +73,15 @@ def test_physical_proof_is_storage_isolated_from_issue_984() -> None:
 
 def test_physical_job_uses_exact_source_native_checkout_and_bounded_fetch() -> None:
     text = _text()
-    assert 'git -c http.version=HTTP/1.1 fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"' in text
+    assert 'git -c credential.helper= -c http.version=HTTP/1.1 fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"' in text
     assert 'test "$(git rev-parse HEAD)" = "$GITHUB_SHA"' in text
     assert "for fetch_attempt in 1 2 3" in text
     physical_section = text.split("  physical-proof:", 1)[1].split("  persist-proof:", 1)[0]
     assert "uses: actions/checkout" not in physical_section
     assert "uses: actions/upload-artifact" not in physical_section
+    assert 'source_root="$HOME/.local/share/nexus/multipair-physical-proof-source/$GITHUB_RUN_ID"' in physical_section
+    assert 'state_root="$HOME/.local/share/nexus/multipair-physical-proof-state/$GITHUB_RUN_ID"' in physical_section
+    assert "physical_source_isolation=PASS" in physical_section
+    assert "git reset --hard" not in physical_section
+    assert "git clean -ffdx" not in physical_section
+    assert 'cd "$SOURCE_ROOT"' in physical_section
