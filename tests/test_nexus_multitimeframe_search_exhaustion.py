@@ -105,6 +105,8 @@ def test_neighborhood_fingerprint_changes_on_source_sha_change(tmp_path: Path) -
 
 
 def test_source_sha_can_be_bound_from_trigger_environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    implementation = tmp_path / "engine.py"
+    implementation.write_text("ENGINE = 1\n", encoding="utf-8")
     monkeypatch.setenv("TRIGGER_SOURCE_SHA", "b" * 40)
     monkeypatch.setenv("GITHUB_SHA", "c" * 40)
     neighborhood = exhaustion.build_neighborhood(
