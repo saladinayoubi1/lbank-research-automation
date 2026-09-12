@@ -19,6 +19,7 @@ API_VERSION = "2022-11-28"
 DEFAULT_PREFIX = "bybit-full-history-final-"
 DELIVERY_NAME = "BYBIT_full_history_delivery.json"
 REPLAY_V2_MANIFEST = "REPLAY_DATASET_MANIFEST.json"
+DEFAULT_SOURCE_WORKFLOW = "bybit_full_history_backfill.yml"
 
 
 class ReplayArtifactError(RuntimeError):
@@ -89,7 +90,7 @@ def list_candidate_artifacts(
     repository: str,
     token: str,
     prefix: str = DEFAULT_PREFIX,
-    max_pages: int = 10,
+    max_pages: int = 100,
     artifact_id: int | None = None,
 ) -> list[dict[str, Any]]:
     if "/" not in repository:
@@ -120,6 +121,31 @@ def list_candidate_artifacts(
         key=lambda item: (str(item.get("created_at", "")), int(item.get("id", 0))),
         reverse=True,
     )
+    return candidates
+
+
+def list_source_workflow_candidate_artifacts(
+    repository: str, token: str, prefix: str = DEFAULT_PREFIX,
+    source_workflow: str = DEFAULT_SOURCE_WORKFLOW, max_runs: int = 20,
+) -> list[dict[str, Any]]:
+    workflow = urllib.parse.quote(source_workflow, safe="")
+    payload = _request_json(
+        f"https://api.github.com/repos/{repository}/actions/workflows/{workflow}/runs?per_page={max_runs}&status=completed", token
+    )
+    runs = payload.get("workflow_runs", [])
+    if not isinstance(runs, list):
+        raise ReplayArtifactError("GitHub workflow run response is malformed")
+    candidates: list[dict[str, Any]] = []
+    for run in runs:
+        if run.get("conclusion") != "success" or not run.get("id"):
+            continue
+        artifacts = _request_json(
+            f"https://api.github.com/repos/{repository}/actions/runs/{int(run['id'])}/artifacts?per_page=100", token
+        ).get("artifacts", [])
+        if not isinstance(artifacts, list):
+            raise ReplayArtifactError("GitHub workflow artifact response is malformed")
+        candidates.extend(a for a in artifacts if a.get("expired") is not True and str(a.get("name", "")).startswith(prefix) and a.get("id"))
+    candidates.sort(key=lambda item: (str(item.get("created_at", "")), int(item.get("id", 0))), reverse=True)
     return candidates
 
 
@@ -231,9 +257,18 @@ def restore_matching_artifact(
 ) -> dict[str, Any]:
     if bool(expected_sha256) == bool(expected_semantic_sha256):
         raise ReplayArtifactError("exactly one replay identity mode is required")
-    candidates = list_candidate_artifacts(
-        repository, token, prefix=prefix, artifact_id=artifact_id
-    )
+    candidates: list[dict[str, Any]] = []
+    if artifact_id is None:
+        try:
+            candidates = list_source_workflow_candidate_artifacts(
+                repository, token, prefix=prefix
+            )
+        except (ReplayArtifactError, urllib.error.URLError):
+            candidates = []
+    if not candidates:
+        candidates = list_candidate_artifacts(
+            repository, token, prefix=prefix, artifact_id=artifact_id
+        )
     if not candidates:
         raise ReplayArtifactError("no unexpired replay artifacts found")
     output_dir.mkdir(parents=True, exist_ok=True)
