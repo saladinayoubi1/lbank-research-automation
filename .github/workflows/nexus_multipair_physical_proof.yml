@@ -354,6 +354,21 @@ jobs:
             echo "proof_b64=$proof_b64"
           } >> "$GITHUB_OUTPUT"
 
+      - name: Cleanup isolated physical source and successful state
+        if: always()
+        env:
+          PROOF_OUTCOME: ${{ steps.proof.outcome }}
+        run: |
+          set -euo pipefail
+          source_root="$HOME/.local/share/nexus/multipair-physical-proof-source/$GITHUB_RUN_ID"
+          state_root="$HOME/.local/share/nexus/multipair-physical-proof-state/$GITHUB_RUN_ID"
+          rm -rf "$source_root"
+          echo "physical_source_cleanup=PASS"
+          if [ "$PROOF_OUTCOME" = "success" ]; then
+            rm -rf "$state_root"
+            echo "physical_state_cleanup=PASS"
+          fi
+
   persist-proof:
     if: ${{ always() && needs.physical-proof.result == 'success' && needs.physical-proof.outputs.proof_b64 != '' }}
     needs: physical-proof

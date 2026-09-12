@@ -85,3 +85,13 @@ def test_physical_job_uses_exact_source_native_checkout_and_bounded_fetch() -> N
     assert "git reset --hard" not in physical_section
     assert "git clean -ffdx" not in physical_section
     assert 'cd "$SOURCE_ROOT"' in physical_section
+
+
+def test_physical_job_cleans_run_scoped_source_after_execution() -> None:
+    text = _text()
+    section = text.split("  physical-proof:", 1)[1].split("  persist-proof:", 1)[0]
+    assert "Cleanup isolated physical source and successful state" in section
+    assert 'source_root="$HOME/.local/share/nexus/multipair-physical-proof-source/$GITHUB_RUN_ID"' in section
+    assert 'state_root="$HOME/.local/share/nexus/multipair-physical-proof-state/$GITHUB_RUN_ID"' in section
+    assert "physical_source_cleanup=PASS" in section
+    assert "physical_state_cleanup=PASS" in section
