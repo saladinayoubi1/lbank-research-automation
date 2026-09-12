@@ -10,6 +10,7 @@ on:
       - "nexus_multipair_archive_snapshot.py"
       - "nexus_multipair_strategy_discovery.py"
       - "nexus_multipair_training_refinement.py"
+      - "nexus_multipair_search_exhaustion.py"
       - "nexus_multipair_strategy_proposal_requalification.py"
       - "nexus_multipair_runtime_requalification_snapshot.py"
       - "nexus_multipair_demo_strategy_matrix.py"
@@ -38,6 +39,7 @@ on:
       - "tests/test_nexus_runtime_snapshot_artifact.py"
       - "tests/test_nexus_multipair_trusted_surface.py"
       - "tests/test_nexus_multipair_strategy_discovery_workflow.py"
+      - "tests/test_nexus_multipair_search_exhaustion.py"
       - ".github/workflows/nexus_multipair_strategy_discovery_v2.yml"
   pull_request:
     branches: [main]
@@ -47,6 +49,7 @@ on:
       - "nexus_multipair_archive_snapshot.py"
       - "nexus_multipair_strategy_discovery.py"
       - "nexus_multipair_training_refinement.py"
+      - "nexus_multipair_search_exhaustion.py"
       - "nexus_multipair_strategy_proposal_requalification.py"
       - "nexus_multipair_runtime_requalification_snapshot.py"
       - "nexus_multipair_demo_strategy_matrix.py"
@@ -75,6 +78,7 @@ on:
       - "tests/test_nexus_runtime_snapshot_artifact.py"
       - "tests/test_nexus_multipair_trusted_surface.py"
       - "tests/test_nexus_multipair_strategy_discovery_workflow.py"
+      - "tests/test_nexus_multipair_search_exhaustion.py"
       - ".github/workflows/nexus_multipair_strategy_discovery_v2.yml"
 
 permissions:
@@ -112,16 +116,23 @@ jobs:
           tests/test_nexus_runtime_snapshot_artifact.py
           tests/test_nexus_multipair_trusted_surface.py
           tests/test_nexus_multipair_strategy_discovery_workflow.py
+          tests/test_nexus_multipair_search_exhaustion.py
 
   runtime-wheelhouse:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXHAUSTION_ARTIFACT: nexus-multipair-search-exhaustion-${{ github.sha }}
     outputs:
       archive_sha256: ${{ steps.pack.outputs.archive_sha256 }}
       source_archive_sha256: ${{ steps.source.outputs.source_archive_sha256 }}
       snapshot_archive_sha256: ${{ steps.archive.outputs.snapshot_archive_sha256 }}
-      snapshot_digest: ${{ steps.archive.outputs.snapshot_digest }}
+      snapshot_digest: ${{ steps.search.outputs.snapshot_digest }}
+      exhaustion_reuse: ${{ steps.search.outputs.exhaustion_reuse }}
+      search_neighborhood_b64: ${{ steps.search.outputs.search_neighborhood_b64 }}
+      exhaustion_reuse_b64: ${{ steps.search.outputs.exhaustion_reuse_b64 }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -197,7 +208,74 @@ jobs:
           if-no-files-found: error
           retention-days: 7
           compression-level: 0
+      - name: Reuse exact exhausted historical neighborhood when unchanged
+        id: exhaustion
+        run: |
+          set -euo pipefail
+          echo "reuse=false" >> "$GITHUB_OUTPUT"
+          rm -rf build/exhaustion-cache
+          mkdir -p build/exhaustion-cache
+          artifact_id="$(gh api \
+            -H 'Accept: application/vnd.github+json' \
+            "repos/$GITHUB_REPOSITORY/actions/artifacts?name=$EXHAUSTION_ARTIFACT&per_page=100" \
+            --jq '.artifacts | map(select(.expired == false)) | sort_by(.created_at) | reverse | .[0].id // empty')"
+          if [ -z "$artifact_id" ]; then
+            echo "multipair_search_exhaustion_reuse=MISS reason=no_certificate"
+            exit 0
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" > build/exhaustion-cache/certificate.zip
+          unzip -q build/exhaustion-cache/certificate.zip -d build/exhaustion-cache/content
+          certificate="$(find build/exhaustion-cache/content -type f -name 'exhaustion-certificate.json' -print -quit)"
+          if [ -z "$certificate" ]; then
+            echo "multipair_search_exhaustion_reuse=MISS reason=certificate_missing"
+            exit 0
+          fi
+          snapshot_digest="$(CERTIFICATE="$certificate" python - <<'PY'
+          import json, os, re
+          from pathlib import Path
+          value = json.loads(Path(os.environ["CERTIFICATE"]).read_text(encoding="utf-8"))
+          if value.get("source_sha") != os.environ["GITHUB_SHA"]:
+              raise SystemExit("certificate source SHA mismatch")
+          digest = str(value.get("snapshot_digest", ""))
+          if not re.fullmatch(r"[0-9a-f]{64}", digest):
+              raise SystemExit("certificate snapshot digest invalid")
+          print(digest)
+          PY
+          )"
+          python nexus_multipair_search_exhaustion.py fingerprint \
+            --manifest experiments/nexus_multipair_strategy_discovery_v2.json \
+            --source-sha "$GITHUB_SHA" \
+            --snapshot-digest "$snapshot_digest" \
+            --root . \
+            --output build/exhaustion-cache/search-neighborhood.json
+          reusable="$(python nexus_multipair_search_exhaustion.py check \
+            --neighborhood build/exhaustion-cache/search-neighborhood.json \
+            --certificate "$certificate" \
+            | python -c 'import json,sys; print(str(json.load(sys.stdin)["reusable"]).lower())')"
+          if [ "$reusable" != "true" ]; then
+            echo "multipair_search_exhaustion_reuse=MISS reason=fingerprint_changed"
+            exit 0
+          fi
+          python nexus_multipair_search_exhaustion.py reuse \
+            --neighborhood build/exhaustion-cache/search-neighborhood.json \
+            --certificate "$certificate" \
+            --run-id "$GITHUB_RUN_ID" \
+            --output build/exhaustion-cache/reuse-evidence.json >/dev/null
+          python nexus_multipair_search_exhaustion.py verify-reuse \
+            --evidence build/exhaustion-cache/reuse-evidence.json >/dev/null
+          neighborhood_b64="$(base64 -w 0 build/exhaustion-cache/search-neighborhood.json)"
+          reuse_b64="$(base64 -w 0 build/exhaustion-cache/reuse-evidence.json)"
+          test "${#neighborhood_b64}" -lt 60000
+          test "${#reuse_b64}" -lt 60000
+          {
+            echo "reuse=true"
+            echo "snapshot_digest=$snapshot_digest"
+            echo "search_neighborhood_b64=$neighborhood_b64"
+            echo "exhaustion_reuse_b64=$reuse_b64"
+          } >> "$GITHUB_OUTPUT"
+          echo "multipair_search_exhaustion_reuse=PASS policy=exact_snapshot_and_implementation_only fresh_runtime_required=true"
       - name: Acquire immutable official Bybit Spot archive snapshot
+        if: steps.exhaustion.outputs.reuse != 'true'
         id: archive
         run: |
           set -euo pipefail
@@ -239,12 +317,45 @@ jobs:
           rm -rf "$acquire_site" "$state" "$cache" "$snapshot"
           echo "hosted_official_bybit_archive_snapshot=PASS digest=$snapshot_digest archive=$snapshot_archive_sha256"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: steps.exhaustion.outputs.reuse != 'true'
         with:
           name: nexus-multipair-discovery-v2-archive-snapshot-${{ github.sha }}
           path: build/nexus-multipair-archive-snapshot.zip
           if-no-files-found: error
           retention-days: 7
           compression-level: 0
+
+      - name: Resolve exact search neighborhood for physical handoff
+        id: search
+        run: |
+          set -euo pipefail
+          if [ "${{ steps.exhaustion.outputs.reuse }}" = "true" ]; then
+            {
+              echo "exhaustion_reuse=true"
+              echo "snapshot_digest=${{ steps.exhaustion.outputs.snapshot_digest }}"
+              echo "search_neighborhood_b64=${{ steps.exhaustion.outputs.search_neighborhood_b64 }}"
+              echo "exhaustion_reuse_b64=${{ steps.exhaustion.outputs.exhaustion_reuse_b64 }}"
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          snapshot_digest="${{ steps.archive.outputs.snapshot_digest }}"
+          test -n "$snapshot_digest"
+          mkdir -p build/exhaustion-current
+          python nexus_multipair_search_exhaustion.py fingerprint \
+            --manifest experiments/nexus_multipair_strategy_discovery_v2.json \
+            --source-sha "$GITHUB_SHA" \
+            --snapshot-digest "$snapshot_digest" \
+            --root . \
+            --output build/exhaustion-current/search-neighborhood.json >/dev/null
+          neighborhood_b64="$(base64 -w 0 build/exhaustion-current/search-neighborhood.json)"
+          test "${#neighborhood_b64}" -lt 60000
+          {
+            echo "exhaustion_reuse=false"
+            echo "snapshot_digest=$snapshot_digest"
+            echo "search_neighborhood_b64=$neighborhood_b64"
+            echo "exhaustion_reuse_b64="
+          } >> "$GITHUB_OUTPUT"
+          echo "multipair_search_neighborhood=MISS_REQUIRES_FULL_PHYSICAL_DISCOVERY"
 
   discover-physical:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
@@ -255,6 +366,7 @@ jobs:
       runner_name: ${{ steps.discovery.outputs.runner_name }}
       snapshot_digest: ${{ steps.discovery.outputs.snapshot_digest }}
       proposal_count: ${{ steps.discovery.outputs.proposal_count }}
+      exhaustion_reuse: ${{ steps.discovery.outputs.exhaustion_reuse }}
     env:
       GH_TOKEN: ${{ github.token }}
       SOURCE_ARTIFACT: nexus-multipair-discovery-v2-source-${{ github.sha }}
@@ -264,6 +376,9 @@ jobs:
       SNAPSHOT_ARTIFACT: nexus-multipair-discovery-v2-archive-snapshot-${{ github.sha }}
       SNAPSHOT_ARCHIVE_SHA256: ${{ needs.runtime-wheelhouse.outputs.snapshot_archive_sha256 }}
       EXPECTED_HOSTED_SNAPSHOT_DIGEST: ${{ needs.runtime-wheelhouse.outputs.snapshot_digest }}
+      EXHAUSTION_REUSE: ${{ needs.runtime-wheelhouse.outputs.exhaustion_reuse }}
+      SEARCH_NEIGHBORHOOD_B64: ${{ needs.runtime-wheelhouse.outputs.search_neighborhood_b64 }}
+      EXHAUSTION_REUSE_B64: ${{ needs.runtime-wheelhouse.outputs.exhaustion_reuse_b64 }}
     steps:
       - name: Prepare isolated exact source and ephemeral external Research state
         run: |
@@ -473,6 +588,7 @@ jobs:
           fi
 
       - name: Restore digest-pinned official Bybit archive snapshot
+        if: env.EXHAUSTION_REUSE != 'true'
         run: |
           set -euo pipefail
           cd "$SOURCE_ROOT"
@@ -521,6 +637,32 @@ jobs:
       - name: Verify isolated runtime dependency consistency
         run: '"$PYTHON_BIN" -m pip check'
 
+      - name: Materialize exact search neighborhood and optional exhaustion reuse
+        run: |
+          set -euo pipefail
+          cd "$SOURCE_ROOT"
+          test -n "$SEARCH_NEIGHBORHOOD_B64"
+          printf '%s' "$SEARCH_NEIGHBORHOOD_B64" | base64 --decode > "$STATE_ROOT/search-neighborhood.json"
+          "$PYTHON_BIN" - <<'PY'
+          import json, os
+          from pathlib import Path
+          from nexus_multipair_search_exhaustion import verify_neighborhood
+          value = json.loads((Path(os.environ["STATE_ROOT"]) / "search-neighborhood.json").read_text())
+          verify_neighborhood(value)
+          assert value["source_sha"] == os.environ["GITHUB_SHA"]
+          assert value["snapshot_digest"] == os.environ["EXPECTED_HOSTED_SNAPSHOT_DIGEST"]
+          print("multipair_search_neighborhood_physical_binding=PASS")
+          PY
+          if [ "$EXHAUSTION_REUSE" = "true" ]; then
+            test -n "$EXHAUSTION_REUSE_B64"
+            printf '%s' "$EXHAUSTION_REUSE_B64" | base64 --decode > "$STATE_ROOT/exhaustion-reuse.json"
+            "$PYTHON_BIN" nexus_multipair_search_exhaustion.py verify-reuse \
+              --evidence "$STATE_ROOT/exhaustion-reuse.json" >/dev/null
+            echo "multipair_historical_discovery_reuse_physical_binding=PASS"
+          else
+            test -z "$EXHAUSTION_REUSE_B64"
+          fi
+
       - name: Verify transported archive and run leakage-resistant Discovery
         id: discovery
         env:
@@ -528,11 +670,25 @@ jobs:
         run: |
           set -euo pipefail
           cd "$SOURCE_ROOT"
+          if [ "$EXHAUSTION_REUSE" = "true" ]; then
+            "$PYTHON_BIN" nexus_multipair_search_exhaustion.py verify-reuse \
+              --evidence "$STATE_ROOT/exhaustion-reuse.json" >/dev/null
+            snapshot_digest="$("$PYTHON_BIN" -c 'import json,os; print(json.load(open(os.path.join(os.environ["STATE_ROOT"], "exhaustion-reuse.json")))["snapshot_digest"])')"
+            {
+              echo "runner_name=$RUNNER_NAME_EVIDENCE"
+              echo "snapshot_digest=$snapshot_digest"
+              echo "proposal_count=0"
+              echo "exhaustion_reuse=true"
+            } >> "$GITHUB_OUTPUT"
+            echo "multipair_archive_discovery_physical=SKIPPED_EXACT_EXHAUSTION snapshot=$snapshot_digest fresh_runtime_required=true"
+            exit 0
+          fi
           "$PYTHON_BIN" - <<'PY'
           import json
           import os
           from pathlib import Path
           from nexus_multipair_archive_snapshot import verify_snapshot
+          from nexus_multipair_search_exhaustion import verify_neighborhood
           from nexus_multipair_strategy_discovery import run as run_discovery, verify_discovery
           from nexus_multipair_training_refinement import run as run_refinement
           from nexus_multipair_trusted_surface import FAMILIES, SYMBOLS, TIMEFRAMES
@@ -540,6 +696,10 @@ jobs:
           source_sha = os.environ["GITHUB_SHA"]
           snapshot_root = state_root / "snapshot"
           snapshot = json.loads((snapshot_root / "snapshot-manifest.json").read_text(encoding="utf-8"))
+          neighborhood = json.loads((state_root / "search-neighborhood.json").read_text(encoding="utf-8"))
+          verify_neighborhood(neighborhood)
+          assert neighborhood["source_sha"] == source_sha
+          assert neighborhood["snapshot_digest"] == snapshot["snapshot_digest"]
           snapshot_verification = verify_snapshot(snapshot_root, snapshot)
           assert snapshot_verification["decision"] == "pass", snapshot_verification
           assert snapshot["source_sha"] == source_sha
@@ -641,6 +801,7 @@ jobs:
           echo "runner_name=$RUNNER_NAME_EVIDENCE" >> "$GITHUB_OUTPUT"
           echo "snapshot_digest=$snapshot_digest" >> "$GITHUB_OUTPUT"
           echo "proposal_count=$proposal_count" >> "$GITHUB_OUTPUT"
+          echo "exhaustion_reuse=false" >> "$GITHUB_OUTPUT"
           echo "multipair_archive_discovery_physical=PASS proposals=$proposal_count snapshot=$snapshot_digest"
 
       - name: Remove isolated Discovery source after failure
@@ -674,6 +835,7 @@ jobs:
       runtime_snapshot_archive_chunk_7: ${{ steps.acquire.outputs.runtime_snapshot_archive_chunk_7 }}
     env:
       EXPECTED_DISCOVERY_RUNNER_NAME: ${{ needs.discover-physical.outputs.runner_name }}
+      EXHAUSTION_REUSE: ${{ needs.discover-physical.outputs.exhaustion_reuse }}
     steps:
       - name: Initialize same-run physical runtime snapshot roots
         run: |
@@ -690,7 +852,12 @@ jobs:
           esac
           test -d "$state_root/runtime-site"
           test -f "$state_root/requirements.lock"
-          test -f "$state_root/discovery/multipair_strategy_discovery.json"
+          test -f "$state_root/search-neighborhood.json"
+          if [ "$EXHAUSTION_REUSE" = "true" ]; then
+            test -f "$state_root/exhaustion-reuse.json"
+          else
+            test -f "$state_root/discovery/multipair_strategy_discovery.json"
+          fi
           test "$(cat "$source_root/.nexus-exact-source-sha")" = "$GITHUB_SHA"
           test -f "$source_root/requirements.lock"
           test -f "$source_root/nexus_multipair_runtime_requalification_snapshot.py"
@@ -893,6 +1060,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       EXPECTED_DISCOVERY_RUNNER_NAME: ${{ needs.discover-physical.outputs.runner_name }}
       EXPECTED_SNAPSHOT_DIGEST: ${{ needs.discover-physical.outputs.snapshot_digest }}
+      EXHAUSTION_REUSE: ${{ needs.discover-physical.outputs.exhaustion_reuse }}
       RUNTIME_SNAPSHOT_ARTIFACT: nexus-multipair-runtime-requalification-snapshot-${{ github.sha }}
       RUNTIME_SNAPSHOT_ARCHIVE_SHA256: ${{ needs.runtime-snapshot.outputs.runtime_snapshot_archive_sha256 }}
       EXPECTED_RUNTIME_SNAPSHOT_DIGEST: ${{ needs.runtime-snapshot.outputs.runtime_snapshot_digest }}
@@ -913,9 +1081,14 @@ jobs:
           esac
           test -d "$state_root/runtime-site"
           test -f "$state_root/requirements.lock"
-          test -f "$state_root/snapshot/snapshot-manifest.json"
-          test -f "$state_root/discovery/multipair_strategy_discovery.json"
-          test -f "$state_root/discovery/research_proposals.json"
+          test -f "$state_root/search-neighborhood.json"
+          if [ "$EXHAUSTION_REUSE" = "true" ]; then
+            test -f "$state_root/exhaustion-reuse.json"
+          else
+            test -f "$state_root/snapshot/snapshot-manifest.json"
+            test -f "$state_root/discovery/multipair_strategy_discovery.json"
+            test -f "$state_root/discovery/research_proposals.json"
+          fi
           test "$(cat "$source_root/.nexus-exact-source-sha")" = "$GITHUB_SHA"
           test -f "$source_root/requirements.lock"
           test -f "$source_root/nexus_multipair_runtime_requalification_snapshot.py"
@@ -993,6 +1166,39 @@ jobs:
         run: |
           set -euo pipefail
           cd "$SOURCE_ROOT"
+          mkdir -p "$STATE_ROOT/requalification"
+          if [ "$EXHAUSTION_REUSE" = "true" ]; then
+            "$PYTHON_BIN" nexus_multipair_search_exhaustion.py bind-runtime \
+              --reuse "$STATE_ROOT/exhaustion-reuse.json" \
+              --runtime-snapshot "$STATE_ROOT/runtime-snapshot/snapshot-manifest.json" \
+              --now-ms "$RUNTIME_CONSUME_NOW_MS" \
+              --output "$STATE_ROOT/requalification/runtime-requalification.json" >/dev/null
+            "$PYTHON_BIN" nexus_multipair_search_exhaustion.py verify-runtime \
+              --evidence "$STATE_ROOT/requalification/runtime-requalification.json" >/dev/null
+            "$PYTHON_BIN" - <<'PY'
+            import json, os
+            from pathlib import Path
+            from nexus_multipair_runtime_requalification_snapshot import verify_fresh_runtime_snapshot
+            from nexus_multipair_search_exhaustion import verify_fresh_no_work
+            root = Path(os.environ["STATE_ROOT"])
+            snapshot = json.loads((root / "runtime-snapshot" / "snapshot-manifest.json").read_text())
+            result = json.loads((root / "requalification" / "runtime-requalification.json").read_text())
+            fresh = verify_fresh_runtime_snapshot(
+                root / "runtime-snapshot", snapshot,
+                source_sha=os.environ["GITHUB_SHA"],
+                now_ms=int(os.environ["RUNTIME_CONSUME_NOW_MS"]),
+            )
+            assert fresh["decision"] == "pass", fresh
+            assert verify_fresh_no_work(result)["decision"] == "pass"
+            assert result["runtime_snapshot_digest"] == snapshot["snapshot_digest"]
+            assert result["runtime_snapshot_as_of_ms"] == snapshot["as_of_ms"]
+            assert result["status"] == "NO_WORK"
+            assert result["runtime_snapshot_freshness_verified"] is True
+            assert result["live_trading_authority"] is False
+            print("multipair_exhaustion_reuse_fresh_runtime_binding=PASS")
+            PY
+            exit 0
+          fi
           "$PYTHON_BIN" nexus_multipair_runtime_requalification_snapshot.py requalify \
             --snapshot-root "$STATE_ROOT/runtime-snapshot" \
             --discovery "$STATE_ROOT/discovery/multipair_strategy_discovery.json" \
@@ -1068,56 +1274,127 @@ jobs:
           from pathlib import Path
           from nexus_multipair_archive_snapshot import verify_snapshot
           from nexus_multipair_runtime_requalification_snapshot import TRANSPORT_ORIGIN, verify_fresh_runtime_snapshot
+          from nexus_multipair_search_exhaustion import verify_fresh_no_work, verify_neighborhood, verify_reuse_evidence
           from nexus_multipair_strategy_discovery import verify_discovery
           from nexus_multipair_strategy_proposal_requalification import verify_requalification
           from nexus_multipair_trusted_surface import FAMILIES, SYMBOLS, TIMEFRAMES
+
           root = Path(os.environ["STATE_ROOT"])
-          snapshot = json.loads((root / "snapshot" / "snapshot-manifest.json").read_text())
+          source_sha = os.environ["GITHUB_SHA"]
+          neighborhood = json.loads((root / "search-neighborhood.json").read_text())
+          verify_neighborhood(neighborhood)
+          assert neighborhood["source_sha"] == source_sha
+          assert neighborhood["snapshot_digest"] == os.environ["EXPECTED_SNAPSHOT_DIGEST"]
+
           runtime_snapshot = json.loads((root / "runtime-snapshot" / "snapshot-manifest.json").read_text())
-          discovery = json.loads((root / "discovery" / "multipair_strategy_discovery.json").read_text())
-          base_discovery = json.loads((root / "base-discovery" / "multipair_strategy_discovery.json").read_text())
-          refinement = json.loads((root / "refinement" / "refinement-plan.json").read_text())
-          requalification = json.loads((root / "requalification" / "runtime-requalification.json").read_text())
-          assert verify_snapshot(root / "snapshot", snapshot)["decision"] == "pass"
-          assert verify_discovery(base_discovery)["decision"] == "pass"
-          assert verify_discovery(discovery)["decision"] == "pass"
-          assert verify_requalification(requalification)["decision"] == "pass"
-          assert refinement["source_discovery_sha"] == os.environ["GITHUB_SHA"]
-          assert refinement["source_discovery_digest"] == base_discovery["discovery_digest"]
-          assert refinement["dataset_snapshot_sha256"] == snapshot["snapshot_digest"]
-          assert refinement["base_research_proposal_count"] == base_discovery["research_proposal_count"]
-          assert refinement["selection_basis"] == "training_only"
-          assert refinement["locked_holdout_used_for_refinement"] is False
-          assert refinement["research_only"] is True
-          assert refinement["paper_only"] is True
-          assert refinement["live_trading_authority"] is False
-          assert refinement["private_credentials_used"] is False
-          assert refinement["automatic_strategy_promotion"] is False
-          assert refinement["automatic_paper_forward_started"] is False
           fresh = verify_fresh_runtime_snapshot(
-              root / "runtime-snapshot",
-              runtime_snapshot,
-              source_sha=os.environ["GITHUB_SHA"],
+              root / "runtime-snapshot", runtime_snapshot,
+              source_sha=source_sha,
               now_ms=int(os.environ["RUNTIME_CONSUME_NOW_MS"]),
           )
           assert fresh["decision"] == "pass", fresh
-          assert snapshot["snapshot_digest"] == os.environ["EXPECTED_SNAPSHOT_DIGEST"]
           assert runtime_snapshot["snapshot_digest"] == os.environ["EXPECTED_RUNTIME_SNAPSHOT_DIGEST"]
-          assert runtime_snapshot["as_of_ms"] == int(os.environ["EXPECTED_RUNTIME_SNAPSHOT_AS_OF_MS"])
-          assert snapshot["source_sha"] == runtime_snapshot["source_sha"] == discovery["source_sha"] == requalification["source_sha"] == os.environ["GITHUB_SHA"]
-          assert snapshot["symbols"] == runtime_snapshot["symbols"] == discovery["symbols"] == requalification["symbols"] == list(SYMBOLS)
-          assert snapshot["timeframes"] == runtime_snapshot["timeframes"] == discovery["timeframes"] == list(TIMEFRAMES)
-          assert discovery["families"] == list(FAMILIES)
-          assert snapshot["cell_count"] == 12
+          assert runtime_snapshot["as_of_ms"] == int(os.environ["EXPECTED_RUNTIME_SNAPSHOT_AS_OF_MS"] )
+          assert runtime_snapshot["source_sha"] == source_sha
+          assert runtime_snapshot["symbols"] == list(SYMBOLS)
+          assert runtime_snapshot["timeframes"] == list(TIMEFRAMES)
           assert runtime_snapshot["cell_count"] == 12
           assert runtime_snapshot["history_limit"] == 240
           assert runtime_snapshot["data_origin"] == "canonical_public_bybit_closed_candles"
-          assert runtime_snapshot["snapshot_digest"] != snapshot["snapshot_digest"]
-          assert snapshot["data_origin"] == "official_public_bybit_spot_trade_archive_aggregated"
-          assert snapshot["runtime_freshness_claimed"] is False
-          assert discovery["snapshot_schema_version"] == snapshot["schema_version"]
-          assert discovery["snapshot_runtime_freshness_claimed"] is False
-          assert discovery["hypothesis_count"] == 9
+          assert runtime_snapshot["snapshot_digest"] != neighborhood["snapshot_digest"]
+
+          requalification = json.loads((root / "requalification" / "runtime-requalification.json").read_text())
+          reused = os.environ["EXHAUSTION_REUSE"] == "true"
+          if reused:
+              reuse = json.loads((root / "exhaustion-reuse.json").read_text())
+              assert verify_reuse_evidence(reuse)["decision"] == "pass"
+              assert verify_fresh_no_work(requalification)["decision"] == "pass"
+              assert reuse["source_sha"] == source_sha
+              assert reuse["snapshot_digest"] == neighborhood["snapshot_digest"]
+              assert requalification["historical_snapshot_digest"] == neighborhood["snapshot_digest"]
+              historical = {
+                  "snapshot_transport": "exact_exhaustion_certificate",
+                  "snapshot_data_origin": reuse["snapshot_data_origin"],
+                  "snapshot_runtime_freshness_claimed": reuse["snapshot_runtime_freshness_claimed"],
+                  "snapshot_cell_count": reuse["snapshot_cell_count"],
+                  "snapshot_history_limit": reuse["snapshot_history_limit"],
+                  "snapshot_as_of_ms": reuse["snapshot_as_of_ms"],
+                  "snapshot_digest": reuse["snapshot_digest"],
+                  "discovery_digest": reuse["discovery_digest"],
+                  "discovery_hypothesis_count": reuse["discovery_hypothesis_count"],
+                  "base_research_proposal_count": 0,
+                  "refinement_started": True,
+                  "refinement_selection_basis": reuse["refinement_selection_basis"],
+                  "locked_holdout_used_for_refinement": reuse["locked_holdout_used_for_refinement"],
+                  "refinement_training_basis_digest": reuse["refinement_training_basis_digest"],
+                  "refinement_targeted_cells": reuse["refinement_targeted_cells"],
+                  "refinement_variant_counts": reuse["refinement_variant_counts"],
+                  "effective_research_proposal_count": 0,
+                  "research_proposal_count": 0,
+                  "selection_policy": reuse["selection_policy"],
+                  "multiplicity_policy": reuse["multiplicity_policy"],
+                  "physical_discovery_skipped_exact_exhaustion": True,
+                  "historical_discovery_result_reused_exact_exhaustion": True,
+                  "runtime_requalification_skipped_no_proposals": True,
+              }
+          else:
+              snapshot = json.loads((root / "snapshot" / "snapshot-manifest.json").read_text())
+              discovery = json.loads((root / "discovery" / "multipair_strategy_discovery.json").read_text())
+              base_discovery = json.loads((root / "base-discovery" / "multipair_strategy_discovery.json").read_text())
+              refinement = json.loads((root / "refinement" / "refinement-plan.json").read_text())
+              assert verify_snapshot(root / "snapshot", snapshot)["decision"] == "pass"
+              assert verify_discovery(base_discovery)["decision"] == "pass"
+              assert verify_discovery(discovery)["decision"] == "pass"
+              assert verify_requalification(requalification)["decision"] == "pass"
+              assert snapshot["source_sha"] == discovery["source_sha"] == requalification["source_sha"] == source_sha
+              assert snapshot["snapshot_digest"] == neighborhood["snapshot_digest"]
+              assert refinement["source_discovery_sha"] == source_sha
+              assert refinement["source_discovery_digest"] == base_discovery["discovery_digest"]
+              assert refinement["dataset_snapshot_sha256"] == snapshot["snapshot_digest"]
+              assert refinement["base_research_proposal_count"] == base_discovery["research_proposal_count"]
+              assert refinement["selection_basis"] == "training_only"
+              assert refinement["locked_holdout_used_for_refinement"] is False
+              assert refinement["research_only"] is True
+              assert refinement["paper_only"] is True
+              assert refinement["live_trading_authority"] is False
+              assert refinement["private_credentials_used"] is False
+              assert refinement["automatic_strategy_promotion"] is False
+              assert refinement["automatic_paper_forward_started"] is False
+              assert discovery["symbols"] == list(SYMBOLS)
+              assert discovery["timeframes"] == list(TIMEFRAMES)
+              assert discovery["families"] == list(FAMILIES)
+              assert discovery["hypothesis_count"] == 9
+              historical = {
+                  "snapshot_transport": "digest_pinned_current_run_github_artifact",
+                  "snapshot_data_origin": snapshot["data_origin"],
+                  "snapshot_runtime_freshness_claimed": snapshot["runtime_freshness_claimed"],
+                  "snapshot_cell_count": snapshot["cell_count"],
+                  "snapshot_history_limit": snapshot["history_limit"],
+                  "snapshot_as_of_ms": discovery["snapshot_as_of_ms"],
+                  "snapshot_digest": snapshot["snapshot_digest"],
+                  "discovery_digest": discovery["discovery_digest"],
+                  "discovery_hypothesis_count": discovery["hypothesis_count"],
+                  "base_research_proposal_count": base_discovery["research_proposal_count"],
+                  "refinement_started": refinement["should_refine"],
+                  "refinement_selection_basis": refinement["selection_basis"],
+                  "locked_holdout_used_for_refinement": refinement["locked_holdout_used_for_refinement"],
+                  "refinement_training_basis_digest": refinement["training_basis_digest"],
+                  "refinement_targeted_cells": refinement["targeted_cells"],
+                  "refinement_variant_counts": refinement["variant_counts"],
+                  "effective_research_proposal_count": discovery["research_proposal_count"],
+                  "research_proposal_count": discovery["research_proposal_count"],
+                  "selection_policy": discovery["selection_policy"],
+                  "multiplicity_policy": discovery["multiplicity_policy"],
+                  "physical_discovery_skipped_exact_exhaustion": False,
+                  "historical_discovery_result_reused_exact_exhaustion": False,
+                  "runtime_requalification_skipped_no_proposals": False,
+              }
+
+          assert historical["snapshot_data_origin"] == "official_public_bybit_spot_trade_archive_aggregated"
+          assert historical["snapshot_runtime_freshness_claimed"] is False
+          assert historical["snapshot_cell_count"] == 12
+          assert historical["snapshot_history_limit"] == 500
+          assert historical["discovery_hypothesis_count"] == 9
           assert requalification["blocked_runtime_data_count"] == 0
           assert requalification["status"] in {"NO_WORK", "EVALUATED"}
           assert requalification["runtime_data_transport"] == TRANSPORT_ORIGIN
@@ -1125,19 +1402,16 @@ jobs:
           assert requalification["runtime_snapshot_as_of_ms"] == runtime_snapshot["as_of_ms"]
           assert requalification["runtime_snapshot_distinct_from_discovery"] is True
           assert requalification["historical_discovery_snapshot_reused"] is False
-          assert discovery["research_only"] is True
-          assert discovery["paper_only"] is True
-          assert discovery["live_trading_authority"] is False
-          assert discovery["private_credentials_used"] is False
-          assert discovery["automatic_strategy_promotion"] is False
+          assert requalification["runtime_data_is_fresh_not_snapshot_reuse"] is True
           assert requalification["paper_execution_started"] is False
           assert requalification["automatic_strategy_promotion"] is False
           assert requalification["live_trading_authority"] is False
           assert requalification["private_credentials_used"] is False
           assert requalification["deterministic_risk_final_authority"] is True
+
           evidence = {
               "schema_version": "nexus.multipair-discovery-v2-physical-proof.v1",
-              "source_sha": os.environ["GITHUB_SHA"],
+              "source_sha": source_sha,
               "run_id": os.environ["GITHUB_RUN_ID"],
               "physical_runner_name": os.environ["RUNNER_NAME_EVIDENCE"],
               "physical_runner_os": os.environ["RUNNER_OS_EVIDENCE"],
@@ -1147,26 +1421,8 @@ jobs:
               "symbols": list(SYMBOLS),
               "timeframes": list(TIMEFRAMES),
               "families": list(FAMILIES),
-              "snapshot_transport": "digest_pinned_current_run_github_artifact",
-              "snapshot_data_origin": snapshot["data_origin"],
-              "snapshot_runtime_freshness_claimed": snapshot["runtime_freshness_claimed"],
-              "snapshot_cell_count": snapshot["cell_count"],
-              "snapshot_history_limit": snapshot["history_limit"],
-              "snapshot_as_of_ms": discovery["snapshot_as_of_ms"],
-              "snapshot_digest": snapshot["snapshot_digest"],
-              "discovery_digest": discovery["discovery_digest"],
-              "discovery_hypothesis_count": discovery["hypothesis_count"],
-              "base_research_proposal_count": base_discovery["research_proposal_count"],
-              "refinement_started": refinement["should_refine"],
-              "refinement_selection_basis": refinement["selection_basis"],
-              "locked_holdout_used_for_refinement": refinement["locked_holdout_used_for_refinement"],
-              "refinement_training_basis_digest": refinement["training_basis_digest"],
-              "refinement_targeted_cells": refinement["targeted_cells"],
-              "refinement_variant_counts": refinement["variant_counts"],
-              "effective_research_proposal_count": discovery["research_proposal_count"],
-              "research_proposal_count": discovery["research_proposal_count"],
-              "selection_policy": discovery["selection_policy"],
-              "multiplicity_policy": discovery["multiplicity_policy"],
+              "search_neighborhood_fingerprint": neighborhood["neighborhood_fingerprint"],
+              **historical,
               "runtime_snapshot_transport": requalification["runtime_data_transport"],
               "runtime_snapshot_digest": runtime_snapshot["snapshot_digest"],
               "runtime_snapshot_as_of_ms": runtime_snapshot["as_of_ms"],
@@ -1196,8 +1452,16 @@ jobs:
               "persistent_runtime_database_on_github": False,
               "legacy_btc_eth_discovery_archive_used": False,
           }
+          if evidence["requalification_status"] == "EVALUATED":
+              assert evidence["research_proposal_count"] > 0
+              assert evidence["qualified_for_review_count"] + evidence["rejected_count"] == evidence["research_proposal_count"]
+          else:
+              assert evidence["research_proposal_count"] == 0
+              assert evidence["qualified_for_review_count"] == 0
+              assert evidence["rejected_count"] == 0
           target = root / "physical-discovery-v2-evidence.json"
           target.write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          print(f"multipair_discovery_v2_proof_mode={'EXHAUSTION_REUSE' if reused else 'FULL_PHYSICAL'}")
           PY
           proof_file="$STATE_ROOT/physical-discovery-v2-evidence.json"
           proof_sha="$(sha256sum "$proof_file" | awk '{print $1}')"
@@ -1231,6 +1495,11 @@ jobs:
       PROOF_B64: ${{ needs.requalify-physical.outputs.proof_b64 }}
       PROOF_SHA256: ${{ needs.requalify-physical.outputs.proof_sha256 }}
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
       - name: Rehydrate and independently enforce physical Discovery v2 proof
         run: |
           set -euo pipefail
@@ -1238,10 +1507,12 @@ jobs:
           printf '%s' "$PROOF_B64" | base64 --decode > build/nexus-multipair-discovery-v2-proof/evidence.json
           test "$(sha256sum build/nexus-multipair-discovery-v2-proof/evidence.json | awk '{print $1}')" = "$PROOF_SHA256"
           python - <<'PY'
-          import json
+          import json, re
           from pathlib import Path
           evidence = json.loads(Path("build/nexus-multipair-discovery-v2-proof/evidence.json").read_text())
+          hex64 = re.compile(r"^[0-9a-f]{64}$")
           assert evidence["schema_version"] == "nexus.multipair-discovery-v2-physical-proof.v1"
+          assert evidence["source_sha"] == "${{ github.sha }}"
           assert evidence["physical_runner_environment"] == "self-hosted"
           assert evidence["physical_runner_os"] == "Linux"
           assert evidence["execution_plane"] == "nexus-bybit-network"
@@ -1249,20 +1520,20 @@ jobs:
           assert evidence["symbols"] == ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT"]
           assert evidence["timeframes"] == ["minute15", "hour1", "hour4"]
           assert evidence["families"] == ["momentum", "trend_breakout", "mean_reversion"]
-          assert evidence["snapshot_transport"] == "digest_pinned_current_run_github_artifact"
+          assert hex64.fullmatch(evidence["search_neighborhood_fingerprint"])
           assert evidence["snapshot_data_origin"] == "official_public_bybit_spot_trade_archive_aggregated"
           assert evidence["snapshot_runtime_freshness_claimed"] is False
           assert evidence["snapshot_cell_count"] == 12
           assert evidence["snapshot_history_limit"] == 500
           assert evidence["discovery_hypothesis_count"] == 9
-          assert evidence["base_research_proposal_count"] >= 0
-          assert isinstance(evidence["refinement_started"], bool)
-          assert evidence["refinement_selection_basis"] == "training_only"
-          assert evidence["locked_holdout_used_for_refinement"] is False
-          assert len(evidence["refinement_training_basis_digest"]) == 64
+          assert hex64.fullmatch(evidence["snapshot_digest"])
+          assert hex64.fullmatch(evidence["discovery_digest"])
+          assert hex64.fullmatch(evidence["refinement_training_basis_digest"])
           assert isinstance(evidence["refinement_targeted_cells"], list)
           assert len(evidence["refinement_targeted_cells"]) <= 9
           assert set(evidence["refinement_variant_counts"]) == {"momentum", "trend_breakout", "mean_reversion"}
+          assert evidence["refinement_selection_basis"] == "training_only"
+          assert evidence["locked_holdout_used_for_refinement"] is False
           assert evidence["effective_research_proposal_count"] == evidence["research_proposal_count"]
           assert evidence["runtime_snapshot_transport"] == "digest_pinned_physical_bybit_rest_snapshot"
           assert evidence["runtime_snapshot_data_origin"] == "canonical_public_bybit_closed_candles"
@@ -1288,16 +1559,86 @@ jobs:
           assert evidence["issue_984_state_artifact_touched"] is False
           assert evidence["persistent_runtime_database_on_github"] is False
           assert evidence["legacy_btc_eth_discovery_archive_used"] is False
+          reused = evidence["physical_discovery_skipped_exact_exhaustion"]
+          assert isinstance(reused, bool)
+          if reused:
+              assert evidence["snapshot_transport"] == "exact_exhaustion_certificate"
+              assert evidence["historical_discovery_result_reused_exact_exhaustion"] is True
+              assert evidence["runtime_requalification_skipped_no_proposals"] is True
+              assert evidence["base_research_proposal_count"] == 0
+              assert evidence["research_proposal_count"] == 0
+              assert evidence["requalification_status"] == "NO_WORK"
+          else:
+              assert evidence["snapshot_transport"] == "digest_pinned_current_run_github_artifact"
+              assert evidence["historical_discovery_result_reused_exact_exhaustion"] is False
+              assert evidence["runtime_requalification_skipped_no_proposals"] is False
           if evidence["requalification_status"] == "EVALUATED":
+              assert evidence["research_proposal_count"] > 0
               assert evidence["qualified_for_review_count"] + evidence["rejected_count"] == evidence["research_proposal_count"]
           else:
               assert evidence["research_proposal_count"] == 0
-          print("hosted_multipair_discovery_v2_proof_verification=PASS")
+              assert evidence["qualified_for_review_count"] == 0
+              assert evidence["rejected_count"] == 0
+          print(f"hosted_multipair_discovery_v2_proof_verification=PASS reused={str(reused).lower()}")
           PY
+
+      - name: Determine exact exhaustion certification eligibility
+        id: exhaustion-decision
+        run: |
+          set -euo pipefail
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from pathlib import Path
+          e = json.loads(Path("build/nexus-multipair-discovery-v2-proof/evidence.json").read_text())
+          should = (
+              e["physical_discovery_skipped_exact_exhaustion"] is False
+              and e["base_research_proposal_count"] == 0
+              and e["refinement_started"] is True
+              and e["effective_research_proposal_count"] == 0
+              and e["research_proposal_count"] == 0
+              and e["requalification_status"] == "NO_WORK"
+              and e["qualified_for_review_count"] == 0
+              and e["rejected_count"] == 0
+              and e["blocked_runtime_data_count"] == 0
+          )
+          print(f"should_certify={str(should).lower()}")
+          PY
+
+      - name: Certify exact exhausted Multi-Pair historical neighborhood
+        if: steps.exhaustion-decision.outputs.should_certify == 'true'
+        run: |
+          set -euo pipefail
+          snapshot_digest="$(python -c 'import json; print(json.load(open("build/nexus-multipair-discovery-v2-proof/evidence.json"))["snapshot_digest"])')"
+          python nexus_multipair_search_exhaustion.py fingerprint \
+            --manifest experiments/nexus_multipair_strategy_discovery_v2.json \
+            --source-sha "$GITHUB_SHA" \
+            --snapshot-digest "$snapshot_digest" \
+            --root . \
+            --output build/nexus-multipair-discovery-v2-proof/search-neighborhood.json >/dev/null
+          python nexus_multipair_search_exhaustion.py certify \
+            --neighborhood build/nexus-multipair-discovery-v2-proof/search-neighborhood.json \
+            --proof build/nexus-multipair-discovery-v2-proof/evidence.json \
+            --output build/nexus-multipair-discovery-v2-proof/exhaustion-certificate.json >/dev/null
+          python nexus_multipair_search_exhaustion.py check \
+            --neighborhood build/nexus-multipair-discovery-v2-proof/search-neighborhood.json \
+            --certificate build/nexus-multipair-discovery-v2-proof/exhaustion-certificate.json \
+            | python -c 'import json,sys; assert json.load(sys.stdin)["reusable"] is True'
+          echo "multipair_search_exhaustion_certificate=PASS"
+
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: nexus-multipair-discovery-v2-proof-${{ github.sha }}
           path: build/nexus-multipair-discovery-v2-proof/evidence.json
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Publish reusable exact Multi-Pair exhaustion certificate
+        if: steps.exhaustion-decision.outputs.should_certify == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: nexus-multipair-search-exhaustion-${{ github.sha }}
+          path: build/nexus-multipair-discovery-v2-proof/exhaustion-certificate.json
           if-no-files-found: error
           retention-days: 90
           compression-level: 9
