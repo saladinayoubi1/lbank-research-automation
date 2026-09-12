@@ -1,11 +1,11 @@
 """Certify and reuse an exactly exhausted Multi-Timeframe research neighborhood.
 
 Reuse is deliberately narrow: the immutable dataset semantic SHA, base manifest,
-research gates, authority, workflow, dependency lock, and every implementation
-file that defines the search must match exactly. A certificate can only be emitted
-after both the base search and its bounded training-only refinement return zero
-research proposals. Locked holdout evidence is never used to generate or widen
-the next search surface.
+research gates, authority, workflow, dependency lock, source commit, and every
+implementation file that defines the search must match exactly. A certificate can
+only be emitted after both the base search and its bounded training-only refinement
+return zero research proposals. Locked holdout evidence is never used to generate
+or widen the next search surface.
 """
 from __future__ import annotations
 
@@ -21,6 +21,7 @@ import nexus_multitimeframe_strategy_discovery as discovery
 
 NEIGHBORHOOD_SCHEMA = "nexus.multitimeframe-search-neighborhood.v1"
 CERTIFICATE_SCHEMA = "nexus.multitimeframe-search-exhaustion.v1"
+_SHA40_RE = re.compile(r"^[0-9a-f]{40}$")
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 IMPLEMENTATION_FILES: tuple[str, ...] = (
     ".github/workflows/nexus_multitimeframe_strategy_discovery.yml",
@@ -82,13 +83,31 @@ def _atomic(path: str | Path, value: Mapping[str, Any]) -> None:
     os.replace(temporary, target)
 
 
+def _resolve_source_sha(source_sha: str | None) -> str:
+    if source_sha is not None:
+        value = str(source_sha).strip().lower()
+        if not _SHA40_RE.fullmatch(value):
+            raise MultiTimeframeExhaustionError("source SHA is invalid")
+        return value
+    for env_name in ("TRIGGER_SOURCE_SHA", "GITHUB_SHA"):
+        raw = os.environ.get(env_name)
+        if raw:
+            value = raw.strip().lower()
+            if not _SHA40_RE.fullmatch(value):
+                raise MultiTimeframeExhaustionError(f"{env_name} is not a valid source SHA")
+            return value
+    raise MultiTimeframeExhaustionError("source SHA is required")
+
+
 def build_neighborhood(
     manifest_path: str | Path,
     *,
+    source_sha: str | None = None,
     dataset_semantic_sha256: str,
     root: str | Path = ".",
     implementation_files: Sequence[str] = IMPLEMENTATION_FILES,
 ) -> dict[str, Any]:
+    source_sha = _resolve_source_sha(source_sha)
     dataset_semantic_sha256 = str(dataset_semantic_sha256).strip().lower()
     if not _SHA256_RE.fullmatch(dataset_semantic_sha256):
         raise MultiTimeframeExhaustionError("dataset semantic SHA256 is invalid")
@@ -99,6 +118,7 @@ def build_neighborhood(
     }
     core = {
         "schema_version": NEIGHBORHOOD_SCHEMA,
+        "source_sha": source_sha,
         "dataset_semantic_sha256": dataset_semantic_sha256,
         "dataset_archive_sha256": manifest["dataset"]["archive_sha256"],
         "experiment_id": manifest["experiment_id"],
@@ -123,6 +143,7 @@ def verify_neighborhood(value: Mapping[str, Any]) -> None:
     if (
         core.get("schema_version") != NEIGHBORHOOD_SCHEMA
         or claimed != _digest(core)
+        or not _SHA40_RE.fullmatch(str(core.get("source_sha", "")))
         or not _SHA256_RE.fullmatch(str(core.get("dataset_semantic_sha256", "")))
         or core.get("research_only") is not True
         or core.get("paper_only") is not True
@@ -159,6 +180,8 @@ def build_certificate(
         raise MultiTimeframeExhaustionError("refinement source digest mismatch")
     if refined_result.get("source_sha") != base_result.get("source_sha"):
         raise MultiTimeframeExhaustionError("refined source SHA mismatch")
+    if base_result.get("source_sha") != neighborhood.get("source_sha"):
+        raise MultiTimeframeExhaustionError("base source SHA mismatch")
     if base_result.get("dataset_archive_sha256") != neighborhood.get("dataset_archive_sha256"):
         raise MultiTimeframeExhaustionError("base dataset archive mismatch")
     if refined_result.get("dataset_archive_sha256") != neighborhood.get("dataset_archive_sha256"):
@@ -180,7 +203,7 @@ def build_certificate(
         "gates_sha256": neighborhood["gates_sha256"],
         "authority_sha256": neighborhood["authority_sha256"],
         "implementation_sha256": neighborhood["implementation_sha256"],
-        "source_sha": base_result["source_sha"],
+        "source_sha": neighborhood["source_sha"],
         "base_discovery_digest": base_result["discovery_digest"],
         "refinement_plan_digest": refinement_plan["plan_digest"],
         "training_basis_digest": refinement_plan["training_basis_digest"],
@@ -205,6 +228,7 @@ def verify_certificate(value: Mapping[str, Any]) -> None:
     if (
         core.get("schema_version") != CERTIFICATE_SCHEMA
         or claimed != _digest(core)
+        or not _SHA40_RE.fullmatch(str(core.get("source_sha", "")))
         or core.get("exhausted") is not True
         or core.get("reuse_policy") != "exact_static_neighborhood_only"
         or core.get("base_research_proposal_count") != 0
@@ -225,7 +249,10 @@ def certificate_is_reusable(neighborhood: Mapping[str, Any], certificate: Mappin
         verify_certificate(certificate)
     except MultiTimeframeExhaustionError:
         return False
-    return certificate.get("neighborhood_fingerprint") == neighborhood.get("neighborhood_fingerprint")
+    return (
+        certificate.get("neighborhood_fingerprint") == neighborhood.get("neighborhood_fingerprint")
+        and certificate.get("source_sha") == neighborhood.get("source_sha")
+    )
 
 
 def main() -> int:
@@ -234,6 +261,7 @@ def main() -> int:
 
     fingerprint = sub.add_parser("fingerprint")
     fingerprint.add_argument("--manifest", type=Path, required=True)
+    fingerprint.add_argument("--source-sha")
     fingerprint.add_argument("--dataset-semantic-sha256", required=True)
     fingerprint.add_argument("--root", type=Path, default=Path("."))
     fingerprint.add_argument("--output", type=Path, required=True)
@@ -253,6 +281,7 @@ def main() -> int:
     if args.command == "fingerprint":
         value = build_neighborhood(
             args.manifest,
+            source_sha=args.source_sha,
             dataset_semantic_sha256=args.dataset_semantic_sha256,
             root=args.root,
         )
