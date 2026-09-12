@@ -63,7 +63,8 @@ def test_restart_replay_requires_same_runner_exact_sha_and_bounded_fetch() -> No
         assert "git clean -ffdx" not in section
         assert 'cd "$SOURCE_ROOT"' in section
     assert 'source_root="$HOME/.local/share/nexus/multipair-restart-replay-source/$GITHUB_RUN_ID/seed"' in text
-    assert 'source_root="$HOME/.local/share/nexus/multipair-restart-replay-source/$GITHUB_RUN_ID/replay"' in text
+    assert 'run_source_root="$HOME/.local/share/nexus/multipair-restart-replay-source/$GITHUB_RUN_ID"' in text
+    assert 'source_root="$run_source_root/replay"' in text
 
 
 def test_restart_replay_wheelhouse_matches_restore_helper_inner_name_contract() -> None:
@@ -123,5 +124,7 @@ def test_restart_replay_cleans_run_scoped_sources_and_success_state() -> None:
     assert "Cleanup isolated replay source and successful continuity state" in text
     assert "restart_source_cleanup=PASS" in text
     assert "restart_state_cleanup=PASS" in text
+    assert 'rmdir "$run_source_root" 2>/dev/null || true' in text
     assert 'source_root="$HOME/.local/share/nexus/multipair-restart-replay-source/$GITHUB_RUN_ID/seed"' in text
-    assert 'source_root="$HOME/.local/share/nexus/multipair-restart-replay-source/$GITHUB_RUN_ID/replay"' in text
+    assert 'run_source_root="$HOME/.local/share/nexus/multipair-restart-replay-source/$GITHUB_RUN_ID"' in text
+    assert 'source_root="$run_source_root/replay"' in text
