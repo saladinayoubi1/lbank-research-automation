@@ -331,7 +331,7 @@ jobs:
           {"source_sha":"$SOURCE_SHA","paper_run_id":"$PAPER_RUN_ID","paper_artifact_id":"$PAPER_ARTIFACT_ID","paper_artifact_sha256":"$PAPER_ARTIFACT_DIGEST","discovery_run_id":"$DISCOVERY_RUN_ID","proof_artifact_id":"$PROOF_ARTIFACT_ID","proof_artifact_sha256":"$PROOF_ARTIFACT_DIGEST","issue_984_state_artifact_touched":false}
           EOF
 
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: steps.pair.outputs.paired == 'true' && steps.boundary.outputs.eligible == 'true'
         with:
           name: nexus-multipair-paper-boundary-feedback-${{ steps.pair.outputs.source_sha }}
