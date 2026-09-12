@@ -14,11 +14,12 @@ DATASET_SEMANTIC_SHA = "2" * 64
 SOURCE_SHA = "a" * 40
 
 
-def _neighborhood(tmp_path: Path) -> dict:
+def _neighborhood(tmp_path: Path, *, source_sha: str = SOURCE_SHA) -> dict:
     implementation = tmp_path / "engine.py"
     implementation.write_text("ENGINE = 1\n", encoding="utf-8")
     return exhaustion.build_neighborhood(
         MANIFEST,
+        source_sha=source_sha,
         dataset_semantic_sha256=DATASET_SEMANTIC_SHA,
         root=tmp_path,
         implementation_files=("engine.py",),
@@ -65,16 +66,54 @@ def _evidence(neighborhood: dict) -> tuple[dict, dict, dict]:
 def test_neighborhood_fingerprint_changes_on_implementation_change(tmp_path: Path) -> None:
     implementation = tmp_path / "engine.py"
     implementation.write_text("ENGINE = 1\n", encoding="utf-8")
-    first = exhaustion.build_neighborhood(MANIFEST, dataset_semantic_sha256=DATASET_SEMANTIC_SHA, root=tmp_path, implementation_files=("engine.py",))
+    first = exhaustion.build_neighborhood(
+        MANIFEST,
+        source_sha=SOURCE_SHA,
+        dataset_semantic_sha256=DATASET_SEMANTIC_SHA,
+        root=tmp_path,
+        implementation_files=("engine.py",),
+    )
     implementation.write_text("ENGINE = 2\n", encoding="utf-8")
-    second = exhaustion.build_neighborhood(MANIFEST, dataset_semantic_sha256=DATASET_SEMANTIC_SHA, root=tmp_path, implementation_files=("engine.py",))
+    second = exhaustion.build_neighborhood(
+        MANIFEST,
+        source_sha=SOURCE_SHA,
+        dataset_semantic_sha256=DATASET_SEMANTIC_SHA,
+        root=tmp_path,
+        implementation_files=("engine.py",),
+    )
     assert first["neighborhood_fingerprint"] != second["neighborhood_fingerprint"]
 
 
 def test_neighborhood_fingerprint_changes_on_dataset_change(tmp_path: Path) -> None:
     first = _neighborhood(tmp_path)
-    second = exhaustion.build_neighborhood(MANIFEST, dataset_semantic_sha256="3" * 64, root=tmp_path, implementation_files=("engine.py",))
+    second = exhaustion.build_neighborhood(
+        MANIFEST,
+        source_sha=SOURCE_SHA,
+        dataset_semantic_sha256="3" * 64,
+        root=tmp_path,
+        implementation_files=("engine.py",),
+    )
     assert first["neighborhood_fingerprint"] != second["neighborhood_fingerprint"]
+
+
+def test_neighborhood_fingerprint_changes_on_source_sha_change(tmp_path: Path) -> None:
+    first = _neighborhood(tmp_path, source_sha=SOURCE_SHA)
+    second = _neighborhood(tmp_path, source_sha="f" * 40)
+    assert first["source_sha"] == SOURCE_SHA
+    assert second["source_sha"] == "f" * 40
+    assert first["neighborhood_fingerprint"] != second["neighborhood_fingerprint"]
+
+
+def test_source_sha_can_be_bound_from_trigger_environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setenv("TRIGGER_SOURCE_SHA", "b" * 40)
+    monkeypatch.setenv("GITHUB_SHA", "c" * 40)
+    neighborhood = exhaustion.build_neighborhood(
+        MANIFEST,
+        dataset_semantic_sha256=DATASET_SEMANTIC_SHA,
+        root=tmp_path,
+        implementation_files=("engine.py",),
+    )
+    assert neighborhood["source_sha"] == "b" * 40
 
 
 def test_zero_base_and_training_refinement_create_reusable_certificate(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -84,6 +123,7 @@ def test_zero_base_and_training_refinement_create_reusable_certificate(monkeypat
     certificate = exhaustion.build_certificate(neighborhood, base, plan, refined)
     exhaustion.verify_certificate(certificate)
     assert certificate["exhausted"] is True
+    assert certificate["source_sha"] == SOURCE_SHA
     assert certificate["selection_basis"] == "training_only"
     assert certificate["locked_holdout_used_for_refinement"] is False
     assert certificate["live_trading_authority"] is False
@@ -101,6 +141,23 @@ def test_certificate_reuse_requires_exact_neighborhood(monkeypatch: pytest.Monke
     core.pop("neighborhood_fingerprint")
     changed["neighborhood_fingerprint"] = exhaustion._digest(core)
     assert exhaustion.certificate_is_reusable(changed, certificate) is False
+
+
+def test_certificate_reuse_rejects_different_source_sha(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    neighborhood = _neighborhood(tmp_path)
+    base, plan, refined = _evidence(neighborhood)
+    monkeypatch.setattr(exhaustion.discovery, "verify_discovery", lambda value: {"decision": "pass"})
+    certificate = exhaustion.build_certificate(neighborhood, base, plan, refined)
+    changed = _neighborhood(tmp_path, source_sha="f" * 40)
+    assert exhaustion.certificate_is_reusable(changed, certificate) is False
+
+
+def test_certificate_fails_closed_on_base_source_sha_mismatch(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    neighborhood = _neighborhood(tmp_path, source_sha="f" * 40)
+    base, plan, refined = _evidence(neighborhood)
+    monkeypatch.setattr(exhaustion.discovery, "verify_discovery", lambda value: {"decision": "pass"})
+    with pytest.raises(exhaustion.MultiTimeframeExhaustionError, match="base source SHA mismatch"):
+        exhaustion.build_certificate(neighborhood, base, plan, refined)
 
 
 def test_certificate_fails_closed_if_locked_holdout_influenced_refinement(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
