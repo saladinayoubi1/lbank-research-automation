@@ -172,3 +172,30 @@ def test_verifier_rejects_mutated_feedback(monkeypatch: pytest.MonkeyPatch) -> N
     mutated = copy.deepcopy(result)
     mutated["live_trading_authority"] = True
     assert feedback.verify_feedback(mutated)["decision"] == "reject"
+
+
+def test_feedback_accepts_exact_exhaustion_reuse_with_fresh_runtime(monkeypatch: pytest.MonkeyPatch) -> None:
+    proof = _proof()
+    proof.update({
+        "snapshot_transport": "exact_exhaustion_certificate",
+        "physical_discovery_skipped_exact_exhaustion": True,
+        "historical_discovery_result_reused_exact_exhaustion": True,
+        "runtime_requalification_skipped_no_proposals": True,
+    })
+    result = feedback.build_feedback(_context(monkeypatch), proof)
+    assert result["status"] == "VERIFIED_NO_RESEARCH_PROPOSALS"
+    assert result["paper_boundary_coverage_verified"] is True
+    assert feedback.verify_feedback(result)["decision"] == "pass"
+
+
+def test_feedback_rejects_exact_exhaustion_reuse_without_fresh_runtime(monkeypatch: pytest.MonkeyPatch) -> None:
+    proof = _proof()
+    proof.update({
+        "snapshot_transport": "exact_exhaustion_certificate",
+        "physical_discovery_skipped_exact_exhaustion": True,
+        "historical_discovery_result_reused_exact_exhaustion": True,
+        "runtime_requalification_skipped_no_proposals": True,
+        "runtime_snapshot_freshness_verified": False,
+    })
+    with pytest.raises(feedback.MultiPairPaperBoundaryFeedbackError):
+        feedback.build_feedback(_context(monkeypatch), proof)
