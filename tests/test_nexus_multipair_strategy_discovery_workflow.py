@@ -334,3 +334,16 @@ def test_reuse_proof_explicitly_records_historical_skip_but_no_freshness_skip() 
     assert '"runtime_data_is_fresh_not_snapshot_reuse": requalification["runtime_data_is_fresh_not_snapshot_reuse"]' in text
     assert "EXHAUSTION_REUSE" in text
     assert "exact_exhaustion_certificate" in text
+
+
+def test_requalification_python_heredocs_have_column_zero_terminators() -> None:
+    document = yaml.safe_load(_text())
+    steps = document["jobs"]["requalify-physical"]["steps"]
+    step = next(
+        row for row in steps
+        if row.get("name") == "Independently requalify exact Discovery proposals on transported fresh Bybit data"
+    )
+    script = step["run"]
+    assert script.count("<<'PY'") == 2
+    assert script.splitlines().count("PY") == 2
+    assert all(line == "PY" for line in script.splitlines() if line.strip() == "PY")

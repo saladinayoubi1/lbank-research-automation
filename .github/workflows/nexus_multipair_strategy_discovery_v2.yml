@@ -1176,27 +1176,27 @@ jobs:
             "$PYTHON_BIN" nexus_multipair_search_exhaustion.py verify-runtime \
               --evidence "$STATE_ROOT/requalification/runtime-requalification.json" >/dev/null
             "$PYTHON_BIN" - <<'PY'
-            import json, os
-            from pathlib import Path
-            from nexus_multipair_runtime_requalification_snapshot import verify_fresh_runtime_snapshot
-            from nexus_multipair_search_exhaustion import verify_fresh_no_work
-            root = Path(os.environ["STATE_ROOT"])
-            snapshot = json.loads((root / "runtime-snapshot" / "snapshot-manifest.json").read_text())
-            result = json.loads((root / "requalification" / "runtime-requalification.json").read_text())
-            fresh = verify_fresh_runtime_snapshot(
-                root / "runtime-snapshot", snapshot,
-                source_sha=os.environ["GITHUB_SHA"],
-                now_ms=int(os.environ["RUNTIME_CONSUME_NOW_MS"]),
-            )
-            assert fresh["decision"] == "pass", fresh
-            assert verify_fresh_no_work(result)["decision"] == "pass"
-            assert result["runtime_snapshot_digest"] == snapshot["snapshot_digest"]
-            assert result["runtime_snapshot_as_of_ms"] == snapshot["as_of_ms"]
-            assert result["status"] == "NO_WORK"
-            assert result["runtime_snapshot_freshness_verified"] is True
-            assert result["live_trading_authority"] is False
-            print("multipair_exhaustion_reuse_fresh_runtime_binding=PASS")
-            PY
+          import json, os
+          from pathlib import Path
+          from nexus_multipair_runtime_requalification_snapshot import verify_fresh_runtime_snapshot
+          from nexus_multipair_search_exhaustion import verify_fresh_no_work
+          root = Path(os.environ["STATE_ROOT"])
+          snapshot = json.loads((root / "runtime-snapshot" / "snapshot-manifest.json").read_text())
+          result = json.loads((root / "requalification" / "runtime-requalification.json").read_text())
+          fresh = verify_fresh_runtime_snapshot(
+              root / "runtime-snapshot", snapshot,
+              source_sha=os.environ["GITHUB_SHA"],
+              now_ms=int(os.environ["RUNTIME_CONSUME_NOW_MS"]),
+          )
+          assert fresh["decision"] == "pass", fresh
+          assert verify_fresh_no_work(result)["decision"] == "pass"
+          assert result["runtime_snapshot_digest"] == snapshot["snapshot_digest"]
+          assert result["runtime_snapshot_as_of_ms"] == snapshot["as_of_ms"]
+          assert result["status"] == "NO_WORK"
+          assert result["runtime_snapshot_freshness_verified"] is True
+          assert result["live_trading_authority"] is False
+          print("multipair_exhaustion_reuse_fresh_runtime_binding=PASS")
+          PY
             exit 0
           fi
           "$PYTHON_BIN" nexus_multipair_runtime_requalification_snapshot.py requalify \
