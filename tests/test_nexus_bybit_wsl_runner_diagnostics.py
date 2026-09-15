@@ -54,8 +54,10 @@ def test_runner_diagnostics_workflow_is_bounded_to_failures_and_physical_windows
     assert "github.event.workflow_run.conclusion == 'cancelled'" in text
     assert "github.event_name != 'workflow_dispatch'" in text
     assert "github.ref == 'refs/heads/main'" in text
-    assert "runs-on: [self-hosted, Windows, X64, nexus-local]" in text
+    assert "runs-on: [self-hosted, Windows, X64, nexus-remote-rescue]" in text
     assert "permissions:\n  contents: read" in text
+    assert "nexus-bybit-wsl-runner-diagnostics-${{" in text
+    assert "github.event.workflow_run.id" in text
     assert "cancel-in-progress: false" in text
     assert "uses:" not in text.split("  capture:", 1)[1]
     assert "actions/checkout@" not in text

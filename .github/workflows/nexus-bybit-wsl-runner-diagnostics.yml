@@ -17,13 +17,17 @@ permissions:
   contents: read
 
 concurrency:
-  group: nexus-bybit-wsl-runner-diagnostics
+  # Keep a newly repaired diagnostic from being blocked behind a historical
+  # queued run whose primary Windows runner is itself unavailable.
+  group: nexus-bybit-wsl-runner-diagnostics-${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || github.sha }}
   cancel-in-progress: false
 
 jobs:
   capture:
     if: ${{ (github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/main') && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'failure' || github.event.workflow_run.conclusion == 'cancelled') }}
-    runs-on: [self-hosted, Windows, X64, nexus-local]
+    # Diagnostics are a recovery-plane responsibility. Do not depend on the
+    # primary Windows runner that may be part of the same incident.
+    runs-on: [self-hosted, Windows, X64, nexus-remote-rescue]
     timeout-minutes: 10
     steps:
       - name: Prepare exact diagnostic source without JavaScript actions
