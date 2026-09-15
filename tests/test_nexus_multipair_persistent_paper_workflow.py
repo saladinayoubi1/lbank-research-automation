@@ -49,16 +49,18 @@ def test_v2_cutover_keeps_state_artifact_name_and_read_only_transport() -> None:
     assert "github_actions" not in paper.lower() or "persistent_runtime_database_on_github" in paper
 
 
-def test_exact_source_checkout_is_per_run_and_does_not_depend_on_shared_git_lock_cleanup() -> None:
+def test_exact_source_restore_is_per_run_and_does_not_use_shared_git_state() -> None:
     paper = _paper_job()
     prepare = paper.split(
-        "Prepare exact repository and pre-provisioned Python 3.12 without JavaScript actions", 1
+        "Prepare exact source artifact and pre-provisioned Python 3.12 without JavaScript actions", 1
     )[1].split("Enforce eligible Bybit network execution plane", 1)[0]
     assert 'source_root="$HOME/.local/share/nexus/persistent-paper-source/$GITHUB_RUN_ID"' in prepare
-    assert 'rm -rf "$source_root"' in prepare
-    assert 'mkdir -p "$source_root"' in prepare
-    assert 'cd "$source_root"' in prepare
-    assert "git init ." in prepare
+    assert 'rm -rf "$source_root" "$state_root"' in prepare
+    assert 'mkdir -p "$source_root" "$state_root"' in prepare
+    assert "physical_exact_source_artifact_restore=PASS" in prepare
+    assert "git init ." not in prepare
+    assert "git fetch" not in prepare
+    assert "git checkout" not in prepare
     assert "shallow.lock" not in prepare
     assert "SOURCE_ROOT=" in prepare
 

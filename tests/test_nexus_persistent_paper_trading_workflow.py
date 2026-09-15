@@ -77,7 +77,7 @@ def test_network_eligible_runner_is_pinned_and_fail_closed() -> None:
     assert "vpn" not in paper.lower()
 
 
-def test_physical_wsl_job_avoids_javascript_actions_and_codeload_dependency() -> None:
+def test_physical_wsl_job_uses_hosted_exact_source_artifact_without_javascript_actions() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     contract, _ = text.split("  paper-loop:", 1)
     paper = _paper_job(text)
@@ -85,53 +85,70 @@ def test_physical_wsl_job_avoids_javascript_actions_and_codeload_dependency() ->
 
     assert "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" in contract
     assert "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97" in contract
-    assert "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a" in persist
+    upload_action = "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a"
+    assert upload_action in contract
+    assert upload_action in persist
+    assert "Pack exact commit source for the Node-free physical Paper job" in contract
+    assert 'git archive --format=zip --output "$archive" "$GITHUB_SHA"' in contract
+    assert "nexus-persistent-paper-source-${{ github.sha }}" in contract
+    assert "source_archive_sha256" in contract
 
     assert "uses:" not in paper
     assert "actions/checkout@" not in paper
     assert "actions/setup-python@" not in paper
     assert "actions/upload-artifact@" not in paper
     assert "ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION" not in paper
-    assert "Prepare exact repository and pre-provisioned Python 3.12 without JavaScript actions" in paper
-    assert 'repo_url="https://github.com/${GITHUB_REPOSITORY}.git"' in paper
-    assert 'git -c http.version=HTTP/1.1 fetch \\\n' in paper
-    assert '--no-tags --prune --depth=1 origin "$GITHUB_SHA"' in paper
-    assert 'test "$(git rev-parse HEAD)" = "$GITHUB_SHA"' in paper
+    assert "Prepare exact source artifact and pre-provisioned Python 3.12 without JavaScript actions" in paper
+    assert "SOURCE_ARTIFACT: nexus-persistent-paper-source-${{ github.sha }}" in paper
+    assert "SOURCE_ARCHIVE_SHA256: ${{ needs.runtime-wheelhouse.outputs.source_archive_sha256 }}" in paper
+    assert "physical_exact_source_artifact_restore=PASS" in paper
+    assert "physical_source_transport=digest-pinned-current-run-artifact" in paper
+    assert "git init ." not in paper
+    assert "git fetch" not in paper
+    assert "git checkout" not in paper
 
 
-def test_physical_checkout_retries_transient_fetch_failures_only_with_a_bounded_budget() -> None:
+def test_physical_source_download_has_bounded_transport_and_extraction_budgets() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     paper = _paper_job(text)
     prepare = paper.split(
-        "Prepare exact repository and pre-provisioned Python 3.12 without JavaScript actions", 1
+        "Prepare exact source artifact and pre-provisioned Python 3.12 without JavaScript actions", 1
     )[1].split("Enforce eligible Bybit network execution plane", 1)[0]
 
-    assert "fetch_max_attempts=3" in prepare
-    assert "for fetch_attempt in 1 2 3; do" in prepare
-    assert "sleep \"$((fetch_attempt * 5))\"" in prepare
-    assert 'if [ "$fetch_attempt" -lt "$fetch_max_attempts" ]; then' in prepare
-    assert 'if [ "$fetch_ok" != true ]; then' in prepare
-    assert "Exact repository fetch failed after ${fetch_max_attempts} bounded attempts." in prepare
-    assert "exit 1" in prepare
+    assert "--retry 3 --retry-all-errors" in prepare
+    assert "--connect-timeout 20 --max-time 900" in prepare
+    assert "--max-filesize 104857600" in prepare
+    assert "source artifact size is outside bounds" in prepare
+    assert "row.file_size > 50 * 1024 * 1024" in prepare
+    assert "total > 250 * 1024 * 1024" in prepare
+    assert "duplicate source archive member" in prepare
+    assert "unsafe source archive path" in prepare
 
 
-def test_physical_checkout_retry_preserves_anonymous_exact_sha_fail_closed_contract() -> None:
+def test_physical_source_handoff_is_exact_sha_digest_pinned_and_token_safe() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     paper = _paper_job(text)
     prepare = paper.split(
-        "Prepare exact repository and pre-provisioned Python 3.12 without JavaScript actions", 1
+        "Prepare exact source artifact and pre-provisioned Python 3.12 without JavaScript actions", 1
     )[1].split("Enforce eligible Bybit network execution plane", 1)[0]
 
-    assert "git config --local --unset-all http.https://github.com/.extraheader || true" in prepare
-    assert 'repo_url="https://github.com/${GITHUB_REPOSITORY}.git"' in prepare
-    assert "x-access-token" not in prepare
-    assert "Authorization" not in prepare
-    assert "http.extraHeader" not in prepare
-    assert 'git checkout --detach --force FETCH_HEAD' in prepare
-    assert 'test "$(git rev-parse HEAD)" = "$GITHUB_SHA"' in prepare
-    assert prepare.index('if [ "$fetch_ok" != true ]; then') < prepare.index(
-        "git checkout --detach --force FETCH_HEAD"
-    )
+    assert 'str(run.get("id")) != os.environ["GITHUB_RUN_ID"]' in prepare
+    assert 'run.get("head_sha") != os.environ["GITHUB_SHA"]' in prepare
+    assert 'run.get("head_branch") != "main"' in prepare
+    assert 'run.get("event") not in {"push", "schedule", "workflow_dispatch"}' in prepare
+    assert "expected one exact source artifact" in prepare
+    assert "source artifact has no valid GitHub SHA-256 digest" in prepare
+    assert "source artifact commit identity mismatch" in prepare
+    assert "source archive digest mismatch" in prepare
+    assert 'test "$source_sha" = "$GITHUB_SHA"' in prepare
+
+    assert '-H "Authorization: Bearer $GH_TOKEN"' in prepare
+    storage_download = prepare.split(
+        "# Never send the GitHub bearer token to the signed artifact-storage URL.", 1
+    )[1].split('test "$(stat -c', 1)[0]
+    assert "Authorization" not in storage_download
+    assert "GH_TOKEN" not in storage_download
+    assert '"$artifact_url" > "$outer_archive"' in storage_download
 
 
 def test_wsl1_python_selection_is_preprovisioned_and_checks_version() -> None:
