@@ -12,7 +12,7 @@ def test_physical_python_binds_its_own_runtime_library_before_paper_imports() ->
     text = WORKFLOW.read_text(encoding="utf-8")
     paper = _paper_job(text)
     prepare = paper.split(
-        "Prepare exact repository and pre-provisioned Python 3.12 without JavaScript actions",
+        "Prepare exact source artifact and pre-provisioned Python 3.12 without JavaScript actions",
         1,
     )[1].split("Enforce eligible Bybit network execution plane", 1)[0]
 
