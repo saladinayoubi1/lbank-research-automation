@@ -31,6 +31,22 @@ def test_runner_diagnostics_are_read_only_and_redacted():
         assert forbidden not in text
 
 
+def test_wsl_probe_uses_lf_only_stdin_transport_with_a_bounded_process() -> None:
+    text = SCRIPT.read_text(encoding="utf-8")
+    invoke = text.split("function Invoke-WslCapture", 1)[1].split(
+        "function Protect-DiagnosticLine", 1
+    )[0]
+
+    assert '$Command.Replace("`r`n", "`n").Replace("`r", "`n")' in invoke
+    assert '$psi.Arguments = "-d $Distribution -u root -- bash -s"' in invoke
+    assert "$psi.RedirectStandardInput = $true" in invoke
+    assert "$process.StandardInput.Write($normalizedCommand)" in invoke
+    assert "$process.StandardInput.Close()" in invoke
+    assert "$process.WaitForExit(30000)" in invoke
+    assert "$process.Kill()" in invoke
+    assert "bash -lc $Command" not in invoke
+
+
 def test_runner_diagnostics_workflow_is_bounded_to_failures_and_physical_windows():
     text = WORKFLOW.read_text(encoding="utf-8")
     assert 'workflows: ["NEXUS persistent Paper trading loop"]' in text
