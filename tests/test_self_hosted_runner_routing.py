@@ -8,7 +8,7 @@ WINDOWS_RUNS_ON = re.compile(r"^\s*runs-on:\s*\[(?=[^\]]*self-hosted)(?=[^\]]*Wi
 
 EXPECTED_ROUTES = {
     "nexus-bybit-wsl-fix-validation.yml": "nexus-local",
-    "nexus-bybit-wsl-runner-diagnostics.yml": "nexus-local",
+    "nexus-bybit-wsl-runner-diagnostics.yml": "nexus-remote-rescue",
     "nexus-bybit-wsl-runner-wake.yml": "nexus-local",
     "nexus-bybit-wsl1-fallback.yml": "nexus-local",
     "nexus-continuous-phase3.yml": "nexus-local",
