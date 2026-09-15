@@ -21,13 +21,52 @@ function Invoke-WslCapture {
     param([Parameter(Mandatory = $true)][string]$Command)
 
     $previousErrorActionPreference = $ErrorActionPreference
+    $process = $null
     try {
         $ErrorActionPreference = 'Continue'
-        $raw = @(& "$env:SystemRoot\System32\wsl.exe" -d $Distribution -u root -- bash -lc $Command 2>&1)
-        $exitCode = $LASTEXITCODE
-        $text = (($raw | ForEach-Object { $_.ToString() }) | Out-String)
+        $normalizedCommand = $Command.Replace("`r`n", "`n").Replace("`r", "`n")
+        if (-not $normalizedCommand.EndsWith("`n")) {
+            $normalizedCommand += "`n"
+        }
+
+        # Keep the multi-line Bash payload out of Windows argv. PowerShell 5.1
+        # otherwise preserves CRLF and can alter nested quoting before wsl.exe
+        # reaches Bash. StandardInput.Write preserves the exact LF-only payload.
+        $psi = New-Object System.Diagnostics.ProcessStartInfo
+        $psi.FileName = "$env:SystemRoot\System32\wsl.exe"
+        $psi.Arguments = "-d $Distribution -u root -- bash -s"
+        $psi.UseShellExecute = $false
+        $psi.CreateNoWindow = $true
+        $psi.RedirectStandardInput = $true
+        $psi.RedirectStandardOutput = $true
+        $psi.RedirectStandardError = $true
+
+        $process = New-Object System.Diagnostics.Process
+        $process.StartInfo = $psi
+        if (-not $process.Start()) {
+            throw 'Could not start bounded WSL diagnostic probe.'
+        }
+        $stdoutTask = $process.StandardOutput.ReadToEndAsync()
+        $stderrTask = $process.StandardError.ReadToEndAsync()
+        $process.StandardInput.Write($normalizedCommand)
+        $process.StandardInput.Close()
+
+        $timedOut = -not $process.WaitForExit(30000)
+        if ($timedOut) {
+            try { $process.Kill() } catch {}
+            [void]$process.WaitForExit(5000)
+        }
+        $stdout = $stdoutTask.GetAwaiter().GetResult()
+        $stderr = $stderrTask.GetAwaiter().GetResult()
+        $text = (@($stdout, $stderr) | Where-Object { $_ } | Out-String)
+        if ($timedOut) {
+            return [ordered]@{
+                exit_code = -1
+                output = 'bounded WSL diagnostic probe timed out after 30 seconds'
+            }
+        }
         return [ordered]@{
-            exit_code = if ($null -eq $exitCode) { -1 } else { [int]$exitCode }
+            exit_code = [int]$process.ExitCode
             output = ($text -replace "`0", '').Trim()
         }
     }
@@ -38,6 +77,9 @@ function Invoke-WslCapture {
         }
     }
     finally {
+        if ($null -ne $process) {
+            $process.Dispose()
+        }
         $ErrorActionPreference = $previousErrorActionPreference
     }
 }
