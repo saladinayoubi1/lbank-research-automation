@@ -1,0 +1,78 @@
+name: NEXUS Windows App Install
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - scripts/install_and_smoke_nexus_personal_pro.ps1
+      - .github/workflows/nexus-windows-app-install.yml
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: nexus-windows-app-install
+  cancel-in-progress: false
+
+jobs:
+  install-and-smoke:
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      github.actor == github.repository_owner &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event_name == 'push' && contains(github.event.head_commit.message, '[install-app]')))
+    runs-on: [self-hosted, Windows, X64, nexus-local]
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: cmd
+    steps:
+      - name: Checkout exact installation source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 1
+
+      - name: Verify exact main trigger
+        run: |
+          for /f %%S in ('git rev-parse HEAD') do set "CHECKED_OUT_SHA=%%S"
+          if /I not "%CHECKED_OUT_SHA%"=="%GITHUB_SHA%" exit /b 1
+          if /I not "%GITHUB_REF%"=="refs/heads/main" exit /b 1
+          echo exact_install_trigger_sha=%CHECKED_OUT_SHA%
+
+      - name: Download exact approved NEXUS Personal Pro package
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: nexus-windows-final-mission-control-packages
+          path: ${{ runner.temp }}/nexus-personal-pro-package-${{ github.run_id }}
+          github-token: ${{ github.token }}
+          repository: saladinayoubi1/lbank-research-automation
+          run-id: '35102997291'
+
+      - name: Install and smoke-test NEXUS Personal Pro on exact Lenovo
+        run: >-
+          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass
+          -File scripts\install_and_smoke_nexus_personal_pro.ps1
+          -PackageRoot "%RUNNER_TEMP%\nexus-personal-pro-package-%GITHUB_RUN_ID%"
+          -ExpectedSourceSha "f793e3a53048f6fcc02b593036fb32f496e44de5"
+          -ExpectedSetupSha256 "c3eacdc5253b2d9d2372f436394e8a7cbd1c1c73fc7c5fc5fbead4551d4cd82a"
+          -ExpectedPortableSha256 "27d5af2c182b27e3078e050b4c9bd55def1b5e045ac11873cb9c0cf6c50e0921"
+          -ArtifactRunId 35102997291
+          -ArtifactId 10449670023
+          -ExpectedComputerName "DESKTOP-1R1081M"
+          -ExpectedRunnerName "NEXUS-LOCAL-RUNNER"
+          -EvidencePath "build\windows-app-install\evidence.json"
+
+      - name: Upload physical Windows app install proof
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-windows-app-install-proof-${{ github.run_id }}
+          if-no-files-found: error
+          retention-days: 30
+          path: build/windows-app-install/evidence.json
