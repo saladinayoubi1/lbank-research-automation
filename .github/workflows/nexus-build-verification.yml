@@ -209,6 +209,7 @@ jobs:
             "$hash  $($file.Name)"
           }
           $lines | Set-Content -Encoding ascii 'desktop/nexus-product/dist/SHA256SUMS.txt'
+          Get-Content 'desktop/nexus-product/dist/SHA256SUMS.txt' | ForEach-Object { Write-Host "NEXUS_WINDOWS_SHA256=$_" }
       - name: Build unsigned Windows evidence bundle
         run: >-
           python scripts/build_release_evidence.py
