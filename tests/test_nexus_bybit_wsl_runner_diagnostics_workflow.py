@@ -85,7 +85,9 @@ def test_linux_diagnostics_support_minimal_wsl_without_coreutils_process_tools()
     assert "$process.StandardInput.Write($normalizedCommand)" in text
     assert "$process.WaitForExit(30000)" in text
     assert "for prefix in Runner Worker" in text
-    assert '[ "$lines_read" -ge 2500 ] && break' in text
+    assert '[ "${#recent_files[@]}" -gt 2 ]' in text
+    assert '[ "$lines_read" -ge 400 ] && break' in text
+    assert 'collect_signal_lines < "$file"' in text
     assert "bash -lc $Command" not in text
     assert "runner_mutation_performed = $false" in text
     assert "windows_runner_paths_modified = $false" in text
