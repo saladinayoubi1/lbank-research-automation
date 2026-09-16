@@ -1,0 +1,82 @@
+name: NEXUS Install App Fastpath
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nexus-install-app-fastpath
+  cancel-in-progress: false
+
+jobs:
+  install:
+    if: github.ref == 'refs/heads/main' && github.actor == github.repository_owner
+    runs-on: [self-hosted, Windows, X64, nexus-local]
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - name: Acquire exact pinned installer script
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $commit = '3fa1f6f752ebf57e12d0a4b5f73e9b3809f00ace'
+          $expectedBlob = 'a71cb4b992162fd2e7b056c7af8ac6cfe411eb20'
+          $url = "https://raw.githubusercontent.com/saladinayoubi1/lbank-research-automation/$commit/scripts/install_and_smoke_nexus_personal_pro.ps1"
+          $dest = Join-Path $env:RUNNER_TEMP 'install_and_smoke_nexus_personal_pro.ps1'
+          Remove-Item -LiteralPath $dest -Force -ErrorAction SilentlyContinue
+          $downloaded = $false
+          for ($attempt = 1; $attempt -le 12 -and -not $downloaded; $attempt++) {
+            try {
+              Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $dest -TimeoutSec 45
+              if ((Get-Item -LiteralPath $dest).Length -gt 1000) { $downloaded = $true }
+            } catch {
+              Remove-Item -LiteralPath $dest -Force -ErrorAction SilentlyContinue
+              Start-Sleep -Seconds 2
+            }
+          }
+          if (-not $downloaded) { throw 'Pinned installer script download failed.' }
+          $bytes = [IO.File]::ReadAllBytes($dest)
+          $prefix = [Text.Encoding]::ASCII.GetBytes("blob $($bytes.Length)`0")
+          $combined = New-Object byte[] ($prefix.Length + $bytes.Length)
+          [Array]::Copy($prefix, 0, $combined, 0, $prefix.Length)
+          [Array]::Copy($bytes, 0, $combined, $prefix.Length, $bytes.Length)
+          $sha1 = [Security.Cryptography.SHA1]::Create().ComputeHash($combined)
+          $blob = -join ($sha1 | ForEach-Object { $_.ToString('x2') })
+          if ($blob -ne $expectedBlob) { throw "Pinned installer blob mismatch: $blob" }
+          Write-Host "installer_blob=$blob"
+
+      - name: Verify isolated runner workspace
+        run: |
+          $root = [IO.Path]::GetFullPath($env:GITHUB_WORKSPACE).TrimEnd('\')
+          $repo = ($env:GITHUB_REPOSITORY -split '/')[-1]
+          if ((Split-Path -Leaf $root) -ine $repo -or
+              (Split-Path -Leaf (Split-Path -Parent $root)) -ine $repo -or
+              (Split-Path -Leaf (Split-Path -Parent (Split-Path -Parent $root))) -ine '_work') {
+            throw 'Install fastpath workspace is not an isolated GitHub Actions workspace.'
+          }
+          Write-Host 'install_fastpath_privacy_guard=ok'
+
+      - name: Install and smoke-test NEXUS Personal Pro on exact Lenovo
+        run: |
+          & (Join-Path $env:RUNNER_TEMP 'install_and_smoke_nexus_personal_pro.ps1') `
+            -PackageRoot (Join-Path $env:RUNNER_TEMP "nexus-personal-pro-package-$env:GITHUB_RUN_ID") `
+            -ExpectedSourceSha 'f793e3a53048f6fcc02b593036fb32f496e44de5' `
+            -ExpectedSetupSha256 'c3eacdc5253b2d9d2372f436394e8a7cbd1c1c73fc7c5fc5fbead4551d4cd82a' `
+            -ExpectedPortableSha256 '27d5af2c182b27e3078e050b4c9bd55def1b5e045ac11873cb9c0cf6c50e0921' `
+            -ArtifactRunId 35102997291 `
+            -ArtifactId 10449670023 `
+            -ExpectedComputerName 'DESKTOP-1R1081M' `
+            -ExpectedRunnerName 'NEXUS-LOCAL-RUNNER' `
+            -EvidencePath 'build\windows-app-install\evidence.json'
+
+      - name: Upload physical Windows app install proof
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-windows-app-install-fastpath-proof-${{ github.run_id }}
+          if-no-files-found: error
+          retention-days: 30
+          path: build/windows-app-install/evidence.json
