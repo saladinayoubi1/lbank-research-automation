@@ -58,16 +58,17 @@ def test_wsl_probe_uses_lf_only_stdin_transport_with_a_bounded_process() -> None
     assert "bash -lc $Command" not in invoke
 
 
-def test_diagnostic_signal_scan_is_recent_and_bounded() -> None:
+def test_diagnostic_signal_scan_is_recent_and_bounded(tmp_path: Path) -> None:
     text = SCRIPT.read_text(encoding="utf-8")
     signals = text.split("$diagSignalsCommand = @'", 1)[1].split("'@", 1)[0]
 
     assert "for prefix in Runner Worker" in signals
     assert "recent_files=()" in signals
-    assert '[ "${#recent_files[@]}" -gt 8 ]' in signals
+    assert '[ "${#recent_files[@]}" -gt 2 ]' in signals
     assert 'recent_files=("${recent_files[@]:1}")' in signals
     assert "lines_read=$((lines_read + 1))" in signals
-    assert '[ "$lines_read" -ge 2500 ] && break' in signals
+    assert '[ "$lines_read" -ge 400 ] && break' in signals
+    assert 'collect_signal_lines < "$file"' in signals
 
     bash = shutil.which("bash")
     if not bash:
@@ -81,6 +82,34 @@ def test_diagnostic_signal_scan_is_recent_and_bounded() -> None:
         check=False,
     )
     assert completed.returncode == 0, completed.stderr
+
+    diag = tmp_path / "_diag"
+    diag.mkdir()
+    for prefix in ("Runner", "Worker"):
+        for index in range(4):
+            start = f"{prefix} failed-start-{index}"
+            end = f"{prefix} error-end-{index}"
+            payload = start + "\n" + ("ordinary line\n" * 1_000) + end + "\n"
+            (diag / f"{prefix}_20260916-00000{index}-utc.log").write_text(
+                payload,
+                encoding="utf-8",
+            )
+
+    rooted = signals.replace("__RUNNER_ROOT__", str(tmp_path))
+    builtin_only = subprocess.run(
+        [bash],
+        input=rooted,
+        text=True,
+        capture_output=True,
+        timeout=10,
+        check=False,
+        env={"PATH": ""},
+    )
+    assert builtin_only.returncode == 0, builtin_only.stderr
+    assert "Runner failed-start-2" in builtin_only.stdout
+    assert "Worker failed-start-3" in builtin_only.stdout
+    assert "failed-start-0" not in builtin_only.stdout
+    assert "error-end-2" not in builtin_only.stdout
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows PowerShell check is Windows-only")
