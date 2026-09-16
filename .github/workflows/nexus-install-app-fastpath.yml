@@ -75,7 +75,7 @@ jobs:
           $replacement = $replacementLines -join "`r`n"
           $text = [regex]::Replace($text, $pattern, [System.Text.RegularExpressions.MatchEvaluator]{ param($m) $replacement }, 1)
           $oldTransport = "download_transport = 'existing_owner_gh_cli'"
-          if (($text.Split($oldTransport).Count - 1) -ne 1) { throw 'Installer evidence transport marker mismatch.' }
+          if ([regex]::Matches($text, [regex]::Escape($oldTransport)).Count -ne 1) { throw 'Installer evidence transport marker mismatch.' }
           $text = $text.Replace($oldTransport, "download_transport = 'verified_local_artifact_cache'")
           [IO.File]::WriteAllText($dest, $text, (New-Object Text.UTF8Encoding($false)))
           Write-Host 'installer_transport=verified_local_artifact_cache'
