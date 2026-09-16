@@ -18,6 +18,7 @@ let restartScheduled = false;
 let preferencesIpcRegistered = false;
 const MAX_RESTARTS_PER_WINDOW = 3;
 const RESTART_WINDOW_MS = 10 * 60 * 1000;
+const PRODUCT_GATEWAY_STARTUP_TIMEOUT_MS = 4 * 60 * 1000;
 
 const DEFAULT_UI_PREFERENCES = Object.freeze({
   fontFamily: 'system',
@@ -245,7 +246,7 @@ function probeProduct(origin, timeoutMs = 2500) {
   });
 }
 
-async function waitForProduct(origin, timeoutMs = 90000) {
+async function waitForProduct(origin, timeoutMs = PRODUCT_GATEWAY_STARTUP_TIMEOUT_MS) {
   const deadline = Date.now() + timeoutMs;
   let lastError = null;
   while (Date.now() < deadline) {
