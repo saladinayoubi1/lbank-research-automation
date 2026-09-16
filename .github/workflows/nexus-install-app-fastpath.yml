@@ -24,6 +24,13 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $commit = '3fa1f6f752ebf57e12d0a4b5f73e9b3809f00ace'
           $expectedBlob = 'a71cb4b992162fd2e7b056c7af8ac6cfe411eb20'
+          $expectedArtifactZipSha256 = 'f6357d9de67d06000e3871fb088f90b00970bbc3a27907a21979cc96e99faf4d'
+          $cacheZip = Join-Path $env:LOCALAPPDATA 'NEXUS\artifact-cache\nexus-windows-final-mission-control-packages-10449670023.zip'
+          if (-not (Test-Path -LiteralPath $cacheZip -PathType Leaf)) { throw 'Verified artifact cache is missing.' }
+          $cacheHash = (Get-FileHash -LiteralPath $cacheZip -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($cacheHash -ne $expectedArtifactZipSha256) { throw "Verified artifact cache digest mismatch: $cacheHash" }
+          Write-Host "artifact_cache_sha256=$cacheHash"
+
           $url = "https://raw.githubusercontent.com/saladinayoubi1/lbank-research-automation/$commit/scripts/install_and_smoke_nexus_personal_pro.ps1"
           $dest = Join-Path $env:RUNNER_TEMP 'install_and_smoke_nexus_personal_pro.ps1'
           Remove-Item -LiteralPath $dest -Force -ErrorAction SilentlyContinue
@@ -48,6 +55,30 @@ jobs:
           if ($blob -ne $expectedBlob) { throw "Pinned installer blob mismatch: $blob" }
           Write-Host "installer_blob=$blob"
 
+          $text = [IO.File]::ReadAllText($dest)
+          $pattern = '(?s)    \$gh = Get-Command gh\.exe.*?    \$script:Evidence\.package\.downloaded = \$true'
+          $matches = [regex]::Matches($text, $pattern)
+          if ($matches.Count -ne 1) { throw "Installer artifact transport patch match count was $($matches.Count), expected 1." }
+          $replacement = @'
+    $verifiedZip = [Environment]::GetEnvironmentVariable('NEXUS_VERIFIED_ARTIFACT_ZIP', 'Process')
+    if (-not $verifiedZip -or -not (Test-Path -LiteralPath $verifiedZip -PathType Leaf)) {
+        throw 'Verified local artifact ZIP is unavailable.'
+    }
+    $expectedArtifactZipSha256 = 'f6357d9de67d06000e3871fb088f90b00970bbc3a27907a21979cc96e99faf4d'
+    $artifactZipSha256 = (Get-FileHash -LiteralPath $verifiedZip -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($artifactZipSha256 -ne $expectedArtifactZipSha256) { throw 'Verified local artifact ZIP digest mismatch.' }
+    New-Item -ItemType Directory -Path $packageRootFull -Force | Out-Null
+    Expand-Archive -LiteralPath $verifiedZip -DestinationPath $packageRootFull -Force
+    if (-not (Test-Path -LiteralPath $packageRootFull -PathType Container)) { throw 'Package root is missing after verified local extraction.' }
+    $script:Evidence.package.downloaded = $true
+'@
+          $text = [regex]::Replace($text, $pattern, [System.Text.RegularExpressions.MatchEvaluator]{ param($m) $replacement }, 1)
+          $oldTransport = "download_transport = 'existing_owner_gh_cli'"
+          if (($text.Split($oldTransport).Count - 1) -ne 1) { throw 'Installer evidence transport marker mismatch.' }
+          $text = $text.Replace($oldTransport, "download_transport = 'verified_local_artifact_cache'")
+          [IO.File]::WriteAllText($dest, $text, (New-Object Text.UTF8Encoding($false)))
+          Write-Host 'installer_transport=verified_local_artifact_cache'
+
       - name: Verify isolated runner workspace
         run: |
           $root = [IO.Path]::GetFullPath($env:GITHUB_WORKSPACE).TrimEnd('\')
@@ -61,6 +92,7 @@ jobs:
 
       - name: Install and smoke-test NEXUS Personal Pro on exact Lenovo
         run: |
+          $env:NEXUS_VERIFIED_ARTIFACT_ZIP = Join-Path $env:LOCALAPPDATA 'NEXUS\artifact-cache\nexus-windows-final-mission-control-packages-10449670023.zip'
           & (Join-Path $env:RUNNER_TEMP 'install_and_smoke_nexus_personal_pro.ps1') `
             -PackageRoot (Join-Path $env:RUNNER_TEMP "nexus-personal-pro-package-$env:GITHUB_RUN_ID") `
             -ExpectedSourceSha 'f793e3a53048f6fcc02b593036fb32f496e44de5' `
