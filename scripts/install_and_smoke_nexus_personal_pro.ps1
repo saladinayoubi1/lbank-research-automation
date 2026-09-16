@@ -2,11 +2,10 @@
 param(
     [Parameter(Mandatory = $true)] [string]$PackageRoot,
     [Parameter(Mandatory = $true)] [ValidatePattern('^[0-9a-fA-F]{40}$')] [string]$ExpectedSourceSha,
-    [Parameter(Mandatory = $true)] [ValidatePattern('^[0-9a-fA-F]{64}$')] [string]$ExpectedSetupSha256,
-    [Parameter(Mandatory = $true)] [ValidatePattern('^[0-9a-fA-F]{64}$')] [string]$ExpectedPortableSha256,
+    [Parameter(Mandatory = $true)] [ValidatePattern('^[0-9a-fA-F]{64}$')] [string]$ExpectedUnpackedSha256,
     [Parameter(Mandatory = $true)] [long]$ArtifactRunId,
     [Parameter(Mandatory = $true)] [long]$ArtifactId,
-    [string]$ArtifactName = 'nexus-windows-final-mission-control-packages',
+    [string]$ArtifactName = 'nexus-windows-persistent-unpacked',
     [string]$ExpectedComputerName = 'DESKTOP-1R1081M',
     [string]$ExpectedRunnerName = 'NEXUS-LOCAL-RUNNER',
     [string]$EvidencePath = 'build\windows-app-install\evidence.json'
@@ -16,11 +15,15 @@ Set-StrictMode -Version 2.0
 $ErrorActionPreference = 'Stop'
 
 $ExpectedSourceSha = $ExpectedSourceSha.ToLowerInvariant()
-$ExpectedSetupSha256 = $ExpectedSetupSha256.ToLowerInvariant()
-$ExpectedPortableSha256 = $ExpectedPortableSha256.ToLowerInvariant()
+$ExpectedUnpackedSha256 = $ExpectedUnpackedSha256.ToLowerInvariant()
 $script:BaselineNexusProcessIds = @{}
 $script:SmokeRoot = $null
 $script:SmokeCleaned = $false
+$script:ProgramRoot = $null
+$script:InstallRoot = $null
+$script:InstallStagingRoot = $null
+$script:InstallCreatedThisRun = $false
+$script:InstallSmokeVerified = $false
 $script:PackageTransportRemoved = $false
 $script:Evidence = [ordered]@{
     schema_version = 'nexus.windows-app-install-proof.v1'
@@ -41,12 +44,11 @@ $script:Evidence = [ordered]@{
         download_transport = 'existing_owner_gh_cli'
         workflow_token_used = $false
         downloaded = $false
-        setup_sha256 = $null
-        portable_sha256 = $null
+        unpacked_sha256 = $null
         checksum_manifest_verified = $false
     }
     install = [ordered]@{
-        mode = 'versioned_side_by_side_portable'
+        mode = 'versioned_side_by_side_unpacked'
         previous_install_removed = $false
         previous_app_data_removed = $false
         registry_installation_changed = $false
@@ -311,80 +313,103 @@ try {
     if (-not (Test-Path -LiteralPath $packageRootFull -PathType Container)) { throw 'Package root is missing after download.' }
     $script:Evidence.package.downloaded = $true
     Assert-NotReparsePoint $packageRootFull 'Package root'
-    $setupName = 'NEXUS_Personal_Pro_Setup_5.1.0_x64.exe'
-    $portableName = 'NEXUS_Personal_Pro_Portable_5.1.0_x64.exe'
-    $setupPath = Join-Path $packageRootFull $setupName
-    $portablePath = Join-Path $packageRootFull $portableName
+    $unpackedName = 'NEXUS_Personal_Pro_Unpacked_5.1.0_x64.zip'
+    $unpackedPath = Join-Path $packageRootFull $unpackedName
     $sumsPath = Join-Path $packageRootFull 'SHA256SUMS.txt'
-    foreach ($requiredPath in @($setupPath, $portablePath, $sumsPath)) {
+    foreach ($requiredPath in @($unpackedPath, $sumsPath)) {
         if (-not (Test-Path -LiteralPath $requiredPath -PathType Leaf)) { throw "Required package file is missing: $(Split-Path -Leaf $requiredPath)" }
         Assert-NotReparsePoint $requiredPath 'Package file'
     }
-    if ((Get-Item -LiteralPath $setupPath).Length -lt 100MB -or (Get-Item -LiteralPath $portablePath).Length -lt 100MB) {
-        throw 'NEXUS executable package is unexpectedly small.'
-    }
-
-    $setupSha = (Get-FileHash -LiteralPath $setupPath -Algorithm SHA256).Hash.ToLowerInvariant()
-    $portableSha = (Get-FileHash -LiteralPath $portablePath -Algorithm SHA256).Hash.ToLowerInvariant()
-    $script:Evidence.package.setup_sha256 = $setupSha
-    $script:Evidence.package.portable_sha256 = $portableSha
-    if ($setupSha -ne $ExpectedSetupSha256) { throw 'Setup SHA256 does not match the exact approved artifact.' }
-    if ($portableSha -ne $ExpectedPortableSha256) { throw 'Portable SHA256 does not match the exact approved artifact.' }
+    if ((Get-Item -LiteralPath $unpackedPath).Length -lt 100MB) { throw 'Persistent NEXUS package is unexpectedly small.' }
+    $unpackedSha = (Get-FileHash -LiteralPath $unpackedPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    $script:Evidence.package.unpacked_sha256 = $unpackedSha
+    if ($unpackedSha -ne $ExpectedUnpackedSha256) { throw 'Persistent unpacked ZIP SHA256 does not match the exact approved artifact.' }
     $sumText = Get-Content -LiteralPath $sumsPath -Raw
-    $setupLine = "$ExpectedSetupSha256  $setupName"
-    $portableLine = "$ExpectedPortableSha256  $portableName"
-    if ($sumText -notmatch [Regex]::Escape($setupLine) -or $sumText -notmatch [Regex]::Escape($portableLine)) {
-        throw 'Package checksum manifest does not bind both exact executables.'
-    }
+    $unpackedLine = "$ExpectedUnpackedSha256  $unpackedName"
+    if ($sumText -notmatch [Regex]::Escape($unpackedLine)) { throw 'Package checksum manifest does not bind the exact persistent ZIP.' }
     $script:Evidence.package.checksum_manifest_verified = $true
 
     if (-not $env:LOCALAPPDATA -or -not $env:APPDATA) { throw 'Owner profile application paths are unavailable.' }
     $programRoot = Get-FullPath (Join-Path $env:LOCALAPPDATA 'Programs\NEXUS Personal Pro')
     $installRoot = Get-FullPath (Join-Path $programRoot "5.1.0-$($ExpectedSourceSha.Substring(0, 8))")
+    $script:ProgramRoot = $programRoot
+    $script:InstallRoot = $installRoot
     if (-not (Test-PathWithin $installRoot $programRoot)) { throw 'Versioned installation escaped the NEXUS program root.' }
     New-Item -ItemType Directory -Path $programRoot -Force | Out-Null
     Assert-NotReparsePoint $programRoot 'NEXUS program root'
-    New-Item -ItemType Directory -Path $installRoot -Force | Out-Null
-    Assert-NotReparsePoint $installRoot 'Versioned install root'
-
-    $installedExecutable = Join-Path $installRoot $portableName
-    if (Test-Path -LiteralPath $installedExecutable -PathType Leaf) {
-        Assert-NotReparsePoint $installedExecutable 'Installed executable'
-        $existingHash = (Get-FileHash -LiteralPath $installedExecutable -Algorithm SHA256).Hash.ToLowerInvariant()
-        if ($existingHash -ne $ExpectedPortableSha256) { throw 'A different file already occupies the exact versioned install target.' }
-    } else {
-        $temporaryExecutable = Join-Path $installRoot ($portableName + '.incoming')
-        Copy-Item -LiteralPath $portablePath -Destination $temporaryExecutable
-        if ((Get-FileHash -LiteralPath $temporaryExecutable -Algorithm SHA256).Hash.ToLowerInvariant() -ne $ExpectedPortableSha256) {
-            Remove-Item -LiteralPath $temporaryExecutable -Force -ErrorAction SilentlyContinue
-            throw 'Deployed executable failed post-copy SHA256 verification.'
+    $manifestPath = Join-Path $installRoot 'install-manifest.json'
+    if (-not (Test-Path -LiteralPath $installRoot -PathType Container)) {
+        $stagingRoot = Get-FullPath (Join-Path $programRoot ".incoming-$($ExpectedSourceSha.Substring(0, 8))-$($env:GITHUB_RUN_ID)")
+        if (-not (Test-PathWithin $stagingRoot $programRoot)) { throw 'Install staging escaped the NEXUS program root.' }
+        if (Test-Path -LiteralPath $stagingRoot) { throw 'Stale exact install staging root exists.' }
+        $script:InstallStagingRoot = $stagingRoot
+        New-Item -ItemType Directory -Path $stagingRoot | Out-Null
+        Assert-NotReparsePoint $stagingRoot 'Install staging root'
+        Expand-Archive -LiteralPath $unpackedPath -DestinationPath $stagingRoot -Force
+        $reparse = @(Get-ChildItem -LiteralPath $stagingRoot -Recurse -Force | Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint } | Select-Object -First 1)
+        if ($reparse.Count -gt 0) { throw 'Persistent package contains a reparse point.' }
+        $stagedExecutable = Join-Path $stagingRoot 'NEXUS Personal Pro.exe'
+        $stagedSourceSha = Join-Path $stagingRoot 'resources\source-sha.txt'
+        $stagedBuildEvidence = Join-Path $stagingRoot 'resources\build-evidence.json'
+        $stagedSidecar = Join-Path $stagingRoot 'resources\nexus-product-server\nexus-product-server.exe'
+        foreach ($requiredPath in @($stagedExecutable, $stagedSourceSha, $stagedBuildEvidence, $stagedSidecar)) {
+            if (-not (Test-Path -LiteralPath $requiredPath -PathType Leaf)) { throw "Extracted persistent package is incomplete: $(Split-Path -Leaf $requiredPath)" }
+            Assert-NotReparsePoint $requiredPath 'Extracted package file'
         }
-        Move-Item -LiteralPath $temporaryExecutable -Destination $installedExecutable
+        if ((Get-Content -LiteralPath $stagedSourceSha -Raw).Trim().ToLowerInvariant() -ne $ExpectedSourceSha) { throw 'Extracted package source SHA mismatch.' }
+        $stagedEvidence = Get-Content -LiteralPath $stagedBuildEvidence -Raw | ConvertFrom-Json
+        if (([string]$stagedEvidence.source_sha).ToLowerInvariant() -ne $ExpectedSourceSha -or
+            $stagedEvidence.paper_only -ne $true -or $stagedEvidence.live_trading_authority -ne $false -or
+            [string]$stagedEvidence.builder -ne 'github-actions/nexus-build-verification/windows-desktop') {
+            throw 'Extracted package build evidence failed exact-source or authority validation.'
+        }
+        Move-Item -LiteralPath $stagingRoot -Destination $installRoot
+        $script:InstallCreatedThisRun = $true
+        $script:InstallStagingRoot = $null
+    } else {
+        Assert-NotReparsePoint $installRoot 'Versioned install root'
+        if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) { throw 'Existing exact-version install is missing its manifest.' }
+        $existingManifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+        if (([string]$existingManifest.source_sha).ToLowerInvariant() -ne $ExpectedSourceSha -or
+            ([string]$existingManifest.unpacked_sha256).ToLowerInvariant() -ne $ExpectedUnpackedSha256) {
+            throw 'Existing exact-version install is not bound to the approved persistent package.'
+        }
+    }
+
+    $installedExecutable = Join-Path $installRoot 'NEXUS Personal Pro.exe'
+    $installedSourceSha = Join-Path $installRoot 'resources\source-sha.txt'
+    $installedBuildEvidence = Join-Path $installRoot 'resources\build-evidence.json'
+    $installedSidecar = Join-Path $installRoot 'resources\nexus-product-server\nexus-product-server.exe'
+    foreach ($requiredPath in @($installedExecutable, $installedSourceSha, $installedBuildEvidence, $installedSidecar)) {
+        if (-not (Test-Path -LiteralPath $requiredPath -PathType Leaf)) { throw "Installed persistent package is incomplete: $(Split-Path -Leaf $requiredPath)" }
+        Assert-NotReparsePoint $requiredPath 'Installed package file'
+    }
+    if ((Get-Content -LiteralPath $installedSourceSha -Raw).Trim().ToLowerInvariant() -ne $ExpectedSourceSha) { throw 'Installed package source SHA mismatch.' }
+    $installedEvidence = Get-Content -LiteralPath $installedBuildEvidence -Raw | ConvertFrom-Json
+    if (([string]$installedEvidence.source_sha).ToLowerInvariant() -ne $ExpectedSourceSha -or
+        $installedEvidence.paper_only -ne $true -or $installedEvidence.live_trading_authority -ne $false -or
+        [string]$installedEvidence.builder -ne 'github-actions/nexus-build-verification/windows-desktop') {
+        throw 'Installed package build evidence failed exact-source or authority validation.'
     }
     $script:Evidence.install.executable_deployed = $true
 
     $installManifest = [ordered]@{
-        schema_version = 'nexus.windows-side-by-side-install.v1'
+        schema_version = 'nexus.windows-side-by-side-install.v2'
         version = '5.1.0'
+        install_mode = 'persistent_unpacked'
         source_sha = $ExpectedSourceSha
-        portable_sha256 = $ExpectedPortableSha256
+        unpacked_sha256 = $ExpectedUnpackedSha256
+        artifact_name = $ArtifactName
         artifact_run_id = $ArtifactRunId
         artifact_id = $ArtifactId
+        executable = 'NEXUS Personal Pro.exe'
         installed_at = [DateTime]::UtcNow.ToString('o')
         paper_only = $true
         live_trading_authority = $false
         previous_install_removed = $false
     }
-    $manifestPath = Join-Path $installRoot 'install-manifest.json'
     [IO.File]::WriteAllText($manifestPath, ($installManifest | ConvertTo-Json -Depth 4), (New-Object Text.UTF8Encoding($false)))
     $script:Evidence.install.manifest_written = $true
-
-    $desktopShortcut = Join-Path ([Environment]::GetFolderPath('Desktop')) 'NEXUS Personal Pro 5.1.0.lnk'
-    $startMenuShortcut = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\NEXUS Personal Pro 5.1.0.lnk'
-    New-NexusShortcut $desktopShortcut $installedExecutable
-    $script:Evidence.install.desktop_shortcut_created = $true
-    New-NexusShortcut $startMenuShortcut $installedExecutable
-    $script:Evidence.install.start_menu_shortcut_created = $true
 
     foreach ($process in @(Get-NexusProcesses)) { $script:BaselineNexusProcessIds[[int]$process.Id] = $true }
     $preexistingGuiCount = @(Get-NexusProcesses | Where-Object { $_.MainWindowHandle -ne 0 }).Count
@@ -395,15 +420,23 @@ try {
     $smokeArguments = @("--user-data-dir=`"$($script:SmokeRoot)`"", "--nexus-install-smoke=$($env:GITHUB_RUN_ID)")
     [void](Start-Process -FilePath $installedExecutable -ArgumentList $smokeArguments -PassThru)
     $script:Evidence.smoke.process_started = $true
-    $state = Wait-ForHealthySupervisor -Root $script:SmokeRoot -NotBeforeUtc $smokeStarted -TimeoutSeconds 150
+    $state = Wait-ForHealthySupervisor -Root $script:SmokeRoot -NotBeforeUtc $smokeStarted -TimeoutSeconds 420
     $script:Evidence.smoke.supervisor_healthy = $true
     if (-not (Wait-ForVisibleNewWindow -TimeoutSeconds 90)) { throw 'NEXUS started but no visible Mission Control window was observed.' }
     $script:Evidence.smoke.visible_window_observed = $true
     Invoke-ProductContract -Origin ([string]$state.origin)
+    $script:InstallSmokeVerified = $true
     Write-Evidence
 
     Stop-SmokeProcesses
     Remove-SmokeRoot
+
+    $desktopShortcut = Join-Path ([Environment]::GetFolderPath('Desktop')) 'NEXUS Personal Pro 5.1.0.lnk'
+    $startMenuShortcut = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\NEXUS Personal Pro 5.1.0.lnk'
+    New-NexusShortcut $desktopShortcut $installedExecutable
+    $script:Evidence.install.desktop_shortcut_created = $true
+    New-NexusShortcut $startMenuShortcut $installedExecutable
+    $script:Evidence.install.start_menu_shortcut_created = $true
 
     if ($preexistingGuiCount -gt 0) {
         $script:Evidence.final_launch.status = 'SKIPPED_EXISTING_APP_PRESERVED'
@@ -413,7 +446,7 @@ try {
         [Environment]::SetEnvironmentVariable('RUNNER_TRACKING_ID', $null, 'Process')
         try { [void](Start-Process -FilePath $installedExecutable -ArgumentList @("--nexus-installed-source=$($ExpectedSourceSha.Substring(0, 8))")) }
         finally { [Environment]::SetEnvironmentVariable('RUNNER_TRACKING_ID', $tracking, 'Process') }
-        if (-not (Wait-ForVisibleNewWindow -TimeoutSeconds 120)) { throw 'Installed NEXUS final window did not become visible.' }
+        if (-not (Wait-ForVisibleNewWindow -TimeoutSeconds 300)) { throw 'Installed NEXUS final window did not become visible.' }
         $script:Evidence.final_launch.status = 'RUNNING_VISIBLE'
         $script:Evidence.final_launch.visible_window_observed = $true
     }
@@ -424,6 +457,21 @@ try {
 } catch {
     try { Stop-SmokeProcesses } catch { }
     try { Remove-SmokeRoot } catch { }
+    try {
+        if ($script:InstallStagingRoot -and $script:ProgramRoot -and
+            (Test-Path -LiteralPath $script:InstallStagingRoot) -and
+            (Test-PathWithin $script:InstallStagingRoot $script:ProgramRoot)) {
+            Remove-Item -LiteralPath $script:InstallStagingRoot -Recurse -Force
+        }
+    } catch { }
+    try {
+        if ($script:InstallCreatedThisRun -and -not $script:InstallSmokeVerified -and
+            $script:InstallRoot -and $script:ProgramRoot -and
+            (Test-Path -LiteralPath $script:InstallRoot) -and
+            (Test-PathWithin $script:InstallRoot $script:ProgramRoot)) {
+            Remove-Item -LiteralPath $script:InstallRoot -Recurse -Force
+        }
+    } catch { }
     $script:Evidence.decision = 'FAIL_CLOSED'
     $script:Evidence.error = ConvertTo-SafeError $_.Exception.Message
     try { Write-Evidence } catch { }

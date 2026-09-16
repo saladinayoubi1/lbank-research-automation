@@ -227,6 +227,14 @@ jobs:
           --expected-builder 'github-actions/nexus-build-verification/windows-desktop'
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
+          name: nexus-windows-persistent-unpacked
+          path: |
+            desktop/nexus-product/dist/NEXUS_Personal_Pro_Unpacked_5.1.0_x64.zip
+            desktop/nexus-product/dist/SHA256SUMS.txt
+          if-no-files-found: error
+          compression-level: 0
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
           name: nexus-windows-final-mission-control-packages
           path: |
             desktop/nexus-product/dist/NEXUS_Personal_Pro_Setup_5.1.0_*.exe
