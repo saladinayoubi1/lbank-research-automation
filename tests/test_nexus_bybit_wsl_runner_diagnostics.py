@@ -1,4 +1,11 @@
+from __future__ import annotations
+
+import shutil
+import subprocess
+import sys
 from pathlib import Path
+
+import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -40,11 +47,66 @@ def test_wsl_probe_uses_lf_only_stdin_transport_with_a_bounded_process() -> None
     assert '$Command.Replace("`r`n", "`n").Replace("`r", "`n")' in invoke
     assert '$psi.Arguments = "-d $Distribution -u root -- bash -s"' in invoke
     assert "$psi.RedirectStandardInput = $true" in invoke
+    assert "$previousConsoleInputEncoding = [Console]::InputEncoding" in invoke
+    assert '[Console]::InputEncoding = (New-Object System.Text.UTF8Encoding($false))' in invoke
+    assert "[Console]::InputEncoding = $previousConsoleInputEncoding" in invoke
+    assert "$process.StandardInput.Encoding.GetPreamble().Length -ne 0" in invoke
     assert "$process.StandardInput.Write($normalizedCommand)" in invoke
     assert "$process.StandardInput.Close()" in invoke
     assert "$process.WaitForExit(30000)" in invoke
     assert "$process.Kill()" in invoke
     assert "bash -lc $Command" not in invoke
+
+
+def test_diagnostic_signal_scan_is_recent_and_bounded() -> None:
+    text = SCRIPT.read_text(encoding="utf-8")
+    signals = text.split("$diagSignalsCommand = @'", 1)[1].split("'@", 1)[0]
+
+    assert "for prefix in Runner Worker" in signals
+    assert "recent_files=()" in signals
+    assert '[ "${#recent_files[@]}" -gt 8 ]' in signals
+    assert 'recent_files=("${recent_files[@]:1}")' in signals
+    assert "lines_read=$((lines_read + 1))" in signals
+    assert '[ "$lines_read" -ge 2500 ] && break' in signals
+
+    bash = shutil.which("bash")
+    if not bash:
+        pytest.skip("Bash syntax validation is unavailable")
+    completed = subprocess.run(
+        [bash, "-n"],
+        input=signals.replace("__RUNNER_ROOT__", "/opt/nexus-bybit-runner"),
+        text=True,
+        capture_output=True,
+        timeout=10,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows PowerShell check is Windows-only")
+def test_capture_script_parses_and_bom_free_encoding_is_supported_on_windows() -> None:
+    powershell = shutil.which("powershell.exe") or shutil.which("powershell")
+    assert powershell, "Windows PowerShell is required on windows-latest"
+    escaped = str(SCRIPT).replace("'", "''")
+    command = (
+        "$tokens=$null;$errors=$null;"
+        f"[System.Management.Automation.Language.Parser]::ParseFile('{escaped}',[ref]$tokens,[ref]$errors)|Out-Null;"
+        "if($errors.Count -gt 0){$errors|ForEach-Object{Write-Error $_.Message};exit 1};"
+        "$original=[Console]::InputEncoding;"
+        "$encoding=(New-Object System.Text.UTF8Encoding($false));"
+        "try{[Console]::InputEncoding=$encoding;"
+        "if([Console]::InputEncoding.GetPreamble().Length -ne 0){exit 2}}"
+        "finally{[Console]::InputEncoding=$original}"
+    )
+    completed = subprocess.run(
+        [powershell, "-NoProfile", "-NonInteractive", "-Command", command],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        timeout=20,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr or completed.stdout
 
 
 def test_runner_diagnostics_workflow_is_bounded_to_failures_and_physical_windows():

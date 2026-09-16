@@ -40,11 +40,27 @@ function Invoke-WslCapture {
         $psi.RedirectStandardInput = $true
         $psi.RedirectStandardOutput = $true
         $psi.RedirectStandardError = $true
-
         $process = New-Object System.Diagnostics.Process
         $process.StartInfo = $psi
-        if (-not $process.Start()) {
-            throw 'Could not start bounded WSL diagnostic probe.'
+        # .NET Framework's ProcessStartInfo (used by Windows PowerShell 5.1)
+        # does not expose StandardInputEncoding. It creates the redirected
+        # StreamWriter from Console.InputEncoding instead, so select a
+        # BOM-free UTF-8 encoding only while the process and its writer start.
+        # Restore the host setting immediately; the probes run sequentially.
+        $previousConsoleInputEncoding = [Console]::InputEncoding
+        try {
+            [Console]::InputEncoding = (New-Object System.Text.UTF8Encoding($false))
+            if (-not $process.Start()) {
+                throw 'Could not start bounded WSL diagnostic probe.'
+            }
+        }
+        finally {
+            [Console]::InputEncoding = $previousConsoleInputEncoding
+        }
+        if ($process.StandardInput.Encoding.GetPreamble().Length -ne 0) {
+            try { $process.Kill() } catch {}
+            [void]$process.WaitForExit(5000)
+            throw 'Redirected WSL diagnostic input unexpectedly has a byte-order mark.'
         }
         $stdoutTask = $process.StandardOutput.ReadToEndAsync()
         $stderrTask = $process.StandardError.ReadToEndAsync()
@@ -215,16 +231,28 @@ $diagSignalsCommand = @'
 shopt -s nocasematch
 signals=()
 if [ -d '__RUNNER_ROOT__/_diag' ]; then
-    for file in '__RUNNER_ROOT__'/_diag/*.log; do
-        [ -f "$file" ] || continue
-        while IFS= read -r line || [ -n "$line" ]; do
-            if [[ "$line" =~ error|exception|failed|failure|exit[[:space:]]+code|terminated|killed|out[[:space:]]+of[[:space:]]+memory|segmentation|permission[[:space:]]+denied|no[[:space:]]+space[[:space:]]+left|resource[[:space:]]+temporarily[[:space:]]+unavailable|Runner\.Worker|Runner\.Listener|job[[:space:]]+message|connection ]]; then
-                signals+=("$line")
-                if [ "${#signals[@]}" -gt 240 ]; then
-                    signals=("${signals[@]:1}")
-                fi
+    for prefix in Runner Worker; do
+        recent_files=()
+        for file in '__RUNNER_ROOT__'/_diag/"${prefix}_"*.log; do
+            [ -f "$file" ] || continue
+            recent_files+=("$file")
+            if [ "${#recent_files[@]}" -gt 8 ]; then
+                recent_files=("${recent_files[@]:1}")
             fi
-        done < "$file"
+        done
+        for file in "${recent_files[@]}"; do
+            lines_read=0
+            while IFS= read -r line || [ -n "$line" ]; do
+                lines_read=$((lines_read + 1))
+                if [[ "$line" =~ error|exception|failed|failure|exit[[:space:]]+code|terminated|killed|out[[:space:]]+of[[:space:]]+memory|segmentation|permission[[:space:]]+denied|no[[:space:]]+space[[:space:]]+left|resource[[:space:]]+temporarily[[:space:]]+unavailable|Runner\.Worker|Runner\.Listener|job[[:space:]]+message|connection ]]; then
+                    signals+=("$line")
+                    if [ "${#signals[@]}" -gt 240 ]; then
+                        signals=("${signals[@]:1}")
+                    fi
+                fi
+                [ "$lines_read" -ge 2500 ] && break
+            done < "$file"
+        done
     done
 fi
 if [ "${#signals[@]}" -gt 0 ]; then printf '%s\n' "${signals[@]}"; fi
