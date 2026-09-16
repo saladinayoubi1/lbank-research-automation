@@ -80,8 +80,11 @@ def test_linux_diagnostics_support_minimal_wsl_without_coreutils_process_tools()
     assert '$Command.Replace("`r`n", "`n").Replace("`r", "`n")' in text
     assert '$psi.Arguments = "-d $Distribution -u root -- bash -s"' in text
     assert "$psi.RedirectStandardInput = $true" in text
+    assert "$psi.StandardInputEncoding = (New-Object System.Text.UTF8Encoding($false))" in text
     assert "$process.StandardInput.Write($normalizedCommand)" in text
     assert "$process.WaitForExit(30000)" in text
+    assert "for prefix in Runner Worker" in text
+    assert '[ "$lines_read" -ge 2500 ] && break' in text
     assert "bash -lc $Command" not in text
     assert "runner_mutation_performed = $false" in text
     assert "windows_runner_paths_modified = $false" in text

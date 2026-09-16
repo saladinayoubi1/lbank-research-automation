@@ -40,11 +40,24 @@ def test_wsl_probe_uses_lf_only_stdin_transport_with_a_bounded_process() -> None
     assert '$Command.Replace("`r`n", "`n").Replace("`r", "`n")' in invoke
     assert '$psi.Arguments = "-d $Distribution -u root -- bash -s"' in invoke
     assert "$psi.RedirectStandardInput = $true" in invoke
+    assert "$psi.StandardInputEncoding = (New-Object System.Text.UTF8Encoding($false))" in invoke
     assert "$process.StandardInput.Write($normalizedCommand)" in invoke
     assert "$process.StandardInput.Close()" in invoke
     assert "$process.WaitForExit(30000)" in invoke
     assert "$process.Kill()" in invoke
     assert "bash -lc $Command" not in invoke
+
+
+def test_diagnostic_signal_scan_is_recent_and_bounded() -> None:
+    text = SCRIPT.read_text(encoding="utf-8")
+    signals = text.split("$diagSignalsCommand = @'", 1)[1].split("'@", 1)[0]
+
+    assert "for prefix in Runner Worker" in signals
+    assert "recent_files=()" in signals
+    assert '[ "${#recent_files[@]}" -gt 8 ]' in signals
+    assert 'recent_files=("${recent_files[@]:1}")' in signals
+    assert "lines_read=$((lines_read + 1))" in signals
+    assert '[ "$lines_read" -ge 2500 ] && break' in signals
 
 
 def test_runner_diagnostics_workflow_is_bounded_to_failures_and_physical_windows():

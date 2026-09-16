@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import textwrap
 from pathlib import Path
 
 
@@ -8,6 +9,26 @@ WORKFLOW = Path(".github/workflows/nexus_persistent_paper_trading_loop.yml")
 
 def _paper_job(text: str) -> str:
     return text.split("  paper-loop:", 1)[1].split("  persist-state:", 1)[0]
+
+
+def _embedded_python_blocks(text: str) -> list[tuple[int, str]]:
+    lines = text.splitlines()
+    blocks: list[tuple[int, str]] = []
+    index = 0
+    while index < len(lines):
+        if "<<'PY'" not in lines[index]:
+            index += 1
+            continue
+        start_line = index + 2
+        index += 1
+        body: list[str] = []
+        while index < len(lines) and lines[index].strip() != "PY":
+            body.append(lines[index])
+            index += 1
+        assert index < len(lines), f"unterminated Python heredoc at line {start_line}"
+        blocks.append((start_line, textwrap.dedent("\n".join(body))))
+        index += 1
+    return blocks
 
 
 def test_persistent_loop_runs_on_closed_candle_cadence_and_restores_state() -> None:
@@ -149,6 +170,25 @@ def test_physical_source_handoff_is_exact_sha_digest_pinned_and_token_safe() -> 
     assert "Authorization" not in storage_download
     assert "GH_TOKEN" not in storage_download
     assert '"$artifact_url" > "$outer_archive"' in storage_download
+
+
+def test_every_embedded_python_block_is_syntax_valid() -> None:
+    text = WORKFLOW.read_text(encoding="utf-8")
+    blocks = _embedded_python_blocks(text)
+    assert len(blocks) == 9
+    for start_line, source in blocks:
+        compile(source, f"{WORKFLOW}:heredoc:{start_line}", "exec")
+
+
+def test_failed_prepare_cleanup_uses_only_isolated_physical_roots() -> None:
+    text = WORKFLOW.read_text(encoding="utf-8")
+    paper = _paper_job(text)
+    header = paper.split("    steps:", 1)[0]
+    cleanup = paper.split("Cleanup isolated physical source and state", 1)[1]
+
+    assert "STATE_ROOT:" not in header
+    assert '${STATE_ROOT:-$HOME/.local/share/nexus/persistent-paper-state/$GITHUB_RUN_ID}' in cleanup
+    assert 'case "$state_root" in "$HOME"/.local/share/nexus/persistent-paper-state/*)' in cleanup
 
 
 def test_wsl1_python_selection_is_preprovisioned_and_checks_version() -> None:
