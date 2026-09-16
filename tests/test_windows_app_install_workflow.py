@@ -11,7 +11,7 @@ import yaml
 
 
 ROOT = Path(__file__).resolve().parents[1]
-WORKFLOW = ROOT / ".github" / "workflows" / "nexus-windows-app-install.yml"
+WORKFLOW = ROOT / ".github" / "workflows" / "nexus-local-runner.yml"
 SCRIPT = ROOT / "scripts" / "install_and_smoke_nexus_personal_pro.ps1"
 POLICY = ROOT / "security" / "workflow-permissions-policy-v1.json"
 
@@ -24,14 +24,9 @@ def test_install_route_is_owner_main_exact_laptop_and_digest_bound() -> None:
     workflow = text(WORKFLOW)
     for marker in (
         "[install-app]",
-        "name: NEXUS Windows App Install",
-        "github.ref == 'refs/heads/main'",
+        "name: NEXUS Local Runner",
         "github.actor == github.repository_owner",
-        "actions: read",
         "runs-on: [self-hosted, Windows, X64, nexus-local]",
-        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
-        "nexus-windows-final-mission-control-packages",
-        "run-id: '35102997291'",
         "ArtifactId 10449670023",
         "f793e3a53048f6fcc02b593036fb32f496e44de5",
         "c3eacdc5253b2d9d2372f436394e8a7cbd1c1c73fc7c5fc5fbead4551d4cd82a",
@@ -42,6 +37,9 @@ def test_install_route_is_owner_main_exact_laptop_and_digest_bound() -> None:
         assert marker in workflow
     parsed = yaml.safe_load(workflow)
     assert isinstance(parsed, dict) and isinstance(parsed.get("jobs"), dict)
+    permission_block = workflow.split("permissions:", 1)[1].split("concurrency:", 1)[0]
+    assert permission_block.strip() == "contents: read"
+    assert "actions/download-artifact" not in workflow
 
 
 def test_installer_is_side_by_side_non_admin_and_preserves_existing_install() -> None:
@@ -57,6 +55,10 @@ def test_installer_is_side_by_side_non_admin_and_preserves_existing_install() ->
         "Elevated installation is forbidden",
         "NEXUS Personal Pro 5.1.0.lnk",
         "RUNNER_TRACKING_ID",
+        "existing_owner_gh_cli",
+        "workflow_token_used = $false",
+        "gh.Source run download",
+        "SetEnvironmentVariable('GITHUB_TOKEN', $null, 'Process')",
     ):
         assert marker in script
     lowered = script.casefold()
@@ -123,6 +125,6 @@ def test_install_script_parses_in_windows_powershell() -> None:
 
 def test_permission_policy_tracks_cross_run_artifact_read() -> None:
     policy = json.loads(text(POLICY))
-    rule = policy["workflows"][".github/workflows/nexus-windows-app-install.yml"]
-    assert rule["workflow_permissions"] == {"actions": "read", "contents": "read"}
+    rule = policy["workflows"][".github/workflows/nexus-local-runner.yml"]
+    assert rule["workflow_permissions"] == {"contents": "read"}
     assert "write" not in rule["workflow_permissions"].values()

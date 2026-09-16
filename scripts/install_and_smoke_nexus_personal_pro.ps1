@@ -6,6 +6,7 @@ param(
     [Parameter(Mandatory = $true)] [ValidatePattern('^[0-9a-fA-F]{64}$')] [string]$ExpectedPortableSha256,
     [Parameter(Mandatory = $true)] [long]$ArtifactRunId,
     [Parameter(Mandatory = $true)] [long]$ArtifactId,
+    [string]$ArtifactName = 'nexus-windows-final-mission-control-packages',
     [string]$ExpectedComputerName = 'DESKTOP-1R1081M',
     [string]$ExpectedRunnerName = 'NEXUS-LOCAL-RUNNER',
     [string]$EvidencePath = 'build\windows-app-install\evidence.json'
@@ -37,6 +38,9 @@ $script:Evidence = [ordered]@{
         elevated = $null
     }
     package = [ordered]@{
+        download_transport = 'existing_owner_gh_cli'
+        workflow_token_used = $false
+        downloaded = $false
         setup_sha256 = $null
         portable_sha256 = $null
         checksum_manifest_verified = $false
@@ -283,8 +287,29 @@ try {
     $script:Evidence.target.owner_user_context = $true
     $script:Evidence.target.interactive_desktop = $true
 
+    if (-not $env:RUNNER_TEMP) { throw 'RUNNER_TEMP is required for bounded artifact transport.' }
     $packageRootFull = Get-FullPath $PackageRoot
-    if (-not (Test-Path -LiteralPath $packageRootFull -PathType Container)) { throw 'Package root is missing.' }
+    if (-not (Test-PathWithin $packageRootFull $env:RUNNER_TEMP)) { throw 'Package transport escaped RUNNER_TEMP.' }
+    if ((Split-Path -Leaf $packageRootFull) -notmatch '^nexus-personal-pro-package-[0-9]+$') {
+        throw 'Unexpected package transport leaf.'
+    }
+    if (Test-Path -LiteralPath $packageRootFull) { throw 'Stale package transport already exists.' }
+    $gh = Get-Command gh.exe -ErrorAction SilentlyContinue
+    if (-not $gh) { $gh = Get-Command gh -ErrorAction SilentlyContinue }
+    if (-not $gh) { throw 'Existing owner GitHub CLI is unavailable.' }
+    $previousGhToken = [Environment]::GetEnvironmentVariable('GH_TOKEN', 'Process')
+    $previousGitHubToken = [Environment]::GetEnvironmentVariable('GITHUB_TOKEN', 'Process')
+    [Environment]::SetEnvironmentVariable('GH_TOKEN', $null, 'Process')
+    [Environment]::SetEnvironmentVariable('GITHUB_TOKEN', $null, 'Process')
+    try {
+        & $gh.Source run download "$ArtifactRunId" --repo 'saladinayoubi1/lbank-research-automation' --name $ArtifactName --dir $packageRootFull
+        if ($LASTEXITCODE -ne 0) { throw 'Existing owner GitHub CLI could not download the exact approved artifact.' }
+    } finally {
+        [Environment]::SetEnvironmentVariable('GH_TOKEN', $previousGhToken, 'Process')
+        [Environment]::SetEnvironmentVariable('GITHUB_TOKEN', $previousGitHubToken, 'Process')
+    }
+    if (-not (Test-Path -LiteralPath $packageRootFull -PathType Container)) { throw 'Package root is missing after download.' }
+    $script:Evidence.package.downloaded = $true
     Assert-NotReparsePoint $packageRootFull 'Package root'
     $setupName = 'NEXUS_Personal_Pro_Setup_5.1.0_x64.exe'
     $portableName = 'NEXUS_Personal_Pro_Portable_5.1.0_x64.exe'

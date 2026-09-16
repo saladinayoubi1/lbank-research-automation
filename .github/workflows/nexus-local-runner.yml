@@ -19,6 +19,7 @@ on:
           - bybit-wsl-status
           - bybit-wsl-enable
           - bybit-wsl-provision
+          - install-app
           - autonomous
   push:
     branches:
@@ -32,6 +33,7 @@ on:
       - scripts/bootstrap_portable_python.cmd
       - scripts/install_nexus_autostart_from_runner.ps1
       - scripts/verify_nexus_owner_autostart.ps1
+      - scripts/install_and_smoke_nexus_personal_pro.ps1
       - .github/workflows/nexus-local-runner.yml
 
 permissions:
@@ -43,6 +45,8 @@ concurrency:
       github.event_name == 'push' && contains(github.event.head_commit.message, '[verify-owner-autostart]') && 'owner-proof' ||
       github.event_name == 'push' && contains(github.event.head_commit.message, '[install-autostart]') && 'install' ||
       github.event_name == 'push' && contains(github.event.head_commit.message, '[sidecar-compat]') && 'sidecar-compat' ||
+      ((github.event_name == 'push' && contains(github.event.head_commit.message, '[install-app]')) ||
+       (github.event_name == 'workflow_dispatch' && inputs.task == 'install-app')) && 'install-app' ||
       ((github.event_name == 'push' && contains(github.event.head_commit.message, '[autonomous]')) ||
        (github.event_name == 'workflow_dispatch' && inputs.task == 'autonomous')) && 'autonomous' ||
       'general'
@@ -126,6 +130,38 @@ jobs:
           (github.event_name != 'push' || !contains(github.event.head_commit.message, '[verify-owner-autostart]')) ||
           (github.event_name == 'push' && contains(github.event.head_commit.message, '[sidecar-compat]'))
         run: python -c "import os,pathlib; root=pathlib.Path.cwd().resolve(); repo=os.environ['GITHUB_REPOSITORY'].split('/')[-1]; assert root.name.casefold()==repo.casefold() and root.parent.name.casefold()==repo.casefold() and root.parent.parent.name.casefold()=='_work'; print('privacy_guard=ok')"
+
+      - name: Install and smoke-test NEXUS Personal Pro on exact Lenovo
+        if: >-
+          github.actor == github.repository_owner && (
+            (github.event_name == 'push' && contains(github.event.head_commit.message, '[install-app]')) ||
+            (github.event_name == 'workflow_dispatch' && inputs.task == 'install-app')
+          )
+        run: >-
+          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass
+          -File scripts\install_and_smoke_nexus_personal_pro.ps1
+          -PackageRoot "%RUNNER_TEMP%\nexus-personal-pro-package-%GITHUB_RUN_ID%"
+          -ExpectedSourceSha "f793e3a53048f6fcc02b593036fb32f496e44de5"
+          -ExpectedSetupSha256 "c3eacdc5253b2d9d2372f436394e8a7cbd1c1c73fc7c5fc5fbead4551d4cd82a"
+          -ExpectedPortableSha256 "27d5af2c182b27e3078e050b4c9bd55def1b5e045ac11873cb9c0cf6c50e0921"
+          -ArtifactRunId 35102997291
+          -ArtifactId 10449670023
+          -ExpectedComputerName "DESKTOP-1R1081M"
+          -ExpectedRunnerName "NEXUS-LOCAL-RUNNER"
+          -EvidencePath "build\windows-app-install\evidence.json"
+
+      - name: Upload physical Windows app install proof
+        if: >-
+          always() && github.actor == github.repository_owner && (
+            (github.event_name == 'push' && contains(github.event.head_commit.message, '[install-app]')) ||
+            (github.event_name == 'workflow_dispatch' && inputs.task == 'install-app')
+          )
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-windows-app-install-proof-${{ github.run_id }}
+          if-no-files-found: error
+          retention-days: 30
+          path: build/windows-app-install/evidence.json
 
       - name: Install zero-touch NEXUS autostart
         if: github.event_name == 'push' && contains(github.event.head_commit.message, '[install-autostart]')
