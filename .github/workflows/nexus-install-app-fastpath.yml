@@ -77,6 +77,10 @@ jobs:
           $oldTransport = "download_transport = 'existing_owner_gh_cli'"
           if ([regex]::Matches($text, [regex]::Escape($oldTransport)).Count -ne 1) { throw 'Installer evidence transport marker mismatch.' }
           $text = $text.Replace($oldTransport, "download_transport = 'verified_local_artifact_cache'")
+          $oldHealthyWait = 'Wait-ForHealthySupervisor -Root $script:SmokeRoot -NotBeforeUtc $smokeStarted -TimeoutSeconds 150'
+          if ([regex]::Matches($text, [regex]::Escape($oldHealthyWait)).Count -ne 1) { throw 'Installer healthy-supervisor timeout marker mismatch.' }
+          $text = $text.Replace($oldHealthyWait, 'Wait-ForHealthySupervisor -Root $script:SmokeRoot -NotBeforeUtc $smokeStarted -TimeoutSeconds 420')
+          Write-Host 'installer_healthy_timeout_seconds=420'
           [IO.File]::WriteAllText($dest, $text, (New-Object Text.UTF8Encoding($false)))
           Write-Host 'installer_transport=verified_local_artifact_cache'
 
