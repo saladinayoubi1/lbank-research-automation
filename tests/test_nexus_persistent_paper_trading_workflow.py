@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import textwrap
 from pathlib import Path
 
@@ -286,23 +287,26 @@ def test_physical_state_handoff_is_bounded_chunked_digest_checked_and_hosted_per
 
     assert "Package Paper state for hosted artifact persistence" in paper
     assert "state_archive_chunk_count" in paper
-    assert "state_archive_b64_len" in paper
+    assert "state_archive_b85_len" in paper
     for index in range(12):
         assert f"state_archive_chunk_{index}" in paper
         assert f"needs.paper-loop.outputs.state_archive_chunk_{index}" in persist
     assert "state_archive_sha256" in paper
     assert "persistent-state-handoff.tar.xz" in paper
-    assert 'state_b64_bytes" -gt 720000' in paper
-    assert "chunk_size=60000" in paper
-    assert "max_chunks=12" in paper
+    assert "base64.b85encode" in paper
+    assert "estimated_output_utf16_bytes=$(( state_b85_chars * 2 + 4096 ))" in paper
+    assert 'estimated_output_utf16_bytes" -gt 1048576' in paper
+    assert "chunk_size=50000" in paper
+    assert "max_chunks=11" in paper
     assert 'tarfile.open(output, "w:xz", preset=9)' in paper
     assert "zipfile.ZIP_LZMA" not in paper
     assert "zipfile.ZIP_DEFLATED" not in paper
 
-    assert "STATE_ARCHIVE_B64:" not in persist
+    assert "STATE_ARCHIVE_B64" not in persist
     assert "STATE_ARCHIVE_CHUNK_COUNT" in persist
-    assert "STATE_ARCHIVE_B64_LEN" in persist
-    assert '"${#state_b64}" -ne "$STATE_ARCHIVE_B64_LEN"' in persist
+    assert "STATE_ARCHIVE_B85_LEN" in persist
+    assert '"${#state_b85}" -ne "$STATE_ARCHIVE_B85_LEN"' in persist
+    assert "base64.b85decode" in persist
     assert "Paper state handoff chunk exceeds bound." in persist
     assert "Unexpected trailing Paper state handoff chunk." in persist
     assert "STATE_ARCHIVE_SHA256" in persist
@@ -311,6 +315,20 @@ def test_physical_state_handoff_is_bounded_chunked_digest_checked_and_hosted_per
     assert 'tarfile.open(archive_path, "r:xz")' in persist
     assert "hosted_state_handoff_verification=PASS" in persist
     assert "nexus-persistent-paper-trading-state" in persist
+
+
+def test_base85_handoff_fits_observed_archive_under_github_utf16_limit() -> None:
+    observed_archive_bytes = 400_652
+    payload = (bytes(range(251)) * 1_597)[:observed_archive_bytes]
+    encoded_b85 = base64.b85encode(payload)
+    encoded_b64 = base64.b64encode(payload)
+
+    assert len(payload) == observed_archive_bytes
+    assert len(encoded_b85) == 500_815
+    assert len(encoded_b85) * 2 + 4_096 < 1_048_576
+    assert len(encoded_b64) == 534_204
+    assert len(encoded_b64) * 2 + 4_096 > 1_048_576
+    assert base64.b85decode(encoded_b85) == payload
 
 
 def test_persistent_loop_permissions_are_read_only_and_authority_is_fail_closed() -> None:
