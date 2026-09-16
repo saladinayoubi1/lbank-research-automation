@@ -59,19 +59,20 @@ jobs:
           $pattern = '(?s)    \$gh = Get-Command gh\.exe.*?    \$script:Evidence\.package\.downloaded = \$true'
           $matches = [regex]::Matches($text, $pattern)
           if ($matches.Count -ne 1) { throw "Installer artifact transport patch match count was $($matches.Count), expected 1." }
-          $replacement = @'
-    $verifiedZip = [Environment]::GetEnvironmentVariable('NEXUS_VERIFIED_ARTIFACT_ZIP', 'Process')
-    if (-not $verifiedZip -or -not (Test-Path -LiteralPath $verifiedZip -PathType Leaf)) {
-        throw 'Verified local artifact ZIP is unavailable.'
-    }
-    $expectedArtifactZipSha256 = 'f6357d9de67d06000e3871fb088f90b00970bbc3a27907a21979cc96e99faf4d'
-    $artifactZipSha256 = (Get-FileHash -LiteralPath $verifiedZip -Algorithm SHA256).Hash.ToLowerInvariant()
-    if ($artifactZipSha256 -ne $expectedArtifactZipSha256) { throw 'Verified local artifact ZIP digest mismatch.' }
-    New-Item -ItemType Directory -Path $packageRootFull -Force | Out-Null
-    Expand-Archive -LiteralPath $verifiedZip -DestinationPath $packageRootFull -Force
-    if (-not (Test-Path -LiteralPath $packageRootFull -PathType Container)) { throw 'Package root is missing after verified local extraction.' }
-    $script:Evidence.package.downloaded = $true
-'@
+          $replacementLines = @(
+            '    $verifiedZip = [Environment]::GetEnvironmentVariable(''NEXUS_VERIFIED_ARTIFACT_ZIP'', ''Process'')'
+            '    if (-not $verifiedZip -or -not (Test-Path -LiteralPath $verifiedZip -PathType Leaf)) {'
+            '        throw ''Verified local artifact ZIP is unavailable.'''
+            '    }'
+            '    $expectedArtifactZipSha256 = ''f6357d9de67d06000e3871fb088f90b00970bbc3a27907a21979cc96e99faf4d'''
+            '    $artifactZipSha256 = (Get-FileHash -LiteralPath $verifiedZip -Algorithm SHA256).Hash.ToLowerInvariant()'
+            '    if ($artifactZipSha256 -ne $expectedArtifactZipSha256) { throw ''Verified local artifact ZIP digest mismatch.'' }'
+            '    New-Item -ItemType Directory -Path $packageRootFull -Force | Out-Null'
+            '    Expand-Archive -LiteralPath $verifiedZip -DestinationPath $packageRootFull -Force'
+            '    if (-not (Test-Path -LiteralPath $packageRootFull -PathType Container)) { throw ''Package root is missing after verified local extraction.'' }'
+            '    $script:Evidence.package.downloaded = $true'
+          )
+          $replacement = $replacementLines -join "`r`n"
           $text = [regex]::Replace($text, $pattern, [System.Text.RegularExpressions.MatchEvaluator]{ param($m) $replacement }, 1)
           $oldTransport = "download_transport = 'existing_owner_gh_cli'"
           if (($text.Split($oldTransport).Count - 1) -ne 1) { throw 'Installer evidence transport marker mismatch.' }
