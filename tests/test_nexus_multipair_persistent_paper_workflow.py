@@ -103,9 +103,12 @@ def test_state_handoff_keeps_full_state_but_uses_bounded_cross_file_xz_compressi
     assert "persistent-state-handoff.tar.xz" in package
     assert 'tarfile.open(output, "w:xz", preset=9)' in package
     assert "state_handoff_tar_xz_bytes=" in package
-    assert 'state_b64_bytes" -gt 720000' in package
+    assert "base64.b85encode" in package
+    assert "estimated_output_utf16_bytes=$(( state_b85_chars * 2 + 4096 ))" in package
+    assert 'estimated_output_utf16_bytes" -gt 1048576' in package
     assert "zipfile.ZIP_LZMA" not in package
     assert "persistent-state-handoff.tar.xz" in persist
+    assert "base64.b85decode" in persist
     assert 'tarfile.open(archive_path, "r:xz")' in persist
     assert "archive.extractall" not in persist
     assert "member.issym()" in persist
