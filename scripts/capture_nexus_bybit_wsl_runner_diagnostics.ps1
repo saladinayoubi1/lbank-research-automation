@@ -40,15 +40,27 @@ function Invoke-WslCapture {
         $psi.RedirectStandardInput = $true
         $psi.RedirectStandardOutput = $true
         $psi.RedirectStandardError = $true
-        # Windows PowerShell 5.1 may otherwise emit a UTF-8 preamble on the
-        # redirected stream. Bash treats those bytes as part of its first
-        # command, corrupting otherwise valid LF-only diagnostics.
-        $psi.StandardInputEncoding = (New-Object System.Text.UTF8Encoding($false))
-
         $process = New-Object System.Diagnostics.Process
         $process.StartInfo = $psi
-        if (-not $process.Start()) {
-            throw 'Could not start bounded WSL diagnostic probe.'
+        # .NET Framework's ProcessStartInfo (used by Windows PowerShell 5.1)
+        # does not expose StandardInputEncoding. It creates the redirected
+        # StreamWriter from Console.InputEncoding instead, so select a
+        # BOM-free UTF-8 encoding only while the process and its writer start.
+        # Restore the host setting immediately; the probes run sequentially.
+        $previousConsoleInputEncoding = [Console]::InputEncoding
+        try {
+            [Console]::InputEncoding = (New-Object System.Text.UTF8Encoding($false))
+            if (-not $process.Start()) {
+                throw 'Could not start bounded WSL diagnostic probe.'
+            }
+        }
+        finally {
+            [Console]::InputEncoding = $previousConsoleInputEncoding
+        }
+        if ($process.StandardInput.Encoding.GetPreamble().Length -ne 0) {
+            try { $process.Kill() } catch {}
+            [void]$process.WaitForExit(5000)
+            throw 'Redirected WSL diagnostic input unexpectedly has a byte-order mark.'
         }
         $stdoutTask = $process.StandardOutput.ReadToEndAsync()
         $stderrTask = $process.StandardError.ReadToEndAsync()

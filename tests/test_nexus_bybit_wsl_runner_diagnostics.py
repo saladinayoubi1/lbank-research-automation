@@ -47,7 +47,10 @@ def test_wsl_probe_uses_lf_only_stdin_transport_with_a_bounded_process() -> None
     assert '$Command.Replace("`r`n", "`n").Replace("`r", "`n")' in invoke
     assert '$psi.Arguments = "-d $Distribution -u root -- bash -s"' in invoke
     assert "$psi.RedirectStandardInput = $true" in invoke
-    assert "$psi.StandardInputEncoding = (New-Object System.Text.UTF8Encoding($false))" in invoke
+    assert "$previousConsoleInputEncoding = [Console]::InputEncoding" in invoke
+    assert '[Console]::InputEncoding = (New-Object System.Text.UTF8Encoding($false))' in invoke
+    assert "[Console]::InputEncoding = $previousConsoleInputEncoding" in invoke
+    assert "$process.StandardInput.Encoding.GetPreamble().Length -ne 0" in invoke
     assert "$process.StandardInput.Write($normalizedCommand)" in invoke
     assert "$process.StandardInput.Close()" in invoke
     assert "$process.WaitForExit(30000)" in invoke
@@ -89,10 +92,11 @@ def test_capture_script_parses_and_bom_free_encoding_is_supported_on_windows() -
         "$tokens=$null;$errors=$null;"
         f"[System.Management.Automation.Language.Parser]::ParseFile('{escaped}',[ref]$tokens,[ref]$errors)|Out-Null;"
         "if($errors.Count -gt 0){$errors|ForEach-Object{Write-Error $_.Message};exit 1};"
+        "$original=[Console]::InputEncoding;"
         "$encoding=(New-Object System.Text.UTF8Encoding($false));"
-        "$probe=(New-Object System.Diagnostics.ProcessStartInfo);"
-        "$probe.StandardInputEncoding=$encoding;"
-        "if($probe.StandardInputEncoding.GetPreamble().Length -ne 0){exit 2}"
+        "try{[Console]::InputEncoding=$encoding;"
+        "if([Console]::InputEncoding.GetPreamble().Length -ne 0){exit 2}}"
+        "finally{[Console]::InputEncoding=$original}"
     )
     completed = subprocess.run(
         [powershell, "-NoProfile", "-NonInteractive", "-Command", command],
