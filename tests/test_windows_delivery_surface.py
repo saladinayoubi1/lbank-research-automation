@@ -114,7 +114,7 @@ def test_gui_runner_bootstrap_discovery_is_narrow_and_exact_repo_bound() -> None
 def test_windows_startup_is_slow_machine_tolerant_diagnostic_and_bounded_self_recovering() -> None:
     main = read(DESKTOP / "main.js")
     for marker in (
-        "const http = require('http')", "timeoutMs = 90000", "sidecarExit", "sidecarStderr",
+        "const http = require('http')", "PRODUCT_GATEWAY_STARTUP_TIMEOUT_MS = 4 * 60 * 1000", "sidecarExit", "sidecarStderr",
         "nexus-product-startup.log", "engine exited before startup", "Startup diagnostics",
         "cwd: path.dirname(bindings.executable)", "MAX_RESTARTS_PER_WINDOW = 3",
         "RESTART_WINDOW_MS", "bounded_restart_policy", "restartProductAfterExit",
