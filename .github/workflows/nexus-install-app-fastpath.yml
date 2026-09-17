@@ -22,11 +22,12 @@ jobs:
       - name: Acquire exact pinned installer script
         run: |
           $ErrorActionPreference = 'Stop'
-          $commit = '3fa1f6f752ebf57e12d0a4b5f73e9b3809f00ace'
-          $expectedBlob = 'a71cb4b992162fd2e7b056c7af8ac6cfe411eb20'
-          $expectedArtifactZipSha256 = 'f6357d9de67d06000e3871fb088f90b00970bbc3a27907a21979cc96e99faf4d'
-          $cacheZip = Join-Path $env:LOCALAPPDATA 'NEXUS\artifact-cache\nexus-windows-final-mission-control-packages-10449670023.zip'
+          $commit = '3173e960705831c04b5b9255c643ce0fd72d2e92'
+          $expectedBlob = 'fc76c6c392d2e7db3579676856c8907463aa7f7a'
+          $expectedArtifactZipSha256 = '9c077cef8d0ea124a2e02178e96b1329a3efb7af6f18c40fca5015aa16637c48'
+          $cacheZip = Join-Path $env:LOCALAPPDATA 'NEXUS\artifact-cache\nexus-windows-persistent-unpacked-10469382268.zip'
           if (-not (Test-Path -LiteralPath $cacheZip -PathType Leaf)) { throw 'Verified artifact cache is missing.' }
+          if ((Get-Item -LiteralPath $cacheZip).Length -ne 217183934) { throw 'Verified artifact cache size mismatch.' }
           $cacheHash = (Get-FileHash -LiteralPath $cacheZip -Algorithm SHA256).Hash.ToLowerInvariant()
           if ($cacheHash -ne $expectedArtifactZipSha256) { throw "Verified artifact cache digest mismatch: $cacheHash" }
           Write-Host "artifact_cache_sha256=$cacheHash"
@@ -64,7 +65,7 @@ jobs:
             '    if (-not $verifiedZip -or -not (Test-Path -LiteralPath $verifiedZip -PathType Leaf)) {'
             '        throw ''Verified local artifact ZIP is unavailable.'''
             '    }'
-            '    $expectedArtifactZipSha256 = ''f6357d9de67d06000e3871fb088f90b00970bbc3a27907a21979cc96e99faf4d'''
+            '    $expectedArtifactZipSha256 = ''9c077cef8d0ea124a2e02178e96b1329a3efb7af6f18c40fca5015aa16637c48'''
             '    $artifactZipSha256 = (Get-FileHash -LiteralPath $verifiedZip -Algorithm SHA256).Hash.ToLowerInvariant()'
             '    if ($artifactZipSha256 -ne $expectedArtifactZipSha256) { throw ''Verified local artifact ZIP digest mismatch.'' }'
             '    New-Item -ItemType Directory -Path $packageRootFull -Force | Out-Null'
@@ -77,10 +78,6 @@ jobs:
           $oldTransport = "download_transport = 'existing_owner_gh_cli'"
           if ([regex]::Matches($text, [regex]::Escape($oldTransport)).Count -ne 1) { throw 'Installer evidence transport marker mismatch.' }
           $text = $text.Replace($oldTransport, "download_transport = 'verified_local_artifact_cache'")
-          $oldHealthyWait = 'Wait-ForHealthySupervisor -Root $script:SmokeRoot -NotBeforeUtc $smokeStarted -TimeoutSeconds 150'
-          if ([regex]::Matches($text, [regex]::Escape($oldHealthyWait)).Count -ne 1) { throw 'Installer healthy-supervisor timeout marker mismatch.' }
-          $text = $text.Replace($oldHealthyWait, 'Wait-ForHealthySupervisor -Root $script:SmokeRoot -NotBeforeUtc $smokeStarted -TimeoutSeconds 420')
-          Write-Host 'installer_healthy_timeout_seconds=420'
           [IO.File]::WriteAllText($dest, $text, (New-Object Text.UTF8Encoding($false)))
           Write-Host 'installer_transport=verified_local_artifact_cache'
 
@@ -97,14 +94,14 @@ jobs:
 
       - name: Install and smoke-test NEXUS Personal Pro on exact Lenovo
         run: |
-          $env:NEXUS_VERIFIED_ARTIFACT_ZIP = Join-Path $env:LOCALAPPDATA 'NEXUS\artifact-cache\nexus-windows-final-mission-control-packages-10449670023.zip'
+          $env:NEXUS_VERIFIED_ARTIFACT_ZIP = Join-Path $env:LOCALAPPDATA 'NEXUS\artifact-cache\nexus-windows-persistent-unpacked-10469382268.zip'
           & (Join-Path $env:RUNNER_TEMP 'install_and_smoke_nexus_personal_pro.ps1') `
             -PackageRoot (Join-Path $env:RUNNER_TEMP "nexus-personal-pro-package-$env:GITHUB_RUN_ID") `
-            -ExpectedSourceSha 'f793e3a53048f6fcc02b593036fb32f496e44de5' `
-            -ExpectedSetupSha256 'c3eacdc5253b2d9d2372f436394e8a7cbd1c1c73fc7c5fc5fbead4551d4cd82a' `
-            -ExpectedPortableSha256 '27d5af2c182b27e3078e050b4c9bd55def1b5e045ac11873cb9c0cf6c50e0921' `
-            -ArtifactRunId 35102997291 `
-            -ArtifactId 10449670023 `
+            -ExpectedSourceSha '3173e960705831c04b5b9255c643ce0fd72d2e92' `
+            -ExpectedUnpackedSha256 '7288452fb90dfeb4ba9863a3a7596af4c8b9187eede354b002210d303c3b4f1f' `
+            -ArtifactRunId 35151530593 `
+            -ArtifactId 10469382268 `
+            -ArtifactName 'nexus-windows-persistent-unpacked' `
             -ExpectedComputerName 'DESKTOP-1R1081M' `
             -ExpectedRunnerName 'NEXUS-LOCAL-RUNNER' `
             -EvidencePath 'build\windows-app-install\evidence.json'
