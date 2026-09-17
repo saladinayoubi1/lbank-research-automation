@@ -22,8 +22,8 @@ jobs:
       - name: Acquire exact pinned installer script
         run: |
           $ErrorActionPreference = 'Stop'
-          $commit = '3173e960705831c04b5b9255c643ce0fd72d2e92'
-          $expectedBlob = 'fc76c6c392d2e7db3579676856c8907463aa7f7a'
+          $commit = '20205aa4411857844f1a42616267e34b6ffc5e91'
+          $expectedBlob = '9a75147a78957962035a253eada5510024147d8e'
           $expectedArtifactZipSha256 = '9c077cef8d0ea124a2e02178e96b1329a3efb7af6f18c40fca5015aa16637c48'
           $cacheZip = Join-Path $env:LOCALAPPDATA 'NEXUS\artifact-cache\nexus-windows-persistent-unpacked-10469382268.zip'
           if (-not (Test-Path -LiteralPath $cacheZip -PathType Leaf)) { throw 'Verified artifact cache is missing.' }
