@@ -272,7 +272,9 @@ try {
     if ($env:GITHUB_REPOSITORY -ne 'saladinayoubi1/lbank-research-automation') { throw 'Unexpected repository.' }
     if ($env:GITHUB_REF -ne 'refs/heads/main') { throw 'Laptop installation is restricted to main.' }
     if ($env:RUNNER_NAME -ne $ExpectedRunnerName) { throw "Unexpected runner: $($env:RUNNER_NAME)" }
-    if ($env:COMPUTERNAME -ine $ExpectedComputerName) { throw "Unexpected computer: $($env:COMPUTERNAME)" }
+    $actualComputerName = [string]$env:COMPUTERNAME
+    if ([string]::IsNullOrWhiteSpace($actualComputerName)) { $actualComputerName = [Environment]::MachineName }
+    if ($actualComputerName -ine $ExpectedComputerName) { throw "Unexpected computer: $actualComputerName" }
 
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
     if ($identity.Name -match '^(?i:NT AUTHORITY\\(?:SYSTEM|LOCAL SERVICE|NETWORK SERVICE))$') {
