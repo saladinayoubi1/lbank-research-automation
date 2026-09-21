@@ -37,6 +37,7 @@ on:
       - .github/workflows/nexus-local-runner.yml
 
 permissions:
+  actions: read
   contents: read
 
 concurrency:
@@ -131,6 +132,20 @@ jobs:
           (github.event_name == 'push' && contains(github.event.head_commit.message, '[sidecar-compat]'))
         run: python -c "import os,pathlib; root=pathlib.Path.cwd().resolve(); repo=os.environ['GITHUB_REPOSITORY'].split('/')[-1]; assert root.name.casefold()==repo.casefold() and root.parent.name.casefold()==repo.casefold() and root.parent.parent.name.casefold()=='_work'; print('privacy_guard=ok')"
 
+      - name: Download exact NEXUS persistent package
+        if: >-
+          github.actor == github.repository_owner && (
+            (github.event_name == 'push' && contains(github.event.head_commit.message, '[install-app]')) ||
+            (github.event_name == 'workflow_dispatch' && inputs.task == 'install-app')
+          )
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: nexus-windows-persistent-unpacked
+          path: ${{ runner.temp }}\nexus-personal-pro-package-${{ github.run_id }}
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 35634265750
+
       - name: Install and smoke-test NEXUS Personal Pro on exact Lenovo
         if: >-
           github.actor == github.repository_owner && (
@@ -149,6 +164,7 @@ jobs:
           -ExpectedComputerName "DESKTOP-1R1081M"
           -ExpectedRunnerName "NEXUS-LOCAL-RUNNER"
           -EvidencePath "build\windows-app-install\evidence.json"
+          -UsePreloadedPackage
 
       - name: Upload physical Windows app install proof
         if: >-
