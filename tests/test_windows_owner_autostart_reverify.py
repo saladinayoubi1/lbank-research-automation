@@ -33,7 +33,7 @@ def test_owner_proof_privacy_guard_validates_isolated_actions_workspace_without_
     assert "Owner-proof workspace is not an isolated GitHub Actions _work/repo/repo checkout" in text
     assert "$userHome=" not in text
     assert "$home=" not in text.casefold()
-    assert "permissions:\n  contents: read" in text
+    assert "permissions:\n  actions: read\n  contents: read" in text
 
 
 def test_owner_task_query_is_read_only_and_reports_native_failure_deterministically() -> None:
