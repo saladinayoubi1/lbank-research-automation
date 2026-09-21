@@ -12,6 +12,7 @@ from urllib.parse import parse_qs, urlsplit
 
 from phase5_strategy_factory import ALLOWED_FAMILIES
 from product_control_runtime import ProductControlError, ProductControlRuntime
+from product_prospective_paper import load_prospective_paper_snapshot
 from product_research_runtime import ProductResearchError, ProductResearchRuntime
 from product_runtime import ProductRuntime, ProductRuntimeError
 from nexus_demo_strategy_matrix import verify_snapshot
@@ -147,8 +148,17 @@ def _demo_matrix_snapshot(data_root: Path) -> dict[str, Any]:
     except (OSError, UnicodeError, json.JSONDecodeError, ValueError):
         return {**unavailable, "reason": "snapshot_unreadable"}
 
-def _product_overview(runtime: ProductRuntime, data_root: Path) -> dict[str, Any]:
+def _product_paper_snapshot(runtime: ProductRuntime, data_root: Path) -> dict[str, Any]:
+    """Combine mutable local demo state with a strictly read-only prospective evidence view."""
     paper = runtime.paper_snapshot()
+    return {
+        **paper,
+        "prospective_forward": load_prospective_paper_snapshot(data_root.parent),
+    }
+
+
+def _product_overview(runtime: ProductRuntime, data_root: Path) -> dict[str, Any]:
+    paper = _product_paper_snapshot(runtime, data_root)
     live = runtime.live_surface()
     mission = _mission_snapshot(data_root)
     return {
@@ -190,8 +200,9 @@ def _integration_snapshot(
     data_root: Path,
 ) -> dict[str, Any]:
     """One truthful cross-lane read model shared by the UI and AI Room."""
-    paper = runtime.paper_snapshot()
+    paper = _product_paper_snapshot(runtime, data_root)
     account = paper.get("account", {})
+    prospective = paper.get("prospective_forward", {})
     research = research_runtime.last_research()
     qualification = research.get("qualification", {}) if isinstance(research, Mapping) else {}
     recovery = control_runtime.recovery_snapshot()
@@ -216,7 +227,13 @@ def _integration_snapshot(
         "paper": {
             "status": "active" if paper.get("active") is True else "unavailable",
             "event_count": int(paper.get("event_count", 0)),
-            "open_positions": len(account.get("positions", [])) if isinstance(account.get("positions"), list) else 0,
+            "open_positions": (
+                (len(account.get("positions", [])) if isinstance(account.get("positions"), list) else 0)
+                + (len(prospective.get("positions", [])) if prospective.get("available") is True and isinstance(prospective.get("positions"), list) else 0)
+            ),
+            "manual_open_positions": len(account.get("positions", [])) if isinstance(account.get("positions"), list) else 0,
+            "prospective_open_positions": len(prospective.get("positions", [])) if prospective.get("available") is True and isinstance(prospective.get("positions"), list) else 0,
+            "prospective_status": prospective.get("status", "unavailable"),
         },
         "recovery": {"status": str(recovery.get("status", "unavailable")), "head_event_digest": recovery.get("head_event_digest")},
         "live": {"status": str(live.get("status", "locked_owner_controlled")), "orders_allowed": False},
@@ -303,7 +320,7 @@ def build_handler(
                     payload = _product_overview(runtime, data_root)
                 elif parsed.path == "/api/product/paper":
                     if parsed.query: raise ProductRuntimeError("paper snapshot does not accept query")
-                    payload = runtime.paper_snapshot()
+                    payload = _product_paper_snapshot(runtime, data_root)
                 elif parsed.path == "/api/product/paper/matrix":
                     if parsed.query: raise ProductRuntimeError("Paper matrix does not accept query")
                     payload = _demo_matrix_snapshot(data_root)
