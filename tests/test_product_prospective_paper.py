@@ -135,7 +135,7 @@ def test_product_paper_endpoint_exposes_forward_without_mutating_manual_account(
     data_root.mkdir(parents=True)
     _write_state(data_root.parent, _state())
     runtime = ProductRuntime(tmp_path / "manual")
-    server = ThreadingHTTPServer(
+    probe = ThreadingHTTPServer(
         ("127.0.0.1", 0),
         build_handler(
             data_root,
@@ -144,7 +144,17 @@ def test_product_paper_endpoint_exposes_forward_without_mutating_manual_account(
             runtime=runtime,
         ),
     )
-    port = server.server_address[1]
+    port = probe.server_address[1]
+    probe.server_close()
+    server = ThreadingHTTPServer(
+        ("127.0.0.1", port),
+        build_handler(
+            data_root,
+            config=GatewayConfig(mode="local", host="127.0.0.1", port=port),
+            ui_root=PRODUCT_UI_ROOT,
+            runtime=runtime,
+        ),
+    )
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
