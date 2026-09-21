@@ -27,10 +27,10 @@ def test_install_route_is_owner_main_exact_laptop_and_digest_bound() -> None:
         "name: NEXUS Local Runner",
         "github.actor == github.repository_owner",
         "runs-on: [self-hosted, Windows, X64, nexus-local]",
-        "ArtifactId 10449670023",
-        "f793e3a53048f6fcc02b593036fb32f496e44de5",
-        "c3eacdc5253b2d9d2372f436394e8a7cbd1c1c73fc7c5fc5fbead4551d4cd82a",
-        "27d5af2c182b27e3078e050b4c9bd55def1b5e045ac11873cb9c0cf6c50e0921",
+        "ArtifactId 10469382268",
+        "3173e960705831c04b5b9255c643ce0fd72d2e92",
+        "7288452fb90dfeb4ba9863a3a7596af4c8b9187eede354b002210d303c3b4f1f",
+        'ArtifactName "nexus-windows-persistent-unpacked"',
         'ExpectedComputerName "DESKTOP-1R1081M"',
         'ExpectedRunnerName "NEXUS-LOCAL-RUNNER"',
     ):
@@ -45,7 +45,7 @@ def test_install_route_is_owner_main_exact_laptop_and_digest_bound() -> None:
 def test_installer_is_side_by_side_non_admin_and_preserves_existing_install() -> None:
     script = text(SCRIPT)
     for marker in (
-        "versioned_side_by_side_portable",
+        "versioned_side_by_side_unpacked",
         "previous_install_removed = $false",
         "previous_app_data_removed = $false",
         "registry_installation_changed = $false",
