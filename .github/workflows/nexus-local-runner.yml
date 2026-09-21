@@ -144,7 +144,7 @@ jobs:
           path: ${{ runner.temp }}\nexus-personal-pro-package-${{ github.run_id }}
           github-token: ${{ github.token }}
           repository: ${{ github.repository }}
-          run-id: 35634265750
+          run-id: 35646726924
 
       - name: Install and smoke-test NEXUS Personal Pro on exact Lenovo
         if: >-
@@ -156,10 +156,10 @@ jobs:
           powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass
           -File scripts\install_and_smoke_nexus_personal_pro.ps1
           -PackageRoot "%RUNNER_TEMP%\nexus-personal-pro-package-%GITHUB_RUN_ID%"
-          -ExpectedSourceSha "3710edea80588daf9ba0054ede79ad426318808f"
-          -ExpectedUnpackedSha256 "912809244aff5f660ff6e9a7ac6492227cde30fe7269caa304dee774320237e7"
-          -ArtifactRunId 35634265750
-          -ArtifactId 10655910159
+          -ExpectedSourceSha "2a30473695b7464291b84a77f690daf12a4a0873"
+          -ExpectedUnpackedSha256 "505e9ac5f61acf4a12910a9a96f83f2886cf4e79089c1958fb14649d0f8245bf"
+          -ArtifactRunId 35646726924
+          -ArtifactId 10660551978
           -ArtifactName "nexus-windows-persistent-unpacked"
           -ExpectedComputerName "DESKTOP-1R1081M"
           -ExpectedRunnerName "NEXUS-LOCAL-RUNNER"
