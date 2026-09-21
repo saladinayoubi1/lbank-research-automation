@@ -12,8 +12,8 @@
   }
 
   function ensureUi() {
-    const build = byId('buildLabel'); if (build) build.textContent = '4.2.0';
-    document.title = 'NEXUS Personal Pro 4.2.0 · Offline-first';
+    const build = byId('buildLabel'); if (build) build.textContent = '5.1.0';
+    document.title = 'NEXUS Personal Pro 5.1.0 · Offline-first';
     if (!document.querySelector('link[href="/ui/product-offline.css"]')) { const link=document.createElement('link'); link.rel='stylesheet'; link.href='/ui/product-offline.css'; document.head.appendChild(link); }
     const topStatus=document.querySelector('.top-status');
     if (topStatus && !byId('offlineModeBadge')) { const badge=document.createElement('span'); badge.id='offlineModeBadge'; badge.className='status good offline-mode-badge'; badge.innerHTML='<i></i><b>OFFLINE-FIRST</b>'; topStatus.prepend(badge); }
