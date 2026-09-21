@@ -33,13 +33,17 @@ def test_install_route_is_owner_main_exact_laptop_and_digest_bound() -> None:
         'ArtifactName "nexus-windows-persistent-unpacked"',
         'ExpectedComputerName "DESKTOP-1R1081M"',
         'ExpectedRunnerName "NEXUS-LOCAL-RUNNER"',
+        "Download exact NEXUS persistent package",
+        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
+        "run-id: 35634265750",
+        "github-token: ${{ github.token }}",
+        "-UsePreloadedPackage",
     ):
         assert marker in workflow
     parsed = yaml.safe_load(workflow)
     assert isinstance(parsed, dict) and isinstance(parsed.get("jobs"), dict)
-    permission_block = workflow.split("permissions:", 1)[1].split("concurrency:", 1)[0]
-    assert permission_block.strip() == "contents: read"
-    assert "actions/download-artifact" not in workflow
+    assert parsed["permissions"] == {"actions": "read", "contents": "read"}
+    assert "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093" in workflow
 
 
 def test_installer_is_side_by_side_non_admin_and_preserves_existing_install() -> None:
@@ -56,7 +60,10 @@ def test_installer_is_side_by_side_non_admin_and_preserves_existing_install() ->
         "NEXUS Personal Pro 5.1.0.lnk",
         "RUNNER_TRACKING_ID",
         "existing_owner_gh_cli",
+        "actions_download_artifact",
+        "[switch]$UsePreloadedPackage",
         "workflow_token_used = $false",
+        "workflow_token_used = $true",
         "gh.Source run download",
         "SetEnvironmentVariable('GITHUB_TOKEN', $null, 'Process')",
     ):
@@ -126,5 +133,5 @@ def test_install_script_parses_in_windows_powershell() -> None:
 def test_permission_policy_tracks_cross_run_artifact_read() -> None:
     policy = json.loads(text(POLICY))
     rule = policy["workflows"][".github/workflows/nexus-local-runner.yml"]
-    assert rule["workflow_permissions"] == {"contents": "read"}
+    assert rule["workflow_permissions"] == {"actions": "read", "contents": "read"}
     assert "write" not in rule["workflow_permissions"].values()
