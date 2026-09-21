@@ -86,8 +86,10 @@ def test_owner_autostart_proof_target_is_exact_sha():
 
 def test_local_runner_wires_readonly_proof_without_permission_expansion():
     text = WORKFLOW.read_text(encoding="utf-8")
-    assert "permissions:\n  contents: read\n" in text
+    assert "permissions:\n  actions: read\n  contents: read\n" in text
     assert "issues: write" not in text
+    assert "contents: write" not in text
+    assert "actions: write" not in text
     assert "statuses: write" not in text
     assert "[verify-owner-autostart]" in text
     assert "scripts\\verify_nexus_owner_autostart.ps1" in text
