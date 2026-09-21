@@ -24,10 +24,10 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $commit = '20205aa4411857844f1a42616267e34b6ffc5e91'
           $expectedBlob = '9a75147a78957962035a253eada5510024147d8e'
-          $expectedArtifactZipSha256 = '9c077cef8d0ea124a2e02178e96b1329a3efb7af6f18c40fca5015aa16637c48'
-          $cacheZip = Join-Path $env:LOCALAPPDATA 'NEXUS\artifact-cache\nexus-windows-persistent-unpacked-10469382268.zip'
+          $expectedArtifactZipSha256 = 'd33e26ce1cc8df29ce51fc4d6084ddea6f99be3a4556f6ef0aea477203b8b56c'
+          $cacheZip = Join-Path $env:LOCALAPPDATA 'NEXUS\artifact-cache\nexus-windows-persistent-unpacked-10655910159.zip'
           if (-not (Test-Path -LiteralPath $cacheZip -PathType Leaf)) { throw 'Verified artifact cache is missing.' }
-          if ((Get-Item -LiteralPath $cacheZip).Length -ne 217183934) { throw 'Verified artifact cache size mismatch.' }
+          if ((Get-Item -LiteralPath $cacheZip).Length -ne 217197788) { throw 'Verified artifact cache size mismatch.' }
           $cacheHash = (Get-FileHash -LiteralPath $cacheZip -Algorithm SHA256).Hash.ToLowerInvariant()
           if ($cacheHash -ne $expectedArtifactZipSha256) { throw "Verified artifact cache digest mismatch: $cacheHash" }
           Write-Host "artifact_cache_sha256=$cacheHash"
@@ -65,7 +65,7 @@ jobs:
             '    if (-not $verifiedZip -or -not (Test-Path -LiteralPath $verifiedZip -PathType Leaf)) {'
             '        throw ''Verified local artifact ZIP is unavailable.'''
             '    }'
-            '    $expectedArtifactZipSha256 = ''9c077cef8d0ea124a2e02178e96b1329a3efb7af6f18c40fca5015aa16637c48'''
+            '    $expectedArtifactZipSha256 = ''d33e26ce1cc8df29ce51fc4d6084ddea6f99be3a4556f6ef0aea477203b8b56c'''
             '    $artifactZipSha256 = (Get-FileHash -LiteralPath $verifiedZip -Algorithm SHA256).Hash.ToLowerInvariant()'
             '    if ($artifactZipSha256 -ne $expectedArtifactZipSha256) { throw ''Verified local artifact ZIP digest mismatch.'' }'
             '    New-Item -ItemType Directory -Path $packageRootFull -Force | Out-Null'
@@ -94,13 +94,13 @@ jobs:
 
       - name: Install and smoke-test NEXUS Personal Pro on exact Lenovo
         run: |
-          $env:NEXUS_VERIFIED_ARTIFACT_ZIP = Join-Path $env:LOCALAPPDATA 'NEXUS\artifact-cache\nexus-windows-persistent-unpacked-10469382268.zip'
+          $env:NEXUS_VERIFIED_ARTIFACT_ZIP = Join-Path $env:LOCALAPPDATA 'NEXUS\artifact-cache\nexus-windows-persistent-unpacked-10655910159.zip'
           & (Join-Path $env:RUNNER_TEMP 'install_and_smoke_nexus_personal_pro.ps1') `
             -PackageRoot (Join-Path $env:RUNNER_TEMP "nexus-personal-pro-package-$env:GITHUB_RUN_ID") `
-            -ExpectedSourceSha '3173e960705831c04b5b9255c643ce0fd72d2e92' `
-            -ExpectedUnpackedSha256 '7288452fb90dfeb4ba9863a3a7596af4c8b9187eede354b002210d303c3b4f1f' `
-            -ArtifactRunId 35151530593 `
-            -ArtifactId 10469382268 `
+            -ExpectedSourceSha '3710edea80588daf9ba0054ede79ad426318808f' `
+            -ExpectedUnpackedSha256 '912809244aff5f660ff6e9a7ac6492227cde30fe7269caa304dee774320237e7' `
+            -ArtifactRunId 35634265750 `
+            -ArtifactId 10655910159 `
             -ArtifactName 'nexus-windows-persistent-unpacked' `
             -ExpectedComputerName 'DESKTOP-1R1081M' `
             -ExpectedRunnerName 'NEXUS-LOCAL-RUNNER' `
