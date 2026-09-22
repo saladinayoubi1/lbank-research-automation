@@ -59,14 +59,17 @@ def test_physical_dr_preserves_read_only_and_paper_only_boundaries() -> None:
 def test_service_identity_reuses_only_exact_automatic_running_runner_service() -> None:
     text = SCRIPT.read_text(encoding="utf-8")
 
-    assert "schema_version = 2" in text
+    assert "schema_version = 3" in text
     assert "Get-ExactExistingRunnerService" in text
     assert "Join-Path $FullRoot '.service'" in text
     assert "Join-Path $FullRoot 'bin\\RunnerService.exe'" in text
-    assert "Get-CimInstance -ClassName Win32_Service" in text
+    assert "Registry::HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\" in text
+    assert "Get-ItemProperty -LiteralPath $serviceRegistryPath" in text
+    assert "Get-Service -Name $serviceName" in text
+    assert "Get-CimInstance -ClassName Win32_Service" not in text
     assert "StartsWith($expectedExecutable" in text
-    assert "StartMode -ne 'Auto'" in text
-    assert "State -ne 'Running'" in text
+    assert "serviceConfig.Start -ne 2" in text
+    assert "serviceController.Status -ne 'Running'" in text
     assert "Get-TargetListener" in text
     assert "persistence_mode = 'EXISTING_WINDOWS_SERVICE'" in text
     assert "existing_service_reused = $true" in text

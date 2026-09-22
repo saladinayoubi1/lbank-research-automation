@@ -85,8 +85,11 @@ jobs:
             'Get-ExactExistingRunnerService',
             "Join-Path `$FullRoot '.service'",
             "Join-Path `$FullRoot 'bin\RunnerService.exe'",
-            "StartMode -ne 'Auto'",
-            "State -ne 'Running'",
+            'Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\',
+            'Get-ItemProperty -LiteralPath $serviceRegistryPath',
+            'Get-Service -Name $serviceName',
+            'serviceConfig.Start -ne 2',
+            "serviceController.Status -ne 'Running'",
             "persistence_mode = 'EXISTING_WINDOWS_SERVICE'",
             'existing_service_reused = $true',
             'service_modified = $false',
@@ -95,7 +98,7 @@ jobs:
           )) {
             if (-not $text.Contains($required)) { throw "Required existing-service proof marker missing: $required" }
           }
-          foreach ($forbidden in @('New-Service','Set-Service','Start-Service','Stop-Service','config.cmd','remove.cmd')) {
+          foreach ($forbidden in @('Get-CimInstance -ClassName Win32_Service','New-Service','Set-Service','Start-Service','Stop-Service','config.cmd','remove.cmd')) {
             if ($text.Contains($forbidden)) { throw "Forbidden service or registration mutation marker present: $forbidden" }
           }
 
@@ -214,7 +217,7 @@ jobs:
           $evidencePath = Join-Path $env:RUNNER_TEMP "nexus-windows-dr-persistence-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT.json"
           if (-not (Test-Path -LiteralPath $evidencePath -PathType Leaf)) { throw 'Persistence evidence is missing.' }
           $evidence = Get-Content -LiteralPath $evidencePath -Raw | ConvertFrom-Json
-          if ($evidence.schema_version -ne 2) { throw "Unexpected persistence evidence schema: $($evidence.schema_version)" }
+          if ($evidence.schema_version -ne 3) { throw "Unexpected persistence evidence schema: $($evidence.schema_version)" }
           if ($evidence.decision -ne 'SUCCESS') {
             $detail = if ($evidence.error) { [string]$evidence.error } else { 'no error detail recorded' }
             throw "Persistence was not installed by the exact target runner: $($evidence.decision); error=$detail"

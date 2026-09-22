@@ -30,19 +30,20 @@ def _command_here_string(function_block: str) -> str:
 
 
 
-def test_wsl_transport_uses_stdin_without_external_base64_dependency() -> None:
+def test_wsl1_transport_uses_proven_base64_argv_without_redirected_stdin() -> None:
     text = _script()
+    wrapper = _function(text, "ConvertTo-WslBashWrapper", "New-WslProcessStartInfo")
     transport = _function(text, "New-WslProcessStartInfo", "Invoke-WslNative")
     invoke = _function(text, "Invoke-WslNative", "Write-Log")
     managed = _function(text, "Start-ManagedRunnerProcess", "Stop-PreviousUserWatchdogs")
-    assert "$psi.RedirectStandardInput = $true" in transport
-    assert "-u root -- bash'" in transport
-    assert "base64 -d" not in text
-    assert "Write-WslCommandInput -Process $proc -Command $Command" in invoke
-    assert "Write-WslCommandInput -Process $proc -Command $command" in managed
-    assert '$normalizedCommand = $Command.Replace("`r`n", "`n").Replace("`r", "`n")' in text
-    assert '$Process.StandardInput.Write("`n")' in text
-    assert "$Process.StandardInput.Close()" in text
+    assert '$normalizedCommand = $Command.Replace("`r`n", "`n").Replace("`r", "`n")' in wrapper
+    assert "[Convert]::ToBase64String" in wrapper
+    assert "base64 -d | bash" in wrapper
+    assert "-u root -- bash -lc" in transport
+    assert "$psi.RedirectStandardInput" not in text
+    assert ".StandardInput.Write" not in text
+    assert "New-WslProcessStartInfo -Command $Command -RedirectOutput $true" in invoke
+    assert "New-WslProcessStartInfo -Command $command -RedirectOutput $false" in managed
 
 def test_registration_probe_uses_bash_builtins_only() -> None:
     text = _script()

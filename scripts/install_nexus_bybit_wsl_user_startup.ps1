@@ -5,7 +5,7 @@ param(
     [string]$Distribution = 'Ubuntu',
     [string]$RunnerRoot = '/opt/nexus-bybit-runner',
     [string]$ExpectedRunnerName = 'NEXUS-BYBIT-WSL',
-    [int]$Generation = 7
+    [int]$Generation = 8
 )
 
 $ErrorActionPreference = 'Stop'
@@ -14,7 +14,7 @@ Set-StrictMode -Version 2.0
 if ($Distribution -ne 'Ubuntu') { throw 'Distribution must remain pinned to Ubuntu.' }
 if ($RunnerRoot -ne '/opt/nexus-bybit-runner') { throw 'RunnerRoot must remain pinned.' }
 if ($ExpectedRunnerName -ne 'NEXUS-BYBIT-WSL') { throw 'ExpectedRunnerName must remain pinned.' }
-if ($Generation -ne 7) { throw 'Generation must remain pinned to the reviewed watchdog generation.' }
+if ($Generation -ne 8) { throw 'Generation must remain pinned to the reviewed watchdog generation.' }
 
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
 $sid = [string]$identity.User.Value
@@ -40,16 +40,30 @@ $watchdogGeneration = $Generation
 $managedRunnerLog = '/tmp/nexus-bybit-runner.log'
 $managedChildMissingListenerThreshold = 3
 
+function ConvertTo-WslBashWrapper {
+    param([Parameter(Mandatory = $true)][string]$Command)
+
+    # WSL1 on the Lenovo host can block indefinitely when a bash script is sent
+    # through redirected stdin. Carry the exact UTF-8 script as base64 in argv;
+    # this is the same transport already proven by the earlier physical wake.
+    $normalizedCommand = $Command.Replace("`r`n", "`n").Replace("`r", "`n")
+    $encodedCommand = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($normalizedCommand))
+    return "printf '%s' '$encodedCommand' | base64 -d | bash"
+}
+
 function New-WslProcessStartInfo {
-    param([bool]$RedirectOutput = $false)
+    param(
+        [Parameter(Mandatory = $true)][string]$Command,
+        [bool]$RedirectOutput = $false
+    )
 
     $psi = New-Object Diagnostics.ProcessStartInfo
     $psi.FileName = $wsl
-    $psi.Arguments = '-d ' + $Distribution + ' -u root -- bash'
+    $wrappedCommand = ConvertTo-WslBashWrapper -Command $Command
+    $psi.Arguments = '-d ' + $Distribution + ' -u root -- bash -lc "' + $wrappedCommand + '"'
     $psi.UseShellExecute = $false
     $psi.CreateNoWindow = $true
     $psi.WindowStyle = [Diagnostics.ProcessWindowStyle]::Hidden
-    $psi.RedirectStandardInput = $true
     if ($RedirectOutput) {
         $psi.RedirectStandardOutput = $true
         $psi.RedirectStandardError = $true
@@ -57,30 +71,18 @@ function New-WslProcessStartInfo {
     return $psi
 }
 
-function Write-WslCommandInput {
-    param(
-        [Parameter(Mandatory = $true)][Diagnostics.Process]$Process,
-        [Parameter(Mandatory = $true)][string]$Command
-    )
-    $normalizedCommand = $Command.Replace("`r`n", "`n").Replace("`r", "`n")
-    $Process.StandardInput.Write($normalizedCommand)
-    $Process.StandardInput.Write("`n")
-    $Process.StandardInput.Close()
-}
-
 function Invoke-WslNative {
     param([Parameter(Mandatory = $true)][string]$Command)
 
     # All probe/mutation calls are bounded. The long-lived managed runner uses a
     # separate watchdog-owned wsl.exe child and is never routed through here.
-    $psi = New-WslProcessStartInfo -RedirectOutput $true
+    $psi = New-WslProcessStartInfo -Command $Command -RedirectOutput $true
     $proc = New-Object Diagnostics.Process
     $proc.StartInfo = $psi
     try {
         if (-not $proc.Start()) {
             return [ordered]@{ exit_code = -1; output = 'wsl_process_start_failed' }
         }
-        Write-WslCommandInput -Process $proc -Command $Command
         if (-not $proc.WaitForExit($wslTimeoutMilliseconds)) {
             try { $proc.Kill() } catch { }
             return [ordered]@{ exit_code = 124; output = 'wsl_timeout' }
@@ -231,7 +233,7 @@ exit 0
 function Start-ManagedRunnerProcess {
     Test-ExistingRegistration
     $command = "cd '$RunnerRoot' && export RUNNER_ALLOW_RUNASROOT=1 && export RUNNER_TRACKING_ID= && exec ./run.sh >>'$managedRunnerLog' 2>&1"
-    $psi = New-WslProcessStartInfo -RedirectOutput $false
+    $psi = New-WslProcessStartInfo -Command $command -RedirectOutput $false
     $proc = New-Object Diagnostics.Process
     $proc.StartInfo = $psi
     try {
@@ -239,7 +241,6 @@ function Start-ManagedRunnerProcess {
             $proc.Dispose()
             return $null
         }
-        Write-WslCommandInput -Process $proc -Command $command
         Start-Sleep -Seconds 5
         if ($proc.HasExited) {
             Write-Log ('managed_runner_early_exit=' + $proc.ExitCode)
@@ -307,7 +308,7 @@ function Stop-PreviousUserWatchdogs {
 function Write-Evidence([string]$Decision, [bool]$ListenerObserved) {
     New-Item -ItemType Directory -Path $stateRoot -Force | Out-Null
     $payload = [ordered]@{
-        schema_version = 5
+        schema_version = 6
         generated_at_utc = [DateTime]::UtcNow.ToString('o')
         decision = $Decision
         windows_identity = [string]$identity.Name
@@ -326,6 +327,7 @@ function Write-Evidence([string]$Decision, [bool]$ListenerObserved) {
         active_worker_interrupt_allowed = $false
         unknown_probe_interrupt_allowed = $false
         wsl_call_timeout_seconds = [int]($wslTimeoutMilliseconds / 1000)
+        wsl_command_transport = 'BASE64_ARGV'
         administrator_required = $false
         task_scheduler_used = $false
         runner_registration_modified = $false
