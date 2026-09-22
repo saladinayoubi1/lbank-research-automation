@@ -41,8 +41,9 @@ def test_wake_pins_source_and_requires_detached_live_watchdog() -> None:
     assert "bybit_wsl_watchdog_blob=" in text
     assert "USER_CONTEXT_MANAGED_CHILD_LIVENESS_SELF_HEAL_ACTIVE" in text
     assert "actions_process_tracking_detached" in text
-    assert "watchdog_generation -ne 8" in text
+    assert "watchdog_generation -ne 9" in text
     assert "wsl_command_transport -ne 'BASE64_ARGV'" in text
+    assert "wsl_standard_stream_redirection -ne $false" in text
     assert "Start-Sleep -Seconds 20" in text
     assert "Win32_Process WHERE Name='powershell.exe'" in text
     assert "post_install_watchdog_process=RUNNING" in text
