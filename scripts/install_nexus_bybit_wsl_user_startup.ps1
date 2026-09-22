@@ -5,7 +5,7 @@ param(
     [string]$Distribution = 'Ubuntu',
     [string]$RunnerRoot = '/opt/nexus-bybit-runner',
     [string]$ExpectedRunnerName = 'NEXUS-BYBIT-WSL',
-    [int]$Generation = 6
+    [int]$Generation = 7
 )
 
 $ErrorActionPreference = 'Stop'
@@ -14,7 +14,7 @@ Set-StrictMode -Version 2.0
 if ($Distribution -ne 'Ubuntu') { throw 'Distribution must remain pinned to Ubuntu.' }
 if ($RunnerRoot -ne '/opt/nexus-bybit-runner') { throw 'RunnerRoot must remain pinned.' }
 if ($ExpectedRunnerName -ne 'NEXUS-BYBIT-WSL') { throw 'ExpectedRunnerName must remain pinned.' }
-if ($Generation -ne 6) { throw 'Generation must remain pinned to the reviewed watchdog generation.' }
+if ($Generation -ne 7) { throw 'Generation must remain pinned to the reviewed watchdog generation.' }
 
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
 $sid = [string]$identity.User.Value
@@ -35,7 +35,7 @@ $evidencePath = Join-Path $stateRoot 'evidence.json'
 $startupRoot = [Environment]::GetFolderPath('Startup')
 $startupVbs = Join-Path $startupRoot 'NEXUS-Bybit-WSL-User-Startup.vbs'
 $legacyStartupCmd = Join-Path $startupRoot 'NEXUS-Bybit-WSL-User-Startup.cmd'
-$wslTimeoutMilliseconds = 10000
+$wslTimeoutMilliseconds = 30000
 $watchdogGeneration = $Generation
 $managedRunnerLog = '/tmp/nexus-bybit-runner.log'
 $managedChildMissingListenerThreshold = 3
@@ -118,7 +118,9 @@ done < '__RUNNER_ROOT__/.runner'
     $command = $command.Replace('__RUNNER_ROOT__', $RunnerRoot).Replace('__EXPECTED_RUNNER_NAME__', $ExpectedRunnerName)
     $probe = Invoke-WslNative $command
     if ($probe.exit_code -ne 0) {
-        throw 'Existing NEXUS-BYBIT-WSL registration was not found; this script will not create or replace it.'
+        throw ('Existing NEXUS-BYBIT-WSL registration could not be verified without mutation; ' +
+            'this script will not create or replace it. probe_exit=' + $probe.exit_code +
+            ' detail=' + $probe.output)
     }
 }
 
