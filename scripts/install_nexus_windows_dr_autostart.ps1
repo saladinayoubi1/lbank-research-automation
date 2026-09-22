@@ -38,7 +38,7 @@ function Write-Evidence([string]$Decision, [hashtable]$Extra = @{}) {
     $parent = Split-Path -Parent $target
     if ($parent) { New-Item -ItemType Directory -Path $parent -Force | Out-Null }
     $payload = [ordered]@{
-        schema_version = 1
+        schema_version = 2
         generated_at_utc = [DateTime]::UtcNow.ToString('o')
         decision = $Decision
         runner_root = [IO.Path]::GetFullPath($RunnerRoot)
@@ -88,6 +88,53 @@ function Get-TargetListener {
         catch { }
     }
     return $null
+}
+
+function Get-ExactExistingRunnerService([string]$FullRoot) {
+    $serviceMarker = Join-Path $FullRoot '.service'
+    if (-not (Test-Path -LiteralPath $serviceMarker -PathType Leaf)) {
+        throw 'Service identity is active but the exact runner service marker is missing.'
+    }
+    $serviceName = (Get-Content -LiteralPath $serviceMarker -Raw).Trim()
+    if (-not $serviceName -or $serviceName -notmatch '^actions\.runner\.[0-9A-Za-z_.-]+$') {
+        throw 'Exact runner service marker is empty or malformed.'
+    }
+
+    $service = Get-CimInstance -ClassName Win32_Service |
+        Where-Object { [string]$_.Name -eq $serviceName } |
+        Select-Object -First 1
+    if (-not $service) { throw 'Exact runner Windows service was not found.' }
+
+    $expectedExecutable = [IO.Path]::GetFullPath((Join-Path $FullRoot 'bin\RunnerService.exe'))
+    if (-not (Test-Path -LiteralPath $expectedExecutable -PathType Leaf)) {
+        throw 'Exact runner service executable is missing.'
+    }
+    $rawPath = [Environment]::ExpandEnvironmentVariables(([string]$service.PathName).Trim())
+    $actualExecutable = ''
+    if ($rawPath.StartsWith('"')) {
+        $match = [regex]::Match($rawPath, '^"([^"]+)"(?:\s+.*)?$')
+        if ($match.Success) { $actualExecutable = $match.Groups[1].Value }
+    }
+    elseif ($rawPath.StartsWith($expectedExecutable, [StringComparison]::OrdinalIgnoreCase)) {
+        $actualExecutable = $expectedExecutable
+    }
+    if (-not $actualExecutable -or
+        -not ([IO.Path]::GetFullPath($actualExecutable)).Equals($expectedExecutable, [StringComparison]::OrdinalIgnoreCase)) {
+        throw 'Runner service executable is not bound to the exact target root.'
+    }
+    if ([string]$service.StartMode -ne 'Auto') { throw 'Exact runner service is not configured for automatic start.' }
+    if ([string]$service.State -ne 'Running' -or [uint32]$service.ProcessId -eq 0) {
+        throw 'Exact runner service is not currently running.'
+    }
+    if (-not (Get-TargetListener)) { throw 'Exact runner service is running but its target listener was not observed.' }
+
+    return [pscustomobject]@{
+        Name = $serviceName
+        State = [string]$service.State
+        StartMode = [string]$service.StartMode
+        Executable = $expectedExecutable
+        ProcessId = [uint32]$service.ProcessId
+    }
 }
 
 function Get-SignedInWindowsUser {
@@ -198,16 +245,48 @@ function Install-TargetTask {
         return
     }
 
-    $script:InstallStage = 'signed_in_user_lookup'
-    $signedInUser = Get-SignedInWindowsUser
+    $script:InstallStage = 'target_runner_validation'
+    $fullRoot = Assert-TargetRunnerFiles
     $script:InstallStage = 'runner_identity_check'
     $currentIdentity = [string][Security.Principal.WindowsIdentity]::GetCurrent().Name
-    if ([string]::IsNullOrWhiteSpace($currentIdentity) -or -not $currentIdentity.Equals($signedInUser, [StringComparison]::OrdinalIgnoreCase)) {
+    if ([string]::IsNullOrWhiteSpace($currentIdentity)) {
+        throw 'The target runner Windows identity could not be resolved.'
+    }
+
+    $serviceIdentity = (
+        $currentIdentity.StartsWith('NT AUTHORITY\', [StringComparison]::OrdinalIgnoreCase) -or
+        $currentIdentity.StartsWith('NT SERVICE\', [StringComparison]::OrdinalIgnoreCase)
+    )
+    if ($serviceIdentity) {
+        $script:InstallStage = 'existing_service_validation'
+        $existingService = Get-ExactExistingRunnerService -FullRoot $fullRoot
+        $script:InstallStage = 'evidence_success_existing_service'
+        Write-Evidence 'SUCCESS' @{
+            persistence_mode = 'EXISTING_WINDOWS_SERVICE'
+            existing_service_reused = $true
+            service_modified = $false
+            scheduled_task_modified = $false
+            target_task_registered = $false
+            target_task_started = $false
+            signed_in_user_verified = $false
+            service_name = $existingService.Name
+            service_state = $existingService.State
+            service_start_mode = $existingService.StartMode
+            service_executable = $existingService.Executable
+            service_process_id = $existingService.ProcessId
+            target_listener_observed = $true
+        }
+        Write-Log ('install_decision=SUCCESS existing_service_reused=true service=' + $existingService.Name)
+        Write-Host ('windows_dr_autostart_decision=SUCCESS persistence_mode=EXISTING_WINDOWS_SERVICE service=' + $existingService.Name)
+        return
+    }
+
+    $script:InstallStage = 'signed_in_user_lookup'
+    $signedInUser = Get-SignedInWindowsUser
+    if (-not $currentIdentity.Equals($signedInUser, [StringComparison]::OrdinalIgnoreCase)) {
         throw 'The target runner must run under the signed-in Windows user.'
     }
 
-    $script:InstallStage = 'target_runner_validation'
-    $fullRoot = Assert-TargetRunnerFiles
     $script:InstallStage = 'state_script_copy'
     Ensure-StateRoot
     $source = (Resolve-Path -LiteralPath $PSCommandPath).Path
@@ -242,9 +321,12 @@ function Install-TargetTask {
         $script:TaskStarted = $true
         $script:InstallStage = 'evidence_success_reused'
         Write-Evidence 'SUCCESS' @{
+            persistence_mode = 'INTERACTIVE_USER_SCHEDULED_TASK'
             target_task_registered = $true
             target_task_started = $true
             target_task_reused = $true
+            scheduled_task_modified = $false
+            service_modified = $false
             signed_in_user_verified = $true
             stable_script = $StableScript
             target_listener_observed = $true
@@ -297,9 +379,12 @@ function Install-TargetTask {
 
     $script:InstallStage = 'evidence_success'
     Write-Evidence 'SUCCESS' @{
+        persistence_mode = 'INTERACTIVE_USER_SCHEDULED_TASK'
         target_task_registered = $true
         target_task_started = $true
         target_task_reused = $false
+        scheduled_task_modified = $true
+        service_modified = $false
         signed_in_user_verified = $true
         stable_script = $StableScript
         target_listener_observed = [bool](Get-TargetListener)
