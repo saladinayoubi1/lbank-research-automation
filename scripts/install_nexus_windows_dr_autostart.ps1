@@ -38,7 +38,7 @@ function Write-Evidence([string]$Decision, [hashtable]$Extra = @{}) {
     $parent = Split-Path -Parent $target
     if ($parent) { New-Item -ItemType Directory -Path $parent -Force | Out-Null }
     $payload = [ordered]@{
-        schema_version = 2
+        schema_version = 3
         generated_at_utc = [DateTime]::UtcNow.ToString('o')
         decision = $Decision
         runner_root = [IO.Path]::GetFullPath($RunnerRoot)
@@ -100,16 +100,22 @@ function Get-ExactExistingRunnerService([string]$FullRoot) {
         throw 'Exact runner service marker is empty or malformed.'
     }
 
-    $service = Get-CimInstance -ClassName Win32_Service |
-        Where-Object { [string]$_.Name -eq $serviceName } |
-        Select-Object -First 1
-    if (-not $service) { throw 'Exact runner Windows service was not found.' }
+    # The recovery runner's service identity has returned provider-level "Not
+    # found" errors from Win32_Service even though the service is active. Read
+    # its immutable configuration directly, then use ServiceController for the
+    # live state. Neither operation changes the service.
+    $serviceRegistryPath = 'Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\' + $serviceName
+    if (-not (Test-Path -LiteralPath $serviceRegistryPath -PathType Container)) {
+        throw 'Exact runner Windows service registry key was not found.'
+    }
+    $serviceConfig = Get-ItemProperty -LiteralPath $serviceRegistryPath -ErrorAction Stop
+    $serviceController = Get-Service -Name $serviceName -ErrorAction Stop
 
     $expectedExecutable = [IO.Path]::GetFullPath((Join-Path $FullRoot 'bin\RunnerService.exe'))
     if (-not (Test-Path -LiteralPath $expectedExecutable -PathType Leaf)) {
         throw 'Exact runner service executable is missing.'
     }
-    $rawPath = [Environment]::ExpandEnvironmentVariables(([string]$service.PathName).Trim())
+    $rawPath = [Environment]::ExpandEnvironmentVariables(([string]$serviceConfig.ImagePath).Trim())
     $actualExecutable = ''
     if ($rawPath.StartsWith('"')) {
         $match = [regex]::Match($rawPath, '^"([^"]+)"(?:\s+.*)?$')
@@ -122,18 +128,17 @@ function Get-ExactExistingRunnerService([string]$FullRoot) {
         -not ([IO.Path]::GetFullPath($actualExecutable)).Equals($expectedExecutable, [StringComparison]::OrdinalIgnoreCase)) {
         throw 'Runner service executable is not bound to the exact target root.'
     }
-    if ([string]$service.StartMode -ne 'Auto') { throw 'Exact runner service is not configured for automatic start.' }
-    if ([string]$service.State -ne 'Running' -or [uint32]$service.ProcessId -eq 0) {
+    if ([int]$serviceConfig.Start -ne 2) { throw 'Exact runner service is not configured for automatic start.' }
+    if ([string]$serviceController.Status -ne 'Running') {
         throw 'Exact runner service is not currently running.'
     }
     if (-not (Get-TargetListener)) { throw 'Exact runner service is running but its target listener was not observed.' }
 
     return [pscustomobject]@{
         Name = $serviceName
-        State = [string]$service.State
-        StartMode = [string]$service.StartMode
+        State = [string]$serviceController.Status
+        StartMode = 'Auto'
         Executable = $expectedExecutable
-        ProcessId = [uint32]$service.ProcessId
     }
 }
 
@@ -273,7 +278,6 @@ function Install-TargetTask {
             service_state = $existingService.State
             service_start_mode = $existingService.StartMode
             service_executable = $existingService.Executable
-            service_process_id = $existingService.ProcessId
             target_listener_observed = $true
         }
         Write-Log ('install_decision=SUCCESS existing_service_reused=true service=' + $existingService.Name)
