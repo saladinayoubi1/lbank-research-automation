@@ -2,6 +2,7 @@ from pathlib import Path
 
 
 WORKFLOW = Path(".github/workflows/nexus-windows-dr-persistence.yml")
+SCRIPT = Path("scripts/install_nexus_windows_dr_autostart.ps1")
 
 
 def _persist_job() -> str:
@@ -53,3 +54,35 @@ def test_physical_dr_preserves_read_only_and_paper_only_boundaries() -> None:
     assert "runner_credentials_modified" in text
     assert "other_runner_paths_modified" in text
     assert "live_trading_authority" in text
+
+
+def test_service_identity_reuses_only_exact_automatic_running_runner_service() -> None:
+    text = SCRIPT.read_text(encoding="utf-8")
+
+    assert "schema_version = 2" in text
+    assert "Get-ExactExistingRunnerService" in text
+    assert "Join-Path $FullRoot '.service'" in text
+    assert "Join-Path $FullRoot 'bin\\RunnerService.exe'" in text
+    assert "Get-CimInstance -ClassName Win32_Service" in text
+    assert "StartsWith($expectedExecutable" in text
+    assert "StartMode -ne 'Auto'" in text
+    assert "State -ne 'Running'" in text
+    assert "Get-TargetListener" in text
+    assert "persistence_mode = 'EXISTING_WINDOWS_SERVICE'" in text
+    assert "existing_service_reused = $true" in text
+    assert "service_modified = $false" in text
+    assert "scheduled_task_modified = $false" in text
+    assert "service_installed = $false" in text
+
+    service_branch = text.index("if ($serviceIdentity)")
+    signed_in_lookup = text.index("$signedInUser = Get-SignedInWindowsUser")
+    assert service_branch < signed_in_lookup
+    for forbidden in (
+        "New-Service",
+        "Set-Service",
+        "Start-Service",
+        "Stop-Service",
+        "config.cmd",
+        "remove.cmd",
+    ):
+        assert forbidden not in text
