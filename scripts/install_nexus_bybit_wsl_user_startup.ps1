@@ -4,7 +4,8 @@ param(
     [string]$Mode = 'Install',
     [string]$Distribution = 'Ubuntu',
     [string]$RunnerRoot = '/opt/nexus-bybit-runner',
-    [string]$ExpectedRunnerName = 'NEXUS-BYBIT-WSL'
+    [string]$ExpectedRunnerName = 'NEXUS-BYBIT-WSL',
+    [int]$Generation = 6
 )
 
 $ErrorActionPreference = 'Stop'
@@ -13,6 +14,7 @@ Set-StrictMode -Version 2.0
 if ($Distribution -ne 'Ubuntu') { throw 'Distribution must remain pinned to Ubuntu.' }
 if ($RunnerRoot -ne '/opt/nexus-bybit-runner') { throw 'RunnerRoot must remain pinned.' }
 if ($ExpectedRunnerName -ne 'NEXUS-BYBIT-WSL') { throw 'ExpectedRunnerName must remain pinned.' }
+if ($Generation -ne 6) { throw 'Generation must remain pinned to the reviewed watchdog generation.' }
 
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
 $sid = [string]$identity.User.Value
@@ -34,7 +36,7 @@ $startupRoot = [Environment]::GetFolderPath('Startup')
 $startupVbs = Join-Path $startupRoot 'NEXUS-Bybit-WSL-User-Startup.vbs'
 $legacyStartupCmd = Join-Path $startupRoot 'NEXUS-Bybit-WSL-User-Startup.cmd'
 $wslTimeoutMilliseconds = 10000
-$watchdogGeneration = 5
+$watchdogGeneration = $Generation
 $managedRunnerLog = '/tmp/nexus-bybit-runner.log'
 $managedChildMissingListenerThreshold = 3
 
@@ -252,10 +254,8 @@ function Start-ManagedRunnerProcess {
     }
 }
 
-function Stop-PreviousUserWatchdogs {
-    # The stable watchdog path is reused across upgrades. Kill only same-user
-    # PowerShell processes whose command line explicitly points at that script
-    # in -Mode Watch. This is process cleanup only; no task/service/ACL mutation.
+function Get-UserWatchdogProcessIds([bool]$CurrentGenerationOnly = $false) {
+    $ids = New-Object 'System.Collections.Generic.List[int]'
     try {
         $query = "SELECT ProcessId, CommandLine FROM Win32_Process WHERE Name='powershell.exe'"
         $searcher = New-Object System.Management.ManagementObjectSearcher($query)
@@ -266,25 +266,46 @@ function Stop-PreviousUserWatchdogs {
             if (-not $commandLine) { continue }
             if ($commandLine.IndexOf($stableScript, [StringComparison]::OrdinalIgnoreCase) -lt 0) { continue }
             if ($commandLine -notmatch '(?i)-Mode\s+Watch') { continue }
-            try {
-                [Diagnostics.Process]::GetProcessById($pidValue).Kill()
-                Write-Log ('previous_watchdog_terminated_pid=' + $pidValue)
-            }
-            catch {
-                Write-Log ('previous_watchdog_terminate_failed_pid=' + $pidValue)
-            }
+            if ($CurrentGenerationOnly -and
+                $commandLine -notmatch ('(?i)-Generation\s+' + $watchdogGeneration + '(?:\s|$)')) { continue }
+            [void]$ids.Add($pidValue)
         }
         $searcher.Dispose()
     }
     catch {
-        Write-Log ('previous_watchdog_inventory_error=' + $_.Exception.GetType().Name)
+        Write-Log ('watchdog_inventory_error=' + $_.Exception.GetType().Name)
+        throw
+    }
+    return $ids.ToArray()
+}
+
+function Stop-PreviousUserWatchdogs {
+    # The stable watchdog path is reused across upgrades. Kill only same-user
+    # PowerShell processes whose command line explicitly points at that script
+    # in -Mode Watch. Re-check the Linux Worker immediately before every stop;
+    # upgrades fail closed instead of interrupting an active or unknown job.
+    foreach ($pidValue in @(Get-UserWatchdogProcessIds)) {
+        $state = Get-RunnerProcessState
+        if (-not $state.known) {
+            throw 'Previous watchdog upgrade deferred because runner state is unknown.'
+        }
+        if ($state.worker) {
+            throw 'Previous watchdog upgrade deferred while Runner.Worker is active.'
+        }
+        try {
+            [Diagnostics.Process]::GetProcessById($pidValue).Kill()
+            Write-Log ('previous_watchdog_terminated_pid=' + $pidValue)
+        }
+        catch {
+            Write-Log ('previous_watchdog_terminate_failed_pid=' + $pidValue)
+        }
     }
 }
 
 function Write-Evidence([string]$Decision, [bool]$ListenerObserved) {
     New-Item -ItemType Directory -Path $stateRoot -Force | Out-Null
     $payload = [ordered]@{
-        schema_version = 4
+        schema_version = 5
         generated_at_utc = [DateTime]::UtcNow.ToString('o')
         decision = $Decision
         windows_identity = [string]$identity.Name
@@ -312,8 +333,31 @@ function Write-Evidence([string]$Decision, [bool]$ListenerObserved) {
         private_exchange_credentials_used = $false
         live_trading_authority_changed = $false
         popup_launcher_used = $false
+        actions_process_tracking_detached = $true
     }
     $payload | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $evidencePath -Encoding UTF8
+}
+
+function Write-RecoverySuccessOutput([bool]$ReusedCurrentWatchdog) {
+    Write-Host 'bybit_wsl_user_startup_recovery=PASS'
+    Write-Host "startup_path=$startupVbs"
+    Write-Host "watchdog_path=$stableScript"
+    Write-Host ('watchdog_generation=' + $watchdogGeneration)
+    Write-Host ('current_watchdog_reused=' + $ReusedCurrentWatchdog.ToString().ToLowerInvariant())
+    Write-Host 'watchdog_owns_wsl_child=true'
+    Write-Host 'managed_child_liveness_probe=true'
+    Write-Host ('missing_listener_recycle_after_probes=' + $managedChildMissingListenerThreshold)
+    Write-Host 'stale_idle_listener_recycle=true'
+    Write-Host 'active_worker_interrupt_allowed=false'
+    Write-Host 'unknown_probe_interrupt_allowed=false'
+    Write-Host ('wsl_call_timeout_seconds=' + [int]($wslTimeoutMilliseconds / 1000))
+    Write-Host 'administrator_required=false'
+    Write-Host 'task_scheduler_used=false'
+    Write-Host 'runner_registration_modified=false'
+    Write-Host 'windows_acl_modified=false'
+    Write-Host 'live_trading_authority_changed=false'
+    Write-Host 'popup_launcher_used=false'
+    Write-Host 'actions_process_tracking_detached=true'
 }
 
 function Run-Watchdog {
@@ -433,11 +477,18 @@ New-Item -ItemType Directory -Path $stateRoot -Force | Out-Null
 New-Item -ItemType Directory -Path $startupRoot -Force | Out-Null
 
 $source = [IO.Path]::GetFullPath($PSCommandPath)
-if (-not $source.Equals([IO.Path]::GetFullPath($stableScript), [StringComparison]::OrdinalIgnoreCase)) {
+$stableWasCurrent = $false
+if (Test-Path -LiteralPath $stableScript -PathType Leaf) {
+    $sourceHash = (Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash
+    $stableHash = (Get-FileHash -LiteralPath $stableScript -Algorithm SHA256).Hash
+    $stableWasCurrent = ($sourceHash -eq $stableHash)
+}
+if (-not $source.Equals([IO.Path]::GetFullPath($stableScript), [StringComparison]::OrdinalIgnoreCase) -and
+    -not $stableWasCurrent) {
     Copy-Item -LiteralPath $source -Destination $stableScript -Force
 }
 
-$watchCommand = 'powershell.exe -NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File "' + $stableScript + '" -Mode Watch'
+$watchCommand = 'powershell.exe -NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File "' + $stableScript + '" -Mode Watch -Generation ' + $watchdogGeneration
 $escapedWatchCommand = $watchCommand.Replace('"', '""')
 $vbs = 'Set shell = CreateObject("WScript.Shell")' + "`r`n" + 'shell.Run "' + $escapedWatchCommand + '", 0, False' + "`r`n"
 [IO.File]::WriteAllText($startupVbs, $vbs, (New-Object Text.ASCIIEncoding))
@@ -445,18 +496,34 @@ if (Test-Path -LiteralPath $legacyStartupCmd -PathType Leaf) {
     Remove-Item -LiteralPath $legacyStartupCmd -Force
 }
 
+$currentWatchdogs = @(Get-UserWatchdogProcessIds -CurrentGenerationOnly $true)
+if ($stableWasCurrent -and $currentWatchdogs.Count -gt 0) {
+    $listener = Test-Listener
+    Write-Evidence -Decision $(if ($listener) { 'USER_CONTEXT_MANAGED_CHILD_LIVENESS_SELF_HEAL_ACTIVE' } else { 'CURRENT_WATCHDOG_RUNNING_LISTENER_NOT_OBSERVED' }) -ListenerObserved $listener
+    if (-not $listener) { throw 'Current detached watchdog is running but NEXUS-BYBIT-WSL listener was not observed.' }
+    Write-RecoverySuccessOutput -ReusedCurrentWatchdog $true
+    exit 0
+}
+
 Stop-PreviousUserWatchdogs
 Start-Sleep -Seconds 1
 
 $psi = New-Object Diagnostics.ProcessStartInfo
 $psi.FileName = 'powershell.exe'
-$psi.Arguments = '-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File "' + $stableScript + '" -Mode Watch'
+$psi.Arguments = '-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File "' + $stableScript + '" -Mode Watch -Generation ' + $watchdogGeneration
 $psi.UseShellExecute = $false
 $psi.CreateNoWindow = $true
 $psi.WindowStyle = [Diagnostics.ProcessWindowStyle]::Hidden
 $proc = New-Object Diagnostics.Process
 $proc.StartInfo = $psi
-if (-not $proc.Start()) { throw 'Unable to start user-context watchdog.' }
+$previousTrackingId = [Environment]::GetEnvironmentVariable('RUNNER_TRACKING_ID', 'Process')
+[Environment]::SetEnvironmentVariable('RUNNER_TRACKING_ID', $null, 'Process')
+try {
+    if (-not $proc.Start()) { throw 'Unable to start user-context watchdog.' }
+}
+finally {
+    [Environment]::SetEnvironmentVariable('RUNNER_TRACKING_ID', $previousTrackingId, 'Process')
+}
 $proc.Dispose()
 
 Start-Sleep -Seconds 10
@@ -464,21 +531,5 @@ $listener = Test-Listener
 Write-Evidence -Decision $(if ($listener) { 'USER_CONTEXT_MANAGED_CHILD_LIVENESS_SELF_HEAL_ACTIVE' } else { 'WATCHDOG_STARTED_LISTENER_NOT_YET_OBSERVED' }) -ListenerObserved $listener
 if (-not $listener) { throw 'Watchdog started but NEXUS-BYBIT-WSL listener was not observed.' }
 
-Write-Host 'bybit_wsl_user_startup_recovery=PASS'
-Write-Host "startup_path=$startupVbs"
-Write-Host "watchdog_path=$stableScript"
-Write-Host ('watchdog_generation=' + $watchdogGeneration)
-Write-Host 'watchdog_owns_wsl_child=true'
-Write-Host 'managed_child_liveness_probe=true'
-Write-Host ('missing_listener_recycle_after_probes=' + $managedChildMissingListenerThreshold)
-Write-Host 'stale_idle_listener_recycle=true'
-Write-Host 'active_worker_interrupt_allowed=false'
-Write-Host 'unknown_probe_interrupt_allowed=false'
-Write-Host ('wsl_call_timeout_seconds=' + [int]($wslTimeoutMilliseconds / 1000))
-Write-Host 'administrator_required=false'
-Write-Host 'task_scheduler_used=false'
-Write-Host 'runner_registration_modified=false'
-Write-Host 'windows_acl_modified=false'
-Write-Host 'live_trading_authority_changed=false'
-Write-Host 'popup_launcher_used=false'
+Write-RecoverySuccessOutput -ReusedCurrentWatchdog $false
 exit 0
