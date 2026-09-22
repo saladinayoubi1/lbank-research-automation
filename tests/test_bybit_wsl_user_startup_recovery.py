@@ -43,7 +43,8 @@ def test_recovery_uses_per_user_startup_and_managed_child_watchdog() -> None:
     assert "-Mode Watch" in text
     assert "Start-Sleep -Seconds 15" in text
     assert "Local\\NEXUS-Bybit-WSL-Watchdog-v" in text
-    assert "$watchdogGeneration = 5" in text
+    assert "$Generation = 6" in text
+    assert "$watchdogGeneration = $Generation" in text
     assert "Start-ManagedRunnerProcess" in text
     assert "exec ./run.sh" in text
     assert "RUNNER_ALLOW_RUNASROOT=1" in text
@@ -51,6 +52,33 @@ def test_recovery_uses_per_user_startup_and_managed_child_watchdog() -> None:
     assert "watchdog_owns_wsl_child = $true" in text
     assert "watchdog_owns_wsl_child=true" in text
     assert "nohup ./run.sh" not in text
+
+
+def test_install_detaches_watchdog_from_actions_process_cleanup() -> None:
+    text = _text()
+    assert "schema_version = 5" in text
+    assert "actions_process_tracking_detached = $true" in text
+    assert "actions_process_tracking_detached=true" in text
+    assert "GetEnvironmentVariable('RUNNER_TRACKING_ID', 'Process')" in text
+    assert "SetEnvironmentVariable('RUNNER_TRACKING_ID', $null, 'Process')" in text
+    assert "SetEnvironmentVariable('RUNNER_TRACKING_ID', $previousTrackingId, 'Process')" in text
+    detached = text.split(
+        "$previousTrackingId = [Environment]::GetEnvironmentVariable", 1
+    )[1].split("$proc.Dispose()", 1)[0]
+    assert detached.index("SetEnvironmentVariable('RUNNER_TRACKING_ID', $null") < detached.index(
+        "$proc.Start()"
+    )
+
+
+def test_current_watchdog_is_reused_and_upgrade_preserves_active_worker() -> None:
+    text = _text()
+    assert "Get-UserWatchdogProcessIds" in text
+    assert "-CurrentGenerationOnly $true" in text
+    assert "-Generation ' + $watchdogGeneration" in text
+    assert "$stableWasCurrent -and $currentWatchdogs.Count -gt 0" in text
+    assert "Write-RecoverySuccessOutput -ReusedCurrentWatchdog $true" in text
+    assert "Previous watchdog upgrade deferred while Runner.Worker is active." in text
+    assert "Previous watchdog upgrade deferred because runner state is unknown." in text
 
 
 def test_wsl_probe_interop_is_timeout_bounded() -> None:
