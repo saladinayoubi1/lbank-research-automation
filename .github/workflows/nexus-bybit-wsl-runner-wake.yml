@@ -7,14 +7,18 @@ on:
   push:
     branches: [main]
     paths:
+      - scripts/install_nexus_bybit_wsl_user_startup.ps1
       - .github/workflows/nexus-bybit-wsl-runner-wake.yml
 
-# Bootstrap-safe recovery for the already-registered Bybit WSL runner.
-# Keep the recovery contract aligned with install_nexus_bybit_wsl_user_startup.ps1:
-# exact Ubuntu distribution, exact isolated runner root, exact existing runner name,
-# procfs liveness checks, and no registration/credential/ACL/trading-authority mutation.
+# Bootstrap-safe recovery for the already-registered Bybit WSL runner. The
+# signed-in Lenovo user watchdog owns the long-lived wsl.exe child so it is not
+# coupled to the lifetime of this GitHub Actions job. Registration, credentials,
+# Windows ACLs, Task Scheduler, and trading authority remain untouched.
 permissions:
   contents: read
+
+env:
+  NEXUS_BYBIT_WSL_STARTUP_SCRIPT_BLOB_SHA: 58ceea71d6d05d4035c723acba8216562ad709ad
 
 concurrency:
   group: nexus-bybit-wsl-runner-wake
@@ -24,9 +28,9 @@ jobs:
   wake:
     if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') || github.event_name == 'push'
     runs-on: [self-hosted, Windows, X64, nexus-local]
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
-      - name: Verify and wake exact existing Bybit WSL runner
+      - name: Prepare exact pinned user-context watchdog without action downloads
         shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
         run: |
           $ErrorActionPreference = 'Stop'
@@ -35,10 +39,11 @@ jobs:
 
           $expectedWindowsRunnerName = 'NEXUS-LOCAL-RUNNER'
           $expectedRepository = 'saladinayoubi1/lbank-research-automation'
-          $distribution = 'Ubuntu'
-          $wslRunnerRoot = '/opt/nexus-bybit-runner'
-          $expectedWslRunnerName = 'NEXUS-BYBIT-WSL'
-          $wsl = Join-Path $env:SystemRoot 'System32\wsl.exe'
+          $relativePath = 'scripts\install_nexus_bybit_wsl_user_startup.ps1'
+          $expectedBlob = $env:NEXUS_BYBIT_WSL_STARTUP_SCRIPT_BLOB_SHA.ToLowerInvariant()
+          $targetSha = [string]$env:GITHUB_SHA
+          $prepared = Join-Path $env:RUNNER_TEMP "nexus-bybit-wsl-user-startup-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT.ps1"
+          $rawUrl = "https://raw.githubusercontent.com/$expectedRepository/$targetSha/scripts/install_nexus_bybit_wsl_user_startup.ps1"
 
           if ([string]$env:RUNNER_NAME -ne $expectedWindowsRunnerName) {
             throw "exact local runner name mismatch: $env:RUNNER_NAME"
@@ -46,172 +51,150 @@ jobs:
           if ([string]$env:GITHUB_REPOSITORY -ne $expectedRepository) {
             throw "exact repository binding mismatch: $env:GITHUB_REPOSITORY"
           }
-          if ([string]$env:RUNNER_OS -ne 'Windows') {
-            throw "unexpected runner OS: $env:RUNNER_OS"
-          }
-          if ([string]$env:RUNNER_ARCH -ne 'X64') {
-            throw "unexpected runner architecture: $env:RUNNER_ARCH"
-          }
-          if (-not (Test-Path -LiteralPath $wsl -PathType Leaf)) {
-            throw 'wsl.exe is required for native Bybit runner recovery.'
+          if ([string]$env:RUNNER_OS -ne 'Windows' -or [string]$env:RUNNER_ARCH -ne 'X64') {
+            throw "unexpected recovery runner platform: $env:RUNNER_OS/$env:RUNNER_ARCH"
           }
 
-          function ConvertTo-WslBashWrapper {
-            param([Parameter(Mandatory = $true)][string]$Command)
-            $normalizedCommand = $Command.Replace("`r`n", "`n").Replace("`r", "`n")
-            $bytes = [System.Text.Encoding]::UTF8.GetBytes($normalizedCommand)
-            $encoded = [Convert]::ToBase64String($bytes)
-            return "printf '%s' '$encoded' | base64 -d | bash"
+          function Get-GitBlob([string]$Path) {
+            if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return '' }
+            $value = (& git hash-object -- $Path 2>$null)
+            if ($LASTEXITCODE -ne 0 -or -not $value) { return '' }
+            return ([string]$value).Trim().ToLowerInvariant()
           }
 
-          function Invoke-Wsl {
-            param([Parameter(Mandatory = $true)][string]$Command)
-            $wrappedCommand = ConvertTo-WslBashWrapper -Command $Command
-            $psi = New-Object System.Diagnostics.ProcessStartInfo
-            $psi.FileName = $wsl
-            $psi.Arguments = "-d $distribution -u root -- bash -lc `"$wrappedCommand`""
-            $psi.UseShellExecute = $false
-            $psi.CreateNoWindow = $true
-            $psi.RedirectStandardOutput = $true
-            $psi.RedirectStandardError = $true
+          Remove-Item -LiteralPath $prepared -Force -ErrorAction SilentlyContinue
+          $source = ''
+          $cached = Join-Path $env:GITHUB_WORKSPACE $relativePath
+          if ((Get-GitBlob -Path $cached) -eq $expectedBlob) {
+            Copy-Item -LiteralPath $cached -Destination $prepared -Force
+            $source = 'local-pinned-cache'
+          }
 
-            $process = New-Object System.Diagnostics.Process
-            $process.StartInfo = $psi
-            if (-not $process.Start()) {
-              $process.Dispose()
-              throw 'Could not start bounded WSL probe process.'
-            }
-
-            try {
-              if (-not $process.WaitForExit(15000)) {
-                try { $process.Kill() } catch {}
-                throw 'Bounded WSL probe timed out after 15 seconds.'
+          if (-not $source) {
+            for ($attempt = 1; $attempt -le 4; $attempt++) {
+              try {
+                Invoke-WebRequest -UseBasicParsing -Uri $rawUrl -OutFile $prepared -TimeoutSec 20
+                if ((Get-GitBlob -Path $prepared) -eq $expectedBlob) {
+                  $source = "bounded-raw-fetch-attempt-$attempt"
+                  break
+                }
+                Write-Warning "Downloaded watchdog failed pinned blob verification on attempt $attempt."
               }
-
-              $stdout = $process.StandardOutput.ReadToEnd().Trim()
-              $stderr = $process.StandardError.ReadToEnd().Trim()
-              $text = @($stdout, $stderr) | Where-Object { $_ } | Out-String
-              return [pscustomobject]@{ Code = [int]$process.ExitCode; Text = $text.Trim() }
-            }
-            finally {
-              $process.Dispose()
+              catch {
+                Write-Warning "Bounded watchdog fetch attempt $attempt failed: $($_.Exception.Message)"
+              }
+              if ($attempt -lt 4) {
+                Remove-Item -LiteralPath $prepared -Force -ErrorAction SilentlyContinue
+                Start-Sleep -Seconds (2 * $attempt)
+              }
             }
           }
 
-          function Get-ListenerState {
-            $command = @(
-              'listener=0',
-              'for proc in /proc/[0-9]*; do',
-              '  [ -r "$proc/cmdline" ] || continue',
-              '  exe=""',
-              '  IFS= read -r -d "" exe < "$proc/cmdline" || continue',
-              '  case "$exe" in',
-              '    __RUNNER_ROOT__/bin/Runner.Listener) listener=1; break ;;',
-              '  esac',
-              'done',
-              'printf "listener=%s\n" "$listener"'
-            ) -join "`n"
-            $command = $command.Replace('__RUNNER_ROOT__', $wslRunnerRoot)
-            $probe = Invoke-Wsl -Command $command
-            if ($probe.Code -ne 0) {
-              return [pscustomobject]@{ Known = $false; Listener = $false }
-            }
-            if ($probe.Text -match '(?m)^listener=1$') {
-              return [pscustomobject]@{ Known = $true; Listener = $true }
-            }
-            if ($probe.Text -match '(?m)^listener=0$') {
-              return [pscustomobject]@{ Known = $true; Listener = $false }
-            }
-            return [pscustomobject]@{ Known = $false; Listener = $false }
+          $actualBlob = Get-GitBlob -Path $prepared
+          if (-not $source -or $actualBlob -ne $expectedBlob) {
+            throw "Exact pinned Bybit WSL watchdog unavailable: expected=$expectedBlob actual=$actualBlob"
           }
 
-          Write-Host "recovery_runner=$env:RUNNER_NAME"
-          Write-Host "recovery_runner_binding=$env:GITHUB_REPOSITORY"
-          Write-Host 'recovery_runner_identity=PASS'
-          Write-Host "source_sha=$env:GITHUB_SHA"
-          Write-Host 'legacy_scheduled_tasks_used=false'
+          $tokens = $null
+          $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile($prepared, [ref]$tokens, [ref]$errors)
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            throw 'Pinned Bybit WSL watchdog failed PowerShell parsing.'
+          }
+
+          $utf8 = New-Object Text.UTF8Encoding($false)
+          [IO.File]::AppendAllText($env:GITHUB_ENV, "NEXUS_BYBIT_WSL_RECOVERY_SCRIPT=$prepared`n", $utf8)
+          Write-Host "physical_source_transport=$source"
+          Write-Host "source_sha=$targetSha"
+          Write-Host "bybit_wsl_watchdog_blob=$actualBlob"
+          Write-Host 'hosted_actions_used=false'
+          Write-Host 'runner_registration_mutated=false'
+          Write-Host 'runner_credentials_mutated=false'
           Write-Host 'windows_task_acl_modified=false'
+          Write-Host 'live_trading_authority_changed=false'
+
+      - name: Install and start durable signed-in-user watchdog
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass `
+            -File $env:NEXUS_BYBIT_WSL_RECOVERY_SCRIPT `
+            -Mode Install `
+            -Distribution Ubuntu `
+            -RunnerRoot /opt/nexus-bybit-runner `
+            -ExpectedRunnerName NEXUS-BYBIT-WSL
+          if ($LASTEXITCODE -ne 0) {
+            throw "Durable Bybit WSL watchdog installation failed with exit code $LASTEXITCODE."
+          }
+
+      - name: Require detached watchdog and live exact listener
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Set-StrictMode -Version 2.0
+
+          $stateRoot = Join-Path $env:LOCALAPPDATA 'NEXUS\BybitWSLUserStartup'
+          $evidencePath = Join-Path $stateRoot 'evidence.json'
+          if (-not (Test-Path -LiteralPath $evidencePath -PathType Leaf)) {
+            throw 'Durable Bybit WSL watchdog evidence is missing.'
+          }
+          $evidence = Get-Content -LiteralPath $evidencePath -Raw | ConvertFrom-Json
+          if ($evidence.schema_version -ne 5) { throw "Unexpected evidence schema: $($evidence.schema_version)" }
+          if ($evidence.decision -ne 'USER_CONTEXT_MANAGED_CHILD_LIVENESS_SELF_HEAL_ACTIVE') {
+            throw "Durable recovery did not reach the active state: $($evidence.decision)"
+          }
+          if ($evidence.expected_runner_name -ne 'NEXUS-BYBIT-WSL' -or $evidence.distribution -ne 'Ubuntu') {
+            throw 'Exact Bybit WSL runner identity was not preserved.'
+          }
+          if ($evidence.listener_observed -ne $true -or $evidence.watchdog_generation -ne 6) {
+            throw 'Exact Bybit WSL listener or current watchdog generation was not observed.'
+          }
+          foreach ($requiredFalse in @(
+            'task_scheduler_used',
+            'runner_registration_modified',
+            'runner_credentials_modified',
+            'windows_acl_modified',
+            'windows_service_modified',
+            'private_exchange_credentials_used',
+            'live_trading_authority_changed'
+          )) {
+            if ($evidence.$requiredFalse -ne $false) { throw "Safety boundary changed: $requiredFalse" }
+          }
+          if ($evidence.actions_process_tracking_detached -ne $true) {
+            throw 'Watchdog did not detach from GitHub Actions process tracking.'
+          }
+          if (-not (Test-Path -LiteralPath $evidence.startup_path -PathType Leaf) -or
+              -not (Test-Path -LiteralPath $evidence.stable_watchdog_path -PathType Leaf)) {
+            throw 'Per-user startup launcher or stable watchdog is missing.'
+          }
+
+          Start-Sleep -Seconds 20
+          $stableWatchdog = [string]$evidence.stable_watchdog_path
+          $watchdogFound = $false
+          $query = "SELECT ProcessId, CommandLine FROM Win32_Process WHERE Name='powershell.exe'"
+          $searcher = New-Object System.Management.ManagementObjectSearcher($query)
+          try {
+            foreach ($item in @($searcher.Get())) {
+              $commandLine = [string]$item.CommandLine
+              if ($commandLine -and
+                  $commandLine.IndexOf($stableWatchdog, [StringComparison]::OrdinalIgnoreCase) -ge 0 -and
+                  $commandLine -match '(?i)-Mode\s+Watch') {
+                $watchdogFound = $true
+                break
+              }
+            }
+          }
+          finally {
+            $searcher.Dispose()
+          }
+          if (-not $watchdogFound) { throw 'Detached signed-in-user watchdog did not remain alive.' }
+
+          Write-Host 'bybit_wsl_durable_recovery=PASS'
+          Write-Host 'post_install_watchdog_process=RUNNING'
+          Write-Host 'wsl_runner_listener=RUNNING'
+          Write-Host 'actions_process_tracking_detached=true'
+          Write-Host 'task_scheduler_used=false'
           Write-Host 'runner_registration_mutated=false'
           Write-Host 'runner_credentials_mutated=false'
           Write-Host 'live_trading_authority_changed=false'
-          Write-Host 'wsl_probe_timeout_seconds=15'
-          Write-Host 'wsl_command_transport=base64-argv'
-
-          $registrationProbe = @(
-            'test -x __RUNNER_ROOT__/run.sh || { printf "registration_check=run_sh_missing\n"; exit 10; }',
-            'test -f __RUNNER_ROOT__/.runner || { printf "registration_check=runner_config_missing\n"; exit 11; }',
-            'found=0',
-            'while IFS= read -r line; do',
-            '  case "$line" in',
-            '    *__EXPECTED_RUNNER_NAME__*) found=1 ;;',
-            '  esac',
-            'done < __RUNNER_ROOT__/.runner',
-            'if [ "$found" -ne 1 ]; then printf "registration_check=runner_name_mismatch\n"; exit 12; fi',
-            'printf "registration_check=pass\n"'
-          ) -join "`n"
-          $registrationProbe = $registrationProbe.Replace('__RUNNER_ROOT__', $wslRunnerRoot).Replace('__EXPECTED_RUNNER_NAME__', $expectedWslRunnerName)
-          $probe = Invoke-Wsl -Command $registrationProbe
-          if ($probe.Code -ne 0) {
-            if ($probe.Text) { Write-Host $probe.Text }
-            throw "Exact existing Bybit WSL runner registration could not be verified (exit=$($probe.Code))."
-          }
-          Write-Host 'wsl_runner_registration=PASS'
-
-          $state = Get-ListenerState
-          if (-not $state.Known) {
-            throw 'Bybit WSL listener state could not be determined safely.'
-          }
-          if ($state.Listener) {
-            Write-Host 'wsl_runner_listener=ALREADY_RUNNING'
-            Write-Host 'bybit_wsl_native_wake=PASS'
-            exit 0
-          }
-
-          $previousTrackingId = [string]$env:RUNNER_TRACKING_ID
-          $env:RUNNER_TRACKING_ID = ''
-          $hostStarted = $false
-          $startCommand = "cd '$wslRunnerRoot' && export RUNNER_ALLOW_RUNASROOT=1 && export RUNNER_TRACKING_ID= && exec ./run.sh >>'/tmp/nexus-bybit-runner.log' 2>&1"
-          $wrappedStartCommand = ConvertTo-WslBashWrapper -Command $startCommand
-          $psi = New-Object Diagnostics.ProcessStartInfo
-          $psi.FileName = $wsl
-          $psi.Arguments = "-d $distribution -u root -- bash -lc `"$wrappedStartCommand`""
-          $psi.UseShellExecute = $false
-          $psi.CreateNoWindow = $true
-          $psi.WindowStyle = [Diagnostics.ProcessWindowStyle]::Hidden
-          $hostProcess = New-Object Diagnostics.Process
-          $hostProcess.StartInfo = $psi
-
-          try {
-            if (-not $hostProcess.Start()) {
-              throw 'Could not start the existing Bybit WSL runner host process.'
-            }
-            $hostStarted = $true
-            Start-Sleep -Seconds 5
-            if ($hostProcess.HasExited) {
-              throw "Existing Bybit WSL runner exited during startup (exit=$($hostProcess.ExitCode))."
-            }
-
-            $observed = $false
-            for ($attempt = 1; $attempt -le 20; $attempt++) {
-              $state = Get-ListenerState
-              if ($state.Known -and $state.Listener) {
-                $observed = $true
-                break
-              }
-              Start-Sleep -Seconds 1
-            }
-            if (-not $observed) {
-              throw 'Bybit WSL Runner.Listener was not observed within the bounded startup window.'
-            }
-
-            Write-Host "wsl_host_pid=$($hostProcess.Id)"
-            Write-Host 'wsl_runner_start_method=managed-existing-run-sh'
-            Write-Host 'wsl_runner_listener=RUNNING'
-            Write-Host 'bybit_wsl_native_wake=PASS'
-          }
-          finally {
-            $env:RUNNER_TRACKING_ID = $previousTrackingId
-            if ($hostStarted -and $hostProcess.HasExited) {
-              $hostProcess.Dispose()
-            }
-          }

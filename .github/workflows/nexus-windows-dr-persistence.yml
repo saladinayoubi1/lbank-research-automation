@@ -45,6 +45,8 @@ jobs:
           if ($persist -match 'uses:\s+actions/checkout@') { throw 'Physical persistence job must not use actions/checkout.' }
           foreach ($required in @(
             'https://github.com/${env:GITHUB_REPOSITORY}.git',
+            '$sourceRoot = Join-Path $env:RUNNER_TEMP',
+            'NEXUS_DR_SOURCE_ROOT=',
             'git config --local --unset-all http.https://github.com/.extraheader',
             'http.version=HTTP/1.1',
             '$fetchMaxAttempts = 3',
@@ -55,7 +57,15 @@ jobs:
           )) {
             if (-not $persist.Contains($required)) { throw "Required physical exact-fetch marker missing: $required" }
           }
-          foreach ($forbidden in @('x-access-token', 'Authorization: Bearer', 'http.extraHeader')) {
+          foreach ($forbidden in @(
+            'x-access-token',
+            'Authorization: Bearer',
+            'http.extraHeader',
+            'safe.directory',
+            'git reset --hard',
+            'git clean -ffdx',
+            'git remote set-url origin'
+          )) {
             if ($persist.Contains($forbidden)) { throw "Forbidden physical checkout credential marker present: $forbidden" }
           }
 
@@ -98,72 +108,89 @@ jobs:
           Set-StrictMode -Version 2.0
 
           $repoUrl = "https://github.com/${env:GITHUB_REPOSITORY}.git"
-          if (Test-Path '.git' -PathType Container) {
-            & git remote set-url origin $repoUrl
-            if ($LASTEXITCODE -ne 0) { throw 'Failed to bind existing workspace to anonymous repository URL.' }
-            & git reset --hard
-            if ($LASTEXITCODE -ne 0) { throw 'Failed to reset existing physical workspace.' }
-            & git clean -ffdx
-            if ($LASTEXITCODE -ne 0) { throw 'Failed to clean existing physical workspace.' }
+          $sourceRoot = Join-Path $env:RUNNER_TEMP "nexus-windows-dr-source-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT"
+          $sourceRoot = [IO.Path]::GetFullPath($sourceRoot).TrimEnd('\')
+          $runnerTemp = [IO.Path]::GetFullPath($env:RUNNER_TEMP).TrimEnd('\')
+          if ((Split-Path -Parent $sourceRoot) -ne $runnerTemp -or
+              (Split-Path -Leaf $sourceRoot) -notmatch '^nexus-windows-dr-source-[0-9]+-[0-9]+$') {
+            throw 'Isolated DR source root escaped the exact runner temp boundary.'
           }
-          else {
-            Get-ChildItem -Force | Remove-Item -Recurse -Force
+          if (Test-Path -LiteralPath $sourceRoot) {
+            throw 'Exact isolated DR source root already exists; refusing to reuse stale source.'
+          }
+
+          New-Item -ItemType Directory -Path $sourceRoot | Out-Null
+          $utf8 = New-Object Text.UTF8Encoding($false)
+          [IO.File]::AppendAllText($env:GITHUB_ENV, "NEXUS_DR_SOURCE_ROOT=$sourceRoot`n", $utf8)
+          Push-Location $sourceRoot
+          try {
             & git init .
-            if ($LASTEXITCODE -ne 0) { throw 'Failed to initialize physical workspace.' }
+            if ($LASTEXITCODE -ne 0) { throw 'Failed to initialize isolated physical source.' }
             & git remote add origin $repoUrl
             if ($LASTEXITCODE -ne 0) { throw 'Failed to add anonymous repository remote.' }
-          }
 
-          & git config --local --unset-all http.https://github.com/.extraheader
-          $fetchOk = $false
-          $fetchMaxAttempts = 3
-          for ($fetchAttempt = 1; $fetchAttempt -le $fetchMaxAttempts; $fetchAttempt++) {
-            & git -c 'http.version=HTTP/1.1' fetch --no-tags --prune --depth=1 origin $env:GITHUB_SHA
-            if ($LASTEXITCODE -eq 0) {
-              $fetchOk = $true
-              break
+            & git config --local --unset-all http.https://github.com/.extraheader
+            $fetchOk = $false
+            $fetchMaxAttempts = 3
+            for ($fetchAttempt = 1; $fetchAttempt -le $fetchMaxAttempts; $fetchAttempt++) {
+              & git -c 'http.version=HTTP/1.1' fetch --no-tags --prune --depth=1 origin $env:GITHUB_SHA
+              if ($LASTEXITCODE -eq 0) {
+                $fetchOk = $true
+                break
+              }
+              Write-Warning "Exact repository fetch attempt $fetchAttempt/$fetchMaxAttempts failed."
+              if ($fetchAttempt -lt $fetchMaxAttempts) {
+                Start-Sleep -Seconds ($fetchAttempt * 5)
+              }
             }
-            Write-Warning "Exact repository fetch attempt $fetchAttempt/$fetchMaxAttempts failed."
-            if ($fetchAttempt -lt $fetchMaxAttempts) {
-              Start-Sleep -Seconds ($fetchAttempt * 5)
+            if (-not $fetchOk) {
+              throw "Exact repository fetch failed after $fetchMaxAttempts bounded attempts."
             }
-          }
-          if (-not $fetchOk) {
-            throw "Exact repository fetch failed after $fetchMaxAttempts bounded attempts."
-          }
 
-          & git checkout --detach --force FETCH_HEAD
-          if ($LASTEXITCODE -ne 0) { throw 'Exact repository checkout failed.' }
-          $checkedOutSha = (& git rev-parse HEAD).Trim()
-          if ($LASTEXITCODE -ne 0 -or $checkedOutSha -ne $env:GITHUB_SHA) {
-            throw "Exact trigger SHA mismatch: expected=$env:GITHUB_SHA actual=$checkedOutSha"
+            & git checkout --detach --force FETCH_HEAD
+            if ($LASTEXITCODE -ne 0) { throw 'Exact repository checkout failed.' }
+            $checkedOutSha = (& git rev-parse HEAD).Trim()
+            if ($LASTEXITCODE -ne 0 -or $checkedOutSha -ne $env:GITHUB_SHA) {
+              throw "Exact trigger SHA mismatch: expected=$env:GITHUB_SHA actual=$checkedOutSha"
+            }
           }
-          & git clean -ffdx
-          if ($LASTEXITCODE -ne 0) { throw 'Post-checkout workspace clean failed.' }
+          finally {
+            Pop-Location
+          }
+          Write-Host "isolated_source_root=$sourceRoot"
           Write-Host "exact_trigger_sha=$checkedOutSha"
 
       - name: Parse targeted Windows DR persistence script
-        run: >-
-          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command
-          "$tokens=$null;$errors=$null;[void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path 'scripts\install_nexus_windows_dr_autostart.ps1'),[ref]$tokens,[ref]$errors);if($errors.Count -gt 0){$errors | ForEach-Object { Write-Error $_.Message };exit 1}"
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
+        run: |
+          $path = Join-Path $env:NEXUS_DR_SOURCE_ROOT 'scripts\install_nexus_windows_dr_autostart.ps1'
+          if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw 'Exact DR persistence script is missing.' }
+          $tokens = $null
+          $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$tokens, [ref]$errors)
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            exit 1
+          }
 
       - name: Install persistence only when claimed by NEXUS-WINDOWS-DR
         continue-on-error: true
         run: >-
           powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass
-          -File scripts\install_nexus_windows_dr_autostart.ps1
+          -File "%NEXUS_DR_SOURCE_ROOT%\scripts\install_nexus_windows_dr_autostart.ps1"
           -Mode Install
           -RunnerRoot "C:\actions-runner\actions-runner"
           -ExpectedRunnerName "NEXUS-WINDOWS-DR"
           -ExpectedGitHubUrl "https://github.com/saladinayoubi1/lbank-research-automation"
-          -OutputPath "build\windows-dr-autostart\evidence.json"
+          -OutputPath "%RUNNER_TEMP%\nexus-windows-dr-persistence-%GITHUB_RUN_ID%-%GITHUB_RUN_ATTEMPT%.json"
 
       - name: Require exact target claim and successful persistence install
         if: always()
         shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
         run: |
-          if (-not (Test-Path 'build\windows-dr-autostart\evidence.json' -PathType Leaf)) { throw 'Persistence evidence is missing.' }
-          $evidence = Get-Content 'build\windows-dr-autostart\evidence.json' -Raw | ConvertFrom-Json
+          $evidencePath = Join-Path $env:RUNNER_TEMP "nexus-windows-dr-persistence-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT.json"
+          if (-not (Test-Path -LiteralPath $evidencePath -PathType Leaf)) { throw 'Persistence evidence is missing.' }
+          $evidence = Get-Content -LiteralPath $evidencePath -Raw | ConvertFrom-Json
           if ($evidence.decision -ne 'SUCCESS') {
             $detail = if ($evidence.error) { [string]$evidence.error } else { 'no error detail recorded' }
             throw "Persistence was not installed by the exact target runner: $($evidence.decision); error=$detail"
@@ -180,6 +207,25 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: nexus-windows-dr-persistence-${{ github.run_id }}-${{ github.run_attempt }}
-          path: build/windows-dr-autostart/evidence.json
+          path: ${{ runner.temp }}\nexus-windows-dr-persistence-${{ github.run_id }}-${{ github.run_attempt }}.json
           if-no-files-found: error
           retention-days: 14
+
+      - name: Remove exact isolated source
+        if: always()
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
+        run: |
+          if (-not $env:NEXUS_DR_SOURCE_ROOT) {
+            Write-Host 'isolated_source_cleanup=SKIPPED_NOT_CREATED'
+            exit 0
+          }
+          $sourceRoot = [IO.Path]::GetFullPath($env:NEXUS_DR_SOURCE_ROOT).TrimEnd('\')
+          $runnerTemp = [IO.Path]::GetFullPath($env:RUNNER_TEMP).TrimEnd('\')
+          if ((Split-Path -Parent $sourceRoot) -ne $runnerTemp -or
+              (Split-Path -Leaf $sourceRoot) -notmatch '^nexus-windows-dr-source-[0-9]+-[0-9]+$') {
+            throw 'Refusing cleanup outside the exact isolated DR source boundary.'
+          }
+          if (Test-Path -LiteralPath $sourceRoot) {
+            Remove-Item -LiteralPath $sourceRoot -Recurse -Force
+          }
+          Write-Host 'isolated_source_cleanup=PASS'
