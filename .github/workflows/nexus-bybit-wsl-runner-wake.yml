@@ -18,7 +18,7 @@ permissions:
   contents: read
 
 env:
-  NEXUS_BYBIT_WSL_STARTUP_SCRIPT_BLOB_SHA: d88d0bc00be29e6e7420a58497e8787c3d515a0c
+  NEXUS_BYBIT_WSL_STARTUP_SCRIPT_BLOB_SHA: 22f18f24b7adcc31f5badb841d46d95718c771a1
 
 concurrency:
   group: nexus-bybit-wsl-runner-wake
@@ -140,15 +140,18 @@ jobs:
             throw 'Durable Bybit WSL watchdog evidence is missing.'
           }
           $evidence = Get-Content -LiteralPath $evidencePath -Raw | ConvertFrom-Json
-          if ($evidence.schema_version -ne 5) { throw "Unexpected evidence schema: $($evidence.schema_version)" }
+          if ($evidence.schema_version -ne 6) { throw "Unexpected evidence schema: $($evidence.schema_version)" }
           if ($evidence.decision -ne 'USER_CONTEXT_MANAGED_CHILD_LIVENESS_SELF_HEAL_ACTIVE') {
             throw "Durable recovery did not reach the active state: $($evidence.decision)"
           }
           if ($evidence.expected_runner_name -ne 'NEXUS-BYBIT-WSL' -or $evidence.distribution -ne 'Ubuntu') {
             throw 'Exact Bybit WSL runner identity was not preserved.'
           }
-          if ($evidence.listener_observed -ne $true -or $evidence.watchdog_generation -ne 7) {
+          if ($evidence.listener_observed -ne $true -or $evidence.watchdog_generation -ne 8) {
             throw 'Exact Bybit WSL listener or current watchdog generation was not observed.'
+          }
+          if ($evidence.wsl_command_transport -ne 'BASE64_ARGV') {
+            throw "Unexpected WSL command transport: $($evidence.wsl_command_transport)"
           }
           foreach ($requiredFalse in @(
             'task_scheduler_used',
