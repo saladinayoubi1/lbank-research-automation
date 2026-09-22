@@ -30,7 +30,7 @@ def _command_here_string(function_block: str) -> str:
 
 
 
-def test_wsl1_transport_uses_proven_base64_argv_without_redirected_stdin() -> None:
+def test_wsl1_transport_uses_base64_argv_without_redirected_standard_streams() -> None:
     text = _script()
     wrapper = _function(text, "ConvertTo-WslBashWrapper", "New-WslProcessStartInfo")
     transport = _function(text, "New-WslProcessStartInfo", "Invoke-WslNative")
@@ -40,10 +40,12 @@ def test_wsl1_transport_uses_proven_base64_argv_without_redirected_stdin() -> No
     assert "[Convert]::ToBase64String" in wrapper
     assert "base64 -d | bash" in wrapper
     assert "-u root -- bash -lc" in transport
-    assert "$psi.RedirectStandardInput" not in text
+    assert "$psi.RedirectStandard" not in text
     assert ".StandardInput.Write" not in text
-    assert "New-WslProcessStartInfo -Command $Command -RedirectOutput $true" in invoke
-    assert "New-WslProcessStartInfo -Command $command -RedirectOutput $false" in managed
+    assert ".StandardOutput.ReadToEnd" not in text
+    assert ".StandardError.ReadToEnd" not in text
+    assert "New-WslProcessStartInfo -Command $Command" in invoke
+    assert "New-WslProcessStartInfo -Command $command" in managed
 
 def test_registration_probe_uses_bash_builtins_only() -> None:
     text = _script()
@@ -66,7 +68,9 @@ def test_process_liveness_probe_uses_procfs_exact_argv0_without_pgrep() -> None:
     assert "'__RUNNER_ROOT__/bin/Runner.Listener'" in probe
     assert "'__RUNNER_ROOT__/bin/Runner.Worker'" in probe
     assert "$command.Replace('__RUNNER_ROOT__', $RunnerRoot)" in probe
-    assert "runner_process_probe_unparsable=true" in probe
+    assert "[int]$probe.exit_code -notin @(0,1,2,3)" in probe
+    assert "[int]$probe.exit_code -in @(1,3)" in probe
+    assert "[int]$probe.exit_code -in @(2,3)" in probe
     assert "known = $false" in probe
 
 
