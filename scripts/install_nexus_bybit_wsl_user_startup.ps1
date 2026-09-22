@@ -5,7 +5,7 @@ param(
     [string]$Distribution = 'Ubuntu',
     [string]$RunnerRoot = '/opt/nexus-bybit-runner',
     [string]$ExpectedRunnerName = 'NEXUS-BYBIT-WSL',
-    [int]$Generation = 8
+    [int]$Generation = 9
 )
 
 $ErrorActionPreference = 'Stop'
@@ -14,7 +14,7 @@ Set-StrictMode -Version 2.0
 if ($Distribution -ne 'Ubuntu') { throw 'Distribution must remain pinned to Ubuntu.' }
 if ($RunnerRoot -ne '/opt/nexus-bybit-runner') { throw 'RunnerRoot must remain pinned.' }
 if ($ExpectedRunnerName -ne 'NEXUS-BYBIT-WSL') { throw 'ExpectedRunnerName must remain pinned.' }
-if ($Generation -ne 8) { throw 'Generation must remain pinned to the reviewed watchdog generation.' }
+if ($Generation -ne 9) { throw 'Generation must remain pinned to the reviewed watchdog generation.' }
 
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
 $sid = [string]$identity.User.Value
@@ -52,10 +52,7 @@ function ConvertTo-WslBashWrapper {
 }
 
 function New-WslProcessStartInfo {
-    param(
-        [Parameter(Mandatory = $true)][string]$Command,
-        [bool]$RedirectOutput = $false
-    )
+    param([Parameter(Mandatory = $true)][string]$Command)
 
     $psi = New-Object Diagnostics.ProcessStartInfo
     $psi.FileName = $wsl
@@ -64,19 +61,17 @@ function New-WslProcessStartInfo {
     $psi.UseShellExecute = $false
     $psi.CreateNoWindow = $true
     $psi.WindowStyle = [Diagnostics.ProcessWindowStyle]::Hidden
-    if ($RedirectOutput) {
-        $psi.RedirectStandardOutput = $true
-        $psi.RedirectStandardError = $true
-    }
     return $psi
 }
 
 function Invoke-WslNative {
     param([Parameter(Mandatory = $true)][string]$Command)
 
-    # All probe/mutation calls are bounded. The long-lived managed runner uses a
-    # separate watchdog-owned wsl.exe child and is never routed through here.
-    $psi = New-WslProcessStartInfo -Command $Command -RedirectOutput $true
+    # All probes are bounded and encode state solely in their exit code. WSL1
+    # on the Lenovo host has now hung with both redirected stdin and redirected
+    # stdout/stderr, while its unredirected long-lived launch was proven. Keep
+    # every standard stream unredirected to avoid that interop failure mode.
+    $psi = New-WslProcessStartInfo -Command $Command
     $proc = New-Object Diagnostics.Process
     $proc.StartInfo = $psi
     try {
@@ -87,10 +82,9 @@ function Invoke-WslNative {
             try { $proc.Kill() } catch { }
             return [ordered]@{ exit_code = 124; output = 'wsl_timeout' }
         }
-        $stdout = $proc.StandardOutput.ReadToEnd()
-        $stderr = $proc.StandardError.ReadToEnd()
-        $text = (($stdout + [Environment]::NewLine + $stderr).Trim())
-        return [ordered]@{ exit_code = [int]$proc.ExitCode; output = $text }
+        $exitCode = [int]$proc.ExitCode
+        $detail = if ($exitCode -eq 0) { '' } else { 'wsl_exit_' + $exitCode }
+        return [ordered]@{ exit_code = $exitCode; output = $detail }
     }
     catch {
         return [ordered]@{ exit_code = -1; output = $_.Exception.GetType().Name }
@@ -115,14 +109,21 @@ while IFS= read -r line; do
     *'"agentName"'*'__EXPECTED_RUNNER_NAME__'*) found=1 ;;
   esac
 done < '__RUNNER_ROOT__/.runner'
-[ "$found" -eq 1 ]
+if [ "$found" -ne 1 ]; then exit 12; fi
+exit 0
 '@
     $command = $command.Replace('__RUNNER_ROOT__', $RunnerRoot).Replace('__EXPECTED_RUNNER_NAME__', $ExpectedRunnerName)
     $probe = Invoke-WslNative $command
     if ($probe.exit_code -ne 0) {
+        $detail = switch ([int]$probe.exit_code) {
+            10 { 'run_sh_missing' }
+            11 { 'runner_config_missing' }
+            12 { 'runner_name_mismatch' }
+            default { [string]$probe.output }
+        }
         throw ('Existing NEXUS-BYBIT-WSL registration could not be verified without mutation; ' +
             'this script will not create or replace it. probe_exit=' + $probe.exit_code +
-            ' detail=' + $probe.output)
+            ' detail=' + $detail)
     }
 }
 
@@ -147,8 +148,10 @@ for proc in /proc/[0-9]*; do
     '__RUNNER_ROOT__/bin/Runner.Worker') worker=1 ;;
   esac
 done
-echo "listener=$listener"
-echo "worker=$worker"
+if [ "$listener" -eq 1 ] && [ "$worker" -eq 1 ]; then exit 3; fi
+if [ "$listener" -eq 1 ]; then exit 1; fi
+if [ "$worker" -eq 1 ]; then exit 2; fi
+exit 0
 '@
     $command = $command.Replace('__RUNNER_ROOT__', $RunnerRoot)
     $probe = Invoke-WslNative $command
@@ -156,18 +159,12 @@ echo "worker=$worker"
         Write-Log 'runner_process_probe_timeout=true'
         return [ordered]@{ known = $false; listener = $false; worker = $false }
     }
-    if ($probe.exit_code -ne 0) {
+    if ([int]$probe.exit_code -notin @(0,1,2,3)) {
         Write-Log ('runner_process_probe_failed=' + $probe.exit_code)
         return [ordered]@{ known = $false; listener = $false; worker = $false }
     }
-    $listenerSeen = ($probe.output -match '(?m)^listener=1$')
-    $workerSeen = ($probe.output -match '(?m)^worker=1$')
-    $listenerKnown = ($probe.output -match '(?m)^listener=[01]$')
-    $workerKnown = ($probe.output -match '(?m)^worker=[01]$')
-    if (-not $listenerKnown -or -not $workerKnown) {
-        Write-Log 'runner_process_probe_unparsable=true'
-        return [ordered]@{ known = $false; listener = $false; worker = $false }
-    }
+    $listenerSeen = ([int]$probe.exit_code -in @(1,3))
+    $workerSeen = ([int]$probe.exit_code -in @(2,3))
     return [ordered]@{
         known = $true
         listener = $listenerSeen
@@ -233,7 +230,7 @@ exit 0
 function Start-ManagedRunnerProcess {
     Test-ExistingRegistration
     $command = "cd '$RunnerRoot' && export RUNNER_ALLOW_RUNASROOT=1 && export RUNNER_TRACKING_ID= && exec ./run.sh >>'$managedRunnerLog' 2>&1"
-    $psi = New-WslProcessStartInfo -Command $command -RedirectOutput $false
+    $psi = New-WslProcessStartInfo -Command $command
     $proc = New-Object Diagnostics.Process
     $proc.StartInfo = $psi
     try {
@@ -308,7 +305,7 @@ function Stop-PreviousUserWatchdogs {
 function Write-Evidence([string]$Decision, [bool]$ListenerObserved) {
     New-Item -ItemType Directory -Path $stateRoot -Force | Out-Null
     $payload = [ordered]@{
-        schema_version = 6
+        schema_version = 7
         generated_at_utc = [DateTime]::UtcNow.ToString('o')
         decision = $Decision
         windows_identity = [string]$identity.Name
@@ -328,6 +325,7 @@ function Write-Evidence([string]$Decision, [bool]$ListenerObserved) {
         unknown_probe_interrupt_allowed = $false
         wsl_call_timeout_seconds = [int]($wslTimeoutMilliseconds / 1000)
         wsl_command_transport = 'BASE64_ARGV'
+        wsl_standard_stream_redirection = $false
         administrator_required = $false
         task_scheduler_used = $false
         runner_registration_modified = $false
