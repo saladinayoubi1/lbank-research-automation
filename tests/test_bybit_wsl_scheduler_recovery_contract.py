@@ -7,7 +7,7 @@ WAKE_WORKFLOW = ROOT / ".github" / "workflows" / "nexus-bybit-wsl-runner-wake.ym
 DIAGNOSTIC_SCRIPT = ROOT / "scripts" / "run_nexus_bybit_wsl_runner_diagnostics.ps1"
 
 
-def test_wake_is_bootstrap_independent_native_wsl_and_bounded() -> None:
+def test_wake_is_bootstrap_independent_and_installs_durable_user_watchdog() -> None:
     text = WAKE_WORKFLOW.read_text(encoding="utf-8")
 
     assert not re.search(r"(?m)^\s*uses:\s*", text)
@@ -15,31 +15,37 @@ def test_wake_is_bootstrap_independent_native_wsl_and_bounded() -> None:
     assert "actions/upload-artifact" not in text
     assert "runs-on: [self-hosted, Windows, X64, nexus-local]" in text
     assert "$expectedWindowsRunnerName = 'NEXUS-LOCAL-RUNNER'" in text
-    assert "$distribution = 'Ubuntu'" in text
-    assert "$wslRunnerRoot = '/opt/nexus-bybit-runner'" in text
-    assert "$expectedWslRunnerName = 'NEXUS-BYBIT-WSL'" in text
-    assert "wsl.exe" in text.lower()
+    assert "NEXUS_BYBIT_WSL_STARTUP_SCRIPT_BLOB_SHA" in text
+    assert "scripts\\install_nexus_bybit_wsl_user_startup.ps1" in text
+    assert "Invoke-WebRequest" in text
+    assert "Get-GitBlob" in text
+    assert "-Mode Install" in text
+    assert "-Distribution Ubuntu" in text
+    assert "-RunnerRoot /opt/nexus-bybit-runner" in text
+    assert "-ExpectedRunnerName NEXUS-BYBIT-WSL" in text
     assert "schtasks.exe" not in text.lower()
-    assert "legacy_scheduled_tasks_used=false" in text
+    assert "task_scheduler_used=false" in text
     assert "windows_task_acl_modified=false" in text
     assert "runner_registration_mutated=false" in text
     assert "runner_credentials_mutated=false" in text
     assert "live_trading_authority_changed=false" in text
 
 
-def test_wake_bounds_native_wsl_transport_and_fails_closed() -> None:
+def test_wake_pins_source_and_requires_detached_live_watchdog() -> None:
     text = WAKE_WORKFLOW.read_text(encoding="utf-8")
 
     assert "$ErrorActionPreference = 'Stop'" in text
     assert "$ProgressPreference = 'SilentlyContinue'" in text
-    assert "WaitForExit(15000)" in text
-    assert "$process.Kill()" in text
-    assert "Bounded WSL probe timed out after 15 seconds." in text
-    assert "wsl_probe_timeout_seconds=15" in text
-    assert "wsl_command_transport=base64-argv" in text
-    assert "ConvertTo-WslBashWrapper" in text
-    assert "registration_check=pass" in text
-    assert "bybit_wsl_native_wake=PASS" in text
+    assert "$attempt -le 4" in text
+    assert "raw.githubusercontent.com/$expectedRepository/$targetSha" in text
+    assert "bybit_wsl_watchdog_blob=" in text
+    assert "USER_CONTEXT_MANAGED_CHILD_LIVENESS_SELF_HEAL_ACTIVE" in text
+    assert "actions_process_tracking_detached" in text
+    assert "watchdog_generation -ne 6" in text
+    assert "Start-Sleep -Seconds 20" in text
+    assert "Win32_Process WHERE Name='powershell.exe'" in text
+    assert "post_install_watchdog_process=RUNNING" in text
+    assert "bybit_wsl_durable_recovery=PASS" in text
 
 
 def test_diagnostics_treat_service_wsl_visibility_as_context_limited() -> None:
