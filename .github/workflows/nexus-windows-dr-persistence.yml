@@ -77,6 +77,28 @@ jobs:
           [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path 'scripts\install_nexus_windows_dr_autostart.ps1'),[ref]$tokens,[ref]$errors)
           if($errors.Count -gt 0){$errors | ForEach-Object { Write-Error $_.Message }; exit 1}
 
+      - name: Verify fail-closed existing-service reuse contract
+        shell: powershell
+        run: |
+          $text = Get-Content 'scripts\install_nexus_windows_dr_autostart.ps1' -Raw
+          foreach ($required in @(
+            'Get-ExactExistingRunnerService',
+            "Join-Path `$FullRoot '.service'",
+            "Join-Path `$FullRoot 'bin\RunnerService.exe'",
+            "StartMode -ne 'Auto'",
+            "State -ne 'Running'",
+            "persistence_mode = 'EXISTING_WINDOWS_SERVICE'",
+            'existing_service_reused = $true',
+            'service_modified = $false',
+            'scheduled_task_modified = $false',
+            'target_listener_observed = $true'
+          )) {
+            if (-not $text.Contains($required)) { throw "Required existing-service proof marker missing: $required" }
+          }
+          foreach ($forbidden in @('New-Service','Set-Service','Start-Service','Stop-Service','config.cmd','remove.cmd')) {
+            if ($text.Contains($forbidden)) { throw "Forbidden service or registration mutation marker present: $forbidden" }
+          }
+
       - name: Verify fail-closed behavior on a non-target runner
         shell: powershell
         run: |
@@ -91,6 +113,7 @@ jobs:
           if ($evidence.runner_registration_modified -ne $false) { throw 'Runner registration mutation must remain false.' }
           if ($evidence.runner_credentials_modified -ne $false) { throw 'Runner credential mutation must remain false.' }
           if ($evidence.other_runner_paths_modified -ne $false) { throw 'Other runner path mutation must remain false.' }
+          if ($evidence.service_installed -ne $false) { throw 'This recovery must not install a Windows service.' }
           if ($evidence.live_trading_authority -ne $false) { throw 'Live authority must remain false.' }
 
   persist:
@@ -191,6 +214,7 @@ jobs:
           $evidencePath = Join-Path $env:RUNNER_TEMP "nexus-windows-dr-persistence-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT.json"
           if (-not (Test-Path -LiteralPath $evidencePath -PathType Leaf)) { throw 'Persistence evidence is missing.' }
           $evidence = Get-Content -LiteralPath $evidencePath -Raw | ConvertFrom-Json
+          if ($evidence.schema_version -ne 2) { throw "Unexpected persistence evidence schema: $($evidence.schema_version)" }
           if ($evidence.decision -ne 'SUCCESS') {
             $detail = if ($evidence.error) { [string]$evidence.error } else { 'no error detail recorded' }
             throw "Persistence was not installed by the exact target runner: $($evidence.decision); error=$detail"
@@ -200,7 +224,21 @@ jobs:
           if ($evidence.runner_registration_modified -ne $false) { throw 'Runner registration mutation must remain false.' }
           if ($evidence.runner_credentials_modified -ne $false) { throw 'Runner credential mutation must remain false.' }
           if ($evidence.other_runner_paths_modified -ne $false) { throw 'Other runner path mutation must remain false.' }
+          if ($evidence.service_installed -ne $false) { throw 'This recovery must not install a Windows service.' }
           if ($evidence.live_trading_authority -ne $false) { throw 'Live authority must remain false.' }
+          if ($evidence.persistence_mode -eq 'EXISTING_WINDOWS_SERVICE') {
+            if ($evidence.existing_service_reused -ne $true -or
+                $evidence.service_modified -ne $false -or
+                $evidence.scheduled_task_modified -ne $false -or
+                $evidence.service_state -ne 'Running' -or
+                $evidence.service_start_mode -ne 'Auto' -or
+                $evidence.target_listener_observed -ne $true) {
+              throw 'Existing Windows service persistence proof is incomplete.'
+            }
+          }
+          elseif ($evidence.persistence_mode -ne 'INTERACTIVE_USER_SCHEDULED_TASK') {
+            throw "Unexpected DR persistence mode: $($evidence.persistence_mode)"
+          }
 
       - name: Upload sanitized persistence evidence
         if: always()
