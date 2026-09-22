@@ -43,7 +43,7 @@ def test_recovery_uses_per_user_startup_and_managed_child_watchdog() -> None:
     assert "-Mode Watch" in text
     assert "Start-Sleep -Seconds 15" in text
     assert "Local\\NEXUS-Bybit-WSL-Watchdog-v" in text
-    assert "$Generation = 7" in text
+    assert "$Generation = 8" in text
     assert "$watchdogGeneration = $Generation" in text
     assert "Start-ManagedRunnerProcess" in text
     assert "exec ./run.sh" in text
@@ -56,7 +56,7 @@ def test_recovery_uses_per_user_startup_and_managed_child_watchdog() -> None:
 
 def test_install_detaches_watchdog_from_actions_process_cleanup() -> None:
     text = _text()
-    assert "schema_version = 5" in text
+    assert "schema_version = 6" in text
     assert "actions_process_tracking_detached = $true" in text
     assert "actions_process_tracking_detached=true" in text
     assert "GetEnvironmentVariable('RUNNER_TRACKING_ID', 'Process')" in text
@@ -90,12 +90,14 @@ def test_wsl_probe_interop_is_timeout_bounded() -> None:
     assert "runner_process_probe_timeout=true" in text
     assert "watchdog_generation = $watchdogGeneration" in text
     assert "wsl_call_timeout_seconds" in text
-    assert "$psi.RedirectStandardInput = $true" in text
+    assert "ConvertTo-WslBashWrapper" in text
     assert "$normalizedCommand = $Command.Replace(\"`r`n\", \"`n\").Replace(\"`r\", \"`n\")" in text
-    assert '$Process.StandardInput.Write("`n")' in text
-    assert "$Process.StandardInput.Close()" in text
-    assert "base64 -d" not in text
-    assert "-u root -- bash'" in text
+    assert "[Convert]::ToBase64String" in text
+    assert "base64 -d | bash" in text
+    assert "-u root -- bash -lc" in text
+    assert "$psi.RedirectStandardInput" not in text
+    assert ".StandardInput.Write" not in text
+    assert "wsl_command_transport = 'BASE64_ARGV'" in text
     assert "probe_exit=" in text
     assert "this script will not create or replace it" in text
 
