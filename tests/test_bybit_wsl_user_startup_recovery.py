@@ -43,7 +43,7 @@ def test_recovery_uses_per_user_startup_and_managed_child_watchdog() -> None:
     assert "-Mode Watch" in text
     assert "Start-Sleep -Seconds 15" in text
     assert "Local\\NEXUS-Bybit-WSL-Watchdog-v" in text
-    assert "$Generation = 6" in text
+    assert "$Generation = 7" in text
     assert "$watchdogGeneration = $Generation" in text
     assert "Start-ManagedRunnerProcess" in text
     assert "exec ./run.sh" in text
@@ -83,7 +83,7 @@ def test_current_watchdog_is_reused_and_upgrade_preserves_active_worker() -> Non
 
 def test_wsl_probe_interop_is_timeout_bounded() -> None:
     text = _text()
-    assert "$wslTimeoutMilliseconds = 10000" in text
+    assert "$wslTimeoutMilliseconds = 30000" in text
     assert "WaitForExit($wslTimeoutMilliseconds)" in text
     assert "exit_code = 124" in text
     assert "wsl_timeout" in text
@@ -96,6 +96,8 @@ def test_wsl_probe_interop_is_timeout_bounded() -> None:
     assert "$Process.StandardInput.Close()" in text
     assert "base64 -d" not in text
     assert "-u root -- bash'" in text
+    assert "probe_exit=" in text
+    assert "this script will not create or replace it" in text
 
 
 def test_watchdog_recycles_only_idle_external_listener() -> None:

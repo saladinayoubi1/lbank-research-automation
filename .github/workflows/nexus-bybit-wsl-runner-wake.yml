@@ -18,7 +18,7 @@ permissions:
   contents: read
 
 env:
-  NEXUS_BYBIT_WSL_STARTUP_SCRIPT_BLOB_SHA: 58ceea71d6d05d4035c723acba8216562ad709ad
+  NEXUS_BYBIT_WSL_STARTUP_SCRIPT_BLOB_SHA: d88d0bc00be29e6e7420a58497e8787c3d515a0c
 
 concurrency:
   group: nexus-bybit-wsl-runner-wake
@@ -147,7 +147,7 @@ jobs:
           if ($evidence.expected_runner_name -ne 'NEXUS-BYBIT-WSL' -or $evidence.distribution -ne 'Ubuntu') {
             throw 'Exact Bybit WSL runner identity was not preserved.'
           }
-          if ($evidence.listener_observed -ne $true -or $evidence.watchdog_generation -ne 6) {
+          if ($evidence.listener_observed -ne $true -or $evidence.watchdog_generation -ne 7) {
             throw 'Exact Bybit WSL listener or current watchdog generation was not observed.'
           }
           foreach ($requiredFalse in @(
