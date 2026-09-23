@@ -53,8 +53,24 @@ jobs:
       - name: Verify Local Autonomy source transport contract
         run: python tests/test_nexus_local_autonomy_workflow.py
 
-  local-worker:
+  source-prep:
     needs: contract-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Verify exact hosted source binding
+        shell: bash
+        run: |
+          set -euo pipefail
+          actual="$(git rev-parse HEAD)"
+          test "$actual" = "$GITHUB_SHA"
+          echo "hosted_source_binding=PASS sha=$actual"
+
+  local-worker:
+    needs: [contract-test, source-prep]
     if: >-
       github.event_name != 'pull_request' &&
       (github.event_name != 'workflow_dispatch' ||
