@@ -149,36 +149,30 @@ function Invoke-Phase7Mode([string]$Root, [string]$PhaseMode, [string]$SessionId
     return ($proc.ExitCode -eq 0)
 }
 
-function Test-SupervisorCommandLine([string]$CommandLine, [string]$Root) {
-    if (-not $CommandLine) { return $false }
-    $expectedScript = [IO.Path]::GetFullPath((Join-Path $Root $SupervisorRelative))
-    return $CommandLine.IndexOf($expectedScript, [StringComparison]::OrdinalIgnoreCase) -ge 0
-}
-
 function Get-SupervisorProcess([string]$Root) {
-    if (Test-Path -LiteralPath $SupervisorPidPath -PathType Leaf) {
-        try {
-            $pidValue = [int](Get-Content -LiteralPath $SupervisorPidPath -Raw)
-            $proc = Get-Process -Id $pidValue -ErrorAction SilentlyContinue
-            if ($proc) {
-                $wmi = Get-CimInstance Win32_Process -Filter "ProcessId=$pidValue" -ErrorAction SilentlyContinue
-                if ($wmi -and (Test-SupervisorCommandLine ([string]$wmi.CommandLine) $Root)) { return $proc }
-            }
-        } catch { }
-    }
-
+    # The Lenovo host can have a broken Win32_Process CIM provider. The
+    # supervisor already publishes an atomic heartbeat every ten seconds, so
+    # use that exact-repository state as the primary identity/liveness proof.
+    $statePath = Join-Path $Root 'data\agent_coordination\supervisor.json'
+    if (-not (Test-Path -LiteralPath $statePath -PathType Leaf)) { return $null }
     try {
-        foreach ($row in Get-CimInstance Win32_Process -ErrorAction SilentlyContinue) {
-            if ($row.CommandLine -and (Test-SupervisorCommandLine ([string]$row.CommandLine) $Root)) {
-                $proc = Get-Process -Id $row.ProcessId -ErrorAction SilentlyContinue
-                if ($proc) {
-                    Set-Content -LiteralPath $SupervisorPidPath -Encoding ASCII -Value $proc.Id
-                    return $proc
-                }
-            }
-        }
-    } catch { }
-    return $null
+        $state = Get-Content -LiteralPath $statePath -Raw | ConvertFrom-Json
+        if ([int]$state.schema_version -ne 1) { return $null }
+        $generated = [DateTime]::Parse([string]$state.generated_at).ToUniversalTime()
+        $ageSeconds = ([DateTime]::UtcNow - $generated).TotalSeconds
+        if ($ageSeconds -lt -30 -or $ageSeconds -gt 45) { return $null }
+        $pidValue = [int]$state.supervisor_pid
+        if ($pidValue -le 0) { return $null }
+        $proc = Get-Process -Id $pidValue -ErrorAction SilentlyContinue
+        if (-not $proc -or [string]$proc.ProcessName -notin @('python','pythonw')) { return $null }
+        Set-Content -LiteralPath $SupervisorPidPath -Encoding ASCII -Value $proc.Id
+        Write-Log "local_supervisor_reused_from_state pid=$($proc.Id) age_seconds=$([Math]::Round($ageSeconds,1))"
+        return $proc
+    }
+    catch {
+        Write-Log "local_supervisor_state_probe_rejected error=$($_.Exception.Message)"
+        return $null
+    }
 }
 
 function Start-LocalSupervisor([string]$Root) {

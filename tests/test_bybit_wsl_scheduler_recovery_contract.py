@@ -45,7 +45,10 @@ def test_wake_pins_source_and_requires_detached_live_watchdog() -> None:
     assert "wsl_command_transport -ne 'BASE64_ARGV'" in text
     assert "wsl_standard_stream_redirection -ne $false" in text
     assert "Start-Sleep -Seconds 20" in text
-    assert "Win32_Process WHERE Name='powershell.exe'" in text
+    assert "Threading.Mutex" in text
+    assert "$watchdogMutex.WaitOne(0)" in text
+    assert "Win32_Process WHERE Name='powershell.exe'" not in text
+    assert "System.Management.ManagementObjectSearcher" not in text
     assert "post_install_watchdog_process=RUNNING" in text
     assert "bybit_wsl_durable_recovery=PASS" in text
 

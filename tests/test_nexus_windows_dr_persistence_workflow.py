@@ -72,14 +72,18 @@ def test_service_identity_reuses_only_exact_automatic_running_runner_service() -
     assert "serviceController.Status -ne 'Running'" in text
     assert "Get-TargetListener" in text
     assert "persistence_mode = 'EXISTING_WINDOWS_SERVICE'" in text
+    assert "target_service_observed = $true" in text
+    assert "supervisor_skipped_existing_service=true" in text
     assert "existing_service_reused = $true" in text
     assert "service_modified = $false" in text
     assert "scheduled_task_modified = $false" in text
     assert "service_installed = $false" in text
 
-    service_branch = text.index("if ($serviceIdentity)")
-    signed_in_lookup = text.index("$signedInUser = Get-SignedInWindowsUser")
+    install = text[text.index("function Install-TargetTask"):]
+    service_branch = install.index("if (Test-Path -LiteralPath $serviceMarker -PathType Leaf)")
+    signed_in_lookup = install.index("$signedInUser = Get-SignedInWindowsUser")
     assert service_branch < signed_in_lookup
+    assert install.index("$source = (Resolve-Path -LiteralPath $PSCommandPath).Path") < service_branch
     for forbidden in (
         "New-Service",
         "Set-Service",

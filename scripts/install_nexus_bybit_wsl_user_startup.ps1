@@ -254,51 +254,33 @@ function Start-ManagedRunnerProcess {
     }
 }
 
-function Get-UserWatchdogProcessIds([bool]$CurrentGenerationOnly = $false) {
-    $ids = New-Object 'System.Collections.Generic.List[int]'
-    try {
-        $query = "SELECT ProcessId, CommandLine FROM Win32_Process WHERE Name='powershell.exe'"
-        $searcher = New-Object System.Management.ManagementObjectSearcher($query)
-        foreach ($item in @($searcher.Get())) {
-            $pidValue = [int]$item.ProcessId
-            $commandLine = [string]$item.CommandLine
-            if ($pidValue -eq $PID) { continue }
-            if (-not $commandLine) { continue }
-            if ($commandLine.IndexOf($stableScript, [StringComparison]::OrdinalIgnoreCase) -lt 0) { continue }
-            if ($commandLine -notmatch '(?i)-Mode\s+Watch') { continue }
-            if ($CurrentGenerationOnly -and
-                $commandLine -notmatch ('(?i)-Generation\s+' + $watchdogGeneration + '(?:\s|$)')) { continue }
-            [void]$ids.Add($pidValue)
-        }
-        $searcher.Dispose()
-    }
-    catch {
-        Write-Log ('watchdog_inventory_error=' + $_.Exception.GetType().Name)
-        throw
-    }
-    return $ids.ToArray()
+function Get-WatchdogMutexName {
+    return 'Local\NEXUS-Bybit-WSL-Watchdog-v' + $watchdogGeneration + '-' + $sid
 }
 
-function Stop-PreviousUserWatchdogs {
-    # The stable watchdog path is reused across upgrades. Kill only same-user
-    # PowerShell processes whose command line explicitly points at that script
-    # in -Mode Watch. Re-check the Linux Worker immediately before every stop;
-    # upgrades fail closed instead of interrupting an active or unknown job.
-    foreach ($pidValue in @(Get-UserWatchdogProcessIds)) {
-        $state = Get-RunnerProcessState
-        if (-not $state.known) {
-            throw 'Previous watchdog upgrade deferred because runner state is unknown.'
-        }
-        if ($state.worker) {
-            throw 'Previous watchdog upgrade deferred while Runner.Worker is active.'
-        }
+function Test-UserWatchdogActive {
+    # Win32_Process/WMI is not a reliable inventory source on the Lenovo host.
+    # The watchdog already owns this named mutex for its entire lifetime, so
+    # mutex ownership is the exact same-user, same-generation liveness proof.
+    $createdNew = $false
+    $mutex = New-Object Threading.Mutex($false, (Get-WatchdogMutexName), [ref]$createdNew)
+    try {
+        if ($createdNew) { return $false }
+        $acquired = $false
         try {
-            [Diagnostics.Process]::GetProcessById($pidValue).Kill()
-            Write-Log ('previous_watchdog_terminated_pid=' + $pidValue)
+            $acquired = $mutex.WaitOne(0)
         }
-        catch {
-            Write-Log ('previous_watchdog_terminate_failed_pid=' + $pidValue)
+        catch [Threading.AbandonedMutexException] {
+            $acquired = $true
         }
+        if ($acquired) {
+            try { $mutex.ReleaseMutex() } catch { }
+            return $false
+        }
+        return $true
+    }
+    finally {
+        $mutex.Dispose()
     }
 }
 
@@ -366,7 +348,7 @@ function Run-Watchdog {
     Test-ExistingRegistration
     New-Item -ItemType Directory -Path $stateRoot -Force | Out-Null
     $createdNew = $false
-    $mutexName = 'Local\NEXUS-Bybit-WSL-Watchdog-v' + $watchdogGeneration + '-' + $sid
+    $mutexName = Get-WatchdogMutexName
     $mutex = New-Object Threading.Mutex($true, $mutexName, [ref]$createdNew)
     if (-not $createdNew) { return }
 
@@ -498,17 +480,18 @@ if (Test-Path -LiteralPath $legacyStartupCmd -PathType Leaf) {
     Remove-Item -LiteralPath $legacyStartupCmd -Force
 }
 
-$currentWatchdogs = @(Get-UserWatchdogProcessIds -CurrentGenerationOnly $true)
-if ($stableWasCurrent -and $currentWatchdogs.Count -gt 0) {
+$watchdogActive = Test-UserWatchdogActive
+if ($watchdogActive) {
     $listener = Test-Listener
     Write-Evidence -Decision $(if ($listener) { 'USER_CONTEXT_MANAGED_CHILD_LIVENESS_SELF_HEAL_ACTIVE' } else { 'CURRENT_WATCHDOG_RUNNING_LISTENER_NOT_OBSERVED' }) -ListenerObserved $listener
     if (-not $listener) { throw 'Current detached watchdog is running but NEXUS-BYBIT-WSL listener was not observed.' }
+    if (-not $stableWasCurrent) {
+        Write-Log 'watchdog_upgrade_deferred_until_next_start=true'
+    }
     Write-RecoverySuccessOutput -ReusedCurrentWatchdog $true
     exit 0
 }
 
-Stop-PreviousUserWatchdogs
-Start-Sleep -Seconds 1
 
 $psi = New-Object Diagnostics.ProcessStartInfo
 $psi.FileName = 'powershell.exe'

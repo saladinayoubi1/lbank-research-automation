@@ -132,13 +132,14 @@ function Get-ExactExistingRunnerService([string]$FullRoot) {
     if ([string]$serviceController.Status -ne 'Running') {
         throw 'Exact runner service is not currently running.'
     }
-    if (-not (Get-TargetListener)) { throw 'Exact runner service is running but its target listener was not observed.' }
+    $listenerObserved = [bool](Get-TargetListener)
 
     return [pscustomobject]@{
         Name = $serviceName
         State = [string]$serviceController.Status
         StartMode = 'Auto'
         Executable = $expectedExecutable
+        ListenerObserved = $listenerObserved
     }
 }
 
@@ -228,7 +229,13 @@ function Start-TargetRunnerHidden {
 }
 
 function Run-Supervisor {
-    [void](Assert-TargetRunnerFiles)
+    $fullRoot = Assert-TargetRunnerFiles
+    $serviceMarker = Join-Path $fullRoot '.service'
+    if (Test-Path -LiteralPath $serviceMarker -PathType Leaf) {
+        $existingService = Get-ExactExistingRunnerService -FullRoot $fullRoot
+        Write-Log ('supervisor_skipped_existing_service=true service=' + $existingService.Name + ' listener_observed=' + $existingService.ListenerObserved)
+        return
+    }
     Write-Log 'supervisor_started=true'
     while ($true) {
         try {
@@ -258,11 +265,18 @@ function Install-TargetTask {
         throw 'The target runner Windows identity could not be resolved.'
     }
 
-    $serviceIdentity = (
-        $currentIdentity.StartsWith('NT AUTHORITY\', [StringComparison]::OrdinalIgnoreCase) -or
-        $currentIdentity.StartsWith('NT SERVICE\', [StringComparison]::OrdinalIgnoreCase)
-    )
-    if ($serviceIdentity) {
+    $script:InstallStage = 'state_script_copy'
+    Ensure-StateRoot
+    $source = (Resolve-Path -LiteralPath $PSCommandPath).Path
+    if (-not $source.Equals([IO.Path]::GetFullPath($StableScript), [StringComparison]::OrdinalIgnoreCase)) {
+        Copy-Item -LiteralPath $source -Destination $StableScript -Force
+    }
+
+    # A registered runner service is authoritative regardless of which Windows
+    # identity invokes the installer. Never create a second user-context
+    # listener against the same .runner credentials when that service exists.
+    $serviceMarker = Join-Path $fullRoot '.service'
+    if (Test-Path -LiteralPath $serviceMarker -PathType Leaf) {
         $script:InstallStage = 'existing_service_validation'
         $existingService = Get-ExactExistingRunnerService -FullRoot $fullRoot
         $script:InstallStage = 'evidence_success_existing_service'
@@ -278,24 +292,26 @@ function Install-TargetTask {
             service_state = $existingService.State
             service_start_mode = $existingService.StartMode
             service_executable = $existingService.Executable
-            target_listener_observed = $true
+            target_service_observed = $true
+            target_listener_observed = [bool]$existingService.ListenerObserved
         }
-        Write-Log ('install_decision=SUCCESS existing_service_reused=true service=' + $existingService.Name)
+        Write-Log ('install_decision=SUCCESS existing_service_reused=true service=' + $existingService.Name + ' listener_observed=' + $existingService.ListenerObserved)
         Write-Host ('windows_dr_autostart_decision=SUCCESS persistence_mode=EXISTING_WINDOWS_SERVICE service=' + $existingService.Name)
         return
+    }
+
+    $serviceIdentity = (
+        $currentIdentity.StartsWith('NT AUTHORITY\', [StringComparison]::OrdinalIgnoreCase) -or
+        $currentIdentity.StartsWith('NT SERVICE\', [StringComparison]::OrdinalIgnoreCase)
+    )
+    if ($serviceIdentity) {
+        throw 'Service identity requires the exact target runner service marker.'
     }
 
     $script:InstallStage = 'signed_in_user_lookup'
     $signedInUser = Get-SignedInWindowsUser
     if (-not $currentIdentity.Equals($signedInUser, [StringComparison]::OrdinalIgnoreCase)) {
         throw 'The target runner must run under the signed-in Windows user.'
-    }
-
-    $script:InstallStage = 'state_script_copy'
-    Ensure-StateRoot
-    $source = (Resolve-Path -LiteralPath $PSCommandPath).Path
-    if (-not $source.Equals([IO.Path]::GetFullPath($StableScript), [StringComparison]::OrdinalIgnoreCase)) {
-        Copy-Item -LiteralPath $source -Destination $StableScript -Force
     }
 
     $powershell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'

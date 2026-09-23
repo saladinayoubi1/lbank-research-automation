@@ -13,6 +13,30 @@ from typing import Any
 STATE_DIR = Path("data/agent_coordination")
 SUPERVISOR_FILE = STATE_DIR / "supervisor.json"
 LOG_DIR = STATE_DIR / "logs"
+LOCK_FILE = STATE_DIR / "supervisor.lock"
+
+
+def acquire_singleton_lock():
+    LOCK_FILE.parent.mkdir(parents=True, exist_ok=True)
+    handle = LOCK_FILE.open("a+b")
+    handle.seek(0, os.SEEK_END)
+    if handle.tell() == 0:
+        handle.write(b"0")
+        handle.flush()
+    handle.seek(0)
+    try:
+        if os.name == "nt":
+            import msvcrt
+
+            msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        handle.close()
+        return None
+    return handle
 
 
 def utcnow() -> str:
@@ -40,6 +64,10 @@ def main() -> int:
     parser.add_argument("--poll-seconds", type=int, default=20)
     parser.add_argument("--with-dashboard", action="store_true")
     args = parser.parse_args()
+
+    singleton_lock = acquire_singleton_lock()
+    if singleton_lock is None:
+        return 0
 
     poll = max(15, args.poll_seconds)
     children: dict[str, tuple[subprocess.Popen[str], Any, list[str]]] = {}
@@ -89,6 +117,7 @@ def main() -> int:
             if proc.poll() is None:
                 proc.terminate()
             log.close()
+        singleton_lock.close()
 
 
 if __name__ == "__main__":
