@@ -52,7 +52,9 @@ def test_sanitized_evidence_is_published_without_raw_diag_upload() -> None:
     assert "windows_runner_paths_modified=false" in capture
     assert "bybit_private_credentials_used=false" in capture
     assert "Raw diagnostic upload is forbidden." in capture
-    assert "Join-Path $env:DIAGNOSTIC_SOURCE_ROOT 'build\\bybit-wsl-runner-diagnostics\\evidence.json'" in capture
+    assert "$evidencePath = Join-Path $env:DIAGNOSTIC_SOURCE_ROOT 'build\\bybit-wsl-runner-diagnostics\\evidence.json'" in capture
+    assert "-OutputPath $evidencePath" in capture
+    assert "$target = Join-Path $env:DIAGNOSTIC_SOURCE_ROOT 'build\\bybit-wsl-runner-diagnostics\\evidence.json'" in capture
     assert "Join-Path $env:DIAGNOSTIC_SOURCE_ROOT 'scripts\\run_nexus_bybit_wsl_runner_diagnostics.ps1'" in capture
 
 
