@@ -7,7 +7,12 @@ SCRIPT = Path("scripts/install_nexus_windows_dr_autostart.ps1")
 
 def _persist_job() -> str:
     text = WORKFLOW.read_text(encoding="utf-8")
-    return text.split("\n  persist:\n", 1)[1]
+    return text.split("\n  persist:\n", 1)[1].split("\n  upload-evidence:\n", 1)[0]
+
+
+def _upload_job() -> str:
+    text = WORKFLOW.read_text(encoding="utf-8")
+    return text.split("\n  upload-evidence:\n", 1)[1]
 
 
 def test_physical_dr_fetch_uses_fresh_runner_temp_source() -> None:
@@ -33,17 +38,38 @@ def test_physical_dr_fetch_uses_fresh_runner_temp_source() -> None:
         assert forbidden not in text
 
 
-def test_physical_dr_uses_unique_evidence_and_bounded_cleanup() -> None:
+def test_physical_dr_uses_bounded_output_handoff_and_bounded_cleanup() -> None:
     text = _persist_job()
 
     assert (
         '"%RUNNER_TEMP%\\nexus-windows-dr-persistence-%GITHUB_RUN_ID%-%GITHUB_RUN_ATTEMPT%.json"'
         in text
     )
-    assert "${{ runner.temp }}\\nexus-windows-dr-persistence-${{ github.run_id }}-${{ github.run_attempt }}.json" in text
+    assert "Export bounded sanitized persistence evidence" in text
+    assert "id: evidence_handoff" in text
+    assert "evidence_b64" in text
+    assert "evidence_sha256" in text
+    assert "evidence_bytes" in text
+    assert "$bytes.Length -gt 65536" in text
+    assert "actions/upload-artifact@" not in text
     assert "Refusing cleanup outside the exact isolated DR source boundary." in text
     assert "Remove-Item -LiteralPath $sourceRoot -Recurse -Force" in text
     assert "Get-ChildItem -Force | Remove-Item" not in text
+
+
+def test_dr_evidence_upload_runs_on_hosted_runner_and_verifies_handoff() -> None:
+    text = _upload_job()
+
+    assert "needs: persist" in text
+    assert "runs-on: ubuntu-latest" in text
+    assert "needs.persist.outputs.evidence_b64" in text
+    assert "needs.persist.outputs.evidence_sha256" in text
+    assert "needs.persist.outputs.evidence_bytes" in text
+    assert "base64 -d" in text
+    assert "sha256sum build/windows-dr-persistence/evidence.json" in text
+    assert "hosted_evidence_rehydration=PASS" in text
+    assert "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a" in text
+    assert "live authority boundary changed" in text
 
 
 def test_physical_dr_preserves_read_only_and_paper_only_boundaries() -> None:
