@@ -357,7 +357,7 @@ function Reconcile-Runner([string]$Root, [ref]$LastStartAttempt) {
 }
 
 function Install-Autostart {
-    if ($env:OS -ne 'Windows_NT') { throw 'NEXUS GitHub runner autostart can only be installed on Windows' }
+    if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) { throw 'NEXUS GitHub runner autostart can only be installed on Windows' }
     $root = Resolve-RepoRoot
     Ensure-StateRoot
     $runner = Find-RunnerInstallation $root
@@ -436,7 +436,7 @@ function Show-Status {
 }
 
 function Run-Daemon {
-    if ($env:OS -ne 'Windows_NT') { throw 'RunDaemon is Windows-only' }
+    if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) { throw 'RunDaemon is Windows-only' }
     $root = Resolve-RepoRoot
     Ensure-StateRoot
     $created = $false
