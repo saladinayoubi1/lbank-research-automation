@@ -75,13 +75,12 @@ def test_diagnostic_signal_scan_is_recent_and_bounded(tmp_path: Path) -> None:
         pytest.skip("Bash syntax validation is unavailable")
     completed = subprocess.run(
         [bash, "-n"],
-        input=signals.replace("__RUNNER_ROOT__", "/opt/nexus-bybit-runner"),
-        text=True,
+        input=signals.replace("__RUNNER_ROOT__", "/opt/nexus-bybit-runner").encode("utf-8"),
         capture_output=True,
         timeout=10,
         check=False,
     )
-    assert completed.returncode == 0, completed.stderr
+    assert completed.returncode == 0, completed.stderr.decode("utf-8", errors="replace")
 
     diag = tmp_path / "_diag"
     diag.mkdir()
