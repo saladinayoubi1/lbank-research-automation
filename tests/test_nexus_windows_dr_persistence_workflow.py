@@ -7,12 +7,7 @@ SCRIPT = Path("scripts/install_nexus_windows_dr_autostart.ps1")
 
 def _persist_job() -> str:
     text = WORKFLOW.read_text(encoding="utf-8")
-    return text.split("\n  persist:\n", 1)[1].split("\n  upload-evidence:\n", 1)[0]
-
-
-def _upload_job() -> str:
-    text = WORKFLOW.read_text(encoding="utf-8")
-    return text.split("\n  upload-evidence:\n", 1)[1]
+    return text.split("\n  persist:\n", 1)[1]
 
 
 def test_physical_dr_fetch_uses_fresh_runner_temp_source() -> None:
@@ -57,19 +52,23 @@ def test_physical_dr_uses_bounded_output_handoff_and_bounded_cleanup() -> None:
     assert "Get-ChildItem -Force | Remove-Item" not in text
 
 
-def test_dr_evidence_upload_runs_on_hosted_runner_and_verifies_handoff() -> None:
-    text = _upload_job()
+def test_existing_hosted_contract_job_rehydrates_and_uploads_physical_evidence() -> None:
+    text = WORKFLOW.read_text(encoding="utf-8")
+    contract = text.split("\n  contract:\n", 1)[1].split("\n  persist:\n", 1)[0]
 
-    assert "needs: persist" in text
-    assert "runs-on: ubuntu-latest" in text
-    assert "needs.persist.outputs.evidence_b64" in text
-    assert "needs.persist.outputs.evidence_sha256" in text
-    assert "needs.persist.outputs.evidence_bytes" in text
-    assert "base64 -d" in text
-    assert "sha256sum build/windows-dr-persistence/evidence.json" in text
-    assert "hosted_evidence_rehydration=PASS" in text
-    assert "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a" in text
-    assert "live authority boundary changed" in text
+    assert "needs: persist" in contract
+    assert "runs-on: windows-latest" in contract
+    assert "needs.persist.outputs.evidence_b64" in contract
+    assert "needs.persist.outputs.evidence_sha256" in contract
+    assert "needs.persist.outputs.evidence_bytes" in contract
+    assert "Require physical evidence handoff after successful runtime persistence" in contract
+    assert "Rehydrate and verify physical persistence evidence" in contract
+    assert "[Convert]::FromBase64String" in contract
+    assert "Persistence evidence digest mismatch." in contract
+    assert "hosted_evidence_rehydration=PASS" in contract
+    assert "Upload sanitized persistence evidence from hosted runner" in contract
+    assert "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a" in contract
+    assert "Live authority boundary changed." in contract
 
 
 def test_physical_dr_preserves_read_only_and_paper_only_boundaries() -> None:
