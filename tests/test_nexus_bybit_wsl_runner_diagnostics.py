@@ -75,13 +75,12 @@ def test_diagnostic_signal_scan_is_recent_and_bounded(tmp_path: Path) -> None:
         pytest.skip("Bash syntax validation is unavailable")
     completed = subprocess.run(
         [bash, "-n"],
-        input=signals.replace("__RUNNER_ROOT__", "/opt/nexus-bybit-runner"),
-        text=True,
+        input=signals.replace("__RUNNER_ROOT__", "/opt/nexus-bybit-runner").encode("utf-8"),
         capture_output=True,
         timeout=10,
         check=False,
     )
-    assert completed.returncode == 0, completed.stderr
+    assert completed.returncode == 0, completed.stderr.decode("utf-8", errors="replace")
 
     diag = tmp_path / "_diag"
     diag.mkdir()
@@ -95,21 +94,28 @@ def test_diagnostic_signal_scan_is_recent_and_bounded(tmp_path: Path) -> None:
                 encoding="utf-8",
             )
 
-    rooted = signals.replace("__RUNNER_ROOT__", str(tmp_path))
+    runner_root = str(tmp_path)
+    bash_path = Path(bash).as_posix().lower()
+    if sys.platform == "win32" and bash_path.endswith("/windows/system32/bash.exe"):
+        windows_root = tmp_path.resolve().as_posix()
+        if len(windows_root) >= 3 and windows_root[1:3] == ":/":
+            runner_root = f"/mnt/{windows_root[0].lower()}{windows_root[2:]}"
+    rooted = signals.replace("__RUNNER_ROOT__", runner_root)
     builtin_only = subprocess.run(
         [bash],
-        input=rooted,
-        text=True,
+        input=rooted.encode("utf-8"),
         capture_output=True,
         timeout=10,
         check=False,
         env={"PATH": ""},
     )
-    assert builtin_only.returncode == 0, builtin_only.stderr
-    assert "Runner failed-start-2" in builtin_only.stdout
-    assert "Worker failed-start-3" in builtin_only.stdout
-    assert "failed-start-0" not in builtin_only.stdout
-    assert "error-end-2" not in builtin_only.stdout
+    builtin_stderr = builtin_only.stderr.decode("utf-8", errors="replace")
+    builtin_stdout = builtin_only.stdout.decode("utf-8", errors="replace")
+    assert builtin_only.returncode == 0, builtin_stderr
+    assert "Runner failed-start-2" in builtin_stdout
+    assert "Worker failed-start-3" in builtin_stdout
+    assert "failed-start-0" not in builtin_stdout
+    assert "error-end-2" not in builtin_stdout
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows PowerShell check is Windows-only")
