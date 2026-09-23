@@ -149,20 +149,20 @@ def test_self_hosted_phase_workflows_pin_trusted_manual_refs_and_credentials():
 
     assert "github.actor == github.repository_owner" in autonomy
     assert "github.ref_name == github.event.repository.default_branch" in autonomy
-    source_start = autonomy.index("  source-prep:")
-    worker_start = autonomy.index("  local-worker:", source_start)
-    source_block = autonomy[source_start:worker_start]
+    worker_start = autonomy.index("  local-worker:")
     worker_block = autonomy[worker_start:]
-    assert "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" in source_block
-    assert "persist-credentials: false" in source_block
-    assert "git archive --format=zip" in source_block
-    assert "nexus-local-autonomy-source-${{ github.run_id }}" in source_block
-    assert "actions/checkout" not in worker_block
-    assert "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093" in worker_block
-    assert "EXPECTED_SOURCE_ARCHIVE_SHA256" in worker_block
-    assert "Exact source commit mismatch" in worker_block
-    assert "Exact source archive digest mismatch" in worker_block
-    assert "git fetch" not in worker_block
+    assert "source-prep:" not in autonomy
+    assert "actions/download-artifact@" not in worker_block
+    assert "Prepare anonymous exact source with bounded HTTP/1.1 retries" in worker_block
+    assert "https://github.com/$env:GITHUB_REPOSITORY.git" in worker_block
+    assert "git -C $workspace config --local --unset-all http.https://github.com/.extraheader" in worker_block
+    assert "http.version=HTTP/1.1" in worker_block
+    assert "$fetchMaxAttempts = 3" in worker_block
+    assert "fetch --no-tags --prune --depth=1 origin $env:GITHUB_SHA" in worker_block
+    assert "checkout --detach --force FETCH_HEAD" in worker_block
+    assert "Exact trigger SHA mismatch" in worker_block
+    assert "x-access-token" not in worker_block
+    assert "Authorization: Bearer" not in worker_block
 
     assert "github.actor == github.repository_owner" in continuous
     assert "github.ref_name == github.event.repository.default_branch" in continuous
