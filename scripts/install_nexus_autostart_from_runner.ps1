@@ -19,17 +19,17 @@ function Fail([string]$Message) {
     throw "NEXUS zero-touch remote install: $Message"
 }
 
-function Invoke-Git([string]$Root, [string[]]$Args) {
+function Invoke-Git([string]$Root, [string[]]$GitArgs) {
     $git = Get-Command git -ErrorAction Stop
-    $output = & $git.Source -C $Root @Args 2>&1
-    if ($LASTEXITCODE -ne 0) { Fail "git $($Args -join ' ') failed: $($output -join ' ')" }
+    $output = & $git.Source -C $Root @GitArgs 2>&1
+    if ($LASTEXITCODE -ne 0) { Fail "git $($GitArgs -join ' ') failed: $($output -join ' ')" }
     return (($output | Out-String).Trim())
 }
 
-function Invoke-GitGlobal([string[]]$Args) {
+function Invoke-GitGlobal([string[]]$GitArgs) {
     $git = Get-Command git -ErrorAction Stop
-    $output = & $git.Source @Args 2>&1
-    if ($LASTEXITCODE -ne 0) { Fail "git $($Args -join ' ') failed: $($output -join ' ')" }
+    $output = & $git.Source @GitArgs 2>&1
+    if ($LASTEXITCODE -ne 0) { Fail "git $($GitArgs -join ' ') failed: $($output -join ' ')" }
     return (($output | Out-String).Trim())
 }
 
@@ -190,14 +190,33 @@ function Invoke-Installer([string]$Root, [string]$Script) {
 }
 
 function Task-Snapshot([string]$Name) {
-    $task = Get-ScheduledTask -TaskName $Name -ErrorAction SilentlyContinue
-    if (-not $task) { return [ordered]@{ exists=$false; state='MISSING' } }
-    $info = Get-ScheduledTaskInfo -TaskName $Name -ErrorAction SilentlyContinue
-    return [ordered]@{
-        exists = $true
-        state = [string]$task.State
-        last_run_time = if ($info) { [string]$info.LastRunTime } else { $null }
-        last_task_result = if ($info) { [int]$info.LastTaskResult } else { $null }
+    try {
+        $task = Get-ScheduledTask -TaskName $Name -ErrorAction Stop
+        $info = Get-ScheduledTaskInfo -TaskName $Name -ErrorAction SilentlyContinue
+        return [ordered]@{
+            exists = $true
+            state = [string]$task.State
+            last_run_time = if ($info) { [string]$info.LastRunTime } else { $null }
+            last_task_result = if ($info) { [int]$info.LastTaskResult } else { $null }
+        }
+    }
+    catch {
+        try {
+            $service = New-Object -ComObject 'Schedule.Service'
+            $service.Connect()
+            $task = $service.GetFolder('\').GetTask($Name)
+            $states = @('Unknown','Disabled','Queued','Ready','Running')
+            $state = if ([int]$task.State -ge 0 -and [int]$task.State -lt $states.Count) { $states[[int]$task.State] } else { [string]$task.State }
+            return [ordered]@{
+                exists = $true
+                state = $state
+                last_run_time = [string]$task.LastRunTime
+                last_task_result = [int]$task.LastTaskResult
+            }
+        }
+        catch {
+            return [ordered]@{ exists=$false; state='MISSING' }
+        }
     }
 }
 
