@@ -201,7 +201,7 @@ function Task-Snapshot([string]$Name) {
     }
 }
 
-if ($env:OS -ne 'Windows_NT') { Fail 'Windows is required' }
+if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) { Fail 'Windows is required' }
 New-Item -ItemType Directory -Force -Path $EvidenceDir | Out-Null
 $identity = Get-ExecutionIdentity
 if ($identity.Blocked) { Fail "self-hosted runner is executing as service identity $($identity.Name); owner-user Task Scheduler install is unsafe" }
