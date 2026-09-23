@@ -13,23 +13,24 @@ class LocalAutonomyWorkflowContractTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.text = WORKFLOW.read_text(encoding="utf-8")
 
-    def test_physical_runner_uses_current_run_digest_pinned_source_artifact(self) -> None:
-        self.assertIn("source-prep:", self.text)
-        self.assertIn("git archive --format=zip", self.text)
-        self.assertIn("archive_sha256:", self.text)
-        self.assertIn("nexus-local-autonomy-source-${{ github.run_id }}", self.text)
-        self.assertIn(
-            "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
-            self.text,
-        )
-        self.assertIn("EXPECTED_SOURCE_ARCHIVE_SHA256", self.text)
-        self.assertIn("Get-FileHash", self.text)
-        self.assertIn("exact_source_mode=digest-pinned-current-run-artifact", self.text)
+    def test_physical_runner_uses_anonymous_exact_sha_http11_source(self) -> None:
+        self.assertNotIn("source-prep:", self.text)
+        self.assertNotIn("actions/download-artifact@", self.text)
+        self.assertIn("Prepare anonymous exact source with bounded HTTP/1.1 retries", self.text)
+        self.assertIn("https://github.com/$env:GITHUB_REPOSITORY.git", self.text)
+        self.assertIn("credential", self.text)
+        self.assertIn("http.version=HTTP/1.1", self.text)
+        self.assertIn("$fetchMaxAttempts = 3", self.text)
+        self.assertIn("fetch --no-tags --prune --depth=1 origin $env:GITHUB_SHA", self.text)
+        self.assertIn("checkout --detach --force FETCH_HEAD", self.text)
+        self.assertIn("exact_source_mode=anonymous-exact-sha-http11", self.text)
 
-    def test_physical_runner_does_not_fetch_repository_over_git(self) -> None:
-        self.assertNotIn("fetch --no-tags", self.text)
-        self.assertNotIn("bounded-http11-fetch", self.text)
-        self.assertNotIn("git checkout --detach", self.text)
+    def test_physical_runner_source_fetch_is_anonymous_and_fail_closed(self) -> None:
+        self.assertIn("git -C $workspace config --local --unset-all http.https://github.com/.extraheader", self.text)
+        self.assertIn("Exact autonomy source fetch failed", self.text)
+        self.assertIn("Exact trigger SHA mismatch", self.text)
+        self.assertNotIn("x-access-token", self.text)
+        self.assertNotIn("Authorization: Bearer", self.text)
         self.assertNotIn("git remote set-url", self.text)
 
     def test_worker_authority_and_execution_plane_remain_bounded(self) -> None:
@@ -41,11 +42,9 @@ class LocalAutonomyWorkflowContractTests(unittest.TestCase):
         self.assertIn("permissions:\n  contents: read", self.text)
 
     def test_source_binding_is_fail_closed_before_execution(self) -> None:
-        self.assertIn("Exact source commit mismatch", self.text)
-        self.assertIn("Exact source archive digest mismatch", self.text)
         self.assertIn("Restored exact source is incomplete", self.text)
         self.assertLess(
-            self.text.index("Verify and restore exact source artifact"),
+            self.text.index("Prepare anonymous exact source with bounded HTTP/1.1 retries"),
             self.text.index("Run bounded autonomous queue"),
         )
 
