@@ -13,6 +13,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / ".github" / "workflows" / "nexus-local-runner.yml"
 SCRIPT = ROOT / "scripts" / "install_and_smoke_nexus_personal_pro.ps1"
+DOWNLOADER = ROOT / "scripts" / "download_github_actions_artifact_http11.ps1"
 POLICY = ROOT / "security" / "workflow-permissions-policy-v1.json"
 
 
@@ -33,17 +34,35 @@ def test_install_route_is_owner_main_exact_laptop_and_digest_bound() -> None:
         'ArtifactName "nexus-windows-persistent-unpacked"',
         'ExpectedComputerName "DESKTOP-1R1081M"',
         'ExpectedRunnerName "NEXUS-LOCAL-RUNNER"',
-        "Download exact NEXUS persistent package",
-        "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
-        "run-id: 35923832634",
-        "github-token: ${{ github.token }}",
+        "Download exact NEXUS persistent package via resilient HTTP/1.1 transport",
+        "download_github_actions_artifact_http11.ps1",
+        "a87684f07c8aaa949e6960466c9f51eddcaf9905765e901b744569060930bc0e",
+        "217211776",
+        "GITHUB_TOKEN: ${{ github.token }}",
         "-UsePreloadedPackage",
     ):
         assert marker in workflow
     parsed = yaml.safe_load(workflow)
     assert isinstance(parsed, dict) and isinstance(parsed.get("jobs"), dict)
     assert parsed["permissions"] == {"actions": "read", "contents": "read"}
-    assert "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093" in workflow
+    assert "actions/download-artifact@" not in workflow
+
+
+def test_resilient_artifact_downloader_is_metadata_and_digest_bound() -> None:
+    script = text(DOWNLOADER)
+    for marker in (
+        "metadata.workflow_run.id",
+        "metadata.workflow_run.head_sha",
+        "metadata.digest",
+        "ExpectedArchiveBytes",
+        "--http1.1",
+        "--continue-at",
+        "Artifact destination escaped RUNNER_TEMP",
+        "Get-FileHash",
+        "NEXUS_ARTIFACT_HTTP11_DOWNLOAD=PASS",
+    ):
+        assert marker in script
+    assert "http://" not in script
 
 
 def test_installer_is_side_by_side_non_admin_and_preserves_existing_install() -> None:
@@ -120,18 +139,19 @@ def test_install_artifact_transport_cleanup_is_narrow_and_fail_closed() -> None:
 def test_install_script_parses_in_windows_powershell() -> None:
     powershell = shutil.which("powershell.exe") or shutil.which("powershell")
     assert powershell, "Windows PowerShell is required on windows-latest"
-    escaped = str(SCRIPT).replace("'", "''")
-    command = (
-        f"$tokens=$null;$errors=$null;"
-        f"[System.Management.Automation.Language.Parser]::ParseFile('{escaped}',[ref]$tokens,[ref]$errors)|Out-Null;"
-        "$messages=@($errors|ForEach-Object{$_.Message});if($messages.Count){$messages|ForEach-Object{Write-Error $_};exit 1}"
-    )
-    subprocess.run(
-        [powershell, "-NoProfile", "-NonInteractive", "-Command", command],
-        check=True,
-        text=True,
-        capture_output=True,
-    )
+    for path in (SCRIPT, DOWNLOADER):
+        escaped = str(path).replace("'", "''")
+        command = (
+            f"$tokens=$null;$errors=$null;"
+            f"[System.Management.Automation.Language.Parser]::ParseFile('{escaped}',[ref]$tokens,[ref]$errors)|Out-Null;"
+            "$messages=@($errors|ForEach-Object{$_.Message});if($messages.Count){$messages|ForEach-Object{Write-Error $_};exit 1}"
+        )
+        subprocess.run(
+            [powershell, "-NoProfile", "-NonInteractive", "-Command", command],
+            check=True,
+            text=True,
+            capture_output=True,
+        )
 
 
 def test_permission_policy_tracks_cross_run_artifact_read() -> None:
