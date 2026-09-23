@@ -70,15 +70,17 @@ def test_install_detaches_watchdog_from_actions_process_cleanup() -> None:
     )
 
 
-def test_current_watchdog_is_reused_and_upgrade_preserves_active_worker() -> None:
+def test_current_watchdog_is_reused_without_wmi_or_interrupting_runner() -> None:
     text = _text()
-    assert "Get-UserWatchdogProcessIds" in text
-    assert "-CurrentGenerationOnly $true" in text
+    assert "Test-UserWatchdogActive" in text
+    assert "Get-WatchdogMutexName" in text
+    assert "$mutex.WaitOne(0)" in text
     assert "-Generation ' + $watchdogGeneration" in text
-    assert "$stableWasCurrent -and $currentWatchdogs.Count -gt 0" in text
+    assert "if ($watchdogActive)" in text
     assert "Write-RecoverySuccessOutput -ReusedCurrentWatchdog $true" in text
-    assert "Previous watchdog upgrade deferred while Runner.Worker is active." in text
-    assert "Previous watchdog upgrade deferred because runner state is unknown." in text
+    assert "watchdog_upgrade_deferred_until_next_start=true" in text
+    assert "System.Management.ManagementObjectSearcher" not in text
+    assert "Win32_Process WHERE Name='powershell.exe'" not in text
 
 
 def test_wsl_probe_interop_is_timeout_bounded() -> None:
@@ -140,14 +142,15 @@ def test_managed_child_is_liveness_probed_without_interrupting_worker_or_unknown
     assert "$managedRunner.Kill()" not in unknown_guard
 
 
-def test_upgrade_cleans_only_prior_same_user_watchdog_process() -> None:
+def test_watchdog_inventory_is_mutex_backed_and_wmi_independent() -> None:
     text = _text()
-    assert "Stop-PreviousUserWatchdogs" in text
-    assert "System.Management.ManagementObjectSearcher" in text
-    assert "Win32_Process WHERE Name='powershell.exe'" in text
-    assert "IndexOf($stableScript" in text
-    assert "-Mode\\s+Watch" in text
-    assert "previous_watchdog_terminated_pid=" in text
+    assert "Local\\NEXUS-Bybit-WSL-Watchdog-v" in text
+    assert "Threading.Mutex" in text
+    assert "WaitOne(0)" in text
+    assert "AbandonedMutexException" in text
+    assert "Stop-PreviousUserWatchdogs" not in text
+    assert "System.Management.ManagementObjectSearcher" not in text
+    assert "Win32_Process WHERE Name='powershell.exe'" not in text
     assert "Stop-Process" not in text
 
 

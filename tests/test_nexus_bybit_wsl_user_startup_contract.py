@@ -35,7 +35,7 @@ def test_wsl1_transport_uses_base64_argv_without_redirected_standard_streams() -
     wrapper = _function(text, "ConvertTo-WslBashWrapper", "New-WslProcessStartInfo")
     transport = _function(text, "New-WslProcessStartInfo", "Invoke-WslNative")
     invoke = _function(text, "Invoke-WslNative", "Write-Log")
-    managed = _function(text, "Start-ManagedRunnerProcess", "Stop-PreviousUserWatchdogs")
+    managed = _function(text, "Start-ManagedRunnerProcess", "Get-WatchdogMutexName")
     assert '$normalizedCommand = $Command.Replace("`r`n", "`n").Replace("`r", "`n")' in wrapper
     assert "[Convert]::ToBase64String" in wrapper
     assert "base64 -d | bash" in wrapper

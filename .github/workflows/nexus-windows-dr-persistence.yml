@@ -94,7 +94,8 @@ jobs:
             'existing_service_reused = $true',
             'service_modified = $false',
             'scheduled_task_modified = $false',
-            'target_listener_observed = $true'
+            'target_service_observed = $true',
+            'supervisor_skipped_existing_service=true'
           )) {
             if (-not $text.Contains($required)) { throw "Required existing-service proof marker missing: $required" }
           }
@@ -235,8 +236,11 @@ jobs:
                 $evidence.scheduled_task_modified -ne $false -or
                 $evidence.service_state -ne 'Running' -or
                 $evidence.service_start_mode -ne 'Auto' -or
-                $evidence.target_listener_observed -ne $true) {
+                $evidence.target_service_observed -ne $true) {
               throw 'Existing Windows service persistence proof is incomplete.'
+            }
+            if ($null -eq $evidence.target_listener_observed) {
+              throw 'Existing Windows service listener visibility must be explicitly recorded.'
             }
           }
           elseif ($evidence.persistence_mode -ne 'INTERACTIVE_USER_SCHEDULED_TASK') {

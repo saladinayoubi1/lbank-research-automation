@@ -101,7 +101,8 @@ def test_state_handoff_keeps_full_state_but_uses_bounded_cross_file_xz_compressi
     package = paper.split("Package Paper state for hosted artifact persistence", 1)[1]
     persist = text.split("  persist-state:", 1)[1]
     assert "persistent-state-handoff.tar.xz" in package
-    assert 'tarfile.open(output, "w:xz", preset=9)' in package
+    assert "import lzma" in package
+    assert 'tarfile.open(output, "w:xz", preset=9 | lzma.PRESET_EXTREME)' in package
     assert "state_handoff_tar_xz_bytes=" in package
     assert "base64.b85encode" in package
     assert "estimated_output_utf16_bytes=$(( state_b85_chars * 2 + 4096 ))" in package

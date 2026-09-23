@@ -3,6 +3,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PS = ROOT / "scripts" / "nexus_windows_autostart.ps1"
 CMD = ROOT / "INSTALL_NEXUS_AUTOSTART.cmd"
+SUPERVISOR = ROOT / "local_node_supervisor.py"
 
 
 def read(path: Path) -> str:
@@ -51,12 +52,26 @@ def test_daemon_runs_real_local_supervisor_hidden_recovers_and_binds_exact_check
         "-WindowStyle Hidden",
         "Get-SupervisorProcess",
         "Start-LocalSupervisor",
-        "Test-SupervisorCommandLine",
+        "data\\agent_coordination\\supervisor.json",
+        "supervisor_pid",
+        "generated_at",
+        "local_supervisor_reused_from_state",
         "[IO.Path]::GetFullPath((Join-Path $Root $SupervisorRelative))",
-        "IndexOf($expectedScript, [StringComparison]::OrdinalIgnoreCase)",
         "$quotedScript",
         "local_supervisor_start_failed",
         "duplicate_daemon_rejected",
+    ):
+        assert marker in text
+
+
+def test_local_supervisor_has_cross_platform_singleton_lock():
+    text = read(SUPERVISOR)
+    for marker in (
+        'supervisor.lock',
+        'msvcrt.LK_NBLCK',
+        'fcntl.LOCK_EX | fcntl.LOCK_NB',
+        'singleton_lock = acquire_singleton_lock()',
+        'if singleton_lock is None:',
     ):
         assert marker in text
 

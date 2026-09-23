@@ -176,23 +176,29 @@ jobs:
           }
 
           Start-Sleep -Seconds 20
-          $stableWatchdog = [string]$evidence.stable_watchdog_path
+          $watchdogMutexName = 'Local\NEXUS-Bybit-WSL-Watchdog-v' + [int]$evidence.watchdog_generation + '-' + [string]$evidence.windows_user_sid
+          $createdNew = $false
+          $watchdogMutex = New-Object Threading.Mutex($false, $watchdogMutexName, [ref]$createdNew)
           $watchdogFound = $false
-          $query = "SELECT ProcessId, CommandLine FROM Win32_Process WHERE Name='powershell.exe'"
-          $searcher = New-Object System.Management.ManagementObjectSearcher($query)
           try {
-            foreach ($item in @($searcher.Get())) {
-              $commandLine = [string]$item.CommandLine
-              if ($commandLine -and
-                  $commandLine.IndexOf($stableWatchdog, [StringComparison]::OrdinalIgnoreCase) -ge 0 -and
-                  $commandLine -match '(?i)-Mode\s+Watch') {
+            if (-not $createdNew) {
+              $acquired = $false
+              try {
+                $acquired = $watchdogMutex.WaitOne(0)
+              }
+              catch [Threading.AbandonedMutexException] {
+                $acquired = $true
+              }
+              if ($acquired) {
+                try { $watchdogMutex.ReleaseMutex() } catch { }
+              }
+              else {
                 $watchdogFound = $true
-                break
               }
             }
           }
           finally {
-            $searcher.Dispose()
+            $watchdogMutex.Dispose()
           }
           if (-not $watchdogFound) { throw 'Detached signed-in-user watchdog did not remain alive.' }
 

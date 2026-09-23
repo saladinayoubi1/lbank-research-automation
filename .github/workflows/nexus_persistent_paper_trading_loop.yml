@@ -739,6 +739,7 @@ jobs:
           fi
           cd "$SOURCE_ROOT"
           "$PYTHON_BIN" - <<'PY'
+          import lzma
           import os
           import tarfile
           from pathlib import Path
@@ -751,7 +752,7 @@ jobs:
           output.unlink(missing_ok=True)
           file_count = 0
           total_bytes = 0
-          with tarfile.open(output, "w:xz", preset=9) as archive:
+          with tarfile.open(output, "w:xz", preset=9 | lzma.PRESET_EXTREME) as archive:
               for path in sorted(root.rglob("*")):
                   if path.is_symlink():
                       raise RuntimeError(f"Paper state contains symlink: {path}")
