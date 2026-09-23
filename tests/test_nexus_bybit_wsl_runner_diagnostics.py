@@ -97,18 +97,19 @@ def test_diagnostic_signal_scan_is_recent_and_bounded(tmp_path: Path) -> None:
     rooted = signals.replace("__RUNNER_ROOT__", str(tmp_path))
     builtin_only = subprocess.run(
         [bash],
-        input=rooted,
-        text=True,
+        input=rooted.encode("utf-8"),
         capture_output=True,
         timeout=10,
         check=False,
         env={"PATH": ""},
     )
-    assert builtin_only.returncode == 0, builtin_only.stderr
-    assert "Runner failed-start-2" in builtin_only.stdout
-    assert "Worker failed-start-3" in builtin_only.stdout
-    assert "failed-start-0" not in builtin_only.stdout
-    assert "error-end-2" not in builtin_only.stdout
+    builtin_stderr = builtin_only.stderr.decode("utf-8", errors="replace")
+    builtin_stdout = builtin_only.stdout.decode("utf-8", errors="replace")
+    assert builtin_only.returncode == 0, builtin_stderr
+    assert "Runner failed-start-2" in builtin_stdout
+    assert "Worker failed-start-3" in builtin_stdout
+    assert "failed-start-0" not in builtin_stdout
+    assert "error-end-2" not in builtin_stdout
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows PowerShell check is Windows-only")
