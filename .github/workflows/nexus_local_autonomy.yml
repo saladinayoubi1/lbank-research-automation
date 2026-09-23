@@ -53,40 +53,8 @@ jobs:
       - name: Verify Local Autonomy source transport contract
         run: python tests/test_nexus_local_autonomy_workflow.py
 
-  source-prep:
-    needs: contract-test
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    outputs:
-      archive_sha256: ${{ steps.pack.outputs.archive_sha256 }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-      - name: Pack exact commit source without repository history
-        id: pack
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p build/local-autonomy-source
-          archive='build/local-autonomy-source/nexus-local-autonomy-source.zip'
-          commit_file='build/local-autonomy-source/nexus-local-autonomy-source.commit-sha'
-          git archive --format=zip --output "$archive" "$GITHUB_SHA"
-          printf '%s\n' "$GITHUB_SHA" > "$commit_file"
-          archive_sha256="$(sha256sum "$archive" | awk '{print $1}')"
-          test -n "$archive_sha256"
-          echo "archive_sha256=$archive_sha256" >> "$GITHUB_OUTPUT"
-          echo "local_autonomy_exact_source_pack=PASS sha=$GITHUB_SHA digest=$archive_sha256"
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        with:
-          name: nexus-local-autonomy-source-${{ github.run_id }}
-          path: build/local-autonomy-source/*
-          if-no-files-found: error
-          retention-days: 1
-          compression-level: 0
-
   local-worker:
-    needs: [contract-test, source-prep]
+    needs: contract-test
     if: >-
       github.event_name != 'pull_request' &&
       (github.event_name != 'workflow_dispatch' ||
@@ -98,55 +66,47 @@ jobs:
       NEXUS_WORKER_MAX_SECONDS: '240'
       NEXUS_WORKER_IDLE_SLEEP: '15'
       NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: '0'
-      EXPECTED_SOURCE_ARCHIVE_SHA256: ${{ needs.source-prep.outputs.archive_sha256 }}
     steps:
-      - name: Download exact current-run source transport
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        with:
-          name: nexus-local-autonomy-source-${{ github.run_id }}
-          path: ${{ runner.temp }}/nexus-local-autonomy-source
-
-      - name: Verify and restore exact source artifact
+      - name: Prepare anonymous exact source with bounded HTTP/1.1 retries
         timeout-minutes: 5
         shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
         run: |
           $ErrorActionPreference = 'Stop'
           Set-StrictMode -Version 2.0
 
-          $transportRoot = Join-Path $env:RUNNER_TEMP 'nexus-local-autonomy-source'
-          $archive = Join-Path $transportRoot 'nexus-local-autonomy-source.zip'
-          $commitFile = Join-Path $transportRoot 'nexus-local-autonomy-source.commit-sha'
-          $expectedSha = [string]$env:GITHUB_SHA
-          $expectedDigest = ([string]$env:EXPECTED_SOURCE_ARCHIVE_SHA256).ToLowerInvariant()
+          $repoUrl = "https://github.com/$env:GITHUB_REPOSITORY.git"
+          $workspace = [IO.Path]::GetFullPath($env:GITHUB_WORKSPACE)
+          Get-ChildItem -Force -LiteralPath $workspace -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force
+          & git -C $workspace init .
+          if ($LASTEXITCODE -ne 0) { throw 'Failed to initialize exact autonomy source workspace.' }
+          & git -C $workspace remote add origin $repoUrl
+          if ($LASTEXITCODE -ne 0) { throw 'Failed to add anonymous autonomy source remote.' }
+          & git -C $workspace config --local --unset-all http.https://github.com/.extraheader
 
-          if (-not $expectedSha) { throw 'GITHUB_SHA is required.' }
-          if (-not $expectedDigest) { throw 'Expected source archive SHA256 is required.' }
-          if (-not (Test-Path $archive -PathType Leaf)) { throw 'Exact source archive is missing.' }
-          if (-not (Test-Path $commitFile -PathType Leaf)) { throw 'Exact source commit binding is missing.' }
-
-          $transportSha = (Get-Content -LiteralPath $commitFile -Raw).Trim()
-          if ($transportSha -ne $expectedSha) {
-            throw "Exact source commit mismatch: expected=$expectedSha actual=$transportSha"
+          $fetchOk = $false
+          $fetchMaxAttempts = 3
+          for ($fetchAttempt = 1; $fetchAttempt -le $fetchMaxAttempts; $fetchAttempt++) {
+            & git -C $workspace -c 'http.version=HTTP/1.1' fetch --no-tags --prune --depth=1 origin $env:GITHUB_SHA
+            if ($LASTEXITCODE -eq 0) { $fetchOk = $true; break }
+            Write-Warning "Exact autonomy source fetch attempt $fetchAttempt/$fetchMaxAttempts failed."
+            if ($fetchAttempt -lt $fetchMaxAttempts) { Start-Sleep -Seconds ($fetchAttempt * 5) }
           }
+          if (-not $fetchOk) { throw "Exact autonomy source fetch failed after $fetchMaxAttempts bounded attempts." }
 
-          $actualDigest = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
-          if ($actualDigest -ne $expectedDigest) {
-            throw "Exact source archive digest mismatch: expected=$expectedDigest actual=$actualDigest"
+          & git -C $workspace checkout --detach --force FETCH_HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'Exact autonomy source checkout failed.' }
+          $actualSha = (& git -C $workspace rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0 -or $actualSha -ne $env:GITHUB_SHA) {
+            throw "Exact trigger SHA mismatch: expected=$env:GITHUB_SHA actual=$actualSha"
           }
-
-          Get-ChildItem -Force -LiteralPath $env:GITHUB_WORKSPACE | Remove-Item -Recurse -Force
-          Expand-Archive -LiteralPath $archive -DestinationPath $env:GITHUB_WORKSPACE -Force
-          Set-Location $env:GITHUB_WORKSPACE
-
-          if (-not (Test-Path 'scripts/nexus_local_worker.py' -PathType Leaf)) {
+          if (-not (Test-Path (Join-Path $workspace 'scripts\nexus_local_worker.py') -PathType Leaf)) {
             throw 'Restored exact source is incomplete.'
           }
-          if (-not (Test-Path 'nexus_autonomous_orchestrator.py' -PathType Leaf)) {
+          if (-not (Test-Path (Join-Path $workspace 'nexus_autonomous_orchestrator.py') -PathType Leaf)) {
             throw 'Restored exact source is missing the autonomy orchestrator.'
           }
-          Write-Host "exact_source_mode=digest-pinned-current-run-artifact"
-          Write-Host "exact_trigger_sha=$transportSha"
-          Write-Host "exact_source_archive_sha256=$actualDigest"
+          Write-Host 'exact_source_mode=anonymous-exact-sha-http11'
+          Write-Host "exact_trigger_sha=$actualSha"
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
