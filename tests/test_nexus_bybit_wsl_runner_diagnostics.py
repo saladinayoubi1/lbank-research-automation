@@ -94,7 +94,13 @@ def test_diagnostic_signal_scan_is_recent_and_bounded(tmp_path: Path) -> None:
                 encoding="utf-8",
             )
 
-    rooted = signals.replace("__RUNNER_ROOT__", str(tmp_path))
+    runner_root = str(tmp_path)
+    bash_path = Path(bash).as_posix().lower()
+    if sys.platform == "win32" and bash_path.endswith("/windows/system32/bash.exe"):
+        windows_root = tmp_path.resolve().as_posix()
+        if len(windows_root) >= 3 and windows_root[1:3] == ":/":
+            runner_root = f"/mnt/{windows_root[0].lower()}{windows_root[2:]}"
+    rooted = signals.replace("__RUNNER_ROOT__", runner_root)
     builtin_only = subprocess.run(
         [bash],
         input=rooted.encode("utf-8"),
