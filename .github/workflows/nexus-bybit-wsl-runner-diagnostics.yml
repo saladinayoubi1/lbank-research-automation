@@ -78,7 +78,9 @@ jobs:
           $sourceSha = if ($env:SOURCE_HEAD_SHA) { $env:SOURCE_HEAD_SHA } else { $env:GITHUB_SHA }
           $sourceConclusion = if ($env:SOURCE_CONCLUSION) { $env:SOURCE_CONCLUSION } else { 'diagnostic_push' }
           $runnerScript = Join-Path $env:DIAGNOSTIC_SOURCE_ROOT 'scripts\run_nexus_bybit_wsl_runner_diagnostics.ps1'
+          $evidencePath = Join-Path $env:DIAGNOSTIC_SOURCE_ROOT 'build\bybit-wsl-runner-diagnostics\evidence.json'
           & $runnerScript `
+            -OutputPath $evidencePath `
             -SourceRunId $sourceRunId `
             -SourceSha $sourceSha `
             -SourceConclusion $sourceConclusion
