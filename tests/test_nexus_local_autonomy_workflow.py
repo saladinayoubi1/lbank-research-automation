@@ -14,7 +14,10 @@ class LocalAutonomyWorkflowContractTests(unittest.TestCase):
         cls.text = WORKFLOW.read_text(encoding="utf-8")
 
     def test_physical_runner_uses_anonymous_exact_sha_http11_source(self) -> None:
-        self.assertNotIn("source-prep:", self.text)
+        self.assertIn("source-prep:", self.text)
+        self.assertIn("Verify exact hosted source binding", self.text)
+        self.assertIn('test "$actual" = "$GITHUB_SHA"', self.text)
+        self.assertNotIn("actions/upload-artifact@", self.text[self.text.index("  source-prep:"):self.text.index("  local-worker:")])
         self.assertNotIn("actions/download-artifact@", self.text)
         self.assertIn("Prepare anonymous exact source with bounded HTTP/1.1 retries", self.text)
         self.assertIn("https://github.com/$env:GITHUB_REPOSITORY.git", self.text)
