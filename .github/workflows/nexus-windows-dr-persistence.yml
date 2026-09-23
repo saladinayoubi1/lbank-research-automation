@@ -24,6 +24,8 @@ concurrency:
 
 jobs:
   contract:
+    if: ${{ always() }}
+    needs: persist
     runs-on: windows-latest
     timeout-minutes: 10
     steps:
@@ -40,11 +42,9 @@ jobs:
           $text = Get-Content '.github\workflows\nexus-windows-dr-persistence.yml' -Raw
           $parts = [regex]::Split($text, '(?m)^  persist:\s*$', 2)
           if ($parts.Count -ne 2) { throw 'Unable to isolate physical persistence job.' }
-          $persist = [regex]::Split($parts[1], '(?m)^  upload-evidence:\s*$', 2)[0]
+          $persist = $parts[1]
           if (-not $persist.Contains('runs-on: [self-hosted, Windows, X64, nexus-remote-rescue]')) { throw 'Physical persistence job must target the dedicated DR runner label.' }
           if ($persist -match 'uses:\s+actions/checkout@') { throw 'Physical persistence job must not use actions/checkout.' }
-          if ($persist -match 'uses:\s+actions/upload-artifact@') { throw 'Physical persistence job must not upload artifacts directly.' }
-          if (-not $persist.Contains('Export bounded sanitized persistence evidence')) { throw 'Physical persistence job must export a bounded evidence handoff.' }
           foreach ($required in @(
             'https://github.com/${env:GITHUB_REPOSITORY}.git',
             '$sourceRoot = Join-Path $env:RUNNER_TEMP',
@@ -121,6 +121,55 @@ jobs:
           if ($evidence.other_runner_paths_modified -ne $false) { throw 'Other runner path mutation must remain false.' }
           if ($evidence.service_installed -ne $false) { throw 'This recovery must not install a Windows service.' }
           if ($evidence.live_trading_authority -ne $false) { throw 'Live authority must remain false.' }
+
+      - name: Require physical evidence handoff after successful runtime persistence
+        if: ${{ github.event_name != 'pull_request' && needs.persist.result == 'success' }}
+        shell: powershell
+        env:
+          EVIDENCE_B64: ${{ needs.persist.outputs.evidence_b64 }}
+          EVIDENCE_SHA256: ${{ needs.persist.outputs.evidence_sha256 }}
+          EVIDENCE_BYTES: ${{ needs.persist.outputs.evidence_bytes }}
+        run: |
+          if (-not $env:EVIDENCE_B64 -or -not $env:EVIDENCE_SHA256 -or -not $env:EVIDENCE_BYTES) {
+            throw 'Successful physical persistence did not emit the bounded evidence handoff.'
+          }
+
+      - name: Rehydrate and verify physical persistence evidence
+        if: ${{ github.event_name != 'pull_request' && needs.persist.outputs.evidence_b64 != '' }}
+        shell: powershell
+        env:
+          EVIDENCE_B64: ${{ needs.persist.outputs.evidence_b64 }}
+          EVIDENCE_SHA256: ${{ needs.persist.outputs.evidence_sha256 }}
+          EVIDENCE_BYTES: ${{ needs.persist.outputs.evidence_bytes }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          [int]$expectedBytes = $env:EVIDENCE_BYTES
+          if ($expectedBytes -lt 2 -or $expectedBytes -gt 65536) {
+            throw "Persistence evidence escaped bounded handoff size: $expectedBytes"
+          }
+          $bytes = [Convert]::FromBase64String($env:EVIDENCE_B64)
+          if ($bytes.Length -ne $expectedBytes) { throw 'Persistence evidence byte-count mismatch.' }
+          $outDir = Join-Path $PWD 'build\windows-dr-persistence'
+          New-Item -ItemType Directory -Path $outDir -Force | Out-Null
+          $outPath = Join-Path $outDir 'evidence.json'
+          [IO.File]::WriteAllBytes($outPath, $bytes)
+          $actualSha = (Get-FileHash -LiteralPath $outPath -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actualSha -ne $env:EVIDENCE_SHA256) { throw 'Persistence evidence digest mismatch.' }
+          $payload = Get-Content -LiteralPath $outPath -Raw | ConvertFrom-Json
+          if ($payload.schema_version -ne 3) { throw 'Unexpected persistence evidence schema.' }
+          if ($payload.runner_registration_modified -ne $false) { throw 'Runner registration boundary changed.' }
+          if ($payload.runner_credentials_modified -ne $false) { throw 'Runner credential boundary changed.' }
+          if ($payload.live_trading_authority -ne $false) { throw 'Live authority boundary changed.' }
+          Write-Host 'hosted_evidence_rehydration=PASS'
+
+      - name: Upload sanitized persistence evidence from hosted runner
+        if: ${{ github.event_name != 'pull_request' && needs.persist.outputs.evidence_b64 != '' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-windows-dr-persistence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: build/windows-dr-persistence/evidence.json
+          if-no-files-found: error
+          retention-days: 14
 
   persist:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
@@ -294,52 +343,3 @@ jobs:
             Remove-Item -LiteralPath $sourceRoot -Recurse -Force
           }
           Write-Host 'isolated_source_cleanup=PASS'
-
-  upload-evidence:
-    if: ${{ always() && github.event_name != 'pull_request' && needs.persist.outputs.evidence_b64 != '' }}
-    needs: persist
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    env:
-      EVIDENCE_B64: ${{ needs.persist.outputs.evidence_b64 }}
-      EVIDENCE_SHA256: ${{ needs.persist.outputs.evidence_sha256 }}
-      EVIDENCE_BYTES: ${{ needs.persist.outputs.evidence_bytes }}
-    steps:
-      - name: Rehydrate and verify sanitized persistence evidence
-        run: |
-          set -euo pipefail
-          case "$EVIDENCE_BYTES" in
-            ''|*[!0-9]*) echo "::error::Invalid evidence byte count."; exit 1 ;;
-          esac
-          if [ "$EVIDENCE_BYTES" -lt 2 ] || [ "$EVIDENCE_BYTES" -gt 65536 ]; then
-            echo "::error::Persistence evidence escaped bounded handoff size."
-            exit 1
-          fi
-          mkdir -p build/windows-dr-persistence
-          printf '%s' "$EVIDENCE_B64" | base64 -d > build/windows-dr-persistence/evidence.json
-          actual_bytes="$(wc -c < build/windows-dr-persistence/evidence.json | tr -d '[:space:]')"
-          test "$actual_bytes" = "$EVIDENCE_BYTES"
-          actual_sha="$(sha256sum build/windows-dr-persistence/evidence.json | awk '{print $1}')"
-          test "$actual_sha" = "$EVIDENCE_SHA256"
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          payload = json.loads(Path("build/windows-dr-persistence/evidence.json").read_text(encoding="utf-8-sig"))
-          if payload.get("schema_version") != 3:
-              raise SystemExit("unexpected persistence evidence schema")
-          if payload.get("runner_registration_modified") is not False:
-              raise SystemExit("runner registration boundary changed")
-          if payload.get("runner_credentials_modified") is not False:
-              raise SystemExit("runner credential boundary changed")
-          if payload.get("live_trading_authority") is not False:
-              raise SystemExit("live authority boundary changed")
-          print("hosted_evidence_rehydration=PASS")
-          PY
-
-      - name: Upload sanitized persistence evidence
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        with:
-          name: nexus-windows-dr-persistence-${{ github.run_id }}-${{ github.run_attempt }}
-          path: build/windows-dr-persistence/evidence.json
-          if-no-files-found: error
-          retention-days: 14
