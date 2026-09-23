@@ -23,6 +23,12 @@ def test_diagnostics_native_checkout_is_exact_sha_bound() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     capture = _capture_job(text)
     assert "git -c credential.helper= -c http.https://github.com/.extraheader= fetch --no-tags --prune --depth=1 $repoUrl $env:GITHUB_SHA" in capture
+    assert "$fetchSucceeded = $false" in capture
+    assert "for ($attempt = 1; $attempt -le 3; $attempt++)" in capture
+    assert "exact diagnostic source fetch attempt $attempt failed" in capture
+    assert "Start-Sleep -Seconds (2 * $attempt)" in capture
+    assert "exact diagnostic source fetch failed after bounded retries." in capture
+    assert "diagnostic_fetch_retry_bound=3" in capture
     assert "$env:GIT_TERMINAL_PROMPT = '0'" in capture
     assert "$env:GCM_INTERACTIVE = 'Never'" in capture
     assert "diagnostic_anonymous_public_fetch=true" in capture
@@ -91,4 +97,4 @@ def test_linux_diagnostics_support_minimal_wsl_without_coreutils_process_tools()
     assert "bash -lc $Command" not in text
     assert "runner_mutation_performed = $false" in text
     assert "windows_runner_paths_modified = $false" in text
-    assert "bybit_private_credentials_used = $false" in text
+    assert "bybit_private_credentials_used = $false"
