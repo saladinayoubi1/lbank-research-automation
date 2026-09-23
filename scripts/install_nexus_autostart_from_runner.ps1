@@ -21,15 +21,31 @@ function Fail([string]$Message) {
 
 function Invoke-Git([string]$Root, [string[]]$GitArgs) {
     $git = Get-Command git -ErrorAction Stop
-    $output = & $git.Source -C $Root @GitArgs 2>&1
-    if ($LASTEXITCODE -ne 0) { Fail "git $($GitArgs -join ' ') failed: $($output -join ' ')" }
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = 'Continue'
+        $output = @(& $git.Source -C $Root @GitArgs 2>&1 | ForEach-Object { [string]$_ })
+        $exitCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+    if ($exitCode -ne 0) { Fail "git $($GitArgs -join ' ') failed: $($output -join ' ')" }
     return (($output | Out-String).Trim())
 }
 
 function Invoke-GitGlobal([string[]]$GitArgs) {
     $git = Get-Command git -ErrorAction Stop
-    $output = & $git.Source @GitArgs 2>&1
-    if ($LASTEXITCODE -ne 0) { Fail "git $($GitArgs -join ' ') failed: $($output -join ' ')" }
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = 'Continue'
+        $output = @(& $git.Source @GitArgs 2>&1 | ForEach-Object { [string]$_ })
+        $exitCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+    if ($exitCode -ne 0) { Fail "git $($GitArgs -join ' ') failed: $($output -join ' ')" }
     return (($output | Out-String).Trim())
 }
 
