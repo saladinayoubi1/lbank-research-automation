@@ -1,10 +1,19 @@
 from pathlib import Path
 import re
+import subprocess
 
 
 ROOT = Path(__file__).resolve().parents[1]
 WAKE_WORKFLOW = ROOT / ".github" / "workflows" / "nexus-bybit-wsl-runner-wake.yml"
 DIAGNOSTIC_SCRIPT = ROOT / "scripts" / "run_nexus_bybit_wsl_runner_diagnostics.ps1"
+WATCHDOG_SCRIPT = ROOT / "scripts" / "install_nexus_bybit_wsl_user_startup.ps1"
+
+
+def _committed_blob_sha(path: Path) -> str:
+    relative = path.relative_to(ROOT).as_posix()
+    return subprocess.check_output(
+        ["git", "rev-parse", f"HEAD:{relative}"], cwd=ROOT, text=True
+    ).strip()
 
 
 def test_wake_is_bootstrap_independent_and_installs_durable_user_watchdog() -> None:
@@ -29,6 +38,13 @@ def test_wake_is_bootstrap_independent_and_installs_durable_user_watchdog() -> N
     assert "runner_registration_mutated=false" in text
     assert "runner_credentials_mutated=false" in text
     assert "live_trading_authority_changed=false" in text
+
+
+def test_wake_pin_matches_current_watchdog_git_blob() -> None:
+    text = WAKE_WORKFLOW.read_text(encoding="utf-8")
+    match = re.search(r"NEXUS_BYBIT_WSL_STARTUP_SCRIPT_BLOB_SHA:\s*([0-9a-f]{40})", text)
+    assert match is not None
+    assert match.group(1) == _committed_blob_sha(WATCHDOG_SCRIPT)
 
 
 def test_wake_pins_source_and_requires_detached_live_watchdog() -> None:

@@ -18,7 +18,7 @@ permissions:
   contents: read
 
 env:
-  NEXUS_BYBIT_WSL_STARTUP_SCRIPT_BLOB_SHA: f5cb5d7b26566ad448200611eb69fcd1b39344ec
+  NEXUS_BYBIT_WSL_STARTUP_SCRIPT_BLOB_SHA: 30b56dc685645dd5170d89930f9143684d2fb345
 
 concurrency:
   group: nexus-bybit-wsl-runner-wake
