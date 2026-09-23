@@ -248,6 +248,38 @@ function Handle-Phase7([string]$Root) {
     }
 }
 
+function Install-LogonTaskViaCom(
+    [string]$Name,
+    [string]$Executable,
+    [string]$Arguments,
+    [string]$WorkingDirectory,
+    [string]$Description,
+    [string]$User
+) {
+    $service = New-Object -ComObject 'Schedule.Service'
+    $service.Connect()
+    $folder = $service.GetFolder('\')
+    $definition = $service.NewTask(0)
+    $definition.RegistrationInfo.Author = 'NEXUS Personal Pro'
+    $definition.RegistrationInfo.Description = $Description
+    $definition.Settings.Enabled = $true
+    $definition.Settings.StartWhenAvailable = $true
+    $definition.Settings.DisallowStartIfOnBatteries = $false
+    $definition.Settings.StopIfGoingOnBatteries = $false
+    $definition.Settings.ExecutionTimeLimit = 'PT0S'
+    $trigger = $definition.Triggers.Create(9)
+    $trigger.UserId = $User
+    $action = $definition.Actions.Create(0)
+    $action.Path = $Executable
+    $action.Arguments = $Arguments
+    $action.WorkingDirectory = $WorkingDirectory
+    $definition.Principal.UserId = $User
+    $definition.Principal.LogonType = 3
+    $definition.Principal.RunLevel = 0
+    $task = $folder.RegisterTaskDefinition($Name, $definition, 6, $User, $null, 3, $null)
+    $null = $task.Run($null)
+}
+
 function Install-Autostart {
     if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) { throw 'NEXUS Windows autostart can only be installed on Windows' }
     $root = Resolve-RepoRoot
@@ -259,13 +291,19 @@ function Install-Autostart {
     $ps = Get-PowerShellExe
     $user = "$env:USERDOMAIN\$env:USERNAME"
     $taskArgs = "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$script`" -Mode RunDaemon -RepoRoot `"$root`""
-    $action = New-ScheduledTaskAction -Execute $ps -Argument $taskArgs -WorkingDirectory $root
-    $trigger = New-ScheduledTaskTrigger -AtLogOn -User $user
-    $principal = New-ScheduledTaskPrincipal -UserId $user -LogonType Interactive -RunLevel Limited
-    $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -MultipleInstances IgnoreNew -RestartCount 999 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit ([TimeSpan]::Zero)
-    $task = New-ScheduledTask -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description 'Starts the NEXUS local supervisor and safely resumes Phase 7 offline handoff after Windows logon.'
-    Register-ScheduledTask -TaskName $TaskName -InputObject $task -Force | Out-Null
-    Start-ScheduledTask -TaskName $TaskName
+    try {
+        $action = New-ScheduledTaskAction -Execute $ps -Argument $taskArgs -WorkingDirectory $root -ErrorAction Stop
+        $trigger = New-ScheduledTaskTrigger -AtLogOn -User $user -ErrorAction Stop
+        $principal = New-ScheduledTaskPrincipal -UserId $user -LogonType Interactive -RunLevel Limited -ErrorAction Stop
+        $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -MultipleInstances IgnoreNew -RestartCount 999 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit ([TimeSpan]::Zero) -ErrorAction Stop
+        $task = New-ScheduledTask -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description 'Starts the NEXUS local supervisor and safely resumes Phase 7 offline handoff after Windows logon.' -ErrorAction Stop
+        Register-ScheduledTask -TaskName $TaskName -InputObject $task -Force -ErrorAction Stop | Out-Null
+        Start-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+    }
+    catch {
+        Write-Log "scheduled_tasks_cim_unavailable_using_com_fallback error=$($_.Exception.Message)"
+        Install-LogonTaskViaCom $TaskName $ps $taskArgs $root 'Starts the NEXUS local supervisor and safely resumes Phase 7 offline handoff after Windows logon.' $user
+    }
     Write-Log "autostart_installed task=$TaskName user=$user repo=$root runtime_hydration=daemon_managed"
     Write-Host "NEXUS zero-touch autostart installed: $TaskName"
 }
