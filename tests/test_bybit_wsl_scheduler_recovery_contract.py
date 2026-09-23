@@ -41,7 +41,7 @@ def test_wake_is_bootstrap_independent_and_installs_durable_user_watchdog() -> N
 
 def test_wake_pin_matches_current_watchdog_git_blob() -> None:
     text = WAKE_WORKFLOW.read_text(encoding="utf-8")
-    match = re.search(r"NEXUS_BYBIT_WSL_STARTUP_SCRIPT_BLOB_SHA:\\s*([0-9a-f]{40})", text)
+    match = re.search(r"NEXUS_BYBIT_WSL_STARTUP_SCRIPT_BLOB_SHA:\s*([0-9a-f]{40})", text)
     assert match is not None
     assert match.group(1) == _git_blob_sha(WATCHDOG_SCRIPT)
 
