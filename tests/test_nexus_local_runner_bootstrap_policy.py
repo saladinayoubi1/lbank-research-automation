@@ -158,11 +158,15 @@ def test_autonomy_schedule_exceeds_bounded_worker_window_and_keeps_push_immediat
 
 def test_autonomy_exact_source_fetch_is_bounded_anonymous_and_http11():
     workflow = AUTONOMY_WORKFLOW.read_text(encoding='utf-8')
-    assert 'source-prep:' not in workflow
-    worker_start = workflow.index('  local-worker:')
+    source_start = workflow.index('  source-prep:')
+    worker_start = workflow.index('  local-worker:', source_start)
+    source_block = workflow[source_start:worker_start]
     worker_block = workflow[worker_start:]
 
-    assert 'needs: contract-test' in worker_block
+    assert 'runs-on: ubuntu-latest' in source_block
+    assert 'Verify exact hosted source binding' in source_block
+    assert 'actions/upload-artifact@' not in source_block
+    assert 'needs: [contract-test, source-prep]' in worker_block
     assert 'Prepare anonymous exact source with bounded HTTP/1.1 retries' in worker_block
     assert 'actions/download-artifact@' not in worker_block
     assert 'https://github.com/$env:GITHUB_REPOSITORY.git' in worker_block
