@@ -117,7 +117,9 @@ function Invoke-GitGlobal([string[]]$GitArguments) {
 }
 
 function Assert-InteractiveOwner {
-    if ($env:OS -ne 'Windows_NT') { throw 'owner autostart bootstrap is Windows-only' }
+    if (-not [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::Windows)) {
+        throw 'owner autostart bootstrap is Windows-only'
+    }
     if (-not [Environment]::UserInteractive) { throw 'owner autostart bootstrap requires an interactive user session' }
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent().Name
     if ($identity -in @('NT AUTHORITY\SYSTEM','NT AUTHORITY\NETWORK SERVICE','NT AUTHORITY\LOCAL SERVICE')) {
@@ -177,22 +179,51 @@ function Validate-ExistingManagedRepo {
     return (Invoke-Git -Root $ManagedRepoRoot -GitArguments @('rev-parse','HEAD')).ToLowerInvariant()
 }
 
+function Test-GitAncestor([string]$Ancestor, [string]$Descendant) {
+    $git = Get-Git
+    $previous = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = 'Continue'
+        & $git -C $ManagedRepoRoot merge-base --is-ancestor $Ancestor $Descendant 1>$null 2>$null
+        $exitCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $previous
+    }
+    if ($exitCode -eq 0) { return $true }
+    if ($exitCode -eq 1) { return $false }
+    throw "git merge-base --is-ancestor failed exit=$exitCode ancestor=$Ancestor descendant=$Descendant"
+}
+
 function Reconcile-ExistingManagedRepo([string]$CurrentHead) {
     $target = $SourceSha.ToLowerInvariant()
-    if ($CurrentHead.ToLowerInvariant() -eq $target) { return $false }
+    $current = $CurrentHead.ToLowerInvariant()
+    if ($current -eq $target) {
+        return [pscustomobject]@{ Updated=$false; PreservedNewer=$false }
+    }
 
-    # The package seed is the only source used for reconciliation. No origin/network
-    # fetch is performed and no credential is added. --update-shallow allows the exact
-    # packaged shallow commit to be imported into an older managed checkout.
-    Write-Log "reconcile managed checkout prior_sha=$CurrentHead target_sha=$target source=packaged_seed"
+    # Import the packaged commit into the object database without moving the branch.
+    # The package seed is offline-only and carries no credentials.
+    Write-Log "reconcile managed checkout prior_sha=$current target_sha=$target source=packaged_seed"
     [void](Invoke-Git -Root $ManagedRepoRoot -GitArguments @('fetch','--no-tags','--update-shallow',$SeedRepoPath,$PackageRef))
     $fetched = Invoke-Git -Root $ManagedRepoRoot -GitArguments @('rev-parse','FETCH_HEAD')
     if ($fetched.ToLowerInvariant() -ne $target) {
         throw "packaged seed fetch mismatch: expected $target got $fetched"
     }
 
-    # checkout -B updates only this clean managed checkout. Git itself refuses an
-    # untracked-file collision; we do not delete, clean, or hard-reset owner data.
+    # Never downgrade a managed checkout. A packaged build may be older than the
+    # repository because the repository can continue advancing after installation.
+    if (Test-GitAncestor -Ancestor $target -Descendant $current) {
+        Write-Log "managed checkout newer than packaged seed; preserving current_sha=$current package_sha=$target"
+        return [pscustomobject]@{ Updated=$false; PreservedNewer=$true }
+    }
+
+    # Only a true fast-forward from the current managed checkout to the packaged
+    # commit may move main. Divergent history is blocked fail-closed.
+    if (-not (Test-GitAncestor -Ancestor $current -Descendant $target)) {
+        throw "managed checkout and packaged seed have divergent history: current=$current package=$target"
+    }
+
     [void](Invoke-Git -Root $ManagedRepoRoot -GitArguments @('checkout','-B','main','FETCH_HEAD'))
     Assert-CanonicalRemote $ManagedRepoRoot
     Assert-TrackedClean $ManagedRepoRoot
@@ -200,7 +231,7 @@ function Reconcile-ExistingManagedRepo([string]$CurrentHead) {
     if ($head.ToLowerInvariant() -ne $target) {
         throw "managed checkout reconciliation failed: expected $target got $head"
     }
-    return $true
+    return [pscustomobject]@{ Updated=$true; PreservedNewer=$false }
 }
 
 function Prepare-ManagedRepo {
@@ -209,15 +240,17 @@ function Prepare-ManagedRepo {
         return [ordered]@{
             created = $true
             updated_from_package_seed = $false
+            preserved_newer_managed_checkout = $false
             previous_head = $null
         }
     }
 
     $previousHead = Validate-ExistingManagedRepo
-    $updated = Reconcile-ExistingManagedRepo $previousHead
+    $reconciled = Reconcile-ExistingManagedRepo $previousHead
     return [ordered]@{
         created = $false
-        updated_from_package_seed = [bool]$updated
+        updated_from_package_seed = [bool]$reconciled.Updated
+        preserved_newer_managed_checkout = [bool]$reconciled.PreservedNewer
         previous_head = $previousHead
     }
 }
@@ -290,8 +323,8 @@ try {
     $CurrentStage = 'managed_checkout'
     $managed = Prepare-ManagedRepo
     $head = Invoke-Git -Root $ManagedRepoRoot -GitArguments @('rev-parse','HEAD')
-    if ($head.ToLowerInvariant() -ne $SourceSha.ToLowerInvariant()) {
-        throw "managed checkout exact-source verification failed: $head"
+    if ($head.ToLowerInvariant() -ne $SourceSha.ToLowerInvariant() -and -not [bool]$managed.preserved_newer_managed_checkout) {
+        throw "managed checkout source verification failed: package=$($SourceSha.ToLowerInvariant()) managed=$head"
     }
 
     $CurrentStage = 'core_autostart_install'
@@ -313,6 +346,7 @@ try {
         windows_identity = $identity
         managed_checkout_created = [bool]$managed.created
         managed_checkout_updated_from_package_seed = [bool]$managed.updated_from_package_seed
+        preserved_newer_managed_checkout = [bool]$managed.preserved_newer_managed_checkout
         managed_previous_head = $managed.previous_head
         managed_head = $head.ToLowerInvariant()
         core_task = $core
