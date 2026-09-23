@@ -37,33 +37,34 @@ jobs:
           $ProgressPreference = 'SilentlyContinue'
           $env:GIT_TERMINAL_PROMPT = '0'
           $env:GCM_INTERACTIVE = 'Never'
-          Set-Location -LiteralPath $env:GITHUB_WORKSPACE
           $repoUrl = "https://github.com/$env:GITHUB_REPOSITORY.git"
-          if (-not (Test-Path -LiteralPath '.git' -PathType Container)) {
-            git init .
-            if ($LASTEXITCODE -ne 0) { throw 'git init failed.' }
-            git remote add origin $repoUrl
-            if ($LASTEXITCODE -ne 0) { throw 'git remote add failed.' }
+          $sourceRoot = Join-Path $env:RUNNER_TEMP ("nexus-bybit-wsl-diagnostics-" + $env:GITHUB_RUN_ID)
+          if (Test-Path -LiteralPath $sourceRoot) {
+            Remove-Item -LiteralPath $sourceRoot -Recurse -Force
           }
-          else {
-            $origin = (git remote get-url origin 2>$null | Out-String).Trim()
-            if ($LASTEXITCODE -ne 0 -or -not $origin) {
-              git remote add origin $repoUrl
-              if ($LASTEXITCODE -ne 0) { throw 'git remote add failed.' }
+          New-Item -ItemType Directory -Path $sourceRoot -Force | Out-Null
+          git -C $sourceRoot init .
+          if ($LASTEXITCODE -ne 0) { throw 'isolated diagnostic git init failed.' }
+          $fetchSucceeded = $false
+          for ($attempt = 1; $attempt -le 3; $attempt++) {
+            git -C $sourceRoot -c credential.helper= -c http.https://github.com/.extraheader= fetch --no-tags --prune --depth=1 $repoUrl $env:GITHUB_SHA
+            if ($LASTEXITCODE -eq 0) {
+              $fetchSucceeded = $true
+              break
             }
-            elseif ($origin -ne $repoUrl) {
-              git remote set-url origin $repoUrl
-              if ($LASTEXITCODE -ne 0) { throw 'git remote set-url failed.' }
-            }
+            Write-Warning "exact diagnostic source fetch attempt $attempt failed"
+            if ($attempt -lt 3) { Start-Sleep -Seconds (2 * $attempt) }
           }
-          git -c credential.helper= -c http.https://github.com/.extraheader= fetch --no-tags --prune --depth=1 $repoUrl $env:GITHUB_SHA
-          if ($LASTEXITCODE -ne 0) { throw 'exact diagnostic source fetch failed.' }
-          git checkout --force --detach FETCH_HEAD
+          if (-not $fetchSucceeded) { throw 'exact diagnostic source fetch failed after bounded retries.' }
+          git -C $sourceRoot checkout --force --detach FETCH_HEAD
           if ($LASTEXITCODE -ne 0) { throw 'exact diagnostic source checkout failed.' }
-          $head = (git rev-parse HEAD | Out-String).Trim()
+          $head = (git -C $sourceRoot rev-parse HEAD | Out-String).Trim()
           if ($head -ne $env:GITHUB_SHA) { throw "diagnostic source SHA mismatch: $head" }
+          "DIAGNOSTIC_SOURCE_ROOT=$sourceRoot" | Add-Content -LiteralPath $env:GITHUB_ENV -Encoding UTF8
           Write-Host "diagnostic_checkout_sha=$head"
+          Write-Host "diagnostic_source_root=$sourceRoot"
           Write-Host 'diagnostic_anonymous_public_fetch=true'
+          Write-Host 'diagnostic_fetch_retry_bound=3'
           Write-Host 'diagnostic_javascript_actions_used=false'
 
       - name: Capture read-only WSL runner diagnostics
@@ -76,7 +77,10 @@ jobs:
           $sourceRunId = if ($env:SOURCE_RUN_ID) { $env:SOURCE_RUN_ID } else { $env:GITHUB_RUN_ID }
           $sourceSha = if ($env:SOURCE_HEAD_SHA) { $env:SOURCE_HEAD_SHA } else { $env:GITHUB_SHA }
           $sourceConclusion = if ($env:SOURCE_CONCLUSION) { $env:SOURCE_CONCLUSION } else { 'diagnostic_push' }
-          .\scripts\run_nexus_bybit_wsl_runner_diagnostics.ps1 `
+          $runnerScript = Join-Path $env:DIAGNOSTIC_SOURCE_ROOT 'scripts\run_nexus_bybit_wsl_runner_diagnostics.ps1'
+          $evidencePath = Join-Path $env:DIAGNOSTIC_SOURCE_ROOT 'build\bybit-wsl-runner-diagnostics\evidence.json'
+          & $runnerScript `
+            -OutputPath $evidencePath `
             -SourceRunId $sourceRunId `
             -SourceSha $sourceSha `
             -SourceConclusion $sourceConclusion
@@ -86,7 +90,7 @@ jobs:
         shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
         run: |
           $ErrorActionPreference = 'Stop'
-          $target = Join-Path $env:GITHUB_WORKSPACE 'build\bybit-wsl-runner-diagnostics\evidence.json'
+          $target = Join-Path $env:DIAGNOSTIC_SOURCE_ROOT 'build\bybit-wsl-runner-diagnostics\evidence.json'
           if (-not (Test-Path -LiteralPath $target -PathType Leaf)) {
             throw 'Sanitized diagnostics evidence was not produced.'
           }

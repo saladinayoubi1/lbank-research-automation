@@ -75,13 +75,12 @@ def test_diagnostic_signal_scan_is_recent_and_bounded(tmp_path: Path) -> None:
         pytest.skip("Bash syntax validation is unavailable")
     completed = subprocess.run(
         [bash, "-n"],
-        input=signals.replace("__RUNNER_ROOT__", "/opt/nexus-bybit-runner"),
-        text=True,
+        input=signals.replace("__RUNNER_ROOT__", "/opt/nexus-bybit-runner").encode("utf-8"),
         capture_output=True,
         timeout=10,
         check=False,
     )
-    assert completed.returncode == 0, completed.stderr
+    assert completed.returncode == 0, completed.stderr.decode("utf-8", errors="replace")
 
     diag = tmp_path / "_diag"
     diag.mkdir()
@@ -95,21 +94,28 @@ def test_diagnostic_signal_scan_is_recent_and_bounded(tmp_path: Path) -> None:
                 encoding="utf-8",
             )
 
-    rooted = signals.replace("__RUNNER_ROOT__", str(tmp_path))
+    runner_root = str(tmp_path)
+    bash_path = Path(bash).as_posix().lower()
+    if sys.platform == "win32" and bash_path.endswith("/windows/system32/bash.exe"):
+        windows_root = tmp_path.resolve().as_posix()
+        if len(windows_root) >= 3 and windows_root[1:3] == ":/":
+            runner_root = f"/mnt/{windows_root[0].lower()}{windows_root[2:]}"
+    rooted = signals.replace("__RUNNER_ROOT__", runner_root)
     builtin_only = subprocess.run(
         [bash],
-        input=rooted,
-        text=True,
+        input=rooted.encode("utf-8"),
         capture_output=True,
         timeout=10,
         check=False,
         env={"PATH": ""},
     )
-    assert builtin_only.returncode == 0, builtin_only.stderr
-    assert "Runner failed-start-2" in builtin_only.stdout
-    assert "Worker failed-start-3" in builtin_only.stdout
-    assert "failed-start-0" not in builtin_only.stdout
-    assert "error-end-2" not in builtin_only.stdout
+    builtin_stderr = builtin_only.stderr.decode("utf-8", errors="replace")
+    builtin_stdout = builtin_only.stdout.decode("utf-8", errors="replace")
+    assert builtin_only.returncode == 0, builtin_stderr
+    assert "Runner failed-start-2" in builtin_stdout
+    assert "Worker failed-start-3" in builtin_stdout
+    assert "failed-start-0" not in builtin_stdout
+    assert "error-end-2" not in builtin_stdout
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows PowerShell check is Windows-only")
@@ -154,10 +160,12 @@ def test_runner_diagnostics_workflow_is_bounded_to_failures_and_physical_windows
     assert "actions/checkout@" not in text
     assert "actions/upload-artifact@" not in text
     assert "Prepare exact diagnostic source without JavaScript actions" in text
-    assert "git -c credential.helper= -c http.https://github.com/.extraheader= fetch --no-tags --prune --depth=1 $repoUrl $env:GITHUB_SHA" in text
+    assert "git -C $sourceRoot -c credential.helper= -c http.https://github.com/.extraheader= fetch --no-tags --prune --depth=1 $repoUrl $env:GITHUB_SHA" in text
     assert "$env:GIT_TERMINAL_PROMPT = '0'" in text
     assert "$env:GCM_INTERACTIVE = 'Never'" in text
-    assert "git checkout --force --detach FETCH_HEAD" in text
+    assert "git -C $sourceRoot checkout --force --detach FETCH_HEAD" in text
+    assert "$evidencePath = Join-Path $env:DIAGNOSTIC_SOURCE_ROOT" in text
+    assert "-OutputPath $evidencePath" in text
     assert "diagnostic_anonymous_public_fetch=true" in text
     assert "diagnostic_javascript_actions_used=false" in text
     assert "Publish sanitized runner diagnostics to job log" in text

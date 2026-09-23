@@ -22,14 +22,23 @@ def test_physical_windows_diagnostics_avoid_javascript_action_predownload() -> N
 def test_diagnostics_native_checkout_is_exact_sha_bound() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     capture = _capture_job(text)
-    assert "git -c credential.helper= -c http.https://github.com/.extraheader= fetch --no-tags --prune --depth=1 $repoUrl $env:GITHUB_SHA" in capture
+    assert "git -C $sourceRoot -c credential.helper= -c http.https://github.com/.extraheader= fetch --no-tags --prune --depth=1 $repoUrl $env:GITHUB_SHA" in capture
+    assert 'Join-Path $env:RUNNER_TEMP ("nexus-bybit-wsl-diagnostics-" + $env:GITHUB_RUN_ID)' in capture
+    assert "DIAGNOSTIC_SOURCE_ROOT=$sourceRoot" in capture
+    assert "$fetchSucceeded = $false" in capture
+    assert "for ($attempt = 1; $attempt -le 3; $attempt++)" in capture
+    assert "exact diagnostic source fetch attempt $attempt failed" in capture
+    assert "Start-Sleep -Seconds (2 * $attempt)" in capture
+    assert "exact diagnostic source fetch failed after bounded retries." in capture
+    assert "diagnostic_fetch_retry_bound=3" in capture
     assert "$env:GIT_TERMINAL_PROMPT = '0'" in capture
     assert "$env:GCM_INTERACTIVE = 'Never'" in capture
     assert "diagnostic_anonymous_public_fetch=true" in capture
-    assert "git checkout --force --detach FETCH_HEAD" in capture
-    assert "git rev-parse HEAD" in capture
+    assert "git -C $sourceRoot checkout --force --detach FETCH_HEAD" in capture
+    assert "git -C $sourceRoot rev-parse HEAD" in capture
     assert "$head -ne $env:GITHUB_SHA" in capture
     assert "diagnostic_checkout_sha=$head" in capture
+    assert "diagnostic_source_root=$sourceRoot" in capture
 
 
 def test_sanitized_evidence_is_published_without_raw_diag_upload() -> None:
@@ -43,6 +52,10 @@ def test_sanitized_evidence_is_published_without_raw_diag_upload() -> None:
     assert "windows_runner_paths_modified=false" in capture
     assert "bybit_private_credentials_used=false" in capture
     assert "Raw diagnostic upload is forbidden." in capture
+    assert "$evidencePath = Join-Path $env:DIAGNOSTIC_SOURCE_ROOT 'build\\bybit-wsl-runner-diagnostics\\evidence.json'" in capture
+    assert "-OutputPath $evidencePath" in capture
+    assert "$target = Join-Path $env:DIAGNOSTIC_SOURCE_ROOT 'build\\bybit-wsl-runner-diagnostics\\evidence.json'" in capture
+    assert "Join-Path $env:DIAGNOSTIC_SOURCE_ROOT 'scripts\\run_nexus_bybit_wsl_runner_diagnostics.ps1'" in capture
 
 
 def test_diagnostics_remain_read_only_and_failure_triggered() -> None:
