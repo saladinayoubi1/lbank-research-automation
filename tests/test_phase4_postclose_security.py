@@ -149,9 +149,14 @@ def test_self_hosted_phase_workflows_pin_trusted_manual_refs_and_credentials():
 
     assert "github.actor == github.repository_owner" in autonomy
     assert "github.ref_name == github.event.repository.default_branch" in autonomy
-    worker_start = autonomy.index("  local-worker:")
+    source_start = autonomy.index("  source-prep:")
+    worker_start = autonomy.index("  local-worker:", source_start)
+    source_block = autonomy[source_start:worker_start]
     worker_block = autonomy[worker_start:]
-    assert "source-prep:" not in autonomy
+    assert "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" in source_block
+    assert "persist-credentials: false" in source_block
+    assert "Verify exact hosted source binding" in source_block
+    assert "actions/upload-artifact@" not in source_block
     assert "actions/download-artifact@" not in worker_block
     assert "Prepare anonymous exact source with bounded HTTP/1.1 retries" in worker_block
     assert "https://github.com/$env:GITHUB_REPOSITORY.git" in worker_block
