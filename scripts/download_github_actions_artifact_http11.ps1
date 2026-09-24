@@ -157,20 +157,48 @@ while (-not $verified) {
 
             $batchSucceeded = $true
             foreach ($part in $parts) {
-                $part.Process.WaitForExit()
+                if ($null -eq $part.Process) {
+                    Write-Warning "Artifact range $($part.Start)-$($part.End) attempt $attempt/$MaxAttempts did not return a curl process object."
+                    $batchSucceeded = $false
+                    continue
+                }
+
+                try {
+                    $part.Process.WaitForExit()
+                }
+                catch {
+                    Write-Warning "Artifact range $($part.Start)-$($part.End) attempt $attempt/$MaxAttempts could not wait for curl completion: $($_.Exception.Message)"
+                    $batchSucceeded = $false
+                    continue
+                }
+
                 $expectedPartBytes = [long]($part.End - $part.Start + 1)
                 $actualPartBytes = if (Test-Path -LiteralPath $part.Path -PathType Leaf) {
                     [long](Get-Item -LiteralPath $part.Path).Length
                 } else {
                     -1L
                 }
-                if ($part.Process.ExitCode -ne 0 -or $actualPartBytes -ne $expectedPartBytes) {
+
+                $exitCode = $null
+                try {
+                    if ($part.Process.HasExited) {
+                        $part.Process.Refresh()
+                        $exitCode = $part.Process.ExitCode
+                    }
+                }
+                catch {
+                    Write-Warning "Artifact range $($part.Start)-$($part.End) attempt $attempt/$MaxAttempts could not read curl exit state: $($_.Exception.Message)"
+                }
+
+                $exitFailed = ($null -ne $exitCode -and $exitCode -ne 0)
+                if ($exitFailed -or $actualPartBytes -ne $expectedPartBytes) {
                     $stderr = if (Test-Path -LiteralPath $part.Stderr -PathType Leaf) {
                         ([string](Get-Content -LiteralPath $part.Stderr -Raw -ErrorAction SilentlyContinue)).Trim()
                     } else {
                         ''
                     }
-                    Write-Warning "Artifact range $($part.Start)-$($part.End) attempt $attempt/$MaxAttempts failed (curl_exit=$($part.Process.ExitCode), bytes=$actualPartBytes, stderr=$stderr)."
+                    $exitLabel = if ($null -eq $exitCode) { 'unavailable' } else { [string]$exitCode }
+                    Write-Warning "Artifact range $($part.Start)-$($part.End) attempt $attempt/$MaxAttempts failed (curl_exit=$exitLabel, bytes=$actualPartBytes, stderr=$stderr)."
                     $batchSucceeded = $false
                 }
             }
