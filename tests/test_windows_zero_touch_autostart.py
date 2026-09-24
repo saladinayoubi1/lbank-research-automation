@@ -47,7 +47,6 @@ def test_daemon_runs_real_local_supervisor_hidden_recovers_and_binds_exact_check
     for marker in (
         "local_node_supervisor.py",
         "--poll-seconds",
-        "--with-dashboard",
         "pythonw.exe",
         "-WindowStyle Hidden",
         "Get-SupervisorProcess",
@@ -112,3 +111,11 @@ def test_one_click_installer_only_delegates_to_versioned_powershell_installer():
     assert "-RepoRoot" in text
     assert "curl" not in text.casefold()
     assert "gh auth login" not in text.casefold()
+
+
+def test_zero_touch_autostart_does_not_launch_legacy_dashboard_by_default():
+    text = read(PS)
+    start = text[text.index("function Start-LocalSupervisor"):text.index("function Handle-Phase7")]
+    assert "--with-dashboard" not in start
+    assert "@($quotedScript,'--poll-seconds','20')" in start
+    assert 'parser.add_argument("--with-dashboard", action="store_true")' in read(SUPERVISOR)
