@@ -9,6 +9,7 @@ param(
 Set-StrictMode -Version 2.0
 $ErrorActionPreference = 'Stop'
 $SourceSha = $SourceSha.ToLowerInvariant()
+$repositoryOwner = ($Repository -split '/', 2)[0]
 
 if (-not $env:GITHUB_TOKEN) { throw 'GITHUB_TOKEN is required for exact artifact resolution.' }
 if (-not $env:GITHUB_OUTPUT) { throw 'GITHUB_OUTPUT is required for exact artifact resolution.' }
@@ -29,13 +30,14 @@ $runs = @(
         Where-Object {
             ([string]$_.head_sha).ToLowerInvariant() -eq $SourceSha -and
             [string]$_.conclusion -eq 'success' -and
-            [string]$_.event -eq 'push' -and
-            [string]$_.head_branch -eq 'main'
+            [string]$_.event -in @('push', 'workflow_dispatch') -and
+            [string]$_.head_branch -eq 'main' -and
+            [string]$_.actor.login -eq $repositoryOwner
         } |
         Sort-Object { [DateTime]$_.created_at } -Descending
 )
 if ($runs.Count -lt 1) {
-    throw "No successful main/push $WorkflowFile run exists for exact source $SourceSha."
+    throw "No successful owner-triggered main $WorkflowFile run exists for exact source $SourceSha."
 }
 
 $selectedRun = $null
