@@ -27,3 +27,20 @@ def test_runner_supervisor_uses_cached_healthy_evidence_and_five_minute_reconcil
     assert "function runnerStateIsHealthy(state)" in text
     assert "if (!force && runnerStateIsHealthy(cached)) return { status: 'HEALTHY_CACHED'" in text
     assert "reconcileRunnerFromGui({ force: true })" in text
+
+
+def test_packaged_app_runs_validated_paper_sync_on_startup_and_bounded_interval():
+    text = BOOTSTRAP_MAIN.read_text(encoding="utf-8")
+    for marker in (
+        "PAPER_SYNC_INTERVAL_MS = 15 * 60 * 1000",
+        "PAPER_SYNC_TIMEOUT_MS = 3 * 60 * 1000",
+        "function prospectivePaperSyncPath()",
+        "paper-forward-sync', 'sync.ps1",
+        "function runProspectivePaperSync()",
+        "if (paperSyncInFlight)",
+        "function startProspectivePaperSyncSupervisor()",
+        "startProspectivePaperSyncSupervisor();",
+    ):
+        assert marker in text
+    block = text[text.index("function runProspectivePaperSync()"):text.index("function startOwnerAutostartBootstrap")]
+    assert "live_trading" not in block
