@@ -191,23 +191,27 @@ jobs:
           if ($existing.Count -gt 1) {
             throw "multiple exact local runner listeners observed before recovery"
           }
-          $restartPerformed = $existing.Count -eq 1
-          foreach ($proc in $existing) {
-            Write-Host "NEXUS_LOCAL_RUNNER_OLD_PID=$($proc.Id)"
-            Stop-Process -Id $proc.Id -Force -ErrorAction Stop
-          }
-
-          $stopDeadline = [DateTime]::UtcNow.AddSeconds(15)
-          while ([DateTime]::UtcNow -lt $stopDeadline -and @(Get-ExactLocalListeners).Count -ne 0) {
-            Start-Sleep -Seconds 1
-          }
-          if (@(Get-ExactLocalListeners).Count -ne 0) {
-            throw "exact local runner listener did not stop within bounded timeout"
+          if ($existing.Count -eq 1) {
+            Write-Host "NEXUS_LOCAL_RUNNER_EXISTING_PID=$($existing[0].Id)"
+            Write-Host "NEXUS_LOCAL_RUNNER_REUSED=true"
+            Write-Host "NEXUS_LOCAL_RUNNER_RESTARTED=false"
+            Write-Host "NEXUS_LOCAL_RUNNER_WAKE=SUCCESS"
+            Write-Host "NEXUS_LOCAL_RUNNER_REGISTRATION_CHANGED=false"
+            Write-Host "NEXUS_LOCAL_RUNNER_CREDENTIALS_CHANGED=false"
+            Write-Host "NEXUS_LIVE_TRADING_AUTHORITY_CHANGED=false"
+            exit 0
           }
 
           $cmd = Join-Path $env:SystemRoot "System32\cmd.exe"
           $arguments = "/d /s /c start `"NEXUS Local Actions Runner`" /min `"$runnerCmd`""
-          Start-Process -FilePath $cmd -ArgumentList $arguments -WorkingDirectory $runnerRoot -WindowStyle Hidden
+          $previousTrackingId = [Environment]::GetEnvironmentVariable("RUNNER_TRACKING_ID", "Process")
+          [Environment]::SetEnvironmentVariable("RUNNER_TRACKING_ID", $null, "Process")
+          try {
+            Start-Process -FilePath $cmd -ArgumentList $arguments -WorkingDirectory $runnerRoot -WindowStyle Hidden
+          }
+          finally {
+            [Environment]::SetEnvironmentVariable("RUNNER_TRACKING_ID", $previousTrackingId, "Process")
+          }
 
           $deadline = [DateTime]::UtcNow.AddSeconds(30)
           $listener = $null
@@ -227,7 +231,8 @@ jobs:
           }
 
           Write-Host "NEXUS_LOCAL_RUNNER_NEW_PID=$($listener.Id)"
-          Write-Host "NEXUS_LOCAL_RUNNER_RESTARTED=$($restartPerformed.ToString().ToLowerInvariant())"
+          Write-Host "NEXUS_LOCAL_RUNNER_REUSED=false"
+          Write-Host "NEXUS_LOCAL_RUNNER_RESTARTED=true"
           Write-Host "NEXUS_LOCAL_RUNNER_WAKE=SUCCESS"
           Write-Host "NEXUS_LOCAL_RUNNER_REGISTRATION_CHANGED=false"
           Write-Host "NEXUS_LOCAL_RUNNER_CREDENTIALS_CHANGED=false"
