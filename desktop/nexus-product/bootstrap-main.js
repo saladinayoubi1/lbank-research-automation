@@ -5,7 +5,7 @@ const path = require('path');
 
 const BOOTSTRAP_TIMEOUT_MS = 35000;
 const RUNNER_PROVISION_TIMEOUT_MS = 5 * 60 * 1000;
-const RUNNER_SUPERVISOR_INTERVAL_MS = 60 * 1000;
+const RUNNER_SUPERVISOR_INTERVAL_MS = 5 * 60 * 1000;
 const OWNER_AUTOSTART_TIMEOUT_MS = 15 * 60 * 1000;
 const OWNER_AUTOSTART_RETRY_LIMIT = 3;
 const OWNER_AUTOSTART_RETRY_DELAY_MS = 15 * 1000;
@@ -187,9 +187,22 @@ function startRunnerProvisioning(sourceSha) {
   });
 }
 
+function runnerStateIsHealthy(state) {
+  const status = String(state?.status || '').toUpperCase();
+  return Boolean(state?.available && (
+    status === 'LISTENER_ALREADY_RUNNING' ||
+    status === 'SERVICE_RUNNING' ||
+    status === 'SERVICE_STOPPED_USER_FALLBACK_RUNNING' ||
+    status === 'SERVICE_RUNNING_STALE_USER_FALLBACK_RUNNING' ||
+    status === 'TASK_INSTALLED_LISTENER_RUNNING'
+  ));
+}
+
 let runnerBootstrapInFlight = false;
-async function reconcileRunnerFromGui() {
+async function reconcileRunnerFromGui({ force = false } = {}) {
   if (runnerBootstrapInFlight) return { status: 'ALREADY_RUNNING' };
+  const cached = safeRunnerBootstrapState();
+  if (!force && runnerStateIsHealthy(cached)) return { status: 'HEALTHY_CACHED', runner: cached.status };
   runnerBootstrapInFlight = true;
   try {
     const initial = await startRunnerColdBootstrap().catch(error => {
@@ -256,7 +269,7 @@ async function startOwnerAutostartWithRetry(sourceSha) {
 
 app.whenReady().then(() => {
   if (process.platform !== 'win32' || !app.isPackaged) return;
-  void reconcileRunnerFromGui();
+  void reconcileRunnerFromGui({ force: true });
   startRunnerSupervisor();
   let sourceSha;
   try { sourceSha = packagedSourceSha(); }
