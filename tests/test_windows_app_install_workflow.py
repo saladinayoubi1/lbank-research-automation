@@ -60,7 +60,7 @@ def test_install_route_is_owner_main_exact_laptop_and_digest_bound() -> None:
         assert stale not in workflow
     parsed = yaml.safe_load(workflow)
     assert isinstance(parsed, dict) and isinstance(parsed.get("jobs"), dict)
-    assert parsed["permissions"] == {"actions": "read", "contents": "read"}
+    assert parsed["permissions"] == {"contents": "read"}
     assert "actions/download-artifact@" not in workflow
 
 
