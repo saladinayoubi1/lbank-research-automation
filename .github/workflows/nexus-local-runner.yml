@@ -56,85 +56,8 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[verify-owner-autostart]') }}
 
 jobs:
-  install_app:
-    if: >-
-      github.ref == 'refs/heads/main' && github.actor == github.repository_owner && (
-        (github.event_name == 'push' && contains(github.event.head_commit.message, '[install-app]')) ||
-        (github.event_name == 'workflow_dispatch' && inputs.task == 'install-app')
-      )
-    runs-on: [self-hosted, Windows, X64, nexus-local]
-    timeout-minutes: 120
-    defaults:
-      run:
-        shell: cmd
-    steps:
-      - name: Checkout repository
-        timeout-minutes: 10
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-          clean: true
-          fetch-depth: 1
-
-      - name: Verify exact trigger SHA
-        run: |
-          for /f %%S in ('git rev-parse HEAD') do set "CHECKED_OUT_SHA=%%S"
-          if /I not "%CHECKED_OUT_SHA%"=="%GITHUB_SHA%" (
-            echo Checkout SHA mismatch: expected %GITHUB_SHA% got %CHECKED_OUT_SHA%
-            exit /b 1
-          )
-          echo exact_trigger_sha=%CHECKED_OUT_SHA%
-
-      - name: Download exact NEXUS persistent package via resilient HTTP/1.1 transport
-        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          & scripts\download_github_actions_artifact_http11.ps1 `
-            -Repository $env:GITHUB_REPOSITORY `
-            -ArtifactRunId 35923832634 `
-            -ArtifactId 10778482019 `
-            -ArtifactName 'nexus-windows-persistent-unpacked' `
-            -ExpectedSourceSha 'ca1bf756edd1e6d0336a0316cad1695537eeb7ed' `
-            -ExpectedArchiveSha256 'a87684f07c8aaa949e6960466c9f51eddcaf9905765e901b744569060930bc0e' `
-            -ExpectedArchiveBytes 217211776 `
-            -DestinationDirectory (Join-Path $env:RUNNER_TEMP "nexus-personal-pro-package-$env:GITHUB_RUN_ID")
-
-      - name: Install and smoke-test NEXUS Personal Pro on exact Lenovo
-        run: >-
-          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass
-          -File scripts\install_and_smoke_nexus_personal_pro.ps1
-          -PackageRoot "%RUNNER_TEMP%\nexus-personal-pro-package-%GITHUB_RUN_ID%"
-          -ExpectedSourceSha "ca1bf756edd1e6d0336a0316cad1695537eeb7ed"
-          -ExpectedUnpackedSha256 "96c668465f386a772432d05bae7d6ceddc969f157b6d8e7a9a47020d249f364e"
-          -ArtifactRunId 35923832634
-          -ArtifactId 10778482019
-          -ArtifactName "nexus-windows-persistent-unpacked"
-          -ExpectedComputerName "DESKTOP-1R1081M"
-          -ExpectedRunnerName "NEXUS-LOCAL-RUNNER"
-          -EvidencePath "build\windows-app-install\evidence.json"
-          -UsePreloadedPackage
-
-      - name: Upload physical Windows app install proof
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        with:
-          name: nexus-windows-app-install-proof-${{ github.run_id }}
-          if-no-files-found: error
-          retention-days: 30
-          path: build/windows-app-install/evidence.json
-
-      - name: Local change report
-        if: always()
-        run: git status --short
-
   local:
-    if: >-
-      github.ref == 'refs/heads/main' && !(
-        (github.event_name == 'push' && contains(github.event.head_commit.message, '[install-app]')) ||
-        (github.event_name == 'workflow_dispatch' && inputs.task == 'install-app')
-      )
+    if: github.ref == 'refs/heads/main'
     runs-on: [self-hosted, Windows, X64, nexus-local]
     timeout-minutes: 120
     defaults:
@@ -193,10 +116,9 @@ jobs:
           retention-days: 14
           path: build/owner-autostart-proof/evidence.json
 
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        if: github.event_name != 'push' || !contains(github.event.head_commit.message, '[verify-owner-autostart]')
-        with:
-          node-version: '20'
+      - name: Verify system Node.js
+        if: github.event_name == 'workflow_dispatch' && inputs.task == 'ai-council-health'
+        run: node --version
 
       - name: Bootstrap portable Python
         if: >-
@@ -209,6 +131,59 @@ jobs:
           (github.event_name != 'push' || !contains(github.event.head_commit.message, '[verify-owner-autostart]')) ||
           (github.event_name == 'push' && contains(github.event.head_commit.message, '[sidecar-compat]'))
         run: python -c "import os,pathlib; root=pathlib.Path.cwd().resolve(); repo=os.environ['GITHUB_REPOSITORY'].split('/')[-1]; assert root.name.casefold()==repo.casefold() and root.parent.name.casefold()==repo.casefold() and root.parent.parent.name.casefold()=='_work'; print('privacy_guard=ok')"
+
+      - name: Download exact NEXUS persistent package via resilient HTTP/1.1 transport
+        if: >-
+          github.actor == github.repository_owner && (
+            (github.event_name == 'push' && contains(github.event.head_commit.message, '[install-app]')) ||
+            (github.event_name == 'workflow_dispatch' && inputs.task == 'install-app')
+          )
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          & scripts\download_github_actions_artifact_http11.ps1 `
+            -Repository $env:GITHUB_REPOSITORY `
+            -ArtifactRunId 35923832634 `
+            -ArtifactId 10778482019 `
+            -ArtifactName 'nexus-windows-persistent-unpacked' `
+            -ExpectedSourceSha 'ca1bf756edd1e6d0336a0316cad1695537eeb7ed' `
+            -ExpectedArchiveSha256 'a87684f07c8aaa949e6960466c9f51eddcaf9905765e901b744569060930bc0e' `
+            -ExpectedArchiveBytes 217211776 `
+            -DestinationDirectory (Join-Path $env:RUNNER_TEMP "nexus-personal-pro-package-$env:GITHUB_RUN_ID")
+
+      - name: Install and smoke-test NEXUS Personal Pro on exact Lenovo
+        if: >-
+          github.actor == github.repository_owner && (
+            (github.event_name == 'push' && contains(github.event.head_commit.message, '[install-app]')) ||
+            (github.event_name == 'workflow_dispatch' && inputs.task == 'install-app')
+          )
+        run: >-
+          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass
+          -File scripts\install_and_smoke_nexus_personal_pro.ps1
+          -PackageRoot "%RUNNER_TEMP%\nexus-personal-pro-package-%GITHUB_RUN_ID%"
+          -ExpectedSourceSha "ca1bf756edd1e6d0336a0316cad1695537eeb7ed"
+          -ExpectedUnpackedSha256 "96c668465f386a772432d05bae7d6ceddc969f157b6d8e7a9a47020d249f364e"
+          -ArtifactRunId 35923832634
+          -ArtifactId 10778482019
+          -ArtifactName "nexus-windows-persistent-unpacked"
+          -ExpectedComputerName "DESKTOP-1R1081M"
+          -ExpectedRunnerName "NEXUS-LOCAL-RUNNER"
+          -EvidencePath "build\windows-app-install\evidence.json"
+          -UsePreloadedPackage
+
+      - name: Upload physical Windows app install proof
+        if: >-
+          always() && github.actor == github.repository_owner && (
+            (github.event_name == 'push' && contains(github.event.head_commit.message, '[install-app]')) ||
+            (github.event_name == 'workflow_dispatch' && inputs.task == 'install-app')
+          )
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-windows-app-install-proof-${{ github.run_id }}
+          if-no-files-found: error
+          retention-days: 30
+          path: build/windows-app-install/evidence.json
 
       - name: Install zero-touch NEXUS autostart
         if: github.event_name == 'push' && contains(github.event.head_commit.message, '[install-autostart]')
