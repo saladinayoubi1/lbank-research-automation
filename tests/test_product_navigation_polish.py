@@ -63,3 +63,11 @@ def test_dynamic_settings_nav_uses_semantic_icon_and_preserves_live_lock_icon():
     assert "n.textContent='11'" not in js
     assert "if(live)nav.insertBefore(button,live)" in js
     assert "<span>10</span><b>تنظیمات</b>" not in js
+
+
+def test_negative_status_semantics_take_precedence_over_positive_substrings():
+    js = (ROOT / "product_ui" / "product.js").read_text(encoding="utf-8")
+    status = js[js.index("function statusClass"):js.index("function normalizeUIPreferences")]
+    assert status.index("unavailable") < status.index("available|active")
+    assert "quarantined" in status
+    assert "?'bad':" in status
