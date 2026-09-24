@@ -57,7 +57,7 @@ def test_resilient_artifact_downloader_is_metadata_and_digest_bound() -> None:
         "ExpectedArchiveBytes",
         "--http1.1",
         "--continue-at",
-        "& curl.exe --retry-all-errors --version",
+        "cmd.exe /D /C \"curl.exe --retry-all-errors --version >NUL 2>NUL\"",
         "curl_retry_all_errors_supported=",
         "$retryArgs += '--retry-all-errors'",
         "Artifact destination escaped RUNNER_TEMP",
