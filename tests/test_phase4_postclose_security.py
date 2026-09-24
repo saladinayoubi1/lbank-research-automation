@@ -180,7 +180,16 @@ def test_self_hosted_phase_workflows_pin_trusted_manual_refs_and_credentials():
     assert "persist-credentials: false" in activation
     assert "Verify exact trusted SHA" in activation
 
-    assert "persist-credentials: false" in local_runner
+    assert "Prepare anonymous exact source with bounded HTTP/1.1 retries" in local_runner
+    assert "https://github.com/$env:GITHUB_REPOSITORY.git" in local_runner
+    assert "git -C $workspace config --local --unset-all http.https://github.com/.extraheader" in local_runner
+    assert "http.version=HTTP/1.1" in local_runner
+    assert "$fetchMaxAttempts = 3" in local_runner
+    assert "fetch --no-tags --prune --depth=1 origin $env:GITHUB_SHA" in local_runner
+    assert "checkout --detach --force FETCH_HEAD" in local_runner
+    assert "actions/checkout@" not in local_runner
+    assert "x-access-token" not in local_runner
+    assert "Authorization: Bearer" not in local_runner
     assert "Verify exact trigger SHA" in local_runner
     assert "github.event.pull_request.head.repo.full_name == github.repository" in runtime
     assert "github.actor == github.repository_owner" in runtime
