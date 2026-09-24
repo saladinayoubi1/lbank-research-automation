@@ -135,9 +135,9 @@ def test_local_runner_source_fetch_is_bounded_anonymous_http11_and_clean():
     assert 'Remove-Item -Recurse -Force' in block
     assert 'git -C $workspace init .' in block
     assert '$fetchMaxAttempts = 3' in block
-    assert "-c 'http.version=HTTP/1.1'" in block
-    assert "-c 'http.lowSpeedLimit=1024'" in block
-    assert "-c 'http.lowSpeedTime=20'" in block
+    assert "'-c','http.version=HTTP/1.1'" in block
+    assert "'-c','http.lowSpeedLimit=1024'" in block
+    assert "'-c','http.lowSpeedTime=20'" in block
     assert "$fetchHardTimeoutMs = 45000" in block
     assert "Start-Process -FilePath 'git.exe'" in block
     assert "WaitForExit($fetchHardTimeoutMs)" in block
