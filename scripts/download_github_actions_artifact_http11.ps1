@@ -158,19 +158,23 @@ while (-not $verified) {
             $batchSucceeded = $true
             foreach ($part in $parts) {
                 $part.Process.WaitForExit()
+                $exitCode = $part.Process.ExitCode
+                $exitCodeKnown = $null -ne $exitCode
                 $expectedPartBytes = [long]($part.End - $part.Start + 1)
                 $actualPartBytes = if (Test-Path -LiteralPath $part.Path -PathType Leaf) {
                     [long](Get-Item -LiteralPath $part.Path).Length
                 } else {
                     -1L
                 }
-                if ($part.Process.ExitCode -ne 0 -or $actualPartBytes -ne $expectedPartBytes) {
-                    $stderr = if (Test-Path -LiteralPath $part.Stderr -PathType Leaf) {
-                        ([string](Get-Content -LiteralPath $part.Stderr -Raw -ErrorAction SilentlyContinue)).Trim()
-                    } else {
-                        ''
+                $partFailed = ($actualPartBytes -ne $expectedPartBytes) -or ($exitCodeKnown -and [int]$exitCode -ne 0)
+                if ($partFailed) {
+                    $stderr = ''
+                    if (Test-Path -LiteralPath $part.Stderr -PathType Leaf) {
+                        $stderrRaw = Get-Content -LiteralPath $part.Stderr -Raw -ErrorAction SilentlyContinue
+                        if ($null -ne $stderrRaw) { $stderr = $stderrRaw.Trim() }
                     }
-                    Write-Warning "Artifact range $($part.Start)-$($part.End) attempt $attempt/$MaxAttempts failed (curl_exit=$($part.Process.ExitCode), bytes=$actualPartBytes, stderr=$stderr)."
+                    $exitCodeText = if ($exitCodeKnown) { [string]$exitCode } else { 'unavailable' }
+                    Write-Warning "Artifact range $($part.Start)-$($part.End) attempt $attempt/$MaxAttempts failed (curl_exit=$exitCodeText, bytes=$actualPartBytes, stderr=$stderr)."
                     $batchSucceeded = $false
                 }
             }
