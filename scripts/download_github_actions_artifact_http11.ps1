@@ -96,7 +96,7 @@ for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
 
     $signedUrl = Get-SignedArtifactUrl
     try {
-        & curl.exe --fail --silent --show-error --http1.1 --connect-timeout 20 --max-time 900 --retry 3 --retry-all-errors --retry-delay 2 --continue-at - --output $archivePath $signedUrl
+        & curl.exe --fail --silent --show-error --http1.1 --connect-timeout 20 --max-time 900 --retry 3 --retry-delay 2 --continue-at - --output $archivePath $signedUrl
         $curlExit = $LASTEXITCODE
     }
     finally {

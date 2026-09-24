@@ -63,6 +63,8 @@ def test_resilient_artifact_downloader_is_metadata_and_digest_bound() -> None:
     ):
         assert marker in script
     assert "http://" not in script
+    # Windows 10 ships curl 7.55.1 on the Lenovo; outer PowerShell attempts already retry every failure.
+    assert "--retry-all-errors" not in script
 
 
 def test_installer_is_side_by_side_non_admin_and_preserves_existing_install() -> None:
