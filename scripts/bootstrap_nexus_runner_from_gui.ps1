@@ -321,7 +321,7 @@ function Install-InteractiveRunnerTask([pscustomobject]$Runner) {
 
 try {
     Ensure-StateRoot
-    if ($env:OS -ne 'Windows_NT') { throw 'GUI runner bootstrap is Windows-only' }
+    if (-not [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::Windows)) { throw 'GUI runner bootstrap is Windows-only' }
     if (-not [Environment]::UserInteractive) { throw 'GUI runner bootstrap requires an interactive owner session' }
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent().Name
     if ($identity -in @('NT AUTHORITY\SYSTEM','NT AUTHORITY\NETWORK SERVICE','NT AUTHORITY\LOCAL SERVICE')) {

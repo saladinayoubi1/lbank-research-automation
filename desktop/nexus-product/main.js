@@ -95,7 +95,7 @@ function supervisorPath() {
 }
 
 function preferencesPath() {
-  const root = path.join(app.getPath('userData'), 'preferences');
+  const root = path.join(app.getPath('userData'), 'product-data');
   fs.mkdirSync(root, { recursive: true });
   return path.join(root, 'ui-preferences.json');
 }
