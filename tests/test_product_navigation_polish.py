@@ -55,3 +55,11 @@ def test_refresh_and_sidebar_toggle_visual_order_is_swapped_only_in_css():
     assert "#reload{order:0}" in css
     assert "#sidebarToggle{order:3}" in css
     assert 'id="reload"' in html and 'id="sidebarToggle"' in html
+
+
+def test_dynamic_settings_nav_uses_semantic_icon_and_preserves_live_lock_icon():
+    js = (ROOT / "product_ui" / "product.js").read_text(encoding="utf-8")
+    assert 'button.innerHTML=\'<span class="nav-icon" aria-hidden="true">☼</span><b>تنظیمات</b><small>Personalize</small>\'' in js
+    assert "n.textContent='11'" not in js
+    assert "if(live)nav.insertBefore(button,live)" in js
+    assert "<span>10</span><b>تنظیمات</b>" not in js
