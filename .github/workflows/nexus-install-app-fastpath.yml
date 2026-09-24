@@ -97,21 +97,23 @@ jobs:
           }
 
       - name: Install and smoke-test exact NEXUS build
+        env:
+          NEXUS_ARTIFACT_RUN_ID: ${{ steps.package.outputs.artifact_run_id }}
+          NEXUS_ARTIFACT_ID: ${{ steps.package.outputs.artifact_id }}
+          NEXUS_ARTIFACT_NAME: ${{ steps.package.outputs.artifact_name }}
+          NEXUS_SOURCE_SHA: ${{ steps.package.outputs.source_sha }}
+          NEXUS_INNER_SHA256: ${{ steps.package.outputs.inner_sha256 }}
         run: |
-          $outputs = @{}
-          Get-Content -LiteralPath $env:GITHUB_OUTPUT | ForEach-Object {
-            if ($_ -match '^([^=]+)=(.*)$') { $outputs[$Matches[1]] = $Matches[2] }
-          }
-          foreach ($required in @('artifact_run_id','artifact_id','artifact_name','source_sha','inner_sha256')) {
-            if (-not $outputs.ContainsKey($required) -or -not $outputs[$required]) { throw "Package output missing: $required" }
+          foreach ($required in @('NEXUS_ARTIFACT_RUN_ID','NEXUS_ARTIFACT_ID','NEXUS_ARTIFACT_NAME','NEXUS_SOURCE_SHA','NEXUS_INNER_SHA256')) {
+            if (-not [Environment]::GetEnvironmentVariable($required, 'Process')) { throw "Package output missing: $required" }
           }
           & scripts\install_and_smoke_nexus_personal_pro.ps1 `
             -PackageRoot (Join-Path $env:RUNNER_TEMP "nexus-personal-pro-package-$env:GITHUB_RUN_ID") `
-            -ExpectedSourceSha $outputs.source_sha `
-            -ExpectedUnpackedSha256 $outputs.inner_sha256 `
-            -ArtifactRunId ([long]$outputs.artifact_run_id) `
-            -ArtifactId ([long]$outputs.artifact_id) `
-            -ArtifactName $outputs.artifact_name `
+            -ExpectedSourceSha $env:NEXUS_SOURCE_SHA `
+            -ExpectedUnpackedSha256 $env:NEXUS_INNER_SHA256 `
+            -ArtifactRunId ([long]$env:NEXUS_ARTIFACT_RUN_ID) `
+            -ArtifactId ([long]$env:NEXUS_ARTIFACT_ID) `
+            -ArtifactName $env:NEXUS_ARTIFACT_NAME `
             -ExpectedComputerName 'DESKTOP-1R1081M' `
             -ExpectedRunnerName 'NEXUS-LOCAL-RUNNER' `
             -EvidencePath 'build\windows-app-install\evidence.json' `
