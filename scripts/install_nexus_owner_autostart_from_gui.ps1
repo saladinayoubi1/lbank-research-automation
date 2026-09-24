@@ -179,6 +179,252 @@ function Validate-ExistingManagedRepo {
     return (Invoke-Git -Root $ManagedRepoRoot -GitArguments @('rev-parse','HEAD')).ToLowerInvariant()
 }
 
+function Test-GitCommitExists([string]$Commit) {
+    $git = Get-Git
+    $previous = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = 'Continue'
+        & $git -C $ManagedRepoRoot cat-file -e "$Commit^{commit}" 1>$null 2>$null
+        $exitCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $previous
+    }
+    return ($exitCode -eq 0)
+}
+
+function Get-RawGitCommitParents([string]$Commit) {
+    if (-not (Test-GitCommitExists $Commit)) { return @() }
+    $raw = Invoke-Git -Root $ManagedRepoRoot -GitArguments @('cat-file','-p',$Commit)
+    $parents = @()
+    foreach ($line in ($raw -split "\r?\n")) {
+        if ($line -eq '') { break }
+        if ($line -match '^parent ([0-9a-fA-F]{40})    $git = Get-Git
+    $previous = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = 'Continue'
+        & $git -C $ManagedRepoRoot merge-base --is-ancestor $Ancestor $Descendant 1>$null 2>$null
+        $exitCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $previous
+    }
+    if ($exitCode -eq 0) { return $true }
+    if ($exitCode -eq 1) {
+        $isShallow = Invoke-Git -Root $ManagedRepoRoot -GitArguments @('rev-parse','--is-shallow-repository')
+        if ($isShallow -eq 'true' -and (Test-RawGitAncestor -Ancestor $Ancestor -Descendant $Descendant)) {
+            Write-Log "shallow raw ancestry proof ancestor=$($Ancestor.ToLowerInvariant()) descendant=$($Descendant.ToLowerInvariant())"
+            return $true
+        }
+        return $false
+    }
+    throw "git merge-base --is-ancestor failed exit=$exitCode ancestor=$Ancestor descendant=$Descendant"
+}
+
+function Reconcile-ExistingManagedRepo([string]$CurrentHead) {
+    $target = $SourceSha.ToLowerInvariant()
+    $current = $CurrentHead.ToLowerInvariant()
+    if ($current -eq $target) {
+        return [pscustomobject]@{ Updated=$false; PreservedNewer=$false }
+    }
+
+    # Import the packaged commit into the object database without moving the branch.
+    # The package seed is offline-only and carries no credentials.
+    Write-Log "reconcile managed checkout prior_sha=$current target_sha=$target source=packaged_seed"
+    [void](Invoke-Git -Root $ManagedRepoRoot -GitArguments @('fetch','--no-tags','--update-shallow',$SeedRepoPath,$PackageRef))
+    $fetched = Invoke-Git -Root $ManagedRepoRoot -GitArguments @('rev-parse','FETCH_HEAD')
+    if ($fetched.ToLowerInvariant() -ne $target) {
+        throw "packaged seed fetch mismatch: expected $target got $fetched"
+    }
+
+    # Never downgrade a managed checkout. A packaged build may be older than the
+    # repository because the repository can continue advancing after installation.
+    if (Test-GitAncestor -Ancestor $target -Descendant $current) {
+        Write-Log "managed checkout newer than packaged seed; preserving current_sha=$current package_sha=$target"
+        return [pscustomobject]@{ Updated=$false; PreservedNewer=$true }
+    }
+
+    # Only a true fast-forward from the current managed checkout to the packaged
+    # commit may move main. Divergent history is blocked fail-closed.
+    if (-not (Test-GitAncestor -Ancestor $current -Descendant $target)) {
+        throw "managed checkout and packaged seed have divergent history: current=$current package=$target"
+    }
+
+    [void](Invoke-Git -Root $ManagedRepoRoot -GitArguments @('checkout','-B','main','FETCH_HEAD'))
+    Assert-CanonicalRemote $ManagedRepoRoot
+    Assert-TrackedClean $ManagedRepoRoot
+    $head = Invoke-Git -Root $ManagedRepoRoot -GitArguments @('rev-parse','HEAD')
+    if ($head.ToLowerInvariant() -ne $target) {
+        throw "managed checkout reconciliation failed: expected $target got $head"
+    }
+    return [pscustomobject]@{ Updated=$true; PreservedNewer=$false }
+}
+
+function Prepare-ManagedRepo {
+    if (-not (Test-Path -LiteralPath $ManagedRepoRoot -PathType Container)) {
+        Initialize-ManagedRepo
+        return [ordered]@{
+            created = $true
+            updated_from_package_seed = $false
+            preserved_newer_managed_checkout = $false
+            previous_head = $null
+        }
+    }
+
+    $previousHead = Validate-ExistingManagedRepo
+    $reconciled = Reconcile-ExistingManagedRepo $previousHead
+    return [ordered]@{
+        created = $false
+        updated_from_package_seed = [bool]$reconciled.Updated
+        preserved_newer_managed_checkout = [bool]$reconciled.PreservedNewer
+        previous_head = $previousHead
+    }
+}
+
+function Get-PowerShellExe {
+    $fixed = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+    if (Test-Path -LiteralPath $fixed -PathType Leaf) { return $fixed }
+    return (Get-Command powershell.exe -ErrorAction Stop).Source
+}
+
+function Import-TaskSchedulerCompat {
+    $path = Join-Path $ManagedRepoRoot $TaskCompatRelative
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "required Task Scheduler compatibility helper missing: $TaskCompatRelative" }
+    . $path
+}
+
+function Install-TaskViaComFallback([string]$RelativeScript) {
+    Import-TaskSchedulerCompat
+    $scriptPath = Join-Path $ManagedRepoRoot $RelativeScript
+    $ps = Get-PowerShellExe
+    $user = "$env:USERDOMAIN\$env:USERNAME"
+    $taskArgs = "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$scriptPath`" -Mode RunDaemon -RepoRoot `"$ManagedRepoRoot`""
+
+    if ($RelativeScript -eq 'scripts\nexus_windows_autostart.ps1') {
+        $name = 'NEXUS-ZeroTouch-Autopilot'
+        $description = 'Starts the NEXUS local supervisor and safely resumes Phase 7 offline handoff after Windows logon.'
+    }
+    elseif ($RelativeScript -eq 'scripts\nexus_github_runner_autostart.ps1') {
+        $name = 'NEXUS-GitHub-Runner-Autostart'
+        $description = 'Keeps the configured NEXUS GitHub Actions self-hosted runner listener available after Windows logon without a visible shell.'
+    }
+    else {
+        throw "Task Scheduler COM fallback is not defined for installer: $RelativeScript"
+    }
+
+    [void](New-NexusInteractiveLogonTask -Name $name -Execute $ps -Arguments $taskArgs -WorkingDirectory $ManagedRepoRoot -User $user -Description $description -StartNow)
+    $script:TaskSchedulerCimFallbackUsed = $true
+    Write-Log "task_scheduler_transport=com_fallback task=$name reason=cim_unavailable"
+}
+
+function Invoke-Installer([string]$RelativeScript) {
+    $path = Join-Path $ManagedRepoRoot $RelativeScript
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "required installer missing: $RelativeScript" }
+    $ps = Get-PowerShellExe
+    $installerArguments = @('-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',$path,'-Mode','Install','-RepoRoot',$ManagedRepoRoot)
+    try {
+        [void](Invoke-NativeCapture -Executable $ps -WorkingDirectory $ManagedRepoRoot -Arguments $installerArguments -Label ("installer $RelativeScript"))
+    }
+    catch {
+        $message = Sanitize-Inline $_.Exception.Message
+        if ($message -notmatch '(?i)CimJob_BrokenCimSession|Cannot connect to CIM server') { throw }
+        Write-Log "scheduledtasks_cmdlets_unavailable installer=$RelativeScript error=$message"
+        Install-TaskViaComFallback $RelativeScript
+    }
+}
+
+function Task-Snapshot([string]$Name) {
+    Import-TaskSchedulerCompat
+    return (Get-NexusScheduledTaskSnapshot $Name)
+}
+
+try {
+    Ensure-StateRoot
+    $CurrentStage = 'identity'
+    $identity = Assert-InteractiveOwner
+
+    $CurrentStage = 'seed'
+    $seedSha = Assert-SeedSource
+
+    $CurrentStage = 'managed_checkout'
+    $managed = Prepare-ManagedRepo
+    $head = Invoke-Git -Root $ManagedRepoRoot -GitArguments @('rev-parse','HEAD')
+    if ($head.ToLowerInvariant() -ne $SourceSha.ToLowerInvariant() -and -not [bool]$managed.preserved_newer_managed_checkout) {
+        throw "managed checkout source verification failed: package=$($SourceSha.ToLowerInvariant()) managed=$head"
+    }
+
+    $CurrentStage = 'core_autostart_install'
+    Invoke-Installer 'scripts\nexus_windows_autostart.ps1'
+
+    $CurrentStage = 'runner_autostart_install'
+    Invoke-Installer 'scripts\nexus_github_runner_autostart.ps1'
+
+    $CurrentStage = 'task_verify'
+    $core = Task-Snapshot 'NEXUS-ZeroTouch-Autopilot'
+    $runner = Task-Snapshot 'NEXUS-GitHub-Runner-Autostart'
+    if (-not $core.exists -or -not $runner.exists) { throw 'required owner-user scheduled tasks were not created' }
+    if ($core.run_level -ne 'Limited' -or $runner.run_level -ne 'Limited') { throw 'owner-user scheduled tasks are not limited-runlevel' }
+
+    $CurrentStage = 'complete'
+    Write-Evidence 'SUCCESS' @{
+        seed_verified = $true
+        seed_sha = $seedSha
+        windows_identity = $identity
+        managed_checkout_created = [bool]$managed.created
+        managed_checkout_updated_from_package_seed = [bool]$managed.updated_from_package_seed
+        preserved_newer_managed_checkout = [bool]$managed.preserved_newer_managed_checkout
+        managed_previous_head = $managed.previous_head
+        managed_head = $head.ToLowerInvariant()
+        core_task = $core
+        runner_task = $runner
+        installed = $true
+    }
+    Write-Host 'NEXUS_OWNER_AUTOSTART_BOOTSTRAP=SUCCESS'
+    exit 0
+}
+catch {
+    $message = Sanitize-Inline $_.Exception.Message
+    try {
+        Write-Evidence 'BLOCKED' @{
+            error = $message
+            installed = $false
+        }
+    } catch { }
+    try { Write-Log "blocked stage=$CurrentStage error=$message" } catch { }
+    exit 20
+}
+) {
+            $parents += $Matches[1].ToLowerInvariant()
+        }
+    }
+    return @($parents)
+}
+
+function Test-RawGitAncestor([string]$Ancestor, [string]$Descendant, [int]$MaxCommits = 128) {
+    $ancestorSha = $Ancestor.ToLowerInvariant()
+    $descendantSha = $Descendant.ToLowerInvariant()
+    if ($ancestorSha -eq $descendantSha) { return $true }
+    if (-not (Test-GitCommitExists $descendantSha)) { return $false }
+
+    $queue = New-Object 'System.Collections.Generic.Queue[string]'
+    $seen = New-Object 'System.Collections.Generic.HashSet[string]'
+    $queue.Enqueue($descendantSha)
+    $visited = 0
+    while ($queue.Count -gt 0) {
+        $commit = $queue.Dequeue()
+        if (-not $seen.Add($commit)) { continue }
+        $visited += 1
+        if ($visited -gt $MaxCommits) {
+            throw "raw shallow ancestry proof exceeded bound=$MaxCommits ancestor=$ancestorSha descendant=$descendantSha"
+        }
+        foreach ($parent in @(Get-RawGitCommitParents $commit)) {
+            if ($parent -eq $ancestorSha) { return $true }
+            if (Test-GitCommitExists $parent) { $queue.Enqueue($parent) }
+        }
+    }
+    return $false
+}
+
 function Test-GitAncestor([string]$Ancestor, [string]$Descendant) {
     $git = Get-Git
     $previous = $ErrorActionPreference
