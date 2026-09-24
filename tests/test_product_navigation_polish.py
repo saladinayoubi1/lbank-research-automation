@@ -83,3 +83,17 @@ def test_product_actions_are_single_flight():
     assert "control.disabled=true" in js
     assert "control.disabled=false" in js
     assert "aria-busy" in js
+
+
+def test_optional_product_surfaces_degrade_without_hiding_critical_failures():
+    js = (ROOT / "product_ui" / "product.js").read_text(encoding="utf-8")
+    assert "async function optionalApi(path)" in js
+    assert "api('/api/product/overview')" in js
+    assert "api('/api/product/paper')" in js
+    assert "api('/api/product/risk')" in js
+    assert "api('/api/product/recovery')" in js
+    assert "optionalApi('/api/product/mission-control')" in js
+    assert "optionalApi('/api/product/notifications?limit=40')" in js
+    assert "optionalApi('/api/product/data/registry')" in js
+    assert "بخش محدود" in js
+    assert "Paper backend unavailable" in js
