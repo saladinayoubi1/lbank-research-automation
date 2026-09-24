@@ -75,3 +75,14 @@ def test_windows_interop_calls_are_bounded_and_local_recovery_is_required() -> N
     assert "timeout-minutes: 2" in local
     assert "continue-on-error: true" in remote
     assert "timeout-minutes: 1" in remote
+
+
+def test_local_runner_recovery_uses_script_file_not_inline_command() -> None:
+    text = _text()
+    local = text[text.index("Recover exact Lenovo local Actions runner through WSL interop"):text.index("Request existing Remote Commander user-context recovery through WSL")]
+    assert "nexus-wsl-recover-local-runner.ps1" in local
+    assert "cat > \"$SCRIPT\" <<'POWERSHELL'" in local
+    assert 'WIN_SCRIPT="$(wslpath -w "$SCRIPT")"' in local
+    assert '-File "$WIN_SCRIPT"' in local
+    assert "-Command '" not in local
+    assert "trap cleanup EXIT" in local
