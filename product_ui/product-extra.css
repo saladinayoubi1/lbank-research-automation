@@ -25,3 +25,9 @@ body[data-contrast="high"]{--text:#f4f7fb;--strong:#fff;--muted:#c3ccd7;--dim:#9
 .sidebar nav button>span::before{font:600 17px/1 "Segoe UI Symbol","Segoe UI",sans-serif;color:currentColor}.sidebar nav button.active>span::before{color:var(--blue)}
 .sidebar nav button[data-view="overview"]>span::before{content:"⌂"}.sidebar nav button[data-view="data"]>span::before{content:"▦"}.sidebar nav button[data-view="research"]>span::before{content:"∑"}.sidebar nav button[data-view="paper"]>span::before{content:"↗"}.sidebar nav button[data-view="risk"]>span::before{content:"◆"}.sidebar nav button[data-view="ai"]>span::before{content:"✦"}.sidebar nav button[data-view="strategies"]>span::before{content:"⎇"}.sidebar nav button[data-view="agents"]>span::before{content:"⚙"}.sidebar nav button[data-view="audit"]>span::before{content:"◎"}.sidebar nav button[data-view="live"]>span::before{content:"⊘"}
 body.sidebar-collapsed .sidebar nav button>span{font-size:0!important}@media(max-width:900px){.sidebar nav button>span::before{font-size:16px}}
+
+/* Laptop pipeline polish: keep the canonical decision chain readable without nested horizontal scrolling. */
+.pipeline{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px!important;overflow:visible!important}
+.pipeline>div{min-width:0!important}
+.pipeline>em{display:none!important}
+@media(min-width:1450px){.pipeline{grid-template-columns:repeat(3,minmax(0,1fr))}}
