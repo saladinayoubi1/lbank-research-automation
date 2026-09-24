@@ -60,6 +60,10 @@ jobs:
             echo 'windows_powershell_interop=missing' >&2
             exit 2
           fi
+          # WSL Windows interop requires a Windows-backed current directory.
+          WINDOWS_INTEROP_CWD='/mnt/c/Users/afaq/AppData/Local/Temp'
+          test -d "$WINDOWS_INTEROP_CWD"
+          cd "$WINDOWS_INTEROP_CWD"
           run_bounded_interop 45 "$PS_EXE" -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command '
             $ErrorActionPreference = "Stop"
             Set-StrictMode -Version 2.0
@@ -185,6 +189,10 @@ jobs:
           WINPS='/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe'
           SCRIPT='/mnt/c/Users/afaq/AppData/Local/Temp/nexus-wsl-recover-local-runner.ps1'
           test -x "$WINPS"
+          # WSL Windows interop requires a Windows-backed current directory.
+          WINDOWS_INTEROP_CWD='/mnt/c/Users/afaq/AppData/Local/Temp'
+          test -d "$WINDOWS_INTEROP_CWD"
+          cd "$WINDOWS_INTEROP_CWD"
           cleanup() { rm -f "$SCRIPT" || true; }
           trap cleanup EXIT
           cat > "$SCRIPT" <<'POWERSHELL'
@@ -318,4 +326,8 @@ jobs:
           }
           WINPS='/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe'
           test -x "$WINPS"
+          # WSL Windows interop requires a Windows-backed current directory.
+          WINDOWS_INTEROP_CWD='/mnt/c/Users/afaq/AppData/Local/Temp'
+          test -d "$WINDOWS_INTEROP_CWD"
+          cd "$WINDOWS_INTEROP_CWD"
           run_bounded_interop 45 "$WINPS" -NoProfile -NonInteractive -Command '$task="NEXUS-Remote-Commander-Recovery"; & schtasks.exe /Query /TN $task /FO LIST /V; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; & schtasks.exe /Run /TN $task; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; Start-Sleep -Seconds 5; & schtasks.exe /Query /TN $task /FO LIST /V; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; Write-Host "remote_commander_rescue_request=PASS"; Write-Host "remote_commander_task_mutated=false"; Write-Host "runner_registration_mutated=false"; Write-Host "runner_credentials_mutated=false"; Write-Host "windows_acl_modified=false"; Write-Host "live_trading_authority_changed=false"'
