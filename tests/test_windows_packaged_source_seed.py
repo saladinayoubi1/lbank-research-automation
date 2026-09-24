@@ -18,7 +18,7 @@ def test_stager_materializes_a_loose_exact_source_ref_before_packaging() -> None
     assert "path.join(seedPath, 'refs', 'heads', 'nexus-package-source')" in text
     assert "exact-source seed loose ref is missing" in text
     assert "seed loose ref mismatch" in text
-    assert text.index("'clone', '--depth', '1', '--bare'") < text.index("'--git-dir', seedPath, 'update-ref', packageRef, head")
+    assert text.index("'clone', '--depth', '32', '--bare'") < text.index("'--git-dir', seedPath, 'update-ref', packageRef, head")
 
 
 def test_after_pack_proves_the_packaged_seed_is_a_real_git_repository() -> None:
