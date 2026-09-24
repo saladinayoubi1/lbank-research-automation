@@ -35,7 +35,11 @@ jobs:
           run_bounded_interop() {
             local limit="$1"
             shift
-            "$@" &
+            local interop_cwd='/mnt/c/Windows/System32'
+            (
+              cd "$interop_cwd"
+              exec "$@"
+            ) &
             local child=$!
             (
               sleep "$limit"
@@ -162,7 +166,11 @@ jobs:
           run_bounded_interop() {
             local limit="$1"
             shift
-            "$@" &
+            local interop_cwd='/mnt/c/Windows/System32'
+            (
+              cd "$interop_cwd"
+              exec "$@"
+            ) &
             local child=$!
             (
               sleep "$limit"
@@ -296,7 +304,11 @@ jobs:
           run_bounded_interop() {
             local limit="$1"
             shift
-            "$@" &
+            local interop_cwd='/mnt/c/Windows/System32'
+            (
+              cd "$interop_cwd"
+              exec "$@"
+            ) &
             local child=$!
             (
               sleep "$limit"
