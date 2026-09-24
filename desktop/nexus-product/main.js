@@ -397,23 +397,37 @@ function showStartupFailure(error) {
   win.loadURL(`data:text/html;charset=utf-8,<body style="background:%23090c10;color:%23fff;font-family:Segoe UI;padding:30px"><h2>NEXUS startup blocked</h2><p>${encodeURIComponent(message)}</p><p>${encodeURIComponent(logText)}</p><p>The product failed closed. No Paper or Live state was changed.</p></body>`);
 }
 
-app.whenReady().then(async () => {
-  registerUiPreferenceIpc();
-  try { const origin = await startSidecar(); createWindow(origin); }
-  catch (error) {
-    logStartup(`startup blocked: ${error && error.stack ? error.stack : error}`);
-    writeSupervisorState('startup_failed', { reason: String(error && error.message ? error.message : error) });
-    showStartupFailure(error);
-  }
-  app.on('activate', async () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      try { if (!productOrigin || !productReady) productOrigin = await startSidecar(); createWindow(productOrigin); }
-      catch (error) { showStartupFailure(error); }
-    }
-  });
-});
+const singleInstanceLock = app.requestSingleInstanceLock();
 
-app.on('before-quit', () => { isQuitting = true; writeSupervisorState('stopping'); stopSidecar(); });
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') { isQuitting = true; stopSidecar(); app.quit(); }
-});
+if (!singleInstanceLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    const win = BrowserWindow.getAllWindows().find(candidate => !candidate.isDestroyed());
+    if (!win) return;
+    if (win.isMinimized()) win.restore();
+    win.show();
+    win.focus();
+  });
+
+  app.whenReady().then(async () => {
+    registerUiPreferenceIpc();
+    try { const origin = await startSidecar(); createWindow(origin); }
+    catch (error) {
+      logStartup(`startup blocked: ${error && error.stack ? error.stack : error}`);
+      writeSupervisorState('startup_failed', { reason: String(error && error.message ? error.message : error) });
+      showStartupFailure(error);
+    }
+    app.on('activate', async () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        try { if (!productOrigin || !productReady) productOrigin = await startSidecar(); createWindow(productOrigin); }
+        catch (error) { showStartupFailure(error); }
+      }
+    });
+  });
+
+  app.on('before-quit', () => { isQuitting = true; writeSupervisorState('stopping'); stopSidecar(); });
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') { isQuitting = true; stopSidecar(); app.quit(); }
+  });
+}

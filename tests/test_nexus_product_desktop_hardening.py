@@ -44,3 +44,16 @@ def test_packaged_app_runs_validated_paper_sync_on_startup_and_bounded_interval(
         assert marker in text
     block = text[text.index("function runProspectivePaperSync()"):text.index("function startOwnerAutostartBootstrap")]
     assert "live_trading" not in block
+
+
+def test_desktop_enforces_single_instance_and_refocuses_existing_window():
+    text = MAIN.read_text(encoding="utf-8")
+    assert "app.requestSingleInstanceLock()" in text
+    assert "app.on('second-instance'" in text
+    assert "BrowserWindow.getAllWindows().find" in text
+    assert "win.isMinimized()" in text
+    assert "win.restore()" in text
+    assert "win.show()" in text
+    assert "win.focus()" in text
+    assert "if (!singleInstanceLock)" in text
+    assert "app.quit()" in text
