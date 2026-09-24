@@ -61,9 +61,14 @@ def test_remote_commander_recovery_remains_reused_not_recreated() -> None:
 
 def test_windows_interop_calls_are_bounded_and_local_recovery_is_required() -> None:
     text = _text()
-    assert "timeout --foreground --signal=TERM --kill-after=5s 45s \"$PS_EXE\"" in text
-    assert "timeout --foreground --signal=TERM --kill-after=5s 90s \"$WINPS\"" in text
-    assert "timeout --foreground --signal=TERM --kill-after=5s 45s \"$WINPS\"" in text
+    assert text.count("run_bounded_interop() {") == 3
+    assert 'run_bounded_interop 45 "$PS_EXE"' in text
+    assert 'run_bounded_interop 90 "$WINPS"' in text
+    assert 'run_bounded_interop 45 "$WINPS"' in text
+    assert "windows_interop_timeout_seconds=$limit" in text
+    assert 'kill -TERM "$child"' in text
+    assert 'kill -KILL "$child"' in text
+    assert "timeout --foreground" not in text
 
     dr = text[text.index("Recover exact existing Windows Actions runner through WSL interop"):text.index("Recover exact Lenovo local Actions runner through WSL interop")]
     local = text[text.index("Recover exact Lenovo local Actions runner through WSL interop"):text.index("Request existing Remote Commander user-context recovery through WSL")]
