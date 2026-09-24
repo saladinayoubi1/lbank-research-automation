@@ -38,17 +38,17 @@ if (!/^[0-9a-f]{40}$/.test(head)) throw new Error('repository HEAD is not a full
 const expected = String(process.env.GITHUB_SHA || head).trim().toLowerCase();
 if (expected !== head) throw new Error(`build source mismatch: GITHUB_SHA=${expected} HEAD=${head}`);
 
-// Keep the packaged source small and self-contained: create a depth-1 bare seed
-// from the exact build commit. Git preserves the original commit/tree identity and
-// records the missing ancestry as a shallow boundary. No GitHub credential/config
-// is copied into the package.
+// Keep the packaged source bounded and self-contained: retain a small recent ancestry
+// window so clean owner checkouts can prove multi-version offline fast-forwards. Git
+// preserves original commit/tree identity and records older history as a shallow
+// boundary. No GitHub credential/config is copied into the package.
 const seedPath = path.join(sidecarRoot, 'nexus-source-seed.git');
 fs.rmSync(seedPath, { recursive: true, force: true });
 try {
   runGit(['update-ref', packageRef, head]);
   const sourceUrl = pathToFileURL(repoRoot + path.sep).href;
   execFileSync('git', [
-    'clone', '--depth', '1', '--bare', '--branch', 'nexus-package-source',
+    'clone', '--depth', '32', '--bare', '--branch', 'nexus-package-source',
     sourceUrl, seedPath,
   ], {
     cwd: repoRoot,
