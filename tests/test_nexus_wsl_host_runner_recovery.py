@@ -66,6 +66,9 @@ def test_windows_interop_calls_are_bounded_and_local_recovery_is_required() -> N
     assert 'run_bounded_interop 90 "$WINPS"' in text
     assert 'run_bounded_interop 45 "$WINPS"' in text
     assert "windows_interop_timeout_seconds=$limit" in text
+    assert text.count("local interop_cwd='/mnt/c/Windows/System32'") == 3
+    assert text.count('cd "$interop_cwd"') == 3
+    assert text.count('exec "$@"') == 3
     assert 'kill -TERM "$child"' in text
     assert 'kill -KILL "$child"' in text
     assert "timeout --foreground" not in text
@@ -107,3 +110,11 @@ def test_local_runner_recovery_reuses_existing_listener_and_detaches_new_listene
     ):
         assert marker in local
     assert 'Stop-Process -Id $proc.Id -Force -ErrorAction Stop' not in local
+
+
+def test_windows_interop_uses_windows_mounted_working_directory() -> None:
+    text = _text()
+    assert text.count("local interop_cwd='/mnt/c/Windows/System32'") == 3
+    assert text.count('cd "$interop_cwd"') == 3
+    assert text.count('exec "$@"') == 3
+    assert "/opt/nexus-bybit-runner/_work" not in text
