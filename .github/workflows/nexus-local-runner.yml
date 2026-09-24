@@ -65,35 +65,42 @@ jobs:
         shell: cmd
     steps:
       - name: Fetch exact repository source over Git HTTP/1.1
-        timeout-minutes: 10
+        timeout-minutes: 5
         shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
         run: |
           $ErrorActionPreference = 'Stop'
+          Set-StrictMode -Version 2.0
           $env:GIT_TERMINAL_PROMPT = '0'
-          $root = [IO.Path]::GetFullPath($env:GITHUB_WORKSPACE)
-          New-Item -ItemType Directory -Force -Path $root | Out-Null
-          Set-Location $root
-          if (-not (Test-Path (Join-Path $root '.git'))) {
-            & git init
-            if ($LASTEXITCODE -ne 0) { throw 'git init failed' }
+
+          $repoUrl = "https://github.com/$env:GITHUB_REPOSITORY.git"
+          $workspace = [IO.Path]::GetFullPath($env:GITHUB_WORKSPACE)
+          New-Item -ItemType Directory -Force -Path $workspace | Out-Null
+          Get-ChildItem -Force -LiteralPath $workspace -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force
+          & git -C $workspace init .
+          if ($LASTEXITCODE -ne 0) { throw 'Failed to initialize exact local-runner source workspace.' }
+          & git -C $workspace remote add origin $repoUrl
+          if ($LASTEXITCODE -ne 0) { throw 'Failed to add anonymous local-runner source remote.' }
+          & git -C $workspace config --local credential.helper ''
+          & git -C $workspace config --local core.askPass ''
+          & git -C $workspace config --local --unset-all http.https://github.com/.extraheader 2>$null
+
+          $fetchOk = $false
+          $fetchMaxAttempts = 3
+          for ($fetchAttempt = 1; $fetchAttempt -le $fetchMaxAttempts; $fetchAttempt++) {
+            & git -C $workspace -c 'http.version=HTTP/1.1' fetch --no-tags --prune --depth=1 origin $env:GITHUB_SHA
+            if ($LASTEXITCODE -eq 0) { $fetchOk = $true; break }
+            Write-Warning "Exact local-runner source fetch attempt $fetchAttempt/$fetchMaxAttempts failed."
+            if ($fetchAttempt -lt $fetchMaxAttempts) { Start-Sleep -Seconds ($fetchAttempt * 5) }
           }
-          & git remote remove origin 2>$null
-          & git remote add origin ("https://github.com/{0}.git" -f $env:GITHUB_REPOSITORY)
-          if ($LASTEXITCODE -ne 0) { throw 'git remote add failed' }
-          & git config --local http.version HTTP/1.1
-          & git config --local credential.helper ''
-          & git config --local core.askPass ''
-          & git config --local --unset-all http.https://github.com/.extraheader 2>$null
-          & git fetch --force --no-tags --depth=1 origin $env:GITHUB_SHA
-          if ($LASTEXITCODE -ne 0) { throw "exact source fetch failed for $env:GITHUB_SHA" }
-          & git reset --hard FETCH_HEAD
-          if ($LASTEXITCODE -ne 0) { throw 'git reset failed' }
-          & git clean -ffdx
-          if ($LASTEXITCODE -ne 0) { throw 'git clean failed' }
-          $actual = (& git rev-parse HEAD).Trim()
-          if ($actual -ine $env:GITHUB_SHA) {
+          if (-not $fetchOk) { throw "Exact local-runner source fetch failed after $fetchMaxAttempts bounded attempts." }
+
+          & git -C $workspace checkout --detach --force FETCH_HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'Exact local-runner source checkout failed.' }
+          $actual = (& git -C $workspace rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0 -or $actual -ine $env:GITHUB_SHA) {
             throw "Checkout SHA mismatch: expected $env:GITHUB_SHA got $actual"
           }
+          Write-Host 'exact_source_mode=anonymous-exact-sha-http11'
           Write-Host "exact_trigger_sha=$actual"
 
       - name: Owner-proof privacy guard
