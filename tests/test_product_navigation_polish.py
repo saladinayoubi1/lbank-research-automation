@@ -71,3 +71,15 @@ def test_negative_status_semantics_take_precedence_over_positive_substrings():
     assert status.index("unavailable") < status.index("available|active")
     assert "quarantined" in status
     assert "?'bad':" in status
+
+
+def test_product_actions_are_single_flight():
+    js = (ROOT / "product_ui" / "product.js").read_text(encoding="utf-8")
+    assert "const inFlightActions=new Set()" in js
+    assert "async function singleFlight(" in js
+    assert "singleFlight('paper-order'" in js
+    assert "singleFlight('research-run'" in js
+    assert "singleFlight('auto-paper'" in js
+    assert "control.disabled=true" in js
+    assert "control.disabled=false" in js
+    assert "aria-busy" in js
