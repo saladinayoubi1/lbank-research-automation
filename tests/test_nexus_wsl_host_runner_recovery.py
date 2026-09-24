@@ -107,3 +107,18 @@ def test_local_runner_recovery_reuses_existing_listener_and_detaches_new_listene
     ):
         assert marker in local
     assert 'Stop-Process -Id $proc.Id -Force -ErrorAction Stop' not in local
+
+def test_windows_interop_uses_windows_backed_cwd_before_windows_processes() -> None:
+    text = _text()
+    marker = "WINDOWS_INTEROP_CWD='/mnt/c/Users/afaq/AppData/Local/Temp'"
+    assert text.count(marker) == 3
+    assert text.count('test -d "$WINDOWS_INTEROP_CWD"') == 3
+    assert text.count('cd "$WINDOWS_INTEROP_CWD"') == 3
+
+    dr = text[text.index("Recover exact existing Windows Actions runner through WSL interop"):text.index("Recover exact Lenovo local Actions runner through WSL interop")]
+    local = text[text.index("Recover exact Lenovo local Actions runner through WSL interop"):text.index("Request existing Remote Commander user-context recovery through WSL")]
+    remote = text[text.index("Request existing Remote Commander user-context recovery through WSL"):]
+    for section in (dr, local, remote):
+        assert marker in section
+        assert 'cd "$WINDOWS_INTEROP_CWD"' in section
+
