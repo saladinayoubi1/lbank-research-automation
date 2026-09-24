@@ -339,8 +339,13 @@ function terminalOwnerAutostartBlocker() {
     const status = String(payload.status || '').toUpperCase();
     const stage = String(payload.stage || '');
     const error = String(payload.error || '').slice(0, 512);
-    if (status === 'BLOCKED' && stage === 'managed_checkout' && error.includes('tracked owner changes')) {
-      return { status, stage, error };
+    if (status === 'BLOCKED' && stage === 'managed_checkout') {
+      if (error.includes('tracked owner changes')) {
+        return { status, stage, error, reason: 'tracked_owner_changes' };
+      }
+      if (error.includes('divergent history')) {
+        return { status, stage, error, reason: 'divergent_history' };
+      }
     }
   } catch {}
   return null;
@@ -358,7 +363,7 @@ async function startOwnerAutostartWithRetry(sourceSha) {
     }
     const terminalBlocker = terminalOwnerAutostartBlocker();
     if (terminalBlocker) {
-      appendOwnerAutostartLog(`owner_bootstrap_terminal_block stage=${terminalBlocker.stage} reason=tracked_owner_changes attempt=${attempt}`);
+      appendOwnerAutostartLog(`owner_bootstrap_terminal_block stage=${terminalBlocker.stage} reason=${terminalBlocker.reason} attempt=${attempt}`);
       return { status: 'BLOCKED_TERMINAL', code: result && result.code != null ? result.code : 20 };
     }
     if (attempt < OWNER_AUTOSTART_RETRY_LIMIT) {
