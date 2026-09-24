@@ -57,3 +57,21 @@ def test_remote_commander_recovery_remains_reused_not_recreated() -> None:
     assert 'schtasks.exe /Run /TN $task' in text
     assert 'remote_commander_task_mutated=false' in text
     assert 'windows_acl_modified=false' in text
+
+
+def test_windows_interop_calls_are_bounded_and_local_recovery_is_required() -> None:
+    text = _text()
+    assert "timeout --foreground --signal=TERM --kill-after=5s 45s \"$PS_EXE\"" in text
+    assert "timeout --foreground --signal=TERM --kill-after=5s 90s \"$WINPS\"" in text
+    assert "timeout --foreground --signal=TERM --kill-after=5s 45s \"$WINPS\"" in text
+
+    dr = text[text.index("Recover exact existing Windows Actions runner through WSL interop"):text.index("Recover exact Lenovo local Actions runner through WSL interop")]
+    local = text[text.index("Recover exact Lenovo local Actions runner through WSL interop"):text.index("Request existing Remote Commander user-context recovery through WSL")]
+    remote = text[text.index("Request existing Remote Commander user-context recovery through WSL"):]
+
+    assert "continue-on-error: true" in dr
+    assert "timeout-minutes: 1" in dr
+    assert "continue-on-error: true" not in local
+    assert "timeout-minutes: 2" in local
+    assert "continue-on-error: true" in remote
+    assert "timeout-minutes: 1" in remote
