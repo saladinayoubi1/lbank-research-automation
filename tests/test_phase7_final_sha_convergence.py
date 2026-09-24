@@ -25,8 +25,9 @@ def test_final_sha_cloud_and_physical_proofs_share_trusted_main_trigger_surfaces
     assert "- scripts/bootstrap_portable_python.cmd" in local
     assert "runs-on: [self-hosted, Windows, X64, nexus-local]" in local
     assert "Fetch exact repository source over Git HTTP/1.1" in local
-    assert "fetch --force --no-tags --depth=1 origin $env:GITHUB_SHA" in local
-    assert "git rev-parse HEAD" in local
+    assert "-c 'http.version=HTTP/1.1' fetch --no-tags --prune --depth=1 origin $env:GITHUB_SHA" in local
+    assert "checkout --detach --force FETCH_HEAD" in local
+    assert "git -C $workspace rev-parse HEAD" in local
     assert "Checkout SHA mismatch" in local
     assert "actions/checkout@" not in local
     assert "'[verify-owner-autostart]'" in local
