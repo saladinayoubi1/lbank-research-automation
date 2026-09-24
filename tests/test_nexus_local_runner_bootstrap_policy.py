@@ -112,38 +112,29 @@ def test_portable_artifact_cache_survives_runner_temp_cleanup_and_remains_checks
 
 def test_local_runner_source_fetch_is_bound_to_trigger_sha_and_verified():
     workflow = WORKFLOW.read_text(encoding='utf-8')
-    assert '- name: Fetch exact repository source over Git HTTP/1.1' in workflow
+    assert '- name: Fetch exact repository source from codeload' in workflow
+    assert 'https://codeload.github.com/$env:GITHUB_REPOSITORY/zip/$env:GITHUB_SHA' in workflow
+    assert "Set-Content -LiteralPath (Join-Path $workspace '.nexus-trigger-source')" in workflow
+    assert 'exact_source_mode=codeload-exact-sha-http11' in workflow
     assert 'actions/checkout@' not in workflow
     assert 'ref: main' not in workflow
-    assert 'git -C $workspace rev-parse HEAD' in workflow
-    assert '$env:GITHUB_SHA' in workflow
-    assert 'Checkout SHA mismatch' in workflow
 
 
-def test_local_runner_source_fetch_is_bounded_anonymous_http11_and_clean():
+def test_local_runner_source_fetch_is_bounded_http11_and_clean():
     workflow = WORKFLOW.read_text(encoding='utf-8')
-    fetch = workflow.index('- name: Fetch exact repository source over Git HTTP/1.1')
+    fetch = workflow.index('- name: Fetch exact repository source from codeload')
     owner_guard = workflow.index('- name: Owner-proof privacy guard')
     block = workflow[fetch:owner_guard]
-    assert 'timeout-minutes: 5' in block
-    assert 'https://github.com/$env:GITHUB_REPOSITORY.git' in block
-    assert 'GIT_TERMINAL_PROMPT' in block
-    assert "credential.helper ''" in block
-    assert "core.askPass ''" in block
-    assert '--unset-all http.https://github.com/.extraheader' in block
+    assert 'timeout-minutes: 2' in block
+    assert '--http1.1' in block
+    assert '--connect-timeout 10' in block
+    assert '--max-time 60' in block
+    assert '--speed-time 20' in block
+    assert '--speed-limit 1024' in block
+    assert 'for ($attempt = 1; $attempt -le 3; $attempt++)' in block
     assert 'Get-ChildItem -Force -LiteralPath $workspace' in block
-    assert 'Remove-Item -Recurse -Force' in block
-    assert 'git -C $workspace init .' in block
-    assert '$fetchMaxAttempts = 3' in block
-    assert "-c 'http.version=HTTP/1.1'" in block
-    assert "-c 'http.lowSpeedLimit=1024'" in block
-    assert "-c 'http.lowSpeedTime=20'" in block
-    assert "fetch --no-tags --prune --depth=1 origin $env:GITHUB_SHA" in block
-    assert 'checkout --detach --force FETCH_HEAD' in block
-    assert 'git -C $workspace rev-parse HEAD' in block
-    assert 'exact_source_mode=anonymous-exact-sha-http11' in block
+    assert 'Expand-Archive' in block
     assert 'actions/checkout@' not in block
-
 
 def test_bootstrap_prefers_verified_local_python_before_portable_network_fallback():
     text = _text()
