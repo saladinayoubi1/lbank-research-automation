@@ -62,11 +62,11 @@
     const active = m.control_plane?.active_tasks || [], blocked = m.control_plane?.blocked_or_triage || [], owner = m.owner_actions || [];
     const leader = m.strategy_center?.leading_candidate, supervisor = m.local_supervisor || {}, build = m.build_evidence || {}, ci = ciHealth(m), s = ci.summary || {};
     const current = active[0];
-    const resourceText = (m.resources || []).length ? m.resources.map(r => `${esc(r.id)}:${esc(r.state)}`).join(' · ') : 'No runtime resource evidence';
+    const resourceRows = m.resources || []; const resourceHtml = resourceRows.length ? `<span class="mission-resource-stack">${resourceRows.map(r => `<span class="mission-resource-pill ${stateClass(r.state)}">${esc(r.id)} · ${esc(String(r.state || 'UNKNOWN').toUpperCase())}</span>`).join('')}</span>` : '<span class="mission-resource-empty">No runtime resource evidence</span>';
     const ciBad = Number(s.FAILED || 0) + Number(s.BLOCKED || 0);
     host.innerHTML = `
-      <div><span>NOW</span><b>${current ? `${esc(current.id)} · ${esc(current.title)}` : (m.control_plane?.runtime_present ? 'No active task / control plane idle' : 'Runtime state not present on this laptop')}</b><small>${active.length} active · ${fmt(m.control_plane?.verified_progress_percent,1)}% verified</small></div>
-      <div><span>RESOURCES</span><b>${resourceText}</b><small>${esc(m.source)}${m.stale ? ' · STALE SNAPSHOT' : ''}</small></div>
+      <div><span>NOW</span><b>${current ? `${esc(current.id)} · ${esc(current.title)}` : (m.control_plane?.runtime_present ? 'No active task / control plane idle' : 'Mission runtime snapshot not loaded')}</b><small>${active.length} active · ${fmt(m.control_plane?.verified_progress_percent,1)}% verified</small></div>
+      <div><span>RESOURCES</span><b class="mission-resource-summary">${resourceHtml}</b><small>${esc(m.source)}${m.stale ? ' · STALE SNAPSHOT' : ''}</small></div>
       <div><span>LEADING STRATEGY</span><b>${leader ? `${esc(leader.request?.family)} · ${esc(leader.qualification?.status)}` : 'No qualified candidate recorded'}</b><small>${leader ? `OOS ${fmt(leader.evidence?.oos_score,4)} · DD ${fmt(leader.evidence?.max_drawdown_pct,2)}%` : 'Requires real qualification evidence'}</small></div>
       <div><span>BLOCKER / RECOVERY</span><b>${blocked.length ? `${esc(blocked[0].id)} · ${esc(blocked[0].status)}` : `Supervisor ${esc(supervisor.status || 'unknown')} · restart ${esc(supervisor.restart_count ?? 0)}/${esc(supervisor.restart_limit ?? 3)}`}</b><small>${blocked.length} control blockers · CI ${ci.status === 'available' ? (ciBad ? `${ciBad} failed/blocked` : esc(ci.state)) : 'not synced'} · build ${esc(build.status || 'unavailable')}</small></div>
       <div class="${owner.length ? 'owner-needed' : 'owner-clear'}"><span>OWNER ACTION</span><b>${owner.length ? `🔴 ${owner.length} owner-required` : 'No owner action required'}</b><small>${owner.length ? esc(owner[0].title || owner[0].id) : 'Only actual OWNER_REQUIRED L4 is surfaced here'}</small></div>`;
@@ -125,7 +125,7 @@
 
   function renderMission(m) {
     if ($('buildLabel')) $('buildLabel').textContent = '5.0.0';
-    const badge = $('missionBadge'); if (badge) { badge.textContent = m.control_plane?.runtime_present ? 'CONTROL PLANE' : (m.source === 'imported_snapshot' ? 'IMPORTED STATE' : 'NO RUNTIME'); badge.className = `badge ${m.stale ? 'warn' : (m.control_plane?.runtime_present ? 'good' : 'neutral')}`; }
+    const badge = $('missionBadge'); if (badge) { badge.textContent = m.control_plane?.runtime_present ? 'CONTROL PLANE' : (m.source === 'imported_snapshot' ? 'IMPORTED STATE' : 'NO MISSION SNAPSHOT'); badge.className = `badge ${m.stale ? 'warn' : (m.control_plane?.runtime_present ? 'good' : 'neutral')}`; }
     renderNow(m); renderOwner(m); renderSystemEvidence(m); renderResources(m); renderTasks(m); renderEvents(m); renderStrategy(m); renderSync(m);
   }
 
