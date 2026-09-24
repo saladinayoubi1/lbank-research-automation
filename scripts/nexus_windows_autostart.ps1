@@ -16,6 +16,7 @@ $SupervisorPidPath = Join-Path $StateRoot 'local-node-supervisor.pid'
 $Phase7StateRoot = Join-Path $env:LOCALAPPDATA 'NEXUS\Phase7'
 $Phase7HelperRelative = 'scripts\phase7_offline_laptop.ps1'
 $SupervisorRelative = 'local_node_supervisor.py'
+$script:LastReusedSupervisorPid = $null
 
 function Ensure-StateRoot {
     New-Item -ItemType Directory -Force -Path $StateRoot | Out-Null
@@ -166,7 +167,10 @@ function Get-SupervisorProcess([string]$Root) {
         $proc = Get-Process -Id $pidValue -ErrorAction SilentlyContinue
         if (-not $proc -or [string]$proc.ProcessName -notin @('python','pythonw')) { return $null }
         Set-Content -LiteralPath $SupervisorPidPath -Encoding ASCII -Value $proc.Id
-        Write-Log "local_supervisor_reused_from_state pid=$($proc.Id) age_seconds=$([Math]::Round($ageSeconds,1))"
+        if ($script:LastReusedSupervisorPid -ne $proc.Id) {
+            Write-Log "local_supervisor_reused_from_state pid=$($proc.Id) age_seconds=$([Math]::Round($ageSeconds,1))"
+            $script:LastReusedSupervisorPid = $proc.Id
+        }
         return $proc
     }
     catch {
@@ -186,7 +190,7 @@ function Start-LocalSupervisor([string]$Root) {
     if (-not (Test-Path -LiteralPath $script -PathType Leaf)) { throw 'local_node_supervisor.py is missing' }
 
     $quotedScript = '"' + $script.Replace('"','\"') + '"'
-    $proc = Start-Process -FilePath $exe -ArgumentList @($quotedScript,'--poll-seconds','20','--with-dashboard') -WorkingDirectory $Root -WindowStyle Hidden -PassThru
+    $proc = Start-Process -FilePath $exe -ArgumentList @($quotedScript,'--poll-seconds','20') -WorkingDirectory $Root -WindowStyle Hidden -PassThru
     Set-Content -LiteralPath $SupervisorPidPath -Encoding ASCII -Value $proc.Id
     Write-Log "local_supervisor_started pid=$($proc.Id) script=$script"
     return $proc
