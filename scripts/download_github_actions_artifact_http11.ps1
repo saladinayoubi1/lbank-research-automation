@@ -224,6 +224,23 @@ if (-not (Test-Path -LiteralPath $innerZip -PathType Leaf) -or -not (Test-Path -
     throw 'Downloaded artifact archive did not contain the expected persistent package files.'
 }
 
+$manifestMatches = @(
+    Get-Content -LiteralPath $sumFile |
+        Where-Object { $_ -match '(?i)NEXUS_Personal_Pro_Unpacked_5\.1\.0_x64\.zip$' }
+)
+if ($manifestMatches.Count -ne 1) { throw 'Persistent package checksum manifest entry is missing or ambiguous.' }
+if ($manifestMatches[0] -notmatch '^([0-9a-fA-F]{64})\s+\*?NEXUS_Personal_Pro_Unpacked_5\.1\.0_x64\.zip$') {
+    throw 'Persistent package checksum manifest entry is malformed.'
+}
+$manifestInnerSha256 = $Matches[1].ToLowerInvariant()
+$actualInnerSha256 = (Get-FileHash -LiteralPath $innerZip -Algorithm SHA256).Hash.ToLowerInvariant()
+if ($actualInnerSha256 -ne $manifestInnerSha256) {
+    throw 'Persistent unpacked ZIP failed its source-bound SHA-256 manifest check.'
+}
+if ($env:GITHUB_OUTPUT) {
+    Add-Content -LiteralPath $env:GITHUB_OUTPUT -Value "inner_sha256=$actualInnerSha256" -Encoding utf8
+}
+
 Remove-Item -LiteralPath $archivePath -Force
 $env:GITHUB_TOKEN = $null
-Write-Host "NEXUS_ARTIFACT_HTTP11_DOWNLOAD=PASS artifact=$ArtifactId run=$ArtifactRunId bytes=$ExpectedArchiveBytes"
+Write-Host "NEXUS_ARTIFACT_HTTP11_DOWNLOAD=PASS artifact=$ArtifactId run=$ArtifactRunId bytes=$ExpectedArchiveBytes inner_sha256=$actualInnerSha256"

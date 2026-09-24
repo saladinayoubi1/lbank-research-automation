@@ -35,6 +35,7 @@ on:
       - scripts/verify_nexus_owner_autostart.ps1
       - scripts/install_and_smoke_nexus_personal_pro.ps1
       - scripts/download_github_actions_artifact_http11.ps1
+      - scripts/resolve_nexus_persistent_artifact.ps1
       - .github/workflows/nexus-local-runner.yml
 
 permissions:
@@ -157,7 +158,25 @@ jobs:
           (github.event_name == 'push' && contains(github.event.head_commit.message, '[sidecar-compat]'))
         run: python -c "import os,pathlib; root=pathlib.Path.cwd().resolve(); repo=os.environ['GITHUB_REPOSITORY'].split('/')[-1]; assert root.name.casefold()==repo.casefold() and root.parent.name.casefold()==repo.casefold() and root.parent.parent.name.casefold()=='_work'; print('privacy_guard=ok')"
 
+      - name: Resolve exact-source NEXUS persistent package
+        id: package_meta
+        if: >-
+          github.actor == github.repository_owner && (
+            (github.event_name == 'push' && contains(github.event.head_commit.message, '[install-app]')) ||
+            (github.event_name == 'workflow_dispatch' && inputs.task == 'install-app')
+          )
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          & scripts\resolve_nexus_persistent_artifact.ps1 `
+            -Repository $env:GITHUB_REPOSITORY `
+            -SourceSha $env:GITHUB_SHA `
+            -WorkflowFile 'nexus-build-verification.yml' `
+            -ArtifactName 'nexus-windows-persistent-unpacked'
+
       - name: Download exact NEXUS persistent package via resilient HTTP/1.1 transport
+        id: package_download
         if: >-
           github.actor == github.repository_owner && (
             (github.event_name == 'push' && contains(github.event.head_commit.message, '[install-app]')) ||
@@ -169,12 +188,12 @@ jobs:
         run: |
           & scripts\download_github_actions_artifact_http11.ps1 `
             -Repository $env:GITHUB_REPOSITORY `
-            -ArtifactRunId 36026328756 `
-            -ArtifactId 10818899755 `
-            -ArtifactName 'nexus-windows-persistent-unpacked' `
-            -ExpectedSourceSha '6906679596a6f2f01d6da63ae0620e7a1c78ec6d' `
-            -ExpectedArchiveSha256 '1445007c0316f0bdb0aa64f60b0aeeddd4c287e527c6b37399a0de6798698f54' `
-            -ExpectedArchiveBytes 217220273 `
+            -ArtifactRunId '${{ steps.package_meta.outputs.artifact_run_id }}' `
+            -ArtifactId '${{ steps.package_meta.outputs.artifact_id }}' `
+            -ArtifactName '${{ steps.package_meta.outputs.artifact_name }}' `
+            -ExpectedSourceSha '${{ steps.package_meta.outputs.source_sha }}' `
+            -ExpectedArchiveSha256 '${{ steps.package_meta.outputs.archive_sha256 }}' `
+            -ExpectedArchiveBytes '${{ steps.package_meta.outputs.archive_bytes }}' `
             -DestinationDirectory (Join-Path $env:RUNNER_TEMP "nexus-personal-pro-package-$env:GITHUB_RUN_ID")
 
       - name: Install and smoke-test NEXUS Personal Pro on exact Lenovo
@@ -187,11 +206,11 @@ jobs:
           powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass
           -File scripts\install_and_smoke_nexus_personal_pro.ps1
           -PackageRoot "%RUNNER_TEMP%\nexus-personal-pro-package-%GITHUB_RUN_ID%"
-          -ExpectedSourceSha "6906679596a6f2f01d6da63ae0620e7a1c78ec6d"
-          -ExpectedUnpackedSha256 "4deddbc6c26324a8ea77eb7b825cdf3848ff13971d89ec49c65288b9070f8921"
-          -ArtifactRunId 36026328756
-          -ArtifactId 10818899755
-          -ArtifactName "nexus-windows-persistent-unpacked"
+          -ExpectedSourceSha "${{ steps.package_meta.outputs.source_sha }}"
+          -ExpectedUnpackedSha256 "${{ steps.package_download.outputs.inner_sha256 }}"
+          -ArtifactRunId "${{ steps.package_meta.outputs.artifact_run_id }}"
+          -ArtifactId "${{ steps.package_meta.outputs.artifact_id }}"
+          -ArtifactName "${{ steps.package_meta.outputs.artifact_name }}"
           -ExpectedComputerName "DESKTOP-1R1081M"
           -ExpectedRunnerName "NEXUS-LOCAL-RUNNER"
           -EvidencePath "build\windows-app-install\evidence.json"

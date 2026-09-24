@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / ".github" / "workflows" / "nexus-local-runner.yml"
 SCRIPT = ROOT / "scripts" / "install_and_smoke_nexus_personal_pro.ps1"
 DOWNLOADER = ROOT / "scripts" / "download_github_actions_artifact_http11.ps1"
+RESOLVER = ROOT / "scripts" / "resolve_nexus_persistent_artifact.ps1"
 POLICY = ROOT / "security" / "workflow-permissions-policy-v1.json"
 
 
@@ -28,25 +29,59 @@ def test_install_route_is_owner_main_exact_laptop_and_digest_bound() -> None:
         "name: NEXUS Local Runner",
         "github.actor == github.repository_owner",
         "runs-on: [self-hosted, Windows, X64, nexus-local]",
-        "ArtifactRunId 36026328756",
-        "ArtifactId 10818899755",
-        "6906679596a6f2f01d6da63ae0620e7a1c78ec6d",
-        "4deddbc6c26324a8ea77eb7b825cdf3848ff13971d89ec49c65288b9070f8921",
-        'ArtifactName "nexus-windows-persistent-unpacked"',
+        "Resolve exact-source NEXUS persistent package",
+        "resolve_nexus_persistent_artifact.ps1",
+        "-SourceSha $env:GITHUB_SHA",
+        "nexus-build-verification.yml",
+        "nexus-windows-persistent-unpacked",
+        "steps.package_meta.outputs.artifact_run_id",
+        "steps.package_meta.outputs.artifact_id",
+        "steps.package_meta.outputs.source_sha",
+        "steps.package_meta.outputs.archive_sha256",
+        "steps.package_meta.outputs.archive_bytes",
+        "steps.package_download.outputs.inner_sha256",
         'ExpectedComputerName "DESKTOP-1R1081M"',
         'ExpectedRunnerName "NEXUS-LOCAL-RUNNER"',
         "Download exact NEXUS persistent package via resilient HTTP/1.1 transport",
         "download_github_actions_artifact_http11.ps1",
-        "1445007c0316f0bdb0aa64f60b0aeeddd4c287e527c6b37399a0de6798698f54",
-        "217220273",
         "GITHUB_TOKEN: ${{ github.token }}",
         "-UsePreloadedPackage",
     ):
         assert marker in workflow
+    for stale in (
+        "ArtifactRunId 36026328756",
+        "ArtifactId 10818899755",
+        "6906679596a6f2f01d6da63ae0620e7a1c78ec6d",
+        "4deddbc6c26324a8ea77eb7b825cdf3848ff13971d89ec49c65288b9070f8921",
+        "1445007c0316f0bdb0aa64f60b0aeeddd4c287e527c6b37399a0de6798698f54",
+        "217220273",
+    ):
+        assert stale not in workflow
     parsed = yaml.safe_load(workflow)
     assert isinstance(parsed, dict) and isinstance(parsed.get("jobs"), dict)
     assert parsed["permissions"] == {"actions": "read", "contents": "read"}
     assert "actions/download-artifact@" not in workflow
+
+
+def test_exact_source_artifact_resolver_requires_successful_main_push_and_named_artifact() -> None:
+    script = text(RESOLVER)
+    for marker in (
+        "head_sha",
+        "conclusion -eq 'success'",
+        "event -eq 'push'",
+        "head_branch -eq 'main'",
+        "nexus-build-verification.yml",
+        "nexus-windows-persistent-unpacked",
+        "workflow_run.head_sha",
+        "artifact_run_id",
+        "artifact_id",
+        "archive_sha256",
+        "archive_bytes",
+        "GITHUB_OUTPUT",
+        "NEXUS_PERSISTENT_ARTIFACT_RESOLVE=PASS",
+    ):
+        assert marker in script
+    assert "http://" not in script
 
 
 def test_resilient_artifact_downloader_is_metadata_and_digest_bound() -> None:
@@ -65,6 +100,10 @@ def test_resilient_artifact_downloader_is_metadata_and_digest_bound() -> None:
         "$chunkBytes = 1MB",
         "Artifact destination escaped RUNNER_TEMP",
         "Get-FileHash",
+        "SHA256SUMS.txt",
+        "manifestInnerSha256",
+        "actualInnerSha256",
+        "inner_sha256=",
         "NEXUS_ARTIFACT_HTTP11_DOWNLOAD=PASS",
     ):
         assert marker in script
@@ -155,7 +194,7 @@ def test_install_artifact_transport_cleanup_is_narrow_and_fail_closed() -> None:
 def test_install_script_parses_in_windows_powershell() -> None:
     powershell = shutil.which("powershell.exe") or shutil.which("powershell")
     assert powershell, "Windows PowerShell is required on windows-latest"
-    for path in (SCRIPT, DOWNLOADER):
+    for path in (SCRIPT, DOWNLOADER, RESOLVER):
         escaped = str(path).replace("'", "''")
         command = (
             f"$tokens=$null;$errors=$null;"
