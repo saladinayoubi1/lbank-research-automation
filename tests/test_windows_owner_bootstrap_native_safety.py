@@ -152,3 +152,21 @@ exit 0
         check=False,
     )
     assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
+def test_owner_bootstrap_does_not_retry_deterministic_dirty_checkout_blocker() -> None:
+    text = read(ENTRY)
+    for marker in (
+        "function terminalOwnerAutostartBlocker()",
+        "'OwnerAutostartBootstrap', 'evidence.json'",
+        "stat.size > 64 * 1024",
+        "status === 'BLOCKED'",
+        "stage === 'managed_checkout'",
+        "error.includes('tracked owner changes')",
+        "owner_bootstrap_terminal_block",
+        "status: 'BLOCKED_TERMINAL'",
+    ):
+        assert marker in text
+    terminal = text.index("const terminalBlocker = terminalOwnerAutostartBlocker();")
+    retry = text.index("owner_bootstrap_retry", terminal)
+    assert terminal < retry

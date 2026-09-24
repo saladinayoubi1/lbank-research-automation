@@ -248,6 +248,25 @@ function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function terminalOwnerAutostartBlocker() {
+  try {
+    const localAppData = String(process.env.LOCALAPPDATA || '').trim();
+    if (!localAppData || !path.isAbsolute(localAppData)) return null;
+    const target = path.join(localAppData, 'NEXUS', 'OwnerAutostartBootstrap', 'evidence.json');
+    const stat = fs.lstatSync(target);
+    if (!stat.isFile() || stat.isSymbolicLink() || stat.size < 2 || stat.size > 64 * 1024) return null;
+    const payload = JSON.parse(fs.readFileSync(target, 'utf8').replace(/^\uFEFF/, ''));
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return null;
+    const status = String(payload.status || '').toUpperCase();
+    const stage = String(payload.stage || '');
+    const error = String(payload.error || '').slice(0, 512);
+    if (status === 'BLOCKED' && stage === 'managed_checkout' && error.includes('tracked owner changes')) {
+      return { status, stage, error };
+    }
+  } catch {}
+  return null;
+}
+
 async function startOwnerAutostartWithRetry(sourceSha) {
   for (let attempt = 1; attempt <= OWNER_AUTOSTART_RETRY_LIMIT; attempt += 1) {
     const result = await startOwnerAutostartBootstrap(sourceSha).catch(error => {
@@ -257,6 +276,11 @@ async function startOwnerAutostartWithRetry(sourceSha) {
     if (result && result.status === 'SUCCESS') {
       appendOwnerAutostartLog(`owner_bootstrap_complete attempt=${attempt}`);
       return result;
+    }
+    const terminalBlocker = terminalOwnerAutostartBlocker();
+    if (terminalBlocker) {
+      appendOwnerAutostartLog(`owner_bootstrap_terminal_block stage=${terminalBlocker.stage} reason=tracked_owner_changes attempt=${attempt}`);
+      return { status: 'BLOCKED_TERMINAL', code: result && result.code != null ? result.code : 20 };
     }
     if (attempt < OWNER_AUTOSTART_RETRY_LIMIT) {
       appendOwnerAutostartLog(`owner_bootstrap_retry attempt=${attempt} status=${result && result.status ? result.status : 'UNKNOWN'} delay_ms=${OWNER_AUTOSTART_RETRY_DELAY_MS}`);
