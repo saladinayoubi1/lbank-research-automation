@@ -83,46 +83,72 @@ jobs:
       NEXUS_WORKER_IDLE_SLEEP: '15'
       NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: '0'
     steps:
-      - name: Prepare anonymous exact source with bounded HTTP/1.1 retries
+      - name: Fetch exact autonomy source from codeload
         timeout-minutes: 5
         shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
         run: |
           $ErrorActionPreference = 'Stop'
           Set-StrictMode -Version 2.0
 
-          $repoUrl = "https://github.com/$env:GITHUB_REPOSITORY.git"
-          $workspace = [IO.Path]::GetFullPath($env:GITHUB_WORKSPACE)
+          $workspace = [IO.Path]::GetFullPath($env:GITHUB_WORKSPACE).TrimEnd('\')
+          $runnerWorkspace = [IO.Path]::GetFullPath($env:RUNNER_WORKSPACE).TrimEnd('\')
+          $repoName = ($env:GITHUB_REPOSITORY -split '/')[-1]
+          if ((Split-Path -Parent $workspace) -ine $runnerWorkspace -or
+              (Split-Path -Leaf $workspace) -ine $repoName) {
+            throw 'Local Autonomy workspace boundary mismatch.'
+          }
+
+          $archive = Join-Path $env:RUNNER_TEMP "nexus-autonomy-source-$env:GITHUB_SHA.zip"
+          $extract = Join-Path $env:RUNNER_TEMP "nexus-autonomy-source-$env:GITHUB_SHA"
+          $sourceUrl = "https://codeload.github.com/$env:GITHUB_REPOSITORY/zip/$env:GITHUB_SHA"
+
+          Remove-Item -LiteralPath $archive -Force -ErrorAction SilentlyContinue
+          Remove-Item -LiteralPath $extract -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force -Path $workspace | Out-Null
           Get-ChildItem -Force -LiteralPath $workspace -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force
-          & git -C $workspace init .
-          if ($LASTEXITCODE -ne 0) { throw 'Failed to initialize exact autonomy source workspace.' }
-          & git -C $workspace remote add origin $repoUrl
-          if ($LASTEXITCODE -ne 0) { throw 'Failed to add anonymous autonomy source remote.' }
-          & git -C $workspace config --local --unset-all http.https://github.com/.extraheader
 
-          $fetchOk = $false
-          $fetchMaxAttempts = 3
-          for ($fetchAttempt = 1; $fetchAttempt -le $fetchMaxAttempts; $fetchAttempt++) {
-            & git -C $workspace -c 'http.version=HTTP/1.1' fetch --no-tags --prune --depth=1 origin $env:GITHUB_SHA
-            if ($LASTEXITCODE -eq 0) { $fetchOk = $true; break }
-            Write-Warning "Exact autonomy source fetch attempt $fetchAttempt/$fetchMaxAttempts failed."
-            if ($fetchAttempt -lt $fetchMaxAttempts) { Start-Sleep -Seconds ($fetchAttempt * 5) }
+          $downloadOk = $false
+          for ($attempt = 1; $attempt -le 3; $attempt++) {
+            & curl.exe --fail --silent --show-error --http1.1 --connect-timeout 10 --max-time 60 --speed-time 20 --speed-limit 1024 --output $archive $sourceUrl
+            if ($LASTEXITCODE -eq 0 -and
+                (Test-Path -LiteralPath $archive -PathType Leaf) -and
+                (Get-Item -LiteralPath $archive).Length -gt 0) {
+              $downloadOk = $true
+              break
+            }
+            Remove-Item -LiteralPath $archive -Force -ErrorAction SilentlyContinue
+            if ($attempt -lt 3) { Start-Sleep -Seconds (3 * $attempt) }
           }
-          if (-not $fetchOk) { throw "Exact autonomy source fetch failed after $fetchMaxAttempts bounded attempts." }
+          if (-not $downloadOk) { throw "Exact autonomy codeload source download failed for $env:GITHUB_SHA." }
 
-          & git -C $workspace checkout --detach --force FETCH_HEAD
-          if ($LASTEXITCODE -ne 0) { throw 'Exact autonomy source checkout failed.' }
-          $actualSha = (& git -C $workspace rev-parse HEAD).Trim()
-          if ($LASTEXITCODE -ne 0 -or $actualSha -ne $env:GITHUB_SHA) {
-            throw "Exact trigger SHA mismatch: expected=$env:GITHUB_SHA actual=$actualSha"
+          New-Item -ItemType Directory -Force -Path $extract | Out-Null
+          & tar.exe -xf $archive -C $extract
+          if ($LASTEXITCODE -ne 0) { throw 'Exact autonomy codeload archive extraction failed.' }
+          $root = Get-ChildItem -LiteralPath $extract -Directory | Select-Object -First 1
+          if ($null -eq $root) { throw 'Exact autonomy codeload archive did not contain a source root.' }
+          Get-ChildItem -Force -LiteralPath $root.FullName | ForEach-Object {
+            Move-Item -LiteralPath $_.FullName -Destination $workspace -Force
           }
+
+          $binding = "$env:GITHUB_REPOSITORY@$env:GITHUB_SHA"
+          $bindingPath = Join-Path $workspace '.nexus-trigger-source'
+          Set-Content -LiteralPath $bindingPath -Value $binding -Encoding ASCII
+          $actualBinding = ([string](Get-Content -LiteralPath $bindingPath -Raw)).Trim()
+          if ($actualBinding -ne $binding) {
+            throw "Exact autonomy trigger binding mismatch: expected=$binding actual=$actualBinding"
+          }
+
           if (-not (Test-Path (Join-Path $workspace 'scripts\nexus_local_worker.py') -PathType Leaf)) {
             throw 'Restored exact source is incomplete.'
           }
           if (-not (Test-Path (Join-Path $workspace 'nexus_autonomous_orchestrator.py') -PathType Leaf)) {
             throw 'Restored exact source is missing the autonomy orchestrator.'
           }
-          Write-Host 'exact_source_mode=anonymous-exact-sha-http11'
-          Write-Host "exact_trigger_sha=$actualSha"
+
+          Remove-Item -LiteralPath $archive -Force
+          Remove-Item -LiteralPath $extract -Recurse -Force
+          Write-Host 'exact_source_mode=codeload-exact-sha-http11'
+          Write-Host "exact_trigger_sha=$env:GITHUB_SHA"
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
