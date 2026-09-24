@@ -115,7 +115,7 @@ def test_local_runner_source_fetch_is_bound_to_trigger_sha_and_verified():
     assert '- name: Fetch exact repository source over Git HTTP/1.1' in workflow
     assert 'actions/checkout@' not in workflow
     assert 'ref: main' not in workflow
-    assert 'git rev-parse HEAD' in workflow
+    assert 'git -C $workspace rev-parse HEAD' in workflow
     assert '$env:GITHUB_SHA' in workflow
     assert 'Checkout SHA mismatch' in workflow
 
