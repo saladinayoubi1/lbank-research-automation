@@ -64,14 +64,48 @@ jobs:
       run:
         shell: cmd
     steps:
-      - name: Checkout repository
-        timeout-minutes: 10
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-          clean: true
-          fetch-depth: 1
+      - name: Prepare anonymous exact source with bounded HTTP/1.1 retries
+        timeout-minutes: 5
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Set-StrictMode -Version 2.0
+
+          $repoUrl = "https://github.com/$env:GITHUB_REPOSITORY.git"
+          $workspace = [IO.Path]::GetFullPath($env:GITHUB_WORKSPACE).TrimEnd('\\')
+          $runnerWorkspace = [IO.Path]::GetFullPath($env:RUNNER_WORKSPACE).TrimEnd('\\')
+          $repoName = ($env:GITHUB_REPOSITORY -split '/')[-1]
+          if ((Split-Path -Parent $workspace) -ine $runnerWorkspace -or
+              (Split-Path -Leaf $workspace) -ine $repoName) {
+            throw 'Local Runner workspace boundary mismatch.'
+          }
+
+          Get-ChildItem -Force -LiteralPath $workspace -ErrorAction SilentlyContinue |
+            Remove-Item -Recurse -Force
+          & git -C $workspace init .
+          if ($LASTEXITCODE -ne 0) { throw 'Failed to initialize exact Local Runner source workspace.' }
+          & git -C $workspace remote add origin $repoUrl
+          if ($LASTEXITCODE -ne 0) { throw 'Failed to add anonymous Local Runner source remote.' }
+          & git -C $workspace config --local --unset-all http.https://github.com/.extraheader
+
+          $fetchOk = $false
+          $fetchMaxAttempts = 3
+          for ($fetchAttempt = 1; $fetchAttempt -le $fetchMaxAttempts; $fetchAttempt++) {
+            & git -C $workspace -c 'http.version=HTTP/1.1' fetch --no-tags --prune --depth=1 origin $env:GITHUB_SHA
+            if ($LASTEXITCODE -eq 0) { $fetchOk = $true; break }
+            Write-Warning "Exact Local Runner source fetch attempt $fetchAttempt/$fetchMaxAttempts failed."
+            if ($fetchAttempt -lt $fetchMaxAttempts) { Start-Sleep -Seconds ($fetchAttempt * 5) }
+          }
+          if (-not $fetchOk) { throw "Exact Local Runner source fetch failed after $fetchMaxAttempts bounded attempts." }
+
+          & git -C $workspace checkout --detach --force FETCH_HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'Exact Local Runner source checkout failed.' }
+          $actualSha = (& git -C $workspace rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0 -or $actualSha -ne $env:GITHUB_SHA) {
+            throw "Exact trigger SHA mismatch: expected=$env:GITHUB_SHA actual=$actualSha"
+          }
+          Write-Host 'exact_source_mode=anonymous-exact-sha-http11'
+          Write-Host "exact_trigger_sha=$actualSha"
 
       - name: Verify exact trigger SHA
         run: |
