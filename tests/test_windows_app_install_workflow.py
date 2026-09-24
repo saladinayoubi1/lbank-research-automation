@@ -256,3 +256,11 @@ def test_install_fastpath_is_exact_source_and_has_no_external_actions_on_lenovo(
     ):
         assert stale not in workflow
 
+
+
+def test_installer_retargets_generic_start_menu_shortcut() -> None:
+    script = text(SCRIPT)
+    assert "NEXUS Personal Pro 5.1.0.lnk" in script
+    assert "NEXUS Personal Pro.lnk" in script
+    assert "$genericStartMenuShortcut" in script
+    assert "New-NexusShortcut $genericStartMenuShortcut $installedExecutable" in script
