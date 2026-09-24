@@ -92,7 +92,9 @@ jobs:
           }
           if (-not $downloadOk) { throw "Exact codeload source download failed for $env:GITHUB_SHA." }
 
-          Expand-Archive -LiteralPath $archive -DestinationPath $extract -Force
+          New-Item -ItemType Directory -Force -Path $extract | Out-Null
+          & tar.exe -xf $archive -C $extract
+          if ($LASTEXITCODE -ne 0) { throw 'Exact codeload archive extraction failed.' }
           $root = Get-ChildItem -LiteralPath $extract -Directory | Select-Object -First 1
           if ($null -eq $root) { throw 'Exact codeload archive did not contain a source root.' }
           Get-ChildItem -Force -LiteralPath $root.FullName | ForEach-Object {
@@ -373,4 +375,14 @@ jobs:
 
       - name: Local change report
         if: always()
-        run: git status --short
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
+        run: |
+          if (Test-Path -LiteralPath '.git' -PathType Container) {
+            & git status --short
+            exit $LASTEXITCODE
+          }
+          if (Test-Path -LiteralPath '.nexus-trigger-source' -PathType Leaf) {
+            Write-Host "source_binding=$((Get-Content -LiteralPath '.nexus-trigger-source' -Raw).Trim())"
+            exit 0
+          }
+          throw 'No Git checkout or exact codeload source binding is present.'

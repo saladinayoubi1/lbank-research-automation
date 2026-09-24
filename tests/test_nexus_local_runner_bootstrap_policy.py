@@ -133,7 +133,7 @@ def test_local_runner_source_fetch_is_bounded_http11_and_clean():
     assert '--speed-limit 1024' in block
     assert 'for ($attempt = 1; $attempt -le 3; $attempt++)' in block
     assert 'Get-ChildItem -Force -LiteralPath $workspace' in block
-    assert 'Expand-Archive' in block
+    assert 'tar.exe -xf $archive -C $extract' in block
     assert 'actions/checkout@' not in block
 
 def test_bootstrap_prefers_verified_local_python_before_portable_network_fallback():
