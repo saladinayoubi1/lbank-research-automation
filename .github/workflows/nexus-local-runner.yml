@@ -64,23 +64,37 @@ jobs:
       run:
         shell: cmd
     steps:
-      - name: Checkout repository
+      - name: Fetch exact repository source over Git HTTP/1.1
         timeout-minutes: 10
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-          clean: true
-          fetch-depth: 1
-
-      - name: Verify exact trigger SHA
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
         run: |
-          for /f %%S in ('git rev-parse HEAD') do set "CHECKED_OUT_SHA=%%S"
-          if /I not "%CHECKED_OUT_SHA%"=="%GITHUB_SHA%" (
-            echo Checkout SHA mismatch: expected %GITHUB_SHA% got %CHECKED_OUT_SHA%
-            exit /b 1
-          )
-          echo exact_trigger_sha=%CHECKED_OUT_SHA%
+          $ErrorActionPreference = 'Stop'
+          $env:GIT_TERMINAL_PROMPT = '0'
+          $root = [IO.Path]::GetFullPath($env:GITHUB_WORKSPACE)
+          New-Item -ItemType Directory -Force -Path $root | Out-Null
+          Set-Location $root
+          if (-not (Test-Path (Join-Path $root '.git'))) {
+            & git init
+            if ($LASTEXITCODE -ne 0) { throw 'git init failed' }
+          }
+          & git remote remove origin 2>$null
+          & git remote add origin ("https://github.com/{0}.git" -f $env:GITHUB_REPOSITORY)
+          if ($LASTEXITCODE -ne 0) { throw 'git remote add failed' }
+          & git config --local http.version HTTP/1.1
+          & git config --local credential.helper ''
+          & git config --local core.askPass ''
+          & git config --local --unset-all http.https://github.com/.extraheader 2>$null
+          & git fetch --force --no-tags --depth=1 origin $env:GITHUB_SHA
+          if ($LASTEXITCODE -ne 0) { throw "exact source fetch failed for $env:GITHUB_SHA" }
+          & git reset --hard FETCH_HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'git reset failed' }
+          & git clean -ffdx
+          if ($LASTEXITCODE -ne 0) { throw 'git clean failed' }
+          $actual = (& git rev-parse HEAD).Trim()
+          if ($actual -ine $env:GITHUB_SHA) {
+            throw "Checkout SHA mismatch: expected $env:GITHUB_SHA got $actual"
+          }
+          Write-Host "exact_trigger_sha=$actual"
 
       - name: Owner-proof privacy guard
         if: github.event_name == 'push' && contains(github.event.head_commit.message, '[verify-owner-autostart]')
