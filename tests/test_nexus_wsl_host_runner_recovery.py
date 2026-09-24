@@ -86,3 +86,20 @@ def test_local_runner_recovery_uses_script_file_not_inline_command() -> None:
     assert '-File "$WIN_SCRIPT"' in local
     assert "-Command '" not in local
     assert "trap cleanup EXIT" in local
+
+
+def test_local_runner_recovery_reuses_existing_listener_and_detaches_new_listener() -> None:
+    text = _text()
+    local = text[text.index("Recover exact Lenovo local Actions runner through WSL interop"):text.index("Request existing Remote Commander user-context recovery through WSL")]
+    for marker in (
+        "NEXUS_LOCAL_RUNNER_REUSED=true",
+        "NEXUS_LOCAL_RUNNER_RESTARTED=false",
+        "NEXUS_LOCAL_RUNNER_REUSED=false",
+        "NEXUS_LOCAL_RUNNER_RESTARTED=true",
+        'GetEnvironmentVariable("RUNNER_TRACKING_ID", "Process")',
+        'SetEnvironmentVariable("RUNNER_TRACKING_ID", $null, "Process")',
+        "multiple exact local runner listeners observed before recovery",
+    ):
+        assert marker in local
+    assert 'Stop-Process -Id $proc.Id -Force -ErrorAction Stop' not in local
+
