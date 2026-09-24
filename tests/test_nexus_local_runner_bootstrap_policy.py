@@ -135,7 +135,10 @@ def test_local_runner_source_fetch_is_bounded_anonymous_http11_and_clean():
     assert 'Remove-Item -Recurse -Force' in block
     assert 'git -C $workspace init .' in block
     assert '$fetchMaxAttempts = 3' in block
-    assert "-c 'http.version=HTTP/1.1' fetch --no-tags --prune --depth=1 origin $env:GITHUB_SHA" in block
+    assert "-c 'http.version=HTTP/1.1'" in block
+    assert "-c 'http.lowSpeedLimit=1024'" in block
+    assert "-c 'http.lowSpeedTime=20'" in block
+    assert "fetch --no-tags --prune --depth=1 origin $env:GITHUB_SHA" in block
     assert 'checkout --detach --force FETCH_HEAD' in block
     assert 'git -C $workspace rev-parse HEAD' in block
     assert 'exact_source_mode=anonymous-exact-sha-http11' in block

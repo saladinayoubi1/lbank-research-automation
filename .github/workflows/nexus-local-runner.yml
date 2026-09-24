@@ -87,7 +87,7 @@ jobs:
           $fetchOk = $false
           $fetchMaxAttempts = 3
           for ($fetchAttempt = 1; $fetchAttempt -le $fetchMaxAttempts; $fetchAttempt++) {
-            & git -C $workspace -c 'http.version=HTTP/1.1' fetch --no-tags --prune --depth=1 origin $env:GITHUB_SHA
+            & git -C $workspace -c 'http.version=HTTP/1.1' -c 'http.lowSpeedLimit=1024' -c 'http.lowSpeedTime=20' fetch --no-tags --prune --depth=1 origin $env:GITHUB_SHA
             if ($LASTEXITCODE -eq 0) { $fetchOk = $true; break }
             Write-Warning "Exact local-runner source fetch attempt $fetchAttempt/$fetchMaxAttempts failed."
             if ($fetchAttempt -lt $fetchMaxAttempts) { Start-Sleep -Seconds ($fetchAttempt * 5) }
