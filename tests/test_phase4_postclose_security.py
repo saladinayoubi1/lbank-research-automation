@@ -186,10 +186,14 @@ def test_self_hosted_phase_workflows_pin_trusted_manual_refs_and_credentials():
     assert "credential.helper ''" in local_runner
     assert "--unset-all http.https://github.com/.extraheader" in local_runner
     assert "$fetchMaxAttempts = 3" in local_runner
-    assert "-c 'http.version=HTTP/1.1'" in local_runner
-    assert "-c 'http.lowSpeedLimit=1024'" in local_runner
-    assert "-c 'http.lowSpeedTime=20'" in local_runner
-    assert "fetch --no-tags --prune --depth=1 origin $env:GITHUB_SHA" in local_runner
+    assert "'-c','http.version=HTTP/1.1'" in local_runner
+    assert "'-c','http.lowSpeedLimit=1024'" in local_runner
+    assert "'-c','http.lowSpeedTime=20'" in local_runner
+    assert "$fetchHardTimeoutMs = 45000" in local_runner
+    assert "Start-Process -FilePath 'git.exe'" in local_runner
+    assert "WaitForExit($fetchHardTimeoutMs)" in local_runner
+    assert "taskkill.exe /PID $fetchProcess.Id /T /F" in local_runner
+    assert "fetch','--no-tags','--prune','--depth=1','origin',$env:GITHUB_SHA" in local_runner
     assert "checkout --detach --force FETCH_HEAD" in local_runner
     assert "Checkout SHA mismatch" in local_runner
     assert "actions/checkout@" not in local_runner
