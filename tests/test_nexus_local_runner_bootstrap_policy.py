@@ -125,17 +125,20 @@ def test_local_runner_source_fetch_is_bounded_anonymous_http11_and_clean():
     fetch = workflow.index('- name: Fetch exact repository source over Git HTTP/1.1')
     owner_guard = workflow.index('- name: Owner-proof privacy guard')
     block = workflow[fetch:owner_guard]
-    assert 'timeout-minutes: 10' in block
-    assert 'https://github.com/{0}.git' in block
+    assert 'timeout-minutes: 5' in block
+    assert 'https://github.com/$env:GITHUB_REPOSITORY.git' in block
     assert 'GIT_TERMINAL_PROMPT' in block
-    assert 'http.version HTTP/1.1' in block
     assert "credential.helper ''" in block
     assert "core.askPass ''" in block
     assert '--unset-all http.https://github.com/.extraheader' in block
-    assert 'fetch --force --no-tags --depth=1 origin $env:GITHUB_SHA' in block
-    assert 'reset --hard FETCH_HEAD' in block
-    assert 'clean -ffdx' in block
-    assert 'git rev-parse HEAD' in block
+    assert 'Get-ChildItem -Force -LiteralPath $workspace' in block
+    assert 'Remove-Item -Recurse -Force' in block
+    assert 'git -C $workspace init .' in block
+    assert '$fetchMaxAttempts = 3' in block
+    assert "-c 'http.version=HTTP/1.1' fetch --no-tags --prune --depth=1 origin $env:GITHUB_SHA" in block
+    assert 'checkout --detach --force FETCH_HEAD' in block
+    assert 'git -C $workspace rev-parse HEAD' in block
+    assert 'exact_source_mode=anonymous-exact-sha-http11' in block
     assert 'actions/checkout@' not in block
 
 
