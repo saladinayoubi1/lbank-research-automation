@@ -9,6 +9,8 @@ const RUNNER_SUPERVISOR_INTERVAL_MS = 60 * 1000;
 const OWNER_AUTOSTART_TIMEOUT_MS = 15 * 60 * 1000;
 const OWNER_AUTOSTART_RETRY_LIMIT = 3;
 const OWNER_AUTOSTART_RETRY_DELAY_MS = 15 * 1000;
+const PAPER_SYNC_INTERVAL_MS = 15 * 60 * 1000;
+const PAPER_SYNC_TIMEOUT_MS = 3 * 60 * 1000;
 const RUNNER_STATE_CHANNEL = 'nexus:runner-bootstrap:get';
 const RUNNER_EVIDENCE_MAX_BYTES = 64 * 1024;
 const RUNNER_REGISTRATION_TOKEN_ENV = 'NEXUS_GITHUB_RUNNER_REGISTRATION_TOKEN';
@@ -24,6 +26,14 @@ function appendBootstrapLog(message) {
   } catch {}
 }
 
+function appendPaperSyncLog(message) {
+  try {
+    const root = app.getPath('logs');
+    fs.mkdirSync(root, { recursive: true });
+    const target = path.join(root, 'nexus-paper-sync.log');
+    fs.appendFileSync(target, `[${new Date().toISOString()}] ${String(message).slice(0, 4000)}\n`, 'utf8');
+  } catch {}
+}
 function appendOwnerAutostartLog(message) {
   try {
     const root = app.getPath('logs');
@@ -217,6 +227,67 @@ function startRunnerSupervisor() {
   appendBootstrapLog(`runner_supervisor_started interval_ms=${RUNNER_SUPERVISOR_INTERVAL_MS}`);
 }
 
+let paperSyncInFlight = false;
+let paperSyncTimer = null;
+
+function prospectivePaperSyncPath() {
+  const localAppData = String(process.env.LOCALAPPDATA || '').trim();
+  if (!localAppData || !path.isAbsolute(localAppData)) return null;
+  const nexusRoot = path.resolve(localAppData, 'NEXUS');
+  const target = path.resolve(nexusRoot, 'paper-forward-sync', 'sync.ps1');
+  const relative = path.relative(nexusRoot, target);
+  if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) return null;
+  return target;
+}
+
+function runProspectivePaperSync() {
+  if (paperSyncInFlight) return Promise.resolve({ status: 'ALREADY_RUNNING' });
+  const script = prospectivePaperSyncPath();
+  if (!script || !fs.existsSync(script)) {
+    appendPaperSyncLog('sync skipped: deployed Paper sync script is not present');
+    return Promise.resolve({ status: 'SCRIPT_NOT_PRESENT' });
+  }
+  paperSyncInFlight = true;
+  return new Promise(resolve => {
+    const child = spawn(windowsPowerShell(), [
+      '-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden',
+      '-ExecutionPolicy', 'Bypass', '-File', script,
+    ], { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+    let stdout = '';
+    let stderr = '';
+    let settled = false;
+    const finish = result => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      paperSyncInFlight = false;
+      appendPaperSyncLog(JSON.stringify({
+        ...result,
+        stdout: stdout.slice(-1200),
+        stderr: stderr.slice(-1200),
+      }));
+      resolve(result);
+    };
+    child.stdout.on('data', chunk => { stdout = (stdout + String(chunk)).slice(-8192); });
+    child.stderr.on('data', chunk => { stderr = (stderr + String(chunk)).slice(-8192); });
+    child.on('error', error => finish({ status: 'SPAWN_ERROR', error: error.message }));
+    child.on('exit', (code, signal) => finish({ status: code === 0 ? 'SUCCESS' : 'FAILED', code, signal: signal || null }));
+    const timer = setTimeout(() => {
+      try { child.kill(); } catch {}
+      finish({ status: 'TIMEOUT', code: null, signal: null });
+    }, PAPER_SYNC_TIMEOUT_MS);
+  });
+}
+
+function startProspectivePaperSyncSupervisor() {
+  void runProspectivePaperSync();
+  paperSyncTimer = setInterval(() => { void runProspectivePaperSync(); }, PAPER_SYNC_INTERVAL_MS);
+  app.once('before-quit', () => {
+    if (paperSyncTimer) clearInterval(paperSyncTimer);
+    paperSyncTimer = null;
+  });
+  appendPaperSyncLog(`paper_sync_supervisor_started interval_ms=${PAPER_SYNC_INTERVAL_MS}`);
+}
 function startOwnerAutostartBootstrap(sourceSha) {
   const seed = path.join(process.resourcesPath, 'nexus-source-seed.git');
   if (!fs.existsSync(seed)) {
@@ -258,6 +329,7 @@ app.whenReady().then(() => {
   if (process.platform !== 'win32' || !app.isPackaged) return;
   void reconcileRunnerFromGui();
   startRunnerSupervisor();
+  startProspectivePaperSyncSupervisor();
   let sourceSha;
   try { sourceSha = packagedSourceSha(); }
   catch (error) {
