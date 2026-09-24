@@ -68,8 +68,10 @@ def test_exact_source_artifact_resolver_requires_successful_main_push_and_named_
     for marker in (
         "head_sha",
         "conclusion -eq 'success'",
-        "event -eq 'push'",
+        "event -in @('push', 'workflow_dispatch')",
         "head_branch -eq 'main'",
+        "actor.login",
+        "repositoryOwner",
         "nexus-build-verification.yml",
         "nexus-windows-persistent-unpacked",
         "workflow_run.head_sha",
