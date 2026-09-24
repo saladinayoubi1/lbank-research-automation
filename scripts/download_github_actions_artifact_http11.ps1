@@ -96,7 +96,27 @@ for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
 
     $signedUrl = Get-SignedArtifactUrl
     try {
-        & curl.exe --fail --silent --show-error --http1.1 --connect-timeout 20 --max-time 900 --retry 3 --retry-all-errors --retry-delay 2 --continue-at - --output $archivePath $signedUrl
+        $retryArgs = @('--retry', '3', '--retry-delay', '2')
+        & curl.exe --retry-all-errors --version *> $null
+        $retryAllErrorsSupported = ($LASTEXITCODE -eq 0)
+        if ($retryAllErrorsSupported) {
+            $retryArgs += '--retry-all-errors'
+        }
+        Write-Host "curl_retry_all_errors_supported=$($retryAllErrorsSupported.ToString().ToLowerInvariant())"
+
+        $curlArgs = @(
+            '--fail',
+            '--silent',
+            '--show-error',
+            '--http1.1',
+            '--connect-timeout', '20',
+            '--max-time', '900'
+        ) + $retryArgs + @(
+            '--continue-at', '-',
+            '--output', $archivePath,
+            $signedUrl
+        )
+        & curl.exe @curlArgs
         $curlExit = $LASTEXITCODE
     }
     finally {
