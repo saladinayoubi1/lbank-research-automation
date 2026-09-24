@@ -166,7 +166,7 @@ while (-not $verified) {
                 }
                 if ($part.Process.ExitCode -ne 0 -or $actualPartBytes -ne $expectedPartBytes) {
                     $stderr = if (Test-Path -LiteralPath $part.Stderr -PathType Leaf) {
-                        (Get-Content -LiteralPath $part.Stderr -Raw -ErrorAction SilentlyContinue).Trim()
+                        ([string](Get-Content -LiteralPath $part.Stderr -Raw -ErrorAction SilentlyContinue)).Trim()
                     } else {
                         ''
                     }
