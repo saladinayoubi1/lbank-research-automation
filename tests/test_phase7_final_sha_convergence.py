@@ -25,10 +25,14 @@ def test_final_sha_cloud_and_physical_proofs_share_trusted_main_trigger_surfaces
     assert "- scripts/bootstrap_portable_python.cmd" in local
     assert "runs-on: [self-hosted, Windows, X64, nexus-local]" in local
     assert "Fetch exact repository source over Git HTTP/1.1" in local
-    assert "-c 'http.version=HTTP/1.1'" in local
-    assert "-c 'http.lowSpeedLimit=1024'" in local
-    assert "-c 'http.lowSpeedTime=20'" in local
-    assert "fetch --no-tags --prune --depth=1 origin $env:GITHUB_SHA" in local
+    assert "'-c','http.version=HTTP/1.1'" in local
+    assert "'-c','http.lowSpeedLimit=1024'" in local
+    assert "'-c','http.lowSpeedTime=20'" in local
+    assert "$fetchHardTimeoutMs = 45000" in local
+    assert "Start-Process -FilePath 'git.exe'" in local
+    assert "WaitForExit($fetchHardTimeoutMs)" in local
+    assert "taskkill.exe /PID $fetchProcess.Id /T /F" in local
+    assert "fetch','--no-tags','--prune','--depth=1','origin',$env:GITHUB_SHA" in local
     assert "checkout --detach --force FETCH_HEAD" in local
     assert "git -C $workspace rev-parse HEAD" in local
     assert "Checkout SHA mismatch" in local
