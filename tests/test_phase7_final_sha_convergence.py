@@ -24,8 +24,11 @@ def test_final_sha_cloud_and_physical_proofs_share_trusted_main_trigger_surfaces
     # existing read-only proof/compatibility markers in its merge message.
     assert "- scripts/bootstrap_portable_python.cmd" in local
     assert "runs-on: [self-hosted, Windows, X64, nexus-local]" in local
-    assert "ref: ${{ github.sha }}" in local
-    assert "persist-credentials: false" in local
+    assert "Fetch exact repository source over Git HTTP/1.1" in local
+    assert "fetch --force --no-tags --depth=1 origin $env:GITHUB_SHA" in local
+    assert "git rev-parse HEAD" in local
+    assert "Checkout SHA mismatch" in local
+    assert "actions/checkout@" not in local
     assert "'[verify-owner-autostart]'" in local
     assert "'[sidecar-compat]'" in local
     assert "nexus-owner-autostart-proof-${{ github.run_id }}" in local
