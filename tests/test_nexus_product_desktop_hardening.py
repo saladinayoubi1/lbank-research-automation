@@ -57,3 +57,18 @@ def test_desktop_enforces_single_instance_and_refocuses_existing_window():
     assert "win.focus()" in text
     assert "if (!singleInstanceLock)" in text
     assert "app.quit()" in text
+
+
+def test_auxiliary_desktop_logs_are_bounded_and_rotated():
+    text = BOOTSTRAP_MAIN.read_text(encoding="utf-8")
+    assert "const AUX_LOG_MAX_BYTES = 512 * 1024;" in text
+    assert "function appendBoundedLog(filename, message)" in text
+    assert "stat.size >= AUX_LOG_MAX_BYTES" in text
+    assert "fs.rmSync(backup, { force: true })" in text
+    assert "fs.renameSync(target, backup)" in text
+    for name in (
+        "nexus-gui-runner-bootstrap.log",
+        "nexus-paper-sync.log",
+        "nexus-owner-autostart-bootstrap.log",
+    ):
+        assert f"appendBoundedLog('{name}'" in text

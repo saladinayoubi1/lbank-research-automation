@@ -17,31 +17,37 @@ const RUNNER_REGISTRATION_TOKEN_ENV = 'NEXUS_GITHUB_RUNNER_REGISTRATION_TOKEN';
 let runnerRegistrationToken = String(process.env[RUNNER_REGISTRATION_TOKEN_ENV] || '').trim();
 delete process.env[RUNNER_REGISTRATION_TOKEN_ENV];
 
-function appendBootstrapLog(message) {
+const AUX_LOG_MAX_BYTES = 512 * 1024;
+
+function appendBoundedLog(filename, message) {
   try {
     const root = app.getPath('logs');
     fs.mkdirSync(root, { recursive: true });
-    const target = path.join(root, 'nexus-gui-runner-bootstrap.log');
+    const target = path.join(root, filename);
+    const backup = `${target}.1`;
+    try {
+      const stat = fs.statSync(target);
+      if (stat.isFile() && stat.size >= AUX_LOG_MAX_BYTES) {
+        fs.rmSync(backup, { force: true });
+        fs.renameSync(target, backup);
+      }
+    } catch (error) {
+      if (error && error.code !== 'ENOENT') throw error;
+    }
     fs.appendFileSync(target, `[${new Date().toISOString()}] ${String(message).slice(0, 4000)}\n`, 'utf8');
   } catch {}
+}
+
+function appendBootstrapLog(message) {
+  appendBoundedLog('nexus-gui-runner-bootstrap.log', message);
 }
 
 function appendPaperSyncLog(message) {
-  try {
-    const root = app.getPath('logs');
-    fs.mkdirSync(root, { recursive: true });
-    const target = path.join(root, 'nexus-paper-sync.log');
-    fs.appendFileSync(target, `[${new Date().toISOString()}] ${String(message).slice(0, 4000)}\n`, 'utf8');
-  } catch {}
+  appendBoundedLog('nexus-paper-sync.log', message);
 }
 
 function appendOwnerAutostartLog(message) {
-  try {
-    const root = app.getPath('logs');
-    fs.mkdirSync(root, { recursive: true });
-    const target = path.join(root, 'nexus-owner-autostart-bootstrap.log');
-    fs.appendFileSync(target, `[${new Date().toISOString()}] ${String(message).slice(0, 4000)}\n`, 'utf8');
-  } catch {}
+  appendBoundedLog('nexus-owner-autostart-bootstrap.log', message);
 }
 
 function packagedSourceSha() {
