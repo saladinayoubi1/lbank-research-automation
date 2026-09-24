@@ -226,10 +226,10 @@ if (-not (Test-Path -LiteralPath $innerZip -PathType Leaf) -or -not (Test-Path -
 
 $manifestMatches = @(
     Get-Content -LiteralPath $sumFile |
-        Where-Object { $_ -match '(?i)NEXUS_Personal_Pro_Unpacked_5\.1\.0_x64\.zip }
+        Where-Object { $_ -match '(?i)NEXUS_Personal_Pro_Unpacked_5\.1\.0_x64\.zip$' }
 )
 if ($manifestMatches.Count -ne 1) { throw 'Persistent package checksum manifest entry is missing or ambiguous.' }
-if ($manifestMatches[0] -notmatch '^([0-9a-fA-F]{64})\s+\*?NEXUS_Personal_Pro_Unpacked_5\.1\.0_x64\.zip) {
+if ($manifestMatches[0] -notmatch '^([0-9a-fA-F]{64})\s+\*?NEXUS_Personal_Pro_Unpacked_5\.1\.0_x64\.zip$') {
     throw 'Persistent package checksum manifest entry is malformed.'
 }
 $manifestInnerSha256 = $Matches[1].ToLowerInvariant()
