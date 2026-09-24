@@ -180,18 +180,15 @@ def test_self_hosted_phase_workflows_pin_trusted_manual_refs_and_credentials():
     assert "persist-credentials: false" in activation
     assert "Verify exact trusted SHA" in activation
 
-    assert "Fetch exact repository source over Git HTTP/1.1" in local_runner
-    assert "https://github.com/$env:GITHUB_REPOSITORY.git" in local_runner
-    assert "GIT_TERMINAL_PROMPT" in local_runner
-    assert "credential.helper ''" in local_runner
-    assert "--unset-all http.https://github.com/.extraheader" in local_runner
-    assert "$fetchMaxAttempts = 3" in local_runner
-    assert "-c 'http.version=HTTP/1.1'" in local_runner
-    assert "-c 'http.lowSpeedLimit=1024'" in local_runner
-    assert "-c 'http.lowSpeedTime=20'" in local_runner
-    assert "fetch --no-tags --prune --depth=1 origin $env:GITHUB_SHA" in local_runner
-    assert "checkout --detach --force FETCH_HEAD" in local_runner
-    assert "Checkout SHA mismatch" in local_runner
+    assert "Fetch exact repository source from codeload" in local_runner
+    assert "https://codeload.github.com/$env:GITHUB_REPOSITORY/zip/$env:GITHUB_SHA" in local_runner
+    assert "--http1.1" in local_runner
+    assert "--connect-timeout 10" in local_runner
+    assert "--max-time 60" in local_runner
+    assert "--speed-time 20" in local_runner
+    assert "--speed-limit 1024" in local_runner
+    assert "exact_source_mode=codeload-exact-sha-http11" in local_runner
+    assert ".nexus-trigger-source" in local_runner
     assert "actions/checkout@" not in local_runner
     assert "github.event.pull_request.head.repo.full_name == github.repository" in runtime
     assert "github.actor == github.repository_owner" in runtime
