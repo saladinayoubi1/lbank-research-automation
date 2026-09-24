@@ -457,10 +457,12 @@ try {
 
     $desktopShortcut = Join-Path ([Environment]::GetFolderPath('Desktop')) 'NEXUS Personal Pro 5.1.0.lnk'
     $startMenuShortcut = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\NEXUS Personal Pro 5.1.0.lnk'
+    $genericStartMenuShortcut = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\NEXUS Personal Pro.lnk'
     $startupShortcut = Join-Path ([Environment]::GetFolderPath('Startup')) 'NEXUS Personal Pro.lnk'
     New-NexusShortcut $desktopShortcut $installedExecutable
     $script:Evidence.install.desktop_shortcut_created = $true
     New-NexusShortcut $startMenuShortcut $installedExecutable
+    New-NexusShortcut $genericStartMenuShortcut $installedExecutable
     $script:Evidence.install.start_menu_shortcut_created = $true
     New-NexusShortcut $startupShortcut $installedExecutable
     $script:Evidence.install.startup_shortcut_created = $true
