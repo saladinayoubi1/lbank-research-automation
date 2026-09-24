@@ -157,8 +157,28 @@ while (-not $verified) {
 
             $batchSucceeded = $true
             foreach ($part in $parts) {
-                $part.Process.WaitForExit()
-                $exitCode = $part.Process.ExitCode
+                if ($null -eq $part.Process) {
+                    Write-Warning "Artifact range $($part.Start)-$($part.End) attempt $attempt/$MaxAttempts did not return a curl process object."
+                    $batchSucceeded = $false
+                    continue
+                }
+
+                try {
+                    $part.Process.WaitForExit()
+                }
+                catch {
+                    Write-Warning "Artifact range $($part.Start)-$($part.End) attempt $attempt/$MaxAttempts could not wait for curl completion: $($_.Exception.Message)"
+                    $batchSucceeded = $false
+                    continue
+                }
+
+                $exitCode = $null
+                try {
+                    $exitCode = $part.Process.ExitCode
+                }
+                catch {
+                    Write-Warning "Artifact range $($part.Start)-$($part.End) attempt $attempt/$MaxAttempts could not read curl exit state: $($_.Exception.Message)"
+                }
                 $exitCodeKnown = $null -ne $exitCode
                 $expectedPartBytes = [long]($part.End - $part.Start + 1)
                 $actualPartBytes = if (Test-Path -LiteralPath $part.Path -PathType Leaf) {
