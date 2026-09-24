@@ -174,3 +174,19 @@ def test_owner_bootstrap_does_not_retry_deterministic_dirty_checkout_blocker() -
     terminal = text.index("const terminalBlocker = terminalOwnerAutostartBlocker();")
     retry = text.index("owner_bootstrap_retry", terminal)
     assert terminal < retry
+
+
+def test_owner_bootstrap_imports_task_scheduler_helpers_at_script_scope() -> None:
+    text = read(OWNER)
+    for marker in (
+        "$CurrentStage = 'task_scheduler_compat'",
+        "$taskCompatPath = Join-Path $ManagedRepoRoot $TaskCompatRelative",
+        ". $taskCompatPath",
+        "Get-NexusScheduledTaskSnapshot",
+        "New-NexusInteractiveLogonTask",
+    ):
+        assert marker in text
+    import_at_script_scope = text.index(". $taskCompatPath")
+    core_install = text.index("$CurrentStage = 'core_autostart_install'")
+    task_verify = text.index("$CurrentStage = 'task_verify'")
+    assert import_at_script_scope < core_install < task_verify
