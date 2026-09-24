@@ -74,6 +74,9 @@ def test_resilient_artifact_downloader_is_metadata_and_digest_bound() -> None:
     assert "Start-Process -FilePath 'curl.exe'" in script
     assert "Get-SignedArtifactUrl" in script
     assert "$exitCodeKnown = $null -ne $exitCode" in script
+    assert "$null -eq $part.Process" in script
+    assert "could not wait for curl completion" in script
+    assert "could not read curl exit state" in script
     assert "$actualPartBytes -ne $expectedPartBytes" in script
     assert "$stderrRaw = Get-Content -LiteralPath $part.Stderr -Raw -ErrorAction SilentlyContinue" in script
     assert "if ($null -ne $stderrRaw) { $stderr = $stderrRaw.Trim() }" in script
