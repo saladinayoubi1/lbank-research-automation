@@ -97,7 +97,7 @@ for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
     $signedUrl = Get-SignedArtifactUrl
     try {
         $retryArgs = @('--retry', '3', '--retry-delay', '2')
-        & curl.exe --retry-all-errors --version *> $null
+        & cmd.exe /D /C "curl.exe --retry-all-errors --version >NUL 2>NUL"
         $retryAllErrorsSupported = ($LASTEXITCODE -eq 0)
         if ($retryAllErrorsSupported) {
             $retryArgs += '--retry-all-errors'
