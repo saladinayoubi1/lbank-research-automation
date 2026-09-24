@@ -163,6 +163,10 @@ def test_owner_bootstrap_does_not_retry_deterministic_dirty_checkout_blocker() -
         "status === 'BLOCKED'",
         "stage === 'managed_checkout'",
         "error.includes('tracked owner changes')",
+        "error.includes('divergent history')",
+        "reason: 'tracked_owner_changes'",
+        "reason: 'divergent_history'",
+        "reason=${terminalBlocker.reason}",
         "owner_bootstrap_terminal_block",
         "status: 'BLOCKED_TERMINAL'",
     ):
