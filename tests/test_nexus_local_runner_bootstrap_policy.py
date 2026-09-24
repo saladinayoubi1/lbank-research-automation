@@ -112,24 +112,31 @@ def test_portable_artifact_cache_survives_runner_temp_cleanup_and_remains_checks
 
 def test_local_runner_checkout_is_bound_to_trigger_sha_and_verified():
     workflow = WORKFLOW.read_text(encoding='utf-8')
-    assert 'ref: ${{ github.sha }}' in workflow
-    assert 'ref: main' not in workflow
+    assert 'Prepare anonymous exact source with bounded HTTP/1.1 retries' in workflow
+    assert 'https://github.com/$env:GITHUB_REPOSITORY.git' in workflow
+    assert "http.version=HTTP/1.1" in workflow
+    assert 'fetch --no-tags --prune --depth=1 origin $env:GITHUB_SHA' in workflow
+    assert 'checkout --detach --force FETCH_HEAD' in workflow
     assert 'git rev-parse HEAD' in workflow
     assert 'GITHUB_SHA' in workflow
-    assert 'Checkout SHA mismatch' in workflow
+    assert 'Exact trigger SHA mismatch' in workflow
+    assert 'exact_source_mode=anonymous-exact-sha-http11' in workflow
 
 
-def test_local_runner_checkout_is_bounded_and_preserves_clean_exact_sha_checkout():
+def test_local_runner_checkout_is_bounded_anonymous_and_preserves_workspace_boundary():
     workflow = WORKFLOW.read_text(encoding='utf-8')
-    checkout = workflow.index('- name: Checkout repository')
+    checkout = workflow.index('- name: Prepare anonymous exact source with bounded HTTP/1.1 retries')
     verify = workflow.index('- name: Verify exact trigger SHA')
     block = workflow[checkout:verify]
-    assert 'timeout-minutes: 10' in block
-    assert 'uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1' in block
-    assert 'ref: ${{ github.sha }}' in block
-    assert 'persist-credentials: false' in block
-    assert 'clean: true' in block
-    assert 'fetch-depth: 1' in block
+    assert 'timeout-minutes: 5' in block
+    assert 'actions/checkout@' not in block
+    assert '$fetchMaxAttempts = 3' in block
+    assert 'http.version=HTTP/1.1' in block
+    assert 'http.https://github.com/.extraheader' in block
+    assert 'Local Runner workspace boundary mismatch.' in block
+    assert 'Get-ChildItem -Force -LiteralPath $workspace' in block
+    assert 'fetch --no-tags --prune --depth=1 origin $env:GITHUB_SHA' in block
+    assert 'checkout --detach --force FETCH_HEAD' in block
 
 
 def test_bootstrap_prefers_verified_local_python_before_portable_network_fallback():
