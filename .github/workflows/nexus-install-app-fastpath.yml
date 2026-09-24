@@ -52,13 +52,11 @@ jobs:
           }
           Write-Host "install_fastpath_exact_source=$env:GITHUB_SHA"
 
-      - name: Resolve and download exact persistent package
-        id: package
+      - name: Resolve exact-source persistent package
+        id: package_meta
         run: |
-          $ErrorActionPreference = 'Stop'
-          $gh = Get-Command gh.exe -ErrorAction Stop
-          $token = (& $gh.Source auth token).Trim()
-          if (-not $token) { throw 'Existing owner GitHub CLI authentication is unavailable.' }
+          $token = (& gh auth token).Trim()
+          if (-not $token) { throw 'Owner gh CLI authentication is unavailable.' }
           $env:GITHUB_TOKEN = $token
           try {
             & scripts\resolve_nexus_persistent_artifact.ps1 `
@@ -66,64 +64,52 @@ jobs:
               -SourceSha $env:GITHUB_SHA `
               -WorkflowFile 'nexus-build-verification.yml' `
               -ArtifactName 'nexus-windows-persistent-unpacked'
+          } finally {
+            $env:GITHUB_TOKEN = $null
+            $token = $null
+          }
 
-            $outputs = @{}
-            Get-Content -LiteralPath $env:GITHUB_OUTPUT | ForEach-Object {
-              if ($_ -match '^([^=]+)=(.*)$') { $outputs[$Matches[1]] = $Matches[2] }
-            }
-            foreach ($required in @('artifact_run_id','artifact_id','artifact_name','source_sha','archive_sha256','archive_bytes')) {
-              if (-not $outputs.ContainsKey($required) -or -not $outputs[$required]) { throw "Resolver output missing: $required" }
-            }
-
+      - name: Download exact persistent package
+        id: package_download
+        run: |
+          $token = (& gh auth token).Trim()
+          if (-not $token) { throw 'Owner gh CLI authentication is unavailable.' }
+          $env:GITHUB_TOKEN = $token
+          try {
             & scripts\download_github_actions_artifact_http11.ps1 `
               -Repository $env:GITHUB_REPOSITORY `
-              -ArtifactRunId ([long]$outputs.artifact_run_id) `
-              -ArtifactId ([long]$outputs.artifact_id) `
-              -ArtifactName $outputs.artifact_name `
-              -ExpectedSourceSha $outputs.source_sha `
-              -ExpectedArchiveSha256 $outputs.archive_sha256 `
-              -ExpectedArchiveBytes ([long]$outputs.archive_bytes) `
+              -ArtifactRunId '${{ steps.package_meta.outputs.artifact_run_id }}' `
+              -ArtifactId '${{ steps.package_meta.outputs.artifact_id }}' `
+              -ArtifactName '${{ steps.package_meta.outputs.artifact_name }}' `
+              -ExpectedSourceSha '${{ steps.package_meta.outputs.source_sha }}' `
+              -ExpectedArchiveSha256 '${{ steps.package_meta.outputs.archive_sha256 }}' `
+              -ExpectedArchiveBytes '${{ steps.package_meta.outputs.archive_bytes }}' `
               -DestinationDirectory (Join-Path $env:RUNNER_TEMP "nexus-personal-pro-package-$env:GITHUB_RUN_ID")
-
-            $allOutputs = @{}
-            Get-Content -LiteralPath $env:GITHUB_OUTPUT | ForEach-Object {
-              if ($_ -match '^([^=]+)=(.*)$') { $allOutputs[$Matches[1]] = $Matches[2] }
-            }
-            if (-not $allOutputs.inner_sha256) { throw 'Verified inner package checksum output is missing.' }
-          }
-          finally {
-            [Environment]::SetEnvironmentVariable('GITHUB_TOKEN', $null, 'Process')
+          } finally {
+            $env:GITHUB_TOKEN = $null
             $token = $null
           }
 
       - name: Install and smoke-test exact NEXUS build
-        env:
-          NEXUS_ARTIFACT_RUN_ID: ${{ steps.package.outputs.artifact_run_id }}
-          NEXUS_ARTIFACT_ID: ${{ steps.package.outputs.artifact_id }}
-          NEXUS_ARTIFACT_NAME: ${{ steps.package.outputs.artifact_name }}
-          NEXUS_SOURCE_SHA: ${{ steps.package.outputs.source_sha }}
-          NEXUS_INNER_SHA256: ${{ steps.package.outputs.inner_sha256 }}
         run: |
-          foreach ($required in @('NEXUS_ARTIFACT_RUN_ID','NEXUS_ARTIFACT_ID','NEXUS_ARTIFACT_NAME','NEXUS_SOURCE_SHA','NEXUS_INNER_SHA256')) {
-            if (-not [Environment]::GetEnvironmentVariable($required, 'Process')) { throw "Package output missing: $required" }
-          }
           & scripts\install_and_smoke_nexus_personal_pro.ps1 `
             -PackageRoot (Join-Path $env:RUNNER_TEMP "nexus-personal-pro-package-$env:GITHUB_RUN_ID") `
-            -ExpectedSourceSha $env:NEXUS_SOURCE_SHA `
-            -ExpectedUnpackedSha256 $env:NEXUS_INNER_SHA256 `
-            -ArtifactRunId ([long]$env:NEXUS_ARTIFACT_RUN_ID) `
-            -ArtifactId ([long]$env:NEXUS_ARTIFACT_ID) `
-            -ArtifactName $env:NEXUS_ARTIFACT_NAME `
+            -ExpectedSourceSha '${{ steps.package_meta.outputs.source_sha }}' `
+            -ExpectedUnpackedSha256 '${{ steps.package_download.outputs.inner_sha256 }}' `
+            -ArtifactRunId '${{ steps.package_meta.outputs.artifact_run_id }}' `
+            -ArtifactId '${{ steps.package_meta.outputs.artifact_id }}' `
+            -ArtifactName '${{ steps.package_meta.outputs.artifact_name }}' `
             -ExpectedComputerName 'DESKTOP-1R1081M' `
             -ExpectedRunnerName 'NEXUS-LOCAL-RUNNER' `
             -EvidencePath 'build\windows-app-install\evidence.json' `
             -UsePreloadedPackage
 
-      - name: Verify physical install proof locally
+      - name: Verify physical install proof
         run: |
           $path = 'build\windows-app-install\evidence.json'
           if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw 'Physical install evidence is missing.' }
-          $evidence = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json
+          $json = Get-Content -LiteralPath $path -Raw
+          $evidence = $json | ConvertFrom-Json
           if ($evidence.decision -ne 'PASS') { throw 'Physical install evidence is not PASS.' }
           if (([string]$evidence.source_sha).ToLowerInvariant() -ne $env:GITHUB_SHA.ToLowerInvariant()) { throw 'Physical install source SHA mismatch.' }
           if ($evidence.safety.paper_only_required -ne $true -or
@@ -131,4 +117,5 @@ jobs:
               $evidence.smoke.live_orders_allowed -ne $false) {
             throw 'Physical install safety boundary failed.'
           }
-          Write-Host "NEXUS_FASTPATH_INSTALL=PASS evidence=$path"
+          Write-Host 'NEXUS_FASTPATH_INSTALL=PASS'
+          Write-Host ("NEXUS_FASTPATH_EVIDENCE=" + ($evidence | ConvertTo-Json -Depth 8 -Compress))
