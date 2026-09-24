@@ -109,3 +109,15 @@ def test_paper_ui_auto_refresh_is_lightweight_and_visibility_aware():
     assert "function startPaperUiAutoRefresh()" in js
     assert "visibilitychange" in js
     assert "await loadAll();startPaperUiAutoRefresh()" in js
+
+
+def test_manual_paper_ticket_has_no_fake_price_defaults():
+    html = INDEX.read_text(encoding="utf-8")
+    for fake in ('value="60000"', 'value="59000"', 'value="62000"'):
+        assert fake not in html
+    for name in ("quantity", "reference_price", "stop_price", "target_price"):
+        marker = f'name="{name}"'
+        start = html.index(marker)
+        tag = html[html.rfind("<input", 0, start):html.index(">", start) + 1]
+        assert "required" in tag
+        assert 'autocomplete="off"' in tag
