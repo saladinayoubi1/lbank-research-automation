@@ -93,3 +93,9 @@ def test_worker_releases_runner_immediately_when_idle(monkeypatch):
     assert heartbeats[-1]["state"] == "cycle_complete"
     assert heartbeats[-1]["exit_reason"] == "idle"
     assert heartbeats[-1]["tasks_run"] == 0
+
+
+def test_readiness_task_writes_reports_to_durable_runtime_state():
+    text = WORKER.read_text(encoding="utf-8")
+    assert "'--output-root', str(STATE_DIR / 'readiness')" in text
+    assert "'--status-path', r'data\\\\market\\\\_backfill_status.csv'" in text

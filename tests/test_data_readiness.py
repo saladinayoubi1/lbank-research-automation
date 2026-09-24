@@ -209,3 +209,22 @@ def test_build_summary_handles_empty_input():
 
     assert summary["total_series"] == 0
     assert summary["all_ready"] is False
+
+
+def test_generate_readiness_report_supports_separate_output_root(tmp_path):
+    status_root = tmp_path / "source"
+    output_root = tmp_path / "runtime" / "readiness"
+    status_root.mkdir()
+    status_path = status_root / "_backfill_status.csv"
+    sample_frame().to_csv(status_path, index=False)
+
+    generate_readiness_report(
+        status_path=status_path,
+        output_root=output_root,
+        as_of_utc=AS_OF,
+    )
+
+    assert (output_root / "_data_readiness.json").exists()
+    assert (output_root / "_data_readiness.csv").exists()
+    assert (output_root / "_data_readiness.md").exists()
+    assert not (status_root / "_data_readiness.json").exists()

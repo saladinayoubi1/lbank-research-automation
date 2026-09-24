@@ -261,6 +261,7 @@ def generate_readiness_report(
     minimum_rows: int = 0,
     *,
     as_of_utc: datetime | None = None,
+    output_root: Path | None = None,
 ) -> dict[str, Any]:
     if not status_path.exists():
         raise FileNotFoundError(f"Status report not found: {status_path}")
@@ -271,7 +272,7 @@ def generate_readiness_report(
         minimum_rows=minimum_rows,
         as_of_utc=as_of_utc,
     )
-    return write_reports(readiness_frame, status_path.parent)
+    return write_reports(readiness_frame, output_root or status_path.parent)
 
 
 def parse_args() -> argparse.Namespace:
@@ -290,6 +291,12 @@ def parse_args() -> argparse.Namespace:
         help="Optional minimum row count required for a series to be research-ready.",
     )
     parser.add_argument(
+        "--output-root",
+        type=Path,
+        default=None,
+        help="Optional directory for generated readiness reports; defaults to the status-file directory.",
+    )
+    parser.add_argument(
         "--require-all-ready",
         action="store_true",
         help="Exit non-zero when any series is blocked.",
@@ -302,6 +309,7 @@ def main() -> int:
     summary = generate_readiness_report(
         status_path=args.status_path,
         minimum_rows=args.minimum_rows,
+        output_root=args.output_root,
     )
     print(json.dumps(summary, sort_keys=True))
     if args.require_all_ready and not summary["all_ready"]:
