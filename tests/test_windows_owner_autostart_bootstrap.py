@@ -216,7 +216,7 @@ def test_package_stager_builds_shallow_exact_source_seed_and_cleans_temp_ref() -
         "install_nexus_owner_autostart_from_gui.ps1",
         "nexus-source-seed.git",
         "refs/heads/nexus-package-source",
-        "--depth', '1'",
+        "--depth', '32'",
         "--bare",
         "--branch', 'nexus-package-source'",
         "pathToFileURL",
@@ -267,3 +267,10 @@ def test_stage_script_parses_with_node_when_available() -> None:
         check=False,
     )
     assert completed.returncode == 0, completed.stderr or completed.stdout
+
+
+def test_windows_build_fetches_bounded_history_for_package_seed() -> None:
+    workflow = read(ROOT / ".github" / "workflows" / "nexus-build-verification.yml")
+    windows = workflow[workflow.index("  windows-desktop:"):]
+    assert "actions/checkout@" in windows
+    assert "fetch-depth: 32" in windows
