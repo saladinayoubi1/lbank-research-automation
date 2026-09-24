@@ -102,4 +102,3 @@ def test_local_runner_recovery_reuses_existing_listener_and_detaches_new_listene
     ):
         assert marker in local
     assert 'Stop-Process -Id $proc.Id -Force -ErrorAction Stop' not in local
-
