@@ -80,41 +80,135 @@ function Get-SignedArtifactUrl {
     }
 }
 
+$chunkBytes = 1MB
+$parallelChunks = 4
 $verified = $false
-for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
-    if (Test-Path -LiteralPath $archivePath -PathType Leaf) {
-        $length = (Get-Item -LiteralPath $archivePath).Length
-        if ($length -eq $ExpectedArchiveBytes) {
-            $sha = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash.ToLowerInvariant()
-            if ($sha -eq $ExpectedArchiveSha256) { $verified = $true; break }
-            Remove-Item -LiteralPath $archivePath -Force
-        }
-        elseif ($length -gt $ExpectedArchiveBytes) {
-            Remove-Item -LiteralPath $archivePath -Force
-        }
-    }
 
-    $signedUrl = Get-SignedArtifactUrl
-    try {
-        & curl.exe --fail --silent --show-error --http1.1 --connect-timeout 20 --max-time 900 --retry 3 --retry-delay 2 --continue-at - --output $archivePath $signedUrl
-        $curlExit = $LASTEXITCODE
+if (Test-Path -LiteralPath $archivePath -PathType Leaf) {
+    $existingLength = [long](Get-Item -LiteralPath $archivePath).Length
+    if ($existingLength -gt $ExpectedArchiveBytes) {
+        Remove-Item -LiteralPath $archivePath -Force
     }
-    finally {
-        $signedUrl = $null
-    }
-
-    if (Test-Path -LiteralPath $archivePath -PathType Leaf) {
-        $length = (Get-Item -LiteralPath $archivePath).Length
-        if ($length -eq $ExpectedArchiveBytes) {
-            $sha = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash.ToLowerInvariant()
-            if ($sha -eq $ExpectedArchiveSha256) { $verified = $true; break }
-            Remove-Item -LiteralPath $archivePath -Force
+    elseif ($existingLength -gt 0 -and $existingLength -lt $ExpectedArchiveBytes) {
+        $alignedLength = [long]([Math]::Floor($existingLength / $chunkBytes) * $chunkBytes)
+        if ($alignedLength -ne $existingLength) {
+            $stream = [IO.File]::Open($archivePath, [IO.FileMode]::Open, [IO.FileAccess]::Write, [IO.FileShare]::Read)
+            try { $stream.SetLength($alignedLength) } finally { $stream.Dispose() }
         }
     }
-    Write-Warning "Artifact HTTP/1.1 transport attempt $attempt/$MaxAttempts incomplete (curl_exit=$curlExit)."
-    if ($attempt -lt $MaxAttempts) { Start-Sleep -Seconds ([Math]::Min(5 * $attempt, 30)) }
 }
-if (-not $verified) { throw "Exact artifact download failed after $MaxAttempts bounded attempts." }
+
+while (-not $verified) {
+    $currentLength = if (Test-Path -LiteralPath $archivePath -PathType Leaf) {
+        [long](Get-Item -LiteralPath $archivePath).Length
+    } else {
+        0L
+    }
+
+    if ($currentLength -eq $ExpectedArchiveBytes) {
+        $sha = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash.ToLowerInvariant()
+        if ($sha -eq $ExpectedArchiveSha256) {
+            $verified = $true
+            break
+        }
+        Remove-Item -LiteralPath $archivePath -Force
+        $currentLength = 0L
+    }
+    elseif ($currentLength -gt $ExpectedArchiveBytes) {
+        Remove-Item -LiteralPath $archivePath -Force
+        $currentLength = 0L
+    }
+
+    $batchSucceeded = $false
+    for ($attempt = 1; $attempt -le $MaxAttempts -and -not $batchSucceeded; $attempt++) {
+        $signedUrl = Get-SignedArtifactUrl
+        $parts = @()
+        try {
+            for ($index = 0; $index -lt $parallelChunks; $index++) {
+                $rangeStart = $currentLength + ([long]$index * $chunkBytes)
+                if ($rangeStart -ge $ExpectedArchiveBytes) { break }
+                $rangeEnd = [Math]::Min($rangeStart + $chunkBytes - 1, $ExpectedArchiveBytes - 1)
+                $partPath = "$archivePath.part-$rangeStart-$rangeEnd"
+                Remove-Item -LiteralPath $partPath -Force -ErrorAction SilentlyContinue
+                $stderrPath = "$partPath.stderr"
+                Remove-Item -LiteralPath $stderrPath -Force -ErrorAction SilentlyContinue
+                $arguments = @(
+                    '--fail',
+                    '--silent',
+                    '--show-error',
+                    '--http1.1',
+                    '--connect-timeout', '15',
+                    '--max-time', '90',
+                    '--speed-time', '20',
+                    '--speed-limit', '1024',
+                    '--range', "$rangeStart-$rangeEnd",
+                    '--output', $partPath,
+                    $signedUrl
+                )
+                $process = Start-Process -FilePath 'curl.exe' -ArgumentList $arguments -NoNewWindow -PassThru -RedirectStandardError $stderrPath
+                $parts += [pscustomobject]@{
+                    Start = [long]$rangeStart
+                    End = [long]$rangeEnd
+                    Path = $partPath
+                    Stderr = $stderrPath
+                    Process = $process
+                }
+            }
+
+            $batchSucceeded = $true
+            foreach ($part in $parts) {
+                $part.Process.WaitForExit()
+                $expectedPartBytes = [long]($part.End - $part.Start + 1)
+                $actualPartBytes = if (Test-Path -LiteralPath $part.Path -PathType Leaf) {
+                    [long](Get-Item -LiteralPath $part.Path).Length
+                } else {
+                    -1L
+                }
+                if ($part.Process.ExitCode -ne 0 -or $actualPartBytes -ne $expectedPartBytes) {
+                    $stderr = if (Test-Path -LiteralPath $part.Stderr -PathType Leaf) {
+                        (Get-Content -LiteralPath $part.Stderr -Raw -ErrorAction SilentlyContinue).Trim()
+                    } else {
+                        ''
+                    }
+                    Write-Warning "Artifact range $($part.Start)-$($part.End) attempt $attempt/$MaxAttempts failed (curl_exit=$($part.Process.ExitCode), bytes=$actualPartBytes, stderr=$stderr)."
+                    $batchSucceeded = $false
+                }
+            }
+
+            if ($batchSucceeded) {
+                $output = [IO.File]::Open($archivePath, [IO.FileMode]::Append, [IO.FileAccess]::Write, [IO.FileShare]::Read)
+                try {
+                    foreach ($part in ($parts | Sort-Object Start)) {
+                        $input = [IO.File]::OpenRead($part.Path)
+                        try { $input.CopyTo($output) } finally { $input.Dispose() }
+                    }
+                }
+                finally {
+                    $output.Dispose()
+                }
+                $currentLength = [long](Get-Item -LiteralPath $archivePath).Length
+                Write-Host "NEXUS_ARTIFACT_RANGE_PROGRESS bytes=$currentLength/$ExpectedArchiveBytes"
+            }
+        }
+        finally {
+            $signedUrl = $null
+            foreach ($part in $parts) {
+                Remove-Item -LiteralPath $part.Path -Force -ErrorAction SilentlyContinue
+                Remove-Item -LiteralPath $part.Stderr -Force -ErrorAction SilentlyContinue
+            }
+        }
+
+        if (-not $batchSucceeded -and $attempt -lt $MaxAttempts) {
+            Start-Sleep -Seconds ([Math]::Min(3 * $attempt, 15))
+        }
+    }
+
+    if (-not $batchSucceeded) {
+        throw "Exact artifact range download failed after $MaxAttempts bounded attempts at byte $currentLength."
+    }
+}
+
+if (-not $verified) { throw "Exact artifact download failed verification." }
 
 if (Test-Path -LiteralPath $destination) { Remove-Item -LiteralPath $destination -Recurse -Force }
 New-Item -ItemType Directory -Path $destination | Out-Null
