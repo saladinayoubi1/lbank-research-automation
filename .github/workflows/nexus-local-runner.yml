@@ -86,10 +86,32 @@ jobs:
 
           $fetchOk = $false
           $fetchMaxAttempts = 3
+          $fetchHardTimeoutMs = 45000
           for ($fetchAttempt = 1; $fetchAttempt -le $fetchMaxAttempts; $fetchAttempt++) {
-            & git -C $workspace -c 'http.version=HTTP/1.1' -c 'http.lowSpeedLimit=1024' -c 'http.lowSpeedTime=20' fetch --no-tags --prune --depth=1 origin $env:GITHUB_SHA
-            if ($LASTEXITCODE -eq 0) { $fetchOk = $true; break }
-            Write-Warning "Exact local-runner source fetch attempt $fetchAttempt/$fetchMaxAttempts failed."
+            $stdoutPath = Join-Path $env:RUNNER_TEMP "nexus-git-fetch-$fetchAttempt.stdout.log"
+            $stderrPath = Join-Path $env:RUNNER_TEMP "nexus-git-fetch-$fetchAttempt.stderr.log"
+            Remove-Item -LiteralPath $stdoutPath,$stderrPath -Force -ErrorAction SilentlyContinue
+            $arguments = @(
+              '-c','http.version=HTTP/1.1',
+              '-c','http.lowSpeedLimit=1024',
+              '-c','http.lowSpeedTime=20',
+              'fetch','--no-tags','--prune','--depth=1','origin',$env:GITHUB_SHA
+            )
+            $fetchProcess = Start-Process -FilePath 'git.exe' -WorkingDirectory $workspace -ArgumentList $arguments -NoNewWindow -PassThru -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
+            $finished = $fetchProcess.WaitForExit($fetchHardTimeoutMs)
+            if (-not $finished) {
+              Write-Warning "Exact local-runner source fetch attempt $fetchAttempt/$fetchMaxAttempts hit hard timeout."
+              & taskkill.exe /PID $fetchProcess.Id /T /F | Out-Null
+              $fetchProcess.WaitForExit()
+              $fetchExit = 124
+            }
+            else {
+              $fetchExit = $fetchProcess.ExitCode
+            }
+            if (Test-Path -LiteralPath $stdoutPath -PathType Leaf) { Get-Content -LiteralPath $stdoutPath -ErrorAction SilentlyContinue }
+            if (Test-Path -LiteralPath $stderrPath -PathType Leaf) { Get-Content -LiteralPath $stderrPath -ErrorAction SilentlyContinue }
+            if ($fetchExit -eq 0) { $fetchOk = $true; break }
+            Write-Warning "Exact local-runner source fetch attempt $fetchAttempt/$fetchMaxAttempts failed (exit=$fetchExit)."
             if ($fetchAttempt -lt $fetchMaxAttempts) { Start-Sleep -Seconds ($fetchAttempt * 5) }
           }
           if (-not $fetchOk) { throw "Exact local-runner source fetch failed after $fetchMaxAttempts bounded attempts." }
