@@ -97,3 +97,15 @@ def test_optional_product_surfaces_degrade_without_hiding_critical_failures():
     assert "optionalApi('/api/product/data/registry')" in js
     assert "بخش محدود" in js
     assert "Paper backend unavailable" in js
+
+
+def test_paper_ui_auto_refresh_is_lightweight_and_visibility_aware():
+    js = (ROOT / "product_ui" / "product.js").read_text(encoding="utf-8")
+    assert "PAPER_UI_REFRESH_INTERVAL_MS=60*1000" in js
+    assert "async function refreshPaperSnapshot()" in js
+    assert "document.visibilityState!=='visible'" in js
+    assert "singleFlight('paper-ui-refresh'" in js
+    assert "state.paper=await api('/api/product/paper')" in js
+    assert "function startPaperUiAutoRefresh()" in js
+    assert "visibilitychange" in js
+    assert "await loadAll();startPaperUiAutoRefresh()" in js
