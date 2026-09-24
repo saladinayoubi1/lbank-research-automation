@@ -64,44 +64,46 @@ jobs:
       run:
         shell: cmd
     steps:
-      - name: Fetch exact repository source over Git HTTP/1.1
-        timeout-minutes: 5
+      - name: Fetch exact repository source from codeload
+        timeout-minutes: 2
         shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
         run: |
           $ErrorActionPreference = 'Stop'
           Set-StrictMode -Version 2.0
-          $env:GIT_TERMINAL_PROMPT = '0'
-
-          $repoUrl = "https://github.com/$env:GITHUB_REPOSITORY.git"
           $workspace = [IO.Path]::GetFullPath($env:GITHUB_WORKSPACE)
+          $archive = Join-Path $env:RUNNER_TEMP "nexus-source-$env:GITHUB_SHA.zip"
+          $extract = Join-Path $env:RUNNER_TEMP "nexus-source-$env:GITHUB_SHA"
+          $sourceUrl = "https://codeload.github.com/$env:GITHUB_REPOSITORY/zip/$env:GITHUB_SHA"
+
+          Remove-Item -LiteralPath $archive -Force -ErrorAction SilentlyContinue
+          Remove-Item -LiteralPath $extract -Recurse -Force -ErrorAction SilentlyContinue
           New-Item -ItemType Directory -Force -Path $workspace | Out-Null
           Get-ChildItem -Force -LiteralPath $workspace -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force
-          & git -C $workspace init .
-          if ($LASTEXITCODE -ne 0) { throw 'Failed to initialize exact local-runner source workspace.' }
-          & git -C $workspace remote add origin $repoUrl
-          if ($LASTEXITCODE -ne 0) { throw 'Failed to add anonymous local-runner source remote.' }
-          & git -C $workspace config --local credential.helper ''
-          & git -C $workspace config --local core.askPass ''
-          & git -C $workspace config --local --unset-all http.https://github.com/.extraheader 2>$null
 
-          $fetchOk = $false
-          $fetchMaxAttempts = 3
-          for ($fetchAttempt = 1; $fetchAttempt -le $fetchMaxAttempts; $fetchAttempt++) {
-            & git -C $workspace -c 'http.version=HTTP/1.1' -c 'http.lowSpeedLimit=1024' -c 'http.lowSpeedTime=20' fetch --no-tags --prune --depth=1 origin $env:GITHUB_SHA
-            if ($LASTEXITCODE -eq 0) { $fetchOk = $true; break }
-            Write-Warning "Exact local-runner source fetch attempt $fetchAttempt/$fetchMaxAttempts failed."
-            if ($fetchAttempt -lt $fetchMaxAttempts) { Start-Sleep -Seconds ($fetchAttempt * 5) }
+          $downloadOk = $false
+          for ($attempt = 1; $attempt -le 3; $attempt++) {
+            & curl.exe --fail --silent --show-error --http1.1 --connect-timeout 10 --max-time 60 --speed-time 20 --speed-limit 1024 --output $archive $sourceUrl
+            if ($LASTEXITCODE -eq 0 -and (Test-Path -LiteralPath $archive -PathType Leaf) -and (Get-Item -LiteralPath $archive).Length -gt 0) {
+              $downloadOk = $true
+              break
+            }
+            Remove-Item -LiteralPath $archive -Force -ErrorAction SilentlyContinue
+            if ($attempt -lt 3) { Start-Sleep -Seconds (3 * $attempt) }
           }
-          if (-not $fetchOk) { throw "Exact local-runner source fetch failed after $fetchMaxAttempts bounded attempts." }
+          if (-not $downloadOk) { throw "Exact codeload source download failed for $env:GITHUB_SHA." }
 
-          & git -C $workspace checkout --detach --force FETCH_HEAD
-          if ($LASTEXITCODE -ne 0) { throw 'Exact local-runner source checkout failed.' }
-          $actual = (& git -C $workspace rev-parse HEAD).Trim()
-          if ($LASTEXITCODE -ne 0 -or $actual -ine $env:GITHUB_SHA) {
-            throw "Checkout SHA mismatch: expected $env:GITHUB_SHA got $actual"
+          Expand-Archive -LiteralPath $archive -DestinationPath $extract -Force
+          $root = Get-ChildItem -LiteralPath $extract -Directory | Select-Object -First 1
+          if ($null -eq $root) { throw 'Exact codeload archive did not contain a source root.' }
+          Get-ChildItem -Force -LiteralPath $root.FullName | ForEach-Object {
+            Move-Item -LiteralPath $_.FullName -Destination $workspace -Force
           }
-          Write-Host 'exact_source_mode=anonymous-exact-sha-http11'
-          Write-Host "exact_trigger_sha=$actual"
+          $binding = "$env:GITHUB_REPOSITORY@$env:GITHUB_SHA"
+          Set-Content -LiteralPath (Join-Path $workspace '.nexus-trigger-source') -Value $binding -Encoding ASCII
+          Remove-Item -LiteralPath $archive -Force
+          Remove-Item -LiteralPath $extract -Recurse -Force
+          Write-Host 'exact_source_mode=codeload-exact-sha-http11'
+          Write-Host "exact_trigger_sha=$env:GITHUB_SHA"
 
       - name: Owner-proof privacy guard
         if: github.event_name == 'push' && contains(github.event.head_commit.message, '[verify-owner-autostart]')
