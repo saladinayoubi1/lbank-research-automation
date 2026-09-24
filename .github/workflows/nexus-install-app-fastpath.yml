@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: read
   contents: read
 
 concurrency:
@@ -15,93 +16,131 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.actor == github.repository_owner
     runs-on: [self-hosted, Windows, X64, nexus-local]
     timeout-minutes: 60
+    outputs:
+      evidence_b64: ${{ steps.proof.outputs.evidence_b64 }}
     defaults:
       run:
-        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
     steps:
-      - name: Acquire exact pinned installer script
+      - name: Fetch exact repository source from codeload
         run: |
           $ErrorActionPreference = 'Stop'
-          $commit = '20205aa4411857844f1a42616267e34b6ffc5e91'
-          $expectedBlob = '9a75147a78957962035a253eada5510024147d8e'
-          $expectedArtifactZipSha256 = '9c077cef8d0ea124a2e02178e96b1329a3efb7af6f18c40fca5015aa16637c48'
-          $cacheZip = Join-Path $env:LOCALAPPDATA 'NEXUS\artifact-cache\nexus-windows-persistent-unpacked-10469382268.zip'
-          if (-not (Test-Path -LiteralPath $cacheZip -PathType Leaf)) { throw 'Verified artifact cache is missing.' }
-          if ((Get-Item -LiteralPath $cacheZip).Length -ne 217183934) { throw 'Verified artifact cache size mismatch.' }
-          $cacheHash = (Get-FileHash -LiteralPath $cacheZip -Algorithm SHA256).Hash.ToLowerInvariant()
-          if ($cacheHash -ne $expectedArtifactZipSha256) { throw "Verified artifact cache digest mismatch: $cacheHash" }
-          Write-Host "artifact_cache_sha256=$cacheHash"
-
-          $url = "https://raw.githubusercontent.com/saladinayoubi1/lbank-research-automation/$commit/scripts/install_and_smoke_nexus_personal_pro.ps1"
-          $dest = Join-Path $env:RUNNER_TEMP 'install_and_smoke_nexus_personal_pro.ps1'
-          Remove-Item -LiteralPath $dest -Force -ErrorAction SilentlyContinue
-          $downloaded = $false
-          for ($attempt = 1; $attempt -le 12 -and -not $downloaded; $attempt++) {
-            try {
-              Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $dest -TimeoutSec 45
-              if ((Get-Item -LiteralPath $dest).Length -gt 1000) { $downloaded = $true }
-            } catch {
-              Remove-Item -LiteralPath $dest -Force -ErrorAction SilentlyContinue
-              Start-Sleep -Seconds 2
-            }
-          }
-          if (-not $downloaded) { throw 'Pinned installer script download failed.' }
-          $bytes = [IO.File]::ReadAllBytes($dest)
-          $prefix = [Text.Encoding]::ASCII.GetBytes("blob $($bytes.Length)`0")
-          $combined = New-Object byte[] ($prefix.Length + $bytes.Length)
-          [Array]::Copy($prefix, 0, $combined, 0, $prefix.Length)
-          [Array]::Copy($bytes, 0, $combined, $prefix.Length, $bytes.Length)
-          $sha1 = [Security.Cryptography.SHA1]::Create().ComputeHash($combined)
-          $blob = -join ($sha1 | ForEach-Object { $_.ToString('x2') })
-          if ($blob -ne $expectedBlob) { throw "Pinned installer blob mismatch: $blob" }
-          Write-Host "installer_blob=$blob"
-
-          $text = [IO.File]::ReadAllText($dest)
-          $pattern = '(?s)    \$gh = Get-Command gh\.exe.*?    \$script:Evidence\.package\.downloaded = \$true'
-          $matches = [regex]::Matches($text, $pattern)
-          if ($matches.Count -ne 1) { throw "Installer artifact transport patch match count was $($matches.Count), expected 1." }
-          $replacementLines = @(
-            '    $verifiedZip = [Environment]::GetEnvironmentVariable(''NEXUS_VERIFIED_ARTIFACT_ZIP'', ''Process'')'
-            '    if (-not $verifiedZip -or -not (Test-Path -LiteralPath $verifiedZip -PathType Leaf)) {'
-            '        throw ''Verified local artifact ZIP is unavailable.'''
-            '    }'
-            '    $expectedArtifactZipSha256 = ''9c077cef8d0ea124a2e02178e96b1329a3efb7af6f18c40fca5015aa16637c48'''
-            '    $artifactZipSha256 = (Get-FileHash -LiteralPath $verifiedZip -Algorithm SHA256).Hash.ToLowerInvariant()'
-            '    if ($artifactZipSha256 -ne $expectedArtifactZipSha256) { throw ''Verified local artifact ZIP digest mismatch.'' }'
-            '    New-Item -ItemType Directory -Path $packageRootFull -Force | Out-Null'
-            '    Expand-Archive -LiteralPath $verifiedZip -DestinationPath $packageRootFull -Force'
-            '    if (-not (Test-Path -LiteralPath $packageRootFull -PathType Container)) { throw ''Package root is missing after verified local extraction.'' }'
-            '    $script:Evidence.package.downloaded = $true'
-          )
-          $replacement = $replacementLines -join "`r`n"
-          $text = [regex]::Replace($text, $pattern, [System.Text.RegularExpressions.MatchEvaluator]{ param($m) $replacement }, 1)
-          $oldTransport = "download_transport = 'existing_owner_gh_cli'"
-          if ([regex]::Matches($text, [regex]::Escape($oldTransport)).Count -ne 1) { throw 'Installer evidence transport marker mismatch.' }
-          $text = $text.Replace($oldTransport, "download_transport = 'verified_local_artifact_cache'")
-          [IO.File]::WriteAllText($dest, $text, (New-Object Text.UTF8Encoding($false)))
-          Write-Host 'installer_transport=verified_local_artifact_cache'
-
-      - name: Verify isolated runner workspace
-        run: |
-          $root = [IO.Path]::GetFullPath($env:GITHUB_WORKSPACE).TrimEnd('\')
-          $repo = ($env:GITHUB_REPOSITORY -split '/')[-1]
-          if ((Split-Path -Leaf $root) -ine $repo -or
-              (Split-Path -Leaf (Split-Path -Parent $root)) -ine $repo -or
-              (Split-Path -Leaf (Split-Path -Parent (Split-Path -Parent $root))) -ine '_work') {
+          $workspace = [IO.Path]::GetFullPath($env:GITHUB_WORKSPACE).TrimEnd('\')
+          $repoName = ($env:GITHUB_REPOSITORY -split '/')[-1]
+          if ((Split-Path -Leaf $workspace) -ine $repoName -or
+              (Split-Path -Leaf (Split-Path -Parent $workspace)) -ine $repoName -or
+              (Split-Path -Leaf (Split-Path -Parent (Split-Path -Parent $workspace))) -ine '_work') {
             throw 'Install fastpath workspace is not an isolated GitHub Actions workspace.'
           }
-          Write-Host 'install_fastpath_privacy_guard=ok'
 
-      - name: Install and smoke-test NEXUS Personal Pro on exact Lenovo
+          Get-ChildItem -LiteralPath $workspace -Force -ErrorAction SilentlyContinue |
+            Remove-Item -Recurse -Force -ErrorAction Stop
+
+          $archive = Join-Path $env:RUNNER_TEMP "nexus-fastpath-source-$env:GITHUB_RUN_ID.zip"
+          Remove-Item -LiteralPath $archive -Force -ErrorAction SilentlyContinue
+          $url = "https://codeload.github.com/$($env:GITHUB_REPOSITORY)/zip/$($env:GITHUB_SHA)"
+          & curl.exe --fail --silent --show-error --http1.1 --connect-timeout 15 --max-time 180 --retry 3 --retry-delay 3 --output $archive $url
+          if ($LASTEXITCODE -ne 0) { throw "Exact-source codeload failed with exit code $LASTEXITCODE." }
+          if (-not (Test-Path -LiteralPath $archive -PathType Leaf)) { throw 'Exact-source archive is missing.' }
+          if ((Get-Item -LiteralPath $archive).Length -lt 100000) { throw 'Exact-source archive is unexpectedly small.' }
+
+          & tar.exe -xf $archive -C $workspace --strip-components=1
+          if ($LASTEXITCODE -ne 0) { throw "Exact-source extraction failed with exit code $LASTEXITCODE." }
+          Remove-Item -LiteralPath $archive -Force
+
+          $marker = Join-Path $workspace '.nexus-trigger-source'
+          [IO.File]::WriteAllText($marker, $env:GITHUB_SHA, (New-Object Text.UTF8Encoding($false)))
+          if ((Get-Content -LiteralPath $marker -Raw).Trim().ToLowerInvariant() -ne $env:GITHUB_SHA.ToLowerInvariant()) {
+            throw 'Exact-source marker mismatch.'
+          }
+          Write-Host "install_fastpath_exact_source=$env:GITHUB_SHA"
+
+      - name: Resolve exact-source persistent package
+        id: package_meta
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
-          $env:NEXUS_VERIFIED_ARTIFACT_ZIP = Join-Path $env:LOCALAPPDATA 'NEXUS\artifact-cache\nexus-windows-persistent-unpacked-10469382268.zip'
-          & (Join-Path $env:RUNNER_TEMP 'install_and_smoke_nexus_personal_pro.ps1') `
+          & scripts\resolve_nexus_persistent_artifact.ps1 `
+            -Repository $env:GITHUB_REPOSITORY `
+            -SourceSha $env:GITHUB_SHA `
+            -WorkflowFile 'nexus-build-verification.yml' `
+            -ArtifactName 'nexus-windows-persistent-unpacked'
+
+      - name: Download exact persistent package
+        id: package_download
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          & scripts\download_github_actions_artifact_http11.ps1 `
+            -Repository $env:GITHUB_REPOSITORY `
+            -ArtifactRunId '${{ steps.package_meta.outputs.artifact_run_id }}' `
+            -ArtifactId '${{ steps.package_meta.outputs.artifact_id }}' `
+            -ArtifactName '${{ steps.package_meta.outputs.artifact_name }}' `
+            -ExpectedSourceSha '${{ steps.package_meta.outputs.source_sha }}' `
+            -ExpectedArchiveSha256 '${{ steps.package_meta.outputs.archive_sha256 }}' `
+            -ExpectedArchiveBytes '${{ steps.package_meta.outputs.archive_bytes }}' `
+            -DestinationDirectory (Join-Path $env:RUNNER_TEMP "nexus-personal-pro-package-$env:GITHUB_RUN_ID")
+
+      - name: Install and smoke-test exact NEXUS build
+        run: |
+          & scripts\install_and_smoke_nexus_personal_pro.ps1 `
             -PackageRoot (Join-Path $env:RUNNER_TEMP "nexus-personal-pro-package-$env:GITHUB_RUN_ID") `
-            -ExpectedSourceSha '3173e960705831c04b5b9255c643ce0fd72d2e92' `
-            -ExpectedUnpackedSha256 '7288452fb90dfeb4ba9863a3a7596af4c8b9187eede354b002210d303c3b4f1f' `
-            -ArtifactRunId 35151530593 `
-            -ArtifactId 10469382268 `
-            -ArtifactName 'nexus-windows-persistent-unpacked' `
+            -ExpectedSourceSha '${{ steps.package_meta.outputs.source_sha }}' `
+            -ExpectedUnpackedSha256 '${{ steps.package_download.outputs.inner_sha256 }}' `
+            -ArtifactRunId '${{ steps.package_meta.outputs.artifact_run_id }}' `
+            -ArtifactId '${{ steps.package_meta.outputs.artifact_id }}' `
+            -ArtifactName '${{ steps.package_meta.outputs.artifact_name }}' `
             -ExpectedComputerName 'DESKTOP-1R1081M' `
             -ExpectedRunnerName 'NEXUS-LOCAL-RUNNER' `
-            -EvidencePath 'build\windows-app-install\evidence.json'
+            -EvidencePath 'build\windows-app-install\evidence.json' `
+            -UsePreloadedPackage
+
+      - name: Export physical install proof
+        id: proof
+        run: |
+          $path = 'build\windows-app-install\evidence.json'
+          if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw 'Physical install evidence is missing.' }
+          $json = Get-Content -LiteralPath $path -Raw
+          $evidence = $json | ConvertFrom-Json
+          if ($evidence.decision -ne 'PASS') { throw 'Physical install evidence is not PASS.' }
+          if (([string]$evidence.source_sha).ToLowerInvariant() -ne $env:GITHUB_SHA.ToLowerInvariant()) { throw 'Physical install source SHA mismatch.' }
+          if ($evidence.safety.paper_only_required -ne $true -or $evidence.smoke.live_trading_authority -ne $false -or $evidence.smoke.live_orders_allowed -ne $false) {
+            throw 'Physical install safety boundary failed.'
+          }
+          $bytes = [Text.Encoding]::UTF8.GetBytes($json)
+          $b64 = [Convert]::ToBase64String($bytes)
+          if ($b64.Length -gt 500000) { throw 'Physical install evidence is unexpectedly large.' }
+          Add-Content -LiteralPath $env:GITHUB_OUTPUT -Value "evidence_b64=$b64" -Encoding utf8
+          Write-Host 'NEXUS_FASTPATH_INSTALL=PASS'
+
+  upload-proof:
+    needs: install
+    if: needs.install.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Rehydrate physical install proof
+        shell: bash
+        env:
+          EVIDENCE_B64: ${{ needs.install.outputs.evidence_b64 }}
+        run: |
+          set -euo pipefail
+          mkdir -p proof
+          printf '%s' "$EVIDENCE_B64" | base64 --decode > proof/evidence.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = json.loads(Path("proof/evidence.json").read_text(encoding="utf-8"))
+          assert p["decision"] == "PASS"
+          assert p["safety"]["paper_only_required"] is True
+          assert p["smoke"]["live_trading_authority"] is False
+          assert p["smoke"]["live_orders_allowed"] is False
+          print("cloud_proof_rehydrate=ok")
+          PY
+
+      - name: Upload physical Windows app install proof
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-windows-app-install-fastpath-proof-${{ github.run_id }}
+          path: proof/evidence.json
+          if-no-files-found: error
+          retention-days: 30
