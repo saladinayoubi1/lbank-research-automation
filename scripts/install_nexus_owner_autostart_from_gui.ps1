@@ -212,7 +212,11 @@ function Get-RawGitCommitParents([string]$Commit) {
     if ($exitCode -eq 0) { return $true }
     if ($exitCode -eq 1) {
         $isShallow = Invoke-Git -Root $ManagedRepoRoot -GitArguments @('rev-parse','--is-shallow-repository')
-        if ($isShallow -eq 'true' -and (Test-RawGitAncestor -Ancestor $Ancestor -Descendant $Descendant)) {
+        $rawAncestor = $false
+        if ($isShallow -eq 'true') {
+            $rawAncestor = Test-RawGitAncestor -Ancestor $Ancestor -Descendant $Descendant
+        }
+        if ($rawAncestor) {
             Write-Log "shallow raw ancestry proof ancestor=$($Ancestor.ToLowerInvariant()) descendant=$($Descendant.ToLowerInvariant())"
             return $true
         }
