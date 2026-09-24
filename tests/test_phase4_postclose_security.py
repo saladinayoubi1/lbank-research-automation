@@ -158,14 +158,20 @@ def test_self_hosted_phase_workflows_pin_trusted_manual_refs_and_credentials():
     assert "Verify exact hosted source binding" in source_block
     assert "actions/upload-artifact@" not in source_block
     assert "actions/download-artifact@" not in worker_block
-    assert "Prepare anonymous exact source with bounded HTTP/1.1 retries" in worker_block
-    assert "https://github.com/$env:GITHUB_REPOSITORY.git" in worker_block
-    assert "git -C $workspace config --local --unset-all http.https://github.com/.extraheader" in worker_block
-    assert "http.version=HTTP/1.1" in worker_block
-    assert "$fetchMaxAttempts = 3" in worker_block
-    assert "fetch --no-tags --prune --depth=1 origin $env:GITHUB_SHA" in worker_block
-    assert "checkout --detach --force FETCH_HEAD" in worker_block
-    assert "Exact trigger SHA mismatch" in worker_block
+    assert "Fetch exact autonomy source from codeload" in worker_block
+    assert "https://codeload.github.com/$env:GITHUB_REPOSITORY/zip/$env:GITHUB_SHA" in worker_block
+    assert "curl.exe --fail --silent --show-error --http1.1" in worker_block
+    assert "--connect-timeout 10" in worker_block
+    assert "--max-time 60" in worker_block
+    assert "--speed-time 20" in worker_block
+    assert "--speed-limit 1024" in worker_block
+    assert "tar.exe -xf $archive -C $extract" in worker_block
+    assert ".nexus-trigger-source" in worker_block
+    assert "Exact autonomy trigger binding mismatch" in worker_block
+    assert "exact_source_mode=codeload-exact-sha-http11" in worker_block
+    assert "Expand-Archive" not in worker_block
+    assert "git -C $workspace" not in worker_block
+    assert "fetch --no-tags" not in worker_block
     assert "x-access-token" not in worker_block
     assert "Authorization: Bearer" not in worker_block
 
