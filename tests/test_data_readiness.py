@@ -209,3 +209,20 @@ def test_build_summary_handles_empty_input():
 
     assert summary["total_series"] == 0
     assert summary["all_ready"] is False
+
+
+def test_generate_report_can_write_runtime_reports_outside_status_checkout(tmp_path: Path):
+    status_root = tmp_path / "repo" / "data" / "market"
+    status_root.mkdir(parents=True)
+    status_path = status_root / "_backfill_status.csv"
+    sample_frame().to_csv(status_path, index=False)
+    runtime_root = tmp_path / "runtime" / "readiness"
+
+    summary = generate_readiness_report(
+        status_path, as_of_utc=AS_OF, output_root=runtime_root
+    )
+
+    assert summary["total_series"] == 2
+    for name in ("_data_readiness.csv", "_data_readiness.json", "_data_readiness.md"):
+        assert (runtime_root / name).is_file()
+        assert not (status_root / name).exists()

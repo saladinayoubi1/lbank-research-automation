@@ -93,3 +93,10 @@ def test_worker_releases_runner_immediately_when_idle(monkeypatch):
     assert heartbeats[-1]["state"] == "cycle_complete"
     assert heartbeats[-1]["exit_reason"] == "idle"
     assert heartbeats[-1]["tasks_run"] == 0
+
+
+def test_readiness_runtime_reports_stay_outside_tracked_checkout():
+    text = WORKER.read_text(encoding="utf-8")
+    readiness_line = next(line for line in text.splitlines() if line.strip().startswith("'readiness':"))
+    assert "--output-root" in readiness_line
+    assert "STATE_DIR / 'readiness'" in readiness_line

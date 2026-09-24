@@ -26,7 +26,7 @@ HEARTBEAT = STATE_DIR / 'worker-heartbeat.json'
 COMMANDS = {
     'health': [sys.executable, '-m', 'pytest', '-q', 'tests/test_nexus_architecture_validator.py', 'tests/test_web_dashboard.py'],
     'tests': [sys.executable, '-m', 'pytest', '-q'],
-    'readiness': [sys.executable, 'data_readiness.py', '--status-path', r'data\\market\\_backfill_status.csv'],
+    'readiness': [sys.executable, 'data_readiness.py', '--status-path', r'data\\market\\_backfill_status.csv', '--output-root', str(STATE_DIR / 'readiness')],
     'zotero-status': [sys.executable, '-c', "import urllib.request; urllib.request.urlopen('http://127.0.0.1:23119/connector/ping',timeout=5); print('zotero=ok')"],
     'ai-council-health': ['node', 'scripts/nexus_ai_council.js'],
     'brain-health': ['node', 'scripts/nexus_brain_core.js'],
