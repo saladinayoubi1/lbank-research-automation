@@ -110,26 +110,33 @@ def test_portable_artifact_cache_survives_runner_temp_cleanup_and_remains_checks
     assert 'PIP_WHEEL=%RUNNER_TEMP%' not in text
 
 
-def test_local_runner_checkout_is_bound_to_trigger_sha_and_verified():
+def test_local_runner_source_fetch_is_bound_to_trigger_sha_and_verified():
     workflow = WORKFLOW.read_text(encoding='utf-8')
-    assert 'ref: ${{ github.sha }}' in workflow
+    assert '- name: Fetch exact repository source over Git HTTP/1.1' in workflow
+    assert 'actions/checkout@' not in workflow
     assert 'ref: main' not in workflow
     assert 'git rev-parse HEAD' in workflow
-    assert 'GITHUB_SHA' in workflow
+    assert '$env:GITHUB_SHA' in workflow
     assert 'Checkout SHA mismatch' in workflow
 
 
-def test_local_runner_checkout_is_bounded_and_preserves_clean_exact_sha_checkout():
+def test_local_runner_source_fetch_is_bounded_anonymous_http11_and_clean():
     workflow = WORKFLOW.read_text(encoding='utf-8')
-    checkout = workflow.index('- name: Checkout repository')
-    verify = workflow.index('- name: Verify exact trigger SHA')
-    block = workflow[checkout:verify]
+    fetch = workflow.index('- name: Fetch exact repository source over Git HTTP/1.1')
+    owner_guard = workflow.index('- name: Owner-proof privacy guard')
+    block = workflow[fetch:owner_guard]
     assert 'timeout-minutes: 10' in block
-    assert 'uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1' in block
-    assert 'ref: ${{ github.sha }}' in block
-    assert 'persist-credentials: false' in block
-    assert 'clean: true' in block
-    assert 'fetch-depth: 1' in block
+    assert 'https://github.com/{0}.git' in block
+    assert 'GIT_TERMINAL_PROMPT' in block
+    assert 'http.version HTTP/1.1' in block
+    assert "credential.helper ''" in block
+    assert "core.askPass ''" in block
+    assert '--unset-all http.https://github.com/.extraheader' in block
+    assert 'fetch --force --no-tags --depth=1 origin $env:GITHUB_SHA' in block
+    assert 'reset --hard FETCH_HEAD' in block
+    assert 'clean -ffdx' in block
+    assert 'git rev-parse HEAD' in block
+    assert 'actions/checkout@' not in block
 
 
 def test_bootstrap_prefers_verified_local_python_before_portable_network_fallback():
@@ -181,14 +188,17 @@ def test_autonomy_exact_source_fetch_is_bounded_anonymous_and_http11():
     assert 'Authorization: Bearer' not in worker_block
 
 
-def test_owner_autostart_proof_fast_path_skips_heavy_python_and_node_bootstrap():
+def test_owner_autostart_proof_fast_path_skips_heavy_python_and_scopes_node_probe():
     workflow = WORKFLOW.read_text(encoding='utf-8')
     skip_expr = "github.event_name != 'push' || !contains(github.event.head_commit.message, '[verify-owner-autostart]')"
-    assert workflow.count(skip_expr) == 3
+    assert workflow.count(skip_expr) == 2
     verifier = workflow.index('- name: Verify owner-user autostart read-only')
-    setup_node = workflow.index('- uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020')
+    node_probe = workflow.index('- name: Verify system Node.js')
     bootstrap = workflow.index('- name: Bootstrap portable Python')
-    assert verifier < setup_node < bootstrap
+    assert verifier < node_probe < bootstrap
+    assert 'actions/setup-node@' not in workflow
+    assert "inputs.task == 'ai-council-health'" in workflow[node_probe:bootstrap]
+    assert 'run: node --version' in workflow[node_probe:bootstrap]
     assert '- name: Owner-proof privacy guard' in workflow
     assert 'owner_proof_privacy_guard=ok' in workflow
     assert 'GITHUB_WORKSPACE' in workflow

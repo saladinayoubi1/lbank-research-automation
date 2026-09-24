@@ -28,10 +28,13 @@ def test_python_windows_paths_share_portable_bootstrap() -> None:
         assert "scripts\\bootstrap_portable_python.cmd" in text(workflow), name
 
 
-def test_node_is_provisioned_before_local_worker_and_runtime_worker() -> None:
+def test_node_runtime_requirements_are_explicit_without_local_runner_setup_action() -> None:
     local_runner = text(ROOT / ".github" / "workflows" / "nexus-local-runner.yml")
     runtime_worker = text(ROOT / ".github" / "workflows" / "nexus-runtime-worker.yml")
-    assert SETUP_NODE in local_runner
+    assert SETUP_NODE not in local_runner
+    assert "- name: Verify system Node.js" in local_runner
+    assert "inputs.task == 'ai-council-health'" in local_runner
+    assert "run: node --version" in local_runner
     assert SETUP_NODE in runtime_worker
     assert "shell: powershell" not in runtime_worker
 
