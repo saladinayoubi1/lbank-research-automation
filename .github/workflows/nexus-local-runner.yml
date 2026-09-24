@@ -34,6 +34,7 @@ on:
       - scripts/install_nexus_autostart_from_runner.ps1
       - scripts/verify_nexus_owner_autostart.ps1
       - scripts/install_and_smoke_nexus_personal_pro.ps1
+      - scripts/download_github_actions_artifact_http11.ps1
       - .github/workflows/nexus-local-runner.yml
 
 permissions:
@@ -132,19 +133,25 @@ jobs:
           (github.event_name == 'push' && contains(github.event.head_commit.message, '[sidecar-compat]'))
         run: python -c "import os,pathlib; root=pathlib.Path.cwd().resolve(); repo=os.environ['GITHUB_REPOSITORY'].split('/')[-1]; assert root.name.casefold()==repo.casefold() and root.parent.name.casefold()==repo.casefold() and root.parent.parent.name.casefold()=='_work'; print('privacy_guard=ok')"
 
-      - name: Download exact NEXUS persistent package
+      - name: Download exact NEXUS persistent package via resilient HTTP/1.1 transport
         if: >-
           github.actor == github.repository_owner && (
             (github.event_name == 'push' && contains(github.event.head_commit.message, '[install-app]')) ||
             (github.event_name == 'workflow_dispatch' && inputs.task == 'install-app')
           )
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        with:
-          name: nexus-windows-persistent-unpacked
-          path: ${{ runner.temp }}\nexus-personal-pro-package-${{ github.run_id }}
-          github-token: ${{ github.token }}
-          repository: ${{ github.repository }}
-          run-id: 35923832634
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          & scripts\download_github_actions_artifact_http11.ps1 `
+            -Repository $env:GITHUB_REPOSITORY `
+            -ArtifactRunId 35923832634 `
+            -ArtifactId 10778482019 `
+            -ArtifactName 'nexus-windows-persistent-unpacked' `
+            -ExpectedSourceSha 'ca1bf756edd1e6d0336a0316cad1695537eeb7ed' `
+            -ExpectedArchiveSha256 'a87684f07c8aaa949e6960466c9f51eddcaf9905765e901b744569060930bc0e' `
+            -ExpectedArchiveBytes 217211776 `
+            -DestinationDirectory (Join-Path $env:RUNNER_TEMP "nexus-personal-pro-package-$env:GITHUB_RUN_ID")
 
       - name: Install and smoke-test NEXUS Personal Pro on exact Lenovo
         if: >-
