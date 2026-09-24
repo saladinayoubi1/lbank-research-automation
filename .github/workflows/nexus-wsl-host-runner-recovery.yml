@@ -2,6 +2,11 @@ name: NEXUS WSL Host Runner Recovery
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/nexus-wsl-host-runner-recovery.yml'
+      - '.nexus/wsl-host-recovery-trigger.txt'
 
 permissions:
   contents: read
@@ -13,8 +18,8 @@ concurrency:
 # Emergency-only recovery path. Scheduled DR recovery belongs to
 # nexus-windows-dr-bootstrap.yml, which runs from the healthy nexus-local runner.
 # This workflow intentionally runs from the already-registered Bybit WSL runner
-# so it can recover the exact Windows DR registration through WSL interop without
-# depending on the DR runner being online first.
+# so it can recover the exact Windows DR and local Lenovo runner processes through
+# WSL interop without depending on either Windows runner being online first.
 jobs:
   wake-windows-runner:
     if: github.ref == 'refs/heads/main'
@@ -121,6 +126,105 @@ jobs:
             Write-Host "NEXUS_WINDOWS_RUNNER_REGISTRATION_CHANGED=false"
             Write-Host "NEXUS_WINDOWS_RUNNER_CREDENTIALS_CHANGED=false"
             Write-Host "NEXUS_WINDOWS_RUNNER_OTHER_PATHS_CHANGED=false"
+            Write-Host "NEXUS_LIVE_TRADING_AUTHORITY_CHANGED=false"
+          '
+
+      - name: Recover exact Lenovo local Actions runner through WSL interop
+        shell: bash
+        run: |
+          set -euo pipefail
+          WINPS='/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe'
+          test -x "$WINPS"
+          "$WINPS" -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command '
+            $ErrorActionPreference = "Stop"
+            Set-StrictMode -Version 2.0
+
+            $runnerRoot = Join-Path $env:LOCALAPPDATA "NEXUS\actions-runner"
+            $runnerCmd = Join-Path $runnerRoot "run.cmd"
+            $runnerConfig = Join-Path $runnerRoot ".runner"
+            $listenerExe = Join-Path $runnerRoot "bin\Runner.Listener.exe"
+            $expectedRunnerName = "NEXUS-LOCAL-RUNNER"
+            $expectedGitHubUrl = "https://github.com/saladinayoubi1/lbank-research-automation"
+
+            function Normalize-Url([string]$Value) {
+              if (-not $Value) { return "" }
+              return $Value.Trim().TrimEnd("/").ToLowerInvariant()
+            }
+
+            foreach ($requiredPath in @($runnerCmd, $runnerConfig, $listenerExe)) {
+              if (-not (Test-Path -LiteralPath $requiredPath -PathType Leaf)) {
+                throw "exact local runner file missing: $requiredPath"
+              }
+            }
+
+            $config = Get-Content -LiteralPath $runnerConfig -Raw | ConvertFrom-Json
+            if ([string]$config.agentName -ne $expectedRunnerName) {
+              throw "exact local runner name mismatch"
+            }
+            if ((Normalize-Url ([string]$config.gitHubUrl)) -ne (Normalize-Url $expectedGitHubUrl)) {
+              throw "exact local runner repository binding mismatch"
+            }
+            Write-Host "NEXUS_LOCAL_RUNNER_TARGET_VERIFIED=true"
+
+            $rootPrefix = ([IO.Path]::GetFullPath($runnerRoot).TrimEnd("\") + "\")
+            function Get-ExactLocalListeners {
+              $matches = @()
+              foreach ($proc in Get-Process -Name "Runner.Listener" -ErrorAction SilentlyContinue) {
+                try {
+                  $procPath = [string]$proc.Path
+                  if ($procPath -and ([IO.Path]::GetFullPath($procPath)).StartsWith($rootPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+                    $matches += $proc
+                  }
+                }
+                catch { }
+              }
+              return @($matches)
+            }
+
+            $existing = @(Get-ExactLocalListeners)
+            if ($existing.Count -gt 1) {
+              throw "multiple exact local runner listeners observed before recovery"
+            }
+            $restartPerformed = $existing.Count -eq 1
+            foreach ($proc in $existing) {
+              Write-Host "NEXUS_LOCAL_RUNNER_OLD_PID=$($proc.Id)"
+              Stop-Process -Id $proc.Id -Force -ErrorAction Stop
+            }
+
+            $stopDeadline = [DateTime]::UtcNow.AddSeconds(15)
+            while ([DateTime]::UtcNow -lt $stopDeadline -and @(Get-ExactLocalListeners).Count -ne 0) {
+              Start-Sleep -Seconds 1
+            }
+            if (@(Get-ExactLocalListeners).Count -ne 0) {
+              throw "exact local runner listener did not stop within bounded timeout"
+            }
+
+            $cmd = Join-Path $env:SystemRoot "System32\cmd.exe"
+            $arguments = "/d /s /c start `"NEXUS Local Actions Runner`" /min `"$runnerCmd`""
+            Start-Process -FilePath $cmd -ArgumentList $arguments -WorkingDirectory $runnerRoot -WindowStyle Hidden
+
+            $deadline = [DateTime]::UtcNow.AddSeconds(30)
+            $listener = $null
+            while ([DateTime]::UtcNow -lt $deadline) {
+              Start-Sleep -Seconds 1
+              $candidate = @(Get-ExactLocalListeners)
+              if ($candidate.Count -eq 1) {
+                $listener = $candidate[0]
+                break
+              }
+              if ($candidate.Count -gt 1) {
+                throw "duplicate exact local runner listeners observed after recovery"
+              }
+            }
+            if (-not $listener) {
+              throw "exact local Runner.Listener did not start within bounded timeout"
+            }
+
+            Write-Host "NEXUS_LOCAL_RUNNER_NEW_PID=$($listener.Id)"
+            Write-Host "NEXUS_LOCAL_RUNNER_RESTARTED=$($restartPerformed.ToString().ToLowerInvariant())"
+            Write-Host "NEXUS_LOCAL_RUNNER_WAKE=SUCCESS"
+            Write-Host "NEXUS_LOCAL_RUNNER_REGISTRATION_CHANGED=false"
+            Write-Host "NEXUS_LOCAL_RUNNER_CREDENTIALS_CHANGED=false"
             Write-Host "NEXUS_LIVE_TRADING_AUTHORITY_CHANGED=false"
           '
 
