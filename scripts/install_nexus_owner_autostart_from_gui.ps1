@@ -327,6 +327,16 @@ try {
         throw "managed checkout source verification failed: package=$($SourceSha.ToLowerInvariant()) managed=$head"
     }
 
+    # Import Task Scheduler compatibility helpers once at script scope. Dot-sourcing
+    # only inside Import-TaskSchedulerCompat would define the helper functions in
+    # that function's local scope and discard them on return.
+    $CurrentStage = 'task_scheduler_compat'
+    $taskCompatPath = Join-Path $ManagedRepoRoot $TaskCompatRelative
+    if (-not (Test-Path -LiteralPath $taskCompatPath -PathType Leaf)) {
+        throw "required Task Scheduler compatibility helper missing: $TaskCompatRelative"
+    }
+    . $taskCompatPath
+
     $CurrentStage = 'core_autostart_install'
     Invoke-Installer 'scripts\nexus_windows_autostart.ps1'
 
