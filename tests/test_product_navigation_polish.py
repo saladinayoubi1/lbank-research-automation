@@ -121,3 +121,23 @@ def test_manual_paper_ticket_has_no_fake_price_defaults():
         tag = html[html.rfind("<input", 0, start):html.index(">", start) + 1]
         assert "required" in tag
         assert 'autocomplete="off"' in tag
+
+
+def test_laptop_professional_polish_removes_visible_prototype_artifacts():
+    html = INDEX.read_text(encoding="utf-8")
+    offline = (ROOT / "product_ui" / "product-offline.js").read_text(encoding="utf-8")
+    mission = (ROOT / "product_ui" / "product-mission.js").read_text(encoding="utf-8")
+    mission_css = (ROOT / "product_ui" / "product-mission.css").read_text(encoding="utf-8")
+    extra = CSS.read_text(encoding="utf-8")
+
+    assert '<b id="buildLabel">5.1.0</b>' in html
+    assert "NEXUS Personal Pro 5.1.0 - Offline-first" in offline
+    assert "5.1.0 · Offline-first" not in offline
+    assert "Runtime state not present on this laptop" not in mission
+    assert "Mission runtime snapshot not loaded" in mission
+    assert "NO MISSION SNAPSHOT" in mission
+    assert "mission-resource-pill" in mission
+    assert ".mission-resource-stack" in mission_css
+    assert "@media(max-width:1400px){.mission-now{grid-template-columns:repeat(3" in mission_css
+    assert ".pipeline{display:grid!important" in extra
+    assert ".pipeline>em{display:none!important}" in extra
