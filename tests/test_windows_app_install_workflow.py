@@ -226,18 +226,26 @@ def test_install_fastpath_is_exact_source_and_has_no_external_actions_on_lenovo(
     install = parsed["jobs"]["install"]
     assert install["runs-on"] == ["self-hosted", "Windows", "X64", "nexus-local"]
     assert install["if"] == "github.ref == 'refs/heads/main' && github.actor == github.repository_owner"
-    assert parsed["permissions"] == {"actions": "read", "contents": "read"}
+    assert parsed["permissions"] == {"contents": "read"}
 
     install_steps = install["steps"]
     assert install_steps
     assert all("uses" not in step for step in install_steps)
     assert "codeload.github.com" in workflow
     assert "$env:GITHUB_SHA" in workflow
-    assert "resolve_nexus_persistent_artifact.ps1" in workflow
-    assert "download_github_actions_artifact_http11.ps1" in workflow
+    assert "cache-manifest.json" in workflow
+    assert "nexus.preloaded-persistent-cache.v1" in workflow
+    assert "NEXUS_Personal_Pro_Unpacked_5.1.0_x64.zip" in workflow
     assert "install_and_smoke_nexus_personal_pro.ps1" in workflow
-    assert "nexus-windows-persistent-unpacked" in workflow
+    assert "-UsePreloadedPackage" in workflow
+    assert "NEXUS_FASTPATH_CACHE=PASS" in workflow
     assert "NEXUS_FASTPATH_INSTALL=PASS" in workflow
+    assert "source_sha:" in workflow
+    assert "artifact_run_id:" in workflow
+    assert "artifact_id:" in workflow
+    assert "archive_sha256:" in workflow
+    assert "archive_bytes:" in workflow
+    assert "inner_sha256:" in workflow
 
     for stale in (
         "10469382268",
@@ -248,9 +256,3 @@ def test_install_fastpath_is_exact_source_and_has_no_external_actions_on_lenovo(
     ):
         assert stale not in workflow
 
-    upload = parsed["jobs"]["upload-proof"]
-    assert upload["needs"] == "install"
-    assert any(
-        step.get("uses", "").startswith("actions/upload-artifact@")
-        for step in upload["steps"]
-    )
