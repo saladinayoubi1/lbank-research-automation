@@ -223,6 +223,7 @@ def test_install_fastpath_is_exact_source_and_has_no_external_actions_on_lenovo(
     workflow = text(FASTPATH)
     parsed = yaml.safe_load(workflow)
     assert isinstance(parsed, dict) and isinstance(parsed.get("jobs"), dict)
+    assert set(parsed["jobs"]) == {"install"}
     install = parsed["jobs"]["install"]
     assert install["runs-on"] == ["self-hosted", "Windows", "X64", "nexus-local"]
     assert install["if"] == "github.ref == 'refs/heads/main' && github.actor == github.repository_owner"
@@ -233,19 +234,14 @@ def test_install_fastpath_is_exact_source_and_has_no_external_actions_on_lenovo(
     assert all("uses" not in step for step in install_steps)
     assert "codeload.github.com" in workflow
     assert "$env:GITHUB_SHA" in workflow
-    assert "cache-manifest.json" in workflow
-    assert "nexus.preloaded-persistent-cache.v1" in workflow
-    assert "NEXUS_Personal_Pro_Unpacked_5.1.0_x64.zip" in workflow
+    assert "gh auth token" in workflow
+    assert "resolve_nexus_persistent_artifact.ps1" in workflow
+    assert "download_github_actions_artifact_http11.ps1" in workflow
+    assert "NEXUS_Personal_Pro_Unpacked_5.1.0_x64.zip" not in workflow
     assert "install_and_smoke_nexus_personal_pro.ps1" in workflow
     assert "-UsePreloadedPackage" in workflow
-    assert "NEXUS_FASTPATH_CACHE=PASS" in workflow
     assert "NEXUS_FASTPATH_INSTALL=PASS" in workflow
-    assert "source_sha:" in workflow
-    assert "artifact_run_id:" in workflow
-    assert "artifact_id:" in workflow
-    assert "archive_sha256:" in workflow
-    assert "archive_bytes:" in workflow
-    assert "inner_sha256:" in workflow
+    assert "NEXUS_FASTPATH_EVIDENCE=" in workflow
 
     for stale in (
         "10469382268",
