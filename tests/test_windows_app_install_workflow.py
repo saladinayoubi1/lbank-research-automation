@@ -73,6 +73,7 @@ def test_resilient_artifact_downloader_is_metadata_and_digest_bound() -> None:
     assert "--continue-at" not in script
     assert "Start-Process -FilePath 'curl.exe'" in script
     assert "Get-SignedArtifactUrl" in script
+    assert "([string](Get-Content -LiteralPath $part.Stderr -Raw -ErrorAction SilentlyContinue)).Trim()" in script
 
 
 def test_installer_is_side_by_side_non_admin_and_preserves_existing_install() -> None:
