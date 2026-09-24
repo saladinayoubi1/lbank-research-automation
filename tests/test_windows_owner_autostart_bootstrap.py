@@ -71,6 +71,12 @@ def test_owner_bootstrap_uses_only_packaged_seed_for_initial_and_existing_source
     assert "'checkout','-B','main','FETCH_HEAD'" in script
     assert "packaged seed fetch mismatch" in script
     assert "managed checkout reconciliation failed" in script
+    assert "function Test-RawGitAncestor" in script
+    assert "function Get-RawGitCommitParents" in script
+    assert "cat-file','-p'" in script
+    assert "'rev-parse','--is-shallow-repository'" in script
+    assert "raw shallow ancestry proof exceeded bound=" in script
+    assert "shallow raw ancestry proof ancestor=" in script
     assert "fetch','origin" not in script
     assert "pull" not in script.casefold()
 
@@ -157,6 +163,19 @@ def test_shallow_packaged_seed_can_reconcile_an_older_clean_checkout_without_net
 
     _git("fetch", "--no-tags", "--update-shallow", str(seed), "refs/heads/nexus-package-source", cwd=managed)
     assert _git("rev-parse", "FETCH_HEAD", cwd=managed) == new_sha
+
+    shallow_probe = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", old_sha, new_sha],
+        cwd=managed,
+        text=True,
+        capture_output=True,
+        timeout=30,
+        check=False,
+    )
+    assert shallow_probe.returncode == 1
+    raw_commit = _git("cat-file", "-p", new_sha, cwd=managed)
+    assert f"parent {old_sha}" in raw_commit
+
     _git("checkout", "-B", "main", "FETCH_HEAD", cwd=managed)
 
     assert _git("rev-parse", "HEAD", cwd=managed) == new_sha
