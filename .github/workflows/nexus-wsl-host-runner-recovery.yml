@@ -27,6 +27,8 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Recover exact existing Windows Actions runner through WSL interop
+        continue-on-error: true
+        timeout-minutes: 1
         shell: bash
         run: |
           set -euo pipefail
@@ -35,7 +37,7 @@ jobs:
             echo 'windows_powershell_interop=missing' >&2
             exit 2
           fi
-          "$PS_EXE" -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command '
+          timeout --foreground --signal=TERM --kill-after=5s 45s "$PS_EXE" -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command '
             $ErrorActionPreference = "Stop"
             Set-StrictMode -Version 2.0
 
@@ -130,12 +132,13 @@ jobs:
           '
 
       - name: Recover exact Lenovo local Actions runner through WSL interop
+        timeout-minutes: 2
         shell: bash
         run: |
           set -euo pipefail
           WINPS='/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe'
           test -x "$WINPS"
-          "$WINPS" -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command '
+          timeout --foreground --signal=TERM --kill-after=5s 90s "$WINPS" -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command '
             $ErrorActionPreference = "Stop"
             Set-StrictMode -Version 2.0
 
@@ -229,9 +232,11 @@ jobs:
           '
 
       - name: Request existing Remote Commander user-context recovery through WSL
+        continue-on-error: true
+        timeout-minutes: 1
         shell: bash
         run: |
           set -euo pipefail
           WINPS='/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe'
           test -x "$WINPS"
-          "$WINPS" -NoProfile -NonInteractive -Command '$task="NEXUS-Remote-Commander-Recovery"; & schtasks.exe /Query /TN $task /FO LIST /V; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; & schtasks.exe /Run /TN $task; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; Start-Sleep -Seconds 5; & schtasks.exe /Query /TN $task /FO LIST /V; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; Write-Host "remote_commander_rescue_request=PASS"; Write-Host "remote_commander_task_mutated=false"; Write-Host "runner_registration_mutated=false"; Write-Host "runner_credentials_mutated=false"; Write-Host "windows_acl_modified=false"; Write-Host "live_trading_authority_changed=false"'
+          timeout --foreground --signal=TERM --kill-after=5s 45s "$WINPS" -NoProfile -NonInteractive -Command '$task="NEXUS-Remote-Commander-Recovery"; & schtasks.exe /Query /TN $task /FO LIST /V; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; & schtasks.exe /Run /TN $task; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; Start-Sleep -Seconds 5; & schtasks.exe /Query /TN $task /FO LIST /V; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; Write-Host "remote_commander_rescue_request=PASS"; Write-Host "remote_commander_task_mutated=false"; Write-Host "runner_registration_mutated=false"; Write-Host "runner_credentials_mutated=false"; Write-Host "windows_acl_modified=false"; Write-Host "live_trading_authority_changed=false"'
