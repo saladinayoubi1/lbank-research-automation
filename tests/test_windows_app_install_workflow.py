@@ -12,6 +12,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / ".github" / "workflows" / "nexus-local-runner.yml"
+FASTPATH = ROOT / ".github" / "workflows" / "nexus-install-app-fastpath.yml"
 SCRIPT = ROOT / "scripts" / "install_and_smoke_nexus_personal_pro.ps1"
 DOWNLOADER = ROOT / "scripts" / "download_github_actions_artifact_http11.ps1"
 RESOLVER = ROOT / "scripts" / "resolve_nexus_persistent_artifact.ps1"
@@ -216,3 +217,40 @@ def test_permission_policy_tracks_cross_run_artifact_read() -> None:
     rule = policy["workflows"][".github/workflows/nexus-local-runner.yml"]
     assert rule["workflow_permissions"] == {"actions": "read", "contents": "read"}
     assert "write" not in rule["workflow_permissions"].values()
+
+
+def test_install_fastpath_is_exact_source_and_has_no_external_actions_on_lenovo() -> None:
+    workflow = text(FASTPATH)
+    parsed = yaml.safe_load(workflow)
+    assert isinstance(parsed, dict) and isinstance(parsed.get("jobs"), dict)
+    install = parsed["jobs"]["install"]
+    assert install["runs-on"] == ["self-hosted", "Windows", "X64", "nexus-local"]
+    assert install["if"] == "github.ref == 'refs/heads/main' && github.actor == github.repository_owner"
+    assert parsed["permissions"] == {"actions": "read", "contents": "read"}
+
+    install_steps = install["steps"]
+    assert install_steps
+    assert all("uses" not in step for step in install_steps)
+    assert "codeload.github.com" in workflow
+    assert "$env:GITHUB_SHA" in workflow
+    assert "resolve_nexus_persistent_artifact.ps1" in workflow
+    assert "download_github_actions_artifact_http11.ps1" in workflow
+    assert "install_and_smoke_nexus_personal_pro.ps1" in workflow
+    assert "nexus-windows-persistent-unpacked" in workflow
+    assert "NEXUS_FASTPATH_INSTALL=PASS" in workflow
+
+    for stale in (
+        "10469382268",
+        "35151530593",
+        "3173e960705831c04b5b9255c643ce0fd72d2e92",
+        "7288452fb90dfeb4ba9863a3a7596af4c8b9187eede354b002210d303c3b4f1f",
+        "20205aa4411857844f1a42616267e34b6ffc5e91",
+    ):
+        assert stale not in workflow
+
+    upload = parsed["jobs"]["upload-proof"]
+    assert upload["needs"] == "install"
+    assert any(
+        step.get("uses", "").startswith("actions/upload-artifact@")
+        for step in upload["steps"]
+    )
