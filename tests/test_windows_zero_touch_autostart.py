@@ -119,3 +119,10 @@ def test_zero_touch_autostart_does_not_launch_legacy_dashboard_by_default():
     assert "--with-dashboard" not in start
     assert "@($quotedScript,'--poll-seconds','20')" in start
     assert 'parser.add_argument("--with-dashboard", action="store_true")' in read(SUPERVISOR)
+
+
+def test_supervisor_reuse_logging_is_pid_change_bounded():
+    text = read(PS)
+    assert "$script:LastReusedSupervisorPid = $null" in text
+    assert "if ($script:LastReusedSupervisorPid -ne $proc.Id)" in text
+    assert "$script:LastReusedSupervisorPid = $proc.Id" in text
