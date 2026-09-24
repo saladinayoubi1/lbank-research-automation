@@ -179,6 +179,58 @@ function Validate-ExistingManagedRepo {
     return (Invoke-Git -Root $ManagedRepoRoot -GitArguments @('rev-parse','HEAD')).ToLowerInvariant()
 }
 
+function Test-GitCommitExists([string]$Commit) {
+    $git = Get-Git
+    $previous = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = 'Continue'
+        & $git -C $ManagedRepoRoot cat-file -e ($Commit + '^{commit}') 1>$null 2>$null
+        $exitCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $previous
+    }
+    return ($exitCode -eq 0)
+}
+
+function Get-RawGitCommitParents([string]$Commit) {
+    if (-not (Test-GitCommitExists $Commit)) { return @() }
+    $raw = Invoke-Git -Root $ManagedRepoRoot -GitArguments @('cat-file','-p',$Commit)
+    $parents = @()
+    foreach ($line in ($raw -split "\r?\n")) {
+        if ($line -eq '') { break }
+        if ($line -match '^parent ([0-9a-fA-F]{40})$') {
+            $parents += $Matches[1].ToLowerInvariant()
+        }
+    }
+    return @($parents)
+}
+
+function Test-RawGitAncestor([string]$Ancestor, [string]$Descendant, [int]$MaxCommits = 128) {
+    $ancestorSha = $Ancestor.ToLowerInvariant()
+    $descendantSha = $Descendant.ToLowerInvariant()
+    if ($ancestorSha -eq $descendantSha) { return $true }
+    if (-not (Test-GitCommitExists $descendantSha)) { return $false }
+
+    $queue = New-Object 'System.Collections.Generic.Queue[string]'
+    $seen = New-Object 'System.Collections.Generic.HashSet[string]'
+    $queue.Enqueue($descendantSha)
+    $visited = 0
+    while ($queue.Count -gt 0) {
+        $commit = $queue.Dequeue()
+        if (-not $seen.Add($commit)) { continue }
+        $visited += 1
+        if ($visited -gt $MaxCommits) {
+            throw "raw shallow ancestry proof exceeded bound=$MaxCommits ancestor=$ancestorSha descendant=$descendantSha"
+        }
+        foreach ($parent in @(Get-RawGitCommitParents $commit)) {
+            if ($parent -eq $ancestorSha) { return $true }
+            if (Test-GitCommitExists $parent) { $queue.Enqueue($parent) }
+        }
+    }
+    return $false
+}
+
 function Test-GitAncestor([string]$Ancestor, [string]$Descendant) {
     $git = Get-Git
     $previous = $ErrorActionPreference
@@ -191,10 +243,16 @@ function Test-GitAncestor([string]$Ancestor, [string]$Descendant) {
         $ErrorActionPreference = $previous
     }
     if ($exitCode -eq 0) { return $true }
-    if ($exitCode -eq 1) { return $false }
+    if ($exitCode -eq 1) {
+        $isShallow = Invoke-Git -Root $ManagedRepoRoot -GitArguments @('rev-parse','--is-shallow-repository')
+        if ($isShallow -eq 'true' -and (Test-RawGitAncestor -Ancestor $Ancestor -Descendant $Descendant)) {
+            Write-Log "shallow raw ancestry proof ancestor=$($Ancestor.ToLowerInvariant()) descendant=$($Descendant.ToLowerInvariant())"
+            return $true
+        }
+        return $false
+    }
     throw "git merge-base --is-ancestor failed exit=$exitCode ancestor=$Ancestor descendant=$Descendant"
 }
-
 function Reconcile-ExistingManagedRepo([string]$CurrentHead) {
     $target = $SourceSha.ToLowerInvariant()
     $current = $CurrentHead.ToLowerInvariant()
