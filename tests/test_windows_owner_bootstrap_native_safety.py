@@ -69,7 +69,7 @@ def test_owner_bootstrap_stays_exact_source_fail_closed_and_non_elevating() -> N
 def test_packaged_gui_supervises_runner_and_retries_owner_bootstrap_boundedly() -> None:
     text = read(ENTRY)
     for marker in (
-        "RUNNER_SUPERVISOR_INTERVAL_MS = 60 * 1000",
+        "RUNNER_SUPERVISOR_INTERVAL_MS = 5 * 60 * 1000",
         "OWNER_AUTOSTART_RETRY_LIMIT = 3",
         "OWNER_AUTOSTART_RETRY_DELAY_MS = 15 * 1000",
         "runnerBootstrapInFlight",
