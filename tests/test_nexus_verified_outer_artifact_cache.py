@@ -41,7 +41,7 @@ def _metadata_server(metadata: dict):
 
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
-            if self.path != f"/repos/test-owner/test-repo/actions/artifacts/{ARTIFACT_ID}":
+            if self.path != f"/repos/test-owner/test-repo/actions/artifacts/{metadata['id']}":
                 self.send_error(404)
                 return
             self.send_response(200)
@@ -56,23 +56,29 @@ def _metadata_server(metadata: dict):
     return HTTPServer(("127.0.0.1", 0), Handler)
 
 
-def _run_powershell(tmp_path: Path, *, corrupt_cache: bool = False):
+def _run_powershell(tmp_path: Path, request, *, corrupt_cache: bool = False):
     outer, inner_sha = _fixture_bytes()
     expected_sha = hashlib.sha256(outer).hexdigest()
     cached = bytearray(outer)
     if corrupt_cache:
         cached[-5] ^= 1
-    local = tmp_path / "appdata"
+    # The downloader intentionally uses the real owner LOCALAPPDATA. Faking it
+    # can hide built-in Windows PowerShell modules on hosted CI runners.
+    local = Path(os.environ["LOCALAPPDATA"])
     cache = local / "NEXUS" / "verified-outer-artifacts"
     cache.mkdir(parents=True)
-    archive = cache / f"nexus-artifact-{ARTIFACT_ID}.zip"
+    artifact_id = ARTIFACT_ID + int.from_bytes(
+        hashlib.sha256(str(tmp_path).encode()).digest()[:4], "big"
+    )
+    archive = cache / f"nexus-artifact-{artifact_id}.zip"
     archive.write_bytes(cached)
+    request.addfinalizer(lambda: archive.unlink(missing_ok=True))
 
     temp = tmp_path / "runner-temp"
     temp.mkdir()
     destination = temp / "nexus-personal-pro-package-12345"
     metadata = {
-        "id": ARTIFACT_ID,
+        "id": artifact_id,
         "name": "nexus-windows-persistent-unpacked",
         "expired": False,
         "size_in_bytes": len(outer),
@@ -94,17 +100,15 @@ def _run_powershell(tmp_path: Path, *, corrupt_cache: bool = False):
         # Utility/Archive modules. Load them before isolating only the artifact
         # cache location; replacing LOCALAPPDATA at process startup masks
         # built-in Get-FileHash on some hosted Windows runners.
-        quoted_local = str(local).replace("'", "''")
         quoted_script = str(SCRIPT).replace("'", "''")
         quoted_destination = str(destination).replace("'", "''")
         command = (
             "Import-Module Microsoft.PowerShell.Utility -ErrorAction Stop; "
             "Import-Module Microsoft.PowerShell.Archive -ErrorAction Stop; "
-            f"$env:LOCALAPPDATA='{quoted_local}'; "
             f"& '{quoted_script}' "
             "-Repository 'test-owner/test-repo' "
             f"-ArtifactRunId {RUN_ID} "
-            f"-ArtifactId {ARTIFACT_ID} "
+            f"-ArtifactId {artifact_id} "
             "-ArtifactName 'nexus-windows-persistent-unpacked' "
             f"-ExpectedSourceSha '{SOURCE}' "
             f"-ExpectedArchiveSha256 '{expected_sha}' "
@@ -137,8 +141,8 @@ def test_metadata_gate_precedes_cache_and_cache_copy_has_second_digest_check():
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Needs Windows PowerShell and Expand-Archive")
-def test_owner_exact_sha_cache_bypasses_cdn_and_verifies_nested_manifest(tmp_path):
-    result, destination, cache, expected_sha, inner_sha = _run_powershell(tmp_path)
+def test_owner_exact_sha_cache_bypasses_cdn_and_verifies_nested_manifest(tmp_path, request):
+    result, destination, cache, expected_sha, inner_sha = _run_powershell(tmp_path, request)
     assert result.returncode == 0, result.stdout + result.stderr
     assert "NEXUS_VERIFIED_OWNER_ARTIFACT_CACHE=PASS" in result.stdout
     assert "transport=verified_owner_cache" in result.stdout
@@ -149,9 +153,9 @@ def test_owner_exact_sha_cache_bypasses_cdn_and_verifies_nested_manifest(tmp_pat
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Needs Windows PowerShell")
-def test_corrupted_owner_cache_fails_closed_without_artifact_destination(tmp_path):
+def test_corrupted_owner_cache_fails_closed_without_artifact_destination(tmp_path, request):
     result, destination, cache, expected_sha, _ = _run_powershell(
-        tmp_path, corrupt_cache=True
+        tmp_path, request, corrupt_cache=True
     )
     assert result.returncode != 0
     assert "Preloaded artifact cache SHA-256 mismatch." in result.stdout + result.stderr
