@@ -83,6 +83,37 @@ function Get-SignedArtifactUrl {
 $chunkBytes = 1MB
 $parallelChunks = 4
 $verified = $false
+$verifiedFromCache = $false
+
+# A preloaded owner cache may bypass slow artifact-CDN transport, but never
+# bypass GitHub's already-validated artifact identity or byte-level SHA-256.
+# Keep this cache outside RUNNER_TEMP so runner job setup cannot erase it.
+$cacheRoot = Join-Path $env:LOCALAPPDATA 'NEXUS\verified-outer-artifacts'
+$cachedArchive = Join-Path $cacheRoot "nexus-artifact-$ArtifactId.zip"
+if (Test-Path -LiteralPath $cachedArchive -PathType Leaf) {
+    foreach ($candidate in @($cacheRoot, $cachedArchive)) {
+        $item = Get-Item -LiteralPath $candidate -Force -ErrorAction Stop
+        if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+            throw 'Verified owner artifact cache cannot be a reparse point.'
+        }
+    }
+    if ([long](Get-Item -LiteralPath $cachedArchive).Length -ne $ExpectedArchiveBytes) {
+        throw 'Preloaded artifact cache size mismatch.'
+    }
+    $cacheSha = (Get-FileHash -LiteralPath $cachedArchive -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($cacheSha -ne $ExpectedArchiveSha256) {
+        throw 'Preloaded artifact cache SHA-256 mismatch.'
+    }
+    Copy-Item -LiteralPath $cachedArchive -Destination $archivePath -Force -ErrorAction Stop
+    $copiedSha = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ([long](Get-Item -LiteralPath $archivePath).Length -ne $ExpectedArchiveBytes -or
+        $copiedSha -ne $ExpectedArchiveSha256) {
+        throw 'Copied owner artifact cache failed exact byte-level verification.'
+    }
+    $verified = $true
+    $verifiedFromCache = $true
+    Write-Host "NEXUS_VERIFIED_OWNER_ARTIFACT_CACHE=PASS artifact=$ArtifactId bytes=$ExpectedArchiveBytes sha256=$copiedSha"
+}
 
 if (Test-Path -LiteralPath $archivePath -PathType Leaf) {
     $existingLength = [long](Get-Item -LiteralPath $archivePath).Length
@@ -244,4 +275,5 @@ if ($env:GITHUB_OUTPUT) {
 
 Remove-Item -LiteralPath $archivePath -Force
 $env:GITHUB_TOKEN = $null
-Write-Host "NEXUS_ARTIFACT_HTTP11_DOWNLOAD=PASS artifact=$ArtifactId run=$ArtifactRunId bytes=$ExpectedArchiveBytes inner_sha256=$actualInnerSha256"
+$transport = if ($verifiedFromCache) { "verified_owner_cache" } else { "http11_ipv4_ranges" }
+Write-Host "NEXUS_ARTIFACT_HTTP11_DOWNLOAD=PASS transport=$transport artifact=$ArtifactId run=$ArtifactRunId bytes=$ExpectedArchiveBytes inner_sha256=$actualInnerSha256"
