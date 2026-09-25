@@ -166,3 +166,13 @@ def test_clean_mission_idle_does_not_render_false_local_node_failure():
     normal_start = js.index("const q=m.queue||{}", idle_start)
     idle_block = js[idle_start:normal_start]
     assert "local_node" not in idle_block
+
+
+def test_status_badges_do_not_greenwash_negative_compound_states():
+    js = (ROOT / "product_ui" / "product.js").read_text(encoding="utf-8")
+    assert "const bad=['locked','unavailable','not_available','inactive','not_active','disabled','offline'" in js
+    assert "'unverified','not_ready','not_executed','stale'" in js
+    assert "const good=['available','active','complete','completed','ready','pass','passed','paper','verified','candidate','executed','success','healthy']" in js
+    assert "value.startsWith(token+'_')" in js
+    assert "value.endsWith('_'+token)" in js
+    assert "bad.some(" in js and "good.some(" in js
