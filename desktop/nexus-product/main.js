@@ -19,6 +19,11 @@ let preferencesIpcRegistered = false;
 const MAX_RESTARTS_PER_WINDOW = 3;
 const RESTART_WINDOW_MS = 10 * 60 * 1000;
 const PRODUCT_GATEWAY_STARTUP_TIMEOUT_MS = 4 * 60 * 1000;
+const MISSION_SYNC_INTERVAL_MS = 5 * 60 * 1000;
+const MISSION_SYNC_TIMEOUT_MS = 2 * 60 * 1000;
+let missionSyncTimer = null;
+let missionSyncProcess = null;
+let missionSyncTimeout = null;
 
 const DEFAULT_UI_PREFERENCES = Object.freeze({
   fontFamily: 'system',
@@ -287,6 +292,7 @@ async function restartProductAfterExit(exitInfo) {
   await new Promise(resolve => setTimeout(resolve, Math.min(5000, 800 * restartCount)));
   try {
     const origin = await startSidecar();
+    startMissionSync();
     for (const win of BrowserWindow.getAllWindows()) { try { win.destroy(); } catch {} }
     createWindow(origin);
   } catch (error) {
@@ -347,6 +353,75 @@ async function startSidecar() {
   productReady = true;
   writeSupervisorState('healthy', { source_sha: bindings.sourceSha, origin: productOrigin });
   return productOrigin;
+}
+
+function stopMissionSync() {
+  if (missionSyncTimer) clearInterval(missionSyncTimer);
+  missionSyncTimer = null;
+  if (missionSyncTimeout) clearTimeout(missionSyncTimeout);
+  missionSyncTimeout = null;
+  if (missionSyncProcess && !missionSyncProcess.killed) {
+    try { missionSyncProcess.kill(); } catch {}
+  }
+  missionSyncProcess = null;
+}
+
+function runMissionSync() {
+  if (isQuitting || !productReady || !productOrigin || missionSyncProcess) return;
+  let bindings;
+  try { bindings = productBindings(); }
+  catch (error) { logStartup(`mission sync bindings unavailable: ${error.message}`); return; }
+  const script = path.join(bindings.resourceRoot, 'scripts', 'sync_nexus_mission_snapshot_from_github.ps1');
+  if (!fs.existsSync(script)) {
+    logStartup(`mission sync helper unavailable: ${script}`);
+    return;
+  }
+  const systemRoot = process.env.SystemRoot || process.env.WINDIR || 'C:\\Windows';
+  const powershell = path.join(systemRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+  if (!fs.existsSync(powershell)) {
+    logStartup('mission sync PowerShell unavailable');
+    return;
+  }
+
+  const args = [
+    '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', script,
+    '-ExpectedSourceSha', bindings.sourceSha,
+    '-Origin', productOrigin,
+    '-Repository', 'saladinayoubi1/lbank-research-automation',
+  ];
+  let stdout = '';
+  let stderr = '';
+  const child = spawn(powershell, args, {
+    cwd: path.dirname(script),
+    windowsHide: true,
+    stdio: ['ignore', 'pipe', 'pipe'],
+    env: { ...process.env },
+  });
+  missionSyncProcess = child;
+  child.stdout.on('data', chunk => { stdout = (stdout + String(chunk)).slice(-8192); });
+  child.stderr.on('data', chunk => { stderr = (stderr + String(chunk)).slice(-8192); });
+  missionSyncTimeout = setTimeout(() => {
+    if (missionSyncProcess === child && !child.killed) {
+      logStartup('mission sync timed out; terminating owned helper');
+      try { child.kill(); } catch {}
+    }
+  }, MISSION_SYNC_TIMEOUT_MS);
+  child.on('error', error => logStartup(`mission sync spawn error: ${error.message}`));
+  child.on('exit', code => {
+    if (missionSyncTimeout) clearTimeout(missionSyncTimeout);
+    missionSyncTimeout = null;
+    if (missionSyncProcess === child) missionSyncProcess = null;
+    const out = stdout.trim().split(/\r?\n/).slice(-1)[0] || '';
+    const err = stderr.trim().split(/\r?\n/).slice(-1)[0] || '';
+    logStartup(`mission sync exit=${code} ${out || err || 'no-output'}`);
+  });
+}
+
+function startMissionSync() {
+  if (missionSyncTimer) clearInterval(missionSyncTimer);
+  setTimeout(() => runMissionSync(), 5000).unref?.();
+  missionSyncTimer = setInterval(() => runMissionSync(), MISSION_SYNC_INTERVAL_MS);
+  missionSyncTimer.unref?.();
 }
 
 function stopSidecar() {
@@ -412,7 +487,7 @@ if (!singleInstanceLock) {
 
   app.whenReady().then(async () => {
     registerUiPreferenceIpc();
-    try { const origin = await startSidecar(); createWindow(origin); }
+    try { const origin = await startSidecar(); startMissionSync(); createWindow(origin); }
     catch (error) {
       logStartup(`startup blocked: ${error && error.stack ? error.stack : error}`);
       writeSupervisorState('startup_failed', { reason: String(error && error.message ? error.message : error) });
@@ -420,14 +495,14 @@ if (!singleInstanceLock) {
     }
     app.on('activate', async () => {
       if (BrowserWindow.getAllWindows().length === 0) {
-        try { if (!productOrigin || !productReady) productOrigin = await startSidecar(); createWindow(productOrigin); }
+        try { if (!productOrigin || !productReady) { productOrigin = await startSidecar(); startMissionSync(); } createWindow(productOrigin); }
         catch (error) { showStartupFailure(error); }
       }
     });
   });
 
-  app.on('before-quit', () => { isQuitting = true; writeSupervisorState('stopping'); stopSidecar(); });
+  app.on('before-quit', () => { isQuitting = true; writeSupervisorState('stopping'); stopMissionSync(); stopSidecar(); });
   app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') { isQuitting = true; stopSidecar(); app.quit(); }
+    if (process.platform !== 'darwin') { isQuitting = true; stopMissionSync(); stopSidecar(); app.quit(); }
   });
 }
