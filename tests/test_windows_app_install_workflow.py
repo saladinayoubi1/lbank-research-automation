@@ -295,3 +295,15 @@ def test_install_smoke_cannot_bootstrap_or_stop_other_owner_processes() -> None:
     cleanup = installer.split("function Get-NewNexusProcesses {", 1)[1].split("function Get-InstalledNexusProductProcesses", 1)[0]
     assert "Get-InstalledNexusProductProcesses -ProgramRoot $script:InstallRoot" in cleanup
     assert "Get-NexusProcesses | Where-Object" not in cleanup
+
+
+def test_stage_only_cannot_replace_global_owner_paper_sync() -> None:
+    installer = text(SCRIPT)
+    guard = installer.index("if (-not $ActivateInstalledBuild) {")
+    exit_stage = installer.index("        return\n    }", guard)
+    deploy = installer.index("Copy-Item -LiteralPath $paperSyncSource")
+    deploy_validator = installer.index("Copy-Item -LiteralPath $paperSyncValidator")
+    shortcut = installer.index("$desktopShortcut = Join-Path")
+    assert guard < exit_stage < deploy < deploy_validator < shortcut
+    assert "NEXUS_PAPER_SYNC_SOURCE_DEPLOYED=1" in installer
+    assert "SKIPPED_UNTIL_EXPLICIT_ACTIVATION" in installer

@@ -397,18 +397,6 @@ try {
 
     if (-not $env:LOCALAPPDATA -or -not $env:APPDATA) { throw 'Owner profile application paths are unavailable.' }
 
-    $repoRoot = Get-FullPath (Join-Path $PSScriptRoot '..')
-    $paperSyncSource = Join-Path $PSScriptRoot 'nexus_prospective_paper_sync.ps1'
-    $paperSyncValidator = Join-Path $repoRoot 'product_prospective_paper.py'
-    $paperSyncRoot = Get-FullPath (Join-Path $env:LOCALAPPDATA 'NEXUS\paper-forward-sync')
-    if (-not (Test-Path -LiteralPath $paperSyncSource -PathType Leaf)) { throw 'Canonical prospective Paper sync script is missing.' }
-    if (-not (Test-Path -LiteralPath $paperSyncValidator -PathType Leaf)) { throw 'Prospective Paper validator is missing.' }
-    New-Item -ItemType Directory -Path $paperSyncRoot -Force | Out-Null
-    Assert-NotReparsePoint $paperSyncRoot 'Prospective Paper sync root'
-    Copy-Item -LiteralPath $paperSyncSource -Destination (Join-Path $paperSyncRoot 'sync.ps1') -Force
-    Copy-Item -LiteralPath $paperSyncValidator -Destination (Join-Path $paperSyncRoot 'product_prospective_paper.py') -Force
-    Write-Host 'NEXUS_PAPER_SYNC_SOURCE_DEPLOYED=1'
-
     $programRoot = Get-FullPath (Join-Path $env:LOCALAPPDATA 'Programs\NEXUS Personal Pro')
     $installRoot = Get-FullPath (Join-Path $programRoot "5.1.0-$($ExpectedSourceSha.Substring(0, 8))")
     $script:ProgramRoot = $programRoot
@@ -521,6 +509,20 @@ try {
         Write-Host "NEXUS_WINDOWS_APP_INSTALL=PASS source=$ExpectedSourceSha artifact=$ArtifactId staged_only=true"
         return
     }
+
+    # Stage-only verification cannot mutate global owner Paper sync scripts.
+    # Explicit activation remains separately guarded and requires owner rollback proof.
+    $repoRoot = Get-FullPath (Join-Path $PSScriptRoot '..')
+    $paperSyncSource = Join-Path $PSScriptRoot 'nexus_prospective_paper_sync.ps1'
+    $paperSyncValidator = Join-Path $repoRoot 'product_prospective_paper.py'
+    $paperSyncRoot = Get-FullPath (Join-Path $env:LOCALAPPDATA 'NEXUS\paper-forward-sync')
+    if (-not (Test-Path -LiteralPath $paperSyncSource -PathType Leaf)) { throw 'Canonical prospective Paper sync script is missing.' }
+    if (-not (Test-Path -LiteralPath $paperSyncValidator -PathType Leaf)) { throw 'Prospective Paper validator is missing.' }
+    New-Item -ItemType Directory -Path $paperSyncRoot -Force | Out-Null
+    Assert-NotReparsePoint $paperSyncRoot 'Prospective Paper sync root'
+    Copy-Item -LiteralPath $paperSyncSource -Destination (Join-Path $paperSyncRoot 'sync.ps1') -Force
+    Copy-Item -LiteralPath $paperSyncValidator -Destination (Join-Path $paperSyncRoot 'product_prospective_paper.py') -Force
+    Write-Host 'NEXUS_PAPER_SYNC_SOURCE_DEPLOYED=1'
 
     $desktopShortcut = Join-Path ([Environment]::GetFolderPath('Desktop')) 'NEXUS Personal Pro 5.1.0.lnk'
     $startMenuShortcut = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\NEXUS Personal Pro 5.1.0.lnk'
