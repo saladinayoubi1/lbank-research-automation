@@ -50,3 +50,13 @@ def test_close_signal_waits_until_next_bar_open() -> None:
 def test_discovery_executor_rejects_nonbinary_targets() -> None:
     with pytest.raises(discovery.MultiTimeframeDiscoveryError, match="binary"):
         _run([100.0] * 40, [0.5] * 40)
+
+
+def test_cost_ruin_preserves_residual_cash_without_dust_fills() -> None:
+    # Thousands of real high-cost flips can nearly exhaust the initial stake.
+    # An entry below the existing executable-quantity tolerance is not a fill.
+    targets = [1.0, 0.0] * 5000
+    result = _run([100.0] * len(targets), targets, fee=25.0, slippage=15.0)
+    assert 0 < result["fill_count"] < len(targets)
+    assert -1.0 < result["total_return"] < -0.99
+    assert result["max_drawdown"] > 0.99
