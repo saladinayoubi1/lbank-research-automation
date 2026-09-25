@@ -136,6 +136,7 @@ while (-not $verified) {
                     '--fail',
                     '--silent',
                     '--show-error',
+                    '--ipv4',
                     '--http1.1',
                     '--connect-timeout', '15',
                     '--max-time', '90',
