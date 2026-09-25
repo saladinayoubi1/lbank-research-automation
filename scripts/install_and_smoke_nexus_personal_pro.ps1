@@ -60,6 +60,12 @@ $script:Evidence = [ordered]@{
         start_menu_shortcut_created = $false
         startup_shortcut_created = $false
         version = '5.1.0'
+        retention_max_versions = 3
+        retention_status = 'NOT_RUN'
+        versions_removed = @()
+        versions_skipped_running = @()
+        versions_skipped_unverified = @()
+        retention_error = $null
     }
     smoke = [ordered]@{
         isolated_user_data = $true
@@ -533,6 +539,25 @@ try {
         }
         $script:Evidence.final_launch.visible_window_observed = $true
         $script:Evidence.final_launch.preexisting_app_preserved = $false
+    }
+
+    try {
+        $retentionScript = Join-Path $PSScriptRoot 'cleanup_nexus_desktop_versions.ps1'
+        if (-not (Test-Path -LiteralPath $retentionScript -PathType Leaf)) { throw 'NEXUS version retention helper is missing.' }
+        Assert-NotReparsePoint $retentionScript 'Version retention helper'
+        $retentionOutput = @(& $retentionScript -ProgramRoot $programRoot -CurrentInstallRoot $installRoot -MaxVersions 3)
+        $retentionJson = @($retentionOutput | Where-Object { $_ -is [string] -and $_.TrimStart().StartsWith('{') } | Select-Object -Last 1)
+        if ($retentionJson.Count -ne 1) { throw 'NEXUS version retention did not return one JSON result.' }
+        $retention = $retentionJson[0] | ConvertFrom-Json
+        if ([string]$retention.schema_version -ne 'nexus.windows-version-retention.v1') { throw 'NEXUS version retention result schema mismatch.' }
+        $script:Evidence.install.retention_status = 'PASS'
+        $script:Evidence.install.versions_removed = @($retention.removed)
+        $script:Evidence.install.versions_skipped_running = @($retention.skipped_running)
+        $script:Evidence.install.versions_skipped_unverified = @($retention.skipped_unverified)
+    } catch {
+        $script:Evidence.install.retention_status = 'WARNING'
+        $script:Evidence.install.retention_error = ConvertTo-SafeError $_.Exception.Message
+        Write-Warning "NEXUS version retention skipped: $($script:Evidence.install.retention_error)"
     }
 
     $script:Evidence.decision = 'PASS'
