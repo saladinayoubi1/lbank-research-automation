@@ -32,3 +32,11 @@ def test_workflow_keeps_research_authority_frozen_on_reuse() -> None:
     assert 'assert certificate["automatic_strategy_promotion"] is False' in text
     assert 'assert certificate["live_trading_authority"] is False' in text
     assert "cancel-in-progress: true" in text
+
+
+def test_shared_executor_regressions_are_required_for_discovery_ci() -> None:
+    text = WORKFLOW.read_text(encoding="utf-8")
+    regression = "tests/test_nexus_discovery_execution_fill_integrity.py"
+    assert text.count(f'      - "{regression}"') == 2
+    contract = text.split("  contract-test:", 1)[1].split("  discover:", 1)[0]
+    assert regression in contract
