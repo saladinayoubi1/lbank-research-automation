@@ -9,7 +9,8 @@ param(
     [string]$ExpectedComputerName = 'DESKTOP-1R1081M',
     [string]$ExpectedRunnerName = 'NEXUS-LOCAL-RUNNER',
     [string]$EvidencePath = 'build\windows-app-install\evidence.json',
-    [switch]$UsePreloadedPackage
+    [switch]$UsePreloadedPackage,
+    [switch]$ActivateInstalledBuild
 )
 
 Set-StrictMode -Version 2.0
@@ -79,6 +80,7 @@ $script:Evidence = [ordered]@{
         status = 'NOT_ATTEMPTED'
         visible_window_observed = $false
         preexisting_app_preserved = $false
+        activation_requested = [bool]$ActivateInstalledBuild
     }
     safety = [ordered]@{
         paper_only_required = $true
@@ -132,6 +134,50 @@ function Get-NexusProcesses {
 
 function Get-NewNexusProcesses {
     return @(Get-NexusProcesses | Where-Object { -not $script:BaselineNexusProcessIds.ContainsKey([int]$_.Id) })
+}
+
+
+function Get-InstalledNexusProductProcesses([string]$ProgramRoot) {
+    $root = (Get-FullPath $ProgramRoot).TrimEnd('\')
+    $matches = @()
+    foreach ($process in @(Get-Process -ErrorAction SilentlyContinue | Where-Object {
+        $_.ProcessName -in @('NEXUS Personal Pro', 'nexus-product-server')
+    })) {
+        try {
+            $processPath = [string]$process.Path
+            if ($processPath -and (Test-PathWithin $processPath $root)) { $matches += $process }
+        } catch { }
+    }
+    return @($matches)
+}
+
+function Stop-InstalledNexusProductProcesses([string]$ProgramRoot) {
+    $targets = @(Get-InstalledNexusProductProcesses -ProgramRoot $ProgramRoot)
+    foreach ($process in $targets) {
+        try {
+            if ($process.MainWindowHandle -ne 0) { [void]$process.CloseMainWindow() }
+        } catch { }
+    }
+
+    $deadline = [DateTime]::UtcNow.AddSeconds(12)
+    do {
+        Start-Sleep -Milliseconds 400
+        $remaining = @(Get-InstalledNexusProductProcesses -ProgramRoot $ProgramRoot)
+    } while ($remaining.Count -gt 0 -and [DateTime]::UtcNow -lt $deadline)
+
+    foreach ($process in $remaining) {
+        try { Stop-Process -Id $process.Id -Force -ErrorAction Stop } catch { }
+    }
+
+    $deadline = [DateTime]::UtcNow.AddSeconds(6)
+    do {
+        Start-Sleep -Milliseconds 300
+        $remaining = @(Get-InstalledNexusProductProcesses -ProgramRoot $ProgramRoot)
+    } while ($remaining.Count -gt 0 -and [DateTime]::UtcNow -lt $deadline)
+
+    if ($remaining.Count -gt 0) {
+        throw 'Existing NEXUS product processes did not stop inside the bounded activation window.'
+    }
 }
 
 function Stop-SmokeProcesses {
@@ -468,17 +514,25 @@ try {
     $script:Evidence.install.startup_shortcut_created = $true
     Write-Host "NEXUS_APP_AUTOSTART_SHORTCUT=$startupShortcut"
 
-    if ($preexistingGuiCount -gt 0) {
+    if ($preexistingGuiCount -gt 0 -and -not $ActivateInstalledBuild) {
         $script:Evidence.final_launch.status = 'SKIPPED_EXISTING_APP_PRESERVED'
         $script:Evidence.final_launch.preexisting_app_preserved = $true
     } else {
+        if ($ActivateInstalledBuild) {
+            Stop-InstalledNexusProductProcesses -ProgramRoot $programRoot
+        }
         $tracking = [Environment]::GetEnvironmentVariable('RUNNER_TRACKING_ID', 'Process')
         [Environment]::SetEnvironmentVariable('RUNNER_TRACKING_ID', $null, 'Process')
         try { [void](Start-Process -FilePath $installedExecutable -ArgumentList @("--nexus-installed-source=$($ExpectedSourceSha.Substring(0, 8))")) }
         finally { [Environment]::SetEnvironmentVariable('RUNNER_TRACKING_ID', $tracking, 'Process') }
         if (-not (Wait-ForVisibleNewWindow -TimeoutSeconds 300)) { throw 'Installed NEXUS final window did not become visible.' }
-        $script:Evidence.final_launch.status = 'RUNNING_VISIBLE'
+        if ($ActivateInstalledBuild) {
+            $script:Evidence.final_launch.status = 'RUNNING_VISIBLE_ACTIVATED'
+        } else {
+            $script:Evidence.final_launch.status = 'RUNNING_VISIBLE'
+        }
         $script:Evidence.final_launch.visible_window_observed = $true
+        $script:Evidence.final_launch.preexisting_app_preserved = $false
     }
 
     $script:Evidence.decision = 'PASS'
