@@ -42,7 +42,7 @@ function UnderRoot([string]$Root, [string]$Relative) {
 function Read-Manifest([string]$Name, [int]$ExactCount) {
     $path = UnderRoot $BackupRoot $Name
     Require (Test-Path -LiteralPath $path -PathType Leaf) 'BACKUP_MANIFEST_MISSING'
-    $items = @(Get-Content -LiteralPath $path -Raw | ConvertFrom-Json)
+    $items = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json
     Require ($items.Count -eq $ExactCount) 'BACKUP_MANIFEST_COUNT_MISMATCH'
     return $items
 }
