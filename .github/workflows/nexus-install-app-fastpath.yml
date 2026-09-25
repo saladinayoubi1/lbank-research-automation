@@ -147,7 +147,8 @@ jobs:
             -ExpectedComputerName 'DESKTOP-1R1081M' `
             -ExpectedRunnerName 'NEXUS-LOCAL-RUNNER' `
             -EvidencePath 'build\windows-app-install\evidence.json' `
-            -UsePreloadedPackage
+            -UsePreloadedPackage `
+            -ActivateInstalledBuild
 
       - name: Verify physical install proof
         run: |
