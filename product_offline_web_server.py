@@ -21,7 +21,13 @@ from product_offline_runtime import (
 )
 from product_research_runtime import ProductResearchError, ProductResearchRuntime
 from product_runtime import ProductRuntime
-from product_web_server import PRODUCT_UI_ROOT, _json_error, _safe_asset, build_handler as build_product_handler
+from product_web_server import (
+    DESKTOP_DEMO_OPENING_CASH,
+    PRODUCT_UI_ROOT,
+    _json_error,
+    _safe_asset,
+    build_handler as build_product_handler,
+)
 from web_dashboard import ApiResponse, ByteResponse, GatewayConfig, validate_gateway_config
 
 DEFAULT_DATA_ROOT = Path("data/market")
@@ -47,7 +53,7 @@ def build_handler(
     mission: ProductMissionRuntime | None = None,
 ):
     active_config = validate_gateway_config(config or GatewayConfig())
-    runtime = runtime or ProductRuntime(data_root.parent)
+    runtime = runtime or ProductRuntime(data_root.parent, opening_cash=DESKTOP_DEMO_OPENING_CASH)
     store = store or OfflineDatasetStore(data_root.parent / "offline-datasets")
     online_research = online_research or CachingProductResearchRuntime(runtime, store)
     controls = controls or ProductControlRuntime(runtime)
