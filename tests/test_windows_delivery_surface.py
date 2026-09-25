@@ -7,6 +7,8 @@ ROOT = Path(__file__).resolve().parents[1]
 DESKTOP = ROOT / "desktop" / "nexus-product"
 UI = ROOT / "product_ui"
 GUI_RUNNER_BOOTSTRAP = ROOT / "scripts" / "bootstrap_nexus_runner_from_gui.ps1"
+INSTALLER = ROOT / "scripts" / "install_and_smoke_nexus_personal_pro.ps1"
+RETENTION = ROOT / "scripts" / "cleanup_nexus_desktop_versions.ps1"
 
 
 def read(path: Path) -> str:
@@ -251,3 +253,43 @@ def test_frozen_workflow_permissions_policy_remains_authoritative() -> None:
     assert trusted["workflow_permissions"] == {"contents": "read"}
     assert set(trusted["jobs"]) == {"build-windows"}
     assert ".github/workflows/build_nexus_product_windows.yml" not in policy["workflows"]
+
+
+def test_persistent_installer_bounds_version_retention_after_successful_activation() -> None:
+    installer = read(INSTALLER)
+    retention = read(RETENTION)
+    for marker in (
+        "retention_max_versions = 3",
+        "retention_status = 'NOT_RUN'",
+        "cleanup_nexus_desktop_versions.ps1",
+        "nexus.windows-version-retention.v1",
+        "versions_removed = @()",
+        "versions_skipped_running = @()",
+        "versions_skipped_unverified = @()",
+    ):
+        assert marker in installer
+
+    retention_call = installer.index(
+        "$retentionScript = Join-Path $PSScriptRoot 'cleanup_nexus_desktop_versions.ps1'"
+    )
+    final_window = installer.index("$script:Evidence.final_launch.visible_window_observed = $true")
+    pass_decision = installer.index("$script:Evidence.decision = 'PASS'")
+    assert final_window < retention_call < pass_decision
+
+    for marker in (
+        "Retention root must be the owner-local NEXUS program directory.",
+        "nexus.windows-side-by-side-install.v2",
+        "manifest.paper_only -ne $true",
+        "manifest.live_trading_authority -ne $false",
+        "Get-Process -ErrorAction SilentlyContinue",
+        "NEXUS Personal Pro",
+        "nexus-product-server",
+        "Remove-Item -LiteralPath $candidate.Path -Recurse -Force -ErrorAction Stop",
+        "NEXUS_VERSION_RETENTION_REMOVED=",
+        "MaxVersions - $protected.Count",
+    ):
+        assert marker in retention
+
+    assert "if ($protected.Contains($candidate.Path)) { continue }" in retention
+    assert "if ($candidate.Path -eq $current -or $runningRoots.Contains($candidate.Path)) { continue }" in retention
+    assert "Assert-NotReparsePoint $root 'NEXUS program root'" in retention
