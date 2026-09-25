@@ -266,12 +266,28 @@ function Wait-ForListener([pscustomobject]$Runner, [int]$Seconds = 20) {
     return $null
 }
 
+function Get-CanonicalSystemCmd {
+    $windowsRoot = [Environment]::GetFolderPath([Environment+SpecialFolder]::Windows)
+    if ([string]::IsNullOrWhiteSpace($windowsRoot) -or -not [IO.Path]::IsPathRooted($windowsRoot)) {
+        throw 'Trusted Windows system directory is unavailable'
+    }
+    $candidate = Join-Path $windowsRoot 'System32\cmd.exe'
+    if (-not (Test-Path -LiteralPath $candidate -PathType Leaf)) {
+        throw 'Canonical Windows cmd.exe is unavailable'
+    }
+    $item = Get-Item -LiteralPath $candidate -ErrorAction Stop
+    if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+        throw 'Canonical Windows cmd.exe is a reparse point'
+    }
+    return $item.FullName
+}
+
 function Start-InteractiveRunnerFallback([pscustomobject]$Runner, [string]$Reason = 'unspecified') {
     $existing = Get-Listener $Runner
     if ($existing) { return [int]$existing.ProcessId }
 
     $psi = New-Object System.Diagnostics.ProcessStartInfo
-    $psi.FileName = $env:ComSpec
+    $psi.FileName = Get-CanonicalSystemCmd
     $psi.UseShellExecute = $false
     $psi.CreateNoWindow = $true
     $psi.WorkingDirectory = $Runner.Root
@@ -311,7 +327,7 @@ function Install-InteractiveRunnerTask([pscustomobject]$Runner) {
     $trigger.Enabled = $true
     $trigger.UserId = $user
     $action = $definition.Actions.Create(0)
-    $action.Path = $env:ComSpec
+    $action.Path = Get-CanonicalSystemCmd
     $action.Arguments = '/d /s /c ""' + $Runner.RunCmd + '""'
     $action.WorkingDirectory = $Runner.Root
     $registered = $folder.RegisterTaskDefinition("\$TaskName", $definition, 6, $null, $null, 3, $null)
