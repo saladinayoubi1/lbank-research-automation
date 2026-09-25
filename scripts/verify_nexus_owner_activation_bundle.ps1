@@ -27,6 +27,8 @@ function UnderRoot([string]$Root, [string]$Relative) {
     Require ($Relative -notmatch '(^|[\\/])\.\.([\\/]|$)') 'BACKUP_PATH_TRAVERSAL'
     Require ($Relative -notmatch '(^|[\\/])\.([\\/]|$)') 'BACKUP_DOT_PATH'
     $rootFull = [IO.Path]::GetFullPath($Root).TrimEnd('\')
+    Require (Test-Path -LiteralPath $rootFull -PathType Container) 'BACKUP_ROOT_MISSING'
+    Require (-not [bool]((Get-Item -LiteralPath $rootFull -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)) 'BACKUP_ROOT_REPARSE_POINT'
     $full = [IO.Path]::GetFullPath((Join-Path $rootFull $Relative))
     Require ($full.StartsWith($rootFull + '\', [StringComparison]::OrdinalIgnoreCase)) 'BACKUP_PATH_OUTSIDE_ROOT'
     $cursor = $full
