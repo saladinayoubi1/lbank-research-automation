@@ -32,6 +32,7 @@ copyScript('provision_nexus_github_runner.ps1');
 // Package the canonical owner bootstrap directly. Runner self-heal remains an
 // explicit opt-in maintenance tool and is not enabled during product startup.
 copyScript('install_nexus_owner_autostart_from_gui.ps1');
+copyScript('sync_nexus_mission_snapshot_from_github.ps1');
 
 const head = runGit(['rev-parse', 'HEAD']).toLowerCase();
 if (!/^[0-9a-f]{40}$/.test(head)) throw new Error('repository HEAD is not a full SHA');
