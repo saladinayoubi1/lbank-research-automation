@@ -154,3 +154,15 @@ def test_backend_freshness_becomes_visible_after_repeated_passive_failures():
     assert "paperUiRefreshFailures+=1" in js
     assert "Backend stale" in js
     assert "lastGatewayHealthyAt.toLocaleTimeString('fa-IR')" in js
+
+
+def test_clean_mission_idle_does_not_render_false_local_node_failure():
+    js = (ROOT / "product_ui" / "product.js").read_text(encoding="utf-8")
+    assert "m.projection==='clean_install_idle'" in js
+    assert "m.data?.runtime_report_present===false" in js
+    assert "runtime report not generated" in js
+    assert "به معنی خرابی Local Runner یا Supervisor نیست" in js
+    idle_start = js.index("if(m.projection==='clean_install_idle'")
+    normal_start = js.index("const q=m.queue||{}", idle_start)
+    idle_block = js[idle_start:normal_start]
+    assert "local_node" not in idle_block
