@@ -281,3 +281,13 @@ Evidence: exact-main Multi-Pair Paper feedback run `34412163303` passed exact-SH
 Decision: every isolated job that imports a runtime verifier must provision and check the repository's locked runtime dependencies in that job before the import. Do not weaken artifact or snapshot verification to avoid provisioning. Treat `NO_OP_NOT_ELIGIBLE` as a successful fail-closed boundary decision when exact evidence is valid but the natural 12-cell health condition is false; do not manufacture eligibility, emit a feedback artifact, or promote state.
 
 Boundary: Research/Backtest/Paper evidence linking only. No Candidate/Paper promotion, Issue #984 mutation, Live/L4 authority, private credentials, real exchange orders, signing, deployment, destructive authority, automatic strategy promotion, or self-authorization.
+
+
+## 2026-09-25 — Keep Paper gate time-based after 180/180 and bind desktop UI to exact-main physical evidence
+Status: ACTIVE
+
+Evidence: PR #1803 merged as main `804a81119cf224de3397aa0a88fca75d18b25126` after exact-head cross-platform and security/control-plane checks passed. Exact-main Build Verification run `36087959492` produced persistent Windows artifact `10844033352`; physical fastpath run `36088426787` installed, smoke-tested, activated, and physically verified it on `NEXUS-LOCAL-RUNNER` / `DESKTOP-1R1081M`. The active build is `5.1.0-804a8111`; runtime Mission Control reports `clean_install_idle`; Paper is active; Live authority and live orders remain false. Separately, prospective producer run `36078163210` reached `180/180` bars with state digest `0d00b8bae995e468d19410724729078d3fa59c56cc5e20a3b557ad02cbdd5eb1` and last execution `2026-09-24T20:00:00Z`.
+
+Decision: Treat 180/180 as satisfying only the bar-count threshold. Do not declare #984 complete until the immutable 30-day elapsed-time condition is represented by a genuine newly closed four-hour observation and the canonical state reaches a valid terminal status. The next `2026-09-25T00:00:00Z` observation is eligible only after its four-hour interval closes after `04:00:00Z`. Preserve exact-source/digest binding for desktop installs and token-aware fail-closed UI status semantics; do not repeat a physical install for non-material main drift.
+
+Boundary: Research/Backtest/Paper only. No synthetic prospective observation, automatic Live promotion, Live/L4 authority, private exchange credentials, real orders, withdrawals, signing, deployment, production promotion, or self-authorization.
