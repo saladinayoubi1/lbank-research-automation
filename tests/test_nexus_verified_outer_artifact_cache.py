@@ -6,6 +6,7 @@ import hashlib
 import io
 import json
 import os
+import shutil
 from pathlib import Path
 import subprocess
 import sys
@@ -116,8 +117,12 @@ def _run_powershell(tmp_path: Path, request, *, corrupt_cache: bool = False):
             f"-DestinationDirectory '{quoted_destination}' "
             "-MaxAttempts 1"
         )
+        # Hosted Windows PowerShell 5.1 may lack Utility cmdlet discovery; use
+        # the preinstalled PowerShell 7 test shell there. Owner Windows PS 5.1
+        # is exercised separately in the physical focused test suite.
+        shell = shutil.which("pwsh.exe") or "powershell.exe"
         result = subprocess.run(
-            ["powershell.exe", "-NoProfile", "-NonInteractive",
+            [shell, "-NoProfile", "-NonInteractive",
              "-ExecutionPolicy", "Bypass", "-Command", command],
             env=env, capture_output=True, text=True, timeout=45,
         )
