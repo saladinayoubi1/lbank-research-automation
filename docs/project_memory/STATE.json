@@ -30,8 +30,8 @@
     "owner_override_required_for_priority_change": true
   },
   "runtime_status": {
-    "agent_execution_state": "paper_waiting_multipair_feedback_runtime_and_strategy_factory_replay_v2_verified",
-    "laptop_state": "physical_windows_and_wsl_runners_online_windows_2_337_0_exact_main_dr_and_local_success",
+    "agent_execution_state": "paper_180_of_180_waiting_final_elapsed_time_boundary_exact_main_desktop_verified",
+    "laptop_state": "all_three_runners_online_idle_and_nexus_personal_pro_exact_main_804a8111_active",
     "internet_outage_state": "not_assumed_from_laptop_state",
     "laptop_offline_is_not_internet_outage": true,
     "windows_runner_identity_class": "NETWORK_SERVICE",
@@ -103,8 +103,8 @@
     }
   },
   "latest_checkpoint": {
-    "checkpoint_date": "2026-09-10",
-    "observed_main_sha": "91b29b36e38eeb03c45bf52060030fa940206b81",
+    "checkpoint_date": "2026-09-25",
+    "observed_main_sha": "804a81119cf224de3397aa0a88fca75d18b25126",
     "continuity_only": true,
     "completed_milestones": [
       "PRs #1411-#1416 merged sequentially after required checks; Multi-Pair Discovery v2 moved fresh runtime acquisition to the physical Bybit plane, removed WSL Node actions and all WSL Git fetches, and added digest-verified hosted artifact relays plus verified wheelhouse cache reuse",
@@ -122,7 +122,12 @@
       "both Windows runner roots were migrated from the incomplete 2.336.0-to-2.337.0 self-update state to standard bin/externals junctions targeting GitHub Runner 2.337.0 without changing registration or credentials",
       "exact-main Windows DR Persistence run 34482923984 completed successfully and persisted artifact 10156147936 with digest sha256:e39caa5ccb230078e434059efed66859d5338ae33b5739ea5751c55db3d89a54",
       "exact-main Local Autonomy run 34482924040 completed every step successfully and persisted artifact 10157084959 with digest sha256:69665a8e68ea02eb0971380425f296bdde8910d4eac4bc90fca67fbe70a0d955",
-      "NEXUS-BYBIT-WSL, NEXUS-LOCAL-RUNNER and NEXUS-WINDOWS-DR were all observed online and idle after the exact-main proofs"
+      "NEXUS-BYBIT-WSL, NEXUS-LOCAL-RUNNER and NEXUS-WINDOWS-DR were all observed online and idle after the exact-main proofs",
+      "PR #1803 merged as main 804a81119cf224de3397aa0a88fca75d18b25126 after exact-head cross-platform tests, Build Verification, audit, secure-gateway, fallback-health and control-plane checks passed",
+      "Build Verification run 36087959492 succeeded on exact main and produced persistent Windows artifact 10844033352 with outer digest sha256:a313fd8441db3c0e852edac6ff72993575dbdae0814d5c881fcbe09e89c5a76d and unpacked SHA-256 96bbed17886635feb419bd216666061ceb776d6c94aa53f3a5bdc426c392f622",
+      "physical fastpath run 36088426787 succeeded on NEXUS-LOCAL-RUNNER / DESKTOP-1R1081M; exact source/cache/install/smoke/physical-proof all passed and active product processes point to 5.1.0-804a8111",
+      "active NEXUS product APIs report Mission Control clean_install_idle, Paper active, and Live disabled with orders, withdrawals and production promotion denied",
+      "Issue #984 prospective state independently inspected at 180/180 completed 4h bars, last execution 2026-09-24T20:00:00Z, status COLLECTING, elapsed-day floor 29/30; no final completion is claimed before the real 2026-09-25T00:00:00Z observation is closed after 04:00Z"
     ],
     "do_not_repeat_without_regression_evidence": [
       "WSL rootfs ownership/DACL recovery",
@@ -142,21 +147,21 @@
       "Windows Local/DR runner routing ambiguity or 2.336.0-to-2.337.0 migration repair unless new exact repository/runtime evidence shows regression"
     ],
     "current_blocker": {
-      "area": "Strategy Factory candidate governance",
-      "workflow_run": 34404651563,
-      "status": "HUMAN_REVIEW_REQUIRED_NO_AUTOMATIC_FORWARD",
-      "evidence": "replay-v2 neighborhood validation passed the frozen strategy and parameter plateau with 29 dual-profile passers and reported qualifies_for_derivatives_validation_and_prospective_paper_forward=true, while automatic_paper_forward_started remained false",
-      "required_fix": "independently review artifact 10125093054 and explicitly decide whether bounded derivatives validation or prospective Paper-forward work is authorized; do not auto-promote, touch Issue #984, or create Live/private-credential authority"
+      "area": "prospective Paper elapsed-time gate",
+      "workflow_run": 36078163210,
+      "status": "WAITING_FOR_REAL_FINAL_ELAPSED_TIME_OBSERVATION",
+      "evidence": "180/180 completed 4h bars are verified, but last_execution_utc=2026-09-24T20:00:00Z is only 29 days 20 hours after the immutable start_not_before timestamp.",
+      "required_fix": "after the real 2026-09-25T00:00:00Z 4h observation is closed after 04:00Z, run the canonical producer once, independently verify terminal state/runtime attestation, and close #984 only if the immutable gate reaches a valid terminal status; never synthesize or backfill the observation"
     },
     "canonical_authority_fields_preserved": true
   },
   "current_evidence": {
-    "observed_main_sha": "91b29b36e38eeb03c45bf52060030fa940206b81",
-    "observed_at_utc": "2026-09-10T14:31:00Z",
-    "state_commit_relationship": "observed_main_sha is the exact base main snapshot whose Windows runner routing and exact-main post-repair evidence are recorded by this continuity checkpoint; historical Paper, Strategy Factory and prospective-gate evidence remains fixed to its own source SHA and is not relabeled as current",
+    "observed_main_sha": "804a81119cf224de3397aa0a88fca75d18b25126",
+    "observed_at_utc": "2026-09-25T03:07:11Z",
+    "state_commit_relationship": "observed_main_sha is the exact base main snapshot whose merged UI status semantics, Build Verification, physical Lenovo install/smoke evidence, active desktop runtime, and latest independently inspected 180/180 prospective Paper checkpoint are recorded by this continuity checkpoint; the final 30-day prospective gate is still time-bound and not claimed complete",
     "latest_main_change": {
-      "pr": 1433,
-      "summary": "Bound Windows self-hosted workflows to deterministic role-specific labels and added routing regression coverage without expanding runner, credential, Live or production authority.",
+      "pr": 1803,
+      "summary": "Prevent negative compound NEXUS statuses such as inactive, unverified and not_ready from rendering green; exact-head CI passed before merge.",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true
@@ -309,18 +314,21 @@
       "issue_state": "open",
       "strategy_id": "bybit_btc_eth_regime_consensus_v1",
       "status": "COLLECTING",
+      "decision": "collect_prospective_paper_evidence",
       "start_not_before": "2026-08-26T00:00:00Z",
       "required_elapsed_days": 30,
-      "verified_elapsed_day_floor": 14,
+      "verified_elapsed_day_floor": 29,
       "required_completed_hour4_bars": 180,
-      "verified_completed_hour4_bars": 89,
-      "latest_verified_execution": "2026-09-09T16:00:00Z",
-      "latest_verified_workflow_run": 34402168058,
-      "latest_verified_source_sha": "77268e2e87fa36068d0d420b4205dc498ca9ff75",
-      "latest_verified_artifact_id": 10123917893,
-      "latest_verified_state_digest": "91804c633c25139ac85791cedf723ee5cc32b620951b76167103de9538101a15",
-      "latest_verified_artifact_digest": "sha256:6cffc34d5d8e253caa133b78a87dddb12e0f3d8245b0eeaac05b4b75f04e6774",
-      "latest_verified_tail_event_digest": "31d3906e694a20fe5544747b33d87ce08581df64e5bfa5abcbe2c5f5b790fcbe",
+      "verified_completed_hour4_bars": 180,
+      "latest_verified_execution": "2026-09-24T20:00:00Z",
+      "latest_verified_workflow_run": 36078163210,
+      "latest_verified_source_sha": "2666ab0d3303f632a07c8438471a5552febe43f8",
+      "latest_verified_artifact_id": 10840950765,
+      "latest_verified_state_digest": "0d00b8bae995e468d19410724729078d3fa59c56cc5e20a3b557ad02cbdd5eb1",
+      "latest_verified_artifact_digest": "sha256:6166f28508de55c7a054fca03b3aadc5d2ae49caa49a05d944b179880e24e92b",
+      "latest_verified_tail_event_digest": "b4398156835b9c83aa428b60498780bde74da5489889c160d5368ebdf399a3d2",
+      "next_real_terminal_eligible_observation": "2026-09-25T00:00:00Z",
+      "observation_is_not_closed_until_after_utc": "2026-09-25T04:00:00Z",
       "paper_only": true,
       "live_trading_authority": false,
       "private_credentials_used": false,
@@ -558,6 +566,26 @@
       "real_exchange_orders": false,
       "deterministic_risk_final_authority": true,
       "issue_984_state_touched": false
+    },
+    "windows_personal_pro": {
+      "status": "EXACT_MAIN_PHYSICAL_INSTALL_ACTIVE",
+      "source_sha": "804a81119cf224de3397aa0a88fca75d18b25126",
+      "build_verification_run": 36087959492,
+      "build_verification_conclusion": "success",
+      "persistent_artifact_id": 10844033352,
+      "persistent_artifact_digest": "sha256:a313fd8441db3c0e852edac6ff72993575dbdae0814d5c881fcbe09e89c5a76d",
+      "unpacked_sha256": "96bbed17886635feb419bd216666061ceb776d6c94aa53f3a5bdc426c392f622",
+      "physical_install_run": 36088426787,
+      "physical_install_conclusion": "success",
+      "machine": "DESKTOP-1R1081M",
+      "runner": "NEXUS-LOCAL-RUNNER",
+      "version_dir": "5.1.0-804a8111",
+      "install_decision": "PASS",
+      "mission_control_projection": "clean_install_idle",
+      "paper_only": true,
+      "live_trading_authority": false,
+      "live_orders_allowed": false,
+      "production_promotion_allowed": false
     }
   },
   "open_gates": {
@@ -569,7 +597,7 @@
     "prospective_paper": {
       "issue": 984,
       "state": "open",
-      "reason": "hard real-time acceptance gate; latest independently verified evidence is 89/180 completed hour4 bars and a 14/30 elapsed-day floor"
+      "reason": "180/180 completed hour4 bars are verified, but elapsed prospective time represented by the canonical state is still 29 days 20 hours; final terminal evaluation requires the next real closed observation after 2026-09-25T04:00:00Z"
     },
     "production_release": {
       "issue": 43,
@@ -635,10 +663,10 @@
   "next_autonomous_work": {
     "priority": "trading_engine_first",
     "order": [
-      "independently review Strategy Factory neighborhood-v7 artifact 10125093054 and its exact replay-v2 provenance; do not advance it automatically",
-      "continue bounded Strategy Factory rotation from next index 6 across Multi-timeframe and Multi-Pair stages while preserving qualification=false, holdout, stress and Deterministic Risk gates",
-      "continue scheduled persistent Paper cycles from exact-main verified artifact 10128322177 without fabricating cells or weakening WAITING/ACTIVE contracts; allow Multi-Pair boundary feedback to remain a no-op until all 12 cells are naturally eligible",
-      "continue immutable #984 prospective Paper collection without inferred, accelerated or fabricated bars",
+      "after 2026-09-25T04:00:00Z, advance #984 with exactly one canonical prospective Paper producer run using only genuine newly closed Bybit public data",
+      "independently verify the resulting state digest, event chain, runtime attestation and Paper-only authority; close #984 only on valid terminal evidence and never auto-promote to Live",
+      "continue persistent Paper / multi-pair / multi-timeframe / multi-strategy runtime and Strategy Factory work from current GitHub evidence without fabricating freshness or qualification",
+      "keep the exact-main Lenovo desktop/runtime proof current only when material product/runtime changes require a new build",
       "keep #43 production release deny-by-default and do not create Live, signing, credential or deployment authority"
     ],
     "approval_required_for_reversible_research_backtest_paper_hardening": false,
