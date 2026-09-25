@@ -489,7 +489,10 @@ try {
     $script:Evidence.smoke.process_started = $true
     $state = Wait-ForHealthySupervisor -Root $script:SmokeRoot -NotBeforeUtc $smokeStarted -TimeoutSeconds 420
     $script:Evidence.smoke.supervisor_healthy = $true
-    if (-not (Wait-ForVisibleNewWindow -TimeoutSeconds 90)) { throw 'NEXUS started but no visible Mission Control window was observed.' }
+    # The gateway is source-verified above; do not mistake delayed renderer
+    # first paint on the physical owner laptop for a failed application.
+    # Still require an actual visible exact-install window, fail closed at 300s.
+    if (-not (Wait-ForVisibleNewWindow -TimeoutSeconds 300)) { throw 'NEXUS started but no visible Mission Control window was observed.' }
     $script:Evidence.smoke.visible_window_observed = $true
     Invoke-ProductContract -Origin ([string]$state.origin)
     $script:InstallSmokeVerified = $true

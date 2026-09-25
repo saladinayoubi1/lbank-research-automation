@@ -385,8 +385,32 @@ function createWindow(origin) {
       callback({ cancel: !allowed });
     } catch { callback({ cancel: true }); }
   });
+  // On a busy owner laptop Electron can complete the HTTP gateway startup
+  // before the first renderer paint. A completed trusted document load is
+  // sufficient to show the window even when ready-to-show arrives late.
+  let mainFrameLoadFailed = false;
+  win.webContents.on('did-fail-load', (_event, code, _description, _url, isMainFrame) => {
+    if (!isMainFrame) return;
+    mainFrameLoadFailed = true;
+    logStartup(`UI main-frame navigation failed code=${code}`);
+  });
+  win.webContents.once('did-finish-load', () => {
+    if (mainFrameLoadFailed || win.isDestroyed()) return;
+    if (win.webContents.getURL() !== origin + '/') {
+      logStartup('UI document origin did not match the verified product gateway');
+      return;
+    }
+    if (!win.isVisible()) {
+      win.show();
+      logStartup('UI window shown after verified document load');
+    }
+  });
   win.loadURL(origin + '/');
-  win.once('ready-to-show', () => win.show());
+  win.once('ready-to-show', () => {
+    if (win.isDestroyed() || mainFrameLoadFailed) return;
+    win.show();
+    logStartup('UI window ready-to-show');
+  });
   return win;
 }
 
