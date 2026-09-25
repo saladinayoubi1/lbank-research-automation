@@ -1,0 +1,32 @@
+{
+  "schema_version": "nexus.low-turnover-hypothesis-prereg.v1",
+  "experiment_id": "nexus-bybit-btc-eth-4h-low-turnover-research-v1",
+  "market": "bybit_public_spot_research_only",
+  "symbols": ["BTCUSDT", "ETHUSDT"],
+  "timeframe": "hour4",
+  "variants": [
+    {"lookback": 20, "entry_deadband": 0.01, "min_hold_bars": 6, "exit_cooldown_bars": 3},
+    {"lookback": 40, "entry_deadband": 0.015, "min_hold_bars": 6, "exit_cooldown_bars": 3}
+  ],
+  "execution": {
+    "conservative": {"fee_bps": 10.0, "slippage_bps": 5.0},
+    "stress": {"fee_bps": 25.0, "slippage_bps": 15.0}
+  },
+  "evaluation": {
+    "historical_development_training_only": true,
+    "previously_inspected_locked_holdout_is_pristine": false,
+    "future_holdout_no_earlier_than_utc": "2026-09-26T00:00:00Z",
+    "future_holdout_must_follow_exact_code_freeze": true,
+    "future_holdout_used_for_selection": false,
+    "minimum_new_forward_fills_per_profile": 4,
+    "forward_activity_requires_separate_review": true
+  },
+  "authority": {
+    "research_only": true,
+    "paper_only": true,
+    "live_trading_authority": false,
+    "private_credentials_allowed": false,
+    "automatic_strategy_promotion": false,
+    "automatic_paper_forward_started": false
+  }
+}
