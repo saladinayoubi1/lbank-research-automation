@@ -264,3 +264,18 @@ def test_installer_retargets_generic_start_menu_shortcut() -> None:
     assert "NEXUS Personal Pro.lnk" in script
     assert "$genericStartMenuShortcut" in script
     assert "New-NexusShortcut $genericStartMenuShortcut $installedExecutable" in script
+
+
+def test_fastpath_activates_exact_installed_build_without_widening_process_scope() -> None:
+    script = text(SCRIPT)
+    workflow = text(FASTPATH)
+    assert "[switch]$ActivateInstalledBuild" in script
+    assert "activation_requested = [bool]$ActivateInstalledBuild" in script
+    assert "function Get-InstalledNexusProductProcesses" in script
+    assert "Test-PathWithin $processPath $root" in script
+    assert "^(?i:NEXUS Personal Pro|nexus-product-server)$" in script
+    assert "Stop-InstalledNexusProductProcesses -ProgramRoot $programRoot" in script
+    assert "$preexistingGuiCount -gt 0 -and -not $ActivateInstalledBuild" in script
+    assert "RUNNING_VISIBLE_ACTIVATED" in script
+    assert "-ActivateInstalledBuild" in workflow
+    assert "Runner.Listener" not in script
