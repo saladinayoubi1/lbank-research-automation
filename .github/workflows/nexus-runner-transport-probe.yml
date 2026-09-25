@@ -15,6 +15,7 @@ concurrency:
 
 jobs:
   transport-probe:
+    if: github.ref == 'refs/heads/main' && github.actor == github.repository_owner
     runs-on: [self-hosted, Windows, X64, nexus-local]
     timeout-minutes: 12
     defaults:
