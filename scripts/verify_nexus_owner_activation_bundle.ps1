@@ -99,6 +99,7 @@ $expectedShortcuts = @(
 )
 $shortcuts = @(Read-Manifest 'shortcuts-manifest.json' 4)
 Require (@($shortcuts | Select-Object -ExpandProperty original_path -Unique).Count -eq 4) 'DUPLICATE_SHORTCUT_ENTRY'
+Require (@($shortcuts | Select-Object -ExpandProperty backup_file -Unique).Count -eq 4) 'DUPLICATE_BACKUP_SHORTCUT_FILE'
 $shell = New-Object -ComObject WScript.Shell
 foreach ($link in $shortcuts) {
     Require ($expectedShortcuts -contains [string]$link.original_path) 'UNEXPECTED_SHORTCUT_PATH'
@@ -112,7 +113,7 @@ $sync = @(Read-Manifest 'global-paper-sync-manifest.json' 2)
 Require (@($sync | Select-Object -ExpandProperty file -Unique).Count -eq 2) 'DUPLICATE_PAPER_SYNC_ENTRY'
 foreach ($item in $sync) {
     Require ([string]$item.file -in @('sync.ps1','product_prospective_paper.py')) 'UNEXPECTED_GLOBAL_SYNC_FILE'
-    ExactHash (UnderRoot $BackupRoot ('global-paper-sync\' + $item.file)) ([string]$item.sha256) 'BACKUP_PAPER_SYNC'
+    ExactHash (UnderRoot $BackupRoot ('paper-forward-sync\' + $item.file)) ([string]$item.sha256) 'BACKUP_PAPER_SYNC'
     ExactHash (Join-Path $GlobalPaperSyncRoot $item.file) ([string]$item.sha256) 'LIVE_PAPER_SYNC'
 }
 [ordered]@{
