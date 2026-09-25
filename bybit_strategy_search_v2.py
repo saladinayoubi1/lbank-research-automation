@@ -181,20 +181,32 @@ def exact(frame: pd.DataFrame, targets: pd.Series, period: dict[str, str], profi
     m = period_mask(frame, period)
     f = frame.loc[m].reset_index(drop=True)
     t = targets.loc[m].reset_index(drop=True).to_numpy(float)
+    if not np.isfinite(t).all() or (t < 0).any() or (t > 1).any():
+        raise SearchError("exact execution requires finite long/flat fractional targets")
     cash = float(profile["initial_cash"]); qty = 0.0
     fee_rate = float(profile["fee_bps"]) / 10000
     slip = float(profile["slippage_bps"]) / 10000
     equity = []; total_notional = 0.0; total_fees = 0.0; fills = 0
+    executed_target = 0.0
     for i, row in f.iterrows():
         if i > 0:
-            ref = float(row.open); eopen = cash + qty * ref
-            desired = eopen * t[i - 1] / ref
-            dq = desired - qty
-            if abs(dq) > 1e-12:
+            next_target = float(t[i - 1])  # Current-bar close cannot execute yet.
+            # target() already freezes/quantizes the risk overlay by its
+            # rebalance interval. An unchanged target is not a new fill.
+            if abs(next_target - executed_target) > 1e-12:
+                ref = float(row.open); eopen = cash + qty * ref
+                dq = eopen * next_target / ref - qty
                 fill = ref * (1 + slip if dq > 0 else 1 - slip)
-                notional = abs(dq * fill); fee = notional * fee_rate
-                cash -= dq * fill + fee; qty += dq
-                total_notional += notional; total_fees += fee; fills += 1
+                if dq > 0:
+                    # Never borrow fee/slippage cash to meet an all-in target.
+                    dq = min(dq, max(0.0, cash) / (fill * (1 + fee_rate)))
+                if abs(dq) > 1e-12:
+                    notional = abs(dq * fill); fee = notional * fee_rate
+                    cash -= dq * fill + fee; qty += dq
+                    if abs(cash) < 1e-10:
+                        cash = 0.0
+                    total_notional += notional; total_fees += fee; fills += 1
+                executed_target = next_target
         equity.append(cash + qty * float(row.close))
     if abs(qty) > 1e-12:
         ref = float(f.iloc[-1].close); dq = -qty
