@@ -129,6 +129,7 @@ jobs:
         run: |
           set -euo pipefail
           python nexus_paper_gate_report.py \
+            --manifest experiments/bybit_prospective_paper_forward_v1.json \
             --state "build/nexus_paper_gate_report/state/$STATE_FILE" \
             --expected-source-sha "$TRIGGER_HEAD_SHA" \
             --expected-run-id "$TRIGGER_RUN_ID" \

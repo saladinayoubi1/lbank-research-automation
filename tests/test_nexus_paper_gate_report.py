@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from pathlib import Path
 
 import pytest
 
@@ -165,3 +166,87 @@ def test_event_chain_substitution_fails_closed() -> None:
 
     with pytest.raises(report.PaperGateReportError, match="event chain"):
         render(state)
+
+
+
+def test_terminal_report_shows_actual_locked_failure_without_promotion() -> None:
+    state = state_with_bars(5, status="QUARANTINED")
+    profile = {
+        "equity": 10190.0,
+        "maximum_drawdown": 0.02,
+        "fill_count": 3,
+        "asset_fill_counts": [1, 2],
+        "actual_funding_events": 10,
+        "expected_funding_events": 10,
+        "orders": 3,
+        "execution_hits": 3,
+        "maximum_margin_utilization": 0.15,
+        "maximum_risk_tier_utilization": 0.01,
+        "margin_rejections": 0,
+        "liquidations": 0,
+    }
+    state["profiles"] = {"conservative": dict(profile), "stress": dict(profile)}
+    core = dict(state)
+    core.pop("state_digest")
+    state["state_digest"] = report._digest(core)  # noqa: SLF001
+    gate = {
+        "minimum_total_return": -0.10,
+        "maximum_drawdown": 0.15,
+        "minimum_fill_count": 4,
+        "minimum_asset_fill_count": 1,
+        "minimum_funding_coverage": 0.95,
+        "minimum_execution_coverage": 0.95,
+        "maximum_margin_utilization": 0.60,
+        "maximum_risk_tier_utilization": 0.75,
+    }
+    manifest = {
+        "forward_id": report.FORWARD_ID,
+        "strategy_id": report.STRATEGY_ID,
+        "strategy_manifest_sha256": "d" * 64,
+        "start_not_before_utc": state["start_not_before_utc"],
+        "minimum_completed_bars": 180,
+        "minimum_observation_days": 30,
+        "execution_profiles": {
+            "conservative": {"initial_cash": 10000},
+            "stress": {"initial_cash": 10000},
+        },
+        "completion_gates": {"conservative": dict(gate), "stress": dict(gate)},
+    }
+    kwargs = {
+        "expected_source_sha": SOURCE_SHA,
+        "expected_run_id": RUN_ID,
+        "run_url": RUN_URL,
+        "artifact_id": 987,
+        "artifact_digest": ARTIFACT_DIGEST,
+        "manifest": manifest,
+    }
+    metadata, markdown = report.build_report(state, **kwargs)
+    diagnostics = metadata["terminal_gate_diagnostics"]
+    assert diagnostics["all_checks_passed"] is False
+    assert diagnostics["profiles"]["conservative"]["failed_checks"] == ["minimum_fill_count"]
+    assert diagnostics["profiles"]["stress"]["failed_checks"] == ["minimum_fill_count"]
+    assert markdown.count("minimum_fill_count") == 2
+    assert "fills `3/4`" in markdown
+    assert "cannot be promoted" in markdown
+
+    wrong_manifest = {**manifest, "strategy_manifest_sha256": "e" * 64}
+    with pytest.raises(report.PaperGateReportError, match="manifest"):
+        report.build_report(state, **{**kwargs, "manifest": wrong_manifest})
+
+    passing = dict(state)
+    passing["status"] = "COMPLETE_REVIEW_REQUIRED"
+    passing["decision"] = report.STATUS_DECISIONS[passing["status"]]
+    unsigned = dict(passing)
+    unsigned.pop("state_digest")
+    passing["state_digest"] = report._digest(unsigned)  # noqa: SLF001
+    with pytest.raises(report.PaperGateReportError, match="contradicts"):
+        report.build_report(passing, **kwargs)
+
+
+def test_terminal_report_workflow_uses_frozen_manifest() -> None:
+    workflow = (
+        Path(__file__).resolve().parents[1]
+        / ".github/workflows/nexus_bybit_paper_gate_report.yml"
+    ).read_text(encoding="utf-8")
+    assert "python nexus_paper_gate_report.py" in workflow
+    assert "--manifest experiments/bybit_prospective_paper_forward_v1.json" in workflow

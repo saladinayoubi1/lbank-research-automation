@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import re
 from datetime import datetime, timezone
 from pathlib import Path
@@ -129,6 +130,87 @@ def verify_state(
         raise PaperGateReportError("Empty Paper chain has a last execution")
 
 
+
+def terminal_gate_diagnostics(
+    state: Mapping[str, Any], manifest: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Render frozen completion criteria without changing the producer's decision."""
+    if (
+        manifest.get("forward_id") != FORWARD_ID
+        or manifest.get("strategy_id") != STRATEGY_ID
+        or manifest.get("strategy_manifest_sha256") != state.get("strategy_manifest_sha256")
+        or manifest.get("start_not_before_utc") != state.get("start_not_before_utc")
+        or manifest.get("minimum_completed_bars") != MINIMUM_BARS
+        or manifest.get("minimum_observation_days") != 30
+    ):
+        raise PaperGateReportError("Terminal completion manifest does not match frozen state")
+    gates = manifest.get("completion_gates")
+    configs = manifest.get("execution_profiles")
+    if not isinstance(gates, Mapping) or not isinstance(configs, Mapping):
+        raise PaperGateReportError("Terminal completion manifest is incomplete")
+    if set(gates) != {"conservative", "stress"} or set(configs) != set(gates):
+        raise PaperGateReportError("Terminal completion profiles mismatch")
+
+    def number(value: Any, label: str) -> float:
+        if isinstance(value, bool):
+            raise PaperGateReportError(f"Invalid terminal metric: {label}")
+        try:
+            result = float(value)
+        except (TypeError, ValueError) as exc:
+            raise PaperGateReportError(f"Invalid terminal metric: {label}") from exc
+        if not math.isfinite(result):
+            raise PaperGateReportError(f"Invalid terminal metric: {label}")
+        return result
+
+    profiles: dict[str, Any] = {}
+    for name in ("conservative", "stress"):
+        profile = state["profiles"][name]
+        gate = gates[name]
+        if not isinstance(profile, Mapping) or not isinstance(gate, Mapping):
+            raise PaperGateReportError("Terminal completion profile is invalid")
+        initial = number(configs[name]["initial_cash"], f"{name}.initial_cash")
+        if initial <= 0:
+            raise PaperGateReportError("Terminal initial cash must be positive")
+        fills = number(profile.get("fill_count"), f"{name}.fill_count")
+        asset_fills = profile.get("asset_fill_counts")
+        if not isinstance(asset_fills, list) or len(asset_fills) != 2:
+            raise PaperGateReportError("Terminal asset fill counts are invalid")
+        min_asset_fills = min(number(v, f"{name}.asset_fill_counts") for v in asset_fills)
+        expected_funding = number(profile.get("expected_funding_events"), f"{name}.expected_funding_events")
+        actual_funding = number(profile.get("actual_funding_events"), f"{name}.actual_funding_events")
+        orders = number(profile.get("orders"), f"{name}.orders")
+        executions = number(profile.get("execution_hits"), f"{name}.execution_hits")
+        if min(fills, min_asset_fills, expected_funding, actual_funding, orders, executions) < 0:
+            raise PaperGateReportError("Terminal count must not be negative")
+        checks = {
+            "minimum_total_return": number(profile.get("equity"), f"{name}.equity") / initial - 1
+            >= number(gate.get("minimum_total_return"), "minimum_total_return"),
+            "maximum_drawdown": number(profile.get("maximum_drawdown"), f"{name}.maximum_drawdown")
+            <= number(gate.get("maximum_drawdown"), "maximum_drawdown"),
+            "minimum_fill_count": fills >= number(gate.get("minimum_fill_count"), "minimum_fill_count"),
+            "minimum_asset_fill_count": min_asset_fills >= number(gate.get("minimum_asset_fill_count"), "minimum_asset_fill_count"),
+            "minimum_funding_coverage": actual_funding / max(expected_funding, 1)
+            >= number(gate.get("minimum_funding_coverage"), "minimum_funding_coverage"),
+            "minimum_execution_coverage": executions / max(orders, 1)
+            >= number(gate.get("minimum_execution_coverage"), "minimum_execution_coverage"),
+            "maximum_margin_utilization": number(profile.get("maximum_margin_utilization"), f"{name}.maximum_margin_utilization")
+            <= number(gate.get("maximum_margin_utilization"), "maximum_margin_utilization"),
+            "maximum_risk_tier_utilization": number(profile.get("maximum_risk_tier_utilization"), f"{name}.maximum_risk_tier_utilization")
+            <= number(gate.get("maximum_risk_tier_utilization"), "maximum_risk_tier_utilization"),
+            "zero_margin_rejections": number(profile.get("margin_rejections"), f"{name}.margin_rejections") == 0,
+            "zero_liquidations": number(profile.get("liquidations"), f"{name}.liquidations") == 0,
+        }
+        profiles[name] = {
+            "failed_checks": sorted(key for key, passed in checks.items() if not passed),
+            "fill_count": int(fills),
+            "minimum_fill_count": int(number(gate["minimum_fill_count"], "minimum_fill_count")),
+        }
+    failed = any(row["failed_checks"] for row in profiles.values())
+    status = state["status"]
+    if (status == "QUARANTINED") != failed:
+        raise PaperGateReportError("Terminal status contradicts locked completion criteria")
+    return {"profiles": profiles, "all_checks_passed": not failed}
+
 def build_report(
     state: Mapping[str, Any],
     *,
@@ -137,6 +219,7 @@ def build_report(
     run_url: str,
     artifact_id: int,
     artifact_digest: str,
+    manifest: Mapping[str, Any] | None = None,
 ) -> tuple[dict[str, Any], str]:
     verify_state(
         state,
@@ -175,6 +258,14 @@ def build_report(
         "automatic_live_promotion": False,
     }
 
+    diagnostics = (
+        terminal_gate_diagnostics(state, manifest)
+        if manifest is not None and status in TERMINAL_STATUS
+        else None
+    )
+    if diagnostics is not None:
+        metadata["terminal_gate_diagnostics"] = diagnostics
+
     heading = (
         "## Prospective Paper terminal evidence"
         if status in TERMINAL_STATUS
@@ -195,6 +286,15 @@ def build_report(
         "- Paper-only: `true`; Live: `false`; private credentials: `false`; automatic Live promotion: `false`",
         "",
     ]
+    if diagnostics is not None:
+        for profile_name in ("conservative", "stress"):
+            row = diagnostics["profiles"][profile_name]
+            failed = ", ".join(row["failed_checks"]) if row["failed_checks"] else "none"
+            lines.append(
+                f"- {profile_name} locked gate failures: `{failed}` "
+                f"(fills `{row['fill_count']}/{row['minimum_fill_count']}`)"
+            )
+        lines.append("")
     if status == "COMPLETE_REVIEW_REQUIRED":
         lines.append(
             "The observation threshold was reached and the result requires separate human review; no promotion is automatic."
@@ -219,6 +319,7 @@ def build_report(
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--state", type=Path, required=True)
+    parser.add_argument("--manifest", type=Path)
     parser.add_argument("--expected-source-sha", required=True)
     parser.add_argument("--expected-run-id", type=int, required=True)
     parser.add_argument("--run-url", required=True)
@@ -232,6 +333,11 @@ def main() -> int:
         state = json.loads(args.state.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
         raise PaperGateReportError(f"Paper state is unavailable: {exc}") from exc
+    manifest = (
+        json.loads(args.manifest.read_text(encoding="utf-8"))
+        if args.manifest is not None
+        else None
+    )
     metadata, markdown = build_report(
         state,
         expected_source_sha=args.expected_source_sha,
@@ -239,6 +345,7 @@ def main() -> int:
         run_url=args.run_url,
         artifact_id=args.artifact_id,
         artifact_digest=args.artifact_digest,
+        manifest=manifest,
     )
     args.metadata.parent.mkdir(parents=True, exist_ok=True)
     args.markdown.parent.mkdir(parents=True, exist_ok=True)
