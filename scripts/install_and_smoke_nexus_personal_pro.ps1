@@ -348,6 +348,13 @@ try {
     $script:Evidence.target.owner_user_context = $true
     $script:Evidence.target.interactive_desktop = $true
 
+    # The legacy activation branch changes owner sync and shortcuts before
+    # the old app has quiesced and has no transactional rollback. Never enter
+    # it until a separate, independently tested activation gate replaces it.
+    if ($ActivateInstalledBuild) {
+        throw 'UNSAFE_LEGACY_OWNER_ACTIVATION_DISABLED: use verified stage-only installation pending transactional activation.'
+    }
+
     if (-not $env:RUNNER_TEMP) { throw 'RUNNER_TEMP is required for bounded artifact transport.' }
     $packageRootFull = Get-FullPath $PackageRoot
     if (-not (Test-PathWithin $packageRootFull $env:RUNNER_TEMP)) { throw 'Package transport escaped RUNNER_TEMP.' }
