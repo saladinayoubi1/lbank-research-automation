@@ -78,6 +78,7 @@ jobs:
           tests/test_product_runtime.py
           tests/test_product_web_server.py
           tests/test_product_offline_owner_500_bootstrap.py
+          tests/test_gui_runner_canonical_cmd.py
           tests/test_product_research_runtime.py
           tests/test_product_offline_runtime.py
           tests/test_product_mission_runtime.py
