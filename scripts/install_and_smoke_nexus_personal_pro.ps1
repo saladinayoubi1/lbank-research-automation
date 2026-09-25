@@ -141,7 +141,45 @@ function Get-InstalledNexusProductProcesses([string]$ProgramRoot) {
     $root = (Get-FullPath $ProgramRoot).TrimEnd('\')
     $matches = @()
     foreach ($process in @(Get-Process -ErrorAction SilentlyContinue | Where-Object {
-        $_.ProcessName -match '^(?i:NEXUS Personal Pro|nexus-product-server)
+        $_.ProcessName -in @('NEXUS Personal Pro', 'nexus-product-server')
+    })) {
+        try {
+            $processPath = [string]$process.Path
+            if ($processPath -and (Test-PathWithin $processPath $root)) { $matches += $process }
+        } catch { }
+    }
+    return @($matches)
+}
+
+function Stop-InstalledNexusProductProcesses([string]$ProgramRoot) {
+    $targets = @(Get-InstalledNexusProductProcesses -ProgramRoot $ProgramRoot)
+    foreach ($process in $targets) {
+        try {
+            if ($process.MainWindowHandle -ne 0) { [void]$process.CloseMainWindow() }
+        } catch { }
+    }
+
+    $deadline = [DateTime]::UtcNow.AddSeconds(12)
+    do {
+        Start-Sleep -Milliseconds 400
+        $remaining = @(Get-InstalledNexusProductProcesses -ProgramRoot $ProgramRoot)
+    } while ($remaining.Count -gt 0 -and [DateTime]::UtcNow -lt $deadline)
+
+    foreach ($process in $remaining) {
+        try { Stop-Process -Id $process.Id -Force -ErrorAction Stop } catch { }
+    }
+
+    $deadline = [DateTime]::UtcNow.AddSeconds(6)
+    do {
+        Start-Sleep -Milliseconds 300
+        $remaining = @(Get-InstalledNexusProductProcesses -ProgramRoot $ProgramRoot)
+    } while ($remaining.Count -gt 0 -and [DateTime]::UtcNow -lt $deadline)
+
+    if ($remaining.Count -gt 0) {
+        throw 'Existing NEXUS product processes did not stop inside the bounded activation window.'
+    }
+}
+
 function Stop-SmokeProcesses {
     if ($script:SmokeCleaned) { return }
     foreach ($process in @(Get-NewNexusProcesses)) {
