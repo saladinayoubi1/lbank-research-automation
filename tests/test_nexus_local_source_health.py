@@ -42,6 +42,8 @@ def test_owner_health_requires_isolation_exact_sha_and_original_tests():
     )
     for marker in required:
         assert marker in source
+    assert "ReparsePoint" in source
+    assert source.index("ReparsePoint") < source.index("Remove-Item -Recurse -Force -ErrorAction Stop")
     assert source.index("Owner source health requires isolated GitHub Actions workspace") < source.index(
         "Remove-Item -Recurse -Force -ErrorAction Stop"
     )
