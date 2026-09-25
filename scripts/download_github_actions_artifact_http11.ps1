@@ -129,6 +129,7 @@ if (Test-Path -LiteralPath $archivePath -PathType Leaf) {
     }
 }
 
+$fullDigestFailures = 0
 while (-not $verified) {
     $currentLength = if (Test-Path -LiteralPath $archivePath -PathType Leaf) {
         [long](Get-Item -LiteralPath $archivePath).Length
@@ -142,6 +143,8 @@ while (-not $verified) {
             $verified = $true
             break
         }
+        $fullDigestFailures += 1
+        if ($fullDigestFailures -ge 2) { throw 'Assembled artifact repeatedly failed full SHA-256 verification.' }
         Remove-Item -LiteralPath $archivePath -Force
         $currentLength = 0L
     }
@@ -151,8 +154,10 @@ while (-not $verified) {
     }
 
     $batchSucceeded = $false
+    $retainedParts = @{}
+    try {
     for ($attempt = 1; $attempt -le $MaxAttempts -and -not $batchSucceeded; $attempt++) {
-        $signedUrl = Get-SignedArtifactUrl
+        $signedUrl = $null
         $parts = @()
         try {
             for ($index = 0; $index -lt $parallelChunks; $index++) {
@@ -160,9 +165,38 @@ while (-not $verified) {
                 if ($rangeStart -ge $ExpectedArchiveBytes) { break }
                 $rangeEnd = [Math]::Min($rangeStart + $chunkBytes - 1, $ExpectedArchiveBytes - 1)
                 $partPath = "$archivePath.part-$rangeStart-$rangeEnd"
-                Remove-Item -LiteralPath $partPath -Force -ErrorAction SilentlyContinue
+                $rangeKey = "$rangeStart-$rangeEnd"
+                if ($retainedParts.ContainsKey($rangeKey)) {
+                    $saved = Get-Item -LiteralPath $partPath -Force -ErrorAction Stop
+                    if (($saved.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -or
+                        [long]$saved.Length -ne ($rangeEnd - $rangeStart + 1)) {
+                        throw "Retained artifact range changed: $rangeKey."
+                    }
+                    $parts += [pscustomobject]@{
+                        Start = [long]$rangeStart
+                        End = [long]$rangeEnd
+                        Path = $partPath
+                        Stderr = $null
+                        Process = $null
+                    }
+                    continue
+                }
+                if (Test-Path -LiteralPath $partPath) {
+                    $stale = Get-Item -LiteralPath $partPath -Force
+                    if (($stale.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+                        throw "Untrusted artifact range reparse point: $rangeKey."
+                    }
+                    Remove-Item -LiteralPath $partPath -Force
+                }
                 $stderrPath = "$partPath.stderr"
-                Remove-Item -LiteralPath $stderrPath -Force -ErrorAction SilentlyContinue
+                if (Test-Path -LiteralPath $stderrPath) {
+                    $staleStderr = Get-Item -LiteralPath $stderrPath -Force
+                    if (($staleStderr.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+                        throw "Untrusted artifact range stderr reparse point: $rangeKey."
+                    }
+                    Remove-Item -LiteralPath $stderrPath -Force
+                }
+                if ($null -eq $signedUrl) { $signedUrl = Get-SignedArtifactUrl }
                 $arguments = @(
                     '--fail',
                     '--silent',
@@ -189,14 +223,18 @@ while (-not $verified) {
 
             $batchSucceeded = $true
             foreach ($part in $parts) {
+                if ($null -eq $part.Process) { continue }
                 $part.Process.WaitForExit()
                 $exitCode = $part.Process.ExitCode
                 $exitCodeKnown = $null -ne $exitCode
                 $expectedPartBytes = [long]($part.End - $part.Start + 1)
-                $actualPartBytes = if (Test-Path -LiteralPath $part.Path -PathType Leaf) {
-                    [long](Get-Item -LiteralPath $part.Path).Length
-                } else {
-                    -1L
+                $actualPartBytes = -1L
+                if (Test-Path -LiteralPath $part.Path -PathType Leaf) {
+                    $downloaded = Get-Item -LiteralPath $part.Path -Force
+                    if (($downloaded.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+                        throw "Downloaded artifact fragment is a reparse point: $($part.Start)-$($part.End)."
+                    }
+                    $actualPartBytes = [long]$downloaded.Length
                 }
                 $partFailed = ($actualPartBytes -ne $expectedPartBytes) -or ($exitCodeKnown -and [int]$exitCode -ne 0)
                 if ($partFailed) {
@@ -209,9 +247,19 @@ while (-not $verified) {
                     Write-Warning "Artifact range $($part.Start)-$($part.End) attempt $attempt/$MaxAttempts failed (curl_exit=$exitCodeText, bytes=$actualPartBytes, stderr=$stderr)."
                     $batchSucceeded = $false
                 }
+                else {
+                    $retainedParts["$($part.Start)-$($part.End)"] = $true
+                }
             }
 
             if ($batchSucceeded) {
+                foreach ($part in $parts) {
+                    $saved = Get-Item -LiteralPath $part.Path -Force -ErrorAction Stop
+                    if (($saved.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -or
+                        [long]$saved.Length -ne ($part.End - $part.Start + 1)) {
+                        throw "Artifact range changed before ordered append: $($part.Start)-$($part.End)."
+                    }
+                }
                 $output = [IO.File]::Open($archivePath, [IO.FileMode]::Append, [IO.FileAccess]::Write, [IO.FileShare]::Read)
                 try {
                     foreach ($part in ($parts | Sort-Object Start)) {
@@ -229,13 +277,34 @@ while (-not $verified) {
         finally {
             $signedUrl = $null
             foreach ($part in $parts) {
-                Remove-Item -LiteralPath $part.Path -Force -ErrorAction SilentlyContinue
-                Remove-Item -LiteralPath $part.Stderr -Force -ErrorAction SilentlyContinue
+                if ($null -ne $part.Process) {
+                    try { $part.Process.WaitForExit() } catch { }
+                }
+                if ($null -ne $part.Stderr) {
+                    Remove-Item -LiteralPath $part.Stderr -Force -ErrorAction SilentlyContinue
+                }
+                if (-not $retainedParts.ContainsKey("$($part.Start)-$($part.End)") -and
+                    (Test-Path -LiteralPath $part.Path -PathType Leaf)) {
+                    Remove-Item -LiteralPath $part.Path -Force -ErrorAction SilentlyContinue
+                }
             }
         }
 
         if (-not $batchSucceeded -and $attempt -lt $MaxAttempts) {
             Start-Sleep -Seconds ([Math]::Min(3 * $attempt, 15))
+        }
+    }
+    }
+    finally {
+        # No fragments survive a separate execution or artifact identity.
+        foreach ($key in @($retainedParts.Keys)) {
+            $retainedPath = "$archivePath.part-$key"
+            if (Test-Path -LiteralPath $retainedPath -PathType Leaf) {
+                $item = Get-Item -LiteralPath $retainedPath -Force
+                if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -eq 0) {
+                    Remove-Item -LiteralPath $retainedPath -Force -ErrorAction SilentlyContinue
+                }
+            }
         }
     }
 
