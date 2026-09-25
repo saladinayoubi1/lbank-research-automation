@@ -274,3 +274,25 @@ def test_project_memory_compaction_retains_prior_state_by_git_identity() -> None
     assert SHA_RE.fullmatch(compaction["prior_state_observed_main_sha"])
     assert compaction["historical_detail_preserved_via_git_history"] is True
     assert compaction["do_not_treat_compaction_as_authority_expansion"] is True
+
+
+def test_latest_corrected_research_evidence_is_no_candidate_and_paper_quarantine_is_immutable() -> None:
+    state = _state()
+    checkpoint = state["latest_checkpoint"]
+    evidence = state["current_evidence"]
+    corrected = evidence["discovery_executor_integrity_latest"]
+    assert checkpoint["observed_main_sha"] == evidence["observed_main_sha"]
+    assert evidence["latest_main_change"]["pr"] == 1817
+    assert corrected["shared_executor_fix_prs"] == [1813, 1816]
+    assert SHA_RE.fullmatch(corrected["shared_binary_executor_main"])
+    assert corrected["shared_executor_verified_real_main_run"] == 36103201556
+    assert corrected["mtf_hypothesis_cells"] == 9
+    assert corrected["mtf_base_research_proposals"] == corrected["mtf_refined_research_proposals"] == 0
+    assert corrected["mtf_search_exhausted"] is True
+    assert corrected["refinement_training_only"] is True
+    assert corrected["refinement_used_locked_holdout"] is False
+    assert corrected["fractional_v2_qualifies_for_paper_forward_review"] is False
+    assert corrected["new_strategy_promoted"] is False
+    assert corrected["prospective_paper_984_quarantine_unchanged"] is True
+    assert corrected["live_trading_authority"] is False
+    assert evidence["prospective_paper_gate"]["status"] == "QUARANTINED"
