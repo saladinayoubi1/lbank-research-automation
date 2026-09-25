@@ -266,7 +266,7 @@ def test_installer_retargets_generic_start_menu_shortcut() -> None:
     assert "New-NexusShortcut $genericStartMenuShortcut $installedExecutable" in script
 
 
-def test_fastpath_activates_exact_installed_build_without_widening_process_scope() -> None:
+def test_fastpath_stages_exact_build_without_implicit_owner_activation() -> None:
     script = text(SCRIPT)
     workflow = text(FASTPATH)
     assert "[switch]$ActivateInstalledBuild" in script
@@ -277,5 +277,21 @@ def test_fastpath_activates_exact_installed_build_without_widening_process_scope
     assert "Stop-InstalledNexusProductProcesses -ProgramRoot $programRoot" in script
     assert "$preexistingGuiCount -gt 0 -and -not $ActivateInstalledBuild" in script
     assert "RUNNING_VISIBLE_ACTIVATED" in script
-    assert "-ActivateInstalledBuild" in workflow
+    assert "-ActivateInstalledBuild" not in workflow
+    assert "STAGED_ONLY_OWNER_PRESERVED" in script
+    assert "SKIPPED_UNTIL_EXPLICIT_ACTIVATION" in script
+    assert script.index("if (-not $ActivateInstalledBuild) {") < script.index("$desktopShortcut = Join-Path")
+    assert "if ($evidence.final_launch.activation_requested -ne $false" in workflow
     assert "Runner.Listener" not in script
+
+
+def test_install_smoke_cannot_bootstrap_or_stop_other_owner_processes() -> None:
+    bootstrap = text(ROOT / "desktop" / "nexus-product" / "bootstrap-main.js")
+    installer = text(SCRIPT)
+    assert r"/^--nexus-install-smoke=\d+$/" in bootstrap
+    startup = bootstrap.split("app.whenReady().then(() => {", 1)[1]
+    assert startup.index("if (process.argv.some(arg =>") < startup.index("void reconcileRunnerFromGui")
+    assert "if (process.argv.some(arg =>" in bootstrap
+    cleanup = installer.split("function Get-NewNexusProcesses {", 1)[1].split("function Get-InstalledNexusProductProcesses", 1)[0]
+    assert "Get-InstalledNexusProductProcesses -ProgramRoot $script:InstallRoot" in cleanup
+    assert "Get-NexusProcesses | Where-Object" not in cleanup

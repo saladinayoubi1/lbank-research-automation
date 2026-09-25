@@ -139,7 +139,10 @@ function Get-NexusProcesses {
 }
 
 function Get-NewNexusProcesses {
-    return @(Get-NexusProcesses | Where-Object { -not $script:BaselineNexusProcessIds.ContainsKey([int]$_.Id) })
+    # Never sweep unrelated owner processes that happened to restart during smoke.
+    if (-not $script:InstallRoot) { return @() }
+    return @(Get-InstalledNexusProductProcesses -ProgramRoot $script:InstallRoot |
+        Where-Object { -not $script:BaselineNexusProcessIds.ContainsKey([int]$_.Id) })
 }
 
 
@@ -506,6 +509,18 @@ try {
 
     Stop-SmokeProcesses
     Remove-SmokeRoot
+
+    # Staging is never permission to replace owner shortcuts or stop the healthy app.
+    # Only an explicit separate activation run may perform owner-visible changes.
+    if (-not $ActivateInstalledBuild) {
+        $script:Evidence.final_launch.status = 'STAGED_ONLY_OWNER_PRESERVED'
+        $script:Evidence.final_launch.preexisting_app_preserved = $true
+        $script:Evidence.install.retention_status = 'SKIPPED_UNTIL_EXPLICIT_ACTIVATION'
+        $script:Evidence.decision = 'PASS'
+        Write-Evidence
+        Write-Host "NEXUS_WINDOWS_APP_INSTALL=PASS source=$ExpectedSourceSha artifact=$ArtifactId staged_only=true"
+        return
+    }
 
     $desktopShortcut = Join-Path ([Environment]::GetFolderPath('Desktop')) 'NEXUS Personal Pro 5.1.0.lnk'
     $startMenuShortcut = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\NEXUS Personal Pro 5.1.0.lnk'

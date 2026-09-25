@@ -377,6 +377,8 @@ async function startOwnerAutostartWithRetry(sourceSha) {
 
 app.whenReady().then(() => {
   if (process.platform !== 'win32' || !app.isPackaged) return;
+  // A source-verified install smoke must not mutate owner runner/autostart/sync state.
+  if (process.argv.some(arg => /^--nexus-install-smoke=\d+$/.test(String(arg)))) return;
   void reconcileRunnerFromGui({ force: true });
   startRunnerSupervisor();
   startProspectivePaperSyncSupervisor();

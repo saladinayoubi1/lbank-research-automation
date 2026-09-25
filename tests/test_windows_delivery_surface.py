@@ -273,7 +273,8 @@ def test_persistent_installer_bounds_version_retention_after_successful_activati
         "$retentionScript = Join-Path $PSScriptRoot 'cleanup_nexus_desktop_versions.ps1'"
     )
     final_window = installer.index("$script:Evidence.final_launch.visible_window_observed = $true")
-    pass_decision = installer.index("$script:Evidence.decision = 'PASS'")
+    # Stage-only proof exits earlier; this assertion concerns explicit activation.
+    pass_decision = installer.rindex("$script:Evidence.decision = 'PASS'")
     assert final_window < retention_call < pass_decision
 
     for marker in (
