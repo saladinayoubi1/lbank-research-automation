@@ -51,6 +51,30 @@ def product_server(tmp_path: Path):
         server.shutdown(); server.server_close(); thread.join(timeout=5)
 
 
+def test_new_desktop_paper_wallet_starts_at_500_without_rewriting_existing_journals(tmp_path: Path) -> None:
+    from product_web_server import DESKTOP_DEMO_OPENING_CASH
+
+    config = GatewayConfig(mode="local", host="127.0.0.1", port=8765)
+    assert DESKTOP_DEMO_OPENING_CASH == "500"
+    fresh_root = tmp_path / "fresh"
+    (fresh_root / "market").mkdir(parents=True)
+    build_handler(fresh_root / "market", config=config)
+    fresh = ProductRuntime(fresh_root)
+    snapshot = fresh.paper_snapshot()
+    assert snapshot["account"]["cash"] == "500"
+    assert snapshot["account"]["equity"] == "500"
+    assert snapshot["event_count"] == 2
+    assert snapshot["live_trading_authority"] is False
+
+    previous_root = tmp_path / "previous"
+    previous = ProductRuntime(previous_root, opening_cash="10000")
+    journal_before = previous.paper_events_path.read_bytes()
+    (previous_root / "market").mkdir(parents=True)
+    build_handler(previous_root / "market", config=config)
+    assert previous.paper_events_path.read_bytes() == journal_before
+    assert previous.paper_snapshot()["account"]["cash"] == "10000"
+
+
 def test_product_ui_contains_complete_current_scope_surfaces(product_server) -> None:
     port, _ = product_server
     status, content_type, raw = _request(port, "GET", "/")
