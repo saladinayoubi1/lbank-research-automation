@@ -307,3 +307,20 @@ def test_stage_only_cannot_replace_global_owner_paper_sync() -> None:
     assert guard < exit_stage < deploy < deploy_validator < shortcut
     assert "NEXUS_PAPER_SYNC_SOURCE_DEPLOYED=1" in installer
     assert "SKIPPED_UNTIL_EXPLICIT_ACTIVATION" in installer
+
+
+def test_unsafe_legacy_activation_is_rejected_before_owner_mutation() -> None:
+    script = text(SCRIPT)
+    fastpath = text(FASTPATH)
+    preflight = script.index('$script:Evidence.target.interactive_desktop = $true')
+    gate = script.index('if ($ActivateInstalledBuild) {', preflight)
+    refusal = script.index('UNSAFE_LEGACY_OWNER_ACTIVATION_DISABLED', gate)
+    for owner_mutation in (
+        'Copy-Item -LiteralPath $paperSyncSource',
+        'Copy-Item -LiteralPath $paperSyncValidator',
+        'New-NexusShortcut $desktopShortcut $installedExecutable',
+        'Stop-InstalledNexusProductProcesses -ProgramRoot $programRoot',
+    ):
+        assert preflight < gate < refusal < script.index(owner_mutation)
+    assert '-ActivateInstalledBuild' not in fastpath
+    assert 'STAGED_ONLY_OWNER_PRESERVED' in script
