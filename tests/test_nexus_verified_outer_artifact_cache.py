@@ -66,7 +66,7 @@ def _run_powershell(tmp_path: Path, request, *, corrupt_cache: bool = False):
     # can hide built-in Windows PowerShell modules on hosted CI runners.
     local = Path(os.environ["LOCALAPPDATA"])
     cache = local / "NEXUS" / "verified-outer-artifacts"
-    cache.mkdir(parents=True)
+    cache.mkdir(parents=True, exist_ok=True)
     artifact_id = ARTIFACT_ID + int.from_bytes(
         hashlib.sha256(str(tmp_path).encode()).digest()[:4], "big"
     )
