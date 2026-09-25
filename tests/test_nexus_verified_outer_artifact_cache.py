@@ -85,26 +85,36 @@ def _run_powershell(tmp_path: Path, *, corrupt_cache: bool = False):
     try:
         env = os.environ.copy()
         env.update({
-            "LOCALAPPDATA": str(local),
             "RUNNER_TEMP": str(temp),
             "GITHUB_API_URL": f"http://127.0.0.1:{server.server_port}",
             "GITHUB_TOKEN": "offline-fixture-token",
             "GITHUB_OUTPUT": str(tmp_path / "output.txt"),
         })
+        # Windows PowerShell uses LOCALAPPDATA while discovering built-in
+        # Utility/Archive modules. Load them before isolating only the artifact
+        # cache location; replacing LOCALAPPDATA at process startup masks
+        # built-in Get-FileHash on some hosted Windows runners.
+        quoted_local = str(local).replace("'", "''")
+        quoted_script = str(SCRIPT).replace("'", "''")
+        quoted_destination = str(destination).replace("'", "''")
+        command = (
+            "Import-Module Microsoft.PowerShell.Utility -ErrorAction Stop; "
+            "Import-Module Microsoft.PowerShell.Archive -ErrorAction Stop; "
+            f"$env:LOCALAPPDATA='{quoted_local}'; "
+            f"& '{quoted_script}' "
+            "-Repository 'test-owner/test-repo' "
+            f"-ArtifactRunId {RUN_ID} "
+            f"-ArtifactId {ARTIFACT_ID} "
+            "-ArtifactName 'nexus-windows-persistent-unpacked' "
+            f"-ExpectedSourceSha '{SOURCE}' "
+            f"-ExpectedArchiveSha256 '{expected_sha}' "
+            f"-ExpectedArchiveBytes {len(outer)} "
+            f"-DestinationDirectory '{quoted_destination}' "
+            "-MaxAttempts 1"
+        )
         result = subprocess.run(
-            [
-                "powershell.exe", "-NoProfile", "-NonInteractive",
-                "-ExecutionPolicy", "Bypass", "-File", str(SCRIPT),
-                "-Repository", "test-owner/test-repo",
-                "-ArtifactRunId", str(RUN_ID),
-                "-ArtifactId", str(ARTIFACT_ID),
-                "-ArtifactName", "nexus-windows-persistent-unpacked",
-                "-ExpectedSourceSha", SOURCE,
-                "-ExpectedArchiveSha256", expected_sha,
-                "-ExpectedArchiveBytes", str(len(outer)),
-                "-DestinationDirectory", str(destination),
-                "-MaxAttempts", "1",
-            ],
+            ["powershell.exe", "-NoProfile", "-NonInteractive",
+             "-ExecutionPolicy", "Bypass", "-Command", command],
             env=env, capture_output=True, text=True, timeout=45,
         )
     finally:
