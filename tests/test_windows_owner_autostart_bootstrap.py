@@ -30,7 +30,7 @@ def test_owner_bootstrap_is_exact_source_interactive_and_fail_closed() -> None:
         "[Environment]::UserInteractive",
         "NT AUTHORITY\\NETWORK SERVICE",
         "LOCALAPPDATA",
-        "NEXUS\\lbank-research-automation",
+        "NEXUS\\owner-autostart-runtime",
         "--no-local",
         "NEXUS-ZeroTouch-Autopilot",
         "NEXUS-GitHub-Runner-Autostart",
@@ -60,6 +60,16 @@ def test_owner_bootstrap_is_exact_source_interactive_and_fail_closed() -> None:
         "git clean",
     ):
         assert forbidden not in lowered
+
+
+def test_owner_autostart_runtime_isolated_from_user_research_checkout() -> None:
+    script = read(SCRIPT)
+    assert "NEXUS\\owner-autostart-runtime" in script
+    assert "lbank-research-automation" not in script.split("$ManagedRepoRoot =", 1)[1].split("$StateRoot", 1)[0]
+    lowered = script.casefold()
+    assert "reset --hard" not in lowered
+    assert "git clean" not in lowered
+    assert "git stash" not in lowered
 
 
 def test_owner_bootstrap_uses_only_packaged_seed_for_initial_and_existing_source() -> None:
