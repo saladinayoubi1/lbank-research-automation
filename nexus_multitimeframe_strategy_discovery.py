@@ -289,17 +289,29 @@ def _simulate(
     turnover = 0.0
     sliced = frame.iloc[start:end].reset_index(drop=True)
     desired = target.iloc[start:end].reset_index(drop=True).astype(float).to_numpy()
+    # The discovery families emit long/flat targets. Rebalancing an already
+    # fully invested position on every bar manufactures fee-funded dust fills;
+    # those fills must not count as independent strategy activity.
+    if not np.isfinite(desired).all() or not np.isin(desired, (0.0, 1.0)).all():
+        raise MultiTimeframeDiscoveryError("discovery execution requires binary long/flat targets")
     for index, row in sliced.iterrows():
         if index > 0:
             reference = float(row["open"])
-            equity_open = cash + qty * reference
-            wanted_qty = equity_open * desired[index - 1] / reference
-            delta = wanted_qty - qty
-            if abs(delta) > 1e-12:
-                fill = reference * (1.0 + slippage if delta > 0 else 1.0 - slippage)
-                notional = abs(delta * fill)
-                cash -= delta * fill + notional * fee_rate
-                qty += delta
+            previous_signal = desired[index - 1]  # Never execute the current bar's close signal.
+            if previous_signal == 1.0 and qty <= 1e-12:
+                fill = reference * (1.0 + slippage)
+                # Fully fund entry fees/slippage rather than creating negative
+                # cash that triggers phantom rebalancing fills on later bars.
+                notional = cash / (1.0 + fee_rate)
+                qty = notional / fill
+                cash = 0.0
+                fills += 1
+                turnover += notional / 10_000.0
+            elif previous_signal == 0.0 and qty > 1e-12:
+                fill = reference * (1.0 - slippage)
+                notional = qty * fill
+                cash += notional * (1.0 - fee_rate)
+                qty = 0.0
                 fills += 1
                 turnover += notional / 10_000.0
         equity.append(cash + qty * float(row["close"]))
