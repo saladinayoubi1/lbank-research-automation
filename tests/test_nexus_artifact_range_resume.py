@@ -48,7 +48,7 @@ def test_range_reuse_cannot_bypass_artifact_identity_or_full_sha():
 
 
 def _run_mock_transport(tmp_path: Path, *, fail_one: bool = False, corrupt: bool = False,
-                        stale_fragment: bool = False):
+                        stale_fragment: bool = False, fail_forever: bool = False):
     original = bytes(i % 251 for i in range(1024))
     original_path = tmp_path / "fixture.bin"
     original_path.write_bytes(original)
@@ -100,7 +100,7 @@ function Start-Process {{
     $block=New-Object byte[] ($to-$from+1)
     [Array]::Copy($data,$from,$block,0,$block.Length)
     $exit=0
-    if ('{int(fail_one)}' -eq '1' -and $range -eq '256-511' -and $script:calls[$range] -eq 1) {{
+    if (($range -eq '256-511') -and (('{int(fail_one)}' -eq '1' -and $script:calls[$range] -eq 1) -or ('{int(fail_forever)}' -eq '1'))) {{
         $block=[byte[]]@(3,4,5)
         $exit=28
     }}
@@ -169,4 +169,23 @@ def test_correct_size_but_corrupted_range_fails_closed_after_bounded_sha_recheck
     )
     assert hashlib.sha256(archive.read_bytes()).hexdigest() != expected_sha
     assert requests["512-767"] == 2
+    assert not list(tmp_path.glob("mock-archive.zip.part-*"))
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="PowerShell transport test requires Windows")
+def test_persistently_failed_range_has_bounded_retries_without_partial_append(tmp_path):
+    result, archive, requests, _ = _run_mock_transport(
+        tmp_path, fail_forever=True
+    )
+    assert result.returncode != 0
+    assert "Exact artifact range download failed after 3 bounded attempts at byte 0." in (
+        result.stdout + result.stderr
+    )
+    assert not archive.exists()
+    assert requests == {
+        "0-255": 1,
+        "256-511": 3,
+        "512-767": 1,
+        "768-1023": 1,
+    }
     assert not list(tmp_path.glob("mock-archive.zip.part-*"))
