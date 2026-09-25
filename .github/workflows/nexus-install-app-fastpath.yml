@@ -147,8 +147,7 @@ jobs:
             -ExpectedComputerName 'DESKTOP-1R1081M' `
             -ExpectedRunnerName 'NEXUS-LOCAL-RUNNER' `
             -EvidencePath 'build\windows-app-install\evidence.json' `
-            -UsePreloadedPackage `
-            -ActivateInstalledBuild
+            -UsePreloadedPackage
 
       - name: Verify physical install proof
         run: |
@@ -161,5 +160,13 @@ jobs:
               $evidence.smoke.live_trading_authority -ne $false -or
               $evidence.smoke.live_orders_allowed -ne $false) {
             throw 'Physical install safety boundary failed.'
+          }
+          if ($evidence.final_launch.activation_requested -ne $false -or
+              $evidence.final_launch.status -ne 'STAGED_ONLY_OWNER_PRESERVED' -or
+              $evidence.install.startup_shortcut_created -ne $false -or
+              $evidence.install.previous_install_removed -ne $false -or
+              $evidence.install.previous_app_data_removed -ne $false -or
+              $evidence.install.retention_status -ne 'SKIPPED_UNTIL_EXPLICIT_ACTIVATION') {
+            throw 'Physical stage changed owner activation or retention state.'
           }
           Write-Host 'NEXUS_FASTPATH_INSTALL=PASS'
