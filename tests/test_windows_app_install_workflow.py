@@ -279,3 +279,27 @@ def test_fastpath_activates_exact_installed_build_without_widening_process_scope
     assert "RUNNING_VISIBLE_ACTIVATED" in script
     assert "-ActivateInstalledBuild" in workflow
     assert "Runner.Listener" not in script
+
+
+def test_installer_retains_two_safe_rollback_versions_after_activation() -> None:
+    script = text(SCRIPT)
+    for marker in (
+        "rollback_retention_limit = 2",
+        "retained_rollback_versions = @()",
+        "removed_stale_versions = @()",
+        "cleanup_skipped_versions = @()",
+        "function Remove-StaleVersionedInstalls",
+        "^5\\.1\\.0-[0-9a-fA-F]{8}$",
+        "nexus.windows-side-by-side-install.v2",
+        "manifest_missing",
+        "manifest_untrusted",
+        "active_process",
+        "Get-InstalledNexusProductProcesses -ProgramRoot $candidatePath",
+        "Remove-StaleVersionedInstalls -ProgramRoot $programRoot -CurrentInstallRoot $installRoot -RetainPrevious 2",
+        "RUNNING_VISIBLE_ACTIVATED",
+        "NEXUS_VERSION_RETENTION=",
+        "SKIPPED_SAFE",
+    ):
+        assert marker in script
+    assert "Remove-Item -LiteralPath $candidatePath -Recurse -Force -ErrorAction Stop" in script
+    assert "Remove-Item -LiteralPath $programRoot -Recurse" not in script
