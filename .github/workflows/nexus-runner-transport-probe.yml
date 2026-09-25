@@ -1,0 +1,72 @@
+name: NEXUS Isolated Runner Transport Probe
+
+# Action-free diagnostic: the standard multi-task workflow eagerly downloads
+# upload-artifact before even its health step. This isolates the listener,
+# job-message transport, source CDN, and TLS without fetching any actions.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nexus-isolated-runner-transport-probe
+  cancel-in-progress: false
+
+jobs:
+  transport-probe:
+    runs-on: [self-hosted, Windows, X64, nexus-local]
+    timeout-minutes: 12
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - name: Prove local worker can start without action archive download
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:RUNNER_NAME -ne 'NEXUS-LOCAL-RUNNER') {
+            throw 'The expected canonical owner runner did not receive this job.'
+          }
+          Write-Output "RUNNER_ISOLATED_WORKER_STARTED=1"
+          Write-Output "RUNNER_NAME=$env:RUNNER_NAME"
+          Write-Output "JOB_SHA=$env:GITHUB_SHA"
+
+      - name: Measure bounded IPv4 DNS and TLS without exposing URLs or tokens
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $targets = @(
+            'https://api.github.com/',
+            'https://github.com/',
+            'https://codeload.github.com/actions/upload-artifact/zip/043fb46d1a93c77aae656e7c1c64a875d1fc6a0a',
+            'https://broker.actions.githubusercontent.com/'
+          )
+          $failed = $false
+          foreach ($url in $targets) {
+            $hostName = ([Uri]$url).Host
+            $dnsOk = $false
+            try {
+              $dns = @([Net.Dns]::GetHostAddresses($hostName) |
+                Where-Object { $_.AddressFamily -eq [Net.Sockets.AddressFamily]::InterNetwork })
+              $dnsOk = $dns.Count -gt 0
+            }
+            catch {
+              Write-Output ("PROBE DNS_FAIL host={0}" -f $hostName)
+            }
+            if (-not $dnsOk) {
+              $failed = $true
+              continue
+            }
+            $measurement = & curl.exe --ipv4 --http1.1 --head --silent --show-error `
+              --connect-timeout 6 --max-time 15 --output NUL `
+              --write-out 'http=%{http_code} tls=%{time_appconnect} total=%{time_total}' `
+              $url 2>&1
+            $code = $LASTEXITCODE
+            Write-Output ("PROBE host={0} curl_exit={1} {2}" -f $hostName, $code, ($measurement -join ' '))
+            # The authenticated broker may answer 403/404 without a token.
+            # Such an HTTP response still proves IPv4 DNS/TCP/TLS reached it.
+            if ($code -ne 0 -or (($measurement -join ' ') -match 'http=000')) {
+              $failed = $true
+            }
+          }
+          if ($failed) { throw 'One or more bounded IPv4/TLS transport checks failed.' }
+          Write-Output 'RUNNER_ISOLATED_TRANSPORT_PASS=1'
