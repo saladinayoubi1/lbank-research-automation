@@ -440,14 +440,19 @@ function Uninstall-Autostart {
 
 function Show-Status {
     $root = Resolve-RepoRoot
-    $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
-    if ($task) {
-        $info = Get-ScheduledTaskInfo -TaskName $TaskName -ErrorAction SilentlyContinue
-        Write-Host "Autostart task: $($task.State)"
-        if ($info) {
-            Write-Host "LastRunTime: $($info.LastRunTime)"
-            Write-Host "LastTaskResult: $($info.LastTaskResult)"
-        }
+    # Report the real task state through COM, not the potentially broken
+    # ScheduledTasks CIM provider. This path never registers or starts tasks.
+    $compatPath = Join-Path $PSScriptRoot 'nexus_task_scheduler_compat.ps1'
+    if (-not (Test-Path -LiteralPath $compatPath -PathType Leaf)) {
+        throw 'Task Scheduler COM compatibility helper is missing.'
+    }
+    . $compatPath
+    $snapshot = Get-NexusScheduledTaskSnapshot $TaskName
+    if ($snapshot.exists) {
+        Write-Host "Autostart task: $($snapshot.state)"
+        Write-Host "RunLevel: $($snapshot.run_level)"
+        Write-Host "LastRunTime: $($snapshot.last_run_time)"
+        Write-Host "LastTaskResult: $($snapshot.last_task_result)"
     } else {
         Write-Host 'Autostart task: NOT INSTALLED'
     }
