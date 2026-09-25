@@ -188,7 +188,7 @@
       "deterministic_risk_final_authority": true
     },
     "windows_dr_persistence": {
-      "status": "SUCCESS_EXACT_MAIN_PHYSICAL_CURRENT",
+      "status": "SUCCESS_EXACT_MAIN_PHYSICAL_HISTORICAL",
       "run_id": 34482923984,
       "source_sha": "91b29b36e38eeb03c45bf52060030fa940206b81",
       "runner": "NEXUS-WINDOWS-DR",
@@ -204,10 +204,10 @@
       "runner_credentials_modified": false,
       "other_runner_paths_modified": false,
       "live_trading_authority": false,
-      "evidence_scope": "exact_checkpoint_main"
+      "evidence_scope": "historical_exact_main_at_run"
     },
     "windows_local_autonomy": {
-      "status": "SUCCESS_EXACT_MAIN_PHYSICAL_CURRENT",
+      "status": "SUCCESS_EXACT_MAIN_PHYSICAL_HISTORICAL",
       "run_id": 34482924040,
       "source_sha": "91b29b36e38eeb03c45bf52060030fa940206b81",
       "runner": "NEXUS-LOCAL-RUNNER",
@@ -221,7 +221,7 @@
       "runner_registration_modified": false,
       "runner_credentials_modified": false,
       "live_trading_authority": false,
-      "evidence_scope": "exact_checkpoint_main"
+      "evidence_scope": "historical_exact_main_at_run"
     },
     "windows_recovery_probe": {
       "status": "CONTEXT_LIMITED_SECURITY_BOUNDARY_CONFIRMED_NOT_BLOCKING_CURRENT_WINDOWS_DR_PERSISTENCE",
@@ -639,11 +639,11 @@
       "reason": "frozen neighborhood validation and parameter plateau passed, but repository evidence cannot authorize derivatives validation, prospective Paper-forward admission, automatic promotion or Live authority"
     },
     "windows_runner_routing_and_update": {
-      "state": "closed_exact_main_verified",
+      "state": "closed_historical_exact_main_verified",
       "source_sha": "91b29b36e38eeb03c45bf52060030fa940206b81",
       "dr_run": 34482923984,
       "local_run": 34482924040,
-      "reason": "role-specific routing is active and both Windows runners completed exact-main proof on GitHub Runner 2.337.0 after migration to the standard junction layout"
+      "reason": "role-specific routing and the Windows 2.337.0 migration were physically verified on source 91b29b36e38eeb03c45bf52060030fa940206b81; those proofs are historical, while all three runners are currently observed online/idle and the current main Lenovo app has separate exact-main physical evidence"
     }
   },
   "authority": {
