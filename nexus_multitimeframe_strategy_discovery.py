@@ -303,10 +303,15 @@ def _simulate(
                 # Fully fund entry fees/slippage rather than creating negative
                 # cash that triggers phantom rebalancing fills on later bars.
                 notional = cash / (1.0 + fee_rate)
-                qty = notional / fill
-                cash = 0.0
-                fills += 1
-                turnover += notional / 10_000.0
+                proposed_qty = notional / fill
+                # If repeated net losses have exhausted executable capital,
+                # preserve the remaining cash. An unexecutable dust entry
+                # must neither count as a fill nor zero out the equity curve.
+                if proposed_qty > 1e-12:
+                    qty = proposed_qty
+                    cash = 0.0
+                    fills += 1
+                    turnover += notional / 10_000.0
             elif previous_signal == 0.0 and qty > 1e-12:
                 fill = reference * (1.0 - slippage)
                 notional = qty * fill
