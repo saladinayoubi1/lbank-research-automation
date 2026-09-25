@@ -83,8 +83,8 @@ $expectedRelative = @(
 $data = @(Read-Manifest 'product-data-sha256-manifest.json' 7)
 Require (@($data | Select-Object -ExpandProperty relative -Unique).Count -eq 7) 'DUPLICATE_BACKUP_DATA_ENTRY'
 foreach ($entry in $data) {
-    Require ($expectedRelative -contains [string]$entry.relative) 'UNEXPECTED_BACKUP_DATA_ENTRY'
     $file = UnderRoot $BackupRoot ([string]$entry.relative)
+    Require ($expectedRelative -contains [string]$entry.relative) 'UNEXPECTED_BACKUP_DATA_ENTRY'
     ExactHash $file ([string]$entry.sha256) 'BACKUP_DATA'
     Require ((Get-Item -LiteralPath $file).Length -eq [long]$entry.bytes) 'BACKUP_DATA_LENGTH_MISMATCH'
 }
