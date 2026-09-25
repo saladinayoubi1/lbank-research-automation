@@ -307,3 +307,17 @@ def test_stage_only_cannot_replace_global_owner_paper_sync() -> None:
     assert guard < exit_stage < deploy < deploy_validator < shortcut
     assert "NEXUS_PAPER_SYNC_SOURCE_DEPLOYED=1" in installer
     assert "SKIPPED_UNTIL_EXPLICIT_ACTIVATION" in installer
+
+
+def test_delayed_renderer_window_still_requires_trusted_loaded_document() -> None:
+    installer = text(SCRIPT)
+    main = text(ROOT / "desktop" / "nexus-product" / "main.js")
+    assert "if (-not (Wait-ForVisibleNewWindow -TimeoutSeconds 300))" in installer
+    assert "Get-InstalledNexusProductProcesses -ProgramRoot $script:InstallRoot" in installer
+    assert "if ($process.MainWindowHandle -ne 0 -and [string]$process.MainWindowTitle -match '(?i)NEXUS')" in installer
+    assert "mainFrameLoadFailed = true;" in main
+    assert "win.webContents.on('did-fail-load'" in main
+    assert "win.webContents.once('did-finish-load'" in main
+    assert "win.webContents.getURL() !== origin + '/'" in main
+    assert "win.show();" in main
+    assert "if (mainFrameLoadFailed || win.isDestroyed()) return;" in main
