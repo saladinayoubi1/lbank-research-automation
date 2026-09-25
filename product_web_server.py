@@ -21,6 +21,10 @@ from web_ui_server import build_handler as build_ai_handler
 
 PRODUCT_UI_ROOT = Path(__file__).with_name("product_ui")
 DEFAULT_DATA_ROOT = Path("data/market")
+# Only the user-facing desktop Paper wallet starts at $500. Research experiments,
+# isolated strategy lanes and existing event-sourced journals retain their own
+# explicitly recorded opening capital; never silently rewrite existing evidence.
+DESKTOP_DEMO_OPENING_CASH = "500"
 MAX_PRODUCT_REQUEST_BYTES = 16_384
 PRODUCT_STATIC = {
     "/": "index.html",
@@ -289,7 +293,7 @@ def build_handler(
     control_runtime: ProductControlRuntime | None = None,
 ):
     active_config = validate_gateway_config(config or GatewayConfig())
-    runtime = runtime or ProductRuntime(data_root.parent)
+    runtime = runtime or ProductRuntime(data_root.parent, opening_cash=DESKTOP_DEMO_OPENING_CASH)
     research_runtime = research_runtime or ProductResearchRuntime(runtime)
     control_runtime = control_runtime or ProductControlRuntime(runtime)
     BaseHandler = build_ai_handler(
