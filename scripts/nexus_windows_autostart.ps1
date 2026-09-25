@@ -317,17 +317,23 @@ function Uninstall-Autostart {
 }
 
 function Show-Status {
-    $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
-    if (-not $task) {
+    # The Windows ScheduledTasks cmdlets depend on CIM, which is not
+    # available on some otherwise healthy owner laptops. Use the existing
+    # read-only Task Scheduler 2.0 COM helper for status reporting.
+    $compatPath = Join-Path $PSScriptRoot 'nexus_task_scheduler_compat.ps1'
+    if (-not (Test-Path -LiteralPath $compatPath -PathType Leaf)) {
+        throw 'Task Scheduler COM compatibility helper is missing.'
+    }
+    . $compatPath
+    $snapshot = Get-NexusScheduledTaskSnapshot $TaskName
+    if (-not $snapshot.exists) {
         Write-Host 'NEXUS zero-touch autostart: NOT INSTALLED'
         return
     }
-    $info = Get-ScheduledTaskInfo -TaskName $TaskName -ErrorAction SilentlyContinue
-    Write-Host "NEXUS zero-touch autostart: $($task.State)"
-    if ($info) {
-        Write-Host "LastRunTime: $($info.LastRunTime)"
-        Write-Host "LastTaskResult: $($info.LastTaskResult)"
-    }
+    Write-Host "NEXUS zero-touch autostart: $($snapshot.state)"
+    Write-Host "RunLevel: $($snapshot.run_level)"
+    Write-Host "LastRunTime: $($snapshot.last_run_time)"
+    Write-Host "LastTaskResult: $($snapshot.last_task_result)"
     Write-Host "Log: $LogPath"
 }
 
