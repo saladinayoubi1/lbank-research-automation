@@ -8,6 +8,7 @@ WORKFLOW = Path(__file__).resolve().parents[1] / ".github/workflows/nexus-runner
 def test_probe_is_action_free_and_never_runs_without_explicit_dispatch():
     text = WORKFLOW.read_text(encoding="utf-8")
     assert "workflow_dispatch:" in text
+    assert "github.ref == 'refs/heads/main' && github.actor == github.repository_owner" in text
     assert "runs-on: [self-hosted, Windows, X64, nexus-local]" in text
     assert "uses:" not in text
     assert "actions/checkout" not in text
