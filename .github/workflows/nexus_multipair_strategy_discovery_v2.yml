@@ -9,6 +9,7 @@ on:
       - "nexus_multipair_discovery_snapshot.py"
       - "nexus_multipair_archive_snapshot.py"
       - "nexus_multipair_strategy_discovery.py"
+      - "nexus_multitimeframe_strategy_discovery.py"
       - "nexus_multipair_training_refinement.py"
       - "nexus_multipair_search_exhaustion.py"
       - "nexus_multipair_strategy_proposal_requalification.py"
@@ -30,6 +31,7 @@ on:
       - "scripts/nexus_runtime_snapshot_artifact.py"
       - "requirements.lock"
       - "tests/test_nexus_multipair_strategy_discovery.py"
+      - "tests/test_nexus_discovery_execution_fill_integrity.py"
       - "tests/test_nexus_multipair_training_refinement.py"
       - "tests/test_nexus_multipair_strategy_discovery_archive.py"
       - "tests/test_nexus_multipair_archive_snapshot.py"
@@ -48,6 +50,7 @@ on:
       - "nexus_multipair_discovery_snapshot.py"
       - "nexus_multipair_archive_snapshot.py"
       - "nexus_multipair_strategy_discovery.py"
+      - "nexus_multitimeframe_strategy_discovery.py"
       - "nexus_multipair_training_refinement.py"
       - "nexus_multipair_search_exhaustion.py"
       - "nexus_multipair_strategy_proposal_requalification.py"
@@ -69,6 +72,7 @@ on:
       - "scripts/nexus_runtime_snapshot_artifact.py"
       - "requirements.lock"
       - "tests/test_nexus_multipair_strategy_discovery.py"
+      - "tests/test_nexus_discovery_execution_fill_integrity.py"
       - "tests/test_nexus_multipair_training_refinement.py"
       - "tests/test_nexus_multipair_strategy_discovery_archive.py"
       - "tests/test_nexus_multipair_archive_snapshot.py"
@@ -107,6 +111,7 @@ jobs:
         run: >-
           python -m pytest -q
           tests/test_nexus_multipair_strategy_discovery.py
+          tests/test_nexus_discovery_execution_fill_integrity.py
           tests/test_nexus_multipair_training_refinement.py
           tests/test_nexus_multipair_strategy_discovery_archive.py
           tests/test_nexus_multipair_archive_snapshot.py

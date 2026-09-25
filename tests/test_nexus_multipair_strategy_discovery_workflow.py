@@ -42,9 +42,16 @@ def test_discovery_v2_is_one_shot_read_only_and_not_scheduled() -> None:
     assert "id-token: write" not in text
 
 
+def test_shared_executor_changes_and_regressions_trigger_multipair_ci() -> None:
+    text = _text()
+    assert text.count('      - "nexus_multitimeframe_strategy_discovery.py"') == 2
+    assert text.count('      - "tests/test_nexus_discovery_execution_fill_integrity.py"') == 2
+
+
 def test_contract_gate_covers_archive_dispatch_transport_and_fresh_requalification() -> None:
     contract = _section(_text(), "contract-test", "runtime-wheelhouse")
     assert "tests/test_nexus_multipair_strategy_discovery.py" in contract
+    assert "tests/test_nexus_discovery_execution_fill_integrity.py" in contract
     assert "tests/test_nexus_multipair_strategy_discovery_archive.py" in contract
     assert "tests/test_nexus_multipair_archive_snapshot.py" in contract
     assert "tests/test_nexus_snapshot_artifact.py" in contract
