@@ -68,9 +68,12 @@ def test_dynamic_settings_nav_uses_semantic_icon_and_preserves_live_lock_icon():
 def test_negative_status_semantics_take_precedence_over_positive_substrings():
     js = (ROOT / "product_ui" / "product.js").read_text(encoding="utf-8")
     status = js[js.index("function statusClass"):js.index("function normalizeUIPreferences")]
-    assert status.index("unavailable") < status.index("available|active")
-    assert "quarantined" in status
-    assert "?'bad':" in status
+    assert "const bad=[" in status
+    assert "const good=[" in status
+    assert status.index("const bad=[") < status.index("const good=[")
+    for value in ("unavailable", "inactive", "unverified", "not_ready", "not_executed", "quarantined"):
+        assert value in status
+    assert "if(bad.some(" in status
 
 
 def test_product_actions_are_single_flight():
