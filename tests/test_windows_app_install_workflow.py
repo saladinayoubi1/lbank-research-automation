@@ -273,7 +273,7 @@ def test_fastpath_activates_exact_installed_build_without_widening_process_scope
     assert "activation_requested = [bool]$ActivateInstalledBuild" in script
     assert "function Get-InstalledNexusProductProcesses" in script
     assert "Test-PathWithin $processPath $root" in script
-    assert "^(?i:NEXUS Personal Pro|nexus-product-server)$" in script
+    assert "$_.ProcessName -in @('NEXUS Personal Pro', 'nexus-product-server')" in script
     assert "Stop-InstalledNexusProductProcesses -ProgramRoot $programRoot" in script
     assert "$preexistingGuiCount -gt 0 -and -not $ActivateInstalledBuild" in script
     assert "RUNNING_VISIBLE_ACTIVATED" in script
