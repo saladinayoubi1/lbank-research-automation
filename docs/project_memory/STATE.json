@@ -104,7 +104,7 @@
   },
   "latest_checkpoint": {
     "checkpoint_date": "2026-09-25",
-    "observed_main_sha": "77d23868ded3cccc291db2d8b28b6ee4030e8b00",
+    "observed_main_sha": "c33ef4d4255614fa5f71475226879b17796ab287",
     "continuity_only": true,
     "completed_milestones": [
       "PRs #1411-#1416 merged sequentially after required checks; Multi-Pair Discovery v2 moved fresh runtime acquisition to the physical Bybit plane, removed WSL Node actions and all WSL Git fetches, and added digest-verified hosted artifact relays plus verified wheelhouse cache reuse",
@@ -132,7 +132,13 @@
       "exact-main Build Verification run 36092111087 succeeded and produced persistent Windows artifact 10845687916 with outer digest sha256:b8b5ef168f27c16afe02652c897b7a8b8d436346d097a3b36a144eead2f0276b and unpacked SHA-256 131a18c19c48eae49c3f5d5c382f448140ada634efd2e780a170e53623d3f3a9",
       "physical fastpath run 36092850848 passed exact source/cache/install/smoke/activation proof on DESKTOP-1R1081M and removed six obsolete verified rollback versions while retaining 77d23868, 804a8111 and ee41a1a5",
       "canonical prospective Paper run 36093393527 advanced the immutable chain to 181 completed 4h bars at 2026-09-25T00:00:00Z and reached terminal QUARANTINED / paper_forward_failed_no_promotion",
-      "independent Paper gate reporter run 36093483606 verified the exact final artifact and runtime attestation and published terminal evidence to #984; #984 was closed not_planned because the candidate failed the locked gate"
+      "independent Paper gate reporter run 36093483606 verified the exact final artifact and runtime attestation and published terminal evidence to #984; #984 was closed not_planned because the candidate failed the locked gate",
+      "PR #1812 merged locked terminal Paper reason-code reporting; independently verified #984 failed only minimum_fill_count (3/4 both profiles), unchanged QUARANTINED.",
+      "PRs #1813 and #1816 repaired shared MTF/MP phantom rebalancing fills and unexecutable dust zero-equity; exact-main real corrected MTF run 36103201556 passed all jobs and emitted new verified exhaustion artifact 10850546396.",
+      "Corrected MTF source 6e1b27e real run 36103201556 produced 0 base and 0 refined proposals across all 9 cells; no new Paper-eligible candidate and no repeated exact exhausted search.",
+      "PR #1815 corrected fractional v2 fill inflation; real corrected-main v2 run 36102660134, artifact 10850490620, remained continue_research_no_promotion with locked conservative/stress failure.",
+      "PR #1817 merged cross-workflow CI dependency and regression coverage at c33ef4d after exact-head targeted MTF/MP, cross-platform Test, Build Verification, permissions and fallback checks all passed.",
+      "Lenovo product read-only API still shows the original 181-bar prospective QUARANTINED state, conservative/stress 3 fills and Live/order/production authority false; physical installed GUI remains exact 5.1.0-77d23868."
     ],
     "do_not_repeat_without_regression_evidence": [
       "WSL rootfs ownership/DACL recovery",
@@ -149,24 +155,25 @@
       "classification of the 8/12 Paper state as a Bybit HTTP 403 data-plane outage; exact-main run 34397395277 proved source-SHA/no-new-hour4-bar freshness semantics while endpoint fallbacks still completed",
       "fixed Strategy Factory replay artifact ID 8867026863 or representation-sensitive legacy archive digest; use the unexpired manifest-bound replay-v2 selector and canonical semantic identity",
       "re-diagnosis of Multi-Pair Paper feedback run 34412163303 as an evidence or Bybit failure; PR #1430 proved it was isolated-job dependency provisioning and exact-main run 34414723066 verified the repair",
-      "Windows Local/DR runner routing ambiguity or 2.336.0-to-2.337.0 migration repair unless new exact repository/runtime evidence shows regression"
+      "Windows Local/DR runner routing ambiguity or 2.336.0-to-2.337.0 migration repair unless new exact repository/runtime evidence shows regression",
+      "exact unchanged 6e1b27e MTF 9-cell zero-proposal exhausted replay or 81e81c8 historical v2 replay; use new preregistered economics-based hypotheses and genuinely uninspected future data instead"
     ],
     "current_blocker": {
       "area": "strategy replacement after prospective Paper quarantine",
       "workflow_run": 36093393527,
       "status": "TERMINAL_CANDIDATE_FAILED_MINIMUM_FILL_COUNT",
-      "evidence": "The 30-day / 180-bar gate completed at 181 bars. Both conservative and stress profiles had fill_count=3 against the locked minimum 4; the independent reporter verified the terminal QUARANTINED state and runtime attestation.",
-      "required_fix": "keep the failed frozen candidate non-promotable and continue bounded Strategy Factory / multi-timeframe / multi-pair discovery toward a new candidate without weakening completion gates or reusing the failed result as a pass"
+      "evidence": "The 30-day / 180-bar gate completed at 181 bars. Both conservative and stress profiles had fill_count=3 against the locked minimum 4; the independent reporter verified the terminal QUARANTINED state and runtime attestation. Corrected MTF and v2 research backtests subsequently completed and documented reproducible historical no-candidate outcomes; this does not remedy failed prospective #984.",
+      "required_fix": "Keep old frozen Paper candidate non-promotable; preregister a different testable, cost/turnover-aware hypothesis, collect independent uninspected post-freeze evidence, retain untouched holdout/stress and Deterministic Risk review, then open only a separate genuine real-time Paper window if a new candidate qualifies."
     },
     "canonical_authority_fields_preserved": true
   },
   "current_evidence": {
-    "observed_main_sha": "77d23868ded3cccc291db2d8b28b6ee4030e8b00",
-    "observed_at_utc": "2026-09-25T04:12:39Z",
-    "state_commit_relationship": "observed_main_sha is the exact main snapshot bound to the active Lenovo desktop build and the terminal prospective Paper run; #984 ended in a verified fail-closed quarantine and is not a promotion authority",
+    "observed_main_sha": "c33ef4d4255614fa5f71475226879b17796ab287",
+    "observed_at_utc": "2026-09-25T06:39:13Z",
+    "state_commit_relationship": "Observed main parent PR #1817 at c33ef4d after required exact-head CI. The verified terminal Paper result, corrected historical research artifacts, and physically installed Lenovo GUI have independent, explicitly retained source identities; this continuity-only memory update cannot promote a failed Paper candidate.",
     "latest_main_change": {
-      "pr": 1809,
-      "summary": "Bound retained NEXUS desktop rollback versions after exact-source activation while protecting current, running, unverified and reparse-point installs.",
+      "pr": 1817,
+      "summary": "Require shared MTF/MP executor integrity regressions in both targeted CI paths; no research/Paper gate or GUI runtime authority changed.",
       "architecture_or_core_goal_change_observed": false,
       "core_goal_change_observed": false,
       "meaningful_operational_change_observed": true
@@ -603,6 +610,35 @@
         "5.1.0-ee41a1a5"
       ],
       "removed_obsolete_version_count": 6
+    },
+    "discovery_executor_integrity_latest": {
+      "status": "CORRECTED_REAL_HISTORICAL_REPLAY_VERIFIED_NO_NEW_CANDIDATE",
+      "shared_binary_executor_main": "6e1b27eb0f017e71844e5f0408b0355e93f392ef",
+      "shared_executor_fix_prs": [
+        1813,
+        1816
+      ],
+      "shared_executor_verified_real_main_run": 36103201556,
+      "shared_executor_result_artifact_id": 10850451545,
+      "shared_executor_result_artifact_digest": "sha256:96e4cefad041a39242d289b7b87504ff8275abf07205c6f182821b4fe4ad010b",
+      "shared_executor_exhaustion_artifact_id": 10850546396,
+      "shared_executor_exhaustion_artifact_digest": "sha256:394b77b11893dece7dc3d518521a9bd43cdafe580d267bc806b5fc0decb312e6",
+      "mtf_hypothesis_cells": 9,
+      "mtf_base_research_proposals": 0,
+      "mtf_refined_research_proposals": 0,
+      "mtf_search_exhausted": true,
+      "refinement_training_only": true,
+      "refinement_used_locked_holdout": false,
+      "fractional_v2_fix_pr": 1815,
+      "fractional_v2_source_sha": "81e81c887799bd9eea442ae6b5878925a5bd4287",
+      "fractional_v2_verified_real_main_run": 36102660134,
+      "fractional_v2_artifact_id": 10850490620,
+      "fractional_v2_artifact_digest": "sha256:3fb9d940e05f012c32cf92d54885d4d90fd0623ac93a1e632d7b364b9f44979d",
+      "fractional_v2_qualifies_for_paper_forward_review": false,
+      "targeted_ci_regression_pr": 1817,
+      "new_strategy_promoted": false,
+      "prospective_paper_984_quarantine_unchanged": true,
+      "live_trading_authority": false
     }
   },
   "open_gates": {
@@ -681,7 +717,7 @@
     "priority": "trading_engine_first",
     "order": [
       "keep bybit_btc_eth_regime_consensus_v1 quarantined and non-promotable; do not weaken or reinterpret the locked completion gates",
-      "continue bounded Strategy Factory, multi-timeframe and multi-pair discovery toward a new Paper candidate using fresh evidence and existing holdout/stress/Deterministic Risk gates",
+      "continue bounded Strategy Factory review only on verified current cursor; do not rerun unchanged exhausted corrected MTF/v2 historical neighborhoods. Predeclare a new economics-based, low-turnover/risk-robust Research hypothesis independently of the inspected holdout; reserve genuinely uninspected future data and require separate authentic prospective Paper plus deterministic risk review before any candidate admission",
       "continue persistent Paper runtime and strategy-discovery health work without fabricating freshness, qualification or prospective evidence",
       "keep the exact-main Lenovo desktop/runtime proof current only when material product/runtime changes require a new build",
       "keep #43 production release deny-by-default and do not create Live, signing, credential or deployment authority"
