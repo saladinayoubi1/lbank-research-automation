@@ -141,3 +141,16 @@ def test_laptop_professional_polish_removes_visible_prototype_artifacts():
     assert "@media(max-width:1400px){.mission-now{grid-template-columns:repeat(3" in mission_css
     assert ".pipeline{display:grid!important" in extra
     assert ".pipeline>em{display:none!important}" in extra
+
+
+def test_backend_freshness_becomes_visible_after_repeated_passive_failures():
+    html = INDEX.read_text(encoding="utf-8")
+    js = (ROOT / "product_ui" / "product.js").read_text(encoding="utf-8")
+    assert 'id="gatewayState"' in html and 'aria-live="polite"' in html
+    assert 'id="reload"' in html and 'aria-label="بروزرسانی وضعیت"' in html
+    assert "PAPER_UI_STALE_FAILURE_LIMIT=2" in js
+    assert "paperUiRefreshFailures=0" in js
+    assert "function markGatewayHealthy(" in js
+    assert "paperUiRefreshFailures+=1" in js
+    assert "Backend stale" in js
+    assert "lastGatewayHealthyAt.toLocaleTimeString('fa-IR')" in js
