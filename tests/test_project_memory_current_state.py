@@ -60,7 +60,7 @@ def test_project_memory_current_paper_acceptance_is_closed_and_provenance_bound(
     assert paper["deterministic_risk_final_authority"] is True
 
 
-def test_project_memory_windows_persistence_is_current_and_probe_remains_bounded() -> None:
+def test_project_memory_windows_persistence_history_remains_bounded_and_truthful() -> None:
     state = _state()
     evidence = state["current_evidence"]
     probe = evidence["windows_recovery_probe"]
@@ -80,9 +80,10 @@ def test_project_memory_windows_persistence_is_current_and_probe_remains_bounded
     assert probe["privilege_acl_service_account_change_authorized"] is False
     assert probe["runner_reregistration_authorized"] is False
 
-    assert persistence["status"] == "SUCCESS_EXACT_MAIN_PHYSICAL_CURRENT"
-    assert persistence["evidence_scope"] == "exact_checkpoint_main"
-    assert persistence["source_sha"] == evidence["observed_main_sha"]
+    assert persistence["status"] == "SUCCESS_EXACT_MAIN_PHYSICAL_HISTORICAL"
+    assert persistence["evidence_scope"] == "historical_exact_main_at_run"
+    assert SHA_RE.fullmatch(persistence["source_sha"])
+    assert persistence["source_sha"] != evidence["observed_main_sha"]
     assert persistence["runner"] == "NEXUS-WINDOWS-DR"
     assert persistence["runner_version"] == "2.337.0"
     assert persistence["routing_label"] == "nexus-remote-rescue"
@@ -95,9 +96,10 @@ def test_project_memory_windows_persistence_is_current_and_probe_remains_bounded
     assert persistence["other_runner_paths_modified"] is False
     assert persistence["live_trading_authority"] is False
 
-    assert local["status"] == "SUCCESS_EXACT_MAIN_PHYSICAL_CURRENT"
-    assert local["evidence_scope"] == "exact_checkpoint_main"
-    assert local["source_sha"] == evidence["observed_main_sha"]
+    assert local["status"] == "SUCCESS_EXACT_MAIN_PHYSICAL_HISTORICAL"
+    assert local["evidence_scope"] == "historical_exact_main_at_run"
+    assert SHA_RE.fullmatch(local["source_sha"])
+    assert local["source_sha"] != evidence["observed_main_sha"]
     assert local["runner"] == "NEXUS-LOCAL-RUNNER"
     assert local["runner_version"] == "2.337.0"
     assert local["routing_label"] == "nexus-local"
@@ -109,8 +111,9 @@ def test_project_memory_windows_persistence_is_current_and_probe_remains_bounded
     assert local["runner_credentials_modified"] is False
     assert local["live_trading_authority"] is False
 
-    assert gate["state"] == "closed_exact_main_verified"
-    assert gate["source_sha"] == evidence["observed_main_sha"]
+    assert gate["state"] == "closed_historical_exact_main_verified"
+    assert SHA_RE.fullmatch(gate["source_sha"])
+    assert gate["source_sha"] != evidence["observed_main_sha"]
     assert gate["dr_run"] == persistence["run_id"]
     assert gate["local_run"] == local["run_id"]
 
@@ -147,10 +150,16 @@ def test_project_memory_keeps_real_time_and_production_gates_fail_closed() -> No
     assert gates["paper_runtime_acceptance"]["issue"] == 1041
     assert gates["paper_runtime_acceptance"]["state"] == "closed"
     assert prospective["issue"] == 984
-    assert prospective["status"] == "COLLECTING"
-    assert prospective["verified_completed_hour4_bars"] < prospective["required_completed_hour4_bars"]
+    assert prospective["issue_state"] == "closed_not_planned"
+    assert prospective["status"] == "QUARANTINED"
+    assert prospective["decision"] == "paper_forward_failed_no_promotion"
+    assert prospective["verified_completed_hour4_bars"] >= prospective["required_completed_hour4_bars"]
+    assert prospective["verified_elapsed_day_floor"] >= prospective["required_elapsed_days"]
+    assert prospective["terminal_failure_gate"] == "minimum_fill_count"
+    assert prospective["conservative_fill_count"] < prospective["required_minimum_fill_count"]
+    assert prospective["stress_fill_count"] < prospective["required_minimum_fill_count"]
     assert prospective["may_be_accelerated_or_fabricated"] is False
-    assert gates["prospective_paper"]["state"] == "open"
+    assert gates["prospective_paper"]["state"] == "closed_terminal_quarantined"
     assert gates["production_release"]["issue"] == 43
     assert gates["production_release"]["state"] == "open"
     assert gates["production_release"]["deny_by_default"] is True
