@@ -208,3 +208,35 @@ def test_windows_exclusive_cookie_handle_fails_closed(ctx):
         assert not ctx["report"].exists()
     finally:
         assert kernel.CloseHandle(handle)
+
+
+@pytest.mark.skipif(os.name != "nt", reason="NTFS junction test")
+def test_windows_ntfs_junction_is_rejected_without_touching_owner(ctx):
+    import subprocess
+
+    link = ctx["source"] / "Network" / "junction-to-original-owner"
+    created = subprocess.run(
+        ["cmd.exe", "/c", "mklink", "/J", str(link), str(ctx["owner_profile"])],
+        capture_output=True, text=True,
+    )
+    if created.returncode:
+        pytest.skip("test environment does not permit disposable junction fixture")
+    try:
+        with pytest.raises(ValueError, match="REPARSE_POINT_REFUSED"):
+            run(ctx)
+        assert not ctx["destination"].exists()
+        assert not ctx["report"].exists()
+        assert (ctx["owner_profile"] / "do-not-modify.txt").read_text() == (
+            "original stays intact"
+        )
+    finally:
+        link.rmdir()
+
+
+def test_script_exposes_no_process_control_or_real_owner_install_path():
+    text = SCRIPT.read_text(encoding="utf-8")
+    assert "owner_activation_authorized" in text
+    assert "real_owner_full_profile_copied" in text
+    for forbidden in ("Stop-Process", "CloseMainWindow", "Restart-Computer",
+                      "os.kill(", "subprocess.", "shutil.rmtree("):
+        assert forbidden not in text
