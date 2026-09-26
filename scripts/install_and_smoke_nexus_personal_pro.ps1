@@ -603,31 +603,7 @@ try {
     try {
         if ($script:SmokeRoot -and $env:RUNNER_TEMP -and
             (Test-PathWithin $script:SmokeRoot $env:RUNNER_TEMP) -and
-            (Split-Path -Leaf $script:SmokeRoot) -match '^nexus-app-smoke-[0-9]+
-    try {
-        if ($script:InstallStagingRoot -and $script:ProgramRoot -and
-            (Test-Path -LiteralPath $script:InstallStagingRoot) -and
-            (Test-PathWithin $script:InstallStagingRoot $script:ProgramRoot)) {
-            Remove-Item -LiteralPath $script:InstallStagingRoot -Recurse -Force
-        }
-    } catch { }
-    try {
-        if ($script:InstallCreatedThisRun -and -not $script:InstallSmokeVerified -and
-            $script:InstallRoot -and $script:ProgramRoot -and
-            (Test-Path -LiteralPath $script:InstallRoot) -and
-            (Test-PathWithin $script:InstallRoot $script:ProgramRoot)) {
-            Remove-Item -LiteralPath $script:InstallRoot -Recurse -Force
-        }
-    } catch { }
-    $script:Evidence.decision = 'FAIL_CLOSED'
-    $script:Evidence.error = ConvertTo-SafeError $_.Exception.Message
-    try { Write-Evidence } catch { }
-    Write-Error ("NEXUS Windows app installation failed closed: " + (ConvertTo-SafeError $_.Exception.Message))
-    exit 1
-} finally {
-    try { Remove-PackageTransport } catch { Write-Warning (ConvertTo-SafeError $_.Exception.Message) }
-}
-) {
+            (Split-Path -Leaf $script:SmokeRoot) -match '^nexus-app-smoke-[0-9]+$') {
             $dataDir = Join-Path $script:SmokeRoot 'product-data'
             $stateFile = Join-Path $dataDir 'supervisor-state.json'
             if ((Test-Path -LiteralPath $dataDir -PathType Container) -and
