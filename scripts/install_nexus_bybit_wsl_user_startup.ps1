@@ -345,7 +345,8 @@ function Write-RecoverySuccessOutput([bool]$ReusedCurrentWatchdog) {
 }
 
 function Run-Watchdog {
-    Test-ExistingRegistration
+    # WSL may not answer during logon. Keep the watchdog alive to retry.
+    # Start-ManagedRunnerProcess validates registration before every launch.
     New-Item -ItemType Directory -Path $stateRoot -Force | Out-Null
     $createdNew = $false
     $mutexName = Get-WatchdogMutexName
