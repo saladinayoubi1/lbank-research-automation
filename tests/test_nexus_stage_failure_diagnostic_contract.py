@@ -26,6 +26,7 @@ def test_stage_failure_snapshot_is_scratch_only_bounded_and_categorical() -> Non
     assert "product-data" in block and "supervisor-state.json" in block
     assert block.count("ReparsePoint") == 3
     assert "$stateInfo.Length -le 65536" in block
+    assert "source_matches = $null" in block  # Missing source is unknown, not mismatch.
     assert "$reason.Length -gt 4096" in block
     assert "$script:Evidence['smoke_failure_diagnostic'] = $diag" in block
     assert "$diag.reason =" not in block
