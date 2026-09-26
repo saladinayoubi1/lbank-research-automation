@@ -96,6 +96,7 @@ class FullProfileEvidence:
     private_acl_verified: bool
     complete_persistent_inventory_verified: bool
     old_owner_absent_during_capture: bool
+    reparse_points_refused: bool
 
     def valid_for(self, gate: Gate, snapshot: Snapshot) -> bool:
         required = {
@@ -110,13 +111,15 @@ class FullProfileEvidence:
             and self.private_acl_verified is True
             and self.complete_persistent_inventory_verified is True
             and self.old_owner_absent_during_capture is True
+            and self.reparse_points_refused is True
             and self.source_file_count == self.copied_file_count == len(self.files)
             and len(found) == len(self.files)
+            and len({p.casefold() for p in paths}) == len(paths)
             and required <= found
             and any(p.startswith("Local Storage/") for p in paths)
             and any(p.startswith("Session Storage/") for p in paths)
             and all(
-                p and not p.startswith("/") and "\\\\" not in p and
+                p and not p.startswith("/") and chr(92) not in p and ":" not in p and
                 all(part not in ("", ".", "..") for part in p.split("/"))
                 for p in paths
             )
