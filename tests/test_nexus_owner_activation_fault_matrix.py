@@ -51,6 +51,8 @@ class MemoryOnlyPort:
         self.runner_preserved = True
         self.remote_preserved = True
         self.attests = 0
+        self.profile_copy_calls = 0
+        self.quiescence_checks = 0
 
     def _call(self, name):
         self.calls.append(name)
@@ -76,9 +78,57 @@ class MemoryOnlyPort:
 
     def prove_old_absent_without_respawn(self, snapshot):
         self._call("prove_old_absent_without_respawn")
-        if self.fault == "respawn":
+        self.quiescence_checks += 1
+        if self.fault == "respawn" or (
+                self.fault == "respawn_during_profile" and self.quiescence_checks == 2):
             self.owner_running = True
         return not self.owner_running
+
+    def capture_full_profile_after_quiescence(self, snapshot):
+        self._call("capture_full_profile_after_quiescence")
+        self.profile_copy_calls += 1
+        if self.fault == "locked_cookies":
+            raise PermissionError("simulated Windows sharing violation 32")
+        if self.fault == "partial_profile_exception":
+            raise IOError("simulated partial profile file copy")
+        file_names = (
+            "Network/Cookies", "Local State", "Preferences",
+            "Local Storage/leveldb/CURRENT", "Session Storage/CURRENT",
+            "product-data/product_runtime/paper-events.jsonl",
+            "Shared Dictionary/cache/index",
+        )
+        if self.fault == "cookies_omitted":
+            file_names = tuple(n for n in file_names if n != "Network/Cookies")
+        if self.fault == "nested_persistent_omitted":
+            file_names = tuple(n for n in file_names if n != "Shared Dictionary/cache/index")
+        if self.fault == "unsafe_profile_path":
+            file_names += ("../old-owner/Network/Cookies",)
+        if self.fault == "duplicate_profile_path":
+            file_names += (file_names[0],)
+        rows = tuple(
+            model.ProfileEntry(
+                relative_path=n,
+                bytes=200,
+                source_sha256=("f" * 64 if n.endswith("paper-events.jsonl") else "a" * 64),
+                copied_sha256=(
+                    "b" * 64 if self.fault == "copied_file_tampered" and
+                    n == "Network/Cookies" else
+                    "f" * 64 if n.endswith("paper-events.jsonl") else "a" * 64
+                ),
+            ) for n in file_names
+        )
+        return model.FullProfileEvidence(
+            owner_source_sha=NEW if self.fault == "wrong_profile_owner" else OLD,
+            journal_sha256=JOURNAL,
+            source_file_count=len(rows) + (1 if self.fault == "source_count_changed" else 0),
+            copied_file_count=len(rows),
+            files=rows,
+            private_acl_verified=self.fault != "broad_acl",
+            complete_persistent_inventory_verified=(
+                self.fault not in {"coverage_failed", "nested_persistent_omitted"}
+            ),
+            old_owner_absent_during_capture=self.fault != "owner_active_midcopy",
+        )
 
     def launch_exact_stage(self, trusted_gate):
         self._call("launch_exact_stage")
@@ -156,7 +206,9 @@ def test_successful_simulated_order_has_no_activation_authority():
     result = model.simulate_activation(port, gate())
     assert result.decision == "SIMULATED_COMMIT_PATH_PASS"
     assert result.simulation_only is True and result.activation_authorized is False
-    assert port.calls.index("prove_old_absent_without_respawn") < port.calls.index("launch_exact_stage")
+    assert port.calls.index("prove_old_absent_without_respawn") < port.calls.index("capture_full_profile_after_quiescence")
+    assert port.calls.index("capture_full_profile_after_quiescence") < port.calls.index("launch_exact_stage")
+    assert port.quiescence_checks == 2 and port.profile_copy_calls == 1
     assert port.calls.index("attest_exact_stage") < port.calls.index("commit_shortcuts_and_sync")
     assert port.runner_preserved and port.remote_preserved
 
@@ -234,6 +286,38 @@ def test_unverified_rollback_fails_closed_and_attempts_other_restorations(fault,
     assert "verify_full_restoration" in port.calls
     assert not result.activation_authorized
 
+
+
+@pytest.mark.parametrize("fault", [
+    "locked_cookies", "partial_profile_exception", "cookies_omitted",
+    "source_count_changed", "copied_file_tampered", "duplicate_profile_path",
+    "unsafe_profile_path", "broad_acl", "coverage_failed",
+    "nested_persistent_omitted", "owner_active_midcopy", "wrong_profile_owner",
+    "respawn_during_profile",
+])
+def test_full_profile_gate_failure_rolls_back_without_any_global_commit(fault):
+    port = MemoryOnlyPort(fault)
+    result = model.simulate_activation(port, gate())
+    assert result.decision == "SIMULATED_ROLLBACK_VERIFIED"
+    assert result.activation_authorized is False
+    assert port.owner_running is True and port.stage_running is False
+    assert port.shortcuts == [OLD] * 4
+    assert port.sync == ["1" * 64, "2" * 64]
+    assert "capture_full_profile_after_quiescence" in port.calls
+    assert "launch_exact_stage" not in port.calls
+    assert "commit_shortcuts_and_sync" not in port.calls
+    assert "owner_files_untouched_before_commit" in result.operations
+    assert "restore_exact_owner_only" in port.calls
+
+
+def test_full_profile_reference_requires_persisted_file_coverage():
+    port = MemoryOnlyPort()
+    snap = port.capture_owner()
+    receipt = port.capture_full_profile_after_quiescence(snap)
+    assert receipt.valid_for(gate(), snap)
+    assert "Network/Cookies" in {row.relative_path for row in receipt.files}
+    assert "Shared Dictionary/cache/index" in {row.relative_path for row in receipt.files}
+    assert receipt.private_acl_verified is True
 
 def test_reference_model_is_not_wired_to_actual_installer():
     installer = (ROOT / "scripts" / "install_and_smoke_nexus_personal_pro.ps1").read_text(encoding="utf-8")
