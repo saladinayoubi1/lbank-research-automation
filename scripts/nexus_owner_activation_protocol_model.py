@@ -116,6 +116,13 @@ class FullProfileEvidence:
             and len(found) == len(self.files)
             and len({p.casefold() for p in paths}) == len(paths)
             and required <= found
+            # Bind the real journal file's bytes to the independently pinned
+            # original owner journal; a self-consistent wrong copy must fail.
+            and any(
+                entry.relative_path == "product-data/product_runtime/paper-events.jsonl"
+                and entry.source_sha256.lower() == snapshot.journal_sha256.lower()
+                for entry in self.files
+            )
             and any(p.startswith("Local Storage/") for p in paths)
             and any(p.startswith("Session Storage/") for p in paths)
             and all(
