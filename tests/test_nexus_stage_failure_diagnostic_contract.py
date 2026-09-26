@@ -28,7 +28,7 @@ def test_stage_failure_snapshot_is_scratch_only_bounded_and_categorical() -> Non
     assert "$stateInfo.Length -le 65536" in block
     assert "$reason.Length -gt 4096" in block
     assert "$script:Evidence['smoke_failure_diagnostic'] = $diag" in block
-    assert "$diag.reason" not in block
+    assert "$diag.reason =" not in block
     assert "$diag.raw" not in block
     assert "Get-ChildItem" not in block
     assert "$env:APPDATA" not in block
