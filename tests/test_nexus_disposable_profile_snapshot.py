@@ -90,6 +90,17 @@ def test_complete_disposable_clone_copy_includes_cookies_and_journal(ctx):
     assert original_marker == (ctx["owner_profile"] / "do-not-modify.txt").read_bytes()
 
 
+def test_nested_research_cache_is_persistent(ctx):
+    nested = ctx["source"] / "product-data" / "Cache" / "research-metadata.json"
+    nested.parent.mkdir(parents=True)
+    nested.write_bytes(b'{"important":"preserve"}')
+    receipt = run(ctx)
+    names = {entry["relative"] for entry in receipt["file_manifest"]}
+    assert "product-data/Cache/research-metadata.json" in names
+    assert "Cache/transient" not in names
+    assert (ctx["destination"] / "product-data" / "Cache" / "research-metadata.json").read_bytes() == nested.read_bytes()
+
+
 @pytest.mark.parametrize("change,error", [
     ("bad_pin", "INDEPENDENT_CLONE_PROOF_SHA_MISMATCH"),
     ("false_owner", "CLONE_PROOF_BOUNDARY_REFUSED"),
