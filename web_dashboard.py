@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import csv
 import hmac
+import hashlib
 import ipaddress
 import json
 import mimetypes
@@ -508,7 +509,7 @@ def build_handler(
                 return False
             principal = self.client_address[0]
             if config.mode == "remote":
-                principal = "remote:" + _digest(self.headers.get("Authorization", ""))[:16]
+                principal = "remote:" + hashlib.sha256(self.headers.get("Authorization", "").encode("utf-8")).hexdigest()[:16]
             allowed, retry_after = limiter.allow(principal)
             if not allowed:
                 self._send(_access_error(

@@ -2,6 +2,11 @@ package com.saladinayoubi1.lbankmobile;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.text.InputType;
+import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.Toast;
 import android.os.Bundle;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
@@ -64,6 +69,7 @@ public final class MainActivity extends Activity {
     private static final Set<String> RESEARCH_KEYS = new HashSet<>(Arrays.asList("symbol", "timeframe", "family", "limit"));
 
     private WebView webView;
+    private final Object gatewayLock = new Object();
     private final ExecutorService executor = Executors.newFixedThreadPool(4);
 
     @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
@@ -126,12 +132,54 @@ public final class MainActivity extends Activity {
     }
 
     private URL gatewayBaseUrl() throws Exception {
-        URL base = new URL(BuildConfig.NEXUS_GATEWAY_URL);
+        URL base = new URL(getPreferences(MODE_PRIVATE).getString("gateway_origin", BuildConfig.NEXUS_GATEWAY_URL));
         if (!"https".equalsIgnoreCase(base.getProtocol())) throw new SecurityException("Android NEXUS gateway must use HTTPS");
         if (base.getUserInfo() != null || base.getQuery() != null || base.getRef() != null || !(base.getPath().isEmpty() || "/".equals(base.getPath()))) {
             throw new SecurityException("Android NEXUS gateway configuration must be an HTTPS origin only");
         }
+        if (base.getHost().isEmpty() || base.getPort() == 0 || base.getPort() > 65535) throw new SecurityException("Invalid gateway host or port");
         return base;
+    }
+
+    // Only a native, owner-confirmed dialog can change the origin. The WebView supplies no URL/token.
+    private void showGatewayDialog() {
+        LinearLayout fields = new LinearLayout(this);
+        fields.setOrientation(LinearLayout.VERTICAL);
+        fields.setPadding(32, 16, 32, 8);
+        EditText origin = new EditText(this);
+        origin.setHint("https://your-laptop-gateway.example");
+        origin.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+        origin.setSingleLine(true);
+        origin.setText(getPreferences(MODE_PRIVATE).getString("gateway_origin", ""));
+        EditText token = new EditText(this);
+        token.setHint("Gateway token — 32+ characters");
+        token.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        token.setSingleLine(true);
+        fields.addView(origin); fields.addView(token);
+        AlertDialog dialog = new AlertDialog.Builder(this).setTitle("اتصال امن به لپ‌تاپ")
+                .setMessage("نشانی HTTPS و توکن Gateway لپ‌تاپ را وارد کنید. توکن قبلی با تغییر اتصال جایگزین می‌شود؛ کلید صرافی وارد نکنید.")
+                .setView(fields).setNegativeButton("لغو", null).setPositiveButton("ذخیره و اتصال", null).create();
+        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> {
+            try {
+                String raw = origin.getText().toString().trim();
+                URI uri = new URI(raw);
+                if (!"https".equalsIgnoreCase(uri.getScheme()) || uri.getHost() == null || uri.getHost().isEmpty()
+                        || uri.getRawUserInfo() != null || uri.getRawQuery() != null || uri.getRawFragment() != null
+                        || !(uri.getRawPath().isEmpty() || "/".equals(uri.getRawPath()))
+                        || uri.getPort() == 0 || uri.getPort() > 65535) throw new IllegalArgumentException();
+                String value = token.getText().toString().trim();
+                if (value.length() < 32 || value.length() > 512 || value.matches(".*[\\r\\n].*")) throw new IllegalArgumentException();
+                synchronized (gatewayLock) {
+                    if (!getPreferences(MODE_PRIVATE).edit().putString("gateway_origin", raw)
+                            .putString("gateway_token", encrypt(value)).commit()) throw new IllegalStateException();
+                }
+                token.setText(""); dialog.dismiss();
+                webView.evaluateJavascript("window.dispatchEvent(new Event('nexus-gateway-configured'))", null);
+            } catch (Exception error) {
+                Toast.makeText(this, "نشانی HTTPS معتبر و توکن ۳۲ تا ۵۱۲ کاراکتری لازم است.", Toast.LENGTH_LONG).show();
+            }
+        }));
+        dialog.show();
     }
 
     private URL gatewayTarget(String relativePath) throws Exception {
@@ -170,8 +218,15 @@ public final class MainActivity extends Activity {
         connection.setInstanceFollowRedirects(false);
         connection.setRequestMethod(method);
         connection.setRequestProperty("Accept", "application/json");
-        String token = gatewayToken();
-        if (!token.isEmpty()) connection.setRequestProperty("Authorization", "Bearer " + token);
+        synchronized (gatewayLock) {
+            URL current = gatewayBaseUrl();
+            int currentPort = current.getPort() == -1 ? current.getDefaultPort() : current.getPort();
+            int targetPort = target.getPort() == -1 ? target.getDefaultPort() : target.getPort();
+            if (!current.getProtocol().equalsIgnoreCase(target.getProtocol()) || !current.getHost().equalsIgnoreCase(target.getHost()) || currentPort != targetPort)
+                throw new SecurityException("Gateway configuration changed; retry request");
+            String token = gatewayToken();
+            if (!token.isEmpty()) connection.setRequestProperty("Authorization", "Bearer " + token);
+        }
         return connection;
     }
 
@@ -332,6 +387,7 @@ public final class MainActivity extends Activity {
     }
 
     public final class NativeGateway {
+        @JavascriptInterface public void configureGateway() { runOnUiThread(() -> showGatewayDialog()); }
         @JavascriptInterface public boolean isAvailable() { return true; }
         @JavascriptInterface public String gatewayInfo() {
             try {
