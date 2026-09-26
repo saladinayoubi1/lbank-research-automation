@@ -21,7 +21,15 @@ foreach ($pin in $pins) {
   $path = Join-Path $root $pin.Name
   if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw ('MANIFEST_MISSING_' + $pin.Name) }
   if ((Get-Item -LiteralPath $path -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'MANIFEST_REPARSE_POINT' }
-  $actual = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant()
+  # Use intrinsic .NET SHA256 so the gate is independent of optional PowerShell cmdlet/module availability.
+  $sha256 = [Security.Cryptography.SHA256]::Create()
+  $stream = [IO.File]::OpenRead($path)
+  try {
+    $actual = [BitConverter]::ToString($sha256.ComputeHash($stream)).Replace('-', '').ToLowerInvariant()
+  } finally {
+    $stream.Dispose()
+    $sha256.Dispose()
+  }
   if ($actual -ne ([string]$pin.Expected).ToLowerInvariant()) { throw ('MANIFEST_PIN_MISMATCH_' + $pin.Name) }
   $items = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json
   if (@($items).Count -ne $pin.ExpectedEntries) { throw ('MANIFEST_ENTRY_COUNT_MISMATCH_' + $pin.Name) }
