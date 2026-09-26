@@ -115,7 +115,7 @@ class MemoryOnlyPort:
 
     def verify_committed_state(self):
         self._call("verify_committed_state")
-        return (self.fault != "commit_verify_failure" and self.stage_running
+        return (self.fault not in {"commit_verify_failure", "cleanup_failure",\n                                   "restore_files_failure", "restart_failure"} and self.stage_running
                 and self.shortcuts == [NEW] * 4
                 and self.sync == ["3" * 64, "4" * 64])
 
