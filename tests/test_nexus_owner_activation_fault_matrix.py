@@ -105,6 +105,10 @@ class MemoryOnlyPort:
             file_names += ("../old-owner/Network/Cookies",)
         if self.fault == "duplicate_profile_path":
             file_names += (file_names[0],)
+        if self.fault == "case_insensitive_collision":
+            file_names += ("network/cookies",)
+        if self.fault == "windows_separator_alias":
+            file_names += ("Network\\\\Cookies",)
         rows = tuple(
             model.ProfileEntry(
                 relative_path=n,
@@ -128,6 +132,7 @@ class MemoryOnlyPort:
                 self.fault not in {"coverage_failed", "nested_persistent_omitted"}
             ),
             old_owner_absent_during_capture=self.fault != "owner_active_midcopy",
+            reparse_points_refused=self.fault != "reparse_point",
         )
 
     def launch_exact_stage(self, trusted_gate):
@@ -292,6 +297,7 @@ def test_unverified_rollback_fails_closed_and_attempts_other_restorations(fault,
     "locked_cookies", "partial_profile_exception", "cookies_omitted",
     "source_count_changed", "copied_file_tampered", "duplicate_profile_path",
     "unsafe_profile_path", "broad_acl", "coverage_failed",
+    "reparse_point", "windows_separator_alias", "case_insensitive_collision",
     "nested_persistent_omitted", "owner_active_midcopy", "wrong_profile_owner",
     "respawn_during_profile",
 ])
