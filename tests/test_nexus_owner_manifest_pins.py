@@ -24,6 +24,8 @@ def test_manifest_pinning_is_independent_and_read_only() -> None:
         "independent_source_for_expected_pins_verified=$false",
     ):
         assert marker in source
+    assert "[Security.Cryptography.SHA256]::Create()" in source
+    assert "Get-FileHash" not in source
     for forbidden in (
         "Start-Process", "Stop-Process", "Remove-Item", "Move-Item", "Copy-Item",
         "Set-Content", "CloseMainWindow", "Restart-Computer",
