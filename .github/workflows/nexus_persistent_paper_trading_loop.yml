@@ -230,6 +230,7 @@ jobs:
     outputs:
       state_archive_b85_len: ${{ steps.package.outputs.state_archive_b85_len }}
       state_archive_sha256: ${{ steps.package.outputs.state_archive_sha256 }}
+      state_archive_runner_name: ${{ steps.package.outputs.state_archive_runner_name }}
       state_archive_part_a_len: ${{ steps.package.outputs.state_archive_part_a_len }}
       state_archive_part_a_chunk_count: ${{ steps.package.outputs.state_archive_part_a_chunk_count }}
       state_archive_part_a_chunk_0: ${{ steps.package.outputs.state_archive_part_a_chunk_0 }}
@@ -797,6 +798,7 @@ jobs:
           {
             echo "state_archive_b85_len=$state_b85_chars"
             echo "state_archive_sha256=$state_sha"
+            echo "state_archive_runner_name=$RUNNER_NAME"
             echo "state_archive_part_a_len=$part_a_len"
             echo "state_archive_part_a_chunk_count=$part_a_chunk_count"
             for index in 0 1 2 3 4 5 6 7 8 9; do
@@ -813,6 +815,13 @@ jobs:
           echo "state_handoff_part_a_chars=$part_a_len"
           echo "state_handoff_part_a_estimated_utf16_bytes=$estimated_part_a_utf16_bytes"
 
+      - name: Remove run-scoped handoff if the physical packaging failed
+        if: failure() || cancelled()
+        run: |
+          set -euo pipefail
+          handoff_root="$HOME/.local/share/nexus/persistent-paper-handoff/$GITHUB_RUN_ID"
+          case "$handoff_root" in "$HOME"/.local/share/nexus/persistent-paper-handoff/*) rm -rf "$handoff_root" ;; *) exit 1;; esac
+
       - name: Cleanup isolated physical source and state
         if: always()
         run: |
@@ -823,7 +832,9 @@ jobs:
           case "$state_root" in "$HOME"/.local/share/nexus/persistent-paper-state/*) rm -rf "$state_root" ;; *) exit 1;; esac
 
   paper-handoff-b:
-    if: ${{ always() && needs.paper-loop.result == 'success' && needs.paper-loop.outputs.state_archive_part_a_chunk_count != '' }}
+    # Cleanup still runs after a failed/skipped paper-loop, but no data is
+    # emitted unless the source job completed and published its exact receipt.
+    if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && always() }}
     needs: paper-loop
     runs-on: nexus-bybit-network
     timeout-minutes: 10
@@ -844,14 +855,17 @@ jobs:
       STATE_ARCHIVE_B85_LEN: ${{ needs.paper-loop.outputs.state_archive_b85_len }}
       STATE_ARCHIVE_PART_A_LEN: ${{ needs.paper-loop.outputs.state_archive_part_a_len }}
       STATE_ARCHIVE_SHA256: ${{ needs.paper-loop.outputs.state_archive_sha256 }}
+      SOURCE_RUNNER_NAME: ${{ needs.paper-loop.outputs.state_archive_runner_name }}
     steps:
       - name: Emit independently verified Paper state handoff part B
+        if: ${{ needs.paper-loop.result == 'success' && needs.paper-loop.outputs.state_archive_part_a_chunk_count != '' }}
         id: part_b
         run: |
           set -euo pipefail
           handoff_root="$HOME/.local/share/nexus/persistent-paper-handoff/$GITHUB_RUN_ID"
           archive="$handoff_root/persistent-state-handoff.tar.xz"
           case "$handoff_root" in "$HOME"/.local/share/nexus/persistent-paper-handoff/*) ;; *) exit 1;; esac
+          test -n "$SOURCE_RUNNER_NAME" && test "$RUNNER_NAME" = "$SOURCE_RUNNER_NAME"
           test -f "$archive" && test ! -L "$archive"
           test "$(sha256sum "$archive" | awk '{print $1}')" = "$STATE_ARCHIVE_SHA256"
           state_b85="$(python3 -c 'import base64, sys; sys.stdout.write(base64.b85encode(sys.stdin.buffer.read()).decode("ascii"))' < "$archive")"
