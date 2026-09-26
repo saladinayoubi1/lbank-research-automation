@@ -742,9 +742,10 @@ jobs:
           import tarfile
           from pathlib import Path
 
-          root = Path(os.environ["STATE_ROOT"]).resolve()
+          root = Path(os.environ["STATE_ROOT"])
           if root.is_symlink() or not root.is_dir():
               raise RuntimeError("Paper state root is unavailable or unsafe")
+          root = root.resolve(strict=True)
           output = Path(os.environ["HANDOFF_ARCHIVE"])
           output.unlink(missing_ok=True)
           file_count = 0

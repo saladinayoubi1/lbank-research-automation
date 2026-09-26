@@ -9,6 +9,7 @@ from pathlib import Path
 import random
 import shutil
 import subprocess
+import sys
 import tarfile
 
 import pytest
@@ -92,3 +93,30 @@ def test_digest_valid_archive_cannot_escape_receiver_root(tmp_path: Path) -> Non
     assert result.returncode != 0
     assert "unsafe state handoff path" in result.stderr
     assert not (tmp_path / "escape.bin").exists()
+
+
+@pytest.mark.parametrize("linked_root", [False, True])
+def test_packer_checks_original_state_root_before_resolving(tmp_path: Path, linked_root: bool) -> None:
+    workflow = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+    step = next(step for step in workflow["jobs"]["paper-loop"]["steps"] if step.get("id") == "package")
+    code = step["run"].split("<<'PY'\n", 1)[1].split("\nPY", 1)[0]
+    root = tmp_path / "state"
+    root.mkdir()
+    (root / "journal.jsonl").write_bytes(b'{"paper_only":true}\n')
+    source = root
+    if linked_root:
+        source = tmp_path / "linked-state"
+        source.symlink_to(root, target_is_directory=True)
+    output = tmp_path / "handoff.tar.xz"
+    result = subprocess.run(
+        [sys.executable, "-c", code], cwd=tmp_path,
+        env={**os.environ, "STATE_ROOT": str(source), "HANDOFF_ARCHIVE": str(output)},
+        capture_output=True, text=True, timeout=30,
+    )
+    if linked_root:
+        assert result.returncode != 0, "symlinked state root was silently followed"
+        assert not output.exists()
+    else:
+        assert result.returncode == 0, result.stderr
+        with tarfile.open(output, "r:xz") as archive:
+            assert archive.extractfile("journal.jsonl").read() == (root / "journal.jsonl").read_bytes()
