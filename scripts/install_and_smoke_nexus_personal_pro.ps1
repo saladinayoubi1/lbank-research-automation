@@ -664,7 +664,7 @@ try {
                         $diag.failure_class = 'gateway_timeout'
                     } elseif ($reason -match 'bounded_restart_limit') {
                         $diag.failure_class = 'restart_limit'
-                    } elseif ($reason -match 'unexpected_sidecar_exit') {
+                    } elseif ($reason -match 'unexpected_sidecar_exit|engine exited before startup|spawn error') {
                         $diag.failure_class = 'sidecar_exit'
                     }
                 } else { $diag.failure_class = 'untrusted_state_file' }
