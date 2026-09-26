@@ -98,15 +98,17 @@ def test_v2_implementation_and_manifest_changes_retrigger_push_and_pr() -> None:
 def test_state_handoff_keeps_full_state_but_uses_bounded_cross_file_xz_compression() -> None:
     text = _text()
     paper = _paper_job()
-    package = paper.split("Package Paper state for hosted artifact persistence", 1)[1]
+    package = paper.split("Package Paper state for bounded two-job hosted persistence", 1)[1]
     persist = text.split("  persist-state:", 1)[1]
     assert "persistent-state-handoff.tar.xz" in package
     assert "import lzma" in package
     assert 'tarfile.open(output, "w:xz", preset=9 | lzma.PRESET_EXTREME)' in package
     assert "state_handoff_tar_xz_bytes=" in package
     assert "base64.b85encode" in package
-    assert "estimated_output_utf16_bytes=$(( state_b85_chars * 2 + 4096 ))" in package
-    assert 'estimated_output_utf16_bytes" -gt 1048576' in package
+    assert "estimated_part_a_utf16_bytes=$(( part_a_len * 2 + 16384 ))" in package
+    assert 'estimated_part_a_utf16_bytes" -gt 1048576' in package
+    assert "paper-handoff-b:" in text
+    assert "estimated_part_b_utf16_bytes=$(( part_b_len * 2 + 16384 ))" in text
     assert "zipfile.ZIP_LZMA" not in package
     assert "persistent-state-handoff.tar.xz" in persist
     assert "base64.b85decode" in persist
@@ -146,7 +148,8 @@ def test_verified_waiting_for_fresh_cells_is_accepted_without_weakening_active_r
 def test_failed_physical_runtime_cannot_persist_partial_state() -> None:
     text = _text()
     paper = _paper_job()
-    package = paper.split("Package Paper state for hosted artifact persistence", 1)[1]
+    package = paper.split("Package Paper state for bounded two-job hosted persistence", 1)[1]
     persist_header = text.split("  persist-state:", 1)[1].split("    env:", 1)[0]
     assert "if: success()" in package
     assert "needs.paper-loop.result == 'success'" in persist_header
+    assert "needs.paper-handoff-b.result == 'success'" in persist_header
