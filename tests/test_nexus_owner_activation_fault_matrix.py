@@ -60,6 +60,8 @@ class MemoryOnlyPort:
         result = model.Snapshot(OLD, JOURNAL, (11, 22, 33, 44), 1, tuple(self.shortcuts), tuple(self.sync))
         if self.fault == "snapshot_wrong_journal":
             return model.Snapshot(OLD, "f" * 64, result.exact_owner_pids, 1, tuple(self.shortcuts), tuple(self.sync))
+        if self.fault == "duplicate_pid":
+            return model.Snapshot(OLD, JOURNAL, (11, 11, 33, 44), 1, tuple(self.shortcuts), tuple(self.sync))
         return result
 
     def verify_immutable_backup(self, snapshot):
@@ -177,6 +179,9 @@ def test_failure_matrix_restores_exact_owner_and_never_claims_real_activation(fa
         assert "launch_exact_stage" not in port.calls
     if fault in {"bad_source", "live_enabled", "cash_mismatch"}:
         assert "commit_shortcuts_and_sync" not in port.calls
+    if fault in {"partial_stop", "respawn", "partial_launch", "bad_source", "live_enabled", "cash_mismatch"}:
+        assert "restore_original_shortcuts_and_sync" not in port.calls
+        assert "owner_files_untouched_before_commit" in result.operations
 
 
 @pytest.mark.parametrize("unsafe", [
@@ -185,6 +190,8 @@ def test_failure_matrix_restores_exact_owner_and_never_claims_real_activation(fa
     {"independent_backup_manifest_pins_verified": False},
     {"owner_authorization_verified": False},
     {"main_sha": OLD},
+    {"main_sha": "z" * 40, "stage_sha": "z" * 40},
+    {"journal_sha256": "z" * 64},
 ])
 def test_untrusted_preflight_never_captures_or_stops_owner(unsafe):
     port = MemoryOnlyPort()
@@ -196,6 +203,7 @@ def test_untrusted_preflight_never_captures_or_stops_owner(unsafe):
 
 @pytest.mark.parametrize("fault,expected", [
     ("snapshot_wrong_journal", "REFUSED_OWNER_STATE_MISMATCH"),
+    ("duplicate_pid", "REFUSED_OWNER_STATE_MISMATCH"),
     ("backup_fail", "REFUSED_BACKUP_UNVERIFIED"),
 ])
 def test_snapshot_and_backup_failure_are_action_free(fault, expected):
@@ -217,7 +225,11 @@ def test_unverified_rollback_fails_closed_and_attempts_other_restorations(fault,
     result = model.simulate_activation(port, gate())
     assert result.decision == "SIMULATED_ROLLBACK_UNVERIFIED_FAIL_CLOSED"
     assert expected_error in result.restoration_errors
-    assert "restore_original_shortcuts_and_sync" in port.calls
+    if fault == "journal_mutated":
+        assert "restore_original_shortcuts_and_sync" not in port.calls
+        assert "owner_files_untouched_before_commit" in result.operations
+    else:
+        assert "restore_original_shortcuts_and_sync" in port.calls
     assert "restore_exact_owner_only" in port.calls
     assert "verify_full_restoration" in port.calls
     assert not result.activation_authorized
