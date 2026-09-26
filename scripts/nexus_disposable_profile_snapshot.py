@@ -77,12 +77,10 @@ def snapshot(*, scratch_root: Path, source: Path, destination: Path,
                      clone_proof, report):
         if not location.is_absolute():
             raise ValueError("ABSOLUTE_PATHS_REQUIRED")
-    for value in (expected_source_sha, expected_journal_sha256,
-                  expected_proof_sha256):
-        if re.fullmatch("[a-fA-F0-9]{40}", value) is None and (
-                value == expected_source_sha or
-                re.fullmatch("[a-fA-F0-9]{64}", value) is None):
-            raise ValueError("INVALID_EXPECTED_DIGEST")
+    if (re.fullmatch("[a-fA-F0-9]{40}", expected_source_sha) is None or
+            re.fullmatch("[a-fA-F0-9]{64}", expected_journal_sha256) is None or
+            re.fullmatch("[a-fA-F0-9]{64}", expected_proof_sha256) is None):
+        raise ValueError("INVALID_EXPECTED_DIGEST")
 
     no_reparse(scratch_root)
     no_reparse(source)
