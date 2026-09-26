@@ -1,0 +1,36 @@
+name: One-shot verified Tailscale Windows installer
+on:
+  push:
+    branches:
+      - codex/tailscale-verified-installer-20260927
+    paths:
+      - .github/workflows/tailscale-verified-vendor-download.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  download:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Fetch only from official Tailscale origins and verify WinGet-published SHA256
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p installer
+          file="installer/tailscale-setup-1.102.4-amd64.msi"
+          for origin in pkgs.tailscale.com dl.tailscale.com; do
+            if curl --fail --location --silent --show-error --retry 2 --connect-timeout 12 --max-time 150 \
+              --output "$file" "https://$origin/stable/tailscale-setup-1.102.4-amd64.msi"; then
+              break
+            fi
+          done
+          echo "80eb007e39dfebe17299fa1a09c79a8e1d934f76e0246c0817ebe3af675b7ef6  $file" | sha256sum --check --status
+          echo "Official source installer SHA256 verified"
+      - name: Upload short-lived verified installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: tailscale-official-windows-x64-1.102.4
+          path: installer/tailscale-setup-1.102.4-amd64.msi
+          if-no-files-found: error
+          retention-days: 3
