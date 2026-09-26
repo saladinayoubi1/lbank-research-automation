@@ -228,6 +228,7 @@ jobs:
     runs-on: nexus-bybit-network
     timeout-minutes: 45
     outputs:
+      state_archive_codec: ${{ steps.package.outputs.state_archive_codec }}
       state_archive_chunk_count: ${{ steps.package.outputs.state_archive_chunk_count }}
       state_archive_b85_len: ${{ steps.package.outputs.state_archive_b85_len }}
       state_archive_chunk_0: ${{ steps.package.outputs.state_archive_chunk_0 }}
@@ -242,6 +243,12 @@ jobs:
       state_archive_chunk_9: ${{ steps.package.outputs.state_archive_chunk_9 }}
       state_archive_chunk_10: ${{ steps.package.outputs.state_archive_chunk_10 }}
       state_archive_chunk_11: ${{ steps.package.outputs.state_archive_chunk_11 }}
+      state_archive_chunk_12: ${{ steps.package.outputs.state_archive_chunk_12 }}
+      state_archive_chunk_13: ${{ steps.package.outputs.state_archive_chunk_13 }}
+      state_archive_chunk_14: ${{ steps.package.outputs.state_archive_chunk_14 }}
+      state_archive_chunk_15: ${{ steps.package.outputs.state_archive_chunk_15 }}
+      state_archive_chunk_16: ${{ steps.package.outputs.state_archive_chunk_16 }}
+      state_archive_chunk_17: ${{ steps.package.outputs.state_archive_chunk_17 }}
       state_archive_sha256: ${{ steps.package.outputs.state_archive_sha256 }}
     env:
       GH_TOKEN: ${{ github.token }}
@@ -731,7 +738,7 @@ jobs:
               echo "state_archive_chunk_count=0"
               echo "state_archive_b85_len=0"
               echo "state_archive_sha256="
-              for index in 0 1 2 3 4 5 6 7 8 9 10 11; do
+              for index in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17; do
                 echo "state_archive_chunk_${index}="
               done
             } >> "$GITHUB_OUTPUT"
@@ -744,9 +751,10 @@ jobs:
           import tarfile
           from pathlib import Path
 
-          root = Path(os.environ["STATE_ROOT"]).resolve()
+          root = Path(os.environ["STATE_ROOT"])
           if root.is_symlink() or not root.is_dir():
               raise RuntimeError("Paper state root is unavailable or unsafe")
+          root = root.resolve(strict=True)
           output = Path("build/persistent-state-handoff.tar.xz")
           output.parent.mkdir(parents=True, exist_ok=True)
           output.unlink(missing_ok=True)
@@ -782,41 +790,37 @@ jobs:
           print(f"state_handoff_uncompressed_bytes={total_bytes}")
           print(f"state_handoff_tar_xz_bytes={output.stat().st_size}")
           PY
-          state_sha="$(sha256sum build/persistent-state-handoff.tar.xz | awk '{print $1}')"
-          state_b85="$("$PYTHON_BIN" -c 'import base64, sys; sys.stdout.write(base64.b85encode(sys.stdin.buffer.read()).decode("ascii"))' < build/persistent-state-handoff.tar.xz)"
-          state_b85_chars="${#state_b85}"
-          chunk_size=50000
-          max_chunks=11
-          # GitHub caps job outputs at 1 MiB estimated as UTF-16. Reserve
-          # 4 KiB for output names and metadata, then fail closed before the
-          # runner silently rejects the job while evaluating its outputs.
-          estimated_output_utf16_bytes=$(( state_b85_chars * 2 + 4096 ))
-          if [ "$estimated_output_utf16_bytes" -gt 1048576 ]; then
-            echo "::error::Packed Paper state exceeds the bounded GitHub job-output handoff."
-            exit 1
-          fi
-          chunk_count=$(( (state_b85_chars + chunk_size - 1) / chunk_size ))
-          if [ "$chunk_count" -lt 1 ] || [ "$chunk_count" -gt "$max_chunks" ]; then
-            echo "::error::Packed Paper state has invalid chunk count: $chunk_count"
-            exit 1
-          fi
-          {
-            echo "state_archive_chunk_count=$chunk_count"
-            echo "state_archive_b85_len=$state_b85_chars"
-            echo "state_archive_sha256=$state_sha"
-            for index in 0 1 2 3 4 5 6 7 8 9 10 11; do
-              if [ "$index" -lt "$chunk_count" ]; then
-                offset=$(( index * chunk_size ))
-                chunk="${state_b85:offset:chunk_size}"
-              else
-                chunk=""
-              fi
-              printf 'state_archive_chunk_%s=%s\n' "$index" "$chunk"
-            done
-          } >> "$GITHUB_OUTPUT"
-          echo "state_handoff_base85_chars=$state_b85_chars"
-          echo "state_handoff_estimated_output_utf16_bytes=$estimated_output_utf16_bytes"
-          echo "state_handoff_chunk_count=$chunk_count"
+          # Pack pairs of Base85 digits into single BMP characters. This halves
+          # GitHub's UTF-16 estimate without new jobs, files shared between jobs,
+          # changed permissions, or a change to the digest-verified archive.
+          PYTHONUTF8=1 "$PYTHON_BIN" - <<'PY'
+          import base64
+          import hashlib
+          import os
+          from pathlib import Path
+
+          archive = Path("build/persistent-state-handoff.tar.xz")
+          if not 0 < archive.stat().st_size <= 800_000:
+              raise RuntimeError("Packed Paper state exceeds compact handoff bound")
+          raw = archive.read_bytes()
+          encoded = base64.b85encode(raw).decode("ascii")
+          alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!#$%&()*+-;<=>?@^_`{|}~"
+          digits = {char: index for index, char in enumerate(alphabet)}
+          padded = encoded + ("0" if len(encoded) % 2 else "")
+          compact = "".join(chr(0x4000 + digits[padded[i]] * 85 + digits[padded[i + 1]]) for i in range(0, len(padded), 2))
+          chunk_size = 30_000  # <=90,000 UTF-8 bytes per Linux environment value.
+          chunks = [compact[i:i + chunk_size] for i in range(0, len(compact), chunk_size)]
+          estimated_output_utf16_bytes = len(compact) * 2 + 16_384
+          if estimated_output_utf16_bytes > 1_048_576 or not 1 <= len(chunks) <= 18:
+              raise RuntimeError("Packed Paper state exceeds the bounded GitHub job-output handoff")
+          lines = ["state_archive_codec=b85-pairs-v1", f"state_archive_chunk_count={len(chunks)}",
+                   f"state_archive_b85_len={len(encoded)}", f"state_archive_sha256={hashlib.sha256(raw).hexdigest()}"]
+          lines += [f"state_archive_chunk_{i}={chunks[i] if i < len(chunks) else ''}" for i in range(18)]
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
+              handle.write("\n".join(lines) + "\n")
+          print(f"state_handoff_estimated_output_utf16_bytes={estimated_output_utf16_bytes}")
+          print(f"state_handoff_chunk_count={len(chunks)}")
+          PY
 
       - name: Cleanup isolated physical source and state
         if: always()
@@ -828,11 +832,12 @@ jobs:
           case "$state_root" in "$HOME"/.local/share/nexus/persistent-paper-state/*) rm -rf "$state_root" ;; *) exit 1;; esac
 
   persist-state:
-    if: ${{ always() && needs.paper-loop.result == 'success' && needs.paper-loop.outputs.state_archive_chunk_count != '0' }}
+    if: ${{ always() && needs.paper-loop.result == 'success' && needs.paper-loop.outputs.state_archive_chunk_count != '0' && needs.paper-loop.outputs.state_archive_chunk_count != '' }}
     needs: paper-loop
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
+      STATE_ARCHIVE_CODEC: ${{ needs.paper-loop.outputs.state_archive_codec }}
       STATE_ARCHIVE_CHUNK_COUNT: ${{ needs.paper-loop.outputs.state_archive_chunk_count }}
       STATE_ARCHIVE_B85_LEN: ${{ needs.paper-loop.outputs.state_archive_b85_len }}
       STATE_ARCHIVE_CHUNK_0: ${{ needs.paper-loop.outputs.state_archive_chunk_0 }}
@@ -847,6 +852,12 @@ jobs:
       STATE_ARCHIVE_CHUNK_9: ${{ needs.paper-loop.outputs.state_archive_chunk_9 }}
       STATE_ARCHIVE_CHUNK_10: ${{ needs.paper-loop.outputs.state_archive_chunk_10 }}
       STATE_ARCHIVE_CHUNK_11: ${{ needs.paper-loop.outputs.state_archive_chunk_11 }}
+      STATE_ARCHIVE_CHUNK_12: ${{ needs.paper-loop.outputs.state_archive_chunk_12 }}
+      STATE_ARCHIVE_CHUNK_13: ${{ needs.paper-loop.outputs.state_archive_chunk_13 }}
+      STATE_ARCHIVE_CHUNK_14: ${{ needs.paper-loop.outputs.state_archive_chunk_14 }}
+      STATE_ARCHIVE_CHUNK_15: ${{ needs.paper-loop.outputs.state_archive_chunk_15 }}
+      STATE_ARCHIVE_CHUNK_16: ${{ needs.paper-loop.outputs.state_archive_chunk_16 }}
+      STATE_ARCHIVE_CHUNK_17: ${{ needs.paper-loop.outputs.state_archive_chunk_17 }}
       STATE_ARCHIVE_SHA256: ${{ needs.paper-loop.outputs.state_archive_sha256 }}
       STATE_ROOT: build/nexus_persistent_paper_trading_state
     steps:
@@ -855,45 +866,38 @@ jobs:
           set -euo pipefail
           rm -rf "$STATE_ROOT" build/persistent-state-handoff.tar.xz
           mkdir -p "$STATE_ROOT"
-          case "$STATE_ARCHIVE_CHUNK_COUNT" in
-            1|2|3|4|5|6|7|8|9|10|11) ;;
-            *) echo "::error::Invalid Paper state handoff chunk count."; exit 1 ;;
-          esac
-          chunks=(
-            "$STATE_ARCHIVE_CHUNK_0"
-            "$STATE_ARCHIVE_CHUNK_1"
-            "$STATE_ARCHIVE_CHUNK_2"
-            "$STATE_ARCHIVE_CHUNK_3"
-            "$STATE_ARCHIVE_CHUNK_4"
-            "$STATE_ARCHIVE_CHUNK_5"
-            "$STATE_ARCHIVE_CHUNK_6"
-            "$STATE_ARCHIVE_CHUNK_7"
-            "$STATE_ARCHIVE_CHUNK_8"
-            "$STATE_ARCHIVE_CHUNK_9"
-            "$STATE_ARCHIVE_CHUNK_10"
-            "$STATE_ARCHIVE_CHUNK_11"
-          )
-          state_b85=""
-          for ((index=0; index<STATE_ARCHIVE_CHUNK_COUNT; index++)); do
-            if [ "${#chunks[$index]}" -gt 50000 ]; then
-              echo "::error::Paper state handoff chunk exceeds bound."
-              exit 1
-            fi
-            state_b85+="${chunks[$index]}"
-          done
-          for ((index=STATE_ARCHIVE_CHUNK_COUNT; index<12; index++)); do
-            if [ -n "${chunks[$index]}" ]; then
-              echo "::error::Unexpected trailing Paper state handoff chunk."
-              exit 1
-            fi
-          done
-          if [ "${#state_b85}" -ne "$STATE_ARCHIVE_B85_LEN" ]; then
-            echo "::error::Paper state handoff length mismatch."
-            exit 1
-          fi
-          printf '%s' "$state_b85" | python -c 'import base64, sys; sys.stdout.buffer.write(base64.b85decode(sys.stdin.buffer.read()))' > build/persistent-state-handoff.tar.xz
-          actual_sha="$(sha256sum build/persistent-state-handoff.tar.xz | awk '{print $1}')"
-          test "$actual_sha" = "$STATE_ARCHIVE_SHA256"
+          PYTHONUTF8=1 python - <<'PY'
+          import base64
+          import hashlib
+          import os
+          from pathlib import Path
+
+          if os.environ["STATE_ARCHIVE_CODEC"] != "b85-pairs-v1":
+              raise RuntimeError("Unsupported Paper state handoff codec")
+          count = int(os.environ["STATE_ARCHIVE_CHUNK_COUNT"])
+          length = int(os.environ["STATE_ARCHIVE_B85_LEN"])
+          if not 1 <= count <= 18 or not 1 <= length <= 1_000_000:
+              raise RuntimeError("Invalid Paper state handoff dimensions")
+          chunks = [os.environ[f"STATE_ARCHIVE_CHUNK_{i}"] for i in range(18)]
+          if any(not chunk or len(chunk) > 30_000 for chunk in chunks[:count]):
+              raise RuntimeError("Paper state handoff chunk exceeds bound or is missing")
+          if any(chunks[count:]):
+              raise RuntimeError("Unexpected trailing Paper state handoff chunk")
+          compact = "".join(chunks[:count])
+          if len(compact) != (length + 1) // 2:
+              raise RuntimeError("Paper state handoff length mismatch")
+          alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!#$%&()*+-;<=>?@^_`{|}~"
+          digits = [ord(char) - 0x4000 for char in compact]
+          if any(not 0 <= value < 85 * 85 for value in digits):
+              raise RuntimeError("Invalid compact Paper state character")
+          encoded = "".join(alphabet[value // 85] + alphabet[value % 85] for value in digits)
+          if length % 2 and encoded[-1] != "0":
+              raise RuntimeError("Noncanonical compact Paper state padding")
+          raw = base64.b85decode(encoded[:length].encode("ascii"))
+          if not 0 < len(raw) <= 800_000 or hashlib.sha256(raw).hexdigest() != os.environ["STATE_ARCHIVE_SHA256"]:
+              raise RuntimeError("Paper state handoff SHA256 or size mismatch")
+          Path("build/persistent-state-handoff.tar.xz").write_bytes(raw)
+          PY
           python - <<'PY'
           import os
           import shutil
