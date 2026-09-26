@@ -671,7 +671,7 @@ try {
             }
         }
     } catch { $diag.failure_class = 'diagnostic_unavailable' }
-    $script:Evidence.smoke_failure_diagnostic = $diag
+    $script:Evidence['smoke_failure_diagnostic'] = $diag
     try { Stop-SmokeProcesses } catch { }
     try { Remove-SmokeRoot } catch { }
     try {
