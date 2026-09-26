@@ -54,7 +54,9 @@ def inventory(source: Path) -> list[Path]:
         for name in sorted(dirs):
             child = parent / name
             no_reparse(child)  # reject unexpected junctions before descending
-            if name not in EPHEMERAL_DIRS:
+            # Only Chromium's top-level cache directories are transient.
+            # A nested product-data/Cache directory may contain owner research.
+            if parent != source or name not in EPHEMERAL_DIRS:
                 retained.append(name)
         dirs[:] = retained
         for name in sorted(files):
@@ -63,7 +65,7 @@ def inventory(source: Path) -> list[Path]:
             rel = item.relative_to(source)
             if rel.parts == ("lockfile",):
                 continue
-            if any(part in EPHEMERAL_DIRS for part in rel.parts):
+            if rel.parts[0] in EPHEMERAL_DIRS:
                 continue
             records.append(rel)
     return sorted(records, key=lambda item: item.as_posix())
