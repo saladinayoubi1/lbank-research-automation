@@ -176,7 +176,7 @@ def test_physical_source_handoff_is_exact_sha_digest_pinned_and_token_safe() -> 
 def test_every_embedded_python_block_is_syntax_valid() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     blocks = _embedded_python_blocks(text)
-    assert len(blocks) == 9
+    assert len(blocks) == 11
     for start_line, source in blocks:
         compile(source, f"{WORKFLOW}:heredoc:{start_line}", "exec")
 
@@ -288,16 +288,18 @@ def test_physical_state_handoff_is_bounded_chunked_digest_checked_and_hosted_per
     assert "Package Paper state for hosted artifact persistence" in paper
     assert "state_archive_chunk_count" in paper
     assert "state_archive_b85_len" in paper
-    for index in range(12):
+    for index in range(18):
         assert f"state_archive_chunk_{index}" in paper
         assert f"needs.paper-loop.outputs.state_archive_chunk_{index}" in persist
     assert "state_archive_sha256" in paper
     assert "persistent-state-handoff.tar.xz" in paper
     assert "base64.b85encode" in paper
-    assert "estimated_output_utf16_bytes=$(( state_b85_chars * 2 + 4096 ))" in paper
-    assert 'estimated_output_utf16_bytes" -gt 1048576' in paper
-    assert "chunk_size=50000" in paper
-    assert "max_chunks=11" in paper
+    assert "estimated_output_utf16_bytes = len(compact) * 2 + 16_384" in paper
+    assert "estimated_output_utf16_bytes > 1_048_576" in paper
+    assert "chunk_size = 30_000" in paper
+    assert "1 <= len(chunks) <= 18" in paper
+    assert "800_000" in paper
+    assert "state_archive_codec=b85-pairs-v1" in paper
     assert "import lzma" in paper
     assert 'tarfile.open(output, "w:xz", preset=9 | lzma.PRESET_EXTREME)' in paper
     assert "zipfile.ZIP_LZMA" not in paper
@@ -306,19 +308,19 @@ def test_physical_state_handoff_is_bounded_chunked_digest_checked_and_hosted_per
     assert "STATE_ARCHIVE_B64" not in persist
     assert "STATE_ARCHIVE_CHUNK_COUNT" in persist
     assert "STATE_ARCHIVE_B85_LEN" in persist
-    assert '"${#state_b85}" -ne "$STATE_ARCHIVE_B85_LEN"' in persist
+    assert "len(compact) != (length + 1) // 2" in persist
     assert "base64.b85decode" in persist
-    assert "Paper state handoff chunk exceeds bound." in persist
-    assert "Unexpected trailing Paper state handoff chunk." in persist
+    assert "Paper state handoff chunk exceeds bound or is missing" in persist
+    assert "Unexpected trailing Paper state handoff chunk" in persist
     assert "STATE_ARCHIVE_SHA256" in persist
-    assert "sha256sum build/persistent-state-handoff.tar.xz" in persist
+    assert 'hashlib.sha256(raw).hexdigest() != os.environ["STATE_ARCHIVE_SHA256"]' in persist
     assert "unsafe state handoff path" in persist
     assert 'tarfile.open(archive_path, "r:xz")' in persist
     assert "hosted_state_handoff_verification=PASS" in persist
     assert "nexus-persistent-paper-trading-state" in persist
 
 
-def test_base85_handoff_boundary_matches_github_utf16_limit() -> None:
+def test_legacy_base85_handoff_boundary_documents_previous_failure() -> None:
     # With the 4 KiB metadata reserve used by the workflow, Base85 payloads
     # remain safe through 417,792 compressed bytes. The live state is packed
     # with XZ preset 9 + EXTREME before this guard is evaluated.
