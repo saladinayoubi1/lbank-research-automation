@@ -75,6 +75,70 @@ class CandidateAttestation:
         )
 
 
+
+@dataclass(frozen=True)
+class ProfileEntry:
+    """Simulated source/destination hashes for one persisted original owner file."""
+    relative_path: str
+    bytes: int
+    source_sha256: str
+    copied_sha256: str
+
+
+@dataclass(frozen=True)
+class FullProfileEvidence:
+    """Untrusted reference receipt; never physical activation proof on its own."""
+    owner_source_sha: str
+    journal_sha256: str
+    source_file_count: int
+    copied_file_count: int
+    files: tuple[ProfileEntry, ...]
+    private_acl_verified: bool
+    complete_persistent_inventory_verified: bool
+    old_owner_absent_during_capture: bool
+    reparse_points_refused: bool
+
+    def valid_for(self, gate: Gate, snapshot: Snapshot) -> bool:
+        required = {
+            "Network/Cookies", "Local State", "Preferences",
+            "product-data/product_runtime/paper-events.jsonl",
+        }
+        paths = [entry.relative_path for entry in self.files]
+        found = set(paths)
+        return (
+            self.owner_source_sha == gate.owner_sha
+            and self.journal_sha256 == snapshot.journal_sha256
+            and self.private_acl_verified is True
+            and self.complete_persistent_inventory_verified is True
+            and self.old_owner_absent_during_capture is True
+            and self.reparse_points_refused is True
+            and self.source_file_count == self.copied_file_count == len(self.files)
+            and len(found) == len(self.files)
+            and len({p.casefold() for p in paths}) == len(paths)
+            and required <= found
+            # Bind the real journal file's bytes to the independently pinned
+            # original owner journal; a self-consistent wrong copy must fail.
+            and any(
+                entry.relative_path == "product-data/product_runtime/paper-events.jsonl"
+                and entry.source_sha256.lower() == snapshot.journal_sha256.lower()
+                for entry in self.files
+            )
+            and any(p.startswith("Local Storage/") for p in paths)
+            and any(p.startswith("Session Storage/") for p in paths)
+            and all(
+                p and not p.startswith("/") and chr(92) not in p and ":" not in p and
+                all(part not in ("", ".", "..") for part in p.split("/"))
+                for p in paths
+            )
+            and all(
+                entry.bytes >= 0
+                and re.fullmatch(r"[0-9a-fA-F]{64}", entry.source_sha256) is not None
+                and entry.source_sha256 == entry.copied_sha256
+                for entry in self.files
+            )
+        )
+
+
 class Port(Protocol):
     """Pure test seam; no concrete production implementation is included."""
 
@@ -82,6 +146,7 @@ class Port(Protocol):
     def verify_immutable_backup(self, snapshot: Snapshot) -> bool: ...
     def quiesce_exact_owner(self, snapshot: Snapshot) -> None: ...
     def prove_old_absent_without_respawn(self, snapshot: Snapshot) -> bool: ...
+    def capture_full_profile_after_quiescence(self, snapshot: Snapshot) -> FullProfileEvidence: ...
     def launch_exact_stage(self, gate: Gate) -> None: ...
     def attest_exact_stage(self) -> CandidateAttestation: ...
     def commit_shortcuts_and_sync(self) -> None: ...
@@ -150,6 +215,21 @@ def simulate_activation(port: Port, gate: Gate) -> SimulationReceipt:
         step = "prove_old_absent_without_respawn"
         if not port.prove_old_absent_without_respawn(snapshot):
             raise RuntimeError("EXACT_OWNER_RESPAWN_OR_NOT_QUIESCENT")
+        events.append(step)
+
+        # An earlier product-data backup is not a consistent persisted Electron
+        # profile. Copy and hash the complete profile only AFTER exact owner
+        # quiescence; locked Cookies or incomplete coverage must roll back.
+        step = "capture_full_profile_after_quiescence"
+        evidence = port.capture_full_profile_after_quiescence(snapshot)
+        if not evidence.valid_for(gate, snapshot):
+            raise RuntimeError("FULL_PERSISTENT_PROFILE_UNVERIFIED")
+        events.append(step)
+
+        # Prevent an owner respawn while the full-profile snapshot was copied.
+        step = "prove_owner_still_absent_after_full_profile"
+        if not port.prove_old_absent_without_respawn(snapshot):
+            raise RuntimeError("OWNER_RESPAWNED_DURING_FULL_PROFILE")
         events.append(step)
 
         step = "launch_exact_stage"
