@@ -177,3 +177,22 @@ def test_recovery_contract_preserves_authority_and_identity_boundaries() -> None
     )
     for token in forbidden_mutators:
         assert token not in text
+
+
+def test_cold_logon_does_not_exit_before_recovery_loop():
+    text = _script()
+    watch = text[text.index('function Run-Watchdog {'):text.index("if ($Mode -eq 'Watch')")]
+    assert 'Test-ExistingRegistration' not in watch
+    managed = _function(text, 'Start-ManagedRunnerProcess', 'Get-WatchdogMutexName')
+    assert managed.index('Test-ExistingRegistration') < managed.index('$proc.Start()')
+
+
+def test_cold_logon_retries_unknown_wsl_state_in_powershell():
+    import shutil
+    import pytest
+    executable = shutil.which('powershell') or shutil.which('pwsh')
+    if not executable:
+        pytest.skip('PowerShell required; also executed on the Windows owner')
+    fixture = SCRIPT.parents[1] / 'tests/fixtures/wsl_cold_logon_regression.ps1'
+    result = subprocess.run([executable, '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', str(fixture), '-ScriptPath', str(SCRIPT)], capture_output=True, text=True, timeout=20)
+    assert result.returncode == 0, result.stdout + result.stderr

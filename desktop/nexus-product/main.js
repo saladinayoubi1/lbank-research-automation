@@ -16,9 +16,12 @@ let restartCount = 0;
 let restartWindowStartedAt = Date.now();
 let restartScheduled = false;
 let preferencesIpcRegistered = false;
+let startupInFlight = null;
+let startupFailureWindow = null;
 const MAX_RESTARTS_PER_WINDOW = 3;
 const RESTART_WINDOW_MS = 10 * 60 * 1000;
 const PRODUCT_GATEWAY_STARTUP_TIMEOUT_MS = 4 * 60 * 1000;
+const PRODUCT_GATEWAY_RECOVERY_TIMEOUT_MS = 12 * 60 * 1000;
 
 const DEFAULT_UI_PREFERENCES = Object.freeze({
   fontFamily: 'system',
@@ -250,19 +253,23 @@ async function waitForProduct(origin, timeoutMs = PRODUCT_GATEWAY_STARTUP_TIMEOU
   const deadline = Date.now() + timeoutMs;
   let lastError = null;
   while (Date.now() < deadline) {
+    if (isQuitting) throw new Error('NEXUS startup cancelled');
     if (sidecarExit) {
       const detail = sidecarStderr.trim().slice(-1600) || 'no stderr captured';
       throw new Error(`NEXUS product engine exited before startup (code ${sidecarExit.code}, signal ${sidecarExit.signal || 'none'}): ${detail}`);
     }
     try {
       await probeProduct(origin);
+      if (isQuitting || sidecarExit) throw new Error('NEXUS startup cancelled or engine exited');
       logStartup(`Product gateway ready at ${origin}`);
       return;
     } catch (error) { lastError = error; }
     await new Promise(resolve => setTimeout(resolve, 400));
   }
   const detail = sidecarStderr.trim().slice(-1200);
-  throw new Error(`NEXUS product gateway did not become ready within ${Math.round(timeoutMs / 1000)}s: ${lastError || 'timeout'}${detail ? `; engine: ${detail}` : ''}`);
+  const error = new Error(`NEXUS product gateway did not become ready within ${Math.round(timeoutMs / 1000)}s: ${lastError || 'timeout'}${detail ? `; engine: ${detail}` : ''}`);
+  error.code = 'NEXUS_GATEWAY_TIMEOUT';
+  throw error;
 }
 
 function canRestart() {
@@ -287,8 +294,9 @@ async function restartProductAfterExit(exitInfo) {
   await new Promise(resolve => setTimeout(resolve, Math.min(5000, 800 * restartCount)));
   try {
     const origin = await startSidecar();
-    for (const win of BrowserWindow.getAllWindows()) { try { win.destroy(); } catch {} }
+    const oldWindows = BrowserWindow.getAllWindows();
     createWindow(origin);
+    for (const win of oldWindows) { try { win.destroy(); } catch {} }
   } catch (error) {
     logStartup(`supervised restart failed: ${error && error.stack ? error.stack : error}`);
     writeSupervisorState('restart_failed', { reason: String(error && error.message ? error.message : error), last_exit: exitInfo });
@@ -297,9 +305,20 @@ async function restartProductAfterExit(exitInfo) {
   }
 }
 
-async function startSidecar() {
+function startSidecar() {
+  if (isQuitting) return Promise.reject(new Error('NEXUS startup cancelled'));
+  if (startupInFlight) return startupInFlight;
+  if (productReady && sidecar) return Promise.resolve(productOrigin);
+  // An exhausted startup must not spawn a second engine over the same data.
+  if (sidecar && !sidecarExit) return Promise.reject(new Error('NEXUS engine startup recovery exhausted'));
+  startupInFlight = launchSidecar().finally(() => { startupInFlight = null; });
+  return startupInFlight;
+}
+
+async function launchSidecar() {
   if (!startupLogPath) initStartupLog();
   const port = await freePort();
+  if (isQuitting) throw new Error('NEXUS startup cancelled');
   if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Unable to allocate bounded product port');
   const dataRoot = path.join(app.getPath('userData'), 'product-data', 'market');
   fs.mkdirSync(dataRoot, { recursive: true });
@@ -343,7 +362,18 @@ async function startSidecar() {
     if (wasReady && !isQuitting) restartProductAfterExit(info);
   });
   productOrigin = `http://127.0.0.1:${port}`;
-  await waitForProduct(productOrigin);
+  try {
+    await waitForProduct(productOrigin);
+  } catch (error) {
+    if (error.code !== 'NEXUS_GATEWAY_TIMEOUT' || isQuitting || sidecarExit || !sidecar) throw error;
+    // Keep the same process/port/source binding while a busy login finishes.
+    // This is bounded and never restarts an engine that may be using Paper data.
+    writeSupervisorState('recovering', { source_sha: bindings.sourceSha, origin: productOrigin,
+      reason: 'gateway_startup_delayed', recovery_timeout_seconds: PRODUCT_GATEWAY_RECOVERY_TIMEOUT_MS / 1000 });
+    showStartupFailure(new Error('The engine is taking longer to start. NEXUS will open automatically when it is ready.'), true);
+    await waitForProduct(productOrigin, PRODUCT_GATEWAY_RECOVERY_TIMEOUT_MS);
+  }
+  if (isQuitting || sidecarExit || !sidecar) throw new Error('NEXUS startup cancelled or engine exited');
   productReady = true;
   writeSupervisorState('healthy', { source_sha: bindings.sourceSha, origin: productOrigin });
   return productOrigin;
@@ -400,6 +430,8 @@ function createWindow(origin) {
       logStartup('UI document origin did not match the verified product gateway');
       return;
     }
+    if (startupFailureWindow && !startupFailureWindow.isDestroyed()) startupFailureWindow.destroy();
+    startupFailureWindow = null;
     if (!win.isVisible()) {
       win.show();
       logStartup('UI window shown after verified document load');
@@ -414,11 +446,16 @@ function createWindow(origin) {
   return win;
 }
 
-function showStartupFailure(error) {
-  const win = new BrowserWindow({ width: 860, height: 560, backgroundColor: '#090c10' });
+function showStartupFailure(error, recovering = false) {
+  if (isQuitting) return;
+  const win = startupFailureWindow && !startupFailureWindow.isDestroyed()
+    ? startupFailureWindow : new BrowserWindow({ width: 860, height: 560, backgroundColor: '#090c10' });
+  startupFailureWindow = win;
+  const heading = recovering ? 'NEXUS is starting' : 'NEXUS startup blocked';
+  const detail = recovering ? 'Waiting for the existing engine. You can close this window to cancel.' : 'The product failed closed. No Paper or Live state was changed.';
   const message = String(error && error.message ? error.message : error).replace(/[<>&]/g, '');
   const logText = startupLogPath ? `Startup diagnostics: ${startupLogPath}` : 'Startup diagnostics unavailable';
-  win.loadURL(`data:text/html;charset=utf-8,<body style="background:%23090c10;color:%23fff;font-family:Segoe UI;padding:30px"><h2>NEXUS startup blocked</h2><p>${encodeURIComponent(message)}</p><p>${encodeURIComponent(logText)}</p><p>The product failed closed. No Paper or Live state was changed.</p></body>`);
+  win.loadURL(`data:text/html;charset=utf-8,<body style="background:%23090c10;color:%23fff;font-family:Segoe UI;padding:30px"><h2>${heading}</h2><p>${encodeURIComponent(message)}</p><p>${encodeURIComponent(logText)}</p><p>${detail}</p></body>`);
 }
 
 const singleInstanceLock = app.requestSingleInstanceLock();
@@ -439,6 +476,7 @@ if (!singleInstanceLock) {
     try { const origin = await startSidecar(); createWindow(origin); }
     catch (error) {
       logStartup(`startup blocked: ${error && error.stack ? error.stack : error}`);
+      if (isQuitting) return;
       writeSupervisorState('startup_failed', { reason: String(error && error.message ? error.message : error) });
       showStartupFailure(error);
     }
