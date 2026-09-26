@@ -40,6 +40,7 @@ async function initializePersonalization(){ensureSettingsSurface();try{applyUIPr
 function renderOverview(){const x=state.overview;if(!x)return;$('#productState').textContent=x.delivery||'canonical-python-sidecar';$('#paperState').textContent=x.paper?.active?'ACTIVE':'UNAVAILABLE';$('#liveState').textContent=(x.live?.status||'LOCKED').toUpperCase();const m=x.mission_control||{};$('#missionBadge').className='badge '+statusClass(m.status);$('#missionBadge').textContent=String(m.status||'unavailable').toUpperCase();const mission=m.mission||{},queue=m.queue||{},counts=queue.counts||{};$('#missionSummary').innerHTML=[metric('MISSION',mission.status||m.status||'unavailable',mission.mission_id||''),metric('READY',counts.ready??counts.READY??'—','queue'),metric('RUNNING',counts.running??counts.RUNNING??'—','queue'),metric('AGENTS',Array.isArray(m.agents)?m.agents.length:'—','registered')].join('');$('#capabilityMap').innerHTML=Object.entries(x.capabilities||{}).map(([k,v])=>`<div class="capability"><span>${esc(k.replaceAll('_',' ').toUpperCase())}</span><b class="${statusClass(v)}">${esc(v)}</b></div>`).join('')}
 function renderPaper(){
   const p=state.paper;if(!p)return;
+  window.NexusPaperTerminal?.render(p.shared_portfolio);
   const a=p.account||{},forward=p.prospective_forward||{},manual=a.positions||[],prospective=forward.available===true?(forward.positions||[]):[],allCount=manual.length+prospective.length;
   const active=forward.profiles?.[forward.active_profile||'conservative']||{};
   $('#paperMetrics').innerHTML=[

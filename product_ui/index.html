@@ -7,6 +7,7 @@
   <title>NEXUS Personal Pro</title>
   <link rel="stylesheet" href="/ui/product.css">
   <link rel="stylesheet" href="/ui/product-extra.css">
+<link rel="stylesheet" href="/ui/product-terminal.css">
 </head>
 <body>
 <div class="app-shell">
@@ -68,9 +69,10 @@
       </section>
 
       <section id="view-paper" class="view">
-        <div class="section-head"><div><span>PAPER / DEMO EXECUTION</span><h2>حساب دمو و اجرای قطعی</h2></div><div class="inline-actions"><button id="autoPaper" class="small-btn accent">اجرای Auto Paper از آخرین Qualification</button><strong class="badge good">PAPER ONLY</strong></div></div>
+        <div id="sharedTerminal"></div>
+        <div class="section-head"><div><span>PAPER / DEMO EXECUTION</span><h2>حساب دستی مستقل و آرشیو پژوهش</h2></div><div class="inline-actions"><button id="autoPaper" class="small-btn accent">اجرای Auto Paper از آخرین Qualification</button><strong class="badge good">PAPER ONLY</strong></div></div>
         <div class="paper-layout">
-          <article class="panel account-panel"><header><div><span>DEMO ACCOUNT</span><h2>پرتفوی</h2></div><button id="paperRefresh" class="small-btn">بروزرسانی</button></header><div id="paperMetrics" class="metric-grid"></div><div class="control-strip"><button id="sessionOpen" class="small-btn">Session Open</button><button id="sessionClose" class="small-btn">Session Close</button><button id="killOn" class="small-btn danger-btn">Kill Switch ON</button><button id="killOff" class="small-btn">Kill Switch OFF</button></div><div class="subhead">پوزیشن‌های باز</div><div id="positions" class="table-wrap"></div></article>
+          <article class="panel account-panel"><header><div><span>MANUAL PAPER · SEPARATE ACCOUNT</span><h2>حساب دستی مستقل</h2></div><button id="paperRefresh" class="small-btn">بروزرسانی</button></header><div id="paperMetrics" class="metric-grid"></div><div class="control-strip"><button id="sessionOpen" class="small-btn">Session Open</button><button id="sessionClose" class="small-btn">Session Close</button><button id="killOn" class="small-btn danger-btn">Kill Switch ON</button><button id="killOff" class="small-btn">Kill Switch OFF</button></div><div class="subhead">پوزیشن‌های باز</div><div id="positions" class="table-wrap"></div></article>
           <article class="panel ticket-panel"><header><div><span>MANUAL PAPER TICKET</span><h2>فرمان Paper</h2></div><strong class="badge good">RISK GATED</strong></header><form id="paperOrder" class="order-form"><label>عملیات<select name="operation"><option value="open">باز کردن</option><option value="close">بستن</option><option value="reduce">کاهش</option><option value="reverse">معکوس</option></select></label><label>نماد<select name="symbol"><option>BTCUSDT</option><option>ETHUSDT</option><option>SOLUSDT</option><option>BNBUSDT</option><option>XRPUSDT</option></select></label><label>تایم‌فریم<select name="timeframe"><option value="minute15">15m</option><option value="hour1">1h</option><option value="hour4">4h</option></select></label><label>جهت<select name="side"><option value="long">Long</option><option value="short">Short</option></select></label><label>مقدار<input name="quantity" inputmode="decimal" required placeholder="مثلاً 0.001" autocomplete="off"></label><label>قیمت مرجع<input name="reference_price" inputmode="decimal" required placeholder="قیمت Paper را وارد کنید" autocomplete="off"></label><label>حد ضرر<input name="stop_price" inputmode="decimal" required placeholder="Stop" autocomplete="off"></label><label>هدف<input name="target_price" inputmode="decimal" required placeholder="Target" autocomplete="off"></label><button class="primary" type="submit">ارسال به Risk → Paper Execution</button></form><div id="orderResult" class="result-box muted">هیچ فرمانی ارسال نشده است.</div></article>
         </div>
         <article class="panel"><header><div><span>DEMO STRATEGY MATRIX</span><h2>۱۸ مسیر Paper فعال</h2></div><strong id="matrixBadge" class="badge neutral">UNAVAILABLE</strong></header><div id="matrixMetrics" class="metric-grid"></div><div id="strategyMatrix" class="table-wrap"><div class="empty-state">هنوز snapshot ماتریس در این دستگاه موجود نیست.</div></div></article>
@@ -103,6 +105,7 @@
   </section>
 </div>
 <div id="toast" role="status"></div>
+<script src="/ui/product-terminal.js"></script>
 <script src="/ui/product.js"></script>
 </body>
 </html>
