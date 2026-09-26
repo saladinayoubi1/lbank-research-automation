@@ -228,21 +228,20 @@ jobs:
     runs-on: nexus-bybit-network
     timeout-minutes: 45
     outputs:
-      state_archive_chunk_count: ${{ steps.package.outputs.state_archive_chunk_count }}
       state_archive_b85_len: ${{ steps.package.outputs.state_archive_b85_len }}
-      state_archive_chunk_0: ${{ steps.package.outputs.state_archive_chunk_0 }}
-      state_archive_chunk_1: ${{ steps.package.outputs.state_archive_chunk_1 }}
-      state_archive_chunk_2: ${{ steps.package.outputs.state_archive_chunk_2 }}
-      state_archive_chunk_3: ${{ steps.package.outputs.state_archive_chunk_3 }}
-      state_archive_chunk_4: ${{ steps.package.outputs.state_archive_chunk_4 }}
-      state_archive_chunk_5: ${{ steps.package.outputs.state_archive_chunk_5 }}
-      state_archive_chunk_6: ${{ steps.package.outputs.state_archive_chunk_6 }}
-      state_archive_chunk_7: ${{ steps.package.outputs.state_archive_chunk_7 }}
-      state_archive_chunk_8: ${{ steps.package.outputs.state_archive_chunk_8 }}
-      state_archive_chunk_9: ${{ steps.package.outputs.state_archive_chunk_9 }}
-      state_archive_chunk_10: ${{ steps.package.outputs.state_archive_chunk_10 }}
-      state_archive_chunk_11: ${{ steps.package.outputs.state_archive_chunk_11 }}
       state_archive_sha256: ${{ steps.package.outputs.state_archive_sha256 }}
+      state_archive_part_a_len: ${{ steps.package.outputs.state_archive_part_a_len }}
+      state_archive_part_a_chunk_count: ${{ steps.package.outputs.state_archive_part_a_chunk_count }}
+      state_archive_part_a_chunk_0: ${{ steps.package.outputs.state_archive_part_a_chunk_0 }}
+      state_archive_part_a_chunk_1: ${{ steps.package.outputs.state_archive_part_a_chunk_1 }}
+      state_archive_part_a_chunk_2: ${{ steps.package.outputs.state_archive_part_a_chunk_2 }}
+      state_archive_part_a_chunk_3: ${{ steps.package.outputs.state_archive_part_a_chunk_3 }}
+      state_archive_part_a_chunk_4: ${{ steps.package.outputs.state_archive_part_a_chunk_4 }}
+      state_archive_part_a_chunk_5: ${{ steps.package.outputs.state_archive_part_a_chunk_5 }}
+      state_archive_part_a_chunk_6: ${{ steps.package.outputs.state_archive_part_a_chunk_6 }}
+      state_archive_part_a_chunk_7: ${{ steps.package.outputs.state_archive_part_a_chunk_7 }}
+      state_archive_part_a_chunk_8: ${{ steps.package.outputs.state_archive_part_a_chunk_8 }}
+      state_archive_part_a_chunk_9: ${{ steps.package.outputs.state_archive_part_a_chunk_9 }}
     env:
       GH_TOKEN: ${{ github.token }}
       SOURCE_ARTIFACT: nexus-persistent-paper-source-${{ github.sha }}
@@ -721,23 +720,21 @@ jobs:
           }, sort_keys=True))
           PY
 
-      - name: Package Paper state for hosted artifact persistence
+      - name: Package Paper state for bounded two-job hosted persistence
         id: package
         if: success()
         run: |
           set -euo pipefail
           if [ "${NATIVE_PREPARED:-false}" != "true" ] || [ ! -d "$STATE_ROOT" ]; then
-            {
-              echo "state_archive_chunk_count=0"
-              echo "state_archive_b85_len=0"
-              echo "state_archive_sha256="
-              for index in 0 1 2 3 4 5 6 7 8 9 10 11; do
-                echo "state_archive_chunk_${index}="
-              done
-            } >> "$GITHUB_OUTPUT"
             exit 0
           fi
           cd "$SOURCE_ROOT"
+          handoff_root="$HOME/.local/share/nexus/persistent-paper-handoff/$GITHUB_RUN_ID"
+          case "$handoff_root" in "$HOME"/.local/share/nexus/persistent-paper-handoff/*) ;; *) exit 1;; esac
+          rm -rf "$handoff_root"
+          mkdir -p "$handoff_root"
+          chmod 700 "$handoff_root"
+          export HANDOFF_ARCHIVE="$handoff_root/persistent-state-handoff.tar.xz"
           "$PYTHON_BIN" - <<'PY'
           import lzma
           import os
@@ -747,8 +744,7 @@ jobs:
           root = Path(os.environ["STATE_ROOT"]).resolve()
           if root.is_symlink() or not root.is_dir():
               raise RuntimeError("Paper state root is unavailable or unsafe")
-          output = Path("build/persistent-state-handoff.tar.xz")
-          output.parent.mkdir(parents=True, exist_ok=True)
+          output = Path(os.environ["HANDOFF_ARCHIVE"])
           output.unlink(missing_ok=True)
           file_count = 0
           total_bytes = 0
@@ -778,45 +774,44 @@ jobs:
                       archive.addfile(info, handle)
           if file_count < 1:
               raise RuntimeError("Paper state contains no files")
+          if output.stat().st_size > 800_000:
+              raise RuntimeError("Packed Paper state exceeds bounded two-job handoff surface")
+          os.chmod(output, 0o600)
           print(f"state_handoff_file_count={file_count}")
           print(f"state_handoff_uncompressed_bytes={total_bytes}")
           print(f"state_handoff_tar_xz_bytes={output.stat().st_size}")
           PY
-          state_sha="$(sha256sum build/persistent-state-handoff.tar.xz | awk '{print $1}')"
-          state_b85="$("$PYTHON_BIN" -c 'import base64, sys; sys.stdout.write(base64.b85encode(sys.stdin.buffer.read()).decode("ascii"))' < build/persistent-state-handoff.tar.xz)"
+          state_sha="$(sha256sum "$HANDOFF_ARCHIVE" | awk '{print $1}')"
+          state_b85="$("$PYTHON_BIN" -c 'import base64, sys; sys.stdout.write(base64.b85encode(sys.stdin.buffer.read()).decode("ascii"))' < "$HANDOFF_ARCHIVE")"
           state_b85_chars="${#state_b85}"
+          split_at=$(( (state_b85_chars + 1) / 2 ))
+          part_a="${state_b85:0:split_at}"
+          part_a_len="${#part_a}"
           chunk_size=50000
-          max_chunks=11
-          # GitHub caps job outputs at 1 MiB estimated as UTF-16. Reserve
-          # 4 KiB for output names and metadata, then fail closed before the
-          # runner silently rejects the job while evaluating its outputs.
-          estimated_output_utf16_bytes=$(( state_b85_chars * 2 + 4096 ))
-          if [ "$estimated_output_utf16_bytes" -gt 1048576 ]; then
-            echo "::error::Packed Paper state exceeds the bounded GitHub job-output handoff."
-            exit 1
-          fi
-          chunk_count=$(( (state_b85_chars + chunk_size - 1) / chunk_size ))
-          if [ "$chunk_count" -lt 1 ] || [ "$chunk_count" -gt "$max_chunks" ]; then
-            echo "::error::Packed Paper state has invalid chunk count: $chunk_count"
+          part_a_chunk_count=$(( (part_a_len + chunk_size - 1) / chunk_size ))
+          estimated_part_a_utf16_bytes=$(( part_a_len * 2 + 16384 ))
+          if [ "$estimated_part_a_utf16_bytes" -gt 1048576 ] || [ "$part_a_chunk_count" -lt 1 ] || [ "$part_a_chunk_count" -gt 10 ]; then
+            echo "::error::Paper state part A exceeds its bounded GitHub job-output handoff."
             exit 1
           fi
           {
-            echo "state_archive_chunk_count=$chunk_count"
             echo "state_archive_b85_len=$state_b85_chars"
             echo "state_archive_sha256=$state_sha"
-            for index in 0 1 2 3 4 5 6 7 8 9 10 11; do
-              if [ "$index" -lt "$chunk_count" ]; then
+            echo "state_archive_part_a_len=$part_a_len"
+            echo "state_archive_part_a_chunk_count=$part_a_chunk_count"
+            for index in 0 1 2 3 4 5 6 7 8 9; do
+              if [ "$index" -lt "$part_a_chunk_count" ]; then
                 offset=$(( index * chunk_size ))
-                chunk="${state_b85:offset:chunk_size}"
+                chunk="${part_a:offset:chunk_size}"
               else
                 chunk=""
               fi
-              printf 'state_archive_chunk_%s=%s\n' "$index" "$chunk"
+              printf 'state_archive_part_a_chunk_%s=%s\n' "$index" "$chunk"
             done
           } >> "$GITHUB_OUTPUT"
           echo "state_handoff_base85_chars=$state_b85_chars"
-          echo "state_handoff_estimated_output_utf16_bytes=$estimated_output_utf16_bytes"
-          echo "state_handoff_chunk_count=$chunk_count"
+          echo "state_handoff_part_a_chars=$part_a_len"
+          echo "state_handoff_part_a_estimated_utf16_bytes=$estimated_part_a_utf16_bytes"
 
       - name: Cleanup isolated physical source and state
         if: always()
@@ -827,70 +822,143 @@ jobs:
           case "$source_root" in "$HOME"/.local/share/nexus/persistent-paper-source/*) rm -rf "$source_root" ;; *) exit 1;; esac
           case "$state_root" in "$HOME"/.local/share/nexus/persistent-paper-state/*) rm -rf "$state_root" ;; *) exit 1;; esac
 
-  persist-state:
-    if: ${{ always() && needs.paper-loop.result == 'success' && needs.paper-loop.outputs.state_archive_chunk_count != '0' }}
+  paper-handoff-b:
+    if: ${{ always() && needs.paper-loop.result == 'success' && needs.paper-loop.outputs.state_archive_part_a_chunk_count != '' }}
     needs: paper-loop
+    runs-on: nexus-bybit-network
+    timeout-minutes: 10
+    outputs:
+      state_archive_part_b_len: ${{ steps.part_b.outputs.state_archive_part_b_len }}
+      state_archive_part_b_chunk_count: ${{ steps.part_b.outputs.state_archive_part_b_chunk_count }}
+      state_archive_part_b_chunk_0: ${{ steps.part_b.outputs.state_archive_part_b_chunk_0 }}
+      state_archive_part_b_chunk_1: ${{ steps.part_b.outputs.state_archive_part_b_chunk_1 }}
+      state_archive_part_b_chunk_2: ${{ steps.part_b.outputs.state_archive_part_b_chunk_2 }}
+      state_archive_part_b_chunk_3: ${{ steps.part_b.outputs.state_archive_part_b_chunk_3 }}
+      state_archive_part_b_chunk_4: ${{ steps.part_b.outputs.state_archive_part_b_chunk_4 }}
+      state_archive_part_b_chunk_5: ${{ steps.part_b.outputs.state_archive_part_b_chunk_5 }}
+      state_archive_part_b_chunk_6: ${{ steps.part_b.outputs.state_archive_part_b_chunk_6 }}
+      state_archive_part_b_chunk_7: ${{ steps.part_b.outputs.state_archive_part_b_chunk_7 }}
+      state_archive_part_b_chunk_8: ${{ steps.part_b.outputs.state_archive_part_b_chunk_8 }}
+      state_archive_part_b_chunk_9: ${{ steps.part_b.outputs.state_archive_part_b_chunk_9 }}
+    env:
+      STATE_ARCHIVE_B85_LEN: ${{ needs.paper-loop.outputs.state_archive_b85_len }}
+      STATE_ARCHIVE_PART_A_LEN: ${{ needs.paper-loop.outputs.state_archive_part_a_len }}
+      STATE_ARCHIVE_SHA256: ${{ needs.paper-loop.outputs.state_archive_sha256 }}
+    steps:
+      - name: Emit independently verified Paper state handoff part B
+        id: part_b
+        run: |
+          set -euo pipefail
+          handoff_root="$HOME/.local/share/nexus/persistent-paper-handoff/$GITHUB_RUN_ID"
+          archive="$handoff_root/persistent-state-handoff.tar.xz"
+          case "$handoff_root" in "$HOME"/.local/share/nexus/persistent-paper-handoff/*) ;; *) exit 1;; esac
+          test -f "$archive" && test ! -L "$archive"
+          test "$(sha256sum "$archive" | awk '{print $1}')" = "$STATE_ARCHIVE_SHA256"
+          state_b85="$(python3 -c 'import base64, sys; sys.stdout.write(base64.b85encode(sys.stdin.buffer.read()).decode("ascii"))' < "$archive")"
+          test "${#state_b85}" -eq "$STATE_ARCHIVE_B85_LEN"
+          test "$STATE_ARCHIVE_PART_A_LEN" -eq $(( (STATE_ARCHIVE_B85_LEN + 1) / 2 ))
+          part_b="${state_b85:STATE_ARCHIVE_PART_A_LEN}"
+          part_b_len="${#part_b}"
+          chunk_size=50000
+          part_b_chunk_count=$(( (part_b_len + chunk_size - 1) / chunk_size ))
+          estimated_part_b_utf16_bytes=$(( part_b_len * 2 + 16384 ))
+          if [ "$estimated_part_b_utf16_bytes" -gt 1048576 ] || [ "$part_b_chunk_count" -lt 1 ] || [ "$part_b_chunk_count" -gt 10 ]; then
+            echo "::error::Paper state part B exceeds its bounded GitHub job-output handoff."
+            exit 1
+          fi
+          {
+            echo "state_archive_part_b_len=$part_b_len"
+            echo "state_archive_part_b_chunk_count=$part_b_chunk_count"
+            for index in 0 1 2 3 4 5 6 7 8 9; do
+              if [ "$index" -lt "$part_b_chunk_count" ]; then
+                offset=$(( index * chunk_size ))
+                chunk="${part_b:offset:chunk_size}"
+              else
+                chunk=""
+              fi
+              printf 'state_archive_part_b_chunk_%s=%s\n' "$index" "$chunk"
+            done
+          } >> "$GITHUB_OUTPUT"
+          echo "state_handoff_part_b_chars=$part_b_len"
+          echo "state_handoff_part_b_estimated_utf16_bytes=$estimated_part_b_utf16_bytes"
+      - name: Cleanup run-scoped physical Paper handoff
+        if: always()
+        run: |
+          set -euo pipefail
+          handoff_root="$HOME/.local/share/nexus/persistent-paper-handoff/$GITHUB_RUN_ID"
+          case "$handoff_root" in "$HOME"/.local/share/nexus/persistent-paper-handoff/*) rm -rf "$handoff_root" ;; *) exit 1;; esac
+
+  persist-state:
+    if: ${{ always() && needs.paper-loop.result == 'success' && needs.paper-handoff-b.result == 'success' }}
+    needs: [paper-loop, paper-handoff-b]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      STATE_ARCHIVE_CHUNK_COUNT: ${{ needs.paper-loop.outputs.state_archive_chunk_count }}
       STATE_ARCHIVE_B85_LEN: ${{ needs.paper-loop.outputs.state_archive_b85_len }}
-      STATE_ARCHIVE_CHUNK_0: ${{ needs.paper-loop.outputs.state_archive_chunk_0 }}
-      STATE_ARCHIVE_CHUNK_1: ${{ needs.paper-loop.outputs.state_archive_chunk_1 }}
-      STATE_ARCHIVE_CHUNK_2: ${{ needs.paper-loop.outputs.state_archive_chunk_2 }}
-      STATE_ARCHIVE_CHUNK_3: ${{ needs.paper-loop.outputs.state_archive_chunk_3 }}
-      STATE_ARCHIVE_CHUNK_4: ${{ needs.paper-loop.outputs.state_archive_chunk_4 }}
-      STATE_ARCHIVE_CHUNK_5: ${{ needs.paper-loop.outputs.state_archive_chunk_5 }}
-      STATE_ARCHIVE_CHUNK_6: ${{ needs.paper-loop.outputs.state_archive_chunk_6 }}
-      STATE_ARCHIVE_CHUNK_7: ${{ needs.paper-loop.outputs.state_archive_chunk_7 }}
-      STATE_ARCHIVE_CHUNK_8: ${{ needs.paper-loop.outputs.state_archive_chunk_8 }}
-      STATE_ARCHIVE_CHUNK_9: ${{ needs.paper-loop.outputs.state_archive_chunk_9 }}
-      STATE_ARCHIVE_CHUNK_10: ${{ needs.paper-loop.outputs.state_archive_chunk_10 }}
-      STATE_ARCHIVE_CHUNK_11: ${{ needs.paper-loop.outputs.state_archive_chunk_11 }}
       STATE_ARCHIVE_SHA256: ${{ needs.paper-loop.outputs.state_archive_sha256 }}
+      STATE_ARCHIVE_PART_A_LEN: ${{ needs.paper-loop.outputs.state_archive_part_a_len }}
+      STATE_ARCHIVE_PART_A_CHUNK_COUNT: ${{ needs.paper-loop.outputs.state_archive_part_a_chunk_count }}
+      STATE_ARCHIVE_PART_A_CHUNK_0: ${{ needs.paper-loop.outputs.state_archive_part_a_chunk_0 }}
+      STATE_ARCHIVE_PART_A_CHUNK_1: ${{ needs.paper-loop.outputs.state_archive_part_a_chunk_1 }}
+      STATE_ARCHIVE_PART_A_CHUNK_2: ${{ needs.paper-loop.outputs.state_archive_part_a_chunk_2 }}
+      STATE_ARCHIVE_PART_A_CHUNK_3: ${{ needs.paper-loop.outputs.state_archive_part_a_chunk_3 }}
+      STATE_ARCHIVE_PART_A_CHUNK_4: ${{ needs.paper-loop.outputs.state_archive_part_a_chunk_4 }}
+      STATE_ARCHIVE_PART_A_CHUNK_5: ${{ needs.paper-loop.outputs.state_archive_part_a_chunk_5 }}
+      STATE_ARCHIVE_PART_A_CHUNK_6: ${{ needs.paper-loop.outputs.state_archive_part_a_chunk_6 }}
+      STATE_ARCHIVE_PART_A_CHUNK_7: ${{ needs.paper-loop.outputs.state_archive_part_a_chunk_7 }}
+      STATE_ARCHIVE_PART_A_CHUNK_8: ${{ needs.paper-loop.outputs.state_archive_part_a_chunk_8 }}
+      STATE_ARCHIVE_PART_A_CHUNK_9: ${{ needs.paper-loop.outputs.state_archive_part_a_chunk_9 }}
+      STATE_ARCHIVE_PART_B_LEN: ${{ needs.paper-handoff-b.outputs.state_archive_part_b_len }}
+      STATE_ARCHIVE_PART_B_CHUNK_COUNT: ${{ needs.paper-handoff-b.outputs.state_archive_part_b_chunk_count }}
+      STATE_ARCHIVE_PART_B_CHUNK_0: ${{ needs.paper-handoff-b.outputs.state_archive_part_b_chunk_0 }}
+      STATE_ARCHIVE_PART_B_CHUNK_1: ${{ needs.paper-handoff-b.outputs.state_archive_part_b_chunk_1 }}
+      STATE_ARCHIVE_PART_B_CHUNK_2: ${{ needs.paper-handoff-b.outputs.state_archive_part_b_chunk_2 }}
+      STATE_ARCHIVE_PART_B_CHUNK_3: ${{ needs.paper-handoff-b.outputs.state_archive_part_b_chunk_3 }}
+      STATE_ARCHIVE_PART_B_CHUNK_4: ${{ needs.paper-handoff-b.outputs.state_archive_part_b_chunk_4 }}
+      STATE_ARCHIVE_PART_B_CHUNK_5: ${{ needs.paper-handoff-b.outputs.state_archive_part_b_chunk_5 }}
+      STATE_ARCHIVE_PART_B_CHUNK_6: ${{ needs.paper-handoff-b.outputs.state_archive_part_b_chunk_6 }}
+      STATE_ARCHIVE_PART_B_CHUNK_7: ${{ needs.paper-handoff-b.outputs.state_archive_part_b_chunk_7 }}
+      STATE_ARCHIVE_PART_B_CHUNK_8: ${{ needs.paper-handoff-b.outputs.state_archive_part_b_chunk_8 }}
+      STATE_ARCHIVE_PART_B_CHUNK_9: ${{ needs.paper-handoff-b.outputs.state_archive_part_b_chunk_9 }}
       STATE_ROOT: build/nexus_persistent_paper_trading_state
     steps:
-      - name: Rehydrate physical Paper state handoff
+      - name: Rehydrate digest-bound two-job physical Paper state handoff
         run: |
           set -euo pipefail
           rm -rf "$STATE_ROOT" build/persistent-state-handoff.tar.xz
           mkdir -p "$STATE_ROOT"
-          case "$STATE_ARCHIVE_CHUNK_COUNT" in
-            1|2|3|4|5|6|7|8|9|10|11) ;;
-            *) echo "::error::Invalid Paper state handoff chunk count."; exit 1 ;;
-          esac
-          chunks=(
-            "$STATE_ARCHIVE_CHUNK_0"
-            "$STATE_ARCHIVE_CHUNK_1"
-            "$STATE_ARCHIVE_CHUNK_2"
-            "$STATE_ARCHIVE_CHUNK_3"
-            "$STATE_ARCHIVE_CHUNK_4"
-            "$STATE_ARCHIVE_CHUNK_5"
-            "$STATE_ARCHIVE_CHUNK_6"
-            "$STATE_ARCHIVE_CHUNK_7"
-            "$STATE_ARCHIVE_CHUNK_8"
-            "$STATE_ARCHIVE_CHUNK_9"
-            "$STATE_ARCHIVE_CHUNK_10"
-            "$STATE_ARCHIVE_CHUNK_11"
+          case "$STATE_ARCHIVE_PART_A_CHUNK_COUNT" in 1|2|3|4|5|6|7|8|9|10) ;; *) echo "::error::Invalid Paper state part A chunk count."; exit 1 ;; esac
+          case "$STATE_ARCHIVE_PART_B_CHUNK_COUNT" in 1|2|3|4|5|6|7|8|9|10) ;; *) echo "::error::Invalid Paper state part B chunk count."; exit 1 ;; esac
+          part_a_chunks=(
+            "$STATE_ARCHIVE_PART_A_CHUNK_0" "$STATE_ARCHIVE_PART_A_CHUNK_1"
+            "$STATE_ARCHIVE_PART_A_CHUNK_2" "$STATE_ARCHIVE_PART_A_CHUNK_3"
+            "$STATE_ARCHIVE_PART_A_CHUNK_4" "$STATE_ARCHIVE_PART_A_CHUNK_5"
+            "$STATE_ARCHIVE_PART_A_CHUNK_6" "$STATE_ARCHIVE_PART_A_CHUNK_7"
+            "$STATE_ARCHIVE_PART_A_CHUNK_8" "$STATE_ARCHIVE_PART_A_CHUNK_9"
           )
-          state_b85=""
-          for ((index=0; index<STATE_ARCHIVE_CHUNK_COUNT; index++)); do
-            if [ "${#chunks[$index]}" -gt 50000 ]; then
-              echo "::error::Paper state handoff chunk exceeds bound."
-              exit 1
-            fi
-            state_b85+="${chunks[$index]}"
+          part_b_chunks=(
+            "$STATE_ARCHIVE_PART_B_CHUNK_0" "$STATE_ARCHIVE_PART_B_CHUNK_1"
+            "$STATE_ARCHIVE_PART_B_CHUNK_2" "$STATE_ARCHIVE_PART_B_CHUNK_3"
+            "$STATE_ARCHIVE_PART_B_CHUNK_4" "$STATE_ARCHIVE_PART_B_CHUNK_5"
+            "$STATE_ARCHIVE_PART_B_CHUNK_6" "$STATE_ARCHIVE_PART_B_CHUNK_7"
+            "$STATE_ARCHIVE_PART_B_CHUNK_8" "$STATE_ARCHIVE_PART_B_CHUNK_9"
+          )
+          part_a=""
+          for ((index=0; index<STATE_ARCHIVE_PART_A_CHUNK_COUNT; index++)); do
+            test "${#part_a_chunks[$index]}" -le 50000
+            part_a+="${part_a_chunks[$index]}"
           done
-          for ((index=STATE_ARCHIVE_CHUNK_COUNT; index<12; index++)); do
-            if [ -n "${chunks[$index]}" ]; then
-              echo "::error::Unexpected trailing Paper state handoff chunk."
-              exit 1
-            fi
+          for ((index=STATE_ARCHIVE_PART_A_CHUNK_COUNT; index<10; index++)); do test -z "${part_a_chunks[$index]}"; done
+          part_b=""
+          for ((index=0; index<STATE_ARCHIVE_PART_B_CHUNK_COUNT; index++)); do
+            test "${#part_b_chunks[$index]}" -le 50000
+            part_b+="${part_b_chunks[$index]}"
           done
-          if [ "${#state_b85}" -ne "$STATE_ARCHIVE_B85_LEN" ]; then
-            echo "::error::Paper state handoff length mismatch."
-            exit 1
-          fi
+          for ((index=STATE_ARCHIVE_PART_B_CHUNK_COUNT; index<10; index++)); do test -z "${part_b_chunks[$index]}"; done
+          test "${#part_a}" -eq "$STATE_ARCHIVE_PART_A_LEN"
+          test "${#part_b}" -eq "$STATE_ARCHIVE_PART_B_LEN"
+          state_b85="$part_a$part_b"
+          test "${#state_b85}" -eq "$STATE_ARCHIVE_B85_LEN"
           printf '%s' "$state_b85" | python -c 'import base64, sys; sys.stdout.buffer.write(base64.b85decode(sys.stdin.buffer.read()))' > build/persistent-state-handoff.tar.xz
           actual_sha="$(sha256sum build/persistent-state-handoff.tar.xz | awk '{print $1}')"
           test "$actual_sha" = "$STATE_ARCHIVE_SHA256"
@@ -912,11 +980,7 @@ jobs:
                   if member.issym() or member.islnk() or not member.isfile():
                       raise RuntimeError(f"unsafe state handoff member type: {member.name}")
                   relative = PurePosixPath(member.name)
-                  if (
-                      relative.is_absolute()
-                      or not relative.parts
-                      or any(part in {"", ".", ".."} for part in relative.parts)
-                  ):
+                  if relative.is_absolute() or not relative.parts or any(part in {"", ".", ".."} for part in relative.parts):
                       raise RuntimeError(f"unsafe state handoff path: {member.name}")
                   normalized = relative.as_posix()
                   if normalized in seen:
