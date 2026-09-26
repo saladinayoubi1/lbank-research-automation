@@ -35,6 +35,8 @@ jobs:
         with:
           python-version: "3.12"
       - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407
+        with:
+          packages: platform-tools
       - name: Install Android SDK
         run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
       - uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d
@@ -43,14 +45,15 @@ jobs:
       - name: Run mobile product and redesign regression tests
         run: |
           python -m pip install -r requirements-dev.lock
-          python -m pytest -q tests/test_mobile_delivery_surface.py
+          python -m pytest -q tests/test_mobile_delivery_surface.py tests/test_mobile_shared_gateway.py
+          node --test tests/test_mobile_shared_client.cjs
       - name: Build installable release APK
         working-directory: android/lbank-mobile
         run: gradle --no-daemon --stacktrace :app:assembleRelease
       - name: Validate and package NEXUS Android 4 APK
         env:
           APK_SOURCE: android/lbank-mobile/app/build/outputs/apk/release/app-release.apk
-          APK_FINAL: android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_0_0.apk
+          APK_FINAL: android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_0.apk
         run: |
           set -euo pipefail
           test -s "$APK_SOURCE"
@@ -59,7 +62,7 @@ jobs:
           test "$size" -ge 10000
           unzip -t "$APK_FINAL"
           unzip -l "$APK_FINAL" | tee /tmp/apk-contents.txt
-          for asset in AndroidManifest.xml classes.dex assets/index.html assets/delivery.css assets/mobile-redesign.css assets/mobile-core.js assets/mobile-runtime.js assets/mobile-redesign.js assets/mobile-canonical-client.js assets/data.json; do
+          for asset in AndroidManifest.xml classes.dex assets/index.html assets/delivery.css assets/mobile-redesign.css assets/mobile-core.js assets/mobile-runtime.js assets/mobile-redesign.js assets/mobile-canonical-client.js assets/mobile-shared-client.js assets/mobile-shared-terminal.js assets/mobile-shared-terminal.css assets/data.json; do
             grep -q "$asset" /tmp/apk-contents.txt
           done
           unzip -p "$APK_FINAL" assets/index.html > /tmp/mobile-index.html
@@ -107,7 +110,7 @@ jobs:
           fi
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK_FINAL" | tee /tmp/apksigner.txt
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK_FINAL" | tee /tmp/aapt-badging.txt
-          grep -q "package: name='com.saladinayoubi.lbankmobile' versionCode='8' versionName='4.0.0'" /tmp/aapt-badging.txt
+          grep -q "package: name='com.saladinayoubi.lbankmobile' versionCode='9' versionName='4.1.0'" /tmp/aapt-badging.txt
           grep -q "launchable-activity:" /tmp/aapt-badging.txt
           sha256sum "$APK_FINAL" > "${APK_FINAL}.sha256"
           digest=$(cut -d' ' -f1 "${APK_FINAL}.sha256")
@@ -121,8 +124,8 @@ jobs:
             echo "- Android back navigation history contract: verified"
             echo "- APK signature verification: successful (repository release build uses configured debug signing; not a store-signing claim)"
             echo "- Package: \`com.saladinayoubi.lbankmobile\`"
-            echo "- Version: \`4.0.0 (8)\`"
-            echo "- File: \`NEXUS_PERSONAL_PRO_4_0_0.apk\`"
+            echo "- Version: \`4.1.0 (9)\`"
+            echo "- File: \`NEXUS_PERSONAL_PRO_4_1_0.apk\`"
             echo "- Size: ${size} bytes (${size_kb} KB)"
             echo "- SHA-256: \`${digest}\`"
             echo "- Mission: real /api/product/mission/full evidence when approved HTTPS Gateway is available; truthful MISSION UNSYNCED otherwise"
@@ -133,8 +136,8 @@ jobs:
         run: >-
           python scripts/build_release_evidence.py
           --bundle-dir release-evidence/android-v4
-          --artifact-glob 'android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_0_0.apk'
-          --artifact-glob 'android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_0_0.apk.sha256'
+          --artifact-glob 'android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_0.apk'
+          --artifact-glob 'android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_0.apk.sha256'
           --source-commit '${{ github.sha }}'
           --builder 'github-actions/build-nexus-mobile-apk/release-v4'
       - name: Fail-closed verify final APK release evidence
@@ -159,16 +162,16 @@ jobs:
           PY
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: NEXUS_PERSONAL_PRO_4_0_0_APK
+          name: NEXUS_PERSONAL_PRO_4_1_0_APK
           path: |
-            android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_0_0.apk
-            android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_0_0.apk.sha256
+            android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_0.apk
+            android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_0.apk.sha256
           if-no-files-found: error
           retention-days: 30
           compression-level: 0
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: NEXUS_PERSONAL_PRO_4_0_0_RELEASE_EVIDENCE
+          name: NEXUS_PERSONAL_PRO_4_1_0_RELEASE_EVIDENCE
           path: release-evidence/android-v4
           if-no-files-found: error
           retention-days: 30

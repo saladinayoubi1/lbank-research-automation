@@ -193,10 +193,10 @@ def test_mobile_metadata_discloses_real_mission_control_backend_and_local_fallba
 def test_mobile_version_and_ci_package_android_v4_build() -> None:
     gradle = BUILD_GRADLE.read_text(encoding="utf-8")
     workflow = WORKFLOW.read_text(encoding="utf-8")
-    assert "versionCode 8" in gradle
-    assert 'versionName "4.0.0"' in gradle
-    assert "NEXUS_PERSONAL_PRO_4_0_0.apk" in workflow
-    assert "versionCode='8' versionName='4.0.0'" in workflow
+    assert "versionCode 9" in gradle
+    assert 'versionName "4.1.0"' in gradle
+    assert "NEXUS_PERSONAL_PRO_4_1_0.apk" in workflow
+    assert "versionCode='9' versionName='4.1.0'" in workflow
     assert "assets/mobile-redesign.css" in workflow
     assert "assets/mobile-redesign.js" in workflow
     assert "assets/mobile-canonical-client.js" in workflow
@@ -216,7 +216,7 @@ def test_final_android_release_apk_is_bound_to_fail_closed_nonproduction_evidenc
         "scripts/build_release_evidence.py",
         "scripts/release_gate.py",
         "release-evidence/android-v4",
-        "NEXUS_PERSONAL_PRO_4_0_0_RELEASE_EVIDENCE",
+        "NEXUS_PERSONAL_PRO_4_1_0_RELEASE_EVIDENCE",
         "github-actions/build-nexus-mobile-apk/release-v4",
         "--expected-source-commit '${{ github.sha }}'",
         "--allow-unsigned",
@@ -226,4 +226,4 @@ def test_final_android_release_apk_is_bound_to_fail_closed_nonproduction_evidenc
         assert marker in workflow
     assert workflow.index("Build installable release APK") < workflow.index("Build unsigned final APK release evidence")
     assert workflow.index("Build unsigned final APK release evidence") < workflow.index("Fail-closed verify final APK release evidence")
-    assert workflow.index("Fail-closed verify final APK release evidence") < workflow.index("NEXUS_PERSONAL_PRO_4_0_0_RELEASE_EVIDENCE")
+    assert workflow.index("Fail-closed verify final APK release evidence") < workflow.index("NEXUS_PERSONAL_PRO_4_1_0_RELEASE_EVIDENCE")

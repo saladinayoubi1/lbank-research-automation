@@ -76,3 +76,19 @@ Every versioned JSON response includes `nexus.gateway.v1` disclosure fields for 
 
 ## Safety boundary
 Gate 14 introduces no exchange credential loading in the gateway, no live order, withdrawal, production promotion/deployment, billing mutation, signing, merge authority or irreversible financial action. Native direct-provider networking is removed so dashboard/native delivery cannot bypass the repository control plane.
+
+## Owner pairing extension — Android 4.1
+
+The build-time HTTPS origin remains the default. Android 4.1 may replace it only
+through an Android-native confirmation dialog whose bridge method takes no URL or
+token arguments. WebView JavaScript cannot choose an origin or read the token.
+The owner enters both origin and fresh token; they are committed together, with
+AES/GCM Keystore token encryption. Requests reject an origin change between URL
+resolution and credential attachment. TLS verification, redirect rejection, method
+and path allowlists, and response size limits remain enabled.
+
+`mobile_paper_gateway.py` is an optional read-only remote-mode endpoint over the
+existing `product-data/shared_paper/terminal.json` export. It requires runtime TLS
+certificate/key, strong bearer token and exact Host/Origin lists. It exposes only
+GET/HEAD `/api/product/paper`; it cannot send orders, reset balances or start a
+second strategy engine. No external endpoint or credential is compiled into APKs.

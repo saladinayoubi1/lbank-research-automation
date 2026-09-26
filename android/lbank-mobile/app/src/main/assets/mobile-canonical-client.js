@@ -30,5 +30,6 @@ async function backendKill(){const enabled=canonical.paper?.account?.kill_switch
 async function backendRecovery(){canonical.recovery=await call('GET','/api/product/recovery');canonical.events=await call('GET','/api/product/paper/events?limit=100');render();toast(`Recovery: ${canonical.recovery.status||'unknown'}`)}
 function intercept(e){if(!canonical.connected)return;const target=e.target.closest?.('button');if(!target)return;let action=null;if(target.dataset.canonicalClose)action=()=>backendClose(target);else if(target.id==='executePaper')action=backendPaper;else if(target.id==='runPreview')action=backendResearch;else if(target.id==='sessionToggle')action=backendSession;else if(target.id==='killToggle')action=backendKill;else if(target.id==='verifyLedger')action=backendRecovery;else if(target.id==='syncMission')action=sync;if(!action)return;e.preventDefault();e.stopImmediatePropagation();Promise.resolve().then(action).catch(err=>toast('Fail closed: '+err.message))}
 function bind(){document.addEventListener('click',intercept,true);window.addEventListener('focus',()=>sync());setInterval(sync,60000)}
+window.NexusProductClient={call};window.dispatchEvent(new Event('nexus-product-client-ready'));
 inject();bind();sync();
 })();
