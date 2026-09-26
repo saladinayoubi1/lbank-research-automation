@@ -280,36 +280,40 @@ def test_state_restore_never_forwards_github_token_to_artifact_storage_redirect(
     assert "token" not in storage_block
 
 
-def test_physical_state_handoff_is_bounded_chunked_digest_checked_and_hosted_persisted() -> None:
+def test_physical_state_handoff_is_two_job_bounded_digest_checked_and_hosted_persisted() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
-    paper = _paper_job(text)
+    paper = text.split("  paper-loop:", 1)[1].split("  paper-handoff-b:", 1)[0]
+    part_b = text.split("  paper-handoff-b:", 1)[1].split("  persist-state:", 1)[0]
     persist = text.split("  persist-state:", 1)[1]
 
-    assert "Package Paper state for hosted artifact persistence" in paper
-    assert "state_archive_chunk_count" in paper
+    assert "Package Paper state for bounded two-job hosted persistence" in paper
+    assert "persistent-paper-handoff/$GITHUB_RUN_ID" in paper
+    assert "state_archive_part_a_chunk_count" in paper
     assert "state_archive_b85_len" in paper
-    for index in range(12):
-        assert f"state_archive_chunk_{index}" in paper
-        assert f"needs.paper-loop.outputs.state_archive_chunk_{index}" in persist
     assert "state_archive_sha256" in paper
-    assert "persistent-state-handoff.tar.xz" in paper
     assert "base64.b85encode" in paper
-    assert "estimated_output_utf16_bytes=$(( state_b85_chars * 2 + 4096 ))" in paper
-    assert 'estimated_output_utf16_bytes" -gt 1048576' in paper
-    assert "chunk_size=50000" in paper
-    assert "max_chunks=11" in paper
-    assert "import lzma" in paper
-    assert 'tarfile.open(output, "w:xz", preset=9 | lzma.PRESET_EXTREME)' in paper
-    assert "zipfile.ZIP_LZMA" not in paper
-    assert "zipfile.ZIP_DEFLATED" not in paper
+    assert "800_000" in paper
+    assert "estimated_part_a_utf16_bytes=$(( part_a_len * 2 + 16384 ))" in paper
+    assert 'estimated_part_a_utf16_bytes" -gt 1048576' in paper
+    for index in range(10):
+        assert f"state_archive_part_a_chunk_{index}" in paper
+        assert f"needs.paper-loop.outputs.state_archive_part_a_chunk_{index}" in persist
 
-    assert "STATE_ARCHIVE_B64" not in persist
-    assert "STATE_ARCHIVE_CHUNK_COUNT" in persist
-    assert "STATE_ARCHIVE_B85_LEN" in persist
-    assert '"${#state_b85}" -ne "$STATE_ARCHIVE_B85_LEN"' in persist
+    assert "runs-on: nexus-bybit-network" in part_b
+    assert "Emit independently verified Paper state handoff part B" in part_b
+    assert 'test "$(sha256sum "$archive"' in part_b
+    assert 'test "${#state_b85}" -eq "$STATE_ARCHIVE_B85_LEN"' in part_b
+    assert "estimated_part_b_utf16_bytes=$(( part_b_len * 2 + 16384 ))" in part_b
+    assert "Cleanup run-scoped physical Paper handoff" in part_b
+    assert "if: always()" in part_b
+    for index in range(10):
+        assert f"state_archive_part_b_chunk_{index}" in part_b
+        assert f"needs.paper-handoff-b.outputs.state_archive_part_b_chunk_{index}" in persist
+
+    assert "needs: [paper-loop, paper-handoff-b]" in persist
+    assert 'state_b85="$part_a$part_b"' in persist
+    assert 'test "${#state_b85}" -eq "$STATE_ARCHIVE_B85_LEN"' in persist
     assert "base64.b85decode" in persist
-    assert "Paper state handoff chunk exceeds bound." in persist
-    assert "Unexpected trailing Paper state handoff chunk." in persist
     assert "STATE_ARCHIVE_SHA256" in persist
     assert "sha256sum build/persistent-state-handoff.tar.xz" in persist
     assert "unsafe state handoff path" in persist
@@ -318,20 +322,27 @@ def test_physical_state_handoff_is_bounded_chunked_digest_checked_and_hosted_per
     assert "nexus-persistent-paper-trading-state" in persist
 
 
-def test_base85_handoff_boundary_matches_github_utf16_limit() -> None:
-    # With the 4 KiB metadata reserve used by the workflow, Base85 payloads
-    # remain safe through 417,792 compressed bytes. The live state is packed
-    # with XZ preset 9 + EXTREME before this guard is evaluated.
-    bounded_archive_bytes = 417_792
-    payload = (bytes(range(251)) * 1_665)[:bounded_archive_bytes]
-    encoded_b85 = base64.b85encode(payload)
+def test_two_job_base85_handoff_covers_demonstrated_growth_with_per_job_headroom() -> None:
+    # Run 36234310470 produced 424,596 compressed bytes, above the old
+    # single-job practical ceiling. The new transport is bounded at 800 KiB
+    # and splits Base85 evenly across two physical job-output surfaces.
+    demonstrated_archive_bytes = 424_596
+    payload = (bytes(range(251)) * 3_400)[:demonstrated_archive_bytes]
+    encoded = base64.b85encode(payload)
+    split = (len(encoded) + 1) // 2
+    part_a, part_b = encoded[:split], encoded[split:]
 
-    assert len(payload) == bounded_archive_bytes
-    assert len(encoded_b85) * 2 + 4_096 <= 1_048_576
-    assert base64.b85decode(encoded_b85) == payload
+    assert len(payload) == demonstrated_archive_bytes
+    assert len(part_a) * 2 + 16_384 <= 1_048_576
+    assert len(part_b) * 2 + 16_384 <= 1_048_576
+    assert base64.b85decode(part_a + part_b) == payload
 
-    overflow = payload + b"x"
-    assert len(base64.b85encode(overflow)) * 2 + 4_096 > 1_048_576
+    maximum_archive_bytes = 800_000
+    max_encoded_chars = (maximum_archive_bytes * 5 + 3) // 4
+    max_half_chars = (max_encoded_chars + 1) // 2
+    assert max_half_chars <= 500_000
+    assert max_half_chars * 2 + 16_384 <= 1_048_576
+    assert (max_half_chars + 49_999) // 50_000 <= 10
 
 
 def test_persistent_loop_permissions_are_read_only_and_authority_is_fail_closed() -> None:
