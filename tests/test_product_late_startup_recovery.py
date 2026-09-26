@@ -62,3 +62,33 @@ waitForProduct = async (origin,timeout) => {
 '''
     result = subprocess.run([node, '-e', harness, str(ROOT / 'desktop/nexus-product/main.js'), mode], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
+
+
+def test_waiting_window_closes_only_after_verified_product_document():
+    node = shutil.which('node')
+    if not node:
+        pytest.skip('Node required')
+    harness = r'''
+const vm=require('vm'), fs=require('fs'), assert=require('assert');
+const source=fs.readFileSync(process.argv[1],'utf8').split('const singleInstanceLock =')[0];
+let url='http://wrong/', waitingDestroyed=false, shown=false;
+const handlers={};
+class Window {
+ constructor(){this.webContents={setWindowOpenHandler(){},on(){},once(name,fn){handlers[name]=fn;},getURL(){return url;},session:{webRequest:{onBeforeRequest(){}}}};}
+ loadURL(){} once(){} isDestroyed(){return false;} isVisible(){return shown;} show(){shown=true;}
+}
+const context={require(name){
+ if(name==='electron')return {app:{getPath:()=>'/tmp'},BrowserWindow:Window,screen:{getPrimaryDisplay:()=>({workAreaSize:{width:1200,height:800}})}};
+ return require(name);
+},process,setTimeout,__dirname:"/tmp"};
+vm.createContext(context); vm.runInContext(source,context);
+context.waiting={isDestroyed:()=>false,destroy:()=>{waitingDestroyed=true}};
+vm.runInContext("loadUiPreferences=()=>({windowPreset:'auto'});startupFailureWindow=waiting;createWindow('http://127.0.0.1:23456')",context);
+handlers['did-finish-load']();
+assert(!waitingDestroyed && !shown);
+url='http://127.0.0.1:23456/';
+handlers['did-finish-load']();
+assert(waitingDestroyed && shown);
+'''
+    result = subprocess.run([node, '-e', harness, str(ROOT / 'desktop/nexus-product/main.js')], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
