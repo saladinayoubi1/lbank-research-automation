@@ -903,7 +903,7 @@ jobs:
           case "$handoff_root" in "$HOME"/.local/share/nexus/persistent-paper-handoff/*) rm -rf "$handoff_root" ;; *) exit 1;; esac
 
   persist-state:
-    if: ${{ always() && needs.paper-loop.result == 'success' && needs.paper-handoff-b.result == 'success' }}
+    if: ${{ always() && needs.paper-loop.result == 'success' && needs.paper-handoff-b.result == 'success' && needs.paper-loop.outputs.state_archive_part_a_chunk_count != '' && needs.paper-handoff-b.outputs.state_archive_part_b_chunk_count != '' }}
     needs: [paper-loop, paper-handoff-b]
     runs-on: ubuntu-latest
     timeout-minutes: 10
