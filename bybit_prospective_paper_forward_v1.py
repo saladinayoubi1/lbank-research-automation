@@ -436,9 +436,16 @@ def _profile_step(
     observation: Mapping[str, Any],
     profile: Mapping[str, Any],
     profile_name: str,
+    *, capture_execution: bool = False,
 ) -> dict[str, Any]:
     row = deepcopy(dict(current))
     positions = _objects(row)
+    def record(kind, asset, **details):
+        if capture_execution:
+            journal = row.setdefault("execution_journal", [])
+            journal.append({"sequence": len(journal)+1, "kind": kind,
+                "execution_utc": observation["execution_utc"], "symbol": SYMBOLS[asset],
+                "profile": profile_name, **details})
     specs = [InstrumentSpec(**item) for item in observation["instrument_specs"]]
     tiers = [[RiskTier(**tier) for tier in group] for group in observation["risk_tiers"]]
     fee_rate = float(profile["fee_bps"]) / 10000.0
@@ -451,6 +458,10 @@ def _profile_step(
             wallet += cashflow
             row["funding_cashflow"] += cashflow
             row["actual_funding_events"] += 1
+            if positions[asset].quantity:
+                record("funding", asset, amount=cashflow, rate=float(rate),
+                       quantity=positions[asset].quantity, price=float(marks_open[asset]),
+                       timestamp_precision="execution_bar")
     target = [float(x) for x in observation["target_weights"]]
     if observation["target_changed"]:
         equity_open = wallet + sum(unrealized(position, marks_open[i]) for i, position in enumerate(positions))
@@ -480,7 +491,8 @@ def _profile_step(
                 )
                 row["execution_hits"] += 1
             candidate = [Position(x.quantity, x.average_entry) for x in positions]
-            candidate_wallet = wallet + apply_trade(candidate[asset], delta, fill)
+            gross_realized = apply_trade(candidate[asset], delta, fill)
+            candidate_wallet = wallet + gross_realized
             fee = abs(delta * fill) * fee_rate
             candidate_wallet -= fee
             initial, _, details = margin_requirements(
@@ -496,7 +508,16 @@ def _profile_step(
             )
             if tier_exceeded or initial > candidate_equity + 1e-8:
                 row["margin_rejections"] += 1
+                record("rejected", asset, quantity=delta, price=fill,
+                       reason="risk_tier_or_margin", fee=0.0)
                 continue
+            record("fill", asset, quantity=delta, price=fill,
+                   reference_price=float(observation["trade"][asset]["open"]),
+                   slippage_cost=delta*(fill-float(observation["trade"][asset]["open"])),
+                   fee=fee, realized_gross=gross_realized,
+                   position_before=dataclasses.asdict(positions[asset]),
+                   position_after=dataclasses.asdict(candidate[asset]), reason="strategy_signal",
+                   execution_model="minute_vwap" if vwap is not None else "fallback_slippage")
             positions = candidate
             wallet = candidate_wallet
             row["fees"] += fee
@@ -541,9 +562,16 @@ def _profile_step(
                 continue
             delta = -position.quantity
             fill = adverse[asset] * (1.0 + math.copysign(liquidation_rate, delta))
-            wallet += apply_trade(position, delta, fill)
+            before = dataclasses.asdict(position)
+            gross_realized = apply_trade(position, delta, fill)
+            wallet += gross_realized
             charge = abs(delta * fill) * liquidation_rate
             wallet -= charge
+            record("fill", asset, quantity=delta, price=float(fill), reference_price=float(adverse[asset]),
+                   slippage_cost=delta*(fill-float(adverse[asset])), fee=charge,
+                   realized_gross=gross_realized, position_before=before,
+                   position_after=dataclasses.asdict(position), reason="liquidation",
+                   execution_model="adverse_bar")
             row["fees"] += charge
             row["fill_count"] += 1
             row["asset_fill_counts"][asset] += 1
@@ -556,6 +584,12 @@ def _profile_step(
     drawdown = 1.0 - float(close_equity) / max(float(row["equity_high"]), 1e-12)
     row["maximum_drawdown"] = max(float(row["maximum_drawdown"]), drawdown)
     row["positions"] = [dataclasses.asdict(position) for position in positions]
+    if capture_execution:
+        row["mark_prices"] = [float(x) for x in close_marks]
+        row["mark_time_utc"] = str(pd.Timestamp(observation["execution_utc"])+pd.Timedelta(hours=4))
+        final_initial, _, _ = margin_requirements(positions, close_marks, tiers, float(profile["account_leverage"]), fee_rate)
+        row["initial_margin"] = float(final_initial)
+        row["account_leverage"] = float(profile["account_leverage"])
     return row
 
 
@@ -616,7 +650,8 @@ def apply_observations(
             raise ProspectivePaperError("paper-forward observations are not strictly increasing")
         for name in ("conservative", "stress"):
             result["profiles"][name] = _profile_step(
-                result["profiles"][name], observation, config["execution_profiles"][name], name
+                result["profiles"][name], observation, config["execution_profiles"][name], name,
+                capture_execution=observation.get("capture_execution_details") is True
             )
         previous = result["events"][-1]["event_digest"] if result["events"] else "0" * 64
         event_core = {

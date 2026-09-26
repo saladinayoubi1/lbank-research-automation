@@ -12,6 +12,7 @@ from urllib.parse import parse_qs, urlsplit
 
 from phase5_strategy_factory import ALLOWED_FAMILIES
 from product_control_runtime import ProductControlError, ProductControlRuntime
+from product_shared_paper import load_snapshot as load_shared_snapshot, export_csv as shared_export_csv
 from product_prospective_paper import load_prospective_paper_snapshot
 from product_research_runtime import ProductResearchError, ProductResearchRuntime
 from product_runtime import ProductRuntime, ProductRuntimeError
@@ -31,6 +32,8 @@ PRODUCT_STATIC = {
     "/ui/product.css": "product.css",
     "/ui/product-extra.css": "product-extra.css",
     "/ui/product.js": "product.js",
+    "/ui/product-terminal.js": "product-terminal.js",
+    "/ui/product-terminal.css": "product-terminal.css",
 }
 
 
@@ -158,6 +161,7 @@ def _product_paper_snapshot(runtime: ProductRuntime, data_root: Path) -> dict[st
     return {
         **paper,
         "prospective_forward": load_prospective_paper_snapshot(data_root.parent),
+        "shared_portfolio": load_shared_snapshot(data_root.parent),
     }
 
 
@@ -325,6 +329,21 @@ def build_handler(
                 elif parsed.path == "/api/product/paper":
                     if parsed.query: raise ProductRuntimeError("paper snapshot does not accept query")
                     payload = _product_paper_snapshot(runtime, data_root)
+                elif parsed.path == "/api/product/paper/shared":
+                    if parsed.query: raise ProductRuntimeError("shared Paper snapshot does not accept query")
+                    payload = load_shared_snapshot(data_root.parent)
+                elif parsed.path == "/api/product/paper/shared/export.csv":
+                    query = parse_qs(parsed.query)
+                    if set(query)-{"table"} or len(query.get("table", ["history"])) != 1:
+                        raise ProductRuntimeError("invalid export query")
+                    table = query.get("table", ["history"])[0]
+                    if table not in ("history", "orders", "cashflows", "positions"):
+                        raise ProductRuntimeError("unknown export table")
+                    snapshot = load_shared_snapshot(data_root.parent)
+                    if not snapshot["available"]:
+                        raise ProductRuntimeError("shared Paper unavailable")
+                    self._send(ByteResponse(HTTPStatus.OK, shared_export_csv(snapshot, table),
+                        "text/csv; charset=utf-8"), head_only=head_only); return True
                 elif parsed.path == "/api/product/paper/matrix":
                     if parsed.query: raise ProductRuntimeError("Paper matrix does not accept query")
                     payload = _demo_matrix_snapshot(data_root)

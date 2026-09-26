@@ -225,6 +225,7 @@ def step(state, activation, observation, signals, client, signal_bindings=None):
     windows = deepcopy(observation["minute_windows"])
     for name in LANES:
         obs = deepcopy(observation)
+        obs["capture_execution_details"] = True
         lane = state["lanes"][name]
         obs["target_weights"] = weights[name]
         obs["target_changed"] = not np.allclose(weights[name],
@@ -286,6 +287,11 @@ def tick(root, activation, now):
         "live_trading_authority": False, "automatic_promotion": False,
         "mode": "internal_paper", "source_sha": activation["source_sha"], "state_digest": state["digest"]}
     forward.save_state(root/"status.json", summary)
+    from product_shared_paper import build_snapshot, with_public_marks
+    terminal = build_snapshot(state, activation, summary)
+    if terminal["positions"]:
+        terminal = with_public_marks(terminal, Client(cfg["api_base_urls"], 5, 2, 0), pd.Timestamp(now).to_pydatetime())
+    forward.save_state(root/"terminal.json", terminal)
     return summary
 
 
@@ -296,6 +302,7 @@ def main():
     parser.add_argument("--backtest-report", type=Path, required=True)
     parser.add_argument("--source-sha", required=True)
     parser.add_argument("--loop", action="store_true")
+    parser.add_argument("--snapshot-out", type=Path)
     args = parser.parse_args()
     root = args.root.resolve()
     root.mkdir(parents=True, exist_ok=True)
@@ -304,6 +311,10 @@ def main():
         while not (root/"STOP").exists():
             try:
                 tick(root, activation, pd.Timestamp.now(tz="UTC"))
+                if args.snapshot_out:
+                    if args.snapshot_out.name != "terminal.json" or args.snapshot_out.resolve() == (root/"state.json").resolve():
+                        raise ValueError("invalid terminal export path")
+                    forward.save_state(args.snapshot_out, json.loads((root/"terminal.json").read_text("utf-8")))
             except Exception as exc:
                 forward.save_state(root/"last-error.json", {"error_type": type(exc).__name__,
                     "message": str(exc)[:400], "at": str(pd.Timestamp.now(tz="UTC"))})

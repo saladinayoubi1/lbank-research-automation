@@ -2,7 +2,7 @@
 'use strict';
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const state={overview:null,paper:null,matrix:null,events:null,strategies:null,mission:null,risk:null,recovery:null,notifications:null,registry:null,research:null,integration:null,lastRisk:null,sessionId:'nexus-ui-'+crypto.randomUUID(),conversationId:'product-'+crypto.randomUUID(),turn:0};
-const PAPER_UI_REFRESH_INTERVAL_MS=60*1000;
+const PAPER_UI_REFRESH_INTERVAL_MS=15*1000;
 const PAPER_UI_STALE_FAILURE_LIMIT=2;
 let paperUiRefreshTimer=null;
 let paperUiRefreshFailures=0;
@@ -40,6 +40,7 @@ async function initializePersonalization(){ensureSettingsSurface();try{applyUIPr
 function renderOverview(){const x=state.overview;if(!x)return;$('#productState').textContent=x.delivery||'canonical-python-sidecar';$('#paperState').textContent=x.paper?.active?'ACTIVE':'UNAVAILABLE';$('#liveState').textContent=(x.live?.status||'LOCKED').toUpperCase();const m=x.mission_control||{};$('#missionBadge').className='badge '+statusClass(m.status);$('#missionBadge').textContent=String(m.status||'unavailable').toUpperCase();const mission=m.mission||{},queue=m.queue||{},counts=queue.counts||{};$('#missionSummary').innerHTML=[metric('MISSION',mission.status||m.status||'unavailable',mission.mission_id||''),metric('READY',counts.ready??counts.READY??'—','queue'),metric('RUNNING',counts.running??counts.RUNNING??'—','queue'),metric('AGENTS',Array.isArray(m.agents)?m.agents.length:'—','registered')].join('');$('#capabilityMap').innerHTML=Object.entries(x.capabilities||{}).map(([k,v])=>`<div class="capability"><span>${esc(k.replaceAll('_',' ').toUpperCase())}</span><b class="${statusClass(v)}">${esc(v)}</b></div>`).join('')}
 function renderPaper(){
   const p=state.paper;if(!p)return;
+  window.NexusPaperTerminal?.render(p.shared_portfolio);
   const a=p.account||{},forward=p.prospective_forward||{},manual=a.positions||[],prospective=forward.available===true?(forward.positions||[]):[],allCount=manual.length+prospective.length;
   const active=forward.profiles?.[forward.active_profile||'conservative']||{};
   $('#paperMetrics').innerHTML=[

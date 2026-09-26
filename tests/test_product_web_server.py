@@ -252,3 +252,17 @@ def test_product_static_script_is_same_origin_only_and_has_real_product_routes(p
         assert route in script
     for forbidden in ("/api/product/live/order", "/withdraw", "/v5/order", "apisecret", "secretkey", "private_key"):
         assert forbidden not in lowered
+
+
+def test_shared_terminal_missing_snapshot_is_not_zero_balance(product_server):
+    port,_=product_server
+    status,_,raw=_request(port,'GET','/api/product/paper/shared')
+    assert status==200
+    payload=json.loads(raw)
+    assert payload['available'] is False
+    assert 'account' not in payload
+    assert payload['live_trading_authority'] is False
+    for path in ('/ui/product-terminal.js','/ui/product-terminal.css'):
+        assert _request(port,'GET',path)[0]==200
+    assert _request(port,'GET','/api/product/paper/shared/export.csv?table=../../state')[0]==400
+    assert _request(port,'POST','/api/product/paper/shared',{})[0] in (400,403,404,405)
