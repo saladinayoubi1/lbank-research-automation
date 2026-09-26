@@ -109,15 +109,21 @@ class MemoryOnlyPort:
             file_names += ("network/cookies",)
         if self.fault == "windows_separator_alias":
             file_names += ("Network\\\\Cookies",)
+        def source_digest(name):
+            if name.endswith("paper-events.jsonl"):
+                # Deliberately wrong, but source and destination agree:
+                # the declared receipt journal is still the original one.
+                return "f" * 64 if self.fault == "self_consistent_wrong_journal" else JOURNAL
+            return "a" * 64
+
         rows = tuple(
             model.ProfileEntry(
                 relative_path=n,
                 bytes=200,
-                source_sha256=("f" * 64 if n.endswith("paper-events.jsonl") else "a" * 64),
+                source_sha256=source_digest(n),
                 copied_sha256=(
                     "b" * 64 if self.fault == "copied_file_tampered" and
-                    n == "Network/Cookies" else
-                    "f" * 64 if n.endswith("paper-events.jsonl") else "a" * 64
+                    n == "Network/Cookies" else source_digest(n)
                 ),
             ) for n in file_names
         )
@@ -299,7 +305,7 @@ def test_unverified_rollback_fails_closed_and_attempts_other_restorations(fault,
     "unsafe_profile_path", "broad_acl", "coverage_failed",
     "reparse_point", "windows_separator_alias", "case_insensitive_collision",
     "nested_persistent_omitted", "owner_active_midcopy", "wrong_profile_owner",
-    "respawn_during_profile",
+    "self_consistent_wrong_journal", "respawn_during_profile",
 ])
 def test_full_profile_gate_failure_rolls_back_without_any_global_commit(fault):
     port = MemoryOnlyPort(fault)
@@ -323,6 +329,8 @@ def test_full_profile_reference_requires_persisted_file_coverage():
     assert receipt.valid_for(gate(), snap)
     assert "Network/Cookies" in {row.relative_path for row in receipt.files}
     assert "Shared Dictionary/cache/index" in {row.relative_path for row in receipt.files}
+    assert next(e.source_sha256 for e in receipt.files
+                if e.relative_path == "product-data/product_runtime/paper-events.jsonl") == JOURNAL
     assert receipt.private_acl_verified is True
 
 def test_reference_model_is_not_wired_to_actual_installer():
