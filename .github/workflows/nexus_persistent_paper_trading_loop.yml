@@ -38,6 +38,7 @@ on:
       - "tests/test_nexus_bybit_same_interval_chunk_fallback.py"
       - "tests/test_nexus_persistent_paper_trading_loop.py"
       - "tests/test_nexus_persistent_paper_trading_workflow.py"
+      - "tests/test_nexus_paper_compact_handoff_execution.py"
       - "tests/test_nexus_multipair_persistent_paper_trading_loop.py"
       - "tests/test_nexus_multipair_persistent_paper_workflow.py"
       - "tests/test_nexus_multipair_regime_lifecycle.py"
@@ -82,6 +83,7 @@ on:
       - "tests/test_nexus_bybit_same_interval_chunk_fallback.py"
       - "tests/test_nexus_persistent_paper_trading_loop.py"
       - "tests/test_nexus_persistent_paper_trading_workflow.py"
+      - "tests/test_nexus_paper_compact_handoff_execution.py"
       - "tests/test_nexus_multipair_persistent_paper_trading_loop.py"
       - "tests/test_nexus_multipair_persistent_paper_workflow.py"
       - "tests/test_nexus_multipair_regime_lifecycle.py"
@@ -123,6 +125,7 @@ jobs:
           tests/test_nexus_bybit_same_interval_chunk_fallback.py
           tests/test_nexus_persistent_paper_trading_loop.py
           tests/test_nexus_persistent_paper_trading_workflow.py
+          tests/test_nexus_paper_compact_handoff_execution.py
           tests/test_nexus_multipair_persistent_paper_trading_loop.py
           tests/test_nexus_multipair_persistent_paper_workflow.py
           tests/test_nexus_multipair_regime_lifecycle.py
