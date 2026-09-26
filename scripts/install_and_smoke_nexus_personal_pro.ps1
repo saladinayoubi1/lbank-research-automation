@@ -597,7 +597,7 @@ try {
     $diag = [ordered]@{
         isolated_state_seen = $false
         supervisor_status = 'unavailable'
-        source_matches = $false
+        source_matches = $null
         failure_class = 'unknown'
     }
     try {
