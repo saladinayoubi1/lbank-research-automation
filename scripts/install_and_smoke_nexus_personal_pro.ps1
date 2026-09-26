@@ -591,6 +591,87 @@ try {
     Write-Evidence
     Write-Host "NEXUS_WINDOWS_APP_INSTALL=PASS source=$ExpectedSourceSha artifact=$ArtifactId"
 } catch {
+    # Before normal fail-closed removal, record ONLY a categorical receipt
+    # from THIS RUN's isolated smoke profile. Never publish the raw state,
+    # startup log, exception reason or original owner profile.
+    $diag = [ordered]@{
+        isolated_state_seen = $false
+        supervisor_status = 'unavailable'
+        source_matches = $false
+        failure_class = 'unknown'
+    }
+    try {
+        if ($script:SmokeRoot -and $env:RUNNER_TEMP -and
+            (Test-PathWithin $script:SmokeRoot $env:RUNNER_TEMP) -and
+            (Split-Path -Leaf $script:SmokeRoot) -match '^nexus-app-smoke-[0-9]+
+    try {
+        if ($script:InstallStagingRoot -and $script:ProgramRoot -and
+            (Test-Path -LiteralPath $script:InstallStagingRoot) -and
+            (Test-PathWithin $script:InstallStagingRoot $script:ProgramRoot)) {
+            Remove-Item -LiteralPath $script:InstallStagingRoot -Recurse -Force
+        }
+    } catch { }
+    try {
+        if ($script:InstallCreatedThisRun -and -not $script:InstallSmokeVerified -and
+            $script:InstallRoot -and $script:ProgramRoot -and
+            (Test-Path -LiteralPath $script:InstallRoot) -and
+            (Test-PathWithin $script:InstallRoot $script:ProgramRoot)) {
+            Remove-Item -LiteralPath $script:InstallRoot -Recurse -Force
+        }
+    } catch { }
+    $script:Evidence.decision = 'FAIL_CLOSED'
+    $script:Evidence.error = ConvertTo-SafeError $_.Exception.Message
+    try { Write-Evidence } catch { }
+    Write-Error ("NEXUS Windows app installation failed closed: " + (ConvertTo-SafeError $_.Exception.Message))
+    exit 1
+} finally {
+    try { Remove-PackageTransport } catch { Write-Warning (ConvertTo-SafeError $_.Exception.Message) }
+}
+) {
+            $dataDir = Join-Path $script:SmokeRoot 'product-data'
+            $stateFile = Join-Path $dataDir 'supervisor-state.json'
+            if ((Test-Path -LiteralPath $dataDir -PathType Container) -and
+                (Test-Path -LiteralPath $stateFile -PathType Leaf)) {
+                $rootInfo = Get-Item -LiteralPath $script:SmokeRoot -Force
+                $dirInfo = Get-Item -LiteralPath $dataDir -Force
+                $stateInfo = Get-Item -LiteralPath $stateFile -Force
+                if ((-not ($rootInfo.Attributes -band [IO.FileAttributes]::ReparsePoint)) -and
+                    (-not ($dirInfo.Attributes -band [IO.FileAttributes]::ReparsePoint)) -and
+                    (-not ($stateInfo.Attributes -band [IO.FileAttributes]::ReparsePoint)) -and
+                    $stateInfo.Length -le 65536) {
+                    $state = Get-Content -LiteralPath $stateFile -Raw | ConvertFrom-Json
+                    $diag.isolated_state_seen = $true
+                    if ($null -ne $state.PSObject.Properties['status'] -and
+                        [string]$state.status -in @('starting', 'healthy', 'blocked', 'restarting',
+                            'restart_failed', 'startup_failed', 'stopping')) {
+                        $diag.supervisor_status = [string]$state.status
+                    }
+                    if ($null -ne $state.PSObject.Properties['source_sha']) {
+                        $diag.source_matches = ([string]$state.source_sha).ToLowerInvariant() -eq $ExpectedSourceSha
+                    }
+                    $reason = ''
+                    if ($null -ne $state.PSObject.Properties['reason']) { $reason = [string]$state.reason }
+                    if ($reason.Length -gt 4096) { $reason = $reason.Substring(0, 4096) }
+                    if ($reason -match 'ModuleNotFoundError|No module named|ImportError') {
+                        $diag.failure_class = 'module_import'
+                    } elseif ($reason -match 'FileNotFoundError|file not found|system cannot find') {
+                        $diag.failure_class = 'missing_file'
+                    } elseif ($reason -match 'permission denied|access is denied') {
+                        $diag.failure_class = 'permission'
+                    } elseif ($reason -match 'address already in use|EADDRINUSE') {
+                        $diag.failure_class = 'port_collision'
+                    } elseif ($reason -match 'timeout|did not become ready') {
+                        $diag.failure_class = 'gateway_timeout'
+                    } elseif ($reason -match 'bounded_restart_limit') {
+                        $diag.failure_class = 'restart_limit'
+                    } elseif ($reason -match 'unexpected_sidecar_exit') {
+                        $diag.failure_class = 'sidecar_exit'
+                    }
+                } else { $diag.failure_class = 'untrusted_state_file' }
+            }
+        }
+    } catch { $diag.failure_class = 'diagnostic_unavailable' }
+    $script:Evidence.smoke_failure_diagnostic = $diag
     try { Stop-SmokeProcesses } catch { }
     try { Remove-SmokeRoot } catch { }
     try {
