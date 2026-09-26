@@ -2,7 +2,7 @@
 'use strict';
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const state={overview:null,paper:null,matrix:null,events:null,strategies:null,mission:null,risk:null,recovery:null,notifications:null,registry:null,research:null,integration:null,lastRisk:null,sessionId:'nexus-ui-'+crypto.randomUUID(),conversationId:'product-'+crypto.randomUUID(),turn:0};
-const PAPER_UI_REFRESH_INTERVAL_MS=15*1000;
+const PAPER_UI_REFRESH_INTERVAL_MS=60*1000;
 const PAPER_UI_STALE_FAILURE_LIMIT=2;
 let paperUiRefreshTimer=null;
 let paperUiRefreshFailures=0;
