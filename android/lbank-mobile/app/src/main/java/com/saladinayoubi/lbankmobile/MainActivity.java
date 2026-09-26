@@ -34,6 +34,10 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.RejectedExecutionException;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -71,6 +75,9 @@ public final class MainActivity extends Activity {
     private WebView webView;
     private final Object gatewayLock = new Object();
     private final ExecutorService executor = Executors.newFixedThreadPool(4);
+    // Shared observation must not queue behind unavailable mission/research routes.
+    private final ExecutorService paperReader = new ThreadPoolExecutor(1, 1, 0L,
+            TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(1));
 
     @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
     @Override protected void onCreate(Bundle savedInstanceState) {
@@ -231,6 +238,7 @@ public final class MainActivity extends Activity {
     }
 
     private String checkedJson(HttpsURLConnection connection, boolean requireDashboardContract) throws Exception {
+        try {
         int contentLength = connection.getContentLength();
         if (contentLength > MAX_RESPONSE_BYTES) throw new SecurityException("Gateway response exceeds bounded size");
         int code = connection.getResponseCode();
@@ -242,6 +250,7 @@ public final class MainActivity extends Activity {
         if (!requireDashboardContract && !contract.startsWith("nexus.")) throw new SecurityException("Incompatible NEXUS product response");
         if (payload.optBoolean("live_trading_authority", false)) throw new SecurityException("Remote product attempted to widen Live authority");
         return payload.toString();
+        } finally { connection.disconnect(); }
     }
 
     private String validateDashboardPath(String requestJson) throws Exception {
@@ -348,6 +357,10 @@ public final class MainActivity extends Activity {
     private String callProduct(String method, String rawPath, String bodyJson) throws Exception {
         String safePath = validateProductPath(method, rawPath);
         HttpsURLConnection connection = connection(gatewayTarget(safePath), method);
+        if ("GET".equals(method) && "/api/product/paper".equals(safePath)) {
+            connection.setConnectTimeout(5000);
+            connection.setReadTimeout(10000);
+        }
         if ("POST".equals(method)) {
             JSONObject payload = validateProductBody(new URI(safePath).getPath(), bodyJson);
             connection.setDoOutput(true);
@@ -383,7 +396,7 @@ public final class MainActivity extends Activity {
 
     private void deliver(String callback, String id, boolean ok, String payload) {
         final String script = "window." + callback + "(" + JSONObject.quote(id) + "," + ok + "," + JSONObject.quote(payload) + ")";
-        runOnUiThread(() -> webView.evaluateJavascript(script, null));
+        runOnUiThread(() -> { if (webView != null) webView.evaluateJavascript(script, null); });
     }
 
     public final class NativeGateway {
@@ -411,10 +424,19 @@ public final class MainActivity extends Activity {
         @JavascriptInterface public void deleteKey(String id) { assertGatewaySecretId(id); getPreferences(MODE_PRIVATE).edit().remove("gateway_token").apply(); }
         @JavascriptInterface public void request(String id, String json) { executor.execute(() -> { try { deliver("NexusNativeResult", id, true, callDashboard(json)); } catch (Exception e) { deliver("NexusNativeResult", id, false, e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage()); } }); }
         @JavascriptInterface public void requestAiRoom(String id, String json) { executor.execute(() -> { try { deliver("NexusAiRoomResult", id, true, callAiRoom(json)); } catch (Exception e) { deliver("NexusAiRoomResult", id, false, e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage()); } }); }
-        @JavascriptInterface public void requestProduct(String id, String method, String path, String bodyJson) { executor.execute(() -> { try { deliver("NexusProductResult", id, true, callProduct(method == null ? "" : method.trim().toUpperCase(), path, bodyJson == null ? "{}" : bodyJson)); } catch (Exception e) { deliver("NexusProductResult", id, false, e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage()); } }); }
+        @JavascriptInterface public void requestProduct(String id, String method, String path, String bodyJson) {
+            String verb = method == null ? "" : method.trim().toUpperCase();
+            ExecutorService target = "GET".equals(verb) && "/api/product/paper".equals(path) ? paperReader : executor;
+            try {
+                target.execute(() -> {
+                    try { deliver("NexusProductResult", id, true, callProduct(verb, path, bodyJson == null ? "{}" : bodyJson)); }
+                    catch (Exception e) { deliver("NexusProductResult", id, false, e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage()); }
+                });
+            } catch (RejectedExecutionException e) { deliver("NexusProductResult", id, false, "Paper reader busy; retry later"); }
+        }
         @JavascriptInterface public void requestPublicMarket(String id, String symbol, String interval) { executor.execute(() -> { try { deliver("NexusPublicMarketResult", id, true, callPublicMarket(symbol, interval)); } catch (Exception e) { deliver("NexusPublicMarketResult", id, false, e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage()); } }); }
     }
 
     @Override public void onBackPressed() { if (webView != null && webView.canGoBack()) webView.goBack(); else super.onBackPressed(); }
-    @Override protected void onDestroy() { executor.shutdownNow(); if (webView != null) { webView.removeJavascriptInterface("NexusNative"); webView.destroy(); webView = null; } super.onDestroy(); }
+    @Override protected void onDestroy() { paperReader.shutdownNow(); executor.shutdownNow(); if (webView != null) { webView.removeJavascriptInterface("NexusNative"); webView.destroy(); webView = null; } super.onDestroy(); }
 }
