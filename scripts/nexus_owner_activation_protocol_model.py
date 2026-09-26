@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from decimal import Decimal
+import re
 from typing import Protocol
 
 
@@ -26,15 +27,15 @@ class Gate:
     def trusted(self) -> bool:
         return (
             self.main_sha == self.stage_sha
-            and len(self.main_sha) == 40
+            and re.fullmatch(r"[0-9a-fA-F]{40}", self.main_sha) is not None
             and self.owner_sha != self.stage_sha
-            and len(self.owner_sha) == 40
-            and len(self.journal_sha256) == 64
+            and re.fullmatch(r"[0-9a-fA-F]{40}", self.owner_sha) is not None
+            and re.fullmatch(r"[0-9a-fA-F]{64}", self.journal_sha256) is not None
             and self.artifact_id > 0
-            and self.main_current_verified
-            and self.official_stage_proof_verified
-            and self.independent_backup_manifest_pins_verified
-            and self.owner_authorization_verified
+            and self.main_current_verified is True
+            and self.official_stage_proof_verified is True
+            and self.independent_backup_manifest_pins_verified is True
+            and self.owner_authorization_verified is True
         )
 
 
@@ -44,7 +45,7 @@ class Snapshot:
     journal_sha256: str
     exact_owner_pids: tuple[int, ...]
     owner_session_id: int
-    shortcut_targets: tuple[str, ...]
+    shortcut_targets: tuple[str, ...]  # resolved source SHA of each .lnk executable
     global_sync_sha256: tuple[str, ...]
 
 
@@ -119,10 +120,13 @@ def simulate_activation(port: Port, gate: Gate) -> SimulationReceipt:
         or snapshot.journal_sha256 != gate.journal_sha256
         or len(snapshot.exact_owner_pids) < 1
         or any(pid <= 0 for pid in snapshot.exact_owner_pids)
-        or snapshot.owner_session_id < 0
+        or len(set(snapshot.exact_owner_pids)) != len(snapshot.exact_owner_pids)
+        or snapshot.owner_session_id <= 0
         or len(snapshot.shortcut_targets) != 4
         or len(snapshot.global_sync_sha256) != 2
         or any(target != gate.owner_sha for target in snapshot.shortcut_targets)
+        or any(re.fullmatch(r"[0-9a-fA-F]{64}", h) is None
+               for h in snapshot.global_sync_sha256)
     ):
         return SimulationReceipt("REFUSED_OWNER_STATE_MISMATCH", step, tuple(events))
 
@@ -136,6 +140,7 @@ def simulate_activation(port: Port, gate: Gate) -> SimulationReceipt:
 
     quiesce_attempted = False
     candidate_attempted = False
+    file_commit_attempted = False
     try:
         step = "quiesce_exact_owner"
         quiesce_attempted = True  # Even a throwing stop may have partially stopped the GUI.
@@ -158,6 +163,7 @@ def simulate_activation(port: Port, gate: Gate) -> SimulationReceipt:
         events.append(step)
 
         step = "commit_shortcuts_and_sync"
+        file_commit_attempted = True  # Partial writes still require full rollback.
         port.commit_shortcuts_and_sync()
         events.append(step)
 
@@ -182,11 +188,15 @@ def simulate_activation(port: Port, gate: Gate) -> SimulationReceipt:
             events.append("stop_exact_candidate_only")
         except Exception:
             errors.append("CANDIDATE_CLEANUP_FAILED")
-    try:
-        port.restore_original_shortcuts_and_sync(snapshot)
-        events.append("restore_original_shortcuts_and_sync")
-    except Exception:
-        errors.append("ORIGINAL_FILE_RESTORATION_FAILED")
+    if file_commit_attempted:
+        try:
+            port.restore_original_shortcuts_and_sync(snapshot)
+            events.append("restore_original_shortcuts_and_sync")
+        except Exception:
+            errors.append("ORIGINAL_FILE_RESTORATION_FAILED")
+    else:
+        # No shortcut/sync rewrite is permitted before verified quiescence and stage health.
+        events.append("owner_files_untouched_before_commit")
     if quiesce_attempted:
         try:
             port.restore_exact_owner_only(snapshot)
