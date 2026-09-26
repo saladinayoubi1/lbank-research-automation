@@ -60,13 +60,14 @@ def test_manifest_pins_parse_and_reject_sandbox_tampering(tmp_path: Path) -> Non
         path.write_text(content, encoding="utf-8")
         hashes.append(hashlib.sha256(path.read_bytes()).hexdigest())
     args = [
-        ps, "-NoProfile", "-NonInteractive", "-File", str(PIN),
+        ps, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", str(PIN),
         "-BackupRoot", str(tmp_path),
         "-ExpectedDataManifestSha256", hashes[0],
         "-ExpectedShortcutManifestSha256", hashes[1],
         "-ExpectedSyncManifestSha256", hashes[2],
     ]
-    good = subprocess.run(args, text=True, capture_output=True, check=True)
+    good = subprocess.run(args, text=True, capture_output=True)
+    assert good.returncode == 0, good.stdout + "\n" + good.stderr
     result = json.loads(good.stdout)
     assert result["decision"] == "MANIFEST_PIN_PASS_NOT_ACTIVATION"
     assert result["activation_authorized"] is False
