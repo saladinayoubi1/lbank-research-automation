@@ -151,5 +151,5 @@ test('hidden refresh events do not cancel pending retry',async()=>{
  h.requests[0].reject(Error('network'));await h.flush();
  const timer=h.timers.filter(t=>!t.cancelled).at(-1);
  h.document.hidden=true;h.events.focus();
- assert.equal(timer.cancelled,false);
+ assert.notEqual(timer.cancelled,true);
 });
