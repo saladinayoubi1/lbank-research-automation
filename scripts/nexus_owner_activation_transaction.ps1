@@ -72,7 +72,7 @@ function CheckStage {
   $a=JsonFile $StageProof;$b=JsonFile $CloneProof
   Assert ($a.decision -eq 'PASS' -and $a.source_sha -eq $ExpectedSourceSha -and $a.final_launch.status -eq 'STAGED_ONLY_OWNER_PRESERVED') 'Official stage proof not exact'
   Assert ($a.smoke.visible_window_observed -eq $true -and $a.smoke.supervisor_healthy -eq $true -and $a.smoke.live_orders_allowed -eq $false) 'Official stage smoke incomplete'
-  Assert ($b.decision -eq 'PASS_NO_OWNER_ACTIVATION' -and $b.source_sha -eq $ExpectedSourceSha -and $b.clone_visible -eq $true -and $b.old_visible -eq $true) 'Real-profile clone proof not exact'
+  Assert ($b.decision -eq 'PASS_NO_OWNER_ACTIVATION' -and $b.source_sha -eq $ExpectedSourceSha -and $b.clone_visible_gui -eq $true -and $b.old_visible_gui_preserved -eq $true) 'Real-profile clone proof not exact'
   $m=JsonFile (Join-Path $candidate 'install-manifest.json')
   Assert ($m.source_sha -eq $ExpectedSourceSha -and $m.paper_only -eq $true -and $m.live_trading_authority -eq $false) 'Candidate manifest untrusted'
   Assert ((Test-Path (Join-Path $prior 'NEXUS Personal Pro.exe') -PathType Leaf) -and (Test-Path (Join-Path $candidate 'NEXUS Personal Pro.exe') -PathType Leaf)) 'Old or candidate executable missing'
