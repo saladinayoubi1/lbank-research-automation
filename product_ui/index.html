@@ -55,6 +55,15 @@
       <section id="view-data" class="view">
         <div class="section-head"><div><span>DATA CONTROL CENTER</span><h2>رجیستری و کیفیت منابع بازار</h2></div><strong class="badge good">PUBLIC / READ-ONLY</strong></div>
         <article class="panel"><header><div><span>CANONICAL REGISTRY</span><h2>Bybit → Binance → LBank</h2></div><button id="registryRefresh" class="small-btn">بروزرسانی</button></header><div id="registrySummary" class="metric-grid"></div><div id="registryTable" class="table-wrap"></div></article>
+        <article class="panel market-probe-panel" aria-label="آزمایش منبع واقعی بازار"><header><div><span>REAL PUBLIC FEED · EXPLICIT CHECK</span><h2>اتصال واقعی و آخرین کندل تأییدشده Bybit</h2></div><strong class="badge warn">NO AUTOMATIC FALLBACK</strong></header>
+          <p class="market-probe-disclosure">رجیستری فقط سازگاری قرارداد داده را نشان می‌دهد، نه اتصال فعلی بازار. این آزمایش فقط با دکمه شما و بدون API Key انجام می‌شود؛ نتیجه آن قیمت مجاز برای معامله یا بک‌تست محسوب نمی‌شود.</p>
+          <form id="marketProbeForm" class="market-probe-form" aria-label="آزمایش محدود داده عمومی">
+            <label>جفت‌ارز<select name="symbol" id="marketProbeSymbol"><option value="BTCUSDT">BTC/USDT</option><option value="ETHUSDT">ETH/USDT</option><option value="SOLUSDT">SOL/USDT</option><option value="XRPUSDT">XRP/USDT</option></select></label>
+            <label>تایم‌فریم<select name="timeframe" id="marketProbeTimeframe"><option value="15m">15 دقیقه</option><option value="1h">1 ساعت</option><option value="4h" selected>4 ساعت</option></select></label>
+            <button id="marketProbeSubmit" type="submit" class="small-btn">آزمایش Bybit</button>
+          </form>
+          <div id="marketProbeStatus" class="result-box muted" role="status" aria-live="polite">وضعیت منبع هنوز آزمایش نشده است. «Compatible» در جدول بالا به معنی آنلاین بودن نیست.</div>
+        </article>
         <article class="panel"><header><div><span>DATA BOUNDARY</span><h2>قواعد داده</h2></div></header><div class="check-list"><div>✓ فقط کندل بسته و نهایی</div><div>✓ Provenance و SHA-256 binding</div><div>✓ primary source حق جایگزینی مخفی ندارد</div><div>✓ stale/gap/semantic mismatch = fail closed</div><div>✓ بدون API Key خصوصی</div><div>✓ مسیر پژوهش فقط Paper</div></div></article>
       </section>
 
