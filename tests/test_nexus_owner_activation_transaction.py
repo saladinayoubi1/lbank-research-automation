@@ -33,7 +33,9 @@ def test_backup_health_atomic_switch_and_rollback_order():
     assert script.index("foreach($x in $files){")<script.index("$record.status='BACKED_UP'")
     assert script.index("Write-Json (Join-Path $transaction 'transaction.json') $record")<script.index("$null=Start-Process -FilePath (Join-Path $candidate")
     assert script.index("$null=Health $ExpectedSourceSha 425")<script.index("$shortcut=$shell.CreateShortcut")
-    assert "[IO.File]::Replace($tmp,$l.path,$null)" in script
+    assert "[IO.File]::Replace($tmp,$l.path,$priorSibling)" in script
+    assert "[IO.File]::Replace($tmp,$l.path,$null)" not in script
+    assert '.nexus-rollback-prior.lnk' in script
     assert "$record.status='COMMITTED'" in script
     assert "Rollback $TransactionDir" in script
     assert "RestoreProfile $Dir" in script
@@ -55,8 +57,11 @@ def test_rehearsal_operates_only_on_disposable_synthetic_state():
 
 def test_early_failure_keeps_the_healthy_previous_gui():
     script=SOURCE.read_text(encoding="utf-8")
-    assert "$oldAlreadyHealthy=$t.status -eq 'STARTED'" in script
-    assert "if(-not $oldAlreadyHealthy){" in script
+    assert "if($t.status -eq 'ACTIVATING' -and !$existingNew.Count -and $oldWindow.Count -eq 1)" in script
+    assert "if($state.status -eq 'healthy' -and $state.source_sha -eq $oldSource" in script
+    assert "Finish-Rollback $t $Dir" in script
+    assert "newer-paper-post-recovery.json" in script
+    assert "RECOVERY_NEEDS_REVIEW" in script
     assert "if($t.status -in @('BACKED_UP','ACTIVATING')" in script
     assert "Assert ($null -eq $existing) 'A previous owner rollback watchdog still exists" in script
 
@@ -75,3 +80,21 @@ def test_only_one_entrypoint_and_rollback_verifies_old_health():
     assert script.count("Assert ($Mode -eq 'Activate')")==1
     assert "$null=Health $oldSource 425 $prior" in script
     assert "if($t.status -in @('COMMITTED','ROLLED_BACK')){return}" in script
+
+
+def test_physical_shortcut_failure_is_rehearsed_with_legal_backup():
+    script=SOURCE.read_text(encoding="utf-8")
+    assert "[IO.File]::Replace($linkTemp,$link,$linkPrior)" in script
+    assert "Assert ((Hash $linkPrior) -eq $linkMeta.sha)" in script
+    assert "RestoreLinks @($linkMeta)" in script
+    assert "!(Test-Path $linkPrior)" in script
+    assert ".nexus-rollback-prior.lnk" in script
+
+
+def test_no_repeat_destructive_recovery_for_advanced_owner_paper():
+    script=SOURCE.read_text(encoding="utf-8")
+    assert "if($t.status -eq 'RECOVERY_NEEDS_REVIEW'){throw" in script
+    assert "$t.status='RECOVERY_NEEDS_REVIEW'" in script
+    assert "if($t.status -eq 'ACTIVATING' -and !$existingNew.Count -and $existingOld.Count -gt 0)" in script
+    assert "newer-paper-post-recovery.json" in script
+    assert "if((Hash $currentJournal) -eq $first and" not in script
