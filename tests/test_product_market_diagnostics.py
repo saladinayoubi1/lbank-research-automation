@@ -126,7 +126,7 @@ def test_rejects_malformed_price_and_timestamp_semantics(mutation) -> None:
     b"not-json",
     b"x" * 96001,
     _response(rows=_rows(count=2)),
-])
+], ids=["wrong_symbol", "wrong_category", "source_rejected", "invalid_json", "oversized", "too_few_rows"])
 def test_no_fabricated_feed_on_malformed_or_wrong_source(bad: bytes) -> None:
     result = _probe(lambda *_: bad)
     assert result["status"] != "verified_closed_candles"
