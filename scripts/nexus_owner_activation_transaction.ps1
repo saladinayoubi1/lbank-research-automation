@@ -162,7 +162,6 @@ function Rollback([string]$Dir){
   # newer Paper events. The timed watchdog must NEVER overwrite those events.
   $existingOld=@(ExactProcs $prior)
   $existingNew=@(ExactProcs $candidate)
-  $oldWindow=@($existingOld|Where-Object {$_.ProcessName -eq 'NEXUS Personal Pro' -and $_.MainWindowHandle -ne 0})
   # Stop only the exact candidate before assessing an unexpectedly revived old owner.
   # A healthy old GUI may already have added newer Paper events: never stop it
   # or replay an older snapshot merely because a candidate also lingered.
