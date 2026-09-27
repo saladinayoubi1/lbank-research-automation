@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-let snapshot=null,received=0,inflight=false,epoch=0,connection='offline',failures=0,retryTimer=null,lastFailure='';
+let snapshot=null,received=0,inflight=false,epoch=0,connection='offline',failures=0,retryTimer=null,lastFailure='',manualPending=false;
 function schedule(delay){clearTimeout(retryTimer);retryTimer=setTimeout(refresh,delay);}
 const $=id=>document.getElementById(id);
 function failureMessage(error){
@@ -29,15 +29,17 @@ function paint(redraw=true){
   const state=connection==='connected'&&stale?'stale':connection;
   $('sharedConnection').dataset.state=state;
   $('sharedConnectionTitle').textContent=({connected:'حساب مشترک لپ‌تاپ · متصل',stale:'حساب مشترک لپ‌تاپ · داده قدیمی',offline:'حساب مشترک لپ‌تاپ · ارتباط قطع است',loading:'حساب مشترک لپ‌تاپ · در حال دریافت'})[state];
-  $('sharedConnectionDetail').textContent=!snapshot&&lastFailure?lastFailure:snapshot?
+  $('sharedConnectionDetail').textContent=manualPending&&inflight?
+    'درخواست تازه‌سازی ثبت شد و پس از پاسخ جاری خودکار اجرا می‌شود.':!snapshot&&lastFailure?lastFailure:snapshot?
     `آخرین دریافت ${Math.floor(elapsed)} ثانیه پیش · ${state==='connected'?'دموی داخلی، فقط مشاهده':'اطلاعات ذخیره‌شده است؛ قیمت و سود فعلی تأیید نشده'}`:
     'اتصال HTTPS و توکن لپ‌تاپ لازم است. حساب تمرینی گوشی جایگزین این سبد نیست.';
   $('sharedHomeSummary').textContent=snapshot?`${snapshot.account.equity.toFixed(2)} USDT · ${snapshot.positions.length} پوزیشن · ${state==='connected'?'متصل':'داده زنده تأیید نشده'}`:'اتصال به لپ‌تاپ تنظیم نشده یا در دسترس نیست.';
+  $('refreshSharedPaper').textContent=manualPending?'تازه‌سازی در صف':inflight?'در حال دریافت…':'تازه‌سازی';
   if(redraw)window.NexusPaperTerminal?.render(snapshot?{...snapshot,stale:stale||state!=='connected'}:null);
 }
 async function refresh(){
-  clearTimeout(retryTimer);
   if(inflight||document.hidden)return;
+  clearTimeout(retryTimer);
   if(!window.NexusProductClient){connection='offline';lastFailure='اتصال داخلی اپ آماده نیست؛ نسخه جدید اپ را بررسی کنید.';paint(false);schedule(5000);return;}
   // navigator.onLine is unreliable on Android VPNs; the HTTPS request is authoritative.
   inflight=true;const requestEpoch=epoch;if(!snapshot)connection='loading';paint(false);
@@ -47,14 +49,26 @@ async function refresh(){
     if(payload.live_trading_authority!==false||payload.paper_only!==true||!valid(payload.shared_portfolio))throw Error('invalid shared paper snapshot');
     snapshot=payload.shared_portfolio;received=Date.now();connection='connected';failures=0;lastFailure='';
   }catch(e){if(requestEpoch===epoch){connection='offline';lastFailure=failureMessage(e);failures++;}}
-  finally{inflight=false;paint();if(requestEpoch!==epoch)refresh();else schedule(failures?Math.min(60000,5000*2**Math.min(failures-1,4)):30000);}
+  finally{
+    inflight=false;
+    const followUp=manualPending;
+    manualPending=false;
+    paint();
+    if(requestEpoch!==epoch||followUp)refresh();
+    else schedule(failures?Math.min(60000,5000*2**Math.min(failures-1,4)):30000);
+  }
+}
+function manualRefresh(){
+  // Keep only one follow-up GET even after multiple taps. Never race two native requests.
+  if(inflight){manualPending=true;paint(false);return;}
+  refresh();
 }
 function configure(){
   if(typeof window.NexusNative?.configureGateway==='function')window.NexusNative.configureGateway();
   else {$('sharedConnectionDetail').textContent='برای تنظیم اتصال، نسخه جدید APK را نصب کنید.';}
 }
 function configured(){
-  epoch++;failures=0;snapshot=null;received=0;connection='offline';lastFailure='';
+  epoch++;failures=0;manualPending=false;snapshot=null;received=0;connection='offline';lastFailure='';
   const modal=$('terminalDetails');if(modal?.open)modal.close();
   $('terminalSearch')?.blur();paint();refresh();
 }
@@ -62,9 +76,9 @@ window.addEventListener('nexus-product-client-ready',refresh);
 window.addEventListener('nexus-gateway-configured',configured);
 window.addEventListener('focus',refresh);
 window.addEventListener('online',()=>{failures=0;refresh();});
-window.addEventListener('offline',()=>{epoch++;connection='offline';lastFailure='';paint(false);schedule(5000);});
+window.addEventListener('offline',()=>{epoch++;manualPending=false;connection='offline';lastFailure='';paint(false);schedule(5000);});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
-$('configureLaptop').onclick=configure;$('refreshSharedPaper').onclick=refresh;
+$('configureLaptop').onclick=configure;$('refreshSharedPaper').onclick=manualRefresh;
 setInterval(()=>{if(!document.hidden)paint(false);},1000);
 paint();refresh();
 })();
