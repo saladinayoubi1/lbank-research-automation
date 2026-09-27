@@ -53,7 +53,7 @@ jobs:
       - name: Validate and package NEXUS Android 4 APK
         env:
           APK_SOURCE: android/lbank-mobile/app/build/outputs/apk/release/app-release.apk
-          APK_FINAL: android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_2.apk
+          APK_FINAL: android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_3.apk
         run: |
           set -euo pipefail
           test -s "$APK_SOURCE"
@@ -66,6 +66,8 @@ jobs:
             grep -q "$asset" /tmp/apk-contents.txt
           done
           unzip -p "$APK_FINAL" assets/index.html > /tmp/mobile-index.html
+          grep -q 'src="mobile-canonical-client.js"' /tmp/mobile-index.html
+          grep -q 'src="mobile-shared-client.js"' /tmp/mobile-index.html
           grep -q 'data-nexus-mobile="4"' /tmp/mobile-index.html
           grep -q "همه‌چیز مهم، در یک نگاه" /tmp/mobile-index.html
           grep -q "Paper Portfolio" /tmp/mobile-index.html
@@ -110,13 +112,13 @@ jobs:
           fi
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK_FINAL" | tee /tmp/apksigner.txt
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK_FINAL" | tee /tmp/aapt-badging.txt
-          grep -q "package: name='com.saladinayoubi.lbankmobile' versionCode='11' versionName='4.1.2'" /tmp/aapt-badging.txt
+          grep -q "package: name='com.saladinayoubi.lbankmobile' versionCode='12' versionName='4.1.3'" /tmp/aapt-badging.txt
           grep -q "launchable-activity:" /tmp/aapt-badging.txt
           sha256sum "$APK_FINAL" > "${APK_FINAL}.sha256"
           digest=$(cut -d' ' -f1 "${APK_FINAL}.sha256")
           size_kb=$(awk "BEGIN {printf \"%.1f\", $size/1024}")
           {
-            echo "## NEXUS Personal Pro Android 4.1.2"
+            echo "## NEXUS Personal Pro Android 4.1.3"
             echo ""
             echo "- Release APK build: successful"
             echo "- Mobile-first cockpit contract: verified"
@@ -124,8 +126,8 @@ jobs:
             echo "- Android back navigation history contract: verified"
             echo "- APK signature verification: successful (repository release build uses configured debug signing; not a store-signing claim)"
             echo "- Package: \`com.saladinayoubi.lbankmobile\`"
-            echo "- Version: \`4.1.2 (11)\`"
-            echo "- File: \`NEXUS_PERSONAL_PRO_4_1_2.apk\`"
+            echo "- Version: \`4.1.3 (11)\`"
+            echo "- File: \`NEXUS_PERSONAL_PRO_4_1_3.apk\`"
             echo "- Size: ${size} bytes (${size_kb} KB)"
             echo "- SHA-256: \`${digest}\`"
             echo "- Mission: real /api/product/mission/full evidence when approved HTTPS Gateway is available; truthful MISSION UNSYNCED otherwise"
@@ -136,34 +138,34 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p release-evidence/standard-preserved
-          cp android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_2.apk release-evidence/standard-preserved/
-          cp android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_2.apk.sha256 release-evidence/standard-preserved/
+          cp android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_3.apk release-evidence/standard-preserved/
+          cp android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_3.apk.sha256 release-evidence/standard-preserved/
       - name: Build safe side-by-side pairing APK
         working-directory: android/lbank-mobile
         run: gradle --no-daemon --stacktrace :app:assembleRelease -PNEXUS_PAIRING_TEST_BUILD=true
       - name: Validate independent pairing test APK
         run: |
           set -euo pipefail
-          APK_PAIRING=android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_2_PAIRING.apk
+          APK_PAIRING=android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_3_PAIRING.apk
           cp android/lbank-mobile/app/build/outputs/apk/release/app-release.apk "$APK_PAIRING"
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK_PAIRING"
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK_PAIRING" | tee /tmp/aapt-pairing.txt
-          grep -q "package: name='com.saladinayoubi.lbankmobile.pairing' versionCode='11' versionName='4.1.2'" /tmp/aapt-pairing.txt
+          grep -q "package: name='com.saladinayoubi.lbankmobile.bridgefix' versionCode='12' versionName='4.1.3'" /tmp/aapt-pairing.txt
           grep -q "launchable-activity:" /tmp/aapt-pairing.txt
           unzip -p "$APK_PAIRING" assets/mobile-shared-client.js | grep -q "failureMessage"
           sha256sum "$APK_PAIRING" > "${APK_PAIRING}.sha256"
       - name: Restore standard APK for exact-source evidence
         run: |
           set -euo pipefail
-          cp release-evidence/standard-preserved/NEXUS_PERSONAL_PRO_4_1_2.apk android/lbank-mobile/app/build/outputs/apk/release/
-          cp release-evidence/standard-preserved/NEXUS_PERSONAL_PRO_4_1_2.apk.sha256 android/lbank-mobile/app/build/outputs/apk/release/
-          sha256sum -c android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_2.apk.sha256
+          cp release-evidence/standard-preserved/NEXUS_PERSONAL_PRO_4_1_3.apk android/lbank-mobile/app/build/outputs/apk/release/
+          cp release-evidence/standard-preserved/NEXUS_PERSONAL_PRO_4_1_3.apk.sha256 android/lbank-mobile/app/build/outputs/apk/release/
+          sha256sum -c android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_3.apk.sha256
       - name: Build unsigned final APK release evidence
         run: >-
           python scripts/build_release_evidence.py
           --bundle-dir release-evidence/android-v4
-          --artifact-glob 'android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_2.apk'
-          --artifact-glob 'android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_2.apk.sha256'
+          --artifact-glob 'android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_3.apk'
+          --artifact-glob 'android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_3.apk.sha256'
           --source-commit '${{ github.sha }}'
           --builder 'github-actions/build-nexus-mobile-apk/release-v4'
       - name: Fail-closed verify final APK release evidence
@@ -188,25 +190,25 @@ jobs:
           PY
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: NEXUS_PERSONAL_PRO_4_1_2_APK
+          name: NEXUS_PERSONAL_PRO_4_1_3_APK
           path: |
-            android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_2.apk
-            android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_2.apk.sha256
+            android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_3.apk
+            android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_3.apk.sha256
           if-no-files-found: error
           retention-days: 30
           compression-level: 0
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: NEXUS_PERSONAL_PRO_4_1_2_PAIRING_APK
+          name: NEXUS_PERSONAL_PRO_4_1_3_PAIRING_APK
           path: |
-            android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_2_PAIRING.apk
-            android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_2_PAIRING.apk.sha256
+            android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_3_PAIRING.apk
+            android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_3_PAIRING.apk.sha256
           if-no-files-found: error
           retention-days: 30
           compression-level: 0
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: NEXUS_PERSONAL_PRO_4_1_2_RELEASE_EVIDENCE
+          name: NEXUS_PERSONAL_PRO_4_1_3_RELEASE_EVIDENCE
           path: release-evidence/android-v4
           if-no-files-found: error
           retention-days: 30
