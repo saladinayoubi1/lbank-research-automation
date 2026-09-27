@@ -171,3 +171,40 @@ def test_missing_checkpoint_never_makes_up_state(tmp_path):
     with pytest.raises(CheckpointError):
         restore(tmp_path / "missing", tmp_path / "isolated-restore")
     assert not (tmp_path / "isolated-restore").exists()
+
+
+def test_invalid_prior_manifest_cannot_be_skipped_for_newest_snapshot(tmp_path):
+    root = tmp_path / "chain"
+    original = archive(sample())
+    commit(root, stage(tmp_path, original), "36311000000", SOURCE)
+    commit(root, stage(tmp_path, archive({"paper/new": b"next"})), "36311000001", SOURCE)
+    pointer = (root / "latest.json").read_bytes()
+    (root / "commits" / "36311000000.json").write_text('{"bad":"history"}')
+    with pytest.raises(CheckpointError, match="prior checkpoint manifest digest"):
+        restore(root, tmp_path / "restored")
+    assert not (tmp_path / "restored").exists()
+    assert (root / "latest.json").read_bytes() == pointer
+
+
+@pytest.mark.parametrize("part", ("objects", "commits"))
+def test_internal_symlink_directories_are_rejected(tmp_path, part):
+    root = tmp_path / part
+    commit(root, stage(tmp_path, archive(sample())), "36311000000", SOURCE)
+    internal = root / part
+    backup = root / (part + ".saved")
+    internal.rename(backup)
+    try:
+        internal.symlink_to(backup, target_is_directory=True)
+    except OSError:
+        pytest.skip("OS did not allow unprivileged directory symlink")
+    with pytest.raises(CheckpointError, match="symbolic link"):
+        _load(root)
+
+
+def test_invalid_latest_pointer_json_is_rejected_without_restore(tmp_path):
+    root = tmp_path / "root"
+    commit(root, stage(tmp_path, archive(sample())), "36311000000", SOURCE)
+    (root / "latest.json").write_text("{bad")
+    with pytest.raises(CheckpointError, match="latest pointer JSON"):
+        restore(root, tmp_path / "no-recovery")
+    assert not (tmp_path / "no-recovery").exists()
