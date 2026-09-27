@@ -396,3 +396,55 @@ def test_lifecycle_implementation_paths_retrigger_the_persistent_runtime() -> No
 # Semantic no-op: exact-main physical Paper trigger after watchdog generation 2 recovery.
 # Semantic no-op: exact-main physical Paper trigger after watchdog-managed child generation 3 recovery.
 # Semantic no-op: exact-main physical Paper trigger after managed-child liveness generation 4 recovery.
+
+
+def test_owner_checkpoint_shadow_and_primary_are_fail_closed_and_default_off() -> None:
+    text = WORKFLOW.read_text(encoding="utf-8")
+    paper = _paper_job(text)
+    persist = text.split("  persist-state:", 1)[1]
+
+    assert "OWNER_CHECKPOINT_ROOT: /mnt/e/NEXUS/NEXUS_OWNER_PAPER_PRIVATE/checkpoints" in paper
+    assert "OWNER_CHECKPOINT_SHADOW: ${{ vars.NEXUS_OWNER_PAPER_CHECKPOINT_SHADOW || 'false' }}" in paper
+    assert "OWNER_CHECKPOINT_PRIMARY: ${{ vars.NEXUS_OWNER_PAPER_CHECKPOINT_PRIMARY || 'false' }}" in paper
+
+    owner_restore = paper.split("Restore owner-controlled Paper checkpoint in primary mode", 1)[1].split(
+        "Restore newest persistent Paper state", 1
+    )[0]
+    assert "vars.NEXUS_OWNER_PAPER_CHECKPOINT_PRIMARY == 'true'" in owner_restore
+    assert 'case "$OWNER_CHECKPOINT_ROOT" in' in owner_restore
+    assert "/mnt/e/NEXUS/NEXUS_OWNER_PAPER_PRIVATE/checkpoints" in owner_restore
+    assert 'free_kb="$(df -Pk /mnt/e' in owner_restore
+    assert 'scripts/nexus_owner_paper_checkpoint.py verify' in owner_restore
+    assert 'scripts/nexus_owner_paper_checkpoint.py restore' in owner_restore
+    assert 'rm -rf "$STATE_ROOT"' in owner_restore
+
+    legacy_restore = paper.split("Restore newest persistent Paper state", 1)[1].split(
+        "Advance public closed-candle Paper portfolio loop", 1
+    )[0]
+    assert "vars.NEXUS_OWNER_PAPER_CHECKPOINT_PRIMARY != 'true'" in legacy_restore
+
+    package = paper.split("Package Paper state for hosted artifact persistence", 1)[1].split(
+        "Commit owner-controlled Paper checkpoint when enabled", 1
+    )[0]
+    assert 'if [ "${OWNER_CHECKPOINT_PRIMARY:-false}" = "true" ]; then' in package
+    assert "state_archive_codec=owner-checkpoint-v1" in package
+    assert "state_archive_chunk_count=0" in package
+    assert "legacy_cross_job_state_handoff=SKIPPED_PRIMARY_OWNER_CHECKPOINT" in package
+    assert "base64.b85encode" in package
+
+    commit = paper.split("Commit owner-controlled Paper checkpoint when enabled", 1)[1].split(
+        "Cleanup isolated physical source and state", 1
+    )[0]
+    assert "NEXUS_OWNER_PAPER_CHECKPOINT_SHADOW == 'true'" in commit
+    assert "NEXUS_OWNER_PAPER_CHECKPOINT_PRIMARY == 'true'" in commit
+    assert 'archive="$SOURCE_ROOT/build/persistent-state-handoff.tar.xz"' in commit
+    assert 'scripts/nexus_owner_paper_checkpoint.py" commit' in commit
+    assert '--run-id "$GITHUB_RUN_ID"' in commit
+    assert '--source-sha "$GITHUB_SHA"' in commit
+    assert 'scripts/nexus_owner_paper_checkpoint.py" verify' in commit
+
+    assert "vars.NEXUS_OWNER_PAPER_CHECKPOINT_PRIMARY != 'true'" in persist
+    assert text.count('"scripts/nexus_owner_paper_checkpoint.py"') >= 2
+    assert text.count('"tests/test_nexus_owner_paper_checkpoint.py"') >= 2
+    contract = text.split("Verify persistent Trading Engine contracts", 1)[1].split("runtime-wheelhouse:", 1)[0]
+    assert "tests/test_nexus_owner_paper_checkpoint.py" in contract
