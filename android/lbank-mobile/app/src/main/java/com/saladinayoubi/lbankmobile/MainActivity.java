@@ -96,14 +96,8 @@ public final class MainActivity extends Activity {
         settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         webView.addJavascriptInterface(new NativeGateway(), "NexusNative");
-        webView.setWebViewClient(new WebViewClient() {
-            @Override public void onPageFinished(WebView view, String url) {
-                super.onPageFinished(view, url);
-                if ("file:///android_asset/index.html".equals(url)) {
-                    view.evaluateJavascript("(function(){var s=document.createElement('script');s.src='mobile-canonical-client.js';document.body.appendChild(s)})()", null);
-                }
-            }
-        });
+        // The canonical bridge is loaded exactly once, before the shared reader, by ordered HTML defer scripts.
+        webView.setWebViewClient(new WebViewClient());
         webView.setWebChromeClient(new WebChromeClient());
         webView.loadUrl("file:///android_asset/index.html");
     }

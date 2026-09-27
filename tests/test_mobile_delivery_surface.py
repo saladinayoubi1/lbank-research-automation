@@ -193,10 +193,10 @@ def test_mobile_metadata_discloses_real_mission_control_backend_and_local_fallba
 def test_mobile_version_and_ci_package_android_v4_build() -> None:
     gradle = BUILD_GRADLE.read_text(encoding="utf-8")
     workflow = WORKFLOW.read_text(encoding="utf-8")
-    assert "versionCode 11" in gradle
-    assert 'versionName "4.1.2"' in gradle
-    assert "NEXUS_PERSONAL_PRO_4_1_2.apk" in workflow
-    assert "versionCode='11' versionName='4.1.2'" in workflow
+    assert "versionCode 12" in gradle
+    assert 'versionName "4.1.3"' in gradle
+    assert "NEXUS_PERSONAL_PRO_4_1_3.apk" in workflow
+    assert "versionCode='12' versionName='4.1.3'" in workflow
     assert "assets/mobile-redesign.css" in workflow
     assert "assets/mobile-redesign.js" in workflow
     assert "assets/mobile-canonical-client.js" in workflow
@@ -216,7 +216,7 @@ def test_final_android_release_apk_is_bound_to_fail_closed_nonproduction_evidenc
         "scripts/build_release_evidence.py",
         "scripts/release_gate.py",
         "release-evidence/android-v4",
-        "NEXUS_PERSONAL_PRO_4_1_2_RELEASE_EVIDENCE",
+        "NEXUS_PERSONAL_PRO_4_1_3_RELEASE_EVIDENCE",
         "github-actions/build-nexus-mobile-apk/release-v4",
         "--expected-source-commit '${{ github.sha }}'",
         "--allow-unsigned",
@@ -226,17 +226,28 @@ def test_final_android_release_apk_is_bound_to_fail_closed_nonproduction_evidenc
         assert marker in workflow
     assert workflow.index("Build installable release APK") < workflow.index("Build unsigned final APK release evidence")
     assert workflow.index("Build unsigned final APK release evidence") < workflow.index("Fail-closed verify final APK release evidence")
-    assert workflow.index("Fail-closed verify final APK release evidence") < workflow.index("NEXUS_PERSONAL_PRO_4_1_2_RELEASE_EVIDENCE")
+    assert workflow.index("Fail-closed verify final APK release evidence") < workflow.index("NEXUS_PERSONAL_PRO_4_1_3_RELEASE_EVIDENCE")
 
 
 def test_side_by_side_pairing_does_not_replace_owner_app() -> None:
     gradle=BUILD_GRADLE.read_text(encoding="utf-8")
     manifest=Path("android/lbank-mobile/app/src/main/AndroidManifest.xml").read_text(encoding="utf-8")
     workflow=WORKFLOW.read_text(encoding="utf-8")
-    assert "com.saladinayoubi.lbankmobile.pairing" in gradle
+    assert "com.saladinayoubi.lbankmobile.pairingfix" in gradle
     assert "NEXUS_PAIRING_TEST_BUILD" in gradle
-    assert "NEXUS Pairing Test" in gradle
+    assert "NEXUS Pairing Fix" in gradle
     assert 'android:label="${nexusAppLabel}"' in manifest
-    assert "NEXUS_PERSONAL_PRO_4_1_2_PAIRING_APK" in workflow
+    assert "NEXUS_PERSONAL_PRO_4_1_3_PAIRING_APK" in workflow
     assert "assembleRelease -PNEXUS_PAIRING_TEST_BUILD=true" in workflow
     assert workflow.index("Validate and package NEXUS Android 4 APK") < workflow.index("Build safe side-by-side pairing APK")
+
+
+def test_html_loads_canonical_product_bridge_once_before_paper_without_native_injection() -> None:
+    html=(ASSETS / "index.html").read_text(encoding="utf-8")
+    java=Path("android/lbank-mobile/app/src/main/java/com/saladinayoubi/lbankmobile/MainActivity.java").read_text(encoding="utf-8")
+    ordered=["mobile-core.js","mobile-runtime.js","mobile-redesign.js","mobile-shared-terminal.js","mobile-canonical-client.js","mobile-shared-client.js"]
+    tags=[f'<script src="{name}" defer></script>' for name in ordered]
+    assert all(html.count(tag)==1 for tag in tags)
+    assert [html.index(tag) for tag in tags]==sorted(html.index(tag) for tag in tags)
+    assert "s.src='mobile-canonical-client.js'" not in java
+    assert 'webView.addJavascriptInterface(new NativeGateway(), "NexusNative")' in java
