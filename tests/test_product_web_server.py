@@ -276,10 +276,10 @@ def test_market_probe_requires_explicit_bounded_get_and_never_changes_trading(
     port, runtime = product_server
     calls = []
     def fake_probe(*, symbol, timeframe, registry):
-        calls.append((symbol, timeframe))
         assert any(m["canonical_symbol"] == "BTC/USDT" for m in registry["mappings"])
         if symbol != "BTCUSDT" or timeframe != "4h":
             raise MarketProbeInputError("unsupported mapping")
+        calls.append((symbol, timeframe))  # Only an actually eligible probe is counted.
         return {
             "contract_version": "nexus.product-market-probe.v1",
             "status": "unavailable", "reason_code": "public_http_403_access_denied",
