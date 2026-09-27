@@ -1,0 +1,37 @@
+name: NEXUS Data Core public-feed diagnostics
+
+on:
+  pull_request:
+    paths:
+      - "product_market_diagnostics.py"
+      - "product_web_server.py"
+      - "product_ui/product.js"
+      - "product_ui/index.html"
+      - "product_ui/product-extra.css"
+      - "tests/test_product_market_diagnostics.py"
+      - "tests/test_product_web_server.py"
+      - "scripts/test_product_data_market_ui.js"
+      - ".github/workflows/nexus_product_market_diagnostics.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  market-diagnostic-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - name: Checkout exact PR source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Test Python public-feed integrity without network
+        run: |
+          python -m pip install --disable-pip-version-check pytest==8.4.2
+          python -m pytest -q tests/test_product_market_diagnostics.py
+      - name: Test read-only Data Core UI without browser networking
+        run: |
+          node --check product_ui/product.js
+          node --check scripts/test_product_data_market_ui.js
+          node scripts/test_product_data_market_ui.js

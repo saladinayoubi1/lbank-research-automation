@@ -266,3 +266,58 @@ def test_shared_terminal_missing_snapshot_is_not_zero_balance(product_server):
         assert _request(port,'GET',path)[0]==200
     assert _request(port,'GET','/api/product/paper/shared/export.csv?table=../../state')[0]==400
     assert _request(port,'POST','/api/product/paper/shared',{})[0] in (400,403,404,405)
+
+
+def test_market_probe_requires_explicit_bounded_get_and_never_changes_trading(
+    product_server, monkeypatch
+) -> None:
+    from product_market_diagnostics import MarketProbeInputError
+
+    port, runtime = product_server
+    calls = []
+    def fake_probe(*, symbol, timeframe, registry):
+        assert any(m["canonical_symbol"] == "BTC/USDT" for m in registry["mappings"])
+        if symbol != "BTCUSDT" or timeframe != "4h":
+            raise MarketProbeInputError("unsupported mapping")
+        calls.append((symbol, timeframe))  # Only an actually eligible probe is counted.
+        return {
+            "contract_version": "nexus.product-market-probe.v1",
+            "status": "unavailable", "reason_code": "public_http_403_access_denied",
+            "http_status": 403, "source": "Bybit",
+            "paper_only": True, "read_only": True, "execution_eligible": False,
+            "dataset_written": False, "last_close_price": None,
+        }
+    monkeypatch.setattr("product_web_server.probe_primary_spot", fake_probe)
+    baseline = runtime.paper_events_path.read_bytes()
+    status, _, raw = _request(port, "GET", "/api/product/data/registry")
+    assert status == 200
+    rows = json.loads(raw)["mappings"]
+    assert rows[0]["sources"][0]["status"] == "compatible"  # Mapping, not feed health.
+    assert calls == []  # Registry read never triggers an HTTP probe.
+
+    status, _, raw = _request(
+        port, "GET", "/api/product/data/probe?symbol=BTCUSDT&timeframe=4h"
+    )
+    out = json.loads(raw)
+    assert status == 200
+    assert (out["status"], out["reason_code"], out["last_close_price"]) == (
+        "unavailable", "public_http_403_access_denied", None,
+    )
+    assert calls == [("BTCUSDT", "4h")]
+    for bad_path in (
+        "/api/product/data/probe",
+        "/api/product/data/probe?symbol=BTCUSDT",
+        "/api/product/data/probe?symbol=BTCUSDT&timeframe=4h&extra=1",
+        "/api/product/data/probe?symbol=BTCUSDT&symbol=ETHUSDT&timeframe=4h",
+        "/api/product/data/probe?symbol=BTCUSDT&timeframe=",
+        "/api/product/data/probe?symbol=https://example.com&timeframe=4h",
+    ):
+        status, _, _ = _request(port, "GET", bad_path)
+        assert status == 400, bad_path
+    status, _, raw = _request(
+        port, "HEAD", "/api/product/data/probe?symbol=BTCUSDT&timeframe=4h"
+    )
+    assert status == 405 and raw == b""
+    assert calls == [("BTCUSDT", "4h")]
+    assert runtime.paper_events_path.read_bytes() == baseline
+    assert runtime.live_surface()["orders_allowed"] is False

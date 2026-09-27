@@ -15,6 +15,7 @@ from product_control_runtime import ProductControlError, ProductControlRuntime
 from product_shared_paper import load_snapshot as load_shared_snapshot, export_csv as shared_export_csv
 from product_prospective_paper import load_prospective_paper_snapshot
 from product_research_runtime import ProductResearchError, ProductResearchRuntime
+from product_market_diagnostics import MarketProbeInputError, probe_primary_spot
 from product_runtime import ProductRuntime, ProductRuntimeError
 from nexus_demo_strategy_matrix import verify_snapshot
 from web_dashboard import ApiResponse, ByteResponse, GatewayConfig, ReportUnavailableError, gateway_disclosure, load_mission_control, validate_gateway_config, versioned
@@ -361,6 +362,17 @@ def build_handler(
                 elif parsed.path == "/api/product/data/registry":
                     if parsed.query: raise ProductRuntimeError("registry does not accept query")
                     payload = research_runtime.registry_snapshot()
+                elif parsed.path == "/api/product/data/probe":
+                    if head_only:
+                        self._send(_json_error(HTTPStatus.METHOD_NOT_ALLOWED, "head_disabled",
+                            "public feed probe requires explicit GET", active_config), head_only=True); return True
+                    query = parse_qs(parsed.query, keep_blank_values=True)
+                    if set(query) != {"symbol", "timeframe"} or any(len(values) != 1 for values in query.values()):
+                        raise ProductRuntimeError("market probe requires exactly symbol and timeframe")
+                    payload = probe_primary_spot(
+                        symbol=query["symbol"][0], timeframe=query["timeframe"][0],
+                        registry=research_runtime.registry_snapshot(),
+                    )
                 elif parsed.path == "/api/product/research/last":
                     if parsed.query: raise ProductRuntimeError("last research does not accept query")
                     payload = research_runtime.last_research()
@@ -383,7 +395,7 @@ def build_handler(
                     self._send(ByteResponse(HTTPStatus.OK, control_runtime.export_csv(), "text/csv; charset=utf-8"), head_only=head_only); return True
                 else:
                     self._send(_json_error(HTTPStatus.NOT_FOUND, "not_found", parsed.path, active_config), head_only=head_only); return True
-            except (ProductRuntimeError, ProductResearchError, ProductControlError) as exc:
+            except (ProductRuntimeError, ProductResearchError, ProductControlError, MarketProbeInputError) as exc:
                 self._send(_json_error(HTTPStatus.BAD_REQUEST, "product_request_invalid", str(exc), active_config), head_only=head_only); return True
             except Exception as exc:
                 self._send(_json_error(HTTPStatus.SERVICE_UNAVAILABLE, "product_runtime_unavailable", str(exc), active_config), head_only=head_only); return True
