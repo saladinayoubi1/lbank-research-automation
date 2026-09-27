@@ -66,7 +66,7 @@ jobs:
           digits = {c:i for i,c in enumerate(alphabet)}
           padded = encoded + ("0" if len(encoded)%2 else "")
           compact = "".join(chr(0x4000+digits[padded[i]]*85+digits[padded[i+1]]) for i in range(0,len(padded),2))
-          chunks=[compact[i:i+30_000] for i in range(0,len(compact),30_000)]
+          chunks=[compact[i:i+15_000] for i in range(0,len(compact),15_000)]
           estimate=len(compact)*2+16_384
           assert len(raw)==size and 1<=len(chunks)<=18 and estimate<1_048_576
           lines=["state_archive_codec=b85-pairs-v1",f"state_archive_chunk_count={len(chunks)}",
@@ -116,9 +116,9 @@ jobs:
           size=int(os.environ["SYNTHETIC_BYTES"])
           assert size in (300_000,390_016,420_000)
           assert length==size*5//4
-          assert count == ((length+1)//2+29_999)//30_000
+          assert count == ((length+1)//2+14_999)//15_000
           chunks=[os.environ[f"STATE_ARCHIVE_CHUNK_{i}"] for i in range(18)]
-          assert all(0<len(chunk)<=30_000 for chunk in chunks[:count])
+          assert all(0<len(chunk)<=15_000 for chunk in chunks[:count])
           assert not any(chunks[count:])
           compact="".join(chunks[:count])
           assert len(compact)==(length+1)//2
