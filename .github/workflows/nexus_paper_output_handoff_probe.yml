@@ -31,7 +31,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       state_archive_codec: ${{ steps.publish_a.outputs.state_archive_codec }}
-      state_archive_chunk_count: ${{ steps.publish_c.outputs.state_archive_chunk_count }}
+      state_archive_chunk_count: ${{ steps.publish_a.outputs.state_archive_chunk_count }}
       state_archive_raw_len: ${{ steps.publish_a.outputs.state_archive_raw_len }}
       state_archive_sha256: ${{ steps.publish_a.outputs.state_archive_sha256 }}
       state_archive_chunk_0: ${{ steps.publish_a.outputs.state_archive_chunk_0 }}
