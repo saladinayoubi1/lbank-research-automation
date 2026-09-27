@@ -1,0 +1,116 @@
+name: NEXUS Hosted Paper Output Transfer Diagnostic
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/nexus_paper_output_handoff_probe.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Hosted runners only: no physical owner jobs, no stored Paper or trading access.
+jobs:
+  emit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      state_archive_codec: ${{ steps.make.outputs.state_archive_codec }}
+      state_archive_chunk_count: ${{ steps.make.outputs.state_archive_chunk_count }}
+      state_archive_b85_len: ${{ steps.make.outputs.state_archive_b85_len }}
+      state_archive_sha256: ${{ steps.make.outputs.state_archive_sha256 }}
+      state_archive_chunk_0: ${{ steps.make.outputs.state_archive_chunk_0 }}
+      state_archive_chunk_1: ${{ steps.make.outputs.state_archive_chunk_1 }}
+      state_archive_chunk_2: ${{ steps.make.outputs.state_archive_chunk_2 }}
+      state_archive_chunk_3: ${{ steps.make.outputs.state_archive_chunk_3 }}
+      state_archive_chunk_4: ${{ steps.make.outputs.state_archive_chunk_4 }}
+      state_archive_chunk_5: ${{ steps.make.outputs.state_archive_chunk_5 }}
+      state_archive_chunk_6: ${{ steps.make.outputs.state_archive_chunk_6 }}
+      state_archive_chunk_7: ${{ steps.make.outputs.state_archive_chunk_7 }}
+      state_archive_chunk_8: ${{ steps.make.outputs.state_archive_chunk_8 }}
+      state_archive_chunk_9: ${{ steps.make.outputs.state_archive_chunk_9 }}
+      state_archive_chunk_10: ${{ steps.make.outputs.state_archive_chunk_10 }}
+      state_archive_chunk_11: ${{ steps.make.outputs.state_archive_chunk_11 }}
+      state_archive_chunk_12: ${{ steps.make.outputs.state_archive_chunk_12 }}
+      state_archive_chunk_13: ${{ steps.make.outputs.state_archive_chunk_13 }}
+      state_archive_chunk_14: ${{ steps.make.outputs.state_archive_chunk_14 }}
+      state_archive_chunk_15: ${{ steps.make.outputs.state_archive_chunk_15 }}
+      state_archive_chunk_16: ${{ steps.make.outputs.state_archive_chunk_16 }}
+      state_archive_chunk_17: ${{ steps.make.outputs.state_archive_chunk_17 }}
+    steps:
+      - name: Generate bounded synthetic physical-sized Paper output
+        id: make
+        shell: bash
+        run: |
+          python - <<'PY'
+          import base64, hashlib, os
+          from pathlib import Path
+          # Synthetic repeatable bytes; no journal, tokens, exchange data, or owner runtime.
+          raw = b"".join(hashlib.sha256(i.to_bytes(8,"little")).digest() for i in range(13_125))
+          encoded = base64.b85encode(raw).decode("ascii")
+          alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!#$%&()*+-;<=>?@^_" + chr(96) + "{|}~"
+          digits = {c:i for i,c in enumerate(alphabet)}
+          padded = encoded + ("0" if len(encoded)%2 else "")
+          compact = "".join(chr(0x4000+digits[padded[i]]*85+digits[padded[i+1]]) for i in range(0,len(padded),2))
+          chunks=[compact[i:i+30_000] for i in range(0,len(compact),30_000)]
+          estimate=len(compact)*2+16_384
+          assert len(raw)==420_000 and len(chunks)==9 and 500_000 < estimate < 800_000
+          lines=["state_archive_codec=b85-pairs-v1",f"state_archive_chunk_count={len(chunks)}",
+                 f"state_archive_b85_len={len(encoded)}",f"state_archive_sha256={hashlib.sha256(raw).hexdigest()}"]
+          lines += [f"state_archive_chunk_{i}={chunks[i] if i<len(chunks) else ''}" for i in range(18)]
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a",encoding="utf-8") as out:
+              out.write("\n".join(lines)+"\n")
+          print(f"synthetic_handoff_bytes={len(raw)} chunks={len(chunks)} output_utf16_estimate={estimate}")
+          PY
+  verify:
+    needs: emit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      STATE_ARCHIVE_CODEC: ${{ needs.emit.outputs.state_archive_codec }}
+      STATE_ARCHIVE_CHUNK_COUNT: ${{ needs.emit.outputs.state_archive_chunk_count }}
+      STATE_ARCHIVE_B85_LEN: ${{ needs.emit.outputs.state_archive_b85_len }}
+      STATE_ARCHIVE_SHA256: ${{ needs.emit.outputs.state_archive_sha256 }}
+      STATE_ARCHIVE_CHUNK_0: ${{ needs.emit.outputs.state_archive_chunk_0 }}
+      STATE_ARCHIVE_CHUNK_1: ${{ needs.emit.outputs.state_archive_chunk_1 }}
+      STATE_ARCHIVE_CHUNK_2: ${{ needs.emit.outputs.state_archive_chunk_2 }}
+      STATE_ARCHIVE_CHUNK_3: ${{ needs.emit.outputs.state_archive_chunk_3 }}
+      STATE_ARCHIVE_CHUNK_4: ${{ needs.emit.outputs.state_archive_chunk_4 }}
+      STATE_ARCHIVE_CHUNK_5: ${{ needs.emit.outputs.state_archive_chunk_5 }}
+      STATE_ARCHIVE_CHUNK_6: ${{ needs.emit.outputs.state_archive_chunk_6 }}
+      STATE_ARCHIVE_CHUNK_7: ${{ needs.emit.outputs.state_archive_chunk_7 }}
+      STATE_ARCHIVE_CHUNK_8: ${{ needs.emit.outputs.state_archive_chunk_8 }}
+      STATE_ARCHIVE_CHUNK_9: ${{ needs.emit.outputs.state_archive_chunk_9 }}
+      STATE_ARCHIVE_CHUNK_10: ${{ needs.emit.outputs.state_archive_chunk_10 }}
+      STATE_ARCHIVE_CHUNK_11: ${{ needs.emit.outputs.state_archive_chunk_11 }}
+      STATE_ARCHIVE_CHUNK_12: ${{ needs.emit.outputs.state_archive_chunk_12 }}
+      STATE_ARCHIVE_CHUNK_13: ${{ needs.emit.outputs.state_archive_chunk_13 }}
+      STATE_ARCHIVE_CHUNK_14: ${{ needs.emit.outputs.state_archive_chunk_14 }}
+      STATE_ARCHIVE_CHUNK_15: ${{ needs.emit.outputs.state_archive_chunk_15 }}
+      STATE_ARCHIVE_CHUNK_16: ${{ needs.emit.outputs.state_archive_chunk_16 }}
+      STATE_ARCHIVE_CHUNK_17: ${{ needs.emit.outputs.state_archive_chunk_17 }}
+    steps:
+      - name: Verify real GitHub hosted cross-job output publication
+        shell: bash
+        run: |
+          python - <<'PY'
+          import base64, hashlib, os
+          count=int(os.environ["STATE_ARCHIVE_CHUNK_COUNT"])
+          length=int(os.environ["STATE_ARCHIVE_B85_LEN"])
+          assert os.environ["STATE_ARCHIVE_CODEC"]=="b85-pairs-v1"
+          assert count==9 and length==525_000
+          chunks=[os.environ[f"STATE_ARCHIVE_CHUNK_{i}"] for i in range(18)]
+          assert all(0<len(chunk)<=30_000 for chunk in chunks[:count])
+          assert not any(chunks[count:])
+          compact="".join(chunks[:count])
+          assert len(compact)==(length+1)//2
+          alphabet="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!#$%&()*+-;<=>?@^_"+chr(96)+"{|}~"
+          digits=[ord(c)-0x4000 for c in compact]
+          assert all(0<=digit<85*85 for digit in digits)
+          encoded="".join(alphabet[d//85]+alphabet[d%85] for d in digits)
+          raw=base64.b85decode(encoded[:length].encode("ascii"))
+          expected=b"".join(hashlib.sha256(i.to_bytes(8,"little")).digest() for i in range(13_125))
+          assert len(raw)==420_000 and raw==expected
+          assert hashlib.sha256(raw).hexdigest()==os.environ["STATE_ARCHIVE_SHA256"]
+          print("HOSTED_CROSS_JOB_PAPER_HANDOFF_PROBE=PASS (synthetic data only)")
+          PY
