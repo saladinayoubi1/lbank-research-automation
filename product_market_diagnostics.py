@@ -7,14 +7,13 @@ Only an explicit authenticated Data Core UI action initiates the HTTP request.
 from __future__ import annotations
 
 import json
-import math
 import socket
 import time
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from typing import Any, Callable, Mapping
 from urllib.error import HTTPError, URLError
-from urllib.request import HTTPRedirectHandler, Request, build_opener
+from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
 
 CONTRACT = "nexus.product-market-probe.v1"
 TIMEFRAMES = {"15m": ("15", 900_000), "1h": ("60", 3_600_000), "4h": ("240", 14_400_000)}
@@ -32,7 +31,7 @@ class _NoRedirect(HTTPRedirectHandler):
 
 def _download_public(url: str, timeout: float) -> bytes:
     request = Request(url, headers={"Accept": "application/json", "User-Agent": "NEXUS-DataDiagnostic/1"})
-    with build_opener(_NoRedirect()).open(request, timeout=timeout) as response:
+    with build_opener(ProxyHandler({}), _NoRedirect()).open(request, timeout=timeout) as response:
         if response.getcode() != 200:
             raise OSError("unexpected public market HTTP status")
         data = response.read(MAX_RESPONSE + 1)
@@ -114,6 +113,9 @@ def probe_primary_spot(
         return result
     except (URLError, TimeoutError, socket.timeout, ConnectionError, OSError):
         result.update(status="unavailable", reason_code="public_transport_unavailable")
+        return result
+    except ValueError:
+        result.update(status="integrity_failed", reason_code="public_payload_integrity_failure")
         return result
 
     try:
