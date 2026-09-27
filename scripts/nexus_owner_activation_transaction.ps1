@@ -101,7 +101,7 @@ function BackupLinks([string]$Dir) {
     if($exists){Copy-Item -LiteralPath $p -Destination $copy -ErrorAction Stop}
     $result+=@{path=$p;existed=$exists;sha=if($exists){Hash $p}else{''};copy=$copy}
   }
-  return ,$result
+  return $result
 }
 function RestoreLinks([object[]]$LinksData) {
   foreach($x in $LinksData) {
@@ -153,21 +153,39 @@ function Rollback([string]$Dir){
   if($t.links){RestoreLinks @($t.links)}
   $env:RUNNER_TRACKING_ID=$null
   $null=Start-Process -FilePath (Join-Path $prior 'NEXUS Personal Pro.exe')
+  if($t.sync_was_enabled -eq $true){
+    $service=New-Object -ComObject Schedule.Service;$service.Connect()
+    $service.GetFolder('\').GetTask($syncTask).Enabled=$true
+  }
   $t.status='ROLLED_BACK';$t.rolled_back_at=[DateTime]::UtcNow.ToString('o');Write-Json (Join-Path $Dir 'transaction.json') $t
 }
 function Rehearse {
   $r=Join-Path $env:TEMP ('nexus-activation-synthetic-'+[guid]::NewGuid().ToString('N'))
   New-Item -ItemType Directory -Force -Path $r|Out-Null
+  $actualOwner=$script:owner
   try{
-    $original=Join-Path $r 'owner.txt';$backup=Join-Path $r 'backup.txt'
-    [IO.File]::WriteAllText($original,'original-paper-only-state')
-    $sha=Hash $original;Copy-Item $original $backup
-    [IO.File]::WriteAllText($original,'synthetic-failed-activation')
-    Assert ((Hash $backup) -eq $sha) 'Synthetic backup damaged'
-    Copy-Item $backup $original -Force
-    Assert ((Hash $original) -eq $sha) 'Synthetic rollback failed'
-    'SYNTHETIC_OWNER_ACTIVATION_REHEARSAL=PASS no real profile or processes touched'
-  }finally{Remove-Item -LiteralPath $r -Force -Recurse -ErrorAction SilentlyContinue}
+    $script:owner=Join-Path $r 'synthetic-owner'
+    $work=Join-Path $script:owner 'product-data\\shared_paper'
+    New-Item -ItemType Directory -Path $work -Force|Out-Null
+    $journal=Join-Path $work 'terminal.json'
+    [IO.File]::WriteAllText($journal,'{"read_only":true,"live_trading_authority":false,"account":{"initial_balance":500}}')
+    $orig=Hash $journal
+    $files=@(ProfileFiles $script:owner)
+    $txn=Join-Path $r 'transaction';New-Item -ItemType Directory $txn|Out-Null
+    $b=Join-Path $txn 'profile';Copy-Item $script:owner $b -Recurse
+    Assert ((Hash (Join-Path $b 'product-data\\shared_paper\\terminal.json')) -eq $orig) 'Synthetic snapshot copy failed'
+    $link=Join-Path $r 'synthetic-shortcut.lnk';$linkBackup=Join-Path $r 'old-link.lnk'
+    [IO.File]::WriteAllText($link,'old-executable');Copy-Item $link $linkBackup
+    $linkMeta=@{path=$link;existed=$true;copy=$linkBackup;sha=Hash $link}
+    $meta=[ordered]@{status='BACKED_UP';files=$files;links=@($linkMeta)}
+    Write-Json (Join-Path $txn 'transaction.json') $meta
+    [IO.File]::WriteAllText($journal,'{"read_only":true,"live_trading_authority":false,"account":{"initial_balance":1}}')
+    [IO.File]::WriteAllText($link,'failed-new-executable')
+    RestoreProfile $txn
+    RestoreLinks @($linkMeta)
+    Assert ((Hash $journal) -eq $orig -and (Hash $link) -eq $linkMeta.sha) 'Synthetic profile/shortcut rollback failed'
+    'SYNTHETIC_OWNER_ACTIVATION_REHEARSAL=PASS profile-copy, corruption detection, shortcut rollback; no real state'
+  }finally{$script:owner=$actualOwner;Remove-Item -LiteralPath $r -Force -Recurse -ErrorAction SilentlyContinue}
 }
 if($Mode -eq 'Rehearse'){Rehearse;exit 0}
 if($Mode -eq 'Preflight'){ $null=CheckStage;'EXACT_OWNER_PREFLIGHT=PASS no mutation';exit 0 }
@@ -193,7 +211,7 @@ try{
   $transaction=Join-Path $store ("$sourceShort-"+[DateTime]::UtcNow.ToString('yyyyMMddHHmmss'))
   New-Item -ItemType Directory -Path $transaction -ErrorAction Stop|Out-Null
   Copy-Item -LiteralPath $PSCommandPath -Destination (Join-Path $transaction 'recovery.ps1')
-  $record=[ordered]@{schema='nexus.owner-activation-transaction.v1';expected_sha=$ExpectedSourceSha;old_version=$OldVersion;status='STARTED';files=@();links=@();created_at=[DateTime]::UtcNow.ToString('o')}
+  $record=[ordered]@{schema='nexus.owner-activation-transaction.v1';expected_sha=$ExpectedSourceSha;old_version=$OldVersion;status='STARTED';sync_was_enabled=$oldSyncEnabled;files=@();links=@();created_at=[DateTime]::UtcNow.ToString('o')}
   Write-Json (Join-Path $transaction 'transaction.json') $record
   # Pre-arm owner-session watchdog before changing any owner process or state.
   $def=$scheduler.NewTask(0);$def.RegistrationInfo.Description='NEXUS failed-closed owner rollback'
