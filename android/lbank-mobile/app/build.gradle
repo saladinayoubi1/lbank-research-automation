@@ -5,16 +5,19 @@ plugins {
 def nexusGatewayUrl = providers.gradleProperty("NEXUS_GATEWAY_URL").getOrElse("https://127.0.0.1:8443")
 def escapedGatewayUrl = nexusGatewayUrl.replace("\\", "\\\\").replace('"', '\\"')
 
+def pairingTestBuild = providers.gradleProperty('NEXUS_PAIRING_TEST_BUILD').getOrElse('false') == 'true'
+
 android {
     namespace "com.saladinayoubi1.lbankmobile"
     compileSdk 35
 
     defaultConfig {
-        applicationId "com.saladinayoubi.lbankmobile"
+        applicationId pairingTestBuild ? "com.saladinayoubi.lbankmobile.pairing" : "com.saladinayoubi.lbankmobile"
         minSdk 23
         targetSdk 35
-        versionCode 10
-        versionName "4.1.1"
+        versionCode 11
+        versionName "4.1.2"
+        manifestPlaceholders = [nexusAppLabel: pairingTestBuild ? "NEXUS Pairing Test" : "NEXUS Personal Pro"]
         buildConfigField "String", "NEXUS_GATEWAY_URL", "\"${escapedGatewayUrl}\""
     }
 
