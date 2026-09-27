@@ -176,7 +176,7 @@ def test_physical_source_handoff_is_exact_sha_digest_pinned_and_token_safe() -> 
 def test_every_embedded_python_block_is_syntax_valid() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     blocks = _embedded_python_blocks(text)
-    assert len(blocks) == 11
+    assert len(blocks) == 12
     for start_line, source in blocks:
         compile(source, f"{WORKFLOW}:heredoc:{start_line}", "exec")
 
