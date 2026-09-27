@@ -11,6 +11,7 @@ const source=read('mobile-shared-terminal.js');
 const html=read('index.html');
 const style=read('mobile-shared-terminal.css');
 const redraw=read('mobile-redesign.js');
+const redesignStyle=read('mobile-redesign.css');
 const core=read('mobile-core.js');
 
 function renderer(){
@@ -85,6 +86,9 @@ assert.ok(html.indexOf('id="sharedTerminal"')<html.indexOf('id="mobileLocalSandb
 assert.match(html,/<details class="mobile-local-sandbox" id="mobileLocalSandbox">/);
 assert.match(html,/<details class="home-local-sandbox" id="homeLocalSandbox">/);
 assert.match(html,/LOCAL PHONE SANDBOX · NOT LAPTOP PAPER/);
+assert.match(html,/id="paperEquity"[^<]*<\/span> <small>USDT<\/small><\/b>/);
+assert.match(redesignStyle,/\.v4-topbar \.brand>div\{[^}]*flex-direction:column/);
+assert.match(redesignStyle,/\.v4-topbar \.brand small\{[^}]*unicode-bidi:isolate/);
 const paperStart=html.indexOf('<details class="mobile-local-sandbox"');
 const paperEnd=html.indexOf('<section id="screen-mission"');
 const localPart=html.slice(paperStart,paperEnd);
