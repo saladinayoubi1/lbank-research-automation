@@ -5,7 +5,7 @@ const path=require('node:path');
 const vm=require('node:vm');
 const source=fs.readFileSync(path.join(__dirname,'..','product_ui','product-mission.js'),'utf8');
 
-function fixture(stale){
+function fixture(stale, ageSeconds=stale?226000:20){
   const el=new Map();
   for(const id of ['missionNow','missionOwnerActions','missionSystemEvidence','missionResources','missionTasks',
     'missionEvents','strategyMissionLeader','strategyMissionRows','missionSyncState','missionBadge',
@@ -13,7 +13,7 @@ function fixture(stale){
     el.set(id,{id,innerHTML:'',textContent:'',className:'',classList:{add(){},remove(){}}});
   }
   const data={
-    source:'local_runtime',generated_at:'2026-09-25T00:00:00Z',stale,snapshot_age_seconds:stale?226000:20,
+    source:'local_runtime',generated_at:'2026-09-25T00:00:00Z',stale,snapshot_age_seconds:ageSeconds,
     control_plane:{runtime_present:true,active_tasks:[{id:'OLD-PHASE4',title:'OLD TASK',priority:90}],
       blocked_or_triage:[{id:'OLD-BLOCKER',status:'BLOCKED'}],verified_progress_percent:71},
     owner_actions:[{id:'P4-L4-GUARD',title:'OLD L4 OWNER TASK',status:'OWNER_REQUIRED',authority:4}],
@@ -39,6 +39,15 @@ function fixture(stale){
   assert.match(old.get('missionResources').innerHTML,/HISTORICAL RESOURCES/);
   assert.match(old.get('missionBadge').textContent,/HISTORICAL SNAPSHOT/);
   assert.match(old.get('missionSyncState').textContent,/STALE/);
+  const staleAge=await fixture(false, 901);
+  assert.match(staleAge.get('missionNow').innerHTML,/HISTORICAL SNAPSHOT/);
+  assert.match(staleAge.get('missionOwnerActions').innerHTML,/HISTORICAL OWNER ACTIONS/);
+  assert.doesNotMatch(staleAge.get('missionOwnerActions').innerHTML,/🔴/);
+  assert.match(staleAge.get('missionSystemEvidence').innerHTML,/HISTORICAL · NOT CURRENT/);
+  assert.match(staleAge.get('missionResources').innerHTML,/HISTORICAL RESOURCES/);
+  assert.match(staleAge.get('missionTasks').innerHTML,/HISTORICAL TASK SNAPSHOT/);
+  assert.equal(staleAge.get('missionBadge').textContent,'HISTORICAL SNAPSHOT');
+  assert.match(staleAge.get('missionSyncState').textContent,/STALE/);
   const fresh=await fixture(false);
   assert.match(fresh.get('missionNow').innerHTML,/OLD-PHASE4/);
   assert.match(fresh.get('missionOwnerActions').innerHTML,/🔴 P4-L4-GUARD/);
