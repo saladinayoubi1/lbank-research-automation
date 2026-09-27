@@ -423,6 +423,24 @@ def test_owner_checkpoint_shadow_and_primary_are_fail_closed_and_default_off() -
     )[0]
     assert "vars.NEXUS_OWNER_PAPER_CHECKPOINT_PRIMARY != 'true'" in legacy_restore
 
+    bootstrap = paper.split("Bootstrap owner checkpoint from restored known-good Paper state", 1)[1].split(
+        "Advance public closed-candle Paper portfolio loop", 1
+    )[0]
+    assert "NEXUS_OWNER_PAPER_CHECKPOINT_SHADOW == 'true'" in bootstrap
+    assert "NEXUS_OWNER_PAPER_CHECKPOINT_PRIMARY != 'true'" in bootstrap
+    assert 'pre-advance-owner-checkpoint.tar.xz' in bootstrap
+    assert 'OWNER_BOOTSTRAP_ARCHIVE="$archive"' in bootstrap
+    assert 'tarfile.open(output, "w:xz", preset=9 | lzma.PRESET_EXTREME)' in bootstrap
+    assert "Paper state exceeds bounded packing surface" in bootstrap
+    assert 'scripts/nexus_owner_paper_checkpoint.py commit' in bootstrap
+    assert '--run-id "$GITHUB_RUN_ID"' in bootstrap
+    assert '--source-sha "$GITHUB_SHA"' in bootstrap
+    assert 'scripts/nexus_owner_paper_checkpoint.py verify' in bootstrap
+    assert "owner_checkpoint_bootstrap=PASS" in bootstrap
+    assert paper.index("Restore newest persistent Paper state") < paper.index(
+        "Bootstrap owner checkpoint from restored known-good Paper state"
+    ) < paper.index("Advance public closed-candle Paper portfolio loop")
+
     package = paper.split("Package Paper state for hosted artifact persistence", 1)[1].split(
         "Commit owner-controlled Paper checkpoint when enabled", 1
     )[0]
