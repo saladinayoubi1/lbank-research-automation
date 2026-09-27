@@ -35,6 +35,8 @@ function fixture(stale){
   assert.match(old.get('missionOwnerActions').innerHTML,/HISTORICAL OWNER ACTIONS — NOT CURRENT/);
   assert.doesNotMatch(old.get('missionOwnerActions').innerHTML,/🔴|OLD L4 OWNER TASK/);
   assert.match(old.get('missionTasks').innerHTML,/HISTORICAL TASK SNAPSHOT/);
+  assert.match(old.get('missionSystemEvidence').innerHTML,/HISTORICAL · NOT CURRENT/);
+  assert.match(old.get('missionResources').innerHTML,/HISTORICAL RESOURCES/);
   assert.match(old.get('missionBadge').textContent,/HISTORICAL SNAPSHOT/);
   assert.match(old.get('missionSyncState').textContent,/STALE/);
   const fresh=await fixture(false);
