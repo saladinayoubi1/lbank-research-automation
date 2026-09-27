@@ -57,7 +57,7 @@ def test_rehearsal_operates_only_on_disposable_synthetic_state():
 
 def test_early_failure_keeps_the_healthy_previous_gui():
     script=SOURCE.read_text(encoding="utf-8")
-    assert "if($t.status -eq 'ACTIVATING' -and !$existingNew.Count -and $oldWindow.Count -eq 1)" in script
+    assert "if($t.status -in @('STARTED','BACKED_UP','ACTIVATING') -and !$existingNew.Count -and $oldWindow.Count -eq 1)" in script
     assert "if($state.status -eq 'healthy' -and $state.source_sha -eq $oldSource" in script
     assert "Finish-Rollback $t $Dir" in script
     assert "newer-paper-post-recovery.json" in script
@@ -95,6 +95,27 @@ def test_no_repeat_destructive_recovery_for_advanced_owner_paper():
     script=SOURCE.read_text(encoding="utf-8")
     assert "if($t.status -eq 'RECOVERY_NEEDS_REVIEW'){throw" in script
     assert "$t.status='RECOVERY_NEEDS_REVIEW'" in script
-    assert "if($t.status -eq 'ACTIVATING' -and !$existingNew.Count -and $existingOld.Count -gt 0)" in script
+    assert "if($t.status -in @('STARTED','BACKED_UP','ACTIVATING') -and !$existingNew.Count -and $existingOld.Count -gt 0)" in script
     assert "newer-paper-post-recovery.json" in script
     assert "if((Hash $currentJournal) -eq $first and" not in script
+
+
+def test_candidate_is_retired_before_old_owner_recovery_classification():
+    script = SOURCE.read_text(encoding="utf-8")
+    rollback = script[script.index("function Rollback([string]$Dir){"):script.index("function Rehearse {")]
+    assert rollback.index("if($existingNew.Count){") < rollback.index("$oldWindow=@($existingOld")
+    assert "Stop-Exact $candidate 4" in rollback
+    assert "Progressing Paper journal could not be captured consistently" in rollback
+    assert "Current Paper differs from activation snapshot" in rollback
+    assert "unreplayed-current-paper.json" in rollback
+    assert "RECOVERY_NEEDS_REVIEW" in rollback
+
+
+def test_shortcut_commit_checks_targets_and_original_bytes_before_finalizing():
+    script = SOURCE.read_text(encoding="utf-8")
+    marker = script.index("Post-switch shortcut target mismatch")
+    commit = script.index("$record.status='COMMITTED'")
+    assert marker < commit
+    assert "Atomic switch modified original shortcut bytes" in script[marker:commit]
+    assert "Prior app restarted during shortcut commit" in script[marker:commit]
+    assert "$null=Health $ExpectedSourceSha 35" in script[marker:commit]
