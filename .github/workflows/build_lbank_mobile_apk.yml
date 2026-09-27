@@ -132,6 +132,12 @@ jobs:
             echo "- Paper/Research: canonical Python backend first via bounded HTTPS bridge; explicit local deterministic Paper fallback when unavailable"
             echo "- Live: locked; no exchange order/private credential/withdrawal/signing path"
           } >> "$GITHUB_STEP_SUMMARY"
+      - name: Preserve validated standard APK before alternate Gradle build
+        run: |
+          set -euo pipefail
+          mkdir -p release-evidence/standard-preserved
+          cp android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_2.apk release-evidence/standard-preserved/
+          cp android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_2.apk.sha256 release-evidence/standard-preserved/
       - name: Build safe side-by-side pairing APK
         working-directory: android/lbank-mobile
         run: gradle --no-daemon --stacktrace :app:assembleRelease -PNEXUS_PAIRING_TEST_BUILD=true
@@ -146,6 +152,12 @@ jobs:
           grep -q "launchable-activity:" /tmp/aapt-pairing.txt
           unzip -p "$APK_PAIRING" assets/mobile-shared-client.js | grep -q "failureMessage"
           sha256sum "$APK_PAIRING" > "${APK_PAIRING}.sha256"
+      - name: Restore standard APK for exact-source evidence
+        run: |
+          set -euo pipefail
+          cp release-evidence/standard-preserved/NEXUS_PERSONAL_PRO_4_1_2.apk android/lbank-mobile/app/build/outputs/apk/release/
+          cp release-evidence/standard-preserved/NEXUS_PERSONAL_PRO_4_1_2.apk.sha256 android/lbank-mobile/app/build/outputs/apk/release/
+          sha256sum -c android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_2.apk.sha256
       - name: Build unsigned final APK release evidence
         run: >-
           python scripts/build_release_evidence.py
