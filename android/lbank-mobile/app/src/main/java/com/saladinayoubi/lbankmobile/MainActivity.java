@@ -96,7 +96,8 @@ public final class MainActivity extends Activity {
         settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         webView.addJavascriptInterface(new NativeGateway(), "NexusNative");
-        // The canonical bridge is loaded exactly once, before the shared reader, by ordered HTML defer scripts.
+        // Canonical client loads in index.html before the shared Paper observer.
+        // Avoid a second late script injection: it can replace pending native callbacks.
         webView.setWebViewClient(new WebViewClient());
         webView.setWebChromeClient(new WebChromeClient());
         webView.loadUrl("file:///android_asset/index.html");

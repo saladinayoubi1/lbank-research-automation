@@ -233,9 +233,9 @@ def test_side_by_side_pairing_does_not_replace_owner_app() -> None:
     gradle=BUILD_GRADLE.read_text(encoding="utf-8")
     manifest=Path("android/lbank-mobile/app/src/main/AndroidManifest.xml").read_text(encoding="utf-8")
     workflow=WORKFLOW.read_text(encoding="utf-8")
-    assert "com.saladinayoubi.lbankmobile.pairingfix" in gradle
+    assert "com.saladinayoubi.lbankmobile.bridgefix" in gradle
     assert "NEXUS_PAIRING_TEST_BUILD" in gradle
-    assert "NEXUS Pairing Fix" in gradle
+    assert "NEXUS Bridge Test" in gradle
     assert 'android:label="${nexusAppLabel}"' in manifest
     assert "NEXUS_PERSONAL_PRO_4_1_3_PAIRING_APK" in workflow
     assert "assembleRelease -PNEXUS_PAIRING_TEST_BUILD=true" in workflow

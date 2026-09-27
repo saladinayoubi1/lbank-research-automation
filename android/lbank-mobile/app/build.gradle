@@ -12,12 +12,12 @@ android {
     compileSdk 35
 
     defaultConfig {
-        applicationId pairingTestBuild ? "com.saladinayoubi.lbankmobile.pairingfix" : "com.saladinayoubi.lbankmobile"
+        applicationId pairingTestBuild ? "com.saladinayoubi.lbankmobile.bridgefix" : "com.saladinayoubi.lbankmobile"
         minSdk 23
         targetSdk 35
         versionCode 12
         versionName "4.1.3"
-        manifestPlaceholders = [nexusAppLabel: pairingTestBuild ? "NEXUS Pairing Fix" : "NEXUS Personal Pro"]
+        manifestPlaceholders = [nexusAppLabel: pairingTestBuild ? "NEXUS Bridge Test" : "NEXUS Personal Pro"]
         buildConfigField "String", "NEXUS_GATEWAY_URL", "\"${escapedGatewayUrl}\""
     }
 
