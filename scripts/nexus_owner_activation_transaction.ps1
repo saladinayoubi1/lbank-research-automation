@@ -50,6 +50,7 @@ function Stop-Exact([string]$Root,[int]$GraceSeconds=12) {
   Assert (@(ExactProcs $Root).Count -eq 0) 'Exact-version processes did not quiesce'
 }
 function ProfileFiles([string]$Root) {
+  Assert (@(Get-ChildItem -LiteralPath $Root -Recurse -Force -ErrorAction Stop|Where-Object {$_.Attributes -band [IO.FileAttributes]::ReparsePoint}).Count -eq 0) 'Owner profile has reparse content'
   @(Get-ChildItem -LiteralPath $Root -File -Recurse -Force -ErrorAction Stop |
     ForEach-Object {
       Assert (($_.Attributes -band [IO.FileAttributes]::ReparsePoint) -eq 0) 'Profile contains a reparse file'
@@ -79,7 +80,7 @@ function CheckStage {
   $old=@(ExactProcs $prior)
   Assert (@($old|Where-Object {$_.ProcessName -eq 'NEXUS Personal Pro' -and $_.MainWindowHandle -ne 0}).Count -eq 1) 'Exactly one visible prior GUI required'
   Assert ($old.Count -ge 2 -and $old.Count -le 15) 'Unexpected prior process population'
-  $null=ValidPaper (Join-Path $owner 'product-data' '..') # read from owner root
+  $null=ValidPaper $owner # read from owner root
   $super=JsonFile (Join-Path $owner 'product-data\supervisor-state.json')
   Assert ($super.status -eq 'healthy' -and $super.live_trading_authority -eq $false) 'Current owner must be healthy and Live-locked'
   $sw=New-Object -ComObject WScript.Shell
@@ -148,7 +149,7 @@ function Rollback([string]$Dir){
   if($t.status -eq 'COMMITTED'){return}
   Stop-Exact $candidate 4
   if(@(ExactProcs $prior).Count){Stop-Exact $prior 3}
-  if(Test-Path (Join-Path $Dir 'profile')){RestoreProfile $Dir}
+  if($t.status -in @('BACKED_UP','ACTIVATING') -and (Test-Path (Join-Path $Dir 'profile'))){RestoreProfile $Dir}
   if($t.links){RestoreLinks @($t.links)}
   $env:RUNNER_TRACKING_ID=$null
   $null=Start-Process -FilePath (Join-Path $prior 'NEXUS Personal Pro.exe')
@@ -218,20 +219,22 @@ try{
   Write-Json (Join-Path $transaction 'transaction.json') $record
   Assert (@(ExactProcs $prior).Count -eq 0) 'Old version relaunched before candidate'
   $env:RUNNER_TRACKING_ID=$null
+  $record.status='ACTIVATING';Write-Json (Join-Path $transaction 'transaction.json') $record
   $null=Start-Process -FilePath (Join-Path $candidate 'NEXUS Personal Pro.exe')
   $null=Health $ExpectedSourceSha 425
   Assert (@(ExactProcs $prior).Count -eq 0) 'Prior app unexpectedly relaunched'
   # Switch shortcuts only after real owner profile and exact new GUI are healthy.
   $shell=New-Object -ComObject WScript.Shell
   foreach($l in $record.links){
-    $tmp="$($l.path).nexus-new"
+    $tmp="$($l.path).nexus-new.lnk"
     $shortcut=$shell.CreateShortcut($tmp);$shortcut.TargetPath=Join-Path $candidate 'NEXUS Personal Pro.exe'
     $shortcut.WorkingDirectory=$candidate;$shortcut.Save()
-    Move-Item -LiteralPath $tmp -Destination $l.path -Force
+    if(Test-Path -LiteralPath $l.path){[IO.File]::Replace($tmp,$l.path,$null)}
+    else {Move-Item -LiteralPath $tmp -Destination $l.path}
   }
+  $sync.Enabled=$oldSyncEnabled
   $record.status='COMMITTED';$record.committed_at=[DateTime]::UtcNow.ToString('o')
   Write-Json (Join-Path $transaction 'transaction.json') $record
-  $sync.Enabled=$oldSyncEnabled
   try{$folder.DeleteTask($taskName,0)}catch{}
   'EXACT_OWNER_ACTIVATION=PASS new owner GUI verified; rollback backup retained'
 }catch{
