@@ -666,6 +666,72 @@ jobs:
               print("restored_paper_state_artifact_id=none")
           PY
 
+      - name: Bootstrap owner checkpoint from restored known-good Paper state
+        if: ${{ vars.NEXUS_OWNER_PAPER_CHECKPOINT_SHADOW == 'true' && vars.NEXUS_OWNER_PAPER_CHECKPOINT_PRIMARY != 'true' }}
+        run: |
+          set -euo pipefail
+          case "$OWNER_CHECKPOINT_ROOT" in
+            /mnt/e/NEXUS/NEXUS_OWNER_PAPER_PRIVATE/checkpoints) ;;
+            *) echo "::error::Unexpected owner checkpoint root."; exit 1 ;;
+          esac
+          [ -d /mnt/e/NEXUS/NEXUS_OWNER_PAPER_PRIVATE ]
+          free_kb="$(df -Pk /mnt/e | awk 'NR==2 {print $4}')"
+          [ "$free_kb" -ge 10485760 ] || { echo "::error::Owner checkpoint volume has less than 10 GiB free."; exit 1; }
+          cd "$SOURCE_ROOT"
+          archive="$SOURCE_ROOT/build/pre-advance-owner-checkpoint.tar.xz"
+          rm -f "$archive"
+          OWNER_BOOTSTRAP_ARCHIVE="$archive" "$PYTHON_BIN" - <<'PY'
+          import lzma
+          import os
+          import tarfile
+          from pathlib import Path
+
+          root = Path(os.environ["STATE_ROOT"])
+          output = Path(os.environ["OWNER_BOOTSTRAP_ARCHIVE"])
+          if root.is_symlink() or not root.is_dir():
+              raise RuntimeError("Paper state root is unavailable or unsafe")
+          root = root.resolve(strict=True)
+          output.parent.mkdir(parents=True, exist_ok=True)
+          file_count = 0
+          total_bytes = 0
+          with tarfile.open(output, "w:xz", preset=9 | lzma.PRESET_EXTREME) as archive:
+              for path in sorted(root.rglob("*")):
+                  if path.is_symlink():
+                      raise RuntimeError(f"Paper state contains symlink: {path}")
+                  if path.is_dir():
+                      continue
+                  if not path.is_file():
+                      raise RuntimeError(f"Paper state contains non-regular entry: {path}")
+                  file_count += 1
+                  total_bytes += path.stat().st_size
+                  if file_count > 10_000 or total_bytes > 100_000_000:
+                      raise RuntimeError("Paper state exceeds bounded packing surface")
+                  relative = path.relative_to(root).as_posix()
+                  info = archive.gettarinfo(str(path), arcname=relative)
+                  if not info.isfile():
+                      raise RuntimeError(f"Paper state tar member is not regular: {relative}")
+                  info.uid = 0
+                  info.gid = 0
+                  info.uname = ""
+                  info.gname = ""
+                  info.mtime = 0
+                  info.mode = 0o600
+                  with path.open("rb") as handle:
+                      archive.addfile(info, handle)
+          if file_count < 1 or not 0 < output.stat().st_size <= 800_000:
+              raise RuntimeError("Restored Paper state cannot form a bounded owner checkpoint")
+          print(f"owner_checkpoint_bootstrap_files={file_count}")
+          print(f"owner_checkpoint_bootstrap_uncompressed_bytes={total_bytes}")
+          print(f"owner_checkpoint_bootstrap_archive_bytes={output.stat().st_size}")
+          PY
+          "$PYTHON_BIN" scripts/nexus_owner_paper_checkpoint.py commit \
+            --root "$OWNER_CHECKPOINT_ROOT" \
+            --archive "$archive" \
+            --run-id "$GITHUB_RUN_ID" \
+            --source-sha "$GITHUB_SHA"
+          "$PYTHON_BIN" scripts/nexus_owner_paper_checkpoint.py verify --root "$OWNER_CHECKPOINT_ROOT"
+          echo "owner_checkpoint_bootstrap=PASS"
+
       - name: Advance public closed-candle Paper portfolio loop
         run: |
           set -euo pipefail
