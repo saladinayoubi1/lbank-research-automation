@@ -3,11 +3,12 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 const source=fs.readFileSync('android/lbank-mobile/app/src/main/assets/mobile-shared-client.js','utf8');
-function harness(){
+function harness({online=true,clientReady=true}={}){
   let now=1000000;
   const nodes=new Map(),events={},timers=[],renders=[],requests=[];
   const document={hidden:false,getElementById(id){if(!nodes.has(id))nodes.set(id,{dataset:{},blur(){},close(){this.open=false;}});return nodes.get(id);},addEventListener(n,f){events[n]=f;}};
-  const window={navigator:{onLine:true},NexusPaperTerminal:{render(x){renders.push(x);}},NexusProductClient:{call(method,path){return new Promise((resolve,reject)=>requests.push({method,path,resolve,reject}));}},addEventListener(n,f){events[n]=f;}};
+  const window={navigator:{onLine:online},NexusPaperTerminal:{render(x){renders.push(x);}},NexusProductClient:{call(method,path){return new Promise((resolve,reject)=>requests.push({method,path,resolve,reject}));}},addEventListener(n,f){events[n]=f;}};
+  if(!clientReady)delete window.NexusProductClient;
   vm.runInNewContext(source,{document,window,Date:{now:()=>now},setInterval(f,ms){timers.push({f,ms});},setTimeout(f,ms){const t={f,ms};timers.push(t);return t;},clearTimeout(t){if(t)t.cancelled=true;}});
   return {nodes,events,timers,renders,requests,document,window,advance(s){now+=s*1000;},async flush(){await new Promise(setImmediate);}};
 }
@@ -40,7 +41,7 @@ test('retry backs off, online recovers immediately, and offline late success can
  timer=h.timers.filter(t=>!t.cancelled).at(-1);assert.equal(timer.ms,10000);
  h.events.online();assert.equal(timer.cancelled,true);assert.equal(h.requests.length,3);
  h.window.navigator.onLine=false;h.events.offline();h.requests[2].resolve(payload());await h.flush();
- assert.equal(h.nodes.get('sharedConnection').dataset.state,'offline');assert.equal(h.renders.at(-1),null);
+ assert.equal(h.requests.length,4);assert.equal(h.nodes.get('sharedConnection').dataset.state,'loading');assert.equal(h.renders.at(-1),null);
  h.window.navigator.onLine=true;h.events.online();h.requests[3].resolve(payload());await h.flush();
  assert.equal(h.nodes.get('sharedConnection').dataset.state,'connected');
  assert.equal(h.timers.filter(t=>!t.cancelled).at(-1).ms,30000);
@@ -49,4 +50,34 @@ test('a normal refresh preserves visible table until the new response arrives',a
  const h=harness();h.requests[0].resolve(payload());await h.flush();const count=h.renders.length;
  h.events.focus();assert.equal(h.renders.length,count);assert.equal(h.nodes.get('sharedConnection').dataset.state,'connected');
  h.events.focus();assert.equal(h.requests.length,2);
+});
+
+test('VPN offline hint never suppresses an authenticated HTTPS attempt',async()=>{
+ const h=harness({online:false});
+ assert.equal(h.requests.length,1);
+ h.requests[0].resolve(payload());await h.flush();
+ assert.equal(h.nodes.get('sharedConnection').dataset.state,'connected');
+});
+test('failures display actionable safe diagnostics without printing arbitrary exceptions',async()=>{
+ const bad=harness();
+ bad.requests[0].reject(Error('NEXUS gateway HTTP 401'));await bad.flush();
+ assert.match(bad.nodes.get('sharedConnectionDetail').textContent,/401/);
+ assert.equal(bad.nodes.get('sharedConnection').dataset.state,'offline');
+ const tls=harness();
+ tls.requests[0].reject(Error('SSLHandshakeException: private sensitive message'));await tls.flush();
+ assert.match(tls.nodes.get('sharedConnectionDetail').textContent,/HTTPS/);
+ assert.doesNotMatch(tls.nodes.get('sharedConnectionDetail').textContent,/private sensitive/);
+ const other=harness();
+ other.requests[0].reject(Error('Bearer owner-secret-should-not-appear'));await other.flush();
+ assert.doesNotMatch(other.nodes.get('sharedConnectionDetail').textContent,/secret/);
+});
+test('late native bridge becomes usable without a restart',async()=>{
+ const h=harness({clientReady:false});
+ assert.equal(h.requests.length,0);
+ assert.match(h.nodes.get('sharedConnectionDetail').textContent,/اپ/);
+ h.window.NexusProductClient={call(method,path){return new Promise((resolve,reject)=>h.requests.push({method,path,resolve,reject}));}};
+ h.events['nexus-product-client-ready']();
+ assert.equal(h.requests.length,1);
+ h.requests[0].resolve(payload());await h.flush();
+ assert.equal(h.nodes.get('sharedConnection').dataset.state,'connected');
 });
