@@ -260,6 +260,9 @@ jobs:
       STATE_ARTIFACT: nexus-persistent-paper-trading-state
       WHEELHOUSE_ARTIFACT: nexus-paper-runtime-wheelhouse-${{ github.sha }}
       WHEELHOUSE_ARCHIVE_SHA256: ${{ needs.runtime-wheelhouse.outputs.archive_sha256 }}
+      OWNER_CHECKPOINT_ROOT: /mnt/e/NEXUS/NEXUS_OWNER_PAPER_PRIVATE/checkpoints
+      OWNER_CHECKPOINT_SHADOW: ${{ vars.NEXUS_OWNER_PAPER_CHECKPOINT_SHADOW || 'false' }}
+      OWNER_CHECKPOINT_PRIMARY: ${{ vars.NEXUS_OWNER_PAPER_CHECKPOINT_PRIMARY || 'false' }}
     steps:
       - name: Prepare exact source artifact and pre-provisioned Python 3.12 without JavaScript actions
         run: |
@@ -562,7 +565,25 @@ jobs:
           echo "offline_wheelhouse_bootstrap=PASS"
       - run: '"$PYTHON_BIN" -m pip check'
 
+      - name: Restore owner-controlled Paper checkpoint in primary mode
+        if: ${{ vars.NEXUS_OWNER_PAPER_CHECKPOINT_PRIMARY == 'true' }}
+        run: |
+          set -euo pipefail
+          case "$OWNER_CHECKPOINT_ROOT" in
+            /mnt/e/NEXUS/NEXUS_OWNER_PAPER_PRIVATE/checkpoints) ;;
+            *) echo "::error::Unexpected owner checkpoint root."; exit 1 ;;
+          esac
+          [ -d /mnt/e/NEXUS/NEXUS_OWNER_PAPER_PRIVATE ]
+          free_kb="$(df -Pk /mnt/e | awk 'NR==2 {print $4}')"
+          [ "$free_kb" -ge 10485760 ] || { echo "::error::Owner checkpoint volume has less than 10 GiB free."; exit 1; }
+          cd "$SOURCE_ROOT"
+          rm -rf "$STATE_ROOT"
+          "$PYTHON_BIN" scripts/nexus_owner_paper_checkpoint.py verify --root "$OWNER_CHECKPOINT_ROOT"
+          "$PYTHON_BIN" scripts/nexus_owner_paper_checkpoint.py restore --root "$OWNER_CHECKPOINT_ROOT" --destination "$STATE_ROOT"
+          echo "owner_checkpoint_restore=PASS"
+
       - name: Restore newest persistent Paper state
+        if: ${{ vars.NEXUS_OWNER_PAPER_CHECKPOINT_PRIMARY != 'true' }}
         run: |
           set -euo pipefail
           cd "$SOURCE_ROOT"
@@ -793,6 +814,18 @@ jobs:
           print(f"state_handoff_uncompressed_bytes={total_bytes}")
           print(f"state_handoff_tar_xz_bytes={output.stat().st_size}")
           PY
+          if [ "${OWNER_CHECKPOINT_PRIMARY:-false}" = "true" ]; then
+            {
+              echo "state_archive_codec=owner-checkpoint-v1"
+              echo "state_archive_chunk_count=0"
+              echo "state_archive_b85_len=0"
+              echo "state_archive_sha256="
+              for index in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17; do
+                echo "state_archive_chunk_${index}="
+              done
+            } >> "$GITHUB_OUTPUT"
+            echo "legacy_cross_job_state_handoff=SKIPPED_PRIMARY_OWNER_CHECKPOINT"
+          else
           # Pack pairs of Base85 digits into single BMP characters. This halves
           # GitHub's UTF-16 estimate without new jobs, files shared between jobs,
           # changed permissions, or a change to the digest-verified archive.
@@ -824,6 +857,24 @@ jobs:
           print(f"state_handoff_estimated_output_utf16_bytes={estimated_output_utf16_bytes}")
           print(f"state_handoff_chunk_count={len(chunks)}")
           PY
+          fi
+
+      - name: Commit owner-controlled Paper checkpoint when enabled
+        if: ${{ success() && (vars.NEXUS_OWNER_PAPER_CHECKPOINT_SHADOW == 'true' || vars.NEXUS_OWNER_PAPER_CHECKPOINT_PRIMARY == 'true') }}
+        run: |
+          set -euo pipefail
+          case "$OWNER_CHECKPOINT_ROOT" in
+            /mnt/e/NEXUS/NEXUS_OWNER_PAPER_PRIVATE/checkpoints) ;;
+            *) echo "::error::Unexpected owner checkpoint root."; exit 1 ;;
+          esac
+          [ -d /mnt/e/NEXUS/NEXUS_OWNER_PAPER_PRIVATE ]
+          free_kb="$(df -Pk /mnt/e | awk 'NR==2 {print $4}')"
+          [ "$free_kb" -ge 10485760 ] || { echo "::error::Owner checkpoint volume has less than 10 GiB free."; exit 1; }
+          archive="$SOURCE_ROOT/build/persistent-state-handoff.tar.xz"
+          [ -f "$archive" ] && [ -s "$archive" ]
+          "$PYTHON_BIN" "$SOURCE_ROOT/scripts/nexus_owner_paper_checkpoint.py" commit             --root "$OWNER_CHECKPOINT_ROOT"             --archive "$archive"             --run-id "$GITHUB_RUN_ID"             --source-sha "$GITHUB_SHA"
+          "$PYTHON_BIN" "$SOURCE_ROOT/scripts/nexus_owner_paper_checkpoint.py" verify --root "$OWNER_CHECKPOINT_ROOT"
+          echo "owner_checkpoint_commit=PASS mode=${OWNER_CHECKPOINT_PRIMARY:-false}"
 
       - name: Cleanup isolated physical source and state
         if: always()
@@ -835,7 +886,7 @@ jobs:
           case "$state_root" in "$HOME"/.local/share/nexus/persistent-paper-state/*) rm -rf "$state_root" ;; *) exit 1;; esac
 
   persist-state:
-    if: ${{ always() && needs.paper-loop.result == 'success' && needs.paper-loop.outputs.state_archive_chunk_count != '0' && needs.paper-loop.outputs.state_archive_chunk_count != '' }}
+    if: ${{ always() && vars.NEXUS_OWNER_PAPER_CHECKPOINT_PRIMARY != 'true' && needs.paper-loop.result == 'success' && needs.paper-loop.outputs.state_archive_chunk_count != '0' && needs.paper-loop.outputs.state_archive_chunk_count != '' }}
     needs: paper-loop
     runs-on: ubuntu-latest
     timeout-minutes: 10
