@@ -132,6 +132,20 @@ jobs:
             echo "- Paper/Research: canonical Python backend first via bounded HTTPS bridge; explicit local deterministic Paper fallback when unavailable"
             echo "- Live: locked; no exchange order/private credential/withdrawal/signing path"
           } >> "$GITHUB_STEP_SUMMARY"
+      - name: Build safe side-by-side pairing APK
+        working-directory: android/lbank-mobile
+        run: gradle --no-daemon --stacktrace :app:assembleRelease -PNEXUS_PAIRING_TEST_BUILD=true
+      - name: Validate independent pairing test APK
+        run: |
+          set -euo pipefail
+          APK_PAIRING=android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_2_PAIRING.apk
+          cp android/lbank-mobile/app/build/outputs/apk/release/app-release.apk "$APK_PAIRING"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK_PAIRING"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK_PAIRING" | tee /tmp/aapt-pairing.txt
+          grep -q "package: name='com.saladinayoubi.lbankmobile.pairing' versionCode='11' versionName='4.1.2'" /tmp/aapt-pairing.txt
+          grep -q "launchable-activity:" /tmp/aapt-pairing.txt
+          unzip -p "$APK_PAIRING" assets/mobile-shared-client.js | grep -q "failureMessage"
+          sha256sum "$APK_PAIRING" > "${APK_PAIRING}.sha256"
       - name: Build unsigned final APK release evidence
         run: >-
           python scripts/build_release_evidence.py
@@ -166,6 +180,15 @@ jobs:
           path: |
             android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_2.apk
             android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_2.apk.sha256
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: NEXUS_PERSONAL_PRO_4_1_2_PAIRING_APK
+          path: |
+            android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_2_PAIRING.apk
+            android/lbank-mobile/app/build/outputs/apk/release/NEXUS_PERSONAL_PRO_4_1_2_PAIRING.apk.sha256
           if-no-files-found: error
           retention-days: 30
           compression-level: 0

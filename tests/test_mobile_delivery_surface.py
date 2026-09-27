@@ -227,3 +227,16 @@ def test_final_android_release_apk_is_bound_to_fail_closed_nonproduction_evidenc
     assert workflow.index("Build installable release APK") < workflow.index("Build unsigned final APK release evidence")
     assert workflow.index("Build unsigned final APK release evidence") < workflow.index("Fail-closed verify final APK release evidence")
     assert workflow.index("Fail-closed verify final APK release evidence") < workflow.index("NEXUS_PERSONAL_PRO_4_1_2_RELEASE_EVIDENCE")
+
+
+def test_side_by_side_pairing_does_not_replace_owner_app() -> None:
+    gradle=BUILD_GRADLE.read_text(encoding="utf-8")
+    manifest=Path("android/lbank-mobile/app/src/main/AndroidManifest.xml").read_text(encoding="utf-8")
+    workflow=WORKFLOW.read_text(encoding="utf-8")
+    assert "com.saladinayoubi.lbankmobile.pairing" in gradle
+    assert "NEXUS_PAIRING_TEST_BUILD" in gradle
+    assert "NEXUS Pairing Test" in gradle
+    assert 'android:label="${nexusAppLabel}"' in manifest
+    assert "NEXUS_PERSONAL_PRO_4_1_2_PAIRING_APK" in workflow
+    assert "assembleRelease -PNEXUS_PAIRING_TEST_BUILD=true" in workflow
+    assert workflow.index("Validate and package NEXUS Android 4 APK") < workflow.index("Build safe side-by-side pairing APK")
