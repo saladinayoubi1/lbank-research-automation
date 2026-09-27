@@ -108,6 +108,10 @@ function RestoreLinks([object[]]$LinksData) {
   foreach($x in $LinksData) {
     if($x.existed){Assert ((Hash $x.copy) -eq $x.sha) 'Shortcut backup digest failed';Copy-Item -LiteralPath $x.copy -Destination $x.path -Force}
     elseif(Test-Path $x.path){Remove-Item -LiteralPath $x.path -Force}
+    foreach($suffix in @('.nexus-new.lnk','.nexus-rollback-prior.lnk')){
+      $orphan="$($x.path)$suffix"
+      if(Test-Path -LiteralPath $orphan){Remove-Item -LiteralPath $orphan -Force -ErrorAction Stop}
+    }
   }
 }
 function Health([string]$Expected,[int]$Timeout=425,[string]$InstallRoot=$candidate){
@@ -145,27 +149,66 @@ function RestoreProfile([string]$Dir){
   Copy-Item -LiteralPath $backup -Destination $owner -Recurse
   foreach($x in @($meta.files)){Assert ((Hash (Join-Path $owner $x.rel)) -eq $x.sha) 'Owner profile rollback checksum failed'}
 }
+function Finish-Rollback([object]$Transaction,[string]$Dir){
+  $Transaction.status='ROLLED_BACK'
+  $Transaction|Add-Member -NotePropertyName rolled_back_at -NotePropertyValue ([DateTime]::UtcNow.ToString('o')) -Force
+  Write-Json (Join-Path $Dir 'transaction.json') $Transaction
+}
 function Rollback([string]$Dir){
   $t=JsonFile (Join-Path $Dir 'transaction.json')
   if($t.status -in @('COMMITTED','ROLLED_BACK')){return}
-  Stop-Exact $candidate 4
-  $old=@(ExactProcs $prior)
-  $oldAlreadyHealthy=$t.status -eq 'STARTED' -and @($old|Where-Object {$_.ProcessName -eq 'NEXUS Personal Pro' -and $_.MainWindowHandle -ne 0}).Count -eq 1
-  if(-not $oldAlreadyHealthy){
-    if($old.Count){Stop-Exact $prior 3}
-    if($t.status -in @('BACKED_UP','ACTIVATING') -and (Test-Path (Join-Path $Dir 'profile'))){RestoreProfile $Dir}
-    if($t.links){RestoreLinks @($t.links)}
-    $env:RUNNER_TRACKING_ID=$null
-    $null=Start-Process -FilePath (Join-Path $prior 'NEXUS Personal Pro.exe')
+  if($t.status -eq 'RECOVERY_NEEDS_REVIEW'){throw 'Prior recovery needs independent owner review; will not overwrite newer Paper'}
+  # A previous rollback may already have restarted the old GUI and generated
+  # newer Paper events. The timed watchdog must NEVER overwrite those events.
+  $existingOld=@(ExactProcs $prior)
+  $existingNew=@(ExactProcs $candidate)
+  $oldWindow=@($existingOld|Where-Object {$_.ProcessName -eq 'NEXUS Personal Pro' -and $_.MainWindowHandle -ne 0})
+  if($t.status -eq 'ACTIVATING' -and !$existingNew.Count -and $oldWindow.Count -eq 1){
     $oldSource=(Get-Content -LiteralPath (Join-Path $prior 'resources\source-sha.txt') -Raw -ErrorAction Stop).Trim()
-    Assert ($oldSource -match '^[0-9a-f]{40}$') 'Previous source binding is invalid'
-    $null=Health $oldSource 425 $prior
+    $state=JsonFile (Join-Path $owner 'product-data\supervisor-state.json')
+    if($state.status -eq 'healthy' -and $state.source_sha -eq $oldSource -and $state.live_trading_authority -eq $false){
+      $null=ValidPaper $owner
+      if($t.links){RestoreLinks @($t.links)}
+      if($t.sync_was_enabled -eq $true){
+        $service=New-Object -ComObject Schedule.Service;$service.Connect()
+        $service.GetFolder('\').GetTask($syncTask).Enabled=$true
+      }
+      $currentJournal=Join-Path $owner 'product-data\shared_paper\terminal.json'
+      $newerCopy=Join-Path $Dir 'newer-paper-post-recovery.json'
+      for($attempt=0;$attempt -lt 5;$attempt++){
+        $first=Hash $currentJournal
+        Copy-Item -LiteralPath $currentJournal -Destination $newerCopy -Force
+        if((Hash $currentJournal) -eq $first -and (Hash $newerCopy) -eq $first){break}
+        Start-Sleep -Milliseconds 250
+      }
+      Finish-Rollback $t $Dir
+      return
+    }
+  }
+  # If old is already running but not yet healthy, do not destroy its possible
+  # new writes. An operator can diagnose instead of replaying stale account data.
+  if($t.status -eq 'ACTIVATING' -and !$existingNew.Count -and $existingOld.Count -gt 0){
+    $t.status='RECOVERY_NEEDS_REVIEW';Write-Json (Join-Path $Dir 'transaction.json') $t
+    throw 'Existing previous GUI is starting: refusing repeated destructive rollback'
+  }
+  Stop-Exact $candidate 4
+  if(@(ExactProcs $prior).Count){Stop-Exact $prior 3}
+  if($t.status -in @('BACKED_UP','ACTIVATING') -and (Test-Path (Join-Path $Dir 'profile'))){RestoreProfile $Dir}
+  if($t.links){RestoreLinks @($t.links)}
+  $env:RUNNER_TRACKING_ID=$null
+  $null=Start-Process -FilePath (Join-Path $prior 'NEXUS Personal Pro.exe')
+  $oldSource=(Get-Content -LiteralPath (Join-Path $prior 'resources\source-sha.txt') -Raw -ErrorAction Stop).Trim()
+  Assert ($oldSource -match '^[0-9a-f]{40}$') 'Previous source binding is invalid'
+  try{$null=Health $oldSource 425 $prior}
+  catch {
+    $t.status='RECOVERY_NEEDS_REVIEW';Write-Json (Join-Path $Dir 'transaction.json') $t
+    throw 'Previous GUI needs independent recovery review; refusing future automatic overwrite'
   }
   if($t.sync_was_enabled -eq $true){
     $service=New-Object -ComObject Schedule.Service;$service.Connect()
     $service.GetFolder('\').GetTask($syncTask).Enabled=$true
   }
-  $t.status='ROLLED_BACK';$t.rolled_back_at=[DateTime]::UtcNow.ToString('o');Write-Json (Join-Path $Dir 'transaction.json') $t
+  Finish-Rollback $t $Dir
 }
 function Rehearse {
   $r=Join-Path $env:TEMP ('nexus-activation-synthetic-'+[guid]::NewGuid().ToString('N'))
@@ -192,6 +235,13 @@ function Rehearse {
     RestoreProfile $txn
     RestoreLinks @($linkMeta)
     Assert ((Hash $journal) -eq $orig -and (Hash $link) -eq $linkMeta.sha) 'Synthetic profile/shortcut rollback failed'
+    $linkTemp="$link.nexus-new.lnk";$linkPrior="$link.nexus-rollback-prior.lnk"
+    [IO.File]::WriteAllText($linkTemp,'synthetic-candidate-shortcut')
+    [IO.File]::Replace($linkTemp,$link,$linkPrior)
+    Assert ((Get-Content $link -Raw) -eq 'synthetic-candidate-shortcut') 'Atomic synthetic shortcut switch failed'
+    Assert ((Hash $linkPrior) -eq $linkMeta.sha) 'Atomic shortcut prior backup was damaged'
+    RestoreLinks @($linkMeta)
+    Assert ((Hash $link) -eq $linkMeta.sha -and !(Test-Path $linkPrior)) 'Atomic shortcut rollback/cleanup failed'
     'SYNTHETIC_OWNER_ACTIVATION_REHEARSAL=PASS profile-copy, corruption detection, shortcut rollback; no real state'
     if($TestScheduler){
       $testName="NEXUS-Activation-REHEARSAL-$sourceShort"
@@ -273,18 +323,33 @@ try{
     $tmp="$($l.path).nexus-new.lnk"
     $shortcut=$shell.CreateShortcut($tmp);$shortcut.TargetPath=Join-Path $candidate 'NEXUS Personal Pro.exe'
     $shortcut.WorkingDirectory=$candidate;$shortcut.Save()
-    if(Test-Path -LiteralPath $l.path){[IO.File]::Replace($tmp,$l.path,$null)}
+    if(Test-Path -LiteralPath $l.path){
+      $priorSibling="$($l.path).nexus-rollback-prior.lnk"
+      Assert (!(Test-Path -LiteralPath $priorSibling)) 'Unexpected previous shortcut sibling: investigate first'
+      [IO.File]::Replace($tmp,$l.path,$priorSibling)
+    }
     else {Move-Item -LiteralPath $tmp -Destination $l.path}
   }
   $sync.Enabled=$oldSyncEnabled
   $record.status='COMMITTED';$record.committed_at=[DateTime]::UtcNow.ToString('o')
   Write-Json (Join-Path $transaction 'transaction.json') $record
+  foreach($l in $record.links){
+    foreach($suffix in @('.nexus-new.lnk','.nexus-rollback-prior.lnk')){
+      $extra="$($l.path)$suffix"
+      if(Test-Path -LiteralPath $extra){Remove-Item -LiteralPath $extra -Force -ErrorAction SilentlyContinue}
+    }
+  }
   try{$folder.DeleteTask($taskName,0)}catch{}
   'EXACT_OWNER_ACTIVATION=PASS new owner GUI verified; rollback backup retained'
 }catch{
   $reason=$_.Exception.Message
   if($transaction -and (Test-Path (Join-Path $transaction 'transaction.json'))){
-    try{Rollback $transaction}catch{Write-Warning ('RECOVERY_REQUIRED private transaction='+$transaction)}
+    try{
+      Rollback $transaction
+      if((JsonFile (Join-Path $transaction 'transaction.json')).status -eq 'ROLLED_BACK'){
+        try{$folder.DeleteTask($taskName,0)}catch{}
+      }
+    }catch{Write-Warning ('RECOVERY_REQUIRED private transaction='+$transaction)}
   }
   if($oldSyncEnabled -ne $null){try{$sync.Enabled=$oldSyncEnabled}catch{}}
   throw "Owner activation failed closed: $reason"
