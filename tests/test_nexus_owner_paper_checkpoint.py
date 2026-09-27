@@ -1,6 +1,7 @@
 """Stage-only checkpoint validation; never accesses a real owner profile or runner."""
 from __future__ import annotations
 
+import hashlib
 import io
 import json
 from pathlib import Path
@@ -161,7 +162,8 @@ def test_pointer_is_immutable_chain_and_large_realistic_archive(tmp_path):
     first = commit(root, stage(tmp_path, a), "36311000000", SOURCE)
     b = archive(sample(1636))
     second = commit(root, stage(tmp_path, b), "36311000001", SOURCE)
-    assert second["previous_manifest_sha256"] == json.loads((root / "latest.json").read_text())["manifest_sha256"] or second["previous_run_id"] == first["run_id"]
+    assert second["previous_run_id"] == first["run_id"]
+    assert second["previous_manifest_sha256"] == hashlib.sha256((root / "commits" / "36311000000.json").read_bytes()).hexdigest()
     assert (root / "objects" / (first["archive_sha256"] + ".tar.xz")).exists()
 
 
