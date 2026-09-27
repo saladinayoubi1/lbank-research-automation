@@ -90,14 +90,15 @@
     host.innerHTML = `
       <div class="mission-card"><h3>local-supervisor</h3><p class="${stateClass(sup.status)}">${esc(String(sup.status || 'unknown').toUpperCase())}</p><p>Restart: ${esc(sup.restart_count ?? 0)} / ${esc(sup.restart_limit ?? 3)}</p><p>${esc(sup.reason || 'bounded restart policy active')}</p></div>
       <div class="mission-card"><h3>exact-source-build</h3><p class="${stateClass(buildState)}">${buildState}</p><p>SHA: ${esc((build.source_sha || '').slice(0,12) || 'unavailable')}</p><p>Run: ${esc(build.run_id || '—')} · ${esc(build.workflow || 'no build evidence')}</p></div>
-      <div class="mission-card"><h3>CI HEALTH / EXACT HEAD</h3><p class="${stateClass(ci.state)}">${esc(ci.state)}</p><p>Done ${esc(s.DONE || 0)} · Running ${esc(s.RUNNING || 0)} · Failed ${esc(s.FAILED || 0)} · Blocked ${esc(s.BLOCKED || 0)}</p><p>${esc(heads)}</p></div>`;
+      <div class="mission-card"><h3>CI HEALTH / EXACT HEAD</h3><p class="${m.stale ? stateClass('STALE') : stateClass(ci.state)}">${m.stale ? 'HISTORICAL · NOT CURRENT' : esc(ci.state)}</p><p>${m.stale ? 'Archived CI evidence; check fresh GitHub runs' : `Done ${esc(s.DONE || 0)} · Running ${esc(s.RUNNING || 0)} · Failed ${esc(s.FAILED || 0)} · Blocked ${esc(s.BLOCKED || 0)}`}</p><p>${esc(heads)}</p></div>`;
   }
 
   function renderResources(m) {
     const host = $('missionResources'); if (!host) return;
     const resources = (m.resources || []).map(r => `<div class="mission-card"><h3>${esc(r.id)}</h3><p class="${stateClass(r.state)}">${esc(r.state)}</p><p>Workers: ${esc((r.workers || []).join(', ') || '—')}</p><p>Active: ${esc((r.active_workers || []).join(', ') || 'none')}</p><p>Routed: ${esc((r.routed_tasks || []).join(', ') || 'none')}</p></div>`);
     const workers = (m.workers || []).map(w => `<div class="mission-card"><h3>${esc(w.id)}</h3><p class="${stateClass(w.state)}">${esc(w.state)}${w.verifier ? ' · verifier' : ''}</p><p>${esc((w.resources || []).join(' / ') || 'no resource')}</p><p>Active: ${esc((w.active_tasks || []).join(', ') || 'none')}</p><p>Authority ≤ L${esc(w.authority_max)}</p></div>`);
-    host.innerHTML = [...resources, ...workers].join('') || `<div class="mission-empty">No real resource/worker runtime evidence is available.</div>`;
+    const warning = m.stale ? '<div class="mission-card"><h3>HISTORICAL RESOURCES</h3><p>Archived worker assignments are diagnostic only. Verify current runner status separately.</p></div>' : '';
+    host.innerHTML = warning + ([...resources, ...workers].join('') || `<div class="mission-empty">No real resource/worker runtime evidence is available.</div>`);
   }
 
   function renderTasks(m) {
