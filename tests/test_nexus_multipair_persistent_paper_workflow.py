@@ -95,25 +95,27 @@ def test_v2_implementation_and_manifest_changes_retrigger_push_and_pr() -> None:
         assert text.count(path) >= 2
 
 
-def test_state_handoff_keeps_full_state_but_uses_bounded_cross_file_xz_compression() -> None:
+def test_owner_checkpoint_preserves_full_state_without_big_cross_job_outputs() -> None:
     text = _text()
     paper = _paper_job()
-    package = paper.split("Package Paper state for hosted artifact persistence", 1)[1]
     persist = text.split("  persist-state:", 1)[1]
-    assert "persistent-state-handoff.tar.xz" in package
-    assert "import lzma" in package
-    assert 'tarfile.open(output, "w:xz", preset=9 | lzma.PRESET_EXTREME)' in package
-    assert "state_handoff_tar_xz_bytes=" in package
-    assert "base64.b85encode" in package
-    assert "estimated_output_utf16_bytes = len(compact) * 2 + 16_384" in package
-    assert "estimated_output_utf16_bytes > 1_048_576" in package
-    assert "zipfile.ZIP_LZMA" not in package
-    assert "persistent-state-handoff.tar.xz" in persist
-    assert "base64.b85decode" in persist
-    assert 'tarfile.open(archive_path, "r:xz")' in persist
-    assert "archive.extractall" not in persist
-    assert "member.issym()" in persist
-    assert "member.islnk()" in persist
+    assert "scripts/nexus_owner_paper_store.py restore" in paper
+    assert "scripts/nexus_owner_paper_store.py commit" in paper
+    assert "--expected-previous" in paper
+    assert "OWNER_STORE_ROOT: /mnt/e/NEXUS/paper-state-store-v1" in paper
+    assert "owner_archive_sha256" in paper
+    assert "state_archive_chunk_" not in paper
+    assert "state_archive_chunk_" not in persist
+    assert "needs.paper-loop.outputs.owner_archive_sha256" in persist
+    assert '"artifact_contains_paper_state":False' in persist
+    assert "nexus-owner-paper-checkpoint-audit-" in persist
+
+    # Historical compression remains covered by frozen regression fixtures,
+    # but it is not the production cross-job transfer mechanism.
+    legacy = Path("tests/fixtures/legacy_paper_compact_workflow.yml").read_text()
+    assert "persistent-state-handoff.tar.xz" in legacy
+    assert "base64.b85encode" in legacy
+    assert "base64.b85decode" in legacy
 
 
 def test_verified_waiting_for_fresh_cells_is_accepted_without_weakening_active_requirement() -> None:
@@ -143,10 +145,13 @@ def test_verified_waiting_for_fresh_cells_is_accepted_without_weakening_active_r
     assert 'assert snapshot["strategy_discovery_health_trigger_requested"] is False' in verifier
 
 
-def test_failed_physical_runtime_cannot_persist_partial_state() -> None:
+def test_failed_physical_runtime_cannot_publish_owner_audit_receipt() -> None:
     text = _text()
     paper = _paper_job()
-    package = paper.split("Package Paper state for hosted artifact persistence", 1)[1]
+    commit = paper.split("Commit verified Paper state to immutable owner E volume", 1)[1].split(
+        "Cleanup isolated physical source and state", 1
+    )[0]
     persist_header = text.split("  persist-state:", 1)[1].split("    env:", 1)[0]
-    assert "if: success()" in package
+    assert "if: success()" in commit
     assert "needs.paper-loop.result == 'success'" in persist_header
+    assert "needs.paper-loop.outputs.owner_archive_sha256 != ''" in persist_header
