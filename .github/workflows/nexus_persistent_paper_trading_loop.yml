@@ -29,6 +29,7 @@ on:
       - "nexus_multipair_demo_strategy_matrix.py"
       - "scripts/nexus_strategy_discovery_controller.py"
       - "scripts/nexus_runtime_wheelhouse.py"
+      - "scripts/nexus_owner_paper_checkpoint.py"
       - "config/nexus-demo-strategy-matrix-v1.json"
       - "config/nexus-demo-strategy-matrix-v2.json"
       - "config/nexus-regime-strategy-policy-v1.json"
@@ -44,6 +45,7 @@ on:
       - "tests/test_nexus_multipair_regime_lifecycle.py"
       - "tests/test_nexus_multipair_demo_strategy_matrix.py"
       - "tests/test_nexus_runtime_wheelhouse.py"
+      - "tests/test_nexus_owner_paper_checkpoint.py"
       - "tests/test_nexus_regime_selected_position_rebalance.py"
       - "tests/test_nexus_regime_selected_exposure_increase.py"
       - "tests/test_nexus_strategy_discovery_health_trigger.py"
@@ -74,6 +76,7 @@ on:
       - "nexus_multipair_demo_strategy_matrix.py"
       - "scripts/nexus_strategy_discovery_controller.py"
       - "scripts/nexus_runtime_wheelhouse.py"
+      - "scripts/nexus_owner_paper_checkpoint.py"
       - "config/nexus-demo-strategy-matrix-v1.json"
       - "config/nexus-demo-strategy-matrix-v2.json"
       - "config/nexus-regime-strategy-policy-v1.json"
@@ -89,6 +92,7 @@ on:
       - "tests/test_nexus_multipair_regime_lifecycle.py"
       - "tests/test_nexus_multipair_demo_strategy_matrix.py"
       - "tests/test_nexus_runtime_wheelhouse.py"
+      - "tests/test_nexus_owner_paper_checkpoint.py"
       - "tests/test_nexus_regime_selected_position_rebalance.py"
       - "tests/test_nexus_regime_selected_exposure_increase.py"
       - "tests/test_nexus_strategy_discovery_health_trigger.py"
@@ -131,6 +135,7 @@ jobs:
           tests/test_nexus_multipair_regime_lifecycle.py
           tests/test_nexus_multipair_demo_strategy_matrix.py
           tests/test_nexus_runtime_wheelhouse.py
+          tests/test_nexus_owner_paper_checkpoint.py
           tests/test_nexus_regime_selected_position_rebalance.py
           tests/test_nexus_regime_selected_exposure_increase.py
           tests/test_nexus_strategy_discovery_health_trigger.py
