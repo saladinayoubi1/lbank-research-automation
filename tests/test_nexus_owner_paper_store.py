@@ -86,6 +86,23 @@ class OwnerPaperStoreTests(unittest.TestCase):
         self.commit(n="102", sha=SHA_B, previous=one["generation"], expect=1)
         self.assertEqual(self.read_receipt(), two)
 
+    def test_large_realistic_state_tree_restores_all_members_without_job_outputs(self):
+        for index in range(1_600):
+            p = self.state / "regime_runtime_evidence" / f"event-{index:04d}.bin"
+            p.parent.mkdir(exist_ok=True)
+            p.write_bytes(index.to_bytes(4, "little") * 18)
+        self.commit()
+        receipt = self.read_receipt()
+        self.assertEqual(receipt["file_count"], 1_602)
+        restored = self.root / "many-files-restored"
+        self.cmd("restore", state=restored)
+        self.assertEqual(
+            len(list((restored / "regime_runtime_evidence").iterdir())), 1_600
+        )
+        self.assertEqual(
+            (restored / "cells/btcusdt/hour4/events.bin").read_bytes(), self.event_bytes
+        )
+
     def test_tamper_archive_refuses_restore_and_preserves_previous(self):
         self.commit()
         receipt = self.read_receipt()

@@ -11,6 +11,8 @@ import contextlib
 import datetime as dt
 import errno
 import fcntl
+import io
+import lzma
 import hashlib
 import json
 import os
@@ -244,7 +246,14 @@ def restore_archive(archive: Path, receipt: dict, state: Path) -> None:
     seen: set[str] = set()
     total = 0
     try:
-        with tarfile.open(archive, "r:xz") as source:
+        # One bounded owner-volume read. Opening XZ directly over WSL1 DrvFS
+        # performs thousands of small remote reads for large historical trees.
+        require(archive.stat().st_size <= MAX_ARCHIVE, "oversized owner archive")
+        decoder = lzma.LZMADecompressor()
+        plain = decoder.decompress(archive.read_bytes(), max_length=MAX_UNCOMPRESSED + 1)
+        require(decoder.eof and not decoder.unused_data and len(plain) <= MAX_UNCOMPRESSED,
+                "checkpoint decompression or trailing-data bound failed")
+        with tarfile.open(fileobj=io.BytesIO(plain), mode="r:") as source:
             for member in source:
                 pure = PurePosixPath(member.name)
                 require(member.isfile() and not member.issym() and not member.islnk(),
@@ -372,6 +381,6 @@ def cli() -> int:
 if __name__ == "__main__":
     try:
         sys.exit(cli())
-    except (StoreError, OSError, ValueError, json.JSONDecodeError, tarfile.TarError) as exc:
+    except (StoreError, OSError, ValueError, json.JSONDecodeError, tarfile.TarError, lzma.LZMAError) as exc:
         print("OWNER_STORE_FAIL_CLOSED: " + str(exc), file=sys.stderr)
         sys.exit(1)
