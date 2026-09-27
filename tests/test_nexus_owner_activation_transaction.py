@@ -52,3 +52,17 @@ def test_rehearsal_operates_only_on_disposable_synthetic_state():
     assert "RestoreLinks @($linkMeta)" in rehearsal
     assert "Remove-Item -LiteralPath $r" in rehearsal
     assert "$script:owner=$actualOwner" in rehearsal
+
+def test_early_failure_keeps_the_healthy_previous_gui():
+    script=SOURCE.read_text(encoding="utf-8")
+    assert "$oldAlreadyHealthy=$t.status -eq 'STARTED'" in script
+    assert "if(-not $oldAlreadyHealthy){" in script
+    assert "if($t.status -in @('BACKED_UP','ACTIVATING')" in script
+    assert "Assert ($null -eq $existing) 'A previous owner rollback watchdog still exists" in script
+
+def test_watchdog_can_be_rehearsed_without_touching_owner_tasks():
+    script=SOURCE.read_text(encoding="utf-8")
+    assert "[switch]$TestScheduler" in script
+    assert 'NEXUS-Activation-REHEARSAL-$sourceShort' in script
+    assert 'SYNTHETIC_OWNER_WATCHDOG_COM=PASS' in script
+    assert "$folder.DeleteTask($testName,0)" in script
