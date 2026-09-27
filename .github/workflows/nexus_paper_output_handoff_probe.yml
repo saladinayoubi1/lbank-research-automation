@@ -5,6 +5,16 @@ on:
     paths:
       - .github/workflows/nexus_paper_output_handoff_probe.yml
   workflow_dispatch:
+    inputs:
+      raw_bytes:
+        description: Synthetic transport bytes (no owner data)
+        type: choice
+        required: true
+        default: '300000'
+        options:
+          - '300000'
+          - '390016'
+          - '420000'
 
 permissions:
   contents: read
@@ -13,6 +23,8 @@ permissions:
 jobs:
   emit:
     runs-on: ubuntu-latest
+    env:
+      SYNTHETIC_BYTES: ${{ inputs.raw_bytes || '300000' }}
     timeout-minutes: 5
     outputs:
       state_archive_codec: ${{ steps.make.outputs.state_archive_codec }}
@@ -46,7 +58,9 @@ jobs:
           import base64, hashlib, os
           from pathlib import Path
           # Synthetic repeatable bytes; no journal, tokens, exchange data, or owner runtime.
-          raw = b"".join(hashlib.sha256(i.to_bytes(8,"little")).digest() for i in range(13_125))
+          size=int(os.environ["SYNTHETIC_BYTES"])
+          assert size in (300_000,390_016,420_000) and size % 32 == 0
+          raw = b"".join(hashlib.sha256(i.to_bytes(8,"little")).digest() for i in range(size//32))
           encoded = base64.b85encode(raw).decode("ascii")
           alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!#$%&()*+-;<=>?@^_" + chr(96) + "{|}~"
           digits = {c:i for i,c in enumerate(alphabet)}
@@ -54,7 +68,7 @@ jobs:
           compact = "".join(chr(0x4000+digits[padded[i]]*85+digits[padded[i+1]]) for i in range(0,len(padded),2))
           chunks=[compact[i:i+30_000] for i in range(0,len(compact),30_000)]
           estimate=len(compact)*2+16_384
-          assert len(raw)==420_000 and len(chunks)==9 and 500_000 < estimate < 800_000
+          assert len(raw)==size and 1<=len(chunks)<=18 and estimate<1_048_576
           lines=["state_archive_codec=b85-pairs-v1",f"state_archive_chunk_count={len(chunks)}",
                  f"state_archive_b85_len={len(encoded)}",f"state_archive_sha256={hashlib.sha256(raw).hexdigest()}"]
           lines += [f"state_archive_chunk_{i}={chunks[i] if i<len(chunks) else ''}" for i in range(18)]
@@ -67,6 +81,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
+      SYNTHETIC_BYTES: ${{ inputs.raw_bytes || '300000' }}
       STATE_ARCHIVE_CODEC: ${{ needs.emit.outputs.state_archive_codec }}
       STATE_ARCHIVE_CHUNK_COUNT: ${{ needs.emit.outputs.state_archive_chunk_count }}
       STATE_ARCHIVE_B85_LEN: ${{ needs.emit.outputs.state_archive_b85_len }}
@@ -98,7 +113,10 @@ jobs:
           count=int(os.environ["STATE_ARCHIVE_CHUNK_COUNT"])
           length=int(os.environ["STATE_ARCHIVE_B85_LEN"])
           assert os.environ["STATE_ARCHIVE_CODEC"]=="b85-pairs-v1"
-          assert count==9 and length==525_000
+          size=int(os.environ["SYNTHETIC_BYTES"])
+          assert size in (300_000,390_016,420_000)
+          assert length==size*5//4
+          assert count == ((length+1)//2+29_999)//30_000
           chunks=[os.environ[f"STATE_ARCHIVE_CHUNK_{i}"] for i in range(18)]
           assert all(0<len(chunk)<=30_000 for chunk in chunks[:count])
           assert not any(chunks[count:])
@@ -109,8 +127,8 @@ jobs:
           assert all(0<=digit<85*85 for digit in digits)
           encoded="".join(alphabet[d//85]+alphabet[d%85] for d in digits)
           raw=base64.b85decode(encoded[:length].encode("ascii"))
-          expected=b"".join(hashlib.sha256(i.to_bytes(8,"little")).digest() for i in range(13_125))
-          assert len(raw)==420_000 and raw==expected
+          expected=b"".join(hashlib.sha256(i.to_bytes(8,"little")).digest() for i in range(size//32))
+          assert len(raw)==size and raw==expected
           assert hashlib.sha256(raw).hexdigest()==os.environ["STATE_ARCHIVE_SHA256"]
           print("HOSTED_CROSS_JOB_PAPER_HANDOFF_PROBE=PASS (synthetic data only)")
           PY
