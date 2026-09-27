@@ -242,12 +242,12 @@ def test_side_by_side_pairing_does_not_replace_owner_app() -> None:
     assert workflow.index("Validate and package NEXUS Android 4 APK") < workflow.index("Build safe side-by-side pairing APK")
 
 
-def test_canonical_native_bridge_initializes_before_shared_paper_listener() -> None:
-    html = (ASSETS / "index.html").read_text(encoding="utf-8")
-    activity = MAIN_ACTIVITY.read_text(encoding="utf-8")
-    canonical = '<script src="mobile-canonical-client.js"></script>'
-    shared = '<script src="mobile-shared-client.js"></script>'
-    assert html.count(canonical) == 1
-    assert html.index(canonical) < html.index(shared)
-    assert "document.createElement('script')" not in activity
-    assert "webView.setWebViewClient(new WebViewClient());" in activity
+def test_html_loads_canonical_product_bridge_once_before_paper_without_native_injection() -> None:
+    html=(ASSETS / "index.html").read_text(encoding="utf-8")
+    java=Path("android/lbank-mobile/app/src/main/java/com/saladinayoubi/lbankmobile/MainActivity.java").read_text(encoding="utf-8")
+    ordered=["mobile-core.js","mobile-runtime.js","mobile-redesign.js","mobile-shared-terminal.js","mobile-canonical-client.js","mobile-shared-client.js"]
+    tags=[f'<script src="{name}" defer></script>' for name in ordered]
+    assert all(html.count(tag)==1 for tag in tags)
+    assert [html.index(tag) for tag in tags]==sorted(html.index(tag) for tag in tags)
+    assert "s.src='mobile-canonical-client.js'" not in java
+    assert 'webView.addJavascriptInterface(new NativeGateway(), "NexusNative")' in java

@@ -81,3 +81,30 @@ test('late native bridge becomes usable without a restart',async()=>{
  h.requests[0].resolve(payload());await h.flush();
  assert.equal(h.nodes.get('sharedConnection').dataset.state,'connected');
 });
+
+test('packaged canonical bridge boots before the independent Paper reader on an Android VPN',async()=>{
+ const html=fs.readFileSync('android/lbank-mobile/app/src/main/assets/index.html','utf8');
+ const tags=['mobile-canonical-client.js','mobile-shared-client.js'].map(s=>'<script src="'+s+'" defer></script>');
+ assert(tags.every(s=>html.includes(s))&&html.indexOf(tags[0])<html.indexOf(tags[1]));
+ const canonicalSource=fs.readFileSync('android/lbank-mobile/app/src/main/assets/mobile-canonical-client.js','utf8');
+ const nodes=new Map(),requests=[],renders=[],events={};
+ const document={hidden:false,head:{appendChild(){}},querySelector(){return null},createElement(){return {style:{},textContent:''}},
+  getElementById(id){if(!nodes.has(id))nodes.set(id,{dataset:{},blur(){}});return nodes.get(id);},
+  addEventListener(name,fn){events[name]=fn;}};
+ const window={navigator:{onLine:false},NexusPaperTerminal:{render(v){renders.push(v)}},
+  NexusNative:{requestProduct(id,method,path){requests.push({id,method,path});}},
+  addEventListener(name,fn){events[name]=fn;},dispatchEvent(event){events[event.type]?.(event);}};
+ const context={document,window,Date,console,Event:class {constructor(type){this.type=type}},
+  setTimeout(){return 1},clearTimeout(){},setInterval(){return 2}};
+ vm.runInNewContext(canonicalSource,context);
+ assert.equal(typeof window.NexusProductClient.call,'function');
+ assert.equal(typeof window.NexusProductResult,'function');
+ vm.runInNewContext(source,context);
+ const calls=requests.filter(r=>r.path==='/api/product/paper');
+ assert.equal(calls.length,2,'canonical sync and independent reader both issue GET');
+ assert(calls.every(r=>r.method==='GET'));
+ window.NexusProductResult(calls[1].id,true,JSON.stringify(payload()));
+ await new Promise(setImmediate);
+ assert.equal(nodes.get('sharedConnection').dataset.state,'connected');
+ assert.equal(renders.at(-1).account.equity,503.2);
+});

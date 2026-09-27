@@ -69,6 +69,14 @@ jobs:
           grep -q 'src="mobile-canonical-client.js"' /tmp/mobile-index.html
           grep -q 'src="mobile-shared-client.js"' /tmp/mobile-index.html
           grep -q 'data-nexus-mobile="4"' /tmp/mobile-index.html
+          python - <<'PY'
+          from pathlib import Path
+          html=Path('/tmp/mobile-index.html').read_text()
+          names=['mobile-core.js','mobile-runtime.js','mobile-redesign.js','mobile-shared-terminal.js','mobile-canonical-client.js','mobile-shared-client.js']
+          tags=[f'<script src="{name}" defer></script>' for name in names]
+          assert all(html.count(tag)==1 for tag in tags), 'missing or duplicated ordered bridge script'
+          assert [html.index(tag) for tag in tags]==sorted(html.index(tag) for tag in tags), 'bridge script order'
+          PY
           grep -q "همه‌چیز مهم، در یک نگاه" /tmp/mobile-index.html
           grep -q "Paper Portfolio" /tmp/mobile-index.html
           grep -q "NEXUS AI" /tmp/mobile-index.html
@@ -126,7 +134,7 @@ jobs:
             echo "- Android back navigation history contract: verified"
             echo "- APK signature verification: successful (repository release build uses configured debug signing; not a store-signing claim)"
             echo "- Package: \`com.saladinayoubi.lbankmobile\`"
-            echo "- Version: \`4.1.3 (11)\`"
+            echo "- Version: \`4.1.3 (12)\`"
             echo "- File: \`NEXUS_PERSONAL_PRO_4_1_3.apk\`"
             echo "- Size: ${size} bytes (${size_kb} KB)"
             echo "- SHA-256: \`${digest}\`"
