@@ -108,3 +108,48 @@ test('packaged canonical bridge boots before the independent Paper reader on an 
  assert.equal(nodes.get('sharedConnection').dataset.state,'connected');
  assert.equal(renders.at(-1).account.equity,503.2);
 });
+
+test('queued manual tap runs one follow-up GET after an in-flight response',async()=>{
+ const h=harness(),button=h.nodes.get('refreshSharedPaper');
+ button.onclick();button.onclick();button.onclick();
+ assert.equal(h.requests.length,1,'repeat taps must not flood native bridge');
+ assert.match(button.textContent,/در صف/);
+ assert.match(h.nodes.get('sharedConnectionDetail').textContent,/ثبت شد/);
+ h.requests[0].resolve(payload());await h.flush();
+ assert.equal(h.requests.length,2,'a queued tap must refresh immediately on completion');
+ assert.match(button.textContent,/در حال دریافت/);
+ const p=payload();p.shared_portfolio.account.equity=505;
+ h.requests[1].resolve(p);await h.flush();
+ assert.equal(h.requests.length,2,'repeat taps coalesce to a single follow-up');
+ assert.equal(h.renders.at(-1).account.equity,505);
+ assert.equal(button.textContent,'تازه‌سازی');
+ assert.equal(h.timers.filter(t=>!t.cancelled).at(-1).ms,30000);
+});
+test('a single manual tap cancels retry backoff and immediately performs a GET',async()=>{
+ const h=harness();
+ h.requests[0].reject(Error('network'));await h.flush();
+ const timer=h.timers.filter(t=>!t.cancelled).at(-1);
+ assert.equal(timer.ms,5000);
+ h.nodes.get('refreshSharedPaper').onclick();
+ assert.equal(timer.cancelled,true);
+ assert.equal(h.requests.length,2);
+ h.requests[1].resolve(payload());await h.flush();
+ assert.equal(h.nodes.get('sharedConnection').dataset.state,'connected');
+});
+test('new pairing invalidates queued old-origin manual refresh',async()=>{
+ const h=harness();
+ h.nodes.get('refreshSharedPaper').onclick();
+ h.events['nexus-gateway-configured']();
+ h.requests[0].resolve(payload());await h.flush();
+ assert.equal(h.requests.length,2,'pairing starts exactly one new-origin request');
+ h.requests[1].resolve(payload());await h.flush();
+ assert.equal(h.requests.length,2,'no queued old-origin retry');
+ assert.equal(h.nodes.get('sharedConnection').dataset.state,'connected');
+});
+test('hidden refresh events do not cancel pending retry',async()=>{
+ const h=harness();
+ h.requests[0].reject(Error('network'));await h.flush();
+ const timer=h.timers.filter(t=>!t.cancelled).at(-1);
+ h.document.hidden=true;h.events.focus();
+ assert.notEqual(timer.cancelled,true);
+});
