@@ -163,7 +163,16 @@ function Rollback([string]$Dir){
   $existingOld=@(ExactProcs $prior)
   $existingNew=@(ExactProcs $candidate)
   $oldWindow=@($existingOld|Where-Object {$_.ProcessName -eq 'NEXUS Personal Pro' -and $_.MainWindowHandle -ne 0})
-  if($t.status -eq 'ACTIVATING' -and !$existingNew.Count -and $oldWindow.Count -eq 1){
+  # Stop only the exact candidate before assessing an unexpectedly revived old owner.
+  # A healthy old GUI may already have added newer Paper events: never stop it
+  # or replay an older snapshot merely because a candidate also lingered.
+  if($existingNew.Count){
+    Stop-Exact $candidate 4
+    $existingNew=@(ExactProcs $candidate)
+  }
+  $existingOld=@(ExactProcs $prior)
+  $oldWindow=@($existingOld|Where-Object {$_.ProcessName -eq 'NEXUS Personal Pro' -and $_.MainWindowHandle -ne 0})
+  if($t.status -in @('STARTED','BACKED_UP','ACTIVATING') -and !$existingNew.Count -and $oldWindow.Count -eq 1){
     $oldSource=(Get-Content -LiteralPath (Join-Path $prior 'resources\source-sha.txt') -Raw -ErrorAction Stop).Trim()
     $state=JsonFile (Join-Path $owner 'product-data\supervisor-state.json')
     if($state.status -eq 'healthy' -and $state.source_sha -eq $oldSource -and $state.live_trading_authority -eq $false){
@@ -175,11 +184,16 @@ function Rollback([string]$Dir){
       }
       $currentJournal=Join-Path $owner 'product-data\shared_paper\terminal.json'
       $newerCopy=Join-Path $Dir 'newer-paper-post-recovery.json'
+      $captured=$false
       for($attempt=0;$attempt -lt 5;$attempt++){
         $first=Hash $currentJournal
         Copy-Item -LiteralPath $currentJournal -Destination $newerCopy -Force
-        if((Hash $currentJournal) -eq $first -and (Hash $newerCopy) -eq $first){break}
+        if((Hash $currentJournal) -eq $first -and (Hash $newerCopy) -eq $first){$captured=$true;break}
         Start-Sleep -Milliseconds 250
+      }
+      if(!$captured){
+        $t.status='RECOVERY_NEEDS_REVIEW';Write-Json (Join-Path $Dir 'transaction.json') $t
+        throw 'Progressing Paper journal could not be captured consistently; never replay the old snapshot'
       }
       Finish-Rollback $t $Dir
       return
@@ -187,13 +201,25 @@ function Rollback([string]$Dir){
   }
   # If old is already running but not yet healthy, do not destroy its possible
   # new writes. An operator can diagnose instead of replaying stale account data.
-  if($t.status -eq 'ACTIVATING' -and !$existingNew.Count -and $existingOld.Count -gt 0){
+  if($t.status -in @('STARTED','BACKED_UP','ACTIVATING') -and !$existingNew.Count -and $existingOld.Count -gt 0){
     $t.status='RECOVERY_NEEDS_REVIEW';Write-Json (Join-Path $Dir 'transaction.json') $t
     throw 'Existing previous GUI is starting: refusing repeated destructive rollback'
   }
   Stop-Exact $candidate 4
   if(@(ExactProcs $prior).Count){Stop-Exact $prior 3}
-  if($t.status -in @('BACKED_UP','ACTIVATING') -and (Test-Path (Join-Path $Dir 'profile'))){RestoreProfile $Dir}
+  if($t.status -in @('BACKED_UP','ACTIVATING') -and (Test-Path (Join-Path $Dir 'profile'))){
+    $savedPaper=Join-Path $Dir 'profile\product-data\shared_paper\terminal.json'
+    $currentPaper=Join-Path $owner 'product-data\shared_paper\terminal.json'
+    if((Test-Path $savedPaper) -and (Test-Path $currentPaper) -and ((Hash $currentPaper) -ne (Hash $savedPaper))){
+      $copy=Join-Path $Dir 'unreplayed-current-paper.json'
+      $before=Hash $currentPaper
+      Copy-Item -LiteralPath $currentPaper -Destination $copy -Force
+      $t.status='RECOVERY_NEEDS_REVIEW';Write-Json (Join-Path $Dir 'transaction.json') $t
+      Assert ((Hash $currentPaper) -eq $before -and (Hash $copy) -eq $before) 'Paper journal changed during safety capture'
+      throw 'Current Paper differs from activation snapshot: newer events quarantined; obsolete rollback prohibited'
+    }
+    RestoreProfile $Dir
+  }
   if($t.links){RestoreLinks @($t.links)}
   $env:RUNNER_TRACKING_ID=$null
   $null=Start-Process -FilePath (Join-Path $prior 'NEXUS Personal Pro.exe')
@@ -330,6 +356,20 @@ try{
     }
     else {Move-Item -LiteralPath $tmp -Destination $l.path}
   }
+  # Read each committed shortcut back through Windows COM, and retain its
+  # exact pre-activation hash via the named File.Replace sibling until commit.
+  $newExecutable=Join-Path $candidate 'NEXUS Personal Pro.exe'
+  foreach($l in $record.links){
+    Assert ((Test-Path -LiteralPath $l.path -PathType Leaf) -and
+      $shell.CreateShortcut($l.path).TargetPath.Equals($newExecutable,[StringComparison]::OrdinalIgnoreCase)) 'Post-switch shortcut target mismatch'
+    if($l.existed){
+      $sibling="$($l.path).nexus-rollback-prior.lnk"
+      Assert ((Test-Path -LiteralPath $sibling -PathType Leaf) -and
+        (Hash $sibling) -eq $l.sha) 'Atomic switch modified original shortcut bytes'
+    }
+  }
+  Assert (@(ExactProcs $prior).Count -eq 0) 'Prior app restarted during shortcut commit'
+  $null=Health $ExpectedSourceSha 35
   $sync.Enabled=$oldSyncEnabled
   $record.status='COMMITTED';$record.committed_at=[DateTime]::UtcNow.ToString('o')
   Write-Json (Join-Path $transaction 'transaction.json') $record
