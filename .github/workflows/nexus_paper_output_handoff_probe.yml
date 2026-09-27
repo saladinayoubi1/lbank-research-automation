@@ -103,7 +103,7 @@ jobs:
           import json,os
           from pathlib import Path
           data=json.loads(Path("synthetic-output.json").read_text(encoding="utf-8"))
-          keys=["state_archive_codec","state_archive_chunk_count","state_archive_b85_len","state_archive_sha256"]+[f"state_archive_chunk_{i}" for i in range(9)]
+          keys=[f"state_archive_chunk_{i}" for i in range(9,18)]
           assert all(k in data for k in keys)
           lines=[f"{k}={data[k]}\n" for k in keys]
           assert sum(len(v.encode("utf-8")) for v in lines)<512_000
