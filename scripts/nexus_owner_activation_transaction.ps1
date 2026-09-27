@@ -7,7 +7,8 @@ param(
   [string]$StageProof='E:\NEXUS\proofs\stage-931a95b0-36327451730\official-stage-evidence.json',
   [string]$CloneProof='E:\NEXUS\proofs\stage-931a95b0-36327451730\private-clone-smoke-sanitized.json',
   [string]$PrivateRoot='E:\NEXUS\NEXUS_OWNER_PAPER_PRIVATE',
-  [string]$TransactionDir=''
+  [string]$TransactionDir='',
+  [switch]$TestScheduler
 )
 $ErrorActionPreference='Stop'
 Set-StrictMode -Version Latest
@@ -148,11 +149,15 @@ function Rollback([string]$Dir){
   $t=JsonFile (Join-Path $Dir 'transaction.json')
   if($t.status -eq 'COMMITTED'){return}
   Stop-Exact $candidate 4
-  if(@(ExactProcs $prior).Count){Stop-Exact $prior 3}
-  if($t.status -in @('BACKED_UP','ACTIVATING') -and (Test-Path (Join-Path $Dir 'profile'))){RestoreProfile $Dir}
-  if($t.links){RestoreLinks @($t.links)}
-  $env:RUNNER_TRACKING_ID=$null
-  $null=Start-Process -FilePath (Join-Path $prior 'NEXUS Personal Pro.exe')
+  $old=@(ExactProcs $prior)
+  $oldAlreadyHealthy=$t.status -eq 'STARTED' -and @($old|Where-Object {$_.ProcessName -eq 'NEXUS Personal Pro' -and $_.MainWindowHandle -ne 0}).Count -eq 1
+  if(-not $oldAlreadyHealthy){
+    if($old.Count){Stop-Exact $prior 3}
+    if($t.status -in @('BACKED_UP','ACTIVATING') -and (Test-Path (Join-Path $Dir 'profile'))){RestoreProfile $Dir}
+    if($t.links){RestoreLinks @($t.links)}
+    $env:RUNNER_TRACKING_ID=$null
+    $null=Start-Process -FilePath (Join-Path $prior 'NEXUS Personal Pro.exe')
+  }
   if($t.sync_was_enabled -eq $true){
     $service=New-Object -ComObject Schedule.Service;$service.Connect()
     $service.GetFolder('\').GetTask($syncTask).Enabled=$true
@@ -185,6 +190,21 @@ function Rehearse {
     RestoreLinks @($linkMeta)
     Assert ((Hash $journal) -eq $orig -and (Hash $link) -eq $linkMeta.sha) 'Synthetic profile/shortcut rollback failed'
     'SYNTHETIC_OWNER_ACTIVATION_REHEARSAL=PASS profile-copy, corruption detection, shortcut rollback; no real state'
+    if($TestScheduler){
+      $testName="NEXUS-Activation-REHEARSAL-$sourceShort"
+      $service=New-Object -ComObject Schedule.Service;$service.Connect();$folder=$service.GetFolder('\')
+      try{
+        $d=$service.NewTask(0);$d.Principal.LogonType=3;$d.Principal.RunLevel=0
+        $d.Principal.UserId=[Security.Principal.WindowsIdentity]::GetCurrent().Name
+        $t=$d.Triggers.Create(1);$t.StartBoundary=[DateTime]::Now.AddMinutes(20).ToString('s')
+        $a=$d.Actions.Create(0);$a.Path=Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+        $a.Arguments='-NoProfile -NonInteractive -Command "exit 0"'
+        $d.Settings.Enabled=$true
+        $registered=$folder.RegisterTaskDefinition($testName,$d,6,$null,$null,3,$null)
+        Assert ($registered.Enabled -eq $true) 'Owner COM watchdog registration rehearsal failed'
+        'SYNTHETIC_OWNER_WATCHDOG_COM=PASS disposable task registered'
+      }finally{try{$folder.DeleteTask($testName,0)}catch{}}
+    }
   }finally{$script:owner=$actualOwner;Remove-Item -LiteralPath $r -Force -Recurse -ErrorAction SilentlyContinue}
 }
 if($Mode -eq 'Rehearse'){Rehearse;exit 0}
@@ -220,6 +240,9 @@ try{
   $act=$def.Actions.Create(0);$act.Path=Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
   $act.Arguments='-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "'+(Join-Path $transaction 'recovery.ps1')+'" -Mode Recover -ExpectedSourceSha '+$ExpectedSourceSha+' -OldVersion '+$OldVersion+' -PrivateRoot "'+$PrivateRoot+'" -TransactionDir "'+$transaction+'"'
   $def.Settings.Enabled=$true;$def.Settings.StartWhenAvailable=$true
+  $def.Settings.MultipleInstances=2
+  try{$existing=$folder.GetTask($taskName)}catch{$existing=$null}
+  Assert ($null -eq $existing) 'A previous owner rollback watchdog still exists: investigate first'
   $scheduled=$folder.RegisterTaskDefinition($taskName,$def,6,$null,$null,3,$null)
   Assert ($scheduled.Enabled -eq $true) 'Rollback watchdog could not be armed'
   $sync.Enabled=$false
