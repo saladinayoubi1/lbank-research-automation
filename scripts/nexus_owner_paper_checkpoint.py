@@ -71,7 +71,8 @@ def _atomic(path: Path, data: bytes) -> None:
 
 
 def _read_regular(path: Path, limit: int) -> bytes:
-    if path.is_symlink() or not path.is_file():
+    _no_symlink_ancestors(path)
+    if not path.is_file():
         raise CheckpointError("checkpoint file is missing or unsafe")
     if not 0 < path.stat().st_size <= limit:
         raise CheckpointError("checkpoint file size is outside bounds")
@@ -121,7 +122,10 @@ def validate_archive(raw: bytes) -> tuple[int, int]:
 
 def _load(root: Path) -> tuple[dict, bytes]:
     _no_symlink_ancestors(root)
-    pointer = json.loads(_read_regular(root / "latest.json", 2048))
+    try:
+        pointer = json.loads(_read_regular(root / "latest.json", 2048))
+    except (ValueError, UnicodeDecodeError) as exc:
+        raise CheckpointError("invalid latest pointer JSON") from exc
     if set(pointer) != {"run_id", "manifest_sha256"}:
         raise CheckpointError("checkpoint latest pointer has unknown fields")
     run_id, manifest_sha = pointer["run_id"], pointer["manifest_sha256"]
@@ -132,7 +136,10 @@ def _load(root: Path) -> tuple[dict, bytes]:
     manifest_bytes = _read_regular(root / "commits" / f"{run_id}.json", 4096)
     if _sha(manifest_bytes) != manifest_sha:
         raise CheckpointError("checkpoint manifest digest mismatch")
-    manifest = json.loads(manifest_bytes)
+    try:
+        manifest = json.loads(manifest_bytes)
+    except (ValueError, UnicodeDecodeError) as exc:
+        raise CheckpointError("invalid checkpoint manifest JSON") from exc
     expected = {"schema", "run_id", "source_sha", "archive_sha256", "archive_bytes",
                 "previous_run_id", "previous_manifest_sha256"}
     if set(manifest) != expected or manifest["schema"] != SCHEMA or manifest["run_id"] != run_id:
@@ -144,6 +151,24 @@ def _load(root: Path) -> tuple[dict, bytes]:
         raise CheckpointError("invalid checkpoint archive digest")
     if not isinstance(manifest["archive_bytes"], int) or not 0 < manifest["archive_bytes"] <= MAX_COMPRESSED:
         raise CheckpointError("invalid checkpoint archive size")
+    prior = manifest["previous_run_id"]
+    prior_sha = manifest["previous_manifest_sha256"]
+    if (prior is None) != (prior_sha is None):
+        raise CheckpointError("incomplete prior checkpoint chain")
+    if prior is not None:
+        if (not isinstance(prior, str) or not _RUN.fullmatch(prior) or
+                int(prior) >= int(run_id) or not isinstance(prior_sha, str) or
+                not _SHA.fullmatch(prior_sha)):
+            raise CheckpointError("invalid prior checkpoint chain")
+        prev_bytes = _read_regular(root / "commits" / f"{prior}.json", 4096)
+        if _sha(prev_bytes) != prior_sha:
+            raise CheckpointError("prior checkpoint manifest digest mismatch")
+        try:
+            prev_manifest = json.loads(prev_bytes)
+        except (ValueError, UnicodeDecodeError) as exc:
+            raise CheckpointError("invalid prior checkpoint manifest JSON") from exc
+        if prev_manifest.get("run_id") != prior or prev_manifest.get("schema") != SCHEMA:
+            raise CheckpointError("prior checkpoint identity mismatch")
     raw = _read_regular(root / "objects" / f"{archive_sha}.tar.xz", MAX_COMPRESSED)
     if _sha(raw) != archive_sha or len(raw) != manifest["archive_bytes"]:
         raise CheckpointError("checkpoint archive digest or size mismatch")
