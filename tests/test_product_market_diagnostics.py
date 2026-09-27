@@ -6,7 +6,7 @@ from urllib.error import HTTPError, URLError
 
 import pytest
 
-from product_market_diagnostics import MarketProbeInputError, probe_primary_spot
+from product_market_diagnostics import MarketProbeInputError, _download_public, probe_primary_spot
 
 STEP = 14_400_000
 NOW = 30 * STEP + STEP // 2
@@ -147,3 +147,37 @@ def test_input_rejected_before_network(symbol: str, timeframe: str, registry) ->
     with pytest.raises(MarketProbeInputError):
         _probe(fetch, symbol=symbol, timeframe=timeframe, registry=registry)
     assert not called
+
+
+def test_bounded_fetcher_error_returns_structured_integrity_failure() -> None:
+    result = _probe(lambda *_: (_ for _ in ()).throw(ValueError("oversized HTTP response")))
+    assert result["status"] == "integrity_failed"
+    assert result["reason_code"] == "public_payload_integrity_failure"
+    assert result["last_close_price"] is None
+
+
+def test_public_download_is_direct_no_redirect_and_byte_bounded(monkeypatch) -> None:
+    import product_market_diagnostics as market
+
+    class FakeResponse:
+        def __enter__(self): return self
+        def __exit__(self, *_): return False
+        def getcode(self): return 200
+        def read(self, cap):
+            assert cap == market.MAX_RESPONSE + 1
+            return b"{}"
+
+    class FakeOpener:
+        def open(self, req, timeout):
+            assert timeout == 6
+            assert req.full_url == "https://api.bybit.com/v5/market/kline"
+            return FakeResponse()
+
+    def fake_build(*handlers):
+        assert len(handlers) == 2
+        assert handlers[0].proxies == {}  # no inherited proxy or geo routing
+        assert handlers[1].redirect_request(None, None, 302, None, None, "https://other") is None
+        return FakeOpener()
+
+    monkeypatch.setattr(market, "build_opener", fake_build)
+    assert _download_public("https://api.bybit.com/v5/market/kline", 6) == b"{}"
