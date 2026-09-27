@@ -110,7 +110,7 @@ function RestoreLinks([object[]]$LinksData) {
     elseif(Test-Path $x.path){Remove-Item -LiteralPath $x.path -Force}
   }
 }
-function Health([string]$Expected,[int]$Timeout=425){
+function Health([string]$Expected,[int]$Timeout=425,[string]$InstallRoot=$candidate){
   $file=Join-Path $owner 'product-data\supervisor-state.json';$end=[DateTime]::UtcNow.AddSeconds($Timeout)
   do {
     try {
@@ -129,7 +129,7 @@ function Health([string]$Expected,[int]$Timeout=425){
         Assert ($build.source_sha -eq $Expected -and $build.exact_source -eq $true -and $st.paper_only -eq $true -and $st.profitability_claim -eq $false) 'Source/strategy contract failed'
         Assert ($ov.capabilities.deterministic_risk -eq 'final_paper_authority' -and $mission.live_trading_authority -eq $false) 'Risk/Mission authority failed'
         $null=ValidPaper $owner
-        $win=@(ExactProcs $candidate|Where-Object {$_.ProcessName -eq 'NEXUS Personal Pro' -and $_.MainWindowHandle -ne 0})
+        $win=@(ExactProcs $InstallRoot|Where-Object {$_.ProcessName -eq 'NEXUS Personal Pro' -and $_.MainWindowHandle -ne 0})
         if($win.Count -eq 1){return $true}
       }
     }catch { if($_.Exception.Message -match 'Untrusted gateway|safety contract|authority failed'){throw} }
@@ -147,7 +147,7 @@ function RestoreProfile([string]$Dir){
 }
 function Rollback([string]$Dir){
   $t=JsonFile (Join-Path $Dir 'transaction.json')
-  if($t.status -eq 'COMMITTED'){return}
+  if($t.status -in @('COMMITTED','ROLLED_BACK')){return}
   Stop-Exact $candidate 4
   $old=@(ExactProcs $prior)
   $oldAlreadyHealthy=$t.status -eq 'STARTED' -and @($old|Where-Object {$_.ProcessName -eq 'NEXUS Personal Pro' -and $_.MainWindowHandle -ne 0}).Count -eq 1
@@ -157,6 +157,137 @@ function Rollback([string]$Dir){
     if($t.links){RestoreLinks @($t.links)}
     $env:RUNNER_TRACKING_ID=$null
     $null=Start-Process -FilePath (Join-Path $prior 'NEXUS Personal Pro.exe')
+    $oldSource=(Get-Content -LiteralPath (Join-Path $prior 'resources\source-sha.txt') -Raw -ErrorAction Stop).Trim()
+    Assert ($oldSource -match '^[0-9a-f]{40} -eq $true){
+    $service=New-Object -ComObject Schedule.Service;$service.Connect()
+    $service.GetFolder('\').GetTask($syncTask).Enabled=$true
+  }
+  $t.status='ROLLED_BACK';$t.rolled_back_at=[DateTime]::UtcNow.ToString('o');Write-Json (Join-Path $Dir 'transaction.json') $t
+}
+function Rehearse {
+  $r=Join-Path $env:TEMP ('nexus-activation-synthetic-'+[guid]::NewGuid().ToString('N'))
+  New-Item -ItemType Directory -Force -Path $r|Out-Null
+  $actualOwner=$script:owner
+  try{
+    $script:owner=Join-Path $r 'synthetic-owner'
+    $work=Join-Path $script:owner 'product-data\\shared_paper'
+    New-Item -ItemType Directory -Path $work -Force|Out-Null
+    $journal=Join-Path $work 'terminal.json'
+    [IO.File]::WriteAllText($journal,'{"read_only":true,"live_trading_authority":false,"account":{"initial_balance":500}}')
+    $orig=Hash $journal
+    $files=@(ProfileFiles $script:owner)
+    $txn=Join-Path $r 'transaction';New-Item -ItemType Directory $txn|Out-Null
+    $b=Join-Path $txn 'profile';Copy-Item $script:owner $b -Recurse
+    Assert ((Hash (Join-Path $b 'product-data\\shared_paper\\terminal.json')) -eq $orig) 'Synthetic snapshot copy failed'
+    $link=Join-Path $r 'synthetic-shortcut.lnk';$linkBackup=Join-Path $r 'old-link.lnk'
+    [IO.File]::WriteAllText($link,'old-executable');Copy-Item $link $linkBackup
+    $linkMeta=@{path=$link;existed=$true;copy=$linkBackup;sha=Hash $link}
+    $meta=[ordered]@{status='BACKED_UP';files=$files;links=@($linkMeta)}
+    Write-Json (Join-Path $txn 'transaction.json') $meta
+    [IO.File]::WriteAllText($journal,'{"read_only":true,"live_trading_authority":false,"account":{"initial_balance":1}}')
+    [IO.File]::WriteAllText($link,'failed-new-executable')
+    RestoreProfile $txn
+    RestoreLinks @($linkMeta)
+    Assert ((Hash $journal) -eq $orig -and (Hash $link) -eq $linkMeta.sha) 'Synthetic profile/shortcut rollback failed'
+    'SYNTHETIC_OWNER_ACTIVATION_REHEARSAL=PASS profile-copy, corruption detection, shortcut rollback; no real state'
+    if($TestScheduler){
+      $testName="NEXUS-Activation-REHEARSAL-$sourceShort"
+      $service=New-Object -ComObject Schedule.Service;$service.Connect();$folder=$service.GetFolder('\')
+      try{
+        $d=$service.NewTask(0);$d.Principal.LogonType=3;$d.Principal.RunLevel=0
+        $d.Principal.UserId=[Security.Principal.WindowsIdentity]::GetCurrent().Name
+        $t=$d.Triggers.Create(1);$t.StartBoundary=[DateTime]::Now.AddMinutes(20).ToString('s')
+        $a=$d.Actions.Create(0);$a.Path=Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+        $a.Arguments='-NoProfile -NonInteractive -Command "exit 0"'
+        $d.Settings.Enabled=$true
+        $registered=$folder.RegisterTaskDefinition($testName,$d,6,$null,$null,3,$null)
+        Assert ($registered.Enabled -eq $true) 'Owner COM watchdog registration rehearsal failed'
+        'SYNTHETIC_OWNER_WATCHDOG_COM=PASS disposable task registered'
+      }finally{try{$folder.DeleteTask($testName,0)}catch{}}
+    }
+  }finally{$script:owner=$actualOwner;Remove-Item -LiteralPath $r -Force -Recurse -ErrorAction SilentlyContinue}
+}
+if($Mode -eq 'Rehearse'){Rehearse;exit 0}
+if($Mode -eq 'Preflight'){ $null=CheckStage;'EXACT_OWNER_PREFLIGHT=PASS no mutation';exit 0 }
+if($Mode -eq 'Recover'){
+  Assert ($TransactionDir -and (IsWithin $TransactionDir (Join-Path $PrivateRoot 'activation-transactions'))) 'Untrusted recovery transaction'
+  $t=JsonFile (Join-Path $TransactionDir 'transaction.json')
+  Assert ($t.expected_sha -eq $ExpectedSourceSha -and $t.old_version -eq $OldVersion) 'Recovery manifest mismatch'
+  if($t.status -eq 'COMMITTED'){exit 0}
+  Rollback $TransactionDir;'AUTOMATIC_OWNER_ROLLBACK=PASS';exit 0
+}
+Assert ($Mode -eq 'Activate') 'Unknown operation'
+$locked=$false;$transaction=$null;$scheduled=$null;$oldSyncEnabled=$null
+try{
+  $locked=$mutex.WaitOne([TimeSpan]::FromSeconds(2))
+  Assert $locked 'Owner activation already running'
+  $null=CheckStage
+  $scheduler=New-Object -ComObject Schedule.Service;$scheduler.Connect()
+  $folder=$scheduler.GetFolder('\');$sync=$folder.GetTask($syncTask)
+  Assert ($sync.State -eq 3 -and $sync.Enabled) 'Prospective sync must be idle and enabled'
+  $oldSyncEnabled=$sync.Enabled
+  $store=Join-Path $PrivateRoot 'activation-transactions'
+  if(!(Test-Path $store)){New-Item -ItemType Directory -Path $store|Out-Null}
+  $transaction=Join-Path $store ("$sourceShort-"+[DateTime]::UtcNow.ToString('yyyyMMddHHmmss'))
+  New-Item -ItemType Directory -Path $transaction -ErrorAction Stop|Out-Null
+  Copy-Item -LiteralPath $PSCommandPath -Destination (Join-Path $transaction 'recovery.ps1')
+  $record=[ordered]@{schema='nexus.owner-activation-transaction.v1';expected_sha=$ExpectedSourceSha;old_version=$OldVersion;status='STARTED';sync_was_enabled=$oldSyncEnabled;files=@();links=@();created_at=[DateTime]::UtcNow.ToString('o')}
+  Write-Json (Join-Path $transaction 'transaction.json') $record
+  # Pre-arm owner-session watchdog before changing any owner process or state.
+  $def=$scheduler.NewTask(0);$def.RegistrationInfo.Description='NEXUS failed-closed owner rollback'
+  $def.Principal.LogonType=3;$def.Principal.RunLevel=0;$def.Principal.UserId=[Security.Principal.WindowsIdentity]::GetCurrent().Name
+  $tr=$def.Triggers.Create(1);$tr.StartBoundary=[DateTime]::Now.AddMinutes(14).ToString('s');$tr.Enabled=$true
+  $act=$def.Actions.Create(0);$act.Path=Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+  $act.Arguments='-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "'+(Join-Path $transaction 'recovery.ps1')+'" -Mode Recover -ExpectedSourceSha '+$ExpectedSourceSha+' -OldVersion '+$OldVersion+' -PrivateRoot "'+$PrivateRoot+'" -TransactionDir "'+$transaction+'"'
+  $def.Settings.Enabled=$true;$def.Settings.StartWhenAvailable=$true
+  $def.Settings.MultipleInstances=2
+  try{$existing=$folder.GetTask($taskName)}catch{$existing=$null}
+  Assert ($null -eq $existing) 'A previous owner rollback watchdog still exists: investigate first'
+  $scheduled=$folder.RegisterTaskDefinition($taskName,$def,6,$null,$null,3,$null)
+  Assert ($scheduled.Enabled -eq $true) 'Rollback watchdog could not be armed'
+  $sync.Enabled=$false
+  Stop-Exact $prior 15
+  Assert (@(ExactProcs $prior).Count -eq 0) 'Old process relaunch during quiescence'
+  $null=ValidPaper $owner
+  $files=@(ProfileFiles $owner)
+  Assert ($files.Count -gt 0 -and $files.Count -lt 100000) 'Owner profile file count invalid'
+  $copy=Join-Path $transaction 'profile'
+  Copy-Item -LiteralPath $owner -Destination $copy -Recurse -ErrorAction Stop
+  foreach($x in $files){
+    Assert ((Hash (Join-Path $copy $x.rel)) -eq $x.sha -and (Hash (Join-Path $owner $x.rel)) -eq $x.sha) 'Owner backup or live source drift'
+  }
+  $record.files=$files;$record.links=@(BackupLinks $transaction);$record.status='BACKED_UP'
+  Write-Json (Join-Path $transaction 'transaction.json') $record
+  Assert (@(ExactProcs $prior).Count -eq 0) 'Old version relaunched before candidate'
+  $env:RUNNER_TRACKING_ID=$null
+  $record.status='ACTIVATING';Write-Json (Join-Path $transaction 'transaction.json') $record
+  $null=Start-Process -FilePath (Join-Path $candidate 'NEXUS Personal Pro.exe')
+  $null=Health $ExpectedSourceSha 425
+  Assert (@(ExactProcs $prior).Count -eq 0) 'Prior app unexpectedly relaunched'
+  # Switch shortcuts only after real owner profile and exact new GUI are healthy.
+  $shell=New-Object -ComObject WScript.Shell
+  foreach($l in $record.links){
+    $tmp="$($l.path).nexus-new.lnk"
+    $shortcut=$shell.CreateShortcut($tmp);$shortcut.TargetPath=Join-Path $candidate 'NEXUS Personal Pro.exe'
+    $shortcut.WorkingDirectory=$candidate;$shortcut.Save()
+    if(Test-Path -LiteralPath $l.path){[IO.File]::Replace($tmp,$l.path,$null)}
+    else {Move-Item -LiteralPath $tmp -Destination $l.path}
+  }
+  $sync.Enabled=$oldSyncEnabled
+  $record.status='COMMITTED';$record.committed_at=[DateTime]::UtcNow.ToString('o')
+  Write-Json (Join-Path $transaction 'transaction.json') $record
+  try{$folder.DeleteTask($taskName,0)}catch{}
+  'EXACT_OWNER_ACTIVATION=PASS new owner GUI verified; rollback backup retained'
+}catch{
+  $reason=$_.Exception.Message
+  if($transaction -and (Test-Path (Join-Path $transaction 'transaction.json'))){
+    try{Rollback $transaction}catch{Write-Warning ('RECOVERY_REQUIRED private transaction='+$transaction)}
+  }
+  if($oldSyncEnabled -ne $null){try{$sync.Enabled=$oldSyncEnabled}catch{}}
+  throw "Owner activation failed closed: $reason"
+}finally{if($locked){$mutex.ReleaseMutex()};$mutex.Dispose()}
+) 'Previous source binding is invalid'
+    $null=Health $oldSource 425 $prior
   }
   if($t.sync_was_enabled -eq $true){
     $service=New-Object -ComObject Schedule.Service;$service.Connect()
