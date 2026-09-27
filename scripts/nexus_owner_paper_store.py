@@ -133,6 +133,10 @@ def validate_receipt(root: Path, receipt: dict) -> Path:
     require(isinstance(checksum, str) and bool(SHA.fullmatch(checksum)), "invalid checkpoint digest")
     require(previous is None or (isinstance(previous, str) and bool(SHA.fullmatch(previous))),
             "invalid checkpoint predecessor")
+    prev_gen = receipt.get("previous_generation")
+    require((previous is None and prev_gen is None) or
+            (isinstance(prev_gen, str) and bool(re.fullmatch(r"[0-9]{1,24}-[a-f0-9]{16}", prev_gen)) and
+             prev_gen.endswith(previous[:16])), "invalid predecessor generation")
     require(isinstance(receipt.get("archive_bytes"), int) and
             0 < receipt["archive_bytes"] <= MAX_ARCHIVE, "invalid checkpoint byte count")
     require(isinstance(receipt.get("file_count"), int) and
@@ -141,6 +145,11 @@ def validate_receipt(root: Path, receipt: dict) -> Path:
             0 < receipt["uncompressed_bytes"] <= MAX_UNCOMPRESSED, "invalid checkpoint state bytes")
     name = f"{run}-{checksum[:16]}"
     require(receipt.get("generation") == name, "checkpoint generation mismatch")
+    if prev_gen:
+        prior = root / "snapshots" / prev_gen / "receipt.json"
+        prior_receipt = load_json(prior)
+        require(prior_receipt.get("archive_sha256") == previous and
+                prior_receipt.get("generation") == prev_gen, "missing/corrupt prior checkpoint receipt")
     base = root / "snapshots" / name
     no_symlinks(base)
     stored = load_json(base / "receipt.json")
@@ -152,6 +161,8 @@ def validate_receipt(root: Path, receipt: dict) -> Path:
 
 
 def current(root: Path) -> dict | None:
+    # A crash can leave a staged newer generation; never silently replay older state.
+    require(not any(root.glob(".staged-*")), "interrupted owner checkpoint needs explicit recovery")
     pointer = root / "current.json"
     if not pointer.exists() and not pointer.is_symlink():
         snapshots = root / "snapshots"
@@ -288,6 +299,7 @@ def cli() -> int:
     parser.add_argument("--require-owner-volume", action="store_true")
     args = parser.parse_args()
     root = args.store_root.absolute()
+    require(".." not in root.parts, "owner checkpoint path traversal")
     if args.require_owner_volume or args.operation == "volume-check":
         owner_volume(root)
     if args.operation == "volume-check":
@@ -313,14 +325,14 @@ def cli() -> int:
             restore_archive(archive, old, state)
             if args.github_env_file:
                 with args.github_env_file.open("a", encoding="ascii") as output:
-                    output.write(f"NEXUS_OWNER_PREVIOUS_ARCHIVE_SHA={old['archive_sha256']}\n")
+                    output.write(f"NEXUS_OWNER_PREVIOUS_GENERATION={old['generation']}\n")
             print(f"OWNER_RESTORE_VERIFIED run_id={old['run_id']} sha256={old['archive_sha256']}")
             return 0
         require(bool(args.source_sha and COMMIT.fullmatch(args.source_sha)),
                 "source_sha must be exact Git commit")
         require(bool(args.run_id and RUN.fullmatch(args.run_id)), "numeric run ID required")
         previous = None if old is None else old["archive_sha256"]
-        require(args.expected_previous == (previous or "none"),
+        require(args.expected_previous == (old["generation"] if old else "none"),
                 "owner checkpoint advanced concurrently; reject stale commit")
         root.joinpath("snapshots").mkdir(exist_ok=True)
         staged = root / f".staged-{args.run_id}-{uuid.uuid4().hex}"
@@ -334,6 +346,7 @@ def cli() -> int:
                 "schema": SCHEMA, "generation": generation,
                 "source_sha": args.source_sha, "run_id": args.run_id,
                 "archive_sha256": checksum, "previous_archive_sha256": previous,
+                "previous_generation": old["generation"] if old else None,
                 "archive_bytes": archive.stat().st_size,
                 "file_count": count, "uncompressed_bytes": total,
                 "created_at_utc": dt.datetime.now(dt.timezone.utc).isoformat(),

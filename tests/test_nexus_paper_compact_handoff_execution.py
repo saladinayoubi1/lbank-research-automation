@@ -13,7 +13,7 @@ import tarfile
 import pytest
 import yaml
 
-WORKFLOW = Path(__file__).resolve().parents[1] / '.github/workflows/nexus_persistent_paper_trading_loop.yml'
+WORKFLOW = Path(__file__).resolve().parent / 'fixtures/legacy_paper_compact_workflow.yml'
 pytestmark = pytest.mark.skipif(sys.platform != 'linux' or not shutil.which('bash'), reason='Linux hosted transport')
 
 def steps():

@@ -29,7 +29,6 @@ on:
       - "nexus_multipair_demo_strategy_matrix.py"
       - "scripts/nexus_strategy_discovery_controller.py"
       - "scripts/nexus_runtime_wheelhouse.py"
-      - "scripts/nexus_owner_paper_store.py"
       - "config/nexus-demo-strategy-matrix-v1.json"
       - "config/nexus-demo-strategy-matrix-v2.json"
       - "config/nexus-regime-strategy-policy-v1.json"
@@ -45,7 +44,6 @@ on:
       - "tests/test_nexus_multipair_regime_lifecycle.py"
       - "tests/test_nexus_multipair_demo_strategy_matrix.py"
       - "tests/test_nexus_runtime_wheelhouse.py"
-      - "tests/test_nexus_owner_paper_store.py"
       - "tests/test_nexus_regime_selected_position_rebalance.py"
       - "tests/test_nexus_regime_selected_exposure_increase.py"
       - "tests/test_nexus_strategy_discovery_health_trigger.py"
@@ -76,7 +74,6 @@ on:
       - "nexus_multipair_demo_strategy_matrix.py"
       - "scripts/nexus_strategy_discovery_controller.py"
       - "scripts/nexus_runtime_wheelhouse.py"
-      - "scripts/nexus_owner_paper_store.py"
       - "config/nexus-demo-strategy-matrix-v1.json"
       - "config/nexus-demo-strategy-matrix-v2.json"
       - "config/nexus-regime-strategy-policy-v1.json"
@@ -92,7 +89,6 @@ on:
       - "tests/test_nexus_multipair_regime_lifecycle.py"
       - "tests/test_nexus_multipair_demo_strategy_matrix.py"
       - "tests/test_nexus_runtime_wheelhouse.py"
-      - "tests/test_nexus_owner_paper_store.py"
       - "tests/test_nexus_regime_selected_position_rebalance.py"
       - "tests/test_nexus_regime_selected_exposure_increase.py"
       - "tests/test_nexus_strategy_discovery_health_trigger.py"
@@ -135,7 +131,6 @@ jobs:
           tests/test_nexus_multipair_regime_lifecycle.py
           tests/test_nexus_multipair_demo_strategy_matrix.py
           tests/test_nexus_runtime_wheelhouse.py
-          tests/test_nexus_owner_paper_store.py
           tests/test_nexus_regime_selected_position_rebalance.py
           tests/test_nexus_regime_selected_exposure_increase.py
           tests/test_nexus_strategy_discovery_health_trigger.py
@@ -236,10 +231,29 @@ jobs:
     runs-on: nexus-bybit-network
     timeout-minutes: 45
     outputs:
-      owner_archive_sha256: ${{ steps.owner_commit.outputs.owner_archive_sha256 }}
-      owner_run_id: ${{ steps.owner_commit.outputs.owner_run_id }}
+      state_archive_codec: ${{ steps.package.outputs.state_archive_codec }}
+      state_archive_chunk_count: ${{ steps.package.outputs.state_archive_chunk_count }}
+      state_archive_b85_len: ${{ steps.package.outputs.state_archive_b85_len }}
+      state_archive_chunk_0: ${{ steps.package.outputs.state_archive_chunk_0 }}
+      state_archive_chunk_1: ${{ steps.package.outputs.state_archive_chunk_1 }}
+      state_archive_chunk_2: ${{ steps.package.outputs.state_archive_chunk_2 }}
+      state_archive_chunk_3: ${{ steps.package.outputs.state_archive_chunk_3 }}
+      state_archive_chunk_4: ${{ steps.package.outputs.state_archive_chunk_4 }}
+      state_archive_chunk_5: ${{ steps.package.outputs.state_archive_chunk_5 }}
+      state_archive_chunk_6: ${{ steps.package.outputs.state_archive_chunk_6 }}
+      state_archive_chunk_7: ${{ steps.package.outputs.state_archive_chunk_7 }}
+      state_archive_chunk_8: ${{ steps.package.outputs.state_archive_chunk_8 }}
+      state_archive_chunk_9: ${{ steps.package.outputs.state_archive_chunk_9 }}
+      state_archive_chunk_10: ${{ steps.package.outputs.state_archive_chunk_10 }}
+      state_archive_chunk_11: ${{ steps.package.outputs.state_archive_chunk_11 }}
+      state_archive_chunk_12: ${{ steps.package.outputs.state_archive_chunk_12 }}
+      state_archive_chunk_13: ${{ steps.package.outputs.state_archive_chunk_13 }}
+      state_archive_chunk_14: ${{ steps.package.outputs.state_archive_chunk_14 }}
+      state_archive_chunk_15: ${{ steps.package.outputs.state_archive_chunk_15 }}
+      state_archive_chunk_16: ${{ steps.package.outputs.state_archive_chunk_16 }}
+      state_archive_chunk_17: ${{ steps.package.outputs.state_archive_chunk_17 }}
+      state_archive_sha256: ${{ steps.package.outputs.state_archive_sha256 }}
     env:
-      OWNER_STORE_ROOT: /mnt/e/NEXUS/paper-state-store-v1
       GH_TOKEN: ${{ github.token }}
       SOURCE_ARTIFACT: nexus-persistent-paper-source-${{ github.sha }}
       SOURCE_ARCHIVE_SHA256: ${{ needs.runtime-wheelhouse.outputs.source_archive_sha256 }}
@@ -548,43 +562,16 @@ jobs:
           echo "offline_wheelhouse_bootstrap=PASS"
       - run: '"$PYTHON_BIN" -m pip check'
 
-      - name: Verify owner E volume and restore immutable owner Paper checkpoint
-        id: owner_restore
+      - name: Restore newest persistent Paper state
         run: |
           set -euo pipefail
           cd "$SOURCE_ROOT"
-          "$PYTHON_BIN" scripts/nexus_owner_paper_store.py volume-check --store-root "$OWNER_STORE_ROOT"
           rm -rf "$STATE_ROOT" build/persistent-state.zip
           mkdir -p "$STATE_ROOT"
-          if "$PYTHON_BIN" scripts/nexus_owner_paper_store.py restore \
-            --store-root "$OWNER_STORE_ROOT" --state-root "$STATE_ROOT" \
-            --require-owner-volume --github-env-file "$GITHUB_ENV"; then
-            echo "source=owner" >> "$GITHUB_OUTPUT"
-            echo "physical_owner_paper_restore=SHA_VERIFIED"
-          else
-            code=$?
-            if [ "$code" -ne 3 ]; then
-              echo "::error::Invalid owner checkpoint. Legacy fallback prohibited."
-              exit "$code"
-            fi
-            echo "source=legacy" >> "$GITHUB_OUTPUT"
-            echo "NEXUS_OWNER_PREVIOUS_GENERATION=none" >> "$GITHUB_ENV"
-            echo "physical_owner_paper_restore=ONE_TIME_LEGACY_BOOTSTRAP"
-          fi
-
-      - name: Restore legacy GitHub Paper state only when owner store is empty
-        if: steps.owner_restore.outputs.source == 'legacy'
-        run: |
-          set -euo pipefail
-          cd "$SOURCE_ROOT"
-          test -d "$STATE_ROOT"
           "$PYTHON_BIN" - <<'PY'
           import json
           import os
-          import hashlib
-          import re
           import shutil
-          import stat
           import urllib.error
           import urllib.parse
           import urllib.request
@@ -613,12 +600,7 @@ jobs:
           ) as response:
               payload = json.load(response)
           artifacts = payload.get("artifacts") or []
-          if not artifacts:
-              raise RuntimeError("No trusted owner or historical Paper state; refusing fresh reset")
           if artifacts:
-              archive_digest = str(artifacts[0].get("digest", ""))
-              if not re.fullmatch(r"sha256:[a-f0-9]{64}", archive_digest):
-                  raise RuntimeError("Historical Paper artifact digest missing")
               artifact_id = int(artifacts[0]["id"])
               download_url = f"https://api.github.com/repos/{repo}/actions/artifacts/{artifact_id}/zip"
               opener = urllib.request.build_opener(NoRedirect)
@@ -646,23 +628,9 @@ jobs:
                   )
                   with urllib.request.urlopen(storage_request, timeout=120) as response, archive_path.open("wb") as output:
                       shutil.copyfileobj(response, output)
-              if hashlib.sha256(archive_path.read_bytes()).hexdigest() != archive_digest[7:]:
-                  raise RuntimeError("Historical Paper artifact digest mismatch")
               root = state_root.resolve()
-              count = total = 0
-              allowed = {"persistent-loop-state.json","matrix-state.json","cells","demo",
-                         "regime_runtime_drift","regime_runtime_evidence","regime_selected"}
               with zipfile.ZipFile(archive_path) as archive:
                   for member in archive.infolist():
-                      count += 1
-                      total += member.file_size
-                      if count > 10_000 or total > 100_000_000 or "\\" in member.filename:
-                          raise RuntimeError("Historical Paper artifact unsafe size or path")
-                      if member.filename.split("/",1)[0] not in allowed:
-                          raise RuntimeError("Historical artifact unknown Paper surface")
-                      mode = (member.external_attr >> 16) & 0xFFFF
-                      if mode and not (stat.S_ISREG(mode) or member.is_dir()):
-                          raise RuntimeError("Historical artifact non-regular member")
                       target = (state_root / member.filename).resolve()
                       if target != root and root not in target.parents:
                           raise RuntimeError(f"unsafe artifact path: {member.filename}")
@@ -763,25 +731,99 @@ jobs:
           }, sort_keys=True))
           PY
 
-      - name: Commit verified Paper state to immutable owner E volume
-        id: owner_commit
+      - name: Package Paper state for hosted artifact persistence
+        id: package
         if: success()
         run: |
           set -euo pipefail
-          cd "$SOURCE_ROOT"
-          result="$("$PYTHON_BIN" scripts/nexus_owner_paper_store.py commit \
-            --store-root "$OWNER_STORE_ROOT" --state-root "$STATE_ROOT" \
-            --require-owner-volume --source-sha "$GITHUB_SHA" --run-id "$GITHUB_RUN_ID" \
-            --expected-previous "${NEXUS_OWNER_PREVIOUS_GENERATION:-none}")"
-          echo "$result"
-          if [[ ! "$result" =~ archive_sha256=([a-f0-9]{64})[[:space:]]run_id=([0-9]+) ]]; then
-            echo "::error::Missing owner checkpoint receipt"
-            exit 1
+          if [ "${NATIVE_PREPARED:-false}" != "true" ] || [ ! -d "$STATE_ROOT" ]; then
+            {
+              echo "state_archive_chunk_count=0"
+              echo "state_archive_b85_len=0"
+              echo "state_archive_sha256="
+              for index in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17; do
+                echo "state_archive_chunk_${index}="
+              done
+            } >> "$GITHUB_OUTPUT"
+            exit 0
           fi
-          sha="${BASH_REMATCH[1]}"
-          test "${BASH_REMATCH[2]}" = "$GITHUB_RUN_ID"
-          echo "owner_archive_sha256=$sha" >> "$GITHUB_OUTPUT"
-          echo "owner_run_id=$GITHUB_RUN_ID" >> "$GITHUB_OUTPUT"
+          cd "$SOURCE_ROOT"
+          "$PYTHON_BIN" - <<'PY'
+          import lzma
+          import os
+          import tarfile
+          from pathlib import Path
+
+          root = Path(os.environ["STATE_ROOT"])
+          if root.is_symlink() or not root.is_dir():
+              raise RuntimeError("Paper state root is unavailable or unsafe")
+          root = root.resolve(strict=True)
+          output = Path("build/persistent-state-handoff.tar.xz")
+          output.parent.mkdir(parents=True, exist_ok=True)
+          output.unlink(missing_ok=True)
+          file_count = 0
+          total_bytes = 0
+          with tarfile.open(output, "w:xz", preset=9 | lzma.PRESET_EXTREME) as archive:
+              for path in sorted(root.rglob("*")):
+                  if path.is_symlink():
+                      raise RuntimeError(f"Paper state contains symlink: {path}")
+                  if path.is_dir():
+                      continue
+                  if not path.is_file():
+                      raise RuntimeError(f"Paper state contains non-regular entry: {path}")
+                  file_count += 1
+                  total_bytes += path.stat().st_size
+                  if file_count > 10_000 or total_bytes > 100_000_000:
+                      raise RuntimeError("Paper state exceeds bounded packing surface")
+                  relative = path.relative_to(root).as_posix()
+                  info = archive.gettarinfo(str(path), arcname=relative)
+                  if not info.isfile():
+                      raise RuntimeError(f"Paper state tar member is not regular: {relative}")
+                  info.uid = 0
+                  info.gid = 0
+                  info.uname = ""
+                  info.gname = ""
+                  info.mtime = 0
+                  info.mode = 0o600
+                  with path.open("rb") as handle:
+                      archive.addfile(info, handle)
+          if file_count < 1:
+              raise RuntimeError("Paper state contains no files")
+          print(f"state_handoff_file_count={file_count}")
+          print(f"state_handoff_uncompressed_bytes={total_bytes}")
+          print(f"state_handoff_tar_xz_bytes={output.stat().st_size}")
+          PY
+          # Pack pairs of Base85 digits into single BMP characters. This halves
+          # GitHub's UTF-16 estimate without new jobs, files shared between jobs,
+          # changed permissions, or a change to the digest-verified archive.
+          PYTHONUTF8=1 "$PYTHON_BIN" - <<'PY'
+          import base64
+          import hashlib
+          import os
+          from pathlib import Path
+
+          archive = Path("build/persistent-state-handoff.tar.xz")
+          if not 0 < archive.stat().st_size <= 800_000:
+              raise RuntimeError("Packed Paper state exceeds compact handoff bound")
+          raw = archive.read_bytes()
+          encoded = base64.b85encode(raw).decode("ascii")
+          alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!#$%&()*+-;<=>?@^_`{|}~"
+          digits = {char: index for index, char in enumerate(alphabet)}
+          padded = encoded + ("0" if len(encoded) % 2 else "")
+          compact = "".join(chr(0x4000 + digits[padded[i]] * 85 + digits[padded[i + 1]]) for i in range(0, len(padded), 2))
+          chunk_size = 30_000  # <=90,000 UTF-8 bytes per Linux environment value.
+          chunks = [compact[i:i + chunk_size] for i in range(0, len(compact), chunk_size)]
+          estimated_output_utf16_bytes = len(compact) * 2 + 16_384
+          if estimated_output_utf16_bytes > 1_048_576 or not 1 <= len(chunks) <= 18:
+              raise RuntimeError("Packed Paper state exceeds the bounded GitHub job-output handoff")
+          lines = ["state_archive_codec=b85-pairs-v1", f"state_archive_chunk_count={len(chunks)}",
+                   f"state_archive_b85_len={len(encoded)}", f"state_archive_sha256={hashlib.sha256(raw).hexdigest()}"]
+          lines += [f"state_archive_chunk_{i}={chunks[i] if i < len(chunks) else ''}" for i in range(18)]
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
+              handle.write("\n".join(lines) + "\n")
+          print(f"state_handoff_estimated_output_utf16_bytes={estimated_output_utf16_bytes}")
+          print(f"state_handoff_chunk_count={len(chunks)}")
+          PY
 
       - name: Cleanup isolated physical source and state
         if: always()
@@ -793,34 +835,123 @@ jobs:
           case "$state_root" in "$HOME"/.local/share/nexus/persistent-paper-state/*) rm -rf "$state_root" ;; *) exit 1;; esac
 
   persist-state:
-    # GitHub is audit-only. No Paper archive, token or journal crosses outputs.
-    if: ${{ always() && needs.paper-loop.result == 'success' && needs.paper-loop.outputs.owner_archive_sha256 != '' }}
+    if: ${{ always() && needs.paper-loop.result == 'success' && needs.paper-loop.outputs.state_archive_chunk_count != '0' && needs.paper-loop.outputs.state_archive_chunk_count != '' }}
     needs: paper-loop
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      OWNER_ARCHIVE_SHA256: ${{ needs.paper-loop.outputs.owner_archive_sha256 }}
-      OWNER_CHECKPOINT_RUN_ID: ${{ needs.paper-loop.outputs.owner_run_id }}
+      STATE_ARCHIVE_CODEC: ${{ needs.paper-loop.outputs.state_archive_codec }}
+      STATE_ARCHIVE_CHUNK_COUNT: ${{ needs.paper-loop.outputs.state_archive_chunk_count }}
+      STATE_ARCHIVE_B85_LEN: ${{ needs.paper-loop.outputs.state_archive_b85_len }}
+      STATE_ARCHIVE_CHUNK_0: ${{ needs.paper-loop.outputs.state_archive_chunk_0 }}
+      STATE_ARCHIVE_CHUNK_1: ${{ needs.paper-loop.outputs.state_archive_chunk_1 }}
+      STATE_ARCHIVE_CHUNK_2: ${{ needs.paper-loop.outputs.state_archive_chunk_2 }}
+      STATE_ARCHIVE_CHUNK_3: ${{ needs.paper-loop.outputs.state_archive_chunk_3 }}
+      STATE_ARCHIVE_CHUNK_4: ${{ needs.paper-loop.outputs.state_archive_chunk_4 }}
+      STATE_ARCHIVE_CHUNK_5: ${{ needs.paper-loop.outputs.state_archive_chunk_5 }}
+      STATE_ARCHIVE_CHUNK_6: ${{ needs.paper-loop.outputs.state_archive_chunk_6 }}
+      STATE_ARCHIVE_CHUNK_7: ${{ needs.paper-loop.outputs.state_archive_chunk_7 }}
+      STATE_ARCHIVE_CHUNK_8: ${{ needs.paper-loop.outputs.state_archive_chunk_8 }}
+      STATE_ARCHIVE_CHUNK_9: ${{ needs.paper-loop.outputs.state_archive_chunk_9 }}
+      STATE_ARCHIVE_CHUNK_10: ${{ needs.paper-loop.outputs.state_archive_chunk_10 }}
+      STATE_ARCHIVE_CHUNK_11: ${{ needs.paper-loop.outputs.state_archive_chunk_11 }}
+      STATE_ARCHIVE_CHUNK_12: ${{ needs.paper-loop.outputs.state_archive_chunk_12 }}
+      STATE_ARCHIVE_CHUNK_13: ${{ needs.paper-loop.outputs.state_archive_chunk_13 }}
+      STATE_ARCHIVE_CHUNK_14: ${{ needs.paper-loop.outputs.state_archive_chunk_14 }}
+      STATE_ARCHIVE_CHUNK_15: ${{ needs.paper-loop.outputs.state_archive_chunk_15 }}
+      STATE_ARCHIVE_CHUNK_16: ${{ needs.paper-loop.outputs.state_archive_chunk_16 }}
+      STATE_ARCHIVE_CHUNK_17: ${{ needs.paper-loop.outputs.state_archive_chunk_17 }}
+      STATE_ARCHIVE_SHA256: ${{ needs.paper-loop.outputs.state_archive_sha256 }}
+      STATE_ROOT: build/nexus_persistent_paper_trading_state
     steps:
-      - name: Validate owner checkpoint audit receipt without Paper contents
+      - name: Rehydrate physical Paper state handoff
         run: |
+          set -euo pipefail
+          rm -rf "$STATE_ROOT" build/persistent-state-handoff.tar.xz
+          mkdir -p "$STATE_ROOT"
+          PYTHONUTF8=1 python - <<'PY'
+          import base64
+          import hashlib
+          import os
+          from pathlib import Path
+
+          if os.environ["STATE_ARCHIVE_CODEC"] != "b85-pairs-v1":
+              raise RuntimeError("Unsupported Paper state handoff codec")
+          count = int(os.environ["STATE_ARCHIVE_CHUNK_COUNT"])
+          length = int(os.environ["STATE_ARCHIVE_B85_LEN"])
+          if not 1 <= count <= 18 or not 1 <= length <= 1_000_000:
+              raise RuntimeError("Invalid Paper state handoff dimensions")
+          chunks = [os.environ[f"STATE_ARCHIVE_CHUNK_{i}"] for i in range(18)]
+          if any(not chunk or len(chunk) > 30_000 for chunk in chunks[:count]):
+              raise RuntimeError("Paper state handoff chunk exceeds bound or is missing")
+          if any(chunks[count:]):
+              raise RuntimeError("Unexpected trailing Paper state handoff chunk")
+          compact = "".join(chunks[:count])
+          if len(compact) != (length + 1) // 2:
+              raise RuntimeError("Paper state handoff length mismatch")
+          alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!#$%&()*+-;<=>?@^_`{|}~"
+          digits = [ord(char) - 0x4000 for char in compact]
+          if any(not 0 <= value < 85 * 85 for value in digits):
+              raise RuntimeError("Invalid compact Paper state character")
+          encoded = "".join(alphabet[value // 85] + alphabet[value % 85] for value in digits)
+          if length % 2 and encoded[-1] != "0":
+              raise RuntimeError("Noncanonical compact Paper state padding")
+          raw = base64.b85decode(encoded[:length].encode("ascii"))
+          if not 0 < len(raw) <= 800_000 or hashlib.sha256(raw).hexdigest() != os.environ["STATE_ARCHIVE_SHA256"]:
+              raise RuntimeError("Paper state handoff SHA256 or size mismatch")
+          Path("build/persistent-state-handoff.tar.xz").write_bytes(raw)
+          PY
           python - <<'PY'
-          import json, os, pathlib, re
-          sha=os.environ["OWNER_ARCHIVE_SHA256"]
-          run=os.environ["OWNER_CHECKPOINT_RUN_ID"]
-          assert re.fullmatch(r"[a-f0-9]{64}", sha)
-          assert run == os.environ["GITHUB_RUN_ID"]
-          receipt={"schema":"nexus.owner-paper-audit.v1","run_id":run,
-                   "source_sha":os.environ["GITHUB_SHA"],"archive_sha256":sha,
-                   "owner_local_only":True,"artifact_contains_paper_state":False,
-                   "live_trading_authority":False}
-          pathlib.Path("owner-paper-receipt.json").write_text(
-              json.dumps(receipt,sort_keys=True)+"\n",encoding="utf-8")
-          print("HOSTED_OWNER_PAPER_AUDIT_RECEIPT=PASS")
+          import os
+          import shutil
+          import tarfile
+          from pathlib import Path, PurePosixPath
+
+          state_root = Path(os.environ["STATE_ROOT"]).resolve()
+          archive_path = Path("build/persistent-state-handoff.tar.xz")
+          seen: set[str] = set()
+          file_count = 0
+          total_bytes = 0
+          with tarfile.open(archive_path, "r:xz") as archive:
+              for member in archive:
+                  if member.isdir():
+                      continue
+                  if member.issym() or member.islnk() or not member.isfile():
+                      raise RuntimeError(f"unsafe state handoff member type: {member.name}")
+                  relative = PurePosixPath(member.name)
+                  if (
+                      relative.is_absolute()
+                      or not relative.parts
+                      or any(part in {"", ".", ".."} for part in relative.parts)
+                  ):
+                      raise RuntimeError(f"unsafe state handoff path: {member.name}")
+                  normalized = relative.as_posix()
+                  if normalized in seen:
+                      raise RuntimeError(f"duplicate state handoff path: {member.name}")
+                  seen.add(normalized)
+                  file_count += 1
+                  total_bytes += member.size
+                  if file_count > 10_000 or total_bytes > 100_000_000:
+                      raise RuntimeError("state handoff exceeds bounded extraction surface")
+                  target = state_root.joinpath(*relative.parts).resolve()
+                  if target == state_root or state_root not in target.parents:
+                      raise RuntimeError(f"unsafe state handoff path: {member.name}")
+                  source = archive.extractfile(member)
+                  if source is None:
+                      raise RuntimeError(f"state handoff member is unreadable: {member.name}")
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  with source, target.open("wb") as output:
+                      shutil.copyfileobj(source, output)
+          if file_count < 1:
+              raise RuntimeError("state handoff contains no files")
+          print(f"hosted_state_handoff_file_count={file_count}")
+          print(f"hosted_state_handoff_uncompressed_bytes={total_bytes}")
+          print("hosted_state_handoff_verification=PASS")
           PY
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: nexus-owner-paper-checkpoint-audit-${{ github.run_id }}
-          path: owner-paper-receipt.json
+          name: nexus-persistent-paper-trading-state
+          path: build/nexus_persistent_paper_trading_state
           if-no-files-found: error
           retention-days: 90
+          compression-level: 9

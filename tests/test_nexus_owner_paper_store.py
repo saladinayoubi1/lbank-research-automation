@@ -78,12 +78,12 @@ class OwnerPaperStoreTests(unittest.TestCase):
                          self.event_bytes)
         self.assertEqual(json.loads((restored / "demo" / "persistent-paper-trading-loop.json").read_text()),
                          self.paper_json)
-        self.commit(n="101", sha=SHA_B, previous=one["archive_sha256"], state=restored)
+        self.commit(n="101", sha=SHA_B, previous=one["generation"], state=restored)
         two = self.read_receipt()
         self.assertEqual(two["previous_archive_sha256"], one["archive_sha256"])
         self.assertTrue((self.store / "snapshots" / one["generation"] / "paper-state.tar.xz").exists())
         self.assertEqual(len(list((self.store / "snapshots").iterdir())), 2)
-        self.commit(n="102", sha=SHA_B, previous=one["archive_sha256"], expect=1)
+        self.commit(n="102", sha=SHA_B, previous=one["generation"], expect=1)
         self.assertEqual(self.read_receipt(), two)
 
     def test_tamper_archive_refuses_restore_and_preserves_previous(self):

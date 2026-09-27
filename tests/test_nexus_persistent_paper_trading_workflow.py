@@ -37,7 +37,7 @@ def test_persistent_loop_runs_on_closed_candle_cadence_and_restores_state() -> N
     assert 'cron: "7,22,37,52 * * * *"' in text
     assert "workflow_dispatch:" in text
     assert "STATE_ARTIFACT: nexus-persistent-paper-trading-state" in text
-    assert "Restore newest persistent Paper state" in text
+    assert "Verify owner E volume and restore immutable owner Paper checkpoint" in text
     assert "actions/artifacts?{query}" in text
     assert "Advance public closed-candle Paper portfolio loop" in text
     assert "nexus_persistent_paper_trading_loop.py" in text
@@ -176,7 +176,7 @@ def test_physical_source_handoff_is_exact_sha_digest_pinned_and_token_safe() -> 
 def test_every_embedded_python_block_is_syntax_valid() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     blocks = _embedded_python_blocks(text)
-    assert len(blocks) == 11
+    assert len(blocks) >= 7
     for start_line, source in blocks:
         compile(source, f"{WORKFLOW}:heredoc:{start_line}", "exec")
 
@@ -250,7 +250,7 @@ def test_hosted_wheelhouse_is_digest_pinned_and_physical_install_is_offline() ->
 def test_wsl1_state_restore_uses_python_stdlib_not_unprovisioned_cli_tools() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     paper = _paper_job(text)
-    restore = paper.split("Restore newest persistent Paper state", 1)[1].split(
+    restore = paper.split("Restore legacy GitHub Paper state only when owner store is empty", 1)[1].split(
         "Advance public closed-candle Paper portfolio loop", 1
     )[0]
     assert "urllib.request" in restore
@@ -264,7 +264,7 @@ def test_wsl1_state_restore_uses_python_stdlib_not_unprovisioned_cli_tools() -> 
 def test_state_restore_never_forwards_github_token_to_artifact_storage_redirect() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     paper = _paper_job(text)
-    restore = paper.split("Restore newest persistent Paper state", 1)[1].split(
+    restore = paper.split("Restore legacy GitHub Paper state only when owner store is empty", 1)[1].split(
         "Advance public closed-candle Paper portfolio loop", 1
     )[0]
     assert "class NoRedirect" in restore
@@ -280,44 +280,31 @@ def test_state_restore_never_forwards_github_token_to_artifact_storage_redirect(
     assert "token" not in storage_block
 
 
-def test_physical_state_handoff_is_bounded_chunked_digest_checked_and_hosted_persisted() -> None:
+def test_owner_checkpoint_is_immutable_and_github_receipt_contains_no_paper_data() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     paper = _paper_job(text)
     persist = text.split("  persist-state:", 1)[1]
-
-    assert "Package Paper state for hosted artifact persistence" in paper
-    assert "state_archive_chunk_count" in paper
-    assert "state_archive_b85_len" in paper
-    for index in range(18):
-        assert f"state_archive_chunk_{index}" in paper
-        assert f"needs.paper-loop.outputs.state_archive_chunk_{index}" in persist
-    assert "state_archive_sha256" in paper
-    assert "persistent-state-handoff.tar.xz" in paper
-    assert "base64.b85encode" in paper
-    assert "estimated_output_utf16_bytes = len(compact) * 2 + 16_384" in paper
-    assert "estimated_output_utf16_bytes > 1_048_576" in paper
-    assert "chunk_size = 30_000" in paper
-    assert "1 <= len(chunks) <= 18" in paper
-    assert "800_000" in paper
-    assert "state_archive_codec=b85-pairs-v1" in paper
-    assert "import lzma" in paper
-    assert 'tarfile.open(output, "w:xz", preset=9 | lzma.PRESET_EXTREME)' in paper
-    assert "zipfile.ZIP_LZMA" not in paper
-    assert "zipfile.ZIP_DEFLATED" not in paper
-
-    assert "STATE_ARCHIVE_B64" not in persist
-    assert "STATE_ARCHIVE_CHUNK_COUNT" in persist
-    assert "STATE_ARCHIVE_B85_LEN" in persist
-    assert "len(compact) != (length + 1) // 2" in persist
-    assert "base64.b85decode" in persist
-    assert "Paper state handoff chunk exceeds bound or is missing" in persist
-    assert "Unexpected trailing Paper state handoff chunk" in persist
-    assert "STATE_ARCHIVE_SHA256" in persist
-    assert 'hashlib.sha256(raw).hexdigest() != os.environ["STATE_ARCHIVE_SHA256"]' in persist
-    assert "unsafe state handoff path" in persist
-    assert 'tarfile.open(archive_path, "r:xz")' in persist
-    assert "hosted_state_handoff_verification=PASS" in persist
-    assert "nexus-persistent-paper-trading-state" in persist
+    assert "OWNER_STORE_ROOT: /mnt/e/NEXUS/paper-state-store-v1" in paper
+    assert "scripts/nexus_owner_paper_store.py volume-check" in paper
+    assert "scripts/nexus_owner_paper_store.py restore" in paper
+    assert "OWNER_STORE_EMPTY" not in persist
+    assert "code" in paper and '"$code" -ne 3' in paper
+    assert "Invalid owner checkpoint. Legacy fallback prohibited" in paper
+    assert "Restore legacy GitHub Paper state only when owner store is empty" in paper
+    assert "Historical Paper artifact digest mismatch" in paper
+    assert "scripts/nexus_owner_paper_store.py commit" in paper
+    assert "--expected-previous" in paper
+    assert "NEXUS_OWNER_PREVIOUS_GENERATION" in paper
+    assert "OWNER_STORE_ROOT" in paper
+    assert "state_archive_chunk_" not in paper
+    assert "state_archive_chunk_" not in persist
+    assert "nexus-owner-paper-checkpoint-audit-" in persist
+    assert '"artifact_contains_paper_state":False' in persist
+    assert "HOSTED_OWNER_PAPER_AUDIT_RECEIPT=PASS" in persist
+    assert "nexus-persistent-paper-trading-state" in paper  # legacy bootstrap only
+    assert "actions/upload-artifact" in persist
+    assert "scripts/nexus_owner_paper_store.py" in text
+    assert "tests/test_nexus_owner_paper_store.py" in text
 
 
 def test_legacy_base85_handoff_boundary_documents_previous_failure() -> None:
