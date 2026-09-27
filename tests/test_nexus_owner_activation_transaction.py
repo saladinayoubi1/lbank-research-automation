@@ -66,3 +66,12 @@ def test_watchdog_can_be_rehearsed_without_touching_owner_tasks():
     assert 'NEXUS-Activation-REHEARSAL-$sourceShort' in script
     assert 'SYNTHETIC_OWNER_WATCHDOG_COM=PASS' in script
     assert "$folder.DeleteTask($testName,0)" in script
+
+def test_only_one_entrypoint_and_rollback_verifies_old_health():
+    script=SOURCE.read_text(encoding="utf-8")
+    assert script.count("function Rehearse {")==1
+    assert script.count("function Rollback([string]$Dir){")==1
+    assert script.count("if($Mode -eq 'Rehearse')")==1
+    assert script.count("Assert ($Mode -eq 'Activate')")==1
+    assert "$null=Health $oldSource 425 $prior" in script
+    assert "if($t.status -in @('COMMITTED','ROLLED_BACK')){return}" in script
