@@ -89,8 +89,10 @@ function renderMarketProbe(){
     root.textContent='اتصال واقعی آزمایش نشده است. منابع Compatible فقط از نظر قرارداد داده سازگارند.';
     return;
   }
-  const validTime=Number.isFinite(Date.parse(p.checked_at_utc));
-  const old=validTime&&Date.now()-Date.parse(p.checked_at_utc)>5*60*1000;
+  const checkedAt=Date.parse(p.checked_at_utc);
+  const validTime=Number.isFinite(checkedAt);
+  const ageMs=validTime?Date.now()-checkedAt:Infinity;
+  const old=!validTime||ageMs<-(60*1000)||ageMs>5*60*1000;
   const ready=p.status==='verified_closed_candles'&&!old;
   root.className='result-box '+(ready?'good':'bad');
   const labels={
