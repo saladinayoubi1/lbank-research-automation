@@ -10,8 +10,11 @@ on:
         description: Synthetic transport bytes (no owner data)
         type: choice
         required: true
-        default: '300000'
+        default: '32000'
         options:
+          - '32000'
+          - '64000'
+          - '128000'
           - '300000'
           - '390016'
           - '420000'
@@ -24,7 +27,7 @@ jobs:
   emit:
     runs-on: ubuntu-latest
     env:
-      SYNTHETIC_BYTES: ${{ inputs.raw_bytes || '300000' }}
+      SYNTHETIC_BYTES: ${{ inputs.raw_bytes || '32000' }}
     timeout-minutes: 5
     outputs:
       state_archive_codec: ${{ steps.make.outputs.state_archive_codec }}
@@ -59,7 +62,7 @@ jobs:
           from pathlib import Path
           # Synthetic repeatable bytes; no journal, tokens, exchange data, or owner runtime.
           size=int(os.environ["SYNTHETIC_BYTES"])
-          assert size in (300_000,390_016,420_000) and size % 32 == 0
+          assert size in (32_000,64_000,128_000,300_000,390_016,420_000) and size % 32 == 0
           raw = b"".join(hashlib.sha256(i.to_bytes(8,"little")).digest() for i in range(size//32))
           encoded = base64.b85encode(raw).decode("ascii")
           alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!#$%&()*+-;<=>?@^_" + chr(96) + "{|}~"
@@ -81,7 +84,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      SYNTHETIC_BYTES: ${{ inputs.raw_bytes || '300000' }}
+      SYNTHETIC_BYTES: ${{ inputs.raw_bytes || '32000' }}
       STATE_ARCHIVE_CODEC: ${{ needs.emit.outputs.state_archive_codec }}
       STATE_ARCHIVE_CHUNK_COUNT: ${{ needs.emit.outputs.state_archive_chunk_count }}
       STATE_ARCHIVE_B85_LEN: ${{ needs.emit.outputs.state_archive_b85_len }}
@@ -114,7 +117,7 @@ jobs:
           length=int(os.environ["STATE_ARCHIVE_B85_LEN"])
           assert os.environ["STATE_ARCHIVE_CODEC"]=="b85-pairs-v1"
           size=int(os.environ["SYNTHETIC_BYTES"])
-          assert size in (300_000,390_016,420_000)
+          assert size in (32_000,64_000,128_000,300_000,390_016,420_000)
           assert length==size*5//4
           assert count == ((length+1)//2+14_999)//15_000
           chunks=[os.environ[f"STATE_ARCHIVE_CHUNK_{i}"] for i in range(18)]
