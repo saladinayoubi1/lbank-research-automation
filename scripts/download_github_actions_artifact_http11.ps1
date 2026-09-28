@@ -89,7 +89,7 @@ function Get-SignedArtifactUrl {
         }
         $locations = @($headers | Where-Object { $_ -match '^Location:\s*\S+' })
         if ($locations.Count -ne 1) { throw 'GitHub artifact redirect was absent or ambiguous.' }
-        $uri = New-Object Uri($locations[0].Substring($locations[0].IndexOf(':') + 1).Trim())
+        $uri = [Uri]($locations[0].Substring($locations[0].IndexOf(':') + 1).Trim())
         if ($uri.Scheme -ne 'https' -or
             ($uri.Host -notmatch '^productionresultssa[0-9]+\.blob\.core\.windows\.net$' -and
              $uri.Host -notmatch '(^|\.)actions\.githubusercontent\.com$')) {
