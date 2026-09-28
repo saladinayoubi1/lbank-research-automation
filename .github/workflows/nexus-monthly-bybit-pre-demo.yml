@@ -1,0 +1,75 @@
+name: NEXUS Complete Month Bybit Pre-Demo Research
+
+on:
+  workflow_dispatch:
+    inputs:
+      month_start:
+        description: Inclusive first UTC day of one fully completed calendar month
+        required: true
+        type: string
+        default: '2026-08-01'
+      next_month_start:
+        description: Exclusive first UTC day of next month
+        required: true
+        type: string
+        default: '2026-09-01'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nexus-monthly-bybit-matrix-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  monthly-research:
+    if: github.ref == 'refs/heads/main' && github.actor == github.repository_owner
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      NEXUS_SOURCE_SHA: ${{ github.sha }}
+      NEXUS_BYBIT_PUBLIC_REGION: GLOBAL
+      MONTH_START: ${{ inputs.month_start }}
+      NEXT_MONTH_START: ${{ inputs.next_month_start }}
+    steps:
+      - name: Check out exact main research source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12'
+      - name: Install locked research dependencies
+        run: python -m pip install -r requirements-dev.lock
+      - name: Verify source and Paper-only scope
+        run: |
+          test "$NEXUS_SOURCE_SHA" = "$(git rev-parse HEAD)"
+          python -m pytest -q tests/test_nexus_monthly_bybit_backtest.py
+      - name: Execute exact completed UTC calendar month
+        run: |
+          python scripts/nexus_monthly_bybit_backtest.py \
+            --start "$MONTH_START" --end-exclusive "$NEXT_MONTH_START" \
+            --output build/owner-pre-demo-monthly-matrix
+      - name: Fail closed on absent/incomplete full-month table
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path("build/owner-pre-demo-monthly-matrix")
+          summary = json.loads((root / "summary.json").read_text())
+          assert summary["code_sha"] == __import__("os").environ["NEXUS_SOURCE_SHA"]
+          assert summary["decision"] == "FULL_MONTH_HISTORICAL_BACKTEST_COMPLETE"
+          assert summary["exact_canonical_months"] == 12
+          assert summary["strategy_cells"] == 36
+          assert summary["no_demo_or_live_execution"] is True
+          assert summary["owner_review_required_before_any_new_demo"] is True
+          assert len(list((root / "datasets").glob("*.json"))) == 12
+          assert sum(1 for line in (root / "cells.jsonl").open() if line.strip()) == 36
+          PY
+      - name: Preserve complete-or-failed research evidence for owner review
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-bybit-full-month-owner-review-${{ github.sha }}
+          path: build/owner-pre-demo-monthly-matrix
+          if-no-files-found: warn
+          retention-days: 30
