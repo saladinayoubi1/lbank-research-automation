@@ -80,7 +80,8 @@ def _closed_asof(source: pd.DataFrame, interval_ms: int, decision: pd.DataFrame,
     joined = pd.merge_asof(decision[["decision_at"]].sort_values("decision_at"),
                            frame, left_on="decision_at", right_on="available_at",
                            direction="backward", allow_exact_matches=True)
-    if (joined["available_at"].dropna() > joined["decision_at"].dropna()).any():
+    valid = joined["available_at"].notna()
+    if (joined.loc[valid, "available_at"] > joined.loc[valid, "decision_at"]).any():
         raise CompositeResearchError("look-ahead as-of violation")
     return joined.drop(columns=["decision_at", "available_at"])
 
