@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import copy
+import bybit_spot_archive_collector as collector
 import pandas as pd
 import pytest
 
