@@ -89,7 +89,7 @@ def load_state(path: str | Path) -> dict[str, Any]:
     return value
 
 
-def build_plan(controller: Mapping[str, Any], state: Mapping[str, Any]) -> dict[str, Any]:
+def build_plan(controller: Mapping[str, Any], state: Mapping[str, Any], feedback: Mapping[str, Any] | None = None) -> dict[str, Any]:
     if (
         controller.get("schema") != "nexus.strategy-discovery-controller.v1"
         or controller.get("controller_verified") is not True
@@ -98,11 +98,32 @@ def build_plan(controller: Mapping[str, Any], state: Mapping[str, Any]) -> dict[
         or controller.get("qualification_claimed") is not False
     ):
         raise StrategyDiscoveryRotationError("strategy discovery controller is not verified")
+    exhausted: set[str] = set()
+    if feedback is not None:
+        if (
+            feedback.get("schema_version") != "nexus.strategy-discovery-feedback.v1"
+            or feedback.get("research_only") is not True
+            or feedback.get("paper_only") is not True
+            or feedback.get("qualification_authority") is not False
+            or feedback.get("automatic_strategy_promotion") is not False
+            or feedback.get("live_trading_authority") is not False
+            or not isinstance(feedback.get("exhausted_experiment_sha256"), list)
+        ):
+            raise StrategyDiscoveryRotationError("strategy discovery feedback is not verified")
+        exhausted = {str(item) for item in feedback["exhausted_experiment_sha256"]}
     stages = [
         row for row in controller.get("search_stages", [])
-        if isinstance(row, Mapping) and row.get("status") == "READY_FOR_RESEARCH_DISPATCH"
+        if (
+            isinstance(row, Mapping)
+            and row.get("status") == "READY_FOR_RESEARCH_DISPATCH"
+            and str(row.get("experiment_sha256")) not in exhausted
+        )
     ]
     if not stages:
+        if exhausted:
+            raise StrategyDiscoveryRotationError(
+                "all reviewed strategy-search neighborhoods are exhausted; novel mechanism required"
+            )
         raise StrategyDiscoveryRotationError("no reviewed strategy-search workflow is ready")
     index = int(state["next_index"]) % len(stages)
     selected = stages[index]
@@ -175,6 +196,7 @@ def main() -> int:
     plan.add_argument("--controller-status", type=Path, required=True)
     plan.add_argument("--state", type=Path, required=True)
     plan.add_argument("--output", type=Path, required=True)
+    plan.add_argument("--feedback-state", type=Path)
     commit = sub.add_parser("commit")
     commit.add_argument("--state", type=Path, required=True)
     commit.add_argument("--plan", type=Path, required=True)
@@ -184,7 +206,10 @@ def main() -> int:
     args = parser.parse_args()
     state = load_state(args.state)
     if args.command == "plan":
-        value = build_plan(load_json(args.controller_status), state)
+        feedback = None
+        if args.feedback_state and args.feedback_state.exists():
+            feedback = load_json(args.feedback_state)
+        value = build_plan(load_json(args.controller_status), state, feedback)
     else:
         value = commit_dispatch(
             state, load_json(args.plan), source_sha=args.source_sha, run_id=args.run_id,
