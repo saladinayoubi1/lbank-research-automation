@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -94,3 +97,90 @@ def test_successful_online_fetch_is_cached_for_future_offline_research(tmp_path:
     fetched = research.fetch_dataset(symbol="BTCUSDT", timeframe="minute15", limit=120)
     assert fetched["binding_sha256"] == dataset["binding_sha256"]
     assert store.snapshot()["dataset_count"] == 1
+
+
+def test_packaged_offline_qualification_uses_verified_registry_from_any_cwd(tmp_path: Path) -> None:
+    """Exercise the real nested phase5 qualifier in a cold non-repo process.
+
+    The installed Electron sidecar passes its absolute bundled registry through
+    NEXUS_MARKET_REGISTRY_PATH. Direct phase5 callers must use that same file.
+    """
+    source_root = Path(__file__).resolve().parents[1]
+    canonical_registry = (source_root / "docs/architecture/market-data-source-registry.yaml").resolve(strict=True)
+    dataset = _dataset(int(time.time() * 1000) - 30 * STEP)
+    fixture_path = tmp_path / "prevalidated-historical.json"
+    fixture_path.write_text(json.dumps(dataset), encoding="utf-8")
+    env = os.environ.copy()
+    env["NEXUS_MARKET_REGISTRY_PATH"] = str(canonical_registry)
+    env["PYTHONPATH"] = str(source_root) + os.pathsep + env.get("PYTHONPATH", "")
+    child = r'''
+import json
+import os
+from pathlib import Path
+from phase5_data_binding import REGISTRY_PATH
+from product_offline_runtime import OfflineDatasetStore, OfflineProductResearchRuntime
+from product_research_runtime import ProductResearchError
+from product_runtime import ProductRuntime
+
+expected = Path(os.environ["NEXUS_MARKET_REGISTRY_PATH"])
+assert expected.is_absolute()
+assert REGISTRY_PATH == expected
+dataset = json.loads(Path("prevalidated-historical.json").read_text(encoding="utf-8"))
+store = OfflineDatasetStore(Path("offline-datasets"))
+imported = store.import_dataset(dataset)
+assert imported["status"] == "imported"
+research = OfflineProductResearchRuntime(
+    ProductRuntime(Path("product-state")),
+    store, source_sha="a" * 40,
+)
+result = research.run_imported_research(
+    binding_sha256=dataset["binding_sha256"], family="momentum",
+)
+assert result["data_mode"] == "offline_import"
+assert result["internet_used"] is False
+assert result["historical_research_allowed"] is True
+assert result["live_execution_allowed"] is False
+assert result["profitability_claim"] is False
+try:
+    research.auto_paper()
+except ProductResearchError as exc:
+    assert "stale canonical data" in str(exc)
+else:
+    raise AssertionError("Expired offline history was silently promoted to Paper")
+print("PACKAGED_OFFLINE_RESEARCH_PASS")
+'''
+    result = subprocess.run(
+        [sys.executable, "-c", child], cwd=tmp_path, env=env,
+        capture_output=True, text=True, timeout=90, check=False,
+    )
+    assert result.returncode == 0, (result.stdout, result.stderr)
+    assert "PACKAGED_OFFLINE_RESEARCH_PASS" in result.stdout
+
+
+@pytest.mark.parametrize("registry_kind", ["missing", "symlink"])
+def test_packaged_registry_override_fails_closed_if_missing_or_linked(
+    tmp_path: Path, registry_kind: str
+) -> None:
+    source_root = Path(__file__).resolve().parents[1]
+    canonical_registry = (source_root / "docs/architecture/market-data-source-registry.yaml").resolve(strict=True)
+    candidate = tmp_path / "invalid-registry.yaml"
+    if registry_kind == "symlink":
+        try:
+            candidate.symlink_to(canonical_registry)
+        except (OSError, NotImplementedError):
+            pytest.skip("runner cannot create symlinks")
+    env = os.environ.copy()
+    env["NEXUS_MARKET_REGISTRY_PATH"] = str(candidate)
+    env["PYTHONPATH"] = str(source_root) + os.pathsep + env.get("PYTHONPATH", "")
+    child = (
+        "from phase5_data_binding import REGISTRY_PATH\n"
+        "from market_data_source_validator import load_and_validate\n"
+        "assert str(REGISTRY_PATH).endswith('invalid-registry.yaml')\n"
+        "load_and_validate(REGISTRY_PATH)\n"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", child], cwd=tmp_path, env=env,
+        capture_output=True, text=True, timeout=25, check=False,
+    )
+    assert result.returncode != 0, (result.stdout, result.stderr)
+    assert "regular non-symlink file" in result.stderr
