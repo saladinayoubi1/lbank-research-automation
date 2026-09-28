@@ -140,3 +140,9 @@ def test_original_archive_integrity_is_not_false_current_recency(tmp_path: Path)
     assert receipt["historical_only"] is True
     assert receipt["live_freshness_claimed"] is False
     assert receipt["automatic_paper_eligible"] is False
+
+
+def test_workflow_runs_exporter_as_repository_module() -> None:
+    workflow = Path(".github/workflows/nexus_historical_offline_export.yml").read_text(encoding="utf-8")
+    assert "python -m scripts.nexus_recent_archive_offline_export \\" in workflow
+    assert "python scripts/nexus_recent_archive_offline_export.py \\" not in workflow
