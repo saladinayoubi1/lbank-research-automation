@@ -63,14 +63,6 @@ SEARCH_STAGES: tuple[dict[str, str], ...] = (
         "experiment": "experiments/nexus_multipair_strategy_discovery_v2.json",
         "workflow": ".github/workflows/nexus_multipair_strategy_discovery_v2.yml",
     },
-    {
-        # Outcome/novelty ledger inside this workflow advances *mechanism*
-        # hypotheses; basic search stages above are untouched for continuity.
-        "stage": "nexus_composite_strategy_research",
-        "engine": "nexus_composite_strategy_research.py",
-        "experiment": "experiments/nexus_composite_strategy_research_v1.json",
-        "workflow": ".github/workflows/nexus_composite_strategy_research.yml",
-    },
 )
 
 
