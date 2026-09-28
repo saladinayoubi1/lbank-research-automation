@@ -290,10 +290,17 @@ def select_next(ledger: dict[str, Any]) -> dict[str, Any] | None:
     seen = ledger["config_fingerprints_evaluated"]
     if len(seen) != len(set(seen)) or any(not isinstance(s, str) for s in seen):
         raise CompositeResearchError("novelty ledger fingerprints malformed")
-    for config in CONFIGS:
-        fingerprint = digest({"config": config, "dataset": ARCHIVE_SHA256, "contract": SCHEMA})
-        if fingerprint not in seen:
-            return {**config, "fingerprint": fingerprint}
+    # Use scarce compute to investigate a different *causal* mechanism before
+    # revisiting the risk variants of a previously negative mechanism. The
+    # novelty ledger still permits all reviewed robustness variants eventually;
+    # parameter sweeps cannot masquerade as independent strategy discovery.
+    for novel_only in (True, False):
+        for config in CONFIGS:
+            if novel_only and config["mechanism"] in ledger["mechanisms_evaluated"]:
+                continue
+            fingerprint = digest({"config": config, "dataset": ARCHIVE_SHA256, "contract": SCHEMA})
+            if fingerprint not in seen:
+                return {**config, "fingerprint": fingerprint}
     return None
 
 
