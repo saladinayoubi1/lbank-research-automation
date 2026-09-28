@@ -118,3 +118,57 @@ def test_full_utc_cadence_and_cross_pair_integrity(tmp_path):
     tampered.to_parquet(first, index=False)
     with pytest.raises(monthly.MonthlyResearchError):
         monthly._load_full_month(tmp_path)
+
+
+def test_reuse_verified_three_month_official_state_without_redownload(tmp_path, monkeypatch):
+    """Contract: policy-approved historical job already fetched 12 exact archives."""
+    import nexus_multipair_archive_snapshot as archive
+
+    state = tmp_path / "verified-state"
+    state.mkdir()
+    report = {
+        "configuration": {"start_date": archive.SOURCE_START_DATE,
+                          "end_date": archive.SOURCE_END_DATE, "symbols": list(SYMBOLS)},
+        "summary": {"plan_units": 3, "plan_archives": 12,
+                    "completed_units": 3, "remaining_units": 0,
+                    "run_failures": 0, "backfill_complete": True,
+                    "current_dataset_integrity_ok": True},
+        "run_failures": [],
+    }
+    (state / backfill.REPORT_NAME).write_text(json.dumps(report), encoding="utf-8")
+    sources = []
+    for month in archive.SOURCE_MONTHS:
+        begin, end = archive._month_bounds(month)
+        for symbol in SYMBOLS:
+            filename = f"{symbol}-{month}.csv.gz"
+            record = _official_sources()[0].copy()
+            record.update({
+                "symbol": symbol, "unit_id": f"monthly:{month}",
+                "filename": filename, "url": backfill.archive_url(symbol, filename),
+                "start_date": begin, "end_date": end,
+            })
+            sources.append(record)
+    (state / backfill.SOURCE_MANIFEST_NAME).write_text(
+        json.dumps(sources), encoding="utf-8"
+    )
+    # The standard snapshot engine stores full state while exporting its
+    # separate 500-row discovery tail. The monthly job consumes full state.
+    frames = _frames()
+    for (symbol, timeframe), frame in frames.items():
+        target = state / "bybit_market" / collector.canonical_symbol(symbol) / f"{timeframe}.parquet"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        frame.to_parquet(target, index=False)
+    result = monthly.run_verified_three_month_backfill(
+        source_sha=SOURCE, state=state, output=tmp_path / "month-results"
+    )
+    assert len(result["rows"]) == 36
+    assert len(result["archive_sources"]) == 4
+    assert len(result["verified_three_month_source_manifest_sha256"]) == 64
+    assert all(not row["demo_promoted"] for row in result["rows"])
+    assert (tmp_path / "month-results" / "monthly-table.csv").is_file()
+    sources[0]["url"] = "https://not-bybit.invalid/fake.csv.gz"
+    (state / backfill.SOURCE_MANIFEST_NAME).write_text(json.dumps(sources), encoding="utf-8")
+    with pytest.raises(archive.MultiPairArchiveSnapshotError):
+        monthly.run_verified_three_month_backfill(
+            source_sha=SOURCE, state=state, output=tmp_path / "unsafe-report"
+        )
