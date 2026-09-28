@@ -337,3 +337,83 @@ jobs:
           if-no-files-found: error
           retention-days: 90
           compression-level: 9
+
+      # The bounded composite hypotheses share the verified data/authority of
+      # this pre-existing approved Research workflow. No extra workflow, job
+      # token scope, or protected Phase-3 policy change is required.
+      - name: Restore previous composite mechanism ledger
+        run: |
+          set -euo pipefail
+          mkdir -p build/previous-composite
+          artifact_id="$(gh api             "repos/$GITHUB_REPOSITORY/actions/artifacts?name=nexus-composite-novelty-state&per_page=100"             --jq '[.artifacts[] | select(.expired == false)] | sort_by(.created_at) | reverse | .[0].id // empty')"
+          if [ -n "$artifact_id" ]; then
+            gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip"               > build/previous-composite.zip
+            unzip -q build/previous-composite.zip -d build/previous-composite
+            test -s build/previous-composite/novelty-ledger.json
+            python - <<'PY'
+          from pathlib import Path
+          from nexus_composite_strategy_research import load_ledger
+          prior = load_ledger(Path("build/previous-composite/novelty-ledger.json"))
+          assert prior["research_only"] and prior["auto_demo_promotion"] is False
+          assert prior["live_enabled"] is False
+          print("prior_mechanism_configs=" + str(len(prior["config_fingerprints_evaluated"])))
+          PY
+          else
+            echo "No prior novelty evidence; starting source-bound first mechanism."
+          fi
+
+      - name: Restore immutable archive for composite search if exact static cache skipped discovery
+        if: steps.exhaustion.outputs.reuse == 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p build/final_delivery build/bybit_dataset
+          python scripts/select_nexus_bybit_replay_artifact.py             --repository "$GITHUB_REPOSITORY"             --output-dir build/final_delivery             --expected-file-name "$DATASET_FILE"             --expected-semantic-sha256 "$DATASET_SHA256"             --delivery-name "$DATASET_DELIVERY"             --artifact-prefix "$DATASET_ARTIFACT_PREFIX"
+          test -s "build/final_delivery/$DATASET_FILE"
+          unzip -q "build/final_delivery/$DATASET_FILE" -d build/bybit_dataset
+
+      - name: Research next previously unseen composite mechanism and backtest historical folds
+        run: |
+          set -euo pipefail
+          extra=()
+          if [ -s build/previous-composite/novelty-ledger.json ]; then
+            extra+=(--previous-ledger build/previous-composite/novelty-ledger.json)
+          fi
+          python nexus_composite_strategy_research.py             --archive-root build/bybit_dataset             --output build/composite             --source-sha "$GITHUB_SHA"             "${extra[@]}"
+
+      - name: Independently verify research-only composite evidence
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          from nexus_composite_strategy_research import ARCHIVE_SHA256, digest, load_ledger
+          root = Path("build/composite")
+          report = json.loads((root / "research-report.json").read_text())
+          claimed = report.pop("report_digest")
+          assert claimed == digest(report)
+          assert report["source_sha"] == os.environ["GITHUB_SHA"]
+          assert report["archive_sha256"] == ARCHIVE_SHA256
+          assert report["research_only"] is True
+          assert report["auto_demo_promotion"] is False
+          assert report["live_enabled"] is False
+          assert report["status"] in {"EVALUATED_RESEARCH_ONLY", "EXHAUSTED_REQUIRES_NEW_MECHANISM"}
+          ledger = load_ledger(root / "novelty-ledger.json")
+          if report["status"] == "EVALUATED_RESEARCH_ONLY":
+              assert len(report["rows"]) == 12
+              assert report["qualification"] == "NOT_QUALIFIED_NO_PRISTINE_FUTURE_HOLDOUT"
+              assert report["ledger_digest"] == ledger["ledger_digest"]
+              assert all(row["trade_count_limit"] is None for row in report["rows"])
+          else:
+              assert report["rows"] == []
+          print("composite_research_status=" + report["status"])
+          PY
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: nexus-composite-novelty-state
+          path: |
+            build/composite/novelty-ledger.json
+            build/composite/research-report.json
+          if-no-files-found: warn
+          retention-days: 90
