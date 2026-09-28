@@ -66,6 +66,12 @@ concurrency:
 
 jobs:
   contract-test:
+    # workflow_run's workflow definition comes from current main, but an older
+    # triggering commit may lack the tests/code this definition now requires.
+    # Never run source-mismatched checks or dispatch from a stale trigger.
+    if: >-
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.head_sha == github.sha
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
