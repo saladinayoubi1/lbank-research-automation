@@ -81,6 +81,21 @@ def test_12_canonical_verified_archive_datasets_are_explicit_historical(tmp_path
             assert dataset["source"] == "Bybit"
             assert dataset["row_count"] == 240
             assert dataset["binding_sha256"] == item["binding_sha256"]
+            # A trade-archive derived candle must NEVER look as though it came
+            # from the direct public REST collector; the contract endpoint is
+            # semantic configuration, not historical transport evidence.
+            metadata = dataset["manifest"]["metadata"]
+            assert metadata["collector"] == recent.DATA_ORIGIN
+            assert metadata["actual_transport"] == "official_bybit_spot_trade_archive"
+            assert metadata["canonical_endpoint_contract_is_mapping_only"] is True
+            assert metadata["original_archive_sha256"] == result["archive_sha256"]
+            assert metadata["original_snapshot_digest"] == result["snapshot_digest"]
+            assert metadata["original_acquired_at_ms"] == ACQUIRED_MS
+            assert metadata["original_data_as_of_ms"] == manifest["data_as_of_ms"]
+            assert metadata["historical_only"] is True
+            assert metadata["live_freshness_claimed"] is False
+            assert metadata["automatic_paper_eligible"] is False
+            assert metadata["collector"] != "bybit_public_klines"
 
 
 @pytest.mark.parametrize("field,bad", [
