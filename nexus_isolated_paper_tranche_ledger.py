@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from datetime import datetime, timezone
 from copy import deepcopy
 from decimal import Decimal, InvalidOperation
 from typing import Any, Mapping
@@ -76,6 +77,17 @@ def _identifier(value: Any, name: str) -> str:
     if any(c in value for c in ("/", "\\", "\n", "\r", "\0")):
         raise TrancheError(f"{name} contains forbidden characters")
     return value
+
+
+def _utc(value: Any, name: str) -> datetime:
+    _identifier(value, name)
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise TrancheError(f"{name} must be an ISO8601 UTC timestamp") from exc
+    if parsed.tzinfo is None or parsed.utcoffset() != timezone.utc.utcoffset(parsed):
+        raise TrancheError(f"{name} must be UTC")
+    return parsed.astimezone(timezone.utc)
 
 
 def _policy(policy: Mapping[str, Any]) -> dict[str, str]:
@@ -182,7 +194,14 @@ def verify_book(value: Mapping[str, Any]) -> dict[str, Any]:
         _identifier(row.get("strategy_id"), "strategy_id")
         _identifier(row.get("strategy_version"), "strategy_version")
         _identifier(row.get("risk_budget_id"), "risk_budget_id")
-        _identifier(row.get("opened_utc"), "opened_utc")
+        opened = _utc(row.get("opened_utc"), "opened_utc")
+        if "closed_utc" in row:
+            if _utc(row["closed_utc"], "closed_utc") < opened:
+                raise TrancheError("closed timestamp predates entry")
+        if not _DIGEST_RE.fullmatch(str(row.get("evidence_sha256", ""))):
+            raise TrancheError("tranche evidence digest invalid")
+        if row.get("timeframe") not in {"minute15", "hour1", "hour4"}:
+            raise TrancheError("tranche timeframe unsupported")
         if quantity <= 0 or not stop < entry < target:
             raise TrancheError("tranche stop/entry/target invalid")
     for field in ("starting_cash", "cash", "peak_equity", "session_start_equity"):
@@ -258,6 +277,9 @@ def open_tranche(
         ("risk_budget_id", risk_budget_id), ("opened_utc", opened_utc),
     ):
         _identifier(value, key)
+    _utc(opened_utc, "opened_utc")
+    if timeframe not in {"minute15", "hour1", "hour4"}:
+        raise TrancheError("unsupported research timeframe")
     if not _DIGEST_RE.fullmatch(evidence_sha256):
         raise TrancheError("research evidence digest is required")
     if any(row["position_id"] == position_id for row in book["positions"] + book["history"]):
@@ -324,7 +346,7 @@ def close_tranche(
 ) -> dict[str, Any]:
     verify_book(book)
     _identifier(position_id, "position_id")
-    _identifier(closed_utc, "closed_utc")
+    closing_time = _utc(closed_utc, "closed_utc")
     if reason not in _EXIT_REASONS:
         raise TrancheError("unsupported isolated Paper exit reason")
     price = _decimal(exit_price, "exit_price", strictly_positive=True)
@@ -335,6 +357,8 @@ def close_tranche(
     if len(matching) != 1:
         raise TrancheRiskRejected("POSITION_NOT_OPEN")
     lot = matching[0]
+    if closing_time < _utc(lot["opened_utc"], "opened_utc"):
+        raise TrancheError("closed timestamp predates entry")
     result = deepcopy(dict(book))
     result.pop("book_digest", None)
     result["positions"] = [row for row in book["positions"] if row["position_id"] != position_id]
@@ -353,6 +377,18 @@ def close_tranche(
     result["session_realized_pnl"] = str(_decimal(book["session_realized_pnl"], "session_realized_pnl") + pnl)
     result["fees_paid"] = str(_decimal(book["fees_paid"], "fees_paid") + fee)
     return _commit(result, "close", completed)
+
+
+def trip_kill_switch(book: Mapping[str, Any], *, reason: str) -> dict[str, Any]:
+    """Permanent halt on a research book; re-enabling requires a NEW audited profile."""
+    verify_book(book)
+    _identifier(reason, "reason")
+    if book["kill_switch"]:
+        return deepcopy(dict(book))
+    result = deepcopy(dict(book))
+    result.pop("book_digest", None)
+    result["kill_switch"] = True
+    return _commit(result, "kill", {"reason": reason})
 
 
 def bracket_exits(
