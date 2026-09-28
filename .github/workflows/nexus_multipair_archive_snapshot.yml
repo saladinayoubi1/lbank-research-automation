@@ -7,6 +7,8 @@ on:
       - ".github/workflows/nexus_multipair_archive_snapshot.yml"
       - "nexus_multipair_archive_snapshot.py"
       - "nexus_monthly_four_pair_pre_demo.py"
+      - "nexus_monthly_ten_variant_pre_demo.py"
+      - "tests/test_nexus_monthly_ten_variant_pre_demo.py"
       - "tests/test_nexus_monthly_four_pair_pre_demo.py"
       - "nexus_multipair_recent_archive_runtime_snapshot.py"
       - "nexus_multipair_runtime_requalification_snapshot.py"
@@ -40,6 +42,8 @@ on:
       - ".github/workflows/nexus_multipair_archive_snapshot.yml"
       - "nexus_multipair_archive_snapshot.py"
       - "nexus_monthly_four_pair_pre_demo.py"
+      - "nexus_monthly_ten_variant_pre_demo.py"
+      - "tests/test_nexus_monthly_ten_variant_pre_demo.py"
       - "tests/test_nexus_monthly_four_pair_pre_demo.py"
       - "nexus_multipair_recent_archive_runtime_snapshot.py"
       - "nexus_multipair_runtime_requalification_snapshot.py"
@@ -164,6 +168,29 @@ jobs:
           assert x["automatic_paper_promotion"] is False and x["live_trading_authority"] is False
           print("full_july_pre_demo_matrix=PASS source_exact=true no_promotion=true")
           PY
+      - name: Execute 10 preregistered variants × 12 exact July archive series
+        run: |
+          set -euo pipefail
+          python nexus_monthly_ten_variant_pre_demo.py \
+            --source-sha "$GITHUB_SHA" \
+            --state-root build/historical-state \
+            --base-report build/monthly-four-pair-pre-demo/monthly-report.json \
+            --output-root build/monthly-four-pair-pre-demo/ten-variants
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          root=Path("build/monthly-four-pair-pre-demo/ten-variants")
+          proof=json.loads((root/"ten-variant-report.json").read_text())
+          assert proof["source_sha"] == os.environ["GITHUB_SHA"]
+          assert len(proof["pre_registered_variants"]) == 10
+          assert len(proof["rows"]) == 120
+          assert proof["strategy_selection_performed"] is False
+          assert proof["independent_runtime_qualification"] is False
+          assert proof["demo_promotions"] == 0 and proof["live_trading_authority"] is False
+          assert all(row["full_month_proven"] and row["demo_promoted"] is False
+                     and row["live_enabled"] is False for row in proof["rows"])
+          print("ten_variants_120_cells_full_july=PASS owner_demo_unchanged=true")
+          PY
       - name: Remove raw historical archive material
         if: always()
         run: rm -rf build/historical-state build/historical-cache
@@ -273,6 +300,7 @@ jobs:
           python -m pytest -q
           tests/test_nexus_multipair_archive_snapshot.py
           tests/test_nexus_monthly_four_pair_pre_demo.py
+          tests/test_nexus_monthly_ten_variant_pre_demo.py
           tests/test_nexus_multipair_recent_archive_runtime_snapshot.py
           tests/test_nexus_multipair_strategy_discovery.py
           tests/test_nexus_multipair_strategy_discovery_archive.py
