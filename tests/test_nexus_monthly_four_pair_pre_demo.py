@@ -197,3 +197,46 @@ def test_full_month_rejection_names_without_exposing_raw_data(tmp_path, column, 
         monthly._load_full_month(tmp_path)
     assert "BTCUSDT/minute15" in str(err.value)
     assert "10000000" not in str(err.value)
+
+
+@pytest.mark.parametrize("datetime_unit", ["us", "ns"])
+def test_monthly_loader_uses_parquet_timestamp_unit_not_implicit_nanoseconds(
+    tmp_path, datetime_unit,
+):
+    """Actual historical Parquet round-trips may carry either UTC time unit."""
+    frames = _frames()
+    for (symbol, timeframe), frame in frames.items():
+        frame = frame.copy()
+        frame["timestamp"] = frame["timestamp"].dt.as_unit(datetime_unit)
+        path = (
+            tmp_path / "bybit_market" / collector.canonical_symbol(symbol)
+            / f"{timeframe}.parquet"
+        )
+        path.parent.mkdir(parents=True, exist_ok=True)
+        frame.to_parquet(path, index=False)
+        stored = pd.read_parquet(path)["timestamp"]
+        assert pd.DatetimeIndex(stored).unit == datetime_unit
+
+    loaded = monthly._load_full_month(tmp_path)
+    assert len(loaded) == 12
+    assert all(len(frame) == monthly.EXPECTED_ROWS[tf]
+               for (_, tf), frame in loaded.items())
+
+
+def test_microsecond_parquet_still_rejects_real_cadence_corruption(tmp_path):
+    """Normalizing the unit must not weaken timestamp integrity checks."""
+    frames = _frames()
+    for (symbol, timeframe), frame in frames.items():
+        frame = frame.copy()
+        frame["timestamp"] = frame["timestamp"].dt.as_unit("us")
+        if symbol == SYMBOLS[0] and timeframe == TIMEFRAMES[0]:
+            frame.loc[111, "timestamp"] += pd.Timedelta(seconds=1)
+        path = (
+            tmp_path / "bybit_market" / collector.canonical_symbol(symbol)
+            / f"{timeframe}.parquet"
+        )
+        path.parent.mkdir(parents=True, exist_ok=True)
+        frame.to_parquet(path, index=False)
+
+    with pytest.raises(monthly.MonthlyResearchError, match="gap_free_cadence"):
+        monthly._load_full_month(tmp_path)
