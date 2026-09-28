@@ -23,12 +23,13 @@ from typing import Any
 from nexus_composite_strategy_research import ARCHIVE_SHA256, digest, load_ledger, safe_write
 from scripts.agent_task_executor import decode_payload
 from scripts.select_nexus_bybit_replay_artifact import (
-    DELIVERY_NAME, validate_candidate, safe_extract, sha256_file,
+    validate_candidate, safe_extract, sha256_file,
 )
 
 TASK_ID = "P7-RESEARCH-COMPOSITE-001"
 REPO = "saladinayoubi1/lbank-research-automation"
 REPLAY_NAME = "NEXUS_BYBIT_replay_v2_2022-12-01_to_2026-07-31.zip"
+DELIVERY_NAME = "NEXUS_BYBIT_replay_v2_delivery.json"
 DATA_CACHE = Path("build/agent-research-cache")
 PRODUCER_CACHE = Path("build/agent-producer-cache")
 HEX40 = re.compile(r"^[0-9a-f]{40}$")
@@ -140,16 +141,10 @@ def _copy_exact_producer(root: Path, payload: dict[str, Any]) -> dict[str, Any]:
     if digest(expected_core) != original_digest:
         raise ResearchPreparationError("producer receipt cache digest changed")
     old = load_ledger(cached / "previous-ledger.json")
-    if (
-        old["ledger_digest"] != original.get("prior_ledger_digest")
-        or old["ledger_digest"] != load_ledger(root / "previous-ledger.json")["ledger_digest"]
-    ):
-        # The newest input cache may have moved on, but independent QA must
-        # still replay the producer's immutable ORIGINAL ledger, not newest.
-        # Only the actual source-verified archive identity must match.
-        # The QA caller chooses the original ledger copied below.
-        if old["ledger_digest"] != original.get("prior_ledger_digest"):
-            raise ResearchPreparationError("QA cannot bind original producer frontier")
+    # The newly published frontier may have moved on while QA waited.
+    # QA replays the producer's copied ORIGINAL prior-ledger, not the newest.
+    if old["ledger_digest"] != original.get("prior_ledger_digest"):
+        raise ResearchPreparationError("QA cannot bind original producer frontier")
     dest = root / "producer" / "result"
     if dest.exists():
         raise ResearchPreparationError("QA producer staging directory must be empty")
