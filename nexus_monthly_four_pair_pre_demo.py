@@ -139,7 +139,7 @@ def _load_full_month(state: Path) -> dict[tuple[str, str], pd.DataFrame]:
                 int(ms[0]) != int(pd.Timestamp(START_DATE, tz="UTC").value // 1_000_000)
                 or int(ms[-1]) != int(pd.Timestamp("2026-08-01", tz="UTC").value // 1_000_000) - STEPS[tf]
                 or not (pd.Series(ms).diff().iloc[1:] == STEPS[tf]).all()
-                or set(df["symbol"].astype(str)) != {symbol}
+                or set(df["symbol"].astype(str)) != {collector.canonical_symbol(symbol)}
                 or set(df["timeframe"].astype(str)) != {tf}
                 or not df[["open", "high", "low", "close", "volume"]].map(math.isfinite).all().all()
                 or (df[["open", "high", "low", "close"]] <= 0).any().any()
