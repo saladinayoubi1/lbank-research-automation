@@ -42,6 +42,7 @@
     ".github/workflows/nexus-bybit-wsl-runner-wake.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"wake":{"policy_version":1}}},
     ".github/workflows/nexus-bybit-wsl1-fallback.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"provision":{"policy_version":1}}},
     ".github/workflows/nexus-cloud-fallback.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"fallback-health":{"policy_version":1}}},
+    ".github/workflows/nexus_composite_strategy_research.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"contract-test":{"policy_version":1},"discover":{"policy_version":1}}},
     ".github/workflows/nexus-continuous-phase3.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"cloud-watchdog":{"policy_version":1},"local-worker":{"policy_version":1}}},
     ".github/workflows/nexus-deepseek-strategy-review.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"review":{"policy_version":1}}},
     ".github/workflows/nexus-ema-trend-validation.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"deterministic-validation":{"policy_version":1}}},
