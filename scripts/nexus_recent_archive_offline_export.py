@@ -18,7 +18,8 @@ from typing import Any
 import nexus_multipair_recent_archive_runtime_snapshot as recent
 import nexus_multipair_runtime_requalification_snapshot as binding
 from nexus_multipair_trusted_surface import SYMBOLS, TIMEFRAMES
-from phase5_data_binding import validate_canonical_dataset
+from market_data_provenance_manifest import build_provenance_manifest
+from phase5_data_binding import bind_canonical_dataset, validate_canonical_dataset
 
 CONTRACT = "nexus.historical-market-offline-bridge.v1"
 HEX40 = re.compile(r"^[0-9a-f]{40}$")
@@ -131,7 +132,42 @@ def export_historical(
                 dataset = binding.bind_transported_runtime_dataset(
                     extracted, manifest, symbol=symbol, timeframe=timeframe,
                 )
-                validated = validate_canonical_dataset(dataset)
+                # Rebind the original 240-bar frame with *honest transport metadata*.
+                # The canonical endpoint_contract only identifies the configured
+                # registry shape; no /v5/market/kline request acquired these bars.
+                # The source actually was an independently verified Bybit *trade*
+                # archive aggregated into historical candles.
+                original = validate_canonical_dataset(dataset)
+                rows = original["rows"]
+                metadata = {
+                    "collector": "official_public_bybit_spot_trade_archive_aggregated_recent",
+                    "actual_transport": "official_bybit_spot_trade_archive",
+                    "canonical_endpoint_contract_is_mapping_only": True,
+                    "original_archive_sha256": expected_archive_sha256,
+                    "original_snapshot_digest": expected_snapshot_digest,
+                    "original_producer_sha": source_sha,
+                    "original_acquired_at_ms": acquired,
+                    "original_data_as_of_ms": manifest["data_as_of_ms"],
+                    "historical_only": True,
+                    "research_only": True,
+                    "live_freshness_claimed": False,
+                    "automatic_paper_eligible": False,
+                }
+                historical_manifest = build_provenance_manifest(
+                    source="Bybit", market_type="spot",
+                    source_symbol=original["source_symbol"],
+                    canonical_symbol=original["instrument"],
+                    timeframe=original["manifest_timeframe"],
+                    endpoint_contract=original["endpoint_contract"],
+                    mapping_policy_version=original["mapping_policy_version"],
+                    retrieval_start_ms=rows[0]["open_time_ms"],
+                    retrieval_end_ms=rows[-1]["open_time_ms"],
+                    candles=rows,
+                    metadata=metadata,
+                )
+                validated = validate_canonical_dataset(
+                    bind_canonical_dataset(historical_manifest, rows)
+                )
                 if (
                     validated.get("row_count") != 240 or validated.get("source") != "Bybit"
                     or validated.get("source_role") != "primary"
