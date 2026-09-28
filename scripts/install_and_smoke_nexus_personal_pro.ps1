@@ -281,34 +281,55 @@ function New-NexusShortcut([string]$ShortcutPath, [string]$ExecutablePath) {
     if (-not (Test-Path -LiteralPath $ShortcutPath -PathType Leaf)) { throw 'NEXUS shortcut creation failed.' }
 }
 
+function Invoke-BoundedProductJson([string]$Uri, [int]$TimeoutSeconds=45, [int]$Attempts=3) {
+    # The physical owner's machine can respond slowly after first packaged
+    # sidecar boot. Network errors may be retried, but no contract mismatch is
+    # retried or suppressed; every caller still validates the returned object.
+    $target = [uri]$Uri
+    if ($target.Scheme -ne 'http' -or $target.Host -notin @('127.0.0.1', 'localhost', '::1')) {
+        throw 'Product smoke only permits loopback HTTP endpoints.'
+    }
+    for ($attempt=1; $attempt -le $Attempts; $attempt++) {
+        try {
+            return Invoke-RestMethod -Uri $Uri -TimeoutSec $TimeoutSeconds -ErrorAction Stop
+        } catch {
+            if ($attempt -ge $Attempts) {
+                throw "Product smoke endpoint remained unavailable after $Attempts bounded attempts: $($target.AbsolutePath)"
+            }
+            Start-Sleep -Seconds 5
+        }
+    }
+    throw 'Product smoke endpoint retry exhausted.'
+}
+
 function Invoke-ProductContract([string]$Origin) {
-    $overview = Invoke-RestMethod -Uri "$Origin/api/product/overview" -TimeoutSec 10
+    $overview = Invoke-BoundedProductJson -Uri "$Origin/api/product/overview"
     if ($overview.paper.active -ne $true -or $overview.live.enabled -ne $false) { throw 'Product overview authority contract failed.' }
     $script:Evidence.smoke.overview_ok = $true
 
-    $paper = Invoke-RestMethod -Uri "$Origin/api/product/paper" -TimeoutSec 10
+    $paper = Invoke-BoundedProductJson -Uri "$Origin/api/product/paper"
     if ($paper.paper_only -ne $true) { throw 'Paper-only contract failed.' }
     $script:Evidence.smoke.paper_only = $true
 
-    $live = Invoke-RestMethod -Uri "$Origin/api/product/live" -TimeoutSec 10
+    $live = Invoke-BoundedProductJson -Uri "$Origin/api/product/live"
     $script:Evidence.smoke.live_trading_authority = [bool]$live.live_trading_authority
     $script:Evidence.smoke.live_orders_allowed = [bool]$live.orders_allowed
     if ($live.live_trading_authority -ne $false -or $live.orders_allowed -ne $false) { throw 'Live trading authority widened during laptop smoke test.' }
 
-    $offline = Invoke-RestMethod -Uri "$Origin/api/product/offline" -TimeoutSec 10
+    $offline = Invoke-BoundedProductJson -Uri "$Origin/api/product/offline"
     if ($offline.mode -ne 'offline_first' -or $offline.live_trading_authority -ne $false) { throw 'Offline-first contract failed.' }
     $script:Evidence.smoke.offline_first = $true
 
-    $mission = Invoke-RestMethod -Uri "$Origin/api/product/mission/full" -TimeoutSec 10
+    $mission = Invoke-BoundedProductJson -Uri "$Origin/api/product/mission/full"
     if ($mission.paper_only -ne $true -or $mission.live_trading_authority -ne $false) { throw 'Mission Control authority contract failed.' }
     $script:Evidence.smoke.mission_control_ok = $true
 
-    $build = Invoke-RestMethod -Uri "$Origin/api/product/build-evidence" -TimeoutSec 10
+    $build = Invoke-BoundedProductJson -Uri "$Origin/api/product/build-evidence"
     if ($build.status -ne 'verified' -or $build.exact_source -ne $true -or ([string]$build.source_sha).ToLowerInvariant() -ne $ExpectedSourceSha) {
         throw 'Installed product exact-source evidence failed.'
     }
 
-    $strategies = Invoke-RestMethod -Uri "$Origin/api/product/strategies/evidence" -TimeoutSec 10
+    $strategies = Invoke-BoundedProductJson -Uri "$Origin/api/product/strategies/evidence"
     if ($strategies.paper_only -ne $true -or $strategies.profitability_claim -ne $false) { throw 'Strategy evidence boundary failed.' }
     $script:Evidence.smoke.strategy_evidence_ok = $true
 
