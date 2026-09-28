@@ -1,9 +1,14 @@
-"""Stage immutable, official Bybit Research Agent inputs for a bounded lease.
+"""Prepare real, immutable Research Agent inputs from approved Actions cache transport.
 
-Called only inside the authorized NEXUS Runtime Worker; an ordinary Phase-4 or
-Phase-7 test task causes no downloads. Separate QA mode independently downloads
-the same semantically verified archive, but receives the producer's *exact*
-prior ledger from the producer artifact instead of racing latest state.
+The approved multi-timeframe workflow (already allowed actions:read) verifies
+the original official Bybit archive and publishes a source-bound cache bundle.
+The bounded runtime worker retains frozen contents:read ONLY; it restores that
+cache and verifies archive ZIP/delivery/ledger digests without fetching GitHub
+Actions artifacts or expanding its token authority.
+
+The producer's exact numerical evidence is also exchanged via a source/lease
+scoped immutable cache, not by fetching an ambiguously latest GitHub artifact.
+Actions cache is a transport, NEVER the durable Research frontier/database.
 """
 from __future__ import annotations
 
@@ -12,164 +17,47 @@ import json
 import os
 import re
 import shutil
-import subprocess
 from pathlib import Path
 from typing import Any
 
-from nexus_composite_strategy_research import ARCHIVE_SHA256, load_ledger
+from nexus_composite_strategy_research import ARCHIVE_SHA256, digest, load_ledger, safe_write
 from scripts.agent_task_executor import decode_payload
-from scripts.select_nexus_bybit_replay_artifact import restore_matching_artifact, safe_extract
+from scripts.select_nexus_bybit_replay_artifact import (
+    DELIVERY_NAME, validate_candidate, safe_extract, sha256_file,
+)
 
 TASK_ID = "P7-RESEARCH-COMPOSITE-001"
 REPO = "saladinayoubi1/lbank-research-automation"
-ARTIFACT = "nexus-composite-novelty-state"
 REPLAY_NAME = "NEXUS_BYBIT_replay_v2_2022-12-01_to_2026-07-31.zip"
-DELIVERY_NAME = "NEXUS_BYBIT_replay_v2_delivery.json"
+DATA_CACHE = Path("build/agent-research-cache")
+PRODUCER_CACHE = Path("build/agent-producer-cache")
 HEX40 = re.compile(r"^[0-9a-f]{40}$")
+HEX64 = re.compile(r"^[0-9a-f]{64}$")
 
 
 class ResearchPreparationError(ValueError):
     pass
 
 
-def _gh_api(path: str) -> dict[str, Any]:
-    if not os.environ.get("GH_TOKEN"):
-        raise ResearchPreparationError("bounded read-only GitHub token unavailable")
-    response = subprocess.run(
-        ["gh", "api", f"repos/{REPO}/{path}"],
-        capture_output=True, text=True, timeout=90, check=False,
-    )
-    if response.returncode:
-        raise ResearchPreparationError("trusted GitHub metadata unavailable")
-    obj = json.loads(response.stdout)
-    if not isinstance(obj, dict):
-        raise ResearchPreparationError("GitHub metadata must be an object")
-    return obj
+def _read_regular_json(path: Path) -> dict[str, Any]:
+    if path.is_symlink() or not path.is_file():
+        raise ResearchPreparationError("required research evidence is missing or linked")
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, ValueError) as exc:
+        raise ResearchPreparationError("required research evidence is malformed") from exc
+    if not isinstance(data, dict):
+        raise ResearchPreparationError("required research evidence is not an object")
+    return data
 
 
-def _previous_ledger(path: Path) -> tuple[dict[str, Any], int]:
-    candidates = _gh_api(f"actions/artifacts?name={ARTIFACT}&per_page=100").get("artifacts", [])
-    if not isinstance(candidates, list):
-        raise ResearchPreparationError("latest novelty artifacts are malformed")
-    main = [
-        a for a in candidates
-        if isinstance(a, dict)
-        and a.get("expired") is False
-        and a.get("name") == ARTIFACT
-        and isinstance(a.get("workflow_run"), dict)
-        and a["workflow_run"].get("head_branch") == "main"
-    ]
-    if not main:
-        raise ResearchPreparationError("no verified prior novelty frontier; refuse implicit restart")
-    # Do not silently fall back if the newest main artifact is untrustworthy.
-    latest = max(main, key=lambda a: (str(a.get("created_at", "")), int(a.get("id", 0))))
-    run_id = latest["workflow_run"].get("id")
-    if type(run_id) is not int or run_id <= 0:
-        raise ResearchPreparationError("prior novelty run identity invalid")
-    run = _gh_api(f"actions/runs/{run_id}")
-    if (
-        run.get("id") != run_id
-        or run.get("name") != "NEXUS multi-timeframe strategy discovery"
-        or run.get("conclusion") != "success"
-        or run.get("status") != "completed"
-        or run.get("head_branch") != "main"
-        or run.get("repository", {}).get("full_name") != REPO
-        or not HEX40.fullmatch(str(run.get("head_sha", "")))
-    ):
-        raise ResearchPreparationError("prior novelty producer lacks source-exact successful attestation")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with_shipped = path.parent / "prior-artifact"
-    if with_shipped.exists():
-        raise ResearchPreparationError("prior-artifact stage must be clean")
-    response = subprocess.run(
-        ["gh", "run", "download", str(run_id), "-R", REPO, "-n", ARTIFACT, "-D", str(with_shipped)],
-        capture_output=True, text=True, timeout=180, check=False,
-    )
-    if response.returncode:
-        raise ResearchPreparationError("prior novelty artifact download failed")
-    original = with_shipped / "novelty-ledger.json"
-    if original.is_symlink() or not original.is_file():
-        raise ResearchPreparationError("prior novelty ledger missing or linked")
-    ledger = load_ledger(original)
-    if not ledger["config_fingerprints_evaluated"]:
-        raise ResearchPreparationError("prior novelty ledger unexpectedly empty")
-    shutil.copyfile(original, path)
-    return ledger, run_id
-
-
-def _exact_producer_proof(root: Path, payload: dict[str, Any]) -> dict[str, Any]:
-    producer_lease = payload["research_producer_lease_id"]
-    expected_digest = payload["research_producer_receipt_digest"]
-    producer_source = payload["research_producer_source_sha"]
-    if producer_source != os.environ["GITHUB_SHA"]:
-        raise ResearchPreparationError("QA worker source SHA differs from producer")
-    name = "nexus-agent-research-" + producer_lease
-    artifacts = _gh_api(f"actions/artifacts?name={name}&per_page=100").get("artifacts", [])
-    matches = [
-        a for a in artifacts
-        if isinstance(a, dict) and a.get("expired") is False
-        and a.get("name") == name and isinstance(a.get("workflow_run"), dict)
-        and a["workflow_run"].get("head_branch") == "main"
-        and a["workflow_run"].get("head_sha") == producer_source
-    ]
-    if len(matches) != 1:
-        raise ResearchPreparationError("producer proof missing or ambiguous for exact lease")
-    run_id = matches[0]["workflow_run"].get("id")
-    if type(run_id) is not int or run_id < 1:
-        raise ResearchPreparationError("producer workflow identity invalid")
-    run = _gh_api(f"actions/runs/{run_id}")
-    if (
-        run.get("id") != run_id
-        or run.get("name") != "NEXUS Runtime Worker"
-        or run.get("event") != "workflow_dispatch"
-        or run.get("conclusion") != "success"
-        or run.get("status") != "completed"
-        or run.get("head_sha") != producer_source
-        or run.get("head_branch") != "main"
-        or run.get("repository", {}).get("full_name") != REPO
-    ):
-        raise ResearchPreparationError("producer run not source-exact or incomplete")
-    location = root / "producer"
-    proc = subprocess.run(
-        ["gh", "run", "download", str(run_id), "-R", REPO, "-n", name, "-D", str(location)],
-        capture_output=True, text=True, timeout=180, check=False,
-    )
-    if proc.returncode:
-        raise ResearchPreparationError("independent QA cannot download exact producer artifact")
-    receipt_file = location / "result" / "agent-receipt.json"
-    prior_file = location / "result" / "previous-ledger.json"
-    if receipt_file.is_symlink() or prior_file.is_symlink() or not receipt_file.is_file():
-        raise ResearchPreparationError("producer receipt missing or linked")
-    receipt = json.loads(receipt_file.read_text(encoding="utf-8"))
-    if (
-        receipt.get("schema") != "nexus.agent-composite-execution.v1"
-        or receipt.get("receipt_digest") != expected_digest
-        or receipt.get("source_sha") != producer_source
-        or receipt.get("lease_id") != producer_lease
-        or receipt.get("archive_sha256") != ARCHIVE_SHA256
-        or receipt.get("independent_qa_complete") is not False
-        or receipt.get("auto_demo_promotion") is not False
-        or receipt.get("live_enabled") is not False
-    ):
-        raise ResearchPreparationError("QA producer proof identity or authority mismatch")
-    old = load_ledger(prior_file)
-    if old["ledger_digest"] != receipt.get("prior_ledger_digest"):
-        raise ResearchPreparationError("QA producer's immutable previous ledger digest mismatch")
-    return {
-        "producer_lease_id": producer_lease,
-        "producer_receipt_digest": expected_digest,
-        "prior_ledger_digest": old["ledger_digest"],
-        "producer_run_id": run_id,
-    }
-
-
-def prepare(mode: str, root: Path) -> dict[str, Any]:
-    token = os.environ.get("NEXUS_TASK_PAYLOAD_B64", "")
-    if not token:
-        return {"research_task": False}
-    payload = decode_payload(token)
+def _classify(mode: str) -> tuple[dict[str, Any] | None, str]:
+    encoded = os.environ.get("NEXUS_TASK_PAYLOAD_B64", "")
+    if not encoded:
+        return None, "none"
+    payload = decode_payload(encoded)
     if payload["task_id"] != TASK_ID:
-        return {"research_task": False}
+        return None, "none"
     if (
         payload["phase"] != 7
         or payload["transport"] != "github-cloud"
@@ -177,62 +65,144 @@ def prepare(mode: str, root: Path) -> dict[str, Any]:
         or os.environ.get("GITHUB_REPOSITORY") != REPO
         or not HEX40.fullmatch(os.environ.get("GITHUB_SHA", ""))
     ):
-        raise ResearchPreparationError("untrusted Research Agent task context")
-    if mode == "auto":
-        mode = "independent-qa" if payload["worker_id"] == "qa-verifier-agent" else "producer"
-    if mode not in ("producer", "independent-qa"):
-        raise ResearchPreparationError("unsupported preparation mode")
-    if (
-        (mode == "producer" and payload["worker_id"] != "research-agent")
-        or (mode == "independent-qa" and payload["worker_id"] != "qa-verifier-agent")
-    ):
+        raise ResearchPreparationError("untrusted real Research Agent task context")
+    expected_mode = "independent-qa" if payload["worker_id"] == "qa-verifier-agent" else "producer"
+    if mode not in ("inspect", "auto", expected_mode):
         raise ResearchPreparationError("untrusted Research Agent role")
-    if root.exists():
-        raise ResearchPreparationError("refuse dirty or pre-existing research staging root")
-    root.mkdir(parents=True)
-    destination = root / "download"
-    restored = restore_matching_artifact(
-        repository=REPO, token=os.environ.get("GH_TOKEN", ""),
-        output_dir=destination,
-        expected_file_name=REPLAY_NAME,
-        expected_semantic_sha256=ARCHIVE_SHA256,
-        delivery_name=DELIVERY_NAME,
-        prefix="bybit-full-history-final-",
+    if expected_mode == "independent-qa" and (
+        payload["research_producer_source_sha"] != os.environ["GITHUB_SHA"]
+        or not HEX64.fullmatch(payload["research_producer_receipt_digest"])
+        or not payload["research_producer_lease_id"]
+    ):
+        raise ResearchPreparationError("QA original producer identity is untrusted")
+    return payload, expected_mode
+
+
+def _verified_input_bundle(root: Path, source_sha: str) -> dict[str, Any]:
+    metadata = _read_regular_json(DATA_CACHE / "manifest.json")
+    claim = metadata.pop("manifest_digest", None)
+    if (
+        claim != digest(metadata)
+        or metadata.get("schema") != "nexus.real-research-transport.v1"
+        or metadata.get("source_sha") != source_sha
+        or metadata.get("archive_sha256") != ARCHIVE_SHA256
+        or not HEX64.fullmatch(str(metadata.get("replay_zip_sha256", "")))
+        or metadata.get("research_only") is not True
+        or metadata.get("auto_demo_promotion") is not False
+        or metadata.get("live_enabled") is not False
+    ):
+        raise ResearchPreparationError("trusted Research data cache provenance rejected")
+    archived, _delivery = validate_candidate(
+        DATA_CACHE, expected_file_name=REPLAY_NAME,
+        expected_semantic_sha256=ARCHIVE_SHA256, delivery_name=DELIVERY_NAME,
     )
-    # The selector checks the outer delivery, ZIP SHA and internal replay-v2
-    # manifest, and safe_extract rejects path traversal and symlink members.
-    safe_extract(Path(restored["replay_file"]), root / "archive")
-    info: dict[str, Any] = {
-        "research_task": True,
+    if sha256_file(archived) != metadata["replay_zip_sha256"]:
+        raise ResearchPreparationError("Research cache ZIP changed after source verification")
+    previous_file = DATA_CACHE / "previous-ledger.json"
+    if previous_file.is_symlink() or not previous_file.is_file():
+        raise ResearchPreparationError("required prior novelty frontier not present")
+    previous = load_ledger(previous_file)
+    if (
+        not previous["config_fingerprints_evaluated"]
+        or previous["ledger_digest"] != metadata.get("prior_ledger_digest")
+    ):
+        raise ResearchPreparationError("Research cache prior novelty ledger mismatch")
+    safe_extract(archived, root / "archive")
+    shutil.copyfile(previous_file, root / "previous-ledger.json")
+    return {
         "archive_sha256": ARCHIVE_SHA256,
-        "source_sha": os.environ["GITHUB_SHA"],
+        "replay_zip_sha256": metadata["replay_zip_sha256"],
+        "prior_ledger_digest": previous["ledger_digest"],
+    }
+
+
+def _copy_exact_producer(root: Path, payload: dict[str, Any]) -> dict[str, Any]:
+    original_lease = payload["research_producer_lease_id"]
+    original_digest = payload["research_producer_receipt_digest"]
+    original_sha = payload["research_producer_source_sha"]
+    if not re.fullmatch(r"[a-zA-Z0-9_-]{1,160}", original_lease):
+        raise ResearchPreparationError("invalid original Research producer lease")
+    cached = PRODUCER_CACHE / "result"
+    original = _read_regular_json(cached / "agent-receipt.json")
+    if (
+        original.get("schema") != "nexus.agent-composite-execution.v1"
+        or original.get("receipt_digest") != original_digest
+        or original.get("source_sha") != original_sha
+        or original.get("lease_id") != original_lease
+        or original.get("archive_sha256") != ARCHIVE_SHA256
+        or original.get("research_only") is not True
+        or original.get("auto_demo_promotion") is not False
+        or original.get("live_enabled") is not False
+        or original.get("independent_qa_complete") is not False
+    ):
+        raise ResearchPreparationError("independent QA producer cache identity rejected")
+    expected_core = {k: v for k, v in original.items() if k != "receipt_digest"}
+    if digest(expected_core) != original_digest:
+        raise ResearchPreparationError("producer receipt cache digest changed")
+    old = load_ledger(cached / "previous-ledger.json")
+    if (
+        old["ledger_digest"] != original.get("prior_ledger_digest")
+        or old["ledger_digest"] != load_ledger(root / "previous-ledger.json")["ledger_digest"]
+    ):
+        # The newest input cache may have moved on, but independent QA must
+        # still replay the producer's immutable ORIGINAL ledger, not newest.
+        # Only the actual source-verified archive identity must match.
+        # The QA caller chooses the original ledger copied below.
+        if old["ledger_digest"] != original.get("prior_ledger_digest"):
+            raise ResearchPreparationError("QA cannot bind original producer frontier")
+    dest = root / "producer" / "result"
+    if dest.exists():
+        raise ResearchPreparationError("QA producer staging directory must be empty")
+    shutil.copytree(cached, dest, symlinks=False)
+    return {
+        "producer_lease_id": original_lease,
+        "producer_receipt_digest": original_digest,
+        "producer_source_sha": original_sha,
+        "producer_prior_ledger_digest": old["ledger_digest"],
+    }
+
+
+def prepare(mode: str, root: Path) -> dict[str, Any]:
+    payload, role = _classify(mode)
+    if payload is None:
+        return {"research_task": False}
+    if mode == "inspect":
+        return {
+            "research_task": True,
+            "mode": role,
+            "producer_lease_id": payload.get("research_producer_lease_id", ""),
+            "producer_source_sha": payload.get("research_producer_source_sha", ""),
+        }
+    if root.exists():
+        raise ResearchPreparationError("refuse dirty or pre-existing Research staging root")
+    root.mkdir(parents=True)
+    info = {
+        "research_task": True,
+        "mode": role,
         "lease_id": payload["lease_id"],
-        "replay_artifact_id": restored["artifact_id"],
-        "mode": mode,
+        "source_sha": os.environ["GITHUB_SHA"],
+        **_verified_input_bundle(root, os.environ["GITHUB_SHA"]),
         "auto_demo_promotion": False,
         "live_enabled": False,
     }
-    if mode == "producer":
-        ledger, run_id = _previous_ledger(root / "previous-ledger.json")
-        info.update({"prior_ledger_digest": ledger["ledger_digest"], "prior_run_id": run_id})
-    else:
-        info.update(_exact_producer_proof(root, payload))
-    from nexus_composite_strategy_research import safe_write
+    if role == "independent-qa":
+        info.update(_copy_exact_producer(root, payload))
     safe_write(root / "preparation.json", info)
     return info
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--mode", choices=("auto", "producer", "independent-qa"), default="auto")
+    parser.add_argument("--mode", choices=("inspect", "auto", "producer", "independent-qa"), default="auto")
     parser.add_argument("--root", type=Path, default=Path("build/agent-research"))
     args = parser.parse_args()
     info = prepare(args.mode, args.root)
-    # Workflow step outputs are flags only; no tokens or private directories.
     if os.environ.get("GITHUB_OUTPUT"):
         with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as handle:
             handle.write("research_task=" + str(info["research_task"]).lower() + "\n")
             handle.write("research_role=" + str(info.get("mode", "none")) + "\n")
+            handle.write("producer_lease=" + str(info.get("producer_lease_id", "")) + "\n")
+            handle.write("producer_source_sha=" + str(info.get("producer_source_sha", "")) + "\n")
     print(json.dumps(info, sort_keys=True))
     return 0
 
