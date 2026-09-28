@@ -29,6 +29,7 @@ on:
         type: string
 
 permissions:
+  actions: read
   contents: read
 
 concurrency:
@@ -97,6 +98,13 @@ jobs:
           if ((Get-Content -LiteralPath $marker -Raw).Trim().ToLowerInvariant() -ne $env:GITHUB_SHA.ToLowerInvariant()) {
             throw 'Exact-source marker mismatch.'
           }
+
+      - name: Preload bounded official artifact when exact cache is absent
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          & scripts\nexus_preload_verified_artifact.ps1 -SourceSha $env:NEXUS_SOURCE_SHA -ArtifactRunId ([long]$env:NEXUS_ARTIFACT_RUN_ID) -ArtifactId ([long]$env:NEXUS_ARTIFACT_ID) -OuterSha256 $env:NEXUS_ARCHIVE_SHA256 -OuterBytes ([long]$env:NEXUS_ARCHIVE_BYTES) -InnerSha256 $env:NEXUS_INNER_SHA256
+          if (-not $?) { throw 'Exact authorized artifact preload failed.' }
 
       - name: Verify preloaded exact-source artifact cache
         run: |
