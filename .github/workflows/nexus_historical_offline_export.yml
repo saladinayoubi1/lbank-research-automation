@@ -98,7 +98,7 @@ jobs:
         run: |
           set -euo pipefail
           now_ms="$(python -c 'import time;print(int(time.time()*1000))')"
-          python scripts/nexus_recent_archive_offline_export.py \
+          python -m scripts.nexus_recent_archive_offline_export \
             --archive build/pinned-archive/nexus-multipair-runtime-requalification-snapshot.zip \
             --expected-archive-sha256 "$INNER_SHA" \
             --expected-snapshot-digest "$MANIFEST_DIGEST" \
