@@ -216,6 +216,9 @@ def deterministic_execution(payload: dict[str, Any], transport: str) -> tuple[st
             return "failure", {
                 "executor": "nexus-real-composite-backtest",
                 "failure_class": "research_lease_worker_phase_or_transport_mismatch",
+                "auto_demo_promotion": False,
+                "live_enabled": False,
+                "qualification_authority": False,
             }
         # Executed as scripts/agent_task_executor.py, so sys.path[0] is
         # scripts/. Resolve only this checked-out repository root; never
@@ -285,6 +288,9 @@ def deterministic_execution(payload: dict[str, Any], transport: str) -> tuple[st
                 "executor": "nexus-real-composite-backtest",
                 "failure_class": "verified_research_execution_failed",
                 "reason": str(exc)[:600],
+                "auto_demo_promotion": False,
+                "live_enabled": False,
+                "qualification_authority": False,
             }
     if task_id in {"P4-MGR-001", "P4-MGR-002"}:
         result = run([sys.executable, "-m", "pytest", "-q", "tests/test_agent_manager.py", "tests/test_agent_manager_runner.py", "tests/test_agent_transport.py"])
