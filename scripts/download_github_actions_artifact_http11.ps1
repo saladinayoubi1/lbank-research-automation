@@ -22,13 +22,31 @@ if ($ExpectedArchiveBytes -lt 1) { throw 'Expected artifact size must be positiv
 
 $apiBase = if ($env:GITHUB_API_URL) { $env:GITHUB_API_URL.TrimEnd('/') } else { 'https://api.github.com' }
 $artifactApi = "$apiBase/repos/$Repository/actions/artifacts/$ArtifactId"
-$metadataHeaders = @{
-    Authorization = "Bearer $($env:GITHUB_TOKEN)"
-    Accept = 'application/vnd.github+json'
-    'X-GitHub-Api-Version' = '2022-11-28'
-    'User-Agent' = 'nexus-selfhost-artifact-transport/1'
+# WinPS 5.1 HttpClient/Invoke-RestMethod can stall behind the owner's VPN/proxy.
+# Use the already required Windows curl with a strict timeout for *metadata* as
+# well as artifact ranges. curl's response body is never written to stdout.
+$metadataPath = Join-Path $env:RUNNER_TEMP "nexus-artifact-$ArtifactId-metadata.private.json"
+try {
+    $metadataArgs = @(
+        '--fail', '--silent', '--show-error', '--ipv4', '--http1.1',
+        '--connect-timeout', '12', '--max-time', '30', '--max-filesize', '65536',
+        '--header', "Authorization: Bearer $($env:GITHUB_TOKEN)",
+        '--header', 'Accept: application/vnd.github+json',
+        '--header', 'X-GitHub-Api-Version: 2022-11-28',
+        '--header', 'User-Agent: nexus-selfhost-artifact-transport/1',
+        '--output', $metadataPath, $artifactApi
+    )
+    & curl.exe @metadataArgs | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw 'Bounded GitHub artifact metadata request failed.' }
+    if (-not (Test-Path -LiteralPath $metadataPath -PathType Leaf) -or
+        [long](Get-Item -LiteralPath $metadataPath).Length -gt 65536) {
+        throw 'Artifact metadata response missing or oversized.'
+    }
+    $metadata = Get-Content -LiteralPath $metadataPath -Raw -ErrorAction Stop | ConvertFrom-Json
 }
-$metadata = Invoke-RestMethod -Method Get -Uri $artifactApi -Headers $metadataHeaders -TimeoutSec 30
+finally {
+    Remove-Item -LiteralPath $metadataPath -Force -ErrorAction SilentlyContinue
+}
 
 if ([long]$metadata.id -ne $ArtifactId) { throw 'Artifact metadata ID mismatch.' }
 if ([string]$metadata.name -ne $ArtifactName) { throw 'Artifact metadata name mismatch.' }
@@ -48,35 +66,39 @@ if ((Split-Path -Leaf $destination) -notmatch '^nexus-personal-pro-package-[0-9]
 }
 $archivePath = Join-Path $runnerTemp "nexus-artifact-$ArtifactId.zip"
 
-Add-Type -AssemblyName System.Net.Http
 function Get-SignedArtifactUrl {
-    $handler = New-Object System.Net.Http.HttpClientHandler
-    $handler.AllowAutoRedirect = $false
-    $client = New-Object System.Net.Http.HttpClient($handler)
+    $redirectHeaders = Join-Path $env:RUNNER_TEMP "nexus-artifact-$ArtifactId-redirect.private.headers"
+    $redirectBody = Join-Path $env:RUNNER_TEMP "nexus-artifact-$ArtifactId-redirect.private.body"
     try {
-        $request = New-Object System.Net.Http.HttpRequestMessage([System.Net.Http.HttpMethod]::Get, "$artifactApi/zip")
-        $request.Headers.Authorization = New-Object System.Net.Http.Headers.AuthenticationHeaderValue('Bearer', $env:GITHUB_TOKEN)
-        $request.Headers.Accept.ParseAdd('application/vnd.github+json')
-        $request.Headers.UserAgent.ParseAdd('nexus-selfhost-artifact-transport/1')
-        $response = $client.SendAsync($request).GetAwaiter().GetResult()
-        try {
-            if ([int]$response.StatusCode -notin @(301, 302, 307, 308)) {
-                throw "Artifact redirect request failed with HTTP $([int]$response.StatusCode)."
-            }
-            $location = $response.Headers.Location
-            if ($null -eq $location) { throw 'Artifact redirect did not provide a signed location.' }
-            if (-not $location.IsAbsoluteUri) { $location = New-Object Uri(([Uri]$apiBase), $location) }
-            if ($location.Scheme -ne 'https') { throw 'Artifact redirect must use HTTPS.' }
-            return $location.AbsoluteUri
+        $redirectArgs = @(
+            '--silent', '--show-error', '--ipv4', '--http1.1',
+            '--connect-timeout', '12', '--max-time', '30', '--max-filesize', '65536',
+            '--header', "Authorization: Bearer $($env:GITHUB_TOKEN)",
+            '--header', 'Accept: application/vnd.github+json',
+            '--header', 'User-Agent: nexus-selfhost-artifact-transport/1',
+            '--dump-header', $redirectHeaders, '--output', $redirectBody,
+            "$artifactApi/zip"
+        )
+        # Do not use -L: the signed CDN URL must never receive GitHub's bearer.
+        & curl.exe @redirectArgs | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw 'Bounded GitHub signed redirect request failed.' }
+        $headers = @(Get-Content -LiteralPath $redirectHeaders -ErrorAction Stop)
+        $responses = @($headers | Where-Object { $_ -match '^HTTP/\S+\s+\d{3}\b' })
+        if ($responses.Count -lt 1 -or $responses[-1] -notmatch '^HTTP/\S+\s+(301|302|307|308)\b') {
+            throw 'GitHub artifact response was not a bounded signed redirect.'
         }
-        finally {
-            $response.Dispose()
-            $request.Dispose()
+        $locations = @($headers | Where-Object { $_ -match '^Location:\s*\S+' })
+        if ($locations.Count -ne 1) { throw 'GitHub artifact redirect was absent or ambiguous.' }
+        $uri = New-Object Uri($locations[0].Substring($locations[0].IndexOf(':') + 1).Trim())
+        if ($uri.Scheme -ne 'https' -or
+            ($uri.Host -notmatch '^productionresultssa[0-9]+\.blob\.core\.windows\.net$' -and
+             $uri.Host -notmatch '(^|\.)actions\.githubusercontent\.com$')) {
+            throw 'GitHub artifact redirected to an unapproved delivery host.'
         }
+        return $uri.AbsoluteUri
     }
     finally {
-        $client.Dispose()
-        $handler.Dispose()
+        Remove-Item -LiteralPath $redirectHeaders, $redirectBody -Force -ErrorAction SilentlyContinue
     }
 }
 
