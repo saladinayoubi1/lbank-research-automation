@@ -45,7 +45,8 @@ def test_asof_does_not_expose_unclosed_four_hour_candle():
         baseline.loc[before, "h4_up"],
         altered.loc[before, "h4_up"],
     )
-    assert baseline["decision_at"].iloc[-1] < availability
+    # Exactly at the close, the 4h bar becomes legitimately observable.
+    assert baseline["decision_at"].iloc[-1] == availability
 
 
 def test_gap_in_any_required_frame_fails_closed():
