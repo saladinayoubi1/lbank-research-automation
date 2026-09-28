@@ -13,6 +13,7 @@ from typing import Any, Mapping
 STATE_SCHEMA = "nexus.strategy-discovery-rotation-state.v1"
 PLAN_SCHEMA = "nexus.strategy-discovery-rotation-plan.v1"
 _SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+_SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
 class StrategyDiscoveryRotationError(RuntimeError):
@@ -99,6 +100,7 @@ def build_plan(controller: Mapping[str, Any], state: Mapping[str, Any], feedback
     ):
         raise StrategyDiscoveryRotationError("strategy discovery controller is not verified")
     exhausted: set[str] = set()
+    resolved_negative: set[str] = set()
     if feedback is not None:
         if (
             feedback.get("schema_version") != "nexus.strategy-discovery-feedback.v1"
@@ -108,21 +110,40 @@ def build_plan(controller: Mapping[str, Any], state: Mapping[str, Any], feedback
             or feedback.get("automatic_strategy_promotion") is not False
             or feedback.get("live_trading_authority") is not False
             or not isinstance(feedback.get("exhausted_experiment_sha256"), list)
+            or not isinstance(feedback.get("outcomes"), list)
+            or feedback.get("state_digest") != _digest(
+                {k: v for k, v in feedback.items() if k != "state_digest"}
+            )
         ):
             raise StrategyDiscoveryRotationError("strategy discovery feedback is not verified")
         exhausted = {str(item) for item in feedback["exhausted_experiment_sha256"]}
+        # A completed, artifact-confirmed negative result retires only the exact
+        # reviewed experiment fingerprint. The next genuinely changed manifest
+        # gets a fresh digest and is eligible; an identical replay is not a
+        # newly discovered strategy, even if its GitHub job reports SUCCESS.
+        resolved_negative = {
+            str(row["experiment_sha256"])
+            for row in feedback["outcomes"]
+            if isinstance(row, Mapping)
+            and row.get("outcome") == "no_candidate"
+            and row.get("workflow_conclusion") == "success"
+            and isinstance(row.get("experiment_sha256"), str)
+            and _SHA256_RE.fullmatch(row["experiment_sha256"])
+        }
     stages = [
         row for row in controller.get("search_stages", [])
         if (
             isinstance(row, Mapping)
             and row.get("status") == "READY_FOR_RESEARCH_DISPATCH"
             and str(row.get("experiment_sha256")) not in exhausted
+            and str(row.get("experiment_sha256")) not in resolved_negative
         )
     ]
     if not stages:
-        if exhausted:
+        if exhausted or resolved_negative:
             raise StrategyDiscoveryRotationError(
-                "all reviewed strategy-search neighborhoods are exhausted; novel mechanism required"
+                "no untested reviewed static experiment remains; enqueue a genuinely new "
+                "mechanism or a changed source-bound manifest rather than replaying old backtests"
             )
         raise StrategyDiscoveryRotationError("no reviewed strategy-search workflow is ready")
     index = int(state["next_index"]) % len(stages)
