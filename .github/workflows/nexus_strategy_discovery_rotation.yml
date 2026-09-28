@@ -261,14 +261,24 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          artifact_id="$(gh api \
+          # Never trust a same-named PR/fork artifact as durable frontier state.
+          # Pin the previous receipt to a successful run of this exact main workflow.
+          prior_meta="$(gh api \
             -H 'Accept: application/vnd.github+json' \
             "repos/$GITHUB_REPOSITORY/actions/artifacts?name=nexus-research-frontier-state&per_page=100" \
-            --jq '[.artifacts[] | select(.name == "nexus-research-frontier-state" and (.expired == false))] | sort_by(.created_at) | reverse | .[0].id // empty')"
+            --jq '[.artifacts[] | select(.name == "nexus-research-frontier-state" and (.expired == false) and (.workflow_run.head_branch == "main"))] | sort_by(.created_at) | reverse | .[0] // {}')"
+          artifact_id="$(jq -r '.id // empty' <<<"$prior_meta")"
           if [ -z "$artifact_id" ]; then
-            echo "No previous research frontier receipt; start empty."
+            echo "No previous certified main-branch frontier; start empty."
             exit 0
           fi
+          prior_run_id="$(jq -r '.workflow_run.id // empty' <<<"$prior_meta")"
+          test "$prior_run_id" -ge 1
+          verified="$(gh api \
+            -H 'Accept: application/vnd.github+json' \
+            "repos/$GITHUB_REPOSITORY/actions/runs/$prior_run_id" \
+            --jq 'if .name == "NEXUS strategy discovery rotation" and .status == "completed" and .conclusion == "success" and .head_branch == "main" and .repository.full_name == env.GITHUB_REPOSITORY then "verified" else "rejected" end')"
+          test "$verified" = "verified"
           gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" \
             > build/research-feedback/frontier-prior.zip
           test "$(stat -c%s build/research-feedback/frontier-prior.zip)" -lt 2097152
