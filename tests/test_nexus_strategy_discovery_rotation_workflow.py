@@ -78,3 +78,28 @@ def test_health_dispatch_is_gated_but_daily_rotation_remains_independent():
     assert "TRIGGER_WORKFLOW" in text
     assert "steps.health-gate.outputs.should_dispatch == 'true'" in text
     assert "github.event_name != 'workflow_run'" in text
+
+
+def test_rotation_reconciles_research_outcomes_before_dispatching_next_stage():
+    text = _text()
+    reconcile = text.split("Reconcile previously dispatched Research outcome", 1)[1].split(
+        "Verify discovery surface and select one stage", 1
+    )[0]
+    assert "last-research-run.json" in reconcile
+    assert 'gh run view "$run_id"' in reconcile
+    assert 'gh run download "$run_id"' in reconcile
+    assert "nexus_strategy_discovery_feedback.py" in reconcile
+    assert 'echo "ready=false" >> "$GITHUB_OUTPUT"' in reconcile
+    assert "--feedback-state build/discovery/feedback-state.json" in text
+
+
+def test_rotation_persists_exact_dispatched_research_run_for_next_feedback_cycle():
+    text = _text()
+    dispatch = text.split("Dispatch reviewed Research workflow", 1)[1].split(
+        "Commit rotation cursor only after accepted dispatch", 1
+    )[0]
+    assert "dispatch_sha" in dispatch
+    assert "research_run_id" in dispatch
+    assert "last-research-run.json" in dispatch
+    assert "automatic_strategy_promotion" in dispatch
+    assert "live_trading_authority" in dispatch
