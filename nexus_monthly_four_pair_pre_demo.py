@@ -119,10 +119,17 @@ def _load_full_month(state: Path) -> dict[tuple[str, str], pd.DataFrame]:
             if path.is_symlink() or not path.is_file() or path.stat().st_size > 20_000_000:
                 raise MonthlyResearchError(f"unsafe or absent frame: {symbol}/{tf}")
             df = pd.read_parquet(path)
-            if df.columns.tolist() != collector.CANONICAL_COLUMNS or len(df) != EXPECTED_ROWS[tf]:
-                raise MonthlyResearchError(f"not a full 31-day series: {symbol}/{tf}")
+            if df.columns.tolist() != collector.CANONICAL_COLUMNS:
+                raise MonthlyResearchError(f"unexpected archive columns: {symbol}/{tf}")
             df = df.copy()
             df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True, errors="raise")
+            # The official 3-month backfill contains full May-July candles.
+            # Extract exact July timestamps only; do not reuse its 500-row Discovery tail.
+            july_start = pd.Timestamp(START_DATE, tz="UTC")
+            august_start = pd.Timestamp("2026-08-01", tz="UTC")
+            df = df.loc[(df["timestamp"] >= july_start) & (df["timestamp"] < august_start)].reset_index(drop=True)
+            if len(df) != EXPECTED_ROWS[tf]:
+                raise MonthlyResearchError(f"not a full 31-day series: {symbol}/{tf}")
             for column in ("open", "high", "low", "close", "volume"):
                 df[column] = pd.to_numeric(df[column], errors="raise")
             if not df["timestamp"].is_monotonic_increasing or df["timestamp"].duplicated().any():
@@ -235,15 +242,58 @@ def run(*, source_sha: str, state: Path, cache: Path, output: Path) -> dict[str,
     return result
 
 
+def run_verified_three_month_backfill(*, source_sha: str, state: Path, output: Path) -> dict[str, Any]:
+    """Use an already verified 12-archive May-July state before its cleanup.
+
+    This is called by the existing policy-approved Multi-Pair archive workflow
+    immediately after immutable historical snapshot verification. It never
+    downloads the same official archive twice or changes the 500-row snapshot.
+    """
+    import nexus_multipair_archive_snapshot as archive
+
+    if output.exists():
+        raise MonthlyResearchError("refuse to overwrite prior monthly result")
+    report_path = state / backfill.REPORT_NAME
+    if report_path.is_symlink() or not report_path.is_file():
+        raise MonthlyResearchError("existing official backfill report missing or linked")
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    archive._validate_backfill_report(report)
+    all_sources, all_source_digest = archive._source_evidence(state)
+    july = sorted((s for s in all_sources if s["month"] == MONTH), key=lambda s: s["symbol"])
+    if len(all_sources) != 12 or len(july) != len(SYMBOLS) or {s["symbol"] for s in july} != set(SYMBOLS):
+        raise MonthlyResearchError("three-month official archive July provenance incomplete")
+    frames = _load_full_month(state)
+    result = calculate(frames, source_sha=source_sha)
+    result["archive_sources"] = july
+    result["verified_three_month_source_manifest_sha256"] = all_source_digest
+    result["source_manifest_sha256"] = _digest(july)
+    result["result_sha256"] = _digest(result)
+    output.mkdir(parents=True, exist_ok=False)
+    (output / "monthly-report.json").write_text(
+        json.dumps(result, indent=2, sort_keys=True, allow_nan=False) + "\n", encoding="utf-8"
+    )
+    with (output / "monthly-table.csv").open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=FIELDS, extrasaction="ignore")
+        writer.writeheader()
+        writer.writerows(result["rows"])
+    return result
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--source-sha", required=True)
     parser.add_argument("--state-root", type=Path, required=True)
     parser.add_argument("--cache-root", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
+    parser.add_argument("--from-verified-three-month-state", action="store_true")
     args = parser.parse_args()
-    outcome = run(source_sha=args.source_sha, state=args.state_root,
-                  cache=args.cache_root, output=args.output_root)
+    if args.from_verified_three_month_state:
+        outcome = run_verified_three_month_backfill(
+            source_sha=args.source_sha, state=args.state_root, output=args.output_root
+        )
+    else:
+        outcome = run(source_sha=args.source_sha, state=args.state_root,
+                      cache=args.cache_root, output=args.output_root)
     print(json.dumps({"contract": outcome["contract"], "rows": len(outcome["rows"]),
                       "source_manifest_sha256": outcome["source_manifest_sha256"],
                       "result_sha256": outcome["result_sha256"], "demo_promoted": False}))
