@@ -297,8 +297,8 @@ jobs:
               --json databaseId,headSha,createdAt \
               | jq -r --arg sha "$dispatch_sha" --arg started "$dispatch_started" \
                 --argjson before "$prior_runs" \
-                '[.[] | select(.headSha == $sha and .createdAt >= $started) | \
-                    select(.databaseId as $id | ($before | map(.databaseId) | index($id)) == null)] \
+                '[.[] | select(.headSha == $sha and .createdAt >= $started) |
+                    select(.databaseId as $id | ($before | map(.databaseId) | index($id)) == null)]
                  | if length == 1 then .[0].databaseId else empty end')"
             if [ -n "$research_run_id" ]; then
               break
