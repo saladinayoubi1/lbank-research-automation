@@ -277,7 +277,7 @@ jobs:
           verified="$(gh api \
             -H 'Accept: application/vnd.github+json' \
             "repos/$GITHUB_REPOSITORY/actions/runs/$prior_run_id" \
-            --jq 'if .name == "NEXUS strategy discovery rotation" and .status == "completed" and .conclusion == "success" and .head_branch == "main" and .repository.full_name == env.GITHUB_REPOSITORY then "verified" else "rejected" end')"
+            --jq 'if .name == "NEXUS strategy discovery rotation" and .status == "completed" and .conclusion == "success" and .head_branch == "main" and .repository.full_name == "saladinayoubi1/lbank-research-automation" then "verified" else "rejected" end')"
           test "$verified" = "verified"
           gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" \
             > build/research-feedback/frontier-prior.zip
