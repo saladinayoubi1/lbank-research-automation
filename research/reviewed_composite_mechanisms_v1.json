@@ -1,0 +1,175 @@
+{
+  "schema": "nexus.reviewed-composite-mechanisms.v1",
+  "research_only": true,
+  "live_trading_authority": false,
+  "automatic_strategy_promotion": false,
+  "description": "Extendible reviewed research grammar; distinct causal topology, not parameter sweeps. Designs require new independent source-bound implementation/backtests before any Paper request.",
+  "mechanisms": [
+    {
+      "id": "multi_tf_structural_retest",
+      "hypothesis": "Completed 4h market structure plus completed 1h volatility context may distinguish 15m structural pullback and retest entries from naive directional indicators.",
+      "inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "context": [
+        "completed_four_hour_structure",
+        "completed_one_hour_volatility_regime"
+      ],
+      "entry": [
+        "completed_fifteen_minute_retest",
+        "relative_volume_reclaim"
+      ],
+      "exit": [
+        "structure_invalidation_stop",
+        "maximum_holding_time"
+      ],
+      "risk": [
+        "portfolio_correlation_cap",
+        "volatility_sized_long_flat"
+      ]
+    },
+    {
+      "id": "compression_expansion_response",
+      "hypothesis": "A forward-tested realized-volatility compression state followed by confirmed expansion and relative volume may outperform fixed breakout signals after realistic costs.",
+      "inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "context": [
+        "realized_volatility_compression",
+        "range_boundary_asof"
+      ],
+      "entry": [
+        "closed_bar_break_expansion",
+        "confirmed_volume_expansion"
+      ],
+      "exit": [
+        "failed_break_invalidation",
+        "volatility_time_stop"
+      ],
+      "risk": [
+        "risk_budgeted_long_flat",
+        "thin_volume_no_trade"
+      ]
+    },
+    {
+      "id": "cross_pair_relative_rotation",
+      "hypothesis": "Cross-sectional relative strength after lagging aligned BTC and altcoin closes with a market-volatility guard may improve portfolio exposure against same-data buy-and-hold.",
+      "inputs": [
+        "closed_spot_ohlcv",
+        "aligned_spot_cross_pair"
+      ],
+      "context": [
+        "btc_market_volatility_guard",
+        "aligned_cross_asset_strength"
+      ],
+      "entry": [
+        "closed_bar_asset_rank_switch",
+        "minimum_rank_persistence"
+      ],
+      "exit": [
+        "rank_decay_exit",
+        "portfolio_regime_cash_exit"
+      ],
+      "risk": [
+        "gross_portfolio_exposure_cap",
+        "dynamic_pair_correlation_cap"
+      ]
+    },
+    {
+      "id": "range_failure_reversal",
+      "hypothesis": "A causally formed range that fails to sustain a breakout followed by price reclaim and volume response may contain an independent reversal mechanism in verified ranging periods.",
+      "inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "context": [
+        "completed_range_structure",
+        "verified_range_regime"
+      ],
+      "entry": [
+        "failed_break_reentry_confirmed",
+        "volume_reversal_condition"
+      ],
+      "exit": [
+        "range_extension_target",
+        "hard_structure_invalidation"
+      ],
+      "risk": [
+        "bounded_countertrend_size",
+        "unknown_regime_no_trade"
+      ]
+    },
+    {
+      "id": "signed_flow_price_response",
+      "hypothesis": "Independently authenticated time-stamped taker trade-flow divergence confirmed by subsequent price response may improve direction selection when executable costs permit.",
+      "inputs": [
+        "closed_spot_ohlcv",
+        "verified_signed_trade_flow"
+      ],
+      "context": [
+        "signed_trade_imbalance_regime",
+        "asof_trade_window"
+      ],
+      "entry": [
+        "trade_flow_divergence_confirm",
+        "next_closed_bar_price_response"
+      ],
+      "exit": [
+        "flow_regime_invalidation",
+        "precommitted_time_exit"
+      ],
+      "risk": [
+        "execution_slippage_stress",
+        "bounded_flow_uncertainty"
+      ]
+    },
+    {
+      "id": "liquidity_microstructure_mean_revert",
+      "hypothesis": "Order-book imbalance and spread-resilient executable quotes may support inventory-controlled temporary-price-deviation research only if actual time-aligned L2 depth is verified.",
+      "inputs": [
+        "closed_spot_ohlcv",
+        "verified_spot_l2"
+      ],
+      "context": [
+        "verified_bid_ask_depth",
+        "time_aligned_spread"
+      ],
+      "entry": [
+        "queue_aware_quote_transition",
+        "validated_inventory_skew"
+      ],
+      "exit": [
+        "replay_verified_inventory_flatten",
+        "adverse_selection_shutdown"
+      ],
+      "risk": [
+        "max_inventory_exposure",
+        "missing_l2_reject"
+      ]
+    },
+    {
+      "id": "perpetual_positioning_divergence",
+      "hypothesis": "Product-verified lagged perpetual funding and open interest may act as separate positioning signals for a strictly spot-long research model, without implying derivative execution.",
+      "inputs": [
+        "closed_spot_ohlcv",
+        "verified_perpetual_funding",
+        "verified_perpetual_oi"
+      ],
+      "context": [
+        "lagged_perpetual_funding_extremes",
+        "lagged_open_interest_divergence"
+      ],
+      "entry": [
+        "spot_price_confirmation",
+        "cash_on_ambiguous_positioning"
+      ],
+      "exit": [
+        "funding_regime_change",
+        "fixed_position_time_stop"
+      ],
+      "risk": [
+        "spot_only_no_implicit_short",
+        "derivative_data_unavailable_no_trade"
+      ]
+    }
+  ]
+}
