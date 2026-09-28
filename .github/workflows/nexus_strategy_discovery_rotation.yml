@@ -58,7 +58,8 @@ permissions:
   actions: write
 
 concurrency:
-  group: nexus-strategy-discovery-rotation
+  # PR contracts are read-only and must not cancel/block the single serialized main dispatcher.
+  group: nexus-strategy-discovery-rotation-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'main' }}
   cancel-in-progress: false
 
 jobs:
