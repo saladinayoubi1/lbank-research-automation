@@ -175,12 +175,21 @@ def test_actual_september_2026_multitimeframe_artifact_contract_fixture_if_avail
     assert feedback._PROVEN_INPUTS == {"closed_spot_ohlcv", "aligned_spot_cross_pair"}
 
 
-def test_feedback_workflow_is_read_only_and_uses_exact_triggering_run_artifact():
-    text = Path(".github/workflows/nexus_autonomous_research_feedback.yml").read_text(encoding="utf-8")
-    assert "contents: read" in text and "actions: read" in text
-    assert "contents: write" not in text and "actions: write" not in text
+def test_feedback_reuses_existing_guarded_rotation_without_policy_change():
+    text = Path(".github/workflows/nexus_strategy_discovery_rotation.yml").read_text(encoding="utf-8")
+    assert "contents: read" in text and "actions: write" in text  # Already approved dispatch grant.
+    assert '"NEXUS multi-timeframe strategy discovery"' in text
     assert "github.event.workflow_run.id" in text
-    assert "actions/runs/$RUN_ID/artifacts" in text
+    assert "actions/runs/$SOURCE_RUN_ID/artifacts" in text
     assert "nexus-multitimeframe-search-exhaustion" in text
     assert "nexus_strategy_research_feedback.py" in text
-    assert "gh workflow run" not in text
+    gate = text.split("Decide daily or health-driven dispatch", 1)[1].split(
+        "Restore rotation state", 1
+    )[0]
+    assert 'if [ "$FEEDBACK_REQUESTED" = "true" ]; then' in gate
+    assert 'echo "should_dispatch=false" >> "$GITHUB_OUTPUT"' in gate
+    feedback_steps = text.split("Obtain only the exact certified prior", 1)[1].split(
+        "if: steps.health-gate.outputs.should_dispatch == 'true'", 1
+    )[0]
+    assert 'gh workflow run' not in feedback_steps
+    assert "nexus-research-frontier-state" in feedback_steps
