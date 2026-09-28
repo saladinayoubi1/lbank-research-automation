@@ -213,3 +213,18 @@ def test_kill_switch_fails_closed_and_does_not_release_existing_tranches():
     )
     assert not closed["positions"]
     assert closed["kill_switch"] is True
+
+
+def test_emergency_close_of_one_symbol_does_not_require_other_market_marks():
+    state = open_one(book(), 0, symbol="BTCUSDT")
+    state = open_one(state, 1, symbol="ETHUSDT", marks={"BTCUSDT": "5"})
+    halted = t.trip_kill_switch(state, reason="missing-unrelated-prices")
+    closed = t.close_tranche(
+        halted, position_id="p-0", exit_price="4",
+        closed_utc="2026-09-28T00:15:00Z", reason="kill_switch_exit",
+        remaining_marks=None,
+    )
+    assert [row["position_id"] for row in closed["positions"]] == ["p-1"]
+    assert [row["position_id"] for row in closed["history"]] == ["p-0"]
+    assert closed["kill_switch"] is True
+    assert t.verify_book(closed) == closed
