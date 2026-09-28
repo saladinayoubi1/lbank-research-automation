@@ -1,0 +1,139 @@
+name: NEXUS automatic composite strategy research
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'nexus_composite_strategy_research.py'
+      - 'experiments/nexus_composite_strategy_research_v1.json'
+      - 'tests/test_nexus_composite_strategy_research.py'
+      - '.github/workflows/nexus_composite_strategy_research.yml'
+  pull_request:
+    paths:
+      - 'nexus_composite_strategy_research.py'
+      - 'experiments/nexus_composite_strategy_research_v1.json'
+      - 'tests/test_nexus_composite_strategy_research.py'
+      - '.github/workflows/nexus_composite_strategy_research.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: nexus-autonomous-composite-research-main
+  cancel-in-progress: false
+
+jobs:
+  contract-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: python -m pip install -r requirements-dev.lock
+      - run: python -m pip check
+      - run: python -m pytest -q tests/test_nexus_composite_strategy_research.py
+
+  discover:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: contract-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      GH_TOKEN: ${{ github.token }}
+      DATASET_FILE: NEXUS_BYBIT_replay_v2_2022-12-01_to_2026-07-31.zip
+      DATASET_DELIVERY: NEXUS_BYBIT_replay_v2_delivery.json
+      DATASET_ARTIFACT_PREFIX: bybit-full-history-final-
+      DATASET_SHA256: '2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422'
+      STATE_ARTIFACT: nexus-composite-novelty-state
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: python -m pip install -r requirements.lock
+      - run: python -m pip check
+
+      - name: Restore last immutable mechanism fingerprint ledger, if one exists
+        run: |
+          set -euo pipefail
+          mkdir -p build/previous-composite
+          artifact_id="$(gh api             "repos/$GITHUB_REPOSITORY/actions/artifacts?name=$STATE_ARTIFACT&per_page=100"             --jq '[.artifacts[] | select(.expired == false)] | sort_by(.created_at) | reverse | .[0].id // empty')"
+          if [ -n "$artifact_id" ]; then
+            gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip"               > build/previous-composite.zip
+            unzip -q build/previous-composite.zip -d build/previous-composite
+            test -s build/previous-composite/novelty-ledger.json
+            python - <<'PY'
+          import json
+          from pathlib import Path
+          from nexus_composite_strategy_research import load_ledger
+          previous = load_ledger(Path('build/previous-composite/novelty-ledger.json'))
+          assert previous['auto_demo_promotion'] is False
+          assert previous['live_enabled'] is False
+          print('verified_prior_novelty_count=' + str(len(previous['config_fingerprints_evaluated'])))
+          PY
+          else
+            echo "No prior ledger: starting first safe mechanism configuration."
+          fi
+
+      - name: Restore previously verified immutable Bybit replay-v2 dataset
+        run: |
+          set -euo pipefail
+          mkdir -p build/final_delivery build/bybit_dataset
+          python scripts/select_nexus_bybit_replay_artifact.py             --repository "$GITHUB_REPOSITORY"             --output-dir build/final_delivery             --expected-file-name "$DATASET_FILE"             --expected-semantic-sha256 "$DATASET_SHA256"             --delivery-name "$DATASET_DELIVERY"             --artifact-prefix "$DATASET_ARTIFACT_PREFIX"
+          test -s "build/final_delivery/$DATASET_FILE"
+          unzip -q "build/final_delivery/$DATASET_FILE" -d build/bybit_dataset
+
+      - name: Explore exactly the next unseen source-bound multi-signal mechanism
+        run: |
+          set -euo pipefail
+          extra=()
+          if [ -s build/previous-composite/novelty-ledger.json ]; then
+            extra+=(--previous-ledger build/previous-composite/novelty-ledger.json)
+          fi
+          python nexus_composite_strategy_research.py             --archive-root build/bybit_dataset             --output build/composite             --source-sha "$GITHUB_SHA"             "${extra[@]}"
+
+      - name: Verify exact-source receipts and deny all automatic promotion
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          from nexus_composite_strategy_research import ARCHIVE_SHA256, digest, load_ledger
+          root = Path('build/composite')
+          report = json.loads((root/'research-report.json').read_text())
+          actual_digest = report.pop('report_digest')
+          assert actual_digest == digest(report)
+          assert report['source_sha'] == os.environ['GITHUB_SHA']
+          assert report['archive_sha256'] == ARCHIVE_SHA256
+          assert report['research_only'] is True
+          assert report['auto_demo_promotion'] is False
+          assert report['live_enabled'] is False
+          assert report['status'] in {'EVALUATED_RESEARCH_ONLY', 'EXHAUSTED_REQUIRES_NEW_MECHANISM'}
+          ledger = load_ledger(root/'novelty-ledger.json')
+          if report['status'] == 'EVALUATED_RESEARCH_ONLY':
+              assert len(report['rows']) == 12
+              assert report['qualification'] == 'NOT_QUALIFIED_NO_PRISTINE_FUTURE_HOLDOUT'
+              assert report['ledger_digest'] == ledger['ledger_digest']
+              assert all(r['trade_count_limit'] is None for r in report['rows'])
+          else:
+              assert report['rows'] == []
+          print('research_only_composite_status=' + report['status'])
+          PY
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: nexus-composite-novelty-state
+          path: |
+            build/composite/novelty-ledger.json
+            build/composite/research-report.json
+          if-no-files-found: warn
+          retention-days: 90
