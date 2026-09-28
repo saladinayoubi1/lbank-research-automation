@@ -63,6 +63,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: nexus-runtime-worker-${{ github.event.inputs.lease_id || github.ref }}
@@ -111,6 +112,15 @@ jobs:
           python --version
           python -m pip install -r requirements-dev.lock
           python -m pip check
+      - name: Prepare verified archive and lease-bound frontier for real Research or independent QA
+        id: prepare-research
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.payload_b64 != '' && github.event.inputs.transport == 'github-cloud'
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NEXUS_TASK_PAYLOAD_B64: ${{ github.event.inputs.payload_b64 }}
+        run: python -m nexus_agent_research_prepare --mode auto --root build/agent-research
       - name: Verify Python runtime for bounded DeepSeek task
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.payload_b64 != '' && github.event.inputs.transport == 'deepseek'
         shell: bash
@@ -140,6 +150,24 @@ jobs:
           path: ${{ env.RESULT_PATH }}
           if-no-files-found: error
           retention-days: 14
+      - name: Publish real producer numerical evidence for exact independent QA lease
+        if: always() && github.event_name == 'workflow_dispatch' && steps.prepare-research.outputs.research_role == 'producer'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-agent-research-${{ github.event.inputs.lease_id }}
+          path: |
+            build/agent-research/preparation.json
+            build/agent-research/result/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Publish independent numerical QA proof
+        if: always() && github.event_name == 'workflow_dispatch' && steps.prepare-research.outputs.research_role == 'independent-qa'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-agent-research-qa-${{ github.event.inputs.lease_id }}
+          path: build/agent-research/qa-evidence.json
+          if-no-files-found: error
+          retention-days: 30
       - name: Checkout exact PR head for Phase 4/5 evidence
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor == github.repository_owner
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
