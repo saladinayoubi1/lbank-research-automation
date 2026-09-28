@@ -523,6 +523,21 @@ def record_result(config: dict[str, Any], task_id: str, worker_id: str, outcome:
     evidence = evidence or {}
     if outcome == "success":
         if task.get("status") == "VERIFYING":
+            if task_id == "P7-RESEARCH-COMPOSITE-001":
+                original = task.get("result_evidence", {})
+                if (
+                    worker_id == task.get("producer")
+                    or not isinstance(original, dict)
+                    or evidence.get("independent_qa_complete") is not True
+                    or evidence.get("auto_demo_promotion") is not False
+                    or evidence.get("live_enabled") is not False
+                    or evidence.get("producer_receipt_digest") != original.get("receipt_digest")
+                    or evidence.get("producer_lease_id") != task.get("research_producer_lease_id")
+                    or evidence.get("source_sha") != original.get("source_sha")
+                    or not isinstance(evidence.get("qa_digest"), str)
+                    or len(evidence["qa_digest"]) != 64
+                ):
+                    raise ValueError("independent Research QA has not verified this exact producer")
             task["status"] = "DONE"
             task["verified_at"] = iso()
             task["verification_evidence"] = evidence
