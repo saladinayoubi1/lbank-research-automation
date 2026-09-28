@@ -13,6 +13,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / ".github" / "workflows" / "nexus-local-runner.yml"
 FASTPATH = ROOT / ".github" / "workflows" / "nexus-install-app-fastpath.yml"
+PRELOADER = ROOT / "scripts" / "nexus_preload_verified_artifact.ps1"
 SCRIPT = ROOT / "scripts" / "install_and_smoke_nexus_personal_pro.ps1"
 DOWNLOADER = ROOT / "scripts" / "download_github_actions_artifact_http11.ps1"
 RESOLVER = ROOT / "scripts" / "resolve_nexus_persistent_artifact.ps1"
@@ -262,10 +263,13 @@ def test_install_fastpath_is_exact_source_and_has_no_external_actions_on_lenovo(
     assert "NEXUS_Personal_Pro_Unpacked_5.1.0_x64.zip" in workflow
     assert "install_and_smoke_nexus_personal_pro.ps1" in workflow
     assert "-UsePreloadedPackage" in workflow
-    assert "NEXUS_FASTPATH_PRELOAD=PASS" in workflow
+    preloader = text(PRELOADER)
+    assert "nexus_preload_verified_artifact.ps1" in workflow
     assert "GITHUB_TOKEN: ${{ github.token }}" in workflow
-    assert "download_github_actions_artifact_http11.ps1" in workflow
-    assert "Downloaded inner package SHA-256 mismatch" in workflow
+    assert "download_github_actions_artifact_http11.ps1" in preloader
+    assert "Downloaded inner package SHA-256 mismatch" in preloader
+    assert "NEXUS_FASTPATH_PRELOAD=PASS" in preloader
+    assert "nexus.preloaded-persistent-cache.v1" in preloader
     assert workflow.index("Fetch exact repository source from codeload") < workflow.index("Preload bounded official artifact when exact cache is absent") < workflow.index("Verify preloaded exact-source artifact cache")
     assert "nexus.preloaded-persistent-cache.v1" in workflow
     assert "NEXUS_FASTPATH_CACHE=PASS" in workflow
