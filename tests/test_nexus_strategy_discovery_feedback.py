@@ -84,3 +84,80 @@ def test_incomplete_run_is_rejected(tmp_path: Path):
             stage="first",
             experiment_sha256="1" * 64,
         )
+
+def test_exact_negative_fingerprint_is_not_redispatched(tmp_path: Path):
+    # A workflow exit 0 with an explicit negative outcome is NOT a new strategy.
+    (tmp_path / "outcome.json").write_text(
+        json.dumps({"decision": "continue_research_no_promotion"}), encoding="utf-8",
+    )
+    negative = record_outcome(
+        empty_state(), run={**_run(), "headSha": "a" * 40},
+        expected_source_sha="a" * 40,
+        artifact_root=tmp_path, stage="first", experiment_sha256="1" * 64,
+    )
+    plan = build_plan(_controller(), empty_rotation_state(), negative)
+    assert plan["stage"] == "second"
+    assert negative["exhausted_experiment_sha256"] == []
+
+
+def test_manifest_fingerprint_change_can_reopen_research(tmp_path: Path):
+    (tmp_path / "outcome.json").write_text(
+        json.dumps({"decision": "continue_research_no_promotion"}), encoding="utf-8",
+    )
+    negative = record_outcome(
+        empty_state(), run=_run(), artifact_root=tmp_path,
+        stage="first", experiment_sha256="1" * 64,
+    )
+    controller = _controller()
+    controller["search_stages"][0]["experiment_sha256"] = "3" * 64
+    plan = build_plan(controller, empty_rotation_state(), negative)
+    assert plan["stage"] == "first"
+
+
+def test_all_exact_negative_static_stages_require_new_mechanism(tmp_path: Path):
+    (tmp_path / "outcome.json").write_text(
+        json.dumps({"decision": "continue_research_no_promotion"}), encoding="utf-8",
+    )
+    negative = record_outcome(
+        empty_state(), run=_run(), artifact_root=tmp_path,
+        stage="first", experiment_sha256="1" * 64,
+    )
+    negative = record_outcome(
+        negative, run={**_run(), "databaseId": 124}, artifact_root=tmp_path,
+        stage="second", experiment_sha256="2" * 64,
+    )
+    with pytest.raises(Exception, match="new mechanism"):
+        build_plan(_controller(), empty_rotation_state(), negative)
+
+
+def test_forged_negative_feedback_digest_is_rejected(tmp_path: Path):
+    (tmp_path / "outcome.json").write_text(
+        json.dumps({"decision": "continue_research_no_promotion"}), encoding="utf-8",
+    )
+    negative = record_outcome(
+        empty_state(), run=_run(), artifact_root=tmp_path,
+        stage="first", experiment_sha256="1" * 64,
+    )
+    negative["outcomes"][0]["experiment_sha256"] = "2" * 64
+    with pytest.raises(Exception, match="not verified"):
+        build_plan(_controller(), empty_rotation_state(), negative)
+
+
+def test_successful_run_without_real_artifact_is_not_a_no_candidate(tmp_path: Path):
+    with pytest.raises(StrategyDiscoveryFeedbackError, match="no readable outcome artifacts"):
+        record_outcome(
+            empty_state(), run=_run(), artifact_root=tmp_path,
+            stage="first", experiment_sha256="1" * 64,
+        )
+
+
+def test_outcome_source_mismatch_fails_closed(tmp_path: Path):
+    (tmp_path / "outcome.json").write_text(
+        json.dumps({"decision": "continue_research_no_promotion"}), encoding="utf-8",
+    )
+    with pytest.raises(StrategyDiscoveryFeedbackError, match="source SHA"):
+        record_outcome(
+            empty_state(), run={**_run(), "headSha": "b" * 40},
+            expected_source_sha="a" * 40, artifact_root=tmp_path,
+            stage="first", experiment_sha256="1" * 64,
+        )
