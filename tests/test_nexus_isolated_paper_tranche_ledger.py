@@ -174,3 +174,42 @@ def test_bad_costs_and_inputs_never_create_lots():
         open_one(book(), quantity="Infinity")
     with pytest.raises(t.TrancheError, match="protective"):
         open_one(book(), price="5", stop="6", target="4")
+
+
+def test_timestamp_finality_timezone_and_exits_are_causal():
+    with pytest.raises(t.TrancheError, match="UTC"):
+        t.open_tranche(
+            book(), position_id="bad", symbol="BTCUSDT", timeframe="minute15",
+            strategy_id="s", strategy_version="1", risk_budget_id="b",
+            evidence_sha256=EVIDENCE, quantity="1", entry="5", stop="4",
+            target="6", opened_utc="2026-09-28T00:00:00",
+        )
+    state = open_one(book())
+    with pytest.raises(t.TrancheError, match="predates entry"):
+        t.close_tranche(
+            state, position_id="p-0", exit_price="5",
+            closed_utc="2026-09-27T23:59:59Z", reason="time_exit",
+        )
+    with pytest.raises(t.TrancheError, match="UTC"):
+        t.close_tranche(
+            state, position_id="p-0", exit_price="5",
+            closed_utc="2026-09-28T00:15:00+03:30", reason="time_exit",
+        )
+
+
+def test_kill_switch_fails_closed_and_does_not_release_existing_tranches():
+    state = open_one(book())
+    halted = t.trip_kill_switch(state, reason="research-circuit")
+    assert halted["kill_switch"] is True
+    assert len(halted["positions"]) == 1
+    assert t.verify_book(halted) == halted
+    assert t.trip_kill_switch(halted, reason="same") == halted
+    with pytest.raises(t.TrancheRiskRejected, match="KILL_SWITCH"):
+        open_one(halted, 2, marks={"BTCUSDT": "5"})
+    # A risk-reducing close must still be possible when halted.
+    closed = t.close_tranche(
+        halted, position_id="p-0", exit_price="4",
+        closed_utc="2026-09-28T00:15:00Z", reason="kill_switch_exit",
+    )
+    assert not closed["positions"]
+    assert closed["kill_switch"] is True
