@@ -111,13 +111,36 @@ jobs:
           python --version
           python -m pip install -r requirements-dev.lock
           python -m pip check
-      - name: Prepare verified archive and lease-bound frontier for real Research or independent QA
-        id: prepare-research
+      - name: Inspect authorized real Research Agent lease before expensive cache restores
+        id: inspect-research
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.payload_b64 != '' && github.event.inputs.transport == 'github-cloud'
+        shell: bash
+        env:
+          NEXUS_TASK_PAYLOAD_B64: ${{ github.event.inputs.payload_b64 }}
+        run: python -m nexus_agent_research_prepare --mode inspect
+
+      - name: Restore immutable approved Bybit Research input transport
+        id: research-data-cache
+        if: steps.inspect-research.outputs.research_task == 'true'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: build/agent-research-cache
+          key: nexus-composite-inputs-v1-${{ github.sha }}
+
+      - name: Restore ONLY the source and original producer-lease-bound numeric proof for QA
+        if: steps.inspect-research.outputs.research_role == 'independent-qa'
+        id: research-producer-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: build/agent-producer-cache
+          key: nexus-composite-producer-v1-${{ steps.inspect-research.outputs.producer_source_sha }}-${{ steps.inspect-research.outputs.producer_lease }}
+
+      - name: Prepare verified cached archive and exact frontier for Research or independent QA
+        id: prepare-research
+        if: steps.inspect-research.outputs.research_task == 'true'
         continue-on-error: true
         shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
           NEXUS_TASK_PAYLOAD_B64: ${{ github.event.inputs.payload_b64 }}
         run: python -m nexus_agent_research_prepare --mode auto --root build/agent-research
       - name: Verify Python runtime for bounded DeepSeek task
@@ -141,6 +164,24 @@ jobs:
           NEXUS_TASK_PAYLOAD_B64: ${{ github.event.inputs.payload_b64 }}
           NEXUS_TASK_TRANSPORT: ${{ github.event.inputs.transport }}
         run: python scripts/agent_task_executor.py --output "$RESULT_PATH"
+      - name: Stage completed source-bound Research producer result into immutable cache
+        if: steps.prepare-research.outputs.research_role == 'producer'
+        run: |
+          set -euo pipefail
+          test -s build/agent-research/result/agent-receipt.json
+          test -s build/agent-research/result/novelty-ledger.json
+          test -s build/agent-research/result/previous-ledger.json
+          test -s build/agent-research/result/research-report.json
+          mkdir -p build/agent-producer-cache
+          cp -R build/agent-research/result build/agent-producer-cache/
+
+      - name: Bind QA to immutable producer cache without widening workflow permissions
+        if: steps.prepare-research.outputs.research_role == 'producer'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: build/agent-producer-cache
+          key: nexus-composite-producer-v1-${{ github.sha }}-${{ github.event.inputs.lease_id }}
+
       - name: Upload bounded cloud or DeepSeek result
         if: always() && github.event_name == 'workflow_dispatch' && github.event.inputs.payload_b64 != '' && github.event.inputs.transport != 'windows'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
