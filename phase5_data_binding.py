@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
@@ -10,7 +11,17 @@ from market_data_provenance_manifest import ProvenanceManifestError, validate_pr
 from market_data_source_validator import SourceContractValidationError, load_and_validate
 
 DATASET_SCHEMA = "nexus.phase5-canonical-dataset.v1"
-REGISTRY_PATH = Path("docs/architecture/market-data-source-registry.yaml")
+# Keep nested callers (including phase5_strategy_factory) aligned with the exact
+# canonical file selected by the packaged Electron sidecar. They often call
+# validate_canonical_dataset without an explicit registry_path. Falling back
+# to a process-relative path silently breaks offline qualification when the
+# executable runs outside the source checkout.
+_PACKAGED_REGISTRY = os.environ.get("NEXUS_MARKET_REGISTRY_PATH", "").strip()
+REGISTRY_PATH = (
+    Path(_PACKAGED_REGISTRY)
+    if _PACKAGED_REGISTRY
+    else Path(__file__).resolve().parent / "docs/architecture/market-data-source-registry.yaml"
+)
 
 
 class CanonicalDataError(ValueError):
