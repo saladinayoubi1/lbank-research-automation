@@ -172,3 +172,28 @@ def test_reuse_verified_three_month_official_state_without_redownload(tmp_path, 
         monthly.run_verified_three_month_backfill(
             source_sha=SOURCE, state=state, output=tmp_path / "unsafe-report"
         )
+
+
+@pytest.mark.parametrize(
+    ("column", "value", "failure_name"),
+    [
+        ("high", -1.0, "high_envelope"),
+        ("low", 10000000.0, "low_envelope"),
+        ("volume", -1.0, "nonnegative_volume"),
+        ("symbol", "btc_wrong", "canonical_symbol"),
+        ("timeframe", "hour1", "timeframe_identity"),
+    ],
+)
+def test_full_month_rejection_names_without_exposing_raw_data(tmp_path, column, value, failure_name):
+    """Identifies exact original fail-closed guard on real parquet-format fixtures."""
+    frames = _frames()
+    key = (SYMBOLS[0], TIMEFRAMES[0])
+    frames[key].loc[100, column] = value
+    for (symbol, timeframe), frame in frames.items():
+        path = tmp_path / "bybit_market" / collector.canonical_symbol(symbol) / f"{timeframe}.parquet"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        frame.to_parquet(path, index=False)
+    with pytest.raises(monthly.MonthlyResearchError, match=f"violated=.*{failure_name}") as err:
+        monthly._load_full_month(tmp_path)
+    assert "BTCUSDT/minute15" in str(err.value)
+    assert "10000000" not in str(err.value)

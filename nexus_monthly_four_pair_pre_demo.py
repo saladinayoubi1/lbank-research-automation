@@ -147,7 +147,25 @@ def _load_full_month(state: Path) -> dict[tuple[str, str], pd.DataFrame]:
                 or (df["high"] < df[["open", "low", "close"]].max(axis=1)).any()
                 or (df["low"] > df[["open", "high", "close"]].min(axis=1)).any()
             ):
-                raise MonthlyResearchError(f"full-month OHLCV integrity rejected: {symbol}/{tf}")
+                # Preserve all original hard integrity gates. Log only invariant
+                # names, never raw prices, archive contents or private user data.
+                failures = {
+                    "utc_first_open": int(ms[0]) != int(pd.Timestamp(START_DATE, tz="UTC").value // 1_000_000),
+                    "utc_last_open": int(ms[-1]) != int(pd.Timestamp("2026-08-01", tz="UTC").value // 1_000_000) - STEPS[tf],
+                    "gap_free_cadence": not bool((pd.Series(ms).diff().iloc[1:] == STEPS[tf]).all()),
+                    "canonical_symbol": set(df["symbol"].astype(str)) != {collector.canonical_symbol(symbol)},
+                    "timeframe_identity": set(df["timeframe"].astype(str)) != {tf},
+                    "finite_ohlcv": not bool(df[["open", "high", "low", "close", "volume"]].map(math.isfinite).all().all()),
+                    "positive_ohlc": bool((df[["open", "high", "low", "close"]] <= 0).any().any()),
+                    "nonnegative_volume": bool((df["volume"] < 0).any()),
+                    "high_envelope": bool((df["high"] < df[["open", "low", "close"]].max(axis=1)).any()),
+                    "low_envelope": bool((df["low"] > df[["open", "high", "close"]].min(axis=1)).any()),
+                }
+                violated = sorted(name for name, is_bad in failures.items() if is_bad)
+                raise MonthlyResearchError(
+                    f"full-month OHLCV integrity rejected: {symbol}/{tf}; "
+                    f"violated={','.join(violated) or 'unknown'}"
+                )
             dates = df["timestamp"].reset_index(drop=True)
             if reference is not None and not dates.equals(reference):
                 raise MonthlyResearchError(f"four-symbol timestamp mismatch: {tf}")
