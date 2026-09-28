@@ -1,0 +1,186 @@
+"""Real exhaustion-proof and adversarial feedback tests; no orders or credentials."""
+from __future__ import annotations
+
+import hashlib
+import json
+from pathlib import Path
+
+import pytest
+
+import nexus_strategy_research_feedback as feedback
+
+
+SHA = "a" * 40
+CATALOG = Path("research/reviewed_composite_mechanisms_v1.json")
+
+
+def _digest(data):
+    return hashlib.sha256(
+        json.dumps(data, sort_keys=True, separators=(",", ":"),
+                   ensure_ascii=False, allow_nan=False).encode()
+    ).hexdigest()
+
+
+def _catalog():
+    return json.loads(CATALOG.read_text(encoding="utf-8"))
+
+
+def _certificate(source=SHA, marker="b"):
+    core = {
+        "schema_version": "nexus.multitimeframe-search-exhaustion.v1",
+        "source_sha": source,
+        "dataset_semantic_sha256": "c" * 64,
+        "dataset_archive_sha256": "d" * 64,
+        "neighborhood_fingerprint": marker * 64,
+        "base_research_proposal_count": 0,
+        "refined_research_proposal_count": 0,
+        "exhausted": True,
+        "reuse_policy": "exact_static_neighborhood_only",
+        "selection_basis": "training_only",
+        "locked_holdout_used_for_refinement": False,
+        "research_only": True,
+        "paper_only": True,
+        "live_trading_authority": False,
+        "automatic_strategy_promotion": False,
+    }
+    return {**core, "certificate_digest": _digest(core)}
+
+
+def _run(head=SHA, runid=1234):
+    return {
+        "id": runid,
+        "name": feedback.REQUIRED_WORKFLOW,
+        "head_branch": "main", "event": "workflow_dispatch",
+        "status": "completed", "conclusion": "success", "head_sha": head,
+        "repository": {"full_name": "saladinayoubi1/lbank-research-automation"},
+    }
+
+
+def test_existing_research_exhaustion_proposes_design_but_never_claims_backtest():
+    state, receipt, proposal = feedback.process_feedback(
+        _run(), _certificate(), _catalog(),
+    )
+    assert receipt["status"] == "NEW_DISTINCT_HYPOTHESIS_DESIGN_ONLY"
+    assert proposal["mechanism"]["id"] == "multi_tf_structural_retest"
+    assert proposal["status"].endswith("INDEPENDENT_BACKTEST")
+    assert proposal["data_claims"] == ["closed_spot_ohlcv"]
+    assert state["research_cycles"] == 1
+    assert len(state["proposed_mechanisms"]) == 1
+    assert state["automatic_strategy_promotion"] is False
+    assert proposal["live_trading_authority"] is False
+    assert receipt["no_backtest_or_qualification_claim"] is True
+    feedback.validate_frontier(state)
+
+
+def test_same_cert_is_idempotent_and_next_exact_verified_exhaustion_changes_mechanism():
+    state, _, _ = feedback.process_feedback(_run(), _certificate(), _catalog())
+    replay, receipt, proposal = feedback.process_feedback(
+        _run(runid=999), _certificate(), _catalog(), previous=state,
+    )
+    assert receipt["status"] == "VERIFIED_EXHAUSTION_REPLAY_NO_NEW_PROPOSAL"
+    assert proposal is None
+    assert replay["research_cycles"] == 1
+    second, receipt2, proposal2 = feedback.process_feedback(
+        _run(runid=1000), _certificate(marker="e"), _catalog(), previous=replay,
+    )
+    assert receipt2["status"] == "NEW_DISTINCT_HYPOTHESIS_DESIGN_ONLY"
+    assert proposal2["mechanism"]["id"] == "compression_expansion_response"
+    assert len(second["proposed_mechanisms"]) == 2
+
+
+@pytest.mark.parametrize("change", [
+    {"conclusion": "failure"},
+    {"head_branch": "pull/45"},
+    {"name": "unrelated workflow"},
+    {"status": "in_progress"},
+    {"event": "pull_request"},
+    {"repository": {"full_name": "other/repo"}},
+])
+def test_trigger_must_be_exact_successful_expected_main_workflow(change):
+    run = {**_run(), **change}
+    with pytest.raises(feedback.ResearchFeedbackError):
+        feedback.process_feedback(run, _certificate(), _catalog())
+
+
+def test_source_mismatch_and_forged_exhaustion_refused():
+    with pytest.raises(feedback.ResearchFeedbackError, match="source"):
+        feedback.process_feedback(_run(head="f"*40), _certificate(), _catalog())
+    cert = _certificate()
+    cert["exhausted"] = False
+    with pytest.raises(feedback.ResearchFeedbackError, match="unverified"):
+        feedback.process_feedback(_run(), cert, _catalog())
+    cert = _certificate()
+    cert["live_trading_authority"] = True
+    with pytest.raises(feedback.ResearchFeedbackError):
+        feedback.process_feedback(_run(), cert, _catalog())
+
+
+def test_frontier_tamper_fails_closed_without_state_cursor_reset():
+    state, _, _ = feedback.process_feedback(_run(), _certificate(), _catalog())
+    state["proposed_mechanisms"] = []
+    with pytest.raises(feedback.ResearchFeedbackError):
+        feedback.process_feedback(_run(), _certificate(), _catalog(), previous=state)
+
+
+def test_catalog_forbids_relabeling_parameter_sweeps_as_novel_mechanisms():
+    catalog = _catalog()
+    duplicate = dict(catalog["mechanisms"][0])
+    duplicate["id"] = "parameter_only_variant"
+    duplicate["hypothesis"] = "Different number for the same underlying causal mechanism."
+    catalog["mechanisms"].append(duplicate)
+    with pytest.raises(feedback.ResearchFeedbackError, match="parameter/text"):
+        feedback.validate_catalog(catalog)
+
+
+def test_more_than_eight_distinct_research_ideas_permitted_but_budget_one_design_per_cycle():
+    catalog = _catalog()
+    first = catalog["mechanisms"][0]
+    for i in range(9):
+        row = dict(first)
+        row["id"] = f"reviewed_additional_mechanism_{i}"
+        row["entry"] = ["structural_signal", f"distinct_trigger_{i}"]
+        catalog["mechanisms"].append(row)
+    assert len(feedback.validate_catalog(catalog)) > 8
+    _, _, proposal = feedback.process_feedback(_run(), _certificate(), catalog)
+    assert proposal is not None
+    assert proposal["mechanism"]["id"] == first["id"]
+
+
+def test_unsupported_source_is_reported_as_data_gap_not_invented_trade_feed():
+    catalog = _catalog()
+    catalog["mechanisms"] = [
+        x for x in catalog["mechanisms"]
+        if x["id"] in ("signed_flow_price_response", "perpetual_positioning_divergence")
+    ]
+    _, receipt, candidate = feedback.process_feedback(
+        _run(), _certificate(), catalog,
+    )
+    assert candidate is None
+    assert receipt["status"] == "NEEDS_VERIFIED_DATA_OR_CATALOG_EXPANSION"
+    assert any("verified_signed_trade_flow" in x["missing_inputs"]
+               for x in receipt["data_blockers"])
+
+
+def test_every_reviewed_input_is_a_data_claim_not_unbounded_ai_generated_code():
+    catalog = _catalog()
+    catalog["mechanisms"][0]["inputs"].append("fictional_market_depth")
+    with pytest.raises(feedback.ResearchFeedbackError):
+        feedback.validate_catalog(catalog)
+
+
+def test_actual_september_2026_multitimeframe_artifact_contract_fixture_if_available():
+    # Hosted proof is tested with the EXACT source-run artifact in the
+    # workflow_dispatch integration, not a guessed sample of financial returns.
+    assert feedback.REQUIRED_WORKFLOW == "NEXUS multi-timeframe strategy discovery"
+    assert feedback._PROVEN_INPUTS == {"closed_spot_ohlcv", "aligned_spot_cross_pair"}
+
+
+def test_feedback_workflow_is_read_only_and_uses_exact_triggering_run_artifact():
+    text = Path(".github/workflows/nexus_autonomous_research_feedback.yml").read_text(encoding="utf-8")
+    assert "contents: read" in text and "actions: read" in text
+    assert "contents: write" not in text and "actions: write" not in text
+    assert "github.event.workflow_run.id" in text
+    assert "actions/runs/$RUN_ID/artifacts" in text
+    assert "nexus-multitimeframe-search-exhaustion" in text
+    assert "nexus_strategy_research_feedback.py" in text
+    assert "gh workflow run" not in text
