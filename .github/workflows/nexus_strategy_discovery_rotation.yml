@@ -4,15 +4,25 @@ on:
   schedule:
     - cron: "37 2 * * *"
   workflow_dispatch:
+    inputs:
+      feedback_source_run_id:
+        description: 'Optional exact completed source run to verify feedback without dispatching another strategy search'
+        type: string
+        required: false
+        default: ''
   workflow_run:
     workflows:
       - "NEXUS persistent Paper trading loop"
       - "NEXUS Demo regime lifecycle bridge"
+      - "NEXUS multi-timeframe strategy discovery"
     types: [completed]
   push:
     branches: [main]
     paths:
       - "nexus_strategy_discovery_rotation.py"
+      - "nexus_strategy_research_feedback.py"
+      - "research/reviewed_composite_mechanisms_v1.json"
+      - "tests/test_nexus_strategy_research_feedback.py"
       - "nexus_strategy_discovery_feedback.py"
       - "nexus_strategy_discovery_health_trigger.py"
       - "nexus_demo_strategy_discovery_health_trigger.py"
@@ -36,6 +46,7 @@ on:
       - "experiments/nexus_multitimeframe_strategy_discovery_v1.json"
       - "tests/test_nexus_multitimeframe_strategy_discovery.py"
       - "tests/test_nexus_strategy_discovery_rotation.py"
+      - "tests/test_nexus_strategy_research_feedback.py"
       - "tests/test_nexus_strategy_discovery_feedback.py"
       - "tests/test_nexus_strategy_discovery_health_trigger.py"
       - "tests/test_nexus_demo_strategy_discovery_health_trigger.py"
@@ -49,7 +60,8 @@ permissions:
   actions: write
 
 concurrency:
-  group: nexus-strategy-discovery-rotation
+  # PR contracts are read-only and must not cancel/block the single serialized main dispatcher.
+  group: nexus-strategy-discovery-rotation-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'main' }}
   cancel-in-progress: false
 
 jobs:
@@ -69,6 +81,7 @@ jobs:
       - run: >-
           python -m pytest -q
           tests/test_nexus_strategy_discovery_rotation.py
+          tests/test_nexus_strategy_research_feedback.py
           tests/test_nexus_strategy_discovery_feedback.py
           tests/test_nexus_strategy_discovery_health_trigger.py
           tests/test_nexus_demo_strategy_discovery_health_trigger.py
@@ -80,6 +93,7 @@ jobs:
     if: >-
       (github.event_name == 'workflow_run' &&
        github.event.workflow_run.head_branch == 'main' &&
+       github.event.workflow_run.head_repository.full_name == github.repository &&
        github.event.workflow_run.conclusion == 'success') ||
       (github.event_name != 'workflow_run' &&
        github.event_name != 'pull_request' &&
@@ -95,6 +109,8 @@ jobs:
       HEALTH_TRIGGER: ${{ github.event_name == 'workflow_run' && 'true' || 'false' }}
       TRIGGER_WORKFLOW: ${{ github.event.workflow_run.name }}
       TRIGGER_RUN_ID: ${{ github.event.workflow_run.id }}
+      SOURCE_RUN_ID: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || inputs.feedback_source_run_id }}
+      FEEDBACK_REQUESTED: ${{ (github.event_name == 'workflow_run' && github.event.workflow_run.name == 'NEXUS multi-timeframe strategy discovery' || inputs.feedback_source_run_id != '') && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -111,6 +127,13 @@ jobs:
         id: health-gate
         run: |
           set -euo pipefail
+          if [ "$FEEDBACK_REQUESTED" = "true" ]; then
+            echo "should_feedback=true" >> "$GITHUB_OUTPUT"
+            echo "should_dispatch=false" >> "$GITHUB_OUTPUT"
+            echo "source_sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "should_feedback=false" >> "$GITHUB_OUTPUT"
           if [ "$HEALTH_TRIGGER" != "true" ]; then
             echo "should_dispatch=true" >> "$GITHUB_OUTPUT"
             echo "source_sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
@@ -257,6 +280,87 @@ jobs:
         run: |
           set -euo pipefail
           python nexus_strategy_discovery_rotation.py commit             --state build/discovery/rotation-state.json             --plan build/discovery/dispatch-plan.json             --source-sha "${{ steps.health-gate.outputs.source_sha }}"             --run-id "$GITHUB_RUN_ID"             --output build/discovery/rotation-state.json
+
+
+      - name: Obtain only the exact certified prior multi-timeframe outcome
+        if: steps.health-gate.outputs.should_feedback == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$SOURCE_RUN_ID" -ge 1
+          mkdir -p build/research-feedback/input
+          gh api -H 'Accept: application/vnd.github+json' \
+            "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID" \
+            > build/research-feedback/input/run.json
+          artifact_id="$(gh api \
+            -H 'Accept: application/vnd.github+json' \
+            "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID/artifacts?per_page=100" \
+            --jq '[.artifacts[] | select(.name == "nexus-multitimeframe-search-exhaustion" and (.expired == false))] | if length == 1 then .[0].id else empty end')"
+          if [ -z "$artifact_id" ]; then
+            echo "No unique exact-run verified exhaustion artifact; fail closed" >&2
+            exit 1
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" \
+            > build/research-feedback/exact-exhaustion.zip
+          test "$(stat -c%s build/research-feedback/exact-exhaustion.zip)" -lt 1048576
+          test "$(unzip -Z1 build/research-feedback/exact-exhaustion.zip)" = 'exhaustion-certificate.json'
+          unzip -p build/research-feedback/exact-exhaustion.zip exhaustion-certificate.json \
+            > build/research-feedback/input/exhaustion-certificate.json
+
+      - name: Restore integrity-bound prior independent research frontier
+        if: steps.health-gate.outputs.should_feedback == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Never trust a same-named PR/fork artifact as durable frontier state.
+          # Pin the previous receipt to a successful run of this exact main workflow.
+          prior_meta="$(gh api \
+            -H 'Accept: application/vnd.github+json' \
+            "repos/$GITHUB_REPOSITORY/actions/artifacts?name=nexus-research-frontier-state&per_page=100" \
+            --jq '[.artifacts[] | select(.name == "nexus-research-frontier-state" and (.expired == false) and (.workflow_run.head_branch == "main"))] | sort_by(.created_at) | reverse | .[0] // {}')"
+          artifact_id="$(jq -r '.id // empty' <<<"$prior_meta")"
+          if [ -z "$artifact_id" ]; then
+            echo "No previous certified main-branch frontier; start empty."
+            exit 0
+          fi
+          prior_run_id="$(jq -r '.workflow_run.id // empty' <<<"$prior_meta")"
+          test "$prior_run_id" -ge 1
+          verified="$(gh api \
+            -H 'Accept: application/vnd.github+json' \
+            "repos/$GITHUB_REPOSITORY/actions/runs/$prior_run_id" \
+            --jq 'if .name == "NEXUS strategy discovery rotation" and .status == "completed" and .conclusion == "success" and .head_branch == "main" and .repository.full_name == "saladinayoubi1/lbank-research-automation" then "verified" else "rejected" end')"
+          test "$verified" = "verified"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" \
+            > build/research-feedback/frontier-prior.zip
+          test "$(stat -c%s build/research-feedback/frontier-prior.zip)" -lt 2097152
+          unzip -Z1 build/research-feedback/frontier-prior.zip | grep -qx 'frontier-state.json'
+          unzip -p build/research-feedback/frontier-prior.zip frontier-state.json \
+            > build/research-feedback/input/prior-state.json
+
+      - name: Issue one unexecuted NEW mechanism design after verified exhaustion
+        if: steps.health-gate.outputs.should_feedback == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=()
+          if [ -f build/research-feedback/input/prior-state.json ]; then
+            args+=(--prior-state build/research-feedback/input/prior-state.json)
+          fi
+          python nexus_strategy_research_feedback.py \
+            --trigger-run build/research-feedback/input/run.json \
+            --exhaustion-certificate build/research-feedback/input/exhaustion-certificate.json \
+            --reviewed-mechanisms research/reviewed_composite_mechanisms_v1.json \
+            "${args[@]}" \
+            --output build/research-feedback/output
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: steps.health-gate.outputs.should_feedback == 'true'
+        with:
+          name: nexus-research-frontier-state
+          path: build/research-feedback/output/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: steps.health-gate.outputs.should_dispatch == 'true'
