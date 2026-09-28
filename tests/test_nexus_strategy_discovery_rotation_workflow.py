@@ -166,9 +166,8 @@ def test_unique_new_run_jq_filter_rejects_existing_same_sha_when_available():
     dispatch = _text().split("Dispatch reviewed Research workflow", 1)[1].split(
         "Commit rotation cursor only after accepted dispatch", 1
     )[0]
-    match = re.search(r"--argjson before \"\\$prior_runs\" \\\n\\s*'([^']+)'", dispatch)
-    assert match is not None, "the executable jq query must remain discoverable"
-    query = match.group(1)
+    query = dispatch.split('--argjson before "$prior_runs"', 1)[1].split("'", 2)[1]
+    assert "select(.headSha == $sha" in query, "the real jq program must be selected"
     existing = {"databaseId": 100, "headSha": "a" * 40,
                 "createdAt": "2026-09-29T00:00:02Z"}
     fresh = {"databaseId": 101, "headSha": "a" * 40,
