@@ -114,3 +114,40 @@ def test_rotation_persists_exact_dispatched_research_run_for_next_feedback_cycle
     assert "last-research-run.json" in dispatch
     assert "automatic_strategy_promotion" in dispatch
     assert "live_trading_authority" in dispatch
+
+def test_rotation_restores_only_verified_newest_successful_main_state():
+    workflow = _text()
+    restore = workflow.split("Restore rotation state", 1)[1].split(
+        "Reconcile previously dispatched Research outcome", 1
+    )[0]
+    assert "per_page=100" in restore
+    assert 'sort_by(.created_at) | reverse' in restore
+    assert '.workflow_run.head_branch == "main"' in restore
+    assert '.conclusion == "success"' in restore
+    assert "load_state(Path" in restore
+    assert "load_feedback(" in restore
+
+
+def test_reconciliation_requires_exact_workflow_source_and_artifact():
+    workflow = _text()
+    reconcile = workflow.split("Reconcile previously dispatched Research outcome", 1)[1].split(
+        "Verify discovery surface and select one stage", 1
+    )[0]
+    assert 'run["headSha"] == meta["head_sha"] == receipt["source_sha"]' in reconcile
+    assert 'meta["path"] == receipt["workflow"]' in reconcile
+    assert 'meta["head_branch"] == "main"' in reconcile
+    assert "expected-source-sha" in reconcile
+    assert 'gh run download "$run_id"' in reconcile
+    assert 'gh run download "$run_id" --repo "$GITHUB_REPOSITORY"             --dir build/discovery/research-outcome-artifacts || true' not in reconcile
+
+
+def test_dispatch_must_bind_new_run_not_preexisting_same_sha():
+    workflow = _text()
+    dispatch = workflow.split("Dispatch reviewed Research workflow", 1)[1].split(
+        "Commit rotation cursor only after accepted dispatch", 1
+    )[0]
+    assert "prior_runs=" in dispatch
+    assert "dispatch_started=" in dispatch
+    assert '--argjson before "$prior_runs"' in dispatch
+    assert ".createdAt >= $started" in dispatch
+    assert "if length == 1 then .[0].databaseId else empty end" in dispatch
