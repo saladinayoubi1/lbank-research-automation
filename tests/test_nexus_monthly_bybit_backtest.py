@@ -123,7 +123,7 @@ def test_fail_closed_output_and_owner_review_gate(monkeypatch, tmp_path: Path) -
 
 def test_monthly_research_source_does_not_grant_trading_or_private_transport() -> None:
     source = Path(month.__file__).read_text()
-    workflow = Path(".github/workflows/nexus-monthly-bybit-pre-demo.yml").read_text()
+    workflow = Path(".github/workflows/research-evidence-refresh.yml").read_text()
     for forbidden in ("submit_paper_order", "auto_paper(", "execute_live_order", "requests.post("):
         assert forbidden not in source
     assert "owner_review_required_before_any_new_demo" in source
