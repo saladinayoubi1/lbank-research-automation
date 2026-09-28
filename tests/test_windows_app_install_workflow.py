@@ -355,3 +355,32 @@ def test_delayed_renderer_window_still_requires_trusted_loaded_document() -> Non
     assert "win.webContents.getURL() !== origin + '/'" in main
     assert "win.show();" in main
     assert "if (mainFrameLoadFailed || win.isDestroyed()) return;" in main
+
+def test_packaged_smoke_http_retries_are_bounded_and_preserve_fail_closed_contracts() -> None:
+    script = text(SCRIPT)
+    assert "function Invoke-BoundedProductJson" in script
+    helper = script.split("function Invoke-BoundedProductJson", 1)[1].split("function Invoke-ProductContract", 1)[0]
+    assert "[int]$TimeoutSeconds=45" in helper
+    assert "[int]$Attempts=3" in helper
+    assert "Start-Sleep -Seconds 5" in helper
+    assert "Invoke-RestMethod -Uri $Uri -TimeoutSec $TimeoutSeconds -ErrorAction Stop" in helper
+    assert "Product smoke endpoint remained unavailable" in helper
+    assert "Product smoke only permits loopback HTTP endpoints." in helper
+    contract = script.split("function Invoke-ProductContract", 1)[1].split("\ntry {", 1)[0]
+    for route in (
+        "overview", "paper", "live", "offline", "mission/full",
+        "build-evidence", "strategies/evidence",
+    ):
+        assert f'Invoke-BoundedProductJson -Uri "$Origin/api/product/{route}"' in contract
+    for required in (
+        "Product overview authority contract failed.",
+        "Paper-only contract failed.",
+        "Live trading authority widened during laptop smoke test.",
+        "Offline-first contract failed.",
+        "Mission Control authority contract failed.",
+        "Installed product exact-source evidence failed.",
+        "Strategy evidence boundary failed.",
+    ):
+        assert required in contract
+    assert "if ($ActivateInstalledBuild)" in script
+    assert "UNSAFE_LEGACY_OWNER_ACTIVATION_DISABLED" in script
