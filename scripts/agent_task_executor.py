@@ -101,8 +101,32 @@ def decode_payload(value: str) -> dict[str, Any]:
         data = json.loads(decoded.decode("utf-8"))
     except (UnicodeEncodeError, UnicodeDecodeError, ValueError, json.JSONDecodeError) as exc:
         raise ValueError("dispatch payload encoding is invalid") from exc
-    if not isinstance(data, dict) or set(data) != DISPATCH_KEYS:
+    qa_keys = {"research_producer_lease_id", "research_producer_receipt_digest",
+               "research_producer_source_sha"}
+    if not isinstance(data, dict):
         raise ValueError("dispatch payload schema mismatch")
+    keys = set(data)
+    is_research_qa = (
+        data.get("task_id") == "P7-RESEARCH-COMPOSITE-001"
+        and data.get("worker_id") == "qa-verifier-agent"
+    )
+    if keys != DISPATCH_KEYS and not (is_research_qa and keys == DISPATCH_KEYS | qa_keys):
+        raise ValueError("dispatch payload schema mismatch")
+    if is_research_qa:
+        if keys != DISPATCH_KEYS | qa_keys:
+            raise ValueError("Research independent QA producer binding absent")
+        if (
+            not isinstance(data["research_producer_lease_id"], str)
+            or len(data["research_producer_lease_id"]) > 160
+            or not data["research_producer_lease_id"]
+            or not isinstance(data["research_producer_receipt_digest"], str)
+            or len(data["research_producer_receipt_digest"]) != 64
+            or any(c not in "0123456789abcdef" for c in data["research_producer_receipt_digest"])
+            or not isinstance(data["research_producer_source_sha"], str)
+            or len(data["research_producer_source_sha"]) != 40
+            or any(c not in "0123456789abcdef" for c in data["research_producer_source_sha"])
+        ):
+            raise ValueError("independent QA source or producer receipt is invalid")
     if data["schema_version"] != 2:
         raise ValueError("unsupported dispatch payload schema")
     for field in ("task_id", "lease_id", "correlation_id", "dispatch_id", "worker_id", "transport"):
@@ -187,14 +211,43 @@ def deterministic_execution(payload: dict[str, Any], transport: str) -> tuple[st
     if task_id == "P7-RESEARCH-COMPOSITE-001":
         # This is a real numerical workload, not the historical Phase-7 pytest
         # proof. Only the bounded Research Agent's cloud lease may start it.
-        if payload.get("phase") != 7 or transport != "github-cloud" or payload.get("worker_id") != "research-agent":
+        worker = payload.get("worker_id")
+        if payload.get("phase") != 7 or transport != "github-cloud" or worker not in {"research-agent", "qa-verifier-agent"}:
             return "failure", {
                 "executor": "nexus-real-composite-backtest",
                 "failure_class": "research_lease_worker_phase_or_transport_mismatch",
             }
         try:
-            from nexus_agent_composite_runtime import RealResearchError, run_lease
+            from nexus_agent_composite_runtime import (
+                RealResearchError, run_lease, verify_independently,
+            )
             source = os.environ.get("GITHUB_SHA", "")
+            if worker == "qa-verifier-agent":
+                # QA has its own Agent Manager lease, but independently replays
+                # the specific producer's original prior state and numeric work.
+                if source != payload["research_producer_source_sha"]:
+                    raise RealResearchError("QA source differs from the producer's immutable source")
+                proof = verify_independently(
+                    archive_root=Path("build/agent-research/archive"),
+                    previous_ledger=Path("build/agent-research/producer/result/previous-ledger.json"),
+                    source_sha=source,
+                    lease_id=payload["research_producer_lease_id"],
+                    result_dir=Path("build/agent-research/producer/result"),
+                    output=Path("build/agent-research/qa-evidence.json"),
+                )
+                if proof["producer_receipt_digest"] != payload["research_producer_receipt_digest"]:
+                    raise RealResearchError("QA bound to a different producer digest")
+                return "success", {
+                    "executor": "nexus-independent-composite-numeric-qa",
+                    "producer_receipt_digest": proof["producer_receipt_digest"],
+                    "producer_lease_id": payload["research_producer_lease_id"],
+                    "source_sha": proof["source_sha"],
+                    "qa_digest": proof["qa_digest"],
+                    "independent_qa_complete": True,
+                    "qualification_authority": False,
+                    "auto_demo_promotion": False,
+                    "live_enabled": False,
+                }
             # The secure runner's preparer must have staged both immutable
             # inputs from verified artifacts. No first-mechanism reset fallback.
             evidence = run_lease(
