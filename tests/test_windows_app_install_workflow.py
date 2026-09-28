@@ -114,6 +114,13 @@ def test_resilient_artifact_downloader_is_metadata_and_digest_bound() -> None:
     # Windows 10 ships curl 7.55.1 on the Lenovo; chunk retries are implemented by PowerShell.
     assert "--retry-all-errors" not in script
     assert "--continue-at" not in script
+    assert "Bounded GitHub artifact metadata request failed." in script
+    assert "Bounded GitHub signed redirect request failed." in script
+    assert "Do not use -L" in script
+    assert "Unrecognized artifact host" not in script
+    assert "GitHub artifact redirected to an unapproved delivery host." in script
+    assert "Invoke-RestMethod -Method Get -Uri $artifactApi" not in script
+    assert "System.Net.Http.HttpClient" not in script
     assert "Start-Process -FilePath 'curl.exe'" in script
     assert "Get-SignedArtifactUrl" in script
     assert "$exitCodeKnown = $null -ne $exitCode" in script
@@ -243,7 +250,7 @@ def test_install_fastpath_is_exact_source_and_has_no_external_actions_on_lenovo(
     install = parsed["jobs"]["install"]
     assert install["runs-on"] == ["self-hosted", "Windows", "X64", "nexus-local"]
     assert install["if"] == "github.ref == 'refs/heads/main' && github.actor == github.repository_owner"
-    assert parsed["permissions"] == {"contents": "read"}
+    assert parsed["permissions"] == {"actions": "read", "contents": "read"}
 
     install_steps = install["steps"]
     assert install_steps
@@ -255,6 +262,12 @@ def test_install_fastpath_is_exact_source_and_has_no_external_actions_on_lenovo(
     assert "NEXUS_Personal_Pro_Unpacked_5.1.0_x64.zip" in workflow
     assert "install_and_smoke_nexus_personal_pro.ps1" in workflow
     assert "-UsePreloadedPackage" in workflow
+    assert "NEXUS_FASTPATH_PRELOAD=PASS" in workflow
+    assert "GITHUB_TOKEN: ${{ github.token }}" in workflow
+    assert "download_github_actions_artifact_http11.ps1" in workflow
+    assert "Downloaded inner package SHA-256 mismatch" in workflow
+    assert workflow.index("Fetch exact repository source from codeload") < workflow.index("Preload bounded official artifact when exact cache is absent") < workflow.index("Verify preloaded exact-source artifact cache")
+    assert "nexus.preloaded-persistent-cache.v1" in workflow
     assert "NEXUS_FASTPATH_CACHE=PASS" in workflow
     assert "NEXUS_FASTPATH_INSTALL=PASS" in workflow
     assert "source_sha:" in workflow
