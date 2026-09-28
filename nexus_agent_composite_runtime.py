@@ -11,7 +11,9 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import re
+import shutil
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -108,11 +110,16 @@ def _validate_report(
         if (
             row.get("mechanism") != chosen["mechanism"]
             or row.get("config_fingerprint") != chosen["fingerprint"]
-            or row.get("trade_count_limit") is not None
+            or "trade_count_limit" not in row
+            or row["trade_count_limit"] is not None
             or not isinstance(row.get("closed_round_trips"), int)
             or row["closed_round_trips"] < 0
             or not isinstance(row.get("net_return_pct"), (int, float))
             or not isinstance(row.get("max_drawdown_pct"), (int, float))
+            or not math.isfinite(float(row["net_return_pct"]))
+            or not math.isfinite(float(row["max_drawdown_pct"]))
+            or not isinstance(row.get("bars"), int)
+            or row["bars"] < 1
         ):
             raise RealResearchError("incomplete or capped backtest numeric evidence")
 
@@ -143,6 +150,9 @@ def run_lease(
     report = research.run(archive_root, output_dir, source_sha, previous_ledger)
     ledger = _checked_ledger(output_dir / "novelty-ledger.json")
     _validate_report(report, ledger, previous, source_sha)
+    # Bind an immutable copy of the exact previous frontier into the producer
+    # artifact; QA must never fetch a potentially newer frontier after this run.
+    shutil.copyfile(previous_ledger, output_dir / "previous-ledger.json")
     core = {
         "schema": SCHEMA,
         "lease_id": lease_id,
@@ -153,6 +163,7 @@ def run_lease(
         "report_digest": report["report_digest"],
         "report_file_sha256": _hash_file(output_dir / "research-report.json"),
         "ledger_file_sha256": _hash_file(output_dir / "novelty-ledger.json"),
+        "prior_ledger_file_sha256": _hash_file(output_dir / "previous-ledger.json"),
         "mechanism": report["selected"]["mechanism"],
         "config_fingerprint": report["selected"]["fingerprint"],
         "validation": _summary(report),
@@ -189,6 +200,7 @@ def verify_independently(
         or receipt.get("independent_qa_complete") is not False
         or receipt.get("report_file_sha256") != _hash_file(result_dir / "research-report.json")
         or receipt.get("ledger_file_sha256") != _hash_file(result_dir / "novelty-ledger.json")
+        or receipt.get("prior_ledger_file_sha256") != _hash_file(previous_ledger)
     ):
         raise RealResearchError("producer lease receipt or input binding rejected")
     _validate_report(report, ledger, previous, source_sha)
