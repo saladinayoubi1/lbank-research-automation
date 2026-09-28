@@ -29,6 +29,7 @@ on:
         type: string
 
 permissions:
+  actions: read
   contents: read
 
 concurrency:
@@ -96,6 +97,212 @@ jobs:
           [IO.File]::WriteAllText($marker, $env:GITHUB_SHA, (New-Object Text.UTF8Encoding($false)))
           if ((Get-Content -LiteralPath $marker -Raw).Trim().ToLowerInvariant() -ne $env:GITHUB_SHA.ToLowerInvariant()) {
             throw 'Exact-source marker mismatch.'
+          }
+
+      - name: Preload bounded official artifact when exact cache is absent
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $cache = Join-Path $env:LOCALAPPDATA "NEXUS\artifact-cache\nexus-windows-persistent-unpacked-$env:NEXUS_ARTIFACT_ID"
+          if (Test-Path -LiteralPath $cache) {
+            # Existing caches are strictly checked by the next step, never silently overwritten.
+            Write-Host 'Exact artifact cache is present; next step will verify every bound hash.'
+          } else {
+            $packageRoot = Join-Path $env:RUNNER_TEMP "nexus-personal-pro-package-$env:GITHUB_RUN_ID"
+            if (Test-Path -LiteralPath $packageRoot) { throw 'Existing package transport needs manual review.' }
+            & scripts\download_github_actions_artifact_http11.ps1 `
+              -Repository $env:GITHUB_REPOSITORY `
+              -ArtifactRunId ([long]$env:NEXUS_ARTIFACT_RUN_ID) `
+              -ArtifactId ([long]$env:NEXUS_ARTIFACT_ID) `
+              -ArtifactName $env:NEXUS_ARTIFACT_NAME `
+              -ExpectedSourceSha $env:NEXUS_SOURCE_SHA `
+              -ExpectedArchiveSha256 $env:NEXUS_ARCHIVE_SHA256 `
+              -ExpectedArchiveBytes ([long]$env:NEXUS_ARCHIVE_BYTES) `
+              -DestinationDirectory $packageRoot `
+              -MaxAttempts 4
+            if (-not $?) { throw 'Exact authorized artifact download failed.' }
+            $innerZip = Join-Path $packageRoot 'NEXUS_Personal_Pro_Unpacked_5.1.0_x64.zip'
+            $sumFile = Join-Path $packageRoot 'SHA256SUMS.txt'
+            foreach ($file in @($innerZip, $sumFile)) {
+              if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { throw 'Source-bound persistent ZIP or sums missing.' }
+            }
+            $innerHash = (Get-FileHash -LiteralPath $innerZip -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ($innerHash -ne $env:NEXUS_INNER_SHA256.ToLowerInvariant()) {
+              throw 'Downloaded inner package SHA-256 mismatch; never cache an unverified ZIP.'
+            }
+            $sumMatches = @(Get-Content -LiteralPath $sumFile | Where-Object { $_ -match '(?i)NEXUS_Personal_Pro_Unpacked_5\.1\.0_x64\.zip
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $cache = Join-Path $env:LOCALAPPDATA "NEXUS\artifact-cache\nexus-windows-persistent-unpacked-$env:NEXUS_ARTIFACT_ID"
+          $manifestPath = Join-Path $cache 'cache-manifest.json'
+          $innerZip = Join-Path $cache 'NEXUS_Personal_Pro_Unpacked_5.1.0_x64.zip'
+          $sumFile = Join-Path $cache 'SHA256SUMS.txt'
+          foreach ($path in @($manifestPath, $innerZip, $sumFile)) {
+            if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Verified cache file missing: $path" }
+          }
+
+          $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+          if ($manifest.schema_version -ne 'nexus.preloaded-persistent-cache.v1') { throw 'Cache manifest schema mismatch.' }
+          if ($manifest.repository -ne $env:GITHUB_REPOSITORY) { throw 'Cache repository mismatch.' }
+          if (([string]$manifest.source_sha).ToLowerInvariant() -ne $env:GITHUB_SHA.ToLowerInvariant()) { throw 'Cache source SHA mismatch.' }
+          if ([string]$manifest.artifact_run_id -ne $env:NEXUS_ARTIFACT_RUN_ID) { throw 'Cache artifact run mismatch.' }
+          if ([string]$manifest.artifact_id -ne $env:NEXUS_ARTIFACT_ID) { throw 'Cache artifact ID mismatch.' }
+          if ([string]$manifest.artifact_name -ne $env:NEXUS_ARTIFACT_NAME) { throw 'Cache artifact name mismatch.' }
+          if (([string]$manifest.archive_sha256).ToLowerInvariant() -ne $env:NEXUS_ARCHIVE_SHA256.ToLowerInvariant()) { throw 'Cache outer digest mismatch.' }
+          if ([string]$manifest.archive_bytes -ne $env:NEXUS_ARCHIVE_BYTES) { throw 'Cache outer size mismatch.' }
+          if (([string]$manifest.inner_sha256).ToLowerInvariant() -ne $env:NEXUS_INNER_SHA256.ToLowerInvariant()) { throw 'Cache inner digest mismatch.' }
+
+          $innerHash = (Get-FileHash -LiteralPath $innerZip -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($innerHash -ne $env:NEXUS_INNER_SHA256.ToLowerInvariant()) { throw 'Cached persistent ZIP digest mismatch.' }
+
+          $sumMatches = @(Get-Content -LiteralPath $sumFile | Where-Object { $_ -match '(?i)NEXUS_Personal_Pro_Unpacked_5\.1\.0_x64\.zip$' })
+          if ($sumMatches.Count -ne 1) { throw 'Cached checksum manifest entry missing or ambiguous.' }
+          if ($sumMatches[0] -notmatch '^([0-9a-fA-F]{64})\s+\*?NEXUS_Personal_Pro_Unpacked_5\.1\.0_x64\.zip$') { throw 'Cached checksum entry malformed.' }
+          if ($Matches[1].ToLowerInvariant() -ne $innerHash) { throw 'Cached checksum manifest does not match persistent ZIP.' }
+
+          $packageRoot = Join-Path $env:RUNNER_TEMP "nexus-personal-pro-package-$env:GITHUB_RUN_ID"
+          if (Test-Path -LiteralPath $packageRoot) { Remove-Item -LiteralPath $packageRoot -Recurse -Force }
+          New-Item -ItemType Directory -Path $packageRoot | Out-Null
+          Copy-Item -LiteralPath $innerZip -Destination $packageRoot
+          Copy-Item -LiteralPath $sumFile -Destination $packageRoot
+          Write-Host "NEXUS_FASTPATH_CACHE=PASS source=$env:GITHUB_SHA artifact=$env:NEXUS_ARTIFACT_ID"
+
+      - name: Install and smoke-test exact NEXUS build
+        run: |
+          & scripts\install_and_smoke_nexus_personal_pro.ps1 `
+            -PackageRoot (Join-Path $env:RUNNER_TEMP "nexus-personal-pro-package-$env:GITHUB_RUN_ID") `
+            -ExpectedSourceSha $env:NEXUS_SOURCE_SHA `
+            -ExpectedUnpackedSha256 $env:NEXUS_INNER_SHA256 `
+            -ArtifactRunId ([long]$env:NEXUS_ARTIFACT_RUN_ID) `
+            -ArtifactId ([long]$env:NEXUS_ARTIFACT_ID) `
+            -ArtifactName $env:NEXUS_ARTIFACT_NAME `
+            -ExpectedComputerName 'DESKTOP-1R1081M' `
+            -ExpectedRunnerName 'NEXUS-LOCAL-RUNNER' `
+            -EvidencePath 'build\windows-app-install\evidence.json' `
+            -UsePreloadedPackage
+
+      - name: Verify physical install proof
+        run: |
+          $path = 'build\windows-app-install\evidence.json'
+          if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw 'Physical install evidence is missing.' }
+          $evidence = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json
+          if ($evidence.decision -ne 'PASS') { throw 'Physical install evidence is not PASS.' }
+          if (([string]$evidence.source_sha).ToLowerInvariant() -ne $env:GITHUB_SHA.ToLowerInvariant()) { throw 'Physical install source SHA mismatch.' }
+          if ($evidence.safety.paper_only_required -ne $true -or
+              $evidence.smoke.live_trading_authority -ne $false -or
+              $evidence.smoke.live_orders_allowed -ne $false) {
+            throw 'Physical install safety boundary failed.'
+          }
+          if ($evidence.final_launch.activation_requested -ne $false -or
+              $evidence.final_launch.status -ne 'STAGED_ONLY_OWNER_PRESERVED' -or
+              $evidence.install.startup_shortcut_created -ne $false -or
+              $evidence.install.previous_install_removed -ne $false -or
+              $evidence.install.previous_app_data_removed -ne $false -or
+              $evidence.install.retention_status -ne 'SKIPPED_UNTIL_EXPLICIT_ACTIVATION') {
+            throw 'Physical stage changed owner activation or retention state.'
+          }
+          Write-Host 'NEXUS_FASTPATH_INSTALL=PASS'
+ })
+            if ($sumMatches.Count -ne 1 -or $sumMatches[0] -notmatch '^([0-9a-fA-F]{64})\s+\*?NEXUS_Personal_Pro_Unpacked_5\.1\.0_x64\.zip
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $cache = Join-Path $env:LOCALAPPDATA "NEXUS\artifact-cache\nexus-windows-persistent-unpacked-$env:NEXUS_ARTIFACT_ID"
+          $manifestPath = Join-Path $cache 'cache-manifest.json'
+          $innerZip = Join-Path $cache 'NEXUS_Personal_Pro_Unpacked_5.1.0_x64.zip'
+          $sumFile = Join-Path $cache 'SHA256SUMS.txt'
+          foreach ($path in @($manifestPath, $innerZip, $sumFile)) {
+            if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Verified cache file missing: $path" }
+          }
+
+          $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+          if ($manifest.schema_version -ne 'nexus.preloaded-persistent-cache.v1') { throw 'Cache manifest schema mismatch.' }
+          if ($manifest.repository -ne $env:GITHUB_REPOSITORY) { throw 'Cache repository mismatch.' }
+          if (([string]$manifest.source_sha).ToLowerInvariant() -ne $env:GITHUB_SHA.ToLowerInvariant()) { throw 'Cache source SHA mismatch.' }
+          if ([string]$manifest.artifact_run_id -ne $env:NEXUS_ARTIFACT_RUN_ID) { throw 'Cache artifact run mismatch.' }
+          if ([string]$manifest.artifact_id -ne $env:NEXUS_ARTIFACT_ID) { throw 'Cache artifact ID mismatch.' }
+          if ([string]$manifest.artifact_name -ne $env:NEXUS_ARTIFACT_NAME) { throw 'Cache artifact name mismatch.' }
+          if (([string]$manifest.archive_sha256).ToLowerInvariant() -ne $env:NEXUS_ARCHIVE_SHA256.ToLowerInvariant()) { throw 'Cache outer digest mismatch.' }
+          if ([string]$manifest.archive_bytes -ne $env:NEXUS_ARCHIVE_BYTES) { throw 'Cache outer size mismatch.' }
+          if (([string]$manifest.inner_sha256).ToLowerInvariant() -ne $env:NEXUS_INNER_SHA256.ToLowerInvariant()) { throw 'Cache inner digest mismatch.' }
+
+          $innerHash = (Get-FileHash -LiteralPath $innerZip -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($innerHash -ne $env:NEXUS_INNER_SHA256.ToLowerInvariant()) { throw 'Cached persistent ZIP digest mismatch.' }
+
+          $sumMatches = @(Get-Content -LiteralPath $sumFile | Where-Object { $_ -match '(?i)NEXUS_Personal_Pro_Unpacked_5\.1\.0_x64\.zip$' })
+          if ($sumMatches.Count -ne 1) { throw 'Cached checksum manifest entry missing or ambiguous.' }
+          if ($sumMatches[0] -notmatch '^([0-9a-fA-F]{64})\s+\*?NEXUS_Personal_Pro_Unpacked_5\.1\.0_x64\.zip$') { throw 'Cached checksum entry malformed.' }
+          if ($Matches[1].ToLowerInvariant() -ne $innerHash) { throw 'Cached checksum manifest does not match persistent ZIP.' }
+
+          $packageRoot = Join-Path $env:RUNNER_TEMP "nexus-personal-pro-package-$env:GITHUB_RUN_ID"
+          if (Test-Path -LiteralPath $packageRoot) { Remove-Item -LiteralPath $packageRoot -Recurse -Force }
+          New-Item -ItemType Directory -Path $packageRoot | Out-Null
+          Copy-Item -LiteralPath $innerZip -Destination $packageRoot
+          Copy-Item -LiteralPath $sumFile -Destination $packageRoot
+          Write-Host "NEXUS_FASTPATH_CACHE=PASS source=$env:GITHUB_SHA artifact=$env:NEXUS_ARTIFACT_ID"
+
+      - name: Install and smoke-test exact NEXUS build
+        run: |
+          & scripts\install_and_smoke_nexus_personal_pro.ps1 `
+            -PackageRoot (Join-Path $env:RUNNER_TEMP "nexus-personal-pro-package-$env:GITHUB_RUN_ID") `
+            -ExpectedSourceSha $env:NEXUS_SOURCE_SHA `
+            -ExpectedUnpackedSha256 $env:NEXUS_INNER_SHA256 `
+            -ArtifactRunId ([long]$env:NEXUS_ARTIFACT_RUN_ID) `
+            -ArtifactId ([long]$env:NEXUS_ARTIFACT_ID) `
+            -ArtifactName $env:NEXUS_ARTIFACT_NAME `
+            -ExpectedComputerName 'DESKTOP-1R1081M' `
+            -ExpectedRunnerName 'NEXUS-LOCAL-RUNNER' `
+            -EvidencePath 'build\windows-app-install\evidence.json' `
+            -UsePreloadedPackage
+
+      - name: Verify physical install proof
+        run: |
+          $path = 'build\windows-app-install\evidence.json'
+          if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw 'Physical install evidence is missing.' }
+          $evidence = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json
+          if ($evidence.decision -ne 'PASS') { throw 'Physical install evidence is not PASS.' }
+          if (([string]$evidence.source_sha).ToLowerInvariant() -ne $env:GITHUB_SHA.ToLowerInvariant()) { throw 'Physical install source SHA mismatch.' }
+          if ($evidence.safety.paper_only_required -ne $true -or
+              $evidence.smoke.live_trading_authority -ne $false -or
+              $evidence.smoke.live_orders_allowed -ne $false) {
+            throw 'Physical install safety boundary failed.'
+          }
+          if ($evidence.final_launch.activation_requested -ne $false -or
+              $evidence.final_launch.status -ne 'STAGED_ONLY_OWNER_PRESERVED' -or
+              $evidence.install.startup_shortcut_created -ne $false -or
+              $evidence.install.previous_install_removed -ne $false -or
+              $evidence.install.previous_app_data_removed -ne $false -or
+              $evidence.install.retention_status -ne 'SKIPPED_UNTIL_EXPLICIT_ACTIVATION') {
+            throw 'Physical stage changed owner activation or retention state.'
+          }
+          Write-Host 'NEXUS_FASTPATH_INSTALL=PASS'
+) {
+              throw 'Untrusted inner SHA256SUMS document.'
+            }
+            if ($Matches[1].ToLowerInvariant() -ne $innerHash) { throw 'Downloaded SHA256SUMS disagrees with package.' }
+            $pending = "$cache.incoming-$env:GITHUB_RUN_ID"
+            if (Test-Path -LiteralPath $pending) { throw 'Unreviewed incoming cache directory exists.' }
+            New-Item -ItemType Directory -Path $pending -ErrorAction Stop | Out-Null
+            Copy-Item -LiteralPath $innerZip, $sumFile -Destination $pending -ErrorAction Stop
+            if ((Get-FileHash (Join-Path $pending 'NEXUS_Personal_Pro_Unpacked_5.1.0_x64.zip') -Algorithm SHA256).Hash.ToLowerInvariant() -ne $innerHash) {
+              throw 'Preloaded cache copy SHA-256 mismatch.'
+            }
+            $manifest = [ordered]@{
+              schema_version = 'nexus.preloaded-persistent-cache.v1'
+              repository = $env:GITHUB_REPOSITORY
+              source_sha = $env:GITHUB_SHA
+              artifact_run_id = [long]$env:NEXUS_ARTIFACT_RUN_ID
+              artifact_id = [long]$env:NEXUS_ARTIFACT_ID
+              artifact_name = $env:NEXUS_ARTIFACT_NAME
+              archive_sha256 = $env:NEXUS_ARCHIVE_SHA256.ToLowerInvariant()
+              archive_bytes = [long]$env:NEXUS_ARCHIVE_BYTES
+              inner_sha256 = $innerHash
+            }
+            [IO.File]::WriteAllText((Join-Path $pending 'cache-manifest.json'),
+              ($manifest | ConvertTo-Json -Depth 4), (New-Object Text.UTF8Encoding($false)))
+            if (Test-Path -LiteralPath $cache) { throw 'A concurrent artifact cache appeared; no overwrite.' }
+            Move-Item -LiteralPath $pending -Destination $cache -ErrorAction Stop
+            Write-Host "NEXUS_FASTPATH_PRELOAD=PASS source=$env:GITHUB_SHA artifact=$env:NEXUS_ARTIFACT_ID"
           }
 
       - name: Verify preloaded exact-source artifact cache
