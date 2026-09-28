@@ -315,3 +315,27 @@ def test_real_cloud_executor_invocation_requires_verified_staged_data(tmp_path):
     assert result["outcome"] == "failure"
     assert result["evidence"]["failure_class"] == "verified_research_execution_failed"
     assert result["evidence"]["auto_demo_promotion"] is not True
+
+
+@pytest.mark.parametrize("invalid_original_lease", ["lease\nresearch_role=producer", "../other", "bad lease"])
+def test_qa_lease_identity_cannot_inject_workflow_outputs_or_cache_key(
+    tmp_path, monkeypatch, invalid_original_lease,
+):
+    payload = {
+        "schema_version": 2, "task_id": prepare.TASK_ID,
+        "lease_id": "qa-valid-lease", "correlation_id": "c", "dispatch_id": "d",
+        "worker_id": "qa-verifier-agent", "transport": "github-cloud",
+        "phase": 7, "gate": 17, "title": "qa",
+        "required_capabilities": ["data_validation"], "acceptance": [],
+        "authority": 2, "attempt": 1,
+        "research_producer_lease_id": invalid_original_lease,
+        "research_producer_receipt_digest": "b" * 64,
+        "research_producer_source_sha": SOURCE,
+    }
+    encoded = base64.urlsafe_b64encode(json.dumps(payload).encode()).decode()
+    monkeypatch.setenv("NEXUS_TASK_PAYLOAD_B64", encoded)
+    monkeypatch.setenv("GITHUB_REPOSITORY", prepare.REPO)
+    monkeypatch.setenv("GITHUB_SHA", SOURCE)
+    with pytest.raises(prepare.ResearchPreparationError, match="untrusted"):
+        prepare.prepare("inspect", tmp_path / "never-created")
+    assert not (tmp_path / "never-created").exists()
