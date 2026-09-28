@@ -134,7 +134,10 @@ def _load_full_month(state: Path) -> dict[tuple[str, str], pd.DataFrame]:
                 df[column] = pd.to_numeric(df[column], errors="raise")
             if not df["timestamp"].is_monotonic_increasing or df["timestamp"].duplicated().any():
                 raise MonthlyResearchError("non-monotonic or duplicate candles")
-            ms = df["timestamp"].astype("int64").to_numpy() // 1_000_000
+            # Parquet preserves datetime64[us] on some runners and [ns] on
+            # others. Raw int64 values are in that array's *own* units.
+            # Convert to nanoseconds explicitly before deriving milliseconds.
+            ms = pd.DatetimeIndex(df["timestamp"]).as_unit("ns").asi8 // 1_000_000
             if (
                 int(ms[0]) != int(pd.Timestamp(START_DATE, tz="UTC").value // 1_000_000)
                 or int(ms[-1]) != int(pd.Timestamp("2026-08-01", tz="UTC").value // 1_000_000) - STEPS[tf]
