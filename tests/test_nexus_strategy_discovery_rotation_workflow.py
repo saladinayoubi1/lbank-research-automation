@@ -8,6 +8,17 @@ def _text() -> str:
     return WORKFLOW.read_text(encoding="utf-8")
 
 
+def test_source_stale_workflow_run_is_skipped_before_checkout_and_dispatch():
+    text = _text()
+    contract = text.split('  contract-test:', 1)[1].split('  dispatch-one-stage:', 1)[0]
+    assert "github.event.workflow_run.head_sha == github.sha" in contract
+    assert "github.event_name != 'workflow_run'" in contract
+    assert contract.index('if: >-') < contract.index('runs-on: ubuntu-latest')
+    # The dependent dispatcher cannot start when contract-test is skipped.
+    dispatch = text.split('  dispatch-one-stage:', 1)[1]
+    assert 'needs: contract-test' in dispatch
+
+
 def test_rotation_keeps_daily_fallback_and_adds_paper_and_demo_health_events():
     text = _text()
     assert 'cron: "37 2 * * *"' in text
