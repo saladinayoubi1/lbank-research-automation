@@ -184,6 +184,49 @@ def deterministic_execution(payload: dict[str, Any], transport: str) -> tuple[st
     phase7 = PHASE7_WORKLOADS.get(task_id)
     if phase7 is not None:
         return _phase7_pytest_workload(payload, transport, phase7)
+    if task_id == "P7-RESEARCH-COMPOSITE-001":
+        # This is a real numerical workload, not the historical Phase-7 pytest
+        # proof. Only the bounded Research Agent's cloud lease may start it.
+        if payload.get("phase") != 7 or transport != "github-cloud" or payload.get("worker_id") != "research-agent":
+            return "failure", {
+                "executor": "nexus-real-composite-backtest",
+                "failure_class": "research_lease_worker_phase_or_transport_mismatch",
+            }
+        try:
+            from nexus_agent_composite_runtime import RealResearchError, run_lease
+            source = os.environ.get("GITHUB_SHA", "")
+            # The secure runner's preparer must have staged both immutable
+            # inputs from verified artifacts. No first-mechanism reset fallback.
+            evidence = run_lease(
+                archive_root=Path("build/agent-research/archive"),
+                previous_ledger=Path("build/agent-research/previous-ledger.json"),
+                source_sha=source, lease_id=payload["lease_id"],
+                output_dir=Path("build/agent-research/result"),
+            )
+            return "success", {
+                "executor": "nexus-real-composite-backtest",
+                "workload_id": task_id,
+                "lease_id": payload["lease_id"],
+                "mechanism": evidence["mechanism"],
+                "config_fingerprint": evidence["config_fingerprint"],
+                "archive_sha256": evidence["archive_sha256"],
+                "source_sha": evidence["source_sha"],
+                "prior_ledger_digest": evidence["prior_ledger_digest"],
+                "report_digest": evidence["report_digest"],
+                "ledger_digest": evidence["ledger_digest"],
+                "receipt_digest": evidence["receipt_digest"],
+                "validation": evidence["validation"],
+                "independent_qa_complete": False,
+                "qualification_authority": False,
+                "auto_demo_promotion": False,
+                "live_enabled": False,
+            }
+        except (RealResearchError, OSError, ValueError, RuntimeError) as exc:
+            return "failure", {
+                "executor": "nexus-real-composite-backtest",
+                "failure_class": "verified_research_execution_failed",
+                "reason": str(exc)[:600],
+            }
     if task_id in {"P4-MGR-001", "P4-MGR-002"}:
         result = run([sys.executable, "-m", "pytest", "-q", "tests/test_agent_manager.py", "tests/test_agent_manager_runner.py", "tests/test_agent_transport.py"])
         return ("success" if result["ok"] else "failure", {"executor": "pytest", "tests": result, "failure_class": "deterministic_test_failure" if not result["ok"] else None})
