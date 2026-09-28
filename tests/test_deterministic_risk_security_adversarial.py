@@ -110,15 +110,17 @@ def test_cross_field_policy_invariants_fail_closed():
     ("field", "value"),
     [
         ("max_signals_per_session", True),
-        ("max_signals_per_session", 0),
+        ("max_signals_per_session", -1),
         ("max_signals_per_session", "10"),
         ("max_signal_age_seconds", False),
         ("max_signal_age_seconds", -1),
         ("max_signal_age_seconds", "900"),
     ],
 )
-def test_integer_policy_controls_reject_bool_strings_and_nonpositive_values(field, value):
-    with pytest.raises(RiskInputError, match="positive integer"):
+def test_integer_policy_controls_reject_invalid_types_and_negative_values(field, value):
+    # max_signals_per_session=0 explicitly means no arbitrary count ceiling;
+    # max_signal_age_seconds still requires a positive bound.
+    with pytest.raises(RiskInputError, match="integer"):
         _evaluate(policy=_policy(**{field: value}))
 
 
