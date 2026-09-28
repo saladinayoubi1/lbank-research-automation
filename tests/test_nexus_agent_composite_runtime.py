@@ -284,3 +284,34 @@ def test_research_qa_payload_rejects_missing_producer_provenance():
     }
     with pytest.raises(ValueError, match="producer binding absent"):
         decode_payload(base64.urlsafe_b64encode(json.dumps(payload).encode()).decode())
+
+
+def test_real_cloud_executor_invocation_requires_verified_staged_data(tmp_path):
+    import os
+    import subprocess
+    import sys
+    payload = {
+        "schema_version": 2, "task_id": prepare.TASK_ID,
+        "lease_id": LEASE, "correlation_id": "c", "dispatch_id": "d",
+        "worker_id": "research-agent", "transport": "github-cloud",
+        "phase": 7, "gate": 17, "title": "real research",
+        "required_capabilities": ["data_validation"],
+        "acceptance": ["verified numeric report"], "authority": 2, "attempt": 1,
+    }
+    encoded = base64.urlsafe_b64encode(json.dumps(payload).encode()).decode()
+    output = tmp_path / "real-agent-result.json"
+    env = {**os.environ, "GITHUB_SHA": SOURCE}
+    finished = subprocess.run(
+        [
+            sys.executable, "scripts/agent_task_executor.py",
+            "--payload-b64", encoded, "--transport", "github-cloud",
+            "--output", str(output),
+        ],
+        cwd=Path(__file__).resolve().parents[1], env=env,
+        capture_output=True, text=True, timeout=35, check=False,
+    )
+    assert finished.returncode == 2, finished.stderr
+    result = json.loads(output.read_text(encoding="utf-8"))
+    assert result["outcome"] == "failure"
+    assert result["evidence"]["failure_class"] == "verified_research_execution_failed"
+    assert result["evidence"]["auto_demo_promotion"] is not True
