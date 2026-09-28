@@ -10,14 +10,24 @@
     "phase_continuity_required": true,
     "l4_owner_required": true,
     "manager_scope": "all_current_and_future_phases",
-    "offline_courier_workers": ["windows-runner"],
+    "offline_courier_workers": [
+      "windows-runner"
+    ],
     "offline_courier_lease_minutes": 120
   },
   "workers": [
     {
       "id": "architect-agent",
-      "capabilities": ["architecture", "dependency_analysis", "root_cause_analysis", "diagnostics", "contract_review"],
-      "resources": ["github-cloud"],
+      "capabilities": [
+        "architecture",
+        "dependency_analysis",
+        "root_cause_analysis",
+        "diagnostics",
+        "contract_review"
+      ],
+      "resources": [
+        "github-cloud"
+      ],
       "authority_max": 3,
       "enabled": true,
       "verifier": true,
@@ -25,8 +35,15 @@
     },
     {
       "id": "developer-agent",
-      "capabilities": ["implementation", "refactor", "unit_tests", "diagnostics"],
-      "resources": ["github-cloud"],
+      "capabilities": [
+        "implementation",
+        "refactor",
+        "unit_tests",
+        "diagnostics"
+      ],
+      "resources": [
+        "github-cloud"
+      ],
       "authority_max": 3,
       "enabled": true,
       "verifier": false,
@@ -34,8 +51,20 @@
     },
     {
       "id": "qa-verifier-agent",
-      "capabilities": ["unit_tests", "integration_tests", "adversarial_tests", "recovery_tests", "contract_review", "root_cause_analysis", "diagnostics", "ui_validation", "data_validation"],
-      "resources": ["github-cloud"],
+      "capabilities": [
+        "unit_tests",
+        "integration_tests",
+        "adversarial_tests",
+        "recovery_tests",
+        "contract_review",
+        "root_cause_analysis",
+        "diagnostics",
+        "ui_validation",
+        "data_validation"
+      ],
+      "resources": [
+        "github-cloud"
+      ],
       "authority_max": 3,
       "enabled": true,
       "verifier": true,
@@ -43,8 +72,17 @@
     },
     {
       "id": "research-agent",
-      "capabilities": ["research", "data_validation", "strategy_qualification", "root_cause_analysis", "diagnostics"],
-      "resources": ["github-cloud", "windows-local"],
+      "capabilities": [
+        "research",
+        "data_validation",
+        "strategy_qualification",
+        "root_cause_analysis",
+        "diagnostics"
+      ],
+      "resources": [
+        "github-cloud",
+        "windows-local"
+      ],
       "authority_max": 2,
       "enabled": true,
       "verifier": true,
@@ -52,8 +90,18 @@
     },
     {
       "id": "deepseek-bounded",
-      "capabilities": ["code_review", "test_generation", "log_analysis", "documentation", "refactor_proposal", "root_cause_analysis", "diagnostics"],
-      "resources": ["deepseek"],
+      "capabilities": [
+        "code_review",
+        "test_generation",
+        "log_analysis",
+        "documentation",
+        "refactor_proposal",
+        "root_cause_analysis",
+        "diagnostics"
+      ],
+      "resources": [
+        "deepseek"
+      ],
       "authority_max": 2,
       "enabled": true,
       "verifier": false,
@@ -61,8 +109,17 @@
     },
     {
       "id": "windows-runner",
-      "capabilities": ["windows_runtime", "heavy_compute", "integration_tests", "recovery_tests", "data_validation", "diagnostics"],
-      "resources": ["windows-local"],
+      "capabilities": [
+        "windows_runtime",
+        "heavy_compute",
+        "integration_tests",
+        "recovery_tests",
+        "data_validation",
+        "diagnostics"
+      ],
+      "resources": [
+        "windows-local"
+      ],
       "authority_max": 3,
       "enabled": true,
       "verifier": true,
@@ -70,8 +127,16 @@
     },
     {
       "id": "cloud-worker",
-      "capabilities": ["implementation", "unit_tests", "integration_tests", "log_analysis", "diagnostics"],
-      "resources": ["github-cloud"],
+      "capabilities": [
+        "implementation",
+        "unit_tests",
+        "integration_tests",
+        "log_analysis",
+        "diagnostics"
+      ],
+      "resources": [
+        "github-cloud"
+      ],
       "authority_max": 3,
       "enabled": true,
       "verifier": false,
@@ -79,8 +144,17 @@
     },
     {
       "id": "verification-agent-independent",
-      "capabilities": ["architecture", "contract_review", "adversarial_tests", "recovery_tests", "ui_validation", "diagnostics"],
-      "resources": ["github-cloud"],
+      "capabilities": [
+        "architecture",
+        "contract_review",
+        "adversarial_tests",
+        "recovery_tests",
+        "ui_validation",
+        "diagnostics"
+      ],
+      "resources": [
+        "github-cloud"
+      ],
       "authority_max": 3,
       "enabled": true,
       "verifier": true,
@@ -96,10 +170,19 @@
       "status": "PENDING",
       "priority": 100,
       "dependencies": [],
-      "required_capabilities": ["architecture", "contract_review"],
-      "preferred_resources": ["github-cloud"],
+      "required_capabilities": [
+        "architecture",
+        "contract_review"
+      ],
+      "preferred_resources": [
+        "github-cloud"
+      ],
       "authority": 1,
-      "acceptance": ["task DAG valid", "authority boundaries preserved", "phase continuity explicit"]
+      "acceptance": [
+        "task DAG valid",
+        "authority boundaries preserved",
+        "phase continuity explicit"
+      ]
     },
     {
       "id": "P4-MGR-002",
@@ -108,11 +191,22 @@
       "gate": 16,
       "status": "PENDING",
       "priority": 95,
-      "dependencies": ["P4-MGR-001"],
-      "required_capabilities": ["adversarial_tests", "recovery_tests"],
-      "preferred_resources": ["github-cloud"],
+      "dependencies": [
+        "P4-MGR-001"
+      ],
+      "required_capabilities": [
+        "adversarial_tests",
+        "recovery_tests"
+      ],
+      "preferred_resources": [
+        "github-cloud"
+      ],
       "authority": 1,
-      "acceptance": ["expired lease triages", "non-transient failure gets RCA", "producer cannot self-verify"]
+      "acceptance": [
+        "expired lease triages",
+        "non-transient failure gets RCA",
+        "producer cannot self-verify"
+      ]
     },
     {
       "id": "P4-UI-001",
@@ -121,11 +215,22 @@
       "gate": 2,
       "status": "PENDING",
       "priority": 90,
-      "dependencies": ["P4-MGR-001"],
-      "required_capabilities": ["contract_review", "ui_validation"],
-      "preferred_resources": ["github-cloud"],
+      "dependencies": [
+        "P4-MGR-001"
+      ],
+      "required_capabilities": [
+        "contract_review",
+        "ui_validation"
+      ],
+      "preferred_resources": [
+        "github-cloud"
+      ],
       "authority": 1,
-      "acceptance": ["mobile-first surfaces mapped", "no direct state mutation", "degraded states covered"]
+      "acceptance": [
+        "mobile-first surfaces mapped",
+        "no direct state mutation",
+        "degraded states covered"
+      ]
     },
     {
       "id": "P4-DATA-001",
@@ -134,11 +239,22 @@
       "gate": 3,
       "status": "PENDING",
       "priority": 88,
-      "dependencies": ["P4-MGR-001"],
-      "required_capabilities": ["data_validation"],
-      "preferred_resources": ["windows-local", "github-cloud"],
+      "dependencies": [
+        "P4-MGR-001"
+      ],
+      "required_capabilities": [
+        "data_validation"
+      ],
+      "preferred_resources": [
+        "windows-local",
+        "github-cloud"
+      ],
       "authority": 1,
-      "acceptance": ["source provenance audited", "freshness/integrity gaps classified", "no silent substitution"]
+      "acceptance": [
+        "source provenance audited",
+        "freshness/integrity gaps classified",
+        "no silent substitution"
+      ]
     },
     {
       "id": "P4-EVENT-001",
@@ -147,11 +263,22 @@
       "gate": 5,
       "status": "PENDING",
       "priority": 87,
-      "dependencies": ["P4-MGR-001"],
-      "required_capabilities": ["architecture", "contract_review"],
-      "preferred_resources": ["github-cloud"],
+      "dependencies": [
+        "P4-MGR-001"
+      ],
+      "required_capabilities": [
+        "architecture",
+        "contract_review"
+      ],
+      "preferred_resources": [
+        "github-cloud"
+      ],
       "authority": 1,
-      "acceptance": ["event ownership mapped", "replay invariants defined", "corruption failure leaves prior-valid state"]
+      "acceptance": [
+        "event ownership mapped",
+        "replay invariants defined",
+        "corruption failure leaves prior-valid state"
+      ]
     },
     {
       "id": "P4-DEEPSEEK-001",
@@ -160,11 +287,22 @@
       "gate": 11,
       "status": "PENDING",
       "priority": 80,
-      "dependencies": ["P4-MGR-001"],
-      "required_capabilities": ["code_review", "test_generation"],
-      "preferred_resources": ["deepseek"],
+      "dependencies": [
+        "P4-MGR-001"
+      ],
+      "required_capabilities": [
+        "code_review",
+        "test_generation"
+      ],
+      "preferred_resources": [
+        "deepseek"
+      ],
       "authority": 1,
-      "acceptance": ["edge cases documented", "tests proposed", "no secret or authority expansion"]
+      "acceptance": [
+        "edge cases documented",
+        "tests proposed",
+        "no secret or authority expansion"
+      ]
     },
     {
       "id": "P4-L4-GUARD",
@@ -177,7 +315,36 @@
       "required_capabilities": [],
       "preferred_resources": [],
       "authority": 4,
-      "acceptance": ["must never auto-execute"]
+      "acceptance": [
+        "must never auto-execute"
+      ]
+    },
+    {
+      "id": "P7-RESEARCH-COMPOSITE-001",
+      "title": "Run one source-bound, genuinely distinct multi-timeframe composite backtest on immutable official Bybit replay",
+      "phase": 7,
+      "gate": 17,
+      "status": "PENDING",
+      "priority": 91,
+      "dependencies": [],
+      "required_capabilities": [
+        "data_validation"
+      ],
+      "required_resources": [
+        "github-cloud"
+      ],
+      "preferred_resources": [
+        "github-cloud",
+        "windows-local"
+      ],
+      "authority": 2,
+      "acceptance": [
+        "producer is dedicated research-agent, verifier is independent qa-verifier-agent",
+        "download verified immutable Bybit replay and prior novelty ledger before execution",
+        "source/lease/dataset/mechanism-bound actual 2-pair 3-fold 2-cost backtest numerical artifact exists",
+        "report no untouched OOS claim, no Demo promotion, Live always false",
+        "independent verification receipt required before candidate qualification"
+      ]
     }
   ]
 }
