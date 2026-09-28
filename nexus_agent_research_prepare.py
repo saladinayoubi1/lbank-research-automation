@@ -73,7 +73,7 @@ def _classify(mode: str) -> tuple[dict[str, Any] | None, str]:
     if expected_mode == "independent-qa" and (
         payload["research_producer_source_sha"] != os.environ["GITHUB_SHA"]
         or not HEX64.fullmatch(payload["research_producer_receipt_digest"])
-        or not payload["research_producer_lease_id"]
+        or not re.fullmatch(r"[a-zA-Z0-9_-]{1,160}", payload["research_producer_lease_id"])
     ):
         raise ResearchPreparationError("QA original producer identity is untrusted")
     return payload, expected_mode
