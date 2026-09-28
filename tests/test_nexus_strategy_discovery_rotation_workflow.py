@@ -151,3 +151,37 @@ def test_dispatch_must_bind_new_run_not_preexisting_same_sha():
     assert '--argjson before "$prior_runs"' in dispatch
     assert ".createdAt >= $started" in dispatch
     assert "if length == 1 then .[0].databaseId else empty end" in dispatch
+
+
+def test_unique_new_run_jq_filter_rejects_existing_same_sha_when_available():
+    import json
+    import re
+    import shutil
+    import subprocess
+
+    import pytest
+
+    if shutil.which("jq") is None:
+        pytest.skip("jq integration runs on an available platform")
+    dispatch = _text().split("Dispatch reviewed Research workflow", 1)[1].split(
+        "Commit rotation cursor only after accepted dispatch", 1
+    )[0]
+    match = re.search(r"--argjson before \"\\$prior_runs\" \\\n\\s*'([^']+)'", dispatch)
+    assert match is not None, "the executable jq query must remain discoverable"
+    query = match.group(1)
+    existing = {"databaseId": 100, "headSha": "a" * 40,
+                "createdAt": "2026-09-29T00:00:02Z"}
+    fresh = {"databaseId": 101, "headSha": "a" * 40,
+             "createdAt": "2026-09-29T00:00:05Z"}
+    args = ["jq", "-r", "--arg", "sha", "a" * 40, "--arg", "started",
+            "2026-09-29T00:00:03Z", "--argjson", "before",
+            json.dumps([{"databaseId": existing["databaseId"]}]), query]
+    result = subprocess.run(args, input=json.dumps([existing, fresh]), text=True,
+                            capture_output=True, check=False)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "101"
+    ambiguous = subprocess.run(args, input=json.dumps([existing, fresh,
+                           {**fresh, "databaseId": 102}]), text=True,
+                           capture_output=True, check=False)
+    assert ambiguous.returncode == 0, ambiguous.stderr
+    assert ambiguous.stdout.strip() == "", "ambiguous concurrent runs must fail closed"
