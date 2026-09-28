@@ -193,3 +193,16 @@ def test_feedback_reuses_existing_guarded_rotation_without_policy_change():
     )[0]
     assert 'gh workflow run' not in feedback_steps
     assert "nexus-research-frontier-state" in feedback_steps
+
+
+def test_prior_frontier_must_originate_from_successful_same_repo_main_run():
+    text = Path(".github/workflows/nexus_strategy_discovery_rotation.yml").read_text(encoding="utf-8")
+    stage = text.split("Restore integrity-bound prior independent research frontier", 1)[1].split(
+        "Issue one unexecuted NEW mechanism", 1
+    )[0]
+    assert '.workflow_run.head_branch == "main"' in stage
+    assert 'actions/runs/$prior_run_id' in stage
+    assert '.conclusion == "success"' in stage
+    assert '.name == "NEXUS strategy discovery rotation"' in stage
+    assert '.repository.full_name == "saladinayoubi1/lbank-research-automation"' in stage
+    assert 'test "$verified" = "verified"' in stage
