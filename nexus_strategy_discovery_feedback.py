@@ -128,19 +128,25 @@ def record_outcome(
     artifact_root: Path,
     stage: str,
     experiment_sha256: str,
+    expected_source_sha: str | None = None,
 ) -> dict[str, Any]:
     run_id = str(run.get("databaseId", ""))
     if not run_id.isdigit():
         raise StrategyDiscoveryFeedbackError("research run id is invalid")
     if run.get("status") != "completed":
         raise StrategyDiscoveryFeedbackError("research run is not complete")
+    if expected_source_sha is not None:
+        if not re.fullmatch(r"[0-9a-f]{40}", expected_source_sha) or run.get("headSha") != expected_source_sha:
+            raise StrategyDiscoveryFeedbackError("research outcome source SHA does not match dispatched receipt")
     if not _SHA256_RE.fullmatch(str(experiment_sha256).lower()):
         raise StrategyDiscoveryFeedbackError("experiment sha256 is invalid")
     if run_id in {str(x) for x in state.get("processed_run_ids", [])}:
         return dict(state)
 
-    flags = _artifact_observations(artifact_root)
     conclusion = str(run.get("conclusion", ""))
+    if conclusion == "success" and not any(artifact_root.rglob("*.json")):
+        raise StrategyDiscoveryFeedbackError("completed Research workflow has no readable outcome artifacts")
+    flags = _artifact_observations(artifact_root)
     if conclusion != "success":
         outcome = "workflow_failed"
     elif flags["requires_data"]:
@@ -189,6 +195,7 @@ def main() -> int:
     parser.add_argument("--artifact-root", type=Path, required=True)
     parser.add_argument("--stage", required=True)
     parser.add_argument("--experiment-sha256", required=True)
+    parser.add_argument("--expected-source-sha")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     state = load_state(args.state)
@@ -199,6 +206,7 @@ def main() -> int:
         artifact_root=args.artifact_root,
         stage=args.stage,
         experiment_sha256=args.experiment_sha256,
+        expected_source_sha=args.expected_source_sha,
     )
     _atomic(args.output, value)
     print(json.dumps(value, sort_keys=True))
