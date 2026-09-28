@@ -528,6 +528,19 @@ def record_result(config: dict[str, Any], task_id: str, worker_id: str, outcome:
             task["verification_evidence"] = evidence
             emit("task_done", task_id=task_id, verifier=worker_id)
         else:
+            # An independent QA lease has its own lease_id. Preserve the
+            # producer's exact identity and digest to prevent QA from
+            # accidentally verifying an unrelated/latest Research artifact.
+            if task_id == "P7-RESEARCH-COMPOSITE-001":
+                if (
+                    not isinstance(evidence.get("receipt_digest"), str)
+                    or len(evidence["receipt_digest"]) != 64
+                    or evidence.get("independent_qa_complete") is not False
+                    or evidence.get("auto_demo_promotion") is not False
+                    or evidence.get("live_enabled") is not False
+                ):
+                    raise ValueError("real research producer receipt or authority invalid")
+                task["research_producer_lease_id"] = task["lease_id"]
             task["result_evidence"] = evidence
             request_verification(config, task, utcnow())
     elif outcome == "failure":
