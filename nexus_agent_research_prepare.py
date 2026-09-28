@@ -97,6 +97,72 @@ def _previous_ledger(path: Path) -> tuple[dict[str, Any], int]:
     return ledger, run_id
 
 
+def _exact_producer_proof(root: Path, payload: dict[str, Any]) -> dict[str, Any]:
+    producer_lease = payload["research_producer_lease_id"]
+    expected_digest = payload["research_producer_receipt_digest"]
+    producer_source = payload["research_producer_source_sha"]
+    if producer_source != os.environ["GITHUB_SHA"]:
+        raise ResearchPreparationError("QA worker source SHA differs from producer")
+    name = "nexus-agent-research-" + producer_lease
+    artifacts = _gh_api(f"actions/artifacts?name={name}&per_page=100").get("artifacts", [])
+    matches = [
+        a for a in artifacts
+        if isinstance(a, dict) and a.get("expired") is False
+        and a.get("name") == name and isinstance(a.get("workflow_run"), dict)
+        and a["workflow_run"].get("head_branch") == "main"
+        and a["workflow_run"].get("head_sha") == producer_source
+    ]
+    if len(matches) != 1:
+        raise ResearchPreparationError("producer proof missing or ambiguous for exact lease")
+    run_id = matches[0]["workflow_run"].get("id")
+    if type(run_id) is not int or run_id < 1:
+        raise ResearchPreparationError("producer workflow identity invalid")
+    run = _gh_api(f"actions/runs/{run_id}")
+    if (
+        run.get("id") != run_id
+        or run.get("name") != "NEXUS Runtime Worker"
+        or run.get("event") != "workflow_dispatch"
+        or run.get("conclusion") != "success"
+        or run.get("status") != "completed"
+        or run.get("head_sha") != producer_source
+        or run.get("head_branch") != "main"
+        or run.get("repository", {}).get("full_name") != REPO
+    ):
+        raise ResearchPreparationError("producer run not source-exact or incomplete")
+    location = root / "producer"
+    proc = subprocess.run(
+        ["gh", "run", "download", str(run_id), "-R", REPO, "-n", name, "-D", str(location)],
+        capture_output=True, text=True, timeout=180, check=False,
+    )
+    if proc.returncode:
+        raise ResearchPreparationError("independent QA cannot download exact producer artifact")
+    receipt_file = location / "result" / "agent-receipt.json"
+    prior_file = location / "result" / "previous-ledger.json"
+    if receipt_file.is_symlink() or prior_file.is_symlink() or not receipt_file.is_file():
+        raise ResearchPreparationError("producer receipt missing or linked")
+    receipt = json.loads(receipt_file.read_text(encoding="utf-8"))
+    if (
+        receipt.get("schema") != "nexus.agent-composite-execution.v1"
+        or receipt.get("receipt_digest") != expected_digest
+        or receipt.get("source_sha") != producer_source
+        or receipt.get("lease_id") != producer_lease
+        or receipt.get("archive_sha256") != ARCHIVE_SHA256
+        or receipt.get("independent_qa_complete") is not False
+        or receipt.get("auto_demo_promotion") is not False
+        or receipt.get("live_enabled") is not False
+    ):
+        raise ResearchPreparationError("QA producer proof identity or authority mismatch")
+    old = load_ledger(prior_file)
+    if old["ledger_digest"] != receipt.get("prior_ledger_digest"):
+        raise ResearchPreparationError("QA producer's immutable previous ledger digest mismatch")
+    return {
+        "producer_lease_id": producer_lease,
+        "producer_receipt_digest": expected_digest,
+        "prior_ledger_digest": old["ledger_digest"],
+        "producer_run_id": run_id,
+    }
+
+
 def prepare(mode: str, root: Path) -> dict[str, Any]:
     token = os.environ.get("NEXUS_TASK_PAYLOAD_B64", "")
     if not token:
@@ -107,13 +173,20 @@ def prepare(mode: str, root: Path) -> dict[str, Any]:
     if (
         payload["phase"] != 7
         or payload["transport"] != "github-cloud"
-        or payload["worker_id"] != "research-agent"
+        or payload["worker_id"] not in {"research-agent", "qa-verifier-agent"}
         or os.environ.get("GITHUB_REPOSITORY") != REPO
         or not HEX40.fullmatch(os.environ.get("GITHUB_SHA", ""))
     ):
         raise ResearchPreparationError("untrusted Research Agent task context")
+    if mode == "auto":
+        mode = "independent-qa" if payload["worker_id"] == "qa-verifier-agent" else "producer"
     if mode not in ("producer", "independent-qa"):
         raise ResearchPreparationError("unsupported preparation mode")
+    if (
+        (mode == "producer" and payload["worker_id"] != "research-agent")
+        or (mode == "independent-qa" and payload["worker_id"] != "qa-verifier-agent")
+    ):
+        raise ResearchPreparationError("untrusted Research Agent role")
     if root.exists():
         raise ResearchPreparationError("refuse dirty or pre-existing research staging root")
     root.mkdir(parents=True)
@@ -142,6 +215,8 @@ def prepare(mode: str, root: Path) -> dict[str, Any]:
     if mode == "producer":
         ledger, run_id = _previous_ledger(root / "previous-ledger.json")
         info.update({"prior_ledger_digest": ledger["ledger_digest"], "prior_run_id": run_id})
+    else:
+        info.update(_exact_producer_proof(root, payload))
     from nexus_composite_strategy_research import safe_write
     safe_write(root / "preparation.json", info)
     return info
@@ -149,7 +224,7 @@ def prepare(mode: str, root: Path) -> dict[str, Any]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--mode", choices=("producer", "independent-qa"), default="producer")
+    parser.add_argument("--mode", choices=("auto", "producer", "independent-qa"), default="auto")
     parser.add_argument("--root", type=Path, default=Path("build/agent-research"))
     args = parser.parse_args()
     info = prepare(args.mode, args.root)
@@ -157,6 +232,7 @@ def main() -> int:
     if os.environ.get("GITHUB_OUTPUT"):
         with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as handle:
             handle.write("research_task=" + str(info["research_task"]).lower() + "\n")
+            handle.write("research_role=" + str(info.get("mode", "none")) + "\n")
     print(json.dumps(info, sort_keys=True))
     return 0
 
