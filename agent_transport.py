@@ -130,7 +130,27 @@ def envelope_for(task: dict[str, Any]) -> dict[str, Any]:
     _bounded_id(worker, "worker_id")
     if int(task.get("authority", 0)) >= 4:
         raise ValueError("L4 tasks may not be dispatched")
+    optional = {}
+    if task["id"] == "P7-RESEARCH-COMPOSITE-001" and task.get("status") == "VERIFYING":
+        prior = task.get("result_evidence", {})
+        producer_lease = task.get("research_producer_lease_id")
+        if (
+            not isinstance(prior, dict)
+            or not isinstance(producer_lease, str)
+            or not isinstance(prior.get("receipt_digest"), str)
+            or not isinstance(prior.get("source_sha"), str)
+            or prior.get("independent_qa_complete") is not False
+            or prior.get("auto_demo_promotion") is not False
+            or prior.get("live_enabled") is not False
+        ):
+            raise ValueError("QA dispatch requires the exact authenticated Research producer receipt")
+        optional = {
+            "research_producer_lease_id": producer_lease,
+            "research_producer_receipt_digest": prior["receipt_digest"],
+            "research_producer_source_sha": prior["source_sha"],
+        }
     return {
+        **optional,
         "schema_version": 2,
         "task_id": task["id"],
         "lease_id": lease_id,

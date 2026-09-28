@@ -55,7 +55,7 @@ def merge_definition(template: dict[str, Any], runtime: dict[str, Any] | None) -
         "verified_at", "blocked_reason", "dispatch_id", "dispatch_transport", "dispatched_at",
         "dispatch_mode", "offline_dispatch_digest", "offline_dispatch_bundle_created_at",
         "offline_result_bundle_ingested", "offline_result_bundle_digest",
-        "result_artifact_ingested", "result_received_at", "routing_decision",
+        "result_artifact_ingested", "result_received_at", "research_producer_lease_id", "routing_decision",
         "zero_idle_evidence", "waiting_from_status", "external_wait_state", "external_wait_started_at",
         "external_wait_completed_at", "external_wait_timeline"
     }

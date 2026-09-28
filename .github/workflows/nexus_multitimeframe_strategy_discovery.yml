@@ -408,6 +408,64 @@ jobs:
           print("composite_research_status=" + report["status"])
           PY
 
+      # Existing reviewed discovery owns the verified replay source,
+      # signed novelty frontier, and Actions read scope. Export a source-bound
+      # immutable cache for the leased real Research Agent without widening
+      # the protected NEXUS Runtime Worker's permissions.
+      - name: Check existing approved Research input transport cache
+        if: github.ref == 'refs/heads/main'
+        id: agent-input-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: build/agent-research-cache
+          key: nexus-composite-inputs-v1-${{ github.sha }}
+          lookup-only: true
+
+      - name: Bind canonical archive and novelty frontier as one Research lease input
+        if: github.ref == 'refs/heads/main' && steps.agent-input-cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          test -s "build/final_delivery/$DATASET_FILE"
+          test -s "build/final_delivery/$DATASET_DELIVERY"
+          test -s build/composite/novelty-ledger.json
+          rm -rf build/agent-research-cache
+          mkdir -p build/agent-research-cache
+          cp "build/final_delivery/$DATASET_FILE" build/agent-research-cache/
+          cp "build/final_delivery/$DATASET_DELIVERY" build/agent-research-cache/
+          cp build/composite/novelty-ledger.json build/agent-research-cache/previous-ledger.json
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          from nexus_composite_strategy_research import ARCHIVE_SHA256, digest, load_ledger, safe_write
+          from scripts.select_nexus_bybit_replay_artifact import validate_candidate, sha256_file
+          root = Path("build/agent-research-cache")
+          archive, _ = validate_candidate(
+              root, expected_file_name=os.environ["DATASET_FILE"],
+              expected_semantic_sha256=ARCHIVE_SHA256, delivery_name=os.environ["DATASET_DELIVERY"],
+          )
+          old = load_ledger(root / "previous-ledger.json")
+          assert old["config_fingerprints_evaluated"], "only non-empty verified research frontier is leasable"
+          core = {
+              "schema": "nexus.real-research-transport.v1",
+              "source_sha": os.environ["GITHUB_SHA"],
+              "archive_sha256": ARCHIVE_SHA256,
+              "replay_zip_sha256": sha256_file(archive),
+              "prior_ledger_digest": old["ledger_digest"],
+              "research_only": True,
+              "auto_demo_promotion": False,
+              "live_enabled": False,
+          }
+          safe_write(root / "manifest.json", {**core, "manifest_digest": digest(core)})
+          print("agent_research_inputs_verified=" + old["ledger_digest"])
+          PY
+
+      - name: Publish immutable approved Research input transport
+        if: github.ref == 'refs/heads/main' && steps.agent-input-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: build/agent-research-cache
+          key: nexus-composite-inputs-v1-${{ github.sha }}
+
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
