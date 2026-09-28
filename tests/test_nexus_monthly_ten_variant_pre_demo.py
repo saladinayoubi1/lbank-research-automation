@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import copy
+import bybit_spot_archive_collector as collector
 import pandas as pd
 import pytest
 
@@ -28,7 +29,7 @@ def _frames():
                 "high": [x + 1 for x in values], "low": [x - 1 for x in values],
                 "close": [x + .2 for x in values],
                 "volume": [5.0] * len(values),
-                "symbol": [symbol] * len(values), "timeframe": [tf] * len(values),
+                "symbol": [collector.canonical_symbol(symbol)] * len(values), "timeframe": [tf] * len(values),
             })
     return frames
 

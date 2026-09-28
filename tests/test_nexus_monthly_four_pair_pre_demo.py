@@ -29,7 +29,7 @@ def _frames():
                 "timestamp": timestamps, "open": vals, "high": [x + 1 for x in vals],
                 "low": [x - 1 for x in vals], "close": [x + 0.1 for x in vals],
                 "volume": [10.0] * len(timestamps),
-                "symbol": [symbol] * len(timestamps),
+                "symbol": [collector.canonical_symbol(symbol)] * len(timestamps),
                 "timeframe": [timeframe] * len(timestamps),
             })
     return frames
