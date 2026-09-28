@@ -217,10 +217,16 @@ def deterministic_execution(payload: dict[str, Any], transport: str) -> tuple[st
                 "executor": "nexus-real-composite-backtest",
                 "failure_class": "research_lease_worker_phase_or_transport_mismatch",
             }
+        # Executed as scripts/agent_task_executor.py, so sys.path[0] is
+        # scripts/. Resolve only this checked-out repository root; never
+        # import workload code from a caller-supplied path or dispatch value.
+        repo_root = str(Path(__file__).resolve().parents[1])
+        if repo_root not in sys.path:
+            sys.path.insert(0, repo_root)
+        from nexus_agent_composite_runtime import (
+            RealResearchError, run_lease, verify_independently,
+        )
         try:
-            from nexus_agent_composite_runtime import (
-                RealResearchError, run_lease, verify_independently,
-            )
             source = os.environ.get("GITHUB_SHA", "")
             if worker == "qa-verifier-agent":
                 # QA has its own Agent Manager lease, but independently replays
@@ -274,7 +280,7 @@ def deterministic_execution(payload: dict[str, Any], transport: str) -> tuple[st
                 "auto_demo_promotion": False,
                 "live_enabled": False,
             }
-        except (RealResearchError, OSError, ValueError, RuntimeError) as exc:
+        except (OSError, ValueError, RuntimeError) as exc:
             return "failure", {
                 "executor": "nexus-real-composite-backtest",
                 "failure_class": "verified_research_execution_failed",
