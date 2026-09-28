@@ -77,7 +77,7 @@ def _risk_policy() -> dict[str, Any]:
         "policy_id": "nexus-product-paper-risk", "policy_version": "1.0.0",
         "max_position_fraction": "0.10", "max_aggregate_fraction": "0.30",
         "max_daily_loss_fraction": "0.05", "max_drawdown_fraction": "0.10",
-        "max_signals_per_session": 100, "max_signal_age_seconds": 300,
+        "max_signals_per_session": 0, "max_signal_age_seconds": 300,
         "min_stop_distance_fraction": "0.001", "max_stop_distance_fraction": "0.20",
         "min_target_distance_fraction": "0.001",
         "supported_symbols": list(PAPER_SUPPORTED_SYMBOLS),

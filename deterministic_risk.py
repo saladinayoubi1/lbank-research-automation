@@ -158,7 +158,12 @@ def evaluate_risk(
         raise RiskInputError("policy.max_position_fraction must be <= policy.max_aggregate_fraction")
     if min_stop_distance_fraction > max_stop_distance_fraction:
         raise RiskInputError("policy.min_stop_distance_fraction must be <= policy.max_stop_distance_fraction")
-    max_signals_per_session = _positive_int(policy["max_signals_per_session"], "policy.max_signals_per_session")
+    max_signals_per_session = policy["max_signals_per_session"]
+    if (isinstance(max_signals_per_session, bool) or not isinstance(max_signals_per_session, int)
+            or max_signals_per_session < 0):
+        raise RiskInputError("policy.max_signals_per_session must be a non-negative integer")
+    # Zero disables the arbitrary per-session signal COUNT ceiling. All actual
+    # monetary exposure, drawdown, loss, freshness and circuit gates remain mandatory.
     max_signal_age_seconds = _positive_int(policy["max_signal_age_seconds"], "policy.max_signal_age_seconds")
     supported_symbols = _bounded_string_collection(policy["supported_symbols"], "policy.supported_symbols")
     supported_timeframes = _bounded_string_collection(policy["supported_timeframes"], "policy.supported_timeframes")
@@ -204,7 +209,7 @@ def evaluate_risk(
         return _deny(signal, policy, "session_closed")
     if isinstance(state["signals_today"], bool) or not isinstance(state["signals_today"], int) or state["signals_today"] < 0:
         raise RiskInputError("signals_today must be a non-negative integer")
-    if state["signals_today"] >= max_signals_per_session:
+    if max_signals_per_session > 0 and state["signals_today"] >= max_signals_per_session:
         return _deny(signal, policy, "session_signal_limit")
 
     equity = _decimal(state["equity"], "state.equity", positive=True)
