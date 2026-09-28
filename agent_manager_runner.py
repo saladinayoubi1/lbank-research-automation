@@ -3,6 +3,8 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
+from urllib.parse import quote
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
@@ -55,7 +57,8 @@ def merge_definition(template: dict[str, Any], runtime: dict[str, Any] | None) -
         "verified_at", "blocked_reason", "dispatch_id", "dispatch_transport", "dispatched_at",
         "dispatch_mode", "offline_dispatch_digest", "offline_dispatch_bundle_created_at",
         "offline_result_bundle_ingested", "offline_result_bundle_digest",
-        "result_artifact_ingested", "result_received_at", "research_producer_lease_id", "routing_decision",
+        "result_artifact_ingested", "result_received_at", "research_producer_lease_id",
+        "research_cache_requested_sha", "research_cache_recovery_count", "research_cache_race_evidence", "routing_decision",
         "zero_idle_evidence", "waiting_from_status", "external_wait_state", "external_wait_started_at",
         "external_wait_completed_at", "external_wait_timeline"
     }
@@ -214,6 +217,194 @@ def recover_bounded_specialized_reasoning(config: dict[str, Any]) -> int:
     return recovered
 
 
+
+# The reviewed multi-timeframe workflow is the ONLY producer of immutable
+# replay + novelty-input transport. Never lease Research before it publishes
+# the exact current main SHA. Cache presence is a scheduling hint only: the
+# worker still checks full replay/delivery/ledger cryptographic provenance.
+RESEARCH_TASK = "P7-RESEARCH-COMPOSITE-001"
+RESEARCH_WAIT = "waiting_for_source_exact_immutable_research_input_cache"
+RESEARCH_CACHE_PREFIX = "nexus-composite-inputs-v1-"
+RESEARCH_WORKFLOW = "nexus_multitimeframe_strategy_discovery.yml"
+RESEARCH_FIRST_MISS = "required immutable input or evidence is not a regular file"
+_SHA40 = re.compile(r"^[0-9a-f]{40}$")
+
+
+def _research_context() -> tuple[str, str] | None:
+    repo = os.environ.get("GITHUB_REPOSITORY", "")
+    sha = os.environ.get("GITHUB_SHA", "")
+    ref = os.environ.get("GITHUB_REF", "")
+    if (
+        not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo)
+        or not _SHA40.fullmatch(sha)
+        or ref != "refs/heads/main"
+        or not (os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN"))
+    ):
+        return None
+    return repo, sha
+
+
+def research_cache_status() -> tuple[bool, str]:
+    """Only metadata readiness; the bounded worker separately verifies bytes."""
+    context = _research_context()
+    if context is None:
+        return False, "not_on_authorized_main_with_token"
+    repo, sha = context
+    from agent_transport import _api
+
+    key = RESEARCH_CACHE_PREFIX + sha
+    try:
+        response = _api(
+            "GET",
+            f"https://api.github.com/repos/{repo}/actions/caches?"
+            f"key={quote(key)}&ref=refs%2Fheads%2Fmain&per_page=20",
+        )
+        rows = response.get("actions_caches", []) if isinstance(response, dict) else []
+        if not isinstance(rows, list):
+            return False, "invalid_cache_metadata"
+        if any(
+            isinstance(row, dict) and row.get("key") == key
+            and row.get("ref") == "refs/heads/main"
+            and type(row.get("size_in_bytes")) is int
+            and row["size_in_bytes"] > 0
+            for row in rows
+        ):
+            return True, "source_exact_transport_cache_present"
+        return False, "source_exact_transport_cache_absent"
+    except (RuntimeError, OSError, ValueError) as exc:
+        return False, f"source_exact_cache_metadata_unavailable:{type(exc).__name__}"
+
+
+def _observed_initial_cache_race(task: dict[str, Any]) -> bool:
+    evidence = task.get("failure_evidence")
+    return bool(
+        task.get("id") == RESEARCH_TASK
+        and int(task.get("attempt", 0)) == 1
+        and int(task.get("research_cache_recovery_count", 0)) == 0
+        and task.get("failure_class") == "verified_research_execution_failed"
+        and isinstance(evidence, dict)
+        and evidence.get("executor") == "nexus-real-composite-backtest"
+        and evidence.get("reason") == RESEARCH_FIRST_MISS
+        and evidence.get("auto_demo_promotion") is False
+        and evidence.get("live_enabled") is False
+    )
+
+
+def _clear_abandoned_research_lease(task: dict[str, Any]) -> None:
+    """A replaced lease is rejected by ordinary lease-bound ingestion."""
+    for field in (
+        "assigned_worker", "verifier", "lease_id", "leased_at", "heartbeat_at",
+        "lease_expires_at", "dispatch_id", "dispatch_transport", "dispatched_at",
+        "external_wait_state", "external_wait_started_at",
+        "result_received_at",
+    ):
+        task[field] = None
+    task["result_artifact_ingested"] = False
+    task["triage_mode"] = None
+    task["required_output"] = None
+
+
+def apply_research_input_gate(config: dict[str, Any], *, ready: bool) -> str:
+    """Park only this exact task and recover ONE observed pre-cache first lease.
+
+    Never turn untrusted/failing numeric research into success. Refuse retries
+    after a second or different failure; independent RCA remains mandatory.
+    """
+    task = next((t for t in config.get("tasks", []) if t.get("id") == RESEARCH_TASK), None)
+    if task is None:
+        return "not_present"
+    status = task.get("status")
+    if status in {"DONE", "QUARANTINED", "OWNER_REQUIRED"}:
+        return "terminal_unchanged"
+
+    first_race = _observed_initial_cache_race(task)
+    if status in {"TRIAGE", "RUNNING", "BLOCKED"} and first_race:
+        if status == "RUNNING" and task.get("triage_mode") != "root_cause_first":
+            return "active_producer_unchanged"
+        if status == "BLOCKED" and task.get("blocked_reason") not in {
+            RESEARCH_WAIT, "independent root-cause analyst unavailable",
+        }:
+            return "unrelated_block_unchanged"
+        task["research_cache_race_evidence"] = {
+            "first_failed_lease_id": task.get("lease_id"),
+            "first_failure": deepcopy(task.get("failure_evidence")),
+            "previous_status": status,
+            "previous_triage_mode": task.get("triage_mode"),
+        }
+        _clear_abandoned_research_lease(task)
+        task["status"] = "BLOCKED"
+        task["blocked_reason"] = RESEARCH_WAIT
+        task["research_cache_recovery_count"] = 1
+        am.emit("research_first_source_cache_race_parked", task_id=RESEARCH_TASK)
+        status = "BLOCKED"
+
+    if not ready:
+        if status in {"PENDING", "READY"}:
+            task["status"] = "BLOCKED"
+            task["blocked_reason"] = RESEARCH_WAIT
+            am.emit("research_waiting_for_verified_input_transport", task_id=RESEARCH_TASK)
+            return "parked_waiting_cache"
+        return "wait_unchanged"
+
+    if status == "BLOCKED" and task.get("blocked_reason") == RESEARCH_WAIT:
+        task["status"] = "READY"
+        task["ready_at"] = am.iso()
+        task["blocked_reason"] = None
+        am.emit(
+            "research_source_cache_ready_released",
+            task_id=RESEARCH_TASK,
+            recovery_count=int(task.get("research_cache_recovery_count", 0)),
+        )
+        return "ready_for_producer_lease"
+    return "ready_no_change"
+
+
+def request_missing_research_cache(config: dict[str, Any], reason: str) -> str:
+    """One bounded main-only request; never blindly restart failed workflows."""
+    context = _research_context()
+    task = next((t for t in config.get("tasks", []) if t.get("id") == RESEARCH_TASK), None)
+    if context is None or task is None or task.get("blocked_reason") != RESEARCH_WAIT:
+        return "not_requested"
+    if reason not in {"source_exact_transport_cache_absent"}:
+        return "metadata_unverified_no_dispatch"
+    repo, sha = context
+    from agent_transport import _api
+
+    try:
+        runs = _api(
+            "GET",
+            f"https://api.github.com/repos/{repo}/actions/workflows/"
+            f"{RESEARCH_WORKFLOW}/runs?branch=main&per_page=30",
+        )
+        matches = [
+            row for row in runs.get("workflow_runs", [])
+            if isinstance(row, dict) and row.get("head_sha") == sha
+            and row.get("head_branch") == "main"
+            and row.get("event") in {"push", "workflow_dispatch"}
+        ]
+        if any(row.get("status") != "completed" for row in matches):
+            task["research_cache_requested_sha"] = sha
+            return "matching_research_workflow_already_running"
+        if any(row.get("conclusion") == "success" for row in matches):
+            return "successful_workflow_cache_pending_or_missing"
+        if matches:
+            return "matching_research_workflow_failed_review_required"
+        if task.get("research_cache_requested_sha") == sha:
+            return "prior_dispatch_pending_no_duplicate"
+        _api(
+            "POST",
+            f"https://api.github.com/repos/{repo}/actions/workflows/"
+            f"{RESEARCH_WORKFLOW}/dispatches",
+            {"ref": "main"},
+        )
+        task["research_cache_requested_sha"] = sha
+        am.emit("source_exact_research_cache_build_dispatched", task_id=RESEARCH_TASK, source_sha=sha)
+        return "source_exact_cache_build_dispatched"
+    except (RuntimeError, OSError, ValueError) as exc:
+        return f"research_cache_build_unavailable:{type(exc).__name__}"
+
+
+
 def load_runtime(path: Path) -> dict[str, Any] | None:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
@@ -234,7 +425,19 @@ def main() -> int:
     recover_completed_root_cause_analysis(config)
     recover_bounded_specialized_reasoning(config)
     block_unroutable_specialized_reasoning(config)
+    cache_ready, cache_reason = research_cache_status()
+    cache_gate = apply_research_input_gate(config, ready=cache_ready)
+    cache_build = request_missing_research_cache(config, cache_reason) if not cache_ready else "ready"
     summary = am.cycle(config)
+    summary["research_input_gate"] = {
+        "ready": cache_ready,
+        "reason": cache_reason,
+        "action": cache_gate,
+        "cache_build": cache_build,
+        "research_only": True,
+        "automatic_paper_promotion": False,
+        "live_trading_enabled": False,
+    }
     am.atomic_json(Path(args.runtime), config)
     am.atomic_json(Path(args.summary), summary)
     print(json.dumps(summary, ensure_ascii=False))
