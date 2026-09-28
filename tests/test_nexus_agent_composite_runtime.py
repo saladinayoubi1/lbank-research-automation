@@ -211,7 +211,7 @@ def test_invalid_real_research_worker_never_fetches_archive(tmp_path, monkeypatc
     monkeypatch.setenv("NEXUS_TASK_PAYLOAD_B64", base64.urlsafe_b64encode(json.dumps(payload).encode()).decode())
     monkeypatch.setenv("GITHUB_REPOSITORY", prepare.REPO)
     monkeypatch.setenv("GITHUB_SHA", SOURCE)
-    with pytest.raises(prepare.ResearchPreparationError, match="untrusted"):
+    with pytest.raises(ValueError, match="producer binding absent"):
         prepare.prepare("producer", tmp_path / "stage")
     assert not (tmp_path / "stage").exists()
 
@@ -227,3 +227,60 @@ def test_manager_routes_production_research_to_dedicated_agent_and_separate_qa()
     verification = manager.rank_worker_candidates(spec, workers, verifier_only=True)
     assert verification[0]["worker_id"] == "qa-verifier-agent"
     assert verification[0]["eligible"]
+
+
+
+def test_research_receipt_survives_independent_agent_manager_verification(tmp_path, monkeypatch):
+    import agent_transport
+    monkeypatch.setattr(manager, "EVENT_PATH", tmp_path / "manager-events.jsonl")
+    cfg = manager.load_config()
+    task = next(t for t in cfg["tasks"] if t["id"] == prepare.TASK_ID)
+    task.update(status="RUNNING", assigned_worker="research-agent",
+                producer="research-agent", lease_id=LEASE, attempt=1)
+    producer = {
+        "receipt_digest": "b" * 64,
+        "source_sha": SOURCE,
+        "independent_qa_complete": False,
+        "auto_demo_promotion": False,
+        "live_enabled": False,
+    }
+    manager.record_result(cfg, task["id"], "research-agent", "success", producer)
+    assert task["status"] == "VERIFYING"
+    assert task["research_producer_lease_id"] == LEASE
+    assert task["assigned_worker"] == "qa-verifier-agent"
+    assert task["lease_id"] != LEASE
+    envelope = agent_transport.envelope_for(task)
+    assert envelope["research_producer_lease_id"] == LEASE
+    assert envelope["research_producer_receipt_digest"] == "b" * 64
+    assert envelope["research_producer_source_sha"] == SOURCE
+    from scripts.agent_task_executor import decode_payload
+    assert decode_payload(base64.urlsafe_b64encode(json.dumps(envelope).encode()).decode()) == envelope
+    forged = {
+        "producer_receipt_digest": "c" * 64,
+        "producer_lease_id": LEASE,
+        "source_sha": SOURCE,
+        "qa_digest": "d" * 64,
+        "independent_qa_complete": True,
+        "auto_demo_promotion": False,
+        "live_enabled": False,
+    }
+    with pytest.raises(ValueError, match="independent Research QA"):
+        manager.record_result(cfg, task["id"], "qa-verifier-agent", "success", forged)
+    assert task["status"] == "VERIFYING"
+    valid = {**forged, "producer_receipt_digest": "b" * 64}
+    manager.record_result(cfg, task["id"], "qa-verifier-agent", "success", valid)
+    assert task["status"] == "DONE"
+    assert task["verification_evidence"]["qa_digest"] == "d" * 64
+
+
+def test_research_qa_payload_rejects_missing_producer_provenance():
+    from scripts.agent_task_executor import decode_payload
+    payload = {
+        "schema_version": 2, "task_id": prepare.TASK_ID,
+        "lease_id": "fresh-qa-lease", "correlation_id": "c", "dispatch_id": "d",
+        "worker_id": "qa-verifier-agent", "transport": "github-cloud",
+        "phase": 7, "gate": 17, "title": "research", "required_capabilities": ["data_validation"],
+        "acceptance": ["independent replay"], "authority": 2, "attempt": 1,
+    }
+    with pytest.raises(ValueError, match="producer binding absent"):
+        decode_payload(base64.urlsafe_b64encode(json.dumps(payload).encode()).decode())
