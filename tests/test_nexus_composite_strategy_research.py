@@ -103,7 +103,8 @@ def test_config_novelty_progresses_without_retrying_same_failed_grammar(tmp_path
     second = engine.run(tmp_path, tmp_path / "two", "a" * 40, state_path)
     assert second["selected"]["fingerprint"] != first["selected"]["fingerprint"]
     assert second["parameter_configs_tested_cumulative"] == 2
-    assert second["distinct_mechanisms_tested_cumulative"] == 1
+    assert second["distinct_mechanisms_tested_cumulative"] == 2
+    assert second["selected"]["mechanism"] != first["selected"]["mechanism"]
 
 
 def test_novelty_ledger_tamper_and_authority_widening_fail_closed(tmp_path: Path):
@@ -135,3 +136,22 @@ def test_strategy_choice_is_data_and_schema_gated_not_an_arbitrary_count():
     with pytest.raises(engine.CompositeResearchError, match="unreviewed"):
         engine.signal_for(f, {"mechanism": "unverified_private_depth_strategy",
                               "risk_variant": 0})
+
+
+def test_select_next_explores_all_distinct_mechanisms_before_risk_variants():
+    state = engine.empty_ledger()
+    selected_mechanisms = []
+    for _ in range(len(engine.MECHANISMS)):
+        next_config = engine.select_next(state)
+        assert next_config is not None
+        selected_mechanisms.append(next_config["mechanism"])
+        core = {k: v for k, v in state.items() if k != "ledger_digest"}
+        core["mechanisms_evaluated"] = sorted(set([*core["mechanisms_evaluated"], next_config["mechanism"]]))
+        core["config_fingerprints_evaluated"].append(next_config["fingerprint"])
+        state = {**core, "ledger_digest": engine.digest(core)}
+    assert len(set(selected_mechanisms)) == len(engine.MECHANISMS)
+    # The same reviewed mechanism may now be retested ONLY as an explicit
+    # labeled robustness variant after all distinct mechanisms had a turn.
+    next_config = engine.select_next(state)
+    assert next_config["mechanism"] in selected_mechanisms
+    assert next_config["risk_variant"] == 1

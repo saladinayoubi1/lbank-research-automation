@@ -202,13 +202,30 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p build/discovery
-          artifact_id="$(gh api \
+          # Only restore the newest successful MAIN rotation, never an older PR/fork
+          # artifact or an arbitrary first API result.
+          prior_meta="$(gh api \
             -H 'Accept: application/vnd.github+json' \
-            "repos/$GITHUB_REPOSITORY/actions/artifacts?name=$STATE_ARTIFACT&per_page=1" \
-            --jq '.artifacts[0].id // empty')"
+            "repos/$GITHUB_REPOSITORY/actions/artifacts?name=$STATE_ARTIFACT&per_page=100" \
+            --jq '[.artifacts[] | select(.expired == false and .workflow_run.head_branch == "main")] | sort_by(.created_at) | reverse | .[0] // {}')"
+          artifact_id="$(jq -r '.id // empty' <<<"$prior_meta")"
           if [ -n "$artifact_id" ]; then
+            prior_run_id="$(jq -r '.workflow_run.id // empty' <<<"$prior_meta")"
+            test "$prior_run_id" -ge 1
+            verified="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$prior_run_id" \
+              --jq 'if .name == "NEXUS strategy discovery rotation" and .status == "completed" and .conclusion == "success" and .head_branch == "main" and .repository.full_name == "saladinayoubi1/lbank-research-automation" then "verified" else "rejected" end')"
+            test "$verified" = "verified"
             gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" > build/discovery-state.zip
             unzip -q build/discovery-state.zip -d build/discovery
+            python - <<'PY'
+          from pathlib import Path
+          from nexus_strategy_discovery_rotation import load_state
+          from nexus_strategy_discovery_feedback import load_state as load_feedback
+          state = load_state(Path("build/discovery/rotation-state.json"))
+          feedback = load_feedback(Path("build/discovery/feedback-state.json"))
+          print("restored_dispatch_count=" + str(state["dispatch_count"]))
+          print("restored_feedback_count=" + str(len(feedback["outcomes"])))
+          PY
           fi
 
       - name: Reconcile previously dispatched Research outcome
@@ -225,6 +242,19 @@ jobs:
           stage="$(python -c 'import json; print(json.load(open("build/discovery/last-research-run.json"))["stage"])')"
           experiment_sha256="$(python -c 'import json; print(json.load(open("build/discovery/last-research-run.json"))["experiment_sha256"])')"
           gh run view "$run_id" --repo "$GITHUB_REPOSITORY"             --json databaseId,status,conclusion,headSha,workflowName             > build/discovery/research-run-status.json
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" > build/discovery/research-run-metadata.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          receipt = json.loads(Path("build/discovery/last-research-run.json").read_text())
+          run = json.loads(Path("build/discovery/research-run-status.json").read_text())
+          meta = json.loads(Path("build/discovery/research-run-metadata.json").read_text())
+          assert str(run["databaseId"]) == str(meta["id"]) == str(receipt["research_run_id"])
+          assert run["headSha"] == meta["head_sha"] == receipt["source_sha"]
+          assert meta["path"] == receipt["workflow"]
+          assert meta["head_branch"] == "main"
+          assert meta["repository"]["full_name"] == "saladinayoubi1/lbank-research-automation"
+          PY
           status="$(python -c 'import json; print(json.load(open("build/discovery/research-run-status.json"))["status"])')"
           if [ "$status" != "completed" ]; then
             echo "Previous Research run $run_id is still $status; do not overlap autonomous searches."
@@ -233,8 +263,9 @@ jobs:
           fi
           rm -rf build/discovery/research-outcome-artifacts
           mkdir -p build/discovery/research-outcome-artifacts
-          gh run download "$run_id" --repo "$GITHUB_REPOSITORY"             --dir build/discovery/research-outcome-artifacts || true
-          python nexus_strategy_discovery_feedback.py             --state build/discovery/feedback-state.json             --run-json build/discovery/research-run-status.json             --artifact-root build/discovery/research-outcome-artifacts             --stage "$stage"             --experiment-sha256 "$experiment_sha256"             --output build/discovery/feedback-state.json
+          gh run download "$run_id" --repo "$GITHUB_REPOSITORY"             --dir build/discovery/research-outcome-artifacts
+          expected_sha="$(python -c 'import json; print(json.load(open("build/discovery/last-research-run.json"))["source_sha"])')"
+          python nexus_strategy_discovery_feedback.py             --state build/discovery/feedback-state.json             --run-json build/discovery/research-run-status.json             --artifact-root build/discovery/research-outcome-artifacts             --stage "$stage"             --experiment-sha256 "$experiment_sha256"             --expected-source-sha "$expected_sha"             --output build/discovery/feedback-state.json
           rm -f "$receipt"
 
       - name: Verify discovery surface and select one stage
@@ -253,10 +284,22 @@ jobs:
           stage="$(python -c 'import json; print(json.load(open("build/discovery/dispatch-plan.json"))["stage"])')"
           experiment_sha256="$(python -c 'import json; print(json.load(open("build/discovery/dispatch-plan.json"))["experiment_sha256"])')"
           dispatch_sha="$(gh api "repos/$GITHUB_REPOSITORY/branches/main" --jq '.commit.sha')"
+          prior_runs="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow "$workflow" \
+            --branch main --event workflow_dispatch --limit 100 --json databaseId)"
+          dispatch_started="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           gh workflow run "$workflow" --ref main
           research_run_id=""
           for attempt in $(seq 1 15); do
-            research_run_id="$(gh run list --repo "$GITHUB_REPOSITORY"               --workflow "$workflow" --branch main --event workflow_dispatch --limit 20               --json databaseId,headSha,createdAt               --jq "[.[] | select(.headSha == \"$dispatch_sha\")] | sort_by(.createdAt) | reverse | .[0].databaseId // empty")"
+            # An old successful run at the same commit must NEVER be mistaken
+            # for the newly accepted dispatch, or the cursor will replay.
+            research_run_id="$(gh run list --repo "$GITHUB_REPOSITORY" \
+              --workflow "$workflow" --branch main --event workflow_dispatch --limit 100 \
+              --json databaseId,headSha,createdAt \
+              | jq -r --arg sha "$dispatch_sha" --arg started "$dispatch_started" \
+                --argjson before "$prior_runs" \
+                '[.[] | select(.headSha == $sha and .createdAt >= $started) |
+                    select(.databaseId as $id | ($before | map(.databaseId) | index($id)) == null)]
+                 | if length == 1 then .[0].databaseId else empty end')"
             if [ -n "$research_run_id" ]; then
               break
             fi
