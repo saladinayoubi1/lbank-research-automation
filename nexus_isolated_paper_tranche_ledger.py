@@ -362,7 +362,8 @@ def close_tranche(
     result = deepcopy(dict(book))
     result.pop("book_digest", None)
     result["positions"] = [row for row in book["positions"] if row["position_id"] != position_id]
-    _mark_equity(result, remaining_marks)
+    # A risk-reducing close must never depend on unrelated positions' fresh
+    # marks; stale/missing marks deny NEW opens, not existing emergency exits.
     qty = _decimal(lot["quantity"], "quantity")
     entry = _decimal(lot["entry"], "entry")
     fee = qty * price * fee_bps / Decimal(10_000)
