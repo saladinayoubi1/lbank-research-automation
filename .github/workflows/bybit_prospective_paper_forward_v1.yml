@@ -23,6 +23,7 @@ on:
       - ".github/workflows/bybit_prospective_paper_forward_v1.yml"
       - "bybit_prospective_paper_forward_v1.py"
       - "nexus_paper_terminal_rebind.py"
+      - "nexus_paper_terminal_legacy_archive.py"
       - "nexus_paper_runtime_attestation.py"
       - "requirements.lock"
       - "experiments/bybit_prospective_paper_forward_v1.json"
