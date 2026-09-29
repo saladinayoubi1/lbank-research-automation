@@ -191,6 +191,71 @@ def test_recent_coordinator_proof_does_not_accept_failed_run(monkeypatch):
     with pytest.raises(selector.QaFrontierError, match="no verified"):
         selector.latest_coordinator(selector.REPO)
 
+
+def test_frontier_prefers_exact_current_source_over_newer_stale_coordinator(monkeypatch):
+    mock_proofs(monkeypatch)
+    original = selector.api
+    monkeypatch.setenv("GITHUB_SHA", SOURCE)
+
+    def raced(endpoint, *, binary=False):
+        result = original(endpoint, binary=binary)
+        if endpoint.endswith("workflows/fast-agent-coordinator.yml/runs?branch=main&per_page=12"):
+            result["workflow_runs"].append({
+                "id": 9999999, "head_sha": "b" * 40, "head_branch": "main",
+                "path": ".github/workflows/fast-agent-coordinator.yml",
+                "event": "schedule", "status": "completed", "conclusion": "success",
+                "created_at": "2026-09-29T00:05:00Z",
+                "repository": {"full_name": selector.REPO},
+                "head_repository": {"full_name": selector.REPO},
+            })
+        if endpoint.endswith("actions/runs/9999999/artifacts?per_page=30"):
+            raise AssertionError("stale-source Coordinator must not outrank exact current source")
+        return result
+
+    monkeypatch.setattr(selector, "api", raced)
+    artifact_id, manager = selector.latest_coordinator(
+        selector.REPO, required_task_id=FIFTH,
+    )
+    assert artifact_id == 901
+    assert [t["id"] for t in manager["tasks"]] == [FIFTH]
+
+
+def test_frontier_skips_schema_lag_snapshot_missing_required_predecessor(monkeypatch):
+    mock_proofs(monkeypatch)
+    original = selector.api
+    monkeypatch.setenv("GITHUB_SHA", SOURCE)
+    empty_manager = zipped("agent_manager_runtime.json", {"tasks": []})
+
+    def raced(endpoint, *, binary=False):
+        if binary and endpoint.endswith("actions/artifacts/906/zip"):
+            return empty_manager
+        result = original(endpoint, binary=binary)
+        if endpoint.endswith("workflows/fast-agent-coordinator.yml/runs?branch=main&per_page=12"):
+            result["workflow_runs"].append({
+                "id": 2222222, "head_sha": SOURCE, "head_branch": "main",
+                "path": ".github/workflows/fast-agent-coordinator.yml",
+                "event": "push", "status": "completed", "conclusion": "success",
+                "created_at": "2026-09-29T00:05:00Z",
+                "repository": {"full_name": selector.REPO},
+                "head_repository": {"full_name": selector.REPO},
+            })
+        elif endpoint.endswith("actions/runs/2222222/artifacts?per_page=30"):
+            return {"artifacts": [{
+                "id": 906, "name": "fast-agent-status-2222222",
+                "size_in_bytes": len(empty_manager), "expired": False,
+                "workflow_run": {"id": 2222222, "head_sha": SOURCE,
+                                 "head_branch": "main"},
+            }]}
+        return result
+
+    monkeypatch.setattr(selector, "api", raced)
+    artifact_id, manager = selector.latest_coordinator(
+        selector.REPO, required_task_id=FIFTH,
+    )
+    assert artifact_id == 901
+    assert manager["tasks"][0]["id"] == FIFTH
+
+
 def _historical_proofs(monkeypatch, *, tamper_pin=False, untrusted_actor=False,
                        divergent_source=False):
     expected = mock_proofs(monkeypatch)
