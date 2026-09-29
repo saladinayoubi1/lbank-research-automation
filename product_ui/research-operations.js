@@ -68,6 +68,25 @@
       '<strong>' + safe(value) + '</strong>' +
       (tip ? '<small>' + safe(tip) + '</small>' : '') + '</div>';
   }
+  function numericEvidence(evidence, verified) {
+    var rows = evidence && Array.isArray(evidence.validation) ?
+      evidence.validation.filter(function(v){return v && typeof v === 'object';}).slice(0,48) : [];
+    if (!rows.length) return '';
+    function cell(n, suffix) {
+      if (n === null || n === undefined || n === '' || !Number.isFinite(Number(n))) return '—';
+      return Number(n).toLocaleString('fa-IR',{maximumFractionDigits:3}) + (suffix || '');
+    }
+    return '<div class="ops-results"><div class="ops-results-heading"><div><span class="ops-eyebrow">NUMERIC VALIDATION / HISTORICAL</span>' +
+      '<h4>نتایج عددی ثبت‌شده</h4></div>' + tag(verified ? 'DONE' : 'UNKNOWN',
+        verified ? 'تأیید بازپخش مستقل' : 'فقط گزارش تولیدکننده') + '</div>' +
+      '<div class="ops-results-note">نمونهٔ اعتبارسنجی تاریخی است؛ OOS دست‌نخورده، سودآوری یا مجوز دمو محسوب نمی‌شود.</div>' +
+      '<div class="ops-results-scroll"><table><thead><tr><th>نماد / TF</th><th>هزینه</th><th>معاملات</th><th>بازده خالص</th><th>افت سرمایه</th><th>برد</th><th>PF</th></tr></thead><tbody>' +
+      rows.map(function (v) {return '<tr><td>' + safe(v.symbol) + '<small>' + safe(v.timeframe) + '</small></td>' +
+        '<td>' + safe(v.profile) + '</td><td>' + cell(v.closed_round_trips) + '</td>' +
+        '<td>' + cell(v.net_return_pct,'%') + '</td><td>' + cell(v.max_drawdown_pct,'%') + '</td>' +
+        '<td>' + cell(v.win_rate_pct,'%') + '</td><td>' + cell(v.profit_factor) + '</td></tr>';}).join('') +
+      '</tbody></table></div></div>';
+  }
   function countTile(label, value, note, kind) {
     return '<div class="ops-stat ' + (kind ? 'ops-stat--' + kind : '') + '">' +
       '<span>' + safe(label) + '</span><strong>' + safe(value) +
@@ -148,6 +167,7 @@
       'وضعیت DONE یا موفقیت CI به‌تنهایی مدرک بک‌تست معتبر نیست.') + '</small></div>' +
       (reason ? '<div class="ops-block"><span>BLOCKER / REJECTION</span><p>' + safe(reason) + '</p></div>' : '') +
       '<div class="ops-details">' + fields.join('') + '</div>' +
+      numericEvidence(p,proof) +
       '<div class="ops-digests"><div><span>Producer receipt</span>' + code(p.receipt_digest || '—') +
       '</div><div><span>Independent QA</span>' + code(qa.qa_digest || '—') + '</div>' +
       '<div><span>Novelty ledger</span>' + code(p.ledger_digest || '—') + '</div></div>' +
@@ -268,6 +288,8 @@
     }
     var tasks=tasksOf(m), candidate=mainTask(tasks), verified=tasks.filter(receiptVerified).length;
     var current=fresh(m), blocker=tasks.find(function(t){return BLOCKED.indexOf(t.status)!==-1;});
+    var lastVerified=tasks.filter(receiptVerified).slice(-1)[0];
+    var lastNumeric=candidate && candidate.result_evidence && Array.isArray(candidate.result_evidence.validation) ? candidate : lastVerified;
     host.innerHTML='<div class="ops-research-title"><span class="ops-eyebrow">AUTONOMOUS / EVIDENCE-BOUND</span>' +
       '<h3>چرخهٔ مستقل Research Agent</h3><p>مسیر خودکار با اجرای دستی presetهای پایین صفحه یکی نیست.</p></div>' +
       '<div class="ops-research-cards">' +
@@ -275,6 +297,7 @@
       countTile('تأیید QA',verified,'Receiptهای مستقلاً تطبیق‌داده‌شده') +
       countTile('مکانیزم',candidate&&candidate.result_evidence&&candidate.result_evidence.mechanism || 'هنوز تأیید نشده','فقط از خروجی عددی ثبت‌شده') +
       countTile('گیت دمو','قفل','پذیرش جداگانه؛ هیچ ارتقای خودکار') + '</div>' +
+      (lastNumeric ? numericEvidence(lastNumeric.result_evidence,receiptVerified(lastNumeric)) : '') +
       (blocker?'<div class="ops-block"><span>BLOCKER</span><p>' + safe(blocker.id) + ': ' +
         safe(blocker.blocked_reason||blocker.failure_class||'علت نامشخص') + '</p></div>':'') +
       '<div class="ops-research-link">جزئیات lease، مسیر اجرا و مدارک QA در تب «عامل‌ها و صف» قابل بررسی است.</div>';
