@@ -9,6 +9,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+from nexus_research_missions import SECOND, TASKS, ANCESTRY, validate_ancestry
+
 QUEUE_PATH = Path("config/nexus-agent-manager.json")
 STATE_PATH = Path("data/agent_coordination/manager_state.json")
 EVENT_PATH = Path("data/agent_coordination/manager_events.jsonl")
@@ -389,6 +391,11 @@ def assign_ready_tasks(config: dict[str, Any], now: datetime) -> None:
 
         routing_rows = rank_worker_candidates(task, workers, active_load=active_load)
         eligible_rows = [row for row in routing_rows if row["eligible"]]
+        if task.get("id") in TASKS:
+            # Actual numerical Research leases are not generic cloud pytest
+            # work: only the dedicated Research Agent can be their producer.
+            eligible_rows = [row for row in eligible_rows
+                             if row["worker_id"] == "research-agent"]
         if not eligible_rows:
             task["routing_decision"] = {
                 "evaluated_at": iso(now),
@@ -499,6 +506,10 @@ def request_verification(config: dict[str, Any], task: dict[str, Any], now: date
         verifier_only=True,
         active_load=active_worker_load(config, exclude_task=task),
     )
+    if task.get("id") in TASKS:
+        # Reject a generic verifier even if its dynamic routing score is
+        # higher: independent numerical replay requires the designated QA.
+        candidates = [w for w in candidates if w.id == "qa-verifier-agent"]
     if not candidates:
         task["status"] = "BLOCKED"
         task["blocked_reason"] = "independent verifier unavailable"
@@ -523,7 +534,7 @@ def record_result(config: dict[str, Any], task_id: str, worker_id: str, outcome:
     evidence = evidence or {}
     if outcome == "success":
         if task.get("status") == "VERIFYING":
-            if task_id == "P7-RESEARCH-COMPOSITE-001":
+            if task_id in TASKS:
                 original = task.get("result_evidence", {})
                 if (
                     worker_id == task.get("producer")
@@ -538,6 +549,13 @@ def record_result(config: dict[str, Any], task_id: str, worker_id: str, outcome:
                     or len(evidence["qa_digest"]) != 64
                 ):
                     raise ValueError("independent Research QA has not verified this exact producer")
+                if task_id == SECOND:
+                    ancestor = validate_ancestry({k: task[k] for k in ANCESTRY if k in task})
+                    if (
+                        original.get("prior_ledger_digest") != ancestor["research_predecessor_ledger_digest"]
+                        or original.get("mechanism") == ancestor["research_predecessor_mechanism"]
+                    ):
+                        raise ValueError("second Research QA did not prove causal frontier advancement")
             task["status"] = "DONE"
             task["verified_at"] = iso()
             task["verification_evidence"] = evidence
@@ -546,7 +564,7 @@ def record_result(config: dict[str, Any], task_id: str, worker_id: str, outcome:
             # An independent QA lease has its own lease_id. Preserve the
             # producer's exact identity and digest to prevent QA from
             # accidentally verifying an unrelated/latest Research artifact.
-            if task_id == "P7-RESEARCH-COMPOSITE-001":
+            if task_id in TASKS:
                 if (
                     not isinstance(evidence.get("receipt_digest"), str)
                     or len(evidence["receipt_digest"]) != 64
@@ -555,6 +573,13 @@ def record_result(config: dict[str, Any], task_id: str, worker_id: str, outcome:
                     or evidence.get("live_enabled") is not False
                 ):
                     raise ValueError("real research producer receipt or authority invalid")
+                if task_id == SECOND:
+                    ancestor = validate_ancestry({k: task[k] for k in ANCESTRY if k in task})
+                    if (
+                        evidence.get("prior_ledger_digest") != ancestor["research_predecessor_ledger_digest"]
+                        or evidence.get("mechanism") == ancestor["research_predecessor_mechanism"]
+                    ):
+                        raise ValueError("successor Research producer did not execute a different QA-bound mechanism")
                 task["research_producer_lease_id"] = task["lease_id"]
             task["result_evidence"] = evidence
             request_verification(config, task, utcnow())
