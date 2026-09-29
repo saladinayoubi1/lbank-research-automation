@@ -36,6 +36,7 @@ MECHANISMS = (
     "cross_pair_relative_reclaim",
     "lagged_peer_impulse_confirmation",
     "peer_shock_noncontagion_rebound",
+    "relative_momentum_reacceleration",
 )
 # Distinct entry mechanisms vs risk/feature parameter variations are explicitly
 # separately labeled; eight configurations do NOT count as eight new edges.
@@ -182,6 +183,15 @@ def build_features(frames: dict[str, pd.DataFrame], *, peer_15m: pd.DataFrame | 
             peer_hour_return.shift(2).abs().rolling(96, min_periods=96).median()
         )
         f["lagged_own_response"] = close.pct_change(4).shift(1)
+        # Materially distinct peer-relative momentum continuation, not peer shock
+        # contagion or relative-price mean reversion. Both same-grid 15m bars
+        # are closed at this decision; baseline ends two bars earlier.
+        relative_momentum = close.pct_change(4) - peer_ohlcv["close"].pct_change(4)
+        f["relative_momentum"] = relative_momentum
+        f["relative_momentum_previous"] = relative_momentum.shift(1)
+        f["relative_momentum_baseline"] = (
+            relative_momentum.shift(2).rolling(96, min_periods=96).median()
+        )
     return f
 
 
@@ -238,6 +248,22 @@ def signal_for(frame: pd.DataFrame, config: dict[str, Any]) -> np.ndarray:
             lo < frame["prior_lo"]) & (c > frame["prior_lo"]) & (
             c > o) & (frame["rel_vol"] >= 1.10) & (
             np.isfinite(shock) & np.isfinite(baseline) & np.isfinite(own_before))
+    elif mechanism == "relative_momentum_reacceleration":
+        required = {"relative_momentum", "relative_momentum_previous",
+                    "relative_momentum_baseline"}
+        if not required <= set(frame.columns):
+            raise CompositeResearchError("relative momentum requires exact verified aligned peer history")
+        rel = frame["relative_momentum"]
+        previous = frame["relative_momentum_previous"]
+        baseline = frame["relative_momentum_baseline"]
+        # Target leads peer, decelerates briefly, then visibly re-accelerates
+        # at THIS close during completed higher-timeframe trend confirmation.
+        # Only NEXT own 15m open can fill; no fabricated spread/peer short.
+        s = (frame["h4_up"] == 1) & (frame["h1_vol_ok"] == 1) & (
+            previous > baseline) & (previous > .0015) & (
+            rel > previous + .0010) & (rel > .0030) & (
+            c > frame["prior_hi"]) & (c > o) & (frame["rel_vol"] >= 1.0) & (
+            np.isfinite(rel) & np.isfinite(previous) & np.isfinite(baseline))
     elif mechanism == "cross_pair_relative_reclaim":
         if not {"cross_pair_relative_z", "cross_pair_relative_z_previous"} <= set(frame.columns):
             raise CompositeResearchError("cross-pair mechanism requires exact aligned verified peer history")
@@ -415,7 +441,7 @@ def run(archive_root: Path, output: Path, source_sha: str, previous: Path | None
                   for tf in ("minute15", "hour1", "hour4")}
         peer = None
         if nxt["mechanism"] in {"cross_pair_relative_reclaim", "lagged_peer_impulse_confirmation",
-                                "peer_shock_noncontagion_rebound"}:
+                                "peer_shock_noncontagion_rebound", "relative_momentum_reacceleration"}:
             # Current official replay has exactly BTC/ETH; never pretend to
             # possess missing SOL/XRP or synthetic peer order flow/L2.
             if len(SYMBOLS) != 2:
