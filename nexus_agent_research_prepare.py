@@ -22,7 +22,7 @@ from typing import Any
 
 from nexus_composite_strategy_research import ARCHIVE_SHA256, digest, load_ledger, safe_write, select_next
 from scripts.agent_task_executor import decode_payload
-from nexus_research_missions import FIRST, SECOND, THIRD, TASKS, ANCESTRY, validate_ancestry
+from nexus_research_missions import FIRST, PREDECESSOR, TASKS, ANCESTRY, validate_ancestry
 from scripts.select_nexus_bybit_replay_artifact import (
     validate_candidate, safe_extract, sha256_file,
 )
@@ -77,7 +77,7 @@ def _classify(mode: str) -> tuple[dict[str, Any] | None, str]:
         or not re.fullmatch(r"[a-zA-Z0-9_-]{1,160}", payload["research_producer_lease_id"])
     ):
         raise ResearchPreparationError("QA original producer identity is untrusted")
-    if payload["task_id"] in {SECOND, THIRD}:
+    if payload["task_id"] in PREDECESSOR:
         validate_ancestry({key: payload[key] for key in ANCESTRY})
     return payload, expected_mode
 
@@ -184,7 +184,7 @@ def prepare(mode: str, root: Path) -> dict[str, Any]:
     root.mkdir(parents=True)
     predecessor = (
         validate_ancestry({key: payload[key] for key in ANCESTRY})
-        if payload["task_id"] in {SECOND, THIRD} else None
+        if payload["task_id"] in PREDECESSOR else None
     )
     info = {
         "research_task": True,
