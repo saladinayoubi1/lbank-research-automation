@@ -190,3 +190,58 @@ def test_owner_bootstrap_imports_task_scheduler_helpers_at_script_scope() -> Non
     core_install = text.index("$CurrentStage = 'core_autostart_install'")
     task_verify = text.index("$CurrentStage = 'task_verify'")
     assert import_at_script_scope < core_install < task_verify
+
+def test_private_clone_launch_skips_all_global_owner_bootstrap_side_effects() -> None:
+    text = read(ENTRY)
+    marker = "function isIsolatedProfileOrSmoke(argv) {"
+    assert text.count(marker) == 1
+    for guard in (
+        r"/^--nexus-install-smoke=\d+$/",
+        r"/^--nexus-clone-smoke(?:=|$)/i",
+        r"/^--user-data-dir(?:=|$)/i",
+        "if (isIsolatedProfileOrSmoke(process.argv)) return;",
+    ):
+        assert guard in text
+    isolated = text.index("if (isIsolatedProfileOrSmoke(process.argv)) return;")
+    for global_effect in (
+        "void reconcileRunnerFromGui({ force: true });",
+        "startRunnerSupervisor();",
+        "startProspectivePaperSyncSupervisor();",
+        "void startOwnerAutostartWithRetry(sourceSha);",
+    ):
+        assert isolated < text.index(global_effect, isolated)
+    # Isolated launches still start their own app/sidecar in main.js.
+    assert text.index("require('./main.js')") > isolated
+
+
+def test_private_clone_guard_behaviour_in_node() -> None:
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("Node is unavailable; structural guard test still runs")
+    source = read(ENTRY)
+    start = source.index("function isIsolatedProfileOrSmoke(argv) {")
+    end = source.index("\n\napp.whenReady().then", start)
+    helper = source[start:end]
+    program = helper + r"""
+const samples = [
+  [ ['NEXUS Personal Pro.exe'], false ],
+  [ ['app.exe', '--nexus-install-smoke=36554858225'], true ],
+  [ ['app.exe', '--nexus-clone-smoke=7e9f07ba'], true ],
+  [ ['app.exe', '--user-data-dir=E:\\private\\clone'], true ],
+  [ ['app.exe', '--user-data-dir', 'E:\\private\\clone'], true ],
+  [ ['app.exe', '--USER-DATA-DIR=E:\\private\\clone'], true ],
+  [ ['app.exe', '--user-data-directory=E:\\private\\clone'], false ],
+  [ ['app.exe', '--other-flag=1'], false ],
+];
+for (const [argv, want] of samples) {
+  const actual = isIsolatedProfileOrSmoke(argv);
+  if (actual !== want) throw new Error(JSON.stringify({argv, actual, want}));
+}
+console.log('ISOLATED_PROFILE_BOOTSTRAP_GUARD=PASS');
+"""
+    result = subprocess.run(
+        [node, "-e", program],
+        cwd=ROOT, text=True, capture_output=True, check=False, timeout=15,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "ISOLATED_PROFILE_BOOTSTRAP_GUARD=PASS" in result.stdout
