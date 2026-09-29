@@ -239,3 +239,29 @@ def test_pro_ui_displays_frozen_month_with_filters_and_no_approval_claim():
     assert "auto_demo_admission !== false" in js
     assert "historicalMonth(m) +" in js
     assert ".ops-month-table-wrap" in css
+
+
+def test_malformed_closed_trades_fails_closed_without_taking_full_mission_down(
+    archive, monkeypatch,
+):
+    root, _ = archive
+    p = root / "review-table.csv"
+    rows = list(csv.DictReader(io.StringIO(p.read_text())))
+    rows[0]["closed_trades"] = "NaN"
+    stream = io.StringIO(newline="")
+    writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
+    writer.writeheader()
+    writer.writerows(rows)
+    raw = stream.getvalue().encode()
+    p.write_bytes(raw)
+    updated = json.loads((root / "summary.json").read_text())
+    updated["report_sha256"] = hashlib.sha256(raw).hexdigest()
+    (root / "summary.json").write_bytes(_encoded(updated))
+    monkeypatch.setenv("NEXUS_HISTORICAL_MONTHLY_ARCHIVE_DIR", str(root))
+    monkeypatch.setenv("NEXUS_HISTORICAL_MONTHLY_REPORT_SHA256",
+                       updated["report_sha256"])
+    monkeypatch.setenv("NEXUS_HISTORICAL_MONTHLY_CODE_SHA", SOURCE)
+    result = archive_view()
+    assert result["status"] == "unavailable"
+    assert result["cells"] == []
+    assert result["live_trading_authority"] is False
