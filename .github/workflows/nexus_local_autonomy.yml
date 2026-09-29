@@ -11,12 +11,14 @@ on:
       - '.nexus/autonomous-queue.json'
       - 'config/nexus-mission-queue.json'
       - 'scripts/nexus_local_worker.py'
+      - 'scripts/nexus_local_autonomy_receipt.py'
       - 'scripts/nexus_orchestrator.js'
       - 'scripts/nexus_ai_council.js'
       - 'scripts/nexus_brain_core.js'
       - 'scripts/deepseek_smoke.py'
       - 'scripts/bootstrap_portable_python.cmd'
       - 'tests/test_nexus_local_autonomy_workflow.py'
+      - 'tests/test_nexus_local_autonomy_private_receipt.py'
       - '.github/workflows/nexus_local_autonomy.yml'
   pull_request:
     branches: [main]
@@ -24,12 +26,14 @@ on:
       - '.nexus/autonomous-queue.json'
       - 'config/nexus-mission-queue.json'
       - 'scripts/nexus_local_worker.py'
+      - 'scripts/nexus_local_autonomy_receipt.py'
       - 'scripts/nexus_orchestrator.js'
       - 'scripts/nexus_ai_council.js'
       - 'scripts/nexus_brain_core.js'
       - 'scripts/deepseek_smoke.py'
       - 'scripts/bootstrap_portable_python.cmd'
       - 'tests/test_nexus_local_autonomy_workflow.py'
+      - 'tests/test_nexus_local_autonomy_private_receipt.py'
       - '.github/workflows/nexus_local_autonomy.yml'
 
 permissions:
@@ -182,28 +186,11 @@ jobs:
         shell: cmd
         run: python scripts\nexus_local_worker.py
 
-      - name: Show final worker evidence
+      - name: Verify and retain owner-private autonomy evidence
         if: always()
         shell: cmd
-        run: |
-          if exist "%NEXUS_STATE_DIR%\worker-heartbeat.json" type "%NEXUS_STATE_DIR%\worker-heartbeat.json"
-          if exist "%NEXUS_STATE_DIR%\autonomous-queue.json" type "%NEXUS_STATE_DIR%\autonomous-queue.json"
+        run: python scripts\nexus_local_autonomy_receipt.py
 
-      - name: Copy durable state evidence into artifact staging
-        if: always()
-        shell: cmd
-        run: |
-          if not exist build\autonomy\durable-state mkdir build\autonomy\durable-state
-          if exist "%NEXUS_STATE_DIR%\worker-heartbeat.json" copy /Y "%NEXUS_STATE_DIR%\worker-heartbeat.json" build\autonomy\durable-state\worker-heartbeat.json
-          if exist "%NEXUS_STATE_DIR%\autonomous-queue.json" copy /Y "%NEXUS_STATE_DIR%\autonomous-queue.json" build\autonomy\durable-state\autonomous-queue.json
-          if exist "%NEXUS_STATE_DIR%\state.json" copy /Y "%NEXUS_STATE_DIR%\state.json" build\autonomy\durable-state\state.json
-
-      - name: Upload autonomy evidence
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        with:
-          name: nexus-local-autonomy-${{ github.run_id }}
-          path: build/autonomy/**
-          if-no-files-found: warn
-          include-hidden-files: true
-          retention-days: 7
+      # Intentionally NO upload-artifact. The durable autonomous queue belongs
+      # on the owner runner, not in GitHub Actions storage. The step above emits
+      # only a bounded status-count/digest receipt and keeps the full receipt local.
