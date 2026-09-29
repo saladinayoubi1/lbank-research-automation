@@ -119,3 +119,94 @@ def test_shortcut_commit_checks_targets_and_original_bytes_before_finalizing():
     assert "Atomic switch modified original shortcut bytes" in script[marker:commit]
     assert "Prior app restarted during shortcut commit" in script[marker:commit]
     assert "$null=Health $ExpectedSourceSha 35" in script[marker:commit]
+
+
+def test_bounded_quiescence_retires_gui_host_before_supervised_sidecar():
+    script=SOURCE.read_text(encoding="utf-8")
+    block=script[script.index("function Stop-Exact("):script.index("\nfunction ProfileFiles")]
+    assert block.index("Where-Object {$_.ProcessName -eq 'NEXUS Personal Pro'} | Sort-Object Id") < block.index("Where-Object {$_.ProcessName -eq 'nexus-product-server'}")
+    assert "Only the two bound installation roots can be stopped" in block
+    assert "if($hosts.Count -eq 0){" in block
+    assert "for($pass=1;$pass -le 4;$pass++)" in block
+    assert "while($stable -lt 5)" in block
+    assert "NEXUS_EXACT_QUIESCENCE_RETRY" in block
+    assert "throw \"Exact-version processes did not quiesce scope=" in block
+    assert "Stop-Process -Name" not in block
+    assert "Start-Process" not in block
+
+
+def test_windows_quiescence_mock_host_order_and_unrelated_process_preservation(tmp_path):
+    import shutil
+    import subprocess
+    import sys
+
+    if sys.platform != "win32":
+        return
+    powershell=shutil.which("powershell.exe") or shutil.which("powershell")
+    if not powershell:
+        return
+    script=SOURCE.read_text(encoding="utf-8")
+    block=script[script.index("function Stop-Exact("):script.index("\nfunction ProfileFiles")]
+    test_harness=r"""
+$ErrorActionPreference='Stop'
+$candidate='C:\simulated-nexus-candidate'
+$prior='C:\simulated-nexus-prior'
+$script:alive=@{}
+$script:order=@()
+$script:sidecarSerial=300
+$script:externalEngineRespawn=$false
+function Assert([bool]$Condition,[string]$Reason){if(-not $Condition){throw $Reason}}
+function IsWithin([string]$File,[string]$Root){
+  $File.StartsWith($Root+'\',[StringComparison]::OrdinalIgnoreCase)
+}
+function Fake([int]$Id,[string]$Name,[string]$Root){
+  [pscustomobject]@{Id=$Id;ProcessName=$Name;Path=($Root+'\'+$Name+'.exe');MainWindowHandle=0}
+}
+function ExactProcs([string]$Root){
+  @($script:alive.Values | Where-Object {$_.Path -and (IsWithin $_.Path $Root)})
+}
+function Get-Process {
+  [CmdletBinding()]param([int]$Id)
+  if($script:alive.ContainsKey($Id)){return $script:alive[$Id]}
+  return $null
+}
+function Stop-Process {
+  [CmdletBinding()]param([int]$Id,[switch]$Force)
+  $p=$script:alive[$Id]
+  if(-not $p){throw 'Attempted to stop absent process'}
+  $script:order+=@($p.ProcessName)
+  [void]$script:alive.Remove($Id)
+  if($script:externalEngineRespawn -and $p.ProcessName -eq 'nexus-product-server'){
+    $script:sidecarSerial++
+    $script:alive[$script:sidecarSerial]=Fake $script:sidecarSerial 'nexus-product-server' $candidate
+  }
+}
+function Start-Sleep {param([int]$Milliseconds,[int]$Seconds)}
+"""
+    assertions=r"""
+$script:alive[101]=Fake 101 'NEXUS Personal Pro' $candidate
+$script:alive[202]=Fake 202 'nexus-product-server' $candidate
+$script:alive[303]=Fake 303 'NEXUS Personal Pro' 'C:\unrelated-application'
+Stop-Exact $candidate 0
+if($script:order.Count -ne 2 -or $script:order[0] -ne 'NEXUS Personal Pro' -or
+   $script:order[1] -ne 'nexus-product-server'){throw 'Host-before-engine ordering failed'}
+if(-not $script:alive.ContainsKey(303)){throw 'Unrelated process modified'}
+$script:externalEngineRespawn=$true
+$script:sidecarSerial=300
+$script:alive[300]=Fake 300 'nexus-product-server' $candidate
+$caught=$false
+try{Stop-Exact $candidate 0}catch{
+  if($_.Exception.Message -match 'Exact-version processes did not quiesce'){$caught=$true}
+}
+if(-not $caught){throw 'Unbounded engine respawn did not fail closed'}
+if(-not $script:alive.ContainsKey(303)){throw 'Unrelated process modified after failure'}
+'EXACT_HOST_FIRST_QUIESCENCE_MOCK=PASS'
+"""
+    test_script=tmp_path/"quiescence-mock.ps1"
+    test_script.write_text(test_harness+"\n"+block+"\n"+assertions, encoding="utf-8")
+    result=subprocess.run(
+        [powershell,"-NoProfile","-NonInteractive","-ExecutionPolicy","Bypass","-File",str(test_script)],
+        capture_output=True,text=True,timeout=30,check=False
+    )
+    assert result.returncode == 0, result.stdout+result.stderr
+    assert "EXACT_HOST_FIRST_QUIESCENCE_MOCK=PASS" in result.stdout
