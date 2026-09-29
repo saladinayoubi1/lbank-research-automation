@@ -27,7 +27,15 @@ SCHEMA = "nexus.four-pair-july-reviewed-composite.v2"
 QA_SCHEMA = "nexus.four-pair-july-composite-numeric-replay.v2"
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
 SHA64 = re.compile(r"^[0-9a-f]{64}$")
-EXPERIMENTS = composite.CONFIGS
+# Freeze published v2's six original causal families. Expanding the live Research
+# grammar must NEVER silently change 288 already-published July evidence cells.
+HISTORICAL_V2_MECHANISMS = (
+    "structural_pullback", "volatility_compression_expansion",
+    "bar_proxy_vwap_reclaim", "failed_range_break_reversal",
+    "cross_pair_relative_reclaim", "lagged_peer_impulse_confirmation",
+)
+EXPERIMENTS = tuple(c for c in composite.CONFIGS
+                    if c["mechanism"] in HISTORICAL_V2_MECHANISMS)
 PROFILES = (
     ("conservative", composite.ENTRY_FEE_BPS, composite.ENTRY_SLIP_BPS),
     ("stress", composite.STRESS_FEE_BPS, composite.STRESS_SLIP_BPS),
@@ -124,7 +132,7 @@ def calculate(frames: Mapping[tuple[str, str], pd.DataFrame],
     bound = _baseline_frames(baseline, frames, source_sha)
     if (
         len(EXPERIMENTS) != 12
-        or {c["mechanism"] for c in EXPERIMENTS} != set(composite.MECHANISMS)
+        or {c["mechanism"] for c in EXPERIMENTS} != set(HISTORICAL_V2_MECHANISMS)
         or {c["risk_variant"] for c in EXPERIMENTS} != {0, 1}
         or any(c["entry_model"] != "closed_4h_1h_15m_next_open" for c in EXPERIMENTS)
     ):
@@ -224,7 +232,7 @@ def calculate(frames: Mapping[tuple[str, str], pd.DataFrame],
         "live_trading_authority": False,
         "maximum_trade_count": None,
         "qualification": "RESEARCH_ONLY_REQUIRE_NEW_PROSPECTIVE_EVIDENCE",
-        "reviewed_distinct_mechanisms": len(composite.MECHANISMS),
+        "reviewed_distinct_mechanisms": len(HISTORICAL_V2_MECHANISMS),
         "risk_parameter_variants_per_mechanism": 2,
         "rows_count": expected_count,
         "configurations": signatures,
