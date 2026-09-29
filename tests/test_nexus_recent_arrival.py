@@ -167,7 +167,12 @@ def test_real_bounded_inner_extractor_and_later_numeric_gate_remain_separate(
     nested = tmp_path / "producer-inner.zip"
     with zipfile.ZipFile(nested, "w", compression=zipfile.ZIP_STORED) as zipf:
         for name in sorted(snapshot._expected_members()):
-            zipf.writestr(name, (
+            # Exactly the original producer archive's regular-file mode.
+            entry = zipfile.ZipInfo(name, date_time=(2026, 9, 29, 0, 0, 0))
+            entry.create_system = 3
+            entry.external_attr = 0o100644 << 16
+            entry.compress_type = zipfile.ZIP_STORED
+            zipf.writestr(entry, (
                 arrival._canonical(manifest) if name == snapshot.MANIFEST_NAME
                 else b"PAR1mock-frame-not-a-parquet"
             ))
