@@ -284,3 +284,28 @@ def test_successor_requires_EXACT_prior_QA_ledger_and_different_mechanism(monkey
     ancestor["research_predecessor_ledger_digest"] = "f" * 64
     with pytest.raises(prepare.ResearchPreparationError, match="prior QA"):
         prepare._verified_input_bundle(tmp_path / "wrong", NEW_SOURCE, ancestor)
+
+
+def test_cold_successor_remains_parked_until_new_exact_source_cache_is_ready(monkeypatch):
+    config = linked(monkeypatch)
+    task = config["tasks"][1]
+    assert runner.apply_research_input_gate(config, ready=False) == "parked_waiting_cache"
+    assert task["status"] == "BLOCKED"
+    assert task["blocked_reason"] == runner.RESEARCH_WAIT
+    am.cycle(config)
+    assert task["status"] == "BLOCKED"
+    assert runner.bind_qa_attested_successor(config) == "QA_attested_successor_unchanged"
+    assert runner.apply_research_input_gate(config, ready=True) == "ready_for_producer_lease"
+    am.cycle(config)
+    assert task["status"] == "LEASED"
+    assert task["assigned_worker"] == "research-agent"
+    assert task["lease_id"]
+    assert task["research_predecessor_qa_digest"] == "5" * 64
+
+
+def test_untrusted_original_QA_cannot_release_successor(monkeypatch):
+    config = linked(monkeypatch)
+    config["tasks"][0]["verification_evidence"]["producer_receipt_digest"] = "f" * 64
+    assert runner.bind_qa_attested_successor(config) == "untrusted_prior_QA"
+    assert config["tasks"][1]["status"] == "BLOCKED"
+    assert runner.apply_research_input_gate(config, ready=True) == "successor_QA_not_attested"
