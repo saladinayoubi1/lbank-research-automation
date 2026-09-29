@@ -26,6 +26,7 @@ on:
       - "scripts/nexus_snapshot_artifact.py"
       - "scripts/nexus_recent_archive_runtime_snapshot_artifact.py"
       - "scripts/nexus_public_current_run_artifact.py"
+      - "scripts/nexus_recent_arrival.py"
       - "requirements.lock"
       - "requirements-dev.lock"
       - "tests/test_nexus_multipair_archive_snapshot.py"
@@ -34,6 +35,7 @@ on:
       - "tests/test_nexus_multipair_strategy_discovery_archive.py"
       - "tests/test_nexus_recent_archive_runtime_snapshot_artifact.py"
       - "tests/test_nexus_public_current_run_artifact.py"
+      - "tests/test_nexus_recent_arrival.py"
       - "tests/test_nexus_multipair_archive_acceptance_workflow.py"
       - "security/workflow-permissions-policy-v1.json"
   push:
@@ -61,6 +63,7 @@ on:
       - "scripts/nexus_snapshot_artifact.py"
       - "scripts/nexus_recent_archive_runtime_snapshot_artifact.py"
       - "scripts/nexus_public_current_run_artifact.py"
+      - "scripts/nexus_recent_arrival.py"
       - "requirements.lock"
       - "requirements-dev.lock"
       - "tests/test_nexus_multipair_archive_snapshot.py"
@@ -69,6 +72,7 @@ on:
       - "tests/test_nexus_multipair_strategy_discovery_archive.py"
       - "tests/test_nexus_recent_archive_runtime_snapshot_artifact.py"
       - "tests/test_nexus_public_current_run_artifact.py"
+      - "tests/test_nexus_recent_arrival.py"
       - "tests/test_nexus_multipair_archive_acceptance_workflow.py"
       - "security/workflow-permissions-policy-v1.json"
   workflow_dispatch:
@@ -306,6 +310,7 @@ jobs:
           tests/test_nexus_multipair_strategy_discovery_archive.py
           tests/test_nexus_recent_archive_runtime_snapshot_artifact.py
           tests/test_nexus_public_current_run_artifact.py
+          tests/test_nexus_recent_arrival.py
           tests/test_nexus_multipair_archive_acceptance_workflow.py
 
       - name: Prepare exact source and isolated physical Research state
