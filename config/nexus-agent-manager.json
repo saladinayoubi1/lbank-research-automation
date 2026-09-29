@@ -464,6 +464,36 @@
         "persist source/lease/provenance binding across coordinator restart and prevent repeat leases; if exhausted, require separately reviewed developer change",
         "research only; no pristine OOS claims, no arbitrary trade-count limit, no Paper promotion or Live/L4"
       ]
+    },
+    {
+      "id": "P7-RESEARCH-COMPOSITE-006",
+      "title": "Execute eighth reviewed peer-relative momentum reacceleration as sixth real Research Agent with independent numerical QA",
+      "phase": 7,
+      "gate": 17,
+      "status": "PENDING",
+      "priority": 86,
+      "dependencies": [
+        "P7-RESEARCH-COMPOSITE-005"
+      ],
+      "required_capabilities": [
+        "data_validation"
+      ],
+      "required_resources": [
+        "github-cloud"
+      ],
+      "preferred_resources": [
+        "github-cloud",
+        "windows-local"
+      ],
+      "authority": 2,
+      "acceptance": [
+        "preceding fifth numerical producer and independent QA are genuinely DONE with exact source, lease, receipt and cumulative seventh-family novelty ledger",
+        "source-bound sixth real producer consumes precisely QA-attested fifth ledger and selects novel eighth causal relative_momentum_reacceleration before any recycled parameter variants",
+        "use exact aligned closed BTC/ETH Spot 15m peer bars, prior relative momentum baseline, fully closed 4h/1h guards and next 15m open fills without cross-asset hedge or lookahead",
+        "verify actual two-pair three-partition two-cost numerical producer evidence with separate independent original-source QA replay",
+        "hold on expired original input or changed source; never reset novelty frontier or invent success",
+        "research only, no pristine future holdout claim, no fixed maximum trade count, no automatic Demo admission or Live"
+      ]
     }
   ]
 }
