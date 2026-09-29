@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 import agent_manager as am
+from nexus_research_missions import (FIRST, SECOND, ANCESTRY, attested_predecessor, validate_ancestry)
 
 RUNTIME_PATH = Path("data/agent_coordination/agent_manager_runtime.json")
 SUMMARY_PATH = Path("data/agent_coordination/manager_state.json")
@@ -59,6 +60,7 @@ def merge_definition(template: dict[str, Any], runtime: dict[str, Any] | None) -
         "offline_result_bundle_ingested", "offline_result_bundle_digest",
         "result_artifact_ingested", "result_received_at", "research_producer_lease_id",
         "research_cache_requested_sha", "research_cache_recovery_count", "research_cache_race_evidence", "routing_decision",
+        *ANCESTRY,
         "zero_idle_evidence", "waiting_from_status", "external_wait_state", "external_wait_started_at",
         "external_wait_completed_at", "external_wait_timeline"
     }
@@ -222,7 +224,7 @@ def recover_bounded_specialized_reasoning(config: dict[str, Any]) -> int:
 # replay + novelty-input transport. Never lease Research before it publishes
 # the exact current main SHA. Cache presence is a scheduling hint only: the
 # worker still checks full replay/delivery/ledger cryptographic provenance.
-RESEARCH_TASK = "P7-RESEARCH-COMPOSITE-001"
+RESEARCH_TASK = FIRST
 RESEARCH_WAIT = "waiting_for_source_exact_immutable_research_input_cache"
 RESEARCH_CACHE_PREFIX = "nexus-composite-inputs-v1-"
 RESEARCH_WORKFLOW = "nexus_multitimeframe_strategy_discovery.yml"
@@ -242,6 +244,45 @@ def _research_context() -> tuple[str, str] | None:
     ):
         return None
     return repo, sha
+
+
+
+def bind_qa_attested_successor(config: dict[str, Any]) -> str:
+    """Preserve the exact previous producer+QA identities through cold restarts.
+
+    Linking is authorized ONLY by the preceding, independently verified task.
+    A changed predecessor cannot silently rewrite an already leased successor.
+    """
+    task_map = {t.get("id"): t for t in config.get("tasks", [])}
+    prior, successor = task_map.get(FIRST), task_map.get(SECOND)
+    if prior is None or successor is None:
+        return "not_present"
+    if prior.get("status") != "DONE":
+        return "awaiting_prior_QA"
+    try:
+        evidence = attested_predecessor(prior)
+    except ValueError:
+        if successor.get("status") in {"PENDING", "READY", "BLOCKED"}:
+            successor["status"] = "BLOCKED"
+            successor["blocked_reason"] = "predecessor_independent_research_QA_attestation_missing"
+            am.emit("successor_research_QA_untrusted", task_id=SECOND)
+        return "untrusted_prior_QA"
+    existing = {key: successor[key] for key in ANCESTRY if key in successor}
+    if any(evidence[key] != value for key, value in existing.items()):
+        raise ValueError("persisted research successor ancestry changed since the prior QA lease")
+    if len(existing) != len(ANCESTRY):
+        if successor.get("status") not in {"PENDING", "READY", "BLOCKED"}:
+            raise ValueError("active successor is missing an immutable QA ancestry binding")
+        successor.update(evidence)
+        am.emit(
+            "QA_verified_research_successor_bound", task_id=SECOND,
+            predecessor_lease_id=prior.get("research_producer_lease_id"),
+            predecessor_QA_digest=evidence["research_predecessor_qa_digest"],
+        )
+        return "QA_attested_successor_bound"
+    validate_ancestry(existing)
+    return "QA_attested_successor_unchanged"
+
 
 
 def research_cache_status() -> tuple[bool, str]:
@@ -310,9 +351,28 @@ def apply_research_input_gate(config: dict[str, Any], *, ready: bool) -> str:
     Never turn untrusted/failing numeric research into success. Refuse retries
     after a second or different failure; independent RCA remains mandatory.
     """
-    task = next((t for t in config.get("tasks", []) if t.get("id") == RESEARCH_TASK), None)
-    if task is None:
+    tasks = {t.get("id"): t for t in config.get("tasks", [])}
+    first = tasks.get(FIRST)
+    successor = tasks.get(SECOND)
+    if first is None:
         return "not_present"
+    task = first
+    # After a verified first mission, continue ONLY if the distinct second
+    # mission carries the exact prior QA + result digests.
+    if first.get("status") == "DONE" and successor is not None:
+        task = successor
+        if task.get("status") in {"DONE", "QUARANTINED", "OWNER_REQUIRED"}:
+            return "successor_terminal_unchanged"
+        evidence = {key: task[key] for key in ANCESTRY if key in task}
+        try:
+            validate_ancestry(evidence)
+            if evidence != attested_predecessor(first):
+                raise ValueError("successor ancestry differs from first QA receipt")
+        except ValueError:
+            if task.get("status") in {"PENDING", "READY", "BLOCKED"}:
+                task["status"] = "BLOCKED"
+                task["blocked_reason"] = "predecessor_independent_research_QA_attestation_missing"
+            return "successor_QA_not_attested"
     status = task.get("status")
     if status in {"DONE", "QUARANTINED", "OWNER_REQUIRED"}:
         return "terminal_unchanged"
@@ -362,7 +422,10 @@ def apply_research_input_gate(config: dict[str, Any], *, ready: bool) -> str:
 def request_missing_research_cache(config: dict[str, Any], reason: str) -> str:
     """One bounded main-only request; never blindly restart failed workflows."""
     context = _research_context()
-    task = next((t for t in config.get("tasks", []) if t.get("id") == RESEARCH_TASK), None)
+    tasks = {t.get("id"): t for t in config.get("tasks", [])}
+    task = tasks.get(FIRST)
+    if task is not None and task.get("status") == "DONE":
+        task = tasks.get(SECOND)
     if context is None or task is None or task.get("blocked_reason") != RESEARCH_WAIT:
         return "not_requested"
     if reason not in {"source_exact_transport_cache_absent"}:
@@ -425,12 +488,14 @@ def main() -> int:
     recover_completed_root_cause_analysis(config)
     recover_bounded_specialized_reasoning(config)
     block_unroutable_specialized_reasoning(config)
+    successor_status = bind_qa_attested_successor(config)
     cache_ready, cache_reason = research_cache_status()
     cache_gate = apply_research_input_gate(config, ready=cache_ready)
     cache_build = request_missing_research_cache(config, cache_reason) if not cache_ready else "ready"
     summary = am.cycle(config)
     summary["research_input_gate"] = {
         "ready": cache_ready,
+        "successor": successor_status,
         "reason": cache_reason,
         "action": cache_gate,
         "cache_build": cache_build,
