@@ -311,3 +311,54 @@ def test_exact_prior_ledger_prioritizes_new_sixth_causal_mechanism():
     assert selected["mechanism"] == "lagged_peer_impulse_confirmation"
     assert selected["risk_variant"] == 0
     assert selected["fingerprint"] not in signed["config_fingerprints_evaluated"]
+
+
+def test_seventh_lagged_peer_downside_noncontagion_requires_verified_prior_shock():
+    # The sixth family follows positive peer leadership + own breakout;
+    # this seventh family follows previous negative peer shock + own downside
+    # range-break rejection. These are distinct causal conditions.
+    frame = pd.DataFrame([{
+        "h4_up": 0., "h4_range": 1., "h1_compression": 0., "h1_vol_ok": 1.,
+        "rel_vol": 1.3, "prior_hi": 103., "prior_lo": 99., "atr": 1.,
+        "open": 100., "close": 100.8, "low": 98.5, "high": 101.,
+        "lagged_peer_impulse": -.015, "lagged_peer_impulse_baseline": .003,
+        "lagged_own_response": -.002,
+    }])
+    new = {"mechanism": "peer_shock_noncontagion_rebound", "risk_variant": 0}
+    assert engine.signal_for(frame, new).tolist() == [True]
+    assert engine.signal_for(
+        frame, {"mechanism": "lagged_peer_impulse_confirmation", "risk_variant": 0}
+    ).tolist() == [False]
+    for field, replacement in (
+        ("lagged_peer_impulse", -.002),
+        ("lagged_peer_impulse_baseline", .014),
+        ("lagged_own_response", -.010),
+        ("close", 98.5),
+        ("low", 99.5),
+        ("rel_vol", .8),
+    ):
+        mutated = frame.copy()
+        mutated[field] = replacement
+        assert engine.signal_for(mutated, new).tolist() == [False], field
+    with pytest.raises(engine.CompositeResearchError, match="verified aligned peer"):
+        engine.signal_for(frame.drop(columns=["lagged_peer_impulse"]), new)
+
+
+def test_seventh_is_only_new_novel_family_on_six_mechanism_qa_frontier():
+    prior = engine.empty_ledger()
+    core = {k: v for k, v in prior.items() if k != "ledger_digest"}
+    for cfg in engine.CONFIGS:
+        if cfg["mechanism"] == "peer_shock_noncontagion_rebound" or cfg["risk_variant"] != 0:
+            continue
+        core["config_fingerprints_evaluated"].append(engine.digest({
+            "config": cfg, "dataset": engine.ARCHIVE_SHA256,
+            "contract": engine.SCHEMA,
+        }))
+        core["mechanisms_evaluated"].append(cfg["mechanism"])
+    core["mechanisms_evaluated"] = sorted(set(core["mechanisms_evaluated"]))
+    signed = {**core, "ledger_digest": engine.digest(core)}
+    selected = engine.select_next(signed)
+    assert selected is not None
+    assert selected["mechanism"] == "peer_shock_noncontagion_rebound"
+    assert selected["risk_variant"] == 0
+    assert selected["fingerprint"] not in signed["config_fingerprints_evaluated"]
