@@ -324,8 +324,8 @@ def test_install_smoke_cannot_bootstrap_or_stop_other_owner_processes() -> None:
     installer = text(SCRIPT)
     assert r"/^--nexus-install-smoke=\d+$/" in bootstrap
     startup = bootstrap.split("app.whenReady().then(() => {", 1)[1]
-    assert startup.index("if (process.argv.some(arg =>") < startup.index("void reconcileRunnerFromGui")
-    assert "if (process.argv.some(arg =>" in bootstrap
+    assert startup.index("if (isIsolatedProfileOrSmoke(process.argv)) return;") < startup.index("void reconcileRunnerFromGui")
+    assert "function isIsolatedProfileOrSmoke(argv)" in bootstrap
     cleanup = installer.split("function Get-NewNexusProcesses {", 1)[1].split("function Get-InstalledNexusProductProcesses", 1)[0]
     assert "Get-InstalledNexusProductProcesses -ProgramRoot $script:InstallRoot" in cleanup
     assert "Get-NexusProcesses | Where-Object" not in cleanup
