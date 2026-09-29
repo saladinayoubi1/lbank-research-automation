@@ -35,6 +35,7 @@ MECHANISMS = (
     "failed_range_break_reversal",
     "cross_pair_relative_reclaim",
     "lagged_peer_impulse_confirmation",
+    "peer_shock_noncontagion_rebound",
 )
 # Distinct entry mechanisms vs risk/feature parameter variations are explicitly
 # separately labeled; eight configurations do NOT count as eight new edges.
@@ -217,6 +218,26 @@ def signal_for(frame: pd.DataFrame, config: dict[str, Any]) -> np.ndarray:
             lagged > -.01) & (lagged < shock * .65) & (
             c > frame["prior_hi"]) & (c > o) & (frame["rel_vol"] > 1.05) & (
             np.isfinite(shock) & np.isfinite(benchmark) & np.isfinite(lagged))
+    elif mechanism == "peer_shock_noncontagion_rebound":
+        required = {"lagged_peer_impulse", "lagged_peer_impulse_baseline",
+                    "lagged_own_response"}
+        if not required <= set(frame.columns):
+            raise CompositeResearchError(
+                "peer noncontagion requires exact verified aligned peer history"
+            )
+        shock = frame["lagged_peer_impulse"]
+        baseline = frame["lagged_peer_impulse_baseline"]
+        own_before = frame["lagged_own_response"]
+        # Distinct from positive peer leadership and single-symbol range failure:
+        # the previous closed negative peer shock did not spread proportionally
+        # to the own asset; THIS closed own bar rejects a local range break.
+        # Execution remains NEXT own 15m open; no current peer bar is read.
+        s = (frame["h4_range"] == 1) & (frame["h1_vol_ok"] == 1) & (
+            shock < -.004) & (-shock > baseline * 1.30) & (
+            own_before > shock * .50) & (own_before < .006) & (
+            lo < frame["prior_lo"]) & (c > frame["prior_lo"]) & (
+            c > o) & (frame["rel_vol"] >= 1.10) & (
+            np.isfinite(shock) & np.isfinite(baseline) & np.isfinite(own_before))
     elif mechanism == "cross_pair_relative_reclaim":
         if not {"cross_pair_relative_z", "cross_pair_relative_z_previous"} <= set(frame.columns):
             raise CompositeResearchError("cross-pair mechanism requires exact aligned verified peer history")
@@ -393,7 +414,8 @@ def run(archive_root: Path, output: Path, source_sha: str, previous: Path | None
         frames = {tf: load_verified_archive_frame(archive_root, symbol, tf)
                   for tf in ("minute15", "hour1", "hour4")}
         peer = None
-        if nxt["mechanism"] in {"cross_pair_relative_reclaim", "lagged_peer_impulse_confirmation"}:
+        if nxt["mechanism"] in {"cross_pair_relative_reclaim", "lagged_peer_impulse_confirmation",
+                                "peer_shock_noncontagion_rebound"}:
             # Current official replay has exactly BTC/ETH; never pretend to
             # possess missing SOL/XRP or synthetic peer order flow/L2.
             if len(SYMBOLS) != 2:

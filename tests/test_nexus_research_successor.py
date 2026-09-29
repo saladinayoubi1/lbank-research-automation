@@ -14,7 +14,7 @@ import agent_transport
 import nexus_agent_research_prepare as prepare
 import nexus_composite_strategy_research as search
 from nexus_research_missions import (
-    FIRST, SECOND, THIRD, FOURTH, ANCESTRY, attested_predecessor, validate_ancestry,
+    FIRST, SECOND, THIRD, FOURTH, FIFTH, ANCESTRY, attested_predecessor, validate_ancestry,
 )
 from scripts.agent_task_executor import decode_payload, deterministic_execution
 
@@ -624,3 +624,91 @@ def test_fourth_never_replays_third_as_risk_parameter_variant():
     assert selected is not None
     assert selected["mechanism"] == "lagged_peer_impulse_confirmation"
     assert selected["risk_variant"] == 0
+
+
+def fourth_done_for_fifth():
+    """Synthetic fourth completed producer + independent QA test fixture."""
+    conf = third_done_for_fourth()
+    fourth = conf["tasks"][3]
+    fourth.update(attested_predecessor(conf["tasks"][2]))
+    fourth.update({
+        "status": "DONE", "producer": "research-agent",
+        "verifier": "qa-verifier-agent", "research_producer_lease_id": "fourth-producer",
+        "lease_id": "fourth-verifier",
+        "result_evidence": {
+            "executor": "nexus-real-composite-backtest",
+            "source_sha": "d" * 40, "lease_id": "fourth-producer",
+            "receipt_digest": "1" * 64, "prior_ledger_digest": "d" * 64,
+            "ledger_digest": "4" * 64, "config_fingerprint": "5" * 64,
+            "mechanism": "lagged_peer_impulse_confirmation",
+            "independent_qa_complete": False, "auto_demo_promotion": False,
+            "live_enabled": False,
+        },
+        "verification_evidence": {
+            "executor": "nexus-independent-composite-numeric-qa",
+            "source_sha": "d" * 40, "producer_lease_id": "fourth-producer",
+            "producer_receipt_digest": "1" * 64, "qa_digest": "6" * 64,
+            "independent_qa_complete": True, "auto_demo_promotion": False,
+            "live_enabled": False,
+        },
+    })
+    fifth = child()
+    fifth.update(id=FIFTH, priority=87, dependencies=[FOURTH])
+    conf["tasks"].append(fifth)
+    return conf
+
+
+def test_fifth_successor_is_qa_bound_and_restart_safe(monkeypatch):
+    conf = fourth_done_for_fifth()
+    monkeypatch.setattr(am, "emit", lambda *args, **kwargs: None)
+    assert runner.bind_qa_attested_successor(conf) == "QA_attested_successor_bound"
+    fifth = conf["tasks"][4]
+    assert fifth["research_predecessor_ledger_digest"] == "4" * 64
+    assert fifth["research_predecessor_qa_digest"] == "6" * 64
+    assert fifth["research_predecessor_mechanism"] == "lagged_peer_impulse_confirmation"
+    assert runner.bind_qa_attested_successor(conf) == "QA_attested_successor_unchanged"
+    assert runner.apply_research_input_gate(conf, ready=False) == "parked_waiting_cache"
+    assert runner.apply_research_input_gate(conf, ready=True) == "ready_for_producer_lease"
+    envelope = payload_for(fifth)
+    assert decode_payload(encoded(envelope)) == envelope
+    template = deepcopy(conf)
+    template["tasks"][4] = child()
+    template["tasks"][4].update(id=FIFTH, priority=87, dependencies=[FOURTH])
+    merged = runner.merge_definition(template, {"schema_version": 1, "tasks": conf["tasks"]})
+    assert merged["tasks"][4]["research_predecessor_qa_digest"] == "6" * 64
+    conf["tasks"][3]["verification_evidence"]["qa_digest"] = "0" * 64
+    with pytest.raises(ValueError, match="changed"):
+        runner.bind_qa_attested_successor(conf)
+
+
+def test_fifth_refuses_fourth_mechanism_replay_and_unrelated_frontier(monkeypatch):
+    conf = fourth_done_for_fifth()
+    monkeypatch.setattr(am, "emit", lambda *args, **kwargs: None)
+    runner.bind_qa_attested_successor(conf)
+    fifth = conf["tasks"][4]
+    fifth.update(status="RUNNING", assigned_worker="research-agent", lease_id="fifth-producer")
+    proof = {
+        "receipt_digest": "7" * 64, "source_sha": "e" * 40,
+        "mechanism": "peer_shock_noncontagion_rebound",
+        "prior_ledger_digest": "4" * 64,
+        "independent_qa_complete": False,
+        "auto_demo_promotion": False, "live_enabled": False,
+    }
+    for mutate in ({"mechanism": "lagged_peer_impulse_confirmation"},
+                   {"prior_ledger_digest": "0" * 64}):
+        with pytest.raises(ValueError, match="different"):
+            am.record_result(conf, FIFTH, "research-agent", "success",
+                             {**proof, **mutate})
+    am.record_result(conf, FIFTH, "research-agent", "success", proof)
+    assert fifth["status"] == "VERIFYING"
+    qa = {
+        "independent_qa_complete": True, "source_sha": "e" * 40,
+        "producer_lease_id": "fifth-producer", "producer_receipt_digest": "7" * 64,
+        "qa_digest": "8" * 64,
+        "auto_demo_promotion": False, "live_enabled": False,
+    }
+    with pytest.raises(ValueError):
+        am.record_result(conf, FIFTH, "qa-verifier-agent", "success",
+                         {**qa, "producer_receipt_digest": "0" * 64})
+    am.record_result(conf, FIFTH, "qa-verifier-agent", "success", qa)
+    assert fifth["status"] == "DONE"

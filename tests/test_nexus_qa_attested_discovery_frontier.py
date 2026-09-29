@@ -1,4 +1,4 @@
-"""Attacker-oriented tests for fourth QA-authorized historical research frontier."""
+"""Attacker-oriented tests for fifth QA-authorized historical research frontier."""
 from __future__ import annotations
 import io
 import json
@@ -9,7 +9,7 @@ import pytest
 
 import nexus_composite_strategy_research as research
 from scripts import nexus_qa_attested_discovery_frontier as selector
-from nexus_research_missions import THIRD
+from nexus_research_missions import FOURTH
 
 
 SOURCE = "a" * 40
@@ -24,11 +24,11 @@ def zipped(member, obj):
     return stream.getvalue()
 
 
-def mock_proofs(monkeypatch, *, bad_ledger=False, bad_qa=False, no_verified_third=False):
+def mock_proofs(monkeypatch, *, bad_ledger=False, bad_qa=False, no_verified_fourth=False):
     ledger = research.empty_ledger()
     core = {k: v for k, v in ledger.items() if k != "ledger_digest"}
     for config in research.CONFIGS:
-        if config["mechanism"] == "lagged_peer_impulse_confirmation" or config["risk_variant"] != 0:
+        if config["mechanism"] == "peer_shock_noncontagion_rebound" or config["risk_variant"] != 0:
             continue
         core["config_fingerprints_evaluated"].append(research.digest({
             "config": config, "dataset": research.ARCHIVE_SHA256, "contract": research.SCHEMA,
@@ -41,7 +41,7 @@ def mock_proofs(monkeypatch, *, bad_ledger=False, bad_qa=False, no_verified_thir
         "archive_sha256": research.ARCHIVE_SHA256,
         "ledger_digest": ledger["ledger_digest"],
         "prior_ledger_digest": "1" * 64,
-        "mechanism": "cross_pair_relative_reclaim",
+        "mechanism": "lagged_peer_impulse_confirmation",
     }
     receipt = {**receipt_core, "receipt_digest": research.digest(receipt_core)}
     qa_core = {
@@ -52,7 +52,7 @@ def mock_proofs(monkeypatch, *, bad_ledger=False, bad_qa=False, no_verified_thir
     }
     proof = {**qa_core, "qa_digest": research.digest(qa_core)}
     task = {
-        "id": THIRD, "status": "PENDING" if no_verified_third else "DONE",
+        "id": FOURTH, "status": "PENDING" if no_verified_fourth else "DONE",
         "producer": "research-agent", "verifier": "qa-verifier-agent",
         "research_producer_lease_id": PRODUCER, "lease_id": VERIFIER,
         "result_evidence": {
@@ -116,19 +116,19 @@ def mock_proofs(monkeypatch, *, bad_ledger=False, bad_qa=False, no_verified_thir
     return ledger
 
 
-def test_exact_completed_distinct_qa_proof_selects_third_frontier(monkeypatch):
+def test_exact_completed_distinct_qa_proof_selects_fourth_frontier(monkeypatch):
     expected = mock_proofs(monkeypatch)
     result = selector.verified_frontier(selector.REPO)
-    assert result["predecessor"] == THIRD
+    assert result["predecessor"] == FOURTH
     assert result["ledger"]["ledger_digest"] == expected["ledger_digest"]
-    assert research.select_next(result["ledger"])["mechanism"] == "lagged_peer_impulse_confirmation"
+    assert research.select_next(result["ledger"])["mechanism"] == "peer_shock_noncontagion_rebound"
     assert result["producer_artifact_id"] == 902
     assert result["qa_artifact_id"] == 904
     assert result["research_only"] is True and result["auto_demo_promotion"] is False
 
 
-@pytest.mark.parametrize("variant", ["bad_ledger", "bad_qa", "no_verified_third"])
-def test_mutated_or_unsigned_proof_cannot_seed_fourth(monkeypatch, variant):
+@pytest.mark.parametrize("variant", ["bad_ledger", "bad_qa", "no_verified_fourth"])
+def test_mutated_or_unsigned_proof_cannot_seed_fifth(monkeypatch, variant):
     mock_proofs(monkeypatch, **{variant: True})
     with pytest.raises(selector.QaFrontierError):
         selector.verified_frontier(selector.REPO)
@@ -147,7 +147,7 @@ def test_bounded_proof_archive_rejects_duplicate_member_and_invalid_json():
         selector.archive_json(b"bad", "proof.json")
 
 
-def test_mandatory_fourth_discovery_cache_uses_exact_QA_not_standalone_artifact():
+def test_mandatory_fifth_discovery_cache_uses_exact_QA_not_standalone_artifact():
     workflow = Path(".github/workflows/nexus_multitimeframe_strategy_discovery.yml").read_text()
     segment = workflow.split("- name: Bind canonical archive and novelty frontier as one Research lease input", 1)[1].split("- name: Publish immutable approved Research input transport", 1)[0]
     assert "scripts/nexus_qa_attested_discovery_frontier.py" in segment
