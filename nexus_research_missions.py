@@ -13,7 +13,9 @@ from typing import Any
 
 FIRST = "P7-RESEARCH-COMPOSITE-001"
 SECOND = "P7-RESEARCH-COMPOSITE-002"
-TASKS = frozenset((FIRST, SECOND))
+THIRD = "P7-RESEARCH-COMPOSITE-003"
+TASKS = frozenset((FIRST, SECOND, THIRD))
+PREDECESSOR = {SECOND: FIRST, THIRD: SECOND}
 SOURCE_HEX = re.compile(r"^[0-9a-f]{40}$")
 DIGEST_HEX = re.compile(r"^[0-9a-f]{64}$")
 ANCESTRY = (
@@ -33,7 +35,7 @@ def attested_predecessor(task: dict[str, Any]) -> dict[str, str]:
     production = task.get("result_evidence")
     qa = task.get("verification_evidence")
     if (
-        task.get("id") != FIRST
+        task.get("id") not in PREDECESSOR.values()
         or task.get("status") != "DONE"
         or task.get("producer") != "research-agent"
         or task.get("verifier") != "qa-verifier-agent"
