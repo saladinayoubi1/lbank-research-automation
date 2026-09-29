@@ -33,6 +33,8 @@ PRODUCT_STATIC = {
     "/": "index.html",
     "/ui/product.css": "product.css",
     "/ui/product-extra.css": "product-extra.css",
+    "/ui/research-operations.css": "research-operations.css",
+    "/ui/research-operations.js": "research-operations.js",
     "/ui/product.js": "product.js",
     "/ui/product-terminal.js": "product-terminal.js",
     "/ui/product-terminal.css": "product-terminal.css",
