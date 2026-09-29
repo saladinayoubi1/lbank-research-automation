@@ -9,6 +9,13 @@ import sys
 from pathlib import Path
 from typing import Any
 
+# Research execution identifiers come solely from checked-in reviewed mission
+# definitions, never from the untrusted dispatch payload.
+_REPO_ROOT = str(Path(__file__).resolve().parents[1])
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
+from nexus_research_missions import PREDECESSOR as RESEARCH_FOLLOWONS, TASKS as RESEARCH_TASKS
+
 DISPATCH_KEYS = {
     "schema_version", "task_id", "lease_id", "correlation_id", "dispatch_id", "worker_id",
     "transport", "phase", "gate", "title", "required_capabilities", "acceptance",
@@ -111,9 +118,9 @@ def decode_payload(value: str) -> dict[str, Any]:
     if not isinstance(data, dict):
         raise ValueError("dispatch payload schema mismatch")
     keys = set(data)
-    is_followon = data.get("task_id") in {"P7-RESEARCH-COMPOSITE-002", "P7-RESEARCH-COMPOSITE-003", "P7-RESEARCH-COMPOSITE-004"}
+    is_followon = data.get("task_id") in RESEARCH_FOLLOWONS
     is_research_qa = (
-        data.get("task_id") in {"P7-RESEARCH-COMPOSITE-001", "P7-RESEARCH-COMPOSITE-002", "P7-RESEARCH-COMPOSITE-003", "P7-RESEARCH-COMPOSITE-004"}
+        data.get("task_id") in RESEARCH_TASKS
         and data.get("worker_id") == "qa-verifier-agent"
     )
     expected = DISPATCH_KEYS | (qa_keys if is_research_qa else set()) | (
@@ -226,7 +233,7 @@ def deterministic_execution(payload: dict[str, Any], transport: str) -> tuple[st
     phase7 = PHASE7_WORKLOADS.get(task_id)
     if phase7 is not None:
         return _phase7_pytest_workload(payload, transport, phase7)
-    if task_id in {"P7-RESEARCH-COMPOSITE-001", "P7-RESEARCH-COMPOSITE-002", "P7-RESEARCH-COMPOSITE-003", "P7-RESEARCH-COMPOSITE-004"}:
+    if task_id in RESEARCH_TASKS:
         # This is a real numerical workload, not the historical Phase-7 pytest
         # proof. Only the bounded Research Agent's cloud lease may start it.
         worker = payload.get("worker_id")
@@ -264,7 +271,7 @@ def deterministic_execution(payload: dict[str, Any], transport: str) -> tuple[st
                 )
                 if proof["producer_receipt_digest"] != payload["research_producer_receipt_digest"]:
                     raise RealResearchError("QA bound to a different producer digest")
-                if task_id in {"P7-RESEARCH-COMPOSITE-002", "P7-RESEARCH-COMPOSITE-003", "P7-RESEARCH-COMPOSITE-004"}:
+                if task_id in RESEARCH_FOLLOWONS:
                     original_receipt = json.loads(Path(
                         "build/agent-research/producer/result/agent-receipt.json"
                     ).read_text(encoding="utf-8"))
@@ -294,7 +301,7 @@ def deterministic_execution(payload: dict[str, Any], transport: str) -> tuple[st
                 source_sha=source, lease_id=payload["lease_id"],
                 output_dir=Path("build/agent-research/result"),
             )
-            if task_id in {"P7-RESEARCH-COMPOSITE-002", "P7-RESEARCH-COMPOSITE-003", "P7-RESEARCH-COMPOSITE-004"} and (
+            if task_id in RESEARCH_FOLLOWONS and (
                 evidence["prior_ledger_digest"] != payload["research_predecessor_ledger_digest"]
                 or evidence["mechanism"] == payload["research_predecessor_mechanism"]
             ):
