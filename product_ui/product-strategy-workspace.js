@@ -86,7 +86,8 @@
       var compact=document.createElement('article');compact.className='panel sw-research-entry';compact.id='workspaceResearchHistory';
       compact.innerHTML='<header><div><span>HISTORICAL EVIDENCE</span><h2>دفتر نتایج پژوهش‌های اجراشده</h2></div>'+
         '<button type="button" id="workspaceResearchRefresh" class="small-btn">تازه‌سازی تاریخچه</button></header>'+
-        '<div class="sw-research-summary" id="workspaceResearchSummary">فقط خروجی عددی واقعی</div>';
+        '<div class="sw-research-summary" id="workspaceResearchSummary">فقط خروجی عددی واقعی</div>'+ 
+        '<div class="sw-scroll" id="workspaceResearchTable" aria-live="polite"></div>';
       var layout=research.querySelector('.research-layout');
       research.insertBefore(compact,layout||null);
     }
@@ -172,7 +173,7 @@
       '<div>هیچ خروجی واقعی ثبت نشده؛ برای نتایج خودکار به رسیدهای معتبر Agent نیاز است.</div>');
     if(!rows.length){host.innerHTML='<div class="sw-empty"><b>هیچ بک‌تست ثبت‌شده‌ای موجود نیست.</b>'+
       '<p>بعد از اجرای واقعی، زمان، جفت‌ارز، تایم‌فریم، معاملات، بازده، افت سرمایه و SHA داده اینجا درج می‌شوند.</p>'+
-      '<small>'+esc(s.data.agent_evidence_reason||'Agent evidence unavailable')+'</small></div>';return;}
+      '<small>'+esc(s.data.agent_evidence_reason||'Agent evidence unavailable')+'</small></div>';if(el('workspaceResearchTable'))el('workspaceResearchTable').innerHTML=host.innerHTML;return;}
     host.innerHTML='<table class="sw-table"><thead><tr><th>زمان / روش</th><th>جفت / TF</th><th>بازده</th>'+
       '<th>افت سرمایه</th><th>Fills</th><th>برد</th><th>PF</th><th>وضعیت</th><th>Provenance</th></tr></thead><tbody>'+
       rows.map(function(x){
@@ -188,6 +189,7 @@
           '<br>Mode: '+esc(x.data_mode||'—')+'<br>Stress: '+val(x.stress)+
           '<br>Reason: '+esc(JSON.stringify(x.reason||[]))+'</code></details></td></tr>';
       }).join('')+'</tbody></table>';
+    if(el('workspaceResearchTable'))el('workspaceResearchTable').innerHTML=host.innerHTML;
   }
   function stats(){
     if(!s.data)return;
