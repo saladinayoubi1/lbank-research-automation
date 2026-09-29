@@ -129,6 +129,7 @@ def record_outcome(
     stage: str,
     experiment_sha256: str,
     expected_source_sha: str | None = None,
+    artifact_unavailable: bool = False,
 ) -> dict[str, Any]:
     run_id = str(run.get("databaseId", ""))
     if not run_id.isdigit():
@@ -144,10 +145,13 @@ def record_outcome(
         return dict(state)
 
     conclusion = str(run.get("conclusion", ""))
-    if conclusion == "success" and not any(artifact_root.rglob("*.json")):
+    has_json = any(artifact_root.rglob("*.json"))
+    if conclusion == "success" and not has_json and not artifact_unavailable:
         raise StrategyDiscoveryFeedbackError("completed Research workflow has no readable outcome artifacts")
     flags = _artifact_observations(artifact_root)
-    if conclusion != "success":
+    if artifact_unavailable:
+        outcome = "evidence_unavailable"
+    elif conclusion != "success":
         outcome = "workflow_failed"
     elif flags["requires_data"]:
         outcome = "requires_data"
@@ -196,6 +200,7 @@ def main() -> int:
     parser.add_argument("--stage", required=True)
     parser.add_argument("--experiment-sha256", required=True)
     parser.add_argument("--expected-source-sha")
+    parser.add_argument("--artifact-unavailable", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     state = load_state(args.state)
@@ -207,6 +212,7 @@ def main() -> int:
         stage=args.stage,
         experiment_sha256=args.experiment_sha256,
         expected_source_sha=args.expected_source_sha,
+        artifact_unavailable=args.artifact_unavailable,
     )
     _atomic(args.output, value)
     print(json.dumps(value, sort_keys=True))

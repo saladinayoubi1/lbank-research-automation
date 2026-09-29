@@ -184,3 +184,13 @@ def test_unique_new_run_jq_filter_rejects_existing_same_sha_when_available():
                            capture_output=True, check=False)
     assert ambiguous.returncode == 0, ambiguous.stderr
     assert ambiguous.stdout.strip() == "", "ambiguous concurrent runs must fail closed"
+
+
+def test_lost_prior_research_artifact_is_reason_coded_before_frontier_advances():
+    workflow = _text()
+    reconcile = workflow.split("Reconcile previously dispatched Research outcome", 1)[1].split(
+        "Verify discovery surface and select one stage", 1
+    )[0]
+    assert "research_outcome_artifact=UNAVAILABLE_FAIL_CLOSED" in reconcile
+    assert "--artifact-unavailable" in reconcile
+    assert "artifact_unavailable=true" in reconcile

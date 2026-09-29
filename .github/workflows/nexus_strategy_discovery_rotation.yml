@@ -263,9 +263,15 @@ jobs:
           fi
           rm -rf build/discovery/research-outcome-artifacts
           mkdir -p build/discovery/research-outcome-artifacts
-          gh run download "$run_id" --repo "$GITHUB_REPOSITORY"             --dir build/discovery/research-outcome-artifacts
+          artifact_unavailable=false
+          if ! gh run download "$run_id" --repo "$GITHUB_REPOSITORY"             --dir build/discovery/research-outcome-artifacts; then
+            artifact_unavailable=true
+            echo "research_outcome_artifact=UNAVAILABLE_FAIL_CLOSED run_id=$run_id"
+          fi
           expected_sha="$(python -c 'import json; print(json.load(open("build/discovery/last-research-run.json"))["source_sha"])')"
-          python nexus_strategy_discovery_feedback.py             --state build/discovery/feedback-state.json             --run-json build/discovery/research-run-status.json             --artifact-root build/discovery/research-outcome-artifacts             --stage "$stage"             --experiment-sha256 "$experiment_sha256"             --expected-source-sha "$expected_sha"             --output build/discovery/feedback-state.json
+          args=()
+          if [ "$artifact_unavailable" = "true" ]; then args+=(--artifact-unavailable); fi
+          python nexus_strategy_discovery_feedback.py             --state build/discovery/feedback-state.json             --run-json build/discovery/research-run-status.json             --artifact-root build/discovery/research-outcome-artifacts             --stage "$stage"             --experiment-sha256 "$experiment_sha256"             --expected-source-sha "$expected_sha"             "${args[@]}"             --output build/discovery/feedback-state.json
           rm -f "$receipt"
 
       - name: Verify discovery surface and select one stage

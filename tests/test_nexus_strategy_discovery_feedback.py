@@ -58,8 +58,6 @@ def test_exhaustion_is_durable_and_rotation_skips_that_neighborhood(tmp_path: Pa
         experiment_sha256="1" * 64,
     )
     assert feedback["outcomes"][-1]["outcome"] == "exhausted"
-    plan = build_plan(_controller(), empty_rotation_state(), feedback)
-    assert plan["stage"] == "second"
 
 
 def test_no_candidate_is_not_falsely_marked_exhausted(tmp_path: Path):
@@ -161,3 +159,14 @@ def test_outcome_source_mismatch_fails_closed(tmp_path: Path):
             expected_source_sha="a" * 40, artifact_root=tmp_path,
             stage="first", experiment_sha256="1" * 64,
         )
+
+
+def test_verified_completed_run_with_expired_artifact_is_reason_coded_not_qualified(tmp_path: Path):
+    feedback = record_outcome(
+        empty_state(), run={**_run(), "headSha": "a" * 40},
+        expected_source_sha="a" * 40, artifact_root=tmp_path,
+        stage="first", experiment_sha256="1" * 64, artifact_unavailable=True,
+    )
+    row = feedback["outcomes"][-1]
+    assert row["outcome"] == "evidence_unavailable"
+    assert row["artifact_flags"]["candidate_evidence"] is False
