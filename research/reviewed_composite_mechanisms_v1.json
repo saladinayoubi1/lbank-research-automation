@@ -228,6 +228,39 @@
         "no_orderbook_or_signed_flow_proxy",
         "no_automatic_paper_promotion"
       ]
+    },
+    {
+      "id": "peer_shock_noncontagion_rebound",
+      "hypothesis": "An unusually negative already-closed peer 1h impulse observed at least one completed 15m candle ago, combined with own-asset relative resilience and subsequent closed-bar rejection of its prior downside range, might identify spot-long rebound. This is speculative and has no verified profitability.",
+      "inputs": [
+        "closed_spot_ohlcv",
+        "aligned_spot_cross_pair"
+      ],
+      "context": [
+        "exact_utc_closed_peer_grid",
+        "peer_downside_impulse_lagged_one_completed_15m_bar",
+        "peer_shock_baseline_from_prior_96_closed_bars",
+        "own_prior_four_bar_relative_resilience",
+        "completed_4h_range_regime",
+        "completed_1h_volatility_guard"
+      ],
+      "entry": [
+        "lagged_negative_peer_shock_above_prior_amplitude",
+        "own_prior_response_less_negative_than_peer_shock",
+        "current_own_closed_bar_reclaims_prior_18bar_low",
+        "observed_own_relative_volume_guard",
+        "next_own_15m_open_fill"
+      ],
+      "exit": [
+        "own_intrabar_worst_case_structure_stop",
+        "precommitted_maximum_holding_time"
+      ],
+      "risk": [
+        "single_symbol_spot_long_flat_cash_only",
+        "no_peer_short_or_spread_execution_claim",
+        "no_current_peer_candle_leakage",
+        "no_auto_paper_promotion"
+      ]
     }
   ]
 }
