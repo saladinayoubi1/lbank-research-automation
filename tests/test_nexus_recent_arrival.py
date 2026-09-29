@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 import zipfile
+from types import SimpleNamespace
 from pathlib import Path
 
 import pytest
@@ -56,7 +57,7 @@ def _stage(monkeypatch, tmp_path, *, received_ms=ARRIVED):
     )
     # On the isolated physical disk, the staged inner zip and digest sidecar
     # are later verified again. The mock simply simulates extraction.
-    monkeypatch.setattr(arrival.time, "time", lambda: received_ms / 1000)
+    monkeypatch.setattr(arrival, "time", SimpleNamespace(time=lambda: received_ms / 1000))
     monkeypatch.setattr(arrival, "_hash_file", lambda p: (
         ZIP_SHA if p.read_bytes() == b"original archive" else "0" * 64
     ))
@@ -179,7 +180,7 @@ def test_real_bounded_inner_extractor_and_later_numeric_gate_remain_separate(
         transport, "_artifact", lambda *a, **k: {"id": 87, "size_in_bytes": 100},
     )
     monkeypatch.setattr(transport, "_download_outer", producer_download)
-    monkeypatch.setattr(arrival.time, "time", lambda: ARRIVED / 1000)
+    monkeypatch.setattr(arrival, "time", SimpleNamespace(time=lambda: ARRIVED / 1000))
     stage = tmp_path / "physical-stage"
     receipt = arrival.stage(
         repository=REPO, run_id=RUN, artifact_name="recent", source_sha=SHA,
