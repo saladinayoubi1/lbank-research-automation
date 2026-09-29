@@ -31,9 +31,9 @@ const done = {
   id:'P7-RESEARCH-COMPOSITE-001',title:'Reviewed closed candle research',
   status:'DONE',result_evidence:{
     source_sha:'b'.repeat(40),archive_sha256:sha,config_fingerprint:'c'.repeat(64),
-    mechanism:'structural_pullback',receipt_digest:sha,ledger_digest:'d'.repeat(64),live_enabled:false,validation:[{symbol:'BTCUSDT',timeframe:'15m',profile:'conservative',closed_round_trips:7,net_return_pct:-1.5,max_drawdown_pct:2.25,win_rate_pct:42.86,profit_factor:0.72}]
+    mechanism:'structural_pullback',executor:'nexus-real-composite-backtest',receipt_digest:sha,ledger_digest:'d'.repeat(64),auto_demo_promotion:false,live_enabled:false,validation:[{symbol:'BTCUSDT',timeframe:'15m',profile:'conservative',closed_round_trips:7,net_return_pct:-1.5,max_drawdown_pct:2.25,win_rate_pct:42.86,profit_factor:0.72}]
   },
-  verification_evidence:{independent_qa_complete:true,producer_receipt_digest:sha,qa_digest:'e'.repeat(64),live_enabled:false}
+  verification_evidence:{executor:'nexus-independent-composite-numeric-qa',source_sha:'b'.repeat(40),independent_qa_complete:true,producer_receipt_digest:sha,qa_digest:'e'.repeat(64),auto_demo_promotion:false,live_enabled:false}
 };
 const running = {
   id:'P7-RESEARCH-COMPOSITE-002',
@@ -72,14 +72,27 @@ assert.match(field('opsQueue').innerHTML,/research-agent/);
 // Inspect the completed task rather than assuming the active task has QA proof.
 field('agentState').onclick({target:{closest:(selector)=>
   selector === '[data-ops-task]' ? {getAttribute:()=>done.id} : null}});
-assert.match(field('opsInspector').innerHTML,/تطبیق receipt/);
+assert.match(field('opsInspector').innerHTML,/تطبیق گزارش‌شده/);
 // A matching QA digest is compulsory; task DONE alone must not be promoted.
 const mismatched = JSON.parse(JSON.stringify(done));
 mismatched.verification_evidence.producer_receipt_digest = 'f'.repeat(64);
 ops.render(snapshot({tasks:[mismatched],source:'local_runtime',
   snapshot_age_seconds:6,control_plane:{runtime_present:true}}));
 assert.match(field('opsInspector').innerHTML,/مدرک QA مستقل هنوز تأیید نشده/);
-assert.doesNotMatch(field('opsInspector').innerHTML,/تطبیق receipt/);
+assert.doesNotMatch(field('opsInspector').innerHTML,/تطبیق گزارش‌شده/);
+// A forged source or wrong executor cannot impersonate independent QA.
+for (const modify of [
+  t=>{t.verification_evidence.source_sha='f'.repeat(40);},
+  t=>{t.verification_evidence.executor='nexus-real-composite-backtest';},
+  t=>{t.result_evidence.auto_demo_promotion=true;},
+  t=>{t.verification_evidence.qa_digest='invalid';},
+]) {
+  const fake=JSON.parse(JSON.stringify(done));
+  modify(fake);
+  ops.render(snapshot({tasks:[fake],source:'local_runtime',
+    snapshot_age_seconds:6,control_plane:{runtime_present:true}}));
+  assert.match(field('opsInspector').innerHTML,/مدرک QA مستقل هنوز تأیید نشده/);
+}
 // Historical or old data must never be presented as real-time execution.
 ops.render(snapshot({source:'local_runtime',snapshot_age_seconds:901,
   stale:true,control_plane:{runtime_present:true}}));
