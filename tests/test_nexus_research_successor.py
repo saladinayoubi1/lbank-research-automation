@@ -309,3 +309,34 @@ def test_untrusted_original_QA_cannot_release_successor(monkeypatch):
     assert runner.bind_qa_attested_successor(config) == "untrusted_prior_QA"
     assert config["tasks"][1]["status"] == "BLOCKED"
     assert runner.apply_research_input_gate(config, ready=True) == "successor_QA_not_attested"
+
+
+def test_research_unavailable_never_routes_real_work_to_generic_QA(monkeypatch):
+    config = linked(monkeypatch)
+    for worker in config["workers"]:
+        if worker["id"] == "research-agent":
+            worker["enabled"] = False
+    runner.apply_research_input_gate(config, ready=True)
+    am.cycle(config)
+    task = config["tasks"][1]
+    assert task["status"] == "READY"
+    assert not task.get("assigned_worker")
+
+
+def test_designated_independent_numerical_QA_is_required_not_any_verifier(monkeypatch):
+    config = linked(monkeypatch)
+    for worker in config["workers"]:
+        if worker["id"] == "qa-verifier-agent":
+            worker["enabled"] = False
+    task = config["tasks"][1]
+    task.update(status="RUNNING", assigned_worker="research-agent",
+                producer="research-agent", lease_id="second-producer")
+    am.record_result(config, SECOND, "research-agent", "success", {
+        "receipt_digest": "8" * 64, "source_sha": NEW_SOURCE,
+        "mechanism": "failed_range_break_reversal",
+        "prior_ledger_digest": "3" * 64,
+        "independent_qa_complete": False,
+        "auto_demo_promotion": False, "live_enabled": False,
+    })
+    assert task["status"] == "BLOCKED"
+    assert task["blocked_reason"] == "independent verifier unavailable"
