@@ -97,6 +97,7 @@ jobs:
           print(f"artifact_digest={digest}")
           PY
       - name: Download exact state artifact
+        id: state-surface
         env:
           ARTIFACT_ID: ${{ steps.evidence.outputs.artifact_id }}
         run: |
@@ -109,8 +110,18 @@ jobs:
             > build/nexus_paper_gate_report/state.zip
           unzip -q build/nexus_paper_gate_report/state.zip -d build/nexus_paper_gate_report/state
           test -f "build/nexus_paper_gate_report/state/$STATE_FILE"
-          test -f "build/nexus_paper_gate_report/state/$ATTESTATION_FILE"
+          legacy_receipt="build/nexus_paper_gate_report/state/terminal_archive_receipt.json"
+          runtime_attestation="build/nexus_paper_gate_report/state/$ATTESTATION_FILE"
+          if test -f "$legacy_receipt" && ! test -e "$runtime_attestation"; then
+            echo "legacy_archive=true" >> "$GITHUB_OUTPUT"
+          elif test -f "$runtime_attestation" && ! test -e "$legacy_receipt"; then
+            echo "legacy_archive=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Ambiguous or incomplete Paper runtime evidence" >&2
+            exit 1
+          fi
       - name: Independently verify exact Paper runtime attestation
+        if: steps.state-surface.outputs.legacy_archive != 'true'
         run: |
           set -euo pipefail
           python nexus_paper_runtime_attestation.py verify \
@@ -121,8 +132,85 @@ jobs:
             --check-installed \
             | tee build/nexus_paper_gate_report/runtime-verification.json
           cat build/nexus_paper_gate_report/runtime-verification.json >> "$GITHUB_STEP_SUMMARY"
+      - name: Independently verify original historical quarantined state and receipt
+        id: archived-terminal
+        if: steps.state-surface.outputs.legacy_archive == 'true'
+        run: |
+          set -euo pipefail
+          historical_source=961fc206bb9475666152f15c729e00dd2e1bd184
+          mkdir -p build/nexus_paper_gate_report/original
+          git fetch --no-tags --depth=1 origin "$historical_source"
+          test "$(git rev-parse FETCH_HEAD)" = "$historical_source"
+          git show FETCH_HEAD:bybit_prospective_paper_forward_v1.py \
+            > build/nexus_paper_gate_report/original/historical-engine.py
+          gh api -H 'Accept: application/vnd.github+json' \
+            "repos/$GITHUB_REPOSITORY/actions/runs/36255472645" \
+            > build/nexus_paper_gate_report/original/original-run.json
+          python nexus_paper_terminal_legacy_archive.py verify \
+            --manifest experiments/bybit_prospective_paper_forward_v1.json \
+            --state "build/nexus_paper_gate_report/state/$STATE_FILE" \
+            --old-engine build/nexus_paper_gate_report/original/historical-engine.py \
+            --old-run build/nexus_paper_gate_report/original/original-run.json \
+            --source-sha "$TRIGGER_HEAD_SHA" --run-id "$TRIGGER_RUN_ID" \
+            --receipt build/nexus_paper_gate_report/state/terminal_archive_receipt.json \
+            | tee build/nexus_paper_gate_report/archive-verification.json
+          echo "QUARANTINED: original 181 bars preserved; no engine migration, new data or Paper promotion." >> "$GITHUB_STEP_SUMMARY"
+      - name: Record once the independently verified historical quarantine on Issue 984
+        if: steps.archived-terminal.outcome == 'success' && steps.state-surface.outputs.legacy_archive == 'true'
+        uses: actions/github-script@d746ffe35508b1917358783b479e04febd2b8f71
+        env:
+          ARCHIVE_PROOF: build/nexus_paper_gate_report/archive-verification.json
+        with:
+          script: |
+            const fs = require('fs');
+            const { owner, repo } = context.repo;
+            const proof = JSON.parse(fs.readFileSync(process.env.ARCHIVE_PROOF, 'utf8'));
+            const source = process.env.TRIGGER_HEAD_SHA;
+            const run = Number(process.env.TRIGGER_RUN_ID);
+            if (
+              proof.schema !== 'nexus.paper-terminal-historical-quarantine-archive.v1' ||
+              proof.original_run_id !== 36255472645 ||
+              proof.original_status !== 'QUARANTINED' ||
+              proof.original_completed_bar_count !== 181 ||
+              proof.original_state_digest !== '0caa0abacbafdb1d2631888383ac1fe0069a5080b0c7d716e38917dbad2efbad' ||
+              proof.current_source_sha !== source ||
+              proof.current_run_id !== run ||
+              proof.historical_runtime_requalified_for_current_engine !== false ||
+              proof.new_paper_admission !== false ||
+              proof.live_trading_enabled !== false
+            ) {
+              core.setFailed('Historical Paper proof was not independently verified against its original source');
+              return;
+            }
+            const marker = '<!-- nexus-paper-historical-quarantine:v1:36255472645:0caa0abacbafdb1d2631888383ac1fe0069a5080b0c7d716e38917dbad2efbad -->';
+            const body = [
+              marker,
+              '## Verified historical Paper quarantine — original evidence preserved',
+              '',
+              '- Original prospective run: [36255472645](https://github.com/saladinayoubi1/lbank-research-automation/actions/runs/36255472645).',
+              '- Original terminal state: `QUARANTINED` after **181 historical prospective bars**; it is not an accepted strategy.',
+              '- Original engine SHA-256, source commit, producing run and complete event digest chain verified independently.',
+              `- Separate archive verification run: [${run}](https://github.com/${owner}/${repo}/actions/runs/${run}).`,
+              '- Historical state bytes are immutable; no old engine digest was rewritten as the current engine.',
+              '- No new Paper positions, Paper admission or Live capability. Future prospective candidates require their own untouched evidence and owner-review gate.'
+            ].join('\\n');
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner, repo, issue_number: 984, per_page: 100
+            });
+            const matches = comments.filter(comment => typeof comment.body === 'string' && comment.body.includes(marker));
+            if (matches.length > 1) {
+              core.setFailed('Ambiguous existing historical quarantine evidence comments');
+              return;
+            }
+            if (!matches.length) {
+              const result = await github.rest.issues.createComment({owner, repo, issue_number: 984, body});
+              core.info(`Archived verified quarantine comment ${result.data.id}`);
+            } else {
+              core.info('Historical quarantine already independently documented');
+            }
       - name: Independently verify and render bounded checkpoint
         id: report
+        if: steps.state-surface.outputs.legacy_archive != 'true'
         env:
           ARTIFACT_DIGEST: ${{ steps.evidence.outputs.artifact_digest }}
           ARTIFACT_ID: ${{ steps.evidence.outputs.artifact_id }}
