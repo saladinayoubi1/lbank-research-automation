@@ -15,9 +15,14 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import sys
 from typing import Any
 from urllib.parse import quote
 import zipfile
+
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
 
 from nexus_composite_strategy_research import ARCHIVE_SHA256, digest, load_ledger, safe_write
 from nexus_research_missions import FIRST, PREDECESSOR, attested_predecessor
