@@ -64,6 +64,7 @@ function renderEvents(){const events=state.events?.events||[];const html=events.
 function renderStrategies(){const s=state.strategies;if(!s)return;$('#strategyFamilies').innerHTML=(s.families||[]).map(x=>`<article class="strategy-card"><span>${esc(x.status)}</span><h3>${esc(x.id)}</h3><p>Promotion ceiling: ${esc(x.promotion_ceiling)} · Live: ${esc(bool(x.live_execution_allowed))}</p></article>`).join('');$('#qualificationPath').innerHTML=(s.qualification_path||[]).map(x=>`<div class="stage">${esc(x)}</div>`).join('')}
 function renderIntegration(){const x=state.integration;if(!x)return;$('#aiContext').innerHTML=[metric('MISSION',x.mission?.status||'unavailable','authoritative'),metric('RESEARCH',x.research?.status||'none',x.research?.family||'none'),metric('STRATEGY',x.strategy?.status||'none',x.strategy?.family||'none'),metric('RISK',x.risk?.status||'unavailable','final paper authority'),metric('PAPER',x.paper?.status||'unavailable',`${x.paper?.open_positions||0} positions`),metric('LIVE',x.live?.status||'locked','orders disabled')].join('')}
 function renderMission(){
+  if(window.NexusFullMissionManaged)return;
   const ops=window.NexusResearchOps;
   if(ops && typeof ops.render==='function'){
     ops.render(state.mission,{onRefresh:loadAll});
