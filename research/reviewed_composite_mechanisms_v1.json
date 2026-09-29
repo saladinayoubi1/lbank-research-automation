@@ -261,6 +261,36 @@
         "no_current_peer_candle_leakage",
         "no_auto_paper_promotion"
       ]
+    },
+    {
+      "id": "relative_momentum_reacceleration",
+      "hypothesis": "After a verified BTC/ETH peer's simultaneously closed spot candle, the own asset may re-accelerate its already positive 1-hour relative price momentum at the current 15m close, conditional on fully closed 4h trend, 1h volatility guard and own closed range breakout; this causal continuation hypothesis is different from relative-z mean reversion, peer leadership and downside peer noncontagion. It has no verified profitability.",
+      "inputs": [
+        "closed_spot_ohlcv",
+        "aligned_spot_cross_pair"
+      ],
+      "context": [
+        "complete_4h_trend_confirmation",
+        "complete_1h_volatility_guard",
+        "prior_own_minus_peer_four_bar_return_relative_momentum",
+        "baseline_ends_two_closed_candles_before_current_decision"
+      ],
+      "entry": [
+        "positive_prior_relative_momentum_above_old_baseline",
+        "current_closed_relative_return_reaccelerates_above_prior",
+        "current_own_closed_range_breakout_with_volume",
+        "next_own_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_adverse_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "single_own_symbol_cash_collateral_spot_long_flat_only",
+        "no_peer_short_spread_execution_or_implied_borrowing",
+        "no_current_or_future_peer_candle_lookahead",
+        "no_auto_paper_or_live_promotion"
+      ]
     }
   ]
 }
