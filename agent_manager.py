@@ -391,6 +391,11 @@ def assign_ready_tasks(config: dict[str, Any], now: datetime) -> None:
 
         routing_rows = rank_worker_candidates(task, workers, active_load=active_load)
         eligible_rows = [row for row in routing_rows if row["eligible"]]
+        if task.get("id") in TASKS:
+            # Actual numerical Research leases are not generic cloud pytest
+            # work: only the dedicated Research Agent can be their producer.
+            eligible_rows = [row for row in eligible_rows
+                             if row["worker_id"] == "research-agent"]
         if not eligible_rows:
             task["routing_decision"] = {
                 "evaluated_at": iso(now),
@@ -501,6 +506,10 @@ def request_verification(config: dict[str, Any], task: dict[str, Any], now: date
         verifier_only=True,
         active_load=active_worker_load(config, exclude_task=task),
     )
+    if task.get("id") in TASKS:
+        # Reject a generic verifier even if its dynamic routing score is
+        # higher: independent numerical replay requires the designated QA.
+        candidates = [w for w in candidates if w.id == "qa-verifier-agent"]
     if not candidates:
         task["status"] = "BLOCKED"
         task["blocked_reason"] = "independent verifier unavailable"
