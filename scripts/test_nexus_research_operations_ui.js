@@ -59,7 +59,7 @@ assert.match(field('opsQueue').innerHTML,/&lt;img src=x onerror=&quot;not_safe&q
 assert.doesNotMatch(field('opsQueue').innerHTML,/<img src=x/);
 assert.match(field('researchAgentOverview').innerHTML,/گیت دمو/);
 assert.match(field('researchAgentOverview').innerHTML,/قفل/);
-assert.match(field('opsInspector').innerHTML,/Receipt/);
+assert.match(field('opsInspector').innerHTML,/Producer receipt/i);
 ops.render(snapshot({source:'local_runtime',snapshot_age_seconds:6,
   control_plane:{runtime_present:true}}));
 assert.doesNotMatch(field('agentState').innerHTML,/اطلاعات جاری تأیید نشده/);
