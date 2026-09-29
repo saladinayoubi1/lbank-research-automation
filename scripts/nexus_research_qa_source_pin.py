@@ -26,7 +26,8 @@ def select_source(payload: dict[str, Any], *, repository: str, main_sha: str,
                   ref_name: str, default_branch: str, actor: str,
                   owner: str, input_lease: str, input_transport: str) -> dict[str, Any]:
     if (repository != REPO or ref_name != "main" or default_branch != "main"
-            or actor not in {owner, "github-actions[bot]"}
+            or not owner or not re.fullmatch(r"[A-Za-z0-9-]{1,39}", owner)
+            or not actor or actor not in {owner, "github-actions[bot]"}
             or not SHA40.fullmatch(main_sha)):
         raise ResearchQaPinError("untrusted main Research QA source-pin context")
     if (payload.get("lease_id") != input_lease
