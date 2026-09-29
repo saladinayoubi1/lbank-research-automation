@@ -33,6 +33,7 @@ MECHANISMS = (
     "volatility_compression_expansion",
     "bar_proxy_vwap_reclaim",
     "failed_range_break_reversal",
+    "cross_pair_relative_reclaim",
 )
 # Distinct entry mechanisms vs risk/feature parameter variations are explicitly
 # separately labeled; eight configurations do NOT count as eight new edges.
@@ -86,7 +87,7 @@ def _closed_asof(source: pd.DataFrame, interval_ms: int, decision: pd.DataFrame,
     return joined.drop(columns=["decision_at", "available_at"])
 
 
-def build_features(frames: dict[str, pd.DataFrame]) -> pd.DataFrame:
+def build_features(frames: dict[str, pd.DataFrame], *, peer_15m: pd.DataFrame | None = None) -> pd.DataFrame:
     """Derive observable structural/volatility/bar-proxy features from CLOSED bars."""
     try:
         f = frames["minute15"].reset_index(drop=True).copy()
@@ -138,6 +139,38 @@ def build_features(frames: dict[str, pd.DataFrame]) -> pd.DataFrame:
     f["prior_lo"] = f["low"].shift(1).rolling(18, min_periods=18).min()
     f["rel_vol"] = volume / volume.shift(1).rolling(20, min_periods=20).mean().replace(0, np.nan)
     f["atr"] = (f["high"] - f["low"]).shift(1).rolling(14, min_periods=14).mean()
+    if peer_15m is not None:
+        # New causal feature, derived exclusively from two independently
+        # verified, exactly time-aligned CLOSED 15m Spot candle grids.
+        # A peer candle may not be borrowed from a later/asynchronous bar.
+        peer = peer_15m.reset_index(drop=True)
+        peer_times = pd.to_datetime(peer["timestamp"], utc=True, errors="raise")
+        own_times = pd.to_datetime(f["timestamp"], utc=True)
+        if (
+            len(peer) != len(f)
+            or peer_times.duplicated().any()
+            or not peer_times.is_monotonic_increasing
+            or not peer_times.equals(own_times)
+            or not (peer_times.diff().dropna() == pd.Timedelta(minutes=15)).all()
+        ):
+            raise CompositeResearchError("cross-pair Spot candles are not the exact same closed UTC grid")
+        peer_ohlcv = peer[["open", "high", "low", "close", "volume"]].astype(float)
+        if (
+            not np.isfinite(peer_ohlcv.to_numpy()).all()
+            or (peer_ohlcv[["open", "high", "low", "close"]] <= 0).any().any()
+            or (peer_ohlcv["volume"] < 0).any()
+            or (peer_ohlcv["high"] < peer_ohlcv[["open", "close", "low"]].max(axis=1)).any()
+            or (peer_ohlcv["low"] > peer_ohlcv[["open", "close", "high"]].min(axis=1)).any()
+        ):
+            raise CompositeResearchError("cross-pair Spot candle OHLCV integrity failed")
+        relative = np.log(close / peer_ohlcv["close"])
+        # Mean/std are based on bars completed strictly BEFORE the current
+        # decision candle; current relative close is only visible at its close.
+        baseline = relative.shift(1).rolling(96, min_periods=96)
+        scale = baseline.std().replace(0.0, np.nan)
+        score = (relative - baseline.mean()) / scale
+        f["cross_pair_relative_z"] = score.replace([np.inf, -np.inf], np.nan)
+        f["cross_pair_relative_z_previous"] = f["cross_pair_relative_z"].shift(1)
     return f
 
 
@@ -158,6 +191,17 @@ def signal_for(frame: pd.DataFrame, config: dict[str, Any]) -> np.ndarray:
         s = (frame["h4_range"] == 1) & (frame["h1_vol_ok"] == 1) & (
             c.shift(1) < frame["bar_proxy_vwap"].shift(1)) & (
             c > frame["bar_proxy_vwap"]) & (frame["rel_vol"] >= .9)
+    elif mechanism == "cross_pair_relative_reclaim":
+        if not {"cross_pair_relative_z", "cross_pair_relative_z_previous"} <= set(frame.columns):
+            raise CompositeResearchError("cross-pair mechanism requires exact aligned verified peer history")
+        previous = frame["cross_pair_relative_z_previous"]
+        now = frame["cross_pair_relative_z"]
+        # A negatively dislocated spot asset starts to recover versus its
+        # concurrently closed verified peer, inside already closed 4h/1h
+        # non-trending/volatility context. Not paired execution or rotation.
+        s = (frame["h4_range"] == 1) & (frame["h1_vol_ok"] == 1) & (
+            previous < -1.45) & (now > previous + .20) & (now < -.25) & (
+            c > o) & (frame["rel_vol"] >= 1.0) & np.isfinite(now) & np.isfinite(previous)
     else:  # Failed *observed* 15m range break; not imaginary L2 stop hunts.
         s = (frame["h4_range"] == 1) & (lo < frame["prior_lo"]) & (
             c > frame["prior_lo"]) & (c > o) & (frame["rel_vol"] > 1.0)
@@ -322,7 +366,15 @@ def run(archive_root: Path, output: Path, source_sha: str, previous: Path | None
     for symbol in SYMBOLS:
         frames = {tf: load_verified_archive_frame(archive_root, symbol, tf)
                   for tf in ("minute15", "hour1", "hour4")}
-        f = build_features(frames)
+        peer = None
+        if nxt["mechanism"] == "cross_pair_relative_reclaim":
+            # Current official replay has exactly BTC/ETH; never pretend to
+            # possess missing SOL/XRP or synthetic peer order flow/L2.
+            if len(SYMBOLS) != 2:
+                raise CompositeResearchError("cross-pair peer selection requires reviewed pair topology")
+            other = next(s for s in SYMBOLS if s != symbol)
+            peer = load_verified_archive_frame(archive_root, other, "minute15")
+        f = build_features(frames, peer_15m=peer)
         sig = signal_for(f, nxt)
         n = len(f)
         cut1, cut2 = int(n * TRAIN_FRAC), int(n * (TRAIN_FRAC + VALID_FRAC))
