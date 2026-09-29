@@ -199,3 +199,15 @@ def test_reviewed_signal_and_real_next_open_engine_are_invoked(inputs):
     assert result["trade_count_limit"] is None
     assert result["fee_bps"] == composite.ENTRY_FEE_BPS
     assert result["slippage_bps"] == composite.ENTRY_SLIP_BPS
+
+
+def test_published_july_v2_matrix_is_immutable_when_seventh_research_family_is_added():
+    # The historical report is a source-bound 288-cell artifact. A new
+    # exploratory real-Agent family must not rewrite its grammar or counts.
+    assert len(composite.MECHANISMS) == 7
+    assert len(four.HISTORICAL_V2_MECHANISMS) == 6
+    assert len(four.EXPERIMENTS) == 12
+    assert {c["mechanism"] for c in four.EXPERIMENTS} == set(four.HISTORICAL_V2_MECHANISMS)
+    assert "peer_shock_noncontagion_rebound" not in {
+        c["mechanism"] for c in four.EXPERIMENTS
+    }
