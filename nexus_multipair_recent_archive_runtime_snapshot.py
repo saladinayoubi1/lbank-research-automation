@@ -914,6 +914,8 @@ def main() -> int:
         output=args.output,
         now_ms=args.now_ms,
         max_transport_age_ms=args.max_transport_age_ms,
+        stage_root=args.stage_root,
+        expected_stage_sha256=args.expected_stage_sha256,
     )
     print(
         json.dumps(
