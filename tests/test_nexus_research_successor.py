@@ -372,6 +372,9 @@ def second_done():
             "live_enabled": False,
         },
     })
+    # A genuinely completed second mission MUST already preserve its own
+    # first-producer+QA ancestry; a DONE task without it is invalid runtime.
+    two.update(attested_predecessor(one))
     three = child()
     three.update(id="P7-RESEARCH-COMPOSITE-003", dependencies=[SECOND])
     return {"tasks": [one, two, three]}
