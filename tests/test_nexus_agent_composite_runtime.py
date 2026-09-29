@@ -176,6 +176,33 @@ def test_real_lease_never_resets_missing_ledger(tmp_path, monkeypatch):
     assert calls == []
 
 
+def test_real_lease_rejects_recycled_risk_variant_without_spending_backtest(tmp_path, monkeypatch):
+    # The standalone grammar is allowed to revisit robustness variants.
+    # The autonomous Research Agent successor must introduce an unseen family.
+    old = research.empty_ledger()
+    core = {k: v for k, v in old.items() if k != "ledger_digest"}
+    for cfg in research.CONFIGS:
+        if cfg["risk_variant"] != 0:
+            continue
+        core["config_fingerprints_evaluated"].append(research.digest({
+            "config": cfg, "dataset": research.ARCHIVE_SHA256,
+            "contract": research.SCHEMA,
+        }))
+        core["mechanisms_evaluated"].append(cfg["mechanism"])
+    core["mechanisms_evaluated"] = sorted(set(core["mechanisms_evaluated"]))
+    prior = tmp_path / "all-reviewed.json"
+    research.safe_write(prior, {**core, "ledger_digest": research.digest(core)})
+    assert research.select_next(research.load_ledger(prior)) is not None
+    calls = _fake_engine(monkeypatch)
+    with pytest.raises(runtime.RealResearchError, match="no new reviewed"):
+        runtime.run_lease(
+            archive_root=tmp_path, previous_ledger=prior,
+            source_sha=SOURCE, lease_id=LEASE, output_dir=tmp_path / "blocked",
+        )
+    assert calls == []
+    assert not (tmp_path / "blocked").exists()
+
+
 def test_real_lease_rejects_incomplete_backtest_grid(tmp_path, monkeypatch):
     old = tmp_path / "prior.json"
     _previous(old)
