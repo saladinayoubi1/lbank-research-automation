@@ -34,6 +34,7 @@ MECHANISMS = (
     "bar_proxy_vwap_reclaim",
     "failed_range_break_reversal",
     "cross_pair_relative_reclaim",
+    "lagged_peer_impulse_confirmation",
 )
 # Distinct entry mechanisms vs risk/feature parameter variations are explicitly
 # separately labeled; eight configurations do NOT count as eight new edges.
@@ -171,6 +172,15 @@ def build_features(frames: dict[str, pd.DataFrame], *, peer_15m: pd.DataFrame | 
         score = (relative - baseline.mean()) / scale
         f["cross_pair_relative_z"] = score.replace([np.inf, -np.inf], np.nan)
         f["cross_pair_relative_z_previous"] = f["cross_pair_relative_z"].shift(1)
+        # Different cross-asset hypothesis: the peer impulse was complete
+        # one entire 15m candle ago. Use only earlier peer bars to establish
+        # its ordinary amplitude, so the observed shock cannot set its gate.
+        peer_hour_return = peer_ohlcv["close"].pct_change(4)
+        f["lagged_peer_impulse"] = peer_hour_return.shift(1)
+        f["lagged_peer_impulse_baseline"] = (
+            peer_hour_return.shift(2).abs().rolling(96, min_periods=96).median()
+        )
+        f["lagged_own_response"] = close.pct_change(4).shift(1)
     return f
 
 
@@ -191,6 +201,22 @@ def signal_for(frame: pd.DataFrame, config: dict[str, Any]) -> np.ndarray:
         s = (frame["h4_range"] == 1) & (frame["h1_vol_ok"] == 1) & (
             c.shift(1) < frame["bar_proxy_vwap"].shift(1)) & (
             c > frame["bar_proxy_vwap"]) & (frame["rel_vol"] >= .9)
+    elif mechanism == "lagged_peer_impulse_confirmation":
+        required = {"lagged_peer_impulse", "lagged_peer_impulse_baseline",
+                    "lagged_own_response"}
+        if not required <= set(frame.columns):
+            raise CompositeResearchError("peer impulse requires exact verified aligned peer history")
+        shock = frame["lagged_peer_impulse"]
+        benchmark = frame["lagged_peer_impulse_baseline"]
+        lagged = frame["lagged_own_response"]
+        # Not a hedge or relative-z mean reversion: a peer leads one entire
+        # closed candle, target asset has not caught up, and its own range
+        # breakout confirms only at THIS close. Fill is at NEXT open.
+        s = (frame["h4_up"] == 1) & (frame["h1_vol_ok"] == 1) & (
+            shock > .003) & (shock > benchmark * 1.25) & (
+            lagged > -.01) & (lagged < shock * .65) & (
+            c > frame["prior_hi"]) & (c > o) & (frame["rel_vol"] > 1.05) & (
+            np.isfinite(shock) & np.isfinite(benchmark) & np.isfinite(lagged))
     elif mechanism == "cross_pair_relative_reclaim":
         if not {"cross_pair_relative_z", "cross_pair_relative_z_previous"} <= set(frame.columns):
             raise CompositeResearchError("cross-pair mechanism requires exact aligned verified peer history")
@@ -367,7 +393,7 @@ def run(archive_root: Path, output: Path, source_sha: str, previous: Path | None
         frames = {tf: load_verified_archive_frame(archive_root, symbol, tf)
                   for tf in ("minute15", "hour1", "hour4")}
         peer = None
-        if nxt["mechanism"] == "cross_pair_relative_reclaim":
+        if nxt["mechanism"] in {"cross_pair_relative_reclaim", "lagged_peer_impulse_confirmation"}:
             # Current official replay has exactly BTC/ETH; never pretend to
             # possess missing SOL/XRP or synthetic peer order flow/L2.
             if len(SYMBOLS) != 2:

@@ -2,7 +2,7 @@
 
 Research only: 15m next-open entry with completed 1h/4h context; this is NOT
 independent 1h or 4h entry trading, a multi-symbol portfolio, a pristine
-future holdout, or a qualification for Paper or Live. All 5 reviewed causal
+future holdout, or a qualification for Paper or Live. All 6 reviewed causal
 mechanisms and both risk robustness variants are exhaustively evaluated,
 without ranking or a maximum number of trades.
 """
@@ -23,8 +23,8 @@ import nexus_monthly_four_pair_pre_demo as monthly
 import nexus_composite_strategy_research as composite
 from nexus_multipair_trusted_surface import SYMBOLS, TIMEFRAMES
 
-SCHEMA = "nexus.four-pair-july-reviewed-composite.v1"
-QA_SCHEMA = "nexus.four-pair-july-composite-numeric-replay.v1"
+SCHEMA = "nexus.four-pair-july-reviewed-composite.v2"
+QA_SCHEMA = "nexus.four-pair-july-composite-numeric-replay.v2"
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
 SHA64 = re.compile(r"^[0-9a-f]{64}$")
 EXPERIMENTS = composite.CONFIGS
@@ -123,7 +123,7 @@ def calculate(frames: Mapping[tuple[str, str], pd.DataFrame],
               baseline: Mapping[str, Any], source_sha: str) -> dict[str, Any]:
     bound = _baseline_frames(baseline, frames, source_sha)
     if (
-        len(EXPERIMENTS) != 10
+        len(EXPERIMENTS) != 12
         or {c["mechanism"] for c in EXPERIMENTS} != set(composite.MECHANISMS)
         or {c["risk_variant"] for c in EXPERIMENTS} != {0, 1}
         or any(c["entry_model"] != "closed_4h_1h_15m_next_open" for c in EXPERIMENTS)
@@ -180,7 +180,7 @@ def calculate(frames: Mapping[tuple[str, str], pd.DataFrame],
                         "symbol": symbol,
                         "entry_timeframe": "15m",
                         "context_timeframes": ["completed_1h", "completed_4h"],
-                        "peer": PEER[symbol] if mechanism == "cross_pair_relative_reclaim" else None,
+                        "peer": PEER[symbol] if mechanism in {"cross_pair_relative_reclaim", "lagged_peer_impulse_confirmation"} else None,
                         "historical_period": "2026-07",
                         "part": part, "profile": profile,
                         "mechanism": mechanism,
@@ -198,7 +198,7 @@ def calculate(frames: Mapping[tuple[str, str], pd.DataFrame],
                         **result,
                     })
     expected_count = len(EXPERIMENTS) * len(SYMBOLS) * len(PARTITIONS) * len(PROFILES)
-    if len(rows) != expected_count or expected_count != 240:
+    if len(rows) != expected_count or expected_count != 288:
         raise FourPairCompositeError("full four-pair composite grid incomplete")
     core = {
         "schema": SCHEMA,
@@ -244,8 +244,8 @@ def _validate_report_surface(value: Mapping[str, Any]) -> None:
         or value.get("strategy_selection_performed") is not False
         or value.get("independent_concurrent_multi_asset_portfolio_tested") is not False
         or value.get("independent_hourly_or_fourhour_entries_tested") is not False
-        or len(value.get("rows", [])) != 240
-        or value.get("rows_count") != 240
+        or len(value.get("rows", [])) != 288
+        or value.get("rows_count") != 288
     ):
         raise FourPairCompositeError("monthly composite report integrity or safety failed")
 
@@ -275,7 +275,7 @@ def run(*, state: Path, baseline_file: Path, source_sha: str,
 
 def replay_verify(*, state: Path, baseline_file: Path,
                   report_file: Path, source_sha: str, output: Path) -> dict[str, Any]:
-    """A separate process reruns all 240 numerical experiments and compares all bytes.
+    """A separate process reruns all 288 numerical experiments and compares all bytes.
 
     Same reviewed engine != independent model QA. This is a deterministic
     numerical replay gate; future untouched prospective QA remains required.
@@ -295,7 +295,7 @@ def replay_verify(*, state: Path, baseline_file: Path,
         "source_sha": source_sha,
         "report_digest": report["report_digest"],
         "monthly_baseline_digest": baseline["result_sha256"],
-        "full_240_cell_numerical_replay_matches": True,
+        "full_288_cell_numerical_replay_matches": True,
         "source_material_rechecked": True,
         "independent_model_qa_claimed": False,
         "historical_test_pristine": False,
