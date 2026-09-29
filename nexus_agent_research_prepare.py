@@ -20,13 +20,14 @@ import shutil
 from pathlib import Path
 from typing import Any
 
-from nexus_composite_strategy_research import ARCHIVE_SHA256, digest, load_ledger, safe_write
+from nexus_composite_strategy_research import ARCHIVE_SHA256, digest, load_ledger, safe_write, select_next
 from scripts.agent_task_executor import decode_payload
+from nexus_research_missions import FIRST, SECOND, TASKS, ANCESTRY, validate_ancestry
 from scripts.select_nexus_bybit_replay_artifact import (
     validate_candidate, safe_extract, sha256_file,
 )
 
-TASK_ID = "P7-RESEARCH-COMPOSITE-001"
+TASK_ID = FIRST
 REPO = "saladinayoubi1/lbank-research-automation"
 REPLAY_NAME = "NEXUS_BYBIT_replay_v2_2022-12-01_to_2026-07-31.zip"
 DELIVERY_NAME = "NEXUS_BYBIT_replay_v2_delivery.json"
@@ -57,7 +58,7 @@ def _classify(mode: str) -> tuple[dict[str, Any] | None, str]:
     if not encoded:
         return None, "none"
     payload = decode_payload(encoded)
-    if payload["task_id"] != TASK_ID:
+    if payload["task_id"] not in TASKS:
         return None, "none"
     if (
         payload["phase"] != 7
@@ -76,10 +77,12 @@ def _classify(mode: str) -> tuple[dict[str, Any] | None, str]:
         or not re.fullmatch(r"[a-zA-Z0-9_-]{1,160}", payload["research_producer_lease_id"])
     ):
         raise ResearchPreparationError("QA original producer identity is untrusted")
+    if payload["task_id"] == SECOND:
+        validate_ancestry({key: payload[key] for key in ANCESTRY})
     return payload, expected_mode
 
 
-def _verified_input_bundle(root: Path, source_sha: str) -> dict[str, Any]:
+def _verified_input_bundle(root: Path, source_sha: str, predecessor: dict[str, str] | None = None) -> dict[str, Any]:
     metadata = _read_regular_json(DATA_CACHE / "manifest.json")
     claim = metadata.pop("manifest_digest", None)
     if (
@@ -108,6 +111,14 @@ def _verified_input_bundle(root: Path, source_sha: str) -> dict[str, Any]:
         or previous["ledger_digest"] != metadata.get("prior_ledger_digest")
     ):
         raise ResearchPreparationError("Research cache prior novelty ledger mismatch")
+    if predecessor is not None:
+        # The preceding numerical producer+independent QA must have attested
+        # this exact frontier, not merely a similarly named latest artifact.
+        if previous["ledger_digest"] != predecessor["research_predecessor_ledger_digest"]:
+            raise ResearchPreparationError("source cache does not match prior QA-attested novelty ledger")
+        candidate = select_next(previous)
+        if candidate is None or candidate["mechanism"] == predecessor["research_predecessor_mechanism"]:
+            raise ResearchPreparationError("no different reviewed causal mechanism remains")
     safe_extract(archived, root / "archive")
     shutil.copyfile(previous_file, root / "previous-ledger.json")
     return {
@@ -171,15 +182,22 @@ def prepare(mode: str, root: Path) -> dict[str, Any]:
     if root.exists():
         raise ResearchPreparationError("refuse dirty or pre-existing Research staging root")
     root.mkdir(parents=True)
+    predecessor = (
+        validate_ancestry({key: payload[key] for key in ANCESTRY})
+        if payload["task_id"] == SECOND else None
+    )
     info = {
         "research_task": True,
+        "task_id": payload["task_id"],
         "mode": role,
         "lease_id": payload["lease_id"],
         "source_sha": os.environ["GITHUB_SHA"],
-        **_verified_input_bundle(root, os.environ["GITHUB_SHA"]),
+        **_verified_input_bundle(root, os.environ["GITHUB_SHA"], predecessor),
         "auto_demo_promotion": False,
         "live_enabled": False,
     }
+    if predecessor is not None:
+        info.update(predecessor)
     if role == "independent-qa":
         info.update(_copy_exact_producer(root, payload))
     safe_write(root / "preparation.json", info)
