@@ -10,7 +10,8 @@ from pathlib import Path
 from typing import Any
 
 import agent_manager as am
-from nexus_research_missions import (FIRST, SECOND, THIRD, PREDECESSOR, ANCESTRY, attested_predecessor, validate_ancestry)
+from nexus_research_missions import (FIRST, SECOND, THIRD, TASKS, PREDECESSOR, ANCESTRY, attested_predecessor, validate_ancestry)
+from scripts.nexus_research_qa_incident_recovery import SPEC as RESEARCH_QA_INCIDENT_SPEC, load_spec as load_research_qa_incident, recover_incident as recover_research_qa_incident
 
 RUNTIME_PATH = Path("data/agent_coordination/agent_manager_runtime.json")
 SUMMARY_PATH = Path("data/agent_coordination/manager_state.json")
@@ -59,7 +60,7 @@ def merge_definition(template: dict[str, Any], runtime: dict[str, Any] | None) -
         "dispatch_mode", "offline_dispatch_digest", "offline_dispatch_bundle_created_at",
         "offline_result_bundle_ingested", "offline_result_bundle_digest",
         "result_artifact_ingested", "result_received_at", "research_producer_lease_id",
-        "research_cache_requested_sha", "research_cache_recovery_count", "research_cache_race_evidence", "routing_decision",
+        "research_cache_requested_sha", "research_cache_recovery_count", "research_cache_race_evidence", "research_qa_epoch_drift", "research_qa_incident_recovery", "routing_decision",
         *ANCESTRY,
         "zero_idle_evidence", "waiting_from_status", "external_wait_state", "external_wait_started_at",
         "external_wait_completed_at", "external_wait_timeline"
@@ -118,6 +119,11 @@ def recover_completed_root_cause_analysis(config: dict[str, Any]) -> int:
             continue
         evidence = task.get("result_evidence")
         if not isinstance(evidence, dict):
+            continue
+        # When an old independent Research QA lease failed before producing
+        # a result, this is still the ORIGINAL numeric producer receipt.
+        # Never misclassify it as a successful generic RCA and erase it.
+        if task.get("id") in TASKS and evidence.get("executor") == "nexus-real-composite-backtest":
             continue
 
         task["triage_evidence"] = {
@@ -490,6 +496,15 @@ def main() -> int:
     recover_completed_root_cause_analysis(config)
     recover_bounded_specialized_reasoning(config)
     block_unroutable_specialized_reasoning(config)
+    research_context = _research_context()
+    incident_recovered = False
+    if research_context is not None and RESEARCH_QA_INCIDENT_SPEC.is_file():
+        from agent_transport import _api
+        incident_recovered = recover_research_qa_incident(
+            config, spec=load_research_qa_incident(),
+            api_get=lambda endpoint: _api("GET", "https://api.github.com/" + endpoint),
+            current_sha=research_context[1],
+        )
     successor_status = bind_qa_attested_successor(config)
     cache_ready, cache_reason = research_cache_status()
     cache_gate = apply_research_input_gate(config, ready=cache_ready)
@@ -498,6 +513,7 @@ def main() -> int:
     summary["research_input_gate"] = {
         "ready": cache_ready,
         "successor": successor_status,
+        "verified_fifth_qa_incident_released": incident_recovered,
         "reason": cache_reason,
         "action": cache_gate,
         "cache_build": cache_build,

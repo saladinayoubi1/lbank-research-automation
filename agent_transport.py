@@ -247,6 +247,65 @@ def dispatch_pending(config: dict[str, Any], *, ref: str) -> int:
                     or not re.fullmatch(r"[0-9a-f]{40}", current_sha)):
                 raise ValueError("Research QA dispatch lacks exact authenticated source identity")
             if producer_sha != current_sha:
+                # An explicitly reviewed, one-time Research incident may
+                # re-lease independent QA for its unchanged numeric producer.
+                # The coordinator independently checked the failed original
+                # job and exact old QA dispatch. Never infer recovery merely
+                # from a matching SHA, a generic failed workflow or a payload.
+                incident = task.get("research_qa_incident_recovery")
+                verified_retry = (
+                    isinstance(incident, dict)
+                    and incident.get("reason") ==
+                        "verified_failed_source_epoch_new_independent_qa_only"
+                    and incident.get("original_producer_source_sha") == producer_sha
+                    and incident.get("original_producer_receipt_digest") == receipt
+                    and incident.get("original_producer_lease_id") ==
+                        task.get("research_producer_lease_id")
+                    and incident.get("new_qa_lease_id") == task.get("lease_id")
+                    and incident.get("independent_qa_complete") is False
+                    and incident.get("automatic_demo_promotion") is False
+                    and incident.get("live_enabled") is False
+                    and task.get("assigned_worker") == "qa-verifier-agent"
+                    and task.get("verifier") == "qa-verifier-agent"
+                    and task.get("producer") == "research-agent"
+                    and ref == "main"
+                    and os.environ.get("GITHUB_REF") == "refs/heads/main"
+                    and os.environ.get("GITHUB_REPOSITORY") ==
+                        "saladinayoubi1/lbank-research-automation"
+                )
+                if verified_retry:
+                    # Compare is read-only. Both this dispatch and the worker's
+                    # separate source-pin checkout require a genuine original
+                    # main ancestor; no task-controlled ref is fetched.
+                    from urllib.parse import quote
+                    comparison = _api(
+                        "GET",
+                        "https://api.github.com/repos/"
+                        "saladinayoubi1/lbank-research-automation/compare/"
+                        + quote(producer_sha, safe="") + "..."
+                        + quote(current_sha, safe="") + "?per_page=1",
+                    )
+                    if (
+                        not isinstance(comparison, dict)
+                        or comparison.get("status") != "ahead"
+                        or comparison.get("ahead_by", 0) <= 0
+                        or comparison.get("behind_by") != 0
+                        or (comparison.get("base_commit") or {}).get("sha")
+                            != producer_sha
+                        or (comparison.get("merge_base_commit") or {}).get("sha")
+                            != producer_sha
+                    ):
+                        raise ValueError(
+                            "original Research QA source is not exact main ancestry"
+                        )
+                    am.emit(
+                        "reviewed_original_source_research_qa_ancestor_verified",
+                        task_id=task["id"], producer_source=producer_sha,
+                        trusted_main_source=current_sha,
+                    )
+                    dispatch_task(task, ref=ref)
+                    count += 1
+                    continue
                 task["status"] = "BLOCKED"
                 task["blocked_reason"] = "research_qa_source_epoch_drift_requires_fresh_producer"
                 task["research_qa_epoch_drift"] = {
