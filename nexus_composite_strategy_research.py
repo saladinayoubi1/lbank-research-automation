@@ -35,6 +35,7 @@ MECHANISMS = (
     "failed_range_break_reversal",
     "cross_pair_relative_reclaim",
     "lagged_peer_impulse_confirmation",
+    "relative_momentum_reacceleration",
 )
 # Distinct entry mechanisms vs risk/feature parameter variations are explicitly
 # separately labeled; eight configurations do NOT count as eight new edges.
@@ -181,6 +182,17 @@ def build_features(frames: dict[str, pd.DataFrame], *, peer_15m: pd.DataFrame | 
             peer_hour_return.shift(2).abs().rolling(96, min_periods=96).median()
         )
         f["lagged_own_response"] = close.pct_change(4).shift(1)
+        # Seventh reviewed family: cross-asset relative momentum re-acceleration.
+        # Both relative returns are from completed candles; the older baseline
+        # ends one full candle before the current decision close.
+        own_ret4 = close.pct_change(4)
+        peer_ret4 = peer_ohlcv["close"].pct_change(4)
+        relative_momentum = own_ret4 - peer_ret4
+        f["relative_momentum"] = relative_momentum
+        f["relative_momentum_previous"] = relative_momentum.shift(1)
+        f["relative_momentum_baseline"] = (
+            relative_momentum.shift(2).rolling(96, min_periods=96).median()
+        )
     return f
 
 
@@ -217,6 +229,22 @@ def signal_for(frame: pd.DataFrame, config: dict[str, Any]) -> np.ndarray:
             lagged > -.01) & (lagged < shock * .65) & (
             c > frame["prior_hi"]) & (c > o) & (frame["rel_vol"] > 1.05) & (
             np.isfinite(shock) & np.isfinite(benchmark) & np.isfinite(lagged))
+    elif mechanism == "relative_momentum_reacceleration":
+        required = {"relative_momentum", "relative_momentum_previous",
+                    "relative_momentum_baseline"}
+        if not required <= set(frame.columns):
+            raise CompositeResearchError("relative momentum requires exact verified aligned peer history")
+        rel = frame["relative_momentum"]
+        previous = frame["relative_momentum_previous"]
+        baseline = frame["relative_momentum_baseline"]
+        # Trend-continuation hypothesis, intentionally distinct from relative-z
+        # mean reversion: target already leads its peer, briefly decelerates,
+        # then re-accelerates through its lagged ordinary relative momentum.
+        s = (frame["h4_up"] == 1) & (frame["h1_vol_ok"] == 1) & (
+            previous > baseline) & (previous > .0015) & (
+            rel > previous + .0010) & (rel > .0030) & (
+            c > frame["prior_hi"]) & (c > o) & (frame["rel_vol"] >= 1.0) & (
+            np.isfinite(rel) & np.isfinite(previous) & np.isfinite(baseline))
     elif mechanism == "cross_pair_relative_reclaim":
         if not {"cross_pair_relative_z", "cross_pair_relative_z_previous"} <= set(frame.columns):
             raise CompositeResearchError("cross-pair mechanism requires exact aligned verified peer history")

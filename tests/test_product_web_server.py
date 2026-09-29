@@ -227,6 +227,21 @@ def test_product_rejects_live_and_unknown_write_routes(product_server) -> None:
         assert status == 405
 
 
+def test_product_mission_control_surfaces_real_agent_manager_definition(product_server) -> None:
+    port, _ = product_server
+    status, _, raw = _request(port, "GET", "/api/product/mission-control")
+    assert status == 200
+    payload = json.loads(raw)
+    assert payload["paper_only"] is True
+    assert payload["live_trading_authority"] is False
+    assert payload["contract_version"] == "nexus.product-mission-control.v1"
+    research = [row for row in payload["tasks"] if row["id"].startswith("P7-RESEARCH-")]
+    assert research
+    assert any(row["id"] == "P7-RESEARCH-COMPOSITE-004" for row in research)
+    workers = {row["id"] for row in payload["workers"]}
+    assert {"developer-agent", "research-agent", "qa-verifier-agent"} <= workers
+
+
 def test_product_strategies_are_real_factory_families(product_server) -> None:
     port, _ = product_server
     status, _, raw = _request(port, "GET", "/api/product/strategies")

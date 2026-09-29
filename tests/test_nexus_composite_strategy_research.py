@@ -311,3 +311,67 @@ def test_exact_prior_ledger_prioritizes_new_sixth_causal_mechanism():
     assert selected["mechanism"] == "lagged_peer_impulse_confirmation"
     assert selected["risk_variant"] == 0
     assert selected["fingerprint"] not in signed["config_fingerprints_evaluated"]
+
+
+def test_seventh_relative_momentum_family_uses_closed_peer_data_and_is_semantically_distinct():
+    cols = {
+        "h4_up": 1., "h4_range": 0., "h1_compression": 0., "h1_vol_ok": 1.,
+        "rel_vol": 1.2, "prior_hi": 101., "prior_lo": 99., "atr": 1.,
+        "open": 101.5, "close": 102., "low": 101., "high": 103.,
+        "relative_momentum": .006, "relative_momentum_previous": .0035,
+        "relative_momentum_baseline": .001,
+    }
+    frame = pd.DataFrame([cols])
+    cfg = {"mechanism": "relative_momentum_reacceleration", "risk_variant": 0}
+    assert engine.signal_for(frame, cfg).tolist() == [True]
+    for field, bad in (
+        ("relative_momentum", .0038),
+        ("relative_momentum_previous", .0005),
+        ("relative_momentum_baseline", .005),
+        ("close", 100.),
+    ):
+        changed = frame.copy()
+        changed[field] = bad
+        assert engine.signal_for(changed, cfg).tolist() == [False]
+    with pytest.raises(engine.CompositeResearchError, match="relative momentum requires"):
+        engine.signal_for(frame.drop(columns=["relative_momentum"]), cfg)
+    assert cfg["mechanism"] not in {
+        "cross_pair_relative_reclaim", "lagged_peer_impulse_confirmation"
+    }
+
+
+def test_relative_momentum_features_do_not_read_future_peer_candle():
+    frames = history(n=1536)
+    peer = frames["minute15"].copy()
+    step = np.arange(len(peer), dtype=float)
+    price = 120 + step * .012 + np.sin(step / 13.0) * 1.3
+    peer["open"] = price - .08
+    peer["high"] = price + .4
+    peer["low"] = price - .4
+    peer["close"] = price
+    before = engine.build_features(frames, peer_15m=peer)
+    altered = peer.copy()
+    altered.loc[len(peer)-1, "close"] *= 2
+    altered.loc[len(peer)-1, "high"] = altered.loc[len(peer)-1, "close"] + 1
+    after = engine.build_features(frames, peer_15m=altered)
+    # Only the decision closing with the altered peer candle may change.
+    for field in ("relative_momentum", "relative_momentum_previous",
+                  "relative_momentum_baseline"):
+        pd.testing.assert_series_equal(before[field].iloc[:-1], after[field].iloc[:-1])
+
+
+def test_exact_prior_ledger_advances_to_seventh_family_before_risk_variants():
+    state = engine.empty_ledger()
+    core = {key: value for key, value in state.items() if key != "ledger_digest"}
+    for cfg in engine.CONFIGS:
+        if cfg["mechanism"] == "relative_momentum_reacceleration" or cfg["risk_variant"] != 0:
+            continue
+        core["mechanisms_evaluated"].append(cfg["mechanism"])
+        core["config_fingerprints_evaluated"].append(engine.digest({
+            "config": cfg, "dataset": engine.ARCHIVE_SHA256, "contract": engine.SCHEMA,
+        }))
+    core["mechanisms_evaluated"] = sorted(set(core["mechanisms_evaluated"]))
+    signed = {**core, "ledger_digest": engine.digest(core)}
+    selected = engine.select_next(signed)
+    assert selected["mechanism"] == "relative_momentum_reacceleration"
+    assert selected["risk_variant"] == 0
