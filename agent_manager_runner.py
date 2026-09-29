@@ -355,7 +355,7 @@ def apply_research_input_gate(config: dict[str, Any], *, ready: bool) -> str:
     if first is None:
         return "not_present"
     task = first
-    for next_id in (SECOND, THIRD):
+    for next_id in PREDECESSOR:
         if task.get("status") != "DONE":
             break
         candidate = tasks.get(next_id)
@@ -425,7 +425,7 @@ def request_missing_research_cache(config: dict[str, Any], reason: str) -> str:
     context = _research_context()
     tasks = {t.get("id"): t for t in config.get("tasks", [])}
     task = tasks.get(FIRST)
-    for next_id in (SECOND, THIRD):
+    for next_id in PREDECESSOR:
         if task is not None and task.get("status") == "DONE":
             task = tasks.get(next_id)
     if context is None or task is None or task.get("blocked_reason") != RESEARCH_WAIT:
