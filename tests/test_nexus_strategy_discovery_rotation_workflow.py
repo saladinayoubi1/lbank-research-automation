@@ -194,3 +194,48 @@ def test_lost_prior_research_artifact_is_reason_coded_before_frontier_advances()
     assert "research_outcome_artifact=UNAVAILABLE_FAIL_CLOSED" in reconcile
     assert "--artifact-unavailable" in reconcile
     assert "artifact_unavailable=true" in reconcile
+
+
+def test_reused_source_exhaustion_is_not_misreported_as_failed_or_new_proof():
+    """A no-change discovery legitimately reuses an older certified artifact."""
+    text = _text()
+    certificate = text.split(
+        "Obtain only the exact certified prior multi-timeframe outcome", 1
+    )[1].split("Restore integrity-bound prior independent research frontier", 1)[0]
+    assert "id: certified-source" in certificate
+    assert "artifacts_json=" in certificate
+    assert 'artifact_match_count="$(jq -er' in certificate
+    assert 'if [ "$artifact_match_count" = "0" ]; then' in certificate
+    assert "NOT_EMITTED_NO_NEW_EVIDENCE" in certificate
+    assert 'echo "available=false" >> "$GITHUB_OUTPUT"' in certificate
+    assert 'if [ "$artifact_match_count" != "1" ]; then' in certificate
+    assert "Ambiguous exact-run exhaustion artifact; fail closed" in certificate
+    assert 'if ! [[ "$artifact_id" =~ ^[1-9][0-9]*$ ]]; then' in certificate
+    assert "Malformed certified artifact ID; fail closed" in certificate
+    assert certificate.index('if [ "$artifact_match_count" = "0" ]; then') < (
+        certificate.index("Ambiguous exact-run exhaustion artifact")
+    )
+    # Never publish availability until the exact archive member is unzipped.
+    assert certificate.index(
+        "unzip -p build/research-feedback/exact-exhaustion.zip"
+    ) < certificate.index('echo "available=true" >> "$GITHUB_OUTPUT"')
+    assert "exhaustion-certificate.json" in certificate
+
+
+def test_uncertified_discovery_cannot_advance_frontier_or_publish_design():
+    text = _text()
+    for step in (
+        "Restore integrity-bound prior independent research frontier",
+        "Issue one unexecuted NEW mechanism design after verified exhaustion",
+    ):
+        block = text.split("      - name: " + step, 1)[1]
+        assert (
+            "if: steps.health-gate.outputs.should_feedback == 'true' && "
+            "steps.certified-source.outputs.available == 'true'"
+        ) in block.split("shell: bash", 1)[0]
+    upload = text.split("name: nexus-research-frontier-state", 1)[0].split(
+        "- uses: actions/upload-artifact@", 1
+    )[-1]
+    assert (
+        "steps.certified-source.outputs.available == 'true'"
+    ) in upload

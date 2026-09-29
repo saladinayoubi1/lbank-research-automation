@@ -338,6 +338,7 @@ jobs:
 
 
       - name: Obtain only the exact certified prior multi-timeframe outcome
+        id: certified-source
         if: steps.health-gate.outputs.should_feedback == 'true'
         shell: bash
         run: |
@@ -347,12 +348,26 @@ jobs:
           gh api -H 'Accept: application/vnd.github+json' \
             "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID" \
             > build/research-feedback/input/run.json
-          artifact_id="$(gh api \
+          # A reused SAME-SOURCE exhaustion certificate was verified by the
+          # discovery job, but is intentionally NOT re-emitted as fresh proof.
+          # That legitimate no-new-certificate result must not make CI red
+          # or authorize another hypothesis cycle on identical evidence.
+          artifacts_json="$(gh api \
             -H 'Accept: application/vnd.github+json' \
-            "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID/artifacts?per_page=100" \
-            --jq '[.artifacts[] | select(.name == "nexus-multitimeframe-search-exhaustion" and (.expired == false))] | if length == 1 then .[0].id else empty end')"
-          if [ -z "$artifact_id" ]; then
-            echo "No unique exact-run verified exhaustion artifact; fail closed" >&2
+            "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID/artifacts?per_page=100")"
+          artifact_match_count="$(jq -er '[.artifacts[] | select(.name == "nexus-multitimeframe-search-exhaustion" and (.expired == false))] | length' <<<"$artifacts_json")"
+          if [ "$artifact_match_count" = "0" ]; then
+            echo "exact_run_exhaustion=NOT_EMITTED_NO_NEW_EVIDENCE; no feedback mutation"
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$artifact_match_count" != "1" ]; then
+            echo "Ambiguous exact-run exhaustion artifact; fail closed" >&2
+            exit 1
+          fi
+          artifact_id="$(jq -er '[.artifacts[] | select(.name == "nexus-multitimeframe-search-exhaustion" and (.expired == false))] | .[0].id' <<<"$artifacts_json")"
+          if ! [[ "$artifact_id" =~ ^[1-9][0-9]*$ ]]; then
+            echo "Malformed certified artifact ID; fail closed" >&2
             exit 1
           fi
           gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" \
@@ -361,9 +376,10 @@ jobs:
           test "$(unzip -Z1 build/research-feedback/exact-exhaustion.zip)" = 'exhaustion-certificate.json'
           unzip -p build/research-feedback/exact-exhaustion.zip exhaustion-certificate.json \
             > build/research-feedback/input/exhaustion-certificate.json
+          echo "available=true" >> "$GITHUB_OUTPUT"
 
       - name: Restore integrity-bound prior independent research frontier
-        if: steps.health-gate.outputs.should_feedback == 'true'
+        if: steps.health-gate.outputs.should_feedback == 'true' && steps.certified-source.outputs.available == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -393,7 +409,7 @@ jobs:
             > build/research-feedback/input/prior-state.json
 
       - name: Issue one unexecuted NEW mechanism design after verified exhaustion
-        if: steps.health-gate.outputs.should_feedback == 'true'
+        if: steps.health-gate.outputs.should_feedback == 'true' && steps.certified-source.outputs.available == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -409,7 +425,7 @@ jobs:
             --output build/research-feedback/output
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        if: steps.health-gate.outputs.should_feedback == 'true'
+        if: steps.health-gate.outputs.should_feedback == 'true' && steps.certified-source.outputs.available == 'true'
         with:
           name: nexus-research-frontier-state
           path: build/research-feedback/output/
