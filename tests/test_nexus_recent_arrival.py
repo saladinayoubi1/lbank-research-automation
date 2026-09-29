@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import zipfile
 from pathlib import Path
 
 import pytest
@@ -154,3 +155,55 @@ def test_reject_forged_receipt_changed_archive_and_wrong_source(monkeypatch, tmp
 def test_arrival_and_source_time_boundaries_are_not_extendable(received, now):
     with pytest.raises(RuntimeError):
         arrival._check_times(received, ACQUIRED, SOURCE_AS_OF, now)
+
+
+def test_real_bounded_inner_extractor_and_later_numeric_gate_remain_separate(
+    monkeypatch, tmp_path,
+):
+    """Stage uses REAL safe ZIP extraction; fake Parquet cannot pass numeric QA."""
+    from scripts import nexus_snapshot_artifact as snapshot
+    manifest = producer_manifest()
+    nested = tmp_path / "producer-inner.zip"
+    with zipfile.ZipFile(nested, "w", compression=zipfile.ZIP_STORED) as zipf:
+        for name in sorted(snapshot._expected_members()):
+            zipf.writestr(name, (
+                arrival._canonical(manifest) if name == snapshot.MANIFEST_NAME
+                else b"PAR1mock-frame-not-a-parquet"
+            ))
+    digest = hashlib.sha256(nested.read_bytes()).hexdigest()
+    def producer_download(url, artifact, outer, token):
+        with zipfile.ZipFile(outer, "w") as zipf:
+            zipf.write(nested, arrival.INNER)
+            zipf.writestr(arrival.SIDECAR, digest + "\\n")
+    monkeypatch.setattr(
+        transport, "_artifact", lambda *a, **k: {"id": 87, "size_in_bytes": 100},
+    )
+    monkeypatch.setattr(transport, "_download_outer", producer_download)
+    monkeypatch.setattr(arrival.time, "time", lambda: ARRIVED / 1000)
+    stage = tmp_path / "physical-stage"
+    receipt = arrival.stage(
+        repository=REPO, run_id=RUN, artifact_name="recent", source_sha=SHA,
+        expected_sha256=digest, expected_snapshot_digest=manifest["snapshot_digest"],
+        expected_acquired_at_ms=ACQUIRED, expected_data_as_of_ms=SOURCE_AS_OF,
+        destination=stage, token="redacted-read-only-token",
+    )
+    restored, inner = arrival.verify_stage(
+        stage, repository=REPO, run_id=RUN, source_sha=SHA,
+        expected_sha256=digest, expected_snapshot_digest=manifest["snapshot_digest"],
+        expected_acquired_at_ms=ACQUIRED, expected_data_as_of_ms=SOURCE_AS_OF,
+        now_ms=LATER,
+    )
+    assert restored == receipt and hashlib.sha256(inner.read_bytes()).hexdigest() == digest
+    # Research verifier is stricter than stdlib receipt verifier: mock frame
+    # content must fail before any candidate, Paper or Live permission.
+    with pytest.raises(RuntimeError, match="recent snapshot verifier rejected"):
+        transport.restore_recent(
+            repository=REPO, run_id=RUN, artifact_name="recent",
+            source_sha=SHA, expected_sha256=digest,
+            expected_snapshot_digest=manifest["snapshot_digest"],
+            expected_acquired_at_ms=ACQUIRED,
+            expected_data_as_of_ms=SOURCE_AS_OF, now_ms=LATER,
+            destination=tmp_path / "numerical-stage",
+            work_root=tmp_path / "unused-network-download",
+            token="redacted-read-only-token", stage_root=stage,
+        )
