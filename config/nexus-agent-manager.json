@@ -345,6 +345,36 @@
         "report no untouched OOS claim, no Demo promotion, Live always false",
         "independent verification receipt required before candidate qualification"
       ]
+    },
+    {
+      "id": "P7-RESEARCH-COMPOSITE-002",
+      "title": "Continue from QA-attested exact prior frontier with a different causal composite mechanism",
+      "phase": 7,
+      "gate": 17,
+      "status": "PENDING",
+      "priority": 90,
+      "dependencies": [
+        "P7-RESEARCH-COMPOSITE-001"
+      ],
+      "required_capabilities": [
+        "data_validation"
+      ],
+      "required_resources": [
+        "github-cloud"
+      ],
+      "preferred_resources": [
+        "github-cloud",
+        "windows-local"
+      ],
+      "authority": 2,
+      "acceptance": [
+        "first real research producer and independent QA have matching source, lease and receipt",
+        "new producer consumes EXACT source-bound previous QA-attested novelty ledger with no duplicate fingerprint",
+        "second producer selects a different causal mechanism, not a parameter-only repeat",
+        "all pairs/folds/costs have actual numeric evidence and separate independent QA replay",
+        "if no distinct reviewed mechanism exists, require reviewed Developer Agent design and fail closed",
+        "no automatic Paper promotion, no Live/L4"
+      ]
     }
   ]
 }
