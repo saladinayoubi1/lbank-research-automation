@@ -1,6 +1,10 @@
 (() => {
   'use strict';
 
+  // The full offline Mission endpoint owns the Agent/Research cockpit when
+  // this script is present. A lighter product snapshot cannot supersede it.
+  window.NexusFullMissionManaged = true;
+
   const $ = id => document.getElementById(id);
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const finite = value => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value));
