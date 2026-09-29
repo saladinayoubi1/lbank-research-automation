@@ -236,3 +236,78 @@ def test_new_cross_pair_mechanism_runs_full_numeric_research_only_grid(tmp_path,
     assert report["auto_demo_promotion"] is False
     assert report["live_enabled"] is False
     assert report["historical_test_pristine"] is False
+
+
+def test_lagged_peer_impulse_is_strictly_prior_closed_candle_not_future():
+    frames = history(n=1536)
+    peer = frames["minute15"].copy()
+    step = np.arange(len(peer), dtype=float)
+    price = 120 + step * .012 + np.sin(step / 13.0) * 1.3
+    peer["open"] = price - .08
+    peer["high"] = price + .4
+    peer["low"] = price - .4
+    peer["close"] = price
+    features = engine.build_features(frames, peer_15m=peer)
+    fields = ("lagged_peer_impulse", "lagged_peer_impulse_baseline",
+              "lagged_own_response")
+    assert np.isfinite(features["lagged_peer_impulse"].iloc[120:]).any()
+    assert np.isfinite(features["lagged_peer_impulse_baseline"].iloc[120:]).any()
+    altered = peer.copy()
+    altered.loc[len(peer)-1, "close"] *= 2
+    altered.loc[len(peer)-1, "high"] = altered.loc[len(peer)-1, "close"] + 1
+    changed = engine.build_features(frames, peer_15m=altered)
+    for field in fields:
+        # Today's current peer bar cannot influence today's own close decision.
+        pd.testing.assert_series_equal(features[field], changed[field])
+    altered = peer.copy()
+    altered.loc[len(peer)-2, "close"] *= 2
+    altered.loc[len(peer)-2, "high"] = altered.loc[len(peer)-2, "close"] + 1
+    changed = engine.build_features(frames, peer_15m=altered)
+    # The previous complete peer bar MAY change the current lagged impulse,
+    # but no earlier decision can read that previous bar.
+    for field in fields:
+        pd.testing.assert_series_equal(features[field].iloc[:-1], changed[field].iloc[:-1])
+
+
+def test_sixth_mechanism_is_distinct_lagged_peer_confirmation_not_a_parameter_sweep():
+    cols = {
+        "h4_up": 1., "h4_range": 0., "h1_compression": 0., "h1_vol_ok": 1.,
+        "rel_vol": 1.3, "prior_hi": 101., "prior_lo": 99., "atr": 1.,
+        "open": 101.5, "close": 102., "low": 101., "high": 103.,
+        "lagged_peer_impulse": .015, "lagged_peer_impulse_baseline": .003,
+        "lagged_own_response": .004,
+    }
+    frame = pd.DataFrame([cols])
+    cfg = {"mechanism": "lagged_peer_impulse_confirmation", "risk_variant": 0}
+    assert engine.signal_for(frame, cfg).tolist() == [True]
+    for field, bad_value in (
+        ("lagged_peer_impulse", .001),
+        ("lagged_peer_impulse_baseline", .018),
+        ("lagged_own_response", .012),
+        ("close", 100.),
+    ):
+        changed = frame.copy()
+        changed[field] = bad_value
+        assert engine.signal_for(changed, cfg).tolist() == [False]
+    with pytest.raises(engine.CompositeResearchError, match="verified aligned peer history"):
+        engine.signal_for(frame.drop(columns=["lagged_peer_impulse"]), cfg)
+    assert cfg["mechanism"] != "cross_pair_relative_reclaim"
+
+
+def test_exact_prior_ledger_prioritizes_new_sixth_causal_mechanism():
+    state = engine.empty_ledger()
+    core = {key: value for key, value in state.items() if key != "ledger_digest"}
+    for cfg in engine.CONFIGS:
+        if cfg["mechanism"] == "lagged_peer_impulse_confirmation" or cfg["risk_variant"] != 0:
+            continue
+        core["mechanisms_evaluated"].append(cfg["mechanism"])
+        core["config_fingerprints_evaluated"].append(engine.digest({
+            "config": cfg, "dataset": engine.ARCHIVE_SHA256, "contract": engine.SCHEMA,
+        }))
+    core["mechanisms_evaluated"] = sorted(set(core["mechanisms_evaluated"]))
+    signed = {**core, "ledger_digest": engine.digest(core)}
+    selected = engine.select_next(signed)
+    assert selected is not None
+    assert selected["mechanism"] == "lagged_peer_impulse_confirmation"
+    assert selected["risk_variant"] == 0
+    assert selected["fingerprint"] not in signed["config_fingerprints_evaluated"]
