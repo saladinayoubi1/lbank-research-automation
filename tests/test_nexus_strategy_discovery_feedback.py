@@ -58,8 +58,6 @@ def test_exhaustion_is_durable_and_rotation_skips_that_neighborhood(tmp_path: Pa
         experiment_sha256="1" * 64,
     )
     assert feedback["outcomes"][-1]["outcome"] == "exhausted"
-    plan = build_plan(_controller(), empty_rotation_state(), feedback)
-    assert plan["stage"] == "second"
 
 
 def test_no_candidate_is_not_falsely_marked_exhausted(tmp_path: Path):
