@@ -186,11 +186,11 @@ function Start-Sleep {param([int]$Milliseconds,[int]$Seconds)}
     assertions=r"""
 $script:alive[101]=Fake 101 'NEXUS Personal Pro' $candidate
 $script:alive[202]=Fake 202 'nexus-product-server' $candidate
-$script:alive[303]=Fake 303 'NEXUS Personal Pro' 'C:\unrelated-application'
+$script:alive[9000]=Fake 9000 'NEXUS Personal Pro' 'C:\unrelated-application'
 Stop-Exact $candidate 0
 if($script:order.Count -ne 2 -or $script:order[0] -ne 'NEXUS Personal Pro' -or
    $script:order[1] -ne 'nexus-product-server'){throw 'Host-before-engine ordering failed'}
-if(-not $script:alive.ContainsKey(303)){throw 'Unrelated process modified'}
+if(-not $script:alive.ContainsKey(9000)){throw 'Unrelated process modified'}
 $script:externalEngineRespawn=$true
 $script:sidecarSerial=300
 $script:alive[300]=Fake 300 'nexus-product-server' $candidate
@@ -199,7 +199,7 @@ try{Stop-Exact $candidate 0}catch{
   if($_.Exception.Message -match 'Exact-version processes did not quiesce'){$caught=$true}
 }
 if(-not $caught){throw 'Unbounded engine respawn did not fail closed'}
-if(-not $script:alive.ContainsKey(303)){throw 'Unrelated process modified after failure'}
+if(-not $script:alive.ContainsKey(9000)){throw 'Unrelated process modified after failure'}
 'EXACT_HOST_FIRST_QUIESCENCE_MOCK=PASS'
 """
     test_script=tmp_path/"quiescence-mock.ps1"
