@@ -70,15 +70,15 @@ def _fast_backtest(*args, fee_bps, slip_bps, risk_variant):
     }
 
 
-def test_full_reviewed_10_config_fourpair_240_row_matrix(inputs, monkeypatch):
+def test_full_reviewed_12_config_fourpair_288_row_matrix(inputs, monkeypatch):
     frames, baseline = inputs
     monkeypatch.setattr(composite, "backtest", _fast_backtest)
     report = four.calculate(frames, baseline, SOURCE_SHA)
     assert report["source_sha"] == SOURCE_SHA
-    assert report["rows_count"] == 240
-    assert report["reviewed_distinct_mechanisms"] == 5
-    assert len(report["configurations"]) == 10
-    assert len({row["config_fingerprint"] for row in report["rows"]}) == 10
+    assert report["rows_count"] == 288
+    assert report["reviewed_distinct_mechanisms"] == 6
+    assert len(report["configurations"]) == 12
+    assert len({row["config_fingerprint"] for row in report["rows"]}) == 12
     assert len({row["symbol"] for row in report["rows"]}) == 4
     assert len({row["part"] for row in report["rows"]}) == 3
     assert len({row["profile"] for row in report["rows"]}) == 2
@@ -97,6 +97,9 @@ def test_full_reviewed_10_config_fourpair_240_row_matrix(inputs, monkeypatch):
     cross = [v for v in report["rows"] if v["mechanism"] == "cross_pair_relative_reclaim"]
     assert {v["peer"] for v in cross if v["symbol"] == "BTCUSDT"} == {"ETHUSDT"}
     assert {v["peer"] for v in cross if v["symbol"] == "XRPUSDT"} == {"BTCUSDT"}
+    lagged = [v for v in report["rows"] if v["mechanism"] == "lagged_peer_impulse_confirmation"]
+    assert len(lagged) == 48
+    assert {v["peer"] for v in lagged if v["symbol"] == "ETHUSDT"} == {"BTCUSDT"}
 
 
 def test_nonmatching_monthly_data_or_authority_fails_closed(inputs):
@@ -152,7 +155,7 @@ def test_numerical_replay_rejects_changed_rows_even_if_digest_resigned(inputs, m
         state=tmp_path, baseline_file=b, report_file=produced/"composite-report.json",
         source_sha=SOURCE_SHA, output=tmp_path/"proof",
     )
-    assert proof["full_240_cell_numerical_replay_matches"] is True
+    assert proof["full_288_cell_numerical_replay_matches"] is True
     assert proof["independent_model_qa_claimed"] is False
     assert proof["qa_digest"] == composite.digest(
         {k: v for k, v in proof.items() if k != "qa_digest"}
