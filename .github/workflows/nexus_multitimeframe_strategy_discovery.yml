@@ -17,6 +17,8 @@ on:
       - "nexus_composite_strategy_research.py"
       - "experiments/nexus_composite_strategy_research_v1.json"
       - "tests/test_nexus_composite_strategy_research.py"
+      - "scripts/nexus_qa_attested_discovery_frontier.py"
+      - "tests/test_nexus_qa_attested_discovery_frontier.py"
       - "nexus_demo_archive_replay.py"
       - "scripts/select_nexus_bybit_replay_artifact.py"
       - "experiments/nexus_multitimeframe_strategy_discovery_v1.json"
@@ -36,6 +38,8 @@ on:
       - "nexus_composite_strategy_research.py"
       - "experiments/nexus_composite_strategy_research_v1.json"
       - "tests/test_nexus_composite_strategy_research.py"
+      - "scripts/nexus_qa_attested_discovery_frontier.py"
+      - "tests/test_nexus_qa_attested_discovery_frontier.py"
       - "nexus_demo_archive_replay.py"
       - "scripts/select_nexus_bybit_replay_artifact.py"
       - "experiments/nexus_multitimeframe_strategy_discovery_v1.json"
@@ -79,6 +83,7 @@ jobs:
           tests/test_nexus_strategy_discovery_controller.py
           tests/test_nexus_bybit_replay_artifact_lifecycle.py
           tests/test_nexus_composite_strategy_research.py
+          tests/test_nexus_qa_attested_discovery_frontier.py
 
   discover:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
@@ -435,14 +440,15 @@ jobs:
           mkdir -p build/agent-research-cache
           cp "build/final_delivery/$DATASET_FILE" build/agent-research-cache/
           cp "build/final_delivery/$DATASET_DELIVERY" build/agent-research-cache/
-          if [ -s build/previous-composite/novelty-ledger.json ]; then
-            cp build/previous-composite/novelty-ledger.json build/agent-research-cache/previous-ledger.json
-          else
-            # Initial installation only: a freshly verified composite report
-            # supplies the first nonempty research frontier; no claimed prior
-            # independent QA ancestry exists at initial bootstrap.
-            cp build/composite/novelty-ledger.json build/agent-research-cache/previous-ledger.json
-          fi
+          # FOURTH and later Agent missions consume ONLY the prior real
+          # producer whose exact receipt a distinct independent QA attested
+          # and which the durable main-branch coordinator marked DONE.
+          # Standalone exploratory novelty artifacts are explicitly forbidden
+          # as a replacement: they may have already consumed the next family.
+          python scripts/nexus_qa_attested_discovery_frontier.py \
+            --repository "$GITHUB_REPOSITORY" \
+            --output build/agent-research-cache/previous-ledger.json
+          test -s build/agent-research-cache/previous-ledger.json
           python - <<'PY'
           import os
           from pathlib import Path
