@@ -340,3 +340,131 @@ def test_designated_independent_numerical_QA_is_required_not_any_verifier(monkey
     })
     assert task["status"] == "BLOCKED"
     assert task["blocked_reason"] == "independent verifier unavailable"
+
+
+def second_done():
+    one = prior()
+    two = child()
+    two.update({
+        "status": "DONE", "producer": "research-agent",
+        "verifier": "qa-verifier-agent",
+        "research_producer_lease_id": "real-second-producer",
+        "result_evidence": {
+            "executor": "nexus-real-composite-backtest",
+            "source_sha": NEW_SOURCE, "lease_id": "real-second-producer",
+            "receipt_digest": "6" * 64,
+            "prior_ledger_digest": "3" * 64,
+            "ledger_digest": "7" * 64,
+            "config_fingerprint": "8" * 64,
+            "mechanism": "failed_range_break_reversal",
+            "independent_qa_complete": False,
+            "auto_demo_promotion": False,
+            "live_enabled": False,
+        },
+        "verification_evidence": {
+            "executor": "nexus-independent-composite-numeric-qa",
+            "source_sha": NEW_SOURCE,
+            "producer_lease_id": "real-second-producer",
+            "producer_receipt_digest": "6" * 64,
+            "qa_digest": "9" * 64,
+            "independent_qa_complete": True,
+            "auto_demo_promotion": False,
+            "live_enabled": False,
+        },
+    })
+    three = child()
+    three.update(id="P7-RESEARCH-COMPOSITE-003", dependencies=[SECOND])
+    return {"tasks": [one, two, three]}
+
+
+def test_third_lease_inherits_exact_second_independent_QA_and_cold_restart(monkeypatch):
+    conf = second_done()
+    monkeypatch.setattr(am, "emit", lambda *args, **kwargs: None)
+    assert runner.bind_qa_attested_successor(conf) == "QA_attested_successor_bound"
+    third = conf["tasks"][2]
+    assert third["research_predecessor_ledger_digest"] == "7" * 64
+    assert third["research_predecessor_receipt_digest"] == "6" * 64
+    assert third["research_predecessor_qa_digest"] == "9" * 64
+    assert third["research_predecessor_mechanism"] == "failed_range_break_reversal"
+    assert runner.bind_qa_attested_successor(conf) == "QA_attested_successor_unchanged"
+    assert runner.apply_research_input_gate(conf, ready=False) == "parked_waiting_cache"
+    assert third["status"] == "BLOCKED"
+    assert runner.apply_research_input_gate(conf, ready=True) == "ready_for_producer_lease"
+    assert third["status"] == "READY"
+    template = {"schema_version": 1, "workers": [], "tasks": [prior(), child(), {
+        **child(), "id": "P7-RESEARCH-COMPOSITE-003", "dependencies": [SECOND]}]}
+    runtime = {"schema_version": 1, "tasks": conf["tasks"]}
+    merged = runner.merge_definition(template, runtime)
+    assert merged["tasks"][2]["research_predecessor_qa_digest"] == "9" * 64
+    assert merged["tasks"][2]["research_predecessor_ledger_digest"] == "7" * 64
+
+
+def test_third_rejects_stale_peer_frontier_and_same_predecessor_mechanism(monkeypatch):
+    conf = second_done()
+    monkeypatch.setattr(am, "emit", lambda *a, **kw: None)
+    runner.bind_qa_attested_successor(conf)
+    third = conf["tasks"][2]
+    env = payload_for(third)
+    assert decode_payload(encoded(env)) == env
+    assert env["research_predecessor_receipt_digest"] == "6" * 64
+    assert env["research_predecessor_qa_digest"] == "9" * 64
+    for changed in (
+        {**env, "research_predecessor_ledger_digest": "a" * 63},
+        {**env, "research_predecessor_qa_digest": None},
+        {**env, "research_predecessor_source_sha": "z" * 40},
+    ):
+        with pytest.raises(ValueError):
+            decode_payload(encoded(changed))
+    third.update(status="RUNNING", assigned_worker="research-agent",
+                 lease_id="third-producer")
+    with pytest.raises(ValueError, match="different"):
+        am.record_result(conf, third["id"], "research-agent", "success", {
+            "receipt_digest": "a" * 64,
+            "source_sha": NEW_SOURCE,
+            "prior_ledger_digest": "7" * 64,
+            "mechanism": "failed_range_break_reversal",
+            "independent_qa_complete": False,
+            "auto_demo_promotion": False,
+            "live_enabled": False,
+        })
+    assert third["status"] == "RUNNING"
+    with pytest.raises(ValueError, match="different"):
+        am.record_result(conf, third["id"], "research-agent", "success", {
+            "receipt_digest": "a" * 64, "source_sha": NEW_SOURCE,
+            "prior_ledger_digest": "f" * 64,
+            "mechanism": "cross_pair_relative_reclaim",
+            "independent_qa_complete": False,
+            "auto_demo_promotion": False, "live_enabled": False,
+        })
+    assert third["status"] == "RUNNING"
+
+
+def test_new_mechanism_preferred_to_prior_risk_variant_with_second_QA_frontier():
+    previous = search.empty_ledger()
+    core = {k: v for k, v in previous.items() if k != "ledger_digest"}
+    for cfg in search.CONFIGS:
+        if cfg["mechanism"] == "cross_pair_relative_reclaim":
+            continue
+        if cfg["risk_variant"] == 0 or cfg["mechanism"] == "failed_range_break_reversal":
+            core["config_fingerprints_evaluated"].append(
+                search.digest({"config": cfg, "dataset": search.ARCHIVE_SHA256,
+                               "contract": search.SCHEMA})
+            )
+            core["mechanisms_evaluated"].append(cfg["mechanism"])
+    core["mechanisms_evaluated"] = sorted(set(core["mechanisms_evaluated"]))
+    old = {**core, "ledger_digest": search.digest(core)}
+    chosen = search.select_next(old)
+    assert chosen["mechanism"] == "cross_pair_relative_reclaim"
+    assert chosen["fingerprint"] not in core["config_fingerprints_evaluated"]
+
+
+def test_changed_second_QA_receipt_cannot_rebind_third_even_if_first_done(monkeypatch):
+    conf = second_done()
+    monkeypatch.setattr(am, "emit", lambda *a, **kw: None)
+    runner.bind_qa_attested_successor(conf)
+    third = conf["tasks"][2]
+    bound = {key: third[key] for key in ANCESTRY}
+    conf["tasks"][1]["verification_evidence"]["qa_digest"] = "f" * 64
+    with pytest.raises(ValueError, match="changed"):
+        runner.bind_qa_attested_successor(conf)
+    assert {key: third[key] for key in ANCESTRY} == bound
