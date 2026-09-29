@@ -13,6 +13,7 @@ import re
 import stat
 import tempfile
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -92,6 +93,7 @@ def build_receipt(
         "decision": "OWNER_LOCAL_CYCLE_VERIFIED_ONLY",
         "source_sha": source_sha,
         "workflow_run_id": run_id,
+        "generated_at_utc": datetime.fromtimestamp(time.time() if now is None else now, timezone.utc).isoformat(),
         "runner_name": runner_name,
         "runner_identity_checked": True,
         "owner_durable_state": True,
@@ -140,8 +142,16 @@ def main() -> None:
         runner_name=os.environ["RUNNER_NAME"],
     )
     _store_local(root, report)
-    # No task names, IDs, journal contents, absolute paths or credentials.
-    print(json.dumps(report, sort_keys=True, separators=(",", ":")))
+    # Only an allowlisted, non-reversible operational synopsis enters GitHub logs.
+    # Queue and heartbeat digests are retained ONLY in the owner-local receipt.
+    safe = {key: report[key] for key in (
+        "contract_version", "decision", "source_sha", "workflow_run_id",
+        "generated_at_utc", "runner_name", "last_heartbeat_age_seconds",
+        "exit_reason", "tasks_run", "queue_status_counts", "paper_only",
+        "live_trading_authority", "no_private_state_export",
+        "qualification_authority", "receipt_sha256",
+    )}
+    print(json.dumps(safe, sort_keys=True, separators=(",", ":")))
 
 
 if __name__ == "__main__":
