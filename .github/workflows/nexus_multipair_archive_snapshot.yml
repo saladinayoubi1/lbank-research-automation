@@ -26,6 +26,7 @@ on:
       - "scripts/nexus_snapshot_artifact.py"
       - "scripts/nexus_recent_archive_runtime_snapshot_artifact.py"
       - "scripts/nexus_public_current_run_artifact.py"
+      - "scripts/nexus_recent_arrival.py"
       - "requirements.lock"
       - "requirements-dev.lock"
       - "tests/test_nexus_multipair_archive_snapshot.py"
@@ -34,6 +35,7 @@ on:
       - "tests/test_nexus_multipair_strategy_discovery_archive.py"
       - "tests/test_nexus_recent_archive_runtime_snapshot_artifact.py"
       - "tests/test_nexus_public_current_run_artifact.py"
+      - "tests/test_nexus_recent_arrival.py"
       - "tests/test_nexus_multipair_archive_acceptance_workflow.py"
       - "security/workflow-permissions-policy-v1.json"
   push:
@@ -61,6 +63,7 @@ on:
       - "scripts/nexus_snapshot_artifact.py"
       - "scripts/nexus_recent_archive_runtime_snapshot_artifact.py"
       - "scripts/nexus_public_current_run_artifact.py"
+      - "scripts/nexus_recent_arrival.py"
       - "requirements.lock"
       - "requirements-dev.lock"
       - "tests/test_nexus_multipair_archive_snapshot.py"
@@ -69,6 +72,7 @@ on:
       - "tests/test_nexus_multipair_strategy_discovery_archive.py"
       - "tests/test_nexus_recent_archive_runtime_snapshot_artifact.py"
       - "tests/test_nexus_public_current_run_artifact.py"
+      - "tests/test_nexus_recent_arrival.py"
       - "tests/test_nexus_multipair_archive_acceptance_workflow.py"
       - "security/workflow-permissions-policy-v1.json"
   workflow_dispatch:
@@ -306,6 +310,7 @@ jobs:
           tests/test_nexus_multipair_strategy_discovery_archive.py
           tests/test_nexus_recent_archive_runtime_snapshot_artifact.py
           tests/test_nexus_public_current_run_artifact.py
+          tests/test_nexus_recent_arrival.py
           tests/test_nexus_multipair_archive_acceptance_workflow.py
 
       - name: Prepare exact source and isolated physical Research state
@@ -348,6 +353,29 @@ jobs:
         if: github.event_name != 'pull_request'
         run: >-
           "$PYTHON_BIN" -c "assert '${{ runner.environment }}' == 'self-hosted'; assert '${{ runner.os }}' == 'Linux'; print('multipair_final_acceptance_plane=self-hosted:nexus-bybit-network')"
+
+      # Receive and SHA-verify the ORIGINAL current-run recent producer archive
+      # immediately, BEFORE heavy pinned offline wheelhouse bootstrapping.
+      # Original 45-minute acquisition-to-physical-arrival deadline stays
+      # strict. Whole numeric validation and SOURCE recency are repeated at
+      # their actual later execution time against the same staged bytes.
+      - name: Witness signed recent Bybit artifact physical arrival before offline setup
+        if: github.event_name != 'pull_request'
+        run: |
+          set -euo pipefail
+          cd "$SOURCE_ROOT"
+          "$PYTHON_BIN" scripts/nexus_public_current_run_artifact.py recent-arrival \
+            --repository "$GITHUB_REPOSITORY" \
+            --run-id "$GITHUB_RUN_ID" \
+            --artifact-name "nexus-multipair-recent-runtime-snapshot-$GITHUB_SHA" \
+            --source-sha "$GITHUB_SHA" \
+            --expected-sha256 "$EXPECTED_RECENT_ARCHIVE_SHA256" \
+            --expected-snapshot-digest "$EXPECTED_RECENT_SNAPSHOT_DIGEST" \
+            --expected-acquired-at-ms "$EXPECTED_RECENT_ACQUIRED_AT_MS" \
+            --expected-data-as-of-ms "$EXPECTED_RECENT_DATA_AS_OF_MS" \
+            --destination "$STATE_ROOT/recent-arrival" \
+            --work-root "$STATE_ROOT/recent-arrival-work"
+          echo "multipair_exact_signed_recent_arrival_before_offline_setup=PASS"
 
       - name: Restore deterministic wheelhouse without JavaScript actions
         if: github.event_name != 'pull_request'
@@ -415,6 +443,7 @@ jobs:
             --expected-acquired-at-ms "$EXPECTED_RECENT_ACQUIRED_AT_MS" \
             --expected-data-as-of-ms "$EXPECTED_RECENT_DATA_AS_OF_MS" \
             --now-ms "$consume_now_ms" \
+            --stage-root "$STATE_ROOT/recent-arrival" \
             --destination "$STATE_ROOT/recent-runtime-snapshot" \
             --work-root "$STATE_ROOT/recent-restore"
           "$PYTHON_BIN" - <<'PY'
@@ -461,6 +490,10 @@ jobs:
         run: |
           set -euo pipefail
           cd "$SOURCE_ROOT"
+          # Use ACTUAL evaluation time, never the earlier transport-stage or
+          # before-discovery clock, for the independent source-recency gate.
+          requal_now_ms="$("$PYTHON_BIN" -c 'import time; print(int(time.time() * 1000))')"
+          printf 'CONSUME_NOW_MS=%s\n' "$requal_now_ms" >> "$GITHUB_ENV"
           "$PYTHON_BIN" nexus_multipair_recent_archive_runtime_snapshot.py requalify \
             --snapshot-root "$STATE_ROOT/recent-runtime-snapshot" \
             --discovery "$STATE_ROOT/discovery/multipair_strategy_discovery.json" \
@@ -468,8 +501,10 @@ jobs:
             --source-sha "$GITHUB_SHA" \
             --state-root "$STATE_ROOT/requalification-state" \
             --output "$STATE_ROOT/requalification/runtime-requalification.json" \
-            --now-ms "$CONSUME_NOW_MS" \
-            --max-transport-age-ms 2700000
+            --now-ms "$requal_now_ms" \
+            --max-transport-age-ms 2700000 \
+            --stage-root "$STATE_ROOT/recent-arrival" \
+            --expected-stage-sha256 "$EXPECTED_RECENT_ARCHIVE_SHA256"
 
       - name: Verify physical acceptance and emit immutable proof to log
         id: proof

@@ -81,3 +81,15 @@ def test_final_proof_preserves_authority_and_issue_984_boundaries() -> None:
     assert '"issue_984_state_touched": False' in physical
     assert '"persistent_runtime_database_on_github": False' in physical
     assert "multipair_final_physical_acceptance=PASS" in physical
+
+
+def test_signed_recent_arrival_is_witnessed_before_heavy_offline_dependencies() -> None:
+    physical = _physical_section()
+    early = physical.index("scripts/nexus_public_current_run_artifact.py recent-arrival")
+    expensive = physical.index("scripts/nexus_public_current_run_artifact.py wheelhouse")
+    late = physical.index("scripts/nexus_public_current_run_artifact.py recent \\")
+    assert early < expensive < late
+    assert '--stage-root "$STATE_ROOT/recent-arrival"' in physical
+    assert '--expected-stage-sha256 "$EXPECTED_RECENT_ARCHIVE_SHA256"' in physical
+    assert "requal_now_ms=" in physical
+    assert '--now-ms "$requal_now_ms"' in physical

@@ -158,8 +158,9 @@ def test_recent_restore_uses_bounded_physical_transport_window(monkeypatch, tmp_
 
     monkeypatch.setattr(transport.historical_artifact, "_extract_inner", fake_extract)
 
-    def fake_verify(root, value, *, source_sha, now_ms, max_transport_age_ms):
+    def fake_verify(root, value, *, source_sha, now_ms, max_transport_age_ms, transport_received_at_ms=None):
         captured["max_transport_age_ms"] = max_transport_age_ms
+        assert transport_received_at_ms is None
         return {"decision": "pass", "checks": {"transport_age": True}}
 
     monkeypatch.setattr(recent, "verify_recent_archive_runtime_snapshot", fake_verify)

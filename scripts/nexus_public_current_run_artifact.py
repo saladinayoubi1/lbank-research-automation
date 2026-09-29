@@ -225,23 +225,38 @@ def restore_recent(
     destination: Path,
     work_root: Path,
     token: str,
+    stage_root: Path | None = None,
 ) -> dict[str, Any]:
     import nexus_multipair_recent_archive_runtime_snapshot as recent
 
-    artifact = _artifact(repository, run_id, artifact_name, source_sha, token)
-    work = work_root.resolve()
-    shutil.rmtree(work, ignore_errors=True)
-    work.mkdir(parents=True, exist_ok=True)
-    outer = work / "artifact.zip"
-    _download_outer(repository, artifact, outer, token)
-    inner_name = recent.INNER_ARCHIVE_NAME
-    sidecar_name = "nexus-multipair-recent-runtime-snapshot.sha256"
-    files = _extract_exact_outer(outer, work / "outer", {inner_name, sidecar_name})
-    _read_digest(files[sidecar_name], expected_sha256)
-    actual = historical_artifact._sha256_file(files[inner_name])
+    received_at_ms = None
+    if stage_root is None:
+        artifact = _artifact(repository, run_id, artifact_name, source_sha, token)
+        work = work_root.resolve()
+        shutil.rmtree(work, ignore_errors=True)
+        work.mkdir(parents=True, exist_ok=True)
+        outer = work / "artifact.zip"
+        _download_outer(repository, artifact, outer, token)
+        inner_name = recent.INNER_ARCHIVE_NAME
+        sidecar_name = "nexus-multipair-recent-runtime-snapshot.sha256"
+        files = _extract_exact_outer(outer, work / "outer", {inner_name, sidecar_name})
+        _read_digest(files[sidecar_name], expected_sha256)
+        inner = files[inner_name]
+    else:
+        from scripts.nexus_recent_arrival import verify_stage
+        witness, inner = verify_stage(
+            stage_root, repository=repository, run_id=run_id,
+            source_sha=source_sha, expected_sha256=expected_sha256,
+            expected_snapshot_digest=expected_snapshot_digest,
+            expected_acquired_at_ms=expected_acquired_at_ms,
+            expected_data_as_of_ms=expected_data_as_of_ms, now_ms=now_ms,
+        )
+        artifact = {"id": witness["artifact_id"]}
+        received_at_ms = witness["received_at_ms"]
+    actual = historical_artifact._sha256_file(inner)
     if actual != expected_sha256:
         raise RuntimeError("recent artifact SHA-256 mismatch")
-    historical_artifact._extract_inner(files[inner_name], destination)
+    historical_artifact._extract_inner(inner, destination)
     manifest = json.loads(
         (destination / historical_artifact.MANIFEST_NAME).read_text(encoding="utf-8")
     )
@@ -258,6 +273,7 @@ def restore_recent(
         source_sha=source_sha,
         now_ms=now_ms,
         max_transport_age_ms=PHYSICAL_RECENT_TRANSPORT_AGE_MS,
+        transport_received_at_ms=received_at_ms,
     )
     if verification.get("decision") != "pass":
         raise RuntimeError(
@@ -280,7 +296,7 @@ def _sha(value: str, pattern: re.Pattern[str], name: str) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("wheelhouse", "historical", "recent"))
+    parser.add_argument("mode", choices=("wheelhouse", "historical", "recent", "recent-arrival"))
     parser.add_argument("--repository", required=True)
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--artifact-name", required=True)
@@ -293,6 +309,7 @@ def main() -> int:
     parser.add_argument("--repository-lock")
     parser.add_argument("--destination", required=True)
     parser.add_argument("--work-root", required=True)
+    parser.add_argument("--stage-root")
     parser.add_argument("--token-env", default="GH_TOKEN")
     args = parser.parse_args()
 
@@ -326,21 +343,31 @@ def main() -> int:
             result = restore_historical(expected_snapshot_digest=digest, **common)
         else:
             if not all(
-                isinstance(value, int) and value > 0
-                for value in (
-                    args.expected_acquired_at_ms,
-                    args.expected_data_as_of_ms,
-                    args.now_ms,
-                )
+                type(value) is int and value > 0
+                for value in (args.expected_acquired_at_ms, args.expected_data_as_of_ms)
             ):
-                raise RuntimeError("recent mode requires positive time boundaries")
-            result = restore_recent(
-                expected_snapshot_digest=digest,
-                expected_acquired_at_ms=int(args.expected_acquired_at_ms),
-                expected_data_as_of_ms=int(args.expected_data_as_of_ms),
-                now_ms=int(args.now_ms),
-                **common,
-            )
+                raise RuntimeError("recent mode requires signed exact producer time boundaries")
+            if args.mode == "recent-arrival":
+                from scripts.nexus_recent_arrival import stage
+                result = stage(
+                    repository=args.repository, run_id=args.run_id,
+                    artifact_name=args.artifact_name, source_sha=source_sha,
+                    expected_sha256=expected_sha256, expected_snapshot_digest=digest,
+                    expected_acquired_at_ms=int(args.expected_acquired_at_ms),
+                    expected_data_as_of_ms=int(args.expected_data_as_of_ms),
+                    destination=Path(args.destination), token=token,
+                )
+            else:
+                if type(args.now_ms) is not int or args.now_ms <= 0:
+                    raise RuntimeError("recent numeric restore requires actual verification clock")
+                result = restore_recent(
+                    expected_snapshot_digest=digest,
+                    expected_acquired_at_ms=int(args.expected_acquired_at_ms),
+                    expected_data_as_of_ms=int(args.expected_data_as_of_ms),
+                    now_ms=int(args.now_ms),
+                    stage_root=Path(args.stage_root) if args.stage_root else None,
+                    **common,
+                )
     print(json.dumps(result, sort_keys=True))
     print(f"public_current_run_artifact_{args.mode}=PASS")
     return 0
