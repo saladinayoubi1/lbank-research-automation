@@ -215,6 +215,13 @@ def _source_epoch_qa_task():
     t["producer"] = "research-agent"
     t["verifier"] = "qa-verifier-agent"
     t["research_producer_lease_id"] = "immutable-producer"
+    t.update({
+        "research_predecessor_source_sha": "d" * 40,
+        "research_predecessor_receipt_digest": "e" * 64,
+        "research_predecessor_qa_digest": "f" * 64,
+        "research_predecessor_ledger_digest": "1" * 64,
+        "research_predecessor_mechanism": "failed_range_break_reversal",
+    })
     t["result_evidence"] = {
         "source_sha": "a" * 40,
         "receipt_digest": "b" * 64,
