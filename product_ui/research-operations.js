@@ -5,7 +5,7 @@
 (function () {
   'use strict';
 
-  var saved = {filter:'all', query:'', selected:null, mission:null, onRefresh:null};
+  var saved = {filter:'all', query:'', selected:null, mission:null, onRefresh:null, monthPair:'all'};
   var CONTRACT = 'nexus.product-mission-control.v1';
   var ACTIVE = ['LEASED','RUNNING','VERIFYING','TRIAGE'];
   var BLOCKED = ['BLOCKED','QUARANTINED','OWNER_REQUIRED'];
@@ -289,6 +289,67 @@
     renderQueue();
     renderResearch(m);
   }
+  function historicalMonth(m) {
+    var archive = m && m.historical_monthly_research;
+    if (!archive || archive.status !== 'verified_historical_only') {
+      return '<div class="ops-month-absent"><b>آرشیو ماهانهٔ اعتبارسنجی‌شده متصل نیست</b>' +
+        '<p>اتصال این آرشیو به استراتژی‌های زنده یا مجوز Paper ارتباط ندارد. نصب فعلی تا تأیید منبع تغییر نمی‌کند.</p></div>';
+    }
+    if (archive.paper_only !== true || archive.live_trading_authority !== false ||
+        archive.auto_demo_admission !== false || archive.qualified_count !== 0 ||
+        archive.cell_count !== 36 || archive.rejected_count !== 36 ||
+        !Array.isArray(archive.cells) || archive.cells.length !== 36) {
+      return '<div class="ops-month-absent">قرارداد آرشیو تاریخی نامعتبر است؛ نمایش نتایج متوقف شد.</div>';
+    }
+    var pairs = ['all','BTCUSDT','ETHUSDT','SOLUSDT','XRPUSDT'];
+    var visible = archive.cells.filter(function(r) {
+      return r && r.qualification === 'killed' &&
+        (saved.monthPair === 'all' || r.symbol === saved.monthPair);
+    });
+    function figure(v, decimals) {
+      return v === null || v === undefined || !Number.isFinite(Number(v)) ?
+        '—' : Number(v).toLocaleString('fa-IR', {maximumFractionDigits:decimals});
+    }
+    return '<section class="ops-month" aria-label="آرشیو کامل بک‌تست ماهانه">' +
+      '<header class="ops-month-head"><div><span class="ops-eyebrow">PINNED MONTHLY ARCHIVE / READ ONLY</span>' +
+      '<h3>آرشیو بک‌تست ماهانه</h3><p>منبع: Bybit (طبق آرشیو هش‌بندی‌شده) · ' +
+      safe(archive.month_start_utc) + ' تا ' + safe(archive.month_end_exclusive_utc) +
+      ' UTC · دادهٔ تاریخی، نه پایش بازار زنده</p></div>' +
+      '<span class="ops-month-seal">HASH VERIFIED · HISTORICAL</span></header>' +
+      '<div class="ops-month-kpis">' +
+      countTile('مجموع نتایج',figure(archive.cell_count,0),'۴ جفت‌ارز × ۳ TF × ۳ معیار پایه') +
+      countTile('ردشده',figure(archive.rejected_count,0),'گیت پژوهشی، نه سود یک ماهه','warn') +
+      countTile('پذیرفته‌شده برای دمو','۰','بدون عبور مستقل از گیت','warn') +
+      '</div><div class="ops-month-warning">بازده مثبت تاریخی نشان‌دهندهٔ احراز شرایط نیست. این ۳ روش پایه، استراتژی‌های مرکب جدید محسوب نمی‌شوند و هیچ معامله‌ای از این جدول مجاز نیست.</div>' +
+      '<div class="ops-month-tools"><div class="ops-month-filters" role="group" aria-label="فیلتر جفت‌ارز">' +
+      pairs.map(function(p) {
+        return '<button type="button" data-month-pair="' + safe(p) + '" aria-pressed="' +
+          (saved.monthPair === p ? 'true' : 'false') + '">' +
+          (p === 'all' ? 'همه' : safe(p.replace('USDT',' / USDT'))) + '</button>';
+      }).join('') +
+      '</div><small>' + figure(visible.length,0) + ' نتیجه · SHA ' +
+      code(String(archive.report_sha256 || '').slice(0,16)) + '…</small></div>' +
+      '<div class="ops-month-table-wrap" tabindex="0" aria-label="جدول قابل پیمایش نتایج">' +
+      '<table class="ops-month-table"><thead><tr>' +
+      '<th>جفت‌ارز / TF</th><th>روش پایه</th><th>بازده خالص</th><th>تنش هزینه</th>' +
+      '<th>معاملات بسته</th><th>DD</th><th>نرخ برد</th><th>PF</th><th>نتیجه</th>' +
+      '</tr></thead><tbody>' +
+      visible.map(function(r) {
+        return '<tr><td><b>' + safe(r.symbol) + '</b><small>' + safe(r.timeframe) + '</small></td>' +
+          '<td>' + safe(r.strategy.replace('_',' ')) + '</td>' +
+          '<td class="' + (Number(r.net_return_pct) < 0 ? 'is-negative' : '') + '">' +
+          figure(r.net_return_pct,3) + '٪</td>' +
+          '<td class="' + (Number(r.stress_net_return_pct) < 0 ? 'is-negative' : '') + '">' +
+          figure(r.stress_net_return_pct,3) + '٪</td>' +
+          '<td>' + figure(r.closed_trades,0) + '</td><td>' +
+          figure(r.max_drawdown_pct,3) + '٪</td><td>' +
+          figure(r.win_rate_pct,2) + '٪</td><td>' +
+          figure(r.profit_factor,3) + '</td>' +
+          '<td><span class="ops-month-rejected">ردشده</span></td></tr>';
+      }).join('') + '</tbody></table></div>' +
+      '<footer>منبع کد تاریخی: ' + code(String(archive.code_sha || '').slice(0,16)) +
+      '… · قفل معاملات واقعی و ورود خودکار به دمو فعال است.</footer></section>';
+  }
   function renderResearch(m) {
     var host=el('researchAgentOverview');if(!host)return;
     if(!m || m.contract_version!==CONTRACT) {
@@ -307,9 +368,11 @@
       countTile('مکانیزم',candidate&&candidate.result_evidence&&candidate.result_evidence.mechanism || 'هنوز تأیید نشده','فقط از خروجی عددی ثبت‌شده') +
       countTile('گیت دمو','قفل','پذیرش جداگانه؛ هیچ ارتقای خودکار') + '</div>' +
       (lastNumeric ? numericEvidence(lastNumeric.result_evidence,receiptVerified(lastNumeric)) : '') +
+      historicalMonth(m) +
       (blocker?'<div class="ops-block"><span>BLOCKER</span><p>' + safe(blocker.id) + ': ' +
         safe(blocker.blocked_reason||blocker.failure_class||'علت نامشخص') + '</p></div>':'') +
       '<div class="ops-research-link">جزئیات lease، مسیر اجرا و مدارک QA در تب «عامل‌ها و صف» قابل بررسی است.</div>';
+    host.onclick=function(ev){var button=ev.target.closest('[data-month-pair]');if(button){saved.monthPair=button.getAttribute('data-month-pair');renderResearch(m);}};
   }
   window.NexusResearchOps={render:render,renderResearch:renderResearch};
 })();
