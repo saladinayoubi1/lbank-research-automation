@@ -119,6 +119,8 @@ def decode_payload(value: str) -> dict[str, Any]:
     expected = DISPATCH_KEYS | (qa_keys if is_research_qa else set()) | (
         followon_keys if is_followon else set()
     )
+    if is_research_qa and not qa_keys.issubset(keys):
+        raise ValueError("Research independent QA producer binding absent")
     if keys != expected:
         raise ValueError("dispatch payload schema mismatch")
     if is_followon:
