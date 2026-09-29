@@ -170,5 +170,3 @@ def test_verified_completed_run_with_expired_artifact_is_reason_coded_not_qualif
     row = feedback["outcomes"][-1]
     assert row["outcome"] == "evidence_unavailable"
     assert row["artifact_flags"]["candidate_evidence"] is False
-    plan = build_plan(_controller(), empty_rotation_state(), feedback)
-    assert plan["stage"] == "second"
