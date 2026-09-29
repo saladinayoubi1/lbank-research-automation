@@ -304,7 +304,10 @@ def build_handler(
     runtime = runtime or ProductRuntime(data_root.parent, opening_cash=DESKTOP_DEMO_OPENING_CASH)
     research_runtime = research_runtime or ProductResearchRuntime(runtime)
     control_runtime = control_runtime or ProductControlRuntime(runtime)
-    mission_runtime = ProductMissionRuntime(data_root.parent)
+    # The installed offline wrapper and the lightweight product API must both
+    # read the SAME owner-side durable Agent Manager directory, not sibling
+    # market-data directories. Never create a second apparent runtime.
+    mission_runtime = ProductMissionRuntime(runtime.root)
     BaseHandler = build_ai_handler(
         data_root,
         ui_root=ui_root,
