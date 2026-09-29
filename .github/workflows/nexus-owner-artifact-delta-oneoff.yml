@@ -1,0 +1,78 @@
+name: NEXUS Owner Artifact Delta (One-off)
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/nexus-owner-artifact-delta-oneoff.yml'
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  make-verified-delta:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'codex/nexus-owner-delta-transport-20260929' && github.event.pull_request.base.sha == 'f9c56ef44e1aed8eeb02c73e2d63e96c88d2c6cf'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: saladinayoubi1/lbank-research-automation
+      OLD_RUN: '36553738815'
+      OLD_ARTIFACT: '11026590197'
+      OLD_SOURCE: '7e9f07ba85398232edddf674cdb6f01dcb1efa9f'
+      OLD_BYTES: '217665894'
+      OLD_SHA256: c0e6d776e0655be8c14dc730b1f184d57b06acb7fde8775e4be1b5a34c94190e
+      NEW_RUN: '36569875800'
+      NEW_ARTIFACT: '11033232816'
+      NEW_SOURCE: f9c56ef44e1aed8eeb02c73e2d63e96c88d2c6cf
+      NEW_BYTES: '217664895'
+      NEW_SHA256: fe56b5aed88a60dbe2e2956f64f22fec524bca0e57ac1d1fa795c75a4de06678
+    steps:
+      - name: Verify immutable official artifact provenance and download both outer ZIP archives
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p delta
+          check_artifact() {
+            local id="$1" run="$2" source="$3" size="$4" digest="$5" item
+            item="$(gh api "repos/$REPO/actions/artifacts/$id")"
+            jq -e --argjson id "$id" --argjson run "$run" --arg sha "$source" --argjson size "$size" --arg digest "sha256:$digest" '
+              .id == $id and .name == "nexus-windows-persistent-unpacked"
+              and .expired == false and .size_in_bytes == $size and .digest == $digest
+              and .workflow_run.id == $run and .workflow_run.head_sha == $sha
+            ' <<<"$item" >/dev/null
+            test "$(gh api "repos/$REPO/actions/runs/$run" --jq .head_sha)" = "$source"
+          }
+          check_artifact "$OLD_ARTIFACT" "$OLD_RUN" "$OLD_SOURCE" "$OLD_BYTES" "$OLD_SHA256"
+          check_artifact "$NEW_ARTIFACT" "$NEW_RUN" "$NEW_SOURCE" "$NEW_BYTES" "$NEW_SHA256"
+          # Download the original official OUTER ZIPs, not rebuilt ZIP equivalents.
+          gh api -H 'Accept: application/vnd.github+json' "repos/$REPO/actions/artifacts/$OLD_ARTIFACT/zip" > old-official.zip
+          gh api -H 'Accept: application/vnd.github+json' "repos/$REPO/actions/artifacts/$NEW_ARTIFACT/zip" > new-official.zip
+          test "$(stat -c '%s' old-official.zip)" = "$OLD_BYTES"
+          test "$(stat -c '%s' new-official.zip)" = "$NEW_BYTES"
+          printf '%s  old-official.zip\n' "$OLD_SHA256" | sha256sum -c -
+          printf '%s  new-official.zip\n' "$NEW_SHA256" | sha256sum -c -
+      - name: Build and independently verify reversible binary patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq >/dev/null
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq xdelta3 >/dev/null
+          xdelta3 -e -B 268435456 -s old-official.zip new-official.zip delta/nexus-official-outer.xdelta
+          xdelta3 -d -s old-official.zip delta/nexus-official-outer.xdelta reconstructed.zip
+          test "$(stat -c '%s' reconstructed.zip)" = "$NEW_BYTES"
+          printf '%s  reconstructed.zip\n' "$NEW_SHA256" | sha256sum -c -
+          patchbytes="$(stat -c '%s' delta/nexus-official-outer.xdelta)"
+          test "$patchbytes" -gt 0
+          # Fail rather than upload a patch with no practical transfer advantage.
+          test "$patchbytes" -lt 65000000
+          patchhash="$(sha256sum delta/nexus-official-outer.xdelta | cut -d' ' -f1)"
+          printf 'contract=nexus.artifact-outer-delta-transport.v1\nold_run=%s\nold_artifact=%s\nold_sha256=%s\nnew_run=%s\nnew_artifact=%s\nnew_source_sha=%s\nnew_sha256=%s\nnew_bytes=%s\npatch_sha256=%s\npatch_bytes=%s\n' "$OLD_RUN" "$OLD_ARTIFACT" "$OLD_SHA256" "$NEW_RUN" "$NEW_ARTIFACT" "$NEW_SOURCE" "$NEW_SHA256" "$NEW_BYTES" "$patchhash" "$patchbytes" > delta/delta-manifest.txt
+          echo "DELTA_VERIFIED=true PATCH_BYTES=$patchbytes FULL_BYTES=$NEW_BYTES"
+      - name: Publish patch and digest receipt only
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-owner-exact-official-outer-delta-oneoff
+          path: delta/
+          compression-level: 0
+          retention-days: 7
