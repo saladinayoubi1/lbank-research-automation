@@ -161,3 +161,37 @@
 .ops-deep-evidence .data-table{min-width:645px;font-size:12px}
 .ops-evidence-disclaimer{padding:0 16px 13px;margin:0;font-size:12px;line-height:1.75}
 @media(max-width:900px){.ops-deep-evidence .metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* Immutable monthly historical archive: visually distinct from the live Agent
+   timeline and from any Paper-eligible strategy candidate. */
+.ops-month,.ops-month-absent{border:1px solid rgba(80,136,174,.28);border-radius:18px;background:linear-gradient(145deg,rgba(14,40,61,.88),rgba(12,25,40,.9));margin:20px 0;padding:clamp(14px,2.5vw,24px);color:#eaf3fb}
+.ops-month-absent{border-style:dashed;background:rgba(15,39,55,.35)}
+.ops-month-absent b{display:block;margin-bottom:6px;color:#d6e7f3}
+.ops-month-absent p{margin:0;font-size:13px;line-height:1.75;color:#a9c1d2}
+.ops-month-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.ops-month-head h3{font-size:clamp(18px,2vw,24px);margin:4px 0 6px;letter-spacing:-.025em}
+.ops-month-head p{font-size:12px;line-height:1.7;color:#b1c9d9;margin:0}
+.ops-month-seal{color:#78cfb8;border:1px solid rgba(86,190,155,.4);background:rgba(29,108,91,.16);border-radius:50px;font-size:10px;font-weight:800;letter-spacing:.08em;padding:8px 12px;white-space:nowrap}
+.ops-month-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:16px}
+.ops-month .ops-stat{border-color:rgba(145,174,198,.18);background:rgba(28,56,79,.5)}
+.ops-month-warning{color:#ffd8a7;background:rgba(165,93,20,.14);border:1px solid rgba(231,170,85,.27);border-radius:10px;padding:11px 14px;margin:15px 0;line-height:1.8;font-size:12px}
+.ops-month-tools{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:14px 0}
+.ops-month-tools small{color:#aac2d6;display:flex;align-items:center;gap:4px}
+.ops-month-tools code{overflow-wrap:anywhere}
+.ops-month-filters{display:flex;flex-wrap:wrap;gap:6px}
+.ops-month-filters button{font:inherit;font-size:12px;background:rgba(152,182,206,.07);color:#cde0ef;border:1px solid rgba(153,191,209,.25);border-radius:9px;padding:7px 11px;cursor:pointer;transition:background .16s,color .16s}
+.ops-month-filters button:hover,.ops-month-filters button:focus-visible{background:rgba(57,140,158,.22);outline-color:#60bfc7}
+.ops-month-filters button[aria-pressed="true"]{background:rgba(39,139,144,.28);border-color:#68c9c1;color:#e3fbf9}
+.ops-month-table-wrap{overflow:auto;max-height:450px;border:1px solid rgba(162,186,205,.22);border-radius:12px;scrollbar-color:#558192 transparent}
+.ops-month-table{border-collapse:separate;border-spacing:0;min-width:840px;width:100%;font-size:12px;direction:ltr}
+.ops-month-table th{position:sticky;top:0;z-index:1;text-align:start;background:#20384c;color:#e1f0f7;white-space:nowrap;padding:12px 11px;border-bottom:1px solid rgba(174,203,221,.25)}
+.ops-month-table td{text-align:start;padding:10px 11px;border-bottom:1px solid rgba(158,190,211,.11);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ops-month-table tr:nth-child(even){background:rgba(130,170,198,.04)}
+.ops-month-table tr:hover{background:rgba(75,142,167,.15)}
+.ops-month-table td:first-child b{display:block;color:#f0f8fd}
+.ops-month-table td:first-child small{display:block;color:#a3c0d2;margin-top:3px}
+.ops-month-table td.is-negative{color:#ffadab}
+.ops-month-rejected{display:inline-block;border:1px solid rgba(235,154,92,.34);background:rgba(171,96,44,.14);border-radius:8px;color:#ffcbad;padding:4px 7px;font-size:11px}
+.ops-month footer{font-size:11px;line-height:1.7;color:#a0b8c8;margin-top:12px;overflow-wrap:anywhere}
+@media(max-width:650px){.ops-month-kpis{grid-template-columns:1fr}.ops-month-head{flex-direction:column}.ops-month-table-wrap{margin:0 -5px}.ops-month-filters button{flex:1}}
