@@ -267,7 +267,7 @@
       "hypothesis": "After a verified BTC/ETH peer's simultaneously closed spot candle, the own asset may re-accelerate its already positive 1-hour relative price momentum at the current 15m close, conditional on fully closed 4h trend, 1h volatility guard and own closed range breakout; this causal continuation hypothesis is different from relative-z mean reversion, peer leadership and downside peer noncontagion. It has no verified profitability.",
       "inputs": [
         "closed_spot_ohlcv",
-        "exact_same_utc_grid_closed_peer_spot"
+        "aligned_spot_cross_pair"
       ],
       "context": [
         "complete_4h_trend_confirmation",
