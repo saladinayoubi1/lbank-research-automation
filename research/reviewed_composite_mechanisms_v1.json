@@ -196,6 +196,38 @@
         "single_symbol_collateral_budget",
         "cross_pair_spot_only_no_hedge_claim"
       ]
+    },
+    {
+      "id": "lagged_peer_impulse_confirmation",
+      "hypothesis": "A peer's verified prior 15-minute-close one-hour spot price impulse may precede a slower spot asset's subsequently confirmed own 15-minute range breakout in an already completed positive 4-hour market and normal 1-hour volatility context. This is a speculative historical causal hypothesis, not an established profitable lead-lag relationship.",
+      "inputs": [
+        "closed_spot_ohlcv",
+        "aligned_spot_cross_pair"
+      ],
+      "context": [
+        "exact_utc_closed_spot_peer_grid",
+        "peer_return_lagged_one_completed_15m_candle",
+        "historically_lagged_peer_impulse_baseline",
+        "own_prev_closed_four_bar_response",
+        "completed_4h_market_trend",
+        "completed_1h_volatility_guard"
+      ],
+      "entry": [
+        "prior_peer_impulse_outside_previous_distribution",
+        "lagging_own_observed_four_bar_return",
+        "current_own_closed_range_breakout_with_volume",
+        "next_own_15m_open_fill"
+      ],
+      "exit": [
+        "own_actual_intrabar_worst_case_structure_stop",
+        "precommitted_hold_timeout"
+      ],
+      "risk": [
+        "spot_long_flat_only_per_symbol_cash_collateral",
+        "no_cross_asset_hedge_or_portfolio_rotation_claim",
+        "no_orderbook_or_signed_flow_proxy",
+        "no_automatic_paper_promotion"
+      ]
     }
   ]
 }
