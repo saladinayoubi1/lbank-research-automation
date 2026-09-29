@@ -376,7 +376,7 @@ async function startOwnerAutostartWithRetry(sourceSha) {
 }
 
 // An alternate Electron userData root must NEVER provision the real owner's runner,
-// refresh global autostart, or run the real Paper sync. Clone tests and ad-hoc
+// refresh shared autostart, or run the real Paper sync. Clone tests and ad-hoc
 // private-profile launches use the same fail-closed isolation as install smoke.
 function isIsolatedProfileOrSmoke(argv) {
   return Array.isArray(argv) && argv.some(value => {
