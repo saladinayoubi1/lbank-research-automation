@@ -170,6 +170,32 @@
         "spot_only_no_implicit_short",
         "derivative_data_unavailable_no_trade"
       ]
+    },
+    {
+      "id": "cross_pair_relative_reclaim",
+      "hypothesis": "A causally observed same-UTC-close BTC/ETH relative price dislocation that begins to recover inside already completed higher-timeframe market and volatility context may identify a distinct spot-long response from standalone indicator entries, subject to adverse fill and conservative cost tests.",
+      "inputs": [
+        "closed_spot_ohlcv",
+        "aligned_spot_cross_pair"
+      ],
+      "context": [
+        "verified_peer_candle_exact_utc_alignment",
+        "completed_four_hour_range_context",
+        "completed_hourly_volatility_guard"
+      ],
+      "entry": [
+        "lagged_cross_asset_dislocation",
+        "current_closed_relative_recovery",
+        "observed_volume_confirmation"
+      ],
+      "exit": [
+        "spot_structure_stop",
+        "precommitted_maximum_time_exit"
+      ],
+      "risk": [
+        "single_symbol_collateral_budget",
+        "cross_pair_spot_only_no_hedge_claim"
+      ]
     }
   ]
 }

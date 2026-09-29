@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 import agent_manager as am
-from nexus_research_missions import SECOND, TASKS, ANCESTRY, validate_ancestry
+from nexus_research_missions import SECOND, THIRD, TASKS, ANCESTRY, validate_ancestry
 
 RUNTIME_PATH = Path("data/agent_coordination/agent_manager_runtime.json")
 SUMMARY_PATH = Path("data/agent_coordination/manager_state.json")
@@ -150,7 +150,7 @@ def envelope_for(task: dict[str, Any]) -> dict[str, Any]:
             "research_producer_receipt_digest": prior["receipt_digest"],
             "research_producer_source_sha": prior["source_sha"],
         }
-    if task["id"] == SECOND:
+    if task["id"] in {SECOND, THIRD}:
         ancestry = validate_ancestry({key: task[key] for key in ANCESTRY if key in task})
         optional.update(ancestry)
     return {

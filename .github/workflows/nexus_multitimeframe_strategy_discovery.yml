@@ -427,12 +427,22 @@ jobs:
           set -euo pipefail
           test -s "build/final_delivery/$DATASET_FILE"
           test -s "build/final_delivery/$DATASET_DELIVERY"
+          # Agent must execute the NEXT mechanism against the reviewed prior
+          # frontier, not rebind to the standalone discovery step\x27s freshly
+          # consumed mechanism (which would skip new candidates).
           test -s build/composite/novelty-ledger.json
           rm -rf build/agent-research-cache
           mkdir -p build/agent-research-cache
           cp "build/final_delivery/$DATASET_FILE" build/agent-research-cache/
           cp "build/final_delivery/$DATASET_DELIVERY" build/agent-research-cache/
-          cp build/composite/novelty-ledger.json build/agent-research-cache/previous-ledger.json
+          if [ -s build/previous-composite/novelty-ledger.json ]; then
+            cp build/previous-composite/novelty-ledger.json build/agent-research-cache/previous-ledger.json
+          else
+            # Initial installation only: a freshly verified composite report
+            # supplies the first nonempty research frontier; no claimed prior
+            # independent QA ancestry exists at initial bootstrap.
+            cp build/composite/novelty-ledger.json build/agent-research-cache/previous-ledger.json
+          fi
           python - <<'PY'
           import os
           from pathlib import Path

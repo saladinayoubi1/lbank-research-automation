@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 import agent_manager as am
-from nexus_research_missions import (FIRST, SECOND, ANCESTRY, attested_predecessor, validate_ancestry)
+from nexus_research_missions import (FIRST, SECOND, THIRD, PREDECESSOR, ANCESTRY, attested_predecessor, validate_ancestry)
 
 RUNTIME_PATH = Path("data/agent_coordination/agent_manager_runtime.json")
 SUMMARY_PATH = Path("data/agent_coordination/manager_state.json")
@@ -248,41 +248,40 @@ def _research_context() -> tuple[str, str] | None:
 
 
 def bind_qa_attested_successor(config: dict[str, Any]) -> str:
-    """Preserve the exact previous producer+QA identities through cold restarts.
-
-    Linking is authorized ONLY by the preceding, independently verified task.
-    A changed predecessor cannot silently rewrite an already leased successor.
-    """
-    task_map = {t.get("id"): t for t in config.get("tasks", [])}
-    prior, successor = task_map.get(FIRST), task_map.get(SECOND)
-    if prior is None or successor is None:
-        return "not_present"
-    if prior.get("status") != "DONE":
-        return "awaiting_prior_QA"
-    try:
-        evidence = attested_predecessor(prior)
-    except ValueError:
-        if successor.get("status") in {"PENDING", "READY", "BLOCKED"}:
-            successor["status"] = "BLOCKED"
-            successor["blocked_reason"] = "predecessor_independent_research_QA_attestation_missing"
-            am.emit("successor_research_QA_untrusted", task_id=SECOND)
-        return "untrusted_prior_QA"
-    existing = {key: successor[key] for key in ANCESTRY if key in successor}
-    if any(evidence[key] != value for key, value in existing.items()):
-        raise ValueError("persisted research successor ancestry changed since the prior QA lease")
-    if len(existing) != len(ANCESTRY):
-        if successor.get("status") not in {"PENDING", "READY", "BLOCKED"}:
-            raise ValueError("active successor is missing an immutable QA ancestry binding")
-        successor.update(evidence)
-        am.emit(
-            "QA_verified_research_successor_bound", task_id=SECOND,
-            predecessor_lease_id=prior.get("research_producer_lease_id"),
-            predecessor_QA_digest=evidence["research_predecessor_qa_digest"],
-        )
-        return "QA_attested_successor_bound"
-    validate_ancestry(existing)
-    return "QA_attested_successor_unchanged"
-
+    """Source-exact QA-authorized successor chain, durable across cold restarts."""
+    tasks = {t.get("id"): t for t in config.get("tasks", [])}
+    state = "not_present"
+    for new_id, old_id in PREDECESSOR.items():
+        prior, successor = tasks.get(old_id), tasks.get(new_id)
+        if prior is None or successor is None:
+            continue
+        if prior.get("status") != "DONE":
+            return "awaiting_prior_QA" if state == "not_present" else state
+        try:
+            evidence = attested_predecessor(prior)
+        except ValueError:
+            if successor.get("status") in {"PENDING", "READY", "BLOCKED"}:
+                successor["status"] = "BLOCKED"
+                successor["blocked_reason"] = "predecessor_independent_research_QA_attestation_missing"
+                am.emit("successor_research_QA_untrusted", task_id=new_id)
+            return "untrusted_prior_QA"
+        existing = {key: successor[key] for key in ANCESTRY if key in successor}
+        if any(evidence[key] != value for key, value in existing.items()):
+            raise ValueError("persisted research successor ancestry changed since the prior QA lease")
+        if len(existing) != len(ANCESTRY):
+            if successor.get("status") not in {"PENDING", "READY", "BLOCKED"}:
+                raise ValueError("active successor is missing an immutable QA ancestry binding")
+            successor.update(evidence)
+            am.emit(
+                "QA_verified_research_successor_bound", task_id=new_id,
+                predecessor_lease_id=prior.get("research_producer_lease_id"),
+                predecessor_QA_digest=evidence["research_predecessor_qa_digest"],
+            )
+            state = "QA_attested_successor_bound"
+        else:
+            validate_ancestry(existing)
+            state = "QA_attested_successor_unchanged"
+    return state
 
 
 def research_cache_status() -> tuple[bool, str]:
@@ -353,26 +352,28 @@ def apply_research_input_gate(config: dict[str, Any], *, ready: bool) -> str:
     """
     tasks = {t.get("id"): t for t in config.get("tasks", [])}
     first = tasks.get(FIRST)
-    successor = tasks.get(SECOND)
     if first is None:
         return "not_present"
     task = first
-    # After a verified first mission, continue ONLY if the distinct second
-    # mission carries the exact prior QA + result digests.
-    if first.get("status") == "DONE" and successor is not None:
-        task = successor
-        if task.get("status") in {"DONE", "QUARANTINED", "OWNER_REQUIRED"}:
-            return "successor_terminal_unchanged"
-        evidence = {key: task[key] for key in ANCESTRY if key in task}
+    for next_id in (SECOND, THIRD):
+        if task.get("status") != "DONE":
+            break
+        candidate = tasks.get(next_id)
+        if candidate is None:
+            return "terminal_unchanged"
+        evidence = {key: candidate[key] for key in ANCESTRY if key in candidate}
         try:
             validate_ancestry(evidence)
-            if evidence != attested_predecessor(first):
-                raise ValueError("successor ancestry differs from first QA receipt")
+            if evidence != attested_predecessor(task):
+                raise ValueError("successor ancestry differs from previous independent QA")
         except ValueError:
-            if task.get("status") in {"PENDING", "READY", "BLOCKED"}:
-                task["status"] = "BLOCKED"
-                task["blocked_reason"] = "predecessor_independent_research_QA_attestation_missing"
+            if candidate.get("status") in {"PENDING", "READY", "BLOCKED"}:
+                candidate["status"] = "BLOCKED"
+                candidate["blocked_reason"] = "predecessor_independent_research_QA_attestation_missing"
             return "successor_QA_not_attested"
+        task = candidate
+        if task.get("status") in {"QUARANTINED", "OWNER_REQUIRED"}:
+            return "successor_terminal_unchanged"
     status = task.get("status")
     if status in {"DONE", "QUARANTINED", "OWNER_REQUIRED"}:
         return "terminal_unchanged"
@@ -424,8 +425,9 @@ def request_missing_research_cache(config: dict[str, Any], reason: str) -> str:
     context = _research_context()
     tasks = {t.get("id"): t for t in config.get("tasks", [])}
     task = tasks.get(FIRST)
-    if task is not None and task.get("status") == "DONE":
-        task = tasks.get(SECOND)
+    for next_id in (SECOND, THIRD):
+        if task is not None and task.get("status") == "DONE":
+            task = tasks.get(next_id)
     if context is None or task is None or task.get("blocked_reason") != RESEARCH_WAIT:
         return "not_requested"
     if reason not in {"source_exact_transport_cache_absent"}:

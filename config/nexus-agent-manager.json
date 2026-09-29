@@ -375,6 +375,35 @@
         "if no distinct reviewed mechanism exists, require reviewed Developer Agent design and fail closed",
         "no automatic Paper promotion, no Live/L4"
       ]
+    },
+    {
+      "id": "P7-RESEARCH-COMPOSITE-003",
+      "title": "Research newly reviewed causal cross-pair dislocation on first-v2 lineage; require independent QA and prior second frontier",
+      "phase": 7,
+      "gate": 17,
+      "status": "PENDING",
+      "priority": 89,
+      "dependencies": [
+        "P7-RESEARCH-COMPOSITE-002"
+      ],
+      "required_capabilities": [
+        "data_validation"
+      ],
+      "required_resources": [
+        "github-cloud"
+      ],
+      "preferred_resources": [
+        "github-cloud",
+        "windows-local"
+      ],
+      "authority": 2,
+      "acceptance": [
+        "second distinct Research producer and independent QA verified original replay/frontier before third lease",
+        "new source-bound producer uses exactly preceding second QA novelty ledger, not stale public novelty artifact",
+        "third producer executes genuine newly reviewed cross_pair_relative_reclaim mechanism using verified aligned closed BTC/ETH peer series",
+        "all two-symbol three-partition two-cost numeric artifacts and third separate QA independently reproduce results",
+        "no synthetic L2/funding or simultaneous portfolio hedge claims, no Demo or Live"
+      ]
     }
   ]
 }
