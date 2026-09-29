@@ -71,6 +71,16 @@
       <section id="view-research" class="view">
         <div class="section-head"><div><span>RESEARCH / BACKTEST STUDIO</span><h2>پژوهش واقعی روی داده canonical</h2></div><strong class="badge warn">NO PROFITABILITY CLAIM</strong></div>
         <div id="researchAgentOverview" aria-label="وضعیت واقعی پژوهش خودکار"></div>
+        <details id="autonomousResearchPanel" class="panel ops-deep-evidence">
+          <summary class="ops-evidence-summary">
+            <span class="ops-eyebrow">SOURCE-BOUND AGENT AUDIT / INDEPENDENT QA</span>
+            <strong>گزارش تکمیلی مأموریت‌ها و تطبیق مستقل</strong>
+            <b id="agentResearchBadge" class="badge neutral">NOT VERIFIED</b>
+          </summary>
+          <div id="agentResearchMetrics" class="metric-grid"></div>
+          <div id="agentResearchTasks" class="table-wrap"><div class="empty-state">شواهد معتبر Research Agent هنوز بازیابی نشده است.</div></div>
+          <p class="muted ops-evidence-disclaimer">تطبیق تاریخی رسید تولیدکننده و QA مجوز Paper، اثبات سودآوری یا شواهد دست‌نخوردهٔ OOS نیست.</p>
+        </details>
         <div class="research-layout">
           <article class="panel"><header><div><span>PREREGISTERED RUN</span><h2>اجرای پژوهش</h2></div></header><form id="researchForm" class="order-form"><label>نماد<select name="symbol"><option>BTCUSDT</option><option>ETHUSDT</option><option>SOLUSDT</option><option>BNBUSDT</option><option>XRPUSDT</option></select></label><label>تایم‌فریم<select name="timeframe"><option value="minute15">15m</option><option value="hour1">1h</option><option value="hour4">4h</option></select></label><label>خانواده<select name="family"><option value="momentum">Momentum</option><option value="trend_breakout">Trend Breakout</option><option value="mean_reversion">Mean Reversion</option></select></label><label>کندل<input name="limit" type="number" min="60" max="500" value="240"></label><button class="primary" type="submit">داده → Backtest → OOS/Stress/Regime → Qualification</button></form><div id="researchRunState" class="result-box muted">هنوز پژوهشی اجرا نشده است.</div></article>
           <article class="panel"><header><div><span>QUALIFICATION</span><h2>نتیجه Strategy Factory</h2></div><strong id="qualificationBadge" class="badge neutral">NO RUN</strong></header><div id="researchMetrics" class="metric-grid"></div><pre id="researchEvidence" class="json-view">—</pre></article>
