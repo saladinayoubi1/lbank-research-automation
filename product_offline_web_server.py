@@ -20,6 +20,7 @@ from product_offline_runtime import (
     ProductOfflineError,
 )
 from product_research_runtime import ProductResearchError, ProductResearchRuntime
+from product_strategy_workspace import StrategyWorkspace, StrategyWorkspaceError
 from product_runtime import ProductRuntime
 from product_web_server import (
     DESKTOP_DEMO_OPENING_CASH,
@@ -37,6 +38,8 @@ OFFLINE_STATIC = {
     "/ui/product-offline.css": "product-offline.css",
     "/ui/product-mission.js": "product-mission.js",
     "/ui/product-mission.css": "product-mission.css",
+    "/ui/product-strategy-workspace.js": "product-strategy-workspace.js",
+    "/ui/product-strategy-workspace.css": "product-strategy-workspace.css",
 }
 
 
@@ -59,6 +62,7 @@ def build_handler(
     controls = controls or ProductControlRuntime(runtime)
     offline_research = offline_research or OfflineProductResearchRuntime(runtime, store)
     mission = mission or ProductMissionRuntime(runtime.root, integration_root=data_root.parent)
+    workspace = StrategyWorkspace(runtime.root)
     BaseProductHandler = build_product_handler(
         data_root,
         config=active_config,
@@ -96,8 +100,8 @@ def build_handler(
                 self._send(_json_error(HTTPStatus.SERVICE_UNAVAILABLE, "offline_asset_unavailable", str(exc), active_config), head_only=head_only); return
             head_marker = b"</head>"
             body_marker = b"</body>"
-            head_injection = b'<link rel="stylesheet" href="/ui/product-offline.css"><link rel="stylesheet" href="/ui/product-mission.css"></head>'
-            body_injection = b'<script src="/ui/product-offline.js"></script><script src="/ui/product-mission.js"></script></body>'
+            head_injection = b'<link rel="stylesheet" href="/ui/product-offline.css"><link rel="stylesheet" href="/ui/product-mission.css"><link rel="stylesheet" href="/ui/product-strategy-workspace.css"></head>'
+            body_injection = b'<script src="/ui/product-offline.js"></script><script src="/ui/product-mission.js"></script><script src="/ui/product-strategy-workspace.js"></script></body>'
             if head_marker not in response.body or body_marker not in response.body:
                 self._send(_json_error(HTTPStatus.SERVICE_UNAVAILABLE, "offline_asset_invalid", "product index markers missing", active_config), head_only=head_only); return
             body = response.body.replace(head_marker, head_injection, 1).replace(body_marker, body_injection, 1)
@@ -158,6 +162,15 @@ def build_handler(
                 except ProductMissionError as exc:
                     self._send(_json_error(HTTPStatus.SERVICE_UNAVAILABLE, "strategy_evidence_unavailable", str(exc), active_config)); return
                 self._send(ApiResponse(HTTPStatus.OK, payload)); return
+            if parsed.path == "/api/product/strategy-workspace":
+                if not self._authorized(): return
+                if parsed.query:
+                    self._send(_json_error(HTTPStatus.BAD_REQUEST, "invalid_query", "strategy workspace does not accept query", active_config)); return
+                try:
+                    payload = workspace.snapshot(evidence=mission.strategy_store.history(), datasets=store.snapshot())
+                except (StrategyWorkspaceError, ProductMissionError, ProductOfflineError) as exc:
+                    self._send(_json_error(HTTPStatus.SERVICE_UNAVAILABLE, "strategy_workspace_unavailable", str(exc), active_config)); return
+                self._send(ApiResponse(HTTPStatus.OK, payload)); return
             if parsed.path == "/api/product/build-evidence":
                 if not self._authorized(): return
                 if parsed.query:
@@ -199,6 +212,8 @@ def build_handler(
             routes = {
                 "/api/product/offline/import", "/api/product/offline/research",
                 "/api/product/offline/paper/auto", "/api/product/mission/import",
+                "/api/product/strategy-workspace/propose", "/api/product/strategy-workspace/select",
+                "/api/product/strategy-workspace/research",
             }
             if parsed.path not in routes:
                 super().do_POST(); return
@@ -218,9 +233,20 @@ def build_handler(
                     if set(payload):
                         raise ProductOfflineError("offline auto-paper request must be an empty object")
                     result = offline_research.auto_paper()
+                elif parsed.path == "/api/product/strategy-workspace/propose":
+                    result = workspace.create(payload)
+                elif parsed.path == "/api/product/strategy-workspace/select":
+                    if set(payload) != {"strategy_id"}:
+                        raise StrategyWorkspaceError("strategy selection schema mismatch")
+                    result = workspace.select(payload["strategy_id"])
+                elif parsed.path == "/api/product/strategy-workspace/research":
+                    if set(payload) != {"strategy_id", "binding_sha256"}:
+                        raise StrategyWorkspaceError("strategy research schema mismatch")
+                    family = workspace.selected_manual_family(payload["strategy_id"])
+                    result = offline_research.run_imported_research(binding_sha256=payload["binding_sha256"], family=family)
                 else:
                     result = mission.import_snapshot(payload)
-            except (ProductOfflineError, ProductResearchError, ProductMissionError) as exc:
+            except (ProductOfflineError, ProductResearchError, ProductMissionError, StrategyWorkspaceError) as exc:
                 self._send(_json_error(HTTPStatus.BAD_REQUEST, "offline_action_rejected", str(exc), active_config)); return
             except Exception as exc:
                 self._send(_json_error(HTTPStatus.SERVICE_UNAVAILABLE, "offline_action_unavailable", str(exc), active_config)); return
