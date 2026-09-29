@@ -68,7 +68,9 @@ def child():
 
 def linked(monkeypatch):
     monkeypatch.setattr(am, "emit", lambda *args, **kwargs: None)
-    config = {"tasks": [prior(), child()]}
+    template = am.load_config(Path("config/nexus-agent-manager.json"))
+    config = {"schema_version": 1, "tasks": [prior(), child()],
+              "workers": template["workers"], "policy": template["policy"]}
     assert runner.bind_qa_attested_successor(config) == "QA_attested_successor_bound"
     return config
 
@@ -263,7 +265,7 @@ def test_successor_requires_EXACT_prior_QA_ledger_and_different_mechanism(monkey
         tmp_path / prepare.REPLAY_NAME, {}
     ))
     monkeypatch.setattr(prepare, "sha256_file", lambda *_: "a" * 64)
-    monkeypatch.setattr(prepare, "safe_extract", lambda *_: None)
+    monkeypatch.setattr(prepare, "safe_extract", lambda _archive, root: root.mkdir(parents=True, exist_ok=True))
     ancestor = {"research_predecessor_ledger_digest": old["ledger_digest"],
                 "research_predecessor_mechanism": "failed_range_break_reversal"}
     # The next distinct causal mechanism after all risk_variant=0 is not
