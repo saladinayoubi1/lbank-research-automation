@@ -69,7 +69,7 @@ def child():
 def linked(monkeypatch):
     monkeypatch.setattr(am, "emit", lambda *args, **kwargs: None)
     template = am.load_config(Path("config/nexus-agent-manager.json"))
-    config = {"schema_version": 1, "tasks": [prior(), child()],
+    config = {"schema_version": 1, "phase": 4, "tasks": [prior(), child()],
               "workers": template["workers"], "policy": template["policy"]}
     assert runner.bind_qa_attested_successor(config) == "QA_attested_successor_bound"
     return config
