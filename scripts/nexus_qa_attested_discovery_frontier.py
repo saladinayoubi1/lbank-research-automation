@@ -77,7 +77,9 @@ def archive_json(raw: bytes, expected: str) -> dict[str, Any]:
     return payload
 
 
-def latest_coordinator(repo: str) -> tuple[int, dict[str, Any]]:
+def latest_coordinator(
+    repo: str, *, required_task_id: str | None = None,
+) -> tuple[int, dict[str, Any]]:
     """Find recent successful main Coordinator proofs without a global artifact scan.
 
     The repository-wide artifact index grows with unrelated triage workflows
@@ -94,8 +96,22 @@ def latest_coordinator(repo: str) -> tuple[int, dict[str, Any]]:
     runs = data.get("workflow_runs")
     if not isinstance(runs, list) or len(runs) > 12:
         raise QaFrontierError("untrusted bounded coordinator workflow run index")
-    for run in sorted(runs, key=lambda row: str(row.get("created_at", "")),
-                      reverse=True):
+    current_sha = os.environ.get("GITHUB_SHA", "")
+    if current_sha and not HEX40.fullmatch(current_sha):
+        raise QaFrontierError("current discovery source SHA is malformed")
+    # Prefer an exact-current-source Coordinator proof over a later-finishing
+    # stale-source run during main transitions. Creation time is only the
+    # secondary ordering key; source identity is the primary trust boundary.
+    ordered = sorted(
+        runs,
+        key=lambda row: (
+            bool(current_sha and isinstance(row, dict)
+                 and row.get("head_sha") == current_sha),
+            str(row.get("created_at", "")) if isinstance(row, dict) else "",
+        ),
+        reverse=True,
+    )
+    for run in ordered:
         if not isinstance(run, dict):
             raise QaFrontierError("malformed coordinator workflow run")
         run_id = run.get("id")
@@ -141,7 +157,26 @@ def latest_coordinator(repo: str) -> tuple[int, dict[str, Any]]:
         ):
             raise QaFrontierError("Coordinator proof metadata does not bind to its run")
         raw = api(f"repos/{repo}/actions/artifacts/{artifact['id']}/zip", binary=True)
-        return artifact["id"], archive_json(raw, "agent_manager_runtime.json")
+        manager = archive_json(raw, "agent_manager_runtime.json")
+        if required_task_id is not None:
+            tasks = manager.get("tasks")
+            if not isinstance(tasks, list):
+                # A source-transition snapshot without a durable task ledger
+                # cannot seed Research; continue to another bounded proof.
+                continue
+            matching = [
+                task for task in tasks
+                if isinstance(task, dict) and task.get("id") == required_task_id
+            ]
+            if len(matching) > 1:
+                raise QaFrontierError("ambiguous predecessor Research mission in Coordinator proof")
+            if not matching:
+                # Older Coordinator schema may not yet know the newly appended
+                # successor chain. It is proof transport, not authoritative
+                # runtime state; only a snapshot containing the exact required
+                # predecessor can be selected.
+                continue
+        return artifact["id"], manager
     raise QaFrontierError("no verified successful main Coordinator runtime proof available")
 
 
@@ -258,7 +293,9 @@ def verified_frontier(repo: str) -> dict[str, Any]:
     # The latest reviewed Mission schema names the NEXT dependent task.
     # Its predecessor is the only admissible QA-attested transport source.
     expected_id = PREDECESSOR[list(PREDECESSOR)[-1]]
-    manager_artifact_id, manager = latest_coordinator(repo)
+    manager_artifact_id, manager = latest_coordinator(
+        repo, required_task_id=expected_id,
+    )
     tasks = manager.get("tasks")
     if not isinstance(tasks, list):
         raise QaFrontierError("coordinator does not contain a durable task ledger")
