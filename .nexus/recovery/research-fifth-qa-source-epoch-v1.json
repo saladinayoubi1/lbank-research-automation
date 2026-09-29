@@ -1,0 +1,15 @@
+{
+  "schema": "nexus.research-qa-incident-recovery.v1",
+  "task_id": "P7-RESEARCH-COMPOSITE-005",
+  "producer_source_sha": "99250a5d5a938dd4d18e47bd7bbf2d6baa43dfa5",
+  "producer_lease_id": "8754478b-15a1-4896-82b8-b0ff36d44b1b",
+  "producer_receipt_digest": "996a74b4500ade543a015d6ee06d0055fbd9979704d35b49afec62366e92d5cc",
+  "failed_qa_lease_id": "cb53c98e-00e2-4d2e-95e6-106d0c977836",
+  "failed_qa_dispatch_id": "51e7e859e68cb8a5bdc7511b543b7ac8",
+  "failed_qa_run_id": 36608935481,
+  "failed_qa_head_sha": "efd069478ed1a867cfbcbc1bb49c5e9f0953ce90",
+  "reason": "Verified fifth old-source numerical producer; original independently assigned QA failed at source-identity inspection after main advanced; one new independently leased QA only, never DONE without numerical replay",
+  "allow_original_source_qa_only": true,
+  "automatic_demo_promotion": false,
+  "live_enabled": false
+}
