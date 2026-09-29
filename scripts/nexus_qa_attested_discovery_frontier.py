@@ -78,35 +78,71 @@ def archive_json(raw: bytes, expected: str) -> dict[str, Any]:
 
 
 def latest_coordinator(repo: str) -> tuple[int, dict[str, Any]]:
-    # Inspect only a bounded main-branch status window, newest first.
-    for page in (1, 2, 3):
-        data = api(f"repos/{repo}/actions/artifacts?per_page=100&page={page}")
-        artifacts = data.get("artifacts", [])
-        if not isinstance(artifacts, list):
-            raise QaFrontierError("untrusted coordinator artifact index")
-        for artifact in sorted(artifacts, key=lambda a: str(a.get("created_at", "")),
-                               reverse=True):
-            if not isinstance(artifact, dict):
-                continue
-            name = str(artifact.get("name", ""))
-            if artifact.get("expired") is not False or not re.fullmatch(
-                r"fast-agent-status-[0-9]{7,16}", name
+    """Find recent successful main Coordinator proofs without a global artifact scan.
+
+    The repository-wide artifact index grows with unrelated triage workflows
+    and can exceed hosted Actions API limits. Bound this lookup to the
+    Coordinator's own recent successful runs and their exact same-run output.
+    This is proof transport only, never a replacement runtime database.
+    """
+    if repo != REPO:
+        raise QaFrontierError("coordinator lookup repository is not authorized")
+    data = api(
+        f"repos/{repo}/actions/workflows/fast-agent-coordinator.yml/"
+        "runs?branch=main&per_page=12"
+    )
+    runs = data.get("workflow_runs")
+    if not isinstance(runs, list) or len(runs) > 12:
+        raise QaFrontierError("untrusted bounded coordinator workflow run index")
+    for run in sorted(runs, key=lambda row: str(row.get("created_at", "")),
+                      reverse=True):
+        if not isinstance(run, dict):
+            raise QaFrontierError("malformed coordinator workflow run")
+        run_id = run.get("id")
+        source = run.get("head_sha")
+        if (
+            type(run_id) is not int or run_id < 1
+            or run.get("head_branch") != "main"
+            or run.get("event") not in {"workflow_dispatch", "push", "schedule"}
+            or run.get("status") != "completed"
+            or run.get("conclusion") != "success"
+            or not HEX40.fullmatch(str(source))
+        ):
+            continue
+        if run.get("path") not in {None, ".github/workflows/fast-agent-coordinator.yml"}:
+            raise QaFrontierError("coordinator workflow source path changed")
+        for key in ("repository", "head_repository"):
+            value = run.get(key)
+            if value is not None and (
+                not isinstance(value, dict) or value.get("full_name") != repo
             ):
-                continue
-            run_id = name.rsplit("-", 1)[1]
-            run = api(f"repos/{repo}/actions/runs/{run_id}")
-            if (
-                str(run.get("id")) != run_id
-                or run.get("head_branch") != "main"
-                or run.get("event") not in {"workflow_dispatch", "push", "schedule"}
-                or run.get("status") != "completed"
-                or run.get("conclusion") != "success"
-                or not HEX40.fullmatch(str(run.get("head_sha", "")))
-            ):
-                continue
-            raw = api(f"repos/{repo}/actions/artifacts/{artifact['id']}/zip", binary=True)
-            return int(artifact["id"]), archive_json(raw, "agent_manager_runtime.json")
-    raise QaFrontierError("no completed authorized main-branch coordinator proof available")
+                raise QaFrontierError("untrusted coordinator workflow repository")
+        artifacts = api(f"repos/{repo}/actions/runs/{run_id}/artifacts?per_page=30").get("artifacts")
+        if not isinstance(artifacts, list) or len(artifacts) > 30:
+            raise QaFrontierError("untrusted bounded coordinator run artifact index")
+        exact = [item for item in artifacts
+                 if isinstance(item, dict)
+                 and item.get("name") == f"fast-agent-status-{run_id}"
+                 and item.get("expired") is False]
+        if len(exact) > 1:
+            raise QaFrontierError("ambiguous exact Coordinator runtime proof")
+        if not exact:
+            continue
+        artifact = exact[0]
+        binding = artifact.get("workflow_run")
+        if (
+            type(artifact.get("id")) is not int or artifact["id"] < 1
+            or type(artifact.get("size_in_bytes")) is not int
+            or not 0 < artifact["size_in_bytes"] <= MAX_ZIP_BYTES
+            or not isinstance(binding, dict)
+            or binding.get("id") != run_id
+            or binding.get("head_branch") != "main"
+            or binding.get("head_sha") != source
+        ):
+            raise QaFrontierError("Coordinator proof metadata does not bind to its run")
+        raw = api(f"repos/{repo}/actions/artifacts/{artifact['id']}/zip", binary=True)
+        return artifact["id"], archive_json(raw, "agent_manager_runtime.json")
+    raise QaFrontierError("no verified successful main Coordinator runtime proof available")
 
 
 def exact_artifact_json(repo: str, name: str, sha: str, member: str) -> tuple[int, dict[str, Any]]:
