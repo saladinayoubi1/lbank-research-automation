@@ -90,13 +90,19 @@ def mock_proofs(monkeypatch, *, bad_ledger=False, bad_qa=False, no_verified_four
     def fake_api(endpoint, *, binary=False):
         if binary:
             return archive_map[int(endpoint.rsplit("/", 2)[-2])]
-        if endpoint.endswith("artifacts?per_page=100&page=1"):
+        if endpoint.endswith("workflows/fast-agent-coordinator.yml/runs?branch=main&per_page=12"):
+            return {"workflow_runs": [{"id": 1234567, "head_sha": SOURCE,
+                     "head_branch": "main", "path": ".github/workflows/fast-agent-coordinator.yml",
+                     "event": "workflow_dispatch", "status": "completed",
+                     "conclusion": "success", "created_at": "2026-09-29T00:00:00Z",
+                     "repository": {"full_name": selector.REPO},
+                     "head_repository": {"full_name": selector.REPO}}]}
+        if endpoint.endswith("actions/runs/1234567/artifacts?per_page=30"):
             return {"artifacts": [{"id": 901, "name": "fast-agent-status-1234567",
-                                    "created_at": "2026-09-29T00:00:00Z", "expired": False}]}
-        if endpoint.endswith("actions/runs/1234567"):
-            return {"id": 1234567, "head_sha": SOURCE, "head_branch": "main",
-                    "event": "workflow_dispatch", "status": "completed",
-                    "conclusion": "success"}
+                     "size_in_bytes": len(archive_map[901]),
+                     "created_at": "2026-09-29T00:00:00Z", "expired": False,
+                     "workflow_run": {"id": 1234567, "head_sha": SOURCE,
+                                      "head_branch": "main"}}]}
         if "artifacts?name=" in endpoint:
             name = endpoint.split("name=")[1].split("&")[0]
             id_ = 904 if name.endswith("-qa-" + VERIFIER) else 902
@@ -154,3 +160,33 @@ def test_mandatory_fifth_discovery_cache_uses_exact_QA_not_standalone_artifact()
     assert "cp build/previous-composite/novelty-ledger.json" not in segment
     assert "cp build/composite/novelty-ledger.json" not in segment
     assert "no claimed prior" not in segment
+
+
+def test_recent_coordinator_proof_rejects_unbound_same_run_artifact(monkeypatch):
+    mock_proofs(monkeypatch)
+    original = selector.api
+
+    def mismatched(endpoint, *, binary=False):
+        result = original(endpoint, binary=binary)
+        if endpoint.endswith("actions/runs/1234567/artifacts?per_page=30"):
+            result["artifacts"][0]["workflow_run"]["head_sha"] = "f" * 40
+        return result
+
+    monkeypatch.setattr(selector, "api", mismatched)
+    with pytest.raises(selector.QaFrontierError, match="bind"):
+        selector.latest_coordinator(selector.REPO)
+
+
+def test_recent_coordinator_proof_does_not_accept_failed_run(monkeypatch):
+    mock_proofs(monkeypatch)
+    original = selector.api
+
+    def failed(endpoint, *, binary=False):
+        result = original(endpoint, binary=binary)
+        if endpoint.endswith("workflows/fast-agent-coordinator.yml/runs?branch=main&per_page=12"):
+            result["workflow_runs"][0]["conclusion"] = "failure"
+        return result
+
+    monkeypatch.setattr(selector, "api", failed)
+    with pytest.raises(selector.QaFrontierError, match="no verified"):
+        selector.latest_coordinator(selector.REPO)
