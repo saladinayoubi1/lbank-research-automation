@@ -229,6 +229,13 @@ def test_frontier_skips_schema_lag_snapshot_missing_required_predecessor(monkeyp
     def raced(endpoint, *, binary=False):
         if binary and endpoint.endswith("actions/artifacts/906/zip"):
             return empty_manager
+        if endpoint.endswith("actions/runs/2222222/artifacts?per_page=30"):
+            return {"artifacts": [{
+                "id": 906, "name": "fast-agent-status-2222222",
+                "size_in_bytes": len(empty_manager), "expired": False,
+                "workflow_run": {"id": 2222222, "head_sha": SOURCE,
+                                 "head_branch": "main"},
+            }]}
         result = original(endpoint, binary=binary)
         if endpoint.endswith("workflows/fast-agent-coordinator.yml/runs?branch=main&per_page=12"):
             result["workflow_runs"].append({
@@ -239,13 +246,6 @@ def test_frontier_skips_schema_lag_snapshot_missing_required_predecessor(monkeyp
                 "repository": {"full_name": selector.REPO},
                 "head_repository": {"full_name": selector.REPO},
             })
-        elif endpoint.endswith("actions/runs/2222222/artifacts?per_page=30"):
-            return {"artifacts": [{
-                "id": 906, "name": "fast-agent-status-2222222",
-                "size_in_bytes": len(empty_manager), "expired": False,
-                "workflow_run": {"id": 2222222, "head_sha": SOURCE,
-                                 "head_branch": "main"},
-            }]}
         return result
 
     monkeypatch.setattr(selector, "api", raced)
