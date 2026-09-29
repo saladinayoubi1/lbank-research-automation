@@ -38,17 +38,77 @@ function ExactProcs([string]$Root){
 }
 function Stop-Exact([string]$Root,[int]$GraceSeconds=12) {
   Assert ($Root -in @($candidate,$prior)) 'Only the two bound installation roots can be stopped'
-  $p=@(ExactProcs $Root)
-  foreach($x in $p){if($x.MainWindowHandle -ne 0){try{$null=$x.CloseMainWindow()}catch{}}}
-  $limit=[DateTime]::UtcNow.AddSeconds($GraceSeconds)
-  do { $left=@(ExactProcs $Root);if(!$left.Count){break};Start-Sleep -Milliseconds 500 }
-  while([DateTime]::UtcNow -lt $limit)
-  foreach($x in @(ExactProcs $Root)) {
-    $again=Get-Process -Id $x.Id -ErrorAction SilentlyContinue
-    if($again -and $again.Path -and (IsWithin $again.Path $Root)){Stop-Process -Id $again.Id -Force -ErrorAction Stop}
+  $scope=Split-Path -Leaf $Root
+  # Electron's healthy GUI supervises the Python sidecar: killing the sidecar
+  # before the GUI host has exited can trigger an immediate replacement child.
+  # Request a normal owner-window close first; NEVER signal an unrelated app.
+  foreach($x in @(ExactProcs $Root)){
+    if($x.ProcessName -eq 'NEXUS Personal Pro' -and $x.MainWindowHandle -ne 0){
+      try{$null=$x.CloseMainWindow()}catch{}
+    }
   }
-  Start-Sleep -Seconds 2
-  Assert (@(ExactProcs $Root).Count -eq 0) 'Exact-version processes did not quiesce'
+  $graceUntil=[DateTime]::UtcNow.AddSeconds([Math]::Max(0,$GraceSeconds))
+  do {
+    if(@(ExactProcs $Root).Count -eq 0){break}
+    Start-Sleep -Milliseconds 500
+  }while([DateTime]::UtcNow -lt $graceUntil)
+
+  # The prior one-snapshot stop loop could leave an engine re-created between
+  # signals and the final check. Re-enumerate exact paths every bounded pass,
+  # retire GUI hosts FIRST, then retire only orphaned exact-root sidecars.
+  for($pass=1;$pass -le 4;$pass++){
+    $hosts=@(ExactProcs $Root | Where-Object {$_.ProcessName -eq 'NEXUS Personal Pro'} | Sort-Object Id)
+    foreach($x in $hosts){
+      $again=Get-Process -Id $x.Id -ErrorAction SilentlyContinue
+      if($again -and $again.ProcessName -eq 'NEXUS Personal Pro' -and $again.Path -and (IsWithin $again.Path $Root)){
+        try{Stop-Process -Id $again.Id -Force -ErrorAction Stop}
+        catch{
+          $still=Get-Process -Id $x.Id -ErrorAction SilentlyContinue
+          if($still -and $still.Path -and (IsWithin $still.Path $Root)){throw}
+        }
+      }
+    }
+    $hostDeadline=[DateTime]::UtcNow.AddSeconds(2)
+    do {
+      $hosts=@(ExactProcs $Root | Where-Object {$_.ProcessName -eq 'NEXUS Personal Pro'})
+      if($hosts.Count -eq 0){break}
+      Start-Sleep -Milliseconds 250
+    }while([DateTime]::UtcNow -lt $hostDeadline)
+    # Never kill an engine while its host is still alive and able to respawn it.
+    if($hosts.Count -eq 0){
+      foreach($x in @(ExactProcs $Root | Where-Object {$_.ProcessName -eq 'nexus-product-server'})){
+        $again=Get-Process -Id $x.Id -ErrorAction SilentlyContinue
+        if($again -and $again.ProcessName -eq 'nexus-product-server' -and $again.Path -and
+          (IsWithin $again.Path $Root) -and
+          @(ExactProcs $Root | Where-Object {$_.ProcessName -eq 'NEXUS Personal Pro'}).Count -eq 0){
+          try{Stop-Process -Id $again.Id -Force -ErrorAction Stop}
+          catch{
+            $still=Get-Process -Id $x.Id -ErrorAction SilentlyContinue
+            if($still -and $still.Path -and (IsWithin $still.Path $Root)){throw}
+          }
+        }
+      }
+    }
+    # Several consecutive absent checks, not one transient empty snapshot.
+    $stable=0
+    while($stable -lt 5){
+      if(@(ExactProcs $Root).Count -ne 0){break}
+      $stable++
+      Start-Sleep -Milliseconds 500
+    }
+    if($stable -eq 5){
+      Write-Host "NEXUS_EXACT_QUIESCENCE=PASS scope=$scope passes=$pass"
+      return
+    }
+    $left=@(ExactProcs $Root)
+    $gui=@($left | Where-Object {$_.ProcessName -eq 'NEXUS Personal Pro'}).Count
+    $engine=@($left | Where-Object {$_.ProcessName -eq 'nexus-product-server'}).Count
+    Write-Host "NEXUS_EXACT_QUIESCENCE_RETRY scope=$scope pass=$pass gui=$gui engine=$engine"
+  }
+  $remaining=@(ExactProcs $Root)
+  $gui=@($remaining | Where-Object {$_.ProcessName -eq 'NEXUS Personal Pro'}).Count
+  $engine=@($remaining | Where-Object {$_.ProcessName -eq 'nexus-product-server'}).Count
+  throw "Exact-version processes did not quiesce scope=$scope gui=$gui engine=$engine; no other install was signaled"
 }
 function ProfileFiles([string]$Root) {
   Assert (@(Get-ChildItem -LiteralPath $Root -Recurse -Force -ErrorAction Stop|Where-Object {$_.Attributes -band [IO.FileAttributes]::ReparsePoint}).Count -eq 0) 'Owner profile has reparse content'
