@@ -46,11 +46,20 @@
   }
   function receiptVerified(t) {
     var p = t && t.result_evidence, q = t && t.verification_evidence;
+    // A dashboard can verify consistency of reported receipts, not replay
+    // signed bytes. Require exact worker roles, common source and no widened
+    // trading authority before showing a *reported* independent QA match.
     return !!(t.status === 'DONE' && p && q &&
-      typeof p.receipt_digest === 'string' && p.receipt_digest.length === 64 &&
+      p.executor === 'nexus-real-composite-backtest' &&
+      q.executor === 'nexus-independent-composite-numeric-qa' &&
+      /^[0-9a-f]{64}$/.test(String(p.receipt_digest || '')) &&
+      /^[0-9a-f]{64}$/.test(String(q.qa_digest || '')) &&
+      /^[0-9a-f]{40}$/.test(String(p.source_sha || '')) &&
       q.producer_receipt_digest === p.receipt_digest &&
-      q.independent_qa_complete === true && p.live_enabled === false &&
-      q.live_enabled === false);
+      q.source_sha === p.source_sha &&
+      q.independent_qa_complete === true &&
+      p.auto_demo_promotion === false && q.auto_demo_promotion === false &&
+      p.live_enabled === false && q.live_enabled === false);
   }
   function fresh(m) {
     return !!(m && m.contract_version === CONTRACT && m.source === 'local_runtime' &&
@@ -78,7 +87,7 @@
     }
     return '<div class="ops-results"><div class="ops-results-heading"><div><span class="ops-eyebrow">NUMERIC VALIDATION / HISTORICAL</span>' +
       '<h4>نتایج عددی ثبت‌شده</h4></div>' + tag(verified ? 'DONE' : 'UNKNOWN',
-        verified ? 'تأیید بازپخش مستقل' : 'فقط گزارش تولیدکننده') + '</div>' +
+        verified ? 'تطبیق گزارش‌شدهٔ رسید QA' : 'فقط گزارش تولیدکننده') + '</div>' +
       '<div class="ops-results-note">نمونهٔ اعتبارسنجی تاریخی است؛ OOS دست‌نخورده، سودآوری یا مجوز دمو محسوب نمی‌شود.</div>' +
       '<div class="ops-results-scroll"><table><thead><tr><th>نماد / TF</th><th>هزینه</th><th>معاملات</th><th>بازده خالص</th><th>افت سرمایه</th><th>برد</th><th>PF</th></tr></thead><tbody>' +
       rows.map(function (v) {return '<tr><td>' + safe(v.symbol) + '<small>' + safe(v.timeframe) + '</small></td>' +
@@ -112,7 +121,7 @@
       safe(t.assigned_worker || 'عامل تخصیص نیافته') + ' · ' +
       safe(t.dispatch_transport || 'مسیر اجرا نامشخص') + '</small></span>' +
       '<span class="ops-job-state">' + tag(t.status, historicalStatus ? 'آرشیوی: ' + LABELS[stateOf(t.status)] : null) +
-      (verified ? '<small class="ops-proof">QA receipt تطبیق داده شد</small>' : '') +
+      (verified ? '<small class="ops-proof">رسیدهای QA منطبق (گزارش‌شده)</small>' : '') +
       '</span><span class="ops-job-arrow" aria-hidden="true">›</span></button>';
   }
   function matchFilter(t) {
@@ -162,7 +171,7 @@
     host.innerHTML = '<div class="ops-inspector-head"><div><span class="ops-eyebrow">TASK INSPECTOR / READ ONLY</span>' +
       '<h3>' + safe(t.title) + '</h3><p>' + code(t.id) + '</p></div>' + tag(t.status, historicalStatus ? 'آرشیوی: ' + LABELS[stateOf(t.status)] : null) + '</div>' +
       '<div class="ops-inspector-proof ' + (proof ? 'is-verified' : '') + '">' +
-      '<strong>' + (proof ? 'تطبیق receipt تولیدکننده با QA مستقل ثبت شده' : 'مدرک QA مستقل هنوز تأیید نشده') +
+      '<strong>' + (proof ? 'تطبیق گزارش‌شدهٔ رسید تولیدکننده و QA مستقل' : 'مدرک QA مستقل هنوز تأیید نشده') +
       '</strong><small>' + (proof ? 'Evidence تاریخی؛ پذیرش دمو یا سودآوری را ثابت نمی‌کند.' :
       'وضعیت DONE یا موفقیت CI به‌تنهایی مدرک بک‌تست معتبر نیست.') + '</small></div>' +
       (reason ? '<div class="ops-block"><span>BLOCKER / REJECTION</span><p>' + safe(reason) + '</p></div>' : '') +
@@ -294,7 +303,7 @@
       '<h3>چرخهٔ مستقل Research Agent</h3><p>مسیر خودکار با اجرای دستی presetهای پایین صفحه یکی نیست.</p></div>' +
       '<div class="ops-research-cards">' +
       countTile('مأموریت منتخب',candidate?candidate.id:'ثبت نشده',candidate?(current?candidate.status:'آرشیوی / بدون شواهد زنده'):'منتظر Supervisor') +
-      countTile('تأیید QA',verified,'Receiptهای مستقلاً تطبیق‌داده‌شده') +
+      countTile('تأیید QA',verified,'رسیدهای منطبق (طبق snapshot)') +
       countTile('مکانیزم',candidate&&candidate.result_evidence&&candidate.result_evidence.mechanism || 'هنوز تأیید نشده','فقط از خروجی عددی ثبت‌شده') +
       countTile('گیت دمو','قفل','پذیرش جداگانه؛ هیچ ارتقای خودکار') + '</div>' +
       (lastNumeric ? numericEvidence(lastNumeric.result_evidence,receiptVerified(lastNumeric)) : '') +
