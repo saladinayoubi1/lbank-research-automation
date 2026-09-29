@@ -404,6 +404,36 @@
         "all two-symbol three-partition two-cost numeric artifacts and third separate QA independently reproduce results",
         "no synthetic L2/funding or simultaneous portfolio hedge claims, no Demo or Live"
       ]
+    },
+    {
+      "id": "P7-RESEARCH-COMPOSITE-004",
+      "title": "Independently QA-bind a fourth distinct Research Agent lease for lagged verified peer-impulse causal strategy",
+      "phase": 7,
+      "gate": 17,
+      "status": "PENDING",
+      "priority": 88,
+      "dependencies": [
+        "P7-RESEARCH-COMPOSITE-003"
+      ],
+      "required_capabilities": [
+        "data_validation"
+      ],
+      "required_resources": [
+        "github-cloud"
+      ],
+      "preferred_resources": [
+        "github-cloud",
+        "windows-local"
+      ],
+      "authority": 2,
+      "acceptance": [
+        "third numerical Research Agent and separate QA are genuinely DONE and third source/producer receipt/QA digest/ledger are immutable",
+        "source-exact producer consumes precisely preceding third independently QA-attested ledger, not a stale discovery or risk-variant repeat",
+        "fourth Research Agent tests reviewed lagged_peer_impulse_confirmation, a distinct closed-peer leadership hypothesis with exact verified peer Spot and no same/new candle lookahead",
+        "full actual two-symbol three-partition two-cost numerical artifacts plus separate independent QA replay/receipt and durable restart survive",
+        "if reviewed sixth mechanism or QA-attested previous frontier unavailable, stop fail closed and require separately reviewed developer change",
+        "research only, no historical pristine OOS, no arbitrary trade-count cap, no Demo promotion, no Live/L4"
+      ]
     }
   ]
 }
