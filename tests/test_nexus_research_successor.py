@@ -236,7 +236,9 @@ def test_successor_requires_EXACT_prior_QA_ledger_and_different_mechanism(monkey
     old = search.empty_ledger()
     # Run through existing grammar in deterministic order. Last selected
     # mechanism represents the independently verified original QA.
-    for c in [x for x in search.CONFIGS if x["risk_variant"] == 0]:
+    unseen_mechanism = search.CONFIGS[-1]["mechanism"]
+    for c in [x for x in search.CONFIGS
+              if x["risk_variant"] == 0 and x["mechanism"] != unseen_mechanism]:
         old["config_fingerprints_evaluated"].append(
             search.digest({"config": c, "dataset": search.ARCHIVE_SHA256,
                            "contract": search.SCHEMA})
@@ -268,9 +270,9 @@ def test_successor_requires_EXACT_prior_QA_ledger_and_different_mechanism(monkey
     monkeypatch.setattr(prepare, "safe_extract", lambda _archive, root: root.mkdir(parents=True, exist_ok=True))
     ancestor = {"research_predecessor_ledger_digest": old["ledger_digest"],
                 "research_predecessor_mechanism": "failed_range_break_reversal"}
-    # The next distinct causal mechanism after all risk_variant=0 is not
-    # guaranteed: it begins parameter robustness, never masquerade as novelty.
+    # Keep one reviewed family untouched: a successor may consume it exactly once.
     selected = search.select_next(old)
+    assert selected["mechanism"] == unseen_mechanism
     assert selected is not None
     ancestor["research_predecessor_mechanism"] = selected["mechanism"]
     with pytest.raises(prepare.ResearchPreparationError, match="different"):
@@ -284,6 +286,29 @@ def test_successor_requires_EXACT_prior_QA_ledger_and_different_mechanism(monkey
     ancestor["research_predecessor_ledger_digest"] = "f" * 64
     with pytest.raises(prepare.ResearchPreparationError, match="prior QA"):
         prepare._verified_input_bundle(tmp_path / "wrong", NEW_SOURCE, ancestor)
+
+    # Once every family has been evaluated, select_next intentionally offers
+    # risk-variant robustness. Real successor leases MUST NOT call it novelty.
+    exhausted_core = {k: deepcopy(v) for k, v in old.items() if k != "ledger_digest"}
+    last = next(c for c in search.CONFIGS
+                if c["mechanism"] == unseen_mechanism and c["risk_variant"] == 0)
+    exhausted_core["config_fingerprints_evaluated"].append(search.digest({
+        "config": last, "dataset": search.ARCHIVE_SHA256, "contract": search.SCHEMA
+    }))
+    exhausted_core["mechanisms_evaluated"] = sorted(
+        {*exhausted_core["mechanisms_evaluated"], unseen_mechanism}
+    )
+    exhausted = {**exhausted_core, "ledger_digest": search.digest(exhausted_core)}
+    assert search.select_next(exhausted)["mechanism"] in exhausted["mechanisms_evaluated"]
+    (tmp_path / "previous-ledger.json").write_text(json.dumps(exhausted))
+    manifest["prior_ledger_digest"] = exhausted["ledger_digest"]
+    (tmp_path / "manifest.json").write_text(json.dumps({
+        **manifest, "manifest_digest": search.digest(manifest)
+    }))
+    ancestor["research_predecessor_ledger_digest"] = exhausted["ledger_digest"]
+    ancestor["research_predecessor_mechanism"] = unseen_mechanism
+    with pytest.raises(prepare.ResearchPreparationError, match="no new reviewed"):
+        prepare._verified_input_bundle(tmp_path / "exhausted", NEW_SOURCE, ancestor)
 
 
 def test_cold_successor_remains_parked_until_new_exact_source_cache_is_ready(monkeypatch):

@@ -15,6 +15,10 @@ on:
       - "nexus_multitimeframe_search_exhaustion.py"
       - "nexus_multitimeframe_verified_archive_discovery.py"
       - "nexus_composite_strategy_research.py"
+      - "nexus_agent_research_prepare.py"
+      - "nexus_agent_composite_runtime.py"
+      - "tests/test_nexus_research_successor.py"
+      - "tests/test_nexus_agent_composite_runtime.py"
       - "experiments/nexus_composite_strategy_research_v1.json"
       - "tests/test_nexus_composite_strategy_research.py"
       - "scripts/nexus_qa_attested_discovery_frontier.py"
@@ -36,6 +40,10 @@ on:
       - "nexus_multitimeframe_search_exhaustion.py"
       - "nexus_multitimeframe_verified_archive_discovery.py"
       - "nexus_composite_strategy_research.py"
+      - "nexus_agent_research_prepare.py"
+      - "nexus_agent_composite_runtime.py"
+      - "tests/test_nexus_research_successor.py"
+      - "tests/test_nexus_agent_composite_runtime.py"
       - "experiments/nexus_composite_strategy_research_v1.json"
       - "tests/test_nexus_composite_strategy_research.py"
       - "scripts/nexus_qa_attested_discovery_frontier.py"
@@ -83,6 +91,8 @@ jobs:
           tests/test_nexus_strategy_discovery_controller.py
           tests/test_nexus_bybit_replay_artifact_lifecycle.py
           tests/test_nexus_composite_strategy_research.py
+          tests/test_nexus_agent_composite_runtime.py
+          tests/test_nexus_research_successor.py
           tests/test_nexus_qa_attested_discovery_frontier.py
 
   discover:
