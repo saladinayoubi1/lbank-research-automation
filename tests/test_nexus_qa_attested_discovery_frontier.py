@@ -153,6 +153,16 @@ def test_bounded_proof_archive_rejects_duplicate_member_and_invalid_json():
         selector.archive_json(b"bad", "proof.json")
 
 
+def test_coordinator_rebuilds_on_research_frontier_authority_changes():
+    workflow = Path(".github/workflows/fast-agent-coordinator.yml").read_text()
+    for required in (
+        "scripts/nexus_qa_attested_discovery_frontier.py",
+        "nexus_research_missions.py",
+        "tests/test_nexus_qa_attested_discovery_frontier.py",
+    ):
+        assert required in workflow
+
+
 def test_mandatory_fifth_discovery_cache_uses_exact_QA_not_standalone_artifact():
     workflow = Path(".github/workflows/nexus_multitimeframe_strategy_discovery.yml").read_text()
     segment = workflow.split("- name: Bind canonical archive and novelty frontier as one Research lease input", 1)[1].split("- name: Publish immutable approved Research input transport", 1)[0]
