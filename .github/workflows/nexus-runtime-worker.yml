@@ -172,7 +172,6 @@ jobs:
         shell: bash
         env:
           NEXUS_TASK_PAYLOAD_B64: ${{ github.event.inputs.payload_b64 }}
-        env:
           NEXUS_EXECUTION_SOURCE_SHA: ${{ steps.pin-research-qa.outputs.execution_source_sha }}
         run: |
           test -n "$NEXUS_EXECUTION_SOURCE_SHA"
@@ -201,7 +200,6 @@ jobs:
         shell: bash
         env:
           NEXUS_TASK_PAYLOAD_B64: ${{ github.event.inputs.payload_b64 }}
-        env:
           NEXUS_EXECUTION_SOURCE_SHA: ${{ steps.pin-research-qa.outputs.execution_source_sha }}
         run: |
           test -n "$NEXUS_EXECUTION_SOURCE_SHA"
@@ -271,9 +269,15 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: nexus-agent-research-qa-${{ github.event.inputs.lease_id }}
-          path: |
-            build/agent-research/qa-evidence.json
-            build/pinned-qa-attestation.json
+          path: build/agent-research/qa-evidence.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Publish independently bounded original-source QA ancestry attestation
+        if: always() && github.event_name == 'workflow_dispatch' && steps.pin-research-qa.outputs.qa_pin_verified == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-agent-qa-source-pin-${{ github.event.inputs.lease_id }}
+          path: build/pinned-qa-attestation.json
           if-no-files-found: error
           retention-days: 30
       - name: Checkout exact PR head for Phase 4/5 evidence
