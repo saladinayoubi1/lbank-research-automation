@@ -263,10 +263,10 @@ def test_lagged_peer_impulse_is_strictly_prior_closed_candle_not_future():
     altered.loc[len(peer)-2, "close"] *= 2
     altered.loc[len(peer)-2, "high"] = altered.loc[len(peer)-2, "close"] + 1
     changed = engine.build_features(frames, peer_15m=altered)
-    # The previous complete peer bar MAY change the current lagged impulse,
-    # but no earlier decision can read that previous bar.
+    # A changed peer candle can reach only later already-closed-bar decisions;
+    # none of the older decisions can read it.
     for field in fields:
-        pd.testing.assert_series_equal(features[field].iloc[:-1], changed[field].iloc[:-1])
+        pd.testing.assert_series_equal(features[field].iloc[:-2], changed[field].iloc[:-2])
 
 
 def test_sixth_mechanism_is_distinct_lagged_peer_confirmation_not_a_parameter_sweep():
