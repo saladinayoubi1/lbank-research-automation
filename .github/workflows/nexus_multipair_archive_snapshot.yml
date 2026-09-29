@@ -7,9 +7,11 @@ on:
       - ".github/workflows/nexus_multipair_archive_snapshot.yml"
       - "nexus_multipair_archive_snapshot.py"
       - "nexus_monthly_four_pair_pre_demo.py"
+      - "nexus_monthly_four_pair_composite_pre_demo.py"
       - "nexus_monthly_ten_variant_pre_demo.py"
       - "tests/test_nexus_monthly_ten_variant_pre_demo.py"
       - "tests/test_nexus_monthly_four_pair_pre_demo.py"
+      - "tests/test_nexus_monthly_four_pair_composite_pre_demo.py"
       - "nexus_multipair_recent_archive_runtime_snapshot.py"
       - "nexus_multipair_runtime_requalification_snapshot.py"
       - "nexus_multipair_strategy_discovery.py"
@@ -44,9 +46,11 @@ on:
       - ".github/workflows/nexus_multipair_archive_snapshot.yml"
       - "nexus_multipair_archive_snapshot.py"
       - "nexus_monthly_four_pair_pre_demo.py"
+      - "nexus_monthly_four_pair_composite_pre_demo.py"
       - "nexus_monthly_ten_variant_pre_demo.py"
       - "tests/test_nexus_monthly_ten_variant_pre_demo.py"
       - "tests/test_nexus_monthly_four_pair_pre_demo.py"
+      - "tests/test_nexus_monthly_four_pair_composite_pre_demo.py"
       - "nexus_multipair_recent_archive_runtime_snapshot.py"
       - "nexus_multipair_runtime_requalification_snapshot.py"
       - "nexus_multipair_strategy_discovery.py"
@@ -195,6 +199,49 @@ jobs:
                      and row["live_enabled"] is False for row in proof["rows"])
           print("ten_variants_120_cells_full_july=PASS owner_demo_unchanged=true")
           PY
+      - name: Run all five reviewed causal composite mechanisms over four full July Bybit symbols
+        run: |
+          set -euo pipefail
+          python nexus_monthly_four_pair_composite_pre_demo.py run \
+            --state build/historical-state \
+            --baseline build/monthly-four-pair-pre-demo/monthly-report.json \
+            --source-sha "$GITHUB_SHA" \
+            --output build/monthly-four-pair-pre-demo/composite
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          p = Path("build/monthly-four-pair-pre-demo/composite/composite-report.json")
+          obj = json.loads(p.read_text())
+          assert obj["source_sha"] == os.environ["GITHUB_SHA"]
+          assert obj["rows_count"] == 240
+          assert obj["reviewed_distinct_mechanisms"] == 5
+          assert obj["full_month_verified"] is True
+          assert obj["historical_test_pristine"] is False
+          assert obj["automatic_paper_promotion"] is False
+          assert obj["live_trading_authority"] is False
+          assert len({v["config_fingerprint"] for v in obj["rows"]}) == 10
+          assert {v["symbol"] for v in obj["rows"]} == {"BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT"}
+          print("four_pair_reviewed_composites_240_historical_cells=PASS_no_demo")
+          PY
+      - name: Rerun all composite numerical cells in a separate process
+        run: |
+          set -euo pipefail
+          python nexus_monthly_four_pair_composite_pre_demo.py replay-verify \
+            --state build/historical-state \
+            --baseline build/monthly-four-pair-pre-demo/monthly-report.json \
+            --report build/monthly-four-pair-pre-demo/composite/composite-report.json \
+            --source-sha "$GITHUB_SHA" \
+            --output build/monthly-four-pair-pre-demo/composite-qa
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          val=json.loads(Path("build/monthly-four-pair-pre-demo/composite-qa/replay-proof.json").read_text())
+          assert val["source_sha"] == os.environ["GITHUB_SHA"]
+          assert val["full_240_cell_numerical_replay_matches"] is True
+          assert val["independent_model_qa_claimed"] is False
+          assert val["automatic_paper_promotion"] is False and val["live_trading_authority"] is False
+          print("four_pair_composite_numeric_separate_process_replay=PASS_not_prospective_QA")
+          PY
       - name: Remove raw historical archive material
         if: always()
         run: rm -rf build/historical-state build/historical-cache
@@ -213,6 +260,16 @@ jobs:
           path: build/monthly-four-pair-pre-demo/
           if-no-files-found: error
           retention-days: 7
+          compression-level: 9
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-four-pair-july-reviewed-composite-${{ github.sha }}
+          path: |
+            build/monthly-four-pair-pre-demo/composite/
+            build/monthly-four-pair-pre-demo/composite-qa/
+          if-no-files-found: error
+          retention-days: 30
           compression-level: 9
 
       - name: Acquire bounded-lag recent official Bybit requalification snapshot
@@ -304,6 +361,7 @@ jobs:
           python -m pytest -q
           tests/test_nexus_multipair_archive_snapshot.py
           tests/test_nexus_monthly_four_pair_pre_demo.py
+          tests/test_nexus_monthly_four_pair_composite_pre_demo.py
           tests/test_nexus_monthly_ten_variant_pre_demo.py
           tests/test_nexus_multipair_recent_archive_runtime_snapshot.py
           tests/test_nexus_multipair_strategy_discovery.py
