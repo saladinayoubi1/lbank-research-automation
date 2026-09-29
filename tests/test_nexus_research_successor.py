@@ -14,7 +14,7 @@ import agent_transport
 import nexus_agent_research_prepare as prepare
 import nexus_composite_strategy_research as search
 from nexus_research_missions import (
-    FIRST, SECOND, ANCESTRY, attested_predecessor, validate_ancestry,
+    FIRST, SECOND, THIRD, FOURTH, ANCESTRY, attested_predecessor, validate_ancestry,
 )
 from scripts.agent_task_executor import decode_payload, deterministic_execution
 
@@ -471,3 +471,131 @@ def test_changed_second_QA_receipt_cannot_rebind_third_even_if_first_done(monkey
     with pytest.raises(ValueError, match="changed"):
         runner.bind_qa_attested_successor(conf)
     assert {key: third[key] for key in ANCESTRY} == bound
+
+
+def third_done_for_fourth():
+    """Verified mock first->second->third lineage; not real evidence."""
+    conf = second_done()
+    third = conf["tasks"][2]
+    third.update({
+        "status": "DONE", "producer": "research-agent",
+        "verifier": "qa-verifier-agent",
+        "research_producer_lease_id": "third-producer-original",
+        "result_evidence": {
+            "executor": "nexus-real-composite-backtest", "source_sha": "c" * 40,
+            "lease_id": "third-producer-original", "receipt_digest": "a" * 64,
+            "prior_ledger_digest": "7" * 64, "ledger_digest": "d" * 64,
+            "config_fingerprint": "e" * 64, "mechanism": "cross_pair_relative_reclaim",
+            "independent_qa_complete": False, "auto_demo_promotion": False,
+            "live_enabled": False,
+        },
+        "verification_evidence": {
+            "executor": "nexus-independent-composite-numeric-qa",
+            "source_sha": "c" * 40, "producer_lease_id": "third-producer-original",
+            "producer_receipt_digest": "a" * 64, "qa_digest": "f" * 64,
+            "independent_qa_complete": True, "auto_demo_promotion": False,
+            "live_enabled": False,
+        },
+    })
+    third.update(attested_predecessor(conf["tasks"][1]))
+    fourth = child()
+    fourth.update(id=FOURTH, priority=88, dependencies=[THIRD])
+    conf["tasks"].append(fourth)
+    template = am.load_config(Path("config/nexus-agent-manager.json"))
+    conf.update(schema_version=1, phase=4, workers=template["workers"],
+                policy=template["policy"])
+    return conf
+
+
+def test_fourth_exact_qa_bound_cold_restart_and_no_duplicate_lease(monkeypatch):
+    conf = third_done_for_fourth()
+    monkeypatch.setattr(am, "emit", lambda *args, **kwargs: None)
+    assert runner.bind_qa_attested_successor(conf) == "QA_attested_successor_bound"
+    fourth = conf["tasks"][3]
+    assert fourth["research_predecessor_source_sha"] == "c" * 40
+    assert fourth["research_predecessor_receipt_digest"] == "a" * 64
+    assert fourth["research_predecessor_qa_digest"] == "f" * 64
+    assert fourth["research_predecessor_ledger_digest"] == "d" * 64
+    assert fourth["research_predecessor_mechanism"] == "cross_pair_relative_reclaim"
+    assert runner.bind_qa_attested_successor(conf) == "QA_attested_successor_unchanged"
+    assert runner.apply_research_input_gate(conf, ready=False) == "parked_waiting_cache"
+    assert runner.apply_research_input_gate(conf, ready=True) == "ready_for_producer_lease"
+    assert fourth["status"] == "READY"
+    env = payload_for(fourth)
+    assert decode_payload(encoded(env)) == env
+    assert env["research_predecessor_qa_digest"] == "f" * 64
+    for changed in (
+        {**env, "research_predecessor_qa_digest": None},
+        {**env, "research_predecessor_ledger_digest": "z" * 64},
+        {**env, "free_command": "git push --force"},
+    ):
+        with pytest.raises(ValueError):
+            decode_payload(encoded(changed))
+    template = deepcopy(conf)
+    template["tasks"][3] = {key: val for key, val in child().items()
+                            if key not in ANCESTRY}
+    template["tasks"][3].update(id=FOURTH, dependencies=[THIRD])
+    merged = runner.merge_definition(template, {"schema_version": 1, "tasks": conf["tasks"]})
+    assert merged["tasks"][3]["research_predecessor_qa_digest"] == "f" * 64
+    assert merged["tasks"][3]["research_predecessor_ledger_digest"] == "d" * 64
+
+
+def test_fourth_rejects_same_causal_mechanism_wrong_frontier_and_stale_third_QA(monkeypatch):
+    conf = third_done_for_fourth()
+    monkeypatch.setattr(am, "emit", lambda *args, **kwargs: None)
+    runner.bind_qa_attested_successor(conf)
+    fourth = conf["tasks"][3]
+    fourth.update(status="RUNNING", assigned_worker="research-agent",
+                  lease_id="fourth-producer")
+    evidence = {
+        "receipt_digest": "1" * 64, "source_sha": "b" * 40,
+        "mechanism": "lagged_peer_impulse_confirmation",
+        "prior_ledger_digest": "d" * 64,
+        "independent_qa_complete": False,
+        "auto_demo_promotion": False, "live_enabled": False,
+    }
+    for changes in (
+        {"mechanism": "cross_pair_relative_reclaim"},
+        {"prior_ledger_digest": "0" * 64},
+    ):
+        with pytest.raises(ValueError, match="different"):
+            am.record_result(conf, FOURTH, "research-agent", "success",
+                             {**evidence, **changes})
+        assert fourth["status"] == "RUNNING"
+    am.record_result(conf, FOURTH, "research-agent", "success", evidence)
+    assert fourth["status"] == "VERIFYING"
+    assert fourth["research_producer_lease_id"] == "fourth-producer"
+    verifier_evidence = {
+        "independent_qa_complete": True, "source_sha": "b" * 40,
+        "producer_lease_id": "fourth-producer",
+        "producer_receipt_digest": "1" * 64, "qa_digest": "2" * 64,
+        "auto_demo_promotion": False, "live_enabled": False,
+    }
+    with pytest.raises(ValueError):
+        am.record_result(conf, FOURTH, "qa-verifier-agent", "success",
+                         {**verifier_evidence, "producer_receipt_digest": "3" * 64})
+    assert fourth["status"] == "VERIFYING"
+    am.record_result(conf, FOURTH, "qa-verifier-agent", "success", verifier_evidence)
+    assert fourth["status"] == "DONE"
+    assert fourth["verification_evidence"]["independent_qa_complete"] is True
+    prior_qa = conf["tasks"][2]["verification_evidence"]
+    prior_qa["qa_digest"] = "0" * 64
+    with pytest.raises(ValueError, match="changed"):
+        runner.bind_qa_attested_successor(conf)
+
+
+def test_fourth_never_replays_third_as_risk_parameter_variant():
+    previous = search.empty_ledger()
+    core = {key: value for key, value in previous.items() if key != "ledger_digest"}
+    for cfg in search.CONFIGS:
+        if cfg["mechanism"] == "lagged_peer_impulse_confirmation" or cfg["risk_variant"] != 0:
+            continue
+        core["config_fingerprints_evaluated"].append(search.digest({
+            "config": cfg, "dataset": search.ARCHIVE_SHA256, "contract": search.SCHEMA,
+        }))
+        core["mechanisms_evaluated"].append(cfg["mechanism"])
+    core["mechanisms_evaluated"] = sorted(set(core["mechanisms_evaluated"]))
+    selected = search.select_next({**core, "ledger_digest": search.digest(core)})
+    assert selected is not None
+    assert selected["mechanism"] == "lagged_peer_impulse_confirmation"
+    assert selected["risk_variant"] == 0

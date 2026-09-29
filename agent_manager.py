@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
-from nexus_research_missions import SECOND, THIRD, TASKS, ANCESTRY, validate_ancestry
+from nexus_research_missions import PREDECESSOR, TASKS, ANCESTRY, validate_ancestry
 
 QUEUE_PATH = Path("config/nexus-agent-manager.json")
 STATE_PATH = Path("data/agent_coordination/manager_state.json")
@@ -549,7 +549,7 @@ def record_result(config: dict[str, Any], task_id: str, worker_id: str, outcome:
                     or len(evidence["qa_digest"]) != 64
                 ):
                     raise ValueError("independent Research QA has not verified this exact producer")
-                if task_id in {SECOND, THIRD}:
+                if task_id in PREDECESSOR:
                     ancestor = validate_ancestry({k: task[k] for k in ANCESTRY if k in task})
                     if (
                         original.get("prior_ledger_digest") != ancestor["research_predecessor_ledger_digest"]
@@ -573,7 +573,7 @@ def record_result(config: dict[str, Any], task_id: str, worker_id: str, outcome:
                     or evidence.get("live_enabled") is not False
                 ):
                     raise ValueError("real research producer receipt or authority invalid")
-                if task_id in {SECOND, THIRD}:
+                if task_id in PREDECESSOR:
                     ancestor = validate_ancestry({k: task[k] for k in ANCESTRY if k in task})
                     if (
                         evidence.get("prior_ledger_digest") != ancestor["research_predecessor_ledger_digest"]
