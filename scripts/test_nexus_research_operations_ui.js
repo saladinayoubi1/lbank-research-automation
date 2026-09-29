@@ -69,6 +69,9 @@ assert.doesNotMatch(field('agentState').innerHTML,/اطلاعات جاری تأ�
 assert.match(field('agentState').innerHTML,/وضعیت محلی معتبر/);
 assert.match(field('agentState').innerHTML,/LIVE LOCKED/);
 assert.match(field('opsQueue').innerHTML,/research-agent/);
+// Inspect the completed task rather than assuming the active task has QA proof.
+field('agentState').onclick({target:{closest:(selector)=>
+  selector === '[data-ops-task]' ? {getAttribute:()=>done.id} : null}});
 assert.match(field('opsInspector').innerHTML,/تطبیق receipt/);
 // A matching QA digest is compulsory; task DONE alone must not be promoted.
 const mismatched = JSON.parse(JSON.stringify(done));
