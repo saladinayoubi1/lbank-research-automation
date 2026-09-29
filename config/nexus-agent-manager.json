@@ -434,6 +434,36 @@
         "if reviewed sixth mechanism or QA-attested previous frontier unavailable, stop fail closed and require separately reviewed developer change",
         "research only, no historical pristine OOS, no arbitrary trade-count cap, no Demo promotion, no Live/L4"
       ]
+    },
+    {
+      "id": "P7-RESEARCH-COMPOSITE-005",
+      "title": "Execute seventh reviewed lagged peer downside noncontagion hypothesis as fifth independently verified real Research Agent lease",
+      "phase": 7,
+      "gate": 17,
+      "status": "PENDING",
+      "priority": 87,
+      "dependencies": [
+        "P7-RESEARCH-COMPOSITE-004"
+      ],
+      "required_capabilities": [
+        "data_validation"
+      ],
+      "required_resources": [
+        "github-cloud"
+      ],
+      "preferred_resources": [
+        "github-cloud",
+        "windows-local"
+      ],
+      "authority": 2,
+      "acceptance": [
+        "previous fourth real Research producer and a distinct independent QA verified exact source, lease, numerical receipt and cumulative ledger before successor dispatch",
+        "new fifth producer consumes exactly prior fourth QA-attested ledger with sixth mechanism already present; no risk-variant recast as novelty",
+        "seventh reviewed peer_shock_noncontagion_rebound strictly uses prior completed peer impulse, completed higher timeframe own context, exact verified peer spot grid and next own 15m open fills",
+        "real two-symbol three-fold two-cost numerical artifact and separate independent replay verified against original producer and archive digests",
+        "persist source/lease/provenance binding across coordinator restart and prevent repeat leases; if exhausted, require separately reviewed developer change",
+        "research only; no pristine OOS claims, no arbitrary trade-count limit, no Paper promotion or Live/L4"
+      ]
     }
   ]
 }
