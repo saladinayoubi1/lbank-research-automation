@@ -124,6 +124,30 @@ def test_research_operations_pro_ui_serves_only_local_assets_and_real_mission_sn
     assert all(row["state"] == "UNKNOWN" for row in payload["workers"])
 
 
+def test_research_operations_reads_exact_owner_agent_runtime_not_market_sibling(product_server) -> None:
+    port, runtime = product_server
+    config = json.loads((Path(__file__).resolve().parents[1] / "config" / "nexus-agent-manager.json").read_text(encoding="utf-8"))
+    local = runtime.root / "agent_coordination"
+    local.mkdir(parents=True, exist_ok=True)
+    task = next(t for t in config["tasks"] if t["id"] == "P7-RESEARCH-COMPOSITE-001")
+    task["status"] = "RUNNING"
+    task["assigned_worker"] = "research-agent"
+    task["lease_id"] = "isolated-proof-only"
+    (local / "agent_manager_runtime.json").write_text(json.dumps(config), encoding="utf-8")
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    (local / "manager_state.json").write_text(json.dumps({"generated_at": now}), encoding="utf-8")
+    status, _, raw = _request(port, "GET", "/api/product/mission-control")
+    assert status == 200
+    payload = json.loads(raw)
+    assert payload["source"] == "local_runtime"
+    assert payload["control_plane"]["runtime_present"] is True
+    selected = next(t for t in payload["tasks"] if t["id"] == task["id"])
+    assert selected["lease_id"] == "isolated-proof-only"
+    assert selected["assigned_worker"] == "research-agent"
+    assert payload["live_trading_authority"] is False
+
+
 def test_product_overview_reports_canonical_backend_and_live_locked(product_server) -> None:
     port, _ = product_server
     status, _, raw = _request(port, "GET", "/api/product/overview")
