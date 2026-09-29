@@ -51,11 +51,12 @@ def test_recovery_trigger_is_repository_bound_and_inactive_without_manifest() ->
 
 def test_owner_checkpoint_primary_without_public_artifact_fails_closed_without_dispatch() -> None:
     text = _text()
-    assert "id: restore" in text
-    assert 'echo "state_available=false" >> "$GITHUB_OUTPUT"' in text
-    assert "OWNER_CHECKPOINT_PRIMARY_NO_PUBLIC_ARTIFACT" in text
-    assert "private owner checkpoint remains authoritative and is not exported to GitHub" in text
-    assert "steps.restore.outputs.state_available == 'true'" in text
+    assert "id: transport" in text
+    assert "scripts/nexus_paper_boundary_transport.py" in text
+    assert "build/paper-boundary-transport-jobs.json" in text
+    assert "NOT DISPATCHED" in text
+    assert "steps.transport.outputs.mode == 'public_artifact'" in text
+    assert "should_dispatch: ${{ steps.health.outputs.should_dispatch || 'false' }}" in text
 
 
 def test_workflow_binds_discovery_to_triggering_paper_sha() -> None:
