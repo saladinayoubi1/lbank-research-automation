@@ -27,7 +27,19 @@ SCHEMA = "nexus.four-pair-july-reviewed-composite.v2"
 QA_SCHEMA = "nexus.four-pair-july-composite-numeric-replay.v2"
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
 SHA64 = re.compile(r"^[0-9a-f]{64}$")
-EXPERIMENTS = composite.CONFIGS
+# This July 2026 evidence contract is frozen at the six mechanisms that
+# produced its original 288 historical cells. New reviewed Developer Agent
+# families belong to subsequent, source-bound Research leases; never silently
+# expand or relabel a previously signed historical experiment matrix.
+JULY_REVIEWED_MECHANISMS = (
+    "structural_pullback",
+    "volatility_compression_expansion",
+    "bar_proxy_vwap_reclaim",
+    "failed_range_break_reversal",
+    "cross_pair_relative_reclaim",
+    "lagged_peer_impulse_confirmation",
+)
+EXPERIMENTS = tuple(cfg for cfg in composite.CONFIGS if cfg["mechanism"] in JULY_REVIEWED_MECHANISMS)
 PROFILES = (
     ("conservative", composite.ENTRY_FEE_BPS, composite.ENTRY_SLIP_BPS),
     ("stress", composite.STRESS_FEE_BPS, composite.STRESS_SLIP_BPS),
@@ -124,7 +136,7 @@ def calculate(frames: Mapping[tuple[str, str], pd.DataFrame],
     bound = _baseline_frames(baseline, frames, source_sha)
     if (
         len(EXPERIMENTS) != 12
-        or {c["mechanism"] for c in EXPERIMENTS} != set(composite.MECHANISMS)
+        or {c["mechanism"] for c in EXPERIMENTS} != set(JULY_REVIEWED_MECHANISMS)
         or {c["risk_variant"] for c in EXPERIMENTS} != {0, 1}
         or any(c["entry_model"] != "closed_4h_1h_15m_next_open" for c in EXPERIMENTS)
     ):
