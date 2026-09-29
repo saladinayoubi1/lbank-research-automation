@@ -31,7 +31,7 @@ const done = {
   id:'P7-RESEARCH-COMPOSITE-001',title:'Reviewed closed candle research',
   status:'DONE',result_evidence:{
     source_sha:'b'.repeat(40),archive_sha256:sha,config_fingerprint:'c'.repeat(64),
-    mechanism:'structural_pullback',receipt_digest:sha,ledger_digest:'d'.repeat(64),live_enabled:false
+    mechanism:'structural_pullback',receipt_digest:sha,ledger_digest:'d'.repeat(64),live_enabled:false,validation:[{symbol:'BTCUSDT',timeframe:'15m',profile:'conservative',closed_round_trips:7,net_return_pct:-1.5,max_drawdown_pct:2.25,win_rate_pct:42.86,profit_factor:0.72}]
   },
   verification_evidence:{independent_qa_complete:true,producer_receipt_digest:sha,qa_digest:'e'.repeat(64),live_enabled:false}
 };
@@ -58,6 +58,9 @@ assert.match(field('agentState').innerHTML,/اطلاعات جاری تأیید �
 assert.match(field('opsQueue').innerHTML,/&lt;img src=x onerror=&quot;not_safe&quot;&gt;/);
 assert.doesNotMatch(field('opsQueue').innerHTML,/<img src=x/);
 assert.match(field('researchAgentOverview').innerHTML,/گیت دمو/);
+assert.match(field('researchAgentOverview').innerHTML,/نتایج عددی ثبت‌شده/);
+assert.match(field('researchAgentOverview').innerHTML,/BTCUSDT/);
+assert.match(field('researchAgentOverview').innerHTML,/OOS دست‌نخورده/);
 assert.match(field('researchAgentOverview').innerHTML,/قفل/);
 assert.match(field('opsInspector').innerHTML,/Producer receipt/i);
 ops.render(snapshot({source:'local_runtime',snapshot_age_seconds:6,
