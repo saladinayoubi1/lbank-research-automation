@@ -294,3 +294,25 @@ def test_persistent_installer_bounds_version_retention_after_successful_activati
     assert "if ($protected.Contains($candidate.Path)) { continue }" in retention
     assert "if ($candidate.Path -eq $current -or $runningRoots.Contains($candidate.Path)) { continue }" in retention
     assert "Assert-NotReparsePoint $root 'NEXUS program root'" in retention
+
+
+def test_real_research_panel_reads_observed_mission_tasks_without_promoting_to_paper() -> None:
+    index = read(UI / "index.html")
+    ui = read(UI / "product.js")
+    backend = read(ROOT / "product_offline_web_server.py")
+    mission = read(ROOT / "product_mission_runtime.py")
+    assert 'id="autonomousResearchPanel"' in index
+    assert 'id="agentResearchBadge"' in index
+    assert 'id="agentResearchMetrics"' in index
+    assert 'id="agentResearchTasks"' in index
+    assert "optionalApi('/api/product/mission/full')" in ui
+    assert "renderAgentResearch()" in ui
+    assert "m.stale===false" in ui and "m.source==='local_runtime'" in ui
+    assert "q.producer_receipt_digest===p.receipt_digest" in ui
+    assert "q.source_sha===p.source_sha" in ui
+    assert "p.auto_demo_promotion===false" in ui
+    assert "p.live_enabled===false" in ui
+    assert "'NO MATCHING QA RECEIPT'" in ui
+    assert '"/api/product/mission/full"' in backend
+    assert '"stale": bool(age is not None and age > 900)' in mission
+    assert "imported_mission_snapshot.json" in mission
