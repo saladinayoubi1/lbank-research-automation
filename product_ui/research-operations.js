@@ -85,13 +85,14 @@
   }
   function row(t) {
     var verified = receiptVerified(t);
+    var historicalStatus = !fresh(saved.mission) && ACTIVE.indexOf(t.status) !== -1;
     return '<button type="button" data-ops-task="' + safe(t.id) +
       '" class="ops-job ' + (saved.selected === t.id ? 'is-selected' : '') + '">' +
       '<span class="ops-job-id" dir="ltr">' + safe(t.id) + '</span>' +
       '<span class="ops-job-main"><strong>' + safe(t.title) + '</strong><small>' +
       safe(t.assigned_worker || 'عامل تخصیص نیافته') + ' · ' +
       safe(t.dispatch_transport || 'مسیر اجرا نامشخص') + '</small></span>' +
-      '<span class="ops-job-state">' + tag(t.status) +
+      '<span class="ops-job-state">' + tag(t.status, historicalStatus ? 'آرشیوی: ' + LABELS[stateOf(t.status)] : null) +
       (verified ? '<small class="ops-proof">QA receipt تطبیق داده شد</small>' : '') +
       '</span><span class="ops-job-arrow" aria-hidden="true">›</span></button>';
   }
@@ -138,8 +139,9 @@
     ];
     var reason = t.blocked_reason || t.failure_class || t.triage_reason;
     var proof = receiptVerified(t);
+    var historicalStatus = !fresh(saved.mission) && ACTIVE.indexOf(t.status) !== -1;
     host.innerHTML = '<div class="ops-inspector-head"><div><span class="ops-eyebrow">TASK INSPECTOR / READ ONLY</span>' +
-      '<h3>' + safe(t.title) + '</h3><p>' + code(t.id) + '</p></div>' + tag(t.status) + '</div>' +
+      '<h3>' + safe(t.title) + '</h3><p>' + code(t.id) + '</p></div>' + tag(t.status, historicalStatus ? 'آرشیوی: ' + LABELS[stateOf(t.status)] : null) + '</div>' +
       '<div class="ops-inspector-proof ' + (proof ? 'is-verified' : '') + '">' +
       '<strong>' + (proof ? 'تطبیق receipt تولیدکننده با QA مستقل ثبت شده' : 'مدرک QA مستقل هنوز تأیید نشده') +
       '</strong><small>' + (proof ? 'Evidence تاریخی؛ پذیرش دمو یا سودآوری را ثابت نمی‌کند.' :
@@ -160,7 +162,7 @@
   }
   function pipeline(tasks) {
     var proof = tasks.some(receiptVerified);
-    var active = tasks.some(function(t) {return ACTIVE.indexOf(t.status)!==-1;});
+    var active = fresh(saved.mission) && tasks.some(function(t) {return ACTIVE.indexOf(t.status)!==-1;});
     var data = tasks.some(function(t) {return t.result_evidence && t.result_evidence.archive_sha256;});
     return '<div class="ops-pipeline">' +
       stage(0,'داده معتبر',data ? 'Artifact source-bound ثبت شده' : 'در انتظار شواهد',data?'evidence':'unknown') +
