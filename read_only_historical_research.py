@@ -204,7 +204,7 @@ def load_historical_month(
     for row, item in zip(csv_rows, journal):
         pair, tf, strategy = (row.get("symbol"), row.get("timeframe"), row.get("strategy"))
         key = (pair, tf, strategy)
-        if (pair, tf) not in bindings or strategy not in FAMILIES or key in seen
+        if ((pair, tf) not in bindings or strategy not in FAMILIES or key in seen
                 or not isinstance(item, dict)):
             raise HistoricalArchiveUnavailable("duplicate or unbound historical cell")
         if row["source_sha"] != source_pin or row["dataset_binding_sha256"] != bindings[(pair, tf)]:
