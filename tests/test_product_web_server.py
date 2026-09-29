@@ -93,6 +93,37 @@ def test_product_ui_contains_complete_current_scope_surfaces(product_server) -> 
     assert b"research-layout" in css
 
 
+def test_research_operations_pro_ui_serves_only_local_assets_and_real_mission_snapshot(product_server) -> None:
+    port, _ = product_server
+    status, _, markup = _request(port, "GET", "/")
+    assert status == 200
+    html = markup.decode("utf-8")
+    assert 'id="researchAgentOverview"' in html
+    assert 'id="agentState"' in html
+    assert '/ui/research-operations.css' in html
+    assert '/ui/research-operations.js' in html
+    assert html.index('/ui/research-operations.js') < html.index('/ui/product.js')
+
+    for url, token in (
+        ("/ui/research-operations.js", "window.NexusResearchOps"),
+        ("/ui/research-operations.css", ".ops-hero"),
+    ):
+        status, _, raw = _request(port, "GET", url)
+        assert status == 200
+        assert token.encode() in raw
+
+    status, _, raw = _request(port, "GET", "/api/product/mission-control")
+    assert status == 200
+    payload = json.loads(raw)
+    assert payload["contract_version"] == "nexus.product-mission-control.v1"
+    assert payload["paper_only"] is True
+    assert payload["live_trading_authority"] is False
+    # An empty local runtime is NOT an invented active Research worker.
+    assert payload["source"] == "definition_only"
+    assert payload["control_plane"]["runtime_present"] is False
+    assert all(row["state"] == "UNKNOWN" for row in payload["workers"])
+
+
 def test_product_overview_reports_canonical_backend_and_live_locked(product_server) -> None:
     port, _ = product_server
     status, _, raw = _request(port, "GET", "/api/product/overview")
@@ -225,6 +256,21 @@ def test_product_rejects_live_and_unknown_write_routes(product_server) -> None:
     for path in ("/api/product/live/order", "/api/product/withdraw", "/api/product/exchange/credentials"):
         status, _, _ = _request(port, "POST", path, {"symbol": "BTCUSDT"})
         assert status == 405
+
+
+def test_product_mission_control_surfaces_real_agent_manager_definition(product_server) -> None:
+    port, _ = product_server
+    status, _, raw = _request(port, "GET", "/api/product/mission-control")
+    assert status == 200
+    payload = json.loads(raw)
+    assert payload["paper_only"] is True
+    assert payload["live_trading_authority"] is False
+    assert payload["contract_version"] == "nexus.product-mission-control.v1"
+    research = [row for row in payload["tasks"] if row["id"].startswith("P7-RESEARCH-")]
+    assert research
+    assert any(row["id"] == "P7-RESEARCH-COMPOSITE-004" for row in research)
+    workers = {row["id"] for row in payload["workers"]}
+    assert {"developer-agent", "research-agent", "qa-verifier-agent"} <= workers
 
 
 def test_product_strategies_are_real_factory_families(product_server) -> None:
