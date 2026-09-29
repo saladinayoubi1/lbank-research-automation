@@ -161,6 +161,99 @@ def exact_artifact_json(repo: str, name: str, sha: str, member: str) -> tuple[in
     )
 
 
+def _independently_pinned_historical_qa(
+    repo: str, task: dict[str, Any], source: str,
+    producer_lease: str, producer_digest: str, qa_lease: str,
+) -> tuple[int, dict[str, Any]]:
+    """Allow ONLY the documented fifth incident's independently source-pinned QA.
+
+    GitHub run head is the later trusted main event, NEVER presented as the
+    original numerical source. Both the separate attestation and actual Git
+    ancestry must bind the two; no unauthenticated SHA substitution.
+    """
+    from nexus_research_missions import FIFTH
+
+    incident = task.get("research_qa_incident_recovery")
+    if (task.get("id") != FIFTH or not isinstance(incident, dict)
+            or incident.get("reason") != "verified_failed_source_epoch_new_independent_qa_only"
+            or incident.get("original_producer_source_sha") != source
+            or incident.get("original_producer_receipt_digest") != producer_digest
+            or incident.get("original_producer_lease_id") != producer_lease
+            or incident.get("new_qa_lease_id") != qa_lease
+            or incident.get("independent_qa_complete") is not False
+            or incident.get("automatic_demo_promotion") is not False
+            or incident.get("live_enabled") is not False):
+        raise QaFrontierError("unreviewed historical QA recovery cannot seed research")
+
+    def one_artifact(name: str) -> dict[str, Any]:
+        rows = api(f"repos/{repo}/actions/artifacts?name={quote(name)}&per_page=100").get("artifacts")
+        if not isinstance(rows, list):
+            raise QaFrontierError("historical QA artifact index is malformed")
+        exact = [a for a in rows if isinstance(a, dict)
+                 and a.get("name") == name and a.get("expired") is False]
+        if len(exact) != 1:
+            raise QaFrontierError("historical QA artifact absent or ambiguous")
+        artifact = exact[0]
+        if type(artifact.get("id")) is not int or artifact["id"] < 1:
+            raise QaFrontierError("historical QA artifact has invalid identity")
+        return artifact
+
+    proof_art = one_artifact("nexus-agent-research-qa-" + qa_lease)
+    bound = proof_art.get("workflow_run")
+    if (not isinstance(bound, dict)
+            or type(bound.get("id")) is not int or bound["id"] < 1
+            or bound.get("head_branch") != "main"
+            or not HEX40.fullmatch(str(bound.get("head_sha", "")))
+            or bound["head_sha"] == source):
+        raise QaFrontierError("historical QA must come from a distinct trusted main event")
+    run_id, event_sha = bound["id"], bound["head_sha"]
+    run = api(f"repos/{repo}/actions/runs/{run_id}")
+    if (run.get("id") != run_id or run.get("head_sha") != event_sha
+            or run.get("head_branch") != "main"
+            or run.get("path") != ".github/workflows/nexus-runtime-worker.yml"
+            or run.get("name") != "NEXUS Runtime Worker"
+            or run.get("event") != "workflow_dispatch"
+            or run.get("status") != "completed" or run.get("conclusion") != "success"
+            or (run.get("actor") or {}).get("login") != "github-actions[bot]"
+            or (run.get("repository") or {}).get("full_name") != repo
+            or (run.get("head_repository") or {}).get("full_name") != repo):
+        raise QaFrontierError("historical QA execution run is untrusted")
+    comparison = api(f"repos/{repo}/compare/{quote(source)}...{quote(event_sha)}?per_page=1")
+    if (comparison.get("status") != "ahead"
+            or type(comparison.get("ahead_by")) is not int or comparison["ahead_by"] < 1
+            or comparison.get("behind_by") != 0
+            or (comparison.get("base_commit") or {}).get("sha") != source
+            or (comparison.get("merge_base_commit") or {}).get("sha") != source):
+        raise QaFrontierError("historical QA is not a proven original main ancestor")
+    pin_art = one_artifact("nexus-agent-qa-source-pin-" + qa_lease)
+    pin_bound = pin_art.get("workflow_run")
+    if (not isinstance(pin_bound, dict) or pin_bound.get("id") != run_id
+            or pin_bound.get("head_sha") != event_sha
+            or pin_bound.get("head_branch") != "main"):
+        raise QaFrontierError("original-source QA pin must belong to exact proof run")
+    attestation = archive_json(
+        api(f"repos/{repo}/actions/artifacts/{pin_art['id']}/zip", binary=True),
+        "pinned-qa-attestation.json",
+    )
+    attestation_core = {k: v for k, v in attestation.items() if k != "attestation_sha256"}
+    if (attestation.get("attestation_sha256") != digest(attestation_core)
+            or attestation.get("schema") != "nexus.original-source-research-qa-ancestry.v1"
+            or attestation.get("repository") != repo
+            or attestation.get("run_id") != str(run_id)
+            or attestation.get("trusted_main_event_sha") != event_sha
+            or attestation.get("verified_main_ancestor_sha") != source
+            or attestation.get("original_source_checkout_verified") is not True
+            or attestation.get("independent_research_qa_only") is not True
+            or attestation.get("auto_demo_promotion") is not False
+            or attestation.get("live_enabled") is not False):
+        raise QaFrontierError("independent source-pin attestation failed")
+    proof = archive_json(
+        api(f"repos/{repo}/actions/artifacts/{proof_art['id']}/zip", binary=True),
+        "qa-evidence.json",
+    )
+    return proof_art["id"], proof
+
+
 def verified_frontier(repo: str) -> dict[str, Any]:
     # The latest reviewed Mission schema names the NEXT dependent task.
     # Its predecessor is the only admissible QA-attested transport source.
@@ -192,9 +285,14 @@ def verified_frontier(repo: str) -> dict[str, Any]:
     _, raw_ledger = exact_artifact_json(
         repo, "nexus-agent-research-" + lease, source, "result/novelty-ledger.json"
     )
-    qa_id, proof = exact_artifact_json(
-        repo, "nexus-agent-research-qa-" + qa_lease, source, "qa-evidence.json"
-    )
+    if task.get("research_qa_incident_recovery") is not None:
+        qa_id, proof = _independently_pinned_historical_qa(
+            repo, task, source, lease, production["receipt_digest"], qa_lease,
+        )
+    else:
+        qa_id, proof = exact_artifact_json(
+            repo, "nexus-agent-research-qa-" + qa_lease, source, "qa-evidence.json"
+        )
     receipt_core = {k: v for k, v in receipt.items() if k != "receipt_digest"}
     qa_core = {k: v for k, v in proof.items() if k != "qa_digest"}
     ledger_core = {k: v for k, v in raw_ledger.items() if k != "ledger_digest"}
