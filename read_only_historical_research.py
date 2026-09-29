@@ -215,8 +215,12 @@ def load_historical_month(
                 raise HistoricalArchiveUnavailable("historical cell journal mismatch")
         if row["qualification"] != "killed" or not row["kill_reasons"]:
             raise HistoricalArchiveUnavailable("unsupported historical admission claim")
-        closed = int(row["closed_trades"])
-        if closed < 0 or closed > 1_000_000 or closed != item.get("closed_trades"):
+        closed_raw = row.get("closed_trades")
+        if (not isinstance(closed_raw, str) or not closed_raw.isascii()
+                or not closed_raw.isdigit() or len(closed_raw) > 7):
+            raise HistoricalArchiveUnavailable("invalid historical closed-trade count")
+        closed = int(closed_raw)
+        if closed > 1_000_000 or closed != item.get("closed_trades"):
             raise HistoricalArchiveUnavailable("historical closed-trade count mismatch")
         metrics = {}
         for field in ("net_return_pct", "stress_net_return_pct", "max_drawdown_pct", "win_rate_pct"):
@@ -261,7 +265,7 @@ def load_historical_month(
 def archive_view() -> dict[str, Any]:
     try:
         return load_historical_month()
-    except (HistoricalArchiveUnavailable, OSError, TypeError, KeyError) as exc:
+    except (ValueError, OSError, TypeError, KeyError) as exc:
         return {
             "contract_version": CONTRACT, "status": "unavailable",
             "reason": str(exc)[:120], "paper_only": True,
