@@ -298,21 +298,30 @@ def test_persistent_installer_bounds_version_retention_after_successful_activati
 
 def test_real_research_panel_reads_observed_mission_tasks_without_promoting_to_paper() -> None:
     index = read(UI / "index.html")
-    ui = read(UI / "product.js")
+    product_ui = read(UI / "product.js")
+    mission_ui = read(UI / "product-mission.js")
+    research_ui = read(UI / "research-operations.js")
     backend = read(ROOT / "product_offline_web_server.py")
     mission = read(ROOT / "product_mission_runtime.py")
-    assert 'id="autonomousResearchPanel"' in index
-    assert 'id="agentResearchBadge"' in index
-    assert 'id="agentResearchMetrics"' in index
-    assert 'id="agentResearchTasks"' in index
-    assert "optionalApi('/api/product/mission/full')" in ui
-    assert "renderAgentResearch()" in ui
-    assert "m.stale===false" in ui and "m.source==='local_runtime'" in ui
-    assert "q.producer_receipt_digest===p.receipt_digest" in ui
-    assert "q.source_sha===p.source_sha" in ui
-    assert "p.auto_demo_promotion===false" in ui
-    assert "p.live_enabled===false" in ui
-    assert "'NO MATCHING QA RECEIPT'" in ui
+    # Preserve the installed read-only Research contract while upgrading its UI.
+    assert 'id="researchAgentOverview"' in index
+    assert 'id="agentState"' in index
+    assert '/ui/research-operations.js' in index
+    assert '/ui/research-operations.css' in index
+    assert "window.NexusFullMissionManaged" in product_ui
+    assert "window.NexusResearchOps.render" in mission_ui
+    assert "api('/api/product/mission/full')" in mission_ui
+    # Full Mission evidence, never a synthetic definition-only status.
+    assert "m.source === 'local_runtime'" in research_ui
+    assert "m.snapshot_age_seconds <= 900" in research_ui
+    assert "q.producer_receipt_digest === p.receipt_digest" in research_ui
+    assert "q.source_sha === p.source_sha" in research_ui
+    assert "q.independent_qa_complete === true" in research_ui
+    assert "p.auto_demo_promotion === false" in research_ui
+    assert "q.auto_demo_promotion === false" in research_ui
+    assert "p.live_enabled === false" in research_ui
+    assert "q.live_enabled === false" in research_ui
+    assert "مدرک QA مستقل هنوز تأیید نشده" in research_ui
     assert '"/api/product/mission/full"' in backend
     assert '"stale": bool(age is not None and age > 900)' in mission
     assert "imported_mission_snapshot.json" in mission

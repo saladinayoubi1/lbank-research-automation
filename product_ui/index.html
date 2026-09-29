@@ -7,6 +7,7 @@
   <title>NEXUS Personal Pro</title>
   <link rel="stylesheet" href="/ui/product.css">
   <link rel="stylesheet" href="/ui/product-extra.css">
+  <link rel="stylesheet" href="/ui/research-operations.css">
 <link rel="stylesheet" href="/ui/product-terminal.css">
 </head>
 <body>
@@ -69,7 +70,17 @@
 
       <section id="view-research" class="view">
         <div class="section-head"><div><span>RESEARCH / BACKTEST STUDIO</span><h2>پژوهش واقعی روی داده canonical</h2></div><strong class="badge warn">NO PROFITABILITY CLAIM</strong></div>
-        <article class="panel" id="autonomousResearchPanel"><header><div><span>REAL AGENT / INDEPENDENT QA</span><h2>چرخهٔ واقعی عامل پژوهش</h2></div><strong id="agentResearchBadge" class="badge neutral">NOT VERIFIED</strong></header><div id="agentResearchMetrics" class="metric-grid"></div><div id="agentResearchTasks" class="table-wrap"><div class="empty-state">وضعیت عامل‌های واقعی هنوز از Mission Runtime تأیید نشده است.</div></div><p class="muted">این بخش فقط شواهد واقعی، شناسهٔ مأموریت و تأیید QA را می‌خواند. موفقیت تاریخی یا DONE بودن، مجوز Paper یا سودآوری نیست.</p></article>
+        <div id="researchAgentOverview" aria-label="وضعیت واقعی پژوهش خودکار"></div>
+        <details id="autonomousResearchPanel" class="panel ops-deep-evidence">
+          <summary class="ops-evidence-summary">
+            <span class="ops-eyebrow">SOURCE-BOUND AGENT AUDIT / INDEPENDENT QA</span>
+            <strong>گزارش تکمیلی مأموریت‌ها و تطبیق مستقل</strong>
+            <b id="agentResearchBadge" class="badge neutral">NOT VERIFIED</b>
+          </summary>
+          <div id="agentResearchMetrics" class="metric-grid"></div>
+          <div id="agentResearchTasks" class="table-wrap"><div class="empty-state">شواهد معتبر Research Agent هنوز بازیابی نشده است.</div></div>
+          <p class="muted ops-evidence-disclaimer">تطبیق تاریخی رسید تولیدکننده و QA مجوز Paper، اثبات سودآوری یا شواهد دست‌نخوردهٔ OOS نیست.</p>
+        </details>
         <div class="research-layout">
           <article class="panel"><header><div><span>PREREGISTERED RUN</span><h2>اجرای پژوهش</h2></div></header><form id="researchForm" class="order-form"><label>نماد<select name="symbol"><option>BTCUSDT</option><option>ETHUSDT</option><option>SOLUSDT</option><option>BNBUSDT</option><option>XRPUSDT</option></select></label><label>تایم‌فریم<select name="timeframe"><option value="minute15">15m</option><option value="hour1">1h</option><option value="hour4">4h</option></select></label><label>خانواده<select name="family"><option value="momentum">Momentum</option><option value="trend_breakout">Trend Breakout</option><option value="mean_reversion">Mean Reversion</option></select></label><label>کندل<input name="limit" type="number" min="60" max="500" value="240"></label><button class="primary" type="submit">داده → Backtest → OOS/Stress/Regime → Qualification</button></form><div id="researchRunState" class="result-box muted">هنوز پژوهشی اجرا نشده است.</div></article>
           <article class="panel"><header><div><span>QUALIFICATION</span><h2>نتیجه Strategy Factory</h2></div><strong id="qualificationBadge" class="badge neutral">NO RUN</strong></header><div id="researchMetrics" class="metric-grid"></div><pre id="researchEvidence" class="json-view">—</pre></article>
@@ -102,7 +113,7 @@
 
       <section id="view-strategies" class="view"><div class="section-head"><div><span>STRATEGY LAB</span><h2>Strategy Factory و Qualification</h2></div></div><article class="panel"><div id="strategyFamilies" class="strategy-grid"></div></article><article class="panel"><header><div><span>PROMOTION PATH</span><h2>مسیر پذیرش</h2></div></header><div id="qualificationPath" class="stage-track"></div></article></section>
 
-      <section id="view-agents" class="view"><div class="section-head"><div><span>MISSION / AGENT MANAGER</span><h2>عامل‌ها، Providerها، Runnerها و صف</h2></div></div><article class="panel"><div id="agentState" class="empty-state">در حال خواندن Mission Control…</div></article><article class="panel"><header><div><span>NOTIFICATION CENTER</span><h2>هشدارها و رویدادهای عملیاتی</h2></div></header><div id="notificationList" class="compact-list"></div></article></section>
+      <section id="view-agents" class="view"><div class="section-head"><div><span>MISSION / AGENT MANAGER</span><h2>عامل‌ها، Providerها، Runnerها و صف</h2></div></div><article class="ops-host"><div id="agentState" aria-label="داشبورد عملیاتی پژوهش و عامل‌ها">در حال خواندن Mission Control…</div></article><article class="panel"><header><div><span>NOTIFICATION CENTER</span><h2>هشدارها و رویدادهای عملیاتی</h2></div></header><div id="notificationList" class="compact-list"></div></article></section>
 
       <section id="view-audit" class="view">
         <div class="section-head"><div><span>AUDIT / REPLAY / RECOVERY</span><h2>ممیزی، Digest، بازیابی و گزارش</h2></div><div class="inline-actions"><a class="small-btn link-btn" href="/api/product/export/paper.json" download>Export JSON</a><a class="small-btn link-btn" href="/api/product/export/paper.csv" download>Export CSV</a></div></div>
@@ -116,6 +127,7 @@
 </div>
 <div id="toast" role="status"></div>
 <script src="/ui/product-terminal.js"></script>
+<script src="/ui/research-operations.js"></script>
 <script src="/ui/product.js"></script>
 </body>
 </html>

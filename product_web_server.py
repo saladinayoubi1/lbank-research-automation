@@ -16,6 +16,7 @@ from product_shared_paper import load_snapshot as load_shared_snapshot, export_c
 from product_prospective_paper import load_prospective_paper_snapshot
 from product_research_runtime import ProductResearchError, ProductResearchRuntime
 from product_market_diagnostics import MarketProbeInputError, probe_primary_spot
+from product_mission_runtime import ProductMissionError, ProductMissionRuntime
 from product_runtime import ProductRuntime, ProductRuntimeError
 from nexus_demo_strategy_matrix import verify_snapshot
 from web_dashboard import ApiResponse, ByteResponse, GatewayConfig, ReportUnavailableError, gateway_disclosure, load_mission_control, validate_gateway_config, versioned
@@ -32,6 +33,8 @@ PRODUCT_STATIC = {
     "/": "index.html",
     "/ui/product.css": "product.css",
     "/ui/product-extra.css": "product-extra.css",
+    "/ui/research-operations.css": "research-operations.css",
+    "/ui/research-operations.js": "research-operations.js",
     "/ui/product.js": "product.js",
     "/ui/product-terminal.js": "product-terminal.js",
     "/ui/product-terminal.css": "product-terminal.css",
@@ -301,6 +304,10 @@ def build_handler(
     runtime = runtime or ProductRuntime(data_root.parent, opening_cash=DESKTOP_DEMO_OPENING_CASH)
     research_runtime = research_runtime or ProductResearchRuntime(runtime)
     control_runtime = control_runtime or ProductControlRuntime(runtime)
+    # The installed offline wrapper and the lightweight product API must both
+    # read the SAME owner-side durable Agent Manager directory, not sibling
+    # market-data directories. Never create a second apparent runtime.
+    mission_runtime = ProductMissionRuntime(runtime.root)
     BaseHandler = build_ai_handler(
         data_root,
         ui_root=ui_root,
@@ -358,7 +365,12 @@ def build_handler(
                     payload = _strategy_snapshot()
                 elif parsed.path == "/api/product/mission-control":
                     if parsed.query: raise ProductRuntimeError("mission-control does not accept query")
-                    payload = _mission_snapshot(data_root)
+                    # Prefer the real local Agent Manager state. Definition-only is
+                    # still truthful; never fabricate active workers or leases.
+                    try:
+                        payload = {"status": "available", **mission_runtime.snapshot()}
+                    except ProductMissionError:
+                        payload = _mission_snapshot(data_root)
                 elif parsed.path == "/api/product/data/registry":
                     if parsed.query: raise ProductRuntimeError("registry does not accept query")
                     payload = research_runtime.registry_snapshot()

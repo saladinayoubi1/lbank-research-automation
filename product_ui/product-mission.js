@@ -1,6 +1,10 @@
 (() => {
   'use strict';
 
+  // The full offline Mission endpoint owns the Agent/Research cockpit when
+  // this script is present. A lighter product snapshot cannot supersede it.
+  window.NexusFullMissionManaged = true;
+
   const $ = id => document.getElementById(id);
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const finite = value => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value));
@@ -34,7 +38,7 @@
 
   function ensureAgents() {
     const host = $('agentState');
-    if (!host || $('missionAgentRuntime')) return;
+    if (!host || $('missionAgentRuntime') || window.NexusResearchOps) return;
     host.className = '';
     host.innerHTML = `
       <div class="mission-toolbar"><button id="missionRefresh" class="small-btn">Refresh Mission</button><button id="missionExport" class="small-btn">Export Snapshot</button><input id="missionImportFile" type="file" accept="application/json,.json"><button id="missionImport" class="small-btn">Import Snapshot</button><span id="missionSyncState" class="mission-meta">—</span></div>
@@ -133,14 +137,17 @@
   }
 
   function renderMission(m) {
-    if ($('buildLabel')) $('buildLabel').textContent = '5.0.0';
+    // The product shell owns the build label; do not regress its 5.1.0 version.
     const badge = $('missionBadge'); if (badge) { badge.textContent = isHistorical(m) ? 'HISTORICAL SNAPSHOT' : (m.control_plane?.runtime_present ? 'CONTROL PLANE' : (m.source === 'imported_snapshot' ? 'IMPORTED STATE' : 'NO MISSION SNAPSHOT')); badge.className = `badge ${isHistorical(m) ? 'warn' : (m.control_plane?.runtime_present ? 'good' : 'neutral')}`; }
     renderNow(m); renderOwner(m); renderSystemEvidence(m); renderResources(m); renderTasks(m); renderEvents(m); renderStrategy(m); renderSync(m);
+    // Reuse the real full Mission snapshot in the professional Research cockpit;
+    // the legacy Agent table must never overwrite its markup every 15 seconds.
+    if (window.NexusResearchOps) window.NexusResearchOps.render(m,{onRefresh:refreshMission});
   }
 
   async function refreshMission() {
     try { renderMission(await api('/api/product/mission/full')); }
-    catch (err) { ensureOverview(); ensureAgents(); ensureStrategies(); if ($('missionNow')) $('missionNow').innerHTML = `<div class="owner-needed"><span>MISSION CONTROL</span><b>UNAVAILABLE</b><small>${esc(err.message)}</small></div>`; if ($('missionSyncState')) $('missionSyncState').textContent = `unavailable · ${err.message}`; }
+    catch (err) { if(window.NexusResearchOps) window.NexusResearchOps.render({reason:err.message}); ensureOverview(); ensureAgents(); ensureStrategies(); if ($('missionNow')) $('missionNow').innerHTML = `<div class="owner-needed"><span>MISSION CONTROL</span><b>UNAVAILABLE</b><small>${esc(err.message)}</small></div>`; if ($('missionSyncState')) $('missionSyncState').textContent = `unavailable · ${err.message}`; }
   }
 
   async function exportSnapshot() {
