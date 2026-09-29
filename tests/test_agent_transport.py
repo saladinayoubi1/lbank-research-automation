@@ -204,3 +204,85 @@ def test_runtime_worker_preflight_allows_only_bounded_internal_bot_dispatch():
     laptop = workflow.split("  laptop-worker:\n", 1)[1].split("    needs:", 1)[0]
     assert "github.actor == github.repository_owner" in laptop
     assert "github-actions[bot]" not in laptop
+
+
+def _source_epoch_qa_task():
+    from nexus_research_missions import FIFTH
+    t = task(worker="qa-verifier-agent", lease_id="qa-epoch-one")
+    t["id"] = FIFTH
+    t["phase"] = 7
+    t["status"] = "VERIFYING"
+    t["producer"] = "research-agent"
+    t["verifier"] = "qa-verifier-agent"
+    t["research_producer_lease_id"] = "immutable-producer"
+    t.update({
+        "research_predecessor_source_sha": "d" * 40,
+        "research_predecessor_receipt_digest": "e" * 64,
+        "research_predecessor_qa_digest": "f" * 64,
+        "research_predecessor_ledger_digest": "1" * 64,
+        "research_predecessor_mechanism": "failed_range_break_reversal",
+    })
+    t["result_evidence"] = {
+        "source_sha": "a" * 40,
+        "receipt_digest": "b" * 64,
+        "independent_qa_complete": False,
+        "auto_demo_promotion": False,
+        "live_enabled": False,
+    }
+    return t
+
+
+def test_research_qa_never_dispatches_at_different_source_epoch(monkeypatch):
+    t = _source_epoch_qa_task()
+    cfg = config(t)
+    monkeypatch.setenv("GITHUB_SHA", "c" * 40)
+    calls = []
+    monkeypatch.setattr(at, "_api", lambda *args: calls.append(args))
+    at.dispatch_pending(cfg, ref="main")
+    assert not calls
+    assert t["status"] == "BLOCKED"
+    assert t["blocked_reason"] == "research_qa_source_epoch_drift_requires_fresh_producer"
+    assert t["research_qa_epoch_drift"]["producer_source_sha"] == "a" * 40
+    assert t["research_qa_epoch_drift"]["producer_receipt_digest"] == "b" * 64
+    assert t["result_evidence"]["receipt_digest"] == "b" * 64
+    assert t["research_qa_epoch_drift"]["old_producer_not_qualified"] is True
+    assert t.get("dispatch_id") is None
+
+
+def test_research_qa_same_source_epoch_can_dispatch(monkeypatch):
+    t = _source_epoch_qa_task()
+    cfg = config(t)
+    calls = []
+    monkeypatch.setenv("GITHUB_SHA", "a" * 40)
+    monkeypatch.setenv("GITHUB_REPOSITORY", "example/repo")
+    monkeypatch.setattr(at, "_api", lambda *args: calls.append(args))
+    assert at.dispatch_pending(cfg, ref="main") == 1
+    assert len(calls) == 1
+    assert t["status"] == "VERIFYING"
+    assert t.get("blocked_reason") is None
+
+
+def test_research_qa_unknown_source_fails_closed_without_dispatch(monkeypatch):
+    t = _source_epoch_qa_task()
+    cfg = config(t)
+    monkeypatch.delenv("GITHUB_SHA", raising=False)
+    monkeypatch.setattr(at, "_api", lambda *args: (_ for _ in ()).throw(
+        AssertionError("QA must not dispatch with missing source identity")
+    ))
+    with pytest.raises(ValueError, match="source identity"):
+        at.dispatch_pending(cfg, ref="main")
+    assert t["status"] == "VERIFYING"
+    assert not t.get("dispatch_id")
+
+
+def test_research_qa_inflight_existing_dispatch_is_not_mutated_by_epoch_gate(monkeypatch):
+    t = _source_epoch_qa_task()
+    t["dispatch_id"] = at.dispatch_id_for(t)
+    cfg = config(t)
+    monkeypatch.setenv("GITHUB_SHA", "c" * 40)
+    monkeypatch.setattr(at, "_api", lambda *args: (_ for _ in ()).throw(
+        AssertionError("existing QA dispatch must not be resent")
+    ))
+    assert at.dispatch_pending(cfg, ref="main") == 0
+    assert t["status"] == "VERIFYING"
+    assert t.get("research_qa_epoch_drift") is None

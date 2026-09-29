@@ -6,6 +6,7 @@ import hashlib
 import io
 import json
 import os
+import re
 import urllib.request
 import zipfile
 from pathlib import Path
@@ -229,6 +230,38 @@ def dispatch_pending(config: dict[str, Any], *, ref: str) -> int:
         expected_dispatch = dispatch_id_for(task)
         if task.get("dispatch_id") == expected_dispatch:
             continue
+        # This QA worker's executable code and verified input cache are keyed
+        # to its triggering commit. Never dispatch independent Research QA
+        # against a different commit than the immutable numerical producer.
+        # In-flight old leases are deliberately left untouched: they require
+        # a separately verified failure/receipt before re-leasing.
+        if task.get("id") in TASKS and task.get("status") == "VERIFYING":
+            original = task.get("result_evidence")
+            producer_sha = original.get("source_sha") if isinstance(original, dict) else None
+            receipt = original.get("receipt_digest") if isinstance(original, dict) else None
+            current_sha = os.environ.get("GITHUB_SHA", "")
+            if (not isinstance(producer_sha, str)
+                    or not re.fullmatch(r"[0-9a-f]{40}", producer_sha)
+                    or not isinstance(receipt, str)
+                    or not re.fullmatch(r"[0-9a-f]{64}", receipt)
+                    or not re.fullmatch(r"[0-9a-f]{40}", current_sha)):
+                raise ValueError("Research QA dispatch lacks exact authenticated source identity")
+            if producer_sha != current_sha:
+                task["status"] = "BLOCKED"
+                task["blocked_reason"] = "research_qa_source_epoch_drift_requires_fresh_producer"
+                task["research_qa_epoch_drift"] = {
+                    "producer_source_sha": producer_sha,
+                    "producer_receipt_digest": receipt,
+                    "producer_lease_id": task.get("research_producer_lease_id"),
+                    "undispatched_qa_lease_id": task.get("lease_id"),
+                    "controller_source_sha": current_sha,
+                    "old_producer_not_qualified": True,
+                }
+                am.emit("research_qa_source_epoch_drift_blocked",
+                        task_id=task["id"],
+                        producer_source_sha=producer_sha,
+                        controller_source_sha=current_sha)
+                continue
         dispatch_task(task, ref=ref)
         count += 1
     return count
