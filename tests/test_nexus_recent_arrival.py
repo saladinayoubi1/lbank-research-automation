@@ -174,7 +174,7 @@ def test_real_bounded_inner_extractor_and_later_numeric_gate_remain_separate(
     def producer_download(url, artifact, outer, token):
         with zipfile.ZipFile(outer, "w") as zipf:
             zipf.write(nested, arrival.INNER)
-            zipf.writestr(arrival.SIDECAR, digest + "\\n")
+            zipf.writestr(arrival.SIDECAR, digest)
     monkeypatch.setattr(
         transport, "_artifact", lambda *a, **k: {"id": 87, "size_in_bytes": 100},
     )
