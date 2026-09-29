@@ -93,6 +93,37 @@ def test_product_ui_contains_complete_current_scope_surfaces(product_server) -> 
     assert b"research-layout" in css
 
 
+def test_research_operations_pro_ui_serves_only_local_assets_and_real_mission_snapshot(product_server) -> None:
+    port, _ = product_server
+    status, _, markup = _request(port, "GET", "/")
+    assert status == 200
+    html = markup.decode("utf-8")
+    assert 'id="researchAgentOverview"' in html
+    assert 'id="agentState"' in html
+    assert '/ui/research-operations.css' in html
+    assert '/ui/research-operations.js' in html
+    assert html.index('/ui/research-operations.js') < html.index('/ui/product.js')
+
+    for url, token in (
+        ("/ui/research-operations.js", "window.NexusResearchOps"),
+        ("/ui/research-operations.css", ".ops-hero"),
+    ):
+        status, _, raw = _request(port, "GET", url)
+        assert status == 200
+        assert token.encode() in raw
+
+    status, _, raw = _request(port, "GET", "/api/product/mission-control")
+    assert status == 200
+    payload = json.loads(raw)
+    assert payload["contract_version"] == "nexus.product-mission-control.v1"
+    assert payload["paper_only"] is True
+    assert payload["live_trading_authority"] is False
+    # An empty local runtime is NOT an invented active Research worker.
+    assert payload["source"] == "definition_only"
+    assert payload["control_plane"]["runtime_present"] is False
+    assert all(row["state"] == "UNKNOWN" for row in payload["workers"])
+
+
 def test_product_overview_reports_canonical_backend_and_live_locked(product_server) -> None:
     port, _ = product_server
     status, _, raw = _request(port, "GET", "/api/product/overview")
