@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 import agent_manager as am
+from nexus_research_missions import SECOND, TASKS, ANCESTRY, validate_ancestry
 
 RUNTIME_PATH = Path("data/agent_coordination/agent_manager_runtime.json")
 SUMMARY_PATH = Path("data/agent_coordination/manager_state.json")
@@ -131,7 +132,7 @@ def envelope_for(task: dict[str, Any]) -> dict[str, Any]:
     if int(task.get("authority", 0)) >= 4:
         raise ValueError("L4 tasks may not be dispatched")
     optional = {}
-    if task["id"] == "P7-RESEARCH-COMPOSITE-001" and task.get("status") == "VERIFYING":
+    if task["id"] in TASKS and task.get("status") == "VERIFYING":
         prior = task.get("result_evidence", {})
         producer_lease = task.get("research_producer_lease_id")
         if (
@@ -149,6 +150,9 @@ def envelope_for(task: dict[str, Any]) -> dict[str, Any]:
             "research_producer_receipt_digest": prior["receipt_digest"],
             "research_producer_source_sha": prior["source_sha"],
         }
+    if task["id"] == SECOND:
+        ancestry = validate_ancestry({key: task[key] for key in ANCESTRY if key in task})
+        optional.update(ancestry)
     return {
         **optional,
         "schema_version": 2,
