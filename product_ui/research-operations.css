@@ -144,3 +144,20 @@
 .ops-results td:nth-child(n+3){direction:ltr;text-align:right;font:600 12px Consolas,"Segoe UI",monospace}
 .ops-shell .ops-job-main small,.ops-shell .ops-worker-body small,.ops-shell .ops-field span,.ops-shell .ops-field strong,.ops-shell .ops-field small,.ops-shell .ops-event small,.ops-shell .ops-event time,.ops-shell .ops-job-id,.ops-shell .ops-job-state .ops-tag,.ops-shell .ops-worker-body span{font-size:max(12px,.75rem)}
 .ops-shell .ops-stat span,.ops-shell .ops-stage b,.ops-shell .ops-worker-body strong{font-size:max(13px,.82rem)}
+
+/* Advanced, collapsible canonical QA audit: preserves original evidence
+ * contracts without crowding the primary Research Operations overview. */
+.ops-deep-evidence{margin:0 0 16px;overflow:hidden;border-radius:11px;background:var(--surface,#0d1117)}
+.ops-evidence-summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 17px;background:linear-gradient(110deg,var(--surface2,#111821),var(--surface,#0d1117))}
+.ops-evidence-summary::-webkit-details-marker{display:none}
+.ops-evidence-summary:before{content:"⌄";display:inline-grid;place-items:center;width:28px;height:28px;order:0;border:1px solid var(--line,#263241);border-radius:7px;font-size:18px;color:var(--blue,#4d8dff);transition:transform .15s ease}
+.ops-deep-evidence[open] .ops-evidence-summary:before{transform:rotate(180deg)}
+.ops-evidence-summary strong{flex:1;min-width:200px;font-size:14px;line-height:1.6}
+.ops-evidence-summary .ops-eyebrow{min-width:100%;font-size:11px!important}
+.ops-evidence-summary:focus-visible{outline:2px solid var(--blue,#4d8dff);outline-offset:-3px}
+.ops-deep-evidence .metric-grid{padding:12px 16px;gap:9px;grid-template-columns:repeat(4,minmax(0,1fr))}
+.ops-deep-evidence .metric{border:1px solid var(--line,#263241);border-radius:8px;background:var(--surface2,#111821);padding:11px}
+.ops-deep-evidence #agentResearchTasks{margin:0 16px 12px;border:1px solid var(--line,#263241);border-radius:8px;max-height:365px}
+.ops-deep-evidence .data-table{min-width:645px;font-size:12px}
+.ops-evidence-disclaimer{padding:0 16px 13px;margin:0;font-size:12px;line-height:1.75}
+@media(max-width:900px){.ops-deep-evidence .metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
