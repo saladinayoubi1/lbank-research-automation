@@ -59,6 +59,39 @@ class MultiPairPersistentPaperTradingLoopError(RuntimeError):
     pass
 
 
+def _missing_cell_diagnostics(
+    matrix_state: Mapping[str, Any], manifest: Mapping[str, Any], source_sha: str,
+) -> list[dict[str, str]]:
+    """Bounded public pair/timeframe status only; never owner journals or errors."""
+    cells = matrix_state.get("cells")
+    if not isinstance(cells, Mapping):
+        cells = {}
+    results: list[dict[str, str]] = []
+    for symbol in manifest["symbols"]:
+        for timeframe in manifest["timeframes"]:
+            cell_id = f"{symbol}:{timeframe}"
+            raw = cells.get(cell_id)
+            if not isinstance(raw, Mapping):
+                results.append({"cell_id": cell_id, "reason": "MISSING"})
+                continue
+            status = raw.get("status")
+            if status == "VERIFIED" and raw.get("source_sha") == source_sha:
+                continue
+            if status == "VERIFIED":
+                reason = "SOURCE_MISMATCH"
+            elif status == "BLOCKED":
+                reason = "BLOCKED"
+            else:
+                reason = "UNVERIFIED"
+            diagnostic = {"cell_id": cell_id, "reason": reason}
+            if reason == "BLOCKED":
+                code = raw.get("error_code")
+                if isinstance(code, str) and re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,63}", code):
+                    diagnostic["error_class"] = code
+            results.append(diagnostic)
+    return results
+
+
 def _atomic_json(path: Path, value: Mapping[str, Any]) -> None:
     from nexus_persistent_paper_trading_loop import _atomic_json as legacy_atomic_json
 
@@ -209,6 +242,11 @@ def run_persistent_cycle(
     _matrix_atomic_json(root / "demo" / "strategy-matrix.json", matrix_snapshot)
 
     fresh_cells = _fresh_cells(next_matrix_state, source_sha)
+    missing_cell_diagnostics = _missing_cell_diagnostics(next_matrix_state, manifest, source_sha)
+    if len(fresh_cells) + len(missing_cell_diagnostics) != expected_cells:
+        raise MultiPairPersistentPaperTradingLoopError(
+            "fresh-cell diagnostics do not reconcile against canonical 12-cell grid"
+        )
     performance: dict[str, Any] | None = None
     maintenance: dict[str, Any] | None = None
     regime: dict[str, Any] | None = None
@@ -336,6 +374,7 @@ def run_persistent_cycle(
         "expected_cell_count": expected_cells,
         "fresh_cell_count": len(fresh_cells),
         "fresh_cells": fresh_cells,
+        "missing_cell_diagnostics": missing_cell_diagnostics,
         "expected_lane_count": expected_lanes,
         "matrix_migration_status": migration_status,
         "matrix_migration_digest": migration_digest,
@@ -412,6 +451,26 @@ def verify_loop_snapshot(value: Mapping[str, Any]) -> dict[str, Any]:
             and 0 <= core["fresh_cell_count"] <= EXPECTED_CELLS
             and isinstance(core.get("fresh_cells"), list)
             and len(core["fresh_cells"]) == core["fresh_cell_count"]
+            and isinstance(core.get("missing_cell_diagnostics"), list)
+            and len(core["missing_cell_diagnostics"])
+                + core["fresh_cell_count"] == EXPECTED_CELLS
+            and all(
+                isinstance(d, Mapping)
+                and set(d) in ({"cell_id", "reason"}, {"cell_id", "reason", "error_class"})
+                and isinstance(d["cell_id"], str)
+                and d["cell_id"].split(":", 1)[0] in {"BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT"}
+                and d["cell_id"].split(":", 1)[-1] in {"minute15", "hour1", "hour4"}
+                and d["reason"] in {"MISSING", "SOURCE_MISMATCH", "BLOCKED", "UNVERIFIED"}
+                and ("error_class" not in d or
+                     (d["reason"] == "BLOCKED" and
+                      isinstance(d["error_class"], str) and
+                      re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,63}", d["error_class"])))
+                for d in core["missing_cell_diagnostics"]
+            )
+            and len(set(d["cell_id"] for d in core["missing_cell_diagnostics"]))
+                == len(core["missing_cell_diagnostics"])
+            and set(d["cell_id"] for d in core["missing_cell_diagnostics"])
+                .isdisjoint(set(core["fresh_cells"]))
             and isinstance(core.get("performance_health_feedback_operational"), bool)
             and isinstance(core.get("strategy_discovery_health_trigger_requested"), bool)
             and isinstance(core.get("regime_selected_rebalance_operational"), bool)
@@ -519,6 +578,7 @@ def main() -> int:
     print(json.dumps({
         "status": snapshot["status"],
         "fresh_cells": snapshot["fresh_cell_count"],
+        "missing_cell_diagnostics": snapshot["missing_cell_diagnostics"],
         "expected_cells": snapshot["expected_cell_count"],
         "expected_lanes": snapshot["expected_lane_count"],
         "migration_status": snapshot["matrix_migration_status"],
