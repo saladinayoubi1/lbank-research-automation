@@ -494,6 +494,36 @@
         "hold on expired original input or changed source; never reset novelty frontier or invent success",
         "research only, no pristine future holdout claim, no fixed maximum trade count, no automatic Demo admission or Live"
       ]
+    },
+    {
+      "id": "P7-RESEARCH-COMPOSITE-007",
+      "title": "Execute ninth reviewed lagged peer volatility spillover breakout as seventh real Research Agent with independent numerical QA",
+      "phase": 7,
+      "gate": 17,
+      "status": "PENDING",
+      "priority": 85,
+      "dependencies": [
+        "P7-RESEARCH-COMPOSITE-006"
+      ],
+      "required_capabilities": [
+        "data_validation"
+      ],
+      "required_resources": [
+        "github-cloud"
+      ],
+      "preferred_resources": [
+        "github-cloud",
+        "windows-local"
+      ],
+      "authority": 2,
+      "acceptance": [
+        "preceding sixth numerical producer and independent QA are genuinely DONE with exact source, lease, receipt and cumulative eighth-family novelty ledger",
+        "source-bound seventh real producer consumes precisely QA-attested sixth ledger and selects novel ninth causal lagged_peer_volatility_spillover_breakout before any recycled parameter variants",
+        "use exact aligned closed BTC/ETH Spot 15m peer OHLCV, a peer range shock lagged one full candle, strictly earlier range baseline, own prior compression, completed 4h/1h guards and next own 15m open fills",
+        "verify actual two-pair three-partition two-cost numerical producer evidence with separate independent source-exact QA replay",
+        "hold on expired input, changed source or unavailable exact peer grid; never invent L2, signed flow, funding or success",
+        "research only, no pristine future holdout claim, no fixed maximum trade count, no automatic Demo admission or Live"
+      ]
     }
   ]
 }
