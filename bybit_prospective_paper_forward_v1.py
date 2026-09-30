@@ -470,6 +470,15 @@ def _profile_step(
             for i in range(2)
         ]
         for asset, spec in enumerate(specs):
+            requested_notional = equity_open * target[asset]
+            if (abs(requested_notional) > 1e-12 and abs(desired[asset]) <= 1e-15
+                    and abs(positions[asset].quantity) <= 1e-15):
+                record("skipped", asset, quantity=0.0, price=float(marks_open[asset]),
+                       fee=0.0, reason="below_min_order",
+                       requested_notional=float(requested_notional),
+                       minimum_quantity=float(spec.minimum_quantity),
+                       minimum_notional=float(spec.minimum_notional))
+
             delta = desired[asset] - positions[asset].quantity
             if abs(delta) <= 1e-15:
                 continue
