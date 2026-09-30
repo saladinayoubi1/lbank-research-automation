@@ -40,6 +40,14 @@ def build_snapshot(state, activation, status):
     balance = equity = fees = funding = gross = margin = 0.0
     for name, lane in state["lanes"].items():
         p = lane["profiles"]["conservative"]
+        try:
+            allocation = float(
+                activation["configs"][name]["execution_profiles"]["conservative"]["initial_cash"]
+            )
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValueError("shared account allocation contract missing") from exc
+        if not math.isfinite(allocation) or allocation <= 0:
+            raise ValueError("shared account allocation contract invalid")
         events = p.get("execution_journal", [])
         if sum(e["kind"] == "fill" for e in events) != p["fill_count"]:
             raise ValueError("fill history incomplete; cannot fabricate legacy fills")
@@ -95,7 +103,7 @@ def build_snapshot(state, activation, status):
                     active[symbol] = {"id": key, "opened_at": e["execution_utc"],
                         "entry_fees_remaining": 0.0, "funding": 0.0}
                 active[symbol]["entry_fees_remaining"] += e["fee"]*opening/abs(e["quantity"])
-        expected = 125.0+lane_gross-lane_fees+lane_funding
+        expected = allocation+lane_gross-lane_fees+lane_funding
         if not all((_close(expected, p["wallet"]), _close(lane_fees, p["fees"]),
                     _close(lane_funding, p["funding_cashflow"]))):
             raise ValueError("shared account cash ledger does not reconcile")
@@ -122,8 +130,8 @@ def build_snapshot(state, activation, status):
             raise ValueError("shared account position equity does not reconcile")
         balance += p["wallet"]; equity += p["equity"]; fees += lane_fees
         funding += lane_funding; gross += lane_gross; margin += p.get("initial_margin", 0.0)
-        lanes.append({"strategy": name, "allocation": 125.0, "balance": p["wallet"],
-            "equity": p["equity"], "net_pnl": p["equity"]-125, "fills": p["fill_count"],
+        lanes.append({"strategy": name, "allocation": allocation, "balance": p["wallet"],
+            "equity": p["equity"], "net_pnl": p["equity"]-allocation, "fills": p["fill_count"],
             "halted": name in state["halted_lanes"]})
     for rows in (orders, history, cashflows):
         rows.sort(key=lambda e:(e["time"], e["id"]), reverse=True)
