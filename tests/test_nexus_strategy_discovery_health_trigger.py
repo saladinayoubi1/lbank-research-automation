@@ -28,6 +28,7 @@ def _snapshot(*, regime_status="VERIFIED", research_required=True):
         "expected_cell_count": loop.EXPECTED_CELLS,
         "fresh_cell_count": loop.EXPECTED_CELLS,
         "fresh_cells": [f"cell-{index}" for index in range(loop.EXPECTED_CELLS)],
+        "missing_cell_diagnostics": [],
         "expected_lane_count": loop.EXPECTED_LANES,
         "matrix_migration_status": "FRESH_V2",
         "matrix_migration_digest": None,
