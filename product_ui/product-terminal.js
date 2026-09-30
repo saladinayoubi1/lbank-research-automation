@@ -5,7 +5,7 @@ const number=(v,d=2)=>v===null||v===undefined?'—':Number(v).toLocaleString('en
 const money=v=>v===null||v===undefined?'—':`${number(v)} USDT`;
 const when=v=>v?new Date(v).toLocaleString('fa-IR',{timeZone:'Asia/Tehran'}):'—';
 const pnl=v=>`<span class="${Number(v)>0?'good':Number(v)<0?'bad':''}">${esc(money(v))}</span>`;
-const labels={consensus:'Regime Consensus · بک‌تست‌شده',bollinger20_2:'بولینگر · آرشیو',momentum20_ema100:'مومنتوم · آرشیو',macd12_26_9:'MACD · آرشیو'};
+const labels={bybit_btc_eth_regime_consensus_v1:'Regime Consensus · استراتژی بک‌تست‌شده',consensus:'Regime Consensus · بک‌تست‌شده',bollinger20_2:'بولینگر · آرشیو',momentum20_ema100:'مومنتوم · آرشیو',macd12_26_9:'MACD · آرشیو'};
 const reasons={strategy_signal:'سیگنال استراتژی',liquidation:'لیکوییدیشن شبیه‌سازی',risk_tier_or_margin:'رد ریسک / مارجین',below_min_order:'کمتر از حداقل سفارش Bybit'};
 let current=null,tab='positions',filter='',search='',page=0;
 const PAGE=25;
