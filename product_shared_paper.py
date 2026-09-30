@@ -37,7 +37,7 @@ def build_snapshot(state, activation, status):
     if state["activation_digest"] != activation["digest"] or activation["live_trading_authority"] is not False:
         raise ValueError("shared account binding/authority mismatch")
     positions, history, orders, cashflows, lanes = [], [], [], [], []
-    balance = equity = fees = funding = gross = margin = 0.0
+    balance = equity = fees = funding = gross = margin = initial_total = 0.0
     for name, lane in state["lanes"].items():
         p = lane["profiles"]["conservative"]
         try:
@@ -48,6 +48,7 @@ def build_snapshot(state, activation, status):
             raise ValueError("shared account allocation contract missing") from exc
         if not math.isfinite(allocation) or allocation <= 0:
             raise ValueError("shared account allocation contract invalid")
+        initial_total += allocation
         events = p.get("execution_journal", [])
         if sum(e["kind"] == "fill" for e in events) != p["fill_count"]:
             raise ValueError("fill history incomplete; cannot fabricate legacy fills")
@@ -139,9 +140,9 @@ def build_snapshot(state, activation, status):
         "live_trading_authority": False, "currency": "USDT", "checked_at": status["checked_at"],
         "status": status["status"], "state_digest": state["digest"], "source_sha": activation["source_sha"],
         "start_not_before_utc": status["start_not_before_utc"], "last_execution_utc": state["last_execution_utc"],
-        "valuation": "closed_4h_mark", "account": {"initial_balance": 500.0, "balance": balance,
+        "valuation": "closed_4h_mark", "account": {"initial_balance": initial_total, "balance": balance,
             "equity": equity, "unrealized_pnl": equity-balance, "realized_gross": gross,
-            "realized_net_cash": balance-500, "net_pnl": equity-500, "fees": fees,
+            "realized_net_cash": balance-initial_total, "net_pnl": equity-initial_total, "fees": fees,
             "funding": funding, "initial_margin": margin, "free_margin": equity-margin,
             "drawdown": state["aggregate_max_drawdown"]["conservative"]},
         "positions": positions, "history": history, "orders": orders, "cashflows": cashflows,
@@ -214,7 +215,7 @@ All symbols must have fresh validated marks or the complete booked view remains.
             p['net_pnl_to_date']=p['unrealized_pnl']-p['entry_fees']+p['funding']
         a=result['account']
         a['unrealized_pnl']=sum(p['unrealized_pnl'] for p in result['positions'])
-        a['equity']=a['balance']+a['unrealized_pnl'];a['net_pnl']=a['equity']-500
+        a['equity']=a['balance']+a['unrealized_pnl'];a['net_pnl']=a['equity']-a['initial_balance']
         # Exact live margin would require fresh risk tiers; do not approximate it.
         a['initial_margin']=None;a['free_margin']=None
         for lane in result['strategies']:
