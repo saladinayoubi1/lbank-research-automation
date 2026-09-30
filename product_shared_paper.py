@@ -66,11 +66,15 @@ def build_snapshot(state, activation, status):
                 cashflows.append({**common, "type": "funding", "amount": e["amount"],
                                  "time_precision": "execution_bar"})
                 continue
-            orders.append({**common, "status": "filled" if e["kind"] == "fill" else "rejected",
-                "side": "buy" if e["quantity"] > 0 else "sell", "quantity": abs(e["quantity"]),
-                "price": e["price"], "fee": e["fee"], "reason": e["reason"],
-                "execution_model": e.get("execution_model"), "slippage_cost": e.get("slippage_cost"),
-                "realized_gross": e.get("realized_gross")})
+            orders.append({**common,
+                "status": "filled" if e["kind"] == "fill" else ("skipped" if e["kind"] == "skipped" else "rejected"),
+                "side": "buy" if e["quantity"] > 0 else ("sell" if e["quantity"] < 0 else None),
+                "quantity": abs(e["quantity"]), "price": e["price"], "fee": e.get("fee", 0.0),
+                "reason": e.get("reason"), "execution_model": e.get("execution_model"),
+                "slippage_cost": e.get("slippage_cost"), "realized_gross": e.get("realized_gross"),
+                "requested_notional": e.get("requested_notional"),
+                "minimum_quantity": e.get("minimum_quantity"),
+                "minimum_notional": e.get("minimum_notional")})
             if e["kind"] != "fill":
                 continue
             lane_fees += e["fee"]
@@ -188,11 +192,15 @@ def build_single_strategy_snapshot(state, activation, status, *, strategy_name=N
             cashflows.append({**common, "type":"funding", "amount":e["amount"],
                               "time_precision":"execution_bar"})
             continue
-        orders.append({**common, "status":"filled" if e["kind"] == "fill" else "rejected",
-            "side":"buy" if e["quantity"] > 0 else "sell", "quantity":abs(e["quantity"]),
-            "price":e["price"], "fee":e.get("fee",0.0), "reason":e.get("reason"),
-            "execution_model":e.get("execution_model"), "slippage_cost":e.get("slippage_cost"),
-            "realized_gross":e.get("realized_gross",0.0)})
+        orders.append({**common,
+            "status":"filled" if e["kind"] == "fill" else ("skipped" if e["kind"] == "skipped" else "rejected"),
+            "side":"buy" if e["quantity"] > 0 else ("sell" if e["quantity"] < 0 else None),
+            "quantity":abs(e["quantity"]), "price":e["price"], "fee":e.get("fee",0.0),
+            "reason":e.get("reason"), "execution_model":e.get("execution_model"),
+            "slippage_cost":e.get("slippage_cost"), "realized_gross":e.get("realized_gross",0.0),
+            "requested_notional":e.get("requested_notional"),
+            "minimum_quantity":e.get("minimum_quantity"),
+            "minimum_notional":e.get("minimum_notional")})
         if e["kind"] != "fill":
             continue
         fees += e["fee"]; gross += e["realized_gross"]
