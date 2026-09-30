@@ -21,6 +21,7 @@ import bybit_prospective_paper_forward_v1 as forward
 from bybit_public_klines import _active_mainnet_base_urls
 from bybit_derivatives_core_v1 import Client
 from product_shared_paper import build_single_strategy_snapshot
+from nexus_shared_signal_allocator import aggregate_targets
 
 ROOT = Path(__file__).resolve().parent
 OLD_MANIFEST = ROOT / "experiments/bybit_prospective_paper_forward_v1.json"
@@ -129,6 +130,13 @@ def tick(root, activation, now, client=None):
         # Evaluate each observation before proceeding to the next after downtime.
         for observation in observations:
             observation = dict(observation)
+            allocation = aggregate_targets(
+                {config["strategy_id"]: observation["target_weights"]},
+                gross_cap=float(activation["frozen"]["execution_contract"]["maximum_gross_exposure"]),
+                asset_cap=1.0,
+            )
+            observation["target_weights"] = allocation["target_weights"]
+            observation["shared_allocator"] = allocation
             observation["capture_execution_details"] = True
             state = forward.apply_observations(state, [observation], config,
                 source_sha=activation["source_sha"], run_id=state["last_run_id"]+1)
