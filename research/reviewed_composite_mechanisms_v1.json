@@ -291,6 +291,39 @@
         "no_current_or_future_peer_candle_lookahead",
         "no_auto_paper_or_live_promotion"
       ]
+    },
+    {
+      "id": "lagged_peer_volatility_spillover_breakout",
+      "hypothesis": "An unusually large verified peer 15-minute intrabar range completed one full candle ago may precede delayed own-asset volatility expansion when the own asset stayed comparatively compressed; a current own closed-bar range breakout supplies direction and any fill occurs only at the next own 15-minute open. This is a speculative volatility-transmission hypothesis with no verified profitability.",
+      "inputs": [
+        "closed_spot_ohlcv",
+        "aligned_spot_cross_pair"
+      ],
+      "context": [
+        "exact_utc_closed_spot_peer_grid",
+        "peer_range_shock_lagged_one_completed_15m_candle",
+        "peer_range_baseline_from_strictly_earlier_closed_bars",
+        "own_prior_closed_range_compression",
+        "completed_4h_market_trend",
+        "completed_1h_volatility_guard"
+      ],
+      "entry": [
+        "lagged_peer_range_expansion_above_prior_distribution",
+        "own_prior_range_remains_smaller_than_peer_shock",
+        "current_own_closed_range_breakout_with_volume",
+        "next_own_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_intrabar_worst_case_structure_stop",
+        "precommitted_maximum_holding_time"
+      ],
+      "risk": [
+        "single_own_symbol_spot_long_flat_cash_only",
+        "no_peer_short_spread_execution_or_derivative_proxy",
+        "no_l2_signed_flow_or_funding_claim",
+        "no_current_or_future_peer_candle_lookahead",
+        "no_auto_paper_or_live_promotion"
+      ]
     }
   ]
 }
