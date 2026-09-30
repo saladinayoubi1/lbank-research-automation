@@ -1,4 +1,4 @@
-"""Attacker-oriented tests for sixth QA-authorized historical research frontier."""
+"""Attacker-oriented tests for seventh QA-authorized historical research frontier."""
 from __future__ import annotations
 import io
 import json
@@ -9,7 +9,7 @@ import pytest
 
 import nexus_composite_strategy_research as research
 from scripts import nexus_qa_attested_discovery_frontier as selector
-from nexus_research_missions import FIFTH
+from nexus_research_missions import FIFTH, SIXTH
 
 
 SOURCE = "a" * 40
@@ -24,11 +24,11 @@ def zipped(member, obj):
     return stream.getvalue()
 
 
-def mock_proofs(monkeypatch, *, bad_ledger=False, bad_qa=False, no_verified_fifth=False):
+def mock_proofs(monkeypatch, *, bad_ledger=False, bad_qa=False, no_verified_sixth=False):
     ledger = research.empty_ledger()
     core = {k: v for k, v in ledger.items() if k != "ledger_digest"}
     for config in research.CONFIGS:
-        if config["mechanism"] == "relative_momentum_reacceleration" or config["risk_variant"] != 0:
+        if config["mechanism"] == "lagged_peer_volatility_spillover_breakout" or config["risk_variant"] != 0:
             continue
         core["config_fingerprints_evaluated"].append(research.digest({
             "config": config, "dataset": research.ARCHIVE_SHA256, "contract": research.SCHEMA,
@@ -41,7 +41,7 @@ def mock_proofs(monkeypatch, *, bad_ledger=False, bad_qa=False, no_verified_fift
         "archive_sha256": research.ARCHIVE_SHA256,
         "ledger_digest": ledger["ledger_digest"],
         "prior_ledger_digest": "1" * 64,
-        "mechanism": "peer_shock_noncontagion_rebound",
+        "mechanism": "relative_momentum_reacceleration",
     }
     receipt = {**receipt_core, "receipt_digest": research.digest(receipt_core)}
     qa_core = {
@@ -52,7 +52,7 @@ def mock_proofs(monkeypatch, *, bad_ledger=False, bad_qa=False, no_verified_fift
     }
     proof = {**qa_core, "qa_digest": research.digest(qa_core)}
     task = {
-        "id": FIFTH, "status": "PENDING" if no_verified_fifth else "DONE",
+        "id": SIXTH, "status": "PENDING" if no_verified_sixth else "DONE",
         "producer": "research-agent", "verifier": "qa-verifier-agent",
         "research_producer_lease_id": PRODUCER, "lease_id": VERIFIER,
         "result_evidence": {
@@ -122,19 +122,19 @@ def mock_proofs(monkeypatch, *, bad_ledger=False, bad_qa=False, no_verified_fift
     return ledger
 
 
-def test_exact_completed_distinct_qa_proof_selects_fifth_frontier(monkeypatch):
+def test_exact_completed_distinct_qa_proof_selects_sixth_frontier(monkeypatch):
     expected = mock_proofs(monkeypatch)
     result = selector.verified_frontier(selector.REPO)
-    assert result["predecessor"] == FIFTH
+    assert result["predecessor"] == SIXTH
     assert result["ledger"]["ledger_digest"] == expected["ledger_digest"]
-    assert research.select_next(result["ledger"])["mechanism"] == "relative_momentum_reacceleration"
+    assert research.select_next(result["ledger"])["mechanism"] == "lagged_peer_volatility_spillover_breakout"
     assert result["producer_artifact_id"] == 902
     assert result["qa_artifact_id"] == 904
     assert result["research_only"] is True and result["auto_demo_promotion"] is False
 
 
-@pytest.mark.parametrize("variant", ["bad_ledger", "bad_qa", "no_verified_fifth"])
-def test_mutated_or_unsigned_proof_cannot_seed_sixth(monkeypatch, variant):
+@pytest.mark.parametrize("variant", ["bad_ledger", "bad_qa", "no_verified_sixth"])
+def test_mutated_or_unsigned_proof_cannot_seed_seventh(monkeypatch, variant):
     mock_proofs(monkeypatch, **{variant: True})
     with pytest.raises(selector.QaFrontierError):
         selector.verified_frontier(selector.REPO)
@@ -163,7 +163,7 @@ def test_coordinator_rebuilds_on_research_frontier_authority_changes():
         assert required in workflow
 
 
-def test_mandatory_fifth_discovery_cache_uses_exact_QA_not_standalone_artifact():
+def test_mandatory_seventh_discovery_cache_uses_exact_QA_not_standalone_artifact():
     workflow = Path(".github/workflows/nexus_multitimeframe_strategy_discovery.yml").read_text()
     segment = workflow.split("- name: Bind canonical archive and novelty frontier as one Research lease input", 1)[1].split("- name: Publish immutable approved Research input transport", 1)[0]
     assert "scripts/nexus_qa_attested_discovery_frontier.py" in segment
@@ -224,10 +224,10 @@ def test_frontier_prefers_exact_current_source_over_newer_stale_coordinator(monk
 
     monkeypatch.setattr(selector, "api", raced)
     artifact_id, manager = selector.latest_coordinator(
-        selector.REPO, required_task_id=FIFTH,
+        selector.REPO, required_task_id=SIXTH,
     )
     assert artifact_id == 901
-    assert [t["id"] for t in manager["tasks"]] == [FIFTH]
+    assert [t["id"] for t in manager["tasks"]] == [SIXTH]
 
 
 def test_frontier_skips_schema_lag_snapshot_missing_required_predecessor(monkeypatch):
@@ -260,109 +260,126 @@ def test_frontier_skips_schema_lag_snapshot_missing_required_predecessor(monkeyp
 
     monkeypatch.setattr(selector, "api", raced)
     artifact_id, manager = selector.latest_coordinator(
-        selector.REPO, required_task_id=FIFTH,
+        selector.REPO, required_task_id=SIXTH,
     )
     assert artifact_id == 901
-    assert manager["tasks"][0]["id"] == FIFTH
+    assert manager["tasks"][0]["id"] == SIXTH
 
 
-def _historical_proofs(monkeypatch, *, tamper_pin=False, untrusted_actor=False,
-                       divergent_source=False):
-    expected = mock_proofs(monkeypatch)
-    original = selector.api
-    source_event = "b" * 40
+
+def _historical_fifth_qa_inputs(monkeypatch, *, tamper_pin=False,
+                                untrusted_actor=False, divergent_source=False):
+    source = "d" * 40
+    producer = "5f0f4c58-7f2f-42a1-b7d9-3cc47a9ef111"
+    verifier = "5f0f4c58-7f2f-42a1-b7d9-3cc47a9ef222"
+    receipt_digest = "1" * 64
+    source_event = "e" * 40
     run_id = 7654321
-    receipt = selector.archive_json(
-        original(f"repos/{selector.REPO}/actions/artifacts/902/zip", binary=True),
-        "result/agent-receipt.json",
-    )
-    manager = selector.archive_json(
-        original(f"repos/{selector.REPO}/actions/artifacts/901/zip", binary=True),
-        "agent_manager_runtime.json",
-    )
-    task = manager["tasks"][0]
-    task["research_qa_incident_recovery"] = {
-        "reason": "verified_failed_source_epoch_new_independent_qa_only",
-        "original_producer_source_sha": SOURCE,
-        "original_producer_receipt_digest": receipt["receipt_digest"],
-        "original_producer_lease_id": PRODUCER,
-        "new_qa_lease_id": VERIFIER,
-        "independent_qa_complete": False,
-        "automatic_demo_promotion": False,
-        "live_enabled": False,
+    task = {
+        "id": FIFTH,
+        "research_qa_incident_recovery": {
+            "reason": "verified_failed_source_epoch_new_independent_qa_only",
+            "original_producer_source_sha": source,
+            "original_producer_receipt_digest": receipt_digest,
+            "original_producer_lease_id": producer,
+            "new_qa_lease_id": verifier,
+            "independent_qa_complete": False,
+            "automatic_demo_promotion": False,
+            "live_enabled": False,
+        },
     }
-    manager_archive = zipped("agent_manager_runtime.json", manager)
     pin_core = {
         "schema": "nexus.original-source-research-qa-ancestry.v1",
-        "repository": selector.REPO, "run_id": str(run_id),
+        "repository": selector.REPO,
+        "run_id": str(run_id),
         "trusted_main_event_sha": source_event,
-        "verified_main_ancestor_sha": "f" * 40 if tamper_pin else SOURCE,
+        "verified_main_ancestor_sha": "f" * 40 if tamper_pin else source,
         "original_source_checkout_verified": True,
         "independent_research_qa_only": True,
         "auto_demo_promotion": False,
         "live_enabled": False,
     }
     pin = {**pin_core, "attestation_sha256": research.digest(pin_core)}
+    proof = {
+        "schema": "nexus.independent-research-qa.v1",
+        "source_sha": source,
+        "producer_receipt_digest": receipt_digest,
+        "independent_replay_matches": True,
+        "auto_demo_promotion": False,
+        "live_enabled": False,
+    }
     pin_archive = zipped("pinned-qa-attestation.json", pin)
+    proof_archive = zipped("qa-evidence.json", proof)
 
     def historical_api(endpoint, *, binary=False):
-        if binary and endpoint.endswith("actions/artifacts/901/zip"):
-            return manager_archive
         if binary and endpoint.endswith("actions/artifacts/905/zip"):
             return pin_archive
-        if "actions/artifacts?name=nexus-agent-qa-source-pin-" + VERIFIER in endpoint:
+        if binary and endpoint.endswith("actions/artifacts/904/zip"):
+            return proof_archive
+        if "actions/artifacts?name=nexus-agent-research-qa-" + verifier in endpoint:
             return {"artifacts": [{
-                "name": "nexus-agent-qa-source-pin-" + VERIFIER, "expired": False,
-                "id": 905, "workflow_run": {
+                "name": "nexus-agent-research-qa-" + verifier,
+                "expired": False, "id": 904,
+                "workflow_run": {
                     "id": run_id, "head_branch": "main", "head_sha": source_event,
                 },
             }]}
-        if "actions/artifacts?name=nexus-agent-research-qa-" + VERIFIER in endpoint:
+        if "actions/artifacts?name=nexus-agent-qa-source-pin-" + verifier in endpoint:
             return {"artifacts": [{
-                "name": "nexus-agent-research-qa-" + VERIFIER, "expired": False,
-                "id": 904, "workflow_run": {
+                "name": "nexus-agent-qa-source-pin-" + verifier,
+                "expired": False, "id": 905,
+                "workflow_run": {
                     "id": run_id, "head_branch": "main", "head_sha": source_event,
                 },
             }]}
         if endpoint.endswith(f"actions/runs/{run_id}"):
             return {
-                "id": run_id, "name": "NEXUS Runtime Worker",
+                "id": run_id,
+                "name": "NEXUS Runtime Worker",
                 "path": ".github/workflows/nexus-runtime-worker.yml",
-                "head_sha": source_event, "head_branch": "main",
-                "status": "completed", "conclusion": "success",
+                "head_sha": source_event,
+                "head_branch": "main",
+                "status": "completed",
+                "conclusion": "success",
                 "event": "workflow_dispatch",
                 "actor": {"login": "attacker" if untrusted_actor else "github-actions[bot]"},
                 "repository": {"full_name": selector.REPO},
                 "head_repository": {"full_name": selector.REPO},
             }
-        if "compare/" + SOURCE + "..." + source_event in endpoint:
+        if "compare/" + source + "..." + source_event in endpoint:
             return {
                 "status": "diverged" if divergent_source else "ahead",
-                "ahead_by": 1, "behind_by": 0,
-                "base_commit": {"sha": SOURCE},
-                "merge_base_commit": {"sha": SOURCE},
+                "ahead_by": 1,
+                "behind_by": 0,
+                "base_commit": {"sha": source},
+                "merge_base_commit": {"sha": source},
             }
-        return original(endpoint, binary=binary)
+        raise AssertionError("unexpected historical QA lookup " + endpoint)
 
     monkeypatch.setattr(selector, "api", historical_api)
-    return expected
+    return task, source, producer, receipt_digest, verifier, proof
 
 
-def test_sixth_frontier_accepts_only_signed_fifth_original_source_qa(monkeypatch):
-    expected = _historical_proofs(monkeypatch)
-    proof = selector.verified_frontier(selector.REPO)
-    assert proof["predecessor"] == FIFTH
-    assert proof["ledger"]["ledger_digest"] == expected["ledger_digest"]
-    assert proof["qa_artifact_id"] == 904
-    assert research.select_next(proof["ledger"])["mechanism"] == (
-        "relative_momentum_reacceleration"
+def test_legacy_fifth_original_source_qa_recovery_stays_strict(monkeypatch):
+    task, source, producer, receipt_digest, verifier, expected = (
+        _historical_fifth_qa_inputs(monkeypatch)
     )
+    artifact_id, proof = selector._independently_pinned_historical_qa(
+        selector.REPO, task, source, producer, receipt_digest, verifier
+    )
+    assert artifact_id == 904
+    assert proof == expected
 
 
 @pytest.mark.parametrize("invalid", [
     "tamper_pin", "untrusted_actor", "divergent_source",
 ])
-def test_sixth_frontier_rejects_forgeries_even_with_valid_numeric_qa(monkeypatch, invalid):
-    _historical_proofs(monkeypatch, **{invalid: True})
+def test_legacy_fifth_qa_recovery_rejects_forged_ancestry(monkeypatch, invalid):
+    kwargs = {invalid: True}
+    task, source, producer, receipt_digest, verifier, _ = (
+        _historical_fifth_qa_inputs(monkeypatch, **kwargs)
+    )
     with pytest.raises(selector.QaFrontierError):
-        selector.verified_frontier(selector.REPO)
+        selector._independently_pinned_historical_qa(
+            selector.REPO, task, source, producer, receipt_digest, verifier
+        )
