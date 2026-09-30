@@ -20,7 +20,7 @@ from typing import Any
 CONTRACT = "nexus.owner-local-autonomy-receipt.v1"
 SHA = re.compile(r"^[0-9a-f]{40}$")
 RUN = re.compile(r"^[1-9][0-9]{0,19}$")
-STATES = ("pending", "running", "completed", "failed", "blocked")
+STATES = ("pending", "running", "completed", "failed", "blocked", "superseded")
 MAX_PRIVATE_BYTES = 2_000_000
 
 

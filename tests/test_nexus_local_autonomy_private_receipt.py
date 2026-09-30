@@ -23,7 +23,8 @@ def _fixture(root: Path, *, now: float = 1200.0):
           "tasks_run": 2, "lease_seconds": 240, "max_tasks_per_lease": 0}
     queue = [{"id": "owner-private-1", "task": "private-name", "status": "completed"},
              {"id": "owner-private-2", "status": "blocked"},
-             {"id": "owner-private-3", "status": "pending"}]
+             {"id": "owner-private-3", "status": "pending"},
+             {"id": "owner-private-4", "status": "superseded"}]
     (state / "worker-heartbeat.json").write_text(json.dumps(hb), encoding="utf-8")
     (state / "autonomous-queue.json").write_text(json.dumps(queue), encoding="utf-8")
     return workspace, state
@@ -43,6 +44,7 @@ def test_owner_only_receipt_has_exact_runner_and_no_task_ids(tmp_path):
     assert receipt["source_sha"] == SHA and receipt["workflow_run_id"] == RUN
     assert receipt["queue_status_counts"] == {
         "pending": 1, "running": 0, "completed": 1, "failed": 0, "blocked": 1,
+        "superseded": 1,
     }
     assert receipt["paper_only"] is True
     assert receipt["live_trading_authority"] is False
@@ -97,6 +99,19 @@ def test_private_state_path_does_not_accept_sibling_directory(tmp_path):
     with pytest.raises(mod.PrivateReceiptError, match="root boundary"):
         mod.build_receipt(sibling, workspace, SHA, RUN,
                           runner_name="NEXUS-LOCAL-RUNNER", now=1200.0)
+
+
+def test_repository_superseded_queue_state_is_terminal_and_safe(tmp_path):
+    workspace, state = _fixture(tmp_path)
+    p = state / "autonomous-queue.json"
+    p.write_text(json.dumps([
+        {"id": "legacy-1", "status": "superseded", "superseded_by": "checkpoint"},
+        {"id": "legacy-2", "status": "superseded", "superseded_by": "checkpoint"},
+    ]), encoding="utf-8")
+    receipt = _check(workspace, state)
+    assert receipt["queue_status_counts"]["superseded"] == 2
+    assert receipt["queue_status_counts"]["pending"] == 0
+    assert receipt["qualification_authority"] is False
 
 
 def test_private_queue_malformed_status_fails_closed(tmp_path):
