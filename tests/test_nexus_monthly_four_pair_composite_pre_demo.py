@@ -201,10 +201,10 @@ def test_reviewed_signal_and_real_next_open_engine_are_invoked(inputs):
     assert result["slippage_bps"] == composite.ENTRY_SLIP_BPS
 
 
-def test_published_july_v2_matrix_is_immutable_when_eighth_research_family_is_added():
+def test_published_july_v2_matrix_is_immutable_when_ninth_research_family_is_added():
     # The published historical report remains a frozen six-family, 288-cell
     # artifact even as independently QA-bound agent grammar expands.
-    assert len(composite.MECHANISMS) == 8
+    assert len(composite.MECHANISMS) == 9
     assert len(four.HISTORICAL_V2_MECHANISMS) == 6
     assert len(four.EXPERIMENTS) == 12
     assert {c["mechanism"] for c in four.EXPERIMENTS} == set(four.HISTORICAL_V2_MECHANISMS)
