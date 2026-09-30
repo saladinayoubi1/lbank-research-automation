@@ -272,6 +272,7 @@ jobs:
         id: transport
         run: |
           set -euo pipefail
+          mkdir -p build
           gh api -H 'Accept: application/vnd.github+json' \
             "repos/$GITHUB_REPOSITORY/actions/runs/$TRIGGER_RUN_ID/artifacts?per_page=100" \
             > build/paper-boundary-transport-artifacts.json
