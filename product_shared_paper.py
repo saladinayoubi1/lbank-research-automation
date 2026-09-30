@@ -66,11 +66,15 @@ def build_snapshot(state, activation, status):
                 cashflows.append({**common, "type": "funding", "amount": e["amount"],
                                  "time_precision": "execution_bar"})
                 continue
-            orders.append({**common, "status": "filled" if e["kind"] == "fill" else "rejected",
-                "side": "buy" if e["quantity"] > 0 else "sell", "quantity": abs(e["quantity"]),
-                "price": e["price"], "fee": e["fee"], "reason": e["reason"],
-                "execution_model": e.get("execution_model"), "slippage_cost": e.get("slippage_cost"),
-                "realized_gross": e.get("realized_gross")})
+            orders.append({**common,
+                "status": "filled" if e["kind"] == "fill" else ("skipped" if e["kind"] == "skipped" else "rejected"),
+                "side": "buy" if e["quantity"] > 0 else ("sell" if e["quantity"] < 0 else None),
+                "quantity": abs(e["quantity"]), "price": e["price"], "fee": e.get("fee", 0.0),
+                "reason": e.get("reason"), "execution_model": e.get("execution_model"),
+                "slippage_cost": e.get("slippage_cost"), "realized_gross": e.get("realized_gross"),
+                "requested_notional": e.get("requested_notional"),
+                "minimum_quantity": e.get("minimum_quantity"),
+                "minimum_notional": e.get("minimum_notional")})
             if e["kind"] != "fill":
                 continue
             lane_fees += e["fee"]
@@ -151,6 +155,129 @@ def build_snapshot(state, activation, status):
         "cost_disclosure": "Slippage is embedded in fill prices; do not subtract it twice. Net open PnL excludes future exit costs."}
     return seal(snapshot)
 
+
+
+def build_single_strategy_snapshot(state, activation, status, *, strategy_name=None):
+    """Project one pooled 500-USDT Paper account; no per-signal sub-wallets."""
+    config = activation.get("config", {})
+    profile = state.get("profiles", {}).get("conservative", {})
+    initial = float(config.get("execution_profiles", {}).get("conservative", {}).get("initial_cash", 0.0))
+    if not math.isfinite(initial) or initial <= 0:
+        raise ValueError("single shared account initial cash invalid")
+    if activation.get("automatic_promotion") is not False:
+        raise ValueError("single shared account promotion boundary widened")
+    if config.get("authority", {}).get("live_trading_enabled") is not False:
+        raise ValueError("single shared account live authority widened")
+    if state.get("live_trading_enabled") is not False or state.get("paper_only") is not True:
+        raise ValueError("single shared account state is not Paper-only")
+    if digest({k:v for k,v in state.items() if k != "state_digest"}) != state.get("state_digest"):
+        raise ValueError("single shared account state digest mismatch")
+
+    name = strategy_name or str(config.get("strategy_id") or state.get("strategy_id") or "strategy")
+    events = profile.get("execution_journal", [])
+    if sum(e.get("kind") == "fill" for e in events) != int(profile.get("fill_count", 0)):
+        raise ValueError("fill history incomplete; cannot fabricate single-account fills")
+    positions, history, orders, cashflows = [], [], [], []
+    active = {}
+    fees = funding = gross = 0.0
+    for e in events:
+        symbol = e["symbol"]
+        key = f"{name}:{e['sequence']}"
+        common = {"id": key, "strategy": name, "symbol": symbol,
+                  "time": e["execution_utc"], "timeframe": "4h"}
+        if e["kind"] == "funding":
+            funding += e["amount"]
+            if symbol in active:
+                active[symbol]["funding"] += e["amount"]
+            cashflows.append({**common, "type":"funding", "amount":e["amount"],
+                              "time_precision":"execution_bar"})
+            continue
+        orders.append({**common,
+            "status":"filled" if e["kind"] == "fill" else ("skipped" if e["kind"] == "skipped" else "rejected"),
+            "side":"buy" if e["quantity"] > 0 else ("sell" if e["quantity"] < 0 else None),
+            "quantity":abs(e["quantity"]), "price":e["price"], "fee":e.get("fee",0.0),
+            "reason":e.get("reason"), "execution_model":e.get("execution_model"),
+            "slippage_cost":e.get("slippage_cost"), "realized_gross":e.get("realized_gross",0.0),
+            "requested_notional":e.get("requested_notional"),
+            "minimum_quantity":e.get("minimum_quantity"),
+            "minimum_notional":e.get("minimum_notional")})
+        if e["kind"] != "fill":
+            continue
+        fees += e["fee"]; gross += e["realized_gross"]
+        cashflows.append({**common,"type":"fee","amount":-e["fee"]})
+        if e["realized_gross"]:
+            cashflows.append({**common,"type":"realized_gross","amount":e["realized_gross"]})
+        before=e["position_before"]["quantity"]; after=e["position_after"]["quantity"]
+        closing=min(abs(before),abs(e["quantity"])) if before*e["quantity"] < 0 else 0.0
+        if closing:
+            lot=active[symbol]; ratio=closing/abs(before)
+            entry_fee=lot["entry_fees_remaining"]*ratio
+            allocated_funding=lot["funding"]*ratio
+            exit_fee=e["fee"]*closing/abs(e["quantity"])
+            history.append({**common,"position_id":lot["id"],"opened_at":lot["opened_at"],
+                "side":"long" if before>0 else "short","quantity":closing,
+                "entry_price":e["position_before"]["average_entry"],"exit_price":e["price"],
+                "gross_pnl":e["realized_gross"],"fees":entry_fee+exit_fee,
+                "funding":allocated_funding,
+                "net_pnl":e["realized_gross"]-entry_fee-exit_fee+allocated_funding,
+                "reason":e.get("reason"),"partial":abs(after)>1e-15 and after*before>0})
+            lot["entry_fees_remaining"]-=entry_fee; lot["funding"]-=allocated_funding
+            if closing >= abs(before)-1e-15:
+                del active[symbol]
+        opening=abs(e["quantity"])-closing
+        if opening > 1e-15:
+            if symbol not in active:
+                active[symbol]={"id":key,"opened_at":e["execution_utc"],
+                                "entry_fees_remaining":0.0,"funding":0.0}
+            active[symbol]["entry_fees_remaining"] += e["fee"]*opening/abs(e["quantity"])
+
+    marks=profile.get("mark_prices",[0.0,0.0])
+    lane_upnl=0.0
+    for i,symbol in enumerate(("BTCUSDT","ETHUSDT")):
+        pos=profile.get("positions",[{},{}])[i]
+        q=float(pos.get("quantity",0.0))
+        if abs(q) <= 1e-15:
+            continue
+        lot=active[symbol]; mark=float(marks[i]); entry=float(pos["average_entry"])
+        upnl=q*(mark-entry); lane_upnl += upnl
+        positions.append({"id":lot["id"],"strategy":name,"symbol":symbol,"timeframe":"4h",
+            "side":"long" if q>0 else "short","quantity":abs(q),"entry_price":entry,
+            "mark_price":mark,"mark_time":profile.get("mark_time_utc"),
+            "opened_at":lot["opened_at"],"unrealized_pnl":upnl,
+            "net_pnl_to_date":upnl-lot["entry_fees_remaining"]+lot["funding"],
+            "entry_fees":lot["entry_fees_remaining"],"funding":lot["funding"],
+            "notional":abs(q*mark),"leverage":profile.get("account_leverage"),
+            "stop_loss":None,"take_profit":None,"exit_policy":"strategy_signal",
+            "protection_status":"no_fixed_price_orders","liquidation_price":None})
+    wallet=float(profile["wallet"]); equity=float(profile["equity"])
+    if not _close(wallet+lane_upnl,equity):
+        raise ValueError("single shared account position equity does not reconcile")
+    expected=initial+gross-fees+funding
+    if not _close(expected,wallet):
+        raise ValueError("single shared account cash ledger does not reconcile")
+    for rows in (orders,history,cashflows):
+        rows.sort(key=lambda e:(e["time"],e["id"]),reverse=True)
+    result={"schema":SCHEMA,"available":True,"mode":"internal_paper","read_only":True,
+        "live_trading_authority":False,"currency":"USDT","checked_at":status["checked_at"],
+        "status":status["status"],"state_digest":state["state_digest"],
+        "source_sha":activation["source_sha"],"start_not_before_utc":status["start_not_before_utc"],
+        "last_execution_utc":state.get("last_execution_utc"),"valuation":"closed_4h_mark",
+        "allocator":{"mode":"shared_equity","per_strategy_fixed_cash":False,
+                     "minimum_order_policy":"never_round_up_force_activity"},
+        "account":{"initial_balance":initial,"balance":wallet,"equity":equity,
+            "unrealized_pnl":equity-wallet,"realized_gross":gross,
+            "realized_net_cash":wallet-initial,"net_pnl":equity-initial,
+            "fees":fees,"funding":funding,"initial_margin":profile.get("initial_margin",0.0),
+            "free_margin":equity-float(profile.get("initial_margin",0.0)),
+            "drawdown":profile.get("maximum_drawdown",0.0)},
+        "positions":positions,"history":history,"orders":orders,"cashflows":cashflows,
+        "strategies":[{"strategy":name,"allocation":None,"allocation_mode":"shared_equity",
+            "balance":wallet,"equity":equity,"net_pnl":equity-initial,
+            "fills":profile.get("fill_count",0),"halted":status.get("status")=="risk_halted"}],
+        "pending_orders":[],
+        "execution_disclosure":"One pooled Paper wallet; signals submit target exposure, not permanent sub-wallet allocations.",
+        "cost_disclosure":"Slippage is embedded in fill prices; minimum Bybit order rules are never bypassed."}
+    return seal(result)
 
 def load_snapshot(data_root: Path, *, now=None):
     path = data_root/"shared_paper"/"terminal.json"
