@@ -179,3 +179,16 @@ def test_status_badges_do_not_greenwash_negative_compound_states():
     assert "value.startsWith(token+'_')" in js
     assert "value.endsWith('_'+token)" in js
     assert "bad.some(" in js and "good.some(" in js
+
+def test_paper_primary_surface_archives_legacy_panels_and_names_active_strategy():
+    html = INDEX.read_text(encoding="utf-8")
+    terminal = (ROOT / "product_ui" / "product-terminal.js").read_text(encoding="utf-8")
+
+    assert "ACTIVE STRATEGY PAPER ACCOUNT" in html
+    assert "حساب دمو استراتژی بک‌تست‌شده" in html
+    assert '<div class="paper-layout" hidden>' in html
+    assert '<article class="panel" hidden><header><div><span>DEMO STRATEGY MATRIX</span>' in html
+    assert "Prospective/Manual و ماتریس قدیمی دیگر منبع حساب فعال نیستند" in html
+    assert "Regime Consensus · بک‌تست‌شده" in terminal
+    assert "حساب دمو استراتژی فعال" in terminal
+    assert "مسیر قدیمی Manual/Prospective از حساب فعال جدا و آرشیو شده است" in terminal
