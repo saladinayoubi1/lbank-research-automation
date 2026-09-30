@@ -424,3 +424,80 @@ def test_eighth_novel_mechanism_is_selected_on_actual_seven_family_frontier():
     assert selected["mechanism"] == "relative_momentum_reacceleration"
     assert selected["risk_variant"] == 0
     assert selected["fingerprint"] not in signed["config_fingerprints_evaluated"]
+
+def test_ninth_lagged_peer_volatility_spillover_is_distinct():
+    frame = pd.DataFrame([{
+        "h4_up": 1., "h4_range": 0., "h1_compression": 0., "h1_vol_ok": 1.,
+        "rel_vol": 1.2, "prior_hi": 101., "prior_lo": 99., "atr": 1.,
+        "open": 101.5, "close": 102., "low": 101., "high": 103.,
+        "lagged_peer_range": .018, "lagged_peer_range_baseline": .006,
+        "lagged_own_range": .006,
+    }])
+    cfg = {"mechanism": "lagged_peer_volatility_spillover_breakout", "risk_variant": 0}
+    assert engine.signal_for(frame, cfg).tolist() == [True]
+    for field, bad in (
+        ("lagged_peer_range", .003),
+        ("lagged_peer_range_baseline", .016),
+        ("lagged_own_range", .016),
+        ("close", 100.),
+        ("rel_vol", .8),
+    ):
+        altered = frame.copy()
+        altered[field] = bad
+        assert engine.signal_for(altered, cfg).tolist() == [False], field
+    with pytest.raises(engine.CompositeResearchError, match="volatility spillover requires"):
+        engine.signal_for(frame.drop(columns=["lagged_peer_range"]), cfg)
+    assert cfg["mechanism"] not in {
+        "lagged_peer_impulse_confirmation",
+        "peer_shock_noncontagion_rebound",
+        "relative_momentum_reacceleration",
+        "cross_pair_relative_reclaim",
+    }
+
+
+def test_ninth_peer_range_features_never_read_current_or_future_peer_candle():
+    frames = history(n=1536)
+    peer = frames["minute15"].copy()
+    step = np.arange(len(peer), dtype=float)
+    price = 120 + step * .012 + np.sin(step / 13.0) * 1.3
+    peer["open"] = price - .08
+    peer["high"] = price + .4
+    peer["low"] = price - .4
+    peer["close"] = price
+    before = engine.build_features(frames, peer_15m=peer)
+    fields = ("lagged_peer_range", "lagged_peer_range_baseline", "lagged_own_range")
+    assert all(np.isfinite(before[field].iloc[120:]).any() for field in fields)
+
+    altered = peer.copy()
+    altered.loc[len(peer) - 1, "high"] = altered.loc[len(peer) - 1, "open"] * 3
+    altered.loc[len(peer) - 1, "low"] = altered.loc[len(peer) - 1, "open"] * .5
+    after = engine.build_features(frames, peer_15m=altered)
+    for field in fields:
+        pd.testing.assert_series_equal(before[field], after[field])
+
+    altered = peer.copy()
+    altered.loc[len(peer) - 2, "high"] = altered.loc[len(peer) - 2, "open"] * 2
+    altered.loc[len(peer) - 2, "low"] = altered.loc[len(peer) - 2, "open"] * .6
+    after = engine.build_features(frames, peer_15m=altered)
+    for field in fields:
+        pd.testing.assert_series_equal(before[field].iloc[:-1], after[field].iloc[:-1])
+
+
+def test_ninth_is_only_new_novel_family_on_eight_mechanism_qa_frontier():
+    prior = engine.empty_ledger()
+    core = {k: v for k, v in prior.items() if k != "ledger_digest"}
+    for cfg in engine.CONFIGS:
+        if cfg["risk_variant"] != 0 or cfg["mechanism"] == "lagged_peer_volatility_spillover_breakout":
+            continue
+        core["config_fingerprints_evaluated"].append(engine.digest({
+            "config": cfg, "dataset": engine.ARCHIVE_SHA256,
+            "contract": engine.SCHEMA,
+        }))
+        core["mechanisms_evaluated"].append(cfg["mechanism"])
+    core["mechanisms_evaluated"] = sorted(set(core["mechanisms_evaluated"]))
+    signed = {**core, "ledger_digest": engine.digest(core)}
+    selected = engine.select_next(signed)
+    assert selected is not None
+    assert selected["mechanism"] == "lagged_peer_volatility_spillover_breakout"
+    assert selected["risk_variant"] == 0
+    assert selected["fingerprint"] not in signed["config_fingerprints_evaluated"]
