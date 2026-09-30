@@ -206,3 +206,68 @@ def test_performance_refresh_dispatches_v2_without_weakening_legacy_default(monk
 
     explicit = lambda _snapshot, _state: {"decision": "reject"}
     assert performance_refresh._snapshot_verifier_for(manifest, explicit) is explicit
+
+
+def test_missing_cell_diagnostics_distinguish_source_block_missing_without_private_leaks():
+    manifest = _manifest()
+    state = _matrix_state(fresh=8)
+    state["cells"]["SOLUSDT:hour4"].update({
+        "status": "BLOCKED",
+        "error_code": "MarketDataUnavailable",
+        "error_digest": "secret-do-not-print",
+        "private_wallet_state": "secret",
+    })
+    del state["cells"]["XRPUSDT:minute15"]
+    state["cells"]["XRPUSDT:hour4"]["status"] = "PENDING"
+    state["cells"]["XRPUSDT:hour4"]["error_code"] = "user-private-token-path"
+    missing = loop._missing_cell_diagnostics(state, manifest, SOURCE_SHA)
+    assert len(missing) == 4
+    assert missing == [
+        {"cell_id": "SOLUSDT:hour4", "reason": "BLOCKED",
+         "error_class": "MarketDataUnavailable"},
+        {"cell_id": "XRPUSDT:minute15", "reason": "MISSING"},
+        {"cell_id": "XRPUSDT:hour1", "reason": "SOURCE_MISMATCH"},
+        {"cell_id": "XRPUSDT:hour4", "reason": "UNVERIFIED"},
+    ]
+    from json import dumps
+    assert "secret" not in dumps(missing) and "token" not in dumps(missing)
+
+
+def test_diagnostics_never_weaken_fresh_cell_gate_or_migrate_source(monkeypatch, tmp_path):
+    manifest = _manifest()
+    state = _matrix_state(fresh=8)
+    state["cells"]["SOLUSDT:hour4"]["status"] = "BLOCKED"
+    state["cells"]["SOLUSDT:hour4"]["error_code"] = "HttpError"
+    _patch_common(monkeypatch, state)
+    monkeypatch.setattr(loop, "load_or_migrate_state",
+                        lambda *_args, **_kwargs: (deepcopy(state), None))
+    snapshot = loop.run_persistent_cycle(
+        repo_root=tmp_path,
+        state_root=tmp_path / "new-owner-state",
+        source_sha=SOURCE_SHA,
+        run_id="9001",
+        now_ms=1_728_000_000_000,
+        manifest_path=tmp_path / "v2.json",
+        legacy_manifest_path=tmp_path / "v1.json",
+        selector_policy_path=tmp_path / "policy.json",
+    )
+    assert snapshot["fresh_cell_count"] == 8
+    assert len(snapshot["missing_cell_diagnostics"]) == 4
+    assert snapshot["status"] == "WAITING_FOR_FRESH_CELLS"
+    assert snapshot["remaining_core_gap"] == "WAITING_FOR_FRESH_CELLS"
+    assert snapshot["regime_selected_rebalance_operational"] is False
+    assert snapshot["regime_selected_exposure_increase_operational"] is False
+    assert loop.verify_loop_snapshot(snapshot)["decision"] == "pass"
+
+    from copy import deepcopy as clone
+    swapped = clone(snapshot)
+    swapped["missing_cell_diagnostics"][0]["reason"] = "VERIFIED"
+    core = dict(swapped);core.pop("loop_digest")
+    swapped["loop_digest"] = loop._digest(core)
+    assert loop.verify_loop_snapshot(swapped)["decision"] == "reject"
+
+
+def test_all_fresh_has_no_missing_diagnostics():
+    manifest = _manifest()
+    state = _matrix_state(fresh=12)
+    assert loop._missing_cell_diagnostics(state, manifest, SOURCE_SHA) == []
