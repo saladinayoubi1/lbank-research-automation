@@ -20,6 +20,7 @@ import pandas as pd
 import bybit_prospective_paper_forward_v1 as forward
 from bybit_public_klines import _active_mainnet_base_urls
 from bybit_derivatives_core_v1 import Client
+from product_shared_paper import build_single_strategy_snapshot
 
 ROOT = Path(__file__).resolve().parent
 OLD_MANIFEST = ROOT / "experiments/bybit_prospective_paper_forward_v1.json"
@@ -127,6 +128,8 @@ def tick(root, activation, now, client=None):
             now_utc=str(now), client=client or Client(config["api_base_urls"], 15, 4, 0.03))
         # Evaluate each observation before proceeding to the next after downtime.
         for observation in observations:
+            observation = dict(observation)
+            observation["capture_execution_details"] = True
             state = forward.apply_observations(state, [observation], config,
                 source_sha=activation["source_sha"], run_id=state["last_run_id"]+1)
             forward.verify_state(state, config, activation["engine_sha256"])
@@ -141,6 +144,10 @@ def tick(root, activation, now, client=None):
                "state_sha256": state["state_digest"], "live_trading_authority": False,
                "automatic_promotion": False, "mode": "internal_paper_simulation"}
     forward.save_state(root / "status.json", summary)
+    terminal = build_single_strategy_snapshot(
+        state, activation, summary, strategy_name=config["strategy_id"]
+    )
+    forward.save_state(root / "terminal.json", terminal)
     return summary
 
 
@@ -149,6 +156,7 @@ def main():
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--source-sha", required=True)
     parser.add_argument("--loop", action="store_true")
+    parser.add_argument("--snapshot-out", type=Path)
     args = parser.parse_args()
     root = args.root.resolve()
     root.mkdir(parents=True, exist_ok=True)
@@ -157,6 +165,13 @@ def main():
         while not (root / "STOP").exists():
             try:
                 tick(root, activation, pd.Timestamp.now(tz="UTC"))
+                if args.snapshot_out:
+                    if args.snapshot_out.resolve() == (root / "state.json").resolve():
+                        raise ValueError("invalid terminal export path")
+                    forward.save_state(
+                        args.snapshot_out,
+                        json.loads((root / "terminal.json").read_text("utf-8")),
+                    )
             except Exception as exc:
                 forward.save_state(root / "last-error.json", {
                     "at": str(pd.Timestamp.now(tz="UTC")), "error_type": type(exc).__name__,
