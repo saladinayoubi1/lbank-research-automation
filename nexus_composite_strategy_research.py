@@ -37,9 +37,10 @@ MECHANISMS = (
     "lagged_peer_impulse_confirmation",
     "peer_shock_noncontagion_rebound",
     "relative_momentum_reacceleration",
+    "lagged_peer_volatility_spillover_breakout",
 )
 # Distinct entry mechanisms vs risk/feature parameter variations are explicitly
-# separately labeled; eight configurations do NOT count as eight new edges.
+# separately labeled; nine mechanisms do NOT count as nine established edges.
 CONFIGS = tuple(
     {"mechanism": mechanism, "risk_variant": v, "entry_model": "closed_4h_1h_15m_next_open"}
     for mechanism in MECHANISMS for v in (0, 1)
@@ -192,6 +193,21 @@ def build_features(frames: dict[str, pd.DataFrame], *, peer_15m: pd.DataFrame | 
         f["relative_momentum_baseline"] = (
             relative_momentum.shift(2).rolling(96, min_periods=96).median()
         )
+        # Distinct volatility-transmission hypothesis. The peer range shock is
+        # a fully CLOSED candle one whole 15m bar old; its baseline ends before
+        # that shock. The own prior range must still be comparatively quiet.
+        peer_range = (
+            (peer_ohlcv["high"] - peer_ohlcv["low"]) / peer_ohlcv["open"]
+        )
+        own_range = (
+            (f["high"].astype(float) - f["low"].astype(float))
+            / f["open"].astype(float)
+        )
+        f["lagged_peer_range"] = peer_range.shift(1)
+        f["lagged_peer_range_baseline"] = (
+            peer_range.shift(2).rolling(96, min_periods=96).median()
+        )
+        f["lagged_own_range"] = own_range.shift(1)
     return f
 
 
@@ -264,6 +280,24 @@ def signal_for(frame: pd.DataFrame, config: dict[str, Any]) -> np.ndarray:
             rel > previous + .0010) & (rel > .0030) & (
             c > frame["prior_hi"]) & (c > o) & (frame["rel_vol"] >= 1.0) & (
             np.isfinite(rel) & np.isfinite(previous) & np.isfinite(baseline))
+    elif mechanism == "lagged_peer_volatility_spillover_breakout":
+        required = {"lagged_peer_range", "lagged_peer_range_baseline",
+                    "lagged_own_range"}
+        if not required <= set(frame.columns):
+            raise CompositeResearchError(
+                "peer volatility spillover requires exact verified aligned peer history"
+            )
+        peer_range = frame["lagged_peer_range"]
+        baseline = frame["lagged_peer_range_baseline"]
+        own_range = frame["lagged_own_range"]
+        # A peer's completed range shock leads by a full 15m candle while the
+        # own asset stayed comparatively compressed. Direction is established
+        # only by THIS own closed-bar breakout; fill remains NEXT own open.
+        s = (frame["h4_up"] == 1) & (frame["h1_vol_ok"] == 1) & (
+            peer_range > .004) & (peer_range > baseline * 1.35) & (
+            own_range < peer_range * .70) & (
+            c > frame["prior_hi"]) & (c > o) & (frame["rel_vol"] >= 1.05) & (
+            np.isfinite(peer_range) & np.isfinite(baseline) & np.isfinite(own_range))
     elif mechanism == "cross_pair_relative_reclaim":
         if not {"cross_pair_relative_z", "cross_pair_relative_z_previous"} <= set(frame.columns):
             raise CompositeResearchError("cross-pair mechanism requires exact aligned verified peer history")
@@ -441,7 +475,8 @@ def run(archive_root: Path, output: Path, source_sha: str, previous: Path | None
                   for tf in ("minute15", "hour1", "hour4")}
         peer = None
         if nxt["mechanism"] in {"cross_pair_relative_reclaim", "lagged_peer_impulse_confirmation",
-                                "peer_shock_noncontagion_rebound", "relative_momentum_reacceleration"}:
+                                "peer_shock_noncontagion_rebound", "relative_momentum_reacceleration",
+                                "lagged_peer_volatility_spillover_breakout"}:
             # Current official replay has exactly BTC/ETH; never pretend to
             # possess missing SOL/XRP or synthetic peer order flow/L2.
             if len(SYMBOLS) != 2:
