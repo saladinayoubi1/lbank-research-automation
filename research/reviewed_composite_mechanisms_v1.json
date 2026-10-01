@@ -322,6 +322,38 @@
         "no_current_peer_candle_lookahead",
         "no_auto_paper_or_live_promotion"
       ]
+    },
+    {
+      "id": "cross_pair_volatility_catchup",
+      "hypothesis": "A persistent lag in own-asset realized volatility versus an exactly aligned spot peer, measured only from already closed candles, may precede a delayed own upside range expansion when peer volatility remains elevated. This is speculative cross-asset volatility-dispersion research, not a profitability claim.",
+      "inputs": [
+        "closed_spot_ohlcv",
+        "aligned_spot_cross_pair"
+      ],
+      "context": [
+        "exact_utc_closed_spot_peer_grid",
+        "prior_four_hour_realized_volatility_ratio",
+        "historical_relative_volatility_ratio_baseline",
+        "completed_four_hour_market_context",
+        "completed_one_hour_volatility_guard"
+      ],
+      "entry": [
+        "own_prior_realized_volatility_materially_below_peer",
+        "peer_prior_realized_volatility_above_own_historical_baseline",
+        "current_own_closed_upside_range_expansion_with_volume",
+        "next_own_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_adverse_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "single_own_symbol_cash_collateral_spot_long_flat_only",
+        "no_peer_direction_or_single_shock_dependency",
+        "no_peer_short_spread_execution_or_implicit_borrowing",
+        "no_current_peer_candle_lookahead",
+        "no_auto_paper_or_live_promotion"
+      ]
     }
   ]
 }

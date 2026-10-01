@@ -512,3 +512,73 @@ def test_ninth_mechanism_runs_full_research_only_numeric_grid(tmp_path, monkeypa
     assert report["auto_demo_promotion"] is False
     assert report["live_enabled"] is False
 
+
+
+def test_tenth_cross_pair_volatility_catchup_is_persistent_dispersion_not_peer_shock():
+    frame = pd.DataFrame([{
+        "h4_up": 0., "h4_range": 1., "h1_compression": 0., "h1_vol_ok": 1.,
+        "rel_vol": 1.2, "prior_hi": 101., "prior_lo": 99., "atr": 1.,
+        "open": 101.3, "close": 102., "low": 101., "high": 103.,
+        "cross_pair_volatility_ratio": .35,
+        "cross_pair_volatility_ratio_baseline": .70,
+        "peer_realized_volatility": .012,
+        "peer_realized_volatility_baseline": .008,
+    }])
+    novel = {"mechanism": "cross_pair_volatility_catchup", "risk_variant": 0}
+    assert engine.signal_for(frame, novel).tolist() == [True]
+    for field, bad in (
+        ("cross_pair_volatility_ratio", .75),
+        ("cross_pair_volatility_ratio_baseline", .40),
+        ("peer_realized_volatility", .007),
+        ("peer_realized_volatility_baseline", .009),
+        ("close", 100.5),
+        ("rel_vol", .9),
+    ):
+        altered = frame.copy()
+        altered[field] = bad
+        assert engine.signal_for(altered, novel).tolist() == [False], field
+    with pytest.raises(engine.CompositeResearchError, match="volatility catch-up requires"):
+        engine.signal_for(frame.drop(columns=["cross_pair_volatility_ratio"]), novel)
+
+
+def test_tenth_cross_pair_volatility_features_do_not_read_current_peer_candle():
+    frames = history(n=1536)
+    peer = frames["minute15"].copy()
+    step = np.arange(len(peer), dtype=float)
+    price = 110 + step * .01 + np.sin(step / 7.0) * 2.0
+    peer["open"] = price - .08
+    peer["high"] = price + .5
+    peer["low"] = price - .5
+    peer["close"] = price
+    before = engine.build_features(frames, peer_15m=peer)
+    altered = peer.copy()
+    altered.loc[len(peer) - 1, "close"] *= 2
+    altered.loc[len(peer) - 1, "high"] = altered.loc[len(peer) - 1, "close"] + 1
+    after = engine.build_features(frames, peer_15m=altered)
+    for field in (
+        "cross_pair_volatility_ratio",
+        "cross_pair_volatility_ratio_baseline",
+        "peer_realized_volatility",
+        "peer_realized_volatility_baseline",
+    ):
+        pd.testing.assert_series_equal(before[field], after[field])
+
+
+def test_tenth_novel_mechanism_is_selected_after_first_nine_distinct_families():
+    prior = engine.empty_ledger()
+    core = {k: v for k, v in prior.items() if k != "ledger_digest"}
+    for cfg in engine.CONFIGS:
+        if cfg["risk_variant"] != 0 or cfg["mechanism"] == "cross_pair_volatility_catchup":
+            continue
+        core["config_fingerprints_evaluated"].append(engine.digest({
+            "config": cfg, "dataset": engine.ARCHIVE_SHA256,
+            "contract": engine.SCHEMA,
+        }))
+        core["mechanisms_evaluated"].append(cfg["mechanism"])
+    core["mechanisms_evaluated"] = sorted(set(core["mechanisms_evaluated"]))
+    signed = {**core, "ledger_digest": engine.digest(core)}
+    selected = engine.select_next(signed)
+    assert selected is not None
+    assert selected["mechanism"] == "cross_pair_volatility_catchup"
+    assert selected["risk_variant"] == 0
+    assert selected["fingerprint"] not in signed["config_fingerprints_evaluated"]

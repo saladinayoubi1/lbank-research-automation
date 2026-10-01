@@ -38,6 +38,7 @@ MECHANISMS = (
     "peer_shock_noncontagion_rebound",
     "relative_momentum_reacceleration",
     "lagged_peer_volatility_release",
+    "cross_pair_volatility_catchup",
 )
 # Distinct entry mechanisms vs risk/feature parameter variations are explicitly
 # separately labeled; risk variants do NOT count as independent new edges.
@@ -193,6 +194,23 @@ def build_features(frames: dict[str, pd.DataFrame], *, peer_15m: pd.DataFrame | 
         f["relative_momentum_baseline"] = (
             relative_momentum.shift(2).rolling(96, min_periods=96).median()
         )
+        # Persistent cross-asset volatility dispersion, not a discrete peer
+        # shock. All realized-volatility inputs end at least one full 15m
+        # candle before the current decision; the current peer bar cannot
+        # influence the own-asset breakout decision.
+        own_return = close.pct_change()
+        peer_return = peer_ohlcv["close"].pct_change()
+        own_realized = own_return.shift(1).rolling(16, min_periods=16).std()
+        peer_realized = peer_return.shift(1).rolling(16, min_periods=16).std()
+        vol_ratio = own_realized / peer_realized.replace(0.0, np.nan)
+        f["cross_pair_volatility_ratio"] = vol_ratio.replace([np.inf, -np.inf], np.nan)
+        f["cross_pair_volatility_ratio_baseline"] = (
+            vol_ratio.shift(1).rolling(96, min_periods=96).median()
+        )
+        f["peer_realized_volatility"] = peer_realized
+        f["peer_realized_volatility_baseline"] = (
+            peer_realized.shift(1).rolling(96, min_periods=96).median()
+        )
     return f
 
 
@@ -286,6 +304,29 @@ def signal_for(frame: pd.DataFrame, config: dict[str, Any]) -> np.ndarray:
             own_abs < .0045) & (c > frame["prior_hi"]) & (c > o) & (
             frame["rel_vol"] >= 1.15) & (
             np.isfinite(shock_abs) & np.isfinite(baseline) & np.isfinite(own_abs))
+    elif mechanism == "cross_pair_volatility_catchup":
+        required = {"cross_pair_volatility_ratio",
+                    "cross_pair_volatility_ratio_baseline",
+                    "peer_realized_volatility",
+                    "peer_realized_volatility_baseline"}
+        if not required <= set(frame.columns):
+            raise CompositeResearchError(
+                "cross-pair volatility catch-up requires exact verified aligned peer history"
+            )
+        ratio = frame["cross_pair_volatility_ratio"]
+        ratio_baseline = frame["cross_pair_volatility_ratio_baseline"]
+        peer_rv = frame["peer_realized_volatility"]
+        peer_rv_baseline = frame["peer_realized_volatility_baseline"]
+        # Persistent 4h realized-volatility under-participation versus the peer,
+        # rather than a one-candle peer shock. Entry is permitted only after
+        # THIS own closed bar confirms upside range expansion; execution remains
+        # NEXT own 15m open. No peer direction, hedge, L2, or flow is inferred.
+        s = ((frame["h4_range"] == 1) | (frame["h4_up"] == 1)) & (
+            frame["h1_vol_ok"] == 1) & (ratio < .65) & (
+            ratio < ratio_baseline * .75) & (peer_rv > peer_rv_baseline * 1.10) & (
+            c > frame["prior_hi"]) & (c > o) & (frame["rel_vol"] >= 1.05) & (
+            np.isfinite(ratio) & np.isfinite(ratio_baseline)
+            & np.isfinite(peer_rv) & np.isfinite(peer_rv_baseline))
     elif mechanism == "cross_pair_relative_reclaim":
         if not {"cross_pair_relative_z", "cross_pair_relative_z_previous"} <= set(frame.columns):
             raise CompositeResearchError("cross-pair mechanism requires exact aligned verified peer history")
@@ -464,7 +505,7 @@ def run(archive_root: Path, output: Path, source_sha: str, previous: Path | None
         peer = None
         if nxt["mechanism"] in {"cross_pair_relative_reclaim", "lagged_peer_impulse_confirmation",
                                 "peer_shock_noncontagion_rebound", "relative_momentum_reacceleration",
-                                "lagged_peer_volatility_release"}:
+                                "lagged_peer_volatility_release", "cross_pair_volatility_catchup"}:
             # Current official replay has exactly BTC/ETH; never pretend to
             # possess missing SOL/XRP or synthetic peer order flow/L2.
             if len(SYMBOLS) != 2:

@@ -261,15 +261,12 @@ def test_exact_evaluated_ledger_prevents_reproposing_already_backtested_ninth_de
         _run(runid=7009), cert, catalog, previous=state,
         evaluated_ledger=evaluated,
     )
-    assert proposal is None
-    assert receipt["status"] == "NEEDS_VERIFIED_DATA_OR_CATALOG_EXPANSION"
-    assert {x["id"] for x in receipt["data_blockers"]} == {
-        "signed_flow_price_response",
-        "liquidity_microstructure_mean_revert",
-        "perpetual_positioning_divergence",
-    }
+    assert proposal is not None
+    assert receipt["status"] == "NEW_DISTINCT_HYPOTHESIS_DESIGN_ONLY"
+    assert proposal["mechanism"]["id"] == "cross_pair_volatility_catchup"
+    assert proposal["data_claims"] == ["closed_spot_ohlcv", "aligned_spot_cross_pair"]
     assert state["research_cycles"] == 9
-    assert len(state["proposed_mechanisms"]) == 8
+    assert len(state["proposed_mechanisms"]) == 9
     assert state["automatic_strategy_promotion"] is False
     assert state["live_trading_authority"] is False
 
