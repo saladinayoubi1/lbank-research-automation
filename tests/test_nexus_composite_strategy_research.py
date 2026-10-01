@@ -424,3 +424,91 @@ def test_eighth_novel_mechanism_is_selected_on_actual_seven_family_frontier():
     assert selected["mechanism"] == "relative_momentum_reacceleration"
     assert selected["risk_variant"] == 0
     assert selected["fingerprint"] not in signed["config_fingerprints_evaluated"]
+
+def test_ninth_lagged_peer_volatility_release_is_direction_agnostic_and_distinct():
+    base = {
+        "h4_up": 0., "h4_range": 1., "h1_compression": 1., "h1_vol_ok": 1.,
+        "rel_vol": 1.3, "prior_hi": 101., "prior_lo": 99., "atr": 1.,
+        "open": 101.4, "close": 102., "low": 101., "high": 103.,
+        "lagged_peer_impulse": .012, "lagged_peer_impulse_baseline": .003,
+        "lagged_own_response": .002,
+    }
+    novel = {"mechanism": "lagged_peer_volatility_release", "risk_variant": 0}
+    for shock in (.012, -.012):
+        frame = pd.DataFrame([{**base, "lagged_peer_impulse": shock}])
+        assert engine.signal_for(frame, novel).tolist() == [True]
+        assert engine.signal_for(
+            frame, {"mechanism": "lagged_peer_impulse_confirmation", "risk_variant": 0}
+        ).tolist() == [False]
+    for field, bad in (
+        ("lagged_peer_impulse", .003),
+        ("lagged_peer_impulse_baseline", .010),
+        ("lagged_own_response", .006),
+        ("h1_compression", 0.),
+        ("close", 100.5),
+        ("rel_vol", 1.0),
+    ):
+        frame = pd.DataFrame([{**base, field: bad}])
+        assert engine.signal_for(frame, novel).tolist() == [False], field
+    with pytest.raises(engine.CompositeResearchError, match="peer volatility release requires"):
+        engine.signal_for(pd.DataFrame([base]).drop(columns=["lagged_peer_impulse"]), novel)
+
+
+def test_ninth_novel_mechanism_is_selected_after_first_eight_distinct_families():
+    prior = engine.empty_ledger()
+    core = {k: v for k, v in prior.items() if k != "ledger_digest"}
+    for cfg in engine.CONFIGS:
+        if cfg["risk_variant"] != 0 or cfg["mechanism"] == "lagged_peer_volatility_release":
+            continue
+        core["config_fingerprints_evaluated"].append(engine.digest({
+            "config": cfg, "dataset": engine.ARCHIVE_SHA256,
+            "contract": engine.SCHEMA,
+        }))
+        core["mechanisms_evaluated"].append(cfg["mechanism"])
+    core["mechanisms_evaluated"] = sorted(set(core["mechanisms_evaluated"]))
+    signed = {**core, "ledger_digest": engine.digest(core)}
+    selected = engine.select_next(signed)
+    assert selected is not None
+    assert selected["mechanism"] == "lagged_peer_volatility_release"
+    assert selected["risk_variant"] == 0
+    assert selected["fingerprint"] not in signed["config_fingerprints_evaluated"]
+
+
+def test_ninth_mechanism_runs_full_research_only_numeric_grid(tmp_path, monkeypatch):
+    frames = history(n=1536)
+    peer = frames["minute15"].copy()
+    step = np.arange(len(peer), dtype=float)
+    price = 110 + step * .01 + np.sin(step / 9.0) * 1.8
+    peer["open"] = price - .08
+    peer["high"] = price + .45
+    peer["low"] = price - .45
+    peer["close"] = price
+
+    def approved_loader(_root, symbol, tf):
+        return peer if symbol == "ETHUSDT" and tf == "minute15" else frames[tf]
+
+    monkeypatch.setattr(engine, "load_verified_archive_frame", approved_loader)
+    previous = engine.empty_ledger()
+    core = {k: v for k, v in previous.items() if k != "ledger_digest"}
+    for cfg in engine.CONFIGS:
+        if cfg["risk_variant"] != 0 or cfg["mechanism"] == "lagged_peer_volatility_release":
+            continue
+        core["mechanisms_evaluated"].append(cfg["mechanism"])
+        core["config_fingerprints_evaluated"].append(engine.digest({
+            "config": cfg, "dataset": engine.ARCHIVE_SHA256,
+            "contract": engine.SCHEMA,
+        }))
+    core["mechanisms_evaluated"] = sorted(set(core["mechanisms_evaluated"]))
+    prior_path = tmp_path / "previous.json"
+    prior_path.write_text(json.dumps({**core, "ledger_digest": engine.digest(core)}))
+    report = engine.run(
+        tmp_path / "approved", tmp_path / "result", "a" * 40, prior_path
+    )
+    assert report["selected"]["mechanism"] == "lagged_peer_volatility_release"
+    assert len(report["rows"]) == 12
+    assert set(row["symbol"] for row in report["rows"]) == set(engine.SYMBOLS)
+    assert all(row["trade_count_limit"] is None for row in report["rows"])
+    assert report["research_only"] is True
+    assert report["auto_demo_promotion"] is False
+    assert report["live_enabled"] is False
+
