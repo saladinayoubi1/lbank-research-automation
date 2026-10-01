@@ -374,3 +374,14 @@ def test_sixth_frontier_rejects_forgeries_even_with_valid_numeric_qa(monkeypatch
     _historical_proofs(monkeypatch, **{invalid: True})
     with pytest.raises(selector.QaFrontierError):
         selector.verified_frontier(selector.REPO)
+
+def test_coordinator_proof_runs_for_every_main_push_to_prevent_source_transition_race():
+    text = Path(".github/workflows/fast-agent-coordinator.yml").read_text(encoding="utf-8")
+    trigger = text.split("permissions:", 1)[0]
+    assert "push:" in trigger
+    assert "branches: [main]" in trigger
+    # Discovery may be triggered by many Research paths. Coordinator proof must
+    # therefore not be path-filtered, otherwise the exact source can exist
+    # without any same-SHA durable runtime proof.
+    assert "paths:" not in trigger
+
