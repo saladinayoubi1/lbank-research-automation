@@ -106,31 +106,11 @@ def active_coordinator_workflow_id(repo: str) -> int:
     return next(iter(matches))
 
 
-def latest_coordinator(
-    repo: str, *, required_task_id: str | None = None,
-) -> tuple[int, dict[str, Any]]:
-    """Find recent successful main Coordinator proofs without a global artifact scan.
-
-    The repository-wide artifact index grows with unrelated triage workflows
-    and can exceed hosted Actions API limits. Resolve the active workflow's
-    immutable numeric identity first, because GitHub may retain historical
-    workflow records for the same filename. Then inspect only that workflow's
-    recent successful runs and exact same-run output.
-    """
-    workflow_id = active_coordinator_workflow_id(repo)
-    data = api(
-        f"repos/{repo}/actions/workflows/{workflow_id}/"
-        "runs?branch=main&per_page=12"
-    )
-    runs = data.get("workflow_runs")
-    if not isinstance(runs, list) or len(runs) > 12:
-        raise QaFrontierError("untrusted bounded coordinator workflow run index")
-    current_sha = os.environ.get("GITHUB_SHA", "")
-    if current_sha and not HEX40.fullmatch(current_sha):
-        raise QaFrontierError("current discovery source SHA is malformed")
-    # Prefer an exact-current-source Coordinator proof over a later-finishing
-    # stale-source run during main transitions. Creation time is only the
-    # secondary ordering key; source identity is the primary trust boundary.
+def _coordinator_proof_from_runs(
+    repo: str, workflow_id: int, runs: list[dict[str, Any]], *,
+    required_task_id: str | None, current_sha: str,
+) -> tuple[int, dict[str, Any]] | None:
+    """Select one exact same-run Coordinator artifact from a bounded run list."""
     ordered = sorted(
         runs,
         key=lambda row: (
@@ -143,6 +123,8 @@ def latest_coordinator(
     for run in ordered:
         if not isinstance(run, dict):
             raise QaFrontierError("malformed coordinator workflow run")
+        if run.get("workflow_id") not in {None, workflow_id}:
+            raise QaFrontierError("coordinator workflow identity changed")
         run_id = run.get("id")
         source = run.get("head_sha")
         if (
@@ -190,8 +172,6 @@ def latest_coordinator(
         if required_task_id is not None:
             tasks = manager.get("tasks")
             if not isinstance(tasks, list):
-                # A source-transition snapshot without a durable task ledger
-                # cannot seed Research; continue to another bounded proof.
                 continue
             matching = [
                 task for task in tasks
@@ -200,14 +180,76 @@ def latest_coordinator(
             if len(matching) > 1:
                 raise QaFrontierError("ambiguous predecessor Research mission in Coordinator proof")
             if not matching:
-                # Older Coordinator schema may not yet know the newly appended
-                # successor chain. It is proof transport, not authoritative
-                # runtime state; only a snapshot containing the exact required
-                # predecessor can be selected.
                 continue
         return artifact["id"], manager
-    raise QaFrontierError("no verified successful main Coordinator runtime proof available")
+    return None
 
+
+def _bounded_repository_coordinator_runs(repo: str, workflow_id: int) -> list[dict[str, Any]]:
+    """Fallback transport lookup bound to the exact active workflow identity/path."""
+    found: list[dict[str, Any]] = []
+    for page in range(1, 6):
+        data = api(f"repos/{repo}/actions/runs?branch=main&per_page=100&page={page}")
+        rows = data.get("workflow_runs")
+        if not isinstance(rows, list) or len(rows) > 100:
+            raise QaFrontierError("untrusted bounded repository workflow run index")
+        for run in rows:
+            if not isinstance(run, dict):
+                raise QaFrontierError("malformed repository workflow run")
+            if (
+                run.get("workflow_id") == workflow_id
+                and run.get("path") == COORDINATOR_WORKFLOW_PATH
+            ):
+                found.append(run)
+        if len(rows) < 100:
+            break
+    return found
+
+
+def latest_coordinator(
+    repo: str, *, required_task_id: str | None = None,
+) -> tuple[int, dict[str, Any]]:
+    """Find a recent successful main Coordinator proof with bounded exact identity.
+
+    Prefer the active workflow's own recent-run index. GitHub can occasionally
+    return a source-transition window that omits an older still-authoritative
+    Coordinator proof. In that case, fall back to at most 500 repository runs,
+    accepting only the exact active workflow ID and exact Coordinator path.
+    Artifact lookup remains exact same-run and fail-closed.
+    """
+    workflow_id = active_coordinator_workflow_id(repo)
+    data = api(
+        f"repos/{repo}/actions/workflows/{workflow_id}/"
+        "runs?branch=main&per_page=12"
+    )
+    runs = data.get("workflow_runs")
+    if not isinstance(runs, list) or len(runs) > 12:
+        raise QaFrontierError("untrusted bounded coordinator workflow run index")
+    current_sha = os.environ.get("GITHUB_SHA", "")
+    if current_sha and not HEX40.fullmatch(current_sha):
+        raise QaFrontierError("current discovery source SHA is malformed")
+    selected = _coordinator_proof_from_runs(
+        repo, workflow_id, runs,
+        required_task_id=required_task_id, current_sha=current_sha,
+    )
+    if selected is not None:
+        return selected
+
+    primary_ids = {
+        run.get("id") for run in runs
+        if isinstance(run, dict) and type(run.get("id")) is int
+    }
+    fallback = [
+        run for run in _bounded_repository_coordinator_runs(repo, workflow_id)
+        if run.get("id") not in primary_ids
+    ]
+    selected = _coordinator_proof_from_runs(
+        repo, workflow_id, fallback,
+        required_task_id=required_task_id, current_sha=current_sha,
+    )
+    if selected is not None:
+        return selected
+    raise QaFrontierError("no verified successful main Coordinator runtime proof available")
 
 def exact_artifact_json(repo: str, name: str, sha: str, member: str) -> tuple[int, dict[str, Any]]:
     data = api(f"repos/{repo}/actions/artifacts?name={quote(name)}&per_page=100")
