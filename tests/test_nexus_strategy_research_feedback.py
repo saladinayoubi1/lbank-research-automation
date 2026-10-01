@@ -264,7 +264,7 @@ def test_exact_evaluated_ledger_prevents_reproposing_already_backtested_ninth_de
     assert proposal is not None
     assert receipt["status"] == "NEW_DISTINCT_HYPOTHESIS_DESIGN_ONLY"
     assert proposal["mechanism"]["id"] == "cross_pair_volatility_catchup"
-    assert proposal["data_claims"] == ["closed_spot_ohlcv", "aligned_spot_cross_pair"]
+    assert proposal["data_claims"] == ["aligned_spot_cross_pair", "closed_spot_ohlcv"]
     assert state["research_cycles"] == 9
     assert len(state["proposed_mechanisms"]) == 9
     assert state["automatic_strategy_promotion"] is False

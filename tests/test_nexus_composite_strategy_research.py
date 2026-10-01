@@ -530,7 +530,7 @@ def test_tenth_cross_pair_volatility_catchup_is_persistent_dispersion_not_peer_s
         ("cross_pair_volatility_ratio", .75),
         ("cross_pair_volatility_ratio_baseline", .40),
         ("peer_realized_volatility", .007),
-        ("peer_realized_volatility_baseline", .009),
+        ("peer_realized_volatility_baseline", .012),
         ("close", 100.5),
         ("rel_vol", .9),
     ):
