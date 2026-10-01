@@ -63,11 +63,11 @@ def test_health_dispatch_installs_runtime_dependencies_before_importing_verifier
     text = _text()
     dispatch = text.split("dispatch-one-stage:", 1)[1]
     install = "python -m pip install -r requirements.lock"
-    persistent_trigger = "python nexus_strategy_discovery_health_trigger.py"
+    public_paper_verifier = "python scripts/nexus_public_paper_boundary_proof.py verify"
     demo_trigger = "python nexus_demo_strategy_discovery_health_trigger.py"
     assert install in dispatch
     assert "python -m pip check" in dispatch
-    assert dispatch.index(install) < dispatch.index(persistent_trigger)
+    assert dispatch.index(install) < dispatch.index(public_paper_verifier)
     assert dispatch.index(install) < dispatch.index(demo_trigger)
 
 
