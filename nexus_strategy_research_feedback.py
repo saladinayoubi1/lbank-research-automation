@@ -22,6 +22,7 @@ from nexus_multitimeframe_search_exhaustion import (
 SCHEMA = "nexus.autonomous-research-frontier.v1"
 RECEIPT_SCHEMA = "nexus.autonomous-research-feedback.v1"
 CATALOG_SCHEMA = "nexus.reviewed-composite-mechanisms.v1"
+COMPOSITE_LEDGER_SCHEMA = "nexus.automatic-composite-novelty-ledger.v1"
 REQUIRED_WORKFLOW = "NEXUS multi-timeframe strategy discovery"
 REQUIRED_STAGE = "nexus_multitimeframe_strategy_discovery"
 _ALLOWED_INPUTS = frozenset({
@@ -149,6 +150,37 @@ def validate_catalog(value: Mapping[str, Any]) -> list[dict[str, Any]]:
     return validated
 
 
+def validate_evaluated_ledger(
+    value: Mapping[str, Any], certificate: Mapping[str, Any],
+) -> set[str]:
+    core = dict(value)
+    claimed = core.pop("ledger_digest", None)
+    mechanisms = core.get("mechanisms_evaluated")
+    configs = core.get("config_fingerprints_evaluated")
+    if (
+        set(core) != {
+            "schema", "archive_sha256", "mechanisms_evaluated",
+            "config_fingerprints_evaluated", "research_only",
+            "auto_demo_promotion", "live_enabled",
+        }
+        or core.get("schema") != COMPOSITE_LEDGER_SCHEMA
+        or core.get("archive_sha256") != certificate.get("dataset_semantic_sha256")
+        or core.get("research_only") is not True
+        or core.get("auto_demo_promotion") is not False
+        or core.get("live_enabled") is not False
+        or not isinstance(mechanisms, list)
+        or len(set(mechanisms)) != len(mechanisms)
+        or any(not isinstance(x, str) or not _TOKEN.fullmatch(x) for x in mechanisms)
+        or not isinstance(configs, list)
+        or len(set(configs)) != len(configs)
+        or any(not isinstance(x, str) or not _HEX64.fullmatch(x) for x in configs)
+        or len(configs) < len(mechanisms)
+        or claimed != _digest(core)
+    ):
+        raise ResearchFeedbackError("evaluated composite ledger integrity or authority rejected")
+    return set(mechanisms)
+
+
 def validate_trigger(run: Mapping[str, Any], cert: Mapping[str, Any]) -> None:
     if (
         run.get("name") != REQUIRED_WORKFLOW
@@ -177,10 +209,15 @@ def validate_trigger(run: Mapping[str, Any], cert: Mapping[str, Any]) -> None:
 def process_feedback(
     run: Mapping[str, Any], certificate: Mapping[str, Any],
     catalog: Mapping[str, Any], previous: Mapping[str, Any] | None = None,
+    evaluated_ledger: Mapping[str, Any] | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any] | None]:
     frontier = validate_frontier(previous if previous is not None else empty_frontier())
     reviewed = validate_catalog(catalog)
     validate_trigger(run, certificate)
+    evaluated = (
+        validate_evaluated_ledger(evaluated_ledger, certificate)
+        if evaluated_ledger is not None else set()
+    )
     exhaustion_receipt = _digest({
         "stage": REQUIRED_STAGE,
         "certificate_digest": certificate["certificate_digest"],
@@ -197,6 +234,8 @@ def process_feedback(
             missing = sorted(set(row["inputs"]) - _PROVEN_INPUTS)
             if missing:
                 awaiting_inputs.append({"id": row["id"], "missing_inputs": missing})
+                continue
+            if row["id"] in evaluated:
                 continue
             if row["mechanism_sha256"] not in old_mechanisms:
                 selected = row
@@ -266,6 +305,7 @@ def main() -> int:
     parser.add_argument("--trigger-run", type=Path, required=True)
     parser.add_argument("--exhaustion-certificate", type=Path, required=True)
     parser.add_argument("--reviewed-mechanisms", type=Path, required=True)
+    parser.add_argument("--evaluated-ledger", type=Path, required=True)
     parser.add_argument("--prior-state", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
@@ -273,6 +313,7 @@ def main() -> int:
     state, receipt, proposal = process_feedback(
         _json(args.trigger_run), _json(args.exhaustion_certificate),
         _json(args.reviewed_mechanisms), previous,
+        _json(args.evaluated_ledger),
     )
     if args.output.exists():
         raise ResearchFeedbackError("feedback output must be newly created")
