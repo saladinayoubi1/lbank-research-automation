@@ -321,7 +321,6 @@ jobs:
           }
           run_metadata="$state_root/source-run-metadata.json"
           artifact_metadata="$state_root/source-artifact-metadata.json"
-          artifact_redirect_headers="$state_root/source-artifact-redirect.headers"
           outer_archive="$state_root/source-artifact.zip"
           inner_archive="$state_root/nexus-persistent-paper-exact-source.zip"
           commit_file="$state_root/nexus-persistent-paper-exact-source.commit-sha"
@@ -363,46 +362,151 @@ jobs:
           test -n "$artifact_id"
           test -n "$artifact_size"
           test -n "$artifact_digest"
-          curl --fail --silent --show-error \
-            --retry 3 --retry-all-errors --connect-timeout 20 --max-time 120 \
-            --proto '=https' --max-redirs 0 \
-            --dump-header "$artifact_redirect_headers" --output /dev/null \
-            -H 'Accept: application/vnd.github+json' \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H 'X-GitHub-Api-Version: 2022-11-28' \
-            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip"
-          artifact_url="$(ARTIFACT_REDIRECT_HEADERS="$artifact_redirect_headers" "$python_bin" - <<'PY'
+          ARTIFACT_ID="$artifact_id" ARTIFACT_SIZE="$artifact_size" OUTER_ARCHIVE="$outer_archive" "$python_bin" - <<'PY'
+          import http.client
           import os
+          import re
+          import socket
+          import time
+          import urllib.error
+          import urllib.parse
+          import urllib.request
           from pathlib import Path
-          from urllib.parse import urlsplit
 
-          raw = Path(os.environ["ARTIFACT_REDIRECT_HEADERS"]).read_text(encoding="utf-8")
-          locations = [
-              line.split(":", 1)[1].strip()
-              for line in raw.splitlines()
-              if line.lower().startswith("location:")
-          ]
-          if not locations:
-              raise SystemExit("source artifact redirect missing Location")
-          url = locations[-1]
-          parsed = urlsplit(url)
-          if (
-              parsed.scheme != "https"
-              or not parsed.netloc
-              or parsed.username is not None
-              or parsed.password is not None
-              or parsed.fragment
-          ):
-              raise SystemExit("source artifact redirect is not a safe HTTPS URL")
-          print(url)
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, headers, newurl):
+                  return None
+
+          artifact_id = int(os.environ["ARTIFACT_ID"])
+          expected_size = int(os.environ["ARTIFACT_SIZE"])
+          output = Path(os.environ["OUTER_ARCHIVE"])
+          if not 0 < expected_size <= 100 * 1024 * 1024:
+              raise SystemExit("source artifact size is outside bounds")
+          if output.is_symlink():
+              raise SystemExit("source artifact output must not be a symlink")
+          output.unlink(missing_ok=True)
+
+          github_headers = {
+              "Accept": "application/vnd.github+json",
+              "Authorization": f"Bearer {os.environ['GH_TOKEN']}",
+              "X-GitHub-Api-Version": "2022-11-28",
+              "User-Agent": "nexus-persistent-paper-source",
+          }
+          api_url = (
+              f"https://api.github.com/repos/{os.environ['GITHUB_REPOSITORY']}"
+              f"/actions/artifacts/{artifact_id}/zip"
+          )
+          opener = urllib.request.build_opener(NoRedirect)
+          retryable = (
+              TimeoutError,
+              socket.timeout,
+              ConnectionResetError,
+              http.client.IncompleteRead,
+              urllib.error.URLError,
+          )
+          last_error = None
+
+          def validate_range(value: str | None, expected_start: int) -> None:
+              match = re.fullmatch(r"bytes (\d+)-(\d+)/(\d+)", (value or "").strip())
+              if not match:
+                  raise RuntimeError("source artifact resume response missing valid Content-Range")
+              start, end, total = (int(part) for part in match.groups())
+              if start != expected_start or end < start or total != expected_size:
+                  raise RuntimeError("source artifact Content-Range mismatch")
+
+          for attempt, delay in enumerate((0, 2, 5, 10, 20), start=1):
+              if delay:
+                  time.sleep(delay)
+              offset = output.stat().st_size if output.exists() else 0
+              if offset > expected_size:
+                  raise SystemExit("partial source artifact exceeds declared size")
+              if offset == expected_size:
+                  break
+              try:
+                  location = None
+                  direct_response = None
+                  try:
+                      direct_response = opener.open(
+                          urllib.request.Request(api_url, headers=github_headers),
+                          timeout=60,
+                      )
+                  except urllib.error.HTTPError as exc:
+                      if exc.code not in (301, 302, 303, 307, 308):
+                          raise
+                      location = exc.headers.get("Location")
+                      if not location:
+                          raise RuntimeError("source artifact redirect missing Location") from exc
+
+                  if location is not None:
+                      parsed = urllib.parse.urlsplit(location)
+                      if (
+                          parsed.scheme != "https"
+                          or not parsed.netloc
+                          or parsed.username is not None
+                          or parsed.password is not None
+                          or parsed.fragment
+                      ):
+                          raise RuntimeError("source artifact redirect is not a safe HTTPS URL")
+                      storage_headers = {"User-Agent": "nexus-persistent-paper-source"}
+                      if offset:
+                          storage_headers["Range"] = f"bytes={offset}-"
+                      # Trust boundary: never forward the GitHub bearer token to object storage.
+                      request = urllib.request.Request(location, headers=storage_headers)
+                      with urllib.request.urlopen(request, timeout=180) as response:
+                          if offset:
+                              if response.status != 206:
+                                  raise RuntimeError("resumed source artifact request requires HTTP 206")
+                              validate_range(response.headers.get("Content-Range"), offset)
+                              mode = "ab"
+                          else:
+                              if response.status not in (200, 206):
+                                  raise RuntimeError(
+                                      f"unexpected source artifact storage response: {response.status}"
+                                  )
+                              if response.status == 206:
+                                  validate_range(response.headers.get("Content-Range"), 0)
+                              mode = "wb"
+                          with output.open(mode) as handle:
+                              while True:
+                                  chunk = response.read(1024 * 1024)
+                                  if not chunk:
+                                      break
+                                  handle.write(chunk)
+                                  if handle.tell() > expected_size:
+                                      raise RuntimeError("source artifact download exceeds declared size")
+                  else:
+                      with direct_response as response:
+                          if response.status != 200:
+                              raise RuntimeError(
+                                  f"unexpected direct source artifact response: {response.status}"
+                              )
+                          output.unlink(missing_ok=True)
+                          with output.open("wb") as handle:
+                              while True:
+                                  chunk = response.read(1024 * 1024)
+                                  if not chunk:
+                                      break
+                                  handle.write(chunk)
+                                  if handle.tell() > expected_size:
+                                      raise RuntimeError("source artifact download exceeds declared size")
+
+                  if output.stat().st_size == expected_size:
+                      break
+                  last_error = RuntimeError(
+                      f"source artifact ended early at {output.stat().st_size}/{expected_size} bytes"
+                  )
+              except retryable as exc:
+                  last_error = exc
+          else:
+              raise SystemExit("source artifact download failed after bounded fresh-redirect retries") from last_error
+
+          if not output.exists() or output.stat().st_size != expected_size:
+              raise SystemExit(
+                  f"source artifact size mismatch after retries: "
+                  f"{output.stat().st_size if output.exists() else 0}/{expected_size}"
+              )
+          print(f"source_artifact_fresh_redirect_resume=PASS bytes={expected_size}")
           PY
-          )"
-          # Never send the GitHub bearer token to the signed artifact-storage URL.
-          curl --fail --silent --show-error --location \
-            --retry 3 --retry-all-errors --connect-timeout 20 --max-time 900 \
-            --proto '=https' --proto-redir '=https' --max-redirs 3 \
-            --max-filesize 104857600 \
-            "$artifact_url" > "$outer_archive"
           test "$(stat -c '%s' "$outer_archive")" -eq "$artifact_size"
           test "$(sha256sum "$outer_archive" | awk '{print $1}')" = "$artifact_digest"
           SOURCE_ROOT="$source_root" OUTER_ARCHIVE="$outer_archive" INNER_ARCHIVE="$inner_archive" COMMIT_FILE="$commit_file" "$python_bin" - <<'PY'
