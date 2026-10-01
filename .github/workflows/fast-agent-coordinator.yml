@@ -6,19 +6,6 @@ on:
     - cron: '*/5 * * * *'
   push:
     branches: [main]
-    paths:
-      - '.github/workflows/fast-agent-coordinator.yml'
-      - '.github/workflows/nexus-runtime-worker.yml'
-      - 'agent_manager.py'
-      - 'agent_manager_runner.py'
-      - 'agent_transport.py'
-      - 'config/nexus-agent-manager.json'
-      - 'scripts/agent_task_executor.py'
-      - 'scripts/nexus_qa_attested_discovery_frontier.py'
-      - 'nexus_research_missions.py'
-      - 'tests/test_nexus_qa_attested_discovery_frontier.py'
-      - 'paper_schedule_watchdog.py'
-      - 'prospective_paper_schedule_watchdog.py'
 
 permissions:
   contents: read
