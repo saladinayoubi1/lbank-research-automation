@@ -28,6 +28,7 @@ on:
       - "nexus_demo_strategy_discovery_health_trigger.py"
       - "nexus_multitimeframe_strategy_discovery.py"
       - "scripts/nexus_strategy_discovery_controller.py"
+      - "scripts/nexus_public_paper_boundary_proof.py"
       - "research/strategy_family_catalog.json"
       - "experiments/nexus_multitimeframe_strategy_discovery_v1.json"
       - ".github/workflows/nexus_multitimeframe_strategy_discovery.yml"
@@ -42,6 +43,7 @@ on:
       - "nexus_demo_regime_lifecycle_bridge.py"
       - "nexus_multitimeframe_strategy_discovery.py"
       - "scripts/nexus_strategy_discovery_controller.py"
+      - "scripts/nexus_public_paper_boundary_proof.py"
       - "research/strategy_family_catalog.json"
       - "experiments/nexus_multitimeframe_strategy_discovery_v1.json"
       - "tests/test_nexus_multitimeframe_strategy_discovery.py"
@@ -110,7 +112,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       STATE_ARTIFACT: nexus-strategy-discovery-rotation-state
-      PAPER_STATE_ARTIFACT: nexus-persistent-paper-trading-state
+      PAPER_BOUNDARY_ARTIFACT: nexus-persistent-paper-public-boundary
       DEMO_STATE_ARTIFACT: nexus-demo-strategy-matrix-state
       HEALTH_TRIGGER: ${{ github.event_name == 'workflow_run' && 'true' || 'false' }}
       TRIGGER_WORKFLOW: ${{ github.event.workflow_run.name }}
@@ -150,7 +152,7 @@ jobs:
           mkdir -p build/health-trigger
 
           if [ "$TRIGGER_WORKFLOW" = "NEXUS persistent Paper trading loop" ]; then
-            artifact_name="$PAPER_STATE_ARTIFACT"
+            artifact_name="$PAPER_BOUNDARY_ARTIFACT"
           elif [ "$TRIGGER_WORKFLOW" = "NEXUS Demo regime lifecycle bridge" ]; then
             artifact_name="$DEMO_STATE_ARTIFACT"
           else
@@ -174,12 +176,14 @@ jobs:
           unzip -q build/trigger-state.zip -d build/health-trigger/state
 
           if [ "$TRIGGER_WORKFLOW" = "NEXUS persistent Paper trading loop" ]; then
-            snapshot="$(find build/health-trigger/state -type f \
-              -path '*/demo/persistent-paper-trading-loop.json' -print -quit)"
-            test -n "$snapshot"
-            python nexus_strategy_discovery_health_trigger.py \
-              --loop-snapshot "$snapshot" \
-              --output build/health-trigger/health-trigger.json
+            proof_root="build/health-trigger/state"
+            health="$(find "$proof_root" -type f -name health-trigger.json -print -quit)"
+            test -n "$health"
+            python scripts/nexus_public_paper_boundary_proof.py verify \
+              --root "$proof_root" \
+              --source-sha "${{ github.event.workflow_run.head_sha }}" \
+              --run-id "$TRIGGER_RUN_ID"
+            cp "$health" build/health-trigger/health-trigger.json
           else
             regime="$(find build/health-trigger/state -type f \
               -path '*/demo/regime-cycle.json' -print -quit)"

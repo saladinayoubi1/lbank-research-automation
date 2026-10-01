@@ -28,6 +28,7 @@ on:
       - "nexus_multipair_regime_lifecycle.py"
       - "nexus_multipair_demo_strategy_matrix.py"
       - "scripts/nexus_strategy_discovery_controller.py"
+      - "scripts/nexus_public_paper_boundary_proof.py"
       - "scripts/nexus_runtime_wheelhouse.py"
       - "scripts/nexus_owner_paper_checkpoint.py"
       - "config/nexus-demo-strategy-matrix-v1.json"
@@ -46,6 +47,7 @@ on:
       - "tests/test_nexus_multipair_demo_strategy_matrix.py"
       - "tests/test_nexus_runtime_wheelhouse.py"
       - "tests/test_nexus_owner_paper_checkpoint.py"
+      - "tests/test_nexus_public_paper_boundary_proof.py"
       - "tests/test_nexus_regime_selected_position_rebalance.py"
       - "tests/test_nexus_regime_selected_exposure_increase.py"
       - "tests/test_nexus_strategy_discovery_health_trigger.py"
@@ -75,6 +77,7 @@ on:
       - "nexus_multipair_regime_lifecycle.py"
       - "nexus_multipair_demo_strategy_matrix.py"
       - "scripts/nexus_strategy_discovery_controller.py"
+      - "scripts/nexus_public_paper_boundary_proof.py"
       - "scripts/nexus_runtime_wheelhouse.py"
       - "scripts/nexus_owner_paper_checkpoint.py"
       - "config/nexus-demo-strategy-matrix-v1.json"
@@ -93,6 +96,7 @@ on:
       - "tests/test_nexus_multipair_demo_strategy_matrix.py"
       - "tests/test_nexus_runtime_wheelhouse.py"
       - "tests/test_nexus_owner_paper_checkpoint.py"
+      - "tests/test_nexus_public_paper_boundary_proof.py"
       - "tests/test_nexus_regime_selected_position_rebalance.py"
       - "tests/test_nexus_regime_selected_exposure_increase.py"
       - "tests/test_nexus_strategy_discovery_health_trigger.py"
@@ -136,6 +140,7 @@ jobs:
           tests/test_nexus_multipair_demo_strategy_matrix.py
           tests/test_nexus_runtime_wheelhouse.py
           tests/test_nexus_owner_paper_checkpoint.py
+          tests/test_nexus_public_paper_boundary_proof.py
           tests/test_nexus_regime_selected_position_rebalance.py
           tests/test_nexus_regime_selected_exposure_increase.py
           tests/test_nexus_strategy_discovery_health_trigger.py
@@ -258,6 +263,8 @@ jobs:
       state_archive_chunk_16: ${{ steps.package.outputs.state_archive_chunk_16 }}
       state_archive_chunk_17: ${{ steps.package.outputs.state_archive_chunk_17 }}
       state_archive_sha256: ${{ steps.package.outputs.state_archive_sha256 }}
+      public_boundary_health_b64: ${{ steps.public-boundary.outputs.health_b64 }}
+      public_boundary_context_b64: ${{ steps.public-boundary.outputs.context_b64 }}
     env:
       GH_TOKEN: ${{ github.token }}
       SOURCE_ARTIFACT: nexus-persistent-paper-source-${{ github.sha }}
@@ -927,6 +934,20 @@ jobs:
           }, sort_keys=True))
           PY
 
+      - name: Export privacy-minimized public Paper boundary proof
+        id: public-boundary
+        if: success()
+        run: |
+          set -euo pipefail
+          cd "$SOURCE_ROOT"
+          "$PYTHON_BIN" scripts/nexus_public_paper_boundary_proof.py export \
+            --loop-snapshot "$STATE_ROOT/demo/persistent-paper-trading-loop.json" \
+            --matrix-state "$STATE_ROOT/matrix-state.json" \
+            --output-dir build/public-paper-boundary \
+            --github-output "$GITHUB_OUTPUT" \
+            --source-sha "$GITHUB_SHA" \
+            --run-id "$GITHUB_RUN_ID"
+
       - name: Package Paper state for hosted artifact persistence
         id: package
         if: success()
@@ -1178,6 +1199,43 @@ jobs:
         with:
           name: nexus-persistent-paper-trading-state
           path: build/nexus_persistent_paper_trading_state
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+  persist-public-boundary:
+    if: ${{ always() && needs.paper-loop.result == 'success' && needs.paper-loop.outputs.public_boundary_health_b64 != '' }}
+    needs: paper-loop
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PUBLIC_HEALTH_B64: ${{ needs.paper-loop.outputs.public_boundary_health_b64 }}
+      PUBLIC_CONTEXT_B64: ${{ needs.paper-loop.outputs.public_boundary_context_b64 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements.lock
+      - run: python -m pip check
+      - name: Rehydrate and independently verify public Paper boundary proof
+        run: >-
+          python scripts/nexus_public_paper_boundary_proof.py restore
+          --health-b64 "$PUBLIC_HEALTH_B64"
+          --context-b64 "$PUBLIC_CONTEXT_B64"
+          --output-dir build/nexus-persistent-paper-public-boundary
+          --source-sha "$GITHUB_SHA"
+          --run-id "$GITHUB_RUN_ID"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-persistent-paper-public-boundary
+          path: build/nexus-persistent-paper-public-boundary
           if-no-files-found: error
           retention-days: 90
           compression-level: 9

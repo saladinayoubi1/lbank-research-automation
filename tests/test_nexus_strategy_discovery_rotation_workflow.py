@@ -32,9 +32,9 @@ def test_health_event_consumes_exact_triggering_run_artifact_before_dispatch():
     text = _text()
     assert "github.event.workflow_run.id" in text
     assert "actions/runs/$TRIGGER_RUN_ID/artifacts" in text
-    assert "nexus-persistent-paper-trading-state" in text
+    assert "nexus-persistent-paper-public-boundary" in text
     assert "nexus-demo-strategy-matrix-state" in text
-    assert "nexus_strategy_discovery_health_trigger.py" in text
+    assert "scripts/nexus_public_paper_boundary_proof.py verify" in text
     assert "nexus_demo_strategy_discovery_health_trigger.py" in text
     assert "should_dispatch" in text
 
@@ -258,4 +258,3 @@ def test_feedback_requires_exact_trigger_run_composite_ledger_before_new_design(
         "Issue one unexecuted NEW mechanism design after verified exhaustion", 1
     )[1].split("- uses: actions/upload-artifact@", 1)[0]
     assert "--evaluated-ledger build/research-feedback/input/evaluated-ledger.json" in feedback
-
