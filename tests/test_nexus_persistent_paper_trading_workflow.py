@@ -479,7 +479,7 @@ def test_owner_checkpoint_shadow_and_primary_are_fail_closed_and_default_off() -
 def test_owner_primary_exports_only_privacy_minimized_public_boundary_proof() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     paper = _paper_job(text)
-    public_job = text.split("  persist-public-boundary:", 1)[1]
+    persist = text.split("  persist-state:", 1)[1]
 
     assert "Export privacy-minimized public Paper boundary proof" in paper
     assert "scripts/nexus_public_paper_boundary_proof.py export" in paper
@@ -487,9 +487,10 @@ def test_owner_primary_exports_only_privacy_minimized_public_boundary_proof() ->
     assert 'public_boundary_context_b64: ${{ steps.public-boundary.outputs.context_b64 }}' in paper
     assert "actions/upload-artifact@" not in paper
 
-    assert "nexus-persistent-paper-public-boundary" in public_job
-    assert "scripts/nexus_public_paper_boundary_proof.py restore" in public_job
-    assert "nexus-persistent-paper-trading-state" not in public_job
-    assert "PUBLIC_HEALTH_B64" in public_job
-    assert "PUBLIC_CONTEXT_B64" in public_job
-    assert "needs.paper-loop.outputs.state_archive_chunk_0" not in public_job
+    assert "  persist-public-boundary:" not in text
+    assert "nexus-persistent-paper-public-boundary" in persist
+    assert "scripts/nexus_public_paper_boundary_proof.py restore" in persist
+    assert "PUBLIC_HEALTH_B64" in persist
+    assert "PUBLIC_CONTEXT_B64" in persist
+    assert "vars.NEXUS_OWNER_PAPER_CHECKPOINT_PRIMARY != 'true'" in persist
+    assert "needs.paper-loop.outputs.public_boundary_health_b64 != ''" in persist

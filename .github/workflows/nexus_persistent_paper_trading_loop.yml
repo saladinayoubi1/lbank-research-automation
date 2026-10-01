@@ -1082,7 +1082,17 @@ jobs:
           case "$state_root" in "$HOME"/.local/share/nexus/persistent-paper-state/*) rm -rf "$state_root" ;; *) exit 1;; esac
 
   persist-state:
-    if: ${{ always() && vars.NEXUS_OWNER_PAPER_CHECKPOINT_PRIMARY != 'true' && needs.paper-loop.result == 'success' && needs.paper-loop.outputs.state_archive_chunk_count != '0' && needs.paper-loop.outputs.state_archive_chunk_count != '' }}
+    if: >-
+      always() &&
+      needs.paper-loop.result == 'success' &&
+      (
+        needs.paper-loop.outputs.public_boundary_health_b64 != '' ||
+        (
+          vars.NEXUS_OWNER_PAPER_CHECKPOINT_PRIMARY != 'true' &&
+          needs.paper-loop.outputs.state_archive_chunk_count != '0' &&
+          needs.paper-loop.outputs.state_archive_chunk_count != ''
+        )
+      )
     needs: paper-loop
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -1110,8 +1120,11 @@ jobs:
       STATE_ARCHIVE_CHUNK_17: ${{ needs.paper-loop.outputs.state_archive_chunk_17 }}
       STATE_ARCHIVE_SHA256: ${{ needs.paper-loop.outputs.state_archive_sha256 }}
       STATE_ROOT: build/nexus_persistent_paper_trading_state
+      PUBLIC_HEALTH_B64: ${{ needs.paper-loop.outputs.public_boundary_health_b64 }}
+      PUBLIC_CONTEXT_B64: ${{ needs.paper-loop.outputs.public_boundary_context_b64 }}
     steps:
       - name: Rehydrate physical Paper state handoff
+        if: ${{ vars.NEXUS_OWNER_PAPER_CHECKPOINT_PRIMARY != 'true' && needs.paper-loop.outputs.state_archive_chunk_count != '0' && needs.paper-loop.outputs.state_archive_chunk_count != '' }}
         run: |
           set -euo pipefail
           rm -rf "$STATE_ROOT" build/persistent-state-handoff.tar.xz
@@ -1196,6 +1209,7 @@ jobs:
           print("hosted_state_handoff_verification=PASS")
           PY
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: ${{ vars.NEXUS_OWNER_PAPER_CHECKPOINT_PRIMARY != 'true' && needs.paper-loop.outputs.state_archive_chunk_count != '0' && needs.paper-loop.outputs.state_archive_chunk_count != '' }}
         with:
           name: nexus-persistent-paper-trading-state
           path: build/nexus_persistent_paper_trading_state
@@ -1203,28 +1217,24 @@ jobs:
           retention-days: 90
           compression-level: 9
 
-  persist-public-boundary:
-    if: ${{ always() && needs.paper-loop.result == 'success' && needs.paper-loop.outputs.public_boundary_health_b64 != '' }}
-    needs: paper-loop
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    env:
-      PUBLIC_HEALTH_B64: ${{ needs.paper-loop.outputs.public_boundary_health_b64 }}
-      PUBLIC_CONTEXT_B64: ${{ needs.paper-loop.outputs.public_boundary_context_b64 }}
-    steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        if: ${{ needs.paper-loop.outputs.public_boundary_health_b64 != '' }}
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
           clean: true
           fetch-depth: 1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        if: ${{ needs.paper-loop.outputs.public_boundary_health_b64 != '' }}
         with:
           python-version: "3.12"
           cache: pip
-      - run: python -m pip install -r requirements.lock
-      - run: python -m pip check
+      - if: ${{ needs.paper-loop.outputs.public_boundary_health_b64 != '' }}
+        run: python -m pip install -r requirements.lock
+      - if: ${{ needs.paper-loop.outputs.public_boundary_health_b64 != '' }}
+        run: python -m pip check
       - name: Rehydrate and independently verify public Paper boundary proof
+        if: ${{ needs.paper-loop.outputs.public_boundary_health_b64 != '' }}
         run: >-
           python scripts/nexus_public_paper_boundary_proof.py restore
           --health-b64 "$PUBLIC_HEALTH_B64"
@@ -1233,6 +1243,7 @@ jobs:
           --source-sha "$GITHUB_SHA"
           --run-id "$GITHUB_RUN_ID"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: ${{ needs.paper-loop.outputs.public_boundary_health_b64 != '' }}
         with:
           name: nexus-persistent-paper-public-boundary
           path: build/nexus-persistent-paper-public-boundary
