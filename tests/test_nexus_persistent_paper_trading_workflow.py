@@ -139,7 +139,11 @@ def test_physical_source_download_has_bounded_transport_and_extraction_budgets()
 
     assert "--retry 3 --retry-all-errors" in prepare
     assert "--connect-timeout 20 --max-time 900" in prepare
-    assert "--max-filesize 104857600" in prepare
+    assert "for attempt, delay in enumerate((0, 2, 5, 10, 20), start=1):" in prepare
+    assert "urllib.request.urlopen(request, timeout=180)" in prepare
+    assert "if not 0 < expected_size <= 100 * 1024 * 1024:" in prepare
+    assert "partial source artifact exceeds declared size" in prepare
+    assert "source artifact download exceeds declared size" in prepare
     assert "source artifact size is outside bounds" in prepare
     assert "row.file_size > 50 * 1024 * 1024" in prepare
     assert "total > 250 * 1024 * 1024" in prepare
@@ -165,12 +169,16 @@ def test_physical_source_handoff_is_exact_sha_digest_pinned_and_token_safe() -> 
     assert 'test "$source_sha" = "$GITHUB_SHA"' in prepare
 
     assert '-H "Authorization: Bearer $GH_TOKEN"' in prepare
+    assert '"Authorization": f"Bearer {os.environ[\'GH_TOKEN\']}"' in prepare
+    assert 'storage_headers = {"User-Agent": "nexus-persistent-paper-source"}' in prepare
+    assert 'storage_headers["Range"] = f"bytes={offset}-"' in prepare
     storage_download = prepare.split(
-        "# Never send the GitHub bearer token to the signed artifact-storage URL.", 1
-    )[1].split('test "$(stat -c', 1)[0]
+        'storage_headers = {"User-Agent": "nexus-persistent-paper-source"}', 1
+    )[1].split("# Trust boundary: never forward the GitHub bearer token to object storage.", 1)[0]
     assert "Authorization" not in storage_download
     assert "GH_TOKEN" not in storage_download
-    assert '"$artifact_url" > "$outer_archive"' in storage_download
+    assert "urllib.request.Request(location, headers=storage_headers)" in prepare
+    assert "source_artifact_fresh_redirect_resume=PASS" in prepare
 
 
 def test_every_embedded_python_block_is_syntax_valid() -> None:
