@@ -162,13 +162,21 @@ def test_bounded_proof_archive_rejects_duplicate_member_and_invalid_json():
 
 
 def test_coordinator_rebuilds_on_research_frontier_authority_changes():
-    workflow = Path(".github/workflows/fast-agent-coordinator.yml").read_text()
+    coordinator = Path(".github/workflows/fast-agent-coordinator.yml").read_text()
+    discovery = Path(".github/workflows/nexus_multitimeframe_strategy_discovery.yml").read_text()
+    coordinator_trigger = coordinator.split("permissions:", 1)[0]
+    assert "push:" in coordinator_trigger
+    assert "branches: [main]" in coordinator_trigger
+    assert "paths:" not in coordinator_trigger
+    # The Research workflow still identifies the authority-changing paths that
+    # start Discovery, while Coordinator now covers every main SHA rather than
+    # duplicating a second, drift-prone path allowlist.
     for required in (
         "scripts/nexus_qa_attested_discovery_frontier.py",
         "nexus_research_missions.py",
         "tests/test_nexus_qa_attested_discovery_frontier.py",
     ):
-        assert required in workflow
+        assert required in discovery
 
 
 def test_mandatory_fifth_discovery_cache_uses_exact_QA_not_standalone_artifact():
