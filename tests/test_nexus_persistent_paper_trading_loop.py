@@ -355,3 +355,21 @@ def test_public_regime_adapter_rebinds_archive_provenance_and_full_rebalance(
     assert result["next_core_gap"] == "HEALTH_DRIVEN_STRATEGY_FACTORY_CLOSED_LOOP"
     assert result["cycle_digest"] == regime_digest({k: v for k, v in result.items() if k != "cycle_digest"})
     assert public_regime.verify_cycle_snapshot(result)["decision"] == "pass"
+
+def test_persistent_paper_workflow_refreshes_signed_source_url_per_retry() -> None:
+    workflow = Path(".github/workflows/nexus_persistent_paper_trading_loop.yml").read_text(
+        encoding="utf-8"
+    )
+    segment = workflow.split(
+        "- name: Prepare exact source artifact and pre-provisioned Python 3.12 without JavaScript actions",
+        1,
+    )[1].split("- name: Enforce eligible Bybit network execution plane", 1)[0]
+
+    assert "for attempt, delay in enumerate((0, 2, 5, 10, 20), start=1):" in segment
+    assert "opener.open(" in segment
+    assert 'storage_headers = {"User-Agent": "nexus-persistent-paper-source"}' in segment
+    assert 'storage_headers["Range"] = f"bytes={offset}-"' in segment
+    assert "urllib.request.Request(location, headers=storage_headers)" in segment
+    assert "source_artifact_fresh_redirect_resume=PASS" in segment
+    assert "curl --fail --silent --show-error --location" not in segment
+
