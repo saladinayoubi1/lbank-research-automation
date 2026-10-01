@@ -1,4 +1,4 @@
-"""Four-pair full-month causal research: adversarial source/peer/authority gates."""
+﻿"""Four-pair full-month causal research: adversarial source/peer/authority gates."""
 from __future__ import annotations
 
 from copy import deepcopy
@@ -204,7 +204,7 @@ def test_reviewed_signal_and_real_next_open_engine_are_invoked(inputs):
 def test_published_july_v2_matrix_is_immutable_when_research_grammar_expands():
     # The published historical report remains a frozen six-family, 288-cell
     # artifact even as independently QA-bound exploratory grammar expands.
-    assert len(composite.MECHANISMS) == 9
+    assert len(composite.MECHANISMS) == 10
     assert len(four.HISTORICAL_V2_MECHANISMS) == 6
     assert len(four.EXPERIMENTS) == 12
     assert {c["mechanism"] for c in four.EXPERIMENTS} == set(four.HISTORICAL_V2_MECHANISMS)
@@ -212,3 +212,4 @@ def test_published_july_v2_matrix_is_immutable_when_research_grammar_expands():
     assert "peer_shock_noncontagion_rebound" not in historical
     assert "relative_momentum_reacceleration" not in historical
     assert "lagged_peer_volatility_release" not in historical
+    assert "cross_pair_volatility_catchup" not in historical
