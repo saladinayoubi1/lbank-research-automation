@@ -474,3 +474,23 @@ def test_owner_checkpoint_shadow_and_primary_are_fail_closed_and_default_off() -
     assert text.count('"tests/test_nexus_owner_paper_checkpoint.py"') >= 2
     contract = text.split("Verify persistent Trading Engine contracts", 1)[1].split("runtime-wheelhouse:", 1)[0]
     assert "tests/test_nexus_owner_paper_checkpoint.py" in contract
+
+
+def test_owner_primary_exports_only_privacy_minimized_public_boundary_proof() -> None:
+    text = WORKFLOW.read_text(encoding="utf-8")
+    paper = _paper_job(text)
+    persist = text.split("  persist-state:", 1)[1]
+
+    assert "Export privacy-minimized public Paper boundary proof" in paper
+    assert "scripts/nexus_public_paper_boundary_proof.py export" in paper
+    assert 'public_boundary_health_b64: ${{ steps.public-boundary.outputs.health_b64 }}' in paper
+    assert 'public_boundary_context_b64: ${{ steps.public-boundary.outputs.context_b64 }}' in paper
+    assert "actions/upload-artifact@" not in paper
+
+    assert "  persist-public-boundary:" not in text
+    assert "nexus-persistent-paper-public-boundary" in persist
+    assert "scripts/nexus_public_paper_boundary_proof.py restore" in persist
+    assert "PUBLIC_HEALTH_B64" in persist
+    assert "PUBLIC_CONTEXT_B64" in persist
+    assert "vars.NEXUS_OWNER_PAPER_CHECKPOINT_PRIMARY != 'true'" in persist
+    assert "needs.paper-loop.outputs.public_boundary_health_b64 != ''" in persist

@@ -11,6 +11,7 @@ on:
     branches: [main]
     paths:
       - "nexus_multipair_paper_boundary_discovery_feedback.py"
+      - "scripts/nexus_public_paper_boundary_proof.py"
       - "tests/test_nexus_multipair_paper_boundary_discovery_feedback.py"
       - "tests/test_nexus_multipair_paper_boundary_discovery_feedback_workflow.py"
       - ".github/workflows/nexus_multipair_paper_boundary_discovery_feedback.yml"
@@ -18,6 +19,7 @@ on:
     branches: [main]
     paths:
       - "nexus_multipair_paper_boundary_discovery_feedback.py"
+      - "scripts/nexus_public_paper_boundary_proof.py"
       - "tests/test_nexus_multipair_paper_boundary_discovery_feedback.py"
       - "tests/test_nexus_multipair_paper_boundary_discovery_feedback_workflow.py"
       - ".github/workflows/nexus_multipair_paper_boundary_discovery_feedback.yml"
@@ -67,7 +69,7 @@ jobs:
       EVENT_SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
       PAPER_WORKFLOW: nexus_persistent_paper_trading_loop.yml
       DISCOVERY_WORKFLOW: nexus_multipair_strategy_discovery_v2.yml
-      PAPER_ARTIFACT: nexus-persistent-paper-trading-state
+      PAPER_ARTIFACT: nexus-persistent-paper-public-boundary
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -228,15 +230,20 @@ jobs:
           test "$(sha256sum build/multipair-feedback/proof.zip | awk '{print $1}')" = "$proof_digest"
           unzip -q build/multipair-feedback/paper.zip -d build/multipair-feedback/paper
           unzip -q build/multipair-feedback/proof.zip -d build/multipair-feedback/proof
-          loop_snapshot="$(find build/multipair-feedback/paper -type f -path '*/demo/persistent-paper-trading-loop.json' -print -quit)"
-          matrix_state="$(find build/multipair-feedback/paper -type f -name matrix-state.json -print -quit)"
+          health_trigger="$(find build/multipair-feedback/paper -type f -name health-trigger.json -print -quit)"
+          boundary_context="$(find build/multipair-feedback/paper -type f -name boundary-context.json -print -quit)"
           discovery_proof="$(find build/multipair-feedback/proof -type f -name evidence.json -print -quit)"
-          test -n "$loop_snapshot"
-          test -n "$matrix_state"
+          test -n "$health_trigger"
+          test -n "$boundary_context"
           test -n "$discovery_proof"
+          python scripts/nexus_public_paper_boundary_proof.py verify \
+            --root build/multipair-feedback/paper \
+            --source-sha "$SOURCE_SHA" \
+            --run-id "$PAPER_RUN_ID" \
+            --require-context
           {
-            echo "LOOP_SNAPSHOT=$loop_snapshot"
-            echo "MATRIX_STATE=$matrix_state"
+            echo "HEALTH_TRIGGER=$health_trigger"
+            echo "BOUNDARY_CONTEXT=$boundary_context"
             echo "DISCOVERY_PROOF=$discovery_proof"
             echo "PAPER_ARTIFACT_ID=$paper_artifact_id"
             echo "PAPER_ARTIFACT_DIGEST=$paper_digest"
@@ -250,47 +257,23 @@ jobs:
         id: boundary
         env:
           SOURCE_SHA: ${{ steps.pair.outputs.source_sha }}
+          PAPER_RUN_ID: ${{ steps.pair.outputs.paper_run_id }}
         run: |
           set -euo pipefail
-          eligible="$(SOURCE_SHA="$SOURCE_SHA" LOOP_SNAPSHOT="$LOOP_SNAPSHOT" python - <<'PY'
-          import json
-          import os
-          from pathlib import Path
-          from nexus_multipair_persistent_paper_trading_loop import verify_loop_snapshot
-          value = json.loads(Path(os.environ["LOOP_SNAPSHOT"]).read_text())
-          verification = verify_loop_snapshot(value)
-          if verification.get("decision") != "pass":
-              raise SystemExit("exact Paper loop artifact failed verification")
-          eligible = bool(
-              value.get("source_sha") == os.environ["SOURCE_SHA"]
-              and value.get("status") == "PAPER_LOOP_ACTIVE"
-              and value.get("regime_status") == "VERIFIED"
-              and value.get("expected_cell_count") == 12
-              and value.get("fresh_cell_count") == 12
-              and value.get("expected_lane_count") == 36
-              and value.get("strategy_research_required") is True
-              and value.get("strategy_discovery_health_trigger_requested") is True
-              and value.get("regime_selected_rebalance_operational") is True
-              and value.get("performance_health_feedback_operational") is True
-          )
-          print(str(eligible).lower())
-          PY
-          )"
-          echo "eligible=$eligible" >> "$GITHUB_OUTPUT"
-          if [ "$eligible" != "true" ]; then
-            echo "multipair_paper_feedback_boundary=NO_OP_NOT_ELIGIBLE"
-          else
-            echo "multipair_paper_feedback_boundary=ELIGIBLE"
-          fi
+          python scripts/nexus_public_paper_boundary_proof.py verify \
+            --root build/multipair-feedback/paper \
+            --source-sha "$SOURCE_SHA" \
+            --run-id "$PAPER_RUN_ID" \
+            --require-context
+          echo "eligible=true" >> "$GITHUB_OUTPUT"
+          echo "multipair_paper_feedback_boundary=ELIGIBLE_PUBLIC_PROOF"
 
-      - name: Build exact four-symbol Paper boundary context
+      - name: Restore exact four-symbol Paper boundary context
         if: steps.pair.outputs.paired == 'true' && steps.boundary.outputs.eligible == 'true'
         run: |
           set -euo pipefail
-          python nexus_multipair_paper_boundary_discovery_feedback.py context \
-            --loop-snapshot "$LOOP_SNAPSHOT" \
-            --matrix-state "$MATRIX_STATE" \
-            --output build/multipair-feedback/output/boundary-context.json
+          cp "$BOUNDARY_CONTEXT" build/multipair-feedback/output/boundary-context.json
+          python -c 'import json; from pathlib import Path; from nexus_multipair_paper_boundary_discovery_feedback import verify_boundary_context; value=json.loads(Path("build/multipair-feedback/output/boundary-context.json").read_text()); assert verify_boundary_context(value)["decision"] == "pass"'
 
       - name: Link exact Discovery v2 proof and independently verify feedback
         if: steps.pair.outputs.paired == 'true' && steps.boundary.outputs.eligible == 'true'

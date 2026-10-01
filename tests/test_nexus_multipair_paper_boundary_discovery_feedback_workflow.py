@@ -27,13 +27,16 @@ def test_workflow_requires_exact_sha_successful_counterparts() -> None:
     assert "exact_sha_feedback_pair=PASS" in text
 
 
-def test_workflow_uses_exact_paper_and_v2_proof_artifacts() -> None:
+def test_workflow_uses_exact_privacy_minimized_paper_and_v2_proof_artifacts() -> None:
     text = _text()
-    assert "nexus-persistent-paper-trading-state" in text
+    assert "nexus-persistent-paper-public-boundary" in text
+    assert "nexus-persistent-paper-trading-state" not in text
     assert "nexus-multipair-discovery-v2-proof-$SOURCE_SHA" in text
     assert "artifact {name} run binding mismatch" in text
     assert "sha256sum build/multipair-feedback/paper.zip" in text
     assert "sha256sum build/multipair-feedback/proof.zip" in text
+    assert "scripts/nexus_public_paper_boundary_proof.py verify" in text
+    assert "--require-context" in text
     assert "nexus-multipair-paper-boundary-feedback-${{ steps.pair.outputs.source_sha }}" in text
 
 
@@ -59,31 +62,30 @@ def test_workflow_preserves_read_only_repository_and_actions_authority() -> None
     assert "paper_execution_started" in text
 
 
-def test_workflow_only_links_natural_eligible_twelve_cell_boundary() -> None:
+def test_workflow_only_links_verified_public_twelve_cell_boundary_proof() -> None:
     text = _text()
-    assert 'value.get("expected_cell_count") == 12' in text
-    assert 'value.get("fresh_cell_count") == 12' in text
-    assert 'value.get("expected_lane_count") == 36' in text
-    assert 'value.get("regime_status") == "VERIFIED"' in text
-    assert 'value.get("strategy_research_required") is True' in text
-    assert 'value.get("strategy_discovery_health_trigger_requested") is True' in text
-    assert "NO_OP_NOT_ELIGIBLE" in text
+    assert 'health_trigger="$(find build/multipair-feedback/paper' in text
+    assert 'boundary_context="$(find build/multipair-feedback/paper' in text
+    assert "scripts/nexus_public_paper_boundary_proof.py verify" in text
+    assert "--require-context" in text
+    assert "multipair_paper_feedback_boundary=ELIGIBLE_PUBLIC_PROOF" in text
+    assert 'cp "$BOUNDARY_CONTEXT" build/multipair-feedback/output/boundary-context.json' in text
+    assert "--loop-snapshot" not in text
+    assert "--matrix-state" not in text
 
 
-def test_feedback_job_provisions_locked_runtime_before_importing_verifier() -> None:
+def test_feedback_job_provisions_locked_runtime_before_public_proof_verifier() -> None:
     text = _text()
     feedback = text.split("  link-exact-boundary-feedback:", 1)[1]
     setup = "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97"
     install = "python -m pip install -r requirements.lock"
     check = "python -m pip check"
-    verifier_import = (
-        "from nexus_multipair_persistent_paper_trading_loop import "
-        "verify_loop_snapshot"
-    )
+    verifier = "python scripts/nexus_public_paper_boundary_proof.py verify"
 
     assert setup in feedback
     assert install in feedback
     assert check in feedback
+    assert verifier in feedback
     assert feedback.index(setup) < feedback.index(install)
     assert feedback.index(install) < feedback.index(check)
-    assert feedback.index(check) < feedback.index(verifier_import)
+    assert feedback.index(check) < feedback.index(verifier)
