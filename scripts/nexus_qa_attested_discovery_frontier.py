@@ -28,6 +28,7 @@ from nexus_composite_strategy_research import ARCHIVE_SHA256, digest, load_ledge
 from nexus_research_missions import FIRST, PREDECESSOR, attested_predecessor
 
 REPO = "saladinayoubi1/lbank-research-automation"
+COORDINATOR_WORKFLOW_PATH = ".github/workflows/fast-agent-coordinator.yml"
 HEX40 = re.compile(r"^[0-9a-f]{40}$")
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
 MAX_ZIP_BYTES = 2_000_000
@@ -77,20 +78,48 @@ def archive_json(raw: bytes, expected: str) -> dict[str, Any]:
     return payload
 
 
+def active_coordinator_workflow_id(repo: str) -> int:
+    """Resolve the one active Coordinator workflow by exact path, not filename alias."""
+    if repo != REPO:
+        raise QaFrontierError("coordinator lookup repository is not authorized")
+    matches: set[int] = set()
+    for page in range(1, 6):
+        data = api(f"repos/{repo}/actions/workflows?per_page=100&page={page}")
+        workflows = data.get("workflows")
+        if not isinstance(workflows, list) or len(workflows) > 100:
+            raise QaFrontierError("untrusted bounded workflow index")
+        for workflow in workflows:
+            if not isinstance(workflow, dict):
+                raise QaFrontierError("malformed workflow index entry")
+            if workflow.get("path") != COORDINATOR_WORKFLOW_PATH:
+                continue
+            if workflow.get("state") != "active":
+                continue
+            workflow_id = workflow.get("id")
+            if type(workflow_id) is not int or workflow_id < 1:
+                raise QaFrontierError("active Coordinator workflow has invalid identity")
+            matches.add(workflow_id)
+        if len(workflows) < 100:
+            break
+    if len(matches) != 1:
+        raise QaFrontierError("active Coordinator workflow is missing or ambiguous")
+    return next(iter(matches))
+
+
 def latest_coordinator(
     repo: str, *, required_task_id: str | None = None,
 ) -> tuple[int, dict[str, Any]]:
     """Find recent successful main Coordinator proofs without a global artifact scan.
 
     The repository-wide artifact index grows with unrelated triage workflows
-    and can exceed hosted Actions API limits. Bound this lookup to the
-    Coordinator's own recent successful runs and their exact same-run output.
-    This is proof transport only, never a replacement runtime database.
+    and can exceed hosted Actions API limits. Resolve the active workflow's
+    immutable numeric identity first, because GitHub may retain historical
+    workflow records for the same filename. Then inspect only that workflow's
+    recent successful runs and exact same-run output.
     """
-    if repo != REPO:
-        raise QaFrontierError("coordinator lookup repository is not authorized")
+    workflow_id = active_coordinator_workflow_id(repo)
     data = api(
-        f"repos/{repo}/actions/workflows/fast-agent-coordinator.yml/"
+        f"repos/{repo}/actions/workflows/{workflow_id}/"
         "runs?branch=main&per_page=12"
     )
     runs = data.get("workflow_runs")
@@ -125,7 +154,7 @@ def latest_coordinator(
             or not HEX40.fullmatch(str(source))
         ):
             continue
-        if run.get("path") not in {None, ".github/workflows/fast-agent-coordinator.yml"}:
+        if run.get("path") not in {None, COORDINATOR_WORKFLOW_PATH}:
             raise QaFrontierError("coordinator workflow source path changed")
         for key in ("repository", "head_repository"):
             value = run.get(key)

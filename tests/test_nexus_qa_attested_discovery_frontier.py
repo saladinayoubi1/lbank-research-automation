@@ -15,6 +15,7 @@ from nexus_research_missions import FIFTH
 SOURCE = "a" * 40
 PRODUCER = "c4b0dea7-6460-48c4-b76e-eb0b67625921"
 VERIFIER = "e1016bf9-0fa5-42d6-8627-e9d9131f7fbd"
+COORDINATOR_WORKFLOW_ID = 329147254
 
 
 def zipped(member, obj):
@@ -90,9 +91,16 @@ def mock_proofs(monkeypatch, *, bad_ledger=False, bad_qa=False, no_verified_fift
     def fake_api(endpoint, *, binary=False):
         if binary:
             return archive_map[int(endpoint.rsplit("/", 2)[-2])]
-        if endpoint.endswith("workflows/fast-agent-coordinator.yml/runs?branch=main&per_page=12"):
+        if endpoint.endswith("actions/workflows?per_page=100&page=1"):
+            return {"workflows": [{
+                "id": COORDINATOR_WORKFLOW_ID,
+                "name": "Fast Agent Coordinator",
+                "path": selector.COORDINATOR_WORKFLOW_PATH,
+                "state": "active",
+            }]}
+        if endpoint.endswith(f"actions/workflows/{COORDINATOR_WORKFLOW_ID}/runs?branch=main&per_page=12"):
             return {"workflow_runs": [{"id": 1234567, "head_sha": SOURCE,
-                     "head_branch": "main", "path": ".github/workflows/fast-agent-coordinator.yml",
+                     "head_branch": "main", "path": selector.COORDINATOR_WORKFLOW_PATH,
                      "event": "workflow_dispatch", "status": "completed",
                      "conclusion": "success", "created_at": "2026-09-29T00:00:00Z",
                      "repository": {"full_name": selector.REPO},
@@ -193,7 +201,7 @@ def test_recent_coordinator_proof_does_not_accept_failed_run(monkeypatch):
 
     def failed(endpoint, *, binary=False):
         result = original(endpoint, binary=binary)
-        if endpoint.endswith("workflows/fast-agent-coordinator.yml/runs?branch=main&per_page=12"):
+        if endpoint.endswith(f"actions/workflows/{COORDINATOR_WORKFLOW_ID}/runs?branch=main&per_page=12"):
             result["workflow_runs"][0]["conclusion"] = "failure"
         return result
 
@@ -209,7 +217,7 @@ def test_frontier_prefers_exact_current_source_over_newer_stale_coordinator(monk
 
     def raced(endpoint, *, binary=False):
         result = original(endpoint, binary=binary)
-        if endpoint.endswith("workflows/fast-agent-coordinator.yml/runs?branch=main&per_page=12"):
+        if endpoint.endswith(f"actions/workflows/{COORDINATOR_WORKFLOW_ID}/runs?branch=main&per_page=12"):
             result["workflow_runs"].append({
                 "id": 9999999, "head_sha": "b" * 40, "head_branch": "main",
                 "path": ".github/workflows/fast-agent-coordinator.yml",
@@ -247,7 +255,7 @@ def test_frontier_skips_schema_lag_snapshot_missing_required_predecessor(monkeyp
                                  "head_branch": "main"},
             }]}
         result = original(endpoint, binary=binary)
-        if endpoint.endswith("workflows/fast-agent-coordinator.yml/runs?branch=main&per_page=12"):
+        if endpoint.endswith(f"actions/workflows/{COORDINATOR_WORKFLOW_ID}/runs?branch=main&per_page=12"):
             result["workflow_runs"].append({
                 "id": 2222222, "head_sha": SOURCE, "head_branch": "main",
                 "path": ".github/workflows/fast-agent-coordinator.yml",
