@@ -291,6 +291,37 @@
         "no_current_or_future_peer_candle_lookahead",
         "no_auto_paper_or_live_promotion"
       ]
+    },
+    {
+      "id": "lagged_peer_volatility_release",
+      "hypothesis": "An unusually large direction-agnostic peer one-hour spot move, completed at least one 15-minute candle earlier, may precede a delayed own-asset volatility release when the own asset remained muted and subsequently closes an upside range expansion from independently completed compression context. This is speculative research, not a profitability claim.",
+      "inputs": [
+        "closed_spot_ohlcv",
+        "aligned_spot_cross_pair"
+      ],
+      "context": [
+        "exact_utc_closed_peer_grid",
+        "direction_agnostic_lagged_peer_volatility_shock",
+        "own_prior_response_remains_muted",
+        "completed_one_hour_compression_regime",
+        "completed_four_hour_range_context"
+      ],
+      "entry": [
+        "prior_peer_absolute_impulse_exceeds_historical_baseline",
+        "lagging_own_asset_has_not_already_expanded",
+        "current_own_closed_range_expansion_with_volume",
+        "next_own_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_adverse_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "single_own_symbol_cash_collateral_spot_long_flat_only",
+        "no_peer_direction_following_hedge_or_spread_claim",
+        "no_current_peer_candle_lookahead",
+        "no_auto_paper_or_live_promotion"
+      ]
     }
   ]
 }
