@@ -37,9 +37,10 @@ MECHANISMS = (
     "lagged_peer_impulse_confirmation",
     "peer_shock_noncontagion_rebound",
     "relative_momentum_reacceleration",
+    "lagged_peer_volatility_release",
 )
 # Distinct entry mechanisms vs risk/feature parameter variations are explicitly
-# separately labeled; eight configurations do NOT count as eight new edges.
+# separately labeled; risk variants do NOT count as independent new edges.
 CONFIGS = tuple(
     {"mechanism": mechanism, "risk_variant": v, "entry_model": "closed_4h_1h_15m_next_open"}
     for mechanism in MECHANISMS for v in (0, 1)
@@ -264,6 +265,27 @@ def signal_for(frame: pd.DataFrame, config: dict[str, Any]) -> np.ndarray:
             rel > previous + .0010) & (rel > .0030) & (
             c > frame["prior_hi"]) & (c > o) & (frame["rel_vol"] >= 1.0) & (
             np.isfinite(rel) & np.isfinite(previous) & np.isfinite(baseline))
+    elif mechanism == "lagged_peer_volatility_release":
+        required = {"lagged_peer_impulse", "lagged_peer_impulse_baseline",
+                    "lagged_own_response"}
+        if not required <= set(frame.columns):
+            raise CompositeResearchError(
+                "peer volatility release requires exact verified aligned peer history"
+            )
+        shock_abs = frame["lagged_peer_impulse"].abs()
+        baseline = frame["lagged_peer_impulse_baseline"]
+        own_abs = frame["lagged_own_response"].abs()
+        # Direction-agnostic cross-asset volatility transmission: the peer had
+        # an unusually large move one entire closed 15m candle ago while the
+        # own asset remained muted. Only a later OWN upside range expansion in
+        # a completed compression/range context may trigger a long at NEXT open.
+        # This is neither peer-direction following nor a paired/spread trade.
+        s = (frame["h4_range"] == 1) & (frame["h1_compression"] == 1) & (
+            frame["h1_vol_ok"] == 1) & (shock_abs > .006) & (
+            shock_abs > baseline * 1.50) & (own_abs < shock_abs * .35) & (
+            own_abs < .0045) & (c > frame["prior_hi"]) & (c > o) & (
+            frame["rel_vol"] >= 1.15) & (
+            np.isfinite(shock_abs) & np.isfinite(baseline) & np.isfinite(own_abs))
     elif mechanism == "cross_pair_relative_reclaim":
         if not {"cross_pair_relative_z", "cross_pair_relative_z_previous"} <= set(frame.columns):
             raise CompositeResearchError("cross-pair mechanism requires exact aligned verified peer history")
@@ -441,7 +463,8 @@ def run(archive_root: Path, output: Path, source_sha: str, previous: Path | None
                   for tf in ("minute15", "hour1", "hour4")}
         peer = None
         if nxt["mechanism"] in {"cross_pair_relative_reclaim", "lagged_peer_impulse_confirmation",
-                                "peer_shock_noncontagion_rebound", "relative_momentum_reacceleration"}:
+                                "peer_shock_noncontagion_rebound", "relative_momentum_reacceleration",
+                                "lagged_peer_volatility_release"}:
             # Current official replay has exactly BTC/ETH; never pretend to
             # possess missing SOL/XRP or synthetic peer order flow/L2.
             if len(SYMBOLS) != 2:
