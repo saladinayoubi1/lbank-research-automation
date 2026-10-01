@@ -376,6 +376,31 @@ jobs:
           test "$(unzip -Z1 build/research-feedback/exact-exhaustion.zip)" = 'exhaustion-certificate.json'
           unzip -p build/research-feedback/exact-exhaustion.zip exhaustion-certificate.json \
             > build/research-feedback/input/exhaustion-certificate.json
+
+          composite_match_count="$(jq -er '[.artifacts[] | select(.name == "nexus-composite-novelty-state" and (.expired == false))] | length' <<<"$artifacts_json")"
+          if [ "$composite_match_count" = "0" ]; then
+            echo "exact_run_composite=NOT_EMITTED_NO_EVALUATED_LEDGER; no feedback mutation"
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$composite_match_count" != "1" ]; then
+            echo "Ambiguous exact-run composite novelty artifact; fail closed" >&2
+            exit 1
+          fi
+          composite_artifact_id="$(jq -er '[.artifacts[] | select(.name == "nexus-composite-novelty-state" and (.expired == false))] | .[0].id' <<<"$artifacts_json")"
+          if ! [[ "$composite_artifact_id" =~ ^[1-9][0-9]*$ ]]; then
+            echo "Malformed composite novelty artifact ID; fail closed" >&2
+            exit 1
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$composite_artifact_id/zip" \
+            > build/research-feedback/exact-composite.zip
+          test "$(stat -c%s build/research-feedback/exact-composite.zip)" -lt 5242880
+          composite_members="$(unzip -Z1 build/research-feedback/exact-composite.zip | sort)"
+          expected_members="$(printf '%s\n' novelty-ledger.json research-report.json)"
+          test "$composite_members" = "$expected_members"
+          unzip -p build/research-feedback/exact-composite.zip novelty-ledger.json \
+            > build/research-feedback/input/evaluated-ledger.json
+
           echo "available=true" >> "$GITHUB_OUTPUT"
 
       - name: Restore integrity-bound prior independent research frontier
@@ -421,6 +446,7 @@ jobs:
             --trigger-run build/research-feedback/input/run.json \
             --exhaustion-certificate build/research-feedback/input/exhaustion-certificate.json \
             --reviewed-mechanisms research/reviewed_composite_mechanisms_v1.json \
+            --evaluated-ledger build/research-feedback/input/evaluated-ledger.json \
             "${args[@]}" \
             --output build/research-feedback/output
 

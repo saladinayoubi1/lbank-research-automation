@@ -239,3 +239,23 @@ def test_uncertified_discovery_cannot_advance_frontier_or_publish_design():
     assert (
         "steps.certified-source.outputs.available == 'true'"
     ) in upload
+
+def test_feedback_requires_exact_trigger_run_composite_ledger_before_new_design():
+    text = _text()
+    certificate = text.split(
+        "Obtain only the exact certified prior multi-timeframe outcome", 1
+    )[1].split("Restore integrity-bound prior independent research frontier", 1)[0]
+    assert 'nexus-composite-novelty-state' in certificate
+    assert 'composite_match_count=' in certificate
+    assert 'if [ "$composite_match_count" = "0" ]; then' in certificate
+    assert "NOT_EMITTED_NO_EVALUATED_LEDGER" in certificate
+    assert 'echo "available=false" >> "$GITHUB_OUTPUT"' in certificate
+    assert "Ambiguous exact-run composite novelty artifact; fail closed" in certificate
+    assert "novelty-ledger.json" in certificate
+    assert "research-report.json" in certificate
+    assert "evaluated-ledger.json" in certificate
+    feedback = text.split(
+        "Issue one unexecuted NEW mechanism design after verified exhaustion", 1
+    )[1].split("- uses: actions/upload-artifact@", 1)[0]
+    assert "--evaluated-ledger build/research-feedback/input/evaluated-ledger.json" in feedback
+

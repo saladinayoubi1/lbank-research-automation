@@ -56,6 +56,23 @@ def _run(head=SHA, runid=1234):
     }
 
 
+def _evaluated_ledger(mechanisms, certificate=None):
+    cert = certificate or _certificate()
+    core = {
+        "schema": feedback.COMPOSITE_LEDGER_SCHEMA,
+        "archive_sha256": cert["dataset_semantic_sha256"],
+        "mechanisms_evaluated": list(mechanisms),
+        "config_fingerprints_evaluated": [
+            _digest({"mechanism": m, "config": i})
+            for i, m in enumerate(mechanisms)
+        ],
+        "research_only": True,
+        "auto_demo_promotion": False,
+        "live_enabled": False,
+    }
+    return {**core, "ledger_digest": _digest(core)}
+
+
 def test_existing_research_exhaustion_proposes_design_but_never_claims_backtest():
     state, receipt, proposal = feedback.process_feedback(
         _run(), _certificate(), _catalog(),
@@ -223,4 +240,54 @@ def test_ninth_proven_input_design_is_reached_after_first_eight_cycles():
     assert state["research_cycles"] == 9
     assert state["automatic_strategy_promotion"] is False
     assert state["live_trading_authority"] is False
+
+def test_exact_evaluated_ledger_prevents_reproposing_already_backtested_ninth_design():
+    catalog = _catalog()
+    state = None
+    # Preserve the real autonomous frontier history through the first eight
+    # design cycles. The ninth mechanism was implemented/backtested directly
+    # by the composite engine before feedback got a chance to propose it.
+    for i, marker in enumerate("12345678", start=1):
+        state, receipt, proposal = feedback.process_feedback(
+            _run(runid=7000 + i), _certificate(marker=marker),
+            catalog, previous=state,
+        )
+        assert receipt["status"] == "NEW_DISTINCT_HYPOTHESIS_DESIGN_ONLY"
+        assert proposal is not None
+
+    cert = _certificate(marker="9")
+    evaluated = _evaluated_ledger(["lagged_peer_volatility_release"], cert)
+    state, receipt, proposal = feedback.process_feedback(
+        _run(runid=7009), cert, catalog, previous=state,
+        evaluated_ledger=evaluated,
+    )
+    assert proposal is None
+    assert receipt["status"] == "NEEDS_VERIFIED_DATA_OR_CATALOG_EXPANSION"
+    assert {x["id"] for x in receipt["data_blockers"]} == {
+        "signed_flow_price_response",
+        "liquidity_microstructure_mean_revert",
+        "perpetual_positioning_divergence",
+    }
+    assert state["research_cycles"] == 9
+    assert len(state["proposed_mechanisms"]) == 8
+    assert state["automatic_strategy_promotion"] is False
+    assert state["live_trading_authority"] is False
+
+
+def test_evaluated_ledger_must_be_digest_bound_to_exact_dataset_and_authority():
+    cert = _certificate()
+    ledger = _evaluated_ledger(["lagged_peer_volatility_release"], cert)
+    feedback.validate_evaluated_ledger(ledger, cert)
+
+    tampered = dict(ledger)
+    tampered["mechanisms_evaluated"] = ["peer_shock_noncontagion_rebound"]
+    with pytest.raises(feedback.ResearchFeedbackError, match="evaluated composite ledger"):
+        feedback.validate_evaluated_ledger(tampered, cert)
+
+    wrong_archive = _evaluated_ledger(["lagged_peer_volatility_release"], cert)
+    core = {k: v for k, v in wrong_archive.items() if k != "ledger_digest"}
+    core["archive_sha256"] = "f" * 64
+    wrong_archive = {**core, "ledger_digest": _digest(core)}
+    with pytest.raises(feedback.ResearchFeedbackError, match="evaluated composite ledger"):
+        feedback.validate_evaluated_ledger(wrong_archive, cert)
 
