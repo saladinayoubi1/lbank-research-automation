@@ -206,3 +206,21 @@ def test_prior_frontier_must_originate_from_successful_same_repo_main_run():
     assert '.name == "NEXUS strategy discovery rotation"' in stage
     assert '.repository.full_name == "saladinayoubi1/lbank-research-automation"' in stage
     assert 'test "$verified" = "verified"' in stage
+
+def test_ninth_proven_input_design_is_reached_after_first_eight_cycles():
+    state = None
+    proposed = []
+    catalog = _catalog()
+    for i, marker in enumerate("123456789", start=1):
+        state, receipt, proposal = feedback.process_feedback(
+            _run(runid=5000 + i), _certificate(marker=marker),
+            catalog, previous=state,
+        )
+        assert receipt["status"] == "NEW_DISTINCT_HYPOTHESIS_DESIGN_ONLY"
+        assert proposal is not None
+        proposed.append(proposal["mechanism"]["id"])
+    assert proposed[-1] == "lagged_peer_volatility_release"
+    assert state["research_cycles"] == 9
+    assert state["automatic_strategy_promotion"] is False
+    assert state["live_trading_authority"] is False
+
