@@ -19,11 +19,8 @@ from typing import Any, Mapping
 import numpy as np
 import pandas as pd
 
-import bybit_spot_archive_audit as archive_audit
-import bybit_spot_archive_collector as collector
-import bybit_spot_backfill as backfill
+import nexus_a7_daily_recent_source as daily_source
 import nexus_composite_strategy_research as composite
-import nexus_multipair_recent_archive_runtime_snapshot as recent
 from nexus_multipair_trusted_surface import SYMBOLS, TIMEFRAMES
 
 SCHEMA = "nexus.a7-range-failure-reversal-research.v1"
@@ -55,179 +52,50 @@ def digest(value: Any) -> str:
     ).hexdigest()
 
 
-def _read_json(path: Path, max_bytes: int = 8_000_000) -> Any:
-    if path.is_symlink() or not path.is_file() or path.stat().st_size > max_bytes:
-        raise A7ResearchError(f"missing or unsafe JSON source: {path}")
-    try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
-        raise A7ResearchError(f"unreadable JSON source: {path}") from exc
-
-
-def _frame_digest(frame: pd.DataFrame) -> str:
-    rows = [
-        {
-            "timestamp": pd.Timestamp(row.timestamp).isoformat(),
-            "open": round(float(row.open), 12),
-            "high": round(float(row.high), 12),
-            "low": round(float(row.low), 12),
-            "close": round(float(row.close), 12),
-            "volume": round(float(row.volume), 12),
-        }
-        for row in frame.itertuples(index=False)
-    ]
-    return digest(rows)
-
-
-def _load_full_frame(
-    state_root: Path,
-    symbol: str,
-    timeframe: str,
-    start_date: str,
-    end_date: str,
-) -> pd.DataFrame:
-    path = (
-        state_root.resolve()
-        / "bybit_market"
-        / collector.canonical_symbol(symbol)
-        / f"{timeframe}.parquet"
-    )
-    if path.is_symlink() or not path.is_file() or path.stat().st_size > MAX_FRAME_BYTES:
-        raise A7ResearchError(f"missing or unsafe A7 frame: {symbol}/{timeframe}")
-    frame = pd.read_parquet(path).copy()
-    if frame.columns.tolist() != collector.CANONICAL_COLUMNS:
-        raise A7ResearchError(f"unexpected A7 frame schema: {symbol}/{timeframe}")
-    frame["timestamp"] = pd.to_datetime(frame["timestamp"], utc=True, errors="raise")
-    frame = frame.sort_values("timestamp").reset_index(drop=True)
-    expected = collector.expected_index(start_date, end_date, timeframe)
-    actual = pd.DatetimeIndex(frame["timestamp"]).drop_duplicates().sort_values()
-    missing = expected.difference(actual)
-    unexpected = actual.difference(expected)
-    canonical = collector.canonical_symbol(symbol)
-    if (
-        len(frame) != len(expected)
-        or len(actual) != len(expected)
-        or not missing.empty
-        or not unexpected.empty
-        or set(frame["symbol"].astype(str)) != {canonical}
-        or set(frame["timeframe"].astype(str)) != {timeframe}
-    ):
-        raise A7ResearchError(
-            f"A7 frame grid mismatch: {symbol}/{timeframe}; "
-            f"rows={len(frame)} expected={len(expected)} "
-            f"missing={len(missing)} unexpected={len(unexpected)}"
-        )
-    numeric = frame[["open", "high", "low", "close", "volume"]].astype(float)
-    if (
-        not np.isfinite(numeric.to_numpy()).all()
-        or (numeric[["open", "high", "low", "close"]] <= 0).any().any()
-        or (numeric["volume"] < 0).any()
-        or (numeric["high"] < numeric[["open", "close", "low"]].max(axis=1)).any()
-        or (numeric["low"] > numeric[["open", "close", "high"]].min(axis=1)).any()
-    ):
-        raise A7ResearchError(f"A7 OHLCV integrity failed: {symbol}/{timeframe}")
-    frame["symbol"] = symbol
-    frame["timeframe"] = timeframe
-    return frame
-
-
 def load_verified_recent_surface(
     state_root: Path,
-    snapshot_root: Path,
+    source_proof_root: Path,
     *,
     source_sha: str,
     now_ms: int,
 ) -> tuple[dict[tuple[str, str], pd.DataFrame], dict[str, Any]]:
     if not SHA40.fullmatch(source_sha):
         raise A7ResearchError("source_sha must be an exact lower-case git SHA")
-    manifest = _read_json(snapshot_root.resolve() / "snapshot-manifest.json")
-    if not isinstance(manifest, dict):
-        raise A7ResearchError("recent snapshot manifest is invalid")
-    verification = recent.verify_recent_archive_runtime_snapshot(
-        snapshot_root.resolve(),
-        manifest,
-        source_sha=source_sha,
-        now_ms=now_ms,
-    )
-    if verification.get("decision") != "pass":
-        raise A7ResearchError(f"recent official snapshot rejected: {verification}")
-
-    state = state_root.resolve()
-    report = _read_json(state / backfill.REPORT_NAME)
-    plan = _read_json(state / backfill.PLAN_NAME)
-    if not isinstance(report, dict) or not isinstance(plan, dict):
-        raise A7ResearchError("recent raw source report or plan is invalid")
-    summary = report.get("summary")
-    config = report.get("configuration")
-    if (
-        not isinstance(summary, Mapping)
-        or not isinstance(config, Mapping)
-        or config.get("start_date") != manifest.get("source_window_start")
-        or config.get("end_date") != manifest.get("source_window_end")
-        or config.get("symbols") != list(SYMBOLS)
-        or summary.get("remaining_units") != 0
-        or summary.get("run_failures") != 0
-        or summary.get("backfill_complete") is not True
-        or summary.get("current_dataset_integrity_ok") is not True
-        or report.get("run_failures") != []
-    ):
-        raise A7ResearchError("recent raw source state is not complete")
-    normalized_plan = recent._normalize_plan(
-        plan,
-        start_date=str(manifest["source_window_start"]),
-        end_date=str(manifest["source_window_end"]),
-    )
-    if normalized_plan != manifest.get("archive_plan_units"):
-        raise A7ResearchError("recent raw source plan differs from signed snapshot")
-    source_rows, source_digest = recent._source_evidence(state, normalized_plan)
-    if (
-        source_digest != manifest.get("archive_source_manifest_digest")
-        or source_rows != manifest.get("archive_sources")
-    ):
-        raise A7ResearchError("recent raw source provenance differs from signed snapshot")
-
-    frames: dict[tuple[str, str], pd.DataFrame] = {}
-    frame_digests: dict[str, str] = {}
-    timestamp_refs: dict[str, pd.DatetimeIndex] = {}
-    for timeframe in TIMEFRAMES:
-        for symbol in SYMBOLS:
-            frame = _load_full_frame(
-                state,
-                symbol,
-                timeframe,
-                str(manifest["source_window_start"]),
-                str(manifest["source_window_end"]),
-            )
-            idx = pd.DatetimeIndex(frame["timestamp"])
-            reference = timestamp_refs.setdefault(timeframe, idx)
-            if len(reference) != len(idx) or not reference.difference(idx).empty or not idx.difference(reference).empty:
-                raise A7ResearchError(f"four-symbol A7 timestamps are not aligned: {timeframe}")
-            frames[(symbol, timeframe)] = frame
-            frame_digests[f"{symbol}/{timeframe}"] = _frame_digest(frame)
-
-    dataset_digest = digest(
-        {
-            "snapshot_digest": manifest["snapshot_digest"],
-            "source_manifest_digest": source_digest,
-            "full_frames": frame_digests,
-        }
-    )
-    proof = {
-        "snapshot_digest": manifest["snapshot_digest"],
-        "source_manifest_digest": source_digest,
-        "dataset_digest": dataset_digest,
-        "source_window_start": manifest["source_window_start"],
-        "source_window_end": manifest["source_window_end"],
-        "data_as_of_ms": manifest["data_as_of_ms"],
-        "symbols": list(SYMBOLS),
-        "timeframes": list(TIMEFRAMES),
-        "research_only": True,
-        "paper_only": True,
-        "automatic_strategy_promotion": False,
-        "live_trading_authority": False,
+    proof_path = source_proof_root.resolve() / daily_source.PROOF_NAME
+    if proof_path.is_symlink() or not proof_path.is_file() or proof_path.stat().st_size > 10_000_000:
+        raise A7ResearchError("A7 daily recent source proof is missing or unsafe")
+    try:
+        proof = json.loads(proof_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise A7ResearchError("A7 daily recent source proof is unreadable") from exc
+    try:
+        daily_source.verify_proof(
+            state_root,
+            proof,
+            source_sha=source_sha,
+            now_ms=now_ms,
+        )
+        frames = daily_source.load_verified_frames(state_root, proof)
+    except daily_source.A7DailyRecentSourceError as exc:
+        raise A7ResearchError("A7 daily recent source rejected") from exc
+    source = {
+        "source_proof_sha256": proof["proof_sha256"],
+        "source_manifest_digest": proof["archive_source_manifest_digest"],
+        "dataset_digest": proof["dataset_digest"],
+        "source_window_start": proof["source_window_start"],
+        "source_window_end": proof["source_window_end"],
+        "data_as_of_ms": proof["data_as_of_ms"],
+        "archive_granularity": proof["archive_granularity"],
+        "window_days": proof["window_days"],
+        "archive_source_count": proof["archive_source_count"],
+        "symbols": proof["symbols"],
+        "timeframes": proof["timeframes"],
+        "research_only": proof["research_only"],
+        "paper_only": proof["paper_only"],
+        "automatic_strategy_promotion": proof["automatic_strategy_promotion"],
+        "live_trading_authority": proof["live_trading_authority"],
     }
-    return frames, proof
-
+    return frames, source
 
 def build_a7_features(frames: dict[str, pd.DataFrame]) -> pd.DataFrame:
     f = composite.build_features(frames)
@@ -288,14 +156,14 @@ def signal_for_a7(frame: pd.DataFrame) -> np.ndarray:
 
 def evaluate(
     state_root: Path,
-    snapshot_root: Path,
+    source_proof_root: Path,
     *,
     source_sha: str,
     now_ms: int,
 ) -> dict[str, Any]:
     frames, source = load_verified_recent_surface(
         state_root,
-        snapshot_root,
+        source_proof_root,
         source_sha=source_sha,
         now_ms=now_ms,
     )
@@ -424,7 +292,7 @@ def evaluate(
 
 def run(
     state_root: Path,
-    snapshot_root: Path,
+    source_proof_root: Path,
     output_root: Path,
     *,
     source_sha: str,
@@ -432,7 +300,7 @@ def run(
 ) -> dict[str, Any]:
     report = evaluate(
         state_root,
-        snapshot_root,
+        source_proof_root,
         source_sha=source_sha,
         now_ms=now_ms,
     )
@@ -447,14 +315,14 @@ def run(
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--state-root", type=Path, required=True)
-    parser.add_argument("--snapshot-root", type=Path, required=True)
+    parser.add_argument("--source-proof-root", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--source-sha", required=True)
     parser.add_argument("--now-ms", type=int, required=True)
     args = parser.parse_args()
     report = run(
         args.state_root,
-        args.snapshot_root,
+        args.source_proof_root,
         args.output_root,
         source_sha=args.source_sha,
         now_ms=args.now_ms,
