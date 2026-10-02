@@ -79,10 +79,13 @@ def _classify(mode: str) -> tuple[dict[str, Any] | None, str]:
     if (
         payload["phase"] != 7
         or payload["transport"] != "github-cloud"
-        or payload["worker_id"] not in {"research-agent", "qa-verifier-agent"}
         or os.environ.get("GITHUB_REPOSITORY") != REPO
         or not HEX40.fullmatch(os.environ.get("GITHUB_SHA", ""))
     ):
+        raise ResearchPreparationError("untrusted real Research Agent task context")
+    if payload["worker_id"] not in {"research-agent", "qa-verifier-agent"}:
+        if mode == "inspect":
+            return None, "none"
         raise ResearchPreparationError("untrusted real Research Agent task context")
     expected_mode = "independent-qa" if payload["worker_id"] == "qa-verifier-agent" else "producer"
     if mode not in ("inspect", "auto", expected_mode):
