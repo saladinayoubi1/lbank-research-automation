@@ -44,3 +44,26 @@ def test_successor_cache_key_rejects_missing_or_malformed_frontier():
 def test_cache_key_rejects_malformed_source():
     with pytest.raises(prepare.ResearchPreparationError, match="source SHA"):
         prepare.research_cache_key({"task_id": FIRST}, "not-a-sha")
+
+
+def test_architect_rca_inspect_is_not_granted_research_cache_access(monkeypatch):
+    monkeypatch.setenv("NEXUS_TASK_PAYLOAD_B64", "opaque")
+    monkeypatch.setenv("GITHUB_REPOSITORY", prepare.REPO)
+    monkeypatch.setenv("GITHUB_SHA", SOURCE)
+    monkeypatch.setattr(
+        prepare,
+        "decode_payload",
+        lambda _: {
+            "task_id": EIGHTH,
+            "phase": 7,
+            "transport": "github-cloud",
+            "worker_id": "architect-agent",
+        },
+    )
+
+    assert prepare._classify("inspect") == (None, "none")
+    with pytest.raises(
+        prepare.ResearchPreparationError,
+        match="untrusted real Research Agent task context",
+    ):
+        prepare._classify("auto")
