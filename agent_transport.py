@@ -389,6 +389,33 @@ def find_result(lease_id: str) -> dict[str, Any] | None:
     return _artifact_json(int(artifact["id"]))
 
 
+RESEARCH_CACHE_MISS_REASON = "required immutable input or evidence is not a regular file"
+RESEARCH_RCA_TRANSPORT_MISMATCH = "research_lease_worker_phase_or_transport_mismatch"
+
+
+def _preserve_original_research_cache_failure_for_rca_transport_mismatch(
+    task: dict[str, Any], outcome: str, evidence: dict[str, Any],
+) -> bool:
+    original = task.get("failure_evidence")
+    return bool(
+        outcome == "failure"
+        and task.get("id") in TASKS
+        and task.get("triage_mode") == "root_cause_first"
+        and task.get("assigned_worker") == "architect-agent"
+        and evidence.get("failure_class") == RESEARCH_RCA_TRANSPORT_MISMATCH
+        and evidence.get("executor") == "nexus-real-composite-backtest"
+        and evidence.get("auto_demo_promotion") is False
+        and evidence.get("live_enabled") is False
+        and isinstance(original, dict)
+        and task.get("failure_class") == "verified_research_execution_failed"
+        and original.get("executor") == "nexus-real-composite-backtest"
+        and original.get("failure_class") == "verified_research_execution_failed"
+        and original.get("reason") == RESEARCH_CACHE_MISS_REASON
+        and original.get("auto_demo_promotion") is False
+        and original.get("live_enabled") is False
+    )
+
+
 def ingest_result(config: dict[str, Any], task: dict[str, Any], result: dict[str, Any]) -> None:
     if not isinstance(result, dict) or set(result) != RESULT_KEYS:
         raise ValueError("result schema mismatch")
@@ -417,7 +444,24 @@ def ingest_result(config: dict[str, Any], task: dict[str, Any], result: dict[str
         raise ValueError("result evidence must be an object")
     completed_lease_id = task.get("lease_id")
     completed_dispatch_id = expected_dispatch
-    am.record_result(config, task["id"], task["assigned_worker"], outcome, evidence)
+    if _preserve_original_research_cache_failure_for_rca_transport_mismatch(
+        task, outcome, evidence
+    ):
+        task["triage_evidence"] = {
+            "worker_id": task.get("assigned_worker"),
+            "received_at": am.iso(),
+            "evidence": evidence,
+            "preserved_original_failure": True,
+        }
+        task["status"] = "TRIAGE"
+        task["triage_started_at"] = am.iso()
+        am.emit(
+            "research_rca_transport_mismatch_preserved_original_failure",
+            task_id=task["id"],
+            lease_id=completed_lease_id,
+        )
+    else:
+        am.record_result(config, task["id"], task["assigned_worker"], outcome, evidence)
     task["result_artifact_ingested"] = True
     task["result_received_at"] = am.iso()
     if task.get("external_wait_state") == am.WAITING_EXTERNAL:
