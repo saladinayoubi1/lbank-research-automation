@@ -28,6 +28,9 @@ def test_a7_job_is_trusted_research_only_and_physical():
     assert "shell: powershell" not in job
     assert "actions/setup-python" not in job
     assert "nexus_a7_daily_recent_source.py" in job
+    assert "scripts/nexus_windows_tree_cleanup.py" in job
+    assert "build\\a7-recent-state build\\a7-recent-cache" in job
+    assert "exit /b 0" not in job[job.index("- name: Remove raw A7 source state"):job.index("- name: Clean isolated Python")]
     assert "--source-proof-root build/a7-recent-proof" in job
     assert "a7_recent_source_bound_evidence=PASS" in job
     assert "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a" in job
