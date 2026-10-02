@@ -172,7 +172,7 @@ def test_evaluate_is_research_only_spot_only_and_no_trade_cap(tmp_path, monkeypa
     monkeypatch.setattr(
         a9,
         "load_spot_proof",
-        lambda root: {"snapshot_digest": "e" * 64},
+        lambda root: {"proof_sha256": "e" * 64},
     )
     monkeypatch.setattr(
         a9,
