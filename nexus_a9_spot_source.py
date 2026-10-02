@@ -1,9 +1,9 @@
-"""Acquire and verify the exact official Bybit Spot source surface for A9 research.
+"""Acquire the exact official Bybit Spot source surface for A9 research.
 
-The source window deliberately starts on 2026-07-01 so July can be consumed from
-one official monthly archive per symbol, while the A9 analysis window starts on
-2026-07-03. 2026-08-01 is supplied by the official daily archive. This keeps the
-source bounded to BTC/ETH and avoids downloading unrelated symbols.
+The A9 analysis window is 2026-07-03 through 2026-08-01 inclusive on 15-minute
+Spot bars. To keep memory bounded on the dedicated Windows Research runner this
+module deliberately consumes official *daily* Bybit Spot archives rather than
+loading the very large July monthly archives into one pandas frame.
 """
 from __future__ import annotations
 
@@ -21,20 +21,22 @@ import bybit_spot_archive_audit as audit
 import bybit_spot_archive_collector as collector
 import bybit_spot_backfill as backfill
 
-SCHEMA = "nexus.a9-spot-source.v1"
+SCHEMA = "nexus.a9-spot-source.v2"
 PROOF_NAME = "_a9_spot_source_proof.json"
 SYMBOLS = ("BTCUSDT", "ETHUSDT")
-SOURCE_START_DATE = "2026-07-01"
+SOURCE_START_DATE = "2026-07-03"
 SOURCE_END_DATE = "2026-08-01"
 ANALYSIS_START = pd.Timestamp("2026-07-03T00:00:00Z")
 ANALYSIS_END_EXCLUSIVE = pd.Timestamp("2026-08-02T00:00:00Z")
 TIMEFRAME = "minute15"
 STEP = pd.Timedelta(minutes=15)
-EXPECTED_SOURCE_ROWS = 32 * 96
-EXPECTED_ANALYSIS_ROWS = 30 * 96
-EXPECTED_UNITS = ("monthly:2026-07", "daily:2026-08-01")
-EXPECTED_ARCHIVES = len(SYMBOLS) * len(EXPECTED_UNITS)
-MAX_ARCHIVE_BYTES = 2 * 1024 * 1024 * 1024
+EXPECTED_DAYS = tuple(
+    ts.strftime("%Y-%m-%d")
+    for ts in pd.date_range(SOURCE_START_DATE, SOURCE_END_DATE, freq="1D")
+)
+EXPECTED_SOURCE_ROWS = len(EXPECTED_DAYS) * 96
+EXPECTED_ARCHIVES = len(SYMBOLS) * len(EXPECTED_DAYS)
+MAX_ARCHIVE_BYTES = 128 * 1024 * 1024
 MAX_FRAME_BYTES = 500 * 1024 * 1024
 _HEX64 = re.compile(r"^[0-9a-f]{64}$")
 _QUALITY_ZERO_FIELDS = (
@@ -69,7 +71,7 @@ def _digest(value: Any) -> str:
 
 
 def _read_json(path: Path) -> Any:
-    if path.is_symlink() or not path.is_file() or path.stat().st_size > 5_000_000:
+    if path.is_symlink() or not path.is_file() or path.stat().st_size > 8_000_000:
         raise A9SpotSourceError(f"missing or unsafe JSON source: {path}")
     try:
         return json.loads(path.read_text(encoding="utf-8"))
@@ -87,27 +89,29 @@ def _validate_report(report: Mapping[str, Any]) -> None:
         or config.get("end_date") != SOURCE_END_DATE
         or config.get("symbols") != list(SYMBOLS)
         or config.get("max_archives_per_run") != EXPECTED_ARCHIVES
-        or summary.get("plan_units") != len(EXPECTED_UNITS)
+        or summary.get("plan_units") != len(EXPECTED_DAYS)
         or summary.get("plan_archives") != EXPECTED_ARCHIVES
-        or summary.get("completed_units") != len(EXPECTED_UNITS)
+        or summary.get("completed_units") != len(EXPECTED_DAYS)
         or summary.get("remaining_units") != 0
         or summary.get("run_failures") != 0
         or summary.get("backfill_complete") is not True
         or summary.get("current_dataset_integrity_ok") is not True
         or report.get("run_failures") != []
     ):
-        raise A9SpotSourceError("official BTC/ETH Spot backfill did not complete exact A9 source coverage")
+        raise A9SpotSourceError("official BTC/ETH daily Spot backfill did not complete exact A9 coverage")
 
 
 def _source_evidence(state_root: Path) -> tuple[list[dict[str, Any]], str]:
     raw = _read_json(state_root / backfill.SOURCE_MANIFEST_NAME)
     if not isinstance(raw, list) or len(raw) != EXPECTED_ARCHIVES:
-        raise A9SpotSourceError("A9 Spot source manifest must contain exactly four archives")
+        raise A9SpotSourceError(
+            f"A9 Spot source manifest must contain exactly {EXPECTED_ARCHIVES} daily archives"
+        )
 
     expected = {
-        (symbol, "monthly:2026-07") for symbol in SYMBOLS
-    } | {
-        (symbol, "daily:2026-08-01") for symbol in SYMBOLS
+        (symbol, f"daily:{day}")
+        for symbol in SYMBOLS
+        for day in EXPECTED_DAYS
     }
     seen: set[tuple[str, str]] = set()
     evidence: list[dict[str, Any]] = []
@@ -120,24 +124,16 @@ def _source_evidence(state_root: Path) -> tuple[list[dict[str, Any]], str]:
         if key not in expected or key in seen:
             raise A9SpotSourceError("unexpected, missing, or duplicated A9 Spot source identity")
         seen.add(key)
-
-        if unit_id == "monthly:2026-07":
-            filename = f"{symbol}-2026-07.csv.gz"
-            unit_kind = "monthly"
-            start_date, end_date = "2026-07-01", "2026-07-31"
-        else:
-            filename = f"{symbol}_2026-08-01.csv.gz"
-            unit_kind = "daily"
-            start_date = end_date = "2026-08-01"
-
+        day = unit_id.split(":", 1)[1]
+        filename = f"{symbol}_{day}.csv.gz"
+        expected_url = backfill.archive_url(symbol, filename)
         size = row.get("size_bytes")
         sha = str(row.get("sha256", "")).lower()
-        expected_url = backfill.archive_url(symbol, filename)
         if (
             row.get("filename") != filename
-            or row.get("unit_kind") != unit_kind
-            or row.get("start_date") != start_date
-            or row.get("end_date") != end_date
+            or row.get("unit_kind") != "daily"
+            or row.get("start_date") != day
+            or row.get("end_date") != day
             or row.get("url") != expected_url
             or not expected_url.startswith(audit.ARCHIVE_BASE_URL + "/")
             or row.get("http_status") != 200
@@ -149,19 +145,18 @@ def _source_evidence(state_root: Path) -> tuple[list[dict[str, Any]], str]:
             or int(row.get("valid_trade_rows", 0)) <= 0
             or any(int(row.get(field, 0)) != 0 for field in _QUALITY_ZERO_FIELDS)
         ):
-            raise A9SpotSourceError(f"official A9 Spot archive provenance failed closed: {symbol}/{unit_id}")
+            raise A9SpotSourceError(f"official A9 Spot archive provenance failed closed: {symbol}/{day}")
         evidence.append(
             {
                 "symbol": symbol,
+                "date": day,
                 "unit_id": unit_id,
-                "unit_kind": unit_kind,
+                "unit_kind": "daily",
                 "filename": filename,
                 "url": expected_url,
                 "sha256": sha,
                 "size_bytes": size,
                 "http_status": 200,
-                "start_date": start_date,
-                "end_date": end_date,
                 "source_rows": int(row["source_rows"]),
                 "valid_trade_rows": int(row["valid_trade_rows"]),
                 "parser_engine": str(row.get("parser_engine", "")),
@@ -170,7 +165,7 @@ def _source_evidence(state_root: Path) -> tuple[list[dict[str, Any]], str]:
         )
     if seen != expected:
         raise A9SpotSourceError("A9 Spot source surface is incomplete")
-    evidence.sort(key=lambda item: (item["symbol"], item["unit_id"]))
+    evidence.sort(key=lambda item: (item["symbol"], item["date"]))
     return evidence, _digest(evidence)
 
 
@@ -184,17 +179,19 @@ def _analysis_frame(state_root: Path, symbol: str) -> tuple[pd.DataFrame, str]:
         raise A9SpotSourceError(f"unexpected A9 Spot frame schema: {symbol}")
     frame["timestamp"] = pd.to_datetime(frame["timestamp"], utc=True, errors="raise")
     frame = frame.sort_values("timestamp").reset_index(drop=True)
-
-    source_start = pd.Timestamp(SOURCE_START_DATE, tz="UTC")
-    source_end = pd.Timestamp(SOURCE_END_DATE, tz="UTC") + pd.Timedelta(days=1)
-    source_expected = pd.date_range(source_start, source_end, freq=STEP, inclusive="left")
+    expected = pd.date_range(
+        ANALYSIS_START,
+        ANALYSIS_END_EXCLUSIVE,
+        freq=STEP,
+        inclusive="left",
+    )
     if (
         len(frame) != EXPECTED_SOURCE_ROWS
-        or not pd.DatetimeIndex(frame["timestamp"]).equals(source_expected)
+        or not pd.DatetimeIndex(frame["timestamp"]).equals(expected)
         or set(frame["symbol"].astype(str)) != {canonical}
         or set(frame["timeframe"].astype(str)) != {TIMEFRAME}
     ):
-        raise A9SpotSourceError(f"A9 Spot source grid is incomplete: {symbol}")
+        raise A9SpotSourceError(f"A9 Spot 15m grid is incomplete: {symbol}")
 
     for field in ("open", "high", "low", "close", "volume"):
         frame[field] = pd.to_numeric(frame[field], errors="raise")
@@ -208,22 +205,6 @@ def _analysis_frame(state_root: Path, symbol: str) -> tuple[pd.DataFrame, str]:
     ):
         raise A9SpotSourceError(f"invalid A9 Spot OHLCV values: {symbol}")
 
-    analysis = frame[
-        (frame["timestamp"] >= ANALYSIS_START)
-        & (frame["timestamp"] < ANALYSIS_END_EXCLUSIVE)
-    ].reset_index(drop=True)
-    analysis_expected = pd.date_range(
-        ANALYSIS_START,
-        ANALYSIS_END_EXCLUSIVE,
-        freq=STEP,
-        inclusive="left",
-    )
-    if (
-        len(analysis) != EXPECTED_ANALYSIS_ROWS
-        or not pd.DatetimeIndex(analysis["timestamp"]).equals(analysis_expected)
-    ):
-        raise A9SpotSourceError(f"A9 Spot analysis grid is incomplete: {symbol}")
-
     payload = [
         {
             "timestamp": pd.Timestamp(row.timestamp).isoformat(),
@@ -233,17 +214,18 @@ def _analysis_frame(state_root: Path, symbol: str) -> tuple[pd.DataFrame, str]:
             "close": round(float(row.close), 12),
             "volume": round(float(row.volume), 12),
         }
-        for row in analysis.itertuples(index=False)
+        for row in frame.itertuples(index=False)
     ]
-    return analysis, _digest(payload)
+    return frame, _digest(payload)
 
 
-def _core(state_root: Path, report: Mapping[str, Any]) -> dict[str, Any]:
+def build_proof(state_root: Path, report: Mapping[str, Any]) -> dict[str, Any]:
     _validate_report(report)
-    sources, source_digest = _source_evidence(state_root)
+    state = state_root.resolve()
+    sources, source_digest = _source_evidence(state)
     cells: list[dict[str, Any]] = []
     for symbol in SYMBOLS:
-        frame, frame_digest = _analysis_frame(state_root, symbol)
+        frame, frame_digest = _analysis_frame(state, symbol)
         cells.append(
             {
                 "symbol": symbol,
@@ -255,7 +237,7 @@ def _core(state_root: Path, report: Mapping[str, Any]) -> dict[str, Any]:
                 "analysis_frame_sha256": frame_digest,
             }
         )
-    return {
+    core = {
         "schema": SCHEMA,
         "venue": "bybit",
         "market": "spot",
@@ -266,6 +248,7 @@ def _core(state_root: Path, report: Mapping[str, Any]) -> dict[str, Any]:
         "analysis_start_utc": ANALYSIS_START.isoformat(),
         "analysis_end_exclusive_utc": ANALYSIS_END_EXCLUSIVE.isoformat(),
         "timeframe": TIMEFRAME,
+        "archive_granularity": "daily",
         "archive_sources": sources,
         "archive_source_count": len(sources),
         "archive_source_manifest_sha256": source_digest,
@@ -278,10 +261,6 @@ def _core(state_root: Path, report: Mapping[str, Any]) -> dict[str, Any]:
         "private_credentials_used": False,
         "real_exchange_orders": False,
     }
-
-
-def build_proof(state_root: Path, report: Mapping[str, Any]) -> dict[str, Any]:
-    core = _core(state_root.resolve(), report)
     return {**core, "proof_sha256": _digest(core)}
 
 
