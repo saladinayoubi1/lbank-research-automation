@@ -73,8 +73,13 @@ def mock_proofs(monkeypatch, *, bad_ledger=False, bad_qa=False, no_verified_fift
             "auto_demo_promotion": False, "live_enabled": False,
         },
     }
+    future = [
+        {"id": "P7-RESEARCH-COMPOSITE-006", "status": "PENDING"},
+        {"id": "P7-RESEARCH-COMPOSITE-007", "status": "PENDING"},
+        {"id": "P7-RESEARCH-COMPOSITE-008", "status": "PENDING"},
+    ]
     archive_map = {
-        901: zipped("agent_manager_runtime.json", {"tasks": [task]}),
+        901: zipped("agent_manager_runtime.json", {"tasks": [task, *future]}),
         902: zipped("result/agent-receipt.json", receipt),
         903: zipped("result/novelty-ledger.json", ledger),
         904: zipped("qa-evidence.json", proof),
@@ -245,7 +250,11 @@ def test_frontier_prefers_exact_current_source_over_newer_stale_coordinator(monk
         selector.REPO, required_task_id=FIFTH,
     )
     assert artifact_id == 901
-    assert [t["id"] for t in manager["tasks"]] == [FIFTH]
+    assert manager["tasks"][0]["id"] == FIFTH
+    assert all(
+        task["status"] == "PENDING"
+        for task in manager["tasks"][1:]
+    )
 
 
 def test_frontier_skips_schema_lag_snapshot_missing_required_predecessor(monkeypatch):
