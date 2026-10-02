@@ -12,7 +12,13 @@ on:
       - "tests/test_nexus_monthly_ten_variant_pre_demo.py"
       - "tests/test_nexus_monthly_four_pair_pre_demo.py"
       - "tests/test_nexus_monthly_four_pair_composite_pre_demo.py"
-      - "nexus_multipair_recent_archive_runtime_snapshot.py"\n      - "nexus_a7_range_failure_reversal_research.py"\n      - "tests/test_nexus_a7_range_failure_reversal_research.py"\n      - "tests/test_nexus_a7_range_failure_reversal_workflow.py"\n      - "nexus_a7_range_failure_reversal_research.py"\n      - "tests/test_nexus_a7_range_failure_reversal_research.py"\n      - "tests/test_nexus_a7_range_failure_reversal_workflow.py"
+      - "nexus_multipair_recent_archive_runtime_snapshot.py"
+      - "nexus_a7_range_failure_reversal_research.py"
+      - "tests/test_nexus_a7_range_failure_reversal_research.py"
+      - "tests/test_nexus_a7_range_failure_reversal_workflow.py"
+      - "nexus_a7_range_failure_reversal_research.py"
+      - "tests/test_nexus_a7_range_failure_reversal_research.py"
+      - "tests/test_nexus_a7_range_failure_reversal_workflow.py"
       - "nexus_multipair_runtime_requalification_snapshot.py"
       - "nexus_multipair_strategy_discovery.py"
       - "nexus_multipair_strategy_proposal_requalification.py"
@@ -52,6 +58,9 @@ on:
       - "tests/test_nexus_monthly_four_pair_pre_demo.py"
       - "tests/test_nexus_monthly_four_pair_composite_pre_demo.py"
       - "nexus_multipair_recent_archive_runtime_snapshot.py"
+      - "nexus_a7_range_failure_reversal_research.py"
+      - "tests/test_nexus_a7_range_failure_reversal_research.py"
+      - "tests/test_nexus_a7_range_failure_reversal_workflow.py"
       - "nexus_multipair_runtime_requalification_snapshot.py"
       - "nexus_multipair_strategy_discovery.py"
       - "nexus_multipair_strategy_proposal_requalification.py"
@@ -359,8 +368,8 @@ jobs:
           "$python_bin" -m venv "$venv"
           "$venv/bin/python" -m pip install -r requirements-dev.lock
           "$venv/bin/python" -m pip check
-          printf '%s\\n' "$venv/bin" >> "$GITHUB_PATH"
-          printf 'NEXUS_A7_VENV=%s\\n' "$venv" >> "$GITHUB_ENV"
+          printf '%s\n' "$venv/bin" >> "$GITHUB_PATH"
+          printf 'NEXUS_A7_VENV=%s\n' "$venv" >> "$GITHUB_ENV"
 
       - name: Run A7 causal contract tests
         shell: bash
