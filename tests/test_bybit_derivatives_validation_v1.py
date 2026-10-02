@@ -13,6 +13,7 @@ from bybit_derivatives_validation_v1 import (
     apply_trade,
     choose_risk_tier,
     expected_funding_count,
+    fetch_open_interest,
     funding_cashflow,
     margin_requirements,
     minute_vwap,
@@ -140,3 +141,59 @@ def test_client_demotes_blocked_base_and_caches_working_base() -> None:
         "https://working.example/v5/market/time",
         "https://working.example/v5/market/time",
     ]
+
+
+def test_fetch_open_interest_paginates_and_sorts_without_future_rows() -> None:
+    class FakeClient:
+        def __init__(self) -> None:
+            self.calls: list[dict[str, object]] = []
+
+        def get(self, path: str, params: dict[str, object]) -> dict[str, object]:
+            assert path == "/v5/market/open-interest"
+            self.calls.append(dict(params))
+            if "cursor" not in params:
+                return {
+                    "result": {
+                        "list": [
+                            {"timestamp": "2000", "openInterest": "3"},
+                            {"timestamp": "1000", "openInterest": "2"},
+                        ],
+                        "nextPageCursor": "next",
+                    }
+                }
+            return {
+                "result": {
+                    "list": [
+                        {"timestamp": "3000", "openInterest": "4"},
+                        {"timestamp": "5000", "openInterest": "99"},
+                    ],
+                    "nextPageCursor": "",
+                }
+            }
+
+    client = FakeClient()
+    frame = fetch_open_interest(client, "BTCUSDT", 1000, 4000)
+    assert frame["timestamp"].tolist() == list(
+        pd.to_datetime([1000, 2000, 3000], unit="ms", utc=True)
+    )
+    assert frame["open_interest"].tolist() == [2.0, 3.0, 4.0]
+    assert client.calls[0]["intervalTime"] == "15min"
+    assert client.calls[1]["cursor"] == "next"
+
+
+def test_fetch_open_interest_rejects_repeated_cursor() -> None:
+    class FakeClient:
+        def get(self, _path: str, _params: dict[str, object]) -> dict[str, object]:
+            return {
+                "result": {
+                    "list": [{"timestamp": "1000", "openInterest": "1"}],
+                    "nextPageCursor": "same",
+                }
+            }
+
+    try:
+        fetch_open_interest(FakeClient(), "BTCUSDT", 0, 2000)
+    except Exception as exc:
+        assert "pagination stalled" in str(exc)
+    else:
+        raise AssertionError("repeated open-interest cursor must fail closed")
