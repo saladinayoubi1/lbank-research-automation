@@ -361,24 +361,42 @@ def _independently_pinned_historical_qa(
 
 
 def verified_frontier(repo: str) -> dict[str, Any]:
-    # The latest reviewed Mission schema names the NEXT dependent task.
-    # Its predecessor is the only admissible QA-attested transport source.
-    expected_id = PREDECESSOR[list(PREDECESSOR)[-1]]
-    manager_artifact_id, manager = latest_coordinator(
-        repo, required_task_id=expected_id,
-    )
+    # Future successors may already exist in the Mission schema. Select the
+    # latest actually DONE independent-QA predecessor, not the last planned ID.
+    manager_artifact_id, manager = latest_coordinator(repo)
     tasks = manager.get("tasks")
     if not isinstance(tasks, list):
         raise QaFrontierError("coordinator does not contain a durable task ledger")
-    matching = [task for task in tasks
-                if isinstance(task, dict) and task.get("id") == expected_id]
-    if len(matching) != 1:
-        raise QaFrontierError("no unambiguous latest predecessor Research mission")
-    task = matching[0]
-    try:
-        attested = attested_predecessor(task)
-    except ValueError as exc:
-        raise QaFrontierError("the predecessor did not complete real independent QA") from exc
+    by_id = {}
+    for row in tasks:
+        if not isinstance(row, dict) or not isinstance(row.get("id"), str):
+            continue
+        if row["id"] in by_id:
+            raise QaFrontierError("ambiguous Research mission in Coordinator proof")
+        by_id[row["id"]] = row
+
+    expected_id = None
+    task = None
+    attested = None
+    unfinished_seen = False
+    for candidate_id in dict.fromkeys(PREDECESSOR.values()):
+        candidate = by_id.get(candidate_id)
+        if candidate is None:
+            continue
+        if candidate.get("status") != "DONE":
+            unfinished_seen = True
+            continue
+        if unfinished_seen:
+            raise QaFrontierError("Research mission lineage is non-contiguous")
+        try:
+            candidate_attested = attested_predecessor(candidate)
+        except ValueError as exc:
+            raise QaFrontierError("completed predecessor lacks exact independent QA") from exc
+        expected_id = candidate_id
+        task = candidate
+        attested = candidate_attested
+    if expected_id is None or task is None or attested is None:
+        raise QaFrontierError("no completed verified Research predecessor available")
     production = task["result_evidence"]
     checked = task["verification_evidence"]
     lease = task.get("research_producer_lease_id")
