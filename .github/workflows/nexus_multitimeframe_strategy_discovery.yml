@@ -437,16 +437,40 @@ jobs:
           PY
 
       # Existing reviewed discovery owns the verified replay source,
-      # signed novelty frontier, and Actions read scope. Export a source-bound
-      # immutable cache for the leased real Research Agent without widening
-      # the protected NEXUS Runtime Worker's permissions.
+      # signed novelty frontier, and Actions read scope. Successor transport
+      # identity is source + exact independently-QA-attested frontier digest.
+      - name: Resolve exact QA-attested Research frontier identity
+        if: github.ref == 'refs/heads/main'
+        id: agent-frontier
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf build/research-frontier
+          mkdir -p build/research-frontier
+          python scripts/nexus_qa_attested_discovery_frontier.py \
+            --repository "$GITHUB_REPOSITORY" \
+            --output build/research-frontier/previous-ledger.json
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          from nexus_composite_strategy_research import load_ledger
+          ledger = load_ledger(Path("build/research-frontier/previous-ledger.json"))
+          digest = ledger["ledger_digest"]
+          key = f"nexus-composite-inputs-v2-{os.environ['GITHUB_SHA']}-{digest}"
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as handle:
+              handle.write(f"ledger_digest={digest}\n")
+              handle.write(f"cache_key={key}\n")
+          print("research_frontier_cache_key=" + key)
+          PY
+
       - name: Check existing approved Research input transport cache
         if: github.ref == 'refs/heads/main'
         id: agent-input-cache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: build/agent-research-cache
-          key: nexus-composite-inputs-v1-${{ github.sha }}
+          key: ${{ steps.agent-frontier.outputs.cache_key }}
           lookup-only: true
 
       - name: Bind canonical archive and novelty frontier as one Research lease input
@@ -468,9 +492,7 @@ jobs:
           # and which the durable main-branch coordinator marked DONE.
           # Standalone exploratory novelty artifacts are explicitly forbidden
           # as a replacement: they may have already consumed the next family.
-          python scripts/nexus_qa_attested_discovery_frontier.py \
-            --repository "$GITHUB_REPOSITORY" \
-            --output build/agent-research-cache/previous-ledger.json
+          cp build/research-frontier/previous-ledger.json build/agent-research-cache/previous-ledger.json
           test -s build/agent-research-cache/previous-ledger.json
           python - <<'PY'
           import os
@@ -503,7 +525,7 @@ jobs:
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: build/agent-research-cache
-          key: nexus-composite-inputs-v1-${{ github.sha }}
+          key: ${{ steps.agent-frontier.outputs.cache_key }}
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
