@@ -14,8 +14,8 @@ import nexus_a9_spot_source as source
 def _write_frame(root, symbol):
     canonical = collector.canonical_symbol(symbol)
     index = pd.date_range(
-        pd.Timestamp(source.SOURCE_START_DATE, tz="UTC"),
-        pd.Timestamp(source.SOURCE_END_DATE, tz="UTC") + pd.Timedelta(days=1),
+        source.ANALYSIS_START,
+        source.ANALYSIS_END_EXCLUSIVE,
         freq="15min",
         inclusive="left",
     )
@@ -38,15 +38,8 @@ def _write_frame(root, symbol):
     frame.to_parquet(path / "minute15.parquet", index=False)
 
 
-def _source_row(symbol, unit_id):
-    if unit_id == "monthly:2026-07":
-        filename = f"{symbol}-2026-07.csv.gz"
-        kind = "monthly"
-        start_date, end_date = "2026-07-01", "2026-07-31"
-    else:
-        filename = f"{symbol}_2026-08-01.csv.gz"
-        kind = "daily"
-        start_date = end_date = "2026-08-01"
+def _source_row(symbol, day):
+    filename = f"{symbol}_{day}.csv.gz"
     return {
         "symbol": symbol,
         "filename": filename,
@@ -57,14 +50,14 @@ def _source_row(symbol, unit_id):
         "http_status": 200,
         "download_attempts": 1,
         "loaded_from_cache": False,
-        "parser_engine": "csv",
-        "timestamp_unit": "milliseconds",
+        "parser_engine": "c",
+        "timestamp_unit": "ms",
         "source_rows": 100,
         "valid_trade_rows": 100,
-        "unit_id": unit_id,
-        "unit_kind": kind,
-        "start_date": start_date,
-        "end_date": end_date,
+        "unit_id": f"daily:{day}",
+        "unit_kind": "daily",
+        "start_date": day,
+        "end_date": day,
         "invalid_numeric_rows": 0,
         "invalid_symbol_rows": 0,
         "invalid_side_rows": 0,
@@ -81,8 +74,8 @@ def _write_source_state(root):
     for symbol in source.SYMBOLS:
         _write_frame(root, symbol)
     rows = [
-        _source_row(symbol, unit_id)
-        for unit_id in source.EXPECTED_UNITS
+        _source_row(symbol, day)
+        for day in source.EXPECTED_DAYS
         for symbol in source.SYMBOLS
     ]
     (root / backfill.SOURCE_MANIFEST_NAME).write_text(
@@ -97,11 +90,11 @@ def _write_source_state(root):
             "max_archives_per_run": source.EXPECTED_ARCHIVES,
         },
         "summary": {
-            "plan_units": len(source.EXPECTED_UNITS),
+            "plan_units": len(source.EXPECTED_DAYS),
             "plan_archives": source.EXPECTED_ARCHIVES,
-            "completed_units": len(source.EXPECTED_UNITS),
+            "completed_units": len(source.EXPECTED_DAYS),
             "remaining_units": 0,
-            "units_completed_this_run": len(source.EXPECTED_UNITS),
+            "units_completed_this_run": len(source.EXPECTED_DAYS),
             "archives_completed_this_run": source.EXPECTED_ARCHIVES,
             "run_failures": 0,
             "backfill_complete": True,
@@ -113,18 +106,19 @@ def _write_source_state(root):
     return report
 
 
-def test_a9_spot_proof_is_btc_eth_only_and_covers_august_first(tmp_path):
+def test_a9_spot_proof_is_btc_eth_daily_exact_window(tmp_path):
     report = _write_source_state(tmp_path)
     proof = source.build_proof(tmp_path, report)
     (tmp_path / source.PROOF_NAME).write_text(json.dumps(proof), encoding="utf-8")
     source.verify_proof(tmp_path, proof)
 
     assert proof["symbols"] == ["BTCUSDT", "ETHUSDT"]
-    assert proof["archive_source_count"] == 4
-    assert {row["unit_id"] for row in proof["archive_sources"]} == {
-        "monthly:2026-07",
-        "daily:2026-08-01",
-    }
+    assert proof["archive_granularity"] == "daily"
+    assert proof["archive_source_count"] == 60
+    assert {row["date"] for row in proof["archive_sources"]} == set(source.EXPECTED_DAYS)
+    assert {row["unit_kind"] for row in proof["archive_sources"]} == {"daily"}
+    assert proof["source_window_start"] == "2026-07-03"
+    assert proof["source_window_end_inclusive"] == "2026-08-01"
     assert proof["analysis_start_utc"] == "2026-07-03T00:00:00+00:00"
     assert proof["analysis_end_exclusive_utc"] == "2026-08-02T00:00:00+00:00"
     assert {cell["analysis_rows"] for cell in proof["cells"]} == {2880}
