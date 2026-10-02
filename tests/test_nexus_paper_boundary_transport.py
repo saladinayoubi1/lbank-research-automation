@@ -25,6 +25,22 @@ def owner_jobs():
         {"name": "persist-state", "run_id": int(RUN), "conclusion": "skipped"},
     ]}
 
+def owner_jobs_with_public_boundary_persist():
+    jobs = owner_jobs()
+    jobs["jobs"][1] = {
+        "name": "persist-state",
+        "run_id": int(RUN),
+        "conclusion": "success",
+        "steps": [
+            {"name": "Rehydrate physical Paper state handoff",
+             "conclusion": "skipped"},
+            {"name": "Rehydrate and independently verify public Paper boundary proof",
+             "conclusion": "success"},
+        ],
+    }
+    return jobs
+
+
 def no_artifacts():
     return {"total_count": 0, "artifacts": []}
 
@@ -42,6 +58,26 @@ def test_owner_primary_without_public_artifact_is_explicitly_not_dispatched():
     assert result["mode"] == "owner_checkpoint_primary_no_public_artifact"
     assert result["discovery_dispatch"] is False
     assert result["artifact_id"] == ""
+
+
+def test_owner_primary_public_boundary_persistence_is_verified_without_private_state():
+    result = choose(no_artifacts(), owner_jobs_with_public_boundary_persist(), RUN, SOURCE)
+    assert result["mode"] == "owner_checkpoint_primary_no_public_artifact"
+    assert result["discovery_dispatch"] is False
+
+
+@pytest.mark.parametrize("step_name,bad_conclusion", [
+    ("Rehydrate physical Paper state handoff", "success"),
+    ("Rehydrate and independently verify public Paper boundary proof", "failure"),
+])
+def test_owner_primary_public_boundary_persistence_fails_closed_on_bad_transition(
+        step_name, bad_conclusion):
+    jobs = owner_jobs_with_public_boundary_persist()
+    for step in jobs["jobs"][1]["steps"]:
+        if step["name"] == step_name:
+            step["conclusion"] = bad_conclusion
+    with pytest.raises(TransportError, match="public boundary persistence"):
+        choose(no_artifacts(), jobs, RUN, SOURCE)
 
 
 def test_exact_public_artifact_is_digest_and_source_bound():
