@@ -39,6 +39,7 @@ MECHANISMS = (
     "relative_momentum_reacceleration",
     "lagged_peer_volatility_release",
     "cross_pair_volatility_catchup",
+    "regime_conditional_composite",
 )
 # Distinct entry mechanisms vs risk/feature parameter variations are explicitly
 # separately labeled; risk variants do NOT count as independent new edges.
@@ -327,6 +328,35 @@ def signal_for(frame: pd.DataFrame, config: dict[str, Any]) -> np.ndarray:
             c > frame["prior_hi"]) & (c > o) & (frame["rel_vol"] >= 1.05) & (
             np.isfinite(ratio) & np.isfinite(ratio_baseline)
             & np.isfinite(peer_rv) & np.isfinite(peer_rv_baseline))
+    elif mechanism == "regime_conditional_composite":
+        # A8-style causal regime router. It does not average or optimize
+        # historical returns: a completed higher-timeframe state chooses one
+        # already-reviewed entry family, while ambiguous/unknown states stay
+        # in cash. This is a research hypothesis, never evidence of a new edge
+        # or promotion authority by itself.
+        trend_regime = (
+            (frame["h4_up"] == 1)
+            & (frame["h4_range"] == 0)
+            & (frame["h1_vol_ok"] == 1)
+        )
+        range_regime = (
+            (frame["h4_range"] == 1)
+            & (frame["h4_up"] == 0)
+            & (frame["h1_vol_ok"] == 1)
+        )
+        trend_entry = (
+            (lo <= frame["prior_hi"])
+            & (c > frame["prior_hi"])
+            & (c > o)
+            & (frame["rel_vol"] > .85)
+        )
+        range_failure_entry = (
+            (lo < frame["prior_lo"])
+            & (c > frame["prior_lo"])
+            & (c > o)
+            & (frame["rel_vol"] > 1.0)
+        )
+        s = (trend_regime & trend_entry) | (range_regime & range_failure_entry)
     elif mechanism == "cross_pair_relative_reclaim":
         if not {"cross_pair_relative_z", "cross_pair_relative_z_previous"} <= set(frame.columns):
             raise CompositeResearchError("cross-pair mechanism requires exact aligned verified peer history")

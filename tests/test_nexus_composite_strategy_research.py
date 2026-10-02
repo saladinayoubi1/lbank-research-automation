@@ -582,3 +582,72 @@ def test_tenth_novel_mechanism_is_selected_after_first_nine_distinct_families():
     assert selected["mechanism"] == "cross_pair_volatility_catchup"
     assert selected["risk_variant"] == 0
     assert selected["fingerprint"] not in signed["config_fingerprints_evaluated"]
+
+
+def test_eleventh_regime_conditional_composite_routes_known_regimes_and_holds_cash_unknown():
+    base = {
+        "h1_compression": 0., "h1_vol_ok": 1., "rel_vol": 1.2,
+        "prior_hi": 101., "prior_lo": 99., "atr": 1.,
+        "open": 101.2, "close": 102., "low": 100.5, "high": 103.,
+    }
+    rows = pd.DataFrame([
+        {**base, "h4_up": 1., "h4_range": 0.},
+        {**base, "h4_up": 0., "h4_range": 1.,
+         "open": 99.4, "close": 100., "low": 98.5, "high": 100.5},
+        {**base, "h4_up": 1., "h4_range": 1., "low": 98.5},
+        {**base, "h4_up": 0., "h4_range": 0.},
+    ])
+    config = {"mechanism": "regime_conditional_composite", "risk_variant": 0}
+    assert engine.signal_for(rows, config).tolist() == [True, True, False, False]
+
+
+def test_eleventh_novel_mechanism_is_selected_after_first_ten_distinct_families():
+    prior = engine.empty_ledger()
+    core = {k: v for k, v in prior.items() if k != "ledger_digest"}
+    for cfg in engine.CONFIGS:
+        if cfg["risk_variant"] != 0 or cfg["mechanism"] == "regime_conditional_composite":
+            continue
+        core["config_fingerprints_evaluated"].append(engine.digest({
+            "config": cfg, "dataset": engine.ARCHIVE_SHA256,
+            "contract": engine.SCHEMA,
+        }))
+        core["mechanisms_evaluated"].append(cfg["mechanism"])
+    core["mechanisms_evaluated"] = sorted(set(core["mechanisms_evaluated"]))
+    signed = {**core, "ledger_digest": engine.digest(core)}
+    selected = engine.select_next(signed)
+    assert selected is not None
+    assert selected["mechanism"] == "regime_conditional_composite"
+    assert selected["risk_variant"] == 0
+    assert selected["fingerprint"] not in signed["config_fingerprints_evaluated"]
+
+
+def test_eleventh_mechanism_runs_full_research_only_numeric_grid(tmp_path, monkeypatch):
+    frames = history(n=1536)
+    monkeypatch.setattr(
+        engine, "load_verified_archive_frame",
+        lambda _root, _symbol, tf: frames[tf],
+    )
+    previous = engine.empty_ledger()
+    core = {k: v for k, v in previous.items() if k != "ledger_digest"}
+    for cfg in engine.CONFIGS:
+        if cfg["risk_variant"] != 0 or cfg["mechanism"] == "regime_conditional_composite":
+            continue
+        core["mechanisms_evaluated"].append(cfg["mechanism"])
+        core["config_fingerprints_evaluated"].append(engine.digest({
+            "config": cfg, "dataset": engine.ARCHIVE_SHA256,
+            "contract": engine.SCHEMA,
+        }))
+    core["mechanisms_evaluated"] = sorted(set(core["mechanisms_evaluated"]))
+    prior_path = tmp_path / "previous.json"
+    prior_path.write_text(json.dumps({**core, "ledger_digest": engine.digest(core)}))
+    report = engine.run(
+        tmp_path / "approved", tmp_path / "result", "a" * 40, prior_path
+    )
+    assert report["selected"]["mechanism"] == "regime_conditional_composite"
+    assert report["selected"]["risk_variant"] == 0
+    assert report["distinct_mechanisms_tested_cumulative"] == len(engine.MECHANISMS)
+    assert len(report["rows"]) == 12
+    assert all(row["trade_count_limit"] is None for row in report["rows"])
+    assert report["research_only"] is True
+    assert report["auto_demo_promotion"] is False
+    assert report["live_enabled"] is False
