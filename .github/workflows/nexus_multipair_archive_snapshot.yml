@@ -93,7 +93,7 @@ permissions:
 
 concurrency:
   group: nexus-multipair-official-archive-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'main' }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   acquire-snapshot:
