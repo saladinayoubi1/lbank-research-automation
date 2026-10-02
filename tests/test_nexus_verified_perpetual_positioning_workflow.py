@@ -18,5 +18,15 @@ def test_positioning_workflow_is_read_only_and_verifies_research_plane_proof():
     assert 'proof["derivatives_execution_authority"] is False' in text
     assert 'proof["automatic_strategy_promotion"] is False' in text
     assert 'proof["live_trading_authority"] is False' in text
+    assert "Build fresh public positioning proof" in text
+    assert "python nexus_verified_perpetual_positioning.py" in text
+    assert "--output-root build/perpetual-positioning-fresh" in text
+    assert "Compare fresh proof with committed evidence" in text
+    assert '"dataset_semantic_sha256"' in text
+    assert '"oi_value_field"' in text
+    assert '"oi_methodology"' in text
+    assert "fresh_positioning_evidence=PASS" in text
+    assert "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a" in text
+    assert "nexus-verified-perpetual-positioning-${{ github.sha }}" in text
     assert "api.bybit" not in text
     assert "secrets." not in text
