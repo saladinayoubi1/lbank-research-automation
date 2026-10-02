@@ -12,6 +12,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from bybit_derivatives_core_v1 import (
@@ -145,8 +146,9 @@ def verify_open_interest_grid(
     actual = pd.DatetimeIndex(out["timestamp"])
     if len(actual) != len(expected) or not actual.equals(expected):
         raise PositioningDataError(f"incomplete exact 1h OI grid for {symbol}")
-    if (out[["single_open_interest", "bilateral_open_interest"]] < 0).any().any():
-        raise PositioningDataError(f"negative OI for {symbol}")
+    oi_values = out[["single_open_interest", "bilateral_open_interest"]].astype(float).to_numpy()
+    if not np.isfinite(oi_values).all() or (oi_values < 0).any():
+        raise PositioningDataError(f"non-finite or negative OI for {symbol}")
     out["available_at"] = out["timestamp"] + OI_STEP
     out["symbol"] = symbol
     out["oi_methodology"] = "post_2026_06_11_single_sided"
@@ -170,7 +172,7 @@ def verify_funding(
         raise PositioningDataError(f"duplicate funding timestamp for {symbol}")
     if (out["timestamp"] < start).any() or (out["timestamp"] >= end).any():
         raise PositioningDataError(f"out-of-window funding timestamp for {symbol}")
-    if not out["funding_rate"].map(pd.notna).all():
+    if not np.isfinite(out["funding_rate"].astype(float).to_numpy()).all():
         raise PositioningDataError(f"non-finite funding value for {symbol}")
     expected_count = int((end - start).total_seconds() // (interval_minutes * 60))
     if len(out) != expected_count:
