@@ -123,3 +123,28 @@ def test_full_run_is_research_only_and_source_bound(tmp_path, monkeypatch):
     assert len(report["rows"]) == 12
     assert all(row["trade_count_limit"] is None for row in report["rows"])
     assert all(row["derivative_execution"] is False for row in report["rows"])
+
+
+def test_load_spot_accepts_equivalent_microsecond_parquet_resolution(tmp_path):
+    frame = _spot_frame()
+    frame["timestamp"] = frame["timestamp"].astype("datetime64[us, UTC]")
+    folder = tmp_path / "btc_usdt"
+    folder.mkdir(parents=True)
+    frame.to_parquet(folder / "minute15.parquet", index=False)
+    loaded = a9.load_spot(tmp_path, "btc_usdt")
+    assert len(loaded) == a9.BARS
+    assert str(loaded["timestamp"].dtype) == "datetime64[ns, UTC]"
+
+
+def test_load_spot_rejects_missing_timestamp_after_normalization(tmp_path):
+    frame = _spot_frame()
+    frame.loc[0, "timestamp"] = pd.NaT
+    folder = tmp_path / "btc_usdt"
+    folder.mkdir(parents=True)
+    frame.to_parquet(folder / "minute15.parquet", index=False)
+    try:
+        a9.load_spot(tmp_path, "btc_usdt")
+    except a9.PositioningResearchError as exc:
+        assert "missing timestamp" in str(exc)
+    else:
+        raise AssertionError("missing A9 timestamp must fail closed")
