@@ -4,9 +4,11 @@ from pathlib import Path
 WORKFLOW = Path(".github/workflows/nexus_signed_flow_price_response_research.yml")
 
 
-def test_a6_workflow_is_manual_research_only_and_uses_30_day_verified_inputs():
+def test_a6_workflow_is_main_strategy_triggered_research_only_and_uses_30_day_verified_inputs():
     text = WORKFLOW.read_text(encoding="utf-8")
     assert "workflow_dispatch:" in text
+    assert "push:" in text
+    assert "branches:\n      - main" in text
     assert "schedule:" not in text
     assert "permissions:\n  contents: read" in text
     assert "--start-date 2026-07-03" in text
