@@ -1,0 +1,77 @@
+name: NEXUS verified perpetual positioning research inputs
+
+on:
+  pull_request:
+    paths:
+      - "nexus_verified_perpetual_positioning.py"
+      - "bybit_derivatives_core_v1.py"
+      - "tests/test_nexus_verified_perpetual_positioning.py"
+      - ".github/workflows/nexus_verified_perpetual_positioning.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-positioning:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install locked dependencies
+        run: python -m pip install -r requirements.lock
+
+      - name: Check dependency consistency
+        run: python -m pip check
+
+      - name: Run positioning capability contract tests
+        run: python -m pytest -q tests/test_nexus_verified_perpetual_positioning.py
+
+      - name: Collect and verify 30-day public Bybit positioning inputs
+        run: >-
+          python nexus_verified_perpetual_positioning.py
+          --start 2026-07-03T00:00:00Z
+          --end-exclusive 2026-08-02T00:00:00Z
+          --output-root build/perpetual-positioning
+
+      - name: Enforce non-trading authority and exact coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          p = json.loads(Path("build/perpetual-positioning/_perpetual_positioning_proof.json").read_text())
+          assert p["capabilities"] == ["verified_perpetual_funding", "verified_perpetual_oi"]
+          assert p["symbols"] == ["BTCUSDT", "ETHUSDT"]
+          assert p["start_utc"] == "2026-07-03T00:00:00+00:00"
+          assert p["end_exclusive_utc"] == "2026-08-02T00:00:00+00:00"
+          assert p["oi_value_field"] == "singleOpenInterest"
+          assert p["oi_methodology"] == "post_2026_06_11_single_sided"
+          assert p["oi_rows"] == {"BTCUSDT": 720, "ETHUSDT": 720}
+          assert p["research_only"] is True
+          assert p["paper_only"] is True
+          assert p["derivatives_execution_authority"] is False
+          assert p["automatic_strategy_promotion"] is False
+          assert p["live_trading_authority"] is False
+          assert p["credentials_used"] is False
+          PY
+
+      - name: Upload verified positioning evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-verified-perpetual-positioning-${{ github.sha }}
+          path: build/perpetual-positioning
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
