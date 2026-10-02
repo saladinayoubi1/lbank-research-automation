@@ -7,6 +7,7 @@ import pytest
 
 import agent_manager as am
 import agent_transport as at
+from nexus_research_missions import EIGHTH
 
 
 def task(worker="developer-agent", authority=1, lease_id="lease-1", attempt=1):
@@ -286,3 +287,51 @@ def test_research_qa_inflight_existing_dispatch_is_not_mutated_by_epoch_gate(mon
     assert at.dispatch_pending(cfg, ref="main") == 0
     assert t["status"] == "VERIFYING"
     assert t.get("research_qa_epoch_drift") is None
+
+
+def test_research_rca_transport_mismatch_preserves_original_cache_failure():
+    t = task(worker="architect-agent", authority=2, lease_id="rca-lease", attempt=1)
+    original = {
+        "executor": "nexus-real-composite-backtest",
+        "failure_class": "verified_research_execution_failed",
+        "reason": at.RESEARCH_CACHE_MISS_REASON,
+        "auto_demo_promotion": False,
+        "live_enabled": False,
+        "qualification_authority": False,
+    }
+    t.update({
+        "id": EIGHTH,
+        "phase": 7,
+        "gate": 17,
+        "status": "RUNNING",
+        "producer": "research-agent",
+        "triage_mode": "root_cause_first",
+        "failure_class": "verified_research_execution_failed",
+        "failure_evidence": deepcopy(original),
+        "external_wait_state": "WAITING_EXTERNAL",
+    })
+    t["correlation_id"] = at.correlation_for(t)
+    t["dispatch_id"] = at.dispatch_id_for(t)
+    t["dispatch_transport"] = "github-cloud"
+    cfg = config(t)
+
+    result = result_for(
+        t,
+        outcome="failure",
+        evidence={
+            "executor": "nexus-real-composite-backtest",
+            "failure_class": at.RESEARCH_RCA_TRANSPORT_MISMATCH,
+            "auto_demo_promotion": False,
+            "live_enabled": False,
+            "qualification_authority": False,
+        },
+    )
+    at.ingest_result(cfg, t, result)
+
+    assert t["status"] == "TRIAGE"
+    assert t["failure_class"] == "verified_research_execution_failed"
+    assert t["failure_evidence"] == original
+    assert t["triage_evidence"]["preserved_original_failure"] is True
+    assert t["triage_evidence"]["evidence"]["failure_class"] == at.RESEARCH_RCA_TRANSPORT_MISMATCH
+    assert t["result_artifact_ingested"] is True
+    assert t["external_wait_state"] == "COMPLETED"
