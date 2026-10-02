@@ -95,7 +95,10 @@ def _utc_ns(values: pd.Series) -> pd.Series:
     Identity remains strict after canonicalization; no rounding or tolerance is
     allowed.
     """
-    return pd.to_datetime(values, utc=True, errors="raise").astype("datetime64[ns, UTC]")
+    normalized = pd.to_datetime(values, utc=True, errors="raise")
+    if normalized.isna().any():
+        raise SignedFlowResearchError("missing timestamp in A6 inputs")
+    return normalized.astype("datetime64[ns, UTC]")
 
 
 def prepare_symbol(root: Path, symbol: str, flow: pd.DataFrame) -> pd.DataFrame:
