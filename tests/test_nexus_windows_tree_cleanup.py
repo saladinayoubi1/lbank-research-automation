@@ -96,3 +96,20 @@ def test_cleanup_many_reports_any_surviving_tree(tmp_path: Path, monkeypatch):
 
     assert not good.exists()
     assert bad.exists()
+
+
+def test_a7_a9_workflows_use_verified_cleanup_without_silent_success():
+    a7 = Path(".github/workflows/nexus_multipair_archive_snapshot.yml").read_text(encoding="utf-8")
+    a9 = Path(".github/workflows/nexus_a9_positioning_research.yml").read_text(encoding="utf-8")
+
+    assert "scripts/nexus_windows_tree_cleanup.py build\\a7-recent-state build\\a7-recent-cache" in a7
+    assert "scripts/nexus_windows_tree_cleanup.py build\\a9-spot-state build\\a9-spot-cache build\\a9-positioning" in a9
+
+    a7_raw = a7.split("- name: Remove raw A7 source state", 1)[1].split("- name: Clean isolated Python", 1)[0]
+    a9_raw = a9.split("- name: Remove raw Research state", 1)[1].split("- name: Clean isolated Python", 1)[0]
+    assert "rmdir /s /q" not in a7_raw
+    assert "rmdir /s /q" not in a9_raw
+    assert "exit /b 0" not in a7_raw
+    assert "exit /b 0" not in a9_raw
+    assert "if errorlevel 1 exit /b %errorlevel%" in a7_raw
+    assert "if errorlevel 1 exit /b %errorlevel%" in a9_raw
