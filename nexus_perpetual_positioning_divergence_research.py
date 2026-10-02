@@ -557,7 +557,7 @@ def evaluate(
         "threshold_method": "per_symbol_train_only_funding_q25_median_and_verified_1h_single_oi_growth_q75",
         "thresholds": thresholds,
         "spot_archive_source_manifest_sha256": file_sha256(source_manifest),
-        "spot_archive_snapshot_digest": spot_proof["snapshot_digest"],
+        "spot_archive_source_proof_sha256": spot_proof["proof_sha256"],
         "spot_semantic_sha256": spot_semantic_digest(spot_frames),
         "positioning_dataset_semantic_sha256": positioning_proof["dataset_semantic_sha256"],
         "positioning_proof_sha256": positioning_proof["proof_sha256"],
