@@ -5,6 +5,7 @@ import re
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / ".github" / "workflows"
 WINDOWS_RUNS_ON = re.compile(r"^\s*runs-on:\s*\[(?=[^\]]*self-hosted)(?=[^\]]*Windows)[^\]]+\]\s*$", re.MULTILINE)
+WINDOWS_ROLE_LABELS = ("nexus-local", "nexus-remote-rescue", "nexus-research")
 
 EXPECTED_ROUTES = {
     "nexus-bybit-wsl-fix-validation.yml": "nexus-local",
@@ -17,8 +18,10 @@ EXPECTED_ROUTES = {
     "nexus-windows-dr-bootstrap.yml": "nexus-local",
     "nexus-windows-dr-persistence.yml": "nexus-remote-rescue",
     "nexus-wsl-virtualization-preflight.yml": "nexus-local",
+    "nexus_a9_positioning_research.yml": "nexus-research",
     "nexus_local_autonomy.yml": "nexus-local",
     "nexus_phase3_resource_activation.yml": "nexus-local",
+    "nexus_verified_perpetual_positioning.yml": "nexus-research",
     "windows-dr-keyless.yml": "nexus-remote-rescue",
 }
 
@@ -31,7 +34,7 @@ def test_all_windows_self_hosted_jobs_have_role_label():
     offenders = []
     for path in sorted(WORKFLOWS.glob("*.y*ml")):
         for line in _windows_routes(path):
-            if "nexus-local" not in line and "nexus-remote-rescue" not in line:
+            if not any(label in line for label in WINDOWS_ROLE_LABELS):
                 offenders.append(f"{path.name}: {line.strip()}")
     assert not offenders, "ambiguous Windows self-hosted routing: " + "; ".join(offenders)
 
