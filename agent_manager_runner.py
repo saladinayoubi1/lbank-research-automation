@@ -487,12 +487,13 @@ def request_missing_research_cache(config: dict[str, Any], reason: str) -> str:
         ]
         if any(row.get("status") != "completed" for row in matches):
             task["research_cache_requested_sha"] = sha
-            task["research_cache_requested_binding"] = binding_token
             return "matching_research_workflow_already_running"
         if task.get("research_cache_requested_binding") == binding_token:
             return "prior_dispatch_pending_no_duplicate"
         if matches and not any(row.get("conclusion") == "success" for row in matches):
             return "matching_research_workflow_failed_review_required"
+        if not ledger_digest and any(row.get("conclusion") == "success" for row in matches):
+            return "successful_workflow_cache_pending_or_missing"
         _api(
             "POST",
             f"https://api.github.com/repos/{repo}/actions/workflows/"
