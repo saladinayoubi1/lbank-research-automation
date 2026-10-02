@@ -184,14 +184,24 @@ def _analysis_frame(state_root: Path, symbol: str) -> tuple[pd.DataFrame, str]:
         ANALYSIS_END_EXCLUSIVE,
         freq=STEP,
         inclusive="left",
+    ).as_unit("ns")
+    timestamps = pd.DatetimeIndex(frame["timestamp"]).as_unit("ns")
+    identity_ok = (
+        set(frame["symbol"].astype(str)) == {canonical}
+        and set(frame["timeframe"].astype(str)) == {TIMEFRAME}
     )
-    if (
-        len(frame) != EXPECTED_SOURCE_ROWS
-        or not pd.DatetimeIndex(frame["timestamp"]).equals(expected)
-        or set(frame["symbol"].astype(str)) != {canonical}
-        or set(frame["timeframe"].astype(str)) != {TIMEFRAME}
-    ):
-        raise A9SpotSourceError(f"A9 Spot 15m grid is incomplete: {symbol}")
+    grid_ok = len(frame) == EXPECTED_SOURCE_ROWS and np.array_equal(
+        timestamps.asi8,
+        expected.asi8,
+    )
+    if not grid_ok or not identity_ok:
+        raise A9SpotSourceError(
+            "A9 Spot 15m grid is incomplete: "
+            f"{symbol}; rows={len(frame)}/{EXPECTED_SOURCE_ROWS}; "
+            f"first={None if timestamps.empty else timestamps[0].isoformat()}; "
+            f"last={None if timestamps.empty else timestamps[-1].isoformat()}; "
+            f"timestamp_dtype={timestamps.dtype}; identity_ok={identity_ok}"
+        )
 
     for field in ("open", "high", "low", "close", "volume"):
         frame[field] = pd.to_numeric(frame[field], errors="raise")
