@@ -41,6 +41,22 @@ class ResearchPreparationError(ValueError):
     pass
 
 
+def research_cache_key(payload: dict[str, Any], source_sha: str) -> str:
+    if not HEX40.fullmatch(source_sha):
+        raise ResearchPreparationError("research cache source SHA is malformed")
+    if payload.get("task_id") in PREDECESSOR:
+        predecessor = validate_ancestry({key: payload[key] for key in ANCESTRY})
+        return (
+            "nexus-composite-inputs-v2-"
+            + source_sha
+            + "-"
+            + predecessor["research_predecessor_ledger_digest"]
+        )
+    if payload.get("task_id") == FIRST:
+        return "nexus-composite-inputs-v1-" + source_sha
+    raise ResearchPreparationError("unrecognized Research cache task identity")
+
+
 def _read_regular_json(path: Path) -> dict[str, Any]:
     if path.is_symlink() or not path.is_file():
         raise ResearchPreparationError("required research evidence is missing or linked")
@@ -63,10 +79,13 @@ def _classify(mode: str) -> tuple[dict[str, Any] | None, str]:
     if (
         payload["phase"] != 7
         or payload["transport"] != "github-cloud"
-        or payload["worker_id"] not in {"research-agent", "qa-verifier-agent"}
         or os.environ.get("GITHUB_REPOSITORY") != REPO
         or not HEX40.fullmatch(os.environ.get("GITHUB_SHA", ""))
     ):
+        raise ResearchPreparationError("untrusted real Research Agent task context")
+    if payload["worker_id"] not in {"research-agent", "qa-verifier-agent"}:
+        if mode == "inspect":
+            return None, "none"
         raise ResearchPreparationError("untrusted real Research Agent task context")
     expected_mode = "independent-qa" if payload["worker_id"] == "qa-verifier-agent" else "producer"
     if mode not in ("inspect", "auto", expected_mode):
@@ -179,11 +198,17 @@ def prepare(mode: str, root: Path) -> dict[str, Any]:
     if payload is None:
         return {"research_task": False}
     if mode == "inspect":
+        predecessor_digest = ""
+        if payload["task_id"] in PREDECESSOR:
+            predecessor = validate_ancestry({key: payload[key] for key in ANCESTRY})
+            predecessor_digest = predecessor["research_predecessor_ledger_digest"]
         return {
             "research_task": True,
             "mode": role,
             "producer_lease_id": payload.get("research_producer_lease_id", ""),
             "producer_source_sha": payload.get("research_producer_source_sha", ""),
+            "predecessor_ledger_digest": predecessor_digest,
+            "research_cache_key": research_cache_key(payload, os.environ["GITHUB_SHA"]),
         }
     if root.exists():
         raise ResearchPreparationError("refuse dirty or pre-existing Research staging root")
@@ -222,6 +247,8 @@ def main() -> int:
             handle.write("research_role=" + str(info.get("mode", "none")) + "\n")
             handle.write("producer_lease=" + str(info.get("producer_lease_id", "")) + "\n")
             handle.write("producer_source_sha=" + str(info.get("producer_source_sha", "")) + "\n")
+            handle.write("predecessor_ledger_digest=" + str(info.get("predecessor_ledger_digest", "")) + "\n")
+            handle.write("research_cache_key=" + str(info.get("research_cache_key", "")) + "\n")
     print(json.dumps(info, sort_keys=True))
     return 0
 

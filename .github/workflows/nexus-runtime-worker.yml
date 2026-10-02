@@ -183,7 +183,7 @@ jobs:
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: build/agent-research-cache
-          key: nexus-composite-inputs-v1-${{ steps.pin-research-qa.outputs.execution_source_sha || github.sha }}
+          key: ${{ steps.inspect-research.outputs.research_cache_key }}
 
       - name: Restore ONLY the source and original producer-lease-bound numeric proof for QA
         if: steps.inspect-research.outputs.research_role == 'independent-qa'

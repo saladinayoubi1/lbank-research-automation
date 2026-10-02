@@ -118,36 +118,100 @@ def test_no_l4_or_done_task_is_mutated(monkeypatch):
 
 def test_source_and_branch_match_required_for_metadata_readiness(monkeypatch):
     _ctx(monkeypatch)
+    conf = {"tasks": [_task()]}
     seen = []
     def api(method, url, payload=None):
         seen.append((method, url))
         return {"actions_caches": [
-            {"key": gate.RESEARCH_CACHE_PREFIX + SOURCE,
+            {"key": gate.RESEARCH_BOOTSTRAP_CACHE_PREFIX + SOURCE,
              "ref": "refs/heads/main", "size_in_bytes": 40000}
         ]}
     monkeypatch.setattr(agent_transport, "_api", api)
-    assert gate.research_cache_status() == (True, "source_exact_transport_cache_present")
+    assert gate.research_cache_status(conf) == (True, "source_exact_transport_cache_present")
     assert seen and "ref=refs%2Fheads%2Fmain" in seen[0][1]
     monkeypatch.setenv("GITHUB_REF", "refs/heads/feature")
-    assert gate.research_cache_status() == (False, "not_on_authorized_main_with_token")
+    assert gate.research_cache_status(conf) == (False, "not_on_authorized_main_with_token")
     assert len(seen) == 1
 
 
 def test_cache_metadata_rejects_wrong_source_zero_length_or_wrong_ref(monkeypatch):
     _ctx(monkeypatch)
+    conf = {"tasks": [_task()]}
     monkeypatch.setattr(agent_transport, "_api", lambda *a, **kw: {
         "actions_caches": [
-            {"key": gate.RESEARCH_CACHE_PREFIX + SOURCE, "ref": "refs/pull/33/merge", "size_in_bytes": 4000},
+            {"key": gate.RESEARCH_BOOTSTRAP_CACHE_PREFIX + SOURCE, "ref": "refs/pull/33/merge", "size_in_bytes": 4000},
             {"key": gate.RESEARCH_CACHE_PREFIX + ("b" * 40), "ref": "refs/heads/main", "size_in_bytes": 4000},
-            {"key": gate.RESEARCH_CACHE_PREFIX + SOURCE, "ref": "refs/heads/main", "size_in_bytes": 0},
+            {"key": gate.RESEARCH_BOOTSTRAP_CACHE_PREFIX + SOURCE, "ref": "refs/heads/main", "size_in_bytes": 0},
         ],
     })
-    assert gate.research_cache_status() == (False, "source_exact_transport_cache_absent")
+    assert gate.research_cache_status(conf) == (False, "source_exact_transport_cache_absent")
     def deny(*a, **kw):
         raise RuntimeError("temporary GitHub API unavailable")
     monkeypatch.setattr(agent_transport, "_api", deny)
-    ready, reason = gate.research_cache_status()
+    ready, reason = gate.research_cache_status(conf)
     assert not ready and reason.startswith("source_exact_cache_metadata_unavailable")
+
+
+def test_successor_cache_requires_exact_qa_attested_ledger_digest(monkeypatch):
+    _ctx(monkeypatch)
+    digest = "c" * 64
+    conf = {
+        "tasks": [
+            _task(status="DONE"),
+            {
+                "id": gate.SECOND,
+                "status": "BLOCKED",
+                "research_predecessor_ledger_digest": digest,
+            },
+        ],
+    }
+    seen = []
+
+    def api(method, url, payload=None):
+        seen.append(url)
+        return {
+            "actions_caches": [
+                {
+                    "key": gate.RESEARCH_CACHE_PREFIX + SOURCE + "-" + digest,
+                    "ref": "refs/heads/main",
+                    "size_in_bytes": 40000,
+                },
+                {
+                    "key": gate.RESEARCH_CACHE_PREFIX + SOURCE + "-" + ("d" * 64),
+                    "ref": "refs/heads/main",
+                    "size_in_bytes": 40000,
+                },
+            ]
+        }
+
+    monkeypatch.setattr(agent_transport, "_api", api)
+    assert gate.research_cache_status(conf) == (True, "source_exact_transport_cache_present")
+    assert digest in seen[0]
+
+
+def test_successor_cache_rejects_same_source_with_stale_ledger(monkeypatch):
+    _ctx(monkeypatch)
+    digest = "c" * 64
+    conf = {
+        "tasks": [
+            _task(status="DONE"),
+            {
+                "id": gate.SECOND,
+                "status": "BLOCKED",
+                "research_predecessor_ledger_digest": digest,
+            },
+        ],
+    }
+    monkeypatch.setattr(agent_transport, "_api", lambda *a, **kw: {
+        "actions_caches": [
+            {
+                "key": gate.RESEARCH_CACHE_PREFIX + SOURCE + "-" + ("d" * 64),
+                "ref": "refs/heads/main",
+                "size_in_bytes": 40000,
+            }
+        ]
+    })
+    assert gate.research_cache_status(conf) == (False, "source_exact_transport_cache_absent")
 
 
 def test_existing_source_exact_running_workflow_prevents_duplicate_dispatch(monkeypatch):

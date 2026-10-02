@@ -60,7 +60,7 @@ def merge_definition(template: dict[str, Any], runtime: dict[str, Any] | None) -
         "dispatch_mode", "offline_dispatch_digest", "offline_dispatch_bundle_created_at",
         "offline_result_bundle_ingested", "offline_result_bundle_digest",
         "result_artifact_ingested", "result_received_at", "research_producer_lease_id",
-        "research_cache_requested_sha", "research_cache_recovery_count", "research_cache_race_evidence", "research_qa_epoch_drift", "research_qa_incident_recovery", "routing_decision",
+        "research_cache_requested_sha", "research_cache_requested_binding", "research_cache_recovery_count", "research_cache_race_evidence", "research_qa_epoch_drift", "research_qa_incident_recovery", "routing_decision",
         *ANCESTRY,
         "zero_idle_evidence", "waiting_from_status", "external_wait_state", "external_wait_started_at",
         "external_wait_completed_at", "external_wait_timeline"
@@ -232,10 +232,12 @@ def recover_bounded_specialized_reasoning(config: dict[str, Any]) -> int:
 # worker still checks full replay/delivery/ledger cryptographic provenance.
 RESEARCH_TASK = FIRST
 RESEARCH_WAIT = "waiting_for_source_exact_immutable_research_input_cache"
-RESEARCH_CACHE_PREFIX = "nexus-composite-inputs-v1-"
+RESEARCH_CACHE_PREFIX = "nexus-composite-inputs-v2-"
+RESEARCH_BOOTSTRAP_CACHE_PREFIX = "nexus-composite-inputs-v1-"
 RESEARCH_WORKFLOW = "nexus_multitimeframe_strategy_discovery.yml"
 RESEARCH_FIRST_MISS = "required immutable input or evidence is not a regular file"
 _SHA40 = re.compile(r"^[0-9a-f]{40}$")
+_HEX64 = re.compile(r"^[0-9a-f]{64}$")
 
 
 def _research_context() -> tuple[str, str] | None:
@@ -290,15 +292,40 @@ def bind_qa_attested_successor(config: dict[str, Any]) -> str:
     return state
 
 
-def research_cache_status() -> tuple[bool, str]:
+def _active_research_task(config: dict[str, Any]) -> dict[str, Any] | None:
+    tasks = {t.get("id"): t for t in config.get("tasks", []) if isinstance(t, dict)}
+    task = tasks.get(FIRST)
+    for next_id in PREDECESSOR:
+        if task is None or task.get("status") != "DONE":
+            break
+        task = tasks.get(next_id)
+    return task
+
+
+def _research_cache_binding(config: dict[str, Any], sha: str) -> tuple[str, str] | None:
+    task = _active_research_task(config)
+    if task is None:
+        return None
+    digest = task.get("research_predecessor_ledger_digest")
+    if task.get("id") == FIRST and not digest:
+        return RESEARCH_BOOTSTRAP_CACHE_PREFIX + sha, ""
+    if not _HEX64.fullmatch(str(digest or "")):
+        return None
+    return RESEARCH_CACHE_PREFIX + sha + "-" + str(digest), str(digest)
+
+
+def research_cache_status(config: dict[str, Any]) -> tuple[bool, str]:
     """Only metadata readiness; the bounded worker separately verifies bytes."""
     context = _research_context()
     if context is None:
         return False, "not_on_authorized_main_with_token"
     repo, sha = context
+    binding = _research_cache_binding(config, sha)
+    if binding is None:
+        return False, "qa_attested_frontier_binding_unavailable"
+    key, _ledger_digest = binding
     from agent_transport import _api
 
-    key = RESEARCH_CACHE_PREFIX + sha
     try:
         response = _api(
             "GET",
@@ -439,6 +466,11 @@ def request_missing_research_cache(config: dict[str, Any], reason: str) -> str:
     if reason not in {"source_exact_transport_cache_absent"}:
         return "metadata_unverified_no_dispatch"
     repo, sha = context
+    binding = _research_cache_binding(config, sha)
+    if binding is None:
+        return "metadata_unverified_no_dispatch"
+    cache_key, ledger_digest = binding
+    binding_token = cache_key
     from agent_transport import _api
 
     try:
@@ -456,12 +488,12 @@ def request_missing_research_cache(config: dict[str, Any], reason: str) -> str:
         if any(row.get("status") != "completed" for row in matches):
             task["research_cache_requested_sha"] = sha
             return "matching_research_workflow_already_running"
-        if any(row.get("conclusion") == "success" for row in matches):
-            return "successful_workflow_cache_pending_or_missing"
-        if matches:
-            return "matching_research_workflow_failed_review_required"
-        if task.get("research_cache_requested_sha") == sha:
+        if task.get("research_cache_requested_binding") == binding_token:
             return "prior_dispatch_pending_no_duplicate"
+        if matches and not any(row.get("conclusion") == "success" for row in matches):
+            return "matching_research_workflow_failed_review_required"
+        if not ledger_digest and any(row.get("conclusion") == "success" for row in matches):
+            return "successful_workflow_cache_pending_or_missing"
         _api(
             "POST",
             f"https://api.github.com/repos/{repo}/actions/workflows/"
@@ -469,7 +501,13 @@ def request_missing_research_cache(config: dict[str, Any], reason: str) -> str:
             {"ref": "main"},
         )
         task["research_cache_requested_sha"] = sha
-        am.emit("source_exact_research_cache_build_dispatched", task_id=RESEARCH_TASK, source_sha=sha)
+        task["research_cache_requested_binding"] = binding_token
+        am.emit(
+            "source_exact_research_cache_build_dispatched",
+            task_id=task["id"],
+            source_sha=sha,
+            predecessor_ledger_digest=ledger_digest,
+        )
         return "source_exact_cache_build_dispatched"
     except (RuntimeError, OSError, ValueError) as exc:
         return f"research_cache_build_unavailable:{type(exc).__name__}"
@@ -506,7 +544,7 @@ def main() -> int:
             current_sha=research_context[1],
         )
     successor_status = bind_qa_attested_successor(config)
-    cache_ready, cache_reason = research_cache_status()
+    cache_ready, cache_reason = research_cache_status(config)
     cache_gate = apply_research_input_gate(config, ready=cache_ready)
     cache_build = request_missing_research_cache(config, cache_reason) if not cache_ready else "ready"
     summary = am.cycle(config)

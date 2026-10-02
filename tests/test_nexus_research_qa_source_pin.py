@@ -117,7 +117,8 @@ def test_workflow_pins_only_verified_main_ancestry_and_restores_original_cache()
         assert step["env"]["NEXUS_EXECUTION_SOURCE_SHA"] == "${{ steps.pin-research-qa.outputs.execution_source_sha }}"
         assert 'GITHUB_SHA="$NEXUS_EXECUTION_SOURCE_SHA" python ' in step["run"]
     cache = names["Restore immutable approved Bybit Research input transport"]
-    assert "steps.pin-research-qa.outputs.execution_source_sha" in cache["with"]["key"]
+    assert cache["with"]["key"] == "${{ steps.inspect-research.outputs.research_cache_key }}"
+    assert "research_cache_key=" in inspect["run"] or "nexus_agent_research_prepare --mode inspect" in inspect["run"]
     qa = names["Publish independent numerical QA proof"]
     assert qa["with"]["path"] == "build/agent-research/qa-evidence.json"
     attestation = names["Publish independently bounded original-source QA ancestry attestation"]
