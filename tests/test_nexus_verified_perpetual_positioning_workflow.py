@@ -10,6 +10,8 @@ def test_positioning_workflow_is_read_only_and_verifies_research_plane_proof():
     assert "workflow_dispatch:" in text
     assert "schedule:" not in text
     assert "permissions:\n  contents: read" in text
+    assert "runs-on: [self-hosted, Windows, X64, nexus-research, nexus-worker-2]" in text
+    assert "ubuntu-latest" not in text
     assert "research/evidence/verified_perpetual_positioning_20260703_20260802.json" in text
     assert "verify_proof(proof)" in text
     assert "a59405c733ecc6cad5c9270155a22bab52173989cd62c9569cf37b06f844c6e6" in text
