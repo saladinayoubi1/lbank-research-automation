@@ -115,7 +115,7 @@ def test_simulator_fills_signal_at_next_open():
         "decision_at": pd.date_range("2026-07-03T00:15:00Z", periods=3, freq="15min"),
         "open": [100.0, 200.0, 200.0],
         "high": [101.0, 201.0, 201.0],
-        "low": [99.0, 199.0, 199.0],
+        "low": [99.0, 198.0, 199.0],
         "close": [100.0, 200.0, 200.0],
         "atr": [1.0, 1.0, 1.0],
         "flow_1h": [0.5, 0.5, -0.1],
