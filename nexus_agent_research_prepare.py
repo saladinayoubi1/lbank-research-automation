@@ -35,6 +35,8 @@ DATA_CACHE = Path("build/agent-research-cache")
 PRODUCER_CACHE = Path("build/agent-producer-cache")
 HEX40 = re.compile(r"^[0-9a-f]{40}$")
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
+INPUT_CACHE_V1_PREFIX = "nexus-composite-inputs-v1-"
+INPUT_CACHE_V2_PREFIX = "nexus-composite-inputs-v2-"
 
 
 class ResearchPreparationError(ValueError):
@@ -80,6 +82,18 @@ def _classify(mode: str) -> tuple[dict[str, Any] | None, str]:
     if payload["task_id"] in PREDECESSOR:
         validate_ancestry({key: payload[key] for key in ANCESTRY})
     return payload, expected_mode
+
+
+def _research_input_cache_identity(payload: dict[str, Any], source_sha: str) -> tuple[str, str]:
+    if not HEX40.fullmatch(source_sha):
+        raise ResearchPreparationError("research input cache source SHA is invalid")
+    if payload["task_id"] not in PREDECESSOR:
+        return INPUT_CACHE_V1_PREFIX + source_sha, ""
+    ancestry = validate_ancestry({key: payload[key] for key in ANCESTRY})
+    ledger_digest = ancestry["research_predecessor_ledger_digest"]
+    if not HEX64.fullmatch(ledger_digest):
+        raise ResearchPreparationError("research predecessor ledger digest is invalid")
+    return INPUT_CACHE_V2_PREFIX + source_sha + "-" + ledger_digest, ledger_digest
 
 
 def _verified_input_bundle(root: Path, source_sha: str, predecessor: dict[str, str] | None = None) -> dict[str, Any]:
@@ -179,11 +193,16 @@ def prepare(mode: str, root: Path) -> dict[str, Any]:
     if payload is None:
         return {"research_task": False}
     if mode == "inspect":
+        cache_key, predecessor_ledger_digest = _research_input_cache_identity(
+            payload, os.environ["GITHUB_SHA"]
+        )
         return {
             "research_task": True,
             "mode": role,
             "producer_lease_id": payload.get("research_producer_lease_id", ""),
             "producer_source_sha": payload.get("research_producer_source_sha", ""),
+            "research_input_cache_key": cache_key,
+            "predecessor_ledger_digest": predecessor_ledger_digest,
         }
     if root.exists():
         raise ResearchPreparationError("refuse dirty or pre-existing Research staging root")
@@ -222,6 +241,8 @@ def main() -> int:
             handle.write("research_role=" + str(info.get("mode", "none")) + "\n")
             handle.write("producer_lease=" + str(info.get("producer_lease_id", "")) + "\n")
             handle.write("producer_source_sha=" + str(info.get("producer_source_sha", "")) + "\n")
+            handle.write("research_input_cache_key=" + str(info.get("research_input_cache_key", "")) + "\n")
+            handle.write("predecessor_ledger_digest=" + str(info.get("predecessor_ledger_digest", "")) + "\n")
     print(json.dumps(info, sort_keys=True))
     return 0
 
