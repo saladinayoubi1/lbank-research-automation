@@ -72,9 +72,24 @@ def choose(artifacts: dict, jobs: dict, run_id: str, source_sha: str,
     paper = [j for j in entries if j.get("name") == "paper-loop" and
              str(j.get("run_id")) == run_id and j.get("conclusion") == "success"]
     persist = [j for j in entries if j.get("name") == "persist-state" and
-               str(j.get("run_id")) == run_id and j.get("conclusion") == "skipped"]
+               str(j.get("run_id")) == run_id and
+               j.get("conclusion") in {"skipped", "success"}]
     if len(paper) != 1 or len(persist) != 1:
         raise TransportError("no verified owner-primary checkpoint job transition")
+    persist_job = persist[0]
+    if persist_job.get("conclusion") == "success":
+        persist_steps = persist_job.get("steps") or []
+        private_restore = [
+            s for s in persist_steps
+            if s.get("name") == "Rehydrate physical Paper state handoff"
+        ]
+        public_proof = [
+            s for s in persist_steps
+            if s.get("name") == "Rehydrate and independently verify public Paper boundary proof"
+        ]
+        if (len(private_restore) != 1 or private_restore[0].get("conclusion") != "skipped" or
+                len(public_proof) != 1 or public_proof[0].get("conclusion") != "success"):
+            raise TransportError("owner-primary public boundary persistence is not verified")
     steps = paper[0].get("steps") or []
     for name in _REQUIRED_STEPS:
         found = [s for s in steps if s.get("name") == name]
