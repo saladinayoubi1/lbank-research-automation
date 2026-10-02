@@ -179,11 +179,22 @@ def prepare(mode: str, root: Path) -> dict[str, Any]:
     if payload is None:
         return {"research_task": False}
     if mode == "inspect":
+        predecessor_digest = ""
+        if payload["task_id"] in PREDECESSOR:
+            predecessor = validate_ancestry({key: payload[key] for key in ANCESTRY})
+            predecessor_digest = predecessor["research_predecessor_ledger_digest"]
+            research_cache_key = (
+                f"nexus-composite-inputs-v2-{os.environ['GITHUB_SHA']}-{predecessor_digest}"
+            )
+        else:
+            research_cache_key = f"nexus-composite-inputs-v1-{os.environ['GITHUB_SHA']}"
         return {
             "research_task": True,
             "mode": role,
             "producer_lease_id": payload.get("research_producer_lease_id", ""),
             "producer_source_sha": payload.get("research_producer_source_sha", ""),
+            "predecessor_ledger_digest": predecessor_digest,
+            "research_cache_key": research_cache_key,
         }
     if root.exists():
         raise ResearchPreparationError("refuse dirty or pre-existing Research staging root")
@@ -222,6 +233,8 @@ def main() -> int:
             handle.write("research_role=" + str(info.get("mode", "none")) + "\n")
             handle.write("producer_lease=" + str(info.get("producer_lease_id", "")) + "\n")
             handle.write("producer_source_sha=" + str(info.get("producer_source_sha", "")) + "\n")
+            handle.write("predecessor_ledger_digest=" + str(info.get("predecessor_ledger_digest", "")) + "\n")
+            handle.write("research_cache_key=" + str(info.get("research_cache_key", "")) + "\n")
     print(json.dumps(info, sort_keys=True))
     return 0
 
