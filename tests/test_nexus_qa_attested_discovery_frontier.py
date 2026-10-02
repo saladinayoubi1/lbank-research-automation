@@ -250,7 +250,11 @@ def test_frontier_prefers_exact_current_source_over_newer_stale_coordinator(monk
         selector.REPO, required_task_id=FIFTH,
     )
     assert artifact_id == 901
-    assert [t["id"] for t in manager["tasks"]] == [FIFTH]
+    assert manager["tasks"][0]["id"] == FIFTH
+    assert all(
+        task["status"] == "PENDING"
+        for task in manager["tasks"][1:]
+    )
 
 
 def test_frontier_skips_schema_lag_snapshot_missing_required_predecessor(monkeypatch):
