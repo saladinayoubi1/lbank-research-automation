@@ -1,0 +1,48 @@
+{
+  "automatic_strategy_promotion": false,
+  "capabilities": [
+    "verified_perpetual_funding",
+    "verified_perpetual_oi"
+  ],
+  "category": "linear",
+  "credentials_used": false,
+  "dataset_semantic_sha256": "a59405c733ecc6cad5c9270155a22bab52173989cd62c9569cf37b06f844c6e6",
+  "derivatives_execution_authority": false,
+  "end_exclusive_utc": "2026-08-02T00:00:00+00:00",
+  "funding_endpoint": "/v5/market/funding/history",
+  "funding_rows": {
+    "BTCUSDT": 90,
+    "ETHUSDT": 90
+  },
+  "instrument_contracts": [
+    {
+      "funding_interval_minutes": 480,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "funding_interval_minutes": 480,
+      "symbol": "ETHUSDT"
+    }
+  ],
+  "instrument_endpoint": "/v5/market/instruments-info",
+  "live_trading_authority": false,
+  "oi_endpoint": "/v5/market/open-interest",
+  "oi_interval": "1h",
+  "oi_methodology": "post_2026_06_11_single_sided",
+  "oi_rows": {
+    "BTCUSDT": 720,
+    "ETHUSDT": 720
+  },
+  "oi_value_field": "singleOpenInterest",
+  "paper_only": true,
+  "proof_sha256": "fad61f74ec7443379d9736d2af34905c92fc3afb4af66de5c5ee6eee6f135543",
+  "research_only": true,
+  "schema": "nexus.verified-perpetual-positioning-proof.v1",
+  "spot_execution_only_for_strategy_research": true,
+  "start_utc": "2026-07-03T00:00:00+00:00",
+  "symbols": [
+    "BTCUSDT",
+    "ETHUSDT"
+  ],
+  "venue": "bybit"
+}
