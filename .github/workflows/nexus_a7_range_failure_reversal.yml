@@ -1,0 +1,147 @@
+name: NEXUS A7 range-failure reversal research
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "nexus_a7_range_failure_reversal_research.py"
+      - "nexus_composite_strategy_research.py"
+      - "nexus_multipair_recent_archive_runtime_snapshot.py"
+      - "bybit_spot_backfill.py"
+      - "bybit_spot_archive_audit.py"
+      - "bybit_spot_archive_collector.py"
+      - "tests/test_nexus_a7_range_failure_reversal_research.py"
+      - "tests/test_nexus_a7_range_failure_reversal_workflow.py"
+      - ".github/workflows/nexus_a7_range_failure_reversal.yml"
+      - "security/workflow-permissions-policy-v1.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nexus-a7-range-failure-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  research-backtest:
+    if: >-
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
+       github.actor == github.repository_owner) ||
+      (github.event_name == 'workflow_dispatch' &&
+       github.ref_name == github.event.repository.default_branch)
+    runs-on: nexus-bybit-network
+    timeout-minutes: 120
+    env:
+      A7_SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Prepare isolated Python
+        shell: bash
+        run: |
+          set -euo pipefail
+          python_bin="/opt/nexus-bybit-runner/_work/_tool/Python/3.12.14/x64/bin/python"
+          if [ ! -x "$python_bin" ]; then
+            tool_root="${RUNNER_TOOL_CACHE:-/opt/nexus-bybit-runner/_work/_tool}"
+            python_bin="$(find "$tool_root" -type f -path '*/Python/3.12.*/x64/bin/python' 2>/dev/null | sort -V | tail -n 1 || true)"
+          fi
+          test -x "$python_bin"
+          "$python_bin" -c "import sys; assert sys.version_info[:2] == (3, 12)"
+          venv="$RUNNER_TEMP/nexus-a7-$GITHUB_RUN_ID"
+          rm -rf "$venv"
+          "$python_bin" -m venv "$venv"
+          "$venv/bin/python" -m pip install -r requirements-dev.lock
+          "$venv/bin/python" -m pip check
+          printf '%s
+' "$venv/bin" >> "$GITHUB_PATH"
+          printf 'NEXUS_A7_VENV=%s
+' "$venv" >> "$GITHUB_ENV"
+
+      - name: Run A7 causal contract tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pytest -q             tests/test_nexus_a7_range_failure_reversal_research.py             tests/test_nexus_a7_range_failure_reversal_workflow.py
+
+      - name: Acquire independently recent official Bybit Spot source
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf build/a7-recent-state build/a7-recent-cache build/a7-recent-snapshot                  build/a7-recent-snapshot.zip build/a7-recent-snapshot.sha256
+          now_ms="$(python -c 'import time; print(int(time.time() * 1000))')"
+          python nexus_multipair_recent_archive_runtime_snapshot.py acquire             --state-root build/a7-recent-state             --cache-root build/a7-recent-cache             --output-root build/a7-recent-snapshot             --archive-output build/a7-recent-snapshot.zip             --digest-output build/a7-recent-snapshot.sha256             --source-sha "$A7_SOURCE_SHA"             --now-ms "$now_ms"
+          printf 'A7_ACQUIRE_NOW_MS=%s
+' "$now_ms" >> "$GITHUB_ENV"
+
+      - name: Run source-bound A7 recent backtest
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf build/a7-output
+          verify_now_ms="$(python -c 'import time; print(int(time.time() * 1000))')"
+          python nexus_a7_range_failure_reversal_research.py             --state-root build/a7-recent-state             --snapshot-root build/a7-recent-snapshot             --output-root build/a7-output             --source-sha "$A7_SOURCE_SHA"             --now-ms "$verify_now_ms"
+
+      - name: Verify A7 authority and owner review surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=json.loads(Path("build/a7-output/a7-range-failure-reversal-report.json").read_text())
+          assert p["schema"] == "nexus.a7-range-failure-reversal-research.v1"
+          assert p["source_sha"] == __import__("os").environ["A7_SOURCE_SHA"]
+          assert p["mechanism"] == "a7_range_failure_reversal"
+          assert p["selection_basis"] == "A7_preregistered_in_issue_1985_not_selected_by_recent_returns"
+          assert p["historical_july_previously_inspected"] is True
+          assert p["recent_window_used_for_selection"] is False
+          assert p["research_only"] is True and p["paper_only"] is True
+          assert p["paper_execution_started"] is False
+          assert p["automatic_strategy_promotion"] is False
+          assert p["derivative_execution_authority"] is False
+          assert p["live_trading_authority"] is False
+          assert p["private_credentials_used"] is False
+          assert p["real_exchange_orders"] is False
+          assert p["owner_500_usdt_profile_touched"] is False
+          assert len(p["rows"]) == 8
+          assert len(p["owner_review_cells"]) == 12
+          assert all(r["trade_count_limit"] is None for r in p["rows"])
+          assert all(r["entry_timeframe"] == "minute15" for r in p["rows"])
+          print("a7_recent_source_bound_evidence=PASS conclusion="+p["conclusion"])
+          PY
+
+      - name: Upload A7 numerical evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-a7-range-failure-${{ github.sha }}
+          path: |
+            build/a7-output/
+            build/a7-recent-snapshot/snapshot-manifest.json
+            build/a7-recent-snapshot.sha256
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Remove raw A7 source state
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf build/a7-recent-state build/a7-recent-cache build/a7-recent-snapshot.zip
+          exit 0
+
+      - name: Clean isolated Python
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -n "${NEXUS_A7_VENV:-}" ] && [ -d "$NEXUS_A7_VENV" ]; then
+            rm -rf "$NEXUS_A7_VENV"
+          fi
+          exit 0
