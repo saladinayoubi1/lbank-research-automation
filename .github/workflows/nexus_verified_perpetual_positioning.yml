@@ -60,3 +60,57 @@ jobs:
           assert proof["automatic_strategy_promotion"] is False
           assert proof["live_trading_authority"] is False
           PY
+
+      - name: Build fresh public positioning proof
+        run: >-
+          python nexus_verified_perpetual_positioning.py
+          --start 2026-07-03T00:00:00Z
+          --end-exclusive 2026-08-02T00:00:00Z
+          --output-root build/perpetual-positioning-fresh
+
+      - name: Compare fresh proof with committed evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from nexus_verified_perpetual_positioning import verify_proof
+
+          committed = json.loads(Path(
+              "research/evidence/verified_perpetual_positioning_20260703_20260802.json"
+          ).read_text())
+          fresh = json.loads(Path(
+              "build/perpetual-positioning-fresh/_perpetual_positioning_proof.json"
+          ).read_text())
+          verify_proof(committed)
+          verify_proof(fresh)
+          for key in (
+              "dataset_semantic_sha256",
+              "oi_rows",
+              "funding_rows",
+              "start_utc",
+              "end_exclusive_utc",
+              "oi_value_field",
+              "oi_methodology",
+              "credentials_used",
+              "derivatives_execution_authority",
+              "automatic_strategy_promotion",
+              "live_trading_authority",
+          ):
+              if fresh[key] != committed[key]:
+                  raise SystemExit(
+                      f"fresh positioning evidence mismatch for {key}: "
+                      f"{fresh[key]!r} != {committed[key]!r}"
+                  )
+          print("fresh_positioning_evidence=PASS")
+          PY
+
+      - name: Upload fresh source-bound positioning evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-verified-perpetual-positioning-${{ github.sha }}
+          path: build/perpetual-positioning-fresh
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
