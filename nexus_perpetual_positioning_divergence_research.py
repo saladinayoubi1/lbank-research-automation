@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 
 import bybit_spot_backfill as spot_backfill
-from nexus_multipair_archive_snapshot import verify_snapshot as verify_spot_snapshot
+import nexus_a9_spot_source as a9_spot_source
 from nexus_verified_perpetual_positioning import (
     OI_INTERVAL,
     OI_METHOD_CHANGE,
@@ -161,27 +161,32 @@ def load_verified_positioning(root: Path) -> tuple[dict[str, dict[str, pd.DataFr
 
 def load_spot_proof(root: Path) -> dict[str, Any]:
     root = root.resolve()
-    path = root / "snapshot-manifest.json"
+    path = root / a9_spot_source.PROOF_NAME
     if path.is_symlink() or not path.is_file() or path.stat().st_size > 2_000_000:
-        raise PositioningResearchError("official Spot snapshot proof missing or unsafe")
+        raise PositioningResearchError("official A9 Spot proof missing or unsafe")
     try:
         proof = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
-        raise PositioningResearchError("official Spot snapshot proof unreadable") from exc
-    verification = verify_spot_snapshot(root, proof)
-    if verification.get("decision") != "pass":
-        raise PositioningResearchError("official Spot snapshot proof rejected")
+        raise PositioningResearchError("official A9 Spot proof unreadable") from exc
+    try:
+        a9_spot_source.verify_proof(root, proof)
+    except a9_spot_source.A9SpotSourceError as exc:
+        raise PositioningResearchError("official A9 Spot proof rejected") from exc
     if (
-        proof.get("source_window_start") != "2026-05-01"
-        or proof.get("source_window_end") != "2026-07-31"
+        proof.get("source_window_start") != "2026-07-01"
+        or proof.get("source_window_end_inclusive") != "2026-08-01"
+        or proof.get("analysis_start_utc") != START.isoformat()
+        or proof.get("analysis_end_exclusive_utc") != END_EXCLUSIVE.isoformat()
+        or proof.get("symbols") != ["BTCUSDT", "ETHUSDT"]
         or proof.get("data_origin") != "official_public_bybit_spot_trade_archive_aggregated"
         or proof.get("research_only") is not True
+        or proof.get("paper_only") is not True
         or proof.get("automatic_strategy_promotion") is not False
         or proof.get("live_trading_authority") is not False
         or proof.get("private_credentials_used") is not False
         or proof.get("real_exchange_orders") is not False
     ):
-        raise PositioningResearchError("Spot source proof authority or source window rejected")
+        raise PositioningResearchError("Spot source proof authority or analysis window rejected")
     return proof
 
 
