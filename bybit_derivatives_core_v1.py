@@ -200,6 +200,52 @@ def fetch_funding(client: Client, symbol: str, start_ms: int, end_ms: int) -> pd
     })
 
 
+def fetch_open_interest(
+    client: Client,
+    symbol: str,
+    start_ms: int,
+    end_ms: int,
+    interval: str = "15min",
+) -> pd.DataFrame:
+    rows: dict[int, float] = {}
+    cursor = ""
+    seen_cursors: set[str] = set()
+    while True:
+        params: dict[str, Any] = {
+            "category": "linear",
+            "symbol": symbol,
+            "intervalTime": interval,
+            "startTime": start_ms,
+            "endTime": end_ms - 1,
+            "limit": 200,
+        }
+        if cursor:
+            params["cursor"] = cursor
+        result = client.get("/v5/market/open-interest", params)["result"]
+        batch = result.get("list", [])
+        for item in batch:
+            stamp = int(item["timestamp"])
+            if start_ms <= stamp < end_ms:
+                value = float(item["openInterest"])
+                if not math.isfinite(value) or value < 0.0:
+                    raise ValidationError(f"invalid open interest: {symbol}")
+                rows[stamp] = value
+        next_cursor = str(result.get("nextPageCursor") or "")
+        if not next_cursor:
+            break
+        if next_cursor in seen_cursors:
+            raise ValidationError(f"open-interest pagination stalled: {symbol}")
+        seen_cursors.add(next_cursor)
+        cursor = next_cursor
+    if not rows:
+        raise ValidationError(f"no open-interest rows: {symbol}")
+    ordered = sorted(rows)
+    return pd.DataFrame({
+        "timestamp": pd.to_datetime(ordered, unit="ms", utc=True),
+        "open_interest": [rows[x] for x in ordered],
+    })
+
+
 def fetch_instrument(client: Client, symbol: str) -> InstrumentSpec:
     items = client.get('/v5/market/instruments-info', {
         'category': 'linear', 'symbol': symbol, 'limit': 1000,
