@@ -87,13 +87,29 @@ def _load_all(root: Path) -> dict[str, Any]:
     return {"proof": proof, "flows": flows}
 
 
+def _utc_epoch_ns(values: pd.Series) -> np.ndarray:
+    if values.isna().any():
+        raise SignedFlowResearchError("missing timestamp in A6 inputs")
+    return np.fromiter(
+        (pd.Timestamp(value).value for value in values),
+        dtype=np.int64,
+        count=len(values),
+    )
+
+
 def prepare_symbol(root: Path, symbol: str, flow: pd.DataFrame) -> pd.DataFrame:
     candles = pd.read_parquet(root / symbol / "minute15.parquet").copy()
     for frame in (candles, flow):
         frame["timestamp"] = pd.to_datetime(frame["timestamp"], utc=True, errors="raise")
     candles = candles.sort_values("timestamp").reset_index(drop=True)
     flow = flow.sort_values("timestamp").reset_index(drop=True)
-    if len(candles) != len(flow) or not candles["timestamp"].equals(flow["timestamp"]):
+    if (
+        len(candles) != len(flow)
+        or not np.array_equal(
+            _utc_epoch_ns(candles["timestamp"]),
+            _utc_epoch_ns(flow["timestamp"]),
+        )
+    ):
         raise SignedFlowResearchError(f"candle/flow timestamp identity mismatch for {symbol}")
     if len(candles) < MIN_BARS:
         raise SignedFlowResearchError(
