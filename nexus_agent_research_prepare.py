@@ -41,6 +41,22 @@ class ResearchPreparationError(ValueError):
     pass
 
 
+def research_cache_key(payload: dict[str, Any], source_sha: str) -> str:
+    if not HEX40.fullmatch(source_sha):
+        raise ResearchPreparationError("research cache source SHA is malformed")
+    if payload.get("task_id") in PREDECESSOR:
+        predecessor = validate_ancestry({key: payload[key] for key in ANCESTRY})
+        return (
+            "nexus-composite-inputs-v2-"
+            + source_sha
+            + "-"
+            + predecessor["research_predecessor_ledger_digest"]
+        )
+    if payload.get("task_id") == FIRST:
+        return "nexus-composite-inputs-v1-" + source_sha
+    raise ResearchPreparationError("unrecognized Research cache task identity")
+
+
 def _read_regular_json(path: Path) -> dict[str, Any]:
     if path.is_symlink() or not path.is_file():
         raise ResearchPreparationError("required research evidence is missing or linked")
@@ -183,18 +199,13 @@ def prepare(mode: str, root: Path) -> dict[str, Any]:
         if payload["task_id"] in PREDECESSOR:
             predecessor = validate_ancestry({key: payload[key] for key in ANCESTRY})
             predecessor_digest = predecessor["research_predecessor_ledger_digest"]
-            research_cache_key = (
-                f"nexus-composite-inputs-v2-{os.environ['GITHUB_SHA']}-{predecessor_digest}"
-            )
-        else:
-            research_cache_key = f"nexus-composite-inputs-v1-{os.environ['GITHUB_SHA']}"
         return {
             "research_task": True,
             "mode": role,
             "producer_lease_id": payload.get("research_producer_lease_id", ""),
             "producer_source_sha": payload.get("research_producer_source_sha", ""),
             "predecessor_ledger_digest": predecessor_digest,
-            "research_cache_key": research_cache_key,
+            "research_cache_key": research_cache_key(payload, os.environ["GITHUB_SHA"]),
         }
     if root.exists():
         raise ResearchPreparationError("refuse dirty or pre-existing Research staging root")
