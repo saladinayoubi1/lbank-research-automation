@@ -105,6 +105,8 @@ def mock_proofs(monkeypatch, *, bad_ledger=False, bad_qa=False, no_verified_fift
                      "conclusion": "success", "created_at": "2026-09-29T00:00:00Z",
                      "repository": {"full_name": selector.REPO},
                      "head_repository": {"full_name": selector.REPO}}]}
+        if endpoint.endswith("actions/runs?branch=main&per_page=100&page=1"):
+            return {"workflow_runs": []}
         if endpoint.endswith("actions/runs/1234567/artifacts?per_page=30"):
             return {"artifacts": [{"id": 901, "name": "fast-agent-status-1234567",
                      "size_in_bytes": len(archive_map[901]),
@@ -280,6 +282,62 @@ def test_frontier_skips_schema_lag_snapshot_missing_required_predecessor(monkeyp
     )
     assert artifact_id == 901
     assert manager["tasks"][0]["id"] == FIFTH
+
+
+def test_bounded_repository_run_fallback_recovers_exact_active_coordinator(monkeypatch):
+    mock_proofs(monkeypatch)
+    original = selector.api
+    monkeypatch.setenv("GITHUB_SHA", "f" * 40)
+
+    def fallback_api(endpoint, *, binary=False):
+        if endpoint.endswith(
+            f"actions/workflows/{COORDINATOR_WORKFLOW_ID}/runs?branch=main&per_page=12"
+        ):
+            return {"workflow_runs": []}
+        if endpoint.endswith("actions/runs?branch=main&per_page=100&page=1"):
+            return {"workflow_runs": [{
+                "id": 1234567, "workflow_id": COORDINATOR_WORKFLOW_ID,
+                "head_sha": SOURCE, "head_branch": "main",
+                "path": selector.COORDINATOR_WORKFLOW_PATH,
+                "event": "schedule", "status": "completed", "conclusion": "success",
+                "created_at": "2026-09-29T00:00:00Z",
+                "repository": {"full_name": selector.REPO},
+                "head_repository": {"full_name": selector.REPO},
+            }]}
+        return original(endpoint, binary=binary)
+
+    monkeypatch.setattr(selector, "api", fallback_api)
+    artifact_id, manager = selector.latest_coordinator(
+        selector.REPO, required_task_id=FIFTH,
+    )
+    assert artifact_id == 901
+    assert manager["tasks"][0]["id"] == FIFTH
+
+
+def test_repository_fallback_rejects_same_path_from_wrong_workflow_id(monkeypatch):
+    mock_proofs(monkeypatch)
+    original = selector.api
+
+    def wrong_identity(endpoint, *, binary=False):
+        if endpoint.endswith(
+            f"actions/workflows/{COORDINATOR_WORKFLOW_ID}/runs?branch=main&per_page=12"
+        ):
+            return {"workflow_runs": []}
+        if endpoint.endswith("actions/runs?branch=main&per_page=100&page=1"):
+            return {"workflow_runs": [{
+                "id": 1234567, "workflow_id": COORDINATOR_WORKFLOW_ID + 1,
+                "head_sha": SOURCE, "head_branch": "main",
+                "path": selector.COORDINATOR_WORKFLOW_PATH,
+                "event": "schedule", "status": "completed", "conclusion": "success",
+                "created_at": "2026-09-29T00:00:00Z",
+                "repository": {"full_name": selector.REPO},
+                "head_repository": {"full_name": selector.REPO},
+            }]}
+        return original(endpoint, binary=binary)
+
+    monkeypatch.setattr(selector, "api", wrong_identity)
+    with pytest.raises(selector.QaFrontierError, match="no verified"):
+        selector.latest_coordinator(selector.REPO, required_task_id=FIFTH)
 
 
 def _historical_proofs(monkeypatch, *, tamper_pin=False, untrusted_actor=False,
