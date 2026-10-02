@@ -22,7 +22,7 @@ def _physical_section() -> str:
 
 def test_archive_acceptance_workflow_keeps_policy_job_inventory_and_read_only_permissions() -> None:
     value = yaml.safe_load(_text())
-    assert set(value["jobs"]) == {"acquire-snapshot", "a7-research-backtest", "a7-evidence-artifact", "contract-test"}
+    assert set(value["jobs"]) == {"acquire-snapshot", "a7-research-backtest", "contract-test"}
     assert value["permissions"] == {"actions": "read", "contents": "read"}
 
 
