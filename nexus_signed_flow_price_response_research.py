@@ -87,10 +87,25 @@ def _load_all(root: Path) -> dict[str, Any]:
     return {"proof": proof, "flows": flows}
 
 
+def _utc_ns(values: pd.Series) -> pd.Series:
+    """Normalize equivalent UTC timestamps before strict identity checks.
+
+    Parquet readers can preserve different datetime resolutions (for example
+    microseconds versus nanoseconds) for otherwise identical UTC instants.
+    Identity remains strict after canonicalization; no rounding or tolerance is
+    allowed.
+    """
+    normalized = pd.to_datetime(values, utc=True, errors="raise")
+    if normalized.isna().any():
+        raise SignedFlowResearchError("missing timestamp in A6 inputs")
+    return normalized.astype("datetime64[ns, UTC]")
+
+
 def prepare_symbol(root: Path, symbol: str, flow: pd.DataFrame) -> pd.DataFrame:
     candles = pd.read_parquet(root / symbol / "minute15.parquet").copy()
-    for frame in (candles, flow):
-        frame["timestamp"] = pd.to_datetime(frame["timestamp"], utc=True, errors="raise")
+    candles["timestamp"] = _utc_ns(candles["timestamp"])
+    flow = flow.copy()
+    flow["timestamp"] = _utc_ns(flow["timestamp"])
     candles = candles.sort_values("timestamp").reset_index(drop=True)
     flow = flow.sort_values("timestamp").reset_index(drop=True)
     if len(candles) != len(flow) or not candles["timestamp"].equals(flow["timestamp"]):
@@ -100,7 +115,7 @@ def prepare_symbol(root: Path, symbol: str, flow: pd.DataFrame) -> pd.DataFrame:
             f"{symbol} needs at least {MIN_BARS} 15m bars for 30-day evaluation"
         )
     expected_available = flow["timestamp"] + pd.Timedelta(minutes=15)
-    actual_available = pd.to_datetime(flow["available_at"], utc=True, errors="raise")
+    actual_available = _utc_ns(flow["available_at"]).reset_index(drop=True)
     if not actual_available.equals(expected_available):
         raise SignedFlowResearchError(f"non-causal signed-flow availability for {symbol}")
 

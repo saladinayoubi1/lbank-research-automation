@@ -86,6 +86,30 @@ def make_dataset(root):
     write_proof(root / "_signed_trade_flow_proof.json", proof)
 
 
+
+
+def test_prepare_symbol_canonicalizes_equivalent_parquet_datetime_resolutions(tmp_path):
+    make_dataset(tmp_path)
+    flow_path = tmp_path / "btc_usdt" / "signed_trade_flow_15m.parquet"
+    flow = pd.read_parquet(flow_path)
+    flow["timestamp"] = flow["timestamp"].astype("datetime64[us, UTC]")
+    flow["available_at"] = flow["available_at"].astype("datetime64[us, UTC]")
+
+    prepared = a6.prepare_symbol(tmp_path, "btc_usdt", flow)
+
+    assert len(prepared) == 30 * 96
+    assert str(prepared["timestamp"].dtype) == "datetime64[ns, UTC]"
+
+    missing = flow["timestamp"].copy()
+    missing.iloc[0] = pd.NaT
+    try:
+        a6._utc_ns(missing)
+    except a6.SignedFlowResearchError as exc:
+        assert "missing timestamp" in str(exc)
+    else:
+        raise AssertionError("missing timestamp must fail closed")
+
+
 def test_training_threshold_cannot_be_changed_by_validation_or_test():
     n = 1000
     frame = pd.DataFrame({"flow_1h": np.linspace(0.01, 0.8, n)})
