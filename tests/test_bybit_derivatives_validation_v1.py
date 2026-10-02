@@ -4,6 +4,7 @@ import math
 
 import pandas as pd
 
+from bybit_derivatives_core_v1 import fetch_open_interest
 from bybit_derivatives_validation_v1 import (
     Client,
     InstrumentSpec,
@@ -13,7 +14,6 @@ from bybit_derivatives_validation_v1 import (
     apply_trade,
     choose_risk_tier,
     expected_funding_count,
-    fetch_open_interest,
     funding_cashflow,
     margin_requirements,
     minute_vwap,
