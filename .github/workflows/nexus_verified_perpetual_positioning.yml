@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   contract-test:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Windows, X64, nexus-research, nexus-worker-2]
     timeout-minutes: 15
 
     steps:
