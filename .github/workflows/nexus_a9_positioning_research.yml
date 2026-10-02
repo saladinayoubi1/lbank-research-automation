@@ -5,11 +5,12 @@ on:
     paths:
       - "nexus_perpetual_positioning_divergence_research.py"
       - "nexus_verified_perpetual_positioning.py"
-      - "nexus_multipair_archive_snapshot.py"
+      - "nexus_a9_spot_source.py"
       - "bybit_spot_backfill.py"
       - "bybit_spot_archive_audit.py"
       - "bybit_spot_archive_collector.py"
       - "tests/test_nexus_perpetual_positioning_divergence_research.py"
+      - "tests/test_nexus_a9_spot_source.py"
       - ".github/workflows/nexus_a9_positioning_research.yml"
       - "security/workflow-permissions-policy-v1.json"
   workflow_dispatch:
@@ -19,7 +20,7 @@ permissions:
 
 concurrency:
   group: nexus-a9-positioning-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref_name }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   research-backtest:
@@ -67,7 +68,7 @@ jobs:
         shell: cmd
         run: |
           @echo off
-          python -m pytest -q tests/test_nexus_perpetual_positioning_divergence_research.py tests/test_nexus_verified_perpetual_positioning.py
+          python -m pytest -q tests/test_nexus_perpetual_positioning_divergence_research.py tests/test_nexus_a9_spot_source.py tests/test_nexus_verified_perpetual_positioning.py
           if errorlevel 1 exit /b %errorlevel%
 
       - name: Build fresh verified perpetual positioning inputs
@@ -78,14 +79,13 @@ jobs:
           python nexus_verified_perpetual_positioning.py --start 2026-07-03T00:00:00Z --end-exclusive 2026-08-02T00:00:00Z --output-root build/a9-positioning
           if errorlevel 1 exit /b %errorlevel%
 
-      - name: Acquire official Bybit Spot archive state
+      - name: Acquire exact BTC ETH official Bybit Spot source
         shell: cmd
         run: |
           @echo off
           if exist build\a9-spot-state rmdir /s /q build\a9-spot-state
           if exist build\a9-spot-cache rmdir /s /q build\a9-spot-cache
-          if exist build\a9-spot-proof rmdir /s /q build\a9-spot-proof
-          python nexus_multipair_archive_snapshot.py --state-root build/a9-spot-state --cache-root build/a9-spot-cache --output-root build/a9-spot-proof --archive-output build/a9-spot-proof.zip --digest-output build/a9-spot-proof.sha256 --source-sha %A9_SOURCE_SHA%
+          python nexus_a9_spot_source.py --state-root build/a9-spot-state --cache-root build/a9-spot-cache
           if errorlevel 1 exit /b %errorlevel%
 
       - name: Run A9 research-only backtest
@@ -93,7 +93,7 @@ jobs:
         run: |
           @echo off
           if exist build\a9-output rmdir /s /q build\a9-output
-          python nexus_perpetual_positioning_divergence_research.py --spot-state-root build/a9-spot-state --spot-proof-root build/a9-spot-proof --positioning-root build/a9-positioning --output build/a9-output --source-sha %A9_SOURCE_SHA%
+          python nexus_perpetual_positioning_divergence_research.py --spot-state-root build/a9-spot-state --spot-proof-root build/a9-spot-state --positioning-root build/a9-positioning --output build/a9-output --source-sha %A9_SOURCE_SHA%
           if errorlevel 1 exit /b %errorlevel%
 
       - name: Verify A9 report authority and source contract
@@ -110,8 +110,9 @@ jobs:
           path: |
             build/a9-output/
             build/a9-positioning/_perpetual_positioning_proof.json
-            build/a9-spot-proof/snapshot-manifest.json
-            build/a9-spot-proof.sha256
+            build/a9-spot-state/_a9_spot_source_proof.json
+            build/a9-spot-state/_source_manifest.json
+            build/a9-spot-state/_backfill_report.json
           if-no-files-found: error
           retention-days: 90
           compression-level: 9
