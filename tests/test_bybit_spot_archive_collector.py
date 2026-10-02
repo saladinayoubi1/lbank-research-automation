@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
+from types import SimpleNamespace
 
 import pandas as pd
 import pytest
@@ -145,10 +147,10 @@ def test_build_collection_writes_six_parquets_and_reports(tmp_path):
         return {
             "symbol": symbol,
             "audit_date": audit_date,
-            "url": f"test://{path.name}",
+            "url": f"https://public.bybit.com/spot/{symbol}/{path.name}",
             "path": path.as_posix(),
             "size_bytes": path.stat().st_size,
-            "sha256": "test",
+            "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
             "http_status": 200,
             "download_attempts": 1,
             "loaded_from_cache": False,
@@ -165,7 +167,39 @@ def test_build_collection_writes_six_parquets_and_reports(tmp_path):
     )
     assert report["summary"]["collector_ok"] is True
     assert report["summary"]["ready_series"] == 6
-    assert len(list(output.glob("*/*.parquet"))) == 6
+    assert report["summary"]["signed_flow_capability_ok"] is True
+    assert report["summary"]["signed_flow_rows"] == 192
+    assert len(list(output.glob("*/*.parquet"))) == 8
+    assert (output / "_signed_trade_flow_proof.json").exists()
+    assert not list(output.rglob("*.csv.gz"))
     assert (output / "_collection_report.json").exists()
     assert (output / "_backfill_status.csv").exists()
     assert (output / "_source_manifest.json").exists()
+
+
+def test_cli_requires_signed_flow_capability(monkeypatch, tmp_path):
+    args = SimpleNamespace(
+        start_date="2026-08-01",
+        end_date="2026-08-01",
+        output_root=tmp_path / "output",
+        cache_root=tmp_path / "cache",
+        clean=True,
+    )
+    monkeypatch.setattr(collector, "parse_args", lambda: args)
+    monkeypatch.setattr(
+        collector,
+        "build_collection",
+        lambda **_kwargs: {
+            "summary": {"collector_ok": True, "signed_flow_capability_ok": False}
+        },
+    )
+    assert collector.main() == 1
+
+    monkeypatch.setattr(
+        collector,
+        "build_collection",
+        lambda **_kwargs: {
+            "summary": {"collector_ok": True, "signed_flow_capability_ok": True}
+        },
+    )
+    assert collector.main() == 0

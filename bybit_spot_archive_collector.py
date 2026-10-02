@@ -10,6 +10,7 @@ from typing import Any, Callable
 import pandas as pd
 
 import bybit_spot_archive_audit as audit
+import nexus_verified_signed_trade_flow as signed_flow
 from run_bybit_spot_archive_audit import robust_download_archive
 
 DEFAULT_OUTPUT_ROOT = Path("build/bybit_market")
@@ -196,7 +197,9 @@ def build_collection(
 
     archive_records: list[dict[str, Any]] = []
     errors: list[dict[str, str]] = []
+    signed_flow_errors: list[dict[str, str]] = []
     frames: defaultdict[tuple[str, str], list[pd.DataFrame]] = defaultdict(list)
+    signed_flow_frames: defaultdict[str, list[pd.DataFrame]] = defaultdict(list)
 
     for audit_date in dates:
         for symbol in symbols:
@@ -222,6 +225,21 @@ def build_collection(
                         }
                     )
                     continue
+
+                try:
+                    signed_flow_frames[symbol].append(
+                        signed_flow.aggregate_day(
+                            valid, symbol, audit_date, str(source["sha256"])
+                        )
+                    )
+                except Exception as exc:
+                    signed_flow_errors.append(
+                        {
+                            "symbol": symbol,
+                            "date": audit_date,
+                            "error": f"{type(exc).__name__}: {exc}",
+                        }
+                    )
 
                 for timeframe in audit.TIMEFRAME_RULES:
                     candle_frame = audit.trades_to_candles(
@@ -265,11 +283,50 @@ def build_collection(
                 index=False,
             )
 
+    signed_parts: list[pd.DataFrame] = []
+    for symbol in symbols:
+        parts = signed_flow_frames.get(symbol, [])
+        if not parts:
+            continue
+        combined_flow = pd.concat(parts, ignore_index=True).sort_values("timestamp")
+        destination = output_root / canonical_symbol(symbol)
+        destination.mkdir(parents=True, exist_ok=True)
+        combined_flow.to_parquet(
+            destination / "signed_trade_flow_15m.parquet", index=False
+        )
+        signed_parts.append(combined_flow)
+    signed_frame = (
+        pd.concat(signed_parts, ignore_index=True)
+        if signed_parts else pd.DataFrame()
+    )
+
+    signed_flow_proof = None
+    if not signed_flow_errors and not signed_frame.empty:
+        try:
+            signed_flow_proof = signed_flow.build_proof(
+                signed_frame, archive_records, start_date, end_date, symbols
+            )
+            signed_flow.verify_proof(signed_frame, signed_flow_proof)
+            signed_flow.write_proof(
+                output_root / "_signed_trade_flow_proof.json", signed_flow_proof
+            )
+        except Exception as exc:
+            signed_flow_errors.append(
+                {"symbol": "*", "date": "*", "error": f"{type(exc).__name__}: {exc}"}
+            )
+            signed_flow_proof = None
+
     status_frame = pd.DataFrame(statuses)
     archive_frame = pd.DataFrame(archive_records)
     expected_archives = len(dates) * len(symbols)
     expected_series = len(symbols) * len(audit.TIMEFRAME_RULES)
     ready_series = int(status_frame["integrity_ok"].sum())
+    expected_signed_flow_rows = len(dates) * len(symbols) * 96
+    signed_flow_capability_ok = (
+        signed_flow_proof is not None
+        and len(signed_frame) == expected_signed_flow_rows
+        and not signed_flow_errors
+    )
     collector_ok = (
         len(archive_records) == expected_archives
         and all(bool(record["archive_ok"]) for record in archive_records)
@@ -300,9 +357,15 @@ def build_collection(
             "invalid_series": expected_series - ready_series,
             "errors": len(errors),
             "collector_ok": collector_ok,
+            "signed_flow_expected_rows": expected_signed_flow_rows,
+            "signed_flow_rows": int(len(signed_frame)),
+            "signed_flow_capability_ok": signed_flow_capability_ok,
+            "signed_flow_errors": len(signed_flow_errors),
         },
         "statuses": statuses,
         "archives": archive_records,
+        "signed_flow_proof": signed_flow_proof,
+        "signed_flow_errors": signed_flow_errors,
         "errors": errors,
     }
     write_collection_reports(
@@ -328,6 +391,8 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- Collector OK: **{summary['collector_ok']}**",
         f"- Archives passed: {summary['passed_archives']} / {summary['expected_archives']}",
         f"- Candle series ready: {summary['ready_series']} / {summary['expected_series']}",
+        f"- Signed taker-flow capability: **{summary['signed_flow_capability_ok']}** "
+        f"({summary['signed_flow_rows']} / {summary['signed_flow_expected_rows']} rows)",
         f"- Errors: {summary['errors']}",
         "",
         "| Symbol | Timeframe | Rows | Expected | Missing | Gaps | Duplicates | Off-grid | Invalid OHLC | Status |",
@@ -394,7 +459,10 @@ def main() -> int:
         clean=args.clean,
     )
     print(json.dumps(report["summary"], sort_keys=True))
-    return 0 if report["summary"]["collector_ok"] else 1
+    summary = report["summary"]
+    return 0 if (
+        summary["collector_ok"] and summary["signed_flow_capability_ok"]
+    ) else 1
 
 
 if __name__ == "__main__":
