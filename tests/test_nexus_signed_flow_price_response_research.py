@@ -100,6 +100,15 @@ def test_prepare_symbol_canonicalizes_equivalent_parquet_datetime_resolutions(tm
     assert len(prepared) == 30 * 96
     assert str(prepared["timestamp"].dtype) == "datetime64[ns, UTC]"
 
+    missing = flow["timestamp"].copy()
+    missing.iloc[0] = pd.NaT
+    try:
+        a6._utc_ns(missing)
+    except a6.SignedFlowResearchError as exc:
+        assert "missing timestamp" in str(exc)
+    else:
+        raise AssertionError("missing timestamp must fail closed")
+
 
 def test_training_threshold_cannot_be_changed_by_validation_or_test():
     n = 1000
