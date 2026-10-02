@@ -342,17 +342,42 @@ jobs:
     timeout-minutes: 120
     env:
       A7_SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+    outputs:
+      report_sha256: ${{ steps.proof.outputs.report_sha256 }}
+      report_b64: ${{ steps.proof.outputs.report_b64 }}
 
     steps:
-      - name: Check out repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
+      - name: Prepare exact PR source without JavaScript actions
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_root="$RUNNER_TEMP/nexus-a7-source-$GITHUB_RUN_ID"
+          case "$source_root" in "$RUNNER_TEMP"/nexus-a7-source-*) ;; *) exit 1;; esac
+          rm -rf "$source_root"
+          mkdir -p "$source_root"
+          cd "$source_root"
+          git init .
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git config --local --unset-all http.https://github.com/.extraheader || true
+          fetch_ok=false
+          for attempt in 1 2 3; do
+            if timeout 180s git -c credential.helper= -c http.version=HTTP/1.1 fetch --no-tags --depth=1 origin "$A7_SOURCE_SHA"; then
+              fetch_ok=true
+              break
+            fi
+            if [ "$attempt" -lt 3 ]; then sleep "$((attempt * 5))"; fi
+          done
+          test "$fetch_ok" = true
+          git checkout --detach --force FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "$A7_SOURCE_SHA"
+          printf 'A7_SOURCE_ROOT=%s\n' "$source_root" >> "$GITHUB_ENV"
+          echo "a7_exact_source_checkout=PASS sha=$A7_SOURCE_SHA"
 
       - name: Prepare isolated Python
         shell: bash
         run: |
           set -euo pipefail
+          cd "$A7_SOURCE_ROOT"
           python_bin="/opt/nexus-bybit-runner/_work/_tool/Python/3.12.14/x64/bin/python"
           if [ ! -x "$python_bin" ]; then
             tool_root="${RUNNER_TOOL_CACHE:-/opt/nexus-bybit-runner/_work/_tool}"
@@ -360,7 +385,7 @@ jobs:
           fi
           test -x "$python_bin"
           "$python_bin" -c "import sys; assert sys.version_info[:2] == (3, 12)"
-          venv="$RUNNER_TEMP/nexus-a7-$GITHUB_RUN_ID"
+          venv="$RUNNER_TEMP/nexus-a7-venv-$GITHUB_RUN_ID"
           rm -rf "$venv"
           "$python_bin" -m venv "$venv"
           "$venv/bin/python" -m pip install -r requirements-dev.lock
@@ -372,32 +397,50 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          cd "$A7_SOURCE_ROOT"
           python -m pytest -q tests/test_nexus_a7_range_failure_reversal_research.py tests/test_nexus_a7_range_failure_reversal_workflow.py
 
       - name: Acquire independently recent official Bybit Spot source for A7
         shell: bash
         run: |
           set -euo pipefail
+          cd "$A7_SOURCE_ROOT"
           rm -rf build/a7-recent-state build/a7-recent-cache build/a7-recent-snapshot build/a7-recent-snapshot.zip build/a7-recent-snapshot.sha256
           now_ms="$(python -c 'import time; print(int(time.time() * 1000))')"
-          python nexus_multipair_recent_archive_runtime_snapshot.py acquire --state-root build/a7-recent-state --cache-root build/a7-recent-cache --output-root build/a7-recent-snapshot --archive-output build/a7-recent-snapshot.zip --digest-output build/a7-recent-snapshot.sha256 --source-sha "$A7_SOURCE_SHA" --now-ms "$now_ms"
+          python nexus_multipair_recent_archive_runtime_snapshot.py acquire \
+            --state-root build/a7-recent-state \
+            --cache-root build/a7-recent-cache \
+            --output-root build/a7-recent-snapshot \
+            --archive-output build/a7-recent-snapshot.zip \
+            --digest-output build/a7-recent-snapshot.sha256 \
+            --source-sha "$A7_SOURCE_SHA" \
+            --now-ms "$now_ms"
 
       - name: Run source-bound A7 recent backtest
         shell: bash
         run: |
           set -euo pipefail
+          cd "$A7_SOURCE_ROOT"
           rm -rf build/a7-output
           verify_now_ms="$(python -c 'import time; print(int(time.time() * 1000))')"
-          python nexus_a7_range_failure_reversal_research.py --state-root build/a7-recent-state --snapshot-root build/a7-recent-snapshot --output-root build/a7-output --source-sha "$A7_SOURCE_SHA" --now-ms "$verify_now_ms"
+          python nexus_a7_range_failure_reversal_research.py \
+            --state-root build/a7-recent-state \
+            --snapshot-root build/a7-recent-snapshot \
+            --output-root build/a7-output \
+            --source-sha "$A7_SOURCE_SHA" \
+            --now-ms "$verify_now_ms"
 
-      - name: Verify A7 authority and owner review surface
+      - name: Verify A7 authority and emit immutable report
+        id: proof
         shell: bash
         run: |
           set -euo pipefail
+          cd "$A7_SOURCE_ROOT"
           python - <<'PY'
-          import json, os
+          import base64, hashlib, json, os
           from pathlib import Path
-          p=json.loads(Path("build/a7-output/a7-range-failure-reversal-report.json").read_text())
+          path=Path("build/a7-output/a7-range-failure-reversal-report.json")
+          p=json.loads(path.read_text())
           assert p["source_sha"] == os.environ["A7_SOURCE_SHA"]
           assert p["mechanism"] == "a7_range_failure_reversal"
           assert p["historical_july_previously_inspected"] is True
@@ -411,30 +454,29 @@ jobs:
           assert len(p["rows"]) == 8
           assert len(p["owner_review_cells"]) == 12
           assert all(r["trade_count_limit"] is None for r in p["rows"])
+          encoded=json.dumps(p,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()
+          report_sha=hashlib.sha256(encoded).hexdigest()
+          report_b64=base64.b64encode(encoded).decode()
+          assert len(report_b64) < 60000
+          with open(os.environ["GITHUB_OUTPUT"],"a",encoding="utf-8") as handle:
+              handle.write(f"report_sha256={report_sha}\n")
+              handle.write(f"report_b64={report_b64}\n")
           print("a7_recent_source_bound_evidence=PASS conclusion="+p["conclusion"])
+          print("a7_report_sha256="+report_sha)
+          print("a7_owner_review_cells="+json.dumps(p["owner_review_cells"],sort_keys=True,separators=(",",":")))
           PY
-
-      - name: Upload A7 numerical evidence
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        with:
-          name: nexus-a7-range-failure-${{ github.sha }}
-          path: |
-            build/a7-output/
-            build/a7-recent-snapshot/snapshot-manifest.json
-            build/a7-recent-snapshot.sha256
-          if-no-files-found: error
-          retention-days: 90
-          compression-level: 9
 
       - name: Remove raw A7 source state
         if: always()
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf build/a7-recent-state build/a7-recent-cache build/a7-recent-snapshot.zip
+          if [ -n "${A7_SOURCE_ROOT:-}" ] && [ -d "$A7_SOURCE_ROOT" ]; then
+            rm -rf "$A7_SOURCE_ROOT/build/a7-recent-state" "$A7_SOURCE_ROOT/build/a7-recent-cache" "$A7_SOURCE_ROOT/build/a7-recent-snapshot.zip"
+          fi
           exit 0
 
-      - name: Clean isolated Python
+      - name: Clean isolated Python and source
         if: always()
         shell: bash
         run: |
@@ -442,7 +484,53 @@ jobs:
           if [ -n "${NEXUS_A7_VENV:-}" ] && [ -d "$NEXUS_A7_VENV" ]; then
             rm -rf "$NEXUS_A7_VENV"
           fi
+          if [ -n "${A7_SOURCE_ROOT:-}" ] && [ -d "$A7_SOURCE_ROOT" ]; then
+            case "$A7_SOURCE_ROOT" in "$RUNNER_TEMP"/nexus-a7-source-*) rm -rf "$A7_SOURCE_ROOT" ;; *) exit 1;; esac
+          fi
           exit 0
+
+  a7-evidence-artifact:
+    needs: a7-research-backtest
+    if: ${{ needs.a7-research-backtest.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      A7_REPORT_B64: ${{ needs.a7-research-backtest.outputs.report_b64 }}
+      A7_REPORT_SHA256: ${{ needs.a7-research-backtest.outputs.report_sha256 }}
+      A7_SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - name: Materialize and verify physical A7 report
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/a7-evidence
+          python - <<'PY'
+          import base64, hashlib, json, os
+          from pathlib import Path
+          raw=base64.b64decode(os.environ["A7_REPORT_B64"],validate=True)
+          assert hashlib.sha256(raw).hexdigest() == os.environ["A7_REPORT_SHA256"]
+          value=json.loads(raw)
+          assert value["source_sha"] == os.environ["A7_SOURCE_SHA"]
+          assert value["research_only"] is True
+          assert value["automatic_strategy_promotion"] is False
+          assert value["live_trading_authority"] is False
+          Path("build/a7-evidence/a7-range-failure-reversal-report.json").write_bytes(raw+b"\n")
+          receipt={
+              "source_sha":os.environ["A7_SOURCE_SHA"],
+              "physical_report_sha256":os.environ["A7_REPORT_SHA256"],
+              "authority":"research_paper_only_no_automatic_promotion_no_live",
+          }
+          Path("build/a7-evidence/physical-receipt.json").write_text(json.dumps(receipt,sort_keys=True,indent=2)+"\n")
+          print("a7_physical_report_transport=PASS sha256="+os.environ["A7_REPORT_SHA256"])
+          PY
+      - name: Upload A7 numerical evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-a7-range-failure-${{ github.event.pull_request.head.sha }}
+          path: build/a7-evidence/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
 
   contract-test:
     needs: acquire-snapshot
@@ -487,6 +575,8 @@ jobs:
           tests/test_nexus_public_current_run_artifact.py
           tests/test_nexus_recent_arrival.py
           tests/test_nexus_multipair_archive_acceptance_workflow.py
+          tests/test_nexus_a7_range_failure_reversal_research.py
+          tests/test_nexus_a7_range_failure_reversal_workflow.py
 
       - name: Prepare exact source and isolated physical Research state
         if: github.event_name != 'pull_request'
