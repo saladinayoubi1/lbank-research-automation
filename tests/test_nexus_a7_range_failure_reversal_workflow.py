@@ -23,6 +23,7 @@ def test_a7_job_is_trusted_research_only_and_physical():
     assert "github.event.pull_request.head.repo.full_name == github.repository" in job
     assert "github.actor == github.repository_owner" in job
     assert "runs-on: [self-hosted, Windows, X64, nexus-research, nexus-worker-2]" in job
+    assert "ref: ${{ github.event.pull_request.head.sha }}" in job
     assert "persist-credentials: false" in job
     assert "shell: powershell" not in job
     assert "actions/setup-python" not in job
