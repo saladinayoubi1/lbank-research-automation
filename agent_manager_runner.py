@@ -500,7 +500,13 @@ def request_missing_research_cache(config: dict[str, Any], reason: str) -> str:
             {"ref": "main"},
         )
         task["research_cache_requested_sha"] = sha
-        am.emit("source_exact_research_cache_build_dispatched", task_id=RESEARCH_TASK, source_sha=sha)
+        task["research_cache_requested_binding"] = binding_token
+        am.emit(
+            "source_exact_research_cache_build_dispatched",
+            task_id=task["id"],
+            source_sha=sha,
+            predecessor_ledger_digest=ledger_digest,
+        )
         return "source_exact_cache_build_dispatched"
     except (RuntimeError, OSError, ValueError) as exc:
         return f"research_cache_build_unavailable:{type(exc).__name__}"
