@@ -82,15 +82,26 @@ def canonical_frame_digest(frame: pd.DataFrame) -> str:
     return digest(value.to_dict(orient="records"))
 
 
+def _utc_ns(values: pd.Series) -> pd.Series:
+    """Canonicalize exact UTC instants across Parquet datetime resolutions."""
+    normalized = pd.to_datetime(values, utc=True, errors="raise")
+    if normalized.isna().any():
+        raise PositioningResearchError("missing timestamp in A9 inputs")
+    return normalized.astype("datetime64[ns, UTC]")
+
+
 def load_spot(root: Path, symbol: str) -> pd.DataFrame:
     path = root / symbol / "minute15.parquet"
     if path.is_symlink() or not path.is_file():
         raise PositioningResearchError(f"missing verified spot input: {symbol}")
     frame = pd.read_parquet(path).copy()
-    frame["timestamp"] = pd.to_datetime(frame["timestamp"], utc=True, errors="raise")
+    frame["timestamp"] = _utc_ns(frame["timestamp"])
     frame = frame.sort_values("timestamp").reset_index(drop=True)
-    expected = pd.date_range(START, END_EXCLUSIVE, freq="15min", inclusive="left")
-    if len(frame) != BARS or not pd.DatetimeIndex(frame["timestamp"]).equals(expected):
+    expected = pd.Series(
+        pd.date_range(START, END_EXCLUSIVE, freq="15min", inclusive="left"),
+        name="timestamp",
+    ).astype("datetime64[ns, UTC]")
+    if len(frame) != BARS or not frame["timestamp"].equals(expected):
         raise PositioningResearchError(f"incomplete exact 15m Spot grid: {symbol}")
     for name in ("open", "high", "low", "close", "volume"):
         frame[name] = pd.to_numeric(frame[name], errors="raise")
@@ -109,9 +120,13 @@ def fetch_positioning(
 
     if funding.empty or oi.empty:
         raise PositioningResearchError(f"missing positioning data: {symbol}")
+    oi["timestamp"] = _utc_ns(oi["timestamp"])
+    funding["timestamp"] = _utc_ns(funding["timestamp"])
     oi = oi.sort_values("timestamp").drop_duplicates("timestamp").reset_index(drop=True)
-    expected_oi = pd.date_range(history_start, END_EXCLUSIVE, freq="15min", inclusive="left")
-    actual_oi = pd.DatetimeIndex(pd.to_datetime(oi["timestamp"], utc=True))
+    expected_oi = pd.DatetimeIndex(
+        pd.date_range(history_start, END_EXCLUSIVE, freq="15min", inclusive="left")
+    ).astype("datetime64[ns, UTC]")
+    actual_oi = pd.DatetimeIndex(oi["timestamp"]).astype("datetime64[ns, UTC]")
     if not actual_oi.equals(expected_oi):
         missing = len(expected_oi.difference(actual_oi))
         unexpected = len(actual_oi.difference(expected_oi))
