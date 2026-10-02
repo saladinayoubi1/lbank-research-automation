@@ -1,0 +1,20 @@
+{
+  "schema": "nexus.research-input-incident-recovery.v1",
+  "task_id": "P7-RESEARCH-COMPOSITE-008",
+  "failed_producer_source_sha": "b68853391a8ae197326369b7fafe5ac2b2275763",
+  "failed_producer_lease_id": "f23038d9-4d65-45b7-8ee5-3939cde9c9a9",
+  "failed_producer_dispatch_id": "bb045b7f820d904335339f6b6a9aea83",
+  "failed_producer_run_id": 37072979528,
+  "failed_result_artifact_id": 11255931381,
+  "failed_result_artifact_digest": "sha256:ca88e1db9db6b362402b30064d6f0072fc86c3590e712bf18ef8651275000d08",
+  "predecessor_source_sha": "b68853391a8ae197326369b7fafe5ac2b2275763",
+  "predecessor_receipt_digest": "335303032b20139d36e200e25d1a1e03dafc974665fe10a8b678c4103fa9fd65",
+  "predecessor_qa_digest": "41a600f6f1009da97ed2ffb751ea9556287a581b6bff3e6fbfd8670db7987b07",
+  "predecessor_ledger_digest": "c83a54ddb828fd303a041675e0b757227a42d426b1c6647c351452631f7c9e68",
+  "predecessor_mechanism": "lagged_peer_volatility_release",
+  "failure_class": "verified_research_execution_failed",
+  "failure_reason": "required immutable input or evidence is not a regular file",
+  "reason": "Verified P7-RESEARCH-COMPOSITE-008 producer restored a stale same-source novelty cache after P7-RESEARCH-COMPOSITE-007 advanced the QA-attested ledger; retry only after frontier-bound cache v2 is present.",
+  "automatic_demo_promotion": false,
+  "live_enabled": false
+}
