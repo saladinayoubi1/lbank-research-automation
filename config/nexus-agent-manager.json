@@ -494,6 +494,96 @@
         "hold on expired original input or changed source; never reset novelty frontier or invent success",
         "research only, no pristine future holdout claim, no fixed maximum trade count, no automatic Demo admission or Live"
       ]
+    },
+    {
+      "id": "P7-RESEARCH-COMPOSITE-007",
+      "title": "Execute ninth reviewed lagged peer volatility release as seventh real Research Agent with independent numerical QA",
+      "phase": 7,
+      "gate": 17,
+      "status": "PENDING",
+      "priority": 85,
+      "dependencies": [
+        "P7-RESEARCH-COMPOSITE-006"
+      ],
+      "required_capabilities": [
+        "data_validation"
+      ],
+      "required_resources": [
+        "github-cloud"
+      ],
+      "preferred_resources": [
+        "github-cloud",
+        "windows-local"
+      ],
+      "authority": 2,
+      "acceptance": [
+        "preceding sixth real Research producer and independent QA are genuinely DONE with exact source, lease, receipt and cumulative eight-family novelty ledger",
+        "source-bound seventh producer consumes precisely QA-attested sixth ledger and selects novel ninth lagged_peer_volatility_release before any recycled risk variant",
+        "use exact aligned closed BTC/ETH Spot bars, prior completed peer impulse and baseline, completed higher-timeframe guards and next-open fills",
+        "verify actual two-pair three-partition two-cost numerical producer evidence with a separate independent original-source QA replay",
+        "hold fail closed on missing exact cache, stale ancestry, repeated mechanism or changed receipt; never reset the novelty frontier",
+        "research only with no pristine future holdout claim, no fixed maximum trade count and no automatic promotion authority"
+      ]
+    },
+    {
+      "phase": 7,
+      "gate": 17,
+      "status": "PENDING",
+      "priority": 84,
+      "required_capabilities": [
+        "data_validation"
+      ],
+      "required_resources": [
+        "github-cloud"
+      ],
+      "preferred_resources": [
+        "github-cloud",
+        "windows-local"
+      ],
+      "authority": 2,
+      "id": "P7-RESEARCH-COMPOSITE-008",
+      "title": "Execute tenth reviewed cross-pair volatility catch-up as eighth real Research Agent with independent numerical QA",
+      "dependencies": [
+        "P7-RESEARCH-COMPOSITE-007"
+      ],
+      "acceptance": [
+        "preceding seventh producer and independent QA are genuinely DONE with exact source, receipt, QA digest and cumulative ninth-family novelty ledger",
+        "source-bound eighth producer consumes precisely QA-attested seventh ledger and selects novel tenth cross_pair_volatility_catchup before any risk-parameter revisit",
+        "use exact aligned closed BTC/ETH Spot grids and strictly lagged realized-volatility dispersion and baselines",
+        "preserve completed higher-timeframe guards, next own 15m open fills, conservative and stress costs and uncapped genuine closed round trips",
+        "verify actual numerical producer evidence with a distinct independent original-source QA replay and durable ancestry across restart",
+        "research only with no pristine future holdout claim and no automatic promotion authority"
+      ]
+    },
+    {
+      "phase": 7,
+      "gate": 17,
+      "status": "PENDING",
+      "priority": 83,
+      "required_capabilities": [
+        "data_validation"
+      ],
+      "required_resources": [
+        "github-cloud"
+      ],
+      "preferred_resources": [
+        "github-cloud",
+        "windows-local"
+      ],
+      "authority": 2,
+      "id": "P7-RESEARCH-COMPOSITE-009",
+      "title": "Execute eleventh reviewed regime-conditional composite as ninth real Research Agent with independent numerical QA",
+      "dependencies": [
+        "P7-RESEARCH-COMPOSITE-008"
+      ],
+      "acceptance": [
+        "preceding eighth producer and independent QA are genuinely DONE with exact source, receipt, QA digest and cumulative tenth-family novelty ledger",
+        "source-bound ninth producer consumes precisely QA-attested eighth ledger and selects novel eleventh regime_conditional_composite before any risk-parameter revisit",
+        "route only completed higher-timeframe trend or range states to already reviewed entry families and stay in cash for ambiguous or unknown regime",
+        "do not fit weights on inspected holdout data and do not treat the composite itself as proof of a new edge",
+        "verify actual two-pair three-partition two-cost numerical producer evidence with a distinct independent original-source QA replay",
+        "research only with no pristine future holdout claim, no automatic promotion authority and no live authority"
+      ]
     }
   ]
 }
