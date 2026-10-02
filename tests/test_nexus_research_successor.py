@@ -14,7 +14,8 @@ import agent_transport
 import nexus_agent_research_prepare as prepare
 import nexus_composite_strategy_research as search
 from nexus_research_missions import (
-    FIRST, SECOND, THIRD, FOURTH, FIFTH, ANCESTRY, attested_predecessor, validate_ancestry,
+    FIRST, SECOND, THIRD, FOURTH, FIFTH, SIXTH, SEVENTH, EIGHTH, NINTH,
+    PREDECESSOR, TASKS, ANCESTRY, attested_predecessor, validate_ancestry,
 )
 from scripts.agent_task_executor import decode_payload, deterministic_execution
 
@@ -712,3 +713,133 @@ def test_fifth_refuses_fourth_mechanism_replay_and_unrelated_frontier(monkeypatc
                          {**qa, "producer_receipt_digest": "0" * 64})
     am.record_result(conf, FIFTH, "qa-verifier-agent", "success", qa)
     assert fifth["status"] == "DONE"
+
+
+def _synthetic_done_research_task(
+    task_id, mechanism, source_char, receipt_char, prior_char,
+    ledger_char, config_char, qa_char,
+):
+    producer_lease = task_id.lower() + "-producer"
+    return {
+        "id": task_id,
+        "status": "DONE",
+        "producer": "research-agent",
+        "verifier": "qa-verifier-agent",
+        "research_producer_lease_id": producer_lease,
+        "result_evidence": {
+            "executor": "nexus-real-composite-backtest",
+            "source_sha": source_char * 40,
+            "lease_id": producer_lease,
+            "receipt_digest": receipt_char * 64,
+            "prior_ledger_digest": prior_char * 64,
+            "ledger_digest": ledger_char * 64,
+            "config_fingerprint": config_char * 64,
+            "mechanism": mechanism,
+            "independent_qa_complete": False,
+            "auto_demo_promotion": False,
+            "live_enabled": False,
+        },
+        "verification_evidence": {
+            "executor": "nexus-independent-composite-numeric-qa",
+            "source_sha": source_char * 40,
+            "producer_lease_id": producer_lease,
+            "producer_receipt_digest": receipt_char * 64,
+            "qa_digest": qa_char * 64,
+            "independent_qa_complete": True,
+            "auto_demo_promotion": False,
+            "live_enabled": False,
+        },
+    }
+
+
+def _pending_successor(task_id, dependency, priority):
+    return {
+        "id": task_id, "status": "PENDING", "phase": 7, "gate": 17,
+        "priority": priority, "dependencies": [dependency], "authority": 2,
+        "required_capabilities": ["data_validation"],
+        "preferred_resources": ["github-cloud"],
+        "required_resources": ["github-cloud"],
+        "acceptance": ["exact sequential independent QA ancestry"],
+    }
+
+
+def test_agent_lineage_extends_sequentially_through_mechanism_eleven(monkeypatch):
+    assert PREDECESSOR[SEVENTH] == SIXTH
+    assert PREDECESSOR[EIGHTH] == SEVENTH
+    assert PREDECESSOR[NINTH] == EIGHTH
+    assert {SEVENTH, EIGHTH, NINTH}.issubset(TASKS)
+
+    six = _synthetic_done_research_task(
+        SIXTH, "relative_momentum_reacceleration", "a", "1", "2", "3", "4", "5"
+    )
+    seven = _pending_successor(SEVENTH, SIXTH, 85)
+    eight = _pending_successor(EIGHTH, SEVENTH, 84)
+    nine = _pending_successor(NINTH, EIGHTH, 83)
+    config = {"tasks": [six, seven, eight, nine]}
+    monkeypatch.setattr(am, "emit", lambda *args, **kwargs: None)
+
+    assert runner.bind_qa_attested_successor(config) == "QA_attested_successor_bound"
+    assert seven["research_predecessor_ledger_digest"] == "3" * 64
+    assert not any(key in eight for key in ANCESTRY)
+    assert not any(key in nine for key in ANCESTRY)
+
+    seven.update(_synthetic_done_research_task(
+        SEVENTH, "lagged_peer_volatility_release", "b", "6", "3", "7", "8", "9"
+    ))
+    seven.update(attested_predecessor(six))
+    assert runner.bind_qa_attested_successor(config) == "QA_attested_successor_bound"
+    assert eight["research_predecessor_ledger_digest"] == "7" * 64
+    assert not any(key in nine for key in ANCESTRY)
+
+    eight.update(_synthetic_done_research_task(
+        EIGHTH, "cross_pair_volatility_catchup", "c", "a", "7", "b", "c", "d"
+    ))
+    eight.update(attested_predecessor(seven))
+    assert runner.bind_qa_attested_successor(config) == "QA_attested_successor_bound"
+    assert nine["research_predecessor_ledger_digest"] == "b" * 64
+    assert nine["research_predecessor_mechanism"] == "cross_pair_volatility_catchup"
+
+
+def test_agent_lineage_9_10_11_uses_distinct_mechanisms_before_risk_variants():
+    expected = [
+        "lagged_peer_volatility_release",
+        "cross_pair_volatility_catchup",
+        "regime_conditional_composite",
+    ]
+    for seen_count, expected_mechanism in zip((8, 9, 10), expected):
+        state = search.empty_ledger()
+        core = {key: value for key, value in state.items() if key != "ledger_digest"}
+        for mechanism in search.MECHANISMS[:seen_count]:
+            cfg = next(
+                item for item in search.CONFIGS
+                if item["mechanism"] == mechanism and item["risk_variant"] == 0
+            )
+            core["mechanisms_evaluated"].append(mechanism)
+            core["config_fingerprints_evaluated"].append(search.digest({
+                "config": cfg, "dataset": search.ARCHIVE_SHA256,
+                "contract": search.SCHEMA,
+            }))
+        core["mechanisms_evaluated"] = sorted(set(core["mechanisms_evaluated"]))
+        selected = search.select_next({**core, "ledger_digest": search.digest(core)})
+        assert selected is not None
+        assert selected["mechanism"] == expected_mechanism
+        assert selected["risk_variant"] == 0
+
+
+def test_manager_config_contains_ordered_agent_catchup_without_authority_widening():
+    template = am.load_config(Path("config/nexus-agent-manager.json"))
+    by_id = {task["id"]: task for task in template["tasks"]}
+    expected = [
+        (SEVENTH, SIXTH, 85, "lagged_peer_volatility_release"),
+        (EIGHTH, SEVENTH, 84, "cross_pair_volatility_catchup"),
+        (NINTH, EIGHTH, 83, "regime_conditional_composite"),
+    ]
+    for task_id, predecessor, priority, mechanism in expected:
+        task = by_id[task_id]
+        assert task["dependencies"] == [predecessor]
+        assert task["priority"] == priority
+        assert task["authority"] == 2
+        joined = " ".join(task["acceptance"])
+        assert mechanism in joined
+        assert "independent" in joined.lower()
+        assert "automatic" in joined.lower()
