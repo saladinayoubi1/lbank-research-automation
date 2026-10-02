@@ -313,7 +313,7 @@ def _research_cache_key(config: dict[str, Any], source_sha: str) -> str:
     return RESEARCH_CACHE_PREFIX + source_sha
 
 
-def research_cache_status(config: dict[str, Any]) -> tuple[bool, str]:
+def research_cache_status(config: dict[str, Any] | None = None) -> tuple[bool, str]:
     """Only metadata readiness; the bounded worker separately verifies bytes."""
     context = _research_context()
     if context is None:
@@ -322,7 +322,7 @@ def research_cache_status(config: dict[str, Any]) -> tuple[bool, str]:
     from agent_transport import _api
 
     try:
-        key = _research_cache_key(config, sha)
+        key = _research_cache_key(config or {"tasks": []}, sha)
     except ValueError as exc:
         return False, f"research_cache_identity_invalid:{type(exc).__name__}"
     try:
@@ -428,14 +428,14 @@ def apply_research_input_gate(config: dict[str, Any], *, ready: bool) -> str:
         task["status"] = "BLOCKED"
         task["blocked_reason"] = RESEARCH_WAIT
         task["research_cache_recovery_count"] = 1
-        am.emit("research_first_source_cache_race_parked", task_id=RESEARCH_TASK)
+        am.emit("research_first_source_cache_race_parked", task_id=task.get("id"))
         status = "BLOCKED"
 
     if not ready:
         if status in {"PENDING", "READY"}:
             task["status"] = "BLOCKED"
             task["blocked_reason"] = RESEARCH_WAIT
-            am.emit("research_waiting_for_verified_input_transport", task_id=RESEARCH_TASK)
+            am.emit("research_waiting_for_verified_input_transport", task_id=task.get("id"))
             return "parked_waiting_cache"
         return "wait_unchanged"
 
@@ -445,7 +445,7 @@ def apply_research_input_gate(config: dict[str, Any], *, ready: bool) -> str:
         task["blocked_reason"] = None
         am.emit(
             "research_source_cache_ready_released",
-            task_id=RESEARCH_TASK,
+            task_id=task.get("id"),
             recovery_count=int(task.get("research_cache_recovery_count", 0)),
         )
         return "ready_for_producer_lease"
