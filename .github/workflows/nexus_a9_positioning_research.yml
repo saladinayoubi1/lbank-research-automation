@@ -75,7 +75,8 @@ jobs:
         shell: cmd
         run: |
           @echo off
-          if exist build\a9-positioning rmdir /s /q build\a9-positioning
+          python scripts/nexus_windows_tree_cleanup.py build\a9-positioning --attempts 20 --delay-seconds 1
+          if errorlevel 1 exit /b %errorlevel%
           python nexus_verified_perpetual_positioning.py --start 2026-07-03T00:00:00Z --end-exclusive 2026-08-02T00:00:00Z --output-root build/a9-positioning
           if errorlevel 1 exit /b %errorlevel%
 
@@ -83,8 +84,8 @@ jobs:
         shell: cmd
         run: |
           @echo off
-          if exist build\a9-spot-state rmdir /s /q build\a9-spot-state
-          if exist build\a9-spot-cache rmdir /s /q build\a9-spot-cache
+          python scripts/nexus_windows_tree_cleanup.py build\a9-spot-state build\a9-spot-cache --attempts 20 --delay-seconds 1
+          if errorlevel 1 exit /b %errorlevel%
           python nexus_a9_spot_source.py --state-root build/a9-spot-state --cache-root build/a9-spot-cache
           if errorlevel 1 exit /b %errorlevel%
 
@@ -92,7 +93,8 @@ jobs:
         shell: cmd
         run: |
           @echo off
-          if exist build\a9-output rmdir /s /q build\a9-output
+          python scripts/nexus_windows_tree_cleanup.py build\a9-output --attempts 20 --delay-seconds 1
+          if errorlevel 1 exit /b %errorlevel%
           python nexus_perpetual_positioning_divergence_research.py --spot-state-root build/a9-spot-state --spot-proof-root build/a9-spot-state --positioning-root build/a9-positioning --output build/a9-output --source-sha %A9_SOURCE_SHA%
           if errorlevel 1 exit /b %errorlevel%
 
@@ -122,11 +124,8 @@ jobs:
         shell: cmd
         run: |
           @echo off
-          if exist build\a9-spot-state rmdir /s /q build\a9-spot-state
-          if exist build\a9-spot-cache rmdir /s /q build\a9-spot-cache
-          if exist build\a9-positioning\btcusdt rmdir /s /q build\a9-positioning\btcusdt
-          if exist build\a9-positioning\ethusdt rmdir /s /q build\a9-positioning\ethusdt
-          exit /b 0
+          python scripts/nexus_windows_tree_cleanup.py build\a9-spot-state build\a9-spot-cache build\a9-positioning --attempts 20 --delay-seconds 1
+          if errorlevel 1 exit /b %errorlevel%
 
       - name: Clean isolated Python
         if: always()
