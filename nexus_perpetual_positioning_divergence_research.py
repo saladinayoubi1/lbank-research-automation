@@ -173,7 +173,7 @@ def load_spot_proof(root: Path) -> dict[str, Any]:
     except a9_spot_source.A9SpotSourceError as exc:
         raise PositioningResearchError("official A9 Spot proof rejected") from exc
     if (
-        proof.get("source_window_start") != "2026-07-01"
+        proof.get("source_window_start") != "2026-07-03"
         or proof.get("source_window_end_inclusive") != "2026-08-01"
         or proof.get("analysis_start_utc") != START.isoformat()
         or proof.get("analysis_end_exclusive_utc") != END_EXCLUSIVE.isoformat()
