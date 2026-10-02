@@ -73,8 +73,13 @@ def mock_proofs(monkeypatch, *, bad_ledger=False, bad_qa=False, no_verified_fift
             "auto_demo_promotion": False, "live_enabled": False,
         },
     }
+    future = [
+        {"id": "P7-RESEARCH-COMPOSITE-006", "status": "PENDING"},
+        {"id": "P7-RESEARCH-COMPOSITE-007", "status": "PENDING"},
+        {"id": "P7-RESEARCH-COMPOSITE-008", "status": "PENDING"},
+    ]
     archive_map = {
-        901: zipped("agent_manager_runtime.json", {"tasks": [task]}),
+        901: zipped("agent_manager_runtime.json", {"tasks": [task, *future]}),
         902: zipped("result/agent-receipt.json", receipt),
         903: zipped("result/novelty-ledger.json", ledger),
         904: zipped("qa-evidence.json", proof),
