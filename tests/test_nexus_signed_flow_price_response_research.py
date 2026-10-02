@@ -138,3 +138,14 @@ def test_full_research_run_is_30_day_source_bound_and_non_promoting(tmp_path):
     assert report["qualification"] == "NOT_QUALIFIED_NO_PRISTINE_FUTURE_HOLDOUT"
     assert len(report["rows"]) == 12
     assert all(row["trade_count_limit"] is None for row in report["rows"])
+
+
+def test_timestamp_identity_accepts_equal_instants_across_parquet_resolutions():
+    left = pd.Series(pd.date_range("2026-07-03T00:00:00Z", periods=4, freq="15min").as_unit("ns"))
+    right = pd.Series(pd.date_range("2026-07-03T00:00:00Z", periods=4, freq="15min").as_unit("us"))
+    assert left.equals(right) is False
+    assert a6._same_instants(left, right) is True
+
+    shifted = right.copy()
+    shifted.iloc[-1] = shifted.iloc[-1] + pd.Timedelta(seconds=1)
+    assert a6._same_instants(left, shifted) is False

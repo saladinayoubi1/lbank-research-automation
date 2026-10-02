@@ -87,13 +87,22 @@ def _load_all(root: Path) -> dict[str, Any]:
     return {"proof": proof, "flows": flows}
 
 
+def _same_instants(left: pd.Series, right: pd.Series) -> bool:
+    if len(left) != len(right):
+        return False
+    return all(
+        pd.Timestamp(a).value == pd.Timestamp(b).value
+        for a, b in zip(left, right)
+    )
+
+
 def prepare_symbol(root: Path, symbol: str, flow: pd.DataFrame) -> pd.DataFrame:
     candles = pd.read_parquet(root / symbol / "minute15.parquet").copy()
     for frame in (candles, flow):
         frame["timestamp"] = pd.to_datetime(frame["timestamp"], utc=True, errors="raise")
     candles = candles.sort_values("timestamp").reset_index(drop=True)
     flow = flow.sort_values("timestamp").reset_index(drop=True)
-    if len(candles) != len(flow) or not candles["timestamp"].equals(flow["timestamp"]):
+    if not _same_instants(candles["timestamp"], flow["timestamp"]):
         raise SignedFlowResearchError(f"candle/flow timestamp identity mismatch for {symbol}")
     if len(candles) < MIN_BARS:
         raise SignedFlowResearchError(
@@ -101,7 +110,7 @@ def prepare_symbol(root: Path, symbol: str, flow: pd.DataFrame) -> pd.DataFrame:
         )
     expected_available = flow["timestamp"] + pd.Timedelta(minutes=15)
     actual_available = pd.to_datetime(flow["available_at"], utc=True, errors="raise")
-    if not actual_available.equals(expected_available):
+    if not _same_instants(actual_available, expected_available):
         raise SignedFlowResearchError(f"non-causal signed-flow availability for {symbol}")
 
     merged = candles[["timestamp", "open", "high", "low", "close", "volume"]].copy()
