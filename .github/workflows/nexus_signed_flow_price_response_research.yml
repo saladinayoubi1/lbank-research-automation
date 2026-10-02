@@ -2,6 +2,14 @@ name: NEXUS signed-flow price-response research
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "nexus_signed_flow_price_response_research.py"
+      - "nexus_verified_signed_trade_flow.py"
+      - "bybit_spot_archive_collector.py"
+      - ".github/workflows/nexus_signed_flow_price_response_research.yml"
 
 permissions:
   contents: read
