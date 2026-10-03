@@ -56,3 +56,8 @@ body.sidebar-collapsed .sidebar nav button>span{font-size:0!important}@media(max
 #aiProviderStatus[data-state="verified"]{color:var(--green)}
 .ai-privacy-note{color:var(--muted);font-size:12px;line-height:1.9;margin:0;padding:0 12px 12px}
 @media(max-width:760px){.ai-provider-controls{grid-template-columns:1fr}.ai-provider-controls select{width:100%}}
+.chatgpt-connection{display:grid;gap:12px;padding-top:16px;border-top:1px solid var(--line);margin-top:16px}
+.chatgpt-connection .inline-actions{display:flex;gap:8px;flex-wrap:wrap}
+.chatgpt-connection select{max-width:420px}
+.council-roles{display:flex;flex-wrap:wrap;gap:12px}
+.council-roles>div{display:grid;gap:6px;padding:12px 20px;border:1px solid var(--line);border-radius:8px}

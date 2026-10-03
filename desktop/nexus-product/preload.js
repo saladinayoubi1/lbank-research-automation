@@ -58,6 +58,15 @@ contextBridge.exposeInMainWorld('nexusDesktop', Object.freeze({
   setPreferences: preferences => ipcRenderer.invoke(CHANNELS.set, preferences),
   resetPreferences: () => ipcRenderer.invoke(CHANNELS.reset),
   getRunnerBootstrapState: () => ipcRenderer.invoke(CHANNELS.runner),
+  chatGPT: Object.freeze({
+    status: () => ipcRenderer.invoke('nexus:chatgpt:status'),
+    connect: () => ipcRenderer.invoke('nexus:chatgpt:connect'),
+    disconnect: () => ipcRenderer.invoke('nexus:chatgpt:disconnect'),
+    models: () => ipcRenderer.invoke('nexus:chatgpt:models'),
+    ask: request => ipcRenderer.invoke('nexus:chatgpt:ask', request),
+    cancel: () => ipcRenderer.invoke('nexus:chatgpt:cancel'),
+    usage: () => ipcRenderer.invoke('nexus:chatgpt:usage'),
+  }),
 }));
 
 window.addEventListener('DOMContentLoaded', () => {

@@ -111,3 +111,46 @@ def test_unavailable_external_model_does_not_block_original_room(gateway, monkey
     status, result = _request(port, "POST", "/api/ai-room/message", _turn("show status", "t2"))
     assert status == 200 and result["ai_room"]["decision"]["allowed"] is True
     assert calls == []
+
+
+def test_chatgpt_context_is_gated_bounded_and_preserves_owner_state_without_provider_call(gateway):
+    port, runtime, calls = gateway
+    before = runtime.paper_events_path.read_bytes()
+    status, context = _request(port, "POST", "/api/product/ai/chatgpt/context", _turn())
+    assert status == 200 and context["decision"]["allowed"] is True
+    assert context["state_mutation"] is False and context["live_trading_authority"] is False
+    outbound = json.dumps(context["input"])
+    assert "private-user-marker" not in outbound
+    assert "500" not in outbound and "Independent Verifier" in outbound
+    assert calls == [] and runtime.paper_events_path.read_bytes() == before
+    for payload in (_turn("enable live trading in production"), {**_turn(), "decision": {"allowed": True}}):
+        assert _request(port, "POST", "/api/product/ai/chatgpt/context", payload)[0] in (400, 403)
+    assert _request(port, "POST", "/api/product/ai/chatgpt/context", _turn(), origin="https://evil.example")[0] == 403
+    assert _request(port, "POST", "/api/product/ai/chatgpt/context?authority=4", _turn())[0] == 400
+    assert calls == [] and runtime.paper_events_path.read_bytes() == before
+
+
+def test_chatgpt_reply_filter_redacts_pii_and_rejects_credentials_and_untrusted_fields(gateway):
+    port, runtime, calls = gateway
+    before = runtime.paper_events_path.read_bytes()
+    route = "/api/product/ai/chatgpt/sanitize"
+    status, result = _request(port, "POST", route, {"reply": "پاسخ contact@example.test"})
+    assert status == 200 and "contact@example.test" not in result["reply"]
+    assert "[REDACTED_EMAIL]" in result["reply"]
+    assert _request(port, "POST", route, {"reply": "api_key=private-fixture-token"})[0] == 403
+    assert _request(port, "POST", route, {"reply": "safe", "execute": True})[0] == 400
+    assert _request(port, "POST", route, {"reply": "x" * 12001})[0] == 400
+    assert _request(port, "POST", route, {"reply": "safe"}, origin="https://evil.example")[0] == 403
+    assert calls == [] and runtime.paper_events_path.read_bytes() == before
+
+
+def test_council_projection_is_canonical_configuration_without_fabricated_votes(gateway):
+    port, _, calls = gateway
+    status, roadmap = _request(port, "GET", "/api/product/ai/roadmap")
+    assert status == 200 and roadmap["council"]["status"] == "configured"
+    c = roadmap["council"]
+    assert c["quorum"] == 2 and c["votes"] == [] and c["decision"] == "not_evaluated"
+    assert {r["id"]: r["veto"] for r in c["roles"]} == {"stability": True, "security": True, "delivery": False}
+    assert roadmap["model_advice_is_council_vote"] is False
+    assert roadmap["model_advice_is_independent_qa"] is False
+    assert roadmap["live_trading_authority"] is False and calls == []

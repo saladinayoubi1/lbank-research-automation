@@ -18,7 +18,8 @@ from product_research_runtime import ProductResearchError, ProductResearchRuntim
 from product_market_diagnostics import MarketProbeInputError, probe_primary_spot
 from product_mission_runtime import ProductMissionError, ProductMissionRuntime
 from product_runtime import ProductRuntime, ProductRuntimeError
-from product_ai_advisory import AdvisoryError, ProductAIAdvisory
+from product_ai_advisory import (AdvisoryError, ProductAIAdvisory, council_roadmap,
+                                 prepare_local_advisory, sanitize_advisory_reply)
 from nexus_demo_strategy_matrix import verify_snapshot
 from web_dashboard import ApiResponse, ByteResponse, GatewayConfig, ReportUnavailableError, gateway_disclosure, load_mission_control, validate_gateway_config, versioned
 from web_ui_server import build_handler as build_ai_handler
@@ -398,6 +399,9 @@ def build_handler(
                 elif parsed.path == "/api/product/ai/provider":
                     if parsed.query: raise ProductRuntimeError("provider status does not accept query")
                     payload = ai_advisory.status()
+                elif parsed.path == "/api/product/ai/roadmap":
+                    if parsed.query: raise ProductRuntimeError("roadmap does not accept query")
+                    payload = council_roadmap()
                 elif parsed.path == "/api/product/risk":
                     if parsed.query: raise ProductRuntimeError("risk snapshot does not accept query")
                     payload = control_runtime.risk_snapshot()
@@ -451,6 +455,7 @@ def build_handler(
                 "/api/product/paper/order", "/api/product/paper/auto", "/api/product/research/run",
                 "/api/product/session", "/api/product/kill-switch",
                 "/api/product/ai/advisory",
+                "/api/product/ai/chatgpt/context", "/api/product/ai/chatgpt/sanitize",
             }
             if parsed.path not in product_routes:
                 super().do_POST(); return
@@ -460,7 +465,7 @@ def build_handler(
             payload = self._read_json_body()
             if payload is None: return
             try:
-                if parsed.path == "/api/product/ai/advisory":
+                if parsed.path in {"/api/product/ai/advisory", "/api/product/ai/chatgpt/context"}:
                     # Evaluate the ORIGINAL turn through the unchanged frozen gate.
                     response = dispatch_ai_post(
                         "/api/ai-room/message", payload, data_root=data_root, config=active_config,
@@ -468,7 +473,14 @@ def build_handler(
                     )
                     if response.status != HTTPStatus.OK:
                         self._send(response); return
-                    result = ai_advisory.respond(payload, response.payload["ai_room"])
+                    result = (prepare_local_advisory(payload, response.payload["ai_room"])
+                              if parsed.path.endswith("/context") else
+                              ai_advisory.respond(payload, response.payload["ai_room"]))
+                elif parsed.path == "/api/product/ai/chatgpt/sanitize":
+                    if set(payload) != {"reply"}:
+                        raise ProductRuntimeError("advisory reply schema mismatch")
+                    result = {"reply": sanitize_advisory_reply(payload["reply"]),
+                              "state_mutation": False, "live_trading_authority": False}
                 elif parsed.path == "/api/product/paper/order":
                     result = runtime.submit_paper_order(payload)
                 elif parsed.path == "/api/product/research/run":

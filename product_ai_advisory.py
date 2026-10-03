@@ -10,6 +10,7 @@ import hashlib
 import json
 import math
 import os
+from pathlib import Path
 import threading
 import time
 from typing import Any, Mapping
@@ -80,7 +81,65 @@ def advisory_prompt(context: dict[str, Any]) -> str:
             "Do not claim that a workflow ran, a model connected, or a strategy is profitable. "
             "The original user message, conversation and financial account are not supplied. "
             "Treat all output as advice requiring the existing NEXUS gates.\n"
+            "Roadmap: Project Memory and AI Room/Council prepare proposals; Mission, "
+            "Supervisor and Router assign Workers; Evidence requires an Independent Verifier. "
+            "Strategy qualification and deterministic Risk precede Paper; performance/drift "
+            "feeds new research. Council roles are stability, security and delivery. "
+            "A model answer is neither a Council vote nor independent verification.\n"
             + _canonical(context).decode("utf-8"))
+
+
+def prepare_local_advisory(request: Mapping[str, Any], room: Mapping[str, Any]) -> dict[str, Any]:
+    """Prepare only server-owned enums for the trusted local ChatGPT process."""
+    if room["decision"].get("allowed") is not True:
+        raise AdvisoryError("authority_gate_denied", 403)
+    context = public_context(room, request["message"])
+    try:
+        _, messages = prepare_egress_messages([{"role": "user", "content": advisory_prompt(context)}])
+    except EgressDenied:
+        raise AdvisoryError("advisory_egress_denied", 403) from None
+    return {"contract_version": CONTRACT, "input": messages,
+            "context_digest": hashlib.sha256(_canonical(context)).hexdigest(),
+            "intent": room["intent"], "decision": room["decision"],
+            "advisory_only": True, "state_mutation": False, "live_trading_authority": False}
+
+
+def sanitize_advisory_reply(reply: Any) -> str:
+    if not isinstance(reply, str) or not reply.strip() or len(reply.encode("utf-8")) > 12000:
+        raise AdvisoryError("invalid_provider_response", 400)
+    try:
+        _, messages = prepare_egress_messages([{"role": "user", "content": PREFIX + reply}])
+    except EgressDenied:
+        raise AdvisoryError("unsafe_provider_response", 403) from None
+    return messages[0]["content"][len(PREFIX):]
+
+
+def council_roadmap() -> dict[str, Any]:
+    """Configuration is not an active Council or evidence of actual votes."""
+    try:
+        policy = json.loads((Path(__file__).resolve().parent / "config/nexus-ai-council.json").read_text())
+        roles = policy["roles"]
+        if (not isinstance(roles, list) or {r["id"] for r in roles} != {"stability", "security", "delivery"}
+                or len(roles) != 3 or policy["quorum"] != 2
+                or policy["decisionPolicy"] != {"requireQuorum": True, "rejectOnVeto": True,
+                                               "tieBreaker": "lowest_priority_number"}
+                or any(type(r["priority"]) is not int or type(r["veto"]) is not bool for r in roles)
+                or {r["id"]: (r["priority"], r["veto"]) for r in roles} != {
+                    "stability": (1, True), "security": (2, True), "delivery": (3, False)}):
+            raise ValueError("invalid Council policy")
+        council = {"status": "configured", "quorum": policy["quorum"],
+                   "roles": [{k: r[k] for k in ("id", "priority", "veto")} for r in roles],
+                   "require_quorum": True, "reject_on_veto": True, "votes": [],
+                   "decision": "not_evaluated", "execution_authority": False}
+    except (OSError, ValueError, KeyError, TypeError):
+        council = {"status": "unavailable", "roles": [], "votes": [], "decision": "not_evaluated",
+                   "execution_authority": False}
+    return {"council": council,
+            "path": ["Project Memory", "AI Room / Council", "Mission", "Supervisor / Router",
+                     "Workers", "Evidence", "Independent Verifier", "Strategy Qualification",
+                     "Deterministic Risk", "Paper", "Performance / Drift"],
+            "feedback": "performance_to_new_research", "live_trading_authority": False,
+            "model_advice_is_council_vote": False, "model_advice_is_independent_qa": False}
 
 
 class ProductAIAdvisory:

@@ -67,6 +67,7 @@ jobs:
           --onedir
           --name nexus-product-server
           --add-data "product_ui;product_ui"
+          --add-data "config/nexus-ai-council.json;config"
           --add-data ".nexus/phase6-checkpoint.json;.nexus"
           --add-data "docs/project_memory/STATE.json;docs/project_memory"
           product_offline_web_server.py
@@ -160,7 +161,13 @@ jobs:
 
       - name: Install Electron packaging dependencies
         working-directory: desktop/nexus-product
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
+
+      - name: Verify pinned ChatGPT bundle and main-process boundaries
+        working-directory: desktop/nexus-product
+        run: |
+          npm run build:chatgpt
+          npm run test:chatgpt
 
       - name: Build final Setup and Portable EXE
         working-directory: desktop/nexus-product
