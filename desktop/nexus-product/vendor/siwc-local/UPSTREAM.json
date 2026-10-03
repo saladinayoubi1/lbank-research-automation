@@ -1,0 +1,19 @@
+{
+  "repository": "https://github.com/openai/sign-in-with-chatgpt-devkit",
+  "commit": "f723814abdccec135b519c451fb6e1992ee5e933",
+  "package": "@siwc/local",
+  "version": "0.1.0",
+  "source_unmodified": true,
+  "files": {
+    "LICENSE": "d12fe9f3c01626a133398d70e672b5591c38b1819f3da852b1e3ef8da606facd",
+    "THIRD_PARTY_NOTICES.md": "6443316699dba3a528c34375c8e526030f52497fdcabf7496342f5f5fbebee1e",
+    "src/errors.ts": "14a1f7b8c6913feb788059309b527c6ef9f25ffba8470aeb216a1559c6b678d3",
+    "src/index.ts": "ea94e148be97f91d627be98dd4535cc2a38cee4f2bfd5d94d918b2c87f351870",
+    "src/models.ts": "a1e33e85073aa2f79095ecb572c6123b329d60aa7f68cff3591c53f838ef2bd1",
+    "src/oauth.ts": "556e7afc432db0d59b14912a20fdbaa4a76220c8e7d3e404efc5430e4e1a5ba1",
+    "src/responses.ts": "7c7590d2a3100890565995705868641f74f260e8bf3cc1df6a823278407c5edf",
+    "src/storage.ts": "51c61d3fe369441951a08642089264cbdac96d9906ebf2f59eeda131153b30a4",
+    "src/types.ts": "01f5863b62ed9d6c3b3765123cba1f0c8b73ca395520fc9ba116a16b13980fc1"
+  },
+  "notice_formatting": "Trailing whitespace removed; original license notices retained."
+}

@@ -10,3 +10,6 @@ scripts/diagnose_nexus_bybit_runner_package.ps1 text eol=lf
 # parquet files out of the exact-source git archive so slow runner links do not
 # repeatedly transfer duplicate data.
 data/market/** export-ignore
+
+# Pinned SIWC provenance hashes are byte-exact and must survive Windows checkout.
+desktop/nexus-product/vendor/siwc-local/** text eol=lf
