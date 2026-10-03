@@ -41,11 +41,45 @@ MECHANISMS = (
     "cross_pair_volatility_catchup",
     "regime_conditional_composite",
 )
+# The historical sequential frontier above is immutable.  Once it is exhausted,
+# do NOT fall back to risk-parameter cycling.  Screen a new reviewed generation
+# in one bounded tournament, then spend the expensive full replay + independent
+# QA on only the strongest training-screen candidate.
+FRONTIER_MECHANISMS = (
+    "multi_horizon_trend_reacceleration",
+    "trend_vwap_pullback_reclaim",
+    "volume_dryup_breakout",
+    "range_midpoint_reclaim",
+    "downside_exhaustion_rebound",
+    "volatility_contraction_trend_reentry",
+    "volatility_expansion_pullback_reclaim",
+    "relative_strength_persistence_breakout",
+    "relative_weakness_exhaustion_rebound",
+    "volatility_leadership_reversal",
+)
+ALL_MECHANISMS = MECHANISMS + FRONTIER_MECHANISMS
+PEER_MECHANISMS = frozenset({
+    "cross_pair_relative_reclaim",
+    "lagged_peer_impulse_confirmation",
+    "peer_shock_noncontagion_rebound",
+    "relative_momentum_reacceleration",
+    "lagged_peer_volatility_release",
+    "cross_pair_volatility_catchup",
+    "relative_strength_persistence_breakout",
+    "relative_weakness_exhaustion_rebound",
+    "volatility_leadership_reversal",
+})
+FRONTIER_SCREEN_VERSION = "nexus.frontier-train-screen.v1"
+FRONTIER_SHORTLIST_SIZE = 3
 # Distinct entry mechanisms vs risk/feature parameter variations are explicitly
 # separately labeled; risk variants do NOT count as independent new edges.
 CONFIGS = tuple(
     {"mechanism": mechanism, "risk_variant": v, "entry_model": "closed_4h_1h_15m_next_open"}
     for mechanism in MECHANISMS for v in (0, 1)
+)
+FRONTIER_CONFIGS = tuple(
+    {"mechanism": mechanism, "risk_variant": 0, "entry_model": "closed_4h_1h_15m_next_open"}
+    for mechanism in FRONTIER_MECHANISMS
 )
 MIN_BARS_15M = 960
 TRAIN_FRAC, VALID_FRAC = .60, .20
@@ -143,8 +177,28 @@ def build_features(frames: dict[str, pd.DataFrame], *, peer_15m: pd.DataFrame | 
     f["bar_proxy_vwap"] = weighted / cum_volume
     f["prior_hi"] = f["high"].shift(1).rolling(18, min_periods=18).max()
     f["prior_lo"] = f["low"].shift(1).rolling(18, min_periods=18).min()
+    f["prior_range_mid"] = (f["prior_hi"] + f["prior_lo"]) / 2.0
+    f["prior_range_width_pct"] = (
+        (f["prior_hi"] - f["prior_lo"]) / close.shift(1).replace(0.0, np.nan)
+    )
     f["rel_vol"] = volume / volume.shift(1).rolling(20, min_periods=20).mean().replace(0, np.nan)
+    f["rel_vol_previous"] = f["rel_vol"].shift(1)
     f["atr"] = (f["high"] - f["low"]).shift(1).rolling(14, min_periods=14).mean()
+    own_return_1h = close.pct_change(4)
+    own_return_4h = close.pct_change(16)
+    f["lagged_own_return_1h"] = own_return_1h.shift(1)
+    f["lagged_own_return_4h"] = own_return_4h.shift(1)
+    f["own_return_1h_abs_baseline"] = (
+        own_return_1h.shift(2).abs().rolling(96, min_periods=96).median()
+    )
+    own_realized = close.pct_change().shift(1).rolling(16, min_periods=16).std()
+    f["own_realized_volatility"] = own_realized
+    f["own_realized_volatility_baseline"] = (
+        own_realized.shift(1).rolling(96, min_periods=96).median()
+    )
+    bar_range = (f["high"].astype(float) - f["low"].astype(float)).replace(0.0, np.nan)
+    f["close_location"] = (close - f["low"].astype(float)) / bar_range
+    f["body_efficiency"] = (close - f["open"].astype(float)).abs() / bar_range
     if peer_15m is not None:
         # New causal feature, derived exclusively from two independently
         # verified, exactly time-aligned CLOSED 15m Spot candle grids.
@@ -217,7 +271,7 @@ def build_features(frames: dict[str, pd.DataFrame], *, peer_15m: pd.DataFrame | 
 
 def signal_for(frame: pd.DataFrame, config: dict[str, Any]) -> np.ndarray:
     mechanism = config["mechanism"]
-    if mechanism not in MECHANISMS or config["risk_variant"] not in (0, 1):
+    if mechanism not in ALL_MECHANISMS or config["risk_variant"] not in (0, 1):
         raise CompositeResearchError("unreviewed strategy grammar")
     c, lo, o = frame["close"], frame["low"], frame["open"]
     ok = frame[["h4_up", "h4_range", "h1_compression", "h1_vol_ok", "rel_vol",
@@ -328,6 +382,94 @@ def signal_for(frame: pd.DataFrame, config: dict[str, Any]) -> np.ndarray:
             c > frame["prior_hi"]) & (c > o) & (frame["rel_vol"] >= 1.05) & (
             np.isfinite(ratio) & np.isfinite(ratio_baseline)
             & np.isfinite(peer_rv) & np.isfinite(peer_rv_baseline))
+    elif mechanism == "multi_horizon_trend_reacceleration":
+        required = {"lagged_own_return_1h", "lagged_own_return_4h", "close_location"}
+        if not required <= set(frame.columns):
+            raise CompositeResearchError("multi-horizon trend mechanism lacks causal own-return features")
+        r1 = frame["lagged_own_return_1h"]
+        r4 = frame["lagged_own_return_4h"]
+        s = (frame["h4_up"] == 1) & (frame["h1_vol_ok"] == 1) & (
+            r4 > .004) & (r1 > .001) & (c > frame["prior_hi"]) & (
+            c > o) & (frame["close_location"] >= .70) & (frame["rel_vol"] >= 1.0) & (
+            np.isfinite(r1) & np.isfinite(r4))
+    elif mechanism == "trend_vwap_pullback_reclaim":
+        s = (frame["h4_up"] == 1) & (frame["h1_vol_ok"] == 1) & (
+            c.shift(1) < frame["bar_proxy_vwap"].shift(1)) & (
+            c > frame["bar_proxy_vwap"]) & (c > frame["prior_range_mid"]) & (
+            c > o) & (frame["rel_vol"] >= .90)
+    elif mechanism == "volume_dryup_breakout":
+        s = ((frame["h4_up"] == 1) | (frame["h4_range"] == 1)) & (
+            frame["h1_vol_ok"] == 1) & (frame["rel_vol_previous"] < .65) & (
+            frame["rel_vol"] >= 1.30) & (c > frame["prior_hi"]) & (c > o) & (
+            frame["body_efficiency"] >= .55) & (frame["close_location"] >= .70)
+    elif mechanism == "range_midpoint_reclaim":
+        mid = frame["prior_range_mid"]
+        s = (frame["h4_range"] == 1) & (frame["h1_vol_ok"] == 1) & (
+            c.shift(1) < mid.shift(1)) & (lo <= mid) & (c > mid) & (c > o) & (
+            frame["close_location"] >= .65) & (frame["rel_vol"] >= .85)
+    elif mechanism == "downside_exhaustion_rebound":
+        required = {"lagged_own_return_1h", "own_return_1h_abs_baseline"}
+        if not required <= set(frame.columns):
+            raise CompositeResearchError("downside-exhaustion mechanism lacks causal own-return history")
+        r1 = frame["lagged_own_return_1h"]
+        baseline = frame["own_return_1h_abs_baseline"]
+        s = (frame["h4_range"] == 1) & (frame["h1_vol_ok"] == 1) & (
+            r1 < -.004) & (r1.abs() > baseline * 1.30) & (
+            lo < frame["prior_lo"]) & (c > frame["prior_lo"]) & (c > o) & (
+            frame["close_location"] >= .65) & (frame["rel_vol"] >= 1.0) & (
+            np.isfinite(r1) & np.isfinite(baseline))
+    elif mechanism == "volatility_contraction_trend_reentry":
+        rv = frame["own_realized_volatility"]
+        rv_base = frame["own_realized_volatility_baseline"]
+        s = (frame["h4_up"] == 1) & (frame["h1_compression"] == 1) & (
+            frame["h1_vol_ok"] == 1) & (rv < rv_base * .75) & (
+            c.shift(1) <= frame["bar_proxy_vwap"].shift(1)) & (
+            c > frame["bar_proxy_vwap"]) & (c > o) & (frame["rel_vol"] >= .90) & (
+            np.isfinite(rv) & np.isfinite(rv_base))
+    elif mechanism == "volatility_expansion_pullback_reclaim":
+        rv = frame["own_realized_volatility"]
+        rv_base = frame["own_realized_volatility_baseline"]
+        r1 = frame["lagged_own_return_1h"]
+        s = (frame["h4_up"] == 1) & (frame["h1_vol_ok"] == 1) & (
+            rv > rv_base * 1.35) & (r1 > .001) & (
+            lo <= frame["prior_range_mid"]) & (c > frame["prior_range_mid"]) & (
+            c > o) & (frame["close_location"] >= .60) & (frame["rel_vol"] >= 1.0) & (
+            np.isfinite(rv) & np.isfinite(rv_base) & np.isfinite(r1))
+    elif mechanism == "relative_strength_persistence_breakout":
+        required = {"relative_momentum_previous", "relative_momentum_baseline",
+                    "lagged_own_return_1h"}
+        if not required <= set(frame.columns):
+            raise CompositeResearchError("relative-strength persistence requires aligned peer history")
+        previous = frame["relative_momentum_previous"]
+        baseline = frame["relative_momentum_baseline"]
+        own_r1 = frame["lagged_own_return_1h"]
+        s = (frame["h4_up"] == 1) & (frame["h1_vol_ok"] == 1) & (
+            previous > .002) & (previous > baseline) & (own_r1 > 0.0) & (
+            c > frame["prior_hi"]) & (c > o) & (frame["rel_vol"] >= 1.0) & (
+            np.isfinite(previous) & np.isfinite(baseline) & np.isfinite(own_r1))
+    elif mechanism == "relative_weakness_exhaustion_rebound":
+        required = {"cross_pair_relative_z_previous", "lagged_own_return_1h"}
+        if not required <= set(frame.columns):
+            raise CompositeResearchError("relative-weakness rebound requires aligned peer history")
+        zprev = frame["cross_pair_relative_z_previous"]
+        own_r1 = frame["lagged_own_return_1h"]
+        s = (frame["h4_range"] == 1) & (frame["h1_vol_ok"] == 1) & (
+            zprev < -1.60) & (own_r1 < 0.0) & (lo < frame["prior_lo"]) & (
+            c > frame["prior_lo"]) & (c > o) & (frame["close_location"] >= .65) & (
+            frame["rel_vol"] >= 1.0) & np.isfinite(zprev) & np.isfinite(own_r1)
+    elif mechanism == "volatility_leadership_reversal":
+        required = {"cross_pair_volatility_ratio", "cross_pair_volatility_ratio_baseline",
+                    "lagged_own_return_1h"}
+        if not required <= set(frame.columns):
+            raise CompositeResearchError("volatility-leadership reversal requires aligned peer history")
+        ratio = frame["cross_pair_volatility_ratio"]
+        baseline = frame["cross_pair_volatility_ratio_baseline"]
+        own_r1 = frame["lagged_own_return_1h"]
+        s = (frame["h4_range"] == 1) & (frame["h1_vol_ok"] == 1) & (
+            ratio > 1.45) & (ratio > baseline * 1.25) & (own_r1 < -.003) & (
+            lo < frame["prior_lo"]) & (c > frame["prior_lo"]) & (c > o) & (
+            frame["rel_vol"] >= 1.0) & (
+            np.isfinite(ratio) & np.isfinite(baseline) & np.isfinite(own_r1))
     elif mechanism == "regime_conditional_composite":
         # A8-style causal regime router. It does not average or optimize
         # historical returns: a completed higher-timeframe state chooses one
@@ -485,13 +627,19 @@ def load_ledger(path: Path | None) -> dict[str, Any]:
         raise CompositeResearchError("invalid novelty ledger object")
     unsigned = dict(obj)
     signed_digest = unsigned.pop("ledger_digest", None)
+    screened = unsigned.get("frontier_screened_mechanisms", [])
+    screen_version = unsigned.get("frontier_screening_version")
     if (signed_digest != digest(unsigned) or unsigned.get("schema") != LEDGER_SCHEMA
             or unsigned.get("archive_sha256") != ARCHIVE_SHA256
             or unsigned.get("research_only") is not True
             or unsigned.get("auto_demo_promotion") is not False
             or unsigned.get("live_enabled") is not False
             or not isinstance(unsigned.get("config_fingerprints_evaluated"), list)
-            or not isinstance(unsigned.get("mechanisms_evaluated"), list)):
+            or not isinstance(unsigned.get("mechanisms_evaluated"), list)
+            or not isinstance(screened, list)
+            or len(screened) != len(set(screened))
+            or any(item not in FRONTIER_MECHANISMS for item in screened)
+            or (screen_version is not None and not isinstance(screen_version, str))):
         raise CompositeResearchError("novelty ledger integrity or authority invalid")
     return obj
 
@@ -500,10 +648,9 @@ def select_next(ledger: dict[str, Any]) -> dict[str, Any] | None:
     seen = ledger["config_fingerprints_evaluated"]
     if len(seen) != len(set(seen)) or any(not isinstance(s, str) for s in seen):
         raise CompositeResearchError("novelty ledger fingerprints malformed")
-    # Use scarce compute to investigate a different *causal* mechanism before
-    # revisiting the risk variants of a previously negative mechanism. The
-    # novelty ledger still permits all reviewed robustness variants eventually;
-    # parameter sweeps cannot masquerade as independent strategy discovery.
+    # Retained for historical/replay compatibility.  Production run() switches
+    # to the frontier tournament once every legacy causal mechanism has been
+    # evaluated, rather than cycling through risk variants.
     for novel_only in (True, False):
         for config in CONFIGS:
             if novel_only and config["mechanism"] in ledger["mechanisms_evaluated"]:
@@ -514,74 +661,275 @@ def select_next(ledger: dict[str, Any]) -> dict[str, Any] | None:
     return None
 
 
+def _frontier_configs_to_screen(ledger: dict[str, Any]) -> list[dict[str, Any]]:
+    evaluated = set(ledger["mechanisms_evaluated"])
+    screened = set(ledger.get("frontier_screened_mechanisms", []))
+    out = []
+    for config in FRONTIER_CONFIGS:
+        if config["mechanism"] in evaluated or config["mechanism"] in screened:
+            continue
+        out.append({
+            **config,
+            "fingerprint": digest({
+                "config": config, "dataset": ARCHIVE_SHA256, "contract": SCHEMA,
+            }),
+        })
+    return out
+
+
+def research_mode(ledger: dict[str, Any]) -> str:
+    """Choose legacy sequential search, one broad frontier screen, or stop."""
+    if not set(MECHANISMS).issubset(set(ledger["mechanisms_evaluated"])):
+        return "legacy_sequential"
+    return "frontier_tournament" if _frontier_configs_to_screen(ledger) else "exhausted"
+
+
+def has_runnable_candidate(ledger: dict[str, Any]) -> bool:
+    mode = research_mode(ledger)
+    if mode == "legacy_sequential":
+        return select_next(ledger) is not None
+    return mode == "frontier_tournament"
+
+
+def _load_frontier_features(archive_root: Path) -> dict[str, pd.DataFrame]:
+    frames_by_symbol = {
+        symbol: {
+            tf: load_verified_archive_frame(archive_root, symbol, tf)
+            for tf in ("minute15", "hour1", "hour4")
+        }
+        for symbol in SYMBOLS
+    }
+    if len(SYMBOLS) != 2:
+        raise CompositeResearchError("frontier tournament requires reviewed BTC/ETH peer topology")
+    return {
+        symbol: build_features(
+            frames_by_symbol[symbol],
+            peer_15m=frames_by_symbol[next(s for s in SYMBOLS if s != symbol)]["minute15"],
+        )
+        for symbol in SYMBOLS
+    }
+
+
+def _frontier_rank_key(row: dict[str, Any]) -> tuple[Any, ...]:
+    # No minimum trade-count gate.  A candidate that never trades cannot outrank
+    # an actually exercised system; otherwise breadth and stress resilience lead.
+    return (
+        -int(row["has_activity"]),
+        -int(row["positive_cells"]),
+        -float(row["stress_median_return_pct"]),
+        -float(row["worst_return_pct"]),
+        -float(row["median_return_pct"]),
+        float(row["max_drawdown_pct"]),
+        row["mechanism"],
+    )
+
+
+def _screen_frontier(
+    archive_root: Path, ledger: dict[str, Any],
+) -> tuple[dict[str, Any] | None, dict[str, Any] | None, dict[str, pd.DataFrame] | None]:
+    candidates = _frontier_configs_to_screen(ledger)
+    if not candidates:
+        return None, None, None
+    features = _load_frontier_features(archive_root)
+    ranking: list[dict[str, Any]] = []
+    for candidate in candidates:
+        cells = []
+        for symbol in SYMBOLS:
+            frame = features[symbol]
+            cut = int(len(frame) * TRAIN_FRAC)
+            signals = signal_for(frame, candidate)
+            for profile, (fee, slip) in (
+                ("conservative", (ENTRY_FEE_BPS, ENTRY_SLIP_BPS)),
+                ("stress", (STRESS_FEE_BPS, STRESS_SLIP_BPS)),
+            ):
+                result = backtest(
+                    frame.iloc[:cut].reset_index(drop=True),
+                    signals[:cut],
+                    fee_bps=fee,
+                    slip_bps=slip,
+                    risk_variant=0,
+                )
+                cells.append({
+                    "symbol": symbol,
+                    "profile": profile,
+                    "bars": cut,
+                    "net_return_pct": result["net_return_pct"],
+                    "max_drawdown_pct": result["max_drawdown_pct"],
+                    "closed_round_trips": result["closed_round_trips"],
+                    "profit_factor": result["profit_factor"],
+                    "win_rate_pct": result["win_rate_pct"],
+                })
+        returns = [float(cell["net_return_pct"]) for cell in cells]
+        stress_returns = [
+            float(cell["net_return_pct"]) for cell in cells if cell["profile"] == "stress"
+        ]
+        row = {
+            "mechanism": candidate["mechanism"],
+            "fingerprint": candidate["fingerprint"],
+            "has_activity": sum(int(cell["closed_round_trips"]) for cell in cells) > 0,
+            "closed_round_trips": sum(int(cell["closed_round_trips"]) for cell in cells),
+            "positive_cells": sum(value > 0.0 for value in returns),
+            "median_return_pct": round(float(np.median(returns)), 8),
+            "stress_median_return_pct": round(float(np.median(stress_returns)), 8),
+            "worst_return_pct": round(min(returns), 8),
+            "max_drawdown_pct": round(
+                max(float(cell["max_drawdown_pct"]) for cell in cells), 8
+            ),
+            "cells": cells,
+        }
+        ranking.append(row)
+    ranking.sort(key=_frontier_rank_key)
+    selected_id = ranking[0]["mechanism"]
+    selected = next(item for item in candidates if item["mechanism"] == selected_id)
+    for index, row in enumerate(ranking, 1):
+        row["rank"] = index
+    screening = {
+        "schema": FRONTIER_SCREEN_VERSION,
+        "basis": "training_partition_only_no_validation_or_historical_test_ranking",
+        "candidate_count": len(ranking),
+        "shortlist_size": min(FRONTIER_SHORTLIST_SIZE, len(ranking)),
+        "shortlist": [row["mechanism"] for row in ranking[:FRONTIER_SHORTLIST_SIZE]],
+        "selected_mechanism": selected_id,
+        "screened_mechanisms": sorted(row["mechanism"] for row in ranking),
+        "no_minimum_trade_count_gate": True,
+        "validation_used_for_selection": False,
+        "historically_inspected_test_used_for_selection": False,
+        "ranking": ranking,
+    }
+    return selected, screening, features
+
+
 def run(archive_root: Path, output: Path, source_sha: str, previous: Path | None) -> dict[str, Any]:
     if (len(source_sha) != 40 or any(c not in "0123456789abcdef" for c in source_sha)):
         raise CompositeResearchError("source_sha must be exact lower-case git SHA")
     ledger = load_ledger(previous)
-    nxt = select_next(ledger)
+    mode = research_mode(ledger)
+    screening = None
+    feature_cache = None
+    if mode == "legacy_sequential":
+        nxt = select_next(ledger)
+    elif mode == "frontier_tournament":
+        nxt, screening, feature_cache = _screen_frontier(archive_root, ledger)
+    else:
+        nxt = None
     if nxt is None:
-        report = {"schema": SCHEMA, "source_sha": source_sha, "archive_sha256": ARCHIVE_SHA256,
-                  "status": "EXHAUSTED_REQUIRES_NEW_MECHANISM",
-                  "research_only": True, "auto_demo_promotion": False, "live_enabled": False,
-                  "qualification": "NO_NEW_CANDIDATE", "rows": []}
+        report = {
+            "schema": SCHEMA,
+            "source_sha": source_sha,
+            "archive_sha256": ARCHIVE_SHA256,
+            "status": "EXHAUSTED_REQUIRES_NEW_MECHANISM",
+            "selection_basis": "no_risk_variant_recycling_after_reviewed_frontier",
+            "frontier_screening_version": FRONTIER_SCREEN_VERSION,
+            "research_only": True,
+            "auto_demo_promotion": False,
+            "live_enabled": False,
+            "qualification": "NO_NEW_CANDIDATE",
+            "rows": [],
+        }
         report["report_digest"] = digest(report)
         safe_write(output / "research-report.json", report)
         safe_write(output / "novelty-ledger.json", ledger)
         return report
     rows = []
     for symbol in SYMBOLS:
-        frames = {tf: load_verified_archive_frame(archive_root, symbol, tf)
-                  for tf in ("minute15", "hour1", "hour4")}
-        peer = None
-        if nxt["mechanism"] in {"cross_pair_relative_reclaim", "lagged_peer_impulse_confirmation",
-                                "peer_shock_noncontagion_rebound", "relative_momentum_reacceleration",
-                                "lagged_peer_volatility_release", "cross_pair_volatility_catchup"}:
-            # Current official replay has exactly BTC/ETH; never pretend to
-            # possess missing SOL/XRP or synthetic peer order flow/L2.
-            if len(SYMBOLS) != 2:
-                raise CompositeResearchError("cross-pair peer selection requires reviewed pair topology")
-            other = next(s for s in SYMBOLS if s != symbol)
-            peer = load_verified_archive_frame(archive_root, other, "minute15")
-        f = build_features(frames, peer_15m=peer)
+        if feature_cache is not None:
+            f = feature_cache[symbol]
+        else:
+            frames = {
+                tf: load_verified_archive_frame(archive_root, symbol, tf)
+                for tf in ("minute15", "hour1", "hour4")
+            }
+            peer = None
+            if nxt["mechanism"] in PEER_MECHANISMS:
+                if len(SYMBOLS) != 2:
+                    raise CompositeResearchError(
+                        "cross-pair peer selection requires reviewed pair topology"
+                    )
+                other = next(s for s in SYMBOLS if s != symbol)
+                peer = load_verified_archive_frame(archive_root, other, "minute15")
+            f = build_features(frames, peer_15m=peer)
         sig = signal_for(f, nxt)
         n = len(f)
         cut1, cut2 = int(n * TRAIN_FRAC), int(n * (TRAIN_FRAC + VALID_FRAC))
-        parts = {"train": (0, cut1), "validation": (cut1, cut2), "historically_inspected_test": (cut2, n)}
+        parts = {
+            "train": (0, cut1),
+            "validation": (cut1, cut2),
+            "historically_inspected_test": (cut2, n),
+        }
         for name, (lo, hi) in parts.items():
             for kind, (fee, slip) in (
                 ("conservative", (ENTRY_FEE_BPS, ENTRY_SLIP_BPS)),
-                ("stress", (STRESS_FEE_BPS, STRESS_SLIP_BPS))):
-                # Prior candle history is visible for causal features; no trading
-                # position/equity carries across evaluation splits.
-                result = backtest(f.iloc[lo:hi].reset_index(drop=True), sig[lo:hi],
-                                  fee_bps=fee, slip_bps=slip, risk_variant=nxt["risk_variant"])
-                rows.append({"symbol": symbol, "timeframe": "minute15_with_completed_1h_4h",
-                             "mechanism": nxt["mechanism"], "risk_variant": nxt["risk_variant"],
-                             "config_fingerprint": nxt["fingerprint"], "part": name,
-                             "profile": kind, "bars": hi - lo,
-                             "first_closed_utc": str(f["decision_at"].iloc[lo]),
-                             "last_closed_utc": str(f["decision_at"].iloc[hi - 1]),
-                             **result})
+                ("stress", (STRESS_FEE_BPS, STRESS_SLIP_BPS)),
+            ):
+                result = backtest(
+                    f.iloc[lo:hi].reset_index(drop=True),
+                    sig[lo:hi],
+                    fee_bps=fee,
+                    slip_bps=slip,
+                    risk_variant=nxt["risk_variant"],
+                )
+                rows.append({
+                    "symbol": symbol,
+                    "timeframe": "minute15_with_completed_1h_4h",
+                    "mechanism": nxt["mechanism"],
+                    "risk_variant": nxt["risk_variant"],
+                    "config_fingerprint": nxt["fingerprint"],
+                    "part": name,
+                    "profile": kind,
+                    "bars": hi - lo,
+                    "first_closed_utc": str(f["decision_at"].iloc[lo]),
+                    "last_closed_utc": str(f["decision_at"].iloc[hi - 1]),
+                    **result,
+                })
     unsigned = {k: v for k, v in ledger.items() if k != "ledger_digest"}
-    unsigned["config_fingerprints_evaluated"] = [*unsigned["config_fingerprints_evaluated"], nxt["fingerprint"]]
-    unsigned["mechanisms_evaluated"] = sorted(set([*unsigned["mechanisms_evaluated"], nxt["mechanism"]]))
+    unsigned["config_fingerprints_evaluated"] = [
+        *unsigned["config_fingerprints_evaluated"], nxt["fingerprint"]
+    ]
+    unsigned["mechanisms_evaluated"] = sorted(
+        set([*unsigned["mechanisms_evaluated"], nxt["mechanism"]])
+    )
+    if screening is not None:
+        unsigned["frontier_screening_version"] = FRONTIER_SCREEN_VERSION
+        unsigned["frontier_screened_mechanisms"] = sorted(set([
+            *unsigned.get("frontier_screened_mechanisms", []),
+            *screening["screened_mechanisms"],
+        ]))
     ledger = {**unsigned, "ledger_digest": digest(unsigned)}
-    report = {"schema": SCHEMA, "source_sha": source_sha, "archive_sha256": ARCHIVE_SHA256,
-              "status": "EVALUATED_RESEARCH_ONLY", "selection_basis": "fixed_mechanism_grammar_not_OOS_ranking",
-              "selected": nxt, "distinct_mechanisms_tested_cumulative": len(unsigned["mechanisms_evaluated"]),
-              "parameter_configs_tested_cumulative": len(unsigned["config_fingerprints_evaluated"]),
-              "historical_test_pristine": False, "independent_future_data_required": True,
-              "risk_assumptions": {"initial_cash_usdt_per_isolated_run": SIM_CASH,
-                                   "max_position_fraction": .10, "max_daily_loss_fraction": .05,
-                                   "max_drawdown_fraction": .10, "maximum_trades_per_strategy": None},
-              "research_only": True, "auto_demo_promotion": False, "live_enabled": False,
-              "qualification": "NOT_QUALIFIED_NO_PRISTINE_FUTURE_HOLDOUT",
-              "rows": rows, "ledger_digest": ledger["ledger_digest"]}
+    report = {
+        "schema": SCHEMA,
+        "source_sha": source_sha,
+        "archive_sha256": ARCHIVE_SHA256,
+        "status": "EVALUATED_RESEARCH_ONLY",
+        "selection_basis": (
+            "frontier_training_only_tournament_then_full_replay"
+            if screening is not None
+            else "fixed_mechanism_grammar_not_OOS_ranking"
+        ),
+        "selected": nxt,
+        "distinct_mechanisms_tested_cumulative": len(unsigned["mechanisms_evaluated"]),
+        "parameter_configs_tested_cumulative": len(unsigned["config_fingerprints_evaluated"]),
+        "historical_test_pristine": False,
+        "independent_future_data_required": True,
+        "risk_assumptions": {
+            "initial_cash_usdt_per_isolated_run": SIM_CASH,
+            "max_position_fraction": .10,
+            "max_daily_loss_fraction": .05,
+            "max_drawdown_fraction": .10,
+            "maximum_trades_per_strategy": None,
+        },
+        "research_only": True,
+        "auto_demo_promotion": False,
+        "live_enabled": False,
+        "qualification": "NOT_QUALIFIED_NO_PRISTINE_FUTURE_HOLDOUT",
+        "rows": rows,
+        "ledger_digest": ledger["ledger_digest"],
+    }
+    if screening is not None:
+        report["frontier_screening"] = screening
     report["report_digest"] = digest(report)
     safe_write(output / "research-report.json", report)
     safe_write(output / "novelty-ledger.json", ledger)
     return report
-
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
