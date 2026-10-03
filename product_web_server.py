@@ -18,9 +18,11 @@ from product_research_runtime import ProductResearchError, ProductResearchRuntim
 from product_market_diagnostics import MarketProbeInputError, probe_primary_spot
 from product_mission_runtime import ProductMissionError, ProductMissionRuntime
 from product_runtime import ProductRuntime, ProductRuntimeError
+from product_ai_advisory import AdvisoryError, ProductAIAdvisory
 from nexus_demo_strategy_matrix import verify_snapshot
 from web_dashboard import ApiResponse, ByteResponse, GatewayConfig, ReportUnavailableError, gateway_disclosure, load_mission_control, validate_gateway_config, versioned
 from web_ui_server import build_handler as build_ai_handler
+from web_ui_server import dispatch_ai_post
 
 PRODUCT_UI_ROOT = Path(__file__).with_name("product_ui")
 DEFAULT_DATA_ROOT = Path("data/market")
@@ -299,11 +301,13 @@ def build_handler(
     runtime: ProductRuntime | None = None,
     research_runtime: ProductResearchRuntime | None = None,
     control_runtime: ProductControlRuntime | None = None,
+    ai_advisory: ProductAIAdvisory | None = None,
 ):
     active_config = validate_gateway_config(config or GatewayConfig())
     runtime = runtime or ProductRuntime(data_root.parent, opening_cash=DESKTOP_DEMO_OPENING_CASH)
     research_runtime = research_runtime or ProductResearchRuntime(runtime)
     control_runtime = control_runtime or ProductControlRuntime(runtime)
+    ai_advisory = ai_advisory or ProductAIAdvisory()
     # The installed offline wrapper and the lightweight product API must both
     # read the SAME owner-side durable Agent Manager directory, not sibling
     # market-data directories. Never create a second apparent runtime.
@@ -391,6 +395,9 @@ def build_handler(
                 elif parsed.path == "/api/product/integration":
                     if parsed.query: raise ProductRuntimeError("integration snapshot does not accept query")
                     payload = _integration_snapshot(runtime, research_runtime, control_runtime, data_root)
+                elif parsed.path == "/api/product/ai/provider":
+                    if parsed.query: raise ProductRuntimeError("provider status does not accept query")
+                    payload = ai_advisory.status()
                 elif parsed.path == "/api/product/risk":
                     if parsed.query: raise ProductRuntimeError("risk snapshot does not accept query")
                     payload = control_runtime.risk_snapshot()
@@ -443,6 +450,7 @@ def build_handler(
             product_routes = {
                 "/api/product/paper/order", "/api/product/paper/auto", "/api/product/research/run",
                 "/api/product/session", "/api/product/kill-switch",
+                "/api/product/ai/advisory",
             }
             if parsed.path not in product_routes:
                 super().do_POST(); return
@@ -452,7 +460,16 @@ def build_handler(
             payload = self._read_json_body()
             if payload is None: return
             try:
-                if parsed.path == "/api/product/paper/order":
+                if parsed.path == "/api/product/ai/advisory":
+                    # Evaluate the ORIGINAL turn through the unchanged frozen gate.
+                    response = dispatch_ai_post(
+                        "/api/ai-room/message", payload, data_root=data_root, config=active_config,
+                        product_context=_ai_product_context(runtime, research_runtime, control_runtime, data_root),
+                    )
+                    if response.status != HTTPStatus.OK:
+                        self._send(response); return
+                    result = ai_advisory.respond(payload, response.payload["ai_room"])
+                elif parsed.path == "/api/product/paper/order":
                     result = runtime.submit_paper_order(payload)
                 elif parsed.path == "/api/product/research/run":
                     if set(payload) != {"symbol", "timeframe", "family", "limit"}:
@@ -467,6 +484,8 @@ def build_handler(
                     result = control_runtime.set_session(payload)
                 else:
                     result = control_runtime.set_kill_switch(payload)
+            except AdvisoryError as exc:
+                self._send(_json_error(exc.status, exc.code, "AI advice unavailable; no action executed", active_config)); return
             except (ProductRuntimeError, ProductResearchError, ProductControlError) as exc:
                 self._send(_json_error(HTTPStatus.BAD_REQUEST, "product_action_rejected", str(exc), active_config)); return
             except Exception as exc:

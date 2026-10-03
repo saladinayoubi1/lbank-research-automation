@@ -48,3 +48,11 @@ body.sidebar-collapsed .sidebar nav button>span{font-size:0!important}@media(max
 .market-probe-evidence b{font:inherit;unicode-bidi:isolate;display:inline-block;white-space:nowrap}
 .market-probe-evidence small{color:var(--muted)}
 @media(max-width:800px){.market-probe-evidence{grid-template-columns:1fr}.market-probe-form{display:grid;grid-template-columns:1fr 1fr}.market-probe-form button{grid-column:1/-1}}
+
+.ai-provider-panel{margin-bottom:18px}
+.ai-provider-controls{display:grid;grid-template-columns:auto minmax(180px,260px) 1fr;gap:12px;align-items:center;padding:12px}
+.ai-provider-controls select{background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:4px;padding:10px;font:inherit}
+#aiProviderStatus{font-size:13px;line-height:1.8;color:var(--muted)}
+#aiProviderStatus[data-state="verified"]{color:var(--green)}
+.ai-privacy-note{color:var(--muted);font-size:12px;line-height:1.9;margin:0;padding:0 12px 12px}
+@media(max-width:760px){.ai-provider-controls{grid-template-columns:1fr}.ai-provider-controls select{width:100%}}
