@@ -20,11 +20,13 @@ SIXTH = "P7-RESEARCH-COMPOSITE-006"
 SEVENTH = "P7-RESEARCH-COMPOSITE-007"
 EIGHTH = "P7-RESEARCH-COMPOSITE-008"
 NINTH = "P7-RESEARCH-COMPOSITE-009"
+TENTH = "P7-RESEARCH-COMPOSITE-010"
 # Future successors are definitions only; each remains inactive until its
 # immediate predecessor has a durable independent-QA DONE receipt.
 PREDECESSOR = {
     SECOND: FIRST, THIRD: SECOND, FOURTH: THIRD, FIFTH: FOURTH,
     SIXTH: FIFTH, SEVENTH: SIXTH, EIGHTH: SEVENTH, NINTH: EIGHTH,
+    TENTH: NINTH,
 }
 TASKS = frozenset((FIRST, *PREDECESSOR))
 SOURCE_HEX = re.compile(r"^[0-9a-f]{40}$")
