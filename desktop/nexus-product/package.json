@@ -11,6 +11,7 @@
     "dist:win": "node build-chatgpt-sdk.js && node -e \"const fs=require('fs');fs.mkdirSync('sidecar',{recursive:true});fs.copyFileSync('../../scripts/bootstrap_nexus_runner_from_gui.ps1','sidecar/bootstrap_nexus_runner_from_gui.ps1')\" && node stage-package-resources.js && electron-builder --win nsis portable",
     "build:chatgpt": "node build-chatgpt-sdk.js",
     "test:chatgpt": "node --test ../../tests/test_product_chatgpt_bridge.cjs",
+    "test:tradingview": "node --test ../../tests/test_product_tradingview_bridge.cjs",
     "prestart": "node build-chatgpt-sdk.js"
   },
   "devDependencies": {
@@ -35,6 +36,8 @@
       "package.json",
       "chatgpt-bridge.js",
       "chatgpt-ipc.js",
+      "tradingview-bridge.js",
+      "tradingview-ipc.js",
       "chatgpt-sdk.cjs",
       "vendor/siwc-local/LICENSE",
       "vendor/siwc-local/THIRD_PARTY_NOTICES.md",
@@ -99,5 +102,8 @@
     "portable": {
       "artifactName": "NEXUS_Personal_Pro_Portable_${version}_${arch}.${ext}"
     }
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.0"
   }
 }

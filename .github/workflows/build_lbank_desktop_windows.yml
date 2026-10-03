@@ -168,6 +168,7 @@ jobs:
         run: |
           npm run build:chatgpt
           npm run test:chatgpt
+          npm run test:tradingview
 
       - name: Build final Setup and Portable EXE
         working-directory: desktop/nexus-product
