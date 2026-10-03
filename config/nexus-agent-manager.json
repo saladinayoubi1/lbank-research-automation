@@ -584,6 +584,36 @@
         "verify actual two-pair three-partition two-cost numerical producer evidence with a distinct independent original-source QA replay",
         "research only with no pristine future holdout claim, no automatic promotion authority and no live authority"
       ]
+    },
+    {
+      "phase": 7,
+      "gate": 17,
+      "status": "PENDING",
+      "priority": 82,
+      "required_capabilities": [
+        "data_validation"
+      ],
+      "required_resources": [
+        "github-cloud"
+      ],
+      "preferred_resources": [
+        "github-cloud",
+        "windows-local"
+      ],
+      "authority": 2,
+      "id": "P7-RESEARCH-COMPOSITE-010",
+      "title": "Batch-screen next reviewed composite frontier and execute only the strongest training-screen candidate with independent numerical QA",
+      "dependencies": [
+        "P7-RESEARCH-COMPOSITE-009"
+      ],
+      "acceptance": [
+        "preceding ninth producer and independent QA are genuinely DONE with exact source, receipt, QA digest and cumulative eleventh-family novelty ledger",
+        "source-bound tenth producer consumes precisely QA-attested ninth ledger and performs one bounded training-only tournament across the new reviewed causal frontier instead of cycling legacy risk variants",
+        "screening reuses the exact immutable BTC/ETH Spot archive and closed 15m/1h/4h causal features, ranks without validation or historically inspected test leakage, and records every screened mechanism",
+        "only the deterministic training-screen winner receives the expensive complete two-pair three-partition two-cost replay and independent original-source numerical QA",
+        "no minimum trade-count gate is introduced; zero-activity candidates cannot outrank actually exercised systems and rejected screen candidates are not misrepresented as fully validated",
+        "research only with no pristine future holdout claim, no automatic Paper/Demo promotion and no live authority"
+      ]
     }
   ]
 }
