@@ -351,7 +351,7 @@ def research_cache_status(config: dict[str, Any]) -> tuple[bool, str]:
 def _observed_initial_cache_race(task: dict[str, Any]) -> bool:
     evidence = task.get("failure_evidence")
     return bool(
-        task.get("id") == RESEARCH_TASK
+        task.get("id") in TASKS
         and int(task.get("attempt", 0)) == 1
         and int(task.get("research_cache_recovery_count", 0)) == 0
         and task.get("failure_class") == "verified_research_execution_failed"
@@ -429,14 +429,14 @@ def apply_research_input_gate(config: dict[str, Any], *, ready: bool) -> str:
         task["status"] = "BLOCKED"
         task["blocked_reason"] = RESEARCH_WAIT
         task["research_cache_recovery_count"] = 1
-        am.emit("research_first_source_cache_race_parked", task_id=RESEARCH_TASK)
+        am.emit("research_first_source_cache_race_parked", task_id=task.get("id"))
         status = "BLOCKED"
 
     if not ready:
         if status in {"PENDING", "READY"}:
             task["status"] = "BLOCKED"
             task["blocked_reason"] = RESEARCH_WAIT
-            am.emit("research_waiting_for_verified_input_transport", task_id=RESEARCH_TASK)
+            am.emit("research_waiting_for_verified_input_transport", task_id=task.get("id"))
             return "parked_waiting_cache"
         return "wait_unchanged"
 
@@ -446,7 +446,7 @@ def apply_research_input_gate(config: dict[str, Any], *, ready: bool) -> str:
         task["blocked_reason"] = None
         am.emit(
             "research_source_cache_ready_released",
-            task_id=RESEARCH_TASK,
+            task_id=task.get("id"),
             recovery_count=int(task.get("research_cache_recovery_count", 0)),
         )
         return "ready_for_producer_lease"

@@ -843,3 +843,48 @@ def test_manager_config_contains_ordered_agent_catchup_without_authority_widenin
         assert mechanism in joined
         assert "independent" in joined.lower()
         assert "automatic" in joined.lower()
+
+
+def test_successor_first_cache_miss_recovers_once_when_exact_cache_is_ready(monkeypatch):
+    conf = linked(monkeypatch)
+    task = conf["tasks"][1]
+    original = {
+        "executor": "nexus-real-composite-backtest",
+        "failure_class": "verified_research_execution_failed",
+        "reason": runner.RESEARCH_FIRST_MISS,
+        "auto_demo_promotion": False,
+        "live_enabled": False,
+        "qualification_authority": False,
+    }
+    task.update({
+        "status": "TRIAGE",
+        "attempt": 1,
+        "assigned_worker": "architect-agent",
+        "producer": "research-agent",
+        "lease_id": "rca-lease",
+        "triage_mode": "root_cause_first",
+        "failure_class": "verified_research_execution_failed",
+        "failure_evidence": deepcopy(original),
+        "research_cache_recovery_count": 0,
+        "dispatch_id": "old-dispatch",
+        "dispatch_transport": "github-cloud",
+        "external_wait_state": "WAITING_EXTERNAL",
+    })
+
+    assert runner.apply_research_input_gate(conf, ready=True) == "ready_for_producer_lease"
+    assert task["status"] == "READY"
+    assert task["assigned_worker"] is None
+    assert task["lease_id"] is None
+    assert task["research_cache_recovery_count"] == 1
+    assert task["research_cache_race_evidence"]["first_failure"] == original
+    assert task["failure_evidence"] == original
+
+    # A second failure is never auto-recovered by this bounded exception.
+    task.update({
+        "status": "TRIAGE",
+        "attempt": 2,
+        "assigned_worker": "architect-agent",
+        "lease_id": "second-rca",
+    })
+    assert runner.apply_research_input_gate(conf, ready=True) == "ready_no_change"
+    assert task["status"] == "TRIAGE"
