@@ -41,11 +41,45 @@ MECHANISMS = (
     "cross_pair_volatility_catchup",
     "regime_conditional_composite",
 )
+# The historical sequential frontier above is immutable.  Once it is exhausted,
+# do NOT fall back to risk-parameter cycling.  Screen a new reviewed generation
+# in one bounded tournament, then spend the expensive full replay + independent
+# QA on only the strongest training-screen candidate.
+FRONTIER_MECHANISMS = (
+    "multi_horizon_trend_reacceleration",
+    "trend_vwap_pullback_reclaim",
+    "volume_dryup_breakout",
+    "range_midpoint_reclaim",
+    "downside_exhaustion_rebound",
+    "volatility_contraction_trend_reentry",
+    "volatility_expansion_pullback_reclaim",
+    "relative_strength_persistence_breakout",
+    "relative_weakness_exhaustion_rebound",
+    "volatility_leadership_reversal",
+)
+ALL_MECHANISMS = MECHANISMS + FRONTIER_MECHANISMS
+PEER_MECHANISMS = frozenset({
+    "cross_pair_relative_reclaim",
+    "lagged_peer_impulse_confirmation",
+    "peer_shock_noncontagion_rebound",
+    "relative_momentum_reacceleration",
+    "lagged_peer_volatility_release",
+    "cross_pair_volatility_catchup",
+    "relative_strength_persistence_breakout",
+    "relative_weakness_exhaustion_rebound",
+    "volatility_leadership_reversal",
+})
+FRONTIER_SCREEN_VERSION = "nexus.frontier-train-screen.v1"
+FRONTIER_SHORTLIST_SIZE = 3
 # Distinct entry mechanisms vs risk/feature parameter variations are explicitly
 # separately labeled; risk variants do NOT count as independent new edges.
 CONFIGS = tuple(
     {"mechanism": mechanism, "risk_variant": v, "entry_model": "closed_4h_1h_15m_next_open"}
     for mechanism in MECHANISMS for v in (0, 1)
+)
+FRONTIER_CONFIGS = tuple(
+    {"mechanism": mechanism, "risk_variant": 0, "entry_model": "closed_4h_1h_15m_next_open"}
+    for mechanism in FRONTIER_MECHANISMS
 )
 MIN_BARS_15M = 960
 TRAIN_FRAC, VALID_FRAC = .60, .20
@@ -143,8 +177,28 @@ def build_features(frames: dict[str, pd.DataFrame], *, peer_15m: pd.DataFrame | 
     f["bar_proxy_vwap"] = weighted / cum_volume
     f["prior_hi"] = f["high"].shift(1).rolling(18, min_periods=18).max()
     f["prior_lo"] = f["low"].shift(1).rolling(18, min_periods=18).min()
+    f["prior_range_mid"] = (f["prior_hi"] + f["prior_lo"]) / 2.0
+    f["prior_range_width_pct"] = (
+        (f["prior_hi"] - f["prior_lo"]) / close.shift(1).replace(0.0, np.nan)
+    )
     f["rel_vol"] = volume / volume.shift(1).rolling(20, min_periods=20).mean().replace(0, np.nan)
+    f["rel_vol_previous"] = f["rel_vol"].shift(1)
     f["atr"] = (f["high"] - f["low"]).shift(1).rolling(14, min_periods=14).mean()
+    own_return_1h = close.pct_change(4)
+    own_return_4h = close.pct_change(16)
+    f["lagged_own_return_1h"] = own_return_1h.shift(1)
+    f["lagged_own_return_4h"] = own_return_4h.shift(1)
+    f["own_return_1h_abs_baseline"] = (
+        own_return_1h.shift(2).abs().rolling(96, min_periods=96).median()
+    )
+    own_realized = close.pct_change().shift(1).rolling(16, min_periods=16).std()
+    f["own_realized_volatility"] = own_realized
+    f["own_realized_volatility_baseline"] = (
+        own_realized.shift(1).rolling(96, min_periods=96).median()
+    )
+    bar_range = (f["high"].astype(float) - f["low"].astype(float)).replace(0.0, np.nan)
+    f["close_location"] = (close - f["low"].astype(float)) / bar_range
+    f["body_efficiency"] = (close - f["open"].astype(float)).abs() / bar_range
     if peer_15m is not None:
         # New causal feature, derived exclusively from two independently
         # verified, exactly time-aligned CLOSED 15m Spot candle grids.
@@ -217,7 +271,7 @@ def build_features(frames: dict[str, pd.DataFrame], *, peer_15m: pd.DataFrame | 
 
 def signal_for(frame: pd.DataFrame, config: dict[str, Any]) -> np.ndarray:
     mechanism = config["mechanism"]
-    if mechanism not in MECHANISMS or config["risk_variant"] not in (0, 1):
+    if mechanism not in ALL_MECHANISMS or config["risk_variant"] not in (0, 1):
         raise CompositeResearchError("unreviewed strategy grammar")
     c, lo, o = frame["close"], frame["low"], frame["open"]
     ok = frame[["h4_up", "h4_range", "h1_compression", "h1_vol_ok", "rel_vol",
@@ -328,6 +382,94 @@ def signal_for(frame: pd.DataFrame, config: dict[str, Any]) -> np.ndarray:
             c > frame["prior_hi"]) & (c > o) & (frame["rel_vol"] >= 1.05) & (
             np.isfinite(ratio) & np.isfinite(ratio_baseline)
             & np.isfinite(peer_rv) & np.isfinite(peer_rv_baseline))
+    elif mechanism == "multi_horizon_trend_reacceleration":
+        required = {"lagged_own_return_1h", "lagged_own_return_4h", "close_location"}
+        if not required <= set(frame.columns):
+            raise CompositeResearchError("multi-horizon trend mechanism lacks causal own-return features")
+        r1 = frame["lagged_own_return_1h"]
+        r4 = frame["lagged_own_return_4h"]
+        s = (frame["h4_up"] == 1) & (frame["h1_vol_ok"] == 1) & (
+            r4 > .004) & (r1 > .001) & (c > frame["prior_hi"]) & (
+            c > o) & (frame["close_location"] >= .70) & (frame["rel_vol"] >= 1.0) & (
+            np.isfinite(r1) & np.isfinite(r4))
+    elif mechanism == "trend_vwap_pullback_reclaim":
+        s = (frame["h4_up"] == 1) & (frame["h1_vol_ok"] == 1) & (
+            c.shift(1) < frame["bar_proxy_vwap"].shift(1)) & (
+            c > frame["bar_proxy_vwap"]) & (c > frame["prior_range_mid"]) & (
+            c > o) & (frame["rel_vol"] >= .90)
+    elif mechanism == "volume_dryup_breakout":
+        s = ((frame["h4_up"] == 1) | (frame["h4_range"] == 1)) & (
+            frame["h1_vol_ok"] == 1) & (frame["rel_vol_previous"] < .65) & (
+            frame["rel_vol"] >= 1.30) & (c > frame["prior_hi"]) & (c > o) & (
+            frame["body_efficiency"] >= .55) & (frame["close_location"] >= .70)
+    elif mechanism == "range_midpoint_reclaim":
+        mid = frame["prior_range_mid"]
+        s = (frame["h4_range"] == 1) & (frame["h1_vol_ok"] == 1) & (
+            c.shift(1) < mid.shift(1)) & (lo <= mid) & (c > mid) & (c > o) & (
+            frame["close_location"] >= .65) & (frame["rel_vol"] >= .85)
+    elif mechanism == "downside_exhaustion_rebound":
+        required = {"lagged_own_return_1h", "own_return_1h_abs_baseline"}
+        if not required <= set(frame.columns):
+            raise CompositeResearchError("downside-exhaustion mechanism lacks causal own-return history")
+        r1 = frame["lagged_own_return_1h"]
+        baseline = frame["own_return_1h_abs_baseline"]
+        s = (frame["h4_range"] == 1) & (frame["h1_vol_ok"] == 1) & (
+            r1 < -.004) & (r1.abs() > baseline * 1.30) & (
+            lo < frame["prior_lo"]) & (c > frame["prior_lo"]) & (c > o) & (
+            frame["close_location"] >= .65) & (frame["rel_vol"] >= 1.0) & (
+            np.isfinite(r1) & np.isfinite(baseline))
+    elif mechanism == "volatility_contraction_trend_reentry":
+        rv = frame["own_realized_volatility"]
+        rv_base = frame["own_realized_volatility_baseline"]
+        s = (frame["h4_up"] == 1) & (frame["h1_compression"] == 1) & (
+            frame["h1_vol_ok"] == 1) & (rv < rv_base * .75) & (
+            c.shift(1) <= frame["bar_proxy_vwap"].shift(1)) & (
+            c > frame["bar_proxy_vwap"]) & (c > o) & (frame["rel_vol"] >= .90) & (
+            np.isfinite(rv) & np.isfinite(rv_base))
+    elif mechanism == "volatility_expansion_pullback_reclaim":
+        rv = frame["own_realized_volatility"]
+        rv_base = frame["own_realized_volatility_baseline"]
+        r1 = frame["lagged_own_return_1h"]
+        s = (frame["h4_up"] == 1) & (frame["h1_vol_ok"] == 1) & (
+            rv > rv_base * 1.35) & (r1 > .001) & (
+            lo <= frame["prior_range_mid"]) & (c > frame["prior_range_mid"]) & (
+            c > o) & (frame["close_location"] >= .60) & (frame["rel_vol"] >= 1.0) & (
+            np.isfinite(rv) & np.isfinite(rv_base) & np.isfinite(r1))
+    elif mechanism == "relative_strength_persistence_breakout":
+        required = {"relative_momentum_previous", "relative_momentum_baseline",
+                    "lagged_own_return_1h"}
+        if not required <= set(frame.columns):
+            raise CompositeResearchError("relative-strength persistence requires aligned peer history")
+        previous = frame["relative_momentum_previous"]
+        baseline = frame["relative_momentum_baseline"]
+        own_r1 = frame["lagged_own_return_1h"]
+        s = (frame["h4_up"] == 1) & (frame["h1_vol_ok"] == 1) & (
+            previous > .002) & (previous > baseline) & (own_r1 > 0.0) & (
+            c > frame["prior_hi"]) & (c > o) & (frame["rel_vol"] >= 1.0) & (
+            np.isfinite(previous) & np.isfinite(baseline) & np.isfinite(own_r1))
+    elif mechanism == "relative_weakness_exhaustion_rebound":
+        required = {"cross_pair_relative_z_previous", "lagged_own_return_1h"}
+        if not required <= set(frame.columns):
+            raise CompositeResearchError("relative-weakness rebound requires aligned peer history")
+        zprev = frame["cross_pair_relative_z_previous"]
+        own_r1 = frame["lagged_own_return_1h"]
+        s = (frame["h4_range"] == 1) & (frame["h1_vol_ok"] == 1) & (
+            zprev < -1.60) & (own_r1 < 0.0) & (lo < frame["prior_lo"]) & (
+            c > frame["prior_lo"]) & (c > o) & (frame["close_location"] >= .65) & (
+            frame["rel_vol"] >= 1.0) & np.isfinite(zprev) & np.isfinite(own_r1)
+    elif mechanism == "volatility_leadership_reversal":
+        required = {"cross_pair_volatility_ratio", "cross_pair_volatility_ratio_baseline",
+                    "lagged_own_return_1h"}
+        if not required <= set(frame.columns):
+            raise CompositeResearchError("volatility-leadership reversal requires aligned peer history")
+        ratio = frame["cross_pair_volatility_ratio"]
+        baseline = frame["cross_pair_volatility_ratio_baseline"]
+        own_r1 = frame["lagged_own_return_1h"]
+        s = (frame["h4_range"] == 1) & (frame["h1_vol_ok"] == 1) & (
+            ratio > 1.45) & (ratio > baseline * 1.25) & (own_r1 < -.003) & (
+            lo < frame["prior_lo"]) & (c > frame["prior_lo"]) & (c > o) & (
+            frame["rel_vol"] >= 1.0) & (
+            np.isfinite(ratio) & np.isfinite(baseline) & np.isfinite(own_r1))
     elif mechanism == "regime_conditional_composite":
         # A8-style causal regime router. It does not average or optimize
         # historical returns: a completed higher-timeframe state chooses one
@@ -533,9 +675,7 @@ def run(archive_root: Path, output: Path, source_sha: str, previous: Path | None
         frames = {tf: load_verified_archive_frame(archive_root, symbol, tf)
                   for tf in ("minute15", "hour1", "hour4")}
         peer = None
-        if nxt["mechanism"] in {"cross_pair_relative_reclaim", "lagged_peer_impulse_confirmation",
-                                "peer_shock_noncontagion_rebound", "relative_momentum_reacceleration",
-                                "lagged_peer_volatility_release", "cross_pair_volatility_catchup"}:
+        if nxt["mechanism"] in PEER_MECHANISMS:
             # Current official replay has exactly BTC/ETH; never pretend to
             # possess missing SOL/XRP or synthetic peer order flow/L2.
             if len(SYMBOLS) != 2:
