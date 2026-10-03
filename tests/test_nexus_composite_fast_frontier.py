@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 import nexus_composite_strategy_research as research
-import nexus_agent_manager as agent_manager
+import agent_manager
 from nexus_research_missions import NINTH, TENTH, PREDECESSOR, TASKS
 
 
