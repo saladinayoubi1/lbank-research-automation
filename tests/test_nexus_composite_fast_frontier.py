@@ -2,7 +2,9 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pytest
 
+import nexus_agent_research_prepare as prepare
 import nexus_composite_strategy_research as research
 import agent_manager
 from nexus_research_missions import NINTH, TENTH, PREDECESSOR, TASKS
@@ -46,6 +48,20 @@ def test_frontier_tournament_preempts_legacy_risk_variant_cycle():
     assert research.research_mode(exhausted) == "exhausted"
     assert research.has_runnable_candidate(exhausted) is False
 
+
+
+def test_preparer_accepts_frontier_tournament_and_rejects_true_exhaustion():
+    state = _legacy_complete_ledger()
+    predecessor = {"research_predecessor_mechanism": "regime_conditional_composite"}
+
+    prepare._ensure_new_reviewed_work(state, predecessor)
+
+    core = {key: value for key, value in state.items() if key != "ledger_digest"}
+    core["frontier_screening_version"] = research.FRONTIER_SCREEN_VERSION
+    core["frontier_screened_mechanisms"] = sorted(research.FRONTIER_MECHANISMS)
+    exhausted = {**core, "ledger_digest": research.digest(core)}
+    with pytest.raises(prepare.ResearchPreparationError, match="no new reviewed"):
+        prepare._ensure_new_reviewed_work(exhausted, predecessor)
 
 def test_frontier_rank_prefers_activity_breadth_and_stress_resilience():
     zero = {
