@@ -1,0 +1,76 @@
+name: Build Nursery Android APK
+
+on:
+  push:
+    branches: [ "nursery-android-build" ]
+    paths:
+      - "android-nursery/**"
+      - ".github/workflows/build-nursery-android.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: android-nursery
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android platform
+        run: yes | sdkmanager "platforms;android-35" "build-tools;35.0.0" >/dev/null
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+
+      - name: Restore verified fast-entry app
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64, gzip, hashlib
+          parts = sorted(Path('payload_v111').glob('part*.txt'))
+          if len(parts) != 4:
+              raise SystemExit(f'expected 4 payload parts, got {len(parts)}')
+          src = ''.join(p.read_text().strip() for p in parts)
+          raw = gzip.decompress(base64.b64decode(src))
+          digest = hashlib.sha256(raw).hexdigest()
+          expected = '00085101cf914c5f5e0bff2fcae89c7081825fcf332f696bdb34e499bd3a3d40'
+          if digest != expected:
+              raise SystemExit(f'payload SHA mismatch: {digest}')
+          out = Path('app/src/main/assets/index.html')
+          out.parent.mkdir(parents=True, exist_ok=True)
+          out.write_bytes(raw)
+          print('restored', len(raw), 'bytes; sha256=', digest)
+          PY
+
+      - name: Build installable debug APK
+        run: gradle --no-daemon :app:assembleDebug
+
+      - name: Validate APK
+        run: |
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | head -n 5
+          sha256sum "$APK"
+          cp "$APK" NurseryDaily-Android-v1.1.0.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: NurseryDaily-Android-v1.1.0-fast-entry
+          path: android-nursery/NurseryDaily-Android-v1.1.0.apk
+          if-no-files-found: error
+          retention-days: 30
