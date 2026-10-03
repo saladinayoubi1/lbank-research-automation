@@ -86,7 +86,7 @@ def _validate_report(
     if not isinstance(chosen, dict):
         raise RealResearchError("missing executed mechanism")
     if (
-        chosen.get("mechanism") not in research.MECHANISMS
+        chosen.get("mechanism") not in research.ALL_MECHANISMS
         or chosen.get("mechanism") in previous["mechanisms_evaluated"]
         or chosen.get("fingerprint") in previous["config_fingerprints_evaluated"]
         or chosen.get("fingerprint") not in ledger["config_fingerprints_evaluated"]
@@ -145,10 +145,10 @@ def run_lease(
 ) -> dict[str, Any]:
     _require_identity(source_sha, lease_id)
     previous = _checked_ledger(previous_ledger)
-    next_candidate = research.select_next(previous)
-    if next_candidate is None or next_candidate["mechanism"] in previous["mechanisms_evaluated"]:
+    if not research.has_runnable_candidate(previous):
         raise RealResearchError(
-            "no new reviewed causal mechanism remains; Developer Agent review required"
+            "no new reviewed causal mechanism or frontier tournament candidate remains; "
+            "Developer Agent review required"
         )
     output_dir.mkdir(parents=True, exist_ok=True)
     if (output_dir / "research-report.json").exists():
