@@ -60,6 +60,7 @@ def build_handler(
     offline_research: OfflineProductResearchRuntime | None = None,
     mission: ProductMissionRuntime | None = None,
     alternative: AlternativeMarketStore | None = None,
+    lbank: AlternativeMarketStore | None = None,
 ):
     active_config = validate_gateway_config(config or GatewayConfig())
     runtime = runtime or ProductRuntime(data_root.parent, opening_cash=DESKTOP_DEMO_OPENING_CASH)
@@ -70,6 +71,10 @@ def build_handler(
     mission = mission or ProductMissionRuntime(runtime.root, integration_root=data_root.parent)
     workspace = StrategyWorkspace(runtime.root)
     alternative = alternative or AlternativeMarketStore(runtime.root / "alternative-market")
+    lbank = lbank or AlternativeMarketStore(runtime.root / "lbank-market", provider="lbank")
+    if alternative.provider != "bitget" or lbank.provider != "lbank" or alternative.root == lbank.root:
+        raise AlternativeMarketError("research_provider_binding_failure")
+    market_stores = {"/api/product/alternative-market": alternative, "/api/product/lbank-market": lbank}
     reviewed_reports = ResearchReportStore(ui_root)
     BaseProductHandler = build_product_handler(
         data_root,
@@ -117,12 +122,12 @@ def build_handler(
 
         def do_GET(self) -> None:  # noqa: N802
             parsed = urlsplit(self.path)
-            if parsed.path in {"/api/product/alternative-market", "/api/product/research/reports"}:
+            if parsed.path in market_stores or parsed.path == "/api/product/research/reports":
                 if not self._authorized(): return
                 if parsed.query:
                     self._send(_json_error(HTTPStatus.BAD_REQUEST, "invalid_query", "read-only status does not accept query", active_config)); return
                 try:
-                    payload = alternative.snapshot() if parsed.path.endswith("alternative-market") else reviewed_reports.snapshot()
+                    payload = market_stores[parsed.path].snapshot() if parsed.path in market_stores else reviewed_reports.snapshot()
                 except (AlternativeMarketError, OSError, ValueError) as exc:
                     self._send(_json_error(HTTPStatus.SERVICE_UNAVAILABLE, "data_status_unavailable", str(exc), active_config)); return
                 self._send(ApiResponse(HTTPStatus.OK, payload)); return
@@ -228,6 +233,7 @@ def build_handler(
             parsed = urlsplit(self.path)
             routes = {
                 "/api/product/alternative-market/refresh", "/api/product/alternative-market/polling",
+                "/api/product/lbank-market/refresh", "/api/product/lbank-market/polling",
                 "/api/product/offline/import", "/api/product/offline/research",
                 "/api/product/offline/paper/auto", "/api/product/mission/import",
                 "/api/product/strategy-workspace/propose", "/api/product/strategy-workspace/select",
@@ -241,15 +247,18 @@ def build_handler(
             payload = self._read_offline_json()
             if payload is None: return
             try:
-                if parsed.path == "/api/product/alternative-market/refresh":
+                market_path = parsed.path.rsplit("/", 1)[0]
+                if market_path in market_stores and parsed.path.endswith("/refresh"):
                     if set(payload):
                         raise AlternativeMarketError("refresh request must be an empty object")
-                    threading.Thread(target=alternative.refresh, daemon=True, name="bitget-manual-refresh").start()
+                    selected_store = market_stores[market_path]
+                    threading.Thread(target=selected_store.refresh, daemon=True,
+                                     name=selected_store.provider + "-manual-refresh").start()
                     result = {"status": "started", "execution_eligible": False}
-                elif parsed.path == "/api/product/alternative-market/polling":
+                elif market_path in market_stores and parsed.path.endswith("/polling"):
                     if set(payload) != {"enabled"}:
                         raise AlternativeMarketError("polling request requires only enabled")
-                    result = alternative.set_polling(payload["enabled"])
+                    result = market_stores[market_path].set_polling(payload["enabled"])
                 elif parsed.path == "/api/product/offline/import":
                     result = store.import_dataset(payload)
                 elif parsed.path == "/api/product/offline/research":

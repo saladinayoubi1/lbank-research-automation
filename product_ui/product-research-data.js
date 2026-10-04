@@ -3,6 +3,11 @@
   const byId = id => document.getElementById(id);
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const date = ms => new Date(Number(ms)).toLocaleString('fa-IR');
+  const markets = [
+    {provider: 'lbank', label: 'LBank', prefix: 'lbank', path: '/api/product/lbank-market'},
+    {provider: 'bitget', label: 'Bitget', prefix: 'alternative', path: '/api/product/alternative-market'}
+  ];
+  let pendingRefresh = null;
   async function api(path, payload) {
     const response = await fetch(path, {cache: 'no-store', credentials: 'same-origin',
       ...(payload === undefined ? {} : {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)}),
@@ -18,39 +23,54 @@
     view.appendChild(node);
   }
   function ensureUi() {
-    panel(byId('view-data'), 'alternativeMarketPanel',
-      '<header><div><span>BITGET</span><h2>دادهٔ پشتیبان پژوهش</h2></div><strong id="alternativeMarketBadge" class="badge neutral">بررسی نشده</strong></header>' +
-      '<p>منبع این داده‌ها Bitget است. مرجع اجرای Paper همچنان Bybit است. کندل‌های باز وارد مخزن نمی‌شوند.</p>' +
-      '<div class="research-data-actions"><button id="alternativeStart" class="small-btn accent">شروع پایش پشتیبان</button><button id="alternativeStop" class="small-btn">توقف پایش</button><button id="alternativeRefresh" class="small-btn">دریافت یک‌باره</button></div>' +
-      '<div id="alternativeMarketState" class="result-box muted">در حال خواندن وضعیت مخزن…</div><div id="alternativeMarketTable" class="table-wrap"></div>');
+    for (const market of markets) {
+      const prefix = market.prefix;
+      panel(byId('view-data'), prefix + 'MarketPanel',
+        '<header><div><span>' + market.label.toUpperCase() + '</span><h2>دادهٔ پشتیبان پژوهش</h2></div><strong id="' + prefix + 'MarketBadge" class="badge neutral">بررسی نشده</strong></header>' +
+        '<p>منبع این داده‌ها ' + market.label + ' است. مرجع اجرای Paper همچنان Bybit است. کندل‌های باز وارد مخزن نمی‌شوند.</p>' +
+        '<div class="research-data-actions"><button id="' + prefix + 'Start" class="small-btn accent">شروع پایش پشتیبان</button><button id="' + prefix + 'Stop" class="small-btn">توقف پایش</button><button id="' + prefix + 'Refresh" class="small-btn">دریافت یک‌باره</button></div>' +
+        '<div id="' + prefix + 'MarketState" class="result-box muted">در حال خواندن وضعیت مخزن…</div><div id="' + prefix + 'MarketTable" class="table-wrap"></div>');
+      byId(prefix + 'MarketPanel')?.setAttribute('data-provider', market.provider);
+    }
     panel(byId('view-research'), 'reviewedResearchPanel',
       '<header><div><span>A7 / A9</span><h2>گزارش‌های بررسی‌شدهٔ پژوهش</h2></div><button id="reviewedReportsRefresh" class="small-btn">بازخوانی گزارش‌ها</button></header>' +
       '<p>مبنای محاسبات هر پژوهش ۱۰٬۰۰۰ USDT است. سناریوهای هزینه مستقل‌اند و تعداد معاملاتشان با هم جمع نمی‌شود.</p><div id="reviewedResearchReports"></div>');
   }
-  function marketRow(d) {
-    return '<tr><td>Bitget · Spot</td><td>' + esc(d.symbol) + '</td><td>' + esc(d.timeframe) + '</td><td>' +
-      esc(d.row_count) + '</td><td>' + esc(date(d.end_exclusive_ms)) + '</td><td>' +
+  function marketRow(d, market) {
+    return '<tr><td>' + market.label + ' · Spot</td><td>' + esc(d.symbol) + '</td><td>' + esc(d.timeframe) + '</td><td>' +
+      esc(d.row_count) + '</td><td>' + esc(date(d.end_exclusive_ms)) + '</td><td' + (d.historical_only ? '' : ' data-current="true"') + '>' +
       (d.historical_only ? 'آرشیو تاریخی' : d.fresh ? 'تازه' : 'قدیمی') + '</td></tr>';
   }
-  function renderMarket(snapshot) {
+  function renderMarket(snapshot, market) {
+    if (snapshot.provider !== market.provider || (snapshot.datasets || []).some(d => d.provider !== market.provider)) {
+      throw new Error('منبع پاسخ با این مخزن مطابقت ندارد.');
+    }
+    const prefix = market.prefix;
     const status = snapshot.state || {};
-    const badge = byId('alternativeMarketBadge');
+    const badge = byId(prefix + 'MarketBadge');
     if (badge) {
-      badge.textContent = status.feed_healthy ? 'دادهٔ تازه و معتبر' : snapshot.polling_enabled ? 'در حال پایش' : 'پایش متوقف';
+      badge.textContent = status.feed_healthy ? 'دادهٔ تازه و معتبر' : status.status === 'paused_after_two_failed_cycles' ? 'توقف پس از دو خطا' : snapshot.polling_enabled ? 'در حال پایش' : 'پایش متوقف';
       badge.className = 'badge ' + (status.feed_healthy ? 'good' : 'warn');
     }
     const messages = (status.cells || []).filter(c => c.status !== 'available')
       .map(c => c.symbol + ' / ' + c.timeframe + ': ' + c.reason).join(' · ');
-    const state = byId('alternativeMarketState');
+    const state = byId(prefix + 'MarketState');
     if (state) state.textContent = (snapshot.polling_enabled ? 'پایش هر ۶۰ ثانیه' : 'پایش خودکار متوقف است') +
       ' · ' + (status.successful_cycles || 0) + ' بررسی کامل پیاپی' + (messages ? ' · ' + messages : '');
-    if (byId('alternativeStart')) byId('alternativeStart').disabled = snapshot.polling_enabled;
-    if (byId('alternativeStop')) byId('alternativeStop').disabled = !snapshot.polling_enabled;
+    if (byId(prefix + 'Start')) byId(prefix + 'Start').disabled = snapshot.polling_enabled;
+    if (byId(prefix + 'Stop')) byId(prefix + 'Stop').disabled = !snapshot.polling_enabled;
     const datasets = [...(snapshot.datasets || [])].sort((a, b) => (b.symbol + ':' + b.timeframe).localeCompare(a.symbol + ':' + a.timeframe));
-    const table = byId('alternativeMarketTable');
+    const table = byId(prefix + 'MarketTable');
     if (table) table.innerHTML = datasets.length ? '<table><thead><tr><th>منبع</th><th>نماد</th><th>تایم‌فریم</th><th>کندل بسته</th><th>پایان داده</th><th>وضعیت</th></tr></thead><tbody>' +
-      datasets.map(marketRow).join('') + '</tbody></table>' :
-      '<div class="empty-state">هنوز دادهٔ Bitget در این مخزن وارد نشده است.</div>';
+      datasets.map(d => marketRow(d, market)).join('') + '</tbody></table>' :
+      '<div class="empty-state">هنوز دادهٔ ' + market.label + ' در این مخزن وارد نشده است.</div>';
+  }
+  function marketError(market, error) {
+    const badge = byId(market.prefix + 'MarketBadge');
+    if (badge) { badge.textContent = 'خطای خواندن وضعیت'; badge.className = 'badge warn'; }
+    const state = byId(market.prefix + 'MarketState');
+    if (state) state.textContent = error.message;
+    byId(market.prefix + 'MarketTable')?.querySelectorAll('[data-current]').forEach(cell => { cell.textContent = 'تازگی تأیید نشده'; });
   }
   const partLabel = part => ({train: 'آموزش', validation: 'اعتبارسنجی', historically_inspected_test: 'بازهٔ قبلاً بررسی‌شده'}[part] || 'بازهٔ اخیر');
   function reportRow(r) {
@@ -76,23 +96,34 @@
     holder.innerHTML = reports.map(reportSection).join('') + snapshot.errors.map(error =>
       '<p class="result-box">' + esc(error.id) + ': گزارش به دلیل ' + esc(error.reason) + ' نمایش داده نشد.</p>').join('');
   }
-  async function refresh() {
-    const results = await Promise.allSettled([api('/api/product/alternative-market'), api('/api/product/research/reports')]);
-    if (results[0].status === 'fulfilled') renderMarket(results[0].value);
-    else if (byId('alternativeMarketState')) byId('alternativeMarketState').textContent = results[0].reason.message;
-    if (results[1].status === 'fulfilled') renderReports(results[1].value);
-    else if (byId('reviewedResearchReports')) byId('reviewedResearchReports').textContent = results[1].reason.message;
+  function refresh() {
+    if (pendingRefresh) return pendingRefresh;
+    pendingRefresh = (async () => {
+      const results = await Promise.allSettled([...markets.map(m => api(m.path)), api('/api/product/research/reports')]);
+      markets.forEach((market, i) => {
+        try {
+          if (results[i].status !== 'fulfilled') throw results[i].reason;
+          renderMarket(results[i].value, market);
+        } catch (error) { marketError(market, error); }
+      });
+      const reports = results[markets.length];
+      if (reports.status === 'fulfilled') renderReports(reports.value);
+      else if (byId('reviewedResearchReports')) byId('reviewedResearchReports').textContent = reports.reason.message;
+    })().finally(() => { pendingRefresh = null; });
+    return pendingRefresh;
   }
-  async function action(path, payload) {
-    const state = byId('alternativeMarketState');
+  async function action(market, path, payload) {
+    const state = byId(market.prefix + 'MarketState');
     try { if (state) state.textContent = 'در حال انجام درخواست…'; await api(path, payload); await refresh(); }
-    catch (error) { if (state) state.textContent = error.message; }
+    catch (error) { marketError(market, error); }
   }
   function start() {
     ensureUi();
-    byId('alternativeStart')?.addEventListener('click', () => action('/api/product/alternative-market/polling', {enabled: true}));
-    byId('alternativeStop')?.addEventListener('click', () => action('/api/product/alternative-market/polling', {enabled: false}));
-    byId('alternativeRefresh')?.addEventListener('click', () => action('/api/product/alternative-market/refresh', {}));
+    for (const market of markets) {
+      byId(market.prefix + 'Start')?.addEventListener('click', () => action(market, market.path + '/polling', {enabled: true}));
+      byId(market.prefix + 'Stop')?.addEventListener('click', () => action(market, market.path + '/polling', {enabled: false}));
+      byId(market.prefix + 'Refresh')?.addEventListener('click', () => action(market, market.path + '/refresh', {}));
+    }
     byId('reviewedReportsRefresh')?.addEventListener('click', refresh);
     window.NexusResearchData = {refresh};
     void refresh();
