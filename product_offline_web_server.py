@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import threading
 from http import HTTPStatus
 from http.server import ThreadingHTTPServer
 from pathlib import Path
@@ -10,6 +11,8 @@ from typing import Any, Mapping
 from urllib.parse import urlsplit
 
 from product_build_runtime import ProductBuildEvidenceError, build_evidence_snapshot, supervisor_snapshot
+from product_alternative_market import AlternativeMarketError, AlternativeMarketStore
+from product_research_reports import ResearchReportStore
 from product_control_runtime import ProductControlRuntime
 from product_mission_runtime import ProductMissionError, ProductMissionRuntime
 from product_offline_runtime import (
@@ -34,6 +37,8 @@ from web_dashboard import ApiResponse, ByteResponse, GatewayConfig, validate_gat
 DEFAULT_DATA_ROOT = Path("data/market")
 MAX_OFFLINE_REQUEST_BYTES = MAX_OFFLINE_DATASET_BYTES + 65_536
 OFFLINE_STATIC = {
+    "/ui/product-research-data.js": "product-research-data.js",
+    "/ui/product-research-data.css": "product-research-data.css",
     "/ui/product-offline.js": "product-offline.js",
     "/ui/product-offline.css": "product-offline.css",
     "/ui/product-mission.js": "product-mission.js",
@@ -54,6 +59,7 @@ def build_handler(
     store: OfflineDatasetStore | None = None,
     offline_research: OfflineProductResearchRuntime | None = None,
     mission: ProductMissionRuntime | None = None,
+    alternative: AlternativeMarketStore | None = None,
 ):
     active_config = validate_gateway_config(config or GatewayConfig())
     runtime = runtime or ProductRuntime(data_root.parent, opening_cash=DESKTOP_DEMO_OPENING_CASH)
@@ -63,6 +69,8 @@ def build_handler(
     offline_research = offline_research or OfflineProductResearchRuntime(runtime, store)
     mission = mission or ProductMissionRuntime(runtime.root, integration_root=data_root.parent)
     workspace = StrategyWorkspace(runtime.root)
+    alternative = alternative or AlternativeMarketStore(runtime.root / "alternative-market")
+    reviewed_reports = ResearchReportStore(ui_root)
     BaseProductHandler = build_product_handler(
         data_root,
         config=active_config,
@@ -100,8 +108,8 @@ def build_handler(
                 self._send(_json_error(HTTPStatus.SERVICE_UNAVAILABLE, "offline_asset_unavailable", str(exc), active_config), head_only=head_only); return
             head_marker = b"</head>"
             body_marker = b"</body>"
-            head_injection = b'<link rel="stylesheet" href="/ui/product-offline.css"><link rel="stylesheet" href="/ui/product-mission.css"><link rel="stylesheet" href="/ui/product-strategy-workspace.css"></head>'
-            body_injection = b'<script src="/ui/product-offline.js"></script><script src="/ui/product-mission.js"></script><script src="/ui/product-strategy-workspace.js"></script></body>'
+            head_injection = b'<link rel="stylesheet" href="/ui/product-offline.css"><link rel="stylesheet" href="/ui/product-mission.css"><link rel="stylesheet" href="/ui/product-strategy-workspace.css"><link rel="stylesheet" href="/ui/product-research-data.css"></head>'
+            body_injection = b'<script src="/ui/product-offline.js"></script><script src="/ui/product-mission.js"></script><script src="/ui/product-strategy-workspace.js"></script><script src="/ui/product-research-data.js"></script></body>'
             if head_marker not in response.body or body_marker not in response.body:
                 self._send(_json_error(HTTPStatus.SERVICE_UNAVAILABLE, "offline_asset_invalid", "product index markers missing", active_config), head_only=head_only); return
             body = response.body.replace(head_marker, head_injection, 1).replace(body_marker, body_injection, 1)
@@ -109,6 +117,15 @@ def build_handler(
 
         def do_GET(self) -> None:  # noqa: N802
             parsed = urlsplit(self.path)
+            if parsed.path in {"/api/product/alternative-market", "/api/product/research/reports"}:
+                if not self._authorized(): return
+                if parsed.query:
+                    self._send(_json_error(HTTPStatus.BAD_REQUEST, "invalid_query", "read-only status does not accept query", active_config)); return
+                try:
+                    payload = alternative.snapshot() if parsed.path.endswith("alternative-market") else reviewed_reports.snapshot()
+                except (AlternativeMarketError, OSError, ValueError) as exc:
+                    self._send(_json_error(HTTPStatus.SERVICE_UNAVAILABLE, "data_status_unavailable", str(exc), active_config)); return
+                self._send(ApiResponse(HTTPStatus.OK, payload)); return
             if parsed.path == "/":
                 if not self._authorized(): return
                 if parsed.query:
@@ -210,6 +227,7 @@ def build_handler(
         def do_POST(self) -> None:  # noqa: N802
             parsed = urlsplit(self.path)
             routes = {
+                "/api/product/alternative-market/refresh", "/api/product/alternative-market/polling",
                 "/api/product/offline/import", "/api/product/offline/research",
                 "/api/product/offline/paper/auto", "/api/product/mission/import",
                 "/api/product/strategy-workspace/propose", "/api/product/strategy-workspace/select",
@@ -223,7 +241,16 @@ def build_handler(
             payload = self._read_offline_json()
             if payload is None: return
             try:
-                if parsed.path == "/api/product/offline/import":
+                if parsed.path == "/api/product/alternative-market/refresh":
+                    if set(payload):
+                        raise AlternativeMarketError("refresh request must be an empty object")
+                    threading.Thread(target=alternative.refresh, daemon=True, name="bitget-manual-refresh").start()
+                    result = {"status": "started", "execution_eligible": False}
+                elif parsed.path == "/api/product/alternative-market/polling":
+                    if set(payload) != {"enabled"}:
+                        raise AlternativeMarketError("polling request requires only enabled")
+                    result = alternative.set_polling(payload["enabled"])
+                elif parsed.path == "/api/product/offline/import":
                     result = store.import_dataset(payload)
                 elif parsed.path == "/api/product/offline/research":
                     if set(payload) != {"binding_sha256", "family"}:
@@ -246,7 +273,7 @@ def build_handler(
                     result = offline_research.run_imported_research(binding_sha256=payload["binding_sha256"], family=family)
                 else:
                     result = mission.import_snapshot(payload)
-            except (ProductOfflineError, ProductResearchError, ProductMissionError, StrategyWorkspaceError) as exc:
+            except (ProductOfflineError, ProductResearchError, ProductMissionError, StrategyWorkspaceError, AlternativeMarketError) as exc:
                 self._send(_json_error(HTTPStatus.BAD_REQUEST, "offline_action_rejected", str(exc), active_config)); return
             except Exception as exc:
                 self._send(_json_error(HTTPStatus.SERVICE_UNAVAILABLE, "offline_action_unavailable", str(exc), active_config)); return
