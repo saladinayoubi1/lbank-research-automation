@@ -20,7 +20,9 @@ import shutil
 from pathlib import Path
 from typing import Any
 
-from nexus_composite_strategy_research import ARCHIVE_SHA256, digest, load_ledger, safe_write, select_next
+from nexus_composite_strategy_research import (
+    ARCHIVE_SHA256, digest, load_ledger, research_mode, safe_write, select_next,
+)
 from scripts.agent_task_executor import decode_payload
 from nexus_research_missions import FIRST, PREDECESSOR, TASKS, ANCESTRY, validate_ancestry
 from scripts.select_nexus_bybit_replay_artifact import (
@@ -135,15 +137,18 @@ def _verified_input_bundle(root: Path, source_sha: str, predecessor: dict[str, s
         # this exact frontier, not merely a similarly named latest artifact.
         if previous["ledger_digest"] != predecessor["research_predecessor_ledger_digest"]:
             raise ResearchPreparationError("source cache does not match prior QA-attested novelty ledger")
-        candidate = select_next(previous)
-        # The general research grammar may revisit risk variants. A new real
-        # successor lease must instead introduce a never-tested causal family.
-        if candidate is None or candidate["mechanism"] in previous["mechanisms_evaluated"]:
-            raise ResearchPreparationError(
-                "no new reviewed causal mechanism remains; Developer Agent review required"
-            )
-        if candidate["mechanism"] == predecessor["research_predecessor_mechanism"]:
-            raise ResearchPreparationError("no different reviewed causal mechanism remains")
+        # Match run()'s search mode. Once legacy families are complete, the
+        # reviewed frontier is selected by Training-only screening after staging;
+        # select_next() would instead offer an already-evaluated risk variant.
+        mode = research_mode(previous)
+        if mode != "frontier_tournament":
+            candidate = select_next(previous) if mode == "legacy_sequential" else None
+            if candidate is None or candidate["mechanism"] in previous["mechanisms_evaluated"]:
+                raise ResearchPreparationError(
+                    "no new reviewed causal mechanism remains; Developer Agent review required"
+                )
+            if candidate["mechanism"] == predecessor["research_predecessor_mechanism"]:
+                raise ResearchPreparationError("no different reviewed causal mechanism remains")
     safe_extract(archived, root / "archive")
     shutil.copyfile(previous_file, root / "previous-ledger.json")
     return {

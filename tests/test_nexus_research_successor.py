@@ -288,8 +288,8 @@ def test_successor_requires_EXACT_prior_QA_ledger_and_different_mechanism(monkey
     with pytest.raises(prepare.ResearchPreparationError, match="prior QA"):
         prepare._verified_input_bundle(tmp_path / "wrong", NEW_SOURCE, ancestor)
 
-    # Once every family has been evaluated, select_next intentionally offers
-    # risk-variant robustness. Real successor leases MUST NOT call it novelty.
+    # After the legacy families, select_next offers an old risk variant.
+    # The producer instead screens the reviewed, untouched frontier on Training.
     exhausted_core = {k: deepcopy(v) for k, v in old.items() if k != "ledger_digest"}
     last = next(c for c in search.CONFIGS
                 if c["mechanism"] == unseen_mechanism and c["risk_variant"] == 0)
@@ -308,6 +308,28 @@ def test_successor_requires_EXACT_prior_QA_ledger_and_different_mechanism(monkey
     }))
     ancestor["research_predecessor_ledger_digest"] = exhausted["ledger_digest"]
     ancestor["research_predecessor_mechanism"] = unseen_mechanism
+    assert search.research_mode(exhausted) == "frontier_tournament"
+    report = prepare._verified_input_bundle(tmp_path / "frontier", NEW_SOURCE, ancestor)
+    assert report["prior_ledger_digest"] == exhausted["ledger_digest"]
+    assert search.load_ledger(tmp_path / "frontier" / "previous-ledger.json") == exhausted
+    assert (tmp_path / "frontier" / "archive").is_dir()
+    with pytest.raises(prepare.ResearchPreparationError, match="prior QA"):
+        prepare._verified_input_bundle(tmp_path / "stale-frontier", NEW_SOURCE, {
+            **ancestor, "research_predecessor_ledger_digest": "f" * 64,
+        })
+
+    # Screening every reviewed frontier family closes this path; legacy risk
+    # variants must still never be recycled as a new successor mechanism.
+    exhausted_core["frontier_screening_version"] = search.FRONTIER_SCREEN_VERSION
+    exhausted_core["frontier_screened_mechanisms"] = sorted(search.FRONTIER_MECHANISMS)
+    exhausted = {**exhausted_core, "ledger_digest": search.digest(exhausted_core)}
+    (tmp_path / "previous-ledger.json").write_text(json.dumps(exhausted))
+    manifest["prior_ledger_digest"] = exhausted["ledger_digest"]
+    (tmp_path / "manifest.json").write_text(json.dumps({
+        **manifest, "manifest_digest": search.digest(manifest)
+    }))
+    ancestor["research_predecessor_ledger_digest"] = exhausted["ledger_digest"]
+    assert search.research_mode(exhausted) == "exhausted"
     with pytest.raises(prepare.ResearchPreparationError, match="no new reviewed"):
         prepare._verified_input_bundle(tmp_path / "exhausted", NEW_SOURCE, ancestor)
 
