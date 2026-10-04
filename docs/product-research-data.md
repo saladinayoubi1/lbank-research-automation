@@ -1,16 +1,29 @@
 # Research data in the desktop app
 
-The Data & Market view now has a separate Bitget public-data panel. BTCUSDT and
+The Data & Market view has independent Bitget and LBank public-data panels. BTCUSDT and
 ETHUSDT have 120 closed Spot bars in each of 15m, 1h and 4h. Source-native
 timestamps, OHLCV strings and provider identity are retained. Every stored
 dataset has a canonical digest. The existing Bybit canonical vault, registry,
 qualification path and Paper journal remain separate.
 
+LBank uses its documented HTTPS endpoint `https://api.lbank.info/v2/kline.do`.
+Each of BTCUSDT/ETHUSDT at 15m/1h/4h retains 120 closed Spot candles in its own
+`lbank-market` directory, with independent settings, status and polling controls.
+Requests use the native `btc_usdt`/`eth_usdt` symbols, seconds-based `time`,
+`minute15`/`hour1`/`hour4` intervals and a 121-bar limit to exclude the open candle.
+The six native timestamp/OHLCV fields remain explicit: timestamps are seconds,
+decimal text is preserved without binary-float conversion, and quote volume is
+not fabricated. Exact chronological coverage, OHLC invariants, nonnegative
+volume, provider identity and canonical hashes are checked before atomic writes.
+Invalid/missing/duplicate data leaves the previous valid cache intact. The LBank
+panel rejects a response labelled as another provider. A failed status read
+clears the healthy badge and marks current-candle freshness as unconfirmed.
+
 Polling starts only after the local polling API is enabled. It survives a
 restart through its own settings file, checks every 60 seconds after a completed
 cycle, and pauses after two failed cycles. GET endpoints perform no network
 collection. Public transport uses HTTPS to the fixed Bitget Spot history
-endpoint, with no redirects, proxies, credentials or exchange orders. Missing,
+endpoint for that provider, with no redirects, proxies, credentials or exchange orders. Missing,
 duplicate, malformed or open-window data cannot replace previous valid bytes.
 A cache is fresh only when its observation is recent and its latest closed
 boundary equals the current timeframe boundary.
@@ -38,9 +51,14 @@ Routes:
 | GET /api/product/alternative-market | Cache and current collection health |
 | POST /api/product/alternative-market/refresh, {} | One asynchronous bounded refresh |
 | POST /api/product/alternative-market/polling, {"enabled": true/false} | Start/stop public-data collection |
-| GET /api/product/research/reports | Read-only reviewed reports; rejected artifacts are excluded |
+| GET /api/product/lbank-market | Independent LBank cache and collection health |
+| POST /api/product/lbank-market/refresh, {} | One bounded asynchronous LBank refresh |
+| POST /api/product/lbank-market/polling, {"enabled": true/false} | Independent persistent LBank polling |
+| GET /api/product/research/reports | Reviewed reports, including original rejected results; corrupt artifacts are excluded |
 
-Bitget data availability is research evidence only. It does not convert
+Bitget/LBank data availability is research evidence only. It does not convert
 Bybit-priced positions, enable Paper execution, qualify a strategy or enable
 Live. Existing default authentication, localhost/Origin guards and JSON request
 bounds apply to the new routes.
+
+LBank API reference: https://www.lbank.com/docs/#query-k-bar-data
