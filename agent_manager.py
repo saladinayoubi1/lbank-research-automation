@@ -18,6 +18,7 @@ DEFAULT_LEASE_MINUTES = 5
 TERMINAL = {"DONE", "OWNER_REQUIRED", "QUARANTINED"}
 WAITING_EXTERNAL = "WAITING_EXTERNAL"
 ACTIVE = {"LEASED", "RUNNING", "VERIFYING"}
+RESEARCH_RCA_BLOCK_REASON = "numerical Research RCA requires reviewed source-bound recovery"
 
 
 def utcnow() -> datetime:
@@ -465,6 +466,23 @@ def route_triage(config: dict[str, Any], now: datetime) -> None:
             task["status"] = "READY"
             task["ready_at"] = iso(now)
             emit("bounded_transient_retry", task_id=task["id"])
+            continue
+        if task.get("id") in TASKS:
+            # The numerical executor rejects generic RCA workers. Leasing the
+            # same Research ID to an analyst only creates a deterministic loop.
+            # Preserve the failure for reviewed recovery, never numeric success.
+            prior_lease, prior_dispatch = task.get("lease_id"), task.get("dispatch_id")
+            task["status"] = "BLOCKED"
+            task["blocked_reason"] = RESEARCH_RCA_BLOCK_REASON
+            task["triage_mode"] = "root_cause_first"
+            for field in (
+                "assigned_worker", "lease_id", "heartbeat_at", "lease_expires_at",
+                "dispatch_id", "dispatch_transport", "dispatched_at",
+                "external_wait_state", "external_wait_started_at",
+            ):
+                task[field] = None
+            emit("research_rca_review_required", task_id=task["id"],
+                 prior_lease_id=prior_lease, prior_dispatch_id=prior_dispatch)
             continue
         rca_caps = {"root_cause_analysis", "diagnostics"}
         candidates = [

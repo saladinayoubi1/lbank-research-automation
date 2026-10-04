@@ -1,0 +1,23 @@
+{
+  "schema": "nexus.research-input-incident-recovery.v1",
+  "task_id": "P7-RESEARCH-COMPOSITE-010",
+  "failed_source_sha": "e8e5b6076ff8e90c39264fc305085770b5a93517",
+  "failed_run_id": 37121361825,
+  "failed_lease_id": "7ca27a2b-97b3-462a-b67f-40aeeff10727",
+  "failed_dispatch_id": "251d47256d0771698035f9a2e9588acb",
+  "failed_artifact_id": 11273134047,
+  "failed_artifact_digest": "b4e15ab5020057c08e9e07d3cb5a0da0d81d021301ee41fd912a7ff33cd8e3d3",
+  "first_failed_lease_id": "825fd3ae-143a-4ac9-a463-b833dc59b13e",
+  "fix_commit_sha": "f459e48a446c2773e07518750a9de76e5d937ff7",
+  "fix_prepare_blob_sha": "7f4d465095dff1cc79b494185b3c5d5578fa9a25",
+  "predecessor": {
+    "research_predecessor_source_sha": "e3878a67ad119e19cad00e1a6563d03fd44a4394",
+    "research_predecessor_receipt_digest": "6d6723d487bf59a1b8a7748045f97d9d6a2036019e5d6a8de598dd2e3ef1f673",
+    "research_predecessor_qa_digest": "bfb7b1768aae797c88c0500386fa0aa8d813c01371b7ebfbcaf4d558c03d3a9d",
+    "research_predecessor_ledger_digest": "37ee22eb824bfe8ee6bd871dc4591b1ffad8e204caa5d19bbc6bb876899f3efb",
+    "research_predecessor_mechanism": "regime_conditional_composite"
+  },
+  "reason": "Reviewed producer logs prove an exact input cache hit followed by legacy-only preparation exhaustion. Merged PR 2320 fixes frontier staging; permit one fresh producer through the ordinary source-exact input gate and independent numerical QA.",
+  "automatic_demo_promotion": false,
+  "live_enabled": false
+}

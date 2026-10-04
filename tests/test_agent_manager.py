@@ -105,6 +105,26 @@ def test_transient_failure_has_at_most_one_direct_retry():
     assert task["triage_mode"] == "root_cause_first"
 
 
+def test_numerical_research_failure_cannot_dispatch_generic_rca():
+    cfg = base_config()
+    task = cfg["tasks"][0]
+    task.update(
+        id="P7-RESEARCH-COMPOSITE-010", status="TRIAGE", phase=7,
+        producer="research-agent", assigned_worker="research-agent",
+        failure_class="verified_research_execution_failed",
+        failure_evidence={"reason": "exact observed preparation failure"},
+        lease_id="failed-numeric-lease", dispatch_id="failed-numeric-dispatch",
+    )
+    original_failure = deepcopy(task["failure_evidence"])
+    am.route_triage(cfg, datetime(2026, 10, 4, 4, 0, tzinfo=timezone.utc))
+    assert task["status"] == "BLOCKED"
+    assert task["assigned_worker"] is None
+    assert task["lease_id"] is None
+    assert task["dispatch_id"] is None
+    assert task["failure_evidence"] == original_failure
+    assert task["blocked_reason"] == am.RESEARCH_RCA_BLOCK_REASON
+
+
 def test_producer_cannot_be_final_verifier():
     cfg = base_config()
     task = cfg["tasks"][0]

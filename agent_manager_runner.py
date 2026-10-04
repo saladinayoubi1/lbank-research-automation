@@ -12,6 +12,7 @@ from typing import Any
 import agent_manager as am
 from nexus_research_missions import (FIRST, SECOND, THIRD, TASKS, PREDECESSOR, ANCESTRY, attested_predecessor, validate_ancestry)
 from scripts.nexus_research_qa_incident_recovery import SPEC as RESEARCH_QA_INCIDENT_SPEC, load_spec as load_research_qa_incident, recover_incident as recover_research_qa_incident
+from scripts.nexus_research_input_incident_recovery import SPEC as RESEARCH_INPUT_INCIDENT_SPEC, load_spec as load_research_input_incident, recover_incident as recover_research_input_incident
 
 RUNTIME_PATH = Path("data/agent_coordination/agent_manager_runtime.json")
 SUMMARY_PATH = Path("data/agent_coordination/manager_state.json")
@@ -61,6 +62,7 @@ def merge_definition(template: dict[str, Any], runtime: dict[str, Any] | None) -
         "offline_result_bundle_ingested", "offline_result_bundle_digest",
         "result_artifact_ingested", "result_received_at", "research_producer_lease_id",
         "research_cache_requested_sha", "research_cache_requested_binding", "research_cache_recovery_count", "research_cache_race_evidence", "research_qa_epoch_drift", "research_qa_incident_recovery", "routing_decision",
+        "research_input_incident_recovery",
         *ANCESTRY,
         "zero_idle_evidence", "waiting_from_status", "external_wait_state", "external_wait_started_at",
         "external_wait_completed_at", "external_wait_timeline"
@@ -544,6 +546,14 @@ def main() -> int:
             current_sha=research_context[1],
         )
     successor_status = bind_qa_attested_successor(config)
+    input_incident_recovered = False
+    if research_context is not None and RESEARCH_INPUT_INCIDENT_SPEC.is_file():
+        from agent_transport import _api
+        input_incident_recovered = recover_research_input_incident(
+            config, spec=load_research_input_incident(),
+            api_get=lambda endpoint: _api("GET", "https://api.github.com/" + endpoint),
+            current_sha=research_context[1],
+        )
     cache_ready, cache_reason = research_cache_status(config)
     cache_gate = apply_research_input_gate(config, ready=cache_ready)
     cache_build = request_missing_research_cache(config, cache_reason) if not cache_ready else "ready"
@@ -552,6 +562,7 @@ def main() -> int:
         "ready": cache_ready,
         "successor": successor_status,
         "verified_fifth_qa_incident_released": incident_recovered,
+        "verified_tenth_input_incident_requeued": input_incident_recovered,
         "reason": cache_reason,
         "action": cache_gate,
         "cache_build": cache_build,
