@@ -21,6 +21,7 @@ from product_runtime import ProductRuntime, ProductRuntimeError
 from product_ai_advisory import (AdvisoryError, ProductAIAdvisory, council_roadmap,
                                  prepare_local_advisory, sanitize_advisory_reply)
 from nexus_demo_strategy_matrix import verify_snapshot
+from nexus_multipair_demo_strategy_matrix import load_manifest as load_multipair_manifest, verify_v2_snapshot
 from web_dashboard import ApiResponse, ByteResponse, GatewayConfig, ReportUnavailableError, gateway_disclosure, load_mission_control, validate_gateway_config, versioned
 from web_ui_server import build_handler as build_ai_handler
 from web_ui_server import dispatch_ai_post
@@ -139,7 +140,8 @@ def _strategy_snapshot() -> dict[str, Any]:
 
 
 def _demo_matrix_snapshot(data_root: Path) -> dict[str, Any]:
-    path = data_root.resolve().parent / "demo" / "strategy-matrix.json"
+    demo_root = data_root.resolve().parent / "demo"
+    path = demo_root / "strategy-matrix.json"
     unavailable = {
         "contract_version": "nexus.demo-strategy-matrix-surface.v1",
         "status": "unavailable",
@@ -156,7 +158,20 @@ def _demo_matrix_snapshot(data_root: Path) -> dict[str, Any]:
         if path.is_symlink() or not path.is_file() or path.stat().st_size > 5_000_000:
             return {**unavailable, "reason": "snapshot_unsafe"}
         payload = json.loads(path.read_text(encoding="utf-8"))
-        if not isinstance(payload, dict) or verify_snapshot(payload)["decision"] != "pass":
+        if not isinstance(payload, dict):
+            return {**unavailable, "reason": "snapshot_verification_failed"}
+        if payload.get("expected_cell_count") == 12 or payload.get("expected_lane_count") == 36:
+            state_path = demo_root / "matrix-state.json"
+            manifest_path = demo_root / "matrix-manifest-v2.json"
+            if any(p.is_symlink() or not p.is_file() or p.stat().st_size > 5_000_000
+                   for p in (state_path, manifest_path)):
+                return {**unavailable, "reason": "snapshot_v2_evidence_missing"}
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+            manifest = load_multipair_manifest(manifest_path)
+            if verify_v2_snapshot(payload, manifest=manifest, state=state)["decision"] != "pass":
+                return {**unavailable, "reason": "snapshot_verification_failed"}
+            return payload
+        if verify_snapshot(payload)["decision"] != "pass":
             return {**unavailable, "reason": "snapshot_verification_failed"}
         return payload
     except (OSError, UnicodeError, json.JSONDecodeError, ValueError):
