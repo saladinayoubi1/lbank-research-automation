@@ -99,7 +99,48 @@ function renderAIProvider(){
 async function refreshAIProvider(){
   return singleFlight('ai-provider-status',$('#aiProviderRefresh'),async()=>{
     const r=await optionalApi('/api/product/ai/provider');state.aiProvider=r.value;renderAIProvider();
-    await Promise.all([refreshChatGPT(),loadAIRoadmap()]);
+    await Promise.all([refreshChatGPT(),refreshTradingView(),loadAIRoadmap()]);
+  });
+}
+const tradingViewErrors={storage_unavailable:'ذخیرهٔ امن در این دستگاه در دسترس نیست',sign_in_required:'ورود به TradingView لازم است',connection_busy:'یک درخواست TradingView در حال انجام است',cancelled:'درخواست لغو شد',sign_in_timeout:'زمان ورود تمام شد؛ دوباره دکمهٔ ورود را بزنید',callback_unavailable:'درگاه ورود محلی در دسترس نیست',oauth_callback_rejected:'پاسخ ورود معتبر نیست',tool_unavailable:'ابزارهای تحلیل در این حساب در دسترس نیست',provider_response_rejected:'دادهٔ قابل نمایش دریافت نشد',invalid_request:'نماد یا تایم‌فریم معتبر نیست'};
+async function tradingViewCall(action,payload){
+  const bridge=window.nexusDesktop?.tradingView;
+  if(!bridge)throw new Error('اتصال TradingView در نسخهٔ Desktop انجام می‌شود');
+  const result=await (payload===undefined?bridge[action]():bridge[action](payload));
+  if(!result?.ok)throw new Error(tradingViewErrors[result?.error?.code]||'TradingView پاسخ کامل نداد؛ اتصال و طرح حساب را بررسی کنید');
+  return result.value;
+}
+function clearTradingViewSnapshot(){
+  $('#tradingViewBars').textContent='—';$('#tradingViewTechnicals').textContent='—';
+  $('#tradingViewReceipt').textContent='تحلیل واقعی هنوز دریافت نشده';
+}
+async function refreshTradingView(){
+  let x=null;const available=Boolean(window.nexusDesktop?.tradingView);
+  try{if(available)x=await tradingViewCall('status')}catch{}
+  $('#tradingViewConnect').disabled=!available||Boolean(x?.busy);
+  $('#tradingViewDisconnect').disabled=!x?.signed_in||Boolean(x?.busy);
+  $('#tradingViewSnapshot').disabled=!x?.signed_in||Boolean(x?.busy);
+  $('#tradingViewCancel').disabled=!available;
+  $('#tradingViewStatus').textContent=!available?'TradingView در نسخهٔ Desktop قابل اتصال است':
+    x?.reason==='storage_unavailable'?tradingViewErrors.storage_unavailable:
+    x?.ready?'ارتباط TradingView تأیید شد؛ برای تحلیل جدید دکمهٔ دریافت را بزنید':
+    x?.signed_in?'حساب ذخیره شده؛ دریافت تحلیل واقعی هنوز تأیید نشده':'TradingView متصل نشده';
+}
+async function changeTradingView(action,button){
+  return singleFlight('tradingview-account',button,async()=>{
+    if(action==='connect'||action==='disconnect')clearTradingViewSnapshot();
+    $('#tradingViewStatus').textContent=action==='connect'?'ورود و تأیید دسترسی در مرورگر رسمی TradingView…':'در حال بررسی اتصال…';
+    try{await tradingViewCall(action)}catch(e){toast(e.message)}finally{await refreshTradingView()}
+  });
+}
+async function requestTradingViewSnapshot(event){
+  event.preventDefault();return singleFlight('tradingview-snapshot',$('#tradingViewSnapshot'),async()=>{
+    clearTradingViewSnapshot();$('#tradingViewReceipt').textContent='در حال دریافت تحلیل بازار…';
+    try{
+      const r=await tradingViewCall('snapshot',{symbol:$('#tradingViewSymbol').value.trim(),interval:$('#tradingViewInterval').value,count:100});
+      $('#tradingViewBars').textContent=r.bars;$('#tradingViewTechnicals').textContent=r.technicals;
+      $('#tradingViewReceipt').textContent='TradingView · '+r.symbol+' · '+r.interval+' · دریافت: '+r.received_at+' · زمان دریافت، زمان آخرین کندل نیست';
+    }catch(e){$('#tradingViewReceipt').textContent='دریافت تحلیل تأیید نشد: '+e.message}finally{await refreshTradingView()}
   });
 }
 const chatGPTErrors={sign_in_required:'ورود به ChatGPT لازم است',sharing_not_enabled:'اجازهٔ استفاده از طرح ChatGPT داده نشده',models_not_loaded:'مدل‌های حساب را دریافت کنید',storage_unavailable:'ذخیرهٔ امن حساب در این دستگاه در دسترس نیست',connection_busy:'یک درخواست حساب یا مدل در حال انجام است',cancelled:'درخواست لغو شد',subscription_sharing_usage_limit_exceeded:'سهم مصرف این برنامه تمام شده؛ مدیریت مصرف را باز کنید',subscription_sharing_usage_unavailable:'مصرف طرح فعلاً در دسترس نیست',authority_gate_denied:'درخواست از مرز اختیار NEXUS عبور نکرد',provider_outcome_ambiguous:'نتیجهٔ مصرف قبلی مبهم است؛ همان درخواست تکرار نمی‌شود',turn_payload_conflict:'شناسهٔ نوبت با محتوای متفاوت تکرار شده',stream_interrupted:'پاسخ کامل دریافت نشد',response_incomplete:'مدل پاسخ را کامل نکرد',unsafe_provider_response:'پاسخ از بررسی حریم خصوصی عبور نکرد',model_not_available:'مدل در فهرست مجاز این حساب نیست',account_mismatch:'حساب هنگام درخواست تغییر کرده',gateway_unavailable:'درگاه داخلی در دسترس نیست',advisory_capacity_reached:'ظرفیت نوبت‌های این نشست پر شده'};
@@ -260,6 +301,6 @@ async function sendAI(e){
     if(mode==='chatgpt')await refreshChatGPT();
   });
 }
-function bind(){$$('#nav button').forEach(b=>b.onclick=()=>show(b.dataset.view));$('#sidebarToggle').onclick=()=>document.body.classList.toggle('sidebar-collapsed');$('#reload').onclick=loadAll;$('#registryRefresh').onclick=loadAll;$('#marketProbeForm').onsubmit=runMarketProbe;$('#paperRefresh').onclick=refreshPaper;$('#paperOrder').onsubmit=submitPaper;$('#researchForm').onsubmit=runResearch;$('#autoPaper').onclick=autoPaper;$('#sessionOpen').onclick=()=>control('/api/product/session',{open:true});$('#sessionClose').onclick=()=>control('/api/product/session',{open:false});$('#killOn').onclick=()=>control('/api/product/kill-switch',{enabled:true,reason_code:'user_emergency_stop'});$('#killOff').onclick=()=>control('/api/product/kill-switch',{enabled:false,reason_code:'paper_resume'});$('#aiForm').onsubmit=sendAI;$('#aiProviderRefresh').onclick=refreshAIProvider;$('#chatGPTConnect').onclick=e=>changeChatGPT('connect',e.currentTarget);$('#chatGPTModels').onclick=e=>changeChatGPT('models',e.currentTarget);$('#chatGPTDisconnect').onclick=e=>changeChatGPT('disconnect',e.currentTarget);$('#chatGPTUsage').onclick=()=>chatGPTCall('usage').catch(e=>toast(e.message));$('#chatGPTCancel').onclick=()=>chatGPTCall('cancel').catch(e=>toast(e.message));window.addEventListener('keydown',e=>{if(e.ctrlKey&&e.key.toLowerCase()==='b'){e.preventDefault();document.body.classList.toggle('sidebar-collapsed')}})}
-window.addEventListener('DOMContentLoaded',async()=>{await initializePersonalization();bind();await loadAll();startPaperUiAutoRefresh();await Promise.all([refreshChatGPT(),loadAIRoadmap()]);setInterval(()=>{if(state.marketProbe && $('#view-data')?.classList.contains('active'))renderMarketProbe()},60000)});
+function bind(){$$('#nav button').forEach(b=>b.onclick=()=>show(b.dataset.view));$('#sidebarToggle').onclick=()=>document.body.classList.toggle('sidebar-collapsed');$('#reload').onclick=loadAll;$('#registryRefresh').onclick=loadAll;$('#marketProbeForm').onsubmit=runMarketProbe;$('#paperRefresh').onclick=refreshPaper;$('#paperOrder').onsubmit=submitPaper;$('#researchForm').onsubmit=runResearch;$('#autoPaper').onclick=autoPaper;$('#sessionOpen').onclick=()=>control('/api/product/session',{open:true});$('#sessionClose').onclick=()=>control('/api/product/session',{open:false});$('#killOn').onclick=()=>control('/api/product/kill-switch',{enabled:true,reason_code:'user_emergency_stop'});$('#killOff').onclick=()=>control('/api/product/kill-switch',{enabled:false,reason_code:'paper_resume'});$('#aiForm').onsubmit=sendAI;$('#aiProviderRefresh').onclick=refreshAIProvider;$('#chatGPTConnect').onclick=e=>changeChatGPT('connect',e.currentTarget);$('#chatGPTModels').onclick=e=>changeChatGPT('models',e.currentTarget);$('#chatGPTDisconnect').onclick=e=>changeChatGPT('disconnect',e.currentTarget);$('#chatGPTUsage').onclick=()=>chatGPTCall('usage').catch(e=>toast(e.message));$('#chatGPTCancel').onclick=()=>chatGPTCall('cancel').catch(e=>toast(e.message));$('#tradingViewConnect').onclick=e=>changeTradingView('connect',e.currentTarget);$('#tradingViewDisconnect').onclick=e=>changeTradingView('disconnect',e.currentTarget);$('#tradingViewCancel').onclick=async()=>{try{await tradingViewCall('cancel')}catch(e){toast(e.message)}finally{await refreshTradingView()}};$('#tradingViewForm').onsubmit=requestTradingViewSnapshot;window.addEventListener('keydown',e=>{if(e.ctrlKey&&e.key.toLowerCase()==='b'){e.preventDefault();document.body.classList.toggle('sidebar-collapsed')}})}
+window.addEventListener('DOMContentLoaded',async()=>{await initializePersonalization();bind();await loadAll();startPaperUiAutoRefresh();await Promise.all([refreshChatGPT(),refreshTradingView(),loadAIRoadmap()]);setInterval(()=>{if(state.marketProbe && $('#view-data')?.classList.contains('active'))renderMarketProbe()},60000)});
 })();
