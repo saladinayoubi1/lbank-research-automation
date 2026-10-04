@@ -8,10 +8,11 @@
   "private": true,
   "scripts": {
     "start": "electron .",
-    "dist:win": "node build-chatgpt-sdk.js && node -e \"const fs=require('fs');fs.mkdirSync('sidecar',{recursive:true});fs.copyFileSync('../../scripts/bootstrap_nexus_runner_from_gui.ps1','sidecar/bootstrap_nexus_runner_from_gui.ps1')\" && node stage-package-resources.js && electron-builder --win nsis portable",
+    "dist:win": "npm run test:packaging && node build-chatgpt-sdk.js && node -e \"const fs=require('fs');fs.mkdirSync('sidecar',{recursive:true});fs.copyFileSync('../../scripts/bootstrap_nexus_runner_from_gui.ps1','sidecar/bootstrap_nexus_runner_from_gui.ps1')\" && node stage-package-resources.js && electron-builder --win nsis portable",
     "build:chatgpt": "node build-chatgpt-sdk.js",
     "test:chatgpt": "node --test ../../tests/test_product_chatgpt_bridge.cjs",
     "test:tradingview": "node --test ../../tests/test_product_tradingview_bridge.cjs",
+    "test:packaging": "node --test ../../tests/test_product_after_pack.cjs",
     "prestart": "node build-chatgpt-sdk.js"
   },
   "devDependencies": {

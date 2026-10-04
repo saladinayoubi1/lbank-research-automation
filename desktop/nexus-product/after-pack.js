@@ -15,7 +15,9 @@ module.exports = async function afterPack(context) {
     '/node_modules/@modelcontextprotocol/sdk/dist/cjs/client/streamableHttp.js']) {
     if (!entries.has(name)) throw new Error('packaged TradingView connector missing: ' + name);
   }
-  const sdk = JSON.parse(asar.extractFile(archive, 'node_modules/@modelcontextprotocol/sdk/package.json').toString('utf8'));
+  // ASAR resolves directory components using the host platform's path separator.
+  const sdkManifest = path.join('node_modules', '@modelcontextprotocol', 'sdk', 'package.json');
+  const sdk = JSON.parse(asar.extractFile(archive, sdkManifest).toString('utf8'));
   if (sdk.version !== '1.32.0') throw new Error('packaged TradingView MCP SDK version mismatch');
   const seed = path.join(resources, 'nexus-source-seed.git');
   const sourceShaPath = path.join(resources, 'source-sha.txt');
