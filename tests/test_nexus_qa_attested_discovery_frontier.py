@@ -188,12 +188,23 @@ def test_coordinator_rebuilds_on_research_frontier_authority_changes():
 
 def test_mandatory_fifth_discovery_cache_uses_exact_QA_not_standalone_artifact():
     workflow = Path(".github/workflows/nexus_multitimeframe_strategy_discovery.yml").read_text()
-    segment = workflow.split("- name: Bind canonical archive and novelty frontier as one Research lease input", 1)[1].split("- name: Publish immutable approved Research input transport", 1)[0]
-    assert "scripts/nexus_qa_attested_discovery_frontier.py" in segment
+    frontier = workflow.split(
+        "- name: Resolve exact QA-attested Research frontier for cache identity", 1
+    )[1].split("- name: Check existing approved Research input transport cache", 1)[0]
+    segment = workflow.split(
+        "- name: Bind canonical archive and novelty frontier as one Research lease input", 1
+    )[1].split("- name: Publish immutable approved Research input transport", 1)[0]
+    cache_contract = workflow.split(
+        "- name: Check existing approved Research input transport cache", 1
+    )[1].split("- name: Bind canonical archive and novelty frontier as one Research lease input", 1)[0]
+
+    assert "scripts/nexus_qa_attested_discovery_frontier.py" in frontier
+    assert "ledger_digest" in frontier
+    assert "nexus-composite-inputs-v2-${{ github.sha }}-${{ steps.agent-frontier.outputs.ledger_digest }}" in cache_contract
+    assert "cp build/agent-frontier/previous-ledger.json build/agent-research-cache/previous-ledger.json" in segment
     assert "cp build/previous-composite/novelty-ledger.json" not in segment
     assert "cp build/composite/novelty-ledger.json" not in segment
     assert "no claimed prior" not in segment
-
 
 def test_recent_coordinator_proof_rejects_unbound_same_run_artifact(monkeypatch):
     mock_proofs(monkeypatch)

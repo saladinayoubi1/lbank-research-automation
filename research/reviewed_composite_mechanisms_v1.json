@@ -354,6 +354,283 @@
         "no_current_peer_candle_lookahead",
         "no_auto_paper_or_live_promotion"
       ]
+    },
+    {
+      "id": "multi_horizon_trend_reacceleration",
+      "hypothesis": "A completed 4h up-structure plus lagged positive own 4h and 1h returns may identify a distinct continuation regime when the current closed 15m bar breaks prior structure with strong close location and observed volume.",
+      "inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "context": [
+        "completed_4h_up_structure",
+        "lagged_own_4h_return",
+        "lagged_own_1h_return",
+        "completed_1h_volatility_guard"
+      ],
+      "entry": [
+        "current_closed_15m_structure_break",
+        "strong_close_location",
+        "observed_relative_volume",
+        "next_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "single_symbol_spot_long_flat_cash_only",
+        "no_current_bar_lookahead",
+        "no_auto_paper_or_live_promotion"
+      ]
+    },
+    {
+      "id": "trend_vwap_pullback_reclaim",
+      "hypothesis": "Inside a completed 4h up-structure, a prior closed 15m bar below the causal intraday candle-volume VWAP proxy followed by a current closed reclaim above both VWAP proxy and prior range midpoint may identify trend re-entry distinct from range VWAP mean reversion.",
+      "inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "context": [
+        "completed_4h_up_structure",
+        "completed_1h_volatility_guard",
+        "causal_intraday_candle_volume_vwap_proxy"
+      ],
+      "entry": [
+        "prior_closed_pullback_below_vwap_proxy",
+        "current_closed_vwap_and_midpoint_reclaim",
+        "next_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "candle_volume_proxy_not_trade_vwap",
+        "single_symbol_spot_long_flat_cash_only",
+        "no_auto_paper_or_live_promotion"
+      ]
+    },
+    {
+      "id": "volume_dryup_breakout",
+      "hypothesis": "A fully observed low-relative-volume bar followed by a current closed high-relative-volume structural breakout with efficient close may represent supply exhaustion then expansion without relying on hidden order-book data.",
+      "inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "context": [
+        "completed_4h_trend_or_range_state",
+        "completed_1h_volatility_guard",
+        "prior_closed_relative_volume_dryup"
+      ],
+      "entry": [
+        "current_closed_range_break",
+        "relative_volume_expansion",
+        "efficient_upper_close",
+        "next_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "no_orderbook_liquidity_claim",
+        "single_symbol_spot_long_flat_cash_only",
+        "no_auto_paper_or_live_promotion"
+      ]
+    },
+    {
+      "id": "range_midpoint_reclaim",
+      "hypothesis": "Within a completed 4h range, a move from below the previously established range midpoint to a current closed reclaim above that midpoint may identify a structural mean-reversion state without fitting an equilibrium on future bars.",
+      "inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "context": [
+        "completed_4h_range",
+        "completed_1h_volatility_guard",
+        "prior_range_high_low_midpoint"
+      ],
+      "entry": [
+        "prior_close_below_midpoint",
+        "current_closed_midpoint_reclaim",
+        "strong_close_location",
+        "next_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "bounded_long_flat_mean_reversion",
+        "no_martingale",
+        "no_auto_paper_or_live_promotion"
+      ]
+    },
+    {
+      "id": "downside_exhaustion_rebound",
+      "hypothesis": "An unusually negative lagged own one-hour return relative to its prior amplitude baseline, followed by a current closed failed downside range extension, may identify a distinct own-asset exhaustion rebound in completed range context.",
+      "inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "context": [
+        "completed_4h_range",
+        "completed_1h_volatility_guard",
+        "lagged_own_1h_return",
+        "historical_own_return_amplitude_baseline"
+      ],
+      "entry": [
+        "lagged_downside_exhaustion",
+        "current_closed_failed_downside_extension",
+        "strong_close_location",
+        "next_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "single_symbol_spot_long_flat_cash_only",
+        "no_same_bar_return_leakage",
+        "no_auto_paper_or_live_promotion"
+      ]
+    },
+    {
+      "id": "volatility_contraction_trend_reentry",
+      "hypothesis": "A completed 4h up-structure with lagged own realized volatility materially below its historical baseline and completed 1h compression may favor a later closed VWAP-proxy reclaim as a volatility-contraction trend re-entry.",
+      "inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "context": [
+        "completed_4h_up_structure",
+        "completed_1h_compression",
+        "lagged_own_realized_volatility",
+        "historical_realized_volatility_baseline"
+      ],
+      "entry": [
+        "current_closed_vwap_proxy_reclaim",
+        "observed_relative_volume_guard",
+        "next_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "single_symbol_spot_long_flat_cash_only",
+        "no_options_or_variance_claim",
+        "no_auto_paper_or_live_promotion"
+      ]
+    },
+    {
+      "id": "volatility_expansion_pullback_reclaim",
+      "hypothesis": "After lagged own realized volatility expands materially above its historical baseline inside a completed 4h up-structure, a current closed pullback and prior-range-midpoint reclaim may identify continuation after expansion rather than naive breakout chasing.",
+      "inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "context": [
+        "completed_4h_up_structure",
+        "completed_1h_volatility_guard",
+        "lagged_own_realized_volatility_expansion",
+        "lagged_positive_own_1h_return"
+      ],
+      "entry": [
+        "current_pullback_into_prior_range",
+        "current_closed_midpoint_reclaim",
+        "strong_close_location",
+        "next_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "single_symbol_spot_long_flat_cash_only",
+        "no_current_volatility_lookahead",
+        "no_auto_paper_or_live_promotion"
+      ]
+    },
+    {
+      "id": "relative_strength_persistence_breakout",
+      "hypothesis": "Persistent positive lagged own-minus-peer one-hour relative momentum above its prior baseline may support a later own-asset structural breakout in completed up-trend context without any peer short or spread execution.",
+      "inputs": [
+        "closed_spot_ohlcv",
+        "aligned_spot_cross_pair"
+      ],
+      "context": [
+        "exact_utc_closed_peer_grid",
+        "lagged_relative_momentum",
+        "historical_relative_momentum_baseline",
+        "completed_4h_up_structure"
+      ],
+      "entry": [
+        "persistent_positive_relative_strength",
+        "current_own_closed_range_break",
+        "next_own_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "single_own_symbol_spot_long_flat_cash_only",
+        "no_peer_short_or_spread_claim",
+        "no_auto_paper_or_live_promotion"
+      ]
+    },
+    {
+      "id": "relative_weakness_exhaustion_rebound",
+      "hypothesis": "A deeply negative lagged own-versus-peer relative-price z-state together with a negative lagged own return may precede a current closed failed downside range extension and rebound in completed range context.",
+      "inputs": [
+        "closed_spot_ohlcv",
+        "aligned_spot_cross_pair"
+      ],
+      "context": [
+        "exact_utc_closed_peer_grid",
+        "lagged_relative_price_z",
+        "lagged_negative_own_1h_return",
+        "completed_4h_range"
+      ],
+      "entry": [
+        "relative_weakness_extreme",
+        "current_closed_failed_downside_extension",
+        "strong_close_location",
+        "next_own_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "single_own_symbol_spot_long_flat_cash_only",
+        "no_peer_short_or_spread_claim",
+        "no_auto_paper_or_live_promotion"
+      ]
+    },
+    {
+      "id": "volatility_leadership_reversal",
+      "hypothesis": "When lagged own realized volatility is materially above an exactly aligned peer and above its prior relative-volatility baseline, a negative own impulse followed by a current closed downside-failure reclaim may identify an overreaction reversal distinct from peer-volatility catch-up.",
+      "inputs": [
+        "closed_spot_ohlcv",
+        "aligned_spot_cross_pair"
+      ],
+      "context": [
+        "exact_utc_closed_peer_grid",
+        "lagged_cross_pair_realized_volatility_ratio",
+        "historical_relative_volatility_ratio_baseline",
+        "completed_4h_range"
+      ],
+      "entry": [
+        "own_volatility_leadership",
+        "lagged_negative_own_impulse",
+        "current_closed_failed_downside_extension",
+        "next_own_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "single_own_symbol_spot_long_flat_cash_only",
+        "no_peer_short_or_volatility_derivative_claim",
+        "no_auto_paper_or_live_promotion"
+      ]
     }
   ]
 }

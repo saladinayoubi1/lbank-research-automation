@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, screen, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, screen, shell, safeStorage } = require('electron');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const http = require('http');
@@ -473,6 +473,10 @@ if (!singleInstanceLock) {
 
   app.whenReady().then(async () => {
     registerUiPreferenceIpc();
+    require('./chatgpt-ipc').registerChatGPTIpc({ app, BrowserWindow, ipcMain, safeStorage, shell,
+      getOrigin: () => productOrigin });
+    require('./tradingview-ipc').registerTradingViewIpc({ app, BrowserWindow, ipcMain, safeStorage, shell,
+      getOrigin: () => productOrigin });
     try { const origin = await startSidecar(); createWindow(origin); }
     catch (error) {
       logStartup(`startup blocked: ${error && error.stack ? error.stack : error}`);

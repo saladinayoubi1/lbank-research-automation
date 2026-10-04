@@ -440,13 +440,28 @@ jobs:
       # signed novelty frontier, and Actions read scope. Export a source-bound
       # immutable cache for the leased real Research Agent without widening
       # the protected NEXUS Runtime Worker's permissions.
+      - name: Resolve exact QA-attested Research frontier for cache identity
+        if: github.ref == 'refs/heads/main'
+        id: agent-frontier
+        run: |
+          set -euo pipefail
+          rm -rf build/agent-frontier
+          mkdir -p build/agent-frontier
+          python scripts/nexus_qa_attested_discovery_frontier.py \
+            --repository "$GITHUB_REPOSITORY" \
+            --output build/agent-frontier/previous-ledger.json
+          test -s build/agent-frontier/previous-ledger.json
+          ledger_digest="$(python -c "from pathlib import Path; from nexus_composite_strategy_research import load_ledger; print(load_ledger(Path('build/agent-frontier/previous-ledger.json'))['ledger_digest'])")"
+          test "${#ledger_digest}" -eq 64
+          echo "ledger_digest=$ledger_digest" >> "$GITHUB_OUTPUT"
+
       - name: Check existing approved Research input transport cache
         if: github.ref == 'refs/heads/main'
         id: agent-input-cache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: build/agent-research-cache
-          key: nexus-composite-inputs-v1-${{ github.sha }}
+          key: nexus-composite-inputs-v2-${{ github.sha }}-${{ steps.agent-frontier.outputs.ledger_digest }}
           lookup-only: true
 
       - name: Bind canonical archive and novelty frontier as one Research lease input
@@ -468,9 +483,8 @@ jobs:
           # and which the durable main-branch coordinator marked DONE.
           # Standalone exploratory novelty artifacts are explicitly forbidden
           # as a replacement: they may have already consumed the next family.
-          python scripts/nexus_qa_attested_discovery_frontier.py \
-            --repository "$GITHUB_REPOSITORY" \
-            --output build/agent-research-cache/previous-ledger.json
+          test -s build/agent-frontier/previous-ledger.json
+          cp build/agent-frontier/previous-ledger.json build/agent-research-cache/previous-ledger.json
           test -s build/agent-research-cache/previous-ledger.json
           python - <<'PY'
           import os
@@ -503,7 +517,7 @@ jobs:
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: build/agent-research-cache
-          key: nexus-composite-inputs-v1-${{ github.sha }}
+          key: nexus-composite-inputs-v2-${{ github.sha }}-${{ steps.agent-frontier.outputs.ledger_digest }}
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()

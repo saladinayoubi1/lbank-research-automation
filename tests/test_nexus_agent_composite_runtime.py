@@ -190,9 +190,16 @@ def test_real_lease_rejects_recycled_risk_variant_without_spending_backtest(tmp_
         }))
         core["mechanisms_evaluated"].append(cfg["mechanism"])
     core["mechanisms_evaluated"] = sorted(set(core["mechanisms_evaluated"]))
+    # The new broad frontier has also been training-screened.  Only now is the
+    # agent truly out of novel causal work; it must not fall back to legacy
+    # risk-variant cycling.
+    core["frontier_screening_version"] = research.FRONTIER_SCREEN_VERSION
+    core["frontier_screened_mechanisms"] = sorted(research.FRONTIER_MECHANISMS)
     prior = tmp_path / "all-reviewed.json"
     research.safe_write(prior, {**core, "ledger_digest": research.digest(core)})
-    assert research.select_next(research.load_ledger(prior)) is not None
+    loaded = research.load_ledger(prior)
+    assert research.select_next(loaded) is not None
+    assert research.research_mode(loaded) == "exhausted"
     calls = _fake_engine(monkeypatch)
     with pytest.raises(runtime.RealResearchError, match="no new reviewed"):
         runtime.run_lease(

@@ -1,0 +1,310 @@
+{
+  "cells": [
+    {
+      "asset": "BTC",
+      "collection_checks_passed": false,
+      "demo_replacement_authorized": false,
+      "funding_24h": {
+        "complete": true,
+        "expected": 3,
+        "interval_seconds": 28800,
+        "observed": 3
+      },
+      "instrument": {
+        "fundingRateGranularity": 28800000,
+        "isInverse": false,
+        "lotSize": 1,
+        "makerFeeRate": 0.0002,
+        "multiplier": 0.001,
+        "settleCurrency": "USDT",
+        "symbol": "XBTUSDTM",
+        "takerFeeRate": 0.0006,
+        "tickSize": 0.1
+      },
+      "instrument_fields_present": true,
+      "mark_4h": {
+        "complete": true,
+        "conflicts": 0,
+        "duplicates": 0,
+        "expected": 6,
+        "first": 1790971200,
+        "invalid": 0,
+        "last": 1791043200,
+        "missing": 0,
+        "missing_first": [],
+        "normalized_sha256": "aee59f8d84e8a615f6e6b9ddd157e4804f37b8dedc08782087ab3faa7fce2043",
+        "outside_requested_closed_grid": 0,
+        "valid": 6
+      },
+      "minute_execution_5m": {
+        "complete": false,
+        "conflicts": 0,
+        "duplicates": 0,
+        "expected": 5,
+        "first": 1791043200,
+        "invalid": 0,
+        "last": 1791043380,
+        "missing": 1,
+        "missing_first": [
+          1791043440
+        ],
+        "normalized_sha256": "226e7b024bca2e96e17b04315136ca3ef61d4576d947edae29583ac942824504",
+        "outside_requested_closed_grid": 0,
+        "valid": 4
+      },
+      "risk_tiers": {
+        "count": 12,
+        "mode": "isolated",
+        "present": true,
+        "sha256": "3ae40d30220415f2e4871889de1b3e3eca33fd336e66448a8acc38b6a31c2daa"
+      },
+      "spot_300d_4h": {
+        "complete": true,
+        "conflicts": 0,
+        "duplicates": 0,
+        "expected": 1800,
+        "first": 1765137600,
+        "invalid": 0,
+        "last": 1791043200,
+        "missing": 0,
+        "missing_first": [],
+        "normalized_sha256": "bfe85f8d92c2419a6fe0a3ad59f6e2f2b15e0155e5e37883d93cb3c8088c5359",
+        "outside_requested_closed_grid": 0,
+        "valid": 1800
+      },
+      "trade_4h": {
+        "complete": true,
+        "conflicts": 0,
+        "duplicates": 0,
+        "expected": 6,
+        "first": 1790971200,
+        "invalid": 0,
+        "last": 1791043200,
+        "missing": 0,
+        "missing_first": [],
+        "normalized_sha256": "658a6da12d2112bd86b8d57de5b817043bdda1209ad24bdff19b137a7ae29b3c",
+        "outside_requested_closed_grid": 0,
+        "valid": 6
+      }
+    },
+    {
+      "asset": "ETH",
+      "collection_checks_passed": true,
+      "demo_replacement_authorized": false,
+      "funding_24h": {
+        "complete": true,
+        "expected": 3,
+        "interval_seconds": 28800,
+        "observed": 3
+      },
+      "instrument": {
+        "fundingRateGranularity": 28800000,
+        "isInverse": false,
+        "lotSize": 1,
+        "makerFeeRate": 0.0002,
+        "multiplier": 0.01,
+        "settleCurrency": "USDT",
+        "symbol": "ETHUSDTM",
+        "takerFeeRate": 0.0006,
+        "tickSize": 0.01
+      },
+      "instrument_fields_present": true,
+      "mark_4h": {
+        "complete": true,
+        "conflicts": 0,
+        "duplicates": 0,
+        "expected": 6,
+        "first": 1790971200,
+        "invalid": 0,
+        "last": 1791043200,
+        "missing": 0,
+        "missing_first": [],
+        "normalized_sha256": "2984d51c33483e93998002e24eb3ad9358c4a8f5390d3d79c29c9241146030fa",
+        "outside_requested_closed_grid": 0,
+        "valid": 6
+      },
+      "minute_execution_5m": {
+        "complete": true,
+        "conflicts": 0,
+        "duplicates": 0,
+        "expected": 5,
+        "first": 1791043200,
+        "invalid": 0,
+        "last": 1791043440,
+        "missing": 0,
+        "missing_first": [],
+        "normalized_sha256": "0b7e73cb7cc8224075ebdcd23f6c08b7625a5261c71e8095921636d42220f852",
+        "outside_requested_closed_grid": 0,
+        "valid": 5
+      },
+      "risk_tiers": {
+        "count": 12,
+        "mode": "isolated",
+        "present": true,
+        "sha256": "a2007b9b92ef4a07d3c2b714f6d0296751d46fbdea5f7d8a0cffd2ae4aaf8263"
+      },
+      "spot_300d_4h": {
+        "complete": true,
+        "conflicts": 0,
+        "duplicates": 0,
+        "expected": 1800,
+        "first": 1765137600,
+        "invalid": 0,
+        "last": 1791043200,
+        "missing": 0,
+        "missing_first": [],
+        "normalized_sha256": "50f801f2e7a1712a35f79f9dac78277e8ec27b0238b23f9ee9c8de87c81d6f61",
+        "outside_requested_closed_grid": 0,
+        "valid": 1800
+      },
+      "trade_4h": {
+        "complete": true,
+        "conflicts": 0,
+        "duplicates": 0,
+        "expected": 6,
+        "first": 1790971200,
+        "invalid": 0,
+        "last": 1791043200,
+        "missing": 0,
+        "missing_first": [],
+        "normalized_sha256": "38b426f1849ed9ffc0a36f698f7a03f1b100d6040feb2551901990e66d351412",
+        "outside_requested_closed_grid": 0,
+        "valid": 6
+      }
+    }
+  ],
+  "collection_checks_passed": false,
+  "demo_replacement_authorized": false,
+  "end_exclusive": 1791057600,
+  "http_evidence": [
+    {
+      "attempts": 1,
+      "body_sha256": "d1f319b35436e12bbbd7909e82838991da9bd09caf022aa2d0752412b7955fcc",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:27:59.005538+00:00",
+      "url": "https://api.kucoin.com/api/ua/v1/market/kline?endAt=1785297599&interval=4hour&startAt=1765137600&symbol=BTC-USDT&tradeType=SPOT"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "c00a89f25d83c799059cc5ad93f3ceae077ef9656d8ba81fe8c929906c12eb29",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:27:59.735649+00:00",
+      "url": "https://api.kucoin.com/api/ua/v1/market/kline?endAt=1791057599&interval=4hour&startAt=1785297600&symbol=BTC-USDT&tradeType=SPOT"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "e60e9571d0ad547ac682638686be9f99c9b0b4e6fded5ea049be6ce40ea72004",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:00.347644+00:00",
+      "url": "https://api.kucoin.com/api/ua/v1/market/kline?endAt=1791057599&interval=4hour&startAt=1790971200&symbol=XBTUSDTM&tradeType=FUTURES"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "e2dcfed8ea9f83be08b8b29871f346c1bf62e98b1042f6c7926b5a0c4083c698",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:01.120244+00:00",
+      "url": "https://api.kucoin.com/api/ua/v1/market/kline?endAt=1791057599&interval=4hour&startAt=1790971200&symbol=XBTUSDTM-mark-price&tradeType=FUTURES"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "b4d529485f2d314aea0c1c07c04c1e22daf28869080a7805a26cde7e9749b34c",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:01.829251+00:00",
+      "url": "https://api.kucoin.com/api/ua/v1/market/kline?endAt=1791043499&interval=1min&startAt=1791043200&symbol=XBTUSDTM&tradeType=FUTURES"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "eb0146a9a1c37c6b224e0a09d9396803ea05ce03da3df54d269010d3c85bade8",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:02.540679+00:00",
+      "url": "https://api-futures.kucoin.com/api/v1/contracts/XBTUSDTM"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "ad3f848e0aa2b39da09f062fe3594ee873f318958cc1c797e63505fc2812429e",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:03.117053+00:00",
+      "url": "https://api-futures.kucoin.com/api/v1/contracts/risk-limit/XBTUSDTM"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "2e9b5e7a37d93777744c3647c3bcfb99a37e30fa3193ff850cf762fe15651270",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:03.708280+00:00",
+      "url": "https://api-futures.kucoin.com/api/v1/contract/funding-rates?from=1790971200000&symbol=XBTUSDTM&to=1791057599999"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "7dcbc2b398f513435c693a9502c5a24f732cdd85f00e188c284ff43ec2697859",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:04.496538+00:00",
+      "url": "https://api.kucoin.com/api/ua/v1/market/kline?endAt=1785297599&interval=4hour&startAt=1765137600&symbol=ETH-USDT&tradeType=SPOT"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "dcb89ce23a9d469e6ca32275a5b61645b7b205d8c8eda7e016f8c45fb3f5905f",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:05.150943+00:00",
+      "url": "https://api.kucoin.com/api/ua/v1/market/kline?endAt=1791057599&interval=4hour&startAt=1785297600&symbol=ETH-USDT&tradeType=SPOT"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "734421ac0f26067ce2ecbd0aad6325726c6c910a9fdd577ca4c8ad196bc4234b",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:05.771047+00:00",
+      "url": "https://api.kucoin.com/api/ua/v1/market/kline?endAt=1791057599&interval=4hour&startAt=1790971200&symbol=ETHUSDTM&tradeType=FUTURES"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "2b830bafb241eb9dfb95e6507b223b829280cd27205549c6fec4b71dac54e5f8",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:06.422735+00:00",
+      "url": "https://api.kucoin.com/api/ua/v1/market/kline?endAt=1791057599&interval=4hour&startAt=1790971200&symbol=ETHUSDTM-mark-price&tradeType=FUTURES"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "949dc60c64696eb429358580b9df4e8b5980cf39601a36844627b709bee93fb4",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:07.004373+00:00",
+      "url": "https://api.kucoin.com/api/ua/v1/market/kline?endAt=1791043499&interval=1min&startAt=1791043200&symbol=ETHUSDTM&tradeType=FUTURES"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "3e51b8b839adcef32a436e9525925bf5e441598b055afcceb70e2c3200549117",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:07.581306+00:00",
+      "url": "https://api-futures.kucoin.com/api/v1/contracts/ETHUSDTM"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "2581e7e96fc96a9cdf6c2bd6872dce61f2811aff18629b454ce6449c92280f5c",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:08.201533+00:00",
+      "url": "https://api-futures.kucoin.com/api/v1/contracts/risk-limit/ETHUSDTM"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "d61a0448491008ced57168ebb164188ab495118f1a62d4bd3b0ad1b9c64f8131",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:08.848970+00:00",
+      "url": "https://api-futures.kucoin.com/api/v1/contract/funding-rates?from=1790971200000&symbol=ETHUSDTM&to=1791057599999"
+    }
+  ],
+  "observed_at": "2026-10-03T23:27:57.984052+00:00",
+  "orders_sent": false,
+  "owner_paper_mutated": false,
+  "private_credentials_used": false,
+  "provider": "kucoin",
+  "requests_this_run": 16,
+  "requires": [
+    "provider-native adapter",
+    "full historical replay",
+    "independent numerical QA",
+    "isolated Paper risk/fee/funding reconciliation",
+    "persistent feed verification"
+  ],
+  "schema": "nexus.alternative-demo-data-audit.v1",
+  "source_sha256": "c3bc79c2b83f2afd3e4187d3fefa94a34e470d7da349cb4fcdd6251071f984f4",
+  "status": "COLLECTION_FAILED",
+  "warmup_days": 300
+}

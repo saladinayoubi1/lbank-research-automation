@@ -7,6 +7,18 @@ const path = require('path');
 module.exports = async function afterPack(context) {
   if (context.electronPlatformName !== 'win32') return;
   const resources = path.join(context.appOutDir, 'resources');
+  const asar = require('@electron/asar');
+  const archive = path.join(resources, 'app.asar');
+  const entries = new Set(asar.listPackage(archive).map(name => name.replaceAll('\\', '/')));
+  for (const name of ['/tradingview-bridge.js', '/tradingview-ipc.js',
+    '/node_modules/@modelcontextprotocol/sdk/dist/cjs/client/index.js',
+    '/node_modules/@modelcontextprotocol/sdk/dist/cjs/client/streamableHttp.js']) {
+    if (!entries.has(name)) throw new Error('packaged TradingView connector missing: ' + name);
+  }
+  // ASAR resolves directory components using the host platform's path separator.
+  const sdkManifest = path.join('node_modules', '@modelcontextprotocol', 'sdk', 'package.json');
+  const sdk = JSON.parse(asar.extractFile(archive, sdkManifest).toString('utf8'));
+  if (sdk.version !== '1.32.0') throw new Error('packaged TradingView MCP SDK version mismatch');
   const seed = path.join(resources, 'nexus-source-seed.git');
   const sourceShaPath = path.join(resources, 'source-sha.txt');
   const looseRefPath = path.join(seed, 'refs', 'heads', 'nexus-package-source');

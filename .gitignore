@@ -220,3 +220,8 @@ __marimo__/
 # NEXUS local agent runtime state
 data/agent_coordination/
 data/integrations/
+
+# Reproducible bundle of the pinned SIWC sources; no OAuth credentials in Git.
+desktop/nexus-product/chatgpt-sdk.cjs
+desktop/nexus-product/chatgpt-sdk.cjs.LEGAL.txt
+desktop/nexus-product/node_modules/

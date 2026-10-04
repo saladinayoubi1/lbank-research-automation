@@ -380,7 +380,7 @@ jobs:
         shell: cmd
         run: |
           @echo off
-          python -m pytest -q tests/test_nexus_a7_range_failure_reversal_research.py tests/test_nexus_a7_daily_recent_source.py tests/test_nexus_a7_range_failure_reversal_workflow.py
+          python -m pytest -q tests/test_nexus_a7_range_failure_reversal_research.py tests/test_nexus_a7_daily_recent_source.py tests/test_nexus_a7_range_failure_reversal_workflow.py tests/test_nexus_windows_tree_cleanup.py
           if errorlevel 1 exit /b %errorlevel%
 
       - name: Acquire 30 complete daily Bybit Spot days for A7

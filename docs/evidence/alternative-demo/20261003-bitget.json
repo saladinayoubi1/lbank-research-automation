@@ -1,0 +1,406 @@
+{
+  "cells": [
+    {
+      "asset": "BTC",
+      "collection_checks_passed": true,
+      "demo_replacement_authorized": false,
+      "funding_24h": {
+        "complete": true,
+        "expected": 3,
+        "interval_seconds": 28800,
+        "observed": 3
+      },
+      "instrument": {
+        "fundInterval": "8",
+        "makerFeeRate": "0.0002",
+        "minTradeNum": "0.0001",
+        "minTradeUSDT": "5",
+        "priceEndStep": "1",
+        "pricePlace": "1",
+        "sizeMultiplier": "0.0001",
+        "symbol": "BTCUSDT",
+        "takerFeeRate": "0.0006"
+      },
+      "instrument_fields_present": true,
+      "mark_4h": {
+        "complete": true,
+        "conflicts": 0,
+        "duplicates": 0,
+        "expected": 6,
+        "first": 1790971200,
+        "invalid": 0,
+        "last": 1791043200,
+        "missing": 0,
+        "missing_first": [],
+        "normalized_sha256": "f07d623ef42e8556ff8640826e3cf5bf4bd51721ca5a563797157571de69a7bf",
+        "outside_requested_closed_grid": 0,
+        "valid": 6
+      },
+      "minute_execution_5m": {
+        "complete": true,
+        "conflicts": 0,
+        "duplicates": 0,
+        "expected": 5,
+        "first": 1791043200,
+        "invalid": 0,
+        "last": 1791043440,
+        "missing": 0,
+        "missing_first": [],
+        "normalized_sha256": "e53d1c194d734d9d184b0e644fbf6528b76008f29bdf3e31384b7df9a345bbf4",
+        "outside_requested_closed_grid": 0,
+        "valid": 5
+      },
+      "risk_tiers": {
+        "count": 12,
+        "mode": "isolated",
+        "present": true,
+        "sha256": "b8db655b37e4b97249ca01999702dcc37d3f15d73a7cdc4be276d81c9c843e2d"
+      },
+      "spot_300d_4h": {
+        "complete": true,
+        "conflicts": 0,
+        "duplicates": 0,
+        "expected": 1800,
+        "first": 1765137600,
+        "invalid": 0,
+        "last": 1791043200,
+        "missing": 0,
+        "missing_first": [],
+        "normalized_sha256": "7d8b127b5f068acb96a54150a685a21ec31076d9b6f9e1dd8f68b89be392a5c2",
+        "outside_requested_closed_grid": 0,
+        "valid": 1800
+      },
+      "trade_4h": {
+        "complete": true,
+        "conflicts": 0,
+        "duplicates": 0,
+        "expected": 6,
+        "first": 1790971200,
+        "invalid": 0,
+        "last": 1791043200,
+        "missing": 0,
+        "missing_first": [],
+        "normalized_sha256": "e811dc9ba4d15cd198f2b44ba4e52eb536fc8bb55e399e6490d8cce7f0b96789",
+        "outside_requested_closed_grid": 0,
+        "valid": 6
+      }
+    },
+    {
+      "asset": "ETH",
+      "collection_checks_passed": true,
+      "demo_replacement_authorized": false,
+      "funding_24h": {
+        "complete": true,
+        "expected": 3,
+        "interval_seconds": 28800,
+        "observed": 3
+      },
+      "instrument": {
+        "fundInterval": "8",
+        "makerFeeRate": "0.0002",
+        "minTradeNum": "0.01",
+        "minTradeUSDT": "5",
+        "priceEndStep": "1",
+        "pricePlace": "2",
+        "sizeMultiplier": "0.01",
+        "symbol": "ETHUSDT",
+        "takerFeeRate": "0.0006"
+      },
+      "instrument_fields_present": true,
+      "mark_4h": {
+        "complete": true,
+        "conflicts": 0,
+        "duplicates": 0,
+        "expected": 6,
+        "first": 1790971200,
+        "invalid": 0,
+        "last": 1791043200,
+        "missing": 0,
+        "missing_first": [],
+        "normalized_sha256": "223d0425bcadae3adae94a13c06e4249f97ee202de17f53b12eb72cb27f8839a",
+        "outside_requested_closed_grid": 0,
+        "valid": 6
+      },
+      "minute_execution_5m": {
+        "complete": true,
+        "conflicts": 0,
+        "duplicates": 0,
+        "expected": 5,
+        "first": 1791043200,
+        "invalid": 0,
+        "last": 1791043440,
+        "missing": 0,
+        "missing_first": [],
+        "normalized_sha256": "b3d42e0e08ad6f4ad3a24e75c20b7b66fdadaeb4a2f2d3710131707843bb1450",
+        "outside_requested_closed_grid": 0,
+        "valid": 5
+      },
+      "risk_tiers": {
+        "count": 15,
+        "mode": "isolated",
+        "present": true,
+        "sha256": "233b407143e69a99b8420e5dfb01efbb16a7079fe3a64d56f3a710a2dabba4f3"
+      },
+      "spot_300d_4h": {
+        "complete": true,
+        "conflicts": 0,
+        "duplicates": 0,
+        "expected": 1800,
+        "first": 1765137600,
+        "invalid": 0,
+        "last": 1791043200,
+        "missing": 0,
+        "missing_first": [],
+        "normalized_sha256": "323d4884011d17fcc0ff24b209abad3534da70d641a6b0245fd27a4079027fba",
+        "outside_requested_closed_grid": 0,
+        "valid": 1800
+      },
+      "trade_4h": {
+        "complete": true,
+        "conflicts": 0,
+        "duplicates": 0,
+        "expected": 6,
+        "first": 1790971200,
+        "invalid": 0,
+        "last": 1791043200,
+        "missing": 0,
+        "missing_first": [],
+        "normalized_sha256": "646a90e39738d51fd6230df657f0dc1273ca88fb871c3ffb1bc86ed78e5860d4",
+        "outside_requested_closed_grid": 0,
+        "valid": 6
+      }
+    }
+  ],
+  "collection_checks_passed": true,
+  "demo_replacement_authorized": false,
+  "end_exclusive": 1791057600,
+  "http_evidence": [
+    {
+      "attempts": 1,
+      "body_sha256": "bbfe0025e41107589b3a68183e0048a0207cd29eac857377f6b4bcdf36d9b0a6",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:27:56.835574+00:00",
+      "url": "https://api.bitget.com/api/v2/spot/market/history-candles?endTime=1791057600000&granularity=4h&limit=200&symbol=BTCUSDT"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "a7783032d227afa64ffae00068ef80b6e9182536bffca416576da5d0524b51b9",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:27:57.495048+00:00",
+      "url": "https://api.bitget.com/api/v2/spot/market/history-candles?endTime=1788177600000&granularity=4h&limit=200&symbol=BTCUSDT"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "64b7bdd8e3e83e81010be53c70b31ecc35df38dd6ca9fe89094939783c029aae",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:27:58.214191+00:00",
+      "url": "https://api.bitget.com/api/v2/spot/market/history-candles?endTime=1785297600000&granularity=4h&limit=200&symbol=BTCUSDT"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "85d08ea5c5315e311aa5a584156354270745dfcda05e644a7d2529df7d279b88",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:27:58.900700+00:00",
+      "url": "https://api.bitget.com/api/v2/spot/market/history-candles?endTime=1782417600000&granularity=4h&limit=200&symbol=BTCUSDT"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "1fd3ff23bddf53db4595976ecaa8ce2b0cb84d32da0613d233b1d6124cbf649e",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:27:59.616771+00:00",
+      "url": "https://api.bitget.com/api/v2/spot/market/history-candles?endTime=1779537600000&granularity=4h&limit=200&symbol=BTCUSDT"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "4fa65741969befaa7e17538c16adc953f5369dbe6db831737dbf410cfdfacf35",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:00.224473+00:00",
+      "url": "https://api.bitget.com/api/v2/spot/market/history-candles?endTime=1776657600000&granularity=4h&limit=200&symbol=BTCUSDT"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "15c0cd086098aa5e58883cd53b24256f430e4b552a1f6eb4f118ac9274a36fba",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:00.862735+00:00",
+      "url": "https://api.bitget.com/api/v2/spot/market/history-candles?endTime=1773777600000&granularity=4h&limit=200&symbol=BTCUSDT"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "ce896e27ca5d94abb204b2c3b7412115a54e2aad8f832647babd740207bcd594",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:01.631008+00:00",
+      "url": "https://api.bitget.com/api/v2/spot/market/history-candles?endTime=1770897600000&granularity=4h&limit=200&symbol=BTCUSDT"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "da8ac4c88807afa5fae140028a5e8871bd0eef4cb172664dfcd9522f04980c25",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:02.280650+00:00",
+      "url": "https://api.bitget.com/api/v2/spot/market/history-candles?endTime=1768017600000&granularity=4h&limit=200&symbol=BTCUSDT"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "6ed573d4d4e7cebe1ee0282f6fb8d5952f5efdadca9158d67d112a57a6f1ecb6",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:02.989387+00:00",
+      "url": "https://api.bitget.com/api/v2/mix/market/history-candles?endTime=1791057600000&granularity=4H&limit=200&productType=USDT-FUTURES&startTime=1790971200000&symbol=BTCUSDT"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "3af594e6b29869fdc6bfa3a7b0c254e3dd229882003ea40b65d7fe8e3725949d",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:03.595012+00:00",
+      "url": "https://api.bitget.com/api/v2/mix/market/history-mark-candles?endTime=1791057600000&granularity=4H&limit=200&productType=USDT-FUTURES&startTime=1790971200000&symbol=BTCUSDT"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "098ad93cc66be98ea6fdbbfdffcbf2e9df95c6bdcd1f1a62a99dd6aa66c929e8",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:04.236779+00:00",
+      "url": "https://api.bitget.com/api/v2/mix/market/history-candles?endTime=1791043500000&granularity=1m&limit=200&productType=USDT-FUTURES&startTime=1791043200000&symbol=BTCUSDT"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "8712e1eab6b54130ea6e8f2a68e285d24caa1a6fcdd79237e05ecd5c11ab1e9e",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:04.850279+00:00",
+      "url": "https://api.bitget.com/api/v2/mix/market/contracts?productType=USDT-FUTURES&symbol=BTCUSDT"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "a9ce51bb749398b306c217e04f19becee574494a1367027a4bbdbedf1093d72a",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:05.531416+00:00",
+      "url": "https://api.bitget.com/api/v2/mix/market/query-position-lever?productType=USDT-FUTURES&symbol=BTCUSDT"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "b0e36216128ef97e3b5d7b7fff4275dce289121bb93fe8ac0baf054246997655",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:06.159994+00:00",
+      "url": "https://api.bitget.com/api/v2/mix/market/history-fund-rate?pageNo=1&pageSize=100&productType=USDT-FUTURES&symbol=BTCUSDT"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "8ff3d913575c658e69a957b9fc6f9f7aea8f287d0f145d49b0b4c78ed4aea446",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:06.833267+00:00",
+      "url": "https://api.bitget.com/api/v2/spot/market/history-candles?endTime=1791057600000&granularity=4h&limit=200&symbol=ETHUSDT"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "f344794d413b221b70d2a9204ee2808b36f62c6f974d5284ac5e5c664f838556",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:07.714191+00:00",
+      "url": "https://api.bitget.com/api/v2/spot/market/history-candles?endTime=1788177600000&granularity=4h&limit=200&symbol=ETHUSDT"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "663482cbea5e4fbe15fc1f4f9cd280d997a5fb4e084bd8aa4c7f05c079f3292d",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:08.310894+00:00",
+      "url": "https://api.bitget.com/api/v2/spot/market/history-candles?endTime=1785297600000&granularity=4h&limit=200&symbol=ETHUSDT"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "6a7ed7f25e9245e1a237dc23a913e25b6e1dc6b6987e7560f40f46257d2e831e",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:08.924629+00:00",
+      "url": "https://api.bitget.com/api/v2/spot/market/history-candles?endTime=1782417600000&granularity=4h&limit=200&symbol=ETHUSDT"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "6476f2ae79097198ca47ef12b6347ad10136adb7598121322fa75f7bb848142b",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:09.511746+00:00",
+      "url": "https://api.bitget.com/api/v2/spot/market/history-candles?endTime=1779537600000&granularity=4h&limit=200&symbol=ETHUSDT"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "332c3d4b8583af97e90efc65eefe654f2f556f68f86b1c8cebc6500da9014350",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:10.309898+00:00",
+      "url": "https://api.bitget.com/api/v2/spot/market/history-candles?endTime=1776657600000&granularity=4h&limit=200&symbol=ETHUSDT"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "4bd598444e960479d750c59c672eaa1e99c955bc9c245617a7c3192730e7cdf0",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:10.940338+00:00",
+      "url": "https://api.bitget.com/api/v2/spot/market/history-candles?endTime=1773777600000&granularity=4h&limit=200&symbol=ETHUSDT"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "c95ec4af17e13d034c4bfd9d683a6c52d629ff7da3d8f3b74747b40a92d8f1c6",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:11.568928+00:00",
+      "url": "https://api.bitget.com/api/v2/spot/market/history-candles?endTime=1770897600000&granularity=4h&limit=200&symbol=ETHUSDT"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "84a1eb8f7ed61f78df28fc6d96f30bd79184acacaa6b9f0e534ceebd532b0654",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:12.197767+00:00",
+      "url": "https://api.bitget.com/api/v2/spot/market/history-candles?endTime=1768017600000&granularity=4h&limit=200&symbol=ETHUSDT"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "a9e74645dd102413c8a5deb2f508050762dd128066c8155df1f6967ca3e3b5ae",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:12.812511+00:00",
+      "url": "https://api.bitget.com/api/v2/mix/market/history-candles?endTime=1791057600000&granularity=4H&limit=200&productType=USDT-FUTURES&startTime=1790971200000&symbol=ETHUSDT"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "08f0d7da5104e50b12be88de3397226aa98a8bb3906439dc63629bd1b21b50b0",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:13.394656+00:00",
+      "url": "https://api.bitget.com/api/v2/mix/market/history-mark-candles?endTime=1791057600000&granularity=4H&limit=200&productType=USDT-FUTURES&startTime=1790971200000&symbol=ETHUSDT"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "39176cbb9486e56dbb1d627662d138f41408fd74074027bef8f92ab6036a28ac",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:14.059724+00:00",
+      "url": "https://api.bitget.com/api/v2/mix/market/history-candles?endTime=1791043500000&granularity=1m&limit=200&productType=USDT-FUTURES&startTime=1791043200000&symbol=ETHUSDT"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "77d695ca223c8644e9cf31808e79a4a7ec7cdbc7c1c11c85cea67af98d4cd5fb",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:14.687418+00:00",
+      "url": "https://api.bitget.com/api/v2/mix/market/contracts?productType=USDT-FUTURES&symbol=ETHUSDT"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "f9b8aedade5b930ffd14ecd24f337a91073b8ffd8f7e18604061cd75654345a3",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:15.310922+00:00",
+      "url": "https://api.bitget.com/api/v2/mix/market/query-position-lever?productType=USDT-FUTURES&symbol=ETHUSDT"
+    },
+    {
+      "attempts": 1,
+      "body_sha256": "0357c3688e8c0e343ad952f5e4b5f883d49d773aef4caae271b13d34c7f8454a",
+      "http_status": 200,
+      "observed_at": "2026-10-03T23:28:15.927548+00:00",
+      "url": "https://api.bitget.com/api/v2/mix/market/history-fund-rate?pageNo=1&pageSize=100&productType=USDT-FUTURES&symbol=ETHUSDT"
+    }
+  ],
+  "observed_at": "2026-10-03T23:27:56.159083+00:00",
+  "orders_sent": false,
+  "owner_paper_mutated": false,
+  "private_credentials_used": false,
+  "provider": "bitget",
+  "requests_this_run": 30,
+  "requires": [
+    "provider-native adapter",
+    "full historical replay",
+    "independent numerical QA",
+    "isolated Paper risk/fee/funding reconciliation",
+    "persistent feed verification"
+  ],
+  "schema": "nexus.alternative-demo-data-audit.v1",
+  "source_sha256": "c3bc79c2b83f2afd3e4187d3fefa94a34e470d7da349cb4fcdd6251071f984f4",
+  "status": "COLLECTION_CANDIDATE",
+  "warmup_days": 300
+}

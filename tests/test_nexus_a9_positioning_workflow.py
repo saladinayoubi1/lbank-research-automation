@@ -16,6 +16,9 @@ def test_a9_job_uses_exact_source_and_fail_closed_cleanup():
     job = _research_job(text)
 
     assert "github.event.pull_request.head.sha || github.sha" in job
+    assert "p['source_sha']==os.environ['A9_SOURCE_SHA']" in job
+    assert "name: nexus-a9-source-bound-${{ env.A9_SOURCE_SHA }}" in job
+    assert "tests/test_nexus_windows_tree_cleanup.py" in job
     assert "runs-on: [self-hosted, Windows, X64, nexus-research, nexus-worker-2]" in job
     assert "scripts/nexus_windows_tree_cleanup.py" in job
     assert "build\\a9-spot-state build\\a9-spot-cache" in job

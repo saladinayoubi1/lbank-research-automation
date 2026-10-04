@@ -27,22 +27,57 @@ def _inside(root: Path, candidate: Path) -> bool:
         return False
 
 
-def _make_writable(path: Path) -> None:
+def _checked_stat(path: Path) -> os.stat_result | None:
     try:
-        mode = path.stat().st_mode
-        path.chmod(mode | stat.S_IWRITE | stat.S_IREAD)
+        info = path.lstat()
+    except FileNotFoundError:
+        return None
+    if stat.S_ISLNK(info.st_mode) or (
+        getattr(info, "st_file_attributes", 0)
+        & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+    ):
+        raise CleanupError(f"refusing symlink/reparse cleanup path: {path}")
+    return info
+
+
+def _check_components(root: Path, target: Path) -> None:
+    current = root
+    _checked_stat(current)
+    for part in target.relative_to(root).parts:
+        current = current / part
+        _checked_stat(current)
+
+
+def _make_writable(path: Path) -> None:
+    info = _checked_stat(path)
+    if info is None:
+        return
+    try:
+        path.chmod(info.st_mode | stat.S_IWRITE | stat.S_IREAD)
     except (FileNotFoundError, PermissionError, OSError):
         pass
 
 
 def _clear_readonly_tree(path: Path) -> None:
-    if not path.exists():
+    if _checked_stat(path) is None:
         return
-    if path.is_symlink():
-        raise CleanupError(f"refusing symlink cleanup target: {path}")
-    for item in path.rglob("*"):
+
+    def raise_walk_error(error: OSError) -> None:
+        raise error
+
+    # Validate every entry before changing attributes. os.walk must never follow
+    # a junction or directory symlink to another research/owner tree.
+    entries = [path]
+    for current, directories, files in os.walk(
+        path, followlinks=False, onerror=raise_walk_error
+    ):
+        _checked_stat(Path(current))
+        for name in directories + files:
+            item = Path(current) / name
+            _checked_stat(item)
+            entries.append(item)
+    for item in entries:
         _make_writable(item)
-    _make_writable(path)
 
 
 def remove_tree_verified(
@@ -57,22 +92,29 @@ def remove_tree_verified(
     if delay_seconds < 0:
         raise ValueError("delay_seconds must be >= 0")
 
-    root = (workspace or Path.cwd()).resolve()
-    target = (root / path).resolve() if not path.is_absolute() else path.resolve()
+    requested_root = (workspace or Path.cwd()).absolute()
+    _checked_stat(requested_root)
+    root = requested_root.resolve()
+    # Keep the requested path lexical until each component has been checked.
+    # Resolving first would hide a link and delete its destination instead.
+    target = root / path if not path.is_absolute() else path
+    if ".." in path.parts:
+        raise CleanupError(f"cleanup target outside workspace: {target}")
     if target == root or not _inside(root, target):
         raise CleanupError(f"cleanup target outside workspace: {target}")
 
     last_error: BaseException | None = None
     for attempt in range(1, attempts + 1):
-        if not target.exists():
-            return
-        _clear_readonly_tree(target)
         try:
+            _check_components(root, target)
+            if _checked_stat(target) is None:
+                return
+            _clear_readonly_tree(target)
             shutil.rmtree(target)
+            if _checked_stat(target) is None:
+                return
         except (PermissionError, OSError) as exc:
             last_error = exc
-        if not target.exists():
-            return
         if attempt < attempts:
             time.sleep(delay_seconds)
 

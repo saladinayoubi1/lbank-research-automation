@@ -288,8 +288,8 @@ def test_successor_requires_EXACT_prior_QA_ledger_and_different_mechanism(monkey
     with pytest.raises(prepare.ResearchPreparationError, match="prior QA"):
         prepare._verified_input_bundle(tmp_path / "wrong", NEW_SOURCE, ancestor)
 
-    # Once every family has been evaluated, select_next intentionally offers
-    # risk-variant robustness. Real successor leases MUST NOT call it novelty.
+    # After the legacy families, select_next offers an old risk variant.
+    # The producer instead screens the reviewed, untouched frontier on Training.
     exhausted_core = {k: deepcopy(v) for k, v in old.items() if k != "ledger_digest"}
     last = next(c for c in search.CONFIGS
                 if c["mechanism"] == unseen_mechanism and c["risk_variant"] == 0)
@@ -308,6 +308,28 @@ def test_successor_requires_EXACT_prior_QA_ledger_and_different_mechanism(monkey
     }))
     ancestor["research_predecessor_ledger_digest"] = exhausted["ledger_digest"]
     ancestor["research_predecessor_mechanism"] = unseen_mechanism
+    assert search.research_mode(exhausted) == "frontier_tournament"
+    report = prepare._verified_input_bundle(tmp_path / "frontier", NEW_SOURCE, ancestor)
+    assert report["prior_ledger_digest"] == exhausted["ledger_digest"]
+    assert search.load_ledger(tmp_path / "frontier" / "previous-ledger.json") == exhausted
+    assert (tmp_path / "frontier" / "archive").is_dir()
+    with pytest.raises(prepare.ResearchPreparationError, match="prior QA"):
+        prepare._verified_input_bundle(tmp_path / "stale-frontier", NEW_SOURCE, {
+            **ancestor, "research_predecessor_ledger_digest": "f" * 64,
+        })
+
+    # Screening every reviewed frontier family closes this path; legacy risk
+    # variants must still never be recycled as a new successor mechanism.
+    exhausted_core["frontier_screening_version"] = search.FRONTIER_SCREEN_VERSION
+    exhausted_core["frontier_screened_mechanisms"] = sorted(search.FRONTIER_MECHANISMS)
+    exhausted = {**exhausted_core, "ledger_digest": search.digest(exhausted_core)}
+    (tmp_path / "previous-ledger.json").write_text(json.dumps(exhausted))
+    manifest["prior_ledger_digest"] = exhausted["ledger_digest"]
+    (tmp_path / "manifest.json").write_text(json.dumps({
+        **manifest, "manifest_digest": search.digest(manifest)
+    }))
+    ancestor["research_predecessor_ledger_digest"] = exhausted["ledger_digest"]
+    assert search.research_mode(exhausted) == "exhausted"
     with pytest.raises(prepare.ResearchPreparationError, match="no new reviewed"):
         prepare._verified_input_bundle(tmp_path / "exhausted", NEW_SOURCE, ancestor)
 
@@ -843,3 +865,48 @@ def test_manager_config_contains_ordered_agent_catchup_without_authority_widenin
         assert mechanism in joined
         assert "independent" in joined.lower()
         assert "automatic" in joined.lower()
+
+
+def test_successor_first_cache_miss_recovers_once_when_exact_cache_is_ready(monkeypatch):
+    conf = linked(monkeypatch)
+    task = conf["tasks"][1]
+    original = {
+        "executor": "nexus-real-composite-backtest",
+        "failure_class": "verified_research_execution_failed",
+        "reason": runner.RESEARCH_FIRST_MISS,
+        "auto_demo_promotion": False,
+        "live_enabled": False,
+        "qualification_authority": False,
+    }
+    task.update({
+        "status": "TRIAGE",
+        "attempt": 1,
+        "assigned_worker": "architect-agent",
+        "producer": "research-agent",
+        "lease_id": "rca-lease",
+        "triage_mode": "root_cause_first",
+        "failure_class": "verified_research_execution_failed",
+        "failure_evidence": deepcopy(original),
+        "research_cache_recovery_count": 0,
+        "dispatch_id": "old-dispatch",
+        "dispatch_transport": "github-cloud",
+        "external_wait_state": "WAITING_EXTERNAL",
+    })
+
+    assert runner.apply_research_input_gate(conf, ready=True) == "ready_for_producer_lease"
+    assert task["status"] == "READY"
+    assert task["assigned_worker"] is None
+    assert task["lease_id"] is None
+    assert task["research_cache_recovery_count"] == 1
+    assert task["research_cache_race_evidence"]["first_failure"] == original
+    assert task["failure_evidence"] == original
+
+    # A second failure is never auto-recovered by this bounded exception.
+    task.update({
+        "status": "TRIAGE",
+        "attempt": 2,
+        "assigned_worker": "architect-agent",
+        "lease_id": "second-rca",
+    })
+    assert runner.apply_research_input_gate(conf, ready=True) == "ready_no_change"
+    assert task["status"] == "TRIAGE"
