@@ -11,6 +11,8 @@ on:
       - "bybit_spot_archive_collector.py"
       - "tests/test_nexus_perpetual_positioning_divergence_research.py"
       - "tests/test_nexus_a9_spot_source.py"
+      - "tests/test_nexus_windows_tree_cleanup.py"
+      - "scripts/nexus_windows_tree_cleanup.py"
       - ".github/workflows/nexus_a9_positioning_research.yml"
       - "security/workflow-permissions-policy-v1.json"
   workflow_dispatch:
@@ -39,6 +41,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
 
       - name: Prepare isolated Python
@@ -68,14 +71,15 @@ jobs:
         shell: cmd
         run: |
           @echo off
-          python -m pytest -q tests/test_nexus_perpetual_positioning_divergence_research.py tests/test_nexus_a9_spot_source.py tests/test_nexus_verified_perpetual_positioning.py
+          python -m pytest -q tests/test_nexus_perpetual_positioning_divergence_research.py tests/test_nexus_a9_spot_source.py tests/test_nexus_verified_perpetual_positioning.py tests/test_nexus_windows_tree_cleanup.py tests/test_nexus_a9_positioning_workflow.py
           if errorlevel 1 exit /b %errorlevel%
 
       - name: Build fresh verified perpetual positioning inputs
         shell: cmd
         run: |
           @echo off
-          if exist build\a9-positioning rmdir /s /q build\a9-positioning
+          python scripts/nexus_windows_tree_cleanup.py build\a9-positioning --attempts 20 --delay-seconds 1
+          if errorlevel 1 exit /b %errorlevel%
           python nexus_verified_perpetual_positioning.py --start 2026-07-03T00:00:00Z --end-exclusive 2026-08-02T00:00:00Z --output-root build/a9-positioning
           if errorlevel 1 exit /b %errorlevel%
 
@@ -83,8 +87,8 @@ jobs:
         shell: cmd
         run: |
           @echo off
-          if exist build\a9-spot-state rmdir /s /q build\a9-spot-state
-          if exist build\a9-spot-cache rmdir /s /q build\a9-spot-cache
+          python scripts/nexus_windows_tree_cleanup.py build\a9-spot-state build\a9-spot-cache --attempts 20 --delay-seconds 1
+          if errorlevel 1 exit /b %errorlevel%
           python nexus_a9_spot_source.py --state-root build/a9-spot-state --cache-root build/a9-spot-cache
           if errorlevel 1 exit /b %errorlevel%
 
@@ -92,7 +96,8 @@ jobs:
         shell: cmd
         run: |
           @echo off
-          if exist build\a9-output rmdir /s /q build\a9-output
+          python scripts/nexus_windows_tree_cleanup.py build\a9-output --attempts 20 --delay-seconds 1
+          if errorlevel 1 exit /b %errorlevel%
           python nexus_perpetual_positioning_divergence_research.py --spot-state-root build/a9-spot-state --spot-proof-root build/a9-spot-state --positioning-root build/a9-positioning --output build/a9-output --source-sha %A9_SOURCE_SHA%
           if errorlevel 1 exit /b %errorlevel%
 
@@ -100,13 +105,13 @@ jobs:
         shell: cmd
         run: |
           @echo off
-          python -c "import json; from pathlib import Path; p=json.loads(Path(r'build/a9-output/perpetual-positioning-divergence-report.json').read_text()); assert p['positioning_dataset_semantic_sha256']=='a59405c733ecc6cad5c9270155a22bab52173989cd62c9569cf37b06f844c6e6'; assert p['positioning_oi_interval']=='1h'; assert p['positioning_oi_value_field']=='singleOpenInterest'; assert p['historical_test_pristine'] is False; assert p['automatic_strategy_promotion'] is False; assert p['derivative_execution_authority'] is False; assert p['live_trading_authority'] is False; assert p['qualification']=='NOT_QUALIFIED_NO_PRISTINE_FUTURE_HOLDOUT'; assert all(r['trade_count_limit'] is None and r['execution_instrument']=='spot_long_or_cash_only' for r in p['rows']); print('a9_source_bound_backtest=PASS rows='+str(len(p['rows'])))"
+          python -c "import json,os; from pathlib import Path; p=json.loads(Path(r'build/a9-output/perpetual-positioning-divergence-report.json').read_text()); assert p['source_sha']==os.environ['A9_SOURCE_SHA']; assert p['positioning_dataset_semantic_sha256']=='a59405c733ecc6cad5c9270155a22bab52173989cd62c9569cf37b06f844c6e6'; assert p['positioning_oi_interval']=='1h'; assert p['positioning_oi_value_field']=='singleOpenInterest'; assert p['historical_test_pristine'] is False; assert p['automatic_strategy_promotion'] is False; assert p['derivative_execution_authority'] is False; assert p['live_trading_authority'] is False; assert p['qualification']=='NOT_QUALIFIED_NO_PRISTINE_FUTURE_HOLDOUT'; assert all(r['trade_count_limit'] is None and r['execution_instrument']=='spot_long_or_cash_only' for r in p['rows']); print('a9_source_bound_backtest=PASS rows='+str(len(p['rows'])))"
           if errorlevel 1 exit /b %errorlevel%
 
       - name: Upload A9 numerical evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: nexus-a9-source-bound-${{ github.sha }}
+          name: nexus-a9-source-bound-${{ env.A9_SOURCE_SHA }}
           path: |
             build/a9-output/
             build/a9-positioning/_perpetual_positioning_proof.json
@@ -122,11 +127,8 @@ jobs:
         shell: cmd
         run: |
           @echo off
-          if exist build\a9-spot-state rmdir /s /q build\a9-spot-state
-          if exist build\a9-spot-cache rmdir /s /q build\a9-spot-cache
-          if exist build\a9-positioning\btcusdt rmdir /s /q build\a9-positioning\btcusdt
-          if exist build\a9-positioning\ethusdt rmdir /s /q build\a9-positioning\ethusdt
-          exit /b 0
+          python scripts/nexus_windows_tree_cleanup.py build\a9-spot-state build\a9-spot-cache build\a9-positioning --attempts 20 --delay-seconds 1
+          if errorlevel 1 exit /b %errorlevel%
 
       - name: Clean isolated Python
         if: always()
