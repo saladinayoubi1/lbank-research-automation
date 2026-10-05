@@ -1,0 +1,588 @@
+{
+  "schema": "nexus.mechanism-factory.v1",
+  "authority": "research-only-no-auto-promotion",
+  "selection_basis": "training_partition_only",
+  "no_minimum_trade_count_gate": true,
+  "auto_demo_promotion": false,
+  "live_trading_authority": false,
+  "candidates": [
+    {
+      "id": "factory_efficiency_midpoint_reclaim",
+      "family": "path_efficiency_reclaim",
+      "peer_required": false,
+      "hypothesis": "High lagged directional path efficiency may identify persistent auction pressure that survives a later closed pullback-and-reclaim of the prior range midpoint.",
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "trend_efficiency_16",
+          "op": "ge",
+          "value": 0.45
+        },
+        {
+          "field": "trend_direction_16",
+          "op": "gt",
+          "value": 0.004
+        }
+      ],
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "prior_range_mid"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_range_mid"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open"
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.62
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.85
+        }
+      ]
+    },
+    {
+      "id": "factory_efficiency_vwap_reclaim",
+      "family": "path_efficiency_vwap_reclaim",
+      "peer_required": false,
+      "hypothesis": "A causally efficient completed trend may retain directional pressure when a later closed candle reclaims the session bar-volume price proxy after an intrabar dip.",
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "trend_efficiency_16",
+          "op": "ge",
+          "value": 0.5
+        }
+      ],
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "bar_proxy_vwap"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "bar_proxy_vwap"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open"
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.6
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.8
+        }
+      ]
+    },
+    {
+      "id": "factory_negative_serial_range_rebound",
+      "family": "negative_serial_rebound",
+      "peer_required": false,
+      "hypothesis": "Negative lagged short-horizon return dependence inside a completed range may favor a later closed downside-failure rebound rather than momentum continuation.",
+      "context": [
+        {
+          "field": "h4_range",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "lagged_return_serial_corr",
+          "op": "le",
+          "value": -0.1
+        }
+      ],
+      "entry": [
+        {
+          "field": "low",
+          "op": "lt",
+          "other": "prior_lo"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_lo"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open"
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.9
+        }
+      ]
+    },
+    {
+      "id": "factory_serial_prior_day_continuation",
+      "family": "serial_calendar_continuation",
+      "peer_required": false,
+      "hypothesis": "Positive lagged serial dependence combined with completed higher-timeframe strength may support continuation only after a later closed break of the fully completed prior UTC-day high.",
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "lagged_return_serial_corr",
+          "op": "ge",
+          "value": 0.12
+        },
+        {
+          "field": "lagged_own_return_1h",
+          "op": "gt",
+          "value": 0.001
+        }
+      ],
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_day_high"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open"
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.95
+        }
+      ]
+    },
+    {
+      "id": "factory_wick_trend_reentry",
+      "family": "wick_absorption_trend_reentry",
+      "peer_required": false,
+      "hypothesis": "Elevated lagged lower-wick rejection relative to its own baseline may indicate persistent dip absorption before a later closed re-entry above prior local resistance in an up regime.",
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "lagged_lower_wick_absorption",
+          "op": "gt",
+          "other": "lower_wick_absorption_baseline",
+          "scale": 1.2
+        }
+      ],
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "prior_hi"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_hi"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open"
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.85
+        }
+      ]
+    },
+    {
+      "id": "factory_wick_vwap_reclaim",
+      "family": "wick_absorption_vwap_reclaim",
+      "peer_required": false,
+      "hypothesis": "Repeated lagged lower-wick rejection inside a completed range may precede a later closed reclaim of the session bar-volume price proxy without assuming hidden order-book absorption.",
+      "context": [
+        {
+          "field": "h4_range",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "lagged_lower_wick_absorption",
+          "op": "gt",
+          "other": "lower_wick_absorption_baseline",
+          "scale": 1.25
+        }
+      ],
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "bar_proxy_vwap"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "bar_proxy_vwap"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open"
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        }
+      ]
+    },
+    {
+      "id": "factory_vov_midpoint_release",
+      "family": "vol_of_vol_midpoint_release",
+      "peer_required": false,
+      "hypothesis": "An unusually stable lagged low volatility-of-volatility state may identify compression that releases only after a later closed reclaim of the prior range midpoint with volume expansion.",
+      "context": [
+        {
+          "field": "h1_compression",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "own_volatility_of_volatility",
+          "op": "lt",
+          "other": "own_volatility_of_volatility_baseline",
+          "scale": 0.7
+        }
+      ],
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "prior_range_mid"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_range_mid"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open"
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 1.1
+        }
+      ]
+    },
+    {
+      "id": "factory_vov_prior_day_release",
+      "family": "vol_of_vol_calendar_release",
+      "peer_required": false,
+      "hypothesis": "A stable lagged volatility-of-volatility compression may resolve directionally only when a later closed candle clears the fully completed prior UTC-day high with strong relative volume.",
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "h1_compression",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "own_volatility_of_volatility",
+          "op": "lt",
+          "other": "own_volatility_of_volatility_baseline",
+          "scale": 0.72
+        }
+      ],
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_day_high"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open"
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 1.1
+        }
+      ]
+    },
+    {
+      "id": "factory_peer_residual_vwap_reclaim",
+      "family": "peer_residual_vwap_reclaim",
+      "peer_required": true,
+      "hypothesis": "A lagged negative own return residual relative to a causally estimated peer beta may represent temporary under-response that resolves only after a later own-asset VWAP-proxy reclaim.",
+      "context": [
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "peer_beta_lagged",
+          "op": "gt",
+          "value": 0
+        },
+        {
+          "field": "lagged_peer_beta_residual",
+          "op": "lt",
+          "other": "peer_beta_residual_scale",
+          "scale": -1.15
+        }
+      ],
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "bar_proxy_vwap"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "bar_proxy_vwap"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open"
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.85
+        }
+      ]
+    },
+    {
+      "id": "factory_peer_residual_range_break",
+      "family": "peer_residual_range_break",
+      "peer_required": true,
+      "hypothesis": "A lagged positive residual relative to peer beta may identify own-asset leadership that persists only after a later closed break of prior local resistance.",
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "peer_beta_lagged",
+          "op": "gt",
+          "value": 0
+        },
+        {
+          "field": "lagged_peer_beta_residual",
+          "op": "gt",
+          "other": "peer_beta_residual_scale",
+          "scale": 1.15
+        }
+      ],
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_hi"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open"
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.95
+        }
+      ]
+    },
+    {
+      "id": "factory_peer_volatility_midpoint_catchup",
+      "family": "peer_volatility_catchup",
+      "peer_required": true,
+      "hypothesis": "A lagged own-versus-peer realized-volatility imbalance may identify a delayed own-asset catch-up only after a later closed midpoint reclaim in a non-trending higher-timeframe regime.",
+      "context": [
+        {
+          "field": "h4_range",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "cross_pair_volatility_ratio",
+          "op": "gt",
+          "other": "cross_pair_volatility_ratio_baseline",
+          "scale": 1.2
+        }
+      ],
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "prior_range_mid"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_range_mid"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open"
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.85
+        }
+      ]
+    },
+    {
+      "id": "factory_relative_momentum_vwap_reclaim",
+      "family": "relative_momentum_vwap_reclaim",
+      "peer_required": true,
+      "hypothesis": "Lagged own-minus-peer relative momentum above its historical baseline may persist only when the target asset later closes back above its session bar-volume price proxy.",
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "relative_momentum_previous",
+          "op": "gt",
+          "other": "relative_momentum_baseline",
+          "scale": 1.5
+        }
+      ],
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "bar_proxy_vwap"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "bar_proxy_vwap"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open"
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.85
+        }
+      ]
+    }
+  ]
+}

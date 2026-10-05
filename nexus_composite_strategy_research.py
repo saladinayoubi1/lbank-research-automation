@@ -23,6 +23,14 @@ import numpy as np
 import pandas as pd
 
 from nexus_demo_archive_replay import ARCHIVE_SHA256
+from nexus_mechanism_factory import (
+    MechanismFactoryError,
+    factory_configs,
+    factory_ids,
+    factory_peer_ids,
+    factory_signal,
+    load_factory_contract,
+)
 from nexus_multitimeframe_verified_archive_discovery import load_verified_archive_frame
 
 SCHEMA = "nexus.automatic-composite-research.v1"
@@ -67,7 +75,9 @@ FRONTIER_GENERATION2 = (
     "peer_beta_residual_reclaim",
     "prior_day_breakout_continuation",
 )
-FRONTIER_MECHANISMS = FRONTIER_GENERATION1 + FRONTIER_GENERATION2
+FACTORY_SPECS = load_factory_contract()
+FACTORY_MECHANISMS = factory_ids(FACTORY_SPECS)
+FRONTIER_MECHANISMS = FRONTIER_GENERATION1 + FRONTIER_GENERATION2 + FACTORY_MECHANISMS
 ALL_MECHANISMS = MECHANISMS + FRONTIER_MECHANISMS
 PEER_MECHANISMS = frozenset({
     "cross_pair_relative_reclaim",
@@ -80,8 +90,8 @@ PEER_MECHANISMS = frozenset({
     "relative_weakness_exhaustion_rebound",
     "volatility_leadership_reversal",
     "peer_beta_residual_reclaim",
-})
-FRONTIER_SCREEN_VERSION = "nexus.frontier-train-screen.v2"
+}) | factory_peer_ids(FACTORY_SPECS)
+FRONTIER_SCREEN_VERSION = "nexus.frontier-train-screen.v3"
 FRONTIER_SHORTLIST_SIZE = 3
 # Distinct entry mechanisms vs risk/feature parameter variations are explicitly
 # separately labeled; risk variants do NOT count as independent new edges.
@@ -91,8 +101,8 @@ CONFIGS = tuple(
 )
 FRONTIER_CONFIGS = tuple(
     {"mechanism": mechanism, "risk_variant": 0, "entry_model": "closed_4h_1h_15m_next_open"}
-    for mechanism in FRONTIER_MECHANISMS
-)
+    for mechanism in (FRONTIER_GENERATION1 + FRONTIER_GENERATION2)
+) + factory_configs(FACTORY_SPECS)
 MIN_BARS_15M = 960
 TRAIN_FRAC, VALID_FRAC = .60, .20
 # Each experiment has its own 10,000 USDT cash. Never use the 500 USDT owner wallet.
@@ -350,6 +360,20 @@ def signal_for(frame: pd.DataFrame, config: dict[str, Any]) -> np.ndarray:
     mechanism = config["mechanism"]
     if mechanism not in ALL_MECHANISMS or config["risk_variant"] not in (0, 1):
         raise CompositeResearchError("unreviewed strategy grammar")
+    if mechanism in FACTORY_SPECS:
+        if config["risk_variant"] != 0:
+            raise CompositeResearchError("factory mechanisms have one fixed risk contract")
+        try:
+            signal = factory_signal(
+                frame,
+                mechanism,
+                specs=FACTORY_SPECS,
+                expected_contract_digest=config.get("factory_contract_digest"),
+            )
+        except MechanismFactoryError as exc:
+            raise CompositeResearchError("factory mechanism contract invalid") from exc
+        atr_ok = frame["atr"].notna() & np.isfinite(frame["atr"]) & (frame["atr"] > 0)
+        return (pd.Series(signal, index=frame.index) & atr_ok).fillna(False).to_numpy(dtype=bool)
     c, lo, o = frame["close"], frame["low"], frame["open"]
     ok = frame[["h4_up", "h4_range", "h1_compression", "h1_vol_ok", "rel_vol",
                 "prior_hi", "prior_lo", "atr"]].notna().all(axis=1) & (frame["atr"] > 0)
