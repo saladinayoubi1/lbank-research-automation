@@ -3,7 +3,7 @@ from pathlib import Path
 import agent_manager
 import nexus_composite_strategy_research as research
 from nexus_mechanism_factory import generate_factory_contracts, load_factory_contract
-from nexus_research_missions import THIRTEENTH, TWELFTH, PREDECESSOR, TASKS
+from nexus_research_missions import FOURTEENTH, THIRTEENTH, TWELFTH, PREDECESSOR, TASKS
 
 
 def _ledger_after_fixed_frontier():
@@ -66,5 +66,23 @@ def test_task_013_is_strict_successor_of_012():
     acceptance = " ".join(task["acceptance"]).lower()
     assert "at most twelve" in acceptance
     assert "training-only" in acceptance
+    assert "no automatic paper/demo promotion" in acceptance
+    assert "no owner-wallet mutation" in acceptance
+
+
+def test_task_014_consumes_second_generated_batch_after_013():
+    assert PREDECESSOR[FOURTEENTH] == THIRTEENTH
+    assert FOURTEENTH in TASKS
+    config = agent_manager.load_config(Path("config/nexus-agent-manager.json"))
+    task = next(x for x in config["tasks"] if x["id"] == FOURTEENTH)
+    assert task["dependencies"] == [THIRTEENTH]
+    assert task["status"] == "PENDING"
+    assert task["priority"] < next(
+        x for x in config["tasks"] if x["id"] == THIRTEENTH
+    )["priority"]
+    acceptance = " ".join(task["acceptance"]).lower()
+    assert "second training-only batch" in acceptance
+    assert "next unseen generated topologies" in acceptance
+    assert "zero-activity" in acceptance
     assert "no automatic paper/demo promotion" in acceptance
     assert "no owner-wallet mutation" in acceptance

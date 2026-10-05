@@ -705,6 +705,37 @@
         "only the deterministic Training winner receives complete two-pair three-partition two-cost replay followed by independent original-source numerical QA",
         "research only with no automatic Paper/Demo promotion, no owner-wallet mutation and no live authority"
       ]
+    },
+    {
+      "phase": 7,
+      "gate": 17,
+      "status": "PENDING",
+      "priority": 78,
+      "required_capabilities": [
+        "data_validation"
+      ],
+      "required_resources": [
+        "github-cloud"
+      ],
+      "preferred_resources": [
+        "github-cloud",
+        "windows-local"
+      ],
+      "authority": 2,
+      "id": "P7-RESEARCH-COMPOSITE-014",
+      "title": "Screen the second deterministic generated Mechanism Factory batch after exact QA-attested #013 and independently verify only its Training winner",
+      "dependencies": [
+        "P7-RESEARCH-COMPOSITE-013"
+      ],
+      "acceptance": [
+        "preceding thirteenth producer and independent QA are genuinely DONE with exact source, receipt, QA digest and cumulative novelty ledger",
+        "generated candidates are synthesized only from the checked-in reviewed causal primitive library with deterministic topology digests and no dynamic code",
+        "all already evaluated or frontier-screened generated mechanisms are excluded so the second batch contains only the next unseen generated topologies",
+        "at most twelve unseen generated topologies enter the second Training-only batch and no validation or historically inspected test data selects the winner",
+        "no minimum trade-count gate is introduced and zero-activity candidates cannot outrank actually exercised systems",
+        "only the deterministic Training winner receives complete two-pair three-partition two-cost replay followed by independent original-source numerical QA",
+        "research only with no automatic Paper/Demo promotion, no owner-wallet mutation and no live authority"
+      ]
     }
   ]
 }
