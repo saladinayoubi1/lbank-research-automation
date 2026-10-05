@@ -27,6 +27,7 @@ def _controller():
             "experiment_id": f"experiment-{index}",
             "experiment_sha256": str(index) * 64,
             "status": "READY_FOR_RESEARCH_DISPATCH",
+            "rotation_eligible": True,
         } for index in range(3)],
     }
 
@@ -42,6 +43,33 @@ class StrategyDiscoveryRotationTests(unittest.TestCase):
         self.assertEqual(seen, ["stage-0", "stage-1", "stage-2", "stage-0"])
         self.assertEqual(state["dispatch_count"], 4)
         self.assertFalse(state["automatic_strategy_promotion"])
+
+    def test_legacy_validation_is_never_autonomous_fallback(self):
+        controller = _controller()
+        controller["search_stages"] = [
+            {
+                "stage": "legacy-v7",
+                "workflow": ".github/workflows/legacy-v7.yml",
+                "experiment_id": "legacy-v7",
+                "experiment_sha256": "a" * 64,
+                "status": "READY_FOR_RESEARCH_DISPATCH",
+                "rotation_eligible": False,
+            },
+            {
+                "stage": "modern-frontier",
+                "workflow": ".github/workflows/modern-frontier.yml",
+                "experiment_id": "modern-frontier",
+                "experiment_sha256": "b" * 64,
+                "status": "READY_FOR_RESEARCH_DISPATCH",
+                "rotation_eligible": True,
+            },
+        ]
+        plan = build_plan(controller, empty_state())
+        self.assertEqual(plan["stage"], "modern-frontier")
+
+        controller["search_stages"][1]["status"] = "BLOCKED"
+        with self.assertRaisesRegex(StrategyDiscoveryRotationError, "legacy validation"):
+            build_plan(controller, empty_state())
 
     def test_unverified_controller_fails_closed(self):
         controller = _controller()
