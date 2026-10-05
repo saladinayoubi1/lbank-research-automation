@@ -14,7 +14,7 @@ import re
 from pathlib import Path
 from typing import Any, Callable, Mapping
 
-from nexus_strategy_proposal_runtime_requalification import APPROVED_SYMBOLS, _default_evaluator
+from nexus_strategy_proposal_runtime_requalification import APPROVED_FAMILIES, APPROVED_SYMBOLS, _default_evaluator
 from product_research_runtime import TIMEFRAMES
 
 TASK_SCHEMA = "nexus.strategy-review-qa-task.v1"
@@ -36,15 +36,6 @@ TASK_KEYS = {
 EVIDENCE_KEYS = {
     "symbol", "dataset_binding_sha256", "pipeline_digest",
     "qualification_digest", "last_open_time_ms",
-}
-RECEIPT_KEYS = {
-    "schema_version", "qa_lease_id", "task_digest", "source_sha",
-    "proposal_digest", "proposal_result_digest", "requalification_digest",
-    "requalification_verification_digest", "strategy_config_digest",
-    "runtime_evidence", "independent_qa_complete", "qualification_authority",
-    "promotion_authority", "paper_execution_authority",
-    "automatic_strategy_promotion", "live_trading_authority",
-    "qa_receipt_digest",
 }
 RECEIPT_KEYS = {
     "schema_version", "qa_lease_id", "task_digest", "source_sha",
@@ -115,8 +106,7 @@ def validate_task(task: Mapping[str, Any], execution_source_sha: str) -> dict[st
         or row.get("automatic_strategy_promotion") is not False
         or row.get("live_trading_authority") is not False
         or row.get("timeframe") not in TIMEFRAMES
-        or not isinstance(row.get("family"), str)
-        or not row.get("family")
+        or row.get("family") not in APPROVED_FAMILIES
         or not isinstance(row.get("variant_id"), str)
         or not row.get("variant_id")
         or not isinstance(runtime_evidence, list)
