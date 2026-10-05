@@ -17,48 +17,56 @@ SCHEMA = "nexus.strategy-discovery-controller.v1"
 SEARCH_STAGES: tuple[dict[str, str], ...] = (
     {
         "stage": "bybit_strategy_search_v2",
+        "lane": "legacy_validation",
         "engine": "bybit_strategy_search_v2.py",
         "experiment": "experiments/bybit_strategy_search_v2.json",
         "workflow": ".github/workflows/bybit_strategy_search_v2.yml",
     },
     {
         "stage": "bybit_portfolio_search_v3",
+        "lane": "legacy_validation",
         "engine": "bybit_portfolio_search_v3_scheduled.py",
         "experiment": "experiments/bybit_portfolio_search_v3.json",
         "workflow": ".github/workflows/bybit_portfolio_search_v3.yml",
     },
     {
         "stage": "bybit_long_short_search_v4",
+        "lane": "legacy_validation",
         "engine": "bybit_long_short_search_v4.py",
         "experiment": "experiments/bybit_long_short_search_v4.json",
         "workflow": ".github/workflows/bybit_long_short_search_v4.yml",
     },
     {
         "stage": "bybit_consensus_search_v5",
+        "lane": "legacy_validation",
         "engine": "bybit_consensus_search_v5.py",
         "experiment": "experiments/bybit_consensus_search_v5.json",
         "workflow": ".github/workflows/bybit_consensus_search_v5.yml",
     },
     {
         "stage": "bybit_regime_search_v6",
+        "lane": "legacy_validation",
         "engine": "bybit_regime_search_v6.py",
         "experiment": "experiments/bybit_regime_search_v6.json",
         "workflow": ".github/workflows/bybit_regime_search_v6.yml",
     },
     {
         "stage": "bybit_neighborhood_validation_v7",
+        "lane": "legacy_validation",
         "engine": "bybit_neighborhood_validation_v7.py",
         "experiment": "experiments/bybit_neighborhood_validation_v7.json",
         "workflow": ".github/workflows/bybit_neighborhood_validation_v7.yml",
     },
     {
         "stage": "nexus_multitimeframe_strategy_discovery",
+        "lane": "frontier",
         "engine": "nexus_multitimeframe_strategy_discovery.py",
         "experiment": "experiments/nexus_multitimeframe_strategy_discovery_v1.json",
         "workflow": ".github/workflows/nexus_multitimeframe_strategy_discovery.yml",
     },
     {
         "stage": "nexus_multipair_strategy_discovery_v2",
+        "lane": "frontier",
         "engine": "nexus_multipair_strategy_discovery.py",
         "experiment": "experiments/nexus_multipair_strategy_discovery_v2.json",
         "workflow": ".github/workflows/nexus_multipair_strategy_discovery_v2.yml",
@@ -168,6 +176,8 @@ def _stage_status(root: Path, spec: dict[str, str]) -> tuple[dict[str, Any], lis
 
     return {
         "stage": spec["stage"],
+        "lane": spec["lane"],
+        "rotation_eligible": spec["lane"] == "frontier",
         "engine": spec["engine"],
         "experiment": spec["experiment"],
         "workflow": spec["workflow"],
@@ -189,6 +199,8 @@ def build_status(root: Path = ROOT) -> dict[str, Any]:
         errors.extend(stage_errors)
 
     ready = [row for row in stages if row["status"] == "READY_FOR_RESEARCH_DISPATCH"]
+    ready_frontier = [row for row in ready if row["rotation_eligible"] is True]
+    ready_legacy = [row for row in ready if row["lane"] == "legacy_validation"]
     blocked = [row for row in stages if row["status"] == "BLOCKED"]
     controller_verified = not errors
 
@@ -204,6 +216,8 @@ def build_status(root: Path = ROOT) -> dict[str, Any]:
             "strategy_family_count": catalog.get("family_count", 0),
             "search_stage_count": len(stages),
             "ready_search_stage_count": len(ready),
+            "ready_frontier_stage_count": len(ready_frontier),
+            "ready_legacy_validation_stage_count": len(ready_legacy),
             "blocked_search_stage_count": len(blocked),
         },
         "qualified_candidates": [],
@@ -214,8 +228,8 @@ def build_status(root: Path = ROOT) -> dict[str, Any]:
         ),
         "errors": sorted(set(errors)),
         "next_research_action": (
-            ready[0]["stage"]
-            if controller_verified and ready
+            ready_frontier[0]["stage"]
+            if controller_verified and ready_frontier
             else "repair_discovery_surface_before_dispatch"
         ),
     }
