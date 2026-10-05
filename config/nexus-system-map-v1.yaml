@@ -1,0 +1,211 @@
+version: nexus-system-map/v1
+date: "2026-10-05"
+scope: research_and_paper_only
+baseline_main_sha: a5e0d7fa7a2d9bc8baee5dff59a6518b078e09ea
+
+invariants:
+  live_trading: false
+  paper_reference_balance_usdt: 500
+  primary_market_identity: bybit
+  github_source_of_truth: true
+  github_is_runtime_database: false
+  paper_single_writer: true
+  independent_qa_before_qualification: true
+  qualification_before_demo: true
+  training_selects_candidates: true
+  validation_selects_candidates: false
+  arbitrary_minimum_trade_count_gate: false
+
+machines:
+  laptop_1:
+    hostname: DESKTOP-1R1081M
+    role: runtime_paper_primary
+    paper_writer: true
+    live_trading: false
+    responsibilities:
+      - owner_paper_runtime
+      - product_runtime_journal
+      - desktop_product
+      - local_runner_primary
+      - bybit_runner_primary
+      - windows_dr
+      - protective_exit
+      - research_failover_watchdog_only
+  laptop_2:
+    hostname: DESKTOP-F4SA4VL
+    role: research_primary_conditional_failover
+    paper_writer: false
+    live_trading: false
+    responsibilities:
+      - research_primary
+      - strategy_finder
+      - heavy_backtest
+      - build_support
+      - local_failover_watchdog_only
+      - bybit_failover_watchdog_only
+
+runners:
+  NEXUS-LOCAL-RUNNER:
+    machine: laptop_1
+    state_policy: active
+    role: owner_local_runtime
+  NEXUS-BYBIT-WSL:
+    machine: laptop_1
+    state_policy: active
+    role: bybit_network_primary
+  NEXUS-WINDOWS-DR:
+    machine: laptop_1
+    state_policy: active
+    role: windows_disaster_recovery
+  NEXUS-RESEARCH-RUNNER:
+    machine: laptop_2
+    state_policy: active
+    role: research_primary
+  NEXUS-RESEARCH-FAILOVER:
+    machine: laptop_1
+    state_policy: watchdog_only
+    role: research_failover
+  NEXUS-LOCAL-FAILOVER:
+    machine: laptop_2
+    state_policy: watchdog_only
+    role: local_runtime_failover
+  NEXUS-BYBIT-FAILOVER:
+    machine: laptop_2
+    state_policy: watchdog_only
+    role: bybit_network_failover
+  NEXUS-RESEARCH-SECONDARY:
+    machine: laptop_2
+    state_policy: disabled
+    role: retired_secondary_registration
+
+sources:
+  bybit:
+    authority: primary_market_and_paper_identity
+    substitution_allowed: false
+  binance:
+    authority: secondary_corroboration
+    substitution_allowed: false
+  lbank:
+    authority: tertiary_research_only
+    substitution_allowed: false
+  bitget:
+    authority: auxiliary_research_only
+    substitution_allowed: false
+
+nodes:
+  SYS-00:
+    name: architecture_governance
+    placement: github
+  CTRL-10:
+    name: mission_control_queue
+    placement: github_control_plane
+  CTRL-11:
+    name: agent_manager_coordinator
+    placement: github_control_plane
+  CTRL-12:
+    name: ai_control_plane_room
+    placement: advisory_research_layer
+  DATA-20:
+    name: source_adapters
+    placement: data_plane
+  DATA-21:
+    name: provenance_integrity_readiness
+    placement: deterministic_shared_layer
+  RES-30:
+    name: strategy_finder
+    primary_executor: NEXUS-RESEARCH-RUNNER
+  RES-31:
+    name: mechanism_factory_generator
+    primary_executor: NEXUS-RESEARCH-RUNNER
+  RES-32:
+    name: backtest_multipair_multitimeframe
+    primary_executor: NEXUS-RESEARCH-RUNNER
+  VAL-40:
+    name: validation_oos_stress
+    placement: deterministic_validation_lane
+  QA-41:
+    name: independent_qa
+    placement: independent_verifier_lane
+  QUAL-42:
+    name: qualification_gate
+    placement: deterministic_control_layer
+  REG-50:
+    name: strategy_config_registry
+    placement: github_plus_approved_runtime_copy
+  RUNTIME-60:
+    name: decision_engine
+    primary_machine: laptop_1
+  RISK-61:
+    name: deterministic_risk
+    primary_machine: laptop_1
+  PAPER-62:
+    name: paper_execution
+    primary_machine: laptop_1
+    single_writer: true
+  PAPER-63:
+    name: event_store_productruntime_journal
+    primary_machine: laptop_1
+  SAFE-64:
+    name: protective_exit
+    primary_machine: laptop_1
+    authority:
+      - reduce
+      - close
+    forbidden:
+      - open
+      - reverse
+      - increase_exposure
+      - live
+  UI-70:
+    name: desktop_product
+    primary_machine: laptop_1
+  UI-71:
+    name: mobile_remote_visibility
+    placement: mobile_plus_secure_gateway
+  OBS-80:
+    name: observability_failure_triage
+    placement: github_plus_local_watchdogs
+  REL-90:
+    name: build_release_install
+    placement: github_build_plus_staged_windows
+
+required_flow:
+  - DATA-20
+  - DATA-21
+  - RES-30
+  - RES-31
+  - RES-32
+  - VAL-40
+  - QA-41
+  - QUAL-42
+  - REG-50
+  - RUNTIME-60
+  - RISK-61
+  - PAPER-62
+  - PAPER-63
+
+forbidden_shortcuts:
+  - research_to_paper_without_qa
+  - validation_used_to_select_training_winner
+  - ui_direct_event_store_mutation
+  - ai_risk_override
+  - backup_source_relabelled_as_bybit
+  - multiple_owner_paper_writers
+  - always_on_failover_beside_healthy_primary
+  - live_trading_authority
+
+change_precheck_required:
+  - system_map_nodes
+  - existing_component
+  - duplicate_work_check
+  - primary_executor
+  - upstream_dependencies
+  - downstream_consumers
+  - authority_level
+  - data_provenance
+  - failure_mode
+  - rollback
+  - tests
+  - qa_requirement
+  - deployment_impact
+  - done_evidence
