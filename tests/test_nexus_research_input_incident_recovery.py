@@ -19,8 +19,14 @@ def incident():
     spec = recovery.load_spec()
     config = am.load_config(Path("config/nexus-agent-manager.json"))
     tasks = am.task_index(config)
+    historical_research = {TENTH}
+    cursor = TENTH
+    while cursor in PREDECESSOR:
+        cursor = PREDECESSOR[cursor]
+        historical_research.add(cursor)
+    future_research = TASKS - historical_research
     for task in config["tasks"]:
-        if task["id"] != TENTH:
+        if task["id"] != TENTH and task["id"] not in future_research:
             task["status"] = "DONE"
     prior = tasks[NINTH]
     binding = spec["predecessor"]
@@ -43,7 +49,7 @@ def incident():
             "auto_demo_promotion": False, "live_enabled": False,
         },
     )
-    for task_id in sorted(TASKS - {NINTH, TENTH}):
+    for task_id in sorted(historical_research - {NINTH, TENTH}):
         item = tasks[task_id]
         item.update(producer="research-agent", verifier="qa-verifier-agent",
                     research_producer_lease_id=task_id + "-producer")
@@ -52,8 +58,10 @@ def incident():
             **prior["verification_evidence"], "producer_lease_id": item["research_producer_lease_id"],
         }
     for successor, predecessor in PREDECESSOR.items():
-        if successor != TENTH:
+        if successor in historical_research and successor != TENTH:
             tasks[successor].update(attested_predecessor(tasks[predecessor]))
+    for future in future_research:
+        assert tasks[future]["status"] == "PENDING"
     task = tasks[TENTH]
     task.update(
         **binding, status="RUNNING", producer="research-agent", assigned_worker="architect-agent",

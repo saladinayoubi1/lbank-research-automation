@@ -5,7 +5,7 @@ import pandas as pd
 
 import nexus_composite_strategy_research as research
 import agent_manager
-from nexus_research_missions import NINTH, TENTH, PREDECESSOR, TASKS
+from nexus_research_missions import NINTH, TENTH, ELEVENTH, PREDECESSOR, TASKS
 
 
 def _legacy_complete_ledger():
@@ -111,6 +111,19 @@ def test_all_frontier_mechanisms_emit_bounded_boolean_signals():
         "cross_pair_relative_z_previous": [-1.8] * n,
         "cross_pair_volatility_ratio": [1.6] * n,
         "cross_pair_volatility_ratio_baseline": [1.1] * n,
+        "trend_efficiency_16": [0.6] * n,
+        "trend_direction_16": [0.01] * n,
+        "lagged_return_serial_corr": [0.3] * n,
+        "lagged_lower_wick_absorption": [0.4] * n,
+        "lower_wick_absorption_baseline": [0.2] * n,
+        "own_volatility_of_volatility": [0.004] * n,
+        "own_volatility_of_volatility_baseline": [0.01] * n,
+        "peer_beta_lagged": [1.0] * n,
+        "lagged_peer_beta_residual": [-0.02] * n,
+        "peer_beta_residual_scale": [0.01] * n,
+        "prior_day_high": [100.5] * n,
+        "prior_day_low": [95.0] * n,
+        "prior_day_close": [99.5] * n,
     })
     for mechanism in research.FRONTIER_MECHANISMS:
         signal = research.signal_for(
@@ -132,3 +145,42 @@ def test_mission_010_is_sequential_qa_bound_and_manager_declared():
     assert "training-only tournament" in acceptance
     assert "independent" in acceptance
     assert "no automatic paper/demo promotion" in acceptance
+
+
+def test_generation1_exhaustion_opens_only_generation2_frontier():
+    state = _legacy_complete_ledger()
+    core = {key: value for key, value in state.items() if key != "ledger_digest"}
+    core["frontier_screening_version"] = "nexus.frontier-train-screen.v1"
+    core["frontier_screened_mechanisms"] = sorted(research.FRONTIER_GENERATION1)
+    prior = {**core, "ledger_digest": research.digest(core)}
+    assert research.research_mode(prior) == "frontier_tournament"
+    candidates = research._frontier_configs_to_screen(prior)
+    assert {row["mechanism"] for row in candidates} == set(research.FRONTIER_GENERATION2)
+    assert all(row["risk_variant"] == 0 for row in candidates)
+
+    core["frontier_screening_version"] = research.FRONTIER_SCREEN_VERSION
+    core["frontier_screened_mechanisms"] = sorted(research.FRONTIER_MECHANISMS)
+    exhausted = {**core, "ledger_digest": research.digest(core)}
+    assert research.research_mode(exhausted) == "exhausted"
+    assert research.has_runnable_candidate(exhausted) is False
+
+
+def test_generation2_peer_beta_is_declared_peer_only():
+    assert "peer_beta_residual_reclaim" in research.PEER_MECHANISMS
+    assert set(research.FRONTIER_GENERATION2).isdisjoint(set(research.FRONTIER_GENERATION1))
+    assert len(set(research.FRONTIER_GENERATION2)) == len(research.FRONTIER_GENERATION2)
+
+
+def test_mission_011_is_sequential_qa_bound_and_manager_declared():
+    assert PREDECESSOR[ELEVENTH] == TENTH
+    assert ELEVENTH in TASKS
+    config = agent_manager.load_config(Path("config/nexus-agent-manager.json"))
+    task = next(row for row in config["tasks"] if row["id"] == ELEVENTH)
+    assert task["dependencies"] == [TENTH]
+    assert task["authority"] == 2
+    acceptance = " ".join(task["acceptance"]).lower()
+    assert "generation-two" in acceptance
+    assert "training-only" in acceptance
+    assert "independent" in acceptance
+    assert "no automatic paper/demo promotion" in acceptance
+    assert "no owner-wallet mutation" in acceptance
