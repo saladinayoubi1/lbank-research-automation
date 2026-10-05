@@ -134,12 +134,33 @@ def test_duration_and_calendar_months_are_derived_from_window() -> None:
     assert result.trades_per_30d == pytest.approx(60.0 / 59.0)
 
 
-def test_single_trade_candidate_remains_ineligible() -> None:
+def test_single_trade_candidate_is_not_rejected_by_trade_count() -> None:
     result = evaluate_activity(
         [dt(2026, 1, 10)],
         window_start=dt(2026, 1, 1),
         window_end=dt(2026, 2, 1),
     )
-    assert not result.eligible
-    assert "INSUFFICIENT_OOS_TRADES" in result.reasons
-    assert "TRADE_GAPS_TOO_WIDE" in result.reasons
+    assert result.eligible
+    assert result.trade_count == 1
+    assert result.median_gap_days is None
+    assert "INSUFFICIENT_OOS_TRADES" not in result.reasons
+    assert "SIGNAL_FREQUENCY_TOO_LOW" not in result.reasons
+    assert "TRADE_GAPS_TOO_WIDE" not in result.reasons
+
+
+def test_legacy_trade_count_thresholds_are_diagnostic_only() -> None:
+    result = evaluate_activity(
+        [dt(2026, 1, 10)],
+        window_start=dt(2026, 1, 1),
+        window_end=dt(2026, 2, 1),
+        policy=ActivityPolicy(
+            min_oos_trades=999,
+            min_trades_per_30d=999.0,
+            min_active_month_ratio=0.0,
+            max_median_gap_days=0.1,
+        ),
+    )
+    assert result.eligible
+    assert result.trade_count == 1
+    assert result.trades_per_30d > 0
+    assert result.reasons == ()
