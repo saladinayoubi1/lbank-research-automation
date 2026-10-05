@@ -30,11 +30,12 @@ from product_research_runtime import (
     ProductResearchError,
     ProductResearchRuntime,
 )
-
-SCHEMA = "nexus.strategy-proposal-runtime-requalification.v1"
-VERIFICATION_SCHEMA = "nexus.strategy-proposal-runtime-requalification-verification.v1"
-QUEUE_SCHEMA = "nexus.strategy-research-proposal-queue.v1"
-APPROVED_SYMBOLS = ("BTCUSDT", "ETHUSDT")
+from nexus_strategy_requalification_contract import (
+    APPROVED_SYMBOLS,
+    REQUALIFICATION_SCHEMA as SCHEMA,
+    REQUALIFICATION_VERIFICATION_SCHEMA as VERIFICATION_SCHEMA,
+    RESEARCH_PROPOSAL_QUEUE_SCHEMA as QUEUE_SCHEMA,
+)
 _SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 _HEX64_RE = re.compile(r"^[0-9a-f]{64}$")
 
