@@ -8,7 +8,7 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 from phase5_data_binding import CanonicalDataError, validate_canonical_dataset
-from phase5_strategy_factory import EXPERIMENT_SCHEMA, QUALIFICATION_SCHEMA
+from phase5_strategy_factory import ALLOWED_FAMILIES, EXPERIMENT_SCHEMA, QUALIFICATION_SCHEMA
 
 
 REGISTRY_SCHEMA = "nexus.phase7-strategy-registry.v1"
@@ -300,6 +300,8 @@ def build_approved_strategy_record(
         qualification_policy_version, "qualification_policy_version", limit=96
     )
     family = _bounded_text(family, "family", limit=64)
+    if family not in ALLOWED_FAMILIES:
+        raise StrategyRegistryError("approved strategy family is unsupported")
     timeframe = _bounded_text(timeframe, "timeframe", limit=32)
     if timeframe not in _APPROVED_TIMEFRAMES:
         raise StrategyRegistryError("approved strategy timeframe is unsupported")
@@ -375,6 +377,8 @@ def validate_approved_strategy_record(value: Mapping[str, Any]) -> dict[str, Any
     ):
         _validate_digest(value.get(field), field)
     family = _bounded_text(value.get("family"), "family", limit=64)
+    if family not in ALLOWED_FAMILIES:
+        raise StrategyRegistryError("approved strategy family is unsupported")
     timeframe = _bounded_text(value.get("timeframe"), "timeframe", limit=32)
     if timeframe not in _APPROVED_TIMEFRAMES:
         raise StrategyRegistryError("approved strategy timeframe is unsupported")
