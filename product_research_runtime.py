@@ -183,6 +183,7 @@ class ProductResearchRuntime:
             "contract_version": PRODUCT_RESEARCH_CONTRACT, "paper_only": True, "live_execution_allowed": False, "profitability_claim": False, "source_sha": code_sha,
             "request": {"symbol": symbol, "timeframe": timeframe, "family": family, "limit": limit},
             "dataset": {"binding_sha256": dataset["binding_sha256"], "manifest_sha256": dataset["manifest_sha256"], "instrument": dataset["instrument"], "source": dataset["source"], "source_symbol": dataset["source_symbol"], "timeframe": dataset["manifest_timeframe"], "row_count": dataset["row_count"], "first_open_time_ms": dataset["rows"][0]["open_time_ms"], "last_open_time_ms": last_row["open_time_ms"], "last_close": last_row["close"]},
+            "independent_qa": {"status": "required", "verified": False, "system_map_node": "QA-41", "paper_execution_allowed": False},
             "strategy_config": config, "cost_model": dict(COST_MODEL), "kill_criteria": dict(KILL_CRITERIA), "qualification": job["qualification"], "evidence": job["evidence"], "strategy_record": strategy_record, "research_lifecycle": list(research_lifecycle), "paper_candidate_handoff": job["paper_candidate_handoff"], "pipeline_digest": job["pipeline_digest"], "latest_target": float(targets.iloc[-1]), "backtest": _serialize_backtest(backtest), "_dataset": dataset, "_experiment": job["experiment"],
         }
         self._last_research = result
