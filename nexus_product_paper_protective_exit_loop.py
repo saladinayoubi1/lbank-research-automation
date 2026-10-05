@@ -181,7 +181,7 @@ def run_cycle(
                 raise ProductPaperProtectiveExitLoopError(f"closed-candle replay discontinuity for {symbol}")
             result = evaluate_protective_exit(
                 runtime=runtime, candle=candle, symbol=symbol, timeframe=timeframe,
-                strategy_version=strategy_version,
+                strategy_version=strategy_version, opened_at_utc=str(meta.get("opened_at")),
             )
             position_cursor[symbol] = {
                 "position_event_digest": position_digest,
