@@ -114,6 +114,15 @@ def _qa_task(
     result_digest = str(row.get("result_digest", ""))
     if not _HEX64.fullmatch(proposal_digest) or not _HEX64.fullmatch(result_digest):
         raise StrategyReviewQaHandoffError("QA handoff proposal identity is invalid")
+    strategy_config = row.get("strategy_config")
+    strategy_config_digest = str(row.get("strategy_config_digest", ""))
+    if (
+        not isinstance(strategy_config, Mapping)
+        or not strategy_config
+        or not _HEX64.fullmatch(strategy_config_digest)
+        or strategy_config_digest != _digest(strategy_config)
+    ):
+        raise StrategyReviewQaHandoffError("QA handoff strategy config binding is invalid")
     evaluations = row.get("runtime_evaluations")
     if not isinstance(evaluations, list) or not evaluations:
         raise StrategyReviewQaHandoffError("QA handoff has no runtime evaluations")
@@ -165,6 +174,8 @@ def _qa_task(
         "family": row.get("family"),
         "timeframe": row.get("timeframe"),
         "variant_id": row.get("variant_id"),
+        "strategy_config": dict(strategy_config),
+        "strategy_config_digest": strategy_config_digest,
         "runtime_evidence": evidence,
         "producer_role": "strategy-runtime-requalification",
         "required_verifier": "qa-verifier-agent",
@@ -290,6 +301,10 @@ def verify_handoff(value: Mapping[str, Any]) -> dict[str, Any]:
                     and task_core.get("live_trading_authority") is False
                     and _HEX64.fullmatch(str(task_core.get("proposal_digest", "")))
                     and _HEX64.fullmatch(str(task_core.get("proposal_result_digest", "")))
+                    and isinstance(task_core.get("strategy_config"), Mapping)
+                    and bool(task_core.get("strategy_config"))
+                    and _HEX64.fullmatch(str(task_core.get("strategy_config_digest", "")))
+                    and task_core.get("strategy_config_digest") == _digest(task_core.get("strategy_config"))
                     and task_id == f"STRATEGY-QA-{task_core.get('proposal_digest')}"
                     and task_id not in ids
                     and isinstance(evidence, list)
