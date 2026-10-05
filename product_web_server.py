@@ -213,7 +213,7 @@ def _product_overview(runtime: ProductRuntime, data_root: Path) -> dict[str, Any
             "regime_decision_pipeline": "active",
             "deterministic_risk": "final_paper_authority",
             "paper_execution": "active",
-            "automated_paper_pipeline": "qualification_and_risk_gated",
+            "automated_paper_pipeline": "independent_qa_lifecycle_and_risk_gated",
             "ai_room": "policy_gated",
             "mission_control": mission.get("status", "unavailable"),
             "audit_replay_recovery": "active",
