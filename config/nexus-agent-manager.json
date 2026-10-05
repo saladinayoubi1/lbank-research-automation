@@ -644,6 +644,37 @@
         "no minimum trade-count gate is introduced; zero-activity systems cannot outrank exercised candidates and screened losers are never labeled fully validated",
         "research only with no pristine future holdout claim, no automatic Paper/Demo promotion, no owner-wallet mutation and no live authority"
       ]
+    },
+    {
+      "phase": 7,
+      "gate": 17,
+      "status": "PENDING",
+      "priority": 80,
+      "required_capabilities": [
+        "data_validation"
+      ],
+      "required_resources": [
+        "github-cloud"
+      ],
+      "preferred_resources": [
+        "github-cloud",
+        "windows-local"
+      ],
+      "authority": 2,
+      "id": "P7-RESEARCH-COMPOSITE-012",
+      "title": "Screen bounded declarative Mechanism Factory frontier after exact QA-attested #011 and execute only the strongest training-screen candidate with independent numerical QA",
+      "dependencies": [
+        "P7-RESEARCH-COMPOSITE-011"
+      ],
+      "acceptance": [
+        "preceding eleventh producer and independent QA are genuinely DONE with exact source, receipt, QA digest and cumulative novelty ledger",
+        "source-bound twelfth producer consumes precisely the QA-attested eleventh ledger and loads only the checked-in bounded nexus.mechanism-factory.v1 contract",
+        "factory candidates use only whitelisted completed or lagged causal context plus the current closed 15m confirmation candle; no arbitrary Python, eval, dynamic code, private credentials or derivative execution is accepted",
+        "all unseen factory candidates are ranked on Training only with no validation or historically inspected test selection and no minimum trade-count gate",
+        "only the deterministic Training winner receives complete two-pair three-partition two-cost replay followed by independent original-source numerical QA",
+        "candidate contract digest is bound into the strategy fingerprint so silent strategy-definition mutation cannot reuse prior evidence",
+        "research only with no pristine future holdout claim, no automatic Paper/Demo promotion, no owner-wallet mutation and no live authority"
+      ]
     }
   ]
 }
