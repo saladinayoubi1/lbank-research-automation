@@ -213,7 +213,7 @@ def _product_overview(runtime: ProductRuntime, data_root: Path) -> dict[str, Any
             "regime_decision_pipeline": "active",
             "deterministic_risk": "final_paper_authority",
             "paper_execution": "active",
-            "automated_paper_pipeline": "qualification_and_risk_gated",
+            "automated_paper_pipeline": "independent_qa_and_risk_gated",
             "ai_room": "policy_gated",
             "mission_control": mission.get("status", "unavailable"),
             "audit_replay_recovery": "active",
@@ -247,6 +247,7 @@ def _integration_snapshot(
             "status": str(research.get("status", "completed" if qualification else "no_research_run")),
             "family": str(research.get("request", {}).get("family", "none")) if isinstance(research.get("request"), Mapping) else "none",
             "qualification": str(qualification.get("status", "none")),
+            "independent_qa": str(research.get("independent_qa", {}).get("status", "not_run")) if isinstance(research.get("independent_qa"), Mapping) else "not_run",
         },
         "strategy": {
             "status": str(qualification.get("status", "qualification_engine_available")),
