@@ -229,6 +229,7 @@ def test_auto_paper_requires_independent_qa_before_any_paper_event(tmp_path: Pat
         {"source_sha": "d" * 40},
         {"strategy_record_digest": "d" * 64},
         {"producer_id": "qa-verifier-agent"},
+        {"verifier_id": "untrusted-verifier"},
         {"independent_replay_matches": False},
         {"automatic_strategy_promotion": True},
         {"live_trading_authority": True},
