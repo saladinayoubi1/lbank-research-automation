@@ -82,10 +82,16 @@ def qualify_for_registry(
             execution_source_sha=row["source_sha"],
         )
     )
-    observed_receipt_digest = (
-        str(qa_receipt.get("qa_receipt_digest"))
+    raw_receipt_digest = (
+        qa_receipt.get("qa_receipt_digest")
         if isinstance(qa_receipt, Mapping)
-        and isinstance(qa_receipt.get("qa_receipt_digest"), str)
+        else None
+    )
+    observed_receipt_digest = (
+        str(raw_receipt_digest)
+        if isinstance(raw_receipt_digest, str)
+        and len(raw_receipt_digest) == 64
+        and all(ch in "0123456789abcdef" for ch in raw_receipt_digest)
         else None
     )
 
