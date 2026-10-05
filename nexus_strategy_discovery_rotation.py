@@ -135,6 +135,7 @@ def build_plan(controller: Mapping[str, Any], state: Mapping[str, Any], feedback
         if (
             isinstance(row, Mapping)
             and row.get("status") == "READY_FOR_RESEARCH_DISPATCH"
+            and row.get("rotation_eligible") is True
             and str(row.get("experiment_sha256")) not in exhausted
             and str(row.get("experiment_sha256")) not in resolved_negative
         )
@@ -142,10 +143,12 @@ def build_plan(controller: Mapping[str, Any], state: Mapping[str, Any], feedback
     if not stages:
         if exhausted or resolved_negative:
             raise StrategyDiscoveryRotationError(
-                "no untested reviewed static experiment remains; enqueue a genuinely new "
-                "mechanism or a changed source-bound manifest rather than replaying old backtests"
+                "no untested reviewed Strategy Finder frontier remains; enqueue a genuinely new "
+                "mechanism or changed source-bound frontier manifest rather than replaying legacy validation"
             )
-        raise StrategyDiscoveryRotationError("no reviewed strategy-search workflow is ready")
+        raise StrategyDiscoveryRotationError(
+            "no reviewed Strategy Finder frontier workflow is ready; legacy validation is never an autonomous fallback"
+        )
     index = int(state["next_index"]) % len(stages)
     selected = stages[index]
     workflow = str(selected.get("workflow", ""))
