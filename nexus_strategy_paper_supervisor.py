@@ -162,15 +162,27 @@ def verify_ledger(ledger: Mapping[str, Any]) -> dict[str, Any]:
                 and row.get("live_trading_authority") is False
                 and row.get("status") in {
                     "paper_executed", "qualification_killed", "no_open_signal",
-                    "position_exists", "risk_rejected",
+                    "position_exists", "risk_rejected", "independent_qa_required",
                 }
             )
+            paper = row.get("paper_result", {}) if valid else {}
             if row.get("status") == "paper_executed":
-                paper = row.get("paper_result", {})
                 valid = bool(
                     valid and paper.get("accepted") is True
                     and paper.get("risk", {}).get("allowed") is True
+                    and paper.get("independent_qa", {}).get("verified") is True
                     and isinstance(paper.get("execution"), Mapping)
+                )
+            elif row.get("status") == "independent_qa_required":
+                valid = bool(
+                    valid
+                    and row.get("research_result", {}).get("qualification", {}).get("status")
+                        == "paper_candidate"
+                    and paper.get("accepted") is False
+                    and paper.get("status") == "independent_qa_required"
+                    and paper.get("independent_qa") == {"status": "required", "verified": False}
+                    and paper.get("live_trading_authority") is False
+                    and paper.get("execution") is None
                 )
             checks[f"task_{index}"] = valid
     passed = all(checks.values())
