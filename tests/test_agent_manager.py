@@ -273,11 +273,12 @@ def test_materialized_qa_task_leases_only_designated_qa_verifier(monkeypatch):
 
 def test_materialized_qa_success_is_single_verifier_stage_and_exact_receipt(monkeypatch):
     from nexus_strategy_independent_qa import digest
+    from nexus_strategy_review_qa_handoff import qa_task_id
 
     monkeypatch.setattr(am, "emit", lambda *args, **kwargs: None)
     qa_core = {
         "schema_version":"nexus.strategy-review-qa-task.v1",
-        "id":"STRATEGY-QA-"+"a"*64,
+        "id":qa_task_id("a"*64, "2"*40, "5"*64),
         "task_kind":"strategy_review_independent_qa","system_map_node":"QA-41",
         "status":"READY_FOR_QA_DISPATCH","source_sha":"2"*40,
         "proposal_digest":"a"*64,"proposal_result_digest":"4"*64,
