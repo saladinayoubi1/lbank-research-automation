@@ -8,6 +8,7 @@ and stores an immutable verified copy for Agent Manager definition materializati
 from __future__ import annotations
 
 import argparse
+import hashlib
 import io
 import json
 import os
@@ -33,6 +34,41 @@ HEX64 = re.compile(r"^[0-9a-f]{64}$")
 
 class StrategyQaTransportError(RuntimeError):
     pass
+
+
+def _digest(value: Mapping[str, Any]) -> str:
+    raw = json.dumps(
+        dict(value),
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8")
+    return hashlib.sha256(raw).hexdigest()
+
+
+def _validate_no_work(value: Mapping[str, Any]) -> None:
+    expected = {
+        "schema_version", "source_sha", "reason", "proposal_count",
+        "paper_only", "automatic_strategy_promotion",
+        "live_trading_authority", "evidence_digest",
+    }
+    if not isinstance(value, Mapping) or set(value) != expected:
+        raise StrategyQaTransportError("runtime-requalification no-work schema mismatch")
+    core = dict(value)
+    claimed = core.pop("evidence_digest", None)
+    if (
+        value.get("schema_version")
+        != "nexus.strategy-proposal-runtime-requalification-no-work.v1"
+        or not SHA40.fullmatch(str(value.get("source_sha", "")))
+        or value.get("reason") != "proposal_queue_contains_no_research_proposals"
+        or value.get("proposal_count") != 0
+        or value.get("paper_only") is not True
+        or value.get("automatic_strategy_promotion") is not False
+        or value.get("live_trading_authority") is not False
+        or claimed != _digest(core)
+    ):
+        raise StrategyQaTransportError("runtime-requalification no-work evidence rejected")
 
 
 Api = Callable[[str, str, dict[str, Any] | None], Any]
@@ -107,7 +143,8 @@ def parse_artifact(blob: bytes) -> tuple[dict[str, Any], dict[str, Any]] | None:
         raise StrategyQaTransportError("Strategy QA artifact is not a valid ZIP") from exc
 
     if handoff is None and verification is None:
-        if no_work is not None and no_work.get("status") == "NO_WORK":
+        if no_work is not None:
+            _validate_no_work(no_work)
             return None
         raise StrategyQaTransportError("official requalification artifact has no QA handoff or verified no-work evidence")
     if handoff is None or verification is None or no_work is not None:
