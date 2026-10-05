@@ -30,6 +30,7 @@ from nexus_mechanism_factory import (
     factory_peer_ids,
     factory_signal,
     generate_factory_contracts,
+    generate_factory_contracts_v3,
     load_factory_contract,
 )
 from nexus_multitimeframe_verified_archive_discovery import load_verified_archive_frame
@@ -77,7 +78,14 @@ FRONTIER_GENERATION2 = (
     "prior_day_breakout_continuation",
 )
 FIXED_FACTORY_SPECS = load_factory_contract()
-GENERATED_FACTORY_SPECS = generate_factory_contracts(FIXED_FACTORY_SPECS, limit=24)
+GENERATED_FACTORY_SPECS_V2 = generate_factory_contracts(FIXED_FACTORY_SPECS, limit=24)
+GENERATED_FACTORY_SPECS_V3 = generate_factory_contracts_v3(
+    {**FIXED_FACTORY_SPECS, **GENERATED_FACTORY_SPECS_V2}, limit=36
+)
+GENERATED_FACTORY_SPECS = {
+    **GENERATED_FACTORY_SPECS_V2,
+    **GENERATED_FACTORY_SPECS_V3,
+}
 FACTORY_SPECS = {**FIXED_FACTORY_SPECS, **GENERATED_FACTORY_SPECS}
 FIXED_FACTORY_MECHANISMS = factory_ids(FIXED_FACTORY_SPECS)
 GENERATED_FACTORY_MECHANISMS = factory_ids(GENERATED_FACTORY_SPECS)
@@ -96,7 +104,7 @@ PEER_MECHANISMS = frozenset({
     "volatility_leadership_reversal",
     "peer_beta_residual_reclaim",
 }) | factory_peer_ids(FACTORY_SPECS)
-FRONTIER_SCREEN_VERSION = "nexus.frontier-train-screen.v4"
+FRONTIER_SCREEN_VERSION = "nexus.frontier-train-screen.v5"
 FRONTIER_SHORTLIST_SIZE = 3
 GENERATED_FRONTIER_BATCH_SIZE = 12
 # Distinct entry mechanisms vs risk/feature parameter variations are explicitly
@@ -242,6 +250,34 @@ def build_features(frames: dict[str, pd.DataFrame], *, peer_15m: pd.DataFrame | 
         one_bar_return.shift(1).rolling(48, min_periods=48).corr(one_bar_return.shift(2))
     )
 
+    # Generator-v3 distribution/path-state primitives.  Every statistic ends
+    # at i-1 or earlier; the current closed decision bar cannot alter context.
+    lagged_return = one_bar_return.shift(1)
+    f["lagged_return_skew_64"] = lagged_return.rolling(64, min_periods=64).skew()
+    downside_sq = lagged_return.clip(upper=0.0).pow(2).rolling(64, min_periods=64).sum()
+    total_sq = lagged_return.pow(2).rolling(64, min_periods=64).sum().replace(0.0, np.nan)
+    f["lagged_downside_variance_share_64"] = (
+        downside_sq / total_sq
+    ).replace([np.inf, -np.inf], np.nan)
+
+    previous_close = close.shift(1)
+    rolling_high_32 = previous_close.rolling(32, min_periods=32).max()
+    rolling_low_32 = previous_close.rolling(32, min_periods=32).min()
+    f["lagged_drawdown_depth_32"] = (
+        previous_close / rolling_high_32.replace(0.0, np.nan) - 1.0
+    ).replace([np.inf, -np.inf], np.nan)
+    f["lagged_recovery_from_low_32"] = (
+        previous_close / rolling_low_32.replace(0.0, np.nan) - 1.0
+    ).replace([np.inf, -np.inf], np.nan)
+
+    abs_return = one_bar_return.abs()
+    f["lagged_abs_return_autocorr_48"] = (
+        abs_return.shift(1).rolling(48, min_periods=48).corr(abs_return.shift(2))
+    )
+    f["lagged_close_location_persistence_16"] = (
+        f["close_location"].shift(1).rolling(16, min_periods=16).mean()
+    )
+
     lower_wick = (
         np.minimum(f["open"].astype(float), close) - f["low"].astype(float)
     ) / bar_range
@@ -251,6 +287,14 @@ def build_features(frames: dict[str, pd.DataFrame], *, peer_15m: pd.DataFrame | 
     f["lower_wick_absorption_baseline"] = (
         lower_wick.shift(9).rolling(96, min_periods=96).median()
     )
+    upper_wick = (
+        f["high"].astype(float) - np.maximum(f["open"].astype(float), close)
+    ) / bar_range
+    lower_wick_mean = lower_wick.shift(1).rolling(32, min_periods=32).mean()
+    upper_wick_mean = upper_wick.shift(1).rolling(32, min_periods=32).mean()
+    f["lagged_wick_asymmetry_32"] = (
+        lower_wick_mean / upper_wick_mean.replace(0.0, np.nan)
+    ).replace([np.inf, -np.inf], np.nan)
 
     own_vol_of_vol = own_realized.shift(1).rolling(32, min_periods=32).std()
     f["own_volatility_of_volatility"] = own_vol_of_vol
@@ -358,6 +402,13 @@ def build_features(frames: dict[str, pd.DataFrame], *, peer_15m: pd.DataFrame | 
         f["lagged_peer_beta_residual"] = lagged_residual.replace([np.inf, -np.inf], np.nan)
         f["peer_beta_residual_scale"] = (
             residual_history.rolling(96, min_periods=96).std().replace(0.0, np.nan)
+        )
+
+        # Generator-v3 peer lead/lag relation.  At decision bar i, the newest
+        # estimated pair is own(i-2) versus peer(i-3), so peer leadership is
+        # learned only from history that was already complete before i-1.
+        f["lagged_peer_lead_corr_96"] = (
+            own_return.shift(2).rolling(96, min_periods=96).corr(peer_return.shift(3))
         )
     return f
 

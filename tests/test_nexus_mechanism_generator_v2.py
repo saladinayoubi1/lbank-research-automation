@@ -2,8 +2,15 @@ from pathlib import Path
 
 import agent_manager
 import nexus_composite_strategy_research as research
-from nexus_mechanism_factory import generate_factory_contracts, load_factory_contract
-from nexus_research_missions import FOURTEENTH, THIRTEENTH, TWELFTH, PREDECESSOR, TASKS
+from nexus_mechanism_factory import (
+    generate_factory_contracts,
+    generate_factory_contracts_v3,
+    load_factory_contract,
+)
+from nexus_research_missions import (
+    FOURTEENTH, THIRTEENTH, TWELFTH, FIFTEENTH, SIXTEENTH, SEVENTEENTH,
+    PREDECESSOR, TASKS,
+)
 
 
 def _ledger_after_fixed_frontier():
@@ -31,29 +38,43 @@ def test_generator_builds_unique_reviewed_topologies():
     assert all(x["contract_digest"] for x in generated.values())
 
 
-def test_generated_frontier_advances_in_two_batches_then_exhausts():
-    first_ledger = _ledger_after_fixed_frontier()
-    first = research._frontier_configs_to_screen(first_ledger)
-    assert len(first) == research.GENERATED_FRONTIER_BATCH_SIZE == 12
-    assert {x["mechanism"] for x in first} <= set(research.GENERATED_FACTORY_MECHANISMS)
+def test_generator_v3_preserves_v2_history_then_advances_three_new_batches():
+    fixed = load_factory_contract()
+    legacy = generate_factory_contracts(fixed, limit=24)
+    appended = generate_factory_contracts_v3({**fixed, **legacy}, limit=36)
+    expanded = {**legacy, **appended}
+    assert len(legacy) == 24
+    assert len(appended) == 36
+    assert len(expanded) == 60
+    # Historical #013/#014 contracts must remain byte-semantically identical.
+    assert tuple(expanded)[:24] == tuple(legacy)
+    for ident, contract in legacy.items():
+        assert expanded[ident] == contract
 
-    core = {k: v for k, v in first_ledger.items() if k != "ledger_digest"}
-    core["frontier_screening_version"] = research.FRONTIER_SCREEN_VERSION
-    core["frontier_screened_mechanisms"] = sorted(
-        set(core["frontier_screened_mechanisms"]) | {x["mechanism"] for x in first}
-    )
-    second_ledger = {**core, "ledger_digest": research.digest(core)}
-    second = research._frontier_configs_to_screen(second_ledger)
-    assert len(second) == 12
-    assert {x["mechanism"] for x in first}.isdisjoint({x["mechanism"] for x in second})
+    ledger = _ledger_after_fixed_frontier()
+    batches = []
+    for batch_index in range(5):
+        batch = research._frontier_configs_to_screen(ledger)
+        assert len(batch) == research.GENERATED_FRONTIER_BATCH_SIZE == 12
+        batches.append([x["mechanism"] for x in batch])
+        core = {k: v for k, v in ledger.items() if k != "ledger_digest"}
+        core["frontier_screening_version"] = (
+            "nexus.frontier-train-screen.v4" if batch_index < 2
+            else research.FRONTIER_SCREEN_VERSION
+        )
+        core["frontier_screened_mechanisms"] = sorted(
+            set(core["frontier_screened_mechanisms"]) | set(batches[-1])
+        )
+        ledger = {**core, "ledger_digest": research.digest(core)}
 
-    core = {k: v for k, v in second_ledger.items() if k != "ledger_digest"}
-    core["frontier_screened_mechanisms"] = sorted(
-        set(core["frontier_screened_mechanisms"]) | {x["mechanism"] for x in second}
+    assert set(batches[0] + batches[1]) == set(legacy)
+    assert all(
+        set(batches[i]).isdisjoint(set(batches[j]))
+        for i in range(len(batches)) for j in range(i)
     )
-    final = {**core, "ledger_digest": research.digest(core)}
-    assert research._frontier_configs_to_screen(final) == []
-    assert research.research_mode(final) == "exhausted"
+    assert len(set(batches[2] + batches[3] + batches[4])) == 36
+    assert research._frontier_configs_to_screen(ledger) == []
+    assert research.research_mode(ledger) == "exhausted"
 
 
 def test_task_013_is_strict_successor_of_012():

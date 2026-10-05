@@ -129,6 +129,15 @@ def test_all_frontier_mechanisms_emit_bounded_boolean_signals():
         "prior_day_high": [100.5] * n,
         "prior_day_low": [95.0] * n,
         "prior_day_close": [99.5] * n,
+        "lagged_return_skew_64": [-0.9] * n,
+        "lagged_downside_variance_share_64": [0.7] * n,
+        "lagged_drawdown_depth_32": [-0.03] * n,
+        "lagged_recovery_from_low_32": [0.02] * n,
+        "lagged_wick_asymmetry_32": [1.5] * n,
+        "lagged_abs_return_autocorr_48": [0.25] * n,
+        "lagged_close_location_persistence_16": [0.65] * n,
+        "lagged_peer_lead_corr_96": [0.25] * n,
+        "lagged_peer_impulse": [0.01] * n,
     })
     for mechanism in research.FRONTIER_MECHANISMS:
         config = next(row for row in research.FRONTIER_CONFIGS if row["mechanism"] == mechanism)
