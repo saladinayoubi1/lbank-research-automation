@@ -121,29 +121,32 @@ def test_research_rejects_stale_or_unbound_release_data(tmp_path: Path) -> None:
         missing_sha.run_research(symbol="BTCUSDT", timeframe="minute15", family="momentum", limit=180)
 
 
-def test_qualification_gated_auto_paper_runs_real_deterministic_pipeline(tmp_path: Path, monkeypatch) -> None:
+def test_paper_candidate_requires_independent_qa_before_auto_paper(tmp_path: Path, monkeypatch) -> None:
     now = _now_ms()
     monkeypatch.setattr(product_research, "KILL_CRITERIA", _permissive_kills())
     runtime, research = _research(tmp_path, now)
     result = research.run_research(symbol="BTCUSDT", timeframe="minute15", family="momentum", limit=180)
     assert result["qualification"]["status"] == "paper_candidate"
-    assert result["latest_target"] == 1.0
+    assert result["research_lifecycle"][-1]["to_state"] == "CANDIDATE"
 
+    before = runtime.paper_snapshot()
     auto = research.auto_paper()
+    after = runtime.paper_snapshot()
 
     assert auto["paper_only"] is True
     assert auto["live_trading_authority"] is False
-    assert auto["accepted"] is True
-    assert auto["status"] == "paper_executed"
-    assert auto["signal"]["paper_trading_only"] is True
-    assert auto["risk"]["allowed"] is True
-    assert auto["execution"]["event_count"] >= 1
-    snapshot = runtime.paper_snapshot()
-    assert snapshot["account"]["positions"][0]["symbol"] == "BTCUSDT"
-    assert snapshot["session_signal_count"] == 1
+    assert auto["accepted"] is False
+    assert auto["status"] == "independent_qa_required"
+    assert auto["required_next_gate"] == "QA-41"
+    assert auto["lifecycle_state"] == "CANDIDATE"
+    assert auto["paper_events_written"] == 0
+    assert auto["record_digest"] == result["strategy_record"]["record_digest"]
+    assert after["event_count"] == before["event_count"]
+    assert after["session_signal_count"] == before["session_signal_count"] == 0
+    assert after["account"]["positions"] == []
 
 
-def test_auto_paper_uses_the_injected_canonical_clock(tmp_path: Path, monkeypatch) -> None:
+def test_auto_paper_gate_is_clock_independent_until_qa_exists(tmp_path: Path, monkeypatch) -> None:
     now = 1_700_000_000_000
     monkeypatch.setattr(product_research, "KILL_CRITERIA", _permissive_kills())
     runtime, research = _research(tmp_path, now)
@@ -154,10 +157,11 @@ def test_auto_paper_uses_the_injected_canonical_clock(tmp_path: Path, monkeypatc
 
     auto = research.auto_paper()
 
-    assert auto["status"] == "paper_executed"
+    assert auto["status"] == "independent_qa_required"
     assert auto["paper_only"] is True
     assert auto["live_trading_authority"] is False
-    assert runtime.paper_snapshot()["session_signal_count"] == 1
+    assert auto["accepted"] is False
+    assert runtime.paper_snapshot()["session_signal_count"] == 0
 
 
 def test_auto_paper_rejects_dataset_tamper_before_decision_or_execution(tmp_path: Path, monkeypatch) -> None:
@@ -180,6 +184,30 @@ def test_auto_paper_rejects_mutated_qualification_before_decision_or_execution(t
     assert result["qualification"]["status"] == "paper_candidate"
     research._last_research["qualification"]["dataset_binding_sha256"] = "0" * 64
     with pytest.raises(ProductResearchError, match="mutated qualification lineage"):
+        research.auto_paper()
+    assert runtime.paper_snapshot()["session_signal_count"] == 0
+
+
+def test_auto_paper_rejects_mutated_registry_record_before_qa_gate(tmp_path: Path, monkeypatch) -> None:
+    now = _now_ms()
+    monkeypatch.setattr(product_research, "KILL_CRITERIA", _permissive_kills())
+    runtime, research = _research(tmp_path, now)
+    result = research.run_research(symbol="BTCUSDT", timeframe="minute15", family="momentum", limit=180)
+    assert result["qualification"]["status"] == "paper_candidate"
+    research._last_research["strategy_record"]["record_digest"] = "0" * 64
+    with pytest.raises(ProductResearchError, match="strategy registry record"):
+        research.auto_paper()
+    assert runtime.paper_snapshot()["session_signal_count"] == 0
+
+
+def test_auto_paper_rejects_mutated_lifecycle_before_qa_gate(tmp_path: Path, monkeypatch) -> None:
+    now = _now_ms()
+    monkeypatch.setattr(product_research, "KILL_CRITERIA", _permissive_kills())
+    runtime, research = _research(tmp_path, now)
+    result = research.run_research(symbol="BTCUSDT", timeframe="minute15", family="momentum", limit=180)
+    assert result["qualification"]["status"] == "paper_candidate"
+    research._last_research["research_lifecycle"][-1]["to_state"] = "PAPER"
+    with pytest.raises(ProductResearchError, match="strategy lifecycle"):
         research.auto_paper()
     assert runtime.paper_snapshot()["session_signal_count"] == 0
 
