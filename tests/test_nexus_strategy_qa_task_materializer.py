@@ -28,7 +28,10 @@ def _handoff():
         "variant_id": "v1",
         "strategy_config": {"lookback": 16},
         "strategy_config_digest": "",
-        "runtime_evidence": [{"symbol": "BTCUSDT", "dataset_binding_sha256": "f"*64, "pipeline_digest": "1"*64, "qualification_digest": "2"*64, "last_open_time_ms": 1_800_000_000_000}],
+        "runtime_evidence": [
+            {"symbol": "BTCUSDT", "dataset_binding_sha256": "f"*64, "pipeline_digest": "1"*64, "qualification_digest": "2"*64, "last_open_time_ms": 1_800_000_000_000},
+            {"symbol": "ETHUSDT", "dataset_binding_sha256": "3"*64, "pipeline_digest": "4"*64, "qualification_digest": "5"*64, "last_open_time_ms": 1_800_000_000_000},
+        ],
         "producer_role": "strategy-runtime-requalification",
         "required_verifier": "qa-verifier-agent",
         "research_only": True, "paper_only": True,
