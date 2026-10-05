@@ -52,7 +52,13 @@ jobs:
           grep -q 'nexus:ui-preferences:get' desktop/nexus-product/preload.js
           grep -q 'nexus:ui-preferences:set' desktop/nexus-product/preload.js
           grep -q 'nexus:ui-preferences:reset' desktop/nexus-product/preload.js
-          grep -q 'run_automated_signal_pipeline' product_research_runtime.py
+          if grep -q 'run_automated_signal_pipeline' product_research_runtime.py; then
+            echo "Product Research must not bypass Independent QA into the execution pipeline" >&2
+            exit 1
+          fi
+          grep -q 'independent_qa_required' product_research_runtime.py
+          grep -q 'build_strategy_record' product_research_runtime.py
+          grep -q 'build_research_lifecycle' product_research_runtime.py
           grep -q 'run_research_job' product_research_runtime.py
           grep -q 'execute_paper_command' product_runtime.py
           grep -q 'recovery_snapshot' product_control_runtime.py

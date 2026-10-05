@@ -212,3 +212,15 @@ def test_active_paper_terminal_uses_product_runtime_journal_not_legacy_shared_po
     assert "journal رویدادمحور ProductRuntime فعال" in terminal
     assert "Stop/Target ثبت‌شده" in terminal
     assert "Shared/Prospective قدیمی فقط آرشیو read-only هستند" in terminal
+
+def test_research_candidate_ui_requires_independent_qa_before_auto_paper():
+    js = (ROOT / "product_ui" / "product.js").read_text(encoding="utf-8")
+    assert "CANDIDATE · QA REQUIRED" in js
+    assert "CANDIDATE — INDEPENDENT QA REQUIRED" in js
+    assert "NOT APPLICABLE" in js
+    assert "Paper execution:" in js
+    assert "independent_qa_required" in js
+    assert "Auto Paper مسدود است: Independent QA لازم است" in js
+    render = js[js.index("function renderResearch()"):js.index("async function loadAll()")]
+    assert "candidate?'good':'bad'" not in render
+
