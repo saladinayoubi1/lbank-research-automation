@@ -7,7 +7,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 from nexus_research_missions import PREDECESSOR, TASKS, ANCESTRY, validate_ancestry
 
@@ -136,6 +136,23 @@ def validate_config(config: dict[str, Any]) -> None:
             _bounded_metric(task["max_cost_units"], "max_cost_units")
         if "min_health_score" in task:
             _bounded_metric(task["min_health_score"], "min_health_score", maximum=1.0)
+        if task.get("qa_verifier_only") is True:
+            required_verifier = task.get("required_verifier")
+            if required_verifier not in worker_ids:
+                raise ValueError(f"unknown required verifier for {task['id']}")
+            verifier_rows = [row for row in workers if row.get("id") == required_verifier]
+            if len(verifier_rows) != 1 or verifier_rows[0].get("verifier") is not True:
+                raise ValueError(f"required verifier is not verifier-capable for {task['id']}")
+            if not isinstance(task.get("qa_dispatch_enabled"), bool):
+                raise ValueError(f"qa_dispatch_enabled must be boolean for {task['id']}")
+            handoff = task.get("qa_handoff_task")
+            if (
+                not isinstance(handoff, dict)
+                or handoff.get("required_verifier") != required_verifier
+                or handoff.get("task_kind") != "strategy_review_independent_qa"
+                or handoff.get("system_map_node") != "QA-41"
+            ):
+                raise ValueError(f"invalid QA handoff binding for {task['id']}")
 
 
 def workers_from(config: dict[str, Any]) -> list[Worker]:
@@ -390,13 +407,31 @@ def assign_ready_tasks(config: dict[str, Any], now: datetime) -> None:
             emit("owner_required", task_id=task["id"])
             continue
 
-        routing_rows = rank_worker_candidates(task, workers, active_load=active_load)
+        qa_verifier_only = task.get("qa_verifier_only") is True
+        if qa_verifier_only and task.get("qa_dispatch_enabled") is not True:
+            task["routing_decision"] = {
+                "evaluated_at": iso(now),
+                "selected_worker": None,
+                "reason": "independent_strategy_qa_worker_contract_not_enabled",
+                "candidates": [],
+            }
+            task["blocked_reason"] = "independent strategy QA worker contract not enabled"
+            continue
+        routing_rows = rank_worker_candidates(
+            task, workers, verifier_only=qa_verifier_only, active_load=active_load
+        )
         eligible_rows = [row for row in routing_rows if row["eligible"]]
         if task.get("id") in TASKS:
             # Actual numerical Research leases are not generic cloud pytest
             # work: only the dedicated Research Agent can be their producer.
             eligible_rows = [row for row in eligible_rows
                              if row["worker_id"] == "research-agent"]
+        if task.get("qa_verifier_only") is True:
+            # Materialized QA-41 replay is verifier work from the outset. It
+            # must never receive a generic producer lease.
+            eligible_rows = [row for row in eligible_rows
+                             if row["worker_id"] == task.get("required_verifier")
+                             and row["worker_id"] == "qa-verifier-agent"]
         if not eligible_rows:
             task["routing_decision"] = {
                 "evaluated_at": iso(now),
@@ -429,8 +464,13 @@ def assign_ready_tasks(config: dict[str, Any], now: datetime) -> None:
             }
 
         task["assigned_worker"] = worker.id
-        task["producer"] = worker.id
-        task["status"] = "LEASED"
+        if qa_verifier_only:
+            task.pop("producer", None)
+            task["verifier"] = worker.id
+            task["status"] = "VERIFYING"
+        else:
+            task["producer"] = worker.id
+            task["status"] = "LEASED"
         task["lease_id"] = str(uuid.uuid4())
         task["leased_at"] = iso(now)
         task["heartbeat_at"] = iso(now)
@@ -438,14 +478,23 @@ def assign_ready_tasks(config: dict[str, Any], now: datetime) -> None:
         task["attempt"] = int(task.get("attempt", 0)) + 1
         active_load[worker.id] = active_load.get(worker.id, 0) + 1
         active_count += 1
-        emit(
-            "task_leased",
-            task_id=task["id"],
-            worker=worker.id,
-            attempt=task["attempt"],
-            routing_score=selected["score"],
-            overlapped_external_waits=[row["task_id"] for row in waiting],
-        )
+        if qa_verifier_only:
+            emit(
+                "verification_assigned",
+                task_id=task["id"],
+                verifier=worker.id,
+                producer=task.get("qa_handoff_task", {}).get("producer_role"),
+                routing_score=selected["score"],
+            )
+        else:
+            emit(
+                "task_leased",
+                task_id=task["id"],
+                worker=worker.id,
+                attempt=task["attempt"],
+                routing_score=selected["score"],
+                overlapped_external_waits=[row["task_id"] for row in waiting],
+            )
 
 
 def route_triage(config: dict[str, Any], now: datetime) -> None:
@@ -512,6 +561,8 @@ def route_triage(config: dict[str, Any], now: datetime) -> None:
 
 
 def request_verification(config: dict[str, Any], task: dict[str, Any], now: datetime) -> bool:
+    if task.get("qa_verifier_only") is True:
+        raise ValueError("verifier-only QA task cannot request a second verifier")
     if int(task.get("authority", 0)) >= 4:
         task["status"] = "OWNER_REQUIRED"
         task["blocked_reason"] = "L4 owner approval required"
@@ -552,6 +603,33 @@ def record_result(config: dict[str, Any], task_id: str, worker_id: str, outcome:
     evidence = evidence or {}
     if outcome == "success":
         if task.get("status") == "VERIFYING":
+            if task.get("qa_verifier_only") is True:
+                handoff = task.get("qa_handoff_task")
+                receipt = evidence.get("qa_receipt_digest")
+                if (
+                    worker_id != task.get("required_verifier")
+                    or worker_id != task.get("verifier")
+                    or task.get("producer") is not None
+                    or not isinstance(handoff, Mapping)
+                    or evidence.get("qa_lease_id") != task.get("lease_id")
+                    or evidence.get("task_digest") != handoff.get("task_digest")
+                    or evidence.get("source_sha") != handoff.get("source_sha")
+                    or evidence.get("proposal_digest") != handoff.get("proposal_digest")
+                    or evidence.get("proposal_result_digest") != handoff.get("proposal_result_digest")
+                    or evidence.get("requalification_digest") != handoff.get("requalification_digest")
+                    or evidence.get("requalification_verification_digest")
+                    != handoff.get("requalification_verification_digest")
+                    or evidence.get("strategy_config_digest") != handoff.get("strategy_config_digest")
+                    or evidence.get("independent_qa_complete") is not True
+                    or evidence.get("qualification_authority") is not False
+                    or evidence.get("paper_execution_authority") is not False
+                    or evidence.get("automatic_strategy_promotion") is not False
+                    or evidence.get("live_trading_authority") is not False
+                    or not isinstance(receipt, str)
+                    or len(receipt) != 64
+                    or any(ch not in "0123456789abcdef" for ch in receipt)
+                ):
+                    raise ValueError("independent Strategy QA receipt does not bind this exact verifier lease")
             if task_id in TASKS:
                 original = task.get("result_evidence", {})
                 if (
@@ -602,6 +680,21 @@ def record_result(config: dict[str, Any], task_id: str, worker_id: str, outcome:
             task["result_evidence"] = evidence
             request_verification(config, task, utcnow())
     elif outcome == "failure":
+        if task.get("qa_verifier_only") is True:
+            task["failure_class"] = evidence.get("failure_class", "independent_strategy_qa_failed")
+            task["failure_evidence"] = evidence
+            task["status"] = "BLOCKED"
+            task["blocked_reason"] = "independent Strategy QA failed; reviewed fresh QA lease required"
+            task["assigned_worker"] = None
+            task["heartbeat_at"] = None
+            task["lease_expires_at"] = None
+            emit(
+                "strategy_qa_failed_closed",
+                task_id=task_id,
+                verifier=worker_id,
+                failure_class=task["failure_class"],
+            )
+            return
         task["failure_class"] = evidence.get("failure_class", "deterministic_or_unknown")
         task["failure_evidence"] = evidence
         task["status"] = "TRIAGE"
