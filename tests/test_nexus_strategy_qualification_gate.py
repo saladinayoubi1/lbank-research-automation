@@ -116,6 +116,9 @@ def test_done_independent_qa_qualifies_only_for_registry():
     assert result["decision"] == "QUALIFIED_FOR_REGISTRY"
     assert result["qualified"] is True
     assert result["registry_admission_allowed"] is True
+    assert len(result["runtime_evidence"]) == 2
+    assert len(result["runtime_evidence_digest"]) == 64
+    assert result["runtime_evidence_digest"] == digest(result["runtime_evidence"])
     assert result["registry_mutation_performed"] is False
     assert result["runtime_activation_authority"] is False
     assert result["paper_execution_authority"] is False
@@ -160,6 +163,10 @@ def test_qualification_is_deterministic_and_tamper_evident():
     tampered = deepcopy(first)
     tampered["runtime_activation_authority"] = True
     assert verify_qualification(tampered)["decision"] == "reject"
+
+    evidence_tamper = deepcopy(first)
+    evidence_tamper["runtime_evidence"][0]["pipeline_digest"] = "9" * 64
+    assert verify_qualification(evidence_tamper)["decision"] == "reject"
 
 
 def test_qualification_gate_import_is_control_plane_lightweight():
