@@ -8,13 +8,17 @@ from typing import Iterable
 
 @dataclass(frozen=True)
 class ActivityPolicy:
-    """Screen out statistically sparse strategy candidates before deeper promotion.
+    """Measure OOS strategy activity without imposing a trade-count promotion gate.
 
-    This is a research eligibility gate, not a profitability claim.
+    `min_oos_trades` and `min_trades_per_30d` are retained only for backward
+    compatibility with older research artifacts. They are diagnostic inputs and
+    MUST NOT make a strategy ineligible. Sample size is reported to downstream
+    validation/QA, where uncertainty can be assessed without an arbitrary
+    minimum-position cutoff.
     """
 
-    min_oos_trades: int = 40
-    min_trades_per_30d: float = 4.0
+    min_oos_trades: int = 0
+    min_trades_per_30d: float = 0.0
     min_active_month_ratio: float = 0.50
     max_median_gap_days: float = 14.0
 
@@ -55,10 +59,15 @@ def evaluate_activity(
 ) -> ActivityResult:
     """Evaluate strategy activity inside one explicit OOS interval.
 
-    Window semantics are half-open: ``[window_start, window_end)``.  Inputs are
+    Window semantics are half-open: ``[window_start, window_end)``. Inputs are
     normalized to UTC before duplicate, boundary, month-coverage, and gap checks
     so equivalent instants expressed with different offsets cannot be counted as
     separate trades.
+
+    Trade count and trades-per-30-days are diagnostics only. They never reject a
+    candidate. Temporal coverage and observed gap structure may still be used as
+    explicit activity-quality checks without manufacturing a minimum position
+    count. A missing median gap (<2 trades) is reported as `None`, not failure.
     """
 
     start = _as_utc(window_start, name="window_start")
@@ -91,13 +100,9 @@ def evaluate_activity(
         median_gap_days = None
 
     reasons: list[str] = []
-    if trade_count < policy.min_oos_trades:
-        reasons.append("INSUFFICIENT_OOS_TRADES")
-    if trades_per_30d < policy.min_trades_per_30d:
-        reasons.append("SIGNAL_FREQUENCY_TOO_LOW")
     if active_month_ratio < policy.min_active_month_ratio:
         reasons.append("TOO_FEW_ACTIVE_MONTHS")
-    if median_gap_days is None or median_gap_days > policy.max_median_gap_days:
+    if median_gap_days is not None and median_gap_days > policy.max_median_gap_days:
         reasons.append("TRADE_GAPS_TOO_WIDE")
 
     return ActivityResult(
