@@ -155,6 +155,12 @@ def test_qualified_review_builds_exact_qa41_handoff(tmp_path: Path) -> None:
     assert task["strategy_config"] == {"lookback": 16, "entry_threshold": 0.0015}
     assert task["strategy_config_digest"] == source_row["strategy_config_digest"]
     assert [item["symbol"] for item in task["runtime_evidence"]] == ["BTCUSDT", "ETHUSDT"]
+    assert all(item["last_open_time_ms"] > 0 for item in task["runtime_evidence"])
+    assert [item["last_open_time_ms"] for item in task["runtime_evidence"]] == [
+        source["runtime_last_open_time_ms"] for source in sorted(
+            source_row["runtime_evaluations"], key=lambda item: item["symbol"]
+        )
+    ]
     assert verify_handoff(handoff)["decision"] == "pass"
 
 
@@ -247,6 +253,15 @@ def test_handoff_verifier_rejects_authority_or_verifier_tamper(
     tampered = deepcopy(handoff)
     tampered["tasks"][0][field] = value
 
+    assert verify_handoff(tampered)["decision"] == "reject"
+
+
+def test_replay_window_tamper_is_fail_closed(tmp_path: Path) -> None:
+    result, verification = _requalification(tmp_path)
+    handoff = build_handoff(result, verification)
+
+    tampered = deepcopy(handoff)
+    tampered["tasks"][0]["runtime_evidence"][0]["last_open_time_ms"] = 0
     assert verify_handoff(tampered)["decision"] == "reject"
 
 
