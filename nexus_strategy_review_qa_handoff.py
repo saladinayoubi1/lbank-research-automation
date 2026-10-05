@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from nexus_strategy_proposal_runtime_requalification import (
+    APPROVED_SYMBOLS,
     VERIFICATION_SCHEMA as REQUALIFICATION_VERIFICATION_SCHEMA,
     verify_requalification,
 )
@@ -126,7 +127,7 @@ def _qa_task(
     evaluations = row.get("runtime_evaluations")
     if not isinstance(evaluations, list) or not evaluations:
         raise StrategyReviewQaHandoffError("QA handoff has no runtime evaluations")
-    evidence: list[dict[str, str]] = []
+    evidence: list[dict[str, Any]] = []
     seen_symbols: set[str] = set()
     for item in evaluations:
         if not isinstance(item, Mapping):
@@ -135,12 +136,16 @@ def _qa_task(
         dataset_digest = str(item.get("runtime_dataset_binding_sha256", ""))
         pipeline_digest = str(item.get("pipeline_digest", ""))
         qualification_digest = str(item.get("qualification_digest", ""))
+        last_open_time_ms = item.get("runtime_last_open_time_ms")
         if (
             not symbol
             or symbol in seen_symbols
             or not _HEX64.fullmatch(dataset_digest)
             or not _HEX64.fullmatch(pipeline_digest)
             or not _HEX64.fullmatch(qualification_digest)
+            or isinstance(last_open_time_ms, bool)
+            or not isinstance(last_open_time_ms, int)
+            or last_open_time_ms <= 0
             or item.get("qualification_status") != "paper_candidate"
             or item.get("deterministic_replay_verified") is not True
             or item.get("closed_candle_finality_verified") is not True
@@ -157,9 +162,12 @@ def _qa_task(
                 "dataset_binding_sha256": dataset_digest,
                 "pipeline_digest": pipeline_digest,
                 "qualification_digest": qualification_digest,
+                "last_open_time_ms": last_open_time_ms,
             }
         )
     evidence.sort(key=lambda item: item["symbol"])
+    if seen_symbols != set(APPROVED_SYMBOLS):
+        raise StrategyReviewQaHandoffError("QA handoff must bind every approved runtime symbol")
     core = {
         "schema_version": TASK_SCHEMA,
         "id": f"STRATEGY-QA-{proposal_digest}",
@@ -311,6 +319,8 @@ def verify_handoff(value: Mapping[str, Any]) -> dict[str, Any]:
                     and bool(evidence)
                     and len({item.get("symbol") for item in evidence if isinstance(item, Mapping)})
                     == len(evidence)
+                    and {item.get("symbol") for item in evidence if isinstance(item, Mapping)}
+                    == set(APPROVED_SYMBOLS)
                     and all(
                         isinstance(item, Mapping)
                         and isinstance(item.get("symbol"), str)
@@ -318,6 +328,9 @@ def verify_handoff(value: Mapping[str, Any]) -> dict[str, Any]:
                         and _HEX64.fullmatch(str(item.get("dataset_binding_sha256", "")))
                         and _HEX64.fullmatch(str(item.get("pipeline_digest", "")))
                         and _HEX64.fullmatch(str(item.get("qualification_digest", "")))
+                        and not isinstance(item.get("last_open_time_ms"), bool)
+                        and isinstance(item.get("last_open_time_ms"), int)
+                        and item.get("last_open_time_ms") > 0
                         for item in evidence
                     )
                 )
