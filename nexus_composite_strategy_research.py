@@ -29,6 +29,7 @@ from nexus_mechanism_factory import (
     factory_ids,
     factory_peer_ids,
     factory_signal,
+    generate_factory_contracts,
     load_factory_contract,
 )
 from nexus_multitimeframe_verified_archive_discovery import load_verified_archive_frame
@@ -75,7 +76,11 @@ FRONTIER_GENERATION2 = (
     "peer_beta_residual_reclaim",
     "prior_day_breakout_continuation",
 )
-FACTORY_SPECS = load_factory_contract()
+FIXED_FACTORY_SPECS = load_factory_contract()
+GENERATED_FACTORY_SPECS = generate_factory_contracts(FIXED_FACTORY_SPECS, limit=24)
+FACTORY_SPECS = {**FIXED_FACTORY_SPECS, **GENERATED_FACTORY_SPECS}
+FIXED_FACTORY_MECHANISMS = factory_ids(FIXED_FACTORY_SPECS)
+GENERATED_FACTORY_MECHANISMS = factory_ids(GENERATED_FACTORY_SPECS)
 FACTORY_MECHANISMS = factory_ids(FACTORY_SPECS)
 FRONTIER_MECHANISMS = FRONTIER_GENERATION1 + FRONTIER_GENERATION2 + FACTORY_MECHANISMS
 ALL_MECHANISMS = MECHANISMS + FRONTIER_MECHANISMS
@@ -91,8 +96,9 @@ PEER_MECHANISMS = frozenset({
     "volatility_leadership_reversal",
     "peer_beta_residual_reclaim",
 }) | factory_peer_ids(FACTORY_SPECS)
-FRONTIER_SCREEN_VERSION = "nexus.frontier-train-screen.v3"
+FRONTIER_SCREEN_VERSION = "nexus.frontier-train-screen.v4"
 FRONTIER_SHORTLIST_SIZE = 3
+GENERATED_FRONTIER_BATCH_SIZE = 12
 # Distinct entry mechanisms vs risk/feature parameter variations are explicitly
 # separately labeled; risk variants do NOT count as independent new edges.
 CONFIGS = tuple(
@@ -829,17 +835,24 @@ def select_next(ledger: dict[str, Any]) -> dict[str, Any] | None:
 def _frontier_configs_to_screen(ledger: dict[str, Any]) -> list[dict[str, Any]]:
     evaluated = set(ledger["mechanisms_evaluated"])
     screened = set(ledger.get("frontier_screened_mechanisms", []))
-    out = []
+    fixed: list[dict[str, Any]] = []
+    generated: list[dict[str, Any]] = []
+    generated_ids = set(GENERATED_FACTORY_MECHANISMS)
     for config in FRONTIER_CONFIGS:
         if config["mechanism"] in evaluated or config["mechanism"] in screened:
             continue
-        out.append({
+        row = {
             **config,
             "fingerprint": digest({
                 "config": config, "dataset": ARCHIVE_SHA256, "contract": SCHEMA,
             }),
-        })
-    return out
+        }
+        (generated if config["mechanism"] in generated_ids else fixed).append(row)
+    # Preserve historical reviewed-frontier semantics first.  Once exhausted,
+    # advance through deterministic generated topology batches without code edits.
+    if fixed:
+        return fixed
+    return generated[:GENERATED_FRONTIER_BATCH_SIZE]
 
 
 def research_mode(ledger: dict[str, Any]) -> str:

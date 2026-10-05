@@ -36,8 +36,13 @@ def test_frontier_tournament_preempts_legacy_risk_variant_cycle():
     assert research.research_mode(state) == "frontier_tournament"
     assert research.has_runnable_candidate(state) is True
     frontier = research._frontier_configs_to_screen(state)
-    assert len(frontier) == len(research.FRONTIER_MECHANISMS)
-    assert {row["mechanism"] for row in frontier} == set(research.FRONTIER_MECHANISMS)
+    fixed = (
+        set(research.FRONTIER_GENERATION1)
+        | set(research.FRONTIER_GENERATION2)
+        | set(research.FIXED_FACTORY_MECHANISMS)
+    )
+    assert len(frontier) == len(fixed)
+    assert {row["mechanism"] for row in frontier} == fixed
 
     core = {key: value for key, value in state.items() if key != "ledger_digest"}
     core["frontier_screening_version"] = research.FRONTIER_SCREEN_VERSION
@@ -154,7 +159,7 @@ def test_generation1_exhaustion_opens_only_generation2_frontier():
     assert research.research_mode(prior) == "frontier_tournament"
     candidates = research._frontier_configs_to_screen(prior)
     assert {row["mechanism"] for row in candidates} == (
-        set(research.FRONTIER_GENERATION2) | set(research.FACTORY_MECHANISMS)
+        set(research.FRONTIER_GENERATION2) | set(research.FIXED_FACTORY_MECHANISMS)
     )
     assert all(row["risk_variant"] == 0 for row in candidates)
 
@@ -165,7 +170,7 @@ def test_generation1_exhaustion_opens_only_generation2_frontier():
     g2_complete = {**core, "ledger_digest": research.digest(core)}
     assert research.research_mode(g2_complete) == "frontier_tournament"
     factory = research._frontier_configs_to_screen(g2_complete)
-    assert {row["mechanism"] for row in factory} == set(research.FACTORY_MECHANISMS)
+    assert {row["mechanism"] for row in factory} == set(research.FIXED_FACTORY_MECHANISMS)
     assert all(len(row.get("factory_contract_digest", "")) == 64 for row in factory)
 
     core["frontier_screening_version"] = research.FRONTIER_SCREEN_VERSION

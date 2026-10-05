@@ -240,3 +240,120 @@ def factory_signal(
     for condition in (*spec["context"], *spec["entry"]):
         mask &= _apply_condition(frame, condition)
     return mask.fillna(False).to_numpy(dtype=bool)
+
+
+# Generator v2: reviewed primitives are combined deterministically into new
+# bounded contracts.  The primitive library is fixed/reviewed; the candidate
+# frontier is synthesized automatically and de-duplicated by topology digest.
+GENERATOR_CONTEXTS = (
+    ("efficiency_up", [
+        {"field":"h4_up","op":"eq","value":1},
+        {"field":"h1_vol_ok","op":"eq","value":1},
+        {"field":"trend_efficiency_16","op":"ge","value":0.45},
+    ]),
+    ("serial_positive", [
+        {"field":"h4_up","op":"eq","value":1},
+        {"field":"h1_vol_ok","op":"eq","value":1},
+        {"field":"lagged_return_serial_corr","op":"ge","value":0.10},
+    ]),
+    ("wick_range", [
+        {"field":"h4_range","op":"eq","value":1},
+        {"field":"h1_vol_ok","op":"eq","value":1},
+        {"field":"lagged_lower_wick_absorption","op":"gt",
+         "other":"lower_wick_absorption_baseline","scale":1.15},
+    ]),
+    ("vov_compression", [
+        {"field":"h1_compression","op":"eq","value":1},
+        {"field":"h1_vol_ok","op":"eq","value":1},
+        {"field":"own_volatility_of_volatility","op":"lt",
+         "other":"own_volatility_of_volatility_baseline","scale":0.75},
+    ]),
+    ("peer_residual_negative", [
+        {"field":"h1_vol_ok","op":"eq","value":1},
+        {"field":"peer_beta_lagged","op":"gt","value":0},
+        {"field":"lagged_peer_beta_residual","op":"lt",
+         "other":"peer_beta_residual_scale","scale":-1.10},
+    ]),
+)
+
+GENERATOR_ENTRIES = (
+    ("midpoint_reclaim", [
+        {"field":"low","op":"le","other":"prior_range_mid"},
+        {"field":"close","op":"gt","other":"prior_range_mid"},
+        {"field":"close","op":"gt","other":"open"},
+        {"field":"rel_vol","op":"ge","value":0.90},
+    ]),
+    ("vwap_reclaim", [
+        {"field":"low","op":"le","other":"bar_proxy_vwap"},
+        {"field":"close","op":"gt","other":"bar_proxy_vwap"},
+        {"field":"close","op":"gt","other":"open"},
+        {"field":"close_location","op":"ge","value":0.60},
+    ]),
+    ("local_breakout", [
+        {"field":"close","op":"gt","other":"prior_hi"},
+        {"field":"close","op":"gt","other":"open"},
+        {"field":"close_location","op":"ge","value":0.65},
+        {"field":"rel_vol","op":"ge","value":0.95},
+    ]),
+    ("failed_downside_reclaim", [
+        {"field":"low","op":"lt","other":"prior_lo"},
+        {"field":"close","op":"gt","other":"prior_lo"},
+        {"field":"close","op":"gt","other":"open"},
+        {"field":"close_location","op":"ge","value":0.65},
+    ]),
+    ("prior_day_breakout", [
+        {"field":"close","op":"gt","other":"prior_day_high"},
+        {"field":"close","op":"gt","other":"open"},
+        {"field":"close_location","op":"ge","value":0.65},
+        {"field":"rel_vol","op":"ge","value":0.95},
+    ]),
+)
+
+
+def generate_factory_contracts(
+    existing: Mapping[str, Mapping[str, Any]],
+    *,
+    limit: int = 24,
+) -> dict[str, dict[str, Any]]:
+    if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 64:
+        raise MechanismFactoryError("generator limit invalid")
+    used_topologies = {str(item["topology_digest"]) for item in existing.values()}
+    generated: dict[str, dict[str, Any]] = {}
+    for context_name, context_raw in GENERATOR_CONTEXTS:
+        for entry_name, entry_raw in GENERATOR_ENTRIES:
+            ident = f"factory_gen_{context_name}_{entry_name}"
+            context = [_validate_condition(x, stage="context") for x in context_raw]
+            entry = [_validate_condition(x, stage="entry") for x in entry_raw]
+            used = {c["field"] for c in context}
+            used |= {c.get("other") for c in context if c.get("other")}
+            peer_used = bool(used & PEER_FIELDS)
+            topology = {
+                "family": f"generated_{context_name}_{entry_name}",
+                "peer_required": peer_used,
+                "context": context,
+                "entry": entry,
+            }
+            topology_digest = _digest(topology)
+            if topology_digest in used_topologies:
+                continue
+            core = {
+                "id": ident,
+                "family": topology["family"],
+                "hypothesis": (
+                    f"Reviewed causal context {context_name} is combined with later "
+                    f"closed-bar confirmation {entry_name}; selection remains Training-only."
+                ),
+                "peer_required": peer_used,
+                "context": context,
+                "entry": entry,
+                "factory_schema": SCHEMA,
+            }
+            generated[ident] = {
+                **core,
+                "topology_digest": topology_digest,
+                "contract_digest": _digest(core),
+            }
+            used_topologies.add(topology_digest)
+            if len(generated) >= limit:
+                return generated
+    return generated
