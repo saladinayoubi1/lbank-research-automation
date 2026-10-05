@@ -14,7 +14,7 @@ from nexus_strategy_qa_handoff_transport import (
     parse_artifact,
     store_verified_handoff,
 )
-from nexus_strategy_review_qa_handoff import verify_handoff
+from nexus_strategy_review_qa_handoff import qa_task_id, verify_handoff
 
 
 def _digest(value):
@@ -33,7 +33,7 @@ def _digest(value):
 def _handoff(source_sha: str = "b" * 40):
     task_core = {
         "schema_version": "nexus.strategy-review-qa-task.v1",
-        "id": "STRATEGY-QA-" + "a" * 64,
+        "id": qa_task_id("a" * 64, source_sha, "d" * 64),
         "task_kind": "strategy_review_independent_qa",
         "system_map_node": "QA-41",
         "status": "READY_FOR_QA_DISPATCH",
