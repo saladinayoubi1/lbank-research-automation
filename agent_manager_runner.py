@@ -24,6 +24,11 @@ STATE_BINDING_KEYS = (
     "gate",
     "dependencies",
     "required_capabilities",
+    "required_resources",
+    "qa_verifier_only",
+    "qa_dispatch_enabled",
+    "required_verifier",
+    "qa_handoff_task",
     "authority",
     "acceptance",
 )
@@ -50,7 +55,8 @@ def merge_definition(template: dict[str, Any], runtime: dict[str, Any] | None) -
         "required_capabilities", "preferred_resources", "required_resources",
         "required_data_locality", "preferred_data_locality",
         "required_trust_domain", "preferred_trust_domains",
-        "min_health_score", "max_cost_units", "authority", "acceptance"
+        "min_health_score", "max_cost_units", "authority", "acceptance",
+        "qa_verifier_only", "qa_dispatch_enabled", "required_verifier", "qa_handoff_task"
     }
     runtime_keys = {
         "status", "ready_at", "assigned_worker", "producer", "verifier", "lease_id",

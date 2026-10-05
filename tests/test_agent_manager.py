@@ -239,3 +239,96 @@ def test_triage_does_not_overbook_or_exceed_worker_authority():
     am.route_triage(cfg, datetime(2026, 8, 16, 12, 0, tzinfo=timezone.utc))
     assert cfg["tasks"][1]["status"] == "BLOCKED"
     assert cfg["tasks"][1]["blocked_reason"] == "independent root-cause analyst unavailable"
+
+
+def test_materialized_qa_task_leases_only_designated_qa_verifier(monkeypatch):
+    monkeypatch.setattr(am, "emit", lambda *args, **kwargs: None)
+    config = {
+        "policy": {"max_parallel_tasks": 2},
+        "workers": [
+            {"id":"cloud-worker","capabilities":["data_validation"],"resources":["github-cloud"],"authority_max":3,"enabled":True,"verifier":False,"max_concurrent_tasks":2},
+            {"id":"qa-verifier-agent","capabilities":["data_validation"],"resources":["github-cloud"],"authority_max":3,"enabled":True,"verifier":True,"max_concurrent_tasks":2},
+        ],
+        "tasks": [{
+            "id":"STRATEGY-QA-"+"a"*64,"status":"READY","priority":92,"authority":2,
+            "dependencies":[],"required_capabilities":["data_validation"],"required_resources":["github-cloud"],
+            "preferred_resources":["github-cloud"],"qa_verifier_only":True,
+            "qa_dispatch_enabled":True,"required_verifier":"qa-verifier-agent",
+            "qa_handoff_task":{
+                "task_kind":"strategy_review_independent_qa","system_map_node":"QA-41",
+                "required_verifier":"qa-verifier-agent","producer_role":"strategy-runtime-requalification",
+                "task_digest":"1"*64,"source_sha":"2"*40,"proposal_digest":"3"*64,
+                "proposal_result_digest":"4"*64,"requalification_digest":"5"*64,
+                "requalification_verification_digest":"6"*64,"strategy_config_digest":"7"*64,
+            },
+        }],
+    }
+    am.assign_ready_tasks(config, datetime(2026,10,6,tzinfo=timezone.utc))
+    task=config["tasks"][0]
+    assert task["status"]=="VERIFYING"
+    assert task["assigned_worker"]=="qa-verifier-agent"
+    assert task["verifier"]=="qa-verifier-agent"
+    assert "producer" not in task
+
+
+def test_materialized_qa_success_is_single_verifier_stage_and_exact_receipt(monkeypatch):
+    monkeypatch.setattr(am, "emit", lambda *args, **kwargs: None)
+    config = {
+        "policy":{"max_parallel_tasks":2},
+        "workers":[
+            {"id":"qa-verifier-agent","capabilities":["data_validation"],"resources":["github-cloud"],
+             "authority_max":3,"enabled":True,"verifier":True,"max_concurrent_tasks":2},
+        ],
+        "tasks":[{
+            "id":"STRATEGY-QA-"+"a"*64,"status":"READY","priority":92,"authority":2,
+            "dependencies":[],"required_capabilities":["data_validation"],"required_resources":["github-cloud"],
+            "qa_verifier_only":True,"qa_dispatch_enabled":True,"required_verifier":"qa-verifier-agent",
+            "qa_handoff_task":{
+                "task_kind":"strategy_review_independent_qa","system_map_node":"QA-41",
+                "required_verifier":"qa-verifier-agent","producer_role":"strategy-runtime-requalification",
+                "task_digest":"1"*64,"source_sha":"2"*40,"proposal_digest":"3"*64,
+                "proposal_result_digest":"4"*64,"requalification_digest":"5"*64,
+                "requalification_verification_digest":"6"*64,"strategy_config_digest":"7"*64,
+            },
+        }],
+    }
+    am.assign_ready_tasks(config, datetime(2026,10,6,tzinfo=timezone.utc))
+    task=config["tasks"][0]
+    receipt={
+        "qa_lease_id":task["lease_id"],"task_digest":"1"*64,"source_sha":"2"*40,
+        "proposal_digest":"3"*64,"proposal_result_digest":"4"*64,
+        "requalification_digest":"5"*64,"requalification_verification_digest":"6"*64,
+        "strategy_config_digest":"7"*64,"qa_receipt_digest":"8"*64,
+        "independent_qa_complete":True,"qualification_authority":False,
+        "paper_execution_authority":False,"automatic_strategy_promotion":False,
+        "live_trading_authority":False,
+    }
+    am.record_result(config, task["id"], "qa-verifier-agent", "success", receipt)
+    assert task["status"]=="DONE"
+    assert task["verification_evidence"]==receipt
+
+
+def test_materialized_qa_failure_blocks_instead_of_generic_second_stage(monkeypatch):
+    monkeypatch.setattr(am, "emit", lambda *args, **kwargs: None)
+    config = {
+        "policy":{"max_parallel_tasks":2},
+        "workers":[
+            {"id":"qa-verifier-agent","capabilities":["data_validation"],"resources":["github-cloud"],
+             "authority_max":3,"enabled":True,"verifier":True,"max_concurrent_tasks":2},
+        ],
+        "tasks":[{
+            "id":"STRATEGY-QA-"+"a"*64,"status":"READY","priority":92,"authority":2,
+            "dependencies":[],"required_capabilities":["data_validation"],"required_resources":["github-cloud"],
+            "qa_verifier_only":True,"qa_dispatch_enabled":True,"required_verifier":"qa-verifier-agent",
+            "qa_handoff_task":{
+                "task_kind":"strategy_review_independent_qa","system_map_node":"QA-41",
+                "required_verifier":"qa-verifier-agent",
+            },
+        }],
+    }
+    am.assign_ready_tasks(config, datetime(2026,10,6,tzinfo=timezone.utc))
+    task=config["tasks"][0]
+    am.record_result(config, task["id"], "qa-verifier-agent", "failure", {"failure_class":"replay_mismatch"})
+    assert task["status"]=="BLOCKED"
+    assert task["assigned_worker"] is None
+    assert task["blocked_reason"].startswith("independent Strategy QA failed")

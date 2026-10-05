@@ -245,3 +245,46 @@ def test_specialized_reasoning_guard_does_not_change_transient_triage():
 
     assert block_unroutable_specialized_reasoning(config) == 0
     assert config["tasks"][0]["status"] == "TRIAGE"
+
+
+def test_strategy_qa_security_binding_change_invalidates_stale_done_state():
+    template = {
+        "schema_version": 1, "phase": 4, "policy": {}, "workers": [],
+        "tasks": [{
+            "id": "STRATEGY-QA-" + "a" * 64,
+            "phase": 7, "gate": 17, "dependencies": [],
+            "required_capabilities": ["data_validation"],
+            "required_resources": ["github-cloud"],
+            "authority": 2,
+            "acceptance": ["exact independent replay"],
+            "status": "BLOCKED",
+            "qa_verifier_only": True,
+            "qa_dispatch_enabled": False,
+            "required_verifier": "qa-verifier-agent",
+            "qa_handoff_task": {"task_digest": "1" * 64, "strategy_config_digest": "2" * 64},
+        }],
+    }
+    runtime = {
+        "schema_version": 1, "phase": 4,
+        "tasks": [{
+            "id": "STRATEGY-QA-" + "a" * 64,
+            "phase": 7, "gate": 17, "dependencies": [],
+            "required_capabilities": ["data_validation"],
+            "required_resources": ["github-cloud"],
+            "authority": 2,
+            "acceptance": ["exact independent replay"],
+            "status": "DONE",
+            "qa_verifier_only": True,
+            "qa_dispatch_enabled": True,
+            "required_verifier": "qa-verifier-agent",
+            "qa_handoff_task": {"task_digest": "9" * 64, "strategy_config_digest": "8" * 64},
+            "verifier": "qa-verifier-agent",
+            "verification_evidence": {"old": True},
+        }],
+    }
+    task = merge_definition(template, runtime)["tasks"][0]
+    assert task["status"] == "BLOCKED"
+    assert task["qa_dispatch_enabled"] is False
+    assert task["qa_handoff_task"]["task_digest"] == "1" * 64
+    assert "verification_evidence" not in task
+    assert "verifier" not in task
