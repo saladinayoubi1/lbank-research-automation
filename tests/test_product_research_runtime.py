@@ -189,7 +189,7 @@ def test_auto_paper_rejects_mutated_qualification_before_decision_or_execution(t
     result = research.run_research(symbol="BTCUSDT", timeframe="minute15", family="momentum", limit=180)
     assert result["qualification"]["status"] == "paper_candidate"
     research._last_research["qualification"]["dataset_binding_sha256"] = "0" * 64
-    with pytest.raises(ProductResearchError, match="mutated qualification lineage"):
+    with pytest.raises(ProductResearchError, match="invalid canonical lineage|qualification identity mismatch"):
         research.auto_paper()
     assert runtime.paper_snapshot()["session_signal_count"] == 0
 
