@@ -43,6 +43,28 @@ def _dataset(now_ms: int, count: int = 120):
     return bind_bybit_closed_dataset(_candles(now_ms, count), canonical_symbol="BTC/USDT", source_symbol="BTCUSDT", interval="15")
 
 
+def _candidate_dataset(now_ms: int, count: int = 180):
+    end_open = ((now_ms - STEP) // STEP) * STEP
+    start = end_open - (count - 1) * STEP
+    rows = []
+    for index in range(count):
+        if index < count // 2:
+            price = 120.0 - index * 0.35
+        else:
+            price = 88.5 + (index - count // 2) * 0.65
+        rows.append({
+            "source": "Bybit", "market_type": "spot", "symbol": "BTCUSDT", "interval": "15",
+            "open_time_ms": start + index * STEP,
+            "close_time_ms": start + (index + 1) * STEP - 1,
+            "open": f"{price:.8f}", "high": f"{price * 1.01:.8f}",
+            "low": f"{price * 0.99:.8f}", "close": f"{price:.8f}",
+            "volume": "10", "turnover": f"{price * 10:.8f}", "closed": True,
+        })
+    return bind_bybit_closed_dataset(
+        rows, canonical_symbol="BTC/USDT", source_symbol="BTCUSDT", interval="15"
+    )
+
+
 def test_offline_store_accepts_only_bound_canonical_data_and_persists_by_digest(tmp_path: Path) -> None:
     store = OfflineDatasetStore(tmp_path / "offline")
     dataset = _dataset(int(time.time() * 1000))
@@ -101,7 +123,7 @@ def test_fresh_offline_candidate_still_stops_at_independent_qa(
         "min_regime_pass_ratio": 0.0,
         "max_failure_mode_severity": 10.0,
     })
-    dataset = _dataset(now)
+    dataset = _candidate_dataset(now)
     store = OfflineDatasetStore(tmp_path / "offline")
     store.import_dataset(dataset)
     runtime = ProductRuntime(tmp_path / "state")
