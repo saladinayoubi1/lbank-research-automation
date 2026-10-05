@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 
+import product_research_runtime as product_research
 from phase6_research_pipeline import bind_bybit_closed_dataset
 from product_offline_runtime import (
     CachingProductResearchRuntime,
@@ -85,6 +86,42 @@ def test_historical_canonical_dataset_can_research_offline_but_not_auto_paper(tm
     assert result["dataset"]["binding_sha256"] == historical["binding_sha256"]
     with pytest.raises(ProductResearchError, match="stale canonical data"):
         research.auto_paper()
+
+
+def test_fresh_offline_candidate_still_stops_at_independent_qa(
+    tmp_path: Path, monkeypatch
+) -> None:
+    now = int(time.time() * 1000)
+    monkeypatch.setattr(product_research, "KILL_CRITERIA", {
+        "min_robustness_score": -1.0,
+        "max_cost_stress_loss_pct": 100.0,
+        "min_walk_forward_score": -1.0,
+        "min_oos_score": -1.0,
+        "max_drawdown_pct": 100.0,
+        "min_regime_pass_ratio": 0.0,
+        "max_failure_mode_severity": 10.0,
+    })
+    dataset = _dataset(now)
+    store = OfflineDatasetStore(tmp_path / "offline")
+    store.import_dataset(dataset)
+    runtime = ProductRuntime(tmp_path / "state")
+    research = OfflineProductResearchRuntime(runtime, store, source_sha="a" * 40)
+    result = research.run_imported_research(
+        binding_sha256=dataset["binding_sha256"], family="momentum"
+    )
+    assert result["qualification"]["status"] == "paper_candidate"
+
+    before = runtime.paper_snapshot()
+    auto = research.auto_paper()
+    after = runtime.paper_snapshot()
+
+    assert auto["status"] == "independent_qa_required"
+    assert auto["required_next_gate"] == "QA-41"
+    assert auto["paper_events_written"] == 0
+    assert auto["live_trading_authority"] is False
+    assert after["event_count"] == before["event_count"]
+    assert after["session_signal_count"] == 0
+    assert after["account"]["positions"] == []
 
 
 def test_successful_online_fetch_is_cached_for_future_offline_research(tmp_path: Path) -> None:
