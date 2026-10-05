@@ -38,9 +38,57 @@ async function resetUIPreferences(){if(window.nexusDesktop?.resetPreferences)ret
 function bindSettings(){const form=$('#settingsForm');if(!form)return;const preview=()=>applyUIPreferences(formUIPreferences(),{syncForm:false});form.addEventListener('input',()=>{const out=$('#fontSizeValue'),font=form.elements.namedItem('fontSize');if(out&&font)out.textContent=font.value+'px';preview()});form.addEventListener('change',preview);form.onsubmit=async e=>{e.preventDefault();try{const saved=await persistUIPreferences(formUIPreferences());applyUIPreferences(saved);toast('تنظیمات شخصی ذخیره شد')}catch(err){toast('ذخیره تنظیمات ناموفق بود: '+err.message)}};$('#settingsReset').onclick=async()=>{try{const defaults=await resetUIPreferences();applyUIPreferences(defaults);toast('تنظیمات پیش‌فرض بازیابی شد')}catch(err){toast('بازیابی تنظیمات ناموفق بود: '+err.message)}}}
 async function initializePersonalization(){ensureSettingsSurface();try{applyUIPreferences(await readUIPreferences())}catch{applyUIPreferences(UI_DEFAULTS)}bindSettings();const build=$('#buildLabel');if(build)build.textContent='5.1.0'}
 function renderOverview(){const x=state.overview;if(!x)return;$('#productState').textContent=x.delivery||'canonical-python-sidecar';$('#paperState').textContent=x.paper?.active?'ACTIVE':'UNAVAILABLE';$('#liveState').textContent=(x.live?.status||'LOCKED').toUpperCase();const m=x.mission_control||{};$('#missionBadge').className='badge '+statusClass(m.status);$('#missionBadge').textContent=String(m.status||'unavailable').toUpperCase();const mission=m.mission||{},queue=m.queue||{},counts=queue.counts||{};$('#missionSummary').innerHTML=[metric('MISSION',mission.status||m.status||'unavailable',mission.mission_id||''),metric('READY',counts.ready??counts.READY??'—','queue'),metric('RUNNING',counts.running??counts.RUNNING??'—','queue'),metric('AGENTS',Array.isArray(m.agents)?m.agents.length:'—','registered')].join('');$('#capabilityMap').innerHTML=Object.entries(x.capabilities||{}).map(([k,v])=>`<div class="capability"><span>${esc(k.replaceAll('_',' ').toUpperCase())}</span><b class="${statusClass(v)}">${esc(v)}</b></div>`).join('')}
+function activePaperTerminalSnapshot(p,eventEnvelope){
+  const a=p?.account||{},events=Array.isArray(eventEnvelope?.events)?eventEnvelope.events:[],reportedTotal=Number(eventEnvelope?.total);
+  const complete=Number.isInteger(reportedTotal)&&reportedTotal===events.length,feesByCorrelation=new Map(),slippageByCorrelation=new Map();
+  for(const e of events){
+    const correlation=String(e?.correlation_id||''),amount=Number(e?.payload?.amount);
+    if(e?.event_type==='fee_recorded'&&correlation&&Number.isFinite(amount))feesByCorrelation.set(correlation,(feesByCorrelation.get(correlation)||0)+amount);
+    if(e?.event_type==='slippage_recorded'&&correlation&&Number.isFinite(amount))slippageByCorrelation.set(correlation,(slippageByCorrelation.get(correlation)||0)+amount);
+  }
+  const currentMeta=new Map(),timeline=new Map(),history=[],orders=[],cashflows=[],strategyFills=new Map();
+  let openingCash=null,lastAt=null,totalFees=0;
+  const strategyFor=e=>String(e?.provenance?.strategy_version||'runtime-paper');
+  for(const e of events){
+    const kind=String(e?.event_type||''),payload=e?.payload||{},provenance=e?.provenance||{},symbol=String(payload.symbol||''),correlation=String(e?.correlation_id||'');
+    if(e?.occurred_at)lastAt=e.occurred_at;
+    if(kind==='demo_account_opened'&&openingCash===null)openingCash=payload.opening_cash??null;
+    if(kind==='fee_recorded'){
+      const amount=Number(payload.amount);if(Number.isFinite(amount))totalFees+=amount;
+      cashflows.push({time:e.occurred_at,strategy:strategyFor(e),symbol:null,type:'fee',amount:payload.amount??null});
+    }
+    if(kind==='simulated_fill_recorded'){
+      const strategy=strategyFor(e);strategyFills.set(strategy,(strategyFills.get(strategy)||0)+1);
+      orders.push({id:e.event_id,strategy,symbol,side:payload.side??null,quantity:payload.quantity??null,price:payload.price??null,status:'filled',fee:feesByCorrelation.get(correlation)??null,slippage_cost:slippageByCorrelation.get(correlation)??null,reason:'paper_execution',time:e.occurred_at});
+    }
+    if(kind==='position_opened'||kind==='position_reversed'){
+      if(kind==='position_reversed'){
+        const old=timeline.get(symbol),realized=Number(payload.realized_pnl),fee=feesByCorrelation.get(correlation);
+        history.push({strategy:old?.strategy||strategyFor(e),symbol,side:old?.side??null,quantity:old?.quantity??null,entry_price:old?.entry_price??null,exit_price:payload.entry_price??null,gross_pnl:payload.realized_pnl??null,fees:fee??null,funding:null,net_pnl:Number.isFinite(realized)&&Number.isFinite(fee)?realized-fee:null,opened_at:old?.opened_at??null,time:e.occurred_at,reason:'position_reversed',partial:false});
+      }
+      const meta={kind:provenance.kind||'unknown',source:provenance.source_id||'runtime-journal',strategy:strategyFor(e),timeframe:provenance.timeframe||null,opened_at:e.occurred_at||null,position_event_id:e.event_id||null,side:payload.side??null,quantity:payload.quantity??null,entry_price:payload.entry_price??null};
+      currentMeta.set(symbol,meta);timeline.set(symbol,meta);
+    }else if(kind==='position_reduced'){
+      const old=timeline.get(symbol),realized=Number(payload.realized_pnl),fee=feesByCorrelation.get(correlation),oldQty=Number(old?.quantity),reduced=Number(payload.quantity);
+      history.push({strategy:old?.strategy||strategyFor(e),symbol,side:old?.side??null,quantity:payload.quantity??null,entry_price:old?.entry_price??null,exit_price:payload.exit_price??null,gross_pnl:payload.realized_pnl??null,fees:fee??null,funding:null,net_pnl:Number.isFinite(realized)&&Number.isFinite(fee)?realized-fee:null,opened_at:old?.opened_at??null,time:e.occurred_at,reason:'position_reduced',partial:true});
+      if(old&&Number.isFinite(oldQty)&&Number.isFinite(reduced))timeline.set(symbol,{...old,quantity:String(Math.max(0,oldQty-reduced))});
+    }else if(kind==='position_closed'){
+      const old=timeline.get(symbol),realized=Number(payload.realized_pnl),fee=feesByCorrelation.get(correlation);
+      history.push({strategy:old?.strategy||strategyFor(e),symbol,side:old?.side??null,quantity:old?.quantity??null,entry_price:old?.entry_price??null,exit_price:payload.exit_price??null,gross_pnl:payload.realized_pnl??null,fees:fee??null,funding:null,net_pnl:Number.isFinite(realized)&&Number.isFinite(fee)?realized-fee:null,opened_at:old?.opened_at??null,time:e.occurred_at,reason:'position_closed',partial:false});
+      currentMeta.delete(symbol);timeline.delete(symbol);
+    }
+  }
+  const positions=(Array.isArray(a.positions)?a.positions:[]).map(r=>{
+    const symbol=String(r.symbol||''),m=currentMeta.get(symbol)||{},st=(a.stops||[]).find(x=>x.symbol===symbol),tg=(a.targets||[]).find(x=>x.symbol===symbol);
+    return{id:m.position_event_id||('runtime:'+symbol),strategy:m.strategy||'runtime-paper',symbol,side:r.side,quantity:r.quantity,entry_price:r.entry_price,mark_price:null,unrealized_pnl:null,net_pnl_to_date:null,stop_loss:st?.price??null,take_profit:tg?.price??null,opened_at:m.opened_at??null,mark_time:null,timeframe:m.timeframe??null,source:m.source||'runtime-journal',provenance_kind:m.kind||'unknown'};
+  });
+  const strategies=[...new Set([...strategyFills.keys(),...positions.map(r=>r.strategy)])].map(strategy=>({strategy,allocation:null,balance:null,equity:null,net_pnl:null,fills:strategyFills.get(strategy)||0,halted:a.kill_switch_enabled===true}));
+  const initial=Number(openingCash),equity=Number(a.equity),netPnl=Number.isFinite(initial)&&Number.isFinite(equity)?equity-initial:null;
+  return{available:p?.active===true&&p?.paper_only===true&&p?.live_trading_authority===false,stale:false,status:a.kill_switch_enabled?'risk_halted':'active',source_type:'product_runtime_event_journal',export_url:'/api/product/export/paper.csv',export_filename:'nexus-paper-events.csv',event_window_complete:complete,head_event_digest:p?.head_event_digest||null,checked_at:lastAt,last_execution_utc:lastAt,valuation:'event_sourced_runtime',account:{equity:a.equity??null,balance:a.cash??null,net_pnl:netPnl,unrealized_pnl:a.unrealized_pnl??null,realized_gross:a.realized_pnl??null,fees:complete?totalFees:null,funding:null,free_margin:null},positions,history,orders,cashflows,strategies};
+}
 function renderPaper(){
   const p=state.paper;if(!p)return;
-  window.NexusPaperTerminal?.render(p.shared_portfolio);
+  window.NexusPaperTerminal?.render(activePaperTerminalSnapshot(p,state.events));
   const a=p.account||{},positions=a.positions||[],events=state.events?.events||[],meta=new Map();
   for(const e of events){
     const symbol=e?.payload?.symbol;if(!symbol)continue;
@@ -66,9 +114,9 @@ function renderPaper(){
     metric('OPEN POSITIONS',positions.length,`${autoCount} auto · ${positions.length-autoCount} manual`)
   ].join('');
   const rows=positions.map(r=>{
-    const m=meta.get(String(r.symbol))||{},automatic=m.kind==='automatic',st=(a.stops||[]).find(x=>x.symbol===r.symbol),tg=(a.targets||[]).find(x=>x.symbol===r.symbol);
-    const strategy=String(m.strategy||'manual-paper-v1').replace(/-product-v\d+$/,'').replaceAll('_',' ');
-    return`<tr><td><span class="badge ${automatic?'good':'neutral'}">${automatic?'AUTO':'MANUAL'}</span></td><td class="mono">${esc(r.symbol)}</td><td>${esc(strategy)}</td><td>${esc(m.timeframe||'—')}</td><td>${esc(r.side)}</td><td>${esc(r.quantity)}</td><td>${esc(r.entry_price)}</td><td title="PnL ردیفی نیازمند mark اختصاصی پوزیشن است">—</td><td>${esc(st?.price)}</td><td>${esc(tg?.price)}</td><td>${esc(m.source||'nexus-product-paper-terminal')}</td><td>${esc(m.opened_at||'—')}</td></tr>`
+    const m=meta.get(String(r.symbol))||{},kind=m.kind||'unknown',automatic=kind==='automatic',st=(a.stops||[]).find(x=>x.symbol===r.symbol),tg=(a.targets||[]).find(x=>x.symbol===r.symbol);
+    const strategy=String(m.strategy||'runtime-paper').replace(/-product-v\d+$/,'').replaceAll('_',' ');
+    return`<tr><td><span class="badge ${automatic?'good':'neutral'}">${automatic?'AUTO':kind==='manual'?'MANUAL':'RUNTIME'}</span></td><td class="mono">${esc(r.symbol)}</td><td>${esc(strategy)}</td><td>${esc(m.timeframe||'—')}</td><td>${esc(r.side)}</td><td>${esc(r.quantity)}</td><td>${esc(r.entry_price)}</td><td title="PnL ردیفی نیازمند mark اختصاصی پوزیشن است">—</td><td>${esc(st?.price)}</td><td>${esc(tg?.price)}</td><td>${esc(m.source||'runtime-journal')}</td><td>${esc(m.opened_at||'—')}</td></tr>`
   });
   $('#positions').innerHTML=rows.length?`<table class="data-table"><thead><tr><th>نوع</th><th>نماد</th><th>استراتژی</th><th>TF</th><th>جهت</th><th>مقدار</th><th>ورود</th><th>PnL</th><th>Stop</th><th>Target</th><th>Source</th><th>زمان ورود</th></tr></thead><tbody>${rows.join('')}</tbody></table>`:'<div class="empty-state">هیچ پوزیشن Paper بازی وجود ندارد.</div>';
 }
