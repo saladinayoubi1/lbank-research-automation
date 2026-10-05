@@ -150,6 +150,8 @@ def _validate_independent_qa_receipt(
 
     producer = _qa_identifier(receipt.get("producer_id"), "producer_id")
     verifier = _qa_identifier(receipt.get("verifier_id"), "verifier_id")
+    if producer != "research-agent":
+        raise ProductResearchError("independent QA producer must be research-agent")
     if verifier != "qa-verifier-agent":
         raise ProductResearchError("independent QA verifier must be qa-verifier-agent")
     if producer == verifier:
