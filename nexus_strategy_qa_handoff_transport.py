@@ -49,23 +49,37 @@ def _digest(value: Mapping[str, Any]) -> str:
 
 def _validate_no_work(value: Mapping[str, Any]) -> None:
     expected = {
-        "schema_version", "source_sha", "reason", "proposal_count",
-        "paper_only", "automatic_strategy_promotion",
-        "live_trading_authority", "evidence_digest",
+        "schema_version", "status", "reason", "trigger_run_id", "source_sha",
+        "neighborhood_fingerprint", "exhaustion_certificate_digest",
+        "proposal_count", "qualification_claimed", "research_only", "paper_only",
+        "paper_execution_started", "live_trading_authority",
+        "private_credentials_used", "automatic_strategy_promotion",
+        "evidence_digest",
     }
     if not isinstance(value, Mapping) or set(value) != expected:
         raise StrategyQaTransportError("runtime-requalification no-work schema mismatch")
     core = dict(value)
     claimed = core.pop("evidence_digest", None)
+    trigger_run_id = value.get("trigger_run_id")
     if (
         value.get("schema_version")
         != "nexus.strategy-proposal-runtime-requalification-no-work.v1"
+        or value.get("status") != "NO_WORK"
+        or value.get("reason") != "exact_exhausted_neighborhood_reused"
+        or isinstance(trigger_run_id, bool)
+        or not isinstance(trigger_run_id, int)
+        or trigger_run_id < 1
         or not SHA40.fullmatch(str(value.get("source_sha", "")))
-        or value.get("reason") != "proposal_queue_contains_no_research_proposals"
+        or not HEX64.fullmatch(str(value.get("neighborhood_fingerprint", "")))
+        or not HEX64.fullmatch(str(value.get("exhaustion_certificate_digest", "")))
         or value.get("proposal_count") != 0
+        or value.get("qualification_claimed") is not False
+        or value.get("research_only") is not True
         or value.get("paper_only") is not True
-        or value.get("automatic_strategy_promotion") is not False
+        or value.get("paper_execution_started") is not False
         or value.get("live_trading_authority") is not False
+        or value.get("private_credentials_used") is not False
+        or value.get("automatic_strategy_promotion") is not False
         or claimed != _digest(core)
     ):
         raise StrategyQaTransportError("runtime-requalification no-work evidence rejected")
@@ -100,7 +114,7 @@ def _download_artifact(artifact_id: int) -> bytes:
 
 def _regular_member(info: zipfile.ZipInfo) -> bool:
     mode = (info.external_attr >> 16) & 0xFFFF
-    return not stat.S_ISLNK(mode) and not info.is_dir()
+    return not stat.S_ISLNK(mode) and not info.is_dir() and not (info.flag_bits & 0x1)
 
 
 def _json_member(zf: zipfile.ZipFile, basename: str) -> dict[str, Any] | None:
