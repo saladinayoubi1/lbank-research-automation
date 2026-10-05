@@ -100,8 +100,11 @@ def test_registry_and_research_are_real_canonical_paper_only(tmp_path: Path) -> 
     assert result["qualification"]["status"] in {"paper_candidate", "killed"}
     assert result["strategy_record"]["qualification_digest"] == result["qualification"]["qualification_digest"]
     assert result["research_lifecycle"][-1]["to_state"] in {"CANDIDATE", "REJECTED"}
+    expected_qa_status = (
+        "required" if result["qualification"]["status"] == "paper_candidate" else "not_applicable"
+    )
     assert result["independent_qa"] == {
-        "status": "required",
+        "status": expected_qa_status,
         "verified": False,
         "system_map_node": "QA-41",
         "paper_execution_allowed": False,
