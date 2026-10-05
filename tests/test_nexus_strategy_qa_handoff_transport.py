@@ -103,12 +103,20 @@ def _artifact(*, source_sha: str = "b" * 40, no_work: bool = False, tamper: bool
         if no_work:
             core = {
                 "schema_version": "nexus.strategy-proposal-runtime-requalification-no-work.v1",
+                "status": "NO_WORK",
+                "reason": "exact_exhausted_neighborhood_reused",
+                "trigger_run_id": 41,
                 "source_sha": source_sha,
-                "reason": "proposal_queue_contains_no_research_proposals",
+                "neighborhood_fingerprint": "6" * 64,
+                "exhaustion_certificate_digest": "7" * 64,
                 "proposal_count": 0,
+                "qualification_claimed": False,
+                "research_only": True,
                 "paper_only": True,
-                "automatic_strategy_promotion": False,
+                "paper_execution_started": False,
                 "live_trading_authority": False,
+                "private_credentials_used": False,
+                "automatic_strategy_promotion": False,
             }
             zf.writestr(
                 "runtime-requalification-no-work.json",
@@ -138,12 +146,20 @@ def test_tampered_no_work_artifact_fails_closed():
     with zipfile.ZipFile(blob, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         core = {
             "schema_version": "nexus.strategy-proposal-runtime-requalification-no-work.v1",
+            "status": "NO_WORK",
+            "reason": "exact_exhausted_neighborhood_reused",
+            "trigger_run_id": 41,
             "source_sha": "b" * 40,
-            "reason": "proposal_queue_contains_no_research_proposals",
+            "neighborhood_fingerprint": "6" * 64,
+            "exhaustion_certificate_digest": "7" * 64,
             "proposal_count": 1,
+            "qualification_claimed": False,
+            "research_only": True,
             "paper_only": True,
-            "automatic_strategy_promotion": False,
+            "paper_execution_started": False,
             "live_trading_authority": False,
+            "private_credentials_used": False,
+            "automatic_strategy_promotion": False,
         }
         zf.writestr(
             "runtime-requalification-no-work.json",
