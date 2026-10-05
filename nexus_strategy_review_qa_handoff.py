@@ -46,6 +46,15 @@ def _digest(value: Any) -> str:
     return hashlib.sha256(_canonical(value)).hexdigest()
 
 
+def qa_task_id(proposal_digest: str, source_sha: str, requalification_digest: str) -> str:
+    """Deterministic QA lease identity for one exact requalification epoch."""
+    return "STRATEGY-QA-" + _digest({
+        "proposal_digest": str(proposal_digest),
+        "source_sha": str(source_sha),
+        "requalification_digest": str(requalification_digest),
+    })
+
+
 def _load_json(path: str | Path) -> dict[str, Any]:
     target = Path(path)
     if target.is_symlink() or not target.is_file() or target.stat().st_size > 4_000_000:
@@ -170,7 +179,7 @@ def _qa_task(
         raise StrategyReviewQaHandoffError("QA handoff must bind every approved runtime symbol")
     core = {
         "schema_version": TASK_SCHEMA,
-        "id": f"STRATEGY-QA-{proposal_digest}",
+        "id": qa_task_id(proposal_digest, source_sha, requalification_digest),
         "task_kind": "strategy_review_independent_qa",
         "system_map_node": "QA-41",
         "status": "READY_FOR_QA_DISPATCH",
@@ -313,7 +322,11 @@ def verify_handoff(value: Mapping[str, Any]) -> dict[str, Any]:
                     and bool(task_core.get("strategy_config"))
                     and _HEX64.fullmatch(str(task_core.get("strategy_config_digest", "")))
                     and task_core.get("strategy_config_digest") == _digest(task_core.get("strategy_config"))
-                    and task_id == f"STRATEGY-QA-{task_core.get('proposal_digest')}"
+                    and task_id == qa_task_id(
+                        str(task_core.get("proposal_digest", "")),
+                        str(task_core.get("source_sha", "")),
+                        str(task_core.get("requalification_digest", "")),
+                    )
                     and task_id not in ids
                     and isinstance(evidence, list)
                     and bool(evidence)

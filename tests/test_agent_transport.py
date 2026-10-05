@@ -8,6 +8,8 @@ import pytest
 import agent_manager as am
 import agent_transport as at
 from nexus_research_missions import EIGHTH
+from nexus_strategy_independent_qa import digest
+from nexus_strategy_review_qa_handoff import qa_task_id
 
 
 def task(worker="developer-agent", authority=1, lease_id="lease-1", attempt=1):
@@ -27,6 +29,48 @@ def task(worker="developer-agent", authority=1, lease_id="lease-1", attempt=1):
         "producer": worker,
         "lease_id": lease_id,
         "attempt": attempt,
+    }
+
+
+def strategy_qa_task():
+    core = {
+        "schema_version":"nexus.strategy-review-qa-task.v1",
+        "id":qa_task_id("a"*64, "b"*40, "d"*64),
+        "task_kind":"strategy_review_independent_qa","system_map_node":"QA-41",
+        "status":"READY_FOR_QA_DISPATCH","source_sha":"b"*40,
+        "proposal_digest":"a"*64,"proposal_result_digest":"c"*64,
+        "requalification_digest":"d"*64,"requalification_verification_digest":"e"*64,
+        "family":"momentum","timeframe":"hour4","variant_id":"v1",
+        "strategy_config":{"lookback":16},"strategy_config_digest":"",
+        "runtime_evidence":[
+            {
+                "symbol":"BTCUSDT","dataset_binding_sha256":"f"*64,
+                "pipeline_digest":"1"*64,"qualification_digest":"2"*64,
+                "last_open_time_ms":1800000000000,
+            },
+            {
+                "symbol":"ETHUSDT","dataset_binding_sha256":"3"*64,
+                "pipeline_digest":"4"*64,"qualification_digest":"5"*64,
+                "last_open_time_ms":1800000000000,
+            },
+        ],
+        "producer_role":"strategy-runtime-requalification","required_verifier":"qa-verifier-agent",
+        "research_only":True,"paper_only":True,"candidate_creation_authority":False,
+        "qualification_authority":False,"promotion_authority":False,
+        "paper_execution_authority":False,"automatic_strategy_promotion":False,
+        "live_trading_authority":False,
+    }
+    core["strategy_config_digest"] = digest(core["strategy_config"])
+    handoff = {**core, "task_digest": digest(core)}
+    return {
+        "id":handoff["id"],"title":"independent Strategy QA","phase":7,"gate":17,
+        "status":"VERIFYING","priority":92,"dependencies":[],
+        "required_capabilities":["data_validation"],"required_resources":["github-cloud"],
+        "preferred_resources":["github-cloud"],"authority":2,"acceptance":["exact replay"],
+        "assigned_worker":"qa-verifier-agent","verifier":"qa-verifier-agent",
+        "required_verifier":"qa-verifier-agent","qa_verifier_only":True,
+        "qa_dispatch_enabled":True,"qa_handoff_task":handoff,
+        "lease_id":"qa-strategy-lease","attempt":1,
     }
 
 
@@ -89,6 +133,28 @@ def test_envelope_binds_stable_task_correlation_and_lease_scoped_dispatch():
     assert first_env["dispatch_id"] != second_env["dispatch_id"]
     assert len(first_env["correlation_id"]) == 32
     assert len(first_env["dispatch_id"]) == 32
+
+def test_strategy_qa_transport_embeds_exact_verifier_only_handoff():
+    t = strategy_qa_task()
+    env = at.envelope_for(t)
+    assert env["worker_id"] == "qa-verifier-agent"
+    assert env["phase"] == 7
+    assert env["transport"] == "github-cloud"
+    assert env["strategy_qa_task"] == t["qa_handoff_task"]
+    assert env["strategy_qa_task"]["source_sha"] == "b" * 40
+
+
+def test_strategy_qa_transport_rejects_tampered_or_disabled_handoff():
+    t = strategy_qa_task()
+    t["qa_handoff_task"]["strategy_config"]["lookback"] = 99
+    with pytest.raises(Exception):
+        at.envelope_for(t)
+
+    disabled = strategy_qa_task()
+    disabled["qa_dispatch_enabled"] = False
+    with pytest.raises(ValueError, match="verifier-only and enabled"):
+        at.envelope_for(disabled)
+
 
 
 def test_dispatch_marks_running_only_after_api_accepts(monkeypatch):

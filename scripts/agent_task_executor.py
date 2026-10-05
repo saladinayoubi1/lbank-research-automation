@@ -110,6 +110,7 @@ def decode_payload(value: str) -> dict[str, Any]:
         raise ValueError("dispatch payload encoding is invalid") from exc
     qa_keys = {"research_producer_lease_id", "research_producer_receipt_digest",
                "research_producer_source_sha"}
+    strategy_qa_keys = {"strategy_qa_task"}
     followon_keys = {
         "research_predecessor_source_sha", "research_predecessor_receipt_digest",
         "research_predecessor_qa_digest", "research_predecessor_ledger_digest",
@@ -123,8 +124,16 @@ def decode_payload(value: str) -> dict[str, Any]:
         data.get("task_id") in RESEARCH_TASKS
         and data.get("worker_id") == "qa-verifier-agent"
     )
-    expected = DISPATCH_KEYS | (qa_keys if is_research_qa else set()) | (
-        followon_keys if is_followon else set()
+    is_strategy_qa = (
+        isinstance(data.get("task_id"), str)
+        and data.get("task_id", "").startswith("STRATEGY-QA-")
+        and data.get("worker_id") == "qa-verifier-agent"
+    )
+    expected = (
+        DISPATCH_KEYS
+        | (qa_keys if is_research_qa else set())
+        | (strategy_qa_keys if is_strategy_qa else set())
+        | (followon_keys if is_followon else set())
     )
     if is_research_qa and not qa_keys.issubset(keys):
         raise ValueError("Research independent QA producer binding absent")
@@ -137,6 +146,16 @@ def decode_payload(value: str) -> dict[str, Any]:
             sys.path.insert(0, repo_root)
         from nexus_research_missions import validate_ancestry
         validate_ancestry({k: data[k] for k in followon_keys})
+    if is_strategy_qa:
+        if data.get("phase") != 7 or data.get("transport") != "github-cloud":
+            raise ValueError("Strategy independent QA requires phase 7 cloud transport")
+        from nexus_strategy_independent_qa import validate_task
+        strategy_task = data.get("strategy_qa_task")
+        if not isinstance(strategy_task, dict):
+            raise ValueError("Strategy independent QA handoff binding absent")
+        validate_task(strategy_task, str(strategy_task.get("source_sha", "")))
+        if strategy_task.get("id") != data.get("task_id"):
+            raise ValueError("Strategy independent QA task identity mismatch")
     if is_research_qa:
         if keys != expected or not qa_keys.issubset(keys):
             raise ValueError("Research independent QA producer binding absent")
@@ -227,6 +246,42 @@ def _phase7_pytest_workload(payload: dict[str, Any], transport: str, spec: dict[
 
 def deterministic_execution(payload: dict[str, Any], transport: str) -> tuple[str, dict[str, Any]]:
     task_id = payload["task_id"]
+    if isinstance(task_id, str) and task_id.startswith("STRATEGY-QA-"):
+        if (
+            payload.get("phase") != 7
+            or transport != "github-cloud"
+            or payload.get("worker_id") != "qa-verifier-agent"
+        ):
+            return "failure", {
+                "executor": "nexus-strategy-independent-qa",
+                "failure_class": "strategy_qa_lease_worker_phase_or_transport_mismatch",
+                "qualification_authority": False,
+                "paper_execution_authority": False,
+                "automatic_strategy_promotion": False,
+                "live_trading_authority": False,
+            }
+        try:
+            from nexus_strategy_independent_qa import (
+                StrategyIndependentQaError,
+                run_independent_qa,
+            )
+            receipt = run_independent_qa(
+                payload["strategy_qa_task"],
+                lease_id=payload["lease_id"],
+                execution_source_sha=os.environ.get("GITHUB_SHA", ""),
+                state_root=Path("build/strategy-independent-qa"),
+            )
+            return "success", receipt
+        except (KeyError, OSError, ValueError, RuntimeError, StrategyIndependentQaError) as exc:
+            return "failure", {
+                "executor": "nexus-strategy-independent-qa",
+                "failure_class": "strategy_independent_qa_failed",
+                "reason": str(exc)[:600],
+                "qualification_authority": False,
+                "paper_execution_authority": False,
+                "automatic_strategy_promotion": False,
+                "live_trading_authority": False,
+            }
     phase4 = PHASE4_WORKLOADS.get(task_id)
     if phase4 is not None:
         return _bounded_pytest_workload(payload, transport, phase4, expected_phase=4)

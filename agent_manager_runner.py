@@ -13,6 +13,8 @@ import agent_manager as am
 from nexus_research_missions import (FIRST, SECOND, THIRD, TASKS, PREDECESSOR, ANCESTRY, attested_predecessor, validate_ancestry)
 from scripts.nexus_research_qa_incident_recovery import SPEC as RESEARCH_QA_INCIDENT_SPEC, load_spec as load_research_qa_incident, recover_incident as recover_research_qa_incident
 from scripts.nexus_research_input_incident_recovery import SPEC as RESEARCH_INPUT_INCIDENT_SPEC, load_spec as load_research_input_incident, recover_incident as recover_research_input_incident
+from nexus_strategy_qa_task_materializer import materialize_qa_tasks
+from nexus_strategy_review_qa_handoff import verify_handoff
 
 RUNTIME_PATH = Path("data/agent_coordination/agent_manager_runtime.json")
 SUMMARY_PATH = Path("data/agent_coordination/manager_state.json")
@@ -529,14 +531,53 @@ def load_runtime(path: Path) -> dict[str, Any] | None:
         return None
 
 
+def _load_regular_json(path: Path) -> dict[str, Any]:
+    if path.is_symlink() or not path.is_file() or path.stat().st_size > 4_000_000:
+        raise ValueError("Strategy QA durable evidence is missing, linked, or oversized")
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise ValueError("Strategy QA durable evidence is unreadable") from exc
+    if not isinstance(value, dict):
+        raise ValueError("Strategy QA durable evidence must be an object")
+    return value
+
+
+def materialize_strategy_qa_store(template: dict[str, Any], store: Path) -> dict[str, Any]:
+    if not store.exists():
+        return deepcopy(template)
+    if store.is_symlink() or not store.is_dir():
+        raise ValueError("Strategy QA durable evidence store is invalid")
+
+    result = deepcopy(template)
+    for directory in sorted(store.iterdir(), key=lambda path: path.name):
+        if directory.is_symlink() or not directory.is_dir():
+            raise ValueError("Strategy QA durable evidence contains an invalid entry")
+        if not re.fullmatch(r"[0-9a-f]{64}", directory.name):
+            raise ValueError("Strategy QA durable evidence directory identity is malformed")
+        handoff = _load_regular_json(directory / "qa-handoff.json")
+        verification = _load_regular_json(directory / "qa-handoff-verification.json")
+        if handoff.get("handoff_digest") != directory.name:
+            raise ValueError("Strategy QA durable evidence path does not match handoff digest")
+        if verify_handoff(handoff) != verification or verification.get("decision") != "pass":
+            raise ValueError("Strategy QA durable evidence verification failed")
+        result = materialize_qa_tasks(result, handoff, verification)
+    return result
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Durable wrapper for the NEXUS agent manager")
     parser.add_argument("--config", default=str(am.QUEUE_PATH))
     parser.add_argument("--runtime", default=str(RUNTIME_PATH))
     parser.add_argument("--summary", default=str(SUMMARY_PATH))
+    parser.add_argument(
+        "--strategy-qa-store",
+        default="data/agent_coordination/strategy_qa_handoffs",
+    )
     args = parser.parse_args()
 
     template = am.load_config(Path(args.config))
+    template = materialize_strategy_qa_store(template, Path(args.strategy_qa_store))
     config = merge_definition(template, load_runtime(Path(args.runtime)))
     apply_provider_gates(config)
     recover_completed_root_cause_analysis(config)
