@@ -202,52 +202,124 @@ class ProductResearchRuntime:
         return "neutral", "0.60"
 
     def auto_paper(self) -> dict[str, Any]:
+        """Fail closed until an independently verified QA acceptance is bound.
+
+        A deterministic research qualification is candidate evidence only.  It
+        must not become executable Paper authority by itself.  This method
+        replays the canonical dataset, qualification, immutable strategy record,
+        and research lifecycle so a tampered candidate cannot hide behind the
+        QA gate, then stops at QA-41 without writing Paper events.
+        """
+
         research = self._last_research
-        if research is None: raise ProductResearchError("run canonical research before automated Paper")
+        if research is None:
+            raise ProductResearchError("run canonical research before automated Paper")
         try:
-            dataset = validate_canonical_dataset(research["_dataset"], registry_path=_registry_path())
+            dataset = validate_canonical_dataset(
+                research["_dataset"], registry_path=_registry_path()
+            )
             qualification = research["qualification"]
             recomputed = qualify(dataset, research["_experiment"], research["evidence"])
+            recomputed_record = build_strategy_record(
+                dataset, research["_experiment"], qualification, research["evidence"]
+            )
+            recomputed_lifecycle = list(build_research_lifecycle(recomputed_record))
         except Exception as exc:
-            raise ProductResearchError(f"automated Paper rejected invalid canonical lineage: {exc}") from exc
+            raise ProductResearchError(
+                f"automated Paper rejected invalid canonical lineage: {exc}"
+            ) from exc
+
         if recomputed != qualification:
-            raise ProductResearchError("automated Paper rejected mutated qualification lineage")
+            raise ProductResearchError(
+                "automated Paper rejected mutated qualification lineage"
+            )
         expected_evidence_ref = f"dataset-sha256:{dataset['binding_sha256']}"
         if expected_evidence_ref not in research["evidence"].get("evidence_refs", []):
-            raise ProductResearchError("automated Paper rejected evidence bound to another dataset")
+            raise ProductResearchError(
+                "automated Paper rejected evidence bound to another dataset"
+            )
+
         dataset_summary = research.get("dataset", {})
         request = research.get("request", {})
-        if dataset_summary.get("binding_sha256") != dataset["binding_sha256"] or dataset_summary.get("manifest_sha256") != dataset["manifest_sha256"]:
+        if (
+            dataset_summary.get("binding_sha256") != dataset["binding_sha256"]
+            or dataset_summary.get("manifest_sha256") != dataset["manifest_sha256"]
+        ):
             raise ProductResearchError("automated Paper rejected mutated dataset summary")
         if qualification.get("dataset_binding_sha256") != dataset["binding_sha256"]:
-            raise ProductResearchError("automated Paper rejected qualification bound to another dataset")
-        if request.get("symbol") != dataset["source_symbol"] or TIMEFRAMES.get(request.get("timeframe"), {}).get("manifest") != dataset["manifest_timeframe"] or request.get("family") != qualification.get("family"):
-            raise ProductResearchError("automated Paper rejected request outside canonical qualification tuple")
+            raise ProductResearchError(
+                "automated Paper rejected qualification bound to another dataset"
+            )
+        if (
+            request.get("symbol") != dataset["source_symbol"]
+            or TIMEFRAMES.get(request.get("timeframe"), {}).get("manifest")
+            != dataset["manifest_timeframe"]
+            or request.get("family") != qualification.get("family")
+        ):
+            raise ProductResearchError(
+                "automated Paper rejected request outside canonical qualification tuple"
+            )
+
+        if qualification.get("status") != "paper_candidate":
+            return {
+                "contract_version": PRODUCT_AUTO_PAPER_CONTRACT,
+                "paper_only": True,
+                "live_trading_authority": False,
+                "accepted": False,
+                "status": "qualification_killed",
+                "kill_reasons": qualification.get("kill_reasons", []),
+                "paper_events_written": 0,
+            }
+
         handoff = research.get("paper_candidate_handoff")
-        if qualification.get("status") == "paper_candidate":
-            if not isinstance(handoff, Mapping) or handoff.get("qualification_digest") != qualification.get("qualification_digest") or handoff.get("paper_only") is not True or handoff.get("live_execution_allowed") is not False:
-                raise ProductResearchError("automated Paper rejected invalid paper-candidate handoff")
-        if qualification.get("status") != "paper_candidate": return {"contract_version": PRODUCT_AUTO_PAPER_CONTRACT, "paper_only": True, "accepted": False, "status": "qualification_killed", "kill_reasons": qualification.get("kill_reasons", [])}
-        if float(research.get("latest_target", 0.0)) <= 0.0: return {"contract_version": PRODUCT_AUTO_PAPER_CONTRACT, "paper_only": True, "accepted": False, "status": "no_open_signal"}
-        spec = TIMEFRAMES[request["timeframe"]]; family = request["family"]; strategy_version = qualification["strategy_version"]
-        current_ms = self.clock_ms()
-        source_ms = int(dataset["rows"][-1]["open_time_ms"]) + int(spec["step_ms"]); source_time = _utc_ms(source_ms); occurred_at = _utc_ms(current_ms)
-        if current_ms - source_ms > int(spec["step_ms"]) * 2: raise ProductResearchError("automated Paper rejected stale canonical data")
-        dataset_id = f"canonical:{dataset['mapping_id']}"; dataset_revision = dataset["binding_sha256"]; regime_label, regime_confidence = self._regime(dataset); regime_id = f"regime:{dataset_revision[:20]}:{regime_label}"; correlation_id = f"auto-paper:{uuid.uuid4().hex}"
-        with self.product_runtime._lock:
-            existing = self.product_runtime._ensure_account(); state = replay(existing).state
-            if any(row[0] == request["symbol"] for row in state.positions): return {"contract_version": PRODUCT_AUTO_PAPER_CONTRACT, "paper_only": True, "accepted": False, "status": "position_exists"}
-            equity = Decimal(str(state.equity)); price = Decimal(str(dataset["rows"][-1]["close"])); quantity = ((equity * Decimal("0.05")) / price).quantize(Decimal("0.00000001"), rounding=ROUND_DOWN)
-            if quantity <= 0: raise ProductResearchError("auto-paper sizing produced zero quantity")
-            stop = price * Decimal("0.985"); target = price * Decimal("1.03")
-            dataset_artifact = {"dataset_id": dataset_id, "dataset_revision": dataset_revision, "source_id": "Bybit", "source_timestamp": source_time, "received_timestamp": occurred_at, "symbol": request["symbol"], "timeframe": request["timeframe"], "readiness_status": "ready", "provenance_digest": dataset["manifest_sha256"]}
-            qualification_artifact = {"artifact_id": qualification["experiment_id"], "artifact_digest": qualification["qualification_digest"], "strategy_id": family, "strategy_version": strategy_version, "dataset_id": dataset_id, "dataset_revision": dataset_revision, "status": "paper_eligible", "qualified_at": occurred_at}
-            regime_artifact = {"regime_id": regime_id, "regime_version": "product-regime-v1", "label": regime_label, "confidence": regime_confidence, "source_timestamp": source_time, "dataset_id": dataset_id, "dataset_revision": dataset_revision, "symbol": request["symbol"], "timeframe": request["timeframe"]}
-            decision = {"decision_id": f"decision:{uuid.uuid4().hex}", "operation": "open", "side": "long", "quantity": str(quantity), "reference_price": str(price), "stop_price": str(stop), "target_price": str(target), "confidence": regime_confidence, "strategy_id": family, "strategy_version": strategy_version, "dataset_id": dataset_id, "dataset_revision": dataset_revision, "regime_id": regime_id, "regime_version": "product-regime-v1", "symbol": request["symbol"], "timeframe": request["timeframe"], "source_timestamp": source_time, "correlation_id": correlation_id, "causation_id": regime_id, "risk_policy_version": "1.0.0"}
-            policy = _risk_policy(); policy["eligible_strategies"] = [{"id": family, "version": strategy_version}]; policy["max_signal_age_seconds"] = int(spec["step_ms"] // 1000) * 2 + 300
-            try:
-                result = run_automated_signal_pipeline(dataset=dataset_artifact, qualification=qualification_artifact, regime=regime_artifact, decision=decision, risk_state=_risk_state(state, symbol=request["symbol"], signals_today=_session_signal_count(existing)), risk_policy=policy, portfolio_state=state, occurred_at=occurred_at, fee_rate=PAPER_DEFAULT_FEE_RATE, slippage_bps=PAPER_DEFAULT_SLIPPAGE_BPS)
-                self.product_runtime._write_events([*existing, *result.events])
-            except Exception as exc:
-                raise ProductResearchError(f"automated Paper pipeline failed closed: {exc}") from exc
-        return {"contract_version": PRODUCT_AUTO_PAPER_CONTRACT, "paper_only": True, "accepted": bool(result.risk_decision.allowed and result.execution is not None), "status": "paper_executed" if result.execution is not None else "risk_rejected", "dataset": dataset_artifact, "qualification": qualification_artifact, "regime": regime_artifact, "decision": decision, "signal": dict(result.signal), "risk": _json_safe(asdict(result.risk_decision)), "execution": None if result.execution is None else {"fill_price": str(result.execution.fill_price), "fee": str(result.execution.fee), "slippage_cost": str(result.execution.slippage_cost), "realized_pnl": str(result.execution.realized_pnl), "event_count": len(result.execution.events)}, "account": serialize_portfolio(result.state), "live_trading_authority": False}
+        if (
+            not isinstance(handoff, Mapping)
+            or handoff.get("qualification_digest")
+            != qualification.get("qualification_digest")
+            or handoff.get("paper_only") is not True
+            or handoff.get("live_execution_allowed") is not False
+        ):
+            raise ProductResearchError(
+                "automated Paper rejected invalid paper-candidate handoff"
+            )
+
+        if research.get("strategy_record") != recomputed_record:
+            raise ProductResearchError(
+                "automated Paper rejected mutated strategy registry record"
+            )
+        if research.get("research_lifecycle") != recomputed_lifecycle:
+            raise ProductResearchError(
+                "automated Paper rejected mutated strategy lifecycle"
+            )
+        if (
+            recomputed_record.get("lifecycle_state") != "CANDIDATE"
+            or not recomputed_lifecycle
+            or recomputed_lifecycle[-1].get("to_state") != "CANDIDATE"
+        ):
+            raise ProductResearchError(
+                "automated Paper requires an immutable CANDIDATE lifecycle"
+            )
+
+        return {
+            "contract_version": PRODUCT_AUTO_PAPER_CONTRACT,
+            "paper_only": True,
+            "live_trading_authority": False,
+            "accepted": False,
+            "status": "independent_qa_required",
+            "strategy_id": recomputed_record["strategy_id"],
+            "strategy_version": recomputed_record["strategy_version"],
+            "record_digest": recomputed_record["record_digest"],
+            "qualification_digest": qualification["qualification_digest"],
+            "lifecycle_state": "CANDIDATE",
+            "required_next_gate": "QA-41",
+            "required_path": [
+                "QA-41",
+                "QUAL-42",
+                "REG-50",
+                "RUNTIME-60",
+                "RISK-61",
+                "PAPER-62",
+            ],
+            "paper_events_written": 0,
+            "reason_code": "INDEPENDENT_QA_RECEIPT_REQUIRED",
+        }
