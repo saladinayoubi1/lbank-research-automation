@@ -152,6 +152,8 @@ def test_qualified_review_builds_exact_qa41_handoff(tmp_path: Path) -> None:
     assert task["proposal_digest"] == source_row["proposal_digest"]
     assert task["proposal_result_digest"] == source_row["result_digest"]
     assert task["required_verifier"] == "qa-verifier-agent"
+    assert task["strategy_config"] == {"lookback": 16, "entry_threshold": 0.0015}
+    assert task["strategy_config_digest"] == source_row["strategy_config_digest"]
     assert [item["symbol"] for item in task["runtime_evidence"]] == ["BTCUSDT", "ETHUSDT"]
     assert verify_handoff(handoff)["decision"] == "pass"
 
@@ -246,6 +248,22 @@ def test_handoff_verifier_rejects_authority_or_verifier_tamper(
     tampered["tasks"][0][field] = value
 
     assert verify_handoff(tampered)["decision"] == "reject"
+
+
+def test_strategy_config_tamper_is_fail_closed(tmp_path: Path) -> None:
+    result, verification = _requalification(tmp_path)
+    handoff = build_handoff(result, verification)
+
+    tampered_task = deepcopy(handoff)
+    tampered_task["tasks"][0]["strategy_config"]["lookback"] = 99
+    assert verify_handoff(tampered_task)["decision"] == "reject"
+
+    tampered_requalification = deepcopy(result)
+    tampered_requalification["proposal_results"][0]["strategy_config"]["lookback"] = 99
+    tampered_verification = verify_requalification(tampered_requalification)
+    assert tampered_verification["decision"] == "reject"
+    with pytest.raises(StrategyReviewQaHandoffError, match="failed verification"):
+        build_handoff(tampered_requalification, tampered_verification)
 
 
 def test_handoff_is_deterministic_for_identical_verified_evidence(tmp_path: Path) -> None:
