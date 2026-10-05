@@ -75,6 +75,17 @@ def test_repository_discovery_surface_is_bounded_and_ready() -> None:
     assert status["qualification_claimed"] is False
     assert all(row["status"] == "READY_FOR_RESEARCH_DISPATCH" for row in status["search_stages"])
     assert all(row["dispatch_mode"] == "reviewed_workflow_dispatch" for row in status["search_stages"])
+    frontier = [row for row in status["search_stages"] if row["rotation_eligible"] is True]
+    legacy = [row for row in status["search_stages"] if row["lane"] == "legacy_validation"]
+    assert [row["stage"] for row in frontier] == [
+        "nexus_multitimeframe_strategy_discovery",
+        "nexus_multipair_strategy_discovery_v2",
+    ]
+    assert len(legacy) == 6
+    assert all(row["rotation_eligible"] is False for row in legacy)
+    assert status["summary"]["ready_frontier_stage_count"] == 2
+    assert status["summary"]["ready_legacy_validation_stage_count"] == 6
+    assert status["next_research_action"] == "nexus_multitimeframe_strategy_discovery"
 
 
 def test_missing_engine_fails_visible_and_never_qualifies_candidate(tmp_path: Path) -> None:
