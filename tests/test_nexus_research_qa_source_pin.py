@@ -7,6 +7,7 @@ import yaml
 
 from nexus_research_missions import FIFTH
 from nexus_strategy_independent_qa import digest
+from nexus_strategy_review_qa_handoff import qa_task_id
 from scripts.nexus_research_qa_source_pin import (
     REPO, ResearchQaPinError, select_source,
 )
@@ -32,7 +33,7 @@ def qa_payload():
 def strategy_qa_payload():
     core = {
         "schema_version":"nexus.strategy-review-qa-task.v1",
-        "id":"STRATEGY-QA-"+"d"*64,
+        "id":qa_task_id("d"*64, OLD, "f"*64),
         "task_kind":"strategy_review_independent_qa","system_map_node":"QA-41",
         "status":"READY_FOR_QA_DISPATCH","source_sha":OLD,
         "proposal_digest":"d"*64,"proposal_result_digest":"e"*64,
