@@ -16,6 +16,7 @@ from typing import Any, Callable, Mapping
 
 from nexus_strategy_proposal_runtime_requalification import APPROVED_FAMILIES, APPROVED_SYMBOLS, _default_evaluator
 from product_research_runtime import TIMEFRAMES
+from nexus_strategy_review_qa_handoff import qa_task_id
 
 TASK_SCHEMA = "nexus.strategy-review-qa-task.v1"
 RECEIPT_SCHEMA = "nexus.strategy-independent-qa-receipt.v1"
@@ -88,7 +89,11 @@ def validate_task(task: Mapping[str, Any], execution_source_sha: str) -> dict[st
         or not HEX40.fullmatch(source_sha)
         or execution_source_sha != source_sha
         or not HEX64.fullmatch(proposal_digest)
-        or row.get("id") != f"STRATEGY-QA-{proposal_digest}"
+        or row.get("id") != qa_task_id(
+            proposal_digest,
+            source_sha,
+            str(row.get("requalification_digest", "")),
+        )
         or not HEX64.fullmatch(str(row.get("proposal_result_digest", "")))
         or not HEX64.fullmatch(str(row.get("requalification_digest", "")))
         or not HEX64.fullmatch(str(row.get("requalification_verification_digest", "")))
@@ -248,8 +253,6 @@ def verify_receipt(
 ) -> bool:
     try:
         row = validate_task(task, execution_source_sha)
-        if set(receipt) != RECEIPT_KEYS:
-            return False
         if set(receipt) != RECEIPT_KEYS:
             return False
         value = dict(receipt)
