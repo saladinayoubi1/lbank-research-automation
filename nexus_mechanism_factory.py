@@ -38,6 +38,10 @@ CONTEXT_FIELDS = frozenset({
     "peer_realized_volatility", "peer_realized_volatility_baseline",
     "peer_beta_lagged", "lagged_peer_beta_residual", "peer_beta_residual_scale",
     "prior_day_high", "prior_day_low", "prior_day_close",
+    "lagged_return_skew_64", "lagged_downside_variance_share_64",
+    "lagged_drawdown_depth_32", "lagged_recovery_from_low_32",
+    "lagged_wick_asymmetry_32", "lagged_abs_return_autocorr_48",
+    "lagged_close_location_persistence_16", "lagged_peer_lead_corr_96",
 })
 ENTRY_FIELDS = frozenset({
     "open", "high", "low", "close", "close_location", "body_efficiency",
@@ -51,6 +55,7 @@ PEER_FIELDS = frozenset({
     "cross_pair_volatility_ratio", "cross_pair_volatility_ratio_baseline",
     "peer_realized_volatility", "peer_realized_volatility_baseline",
     "peer_beta_lagged", "lagged_peer_beta_residual", "peer_beta_residual_scale",
+    "lagged_peer_lead_corr_96",
 })
 OPS = frozenset({"eq", "gt", "ge", "lt", "le"})
 
@@ -274,7 +279,57 @@ GENERATOR_CONTEXTS = (
         {"field":"lagged_peer_beta_residual","op":"lt",
          "other":"peer_beta_residual_scale","scale":-1.10},
     ]),
+    # Generator v3 appends materially different lagged/completed causal contexts.
+    # Existing v2 contexts above are byte-for-byte unchanged so every historical
+    # generated id/topology/contract digest remains stable.
+    ("downside_tail_exhaustion", [
+        {"field":"h4_range","op":"eq","value":1},
+        {"field":"h1_vol_ok","op":"eq","value":1},
+        {"field":"lagged_return_skew_64","op":"le","value":-0.75},
+        {"field":"lagged_downside_variance_share_64","op":"ge","value":0.65},
+    ]),
+    ("positive_tail_trend", [
+        {"field":"h4_up","op":"eq","value":1},
+        {"field":"h1_vol_ok","op":"eq","value":1},
+        {"field":"lagged_return_skew_64","op":"ge","value":0.60},
+        {"field":"lagged_downside_variance_share_64","op":"le","value":0.45},
+    ]),
+    ("deep_drawdown_recovery", [
+        {"field":"h4_range","op":"eq","value":1},
+        {"field":"h1_vol_ok","op":"eq","value":1},
+        {"field":"lagged_drawdown_depth_32","op":"le","value":-0.025},
+        {"field":"lagged_recovery_from_low_32","op":"ge","value":0.015},
+    ]),
+    ("shallow_drawdown_acceptance", [
+        {"field":"h4_up","op":"eq","value":1},
+        {"field":"h1_vol_ok","op":"eq","value":1},
+        {"field":"lagged_drawdown_depth_32","op":"ge","value":-0.0075},
+        {"field":"lagged_close_location_persistence_16","op":"ge","value":0.58},
+    ]),
+    ("wick_pressure_range", [
+        {"field":"h4_range","op":"eq","value":1},
+        {"field":"h1_vol_ok","op":"eq","value":1},
+        {"field":"lagged_wick_asymmetry_32","op":"ge","value":1.35},
+    ]),
+    ("wick_pressure_trend", [
+        {"field":"h4_up","op":"eq","value":1},
+        {"field":"h1_vol_ok","op":"eq","value":1},
+        {"field":"lagged_wick_asymmetry_32","op":"ge","value":1.20},
+    ]),
+    ("volatility_cluster_release", [
+        {"field":"h1_compression","op":"eq","value":1},
+        {"field":"h1_vol_ok","op":"eq","value":1},
+        {"field":"lagged_abs_return_autocorr_48","op":"ge","value":0.15},
+    ]),
+    ("peer_lead_followthrough", [
+        {"field":"h1_vol_ok","op":"eq","value":1},
+        {"field":"lagged_peer_lead_corr_96","op":"ge","value":0.15},
+        {"field":"lagged_peer_impulse","op":"gt","value":0.0},
+    ]),
 )
+
+GENERATOR_CONTEXTS_V2 = GENERATOR_CONTEXTS[:5]
+GENERATOR_CONTEXTS_V3 = GENERATOR_CONTEXTS[5:]
 
 GENERATOR_ENTRIES = (
     ("midpoint_reclaim", [
@@ -310,16 +365,17 @@ GENERATOR_ENTRIES = (
 )
 
 
-def generate_factory_contracts(
+def _generate_factory_contracts_from_contexts(
     existing: Mapping[str, Mapping[str, Any]],
+    contexts: tuple[tuple[str, list[dict[str, Any]]], ...],
     *,
-    limit: int = 24,
+    limit: int,
 ) -> dict[str, dict[str, Any]]:
     if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 64:
         raise MechanismFactoryError("generator limit invalid")
     used_topologies = {str(item["topology_digest"]) for item in existing.values()}
     generated: dict[str, dict[str, Any]] = {}
-    for context_name, context_raw in GENERATOR_CONTEXTS:
+    for context_name, context_raw in contexts:
         for entry_name, entry_raw in GENERATOR_ENTRIES:
             ident = f"factory_gen_{context_name}_{entry_name}"
             context = [_validate_condition(x, stage="context") for x in context_raw]
@@ -357,3 +413,25 @@ def generate_factory_contracts(
             if len(generated) >= limit:
                 return generated
     return generated
+
+
+def generate_factory_contracts(
+    existing: Mapping[str, Mapping[str, Any]],
+    *,
+    limit: int = 24,
+) -> dict[str, dict[str, Any]]:
+    """Historical Generator-v2 contracts only; IDs/digests must never drift."""
+    return _generate_factory_contracts_from_contexts(
+        existing, GENERATOR_CONTEXTS_V2, limit=limit
+    )
+
+
+def generate_factory_contracts_v3(
+    existing: Mapping[str, Mapping[str, Any]],
+    *,
+    limit: int = 36,
+) -> dict[str, dict[str, Any]]:
+    """Generate only the materially distinct v3 context topology frontier."""
+    return _generate_factory_contracts_from_contexts(
+        existing, GENERATOR_CONTEXTS_V3, limit=limit
+    )
