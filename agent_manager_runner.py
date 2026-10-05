@@ -69,7 +69,7 @@ def merge_definition(template: dict[str, Any], runtime: dict[str, Any] | None) -
         "dispatch_mode", "offline_dispatch_digest", "offline_dispatch_bundle_created_at",
         "offline_result_bundle_ingested", "offline_result_bundle_digest",
         "result_artifact_ingested", "result_received_at", "research_producer_lease_id",
-        "research_cache_requested_sha", "research_cache_requested_binding", "research_cache_recovery_count", "research_cache_race_evidence", "research_qa_epoch_drift", "research_qa_incident_recovery", "routing_decision",
+        "research_cache_requested_sha", "research_cache_requested_binding", "research_cache_recovery_count", "research_cache_race_evidence", "research_qa_epoch_drift", "research_qa_incident_recovery", "research_fresh_producer_recovery", "routing_decision",
         "research_input_incident_recovery",
         *ANCESTRY,
         "zero_idle_evidence", "waiting_from_status", "external_wait_state", "external_wait_started_at",
@@ -301,6 +301,136 @@ def bind_qa_attested_successor(config: dict[str, Any]) -> str:
             state = "QA_attested_successor_unchanged"
     return state
 
+
+
+
+RESEARCH_EPOCH_DRIFT_BLOCK = "research_qa_source_epoch_drift_requires_fresh_producer"
+
+
+def recover_research_source_epoch_with_fresh_producer(config: dict[str, Any]) -> int:
+    """Discard an unverified old-source producer and requeue exact successor work.
+
+    This is deliberately narrower than historical-QA recovery: the old producer
+    is NEVER accepted or independently verified after source drift. Recovery is
+    allowed only when the immediate predecessor is still independently QA-DONE,
+    the successor's persisted ancestry exactly equals that predecessor, and the
+    blocked producer receipt is the same explicitly unqualified receipt recorded
+    by the source-epoch drift guard.
+    """
+    context = _research_context()
+    if context is None:
+        return 0
+    _repo, current_sha = context
+    tasks = {
+        task.get("id"): task
+        for task in config.get("tasks", [])
+        if isinstance(task, dict) and task.get("id")
+    }
+    recovered = 0
+    for task_id, predecessor_id in PREDECESSOR.items():
+        task = tasks.get(task_id)
+        predecessor = tasks.get(predecessor_id)
+        if (
+            task is None
+            or predecessor is None
+            or task.get("status") != "BLOCKED"
+            or task.get("blocked_reason") != RESEARCH_EPOCH_DRIFT_BLOCK
+        ):
+            continue
+
+        try:
+            expected_ancestry = attested_predecessor(predecessor)
+            persisted_ancestry = validate_ancestry({
+                key: task[key] for key in ANCESTRY if key in task
+            })
+        except (KeyError, ValueError):
+            continue
+        if persisted_ancestry != expected_ancestry:
+            continue
+
+        evidence = task.get("result_evidence")
+        drift = task.get("research_qa_epoch_drift")
+        if (
+            not isinstance(evidence, dict)
+            or not isinstance(drift, dict)
+            or evidence.get("executor") != "nexus-real-composite-backtest"
+            or evidence.get("independent_qa_complete") is not False
+            or evidence.get("auto_demo_promotion") is not False
+            or evidence.get("live_enabled") is not False
+            or not _SHA40.fullmatch(str(evidence.get("source_sha", "")))
+            or not _HEX64.fullmatch(str(evidence.get("receipt_digest", "")))
+            or drift.get("old_producer_not_qualified") is not True
+            or drift.get("producer_source_sha") != evidence.get("source_sha")
+            or drift.get("producer_receipt_digest") != evidence.get("receipt_digest")
+            or drift.get("producer_lease_id") != task.get("research_producer_lease_id")
+            or drift.get("undispatched_qa_lease_id") != task.get("lease_id")
+            or task.get("producer") != "research-agent"
+            or task.get("verifier") != "qa-verifier-agent"
+            or evidence.get("source_sha") == current_sha
+        ):
+            continue
+
+        task["research_fresh_producer_recovery"] = {
+            "reason": "discard_unverified_source_epoch_producer_and_reexecute",
+            "superseded_producer_source_sha": evidence["source_sha"],
+            "superseded_producer_receipt_digest": evidence["receipt_digest"],
+            "superseded_producer_lease_id": task.get("research_producer_lease_id"),
+            "superseded_qa_lease_id": task.get("lease_id"),
+            "fresh_controller_source_sha": current_sha,
+            "predecessor_task_id": predecessor_id,
+            "predecessor_source_sha": expected_ancestry["research_predecessor_source_sha"],
+            "predecessor_receipt_digest": expected_ancestry["research_predecessor_receipt_digest"],
+            "predecessor_qa_digest": expected_ancestry["research_predecessor_qa_digest"],
+            "predecessor_ledger_digest": expected_ancestry["research_predecessor_ledger_digest"],
+            "predecessor_mechanism": expected_ancestry["research_predecessor_mechanism"],
+            "superseded_result_evidence": deepcopy(evidence),
+            "old_producer_not_qualified": True,
+            "independent_qa_complete": False,
+            "automatic_demo_promotion": False,
+            "live_enabled": False,
+        }
+
+        task["status"] = "READY"
+        task["ready_at"] = am.iso()
+        task["blocked_reason"] = None
+        task["assigned_worker"] = None
+        task["producer"] = None
+        task["verifier"] = None
+        task["lease_id"] = None
+        task["leased_at"] = None
+        task["heartbeat_at"] = None
+        task["lease_expires_at"] = None
+        task["result_evidence"] = None
+        task["verification_evidence"] = None
+        task["verified_at"] = None
+        task["research_producer_lease_id"] = None
+        task["research_qa_incident_recovery"] = None
+        task["result_artifact_ingested"] = False
+        task["result_received_at"] = None
+        task["dispatch_id"] = None
+        task["dispatch_transport"] = None
+        task["dispatched_at"] = None
+        task["external_wait_state"] = None
+        task["external_wait_started_at"] = None
+        task["external_wait_completed_at"] = None
+        task["research_cache_requested_sha"] = None
+        task["research_cache_requested_binding"] = None
+        task["failure_class"] = None
+        task["failure_evidence"] = None
+        task["triage_reason"] = None
+        task["triage_started_at"] = None
+        task["triage_mode"] = None
+        task["triage_evidence"] = None
+        task["required_output"] = None
+        am.emit(
+            "research_source_epoch_fresh_producer_ready",
+            task_id=task_id,
+            superseded_source_sha=evidence["source_sha"],
+            fresh_source_sha=current_sha,
+            predecessor_task_id=predecessor_id,
+        )
+        recovered += 1
+    return recovered
 
 def _active_research_task(config: dict[str, Any]) -> dict[str, Any] | None:
     tasks = {t.get("id"): t for t in config.get("tasks", []) if isinstance(t, dict)}
@@ -593,6 +723,7 @@ def main() -> int:
             current_sha=research_context[1],
         )
     successor_status = bind_qa_attested_successor(config)
+    fresh_epoch_producer_recovered = recover_research_source_epoch_with_fresh_producer(config)
     input_incident_recovered = False
     if research_context is not None and RESEARCH_INPUT_INCIDENT_SPEC.is_file():
         from agent_transport import _api
@@ -610,6 +741,7 @@ def main() -> int:
         "successor": successor_status,
         "verified_fifth_qa_incident_released": incident_recovered,
         "verified_tenth_input_incident_requeued": input_incident_recovered,
+        "fresh_source_epoch_producer_requeued": fresh_epoch_producer_recovered,
         "reason": cache_reason,
         "action": cache_gate,
         "cache_build": cache_build,
