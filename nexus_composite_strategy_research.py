@@ -30,6 +30,7 @@ from nexus_mechanism_factory import (
     factory_peer_ids,
     factory_signal,
     load_factory_contract,
+    synthesize_factory_contracts,
 )
 from nexus_multitimeframe_verified_archive_discovery import load_verified_archive_frame
 
@@ -75,8 +76,12 @@ FRONTIER_GENERATION2 = (
     "peer_beta_residual_reclaim",
     "prior_day_breakout_continuation",
 )
-FACTORY_SPECS = load_factory_contract()
-FACTORY_MECHANISMS = factory_ids(FACTORY_SPECS)
+STATIC_FACTORY_SPECS = load_factory_contract()
+SYNTH_FACTORY_SPECS = synthesize_factory_contracts(existing=STATIC_FACTORY_SPECS)
+FACTORY_SPECS = {**STATIC_FACTORY_SPECS, **SYNTH_FACTORY_SPECS}
+STATIC_FACTORY_MECHANISMS = factory_ids(STATIC_FACTORY_SPECS)
+SYNTH_FACTORY_MECHANISMS = factory_ids(SYNTH_FACTORY_SPECS)
+FACTORY_MECHANISMS = STATIC_FACTORY_MECHANISMS + SYNTH_FACTORY_MECHANISMS
 FRONTIER_MECHANISMS = FRONTIER_GENERATION1 + FRONTIER_GENERATION2 + FACTORY_MECHANISMS
 ALL_MECHANISMS = MECHANISMS + FRONTIER_MECHANISMS
 PEER_MECHANISMS = frozenset({
@@ -91,7 +96,7 @@ PEER_MECHANISMS = frozenset({
     "volatility_leadership_reversal",
     "peer_beta_residual_reclaim",
 }) | factory_peer_ids(FACTORY_SPECS)
-FRONTIER_SCREEN_VERSION = "nexus.frontier-train-screen.v3"
+FRONTIER_SCREEN_VERSION = "nexus.frontier-train-screen.v4"
 FRONTIER_SHORTLIST_SIZE = 3
 # Distinct entry mechanisms vs risk/feature parameter variations are explicitly
 # separately labeled; risk variants do NOT count as independent new edges.

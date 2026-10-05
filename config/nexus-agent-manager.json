@@ -675,6 +675,38 @@
         "candidate contract digest is bound into the strategy fingerprint so silent strategy-definition mutation cannot reuse prior evidence",
         "research only with no pristine future holdout claim, no automatic Paper/Demo promotion, no owner-wallet mutation and no live authority"
       ]
+    },
+    {
+      "phase": 7,
+      "gate": 17,
+      "status": "PENDING",
+      "priority": 79,
+      "required_capabilities": [
+        "data_validation"
+      ],
+      "required_resources": [
+        "github-cloud"
+      ],
+      "preferred_resources": [
+        "github-cloud",
+        "windows-local"
+      ],
+      "authority": 2,
+      "id": "P7-RESEARCH-COMPOSITE-013",
+      "title": "Synthesize and screen a new bounded causal frontier from reviewed context/entry primitives after exact QA-attested #012, then independently QA only the deterministic Training winner",
+      "dependencies": [
+        "P7-RESEARCH-COMPOSITE-012"
+      ],
+      "acceptance": [
+        "preceding twelfth producer and independent QA are genuinely DONE with exact source, receipt, QA digest and cumulative novelty ledger",
+        "source-bound thirteenth producer consumes precisely the QA-attested twelfth ledger and the checked-in nexus.mechanism-synthesizer.v1 primitive contract",
+        "candidate identifiers and contracts are synthesized deterministically from reviewed context and entry packs; no hand-authored candidate IDs, arbitrary Python, eval, exec, private credentials or derivative execution are accepted",
+        "synthesized contexts may use only whitelisted completed or lagged causal features and entries may use only the current closed 15m confirmation bar plus historical anchors",
+        "all unseen synthesized candidates are ranked on Training only with no validation or historically inspected test selection and no minimum trade-count gate",
+        "only the deterministic Training winner receives complete two-pair three-partition two-cost replay followed by independent original-source numerical QA",
+        "topology and candidate contract digests are bound into the strategy fingerprint so silent synthesis-contract mutation cannot reuse prior evidence",
+        "research only with no pristine future holdout claim, no automatic Paper/Demo promotion, no owner-wallet mutation and no live authority"
+      ]
     }
   ]
 }

@@ -1,0 +1,416 @@
+{
+  "schema": "nexus.mechanism-synthesizer.v1",
+  "authority": "research-only-no-auto-promotion",
+  "selection_basis": "training_partition_only",
+  "no_minimum_trade_count_gate": true,
+  "auto_demo_promotion": false,
+  "live_trading_authority": false,
+  "contexts": [
+    {
+      "id": "efficient_up",
+      "family": "path_efficiency",
+      "peer_required": false,
+      "description": "lagged efficient positive auction path inside completed higher-timeframe strength",
+      "conditions": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "trend_efficiency_16",
+          "op": "ge",
+          "value": 0.38
+        },
+        {
+          "field": "trend_direction_16",
+          "op": "gt",
+          "value": 0.003
+        }
+      ],
+      "compatible_entries": [
+        "mid_reclaim",
+        "vwap_reclaim",
+        "range_break",
+        "prior_day_break"
+      ]
+    },
+    {
+      "id": "positive_serial_up",
+      "family": "positive_serial_dependence",
+      "peer_required": false,
+      "description": "lagged positive return serial dependence inside completed higher-timeframe strength",
+      "conditions": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "lagged_return_serial_corr",
+          "op": "ge",
+          "value": 0.1
+        },
+        {
+          "field": "lagged_own_return_1h",
+          "op": "gt",
+          "value": 0.0005
+        }
+      ],
+      "compatible_entries": [
+        "mid_reclaim",
+        "vwap_reclaim",
+        "range_break",
+        "prior_day_break"
+      ]
+    },
+    {
+      "id": "negative_serial_range",
+      "family": "negative_serial_dependence",
+      "peer_required": false,
+      "description": "lagged negative return serial dependence inside a completed range regime",
+      "conditions": [
+        {
+          "field": "h4_range",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "lagged_return_serial_corr",
+          "op": "le",
+          "value": -0.08
+        }
+      ],
+      "compatible_entries": [
+        "mid_reclaim",
+        "vwap_reclaim",
+        "downside_failure"
+      ]
+    },
+    {
+      "id": "wick_absorption_range",
+      "family": "wick_absorption",
+      "peer_required": false,
+      "description": "lagged lower-wick rejection pressure above its own historical baseline inside a completed range",
+      "conditions": [
+        {
+          "field": "h4_range",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "lagged_lower_wick_absorption",
+          "op": "gt",
+          "other": "lower_wick_absorption_baseline",
+          "scale": 1.15
+        }
+      ],
+      "compatible_entries": [
+        "mid_reclaim",
+        "vwap_reclaim",
+        "downside_failure"
+      ]
+    },
+    {
+      "id": "stable_vov_compression",
+      "family": "volatility_of_volatility",
+      "peer_required": false,
+      "description": "lagged stable volatility-of-volatility compression before a later closed release",
+      "conditions": [
+        {
+          "field": "h1_compression",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "own_volatility_of_volatility",
+          "op": "lt",
+          "other": "own_volatility_of_volatility_baseline",
+          "scale": 0.8
+        }
+      ],
+      "compatible_entries": [
+        "mid_reclaim",
+        "vwap_reclaim",
+        "range_break",
+        "prior_day_break"
+      ]
+    },
+    {
+      "id": "peer_underresponse",
+      "family": "peer_beta_underresponse",
+      "peer_required": true,
+      "description": "lagged own under-response relative to a causally estimated positive peer beta",
+      "conditions": [
+        {
+          "field": "h4_range",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "peer_beta_lagged",
+          "op": "gt",
+          "value": 0
+        },
+        {
+          "field": "lagged_peer_beta_residual",
+          "op": "lt",
+          "other": "peer_beta_residual_scale",
+          "scale": -1
+        }
+      ],
+      "compatible_entries": [
+        "mid_reclaim",
+        "vwap_reclaim",
+        "downside_failure"
+      ]
+    },
+    {
+      "id": "peer_leadership",
+      "family": "peer_beta_leadership",
+      "peer_required": true,
+      "description": "lagged own leadership residual relative to a causally estimated positive peer beta",
+      "conditions": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "peer_beta_lagged",
+          "op": "gt",
+          "value": 0
+        },
+        {
+          "field": "lagged_peer_beta_residual",
+          "op": "gt",
+          "other": "peer_beta_residual_scale",
+          "scale": 1
+        }
+      ],
+      "compatible_entries": [
+        "mid_reclaim",
+        "vwap_reclaim",
+        "range_break",
+        "prior_day_break"
+      ]
+    },
+    {
+      "id": "relative_momentum",
+      "family": "peer_relative_momentum",
+      "peer_required": true,
+      "description": "lagged own-minus-peer relative momentum above its historical baseline in completed higher-timeframe strength",
+      "conditions": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "relative_momentum_previous",
+          "op": "gt",
+          "other": "relative_momentum_baseline",
+          "scale": 1.2
+        }
+      ],
+      "compatible_entries": [
+        "mid_reclaim",
+        "vwap_reclaim",
+        "range_break",
+        "prior_day_break"
+      ]
+    }
+  ],
+  "entries": [
+    {
+      "id": "mid_reclaim",
+      "family": "midpoint_reclaim",
+      "description": "a later closed dip through and reclaim of the prior local range midpoint",
+      "conditions": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "prior_range_mid"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_range_mid"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open"
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.6
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.75
+        }
+      ]
+    },
+    {
+      "id": "vwap_reclaim",
+      "family": "vwap_proxy_reclaim",
+      "description": "a later closed intrabar dip through and reclaim of the bar-volume price proxy",
+      "conditions": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "bar_proxy_vwap"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "bar_proxy_vwap"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open"
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.6
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.75
+        }
+      ]
+    },
+    {
+      "id": "range_break",
+      "family": "prior_range_break",
+      "description": "a later closed break above prior local resistance with strong close location",
+      "conditions": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_hi"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open"
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.9
+        }
+      ]
+    },
+    {
+      "id": "prior_day_break",
+      "family": "prior_day_break",
+      "description": "a later closed break above the fully completed prior UTC-day high",
+      "conditions": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_day_high"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open"
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.9
+        }
+      ]
+    },
+    {
+      "id": "downside_failure",
+      "family": "downside_failure",
+      "description": "a later closed downside extension below prior support followed by a reclaim",
+      "conditions": [
+        {
+          "field": "low",
+          "op": "lt",
+          "other": "prior_lo"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_lo"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open"
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.8
+        }
+      ]
+    }
+  ]
+}

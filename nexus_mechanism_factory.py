@@ -18,10 +18,13 @@ import numpy as np
 import pandas as pd
 
 SCHEMA = "nexus.mechanism-factory.v1"
+SYNTH_SCHEMA = "nexus.mechanism-synthesizer.v1"
 AUTHORITY = "research-only-no-auto-promotion"
 ROOT = Path(__file__).resolve().parent
 DEFAULT_CONTRACT = ROOT / "research" / "mechanism_factory_v1.json"
-ID_RE = re.compile(r"^factory_[a-z][a-z0-9_]{2,72}$")
+DEFAULT_SYNTH_CONTRACT = ROOT / "research" / "mechanism_synthesizer_v1.json"
+ID_RE = re.compile(r"^(?:factory|synth)_[a-z][a-z0-9_]{2,72}$")
+PACK_ID_RE = re.compile(r"^[a-z][a-z0-9_]{2,48}$")
 
 CONTEXT_FIELDS = frozenset({
     "h4_up", "h4_range", "h1_compression", "h1_vol_ok",
@@ -105,27 +108,15 @@ def _validate_condition(raw: Any, *, stage: str) -> dict[str, Any]:
     return result
 
 
-def load_factory_contract(path: Path = DEFAULT_CONTRACT) -> dict[str, dict[str, Any]]:
-    if path.is_symlink() or not path.is_file():
-        raise MechanismFactoryError("mechanism factory contract missing or unsafe")
-    raw = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(raw, dict):
-        raise MechanismFactoryError("mechanism factory root must be an object")
-    if (
-        raw.get("schema") != SCHEMA
-        or raw.get("authority") != AUTHORITY
-        or raw.get("selection_basis") != "training_partition_only"
-        or raw.get("no_minimum_trade_count_gate") is not True
-        or raw.get("auto_demo_promotion") is not False
-        or raw.get("live_trading_authority") is not False
-    ):
-        raise MechanismFactoryError("mechanism factory authority contract invalid")
-    candidates = raw.get("candidates")
-    if not isinstance(candidates, list) or not 1 <= len(candidates) <= 32:
+def _normalize_candidates(
+    candidates: Any,
+    *,
+    topology_seen: set[str] | None = None,
+) -> dict[str, dict[str, Any]]:
+    if not isinstance(candidates, list) or not 1 <= len(candidates) <= 64:
         raise MechanismFactoryError("mechanism factory candidate count invalid")
-
     out: dict[str, dict[str, Any]] = {}
-    topology_seen: set[str] = set()
+    seen = set() if topology_seen is None else set(topology_seen)
     for item in candidates:
         if not isinstance(item, dict):
             raise MechanismFactoryError("factory candidate must be an object")
@@ -138,8 +129,10 @@ def load_factory_contract(path: Path = DEFAULT_CONTRACT) -> dict[str, dict[str, 
         family = item["family"]
         hypothesis = item["hypothesis"]
         if (
-            not isinstance(family, str) or not re.fullmatch(r"[a-z][a-z0-9_]{2,72}", family)
-            or not isinstance(hypothesis, str) or not 20 <= len(hypothesis) <= 500
+            not isinstance(family, str)
+            or not re.fullmatch(r"[a-z][a-z0-9_]{2,72}", family)
+            or not isinstance(hypothesis, str)
+            or not 20 <= len(hypothesis) <= 500
             or not isinstance(item["peer_required"], bool)
         ):
             raise MechanismFactoryError("factory candidate metadata invalid")
@@ -157,9 +150,9 @@ def load_factory_contract(path: Path = DEFAULT_CONTRACT) -> dict[str, dict[str, 
             raise MechanismFactoryError("peer_required does not match candidate feature usage")
         topology = {"family": family, "peer_required": peer_used, "context": context, "entry": entry}
         topology_digest = _digest(topology)
-        if topology_digest in topology_seen:
+        if topology_digest in seen:
             raise MechanismFactoryError("duplicate factory topology")
-        topology_seen.add(topology_digest)
+        seen.add(topology_digest)
         contract_core = {
             "id": ident,
             "family": family,
@@ -175,6 +168,136 @@ def load_factory_contract(path: Path = DEFAULT_CONTRACT) -> dict[str, dict[str, 
             "contract_digest": _digest(contract_core),
         }
     return out
+
+
+def _validate_authority(raw: Mapping[str, Any], *, schema: str) -> None:
+    if (
+        raw.get("schema") != schema
+        or raw.get("authority") != AUTHORITY
+        or raw.get("selection_basis") != "training_partition_only"
+        or raw.get("no_minimum_trade_count_gate") is not True
+        or raw.get("auto_demo_promotion") is not False
+        or raw.get("live_trading_authority") is not False
+    ):
+        raise MechanismFactoryError("mechanism factory authority contract invalid")
+
+
+def load_factory_contract(path: Path = DEFAULT_CONTRACT) -> dict[str, dict[str, Any]]:
+    if path.is_symlink() or not path.is_file():
+        raise MechanismFactoryError("mechanism factory contract missing or unsafe")
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(raw, dict):
+        raise MechanismFactoryError("mechanism factory root must be an object")
+    _validate_authority(raw, schema=SCHEMA)
+    return _normalize_candidates(raw.get("candidates"))
+
+
+def synthesize_factory_contracts(
+    path: Path = DEFAULT_SYNTH_CONTRACT,
+    *,
+    existing: Mapping[str, Mapping[str, Any]] | None = None,
+) -> dict[str, dict[str, Any]]:
+    if path.is_symlink() or not path.is_file():
+        raise MechanismFactoryError("mechanism synthesizer contract missing or unsafe")
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(raw, dict):
+        raise MechanismFactoryError("mechanism synthesizer root must be an object")
+    _validate_authority(raw, schema=SYNTH_SCHEMA)
+    contexts = raw.get("contexts")
+    entries = raw.get("entries")
+    if not isinstance(contexts, list) or not 1 <= len(contexts) <= 16:
+        raise MechanismFactoryError("mechanism synthesizer contexts invalid")
+    if not isinstance(entries, list) or not 1 <= len(entries) <= 12:
+        raise MechanismFactoryError("mechanism synthesizer entries invalid")
+
+    entry_map: dict[str, dict[str, Any]] = {}
+    for entry in entries:
+        if not isinstance(entry, dict) or set(entry) != {"id", "family", "description", "conditions"}:
+            raise MechanismFactoryError("mechanism synthesizer entry schema invalid")
+        ident = entry["id"]
+        if not isinstance(ident, str) or not PACK_ID_RE.fullmatch(ident) or ident in entry_map:
+            raise MechanismFactoryError("mechanism synthesizer entry id invalid or duplicated")
+        if (
+            not isinstance(entry["family"], str)
+            or not PACK_ID_RE.fullmatch(entry["family"])
+            or not isinstance(entry["description"], str)
+            or not 12 <= len(entry["description"]) <= 300
+            or not isinstance(entry["conditions"], list)
+        ):
+            raise MechanismFactoryError("mechanism synthesizer entry metadata invalid")
+        normalized = [_validate_condition(x, stage="entry") for x in entry["conditions"]]
+        if not 2 <= len(normalized) <= 8:
+            raise MechanismFactoryError("mechanism synthesizer entry condition count invalid")
+        entry_map[ident] = {**entry, "conditions": normalized}
+
+    candidates: list[dict[str, Any]] = []
+    context_ids: set[str] = set()
+    for context in contexts:
+        expected = {
+            "id", "family", "peer_required", "description",
+            "conditions", "compatible_entries",
+        }
+        if not isinstance(context, dict) or set(context) != expected:
+            raise MechanismFactoryError("mechanism synthesizer context schema invalid")
+        ident = context["id"]
+        if not isinstance(ident, str) or not PACK_ID_RE.fullmatch(ident) or ident in context_ids:
+            raise MechanismFactoryError("mechanism synthesizer context id invalid or duplicated")
+        context_ids.add(ident)
+        if (
+            not isinstance(context["family"], str)
+            or not PACK_ID_RE.fullmatch(context["family"])
+            or not isinstance(context["peer_required"], bool)
+            or not isinstance(context["description"], str)
+            or not 12 <= len(context["description"]) <= 300
+            or not isinstance(context["conditions"], list)
+            or not isinstance(context["compatible_entries"], list)
+        ):
+            raise MechanismFactoryError("mechanism synthesizer context metadata invalid")
+        normalized_context = [
+            _validate_condition(x, stage="context") for x in context["conditions"]
+        ]
+        if not 2 <= len(normalized_context) <= 8:
+            raise MechanismFactoryError("mechanism synthesizer context condition count invalid")
+        used = {c["field"] for c in normalized_context}
+        used |= {c.get("other") for c in normalized_context if c.get("other")}
+        if bool(used & PEER_FIELDS) != context["peer_required"]:
+            raise MechanismFactoryError("synthesizer peer_required mismatch")
+        compatible = context["compatible_entries"]
+        if (
+            not compatible
+            or len(compatible) != len(set(compatible))
+            or any(item not in entry_map for item in compatible)
+        ):
+            raise MechanismFactoryError("mechanism synthesizer compatibility invalid")
+        for entry_id in compatible:
+            entry = entry_map[entry_id]
+            candidate_id = f"synth_{ident}_{entry_id}"
+            if len(candidate_id) > 79:
+                candidate_id = f"synth_{_digest([ident, entry_id])[:24]}"
+            candidates.append({
+                "id": candidate_id,
+                "family": f"{context['family']}_{entry['family']}"[:72],
+                "hypothesis": (
+                    f"{context['description'].capitalize()} may persist only when "
+                    f"{entry['description']}."
+                ),
+                "peer_required": context["peer_required"],
+                "context": normalized_context,
+                "entry": entry["conditions"],
+            })
+
+    if not 1 <= len(candidates) <= 64:
+        raise MechanismFactoryError("synthesized candidate count invalid")
+    existing_specs = dict(existing or {})
+    topology_seen = {
+        str(item.get("topology_digest"))
+        for item in existing_specs.values()
+        if item.get("topology_digest")
+    }
+    synthesized = _normalize_candidates(candidates, topology_seen=topology_seen)
+    if set(synthesized) & set(existing_specs):
+        raise MechanismFactoryError("synthesized candidate id collides with existing factory")
+    return synthesized
 
 
 def factory_ids(specs: Mapping[str, Mapping[str, Any]]) -> tuple[str, ...]:

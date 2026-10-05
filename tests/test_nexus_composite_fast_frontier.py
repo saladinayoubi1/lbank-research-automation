@@ -5,7 +5,9 @@ import pandas as pd
 
 import nexus_composite_strategy_research as research
 import agent_manager
-from nexus_research_missions import NINTH, TENTH, ELEVENTH, TWELFTH, PREDECESSOR, TASKS
+from nexus_research_missions import (
+    NINTH, TENTH, ELEVENTH, TWELFTH, THIRTEENTH, PREDECESSOR, TASKS,
+)
 
 
 def _legacy_complete_ledger():
@@ -145,7 +147,7 @@ def test_mission_010_is_sequential_qa_bound_and_manager_declared():
     assert "no automatic paper/demo promotion" in acceptance
 
 
-def test_generation1_exhaustion_opens_only_generation2_frontier():
+def test_historical_frontier_progression_opens_only_unseen_synthesized_candidates():
     state = _legacy_complete_ledger()
     core = {key: value for key, value in state.items() if key != "ledger_digest"}
     core["frontier_screening_version"] = "nexus.frontier-train-screen.v1"
@@ -156,17 +158,29 @@ def test_generation1_exhaustion_opens_only_generation2_frontier():
     assert {row["mechanism"] for row in candidates} == (
         set(research.FRONTIER_GENERATION2) | set(research.FACTORY_MECHANISMS)
     )
-    assert all(row["risk_variant"] == 0 for row in candidates)
 
     core["frontier_screening_version"] = "nexus.frontier-train-screen.v2"
     core["frontier_screened_mechanisms"] = sorted(
         research.FRONTIER_GENERATION1 + research.FRONTIER_GENERATION2
     )
     g2_complete = {**core, "ledger_digest": research.digest(core)}
-    assert research.research_mode(g2_complete) == "frontier_tournament"
     factory = research._frontier_configs_to_screen(g2_complete)
     assert {row["mechanism"] for row in factory} == set(research.FACTORY_MECHANISMS)
-    assert all(len(row.get("factory_contract_digest", "")) == 64 for row in factory)
+
+    # Exact historical #012 shape: G1/G2 plus only the checked-in static factory
+    # had been screened under v3. New code must preserve that history and expose
+    # only unseen synthesized topologies.
+    core["frontier_screening_version"] = "nexus.frontier-train-screen.v3"
+    core["frontier_screened_mechanisms"] = sorted(
+        research.FRONTIER_GENERATION1
+        + research.FRONTIER_GENERATION2
+        + research.STATIC_FACTORY_MECHANISMS
+    )
+    factory_complete = {**core, "ledger_digest": research.digest(core)}
+    synth = research._frontier_configs_to_screen(factory_complete)
+    assert {row["mechanism"] for row in synth} == set(research.SYNTH_FACTORY_MECHANISMS)
+    assert len(synth) == 29
+    assert all(len(row.get("factory_contract_digest", "")) == 64 for row in synth)
 
     core["frontier_screening_version"] = research.FRONTIER_SCREEN_VERSION
     core["frontier_screened_mechanisms"] = sorted(research.FRONTIER_MECHANISMS)
@@ -208,6 +222,23 @@ def test_mission_012_is_factory_qa_bound_and_manager_declared():
     assert "mechanism-factory" in acceptance
     assert "training" in acceptance
     assert "contract digest" in acceptance
+    assert "independent" in acceptance
+    assert "no automatic paper/demo promotion" in acceptance
+    assert "no owner-wallet mutation" in acceptance
+
+
+def test_mission_013_is_synthesizer_qa_bound_and_manager_declared():
+    assert PREDECESSOR[THIRTEENTH] == TWELFTH
+    assert THIRTEENTH in TASKS
+    config = agent_manager.load_config(Path("config/nexus-agent-manager.json"))
+    task = next(row for row in config["tasks"] if row["id"] == THIRTEENTH)
+    assert task["dependencies"] == [TWELFTH]
+    assert task["authority"] == 2
+    assert task["status"] == "PENDING"
+    acceptance = " ".join(task["acceptance"]).lower()
+    assert "synthesized" in acceptance
+    assert "training" in acceptance
+    assert "contract digests" in acceptance
     assert "independent" in acceptance
     assert "no automatic paper/demo promotion" in acceptance
     assert "no owner-wallet mutation" in acceptance

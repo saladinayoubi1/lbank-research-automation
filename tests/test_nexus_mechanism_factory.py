@@ -13,7 +13,7 @@ import nexus_composite_strategy_research as research
 def test_checked_in_factory_contract_is_bounded_and_research_only():
     specs = factory.load_factory_contract()
     assert len(specs) == 12
-    assert tuple(specs) == research.FACTORY_MECHANISMS
+    assert tuple(specs) == research.STATIC_FACTORY_MECHANISMS
     assert len({row["contract_digest"] for row in specs.values()}) == len(specs)
     assert len({row["topology_digest"] for row in specs.values()}) == len(specs)
     assert all(len(row["contract_digest"]) == 64 for row in specs.values())
