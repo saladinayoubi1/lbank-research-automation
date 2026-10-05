@@ -31,6 +31,7 @@ def _controller():
                 "experiment_id": "first",
                 "experiment_sha256": "1" * 64,
                 "status": "READY_FOR_RESEARCH_DISPATCH",
+                "rotation_eligible": True,
             },
             {
                 "stage": "second",
@@ -38,6 +39,7 @@ def _controller():
                 "experiment_id": "second",
                 "experiment_sha256": "2" * 64,
                 "status": "READY_FOR_RESEARCH_DISPATCH",
+                "rotation_eligible": True,
             },
         ],
     }
