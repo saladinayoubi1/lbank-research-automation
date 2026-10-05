@@ -76,7 +76,7 @@ def test_supervisor_runs_each_family_as_fenced_verified_task(tmp_path: Path) -> 
     assert all(row["evidence_digest"] for row in ledger["tasks"])
     assert all(row["status"] in {
         "paper_executed", "qualification_killed", "no_open_signal",
-        "position_exists", "risk_rejected",
+        "position_exists", "risk_rejected", "independent_qa_required",
     } for row in ledger["tasks"])
     assert (tmp_path / "supervisor-ledger.json").is_file()
     assert all((tmp_path / "evidence" / f"{family}.json").is_file() for family in (
@@ -84,7 +84,7 @@ def test_supervisor_runs_each_family_as_fenced_verified_task(tmp_path: Path) -> 
     ))
 
 
-def test_candidate_crosses_real_deterministic_risk_into_isolated_paper(
+def test_candidate_stops_at_independent_qa_before_isolated_paper(
     tmp_path: Path, monkeypatch
 ) -> None:
     monkeypatch.setattr(product_research, "KILL_CRITERIA", _permissive_kills())
@@ -98,13 +98,17 @@ def test_candidate_crosses_real_deterministic_risk_into_isolated_paper(
 
     task = ledger["tasks"][0]
     assert task["research_result"]["qualification"]["status"] == "paper_candidate"
-    assert task["status"] == "paper_executed"
-    assert task["paper_result"]["risk"]["allowed"] is True
-    assert task["paper_result"]["execution"]["event_count"] >= 1
-    assert task["portfolio_snapshot"]["account"]["positions"][0]["symbol"] == "BTCUSDT"
+    assert task["research_result"]["independent_qa"]["status"] == "required"
+    assert task["status"] == "independent_qa_required"
+    assert task["paper_result"]["accepted"] is False
+    assert task["paper_result"]["required_next_gate"] == "QA-41"
+    assert task["paper_result"]["paper_events_written"] == 0
+    assert task["paper_result"]["reason_code"] == "INDEPENDENT_QA_RECEIPT_REQUIRED"
+    assert task["portfolio_snapshot"]["session_signal_count"] == 0
+    assert task["portfolio_snapshot"]["account"]["positions"] == []
 
 
-def test_historical_replay_uses_one_clock_through_paper_execution(
+def test_historical_replay_uses_one_clock_and_stops_at_independent_qa(
     tmp_path: Path, monkeypatch
 ) -> None:
     historical_now = 1_700_000_000_000
@@ -118,8 +122,9 @@ def test_historical_replay_uses_one_clock_through_paper_execution(
     )
 
     task = ledger["tasks"][0]
-    assert task["status"] == "paper_executed"
-    assert task["paper_result"]["risk"]["allowed"] is True
+    assert task["status"] == "independent_qa_required"
+    assert task["paper_result"]["accepted"] is False
+    assert task["paper_result"]["paper_events_written"] == 0
     assert task["paper_only"] is True
     assert task["live_trading_authority"] is False
 
@@ -163,7 +168,9 @@ def test_restart_reuses_isolated_paper_state_without_duplicate_position(
         now_ms=NOW, dataset_fetcher=_fetcher,
     )
 
-    assert first["tasks"][0]["status"] == "paper_executed"
-    assert second["tasks"][0]["status"] == "position_exists"
-    assert len(second["tasks"][0]["portfolio_snapshot"]["account"]["positions"]) == 1
+    assert first["tasks"][0]["status"] == "independent_qa_required"
+    assert second["tasks"][0]["status"] == "independent_qa_required"
+    assert second["tasks"][0]["paper_result"]["paper_events_written"] == 0
+    assert second["tasks"][0]["portfolio_snapshot"]["account"]["positions"] == []
+    assert second["tasks"][0]["portfolio_snapshot"]["session_signal_count"] == 0
     assert second["verification"]["decision"] == "pass"
