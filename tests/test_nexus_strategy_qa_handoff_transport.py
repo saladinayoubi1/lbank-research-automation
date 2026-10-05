@@ -101,9 +101,18 @@ def _artifact(*, source_sha: str = "b" * 40, no_work: bool = False, tamper: bool
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         if no_work:
+            core = {
+                "schema_version": "nexus.strategy-proposal-runtime-requalification-no-work.v1",
+                "source_sha": source_sha,
+                "reason": "proposal_queue_contains_no_research_proposals",
+                "proposal_count": 0,
+                "paper_only": True,
+                "automatic_strategy_promotion": False,
+                "live_trading_authority": False,
+            }
             zf.writestr(
                 "runtime-requalification-no-work.json",
-                json.dumps({"status": "NO_WORK"}),
+                json.dumps({**core, "evidence_digest": _digest(core)}),
             )
         else:
             handoff = _handoff(source_sha)
@@ -122,6 +131,26 @@ def test_parse_verified_handoff_and_exact_no_work():
     handoff, verification = parsed
     assert verification == verify_handoff(handoff)
     assert parse_artifact(_artifact(no_work=True)) is None
+
+
+def test_tampered_no_work_artifact_fails_closed():
+    blob = io.BytesIO()
+    with zipfile.ZipFile(blob, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        core = {
+            "schema_version": "nexus.strategy-proposal-runtime-requalification-no-work.v1",
+            "source_sha": "b" * 40,
+            "reason": "proposal_queue_contains_no_research_proposals",
+            "proposal_count": 1,
+            "paper_only": True,
+            "automatic_strategy_promotion": False,
+            "live_trading_authority": False,
+        }
+        zf.writestr(
+            "runtime-requalification-no-work.json",
+            json.dumps({**core, "evidence_digest": _digest(core)}),
+        )
+    with pytest.raises(StrategyQaTransportError, match="no-work evidence rejected"):
+        parse_artifact(blob.getvalue())
 
 
 def test_tampered_handoff_artifact_fails_closed():
