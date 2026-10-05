@@ -631,6 +631,176 @@
         "no_peer_short_or_volatility_derivative_claim",
         "no_auto_paper_or_live_promotion"
       ]
+    },
+    {
+      "id": "trend_efficiency_breakout",
+      "hypothesis": "A high lagged path-efficiency ratio with positive completed displacement may distinguish persistent directional auction from noisy momentum before a later closed structural breakout.",
+      "inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "context": [
+        "completed_4h_up_structure",
+        "lagged_16bar_path_efficiency",
+        "lagged_16bar_positive_displacement",
+        "completed_1h_volatility_guard"
+      ],
+      "entry": [
+        "current_closed_range_break",
+        "strong_close_location",
+        "observed_relative_volume",
+        "next_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "single_symbol_spot_long_flat_cash_only",
+        "no_current_return_in_efficiency_estimate",
+        "no_auto_paper_or_live_promotion"
+      ]
+    },
+    {
+      "id": "serial_dependence_breakout",
+      "hypothesis": "Positive lagged short-horizon return serial dependence may identify a persistence regime distinct from trend level or volatility level, conditional on a later closed structural breakout.",
+      "inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "context": [
+        "lagged_return_autocorrelation",
+        "lagged_positive_own_1h_return",
+        "completed_4h_up_structure",
+        "completed_1h_volatility_guard"
+      ],
+      "entry": [
+        "current_closed_range_break",
+        "strong_close_location",
+        "observed_relative_volume",
+        "next_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "single_symbol_spot_long_flat_cash_only",
+        "serial_statistic_ends_before_decision_bar",
+        "no_auto_paper_or_live_promotion"
+      ]
+    },
+    {
+      "id": "range_wick_absorption_rebound",
+      "hypothesis": "Repeated lagged lower-wick absorption inside a completed range may indicate downside rejection pressure before a later closed downside-failure reclaim, without claiming hidden order-book liquidity.",
+      "inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "context": [
+        "completed_4h_range",
+        "lagged_lower_wick_absorption",
+        "historical_lower_wick_baseline",
+        "completed_1h_volatility_guard"
+      ],
+      "entry": [
+        "current_closed_failed_downside_extension",
+        "strong_close_location",
+        "observed_relative_volume",
+        "next_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "no_orderbook_absorption_claim",
+        "single_symbol_spot_long_flat_cash_only",
+        "no_auto_paper_or_live_promotion"
+      ]
+    },
+    {
+      "id": "volatility_of_volatility_release",
+      "hypothesis": "A lagged low volatility-of-volatility state may identify unusually stable compression before a later closed range expansion, distinct from merely screening realized-volatility level.",
+      "inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "context": [
+        "completed_1h_compression",
+        "lagged_realized_volatility_of_volatility",
+        "historical_volatility_of_volatility_baseline",
+        "completed_1h_volatility_guard"
+      ],
+      "entry": [
+        "current_closed_range_break",
+        "strong_close_location",
+        "relative_volume_expansion",
+        "next_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "single_symbol_spot_long_flat_cash_only",
+        "no_options_or_variance_instrument_claim",
+        "no_auto_paper_or_live_promotion"
+      ]
+    },
+    {
+      "id": "peer_beta_residual_reclaim",
+      "hypothesis": "A negative lagged own return residual relative to a causally estimated spot-peer beta may identify temporary under-response before a later own-asset reclaim, without executing a hedge or spread.",
+      "inputs": [
+        "closed_spot_ohlcv",
+        "aligned_spot_cross_pair"
+      ],
+      "context": [
+        "exact_utc_closed_peer_grid",
+        "beta_estimated_through_two_bars_prior",
+        "lagged_negative_beta_residual",
+        "historical_residual_scale",
+        "completed_4h_range"
+      ],
+      "entry": [
+        "current_closed_prior_midpoint_reclaim",
+        "strong_close_location",
+        "observed_relative_volume",
+        "next_own_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "single_own_symbol_spot_long_flat_cash_only",
+        "no_peer_short_or_spread_execution_claim",
+        "no_current_peer_return_in_beta_estimate",
+        "no_auto_paper_or_live_promotion"
+      ]
+    },
+    {
+      "id": "prior_day_breakout_continuation",
+      "hypothesis": "A breakout above the high of the fully completed prior UTC day inside completed higher-timeframe up-structure may represent calendar-anchored continuation distinct from a rolling intraday range breakout.",
+      "inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "context": [
+        "fully_completed_prior_utc_day_high_low_close",
+        "completed_4h_up_structure",
+        "completed_1h_volatility_guard"
+      ],
+      "entry": [
+        "current_closed_prior_day_high_break",
+        "prior_bar_not_already_above_anchor",
+        "strong_close_location",
+        "next_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "partial_prior_day_rejected",
+        "single_symbol_spot_long_flat_cash_only",
+        "no_auto_paper_or_live_promotion"
+      ]
     }
   ]
 }

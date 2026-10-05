@@ -614,6 +614,36 @@
         "no minimum trade-count gate is introduced; zero-activity candidates cannot outrank actually exercised systems and rejected screen candidates are not misrepresented as fully validated",
         "research only with no pristine future holdout claim, no automatic Paper/Demo promotion and no live authority"
       ]
+    },
+    {
+      "phase": 7,
+      "gate": 17,
+      "status": "PENDING",
+      "priority": 81,
+      "required_capabilities": [
+        "data_validation"
+      ],
+      "required_resources": [
+        "github-cloud"
+      ],
+      "preferred_resources": [
+        "github-cloud",
+        "windows-local"
+      ],
+      "authority": 2,
+      "id": "P7-RESEARCH-COMPOSITE-011",
+      "title": "Screen second reviewed causal frontier after exact QA-attested #010 exhaustion and execute only the strongest training-screen candidate with independent numerical QA",
+      "dependencies": [
+        "P7-RESEARCH-COMPOSITE-010"
+      ],
+      "acceptance": [
+        "preceding tenth producer and independent QA are genuinely DONE with exact source, receipt, QA digest and the QA-attested novelty ledger",
+        "source-bound eleventh producer consumes precisely the QA-attested tenth ledger and screens only newly reviewed generation-two causal mechanisms instead of recycling risk variants or parameters",
+        "training-only screening uses the immutable BTC/ETH Spot archive with strictly lagged or completed 15m/1h/4h features; validation and historically inspected test remain excluded from candidate selection",
+        "only the deterministic training-screen winner receives complete two-pair three-partition two-cost replay followed by independent original-source numerical QA",
+        "no minimum trade-count gate is introduced; zero-activity systems cannot outrank exercised candidates and screened losers are never labeled fully validated",
+        "research only with no pristine future holdout claim, no automatic Paper/Demo promotion, no owner-wallet mutation and no live authority"
+      ]
     }
   ]
 }

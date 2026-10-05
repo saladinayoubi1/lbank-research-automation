@@ -45,7 +45,7 @@ MECHANISMS = (
 # do NOT fall back to risk-parameter cycling.  Screen a new reviewed generation
 # in one bounded tournament, then spend the expensive full replay + independent
 # QA on only the strongest training-screen candidate.
-FRONTIER_MECHANISMS = (
+FRONTIER_GENERATION1 = (
     "multi_horizon_trend_reacceleration",
     "trend_vwap_pullback_reclaim",
     "volume_dryup_breakout",
@@ -57,6 +57,17 @@ FRONTIER_MECHANISMS = (
     "relative_weakness_exhaustion_rebound",
     "volatility_leadership_reversal",
 )
+# Generation 2 is intentionally topology-diverse and uses only already verified
+# closed Spot inputs.  These are new causal hypotheses, never parameter sweeps.
+FRONTIER_GENERATION2 = (
+    "trend_efficiency_breakout",
+    "serial_dependence_breakout",
+    "range_wick_absorption_rebound",
+    "volatility_of_volatility_release",
+    "peer_beta_residual_reclaim",
+    "prior_day_breakout_continuation",
+)
+FRONTIER_MECHANISMS = FRONTIER_GENERATION1 + FRONTIER_GENERATION2
 ALL_MECHANISMS = MECHANISMS + FRONTIER_MECHANISMS
 PEER_MECHANISMS = frozenset({
     "cross_pair_relative_reclaim",
@@ -68,8 +79,9 @@ PEER_MECHANISMS = frozenset({
     "relative_strength_persistence_breakout",
     "relative_weakness_exhaustion_rebound",
     "volatility_leadership_reversal",
+    "peer_beta_residual_reclaim",
 })
-FRONTIER_SCREEN_VERSION = "nexus.frontier-train-screen.v1"
+FRONTIER_SCREEN_VERSION = "nexus.frontier-train-screen.v2"
 FRONTIER_SHORTLIST_SIZE = 3
 # Distinct entry mechanisms vs risk/feature parameter variations are explicitly
 # separately labeled; risk variants do NOT count as independent new edges.
@@ -199,6 +211,56 @@ def build_features(frames: dict[str, pd.DataFrame], *, peer_15m: pd.DataFrame | 
     bar_range = (f["high"].astype(float) - f["low"].astype(float)).replace(0.0, np.nan)
     f["close_location"] = (close - f["low"].astype(float)) / bar_range
     f["body_efficiency"] = (close - f["open"].astype(float)).abs() / bar_range
+
+    # Generation-2 features are strictly causal.  Every regime statistic ends
+    # at least one completed 15m bar before the decision bar; current-bar OHLCV
+    # is used only for the explicit closed-bar confirmation in signal_for().
+    one_bar_return = close.pct_change()
+    path_length_16 = one_bar_return.abs().shift(1).rolling(16, min_periods=16).sum()
+    displacement_16 = (close.shift(1) / close.shift(17) - 1.0)
+    f["trend_efficiency_16"] = (
+        displacement_16.abs() / path_length_16.replace(0.0, np.nan)
+    ).replace([np.inf, -np.inf], np.nan)
+    f["trend_direction_16"] = displacement_16
+    f["lagged_return_serial_corr"] = (
+        one_bar_return.shift(1).rolling(48, min_periods=48).corr(one_bar_return.shift(2))
+    )
+
+    lower_wick = (
+        np.minimum(f["open"].astype(float), close) - f["low"].astype(float)
+    ) / bar_range
+    f["lagged_lower_wick_absorption"] = (
+        lower_wick.shift(1).rolling(8, min_periods=8).mean()
+    )
+    f["lower_wick_absorption_baseline"] = (
+        lower_wick.shift(9).rolling(96, min_periods=96).median()
+    )
+
+    own_vol_of_vol = own_realized.shift(1).rolling(32, min_periods=32).std()
+    f["own_volatility_of_volatility"] = own_vol_of_vol
+    f["own_volatility_of_volatility_baseline"] = (
+        own_vol_of_vol.shift(1).rolling(96, min_periods=96).median()
+    )
+
+    # Previous FULL UTC-day anchors only.  A partial edge day cannot define a
+    # prior-day level, and today's bars never alter today's mapped anchor.
+    bar_day = pd.to_datetime(f["timestamp"], utc=True).dt.floor("D")
+    daily = pd.DataFrame({
+        "day": bar_day,
+        "high": f["high"].astype(float),
+        "low": f["low"].astype(float),
+        "close": close,
+    }).groupby("day", sort=True).agg(
+        high=("high", "max"), low=("low", "min"), close=("close", "last"),
+        count=("close", "size"),
+    )
+    prior_daily = daily.shift(1)
+    complete_prior = prior_daily["count"] == 96
+    prior_daily.loc[~complete_prior, ["high", "low", "close"]] = np.nan
+    f["prior_day_high"] = bar_day.map(prior_daily["high"])
+    f["prior_day_low"] = bar_day.map(prior_daily["low"])
+    f["prior_day_close"] = bar_day.map(prior_daily["close"])
+
     if peer_15m is not None:
         # New causal feature, derived exclusively from two independently
         # verified, exactly time-aligned CLOSED 15m Spot candle grids.
@@ -265,6 +327,21 @@ def build_features(frames: dict[str, pd.DataFrame], *, peer_15m: pd.DataFrame | 
         f["peer_realized_volatility"] = peer_realized
         f["peer_realized_volatility_baseline"] = (
             peer_realized.shift(1).rolling(96, min_periods=96).median()
+        )
+
+        # Rolling peer beta is estimated strictly from returns ending at i-2.
+        # The i-1 residual is then observed as a lagged dislocation; neither the
+        # current own nor current peer return participates in beta estimation.
+        own_hist = own_return.shift(2)
+        peer_hist = peer_return.shift(2)
+        peer_var = peer_hist.rolling(96, min_periods=96).var().replace(0.0, np.nan)
+        peer_beta = own_hist.rolling(96, min_periods=96).cov(peer_hist) / peer_var
+        lagged_residual = own_return.shift(1) - peer_beta * peer_return.shift(1)
+        residual_history = own_hist - peer_beta.shift(1) * peer_hist
+        f["peer_beta_lagged"] = peer_beta.replace([np.inf, -np.inf], np.nan)
+        f["lagged_peer_beta_residual"] = lagged_residual.replace([np.inf, -np.inf], np.nan)
+        f["peer_beta_residual_scale"] = (
+            residual_history.rolling(96, min_periods=96).std().replace(0.0, np.nan)
         )
     return f
 
@@ -470,6 +547,70 @@ def signal_for(frame: pd.DataFrame, config: dict[str, Any]) -> np.ndarray:
             lo < frame["prior_lo"]) & (c > frame["prior_lo"]) & (c > o) & (
             frame["rel_vol"] >= 1.0) & (
             np.isfinite(ratio) & np.isfinite(baseline) & np.isfinite(own_r1))
+    elif mechanism == "trend_efficiency_breakout":
+        required = {"trend_efficiency_16", "trend_direction_16", "close_location"}
+        if not required <= set(frame.columns):
+            raise CompositeResearchError("trend-efficiency mechanism lacks causal path-efficiency features")
+        efficiency = frame["trend_efficiency_16"]
+        direction = frame["trend_direction_16"]
+        s = (frame["h4_up"] == 1) & (frame["h1_vol_ok"] == 1) & (
+            efficiency >= .42) & (direction > .004) & (c > frame["prior_hi"]) & (
+            c > o) & (frame["close_location"] >= .65) & (frame["rel_vol"] >= .95) & (
+            np.isfinite(efficiency) & np.isfinite(direction))
+    elif mechanism == "serial_dependence_breakout":
+        required = {"lagged_return_serial_corr", "lagged_own_return_1h", "close_location"}
+        if not required <= set(frame.columns):
+            raise CompositeResearchError("serial-dependence mechanism lacks lagged return history")
+        serial = frame["lagged_return_serial_corr"]
+        own_r1 = frame["lagged_own_return_1h"]
+        s = (frame["h4_up"] == 1) & (frame["h1_vol_ok"] == 1) & (
+            serial >= .12) & (own_r1 > .001) & (c > frame["prior_hi"]) & (
+            c > o) & (frame["close_location"] >= .65) & (frame["rel_vol"] >= .95) & (
+            np.isfinite(serial) & np.isfinite(own_r1))
+    elif mechanism == "range_wick_absorption_rebound":
+        required = {"lagged_lower_wick_absorption", "lower_wick_absorption_baseline",
+                    "close_location"}
+        if not required <= set(frame.columns):
+            raise CompositeResearchError("wick-absorption mechanism lacks lagged wick history")
+        absorption = frame["lagged_lower_wick_absorption"]
+        baseline = frame["lower_wick_absorption_baseline"]
+        s = (frame["h4_range"] == 1) & (frame["h1_vol_ok"] == 1) & (
+            absorption >= .30) & (absorption > baseline * 1.15) & (
+            lo < frame["prior_lo"]) & (c > frame["prior_lo"]) & (c > o) & (
+            frame["close_location"] >= .65) & (frame["rel_vol"] >= .85) & (
+            np.isfinite(absorption) & np.isfinite(baseline))
+    elif mechanism == "volatility_of_volatility_release":
+        required = {"own_volatility_of_volatility",
+                    "own_volatility_of_volatility_baseline", "close_location"}
+        if not required <= set(frame.columns):
+            raise CompositeResearchError("vol-of-vol mechanism lacks causal volatility-state history")
+        vov = frame["own_volatility_of_volatility"]
+        vov_base = frame["own_volatility_of_volatility_baseline"]
+        s = (frame["h1_compression"] == 1) & (frame["h1_vol_ok"] == 1) & (
+            vov < vov_base * .75) & (c > frame["prior_hi"]) & (c > o) & (
+            frame["close_location"] >= .65) & (frame["rel_vol"] >= 1.10) & (
+            np.isfinite(vov) & np.isfinite(vov_base))
+    elif mechanism == "peer_beta_residual_reclaim":
+        required = {"peer_beta_lagged", "lagged_peer_beta_residual",
+                    "peer_beta_residual_scale", "close_location"}
+        if not required <= set(frame.columns):
+            raise CompositeResearchError("peer-beta residual mechanism requires exact aligned peer history")
+        beta = frame["peer_beta_lagged"]
+        residual = frame["lagged_peer_beta_residual"]
+        scale = frame["peer_beta_residual_scale"]
+        s = (frame["h4_range"] == 1) & (frame["h1_vol_ok"] == 1) & (
+            beta > 0.0) & (residual < -1.25 * scale) & (
+            lo <= frame["prior_range_mid"]) & (c > frame["prior_range_mid"]) & (
+            c > o) & (frame["close_location"] >= .60) & (frame["rel_vol"] >= .90) & (
+            np.isfinite(beta) & np.isfinite(residual) & np.isfinite(scale))
+    elif mechanism == "prior_day_breakout_continuation":
+        required = {"prior_day_high", "prior_day_low", "prior_day_close", "close_location"}
+        if not required <= set(frame.columns):
+            raise CompositeResearchError("prior-day breakout mechanism lacks completed UTC-day anchors")
+        day_high = frame["prior_day_high"]
+        s = (frame["h4_up"] == 1) & (frame["h1_vol_ok"] == 1) & (
+            c.shift(1) <= day_high) & (c > day_high) & (c > o) & (
+            frame["close_location"] >= .65) & (frame["rel_vol"] >= .95) & np.isfinite(day_high)
     elif mechanism == "regime_conditional_composite":
         # A8-style causal regime router. It does not average or optimize
         # historical returns: a completed higher-timeframe state chooses one
