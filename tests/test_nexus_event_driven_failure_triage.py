@@ -50,6 +50,8 @@ def test_zero_touch_pending_evidence_is_exact_sha_bound_and_non_success_claiming
     assert "ref !== expectedRef || !validSha(sha)" in text
     assert 'Physical installation is **not** claimed' in text
     assert 'expected completion workflow: `NEXUS Local Runner`' in text
+    assert "message.includes(ownerProofCommitMarker)" in text
+    assert "await upsertOwnerProofEvidence({ sha, state: 'PENDING', lines });" in text
 
 
 def test_local_runner_completion_is_bound_to_main_push_exact_commit_and_canonical_run_url():
@@ -214,3 +216,21 @@ def test_triage_evidence_explicitly_denies_authority():
     assert 'not releasable / not merge-authorized' in text
     assert 'no credentials, billing, signing, production deployment, or live financial authority' in text
     assert 'Research/Backtest/Paper only' in text
+
+
+def test_workflow_run_subscription_avoids_requested_in_progress_queue_amplification():
+    text = _text()
+    subscription = text.split('on:', 1)[1].split('permissions:', 1)[0]
+    assert 'types: [completed]' in subscription
+    assert 'requested' not in subscription
+    assert 'in_progress' not in subscription
+    assert "github.event.action == 'completed'" in text
+
+
+def test_triage_concurrency_deduplicates_same_workflow_and_head_sha():
+    text = _text()
+    concurrency = text.split('concurrency:', 1)[1].split('jobs:', 1)[0]
+    assert 'github.event.workflow_run.name' in concurrency
+    assert 'github.event.workflow_run.head_sha' in concurrency
+    assert 'github.event.workflow_run.id' not in concurrency
+    assert 'cancel-in-progress: true' in concurrency
