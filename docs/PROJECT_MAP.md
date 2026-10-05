@@ -195,6 +195,18 @@ NEXUS is considered structurally organized when a maintainer can answer these qu
 
 This map is the starting index; executable code and acceptance evidence remain authoritative.
 
+## Operational master map and deployment topology
+
+The current operational architecture is maintained in
+`docs/NEXUS_MASTER_SYSTEM_MAP.md`. Physical machine/runner placement, primary versus
+standby roles, workload routing and failover constraints are machine-readable in
+`config/nexus-deployment-topology.json`.
+
+New work must first map to an existing system node and runner/resource owner. If the
+change alters a component edge, authority boundary, machine role, primary/failover
+relationship or Paper-state ownership, the relevant map/registry must be updated in
+the same change. Unmapped work must not be implemented by creating a parallel path.
+
 ## Machine-readable integration graph
 
 The canonical component connection matrix is maintained in
