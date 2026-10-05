@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import time
 from pathlib import Path
 
@@ -81,6 +83,43 @@ def _permissive_kills():
     }
 
 
+def _digest(value) -> str:
+    return hashlib.sha256(
+        json.dumps(
+            value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False
+        ).encode("utf-8")
+    ).hexdigest()
+
+
+def _qa_receipt(result, **changes):
+    core = {
+        "contract_version": product_research.PRODUCT_INDEPENDENT_QA_CONTRACT,
+        "strategy_record_digest": result["strategy_record"]["record_digest"],
+        "qualification_digest": result["qualification"]["qualification_digest"],
+        "source_sha": result["source_sha"],
+        "producer_id": "research-agent",
+        "verifier_id": "qa-verifier-agent",
+        "producer_receipt_digest": "b" * 64,
+        "independent_verifier_evidence_sha256": "c" * 64,
+        "independent_replay_matches": True,
+        "independent_qa_complete": True,
+        "qualification_authority": False,
+        "automatic_strategy_promotion": False,
+        "paper_only": True,
+        "live_trading_authority": False,
+    }
+    core.update(changes)
+    return {**core, "qa_digest": _digest(core)}
+
+
+def _install_qa(runtime: ProductRuntime, result, receipt=None):
+    value = receipt or _qa_receipt(result)
+    path = runtime.root / "research_qa" / f"{result['strategy_record']['record_digest']}.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return path
+
+
 def test_registry_and_research_are_real_canonical_paper_only(tmp_path: Path) -> None:
     now = _now_ms()
     _, research = _research(tmp_path, now)
@@ -129,6 +168,7 @@ def test_qualification_gated_auto_paper_runs_real_deterministic_pipeline(tmp_pat
     assert result["qualification"]["status"] == "paper_candidate"
     assert result["latest_target"] == 1.0
 
+    _install_qa(runtime, result)
     auto = research.auto_paper()
 
     assert auto["paper_only"] is True
@@ -136,6 +176,9 @@ def test_qualification_gated_auto_paper_runs_real_deterministic_pipeline(tmp_pat
     assert auto["accepted"] is True
     assert auto["status"] == "paper_executed"
     assert auto["signal"]["paper_trading_only"] is True
+    assert auto["signal"]["strategy_id"] == result["strategy_record"]["strategy_id"]
+    assert auto["registry"]["record_digest"] == result["strategy_record"]["record_digest"]
+    assert auto["independent_qa"]["verified"] is True
     assert auto["risk"]["allowed"] is True
     assert auto["execution"]["event_count"] >= 1
     snapshot = runtime.paper_snapshot()
@@ -152,6 +195,7 @@ def test_auto_paper_uses_the_injected_canonical_clock(tmp_path: Path, monkeypatc
     )
     assert result["qualification"]["status"] == "paper_candidate"
 
+    _install_qa(runtime, result)
     auto = research.auto_paper()
 
     assert auto["status"] == "paper_executed"
@@ -160,12 +204,80 @@ def test_auto_paper_uses_the_injected_canonical_clock(tmp_path: Path, monkeypatc
     assert runtime.paper_snapshot()["session_signal_count"] == 1
 
 
+def test_auto_paper_requires_independent_qa_before_any_paper_event(tmp_path: Path, monkeypatch) -> None:
+    now = _now_ms()
+    monkeypatch.setattr(product_research, "KILL_CRITERIA", _permissive_kills())
+    runtime, research = _research(tmp_path, now)
+    result = research.run_research(
+        symbol="BTCUSDT", timeframe="minute15", family="momentum", limit=180
+    )
+    assert result["qualification"]["status"] == "paper_candidate"
+    baseline = runtime.paper_events_path.read_bytes()
+
+    auto = research.auto_paper()
+
+    assert auto["accepted"] is False
+    assert auto["status"] == "independent_qa_required"
+    assert auto["independent_qa"] == {"status": "required", "verified": False}
+    assert runtime.paper_events_path.read_bytes() == baseline
+    assert runtime.paper_snapshot()["session_signal_count"] == 0
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"source_sha": "d" * 40},
+        {"strategy_record_digest": "d" * 64},
+        {"producer_id": "qa-verifier-agent"},
+        {"independent_replay_matches": False},
+        {"automatic_strategy_promotion": True},
+        {"live_trading_authority": True},
+    ],
+)
+def test_auto_paper_rejects_untrusted_independent_qa_receipt(
+    tmp_path: Path, monkeypatch, changes
+) -> None:
+    now = _now_ms()
+    monkeypatch.setattr(product_research, "KILL_CRITERIA", _permissive_kills())
+    runtime, research = _research(tmp_path, now)
+    result = research.run_research(
+        symbol="BTCUSDT", timeframe="minute15", family="momentum", limit=180
+    )
+    _install_qa(runtime, result, _qa_receipt(result, **changes))
+    baseline = runtime.paper_events_path.read_bytes()
+
+    with pytest.raises(ProductResearchError, match="independent QA"):
+        research.auto_paper()
+
+    assert runtime.paper_events_path.read_bytes() == baseline
+    assert runtime.paper_snapshot()["session_signal_count"] == 0
+
+
+def test_auto_paper_rejects_tampered_qa_digest_without_events(tmp_path: Path, monkeypatch) -> None:
+    now = _now_ms()
+    monkeypatch.setattr(product_research, "KILL_CRITERIA", _permissive_kills())
+    runtime, research = _research(tmp_path, now)
+    result = research.run_research(
+        symbol="BTCUSDT", timeframe="minute15", family="momentum", limit=180
+    )
+    receipt = _qa_receipt(result)
+    receipt["verifier_id"] = "forged-verifier"
+    _install_qa(runtime, result, receipt)
+    baseline = runtime.paper_events_path.read_bytes()
+
+    with pytest.raises(ProductResearchError, match="digest mismatch"):
+        research.auto_paper()
+
+    assert runtime.paper_events_path.read_bytes() == baseline
+
+
 def test_auto_paper_rejects_dataset_tamper_before_decision_or_execution(tmp_path: Path, monkeypatch) -> None:
     now = _now_ms()
     monkeypatch.setattr(product_research, "KILL_CRITERIA", _permissive_kills())
     runtime, research = _research(tmp_path, now)
     result = research.run_research(symbol="BTCUSDT", timeframe="minute15", family="momentum", limit=180)
     assert result["qualification"]["status"] == "paper_candidate"
+    _install_qa(runtime, result)
     research._last_research["_dataset"]["source_role"] = "secondary_validation"
     with pytest.raises(ProductResearchError, match="invalid canonical lineage"):
         research.auto_paper()
@@ -178,6 +290,7 @@ def test_auto_paper_rejects_mutated_qualification_before_decision_or_execution(t
     runtime, research = _research(tmp_path, now)
     result = research.run_research(symbol="BTCUSDT", timeframe="minute15", family="momentum", limit=180)
     assert result["qualification"]["status"] == "paper_candidate"
+    _install_qa(runtime, result)
     research._last_research["qualification"]["dataset_binding_sha256"] = "0" * 64
     with pytest.raises(ProductResearchError, match="mutated qualification lineage"):
         research.auto_paper()
