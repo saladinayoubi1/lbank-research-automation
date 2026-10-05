@@ -271,6 +271,34 @@ def test_exact_evaluated_ledger_prevents_reproposing_already_backtested_ninth_de
     assert state["live_trading_authority"] is False
 
 
+def test_evaluated_ledger_accepts_only_digest_bound_frontier_screen_extension():
+    cert = _certificate()
+    ledger = _evaluated_ledger(["lagged_peer_volatility_release"], cert)
+    core = {k: v for k, v in ledger.items() if k != "ledger_digest"}
+    core["frontier_screened_mechanisms"] = [
+        "factory_gen_deep_drawdown_recovery_vwap_reclaim",
+        "factory_gen_efficiency_up_midpoint_reclaim",
+    ]
+    core["frontier_screening_version"] = "nexus.frontier-train-screen.v5"
+    extended = {**core, "ledger_digest": _digest(core)}
+
+    assert feedback.validate_evaluated_ledger(extended, cert) == {
+        "lagged_peer_volatility_release"
+    }
+
+    missing_pair = dict(extended)
+    missing_pair.pop("frontier_screening_version")
+    unsigned = {k: v for k, v in missing_pair.items() if k != "ledger_digest"}
+    missing_pair["ledger_digest"] = _digest(unsigned)
+    with pytest.raises(feedback.ResearchFeedbackError, match="evaluated composite ledger"):
+        feedback.validate_evaluated_ledger(missing_pair, cert)
+
+    unknown = {**core, "qualification_authority": False}
+    unknown = {**unknown, "ledger_digest": _digest(unknown)}
+    with pytest.raises(feedback.ResearchFeedbackError, match="evaluated composite ledger"):
+        feedback.validate_evaluated_ledger(unknown, cert)
+
+
 def test_evaluated_ledger_must_be_digest_bound_to_exact_dataset_and_authority():
     cert = _certificate()
     ledger = _evaluated_ledger(["lagged_peer_volatility_release"], cert)
