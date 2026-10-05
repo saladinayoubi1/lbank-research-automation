@@ -220,3 +220,193 @@ def evaluate_strategy_health(record: Mapping[str, Any], signals: Mapping[str, An
         "deterministic_risk_final_authority": True,
     }
     return {**result, "health_digest": _digest(result)}
+
+
+APPROVED_STRATEGY_SCHEMA = "nexus.approved-strategy-record.v1"
+_APPROVED_TIMEFRAMES = {"minute15", "hour1", "hour4"}
+_APPROVED_RUNTIME_EVIDENCE_KEYS = {
+    "symbol",
+    "dataset_binding_sha256",
+    "pipeline_digest",
+    "qualification_digest",
+    "last_open_time_ms",
+}
+
+
+def _bounded_text(value: Any, field: str, *, limit: int = 160) -> str:
+    if not isinstance(value, str) or not value or len(value) > limit:
+        raise StrategyRegistryError(f"{field} must be a bounded non-empty string")
+    return value
+
+
+def _approved_runtime_evidence(value: Any) -> list[dict[str, Any]]:
+    if not isinstance(value, Sequence) or isinstance(value, (str, bytes)) or not value:
+        raise StrategyRegistryError("approved runtime evidence must be a non-empty sequence")
+    rows: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for raw in value:
+        if not isinstance(raw, Mapping) or set(raw) != _APPROVED_RUNTIME_EVIDENCE_KEYS:
+            raise StrategyRegistryError("approved runtime evidence schema mismatch")
+        symbol = _bounded_text(raw.get("symbol"), "runtime_evidence.symbol", limit=40)
+        if symbol in seen:
+            raise StrategyRegistryError("approved runtime evidence contains duplicate symbol")
+        seen.add(symbol)
+        last_open = raw.get("last_open_time_ms")
+        if isinstance(last_open, bool) or not isinstance(last_open, int) or last_open <= 0:
+            raise StrategyRegistryError("approved runtime evidence window is invalid")
+        rows.append({
+            "symbol": symbol,
+            "dataset_binding_sha256": _validate_digest(
+                raw.get("dataset_binding_sha256"), "dataset_binding_sha256"
+            ),
+            "pipeline_digest": _validate_digest(raw.get("pipeline_digest"), "pipeline_digest"),
+            "qualification_digest": _validate_digest(
+                raw.get("qualification_digest"), "runtime qualification_digest"
+            ),
+            "last_open_time_ms": last_open,
+        })
+    rows.sort(key=lambda row: row["symbol"])
+    return rows
+
+
+def build_approved_strategy_record(
+    *,
+    source_sha: str,
+    proposal_digest: str,
+    qa_task_digest: str,
+    qa_receipt_digest: str,
+    qualification_digest: str,
+    qualification_policy_version: str,
+    family: str,
+    timeframe: str,
+    variant_id: str,
+    strategy_config: Mapping[str, Any],
+    strategy_config_digest: str,
+    runtime_evidence: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    """Build the immutable REG-50 admission record authorized by QUAL-42 only.
+
+    This record is not Demo/Paper execution authority.  It preserves the exact
+    source/config/data/QA bindings needed by the later reviewed registry write.
+    """
+    source_sha = str(source_sha).lower()
+    if not _SHA40.fullmatch(source_sha):
+        raise StrategyRegistryError("approved strategy source SHA is invalid")
+    proposal_digest = _validate_digest(proposal_digest, "proposal_digest")
+    qa_task_digest = _validate_digest(qa_task_digest, "qa_task_digest")
+    qa_receipt_digest = _validate_digest(qa_receipt_digest, "qa_receipt_digest")
+    qualification_digest = _validate_digest(qualification_digest, "qualification_digest")
+    policy = _bounded_text(
+        qualification_policy_version, "qualification_policy_version", limit=96
+    )
+    family = _bounded_text(family, "family", limit=64)
+    timeframe = _bounded_text(timeframe, "timeframe", limit=32)
+    if timeframe not in _APPROVED_TIMEFRAMES:
+        raise StrategyRegistryError("approved strategy timeframe is unsupported")
+    variant_id = _bounded_text(variant_id, "variant_id", limit=160)
+    if not isinstance(strategy_config, Mapping) or not strategy_config:
+        raise StrategyRegistryError("approved strategy config must be a non-empty mapping")
+    config = dict(strategy_config)
+    config_digest = _validate_digest(strategy_config_digest, "strategy_config_digest")
+    if _digest(config) != config_digest:
+        raise StrategyRegistryError("approved strategy config digest mismatch")
+    evidence = _approved_runtime_evidence(runtime_evidence)
+    identity_core = {
+        "family": family,
+        "timeframe": timeframe,
+        "config_sha256": config_digest,
+    }
+    core = {
+        "schema_version": APPROVED_STRATEGY_SCHEMA,
+        "system_map_node": "REG-50",
+        "strategy_id": _digest(identity_core),
+        "family": family,
+        "timeframe": timeframe,
+        "variant_id": variant_id,
+        "config": config,
+        "config_sha256": config_digest,
+        "source_sha": source_sha,
+        "proposal_digest": proposal_digest,
+        "qa_task_digest": qa_task_digest,
+        "qa_receipt_digest": qa_receipt_digest,
+        "qualification_digest": qualification_digest,
+        "qualification_policy_version": policy,
+        "runtime_evidence": evidence,
+        "qualification_status": "QUALIFIED",
+        "admission_state": "APPROVED_FOR_REGISTRY",
+        "demo_matrix_membership": False,
+        "registry_mutation_authority": False,
+        "promotion_authority": False,
+        "paper_execution_authority": False,
+        "automatic_demo_admission": False,
+        "paper_only": True,
+        "live_trading_authority": False,
+    }
+    return {**core, "record_digest": _digest(core)}
+
+
+def validate_approved_strategy_record(value: Mapping[str, Any]) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        raise StrategyRegistryError("approved strategy record must be a mapping")
+    expected = {
+        "schema_version", "system_map_node", "strategy_id", "family", "timeframe",
+        "variant_id", "config", "config_sha256", "source_sha", "proposal_digest",
+        "qa_task_digest", "qa_receipt_digest", "qualification_digest",
+        "qualification_policy_version", "runtime_evidence", "qualification_status",
+        "admission_state", "demo_matrix_membership", "registry_mutation_authority",
+        "promotion_authority", "paper_execution_authority",
+        "automatic_demo_admission", "paper_only", "live_trading_authority",
+        "record_digest",
+    }
+    if set(value) != expected or value.get("schema_version") != APPROVED_STRATEGY_SCHEMA:
+        raise StrategyRegistryError("approved strategy record schema mismatch")
+    core = dict(value)
+    claimed = _validate_digest(core.pop("record_digest", None), "record_digest")
+    if _digest(core) != claimed:
+        raise StrategyRegistryError("approved strategy record digest mismatch")
+    if value.get("system_map_node") != "REG-50":
+        raise StrategyRegistryError("approved strategy record node mismatch")
+    source_sha = str(value.get("source_sha", "")).lower()
+    if not _SHA40.fullmatch(source_sha):
+        raise StrategyRegistryError("approved strategy source SHA is invalid")
+    for field in (
+        "strategy_id", "config_sha256", "proposal_digest", "qa_task_digest",
+        "qa_receipt_digest", "qualification_digest",
+    ):
+        _validate_digest(value.get(field), field)
+    family = _bounded_text(value.get("family"), "family", limit=64)
+    timeframe = _bounded_text(value.get("timeframe"), "timeframe", limit=32)
+    if timeframe not in _APPROVED_TIMEFRAMES:
+        raise StrategyRegistryError("approved strategy timeframe is unsupported")
+    _bounded_text(value.get("variant_id"), "variant_id", limit=160)
+    _bounded_text(
+        value.get("qualification_policy_version"), "qualification_policy_version", limit=96
+    )
+    config = value.get("config")
+    if not isinstance(config, Mapping) or not config:
+        raise StrategyRegistryError("approved strategy config is invalid")
+    if _digest(dict(config)) != value.get("config_sha256"):
+        raise StrategyRegistryError("approved strategy config binding mismatch")
+    expected_strategy_id = _digest({
+        "family": family,
+        "timeframe": timeframe,
+        "config_sha256": value["config_sha256"],
+    })
+    if value.get("strategy_id") != expected_strategy_id:
+        raise StrategyRegistryError("approved strategy identity mismatch")
+    evidence = _approved_runtime_evidence(value.get("runtime_evidence"))
+    if evidence != value.get("runtime_evidence"):
+        raise StrategyRegistryError("approved runtime evidence is not canonical")
+    if (
+        value.get("qualification_status") != "QUALIFIED"
+        or value.get("admission_state") != "APPROVED_FOR_REGISTRY"
+        or value.get("demo_matrix_membership") is not False
+        or value.get("registry_mutation_authority") is not False
+        or value.get("promotion_authority") is not False
+        or value.get("paper_execution_authority") is not False
+        or value.get("automatic_demo_admission") is not False
+        or value.get("paper_only") is not True
+        or value.get("live_trading_authority") is not False
+    ):
+        raise StrategyRegistryError("approved strategy record authority boundary changed")
+    return dict(value)
