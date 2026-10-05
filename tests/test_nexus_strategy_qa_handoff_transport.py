@@ -238,3 +238,26 @@ def test_fast_coordinator_syncs_handoff_before_agent_manager_advance():
     assert "--store data/agent_coordination/strategy_qa_handoffs" in text
     assert text.index(sync) < text.index(advance)
     assert "actions: write" in text
+
+
+def test_control_plane_transport_import_does_not_require_pandas():
+    import subprocess
+    import sys
+
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import sys; "
+                "sys.modules['pandas']=None; "
+                "import nexus_strategy_qa_handoff_transport; "
+                "print('lightweight_strategy_qa_transport_import=PASS')"
+            ),
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "lightweight_strategy_qa_transport_import=PASS" in proc.stdout

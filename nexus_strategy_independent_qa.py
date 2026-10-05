@@ -14,8 +14,12 @@ import re
 from pathlib import Path
 from typing import Any, Callable, Mapping
 
-from nexus_strategy_proposal_runtime_requalification import APPROVED_FAMILIES, APPROVED_SYMBOLS, _default_evaluator
-from product_research_runtime import TIMEFRAMES
+from nexus_strategy_requalification_contract import (
+    APPROVED_FAMILIES,
+    APPROVED_SYMBOLS,
+    APPROVED_TIMEFRAMES,
+    TIMEFRAME_STEP_MS,
+)
 from nexus_strategy_review_qa_handoff import qa_task_id
 
 TASK_SCHEMA = "nexus.strategy-review-qa-task.v1"
@@ -110,7 +114,7 @@ def validate_task(task: Mapping[str, Any], execution_source_sha: str) -> dict[st
         or row.get("paper_execution_authority") is not False
         or row.get("automatic_strategy_promotion") is not False
         or row.get("live_trading_authority") is not False
-        or row.get("timeframe") not in TIMEFRAMES
+        or row.get("timeframe") not in APPROVED_TIMEFRAMES
         or row.get("family") not in APPROVED_FAMILIES
         or not isinstance(row.get("variant_id"), str)
         or not row.get("variant_id")
@@ -164,11 +168,16 @@ def run_independent_qa(
     lease_id: str,
     execution_source_sha: str,
     state_root: str | Path,
-    evaluator: Evaluator = _default_evaluator,
+    evaluator: Evaluator | None = None,
 ) -> dict[str, Any]:
     if not isinstance(lease_id, str) or not lease_id or len(lease_id) > 160:
         raise StrategyIndependentQaError("Strategy QA lease identity is invalid")
     row = validate_task(task, execution_source_sha)
+    if evaluator is None:
+        # Numerical replay is the only path that needs the heavy research
+        # runtime. Receipt/task verification remains control-plane lightweight.
+        from nexus_strategy_proposal_runtime_requalification import _default_evaluator
+        evaluator = _default_evaluator
     proposal = {
         "proposal_digest": row["proposal_digest"],
         "family": row["family"],
@@ -176,7 +185,7 @@ def run_independent_qa(
         "variant_id": row["variant_id"],
         "strategy_config": dict(row["strategy_config"]),
     }
-    step_ms = int(TIMEFRAMES[row["timeframe"]]["step_ms"])
+    step_ms = int(TIMEFRAME_STEP_MS[row["timeframe"]])
     replay_rows: list[dict[str, Any]] = []
     for expected in sorted(row["runtime_evidence"], key=lambda item: item["symbol"]):
         now_ms = int(expected["last_open_time_ms"]) + step_ms

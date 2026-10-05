@@ -192,3 +192,27 @@ def test_receipt_with_extra_field_is_rejected_even_if_redigested(tmp_path):
     assert not verify_receipt(
         tampered, task, lease_id="qa-lease", execution_source_sha=task["source_sha"]
     )
+
+
+def test_receipt_verifier_import_is_control_plane_lightweight():
+    import subprocess
+    import sys
+
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import sys; "
+                "sys.modules['pandas']=None; "
+                "import nexus_strategy_independent_qa as qa; "
+                "assert callable(qa.verify_receipt); "
+                "print('lightweight_strategy_qa_receipt_verifier=PASS')"
+            ),
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "lightweight_strategy_qa_receipt_verifier=PASS" in proc.stdout
