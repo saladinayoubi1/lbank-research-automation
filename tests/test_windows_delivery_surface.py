@@ -157,7 +157,13 @@ def test_product_uses_real_python_data_research_strategy_paper_risk_agent_state_
     assert "paper-events.jsonl" in runtime
     assert "fetch_bind_bybit_dataset" in research
     assert "run_research_job" in research and "run_canonical_target_exposure_backtest" in research
-    assert "run_automated_signal_pipeline" in research
+    # Product Research may create candidate evidence, but it must not directly
+    # own the Signal -> Risk -> Paper path before independent QA.
+    assert "run_automated_signal_pipeline" not in research
+    assert "INDEPENDENT_QA_RECEIPT_REQUIRED" in research
+    assert '"required_next_gate": "QA-41"' in research
+    assert '"paper_events_written": 0' in research
+    assert "evaluate_risk" in runtime and "execute_paper_command" in runtime
     assert "recovery_snapshot" in controls and "export_csv" in controls
     assert "OfflineDatasetStore" in offline and "CachingProductResearchRuntime" in offline
     assert "StrategyEvidenceStore" in offline
