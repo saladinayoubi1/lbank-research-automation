@@ -63,6 +63,17 @@ def test_repository_manifest_is_bounded_and_paper_only() -> None:
     assert value["authority"]["paper_only"] is True
     assert value["authority"]["live_trading_authority"] is False
     assert value["authority"]["automatic_strategy_promotion"] is False
+    assert value["gates"]["training"]["minimum_fill_count"] == 0
+    assert value["gates"]["locked"]["minimum_fill_count"] == 0
+
+
+def test_nonzero_minimum_fill_count_is_rejected(tmp_path: Path) -> None:
+    value = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    value["gates"]["training"]["minimum_fill_count"] = 1
+    candidate = tmp_path / "manifest.json"
+    candidate.write_text(json.dumps(value), encoding="utf-8")
+    with pytest.raises(discovery.MultiTimeframeDiscoveryError, match="minimum fill-count"):
+        discovery.load_manifest(candidate)
 
 
 def test_locked_holdout_cannot_change_training_selected_variant(tmp_path: Path) -> None:

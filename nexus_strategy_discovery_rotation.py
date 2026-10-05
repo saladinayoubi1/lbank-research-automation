@@ -100,7 +100,7 @@ def build_plan(controller: Mapping[str, Any], state: Mapping[str, Any], feedback
     ):
         raise StrategyDiscoveryRotationError("strategy discovery controller is not verified")
     exhausted: set[str] = set()
-    resolved_negative: set[str] = set()
+    resolved_completed: set[str] = set()
     if feedback is not None:
         if (
             feedback.get("schema_version") != "nexus.strategy-discovery-feedback.v1"
@@ -117,15 +117,21 @@ def build_plan(controller: Mapping[str, Any], state: Mapping[str, Any], feedback
         ):
             raise StrategyDiscoveryRotationError("strategy discovery feedback is not verified")
         exhausted = {str(item) for item in feedback["exhausted_experiment_sha256"]}
-        # A completed, artifact-confirmed negative result retires only the exact
-        # reviewed experiment fingerprint. The next genuinely changed manifest
-        # gets a fresh digest and is eligible; an identical replay is not a
-        # newly discovered strategy, even if its GitHub job reports SUCCESS.
-        resolved_negative = {
+        # A successful, artifact-confirmed terminal result retires only the exact
+        # experiment fingerprint. Positive candidate evidence advances to
+        # review/requalification instead of being replayed as fresh discovery.
+        # Failed, evidence-unavailable and requires-data outcomes remain retryable.
+        terminal_outcomes = {
+            "no_candidate",
+            "exhausted",
+            "candidate_evidence",
+            "completed_no_qualification",
+        }
+        resolved_completed = {
             str(row["experiment_sha256"])
             for row in feedback["outcomes"]
             if isinstance(row, Mapping)
-            and row.get("outcome") == "no_candidate"
+            and row.get("outcome") in terminal_outcomes
             and row.get("workflow_conclusion") == "success"
             and isinstance(row.get("experiment_sha256"), str)
             and _SHA256_RE.fullmatch(row["experiment_sha256"])
@@ -135,17 +141,20 @@ def build_plan(controller: Mapping[str, Any], state: Mapping[str, Any], feedback
         if (
             isinstance(row, Mapping)
             and row.get("status") == "READY_FOR_RESEARCH_DISPATCH"
+            and row.get("rotation_eligible") is True
             and str(row.get("experiment_sha256")) not in exhausted
-            and str(row.get("experiment_sha256")) not in resolved_negative
+            and str(row.get("experiment_sha256")) not in resolved_completed
         )
     ]
     if not stages:
-        if exhausted or resolved_negative:
+        if exhausted or resolved_completed:
             raise StrategyDiscoveryRotationError(
-                "no untested reviewed static experiment remains; enqueue a genuinely new "
-                "mechanism or a changed source-bound manifest rather than replaying old backtests"
+                "no untested reviewed Strategy Finder frontier remains; enqueue a genuinely new "
+                "mechanism or changed source-bound frontier manifest rather than replaying legacy validation"
             )
-        raise StrategyDiscoveryRotationError("no reviewed strategy-search workflow is ready")
+        raise StrategyDiscoveryRotationError(
+            "no reviewed Strategy Finder frontier workflow is ready; legacy validation is never an autonomous fallback"
+        )
     index = int(state["next_index"]) % len(stages)
     selected = stages[index]
     workflow = str(selected.get("workflow", ""))

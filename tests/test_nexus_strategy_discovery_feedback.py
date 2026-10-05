@@ -31,6 +31,7 @@ def _controller():
                 "experiment_id": "first",
                 "experiment_sha256": "1" * 64,
                 "status": "READY_FOR_RESEARCH_DISPATCH",
+                "rotation_eligible": True,
             },
             {
                 "stage": "second",
@@ -38,6 +39,7 @@ def _controller():
                 "experiment_id": "second",
                 "experiment_sha256": "2" * 64,
                 "status": "READY_FOR_RESEARCH_DISPATCH",
+                "rotation_eligible": True,
             },
         ],
     }
@@ -170,3 +172,44 @@ def test_verified_completed_run_with_expired_artifact_is_reason_coded_not_qualif
     row = feedback["outcomes"][-1]
     assert row["outcome"] == "evidence_unavailable"
     assert row["artifact_flags"]["candidate_evidence"] is False
+
+def test_positive_candidate_fingerprint_advances_to_review_not_rediscovery(tmp_path: Path):
+    (tmp_path / "candidate.json").write_text(
+        json.dumps({"status": "paper_candidate"}), encoding="utf-8",
+    )
+    feedback = record_outcome(
+        empty_state(), run={**_run(), "headSha": "a" * 40},
+        expected_source_sha="a" * 40,
+        artifact_root=tmp_path, stage="first", experiment_sha256="1" * 64,
+    )
+    assert feedback["outcomes"][-1]["outcome"] == "candidate_evidence"
+    plan = build_plan(_controller(), empty_rotation_state(), feedback)
+    assert plan["stage"] == "second"
+
+
+def test_requires_data_fingerprint_remains_retryable(tmp_path: Path):
+    (tmp_path / "requires-data.json").write_text(
+        json.dumps({"status": "requires_data", "reason": "requires_data"}),
+        encoding="utf-8",
+    )
+    feedback = record_outcome(
+        empty_state(), run=_run(), artifact_root=tmp_path,
+        stage="first", experiment_sha256="1" * 64,
+    )
+    assert feedback["outcomes"][-1]["outcome"] == "requires_data"
+    plan = build_plan(_controller(), empty_rotation_state(), feedback)
+    assert plan["stage"] == "first"
+
+
+def test_completed_no_qualification_fingerprint_is_not_replayed(tmp_path: Path):
+    (tmp_path / "completed.json").write_text(
+        json.dumps({"status": "completed"}), encoding="utf-8",
+    )
+    feedback = record_outcome(
+        empty_state(), run=_run(), artifact_root=tmp_path,
+        stage="first", experiment_sha256="1" * 64,
+    )
+    assert feedback["outcomes"][-1]["outcome"] == "completed_no_qualification"
+    plan = build_plan(_controller(), empty_rotation_state(), feedback)
+    assert plan["stage"] == "second"
+
