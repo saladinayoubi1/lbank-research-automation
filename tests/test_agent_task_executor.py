@@ -132,3 +132,73 @@ def test_phase4_ui_workload_rejects_transport_substitution(tmp_path):
     assert result["outcome"] == "failure"
     assert result["evidence"]["failure_class"] == "workload_transport_mismatch"
     assert result["evidence"]["allowed_transports"] == ["github-cloud"]
+
+
+def _strategy_qa_payload() -> str:
+    from nexus_strategy_independent_qa import digest
+
+    core = {
+        "schema_version":"nexus.strategy-review-qa-task.v1",
+        "id":"STRATEGY-QA-"+"a"*64,
+        "task_kind":"strategy_review_independent_qa","system_map_node":"QA-41",
+        "status":"READY_FOR_QA_DISPATCH","source_sha":"b"*40,
+        "proposal_digest":"a"*64,"proposal_result_digest":"c"*64,
+        "requalification_digest":"d"*64,"requalification_verification_digest":"e"*64,
+        "family":"momentum","timeframe":"hour4","variant_id":"v1",
+        "strategy_config":{"lookback":16},"strategy_config_digest":"",
+        "runtime_evidence":[
+            {
+                "symbol":"BTCUSDT","dataset_binding_sha256":"f"*64,
+                "pipeline_digest":"1"*64,"qualification_digest":"2"*64,
+                "last_open_time_ms":1800000000000,
+            },
+            {
+                "symbol":"ETHUSDT","dataset_binding_sha256":"3"*64,
+                "pipeline_digest":"4"*64,"qualification_digest":"5"*64,
+                "last_open_time_ms":1800000000000,
+            },
+        ],
+        "producer_role":"strategy-runtime-requalification","required_verifier":"qa-verifier-agent",
+        "research_only":True,"paper_only":True,"candidate_creation_authority":False,
+        "qualification_authority":False,"promotion_authority":False,
+        "paper_execution_authority":False,"automatic_strategy_promotion":False,
+        "live_trading_authority":False,
+    }
+    core["strategy_config_digest"] = digest(core["strategy_config"])
+    task = {**core, "task_digest": digest(core)}
+    payload = {
+        "schema_version":2,"task_id":task["id"],"lease_id":"strategy-qa-lease",
+        "correlation_id":"strategy-qa-correlation","dispatch_id":"strategy-qa-dispatch",
+        "worker_id":"qa-verifier-agent","transport":"github-cloud","phase":7,"gate":17,
+        "title":"independent Strategy QA","required_capabilities":["data_validation"],
+        "acceptance":["exact replay"],"authority":2,"attempt":1,
+        "strategy_qa_task":task,
+    }
+    return base64.urlsafe_b64encode(json.dumps(payload).encode("utf-8")).decode("ascii")
+
+
+def test_strategy_qa_executor_is_bounded_specialized_worker_not_generic_fallback(tmp_path):
+    output = tmp_path / "strategy-qa" / "result.json"
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "scripts/agent_task_executor.py",
+            "--payload-b64",
+            _strategy_qa_payload(),
+            "--transport",
+            "github-cloud",
+            "--output",
+            str(output),
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+        env={**__import__("os").environ, "GITHUB_SHA": "0" * 40},
+    )
+    result = json.loads(output.read_text(encoding="utf-8"))
+    assert proc.returncode == 2
+    assert result["outcome"] == "failure"
+    assert result["evidence"]["executor"] == "nexus-strategy-independent-qa"
+    assert result["evidence"]["failure_class"] == "strategy_independent_qa_failed"
+    assert result["evidence"]["paper_execution_authority"] is False
+    assert result["evidence"]["live_trading_authority"] is False

@@ -69,8 +69,8 @@ def test_materializer_is_restart_safe_and_verifier_only():
     task=first["tasks"][0]
     assert task["id"]=="STRATEGY-QA-"+"a"*64
     assert task["qa_verifier_only"] is True
-    assert task["qa_dispatch_enabled"] is False
-    assert task["status"] == "BLOCKED"
+    assert task["qa_dispatch_enabled"] is True
+    assert task["status"] == "READY"
     assert task["required_verifier"]=="qa-verifier-agent"
     assert task["required_resources"]==["github-cloud"]
     assert task["authority"]==2

@@ -36,7 +36,31 @@ def select_source(payload: dict[str, Any], *, repository: str, main_sha: str,
             or payload.get("phase") not in (4, 7)):
         raise ResearchQaPinError("Research QA source pin requires exact authorized cloud task")
     is_qa = payload.get("task_id") in TASKS and payload.get("worker_id") == "qa-verifier-agent"
-    if is_qa:
+    is_strategy_qa = (
+        isinstance(payload.get("task_id"), str)
+        and payload.get("task_id", "").startswith("STRATEGY-QA-")
+        and payload.get("worker_id") == "qa-verifier-agent"
+    )
+    if is_strategy_qa:
+        strategy_task = payload.get("strategy_qa_task")
+        if payload.get("phase") != 7 or not isinstance(strategy_task, dict):
+            raise ResearchQaPinError("immutable Strategy QA source identity is incomplete")
+        from nexus_strategy_independent_qa import (
+            StrategyIndependentQaError,
+            validate_task,
+        )
+        source = str(strategy_task.get("source_sha", ""))
+        try:
+            validate_task(strategy_task, source)
+        except StrategyIndependentQaError as exc:
+            raise ResearchQaPinError("immutable Strategy QA task binding is invalid") from exc
+        if (
+            not SHA40.fullmatch(source)
+            or strategy_task.get("id") != payload.get("task_id")
+            or strategy_task.get("required_verifier") != "qa-verifier-agent"
+        ):
+            raise ResearchQaPinError("immutable Strategy QA source identity is incomplete")
+    elif is_qa:
         source = payload.get("research_producer_source_sha")
         receipt = payload.get("research_producer_receipt_digest")
         producer_lease = payload.get("research_producer_lease_id")
@@ -48,10 +72,15 @@ def select_source(payload: dict[str, Any], *, repository: str, main_sha: str,
             raise ResearchQaPinError("immutable Research QA producer identity is incomplete")
     else:
         source = main_sha
+    independent_qa = is_qa or is_strategy_qa
     return {
         "execution_source_sha": source,
-        "requested_ancestor_pin": bool(is_qa and source != main_sha),
-        "source_role": "independent-research-qa" if is_qa else "normal-cloud-task",
+        "requested_ancestor_pin": bool(independent_qa and source != main_sha),
+        "source_role": (
+            "independent-strategy-qa" if is_strategy_qa
+            else "independent-research-qa" if is_qa
+            else "normal-cloud-task"
+        ),
         "live_authority": False,
         "auto_demo_promotion": False,
     }

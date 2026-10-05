@@ -605,29 +605,19 @@ def record_result(config: dict[str, Any], task_id: str, worker_id: str, outcome:
         if task.get("status") == "VERIFYING":
             if task.get("qa_verifier_only") is True:
                 handoff = task.get("qa_handoff_task")
-                receipt = evidence.get("qa_receipt_digest")
+                if not isinstance(handoff, Mapping):
+                    raise ValueError("independent Strategy QA handoff is unavailable")
+                from nexus_strategy_independent_qa import verify_receipt
                 if (
                     worker_id != task.get("required_verifier")
                     or worker_id != task.get("verifier")
                     or task.get("producer") is not None
-                    or not isinstance(handoff, Mapping)
-                    or evidence.get("qa_lease_id") != task.get("lease_id")
-                    or evidence.get("task_digest") != handoff.get("task_digest")
-                    or evidence.get("source_sha") != handoff.get("source_sha")
-                    or evidence.get("proposal_digest") != handoff.get("proposal_digest")
-                    or evidence.get("proposal_result_digest") != handoff.get("proposal_result_digest")
-                    or evidence.get("requalification_digest") != handoff.get("requalification_digest")
-                    or evidence.get("requalification_verification_digest")
-                    != handoff.get("requalification_verification_digest")
-                    or evidence.get("strategy_config_digest") != handoff.get("strategy_config_digest")
-                    or evidence.get("independent_qa_complete") is not True
-                    or evidence.get("qualification_authority") is not False
-                    or evidence.get("paper_execution_authority") is not False
-                    or evidence.get("automatic_strategy_promotion") is not False
-                    or evidence.get("live_trading_authority") is not False
-                    or not isinstance(receipt, str)
-                    or len(receipt) != 64
-                    or any(ch not in "0123456789abcdef" for ch in receipt)
+                    or not verify_receipt(
+                        evidence,
+                        handoff,
+                        lease_id=str(task.get("lease_id", "")),
+                        execution_source_sha=str(handoff.get("source_sha", "")),
+                    )
                 ):
                     raise ValueError("independent Strategy QA receipt does not bind this exact verifier lease")
             if task_id in TASKS:

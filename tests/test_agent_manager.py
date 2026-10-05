@@ -272,7 +272,38 @@ def test_materialized_qa_task_leases_only_designated_qa_verifier(monkeypatch):
 
 
 def test_materialized_qa_success_is_single_verifier_stage_and_exact_receipt(monkeypatch):
+    from nexus_strategy_independent_qa import digest
+
     monkeypatch.setattr(am, "emit", lambda *args, **kwargs: None)
+    qa_core = {
+        "schema_version":"nexus.strategy-review-qa-task.v1",
+        "id":"STRATEGY-QA-"+"a"*64,
+        "task_kind":"strategy_review_independent_qa","system_map_node":"QA-41",
+        "status":"READY_FOR_QA_DISPATCH","source_sha":"2"*40,
+        "proposal_digest":"a"*64,"proposal_result_digest":"4"*64,
+        "requalification_digest":"5"*64,"requalification_verification_digest":"6"*64,
+        "family":"momentum","timeframe":"hour4","variant_id":"v1",
+        "strategy_config":{"lookback":16},"strategy_config_digest":"",
+        "runtime_evidence":[
+            {
+                "symbol":"BTCUSDT","dataset_binding_sha256":"9"*64,
+                "pipeline_digest":"b"*64,"qualification_digest":"c"*64,
+                "last_open_time_ms":1800000000000,
+            },
+            {
+                "symbol":"ETHUSDT","dataset_binding_sha256":"a"*64,
+                "pipeline_digest":"d"*64,"qualification_digest":"e"*64,
+                "last_open_time_ms":1800000000000,
+            },
+        ],
+        "producer_role":"strategy-runtime-requalification",
+        "required_verifier":"qa-verifier-agent","research_only":True,"paper_only":True,
+        "candidate_creation_authority":False,"qualification_authority":False,
+        "promotion_authority":False,"paper_execution_authority":False,
+        "automatic_strategy_promotion":False,"live_trading_authority":False,
+    }
+    qa_core["strategy_config_digest"] = digest(qa_core["strategy_config"])
+    qa_task = {**qa_core, "task_digest": digest(qa_core)}
     config = {
         "policy":{"max_parallel_tasks":2},
         "workers":[
@@ -280,33 +311,44 @@ def test_materialized_qa_success_is_single_verifier_stage_and_exact_receipt(monk
              "authority_max":3,"enabled":True,"verifier":True,"max_concurrent_tasks":2},
         ],
         "tasks":[{
-            "id":"STRATEGY-QA-"+"a"*64,"status":"READY","priority":92,"authority":2,
+            "id":qa_task["id"],"status":"READY","priority":92,"authority":2,
             "dependencies":[],"required_capabilities":["data_validation"],"required_resources":["github-cloud"],
             "qa_verifier_only":True,"qa_dispatch_enabled":True,"required_verifier":"qa-verifier-agent",
-            "qa_handoff_task":{
-                "task_kind":"strategy_review_independent_qa","system_map_node":"QA-41",
-                "required_verifier":"qa-verifier-agent","producer_role":"strategy-runtime-requalification",
-                "task_digest":"1"*64,"source_sha":"2"*40,"proposal_digest":"3"*64,
-                "proposal_result_digest":"4"*64,"requalification_digest":"5"*64,
-                "requalification_verification_digest":"6"*64,"strategy_config_digest":"7"*64,
-            },
+            "qa_handoff_task":qa_task,
         }],
     }
     am.assign_ready_tasks(config, datetime(2026,10,6,tzinfo=timezone.utc))
     task=config["tasks"][0]
-    receipt={
-        "qa_lease_id":task["lease_id"],"task_digest":"1"*64,"source_sha":"2"*40,
-        "proposal_digest":"3"*64,"proposal_result_digest":"4"*64,
-        "requalification_digest":"5"*64,"requalification_verification_digest":"6"*64,
-        "strategy_config_digest":"7"*64,"qa_receipt_digest":"8"*64,
+    receipt_core={
+        "schema_version":"nexus.strategy-independent-qa-receipt.v1",
+        "qa_lease_id":task["lease_id"],"task_digest":qa_task["task_digest"],
+        "source_sha":qa_task["source_sha"],"proposal_digest":qa_task["proposal_digest"],
+        "proposal_result_digest":qa_task["proposal_result_digest"],
+        "requalification_digest":qa_task["requalification_digest"],
+        "requalification_verification_digest":qa_task["requalification_verification_digest"],
+        "strategy_config_digest":qa_task["strategy_config_digest"],
+        "runtime_evidence":[
+            {
+                "symbol":"BTCUSDT","dataset_binding_sha256":"9"*64,
+                "pipeline_digest":"b"*64,"qualification_digest":"c"*64,
+                "last_open_time_ms":1800000000000,"qualification_status":"paper_candidate",
+                "deterministic_replay_verified":True,
+            },
+            {
+                "symbol":"ETHUSDT","dataset_binding_sha256":"a"*64,
+                "pipeline_digest":"d"*64,"qualification_digest":"e"*64,
+                "last_open_time_ms":1800000000000,"qualification_status":"paper_candidate",
+                "deterministic_replay_verified":True,
+            },
+        ],
         "independent_qa_complete":True,"qualification_authority":False,
-        "paper_execution_authority":False,"automatic_strategy_promotion":False,
-        "live_trading_authority":False,
+        "promotion_authority":False,"paper_execution_authority":False,
+        "automatic_strategy_promotion":False,"live_trading_authority":False,
     }
+    receipt={**receipt_core,"qa_receipt_digest":digest(receipt_core)}
     am.record_result(config, task["id"], "qa-verifier-agent", "success", receipt)
     assert task["status"]=="DONE"
     assert task["verification_evidence"]==receipt
-
 
 def test_materialized_qa_failure_blocks_instead_of_generic_second_stage(monkeypatch):
     monkeypatch.setattr(am, "emit", lambda *args, **kwargs: None)

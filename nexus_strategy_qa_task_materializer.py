@@ -46,8 +46,7 @@ def _definition_task(task: Mapping[str, Any]) -> dict[str, Any]:
         "title": f"Independent QA replay for strategy proposal {proposal_digest[:12]}",
         "phase": 7,
         "gate": 17,
-        "status": "BLOCKED",
-        "blocked_reason": "independent strategy QA worker contract not enabled",
+        "status": "READY",
         "priority": 92,
         "dependencies": [],
         "required_capabilities": ["data_validation"],
@@ -60,7 +59,7 @@ def _definition_task(task: Mapping[str, Any]) -> dict[str, Any]:
             "no qualification, promotion, Paper execution, automatic Demo admission, or Live authority",
         ],
         "qa_verifier_only": True,
-        "qa_dispatch_enabled": False,
+        "qa_dispatch_enabled": True,
         "required_verifier": "qa-verifier-agent",
         "qa_handoff_task": deepcopy(dict(task)),
     }
