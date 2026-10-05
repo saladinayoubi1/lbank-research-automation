@@ -8,13 +8,13 @@ from nexus_strategy_qa_task_materializer import (
     StrategyQaTaskMaterializerError,
     materialize_qa_tasks,
 )
-from nexus_strategy_review_qa_handoff import verify_handoff
+from nexus_strategy_review_qa_handoff import qa_task_id, verify_handoff
 
 
 def _handoff():
     task_core = {
         "schema_version": "nexus.strategy-review-qa-task.v1",
-        "id": "STRATEGY-QA-" + "a" * 64,
+        "id": qa_task_id("a" * 64, "b" * 40, "d" * 64),
         "task_kind": "strategy_review_independent_qa",
         "system_map_node": "QA-41",
         "status": "READY_FOR_QA_DISPATCH",
@@ -67,7 +67,7 @@ def test_materializer_is_restart_safe_and_verifier_only():
     second=materialize_qa_tasks(first,handoff,proof)
     assert first==second
     task=first["tasks"][0]
-    assert task["id"]=="STRATEGY-QA-"+"a"*64
+    assert task["id"] == qa_task_id("a" * 64, "b" * 40, "d" * 64)
     assert task["qa_verifier_only"] is True
     assert task["qa_dispatch_enabled"] is True
     assert task["status"] == "READY"
@@ -91,6 +91,6 @@ def test_materializer_rejects_definition_collision():
     handoff=_handoff()
     proof=verify_handoff(handoff)
     definition=_definition()
-    definition["tasks"]=[{"id":"STRATEGY-QA-"+"a"*64,"status":"DONE"}]
+    definition["tasks"]=[{"id":qa_task_id("a"*64, "b"*40, "d"*64),"status":"DONE"}]
     with pytest.raises(StrategyQaTaskMaterializerError, match="collides"):
         materialize_qa_tasks(definition,handoff,proof)
