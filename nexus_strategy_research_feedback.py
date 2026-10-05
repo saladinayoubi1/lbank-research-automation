@@ -157,12 +157,21 @@ def validate_evaluated_ledger(
     claimed = core.pop("ledger_digest", None)
     mechanisms = core.get("mechanisms_evaluated")
     configs = core.get("config_fingerprints_evaluated")
+    base_keys = {
+        "schema", "archive_sha256", "mechanisms_evaluated",
+        "config_fingerprints_evaluated", "research_only",
+        "auto_demo_promotion", "live_enabled",
+    }
+    frontier_keys = {
+        "frontier_screened_mechanisms", "frontier_screening_version",
+    }
+    screened = core.get("frontier_screened_mechanisms")
+    screen_version = core.get("frontier_screening_version")
+    has_frontier_extension = bool(set(core) & frontier_keys)
     if (
-        set(core) != {
-            "schema", "archive_sha256", "mechanisms_evaluated",
-            "config_fingerprints_evaluated", "research_only",
-            "auto_demo_promotion", "live_enabled",
-        }
+        not base_keys.issubset(core)
+        or not set(core).issubset(base_keys | frontier_keys)
+        or (has_frontier_extension and not frontier_keys.issubset(core))
         or core.get("schema") != COMPOSITE_LEDGER_SCHEMA
         or core.get("archive_sha256") != certificate.get("dataset_semantic_sha256")
         or core.get("research_only") is not True
@@ -175,6 +184,13 @@ def validate_evaluated_ledger(
         or len(set(configs)) != len(configs)
         or any(not isinstance(x, str) or not _HEX64.fullmatch(x) for x in configs)
         or len(configs) < len(mechanisms)
+        or (has_frontier_extension and (
+            not isinstance(screened, list)
+            or len(set(screened)) != len(screened)
+            or any(not isinstance(x, str) or not _TOKEN.fullmatch(x) for x in screened)
+            or not isinstance(screen_version, str)
+            or not re.fullmatch(r"[a-z0-9][a-z0-9._-]{2,127}", screen_version)
+        ))
         or claimed != _digest(core)
     ):
         raise ResearchFeedbackError("evaluated composite ledger integrity or authority rejected")
