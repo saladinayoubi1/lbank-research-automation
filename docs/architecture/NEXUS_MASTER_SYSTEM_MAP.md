@@ -643,3 +643,22 @@ At the baseline for this map:
 - Live trading remains disabled.
 
 This checkpoint describes intended/current operational roles. Runner health is dynamic and must be re-verified before actions that depend on current online state.
+
+## 16. Automated enforcement
+
+The System Map is an executable governance contract, not only documentation.
+
+CI must run `.github/workflows/nexus-system-map-gate.yml` and fail closed when:
+- protected system invariants drift;
+- Laptop 1 stops being the only owner Paper writer;
+- active/failover runner placement changes without updating the protected topology;
+- Live trading becomes enabled;
+- backup market sources become silently substitutable for Bybit;
+- the required Research -> Validation -> Independent QA -> Qualification -> Risk -> Paper sequence changes;
+- Protective Exit gains open/reverse/increase-exposure authority;
+- a pull request omits the mandatory architecture precheck or references an unknown System Map node.
+
+The executable validator is `nexus_system_map_validator.py` and its regression suite is `tests/test_nexus_system_map_validator.py`.
+
+Changing a protected invariant intentionally requires an explicit architecture change, updated ADR/authority evidence where applicable, updated regression tests, and normal reviewed merge controls. The validator must not be weakened merely to make a failing implementation pass.
+
