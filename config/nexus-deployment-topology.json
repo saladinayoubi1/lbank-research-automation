@@ -1,0 +1,367 @@
+{
+  "schema_version": 1,
+  "status": "active_operational_topology",
+  "scope": "research_backtest_demo_paper_only",
+  "source_of_truth_order": [
+    "current_main_code_tests_workflows",
+    "config/nexus-deployment-topology.json",
+    "config/nexus-integration-registry.json",
+    "docs/NEXUS_MASTER_SYSTEM_MAP.md",
+    "durable_project_memory_and_evidence"
+  ],
+  "invariants": {
+    "live_trading": false,
+    "paper_reference_balance_usdt": 500,
+    "execution_identity": "Bybit",
+    "single_paper_writer": true,
+    "training_only_strategy_ranking": true,
+    "independent_qa_required_before_qualification": true,
+    "automatic_demo_promotion": false,
+    "github_is_source_of_truth": true,
+    "failover_must_be_conditional": true
+  },
+  "machines": [
+    {
+      "id": "laptop-1",
+      "hostname": "DESKTOP-1R1081M",
+      "role": "runtime_paper_primary",
+      "responsibilities": [
+        "desktop_product_runtime",
+        "paper_demo_primary_writer",
+        "paper_protective_exit",
+        "local_integration_runner",
+        "bybit_network_runner",
+        "windows_disaster_recovery",
+        "research_failover_watchdog_only"
+      ],
+      "prohibited_normal_roles": [
+        "parallel_primary_research_when_laptop_2_is_healthy",
+        "second_concurrent_paper_writer",
+        "live_trading"
+      ]
+    },
+    {
+      "id": "laptop-2",
+      "hostname": "DESKTOP-F4SA4VL",
+      "role": "research_build_primary_conditional_failover",
+      "responsibilities": [
+        "primary_research_runner",
+        "strategy_discovery_backtest_workloads",
+        "research_build_support",
+        "conditional_local_failover",
+        "conditional_bybit_network_failover",
+        "remote_recovery"
+      ],
+      "prohibited_normal_roles": [
+        "paper_demo_primary_writer",
+        "always_on_local_failover",
+        "always_on_bybit_failover",
+        "duplicate_primary_research_runner",
+        "live_trading"
+      ]
+    },
+    {
+      "id": "github-actions-cloud",
+      "hostname": null,
+      "role": "ci_orchestration_independent_verification",
+      "responsibilities": [
+        "pull_request_ci",
+        "exact_head_build_verification",
+        "workflow_policy_checks",
+        "independent_cloud_verification",
+        "artifact_transport",
+        "coordinator_and_research_workflow_orchestration"
+      ],
+      "prohibited_normal_roles": [
+        "runtime_database",
+        "owner_paper_wallet",
+        "live_trading"
+      ]
+    }
+  ],
+  "runners": [
+    {
+      "name": "NEXUS-LOCAL-RUNNER",
+      "machine": "laptop-1",
+      "mode": "primary",
+      "labels": [
+        "self-hosted",
+        "Windows",
+        "X64",
+        "nexus-local"
+      ],
+      "workload_class": [
+        "local_windows_integration",
+        "physical_owner_runtime_checks"
+      ],
+      "failover": "NEXUS-LOCAL-FAILOVER",
+      "concurrency_rule": "primary_only_while_healthy"
+    },
+    {
+      "name": "NEXUS-WINDOWS-DR",
+      "machine": "laptop-1",
+      "mode": "recovery",
+      "labels": [
+        "self-hosted",
+        "Windows",
+        "X64",
+        "nexus-remote-rescue"
+      ],
+      "workload_class": [
+        "windows_disaster_recovery",
+        "remote_rescue"
+      ],
+      "failover": null,
+      "concurrency_rule": "do_not_use_as_general_parallel_worker"
+    },
+    {
+      "name": "NEXUS-BYBIT-WSL",
+      "machine": "laptop-1",
+      "mode": "primary",
+      "labels": [
+        "self-hosted",
+        "X64",
+        "Linux",
+        "nexus-bybit-network"
+      ],
+      "workload_class": [
+        "bybit_public_network",
+        "bybit_dataset_and_replay_support"
+      ],
+      "failover": "NEXUS-BYBIT-FAILOVER",
+      "concurrency_rule": "primary_only_while_healthy"
+    },
+    {
+      "name": "NEXUS-RESEARCH-RUNNER",
+      "machine": "laptop-2",
+      "mode": "primary",
+      "labels": [
+        "self-hosted",
+        "Windows",
+        "X64",
+        "nexus-research",
+        "nexus-worker-2"
+      ],
+      "workload_class": [
+        "strategy_research",
+        "backtest",
+        "mechanism_factory",
+        "bounded_research_worker"
+      ],
+      "failover": "laptop-1 research failover watchdog capability",
+      "concurrency_rule": "single_canonical_research_primary"
+    },
+    {
+      "name": "NEXUS-RESEARCH-SECONDARY",
+      "machine": "laptop-2",
+      "mode": "disabled_standby",
+      "labels": [
+        "self-hosted",
+        "Windows",
+        "X64",
+        "nexus-research",
+        "nexus-worker-2",
+        "nexus-failover"
+      ],
+      "workload_class": [
+        "research_failover_only"
+      ],
+      "failover": null,
+      "concurrency_rule": "must_remain_offline_while_NEXUS-RESEARCH-RUNNER_is_healthy"
+    },
+    {
+      "name": "NEXUS-LOCAL-FAILOVER",
+      "machine": "laptop-2",
+      "mode": "conditional_standby",
+      "labels": [
+        "self-hosted",
+        "Windows",
+        "X64",
+        "nexus-local",
+        "nexus-remote-rescue",
+        "nexus-failover"
+      ],
+      "workload_class": [
+        "local_windows_failover_only"
+      ],
+      "failover": null,
+      "concurrency_rule": "watchdog_starts_only_after_primary_health_failure"
+    },
+    {
+      "name": "NEXUS-BYBIT-FAILOVER",
+      "machine": "laptop-2",
+      "mode": "conditional_standby",
+      "labels": [
+        "self-hosted",
+        "X64",
+        "Linux",
+        "nexus-bybit-network",
+        "nexus-failover"
+      ],
+      "workload_class": [
+        "bybit_network_failover_only"
+      ],
+      "failover": null,
+      "concurrency_rule": "watchdog_starts_only_after_primary_health_failure"
+    }
+  ],
+  "logical_planes": [
+    {
+      "id": "control-plane",
+      "components": [
+        "project_memory",
+        "ai_room",
+        "mission",
+        "supervisor",
+        "router",
+        "workers",
+        "evidence",
+        "independent_verifier"
+      ]
+    },
+    {
+      "id": "data-research-plane",
+      "components": [
+        "market_data_sources",
+        "canonical_data",
+        "data_intelligence",
+        "strategy_finder",
+        "mechanism_factory",
+        "mechanism_generator",
+        "backtest_validation",
+        "qualification"
+      ]
+    },
+    {
+      "id": "paper-runtime-plane",
+      "components": [
+        "decision",
+        "deterministic_risk",
+        "paper_event_store",
+        "paper_exchange_simulator",
+        "protective_exit",
+        "portfolio_journal",
+        "performance_drift"
+      ]
+    },
+    {
+      "id": "product-observability-plane",
+      "components": [
+        "mission_control",
+        "desktop_ui",
+        "web_api",
+        "mobile_gateway",
+        "remote_operations"
+      ]
+    }
+  ],
+  "workload_routes": [
+    {
+      "workload": "desktop_product_runtime",
+      "preferred": "laptop-1",
+      "fallback": "none_automatic",
+      "notes": "preserve verified install until replacement passes exact-head verification"
+    },
+    {
+      "workload": "paper_writer",
+      "preferred": "laptop-1",
+      "fallback": "explicit_recovery_only",
+      "notes": "exactly one writer to shared Paper state"
+    },
+    {
+      "workload": "paper_protective_exit",
+      "preferred": "laptop-1",
+      "fallback": "explicit_recovery_only",
+      "notes": "reduce/close only; never open/reverse/live"
+    },
+    {
+      "workload": "strategy_research",
+      "preferred": "NEXUS-RESEARCH-RUNNER",
+      "fallback": "laptop-1 research failover watchdog capability",
+      "notes": "no duplicate primary research runner"
+    },
+    {
+      "workload": "local_windows_integration",
+      "preferred": "NEXUS-LOCAL-RUNNER",
+      "fallback": "NEXUS-LOCAL-FAILOVER",
+      "notes": "conditional failover only"
+    },
+    {
+      "workload": "bybit_public_network",
+      "preferred": "NEXUS-BYBIT-WSL",
+      "fallback": "NEXUS-BYBIT-FAILOVER",
+      "notes": "public/research data and Paper-safe network boundary"
+    },
+    {
+      "workload": "windows_recovery",
+      "preferred": "NEXUS-WINDOWS-DR",
+      "fallback": "manual_owner_recovery",
+      "notes": "recovery role, not normal workload capacity"
+    },
+    {
+      "workload": "ci_and_independent_verification",
+      "preferred": "github-actions-cloud",
+      "fallback": "cloud_fallback_workflow",
+      "notes": "does not own Paper state"
+    }
+  ],
+  "data_sources": [
+    {
+      "id": "bybit",
+      "role": "canonical_primary_market_and_paper_identity",
+      "status": "active",
+      "authority": "public_data_and_demo_paper_only"
+    },
+    {
+      "id": "lbank",
+      "role": "backup_research_market_data",
+      "status": "active_workflow_present",
+      "authority": "research_data_only"
+    },
+    {
+      "id": "bitget",
+      "role": "requested_backup_research_market_data",
+      "status": "must_verify_current_main_before_activation",
+      "authority": "research_data_only"
+    },
+    {
+      "id": "tradingview",
+      "role": "reference_or_ai_context_only",
+      "status": "non_authoritative",
+      "authority": "must_not_replace_canonical_exchange_execution"
+    }
+  ],
+  "failover_policy": {
+    "normal_state": {
+      "laptop-1": [
+        "runtime_paper_primary",
+        "local_primary",
+        "bybit_network_primary",
+        "windows_dr_ready"
+      ],
+      "laptop-2": [
+        "research_primary",
+        "failover_watchdogs_ready"
+      ]
+    },
+    "activation_rule": "standby runner activates only after verified primary health loss; it must return to standby after stable primary recovery",
+    "forbidden": [
+      "two concurrent paper writers",
+      "two always-on local runners for same role",
+      "two always-on bybit network runners for same role",
+      "secondary research runner active without explicit capacity reason",
+      "failover activation based only on stale UI state"
+    ]
+  },
+  "new_work_gate": [
+    "identify_system_map_node",
+    "check_existing_capability_before_building_new",
+    "identify_upstream_and_downstream_dependencies",
+    "select_exact_runner_or_cloud_resource",
+    "confirm_authority_boundary_and_demo_only",
+    "define_acceptance_test_and_independent_verifier",
+    "define_durable_evidence_location",
+    "define_deployment_and_rollback",
+    "update_topology_if_role_or_connection_changes"
+  ]
+}
