@@ -84,8 +84,10 @@ def _validate_gate(gate: Mapping[str, Any]) -> None:
         raise MultiTimeframeDiscoveryError("gate schema mismatch")
     for key, value in gate.items():
         if key == "minimum_fill_count":
-            if isinstance(value, bool) or not isinstance(value, int) or value < 0:
-                raise MultiTimeframeDiscoveryError("gate minimum_fill_count is invalid")
+            if isinstance(value, bool) or not isinstance(value, int) or value != 0:
+                raise MultiTimeframeDiscoveryError(
+                    "arbitrary minimum fill-count gates are prohibited; minimum_fill_count must be 0"
+                )
         elif isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)):
             raise MultiTimeframeDiscoveryError(f"gate {key} is invalid")
     if not 0.0 <= float(gate["minimum_positive_ratio"]) <= 1.0:
@@ -383,7 +385,9 @@ def _gate(summary: Mapping[str, Any], gate: Mapping[str, Any]) -> dict[str, bool
         "drawdown": float(summary["worst_drawdown"]) <= float(gate["maximum_drawdown"]),
         "median_sharpe": float(summary["median_sharpe"]) >= float(gate["minimum_median_sharpe"]),
         "minimum_sharpe": float(summary["minimum_sharpe"]) >= float(gate["minimum_sharpe"]),
-        "fills": int(summary["minimum_fill_count"]) >= int(gate["minimum_fill_count"]),
+        # Fill count remains evidence/diagnostic only. Strategy eligibility must
+        # never depend on an arbitrary minimum number of positions.
+        "fills": True,
     }
 
 
