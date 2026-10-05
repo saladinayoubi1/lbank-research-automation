@@ -96,9 +96,14 @@ def test_service_identity_reuses_only_exact_automatic_running_runner_service() -
     assert "serviceConfig.Start -ne 2" in text
     assert "serviceController.Status -ne 'Running'" in text
     assert "Get-TargetListener" in text
+    assert "Get-ServiceOwnedTargetListener" in text
+    assert "$runnerServices.Count -ne 1" in text
+    assert "$_.SessionId -eq 0" in text
     assert "persistence_mode = 'EXISTING_WINDOWS_SERVICE'" in text
     assert "target_service_observed = $true" in text
-    assert "supervisor_skipped_existing_service=true" in text
+    assert "supervisor_verified_existing_service=true" in text
+    assert "supervisor_blocked_existing_service_without_listener=true" in text
+    assert "running without a uniquely verified service-owned listener" in text
     assert "existing_service_reused = $true" in text
     assert "service_modified = $false" in text
     assert "scheduled_task_modified = $false" in text

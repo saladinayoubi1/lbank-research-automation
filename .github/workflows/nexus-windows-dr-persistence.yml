@@ -97,7 +97,11 @@ jobs:
             'service_modified = $false',
             'scheduled_task_modified = $false',
             'target_service_observed = $true',
-            'supervisor_skipped_existing_service=true'
+            'Get-ServiceOwnedTargetListener',
+            '$runnerServices.Count -ne 1',
+            '$_.SessionId -eq 0',
+            'supervisor_verified_existing_service=true',
+            'supervisor_blocked_existing_service_without_listener=true'
           )) {
             if (-not $text.Contains($required)) { throw "Required existing-service proof marker missing: $required" }
           }

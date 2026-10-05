@@ -90,6 +90,31 @@ function Get-TargetListener {
     return $null
 }
 
+function Get-ServiceOwnedTargetListener([string]$ServiceName, [string]$FullRoot) {
+    # Prefer an executable path bound to the exact runner root when Windows
+    # allows this user to inspect the service-owned process.
+    $direct = Get-TargetListener
+    if ($direct) { return $direct }
+
+    # A NetworkService/System listener may hide Process.Path from an
+    # interactive non-elevated observer.  Fall back only when the machine has
+    # exactly one GitHub Actions Windows service and exactly one Session-0
+    # Runner.Listener.  Any ambiguity fails closed instead of starting a
+    # second listener against the same registration.
+    $runnerServices = @(Get-Service -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -like 'actions.runner.*' })
+    if ($runnerServices.Count -ne 1 -or
+        [string]$runnerServices[0].Name -ne $ServiceName) {
+        return $null
+    }
+    $serviceListeners = @(Get-Process -Name 'Runner.Listener' -ErrorAction SilentlyContinue |
+        Where-Object { $_.SessionId -eq 0 })
+    if ($serviceListeners.Count -eq 1) {
+        return $serviceListeners[0]
+    }
+    return $null
+}
+
 function Get-ExactExistingRunnerService([string]$FullRoot) {
     $serviceMarker = Join-Path $FullRoot '.service'
     if (-not (Test-Path -LiteralPath $serviceMarker -PathType Leaf)) {
@@ -132,7 +157,7 @@ function Get-ExactExistingRunnerService([string]$FullRoot) {
     if ([string]$serviceController.Status -ne 'Running') {
         throw 'Exact runner service is not currently running.'
     }
-    $listenerObserved = [bool](Get-TargetListener)
+    $listenerObserved = [bool](Get-ServiceOwnedTargetListener -ServiceName $serviceName -FullRoot $FullRoot)
 
     return [pscustomobject]@{
         Name = $serviceName
@@ -233,7 +258,11 @@ function Run-Supervisor {
     $serviceMarker = Join-Path $fullRoot '.service'
     if (Test-Path -LiteralPath $serviceMarker -PathType Leaf) {
         $existingService = Get-ExactExistingRunnerService -FullRoot $fullRoot
-        Write-Log ('supervisor_skipped_existing_service=true service=' + $existingService.Name + ' listener_observed=' + $existingService.ListenerObserved)
+        if (-not $existingService.ListenerObserved) {
+            Write-Log ('supervisor_blocked_existing_service_without_listener=true service=' + $existingService.Name)
+            throw 'Exact runner service is running without a uniquely verified service-owned listener.'
+        }
+        Write-Log ('supervisor_verified_existing_service=true service=' + $existingService.Name + ' listener_observed=true')
         return
     }
     Write-Log 'supervisor_started=true'
@@ -279,6 +308,9 @@ function Install-TargetTask {
     if (Test-Path -LiteralPath $serviceMarker -PathType Leaf) {
         $script:InstallStage = 'existing_service_validation'
         $existingService = Get-ExactExistingRunnerService -FullRoot $fullRoot
+        if (-not $existingService.ListenerObserved) {
+            throw 'Exact runner service is running without a uniquely verified service-owned listener.'
+        }
         $script:InstallStage = 'evidence_success_existing_service'
         Write-Evidence 'SUCCESS' @{
             persistence_mode = 'EXISTING_WINDOWS_SERVICE'
@@ -293,9 +325,9 @@ function Install-TargetTask {
             service_start_mode = $existingService.StartMode
             service_executable = $existingService.Executable
             target_service_observed = $true
-            target_listener_observed = [bool]$existingService.ListenerObserved
+            target_listener_observed = $true
         }
-        Write-Log ('install_decision=SUCCESS existing_service_reused=true service=' + $existingService.Name + ' listener_observed=' + $existingService.ListenerObserved)
+        Write-Log ('install_decision=SUCCESS existing_service_reused=true service=' + $existingService.Name + ' listener_observed=true')
         Write-Host ('windows_dr_autostart_decision=SUCCESS persistence_mode=EXISTING_WINDOWS_SERVICE service=' + $existingService.Name)
         return
     }
