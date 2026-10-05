@@ -151,11 +151,20 @@ jobs:
           --clean
           --onedir
           --name nexus-product-server
+          --collect-submodules "numpy.random"
+          --hidden-import "numpy.random._generator"
           --add-data "product_ui;product_ui"
           --add-data "config/nexus-ai-council.json;config"
           --add-data ".nexus/phase6-checkpoint.json;.nexus"
           --add-data "docs/project_memory/STATE.json;docs/project_memory"
           product_offline_web_server.py
+      - name: Smoke-test packaged Python sidecar imports
+        shell: pwsh
+        run: |
+          $exe = 'dist/nexus-product-server/nexus-product-server.exe'
+          if (!(Test-Path -LiteralPath $exe -PathType Leaf)) { throw 'Built sidecar executable missing' }
+          & $exe --help | Out-Null
+          if ($LASTEXITCODE -ne 0) { throw "Packaged sidecar import smoke test failed with exit code $LASTEXITCODE" }
       - name: Stage exact-source Mission Control resources
         shell: pwsh
         run: |
