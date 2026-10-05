@@ -57,6 +57,11 @@ jobs:
       - name: Ingest completed worker results before stale-lease evaluation
         run: python agent_transport.py --mode poll --runtime data/agent_coordination/agent_manager_runtime.json --summary data/agent_coordination/manager_state.json --ref "${GITHUB_REF_NAME}"
 
+      - name: Sync verified Strategy QA handoff evidence
+        run: >-
+          python nexus_strategy_qa_handoff_transport.py
+          --store data/agent_coordination/strategy_qa_handoffs
+
       - name: Advance capability-aware mission DAG and five-minute triage
         run: python agent_manager_runner.py --config config/nexus-agent-manager.json
 

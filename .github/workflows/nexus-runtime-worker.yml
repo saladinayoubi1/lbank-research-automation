@@ -32,6 +32,8 @@ on:
       - 'scripts/nexus_local_worker.py'
       - 'nexus_autonomous_orchestrator.py'
       - 'agent_transport.py'
+      - 'nexus_strategy_independent_qa.py'
+      - 'tests/test_nexus_strategy_independent_qa.py'
       - 'scripts/agent_task_executor.py'
       - 'scripts/bootstrap_portable_python.cmd'
       - 'tests/test_agent_transport.py'

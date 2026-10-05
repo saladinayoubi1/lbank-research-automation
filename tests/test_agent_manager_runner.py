@@ -4,6 +4,7 @@ from agent_manager_runner import (
     DETERMINISTIC_SPECIALIZED_RECOVERY_WORKLOADS,
     SPECIALIZED_REASONING_BLOCK_REASON,
     block_unroutable_specialized_reasoning,
+    materialize_strategy_qa_store,
     merge_definition,
     recover_completed_root_cause_analysis,
     recover_bounded_specialized_reasoning,
@@ -288,3 +289,132 @@ def test_strategy_qa_security_binding_change_invalidates_stale_done_state():
     assert task["qa_handoff_task"]["task_digest"] == "1" * 64
     assert "verification_evidence" not in task
     assert "verifier" not in task
+
+
+def _strategy_qa_handoff_for_store():
+    import hashlib
+    import json
+    from nexus_strategy_review_qa_handoff import qa_task_id
+
+    def digest(value):
+        return hashlib.sha256(
+            json.dumps(
+                value,
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=False,
+                allow_nan=False,
+            ).encode("utf-8")
+        ).hexdigest()
+
+    task_core = {
+        "schema_version": "nexus.strategy-review-qa-task.v1",
+        "id": qa_task_id("a" * 64, "b" * 40, "d" * 64),
+        "task_kind": "strategy_review_independent_qa",
+        "system_map_node": "QA-41",
+        "status": "READY_FOR_QA_DISPATCH",
+        "source_sha": "b" * 40,
+        "proposal_digest": "a" * 64,
+        "proposal_result_digest": "c" * 64,
+        "requalification_digest": "d" * 64,
+        "requalification_verification_digest": "e" * 64,
+        "family": "momentum",
+        "timeframe": "hour4",
+        "variant_id": "v1",
+        "strategy_config": {"lookback": 16},
+        "strategy_config_digest": "",
+        "runtime_evidence": [
+            {
+                "symbol": "BTCUSDT",
+                "dataset_binding_sha256": "f" * 64,
+                "pipeline_digest": "1" * 64,
+                "qualification_digest": "2" * 64,
+                "last_open_time_ms": 1_800_000_000_000,
+            },
+            {
+                "symbol": "ETHUSDT",
+                "dataset_binding_sha256": "3" * 64,
+                "pipeline_digest": "4" * 64,
+                "qualification_digest": "5" * 64,
+                "last_open_time_ms": 1_800_000_000_000,
+            },
+        ],
+        "producer_role": "strategy-runtime-requalification",
+        "required_verifier": "qa-verifier-agent",
+        "research_only": True,
+        "paper_only": True,
+        "candidate_creation_authority": False,
+        "qualification_authority": False,
+        "promotion_authority": False,
+        "paper_execution_authority": False,
+        "automatic_strategy_promotion": False,
+        "live_trading_authority": False,
+    }
+    task_core["strategy_config_digest"] = digest(task_core["strategy_config"])
+    task = {**task_core, "task_digest": digest(task_core)}
+    core = {
+        "schema_version": "nexus.strategy-review-qa-handoff.v1",
+        "source_sha": "b" * 40,
+        "requalification_digest": "d" * 64,
+        "requalification_verification_digest": "e" * 64,
+        "status": "READY_FOR_QA",
+        "task_count": 1,
+        "tasks": [task],
+        "required_verifier": "qa-verifier-agent",
+        "research_only": True,
+        "paper_only": True,
+        "candidate_creation_authority": False,
+        "qualification_authority": False,
+        "promotion_authority": False,
+        "paper_execution_authority": False,
+        "automatic_strategy_promotion": False,
+        "live_trading_authority": False,
+    }
+    return {**core, "handoff_digest": digest(core)}
+
+
+def test_verified_strategy_qa_store_materializes_into_repository_definition(tmp_path):
+    import json
+    from nexus_strategy_review_qa_handoff import verify_handoff
+
+    handoff = _strategy_qa_handoff_for_store()
+    proof = verify_handoff(handoff)
+    root = tmp_path / "strategy_qa_handoffs" / handoff["handoff_digest"]
+    root.mkdir(parents=True)
+    (root / "qa-handoff.json").write_text(json.dumps(handoff), encoding="utf-8")
+    (root / "qa-handoff-verification.json").write_text(json.dumps(proof), encoding="utf-8")
+
+    template = {
+        "schema_version": 1,
+        "phase": 4,
+        "policy": {},
+        "workers": [],
+        "tasks": [],
+    }
+    materialized = materialize_strategy_qa_store(template, tmp_path / "strategy_qa_handoffs")
+    task = materialized["tasks"][0]
+    assert task["id"] == handoff["tasks"][0]["id"]
+    assert task["status"] == "READY"
+    assert task["qa_dispatch_enabled"] is True
+    assert task["qa_verifier_only"] is True
+    assert task["required_verifier"] == "qa-verifier-agent"
+
+
+def test_strategy_qa_store_tamper_fails_before_runtime_merge(tmp_path):
+    import json
+    import pytest
+    from nexus_strategy_review_qa_handoff import verify_handoff
+
+    handoff = _strategy_qa_handoff_for_store()
+    proof = verify_handoff(handoff)
+    root = tmp_path / "strategy_qa_handoffs" / handoff["handoff_digest"]
+    root.mkdir(parents=True)
+    (root / "qa-handoff.json").write_text(json.dumps(handoff), encoding="utf-8")
+    proof["decision"] = "reject"
+    (root / "qa-handoff-verification.json").write_text(json.dumps(proof), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="verification failed"):
+        materialize_strategy_qa_store(
+            {"schema_version": 1, "phase": 4, "policy": {}, "workers": [], "tasks": []},
+            tmp_path / "strategy_qa_handoffs",
+        )

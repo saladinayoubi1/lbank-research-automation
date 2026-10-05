@@ -19,6 +19,7 @@ from nexus_strategy_proposal_runtime_requalification import (
 from nexus_strategy_review_qa_handoff import (
     StrategyReviewQaHandoffError,
     build_handoff,
+    qa_task_id,
     verify_handoff,
 )
 
@@ -146,7 +147,11 @@ def test_qualified_review_builds_exact_qa41_handoff(tmp_path: Path) -> None:
 
     task = handoff["tasks"][0]
     source_row = result["proposal_results"][0]
-    assert task["id"] == f"STRATEGY-QA-{source_row['proposal_digest']}"
+    assert task["id"] == qa_task_id(
+        source_row["proposal_digest"],
+        SOURCE_SHA,
+        result["requalification_digest"],
+    )
     assert task["system_map_node"] == "QA-41"
     assert task["status"] == "READY_FOR_QA_DISPATCH"
     assert task["proposal_digest"] == source_row["proposal_digest"]

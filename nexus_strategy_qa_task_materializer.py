@@ -10,7 +10,7 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any, Mapping
 
-from nexus_strategy_review_qa_handoff import verify_handoff
+from nexus_strategy_review_qa_handoff import qa_task_id, verify_handoff
 
 
 class StrategyQaTaskMaterializerError(ValueError):
@@ -39,15 +39,19 @@ def _definition_task(task: Mapping[str, Any]) -> dict[str, Any]:
         raise StrategyQaTaskMaterializerError("QA task authority boundary changed")
     task_id = str(task.get("id", ""))
     proposal_digest = str(task.get("proposal_digest", ""))
-    if task_id != f"STRATEGY-QA-{proposal_digest}":
-        raise StrategyQaTaskMaterializerError("QA task identity is not deterministic")
+    expected_id = qa_task_id(
+        proposal_digest,
+        str(task.get("source_sha", "")),
+        str(task.get("requalification_digest", "")),
+    )
+    if task_id != expected_id:
+        raise StrategyQaTaskMaterializerError("QA task identity is not exact-epoch deterministic")
     return {
         "id": task_id,
         "title": f"Independent QA replay for strategy proposal {proposal_digest[:12]}",
         "phase": 7,
         "gate": 17,
-        "status": "BLOCKED",
-        "blocked_reason": "independent strategy QA worker contract not enabled",
+        "status": "READY",
         "priority": 92,
         "dependencies": [],
         "required_capabilities": ["data_validation"],
@@ -60,7 +64,7 @@ def _definition_task(task: Mapping[str, Any]) -> dict[str, Any]:
             "no qualification, promotion, Paper execution, automatic Demo admission, or Live authority",
         ],
         "qa_verifier_only": True,
-        "qa_dispatch_enabled": False,
+        "qa_dispatch_enabled": True,
         "required_verifier": "qa-verifier-agent",
         "qa_handoff_task": deepcopy(dict(task)),
     }

@@ -151,6 +151,23 @@ def envelope_for(task: dict[str, Any]) -> dict[str, Any]:
             "research_producer_receipt_digest": prior["receipt_digest"],
             "research_producer_source_sha": prior["source_sha"],
         }
+    if task.get("qa_verifier_only") is True:
+        handoff = task.get("qa_handoff_task")
+        if (
+            task.get("status") != "VERIFYING"
+            or task.get("qa_dispatch_enabled") is not True
+            or worker != "qa-verifier-agent"
+            or task.get("verifier") != "qa-verifier-agent"
+            or task.get("required_verifier") != "qa-verifier-agent"
+            or task.get("producer") is not None
+            or not isinstance(handoff, dict)
+        ):
+            raise ValueError("Strategy QA dispatch lease is not verifier-only and enabled")
+        from nexus_strategy_independent_qa import validate_task
+        validate_task(handoff, str(handoff.get("source_sha", "")))
+        if handoff.get("id") != task.get("id"):
+            raise ValueError("Strategy QA materialized identity differs from handoff")
+        optional["strategy_qa_task"] = dict(handoff)
     if task["id"] in PREDECESSOR:
         ancestry = validate_ancestry({key: task[key] for key in ANCESTRY if key in task})
         optional.update(ancestry)
@@ -321,6 +338,13 @@ def dispatch_pending(config: dict[str, Any], *, ref: str) -> int:
                         producer_source_sha=producer_sha,
                         controller_source_sha=current_sha)
                 continue
+        if task.get("qa_verifier_only") is True:
+            if (
+                ref != "main"
+                or os.environ.get("GITHUB_REPOSITORY")
+                != "saladinayoubi1/lbank-research-automation"
+            ):
+                raise ValueError("Strategy QA dispatch requires the trusted main control lane")
         dispatch_task(task, ref=ref)
         count += 1
     return count

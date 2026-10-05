@@ -6,6 +6,8 @@ import pytest
 import yaml
 
 from nexus_research_missions import FIFTH
+from nexus_strategy_independent_qa import digest
+from nexus_strategy_review_qa_handoff import qa_task_id
 from scripts.nexus_research_qa_source_pin import (
     REPO, ResearchQaPinError, select_source,
 )
@@ -25,6 +27,43 @@ def qa_payload():
         "research_producer_source_sha": OLD,
         "research_producer_receipt_digest": RECEIPT,
         "research_producer_lease_id": "producer-original-lease",
+    }
+
+
+def strategy_qa_payload():
+    core = {
+        "schema_version":"nexus.strategy-review-qa-task.v1",
+        "id":qa_task_id("d"*64, OLD, "f"*64),
+        "task_kind":"strategy_review_independent_qa","system_map_node":"QA-41",
+        "status":"READY_FOR_QA_DISPATCH","source_sha":OLD,
+        "proposal_digest":"d"*64,"proposal_result_digest":"e"*64,
+        "requalification_digest":"f"*64,"requalification_verification_digest":"1"*64,
+        "family":"momentum","timeframe":"hour4","variant_id":"v1",
+        "strategy_config":{"lookback":16},"strategy_config_digest":"",
+        "runtime_evidence":[
+            {
+                "symbol":"BTCUSDT","dataset_binding_sha256":"2"*64,
+                "pipeline_digest":"3"*64,"qualification_digest":"4"*64,
+                "last_open_time_ms":1800000000000,
+            },
+            {
+                "symbol":"ETHUSDT","dataset_binding_sha256":"5"*64,
+                "pipeline_digest":"6"*64,"qualification_digest":"7"*64,
+                "last_open_time_ms":1800000000000,
+            },
+        ],
+        "producer_role":"strategy-runtime-requalification","required_verifier":"qa-verifier-agent",
+        "research_only":True,"paper_only":True,"candidate_creation_authority":False,
+        "qualification_authority":False,"promotion_authority":False,
+        "paper_execution_authority":False,"automatic_strategy_promotion":False,
+        "live_trading_authority":False,
+    }
+    core["strategy_config_digest"] = digest(core["strategy_config"])
+    task = {**core, "task_digest": digest(core)}
+    return {
+        "task_id":task["id"],"worker_id":"qa-verifier-agent","phase":7,
+        "transport":"github-cloud","lease_id":"qa-original-replay-lease",
+        "strategy_qa_task":task,
     }
 
 
@@ -123,3 +162,18 @@ def test_workflow_pins_only_verified_main_ancestry_and_restores_original_cache()
     assert qa["with"]["path"] == "build/agent-research/qa-evidence.json"
     attestation = names["Publish independently bounded original-source QA ancestry attestation"]
     assert attestation["with"]["path"] == "build/pinned-qa-attestation.json"
+
+def test_strategy_qa_requests_exact_source_ancestor_pin():
+    decision = select_source(strategy_qa_payload(), **authorized())
+    assert decision["execution_source_sha"] == OLD
+    assert decision["requested_ancestor_pin"] is True
+    assert decision["source_role"] == "independent-strategy-qa"
+    assert decision["live_authority"] is False
+    assert decision["auto_demo_promotion"] is False
+
+
+def test_strategy_qa_tampered_task_never_selects_code():
+    payload = strategy_qa_payload()
+    payload["strategy_qa_task"]["strategy_config"]["lookback"] = 99
+    with pytest.raises(ResearchQaPinError, match="task binding"):
+        select_source(payload, **authorized())
