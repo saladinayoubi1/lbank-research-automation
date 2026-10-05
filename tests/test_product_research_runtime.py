@@ -261,3 +261,13 @@ def test_manual_paper_signal_limit_counts_proposals_not_audit_events(tmp_path: P
     snapshot = runtime.paper_snapshot()
     assert snapshot["session_signal_count"] == 1
     assert snapshot["account"]["last_sequence"] > snapshot["session_signal_count"]
+
+def test_product_research_runtime_has_no_direct_paper_execution_dependency() -> None:
+    source = (Path(__file__).resolve().parents[1] / "product_research_runtime.py").read_text(
+        encoding="utf-8"
+    )
+    assert "run_automated_signal_pipeline" not in source
+    assert "PAPER_DEFAULT_FEE_RATE" not in source
+    assert "PAPER_DEFAULT_SLIPPAGE_BPS" not in source
+    assert "self.product_runtime._write_events" not in source
+
