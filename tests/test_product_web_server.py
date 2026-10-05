@@ -163,7 +163,7 @@ def test_product_overview_reports_canonical_backend_and_live_locked(product_serv
     assert payload["mission_control"]["agents"] == []
     assert payload["capabilities"]["paper_execution"] == "active"
     assert payload["capabilities"]["research_backtest_studio"] == "active"
-    assert payload["capabilities"]["automated_paper_pipeline"] == "qualification_and_risk_gated"
+    assert payload["capabilities"]["automated_paper_pipeline"] == "independent_qa_and_risk_gated"
     assert payload["capabilities"]["ai_room"] == "policy_gated"
     assert payload["capabilities"]["mission_control"] == "idle"
     assert payload["capabilities"]["reports"] == "json_csv"
@@ -177,6 +177,7 @@ def test_product_integration_snapshot_connects_all_roadmap_lanes(product_server)
     assert payload["contract_version"] == "nexus.product-integration.v1"
     assert payload["authority"] == {"mode": "research_backtest_paper", "live_trading_authority": False}
     assert payload["research"]["status"] == "no_research_run"
+    assert payload["research"]["independent_qa"] == "not_run"
     assert payload["strategy"]["promotion_ceiling"] == "paper_candidate"
     assert payload["risk"]["final_paper_authority"] is True
     assert payload["paper"]["status"] == "active"
