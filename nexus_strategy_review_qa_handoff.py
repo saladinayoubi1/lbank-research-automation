@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from nexus_strategy_proposal_runtime_requalification import (
+    APPROVED_SYMBOLS,
     VERIFICATION_SCHEMA as REQUALIFICATION_VERIFICATION_SCHEMA,
     verify_requalification,
 )
@@ -165,6 +166,8 @@ def _qa_task(
             }
         )
     evidence.sort(key=lambda item: item["symbol"])
+    if seen_symbols != set(APPROVED_SYMBOLS):
+        raise StrategyReviewQaHandoffError("QA handoff must bind every approved runtime symbol")
     core = {
         "schema_version": TASK_SCHEMA,
         "id": f"STRATEGY-QA-{proposal_digest}",
@@ -316,6 +319,8 @@ def verify_handoff(value: Mapping[str, Any]) -> dict[str, Any]:
                     and bool(evidence)
                     and len({item.get("symbol") for item in evidence if isinstance(item, Mapping)})
                     == len(evidence)
+                    and {item.get("symbol") for item in evidence if isinstance(item, Mapping)}
+                    == set(APPROVED_SYMBOLS)
                     and all(
                         isinstance(item, Mapping)
                         and isinstance(item.get("symbol"), str)
