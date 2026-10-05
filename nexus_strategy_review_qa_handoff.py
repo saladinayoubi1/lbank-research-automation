@@ -13,10 +13,9 @@ import re
 from pathlib import Path
 from typing import Any, Mapping
 
-from nexus_strategy_proposal_runtime_requalification import (
+from nexus_strategy_requalification_contract import (
     APPROVED_SYMBOLS,
-    VERIFICATION_SCHEMA as REQUALIFICATION_VERIFICATION_SCHEMA,
-    verify_requalification,
+    REQUALIFICATION_VERIFICATION_SCHEMA,
 )
 
 HANDOFF_SCHEMA = "nexus.strategy-review-qa-handoff.v1"
@@ -83,6 +82,11 @@ def _verify_inputs(
     requalification: Mapping[str, Any],
     verification: Mapping[str, Any],
 ) -> None:
+    # Building a new handoff needs the numerical requalification verifier.
+    # Import it lazily so lightweight control-plane verification of an already
+    # built handoff never imports pandas or the research engine.
+    from nexus_strategy_proposal_runtime_requalification import verify_requalification
+
     computed = verify_requalification(requalification)
     if computed.get("decision") != "pass":
         raise StrategyReviewQaHandoffError("runtime requalification evidence failed verification")
