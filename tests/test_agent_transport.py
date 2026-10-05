@@ -9,6 +9,7 @@ import agent_manager as am
 import agent_transport as at
 from nexus_research_missions import EIGHTH
 from nexus_strategy_independent_qa import digest
+from nexus_strategy_review_qa_handoff import qa_task_id
 
 
 def task(worker="developer-agent", authority=1, lease_id="lease-1", attempt=1):
@@ -34,7 +35,7 @@ def task(worker="developer-agent", authority=1, lease_id="lease-1", attempt=1):
 def strategy_qa_task():
     core = {
         "schema_version":"nexus.strategy-review-qa-task.v1",
-        "id":"STRATEGY-QA-"+"a"*64,
+        "id":qa_task_id("a"*64, "b"*40, "d"*64),
         "task_kind":"strategy_review_independent_qa","system_map_node":"QA-41",
         "status":"READY_FOR_QA_DISPATCH","source_sha":"b"*40,
         "proposal_digest":"a"*64,"proposal_result_digest":"c"*64,
