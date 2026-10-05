@@ -163,7 +163,7 @@ def test_product_overview_reports_canonical_backend_and_live_locked(product_serv
     assert payload["mission_control"]["agents"] == []
     assert payload["capabilities"]["paper_execution"] == "active"
     assert payload["capabilities"]["research_backtest_studio"] == "active"
-    assert payload["capabilities"]["automated_paper_pipeline"] == "qualification_and_risk_gated"
+    assert payload["capabilities"]["automated_paper_pipeline"] == "independent_qa_lifecycle_and_risk_gated"
     assert payload["capabilities"]["ai_room"] == "policy_gated"
     assert payload["capabilities"]["mission_control"] == "idle"
     assert payload["capabilities"]["reports"] == "json_csv"
