@@ -91,6 +91,8 @@ def evaluate_qualification(manager_task: Mapping[str, Any]) -> dict[str, Any]:
         "variant_id": verified_task["variant_id"],
         "strategy_config": dict(verified_task["strategy_config"]),
         "strategy_config_digest": verified_task["strategy_config_digest"],
+        "runtime_evidence": [dict(row) for row in verified_task["runtime_evidence"]],
+        "runtime_evidence_digest": _digest(verified_task["runtime_evidence"]),
         "paper_only": True,
         "registry_mutation_performed": False,
         "runtime_activation_authority": False,
@@ -181,6 +183,10 @@ def verify_qualification(value: Mapping[str, Any]) -> dict[str, Any]:
             and isinstance(core.get("strategy_config"), Mapping)
             and bool(core.get("strategy_config"))
             and core.get("strategy_config_digest") == _digest(core.get("strategy_config"))
+            and isinstance(core.get("runtime_evidence"), list)
+            and bool(core.get("runtime_evidence"))
+            and _HEX64.fullmatch(str(core.get("runtime_evidence_digest", "")))
+            and core.get("runtime_evidence_digest") == _digest(core.get("runtime_evidence"))
         )
         decision = core.get("decision")
         qualified = core.get("qualified")
