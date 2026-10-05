@@ -191,3 +191,38 @@ def test_qualification_gate_import_is_control_plane_lightweight():
     )
     assert proc.returncode == 0, proc.stderr
     assert "lightweight_qual42_import=PASS" in proc.stdout
+
+
+def test_standalone_verifier_rejects_rehashed_malformed_runtime_evidence():
+    result = evaluate_qualification(_manager())
+    from nexus_strategy_qualification_gate import _digest
+
+    malformed = deepcopy(result)
+    malformed["runtime_evidence"][0].pop("pipeline_digest")
+    core = dict(malformed)
+    core.pop("qualification_digest", None)
+    malformed["runtime_evidence_digest"] = _digest(malformed["runtime_evidence"])
+    core = dict(malformed)
+    core.pop("qualification_digest", None)
+    malformed["qualification_digest"] = _digest(core)
+    assert verify_qualification(malformed)["decision"] == "reject"
+
+
+def test_standalone_verifier_rejects_rehashed_wrong_symbol_or_task_identity():
+    result = evaluate_qualification(_manager())
+    from nexus_strategy_qualification_gate import _digest
+
+    wrong_symbol = deepcopy(result)
+    wrong_symbol["runtime_evidence"][0]["symbol"] = "SOLUSDT"
+    wrong_symbol["runtime_evidence_digest"] = _digest(wrong_symbol["runtime_evidence"])
+    core = dict(wrong_symbol)
+    core.pop("qualification_digest", None)
+    wrong_symbol["qualification_digest"] = _digest(core)
+    assert verify_qualification(wrong_symbol)["decision"] == "reject"
+
+    wrong_id = deepcopy(result)
+    wrong_id["strategy_qa_task_id"] = "STRATEGY-QA-" + "f" * 64
+    core = dict(wrong_id)
+    core.pop("qualification_digest", None)
+    wrong_id["qualification_digest"] = _digest(core)
+    assert verify_qualification(wrong_id)["decision"] == "reject"

@@ -13,6 +13,12 @@ from collections.abc import Mapping
 from typing import Any
 
 from nexus_strategy_independent_qa import validate_task, verify_receipt
+from nexus_strategy_requalification_contract import (
+    APPROVED_FAMILIES,
+    APPROVED_SYMBOLS,
+    APPROVED_TIMEFRAMES,
+)
+from nexus_strategy_review_qa_handoff import qa_task_id
 
 SCHEMA = "nexus.strategy-qualification-gate.v1"
 VERIFY_SCHEMA = "nexus.strategy-qualification-gate-verification.v1"
@@ -20,6 +26,10 @@ _SHA40 = re.compile(r"^[0-9a-f]{40}$")
 _HEX64 = re.compile(r"^[0-9a-f]{64}$")
 _WAITING = {"PENDING", "READY", "LEASED", "RUNNING", "VERIFYING"}
 _REJECTED = {"BLOCKED", "QUARANTINED"}
+_RUNTIME_EVIDENCE_KEYS = {
+    "symbol", "dataset_binding_sha256", "pipeline_digest",
+    "qualification_digest", "last_open_time_ms",
+}
 
 
 class StrategyQualificationError(ValueError):
@@ -45,6 +55,31 @@ def _bounded_identity(value: Any, field: str) -> str:
         raise StrategyQualificationError(f"{field} is invalid")
     return value
 
+
+
+
+def _verified_runtime_evidence(value: Any) -> bool:
+    if not isinstance(value, list) or len(value) != len(APPROVED_SYMBOLS):
+        return False
+    seen: set[str] = set()
+    for row in value:
+        if not isinstance(row, Mapping) or set(row) != _RUNTIME_EVIDENCE_KEYS:
+            return False
+        symbol = row.get("symbol")
+        last_open = row.get("last_open_time_ms")
+        if (
+            symbol not in APPROVED_SYMBOLS
+            or symbol in seen
+            or not _HEX64.fullmatch(str(row.get("dataset_binding_sha256", "")))
+            or not _HEX64.fullmatch(str(row.get("pipeline_digest", "")))
+            or not _HEX64.fullmatch(str(row.get("qualification_digest", "")))
+            or isinstance(last_open, bool)
+            or not isinstance(last_open, int)
+            or last_open <= 0
+        ):
+            return False
+        seen.add(str(symbol))
+    return seen == set(APPROVED_SYMBOLS)
 
 def evaluate_qualification(manager_task: Mapping[str, Any]) -> dict[str, Any]:
     """Evaluate one materialized QA task without mutating any downstream state."""
@@ -171,22 +206,30 @@ def verify_qualification(value: Mapping[str, Any]) -> dict[str, Any]:
         claimed = core.pop("qualification_digest", None)
         checks["schema"] = core.get("schema_version") == SCHEMA and core.get("system_map_node") == "QUAL-42"
         checks["digest"] = isinstance(claimed, str) and claimed == _digest(core)
+        proposal_digest = str(core.get("proposal_digest", ""))
+        source_sha = str(core.get("source_sha", ""))
+        requalification_digest = str(core.get("requalification_digest", ""))
+        runtime_evidence = core.get("runtime_evidence")
         checks["identity"] = bool(
             isinstance(core.get("strategy_qa_task_id"), str)
-            and core["strategy_qa_task_id"].startswith("STRATEGY-QA-")
             and _HEX64.fullmatch(str(core.get("qa_task_digest", "")))
-            and _SHA40.fullmatch(str(core.get("source_sha", "")))
-            and _HEX64.fullmatch(str(core.get("proposal_digest", "")))
+            and _SHA40.fullmatch(source_sha)
+            and _HEX64.fullmatch(proposal_digest)
             and _HEX64.fullmatch(str(core.get("proposal_result_digest", "")))
-            and _HEX64.fullmatch(str(core.get("requalification_digest", "")))
+            and _HEX64.fullmatch(requalification_digest)
             and _HEX64.fullmatch(str(core.get("requalification_verification_digest", "")))
+            and core.get("strategy_qa_task_id")
+                == qa_task_id(proposal_digest, source_sha, requalification_digest)
+            and core.get("family") in APPROVED_FAMILIES
+            and core.get("timeframe") in APPROVED_TIMEFRAMES
+            and isinstance(core.get("variant_id"), str)
+            and bool(core.get("variant_id"))
             and isinstance(core.get("strategy_config"), Mapping)
             and bool(core.get("strategy_config"))
             and core.get("strategy_config_digest") == _digest(core.get("strategy_config"))
-            and isinstance(core.get("runtime_evidence"), list)
-            and bool(core.get("runtime_evidence"))
+            and _verified_runtime_evidence(runtime_evidence)
             and _HEX64.fullmatch(str(core.get("runtime_evidence_digest", "")))
-            and core.get("runtime_evidence_digest") == _digest(core.get("runtime_evidence"))
+            and core.get("runtime_evidence_digest") == _digest(runtime_evidence)
         )
         decision = core.get("decision")
         qualified = core.get("qualified")
