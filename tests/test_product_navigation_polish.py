@@ -192,3 +192,23 @@ def test_paper_primary_surface_archives_legacy_panels_and_names_active_strategy(
     assert "Regime Consensus · بک‌تست‌شده" in terminal
     assert "حساب دمو استراتژی فعال" in terminal
     assert "مسیر قدیمی Manual/Prospective از حساب فعال جدا و آرشیو شده است" in terminal
+
+
+def test_active_paper_terminal_uses_product_runtime_journal_not_legacy_shared_portfolio():
+    js = (ROOT / "product_ui" / "product.js").read_text(encoding="utf-8")
+    terminal = (ROOT / "product_ui" / "product-terminal.js").read_text(encoding="utf-8")
+
+    assert "function activePaperTerminalSnapshot(p,eventEnvelope)" in js
+    assert "window.NexusPaperTerminal?.render(activePaperTerminalSnapshot(p,state.events));" in js
+    assert "window.NexusPaperTerminal?.render(p.shared_portfolio);" not in js
+    assert "source_type:'product_runtime_event_journal'" in js
+    assert "export_url:'/api/product/export/paper.csv'" in js
+    assert "stop_loss:st?.price??null" in js
+    assert "take_profit:tg?.price??null" in js
+    assert "m.strategy||'runtime-paper'" in js
+    assert "m.source||'runtime-journal'" in js
+    assert "kind==='manual'?'MANUAL':'RUNTIME'" in js
+    assert "snapshot.export_url" in terminal
+    assert "journal رویدادمحور ProductRuntime فعال" in terminal
+    assert "Stop/Target ثبت‌شده" in terminal
+    assert "Shared/Prospective قدیمی فقط آرشیو read-only هستند" in terminal
