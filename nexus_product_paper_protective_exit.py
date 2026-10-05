@@ -9,14 +9,20 @@ as the conservative deterministic intrabar policy; no optimistic path is assumed
 """
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
+import os
+import time
+from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
-from typing import Any, Mapping
+from pathlib import Path
+from typing import Any, Callable, Mapping
 
+from bybit_public_klines import INTERVAL_MS, fetch_closed_klines
 from paper_event_store import build_event, replay
 from paper_execution import execute_paper_command
-from product_research_runtime import TIMEFRAMES, _utc_ms
+from product_research_runtime import _utc_ms
 from product_runtime import (
     PAPER_CURRENCY,
     PAPER_DEFAULT_FEE_RATE,
@@ -85,6 +91,45 @@ def _validate_candle(candle: Mapping[str, Any], *, symbol: str, timeframe: str) 
     return high, low, close_time_ms
 
 
+def _iso_utc_ms(value: Any) -> int:
+    text = str(value or "").strip()
+    if not text:
+        raise ProductPaperProtectiveExitError("position open timestamp is unavailable")
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ProductPaperProtectiveExitError("position open timestamp is invalid") from exc
+    if parsed.tzinfo is None:
+        raise ProductPaperProtectiveExitError("position open timestamp lacks timezone")
+    return int(parsed.astimezone(timezone.utc).timestamp() * 1000)
+
+
+def _active_position_metadata(events: list[Mapping[str, Any]]) -> dict[str, dict[str, Any]]:
+    active: dict[str, dict[str, Any]] = {}
+    for event in events:
+        payload = event.get("payload", {})
+        if not isinstance(payload, Mapping):
+            continue
+        symbol = str(payload.get("symbol", "")).upper().strip()
+        if not symbol:
+            continue
+        event_type = event.get("event_type")
+        if event_type in {"position_opened", "position_reversed"}:
+            provenance = event.get("provenance", {})
+            if not isinstance(provenance, Mapping):
+                raise ProductPaperProtectiveExitError("position provenance is invalid")
+            active[symbol] = {
+                "opened_at": event.get("occurred_at"),
+                "timeframe": provenance.get("timeframe"),
+                "strategy_version": provenance.get("strategy_version"),
+                "source_id": provenance.get("source_id"),
+                "kind": provenance.get("kind"),
+            }
+        elif event_type == "position_closed":
+            active.pop(symbol, None)
+    return active
+
+
 def evaluate_protective_exit(
     *,
     runtime: ProductRuntime,
@@ -92,6 +137,7 @@ def evaluate_protective_exit(
     symbol: str,
     timeframe: str,
     strategy_version: str,
+    opened_at_utc: str | None = None,
 ) -> dict[str, Any]:
     """Hold or fully close an existing Paper position from one verified closed candle."""
     if not isinstance(runtime, ProductRuntime):
@@ -101,6 +147,8 @@ def evaluate_protective_exit(
     if not symbol or not strategy_version:
         raise ProductPaperProtectiveExitError("position identity is incomplete")
     high, low, close_time_ms = _validate_candle(candle, symbol=symbol, timeframe=timeframe)
+    if opened_at_utc is not None and close_time_ms < _iso_utc_ms(opened_at_utc):
+        raise ProductPaperProtectiveExitError("closed candle predates the active Paper position")
 
     with runtime._lock:
         events = runtime._ensure_account()
@@ -213,3 +261,127 @@ def evaluate_protective_exit(
         "live_trading_authority": False, "exposure_increased": False,
         "terminal_event_digest": result.state.last_event_digest,
     }
+
+
+def run_once(
+    *,
+    runtime: ProductRuntime,
+    now_ms: int | None = None,
+    fetcher: Callable[..., list[dict[str, Any]]] = fetch_closed_klines,
+) -> dict[str, Any]:
+    """Check each open Product Paper position against the latest verified closed Bybit candle."""
+    if not isinstance(runtime, ProductRuntime):
+        raise ProductPaperProtectiveExitError("runtime is invalid")
+    if now_ms is None:
+        now_ms = int(time.time() * 1000)
+    if isinstance(now_ms, bool) or not isinstance(now_ms, int) or now_ms <= 0:
+        raise ProductPaperProtectiveExitError("runner clock is invalid")
+
+    with runtime._lock:
+        events = runtime._ensure_account()
+        state = replay(events).state
+        positions = list(state.positions)
+        metadata = _active_position_metadata(events)
+
+    results: list[dict[str, Any]] = []
+    for symbol, side, quantity, entry in positions:
+        meta = metadata.get(symbol)
+        if not meta:
+            results.append({
+                "symbol": symbol, "status": "BLOCKED", "reason_code": "POSITION_METADATA_MISSING",
+                "paper_only": True, "live_trading_authority": False, "exposure_increased": False,
+            })
+            continue
+
+        timeframe = str(meta.get("timeframe") or "")
+        strategy_version = str(meta.get("strategy_version") or "")
+        opened_at = str(meta.get("opened_at") or "")
+        if timeframe not in _TIMEFRAME_TO_INTERVAL or not strategy_version or not opened_at:
+            results.append({
+                "symbol": symbol, "status": "BLOCKED", "reason_code": "POSITION_METADATA_INVALID",
+                "paper_only": True, "live_trading_authority": False, "exposure_increased": False,
+            })
+            continue
+
+        interval = _TIMEFRAME_TO_INTERVAL[timeframe]
+        step_ms = INTERVAL_MS[interval]
+        latest_open_ms = (now_ms // step_ms - 1) * step_ms
+        latest_close_ms = latest_open_ms + step_ms - 1
+        opened_at_ms = _iso_utc_ms(opened_at)
+        if latest_close_ms < opened_at_ms:
+            results.append({
+                "symbol": symbol, "timeframe": timeframe, "strategy_version": strategy_version,
+                "status": "WAITING_FOR_CLOSED_BAR", "reason_code": "NO_POST_OPEN_CLOSED_CANDLE",
+                "paper_only": True, "live_trading_authority": False, "exposure_increased": False,
+            })
+            continue
+
+        try:
+            candles = fetcher(
+                symbol,
+                interval,
+                now_ms=now_ms,
+                start_time_ms=latest_open_ms,
+                end_time_ms=latest_open_ms,
+                limit=1,
+                timeout_seconds=10.0,
+            )
+            if not isinstance(candles, list) or len(candles) != 1:
+                raise ProductPaperProtectiveExitError("protective runner requires exactly one closed candle")
+            outcome = evaluate_protective_exit(
+                runtime=runtime,
+                candle=candles[0],
+                symbol=symbol,
+                timeframe=timeframe,
+                strategy_version=strategy_version,
+                opened_at_utc=opened_at,
+            )
+            outcome["strategy_version"] = strategy_version
+            outcome["position_side"] = side
+            outcome["position_quantity_before"] = str(quantity)
+            outcome["position_entry_price"] = str(entry)
+            outcome["position_source_id"] = meta.get("source_id")
+            outcome["position_provenance_kind"] = meta.get("kind")
+            results.append(outcome)
+        except Exception as exc:
+            results.append({
+                "symbol": symbol, "timeframe": timeframe, "strategy_version": strategy_version,
+                "status": "BLOCKED", "reason_code": "VERIFIED_MARKET_DATA_UNAVAILABLE_OR_INVALID",
+                "error_type": type(exc).__name__, "error": str(exc),
+                "paper_only": True, "live_trading_authority": False, "exposure_increased": False,
+            })
+
+    return {
+        "schema_version": SCHEMA,
+        "status": "OK" if all(row.get("status") != "BLOCKED" for row in results) else "DEGRADED",
+        "checked_at_utc": _utc_ms(now_ms),
+        "position_count": len(positions),
+        "results": results,
+        "paper_only": True,
+        "live_trading_authority": False,
+        "exposure_increased": False,
+        "automatic_live_promotion": False,
+    }
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="NEXUS Product Paper protective Stop/Target guard")
+    parser.add_argument("--root", type=Path, required=True)
+    parser.add_argument("--opening-cash", default="500")
+    parser.add_argument("--loop", action="store_true")
+    parser.add_argument("--interval-seconds", type=int, default=60)
+    args = parser.parse_args()
+    if args.interval_seconds < 15:
+        raise SystemExit("--interval-seconds must be at least 15")
+
+    runtime = ProductRuntime(args.root, opening_cash=args.opening_cash)
+    while True:
+        result = run_once(runtime=runtime)
+        print(json.dumps(result, sort_keys=True, ensure_ascii=False), flush=True)
+        if not args.loop:
+            return 0 if result["status"] == "OK" else 2
+        time.sleep(args.interval_seconds)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

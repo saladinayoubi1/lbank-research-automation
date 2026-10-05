@@ -7,6 +7,7 @@ import pytest
 from nexus_product_paper_protective_exit import (
     ProductPaperProtectiveExitError,
     evaluate_protective_exit,
+    run_once,
 )
 from product_runtime import ProductRuntime
 
@@ -166,3 +167,103 @@ def test_guard_is_flat_idempotent_after_close(tmp_path: Path):
     assert first["status"] == "CLOSED"
     assert second["status"] == "FLAT"
     assert second["event_count_added"] == 0
+
+
+def _runner_fetcher(*, high: str, low: str):
+    def fetch(symbol: str, interval: str, **kwargs):
+        start = kwargs["start_time_ms"]
+        return [{
+            "source": "Bybit", "market_type": "spot", "symbol": symbol,
+            "interval": interval, "open_time_ms": start,
+            "close_time_ms": start + 15 * 60 * 1000 - 1,
+            "open": "100", "high": high, "low": low, "close": "100",
+            "volume": "10", "turnover": "1000", "closed": True,
+        }]
+    return fetch
+
+
+def test_runner_uses_journal_metadata_and_holds_without_trigger(tmp_path: Path):
+    runtime = _runtime(tmp_path)
+    result = run_once(
+        runtime=runtime,
+        now_ms=1791162000000,
+        fetcher=_runner_fetcher(high="105", low="96"),
+    )
+    assert result["status"] == "OK"
+    assert result["position_count"] == 1
+    row = result["results"][0]
+    assert row["status"] == "HELD"
+    assert row["timeframe"] == "minute15"
+    assert row["strategy_version"] == "manual-paper-v1"
+    assert row["position_provenance_kind"] == "manual"
+    assert row["live_trading_authority"] is False
+    assert row["exposure_increased"] is False
+    assert len(runtime.paper_snapshot()["account"]["positions"]) == 1
+
+
+def test_runner_closes_triggered_position_and_never_increases_exposure(tmp_path: Path):
+    runtime = _runtime(tmp_path)
+    result = run_once(
+        runtime=runtime,
+        now_ms=1791162000000,
+        fetcher=_runner_fetcher(high="104", low="94"),
+    )
+    assert result["status"] == "OK"
+    row = result["results"][0]
+    assert row["status"] == "CLOSED"
+    assert row["trigger"] == "STOP"
+    assert row["risk_reason"] == "risk_reducing_exit"
+    assert result["live_trading_authority"] is False
+    assert result["exposure_increased"] is False
+    assert runtime.paper_snapshot()["account"]["positions"] == []
+
+
+def test_runner_waits_until_a_post_open_candle_exists_without_fetching(tmp_path: Path):
+    runtime = _runtime(tmp_path)
+    calls = []
+    def should_not_fetch(*args, **kwargs):
+        calls.append((args, kwargs))
+        raise AssertionError("fetcher should not be called")
+    result = run_once(
+        runtime=runtime,
+        now_ms=1791158700000,
+        fetcher=should_not_fetch,
+    )
+    assert result["status"] == "OK"
+    assert result["results"][0]["status"] == "WAITING_FOR_CLOSED_BAR"
+    assert calls == []
+    assert len(runtime.paper_snapshot()["account"]["positions"]) == 1
+
+
+def test_runner_fails_closed_when_verified_market_data_is_unavailable(tmp_path: Path):
+    runtime = _runtime(tmp_path)
+    def unavailable(*args, **kwargs):
+        raise OSError("network unavailable")
+    result = run_once(
+        runtime=runtime,
+        now_ms=1791162000000,
+        fetcher=unavailable,
+    )
+    assert result["status"] == "DEGRADED"
+    row = result["results"][0]
+    assert row["status"] == "BLOCKED"
+    assert row["reason_code"] == "VERIFIED_MARKET_DATA_UNAVAILABLE_OR_INVALID"
+    assert row["live_trading_authority"] is False
+    assert row["exposure_increased"] is False
+    assert len(runtime.paper_snapshot()["account"]["positions"]) == 1
+
+
+def test_guard_rejects_candle_that_predates_active_position(tmp_path: Path):
+    runtime = _runtime(tmp_path)
+    old_candle = _candle(high="111", low="94")
+    old_candle["close_time_ms"] = 1791158399999
+    with pytest.raises(ProductPaperProtectiveExitError, match="predates"):
+        evaluate_protective_exit(
+            runtime=runtime,
+            candle=old_candle,
+            symbol="XRPUSDT",
+            timeframe="minute15",
+            strategy_version="manual-paper-v1",
+            opened_at_utc=OPEN_AT,
+        )
+    assert len(runtime.paper_snapshot()["account"]["positions"]) == 1
