@@ -8,6 +8,7 @@ from agent_manager_runner import (
     merge_definition,
     recover_completed_root_cause_analysis,
     recover_bounded_specialized_reasoning,
+    recover_research_source_epoch_with_fresh_producer,
 )
 
 
@@ -418,3 +419,134 @@ def test_strategy_qa_store_tamper_fails_before_runtime_merge(tmp_path):
             {"schema_version": 1, "phase": 4, "policy": {}, "workers": [], "tasks": []},
             tmp_path / "strategy_qa_handoffs",
         )
+
+
+def _qa_done_predecessor(task_id="P7-RESEARCH-COMPOSITE-014"):
+    return {
+        "id": task_id,
+        "status": "DONE",
+        "producer": "research-agent",
+        "verifier": "qa-verifier-agent",
+        "research_producer_lease_id": "producer-prior",
+        "result_evidence": {
+            "executor": "nexus-real-composite-backtest",
+            "source_sha": "1" * 40,
+            "receipt_digest": "2" * 64,
+            "ledger_digest": "3" * 64,
+            "prior_ledger_digest": "4" * 64,
+            "config_fingerprint": "5" * 64,
+            "mechanism": "factory_prior_mechanism",
+            "independent_qa_complete": False,
+            "auto_demo_promotion": False,
+            "live_enabled": False,
+        },
+        "verification_evidence": {
+            "executor": "nexus-independent-composite-numeric-qa",
+            "producer_lease_id": "producer-prior",
+            "producer_receipt_digest": "2" * 64,
+            "source_sha": "1" * 40,
+            "qa_digest": "6" * 64,
+            "independent_qa_complete": True,
+            "auto_demo_promotion": False,
+            "live_enabled": False,
+        },
+    }
+
+
+def _epoch_drift_successor(predecessor):
+    from nexus_research_missions import attested_predecessor
+    ancestry = attested_predecessor(predecessor)
+    return {
+        "id": "P7-RESEARCH-COMPOSITE-015",
+        "status": "BLOCKED",
+        "blocked_reason": "research_qa_source_epoch_drift_requires_fresh_producer",
+        "producer": "research-agent",
+        "verifier": "qa-verifier-agent",
+        "assigned_worker": "qa-verifier-agent",
+        "lease_id": "old-qa-lease",
+        "research_producer_lease_id": "old-producer-lease",
+        "result_evidence": {
+            "executor": "nexus-real-composite-backtest",
+            "source_sha": "7" * 40,
+            "receipt_digest": "8" * 64,
+            "ledger_digest": "9" * 64,
+            "prior_ledger_digest": ancestry["research_predecessor_ledger_digest"],
+            "config_fingerprint": "a" * 64,
+            "mechanism": "factory_new_mechanism",
+            "independent_qa_complete": False,
+            "auto_demo_promotion": False,
+            "live_enabled": False,
+        },
+        "research_qa_epoch_drift": {
+            "producer_source_sha": "7" * 40,
+            "producer_receipt_digest": "8" * 64,
+            "producer_lease_id": "old-producer-lease",
+            "undispatched_qa_lease_id": "old-qa-lease",
+            "controller_source_sha": "b" * 40,
+            "old_producer_not_qualified": True,
+        },
+        **ancestry,
+    }
+
+
+def test_source_epoch_drift_requeues_only_fresh_producer(monkeypatch):
+    predecessor = _qa_done_predecessor()
+    successor = _epoch_drift_successor(predecessor)
+    config = {"tasks": [predecessor, successor]}
+    monkeypatch.setenv("GITHUB_REPOSITORY", "saladinayoubi1/lbank-research-automation")
+    monkeypatch.setenv("GITHUB_SHA", "c" * 40)
+    monkeypatch.setenv("GITHUB_REF", "refs/heads/main")
+    monkeypatch.setenv("GH_TOKEN", "test-token")
+    monkeypatch.setattr("agent_manager_runner.am.iso", lambda: "2026-10-06T00:00:00+00:00")
+    monkeypatch.setattr("agent_manager_runner.am.emit", lambda *args, **kwargs: None)
+
+    assert recover_research_source_epoch_with_fresh_producer(config) == 1
+    task = config["tasks"][1]
+    assert task["status"] == "READY"
+    assert task["producer"] is None
+    assert task["verifier"] is None
+    assert task["lease_id"] is None
+    assert task["research_producer_lease_id"] is None
+    assert task["result_evidence"] is None
+    assert task["verification_evidence"] is None
+    assert task["blocked_reason"] is None
+    assert task["attempt"] if "attempt" in task else True
+    recovery = task["research_fresh_producer_recovery"]
+    assert recovery["superseded_producer_source_sha"] == "7" * 40
+    assert recovery["superseded_producer_receipt_digest"] == "8" * 64
+    assert recovery["fresh_controller_source_sha"] == "c" * 40
+    assert recovery["old_producer_not_qualified"] is True
+    assert recovery["independent_qa_complete"] is False
+    assert recovery["automatic_demo_promotion"] is False
+    assert recovery["live_enabled"] is False
+    assert task["research_predecessor_ledger_digest"] == "3" * 64
+
+
+def test_source_epoch_drift_never_requeues_if_predecessor_attestation_changed(monkeypatch):
+    predecessor = _qa_done_predecessor()
+    successor = _epoch_drift_successor(predecessor)
+    successor["research_predecessor_ledger_digest"] = "f" * 64
+    config = {"tasks": [predecessor, successor]}
+    monkeypatch.setenv("GITHUB_REPOSITORY", "saladinayoubi1/lbank-research-automation")
+    monkeypatch.setenv("GITHUB_SHA", "c" * 40)
+    monkeypatch.setenv("GITHUB_REF", "refs/heads/main")
+    monkeypatch.setenv("GH_TOKEN", "test-token")
+
+    assert recover_research_source_epoch_with_fresh_producer(config) == 0
+    assert successor["status"] == "BLOCKED"
+    assert successor["result_evidence"]["receipt_digest"] == "8" * 64
+    assert "research_fresh_producer_recovery" not in successor
+
+
+def test_source_epoch_drift_never_reuses_already_qa_complete_old_producer(monkeypatch):
+    predecessor = _qa_done_predecessor()
+    successor = _epoch_drift_successor(predecessor)
+    successor["result_evidence"]["independent_qa_complete"] = True
+    config = {"tasks": [predecessor, successor]}
+    monkeypatch.setenv("GITHUB_REPOSITORY", "saladinayoubi1/lbank-research-automation")
+    monkeypatch.setenv("GITHUB_SHA", "c" * 40)
+    monkeypatch.setenv("GITHUB_REF", "refs/heads/main")
+    monkeypatch.setenv("GH_TOKEN", "test-token")
+
+    assert recover_research_source_epoch_with_fresh_producer(config) == 0
+    assert successor["status"] == "BLOCKED"
