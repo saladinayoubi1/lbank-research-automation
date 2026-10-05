@@ -11,3 +11,10 @@ REQUALIFICATION_VERIFICATION_SCHEMA = (
 )
 RESEARCH_PROPOSAL_QUEUE_SCHEMA = "nexus.strategy-research-proposal-queue.v1"
 APPROVED_SYMBOLS = ("BTCUSDT", "ETHUSDT")
+APPROVED_FAMILIES = ("momentum", "trend_breakout", "mean_reversion")
+APPROVED_TIMEFRAMES = ("minute15", "hour1", "hour4")
+TIMEFRAME_STEP_MS = {
+    "minute15": 900_000,
+    "hour1": 3_600_000,
+    "hour4": 14_400_000,
+}
