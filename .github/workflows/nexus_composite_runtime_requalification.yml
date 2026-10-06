@@ -45,10 +45,6 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       TRIGGER_RUN_ID: ${{ inputs.coordinator_run_id }}
-    outputs:
-      evidence_b64: ${{ steps.package.outputs.evidence_b64 }}
-      evidence_sha256: ${{ steps.package.outputs.evidence_sha256 }}
-      evidence_size: ${{ steps.package.outputs.evidence_size }}
     steps:
       - name: Prepare exact source and pre-provisioned Python without JavaScript actions
         shell: bash
@@ -294,8 +290,7 @@ jobs:
           print("composite_runtime_requalification=PASS", result["decision"], result["candidate_digest"], result["requalification_digest"])
           PY
 
-      - name: Package bounded physical evidence for hosted publication
-        id: package
+      - name: Publish bounded physical evidence marker
         shell: bash
         run: |
           set -euo pipefail
@@ -304,65 +299,11 @@ jobs:
           tar -C "$OUTPUT_ROOT" -czf "$WORK_ROOT/evidence.tar.gz" runtime-requalification.json verification.json
           evidence_size="$(wc -c < "$WORK_ROOT/evidence.tar.gz")"
           test "$evidence_size" -gt 0
-          test "$evidence_size" -le 700000
+          test "$evidence_size" -le 500000
           evidence_sha256="$(sha256sum "$WORK_ROOT/evidence.tar.gz" | awk '{print $1}')"
           evidence_b64="$(base64 -w0 "$WORK_ROOT/evidence.tar.gz")"
-          echo "evidence_size=$evidence_size" >> "$GITHUB_OUTPUT"
-          echo "evidence_sha256=$evidence_sha256" >> "$GITHUB_OUTPUT"
-          echo "evidence_b64=$evidence_b64" >> "$GITHUB_OUTPUT"
-
-  publish-evidence:
-    needs: runtime-requalification
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      EVIDENCE_B64: ${{ needs.runtime-requalification.outputs.evidence_b64 }}
-      EVIDENCE_SHA256: ${{ needs.runtime-requalification.outputs.evidence_sha256 }}
-      EVIDENCE_SIZE: ${{ needs.runtime-requalification.outputs.evidence_size }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          ref: ${{ github.sha }}
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
-        with:
-          python-version: "3.12"
-      - name: Rehydrate bounded physical evidence
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p build/nexus_composite_runtime_requalification
-          printf '%s' "$EVIDENCE_B64" | base64 -d > build/physical-evidence.tar.gz
-          test "$(wc -c < build/physical-evidence.tar.gz)" = "$EVIDENCE_SIZE"
-          test "$(sha256sum build/physical-evidence.tar.gz | awk '{print $1}')" = "$EVIDENCE_SHA256"
-          tar -xzf build/physical-evidence.tar.gz -C build/nexus_composite_runtime_requalification
-      - name: Independently verify published VAL-40 evidence
-        shell: bash
-        run: |
-          set -euo pipefail
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          from nexus_composite_runtime_requalification import verify_requalification
-
-          root = Path("build/nexus_composite_runtime_requalification")
-          result = json.loads((root / "runtime-requalification.json").read_text(encoding="utf-8"))
-          stored = json.loads((root / "verification.json").read_text(encoding="utf-8"))
-          computed = verify_requalification(result)
-          if computed.get("decision") != "pass" or computed != stored:
-              raise SystemExit("hosted publication verifier rejected physical evidence")
-          if (
-              result.get("qualification_authority") is not False
-              or result.get("registry_mutation_authority") is not False
-              or result.get("paper_execution_authority") is not False
-              or result.get("live_trading_authority") is not False
-          ):
-              raise SystemExit("published physical evidence widened authority")
-          print("physical_val40_publication=PASS", result["decision"], result["requalification_digest"])
-          PY
-      - name: Publish bounded fresh VAL-40 evidence
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        with:
-          name: nexus-composite-runtime-requalification-${{ github.run_id }}
-          path: build/nexus_composite_runtime_requalification
-          if-no-files-found: error
-          retention-days: 14
+          test "${#evidence_b64}" -le 700000
+          echo "NEXUS_COMPOSITE_VAL40_EVIDENCE_TRANSPORT=bounded-job-log-v1"
+          echo "NEXUS_COMPOSITE_VAL40_EVIDENCE_SHA256=$evidence_sha256"
+          echo "NEXUS_COMPOSITE_VAL40_EVIDENCE_SIZE=$evidence_size"
+          echo "NEXUS_COMPOSITE_VAL40_EVIDENCE_B64=$evidence_b64"
