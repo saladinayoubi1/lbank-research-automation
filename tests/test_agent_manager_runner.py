@@ -550,3 +550,94 @@ def test_source_epoch_drift_never_reuses_already_qa_complete_old_producer(monkey
 
     assert recover_research_source_epoch_with_fresh_producer(config) == 0
     assert successor["status"] == "BLOCKED"
+
+
+def test_composite_val40_security_binding_change_invalidates_stale_done_state():
+    template = {
+        "schema_version": 1, "phase": 4, "policy": {}, "workers": [],
+        "tasks": [{
+            "id": "COMPOSITE-VAL40-" + "a" * 64,
+            "phase": 7, "gate": 17, "dependencies": [],
+            "required_capabilities": ["data_validation"],
+            "required_resources": ["github-cloud"],
+            "authority": 2,
+            "acceptance": ["exact fresh replay"],
+            "status": "BLOCKED",
+            "composite_val40_task": True,
+            "composite_val40_dispatch_enabled": False,
+            "required_producer": "research-agent",
+            "required_verifier": "qa-verifier-agent",
+            "composite_val40_execution_contract": {
+                "execution_contract_digest": "1" * 64,
+                "candidate_digest": "a" * 64,
+            },
+            "composite_val40_contract_verification": {
+                "decision": "pass",
+                "verification_digest": "2" * 64,
+            },
+        }],
+    }
+    runtime = {
+        "schema_version": 1, "phase": 4,
+        "tasks": [{
+            "id": "COMPOSITE-VAL40-" + "a" * 64,
+            "phase": 7, "gate": 17, "dependencies": [],
+            "required_capabilities": ["data_validation"],
+            "required_resources": ["github-cloud"],
+            "authority": 2,
+            "acceptance": ["exact fresh replay"],
+            "status": "DONE",
+            "composite_val40_task": True,
+            "composite_val40_dispatch_enabled": True,
+            "required_producer": "research-agent",
+            "required_verifier": "qa-verifier-agent",
+            "composite_val40_execution_contract": {
+                "execution_contract_digest": "9" * 64,
+                "candidate_digest": "a" * 64,
+            },
+            "composite_val40_contract_verification": {
+                "decision": "pass",
+                "verification_digest": "8" * 64,
+            },
+            "producer": "research-agent",
+            "verifier": "qa-verifier-agent",
+            "verification_evidence": {"old": True},
+        }],
+    }
+    task = merge_definition(template, runtime)["tasks"][0]
+    assert task["status"] == "BLOCKED"
+    assert task["composite_val40_dispatch_enabled"] is False
+    assert task["composite_val40_execution_contract"]["execution_contract_digest"] == "1" * 64
+    assert "verification_evidence" not in task
+    assert "producer" not in task
+    assert "verifier" not in task
+
+
+def test_composite_val40_store_is_materialized_before_runtime_merge(tmp_path, monkeypatch):
+    store = tmp_path / "composite"
+    digest = "a" * 64
+    directory = store / digest
+    directory.mkdir(parents=True)
+    candidate = {"candidate_digest": digest, "value": 1}
+    verification = {"decision": "pass", "value": 2}
+    (directory / "candidate.json").write_text(__import__("json").dumps(candidate), encoding="utf-8")
+    (directory / "verification.json").write_text(__import__("json").dumps(verification), encoding="utf-8")
+
+    captured = {}
+    def fake_materialize(definition, pairs):
+        captured["pairs"] = pairs
+        result = deepcopy(definition)
+        result["tasks"].append({"id": "materialized"})
+        return result
+
+    monkeypatch.setattr(
+        "agent_manager_runner.materialize_composite_val40_candidates",
+        fake_materialize,
+    )
+    from agent_manager_runner import materialize_composite_val40_store
+    result = materialize_composite_val40_store(
+        {"schema_version": 1, "tasks": []},
+        store,
+    )
+    assert result["tasks"] == [{"id": "materialized"}]
+    assert captured["pairs"] == [(candidate, verification)]
