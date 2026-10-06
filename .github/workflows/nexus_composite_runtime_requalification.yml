@@ -105,16 +105,11 @@ jobs:
             effective_ld_library_path="$python_lib:$LD_LIBRARY_PATH"
           fi
 
-          printf 'SOURCE_ROOT=%s
-' "$source_root" >> "$GITHUB_ENV"
-          printf 'WORK_ROOT=%s
-' "$work_root" >> "$GITHUB_ENV"
-          printf 'OUTPUT_ROOT=%s
-' "$work_root/output" >> "$GITHUB_ENV"
-          printf 'PYTHON_BIN=%s
-' "$python_bin" >> "$GITHUB_ENV"
-          printf 'LD_LIBRARY_PATH=%s
-' "$effective_ld_library_path" >> "$GITHUB_ENV"
+          echo "SOURCE_ROOT=$source_root" >> "$GITHUB_ENV"
+          echo "WORK_ROOT=$work_root" >> "$GITHUB_ENV"
+          echo "OUTPUT_ROOT=$work_root/output" >> "$GITHUB_ENV"
+          echo "PYTHON_BIN=$python_bin" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=$effective_ld_library_path" >> "$GITHUB_ENV"
           echo "physical_source_transport=github-api-exact-sha"
           echo "physical_source_sha=$GITHUB_SHA"
 
@@ -127,8 +122,7 @@ jobs:
           runtime_python="$venv_root/bin/python"
           LD_LIBRARY_PATH="$LD_LIBRARY_PATH" "$runtime_python" -m pip install -r "$SOURCE_ROOT/requirements.lock"
           LD_LIBRARY_PATH="$LD_LIBRARY_PATH" "$runtime_python" -m pip check
-          printf 'PYTHON_BIN=%s
-' "$runtime_python" >> "$GITHUB_ENV"
+          echo "PYTHON_BIN=$runtime_python" >> "$GITHUB_ENV"
 
       - name: Enforce physical Bybit Research execution plane
         shell: bash
@@ -313,9 +307,9 @@ jobs:
           test "$evidence_size" -le 700000
           evidence_sha256="$(sha256sum "$WORK_ROOT/evidence.tar.gz" | awk '{print $1}')"
           evidence_b64="$(base64 -w0 "$WORK_ROOT/evidence.tar.gz")"
-          printf 'evidence_size=%s\n' "$evidence_size" >> "$GITHUB_OUTPUT"
-          printf 'evidence_sha256=%s\n' "$evidence_sha256" >> "$GITHUB_OUTPUT"
-          printf 'evidence_b64=%s\n' "$evidence_b64" >> "$GITHUB_OUTPUT"
+          echo "evidence_size=$evidence_size" >> "$GITHUB_OUTPUT"
+          echo "evidence_sha256=$evidence_sha256" >> "$GITHUB_OUTPUT"
+          echo "evidence_b64=$evidence_b64" >> "$GITHUB_OUTPUT"
 
   publish-evidence:
     needs: runtime-requalification
@@ -339,7 +333,7 @@ jobs:
           mkdir -p build/nexus_composite_runtime_requalification
           printf '%s' "$EVIDENCE_B64" | base64 -d > build/physical-evidence.tar.gz
           test "$(wc -c < build/physical-evidence.tar.gz)" = "$EVIDENCE_SIZE"
-          printf '%s  %s\n' "$EVIDENCE_SHA256" build/physical-evidence.tar.gz | sha256sum -c -
+          test "$(sha256sum build/physical-evidence.tar.gz | awk '{print $1}')" = "$EVIDENCE_SHA256"
           tar -xzf build/physical-evidence.tar.gz -C build/nexus_composite_runtime_requalification
       - name: Independently verify published VAL-40 evidence
         shell: bash
