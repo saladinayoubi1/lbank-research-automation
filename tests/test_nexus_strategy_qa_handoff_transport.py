@@ -186,6 +186,7 @@ def test_latest_handoff_admits_only_exact_current_main(monkeypatch):
                     "id": 42,
                     "conclusion": "success",
                     "head_branch": "main",
+                    "head_sha": current,
                     "event": "workflow_run",
                 }]
             }
@@ -215,6 +216,61 @@ def test_latest_handoff_admits_only_exact_current_main(monkeypatch):
         downloader=lambda artifact_id: _artifact(source_sha="a" * 40),
     )
     assert stale is None
+
+
+def test_latest_handoff_skips_stale_run_before_downloading_artifact(monkeypatch):
+    monkeypatch.setenv("GITHUB_REPOSITORY", "saladinayoubi1/lbank-research-automation")
+    current = "b" * 40
+    downloaded = []
+
+    def api(method, url, payload=None):
+        assert method == "GET"
+        if "/runs?branch=main" in url:
+            return {
+                "workflow_runs": [
+                    {
+                        "id": 41,
+                        "conclusion": "success",
+                        "head_branch": "main",
+                        "head_sha": "a" * 40,
+                        "event": "workflow_run",
+                    },
+                    {
+                        "id": 42,
+                        "conclusion": "success",
+                        "head_branch": "main",
+                        "head_sha": current,
+                        "event": "workflow_run",
+                    },
+                ]
+            }
+        if "/runs/41/artifacts" in url:
+            raise AssertionError("stale run artifacts must not be queried")
+        if "/runs/42/artifacts" in url:
+            blob = _artifact(source_sha=current)
+            return {
+                "artifacts": [{
+                    "id": 99,
+                    "name": ARTIFACT_PREFIX + "42",
+                    "expired": False,
+                    "size_in_bytes": len(blob),
+                }]
+            }
+        raise AssertionError(url)
+
+    def downloader(artifact_id):
+        downloaded.append(artifact_id)
+        assert artifact_id == 99
+        return _artifact(source_sha=current)
+
+    result = latest_verified_handoff(
+        current_sha=current,
+        api=api,
+        downloader=downloader,
+    )
+    assert result is not None
+    assert result[2] == 42
+    assert downloaded == [99]
 
 
 def test_verified_handoff_store_is_immutable(tmp_path: Path):
