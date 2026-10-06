@@ -36,7 +36,7 @@ def test_trigger_and_artifact_identity_are_exact() -> None:
     assert 'run.get("name") != "Fast Agent Coordinator"' in text
     assert 'run.get("conclusion") != "success"' in text
     assert 'run.get("head_branch") != "main"' in text
-    assert '"fast-agent-status-" + os.environ["TRIGGER_RUN_ID"]' in text
+    assert 'expected = "fast-agent-status-" + sys.argv[2]' in text
     assert "len(matches) != 1" in text
     assert "size_in_bytes" in text
     assert "<= 8_000_000" in text
@@ -73,15 +73,33 @@ def test_contract_job_covers_candidate_transport_and_requalification() -> None:
     assert "if-no-files-found: error" in text
 
 
-def test_physical_wsl1_runtime_uses_node20_actions_only() -> None:
+def test_physical_runtime_job_is_javascript_action_free() -> None:
     text = _text()
-    runtime = text.split("  runtime-requalification:", 1)[1]
-    contract = text.split("  runtime-requalification:", 1)[0]
-    assert "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683" in runtime
-    assert "actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065" in runtime
-    assert "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02" in runtime
-    assert "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" not in runtime
-    assert "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97" not in runtime
-    assert "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a" not in runtime
-    assert "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" in contract
-    assert "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97" in contract
+    physical = text.split("  runtime-requalification:", 1)[1].split("  publish-evidence:", 1)[0]
+    assert "runs-on: nexus-bybit-network" in physical
+    assert "uses:" not in physical
+    assert "physical_source_transport=github-api-exact-sha" in physical
+    assert "No pre-provisioned CPython 3.12" in physical
+    assert "actions/checkout" not in physical
+    assert "actions/setup-python" not in physical
+    assert "actions/upload-artifact" not in physical
+
+
+def test_physical_evidence_uses_bounded_digest_bound_job_log_transport() -> None:
+    text = _text()
+    physical = text.split("  runtime-requalification:", 1)[1].split("  publish-evidence:", 1)[0]
+    publisher = text.split("  publish-evidence:", 1)[1]
+    assert "NEXUS_COMPOSITE_VAL40_EVIDENCE_TRANSPORT=bounded-job-log-v2" in physical
+    assert "NEXUS_COMPOSITE_VAL40_EVIDENCE_SHA256=" in physical
+    assert "NEXUS_COMPOSITE_VAL40_EVIDENCE_SIZE=" in physical
+    assert "NEXUS_COMPOSITE_VAL40_EVIDENCE_CHUNK_COUNT=" in physical
+    assert "NEXUS_COMPOSITE_VAL40_EVIDENCE_CHUNK_%03d=" in physical
+    assert 'test "$evidence_size" -le 500000' in physical
+    assert 'test "${#evidence_b64}" -le 700000' in physical
+    assert "runs-on: ubuntu-latest" in publisher
+    assert "needs: runtime-requalification" in publisher
+    assert 'row.get("name") == "runtime-requalification"' in publisher
+    assert "physical evidence size or digest mismatch" in publisher
+    assert "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a" in publisher
+    assert "name: nexus-composite-runtime-requalification-${{ github.run_id }}" in publisher
+    assert "if-no-files-found: error" in publisher
