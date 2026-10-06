@@ -71,3 +71,17 @@ def test_contract_job_covers_candidate_transport_and_requalification() -> None:
     assert "tests/test_nexus_composite_validation_candidate.py" in text
     assert "tests/test_nexus_composite_validation_candidate_transport.py" in text
     assert "if-no-files-found: error" in text
+
+
+def test_physical_wsl1_runtime_uses_node20_actions_only() -> None:
+    text = _text()
+    runtime = text.split("  runtime-requalification:", 1)[1]
+    contract = text.split("  runtime-requalification:", 1)[0]
+    assert "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683" in runtime
+    assert "actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065" in runtime
+    assert "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02" in runtime
+    assert "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" not in runtime
+    assert "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97" not in runtime
+    assert "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a" not in runtime
+    assert "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" in contract
+    assert "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97" in contract
