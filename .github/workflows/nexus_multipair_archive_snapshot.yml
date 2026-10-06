@@ -343,19 +343,21 @@ jobs:
 
   a7-research-backtest:
     if: >-
-      github.event_name == 'pull_request' &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      github.actor == github.repository_owner
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
+       github.actor == github.repository_owner) ||
+      (github.event_name == 'workflow_dispatch' &&
+       github.ref_name == github.event.repository.default_branch)
     runs-on: [self-hosted, Windows, X64, nexus-research, nexus-worker-2]
     timeout-minutes: 120
     env:
-      A7_SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+      A7_SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
 
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
 
       - name: Prepare isolated Python
@@ -413,7 +415,7 @@ jobs:
       - name: Upload A7 numerical evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: nexus-a7-range-failure-${{ github.event.pull_request.head.sha }}
+          name: nexus-a7-range-failure-${{ env.A7_SOURCE_SHA }}
           path: |
             build/a7-output/
             build/a7-recent-proof/_a7_daily_recent_source_proof.json
