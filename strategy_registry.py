@@ -300,6 +300,8 @@ def build_qualified_strategy_record(
         "qa_receipt_digest": qualification["qa_receipt_digest"],
         "qualification_digest": qualification["qualification_digest"],
         "qualification_verification_digest": qualification_verification["verification_digest"],
+        "qualification_artifact": dict(qualification),
+        "qualification_verification": dict(qualification_verification),
         "runtime_evidence": [dict(row) for row in runtime_evidence],
         "runtime_evidence_digest": qualification["runtime_evidence_digest"],
         "lifecycle_state": "QUALIFIED_CANDIDATE",
@@ -377,6 +379,42 @@ def verify_qualified_strategy_record(value: Mapping[str, Any]) -> dict[str, Any]
                 for row in runtime_evidence
             )
         )
+        embedded_qualification = core.get("qualification_artifact")
+        embedded_verification = core.get("qualification_verification")
+        computed_verification = (
+            verify_qualification(embedded_qualification)
+            if isinstance(embedded_qualification, Mapping)
+            else None
+        )
+        qualification_bound = bool(
+            isinstance(embedded_qualification, Mapping)
+            and isinstance(embedded_verification, Mapping)
+            and isinstance(computed_verification, Mapping)
+            and computed_verification.get("decision") == "pass"
+            and dict(embedded_verification) == dict(computed_verification)
+            and embedded_qualification.get("decision") == "QUALIFIED_FOR_REGISTRY"
+            and embedded_qualification.get("qualified") is True
+            and embedded_qualification.get("registry_admission_allowed") is True
+            and embedded_qualification.get("qualification_digest") == core.get("qualification_digest")
+            and embedded_verification.get("verification_digest")
+                == core.get("qualification_verification_digest")
+            and embedded_qualification.get("source_sha") == core.get("source_sha")
+            and embedded_qualification.get("proposal_digest") == core.get("proposal_digest")
+            and embedded_qualification.get("proposal_result_digest") == core.get("proposal_result_digest")
+            and embedded_qualification.get("requalification_digest") == core.get("requalification_digest")
+            and embedded_qualification.get("requalification_verification_digest")
+                == core.get("requalification_verification_digest")
+            and embedded_qualification.get("qa_task_digest") == core.get("qa_task_digest")
+            and embedded_qualification.get("qa_receipt_digest") == core.get("qa_receipt_digest")
+            and embedded_qualification.get("family") == core.get("family")
+            and embedded_qualification.get("timeframe") == core.get("timeframe")
+            and embedded_qualification.get("variant_id") == core.get("variant_id")
+            and embedded_qualification.get("strategy_config") == core.get("config")
+            and embedded_qualification.get("strategy_config_digest") == core.get("config_sha256")
+            and embedded_qualification.get("runtime_evidence") == runtime_evidence
+            and embedded_qualification.get("runtime_evidence_digest")
+                == core.get("runtime_evidence_digest")
+        )
         checks["provenance"] = bool(
             _SHA40.fullmatch(str(core.get("source_sha", "")))
             and _HEX64.fullmatch(str(core.get("proposal_digest", "")))
@@ -389,6 +427,7 @@ def verify_qualified_strategy_record(value: Mapping[str, Any]) -> dict[str, Any]
             and _HEX64.fullmatch(str(core.get("qualification_verification_digest", "")))
             and runtime_rows_valid
             and core.get("runtime_evidence_digest") == _digest(runtime_evidence)
+            and qualification_bound
         )
         checks["authority"] = bool(
             core.get("lifecycle_state") == "QUALIFIED_CANDIDATE"
