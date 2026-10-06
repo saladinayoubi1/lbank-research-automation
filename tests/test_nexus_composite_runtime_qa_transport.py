@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import base64
+import hashlib
 import io
 import json
 import zipfile
@@ -27,6 +29,27 @@ def _artifact_blob(producer=None, verification=None):
         zf.writestr("runtime-requalification.json", json.dumps(producer))
         zf.writestr("verification.json", json.dumps(verification))
     return buf.getvalue()
+
+
+def _job_log_blob(archive: bytes, *, chunk_chars: int = 48) -> bytes:
+    encoded = base64.b64encode(archive).decode("ascii")
+    chunks = [
+        encoded[index:index + chunk_chars]
+        for index in range(0, len(encoded), chunk_chars)
+    ]
+    lines = [
+        "transport_version=bounded-job-log-v2",
+        "printf 'NEXUS_COMPOSITE_VAL40_EVIDENCE_TRANSPORT=%s\\n' \"$transport_version\"",
+        "NEXUS_COMPOSITE_VAL40_EVIDENCE_TRANSPORT=bounded-job-log-v2",
+        f"NEXUS_COMPOSITE_VAL40_EVIDENCE_SHA256={hashlib.sha256(archive).hexdigest()}",
+        f"NEXUS_COMPOSITE_VAL40_EVIDENCE_SIZE={len(archive)}",
+        f"NEXUS_COMPOSITE_VAL40_EVIDENCE_CHUNK_COUNT={len(chunks)}",
+        *[
+            f"NEXUS_COMPOSITE_VAL40_EVIDENCE_CHUNK_{index:03d}={chunk}"
+            for index, chunk in enumerate(chunks)
+        ],
+    ]
+    return ("\n".join(lines) + "\n").encode("utf-8")
 
 
 def _task():
@@ -81,6 +104,24 @@ def test_parse_artifact_requires_exact_verification():
         )
 
 
+def test_parse_job_log_evidence_requires_digest_bound_contiguous_chunks():
+    archive = _artifact_blob()
+    assert tr.parse_job_log_evidence(_job_log_blob(archive)) == archive
+
+    duplicate = _job_log_blob(archive).replace(
+        b"NEXUS_COMPOSITE_VAL40_EVIDENCE_CHUNK_000=",
+        b"NEXUS_COMPOSITE_VAL40_EVIDENCE_CHUNK_001=",
+        1,
+    )
+    with pytest.raises(tr.CompositeRuntimeQaTransportError, match="chunk"):
+        tr.parse_job_log_evidence(duplicate)
+
+    digest = hashlib.sha256(archive).hexdigest().encode("ascii")
+    tampered = _job_log_blob(archive).replace(digest, b"0" * 64, 1)
+    with pytest.raises(tr.CompositeRuntimeQaTransportError, match="digest"):
+        tr.parse_job_log_evidence(tampered)
+
+
 def test_latest_verified_task_accepts_only_trusted_main_ancestor(monkeypatch):
     monkeypatch.setenv("GITHUB_REPOSITORY", "saladinayoubi1/lbank-research-automation")
     proof = {"decision": "pass", "verification_digest": "f" * 64}
@@ -128,7 +169,63 @@ def test_latest_verified_task_accepts_only_trusted_main_ancestor(monkeypatch):
     assert qa_task == task
     assert transport["producer_workflow_run_id"] == 101
     assert transport["artifact_id"] == 202
+    assert transport["evidence_transport"] == "github-actions-artifact-v1"
     assert transport["task_digest"] == task["task_digest"]
+    assert transport["paper_execution_authority"] is False
+    assert transport["live_trading_authority"] is False
+
+
+def test_latest_verified_task_uses_bounded_job_log_when_artifact_missing(monkeypatch):
+    monkeypatch.setenv("GITHUB_REPOSITORY", "saladinayoubi1/lbank-research-automation")
+    proof = {"decision": "pass", "verification_digest": "f" * 64}
+
+    def api(method, url, payload):
+        if "/actions/workflows/" in url:
+            return {
+                "workflow_runs": [{
+                    "id": 101,
+                    "conclusion": "success",
+                    "head_branch": "main",
+                    "event": "workflow_dispatch",
+                    "head_sha": SOURCE,
+                }]
+            }
+        if "/actions/runs/101/artifacts" in url:
+            return {"artifacts": []}
+        if "/actions/runs/101/jobs" in url:
+            return {
+                "jobs": [{
+                    "id": 303,
+                    "name": "runtime-requalification",
+                    "conclusion": "success",
+                }]
+            }
+        if "/compare/" in url:
+            return {
+                "status": "ahead",
+                "ahead_by": 2,
+                "behind_by": 0,
+                "merge_base_commit": {"sha": SOURCE},
+            }
+        raise AssertionError(url)
+
+    task = _task()
+    result = tr.latest_verified_task(
+        current_sha=CURRENT,
+        api=api,
+        log_downloader=lambda job_id: _job_log_blob(
+            _artifact_blob(verification=proof)
+        ),
+        verifier=lambda value: dict(proof),
+        builder=lambda producer, verification, producer_workflow_run_id: dict(task),
+        validator=lambda value, source: dict(value),
+    )
+    assert result is not None
+    qa_task, transport = result
+    assert qa_task == task
+    assert transport["artifact_id"] is None
+    assert transport["physical_job_id"] == 303
+    assert transport["evidence_transport"] == "bounded-job-log-v2"
     assert transport["paper_execution_authority"] is False
     assert transport["live_trading_authority"] is False
 
