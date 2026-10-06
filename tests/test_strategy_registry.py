@@ -230,6 +230,8 @@ def test_modern_registry_record_is_qualified_but_not_demo_activated():
     assert record["live_execution_allowed"] is False
     assert record["config_sha256"] == qualification["strategy_config_digest"]
     assert record["runtime_evidence_digest"] == qualification["runtime_evidence_digest"]
+    assert record["qualification_artifact"]["qualification_digest"] == qualification["qualification_digest"]
+    assert record["qualification_verification"] == verification
     assert verify_qualified_strategy_record(record)["decision"] == "pass"
 
 
@@ -265,6 +267,23 @@ def test_modern_registry_record_tamper_fails_closed():
     tampered = deepcopy(record)
     tampered["demo_matrix_member"] = True
     assert verify_qualified_strategy_record(tampered)["decision"] == "reject"
+
+    # Re-digesting a copied registry field cannot detach it from the embedded
+    # self-contained QUAL-42 proof.
+    redigested_identity = deepcopy(record)
+    redigested_identity["variant_id"] = "forged-variant"
+    redigested_core = dict(redigested_identity)
+    redigested_core.pop("record_digest", None)
+    from strategy_registry import _digest
+    redigested_identity["record_digest"] = _digest(redigested_core)
+    assert verify_qualified_strategy_record(redigested_identity)["decision"] == "reject"
+
+    forged_qualification = deepcopy(record)
+    forged_qualification["qualification_artifact"]["variant_id"] = "forged-inside-proof"
+    forged_core = dict(forged_qualification)
+    forged_core.pop("record_digest", None)
+    forged_qualification["record_digest"] = _digest(forged_core)
+    assert verify_qualified_strategy_record(forged_qualification)["decision"] == "reject"
 
     bad_provenance = deepcopy(record)
     bad_provenance["runtime_evidence"][0]["pipeline_digest"] = "not-a-digest"
