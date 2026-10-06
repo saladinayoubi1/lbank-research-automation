@@ -177,3 +177,44 @@ def test_strategy_qa_tampered_task_never_selects_code():
     payload["strategy_qa_task"]["strategy_config"]["lookback"] = 99
     with pytest.raises(ResearchQaPinError, match="task binding"):
         select_source(payload, **authorized())
+
+
+def _composite_qa_payload():
+    return {
+        "task_id": "COMPOSITE-QA-" + "d" * 64,
+        "worker_id": "qa-verifier-agent",
+        "phase": 7,
+        "transport": "github-cloud",
+        "lease_id": "qa-original-replay-lease",
+        "composite_qa_task": {
+            "id": "COMPOSITE-QA-" + "d" * 64,
+            "task_kind": "composite_runtime_independent_qa",
+            "system_map_node": "QA-41",
+            "required_verifier": "qa-verifier-agent",
+            "source_sha": OLD,
+        },
+    }
+
+
+def test_composite_runtime_qa_requests_exact_physical_source_ancestor(monkeypatch):
+    monkeypatch.setattr(
+        "nexus_composite_runtime_independent_qa.validate_task",
+        lambda value, source: dict(value),
+    )
+    decision = select_source(_composite_qa_payload(), **authorized())
+    assert decision["execution_source_sha"] == OLD
+    assert decision["requested_ancestor_pin"] is True
+    assert decision["source_role"] == "independent-composite-runtime-qa"
+    assert decision["live_authority"] is False
+    assert decision["auto_demo_promotion"] is False
+
+
+def test_composite_runtime_qa_tampered_identity_never_selects_code(monkeypatch):
+    monkeypatch.setattr(
+        "nexus_composite_runtime_independent_qa.validate_task",
+        lambda value, source: dict(value),
+    )
+    payload = _composite_qa_payload()
+    payload["composite_qa_task"]["id"] = "COMPOSITE-QA-" + "e" * 64
+    with pytest.raises(ResearchQaPinError, match="source identity"):
+        select_source(payload, **authorized())
