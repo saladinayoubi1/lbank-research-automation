@@ -178,3 +178,26 @@ def test_missing_artifact_never_creates_candidate(tmp_path, monkeypatch):
     assert result["stored"] == 0
     assert result["eligible"] == 0
     assert not list(tmp_path.rglob("candidate.json"))
+
+
+def test_composite_val40_transport_import_is_control_plane_lightweight():
+    import subprocess
+    import sys
+
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import sys; "
+                "sys.modules['pandas']=None; "
+                "import nexus_composite_validation_candidate_transport; "
+                "print('lightweight_composite_val40_transport=PASS')"
+            ),
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "lightweight_composite_val40_transport=PASS" in proc.stdout
