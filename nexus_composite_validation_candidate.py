@@ -21,7 +21,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from nexus_demo_archive_contract import ARCHIVE_SHA256
-from nexus_research_missions import attested_predecessor
+from nexus_research_missions import attested_research_task
 
 SCHEMA = "nexus.composite-validation-candidate.v2"
 VERIFY_SCHEMA = "nexus.composite-validation-candidate-verification.v2"
@@ -172,7 +172,7 @@ def build_candidate(
     research_report: Mapping[str, Any],
 ) -> dict[str, Any]:
     try:
-        attested = attested_predecessor(dict(manager_task))
+        attested = attested_research_task(dict(manager_task))
     except Exception as exc:
         raise CompositeValidationCandidateError("Research task lacks exact independent QA") from exc
 

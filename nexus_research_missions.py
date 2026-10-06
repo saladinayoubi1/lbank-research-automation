@@ -52,12 +52,17 @@ DIGEST_KEYS = ANCESTRY[1:4]
 MECHANISM_KEY = ANCESTRY[4]
 
 
-def attested_predecessor(task: dict[str, Any]) -> dict[str, str]:
-    """Require distinct real producer/QA and exact original receipt binding."""
+def attested_research_task(task: dict[str, Any]) -> dict[str, str]:
+    """Require one completed composite Research task with exact independent QA.
+
+    This validates the proof of the task itself and therefore also applies to a
+    terminal Research mission that has no successor.  It grants no successor,
+    qualification, registry, Paper, or Live authority.
+    """
     production = task.get("result_evidence")
     qa = task.get("verification_evidence")
     if (
-        task.get("id") not in PREDECESSOR.values()
+        task.get("id") not in TASKS
         or task.get("status") != "DONE"
         or task.get("producer") != "research-agent"
         or task.get("verifier") != "qa-verifier-agent"
@@ -83,11 +88,23 @@ def attested_predecessor(task: dict[str, Any]) -> dict[str, str]:
         or len(production["mechanism"]) > 80
         or not production["mechanism"]
     ):
-        raise ValueError("previous real Research+independent-QA evidence is not exact")
+        raise ValueError("real Research+independent-QA evidence is not exact")
     return dict(zip(ANCESTRY, (
         production["source_sha"], production["receipt_digest"], qa["qa_digest"],
         production["ledger_digest"], production["mechanism"],
     )))
+
+
+def attested_predecessor(task: dict[str, Any]) -> dict[str, str]:
+    """Require an attested Research task that is also a real DAG predecessor."""
+    if task.get("id") not in PREDECESSOR.values():
+        raise ValueError("previous real Research+independent-QA evidence is not exact")
+    try:
+        return attested_research_task(task)
+    except ValueError as exc:
+        raise ValueError(
+            "previous real Research+independent-QA evidence is not exact"
+        ) from exc
 
 
 def validate_ancestry(data: dict[str, Any]) -> dict[str, str]:
