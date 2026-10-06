@@ -307,7 +307,8 @@ jobs:
           chunk_count=$(( (${#evidence_b64} + chunk_chars - 1) / chunk_chars ))
           test "$chunk_count" -gt 0
           test "$chunk_count" -le 16
-          echo "NEXUS_COMPOSITE_VAL40_EVIDENCE_TRANSPORT=bounded-job-log-v2"
+          transport_version=bounded-job-log-v2
+          printf 'NEXUS_COMPOSITE_VAL40_EVIDENCE_TRANSPORT=%s\n' "$transport_version"
           echo "NEXUS_COMPOSITE_VAL40_EVIDENCE_SHA256=$evidence_sha256"
           echo "NEXUS_COMPOSITE_VAL40_EVIDENCE_SIZE=$evidence_size"
           echo "NEXUS_COMPOSITE_VAL40_EVIDENCE_CHUNK_COUNT=$chunk_count"
