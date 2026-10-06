@@ -179,3 +179,145 @@ def probe_primary_spot(
     except (ValueError, TypeError, KeyError, OverflowError, UnicodeDecodeError, json.JSONDecodeError):
         result.update(status="integrity_failed", reason_code="public_payload_integrity_failure")
         return result
+
+
+PAPER_MARK_CONTRACT = "nexus.product-paper-market-display.v1"
+MAX_PAPER_MARK_SYMBOLS = 8
+MAX_PAPER_MARK_AGE_SECONDS = 120
+
+
+def probe_public_linear_marks(
+    *,
+    symbols: list[str] | tuple[str, ...],
+    fetcher: Callable[[str, float], bytes] = _download_public,
+    now_ms: int | None = None,
+) -> dict[str, Any]:
+    """Fresh Bybit public mark prices for Demo display only.
+
+    The result is never eligible for signal generation, deterministic risk,
+    Paper execution, registry promotion or Live trading. All requested symbols
+    must validate as fresh or the full mark overlay fails closed.
+    """
+    if not isinstance(symbols, (list, tuple)):
+        raise MarketProbeInputError("paper mark symbols must be a bounded sequence")
+    unique: list[str] = []
+    for symbol in symbols:
+        if (
+            not isinstance(symbol, str)
+            or not 4 <= len(symbol) <= 20
+            or not symbol.isascii()
+            or not symbol.isalnum()
+            or symbol.upper() != symbol
+        ):
+            raise MarketProbeInputError("invalid paper mark symbol")
+        if symbol not in unique:
+            unique.append(symbol)
+    if len(unique) > MAX_PAPER_MARK_SYMBOLS:
+        raise MarketProbeInputError("too many paper mark symbols")
+    if now_ms is None:
+        now_ms = int(time.time() * 1000)
+    if type(now_ms) is not int or now_ms <= 0:
+        raise MarketProbeInputError("invalid paper mark clock")
+
+    result: dict[str, Any] = {
+        "contract_version": PAPER_MARK_CONTRACT,
+        "paper_only": True,
+        "read_only": True,
+        "display_only": True,
+        "execution_eligible": False,
+        "risk_eligible": False,
+        "dataset_written": False,
+        "live_trading_authority": False,
+        "source": "Bybit",
+        "market_category": "linear",
+        "checked_at_utc": _utc(now_ms),
+        "status": "not_needed_flat" if not unique else "unverified",
+        "reason_code": "no_open_positions" if not unique else "not_checked",
+        "http_status": None,
+        "marks": {},
+    }
+    if not unique:
+        return result
+
+    marks: dict[str, Any] = {}
+    for symbol in unique:
+        url = (
+            "https://api.bybit.com/v5/market/tickers"
+            f"?category=linear&symbol={symbol}"
+        )
+        try:
+            raw = fetcher(url, 4.0)
+        except HTTPError as exc:
+            result.update(
+                status="unavailable",
+                http_status=exc.code,
+                reason_code={
+                    403: "public_http_403_access_denied",
+                    429: "public_http_429_rate_limited",
+                }.get(exc.code, "public_http_failure"),
+                marks={},
+            )
+            return result
+        except (URLError, TimeoutError, socket.timeout, ConnectionError, OSError):
+            result.update(
+                status="unavailable",
+                reason_code="public_transport_unavailable",
+                marks={},
+            )
+            return result
+        except ValueError:
+            result.update(
+                status="integrity_failed",
+                reason_code="public_payload_integrity_failure",
+                marks={},
+            )
+            return result
+
+        try:
+            if not isinstance(raw, bytes) or len(raw) > MAX_RESPONSE:
+                raise ValueError("unbounded or invalid response bytes")
+            data = json.loads(raw.decode("utf-8"))
+            server_ms = data.get("time")
+            if (
+                not isinstance(data, dict)
+                or data.get("retCode") != 0
+                or isinstance(server_ms, bool)
+                or not isinstance(server_ms, int)
+                or server_ms <= 0
+            ):
+                raise ValueError("invalid Bybit public ticker response")
+            age_seconds = (now_ms - server_ms) / 1000.0
+            if not -10 <= age_seconds <= MAX_PAPER_MARK_AGE_SECONDS:
+                raise ValueError("stale public ticker timestamp")
+            body = data.get("result")
+            rows = body.get("list") if isinstance(body, dict) else None
+            if (
+                not isinstance(body, dict)
+                or body.get("category") != "linear"
+                or not isinstance(rows, list)
+                or len(rows) != 1
+                or not isinstance(rows[0], dict)
+                or rows[0].get("symbol") != symbol
+            ):
+                raise ValueError("ticker category/symbol mismatch")
+            mark = _price(rows[0].get("markPrice"))
+            marks[symbol] = {
+                "symbol": symbol,
+                "mark_price": str(mark),
+                "mark_time_utc": _utc(server_ms),
+                "age_seconds": max(age_seconds, 0.0),
+            }
+        except (ValueError, TypeError, KeyError, OverflowError, UnicodeDecodeError, json.JSONDecodeError):
+            result.update(
+                status="integrity_failed",
+                reason_code="public_payload_integrity_failure",
+                marks={},
+            )
+            return result
+
+    result.update(
+        status="fresh",
+        reason_code="public_mark_probe_passed",
+        marks=marks,
+    )
+    return result
