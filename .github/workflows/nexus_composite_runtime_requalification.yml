@@ -17,29 +17,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  contract-test:
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          ref: ${{ github.sha }}
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
-        with:
-          python-version: "3.12"
-          cache: pip
-      - run: python -m pip install -r requirements-dev.lock
-      - run: python -m pip check
-      - name: Verify composite fresh VAL-40 contracts
-        run: >-
-          python -m pytest -q
-          tests/test_nexus_composite_runtime_requalification.py
-          tests/test_nexus_composite_runtime_requalification_workflow.py
-          tests/test_nexus_composite_validation_candidate.py
-          tests/test_nexus_composite_validation_candidate_transport.py
-
   runtime-requalification:
-    needs: contract-test
     runs-on: nexus-bybit-network
     timeout-minutes: 45
     outputs:
@@ -354,7 +332,7 @@ jobs:
           print(f"NEXUS_COMPOSITE_VAL40_EVIDENCE_UTF16_ESTIMATE={estimated_utf16_bytes}")
           PY
 
-  publish-evidence:
+  contract-test:
     needs: runtime-requalification
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -376,6 +354,23 @@ jobs:
       EVIDENCE_CHUNK_10: ${{ needs.runtime-requalification.outputs.evidence_chunk_10 }}
       EVIDENCE_CHUNK_11: ${{ needs.runtime-requalification.outputs.evidence_chunk_11 }}
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements-dev.lock
+      - run: python -m pip check
+      - name: Verify composite fresh VAL-40 contracts
+        run: >-
+          python -m pytest -q
+          tests/test_nexus_composite_runtime_requalification.py
+          tests/test_nexus_composite_runtime_requalification_workflow.py
+          tests/test_nexus_composite_validation_candidate.py
+          tests/test_nexus_composite_validation_candidate_transport.py
+
       - name: Restore exact physical evidence from bounded job outputs
         shell: bash
         run: |
