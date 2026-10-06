@@ -17,29 +17,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  contract-test:
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          ref: ${{ github.sha }}
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
-        with:
-          python-version: "3.12"
-          cache: pip
-      - run: python -m pip install -r requirements-dev.lock
-      - run: python -m pip check
-      - name: Verify composite fresh VAL-40 contracts
-        run: >-
-          python -m pytest -q
-          tests/test_nexus_composite_runtime_requalification.py
-          tests/test_nexus_composite_runtime_requalification_workflow.py
-          tests/test_nexus_composite_validation_candidate.py
-          tests/test_nexus_composite_validation_candidate_transport.py
-
   runtime-requalification:
-    needs: contract-test
     runs-on: nexus-bybit-network
     timeout-minutes: 45
     env:
@@ -326,3 +304,121 @@ jobs:
             printf 'NEXUS_COMPOSITE_VAL40_EVIDENCE_CHUNK_%03d=%s\n' "$i" "$chunk"
             i=$(( i + 1 ))
           done
+
+  contract-test:
+    needs: runtime-requalification
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements-dev.lock
+      - run: python -m pip check
+      - name: Verify composite fresh VAL-40 contracts
+        run: >-
+          python -m pytest -q
+          tests/test_nexus_composite_runtime_requalification.py
+          tests/test_nexus_composite_runtime_requalification_workflow.py
+          tests/test_nexus_composite_validation_candidate.py
+          tests/test_nexus_composite_validation_candidate_transport.py
+
+      - name: Reconstruct and verify exact physical evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/nexus_composite_runtime_requalification build/publisher
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs?filter=latest&per_page=100" > build/publisher/jobs.json
+          python - build/publisher/jobs.json build/publisher/job-id.txt <<'PY'
+          import json, sys
+          rows = json.load(open(sys.argv[1], encoding="utf-8")).get("jobs", [])
+          matches = [
+              row for row in rows
+              if row.get("name") == "runtime-requalification"
+              and row.get("conclusion") == "success"
+              and type(row.get("id")) is int
+          ]
+          if len(matches) != 1:
+              raise SystemExit(f"expected one successful physical runtime job, got {len(matches)}")
+          open(sys.argv[2], "w", encoding="ascii").write(str(matches[0]["id"]))
+          PY
+
+          gh api "repos/$GITHUB_REPOSITORY/actions/jobs/$(cat build/publisher/job-id.txt)/logs" > build/publisher/runtime.log
+          python - build/publisher/runtime.log build/nexus_composite_runtime_requalification <<'PY'
+          import base64, hashlib, io, pathlib, re, stat, sys, zipfile
+
+          log = pathlib.Path(sys.argv[1]).read_text(encoding="utf-8", errors="strict")
+          output = pathlib.Path(sys.argv[2])
+          output.mkdir(parents=True, exist_ok=True)
+
+          def one(pattern: str, label: str) -> str:
+              values = re.findall(pattern, log, flags=re.MULTILINE)
+              if len(values) != 1:
+                  raise SystemExit(f"{label} marker missing or ambiguous: {len(values)}")
+              return values[0]
+
+          transport = one(r"NEXUS_COMPOSITE_VAL40_EVIDENCE_TRANSPORT=(bounded-job-log-v2)", "transport")
+          expected_sha = one(r"NEXUS_COMPOSITE_VAL40_EVIDENCE_SHA256=([0-9a-f]{64})", "sha256")
+          expected_size = int(one(r"NEXUS_COMPOSITE_VAL40_EVIDENCE_SIZE=([1-9][0-9]{0,6})", "size"))
+          chunk_count = int(one(r"NEXUS_COMPOSITE_VAL40_EVIDENCE_CHUNK_COUNT=([1-9][0-9]?)", "chunk_count"))
+          if transport != "bounded-job-log-v2" or expected_size > 500000 or not (1 <= chunk_count <= 16):
+              raise SystemExit("physical evidence bounds rejected")
+
+          rows = re.findall(
+              r"NEXUS_COMPOSITE_VAL40_EVIDENCE_CHUNK_([0-9]{3})=([A-Za-z0-9+/=]+)",
+              log,
+              flags=re.MULTILINE,
+          )
+          if len(rows) != chunk_count:
+              raise SystemExit("physical evidence chunk set is incomplete or duplicated")
+          chunks = {}
+          for raw_index, value in rows:
+              index = int(raw_index)
+              if index in chunks:
+                  raise SystemExit("duplicate physical evidence chunk")
+              chunks[index] = value
+          if sorted(chunks) != list(range(chunk_count)):
+              raise SystemExit("physical evidence chunk sequence is not contiguous")
+
+          encoded = "".join(chunks[index] for index in range(chunk_count))
+          try:
+              archive = base64.b64decode(encoded, validate=True)
+          except Exception as exc:
+              raise SystemExit("physical evidence base64 is invalid") from exc
+          if len(archive) != expected_size or hashlib.sha256(archive).hexdigest() != expected_sha:
+              raise SystemExit("physical evidence size or digest mismatch")
+
+          with zipfile.ZipFile(io.BytesIO(archive)) as zf:
+              infos = zf.infolist()
+              names = [info.filename for info in infos]
+              if sorted(names) != ["runtime-requalification.json", "verification.json"]:
+                  raise SystemExit(f"unexpected physical evidence members: {names}")
+              for info in infos:
+                  path = pathlib.PurePosixPath(info.filename)
+                  mode = (info.external_attr >> 16) & 0xFFFF
+                  if (
+                      path.is_absolute()
+                      or ".." in path.parts
+                      or stat.S_ISLNK(mode)
+                      or (info.flag_bits & 0x1)
+                      or info.file_size > 4_000_000
+                  ):
+                      raise SystemExit("unsafe physical evidence member")
+                  (output / info.filename).write_bytes(zf.read(info))
+          print("physical_evidence_reconstruction=PASS", expected_sha, expected_size, chunk_count)
+          PY
+
+      - name: Publish official bounded fresh VAL-40 evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-composite-runtime-requalification-${{ github.run_id }}
+          path: build/nexus_composite_runtime_requalification
+          if-no-files-found: error
+          retention-days: 14
+
