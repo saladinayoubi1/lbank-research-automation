@@ -203,3 +203,53 @@ def test_strategy_qa_executor_is_bounded_specialized_worker_not_generic_fallback
     assert result["evidence"]["failure_class"] == "strategy_independent_qa_failed"
     assert result["evidence"]["paper_execution_authority"] is False
     assert result["evidence"]["live_trading_authority"] is False
+
+
+def test_composite_qa_executor_uses_specialized_replay_and_exact_lease(monkeypatch, tmp_path):
+    import scripts.agent_task_executor as executor
+    receipt = {
+        "schema_version": "nexus.composite-runtime-qa-receipt.v1",
+        "qa_lease_id": "composite-qa-lease",
+        "independent_qa_complete": True,
+        "qualification_authority": False,
+        "registry_mutation_authority": False,
+        "runtime_activation_authority": False,
+        "paper_execution_authority": False,
+        "automatic_strategy_promotion": False,
+        "live_trading_authority": False,
+        "qa_receipt_digest": "a" * 64,
+    }
+    calls = []
+    monkeypatch.setattr(
+        "nexus_composite_runtime_independent_qa.run_independent_qa",
+        lambda task, **kwargs: calls.append((task, kwargs)) or dict(receipt),
+    )
+    monkeypatch.setenv("GITHUB_SHA", "b" * 40)
+    payload = {
+        "task_id": "COMPOSITE-QA-" + "c" * 64,
+        "worker_id": "qa-verifier-agent",
+        "phase": 7,
+        "lease_id": "composite-qa-lease",
+        "composite_qa_task": {"source_sha": "b" * 40},
+    }
+    outcome, evidence = executor.deterministic_execution(payload, "github-cloud")
+    assert outcome == "success"
+    assert evidence == receipt
+    assert calls[0][1]["lease_id"] == "composite-qa-lease"
+    assert calls[0][1]["execution_source_sha"] == "b" * 40
+
+
+def test_composite_qa_executor_fails_closed_on_wrong_transport():
+    import scripts.agent_task_executor as executor
+    payload = {
+        "task_id": "COMPOSITE-QA-" + "c" * 64,
+        "worker_id": "qa-verifier-agent",
+        "phase": 7,
+        "lease_id": "composite-qa-lease",
+        "composite_qa_task": {"source_sha": "b" * 40},
+    }
+    outcome, evidence = executor.deterministic_execution(payload, "windows")
+    assert outcome == "failure"
+    assert evidence["failure_class"] == "composite_runtime_qa_lease_worker_phase_or_transport_mismatch"
+    assert evidence["paper_execution_authority"] is False
+    assert evidence["live_trading_authority"] is False
