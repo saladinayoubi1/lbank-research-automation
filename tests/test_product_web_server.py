@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 from product_runtime import ProductRuntime
-from product_web_server import PRODUCT_UI_ROOT, _mission_snapshot, build_handler
+from product_web_server import PRODUCT_UI_ROOT, _demo_public_mark_client, _mission_snapshot, build_handler
 from web_dashboard import GatewayConfig
 
 
@@ -336,6 +336,21 @@ def test_shared_terminal_missing_snapshot_is_not_zero_balance(product_server):
         assert _request(port,'GET',path)[0]==200
     assert _request(port,'GET','/api/product/paper/shared/export.csv?table=../../state')[0]==400
     assert _request(port,'POST','/api/product/paper/shared',{})[0] in (400,403,404,405)
+
+
+def test_demo_public_mark_client_prioritizes_approved_linear_host(monkeypatch):
+    monkeypatch.delenv("NEXUS_BYBIT_PUBLIC_REGION", raising=False)
+    monkeypatch.delenv("RUNNER_NAME", raising=False)
+    client, transport = _demo_public_mark_client()
+    assert client.bases[:2] == ["https://api.bytick.com", "https://api.bybit.com"]
+    assert client.attempts == 2
+    assert client.timeout == 4.0
+    assert transport == "bybit_official_linear_public"
+
+    monkeypatch.setenv("NEXUS_BYBIT_PUBLIC_REGION", "EEA")
+    regional, _ = _demo_public_mark_client()
+    assert regional.bases[:2] == ["https://api.bytick.com", "https://api.bybit.com"]
+    assert regional.bases[2:] == ["https://api.bybit.eu"]
 
 
 def test_shared_live_terminal_route_is_read_only(product_server, monkeypatch):
