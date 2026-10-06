@@ -201,3 +201,75 @@ def test_composite_val40_transport_import_is_control_plane_lightweight():
     )
     assert proc.returncode == 0, proc.stderr
     assert "lightweight_composite_val40_transport=PASS" in proc.stdout
+
+
+def test_legacy_pre_val40_tasks_are_explicitly_skipped_without_artifact_access(tmp_path, monkeypatch):
+    monkeypatch.setenv("GITHUB_REPOSITORY", "saladinayoubi1/lbank-research-automation")
+    runtime = {"tasks": [_task("P7-RESEARCH-COMPOSITE-014", "legacy-lease")]}
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("legacy pre-VAL40 task must not access producer artifact")
+
+    result = transport.sync_verified_candidates(
+        runtime,
+        tmp_path,
+        api=forbidden,
+        downloader=forbidden,
+        builder=forbidden,
+        verifier=forbidden,
+    )
+    assert result["processed"] == 1
+    assert result["stored"] == 0
+    assert result["legacy_skipped"] == 1
+    assert result["eligible"] == 0
+    assert result["rows"] == [{
+        "task_id": "P7-RESEARCH-COMPOSITE-014",
+        "status": "LEGACY_PRE_VAL40_CONTRACT",
+        "eligible": False,
+        "paper_only": True,
+        "live": False,
+    }]
+    assert not list(tmp_path.rglob("candidate.json"))
+
+
+def test_modern_val40_builder_failure_remains_fatal(tmp_path, monkeypatch):
+    monkeypatch.setenv("GITHUB_REPOSITORY", "saladinayoubi1/lbank-research-automation")
+    blob, _receipt, _report = _zip()
+    runtime = {"tasks": [_task("P7-RESEARCH-COMPOSITE-015", "modern-lease")]}
+
+    def api(method, url, payload):
+        return {
+            "artifacts": [{
+                "id": 55,
+                "name": "nexus-agent-research-modern-lease",
+                "expired": False,
+                "size_in_bytes": len(blob),
+            }]
+        }
+
+    def strict_failure(*args, **kwargs):
+        raise ValueError("modern proof rejected")
+
+    with pytest.raises(ValueError, match="modern proof rejected"):
+        transport.sync_verified_candidates(
+            runtime,
+            tmp_path,
+            api=api,
+            downloader=lambda _id: blob,
+            builder=strict_failure,
+        )
+    assert not list(tmp_path.rglob("candidate.json"))
+
+
+def test_unknown_composite_task_id_is_not_coerced_into_modern_scope(tmp_path, monkeypatch):
+    monkeypatch.setenv("GITHUB_REPOSITORY", "saladinayoubi1/lbank-research-automation")
+    task = _task("P7-RESEARCH-COMPOSITE-X15", "bad-lease")
+    result = transport.sync_verified_candidates(
+        {"tasks": [task]},
+        tmp_path,
+        api=lambda *args: (_ for _ in ()).throw(AssertionError("unexpected artifact lookup")),
+    )
+    assert result["processed"] == 0
+    assert result["stored"] == 0
+    assert result["legacy_skipped"] == 0
+    assert result["eligible"] == 0

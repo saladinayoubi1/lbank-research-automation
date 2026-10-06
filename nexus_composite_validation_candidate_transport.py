@@ -29,6 +29,8 @@ from nexus_composite_validation_candidate import build_candidate, digest, verify
 
 ARTIFACT_PREFIX = "nexus-agent-research-"
 TASK_PREFIX = "P7-RESEARCH-COMPOSITE-"
+MIN_VAL40_TASK_SEQUENCE = 15
+_TASK_ID = re.compile(r"^P7-RESEARCH-COMPOSITE-(\d{3})$")
 MAX_ARCHIVE_BYTES = 8_000_000
 MAX_UNCOMPRESSED_BYTES = 20_000_000
 MAX_ENTRIES = 64
@@ -264,8 +266,9 @@ def sync_verified_candidates(
         task_id = str(task.get("id", ""))
         qa = task.get("verification_evidence")
         production = task.get("result_evidence")
+        match = _TASK_ID.fullmatch(task_id)
         if (
-            not task_id.startswith(TASK_PREFIX)
+            match is None
             or task.get("status") != "DONE"
             or task.get("producer") != "research-agent"
             or task.get("verifier") != "qa-verifier-agent"
@@ -281,6 +284,17 @@ def sync_verified_candidates(
             or production.get("live_enabled") is not False
         ):
             continue
+        sequence = int(match.group(1))
+        if sequence < MIN_VAL40_TASK_SEQUENCE:
+            rows.append({
+                "task_id": task_id,
+                "status": "LEGACY_PRE_VAL40_CONTRACT",
+                "eligible": False,
+                "paper_only": True,
+                "live": False,
+            })
+            continue
+
         lease_id = str(task.get("research_producer_lease_id", ""))
         artifact_id = _artifact_id_for_lease(lease_id, api=api)
         if artifact_id is None:
@@ -312,6 +326,9 @@ def sync_verified_candidates(
         "schema_version": "nexus.composite-validation-candidate-sync.v1",
         "processed": len(rows),
         "stored": sum(row["status"] == "STORED" for row in rows),
+        "legacy_skipped": sum(
+            row["status"] == "LEGACY_PRE_VAL40_CONTRACT" for row in rows
+        ),
         "eligible": sum(row.get("eligible") is True for row in rows),
         "rows": rows,
         "qualification_authority": False,
