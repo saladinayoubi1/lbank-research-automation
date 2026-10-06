@@ -202,6 +202,10 @@ def test_mandatory_fifth_discovery_cache_uses_exact_QA_not_standalone_artifact()
     )[1].split("- name: Bind canonical archive and novelty frontier as one Research lease input", 1)[0]
 
     assert "scripts/nexus_qa_attested_discovery_frontier.py" in frontier
+    assert "for attempt in 1 2 3" in frontier
+    assert 'test "$frontier_resolved" = true' in frontier
+    assert "qa_frontier_transport_retry=" in frontier
+    assert "sleep $((attempt * 5))" in frontier
     assert "ledger_digest" in frontier
     assert "nexus-composite-inputs-v2-${{ github.sha }}-${{ steps.agent-frontier.outputs.ledger_digest }}" in cache_contract
     assert "cp build/agent-frontier/previous-ledger.json build/agent-research-cache/previous-ledger.json" in segment
