@@ -375,3 +375,38 @@ def test_materialized_qa_failure_blocks_instead_of_generic_second_stage(monkeypa
     assert task["status"]=="BLOCKED"
     assert task["assigned_worker"] is None
     assert task["blocked_reason"].startswith("independent Strategy QA failed")
+
+
+def test_validate_config_accepts_dispatch_disabled_composite_verifier_task():
+    config = {
+        "phase": 7,
+        "policy": {"max_parallel_tasks": 2},
+        "workers": [{
+            "id": "qa-verifier-agent",
+            "capabilities": ["data_validation"],
+            "resources": ["github-cloud"],
+            "authority_max": 3,
+            "enabled": True,
+            "verifier": True,
+            "max_concurrent_tasks": 1,
+        }],
+        "tasks": [{
+            "id": "COMPOSITE-QA-" + "a" * 64,
+            "phase": 7,
+            "gate": 17,
+            "status": "BLOCKED",
+            "dependencies": [],
+            "required_capabilities": ["data_validation"],
+            "required_resources": ["github-cloud"],
+            "authority": 2,
+            "qa_verifier_only": True,
+            "qa_dispatch_enabled": False,
+            "required_verifier": "qa-verifier-agent",
+            "qa_handoff_task": {
+                "task_kind": "composite_runtime_independent_qa",
+                "system_map_node": "QA-41",
+                "required_verifier": "qa-verifier-agent",
+            },
+        }],
+    }
+    am.validate_config(config)
