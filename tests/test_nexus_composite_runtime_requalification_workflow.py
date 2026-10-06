@@ -71,3 +71,26 @@ def test_contract_job_covers_candidate_transport_and_requalification() -> None:
     assert "tests/test_nexus_composite_validation_candidate.py" in text
     assert "tests/test_nexus_composite_validation_candidate_transport.py" in text
     assert "if-no-files-found: error" in text
+
+
+def test_physical_runtime_job_is_javascript_action_free() -> None:
+    text = _text()
+    physical = text.split("  runtime-requalification:", 1)[1].split("  publish-evidence:", 1)[0]
+    assert "runs-on: nexus-bybit-network" in physical
+    assert "uses:" not in physical
+    assert "physical_source_transport=github-api-exact-sha" in physical
+    assert "No pre-provisioned CPython 3.12" in physical
+    assert "actions/checkout" not in physical
+    assert "actions/setup-python" not in physical
+    assert "actions/upload-artifact" not in physical
+
+
+def test_physical_evidence_is_published_only_from_hosted_job() -> None:
+    text = _text()
+    assert "  publish-evidence:" in text
+    hosted = text.split("  publish-evidence:", 1)[1]
+    assert "runs-on: ubuntu-latest" in hosted
+    assert "Independently verify published VAL-40 evidence" in hosted
+    assert "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a" in hosted
+    assert "EVIDENCE_SHA256" in hosted
+    assert "sha256sum -c -" in hosted
