@@ -42,6 +42,23 @@ jobs:
     needs: contract-test
     runs-on: nexus-bybit-network
     timeout-minutes: 45
+    outputs:
+      evidence_sha256: ${{ steps.package.outputs.evidence_sha256 }}
+      evidence_size: ${{ steps.package.outputs.evidence_size }}
+      evidence_b64_len: ${{ steps.package.outputs.evidence_b64_len }}
+      evidence_chunk_count: ${{ steps.package.outputs.evidence_chunk_count }}
+      evidence_chunk_0: ${{ steps.package.outputs.evidence_chunk_0 }}
+      evidence_chunk_1: ${{ steps.package.outputs.evidence_chunk_1 }}
+      evidence_chunk_2: ${{ steps.package.outputs.evidence_chunk_2 }}
+      evidence_chunk_3: ${{ steps.package.outputs.evidence_chunk_3 }}
+      evidence_chunk_4: ${{ steps.package.outputs.evidence_chunk_4 }}
+      evidence_chunk_5: ${{ steps.package.outputs.evidence_chunk_5 }}
+      evidence_chunk_6: ${{ steps.package.outputs.evidence_chunk_6 }}
+      evidence_chunk_7: ${{ steps.package.outputs.evidence_chunk_7 }}
+      evidence_chunk_8: ${{ steps.package.outputs.evidence_chunk_8 }}
+      evidence_chunk_9: ${{ steps.package.outputs.evidence_chunk_9 }}
+      evidence_chunk_10: ${{ steps.package.outputs.evidence_chunk_10 }}
+      evidence_chunk_11: ${{ steps.package.outputs.evidence_chunk_11 }}
     env:
       GH_TOKEN: ${{ github.token }}
       TRIGGER_RUN_ID: ${{ inputs.coordinator_run_id }}
@@ -290,20 +307,137 @@ jobs:
           print("composite_runtime_requalification=PASS", result["decision"], result["candidate_digest"], result["requalification_digest"])
           PY
 
-      - name: Publish bounded physical evidence marker
+      - name: Package bounded physical evidence for hosted publication
+        id: package
         shell: bash
         run: |
           set -euo pipefail
           test -f "$OUTPUT_ROOT/runtime-requalification.json"
           test -f "$OUTPUT_ROOT/verification.json"
           tar -C "$OUTPUT_ROOT" -czf "$WORK_ROOT/evidence.tar.gz" runtime-requalification.json verification.json
-          evidence_size="$(wc -c < "$WORK_ROOT/evidence.tar.gz")"
-          test "$evidence_size" -gt 0
-          test "$evidence_size" -le 500000
-          evidence_sha256="$(sha256sum "$WORK_ROOT/evidence.tar.gz" | awk '{print $1}')"
-          evidence_b64="$(base64 -w0 "$WORK_ROOT/evidence.tar.gz")"
-          test "${#evidence_b64}" -le 700000
-          echo "NEXUS_COMPOSITE_VAL40_EVIDENCE_TRANSPORT=bounded-job-log-v1"
-          echo "NEXUS_COMPOSITE_VAL40_EVIDENCE_SHA256=$evidence_sha256"
-          echo "NEXUS_COMPOSITE_VAL40_EVIDENCE_SIZE=$evidence_size"
-          echo "NEXUS_COMPOSITE_VAL40_EVIDENCE_B64=$evidence_b64"
+          "$PYTHON_BIN" - "$WORK_ROOT/evidence.tar.gz" "$GITHUB_OUTPUT" <<'PY'
+          import base64
+          import hashlib
+          import sys
+          from pathlib import Path
+
+          archive = Path(sys.argv[1])
+          raw = archive.read_bytes()
+          if not 0 < len(raw) <= 250_000:
+              raise RuntimeError("physical VAL-40 evidence exceeds bounded handoff size")
+          encoded = base64.b64encode(raw).decode("ascii")
+          if len(encoded) > 340_000:
+              raise RuntimeError("physical VAL-40 evidence base64 exceeds bound")
+          chunk_size = 30_000
+          chunks = [encoded[i:i + chunk_size] for i in range(0, len(encoded), chunk_size)]
+          if not 1 <= len(chunks) <= 12:
+              raise RuntimeError("physical VAL-40 evidence chunk count exceeds bound")
+          estimated_utf16_bytes = len(encoded) * 2 + 8_192
+          if estimated_utf16_bytes > 1_048_576:
+              raise RuntimeError("physical VAL-40 evidence exceeds GitHub job-output bound")
+          lines = [
+              f"evidence_sha256={hashlib.sha256(raw).hexdigest()}",
+              f"evidence_size={len(raw)}",
+              f"evidence_b64_len={len(encoded)}",
+              f"evidence_chunk_count={len(chunks)}",
+          ]
+          lines.extend(
+              f"evidence_chunk_{index}={chunks[index] if index < len(chunks) else ''}"
+              for index in range(12)
+          )
+          with open(sys.argv[2], "a", encoding="utf-8") as handle:
+              handle.write("\n".join(lines) + "\n")
+          print("NEXUS_COMPOSITE_VAL40_EVIDENCE_TRANSPORT=bounded-chunked-job-output-v1")
+          print(f"NEXUS_COMPOSITE_VAL40_EVIDENCE_SHA256={hashlib.sha256(raw).hexdigest()}")
+          print(f"NEXUS_COMPOSITE_VAL40_EVIDENCE_SIZE={len(raw)}")
+          print(f"NEXUS_COMPOSITE_VAL40_EVIDENCE_CHUNKS={len(chunks)}")
+          print(f"NEXUS_COMPOSITE_VAL40_EVIDENCE_UTF16_ESTIMATE={estimated_utf16_bytes}")
+          PY
+
+  publish-evidence:
+    needs: runtime-requalification
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      EVIDENCE_SHA256: ${{ needs.runtime-requalification.outputs.evidence_sha256 }}
+      EVIDENCE_SIZE: ${{ needs.runtime-requalification.outputs.evidence_size }}
+      EVIDENCE_B64_LEN: ${{ needs.runtime-requalification.outputs.evidence_b64_len }}
+      EVIDENCE_CHUNK_COUNT: ${{ needs.runtime-requalification.outputs.evidence_chunk_count }}
+      EVIDENCE_CHUNK_0: ${{ needs.runtime-requalification.outputs.evidence_chunk_0 }}
+      EVIDENCE_CHUNK_1: ${{ needs.runtime-requalification.outputs.evidence_chunk_1 }}
+      EVIDENCE_CHUNK_2: ${{ needs.runtime-requalification.outputs.evidence_chunk_2 }}
+      EVIDENCE_CHUNK_3: ${{ needs.runtime-requalification.outputs.evidence_chunk_3 }}
+      EVIDENCE_CHUNK_4: ${{ needs.runtime-requalification.outputs.evidence_chunk_4 }}
+      EVIDENCE_CHUNK_5: ${{ needs.runtime-requalification.outputs.evidence_chunk_5 }}
+      EVIDENCE_CHUNK_6: ${{ needs.runtime-requalification.outputs.evidence_chunk_6 }}
+      EVIDENCE_CHUNK_7: ${{ needs.runtime-requalification.outputs.evidence_chunk_7 }}
+      EVIDENCE_CHUNK_8: ${{ needs.runtime-requalification.outputs.evidence_chunk_8 }}
+      EVIDENCE_CHUNK_9: ${{ needs.runtime-requalification.outputs.evidence_chunk_9 }}
+      EVIDENCE_CHUNK_10: ${{ needs.runtime-requalification.outputs.evidence_chunk_10 }}
+      EVIDENCE_CHUNK_11: ${{ needs.runtime-requalification.outputs.evidence_chunk_11 }}
+    steps:
+      - name: Restore exact physical evidence from bounded job outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf build/nexus_composite_runtime_requalification build/evidence.tar.gz
+          mkdir -p build/nexus_composite_runtime_requalification
+          python - <<'PY'
+          import base64
+          import hashlib
+          import json
+          import os
+          import tarfile
+          from pathlib import Path, PurePosixPath
+
+          if not os.environ["EVIDENCE_SHA256"] or len(os.environ["EVIDENCE_SHA256"]) != 64:
+              raise RuntimeError("physical evidence SHA256 is malformed")
+          size = int(os.environ["EVIDENCE_SIZE"])
+          encoded_len = int(os.environ["EVIDENCE_B64_LEN"])
+          count = int(os.environ["EVIDENCE_CHUNK_COUNT"])
+          if not 0 < size <= 250_000 or not 0 < encoded_len <= 340_000 or not 1 <= count <= 12:
+              raise RuntimeError("physical evidence handoff dimensions are invalid")
+          chunks = [os.environ[f"EVIDENCE_CHUNK_{index}"] for index in range(12)]
+          if any(not chunk or len(chunk) > 30_000 for chunk in chunks[:count]):
+              raise RuntimeError("physical evidence chunk is missing or oversized")
+          if any(chunks[count:]):
+              raise RuntimeError("physical evidence has unexpected trailing chunks")
+          encoded = "".join(chunks[:count])
+          if len(encoded) != encoded_len:
+              raise RuntimeError("physical evidence base64 length mismatch")
+          raw = base64.b64decode(encoded.encode("ascii"), validate=True)
+          if len(raw) != size or hashlib.sha256(raw).hexdigest() != os.environ["EVIDENCE_SHA256"]:
+              raise RuntimeError("physical evidence SHA256 or size mismatch")
+          archive_path = Path("build/evidence.tar.gz")
+          archive_path.write_bytes(raw)
+          output = Path("build/nexus_composite_runtime_requalification")
+          expected = {"runtime-requalification.json", "verification.json"}
+          with tarfile.open(archive_path, "r:gz") as archive:
+              members = archive.getmembers()
+              names = {member.name for member in members}
+              if len(members) != 2 or names != expected:
+                  raise RuntimeError("physical evidence archive members are not exact")
+              for member in members:
+                  name = PurePosixPath(member.name)
+                  if name.is_absolute() or len(name.parts) != 1 or not member.isfile():
+                      raise RuntimeError("physical evidence archive member is unsafe")
+                  source = archive.extractfile(member)
+                  if source is None:
+                      raise RuntimeError("physical evidence archive member is unreadable")
+                  target = output / member.name
+                  with source, target.open("wb") as handle:
+                      handle.write(source.read())
+          for name in expected:
+              value = json.loads((output / name).read_text(encoding="utf-8"))
+              if not isinstance(value, dict):
+                  raise RuntimeError(f"{name} is not a JSON object")
+          print("hosted_physical_val40_evidence_restore=PASS")
+          PY
+
+      - name: Publish bounded fresh VAL-40 evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-composite-runtime-requalification-${{ github.run_id }}
+          path: build/nexus_composite_runtime_requalification
+          if-no-files-found: error
+          retention-days: 14
