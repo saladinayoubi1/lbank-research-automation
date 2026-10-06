@@ -45,42 +45,106 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       TRIGGER_RUN_ID: ${{ inputs.coordinator_run_id }}
-      OUTPUT_ROOT: build/nexus_composite_runtime_requalification
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          ref: ${{ github.sha }}
+      - name: Prepare exact source and pre-provisioned Python without JavaScript actions
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_root="$RUNNER_TEMP/nexus-composite-val40-source-$GITHUB_RUN_ID"
+          work_root="$RUNNER_TEMP/nexus-composite-val40-work-$GITHUB_RUN_ID"
+          case "$source_root" in "$RUNNER_TEMP"/nexus-composite-val40-source-*) ;; *) exit 1;; esac
+          case "$work_root" in "$RUNNER_TEMP"/nexus-composite-val40-work-*) ;; *) exit 1;; esac
+          rm -rf "$source_root" "$work_root"
+          mkdir -p "$source_root" "$work_root"
 
-      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
-        with:
-          python-version: "3.12"
-          cache: pip
+          known_python="/opt/nexus-bybit-runner/_work/_tool/Python/3.12.14/x64/bin/python"
+          python_bin=""
+          if [ -x "$known_python" ]; then
+            python_bin="$known_python"
+          fi
+          if [ -z "$python_bin" ]; then
+            tool_root="${RUNNER_TOOL_CACHE:-/opt/nexus-bybit-runner/_work/_tool}"
+            if [ "$(basename "$tool_root")" = "Python" ]; then
+              python_root="$tool_root"
+            else
+              python_root="$tool_root/Python"
+            fi
+            python_bin="$(find "$python_root" -type f -path '*/3.12.*/x64/bin/python' 2>/dev/null | sort -V | tail -n 1 || true)"
+          fi
+          if [ -z "$python_bin" ] || [ ! -x "$python_bin" ]; then
+            echo "::error::No pre-provisioned CPython 3.12 exists on the physical runner."
+            exit 1
+          fi
+
+          github_api() {
+            curl --fail --silent --show-error               --retry 3 --retry-all-errors --connect-timeout 20 --max-time 900               --proto '=https' --proto-redir '=https' --location --max-redirs 3               -H 'Accept: application/vnd.github+json'               -H "Authorization: Bearer $GH_TOKEN"               -H 'X-GitHub-Api-Version: 2022-11-28'               "$1"
+          }
+
+          github_api "https://api.github.com/repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA" > "$work_root/source-commit.json"
+          "$python_bin" - "$work_root/source-commit.json" "$GITHUB_SHA" <<'PY'
+          import json, re, sys
+          row = json.load(open(sys.argv[1], encoding="utf-8"))
+          assert re.fullmatch(r"[0-9a-f]{40}", sys.argv[2])
+          assert row.get("sha") == sys.argv[2], (row.get("sha"), sys.argv[2])
+          PY
+
+          github_api "https://api.github.com/repos/$GITHUB_REPOSITORY/tarball/$GITHUB_SHA" > "$work_root/source.tar.gz"
+          test "$(wc -c < "$work_root/source.tar.gz")" -gt 10000
+          tar -xzf "$work_root/source.tar.gz" -C "$source_root" --strip-components=1
+          test -f "$source_root/requirements.lock"
+          test -f "$source_root/nexus_composite_runtime_requalification.py"
+
+          python_prefix="$("$python_bin" -c 'import sys; print(sys.prefix)')"
+          python_lib="$python_prefix/lib"
+          effective_ld_library_path="$python_lib"
+          if [ -n "${LD_LIBRARY_PATH:-}" ]; then
+            effective_ld_library_path="$python_lib:$LD_LIBRARY_PATH"
+          fi
+
+          echo "SOURCE_ROOT=$source_root" >> "$GITHUB_ENV"
+          echo "WORK_ROOT=$work_root" >> "$GITHUB_ENV"
+          echo "OUTPUT_ROOT=$work_root/output" >> "$GITHUB_ENV"
+          echo "PYTHON_BIN=$python_bin" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=$effective_ld_library_path" >> "$GITHUB_ENV"
+          echo "physical_source_transport=github-api-exact-sha"
+          echo "physical_source_sha=$GITHUB_SHA"
+
+      - name: Prepare isolated Python runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          venv_root="$WORK_ROOT/venv"
+          "$PYTHON_BIN" -m venv "$venv_root"
+          runtime_python="$venv_root/bin/python"
+          LD_LIBRARY_PATH="$LD_LIBRARY_PATH" "$runtime_python" -m pip install -r "$SOURCE_ROOT/requirements.lock"
+          LD_LIBRARY_PATH="$LD_LIBRARY_PATH" "$runtime_python" -m pip check
+          echo "PYTHON_BIN=$runtime_python" >> "$GITHUB_ENV"
 
       - name: Enforce physical Bybit Research execution plane
         shell: bash
         run: |
           set -euo pipefail
-          python - <<'PY'
+          "$PYTHON_BIN" - <<'PY'
           import os
           assert os.environ.get("RUNNER_OS") == "Linux"
           print("composite_val40_execution_plane=self-hosted:nexus-bybit-network")
           PY
-
-      - run: python -m pip install -r requirements.lock
-      - run: python -m pip check
 
       - name: Restore exact verified composite candidate evidence
         shell: bash
         run: |
           set -euo pipefail
           [[ "$TRIGGER_RUN_ID" =~ ^[1-9][0-9]{4,20}$ ]]
-          rm -rf build/coordinator-trigger "$OUTPUT_ROOT" build/coordinator-trigger.zip
-          mkdir -p build/coordinator-trigger "$OUTPUT_ROOT"
+          mkdir -p "$WORK_ROOT/coordinator-trigger" "$OUTPUT_ROOT"
 
-          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$TRIGGER_RUN_ID" > build/coordinator-run.json
-          python - <<'PY'
-          import json, os, re
-          run = json.load(open("build/coordinator-run.json", encoding="utf-8"))
+          github_api() {
+            curl --fail --silent --show-error               --retry 3 --retry-all-errors --connect-timeout 20 --max-time 900               --proto '=https' --proto-redir '=https' --location --max-redirs 3               -H 'Accept: application/vnd.github+json'               -H "Authorization: Bearer $GH_TOKEN"               -H 'X-GitHub-Api-Version: 2022-11-28'               "$1"
+          }
+
+          github_api "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs/$TRIGGER_RUN_ID" > "$WORK_ROOT/coordinator-run.json"
+          "$PYTHON_BIN" - "$WORK_ROOT/coordinator-run.json" <<'PY'
+          import json, re, sys
+          run = json.load(open(sys.argv[1], encoding="utf-8"))
           if (
               run.get("name") != "Fast Agent Coordinator"
               or run.get("conclusion") != "success"
@@ -92,13 +156,11 @@ jobs:
           print("coordinator_trigger=PASS", run["id"], run["head_sha"])
           PY
 
-          artifact_name="fast-agent-status-$TRIGGER_RUN_ID"
-          gh api             -H 'Accept: application/vnd.github+json'             "repos/$GITHUB_REPOSITORY/actions/runs/$TRIGGER_RUN_ID/artifacts?per_page=100"             > build/coordinator-artifacts.json
-
-          python - <<'PY'
-          import json, os
-          rows = json.load(open("build/coordinator-artifacts.json", encoding="utf-8")).get("artifacts", [])
-          expected = "fast-agent-status-" + os.environ["TRIGGER_RUN_ID"]
+          github_api "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs/$TRIGGER_RUN_ID/artifacts?per_page=100" > "$WORK_ROOT/coordinator-artifacts.json"
+          "$PYTHON_BIN" - "$WORK_ROOT/coordinator-artifacts.json" "$TRIGGER_RUN_ID" "$WORK_ROOT/coordinator-artifact-id.txt" <<'PY'
+          import json, sys
+          rows = json.load(open(sys.argv[1], encoding="utf-8")).get("artifacts", [])
+          expected = "fast-agent-status-" + sys.argv[2]
           matches = [
               row for row in rows
               if row.get("name") == expected
@@ -109,23 +171,38 @@ jobs:
           ]
           if len(matches) != 1:
               raise SystemExit("coordinator evidence artifact identity is missing or ambiguous")
-          open("build/coordinator-artifact-id.txt", "w", encoding="ascii").write(str(matches[0]["id"]))
+          open(sys.argv[3], "w", encoding="ascii").write(str(matches[0]["id"]))
           PY
 
-          gh api             "repos/$GITHUB_REPOSITORY/actions/artifacts/$(cat build/coordinator-artifact-id.txt)/zip"             > build/coordinator-trigger.zip
-          test "$(wc -c < build/coordinator-trigger.zip)" -le 8000000
-          unzip -q build/coordinator-trigger.zip -d build/coordinator-trigger
+          artifact_id="$(cat "$WORK_ROOT/coordinator-artifact-id.txt")"
+          github_api "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" > "$WORK_ROOT/coordinator-trigger.zip"
+          test "$(wc -c < "$WORK_ROOT/coordinator-trigger.zip")" -le 8000000
+          "$PYTHON_BIN" - "$WORK_ROOT/coordinator-trigger.zip" "$WORK_ROOT/coordinator-trigger" <<'PY'
+          import pathlib, stat, sys, zipfile
+          source = pathlib.Path(sys.argv[1])
+          target = pathlib.Path(sys.argv[2])
+          target.mkdir(parents=True, exist_ok=True)
+          with zipfile.ZipFile(source) as archive:
+              for info in archive.infolist():
+                  path = pathlib.PurePosixPath(info.filename)
+                  mode = (info.external_attr >> 16) & 0xFFFF
+                  if path.is_absolute() or ".." in path.parts or stat.S_ISLNK(mode) or (info.flag_bits & 0x1):
+                      raise SystemExit("coordinator artifact archive member is unsafe")
+              archive.extractall(target)
+          PY
 
       - name: Select exactly one independently verified eligible composite candidate
         shell: bash
         run: |
           set -euo pipefail
-          python - <<'PY'
-          import json
+          cd "$SOURCE_ROOT"
+          "$PYTHON_BIN" - "$WORK_ROOT/coordinator-trigger" "$WORK_ROOT" <<'PY'
+          import json, sys
           from pathlib import Path
           from nexus_composite_validation_candidate import verify_candidate
 
-          root = Path("build/coordinator-trigger/composite_val40_candidates")
+          root = Path(sys.argv[1]) / "composite_val40_candidates"
+          output = Path(sys.argv[2])
           if not root.is_dir():
               raise SystemExit("coordinator artifact has no durable composite VAL-40 candidate store")
 
@@ -166,38 +243,35 @@ jobs:
                   f"fresh composite requalification requires exactly one eligible candidate, got {len(eligible)}"
               )
           candidate_path, verification_path, candidate = eligible[0]
-          Path("build/candidate-path.txt").write_text(str(candidate_path), encoding="utf-8")
-          Path("build/candidate-verification-path.txt").write_text(str(verification_path), encoding="utf-8")
-          Path("build/candidate-digest.txt").write_text(candidate["candidate_digest"], encoding="ascii")
-          print(
-              "composite_candidate_selection=PASS",
-              candidate["research_task_id"],
-              candidate["candidate_digest"],
-          )
+          (output / "candidate-path.txt").write_text(str(candidate_path), encoding="utf-8")
+          (output / "candidate-verification-path.txt").write_text(str(verification_path), encoding="utf-8")
+          (output / "candidate-digest.txt").write_text(candidate["candidate_digest"], encoding="ascii")
+          print("composite_candidate_selection=PASS", candidate["research_task_id"], candidate["candidate_digest"])
           PY
 
       - name: Requalify exact composite candidate on fresh canonical Bybit data
         shell: bash
         run: |
           set -euo pipefail
-          python nexus_composite_runtime_requalification.py             --candidate "$(cat build/candidate-path.txt)"             --candidate-verification "$(cat build/candidate-verification-path.txt)"             --source-sha "$GITHUB_SHA"             --state-root "$OUTPUT_ROOT/state"             --output "$OUTPUT_ROOT/runtime-requalification.json"
+          cd "$SOURCE_ROOT"
+          "$PYTHON_BIN" nexus_composite_runtime_requalification.py             --candidate "$(cat "$WORK_ROOT/candidate-path.txt")"             --candidate-verification "$(cat "$WORK_ROOT/candidate-verification-path.txt")"             --source-sha "$GITHUB_SHA"             --state-root "$WORK_ROOT/state"             --output "$OUTPUT_ROOT/runtime-requalification.json"
 
       - name: Verify fresh composite VAL-40 authority boundary
         shell: bash
         run: |
           set -euo pipefail
-          python - <<'PY'
-          import json
+          cd "$SOURCE_ROOT"
+          "$PYTHON_BIN" - "$OUTPUT_ROOT/runtime-requalification.json" "$OUTPUT_ROOT/verification.json" <<'PY'
+          import json, sys
           from pathlib import Path
           from nexus_composite_runtime_requalification import verify_requalification
 
-          path = Path("build/nexus_composite_runtime_requalification/runtime-requalification.json")
+          path = Path(sys.argv[1])
           result = json.loads(path.read_text(encoding="utf-8"))
           verification = verify_requalification(result)
           if verification.get("decision") != "pass":
               raise SystemExit("fresh composite requalification verification rejected")
-          verification_path = path.with_name("verification.json")
-          verification_path.write_text(
+          Path(sys.argv[2]).write_text(
               json.dumps(verification, indent=2, sort_keys=True) + "\n",
               encoding="utf-8",
           )
@@ -213,16 +287,129 @@ jobs:
               or result.get("private_credentials_used") is not False
           ):
               raise SystemExit("fresh composite requalification widened authority")
-          print(
-              "composite_runtime_requalification=PASS",
-              result["decision"],
-              result["candidate_digest"],
-              result["requalification_digest"],
-          )
+          print("composite_runtime_requalification=PASS", result["decision"], result["candidate_digest"], result["requalification_digest"])
           PY
 
-      - name: Publish bounded fresh VAL-40 evidence
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - name: Publish bounded physical evidence marker
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "$OUTPUT_ROOT/runtime-requalification.json"
+          test -f "$OUTPUT_ROOT/verification.json"
+          tar -C "$OUTPUT_ROOT" -czf "$WORK_ROOT/evidence.tar.gz" runtime-requalification.json verification.json
+          evidence_size="$(wc -c < "$WORK_ROOT/evidence.tar.gz")"
+          test "$evidence_size" -gt 0
+          test "$evidence_size" -le 500000
+          evidence_sha256="$(sha256sum "$WORK_ROOT/evidence.tar.gz" | awk '{print $1}')"
+          evidence_b64="$(base64 -w0 "$WORK_ROOT/evidence.tar.gz")"
+          test "${#evidence_b64}" -le 700000
+          chunk_chars=48000
+          chunk_count=$(( (${#evidence_b64} + chunk_chars - 1) / chunk_chars ))
+          test "$chunk_count" -gt 0
+          test "$chunk_count" -le 16
+          echo "NEXUS_COMPOSITE_VAL40_EVIDENCE_TRANSPORT=bounded-job-log-v2"
+          echo "NEXUS_COMPOSITE_VAL40_EVIDENCE_SHA256=$evidence_sha256"
+          echo "NEXUS_COMPOSITE_VAL40_EVIDENCE_SIZE=$evidence_size"
+          echo "NEXUS_COMPOSITE_VAL40_EVIDENCE_CHUNK_COUNT=$chunk_count"
+          i=0
+          while [ "$i" -lt "$chunk_count" ]; do
+            start=$(( i * chunk_chars ))
+            chunk="${evidence_b64:$start:$chunk_chars}"
+            printf 'NEXUS_COMPOSITE_VAL40_EVIDENCE_CHUNK_%03d=%s\n' "$i" "$chunk"
+            i=$(( i + 1 ))
+          done
+
+  publish-evidence:
+    needs: runtime-requalification
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Reconstruct exact physical evidence from the successful job log
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/nexus_composite_runtime_requalification build/publisher
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs?filter=latest&per_page=100" > build/publisher/jobs.json
+          python - build/publisher/jobs.json build/publisher/job-id.txt <<'PY'
+          import json, sys
+          rows = json.load(open(sys.argv[1], encoding="utf-8")).get("jobs", [])
+          matches = [
+              row for row in rows
+              if row.get("name") == "runtime-requalification"
+              and row.get("conclusion") == "success"
+              and type(row.get("id")) is int
+          ]
+          if len(matches) != 1:
+              raise SystemExit(f"expected one successful physical runtime job, got {len(matches)}")
+          open(sys.argv[2], "w", encoding="ascii").write(str(matches[0]["id"]))
+          PY
+
+          gh api "repos/$GITHUB_REPOSITORY/actions/jobs/$(cat build/publisher/job-id.txt)/logs" > build/publisher/runtime.log
+          python - build/publisher/runtime.log build/nexus_composite_runtime_requalification <<'PY'
+          import base64, hashlib, io, pathlib, re, stat, sys, tarfile
+
+          log = pathlib.Path(sys.argv[1]).read_text(encoding="utf-8", errors="strict")
+          output = pathlib.Path(sys.argv[2])
+          output.mkdir(parents=True, exist_ok=True)
+
+          def one(pattern: str, label: str) -> str:
+              values = re.findall(pattern, log, flags=re.MULTILINE)
+              if len(values) != 1:
+                  raise SystemExit(f"{label} marker missing or ambiguous: {len(values)}")
+              return values[0]
+
+          transport = one(r"NEXUS_COMPOSITE_VAL40_EVIDENCE_TRANSPORT=(bounded-job-log-v2)", "transport")
+          expected_sha = one(r"NEXUS_COMPOSITE_VAL40_EVIDENCE_SHA256=([0-9a-f]{64})", "sha256")
+          expected_size = int(one(r"NEXUS_COMPOSITE_VAL40_EVIDENCE_SIZE=([1-9][0-9]{0,6})", "size"))
+          chunk_count = int(one(r"NEXUS_COMPOSITE_VAL40_EVIDENCE_CHUNK_COUNT=([1-9][0-9]?)", "chunk_count"))
+          if transport != "bounded-job-log-v2" or expected_size > 500000 or not (1 <= chunk_count <= 16):
+              raise SystemExit("physical evidence bounds rejected")
+
+          rows = re.findall(
+              r"NEXUS_COMPOSITE_VAL40_EVIDENCE_CHUNK_([0-9]{3})=([A-Za-z0-9+/=]+)",
+              log,
+              flags=re.MULTILINE,
+          )
+          if len(rows) != chunk_count:
+              raise SystemExit("physical evidence chunk set is incomplete or duplicated")
+          chunks = {}
+          for raw_index, value in rows:
+              index = int(raw_index)
+              if index in chunks:
+                  raise SystemExit("duplicate physical evidence chunk")
+              chunks[index] = value
+          if sorted(chunks) != list(range(chunk_count)):
+              raise SystemExit("physical evidence chunk sequence is not contiguous")
+
+          encoded = "".join(chunks[index] for index in range(chunk_count))
+          try:
+              archive = base64.b64decode(encoded, validate=True)
+          except Exception as exc:
+              raise SystemExit("physical evidence base64 is invalid") from exc
+          if len(archive) != expected_size or hashlib.sha256(archive).hexdigest() != expected_sha:
+              raise SystemExit("physical evidence size or digest mismatch")
+
+          with tarfile.open(fileobj=io.BytesIO(archive), mode="r:gz") as tar:
+              members = tar.getmembers()
+              names = [member.name for member in members]
+              if sorted(names) != ["runtime-requalification.json", "verification.json"]:
+                  raise SystemExit(f"unexpected physical evidence members: {names}")
+              for member in members:
+                  path = pathlib.PurePosixPath(member.name)
+                  if path.is_absolute() or ".." in path.parts or member.issym() or member.islnk() or not member.isfile():
+                      raise SystemExit("unsafe physical evidence member")
+                  target = output / member.name
+                  source = tar.extractfile(member)
+                  if source is None:
+                      raise SystemExit("physical evidence member unreadable")
+                  target.write_bytes(source.read())
+          print("physical_evidence_reconstruction=PASS", expected_sha, expected_size, chunk_count)
+          PY
+
+      - name: Publish official bounded fresh VAL-40 evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: nexus-composite-runtime-requalification-${{ github.run_id }}
           path: build/nexus_composite_runtime_requalification
