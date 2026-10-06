@@ -1,9 +1,10 @@
 """Synchronize verified physical composite VAL-40 evidence into durable QA-41 tasks.
 
-GitHub Actions artifacts are evidence transport only.  The latest successful
-official physical composite requalification run is verified, bound to trusted
-main ancestry, converted into the existing verifier-only QA task contract, and
-stored immutably for Agent Manager definition materialization.
+GitHub Actions artifacts or bounded digest-bound physical job logs are evidence
+transport only.  The latest successful official physical composite
+requalification run is verified, bound to trusted main ancestry, converted into
+the existing verifier-only QA task contract, and stored immutably for Agent
+Manager definition materialization.
 
 This module never dispatches QA, qualifies/registers/activates a strategy,
 executes Paper, or grants Live authority.
@@ -11,6 +12,8 @@ executes Paper, or grants Live authority.
 from __future__ import annotations
 
 import argparse
+import base64
+import binascii
 import hashlib
 import io
 import json
@@ -33,6 +36,9 @@ MAX_ARCHIVE_BYTES = 8_000_000
 MAX_UNCOMPRESSED_BYTES = 16_000_000
 MAX_ENTRIES = 32
 MAX_JSON_BYTES = 4_000_000
+MAX_JOB_LOG_BYTES = 8_000_000
+MAX_LOG_EVIDENCE_BYTES = 500_000
+MAX_LOG_EVIDENCE_CHUNKS = 16
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
 
@@ -43,6 +49,7 @@ class CompositeRuntimeQaTransportError(RuntimeError):
 
 Api = Callable[[str, str, dict[str, Any] | None], Any]
 Downloader = Callable[[int], bytes]
+LogDownloader = Callable[[int], bytes]
 Verifier = Callable[[Mapping[str, Any]], dict[str, Any]]
 Builder = Callable[..., dict[str, Any]]
 Validator = Callable[[Mapping[str, Any], str], dict[str, Any]]
@@ -69,6 +76,22 @@ def _download_artifact(artifact_id: int) -> bytes:
     opener = urllib.request.build_opener(_StripAuthorizationRedirectHandler())
     with opener.open(request, timeout=30) as response:
         return _bounded_read(response, MAX_ARCHIVE_BYTES, "composite runtime QA artifact")
+
+
+def _download_job_log(job_id: int) -> bytes:
+    if isinstance(job_id, bool) or not isinstance(job_id, int) or job_id < 1:
+        raise CompositeRuntimeQaTransportError("composite runtime physical job id is invalid")
+    token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
+    if not token:
+        raise CompositeRuntimeQaTransportError("GitHub token missing")
+    request = urllib.request.Request(
+        f"https://api.github.com/repos/{_repo()}/actions/jobs/{job_id}/logs",
+        method="GET",
+        headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"},
+    )
+    opener = urllib.request.build_opener(_StripAuthorizationRedirectHandler())
+    with opener.open(request, timeout=30) as response:
+        return _bounded_read(response, MAX_JOB_LOG_BYTES, "composite runtime physical job log")
 
 
 def _regular(info: zipfile.ZipInfo) -> bool:
@@ -119,6 +142,78 @@ def parse_artifact(
     return producer, verification
 
 
+def parse_job_log_evidence(blob: bytes) -> bytes:
+    if not isinstance(blob, (bytes, bytearray)) or not blob or len(blob) > MAX_JOB_LOG_BYTES:
+        raise CompositeRuntimeQaTransportError("composite runtime physical job log is outside bounds")
+    try:
+        text = bytes(blob).decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise CompositeRuntimeQaTransportError("composite runtime physical job log is not UTF-8") from exc
+
+    def one(pattern: str, label: str) -> str:
+        values = re.findall(pattern, text, flags=re.MULTILINE)
+        if len(values) != 1:
+            raise CompositeRuntimeQaTransportError(f"{label} marker is missing or ambiguous")
+        return values[0]
+
+    transport = one(
+        r"NEXUS_COMPOSITE_VAL40_EVIDENCE_TRANSPORT=(bounded-job-log-v2)",
+        "physical evidence transport",
+    )
+    expected_sha = one(
+        r"NEXUS_COMPOSITE_VAL40_EVIDENCE_SHA256=([0-9a-f]{64})",
+        "physical evidence SHA-256",
+    )
+    expected_size = int(
+        one(
+            r"NEXUS_COMPOSITE_VAL40_EVIDENCE_SIZE=([1-9][0-9]{0,6})",
+            "physical evidence size",
+        )
+    )
+    chunk_count = int(
+        one(
+            r"NEXUS_COMPOSITE_VAL40_EVIDENCE_CHUNK_COUNT=([1-9][0-9]?)",
+            "physical evidence chunk count",
+        )
+    )
+    if (
+        transport != "bounded-job-log-v2"
+        or expected_size > MAX_LOG_EVIDENCE_BYTES
+        or not 1 <= chunk_count <= MAX_LOG_EVIDENCE_CHUNKS
+    ):
+        raise CompositeRuntimeQaTransportError("physical evidence log bounds rejected")
+
+    rows = re.findall(
+        r"NEXUS_COMPOSITE_VAL40_EVIDENCE_CHUNK_([0-9]{3})=([A-Za-z0-9+/=]+)",
+        text,
+        flags=re.MULTILINE,
+    )
+    if len(rows) != chunk_count:
+        raise CompositeRuntimeQaTransportError("physical evidence chunk set is incomplete or duplicated")
+    chunks: dict[int, str] = {}
+    for raw_index, value in rows:
+        index = int(raw_index)
+        if index in chunks:
+            raise CompositeRuntimeQaTransportError("physical evidence chunk index is duplicated")
+        chunks[index] = value
+    if sorted(chunks) != list(range(chunk_count)):
+        raise CompositeRuntimeQaTransportError("physical evidence chunk sequence is not contiguous")
+
+    encoded = "".join(chunks[index] for index in range(chunk_count))
+    try:
+        archive = base64.b64decode(encoded, validate=True)
+    except (ValueError, binascii.Error) as exc:
+        raise CompositeRuntimeQaTransportError("physical evidence base64 is invalid") from exc
+    if (
+        not archive
+        or len(archive) != expected_size
+        or len(archive) > MAX_LOG_EVIDENCE_BYTES
+        or hashlib.sha256(archive).hexdigest() != expected_sha
+    ):
+        raise CompositeRuntimeQaTransportError("physical evidence size or digest mismatch")
+    return archive
+
+
 def _trusted_main_ancestor(source_sha: str, current_sha: str, *, api: Api = _api) -> bool:
     if not SHA40.fullmatch(source_sha) or not SHA40.fullmatch(current_sha):
         raise CompositeRuntimeQaTransportError("source ancestry identity is malformed")
@@ -148,6 +243,7 @@ def latest_verified_task(
     current_sha: str,
     api: Api = _api,
     downloader: Downloader = _download_artifact,
+    log_downloader: LogDownloader = _download_job_log,
     verifier: Verifier = verify_requalification,
     builder: Builder = build_task,
     validator: Validator = validate_task,
@@ -184,6 +280,8 @@ def latest_verified_task(
         None,
     )
     rows = artifacts.get("artifacts", []) if isinstance(artifacts, Mapping) else []
+    if not isinstance(rows, list):
+        raise CompositeRuntimeQaTransportError("composite runtime artifact metadata is invalid")
     matches = [
         item for item in rows
         if isinstance(item, Mapping)
@@ -196,10 +294,48 @@ def latest_verified_task(
         and not isinstance(item.get("size_in_bytes"), bool)
         and 0 < int(item["size_in_bytes"]) <= MAX_ARCHIVE_BYTES
     ]
-    if len(matches) != 1:
-        raise CompositeRuntimeQaTransportError("composite runtime artifact identity is missing or ambiguous")
+    if len(matches) > 1:
+        raise CompositeRuntimeQaTransportError("composite runtime artifact identity is ambiguous")
 
-    producer, verification = parse_artifact(downloader(int(matches[0]["id"])), verifier=verifier)
+    evidence_identity: dict[str, Any]
+    if len(matches) == 1:
+        artifact_id = int(matches[0]["id"])
+        evidence_blob = downloader(artifact_id)
+        evidence_identity = {
+            "artifact_id": artifact_id,
+            "evidence_transport": "github-actions-artifact-v1",
+        }
+    else:
+        jobs = api(
+            "GET",
+            f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/jobs?filter=latest&per_page=100",
+            None,
+        )
+        job_rows = jobs.get("jobs", []) if isinstance(jobs, Mapping) else []
+        if not isinstance(job_rows, list):
+            raise CompositeRuntimeQaTransportError("composite runtime physical job metadata is invalid")
+        job_matches = [
+            item for item in job_rows
+            if isinstance(item, Mapping)
+            and item.get("name") == "runtime-requalification"
+            and item.get("conclusion") == "success"
+            and isinstance(item.get("id"), int)
+            and not isinstance(item.get("id"), bool)
+            and int(item["id"]) > 0
+        ]
+        if len(job_matches) != 1:
+            raise CompositeRuntimeQaTransportError(
+                "composite runtime physical job log identity is missing or ambiguous"
+            )
+        job_id = int(job_matches[0]["id"])
+        evidence_blob = parse_job_log_evidence(log_downloader(job_id))
+        evidence_identity = {
+            "artifact_id": None,
+            "physical_job_id": job_id,
+            "evidence_transport": "bounded-job-log-v2",
+        }
+
+    producer, verification = parse_artifact(evidence_blob, verifier=verifier)
     source_sha = str(producer.get("requalification_source_sha", ""))
     if source_sha != str(run.get("head_sha", "")):
         raise CompositeRuntimeQaTransportError("producer source differs from physical workflow source")
@@ -215,7 +351,7 @@ def latest_verified_task(
     transport = {
         "schema_version": "nexus.composite-runtime-qa-transport.v1",
         "producer_workflow_run_id": run_id,
-        "artifact_id": int(matches[0]["id"]),
+        **evidence_identity,
         "task_digest": task["task_digest"],
         "source_sha": task["source_sha"],
         "candidate_digest": task["candidate_digest"],
