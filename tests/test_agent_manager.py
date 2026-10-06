@@ -410,3 +410,59 @@ def test_validate_config_accepts_dispatch_disabled_composite_verifier_task():
         }],
     }
     am.validate_config(config)
+
+
+def test_composite_qa_leases_only_designated_verifier_and_never_sets_producer(monkeypatch):
+    monkeypatch.setattr(am, "emit", lambda *args, **kwargs: None)
+    config = {
+        "policy": {"max_parallel_tasks": 2},
+        "workers": [
+            {"id":"cloud-worker","capabilities":["data_validation"],"resources":["github-cloud"],"authority_max":3,"enabled":True,"verifier":False,"max_concurrent_tasks":2},
+            {"id":"qa-verifier-agent","capabilities":["data_validation"],"resources":["github-cloud"],"authority_max":3,"enabled":True,"verifier":True,"max_concurrent_tasks":2},
+        ],
+        "tasks": [{
+            "id":"COMPOSITE-QA-"+"a"*64,"status":"READY","priority":93,"authority":2,
+            "dependencies":[],"required_capabilities":["data_validation"],"required_resources":["github-cloud"],
+            "qa_verifier_only":True,"qa_dispatch_enabled":True,"required_verifier":"qa-verifier-agent",
+            "qa_handoff_task":{
+                "task_kind":"composite_runtime_independent_qa","system_map_node":"QA-41",
+                "required_verifier":"qa-verifier-agent","source_sha":"b"*40,
+            },
+        }],
+    }
+    am.assign_ready_tasks(config, datetime(2026,10,6,tzinfo=timezone.utc))
+    task=config["tasks"][0]
+    assert task["status"]=="VERIFYING"
+    assert task["assigned_worker"]=="qa-verifier-agent"
+    assert task["verifier"]=="qa-verifier-agent"
+    assert "producer" not in task
+
+
+def test_composite_qa_result_uses_composite_receipt_verifier(monkeypatch):
+    monkeypatch.setattr(am, "emit", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        "nexus_composite_runtime_independent_qa.verify_receipt",
+        lambda receipt, task, **kwargs: receipt.get("ok") is True,
+    )
+    row = {
+        "id":"COMPOSITE-QA-"+"a"*64,"status":"VERIFYING","priority":93,"authority":2,
+        "dependencies":[],"required_capabilities":["data_validation"],"required_resources":["github-cloud"],
+        "qa_verifier_only":True,"qa_dispatch_enabled":True,"required_verifier":"qa-verifier-agent",
+        "qa_handoff_task":{
+            "task_kind":"composite_runtime_independent_qa","system_map_node":"QA-41",
+            "required_verifier":"qa-verifier-agent","source_sha":"b"*40,
+        },
+        "assigned_worker":"qa-verifier-agent","verifier":"qa-verifier-agent",
+        "lease_id":"composite-qa-lease",
+    }
+    config={"policy":{"max_parallel_tasks":2},"workers":[],"tasks":[row]}
+    am.record_result(config,row["id"],"qa-verifier-agent","success",{"ok":True})
+    assert row["status"]=="DONE"
+    assert row["verification_evidence"]=={"ok":True}
+
+    bad = dict(row)
+    bad["status"]="VERIFYING"
+    bad["verification_evidence"]=None
+    config["tasks"]=[bad]
+    with pytest.raises(ValueError, match="does not bind"):
+        am.record_result(config,bad["id"],"qa-verifier-agent","success",{"ok":False})
