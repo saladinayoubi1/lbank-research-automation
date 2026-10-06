@@ -70,7 +70,7 @@ def test_contract_job_covers_candidate_transport_and_requalification() -> None:
     assert "tests/test_nexus_composite_runtime_requalification_workflow.py" in text
     assert "tests/test_nexus_composite_validation_candidate.py" in text
     assert "tests/test_nexus_composite_validation_candidate_transport.py" in text
-    assert "if-no-files-found: error" in text
+    assert "bounded-job-log-v2" in text
 
 
 def test_physical_runtime_job_is_javascript_action_free() -> None:
@@ -87,8 +87,8 @@ def test_physical_runtime_job_is_javascript_action_free() -> None:
 
 def test_physical_evidence_uses_bounded_digest_bound_job_log_transport() -> None:
     text = _text()
-    physical = text.split("  runtime-requalification:", 1)[1].split("  publish-evidence:", 1)[0]
-    publisher = text.split("  publish-evidence:", 1)[1]
+    physical = text.split("  runtime-requalification:", 1)[1]
+    assert "  publish-evidence:" not in text
     assert "transport_version=bounded-job-log-v2" in physical
     assert "NEXUS_COMPOSITE_VAL40_EVIDENCE_TRANSPORT=%s" in physical
     assert "NEXUS_COMPOSITE_VAL40_EVIDENCE_SHA256=" in physical
@@ -97,10 +97,5 @@ def test_physical_evidence_uses_bounded_digest_bound_job_log_transport() -> None
     assert "NEXUS_COMPOSITE_VAL40_EVIDENCE_CHUNK_%03d=" in physical
     assert 'test "$evidence_size" -le 500000' in physical
     assert 'test "${#evidence_b64}" -le 700000' in physical
-    assert "runs-on: ubuntu-latest" in publisher
-    assert "needs: runtime-requalification" in publisher
-    assert 'row.get("name") == "runtime-requalification"' in publisher
-    assert "physical evidence size or digest mismatch" in publisher
-    assert "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a" in publisher
-    assert "name: nexus-composite-runtime-requalification-${{ github.run_id }}" in publisher
-    assert "if-no-files-found: error" in publisher
+    assert "zipfile.ZIP_DEFLATED" in physical
+    assert "$WORK_ROOT/evidence.zip" in physical
