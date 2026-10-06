@@ -37,7 +37,12 @@ PREDECESSOR = {
     FOURTEENTH: THIRTEENTH, FIFTEENTH: FOURTEENTH, SIXTEENTH: FIFTEENTH,
     SEVENTEENTH: SIXTEENTH,
 }
-TASKS = frozenset((FIRST, *PREDECESSOR))
+MISSION_SEQUENCE = (
+    FIRST, SECOND, THIRD, FOURTH, FIFTH, SIXTH, SEVENTH, EIGHTH, NINTH,
+    TENTH, ELEVENTH, TWELFTH, THIRTEENTH, FOURTEENTH, FIFTEENTH,
+    SIXTEENTH, SEVENTEENTH,
+)
+TASKS = frozenset(MISSION_SEQUENCE)
 SOURCE_HEX = re.compile(r"^[0-9a-f]{40}$")
 DIGEST_HEX = re.compile(r"^[0-9a-f]{64}$")
 ANCESTRY = (
@@ -57,7 +62,7 @@ def attested_predecessor(task: dict[str, Any]) -> dict[str, str]:
     production = task.get("result_evidence")
     qa = task.get("verification_evidence")
     if (
-        task.get("id") not in PREDECESSOR.values()
+        task.get("id") not in TASKS
         or task.get("status") != "DONE"
         or task.get("producer") != "research-agent"
         or task.get("verifier") != "qa-verifier-agent"

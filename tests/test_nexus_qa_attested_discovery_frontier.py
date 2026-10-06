@@ -9,7 +9,7 @@ import pytest
 
 import nexus_composite_strategy_research as research
 from scripts import nexus_qa_attested_discovery_frontier as selector
-from nexus_research_missions import FIFTH
+from nexus_research_missions import FIFTH, SEVENTEENTH
 
 
 SOURCE = "a" * 40
@@ -25,7 +25,10 @@ def zipped(member, obj):
     return stream.getvalue()
 
 
-def mock_proofs(monkeypatch, *, bad_ledger=False, bad_qa=False, no_verified_fifth=False):
+def mock_proofs(
+    monkeypatch, *, bad_ledger=False, bad_qa=False, no_verified_fifth=False,
+    task_id=FIFTH, include_future=True,
+):
     ledger = research.empty_ledger()
     core = {k: v for k, v in ledger.items() if k != "ledger_digest"}
     for config in research.CONFIGS:
@@ -53,7 +56,7 @@ def mock_proofs(monkeypatch, *, bad_ledger=False, bad_qa=False, no_verified_fift
     }
     proof = {**qa_core, "qa_digest": research.digest(qa_core)}
     task = {
-        "id": FIFTH, "status": "PENDING" if no_verified_fifth else "DONE",
+        "id": task_id, "status": "PENDING" if no_verified_fifth else "DONE",
         "producer": "research-agent", "verifier": "qa-verifier-agent",
         "research_producer_lease_id": PRODUCER, "lease_id": VERIFIER,
         "result_evidence": {
@@ -73,11 +76,11 @@ def mock_proofs(monkeypatch, *, bad_ledger=False, bad_qa=False, no_verified_fift
             "auto_demo_promotion": False, "live_enabled": False,
         },
     }
-    future = [
+    future = ([
         {"id": "P7-RESEARCH-COMPOSITE-006", "status": "PENDING"},
         {"id": "P7-RESEARCH-COMPOSITE-007", "status": "PENDING"},
         {"id": "P7-RESEARCH-COMPOSITE-008", "status": "PENDING"},
-    ]
+    ] if include_future else [])
     archive_map = {
         901: zipped("agent_manager_runtime.json", {"tasks": [task, *future]}),
         902: zipped("result/agent-receipt.json", receipt),
@@ -471,3 +474,19 @@ def test_coordinator_proof_runs_for_every_main_push_to_prevent_source_transition
     # without any same-SHA durable runtime proof.
     assert "paths:" not in trigger
 
+
+
+
+def test_terminal_seventeenth_done_qa_is_visible_as_final_frontier(monkeypatch):
+    expected = mock_proofs(
+        monkeypatch,
+        task_id=SEVENTEENTH,
+        include_future=False,
+    )
+    monkeypatch.setattr(selector, "MISSION_SEQUENCE", (SEVENTEENTH,))
+    result = selector.verified_frontier(selector.REPO)
+    assert result["predecessor"] == SEVENTEENTH
+    assert result["ledger"]["ledger_digest"] == expected["ledger_digest"]
+    assert result["research_only"] is True
+    assert result["auto_demo_promotion"] is False
+    assert result["live_enabled"] is False

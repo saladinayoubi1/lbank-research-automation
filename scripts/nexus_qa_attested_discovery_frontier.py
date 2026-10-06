@@ -25,7 +25,7 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 from nexus_composite_strategy_research import ARCHIVE_SHA256, digest, load_ledger, safe_write
-from nexus_research_missions import FIRST, PREDECESSOR, attested_predecessor
+from nexus_research_missions import FIRST, MISSION_SEQUENCE, PREDECESSOR, attested_predecessor
 
 REPO = "saladinayoubi1/lbank-research-automation"
 COORDINATOR_WORKFLOW_PATH = ".github/workflows/fast-agent-coordinator.yml"
@@ -379,7 +379,7 @@ def verified_frontier(repo: str) -> dict[str, Any]:
     task = None
     attested = None
     unfinished_seen = False
-    for candidate_id in dict.fromkeys(PREDECESSOR.values()):
+    for candidate_id in MISSION_SEQUENCE:
         candidate = by_id.get(candidate_id)
         if candidate is None:
             continue
