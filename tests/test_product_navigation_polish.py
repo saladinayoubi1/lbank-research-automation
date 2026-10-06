@@ -104,11 +104,12 @@ def test_optional_product_surfaces_degrade_without_hiding_critical_failures():
 
 def test_paper_ui_auto_refresh_is_lightweight_and_visibility_aware():
     js = (ROOT / "product_ui" / "product.js").read_text(encoding="utf-8")
-    assert "PAPER_UI_REFRESH_INTERVAL_MS=60*1000" in js
+    assert "PAPER_UI_REFRESH_INTERVAL_MS=15*1000" in js
     assert "async function refreshPaperSnapshot()" in js
     assert "document.visibilityState!=='visible'" in js
     assert "singleFlight('paper-ui-refresh'" in js
-    assert "state.paper=await api('/api/product/paper')" in js
+    assert "state.paper=paper;state.paperMarket=marketResult.value" in js
+    assert "optionalApi('/api/product/paper/market')" in js
     assert "function startPaperUiAutoRefresh()" in js
     assert "visibilitychange" in js
     assert "await loadAll();startPaperUiAutoRefresh()" in js
@@ -224,3 +225,18 @@ def test_research_candidate_ui_requires_independent_qa_before_auto_paper():
     render = js[js.index("function renderResearch()"):js.index("async function loadAll()")]
     assert "candidate?'good':'bad'" not in render
 
+
+
+
+def test_active_demo_terminal_has_visible_market_refresh_control():
+    terminal = (ROOT / "product_ui" / "product-terminal.js").read_text(encoding="utf-8")
+    product = (ROOT / "product_ui" / "product.js").read_text(encoding="utf-8")
+    assert 'id="terminalRefresh"' in terminal
+    assert "↻ تازه‌سازی بازار" in terminal
+    assert "BYBIT MARK LIVE" in terminal
+    assert "آخرین تازه‌سازی بازار" in terminal
+    assert "options.onRefresh" in terminal
+    assert "activePaperTerminalSnapshot(p,state.events,state.paperMarket)" in product
+    assert "valuation:liveComplete?'public_mark_snapshot':'event_sourced_runtime'" in product
+    assert "execution_eligible===false" in product
+    assert "live_trading_authority===false" in product
