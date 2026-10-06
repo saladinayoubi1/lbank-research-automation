@@ -75,7 +75,7 @@ def test_contract_job_covers_candidate_transport_and_requalification() -> None:
 
 def test_physical_runtime_job_is_javascript_action_free() -> None:
     text = _text()
-    physical = text.split("  runtime-requalification:", 1)[1].split("\n  publish-evidence:", 1)[0]
+    physical = text.split("  runtime-requalification:", 1)[1].split("\n  contract-test:", 1)[0]
     assert "runs-on: nexus-bybit-network" in physical
     assert "uses:" not in physical
     assert "physical_source_transport=github-api-exact-sha" in physical
@@ -87,8 +87,8 @@ def test_physical_runtime_job_is_javascript_action_free() -> None:
 
 def test_physical_evidence_is_bounded_then_published_on_hosted_node24_job() -> None:
     text = _text()
-    physical = text.split("  runtime-requalification:", 1)[1].split("\n  publish-evidence:", 1)[0]
-    publisher = text.split("\n  publish-evidence:", 1)[1]
+    physical = text.split("  runtime-requalification:", 1)[1].split("\n  contract-test:", 1)[0]
+    publisher = text.split("\n  contract-test:", 1)[1]
     assert "NEXUS_COMPOSITE_VAL40_EVIDENCE_TRANSPORT=bounded-chunked-job-output-v1" in physical
     assert "chunk_size = 30_000" in physical
     assert "if not 0 < len(raw) <= 250_000" in physical
