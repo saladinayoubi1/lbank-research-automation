@@ -203,3 +203,28 @@ def test_dataset_or_candidate_tamper_fails_closed(monkeypatch):
             dataset_loader=lambda symbol, timeframe, limit: _dataset(symbol, timeframe),
             evaluator=lambda cand, symbol, datasets, peer: _rows(cand, symbol),
         )
+
+
+def test_independent_qa_receipt_requires_exact_replay(monkeypatch):
+    candidate = _candidate()
+    verification = _verification(candidate)
+    monkeypatch.setattr(rq, "verify_candidate", lambda value: verification)
+    producer = rq.run_requalification(
+        candidate,
+        verification,
+        execution_source_sha="f" * 40,
+        now_ms=1_800_000_000_000,
+        dataset_loader=lambda symbol, timeframe, limit: _dataset(symbol, timeframe),
+        evaluator=lambda cand, symbol, datasets, peer: _rows(cand, symbol),
+    )
+    monkeypatch.setattr(rq, "verify_candidate", lambda value: verification)
+    receipt = rq.build_qa_receipt(producer, deepcopy(producer), producer_lease_id="producer-lease")
+    assert receipt["independent_qa_complete"] is True
+    assert receipt["qualification_authority"] is False
+    assert receipt["paper_execution_authority"] is False
+    assert rq.verify_qa_receipt(receipt, producer, producer_lease_id="producer-lease")
+
+    tampered = deepcopy(producer)
+    tampered["runtime_rows"][0]["net_return_pct"] = 99.0
+    with pytest.raises(rq.CompositeRuntimeRequalificationError, match="differs from producer"):
+        rq.build_qa_receipt(producer, tampered, producer_lease_id="producer-lease")
