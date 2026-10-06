@@ -201,3 +201,95 @@ def test_composite_val40_transport_import_is_control_plane_lightweight():
     )
     assert proc.returncode == 0, proc.stderr
     assert "lightweight_composite_val40_transport=PASS" in proc.stdout
+
+
+def test_known_legacy_research_contract_is_classified_without_candidate(tmp_path, monkeypatch):
+    monkeypatch.setenv("GITHUB_REPOSITORY", "saladinayoubi1/lbank-research-automation")
+    blob, _receipt, _report = _zip()
+    runtime = {"tasks": [_task("P7-RESEARCH-COMPOSITE-001", "lease-legacy")]}
+
+    legacy_report = {
+        "schema": "nexus.automatic-composite-research.v1",
+        "selection_basis": "fixed_mechanism_grammar_not_OOS_ranking",
+        "frontier_screening": None,
+    }
+
+    def parser(_blob):
+        return {"lease_id": "lease-legacy"}, legacy_report
+
+    monkeypatch.setattr(transport, "parse_producer_artifact", parser)
+    result = transport.sync_verified_candidates(
+        runtime,
+        tmp_path,
+        api=lambda *args: {
+            "artifacts": [{
+                "id": 99,
+                "name": "nexus-agent-research-lease-legacy",
+                "expired": False,
+                "size_in_bytes": len(blob),
+            }]
+        },
+        downloader=lambda _id: blob,
+        builder=lambda *args: (_ for _ in ()).throw(AssertionError("legacy evidence must not build")),
+    )
+    assert result["processed"] == 1
+    assert result["stored"] == 0
+    assert result["eligible"] == 0
+    assert result["rows"][0]["status"] == "LEGACY_UNSUPPORTED_RESEARCH_EVIDENCE"
+    assert result["rows"][0]["legacy_contract"] == "fixed_mechanism_grammar_not_OOS_ranking"
+    assert result["rows"][0]["candidate_created"] is False
+    assert result["rows"][0]["qualification_authority"] is False
+    assert result["rows"][0]["paper_execution_authority"] is False
+    assert result["rows"][0]["live"] is False
+    assert not list(tmp_path.rglob("candidate.json"))
+
+
+def test_known_pre_v5_frontier_is_legacy_but_current_v5_corruption_hard_fails(tmp_path, monkeypatch):
+    monkeypatch.setenv("GITHUB_REPOSITORY", "saladinayoubi1/lbank-research-automation")
+    blob, _receipt, _report = _zip()
+    runtime = {"tasks": [_task("P7-RESEARCH-COMPOSITE-014", "lease-frontier")]}
+
+    legacy = {
+        "schema": "nexus.automatic-composite-research.v1",
+        "selection_basis": "frontier_training_only_tournament_then_full_replay",
+        "frontier_screening": {"schema": "nexus.frontier-train-screen.v4"},
+    }
+    monkeypatch.setattr(transport, "parse_producer_artifact", lambda _blob: ({"lease_id": "lease-frontier"}, legacy))
+    result = transport.sync_verified_candidates(
+        runtime,
+        tmp_path,
+        api=lambda *args: {
+            "artifacts": [{
+                "id": 100,
+                "name": "nexus-agent-research-lease-frontier",
+                "expired": False,
+                "size_in_bytes": len(blob),
+            }]
+        },
+        downloader=lambda _id: blob,
+        builder=lambda *args: (_ for _ in ()).throw(AssertionError("v4 legacy must not build")),
+    )
+    assert result["rows"][0]["status"] == "LEGACY_UNSUPPORTED_RESEARCH_EVIDENCE"
+    assert result["rows"][0]["legacy_contract"] == "nexus.frontier-train-screen.v4"
+
+    current = {
+        "schema": "nexus.automatic-composite-research.v1",
+        "selection_basis": "frontier_training_only_tournament_then_full_replay",
+        "frontier_screening": {"schema": "nexus.frontier-train-screen.v5"},
+    }
+    monkeypatch.setattr(transport, "parse_producer_artifact", lambda _blob: ({"lease_id": "lease-frontier"}, current))
+    with pytest.raises(transport.CompositeVal40TransportError, match="current composite evidence rejected"):
+        transport.sync_verified_candidates(
+            runtime,
+            tmp_path,
+            api=lambda *args: {
+                "artifacts": [{
+                    "id": 101,
+                    "name": "nexus-agent-research-lease-frontier",
+                    "expired": False,
+                    "size_in_bytes": len(blob),
+                }]
+            },
+            downloader=lambda _id: blob,
+            builder=lambda *args: (_ for _ in ()).throw(ValueError("tampered v5")),
+        )
