@@ -401,3 +401,64 @@ def test_research_rca_transport_mismatch_preserves_original_cache_failure():
     assert t["triage_evidence"]["evidence"]["failure_class"] == at.RESEARCH_RCA_TRANSPORT_MISMATCH
     assert t["result_artifact_ingested"] is True
     assert t["external_wait_state"] == "COMPLETED"
+
+
+def _composite_qa_manager_task():
+    handoff = {
+        "id": "COMPOSITE-QA-" + "a" * 64,
+        "task_kind": "composite_runtime_independent_qa",
+        "system_map_node": "QA-41",
+        "status": "READY_FOR_QA_DISPATCH",
+        "required_verifier": "qa-verifier-agent",
+        "source_sha": "b" * 40,
+        "candidate_digest": "c" * 64,
+        "requalification_digest": "a" * 64,
+        "paper_only": True,
+        "qualification_authority": False,
+        "registry_mutation_authority": False,
+        "runtime_activation_authority": False,
+        "paper_execution_authority": False,
+        "automatic_strategy_promotion": False,
+        "live_trading_authority": False,
+    }
+    return {
+        "id": handoff["id"], "title": "composite QA", "phase": 7, "gate": 17,
+        "status": "VERIFYING", "priority": 93, "dependencies": [],
+        "required_capabilities": ["data_validation"], "required_resources": ["github-cloud"],
+        "preferred_resources": ["github-cloud"], "authority": 2, "acceptance": ["exact replay"],
+        "assigned_worker": "qa-verifier-agent", "verifier": "qa-verifier-agent",
+        "required_verifier": "qa-verifier-agent", "qa_verifier_only": True,
+        "qa_dispatch_enabled": True, "qa_handoff_task": handoff,
+        "lease_id": "composite-qa-lease", "attempt": 1,
+    }
+
+
+def test_composite_qa_transport_embeds_only_exact_verifier_handoff(monkeypatch):
+    monkeypatch.setattr(
+        "nexus_composite_runtime_independent_qa.validate_task",
+        lambda value, source: dict(value),
+    )
+    t = _composite_qa_manager_task()
+    env = at.envelope_for(t)
+    assert env["task_id"] == t["id"]
+    assert env["worker_id"] == "qa-verifier-agent"
+    assert env["transport"] == "github-cloud"
+    assert env["composite_qa_task"] == t["qa_handoff_task"]
+    assert "strategy_qa_task" not in env
+
+
+def test_composite_qa_transport_never_dispatches_wrong_worker_or_disabled_contract(monkeypatch):
+    monkeypatch.setattr(
+        "nexus_composite_runtime_independent_qa.validate_task",
+        lambda value, source: dict(value),
+    )
+    wrong = _composite_qa_manager_task()
+    wrong["assigned_worker"] = "cloud-worker"
+    wrong["verifier"] = "cloud-worker"
+    with pytest.raises(ValueError, match="verifier-only and enabled"):
+        at.envelope_for(wrong)
+
+    disabled = _composite_qa_manager_task()
+    disabled["qa_dispatch_enabled"] = False
+    with pytest.raises(ValueError, match="verifier-only and enabled"):
+        at.envelope_for(disabled)
