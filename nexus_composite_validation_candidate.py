@@ -23,8 +23,8 @@ from typing import Any
 from nexus_demo_archive_replay import ARCHIVE_SHA256
 from nexus_research_missions import attested_predecessor
 
-SCHEMA = "nexus.composite-validation-candidate.v1"
-VERIFY_SCHEMA = "nexus.composite-validation-candidate-verification.v1"
+SCHEMA = "nexus.composite-validation-candidate.v2"
+VERIFY_SCHEMA = "nexus.composite-validation-candidate-verification.v2"
 COMPOSITE_RESEARCH_SCHEMA = "nexus.automatic-composite-research.v1"
 PRODUCER_SCHEMA = "nexus.agent-composite-execution.v1"
 TIMEFRAME = "minute15_with_completed_1h_4h"
@@ -233,6 +233,9 @@ def build_candidate(
         "validation_rows": validation,
         "validation_digest": digest(validation),
         "total_validation_round_trips": total_trades,
+        "research_task": dict(manager_task),
+        "producer_receipt": dict(receipt),
+        "research_report": dict(research_report),
         "no_minimum_trade_count_gate": True,
         "selection_used_validation_for_ranking": False,
         "selection_used_historical_test_for_ranking": False,
@@ -255,6 +258,7 @@ def verify_candidate(value: Mapping[str, Any]) -> dict[str, Any]:
     checks = {
         "schema": False,
         "digest": False,
+        "proof": False,
         "identity": False,
         "validation": False,
         "decision": False,
@@ -269,6 +273,31 @@ def verify_candidate(value: Mapping[str, Any]) -> dict[str, Any]:
             and core.get("proposal_kind") == "composite_mechanism"
         )
         checks["digest"] = isinstance(claimed, str) and claimed == digest(core)
+
+        embedded_task = core.get("research_task")
+        embedded_receipt = core.get("producer_receipt")
+        embedded_report = core.get("research_report")
+        rebuilt = None
+        if (
+            isinstance(embedded_task, Mapping)
+            and isinstance(embedded_receipt, Mapping)
+            and isinstance(embedded_report, Mapping)
+        ):
+            rebuilt = build_candidate(embedded_task, embedded_receipt, embedded_report)
+        proof_keys = {
+            "candidate_digest", "research_task", "producer_receipt", "research_report",
+        }
+        checks["proof"] = bool(
+            isinstance(rebuilt, Mapping)
+            and all(
+                rebuilt.get(key) == value.get(key)
+                for key in set(rebuilt) - proof_keys
+            )
+            and rebuilt.get("research_task") == value.get("research_task")
+            and rebuilt.get("producer_receipt") == value.get("producer_receipt")
+            and rebuilt.get("research_report") == value.get("research_report")
+        )
+
         config = core.get("strategy_config")
         checks["identity"] = bool(
             isinstance(core.get("research_task_id"), str)
