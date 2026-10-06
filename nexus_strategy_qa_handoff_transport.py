@@ -190,6 +190,7 @@ def latest_verified_handoff(
             or run.get("conclusion") != "success"
             or run.get("head_branch") != "main"
             or run.get("event") != "workflow_run"
+            or run.get("head_sha") != current_sha
             or isinstance(run.get("id"), bool)
             or not isinstance(run.get("id"), int)
         ):
