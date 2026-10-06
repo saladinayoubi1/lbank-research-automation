@@ -7,7 +7,12 @@ import pytest
 import yaml
 
 from backtest_engine import BacktestConfig
-from canonical_backtest import CanonicalBacktestError, run_canonical_target_exposure_backtest
+from canonical_backtest import (
+    CanonicalBacktestError,
+    canonical_market_frame,
+    canonical_ohlcv_frame,
+    run_canonical_target_exposure_backtest,
+)
 from phase5_data_binding import REGISTRY_PATH
 from phase6_research_pipeline import bind_bybit_closed_dataset
 
@@ -144,3 +149,28 @@ def test_slice_backtests_cannot_detach_from_full_canonical_binding():
     tampered["rows"][0]["close"] = "999"
     with pytest.raises(CanonicalBacktestError):
         run_canonical_target_exposure_backtest(tampered, targets, start=40, end=60)
+
+
+def test_canonical_ohlcv_frame_preserves_validated_volume_without_changing_legacy_frame():
+    dataset = _dataset()
+    artifact, ohlcv = canonical_ohlcv_frame(dataset)
+    legacy_artifact, legacy = canonical_market_frame(dataset)
+
+    assert artifact["binding_sha256"] == dataset["binding_sha256"]
+    assert legacy_artifact["binding_sha256"] == artifact["binding_sha256"]
+    assert list(ohlcv.columns) == ["timestamp", "open", "high", "low", "close", "volume"]
+    assert list(legacy.columns) == ["timestamp", "open", "high", "low", "close"]
+    assert len(ohlcv) == dataset["row_count"]
+    assert ohlcv["volume"].astype(float).eq(10.0).all()
+
+
+def test_canonical_ohlcv_frame_rejects_the_same_lineage_and_row_tampering():
+    source_tamper = _dataset()
+    source_tamper["source_role"] = "secondary_validation"
+    with pytest.raises(CanonicalBacktestError):
+        canonical_ohlcv_frame(source_tamper)
+
+    row_tamper = _dataset()
+    row_tamper["rows"][0]["volume"] = "-1"
+    with pytest.raises(CanonicalBacktestError):
+        canonical_ohlcv_frame(row_tamper)
