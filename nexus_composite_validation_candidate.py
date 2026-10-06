@@ -20,7 +20,7 @@ import re
 from collections.abc import Mapping
 from typing import Any
 
-from nexus_demo_archive_replay import ARCHIVE_SHA256
+from nexus_demo_archive_contract import ARCHIVE_SHA256
 from nexus_research_missions import attested_predecessor
 
 SCHEMA = "nexus.composite-validation-candidate.v2"
