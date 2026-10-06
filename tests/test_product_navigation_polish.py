@@ -203,7 +203,7 @@ def test_active_paper_terminal_uses_live_shared_projection_with_explicit_refresh
     assert "/api/product/paper/shared/live" in js
     assert "sharedPaperRefresh" in js
     assert "sharedPaperFreshness" in js
-    assert "PAPER_UI_REFRESH_INTERVAL_MS=30*1000" in js
+    assert "PAPER_UI_REFRESH_INTERVAL_MS=60*1000" in js
     assert "window.NexusPaperTerminal?.render(shared);" in js
     assert "activePaperTerminalSnapshot(p,state.events)" not in js[js.index("function renderPaper()"):js.index("function renderMatrix()")]
     assert "MARK زنده" in js
