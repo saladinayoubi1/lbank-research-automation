@@ -4,6 +4,7 @@ from copy import deepcopy
 
 import pytest
 
+from nexus_research_missions import attested_predecessor, attested_research_task
 from nexus_composite_validation_candidate import (
     CompositeValidationCandidateError,
     build_candidate,
@@ -282,3 +283,38 @@ def test_candidate_tamper_is_detected():
     core.pop("candidate_digest", None)
     proof_tamper["candidate_digest"] = digest(core)
     assert verify_candidate(proof_tamper)["decision"] == "reject"
+
+
+def test_terminal_composite_research_task_is_attested_for_val40_but_not_as_successor_predecessor():
+    report = _report(trades=(1, 1, 1, 1))
+    manager, receipt = _bound_inputs(report)
+    manager["id"] = "P7-RESEARCH-COMPOSITE-017"
+    manager["result_evidence"]["workload_id"] = manager["id"]
+
+    attested = attested_research_task(manager)
+    assert attested["research_predecessor_source_sha"] == SOURCE
+    assert attested["research_predecessor_receipt_digest"] == receipt["receipt_digest"]
+    assert attested["research_predecessor_qa_digest"] == QA
+    assert attested["research_predecessor_ledger_digest"] == LEDGER
+    assert attested["research_predecessor_mechanism"] == MECHANISM
+
+    candidate = build_candidate(manager, receipt, report)
+    assert candidate["research_task_id"] == "P7-RESEARCH-COMPOSITE-017"
+    assert verify_candidate(candidate)["decision"] == "pass"
+
+    # Terminal task 017 must not become a predecessor in the Research DAG merely
+    # because its own proof is valid.
+    with pytest.raises(ValueError, match="previous real Research"):
+        attested_predecessor(manager)
+
+
+def test_generic_research_attestation_still_rejects_wrong_worker_or_receipt():
+    manager = _manager()
+    manager["producer"] = "qa-verifier-agent"
+    with pytest.raises(ValueError, match="Research\+independent-QA"):
+        attested_research_task(manager)
+
+    manager = _manager()
+    manager["verification_evidence"]["producer_receipt_digest"] = "0" * 64
+    with pytest.raises(ValueError, match="Research\+independent-QA"):
+        attested_research_task(manager)
