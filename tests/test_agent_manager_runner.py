@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import json
+
 from agent_manager_runner import (
     DETERMINISTIC_SPECIALIZED_RECOVERY_WORKLOADS,
     SPECIALIZED_REASONING_BLOCK_REASON,
     block_unroutable_specialized_reasoning,
     materialize_strategy_qa_store,
+    materialize_composite_val40_store,
     merge_definition,
     recover_completed_root_cause_analysis,
     recover_bounded_specialized_reasoning,
@@ -550,3 +553,78 @@ def test_source_epoch_drift_never_reuses_already_qa_complete_old_producer(monkey
 
     assert recover_research_source_epoch_with_fresh_producer(config) == 0
     assert successor["status"] == "BLOCKED"
+
+
+def test_composite_val40_store_materializes_forward_candidate(tmp_path, monkeypatch):
+    import nexus_composite_val40_task_materializer as mat
+    candidate = {
+        "candidate_digest": "a" * 64,
+        "decision": "FORWARD_TO_VAL40",
+        "eligible_for_fresh_runtime_requalification": True,
+    }
+    verification = {"decision": "pass", "candidate_digest": "a" * 64}
+    target = tmp_path / ("a" * 64)
+    target.mkdir()
+    (target / "candidate.json").write_text(json.dumps(candidate), encoding="utf-8")
+    (target / "verification.json").write_text(json.dumps(verification), encoding="utf-8")
+    monkeypatch.setattr("agent_manager_runner.verify_candidate", lambda value: verification)
+    monkeypatch.setattr(mat, "verify_candidate", lambda value: verification)
+    definition = {"schema_version": 1, "phase": 4, "policy": {}, "workers": [], "tasks": []}
+    result = materialize_composite_val40_store(definition, tmp_path)
+    assert len(result["tasks"]) == 1
+    task = result["tasks"][0]
+    assert task["id"] == "COMPOSITE-VAL40-" + "a" * 64
+    assert task["required_producer"] == "research-agent"
+    assert task["required_verifier"] == "qa-verifier-agent"
+
+
+def test_composite_val40_store_path_or_proof_tamper_fails_closed(tmp_path, monkeypatch):
+    candidate = {
+        "candidate_digest": "a" * 64,
+        "decision": "FORWARD_TO_VAL40",
+        "eligible_for_fresh_runtime_requalification": True,
+    }
+    verification = {"decision": "pass", "candidate_digest": "a" * 64}
+    wrong = tmp_path / ("b" * 64)
+    wrong.mkdir()
+    (wrong / "candidate.json").write_text(json.dumps(candidate), encoding="utf-8")
+    (wrong / "verification.json").write_text(json.dumps(verification), encoding="utf-8")
+    monkeypatch.setattr("agent_manager_runner.verify_candidate", lambda value: verification)
+    import pytest
+    with pytest.raises(ValueError, match="path does not match"):
+        materialize_composite_val40_store(
+            {"schema_version": 1, "phase": 4, "policy": {}, "workers": [], "tasks": []},
+            tmp_path,
+        )
+
+
+def test_composite_val40_security_binding_change_invalidates_stale_done_state():
+    base_task = {
+        "id": "COMPOSITE-VAL40-" + "a" * 64,
+        "phase": 7, "gate": 17, "dependencies": [],
+        "required_capabilities": ["data_validation"],
+        "required_resources": ["github-cloud"],
+        "authority": 2,
+        "acceptance": ["fresh canonical validation"],
+        "status": "READY",
+        "composite_val40_task": True,
+        "required_producer": "research-agent",
+        "required_verifier": "qa-verifier-agent",
+        "composite_val40_candidate": {"candidate_digest": "a" * 64},
+        "composite_val40_candidate_verification": {"decision": "pass"},
+    }
+    template = {
+        "schema_version": 1, "phase": 4, "policy": {}, "workers": [],
+        "tasks": [dict(base_task)],
+    }
+    old = dict(base_task)
+    old["status"] = "DONE"
+    old["composite_val40_candidate"] = {"candidate_digest": "b" * 64}
+    old["verification_evidence"] = {"old": True}
+    old["producer"] = "research-agent"
+    runtime = {"schema_version": 1, "phase": 4, "tasks": [old]}
+    task = merge_definition(template, runtime)["tasks"][0]
+    assert task["status"] == "READY"
+    assert task["composite_val40_candidate"]["candidate_digest"] == "a" * 64
+    assert "verification_evidence" not in task
+    assert "producer" not in task
