@@ -9,7 +9,7 @@ import pytest
 
 import nexus_composite_strategy_research as research
 from scripts import nexus_qa_attested_discovery_frontier as selector
-from nexus_research_missions import FIFTH
+from nexus_research_missions import FIFTH, SEVENTEENTH, attested_predecessor
 
 
 SOURCE = "a" * 40
@@ -471,3 +471,82 @@ def test_coordinator_proof_runs_for_every_main_push_to_prevent_source_transition
     # without any same-SHA durable runtime proof.
     assert "paths:" not in trigger
 
+
+
+def test_terminal_seventeenth_is_valid_discovery_frontier_but_not_successor_authority(monkeypatch):
+    ledger = research.empty_ledger()
+    ledger_core = {k: v for k, v in ledger.items() if k != "ledger_digest"}
+    ledger = {**ledger_core, "ledger_digest": research.digest(ledger_core)}
+    receipt_core = {
+        "lease_id": PRODUCER,
+        "source_sha": SOURCE,
+        "archive_sha256": research.ARCHIVE_SHA256,
+        "ledger_digest": ledger["ledger_digest"],
+        "prior_ledger_digest": "1" * 64,
+        "mechanism": "factory_gen_terminal_frontier",
+    }
+    receipt = {**receipt_core, "receipt_digest": research.digest(receipt_core)}
+    qa_core = {
+        "lease_id": PRODUCER,
+        "source_sha": SOURCE,
+        "producer_receipt_digest": receipt["receipt_digest"],
+        "independent_replay_matches": True,
+        "auto_demo_promotion": False,
+        "live_enabled": False,
+    }
+    proof = {**qa_core, "qa_digest": research.digest(qa_core)}
+    task = {
+        "id": SEVENTEENTH,
+        "status": "DONE",
+        "producer": "research-agent",
+        "verifier": "qa-verifier-agent",
+        "research_producer_lease_id": PRODUCER,
+        "lease_id": VERIFIER,
+        "result_evidence": {
+            "executor": "nexus-real-composite-backtest",
+            "source_sha": SOURCE,
+            "receipt_digest": receipt["receipt_digest"],
+            "ledger_digest": ledger["ledger_digest"],
+            "prior_ledger_digest": receipt["prior_ledger_digest"],
+            "config_fingerprint": "2" * 64,
+            "mechanism": receipt["mechanism"],
+            "independent_qa_complete": False,
+            "auto_demo_promotion": False,
+            "live_enabled": False,
+        },
+        "verification_evidence": {
+            "executor": "nexus-independent-composite-numeric-qa",
+            "source_sha": SOURCE,
+            "producer_lease_id": PRODUCER,
+            "producer_receipt_digest": receipt["receipt_digest"],
+            "qa_digest": proof["qa_digest"],
+            "independent_qa_complete": True,
+            "auto_demo_promotion": False,
+            "live_enabled": False,
+        },
+    }
+
+    monkeypatch.setattr(selector, "latest_coordinator", lambda repo: (901, {"tasks": [task]}))
+
+    def exact(repo, name, sha, member):
+        assert repo == selector.REPO
+        assert sha == SOURCE
+        if member == "result/agent-receipt.json":
+            return 902, receipt
+        if member == "result/novelty-ledger.json":
+            return 903, ledger
+        if member == "qa-evidence.json":
+            return 904, proof
+        raise AssertionError(member)
+
+    monkeypatch.setattr(selector, "exact_artifact_json", exact)
+    selected = selector.verified_frontier(selector.REPO)
+    assert selected["predecessor"] == SEVENTEENTH
+    assert selected["predecessor_ledger_digest"] == ledger["ledger_digest"]
+    assert selected["predecessor_qa_digest"] == proof["qa_digest"]
+    assert selected["research_only"] is True
+    assert selected["auto_demo_promotion"] is False
+    assert selected["live_enabled"] is False
+
+    with pytest.raises(ValueError, match="previous real Research"):
+        attested_predecessor(task)
