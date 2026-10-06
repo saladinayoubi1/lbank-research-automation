@@ -65,6 +65,23 @@ def _safe_asset(ui_root: Path, name: str) -> ByteResponse:
     return ByteResponse(HTTPStatus.OK, target.read_bytes(), content_type)
 
 
+def _demo_public_mark_client() -> tuple[BybitPublicClient, str]:
+    """Use only approved Bybit public hosts, prioritizing the reachable global mirror.
+
+    The Demo account trades USDT linear symbols. The EEA endpoint can answer
+    successfully while exposing no linear instruments, so this display-only
+    client tries the two approved global Bybit hosts first and fails closed.
+    """
+    _, bases = _active_mainnet_base_urls()
+    priority = ("https://api.bytick.com", "https://api.bybit.com")
+    ordered = tuple(base for preferred in priority for base in bases if base == preferred)
+    ordered += tuple(base for base in bases if base not in priority)
+    attempts = min(2, len(ordered))
+    if attempts < 1:
+        raise RuntimeError("no approved Bybit public host available")
+    return BybitPublicClient(list(ordered), 4.0, attempts, 0.0), "bybit_official_linear_public"
+
+
 def _shared_paper_live_snapshot(data_root: Path, *, now: datetime | None = None) -> dict[str, Any]:
     """Read-only live market projection over the sealed shared Paper snapshot.
 
@@ -86,10 +103,11 @@ def _shared_paper_live_snapshot(data_root: Path, *, now: datetime | None = None)
 
     paper_state_stale = bool(snapshot.get("stale", True))
     projected = dict(snapshot)
+    market_transport = "not_needed_flat"
     if snapshot.get("positions"):
+        market_transport = "bybit_public_unavailable"
         try:
-            _, bases = _active_mainnet_base_urls()
-            client = BybitPublicClient(list(bases), 6.0, 2, 0.0)
+            client, market_transport = _demo_public_mark_client()
             projected = with_shared_public_marks(snapshot, client, current)
         except Exception:
             projected = dict(snapshot)
@@ -104,6 +122,7 @@ def _shared_paper_live_snapshot(data_root: Path, *, now: datetime | None = None)
         **projected,
         "projection": "nexus.shared-paper-live-display.v1",
         "market_live": quote_status in {"fresh", "not_needed_flat"},
+        "market_transport": market_transport,
         "paper_state_checked_at": snapshot.get("checked_at"),
         "paper_state_stale": paper_state_stale,
         "display_only_market_overlay": True,
