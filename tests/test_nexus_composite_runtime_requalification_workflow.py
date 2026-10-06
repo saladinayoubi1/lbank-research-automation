@@ -103,6 +103,7 @@ def test_physical_evidence_uses_bounded_digest_bound_job_log_transport() -> None
     assert "needs: runtime-requalification" in hosted
     assert "runs-on: ubuntu-latest" in hosted
     assert "actions/jobs/$(cat build/publisher/job-id.txt)/logs" in hosted
+    assert "gh api --allow-escape-sequences" in hosted
     assert "physical evidence size or digest mismatch" in hosted
     assert "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a" in hosted
     assert "name: nexus-composite-runtime-requalification-${{ github.run_id }}" in hosted
