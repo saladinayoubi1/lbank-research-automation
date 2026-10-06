@@ -6,7 +6,7 @@ from urllib.error import HTTPError, URLError
 
 import pytest
 
-from product_market_diagnostics import MarketProbeInputError, _download_public, probe_primary_spot
+from product_market_diagnostics import MarketProbeInputError, _download_public, probe_primary_spot, probe_public_linear_marks
 
 STEP = 14_400_000
 NOW = 30 * STEP + STEP // 2
@@ -181,3 +181,105 @@ def test_public_download_is_direct_no_redirect_and_byte_bounded(monkeypatch) -> 
 
     monkeypatch.setattr(market, "build_opener", fake_build)
     assert _download_public("https://api.bybit.com/v5/market/kline", 6) == b"{}"
+
+
+
+def _ticker_response(symbol: str, mark: str, *, at: int = NOW, category: str = "linear", ret: int = 0) -> bytes:
+    return json.dumps({
+        "retCode": ret,
+        "retMsg": "OK" if ret == 0 else "denied",
+        "time": at,
+        "result": {
+            "category": category,
+            "list": [{"symbol": symbol, "markPrice": mark}],
+        },
+    }).encode()
+
+
+def test_public_linear_marks_are_fresh_display_only() -> None:
+    calls = []
+    def fetch(url, timeout):
+        calls.append((url, timeout))
+        symbol = "BTCUSDT" if "BTCUSDT" in url else "ETHUSDT"
+        return _ticker_response(symbol, "60123.45" if symbol == "BTCUSDT" else "3123.50", at=NOW - 1000)
+
+    result = probe_public_linear_marks(
+        symbols=["BTCUSDT", "ETHUSDT", "BTCUSDT"],
+        fetcher=fetch,
+        now_ms=NOW,
+    )
+    assert result["status"] == "fresh"
+    assert result["reason_code"] == "public_mark_probe_passed"
+    assert result["source"] == "Bybit"
+    assert result["market_category"] == "linear"
+    assert result["display_only"] is True
+    assert result["execution_eligible"] is False
+    assert result["risk_eligible"] is False
+    assert result["dataset_written"] is False
+    assert result["live_trading_authority"] is False
+    assert result["marks"]["BTCUSDT"]["mark_price"] == "60123.45"
+    assert result["marks"]["ETHUSDT"]["mark_price"] == "3123.50"
+    assert len(calls) == 2
+    assert all(timeout == 4.0 for _, timeout in calls)
+    assert calls[0][0].startswith("https://api.bybit.com/v5/market/tickers?category=linear&symbol=")
+
+
+def test_public_linear_marks_fail_closed_on_stale_or_mismatched_ticker() -> None:
+    stale = probe_public_linear_marks(
+        symbols=["BTCUSDT"],
+        fetcher=lambda *_: _ticker_response("BTCUSDT", "60000", at=NOW - 121_000),
+        now_ms=NOW,
+    )
+    assert stale["status"] == "integrity_failed"
+    assert stale["marks"] == {}
+
+    wrong = probe_public_linear_marks(
+        symbols=["BTCUSDT"],
+        fetcher=lambda *_: _ticker_response("ETHUSDT", "3000", at=NOW),
+        now_ms=NOW,
+    )
+    assert wrong["status"] == "integrity_failed"
+    assert wrong["marks"] == {}
+
+
+def test_public_linear_marks_http_failure_never_returns_partial_prices() -> None:
+    calls = 0
+    def fetch(url, _timeout):
+        nonlocal calls
+        calls += 1
+        if "BTCUSDT" in url:
+            return _ticker_response("BTCUSDT", "60000", at=NOW)
+        raise HTTPError(url, 403, "denied", {}, io.BytesIO())
+
+    result = probe_public_linear_marks(
+        symbols=["BTCUSDT", "ETHUSDT"],
+        fetcher=fetch,
+        now_ms=NOW,
+    )
+    assert calls == 2
+    assert result["status"] == "unavailable"
+    assert result["reason_code"] == "public_http_403_access_denied"
+    assert result["marks"] == {}
+
+
+def test_public_linear_marks_validate_symbols_before_network() -> None:
+    called = []
+    with pytest.raises(MarketProbeInputError):
+        probe_public_linear_marks(
+            symbols=["BTCUSDT&category=spot"],
+            fetcher=lambda *_: called.append(True),
+            now_ms=NOW,
+        )
+    assert called == []
+
+
+def test_public_linear_marks_flat_account_does_not_hit_network() -> None:
+    called = []
+    result = probe_public_linear_marks(
+        symbols=[],
+        fetcher=lambda *_: called.append(True),
+        now_ms=NOW,
+    )
+    assert result["status"] == "not_needed_flat"
+    assert result["marks"] == {}
+    assert called == []
