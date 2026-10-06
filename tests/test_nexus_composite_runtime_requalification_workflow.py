@@ -70,12 +70,12 @@ def test_contract_job_covers_candidate_transport_and_requalification() -> None:
     assert "tests/test_nexus_composite_runtime_requalification_workflow.py" in text
     assert "tests/test_nexus_composite_validation_candidate.py" in text
     assert "tests/test_nexus_composite_validation_candidate_transport.py" in text
-    assert "NEXUS_COMPOSITE_VAL40_EVIDENCE_TRANSPORT=bounded-job-log-v1" in text
+    assert "if-no-files-found: error" in text
 
 
 def test_physical_runtime_job_is_javascript_action_free() -> None:
     text = _text()
-    physical = text.split("  runtime-requalification:", 1)[1]
+    physical = text.split("  runtime-requalification:", 1)[1].split("\n  publish-evidence:", 1)[0]
     assert "runs-on: nexus-bybit-network" in physical
     assert "uses:" not in physical
     assert "physical_source_transport=github-api-exact-sha" in physical
@@ -85,13 +85,26 @@ def test_physical_runtime_job_is_javascript_action_free() -> None:
     assert "actions/upload-artifact" not in physical
 
 
-def test_physical_evidence_uses_bounded_digest_bound_job_log_transport() -> None:
+def test_physical_evidence_is_bounded_then_published_on_hosted_node24_job() -> None:
     text = _text()
-    physical = text.split("  runtime-requalification:", 1)[1]
-    assert "  publish-evidence:" not in text
-    assert "NEXUS_COMPOSITE_VAL40_EVIDENCE_TRANSPORT=bounded-job-log-v1" in physical
-    assert "NEXUS_COMPOSITE_VAL40_EVIDENCE_SHA256=" in physical
-    assert "NEXUS_COMPOSITE_VAL40_EVIDENCE_SIZE=" in physical
-    assert "NEXUS_COMPOSITE_VAL40_EVIDENCE_B64=" in physical
-    assert 'test "$evidence_size" -le 500000' in physical
-    assert 'test "${#evidence_b64}" -le 700000' in physical
+    physical = text.split("  runtime-requalification:", 1)[1].split("\n  publish-evidence:", 1)[0]
+    publisher = text.split("\n  publish-evidence:", 1)[1]
+    assert "NEXUS_COMPOSITE_VAL40_EVIDENCE_TRANSPORT=bounded-chunked-job-output-v1" in physical
+    assert "chunk_size = 30_000" in physical
+    assert "if not 0 < len(raw) <= 250_000" in physical
+    assert "if len(encoded) > 340_000" in physical
+    assert "if not 1 <= len(chunks) <= 12" in physical
+    assert "estimated_utf16_bytes > 1_048_576" in physical
+    assert "evidence_chunk_0: ${{ steps.package.outputs.evidence_chunk_0 }}" in physical
+    assert "evidence_chunk_11: ${{ steps.package.outputs.evidence_chunk_11 }}" in physical
+    assert "runs-on: ubuntu-latest" in publisher
+    assert "needs: runtime-requalification" in publisher
+    assert "EVIDENCE_CHUNK_COUNT: ${{ needs.runtime-requalification.outputs.evidence_chunk_count }}" in publisher
+    assert "EVIDENCE_CHUNK_0: ${{ needs.runtime-requalification.outputs.evidence_chunk_0 }}" in publisher
+    assert "EVIDENCE_CHUNK_11: ${{ needs.runtime-requalification.outputs.evidence_chunk_11 }}" in publisher
+    assert "base64.b64decode(encoded.encode(\"ascii\"), validate=True)" in publisher
+    assert 'expected = {"runtime-requalification.json", "verification.json"}' in publisher
+    assert "hosted_physical_val40_evidence_restore=PASS" in publisher
+    assert "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a" in publisher
+    assert "name: nexus-composite-runtime-requalification-${{ github.run_id }}" in publisher
+    assert "if-no-files-found: error" in publisher
