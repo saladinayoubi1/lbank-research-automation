@@ -1,8 +1,8 @@
 (()=>{
 'use strict';
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
-const state={overview:null,paper:null,matrix:null,events:null,strategies:null,mission:null,risk:null,recovery:null,notifications:null,registry:null,marketProbe:null,research:null,agentResearch:null,integration:null,lastRisk:null,sessionId:'nexus-ui-'+crypto.randomUUID(),conversationId:'product-'+crypto.randomUUID(),turn:0};
-const PAPER_UI_REFRESH_INTERVAL_MS=60*1000;
+const state={overview:null,paper:null,paperMarket:null,matrix:null,events:null,strategies:null,mission:null,risk:null,recovery:null,notifications:null,registry:null,marketProbe:null,research:null,agentResearch:null,integration:null,lastRisk:null,sessionId:'nexus-ui-'+crypto.randomUUID(),conversationId:'product-'+crypto.randomUUID(),turn:0};
+const PAPER_UI_REFRESH_INTERVAL_MS=15*1000;
 const PAPER_UI_STALE_FAILURE_LIMIT=2;
 let paperUiRefreshTimer=null;
 let paperUiRefreshFailures=0;
@@ -38,7 +38,7 @@ async function resetUIPreferences(){if(window.nexusDesktop?.resetPreferences)ret
 function bindSettings(){const form=$('#settingsForm');if(!form)return;const preview=()=>applyUIPreferences(formUIPreferences(),{syncForm:false});form.addEventListener('input',()=>{const out=$('#fontSizeValue'),font=form.elements.namedItem('fontSize');if(out&&font)out.textContent=font.value+'px';preview()});form.addEventListener('change',preview);form.onsubmit=async e=>{e.preventDefault();try{const saved=await persistUIPreferences(formUIPreferences());applyUIPreferences(saved);toast('تنظیمات شخصی ذخیره شد')}catch(err){toast('ذخیره تنظیمات ناموفق بود: '+err.message)}};$('#settingsReset').onclick=async()=>{try{const defaults=await resetUIPreferences();applyUIPreferences(defaults);toast('تنظیمات پیش‌فرض بازیابی شد')}catch(err){toast('بازیابی تنظیمات ناموفق بود: '+err.message)}}}
 async function initializePersonalization(){ensureSettingsSurface();try{applyUIPreferences(await readUIPreferences())}catch{applyUIPreferences(UI_DEFAULTS)}bindSettings();const build=$('#buildLabel');if(build)build.textContent='5.1.0'}
 function renderOverview(){const x=state.overview;if(!x)return;$('#productState').textContent=x.delivery||'canonical-python-sidecar';$('#paperState').textContent=x.paper?.active?'ACTIVE':'UNAVAILABLE';$('#liveState').textContent=(x.live?.status||'LOCKED').toUpperCase();const m=x.mission_control||{};$('#missionBadge').className='badge '+statusClass(m.status);$('#missionBadge').textContent=String(m.status||'unavailable').toUpperCase();const mission=m.mission||{},queue=m.queue||{},counts=queue.counts||{};$('#missionSummary').innerHTML=[metric('MISSION',mission.status||m.status||'unavailable',mission.mission_id||''),metric('READY',counts.ready??counts.READY??'—','queue'),metric('RUNNING',counts.running??counts.RUNNING??'—','queue'),metric('AGENTS',Array.isArray(m.agents)?m.agents.length:'—','registered')].join('');$('#capabilityMap').innerHTML=Object.entries(x.capabilities||{}).map(([k,v])=>`<div class="capability"><span>${esc(k.replaceAll('_',' ').toUpperCase())}</span><b class="${statusClass(v)}">${esc(v)}</b></div>`).join('')}
-function activePaperTerminalSnapshot(p,eventEnvelope){
+function activePaperTerminalSnapshot(p,eventEnvelope,marketEnvelope){
   const a=p?.account||{},events=Array.isArray(eventEnvelope?.events)?eventEnvelope.events:[],reportedTotal=Number(eventEnvelope?.total);
   const complete=Number.isInteger(reportedTotal)&&reportedTotal===events.length,feesByCorrelation=new Map(),slippageByCorrelation=new Map();
   for(const e of events){
@@ -66,7 +66,7 @@ function activePaperTerminalSnapshot(p,eventEnvelope){
         const old=timeline.get(symbol),realized=Number(payload.realized_pnl),fee=feesByCorrelation.get(correlation);
         history.push({strategy:old?.strategy||strategyFor(e),symbol,side:old?.side??null,quantity:old?.quantity??null,entry_price:old?.entry_price??null,exit_price:payload.entry_price??null,gross_pnl:payload.realized_pnl??null,fees:fee??null,funding:null,net_pnl:Number.isFinite(realized)&&Number.isFinite(fee)?realized-fee:null,opened_at:old?.opened_at??null,time:e.occurred_at,reason:'position_reversed',partial:false});
       }
-      const meta={kind:provenance.kind||'unknown',source:provenance.source_id||'runtime-journal',strategy:strategyFor(e),timeframe:provenance.timeframe||null,opened_at:e.occurred_at||null,position_event_id:e.event_id||null,side:payload.side??null,quantity:payload.quantity??null,entry_price:payload.entry_price??null};
+      const meta={kind:provenance.kind||'unknown',source:provenance.source_id||'runtime-journal',strategy:strategyFor(e),timeframe:provenance.timeframe||null,opened_at:e.occurred_at||null,position_event_id:e.event_id||null,side:payload.side??null,quantity:payload.quantity??null,entry_price:payload.entry_price??null,entry_fee:feesByCorrelation.get(correlation)??null};
       currentMeta.set(symbol,meta);timeline.set(symbol,meta);
     }else if(kind==='position_reduced'){
       const old=timeline.get(symbol),realized=Number(payload.realized_pnl),fee=feesByCorrelation.get(correlation),oldQty=Number(old?.quantity),reduced=Number(payload.quantity);
@@ -78,17 +78,25 @@ function activePaperTerminalSnapshot(p,eventEnvelope){
       currentMeta.delete(symbol);timeline.delete(symbol);
     }
   }
+  const marketFresh=marketEnvelope?.status==='fresh'&&marketEnvelope?.source==='Bybit'&&marketEnvelope?.display_only===true&&marketEnvelope?.execution_eligible===false&&marketEnvelope?.live_trading_authority===false;
+  const marks=marketFresh&&marketEnvelope?.marks&&typeof marketEnvelope.marks==='object'?marketEnvelope.marks:{};
   const positions=(Array.isArray(a.positions)?a.positions:[]).map(r=>{
-    const symbol=String(r.symbol||''),m=currentMeta.get(symbol)||{},st=(a.stops||[]).find(x=>x.symbol===symbol),tg=(a.targets||[]).find(x=>x.symbol===symbol);
-    return{id:m.position_event_id||('runtime:'+symbol),strategy:m.strategy||'runtime-paper',symbol,side:r.side,quantity:r.quantity,entry_price:r.entry_price,mark_price:null,unrealized_pnl:null,net_pnl_to_date:null,stop_loss:st?.price??null,take_profit:tg?.price??null,opened_at:m.opened_at??null,mark_time:null,timeframe:m.timeframe??null,source:m.source||'runtime-journal',provenance_kind:m.kind||'unknown'};
+    const symbol=String(r.symbol||''),m=currentMeta.get(symbol)||{},st=(a.stops||[]).find(x=>x.symbol===symbol),tg=(a.targets||[]).find(x=>x.symbol===symbol),quote=marks[symbol]||{};
+    const quantity=Number(r.quantity),entry=Number(r.entry_price),mark=Number(quote.mark_price),side=String(r.side||''),direction=side==='long'?1:side==='short'?-1:0;
+    const liveMark=marketFresh&&Number.isFinite(mark)&&mark>0&&Number.isFinite(quantity)&&quantity>=0&&Number.isFinite(entry)&&entry>0&&direction!==0;
+    const unrealized=liveMark?direction*quantity*(mark-entry):null,entryFee=Number(m.entry_fee);
+    return{id:m.position_event_id||('runtime:'+symbol),strategy:m.strategy||'runtime-paper',symbol,side:r.side,quantity:r.quantity,entry_price:r.entry_price,mark_price:liveMark?mark:null,unrealized_pnl:unrealized,net_pnl_to_date:liveMark&&Number.isFinite(entryFee)?unrealized-entryFee:null,stop_loss:st?.price??null,take_profit:tg?.price??null,opened_at:m.opened_at??null,mark_time:liveMark?(quote.mark_time_utc||marketEnvelope?.checked_at_utc||null):null,timeframe:m.timeframe??null,source:m.source||'runtime-journal',provenance_kind:m.kind||'unknown'};
   });
+  const liveComplete=positions.length>0&&marketFresh&&positions.every(row=>Number.isFinite(Number(row.mark_price))&&Number.isFinite(Number(row.unrealized_pnl)));
+  const displayUnrealized=liveComplete?positions.reduce((sum,row)=>sum+Number(row.unrealized_pnl),0):Number(a.unrealized_pnl);
+  const cash=Number(a.cash),displayEquity=liveComplete&&Number.isFinite(cash)?cash+displayUnrealized:Number(a.equity);
   const strategies=[...new Set([...strategyFills.keys(),...positions.map(r=>r.strategy)])].map(strategy=>({strategy,allocation:null,balance:null,equity:null,net_pnl:null,fills:strategyFills.get(strategy)||0,halted:a.kill_switch_enabled===true}));
-  const initial=Number(openingCash),equity=Number(a.equity),netPnl=Number.isFinite(initial)&&Number.isFinite(equity)?equity-initial:null;
-  return{available:p?.active===true&&p?.paper_only===true&&p?.live_trading_authority===false,stale:false,status:a.kill_switch_enabled?'risk_halted':'active',source_type:'product_runtime_event_journal',export_url:'/api/product/export/paper.csv',export_filename:'nexus-paper-events.csv',event_window_complete:complete,head_event_digest:p?.head_event_digest||null,checked_at:lastAt,last_execution_utc:lastAt,valuation:'event_sourced_runtime',account:{equity:a.equity??null,balance:a.cash??null,net_pnl:netPnl,unrealized_pnl:a.unrealized_pnl??null,realized_gross:a.realized_pnl??null,fees:complete?totalFees:null,funding:null,free_margin:null},positions,history,orders,cashflows,strategies};
+  const initial=Number(openingCash),netPnl=Number.isFinite(initial)&&Number.isFinite(displayEquity)?displayEquity-initial:null;
+  return{available:p?.active===true&&p?.paper_only===true&&p?.live_trading_authority===false,stale:positions.length>0&&!liveComplete,status:a.kill_switch_enabled?'risk_halted':'active',source_type:'product_runtime_event_journal',export_url:'/api/product/export/paper.csv',export_filename:'nexus-paper-events.csv',event_window_complete:complete,head_event_digest:p?.head_event_digest||null,checked_at:liveComplete?marketEnvelope?.checked_at_utc:lastAt,market_checked_at:marketEnvelope?.checked_at_utc??null,last_execution_utc:lastAt,valuation:liveComplete?'public_mark_snapshot':'event_sourced_runtime',quote_status:marketEnvelope?.status||'unavailable',market_source:marketEnvelope?.source||null,account:{equity:Number.isFinite(displayEquity)?displayEquity:a.equity??null,balance:a.cash??null,net_pnl:netPnl,unrealized_pnl:Number.isFinite(displayUnrealized)?displayUnrealized:a.unrealized_pnl??null,realized_gross:a.realized_pnl??null,fees:complete?totalFees:null,funding:null,free_margin:null},positions,history,orders,cashflows,strategies};
 }
 function renderPaper(){
   const p=state.paper;if(!p)return;
-  window.NexusPaperTerminal?.render(activePaperTerminalSnapshot(p,state.events));
+  window.NexusPaperTerminal?.render(activePaperTerminalSnapshot(p,state.events,state.paperMarket),{onRefresh:refreshPaper});
   const a=p.account||{},positions=a.positions||[],events=state.events?.events||[],meta=new Map();
   for(const e of events){
     const symbol=e?.payload?.symbol;if(!symbol)continue;
@@ -355,9 +363,51 @@ function renderResearch(){
   const qaState=candidate?(qa.verified===true?'VERIFIED':'REQUIRED'):'NOT APPLICABLE';
   $('#researchRunState').textContent=`${candidate?'CANDIDATE — INDEPENDENT QA REQUIRED':q.status||'unknown'}\nDataset: ${r.dataset?.source||'—'} ${r.dataset?.row_count||'—'} candles\nIndependent QA: ${qaState}\nPaper execution: ${qa.paper_execution_allowed===true?'ALLOWED':'BLOCKED'}\nPipeline: ${r.pipeline_digest||'—'}\nNo profitability claim.`;
 }
-async function loadAll(){setGateway(false,'در حال اتصال');try{const [overview,paper,risk,recovery,extras]=await Promise.all([api('/api/product/overview'),api('/api/product/paper'),api('/api/product/risk'),api('/api/product/recovery'),Promise.all([optionalApi('/api/product/paper/matrix'),optionalApi('/api/product/paper/events?limit=100'),optionalApi('/api/product/strategies'),optionalApi('/api/product/mission-control'),optionalApi('/api/product/notifications?limit=40'),optionalApi('/api/product/data/registry'),optionalApi('/api/product/research/last'),optionalApi('/api/product/mission/full'),optionalApi('/api/product/integration'),optionalApi('/api/product/ai/provider')])]);const [matrixResult,eventsResult,strategiesResult,missionResult,notificationsResult,registryResult,researchResult,agentResearchResult,integrationResult,aiProviderResult]=extras;const matrix=matrixResult.value,events=eventsResult.value,strategies=strategiesResult.value,mission=missionResult.value,notifications=notificationsResult.value,registry=registryResult.value,research=researchResult.value,agentResearch=agentResearchResult.value,integration=integrationResult.value,aiProvider=aiProviderResult.value;state.marketProbe=null;Object.assign(state,{overview,paper,matrix,events,strategies,mission,risk,recovery,notifications,registry,research,agentResearch,integration,aiProvider});renderOverview();renderPaper();renderMatrix();renderEvents();renderStrategies();renderMission();renderLive();renderRegistry();renderMarketProbe();renderRisk();renderRecovery();renderNotifications();renderResearch();renderAgentResearch();renderIntegration();renderAIProvider();const failed=extras.filter(x=>!x.ok);markGatewayHealthy(failed.length?`متصل · ${failed.length} بخش محدود`:'Python backend متصل');if(failed.length)toast(`${failed.length} بخش فرعی موقتاً در دسترس نیست`)}catch(e){setGateway(false,'Backend unavailable');toast(e.message)}}
-async function refreshPaper(){try{const [paper,risk,recovery,extras]=await Promise.all([api('/api/product/paper'),api('/api/product/risk'),api('/api/product/recovery'),Promise.all([optionalApi('/api/product/paper/matrix'),optionalApi('/api/product/paper/events?limit=100'),optionalApi('/api/product/notifications?limit=40')])]);const [matrixResult,eventsResult,notificationsResult]=extras;Object.assign(state,{paper,risk,recovery,matrix:matrixResult.value,events:eventsResult.value,notifications:notificationsResult.value});renderPaper();renderMatrix();renderEvents();renderRisk();renderRecovery();renderNotifications();const failed=extras.filter(x=>!x.ok);markGatewayHealthy(failed.length?`متصل · ${failed.length} بخش محدود`:'Python backend متصل');if(failed.length)toast(`${failed.length} بخش فرعی Paper موقتاً در دسترس نیست`)}catch(err){setGateway(false,'Paper backend unavailable');toast('بروزرسانی Paper ناموفق بود: '+err.message)}}
-async function refreshPaperSnapshot(){if(document.visibilityState!=='visible'||inFlightActions.has('paper-ui-refresh'))return;await singleFlight('paper-ui-refresh',null,async()=>{try{state.paper=await api('/api/product/paper');const eventsResult=await optionalApi('/api/product/paper/events?limit=100');if(eventsResult.ok)state.events=eventsResult.value;renderPaper();if(eventsResult.ok)renderEvents();markGatewayHealthy()}catch{paperUiRefreshFailures+=1;if(paperUiRefreshFailures>=PAPER_UI_STALE_FAILURE_LIMIT)setGateway(false,'Backend stale')}})}
+async function loadAll(){
+  setGateway(false,'در حال اتصال');
+  try{
+    const [overview,paper,risk,recovery,extras]=await Promise.all([
+      api('/api/product/overview'),api('/api/product/paper'),api('/api/product/risk'),api('/api/product/recovery'),
+      Promise.all([
+        optionalApi('/api/product/paper/market'),optionalApi('/api/product/paper/matrix'),optionalApi('/api/product/paper/events?limit=100'),
+        optionalApi('/api/product/strategies'),optionalApi('/api/product/mission-control'),optionalApi('/api/product/notifications?limit=40'),
+        optionalApi('/api/product/data/registry'),optionalApi('/api/product/research/last'),optionalApi('/api/product/mission/full'),
+        optionalApi('/api/product/integration'),optionalApi('/api/product/ai/provider')
+      ])
+    ]);
+    const [marketResult,matrixResult,eventsResult,strategiesResult,missionResult,notificationsResult,registryResult,researchResult,agentResearchResult,integrationResult,aiProviderResult]=extras;
+    const paperMarket=marketResult.value,matrix=matrixResult.value,events=eventsResult.value,strategies=strategiesResult.value,mission=missionResult.value,notifications=notificationsResult.value,registry=registryResult.value,research=researchResult.value,agentResearch=agentResearchResult.value,integration=integrationResult.value,aiProvider=aiProviderResult.value;
+    state.marketProbe=null;
+    Object.assign(state,{overview,paper,paperMarket,matrix,events,strategies,mission,risk,recovery,notifications,registry,research,agentResearch,integration,aiProvider});
+    renderOverview();renderPaper();renderMatrix();renderEvents();renderStrategies();renderMission();renderLive();renderRegistry();renderMarketProbe();renderRisk();renderRecovery();renderNotifications();renderResearch();renderAgentResearch();renderIntegration();renderAIProvider();
+    const failed=extras.filter(x=>!x.ok);markGatewayHealthy(failed.length?`متصل · ${failed.length} بخش محدود`:'Python backend متصل');if(failed.length)toast(`${failed.length} بخش فرعی موقتاً در دسترس نیست`);
+  }catch(e){setGateway(false,'Backend unavailable');toast(e.message)}
+}
+async function refreshPaper(){
+  try{
+    const [paper,marketResult,risk,recovery,extras]=await Promise.all([
+      api('/api/product/paper'),optionalApi('/api/product/paper/market'),api('/api/product/risk'),api('/api/product/recovery'),
+      Promise.all([optionalApi('/api/product/paper/matrix'),optionalApi('/api/product/paper/events?limit=100'),optionalApi('/api/product/notifications?limit=40')])
+    ]);
+    const [matrixResult,eventsResult,notificationsResult]=extras;
+    Object.assign(state,{paper,paperMarket:marketResult.value,risk,recovery,matrix:matrixResult.value,events:eventsResult.value,notifications:notificationsResult.value});
+    renderPaper();renderMatrix();renderEvents();renderRisk();renderRecovery();renderNotifications();
+    const failed=[marketResult,...extras].filter(x=>!x.ok);markGatewayHealthy(failed.length?`متصل · ${failed.length} بخش محدود`:'Python backend متصل');if(failed.length)toast(`${failed.length} بخش فرعی Paper موقتاً در دسترس نیست`);
+  }catch(err){setGateway(false,'Paper backend unavailable');toast('بروزرسانی Paper ناموفق بود: '+err.message)}
+}
+async function refreshPaperSnapshot(){
+  if(document.visibilityState!=='visible'||inFlightActions.has('paper-ui-refresh'))return;
+  await singleFlight('paper-ui-refresh',null,async()=>{
+    try{
+      const [paper,marketResult,eventsResult]=await Promise.all([
+        api('/api/product/paper'),optionalApi('/api/product/paper/market'),optionalApi('/api/product/paper/events?limit=100')
+      ]);
+      state.paper=paper;state.paperMarket=marketResult.value;if(eventsResult.ok)state.events=eventsResult.value;
+      renderPaper();if(eventsResult.ok)renderEvents();
+      markGatewayHealthy(marketResult.ok?'Python backend متصل':'متصل · قیمت بازار موقتاً در دسترس نیست');
+    }catch{paperUiRefreshFailures+=1;if(paperUiRefreshFailures>=PAPER_UI_STALE_FAILURE_LIMIT)setGateway(false,'Backend stale')}
+  })
+}
 function startPaperUiAutoRefresh(){if(paperUiRefreshTimer)clearInterval(paperUiRefreshTimer);paperUiRefreshTimer=setInterval(()=>{void refreshPaperSnapshot()},PAPER_UI_REFRESH_INTERVAL_MS);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')void refreshPaperSnapshot()})}
 async function submitPaper(e){e.preventDefault();const form=e.currentTarget,button=form.querySelector('button[type="submit"]');return singleFlight('paper-order',button,async()=>{const f=new FormData(form),payload={};for(const [k,v] of f.entries())payload[k]=String(v).trim();const out=$('#orderResult');out.className='result-box muted';out.textContent='در حال ارزیابی Risk…';try{const r=await api('/api/product/paper/order',{method:'POST',body:JSON.stringify(payload)});state.lastRisk=r;$('#lastRisk').textContent=JSON.stringify(r,null,2);out.className='result-box '+(r.accepted?'good':'bad');out.textContent=r.accepted?`ACCEPTED\nFill: ${r.execution.fill_price}\nFee: ${r.execution.fee}\nRisk: ${r.risk.reason_code}`:`REJECTED\nRisk: ${r.risk.reason_code}`;await refreshPaper();toast(r.accepted?'Paper execution ثبت شد':'Risk درخواست را رد کرد')}catch(err){out.className='result-box bad';out.textContent='REJECTED\n'+err.message;toast(err.message)}})}
 async function runResearch(e){e.preventDefault();const form=e.currentTarget,button=form.querySelector('button[type="submit"]');return singleFlight('research-run',button,async()=>{const f=new FormData(form),payload={symbol:String(f.get('symbol')),timeframe:String(f.get('timeframe')),family:String(f.get('family')),limit:Number(f.get('limit'))};$('#researchRunState').className='result-box muted';$('#researchRunState').textContent='در حال دریافت کندل بسته و اجرای backtest / OOS / stress / regime…';try{const r=await api('/api/product/research/run',{method:'POST',body:JSON.stringify(payload)});state.research=r;renderResearch();if(window.NexusStrategyWorkspace)await window.NexusStrategyWorkspace.refresh();toast('پژوهش canonical تکمیل شد')}catch(err){$('#researchRunState').className='result-box bad';$('#researchRunState').textContent='FAIL CLOSED\n'+err.message;toast(err.message)}})}
