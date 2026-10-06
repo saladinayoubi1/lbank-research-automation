@@ -25,7 +25,7 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 from nexus_composite_strategy_research import ARCHIVE_SHA256, digest, load_ledger, safe_write
-from nexus_research_missions import FIRST, PREDECESSOR, attested_predecessor
+from nexus_research_missions import FIRST, PREDECESSOR, attested_research_task
 
 REPO = "saladinayoubi1/lbank-research-automation"
 COORDINATOR_WORKFLOW_PATH = ".github/workflows/fast-agent-coordinator.yml"
@@ -379,7 +379,12 @@ def verified_frontier(repo: str) -> dict[str, Any]:
     task = None
     attested = None
     unfinished_seen = False
-    for candidate_id in dict.fromkeys(PREDECESSOR.values()):
+    # Discovery/cache identity needs the latest independently QA-attested
+    # Research frontier, including a terminal task that intentionally has no
+    # successor in the Agent Manager DAG.  This is narrower than successor
+    # authorization: attested_predecessor() still rejects terminal missions.
+    frontier_order = (FIRST, *PREDECESSOR.keys())
+    for candidate_id in frontier_order:
         candidate = by_id.get(candidate_id)
         if candidate is None:
             continue
@@ -389,9 +394,9 @@ def verified_frontier(repo: str) -> dict[str, Any]:
         if unfinished_seen:
             raise QaFrontierError("Research mission lineage is non-contiguous")
         try:
-            candidate_attested = attested_predecessor(candidate)
+            candidate_attested = attested_research_task(candidate)
         except ValueError as exc:
-            raise QaFrontierError("completed predecessor lacks exact independent QA") from exc
+            raise QaFrontierError("completed frontier lacks exact independent QA") from exc
         expected_id = candidate_id
         task = candidate
         attested = candidate_attested
