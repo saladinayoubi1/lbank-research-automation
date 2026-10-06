@@ -199,8 +199,8 @@ def test_active_paper_terminal_uses_product_runtime_journal_not_legacy_shared_po
     js = (ROOT / "product_ui" / "product.js").read_text(encoding="utf-8")
     terminal = (ROOT / "product_ui" / "product-terminal.js").read_text(encoding="utf-8")
 
-    assert "function activePaperTerminalSnapshot(p,eventEnvelope)" in js
-    assert "window.NexusPaperTerminal?.render(activePaperTerminalSnapshot(p,state.events));" in js
+    assert "function activePaperTerminalSnapshot(p,eventEnvelope,marketEnvelope)" in js
+    assert "window.NexusPaperTerminal?.render(activePaperTerminalSnapshot(p,state.events,state.paperMarket),{onRefresh:refreshPaper});" in js
     assert "window.NexusPaperTerminal?.render(p.shared_portfolio);" not in js
     assert "source_type:'product_runtime_event_journal'" in js
     assert "export_url:'/api/product/export/paper.csv'" in js
