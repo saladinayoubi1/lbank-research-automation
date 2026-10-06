@@ -41,7 +41,31 @@ def select_source(payload: dict[str, Any], *, repository: str, main_sha: str,
         and payload.get("task_id", "").startswith("STRATEGY-QA-")
         and payload.get("worker_id") == "qa-verifier-agent"
     )
-    if is_strategy_qa:
+    is_composite_qa = (
+        isinstance(payload.get("task_id"), str)
+        and payload.get("task_id", "").startswith("COMPOSITE-QA-")
+        and payload.get("worker_id") == "qa-verifier-agent"
+    )
+    if is_composite_qa:
+        composite_task = payload.get("composite_qa_task")
+        if payload.get("phase") != 7 or not isinstance(composite_task, dict):
+            raise ResearchQaPinError("immutable composite runtime QA source identity is incomplete")
+        from nexus_composite_runtime_independent_qa import (
+            CompositeRuntimeQaError,
+            validate_task,
+        )
+        source = str(composite_task.get("source_sha", ""))
+        try:
+            validate_task(composite_task, source)
+        except CompositeRuntimeQaError as exc:
+            raise ResearchQaPinError("immutable composite runtime QA task binding is invalid") from exc
+        if (
+            not SHA40.fullmatch(source)
+            or composite_task.get("id") != payload.get("task_id")
+            or composite_task.get("required_verifier") != "qa-verifier-agent"
+        ):
+            raise ResearchQaPinError("immutable composite runtime QA source identity is incomplete")
+    elif is_strategy_qa:
         strategy_task = payload.get("strategy_qa_task")
         if payload.get("phase") != 7 or not isinstance(strategy_task, dict):
             raise ResearchQaPinError("immutable Strategy QA source identity is incomplete")
@@ -72,12 +96,13 @@ def select_source(payload: dict[str, Any], *, repository: str, main_sha: str,
             raise ResearchQaPinError("immutable Research QA producer identity is incomplete")
     else:
         source = main_sha
-    independent_qa = is_qa or is_strategy_qa
+    independent_qa = is_qa or is_strategy_qa or is_composite_qa
     return {
         "execution_source_sha": source,
         "requested_ancestor_pin": bool(independent_qa and source != main_sha),
         "source_role": (
-            "independent-strategy-qa" if is_strategy_qa
+            "independent-composite-runtime-qa" if is_composite_qa
+            else "independent-strategy-qa" if is_strategy_qa
             else "independent-research-qa" if is_qa
             else "normal-cloud-task"
         ),
