@@ -65,7 +65,12 @@ def test_materializer_is_restart_safe_and_dispatch_disabled(monkeypatch):
     assert row["qa_dispatch_enabled"] is False
     assert row["required_verifier"] == "qa-verifier-agent"
     assert row["authority"] == 2
-    assert row["paper_execution_authority"] if "paper_execution_authority" in row else False is False
+    assert row["qa_handoff_task"]["qualification_authority"] is False
+    assert row["qa_handoff_task"]["registry_mutation_authority"] is False
+    assert row["qa_handoff_task"]["runtime_activation_authority"] is False
+    assert row["qa_handoff_task"]["paper_execution_authority"] is False
+    assert row["qa_handoff_task"]["automatic_strategy_promotion"] is False
+    assert row["qa_handoff_task"]["live_trading_authority"] is False
 
 
 def test_materializer_rejects_authority_widening(monkeypatch):
