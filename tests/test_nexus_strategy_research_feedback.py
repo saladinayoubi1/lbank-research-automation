@@ -283,7 +283,9 @@ def test_evaluated_ledger_accepts_only_digest_bound_frontier_screen_extension():
     extended = {**core, "ledger_digest": _digest(core)}
 
     assert feedback.validate_evaluated_ledger(extended, cert) == {
-        "lagged_peer_volatility_release"
+        "lagged_peer_volatility_release",
+        "factory_gen_deep_drawdown_recovery_vwap_reclaim",
+        "factory_gen_efficiency_up_midpoint_reclaim",
     }
 
     missing_pair = dict(extended)
@@ -297,6 +299,26 @@ def test_evaluated_ledger_accepts_only_digest_bound_frontier_screen_extension():
     unknown = {**unknown, "ledger_digest": _digest(unknown)}
     with pytest.raises(feedback.ResearchFeedbackError, match="evaluated composite ledger"):
         feedback.validate_evaluated_ledger(unknown, cert)
+
+
+def test_frontier_screened_mechanism_is_not_reproposed_as_new_design():
+    cert = _certificate()
+    catalog = _catalog()
+    screened_id = catalog["mechanisms"][0]["id"]
+    expected_next = catalog["mechanisms"][1]["id"]
+    ledger = _evaluated_ledger([], cert)
+    core = {k: v for k, v in ledger.items() if k != "ledger_digest"}
+    core["frontier_screened_mechanisms"] = [screened_id]
+    core["frontier_screening_version"] = "nexus.frontier-train-screen.v5"
+    extended = {**core, "ledger_digest": _digest(core)}
+
+    _, receipt, proposal = feedback.process_feedback(
+        _run(), cert, catalog, evaluated_ledger=extended,
+    )
+    assert receipt["status"] == "NEW_DISTINCT_HYPOTHESIS_DESIGN_ONLY"
+    assert proposal is not None
+    assert proposal["mechanism"]["id"] == expected_next
+    assert proposal["mechanism"]["id"] != screened_id
 
 
 def test_evaluated_ledger_must_be_digest_bound_to_exact_dataset_and_authority():

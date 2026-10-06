@@ -194,7 +194,7 @@ def validate_evaluated_ledger(
         or claimed != _digest(core)
     ):
         raise ResearchFeedbackError("evaluated composite ledger integrity or authority rejected")
-    return set(mechanisms)
+    return set(mechanisms) | (set(screened) if has_frontier_extension else set())
 
 
 def validate_trigger(run: Mapping[str, Any], cert: Mapping[str, Any]) -> None:
