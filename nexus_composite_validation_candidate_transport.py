@@ -172,6 +172,23 @@ def _artifact_id_for_lease(lease_id: str, *, api: Api = _api) -> int | None:
     return int(matches[0]["id"])
 
 
+def _legacy_research_contract(report: Mapping[str, Any]) -> str | None:
+    """Return a bounded known historical contract label, never for current v5."""
+    selection_basis = report.get("selection_basis")
+    screening = report.get("frontier_screening")
+    if (
+        selection_basis == "fixed_mechanism_grammar_not_OOS_ranking"
+        and screening is None
+    ):
+        return "fixed_mechanism_grammar_not_OOS_ranking"
+    if isinstance(screening, Mapping):
+        schema = str(screening.get("schema", ""))
+        match = re.fullmatch(r"nexus\.frontier-train-screen\.v([1-4])", schema)
+        if match:
+            return schema
+    return None
+
+
 def _atomic_json(path: Path, value: Mapping[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(path.suffix + ".tmp")
@@ -293,7 +310,29 @@ def sync_verified_candidates(
             })
             continue
         receipt, report = parse_producer_artifact(downloader(artifact_id))
-        candidate = builder(task, receipt, report)
+        legacy_contract = _legacy_research_contract(report)
+        if legacy_contract is not None:
+            rows.append({
+                "task_id": task_id,
+                "status": "LEGACY_UNSUPPORTED_RESEARCH_EVIDENCE",
+                "legacy_contract": legacy_contract,
+                "producer_lease_id": lease_id,
+                "artifact_id": artifact_id,
+                "eligible": False,
+                "candidate_created": False,
+                "paper_only": True,
+                "qualification_authority": False,
+                "registry_mutation_authority": False,
+                "paper_execution_authority": False,
+                "live": False,
+            })
+            continue
+        try:
+            candidate = builder(task, receipt, report)
+        except Exception as exc:
+            raise CompositeVal40TransportError(
+                f"{task_id} current composite evidence rejected: {exc}"
+            ) from exc
         verification = verifier(candidate)
         if verification.get("decision") != "pass":
             raise CompositeVal40TransportError("composite VAL-40 candidate verification rejected")
