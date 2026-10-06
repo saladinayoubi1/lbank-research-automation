@@ -75,7 +75,7 @@ def test_contract_job_covers_candidate_transport_and_requalification() -> None:
 
 def test_physical_runtime_job_is_javascript_action_free() -> None:
     text = _text()
-    physical = text.split("  runtime-requalification:", 1)[1].split("  publish-evidence:", 1)[0]
+    physical = text.split("  runtime-requalification:", 1)[1].split("  contract-test:", 1)[0]
     assert "runs-on: nexus-bybit-network" in physical
     assert "uses:" not in physical
     assert "physical_source_transport=github-api-exact-sha" in physical
@@ -87,7 +87,8 @@ def test_physical_runtime_job_is_javascript_action_free() -> None:
 
 def test_physical_evidence_uses_bounded_digest_bound_job_log_transport() -> None:
     text = _text()
-    physical = text.split("  runtime-requalification:", 1)[1]
+    physical = text.split("  runtime-requalification:", 1)[1].split("  contract-test:", 1)[0]
+    hosted = text.split("  contract-test:", 1)[1]
     assert "  publish-evidence:" not in text
     assert "transport_version=bounded-job-log-v2" in physical
     assert "NEXUS_COMPOSITE_VAL40_EVIDENCE_TRANSPORT=%s" in physical
@@ -99,3 +100,10 @@ def test_physical_evidence_uses_bounded_digest_bound_job_log_transport() -> None
     assert 'test "${#evidence_b64}" -le 700000' in physical
     assert "zipfile.ZIP_DEFLATED" in physical
     assert "$WORK_ROOT/evidence.zip" in physical
+    assert "needs: runtime-requalification" in hosted
+    assert "runs-on: ubuntu-latest" in hosted
+    assert "actions/jobs/$(cat build/publisher/job-id.txt)/logs" in hosted
+    assert "physical evidence size or digest mismatch" in hosted
+    assert "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a" in hosted
+    assert "name: nexus-composite-runtime-requalification-${{ github.run_id }}" in hosted
+    assert "if-no-files-found: error" in hosted
