@@ -1,0 +1,230 @@
+name: NEXUS composite runtime requalification
+
+on:
+  workflow_dispatch:
+    inputs:
+      coordinator_run_id:
+        description: Exact successful Fast Agent Coordinator run carrying verified composite VAL-40 evidence
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: nexus-composite-runtime-requalification-${{ inputs.coordinator_run_id }}
+  cancel-in-progress: false
+
+jobs:
+  contract-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements-dev.lock
+      - run: python -m pip check
+      - name: Verify composite fresh VAL-40 contracts
+        run: >-
+          python -m pytest -q
+          tests/test_nexus_composite_runtime_requalification.py
+          tests/test_nexus_composite_runtime_requalification_workflow.py
+          tests/test_nexus_composite_validation_candidate.py
+          tests/test_nexus_composite_validation_candidate_transport.py
+
+  runtime-requalification:
+    needs: contract-test
+    runs-on: nexus-bybit-network
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TRIGGER_RUN_ID: ${{ inputs.coordinator_run_id }}
+      OUTPUT_ROOT: build/nexus_composite_runtime_requalification
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Enforce physical Bybit Research execution plane
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import os
+          assert os.environ.get("RUNNER_OS") == "Linux"
+          print("composite_val40_execution_plane=self-hosted:nexus-bybit-network")
+          PY
+
+      - run: python -m pip install -r requirements.lock
+      - run: python -m pip check
+
+      - name: Restore exact verified composite candidate evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$TRIGGER_RUN_ID" =~ ^[1-9][0-9]{4,20}$ ]]
+          rm -rf build/coordinator-trigger "$OUTPUT_ROOT" build/coordinator-trigger.zip
+          mkdir -p build/coordinator-trigger "$OUTPUT_ROOT"
+
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$TRIGGER_RUN_ID" > build/coordinator-run.json
+          python - <<'PY'
+          import json, os, re
+          run = json.load(open("build/coordinator-run.json", encoding="utf-8"))
+          if (
+              run.get("name") != "Fast Agent Coordinator"
+              or run.get("conclusion") != "success"
+              or run.get("head_branch") != "main"
+              or run.get("event") not in {"push", "schedule", "workflow_dispatch"}
+              or not re.fullmatch(r"[0-9a-f]{40}", str(run.get("head_sha", "")))
+          ):
+              raise SystemExit("triggering coordinator run is not trusted successful main evidence")
+          print("coordinator_trigger=PASS", run["id"], run["head_sha"])
+          PY
+
+          artifact_name="fast-agent-status-$TRIGGER_RUN_ID"
+          gh api             -H 'Accept: application/vnd.github+json'             "repos/$GITHUB_REPOSITORY/actions/runs/$TRIGGER_RUN_ID/artifacts?per_page=100"             > build/coordinator-artifacts.json
+
+          python - <<'PY'
+          import json, os
+          rows = json.load(open("build/coordinator-artifacts.json", encoding="utf-8")).get("artifacts", [])
+          expected = "fast-agent-status-" + os.environ["TRIGGER_RUN_ID"]
+          matches = [
+              row for row in rows
+              if row.get("name") == expected
+              and row.get("expired") is False
+              and type(row.get("id")) is int
+              and type(row.get("size_in_bytes")) is int
+              and 0 < row["size_in_bytes"] <= 8_000_000
+          ]
+          if len(matches) != 1:
+              raise SystemExit("coordinator evidence artifact identity is missing or ambiguous")
+          open("build/coordinator-artifact-id.txt", "w", encoding="ascii").write(str(matches[0]["id"]))
+          PY
+
+          gh api             "repos/$GITHUB_REPOSITORY/actions/artifacts/$(cat build/coordinator-artifact-id.txt)/zip"             > build/coordinator-trigger.zip
+          test "$(wc -c < build/coordinator-trigger.zip)" -le 8000000
+          unzip -q build/coordinator-trigger.zip -d build/coordinator-trigger
+
+      - name: Select exactly one independently verified eligible composite candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from nexus_composite_validation_candidate import verify_candidate
+
+          root = Path("build/coordinator-trigger/composite_val40_candidates")
+          if not root.is_dir():
+              raise SystemExit("coordinator artifact has no durable composite VAL-40 candidate store")
+
+          eligible = []
+          seen = 0
+          for candidate_path in sorted(root.glob("*/candidate.json")):
+              verification_path = candidate_path.with_name("verification.json")
+              transport_path = candidate_path.with_name("transport.json")
+              if not verification_path.is_file() or not transport_path.is_file():
+                  raise SystemExit("candidate store entry is incomplete")
+              candidate = json.loads(candidate_path.read_text(encoding="utf-8"))
+              verification = json.loads(verification_path.read_text(encoding="utf-8"))
+              transport = json.loads(transport_path.read_text(encoding="utf-8"))
+              computed = verify_candidate(candidate)
+              if computed.get("decision") != "pass" or computed != verification:
+                  raise SystemExit("stored composite candidate verification rejected")
+              if (
+                  transport.get("candidate_digest") != candidate.get("candidate_digest")
+                  or transport.get("research_task_id") != candidate.get("research_task_id")
+                  or transport.get("paper_only") is not True
+                  or transport.get("qualification_authority") is not False
+                  or transport.get("registry_mutation_authority") is not False
+                  or transport.get("paper_execution_authority") is not False
+                  or transport.get("live_trading_authority") is not False
+              ):
+                  raise SystemExit("stored composite transport authority binding rejected")
+              seen += 1
+              if (
+                  candidate.get("decision") == "FORWARD_TO_VAL40"
+                  and candidate.get("eligible_for_fresh_runtime_requalification") is True
+              ):
+                  eligible.append((candidate_path, verification_path, candidate))
+
+          if seen < 1:
+              raise SystemExit("no verified composite candidates were stored")
+          if len(eligible) != 1:
+              raise SystemExit(
+                  f"fresh composite requalification requires exactly one eligible candidate, got {len(eligible)}"
+              )
+          candidate_path, verification_path, candidate = eligible[0]
+          Path("build/candidate-path.txt").write_text(str(candidate_path), encoding="utf-8")
+          Path("build/candidate-verification-path.txt").write_text(str(verification_path), encoding="utf-8")
+          Path("build/candidate-digest.txt").write_text(candidate["candidate_digest"], encoding="ascii")
+          print(
+              "composite_candidate_selection=PASS",
+              candidate["research_task_id"],
+              candidate["candidate_digest"],
+          )
+          PY
+
+      - name: Requalify exact composite candidate on fresh canonical Bybit data
+        shell: bash
+        run: |
+          set -euo pipefail
+          python nexus_composite_runtime_requalification.py             --candidate "$(cat build/candidate-path.txt)"             --candidate-verification "$(cat build/candidate-verification-path.txt)"             --source-sha "$GITHUB_SHA"             --state-root "$OUTPUT_ROOT/state"             --output "$OUTPUT_ROOT/runtime-requalification.json"
+
+      - name: Verify fresh composite VAL-40 authority boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from nexus_composite_runtime_requalification import verify_requalification
+
+          path = Path("build/nexus_composite_runtime_requalification/runtime-requalification.json")
+          result = json.loads(path.read_text(encoding="utf-8"))
+          verification = verify_requalification(result)
+          if verification.get("decision") != "pass":
+              raise SystemExit("fresh composite requalification verification rejected")
+          verification_path = path.with_name("verification.json")
+          verification_path.write_text(
+              json.dumps(verification, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          if (
+              result.get("paper_only") is not True
+              or result.get("candidate_state_created") is not False
+              or result.get("qualification_authority") is not False
+              or result.get("registry_mutation_authority") is not False
+              or result.get("promotion_authority") is not False
+              or result.get("paper_execution_authority") is not False
+              or result.get("automatic_strategy_promotion") is not False
+              or result.get("live_trading_authority") is not False
+              or result.get("private_credentials_used") is not False
+          ):
+              raise SystemExit("fresh composite requalification widened authority")
+          print(
+              "composite_runtime_requalification=PASS",
+              result["decision"],
+              result["candidate_digest"],
+              result["requalification_digest"],
+          )
+          PY
+
+      - name: Publish bounded fresh VAL-40 evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-composite-runtime-requalification-${{ github.run_id }}
+          path: build/nexus_composite_runtime_requalification
+          if-no-files-found: error
+          retention-days: 14
