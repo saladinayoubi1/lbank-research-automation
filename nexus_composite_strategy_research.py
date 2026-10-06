@@ -179,7 +179,10 @@ def build_features(frames: dict[str, pd.DataFrame], *, peer_15m: pd.DataFrame | 
         if t.duplicated().any() or not t.is_monotonic_increasing or not (t.diff().dropna()
                     == pd.to_timedelta(ms, unit="ms")).all():
             raise CompositeResearchError(tf + " chronology is not a complete UTC grid")
-        numeric = df[["open", "high", "low", "close", "volume"]].astype(float)
+        ohlcv_columns = ["open", "high", "low", "close", "volume"]
+        numeric = df[ohlcv_columns].astype(float)
+        for column in ohlcv_columns:
+            df[column] = numeric[column].to_numpy(copy=True)
         if (not np.isfinite(numeric.to_numpy()).all()
                 or (numeric[["open", "high", "low", "close"]] <= 0).any().any()
                 or (numeric["volume"] < 0).any().any()
