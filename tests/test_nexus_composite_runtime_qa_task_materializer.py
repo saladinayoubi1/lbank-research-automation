@@ -51,7 +51,7 @@ def _transport(task):
     }
 
 
-def test_materializer_is_restart_safe_and_dispatch_disabled(monkeypatch):
+def test_materializer_is_restart_safe_and_dispatch_enabled_only_after_worker_contract(monkeypatch):
     monkeypatch.setattr(mat, "validate_task", lambda value, source: dict(value))
     task = _task()
     definition = {"tasks": []}
@@ -60,9 +60,9 @@ def test_materializer_is_restart_safe_and_dispatch_disabled(monkeypatch):
     assert first == second
     row = first["tasks"][0]
     assert row["id"] == task["id"]
-    assert row["status"] == "BLOCKED"
+    assert row["status"] == "READY"
     assert row["qa_verifier_only"] is True
-    assert row["qa_dispatch_enabled"] is False
+    assert row["qa_dispatch_enabled"] is True
     assert row["required_verifier"] == "qa-verifier-agent"
     assert row["authority"] == 2
     assert row["qa_handoff_task"]["qualification_authority"] is False
