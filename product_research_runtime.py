@@ -133,7 +133,7 @@ class ProductResearchRuntime:
         return {"contract_version": PRODUCT_DATA_CONTRACT, "registry_version": registry.get("registry_version"), "authority": registry.get("authority"), "mappings": rows, "private_credentials_required": False, "paper_only": True}
 
     def fetch_dataset(self, *, symbol: str, timeframe: str, limit: int = 240) -> dict[str, Any]:
-        if isinstance(limit, bool) or not isinstance(limit, int) or not 60 <= limit <= 500: raise ProductResearchError("dataset limit must be between 60 and 500")
+        if isinstance(limit, bool) or not isinstance(limit, int) or not 60 <= limit <= 1000: raise ProductResearchError("dataset limit must be between 60 and 1000")
         registry = load_and_validate(_registry_path()); mapping, source = _public_mapping(registry, symbol, timeframe); spec = TIMEFRAMES[timeframe]
         now_ms = self.clock_ms(); end_ms = ((now_ms - spec["step_ms"]) // spec["step_ms"]) * spec["step_ms"]; start_ms = end_ms - (limit - 1) * spec["step_ms"]
         if start_ms < 0: raise ProductResearchError("invalid bounded market window")

@@ -274,3 +274,35 @@ def test_product_research_runtime_has_no_direct_paper_execution_dependency() -> 
     assert "PAPER_DEFAULT_SLIPPAGE_BPS" not in source
     assert "self.product_runtime._write_events" not in source
 
+
+
+def test_canonical_dataset_boundary_allows_composite_960_bars_but_not_unbounded(tmp_path: Path) -> None:
+    now = _now_ms()
+    dataset = _dataset(now, 960)
+    calls = []
+
+    def fetcher(**kwargs):
+        calls.append(dict(kwargs))
+        return dataset
+
+    runtime = ProductRuntime(tmp_path / "state")
+    research = ProductResearchRuntime(
+        runtime,
+        source_sha="c" * 40,
+        dataset_fetcher=fetcher,
+        clock_ms=lambda: now,
+    )
+    result = research.fetch_dataset(symbol="BTCUSDT", timeframe="minute15", limit=960)
+    assert result["row_count"] == 960
+    assert calls == [{
+        "canonical_symbol": "BTC/USDT",
+        "source_symbol": "BTCUSDT",
+        "interval": "15",
+        "now_ms": now,
+        "start_time_ms": ((now - STEP) // STEP) * STEP - 959 * STEP,
+        "end_time_ms": ((now - STEP) // STEP) * STEP,
+        "limit": 960,
+        "timeout_seconds": 20.0,
+    }]
+    with pytest.raises(ProductResearchError, match="between 60 and 1000"):
+        research.fetch_dataset(symbol="BTCUSDT", timeframe="minute15", limit=1001)
