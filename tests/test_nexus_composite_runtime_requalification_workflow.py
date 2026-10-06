@@ -75,7 +75,7 @@ def test_contract_job_covers_candidate_transport_and_requalification() -> None:
 
 def test_physical_runtime_job_is_javascript_action_free() -> None:
     text = _text()
-    physical = text.split("  runtime-requalification:", 1)[1].split("  publish-evidence:", 1)[0]
+    physical = text.split("  runtime-requalification:", 1)[1]
     assert "runs-on: nexus-bybit-network" in physical
     assert "uses:" not in physical
     assert "physical_source_transport=github-api-exact-sha" in physical
@@ -85,13 +85,13 @@ def test_physical_runtime_job_is_javascript_action_free() -> None:
     assert "actions/upload-artifact" not in physical
 
 
-def test_physical_evidence_is_published_only_from_hosted_job() -> None:
+def test_physical_evidence_uses_bounded_digest_bound_job_log_transport() -> None:
     text = _text()
-    assert "  publish-evidence:" in text
-    hosted = text.split("  publish-evidence:", 1)[1]
-    assert "runs-on: ubuntu-latest" in hosted
-    assert "Independently verify published VAL-40 evidence" in hosted
-    assert "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a" in hosted
-    assert "EVIDENCE_SHA256" in hosted
-    assert "sha256sum build/physical-evidence.tar.gz" in hosted
-    assert '= "$EVIDENCE_SHA256"' in hosted
+    physical = text.split("  runtime-requalification:", 1)[1]
+    assert "  publish-evidence:" not in text
+    assert "NEXUS_COMPOSITE_VAL40_EVIDENCE_TRANSPORT=bounded-job-log-v1" in physical
+    assert "NEXUS_COMPOSITE_VAL40_EVIDENCE_SHA256=" in physical
+    assert "NEXUS_COMPOSITE_VAL40_EVIDENCE_SIZE=" in physical
+    assert "NEXUS_COMPOSITE_VAL40_EVIDENCE_B64=" in physical
+    assert 'test "$evidence_size" -le 500000' in physical
+    assert 'test "${#evidence_b64}" -le 700000' in physical
