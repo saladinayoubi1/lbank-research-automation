@@ -93,4 +93,5 @@ def test_physical_evidence_is_published_only_from_hosted_job() -> None:
     assert "Independently verify published VAL-40 evidence" in hosted
     assert "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a" in hosted
     assert "EVIDENCE_SHA256" in hosted
-    assert "sha256sum -c -" in hosted
+    assert "sha256sum build/physical-evidence.tar.gz" in hosted
+    assert '= "$EVIDENCE_SHA256"' in hosted
