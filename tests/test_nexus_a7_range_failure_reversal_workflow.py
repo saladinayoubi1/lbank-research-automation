@@ -22,8 +22,12 @@ def test_a7_job_is_trusted_research_only_and_physical():
     assert "a7-research-backtest:" in job
     assert "github.event.pull_request.head.repo.full_name == github.repository" in job
     assert "github.actor == github.repository_owner" in job
+    assert "github.event_name == 'workflow_dispatch'" in job
+    assert "github.ref_name == github.event.repository.default_branch" in job
     assert "runs-on: [self-hosted, Windows, X64, nexus-research, nexus-worker-2]" in job
-    assert "ref: ${{ github.event.pull_request.head.sha }}" in job
+    assert "A7_SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}" in job
+    assert "ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}" in job
+    assert "name: nexus-a7-range-failure-${{ env.A7_SOURCE_SHA }}" in job
     assert "persist-credentials: false" in job
     assert "shell: powershell" not in job
     assert "actions/setup-python" not in job
