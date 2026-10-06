@@ -33,15 +33,44 @@ def product_server(tmp_path: Path):
     data_root = tmp_path / "data" / "market"
     data_root.mkdir(parents=True)
     runtime = ProductRuntime(tmp_path / "state")
+
+    def paper_market_provider(*, symbols):
+        marks = {
+            symbol: {
+                "symbol": symbol,
+                "mark_price": "61000" if symbol == "BTCUSDT" else "3100",
+                "mark_time_utc": "2026-10-06T18:00:00Z",
+                "age_seconds": 1.0,
+            }
+            for symbol in symbols
+        }
+        return {
+            "contract_version": "nexus.product-paper-market-display.v1",
+            "paper_only": True,
+            "read_only": True,
+            "display_only": True,
+            "execution_eligible": False,
+            "risk_eligible": False,
+            "dataset_written": False,
+            "live_trading_authority": False,
+            "source": "Bybit",
+            "market_category": "linear",
+            "checked_at_utc": "2026-10-06T18:00:00Z",
+            "status": "fresh" if symbols else "not_needed_flat",
+            "reason_code": "public_mark_probe_passed" if symbols else "no_open_positions",
+            "http_status": None,
+            "marks": marks,
+        }
+
     probe = ThreadingHTTPServer(("127.0.0.1", 0), build_handler(
         data_root, config=GatewayConfig(mode="local", host="127.0.0.1", port=1),
-        ui_root=PRODUCT_UI_ROOT, runtime=runtime,
+        ui_root=PRODUCT_UI_ROOT, runtime=runtime, paper_market_provider=paper_market_provider,
     ))
     port = probe.server_address[1]
     probe.server_close()
     server = ThreadingHTTPServer(("127.0.0.1", port), build_handler(
         data_root, config=GatewayConfig(mode="local", host="127.0.0.1", port=port),
-        ui_root=PRODUCT_UI_ROOT, runtime=runtime,
+        ui_root=PRODUCT_UI_ROOT, runtime=runtime, paper_market_provider=paper_market_provider,
     ))
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -253,6 +282,32 @@ def test_product_paper_controls_and_order_mutate_only_demo_state(product_server)
     assert live["orders_allowed"] is False
 
 
+def test_product_paper_market_display_is_read_only_and_does_not_mutate_journal(product_server) -> None:
+    port, runtime = product_server
+    order = {
+        "operation": "open", "symbol": "BTCUSDT", "timeframe": "minute15",
+        "side": "long", "quantity": "0.001", "reference_price": "60000",
+        "stop_price": "59000", "target_price": "62000",
+    }
+    status, _, raw = _request(port, "POST", "/api/product/paper/order", order)
+    assert status == 200 and json.loads(raw)["accepted"] is True
+    before = runtime.paper_events_path.read_bytes()
+
+    status, _, raw = _request(port, "GET", "/api/product/paper/market")
+    assert status == 200
+    payload = json.loads(raw)
+    assert payload["status"] == "fresh"
+    assert payload["source"] == "Bybit"
+    assert payload["marks"]["BTCUSDT"]["mark_price"] == "61000"
+    assert payload["display_only"] is True
+    assert payload["execution_eligible"] is False
+    assert payload["risk_eligible"] is False
+    assert payload["live_trading_authority"] is False
+    assert runtime.paper_events_path.read_bytes() == before
+
+    assert _request(port, "GET", "/api/product/paper/market?symbol=BTCUSDT")[0] == 400
+
+
 def test_product_registry_risk_recovery_notifications_and_exports(product_server) -> None:
     port, _ = product_server
     for path in (
@@ -315,7 +370,7 @@ def test_product_static_script_is_same_origin_only_and_has_real_product_routes(p
     lowered = script.casefold()
     assert "https://" not in script
     for route in (
-        "/api/product/paper/order", "/api/product/paper/auto", "/api/product/research/run",
+        "/api/product/paper/order", "/api/product/paper/auto", "/api/product/paper/market", "/api/product/research/run",
         "/api/product/risk", "/api/product/recovery", "/api/product/data/registry",
         "/api/product/session", "/api/product/kill-switch", "/api/ai-room/message",
     ):
