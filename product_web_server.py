@@ -15,7 +15,7 @@ from product_control_runtime import ProductControlError, ProductControlRuntime
 from product_shared_paper import load_snapshot as load_shared_snapshot, export_csv as shared_export_csv
 from product_prospective_paper import load_prospective_paper_snapshot
 from product_research_runtime import ProductResearchError, ProductResearchRuntime
-from product_market_diagnostics import MarketProbeInputError, probe_primary_spot
+from product_market_diagnostics import MarketProbeInputError, probe_primary_spot, probe_public_linear_marks
 from product_mission_runtime import ProductMissionError, ProductMissionRuntime
 from product_runtime import ProductRuntime, ProductRuntimeError
 from product_ai_advisory import (AdvisoryError, ProductAIAdvisory, council_roadmap,
@@ -177,6 +177,18 @@ def _demo_matrix_snapshot(data_root: Path) -> dict[str, Any]:
     except (OSError, UnicodeError, json.JSONDecodeError, ValueError):
         return {**unavailable, "reason": "snapshot_unreadable"}
 
+def _product_paper_market(runtime: ProductRuntime, provider=probe_public_linear_marks) -> dict[str, Any]:
+    """Return fresh public marks for display without mutating Paper/Risk state."""
+    paper = runtime.paper_snapshot()
+    positions = paper.get("account", {}).get("positions", [])
+    symbols = [
+        str(row.get("symbol"))
+        for row in positions
+        if isinstance(row, Mapping) and isinstance(row.get("symbol"), str)
+    ]
+    return provider(symbols=symbols)
+
+
 def _product_paper_snapshot(runtime: ProductRuntime, data_root: Path) -> dict[str, Any]:
     """Combine mutable local demo state with a strictly read-only prospective evidence view."""
     paper = runtime.paper_snapshot()
@@ -318,6 +330,7 @@ def build_handler(
     research_runtime: ProductResearchRuntime | None = None,
     control_runtime: ProductControlRuntime | None = None,
     ai_advisory: ProductAIAdvisory | None = None,
+    paper_market_provider=probe_public_linear_marks,
 ):
     active_config = validate_gateway_config(config or GatewayConfig())
     runtime = runtime or ProductRuntime(data_root.parent, opening_cash=DESKTOP_DEMO_OPENING_CASH)
@@ -357,6 +370,9 @@ def build_handler(
                 elif parsed.path == "/api/product/paper":
                     if parsed.query: raise ProductRuntimeError("paper snapshot does not accept query")
                     payload = _product_paper_snapshot(runtime, data_root)
+                elif parsed.path == "/api/product/paper/market":
+                    if parsed.query: raise ProductRuntimeError("paper market display does not accept query")
+                    payload = _product_paper_market(runtime, paper_market_provider)
                 elif parsed.path == "/api/product/paper/shared":
                     if parsed.query: raise ProductRuntimeError("shared Paper snapshot does not accept query")
                     payload = load_shared_snapshot(data_root.parent)
