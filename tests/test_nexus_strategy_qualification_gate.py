@@ -119,6 +119,8 @@ def test_done_independent_qa_qualifies_only_for_registry():
     assert len(result["runtime_evidence"]) == 2
     assert len(result["runtime_evidence_digest"]) == 64
     assert result["runtime_evidence_digest"] == digest(result["runtime_evidence"])
+    assert result["qa_handoff_task"]["task_digest"] == result["qa_task_digest"]
+    assert result["qa_receipt"]["qa_receipt_digest"] == result["qa_receipt_digest"]
     assert result["registry_mutation_performed"] is False
     assert result["runtime_activation_authority"] is False
     assert result["paper_execution_authority"] is False
@@ -153,6 +155,7 @@ def test_non_done_qa_cannot_enter_registry(status, decision, reason):
     assert result["registry_admission_allowed"] is False
     assert result["reason_codes"] == [reason]
     assert result["qa_receipt_digest"] is None
+    assert result["qa_receipt"] is None
     assert verify_qualification(result)["decision"] == "pass"
 
 
@@ -167,6 +170,23 @@ def test_qualification_is_deterministic_and_tamper_evident():
     evidence_tamper = deepcopy(first)
     evidence_tamper["runtime_evidence"][0]["pipeline_digest"] = "9" * 64
     assert verify_qualification(evidence_tamper)["decision"] == "reject"
+
+    # Re-digesting copied identity fields is insufficient because v2 binds the
+    # exact validated QA handoff task and verifier receipt into the artifact.
+    identity_redigest = deepcopy(first)
+    identity_redigest["variant_id"] = "tampered-v2"
+    identity_core = dict(identity_redigest)
+    identity_core.pop("qualification_digest", None)
+    from nexus_strategy_qualification_gate import _digest
+    identity_redigest["qualification_digest"] = _digest(identity_core)
+    assert verify_qualification(identity_redigest)["decision"] == "reject"
+
+    receipt_redigest = deepcopy(first)
+    receipt_redigest["qa_receipt"]["runtime_evidence"][0]["pipeline_digest"] = "9" * 64
+    receipt_core = dict(receipt_redigest)
+    receipt_core.pop("qualification_digest", None)
+    receipt_redigest["qualification_digest"] = _digest(receipt_core)
+    assert verify_qualification(receipt_redigest)["decision"] == "reject"
 
 
 def test_qualification_gate_import_is_control_plane_lightweight():
