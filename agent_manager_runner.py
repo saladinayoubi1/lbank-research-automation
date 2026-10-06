@@ -15,6 +15,7 @@ from scripts.nexus_research_qa_incident_recovery import SPEC as RESEARCH_QA_INCI
 from scripts.nexus_research_input_incident_recovery import SPEC as RESEARCH_INPUT_INCIDENT_SPEC, load_spec as load_research_input_incident, recover_incident as recover_research_input_incident
 from nexus_strategy_qa_task_materializer import materialize_qa_tasks
 from nexus_strategy_review_qa_handoff import verify_handoff
+from nexus_composite_val40_task_materializer import materialize_composite_val40_candidates
 
 RUNTIME_PATH = Path("data/agent_coordination/agent_manager_runtime.json")
 SUMMARY_PATH = Path("data/agent_coordination/manager_state.json")
@@ -31,6 +32,11 @@ STATE_BINDING_KEYS = (
     "qa_dispatch_enabled",
     "required_verifier",
     "qa_handoff_task",
+    "composite_val40_task",
+    "composite_val40_dispatch_enabled",
+    "required_producer",
+    "composite_val40_execution_contract",
+    "composite_val40_contract_verification",
     "authority",
     "acceptance",
 )
@@ -58,7 +64,10 @@ def merge_definition(template: dict[str, Any], runtime: dict[str, Any] | None) -
         "required_data_locality", "preferred_data_locality",
         "required_trust_domain", "preferred_trust_domains",
         "min_health_score", "max_cost_units", "authority", "acceptance",
-        "qa_verifier_only", "qa_dispatch_enabled", "required_verifier", "qa_handoff_task"
+        "qa_verifier_only", "qa_dispatch_enabled", "required_verifier", "qa_handoff_task",
+        "composite_val40_task", "composite_val40_dispatch_enabled",
+        "required_producer", "composite_val40_execution_contract",
+        "composite_val40_contract_verification"
     }
     runtime_keys = {
         "status", "ready_at", "assigned_worker", "producer", "verifier", "lease_id",
@@ -695,6 +704,31 @@ def materialize_strategy_qa_store(template: dict[str, Any], store: Path) -> dict
     return result
 
 
+
+
+
+def materialize_composite_val40_store(
+    template: dict[str, Any],
+    store: Path,
+) -> dict[str, Any]:
+    if not store.exists():
+        return deepcopy(template)
+    if store.is_symlink() or not store.is_dir():
+        raise ValueError("composite VAL-40 durable evidence store is invalid")
+
+    pairs: list[tuple[dict[str, Any], dict[str, Any]]] = []
+    for directory in sorted(store.iterdir(), key=lambda path: path.name):
+        if directory.is_symlink() or not directory.is_dir():
+            raise ValueError("composite VAL-40 durable evidence contains an invalid entry")
+        if not re.fullmatch(r"[0-9a-f]{64}", directory.name):
+            raise ValueError("composite VAL-40 durable evidence directory identity is malformed")
+        candidate = _load_regular_json(directory / "candidate.json")
+        verification = _load_regular_json(directory / "verification.json")
+        if candidate.get("candidate_digest") != directory.name:
+            raise ValueError("composite VAL-40 durable evidence path does not match candidate digest")
+        pairs.append((candidate, verification))
+    return materialize_composite_val40_candidates(template, pairs)
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Durable wrapper for the NEXUS agent manager")
     parser.add_argument("--config", default=str(am.QUEUE_PATH))
@@ -704,10 +738,17 @@ def main() -> int:
         "--strategy-qa-store",
         default="data/agent_coordination/strategy_qa_handoffs",
     )
+    parser.add_argument(
+        "--composite-val40-store",
+        default="data/agent_coordination/composite_val40_candidates",
+    )
     args = parser.parse_args()
 
     template = am.load_config(Path(args.config))
     template = materialize_strategy_qa_store(template, Path(args.strategy_qa_store))
+    template = materialize_composite_val40_store(
+        template, Path(args.composite_val40_store)
+    )
     config = merge_definition(template, load_runtime(Path(args.runtime)))
     apply_provider_gates(config)
     recover_completed_root_cause_analysis(config)
