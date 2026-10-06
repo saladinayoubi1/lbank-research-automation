@@ -136,6 +136,37 @@ def validate_config(config: dict[str, Any]) -> None:
             _bounded_metric(task["max_cost_units"], "max_cost_units")
         if "min_health_score" in task:
             _bounded_metric(task["min_health_score"], "min_health_score", maximum=1.0)
+        if task.get("composite_val40_task") is True:
+            required_producer = task.get("required_producer")
+            required_verifier = task.get("required_verifier")
+            if required_producer != "research-agent" or required_producer not in worker_ids:
+                raise ValueError(f"invalid composite VAL-40 producer for {task['id']}")
+            if required_verifier != "qa-verifier-agent" or required_verifier not in worker_ids:
+                raise ValueError(f"invalid composite VAL-40 verifier for {task['id']}")
+            verifier_rows = [row for row in workers if row.get("id") == required_verifier]
+            if len(verifier_rows) != 1 or verifier_rows[0].get("verifier") is not True:
+                raise ValueError(f"composite VAL-40 verifier is not verifier-capable for {task['id']}")
+            candidate = task.get("composite_val40_candidate")
+            candidate_verification = task.get("composite_val40_candidate_verification")
+            if not isinstance(candidate, dict) or not isinstance(candidate_verification, dict):
+                raise ValueError(f"composite VAL-40 candidate binding missing for {task['id']}")
+            from nexus_composite_validation_candidate import verify_candidate
+            computed_candidate = verify_candidate(candidate)
+            if (
+                computed_candidate.get("decision") != "pass"
+                or candidate_verification != computed_candidate
+                or candidate.get("decision") != "FORWARD_TO_VAL40"
+                or candidate.get("eligible_for_fresh_runtime_requalification") is not True
+                or int(task.get("authority", 0)) > 2
+                or task.get("paper_only") is not True
+                or task.get("qualification_authority") is not False
+                or task.get("registry_mutation_authority") is not False
+                or task.get("runtime_activation_authority") is not False
+                or task.get("paper_execution_authority") is not False
+                or task.get("automatic_strategy_promotion") is not False
+                or task.get("live_trading_authority") is not False
+            ):
+                raise ValueError(f"invalid composite VAL-40 authority/proof for {task['id']}")
         if task.get("qa_verifier_only") is True:
             required_verifier = task.get("required_verifier")
             if required_verifier not in worker_ids:
@@ -426,6 +457,12 @@ def assign_ready_tasks(config: dict[str, Any], now: datetime) -> None:
             # work: only the dedicated Research Agent can be their producer.
             eligible_rows = [row for row in eligible_rows
                              if row["worker_id"] == "research-agent"]
+        if task.get("composite_val40_task") is True:
+            eligible_rows = [
+                row for row in eligible_rows
+                if row["worker_id"] == task.get("required_producer")
+                and row["worker_id"] == "research-agent"
+            ]
         if task.get("qa_verifier_only") is True:
             # Materialized QA-41 replay is verifier work from the outset. It
             # must never receive a generic producer lease.
@@ -579,6 +616,12 @@ def request_verification(config: dict[str, Any], task: dict[str, Any], now: date
         # Reject a generic verifier even if its dynamic routing score is
         # higher: independent numerical replay requires the designated QA.
         candidates = [w for w in candidates if w.id == "qa-verifier-agent"]
+    if task.get("composite_val40_task") is True:
+        candidates = [
+            w for w in candidates
+            if w.id == task.get("required_verifier")
+            and w.id == "qa-verifier-agent"
+        ]
     if not candidates:
         task["status"] = "BLOCKED"
         task["blocked_reason"] = "independent verifier unavailable"
@@ -620,6 +663,23 @@ def record_result(config: dict[str, Any], task_id: str, worker_id: str, outcome:
                     )
                 ):
                     raise ValueError("independent Strategy QA receipt does not bind this exact verifier lease")
+            if task.get("composite_val40_task") is True:
+                original = task.get("result_evidence")
+                producer_lease = task.get("composite_val40_producer_lease_id")
+                from nexus_composite_runtime_requalification import verify_qa_receipt
+                if (
+                    worker_id != task.get("required_verifier")
+                    or worker_id != task.get("verifier")
+                    or task.get("producer") != task.get("required_producer")
+                    or not isinstance(original, dict)
+                    or not isinstance(producer_lease, str)
+                    or not verify_qa_receipt(
+                        evidence, original, producer_lease_id=producer_lease
+                    )
+                ):
+                    raise ValueError(
+                        "independent composite VAL-40 QA has not verified this exact producer"
+                    )
             if task_id in TASKS:
                 original = task.get("result_evidence", {})
                 if (
@@ -650,6 +710,25 @@ def record_result(config: dict[str, Any], task_id: str, worker_id: str, outcome:
             # An independent QA lease has its own lease_id. Preserve the
             # producer's exact identity and digest to prevent QA from
             # accidentally verifying an unrelated/latest Research artifact.
+            if task.get("composite_val40_task") is True:
+                from nexus_composite_runtime_requalification import verify_requalification
+                verification = verify_requalification(evidence)
+                candidate = task.get("composite_val40_candidate")
+                if (
+                    worker_id != task.get("required_producer")
+                    or worker_id != "research-agent"
+                    or verification.get("decision") != "pass"
+                    or not isinstance(candidate, dict)
+                    or evidence.get("candidate_digest") != candidate.get("candidate_digest")
+                    or evidence.get("paper_only") is not True
+                    or evidence.get("qualification_authority") is not False
+                    or evidence.get("registry_mutation_authority") is not False
+                    or evidence.get("paper_execution_authority") is not False
+                    or evidence.get("automatic_strategy_promotion") is not False
+                    or evidence.get("live_trading_authority") is not False
+                ):
+                    raise ValueError("composite VAL-40 producer evidence or authority invalid")
+                task["composite_val40_producer_lease_id"] = task["lease_id"]
             if task_id in TASKS:
                 if (
                     not isinstance(evidence.get("receipt_digest"), str)
