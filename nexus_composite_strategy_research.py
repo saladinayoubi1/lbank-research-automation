@@ -186,6 +186,12 @@ def build_features(frames: dict[str, pd.DataFrame], *, peer_15m: pd.DataFrame | 
                 or (numeric["high"] < numeric[["open", "close", "low"]].max(axis=1)).any()
                 or (numeric["low"] > numeric[["open", "close", "high"]].min(axis=1)).any()):
             raise CompositeResearchError(tf + " OHLCV failed strict validation")
+        # Canonical public APIs commonly transport OHLCV values as strings.
+        # Strict validation above already proves these values are finite and
+        # structurally valid; persist that exact numeric representation before
+        # any feature arithmetic so validation and evaluation cannot diverge.
+        for column in ("open", "high", "low", "close", "volume"):
+            df[column] = numeric[column]
     f["decision_at"] = pd.to_datetime(f["timestamp"], utc=True) + pd.Timedelta(minutes=15)
     higher4 = _closed_asof(q, 14_400_000, f, {
         "up": ((q["close"].astype(float) > q["close"].shift(1).rolling(12).median())

@@ -56,6 +56,20 @@ def test_gap_in_any_required_frame_fails_closed():
         engine.build_features(source)
 
 
+def test_valid_string_ohlcv_is_normalized_before_feature_arithmetic():
+    source = history()
+    columns = ["open", "high", "low", "close", "volume"]
+    for frame in source.values():
+        for column in columns:
+            frame[column] = frame[column].map(str)
+
+    features = engine.build_features(source)
+
+    assert all(pd.api.types.is_numeric_dtype(features[column]) for column in columns)
+    assert np.isfinite(features["bar_proxy_vwap"].dropna()).all()
+    assert np.isfinite(features["atr"].dropna()).all()
+
+
 def test_no_arbitrary_ceiling_for_more_than_100_closed_sequential_trades():
     n = 153 * 3
     stamp = pd.date_range("2025-01-01", periods=n, freq="15min", tz="UTC")
