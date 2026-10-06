@@ -15,6 +15,7 @@ from scripts.nexus_research_qa_incident_recovery import SPEC as RESEARCH_QA_INCI
 from scripts.nexus_research_input_incident_recovery import SPEC as RESEARCH_INPUT_INCIDENT_SPEC, load_spec as load_research_input_incident, recover_incident as recover_research_input_incident
 from nexus_strategy_qa_task_materializer import materialize_qa_tasks
 from nexus_strategy_review_qa_handoff import verify_handoff
+from nexus_composite_runtime_qa_task_materializer import materialize_composite_qa_task
 
 RUNTIME_PATH = Path("data/agent_coordination/agent_manager_runtime.json")
 SUMMARY_PATH = Path("data/agent_coordination/manager_state.json")
@@ -695,6 +696,41 @@ def materialize_strategy_qa_store(template: dict[str, Any], store: Path) -> dict
     return result
 
 
+def _load_composite_qa_json(path: Path) -> dict[str, Any]:
+    if path.is_symlink() or not path.is_file() or path.stat().st_size > 4_000_000:
+        raise ValueError("Composite runtime QA durable evidence is missing, linked, or oversized")
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise ValueError("Composite runtime QA durable evidence is unreadable") from exc
+    if not isinstance(value, dict):
+        raise ValueError("Composite runtime QA durable evidence must be an object")
+    return value
+
+
+def materialize_composite_runtime_qa_store(
+    template: dict[str, Any],
+    store: Path,
+) -> dict[str, Any]:
+    if not store.exists():
+        return deepcopy(template)
+    if store.is_symlink() or not store.is_dir():
+        raise ValueError("Composite runtime QA durable evidence store is invalid")
+
+    result = deepcopy(template)
+    for directory in sorted(store.iterdir(), key=lambda path: path.name):
+        if directory.is_symlink() or not directory.is_dir():
+            raise ValueError("Composite runtime QA durable evidence contains an invalid entry")
+        if not re.fullmatch(r"[0-9a-f]{64}", directory.name):
+            raise ValueError("Composite runtime QA durable evidence directory identity is malformed")
+        task = _load_composite_qa_json(directory / "qa-task.json")
+        transport = _load_composite_qa_json(directory / "transport.json")
+        if task.get("task_digest") != directory.name:
+            raise ValueError("Composite runtime QA durable evidence path does not match task digest")
+        result = materialize_composite_qa_task(result, task, transport)
+    return result
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Durable wrapper for the NEXUS agent manager")
     parser.add_argument("--config", default=str(am.QUEUE_PATH))
@@ -704,10 +740,17 @@ def main() -> int:
         "--strategy-qa-store",
         default="data/agent_coordination/strategy_qa_handoffs",
     )
+    parser.add_argument(
+        "--composite-runtime-qa-store",
+        default="data/agent_coordination/composite_runtime_qa_tasks",
+    )
     args = parser.parse_args()
 
     template = am.load_config(Path(args.config))
     template = materialize_strategy_qa_store(template, Path(args.strategy_qa_store))
+    template = materialize_composite_runtime_qa_store(
+        template, Path(args.composite_runtime_qa_store)
+    )
     config = merge_definition(template, load_runtime(Path(args.runtime)))
     apply_provider_gates(config)
     recover_completed_root_cause_analysis(config)
