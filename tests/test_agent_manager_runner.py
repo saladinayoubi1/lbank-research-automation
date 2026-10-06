@@ -626,7 +626,7 @@ def test_composite_val40_store_is_materialized_before_runtime_merge(tmp_path, mo
     captured = {}
     def fake_materialize(definition, pairs):
         captured["pairs"] = pairs
-        result = deepcopy(definition)
+        result = __import__("copy").deepcopy(definition)
         result["tasks"].append({"id": "materialized"})
         return result
 
