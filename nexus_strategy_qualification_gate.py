@@ -14,8 +14,8 @@ from typing import Any
 
 from nexus_strategy_independent_qa import validate_task, verify_receipt
 
-SCHEMA = "nexus.strategy-qualification-gate.v1"
-VERIFY_SCHEMA = "nexus.strategy-qualification-gate-verification.v1"
+SCHEMA = "nexus.strategy-qualification-gate.v2"
+VERIFY_SCHEMA = "nexus.strategy-qualification-gate-verification.v2"
 _SHA40 = re.compile(r"^[0-9a-f]{40}$")
 _HEX64 = re.compile(r"^[0-9a-f]{64}$")
 _WAITING = {"PENDING", "READY", "LEASED", "RUNNING", "VERIFYING"}
@@ -93,6 +93,7 @@ def evaluate_qualification(manager_task: Mapping[str, Any]) -> dict[str, Any]:
         "strategy_config_digest": verified_task["strategy_config_digest"],
         "runtime_evidence": [dict(row) for row in verified_task["runtime_evidence"]],
         "runtime_evidence_digest": _digest(verified_task["runtime_evidence"]),
+        "qa_handoff_task": dict(verified_task),
         "paper_only": True,
         "registry_mutation_performed": False,
         "runtime_activation_authority": False,
@@ -128,6 +129,7 @@ def evaluate_qualification(manager_task: Mapping[str, Any]) -> dict[str, Any]:
             "registry_admission_allowed": True,
             "qa_lease_id": lease_id,
             "qa_receipt_digest": receipt["qa_receipt_digest"],
+            "qa_receipt": dict(receipt),
         }
     elif status in _REJECTED:
         core = {
@@ -141,6 +143,7 @@ def evaluate_qualification(manager_task: Mapping[str, Any]) -> dict[str, Any]:
             "registry_admission_allowed": False,
             "qa_lease_id": None,
             "qa_receipt_digest": None,
+            "qa_receipt": None,
         }
     elif status in _WAITING:
         core = {
@@ -151,6 +154,7 @@ def evaluate_qualification(manager_task: Mapping[str, Any]) -> dict[str, Any]:
             "registry_admission_allowed": False,
             "qa_lease_id": None,
             "qa_receipt_digest": None,
+            "qa_receipt": None,
         }
     else:
         raise StrategyQualificationError("Agent Manager QA task status is unsupported")
@@ -171,18 +175,31 @@ def verify_qualification(value: Mapping[str, Any]) -> dict[str, Any]:
         claimed = core.pop("qualification_digest", None)
         checks["schema"] = core.get("schema_version") == SCHEMA and core.get("system_map_node") == "QUAL-42"
         checks["digest"] = isinstance(claimed, str) and claimed == _digest(core)
+
+        source_sha = str(core.get("source_sha", ""))
+        embedded_task = core.get("qa_handoff_task")
+        verified_task = (
+            validate_task(embedded_task, source_sha)
+            if isinstance(embedded_task, Mapping)
+            else None
+        )
         checks["identity"] = bool(
-            isinstance(core.get("strategy_qa_task_id"), str)
-            and core["strategy_qa_task_id"].startswith("STRATEGY-QA-")
-            and _HEX64.fullmatch(str(core.get("qa_task_digest", "")))
-            and _SHA40.fullmatch(str(core.get("source_sha", "")))
-            and _HEX64.fullmatch(str(core.get("proposal_digest", "")))
-            and _HEX64.fullmatch(str(core.get("proposal_result_digest", "")))
-            and _HEX64.fullmatch(str(core.get("requalification_digest", "")))
-            and _HEX64.fullmatch(str(core.get("requalification_verification_digest", "")))
-            and isinstance(core.get("strategy_config"), Mapping)
-            and bool(core.get("strategy_config"))
-            and core.get("strategy_config_digest") == _digest(core.get("strategy_config"))
+            isinstance(verified_task, Mapping)
+            and core.get("strategy_qa_task_id") == verified_task.get("id")
+            and core.get("qa_task_digest") == verified_task.get("task_digest")
+            and _SHA40.fullmatch(source_sha)
+            and source_sha == verified_task.get("source_sha")
+            and core.get("proposal_digest") == verified_task.get("proposal_digest")
+            and core.get("proposal_result_digest") == verified_task.get("proposal_result_digest")
+            and core.get("requalification_digest") == verified_task.get("requalification_digest")
+            and core.get("requalification_verification_digest")
+                == verified_task.get("requalification_verification_digest")
+            and core.get("family") == verified_task.get("family")
+            and core.get("timeframe") == verified_task.get("timeframe")
+            and core.get("variant_id") == verified_task.get("variant_id")
+            and core.get("strategy_config") == verified_task.get("strategy_config")
+            and core.get("strategy_config_digest") == verified_task.get("strategy_config_digest")
+            and core.get("runtime_evidence") == verified_task.get("runtime_evidence")
             and isinstance(core.get("runtime_evidence"), list)
             and bool(core.get("runtime_evidence"))
             and _HEX64.fullmatch(str(core.get("runtime_evidence_digest", "")))
@@ -192,7 +209,22 @@ def verify_qualification(value: Mapping[str, Any]) -> dict[str, Any]:
         qualified = core.get("qualified")
         admission = core.get("registry_admission_allowed")
         qa_lease = core.get("qa_lease_id")
-        qa_receipt = core.get("qa_receipt_digest")
+        qa_receipt_digest = core.get("qa_receipt_digest")
+        embedded_receipt = core.get("qa_receipt")
+        qualified_receipt_valid = bool(
+            isinstance(verified_task, Mapping)
+            and isinstance(qa_lease, str)
+            and bool(qa_lease)
+            and len(qa_lease) <= 160
+            and isinstance(embedded_receipt, Mapping)
+            and embedded_receipt.get("qa_receipt_digest") == qa_receipt_digest
+            and verify_receipt(
+                embedded_receipt,
+                verified_task,
+                lease_id=qa_lease,
+                execution_source_sha=source_sha,
+            )
+        )
         checks["decision"] = bool(
             (
                 decision == "QUALIFIED_FOR_REGISTRY"
@@ -200,9 +232,8 @@ def verify_qualification(value: Mapping[str, Any]) -> dict[str, Any]:
                 and admission is True
                 and isinstance(core.get("reason_codes"), list)
                 and core.get("reason_codes") == ["INDEPENDENT_QA_VERIFIED"]
-                and isinstance(qa_lease, str)
-                and bool(qa_lease)
-                and _HEX64.fullmatch(str(qa_receipt or ""))
+                and _HEX64.fullmatch(str(qa_receipt_digest or ""))
+                and qualified_receipt_valid
             )
             or (
                 decision in {"REJECTED", "WAITING_FOR_QA"}
@@ -211,7 +242,8 @@ def verify_qualification(value: Mapping[str, Any]) -> dict[str, Any]:
                 and isinstance(core.get("reason_codes"), list)
                 and bool(core.get("reason_codes"))
                 and qa_lease is None
-                and qa_receipt is None
+                and qa_receipt_digest is None
+                and embedded_receipt is None
             )
         )
         checks["authority"] = bool(
