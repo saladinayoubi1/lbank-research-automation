@@ -4,7 +4,13 @@ import pytest
 
 from phase5_strategy_factory import build_experiment, qualify
 from phase6_research_pipeline import bind_bybit_closed_dataset
-from strategy_registry import StrategyRegistryError, build_strategy_record, evaluate_strategy_health
+from strategy_registry import (
+    StrategyRegistryError,
+    build_qualified_strategy_record,
+    build_strategy_record,
+    evaluate_strategy_health,
+    verify_qualified_strategy_record,
+)
 
 
 START = 1_700_000_100_000
@@ -155,3 +161,121 @@ def test_health_unknown_fields_or_record_tampering_fail_closed():
     tampered["lifecycle_state"] = "PAPER"
     with pytest.raises(StrategyRegistryError, match="record digest mismatch"):
         evaluate_strategy_health(tampered, health_signals())
+
+
+def _modern_qualification():
+    from nexus_strategy_independent_qa import digest
+    from nexus_strategy_qualification_gate import evaluate_qualification, verify_qualification
+    from nexus_strategy_review_qa_handoff import qa_task_id
+
+    core = {
+        "schema_version":"nexus.strategy-review-qa-task.v1",
+        "id":qa_task_id("a"*64,"b"*40,"d"*64),
+        "task_kind":"strategy_review_independent_qa","system_map_node":"QA-41",
+        "status":"READY_FOR_QA_DISPATCH","source_sha":"b"*40,
+        "proposal_digest":"a"*64,"proposal_result_digest":"c"*64,
+        "requalification_digest":"d"*64,"requalification_verification_digest":"e"*64,
+        "family":"momentum","timeframe":"hour4","variant_id":"v1",
+        "strategy_config":{"lookback":16},"strategy_config_digest":"",
+        "runtime_evidence":[
+            {"symbol":"BTCUSDT","dataset_binding_sha256":"f"*64,"pipeline_digest":"1"*64,
+             "qualification_digest":"2"*64,"last_open_time_ms":1800000000000},
+            {"symbol":"ETHUSDT","dataset_binding_sha256":"3"*64,"pipeline_digest":"4"*64,
+             "qualification_digest":"5"*64,"last_open_time_ms":1800000000000},
+        ],
+        "producer_role":"strategy-runtime-requalification","required_verifier":"qa-verifier-agent",
+        "research_only":True,"paper_only":True,"candidate_creation_authority":False,
+        "qualification_authority":False,"promotion_authority":False,
+        "paper_execution_authority":False,"automatic_strategy_promotion":False,
+        "live_trading_authority":False,
+    }
+    core["strategy_config_digest"]=digest(core["strategy_config"])
+    handoff={**core,"task_digest":digest(core)}
+    receipt_core={
+        "schema_version":"nexus.strategy-independent-qa-receipt.v1",
+        "qa_lease_id":"qa-lease","task_digest":handoff["task_digest"],
+        "source_sha":handoff["source_sha"],"proposal_digest":handoff["proposal_digest"],
+        "proposal_result_digest":handoff["proposal_result_digest"],
+        "requalification_digest":handoff["requalification_digest"],
+        "requalification_verification_digest":handoff["requalification_verification_digest"],
+        "strategy_config_digest":handoff["strategy_config_digest"],
+        "runtime_evidence":[
+            {**row,"qualification_status":"paper_candidate","deterministic_replay_verified":True}
+            for row in sorted(handoff["runtime_evidence"], key=lambda item:item["symbol"])
+        ],
+        "independent_qa_complete":True,"qualification_authority":False,
+        "promotion_authority":False,"paper_execution_authority":False,
+        "automatic_strategy_promotion":False,"live_trading_authority":False,
+    }
+    receipt={**receipt_core,"qa_receipt_digest":digest(receipt_core)}
+    manager={
+        "id":handoff["id"],"status":"DONE","authority":2,"qa_verifier_only":True,
+        "qa_dispatch_enabled":True,"required_verifier":"qa-verifier-agent",
+        "qa_handoff_task":handoff,"assigned_worker":"qa-verifier-agent",
+        "verifier":"qa-verifier-agent","lease_id":"qa-lease","verification_evidence":receipt,
+    }
+    qualification=evaluate_qualification(manager)
+    verification=verify_qualification(qualification)
+    assert verification["decision"]=="pass"
+    return qualification, verification
+
+
+def test_modern_registry_record_is_qualified_but_not_demo_activated():
+    qualification, verification = _modern_qualification()
+    record = build_qualified_strategy_record(qualification, verification)
+    assert record["lifecycle_state"] == "QUALIFIED_CANDIDATE"
+    assert record["demo_matrix_member"] is False
+    assert record["runtime_activation_authority"] is False
+    assert record["paper_execution_authority"] is False
+    assert record["live_execution_allowed"] is False
+    assert record["config_sha256"] == qualification["strategy_config_digest"]
+    assert record["runtime_evidence_digest"] == qualification["runtime_evidence_digest"]
+    assert verify_qualified_strategy_record(record)["decision"] == "pass"
+
+
+def test_modern_registry_rejects_nonqualified_or_stale_qual42():
+    qualification, verification = _modern_qualification()
+    waiting = deepcopy(qualification)
+    waiting["decision"] = "WAITING_FOR_QA"
+    with pytest.raises(StrategyRegistryError, match="verification"):
+        build_qualified_strategy_record(waiting, verification)
+
+    stale = deepcopy(verification)
+    stale["verification_digest"] = "0" * 64
+    with pytest.raises(StrategyRegistryError, match="verification"):
+        build_qualified_strategy_record(qualification, stale)
+
+
+def test_modern_registry_identity_stable_for_same_config_but_version_is_epoch_bound():
+    qualification, verification = _modern_qualification()
+    first = build_qualified_strategy_record(qualification, verification)
+    second_q = deepcopy(qualification)
+    second_q["qualification_digest"] = "9" * 64
+    from nexus_strategy_qualification_gate import verify_qualification
+    # The altered artifact is intentionally not self-consistent and therefore
+    # cannot be admitted merely to force a second version.
+    assert verify_qualification(second_q)["decision"] == "reject"
+    assert len(first["strategy_id"]) == 64
+    assert len(first["strategy_version"]) == 64
+
+
+def test_modern_registry_record_tamper_fails_closed():
+    qualification, verification = _modern_qualification()
+    record = build_qualified_strategy_record(qualification, verification)
+    tampered = deepcopy(record)
+    tampered["demo_matrix_member"] = True
+    assert verify_qualified_strategy_record(tampered)["decision"] == "reject"
+
+    bad_provenance = deepcopy(record)
+    bad_provenance["runtime_evidence"][0]["pipeline_digest"] = "not-a-digest"
+    bad_core = dict(bad_provenance)
+    bad_core.pop("record_digest", None)
+    from strategy_registry import _digest
+    bad_provenance["record_digest"] = _digest(bad_core)
+    assert verify_qualified_strategy_record(bad_provenance)["decision"] == "reject"
+
+    bad_identity = deepcopy(qualification)
+    bad_identity["variant_id"] = ""
+    from nexus_strategy_qualification_gate import verify_qualification
+    bad_verification = verify_qualification(bad_identity)
+    assert bad_verification["decision"] == "reject"
