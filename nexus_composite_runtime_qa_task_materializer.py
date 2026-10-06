@@ -1,8 +1,8 @@
 """Materialize verified composite runtime QA-41 tasks into Agent Manager.
 
-The resulting task is intentionally BLOCKED and dispatch-disabled.  This stage
-only makes the independently verifiable producer proof durable and restart-safe.
-A separate reviewed change must enable the verifier transport.
+The resulting task is verifier-only and dispatch-enabled only after the bounded
+transport, source-pin, executor, and receipt-ingestion contracts are present.
+It never grants qualification, registry, Runtime/Paper, or Live authority.
 """
 from __future__ import annotations
 
@@ -44,8 +44,7 @@ def _definition_task(task: Mapping[str, Any]) -> dict[str, Any]:
         "title": f"Independent QA for composite VAL-40 {str(task['candidate_digest'])[:12]}",
         "phase": 7,
         "gate": 17,
-        "status": "BLOCKED",
-        "blocked_reason": "independent composite runtime QA transport not enabled",
+        "status": "READY",
         "priority": 93,
         "dependencies": [],
         "required_capabilities": ["data_validation"],
@@ -58,7 +57,7 @@ def _definition_task(task: Mapping[str, Any]) -> dict[str, Any]:
             "no qualification, registry mutation, Runtime/Paper activation, automatic promotion, or Live authority",
         ],
         "qa_verifier_only": True,
-        "qa_dispatch_enabled": False,
+        "qa_dispatch_enabled": True,
         "required_verifier": "qa-verifier-agent",
         "qa_handoff_task": deepcopy(dict(task)),
     }

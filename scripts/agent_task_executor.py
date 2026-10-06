@@ -111,6 +111,7 @@ def decode_payload(value: str) -> dict[str, Any]:
     qa_keys = {"research_producer_lease_id", "research_producer_receipt_digest",
                "research_producer_source_sha"}
     strategy_qa_keys = {"strategy_qa_task"}
+    composite_qa_keys = {"composite_qa_task"}
     followon_keys = {
         "research_predecessor_source_sha", "research_predecessor_receipt_digest",
         "research_predecessor_qa_digest", "research_predecessor_ledger_digest",
@@ -129,10 +130,16 @@ def decode_payload(value: str) -> dict[str, Any]:
         and data.get("task_id", "").startswith("STRATEGY-QA-")
         and data.get("worker_id") == "qa-verifier-agent"
     )
+    is_composite_qa = (
+        isinstance(data.get("task_id"), str)
+        and data.get("task_id", "").startswith("COMPOSITE-QA-")
+        and data.get("worker_id") == "qa-verifier-agent"
+    )
     expected = (
         DISPATCH_KEYS
         | (qa_keys if is_research_qa else set())
         | (strategy_qa_keys if is_strategy_qa else set())
+        | (composite_qa_keys if is_composite_qa else set())
         | (followon_keys if is_followon else set())
     )
     if is_research_qa and not qa_keys.issubset(keys):
@@ -156,6 +163,16 @@ def decode_payload(value: str) -> dict[str, Any]:
         validate_task(strategy_task, str(strategy_task.get("source_sha", "")))
         if strategy_task.get("id") != data.get("task_id"):
             raise ValueError("Strategy independent QA task identity mismatch")
+    if is_composite_qa:
+        if data.get("phase") != 7 or data.get("transport") != "github-cloud":
+            raise ValueError("Composite runtime independent QA requires phase 7 cloud transport")
+        from nexus_composite_runtime_independent_qa import validate_task
+        composite_task = data.get("composite_qa_task")
+        if not isinstance(composite_task, dict):
+            raise ValueError("Composite runtime independent QA handoff binding absent")
+        validate_task(composite_task, str(composite_task.get("source_sha", "")))
+        if composite_task.get("id") != data.get("task_id"):
+            raise ValueError("Composite runtime independent QA task identity mismatch")
     if is_research_qa:
         if keys != expected or not qa_keys.issubset(keys):
             raise ValueError("Research independent QA producer binding absent")
@@ -246,6 +263,46 @@ def _phase7_pytest_workload(payload: dict[str, Any], transport: str, spec: dict[
 
 def deterministic_execution(payload: dict[str, Any], transport: str) -> tuple[str, dict[str, Any]]:
     task_id = payload["task_id"]
+    if isinstance(task_id, str) and task_id.startswith("COMPOSITE-QA-"):
+        if (
+            payload.get("phase") != 7
+            or transport != "github-cloud"
+            or payload.get("worker_id") != "qa-verifier-agent"
+        ):
+            return "failure", {
+                "executor": "nexus-composite-runtime-independent-qa",
+                "failure_class": "composite_runtime_qa_lease_worker_phase_or_transport_mismatch",
+                "qualification_authority": False,
+                "registry_mutation_authority": False,
+                "runtime_activation_authority": False,
+                "paper_execution_authority": False,
+                "automatic_strategy_promotion": False,
+                "live_trading_authority": False,
+            }
+        try:
+            from nexus_composite_runtime_independent_qa import (
+                CompositeRuntimeQaError,
+                run_independent_qa,
+            )
+            receipt = run_independent_qa(
+                payload["composite_qa_task"],
+                lease_id=payload["lease_id"],
+                execution_source_sha=os.environ.get("GITHUB_SHA", ""),
+                state_root=Path("build/composite-runtime-independent-qa"),
+            )
+            return "success", receipt
+        except (KeyError, OSError, ValueError, RuntimeError, CompositeRuntimeQaError) as exc:
+            return "failure", {
+                "executor": "nexus-composite-runtime-independent-qa",
+                "failure_class": "composite_runtime_independent_qa_failed",
+                "reason": str(exc)[:600],
+                "qualification_authority": False,
+                "registry_mutation_authority": False,
+                "runtime_activation_authority": False,
+                "paper_execution_authority": False,
+                "automatic_strategy_promotion": False,
+                "live_trading_authority": False,
+            }
     if isinstance(task_id, str) and task_id.startswith("STRATEGY-QA-"):
         if (
             payload.get("phase") != 7

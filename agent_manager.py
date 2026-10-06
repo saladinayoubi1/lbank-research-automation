@@ -609,20 +609,26 @@ def record_result(config: dict[str, Any], task_id: str, worker_id: str, outcome:
             if task.get("qa_verifier_only") is True:
                 handoff = task.get("qa_handoff_task")
                 if not isinstance(handoff, Mapping):
-                    raise ValueError("independent Strategy QA handoff is unavailable")
-                from nexus_strategy_independent_qa import verify_receipt
+                    raise ValueError("independent QA handoff is unavailable")
+                task_kind = handoff.get("task_kind")
+                if task_kind == "strategy_review_independent_qa":
+                    from nexus_strategy_independent_qa import verify_receipt as verify_qa_receipt
+                elif task_kind == "composite_runtime_independent_qa":
+                    from nexus_composite_runtime_independent_qa import verify_receipt as verify_qa_receipt
+                else:
+                    raise ValueError("independent QA task kind is unsupported")
                 if (
                     worker_id != task.get("required_verifier")
                     or worker_id != task.get("verifier")
                     or task.get("producer") is not None
-                    or not verify_receipt(
+                    or not verify_qa_receipt(
                         evidence,
                         handoff,
                         lease_id=str(task.get("lease_id", "")),
                         execution_source_sha=str(handoff.get("source_sha", "")),
                     )
                 ):
-                    raise ValueError("independent Strategy QA receipt does not bind this exact verifier lease")
+                    raise ValueError("independent QA receipt does not bind this exact verifier lease")
             if task_id in TASKS:
                 original = task.get("result_evidence", {})
                 if (
@@ -674,15 +680,26 @@ def record_result(config: dict[str, Any], task_id: str, worker_id: str, outcome:
             request_verification(config, task, utcnow())
     elif outcome == "failure":
         if task.get("qa_verifier_only") is True:
-            task["failure_class"] = evidence.get("failure_class", "independent_strategy_qa_failed")
+            handoff = task.get("qa_handoff_task")
+            task_kind = handoff.get("task_kind") if isinstance(handoff, Mapping) else None
+            is_composite = task_kind == "composite_runtime_independent_qa"
+            task["failure_class"] = evidence.get(
+                "failure_class",
+                "independent_composite_runtime_qa_failed" if is_composite
+                else "independent_strategy_qa_failed",
+            )
             task["failure_evidence"] = evidence
             task["status"] = "BLOCKED"
-            task["blocked_reason"] = "independent Strategy QA failed; reviewed fresh QA lease required"
+            task["blocked_reason"] = (
+                "independent composite runtime QA failed; reviewed fresh QA lease required"
+                if is_composite
+                else "independent Strategy QA failed; reviewed fresh QA lease required"
+            )
             task["assigned_worker"] = None
             task["heartbeat_at"] = None
             task["lease_expires_at"] = None
             emit(
-                "strategy_qa_failed_closed",
+                "composite_runtime_qa_failed_closed" if is_composite else "strategy_qa_failed_closed",
                 task_id=task_id,
                 verifier=worker_id,
                 failure_class=task["failure_class"],

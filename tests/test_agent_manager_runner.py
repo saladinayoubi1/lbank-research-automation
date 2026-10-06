@@ -553,7 +553,7 @@ def test_source_epoch_drift_never_reuses_already_qa_complete_old_producer(monkey
     assert successor["status"] == "BLOCKED"
 
 
-def test_composite_runtime_qa_store_materializes_dispatch_disabled_task(tmp_path, monkeypatch):
+def test_composite_runtime_qa_store_materializes_dispatch_enabled_verifier_task(tmp_path, monkeypatch):
     import json
 
     task = {
@@ -616,11 +616,11 @@ def test_composite_runtime_qa_store_materializes_dispatch_disabled_task(tmp_path
     )
     row = materialized["tasks"][0]
     assert row["id"] == task["id"]
-    assert row["status"] == "BLOCKED"
+    assert row["status"] == "READY"
     assert row["qa_verifier_only"] is True
-    assert row["qa_dispatch_enabled"] is False
+    assert row["qa_dispatch_enabled"] is True
     assert row["required_verifier"] == "qa-verifier-agent"
-    assert row["blocked_reason"] == "independent composite runtime QA transport not enabled"
+    assert row.get("blocked_reason") is None
 
 
 def test_composite_runtime_qa_store_path_tamper_fails_closed(tmp_path):
