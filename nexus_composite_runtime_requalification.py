@@ -28,6 +28,7 @@ from product_research_runtime import ProductResearchError, ProductResearchRuntim
 
 SCHEMA = "nexus.composite-runtime-requalification.v1"
 VERIFY_SCHEMA = "nexus.composite-runtime-requalification-verification.v1"
+QA_SCHEMA = "nexus.composite-runtime-requalification-qa.v1"
 SYMBOLS = ("BTCUSDT", "ETHUSDT")
 TIMEFRAMES = ("minute15", "hour1", "hour4")
 PROFILES = {
@@ -468,3 +469,83 @@ def verify_requalification(value: Mapping[str, Any]) -> dict[str, Any]:
         "requalification_digest": value.get("requalification_digest"),
     }
     return {**result, "verification_digest": digest(result)}
+
+
+def build_qa_receipt(
+    producer: Mapping[str, Any],
+    replay: Mapping[str, Any],
+    *,
+    producer_lease_id: str,
+) -> dict[str, Any]:
+    producer_verification = verify_requalification(producer)
+    replay_verification = verify_requalification(replay)
+    if (
+        producer_verification.get("decision") != "pass"
+        or replay_verification.get("decision") != "pass"
+        or _canonical(producer) != _canonical(replay)
+        or not isinstance(producer_lease_id, str)
+        or not producer_lease_id
+        or len(producer_lease_id) > 160
+        or not _SHA40.fullmatch(str(producer.get("execution_source_sha", "")))
+        or not _HEX64.fullmatch(str(producer.get("requalification_digest", "")))
+        or producer.get("candidate_digest") != replay.get("candidate_digest")
+        or producer.get("decision") != replay.get("decision")
+    ):
+        raise CompositeRuntimeRequalificationError(
+            "independent composite runtime QA replay differs from producer"
+        )
+    core = {
+        "schema_version": QA_SCHEMA,
+        "producer_lease_id": producer_lease_id,
+        "producer_requalification_digest": producer["requalification_digest"],
+        "source_sha": producer["execution_source_sha"],
+        "candidate_digest": producer["candidate_digest"],
+        "decision": producer["decision"],
+        "qualified_for_review": producer["qualified_for_review"],
+        "evaluation_clock_ms": producer["evaluation_clock_ms"],
+        "dataset_evidence_digest": producer["dataset_evidence_digest"],
+        "runtime_rows_digest": producer["runtime_rows_digest"],
+        "independent_qa_complete": True,
+        "qualification_authority": False,
+        "registry_mutation_authority": False,
+        "promotion_authority": False,
+        "paper_execution_authority": False,
+        "automatic_strategy_promotion": False,
+        "live_trading_authority": False,
+    }
+    return {**core, "qa_digest": digest(core)}
+
+
+def verify_qa_receipt(
+    receipt: Mapping[str, Any],
+    producer: Mapping[str, Any],
+    *,
+    producer_lease_id: str,
+) -> bool:
+    try:
+        core = dict(receipt)
+        claimed = core.pop("qa_digest", None)
+        return bool(
+            verify_requalification(producer).get("decision") == "pass"
+            and claimed == digest(core)
+            and receipt.get("schema_version") == QA_SCHEMA
+            and receipt.get("producer_lease_id") == producer_lease_id
+            and receipt.get("producer_requalification_digest")
+                == producer.get("requalification_digest")
+            and receipt.get("source_sha") == producer.get("execution_source_sha")
+            and receipt.get("candidate_digest") == producer.get("candidate_digest")
+            and receipt.get("decision") == producer.get("decision")
+            and receipt.get("qualified_for_review") == producer.get("qualified_for_review")
+            and receipt.get("evaluation_clock_ms") == producer.get("evaluation_clock_ms")
+            and receipt.get("dataset_evidence_digest") == producer.get("dataset_evidence_digest")
+            and receipt.get("runtime_rows_digest") == producer.get("runtime_rows_digest")
+            and receipt.get("independent_qa_complete") is True
+            and receipt.get("qualification_authority") is False
+            and receipt.get("registry_mutation_authority") is False
+            and receipt.get("promotion_authority") is False
+            and receipt.get("paper_execution_authority") is False
+            and receipt.get("automatic_strategy_promotion") is False
+            and receipt.get("live_trading_authority") is False
+        )
+    except Exception:
+        return False
