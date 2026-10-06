@@ -202,6 +202,9 @@ def test_positive_exercised_validation_forwards_without_minimum_trade_count_gate
     assert candidate["total_validation_round_trips"] == 4
     assert candidate["no_minimum_trade_count_gate"] is True
     assert candidate["strategy_config"] == _config()
+    assert candidate["research_task"]["verification_evidence"]["qa_digest"] == QA
+    assert candidate["producer_receipt"]["receipt_digest"] == receipt["receipt_digest"]
+    assert candidate["research_report"]["report_digest"] == report["report_digest"]
     assert verify_candidate(candidate)["decision"] == "pass"
 
 
@@ -264,3 +267,18 @@ def test_candidate_tamper_is_detected():
     tampered = deepcopy(candidate)
     tampered["promotion_authority"] = True
     assert verify_candidate(tampered)["decision"] == "reject"
+
+    redigested = deepcopy(candidate)
+    redigested["mechanism"] = "factory_gen_fake_mechanism"
+    redigested["strategy_config"]["mechanism"] = "factory_gen_fake_mechanism"
+    core = dict(redigested)
+    core.pop("candidate_digest", None)
+    redigested["candidate_digest"] = digest(core)
+    assert verify_candidate(redigested)["decision"] == "reject"
+
+    proof_tamper = deepcopy(candidate)
+    proof_tamper["research_task"]["verification_evidence"]["qa_digest"] = "0" * 64
+    core = dict(proof_tamper)
+    core.pop("candidate_digest", None)
+    proof_tamper["candidate_digest"] = digest(core)
+    assert verify_candidate(proof_tamper)["decision"] == "reject"
