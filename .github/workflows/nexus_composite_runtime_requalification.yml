@@ -349,7 +349,7 @@ jobs:
           open(sys.argv[2], "w", encoding="ascii").write(str(matches[0]["id"]))
           PY
 
-          gh api "repos/$GITHUB_REPOSITORY/actions/jobs/$(cat build/publisher/job-id.txt)/logs" > build/publisher/runtime.log
+          gh api --allow-escape-sequences "repos/$GITHUB_REPOSITORY/actions/jobs/$(cat build/publisher/job-id.txt)/logs" > build/publisher/runtime.log
           python - build/publisher/runtime.log build/nexus_composite_runtime_requalification <<'PY'
           import base64, hashlib, io, pathlib, re, stat, sys, zipfile
 
