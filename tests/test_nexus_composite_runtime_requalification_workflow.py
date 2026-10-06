@@ -89,7 +89,8 @@ def test_physical_evidence_uses_bounded_digest_bound_job_log_transport() -> None
     text = _text()
     physical = text.split("  runtime-requalification:", 1)[1].split("  publish-evidence:", 1)[0]
     publisher = text.split("  publish-evidence:", 1)[1]
-    assert "NEXUS_COMPOSITE_VAL40_EVIDENCE_TRANSPORT=bounded-job-log-v2" in physical
+    assert "transport_version=bounded-job-log-v2" in physical
+    assert "NEXUS_COMPOSITE_VAL40_EVIDENCE_TRANSPORT=%s" in physical
     assert "NEXUS_COMPOSITE_VAL40_EVIDENCE_SHA256=" in physical
     assert "NEXUS_COMPOSITE_VAL40_EVIDENCE_SIZE=" in physical
     assert "NEXUS_COMPOSITE_VAL40_EVIDENCE_CHUNK_COUNT=" in physical
