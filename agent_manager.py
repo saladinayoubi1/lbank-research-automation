@@ -149,7 +149,10 @@ def validate_config(config: dict[str, Any]) -> None:
             if (
                 not isinstance(handoff, dict)
                 or handoff.get("required_verifier") != required_verifier
-                or handoff.get("task_kind") != "strategy_review_independent_qa"
+                or handoff.get("task_kind") not in {
+                    "strategy_review_independent_qa",
+                    "composite_runtime_independent_qa",
+                }
                 or handoff.get("system_map_node") != "QA-41"
             ):
                 raise ValueError(f"invalid QA handoff binding for {task['id']}")

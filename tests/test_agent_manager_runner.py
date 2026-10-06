@@ -5,6 +5,7 @@ from agent_manager_runner import (
     SPECIALIZED_REASONING_BLOCK_REASON,
     block_unroutable_specialized_reasoning,
     materialize_strategy_qa_store,
+    materialize_composite_runtime_qa_store,
     merge_definition,
     recover_completed_root_cause_analysis,
     recover_bounded_specialized_reasoning,
@@ -550,3 +551,90 @@ def test_source_epoch_drift_never_reuses_already_qa_complete_old_producer(monkey
 
     assert recover_research_source_epoch_with_fresh_producer(config) == 0
     assert successor["status"] == "BLOCKED"
+
+
+def test_composite_runtime_qa_store_materializes_dispatch_disabled_task(tmp_path, monkeypatch):
+    import json
+
+    task = {
+        "schema_version": "nexus.composite-runtime-qa-task.v1",
+        "id": "COMPOSITE-QA-" + "a" * 64,
+        "task_kind": "composite_runtime_independent_qa",
+        "system_map_node": "QA-41",
+        "status": "READY_FOR_QA_DISPATCH",
+        "required_verifier": "qa-verifier-agent",
+        "producer_role": "physical-composite-val40-requalification",
+        "source_sha": "b" * 40,
+        "candidate_digest": "c" * 64,
+        "requalification_digest": "a" * 64,
+        "requalification_verification_digest": "d" * 64,
+        "evaluations_digest": "e" * 64,
+        "runtime_as_of_ms": 1_800_000_000_000,
+        "producer_workflow_run_id": 123,
+        "producer": {},
+        "producer_verification": {},
+        "research_only": True,
+        "paper_only": True,
+        "qualification_authority": False,
+        "registry_mutation_authority": False,
+        "runtime_activation_authority": False,
+        "promotion_authority": False,
+        "paper_execution_authority": False,
+        "automatic_strategy_promotion": False,
+        "live_trading_authority": False,
+        "task_digest": "f" * 64,
+    }
+    transport = {
+        "schema_version": "nexus.composite-runtime-qa-transport.v1",
+        "producer_workflow_run_id": 123,
+        "artifact_id": 456,
+        "task_digest": task["task_digest"],
+        "source_sha": task["source_sha"],
+        "candidate_digest": task["candidate_digest"],
+        "requalification_digest": task["requalification_digest"],
+        "required_verifier": "qa-verifier-agent",
+        "paper_only": True,
+        "qualification_authority": False,
+        "registry_mutation_authority": False,
+        "runtime_activation_authority": False,
+        "paper_execution_authority": False,
+        "automatic_strategy_promotion": False,
+        "live_trading_authority": False,
+    }
+    root = tmp_path / "composite_runtime_qa_tasks" / task["task_digest"]
+    root.mkdir(parents=True)
+    (root / "qa-task.json").write_text(json.dumps(task), encoding="utf-8")
+    (root / "transport.json").write_text(json.dumps(transport), encoding="utf-8")
+    monkeypatch.setattr(
+        "nexus_composite_runtime_qa_task_materializer.validate_task",
+        lambda value, source: dict(value),
+    )
+
+    template = {"schema_version": 1, "phase": 4, "policy": {}, "workers": [], "tasks": []}
+    materialized = materialize_composite_runtime_qa_store(
+        template, tmp_path / "composite_runtime_qa_tasks"
+    )
+    row = materialized["tasks"][0]
+    assert row["id"] == task["id"]
+    assert row["status"] == "BLOCKED"
+    assert row["qa_verifier_only"] is True
+    assert row["qa_dispatch_enabled"] is False
+    assert row["required_verifier"] == "qa-verifier-agent"
+    assert row["blocked_reason"] == "independent composite runtime QA transport not enabled"
+
+
+def test_composite_runtime_qa_store_path_tamper_fails_closed(tmp_path):
+    import json
+    import pytest
+
+    root = tmp_path / "composite_runtime_qa_tasks" / ("f" * 64)
+    root.mkdir(parents=True)
+    (root / "qa-task.json").write_text(
+        json.dumps({"task_digest": "e" * 64}), encoding="utf-8"
+    )
+    (root / "transport.json").write_text(json.dumps({}), encoding="utf-8")
+    with pytest.raises(ValueError, match="path does not match task digest"):
+        materialize_composite_runtime_qa_store(
+            {"schema_version": 1, "phase": 4, "policy": {}, "workers": [], "tasks": []},
+            tmp_path / "composite_runtime_qa_tasks",
+        )
