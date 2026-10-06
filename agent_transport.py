@@ -162,12 +162,20 @@ def envelope_for(task: dict[str, Any]) -> dict[str, Any]:
             or task.get("producer") is not None
             or not isinstance(handoff, dict)
         ):
-            raise ValueError("Strategy QA dispatch lease is not verifier-only and enabled")
-        from nexus_strategy_independent_qa import validate_task
-        validate_task(handoff, str(handoff.get("source_sha", "")))
+            raise ValueError("QA dispatch lease is not verifier-only and enabled")
+        task_kind = handoff.get("task_kind")
+        if task_kind == "strategy_review_independent_qa":
+            from nexus_strategy_independent_qa import validate_task as validate_qa_task
+            payload_key = "strategy_qa_task"
+        elif task_kind == "composite_runtime_independent_qa":
+            from nexus_composite_runtime_independent_qa import validate_task as validate_qa_task
+            payload_key = "composite_qa_task"
+        else:
+            raise ValueError("QA handoff task kind is unsupported")
+        validate_qa_task(handoff, str(handoff.get("source_sha", "")))
         if handoff.get("id") != task.get("id"):
-            raise ValueError("Strategy QA materialized identity differs from handoff")
-        optional["strategy_qa_task"] = dict(handoff)
+            raise ValueError("QA materialized identity differs from handoff")
+        optional[payload_key] = dict(handoff)
     if task["id"] in PREDECESSOR:
         ancestry = validate_ancestry({key: task[key] for key in ANCESTRY if key in task})
         optional.update(ancestry)
