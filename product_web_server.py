@@ -106,13 +106,18 @@ def _shared_paper_live_snapshot(data_root: Path, *, now: datetime | None = None)
     paper_state_stale = bool(snapshot.get("stale", True))
     projected = dict(snapshot)
     market_transport = "not_needed_flat"
+    market_price_basis = "not_needed_flat"
     if snapshot.get("positions"):
         market_transport = "bybit_public_unavailable"
+        market_price_basis = "closed_bar"
         try:
             client, _ = _demo_public_mark_client()
             projected = with_shared_public_marks(snapshot, client, current)
             if projected.get("quote_status") == "fresh":
                 market_transport = client.last_transport
+                market_price_basis = getattr(client, "last_price_basis", "mark_price")
+                if market_price_basis == "orderbook_mid":
+                    projected["valuation"] = "public_orderbook_mid_snapshot"
             else:
                 market_transport = "bybit_public_unavailable"
         except Exception:
@@ -129,6 +134,7 @@ def _shared_paper_live_snapshot(data_root: Path, *, now: datetime | None = None)
         "projection": "nexus.shared-paper-live-display.v1",
         "market_live": quote_status in {"fresh", "not_needed_flat"},
         "market_transport": market_transport,
+        "market_price_basis": market_price_basis,
         "paper_state_checked_at": snapshot.get("checked_at"),
         "paper_state_stale": paper_state_stale,
         "display_only_market_overlay": True,
