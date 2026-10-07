@@ -13,7 +13,7 @@ def _persist_job() -> str:
 def test_physical_dr_fetch_uses_fresh_runner_temp_source() -> None:
     text = _persist_job()
 
-    assert "runs-on: [self-hosted, Windows, X64, nexus-remote-rescue]" in text
+    assert "runs-on: [self-hosted, Windows, X64, nexus-remote-rescue, nexus-windows-dr]" in text
     assert "$sourceRoot = Join-Path $env:RUNNER_TEMP" in text
     assert "^nexus-windows-dr-source-[0-9]+-[0-9]+$" in text
     assert "Exact isolated DR source root already exists" in text
