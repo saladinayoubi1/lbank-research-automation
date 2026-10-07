@@ -131,7 +131,11 @@ def _row(symbol, profile, trades, value):
     }
 
 
-def _report(values=(0.20, 0.12, 0.24, 0.03), trades=(1, 1, 2, 2)):
+def _report(
+    values=(0.20, 0.12, 0.24, 0.03),
+    trades=(1, 1, 2, 2),
+    screen_schema="nexus.frontier-train-screen.v6",
+):
     validation = [
         _row("BTCUSDT", "conservative", trades[0], values[0]),
         _row("BTCUSDT", "stress", trades[1], values[1]),
@@ -140,7 +144,7 @@ def _report(values=(0.20, 0.12, 0.24, 0.03), trades=(1, 1, 2, 2)):
     ]
     selected = {**_config(), "fingerprint": _fingerprint()}
     screening = {
-        "schema": "nexus.frontier-train-screen.v6",
+        "schema": screen_schema,
         "basis": "training_partition_only_no_validation_or_historical_test_ranking",
         "candidate_count": 12,
         "shortlist_size": 3,
@@ -207,6 +211,24 @@ def test_positive_exercised_validation_forwards_without_minimum_trade_count_gate
     assert candidate["producer_receipt"]["receipt_digest"] == receipt["receipt_digest"]
     assert candidate["research_report"]["report_digest"] == report["report_digest"]
     assert verify_candidate(candidate)["decision"] == "pass"
+
+
+@pytest.mark.parametrize(
+    "screen_schema",
+    ["nexus.frontier-train-screen.v5", "nexus.frontier-train-screen.v6"],
+)
+def test_exact_historical_and_current_frontier_screen_proofs_are_supported(screen_schema):
+    report = _report(trades=(1, 1, 1, 1), screen_schema=screen_schema)
+    manager, receipt = _bound_inputs(report)
+    candidate = build_candidate(manager, receipt, report)
+    assert verify_candidate(candidate)["decision"] == "pass"
+
+
+def test_unknown_frontier_screen_schema_fails_closed():
+    report = _report(screen_schema="nexus.frontier-train-screen.v4")
+    manager, receipt = _bound_inputs(report)
+    with pytest.raises(CompositeValidationCandidateError, match="selection/provenance"):
+        build_candidate(manager, receipt, report)
 
 
 def test_zero_activity_is_rejected_without_creating_a_minimum_trade_gate():
