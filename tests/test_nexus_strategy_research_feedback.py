@@ -279,7 +279,7 @@ def test_evaluated_ledger_accepts_only_digest_bound_frontier_screen_extension():
         "factory_gen_deep_drawdown_recovery_vwap_reclaim",
         "factory_gen_efficiency_up_midpoint_reclaim",
     ]
-    core["frontier_screening_version"] = "nexus.frontier-train-screen.v5"
+    core["frontier_screening_version"] = "nexus.frontier-train-screen.v6"
     extended = {**core, "ledger_digest": _digest(core)}
 
     assert feedback.validate_evaluated_ledger(extended, cert) == {
@@ -309,7 +309,7 @@ def test_frontier_screened_mechanism_is_not_reproposed_as_new_design():
     ledger = _evaluated_ledger([], cert)
     core = {k: v for k, v in ledger.items() if k != "ledger_digest"}
     core["frontier_screened_mechanisms"] = [screened_id]
-    core["frontier_screening_version"] = "nexus.frontier-train-screen.v5"
+    core["frontier_screening_version"] = "nexus.frontier-train-screen.v6"
     extended = {**core, "ledger_digest": _digest(core)}
 
     _, receipt, proposal = feedback.process_feedback(
@@ -337,4 +337,3 @@ def test_evaluated_ledger_must_be_digest_bound_to_exact_dataset_and_authority():
     wrong_archive = {**core, "ledger_digest": _digest(core)}
     with pytest.raises(feedback.ResearchFeedbackError, match="evaluated composite ledger"):
         feedback.validate_evaluated_ledger(wrong_archive, cert)
-

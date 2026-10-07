@@ -140,7 +140,7 @@ def _report(values=(0.20, 0.12, 0.24, 0.03), trades=(1, 1, 2, 2)):
     ]
     selected = {**_config(), "fingerprint": _fingerprint()}
     screening = {
-        "schema": "nexus.frontier-train-screen.v5",
+        "schema": "nexus.frontier-train-screen.v6",
         "basis": "training_partition_only_no_validation_or_historical_test_ranking",
         "candidate_count": 12,
         "shortlist_size": 3,
@@ -288,7 +288,7 @@ def test_candidate_tamper_is_detected():
 def test_terminal_composite_research_task_is_attested_for_val40_but_not_as_successor_predecessor():
     report = _report(trades=(1, 1, 1, 1))
     manager, receipt = _bound_inputs(report)
-    manager["id"] = "P7-RESEARCH-COMPOSITE-017"
+    manager["id"] = "P7-RESEARCH-COMPOSITE-019"
     manager["result_evidence"]["workload_id"] = manager["id"]
 
     attested = attested_research_task(manager)
@@ -299,10 +299,10 @@ def test_terminal_composite_research_task_is_attested_for_val40_but_not_as_succe
     assert attested["research_predecessor_mechanism"] == MECHANISM
 
     candidate = build_candidate(manager, receipt, report)
-    assert candidate["research_task_id"] == "P7-RESEARCH-COMPOSITE-017"
+    assert candidate["research_task_id"] == "P7-RESEARCH-COMPOSITE-019"
     assert verify_candidate(candidate)["decision"] == "pass"
 
-    # Terminal task 017 must not become a predecessor in the Research DAG merely
+    # Terminal task 019 must not become a predecessor in the Research DAG merely
     # because its own proof is valid.
     with pytest.raises(ValueError, match="previous real Research"):
         attested_predecessor(manager)

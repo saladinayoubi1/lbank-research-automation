@@ -18,7 +18,7 @@ def _ledger(digest_value: str):
         "mechanisms_evaluated": [],
         "config_fingerprints_evaluated": [],
         "frontier_screened_mechanisms": [],
-        "frontier_screening_version": "nexus.frontier-train-screen.v5",
+        "frontier_screening_version": "nexus.frontier-train-screen.v6",
         "research_only": True,
         "auto_demo_promotion": False,
         "live_enabled": False,
@@ -275,7 +275,7 @@ def test_known_pre_v5_frontier_is_legacy_but_current_v5_corruption_hard_fails(tm
     current = {
         "schema": "nexus.automatic-composite-research.v1",
         "selection_basis": "frontier_training_only_tournament_then_full_replay",
-        "frontier_screening": {"schema": "nexus.frontier-train-screen.v5"},
+        "frontier_screening": {"schema": "nexus.frontier-train-screen.v6"},
     }
     monkeypatch.setattr(transport, "parse_producer_artifact", lambda _blob: ({"lease_id": "lease-frontier"}, current))
     with pytest.raises(transport.CompositeVal40TransportError, match="current composite evidence rejected"):
