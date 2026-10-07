@@ -22,6 +22,7 @@ from bybit_derivatives_core_v1 import (
     choose_risk_tier,
     expected_funding_count,
     fetch_funding,
+    fetch_open_interest,
     fetch_instrument,
     fetch_klines,
     fetch_risk_tiers,
