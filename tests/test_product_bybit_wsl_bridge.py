@@ -57,15 +57,15 @@ def test_windows_bridge_uses_fixed_official_bybit_hosts_without_shell():
     assert client.last_transport == "bybit_official_wsl_public"
     assert direct.calls == []
     assert len(calls) == 2
-    assert calls[0][0][-1].startswith(
-        "https://api.bytick.com/v5/market/tickers?category=linear&symbol=ETHUSDT"
-    )
-    assert calls[1][0][-1].startswith(
-        "https://api.bybit.com/v5/market/tickers?category=linear&symbol=ETHUSDT"
-    )
+    assert calls[0][0][-1] == "https://api.bytick.com/v5/market/tickers"
+    assert calls[1][0][-1] == "https://api.bybit.com/v5/market/tickers"
     for args, kwargs in calls:
         assert args[:4] == ["wsl.exe", "-d", "Ubuntu", "--"]
         assert "--max-redirs" in args and "0" in args
+        assert "--get" in args
+        assert "category=linear" in args
+        assert "symbol=ETHUSDT" in args
+        assert all("&" not in arg for arg in args)
         assert kwargs["timeout"] == 7.0
 
 
@@ -138,6 +138,9 @@ def test_present_wsl_network_failure_fails_closed_without_direct_or_other_venue(
 
     def runner(args, **kwargs):
         urls.append(args[-1])
+        assert "category=linear" in args
+        assert "symbol=ETHUSDT" in args
+        assert all("&" not in arg for arg in args)
         return subprocess.CompletedProcess(args, 28, b"", b"timeout")
 
     client = BybitPublicDisplayClient(
