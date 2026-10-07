@@ -1,9 +1,9 @@
-"""Bounded Bybit-only public ticker bridge for the Windows Product UI.
+"""Bounded Bybit-only public-price bridge for the Windows Product UI.
 
 On the owner Windows laptop the canonical Bybit network lane is WSL. This
 module never accepts arbitrary URLs, credentials, order paths, or private API
-headers. It only fetches the public linear ticker and returns the native Bybit
-payload for the existing shared-Paper display validator.
+headers. It prefers the official linear ticker mark; if that response is stale,
+it may use a fresh official Bybit order-book midpoint for display-only PnL.
 """
 from __future__ import annotations
 
@@ -12,16 +12,20 @@ import math
 import os
 import re
 import subprocess
+import time
 from pathlib import Path
 from typing import Any, Callable
 
 from bybit_derivatives_core_v1 import Client as BybitPublicClient, ValidationError
 
 _TICKER_PATH = "/v5/market/tickers"
+_ORDERBOOK_PATH = "/v5/market/orderbook"
 _OFFICIAL_HOSTS = ("https://api.bytick.com", "https://api.bybit.com")
 _SYMBOL_RE = re.compile(r"^[A-Z0-9]{3,32}$")
 _MAX_STDOUT_BYTES = 200_000
 _WSL_TIMEOUT_SECONDS = 7.0
+_MAX_QUOTE_AGE_SECONDS = 120.0
+_FUTURE_TOLERANCE_SECONDS = 10.0
 
 
 class WSLBybitBridgeError(ValidationError):
@@ -72,6 +76,31 @@ def _validate_payload(payload: Any, symbol: str) -> dict[str, Any]:
     return payload
 
 
+def _validate_orderbook_payload(payload: Any, symbol: str) -> tuple[float, float]:
+    if not isinstance(payload, dict) or payload.get("retCode") != 0:
+        raise WSLBybitBridgeError("invalid Bybit public orderbook response")
+    result = payload.get("result")
+    if not isinstance(result, dict) or result.get("s") != symbol:
+        raise WSLBybitBridgeError("mismatched Bybit public orderbook symbol")
+    bids, asks = result.get("b"), result.get("a")
+    if not isinstance(bids, list) or not bids or not isinstance(asks, list) or not asks:
+        raise WSLBybitBridgeError("missing Bybit public orderbook levels")
+    try:
+        bid = float(bids[0][0])
+        ask = float(asks[0][0])
+        stamp = float(result.get("ts") or payload.get("time"))
+    except (TypeError, ValueError, IndexError) as exc:
+        raise WSLBybitBridgeError("malformed Bybit public orderbook fields") from exc
+    if not all(math.isfinite(v) and v > 0 for v in (bid, ask, stamp)) or bid > ask:
+        raise WSLBybitBridgeError("invalid Bybit public orderbook fields")
+    return (bid + ask) / 2.0, stamp
+
+
+def _fresh(stamp_ms: float, now_ms: float) -> bool:
+    age = (float(now_ms) - float(stamp_ms)) / 1000.0
+    return -_FUTURE_TOLERANCE_SECONDS <= age <= _MAX_QUOTE_AGE_SECONDS
+
+
 class BybitPublicDisplayClient:
     """Use the canonical WSL Bybit lane on Windows and direct REST elsewhere."""
 
@@ -82,78 +111,111 @@ class BybitPublicDisplayClient:
         runner: Callable[..., subprocess.CompletedProcess[bytes]] = subprocess.run,
         windows: bool | None = None,
         wsl_executable: str | None = None,
+        clock_ms: Callable[[], float] = lambda: time.time() * 1000.0,
     ) -> None:
         self.direct = direct
         self.runner = runner
         self.windows = os.name == "nt" if windows is None else windows
         self.wsl_executable = wsl_executable or _default_wsl_executable()
+        self.clock_ms = clock_ms
         self.last_transport = "not_used"
+        self.last_price_basis = "not_used"
         self.bases = direct.bases
         self.attempts = direct.attempts
         self.timeout = direct.timeout
 
+    def _wsl_json(self, host: str, path: str, query: list[str]) -> dict[str, Any]:
+        args = [
+            self.wsl_executable,
+            "-d",
+            "Ubuntu",
+            "--",
+            "curl",
+            "--fail",
+            "--silent",
+            "--show-error",
+            "--connect-timeout",
+            "3",
+            "--max-time",
+            "6",
+            "--max-redirs",
+            "0",
+            "--proto",
+            "=https",
+            "--get",
+        ]
+        for item in query:
+            args.extend(("--data-urlencode", item))
+        args.append(f"{host}{path}")
+        try:
+            completed = self.runner(
+                args,
+                capture_output=True,
+                check=False,
+                timeout=_WSL_TIMEOUT_SECONDS,
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            )
+        except FileNotFoundError as exc:
+            raise WSLBybitInfrastructureUnavailable("wsl.exe unavailable") from exc
+        except subprocess.TimeoutExpired as exc:
+            raise WSLBybitBridgeError(f"{host}{path}:timeout") from exc
+        if completed.returncode != 0:
+            raise WSLBybitBridgeError(f"{host}{path}:curl_{completed.returncode}")
+        raw = completed.stdout
+        if not isinstance(raw, (bytes, bytearray)) or not 0 < len(raw) <= _MAX_STDOUT_BYTES:
+            raise WSLBybitBridgeError(f"{host}{path}:response_size")
+        try:
+            payload = json.loads(bytes(raw).decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise WSLBybitBridgeError(f"{host}{path}:json") from exc
+        if not isinstance(payload, dict):
+            raise WSLBybitBridgeError(f"{host}{path}:shape")
+        return payload
+
     def _wsl_get(self, symbol: str) -> dict[str, Any]:
-        infrastructure_seen = False
         failures: list[str] = []
         for host in _OFFICIAL_HOSTS:
-            url = f"{host}{_TICKER_PATH}"
-            args = [
-                self.wsl_executable,
-                "-d",
-                "Ubuntu",
-                "--",
-                "curl",
-                "--fail",
-                "--silent",
-                "--show-error",
-                "--connect-timeout",
-                "3",
-                "--max-time",
-                "6",
-                "--max-redirs",
-                "0",
-                "--proto",
-                "=https",
-                "--get",
-                "--data-urlencode",
-                "category=linear",
-                "--data-urlencode",
-                f"symbol={symbol}",
-                url,
-            ]
             try:
-                completed = self.runner(
-                    args,
-                    capture_output=True,
-                    check=False,
-                    timeout=_WSL_TIMEOUT_SECONDS,
-                    creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+                payload = _validate_payload(
+                    self._wsl_json(host, _TICKER_PATH, ["category=linear", f"symbol={symbol}"]),
+                    symbol,
                 )
-            except FileNotFoundError as exc:
-                raise WSLBybitInfrastructureUnavailable("wsl.exe unavailable") from exc
-            except subprocess.TimeoutExpired:
-                infrastructure_seen = True
-                failures.append(f"{host}:timeout")
-                continue
-            infrastructure_seen = True
-            if completed.returncode != 0:
-                failures.append(f"{host}:curl_{completed.returncode}")
-                continue
-            raw = completed.stdout
-            if not isinstance(raw, (bytes, bytearray)) or not 0 < len(raw) <= _MAX_STDOUT_BYTES:
-                failures.append(f"{host}:response_size")
-                continue
+                if _fresh(float(payload["time"]), self.clock_ms()):
+                    self.last_transport = "bybit_official_wsl_public"
+                    self.last_price_basis = "mark_price"
+                    return payload
+                failures.append(f"{host}:ticker_stale")
+            except WSLBybitInfrastructureUnavailable:
+                raise
+            except WSLBybitBridgeError as exc:
+                failures.append(str(exc))
+
+        for host in _OFFICIAL_HOSTS:
             try:
-                payload = json.loads(bytes(raw).decode("utf-8"))
-            except (UnicodeDecodeError, json.JSONDecodeError):
-                failures.append(f"{host}:json")
-                continue
-            validated = _validate_payload(payload, symbol)
-            self.last_transport = "bybit_official_wsl_public"
-            return validated
-        if not infrastructure_seen:
-            raise WSLBybitInfrastructureUnavailable("WSL Bybit bridge unavailable")
-        raise WSLBybitBridgeError("WSL Bybit public ticker unavailable: " + ",".join(failures))
+                payload = self._wsl_json(
+                    host,
+                    _ORDERBOOK_PATH,
+                    ["category=linear", f"symbol={symbol}", "limit=1"],
+                )
+                midpoint, stamp = _validate_orderbook_payload(payload, symbol)
+                if not _fresh(stamp, self.clock_ms()):
+                    failures.append(f"{host}:orderbook_stale")
+                    continue
+                self.last_transport = "bybit_official_wsl_orderbook_mid"
+                self.last_price_basis = "orderbook_mid"
+                return {
+                    "retCode": 0,
+                    "time": int(stamp),
+                    "result": {
+                        "category": "linear",
+                        "list": [{"symbol": symbol, "markPrice": format(midpoint, ".15g")}],
+                    },
+                }
+            except WSLBybitInfrastructureUnavailable:
+                raise
+            except WSLBybitBridgeError as exc:
+                failures.append(str(exc))
+        raise WSLBybitBridgeError("WSL Bybit public price unavailable: " + ",".join(failures))
 
     def get(self, path: str, params: dict[str, Any]) -> dict[str, Any]:
         symbol = _validate_request(path, params)
@@ -162,9 +224,10 @@ class BybitPublicDisplayClient:
                 return self._wsl_get(symbol)
             except WSLBybitInfrastructureUnavailable:
                 # Portable Windows installs without WSL may still use the same
-                # approved direct public Bybit client. Network failures inside
-                # a present WSL fail closed instead of silently changing venue.
+                # approved direct public Bybit client. A present WSL lane that
+                # cannot obtain a fresh Bybit price fails closed instead.
                 pass
         payload = self.direct.get(path, {"category": "linear", "symbol": symbol})
         self.last_transport = "bybit_official_windows_public" if self.windows else "bybit_official_public"
+        self.last_price_basis = "mark_price"
         return _validate_payload(payload, symbol)
