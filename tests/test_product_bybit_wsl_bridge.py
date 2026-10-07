@@ -56,13 +56,54 @@ class _Direct:
         return _payload(params["symbol"])
 
 
-def test_windows_bridge_uses_fixed_official_bybit_hosts_without_shell():
+def _is_ws(args) -> bool:
+    return list(args[:6]) == ["wsl.exe", "-d", "Ubuntu", "--exec", "python3", "-"]
+
+
+def test_windows_bridge_prefers_official_bybit_websocket_without_shell():
     direct = _Direct()
     calls = []
 
     def runner(args, **kwargs):
         calls.append((list(args), dict(kwargs)))
-        assert isinstance(args, list)
+        assert _is_ws(args)
+        assert "shell" not in kwargs
+        assert kwargs["timeout"] == 18.0
+        script = kwargs["input"]
+        assert isinstance(script, bytes)
+        assert b"stream.bybit.com" in script
+        assert b"ETHUSDT" in script
+        assert b"api_key" not in script.lower()
+        return subprocess.CompletedProcess(
+            args, 0, json.dumps(_payload()).encode("utf-8"), b""
+        )
+
+    client = BybitPublicDisplayClient(
+        direct,
+        runner=runner,
+        windows=True,
+        wsl_executable="wsl.exe",
+        clock_ms=lambda: NOW_MS,
+    )
+    result = client.get(
+        "/v5/market/tickers", {"category": "linear", "symbol": "ETHUSDT"}
+    )
+
+    assert result["result"]["list"][0]["symbol"] == "ETHUSDT"
+    assert client.last_transport == "bybit_official_wsl_websocket"
+    assert client.last_price_basis == "mark_price"
+    assert direct.calls == []
+    assert len(calls) == 1
+
+
+def test_websocket_failure_falls_back_to_fixed_official_bybit_rest_hosts():
+    direct = _Direct()
+    calls = []
+
+    def runner(args, **kwargs):
+        calls.append((list(args), dict(kwargs)))
+        if _is_ws(args):
+            return subprocess.CompletedProcess(args, 1, b"", b"ws failed")
         assert "shell" not in kwargs
         if "api.bytick.com" in args[-1]:
             return subprocess.CompletedProcess(args, 28, b"", b"timeout")
@@ -85,10 +126,11 @@ def test_windows_bridge_uses_fixed_official_bybit_hosts_without_shell():
     assert client.last_transport == "bybit_official_wsl_public"
     assert client.last_price_basis == "mark_price"
     assert direct.calls == []
-    assert len(calls) == 2
-    assert calls[0][0][-1] == "https://api.bytick.com/v5/market/tickers"
-    assert calls[1][0][-1] == "https://api.bybit.com/v5/market/tickers"
-    for args, kwargs in calls:
+    assert len(calls) == 3
+    rest_calls = calls[1:]
+    assert rest_calls[0][0][-1] == "https://api.bytick.com/v5/market/tickers"
+    assert rest_calls[1][0][-1] == "https://api.bybit.com/v5/market/tickers"
+    for args, kwargs in rest_calls:
         assert args[:4] == ["wsl.exe", "-d", "Ubuntu", "--"]
         assert "--max-redirs" in args and "0" in args
         assert "--get" in args
@@ -98,13 +140,17 @@ def test_windows_bridge_uses_fixed_official_bybit_hosts_without_shell():
         assert kwargs["timeout"] == 7.0
 
 
-def test_stale_ticker_uses_fresh_official_bybit_orderbook_midpoint():
+def test_websocket_stale_then_rest_stale_uses_fresh_official_bybit_orderbook_midpoint():
     direct = _Direct()
     calls = []
     stale = NOW_MS - 10 * 60 * 1000
 
     def runner(args, **kwargs):
         calls.append((list(args), dict(kwargs)))
+        if _is_ws(args):
+            return subprocess.CompletedProcess(
+                args, 0, json.dumps(_payload(stamp=stale)).encode("utf-8"), b""
+            )
         if args[-1].endswith("/v5/market/tickers"):
             return subprocess.CompletedProcess(
                 args, 0, json.dumps(_payload(stamp=stale)).encode("utf-8"), b""
@@ -130,18 +176,15 @@ def test_stale_ticker_uses_fresh_official_bybit_orderbook_midpoint():
     assert client.last_transport == "bybit_official_wsl_orderbook_mid"
     assert client.last_price_basis == "orderbook_mid"
     assert direct.calls == []
-    assert len(calls) == 3
-    assert calls[0][0][-1].endswith("/v5/market/tickers")
+    assert len(calls) == 4
+    assert _is_ws(calls[0][0])
     assert calls[1][0][-1].endswith("/v5/market/tickers")
-    assert calls[2][0][-1].endswith("/v5/market/orderbook")
-    assert "limit=1" in calls[2][0]
-    assert all(
-        call[0][-1].startswith(("https://api.bytick.com/", "https://api.bybit.com/"))
-        for call in calls
-    )
+    assert calls[2][0][-1].endswith("/v5/market/tickers")
+    assert calls[3][0][-1].endswith("/v5/market/orderbook")
+    assert "limit=1" in calls[3][0]
     assert all(
         "lbank" not in call[0][-1].lower() and "bitget" not in call[0][-1].lower()
-        for call in calls
+        for call in calls[1:]
     )
 
 
@@ -221,10 +264,12 @@ def test_missing_wsl_infrastructure_falls_back_only_to_official_direct_client():
 
 def test_present_wsl_network_failure_fails_closed_without_direct_or_other_venue():
     direct = _Direct()
-    urls = []
+    calls = []
 
     def runner(args, **kwargs):
-        urls.append(args[-1])
+        calls.append(list(args))
+        if _is_ws(args):
+            return subprocess.CompletedProcess(args, 28, b"", b"timeout")
         assert "category=linear" in args
         assert "symbol=ETHUSDT" in args
         assert all("&" not in arg for arg in args)
@@ -244,7 +289,9 @@ def test_present_wsl_network_failure_fails_closed_without_direct_or_other_venue(
         )
 
     assert direct.calls == []
-    assert len(urls) == 4
+    assert len(calls) == 5
+    assert _is_ws(calls[0])
+    urls = [args[-1] for args in calls[1:]]
     assert all(
         url.startswith(("https://api.bytick.com/", "https://api.bybit.com/"))
         for url in urls
@@ -252,16 +299,19 @@ def test_present_wsl_network_failure_fails_closed_without_direct_or_other_venue(
     assert all("lbank" not in url.lower() and "bitget" not in url.lower() for url in urls)
 
 
-def test_stale_ticker_and_stale_orderbook_fail_closed():
+def test_stale_websocket_ticker_rest_ticker_and_orderbook_fail_closed():
     direct = _Direct()
     stale = NOW_MS - 10 * 60 * 1000
 
     def runner(args, **kwargs):
-        payload = (
-            _payload(stamp=stale)
-            if args[-1].endswith("/v5/market/tickers")
-            else _orderbook_payload(stamp=stale)
-        )
+        if _is_ws(args):
+            payload = _payload(stamp=stale)
+        else:
+            payload = (
+                _payload(stamp=stale)
+                if args[-1].endswith("/v5/market/tickers")
+                else _orderbook_payload(stamp=stale)
+            )
         return subprocess.CompletedProcess(
             args, 0, json.dumps(payload).encode("utf-8"), b""
         )
