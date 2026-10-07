@@ -6,7 +6,20 @@ on:
     paths:
       - ".github/workflows/nexus_multipair_archive_snapshot.yml"
       - "nexus_multipair_archive_snapshot.py"
+      - "nexus_monthly_four_pair_pre_demo.py"
+      - "nexus_monthly_four_pair_composite_pre_demo.py"
+      - "nexus_monthly_ten_variant_pre_demo.py"
+      - "tests/test_nexus_monthly_ten_variant_pre_demo.py"
+      - "tests/test_nexus_monthly_four_pair_pre_demo.py"
+      - "tests/test_nexus_monthly_four_pair_composite_pre_demo.py"
       - "nexus_multipair_recent_archive_runtime_snapshot.py"
+      - "nexus_a7_range_failure_reversal_research.py"
+      - "nexus_a7_daily_recent_source.py"
+      - "tests/test_nexus_a7_daily_recent_source.py"
+      - "tests/test_nexus_a7_range_failure_reversal_research.py"
+      - "tests/test_nexus_a7_range_failure_reversal_workflow.py"
+      - "tests/test_nexus_windows_tree_cleanup.py"
+      - "scripts/nexus_windows_tree_cleanup.py"
       - "nexus_multipair_runtime_requalification_snapshot.py"
       - "nexus_multipair_strategy_discovery.py"
       - "nexus_multipair_strategy_proposal_requalification.py"
@@ -22,6 +35,7 @@ on:
       - "scripts/nexus_snapshot_artifact.py"
       - "scripts/nexus_recent_archive_runtime_snapshot_artifact.py"
       - "scripts/nexus_public_current_run_artifact.py"
+      - "scripts/nexus_recent_arrival.py"
       - "requirements.lock"
       - "requirements-dev.lock"
       - "tests/test_nexus_multipair_archive_snapshot.py"
@@ -30,6 +44,7 @@ on:
       - "tests/test_nexus_multipair_strategy_discovery_archive.py"
       - "tests/test_nexus_recent_archive_runtime_snapshot_artifact.py"
       - "tests/test_nexus_public_current_run_artifact.py"
+      - "tests/test_nexus_recent_arrival.py"
       - "tests/test_nexus_multipair_archive_acceptance_workflow.py"
       - "security/workflow-permissions-policy-v1.json"
   push:
@@ -37,7 +52,20 @@ on:
     paths:
       - ".github/workflows/nexus_multipair_archive_snapshot.yml"
       - "nexus_multipair_archive_snapshot.py"
+      - "nexus_monthly_four_pair_pre_demo.py"
+      - "nexus_monthly_four_pair_composite_pre_demo.py"
+      - "nexus_monthly_ten_variant_pre_demo.py"
+      - "tests/test_nexus_monthly_ten_variant_pre_demo.py"
+      - "tests/test_nexus_monthly_four_pair_pre_demo.py"
+      - "tests/test_nexus_monthly_four_pair_composite_pre_demo.py"
       - "nexus_multipair_recent_archive_runtime_snapshot.py"
+      - "nexus_a7_range_failure_reversal_research.py"
+      - "nexus_a7_daily_recent_source.py"
+      - "tests/test_nexus_a7_daily_recent_source.py"
+      - "tests/test_nexus_a7_range_failure_reversal_research.py"
+      - "tests/test_nexus_a7_range_failure_reversal_workflow.py"
+      - "tests/test_nexus_windows_tree_cleanup.py"
+      - "scripts/nexus_windows_tree_cleanup.py"
       - "nexus_multipair_runtime_requalification_snapshot.py"
       - "nexus_multipair_strategy_discovery.py"
       - "nexus_multipair_strategy_proposal_requalification.py"
@@ -53,6 +81,7 @@ on:
       - "scripts/nexus_snapshot_artifact.py"
       - "scripts/nexus_recent_archive_runtime_snapshot_artifact.py"
       - "scripts/nexus_public_current_run_artifact.py"
+      - "scripts/nexus_recent_arrival.py"
       - "requirements.lock"
       - "requirements-dev.lock"
       - "tests/test_nexus_multipair_archive_snapshot.py"
@@ -61,6 +90,7 @@ on:
       - "tests/test_nexus_multipair_strategy_discovery_archive.py"
       - "tests/test_nexus_recent_archive_runtime_snapshot_artifact.py"
       - "tests/test_nexus_public_current_run_artifact.py"
+      - "tests/test_nexus_recent_arrival.py"
       - "tests/test_nexus_multipair_archive_acceptance_workflow.py"
       - "security/workflow-permissions-policy-v1.json"
   workflow_dispatch:
@@ -71,7 +101,7 @@ permissions:
 
 concurrency:
   group: nexus-multipair-official-archive-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'main' }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   acquire-snapshot:
@@ -138,6 +168,94 @@ jobs:
           print(f"archive_sha256={Path('build/nexus-multipair-archive-snapshot.sha256').read_text().strip()}")
           PY
           cat build/historical-meta.env >> "$GITHUB_OUTPUT"
+      - name: Verify full July official Bybit month and emit pre-Demo 36-cell research table
+        run: |
+          set -euo pipefail
+          python nexus_monthly_four_pair_pre_demo.py \
+            --source-sha "$GITHUB_SHA" \
+            --state-root build/historical-state \
+            --cache-root build/historical-cache \
+            --output-root build/monthly-four-pair-pre-demo \
+            --from-verified-three-month-state
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          x=json.loads(Path("build/monthly-four-pair-pre-demo/monthly-report.json").read_text())
+          assert x["source_sha"] == os.environ["GITHUB_SHA"]
+          assert len(x["archive_sources"]) == 4
+          assert len(x["rows"]) == 36
+          assert all(z["monthly_coverage"] is True and
+                     z["qualification"] == "RESEARCH_ONLY_REQUIRES_INDEPENDENT_REQUALIFICATION"
+                     and z["demo_promoted"] is False and z["live_enabled"] is False for z in x["rows"])
+          assert x["automatic_paper_promotion"] is False and x["live_trading_authority"] is False
+          print("full_july_pre_demo_matrix=PASS source_exact=true no_promotion=true")
+          PY
+      - name: Execute 10 preregistered variants × 12 exact July archive series
+        run: |
+          set -euo pipefail
+          python nexus_monthly_ten_variant_pre_demo.py \
+            --source-sha "$GITHUB_SHA" \
+            --state-root build/historical-state \
+            --base-report build/monthly-four-pair-pre-demo/monthly-report.json \
+            --output-root build/monthly-four-pair-pre-demo/ten-variants
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          root=Path("build/monthly-four-pair-pre-demo/ten-variants")
+          proof=json.loads((root/"ten-variant-report.json").read_text())
+          assert proof["source_sha"] == os.environ["GITHUB_SHA"]
+          assert len(proof["pre_registered_variants"]) == 10
+          assert len(proof["rows"]) == 120
+          assert proof["strategy_selection_performed"] is False
+          assert proof["independent_runtime_qualification"] is False
+          assert proof["demo_promotions"] == 0 and proof["live_trading_authority"] is False
+          assert all(row["full_month_proven"] and row["demo_promoted"] is False
+                     and row["live_enabled"] is False for row in proof["rows"])
+          print("ten_variants_120_cells_full_july=PASS owner_demo_unchanged=true")
+          PY
+      - name: Run six reviewed causal composite mechanisms over four full July Bybit symbols
+        run: |
+          set -euo pipefail
+          python nexus_monthly_four_pair_composite_pre_demo.py run \
+            --state build/historical-state \
+            --baseline build/monthly-four-pair-pre-demo/monthly-report.json \
+            --source-sha "$GITHUB_SHA" \
+            --output build/monthly-four-pair-pre-demo/composite
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          p = Path("build/monthly-four-pair-pre-demo/composite/composite-report.json")
+          obj = json.loads(p.read_text())
+          assert obj["source_sha"] == os.environ["GITHUB_SHA"]
+          assert obj["rows_count"] == 288
+          assert obj["reviewed_distinct_mechanisms"] == 6
+          assert obj["full_month_verified"] is True
+          assert obj["historical_test_pristine"] is False
+          assert obj["automatic_paper_promotion"] is False
+          assert obj["live_trading_authority"] is False
+          assert len({v["config_fingerprint"] for v in obj["rows"]}) == 12
+          assert {v["symbol"] for v in obj["rows"]} == {"BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT"}
+          print("four_pair_reviewed_composites_288_historical_cells=PASS_no_demo")
+          PY
+      - name: Rerun all composite numerical cells in a separate process
+        run: |
+          set -euo pipefail
+          python nexus_monthly_four_pair_composite_pre_demo.py replay-verify \
+            --state build/historical-state \
+            --baseline build/monthly-four-pair-pre-demo/monthly-report.json \
+            --report build/monthly-four-pair-pre-demo/composite/composite-report.json \
+            --source-sha "$GITHUB_SHA" \
+            --output build/monthly-four-pair-pre-demo/composite-qa
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          val=json.loads(Path("build/monthly-four-pair-pre-demo/composite-qa/replay-proof.json").read_text())
+          assert val["source_sha"] == os.environ["GITHUB_SHA"]
+          assert val["full_288_cell_numerical_replay_matches"] is True
+          assert val["independent_model_qa_claimed"] is False
+          assert val["automatic_paper_promotion"] is False and val["live_trading_authority"] is False
+          print("four_pair_composite_numeric_separate_process_replay=PASS_not_prospective_QA")
+          PY
       - name: Remove raw historical archive material
         if: always()
         run: rm -rf build/historical-state build/historical-cache
@@ -150,6 +268,23 @@ jobs:
           if-no-files-found: error
           retention-days: 7
           compression-level: 0
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-four-pair-july-monthly-pre-demo-table-${{ github.sha }}
+          path: build/monthly-four-pair-pre-demo/
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 9
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-four-pair-july-reviewed-composite-${{ github.sha }}
+          path: |
+            build/monthly-four-pair-pre-demo/composite/
+            build/monthly-four-pair-pre-demo/composite-qa/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
 
       - name: Acquire bounded-lag recent official Bybit requalification snapshot
         id: recent
@@ -206,6 +341,106 @@ jobs:
           retention-days: 7
           compression-level: 0
 
+  a7-research-backtest:
+    if: >-
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
+       github.actor == github.repository_owner) ||
+      (github.event_name == 'workflow_dispatch' &&
+       github.ref_name == github.event.repository.default_branch)
+    runs-on: [self-hosted, Windows, X64, nexus-research, nexus-worker-2]
+    timeout-minutes: 120
+    env:
+      A7_SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Prepare isolated Python
+        shell: cmd
+        run: |
+          @echo off
+          setlocal
+          set "VENV=%RUNNER_TEMP%\nexus-a7-%GITHUB_RUN_ID%"
+          if exist "%VENV%" rmdir /s /q "%VENV%"
+          python --version
+          if errorlevel 1 exit /b %errorlevel%
+          python -m venv "%VENV%"
+          if errorlevel 1 exit /b %errorlevel%
+          "%VENV%\Scripts\python.exe" -m pip install -r requirements-dev.lock
+          if errorlevel 1 exit /b %errorlevel%
+          "%VENV%\Scripts\python.exe" -m pip check
+          if errorlevel 1 exit /b %errorlevel%
+          >>"%GITHUB_PATH%" echo %VENV%\Scripts
+          >>"%GITHUB_ENV%" echo NEXUS_A7_VENV=%VENV%
+
+      - name: Run A7 causal and source contract tests
+        shell: cmd
+        run: |
+          @echo off
+          python -m pytest -q tests/test_nexus_a7_range_failure_reversal_research.py tests/test_nexus_a7_daily_recent_source.py tests/test_nexus_a7_range_failure_reversal_workflow.py tests/test_nexus_windows_tree_cleanup.py
+          if errorlevel 1 exit /b %errorlevel%
+
+      - name: Acquire 30 complete daily Bybit Spot days for A7
+        shell: cmd
+        run: |
+          @echo off
+          python scripts/nexus_windows_tree_cleanup.py build\a7-recent-state build\a7-recent-cache build\a7-recent-proof --attempts 20 --delay-seconds 1
+          if errorlevel 1 exit /b %errorlevel%
+          for /f %%T in ('python -c "import time; print(int(time.time() * 1000))"') do set "A7_ACQUIRE_NOW_MS=%%T"
+          python nexus_a7_daily_recent_source.py --state-root build/a7-recent-state --cache-root build/a7-recent-cache --output-root build/a7-recent-proof --source-sha %A7_SOURCE_SHA% --now-ms %A7_ACQUIRE_NOW_MS%
+          if errorlevel 1 exit /b %errorlevel%
+
+      - name: Run source-bound A7 recent backtest
+        shell: cmd
+        run: |
+          @echo off
+          python scripts/nexus_windows_tree_cleanup.py build\a7-output --attempts 20 --delay-seconds 1
+          if errorlevel 1 exit /b %errorlevel%
+          for /f %%T in ('python -c "import time; print(int(time.time() * 1000))"') do set "A7_VERIFY_NOW_MS=%%T"
+          python nexus_a7_range_failure_reversal_research.py --state-root build/a7-recent-state --source-proof-root build/a7-recent-proof --output-root build/a7-output --source-sha %A7_SOURCE_SHA% --now-ms %A7_VERIFY_NOW_MS%
+          if errorlevel 1 exit /b %errorlevel%
+
+      - name: Verify A7 authority and owner review surface
+        shell: cmd
+        run: |
+          @echo off
+          python -c "import json,os; from pathlib import Path; p=json.loads(Path(r'build/a7-output/a7-range-failure-reversal-report.json').read_text()); assert p['source_sha']==os.environ['A7_SOURCE_SHA']; assert p['mechanism']=='a7_range_failure_reversal'; assert p['source']['archive_granularity']=='daily'; assert p['source']['window_days']==30; assert p['source']['archive_source_count']==120; assert p['historical_july_previously_inspected'] is True; assert p['recent_window_used_for_selection'] is False; assert p['research_only'] is True and p['paper_only'] is True; assert p['paper_execution_started'] is False; assert p['automatic_strategy_promotion'] is False; assert p['derivative_execution_authority'] is False; assert p['live_trading_authority'] is False; assert p['owner_500_usdt_profile_touched'] is False; assert len(p['rows'])==8; assert len(p['owner_review_cells'])==12; assert all(r['trade_count_limit'] is None for r in p['rows']); print('a7_recent_source_bound_evidence=PASS conclusion='+p['conclusion']); print('a7_report_sha256='+p['report_sha256']); print('a7_owner_review_cells='+json.dumps(p['owner_review_cells'],sort_keys=True,separators=(',',':')))"
+          if errorlevel 1 exit /b %errorlevel%
+
+      - name: Upload A7 numerical evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-a7-range-failure-${{ env.A7_SOURCE_SHA }}
+          path: |
+            build/a7-output/
+            build/a7-recent-proof/_a7_daily_recent_source_proof.json
+            build/a7-recent-state/_source_manifest.json
+            build/a7-recent-state/_backfill_report.json
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Remove raw A7 source state
+        if: always()
+        shell: cmd
+        run: |
+          @echo off
+          python scripts/nexus_windows_tree_cleanup.py build\a7-recent-state build\a7-recent-cache --attempts 20 --delay-seconds 1
+          if errorlevel 1 exit /b %errorlevel%
+
+      - name: Clean isolated Python
+        if: always()
+        shell: cmd
+        run: |
+          @echo off
+          if defined NEXUS_A7_VENV if exist "%NEXUS_A7_VENV%" rmdir /s /q "%NEXUS_A7_VENV%"
+          exit /b 0
+
   contract-test:
     needs: acquire-snapshot
     if: ${{ always() && (github.event_name == 'pull_request' || needs.acquire-snapshot.result == 'success') }}
@@ -239,12 +474,18 @@ jobs:
         run: >-
           python -m pytest -q
           tests/test_nexus_multipair_archive_snapshot.py
+          tests/test_nexus_monthly_four_pair_pre_demo.py
+          tests/test_nexus_monthly_four_pair_composite_pre_demo.py
+          tests/test_nexus_monthly_ten_variant_pre_demo.py
           tests/test_nexus_multipair_recent_archive_runtime_snapshot.py
           tests/test_nexus_multipair_strategy_discovery.py
           tests/test_nexus_multipair_strategy_discovery_archive.py
           tests/test_nexus_recent_archive_runtime_snapshot_artifact.py
           tests/test_nexus_public_current_run_artifact.py
+          tests/test_nexus_recent_arrival.py
           tests/test_nexus_multipair_archive_acceptance_workflow.py
+          tests/test_nexus_a7_range_failure_reversal_research.py
+          tests/test_nexus_a7_range_failure_reversal_workflow.py
 
       - name: Prepare exact source and isolated physical Research state
         if: github.event_name != 'pull_request'
@@ -286,6 +527,29 @@ jobs:
         if: github.event_name != 'pull_request'
         run: >-
           "$PYTHON_BIN" -c "assert '${{ runner.environment }}' == 'self-hosted'; assert '${{ runner.os }}' == 'Linux'; print('multipair_final_acceptance_plane=self-hosted:nexus-bybit-network')"
+
+      # Receive and SHA-verify the ORIGINAL current-run recent producer archive
+      # immediately, BEFORE heavy pinned offline wheelhouse bootstrapping.
+      # Original 45-minute acquisition-to-physical-arrival deadline stays
+      # strict. Whole numeric validation and SOURCE recency are repeated at
+      # their actual later execution time against the same staged bytes.
+      - name: Witness signed recent Bybit artifact physical arrival before offline setup
+        if: github.event_name != 'pull_request'
+        run: |
+          set -euo pipefail
+          cd "$SOURCE_ROOT"
+          "$PYTHON_BIN" scripts/nexus_public_current_run_artifact.py recent-arrival \
+            --repository "$GITHUB_REPOSITORY" \
+            --run-id "$GITHUB_RUN_ID" \
+            --artifact-name "nexus-multipair-recent-runtime-snapshot-$GITHUB_SHA" \
+            --source-sha "$GITHUB_SHA" \
+            --expected-sha256 "$EXPECTED_RECENT_ARCHIVE_SHA256" \
+            --expected-snapshot-digest "$EXPECTED_RECENT_SNAPSHOT_DIGEST" \
+            --expected-acquired-at-ms "$EXPECTED_RECENT_ACQUIRED_AT_MS" \
+            --expected-data-as-of-ms "$EXPECTED_RECENT_DATA_AS_OF_MS" \
+            --destination "$STATE_ROOT/recent-arrival" \
+            --work-root "$STATE_ROOT/recent-arrival-work"
+          echo "multipair_exact_signed_recent_arrival_before_offline_setup=PASS"
 
       - name: Restore deterministic wheelhouse without JavaScript actions
         if: github.event_name != 'pull_request'
@@ -353,6 +617,7 @@ jobs:
             --expected-acquired-at-ms "$EXPECTED_RECENT_ACQUIRED_AT_MS" \
             --expected-data-as-of-ms "$EXPECTED_RECENT_DATA_AS_OF_MS" \
             --now-ms "$consume_now_ms" \
+            --stage-root "$STATE_ROOT/recent-arrival" \
             --destination "$STATE_ROOT/recent-runtime-snapshot" \
             --work-root "$STATE_ROOT/recent-restore"
           "$PYTHON_BIN" - <<'PY'
@@ -399,6 +664,10 @@ jobs:
         run: |
           set -euo pipefail
           cd "$SOURCE_ROOT"
+          # Use ACTUAL evaluation time, never the earlier transport-stage or
+          # before-discovery clock, for the independent source-recency gate.
+          requal_now_ms="$("$PYTHON_BIN" -c 'import time; print(int(time.time() * 1000))')"
+          printf 'CONSUME_NOW_MS=%s\n' "$requal_now_ms" >> "$GITHUB_ENV"
           "$PYTHON_BIN" nexus_multipair_recent_archive_runtime_snapshot.py requalify \
             --snapshot-root "$STATE_ROOT/recent-runtime-snapshot" \
             --discovery "$STATE_ROOT/discovery/multipair_strategy_discovery.json" \
@@ -406,8 +675,10 @@ jobs:
             --source-sha "$GITHUB_SHA" \
             --state-root "$STATE_ROOT/requalification-state" \
             --output "$STATE_ROOT/requalification/runtime-requalification.json" \
-            --now-ms "$CONSUME_NOW_MS" \
-            --max-transport-age-ms 2700000
+            --now-ms "$requal_now_ms" \
+            --max-transport-age-ms 2700000 \
+            --stage-root "$STATE_ROOT/recent-arrival" \
+            --expected-stage-sha256 "$EXPECTED_RECENT_ARCHIVE_SHA256"
 
       - name: Verify physical acceptance and emit immutable proof to log
         id: proof

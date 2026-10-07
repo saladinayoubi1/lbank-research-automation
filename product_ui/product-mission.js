@@ -1,9 +1,14 @@
 (() => {
   'use strict';
 
+  // The full offline Mission endpoint owns the Agent/Research cockpit when
+  // this script is present. A lighter product snapshot cannot supersede it.
+  window.NexusFullMissionManaged = true;
+
   const $ = id => document.getElementById(id);
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const finite = value => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value));
+  const isHistorical = m => m?.stale === true || (finite(m?.snapshot_age_seconds) && Number(m.snapshot_age_seconds) > 900);
   const fmt = (value, digits = 2) => finite(value) ? Number(value).toFixed(digits) : '—';
   const stateClass = state => `state state-${String(state || 'UNKNOWN').toUpperCase().replace(/[^A-Z0-9_-]/g, '_')}`;
 
@@ -33,7 +38,7 @@
 
   function ensureAgents() {
     const host = $('agentState');
-    if (!host || $('missionAgentRuntime')) return;
+    if (!host || $('missionAgentRuntime') || window.NexusResearchOps) return;
     host.className = '';
     host.innerHTML = `
       <div class="mission-toolbar"><button id="missionRefresh" class="small-btn">Refresh Mission</button><button id="missionExport" class="small-btn">Export Snapshot</button><input id="missionImportFile" type="file" accept="application/json,.json"><button id="missionImport" class="small-btn">Import Snapshot</button><span id="missionSyncState" class="mission-meta">—</span></div>
@@ -59,21 +64,26 @@
 
   function renderNow(m) {
     ensureOverview(); const host = $('missionNow'); if (!host) return;
-    const active = m.control_plane?.active_tasks || [], blocked = m.control_plane?.blocked_or_triage || [], owner = m.owner_actions || [];
+    const historical = isHistorical(m);
+    const active = historical ? [] : (m.control_plane?.active_tasks || []), blocked = historical ? [] : (m.control_plane?.blocked_or_triage || []), owner = historical ? [] : (m.owner_actions || []);
     const leader = m.strategy_center?.leading_candidate, supervisor = m.local_supervisor || {}, build = m.build_evidence || {}, ci = ciHealth(m), s = ci.summary || {};
     const current = active[0];
     const resourceRows = m.resources || []; const resourceHtml = resourceRows.length ? `<span class="mission-resource-stack">${resourceRows.map(r => `<span class="mission-resource-pill ${stateClass(r.state)}">${esc(r.id)} · ${esc(String(r.state || 'UNKNOWN').toUpperCase())}</span>`).join('')}</span>` : '<span class="mission-resource-empty">No runtime resource evidence</span>';
     const ciBad = Number(s.FAILED || 0) + Number(s.BLOCKED || 0);
     host.innerHTML = `
-      <div><span>NOW</span><b>${current ? `${esc(current.id)} · ${esc(current.title)}` : (m.control_plane?.runtime_present ? 'No active task / control plane idle' : 'Mission runtime snapshot not loaded')}</b><small>${active.length} active · ${fmt(m.control_plane?.verified_progress_percent,1)}% verified</small></div>
-      <div><span>RESOURCES</span><b class="mission-resource-summary">${resourceHtml}</b><small>${esc(m.source)}${m.stale ? ' · STALE SNAPSHOT' : ''}</small></div>
+      <div><span>NOW</span><b>${historical ? 'HISTORICAL SNAPSHOT · REVALIDATION REQUIRED' : (current ? `${esc(current.id)} · ${esc(current.title)}` : (m.control_plane?.runtime_present ? 'No active task / control plane idle' : 'Mission runtime snapshot not loaded'))}</b><small>${historical ? 'Archived task state is not current execution evidence' : `${active.length} active · ${fmt(m.control_plane?.verified_progress_percent,1)}% verified`}</small></div>
+      <div><span>RESOURCES</span><b class="mission-resource-summary">${resourceHtml}</b><small>${esc(m.source)}${isHistorical(m) ? ' · STALE SNAPSHOT' : ''}</small></div>
       <div><span>LEADING STRATEGY</span><b>${leader ? `${esc(leader.request?.family)} · ${esc(leader.qualification?.status)}` : 'No qualified candidate recorded'}</b><small>${leader ? `OOS ${fmt(leader.evidence?.oos_score,4)} · DD ${fmt(leader.evidence?.max_drawdown_pct,2)}%` : 'Requires real qualification evidence'}</small></div>
-      <div><span>BLOCKER / RECOVERY</span><b>${blocked.length ? `${esc(blocked[0].id)} · ${esc(blocked[0].status)}` : `Supervisor ${esc(supervisor.status || 'unknown')} · restart ${esc(supervisor.restart_count ?? 0)}/${esc(supervisor.restart_limit ?? 3)}`}</b><small>${blocked.length} control blockers · CI ${ci.status === 'available' ? (ciBad ? `${ciBad} failed/blocked` : esc(ci.state)) : 'not synced'} · build ${esc(build.status || 'unavailable')}</small></div>
-      <div class="${owner.length ? 'owner-needed' : 'owner-clear'}"><span>OWNER ACTION</span><b>${owner.length ? `🔴 ${owner.length} owner-required` : 'No owner action required'}</b><small>${owner.length ? esc(owner[0].title || owner[0].id) : 'Only actual OWNER_REQUIRED L4 is surfaced here'}</small></div>`;
+      <div><span>BLOCKER / RECOVERY</span><b>${historical ? `Historical blockers · Supervisor ${esc(supervisor.status || 'unknown')}` : (blocked.length ? `${esc(blocked[0].id)} · ${esc(blocked[0].status)}` : `Supervisor ${esc(supervisor.status || 'unknown')} · restart ${esc(supervisor.restart_count ?? 0)}/${esc(supervisor.restart_limit ?? 3)}`)}</b><small>${historical ? 'Historical CI/tasks only — verify current GitHub runs' : `${blocked.length} control blockers · CI ${ci.status === 'available' ? (ciBad ? `${ciBad} failed/blocked` : esc(ci.state)) : 'not synced'}`} · build ${esc(build.status || 'unavailable')}</small></div>
+      <div class="${historical || owner.length ? 'owner-needed' : 'owner-clear'}"><span>OWNER ACTION</span><b>${historical ? 'UNVERIFIED · STALE SNAPSHOT' : (owner.length ? `🔴 ${owner.length} owner-required` : 'No owner action required')}</b><small>${historical ? 'Do not act on archived L4 tasks; check fresh GitHub evidence' : (owner.length ? esc(owner[0].title || owner[0].id) : 'Only actual OWNER_REQUIRED L4 is surfaced here')}</small></div>`;
   }
 
   function renderOwner(m) {
     const host = $('missionOwnerActions'); if (!host) return; const rows = m.owner_actions || [];
+    if (isHistorical(m)) {
+      host.innerHTML = '<div class="owner-action-box"><b>HISTORICAL OWNER ACTIONS — NOT CURRENT</b><div class="mission-meta">Verify current GitHub/owner state before any L4 action. Archived tasks are for diagnosis only.</div></div>';
+      return;
+    }
     host.innerHTML = rows.length ? rows.map(r => `<div class="owner-action-box"><b>🔴 ${esc(r.id)} — ${esc(r.title)}</b><div class="mission-meta">${esc(r.blocked_reason || 'L4 owner approval required')} · authority L${esc(r.authority)}</div></div>`).join('') : `<div class="owner-action-box clear"><b>OWNER ACTION: NONE</b><div class="mission-meta">هیچ تصمیم L4 واقعی در snapshot فعلی نیازمند دخالت مالک نیست.</div></div>`;
   }
 
@@ -85,19 +95,22 @@
     host.innerHTML = `
       <div class="mission-card"><h3>local-supervisor</h3><p class="${stateClass(sup.status)}">${esc(String(sup.status || 'unknown').toUpperCase())}</p><p>Restart: ${esc(sup.restart_count ?? 0)} / ${esc(sup.restart_limit ?? 3)}</p><p>${esc(sup.reason || 'bounded restart policy active')}</p></div>
       <div class="mission-card"><h3>exact-source-build</h3><p class="${stateClass(buildState)}">${buildState}</p><p>SHA: ${esc((build.source_sha || '').slice(0,12) || 'unavailable')}</p><p>Run: ${esc(build.run_id || '—')} · ${esc(build.workflow || 'no build evidence')}</p></div>
-      <div class="mission-card"><h3>CI HEALTH / EXACT HEAD</h3><p class="${stateClass(ci.state)}">${esc(ci.state)}</p><p>Done ${esc(s.DONE || 0)} · Running ${esc(s.RUNNING || 0)} · Failed ${esc(s.FAILED || 0)} · Blocked ${esc(s.BLOCKED || 0)}</p><p>${esc(heads)}</p></div>`;
+      <div class="mission-card"><h3>CI HEALTH / EXACT HEAD</h3><p class="${isHistorical(m) ? stateClass('STALE') : stateClass(ci.state)}">${isHistorical(m) ? 'HISTORICAL · NOT CURRENT' : esc(ci.state)}</p><p>${isHistorical(m) ? 'Archived CI evidence; check fresh GitHub runs' : `Done ${esc(s.DONE || 0)} · Running ${esc(s.RUNNING || 0)} · Failed ${esc(s.FAILED || 0)} · Blocked ${esc(s.BLOCKED || 0)}`}</p><p>${esc(heads)}</p></div>`;
   }
 
   function renderResources(m) {
     const host = $('missionResources'); if (!host) return;
     const resources = (m.resources || []).map(r => `<div class="mission-card"><h3>${esc(r.id)}</h3><p class="${stateClass(r.state)}">${esc(r.state)}</p><p>Workers: ${esc((r.workers || []).join(', ') || '—')}</p><p>Active: ${esc((r.active_workers || []).join(', ') || 'none')}</p><p>Routed: ${esc((r.routed_tasks || []).join(', ') || 'none')}</p></div>`);
     const workers = (m.workers || []).map(w => `<div class="mission-card"><h3>${esc(w.id)}</h3><p class="${stateClass(w.state)}">${esc(w.state)}${w.verifier ? ' · verifier' : ''}</p><p>${esc((w.resources || []).join(' / ') || 'no resource')}</p><p>Active: ${esc((w.active_tasks || []).join(', ') || 'none')}</p><p>Authority ≤ L${esc(w.authority_max)}</p></div>`);
-    host.innerHTML = [...resources, ...workers].join('') || `<div class="mission-empty">No real resource/worker runtime evidence is available.</div>`;
+    const warning = isHistorical(m) ? '<div class="mission-card"><h3>HISTORICAL RESOURCES</h3><p>Archived worker assignments are diagnostic only. Verify current runner status separately.</p></div>' : '';
+    host.innerHTML = warning + ([...resources, ...workers].join('') || `<div class="mission-empty">No real resource/worker runtime evidence is available.</div>`);
   }
 
   function renderTasks(m) {
     const host = $('missionTasks'); if (!host) return;
-    host.innerHTML = [...(m.tasks || [])].sort((a,b)=>(b.priority||0)-(a.priority||0)).map(t => {
+    const historical = isHistorical(m);
+    const notice = historical ? '<tr><td colspan="5">HISTORICAL TASK SNAPSHOT · Not current, do not act on archived assignments or L4 requests.</td></tr>' : '';
+    host.innerHTML = notice + [...(m.tasks || [])].sort((a,b)=>(b.priority||0)-(a.priority||0)).map(t => {
       const evidence = t.verification_evidence || t.result_evidence || t.failure_evidence;
       const reason = t.blocked_reason || t.triage_reason || t.failure_class || (evidence ? JSON.stringify(evidence).slice(0,180) : '—');
       const lease = [t.leased_at&&`leased ${t.leased_at}`,t.heartbeat_at&&`hb ${t.heartbeat_at}`,t.lease_expires_at&&`exp ${t.lease_expires_at}`].filter(Boolean).join('<br>') || '—';
@@ -119,19 +132,22 @@
 
   function renderSync(m) {
     const host = $('missionSyncState'); if (!host) return; const age = m.snapshot_age_seconds;
-    host.className = `mission-meta ${m.stale ? 'snapshot-stale' : 'snapshot-fresh'}`;
-    host.textContent = `${m.source} · ${finite(age) ? `${Math.round(Number(age))}s old` : 'age unknown'}${m.stale ? ' · STALE' : ''}`;
+    host.className = `mission-meta ${isHistorical(m) ? 'snapshot-stale' : 'snapshot-fresh'}`;
+    host.textContent = `${m.source} · ${finite(age) ? `${Math.round(Number(age))}s old` : 'age unknown'}${isHistorical(m) ? ' · STALE' : ''}`;
   }
 
   function renderMission(m) {
-    if ($('buildLabel')) $('buildLabel').textContent = '5.0.0';
-    const badge = $('missionBadge'); if (badge) { badge.textContent = m.control_plane?.runtime_present ? 'CONTROL PLANE' : (m.source === 'imported_snapshot' ? 'IMPORTED STATE' : 'NO MISSION SNAPSHOT'); badge.className = `badge ${m.stale ? 'warn' : (m.control_plane?.runtime_present ? 'good' : 'neutral')}`; }
+    // The product shell owns the build label; do not regress its 5.1.0 version.
+    const badge = $('missionBadge'); if (badge) { badge.textContent = isHistorical(m) ? 'HISTORICAL SNAPSHOT' : (m.control_plane?.runtime_present ? 'CONTROL PLANE' : (m.source === 'imported_snapshot' ? 'IMPORTED STATE' : 'NO MISSION SNAPSHOT')); badge.className = `badge ${isHistorical(m) ? 'warn' : (m.control_plane?.runtime_present ? 'good' : 'neutral')}`; }
     renderNow(m); renderOwner(m); renderSystemEvidence(m); renderResources(m); renderTasks(m); renderEvents(m); renderStrategy(m); renderSync(m);
+    // Reuse the real full Mission snapshot in the professional Research cockpit;
+    // the legacy Agent table must never overwrite its markup every 15 seconds.
+    if (window.NexusResearchOps) window.NexusResearchOps.render(m,{onRefresh:refreshMission});
   }
 
   async function refreshMission() {
     try { renderMission(await api('/api/product/mission/full')); }
-    catch (err) { ensureOverview(); ensureAgents(); ensureStrategies(); if ($('missionNow')) $('missionNow').innerHTML = `<div class="owner-needed"><span>MISSION CONTROL</span><b>UNAVAILABLE</b><small>${esc(err.message)}</small></div>`; if ($('missionSyncState')) $('missionSyncState').textContent = `unavailable · ${err.message}`; }
+    catch (err) { if(window.NexusResearchOps) window.NexusResearchOps.render({reason:err.message}); ensureOverview(); ensureAgents(); ensureStrategies(); if ($('missionNow')) $('missionNow').innerHTML = `<div class="owner-needed"><span>MISSION CONTROL</span><b>UNAVAILABLE</b><small>${esc(err.message)}</small></div>`; if ($('missionSyncState')) $('missionSyncState').textContent = `unavailable · ${err.message}`; }
   }
 
   async function exportSnapshot() {

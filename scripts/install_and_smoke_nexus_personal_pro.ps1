@@ -139,7 +139,10 @@ function Get-NexusProcesses {
 }
 
 function Get-NewNexusProcesses {
-    return @(Get-NexusProcesses | Where-Object { -not $script:BaselineNexusProcessIds.ContainsKey([int]$_.Id) })
+    # Never sweep unrelated owner processes that happened to restart during smoke.
+    if (-not $script:InstallRoot) { return @() }
+    return @(Get-InstalledNexusProductProcesses -ProgramRoot $script:InstallRoot |
+        Where-Object { -not $script:BaselineNexusProcessIds.ContainsKey([int]$_.Id) })
 }
 
 
@@ -278,34 +281,55 @@ function New-NexusShortcut([string]$ShortcutPath, [string]$ExecutablePath) {
     if (-not (Test-Path -LiteralPath $ShortcutPath -PathType Leaf)) { throw 'NEXUS shortcut creation failed.' }
 }
 
+function Invoke-BoundedProductJson([string]$Uri, [int]$TimeoutSeconds=45, [int]$Attempts=3) {
+    # The physical owner's machine can respond slowly after first packaged
+    # sidecar boot. Network errors may be retried, but no contract mismatch is
+    # retried or suppressed; every caller still validates the returned object.
+    $target = [uri]$Uri
+    if ($target.Scheme -ne 'http' -or $target.Host -notin @('127.0.0.1', 'localhost', '::1')) {
+        throw 'Product smoke only permits loopback HTTP endpoints.'
+    }
+    for ($attempt=1; $attempt -le $Attempts; $attempt++) {
+        try {
+            return Invoke-RestMethod -Uri $Uri -TimeoutSec $TimeoutSeconds -ErrorAction Stop
+        } catch {
+            if ($attempt -ge $Attempts) {
+                throw "Product smoke endpoint remained unavailable after $Attempts bounded attempts: $($target.AbsolutePath)"
+            }
+            Start-Sleep -Seconds 5
+        }
+    }
+    throw 'Product smoke endpoint retry exhausted.'
+}
+
 function Invoke-ProductContract([string]$Origin) {
-    $overview = Invoke-RestMethod -Uri "$Origin/api/product/overview" -TimeoutSec 10
+    $overview = Invoke-BoundedProductJson -Uri "$Origin/api/product/overview"
     if ($overview.paper.active -ne $true -or $overview.live.enabled -ne $false) { throw 'Product overview authority contract failed.' }
     $script:Evidence.smoke.overview_ok = $true
 
-    $paper = Invoke-RestMethod -Uri "$Origin/api/product/paper" -TimeoutSec 10
+    $paper = Invoke-BoundedProductJson -Uri "$Origin/api/product/paper"
     if ($paper.paper_only -ne $true) { throw 'Paper-only contract failed.' }
     $script:Evidence.smoke.paper_only = $true
 
-    $live = Invoke-RestMethod -Uri "$Origin/api/product/live" -TimeoutSec 10
+    $live = Invoke-BoundedProductJson -Uri "$Origin/api/product/live"
     $script:Evidence.smoke.live_trading_authority = [bool]$live.live_trading_authority
     $script:Evidence.smoke.live_orders_allowed = [bool]$live.orders_allowed
     if ($live.live_trading_authority -ne $false -or $live.orders_allowed -ne $false) { throw 'Live trading authority widened during laptop smoke test.' }
 
-    $offline = Invoke-RestMethod -Uri "$Origin/api/product/offline" -TimeoutSec 10
+    $offline = Invoke-BoundedProductJson -Uri "$Origin/api/product/offline"
     if ($offline.mode -ne 'offline_first' -or $offline.live_trading_authority -ne $false) { throw 'Offline-first contract failed.' }
     $script:Evidence.smoke.offline_first = $true
 
-    $mission = Invoke-RestMethod -Uri "$Origin/api/product/mission/full" -TimeoutSec 10
+    $mission = Invoke-BoundedProductJson -Uri "$Origin/api/product/mission/full"
     if ($mission.paper_only -ne $true -or $mission.live_trading_authority -ne $false) { throw 'Mission Control authority contract failed.' }
     $script:Evidence.smoke.mission_control_ok = $true
 
-    $build = Invoke-RestMethod -Uri "$Origin/api/product/build-evidence" -TimeoutSec 10
+    $build = Invoke-BoundedProductJson -Uri "$Origin/api/product/build-evidence"
     if ($build.status -ne 'verified' -or $build.exact_source -ne $true -or ([string]$build.source_sha).ToLowerInvariant() -ne $ExpectedSourceSha) {
         throw 'Installed product exact-source evidence failed.'
     }
 
-    $strategies = Invoke-RestMethod -Uri "$Origin/api/product/strategies/evidence" -TimeoutSec 10
+    $strategies = Invoke-BoundedProductJson -Uri "$Origin/api/product/strategies/evidence"
     if ($strategies.paper_only -ne $true -or $strategies.profitability_claim -ne $false) { throw 'Strategy evidence boundary failed.' }
     $script:Evidence.smoke.strategy_evidence_ok = $true
 
@@ -344,6 +368,13 @@ try {
     if ($explorer.Count -lt 1) { throw 'Explorer is not running in the runner session; refusing a non-visible GUI install.' }
     $script:Evidence.target.owner_user_context = $true
     $script:Evidence.target.interactive_desktop = $true
+
+    # The legacy activation branch changes owner sync and shortcuts before
+    # the old app has quiesced and has no transactional rollback. Never enter
+    # it until a separate, independently tested activation gate replaces it.
+    if ($ActivateInstalledBuild) {
+        throw 'UNSAFE_LEGACY_OWNER_ACTIVATION_DISABLED: use verified stage-only installation pending transactional activation.'
+    }
 
     if (-not $env:RUNNER_TEMP) { throw 'RUNNER_TEMP is required for bounded artifact transport.' }
     $packageRootFull = Get-FullPath $PackageRoot
@@ -393,18 +424,6 @@ try {
     $script:Evidence.package.checksum_manifest_verified = $true
 
     if (-not $env:LOCALAPPDATA -or -not $env:APPDATA) { throw 'Owner profile application paths are unavailable.' }
-
-    $repoRoot = Get-FullPath (Join-Path $PSScriptRoot '..')
-    $paperSyncSource = Join-Path $PSScriptRoot 'nexus_prospective_paper_sync.ps1'
-    $paperSyncValidator = Join-Path $repoRoot 'product_prospective_paper.py'
-    $paperSyncRoot = Get-FullPath (Join-Path $env:LOCALAPPDATA 'NEXUS\paper-forward-sync')
-    if (-not (Test-Path -LiteralPath $paperSyncSource -PathType Leaf)) { throw 'Canonical prospective Paper sync script is missing.' }
-    if (-not (Test-Path -LiteralPath $paperSyncValidator -PathType Leaf)) { throw 'Prospective Paper validator is missing.' }
-    New-Item -ItemType Directory -Path $paperSyncRoot -Force | Out-Null
-    Assert-NotReparsePoint $paperSyncRoot 'Prospective Paper sync root'
-    Copy-Item -LiteralPath $paperSyncSource -Destination (Join-Path $paperSyncRoot 'sync.ps1') -Force
-    Copy-Item -LiteralPath $paperSyncValidator -Destination (Join-Path $paperSyncRoot 'product_prospective_paper.py') -Force
-    Write-Host 'NEXUS_PAPER_SYNC_SOURCE_DEPLOYED=1'
 
     $programRoot = Get-FullPath (Join-Path $env:LOCALAPPDATA 'Programs\NEXUS Personal Pro')
     $installRoot = Get-FullPath (Join-Path $programRoot "5.1.0-$($ExpectedSourceSha.Substring(0, 8))")
@@ -498,7 +517,10 @@ try {
     $script:Evidence.smoke.process_started = $true
     $state = Wait-ForHealthySupervisor -Root $script:SmokeRoot -NotBeforeUtc $smokeStarted -TimeoutSeconds 420
     $script:Evidence.smoke.supervisor_healthy = $true
-    if (-not (Wait-ForVisibleNewWindow -TimeoutSeconds 90)) { throw 'NEXUS started but no visible Mission Control window was observed.' }
+    # The gateway is source-verified above; do not mistake delayed renderer
+    # first paint on the physical owner laptop for a failed application.
+    # Still require an actual visible exact-install window, fail closed at 300s.
+    if (-not (Wait-ForVisibleNewWindow -TimeoutSeconds 300)) { throw 'NEXUS started but no visible Mission Control window was observed.' }
     $script:Evidence.smoke.visible_window_observed = $true
     Invoke-ProductContract -Origin ([string]$state.origin)
     $script:InstallSmokeVerified = $true
@@ -506,6 +528,32 @@ try {
 
     Stop-SmokeProcesses
     Remove-SmokeRoot
+
+    # Staging is never permission to replace owner shortcuts or stop the healthy app.
+    # Only an explicit separate activation run may perform owner-visible changes.
+    if (-not $ActivateInstalledBuild) {
+        $script:Evidence.final_launch.status = 'STAGED_ONLY_OWNER_PRESERVED'
+        $script:Evidence.final_launch.preexisting_app_preserved = $true
+        $script:Evidence.install.retention_status = 'SKIPPED_UNTIL_EXPLICIT_ACTIVATION'
+        $script:Evidence.decision = 'PASS'
+        Write-Evidence
+        Write-Host "NEXUS_WINDOWS_APP_INSTALL=PASS source=$ExpectedSourceSha artifact=$ArtifactId staged_only=true"
+        return
+    }
+
+    # Stage-only verification cannot mutate global owner Paper sync scripts.
+    # Explicit activation remains separately guarded and requires owner rollback proof.
+    $repoRoot = Get-FullPath (Join-Path $PSScriptRoot '..')
+    $paperSyncSource = Join-Path $PSScriptRoot 'nexus_prospective_paper_sync.ps1'
+    $paperSyncValidator = Join-Path $repoRoot 'product_prospective_paper.py'
+    $paperSyncRoot = Get-FullPath (Join-Path $env:LOCALAPPDATA 'NEXUS\paper-forward-sync')
+    if (-not (Test-Path -LiteralPath $paperSyncSource -PathType Leaf)) { throw 'Canonical prospective Paper sync script is missing.' }
+    if (-not (Test-Path -LiteralPath $paperSyncValidator -PathType Leaf)) { throw 'Prospective Paper validator is missing.' }
+    New-Item -ItemType Directory -Path $paperSyncRoot -Force | Out-Null
+    Assert-NotReparsePoint $paperSyncRoot 'Prospective Paper sync root'
+    Copy-Item -LiteralPath $paperSyncSource -Destination (Join-Path $paperSyncRoot 'sync.ps1') -Force
+    Copy-Item -LiteralPath $paperSyncValidator -Destination (Join-Path $paperSyncRoot 'product_prospective_paper.py') -Force
+    Write-Host 'NEXUS_PAPER_SYNC_SOURCE_DEPLOYED=1'
 
     $desktopShortcut = Join-Path ([Environment]::GetFolderPath('Desktop')) 'NEXUS Personal Pro 5.1.0.lnk'
     $startMenuShortcut = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\NEXUS Personal Pro 5.1.0.lnk'
@@ -564,6 +612,63 @@ try {
     Write-Evidence
     Write-Host "NEXUS_WINDOWS_APP_INSTALL=PASS source=$ExpectedSourceSha artifact=$ArtifactId"
 } catch {
+    # Before normal fail-closed removal, record ONLY a categorical receipt
+    # from THIS RUN's isolated smoke profile. Never publish the raw state,
+    # startup log, exception reason or original owner profile.
+    $diag = [ordered]@{
+        isolated_state_seen = $false
+        supervisor_status = 'unavailable'
+        source_matches = $null
+        failure_class = 'unknown'
+    }
+    try {
+        if ($script:SmokeRoot -and $env:RUNNER_TEMP -and
+            (Test-PathWithin $script:SmokeRoot $env:RUNNER_TEMP) -and
+            (Split-Path -Leaf $script:SmokeRoot) -match '^nexus-app-smoke-[0-9]+$') {
+            $dataDir = Join-Path $script:SmokeRoot 'product-data'
+            $stateFile = Join-Path $dataDir 'supervisor-state.json'
+            if ((Test-Path -LiteralPath $dataDir -PathType Container) -and
+                (Test-Path -LiteralPath $stateFile -PathType Leaf)) {
+                $rootInfo = Get-Item -LiteralPath $script:SmokeRoot -Force
+                $dirInfo = Get-Item -LiteralPath $dataDir -Force
+                $stateInfo = Get-Item -LiteralPath $stateFile -Force
+                if ((-not ($rootInfo.Attributes -band [IO.FileAttributes]::ReparsePoint)) -and
+                    (-not ($dirInfo.Attributes -band [IO.FileAttributes]::ReparsePoint)) -and
+                    (-not ($stateInfo.Attributes -band [IO.FileAttributes]::ReparsePoint)) -and
+                    $stateInfo.Length -le 65536) {
+                    $state = Get-Content -LiteralPath $stateFile -Raw | ConvertFrom-Json
+                    $diag.isolated_state_seen = $true
+                    if ($null -ne $state.PSObject.Properties['status'] -and
+                        [string]$state.status -in @('starting', 'healthy', 'blocked', 'restarting',
+                            'restart_failed', 'startup_failed', 'stopping')) {
+                        $diag.supervisor_status = [string]$state.status
+                    }
+                    if ($null -ne $state.PSObject.Properties['source_sha']) {
+                        $diag.source_matches = ([string]$state.source_sha).ToLowerInvariant() -eq $ExpectedSourceSha
+                    }
+                    $reason = ''
+                    if ($null -ne $state.PSObject.Properties['reason']) { $reason = [string]$state.reason }
+                    if ($reason.Length -gt 4096) { $reason = $reason.Substring(0, 4096) }
+                    if ($reason -match 'ModuleNotFoundError|No module named|ImportError') {
+                        $diag.failure_class = 'module_import'
+                    } elseif ($reason -match 'FileNotFoundError|file not found|system cannot find') {
+                        $diag.failure_class = 'missing_file'
+                    } elseif ($reason -match 'permission denied|access is denied') {
+                        $diag.failure_class = 'permission'
+                    } elseif ($reason -match 'address already in use|EADDRINUSE') {
+                        $diag.failure_class = 'port_collision'
+                    } elseif ($reason -match 'timeout|did not become ready') {
+                        $diag.failure_class = 'gateway_timeout'
+                    } elseif ($reason -match 'bounded_restart_limit') {
+                        $diag.failure_class = 'restart_limit'
+                    } elseif ($reason -match 'unexpected_sidecar_exit|engine exited before startup|spawn error') {
+                        $diag.failure_class = 'sidecar_exit'
+                    }
+                } else { $diag.failure_class = 'untrusted_state_file' }
+            }
+        }
+    } catch { $diag.failure_class = 'diagnostic_unavailable' }
+    $script:Evidence['smoke_failure_diagnostic'] = $diag
     try { Stop-SmokeProcesses } catch { }
     try { Remove-SmokeRoot } catch { }
     try {

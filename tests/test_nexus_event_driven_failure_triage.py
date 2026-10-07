@@ -214,3 +214,21 @@ def test_triage_evidence_explicitly_denies_authority():
     assert 'not releasable / not merge-authorized' in text
     assert 'no credentials, billing, signing, production deployment, or live financial authority' in text
     assert 'Research/Backtest/Paper only' in text
+
+
+def test_workflow_run_subscription_avoids_requested_in_progress_queue_amplification():
+    text = _text()
+    subscription = text.split('on:', 1)[1].split('permissions:', 1)[0]
+    assert 'types: [completed]' in subscription
+    assert 'requested' not in subscription
+    assert 'in_progress' not in subscription
+    assert "github.event.action == 'completed'" in text
+
+
+def test_triage_concurrency_deduplicates_same_workflow_and_head_sha():
+    text = _text()
+    concurrency = text.split('concurrency:', 1)[1].split('jobs:', 1)[0]
+    assert 'github.event.workflow_run.name' in concurrency
+    assert 'github.event.workflow_run.head_sha' in concurrency
+    assert 'github.event.workflow_run.id' not in concurrency
+    assert 'cancel-in-progress: true' in concurrency

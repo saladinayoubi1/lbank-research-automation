@@ -1,0 +1,121 @@
+name: NEXUS historical Bybit archive to offline vault
+
+on:
+  pull_request:
+    paths:
+      - "scripts/nexus_recent_archive_offline_export.py"
+      - "tests/test_nexus_recent_archive_offline_export.py"
+      - ".github/workflows/nexus_historical_offline_export.yml"
+      - "security/workflow-permissions-policy-v1.json"
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: "Successful official archive run ID"
+        type: string
+        required: true
+      expected_source_sha:
+        description: "Full original archive producer commit"
+        type: string
+        required: true
+      expected_inner_sha256:
+        description: "Deterministic original archive inner ZIP SHA256"
+        type: string
+        required: true
+      expected_snapshot_digest:
+        description: "Pinned original source manifest digest"
+        type: string
+        required: true
+      expected_outer_sha256:
+        description: "GitHub artifact metadata outer ZIP SHA256"
+        type: string
+        required: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  exporter-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install locked test dependencies
+        run: python -m pip install -r requirements-dev.lock
+      - name: Verify synthetic export and stale-as-live denial
+        run: python -m pytest -q tests/test_nexus_recent_archive_offline_export.py
+
+  archive-export:
+    if: github.event_name == 'workflow_dispatch'
+    needs: exporter-regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUN_ID: ${{ inputs.source_run_id }}
+      SOURCE_SHA: ${{ inputs.expected_source_sha }}
+      INNER_SHA: ${{ inputs.expected_inner_sha256 }}
+      MANIFEST_DIGEST: ${{ inputs.expected_snapshot_digest }}
+      OUTER_SHA: ${{ inputs.expected_outer_sha256 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install exact locked archive/Parquet dependencies
+        run: python -m pip install -r requirements.lock
+      - name: Enforce original run and artifact identity
+        run: |
+          set -euo pipefail
+          [[ "$RUN_ID" =~ ^[0-9]{1,12}$ ]] || exit 1
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]] || exit 1
+          [[ "$INNER_SHA" =~ ^[0-9a-f]{64}$ ]] || exit 1
+          [[ "$MANIFEST_DIGEST" =~ ^[0-9a-f]{64}$ ]] || exit 1
+          [[ "$OUTER_SHA" =~ ^[0-9a-f]{64}$ ]] || exit 1
+          run=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}")
+          test "$(jq -r '.head_sha' <<<"$run")" = "$SOURCE_SHA"
+          test "$(jq -r '.conclusion' <<<"$run")" = success
+          test "$(jq -r '.path' <<<"$run")" = .github/workflows/nexus_multipair_archive_snapshot.yml
+          name="nexus-multipair-recent-runtime-snapshot-${SOURCE_SHA}"
+          artifact=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/artifacts?per_page=100" |
+            jq -ec --arg name "$name" '[.artifacts[]|select(.name==$name and .expired==false)]|if length==1 then .[0] else error("artifact mismatch") end')
+          test "$(jq -r '.digest' <<<"$artifact")" = "sha256:${OUTER_SHA}"
+          test "$(jq -r '.size_in_bytes' <<<"$artifact")" -ge 1000
+          echo "PINNED_ARTIFACT_ID=$(jq -r '.id' <<<"$artifact")" >> "$GITHUB_ENV"
+          mkdir -p build/pinned-archive
+          gh run download "$RUN_ID" -R "$GITHUB_REPOSITORY" --name "$name" --dir build/pinned-archive
+          echo "${INNER_SHA}  build/pinned-archive/nexus-multipair-runtime-requalification-snapshot.zip" | sha256sum --check --status
+      - name: Export historical-only canonical datasets and trade-archive receipt
+        run: |
+          set -euo pipefail
+          now_ms="$(python -c 'import time;print(int(time.time()*1000))')"
+          python -m scripts.nexus_recent_archive_offline_export \
+            --archive build/pinned-archive/nexus-multipair-runtime-requalification-snapshot.zip \
+            --expected-archive-sha256 "$INNER_SHA" \
+            --expected-snapshot-digest "$MANIFEST_DIGEST" \
+            --source-sha "$SOURCE_SHA" \
+            --exporter-sha "$GITHUB_SHA" \
+            --artifact-run-id "$RUN_ID" \
+            --artifact-id "$PINNED_ARTIFACT_ID" \
+            --now-ms "$now_ms" \
+            --output-root build/offline-archive-export
+          echo "HISTORICAL_OFFLINE_ONLY=true" >> "$GITHUB_STEP_SUMMARY"
+          echo "NO_LIVE_DATA_OR_PAPER_EXECUTION=true" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-historical-canonical-offline-${{ inputs.expected_source_sha }}
+          path: |
+            build/offline-archive-export/offline-import.zip
+            build/offline-archive-export/offline-import.sha256
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0

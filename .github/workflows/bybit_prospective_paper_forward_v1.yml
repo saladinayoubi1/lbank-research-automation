@@ -13,6 +13,7 @@ on:
       - ".github/workflows/bybit_prospective_paper_forward_v1.yml"
       - "bybit_prospective_paper_forward_v1.py"
       - "nexus_paper_terminal_rebind.py"
+      - "nexus_paper_terminal_legacy_archive.py"
       - "nexus_paper_runtime_attestation.py"
       - "requirements.lock"
       - "experiments/bybit_prospective_paper_forward_v1.json"
@@ -22,12 +23,14 @@ on:
       - ".github/workflows/bybit_prospective_paper_forward_v1.yml"
       - "bybit_prospective_paper_forward_v1.py"
       - "nexus_paper_terminal_rebind.py"
+      - "nexus_paper_terminal_legacy_archive.py"
       - "nexus_paper_runtime_attestation.py"
       - "requirements.lock"
       - "experiments/bybit_prospective_paper_forward_v1.json"
       - "experiments/bybit_frozen_regime_strategy_v1.json"
       - "tests/test_bybit_prospective_paper_forward_v1.py"
       - "tests/test_nexus_paper_terminal_rebind.py"
+      - "tests/test_nexus_paper_terminal_legacy_archive.py"
       - "tests/test_nexus_paper_runtime_attestation.py"
       - "docs/BYBIT_PROSPECTIVE_PAPER_FORWARD_V1.md"
 
@@ -55,6 +58,7 @@ jobs:
           python -m pytest -q
           tests/test_bybit_prospective_paper_forward_v1.py
           tests/test_nexus_paper_terminal_rebind.py
+          tests/test_nexus_paper_terminal_legacy_archive.py
           tests/test_nexus_paper_runtime_attestation.py
 
   paper-forward:
@@ -99,10 +103,18 @@ jobs:
 
           path = Path("build/prior/bybit_prospective_paper_forward_v1.json")
           terminal = False
+          legacy_archive = False
           if path.is_file():
               state = json.loads(path.read_text(encoding="utf-8"))
               terminal = state.get("status") in {"COMPLETE_REVIEW_REQUIRED", "QUARANTINED"}
+              from nexus_paper_terminal_legacy_archive import OLD_ENGINE_SHA256, OLD_STATE_DIGEST
+              legacy_archive = (
+                  terminal and state.get("status") == "QUARANTINED"
+                  and state.get("engine_sha256") == OLD_ENGINE_SHA256
+                  and state.get("state_digest") == OLD_STATE_DIGEST
+              )
           print(f"terminal={str(terminal).lower()}")
+          print(f"legacy_archive={str(legacy_archive).lower()}")
           PY
       - name: Advance prospective Paper evidence
         if: steps.terminal.outputs.terminal != 'true'
@@ -115,7 +127,7 @@ jobs:
             --source-sha "$GITHUB_SHA" \
             --run-id "$GITHUB_RUN_ID"
       - name: Rebind terminal snapshot without market collection
-        if: steps.terminal.outputs.terminal == 'true'
+        if: steps.terminal.outputs.terminal == 'true' && steps.terminal.outputs.legacy_archive != 'true'
         run: |
           set -euo pipefail
           python nexus_paper_terminal_rebind.py \
@@ -125,7 +137,37 @@ jobs:
             --source-sha "$GITHUB_SHA" \
             --run-id "$GITHUB_RUN_ID"
           echo "terminal_evidence_frozen=true" >> "$GITHUB_STEP_SUMMARY"
+      - name: Preserve exact historical quarantined state with old-source proof only
+        id: legacy-archive
+        if: steps.terminal.outputs.legacy_archive == 'true'
+        run: |
+          set -euo pipefail
+          old_source=961fc206bb9475666152f15c729e00dd2e1bd184
+          mkdir -p build/legacy-terminal
+          git fetch --no-tags --depth=1 origin "$old_source"
+          test "$(git rev-parse FETCH_HEAD)" = "$old_source"
+          git show FETCH_HEAD:bybit_prospective_paper_forward_v1.py > build/legacy-terminal/historical-engine.py
+          gh api -H 'Accept: application/vnd.github+json' \
+            "repos/$GITHUB_REPOSITORY/actions/runs/36255472645" \
+            > build/legacy-terminal/original-run.json
+          python nexus_paper_terminal_legacy_archive.py archive \
+            --manifest experiments/bybit_prospective_paper_forward_v1.json \
+            --state "build/prior/$STATE_FILE" \
+            --old-engine build/legacy-terminal/historical-engine.py \
+            --old-run build/legacy-terminal/original-run.json \
+            --source-sha "$GITHUB_SHA" --run-id "$GITHUB_RUN_ID" \
+            --receipt build/bybit_prospective_paper_forward_v1/terminal_archive_receipt.json
+          python nexus_paper_terminal_legacy_archive.py verify \
+            --manifest experiments/bybit_prospective_paper_forward_v1.json \
+            --state "build/bybit_prospective_paper_forward_v1/$STATE_FILE" \
+            --old-engine build/legacy-terminal/historical-engine.py \
+            --old-run build/legacy-terminal/original-run.json \
+            --source-sha "$GITHUB_SHA" --run-id "$GITHUB_RUN_ID" \
+            --receipt build/bybit_prospective_paper_forward_v1/terminal_archive_receipt.json
+          echo "terminal_evidence_historical_quarantined_unchanged=true" >> "$GITHUB_STEP_SUMMARY"
+          echo "current_engine_historical_requalification=false" >> "$GITHUB_STEP_SUMMARY"
       - name: Bind exact runtime attestation
+        if: steps.terminal.outputs.legacy_archive != 'true'
         run: |
           set -euo pipefail
           if [ -f "build/prior/$ATTESTATION_FILE" ]; then
@@ -176,6 +218,7 @@ jobs:
           path: |
             build/bybit_prospective_paper_forward_v1/bybit_prospective_paper_forward_v1.json
             build/bybit_prospective_paper_forward_v1/runtime_attestation.json
+            build/bybit_prospective_paper_forward_v1/terminal_archive_receipt.json
           if-no-files-found: warn
           retention-days: 90
           compression-level: 9

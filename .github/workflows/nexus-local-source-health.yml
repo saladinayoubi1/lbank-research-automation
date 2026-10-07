@@ -1,6 +1,6 @@
 name: NEXUS Exact Source Local Health
 
-# Owner/main-only executable source health, without eager third-party Actions.
+# OBS-80 / SYS-00: on-demand health on Laptop 1; no runtime or scheduler.
 on:
   workflow_dispatch:
 
@@ -48,7 +48,7 @@ jobs:
           $archive = Join-Path $env:RUNNER_TEMP "nexus-source-health-$env:GITHUB_RUN_ID.zip"
           $url = "https://codeload.github.com/$($env:GITHUB_REPOSITORY)/zip/$($env:GITHUB_SHA)"
           & curl.exe --ipv4 --http1.1 --fail --silent --show-error `
-            --connect-timeout 15 --max-time 150 --retry 2 --retry-delay 3 `
+            --connect-timeout 15 --max-time 150 --retry 1 --retry-delay 3 `
             --speed-time 20 --speed-limit 1024 --output $archive $url
           if ($LASTEXITCODE -ne 0) { throw 'Bounded exact-source codeload failed.' }
           if (-not (Test-Path -LiteralPath $archive -PathType Leaf) -or
@@ -69,9 +69,15 @@ jobs:
         timeout-minutes: 9
         run: call scripts\bootstrap_portable_python.cmd
 
-      - name: Verify source isolation and run original architecture and dashboard health
+      - name: Verify source isolation and current architecture and dashboard health
         shell: cmd
         timeout-minutes: 5
         run: |
           python -c "import os,pathlib; p=pathlib.Path.cwd().resolve(); r=os.environ['GITHUB_REPOSITORY'].split('/')[-1]; assert p.name.casefold()==r.casefold() and p.parent.name.casefold()==r.casefold() and p.parent.parent.name.casefold()=='_work'; assert (p/'.nexus-trigger-source').read_text(encoding='utf-8').strip().lower()==os.environ['GITHUB_SHA'].lower(); print('NEXUS_HEALTH_PRIVACY_AND_SHA_PASS=1')"
-          python -m pytest -q tests/test_nexus_architecture_validator.py tests/test_web_dashboard.py
+          if errorlevel 1 exit /b %errorlevel%
+          python nexus_architecture_validator.py docs/architecture/module-contract-registry.yaml
+          if errorlevel 1 exit /b %errorlevel%
+          python nexus_system_map_validator.py config/nexus-system-map-v1.yaml
+          if errorlevel 1 exit /b %errorlevel%
+          python -m pytest -q tests/test_nexus_architecture_validator.py tests/test_nexus_system_map_validator.py tests/test_web_dashboard.py
+          if errorlevel 1 exit /b %errorlevel%

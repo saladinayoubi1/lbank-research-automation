@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import threading
 from http import HTTPStatus
 from http.server import ThreadingHTTPServer
 from pathlib import Path
@@ -10,6 +11,8 @@ from typing import Any, Mapping
 from urllib.parse import urlsplit
 
 from product_build_runtime import ProductBuildEvidenceError, build_evidence_snapshot, supervisor_snapshot
+from product_alternative_market import AlternativeMarketError, AlternativeMarketStore
+from product_research_reports import ResearchReportStore
 from product_control_runtime import ProductControlRuntime
 from product_mission_runtime import ProductMissionError, ProductMissionRuntime
 from product_offline_runtime import (
@@ -20,6 +23,7 @@ from product_offline_runtime import (
     ProductOfflineError,
 )
 from product_research_runtime import ProductResearchError, ProductResearchRuntime
+from product_strategy_workspace import StrategyWorkspace, StrategyWorkspaceError
 from product_runtime import ProductRuntime
 from product_web_server import (
     DESKTOP_DEMO_OPENING_CASH,
@@ -33,10 +37,14 @@ from web_dashboard import ApiResponse, ByteResponse, GatewayConfig, validate_gat
 DEFAULT_DATA_ROOT = Path("data/market")
 MAX_OFFLINE_REQUEST_BYTES = MAX_OFFLINE_DATASET_BYTES + 65_536
 OFFLINE_STATIC = {
+    "/ui/product-research-data.js": "product-research-data.js",
+    "/ui/product-research-data.css": "product-research-data.css",
     "/ui/product-offline.js": "product-offline.js",
     "/ui/product-offline.css": "product-offline.css",
     "/ui/product-mission.js": "product-mission.js",
     "/ui/product-mission.css": "product-mission.css",
+    "/ui/product-strategy-workspace.js": "product-strategy-workspace.js",
+    "/ui/product-strategy-workspace.css": "product-strategy-workspace.css",
 }
 
 
@@ -51,6 +59,8 @@ def build_handler(
     store: OfflineDatasetStore | None = None,
     offline_research: OfflineProductResearchRuntime | None = None,
     mission: ProductMissionRuntime | None = None,
+    alternative: AlternativeMarketStore | None = None,
+    lbank: AlternativeMarketStore | None = None,
 ):
     active_config = validate_gateway_config(config or GatewayConfig())
     runtime = runtime or ProductRuntime(data_root.parent, opening_cash=DESKTOP_DEMO_OPENING_CASH)
@@ -59,6 +69,13 @@ def build_handler(
     controls = controls or ProductControlRuntime(runtime)
     offline_research = offline_research or OfflineProductResearchRuntime(runtime, store)
     mission = mission or ProductMissionRuntime(runtime.root, integration_root=data_root.parent)
+    workspace = StrategyWorkspace(runtime.root)
+    alternative = alternative or AlternativeMarketStore(runtime.root / "alternative-market")
+    lbank = lbank or AlternativeMarketStore(runtime.root / "lbank-market", provider="lbank")
+    if alternative.provider != "bitget" or lbank.provider != "lbank" or alternative.root == lbank.root:
+        raise AlternativeMarketError("research_provider_binding_failure")
+    market_stores = {"/api/product/alternative-market": alternative, "/api/product/lbank-market": lbank}
+    reviewed_reports = ResearchReportStore(ui_root)
     BaseProductHandler = build_product_handler(
         data_root,
         config=active_config,
@@ -96,8 +113,8 @@ def build_handler(
                 self._send(_json_error(HTTPStatus.SERVICE_UNAVAILABLE, "offline_asset_unavailable", str(exc), active_config), head_only=head_only); return
             head_marker = b"</head>"
             body_marker = b"</body>"
-            head_injection = b'<link rel="stylesheet" href="/ui/product-offline.css"><link rel="stylesheet" href="/ui/product-mission.css"></head>'
-            body_injection = b'<script src="/ui/product-offline.js"></script><script src="/ui/product-mission.js"></script></body>'
+            head_injection = b'<link rel="stylesheet" href="/ui/product-offline.css"><link rel="stylesheet" href="/ui/product-mission.css"><link rel="stylesheet" href="/ui/product-strategy-workspace.css"><link rel="stylesheet" href="/ui/product-research-data.css"></head>'
+            body_injection = b'<script src="/ui/product-offline.js"></script><script src="/ui/product-mission.js"></script><script src="/ui/product-strategy-workspace.js"></script><script src="/ui/product-research-data.js"></script></body>'
             if head_marker not in response.body or body_marker not in response.body:
                 self._send(_json_error(HTTPStatus.SERVICE_UNAVAILABLE, "offline_asset_invalid", "product index markers missing", active_config), head_only=head_only); return
             body = response.body.replace(head_marker, head_injection, 1).replace(body_marker, body_injection, 1)
@@ -105,6 +122,15 @@ def build_handler(
 
         def do_GET(self) -> None:  # noqa: N802
             parsed = urlsplit(self.path)
+            if parsed.path in market_stores or parsed.path == "/api/product/research/reports":
+                if not self._authorized(): return
+                if parsed.query:
+                    self._send(_json_error(HTTPStatus.BAD_REQUEST, "invalid_query", "read-only status does not accept query", active_config)); return
+                try:
+                    payload = market_stores[parsed.path].snapshot() if parsed.path in market_stores else reviewed_reports.snapshot()
+                except (AlternativeMarketError, OSError, ValueError) as exc:
+                    self._send(_json_error(HTTPStatus.SERVICE_UNAVAILABLE, "data_status_unavailable", str(exc), active_config)); return
+                self._send(ApiResponse(HTTPStatus.OK, payload)); return
             if parsed.path == "/":
                 if not self._authorized(): return
                 if parsed.query:
@@ -158,6 +184,15 @@ def build_handler(
                 except ProductMissionError as exc:
                     self._send(_json_error(HTTPStatus.SERVICE_UNAVAILABLE, "strategy_evidence_unavailable", str(exc), active_config)); return
                 self._send(ApiResponse(HTTPStatus.OK, payload)); return
+            if parsed.path == "/api/product/strategy-workspace":
+                if not self._authorized(): return
+                if parsed.query:
+                    self._send(_json_error(HTTPStatus.BAD_REQUEST, "invalid_query", "strategy workspace does not accept query", active_config)); return
+                try:
+                    payload = workspace.snapshot(evidence=mission.strategy_store.history(), datasets=store.snapshot())
+                except (StrategyWorkspaceError, ProductMissionError, ProductOfflineError) as exc:
+                    self._send(_json_error(HTTPStatus.SERVICE_UNAVAILABLE, "strategy_workspace_unavailable", str(exc), active_config)); return
+                self._send(ApiResponse(HTTPStatus.OK, payload)); return
             if parsed.path == "/api/product/build-evidence":
                 if not self._authorized(): return
                 if parsed.query:
@@ -197,8 +232,12 @@ def build_handler(
         def do_POST(self) -> None:  # noqa: N802
             parsed = urlsplit(self.path)
             routes = {
+                "/api/product/alternative-market/refresh", "/api/product/alternative-market/polling",
+                "/api/product/lbank-market/refresh", "/api/product/lbank-market/polling",
                 "/api/product/offline/import", "/api/product/offline/research",
                 "/api/product/offline/paper/auto", "/api/product/mission/import",
+                "/api/product/strategy-workspace/propose", "/api/product/strategy-workspace/select",
+                "/api/product/strategy-workspace/research",
             }
             if parsed.path not in routes:
                 super().do_POST(); return
@@ -208,7 +247,19 @@ def build_handler(
             payload = self._read_offline_json()
             if payload is None: return
             try:
-                if parsed.path == "/api/product/offline/import":
+                market_path = parsed.path.rsplit("/", 1)[0]
+                if market_path in market_stores and parsed.path.endswith("/refresh"):
+                    if set(payload):
+                        raise AlternativeMarketError("refresh request must be an empty object")
+                    selected_store = market_stores[market_path]
+                    threading.Thread(target=selected_store.refresh, daemon=True,
+                                     name=selected_store.provider + "-manual-refresh").start()
+                    result = {"status": "started", "execution_eligible": False}
+                elif market_path in market_stores and parsed.path.endswith("/polling"):
+                    if set(payload) != {"enabled"}:
+                        raise AlternativeMarketError("polling request requires only enabled")
+                    result = market_stores[market_path].set_polling(payload["enabled"])
+                elif parsed.path == "/api/product/offline/import":
                     result = store.import_dataset(payload)
                 elif parsed.path == "/api/product/offline/research":
                     if set(payload) != {"binding_sha256", "family"}:
@@ -218,9 +269,20 @@ def build_handler(
                     if set(payload):
                         raise ProductOfflineError("offline auto-paper request must be an empty object")
                     result = offline_research.auto_paper()
+                elif parsed.path == "/api/product/strategy-workspace/propose":
+                    result = workspace.create(payload)
+                elif parsed.path == "/api/product/strategy-workspace/select":
+                    if set(payload) != {"strategy_id"}:
+                        raise StrategyWorkspaceError("strategy selection schema mismatch")
+                    result = workspace.select(payload["strategy_id"])
+                elif parsed.path == "/api/product/strategy-workspace/research":
+                    if set(payload) != {"strategy_id", "binding_sha256"}:
+                        raise StrategyWorkspaceError("strategy research schema mismatch")
+                    family = workspace.selected_manual_family(payload["strategy_id"])
+                    result = offline_research.run_imported_research(binding_sha256=payload["binding_sha256"], family=family)
                 else:
                     result = mission.import_snapshot(payload)
-            except (ProductOfflineError, ProductResearchError, ProductMissionError) as exc:
+            except (ProductOfflineError, ProductResearchError, ProductMissionError, StrategyWorkspaceError, AlternativeMarketError) as exc:
                 self._send(_json_error(HTTPStatus.BAD_REQUEST, "offline_action_rejected", str(exc), active_config)); return
             except Exception as exc:
                 self._send(_json_error(HTTPStatus.SERVICE_UNAVAILABLE, "offline_action_unavailable", str(exc), active_config)); return

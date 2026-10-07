@@ -31,3 +31,33 @@ body.sidebar-collapsed .sidebar nav button>span{font-size:0!important}@media(max
 .pipeline>div{min-width:0!important}
 .pipeline>em{display:none!important}
 @media(min-width:1450px){.pipeline{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+
+/* Data Core: configured source contracts are NOT measured live feed health. */
+.market-probe-panel{margin-top:12px}
+.market-probe-disclosure{margin:0;padding:13px 14px;color:var(--muted);font-size:.8rem;line-height:1.9}
+.market-probe-form{display:flex;flex-wrap:wrap;align-items:end;gap:12px;padding:0 14px 13px}
+.market-probe-form label{min-width:150px;display:grid;gap:5px;color:var(--muted);font-size:.78rem}
+.market-probe-form select{min-height:35px;max-width:230px;border:1px solid var(--line2);border-radius:5px;background:var(--surface2);color:var(--text);padding:6px 9px;direction:ltr}
+.market-probe-form button{min-height:35px;color:var(--text);border-color:var(--blue);padding-inline:16px}
+.market-probe-form button[aria-busy=true]{opacity:.55;cursor:progress}
+#marketProbeStatus{margin:0 14px 14px;padding:12px;font-size:.77rem;line-height:1.8;overflow-wrap:anywhere}
+#marketProbeStatus strong{display:block;margin-bottom:7px}
+.market-probe-evidence{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 13px;margin-block:6px 9px}
+.market-probe-evidence span{min-width:0}
+.market-probe-evidence b{font:inherit;unicode-bidi:isolate;display:inline-block;white-space:nowrap}
+.market-probe-evidence small{color:var(--muted)}
+@media(max-width:800px){.market-probe-evidence{grid-template-columns:1fr}.market-probe-form{display:grid;grid-template-columns:1fr 1fr}.market-probe-form button{grid-column:1/-1}}
+
+.ai-provider-panel{margin-bottom:18px}
+.ai-provider-controls{display:grid;grid-template-columns:auto minmax(180px,260px) 1fr;gap:12px;align-items:center;padding:12px}
+.ai-provider-controls select{background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:4px;padding:10px;font:inherit}
+#aiProviderStatus{font-size:13px;line-height:1.8;color:var(--muted)}
+#aiProviderStatus[data-state="verified"]{color:var(--green)}
+.ai-privacy-note{color:var(--muted);font-size:12px;line-height:1.9;margin:0;padding:0 12px 12px}
+@media(max-width:760px){.ai-provider-controls{grid-template-columns:1fr}.ai-provider-controls select{width:100%}}
+.chatgpt-connection{display:grid;gap:12px;padding-top:16px;border-top:1px solid var(--line);margin-top:16px}
+.chatgpt-connection .inline-actions{display:flex;gap:8px;flex-wrap:wrap}
+.chatgpt-connection select{max-width:420px}
+.council-roles{display:flex;flex-wrap:wrap;gap:12px}
+.council-roles>div{display:grid;gap:6px;padding:12px 20px;border:1px solid var(--line);border-radius:8px}

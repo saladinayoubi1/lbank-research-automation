@@ -375,8 +375,21 @@ async function startOwnerAutostartWithRetry(sourceSha) {
   return { status: 'RETRY_EXHAUSTED' };
 }
 
+// An alternate Electron userData root must NEVER provision the real owner's runner,
+// refresh shared autostart, or run the real Paper sync. Clone tests and ad-hoc
+// private-profile launches use the same fail-closed isolation as install smoke.
+function isIsolatedProfileOrSmoke(argv) {
+  return Array.isArray(argv) && argv.some(value => {
+    const arg = String(value || '');
+    return /^--nexus-install-smoke=\d+$/.test(arg)
+      || /^--nexus-clone-smoke(?:=|$)/i.test(arg)
+      || /^--user-data-dir(?:=|$)/i.test(arg);
+  });
+}
+
 app.whenReady().then(() => {
   if (process.platform !== 'win32' || !app.isPackaged) return;
+  if (isIsolatedProfileOrSmoke(process.argv)) return;
   void reconcileRunnerFromGui({ force: true });
   startRunnerSupervisor();
   startProspectivePaperSyncSupervisor();

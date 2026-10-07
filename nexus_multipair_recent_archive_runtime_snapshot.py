@@ -431,6 +431,7 @@ def verify_recent_archive_runtime_snapshot(
     source_sha: str,
     now_ms: int,
     max_transport_age_ms: int = MAX_TRANSPORT_AGE_MS,
+    transport_received_at_ms: int | None = None,
 ) -> dict[str, Any]:
     checks = {
         "schema": False,
@@ -451,10 +452,19 @@ def verify_recent_archive_runtime_snapshot(
         acquired = core.get("acquired_at_ms")
         data_as_of = core.get("data_as_of_ms")
         max_source_lag = core.get("max_source_lag_ms")
+        # Transport deadline measures arrival of a digest-verified ORIGINAL
+        # current-run artifact on the isolated physical consumer. When the
+        # 45-minute signed receipt exists, expensive offline installation may
+        # follow arrival; source_recency STILL uses actual later now_ms.
+        # Without a verified arrival receipt, preserve the prior strict check.
+        transport_clock = now_ms if transport_received_at_ms is None else transport_received_at_ms
         checks["transport_age"] = bool(
-            isinstance(acquired, int) and not isinstance(acquired, bool)
+            type(now_ms) is int and type(transport_clock) is int
+            and type(acquired) is int and type(max_transport_age_ms) is int
+            and 0 < max_transport_age_ms <= MAX_SOURCE_LAG_MS
             and core.get("as_of_ms") == acquired
-            and 0 <= now_ms - acquired <= max_transport_age_ms
+            and 0 <= now_ms - transport_clock <= MAX_SOURCE_LAG_MS
+            and 0 <= transport_clock - acquired <= max_transport_age_ms
         )
         checks["source_recency"] = bool(
             isinstance(data_as_of, int) and not isinstance(data_as_of, bool)
@@ -648,6 +658,7 @@ class RecentArchiveRuntimeEvaluator:
         source_sha: str,
         now_ms: int,
         max_transport_age_ms: int = MAX_TRANSPORT_AGE_MS,
+        transport_received_at_ms: int | None = None,
     ) -> None:
         self.root = Path(root).resolve()
         self.snapshot = dict(snapshot)
@@ -668,6 +679,7 @@ class RecentArchiveRuntimeEvaluator:
             source_sha=self.source_sha,
             now_ms=self.now_ms,
             max_transport_age_ms=self.max_transport_age_ms,
+            transport_received_at_ms=transport_received_at_ms,
         )
         if verification["decision"] != "pass":
             raise MultiPairRecentArchiveRuntimeError("transported recent archive snapshot is not verified")
@@ -750,16 +762,38 @@ def run_requalification_from_snapshot(
     output: str | Path,
     now_ms: int,
     max_transport_age_ms: int = MAX_TRANSPORT_AGE_MS,
+    stage_root: Path | None = None,
+    expected_stage_sha256: str | None = None,
 ) -> dict[str, Any]:
     discovery = rest_runtime._load_json(discovery_path)
     queue = rest_runtime._load_json(queue_path)
     snapshot = rest_runtime._load_json(Path(snapshot_root) / "snapshot-manifest.json")
+    arrival_at_ms = None
+    if stage_root is not None:
+        if not _HEX64.fullmatch(str(expected_stage_sha256 or "")):
+            raise MultiPairRecentArchiveRuntimeError("exact staged recent archive SHA is required")
+        # No user-supplied receipt clock is trusted. Recheck archived bytes,
+        # original signed producer manifest and the exact GitHub run identity.
+        from scripts.nexus_recent_arrival import verify_stage
+        receipt, _ = verify_stage(
+            stage_root,
+            repository=os.environ.get("GITHUB_REPOSITORY", ""),
+            run_id=os.environ.get("GITHUB_RUN_ID", ""),
+            source_sha=source_sha,
+            expected_sha256=str(expected_stage_sha256),
+            expected_snapshot_digest=snapshot["snapshot_digest"],
+            expected_acquired_at_ms=snapshot["acquired_at_ms"],
+            expected_data_as_of_ms=snapshot["data_as_of_ms"],
+            now_ms=now_ms,
+        )
+        arrival_at_ms = receipt["received_at_ms"]
     evaluator = RecentArchiveRuntimeEvaluator(
         snapshot_root,
         snapshot,
         source_sha=source_sha,
         now_ms=now_ms,
         max_transport_age_ms=max_transport_age_ms,
+        transport_received_at_ms=arrival_at_ms,
     )
     result = multipair_requal.build_requalification(
         discovery,
@@ -837,6 +871,8 @@ def main() -> int:
     requalify.add_argument("--output", type=Path, required=True)
     requalify.add_argument("--now-ms", type=int, required=True)
     requalify.add_argument("--max-transport-age-ms", type=int, default=MAX_TRANSPORT_AGE_MS)
+    requalify.add_argument("--stage-root", type=Path)
+    requalify.add_argument("--expected-stage-sha256")
 
     args = parser.parse_args()
     if args.command == "acquire":
@@ -878,6 +914,8 @@ def main() -> int:
         output=args.output,
         now_ms=args.now_ms,
         max_transport_age_ms=args.max_transport_age_ms,
+        stage_root=args.stage_root,
+        expected_stage_sha256=args.expected_stage_sha256,
     )
     print(
         json.dumps(

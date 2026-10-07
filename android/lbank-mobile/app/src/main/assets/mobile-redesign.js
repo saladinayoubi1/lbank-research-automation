@@ -87,7 +87,21 @@
 
   function renderPortfolioArc(){
     const arc=q('#portfolioArc');if(!arc)return;
-    try{const eq=Number(equity()),opening=Number(state.paper.openingCash)||1,ratio=Math.max(8,Math.min(100,(eq/opening)*70));arc.style.setProperty('--arc',ratio.toFixed(1)+'%');const label=arc.querySelector('span');if(label)label.textContent=(eq/opening*100).toFixed(0)+'%';const move=q('#portfolioMove');if(move){const p=((eq-opening)/opening)*100;move.textContent=`${p>=0?'+':''}${p.toFixed(2)}% FROM OPENING CASH`;move.className=p>=0?'up':'down';}}
+    try{
+      const eq=Number(equity()),opening=Number(state.paper.openingCash)||1;
+      const ratio=Math.max(8,Math.min(100,(eq/opening)*70));
+      arc.style.setProperty('--arc',ratio.toFixed(1)+'%');
+      const label=arc.querySelector('span'), percent=(eq/opening*100).toFixed(0)+'%';
+      if(label && label.textContent!==percent)label.textContent=percent;
+      const move=q('#portfolioMove');
+      if(move){
+        const p=((eq-opening)/opening)*100;
+        const description=`LOCAL MANUAL · ${p>=0?'+':''}${p.toFixed(2)}% FROM OPENING CASH`;
+        const cls=p>=0?'up':'down';
+        if(move.textContent!==description)move.textContent=description;
+        if(move.className!==cls)move.className=cls;
+      }
+    }
     catch{}
   }
   function refreshVisuals(){renderChart();renderPulse();renderPortfolioArc();syncSecondaryNav();}

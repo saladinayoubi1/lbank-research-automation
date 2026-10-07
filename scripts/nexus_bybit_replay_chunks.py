@@ -8,7 +8,8 @@ import os
 from pathlib import Path
 import re
 from typing import Any, Iterable
-from urllib.parse import urlsplit
+from urllib.parse import urlencode, urlsplit
+import urllib.error
 import urllib.request
 
 
@@ -18,6 +19,8 @@ ARTIFACT_PATTERN = LEGACY_ARTIFACT_PATTERN
 CHUNK_IDS = tuple(f"{number:02d}" for number in range(27, 43)) + tuple(
     f"{number:02d}" for number in range(1, 27)
 )
+SOURCE_WORKFLOW = "bybit_full_history_backfill.yml"
+SOURCE_WORKFLOW_PATH = f".github/workflows/{SOURCE_WORKFLOW}"
 
 
 class _CrossHostAuthStrippingRedirectHandler(urllib.request.HTTPRedirectHandler):
@@ -101,6 +104,139 @@ def _iter_artifacts(payload: Any) -> Iterable[dict[str, Any]]:
                 yield artifact
 
 
+def _request_json(url: str, token: str) -> dict[str, Any]:
+    if not token:
+        raise RuntimeError("GitHub token is required for replay artifact listing")
+    request = urllib.request.Request(
+        url,
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+            "User-Agent": "nexus-bybit-replay-chunk-planner",
+        },
+    )
+    with urllib.request.urlopen(request, timeout=60) as response:
+        payload = json.load(response)
+    if not isinstance(payload, dict):
+        raise RuntimeError("GitHub artifact response must be a JSON object")
+    return payload
+
+
+def fetch_artifact_pages(
+    repository: str,
+    token: str,
+    *,
+    max_pages: int = 20,
+    max_source_runs: int = 3,
+) -> list[dict[str, Any]]:
+    """Prefer bound successful main producer runs before the bounded repo window.
+
+    A completed producer normally contains all 42 monthly chunks. Its small
+    run-scoped list avoids the repository-wide artifact endpoint, which can
+    return HTTP 500 even when an exact source run is readable. Source candidates
+    must match the successful main run's repository, SHA and run ID. If they do
+    not cover every month, retain the existing bounded repository fallback and
+    mark unseen months for an official Bybit rebuild.
+    """
+    if "/" not in repository:
+        raise RuntimeError("repository must be owner/name")
+    if max_pages < 1 or max_pages > 100:
+        raise RuntimeError("max_pages must be in [1,100]")
+    if max_source_runs < 0 or max_source_runs > 20:
+        raise RuntimeError("max_source_runs must be in [0,20]")
+
+    pages: list[dict[str, Any]] = []
+    observed: set[str] = set()
+    required = set(CANONICAL_CHUNK_MAP)
+    if max_source_runs:
+        query = urlencode({"branch": "main", "status": "success", "per_page": max_source_runs})
+        payload = _request_json(
+            f"https://api.github.com/repos/{repository}/actions/workflows/{SOURCE_WORKFLOW}/runs?{query}",
+            token,
+        )
+        runs = payload.get("workflow_runs", [])
+        if not isinstance(runs, list):
+            raise RuntimeError("GitHub workflow run response is malformed")
+        for run in runs[:max_source_runs]:
+            if not isinstance(run, dict):
+                continue
+            source_repo = run.get("repository")
+            head_repo = run.get("head_repository")
+            run_id = run.get("id")
+            run_sha = run.get("head_sha", "")
+            if (
+                run.get("status") != "completed"
+                or run.get("conclusion") != "success"
+                or run.get("head_branch") != "main"
+                or run.get("path") != SOURCE_WORKFLOW_PATH
+                or run.get("event") not in {"push", "workflow_dispatch"}
+                or not isinstance(run_id, int) or isinstance(run_id, bool) or run_id <= 0
+                or not isinstance(run_sha, str) or re.fullmatch(r"[0-9a-f]{40}", run_sha) is None
+                or not isinstance(source_repo, dict) or source_repo.get("full_name") != repository
+                or not isinstance(source_repo.get("id"), int)
+                or isinstance(source_repo["id"], bool) or source_repo["id"] <= 0
+                or not isinstance(head_repo, dict) or head_repo.get("id") != source_repo["id"]
+            ):
+                continue
+            payload = _request_json(
+                f"https://api.github.com/repos/{repository}/actions/runs/{run_id}/artifacts?per_page=100",
+                token,
+            )
+            batch = payload.get("artifacts", [])
+            if not isinstance(batch, list):
+                raise RuntimeError("GitHub run artifact response is malformed")
+            relevant: list[dict[str, Any]] = []
+            for artifact in batch:
+                if not isinstance(artifact, dict) or artifact.get("expired") is not False:
+                    continue
+                chunk_id = _artifact_chunk_id(str(artifact.get("name", "")))
+                binding = artifact.get("workflow_run")
+                if (
+                    chunk_id not in required
+                    or not isinstance(artifact.get("id"), int)
+                    or isinstance(artifact["id"], bool) or artifact["id"] <= 0
+                    or not isinstance(binding, dict)
+                    or binding.get("id") != run_id
+                    or binding.get("head_sha") != run_sha
+                    or binding.get("head_branch") != "main"
+                    or binding.get("repository_id") != source_repo["id"]
+                    or binding.get("head_repository_id") != source_repo["id"]
+                ):
+                    continue
+                relevant.append(artifact)
+                observed.add(chunk_id)
+            pages.append({"artifacts": relevant})
+            if observed == required:
+                return pages
+
+    for page in range(1, max_pages + 1):
+        query = urlencode({"per_page": 100, "page": page})
+        payload = _request_json(
+            f"https://api.github.com/repos/{repository}/actions/artifacts?{query}",
+            token,
+        )
+        batch = payload.get("artifacts", [])
+        if not isinstance(batch, list):
+            raise RuntimeError("GitHub artifact response artifacts field is malformed")
+
+        relevant: list[dict[str, Any]] = []
+        for artifact in batch:
+            if not isinstance(artifact, dict):
+                continue
+            chunk_id = _artifact_chunk_id(str(artifact.get("name", "")))
+            if chunk_id is None or chunk_id not in required:
+                continue
+            relevant.append(artifact)
+            if artifact.get("expired") is not True:
+                observed.add(chunk_id)
+        pages.append({"artifacts": relevant})
+
+        if observed == required or len(batch) < 100:
+            break
+    return pages
+
+
 def _artifact_chunk_id(name: str) -> str | None:
     for pattern in (LEGACY_ARTIFACT_PATTERN, REHYDRATED_ARTIFACT_PATTERN):
         match = pattern.match(name)
@@ -171,7 +307,11 @@ def write_github_outputs(path: Path, plan: dict[str, Any]) -> None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--artifact-pages", type=Path, required=True)
+    parser.add_argument("--artifact-pages", type=Path)
+    parser.add_argument("--repository", default=os.environ.get("GITHUB_REPOSITORY", ""))
+    parser.add_argument("--token-env", default="GH_TOKEN")
+    parser.add_argument("--max-pages", type=int, default=20)
+    parser.add_argument("--max-source-runs", type=int, default=3)
     parser.add_argument("--plan-output", type=Path)
     parser.add_argument("--github-output", type=Path)
     return parser.parse_args()
@@ -179,7 +319,16 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    payload = json.loads(args.artifact_pages.read_text(encoding="utf-8"))
+    if args.artifact_pages is not None:
+        payload = json.loads(args.artifact_pages.read_text(encoding="utf-8"))
+    else:
+        token = os.environ.get(args.token_env, "")
+        payload = fetch_artifact_pages(
+            args.repository,
+            token,
+            max_pages=args.max_pages,
+            max_source_runs=args.max_source_runs,
+        )
     plan = build_plan(payload)
     rendered = json.dumps(plan, indent=2, sort_keys=True) + "\n"
     if args.plan_output:

@@ -1,7 +1,7 @@
 (()=>{
 'use strict';
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
-const state={overview:null,paper:null,matrix:null,events:null,strategies:null,mission:null,risk:null,recovery:null,notifications:null,registry:null,research:null,integration:null,lastRisk:null,sessionId:'nexus-ui-'+crypto.randomUUID(),conversationId:'product-'+crypto.randomUUID(),turn:0};
+const state={overview:null,paper:null,sharedPaper:null,matrix:null,events:null,strategies:null,mission:null,risk:null,recovery:null,notifications:null,registry:null,marketProbe:null,research:null,agentResearch:null,integration:null,lastRisk:null,sessionId:'nexus-ui-'+crypto.randomUUID(),conversationId:'product-'+crypto.randomUUID(),turn:0};
 const PAPER_UI_REFRESH_INTERVAL_MS=60*1000;
 const PAPER_UI_STALE_FAILURE_LIMIT=2;
 let paperUiRefreshTimer=null;
@@ -38,49 +38,360 @@ async function resetUIPreferences(){if(window.nexusDesktop?.resetPreferences)ret
 function bindSettings(){const form=$('#settingsForm');if(!form)return;const preview=()=>applyUIPreferences(formUIPreferences(),{syncForm:false});form.addEventListener('input',()=>{const out=$('#fontSizeValue'),font=form.elements.namedItem('fontSize');if(out&&font)out.textContent=font.value+'px';preview()});form.addEventListener('change',preview);form.onsubmit=async e=>{e.preventDefault();try{const saved=await persistUIPreferences(formUIPreferences());applyUIPreferences(saved);toast('تنظیمات شخصی ذخیره شد')}catch(err){toast('ذخیره تنظیمات ناموفق بود: '+err.message)}};$('#settingsReset').onclick=async()=>{try{const defaults=await resetUIPreferences();applyUIPreferences(defaults);toast('تنظیمات پیش‌فرض بازیابی شد')}catch(err){toast('بازیابی تنظیمات ناموفق بود: '+err.message)}}}
 async function initializePersonalization(){ensureSettingsSurface();try{applyUIPreferences(await readUIPreferences())}catch{applyUIPreferences(UI_DEFAULTS)}bindSettings();const build=$('#buildLabel');if(build)build.textContent='5.1.0'}
 function renderOverview(){const x=state.overview;if(!x)return;$('#productState').textContent=x.delivery||'canonical-python-sidecar';$('#paperState').textContent=x.paper?.active?'ACTIVE':'UNAVAILABLE';$('#liveState').textContent=(x.live?.status||'LOCKED').toUpperCase();const m=x.mission_control||{};$('#missionBadge').className='badge '+statusClass(m.status);$('#missionBadge').textContent=String(m.status||'unavailable').toUpperCase();const mission=m.mission||{},queue=m.queue||{},counts=queue.counts||{};$('#missionSummary').innerHTML=[metric('MISSION',mission.status||m.status||'unavailable',mission.mission_id||''),metric('READY',counts.ready??counts.READY??'—','queue'),metric('RUNNING',counts.running??counts.RUNNING??'—','queue'),metric('AGENTS',Array.isArray(m.agents)?m.agents.length:'—','registered')].join('');$('#capabilityMap').innerHTML=Object.entries(x.capabilities||{}).map(([k,v])=>`<div class="capability"><span>${esc(k.replaceAll('_',' ').toUpperCase())}</span><b class="${statusClass(v)}">${esc(v)}</b></div>`).join('')}
+function activePaperTerminalSnapshot(p,eventEnvelope){
+  const a=p?.account||{},events=Array.isArray(eventEnvelope?.events)?eventEnvelope.events:[],reportedTotal=Number(eventEnvelope?.total);
+  const complete=Number.isInteger(reportedTotal)&&reportedTotal===events.length,feesByCorrelation=new Map(),slippageByCorrelation=new Map();
+  for(const e of events){
+    const correlation=String(e?.correlation_id||''),amount=Number(e?.payload?.amount);
+    if(e?.event_type==='fee_recorded'&&correlation&&Number.isFinite(amount))feesByCorrelation.set(correlation,(feesByCorrelation.get(correlation)||0)+amount);
+    if(e?.event_type==='slippage_recorded'&&correlation&&Number.isFinite(amount))slippageByCorrelation.set(correlation,(slippageByCorrelation.get(correlation)||0)+amount);
+  }
+  const currentMeta=new Map(),timeline=new Map(),history=[],orders=[],cashflows=[],strategyFills=new Map();
+  let openingCash=null,lastAt=null,totalFees=0;
+  const strategyFor=e=>String(e?.provenance?.strategy_version||'runtime-paper');
+  for(const e of events){
+    const kind=String(e?.event_type||''),payload=e?.payload||{},provenance=e?.provenance||{},symbol=String(payload.symbol||''),correlation=String(e?.correlation_id||'');
+    if(e?.occurred_at)lastAt=e.occurred_at;
+    if(kind==='demo_account_opened'&&openingCash===null)openingCash=payload.opening_cash??null;
+    if(kind==='fee_recorded'){
+      const amount=Number(payload.amount);if(Number.isFinite(amount))totalFees+=amount;
+      cashflows.push({time:e.occurred_at,strategy:strategyFor(e),symbol:null,type:'fee',amount:payload.amount??null});
+    }
+    if(kind==='simulated_fill_recorded'){
+      const strategy=strategyFor(e);strategyFills.set(strategy,(strategyFills.get(strategy)||0)+1);
+      orders.push({id:e.event_id,strategy,symbol,side:payload.side??null,quantity:payload.quantity??null,price:payload.price??null,status:'filled',fee:feesByCorrelation.get(correlation)??null,slippage_cost:slippageByCorrelation.get(correlation)??null,reason:'paper_execution',time:e.occurred_at});
+    }
+    if(kind==='position_opened'||kind==='position_reversed'){
+      if(kind==='position_reversed'){
+        const old=timeline.get(symbol),realized=Number(payload.realized_pnl),fee=feesByCorrelation.get(correlation);
+        history.push({strategy:old?.strategy||strategyFor(e),symbol,side:old?.side??null,quantity:old?.quantity??null,entry_price:old?.entry_price??null,exit_price:payload.entry_price??null,gross_pnl:payload.realized_pnl??null,fees:fee??null,funding:null,net_pnl:Number.isFinite(realized)&&Number.isFinite(fee)?realized-fee:null,opened_at:old?.opened_at??null,time:e.occurred_at,reason:'position_reversed',partial:false});
+      }
+      const meta={kind:provenance.kind||'unknown',source:provenance.source_id||'runtime-journal',strategy:strategyFor(e),timeframe:provenance.timeframe||null,opened_at:e.occurred_at||null,position_event_id:e.event_id||null,side:payload.side??null,quantity:payload.quantity??null,entry_price:payload.entry_price??null};
+      currentMeta.set(symbol,meta);timeline.set(symbol,meta);
+    }else if(kind==='position_reduced'){
+      const old=timeline.get(symbol),realized=Number(payload.realized_pnl),fee=feesByCorrelation.get(correlation),oldQty=Number(old?.quantity),reduced=Number(payload.quantity);
+      history.push({strategy:old?.strategy||strategyFor(e),symbol,side:old?.side??null,quantity:payload.quantity??null,entry_price:old?.entry_price??null,exit_price:payload.exit_price??null,gross_pnl:payload.realized_pnl??null,fees:fee??null,funding:null,net_pnl:Number.isFinite(realized)&&Number.isFinite(fee)?realized-fee:null,opened_at:old?.opened_at??null,time:e.occurred_at,reason:'position_reduced',partial:true});
+      if(old&&Number.isFinite(oldQty)&&Number.isFinite(reduced))timeline.set(symbol,{...old,quantity:String(Math.max(0,oldQty-reduced))});
+    }else if(kind==='position_closed'){
+      const old=timeline.get(symbol),realized=Number(payload.realized_pnl),fee=feesByCorrelation.get(correlation);
+      history.push({strategy:old?.strategy||strategyFor(e),symbol,side:old?.side??null,quantity:old?.quantity??null,entry_price:old?.entry_price??null,exit_price:payload.exit_price??null,gross_pnl:payload.realized_pnl??null,fees:fee??null,funding:null,net_pnl:Number.isFinite(realized)&&Number.isFinite(fee)?realized-fee:null,opened_at:old?.opened_at??null,time:e.occurred_at,reason:'position_closed',partial:false});
+      currentMeta.delete(symbol);timeline.delete(symbol);
+    }
+  }
+  const positions=(Array.isArray(a.positions)?a.positions:[]).map(r=>{
+    const symbol=String(r.symbol||''),m=currentMeta.get(symbol)||{},st=(a.stops||[]).find(x=>x.symbol===symbol),tg=(a.targets||[]).find(x=>x.symbol===symbol);
+    return{id:m.position_event_id||('runtime:'+symbol),strategy:m.strategy||'runtime-paper',symbol,side:r.side,quantity:r.quantity,entry_price:r.entry_price,mark_price:null,unrealized_pnl:null,net_pnl_to_date:null,stop_loss:st?.price??null,take_profit:tg?.price??null,opened_at:m.opened_at??null,mark_time:null,timeframe:m.timeframe??null,source:m.source||'runtime-journal',provenance_kind:m.kind||'unknown'};
+  });
+  const strategies=[...new Set([...strategyFills.keys(),...positions.map(r=>r.strategy)])].map(strategy=>({strategy,allocation:null,balance:null,equity:null,net_pnl:null,fills:strategyFills.get(strategy)||0,halted:a.kill_switch_enabled===true}));
+  const initial=Number(openingCash),equity=Number(a.equity),netPnl=Number.isFinite(initial)&&Number.isFinite(equity)?equity-initial:null;
+  return{available:p?.active===true&&p?.paper_only===true&&p?.live_trading_authority===false,stale:false,status:a.kill_switch_enabled?'risk_halted':'active',source_type:'product_runtime_event_journal',export_url:'/api/product/export/paper.csv',export_filename:'nexus-paper-events.csv',event_window_complete:complete,head_event_digest:p?.head_event_digest||null,checked_at:lastAt,last_execution_utc:lastAt,valuation:'event_sourced_runtime',account:{equity:a.equity??null,balance:a.cash??null,net_pnl:netPnl,unrealized_pnl:a.unrealized_pnl??null,realized_gross:a.realized_pnl??null,fees:complete?totalFees:null,funding:null,free_margin:null},positions,history,orders,cashflows,strategies};
+}
+function renderSharedPaperFreshness(){
+  const badge=$('#sharedPaperFreshness'),s=state.sharedPaper;if(!badge)return;
+  if(!s){badge.className='badge bad';badge.textContent='داده در دسترس نیست';badge.title='Shared Paper projection unavailable';return}
+  const marketLive=s.market_live===true,stateStale=s.paper_state_stale===true,priceBasis=String(s.market_price_basis||'unknown'),usingOrderbookMid=priceBasis==='orderbook_mid';
+  badge.className='badge '+(marketLive?(stateStale?'warn':'good'):'bad');
+  badge.textContent=marketLive?(stateStale?(usingOrderbookMid?'MID زنده · STATE قدیمی':'MARK زنده · STATE قدیمی'):(usingOrderbookMid?'MID زنده':'MARK زنده')):'MARK قدیمی';
+  badge.title='Bybit price: '+String(s.quote_status||'unknown')+' · basis: '+priceBasis+' · Paper state: '+(stateStale?'stale':'fresh');
+}
 function renderPaper(){
   const p=state.paper;if(!p)return;
-  const a=p.account||{},forward=p.prospective_forward||{},manual=a.positions||[],prospective=forward.available===true?(forward.positions||[]):[],allCount=manual.length+prospective.length;
-  const active=forward.profiles?.[forward.active_profile||'conservative']||{};
+  const shared=state.sharedPaper||{available:false,status:'unavailable',live_trading_authority:false,positions:[],history:[],orders:[],cashflows:[],strategies:[]};
+  window.NexusPaperTerminal?.render(shared);
+  renderSharedPaperFreshness();
+  const a=p.account||{},positions=a.positions||[],events=state.events?.events||[],meta=new Map();
+  for(const e of events){
+    const symbol=e?.payload?.symbol;if(!symbol)continue;
+    if(e.event_type==='position_opened'||e.event_type==='position_reversed'){
+      meta.set(String(symbol),{
+        kind:e.provenance?.kind||'manual',
+        source:e.provenance?.source_id||'nexus-product-paper-terminal',
+        strategy:e.provenance?.strategy_version||'manual-paper-v1',
+        timeframe:e.provenance?.timeframe||'session',
+        opened_at:e.occurred_at||''
+      });
+    }else if(e.event_type==='position_closed'){
+      meta.delete(String(symbol));
+    }
+  }
+  const autoCount=positions.filter(r=>meta.get(String(r.symbol))?.kind==='automatic').length;
   $('#paperMetrics').innerHTML=[
     metric('CASH',a.cash||'—',a.currency||'USDT'),
-    metric('EQUITY',a.equity||'—','manual paper'),
-    metric('REALIZED PNL',a.realized_pnl||'0','manual paper'),
-    metric('UNREALIZED',a.unrealized_pnl||'0','manual paper'),
-    metric('FORWARD',forward.available?String(forward.status||'available').toUpperCase():'UNAVAILABLE',forward.available?`${forward.completed_bar_count??'—'} closed 4h bars`:forward.reason||'snapshot missing'),
-    metric('FORWARD EQUITY',forward.available?num(active.equity,2):'—',forward.available?`${forward.active_profile||'conservative'} · Paper-only`:'read-only evidence'),
-    metric('SESSION',a.session_open?'OPEN':'CLOSED','manual control'),
-    metric('POSITIONS',allCount,`${manual.length} manual · ${prospective.length} forward`)
+    metric('EQUITY',a.equity||'—','paper account'),
+    metric('REALIZED PNL',a.realized_pnl||'0','paper account'),
+    metric('UNREALIZED',a.unrealized_pnl||'0','aggregate account PnL'),
+    metric('SESSION',a.session_open?'OPEN':'CLOSED','paper control'),
+    metric('OPEN POSITIONS',positions.length,`${autoCount} auto · ${positions.length-autoCount} manual`)
   ].join('');
-  const manualRows=manual.map(r=>{const st=(a.stops||[]).find(x=>x.symbol===r.symbol),tg=(a.targets||[]).find(x=>x.symbol===r.symbol);return`<tr><td><span class="badge neutral">MANUAL</span></td><td>local</td><td class="mono">${esc(r.symbol)}</td><td>${esc(r.side)}</td><td>${esc(r.quantity)}</td><td>${esc(r.entry_price)}</td><td>${esc(a.unrealized_pnl||'0')}</td><td>${esc(st?.price)}</td><td>${esc(tg?.price)}</td></tr>`});
-  const forwardRows=prospective.map(r=>`<tr><td><span class="badge good">FORWARD</span></td><td>${esc(r.profile||forward.active_profile||'conservative')}</td><td class="mono">${esc(r.symbol)}</td><td>${esc(String(r.side||'').toUpperCase())}</td><td>${esc(num(r.quantity,8))}</td><td>${esc(num(r.entry_price,6))}</td><td>${esc(num(r.unrealized_pnl,2))}</td><td>—</td><td>—</td></tr>`);
-  const rows=[...forwardRows,...manualRows];
-  const summary=forward.available? `<div class="result-box good">Prospective Paper · READ ONLY · ${esc(forward.status)} · ${esc(forward.completed_bar_count)} bars · Last: ${esc(forward.last_execution_utc)}<br><small>این داده از زنجیره digest-verified Paper Forward خوانده می‌شود و Ticket دستی اجازه تغییر آن را ندارد.</small></div>` : `<div class="result-box muted">Prospective Paper snapshot در این دستگاه موجود یا معتبر نیست؛ حساب Manual Paper مستقل باقی می‌ماند.</div>`;
-  $('#positions').innerHTML=summary+(rows.length?`<table class="data-table"><thead><tr><th>منبع</th><th>پروفایل</th><th>نماد</th><th>جهت</th><th>مقدار</th><th>ورود</th><th>PnL</th><th>Stop</th><th>Target</th></tr></thead><tbody>${rows.join('')}</tbody></table>`:'<div class="empty-state">پوزیشن بازی وجود ندارد.</div>');
+  const rows=positions.map(r=>{
+    const m=meta.get(String(r.symbol))||{},kind=m.kind||'unknown',automatic=kind==='automatic',st=(a.stops||[]).find(x=>x.symbol===r.symbol),tg=(a.targets||[]).find(x=>x.symbol===r.symbol);
+    const strategy=String(m.strategy||'runtime-paper').replace(/-product-v\d+$/,'').replaceAll('_',' ');
+    return`<tr><td><span class="badge ${automatic?'good':'neutral'}">${automatic?'AUTO':kind==='manual'?'MANUAL':'RUNTIME'}</span></td><td class="mono">${esc(r.symbol)}</td><td>${esc(strategy)}</td><td>${esc(m.timeframe||'—')}</td><td>${esc(r.side)}</td><td>${esc(r.quantity)}</td><td>${esc(r.entry_price)}</td><td title="PnL ردیفی نیازمند mark اختصاصی پوزیشن است">—</td><td>${esc(st?.price)}</td><td>${esc(tg?.price)}</td><td>${esc(m.source||'runtime-journal')}</td><td>${esc(m.opened_at||'—')}</td></tr>`
+  });
+  $('#positions').innerHTML=rows.length?`<table class="data-table"><thead><tr><th>نوع</th><th>نماد</th><th>استراتژی</th><th>TF</th><th>جهت</th><th>مقدار</th><th>ورود</th><th>PnL</th><th>Stop</th><th>Target</th><th>Source</th><th>زمان ورود</th></tr></thead><tbody>${rows.join('')}</tbody></table>`:'<div class="empty-state">هیچ پوزیشن Paper بازی وجود ندارد.</div>';
 }
 function renderMatrix(){const m=state.matrix;if(!m)return;const status=String(m.status||'unavailable');$('#matrixBadge').className='badge '+statusClass(status);$('#matrixBadge').textContent=status.toUpperCase();$('#matrixMetrics').innerHTML=[metric('CELLS',m.verified_cell_count??0,String(m.expected_cell_count??6)+' expected'),metric('LANES',m.reported_lane_count??0,String(m.expected_lane_count??18)+' expected'),metric('BLOCKED',m.blocked_cell_count??0,'fail closed'),metric('SYMBOLS',(m.symbols||[]).length,'BTC / ETH'),metric('TIMEFRAMES',(m.timeframes||[]).length,'15m / 1h / 4h'),metric('FAMILIES',(m.families||[]).length,'isolated')].join('');const lanes=m.lanes||[];$('#strategyMatrix').innerHTML=lanes.length?`<table class="data-table"><thead><tr><th>نماد</th><th>تایم‌فریم</th><th>استراتژی</th><th>وضعیت</th><th>Evidence</th></tr></thead><tbody>${lanes.map(x=>`<tr><td class="mono">${esc(x.symbol)}</td><td>${esc(x.timeframe)}</td><td>${esc(x.family)}</td><td><b class="${statusClass(x.status)}">${esc(x.status)}</b></td><td class="mono">${esc((x.evidence_digest||'').slice(0,12))}…</td></tr>`).join('')}</tbody></table>`:`<div class="empty-state">Snapshot ماتریس هنوز در این دستگاه بازیابی نشده است.<br><small>${esc(m.reason||'')}</small></div>`}
 function renderEvents(){const events=state.events?.events||[];const html=events.slice().reverse().map(e=>`<div class="event-row"><code>#${esc(e.sequence)}</code><b>${esc(e.event_type)}</b><span>${esc(e.payload?.symbol||e.payload?.reason_code||e.payload?.boundary||e.payload?.currency||'')}</span><code>${esc((e.event_digest||'').slice(0,16))}…</code></div>`).join('')||'<div class="empty-state">رویدادی وجود ندارد.</div>';$('#paperEvents').innerHTML=html;$('#auditEvents').innerHTML=html;$('#auditDigest').textContent=(state.paper?.head_event_digest||'—').slice(0,20)+'…'}
 function renderStrategies(){const s=state.strategies;if(!s)return;$('#strategyFamilies').innerHTML=(s.families||[]).map(x=>`<article class="strategy-card"><span>${esc(x.status)}</span><h3>${esc(x.id)}</h3><p>Promotion ceiling: ${esc(x.promotion_ceiling)} · Live: ${esc(bool(x.live_execution_allowed))}</p></article>`).join('');$('#qualificationPath').innerHTML=(s.qualification_path||[]).map(x=>`<div class="stage">${esc(x)}</div>`).join('')}
+function renderAgentResearch(){
+  const m=state.agentResearch, badge=$('#agentResearchBadge'), metrics=$('#agentResearchMetrics'), table=$('#agentResearchTasks');
+  if(!badge||!metrics||!table)return;
+  const tasks=Array.isArray(m?.tasks)?m.tasks.filter(t=>/^P7-RESEARCH-COMPOSITE-[0-9]{3}$/.test(String(t.id||''))):[];
+  const fresh=!!(m&&m.stale===false&&m.control_plane?.runtime_present===true&&m.source==='local_runtime');
+  const age=Number.isFinite(Number(m?.snapshot_age_seconds))?Math.round(Number(m.snapshot_age_seconds))+'s':'unknown';
+  badge.className='badge '+(fresh?'good':'warn');
+  badge.textContent=fresh?'LOCAL RUNTIME OBSERVED':(m?.stale?'STALE / NOT LIVE':'RUNTIME UNVERIFIED');
+  metrics.innerHTML=[metric('SOURCE',m?.source||'unavailable','runtime provenance'),metric('AGE',age,'source snapshot'),metric('LEASES',tasks.length,'reviewed Research tasks'),metric('DONE',tasks.filter(t=>t.status==='DONE').length,'not strategy qualification')].join('');
+  if(!tasks.length){table.innerHTML='<div class="empty-state">هیچ مأموریت پژوهشی واقعی در Runtime قابل مشاهده نیست؛ نمایش موفقیت ساختگی ممنوع است.</div>';return}
+  const lines=tasks.slice(-10).map(t=>{
+    const p=t.result_evidence||{},q=t.verification_evidence||{};
+    const receiptMatch=t.status==='DONE'&&p.executor==='nexus-real-composite-backtest'&&
+      q.executor==='nexus-independent-composite-numeric-qa'&&
+      q.independent_qa_complete===true&&
+      q.producer_receipt_digest&&q.producer_receipt_digest===p.receipt_digest&&
+      q.source_sha===p.source_sha&&
+      p.auto_demo_promotion===false&&q.auto_demo_promotion===false&&
+      p.live_enabled===false&&q.live_enabled===false;
+    const qaText=receiptMatch?'MATCHED RECEIPTS (REPORTED)':'NO MATCHING QA RECEIPT';
+    return '<tr><td class="mono">'+esc(t.id)+'</td><td>'+esc(t.status)+
+      '</td><td>'+esc(p.mechanism||'—')+'</td><td>'+esc(qaText)+
+      '</td><td class="mono">'+esc((p.source_sha||'').slice(0,10))+
+      '</td><td>'+esc(t.blocked_reason||t.failure_class||'—')+'</td></tr>';
+  });
+  table.innerHTML='<table class="data-table"><thead><tr><th>مأموریت</th><th>وضعیت</th><th>مکانیزم</th><th>QA</th><th>Source</th><th>مانع</th></tr></thead><tbody>'+lines.join('')+'</tbody></table>'+
+    '<p class="muted">'+esc(fresh?'داده از Runtime محلی فعلی است؛ رسیدها صرفاً از نظر تطبیق نمایش داده می‌شوند.':'منبع واردشده، قدیمی یا بدون Runtime محلی است؛ هیچ تأیید اجرای جدیدی ادعا نمی‌شود.')+'</p>';
+}
+const aiProviderReasons={paid_routing_not_authorized:'مجوز مصرف مدل فعال نیست',provider_not_configured:'حساب مدل تنظیم نشده',budget_reconciliation_required:'مصرف مبهم قبلی نیاز به بررسی دارد',budget_exhausted:'بودجهٔ مدل تمام شده',budget_unavailable:'وضعیت بودجه قابل تأیید نیست'};
+function renderAIProvider(){
+  const x=state.aiProvider,root=$('#aiProviderStatus'),option=$('#aiResponseMode option[value="deepseek"]');
+  if(!root||!option)return;
+  option.disabled=!x?.ready;
+  if(!x){root.textContent='وضعیت اتصال مدل در دسترس نیست';root.dataset.state='unavailable';return}
+  const label=x.connection_verified?'پاسخ واقعی دریافت شد':x.ready?'آماده؛ پاسخ واقعی هنوز تأیید نشده':'مدل آماده نیست';
+  const reasons=(x.reasons||[]).map(v=>aiProviderReasons[v]||'اتصال نیاز به بررسی دارد').join(' · ');
+  const cap=Number(x.budget?.monthly_cap_usd),budget=Number.isFinite(cap)?' · سقف ماهانه USD $'+cap.toFixed(2):'';
+  root.textContent=label+' · '+String(x.model||'DeepSeek')+(reasons?' · '+reasons:'')+budget;
+  root.dataset.state=x.connection_verified?'verified':x.ready?'ready':'unavailable';
+}
+async function refreshAIProvider(){
+  return singleFlight('ai-provider-status',$('#aiProviderRefresh'),async()=>{
+    const r=await optionalApi('/api/product/ai/provider');state.aiProvider=r.value;renderAIProvider();
+    await Promise.all([refreshChatGPT(),refreshTradingView(),loadAIRoadmap()]);
+  });
+}
+const tradingViewErrors={storage_unavailable:'ذخیرهٔ امن در این دستگاه در دسترس نیست',sign_in_required:'ورود به TradingView لازم است',connection_busy:'یک درخواست TradingView در حال انجام است',cancelled:'درخواست لغو شد',sign_in_timeout:'زمان ورود تمام شد؛ دوباره دکمهٔ ورود را بزنید',callback_unavailable:'درگاه ورود محلی در دسترس نیست',oauth_callback_rejected:'پاسخ ورود معتبر نیست',tool_unavailable:'ابزارهای تحلیل در این حساب در دسترس نیست',provider_response_rejected:'دادهٔ قابل نمایش دریافت نشد',invalid_request:'نماد یا تایم‌فریم معتبر نیست'};
+async function tradingViewCall(action,payload){
+  const bridge=window.nexusDesktop?.tradingView;
+  if(!bridge)throw new Error('اتصال TradingView در نسخهٔ Desktop انجام می‌شود');
+  const result=await (payload===undefined?bridge[action]():bridge[action](payload));
+  if(!result?.ok)throw new Error(tradingViewErrors[result?.error?.code]||'TradingView پاسخ کامل نداد؛ اتصال و طرح حساب را بررسی کنید');
+  return result.value;
+}
+function clearTradingViewSnapshot(){
+  $('#tradingViewBars').textContent='—';$('#tradingViewTechnicals').textContent='—';
+  $('#tradingViewReceipt').textContent='تحلیل واقعی هنوز دریافت نشده';
+}
+async function refreshTradingView(){
+  let x=null;const available=Boolean(window.nexusDesktop?.tradingView);
+  try{if(available)x=await tradingViewCall('status')}catch{}
+  $('#tradingViewConnect').disabled=!available||Boolean(x?.busy);
+  $('#tradingViewDisconnect').disabled=!x?.signed_in||Boolean(x?.busy);
+  $('#tradingViewSnapshot').disabled=!x?.signed_in||Boolean(x?.busy);
+  $('#tradingViewCancel').disabled=!available;
+  $('#tradingViewStatus').textContent=!available?'TradingView در نسخهٔ Desktop قابل اتصال است':
+    x?.reason==='storage_unavailable'?tradingViewErrors.storage_unavailable:
+    x?.ready?'ارتباط TradingView تأیید شد؛ برای تحلیل جدید دکمهٔ دریافت را بزنید':
+    x?.signed_in?'حساب ذخیره شده؛ دریافت تحلیل واقعی هنوز تأیید نشده':'TradingView متصل نشده';
+}
+async function changeTradingView(action,button){
+  return singleFlight('tradingview-account',button,async()=>{
+    if(action==='connect'||action==='disconnect')clearTradingViewSnapshot();
+    $('#tradingViewStatus').textContent=action==='connect'?'ورود و تأیید دسترسی در مرورگر رسمی TradingView…':'در حال بررسی اتصال…';
+    try{await tradingViewCall(action)}catch(e){toast(e.message)}finally{await refreshTradingView()}
+  });
+}
+async function requestTradingViewSnapshot(event){
+  event.preventDefault();return singleFlight('tradingview-snapshot',$('#tradingViewSnapshot'),async()=>{
+    clearTradingViewSnapshot();$('#tradingViewReceipt').textContent='در حال دریافت تحلیل بازار…';
+    try{
+      const r=await tradingViewCall('snapshot',{symbol:$('#tradingViewSymbol').value.trim(),interval:$('#tradingViewInterval').value,count:100});
+      $('#tradingViewBars').textContent=r.bars;$('#tradingViewTechnicals').textContent=r.technicals;
+      $('#tradingViewReceipt').textContent='TradingView · '+r.symbol+' · '+r.interval+' · دریافت: '+r.received_at+' · زمان دریافت، زمان آخرین کندل نیست';
+    }catch(e){$('#tradingViewReceipt').textContent='دریافت تحلیل تأیید نشد: '+e.message}finally{await refreshTradingView()}
+  });
+}
+const chatGPTErrors={sign_in_required:'ورود به ChatGPT لازم است',sharing_not_enabled:'اجازهٔ استفاده از طرح ChatGPT داده نشده',models_not_loaded:'مدل‌های حساب را دریافت کنید',storage_unavailable:'ذخیرهٔ امن حساب در این دستگاه در دسترس نیست',connection_busy:'یک درخواست حساب یا مدل در حال انجام است',cancelled:'درخواست لغو شد',subscription_sharing_usage_limit_exceeded:'سهم مصرف این برنامه تمام شده؛ مدیریت مصرف را باز کنید',subscription_sharing_usage_unavailable:'مصرف طرح فعلاً در دسترس نیست',authority_gate_denied:'درخواست از مرز اختیار NEXUS عبور نکرد',provider_outcome_ambiguous:'نتیجهٔ مصرف قبلی مبهم است؛ همان درخواست تکرار نمی‌شود',turn_payload_conflict:'شناسهٔ نوبت با محتوای متفاوت تکرار شده',stream_interrupted:'پاسخ کامل دریافت نشد',response_incomplete:'مدل پاسخ را کامل نکرد',unsafe_provider_response:'پاسخ از بررسی حریم خصوصی عبور نکرد',model_not_available:'مدل در فهرست مجاز این حساب نیست',account_mismatch:'حساب هنگام درخواست تغییر کرده',gateway_unavailable:'درگاه داخلی در دسترس نیست',advisory_capacity_reached:'ظرفیت نوبت‌های این نشست پر شده'};
+async function chatGPTCall(action,payload){
+  const bridge=window.nexusDesktop?.chatGPT;
+  if(!bridge||typeof bridge[action]!=='function')throw new Error('ورود با ChatGPT در نسخهٔ Desktop انجام می‌شود');
+  const result=await (payload===undefined?bridge[action]():bridge[action](payload));
+  if(!result?.ok)throw new Error(chatGPTErrors[result?.error?.code]||'اتصال ChatGPT نیاز به بررسی دارد');
+  return result.value;
+}
+function renderChatGPT(){
+  const x=state.chatGPT,available=Boolean(window.nexusDesktop?.chatGPT),root=$('#chatGPTStatus'),select=$('#chatGPTModel');
+  $('#aiResponseMode option[value="chatgpt"]').disabled=!x?.ready;
+  $('#chatGPTConnect').disabled=!available;
+  $('#chatGPTModels').disabled=!available||!x?.signed_in||!x?.sharing;
+  $('#chatGPTDisconnect').disabled=!available||!x?.signed_in;
+  $('#chatGPTCancel').disabled=!available;$('#chatGPTUsage').disabled=!available;
+  const selected=select.value;
+  select.innerHTML=x?.models?.length?x.models.map(m=>'<option value="'+esc(m.slug)+'">'+esc(m.displayName)+'</option>').join(''):'<option value="">پس از ورود، مدل‌های مجاز دریافت می‌شوند</option>';
+  if(x?.models?.some(m=>m.slug===selected))select.value=selected;
+  select.disabled=!x?.ready;
+  const label=!available?'ورود با ChatGPT در نسخهٔ Desktop انجام می‌شود':x?.connection_verified?'ChatGPT · پاسخ کامل واقعی دریافت شد':x?.ready?'حساب وارد شده؛ پاسخ واقعی هنوز تأیید نشده':x?.signed_in?'حساب وارد شده؛ مصرف یا فهرست مدل‌ها آماده نیست':'ChatGPT متصل نشده';
+  root.textContent=label+(x?.reasons?.length?' · '+x.reasons.map(k=>chatGPTErrors[k]||'وضعیت اتصال نیاز به بررسی دارد').join(' · '):'');
+}
+async function refreshChatGPT(){
+  if(window.nexusDesktop?.chatGPT){try{state.chatGPT=await chatGPTCall('status')}catch{state.chatGPT=null}}
+  renderChatGPT();
+}
+async function changeChatGPT(action,button){
+  return singleFlight('chatgpt-account',button,async()=>{
+    $('#chatGPTStatus').textContent=action==='connect'?'ورود در مرورگر رسمی؛ اجازهٔ مصرف را همان‌جا بررسی کنید':'در حال بررسی اتصال…';
+    try{await chatGPTCall(action)}catch(e){toast(e.message)}finally{await refreshChatGPT()}
+  });
+}
+async function loadAIRoadmap(){
+  const r=await optionalApi('/api/product/ai/roadmap'),c=r.value?.council;
+  const names={stability:'پایداری',security:'امنیت',delivery:'تحویل'};
+  $('#aiCouncil').innerHTML=c?.status==='configured'?'<div class="council-roles">'+c.roles.map(role=>'<div><b>'+esc(names[role.id]||role.id)+'</b><span>'+esc(role.veto?'حق وتو':'ارزیابی تحویل')+'</span></div>').join('')+'</div><p class="muted">حدنصاب '+esc(c.quorum)+' رأی · تنظیمات موجود است؛ هنوز رأی یا تصمیم اجرایی این نوبت ثبت نشده.</p>':'<p class="muted">سیاست شورا در این نسخه قابل تأیید نیست.</p>';
+  $('#aiRoadmap').innerHTML=(r.value?.path||[]).map(step=>'<div>'+esc(step)+'</div>').join('');
+}
 function renderIntegration(){const x=state.integration;if(!x)return;$('#aiContext').innerHTML=[metric('MISSION',x.mission?.status||'unavailable','authoritative'),metric('RESEARCH',x.research?.status||'none',x.research?.family||'none'),metric('STRATEGY',x.strategy?.status||'none',x.strategy?.family||'none'),metric('RISK',x.risk?.status||'unavailable','final paper authority'),metric('PAPER',x.paper?.status||'unavailable',`${x.paper?.open_positions||0} positions`),metric('LIVE',x.live?.status||'locked','orders disabled')].join('')}
-function renderMission(){const m=state.mission;if(!m||m.status==='unavailable'){$('#agentState').innerHTML=`<div class="empty-state">Mission Control runtime در این دستگاه report فعال ندارد؛ وضعیت ساختگی نمایش داده نمی‌شود.<br><small>${esc(m?.reason||'')}</small></div>`;return}if(m.projection==='clean_install_idle'&&m.data?.runtime_report_present===false){const counts=m.queue?.counts||{};$('#agentState').innerHTML=`<div class="metric-grid">${metric('MISSION','IDLE','runtime report not generated')}${metric('READY',counts.READY??0,'queue')}${metric('RUNNING',counts.RUNNING??0,'queue')}${metric('AGENTS',0,'runtime report pending')}</div><div class="empty-state">Mission Control آماده است اما هنوز runtime report تولید نشده است. این حالت <b>IDLE</b> است و به معنی خرابی Local Runner یا Supervisor نیست.<br><small>${esc(m.reason||'')}</small></div>`;return}const q=m.queue||{},agents=m.agents||[],providers=m.providers||{};$('#agentState').innerHTML=`<div class="metric-grid">${metric('MISSION',m.mission?.status||'unknown',m.mission?.mission_id||'')}${metric('QUEUE',JSON.stringify(q.counts||{}),'current projection')}${metric('AGENTS',Array.isArray(agents)?agents.length:'—','registered')}${metric('PROVIDERS',typeof providers==='object'?Object.keys(providers).length:'—','projection')}</div><pre class="json-view">${esc(JSON.stringify({agents,providers,runners:m.runners,circuits:m.circuits,local_node:m.local_node},null,2))}</pre>`}
+function renderLegacyMission(){const m=state.mission;if(!m||m.status==='unavailable'){$('#agentState').innerHTML=`<div class="empty-state">Mission Control runtime در این دستگاه report فعال ندارد؛ وضعیت ساختگی نمایش داده نمی‌شود.<br><small>${esc(m?.reason||'')}</small></div>`;return}if(m.projection==='clean_install_idle'&&m.data?.runtime_report_present===false){const counts=m.queue?.counts||{};$('#agentState').innerHTML=`<div class="metric-grid">${metric('MISSION','IDLE','runtime report not generated')}${metric('READY',counts.READY??0,'queue')}${metric('RUNNING',counts.RUNNING??0,'queue')}${metric('AGENTS',0,'runtime report pending')}</div><div class="empty-state">Mission Control آماده است اما هنوز runtime report تولید نشده است. این حالت <b>IDLE</b> است و به معنی خرابی Local Runner یا Supervisor نیست.<br><small>${esc(m.reason||'')}</small></div>`;return}const q=m.queue||{},agents=m.agents||[],providers=m.providers||{};$('#agentState').innerHTML=`<div class="metric-grid">${metric('MISSION',m.mission?.status||'unknown',m.mission?.mission_id||'')}${metric('QUEUE',JSON.stringify(q.counts||{}),'current projection')}${metric('AGENTS',Array.isArray(agents)?agents.length:'—','registered')}${metric('PROVIDERS',typeof providers==='object'?Object.keys(providers).length:'—','projection')}</div><pre class="json-view">${esc(JSON.stringify({agents,providers,runners:m.runners,circuits:m.circuits,local_node:m.local_node},null,2))}</pre>`}
+function renderMission(){
+  if(window.NexusFullMissionManaged)return;
+  const ops=window.NexusResearchOps;
+  if(ops && typeof ops.render==='function'){
+    ops.render(state.mission,{onRefresh:loadAll});
+    return;
+  }
+  renderLegacyMission();
+}
 function renderLive(){const x=state.overview?.live||{};$('#liveDetails').innerHTML=[['STATUS',x.status||'locked'],['AUTHORITY',bool(x.live_trading_authority)],['CREDENTIALS',bool(x.exchange_credentials_configured)],['ORDERS',bool(x.orders_allowed)],['WITHDRAWALS',bool(x.withdrawals_allowed)],['PRODUCTION',bool(x.production_promotion_allowed)]].map(([a,b])=>`<div class="lock-item"><span>${esc(a)}</span><b>${esc(b)}</b></div>`).join('')}
-function renderRegistry(){const r=state.registry;if(!r)return;const maps=r.mappings||[];$('#registrySummary').innerHTML=[metric('REGISTRY',r.registry_version||'—','validated'),metric('PRIMARY',r.authority?.primary||'Bybit','canonical'),metric('MAPPINGS',maps.length,'semantic contracts'),metric('PRIVATE KEY',bool(r.private_credentials_required),'public only')].join('');$('#registryTable').innerHTML=`<table class="data-table"><thead><tr><th>Canonical</th><th>Market</th><th>TF</th><th>Finality</th><th>Sources</th></tr></thead><tbody>${maps.map(m=>`<tr><td class="mono">${esc(m.canonical_symbol)}</td><td>${esc(m.market_category)}</td><td>${esc(m.timeframe)}</td><td>${esc(m.finality)}</td><td><div class="source-stack">${(m.sources||[]).map(s=>`<span class="source-chip ${esc(s.role)}">${esc(s.exchange)} · ${esc(s.role)} · ${esc(s.status)}</span>`).join('')}</div></td></tr>`).join('')}</tbody></table>`}
+function renderRegistry(){
+  const r=state.registry;if(!r)return;
+  const maps=r.mappings||[];
+  $('#registrySummary').innerHTML=[
+    metric('REGISTRY',r.registry_version||'—','verified configuration, not live feed'),
+    metric('PRIMARY',r.authority?.primary||'Bybit','configured only'),
+    metric('MAPPINGS',maps.length,'symbol/timeframe contracts'),
+    metric('ACTUAL FEED',state.marketProbe?.status||'NOT CHECKED','manual probe only'),
+  ].join('');
+  $('#registryTable').innerHTML='<table class="data-table"><thead><tr><th>Canonical</th><th>Market</th><th>TF</th><th>Finality</th><th>Sources (mapping only)</th></tr></thead><tbody>'+
+    maps.map(m=>'<tr><td class="mono">'+esc(m.canonical_symbol)+'</td><td>'+esc(m.market_category)+'</td><td>'+
+      esc(m.timeframe)+'</td><td>'+esc(m.finality)+'</td><td><div class="source-stack">'+
+      (m.sources||[]).map(src=>'<span class="source-chip '+esc(src.role)+'">'+esc(src.exchange)+' · '+esc(src.role)+
+      ' · '+esc(src.status==='compatible'?'سازگار از نظر قرارداد · اتصال نامشخص':src.status)+'</span>').join('')+
+      '</div></td></tr>').join('')+'</tbody></table>';
+}
+function renderMarketProbe(){
+  const root=$('#marketProbeStatus');if(!root)return;
+  const p=state.marketProbe;
+  if(!p){
+    root.className='result-box muted';
+    root.textContent='اتصال واقعی آزمایش نشده است. منابع Compatible فقط از نظر قرارداد داده سازگارند.';
+    return;
+  }
+  const checkedAt=Date.parse(p.checked_at_utc);
+  const validTime=Number.isFinite(checkedAt);
+  const ageMs=validTime?Date.now()-checkedAt:Infinity;
+  const old=!validTime||ageMs<-(60*1000)||ageMs>5*60*1000;
+  const ready=p.status==='verified_closed_candles'&&!old;
+  root.className='result-box '+(ready?'good':'bad');
+  const labels={
+    verified_closed_candles:'کندل‌های بسته تأیید شدند',
+    unavailable:'منبع در دسترس نیست',stale:'آخرین کندل بسته قدیمی است',
+    integrity_failed:'سلامت داده رد شد',request_failed:'درخواست آزمایش ناموفق بود'
+  };
+  const reasons={
+    public_http_403_access_denied:'HTTP 403 · دسترسی عمومی Bybit از این مسیر رد شده است',
+    public_http_429_rate_limited:'HTTP 429 · محدودیت نرخ درخواست',
+    public_http_failure:'خطای HTTP منبع عمومی',
+    public_transport_unavailable:'اختلال اتصال یا TLS به منبع رسمی',
+    latest_closed_bar_missing:'کندل نهایی مورد انتظار هنوز تأیید نشده است',
+    recent_closed_candle_gap:'بین کندل‌های نهایی فاصله وجود دارد',
+    public_payload_integrity_failure:'پاسخ منبع با قرارداد OHLCV یا نماد مطابقت ندارد',
+    insufficient_closed_candles:'تعداد کندل‌های نهایی کافی نیست',
+    request_failed:'درخواست محلی انجام نشد',source_probe_passed:'۵ کندل بسته اخیر پیوسته و معتبرند'
+  };
+  root.innerHTML='<strong>'+esc(old?'نتیجه آزمایش قدیمی است · دوباره آزمایش کن':labels[p.status]||'وضعیت تأیید نشده')+
+    '</strong><div class="market-probe-evidence">'+
+    '<span>منبع: '+esc(p.source||'Bybit')+' · '+esc(p.symbol||'—')+' · '+esc(p.timeframe||'—')+'</span>'+
+    '<span>زمان آزمایش: <b dir="ltr">'+esc(validTime?new Date(p.checked_at_utc).toLocaleString('fa-IR',{timeZone:'Asia/Tehran'}):'—')+'</b></span>'+
+    '<span>علت: '+esc(reasons[p.reason_code]||p.reason_code||'نامشخص')+'</span>'+
+    '<span>آخرین کندل نهایی: <b dir="ltr">'+esc(p.last_closed_at_utc||'تأیید نشده')+'</b></span>'+
+    (p.lag_bars!=null?'<span>تأخیر برحسب کندل: '+esc(p.lag_bars)+'</span>':'')+
+    (ready&&p.last_close_price!=null?'<span>قیمت پایان کندل تأییدشده: <b dir="ltr">'+esc(p.last_close_price)+'</b></span>':'')+
+    '</div><small>این فقط آزمایش لحظه‌ای است؛ برای اجرا یا جایگزینی خودکار منبع مجوز صادر نمی‌کند. هیچ داده‌ای در موتور Paper تغییر نمی‌کند.</small>';
+}
+async function runMarketProbe(event){
+  event.preventDefault();
+  const form=event.currentTarget,button=$('#marketProbeSubmit');
+  return singleFlight('market-probe',button,async()=>{
+    state.marketProbe=null;
+    const root=$('#marketProbeStatus');
+    root.className='result-box muted';
+    root.textContent='در حال آزمایش محدود کندل‌های بسته از منبع رسمی Bybit…';
+    const symbol=form.elements.namedItem('symbol').value;
+    const timeframe=form.elements.namedItem('timeframe').value;
+    try{
+      state.marketProbe=await api('/api/product/data/probe?'+new URLSearchParams({symbol,timeframe}).toString());
+    }catch(error){
+      state.marketProbe={status:'request_failed',reason_code:'request_failed',source:'Bybit',symbol,timeframe};
+    }
+    renderMarketProbe();
+    renderRegistry();
+  });
+}
 function renderRisk(){const r=state.risk;if(!r)return;const s=r.state||{},p=r.policy||{},a=r.account||{};$('#riskMetrics').innerHTML=[`<article class="panel"><span>EQUITY</span><b>${esc(a.equity||s.equity)}</b><small>USDT</small></article>`,`<article class="panel"><span>EXPOSURE</span><b>${esc(s.current_exposure||'0')}</b><small>notional</small></article>`,`<article class="panel"><span>DAILY PNL</span><b>${esc(s.daily_realized_pnl||'0')}</b><small>realized</small></article>`,`<article class="panel"><span>POSITION LIMIT</span><b>${esc(p.max_position_fraction||'—')}</b><small>equity fraction</small></article>`,`<article class="panel"><span>AGGREGATE LIMIT</span><b>${esc(p.max_aggregate_fraction||'—')}</b><small>equity fraction</small></article>`,`<article class="panel"><span>DAILY LOSS LIMIT</span><b>${esc(p.max_daily_loss_fraction||'—')}</b><small>fail closed</small></article>`,`<article class="panel"><span>DRAWDOWN LIMIT</span><b>${esc(p.max_drawdown_fraction||'—')}</b><small>fail closed</small></article>`,`<article class="panel"><span>KILL SWITCH</span><b>${s.kill_switch?'ON':'OFF'}</b><small>paper control</small></article>`].join('');$('#riskPolicy').textContent=JSON.stringify(p,null,2)}
 function renderRecovery(){const r=state.recovery;if(!r)return;$('#recoveryBadge').className='badge '+statusClass(r.status);$('#recoveryBadge').textContent=String(r.status||'unknown').toUpperCase();const html=[metric('STATUS',r.status||'—','fail closed'),metric('EVENTS',r.event_count??'—','journal'),metric('SEQUENCE',r.last_sequence??'—','replayed'),metric('ATOMIC',bool(r.atomic_journal),'fsync + replace')].join('');$('#recoveryMetrics').innerHTML=html;$('#overviewRecovery').innerHTML=html}
 function renderNotifications(){const rows=state.notifications?.notifications||[];const html=rows.map(n=>`<div class="compact-row"><code>${esc((n.occurred_at||'').slice(11,19))}</code><b>${esc(n.event_type)}</b><span>${esc(JSON.stringify(n.payload||{}))}</span></div>`).join('')||'<div class="empty-state">هشدار عملیاتی جدیدی ثبت نشده است.</div>';$('#notificationList').innerHTML=html;$('#overviewNotifications').innerHTML=html}
 function researchMetricCards(r){const m=r?.backtest?.metrics||{},e=r?.evidence||{};return[metric('RETURN',pct(m.total_return),'base'),metric('MAX DD',pct(m.max_drawdown),'base'),metric('FILLS',m.fill_count??'—','next-bar-open'),metric('OOS',pct(e.oos_score),'stress holdout'),metric('STRESS',pct(e.robustness_score),'worst return'),metric('REGIME PASS',num((e.regime_pass_ratio||0)*100,1)+'%','ordered slices')].join('')}
 function renderChart(points){const root=$('#equityChart');if(!points?.length){root.className='chart-empty';root.textContent='منحنی قابل نمایش نیست.';return}const w=1000,h=260,pad=18,eq=points.map(x=>Number(x.equity)),dd=points.map(x=>Number(x.drawdown));const emin=Math.min(...eq),emax=Math.max(...eq),er=Math.max(emax-emin,1e-9),dmin=Math.min(...dd,0),dr=Math.max(0-dmin,1e-9);const xy=(arr,kind)=>arr.map((v,i)=>{const x=pad+(w-2*pad)*(i/Math.max(arr.length-1,1));const y=kind==='eq'?pad+(h-2*pad)*(1-(v-emin)/er):pad+(h-2*pad)*(Math.abs(v)/dr);return`${x.toFixed(1)},${y.toFixed(1)}`}).join(' ');root.className='';root.innerHTML=`<svg class="equity-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><line class="grid" x1="${pad}" y1="${h/2}" x2="${w-pad}" y2="${h/2}"/><polyline class="equity" points="${xy(eq,'eq')}"/><polyline class="drawdown" points="${xy(dd,'dd')}"/></svg><div class="chart-legend"><span><i></i> Equity ${esc(num(eq.at(-1),2))}</span><span><i class="dd"></i> Drawdown ${esc(pct(dd.at(-1)))}</span></div>`}
-function renderResearch(){const r=state.research;if(!r||r.status==='no_research_run')return;const q=r.qualification||{};$('#qualificationBadge').className='badge '+statusClass(q.status);$('#qualificationBadge').textContent=String(q.status||'unknown').toUpperCase();$('#researchMetrics').innerHTML=researchMetricCards(r);$('#researchEvidence').textContent=JSON.stringify({dataset:r.dataset,config:r.strategy_config,cost_model:r.cost_model,kill_criteria:r.kill_criteria,evidence:r.evidence,qualification:q,pipeline_digest:r.pipeline_digest},null,2);renderChart(r.backtest?.equity_curve);const fills=r.backtest?.fills||[];$('#backtestFills').innerHTML=fills.length?`<table class="data-table"><thead><tr><th>زمان</th><th>Side</th><th>Fill</th><th>Notional</th><th>Fee</th><th>Reason</th></tr></thead><tbody>${fills.map(f=>`<tr><td class="mono">${esc(f.execution_time)}</td><td>${esc(f.side)}</td><td>${esc(num(f.fill_price,6))}</td><td>${esc(num(f.notional,2))}</td><td>${esc(num(f.fee,4))}</td><td>${esc(f.reason)}</td></tr>`).join('')}</tbody></table>`:'<div class="empty-state">Fill ثبت نشده است.</div>';$('#researchRunState').className='result-box '+(q.status==='paper_candidate'?'good':'bad');$('#researchRunState').textContent=`${q.status||'unknown'}\nDataset: ${r.dataset?.source||'—'} ${r.dataset?.row_count||'—'} candles\nPipeline: ${r.pipeline_digest||'—'}\nNo profitability claim.`}
-async function loadAll(){setGateway(false,'در حال اتصال');try{const [overview,paper,risk,recovery,extras]=await Promise.all([api('/api/product/overview'),api('/api/product/paper'),api('/api/product/risk'),api('/api/product/recovery'),Promise.all([optionalApi('/api/product/paper/matrix'),optionalApi('/api/product/paper/events?limit=100'),optionalApi('/api/product/strategies'),optionalApi('/api/product/mission-control'),optionalApi('/api/product/notifications?limit=40'),optionalApi('/api/product/data/registry'),optionalApi('/api/product/research/last'),optionalApi('/api/product/integration')])]);const [matrixResult,eventsResult,strategiesResult,missionResult,notificationsResult,registryResult,researchResult,integrationResult]=extras;const matrix=matrixResult.value,events=eventsResult.value,strategies=strategiesResult.value,mission=missionResult.value,notifications=notificationsResult.value,registry=registryResult.value,research=researchResult.value,integration=integrationResult.value;Object.assign(state,{overview,paper,matrix,events,strategies,mission,risk,recovery,notifications,registry,research,integration});renderOverview();renderPaper();renderMatrix();renderEvents();renderStrategies();renderMission();renderLive();renderRegistry();renderRisk();renderRecovery();renderNotifications();renderResearch();renderIntegration();const failed=extras.filter(x=>!x.ok);markGatewayHealthy(failed.length?`متصل · ${failed.length} بخش محدود`:'Python backend متصل');if(failed.length)toast(`${failed.length} بخش فرعی موقتاً در دسترس نیست`)}catch(e){setGateway(false,'Backend unavailable');toast(e.message)}}
-async function refreshPaper(){try{const [paper,risk,recovery,extras]=await Promise.all([api('/api/product/paper'),api('/api/product/risk'),api('/api/product/recovery'),Promise.all([optionalApi('/api/product/paper/matrix'),optionalApi('/api/product/paper/events?limit=100'),optionalApi('/api/product/notifications?limit=40')])]);const [matrixResult,eventsResult,notificationsResult]=extras;Object.assign(state,{paper,risk,recovery,matrix:matrixResult.value,events:eventsResult.value,notifications:notificationsResult.value});renderPaper();renderMatrix();renderEvents();renderRisk();renderRecovery();renderNotifications();const failed=extras.filter(x=>!x.ok);markGatewayHealthy(failed.length?`متصل · ${failed.length} بخش محدود`:'Python backend متصل');if(failed.length)toast(`${failed.length} بخش فرعی Paper موقتاً در دسترس نیست`)}catch(err){setGateway(false,'Paper backend unavailable');toast('بروزرسانی Paper ناموفق بود: '+err.message)}}
-async function refreshPaperSnapshot(){if(document.visibilityState!=='visible'||inFlightActions.has('paper-ui-refresh'))return;await singleFlight('paper-ui-refresh',null,async()=>{try{state.paper=await api('/api/product/paper');renderPaper();markGatewayHealthy()}catch{paperUiRefreshFailures+=1;if(paperUiRefreshFailures>=PAPER_UI_STALE_FAILURE_LIMIT)setGateway(false,'Backend stale')}})}
+function renderResearch(){
+  const r=state.research;if(!r||r.status==='no_research_run')return;
+  const q=r.qualification||{},qa=r.independent_qa||{};
+  const candidate=q.status==='paper_candidate';
+  $('#qualificationBadge').className='badge '+(candidate?'neutral':statusClass(q.status));
+  $('#qualificationBadge').textContent=candidate?'CANDIDATE · QA REQUIRED':String(q.status||'unknown').toUpperCase();
+  $('#researchMetrics').innerHTML=researchMetricCards(r);
+  $('#researchEvidence').textContent=JSON.stringify({dataset:r.dataset,config:r.strategy_config,cost_model:r.cost_model,kill_criteria:r.kill_criteria,evidence:r.evidence,qualification:q,independent_qa:qa,strategy_record:r.strategy_record,research_lifecycle:r.research_lifecycle,pipeline_digest:r.pipeline_digest},null,2);
+  renderChart(r.backtest?.equity_curve);
+  const fills=r.backtest?.fills||[];
+  $('#backtestFills').innerHTML=fills.length?`<table class="data-table"><thead><tr><th>زمان</th><th>Side</th><th>Fill</th><th>Notional</th><th>Fee</th><th>Reason</th></tr></thead><tbody>${fills.map(f=>`<tr><td class="mono">${esc(f.execution_time)}</td><td>${esc(f.side)}</td><td>${esc(num(f.fill_price,6))}</td><td>${esc(num(f.notional,2))}</td><td>${esc(num(f.fee,4))}</td><td>${esc(f.reason)}</td></tr>`).join('')}</tbody></table>`:'<div class="empty-state">Fill ثبت نشده است.</div>';
+  $('#researchRunState').className='result-box '+(candidate?'muted':'bad');
+  const qaState=candidate?(qa.verified===true?'VERIFIED':'REQUIRED'):'NOT APPLICABLE';
+  $('#researchRunState').textContent=`${candidate?'CANDIDATE — INDEPENDENT QA REQUIRED':q.status||'unknown'}\nDataset: ${r.dataset?.source||'—'} ${r.dataset?.row_count||'—'} candles\nIndependent QA: ${qaState}\nPaper execution: ${qa.paper_execution_allowed===true?'ALLOWED':'BLOCKED'}\nPipeline: ${r.pipeline_digest||'—'}\nNo profitability claim.`;
+}
+async function loadAll(){setGateway(false,'در حال اتصال');try{const [overview,paper,risk,recovery,extras]=await Promise.all([api('/api/product/overview'),api('/api/product/paper'),api('/api/product/risk'),api('/api/product/recovery'),Promise.all([optionalApi('/api/product/paper/shared/live'),optionalApi('/api/product/paper/matrix'),optionalApi('/api/product/paper/events?limit=100'),optionalApi('/api/product/strategies'),optionalApi('/api/product/mission-control'),optionalApi('/api/product/notifications?limit=40'),optionalApi('/api/product/data/registry'),optionalApi('/api/product/research/last'),optionalApi('/api/product/mission/full'),optionalApi('/api/product/integration'),optionalApi('/api/product/ai/provider')])]);const [sharedPaperResult,matrixResult,eventsResult,strategiesResult,missionResult,notificationsResult,registryResult,researchResult,agentResearchResult,integrationResult,aiProviderResult]=extras;const sharedPaper=sharedPaperResult.value,matrix=matrixResult.value,events=eventsResult.value,strategies=strategiesResult.value,mission=missionResult.value,notifications=notificationsResult.value,registry=registryResult.value,research=researchResult.value,agentResearch=agentResearchResult.value,integration=integrationResult.value,aiProvider=aiProviderResult.value;state.marketProbe=null;Object.assign(state,{overview,paper,sharedPaper,matrix,events,strategies,mission,risk,recovery,notifications,registry,research,agentResearch,integration,aiProvider});renderOverview();renderPaper();renderMatrix();renderEvents();renderStrategies();renderMission();renderLive();renderRegistry();renderMarketProbe();renderRisk();renderRecovery();renderNotifications();renderResearch();renderAgentResearch();renderIntegration();renderAIProvider();const failed=extras.filter(x=>!x.ok);markGatewayHealthy(failed.length?`متصل · ${failed.length} بخش محدود`:'Python backend متصل');if(failed.length)toast(`${failed.length} بخش فرعی موقتاً در دسترس نیست`)}catch(e){setGateway(false,'Backend unavailable');toast(e.message)}}
+async function refreshPaper(){try{const [paper,risk,recovery,extras]=await Promise.all([api('/api/product/paper'),api('/api/product/risk'),api('/api/product/recovery'),Promise.all([optionalApi('/api/product/paper/shared/live'),optionalApi('/api/product/paper/matrix'),optionalApi('/api/product/paper/events?limit=100'),optionalApi('/api/product/notifications?limit=40')])]);const [sharedPaperResult,matrixResult,eventsResult,notificationsResult]=extras;Object.assign(state,{paper,risk,recovery,sharedPaper:sharedPaperResult.value,matrix:matrixResult.value,events:eventsResult.value,notifications:notificationsResult.value});renderPaper();renderMatrix();renderEvents();renderRisk();renderRecovery();renderNotifications();const failed=extras.filter(x=>!x.ok);markGatewayHealthy(failed.length?`متصل · ${failed.length} بخش محدود`:'Python backend متصل');if(failed.length)toast(`${failed.length} بخش فرعی Paper موقتاً در دسترس نیست`)}catch(err){setGateway(false,'Paper backend unavailable');toast('بروزرسانی Paper ناموفق بود: '+err.message)}}
+async function refreshPaperSnapshot(){if(document.visibilityState!=='visible'||inFlightActions.has('paper-ui-refresh'))return;await singleFlight('paper-ui-refresh',null,async()=>{try{state.paper=await api('/api/product/paper');state.sharedPaper=await api('/api/product/paper/shared/live');renderPaper();markGatewayHealthy()}catch{paperUiRefreshFailures+=1;if(state.sharedPaper)state.sharedPaper={...state.sharedPaper,market_live:false,quote_status:'refresh_failed'};renderPaper();if(paperUiRefreshFailures>=PAPER_UI_STALE_FAILURE_LIMIT)setGateway(false,'Backend stale')}})}
 function startPaperUiAutoRefresh(){if(paperUiRefreshTimer)clearInterval(paperUiRefreshTimer);paperUiRefreshTimer=setInterval(()=>{void refreshPaperSnapshot()},PAPER_UI_REFRESH_INTERVAL_MS);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')void refreshPaperSnapshot()})}
 async function submitPaper(e){e.preventDefault();const form=e.currentTarget,button=form.querySelector('button[type="submit"]');return singleFlight('paper-order',button,async()=>{const f=new FormData(form),payload={};for(const [k,v] of f.entries())payload[k]=String(v).trim();const out=$('#orderResult');out.className='result-box muted';out.textContent='در حال ارزیابی Risk…';try{const r=await api('/api/product/paper/order',{method:'POST',body:JSON.stringify(payload)});state.lastRisk=r;$('#lastRisk').textContent=JSON.stringify(r,null,2);out.className='result-box '+(r.accepted?'good':'bad');out.textContent=r.accepted?`ACCEPTED\nFill: ${r.execution.fill_price}\nFee: ${r.execution.fee}\nRisk: ${r.risk.reason_code}`:`REJECTED\nRisk: ${r.risk.reason_code}`;await refreshPaper();toast(r.accepted?'Paper execution ثبت شد':'Risk درخواست را رد کرد')}catch(err){out.className='result-box bad';out.textContent='REJECTED\n'+err.message;toast(err.message)}})}
-async function runResearch(e){e.preventDefault();const form=e.currentTarget,button=form.querySelector('button[type="submit"]');return singleFlight('research-run',button,async()=>{const f=new FormData(form),payload={symbol:String(f.get('symbol')),timeframe:String(f.get('timeframe')),family:String(f.get('family')),limit:Number(f.get('limit'))};$('#researchRunState').className='result-box muted';$('#researchRunState').textContent='در حال دریافت کندل بسته و اجرای backtest / OOS / stress / regime…';try{const r=await api('/api/product/research/run',{method:'POST',body:JSON.stringify(payload)});state.research=r;renderResearch();toast('پژوهش canonical تکمیل شد')}catch(err){$('#researchRunState').className='result-box bad';$('#researchRunState').textContent='FAIL CLOSED\n'+err.message;toast(err.message)}})}
-async function autoPaper(){if(!state.research||state.research.status==='no_research_run'){toast('اول Research/Backtest را اجرا کن');show('research');return}const button=$('#autoPaper');return singleFlight('auto-paper',button,async()=>{try{const r=await api('/api/product/paper/auto',{method:'POST',body:'{}'});state.lastRisk=r;$('#lastRisk').textContent=JSON.stringify(r,null,2);await refreshPaper();toast(r.accepted?'Auto Paper اجرا شد':`Auto Paper: ${r.status}`)}catch(err){toast(err.message)}})}
+async function runResearch(e){e.preventDefault();const form=e.currentTarget,button=form.querySelector('button[type="submit"]');return singleFlight('research-run',button,async()=>{const f=new FormData(form),payload={symbol:String(f.get('symbol')),timeframe:String(f.get('timeframe')),family:String(f.get('family')),limit:Number(f.get('limit'))};$('#researchRunState').className='result-box muted';$('#researchRunState').textContent='در حال دریافت کندل بسته و اجرای backtest / OOS / stress / regime…';try{const r=await api('/api/product/research/run',{method:'POST',body:JSON.stringify(payload)});state.research=r;renderResearch();if(window.NexusStrategyWorkspace)await window.NexusStrategyWorkspace.refresh();toast('پژوهش canonical تکمیل شد')}catch(err){$('#researchRunState').className='result-box bad';$('#researchRunState').textContent='FAIL CLOSED\n'+err.message;toast(err.message)}})}
+async function autoPaper(){if(!state.research||state.research.status==='no_research_run'){toast('اول Research/Backtest را اجرا کن');show('research');return}const button=$('#autoPaper');return singleFlight('auto-paper',button,async()=>{try{const r=await api('/api/product/paper/auto',{method:'POST',body:'{}'});state.lastRisk=r;$('#lastRisk').textContent=JSON.stringify(r,null,2);await refreshPaper();if(r.status==='independent_qa_required'){toast('Auto Paper مسدود است: Independent QA لازم است');return}toast(r.accepted?'Auto Paper اجرا شد':`Auto Paper: ${r.status}`)}catch(err){toast(err.message)}})}
 async function control(path,payload){try{await api(path,{method:'POST',body:JSON.stringify(payload)});await refreshPaper();toast('کنترل Paper ثبت شد')}catch(err){toast(err.message)}}
 function addMessage(kind,name,text,meta=''){const root=$('#aiTranscript'),el=document.createElement('div');el.className='message '+kind;el.innerHTML=`<b>${esc(name)}${meta?' · '+esc(meta):''}</b><p>${esc(text)}</p>`;root.appendChild(el);root.scrollTop=root.scrollHeight}
-async function sendAI(e){e.preventDefault();const input=$('#aiMessage'),message=input.value.trim();if(!message)return;input.value='';addMessage('user','YOU',message);const turn='turn-'+(++state.turn)+'-'+crypto.randomUUID();try{const r=await api('/api/ai-room/message',{method:'POST',body:JSON.stringify({session_id:state.sessionId,conversation_id:state.conversationId,turn_id:turn,message})}),room=r.ai_room||r;addMessage('assistant','NEXUS AI ROOM',room.reply||'پاسخی ثبت نشد',`${room.intent||''} / ${room.decision?.status||''}`)}catch(err){addMessage('assistant','NEXUS GATE','درخواست fail-closed شد: '+err.message,'BLOCKED')}}
-function bind(){$$('#nav button').forEach(b=>b.onclick=()=>show(b.dataset.view));$('#sidebarToggle').onclick=()=>document.body.classList.toggle('sidebar-collapsed');$('#reload').onclick=loadAll;$('#registryRefresh').onclick=loadAll;$('#paperRefresh').onclick=refreshPaper;$('#paperOrder').onsubmit=submitPaper;$('#researchForm').onsubmit=runResearch;$('#autoPaper').onclick=autoPaper;$('#sessionOpen').onclick=()=>control('/api/product/session',{open:true});$('#sessionClose').onclick=()=>control('/api/product/session',{open:false});$('#killOn').onclick=()=>control('/api/product/kill-switch',{enabled:true,reason_code:'user_emergency_stop'});$('#killOff').onclick=()=>control('/api/product/kill-switch',{enabled:false,reason_code:'paper_resume'});$('#aiForm').onsubmit=sendAI;window.addEventListener('keydown',e=>{if(e.ctrlKey&&e.key.toLowerCase()==='b'){e.preventDefault();document.body.classList.toggle('sidebar-collapsed')}})}
-window.addEventListener('DOMContentLoaded',async()=>{await initializePersonalization();bind();await loadAll();startPaperUiAutoRefresh()});
+async function sendAI(e){
+  e.preventDefault();const form=e.currentTarget,input=$('#aiMessage'),message=input.value.trim();if(!message)return;
+  const mode=$('#aiResponseMode')?.value||'local';
+  if(mode==='deepseek'&&!state.aiProvider?.ready){toast('مدل آماده نیست؛ وضعیت اتصال را بررسی کنید');return}
+  if(mode==='chatgpt'&&!state.chatGPT?.ready){toast('حساب و مدل ChatGPT هنوز آماده نیست');return}
+  return singleFlight('ai-turn',form.querySelector('button[type="submit"]'),async()=>{
+    input.value='';addMessage('user','YOU',message);
+    const turn='turn-'+(++state.turn)+'-'+crypto.randomUUID();
+    const request={session_id:state.sessionId,conversation_id:state.conversationId,turn_id:turn,message};
+    try{
+      const r=mode==='chatgpt'?await chatGPTCall('ask',{request,model:$('#chatGPTModel').value}):await api(mode==='deepseek'?'/api/product/ai/advisory':'/api/ai-room/message',{method:'POST',body:JSON.stringify(request)}),room=r.ai_room||r;
+      const source=mode==='chatgpt'?'ChatGPT · '+String(room.model||''):mode==='deepseek'?'DeepSeek · '+String(room.model||''):'NEXUS · کنترل داخلی';
+      addMessage('assistant',source,room.reply||'پاسخی ثبت نشد',`${room.intent||''} / ${room.decision?.status||''}`);
+    }catch(err){addMessage('assistant',mode==='chatgpt'?'CHATGPT':mode==='deepseek'?'DEEPSEEK':'NEXUS GATE','درخواست تکمیل نشد: '+err.message,'BLOCKED')}
+    if(mode==='deepseek')await refreshAIProvider();
+    if(mode==='chatgpt')await refreshChatGPT();
+  });
+}
+function bind(){$$('#nav button').forEach(b=>b.onclick=()=>show(b.dataset.view));$('#sidebarToggle').onclick=()=>document.body.classList.toggle('sidebar-collapsed');$('#reload').onclick=loadAll;$('#registryRefresh').onclick=loadAll;$('#marketProbeForm').onsubmit=runMarketProbe;$('#paperRefresh').onclick=refreshPaper;$('#sharedPaperRefresh').onclick=()=>singleFlight('shared-paper-refresh',$('#sharedPaperRefresh'),async()=>{await refreshPaperSnapshot();toast(state.sharedPaper?.market_live?'قیمت بازار تازه شد':'Bybit تازه در دسترس نیست؛ داده قدیمی علامت‌گذاری شد')});$('#paperOrder').onsubmit=submitPaper;$('#researchForm').onsubmit=runResearch;$('#autoPaper').onclick=autoPaper;$('#sessionOpen').onclick=()=>control('/api/product/session',{open:true});$('#sessionClose').onclick=()=>control('/api/product/session',{open:false});$('#killOn').onclick=()=>control('/api/product/kill-switch',{enabled:true,reason_code:'user_emergency_stop'});$('#killOff').onclick=()=>control('/api/product/kill-switch',{enabled:false,reason_code:'paper_resume'});$('#aiForm').onsubmit=sendAI;$('#aiProviderRefresh').onclick=refreshAIProvider;$('#chatGPTConnect').onclick=e=>changeChatGPT('connect',e.currentTarget);$('#chatGPTModels').onclick=e=>changeChatGPT('models',e.currentTarget);$('#chatGPTDisconnect').onclick=e=>changeChatGPT('disconnect',e.currentTarget);$('#chatGPTUsage').onclick=()=>chatGPTCall('usage').catch(e=>toast(e.message));$('#chatGPTCancel').onclick=()=>chatGPTCall('cancel').catch(e=>toast(e.message));$('#tradingViewConnect').onclick=e=>changeTradingView('connect',e.currentTarget);$('#tradingViewDisconnect').onclick=e=>changeTradingView('disconnect',e.currentTarget);$('#tradingViewCancel').onclick=async()=>{try{await tradingViewCall('cancel')}catch(e){toast(e.message)}finally{await refreshTradingView()}};$('#tradingViewForm').onsubmit=requestTradingViewSnapshot;window.addEventListener('keydown',e=>{if(e.ctrlKey&&e.key.toLowerCase()==='b'){e.preventDefault();document.body.classList.toggle('sidebar-collapsed')}})}
+window.addEventListener('DOMContentLoaded',async()=>{await initializePersonalization();bind();await loadAll();startPaperUiAutoRefresh();await Promise.all([refreshChatGPT(),refreshTradingView(),loadAIRoadmap()]);setInterval(()=>{if(state.marketProbe && $('#view-data')?.classList.contains('active'))renderMarketProbe()},60000)});
 })();

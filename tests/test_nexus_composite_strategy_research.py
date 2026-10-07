@@ -1,0 +1,668 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import pytest
+
+import nexus_composite_strategy_research as engine
+
+
+def history(n=1200):
+    if n % 16:
+        n += 16 - n % 16
+    start = pd.Timestamp("2025-01-01T00:00:00Z")
+    def mk(tf, count, step):
+        t = pd.date_range(start, periods=count, freq=step, tz="UTC")
+        close = 100 + np.arange(count, dtype=float) * .03
+        return pd.DataFrame({
+            "timestamp": t, "open": close - .05,
+            "high": close + .2, "low": close - .2,
+            "close": close, "volume": np.full(count, 1000.),
+            "symbol": "BTCUSDT", "timeframe": tf,
+        })
+    return {
+        "minute15": mk("minute15", n, "15min"),
+        "hour1": mk("hour1", n // 4, "1h"),
+        "hour4": mk("hour4", n // 16, "4h"),
+    }
+
+
+def test_asof_does_not_expose_unclosed_four_hour_candle():
+    source = history()
+    baseline = engine.build_features(source)
+    mutated = {key: value.copy() for key, value in source.items()}
+    four = mutated["hour4"]
+    end = four.index[-1]
+    four.loc[end, "close"] = 5_000.
+    four.loc[end, "high"] = 5_001.
+    altered = engine.build_features(mutated)
+    availability = pd.Timestamp(four["timestamp"].iloc[-1]) + pd.Timedelta(hours=4)
+    before = baseline["decision_at"] < availability
+    pd.testing.assert_series_equal(
+        baseline.loc[before, "h4_up"],
+        altered.loc[before, "h4_up"],
+    )
+    # Exactly at the close, the 4h bar becomes legitimately observable.
+    assert baseline["decision_at"].iloc[-1] == availability
+
+
+def test_gap_in_any_required_frame_fails_closed():
+    source = history()
+    source["hour4"] = source["hour4"].drop(index=10).reset_index(drop=True)
+    with pytest.raises(engine.CompositeResearchError, match="chronology"):
+        engine.build_features(source)
+
+
+def test_build_features_normalizes_string_ohlcv_to_numeric_columns():
+    source = history(n=1536)
+    ohlcv = ("open", "high", "low", "close", "volume")
+    for frame in source.values():
+        for column in ohlcv:
+            frame[column] = frame[column].map(lambda value: f"{value:.10f}")
+
+    features = engine.build_features(source)
+
+    for column in ohlcv:
+        assert pd.api.types.is_float_dtype(features[column])
+    assert np.isfinite(features["bar_proxy_vwap"].dropna()).all()
+    assert np.isfinite(features["atr"].dropna()).all()
+
+
+def test_no_arbitrary_ceiling_for_more_than_100_closed_sequential_trades():
+    n = 153 * 3
+    stamp = pd.date_range("2025-01-01", periods=n, freq="15min", tz="UTC")
+    frame = pd.DataFrame({
+        "decision_at": stamp, "open": np.full(n, 100.),
+        "high": np.array([100.1, 104., 100.1] * 153),
+        "low": np.array([99.9, 99.7, 99.9] * 153),
+        "close": np.full(n, 100.), "atr": np.ones(n),
+    })
+    signals = np.array([True, False, True] * 153)
+    report = engine.backtest(frame, signals, fee_bps=10., slip_bps=5., risk_variant=0)
+    assert report["closed_round_trips"] > 100
+    assert report["trade_count_limit"] is None
+    assert report["concurrent_risk_model"].startswith("one_collateral_backed")
+    assert report["max_drawdown_pct"] <= 10.1
+
+
+def test_same_candle_stop_and_target_chooses_stop():
+    t = pd.date_range("2025-01-01", periods=3, freq="15min", tz="UTC")
+    f = pd.DataFrame({
+        "decision_at": t, "open": [100., 100., 100.],
+        "high": [100.1, 110., 100.1],
+        "low": [99.9, 97., 99.9],
+        "close": [100., 100., 100.], "atr": [1., 1., 1.],
+    })
+    result = engine.backtest(f, np.array([True, False, False]),
+                             fee_bps=10, slip_bps=5, risk_variant=0)
+    assert result["closed_round_trips"] == 1
+    assert result["net_pnl_usdt"] < 0
+    assert result["win_rate_pct"] == 0
+
+
+def test_config_novelty_progresses_without_retrying_same_failed_grammar(tmp_path: Path, monkeypatch):
+    frames = history()
+    monkeypatch.setattr(engine, "load_verified_archive_frame",
+                        lambda _root, _symbol, tf: frames[tf])
+    first = engine.run(tmp_path, tmp_path / "one", "a" * 40, None)
+    assert first["status"] == "EVALUATED_RESEARCH_ONLY"
+    assert first["auto_demo_promotion"] is False
+    assert first["live_enabled"] is False
+    assert first["historical_test_pristine"] is False
+    assert len(first["rows"]) == 2 * 3 * 2
+    assert all(r["trade_count_limit"] is None for r in first["rows"])
+    state_path = tmp_path / "one" / "novelty-ledger.json"
+    second = engine.run(tmp_path, tmp_path / "two", "a" * 40, state_path)
+    assert second["selected"]["fingerprint"] != first["selected"]["fingerprint"]
+    assert second["parameter_configs_tested_cumulative"] == 2
+    assert second["distinct_mechanisms_tested_cumulative"] == 2
+    assert second["selected"]["mechanism"] != first["selected"]["mechanism"]
+
+
+def test_novelty_ledger_tamper_and_authority_widening_fail_closed(tmp_path: Path):
+    p = tmp_path / "ledger.json"
+    state = engine.empty_ledger()
+    state["live_enabled"] = True
+    p.write_text(json.dumps(state))
+    with pytest.raises(engine.CompositeResearchError):
+        engine.load_ledger(p)
+    state = engine.empty_ledger()
+    state["config_fingerprints_evaluated"] = ["unverified"]
+    p.write_text(json.dumps(state))
+    with pytest.raises(engine.CompositeResearchError):
+        engine.load_ledger(p)
+
+
+def test_all_grammar_options_exhausted_requires_new_mechanism():
+    state = engine.empty_ledger()
+    state["config_fingerprints_evaluated"] = [
+        engine.digest({"config": cfg, "dataset": engine.ARCHIVE_SHA256,
+                       "contract": engine.SCHEMA})
+        for cfg in engine.CONFIGS
+    ]
+    assert engine.select_next(state) is None
+
+
+def test_strategy_choice_is_data_and_schema_gated_not_an_arbitrary_count():
+    f = engine.build_features(history())
+    with pytest.raises(engine.CompositeResearchError, match="unreviewed"):
+        engine.signal_for(f, {"mechanism": "unverified_private_depth_strategy",
+                              "risk_variant": 0})
+
+
+def test_select_next_explores_all_distinct_mechanisms_before_risk_variants():
+    state = engine.empty_ledger()
+    selected_mechanisms = []
+    for _ in range(len(engine.MECHANISMS)):
+        next_config = engine.select_next(state)
+        assert next_config is not None
+        selected_mechanisms.append(next_config["mechanism"])
+        core = {k: v for k, v in state.items() if k != "ledger_digest"}
+        core["mechanisms_evaluated"] = sorted(set([*core["mechanisms_evaluated"], next_config["mechanism"]]))
+        core["config_fingerprints_evaluated"].append(next_config["fingerprint"])
+        state = {**core, "ledger_digest": engine.digest(core)}
+    assert len(set(selected_mechanisms)) == len(engine.MECHANISMS)
+    # The same reviewed mechanism may now be retested ONLY as an explicit
+    # labeled robustness variant after all distinct mechanisms had a turn.
+    next_config = engine.select_next(state)
+    assert next_config["mechanism"] in selected_mechanisms
+    assert next_config["risk_variant"] == 1
+
+
+def test_cross_pair_relative_reclaim_requires_real_aligned_closed_peer_candles():
+    frames = history(n=1536)
+    peer = frames["minute15"].copy()
+    price = 95.0 + np.arange(len(peer)) * .015 + np.sin(np.arange(len(peer)) / 18.0) * 1.1
+    peer["open"] = price - .05
+    peer["close"] = price
+    peer["high"] = price + .3
+    peer["low"] = price - .3
+    f = engine.build_features(frames, peer_15m=peer)
+    assert "cross_pair_relative_z" in f
+    assert np.isfinite(f["cross_pair_relative_z"].iloc[140:]).any()
+
+    mutated = peer.copy()
+    idx = len(mutated) - 1
+    mutated.loc[idx, "close"] = 15_000.0
+    mutated.loc[idx, "high"] = 15_001.0
+    changed = engine.build_features(frames, peer_15m=mutated)
+    # No future peer bar can change ANY earlier own-candle decision.
+    pd.testing.assert_series_equal(
+        f["cross_pair_relative_z"].iloc[:-1],
+        changed["cross_pair_relative_z"].iloc[:-1],
+    )
+    pd.testing.assert_series_equal(
+        f["cross_pair_relative_z_previous"], changed["cross_pair_relative_z_previous"],
+    )
+
+    corrupted = peer.drop(index=5).reset_index(drop=True)
+    with pytest.raises(engine.CompositeResearchError, match="same closed UTC grid"):
+        engine.build_features(frames, peer_15m=corrupted)
+    corrupted = peer.copy()
+    corrupted.loc[idx, "timestamp"] = corrupted.loc[idx - 1, "timestamp"]
+    with pytest.raises(engine.CompositeResearchError, match="same closed UTC grid"):
+        engine.build_features(frames, peer_15m=corrupted)
+    corrupted = peer.copy()
+    corrupted.loc[20, "volume"] = -1
+    with pytest.raises(engine.CompositeResearchError, match="OHLCV integrity"):
+        engine.build_features(frames, peer_15m=corrupted)
+
+
+def test_new_cross_pair_mechanism_cannot_fake_missing_peer_as_indicators():
+    f = engine.build_features(history(n=1536))
+    config = {"mechanism": "cross_pair_relative_reclaim", "risk_variant": 0}
+    with pytest.raises(engine.CompositeResearchError, match="verified peer history"):
+        engine.signal_for(f, config)
+
+
+def test_new_cross_pair_mechanism_runs_full_numeric_research_only_grid(tmp_path, monkeypatch):
+    frames = history(n=1536)
+    peer = frames["minute15"].copy()
+    p = 103 + np.arange(len(peer), dtype=float) * .012 + np.sin(np.arange(len(peer)) / 22) * 1.4
+    peer["open"] = p - .06
+    peer["close"] = p
+    peer["high"] = p + .3
+    peer["low"] = p - .3
+    def approved_loader(_root, symbol, tf):
+        return peer if symbol == "ETHUSDT" and tf == "minute15" else frames[tf]
+    monkeypatch.setattr(engine, "load_verified_archive_frame", approved_loader)
+    previous = engine.empty_ledger()
+    core = {k: v for k, v in previous.items() if k != "ledger_digest"}
+    for cfg in engine.CONFIGS:
+        if cfg["mechanism"] == "cross_pair_relative_reclaim" or cfg["risk_variant"] != 0:
+            continue
+        core["mechanisms_evaluated"].append(cfg["mechanism"])
+        core["config_fingerprints_evaluated"].append(
+            engine.digest({"config": cfg, "dataset": engine.ARCHIVE_SHA256,
+                           "contract": engine.SCHEMA})
+        )
+    core["mechanisms_evaluated"] = sorted(set(core["mechanisms_evaluated"]))
+    prior_path = tmp_path / "previous.json"
+    prior_path.write_text(json.dumps({**core, "ledger_digest": engine.digest(core)}))
+    report = engine.run(tmp_path / "approved", tmp_path / "result",
+                        "a" * 40, prior_path)
+    assert report["selected"]["mechanism"] == "cross_pair_relative_reclaim"
+    assert len(report["rows"]) == 12
+    assert set(r["symbol"] for r in report["rows"]) == set(engine.SYMBOLS)
+    assert all(r["trade_count_limit"] is None for r in report["rows"])
+    assert report["auto_demo_promotion"] is False
+    assert report["live_enabled"] is False
+    assert report["historical_test_pristine"] is False
+
+
+def test_lagged_peer_impulse_is_strictly_prior_closed_candle_not_future():
+    frames = history(n=1536)
+    peer = frames["minute15"].copy()
+    step = np.arange(len(peer), dtype=float)
+    price = 120 + step * .012 + np.sin(step / 13.0) * 1.3
+    peer["open"] = price - .08
+    peer["high"] = price + .4
+    peer["low"] = price - .4
+    peer["close"] = price
+    features = engine.build_features(frames, peer_15m=peer)
+    fields = ("lagged_peer_impulse", "lagged_peer_impulse_baseline",
+              "lagged_own_response")
+    assert np.isfinite(features["lagged_peer_impulse"].iloc[120:]).any()
+    assert np.isfinite(features["lagged_peer_impulse_baseline"].iloc[120:]).any()
+    altered = peer.copy()
+    altered.loc[len(peer)-1, "close"] *= 2
+    altered.loc[len(peer)-1, "high"] = altered.loc[len(peer)-1, "close"] + 1
+    changed = engine.build_features(frames, peer_15m=altered)
+    for field in fields:
+        # Today's current peer bar cannot influence today's own close decision.
+        pd.testing.assert_series_equal(features[field], changed[field])
+    altered = peer.copy()
+    altered.loc[len(peer)-2, "close"] *= 2
+    altered.loc[len(peer)-2, "high"] = altered.loc[len(peer)-2, "close"] + 1
+    changed = engine.build_features(frames, peer_15m=altered)
+    # A changed peer candle can reach only later already-closed-bar decisions;
+    # none of the older decisions can read it.
+    for field in fields:
+        pd.testing.assert_series_equal(features[field].iloc[:-2], changed[field].iloc[:-2])
+
+
+def test_sixth_mechanism_is_distinct_lagged_peer_confirmation_not_a_parameter_sweep():
+    cols = {
+        "h4_up": 1., "h4_range": 0., "h1_compression": 0., "h1_vol_ok": 1.,
+        "rel_vol": 1.3, "prior_hi": 101., "prior_lo": 99., "atr": 1.,
+        "open": 101.5, "close": 102., "low": 101., "high": 103.,
+        "lagged_peer_impulse": .015, "lagged_peer_impulse_baseline": .003,
+        "lagged_own_response": .004,
+    }
+    frame = pd.DataFrame([cols])
+    cfg = {"mechanism": "lagged_peer_impulse_confirmation", "risk_variant": 0}
+    assert engine.signal_for(frame, cfg).tolist() == [True]
+    for field, bad_value in (
+        ("lagged_peer_impulse", .001),
+        ("lagged_peer_impulse_baseline", .018),
+        ("lagged_own_response", .012),
+        ("close", 100.),
+    ):
+        changed = frame.copy()
+        changed[field] = bad_value
+        assert engine.signal_for(changed, cfg).tolist() == [False]
+    with pytest.raises(engine.CompositeResearchError, match="verified aligned peer history"):
+        engine.signal_for(frame.drop(columns=["lagged_peer_impulse"]), cfg)
+    assert cfg["mechanism"] != "cross_pair_relative_reclaim"
+
+
+def test_exact_prior_ledger_prioritizes_new_sixth_causal_mechanism():
+    state = engine.empty_ledger()
+    core = {key: value for key, value in state.items() if key != "ledger_digest"}
+    for cfg in engine.CONFIGS:
+        if cfg["mechanism"] == "lagged_peer_impulse_confirmation" or cfg["risk_variant"] != 0:
+            continue
+        core["mechanisms_evaluated"].append(cfg["mechanism"])
+        core["config_fingerprints_evaluated"].append(engine.digest({
+            "config": cfg, "dataset": engine.ARCHIVE_SHA256, "contract": engine.SCHEMA,
+        }))
+    core["mechanisms_evaluated"] = sorted(set(core["mechanisms_evaluated"]))
+    signed = {**core, "ledger_digest": engine.digest(core)}
+    selected = engine.select_next(signed)
+    assert selected is not None
+    assert selected["mechanism"] == "lagged_peer_impulse_confirmation"
+    assert selected["risk_variant"] == 0
+    assert selected["fingerprint"] not in signed["config_fingerprints_evaluated"]
+
+
+def test_seventh_lagged_peer_downside_noncontagion_requires_verified_prior_shock():
+    # The sixth family follows positive peer leadership + own breakout;
+    # this seventh family follows previous negative peer shock + own downside
+    # range-break rejection. These are distinct causal conditions.
+    frame = pd.DataFrame([{
+        "h4_up": 0., "h4_range": 1., "h1_compression": 0., "h1_vol_ok": 1.,
+        "rel_vol": 1.3, "prior_hi": 103., "prior_lo": 99., "atr": 1.,
+        "open": 100., "close": 100.8, "low": 98.5, "high": 101.,
+        "lagged_peer_impulse": -.015, "lagged_peer_impulse_baseline": .003,
+        "lagged_own_response": -.002,
+    }])
+    new = {"mechanism": "peer_shock_noncontagion_rebound", "risk_variant": 0}
+    assert engine.signal_for(frame, new).tolist() == [True]
+    assert engine.signal_for(
+        frame, {"mechanism": "lagged_peer_impulse_confirmation", "risk_variant": 0}
+    ).tolist() == [False]
+    for field, replacement in (
+        ("lagged_peer_impulse", -.002),
+        ("lagged_peer_impulse_baseline", .014),
+        ("lagged_own_response", -.010),
+        ("close", 98.5),
+        ("low", 99.5),
+        ("rel_vol", .8),
+    ):
+        mutated = frame.copy()
+        mutated[field] = replacement
+        assert engine.signal_for(mutated, new).tolist() == [False], field
+    with pytest.raises(engine.CompositeResearchError, match="verified aligned peer"):
+        engine.signal_for(frame.drop(columns=["lagged_peer_impulse"]), new)
+
+
+def test_seventh_is_only_new_novel_family_on_six_mechanism_qa_frontier():
+    prior = engine.empty_ledger()
+    core = {k: v for k, v in prior.items() if k != "ledger_digest"}
+    for cfg in engine.CONFIGS:
+        if cfg["mechanism"] == "peer_shock_noncontagion_rebound" or cfg["risk_variant"] != 0:
+            continue
+        core["config_fingerprints_evaluated"].append(engine.digest({
+            "config": cfg, "dataset": engine.ARCHIVE_SHA256,
+            "contract": engine.SCHEMA,
+        }))
+        core["mechanisms_evaluated"].append(cfg["mechanism"])
+    core["mechanisms_evaluated"] = sorted(set(core["mechanisms_evaluated"]))
+    signed = {**core, "ledger_digest": engine.digest(core)}
+    selected = engine.select_next(signed)
+    assert selected is not None
+    assert selected["mechanism"] == "peer_shock_noncontagion_rebound"
+    assert selected["risk_variant"] == 0
+    assert selected["fingerprint"] not in signed["config_fingerprints_evaluated"]
+
+def test_eighth_relative_momentum_is_distinct_closed_peer_continuation():
+    frame = pd.DataFrame([{
+        "h4_up": 1., "h4_range": 0., "h1_compression": 0., "h1_vol_ok": 1.,
+        "rel_vol": 1.2, "prior_hi": 101., "prior_lo": 99., "atr": 1.,
+        "open": 101.5, "close": 102., "low": 101., "high": 103.,
+        "relative_momentum": .006, "relative_momentum_previous": .0035,
+        "relative_momentum_baseline": .001,
+    }])
+    novel = {"mechanism": "relative_momentum_reacceleration", "risk_variant": 0}
+    assert engine.signal_for(frame, novel).tolist() == [True]
+    for field, bad in (("relative_momentum", .0038),
+                       ("relative_momentum_previous", .0005),
+                       ("relative_momentum_baseline", .005), ("close", 100.)):
+        altered = frame.copy()
+        altered[field] = bad
+        assert engine.signal_for(altered, novel).tolist() == [False]
+    with pytest.raises(engine.CompositeResearchError, match="relative momentum requires"):
+        engine.signal_for(frame.drop(columns=["relative_momentum"]), novel)
+    assert novel["mechanism"] not in {
+        "peer_shock_noncontagion_rebound", "lagged_peer_impulse_confirmation",
+        "cross_pair_relative_reclaim",
+    }
+
+
+def test_eighth_relative_momentum_never_reads_future_peer_candle():
+    frames = history(n=1536)
+    peer = frames["minute15"].copy()
+    step = np.arange(len(peer), dtype=float)
+    price = 120 + step * .012 + np.sin(step / 13.0) * 1.3
+    peer["open"] = price - .08
+    peer["high"] = price + .4
+    peer["low"] = price - .4
+    peer["close"] = price
+    before = engine.build_features(frames, peer_15m=peer)
+    altered = peer.copy()
+    altered.loc[len(peer) - 1, "close"] *= 2
+    altered.loc[len(peer) - 1, "high"] = altered.loc[len(peer) - 1, "close"] + 1
+    after = engine.build_features(frames, peer_15m=altered)
+    for field in ("relative_momentum", "relative_momentum_previous",
+                  "relative_momentum_baseline"):
+        pd.testing.assert_series_equal(before[field].iloc[:-1], after[field].iloc[:-1])
+
+
+def test_eighth_novel_mechanism_is_selected_on_actual_seven_family_frontier():
+    prior = engine.empty_ledger()
+    core = {k: v for k, v in prior.items() if k != "ledger_digest"}
+    for cfg in engine.CONFIGS:
+        if cfg["risk_variant"] != 0 or cfg["mechanism"] == "relative_momentum_reacceleration":
+            continue
+        core["config_fingerprints_evaluated"].append(engine.digest({
+            "config": cfg, "dataset": engine.ARCHIVE_SHA256,
+            "contract": engine.SCHEMA,
+        }))
+        core["mechanisms_evaluated"].append(cfg["mechanism"])
+    core["mechanisms_evaluated"] = sorted(set(core["mechanisms_evaluated"]))
+    signed = {**core, "ledger_digest": engine.digest(core)}
+    selected = engine.select_next(signed)
+    assert selected is not None
+    assert selected["mechanism"] == "relative_momentum_reacceleration"
+    assert selected["risk_variant"] == 0
+    assert selected["fingerprint"] not in signed["config_fingerprints_evaluated"]
+
+def test_ninth_lagged_peer_volatility_release_is_direction_agnostic_and_distinct():
+    base = {
+        "h4_up": 0., "h4_range": 1., "h1_compression": 1., "h1_vol_ok": 1.,
+        "rel_vol": 1.3, "prior_hi": 101., "prior_lo": 99., "atr": 1.,
+        "open": 101.4, "close": 102., "low": 101., "high": 103.,
+        "lagged_peer_impulse": .012, "lagged_peer_impulse_baseline": .003,
+        "lagged_own_response": .002,
+    }
+    novel = {"mechanism": "lagged_peer_volatility_release", "risk_variant": 0}
+    for shock in (.012, -.012):
+        frame = pd.DataFrame([{**base, "lagged_peer_impulse": shock}])
+        assert engine.signal_for(frame, novel).tolist() == [True]
+        assert engine.signal_for(
+            frame, {"mechanism": "lagged_peer_impulse_confirmation", "risk_variant": 0}
+        ).tolist() == [False]
+    for field, bad in (
+        ("lagged_peer_impulse", .003),
+        ("lagged_peer_impulse_baseline", .010),
+        ("lagged_own_response", .006),
+        ("h1_compression", 0.),
+        ("close", 100.5),
+        ("rel_vol", 1.0),
+    ):
+        frame = pd.DataFrame([{**base, field: bad}])
+        assert engine.signal_for(frame, novel).tolist() == [False], field
+    with pytest.raises(engine.CompositeResearchError, match="peer volatility release requires"):
+        engine.signal_for(pd.DataFrame([base]).drop(columns=["lagged_peer_impulse"]), novel)
+
+
+def test_ninth_novel_mechanism_is_selected_after_first_eight_distinct_families():
+    prior = engine.empty_ledger()
+    core = {k: v for k, v in prior.items() if k != "ledger_digest"}
+    for cfg in engine.CONFIGS:
+        if cfg["risk_variant"] != 0 or cfg["mechanism"] == "lagged_peer_volatility_release":
+            continue
+        core["config_fingerprints_evaluated"].append(engine.digest({
+            "config": cfg, "dataset": engine.ARCHIVE_SHA256,
+            "contract": engine.SCHEMA,
+        }))
+        core["mechanisms_evaluated"].append(cfg["mechanism"])
+    core["mechanisms_evaluated"] = sorted(set(core["mechanisms_evaluated"]))
+    signed = {**core, "ledger_digest": engine.digest(core)}
+    selected = engine.select_next(signed)
+    assert selected is not None
+    assert selected["mechanism"] == "lagged_peer_volatility_release"
+    assert selected["risk_variant"] == 0
+    assert selected["fingerprint"] not in signed["config_fingerprints_evaluated"]
+
+
+def test_ninth_mechanism_runs_full_research_only_numeric_grid(tmp_path, monkeypatch):
+    frames = history(n=1536)
+    peer = frames["minute15"].copy()
+    step = np.arange(len(peer), dtype=float)
+    price = 110 + step * .01 + np.sin(step / 9.0) * 1.8
+    peer["open"] = price - .08
+    peer["high"] = price + .45
+    peer["low"] = price - .45
+    peer["close"] = price
+
+    def approved_loader(_root, symbol, tf):
+        return peer if symbol == "ETHUSDT" and tf == "minute15" else frames[tf]
+
+    monkeypatch.setattr(engine, "load_verified_archive_frame", approved_loader)
+    previous = engine.empty_ledger()
+    core = {k: v for k, v in previous.items() if k != "ledger_digest"}
+    for cfg in engine.CONFIGS:
+        if cfg["risk_variant"] != 0 or cfg["mechanism"] == "lagged_peer_volatility_release":
+            continue
+        core["mechanisms_evaluated"].append(cfg["mechanism"])
+        core["config_fingerprints_evaluated"].append(engine.digest({
+            "config": cfg, "dataset": engine.ARCHIVE_SHA256,
+            "contract": engine.SCHEMA,
+        }))
+    core["mechanisms_evaluated"] = sorted(set(core["mechanisms_evaluated"]))
+    prior_path = tmp_path / "previous.json"
+    prior_path.write_text(json.dumps({**core, "ledger_digest": engine.digest(core)}))
+    report = engine.run(
+        tmp_path / "approved", tmp_path / "result", "a" * 40, prior_path
+    )
+    assert report["selected"]["mechanism"] == "lagged_peer_volatility_release"
+    assert len(report["rows"]) == 12
+    assert set(row["symbol"] for row in report["rows"]) == set(engine.SYMBOLS)
+    assert all(row["trade_count_limit"] is None for row in report["rows"])
+    assert report["research_only"] is True
+    assert report["auto_demo_promotion"] is False
+    assert report["live_enabled"] is False
+
+
+
+def test_tenth_cross_pair_volatility_catchup_is_persistent_dispersion_not_peer_shock():
+    frame = pd.DataFrame([{
+        "h4_up": 0., "h4_range": 1., "h1_compression": 0., "h1_vol_ok": 1.,
+        "rel_vol": 1.2, "prior_hi": 101., "prior_lo": 99., "atr": 1.,
+        "open": 101.3, "close": 102., "low": 101., "high": 103.,
+        "cross_pair_volatility_ratio": .35,
+        "cross_pair_volatility_ratio_baseline": .70,
+        "peer_realized_volatility": .012,
+        "peer_realized_volatility_baseline": .008,
+    }])
+    novel = {"mechanism": "cross_pair_volatility_catchup", "risk_variant": 0}
+    assert engine.signal_for(frame, novel).tolist() == [True]
+    for field, bad in (
+        ("cross_pair_volatility_ratio", .75),
+        ("cross_pair_volatility_ratio_baseline", .40),
+        ("peer_realized_volatility", .007),
+        ("peer_realized_volatility_baseline", .012),
+        ("close", 100.5),
+        ("rel_vol", .9),
+    ):
+        altered = frame.copy()
+        altered[field] = bad
+        assert engine.signal_for(altered, novel).tolist() == [False], field
+    with pytest.raises(engine.CompositeResearchError, match="volatility catch-up requires"):
+        engine.signal_for(frame.drop(columns=["cross_pair_volatility_ratio"]), novel)
+
+
+def test_tenth_cross_pair_volatility_features_do_not_read_current_peer_candle():
+    frames = history(n=1536)
+    peer = frames["minute15"].copy()
+    step = np.arange(len(peer), dtype=float)
+    price = 110 + step * .01 + np.sin(step / 7.0) * 2.0
+    peer["open"] = price - .08
+    peer["high"] = price + .5
+    peer["low"] = price - .5
+    peer["close"] = price
+    before = engine.build_features(frames, peer_15m=peer)
+    altered = peer.copy()
+    altered.loc[len(peer) - 1, "close"] *= 2
+    altered.loc[len(peer) - 1, "high"] = altered.loc[len(peer) - 1, "close"] + 1
+    after = engine.build_features(frames, peer_15m=altered)
+    for field in (
+        "cross_pair_volatility_ratio",
+        "cross_pair_volatility_ratio_baseline",
+        "peer_realized_volatility",
+        "peer_realized_volatility_baseline",
+    ):
+        pd.testing.assert_series_equal(before[field], after[field])
+
+
+def test_tenth_novel_mechanism_is_selected_after_first_nine_distinct_families():
+    prior = engine.empty_ledger()
+    core = {k: v for k, v in prior.items() if k != "ledger_digest"}
+    for cfg in engine.CONFIGS:
+        if cfg["risk_variant"] != 0 or cfg["mechanism"] == "cross_pair_volatility_catchup":
+            continue
+        core["config_fingerprints_evaluated"].append(engine.digest({
+            "config": cfg, "dataset": engine.ARCHIVE_SHA256,
+            "contract": engine.SCHEMA,
+        }))
+        core["mechanisms_evaluated"].append(cfg["mechanism"])
+    core["mechanisms_evaluated"] = sorted(set(core["mechanisms_evaluated"]))
+    signed = {**core, "ledger_digest": engine.digest(core)}
+    selected = engine.select_next(signed)
+    assert selected is not None
+    assert selected["mechanism"] == "cross_pair_volatility_catchup"
+    assert selected["risk_variant"] == 0
+    assert selected["fingerprint"] not in signed["config_fingerprints_evaluated"]
+
+
+def test_eleventh_regime_conditional_composite_routes_known_regimes_and_holds_cash_unknown():
+    base = {
+        "h1_compression": 0., "h1_vol_ok": 1., "rel_vol": 1.2,
+        "prior_hi": 101., "prior_lo": 99., "atr": 1.,
+        "open": 101.2, "close": 102., "low": 100.5, "high": 103.,
+    }
+    rows = pd.DataFrame([
+        {**base, "h4_up": 1., "h4_range": 0.},
+        {**base, "h4_up": 0., "h4_range": 1.,
+         "open": 99.4, "close": 100., "low": 98.5, "high": 100.5},
+        {**base, "h4_up": 1., "h4_range": 1., "low": 98.5},
+        {**base, "h4_up": 0., "h4_range": 0.},
+    ])
+    config = {"mechanism": "regime_conditional_composite", "risk_variant": 0}
+    assert engine.signal_for(rows, config).tolist() == [True, True, False, False]
+
+
+def test_eleventh_novel_mechanism_is_selected_after_first_ten_distinct_families():
+    prior = engine.empty_ledger()
+    core = {k: v for k, v in prior.items() if k != "ledger_digest"}
+    for cfg in engine.CONFIGS:
+        if cfg["risk_variant"] != 0 or cfg["mechanism"] == "regime_conditional_composite":
+            continue
+        core["config_fingerprints_evaluated"].append(engine.digest({
+            "config": cfg, "dataset": engine.ARCHIVE_SHA256,
+            "contract": engine.SCHEMA,
+        }))
+        core["mechanisms_evaluated"].append(cfg["mechanism"])
+    core["mechanisms_evaluated"] = sorted(set(core["mechanisms_evaluated"]))
+    signed = {**core, "ledger_digest": engine.digest(core)}
+    selected = engine.select_next(signed)
+    assert selected is not None
+    assert selected["mechanism"] == "regime_conditional_composite"
+    assert selected["risk_variant"] == 0
+    assert selected["fingerprint"] not in signed["config_fingerprints_evaluated"]
+
+
+def test_eleventh_mechanism_runs_full_research_only_numeric_grid(tmp_path, monkeypatch):
+    frames = history(n=1536)
+    monkeypatch.setattr(
+        engine, "load_verified_archive_frame",
+        lambda _root, _symbol, tf: frames[tf],
+    )
+    previous = engine.empty_ledger()
+    core = {k: v for k, v in previous.items() if k != "ledger_digest"}
+    for cfg in engine.CONFIGS:
+        if cfg["risk_variant"] != 0 or cfg["mechanism"] == "regime_conditional_composite":
+            continue
+        core["mechanisms_evaluated"].append(cfg["mechanism"])
+        core["config_fingerprints_evaluated"].append(engine.digest({
+            "config": cfg, "dataset": engine.ARCHIVE_SHA256,
+            "contract": engine.SCHEMA,
+        }))
+    core["mechanisms_evaluated"] = sorted(set(core["mechanisms_evaluated"]))
+    prior_path = tmp_path / "previous.json"
+    prior_path.write_text(json.dumps({**core, "ledger_digest": engine.digest(core)}))
+    report = engine.run(
+        tmp_path / "approved", tmp_path / "result", "a" * 40, prior_path
+    )
+    assert report["selected"]["mechanism"] == "regime_conditional_composite"
+    assert report["selected"]["risk_variant"] == 0
+    assert report["distinct_mechanisms_tested_cumulative"] == len(engine.MECHANISMS)
+    assert len(report["rows"]) == 12
+    assert all(row["trade_count_limit"] is None for row in report["rows"])
+    assert report["research_only"] is True
+    assert report["auto_demo_promotion"] is False
+    assert report["live_enabled"] is False

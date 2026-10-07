@@ -49,6 +49,30 @@ def test_recovery_trigger_is_repository_bound_and_inactive_without_manifest() ->
     assert not RECOVERY.exists()
 
 
+def test_transport_creates_build_directory_before_shell_redirection() -> None:
+    text = _text()
+    section = text.split(
+        "Resolve exact Paper transport without reading private checkpoint on GitHub", 1
+    )[1].split("Restore exact triggering Paper artifact", 1)[0]
+    assert "mkdir -p build" in section
+    assert section.index("mkdir -p build") < section.index(
+        "> build/paper-boundary-transport-artifacts.json"
+    )
+    assert section.index("mkdir -p build") < section.index(
+        "> build/paper-boundary-transport-jobs.json"
+    )
+
+
+def test_owner_checkpoint_primary_without_public_artifact_fails_closed_without_dispatch() -> None:
+    text = _text()
+    assert "id: transport" in text
+    assert "scripts/nexus_paper_boundary_transport.py" in text
+    assert "build/paper-boundary-transport-jobs.json" in text
+    assert "NOT DISPATCHED" in text
+    assert "steps.transport.outputs.mode == 'public_artifact'" in text
+    assert "should_dispatch: ${{ steps.health.outputs.should_dispatch || 'false' }}" in text
+
+
 def test_workflow_binds_discovery_to_triggering_paper_sha() -> None:
     text = _text()
     binding = "needs.gate-paper-boundary.outputs.trigger_source_sha"

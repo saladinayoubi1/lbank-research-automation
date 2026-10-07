@@ -179,3 +179,51 @@ def test_status_badges_do_not_greenwash_negative_compound_states():
     assert "value.startsWith(token+'_')" in js
     assert "value.endsWith('_'+token)" in js
     assert "bad.some(" in js and "good.some(" in js
+
+def test_paper_primary_surface_archives_legacy_panels_and_names_active_strategy():
+    html = INDEX.read_text(encoding="utf-8")
+    terminal = (ROOT / "product_ui" / "product-terminal.js").read_text(encoding="utf-8")
+
+    assert "ACTIVE STRATEGY PAPER ACCOUNT" in html
+    assert "حساب دمو استراتژی بک‌تست‌شده" in html
+    assert 'id="sharedPaperRefresh"' in html
+    assert 'id="sharedPaperFreshness"' in html
+    assert '<div class="paper-layout" hidden>' in html
+    assert '<article class="panel" hidden><header><div><span>DEMO STRATEGY MATRIX</span>' in html
+    assert "Prospective/Manual و ماتریس قدیمی دیگر منبع حساب فعال نیستند" in html
+    assert "Regime Consensus · بک‌تست‌شده" in terminal
+    assert "حساب دمو استراتژی فعال" in terminal
+    assert "مسیر قدیمی Manual/Prospective از حساب فعال جدا و آرشیو شده است" in terminal
+
+
+def test_active_paper_terminal_uses_live_shared_projection_with_explicit_refresh():
+    js = (ROOT / "product_ui" / "product.js").read_text(encoding="utf-8")
+    terminal = (ROOT / "product_ui" / "product-terminal.js").read_text(encoding="utf-8")
+
+    assert "/api/product/paper/shared/live" in js
+    assert "sharedPaperRefresh" in js
+    assert "sharedPaperFreshness" in js
+    assert "PAPER_UI_REFRESH_INTERVAL_MS=60*1000" in js
+    assert "window.NexusPaperTerminal?.render(shared);" in js
+    assert "activePaperTerminalSnapshot(p,state.events)" not in js[js.index("function renderPaper()"):js.index("function renderMatrix()")]
+    assert "MARK زنده" in js
+    assert "MID زنده" in js
+    assert "nexus.shared-paper-live-display.v1" in terminal
+    assert "market_live" in terminal
+    assert "paper_state_stale" in terminal
+    assert "market_price_basis" in terminal
+    assert "مارک عمومی تازهٔ Bybit" in terminal
+    assert "قیمت اجرای معامله نیست" in terminal
+    assert "موتور Paper از آخرین state عقب است" in terminal
+
+def test_research_candidate_ui_requires_independent_qa_before_auto_paper():
+    js = (ROOT / "product_ui" / "product.js").read_text(encoding="utf-8")
+    assert "CANDIDATE · QA REQUIRED" in js
+    assert "CANDIDATE — INDEPENDENT QA REQUIRED" in js
+    assert "NOT APPLICABLE" in js
+    assert "Paper execution:" in js
+    assert "independent_qa_required" in js
+    assert "Auto Paper مسدود است: Independent QA لازم است" in js
+    render = js[js.index("function renderResearch()"):js.index("async function loadAll()")]
+    assert "candidate?'good':'bad'" not in render
+

@@ -139,7 +139,11 @@ def test_physical_source_download_has_bounded_transport_and_extraction_budgets()
 
     assert "--retry 3 --retry-all-errors" in prepare
     assert "--connect-timeout 20 --max-time 900" in prepare
-    assert "--max-filesize 104857600" in prepare
+    assert "for attempt, delay in enumerate((0, 2, 5, 10, 20), start=1):" in prepare
+    assert "urllib.request.urlopen(request, timeout=180)" in prepare
+    assert "if not 0 < expected_size <= 100 * 1024 * 1024:" in prepare
+    assert "partial source artifact exceeds declared size" in prepare
+    assert "source artifact download exceeds declared size" in prepare
     assert "source artifact size is outside bounds" in prepare
     assert "row.file_size > 50 * 1024 * 1024" in prepare
     assert "total > 250 * 1024 * 1024" in prepare
@@ -165,18 +169,22 @@ def test_physical_source_handoff_is_exact_sha_digest_pinned_and_token_safe() -> 
     assert 'test "$source_sha" = "$GITHUB_SHA"' in prepare
 
     assert '-H "Authorization: Bearer $GH_TOKEN"' in prepare
+    assert '"Authorization": f"Bearer {os.environ[\'GH_TOKEN\']}"' in prepare
+    assert 'storage_headers = {"User-Agent": "nexus-persistent-paper-source"}' in prepare
+    assert 'storage_headers["Range"] = f"bytes={offset}-"' in prepare
     storage_download = prepare.split(
-        "# Never send the GitHub bearer token to the signed artifact-storage URL.", 1
-    )[1].split('test "$(stat -c', 1)[0]
+        'storage_headers = {"User-Agent": "nexus-persistent-paper-source"}', 1
+    )[1].split("# Trust boundary: never forward the GitHub bearer token to object storage.", 1)[0]
     assert "Authorization" not in storage_download
     assert "GH_TOKEN" not in storage_download
-    assert '"$artifact_url" > "$outer_archive"' in storage_download
+    assert "urllib.request.Request(location, headers=storage_headers)" in prepare
+    assert "source_artifact_fresh_redirect_resume=PASS" in prepare
 
 
 def test_every_embedded_python_block_is_syntax_valid() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     blocks = _embedded_python_blocks(text)
-    assert len(blocks) == 9
+    assert len(blocks) == 12
     for start_line, source in blocks:
         compile(source, f"{WORKFLOW}:heredoc:{start_line}", "exec")
 
@@ -288,16 +296,18 @@ def test_physical_state_handoff_is_bounded_chunked_digest_checked_and_hosted_per
     assert "Package Paper state for hosted artifact persistence" in paper
     assert "state_archive_chunk_count" in paper
     assert "state_archive_b85_len" in paper
-    for index in range(12):
+    for index in range(18):
         assert f"state_archive_chunk_{index}" in paper
         assert f"needs.paper-loop.outputs.state_archive_chunk_{index}" in persist
     assert "state_archive_sha256" in paper
     assert "persistent-state-handoff.tar.xz" in paper
     assert "base64.b85encode" in paper
-    assert "estimated_output_utf16_bytes=$(( state_b85_chars * 2 + 4096 ))" in paper
-    assert 'estimated_output_utf16_bytes" -gt 1048576' in paper
-    assert "chunk_size=50000" in paper
-    assert "max_chunks=11" in paper
+    assert "estimated_output_utf16_bytes = len(compact) * 2 + 16_384" in paper
+    assert "estimated_output_utf16_bytes > 1_048_576" in paper
+    assert "chunk_size = 30_000" in paper
+    assert "1 <= len(chunks) <= 18" in paper
+    assert "800_000" in paper
+    assert "state_archive_codec=b85-pairs-v1" in paper
     assert "import lzma" in paper
     assert 'tarfile.open(output, "w:xz", preset=9 | lzma.PRESET_EXTREME)' in paper
     assert "zipfile.ZIP_LZMA" not in paper
@@ -306,19 +316,19 @@ def test_physical_state_handoff_is_bounded_chunked_digest_checked_and_hosted_per
     assert "STATE_ARCHIVE_B64" not in persist
     assert "STATE_ARCHIVE_CHUNK_COUNT" in persist
     assert "STATE_ARCHIVE_B85_LEN" in persist
-    assert '"${#state_b85}" -ne "$STATE_ARCHIVE_B85_LEN"' in persist
+    assert "len(compact) != (length + 1) // 2" in persist
     assert "base64.b85decode" in persist
-    assert "Paper state handoff chunk exceeds bound." in persist
-    assert "Unexpected trailing Paper state handoff chunk." in persist
+    assert "Paper state handoff chunk exceeds bound or is missing" in persist
+    assert "Unexpected trailing Paper state handoff chunk" in persist
     assert "STATE_ARCHIVE_SHA256" in persist
-    assert "sha256sum build/persistent-state-handoff.tar.xz" in persist
+    assert 'hashlib.sha256(raw).hexdigest() != os.environ["STATE_ARCHIVE_SHA256"]' in persist
     assert "unsafe state handoff path" in persist
     assert 'tarfile.open(archive_path, "r:xz")' in persist
     assert "hosted_state_handoff_verification=PASS" in persist
     assert "nexus-persistent-paper-trading-state" in persist
 
 
-def test_base85_handoff_boundary_matches_github_utf16_limit() -> None:
+def test_legacy_base85_handoff_boundary_documents_previous_failure() -> None:
     # With the 4 KiB metadata reserve used by the workflow, Base85 payloads
     # remain safe through 417,792 compressed bytes. The live state is packed
     # with XZ preset 9 + EXTREME before this guard is evaluated.
@@ -394,3 +404,93 @@ def test_lifecycle_implementation_paths_retrigger_the_persistent_runtime() -> No
 # Semantic no-op: exact-main physical Paper trigger after watchdog generation 2 recovery.
 # Semantic no-op: exact-main physical Paper trigger after watchdog-managed child generation 3 recovery.
 # Semantic no-op: exact-main physical Paper trigger after managed-child liveness generation 4 recovery.
+
+
+def test_owner_checkpoint_shadow_and_primary_are_fail_closed_and_default_off() -> None:
+    text = WORKFLOW.read_text(encoding="utf-8")
+    paper = _paper_job(text)
+    persist = text.split("  persist-state:", 1)[1]
+
+    assert "OWNER_CHECKPOINT_ROOT: /mnt/e/NEXUS/NEXUS_OWNER_PAPER_PRIVATE/checkpoints" in paper
+    assert "OWNER_CHECKPOINT_SHADOW: ${{ vars.NEXUS_OWNER_PAPER_CHECKPOINT_SHADOW || 'false' }}" in paper
+    assert "OWNER_CHECKPOINT_PRIMARY: ${{ vars.NEXUS_OWNER_PAPER_CHECKPOINT_PRIMARY || 'false' }}" in paper
+
+    owner_restore = paper.split("Restore owner-controlled Paper checkpoint in primary mode", 1)[1].split(
+        "Restore newest persistent Paper state", 1
+    )[0]
+    assert "vars.NEXUS_OWNER_PAPER_CHECKPOINT_PRIMARY == 'true'" in owner_restore
+    assert 'case "$OWNER_CHECKPOINT_ROOT" in' in owner_restore
+    assert "/mnt/e/NEXUS/NEXUS_OWNER_PAPER_PRIVATE/checkpoints" in owner_restore
+    assert 'free_kb="$(df -Pk /mnt/e' in owner_restore
+    assert 'scripts/nexus_owner_paper_checkpoint.py verify' in owner_restore
+    assert 'scripts/nexus_owner_paper_checkpoint.py restore' in owner_restore
+    assert 'rm -rf "$STATE_ROOT"' in owner_restore
+
+    legacy_restore = paper.split("Restore newest persistent Paper state", 1)[1].split(
+        "Advance public closed-candle Paper portfolio loop", 1
+    )[0]
+    assert "vars.NEXUS_OWNER_PAPER_CHECKPOINT_PRIMARY != 'true'" in legacy_restore
+
+    bootstrap = paper.split("Bootstrap owner checkpoint from restored known-good Paper state", 1)[1].split(
+        "Advance public closed-candle Paper portfolio loop", 1
+    )[0]
+    assert "NEXUS_OWNER_PAPER_CHECKPOINT_SHADOW == 'true'" in bootstrap
+    assert "NEXUS_OWNER_PAPER_CHECKPOINT_PRIMARY != 'true'" in bootstrap
+    assert 'pre-advance-owner-checkpoint.tar.xz' in bootstrap
+    assert 'OWNER_BOOTSTRAP_ARCHIVE="$archive"' in bootstrap
+    assert 'tarfile.open(output, "w:xz", preset=9 | lzma.PRESET_EXTREME)' in bootstrap
+    assert "Paper state exceeds bounded packing surface" in bootstrap
+    assert 'scripts/nexus_owner_paper_checkpoint.py commit' in bootstrap
+    assert '--run-id "$GITHUB_RUN_ID"' in bootstrap
+    assert '--source-sha "$GITHUB_SHA"' in bootstrap
+    assert 'scripts/nexus_owner_paper_checkpoint.py verify' in bootstrap
+    assert "owner_checkpoint_bootstrap=PASS" in bootstrap
+    assert paper.index("Restore newest persistent Paper state") < paper.index(
+        "Bootstrap owner checkpoint from restored known-good Paper state"
+    ) < paper.index("Advance public closed-candle Paper portfolio loop")
+
+    package = paper.split("Package Paper state for hosted artifact persistence", 1)[1].split(
+        "Commit owner-controlled Paper checkpoint when enabled", 1
+    )[0]
+    assert 'if [ "${OWNER_CHECKPOINT_PRIMARY:-false}" = "true" ]; then' in package
+    assert "state_archive_codec=owner-checkpoint-v1" in package
+    assert "state_archive_chunk_count=0" in package
+    assert "legacy_cross_job_state_handoff=SKIPPED_PRIMARY_OWNER_CHECKPOINT" in package
+    assert "base64.b85encode" in package
+
+    commit = paper.split("Commit owner-controlled Paper checkpoint when enabled", 1)[1].split(
+        "Cleanup isolated physical source and state", 1
+    )[0]
+    assert "NEXUS_OWNER_PAPER_CHECKPOINT_SHADOW == 'true'" in commit
+    assert "NEXUS_OWNER_PAPER_CHECKPOINT_PRIMARY == 'true'" in commit
+    assert 'archive="$SOURCE_ROOT/build/persistent-state-handoff.tar.xz"' in commit
+    assert 'scripts/nexus_owner_paper_checkpoint.py" commit' in commit
+    assert '--run-id "$GITHUB_RUN_ID"' in commit
+    assert '--source-sha "$GITHUB_SHA"' in commit
+    assert 'scripts/nexus_owner_paper_checkpoint.py" verify' in commit
+
+    assert "vars.NEXUS_OWNER_PAPER_CHECKPOINT_PRIMARY != 'true'" in persist
+    assert text.count('"scripts/nexus_owner_paper_checkpoint.py"') >= 2
+    assert text.count('"tests/test_nexus_owner_paper_checkpoint.py"') >= 2
+    contract = text.split("Verify persistent Trading Engine contracts", 1)[1].split("runtime-wheelhouse:", 1)[0]
+    assert "tests/test_nexus_owner_paper_checkpoint.py" in contract
+
+
+def test_owner_primary_exports_only_privacy_minimized_public_boundary_proof() -> None:
+    text = WORKFLOW.read_text(encoding="utf-8")
+    paper = _paper_job(text)
+    persist = text.split("  persist-state:", 1)[1]
+
+    assert "Export privacy-minimized public Paper boundary proof" in paper
+    assert "scripts/nexus_public_paper_boundary_proof.py export" in paper
+    assert 'public_boundary_health_b64: ${{ steps.public-boundary.outputs.health_b64 }}' in paper
+    assert 'public_boundary_context_b64: ${{ steps.public-boundary.outputs.context_b64 }}' in paper
+    assert "actions/upload-artifact@" not in paper
+
+    assert "  persist-public-boundary:" not in text
+    assert "nexus-persistent-paper-public-boundary" in persist
+    assert "scripts/nexus_public_paper_boundary_proof.py restore" in persist
+    assert "PUBLIC_HEALTH_B64" in persist
+    assert "PUBLIC_CONTEXT_B64" in persist
+    assert "vars.NEXUS_OWNER_PAPER_CHECKPOINT_PRIMARY != 'true'" in persist
+    assert "needs.paper-loop.outputs.public_boundary_health_b64 != ''" in persist

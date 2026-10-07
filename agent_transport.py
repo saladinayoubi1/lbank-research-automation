@@ -6,12 +6,14 @@ import hashlib
 import io
 import json
 import os
+import re
 import urllib.request
 import zipfile
 from pathlib import Path
 from typing import Any
 
 import agent_manager as am
+from nexus_research_missions import PREDECESSOR, TASKS, ANCESTRY, validate_ancestry
 
 RUNTIME_PATH = Path("data/agent_coordination/agent_manager_runtime.json")
 SUMMARY_PATH = Path("data/agent_coordination/manager_state.json")
@@ -130,7 +132,55 @@ def envelope_for(task: dict[str, Any]) -> dict[str, Any]:
     _bounded_id(worker, "worker_id")
     if int(task.get("authority", 0)) >= 4:
         raise ValueError("L4 tasks may not be dispatched")
+    optional = {}
+    if task["id"] in TASKS and task.get("status") == "VERIFYING":
+        prior = task.get("result_evidence", {})
+        producer_lease = task.get("research_producer_lease_id")
+        if (
+            not isinstance(prior, dict)
+            or not isinstance(producer_lease, str)
+            or not isinstance(prior.get("receipt_digest"), str)
+            or not isinstance(prior.get("source_sha"), str)
+            or prior.get("independent_qa_complete") is not False
+            or prior.get("auto_demo_promotion") is not False
+            or prior.get("live_enabled") is not False
+        ):
+            raise ValueError("QA dispatch requires the exact authenticated Research producer receipt")
+        optional = {
+            "research_producer_lease_id": producer_lease,
+            "research_producer_receipt_digest": prior["receipt_digest"],
+            "research_producer_source_sha": prior["source_sha"],
+        }
+    if task.get("qa_verifier_only") is True:
+        handoff = task.get("qa_handoff_task")
+        if (
+            task.get("status") != "VERIFYING"
+            or task.get("qa_dispatch_enabled") is not True
+            or worker != "qa-verifier-agent"
+            or task.get("verifier") != "qa-verifier-agent"
+            or task.get("required_verifier") != "qa-verifier-agent"
+            or task.get("producer") is not None
+            or not isinstance(handoff, dict)
+        ):
+            raise ValueError("QA dispatch lease is not verifier-only and enabled")
+        task_kind = handoff.get("task_kind")
+        if task_kind == "strategy_review_independent_qa":
+            from nexus_strategy_independent_qa import validate_task as validate_qa_task
+            payload_key = "strategy_qa_task"
+        elif task_kind == "composite_runtime_independent_qa":
+            from nexus_composite_runtime_independent_qa import validate_task as validate_qa_task
+            payload_key = "composite_qa_task"
+        else:
+            raise ValueError("QA handoff task kind is unsupported")
+        validate_qa_task(handoff, str(handoff.get("source_sha", "")))
+        if handoff.get("id") != task.get("id"):
+            raise ValueError("QA materialized identity differs from handoff")
+        optional[payload_key] = dict(handoff)
+    if task["id"] in PREDECESSOR:
+        ancestry = validate_ancestry({key: task[key] for key in ANCESTRY if key in task})
+        optional.update(ancestry)
     return {
+        **optional,
         "schema_version": 2,
         "task_id": task["id"],
         "lease_id": lease_id,
@@ -205,6 +255,104 @@ def dispatch_pending(config: dict[str, Any], *, ref: str) -> int:
         expected_dispatch = dispatch_id_for(task)
         if task.get("dispatch_id") == expected_dispatch:
             continue
+        # This QA worker's executable code and verified input cache are keyed
+        # to its triggering commit. Never dispatch independent Research QA
+        # against a different commit than the immutable numerical producer.
+        # In-flight old leases are deliberately left untouched: they require
+        # a separately verified failure/receipt before re-leasing.
+        if task.get("id") in TASKS and task.get("status") == "VERIFYING":
+            original = task.get("result_evidence")
+            producer_sha = original.get("source_sha") if isinstance(original, dict) else None
+            receipt = original.get("receipt_digest") if isinstance(original, dict) else None
+            current_sha = os.environ.get("GITHUB_SHA", "")
+            if (not isinstance(producer_sha, str)
+                    or not re.fullmatch(r"[0-9a-f]{40}", producer_sha)
+                    or not isinstance(receipt, str)
+                    or not re.fullmatch(r"[0-9a-f]{64}", receipt)
+                    or not re.fullmatch(r"[0-9a-f]{40}", current_sha)):
+                raise ValueError("Research QA dispatch lacks exact authenticated source identity")
+            if producer_sha != current_sha:
+                # An explicitly reviewed, one-time Research incident may
+                # re-lease independent QA for its unchanged numeric producer.
+                # The coordinator independently checked the failed original
+                # job and exact old QA dispatch. Never infer recovery merely
+                # from a matching SHA, a generic failed workflow or a payload.
+                incident = task.get("research_qa_incident_recovery")
+                verified_retry = (
+                    isinstance(incident, dict)
+                    and incident.get("reason") ==
+                        "verified_failed_source_epoch_new_independent_qa_only"
+                    and incident.get("original_producer_source_sha") == producer_sha
+                    and incident.get("original_producer_receipt_digest") == receipt
+                    and incident.get("original_producer_lease_id") ==
+                        task.get("research_producer_lease_id")
+                    and incident.get("new_qa_lease_id") == task.get("lease_id")
+                    and incident.get("independent_qa_complete") is False
+                    and incident.get("automatic_demo_promotion") is False
+                    and incident.get("live_enabled") is False
+                    and task.get("assigned_worker") == "qa-verifier-agent"
+                    and task.get("verifier") == "qa-verifier-agent"
+                    and task.get("producer") == "research-agent"
+                    and ref == "main"
+                    and os.environ.get("GITHUB_REF") == "refs/heads/main"
+                    and os.environ.get("GITHUB_REPOSITORY") ==
+                        "saladinayoubi1/lbank-research-automation"
+                )
+                if verified_retry:
+                    # Compare is read-only. Both this dispatch and the worker's
+                    # separate source-pin checkout require a genuine original
+                    # main ancestor; no task-controlled ref is fetched.
+                    from urllib.parse import quote
+                    comparison = _api(
+                        "GET",
+                        "https://api.github.com/repos/"
+                        "saladinayoubi1/lbank-research-automation/compare/"
+                        + quote(producer_sha, safe="") + "..."
+                        + quote(current_sha, safe="") + "?per_page=1",
+                    )
+                    if (
+                        not isinstance(comparison, dict)
+                        or comparison.get("status") != "ahead"
+                        or comparison.get("ahead_by", 0) <= 0
+                        or comparison.get("behind_by") != 0
+                        or (comparison.get("base_commit") or {}).get("sha")
+                            != producer_sha
+                        or (comparison.get("merge_base_commit") or {}).get("sha")
+                            != producer_sha
+                    ):
+                        raise ValueError(
+                            "original Research QA source is not exact main ancestry"
+                        )
+                    am.emit(
+                        "reviewed_original_source_research_qa_ancestor_verified",
+                        task_id=task["id"], producer_source=producer_sha,
+                        trusted_main_source=current_sha,
+                    )
+                    dispatch_task(task, ref=ref)
+                    count += 1
+                    continue
+                task["status"] = "BLOCKED"
+                task["blocked_reason"] = "research_qa_source_epoch_drift_requires_fresh_producer"
+                task["research_qa_epoch_drift"] = {
+                    "producer_source_sha": producer_sha,
+                    "producer_receipt_digest": receipt,
+                    "producer_lease_id": task.get("research_producer_lease_id"),
+                    "undispatched_qa_lease_id": task.get("lease_id"),
+                    "controller_source_sha": current_sha,
+                    "old_producer_not_qualified": True,
+                }
+                am.emit("research_qa_source_epoch_drift_blocked",
+                        task_id=task["id"],
+                        producer_source_sha=producer_sha,
+                        controller_source_sha=current_sha)
+                continue
+        if task.get("qa_verifier_only") is True:
+            if (
+                ref != "main"
+                or os.environ.get("GITHUB_REPOSITORY")
+                != "saladinayoubi1/lbank-research-automation"
+            ):
+                raise ValueError("Strategy QA dispatch requires the trusted main control lane")
         dispatch_task(task, ref=ref)
         count += 1
     return count
@@ -273,6 +421,33 @@ def find_result(lease_id: str) -> dict[str, Any] | None:
     return _artifact_json(int(artifact["id"]))
 
 
+RESEARCH_CACHE_MISS_REASON = "required immutable input or evidence is not a regular file"
+RESEARCH_RCA_TRANSPORT_MISMATCH = "research_lease_worker_phase_or_transport_mismatch"
+
+
+def _preserve_original_research_cache_failure_for_rca_transport_mismatch(
+    task: dict[str, Any], outcome: str, evidence: dict[str, Any],
+) -> bool:
+    original = task.get("failure_evidence")
+    return bool(
+        outcome == "failure"
+        and task.get("id") in TASKS
+        and task.get("triage_mode") == "root_cause_first"
+        and task.get("assigned_worker") == "architect-agent"
+        and evidence.get("failure_class") == RESEARCH_RCA_TRANSPORT_MISMATCH
+        and evidence.get("executor") == "nexus-real-composite-backtest"
+        and evidence.get("auto_demo_promotion") is False
+        and evidence.get("live_enabled") is False
+        and isinstance(original, dict)
+        and task.get("failure_class") == "verified_research_execution_failed"
+        and original.get("executor") == "nexus-real-composite-backtest"
+        and original.get("failure_class") == "verified_research_execution_failed"
+        and original.get("reason") == RESEARCH_CACHE_MISS_REASON
+        and original.get("auto_demo_promotion") is False
+        and original.get("live_enabled") is False
+    )
+
+
 def ingest_result(config: dict[str, Any], task: dict[str, Any], result: dict[str, Any]) -> None:
     if not isinstance(result, dict) or set(result) != RESULT_KEYS:
         raise ValueError("result schema mismatch")
@@ -301,7 +476,24 @@ def ingest_result(config: dict[str, Any], task: dict[str, Any], result: dict[str
         raise ValueError("result evidence must be an object")
     completed_lease_id = task.get("lease_id")
     completed_dispatch_id = expected_dispatch
-    am.record_result(config, task["id"], task["assigned_worker"], outcome, evidence)
+    if _preserve_original_research_cache_failure_for_rca_transport_mismatch(
+        task, outcome, evidence
+    ):
+        task["triage_evidence"] = {
+            "worker_id": task.get("assigned_worker"),
+            "received_at": am.iso(),
+            "evidence": evidence,
+            "preserved_original_failure": True,
+        }
+        task["status"] = "TRIAGE"
+        task["triage_started_at"] = am.iso()
+        am.emit(
+            "research_rca_transport_mismatch_preserved_original_failure",
+            task_id=task["id"],
+            lease_id=completed_lease_id,
+        )
+    else:
+        am.record_result(config, task["id"], task["assigned_worker"], outcome, evidence)
     task["result_artifact_ingested"] = True
     task["result_received_at"] = am.iso()
     if task.get("external_wait_state") == am.WAITING_EXTERNAL:

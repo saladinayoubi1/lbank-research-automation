@@ -13,6 +13,7 @@ from typing import Any, Mapping
 STATE_SCHEMA = "nexus.strategy-discovery-rotation-state.v1"
 PLAN_SCHEMA = "nexus.strategy-discovery-rotation-plan.v1"
 _SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+_SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
 class StrategyDiscoveryRotationError(RuntimeError):
@@ -89,7 +90,7 @@ def load_state(path: str | Path) -> dict[str, Any]:
     return value
 
 
-def build_plan(controller: Mapping[str, Any], state: Mapping[str, Any]) -> dict[str, Any]:
+def build_plan(controller: Mapping[str, Any], state: Mapping[str, Any], feedback: Mapping[str, Any] | None = None) -> dict[str, Any]:
     if (
         controller.get("schema") != "nexus.strategy-discovery-controller.v1"
         or controller.get("controller_verified") is not True
@@ -98,12 +99,62 @@ def build_plan(controller: Mapping[str, Any], state: Mapping[str, Any]) -> dict[
         or controller.get("qualification_claimed") is not False
     ):
         raise StrategyDiscoveryRotationError("strategy discovery controller is not verified")
+    exhausted: set[str] = set()
+    resolved_completed: set[str] = set()
+    if feedback is not None:
+        if (
+            feedback.get("schema_version") != "nexus.strategy-discovery-feedback.v1"
+            or feedback.get("research_only") is not True
+            or feedback.get("paper_only") is not True
+            or feedback.get("qualification_authority") is not False
+            or feedback.get("automatic_strategy_promotion") is not False
+            or feedback.get("live_trading_authority") is not False
+            or not isinstance(feedback.get("exhausted_experiment_sha256"), list)
+            or not isinstance(feedback.get("outcomes"), list)
+            or feedback.get("state_digest") != _digest(
+                {k: v for k, v in feedback.items() if k != "state_digest"}
+            )
+        ):
+            raise StrategyDiscoveryRotationError("strategy discovery feedback is not verified")
+        exhausted = {str(item) for item in feedback["exhausted_experiment_sha256"]}
+        # A successful, artifact-confirmed terminal result retires only the exact
+        # experiment fingerprint. Positive candidate evidence advances to
+        # review/requalification instead of being replayed as fresh discovery.
+        # Failed, evidence-unavailable and requires-data outcomes remain retryable.
+        terminal_outcomes = {
+            "no_candidate",
+            "exhausted",
+            "candidate_evidence",
+            "completed_no_qualification",
+        }
+        resolved_completed = {
+            str(row["experiment_sha256"])
+            for row in feedback["outcomes"]
+            if isinstance(row, Mapping)
+            and row.get("outcome") in terminal_outcomes
+            and row.get("workflow_conclusion") == "success"
+            and isinstance(row.get("experiment_sha256"), str)
+            and _SHA256_RE.fullmatch(row["experiment_sha256"])
+        }
     stages = [
         row for row in controller.get("search_stages", [])
-        if isinstance(row, Mapping) and row.get("status") == "READY_FOR_RESEARCH_DISPATCH"
+        if (
+            isinstance(row, Mapping)
+            and row.get("status") == "READY_FOR_RESEARCH_DISPATCH"
+            and row.get("rotation_eligible") is True
+            and str(row.get("frontier_sha256") or row.get("experiment_sha256")) not in exhausted
+            and str(row.get("frontier_sha256") or row.get("experiment_sha256")) not in resolved_completed
+        )
     ]
     if not stages:
-        raise StrategyDiscoveryRotationError("no reviewed strategy-search workflow is ready")
+        if exhausted or resolved_completed:
+            raise StrategyDiscoveryRotationError(
+                "no untested reviewed Strategy Finder frontier remains; enqueue a genuinely new "
+                "mechanism or changed source-bound frontier manifest rather than replaying legacy validation"
+            )
+        raise StrategyDiscoveryRotationError(
+            "no reviewed Strategy Finder frontier workflow is ready; legacy validation is never an autonomous fallback"
+        )
     index = int(state["next_index"]) % len(stages)
     selected = stages[index]
     workflow = str(selected.get("workflow", ""))
@@ -117,7 +168,8 @@ def build_plan(controller: Mapping[str, Any], state: Mapping[str, Any]) -> dict[
         "stage": selected["stage"],
         "workflow": workflow,
         "experiment_id": selected.get("experiment_id"),
-        "experiment_sha256": selected.get("experiment_sha256"),
+        "experiment_sha256": selected.get("frontier_sha256") or selected.get("experiment_sha256"),
+        "manifest_sha256": selected.get("experiment_sha256"),
         "research_only": True,
         "paper_only": True,
         "live_trading_authority": False,
@@ -155,6 +207,7 @@ def commit_dispatch(
             "workflow": plan["workflow"],
             "experiment_id": plan.get("experiment_id"),
             "experiment_sha256": plan.get("experiment_sha256"),
+            "manifest_sha256": plan.get("manifest_sha256"),
             "source_sha": source_sha,
             "run_id": str(run_id),
             "plan_digest": plan["plan_digest"],
@@ -175,6 +228,7 @@ def main() -> int:
     plan.add_argument("--controller-status", type=Path, required=True)
     plan.add_argument("--state", type=Path, required=True)
     plan.add_argument("--output", type=Path, required=True)
+    plan.add_argument("--feedback-state", type=Path)
     commit = sub.add_parser("commit")
     commit.add_argument("--state", type=Path, required=True)
     commit.add_argument("--plan", type=Path, required=True)
@@ -184,7 +238,10 @@ def main() -> int:
     args = parser.parse_args()
     state = load_state(args.state)
     if args.command == "plan":
-        value = build_plan(load_json(args.controller_status), state)
+        feedback = None
+        if args.feedback_state and args.feedback_state.exists():
+            feedback = load_json(args.feedback_state)
+        value = build_plan(load_json(args.controller_status), state, feedback)
     else:
         value = commit_dispatch(
             state, load_json(args.plan), source_sha=args.source_sha, run_id=args.run_id,

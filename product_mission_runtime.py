@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from dashboard_integrations import IntegrationUnavailableError, load_research_summary, load_zotero_summary
+from read_only_historical_research import archive_view
 
 MISSION_CONTRACT = "nexus.product-mission-control.v1"
 SNAPSHOT_CONTRACT = "nexus.agent-manager-snapshot.v1"
@@ -633,5 +634,8 @@ class ProductMissionRuntime:
             "owner_action_required": bool(owner_actions),
             "strategy_center": self.strategy_store.history(),
             "research_integration": research_summary,
+            # A separate historical-only channel. Never masquerade as the trusted
+            # 24h-fresh Research integration or as a local strategy run.
+            "historical_monthly_research": archive_view(),
             "zotero_integration": zotero_summary,
         }

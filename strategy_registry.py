@@ -9,9 +9,12 @@ from typing import Any
 
 from phase5_data_binding import CanonicalDataError, validate_canonical_dataset
 from phase5_strategy_factory import EXPERIMENT_SCHEMA, QUALIFICATION_SCHEMA
+from nexus_strategy_qualification_gate import verify_qualification
 
 
 REGISTRY_SCHEMA = "nexus.phase7-strategy-registry.v1"
+MODERN_REGISTRY_SCHEMA = "nexus.strategy-registry-record.v2"
+MODERN_REGISTRY_VERIFY_SCHEMA = "nexus.strategy-registry-record-verification.v2"
 HEALTH_SCHEMA = "nexus.phase7-strategy-health.v1"
 _SHA40 = re.compile(r"^[0-9a-f]{40}$")
 _HEX64 = re.compile(r"^[0-9a-f]{64}$")
@@ -171,13 +174,20 @@ def build_strategy_record(
 
 def evaluate_strategy_health(record: Mapping[str, Any], signals: Mapping[str, Any]) -> dict[str, Any]:
     """Deterministically classify strategy health without granting promotion authority."""
-    if not isinstance(record, Mapping) or record.get("schema_version") != REGISTRY_SCHEMA:
+    if not isinstance(record, Mapping):
         raise StrategyRegistryError("registry record schema mismatch")
-    claimed = record.get("record_digest")
-    core = dict(record)
-    core.pop("record_digest", None)
-    if claimed != _digest(core):
-        raise StrategyRegistryError("registry record digest mismatch")
+    if record.get("schema_version") == REGISTRY_SCHEMA:
+        claimed = record.get("record_digest")
+        core = dict(record)
+        core.pop("record_digest", None)
+        if claimed != _digest(core):
+            raise StrategyRegistryError("registry record digest mismatch")
+    elif record.get("schema_version") == MODERN_REGISTRY_SCHEMA:
+        verification = verify_qualified_strategy_record(record)
+        if verification.get("decision") != "pass":
+            raise StrategyRegistryError("modern registry record verification failed")
+    else:
+        raise StrategyRegistryError("registry record schema mismatch")
     if not isinstance(signals, Mapping) or set(signals) != HEALTH_KEYS:
         raise StrategyRegistryError("health signal schema mismatch")
     if not isinstance(signals["data_eligible"], bool) or not isinstance(signals["regime_mismatch"], bool):
@@ -220,3 +230,284 @@ def evaluate_strategy_health(record: Mapping[str, Any], signals: Mapping[str, An
         "deterministic_risk_final_authority": True,
     }
     return {**result, "health_digest": _digest(result)}
+
+
+def build_qualified_strategy_record(
+    qualification: Mapping[str, Any],
+    qualification_verification: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Build a REG-50 immutable record from one exact successful QUAL-42 artifact.
+
+    Registration does not activate the strategy.  Demo matrix membership and
+    Runtime/Paper authority remain false until a later reviewed activation path.
+    """
+    if not isinstance(qualification, Mapping) or not isinstance(qualification_verification, Mapping):
+        raise StrategyRegistryError("modern registry admission requires qualification and verification")
+    computed = verify_qualification(qualification)
+    if computed.get("decision") != "pass" or dict(qualification_verification) != computed:
+        raise StrategyRegistryError("QUAL-42 verification is missing, stale, or rejected")
+    if (
+        qualification.get("decision") != "QUALIFIED_FOR_REGISTRY"
+        or qualification.get("qualified") is not True
+        or qualification.get("registry_admission_allowed") is not True
+        or qualification.get("registry_mutation_performed") is not False
+        or qualification.get("runtime_activation_authority") is not False
+        or qualification.get("paper_execution_authority") is not False
+        or qualification.get("automatic_strategy_promotion") is not False
+        or qualification.get("live_trading_authority") is not False
+        or qualification.get("paper_only") is not True
+    ):
+        raise StrategyRegistryError("QUAL-42 does not authorize registry admission")
+
+    config = qualification.get("strategy_config")
+    runtime_evidence = qualification.get("runtime_evidence")
+    if not isinstance(config, Mapping) or not config:
+        raise StrategyRegistryError("QUAL-42 strategy config is unavailable")
+    if qualification.get("strategy_config_digest") != _digest(dict(config)):
+        raise StrategyRegistryError("QUAL-42 strategy config digest mismatch")
+    if not isinstance(runtime_evidence, list) or not runtime_evidence:
+        raise StrategyRegistryError("QUAL-42 runtime evidence is unavailable")
+    if qualification.get("runtime_evidence_digest") != _digest(runtime_evidence):
+        raise StrategyRegistryError("QUAL-42 runtime evidence digest mismatch")
+
+    family = qualification.get("family")
+    timeframe = qualification.get("timeframe")
+    variant_id = qualification.get("variant_id")
+    if (
+        not isinstance(family, str) or not family or len(family) > 80
+        or not isinstance(timeframe, str) or not timeframe or len(timeframe) > 80
+        or not isinstance(variant_id, str) or not variant_id or len(variant_id) > 160
+    ):
+        raise StrategyRegistryError("QUAL-42 strategy identity fields are invalid")
+    strategy_id = _digest({
+        "family": family,
+        "timeframe": timeframe,
+        "strategy_config_digest": qualification["strategy_config_digest"],
+    })
+    strategy_version = _digest({
+        "strategy_id": strategy_id,
+        "qualification_digest": qualification["qualification_digest"],
+    })
+    core = {
+        "schema_version": MODERN_REGISTRY_SCHEMA,
+        "system_map_node": "REG-50",
+        "strategy_id": strategy_id,
+        "strategy_version": strategy_version,
+        "family": family,
+        "timeframe": timeframe,
+        "variant_id": variant_id,
+        "config": dict(config),
+        "config_sha256": qualification["strategy_config_digest"],
+        "source_sha": qualification["source_sha"],
+        "proposal_digest": qualification["proposal_digest"],
+        "proposal_result_digest": qualification["proposal_result_digest"],
+        "requalification_digest": qualification["requalification_digest"],
+        "requalification_verification_digest": qualification["requalification_verification_digest"],
+        "qa_task_digest": qualification["qa_task_digest"],
+        "qa_receipt_digest": qualification["qa_receipt_digest"],
+        "qualification_digest": qualification["qualification_digest"],
+        "qualification_verification_digest": qualification_verification["verification_digest"],
+        "qualification_artifact": dict(qualification),
+        "qualification_verification": dict(qualification_verification),
+        "runtime_evidence": [dict(row) for row in runtime_evidence],
+        "runtime_evidence_digest": qualification["runtime_evidence_digest"],
+        "lifecycle_state": "QUALIFIED_CANDIDATE",
+        "demo_matrix_member": False,
+        "runtime_activation_authority": False,
+        "paper_execution_authority": False,
+        "automatic_strategy_promotion": False,
+        "paper_only": True,
+        "live_execution_allowed": False,
+        "deterministic_risk_final_authority": True,
+    }
+    return {**core, "record_digest": _digest(core)}
+
+
+def verify_qualified_strategy_record(value: Mapping[str, Any]) -> dict[str, Any]:
+    checks = {
+        "schema": False,
+        "digest": False,
+        "identity": False,
+        "provenance": False,
+        "authority": False,
+    }
+    try:
+        core = dict(value)
+        claimed = core.pop("record_digest", None)
+        checks["schema"] = bool(
+            core.get("schema_version") == MODERN_REGISTRY_SCHEMA
+            and core.get("system_map_node") == "REG-50"
+        )
+        checks["digest"] = isinstance(claimed, str) and claimed == _digest(core)
+        expected_id = _digest({
+            "family": core.get("family"),
+            "timeframe": core.get("timeframe"),
+            "strategy_config_digest": core.get("config_sha256"),
+        })
+        expected_version = _digest({
+            "strategy_id": expected_id,
+            "qualification_digest": core.get("qualification_digest"),
+        })
+        checks["identity"] = bool(
+            core.get("strategy_id") == expected_id
+            and core.get("strategy_version") == expected_version
+            and isinstance(core.get("family"), str)
+            and bool(core.get("family"))
+            and len(core.get("family")) <= 80
+            and isinstance(core.get("timeframe"), str)
+            and bool(core.get("timeframe"))
+            and len(core.get("timeframe")) <= 80
+            and isinstance(core.get("variant_id"), str)
+            and bool(core.get("variant_id"))
+            and len(core.get("variant_id")) <= 160
+            and isinstance(core.get("config"), Mapping)
+            and bool(core.get("config"))
+            and core.get("config_sha256") == _digest(dict(core.get("config")))
+        )
+        runtime_evidence = core.get("runtime_evidence")
+        runtime_rows_valid = bool(
+            isinstance(runtime_evidence, list)
+            and 1 <= len(runtime_evidence) <= 16
+            and len({
+                row.get("symbol")
+                for row in runtime_evidence
+                if isinstance(row, Mapping) and isinstance(row.get("symbol"), str)
+            }) == len(runtime_evidence)
+            and all(
+                isinstance(row, Mapping)
+                and isinstance(row.get("symbol"), str)
+                and bool(row.get("symbol"))
+                and len(row.get("symbol")) <= 40
+                and _HEX64.fullmatch(str(row.get("dataset_binding_sha256", "")))
+                and _HEX64.fullmatch(str(row.get("pipeline_digest", "")))
+                and _HEX64.fullmatch(str(row.get("qualification_digest", "")))
+                and type(row.get("last_open_time_ms")) is int
+                and row.get("last_open_time_ms") > 0
+                for row in runtime_evidence
+            )
+        )
+        embedded_qualification = core.get("qualification_artifact")
+        embedded_verification = core.get("qualification_verification")
+        computed_verification = (
+            verify_qualification(embedded_qualification)
+            if isinstance(embedded_qualification, Mapping)
+            else None
+        )
+        qualification_bound = bool(
+            isinstance(embedded_qualification, Mapping)
+            and isinstance(embedded_verification, Mapping)
+            and isinstance(computed_verification, Mapping)
+            and computed_verification.get("decision") == "pass"
+            and dict(embedded_verification) == dict(computed_verification)
+            and embedded_qualification.get("decision") == "QUALIFIED_FOR_REGISTRY"
+            and embedded_qualification.get("qualified") is True
+            and embedded_qualification.get("registry_admission_allowed") is True
+            and embedded_qualification.get("qualification_digest") == core.get("qualification_digest")
+            and embedded_verification.get("verification_digest")
+                == core.get("qualification_verification_digest")
+            and embedded_qualification.get("source_sha") == core.get("source_sha")
+            and embedded_qualification.get("proposal_digest") == core.get("proposal_digest")
+            and embedded_qualification.get("proposal_result_digest") == core.get("proposal_result_digest")
+            and embedded_qualification.get("requalification_digest") == core.get("requalification_digest")
+            and embedded_qualification.get("requalification_verification_digest")
+                == core.get("requalification_verification_digest")
+            and embedded_qualification.get("qa_task_digest") == core.get("qa_task_digest")
+            and embedded_qualification.get("qa_receipt_digest") == core.get("qa_receipt_digest")
+            and embedded_qualification.get("family") == core.get("family")
+            and embedded_qualification.get("timeframe") == core.get("timeframe")
+            and embedded_qualification.get("variant_id") == core.get("variant_id")
+            and embedded_qualification.get("strategy_config") == core.get("config")
+            and embedded_qualification.get("strategy_config_digest") == core.get("config_sha256")
+            and embedded_qualification.get("runtime_evidence") == runtime_evidence
+            and embedded_qualification.get("runtime_evidence_digest")
+                == core.get("runtime_evidence_digest")
+        )
+        checks["provenance"] = bool(
+            _SHA40.fullmatch(str(core.get("source_sha", "")))
+            and _HEX64.fullmatch(str(core.get("proposal_digest", "")))
+            and _HEX64.fullmatch(str(core.get("proposal_result_digest", "")))
+            and _HEX64.fullmatch(str(core.get("requalification_digest", "")))
+            and _HEX64.fullmatch(str(core.get("requalification_verification_digest", "")))
+            and _HEX64.fullmatch(str(core.get("qa_task_digest", "")))
+            and _HEX64.fullmatch(str(core.get("qa_receipt_digest", "")))
+            and _HEX64.fullmatch(str(core.get("qualification_digest", "")))
+            and _HEX64.fullmatch(str(core.get("qualification_verification_digest", "")))
+            and runtime_rows_valid
+            and core.get("runtime_evidence_digest") == _digest(runtime_evidence)
+            and qualification_bound
+        )
+        checks["authority"] = bool(
+            core.get("lifecycle_state") == "QUALIFIED_CANDIDATE"
+            and core.get("demo_matrix_member") is False
+            and core.get("runtime_activation_authority") is False
+            and core.get("paper_execution_authority") is False
+            and core.get("automatic_strategy_promotion") is False
+            and core.get("paper_only") is True
+            and core.get("live_execution_allowed") is False
+            and core.get("deterministic_risk_final_authority") is True
+        )
+    except Exception:
+        pass
+    decision = "pass" if all(checks.values()) else "reject"
+    result = {
+        "schema_version": MODERN_REGISTRY_VERIFY_SCHEMA,
+        "decision": decision,
+        "checks": checks,
+        "record_digest": value.get("record_digest"),
+    }
+    return {**result, "verification_digest": _digest(result)}
+
+
+
+def build_runtime_candidate_view(
+    record: Mapping[str, Any],
+    health: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Project a verified REG-50 record into the existing selector candidate shape.
+
+    This view is deliberately non-activating. A newly qualified modern record is
+    represented as CANDIDATE, never PAPER. Therefore the existing regime selector
+    preserves cash until a separate reviewed RUNTIME-60 activation contract is
+    introduced. This function grants no Paper execution or Live authority.
+    """
+    if not isinstance(record, Mapping) or record.get("schema_version") != MODERN_REGISTRY_SCHEMA:
+        raise StrategyRegistryError("runtime candidate requires modern REG-50 record")
+    if verify_qualified_strategy_record(record).get("decision") != "pass":
+        raise StrategyRegistryError("runtime candidate registry verification failed")
+    if not isinstance(health, Mapping) or health.get("schema_version") != HEALTH_SCHEMA:
+        raise StrategyRegistryError("runtime candidate health evidence is invalid")
+    health_core = dict(health)
+    claimed_health = health_core.pop("health_digest", None)
+    if (
+        claimed_health != _digest(health_core)
+        or health.get("strategy_id") != record.get("strategy_id")
+        or health.get("strategy_version") != record.get("strategy_version")
+        or health.get("record_digest") != record.get("record_digest")
+        or health.get("paper_only") is not True
+        or health.get("promotion_authority") is not False
+        or health.get("deterministic_risk_final_authority") is not True
+        or health.get("health_state") not in {"HEALTHY", "WATCH", "DEGRADED", "QUARANTINED"}
+    ):
+        raise StrategyRegistryError("runtime candidate health binding failed")
+    if (
+        record.get("lifecycle_state") != "QUALIFIED_CANDIDATE"
+        or record.get("demo_matrix_member") is not False
+        or record.get("runtime_activation_authority") is not False
+        or record.get("paper_execution_authority") is not False
+        or record.get("automatic_strategy_promotion") is not False
+        or record.get("paper_only") is not True
+        or record.get("live_execution_allowed") is not False
+        or record.get("deterministic_risk_final_authority") is not True
+    ):
+        raise StrategyRegistryError("runtime candidate authority boundary widened")
+    return {
+        "family": record["family"],
+        "strategy_id": record["strategy_id"],
+        "strategy_version": record["strategy_version"],
+        "lifecycle_state": "CANDIDATE",
+        "health_state": health["health_state"],
+        "record_digest": record["record_digest"],
+        "health_digest": health["health_digest"],
+        "paper_only": True,
+        "live_trading_authority": False,
+    }

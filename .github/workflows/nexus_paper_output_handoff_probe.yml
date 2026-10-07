@@ -1,0 +1,194 @@
+name: NEXUS Hosted Paper Output Transfer Diagnostic
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/nexus_paper_output_handoff_probe.yml
+  workflow_dispatch:
+    inputs:
+      raw_bytes:
+        description: Synthetic transport bytes (no owner data)
+        type: choice
+        required: true
+        default: '32000'
+        options:
+          - '32000'
+          - '64000'
+          - '128000'
+          - '300000'
+          - '390016'
+          - '420000'
+
+permissions:
+  contents: read
+
+# Isolate job-output transfer using deterministic non-secret bytes on hosted runners only.
+jobs:
+  emit:
+    runs-on: ubuntu-latest
+    env:
+      SYNTHETIC_BYTES: ${{ inputs.raw_bytes || '32000' }}
+    timeout-minutes: 5
+    outputs:
+      state_archive_codec: ${{ steps.publish_a.outputs.state_archive_codec }}
+      state_archive_chunk_count: ${{ steps.publish_a.outputs.state_archive_chunk_count }}
+      state_archive_raw_len: ${{ steps.publish_a.outputs.state_archive_raw_len }}
+      state_archive_sha256: ${{ steps.publish_a.outputs.state_archive_sha256 }}
+      state_archive_chunk_0: ${{ steps.publish_a.outputs.state_archive_chunk_0 }}
+      state_archive_chunk_1: ${{ steps.publish_a.outputs.state_archive_chunk_1 }}
+      state_archive_chunk_2: ${{ steps.publish_a.outputs.state_archive_chunk_2 }}
+      state_archive_chunk_3: ${{ steps.publish_a.outputs.state_archive_chunk_3 }}
+      state_archive_chunk_4: ${{ steps.publish_a.outputs.state_archive_chunk_4 }}
+      state_archive_chunk_5: ${{ steps.publish_b.outputs.state_archive_chunk_5 }}
+      state_archive_chunk_6: ${{ steps.publish_b.outputs.state_archive_chunk_6 }}
+      state_archive_chunk_7: ${{ steps.publish_b.outputs.state_archive_chunk_7 }}
+      state_archive_chunk_8: ${{ steps.publish_b.outputs.state_archive_chunk_8 }}
+      state_archive_chunk_9: ${{ steps.publish_b.outputs.state_archive_chunk_9 }}
+      state_archive_chunk_10: ${{ steps.publish_c.outputs.state_archive_chunk_10 }}
+      state_archive_chunk_11: ${{ steps.publish_c.outputs.state_archive_chunk_11 }}
+      state_archive_chunk_12: ${{ steps.publish_c.outputs.state_archive_chunk_12 }}
+      state_archive_chunk_13: ${{ steps.publish_c.outputs.state_archive_chunk_13 }}
+      state_archive_chunk_14: ${{ steps.publish_c.outputs.state_archive_chunk_14 }}
+      state_archive_chunk_15: ${{ steps.publish_c.outputs.state_archive_chunk_15 }}
+      state_archive_chunk_16: ${{ steps.publish_c.outputs.state_archive_chunk_16 }}
+      state_archive_chunk_17: ${{ steps.publish_c.outputs.state_archive_chunk_17 }}
+    steps:
+      - name: Generate BMP15 synthetic physical-sized Paper output
+        id: make
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          size=int(os.environ["SYNTHETIC_BYTES"])
+          assert size in (32_000,64_000,128_000,300_000,390_016,420_000) and size%32==0
+          raw=b"".join(hashlib.sha256(i.to_bytes(8,"little")).digest() for i in range(size//32))
+          acc=bits=0
+          out=[]
+          for byte in raw:
+              acc=(acc<<8)|byte
+              bits+=8
+              while bits>=15:
+                  bits-=15
+                  out.append(chr(0x4000+((acc>>bits)&0x7fff)))
+                  acc &= (1<<bits)-1
+          if bits: out.append(chr(0x4000+(acc<<(15-bits))))
+          compact="".join(out)
+          chunks=[compact[i:i+15_000] for i in range(0,len(compact),15_000)]
+          estimate=2*len(compact)+16_384
+          assert 1<=len(chunks)<=18 and estimate < 1_048_576
+          lines=["state_archive_codec=bmp15-v1",f"state_archive_chunk_count={len(chunks)}",
+                 f"state_archive_raw_len={len(raw)}",f"state_archive_sha256={hashlib.sha256(raw).hexdigest()}"]
+          lines += [f"state_archive_chunk_{i}={chunks[i] if i<len(chunks) else ''}" for i in range(18)]
+          Path("synthetic-output.json").write_text(json.dumps(dict(line.split("=",1) for line in lines),ensure_ascii=False),encoding="utf-8")
+          print(f"synthetic_bytes={len(raw)} chunks={len(chunks)} job_output_utf16_estimate={estimate}")
+          PY
+      - name: Publish bounded output part A
+        id: publish_a
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          data=json.loads(Path("synthetic-output.json").read_text(encoding="utf-8"))
+          keys=["state_archive_codec","state_archive_chunk_count","state_archive_raw_len","state_archive_sha256"]+[f"state_archive_chunk_{i}" for i in range(0,5)]
+          assert all(k in data for k in keys)
+          lines=[f"{k}={data[k]}\n" for k in keys]
+          assert sum(len(v.encode("utf-8")) for v in lines)<240_000
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a",encoding="utf-8") as output:
+              output.writelines(lines)
+          print("publisher_a_utf8_bytes",sum(len(v.encode("utf-8")) for v in lines))
+          PY
+      - name: Publish bounded output part B
+        id: publish_b
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          data=json.loads(Path("synthetic-output.json").read_text(encoding="utf-8"))
+          keys=[f"state_archive_chunk_{i}" for i in range(5,10)]
+          assert all(k in data for k in keys)
+          lines=[f"{k}={data[k]}\n" for k in keys]
+          assert sum(len(v.encode("utf-8")) for v in lines)<240_000
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a",encoding="utf-8") as output:
+              output.writelines(lines)
+          print("publisher_b_utf8_bytes",sum(len(v.encode("utf-8")) for v in lines))
+          PY
+      - name: Publish bounded output part C
+        id: publish_c
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          data=json.loads(Path("synthetic-output.json").read_text(encoding="utf-8"))
+          keys=[f"state_archive_chunk_{i}" for i in range(10,18)]
+          assert all(k in data for k in keys)
+          lines=[f"{k}={data[k]}\n" for k in keys]
+          assert sum(len(v.encode("utf-8")) for v in lines)<240_000
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a",encoding="utf-8") as output:
+              output.writelines(lines)
+          print("publisher_c_utf8_bytes",sum(len(v.encode("utf-8")) for v in lines))
+          PY
+  verify:
+    needs: emit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SYNTHETIC_BYTES: ${{ inputs.raw_bytes || '32000' }}
+      STATE_ARCHIVE_CODEC: ${{ needs.emit.outputs.state_archive_codec }}
+      STATE_ARCHIVE_CHUNK_COUNT: ${{ needs.emit.outputs.state_archive_chunk_count }}
+      STATE_ARCHIVE_RAW_LEN: ${{ needs.emit.outputs.state_archive_raw_len }}
+      STATE_ARCHIVE_SHA256: ${{ needs.emit.outputs.state_archive_sha256 }}
+      STATE_ARCHIVE_CHUNK_0: ${{ needs.emit.outputs.state_archive_chunk_0 }}
+      STATE_ARCHIVE_CHUNK_1: ${{ needs.emit.outputs.state_archive_chunk_1 }}
+      STATE_ARCHIVE_CHUNK_2: ${{ needs.emit.outputs.state_archive_chunk_2 }}
+      STATE_ARCHIVE_CHUNK_3: ${{ needs.emit.outputs.state_archive_chunk_3 }}
+      STATE_ARCHIVE_CHUNK_4: ${{ needs.emit.outputs.state_archive_chunk_4 }}
+      STATE_ARCHIVE_CHUNK_5: ${{ needs.emit.outputs.state_archive_chunk_5 }}
+      STATE_ARCHIVE_CHUNK_6: ${{ needs.emit.outputs.state_archive_chunk_6 }}
+      STATE_ARCHIVE_CHUNK_7: ${{ needs.emit.outputs.state_archive_chunk_7 }}
+      STATE_ARCHIVE_CHUNK_8: ${{ needs.emit.outputs.state_archive_chunk_8 }}
+      STATE_ARCHIVE_CHUNK_9: ${{ needs.emit.outputs.state_archive_chunk_9 }}
+      STATE_ARCHIVE_CHUNK_10: ${{ needs.emit.outputs.state_archive_chunk_10 }}
+      STATE_ARCHIVE_CHUNK_11: ${{ needs.emit.outputs.state_archive_chunk_11 }}
+      STATE_ARCHIVE_CHUNK_12: ${{ needs.emit.outputs.state_archive_chunk_12 }}
+      STATE_ARCHIVE_CHUNK_13: ${{ needs.emit.outputs.state_archive_chunk_13 }}
+      STATE_ARCHIVE_CHUNK_14: ${{ needs.emit.outputs.state_archive_chunk_14 }}
+      STATE_ARCHIVE_CHUNK_15: ${{ needs.emit.outputs.state_archive_chunk_15 }}
+      STATE_ARCHIVE_CHUNK_16: ${{ needs.emit.outputs.state_archive_chunk_16 }}
+      STATE_ARCHIVE_CHUNK_17: ${{ needs.emit.outputs.state_archive_chunk_17 }}
+    steps:
+      - name: Verify complete SHA-bound hosted cross-job BMP15 output
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib,os
+          size=int(os.environ["SYNTHETIC_BYTES"])
+          count=int(os.environ["STATE_ARCHIVE_CHUNK_COUNT"])
+          length=int(os.environ["STATE_ARCHIVE_RAW_LEN"])
+          assert os.environ["STATE_ARCHIVE_CODEC"]=="bmp15-v1"
+          assert length==size and size in (32_000,64_000,128_000,300_000,390_016,420_000)
+          expected_chars=(length*8+14)//15
+          assert count==(expected_chars+14_999)//15_000 and 1<=count<=18
+          chunks=[os.environ[f"STATE_ARCHIVE_CHUNK_{i}"] for i in range(18)]
+          assert all(0<len(c)<=15_000 for c in chunks[:count]) and not any(chunks[count:])
+          compact="".join(chunks[:count])
+          assert len(compact)==expected_chars
+          acc=bits=0
+          result=bytearray()
+          for char in compact:
+              val=ord(char)-0x4000
+              assert 0<=val<32768
+              acc=(acc<<15)|val
+              bits+=15
+              while bits>=8 and len(result)<length:
+                  bits-=8
+                  result.append((acc>>bits)&255)
+                  acc &= (1<<bits)-1
+          assert len(result)==length and acc==0
+          expected=b"".join(hashlib.sha256(i.to_bytes(8,"little")).digest() for i in range(size//32))
+          assert result==expected and hashlib.sha256(result).hexdigest()==os.environ["STATE_ARCHIVE_SHA256"]
+          print("HOSTED_BMP15_CROSS_JOB_TRANSFER=PASS synthetic-only")
+          PY

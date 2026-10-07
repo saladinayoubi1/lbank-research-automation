@@ -60,6 +60,13 @@ def _materialize_minimal_surface(root: Path) -> None:
         workflow.parent.mkdir(parents=True, exist_ok=True)
         workflow.write_text("name: fixture\non:\n  workflow_dispatch:\n", encoding="utf-8")
 
+    for paths in controller.FRONTIER_FINGERPRINT_INPUTS.values():
+        for relative in paths:
+            path = root / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            if not path.exists():
+                path.write_text(f"# fingerprint fixture: {relative}\n", encoding="utf-8")
+
 
 def test_repository_discovery_surface_is_bounded_and_ready() -> None:
     status = controller.build_status(ROOT)
@@ -75,6 +82,39 @@ def test_repository_discovery_surface_is_bounded_and_ready() -> None:
     assert status["qualification_claimed"] is False
     assert all(row["status"] == "READY_FOR_RESEARCH_DISPATCH" for row in status["search_stages"])
     assert all(row["dispatch_mode"] == "reviewed_workflow_dispatch" for row in status["search_stages"])
+    frontier = [row for row in status["search_stages"] if row["rotation_eligible"] is True]
+    legacy = [row for row in status["search_stages"] if row["lane"] == "legacy_validation"]
+    assert [row["stage"] for row in frontier] == [
+        "nexus_multitimeframe_strategy_discovery",
+        "nexus_multipair_strategy_discovery_v2",
+    ]
+    assert len(legacy) == 6
+    assert all(row["rotation_eligible"] is False for row in legacy)
+    assert status["summary"]["ready_frontier_stage_count"] == 2
+    assert status["summary"]["ready_legacy_validation_stage_count"] == 6
+    assert status["next_research_action"] == "nexus_multitimeframe_strategy_discovery"
+
+
+def test_composite_frontier_fingerprint_changes_without_rewriting_base_manifest(tmp_path: Path) -> None:
+    _materialize_minimal_surface(tmp_path)
+    first = controller.build_status(tmp_path)
+    first_stage = next(
+        row for row in first["search_stages"]
+        if row["stage"] == "nexus_multitimeframe_strategy_discovery"
+    )
+    manifest_sha = first_stage["experiment_sha256"]
+
+    mechanism = tmp_path / "nexus_mechanism_factory.py"
+    mechanism.write_text("# changed reviewed mechanism frontier\n", encoding="utf-8")
+
+    second = controller.build_status(tmp_path)
+    second_stage = next(
+        row for row in second["search_stages"]
+        if row["stage"] == "nexus_multitimeframe_strategy_discovery"
+    )
+    assert second_stage["experiment_sha256"] == manifest_sha
+    assert second_stage["frontier_sha256"] != first_stage["frontier_sha256"]
+    assert second["controller_verified"] is True
 
 
 def test_missing_engine_fails_visible_and_never_qualifies_candidate(tmp_path: Path) -> None:

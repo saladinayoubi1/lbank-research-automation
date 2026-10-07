@@ -89,6 +89,23 @@ def test_each_policy_boundary_denies_with_stable_reason(sig_changes, state_chang
     assert decision.reason_code == reason
 
 
+def test_unlimited_paper_signals_still_obey_monetary_risk_and_circuits():
+    unlimited = policy(max_signals_per_session=0)
+    many_signals = state(signals_today=1_000_000)
+    assert decide(st=many_signals, pol=unlimited).allowed is True
+    assert decide(st=many_signals, pol=unlimited, sig=signal(quantity="0.02")).reason_code == "position_size_limit"
+    assert decide(st=state(signals_today=1_000_000, current_exposure="2500"), pol=unlimited).reason_code == "aggregate_exposure_limit"
+    assert decide(st=state(signals_today=1_000_000, daily_realized_pnl="-400"), pol=unlimited).reason_code == "daily_loss_limit"
+    assert decide(st=state(signals_today=1_000_000, kill_switch=True), pol=unlimited).reason_code == "kill_switch_enabled"
+    assert decide(st=state(signals_today=1_000_000, seen_signal_ids=["sig-1"]), pol=unlimited).reason_code == "signal_duplicate"
+
+
+@pytest.mark.parametrize("invalid", [-1, 1.5, "0", None, True])
+def test_unlimited_policy_sentinel_must_be_exact_integer_zero(invalid):
+    with pytest.raises(RiskInputError, match="max_signals_per_session"):
+        decide(pol=policy(max_signals_per_session=invalid))
+
+
 def test_manual_signal_uses_same_risk_path():
     allowed = decide(signal(provenance_kind="manual"))
     denied = decide(signal(provenance_kind="manual", quantity="0.02"))

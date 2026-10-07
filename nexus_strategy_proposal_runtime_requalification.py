@@ -30,11 +30,12 @@ from product_research_runtime import (
     ProductResearchError,
     ProductResearchRuntime,
 )
-
-SCHEMA = "nexus.strategy-proposal-runtime-requalification.v1"
-VERIFICATION_SCHEMA = "nexus.strategy-proposal-runtime-requalification-verification.v1"
-QUEUE_SCHEMA = "nexus.strategy-research-proposal-queue.v1"
-APPROVED_SYMBOLS = ("BTCUSDT", "ETHUSDT")
+from nexus_strategy_requalification_contract import (
+    APPROVED_SYMBOLS,
+    REQUALIFICATION_SCHEMA as SCHEMA,
+    REQUALIFICATION_VERIFICATION_SCHEMA as VERIFICATION_SCHEMA,
+    RESEARCH_PROPOSAL_QUEUE_SCHEMA as QUEUE_SCHEMA,
+)
 _SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 _HEX64_RE = re.compile(r"^[0-9a-f]{64}$")
 
@@ -361,6 +362,8 @@ def build_requalification(
             "family": proposal["family"],
             "timeframe": proposal["timeframe"],
             "variant_id": proposal["variant_id"],
+            "strategy_config": dict(proposal["strategy_config"]),
+            "strategy_config_digest": _digest(proposal["strategy_config"]),
             "verdict": verdict,
             "runtime_evaluations": evaluations,
             "blocked": blocked,
@@ -476,6 +479,9 @@ def verify_requalification(value: Mapping[str, Any]) -> dict[str, Any]:
                     and row.get("family") in APPROVED_FAMILIES
                     and row.get("timeframe") in APPROVED_TIMEFRAMES
                     and isinstance(row.get("variant_id"), str)
+                    and isinstance(row.get("strategy_config"), Mapping)
+                    and bool(row.get("strategy_config"))
+                    and row.get("strategy_config_digest") == _digest(row.get("strategy_config"))
                     and row.get("candidate_state_created") is False
                     and row.get("paper_execution_started") is False
                     and row.get("automatic_strategy_promotion") is False

@@ -1,0 +1,806 @@
+{
+  "schema": "nexus.reviewed-composite-mechanisms.v1",
+  "research_only": true,
+  "live_trading_authority": false,
+  "automatic_strategy_promotion": false,
+  "description": "Extendible reviewed research grammar; distinct causal topology, not parameter sweeps. Designs require new independent source-bound implementation/backtests before any Paper request.",
+  "mechanisms": [
+    {
+      "id": "multi_tf_structural_retest",
+      "hypothesis": "Completed 4h market structure plus completed 1h volatility context may distinguish 15m structural pullback and retest entries from naive directional indicators.",
+      "inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "context": [
+        "completed_four_hour_structure",
+        "completed_one_hour_volatility_regime"
+      ],
+      "entry": [
+        "completed_fifteen_minute_retest",
+        "relative_volume_reclaim"
+      ],
+      "exit": [
+        "structure_invalidation_stop",
+        "maximum_holding_time"
+      ],
+      "risk": [
+        "portfolio_correlation_cap",
+        "volatility_sized_long_flat"
+      ]
+    },
+    {
+      "id": "compression_expansion_response",
+      "hypothesis": "A forward-tested realized-volatility compression state followed by confirmed expansion and relative volume may outperform fixed breakout signals after realistic costs.",
+      "inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "context": [
+        "realized_volatility_compression",
+        "range_boundary_asof"
+      ],
+      "entry": [
+        "closed_bar_break_expansion",
+        "confirmed_volume_expansion"
+      ],
+      "exit": [
+        "failed_break_invalidation",
+        "volatility_time_stop"
+      ],
+      "risk": [
+        "risk_budgeted_long_flat",
+        "thin_volume_no_trade"
+      ]
+    },
+    {
+      "id": "cross_pair_relative_rotation",
+      "hypothesis": "Cross-sectional relative strength after lagging aligned BTC and altcoin closes with a market-volatility guard may improve portfolio exposure against same-data buy-and-hold.",
+      "inputs": [
+        "closed_spot_ohlcv",
+        "aligned_spot_cross_pair"
+      ],
+      "context": [
+        "btc_market_volatility_guard",
+        "aligned_cross_asset_strength"
+      ],
+      "entry": [
+        "closed_bar_asset_rank_switch",
+        "minimum_rank_persistence"
+      ],
+      "exit": [
+        "rank_decay_exit",
+        "portfolio_regime_cash_exit"
+      ],
+      "risk": [
+        "gross_portfolio_exposure_cap",
+        "dynamic_pair_correlation_cap"
+      ]
+    },
+    {
+      "id": "range_failure_reversal",
+      "hypothesis": "A causally formed range that fails to sustain a breakout followed by price reclaim and volume response may contain an independent reversal mechanism in verified ranging periods.",
+      "inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "context": [
+        "completed_range_structure",
+        "verified_range_regime"
+      ],
+      "entry": [
+        "failed_break_reentry_confirmed",
+        "volume_reversal_condition"
+      ],
+      "exit": [
+        "range_extension_target",
+        "hard_structure_invalidation"
+      ],
+      "risk": [
+        "bounded_countertrend_size",
+        "unknown_regime_no_trade"
+      ]
+    },
+    {
+      "id": "signed_flow_price_response",
+      "hypothesis": "Independently authenticated time-stamped taker trade-flow divergence confirmed by subsequent price response may improve direction selection when executable costs permit.",
+      "inputs": [
+        "closed_spot_ohlcv",
+        "verified_signed_trade_flow"
+      ],
+      "context": [
+        "signed_trade_imbalance_regime",
+        "asof_trade_window"
+      ],
+      "entry": [
+        "trade_flow_divergence_confirm",
+        "next_closed_bar_price_response"
+      ],
+      "exit": [
+        "flow_regime_invalidation",
+        "precommitted_time_exit"
+      ],
+      "risk": [
+        "execution_slippage_stress",
+        "bounded_flow_uncertainty"
+      ]
+    },
+    {
+      "id": "liquidity_microstructure_mean_revert",
+      "hypothesis": "Order-book imbalance and spread-resilient executable quotes may support inventory-controlled temporary-price-deviation research only if actual time-aligned L2 depth is verified.",
+      "inputs": [
+        "closed_spot_ohlcv",
+        "verified_spot_l2"
+      ],
+      "context": [
+        "verified_bid_ask_depth",
+        "time_aligned_spread"
+      ],
+      "entry": [
+        "queue_aware_quote_transition",
+        "validated_inventory_skew"
+      ],
+      "exit": [
+        "replay_verified_inventory_flatten",
+        "adverse_selection_shutdown"
+      ],
+      "risk": [
+        "max_inventory_exposure",
+        "missing_l2_reject"
+      ]
+    },
+    {
+      "id": "perpetual_positioning_divergence",
+      "hypothesis": "Product-verified lagged perpetual funding and open interest may act as separate positioning signals for a strictly spot-long research model, without implying derivative execution.",
+      "inputs": [
+        "closed_spot_ohlcv",
+        "verified_perpetual_funding",
+        "verified_perpetual_oi"
+      ],
+      "context": [
+        "lagged_perpetual_funding_extremes",
+        "lagged_open_interest_divergence"
+      ],
+      "entry": [
+        "spot_price_confirmation",
+        "cash_on_ambiguous_positioning"
+      ],
+      "exit": [
+        "funding_regime_change",
+        "fixed_position_time_stop"
+      ],
+      "risk": [
+        "spot_only_no_implicit_short",
+        "derivative_data_unavailable_no_trade"
+      ]
+    },
+    {
+      "id": "cross_pair_relative_reclaim",
+      "hypothesis": "A causally observed same-UTC-close BTC/ETH relative price dislocation that begins to recover inside already completed higher-timeframe market and volatility context may identify a distinct spot-long response from standalone indicator entries, subject to adverse fill and conservative cost tests.",
+      "inputs": [
+        "closed_spot_ohlcv",
+        "aligned_spot_cross_pair"
+      ],
+      "context": [
+        "verified_peer_candle_exact_utc_alignment",
+        "completed_four_hour_range_context",
+        "completed_hourly_volatility_guard"
+      ],
+      "entry": [
+        "lagged_cross_asset_dislocation",
+        "current_closed_relative_recovery",
+        "observed_volume_confirmation"
+      ],
+      "exit": [
+        "spot_structure_stop",
+        "precommitted_maximum_time_exit"
+      ],
+      "risk": [
+        "single_symbol_collateral_budget",
+        "cross_pair_spot_only_no_hedge_claim"
+      ]
+    },
+    {
+      "id": "lagged_peer_impulse_confirmation",
+      "hypothesis": "A peer's verified prior 15-minute-close one-hour spot price impulse may precede a slower spot asset's subsequently confirmed own 15-minute range breakout in an already completed positive 4-hour market and normal 1-hour volatility context. This is a speculative historical causal hypothesis, not an established profitable lead-lag relationship.",
+      "inputs": [
+        "closed_spot_ohlcv",
+        "aligned_spot_cross_pair"
+      ],
+      "context": [
+        "exact_utc_closed_spot_peer_grid",
+        "peer_return_lagged_one_completed_15m_candle",
+        "historically_lagged_peer_impulse_baseline",
+        "own_prev_closed_four_bar_response",
+        "completed_4h_market_trend",
+        "completed_1h_volatility_guard"
+      ],
+      "entry": [
+        "prior_peer_impulse_outside_previous_distribution",
+        "lagging_own_observed_four_bar_return",
+        "current_own_closed_range_breakout_with_volume",
+        "next_own_15m_open_fill"
+      ],
+      "exit": [
+        "own_actual_intrabar_worst_case_structure_stop",
+        "precommitted_hold_timeout"
+      ],
+      "risk": [
+        "spot_long_flat_only_per_symbol_cash_collateral",
+        "no_cross_asset_hedge_or_portfolio_rotation_claim",
+        "no_orderbook_or_signed_flow_proxy",
+        "no_automatic_paper_promotion"
+      ]
+    },
+    {
+      "id": "peer_shock_noncontagion_rebound",
+      "hypothesis": "An unusually negative already-closed peer 1h impulse observed at least one completed 15m candle ago, combined with own-asset relative resilience and subsequent closed-bar rejection of its prior downside range, might identify spot-long rebound. This is speculative and has no verified profitability.",
+      "inputs": [
+        "closed_spot_ohlcv",
+        "aligned_spot_cross_pair"
+      ],
+      "context": [
+        "exact_utc_closed_peer_grid",
+        "peer_downside_impulse_lagged_one_completed_15m_bar",
+        "peer_shock_baseline_from_prior_96_closed_bars",
+        "own_prior_four_bar_relative_resilience",
+        "completed_4h_range_regime",
+        "completed_1h_volatility_guard"
+      ],
+      "entry": [
+        "lagged_negative_peer_shock_above_prior_amplitude",
+        "own_prior_response_less_negative_than_peer_shock",
+        "current_own_closed_bar_reclaims_prior_18bar_low",
+        "observed_own_relative_volume_guard",
+        "next_own_15m_open_fill"
+      ],
+      "exit": [
+        "own_intrabar_worst_case_structure_stop",
+        "precommitted_maximum_holding_time"
+      ],
+      "risk": [
+        "single_symbol_spot_long_flat_cash_only",
+        "no_peer_short_or_spread_execution_claim",
+        "no_current_peer_candle_leakage",
+        "no_auto_paper_promotion"
+      ]
+    },
+    {
+      "id": "relative_momentum_reacceleration",
+      "hypothesis": "After a verified BTC/ETH peer's simultaneously closed spot candle, the own asset may re-accelerate its already positive 1-hour relative price momentum at the current 15m close, conditional on fully closed 4h trend, 1h volatility guard and own closed range breakout; this causal continuation hypothesis is different from relative-z mean reversion, peer leadership and downside peer noncontagion. It has no verified profitability.",
+      "inputs": [
+        "closed_spot_ohlcv",
+        "aligned_spot_cross_pair"
+      ],
+      "context": [
+        "complete_4h_trend_confirmation",
+        "complete_1h_volatility_guard",
+        "prior_own_minus_peer_four_bar_return_relative_momentum",
+        "baseline_ends_two_closed_candles_before_current_decision"
+      ],
+      "entry": [
+        "positive_prior_relative_momentum_above_old_baseline",
+        "current_closed_relative_return_reaccelerates_above_prior",
+        "current_own_closed_range_breakout_with_volume",
+        "next_own_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_adverse_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "single_own_symbol_cash_collateral_spot_long_flat_only",
+        "no_peer_short_spread_execution_or_implied_borrowing",
+        "no_current_or_future_peer_candle_lookahead",
+        "no_auto_paper_or_live_promotion"
+      ]
+    },
+    {
+      "id": "lagged_peer_volatility_release",
+      "hypothesis": "An unusually large direction-agnostic peer one-hour spot move, completed at least one 15-minute candle earlier, may precede a delayed own-asset volatility release when the own asset remained muted and subsequently closes an upside range expansion from independently completed compression context. This is speculative research, not a profitability claim.",
+      "inputs": [
+        "closed_spot_ohlcv",
+        "aligned_spot_cross_pair"
+      ],
+      "context": [
+        "exact_utc_closed_peer_grid",
+        "direction_agnostic_lagged_peer_volatility_shock",
+        "own_prior_response_remains_muted",
+        "completed_one_hour_compression_regime",
+        "completed_four_hour_range_context"
+      ],
+      "entry": [
+        "prior_peer_absolute_impulse_exceeds_historical_baseline",
+        "lagging_own_asset_has_not_already_expanded",
+        "current_own_closed_range_expansion_with_volume",
+        "next_own_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_adverse_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "single_own_symbol_cash_collateral_spot_long_flat_only",
+        "no_peer_direction_following_hedge_or_spread_claim",
+        "no_current_peer_candle_lookahead",
+        "no_auto_paper_or_live_promotion"
+      ]
+    },
+    {
+      "id": "cross_pair_volatility_catchup",
+      "hypothesis": "A persistent lag in own-asset realized volatility versus an exactly aligned spot peer, measured only from already closed candles, may precede a delayed own upside range expansion when peer volatility remains elevated. This is speculative cross-asset volatility-dispersion research, not a profitability claim.",
+      "inputs": [
+        "closed_spot_ohlcv",
+        "aligned_spot_cross_pair"
+      ],
+      "context": [
+        "exact_utc_closed_spot_peer_grid",
+        "prior_four_hour_realized_volatility_ratio",
+        "historical_relative_volatility_ratio_baseline",
+        "completed_four_hour_market_context",
+        "completed_one_hour_volatility_guard"
+      ],
+      "entry": [
+        "own_prior_realized_volatility_materially_below_peer",
+        "peer_prior_realized_volatility_above_own_historical_baseline",
+        "current_own_closed_upside_range_expansion_with_volume",
+        "next_own_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_adverse_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "single_own_symbol_cash_collateral_spot_long_flat_only",
+        "no_peer_direction_or_single_shock_dependency",
+        "no_peer_short_spread_execution_or_implicit_borrowing",
+        "no_current_peer_candle_lookahead",
+        "no_auto_paper_or_live_promotion"
+      ]
+    },
+    {
+      "id": "multi_horizon_trend_reacceleration",
+      "hypothesis": "A completed 4h up-structure plus lagged positive own 4h and 1h returns may identify a distinct continuation regime when the current closed 15m bar breaks prior structure with strong close location and observed volume.",
+      "inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "context": [
+        "completed_4h_up_structure",
+        "lagged_own_4h_return",
+        "lagged_own_1h_return",
+        "completed_1h_volatility_guard"
+      ],
+      "entry": [
+        "current_closed_15m_structure_break",
+        "strong_close_location",
+        "observed_relative_volume",
+        "next_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "single_symbol_spot_long_flat_cash_only",
+        "no_current_bar_lookahead",
+        "no_auto_paper_or_live_promotion"
+      ]
+    },
+    {
+      "id": "trend_vwap_pullback_reclaim",
+      "hypothesis": "Inside a completed 4h up-structure, a prior closed 15m bar below the causal intraday candle-volume VWAP proxy followed by a current closed reclaim above both VWAP proxy and prior range midpoint may identify trend re-entry distinct from range VWAP mean reversion.",
+      "inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "context": [
+        "completed_4h_up_structure",
+        "completed_1h_volatility_guard",
+        "causal_intraday_candle_volume_vwap_proxy"
+      ],
+      "entry": [
+        "prior_closed_pullback_below_vwap_proxy",
+        "current_closed_vwap_and_midpoint_reclaim",
+        "next_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "candle_volume_proxy_not_trade_vwap",
+        "single_symbol_spot_long_flat_cash_only",
+        "no_auto_paper_or_live_promotion"
+      ]
+    },
+    {
+      "id": "volume_dryup_breakout",
+      "hypothesis": "A fully observed low-relative-volume bar followed by a current closed high-relative-volume structural breakout with efficient close may represent supply exhaustion then expansion without relying on hidden order-book data.",
+      "inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "context": [
+        "completed_4h_trend_or_range_state",
+        "completed_1h_volatility_guard",
+        "prior_closed_relative_volume_dryup"
+      ],
+      "entry": [
+        "current_closed_range_break",
+        "relative_volume_expansion",
+        "efficient_upper_close",
+        "next_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "no_orderbook_liquidity_claim",
+        "single_symbol_spot_long_flat_cash_only",
+        "no_auto_paper_or_live_promotion"
+      ]
+    },
+    {
+      "id": "range_midpoint_reclaim",
+      "hypothesis": "Within a completed 4h range, a move from below the previously established range midpoint to a current closed reclaim above that midpoint may identify a structural mean-reversion state without fitting an equilibrium on future bars.",
+      "inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "context": [
+        "completed_4h_range",
+        "completed_1h_volatility_guard",
+        "prior_range_high_low_midpoint"
+      ],
+      "entry": [
+        "prior_close_below_midpoint",
+        "current_closed_midpoint_reclaim",
+        "strong_close_location",
+        "next_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "bounded_long_flat_mean_reversion",
+        "no_martingale",
+        "no_auto_paper_or_live_promotion"
+      ]
+    },
+    {
+      "id": "downside_exhaustion_rebound",
+      "hypothesis": "An unusually negative lagged own one-hour return relative to its prior amplitude baseline, followed by a current closed failed downside range extension, may identify a distinct own-asset exhaustion rebound in completed range context.",
+      "inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "context": [
+        "completed_4h_range",
+        "completed_1h_volatility_guard",
+        "lagged_own_1h_return",
+        "historical_own_return_amplitude_baseline"
+      ],
+      "entry": [
+        "lagged_downside_exhaustion",
+        "current_closed_failed_downside_extension",
+        "strong_close_location",
+        "next_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "single_symbol_spot_long_flat_cash_only",
+        "no_same_bar_return_leakage",
+        "no_auto_paper_or_live_promotion"
+      ]
+    },
+    {
+      "id": "volatility_contraction_trend_reentry",
+      "hypothesis": "A completed 4h up-structure with lagged own realized volatility materially below its historical baseline and completed 1h compression may favor a later closed VWAP-proxy reclaim as a volatility-contraction trend re-entry.",
+      "inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "context": [
+        "completed_4h_up_structure",
+        "completed_1h_compression",
+        "lagged_own_realized_volatility",
+        "historical_realized_volatility_baseline"
+      ],
+      "entry": [
+        "current_closed_vwap_proxy_reclaim",
+        "observed_relative_volume_guard",
+        "next_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "single_symbol_spot_long_flat_cash_only",
+        "no_options_or_variance_claim",
+        "no_auto_paper_or_live_promotion"
+      ]
+    },
+    {
+      "id": "volatility_expansion_pullback_reclaim",
+      "hypothesis": "After lagged own realized volatility expands materially above its historical baseline inside a completed 4h up-structure, a current closed pullback and prior-range-midpoint reclaim may identify continuation after expansion rather than naive breakout chasing.",
+      "inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "context": [
+        "completed_4h_up_structure",
+        "completed_1h_volatility_guard",
+        "lagged_own_realized_volatility_expansion",
+        "lagged_positive_own_1h_return"
+      ],
+      "entry": [
+        "current_pullback_into_prior_range",
+        "current_closed_midpoint_reclaim",
+        "strong_close_location",
+        "next_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "single_symbol_spot_long_flat_cash_only",
+        "no_current_volatility_lookahead",
+        "no_auto_paper_or_live_promotion"
+      ]
+    },
+    {
+      "id": "relative_strength_persistence_breakout",
+      "hypothesis": "Persistent positive lagged own-minus-peer one-hour relative momentum above its prior baseline may support a later own-asset structural breakout in completed up-trend context without any peer short or spread execution.",
+      "inputs": [
+        "closed_spot_ohlcv",
+        "aligned_spot_cross_pair"
+      ],
+      "context": [
+        "exact_utc_closed_peer_grid",
+        "lagged_relative_momentum",
+        "historical_relative_momentum_baseline",
+        "completed_4h_up_structure"
+      ],
+      "entry": [
+        "persistent_positive_relative_strength",
+        "current_own_closed_range_break",
+        "next_own_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "single_own_symbol_spot_long_flat_cash_only",
+        "no_peer_short_or_spread_claim",
+        "no_auto_paper_or_live_promotion"
+      ]
+    },
+    {
+      "id": "relative_weakness_exhaustion_rebound",
+      "hypothesis": "A deeply negative lagged own-versus-peer relative-price z-state together with a negative lagged own return may precede a current closed failed downside range extension and rebound in completed range context.",
+      "inputs": [
+        "closed_spot_ohlcv",
+        "aligned_spot_cross_pair"
+      ],
+      "context": [
+        "exact_utc_closed_peer_grid",
+        "lagged_relative_price_z",
+        "lagged_negative_own_1h_return",
+        "completed_4h_range"
+      ],
+      "entry": [
+        "relative_weakness_extreme",
+        "current_closed_failed_downside_extension",
+        "strong_close_location",
+        "next_own_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "single_own_symbol_spot_long_flat_cash_only",
+        "no_peer_short_or_spread_claim",
+        "no_auto_paper_or_live_promotion"
+      ]
+    },
+    {
+      "id": "volatility_leadership_reversal",
+      "hypothesis": "When lagged own realized volatility is materially above an exactly aligned peer and above its prior relative-volatility baseline, a negative own impulse followed by a current closed downside-failure reclaim may identify an overreaction reversal distinct from peer-volatility catch-up.",
+      "inputs": [
+        "closed_spot_ohlcv",
+        "aligned_spot_cross_pair"
+      ],
+      "context": [
+        "exact_utc_closed_peer_grid",
+        "lagged_cross_pair_realized_volatility_ratio",
+        "historical_relative_volatility_ratio_baseline",
+        "completed_4h_range"
+      ],
+      "entry": [
+        "own_volatility_leadership",
+        "lagged_negative_own_impulse",
+        "current_closed_failed_downside_extension",
+        "next_own_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "single_own_symbol_spot_long_flat_cash_only",
+        "no_peer_short_or_volatility_derivative_claim",
+        "no_auto_paper_or_live_promotion"
+      ]
+    },
+    {
+      "id": "trend_efficiency_breakout",
+      "hypothesis": "A high lagged path-efficiency ratio with positive completed displacement may distinguish persistent directional auction from noisy momentum before a later closed structural breakout.",
+      "inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "context": [
+        "completed_4h_up_structure",
+        "lagged_16bar_path_efficiency",
+        "lagged_16bar_positive_displacement",
+        "completed_1h_volatility_guard"
+      ],
+      "entry": [
+        "current_closed_range_break",
+        "strong_close_location",
+        "observed_relative_volume",
+        "next_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "single_symbol_spot_long_flat_cash_only",
+        "no_current_return_in_efficiency_estimate",
+        "no_auto_paper_or_live_promotion"
+      ]
+    },
+    {
+      "id": "serial_dependence_breakout",
+      "hypothesis": "Positive lagged short-horizon return serial dependence may identify a persistence regime distinct from trend level or volatility level, conditional on a later closed structural breakout.",
+      "inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "context": [
+        "lagged_return_autocorrelation",
+        "lagged_positive_own_1h_return",
+        "completed_4h_up_structure",
+        "completed_1h_volatility_guard"
+      ],
+      "entry": [
+        "current_closed_range_break",
+        "strong_close_location",
+        "observed_relative_volume",
+        "next_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "single_symbol_spot_long_flat_cash_only",
+        "serial_statistic_ends_before_decision_bar",
+        "no_auto_paper_or_live_promotion"
+      ]
+    },
+    {
+      "id": "range_wick_absorption_rebound",
+      "hypothesis": "Repeated lagged lower-wick absorption inside a completed range may indicate downside rejection pressure before a later closed downside-failure reclaim, without claiming hidden order-book liquidity.",
+      "inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "context": [
+        "completed_4h_range",
+        "lagged_lower_wick_absorption",
+        "historical_lower_wick_baseline",
+        "completed_1h_volatility_guard"
+      ],
+      "entry": [
+        "current_closed_failed_downside_extension",
+        "strong_close_location",
+        "observed_relative_volume",
+        "next_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "no_orderbook_absorption_claim",
+        "single_symbol_spot_long_flat_cash_only",
+        "no_auto_paper_or_live_promotion"
+      ]
+    },
+    {
+      "id": "volatility_of_volatility_release",
+      "hypothesis": "A lagged low volatility-of-volatility state may identify unusually stable compression before a later closed range expansion, distinct from merely screening realized-volatility level.",
+      "inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "context": [
+        "completed_1h_compression",
+        "lagged_realized_volatility_of_volatility",
+        "historical_volatility_of_volatility_baseline",
+        "completed_1h_volatility_guard"
+      ],
+      "entry": [
+        "current_closed_range_break",
+        "strong_close_location",
+        "relative_volume_expansion",
+        "next_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "single_symbol_spot_long_flat_cash_only",
+        "no_options_or_variance_instrument_claim",
+        "no_auto_paper_or_live_promotion"
+      ]
+    },
+    {
+      "id": "peer_beta_residual_reclaim",
+      "hypothesis": "A negative lagged own return residual relative to a causally estimated spot-peer beta may identify temporary under-response before a later own-asset reclaim, without executing a hedge or spread.",
+      "inputs": [
+        "closed_spot_ohlcv",
+        "aligned_spot_cross_pair"
+      ],
+      "context": [
+        "exact_utc_closed_peer_grid",
+        "beta_estimated_through_two_bars_prior",
+        "lagged_negative_beta_residual",
+        "historical_residual_scale",
+        "completed_4h_range"
+      ],
+      "entry": [
+        "current_closed_prior_midpoint_reclaim",
+        "strong_close_location",
+        "observed_relative_volume",
+        "next_own_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "single_own_symbol_spot_long_flat_cash_only",
+        "no_peer_short_or_spread_execution_claim",
+        "no_current_peer_return_in_beta_estimate",
+        "no_auto_paper_or_live_promotion"
+      ]
+    },
+    {
+      "id": "prior_day_breakout_continuation",
+      "hypothesis": "A breakout above the high of the fully completed prior UTC day inside completed higher-timeframe up-structure may represent calendar-anchored continuation distinct from a rolling intraday range breakout.",
+      "inputs": [
+        "closed_spot_ohlcv"
+      ],
+      "context": [
+        "fully_completed_prior_utc_day_high_low_close",
+        "completed_4h_up_structure",
+        "completed_1h_volatility_guard"
+      ],
+      "entry": [
+        "current_closed_prior_day_high_break",
+        "prior_bar_not_already_above_anchor",
+        "strong_close_location",
+        "next_15m_open_fill_only"
+      ],
+      "exit": [
+        "own_intrabar_structure_stop",
+        "fixed_maximum_holding_time"
+      ],
+      "risk": [
+        "partial_prior_day_rejected",
+        "single_symbol_spot_long_flat_cash_only",
+        "no_auto_paper_or_live_promotion"
+      ]
+    }
+  ]
+}

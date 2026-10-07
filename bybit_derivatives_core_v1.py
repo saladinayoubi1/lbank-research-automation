@@ -200,6 +200,74 @@ def fetch_funding(client: Client, symbol: str, start_ms: int, end_ms: int) -> pd
     })
 
 
+def fetch_open_interest(
+    client: Client,
+    symbol: str,
+    start_ms: int,
+    end_ms: int,
+    interval: str = "15min",
+) -> pd.DataFrame:
+    """Fetch exact historical total open interest with cursor pagination.
+
+    Bybit's total openInterest is used; singleOpenInterest is deliberately
+    ignored so the research contract does not change with the newer single-side
+    field. Returned timestamps are unique, sorted and restricted to [start,end).
+    """
+    if interval not in {"5min", "15min", "30min", "1h", "4h", "1d"}:
+        raise ValidationError(f"unsupported open-interest interval: {interval}")
+    if end_ms <= start_ms:
+        raise ValidationError("invalid open-interest time range")
+
+    rows: dict[int, float] = {}
+    cursor: str | None = None
+    seen_cursors: set[str] = set()
+    while True:
+        params: dict[str, Any] = {
+            "category": "linear",
+            "symbol": symbol,
+            "intervalTime": interval,
+            "startTime": start_ms,
+            "endTime": end_ms - 1,
+            "limit": 200,
+        }
+        if cursor:
+            params["cursor"] = cursor
+        result = client.get("/v5/market/open-interest", params)["result"]
+        batch = result.get("list", [])
+        for item in batch:
+            try:
+                stamp = int(item["timestamp"])
+                value = float(item["openInterest"])
+            except (KeyError, TypeError, ValueError) as exc:
+                raise ValidationError(f"malformed open-interest row: {symbol}") from exc
+            if not math.isfinite(value) or value < 0:
+                raise ValidationError(f"invalid open-interest value: {symbol}")
+            if start_ms <= stamp < end_ms:
+                if stamp in rows and not math.isclose(
+                    rows[stamp], value, rel_tol=0.0, abs_tol=1e-12
+                ):
+                    raise ValidationError(f"conflicting open-interest row: {symbol}")
+                rows[stamp] = value
+
+        next_cursor = str(result.get("nextPageCursor") or "")
+        if not next_cursor:
+            break
+        if next_cursor in seen_cursors or next_cursor == cursor:
+            raise ValidationError(f"open-interest pagination stalled: {symbol}")
+        seen_cursors.add(next_cursor)
+        cursor = next_cursor
+
+    ordered = sorted(rows)
+    if not ordered:
+        raise ValidationError(f"no open-interest rows: {symbol}")
+    if len(ordered) != len(set(ordered)):
+        raise ValidationError(f"duplicate open-interest timestamps: {symbol}")
+    return pd.DataFrame({
+        "timestamp": pd.to_datetime(ordered, unit="ms", utc=True),
+        "open_interest": [rows[x] for x in ordered],
+    })
+
+
 def fetch_instrument(client: Client, symbol: str) -> InstrumentSpec:
     items = client.get('/v5/market/instruments-info', {
         'category': 'linear', 'symbol': symbol, 'limit': 1000,

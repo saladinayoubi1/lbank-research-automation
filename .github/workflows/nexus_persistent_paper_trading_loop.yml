@@ -28,7 +28,9 @@ on:
       - "nexus_multipair_regime_lifecycle.py"
       - "nexus_multipair_demo_strategy_matrix.py"
       - "scripts/nexus_strategy_discovery_controller.py"
+      - "scripts/nexus_public_paper_boundary_proof.py"
       - "scripts/nexus_runtime_wheelhouse.py"
+      - "scripts/nexus_owner_paper_checkpoint.py"
       - "config/nexus-demo-strategy-matrix-v1.json"
       - "config/nexus-demo-strategy-matrix-v2.json"
       - "config/nexus-regime-strategy-policy-v1.json"
@@ -38,11 +40,14 @@ on:
       - "tests/test_nexus_bybit_same_interval_chunk_fallback.py"
       - "tests/test_nexus_persistent_paper_trading_loop.py"
       - "tests/test_nexus_persistent_paper_trading_workflow.py"
+      - "tests/test_nexus_paper_compact_handoff_execution.py"
       - "tests/test_nexus_multipair_persistent_paper_trading_loop.py"
       - "tests/test_nexus_multipair_persistent_paper_workflow.py"
       - "tests/test_nexus_multipair_regime_lifecycle.py"
       - "tests/test_nexus_multipair_demo_strategy_matrix.py"
       - "tests/test_nexus_runtime_wheelhouse.py"
+      - "tests/test_nexus_owner_paper_checkpoint.py"
+      - "tests/test_nexus_public_paper_boundary_proof.py"
       - "tests/test_nexus_regime_selected_position_rebalance.py"
       - "tests/test_nexus_regime_selected_exposure_increase.py"
       - "tests/test_nexus_strategy_discovery_health_trigger.py"
@@ -72,7 +77,9 @@ on:
       - "nexus_multipair_regime_lifecycle.py"
       - "nexus_multipair_demo_strategy_matrix.py"
       - "scripts/nexus_strategy_discovery_controller.py"
+      - "scripts/nexus_public_paper_boundary_proof.py"
       - "scripts/nexus_runtime_wheelhouse.py"
+      - "scripts/nexus_owner_paper_checkpoint.py"
       - "config/nexus-demo-strategy-matrix-v1.json"
       - "config/nexus-demo-strategy-matrix-v2.json"
       - "config/nexus-regime-strategy-policy-v1.json"
@@ -82,11 +89,14 @@ on:
       - "tests/test_nexus_bybit_same_interval_chunk_fallback.py"
       - "tests/test_nexus_persistent_paper_trading_loop.py"
       - "tests/test_nexus_persistent_paper_trading_workflow.py"
+      - "tests/test_nexus_paper_compact_handoff_execution.py"
       - "tests/test_nexus_multipair_persistent_paper_trading_loop.py"
       - "tests/test_nexus_multipair_persistent_paper_workflow.py"
       - "tests/test_nexus_multipair_regime_lifecycle.py"
       - "tests/test_nexus_multipair_demo_strategy_matrix.py"
       - "tests/test_nexus_runtime_wheelhouse.py"
+      - "tests/test_nexus_owner_paper_checkpoint.py"
+      - "tests/test_nexus_public_paper_boundary_proof.py"
       - "tests/test_nexus_regime_selected_position_rebalance.py"
       - "tests/test_nexus_regime_selected_exposure_increase.py"
       - "tests/test_nexus_strategy_discovery_health_trigger.py"
@@ -123,11 +133,14 @@ jobs:
           tests/test_nexus_bybit_same_interval_chunk_fallback.py
           tests/test_nexus_persistent_paper_trading_loop.py
           tests/test_nexus_persistent_paper_trading_workflow.py
+          tests/test_nexus_paper_compact_handoff_execution.py
           tests/test_nexus_multipair_persistent_paper_trading_loop.py
           tests/test_nexus_multipair_persistent_paper_workflow.py
           tests/test_nexus_multipair_regime_lifecycle.py
           tests/test_nexus_multipair_demo_strategy_matrix.py
           tests/test_nexus_runtime_wheelhouse.py
+          tests/test_nexus_owner_paper_checkpoint.py
+          tests/test_nexus_public_paper_boundary_proof.py
           tests/test_nexus_regime_selected_position_rebalance.py
           tests/test_nexus_regime_selected_exposure_increase.py
           tests/test_nexus_strategy_discovery_health_trigger.py
@@ -228,6 +241,7 @@ jobs:
     runs-on: nexus-bybit-network
     timeout-minutes: 45
     outputs:
+      state_archive_codec: ${{ steps.package.outputs.state_archive_codec }}
       state_archive_chunk_count: ${{ steps.package.outputs.state_archive_chunk_count }}
       state_archive_b85_len: ${{ steps.package.outputs.state_archive_b85_len }}
       state_archive_chunk_0: ${{ steps.package.outputs.state_archive_chunk_0 }}
@@ -242,7 +256,15 @@ jobs:
       state_archive_chunk_9: ${{ steps.package.outputs.state_archive_chunk_9 }}
       state_archive_chunk_10: ${{ steps.package.outputs.state_archive_chunk_10 }}
       state_archive_chunk_11: ${{ steps.package.outputs.state_archive_chunk_11 }}
+      state_archive_chunk_12: ${{ steps.package.outputs.state_archive_chunk_12 }}
+      state_archive_chunk_13: ${{ steps.package.outputs.state_archive_chunk_13 }}
+      state_archive_chunk_14: ${{ steps.package.outputs.state_archive_chunk_14 }}
+      state_archive_chunk_15: ${{ steps.package.outputs.state_archive_chunk_15 }}
+      state_archive_chunk_16: ${{ steps.package.outputs.state_archive_chunk_16 }}
+      state_archive_chunk_17: ${{ steps.package.outputs.state_archive_chunk_17 }}
       state_archive_sha256: ${{ steps.package.outputs.state_archive_sha256 }}
+      public_boundary_health_b64: ${{ steps.public-boundary.outputs.health_b64 }}
+      public_boundary_context_b64: ${{ steps.public-boundary.outputs.context_b64 }}
     env:
       GH_TOKEN: ${{ github.token }}
       SOURCE_ARTIFACT: nexus-persistent-paper-source-${{ github.sha }}
@@ -250,6 +272,9 @@ jobs:
       STATE_ARTIFACT: nexus-persistent-paper-trading-state
       WHEELHOUSE_ARTIFACT: nexus-paper-runtime-wheelhouse-${{ github.sha }}
       WHEELHOUSE_ARCHIVE_SHA256: ${{ needs.runtime-wheelhouse.outputs.archive_sha256 }}
+      OWNER_CHECKPOINT_ROOT: /mnt/e/NEXUS/NEXUS_OWNER_PAPER_PRIVATE/checkpoints
+      OWNER_CHECKPOINT_SHADOW: ${{ vars.NEXUS_OWNER_PAPER_CHECKPOINT_SHADOW || 'false' }}
+      OWNER_CHECKPOINT_PRIMARY: ${{ vars.NEXUS_OWNER_PAPER_CHECKPOINT_PRIMARY || 'false' }}
     steps:
       - name: Prepare exact source artifact and pre-provisioned Python 3.12 without JavaScript actions
         run: |
@@ -303,7 +328,6 @@ jobs:
           }
           run_metadata="$state_root/source-run-metadata.json"
           artifact_metadata="$state_root/source-artifact-metadata.json"
-          artifact_redirect_headers="$state_root/source-artifact-redirect.headers"
           outer_archive="$state_root/source-artifact.zip"
           inner_archive="$state_root/nexus-persistent-paper-exact-source.zip"
           commit_file="$state_root/nexus-persistent-paper-exact-source.commit-sha"
@@ -345,46 +369,151 @@ jobs:
           test -n "$artifact_id"
           test -n "$artifact_size"
           test -n "$artifact_digest"
-          curl --fail --silent --show-error \
-            --retry 3 --retry-all-errors --connect-timeout 20 --max-time 120 \
-            --proto '=https' --max-redirs 0 \
-            --dump-header "$artifact_redirect_headers" --output /dev/null \
-            -H 'Accept: application/vnd.github+json' \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H 'X-GitHub-Api-Version: 2022-11-28' \
-            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip"
-          artifact_url="$(ARTIFACT_REDIRECT_HEADERS="$artifact_redirect_headers" "$python_bin" - <<'PY'
+          ARTIFACT_ID="$artifact_id" ARTIFACT_SIZE="$artifact_size" OUTER_ARCHIVE="$outer_archive" "$python_bin" - <<'PY'
+          import http.client
           import os
+          import re
+          import socket
+          import time
+          import urllib.error
+          import urllib.parse
+          import urllib.request
           from pathlib import Path
-          from urllib.parse import urlsplit
 
-          raw = Path(os.environ["ARTIFACT_REDIRECT_HEADERS"]).read_text(encoding="utf-8")
-          locations = [
-              line.split(":", 1)[1].strip()
-              for line in raw.splitlines()
-              if line.lower().startswith("location:")
-          ]
-          if not locations:
-              raise SystemExit("source artifact redirect missing Location")
-          url = locations[-1]
-          parsed = urlsplit(url)
-          if (
-              parsed.scheme != "https"
-              or not parsed.netloc
-              or parsed.username is not None
-              or parsed.password is not None
-              or parsed.fragment
-          ):
-              raise SystemExit("source artifact redirect is not a safe HTTPS URL")
-          print(url)
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, headers, newurl):
+                  return None
+
+          artifact_id = int(os.environ["ARTIFACT_ID"])
+          expected_size = int(os.environ["ARTIFACT_SIZE"])
+          output = Path(os.environ["OUTER_ARCHIVE"])
+          if not 0 < expected_size <= 100 * 1024 * 1024:
+              raise SystemExit("source artifact size is outside bounds")
+          if output.is_symlink():
+              raise SystemExit("source artifact output must not be a symlink")
+          output.unlink(missing_ok=True)
+
+          github_headers = {
+              "Accept": "application/vnd.github+json",
+              "Authorization": f"Bearer {os.environ['GH_TOKEN']}",
+              "X-GitHub-Api-Version": "2022-11-28",
+              "User-Agent": "nexus-persistent-paper-source",
+          }
+          api_url = (
+              f"https://api.github.com/repos/{os.environ['GITHUB_REPOSITORY']}"
+              f"/actions/artifacts/{artifact_id}/zip"
+          )
+          opener = urllib.request.build_opener(NoRedirect)
+          retryable = (
+              TimeoutError,
+              socket.timeout,
+              ConnectionResetError,
+              http.client.IncompleteRead,
+              urllib.error.URLError,
+          )
+          last_error = None
+
+          def validate_range(value: str | None, expected_start: int) -> None:
+              match = re.fullmatch(r"bytes (\d+)-(\d+)/(\d+)", (value or "").strip())
+              if not match:
+                  raise RuntimeError("source artifact resume response missing valid Content-Range")
+              start, end, total = (int(part) for part in match.groups())
+              if start != expected_start or end < start or total != expected_size:
+                  raise RuntimeError("source artifact Content-Range mismatch")
+
+          for attempt, delay in enumerate((0, 2, 5, 10, 20), start=1):
+              if delay:
+                  time.sleep(delay)
+              offset = output.stat().st_size if output.exists() else 0
+              if offset > expected_size:
+                  raise SystemExit("partial source artifact exceeds declared size")
+              if offset == expected_size:
+                  break
+              try:
+                  location = None
+                  direct_response = None
+                  try:
+                      direct_response = opener.open(
+                          urllib.request.Request(api_url, headers=github_headers),
+                          timeout=60,
+                      )
+                  except urllib.error.HTTPError as exc:
+                      if exc.code not in (301, 302, 303, 307, 308):
+                          raise
+                      location = exc.headers.get("Location")
+                      if not location:
+                          raise RuntimeError("source artifact redirect missing Location") from exc
+
+                  if location is not None:
+                      parsed = urllib.parse.urlsplit(location)
+                      if (
+                          parsed.scheme != "https"
+                          or not parsed.netloc
+                          or parsed.username is not None
+                          or parsed.password is not None
+                          or parsed.fragment
+                      ):
+                          raise RuntimeError("source artifact redirect is not a safe HTTPS URL")
+                      storage_headers = {"User-Agent": "nexus-persistent-paper-source"}
+                      if offset:
+                          storage_headers["Range"] = f"bytes={offset}-"
+                      # Trust boundary: never forward the GitHub bearer token to object storage.
+                      request = urllib.request.Request(location, headers=storage_headers)
+                      with urllib.request.urlopen(request, timeout=180) as response:
+                          if offset:
+                              if response.status != 206:
+                                  raise RuntimeError("resumed source artifact request requires HTTP 206")
+                              validate_range(response.headers.get("Content-Range"), offset)
+                              mode = "ab"
+                          else:
+                              if response.status not in (200, 206):
+                                  raise RuntimeError(
+                                      f"unexpected source artifact storage response: {response.status}"
+                                  )
+                              if response.status == 206:
+                                  validate_range(response.headers.get("Content-Range"), 0)
+                              mode = "wb"
+                          with output.open(mode) as handle:
+                              while True:
+                                  chunk = response.read(1024 * 1024)
+                                  if not chunk:
+                                      break
+                                  handle.write(chunk)
+                                  if handle.tell() > expected_size:
+                                      raise RuntimeError("source artifact download exceeds declared size")
+                  else:
+                      with direct_response as response:
+                          if response.status != 200:
+                              raise RuntimeError(
+                                  f"unexpected direct source artifact response: {response.status}"
+                              )
+                          output.unlink(missing_ok=True)
+                          with output.open("wb") as handle:
+                              while True:
+                                  chunk = response.read(1024 * 1024)
+                                  if not chunk:
+                                      break
+                                  handle.write(chunk)
+                                  if handle.tell() > expected_size:
+                                      raise RuntimeError("source artifact download exceeds declared size")
+
+                  if output.stat().st_size == expected_size:
+                      break
+                  last_error = RuntimeError(
+                      f"source artifact ended early at {output.stat().st_size}/{expected_size} bytes"
+                  )
+              except retryable as exc:
+                  last_error = exc
+          else:
+              raise SystemExit("source artifact download failed after bounded fresh-redirect retries") from last_error
+
+          if not output.exists() or output.stat().st_size != expected_size:
+              raise SystemExit(
+                  f"source artifact size mismatch after retries: "
+                  f"{output.stat().st_size if output.exists() else 0}/{expected_size}"
+              )
+          print(f"source_artifact_fresh_redirect_resume=PASS bytes={expected_size}")
           PY
-          )"
-          # Never send the GitHub bearer token to the signed artifact-storage URL.
-          curl --fail --silent --show-error --location \
-            --retry 3 --retry-all-errors --connect-timeout 20 --max-time 900 \
-            --proto '=https' --proto-redir '=https' --max-redirs 3 \
-            --max-filesize 104857600 \
-            "$artifact_url" > "$outer_archive"
           test "$(stat -c '%s' "$outer_archive")" -eq "$artifact_size"
           test "$(sha256sum "$outer_archive" | awk '{print $1}')" = "$artifact_digest"
           SOURCE_ROOT="$source_root" OUTER_ARCHIVE="$outer_archive" INNER_ARCHIVE="$inner_archive" COMMIT_FILE="$commit_file" "$python_bin" - <<'PY'
@@ -552,7 +681,25 @@ jobs:
           echo "offline_wheelhouse_bootstrap=PASS"
       - run: '"$PYTHON_BIN" -m pip check'
 
+      - name: Restore owner-controlled Paper checkpoint in primary mode
+        if: ${{ vars.NEXUS_OWNER_PAPER_CHECKPOINT_PRIMARY == 'true' }}
+        run: |
+          set -euo pipefail
+          case "$OWNER_CHECKPOINT_ROOT" in
+            /mnt/e/NEXUS/NEXUS_OWNER_PAPER_PRIVATE/checkpoints) ;;
+            *) echo "::error::Unexpected owner checkpoint root."; exit 1 ;;
+          esac
+          [ -d /mnt/e/NEXUS/NEXUS_OWNER_PAPER_PRIVATE ]
+          free_kb="$(df -Pk /mnt/e | awk 'NR==2 {print $4}')"
+          [ "$free_kb" -ge 10485760 ] || { echo "::error::Owner checkpoint volume has less than 10 GiB free."; exit 1; }
+          cd "$SOURCE_ROOT"
+          rm -rf "$STATE_ROOT"
+          "$PYTHON_BIN" scripts/nexus_owner_paper_checkpoint.py verify --root "$OWNER_CHECKPOINT_ROOT"
+          "$PYTHON_BIN" scripts/nexus_owner_paper_checkpoint.py restore --root "$OWNER_CHECKPOINT_ROOT" --destination "$STATE_ROOT"
+          echo "owner_checkpoint_restore=PASS"
+
       - name: Restore newest persistent Paper state
+        if: ${{ vars.NEXUS_OWNER_PAPER_CHECKPOINT_PRIMARY != 'true' }}
         run: |
           set -euo pipefail
           cd "$SOURCE_ROOT"
@@ -629,6 +776,72 @@ jobs:
           else:
               print("restored_paper_state_artifact_id=none")
           PY
+
+      - name: Bootstrap owner checkpoint from restored known-good Paper state
+        if: ${{ vars.NEXUS_OWNER_PAPER_CHECKPOINT_SHADOW == 'true' && vars.NEXUS_OWNER_PAPER_CHECKPOINT_PRIMARY != 'true' }}
+        run: |
+          set -euo pipefail
+          case "$OWNER_CHECKPOINT_ROOT" in
+            /mnt/e/NEXUS/NEXUS_OWNER_PAPER_PRIVATE/checkpoints) ;;
+            *) echo "::error::Unexpected owner checkpoint root."; exit 1 ;;
+          esac
+          [ -d /mnt/e/NEXUS/NEXUS_OWNER_PAPER_PRIVATE ]
+          free_kb="$(df -Pk /mnt/e | awk 'NR==2 {print $4}')"
+          [ "$free_kb" -ge 10485760 ] || { echo "::error::Owner checkpoint volume has less than 10 GiB free."; exit 1; }
+          cd "$SOURCE_ROOT"
+          archive="$SOURCE_ROOT/build/pre-advance-owner-checkpoint.tar.xz"
+          rm -f "$archive"
+          OWNER_BOOTSTRAP_ARCHIVE="$archive" "$PYTHON_BIN" - <<'PY'
+          import lzma
+          import os
+          import tarfile
+          from pathlib import Path
+
+          root = Path(os.environ["STATE_ROOT"])
+          output = Path(os.environ["OWNER_BOOTSTRAP_ARCHIVE"])
+          if root.is_symlink() or not root.is_dir():
+              raise RuntimeError("Paper state root is unavailable or unsafe")
+          root = root.resolve(strict=True)
+          output.parent.mkdir(parents=True, exist_ok=True)
+          file_count = 0
+          total_bytes = 0
+          with tarfile.open(output, "w:xz", preset=9 | lzma.PRESET_EXTREME) as archive:
+              for path in sorted(root.rglob("*")):
+                  if path.is_symlink():
+                      raise RuntimeError(f"Paper state contains symlink: {path}")
+                  if path.is_dir():
+                      continue
+                  if not path.is_file():
+                      raise RuntimeError(f"Paper state contains non-regular entry: {path}")
+                  file_count += 1
+                  total_bytes += path.stat().st_size
+                  if file_count > 10_000 or total_bytes > 100_000_000:
+                      raise RuntimeError("Paper state exceeds bounded packing surface")
+                  relative = path.relative_to(root).as_posix()
+                  info = archive.gettarinfo(str(path), arcname=relative)
+                  if not info.isfile():
+                      raise RuntimeError(f"Paper state tar member is not regular: {relative}")
+                  info.uid = 0
+                  info.gid = 0
+                  info.uname = ""
+                  info.gname = ""
+                  info.mtime = 0
+                  info.mode = 0o600
+                  with path.open("rb") as handle:
+                      archive.addfile(info, handle)
+          if file_count < 1 or not 0 < output.stat().st_size <= 800_000:
+              raise RuntimeError("Restored Paper state cannot form a bounded owner checkpoint")
+          print(f"owner_checkpoint_bootstrap_files={file_count}")
+          print(f"owner_checkpoint_bootstrap_uncompressed_bytes={total_bytes}")
+          print(f"owner_checkpoint_bootstrap_archive_bytes={output.stat().st_size}")
+          PY
+          "$PYTHON_BIN" scripts/nexus_owner_paper_checkpoint.py commit \
+            --root "$OWNER_CHECKPOINT_ROOT" \
+            --archive "$archive" \
+            --run-id "$GITHUB_RUN_ID" \
+            --source-sha "$GITHUB_SHA"
+          "$PYTHON_BIN" scripts/nexus_owner_paper_checkpoint.py verify --root "$OWNER_CHECKPOINT_ROOT"
+          echo "owner_checkpoint_bootstrap=PASS"
 
       - name: Advance public closed-candle Paper portfolio loop
         run: |
@@ -721,6 +934,20 @@ jobs:
           }, sort_keys=True))
           PY
 
+      - name: Export privacy-minimized public Paper boundary proof
+        id: public-boundary
+        if: success()
+        run: |
+          set -euo pipefail
+          cd "$SOURCE_ROOT"
+          "$PYTHON_BIN" scripts/nexus_public_paper_boundary_proof.py export \
+            --loop-snapshot "$STATE_ROOT/demo/persistent-paper-trading-loop.json" \
+            --matrix-state "$STATE_ROOT/matrix-state.json" \
+            --output-dir build/public-paper-boundary \
+            --github-output "$GITHUB_OUTPUT" \
+            --source-sha "$GITHUB_SHA" \
+            --run-id "$GITHUB_RUN_ID"
+
       - name: Package Paper state for hosted artifact persistence
         id: package
         if: success()
@@ -731,7 +958,7 @@ jobs:
               echo "state_archive_chunk_count=0"
               echo "state_archive_b85_len=0"
               echo "state_archive_sha256="
-              for index in 0 1 2 3 4 5 6 7 8 9 10 11; do
+              for index in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17; do
                 echo "state_archive_chunk_${index}="
               done
             } >> "$GITHUB_OUTPUT"
@@ -744,9 +971,10 @@ jobs:
           import tarfile
           from pathlib import Path
 
-          root = Path(os.environ["STATE_ROOT"]).resolve()
+          root = Path(os.environ["STATE_ROOT"])
           if root.is_symlink() or not root.is_dir():
               raise RuntimeError("Paper state root is unavailable or unsafe")
+          root = root.resolve(strict=True)
           output = Path("build/persistent-state-handoff.tar.xz")
           output.parent.mkdir(parents=True, exist_ok=True)
           output.unlink(missing_ok=True)
@@ -782,41 +1010,67 @@ jobs:
           print(f"state_handoff_uncompressed_bytes={total_bytes}")
           print(f"state_handoff_tar_xz_bytes={output.stat().st_size}")
           PY
-          state_sha="$(sha256sum build/persistent-state-handoff.tar.xz | awk '{print $1}')"
-          state_b85="$("$PYTHON_BIN" -c 'import base64, sys; sys.stdout.write(base64.b85encode(sys.stdin.buffer.read()).decode("ascii"))' < build/persistent-state-handoff.tar.xz)"
-          state_b85_chars="${#state_b85}"
-          chunk_size=50000
-          max_chunks=11
-          # GitHub caps job outputs at 1 MiB estimated as UTF-16. Reserve
-          # 4 KiB for output names and metadata, then fail closed before the
-          # runner silently rejects the job while evaluating its outputs.
-          estimated_output_utf16_bytes=$(( state_b85_chars * 2 + 4096 ))
-          if [ "$estimated_output_utf16_bytes" -gt 1048576 ]; then
-            echo "::error::Packed Paper state exceeds the bounded GitHub job-output handoff."
-            exit 1
+          if [ "${OWNER_CHECKPOINT_PRIMARY:-false}" = "true" ]; then
+            {
+              echo "state_archive_codec=owner-checkpoint-v1"
+              echo "state_archive_chunk_count=0"
+              echo "state_archive_b85_len=0"
+              echo "state_archive_sha256="
+              for index in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17; do
+                echo "state_archive_chunk_${index}="
+              done
+            } >> "$GITHUB_OUTPUT"
+            echo "legacy_cross_job_state_handoff=SKIPPED_PRIMARY_OWNER_CHECKPOINT"
+          else
+          # Pack pairs of Base85 digits into single BMP characters. This halves
+          # GitHub's UTF-16 estimate without new jobs, files shared between jobs,
+          # changed permissions, or a change to the digest-verified archive.
+          PYTHONUTF8=1 "$PYTHON_BIN" - <<'PY'
+          import base64
+          import hashlib
+          import os
+          from pathlib import Path
+
+          archive = Path("build/persistent-state-handoff.tar.xz")
+          if not 0 < archive.stat().st_size <= 800_000:
+              raise RuntimeError("Packed Paper state exceeds compact handoff bound")
+          raw = archive.read_bytes()
+          encoded = base64.b85encode(raw).decode("ascii")
+          alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!#$%&()*+-;<=>?@^_`{|}~"
+          digits = {char: index for index, char in enumerate(alphabet)}
+          padded = encoded + ("0" if len(encoded) % 2 else "")
+          compact = "".join(chr(0x4000 + digits[padded[i]] * 85 + digits[padded[i + 1]]) for i in range(0, len(padded), 2))
+          chunk_size = 30_000  # <=90,000 UTF-8 bytes per Linux environment value.
+          chunks = [compact[i:i + chunk_size] for i in range(0, len(compact), chunk_size)]
+          estimated_output_utf16_bytes = len(compact) * 2 + 16_384
+          if estimated_output_utf16_bytes > 1_048_576 or not 1 <= len(chunks) <= 18:
+              raise RuntimeError("Packed Paper state exceeds the bounded GitHub job-output handoff")
+          lines = ["state_archive_codec=b85-pairs-v1", f"state_archive_chunk_count={len(chunks)}",
+                   f"state_archive_b85_len={len(encoded)}", f"state_archive_sha256={hashlib.sha256(raw).hexdigest()}"]
+          lines += [f"state_archive_chunk_{i}={chunks[i] if i < len(chunks) else ''}" for i in range(18)]
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
+              handle.write("\n".join(lines) + "\n")
+          print(f"state_handoff_estimated_output_utf16_bytes={estimated_output_utf16_bytes}")
+          print(f"state_handoff_chunk_count={len(chunks)}")
+          PY
           fi
-          chunk_count=$(( (state_b85_chars + chunk_size - 1) / chunk_size ))
-          if [ "$chunk_count" -lt 1 ] || [ "$chunk_count" -gt "$max_chunks" ]; then
-            echo "::error::Packed Paper state has invalid chunk count: $chunk_count"
-            exit 1
-          fi
-          {
-            echo "state_archive_chunk_count=$chunk_count"
-            echo "state_archive_b85_len=$state_b85_chars"
-            echo "state_archive_sha256=$state_sha"
-            for index in 0 1 2 3 4 5 6 7 8 9 10 11; do
-              if [ "$index" -lt "$chunk_count" ]; then
-                offset=$(( index * chunk_size ))
-                chunk="${state_b85:offset:chunk_size}"
-              else
-                chunk=""
-              fi
-              printf 'state_archive_chunk_%s=%s\n' "$index" "$chunk"
-            done
-          } >> "$GITHUB_OUTPUT"
-          echo "state_handoff_base85_chars=$state_b85_chars"
-          echo "state_handoff_estimated_output_utf16_bytes=$estimated_output_utf16_bytes"
-          echo "state_handoff_chunk_count=$chunk_count"
+
+      - name: Commit owner-controlled Paper checkpoint when enabled
+        if: ${{ success() && (vars.NEXUS_OWNER_PAPER_CHECKPOINT_SHADOW == 'true' || vars.NEXUS_OWNER_PAPER_CHECKPOINT_PRIMARY == 'true') }}
+        run: |
+          set -euo pipefail
+          case "$OWNER_CHECKPOINT_ROOT" in
+            /mnt/e/NEXUS/NEXUS_OWNER_PAPER_PRIVATE/checkpoints) ;;
+            *) echo "::error::Unexpected owner checkpoint root."; exit 1 ;;
+          esac
+          [ -d /mnt/e/NEXUS/NEXUS_OWNER_PAPER_PRIVATE ]
+          free_kb="$(df -Pk /mnt/e | awk 'NR==2 {print $4}')"
+          [ "$free_kb" -ge 10485760 ] || { echo "::error::Owner checkpoint volume has less than 10 GiB free."; exit 1; }
+          archive="$SOURCE_ROOT/build/persistent-state-handoff.tar.xz"
+          [ -f "$archive" ] && [ -s "$archive" ]
+          "$PYTHON_BIN" "$SOURCE_ROOT/scripts/nexus_owner_paper_checkpoint.py" commit             --root "$OWNER_CHECKPOINT_ROOT"             --archive "$archive"             --run-id "$GITHUB_RUN_ID"             --source-sha "$GITHUB_SHA"
+          "$PYTHON_BIN" "$SOURCE_ROOT/scripts/nexus_owner_paper_checkpoint.py" verify --root "$OWNER_CHECKPOINT_ROOT"
+          echo "owner_checkpoint_commit=PASS mode=${OWNER_CHECKPOINT_PRIMARY:-false}"
 
       - name: Cleanup isolated physical source and state
         if: always()
@@ -828,11 +1082,22 @@ jobs:
           case "$state_root" in "$HOME"/.local/share/nexus/persistent-paper-state/*) rm -rf "$state_root" ;; *) exit 1;; esac
 
   persist-state:
-    if: ${{ always() && needs.paper-loop.result == 'success' && needs.paper-loop.outputs.state_archive_chunk_count != '0' }}
+    if: >-
+      always() &&
+      needs.paper-loop.result == 'success' &&
+      (
+        needs.paper-loop.outputs.public_boundary_health_b64 != '' ||
+        (
+          vars.NEXUS_OWNER_PAPER_CHECKPOINT_PRIMARY != 'true' &&
+          needs.paper-loop.outputs.state_archive_chunk_count != '0' &&
+          needs.paper-loop.outputs.state_archive_chunk_count != ''
+        )
+      )
     needs: paper-loop
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
+      STATE_ARCHIVE_CODEC: ${{ needs.paper-loop.outputs.state_archive_codec }}
       STATE_ARCHIVE_CHUNK_COUNT: ${{ needs.paper-loop.outputs.state_archive_chunk_count }}
       STATE_ARCHIVE_B85_LEN: ${{ needs.paper-loop.outputs.state_archive_b85_len }}
       STATE_ARCHIVE_CHUNK_0: ${{ needs.paper-loop.outputs.state_archive_chunk_0 }}
@@ -847,53 +1112,55 @@ jobs:
       STATE_ARCHIVE_CHUNK_9: ${{ needs.paper-loop.outputs.state_archive_chunk_9 }}
       STATE_ARCHIVE_CHUNK_10: ${{ needs.paper-loop.outputs.state_archive_chunk_10 }}
       STATE_ARCHIVE_CHUNK_11: ${{ needs.paper-loop.outputs.state_archive_chunk_11 }}
+      STATE_ARCHIVE_CHUNK_12: ${{ needs.paper-loop.outputs.state_archive_chunk_12 }}
+      STATE_ARCHIVE_CHUNK_13: ${{ needs.paper-loop.outputs.state_archive_chunk_13 }}
+      STATE_ARCHIVE_CHUNK_14: ${{ needs.paper-loop.outputs.state_archive_chunk_14 }}
+      STATE_ARCHIVE_CHUNK_15: ${{ needs.paper-loop.outputs.state_archive_chunk_15 }}
+      STATE_ARCHIVE_CHUNK_16: ${{ needs.paper-loop.outputs.state_archive_chunk_16 }}
+      STATE_ARCHIVE_CHUNK_17: ${{ needs.paper-loop.outputs.state_archive_chunk_17 }}
       STATE_ARCHIVE_SHA256: ${{ needs.paper-loop.outputs.state_archive_sha256 }}
       STATE_ROOT: build/nexus_persistent_paper_trading_state
+      PUBLIC_HEALTH_B64: ${{ needs.paper-loop.outputs.public_boundary_health_b64 }}
+      PUBLIC_CONTEXT_B64: ${{ needs.paper-loop.outputs.public_boundary_context_b64 }}
     steps:
       - name: Rehydrate physical Paper state handoff
+        if: ${{ vars.NEXUS_OWNER_PAPER_CHECKPOINT_PRIMARY != 'true' && needs.paper-loop.outputs.state_archive_chunk_count != '0' && needs.paper-loop.outputs.state_archive_chunk_count != '' }}
         run: |
           set -euo pipefail
           rm -rf "$STATE_ROOT" build/persistent-state-handoff.tar.xz
           mkdir -p "$STATE_ROOT"
-          case "$STATE_ARCHIVE_CHUNK_COUNT" in
-            1|2|3|4|5|6|7|8|9|10|11) ;;
-            *) echo "::error::Invalid Paper state handoff chunk count."; exit 1 ;;
-          esac
-          chunks=(
-            "$STATE_ARCHIVE_CHUNK_0"
-            "$STATE_ARCHIVE_CHUNK_1"
-            "$STATE_ARCHIVE_CHUNK_2"
-            "$STATE_ARCHIVE_CHUNK_3"
-            "$STATE_ARCHIVE_CHUNK_4"
-            "$STATE_ARCHIVE_CHUNK_5"
-            "$STATE_ARCHIVE_CHUNK_6"
-            "$STATE_ARCHIVE_CHUNK_7"
-            "$STATE_ARCHIVE_CHUNK_8"
-            "$STATE_ARCHIVE_CHUNK_9"
-            "$STATE_ARCHIVE_CHUNK_10"
-            "$STATE_ARCHIVE_CHUNK_11"
-          )
-          state_b85=""
-          for ((index=0; index<STATE_ARCHIVE_CHUNK_COUNT; index++)); do
-            if [ "${#chunks[$index]}" -gt 50000 ]; then
-              echo "::error::Paper state handoff chunk exceeds bound."
-              exit 1
-            fi
-            state_b85+="${chunks[$index]}"
-          done
-          for ((index=STATE_ARCHIVE_CHUNK_COUNT; index<12; index++)); do
-            if [ -n "${chunks[$index]}" ]; then
-              echo "::error::Unexpected trailing Paper state handoff chunk."
-              exit 1
-            fi
-          done
-          if [ "${#state_b85}" -ne "$STATE_ARCHIVE_B85_LEN" ]; then
-            echo "::error::Paper state handoff length mismatch."
-            exit 1
-          fi
-          printf '%s' "$state_b85" | python -c 'import base64, sys; sys.stdout.buffer.write(base64.b85decode(sys.stdin.buffer.read()))' > build/persistent-state-handoff.tar.xz
-          actual_sha="$(sha256sum build/persistent-state-handoff.tar.xz | awk '{print $1}')"
-          test "$actual_sha" = "$STATE_ARCHIVE_SHA256"
+          PYTHONUTF8=1 python - <<'PY'
+          import base64
+          import hashlib
+          import os
+          from pathlib import Path
+
+          if os.environ["STATE_ARCHIVE_CODEC"] != "b85-pairs-v1":
+              raise RuntimeError("Unsupported Paper state handoff codec")
+          count = int(os.environ["STATE_ARCHIVE_CHUNK_COUNT"])
+          length = int(os.environ["STATE_ARCHIVE_B85_LEN"])
+          if not 1 <= count <= 18 or not 1 <= length <= 1_000_000:
+              raise RuntimeError("Invalid Paper state handoff dimensions")
+          chunks = [os.environ[f"STATE_ARCHIVE_CHUNK_{i}"] for i in range(18)]
+          if any(not chunk or len(chunk) > 30_000 for chunk in chunks[:count]):
+              raise RuntimeError("Paper state handoff chunk exceeds bound or is missing")
+          if any(chunks[count:]):
+              raise RuntimeError("Unexpected trailing Paper state handoff chunk")
+          compact = "".join(chunks[:count])
+          if len(compact) != (length + 1) // 2:
+              raise RuntimeError("Paper state handoff length mismatch")
+          alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!#$%&()*+-;<=>?@^_`{|}~"
+          digits = [ord(char) - 0x4000 for char in compact]
+          if any(not 0 <= value < 85 * 85 for value in digits):
+              raise RuntimeError("Invalid compact Paper state character")
+          encoded = "".join(alphabet[value // 85] + alphabet[value % 85] for value in digits)
+          if length % 2 and encoded[-1] != "0":
+              raise RuntimeError("Noncanonical compact Paper state padding")
+          raw = base64.b85decode(encoded[:length].encode("ascii"))
+          if not 0 < len(raw) <= 800_000 or hashlib.sha256(raw).hexdigest() != os.environ["STATE_ARCHIVE_SHA256"]:
+              raise RuntimeError("Paper state handoff SHA256 or size mismatch")
+          Path("build/persistent-state-handoff.tar.xz").write_bytes(raw)
+          PY
           python - <<'PY'
           import os
           import shutil
@@ -942,9 +1209,44 @@ jobs:
           print("hosted_state_handoff_verification=PASS")
           PY
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: ${{ vars.NEXUS_OWNER_PAPER_CHECKPOINT_PRIMARY != 'true' && needs.paper-loop.outputs.state_archive_chunk_count != '0' && needs.paper-loop.outputs.state_archive_chunk_count != '' }}
         with:
           name: nexus-persistent-paper-trading-state
           path: build/nexus_persistent_paper_trading_state
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        if: ${{ needs.paper-loop.outputs.public_boundary_health_b64 != '' }}
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        if: ${{ needs.paper-loop.outputs.public_boundary_health_b64 != '' }}
+        with:
+          python-version: "3.12"
+          cache: pip
+      - if: ${{ needs.paper-loop.outputs.public_boundary_health_b64 != '' }}
+        run: python -m pip install -r requirements.lock
+      - if: ${{ needs.paper-loop.outputs.public_boundary_health_b64 != '' }}
+        run: python -m pip check
+      - name: Rehydrate and independently verify public Paper boundary proof
+        if: ${{ needs.paper-loop.outputs.public_boundary_health_b64 != '' }}
+        run: >-
+          python scripts/nexus_public_paper_boundary_proof.py restore
+          --health-b64 "$PUBLIC_HEALTH_B64"
+          --context-b64 "$PUBLIC_CONTEXT_B64"
+          --output-dir build/nexus-persistent-paper-public-boundary
+          --source-sha "$GITHUB_SHA"
+          --run-id "$GITHUB_RUN_ID"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: ${{ needs.paper-loop.outputs.public_boundary_health_b64 != '' }}
+        with:
+          name: nexus-persistent-paper-public-boundary
+          path: build/nexus-persistent-paper-public-boundary
           if-no-files-found: error
           retention-days: 90
           compression-level: 9

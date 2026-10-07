@@ -14,14 +14,15 @@ class CanonicalBacktestError(ValueError):
     """Raised when an authoritative backtest cannot prove canonical data lineage."""
 
 
-def canonical_market_frame(
+def canonical_ohlcv_frame(
     dataset: Mapping[str, Any], *, registry_path: Path | None = None
 ) -> tuple[dict[str, Any], pd.DataFrame]:
-    """Validate the complete Gate-7 artifact before exposing a market frame.
+    """Validate one complete canonical artifact before exposing closed OHLCV.
 
-    This is the only repository boundary allowed to feed the low-level raw-frame
-    backtest engine from authoritative research/product code.  The low-level engine
-    remains intentionally reusable for unit tests and non-authoritative mechanics.
+    Composite feature research needs volume in addition to the price columns
+    used by the generic backtest engine.  This helper deliberately shares the
+    exact same canonical provenance/finality validator instead of introducing a
+    second raw-data boundary.
     """
     try:
         if registry_path is None:
@@ -35,12 +36,29 @@ def canonical_market_frame(
     frame = pd.DataFrame(rows)
     try:
         frame["timestamp"] = pd.to_datetime(frame["open_time_ms"], unit="ms", utc=True)
-        frame = frame[["timestamp", "open", "high", "low", "close"]].copy()
+        frame = frame[["timestamp", "open", "high", "low", "close", "volume"]].copy()
     except (KeyError, TypeError, ValueError) as exc:
-        raise CanonicalBacktestError("canonical rows cannot form a deterministic market frame") from exc
+        raise CanonicalBacktestError(
+            "canonical rows cannot form a deterministic OHLCV market frame"
+        ) from exc
     if len(frame) != artifact["row_count"]:
-        raise CanonicalBacktestError("canonical row count changed while constructing market frame")
+        raise CanonicalBacktestError(
+            "canonical row count changed while constructing market frame"
+        )
     return artifact, frame
+
+
+def canonical_market_frame(
+    dataset: Mapping[str, Any], *, registry_path: Path | None = None
+) -> tuple[dict[str, Any], pd.DataFrame]:
+    """Validate the complete Gate-7 artifact before exposing a market frame.
+
+    This is the only repository boundary allowed to feed the low-level raw-frame
+    backtest engine from authoritative research/product code.  The low-level engine
+    remains intentionally reusable for unit tests and non-authoritative mechanics.
+    """
+    artifact, frame = canonical_ohlcv_frame(dataset, registry_path=registry_path)
+    return artifact, frame[["timestamp", "open", "high", "low", "close"]].copy()
 
 
 def run_canonical_target_exposure_backtest(

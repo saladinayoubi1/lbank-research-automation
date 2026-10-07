@@ -13,6 +13,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / ".github" / "workflows" / "nexus-local-runner.yml"
 FASTPATH = ROOT / ".github" / "workflows" / "nexus-install-app-fastpath.yml"
+PRELOADER = ROOT / "scripts" / "nexus_preload_verified_artifact.ps1"
 SCRIPT = ROOT / "scripts" / "install_and_smoke_nexus_personal_pro.ps1"
 DOWNLOADER = ROOT / "scripts" / "download_github_actions_artifact_http11.ps1"
 RESOLVER = ROOT / "scripts" / "resolve_nexus_persistent_artifact.ps1"
@@ -114,6 +115,13 @@ def test_resilient_artifact_downloader_is_metadata_and_digest_bound() -> None:
     # Windows 10 ships curl 7.55.1 on the Lenovo; chunk retries are implemented by PowerShell.
     assert "--retry-all-errors" not in script
     assert "--continue-at" not in script
+    assert "Bounded GitHub artifact metadata request failed." in script
+    assert "Bounded GitHub signed redirect request failed." in script
+    assert "Do not use -L" in script
+    assert "Unrecognized artifact host" not in script
+    assert "GitHub artifact redirected to an unapproved delivery host." in script
+    assert "Invoke-RestMethod -Method Get -Uri $artifactApi" not in script
+    assert "System.Net.Http.HttpClient" not in script
     assert "Start-Process -FilePath 'curl.exe'" in script
     assert "Get-SignedArtifactUrl" in script
     assert "$exitCodeKnown = $null -ne $exitCode" in script
@@ -160,6 +168,23 @@ def test_installer_is_side_by_side_non_admin_and_preserves_existing_install() ->
         "live_trading_authority = $true",
     ):
         assert forbidden not in lowered
+
+
+def test_unsafe_legacy_activation_is_rejected_before_owner_mutation() -> None:
+    script = text(SCRIPT)
+    fastpath = text(FASTPATH)
+    preflight = script.index('$script:Evidence.target.interactive_desktop = $true')
+    gate = script.index('if ($ActivateInstalledBuild) {', preflight)
+    refusal = script.index('UNSAFE_LEGACY_OWNER_ACTIVATION_DISABLED', gate)
+    for owner_mutation in (
+        'Copy-Item -LiteralPath $paperSyncSource',
+        'Copy-Item -LiteralPath $paperSyncValidator',
+        'New-NexusShortcut $desktopShortcut $installedExecutable',
+        'Stop-InstalledNexusProductProcesses -ProgramRoot $programRoot',
+    ):
+        assert preflight < gate < refusal < script.index(owner_mutation)
+    assert '-ActivateInstalledBuild' not in fastpath
+    assert 'STAGED_ONLY_OWNER_PRESERVED' in script
 
 
 def test_physical_smoke_requires_visible_ui_and_all_product_safety_contracts() -> None:
@@ -226,7 +251,7 @@ def test_install_fastpath_is_exact_source_and_has_no_external_actions_on_lenovo(
     install = parsed["jobs"]["install"]
     assert install["runs-on"] == ["self-hosted", "Windows", "X64", "nexus-local"]
     assert install["if"] == "github.ref == 'refs/heads/main' && github.actor == github.repository_owner"
-    assert parsed["permissions"] == {"contents": "read"}
+    assert parsed["permissions"] == {"actions": "read", "contents": "read"}
 
     install_steps = install["steps"]
     assert install_steps
@@ -238,6 +263,15 @@ def test_install_fastpath_is_exact_source_and_has_no_external_actions_on_lenovo(
     assert "NEXUS_Personal_Pro_Unpacked_5.1.0_x64.zip" in workflow
     assert "install_and_smoke_nexus_personal_pro.ps1" in workflow
     assert "-UsePreloadedPackage" in workflow
+    preloader = text(PRELOADER)
+    assert "nexus_preload_verified_artifact.ps1" in workflow
+    assert "GITHUB_TOKEN: ${{ github.token }}" in workflow
+    assert "download_github_actions_artifact_http11.ps1" in preloader
+    assert "Downloaded inner package SHA-256 mismatch" in preloader
+    assert "NEXUS_FASTPATH_PRELOAD=PASS" in preloader
+    assert "nexus.preloaded-persistent-cache.v1" in preloader
+    assert workflow.index("Fetch exact repository source from codeload") < workflow.index("Preload bounded official artifact when exact cache is absent") < workflow.index("Verify preloaded exact-source artifact cache")
+    assert "nexus.preloaded-persistent-cache.v1" in workflow
     assert "NEXUS_FASTPATH_CACHE=PASS" in workflow
     assert "NEXUS_FASTPATH_INSTALL=PASS" in workflow
     assert "source_sha:" in workflow
@@ -266,7 +300,7 @@ def test_installer_retargets_generic_start_menu_shortcut() -> None:
     assert "New-NexusShortcut $genericStartMenuShortcut $installedExecutable" in script
 
 
-def test_fastpath_activates_exact_installed_build_without_widening_process_scope() -> None:
+def test_fastpath_stages_exact_build_without_implicit_owner_activation() -> None:
     script = text(SCRIPT)
     workflow = text(FASTPATH)
     assert "[switch]$ActivateInstalledBuild" in script
@@ -277,5 +311,76 @@ def test_fastpath_activates_exact_installed_build_without_widening_process_scope
     assert "Stop-InstalledNexusProductProcesses -ProgramRoot $programRoot" in script
     assert "$preexistingGuiCount -gt 0 -and -not $ActivateInstalledBuild" in script
     assert "RUNNING_VISIBLE_ACTIVATED" in script
-    assert "-ActivateInstalledBuild" in workflow
+    assert "-ActivateInstalledBuild" not in workflow
+    assert "STAGED_ONLY_OWNER_PRESERVED" in script
+    assert "SKIPPED_UNTIL_EXPLICIT_ACTIVATION" in script
+    assert script.index("if (-not $ActivateInstalledBuild) {") < script.index("$desktopShortcut = Join-Path")
+    assert "if ($evidence.final_launch.activation_requested -ne $false" in workflow
     assert "Runner.Listener" not in script
+
+
+def test_install_smoke_cannot_bootstrap_or_stop_other_owner_processes() -> None:
+    bootstrap = text(ROOT / "desktop" / "nexus-product" / "bootstrap-main.js")
+    installer = text(SCRIPT)
+    assert r"/^--nexus-install-smoke=\d+$/" in bootstrap
+    startup = bootstrap.split("app.whenReady().then(() => {", 1)[1]
+    assert startup.index("if (isIsolatedProfileOrSmoke(process.argv)) return;") < startup.index("void reconcileRunnerFromGui")
+    assert "function isIsolatedProfileOrSmoke(argv)" in bootstrap
+    cleanup = installer.split("function Get-NewNexusProcesses {", 1)[1].split("function Get-InstalledNexusProductProcesses", 1)[0]
+    assert "Get-InstalledNexusProductProcesses -ProgramRoot $script:InstallRoot" in cleanup
+    assert "Get-NexusProcesses | Where-Object" not in cleanup
+
+
+def test_stage_only_cannot_replace_global_owner_paper_sync() -> None:
+    installer = text(SCRIPT)
+    guard = installer.index("if (-not $ActivateInstalledBuild) {")
+    exit_stage = installer.index("        return\n    }", guard)
+    deploy = installer.index("Copy-Item -LiteralPath $paperSyncSource")
+    deploy_validator = installer.index("Copy-Item -LiteralPath $paperSyncValidator")
+    shortcut = installer.index("$desktopShortcut = Join-Path")
+    assert guard < exit_stage < deploy < deploy_validator < shortcut
+    assert "NEXUS_PAPER_SYNC_SOURCE_DEPLOYED=1" in installer
+    assert "SKIPPED_UNTIL_EXPLICIT_ACTIVATION" in installer
+
+
+def test_delayed_renderer_window_still_requires_trusted_loaded_document() -> None:
+    installer = text(SCRIPT)
+    main = text(ROOT / "desktop" / "nexus-product" / "main.js")
+    assert "if (-not (Wait-ForVisibleNewWindow -TimeoutSeconds 300))" in installer
+    assert "Get-InstalledNexusProductProcesses -ProgramRoot $script:InstallRoot" in installer
+    assert "if ($process.MainWindowHandle -ne 0 -and [string]$process.MainWindowTitle -match '(?i)NEXUS')" in installer
+    assert "mainFrameLoadFailed = true;" in main
+    assert "win.webContents.on('did-fail-load'" in main
+    assert "win.webContents.once('did-finish-load'" in main
+    assert "win.webContents.getURL() !== origin + '/'" in main
+    assert "win.show();" in main
+    assert "if (mainFrameLoadFailed || win.isDestroyed()) return;" in main
+
+def test_packaged_smoke_http_retries_are_bounded_and_preserve_fail_closed_contracts() -> None:
+    script = text(SCRIPT)
+    assert "function Invoke-BoundedProductJson" in script
+    helper = script.split("function Invoke-BoundedProductJson", 1)[1].split("function Invoke-ProductContract", 1)[0]
+    assert "[int]$TimeoutSeconds=45" in helper
+    assert "[int]$Attempts=3" in helper
+    assert "Start-Sleep -Seconds 5" in helper
+    assert "Invoke-RestMethod -Uri $Uri -TimeoutSec $TimeoutSeconds -ErrorAction Stop" in helper
+    assert "Product smoke endpoint remained unavailable" in helper
+    assert "Product smoke only permits loopback HTTP endpoints." in helper
+    contract = script.split("function Invoke-ProductContract", 1)[1].split("\ntry {", 1)[0]
+    for route in (
+        "overview", "paper", "live", "offline", "mission/full",
+        "build-evidence", "strategies/evidence",
+    ):
+        assert f'Invoke-BoundedProductJson -Uri "$Origin/api/product/{route}"' in contract
+    for required in (
+        "Product overview authority contract failed.",
+        "Paper-only contract failed.",
+        "Live trading authority widened during laptop smoke test.",
+        "Offline-first contract failed.",
+        "Mission Control authority contract failed.",
+        "Installed product exact-source evidence failed.",
+        "Strategy evidence boundary failed.",
+    ):
+        assert required in contract
+    assert "if ($ActivateInstalledBuild)" in script
+    assert "UNSAFE_LEGACY_OWNER_ACTIVATION_DISABLED" in script

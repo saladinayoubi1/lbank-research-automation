@@ -9,6 +9,13 @@ import sys
 from pathlib import Path
 from typing import Any
 
+# Research execution identifiers come solely from checked-in reviewed mission
+# definitions, never from the untrusted dispatch payload.
+_REPO_ROOT = str(Path(__file__).resolve().parents[1])
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
+from nexus_research_missions import PREDECESSOR as RESEARCH_FOLLOWONS, TASKS as RESEARCH_TASKS
+
 DISPATCH_KEYS = {
     "schema_version", "task_id", "lease_id", "correlation_id", "dispatch_id", "worker_id",
     "transport", "phase", "gate", "title", "required_capabilities", "acceptance",
@@ -101,8 +108,86 @@ def decode_payload(value: str) -> dict[str, Any]:
         data = json.loads(decoded.decode("utf-8"))
     except (UnicodeEncodeError, UnicodeDecodeError, ValueError, json.JSONDecodeError) as exc:
         raise ValueError("dispatch payload encoding is invalid") from exc
-    if not isinstance(data, dict) or set(data) != DISPATCH_KEYS:
+    qa_keys = {"research_producer_lease_id", "research_producer_receipt_digest",
+               "research_producer_source_sha"}
+    strategy_qa_keys = {"strategy_qa_task"}
+    composite_qa_keys = {"composite_qa_task"}
+    followon_keys = {
+        "research_predecessor_source_sha", "research_predecessor_receipt_digest",
+        "research_predecessor_qa_digest", "research_predecessor_ledger_digest",
+        "research_predecessor_mechanism",
+    }
+    if not isinstance(data, dict):
         raise ValueError("dispatch payload schema mismatch")
+    keys = set(data)
+    is_followon = data.get("task_id") in RESEARCH_FOLLOWONS
+    is_research_qa = (
+        data.get("task_id") in RESEARCH_TASKS
+        and data.get("worker_id") == "qa-verifier-agent"
+    )
+    is_strategy_qa = (
+        isinstance(data.get("task_id"), str)
+        and data.get("task_id", "").startswith("STRATEGY-QA-")
+        and data.get("worker_id") == "qa-verifier-agent"
+    )
+    is_composite_qa = (
+        isinstance(data.get("task_id"), str)
+        and data.get("task_id", "").startswith("COMPOSITE-QA-")
+        and data.get("worker_id") == "qa-verifier-agent"
+    )
+    expected = (
+        DISPATCH_KEYS
+        | (qa_keys if is_research_qa else set())
+        | (strategy_qa_keys if is_strategy_qa else set())
+        | (composite_qa_keys if is_composite_qa else set())
+        | (followon_keys if is_followon else set())
+    )
+    if is_research_qa and not qa_keys.issubset(keys):
+        raise ValueError("Research independent QA producer binding absent")
+    if keys != expected:
+        raise ValueError("dispatch payload schema mismatch")
+    if is_followon:
+        # Bound repo-root import, never a dispatch-selected Python module.
+        repo_root = str(Path(__file__).resolve().parents[1])
+        if repo_root not in sys.path:
+            sys.path.insert(0, repo_root)
+        from nexus_research_missions import validate_ancestry
+        validate_ancestry({k: data[k] for k in followon_keys})
+    if is_strategy_qa:
+        if data.get("phase") != 7 or data.get("transport") != "github-cloud":
+            raise ValueError("Strategy independent QA requires phase 7 cloud transport")
+        from nexus_strategy_independent_qa import validate_task
+        strategy_task = data.get("strategy_qa_task")
+        if not isinstance(strategy_task, dict):
+            raise ValueError("Strategy independent QA handoff binding absent")
+        validate_task(strategy_task, str(strategy_task.get("source_sha", "")))
+        if strategy_task.get("id") != data.get("task_id"):
+            raise ValueError("Strategy independent QA task identity mismatch")
+    if is_composite_qa:
+        if data.get("phase") != 7 or data.get("transport") != "github-cloud":
+            raise ValueError("Composite runtime independent QA requires phase 7 cloud transport")
+        from nexus_composite_runtime_independent_qa import validate_task
+        composite_task = data.get("composite_qa_task")
+        if not isinstance(composite_task, dict):
+            raise ValueError("Composite runtime independent QA handoff binding absent")
+        validate_task(composite_task, str(composite_task.get("source_sha", "")))
+        if composite_task.get("id") != data.get("task_id"):
+            raise ValueError("Composite runtime independent QA task identity mismatch")
+    if is_research_qa:
+        if keys != expected or not qa_keys.issubset(keys):
+            raise ValueError("Research independent QA producer binding absent")
+        if (
+            not isinstance(data["research_producer_lease_id"], str)
+            or len(data["research_producer_lease_id"]) > 160
+            or not data["research_producer_lease_id"]
+            or not isinstance(data["research_producer_receipt_digest"], str)
+            or len(data["research_producer_receipt_digest"]) != 64
+            or any(c not in "0123456789abcdef" for c in data["research_producer_receipt_digest"])
+            or not isinstance(data["research_producer_source_sha"], str)
+            or len(data["research_producer_source_sha"]) != 40
+            or any(c not in "0123456789abcdef" for c in data["research_producer_source_sha"])
+        ):
+            raise ValueError("independent QA source or producer receipt is invalid")
     if data["schema_version"] != 2:
         raise ValueError("unsupported dispatch payload schema")
     for field in ("task_id", "lease_id", "correlation_id", "dispatch_id", "worker_id", "transport"):
@@ -178,12 +263,188 @@ def _phase7_pytest_workload(payload: dict[str, Any], transport: str, spec: dict[
 
 def deterministic_execution(payload: dict[str, Any], transport: str) -> tuple[str, dict[str, Any]]:
     task_id = payload["task_id"]
+    if isinstance(task_id, str) and task_id.startswith("COMPOSITE-QA-"):
+        if (
+            payload.get("phase") != 7
+            or transport != "github-cloud"
+            or payload.get("worker_id") != "qa-verifier-agent"
+        ):
+            return "failure", {
+                "executor": "nexus-composite-runtime-independent-qa",
+                "failure_class": "composite_runtime_qa_lease_worker_phase_or_transport_mismatch",
+                "qualification_authority": False,
+                "registry_mutation_authority": False,
+                "runtime_activation_authority": False,
+                "paper_execution_authority": False,
+                "automatic_strategy_promotion": False,
+                "live_trading_authority": False,
+            }
+        try:
+            from nexus_composite_runtime_independent_qa import (
+                CompositeRuntimeQaError,
+                run_independent_qa,
+            )
+            receipt = run_independent_qa(
+                payload["composite_qa_task"],
+                lease_id=payload["lease_id"],
+                execution_source_sha=os.environ.get("GITHUB_SHA", ""),
+                state_root=Path("build/composite-runtime-independent-qa"),
+            )
+            return "success", receipt
+        except (KeyError, OSError, ValueError, RuntimeError, CompositeRuntimeQaError) as exc:
+            return "failure", {
+                "executor": "nexus-composite-runtime-independent-qa",
+                "failure_class": "composite_runtime_independent_qa_failed",
+                "reason": str(exc)[:600],
+                "qualification_authority": False,
+                "registry_mutation_authority": False,
+                "runtime_activation_authority": False,
+                "paper_execution_authority": False,
+                "automatic_strategy_promotion": False,
+                "live_trading_authority": False,
+            }
+    if isinstance(task_id, str) and task_id.startswith("STRATEGY-QA-"):
+        if (
+            payload.get("phase") != 7
+            or transport != "github-cloud"
+            or payload.get("worker_id") != "qa-verifier-agent"
+        ):
+            return "failure", {
+                "executor": "nexus-strategy-independent-qa",
+                "failure_class": "strategy_qa_lease_worker_phase_or_transport_mismatch",
+                "qualification_authority": False,
+                "paper_execution_authority": False,
+                "automatic_strategy_promotion": False,
+                "live_trading_authority": False,
+            }
+        try:
+            from nexus_strategy_independent_qa import (
+                StrategyIndependentQaError,
+                run_independent_qa,
+            )
+            receipt = run_independent_qa(
+                payload["strategy_qa_task"],
+                lease_id=payload["lease_id"],
+                execution_source_sha=os.environ.get("GITHUB_SHA", ""),
+                state_root=Path("build/strategy-independent-qa"),
+            )
+            return "success", receipt
+        except (KeyError, OSError, ValueError, RuntimeError, StrategyIndependentQaError) as exc:
+            return "failure", {
+                "executor": "nexus-strategy-independent-qa",
+                "failure_class": "strategy_independent_qa_failed",
+                "reason": str(exc)[:600],
+                "qualification_authority": False,
+                "paper_execution_authority": False,
+                "automatic_strategy_promotion": False,
+                "live_trading_authority": False,
+            }
     phase4 = PHASE4_WORKLOADS.get(task_id)
     if phase4 is not None:
         return _bounded_pytest_workload(payload, transport, phase4, expected_phase=4)
     phase7 = PHASE7_WORKLOADS.get(task_id)
     if phase7 is not None:
         return _phase7_pytest_workload(payload, transport, phase7)
+    if task_id in RESEARCH_TASKS:
+        # This is a real numerical workload, not the historical Phase-7 pytest
+        # proof. Only the bounded Research Agent's cloud lease may start it.
+        worker = payload.get("worker_id")
+        if payload.get("phase") != 7 or transport != "github-cloud" or worker not in {"research-agent", "qa-verifier-agent"}:
+            return "failure", {
+                "executor": "nexus-real-composite-backtest",
+                "failure_class": "research_lease_worker_phase_or_transport_mismatch",
+                "auto_demo_promotion": False,
+                "live_enabled": False,
+                "qualification_authority": False,
+            }
+        # Executed as scripts/agent_task_executor.py, so sys.path[0] is
+        # scripts/. Resolve only this checked-out repository root; never
+        # import workload code from a caller-supplied path or dispatch value.
+        repo_root = str(Path(__file__).resolve().parents[1])
+        if repo_root not in sys.path:
+            sys.path.insert(0, repo_root)
+        from nexus_agent_composite_runtime import (
+            RealResearchError, run_lease, verify_independently,
+        )
+        try:
+            source = os.environ.get("GITHUB_SHA", "")
+            if worker == "qa-verifier-agent":
+                # QA has its own Agent Manager lease, but independently replays
+                # the specific producer's original prior state and numeric work.
+                if source != payload["research_producer_source_sha"]:
+                    raise RealResearchError("QA source differs from the producer's immutable source")
+                proof = verify_independently(
+                    archive_root=Path("build/agent-research/archive"),
+                    previous_ledger=Path("build/agent-research/producer/result/previous-ledger.json"),
+                    source_sha=source,
+                    lease_id=payload["research_producer_lease_id"],
+                    result_dir=Path("build/agent-research/producer/result"),
+                    output=Path("build/agent-research/qa-evidence.json"),
+                )
+                if proof["producer_receipt_digest"] != payload["research_producer_receipt_digest"]:
+                    raise RealResearchError("QA bound to a different producer digest")
+                if task_id in RESEARCH_FOLLOWONS:
+                    original_receipt = json.loads(Path(
+                        "build/agent-research/producer/result/agent-receipt.json"
+                    ).read_text(encoding="utf-8"))
+                    if (
+                        original_receipt.get("prior_ledger_digest")
+                        != payload["research_predecessor_ledger_digest"]
+                        or original_receipt.get("mechanism")
+                        == payload["research_predecessor_mechanism"]
+                    ):
+                        raise RealResearchError("QA detected successor frontier mismatch or same causal mechanism")
+                return "success", {
+                    "executor": "nexus-independent-composite-numeric-qa",
+                    "producer_receipt_digest": proof["producer_receipt_digest"],
+                    "producer_lease_id": payload["research_producer_lease_id"],
+                    "source_sha": proof["source_sha"],
+                    "qa_digest": proof["qa_digest"],
+                    "independent_qa_complete": True,
+                    "qualification_authority": False,
+                    "auto_demo_promotion": False,
+                    "live_enabled": False,
+                }
+            # The secure runner's preparer must have staged both immutable
+            # inputs from verified artifacts. No first-mechanism reset fallback.
+            evidence = run_lease(
+                archive_root=Path("build/agent-research/archive"),
+                previous_ledger=Path("build/agent-research/previous-ledger.json"),
+                source_sha=source, lease_id=payload["lease_id"],
+                output_dir=Path("build/agent-research/result"),
+            )
+            if task_id in RESEARCH_FOLLOWONS and (
+                evidence["prior_ledger_digest"] != payload["research_predecessor_ledger_digest"]
+                or evidence["mechanism"] == payload["research_predecessor_mechanism"]
+            ):
+                raise RealResearchError("successor did not advance to a different QA-bound causal mechanism")
+            return "success", {
+                "executor": "nexus-real-composite-backtest",
+                "workload_id": task_id,
+                "lease_id": payload["lease_id"],
+                "mechanism": evidence["mechanism"],
+                "config_fingerprint": evidence["config_fingerprint"],
+                "archive_sha256": evidence["archive_sha256"],
+                "source_sha": evidence["source_sha"],
+                "prior_ledger_digest": evidence["prior_ledger_digest"],
+                "report_digest": evidence["report_digest"],
+                "ledger_digest": evidence["ledger_digest"],
+                "receipt_digest": evidence["receipt_digest"],
+                "validation": evidence["validation"],
+                "independent_qa_complete": False,
+                "qualification_authority": False,
+                "auto_demo_promotion": False,
+                "live_enabled": False,
+            }
+        except (OSError, ValueError, RuntimeError) as exc:
+            return "failure", {
+                "executor": "nexus-real-composite-backtest",
+                "failure_class": "verified_research_execution_failed",
+                "reason": str(exc)[:600],
+                "auto_demo_promotion": False,
+                "live_enabled": False,
+                "qualification_authority": False,
+            }
     if task_id in {"P4-MGR-001", "P4-MGR-002"}:
         result = run([sys.executable, "-m", "pytest", "-q", "tests/test_agent_manager.py", "tests/test_agent_manager_runner.py", "tests/test_agent_transport.py"])
         return ("success" if result["ok"] else "failure", {"executor": "pytest", "tests": result, "failure_class": "deterministic_test_failure" if not result["ok"] else None})

@@ -7,6 +7,8 @@
   <title>NEXUS Personal Pro</title>
   <link rel="stylesheet" href="/ui/product.css">
   <link rel="stylesheet" href="/ui/product-extra.css">
+  <link rel="stylesheet" href="/ui/research-operations.css">
+<link rel="stylesheet" href="/ui/product-terminal.css">
 </head>
 <body>
 <div class="app-shell">
@@ -54,11 +56,31 @@
       <section id="view-data" class="view">
         <div class="section-head"><div><span>DATA CONTROL CENTER</span><h2>رجیستری و کیفیت منابع بازار</h2></div><strong class="badge good">PUBLIC / READ-ONLY</strong></div>
         <article class="panel"><header><div><span>CANONICAL REGISTRY</span><h2>Bybit → Binance → LBank</h2></div><button id="registryRefresh" class="small-btn">بروزرسانی</button></header><div id="registrySummary" class="metric-grid"></div><div id="registryTable" class="table-wrap"></div></article>
+        <article class="panel market-probe-panel" aria-label="آزمایش منبع واقعی بازار"><header><div><span>REAL PUBLIC FEED · EXPLICIT CHECK</span><h2>اتصال واقعی و آخرین کندل تأییدشده Bybit</h2></div><strong class="badge warn">NO AUTOMATIC FALLBACK</strong></header>
+          <p class="market-probe-disclosure">رجیستری فقط سازگاری قرارداد داده را نشان می‌دهد، نه اتصال فعلی بازار. این آزمایش فقط با دکمه شما و بدون API Key انجام می‌شود؛ نتیجه آن قیمت مجاز برای معامله یا بک‌تست محسوب نمی‌شود.</p>
+          <form id="marketProbeForm" class="market-probe-form" aria-label="آزمایش محدود داده عمومی">
+            <label>جفت‌ارز<select name="symbol" id="marketProbeSymbol"><option value="BTCUSDT">BTC/USDT</option><option value="ETHUSDT">ETH/USDT</option><option value="SOLUSDT">SOL/USDT</option><option value="XRPUSDT">XRP/USDT</option></select></label>
+            <label>تایم‌فریم<select name="timeframe" id="marketProbeTimeframe"><option value="15m">15 دقیقه</option><option value="1h">1 ساعت</option><option value="4h" selected>4 ساعت</option></select></label>
+            <button id="marketProbeSubmit" type="submit" class="small-btn">آزمایش Bybit</button>
+          </form>
+          <div id="marketProbeStatus" class="result-box muted" role="status" aria-live="polite">وضعیت منبع هنوز آزمایش نشده است. «Compatible» در جدول بالا به معنی آنلاین بودن نیست.</div>
+        </article>
         <article class="panel"><header><div><span>DATA BOUNDARY</span><h2>قواعد داده</h2></div></header><div class="check-list"><div>✓ فقط کندل بسته و نهایی</div><div>✓ Provenance و SHA-256 binding</div><div>✓ primary source حق جایگزینی مخفی ندارد</div><div>✓ stale/gap/semantic mismatch = fail closed</div><div>✓ بدون API Key خصوصی</div><div>✓ مسیر پژوهش فقط Paper</div></div></article>
       </section>
 
       <section id="view-research" class="view">
         <div class="section-head"><div><span>RESEARCH / BACKTEST STUDIO</span><h2>پژوهش واقعی روی داده canonical</h2></div><strong class="badge warn">NO PROFITABILITY CLAIM</strong></div>
+        <div id="researchAgentOverview" aria-label="وضعیت واقعی پژوهش خودکار"></div>
+        <details id="autonomousResearchPanel" class="panel ops-deep-evidence">
+          <summary class="ops-evidence-summary">
+            <span class="ops-eyebrow">SOURCE-BOUND AGENT AUDIT / INDEPENDENT QA</span>
+            <strong>گزارش تکمیلی مأموریت‌ها و تطبیق مستقل</strong>
+            <b id="agentResearchBadge" class="badge neutral">NOT VERIFIED</b>
+          </summary>
+          <div id="agentResearchMetrics" class="metric-grid"></div>
+          <div id="agentResearchTasks" class="table-wrap"><div class="empty-state">شواهد معتبر Research Agent هنوز بازیابی نشده است.</div></div>
+          <p class="muted ops-evidence-disclaimer">تطبیق تاریخی رسید تولیدکننده و QA مجوز Paper، اثبات سودآوری یا شواهد دست‌نخوردهٔ OOS نیست.</p>
+        </details>
         <div class="research-layout">
           <article class="panel"><header><div><span>PREREGISTERED RUN</span><h2>اجرای پژوهش</h2></div></header><form id="researchForm" class="order-form"><label>نماد<select name="symbol"><option>BTCUSDT</option><option>ETHUSDT</option><option>SOLUSDT</option><option>BNBUSDT</option><option>XRPUSDT</option></select></label><label>تایم‌فریم<select name="timeframe"><option value="minute15">15m</option><option value="hour1">1h</option><option value="hour4">4h</option></select></label><label>خانواده<select name="family"><option value="momentum">Momentum</option><option value="trend_breakout">Trend Breakout</option><option value="mean_reversion">Mean Reversion</option></select></label><label>کندل<input name="limit" type="number" min="60" max="500" value="240"></label><button class="primary" type="submit">داده → Backtest → OOS/Stress/Regime → Qualification</button></form><div id="researchRunState" class="result-box muted">هنوز پژوهشی اجرا نشده است.</div></article>
           <article class="panel"><header><div><span>QUALIFICATION</span><h2>نتیجه Strategy Factory</h2></div><strong id="qualificationBadge" class="badge neutral">NO RUN</strong></header><div id="researchMetrics" class="metric-grid"></div><pre id="researchEvidence" class="json-view">—</pre></article>
@@ -68,13 +90,16 @@
       </section>
 
       <section id="view-paper" class="view">
-        <div class="section-head"><div><span>PAPER / DEMO EXECUTION</span><h2>حساب دمو و اجرای قطعی</h2></div><div class="inline-actions"><button id="autoPaper" class="small-btn accent">اجرای Auto Paper از آخرین Qualification</button><strong class="badge good">PAPER ONLY</strong></div></div>
-        <div class="paper-layout">
-          <article class="panel account-panel"><header><div><span>DEMO ACCOUNT</span><h2>پرتفوی</h2></div><button id="paperRefresh" class="small-btn">بروزرسانی</button></header><div id="paperMetrics" class="metric-grid"></div><div class="control-strip"><button id="sessionOpen" class="small-btn">Session Open</button><button id="sessionClose" class="small-btn">Session Close</button><button id="killOn" class="small-btn danger-btn">Kill Switch ON</button><button id="killOff" class="small-btn">Kill Switch OFF</button></div><div class="subhead">پوزیشن‌های باز</div><div id="positions" class="table-wrap"></div></article>
+        <div class="section-head"><div><span>ACTIVE STRATEGY PAPER ACCOUNT</span><h2>حساب دمو استراتژی بک‌تست‌شده</h2></div><div class="inline-actions"><button id="sharedPaperRefresh" class="small-btn accent" type="button">تازه‌سازی</button><strong id="sharedPaperFreshness" class="badge neutral">در حال بررسی…</strong><strong class="badge good">PAPER ONLY · LIVE LOCKED</strong></div></div>
+        <div id="sharedTerminal"></div>
+        <article class="panel"><header><div><span>LEGACY PATH</span><h2>مسیر قدیمی آرشیو شد</h2></div><strong class="badge neutral">NOT ACTIVE</strong></header><div class="empty-state">Prospective/Manual و ماتریس قدیمی دیگر منبع حساب فعال نیستند. حساب بالا فقط از runtime استراتژی فعال و دفتر Paper جدید خوانده می‌شود.</div></article>
+        <div class="section-head" hidden><div><span>PAPER / DEMO EXECUTION</span><h2>Legacy Manual / Prospective Archive</h2></div><div class="inline-actions"><button id="autoPaper" class="small-btn accent">اجرای Auto Paper از آخرین Qualification</button><strong class="badge good">PAPER ONLY</strong></div></div>
+        <div class="paper-layout" hidden>
+          <article class="panel account-panel"><header><div><span>MANUAL PAPER · SEPARATE ACCOUNT</span><h2>حساب دستی مستقل</h2></div><button id="paperRefresh" class="small-btn">بروزرسانی</button></header><div id="paperMetrics" class="metric-grid"></div><div class="control-strip"><button id="sessionOpen" class="small-btn">Session Open</button><button id="sessionClose" class="small-btn">Session Close</button><button id="killOn" class="small-btn danger-btn">Kill Switch ON</button><button id="killOff" class="small-btn">Kill Switch OFF</button></div><div class="subhead">پوزیشن‌های باز</div><div id="positions" class="table-wrap"></div></article>
           <article class="panel ticket-panel"><header><div><span>MANUAL PAPER TICKET</span><h2>فرمان Paper</h2></div><strong class="badge good">RISK GATED</strong></header><form id="paperOrder" class="order-form"><label>عملیات<select name="operation"><option value="open">باز کردن</option><option value="close">بستن</option><option value="reduce">کاهش</option><option value="reverse">معکوس</option></select></label><label>نماد<select name="symbol"><option>BTCUSDT</option><option>ETHUSDT</option><option>SOLUSDT</option><option>BNBUSDT</option><option>XRPUSDT</option></select></label><label>تایم‌فریم<select name="timeframe"><option value="minute15">15m</option><option value="hour1">1h</option><option value="hour4">4h</option></select></label><label>جهت<select name="side"><option value="long">Long</option><option value="short">Short</option></select></label><label>مقدار<input name="quantity" inputmode="decimal" required placeholder="مثلاً 0.001" autocomplete="off"></label><label>قیمت مرجع<input name="reference_price" inputmode="decimal" required placeholder="قیمت Paper را وارد کنید" autocomplete="off"></label><label>حد ضرر<input name="stop_price" inputmode="decimal" required placeholder="Stop" autocomplete="off"></label><label>هدف<input name="target_price" inputmode="decimal" required placeholder="Target" autocomplete="off"></label><button class="primary" type="submit">ارسال به Risk → Paper Execution</button></form><div id="orderResult" class="result-box muted">هیچ فرمانی ارسال نشده است.</div></article>
         </div>
-        <article class="panel"><header><div><span>DEMO STRATEGY MATRIX</span><h2>۱۸ مسیر Paper فعال</h2></div><strong id="matrixBadge" class="badge neutral">UNAVAILABLE</strong></header><div id="matrixMetrics" class="metric-grid"></div><div id="strategyMatrix" class="table-wrap"><div class="empty-state">هنوز snapshot ماتریس در این دستگاه موجود نیست.</div></div></article>
-        <article class="panel"><header><div><span>EVENT JOURNAL</span><h2>آخرین رویدادهای Paper</h2></div></header><div id="paperEvents" class="event-list"></div></article>
+        <article class="panel" hidden><header><div><span>DEMO STRATEGY MATRIX</span><h2>Legacy strategy matrix</h2></div><strong id="matrixBadge" class="badge neutral">UNAVAILABLE</strong></header><div id="matrixMetrics" class="metric-grid"></div><div id="strategyMatrix" class="table-wrap"><div class="empty-state">Legacy snapshot archived.</div></div></article>
+        <article class="panel" hidden><header><div><span>EVENT JOURNAL</span><h2>Legacy manual journal</h2></div></header><div id="paperEvents" class="event-list"></div></article>
       </section>
 
       <section id="view-risk" class="view">
@@ -85,12 +110,28 @@
 
       <section id="view-ai" class="view">
         <div class="section-head"><div><span>MULTI-AI CONTROL ROOM</span><h2>اتاق هوش مصنوعی NEXUS</h2></div><strong class="badge warn">POLICY GATED</strong></div>
-        <div class="ai-layout"><article class="panel ai-chat"><div id="aiTranscript" class="transcript"><div class="message system"><b>NEXUS</b><p>اتاق AI به Project Memory و وضعیت واقعی Mission/Research/Strategy/Risk/Paper متصل است. AI اختیار دور زدن Risk یا فعال‌سازی Live ندارد.</p></div></div><form id="aiForm" class="composer"><textarea id="aiMessage" placeholder="وضعیت پروژه، داده، پژوهش یا Paper را تحلیل کن"></textarea><button class="primary">ارسال</button></form></article><article class="panel"><header><div><span>INTEGRATED CONTEXT</span><h2>وضعیت متصل اجزا</h2></div></header><div id="aiContext" class="metric-grid"></div><header><div><span>AUTHORITY</span><h2>سطوح اختیار</h2></div></header><div class="rule-list"><div><b>L0</b><span>مشاهده</span></div><div><b>L1</b><span>پیشنهاد</span></div><div><b>L2</b><span>Paper proposal؛ Risk لازم</span></div><div><b>L3</b><span>گردش‌کار محدود و برگشت‌پذیر</span></div><div class="danger-line"><b>L4</b><span>Owner required / Live / Production</span></div></div></article></div>
+        <article class="panel ai-provider-panel">
+          <header><div><span>MODEL CONNECTION</span><h2>مدل و منبع پاسخ</h2></div><button id="aiProviderRefresh" type="button" class="secondary">بررسی اتصال</button></header>
+          <div class="ai-provider-controls"><label for="aiResponseMode">نوع پاسخ</label><select id="aiResponseMode"><option value="local">کنترل داخلی NEXUS</option><option value="deepseek" disabled>تحلیل مدل DeepSeek</option><option value="chatgpt" disabled>تحلیل مدل ChatGPT</option></select><div id="aiProviderStatus" role="status" aria-live="polite">در حال بررسی وضعیت مدل…</div></div>
+          <div class="chatgpt-connection"><div class="inline-actions"><button id="chatGPTConnect" type="button" class="primary">Continue with ChatGPT</button><button id="chatGPTModels" type="button" class="secondary">دریافت مدل‌های حساب</button><button id="chatGPTDisconnect" type="button" class="secondary">قطع اتصال</button><button id="chatGPTCancel" type="button" class="secondary">لغو درخواست</button><button id="chatGPTUsage" type="button" class="secondary">مدیریت مصرف ChatGPT</button></div><div id="chatGPTStatus" role="status" aria-live="polite">ورود با ChatGPT در نسخهٔ Desktop انجام می‌شود.</div><label for="chatGPTModel">مدل حساب ChatGPT</label><select id="chatGPTModel" disabled><option value="">پس از ورود، مدل‌های مجاز دریافت می‌شوند</option></select></div>
+          <p class="ai-privacy-note">مدل خلاصهٔ وضعیت اجزا و موضوع درخواست را دریافت می‌کند؛ متن گفتگو و اطلاعات حساب ارسال نمی‌شوند. پاسخ مدل مشاوره است و مأموریت از مسیر مجاز NEXUS بررسی می‌شود.</p>
+        </article>
+        <article class="panel" aria-labelledby="tradingViewTitle">
+          <header><div><span>TRADINGVIEW / MARKET ANALYSIS</span><h2 id="tradingViewTitle">تحلیل بازار TradingView</h2></div><button id="tradingViewConnect" type="button" class="secondary">ورود به TradingView</button></header>
+          <div class="ai-provider-controls"><div id="tradingViewStatus" role="status" aria-live="polite">اتصال هنوز بررسی نشده</div><button id="tradingViewDisconnect" type="button" class="secondary">قطع اتصال</button><button id="tradingViewCancel" type="button" class="secondary">لغو ورود یا دریافت</button></div>
+          <form id="tradingViewForm" class="ai-provider-controls"><label for="tradingViewSymbol">نماد بازار</label><input id="tradingViewSymbol" value="BYBIT:ETHUSDT" maxlength="65" pattern="[A-Z0-9_]{2,24}:[A-Z0-9_.!\-]{2,40}" required dir="ltr"><label for="tradingViewInterval">تایم‌فریم</label><select id="tradingViewInterval"><option value="4h">۴ ساعت</option><option value="1h">۱ ساعت</option><option value="15m">۱۵ دقیقه</option><option value="1D">روزانه</option></select><button id="tradingViewSnapshot" type="submit" class="primary">دریافت تحلیل و کندل‌ها</button></form>
+          <p class="muted">نمایش و تحلیل برای شما؛ دادهٔ این بخش به استراتژی، Risk یا اجرای دمو فرستاده نمی‌شود. ورود رسمی و طرح واجد شرایط TradingView لازم است.</p>
+          <div id="tradingViewReceipt" role="status" aria-live="polite">تحلیل واقعی هنوز دریافت نشده</div>
+          <details><summary>شاخص‌ها و تحلیل تکنیکال</summary><pre id="tradingViewTechnicals" class="json-view">—</pre></details>
+          <details><summary>کندل‌ها و حجم</summary><pre id="tradingViewBars" class="json-view">—</pre></details>
+        </article>
+        <article class="panel"><header><div><span>COUNCIL / ROADMAP</span><h2>شورا و مسیر انجام کار</h2></div></header><div id="aiCouncil">در حال خواندن سیاست شورا…</div><div id="aiRoadmap" class="stage-track"></div><p class="muted">نظر مدل، رأی شورا یا QA مستقل نیست. پیشنهاد از Mission و Supervisor می‌گذرد؛ Evidence، تأیید مستقل و Risk برای پذیرش لازم‌اند. عملکرد و Drift به پژوهش بعدی بازمی‌گردند.</p></article>
+        <div class="ai-layout"><article class="panel ai-chat"><div id="aiTranscript" class="transcript"><div class="message system"><b>NEXUS</b><p>اتاق AI به Project Memory و وضعیت واقعی Mission/Research/Strategy/Risk/Paper متصل است. AI اختیار دور زدن Risk یا فعال‌سازی Live ندارد.</p></div></div><form id="aiForm" class="composer"><textarea id="aiMessage" placeholder="وضعیت پروژه، داده، پژوهش یا Paper را تحلیل کن"></textarea><button class="primary" type="submit">ارسال</button></form></article><article class="panel"><header><div><span>INTEGRATED CONTEXT</span><h2>وضعیت متصل اجزا</h2></div></header><div id="aiContext" class="metric-grid"></div><header><div><span>AUTHORITY</span><h2>سطوح اختیار</h2></div></header><div class="rule-list"><div><b>L0</b><span>مشاهده</span></div><div><b>L1</b><span>پیشنهاد</span></div><div><b>L2</b><span>Paper proposal؛ Risk لازم</span></div><div><b>L3</b><span>گردش‌کار محدود و برگشت‌پذیر</span></div><div class="danger-line"><b>L4</b><span>Owner required / Live / Production</span></div></div></article></div>
       </section>
 
       <section id="view-strategies" class="view"><div class="section-head"><div><span>STRATEGY LAB</span><h2>Strategy Factory و Qualification</h2></div></div><article class="panel"><div id="strategyFamilies" class="strategy-grid"></div></article><article class="panel"><header><div><span>PROMOTION PATH</span><h2>مسیر پذیرش</h2></div></header><div id="qualificationPath" class="stage-track"></div></article></section>
 
-      <section id="view-agents" class="view"><div class="section-head"><div><span>MISSION / AGENT MANAGER</span><h2>عامل‌ها، Providerها، Runnerها و صف</h2></div></div><article class="panel"><div id="agentState" class="empty-state">در حال خواندن Mission Control…</div></article><article class="panel"><header><div><span>NOTIFICATION CENTER</span><h2>هشدارها و رویدادهای عملیاتی</h2></div></header><div id="notificationList" class="compact-list"></div></article></section>
+      <section id="view-agents" class="view"><div class="section-head"><div><span>MISSION / AGENT MANAGER</span><h2>عامل‌ها، Providerها، Runnerها و صف</h2></div></div><article class="ops-host"><div id="agentState" aria-label="داشبورد عملیاتی پژوهش و عامل‌ها">در حال خواندن Mission Control…</div></article><article class="panel"><header><div><span>NOTIFICATION CENTER</span><h2>هشدارها و رویدادهای عملیاتی</h2></div></header><div id="notificationList" class="compact-list"></div></article></section>
 
       <section id="view-audit" class="view">
         <div class="section-head"><div><span>AUDIT / REPLAY / RECOVERY</span><h2>ممیزی، Digest، بازیابی و گزارش</h2></div><div class="inline-actions"><a class="small-btn link-btn" href="/api/product/export/paper.json" download>Export JSON</a><a class="small-btn link-btn" href="/api/product/export/paper.csv" download>Export CSV</a></div></div>
@@ -103,6 +144,8 @@
   </section>
 </div>
 <div id="toast" role="status"></div>
+<script src="/ui/product-terminal.js"></script>
+<script src="/ui/research-operations.js"></script>
 <script src="/ui/product.js"></script>
 </body>
 </html>

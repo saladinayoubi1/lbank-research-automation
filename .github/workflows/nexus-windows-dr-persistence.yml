@@ -43,7 +43,7 @@ jobs:
           $parts = [regex]::Split($text, '(?m)^  persist:\s*$', 2)
           if ($parts.Count -ne 2) { throw 'Unable to isolate physical persistence job.' }
           $persist = $parts[1]
-          if (-not $persist.Contains('runs-on: [self-hosted, Windows, X64, nexus-remote-rescue]')) { throw 'Physical persistence job must target the dedicated DR runner label.' }
+          if (-not $persist.Contains('runs-on: [self-hosted, Windows, X64, nexus-remote-rescue, nexus-windows-dr]')) { throw 'Physical persistence job must target the dedicated DR runner label.' }
           if ($persist -match 'uses:\s+actions/checkout@') { throw 'Physical persistence job must not use actions/checkout.' }
           foreach ($required in @(
             'https://github.com/${env:GITHUB_REPOSITORY}.git',
@@ -97,7 +97,11 @@ jobs:
             'service_modified = $false',
             'scheduled_task_modified = $false',
             'target_service_observed = $true',
-            'supervisor_skipped_existing_service=true'
+            'Get-ServiceOwnedTargetListener',
+            '$runnerServices.Count -ne 1',
+            '$_.SessionId -eq 0',
+            'supervisor_verified_existing_service=true',
+            'supervisor_blocked_existing_service_without_listener=true'
           )) {
             if (-not $text.Contains($required)) { throw "Required existing-service proof marker missing: $required" }
           }
@@ -173,7 +177,8 @@ jobs:
 
   persist:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-    runs-on: [self-hosted, Windows, X64, nexus-remote-rescue]
+    # The dedicated label prevents shared rescue/failover runners from claiming DR persistence.
+    runs-on: [self-hosted, Windows, X64, nexus-remote-rescue, nexus-windows-dr]
     timeout-minutes: 10
     outputs:
       evidence_b64: ${{ steps.evidence_handoff.outputs.evidence_b64 }}

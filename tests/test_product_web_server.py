@@ -9,7 +9,8 @@ from pathlib import Path
 import pytest
 
 from product_runtime import ProductRuntime
-from product_web_server import PRODUCT_UI_ROOT, _mission_snapshot, build_handler
+from product_web_server import (PRODUCT_UI_ROOT, _demo_public_mark_client, _mission_snapshot,
+                                _shared_paper_live_snapshot, build_handler)
 from web_dashboard import GatewayConfig
 
 
@@ -93,6 +94,61 @@ def test_product_ui_contains_complete_current_scope_surfaces(product_server) -> 
     assert b"research-layout" in css
 
 
+def test_research_operations_pro_ui_serves_only_local_assets_and_real_mission_snapshot(product_server) -> None:
+    port, _ = product_server
+    status, _, markup = _request(port, "GET", "/")
+    assert status == 200
+    html = markup.decode("utf-8")
+    assert 'id="researchAgentOverview"' in html
+    assert 'id="agentState"' in html
+    assert '/ui/research-operations.css' in html
+    assert '/ui/research-operations.js' in html
+    assert html.index('/ui/research-operations.js') < html.index('/ui/product.js')
+
+    for url, token in (
+        ("/ui/research-operations.js", "window.NexusResearchOps"),
+        ("/ui/research-operations.css", ".ops-hero"),
+    ):
+        status, _, raw = _request(port, "GET", url)
+        assert status == 200
+        assert token.encode() in raw
+
+    status, _, raw = _request(port, "GET", "/api/product/mission-control")
+    assert status == 200
+    payload = json.loads(raw)
+    assert payload["contract_version"] == "nexus.product-mission-control.v1"
+    assert payload["paper_only"] is True
+    assert payload["live_trading_authority"] is False
+    # An empty local runtime is NOT an invented active Research worker.
+    assert payload["source"] == "definition_only"
+    assert payload["control_plane"]["runtime_present"] is False
+    assert all(row["state"] == "UNKNOWN" for row in payload["workers"])
+
+
+def test_research_operations_reads_exact_owner_agent_runtime_not_market_sibling(product_server) -> None:
+    port, runtime = product_server
+    config = json.loads((Path(__file__).resolve().parents[1] / "config" / "nexus-agent-manager.json").read_text(encoding="utf-8"))
+    local = runtime.root / "agent_coordination"
+    local.mkdir(parents=True, exist_ok=True)
+    task = next(t for t in config["tasks"] if t["id"] == "P7-RESEARCH-COMPOSITE-001")
+    task["status"] = "RUNNING"
+    task["assigned_worker"] = "research-agent"
+    task["lease_id"] = "isolated-proof-only"
+    (local / "agent_manager_runtime.json").write_text(json.dumps(config), encoding="utf-8")
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    (local / "manager_state.json").write_text(json.dumps({"generated_at": now}), encoding="utf-8")
+    status, _, raw = _request(port, "GET", "/api/product/mission-control")
+    assert status == 200
+    payload = json.loads(raw)
+    assert payload["source"] == "local_runtime"
+    assert payload["control_plane"]["runtime_present"] is True
+    selected = next(t for t in payload["tasks"] if t["id"] == task["id"])
+    assert selected["lease_id"] == "isolated-proof-only"
+    assert selected["assigned_worker"] == "research-agent"
+    assert payload["live_trading_authority"] is False
+
+
 def test_product_overview_reports_canonical_backend_and_live_locked(product_server) -> None:
     port, _ = product_server
     status, _, raw = _request(port, "GET", "/api/product/overview")
@@ -108,7 +164,7 @@ def test_product_overview_reports_canonical_backend_and_live_locked(product_serv
     assert payload["mission_control"]["agents"] == []
     assert payload["capabilities"]["paper_execution"] == "active"
     assert payload["capabilities"]["research_backtest_studio"] == "active"
-    assert payload["capabilities"]["automated_paper_pipeline"] == "qualification_and_risk_gated"
+    assert payload["capabilities"]["automated_paper_pipeline"] == "independent_qa_lifecycle_and_risk_gated"
     assert payload["capabilities"]["ai_room"] == "policy_gated"
     assert payload["capabilities"]["mission_control"] == "idle"
     assert payload["capabilities"]["reports"] == "json_csv"
@@ -227,6 +283,21 @@ def test_product_rejects_live_and_unknown_write_routes(product_server) -> None:
         assert status == 405
 
 
+def test_product_mission_control_surfaces_real_agent_manager_definition(product_server) -> None:
+    port, _ = product_server
+    status, _, raw = _request(port, "GET", "/api/product/mission-control")
+    assert status == 200
+    payload = json.loads(raw)
+    assert payload["paper_only"] is True
+    assert payload["live_trading_authority"] is False
+    assert payload["contract_version"] == "nexus.product-mission-control.v1"
+    research = [row for row in payload["tasks"] if row["id"].startswith("P7-RESEARCH-")]
+    assert research
+    assert any(row["id"] == "P7-RESEARCH-COMPOSITE-004" for row in research)
+    workers = {row["id"] for row in payload["workers"]}
+    assert {"developer-agent", "research-agent", "qa-verifier-agent"} <= workers
+
+
 def test_product_strategies_are_real_factory_families(product_server) -> None:
     port, _ = product_server
     status, _, raw = _request(port, "GET", "/api/product/strategies")
@@ -252,3 +323,235 @@ def test_product_static_script_is_same_origin_only_and_has_real_product_routes(p
         assert route in script
     for forbidden in ("/api/product/live/order", "/withdraw", "/v5/order", "apisecret", "secretkey", "private_key"):
         assert forbidden not in lowered
+
+
+def test_shared_terminal_missing_snapshot_is_not_zero_balance(product_server):
+    port,_=product_server
+    status,_,raw=_request(port,'GET','/api/product/paper/shared')
+    assert status==200
+    payload=json.loads(raw)
+    assert payload['available'] is False
+    assert 'account' not in payload
+    assert payload['live_trading_authority'] is False
+    for path in ('/ui/product-terminal.js','/ui/product-terminal.css'):
+        assert _request(port,'GET',path)[0]==200
+    assert _request(port,'GET','/api/product/paper/shared/export.csv?table=../../state')[0]==400
+    assert _request(port,'POST','/api/product/paper/shared',{})[0] in (400,403,404,405)
+
+
+def test_demo_public_mark_client_prioritizes_approved_linear_host(monkeypatch):
+    monkeypatch.delenv("NEXUS_BYBIT_PUBLIC_REGION", raising=False)
+    monkeypatch.delenv("RUNNER_NAME", raising=False)
+    client, transport = _demo_public_mark_client()
+    assert client.bases[:2] == ["https://api.bytick.com", "https://api.bybit.com"]
+    assert client.attempts == 2
+    assert client.timeout == 4.0
+    assert transport == "bybit_official_public_bridge"
+
+    monkeypatch.setenv("NEXUS_BYBIT_PUBLIC_REGION", "EEA")
+    regional, _ = _demo_public_mark_client()
+    assert regional.bases[:2] == ["https://api.bytick.com", "https://api.bybit.com"]
+    assert regional.bases[2:] == ["https://api.bybit.eu"]
+
+
+def test_shared_live_snapshot_reports_actual_wsl_bybit_transport(monkeypatch, tmp_path):
+    snapshot = {
+        "available": True,
+        "stale": False,
+        "checked_at": "2026-10-07T06:00:00+00:00",
+        "positions": [{"symbol": "ETHUSDT"}],
+    }
+
+    class FakeClient:
+        last_transport = "not_used"
+        last_price_basis = "not_used"
+
+    client = FakeClient()
+
+    monkeypatch.setattr("product_web_server.load_shared_snapshot", lambda *_args, **_kwargs: dict(snapshot))
+    monkeypatch.setattr(
+        "product_web_server._demo_public_mark_client",
+        lambda: (client, "bybit_official_public_bridge"),
+    )
+
+    def fake_marks(source, received_client, now):
+        assert received_client is client
+        client.last_transport = "bybit_official_wsl_public"
+        client.last_price_basis = "mark_price"
+        return {
+            **source,
+            "quote_status": "fresh",
+            "market_checked_at": now.isoformat(),
+        }
+
+    monkeypatch.setattr("product_web_server.with_shared_public_marks", fake_marks)
+    payload = _shared_paper_live_snapshot(tmp_path / "product_runtime")
+
+    assert payload["market_live"] is True
+    assert payload["market_transport"] == "bybit_official_wsl_public"
+    assert payload["market_price_basis"] == "mark_price"
+    assert payload["read_only"] is True
+    assert payload["display_only_market_overlay"] is True
+    assert payload["live_trading_authority"] is False
+
+
+def test_shared_live_snapshot_labels_orderbook_midpoint(monkeypatch, tmp_path):
+    snapshot = {
+        "available": True,
+        "stale": False,
+        "checked_at": "2026-10-07T06:00:00+00:00",
+        "positions": [{"symbol": "ETHUSDT"}],
+    }
+
+    class FakeClient:
+        last_transport = "not_used"
+        last_price_basis = "not_used"
+
+    client = FakeClient()
+    monkeypatch.setattr("product_web_server.load_shared_snapshot", lambda *_args, **_kwargs: dict(snapshot))
+    monkeypatch.setattr(
+        "product_web_server._demo_public_mark_client",
+        lambda: (client, "bybit_official_public_bridge"),
+    )
+
+    def fake_marks(source, received_client, now):
+        assert received_client is client
+        client.last_transport = "bybit_official_wsl_orderbook_mid"
+        client.last_price_basis = "orderbook_mid"
+        return {
+            **source,
+            "quote_status": "fresh",
+            "valuation": "public_mark_snapshot",
+            "market_checked_at": now.isoformat(),
+        }
+
+    monkeypatch.setattr("product_web_server.with_shared_public_marks", fake_marks)
+    payload = _shared_paper_live_snapshot(tmp_path / "product_runtime")
+
+    assert payload["market_live"] is True
+    assert payload["market_transport"] == "bybit_official_wsl_orderbook_mid"
+    assert payload["market_price_basis"] == "orderbook_mid"
+    assert payload["valuation"] == "public_orderbook_mid_snapshot"
+    assert payload["read_only"] is True
+    assert payload["live_trading_authority"] is False
+
+
+def test_shared_live_snapshot_does_not_claim_transport_when_quote_is_stale(monkeypatch, tmp_path):
+    snapshot = {
+        "available": True,
+        "stale": True,
+        "checked_at": "2026-10-07T06:00:00+00:00",
+        "positions": [{"symbol": "ETHUSDT"}],
+    }
+
+    class FakeClient:
+        last_transport = "not_used"
+        last_price_basis = "not_used"
+
+    monkeypatch.setattr("product_web_server.load_shared_snapshot", lambda *_args, **_kwargs: dict(snapshot))
+    monkeypatch.setattr(
+        "product_web_server._demo_public_mark_client",
+        lambda: (FakeClient(), "bybit_official_public_bridge"),
+    )
+    monkeypatch.setattr(
+        "product_web_server.with_shared_public_marks",
+        lambda source, _client, now: {
+            **source,
+            "quote_status": "unavailable_using_closed_bar",
+            "market_checked_at": now.isoformat(),
+        },
+    )
+
+    payload = _shared_paper_live_snapshot(tmp_path / "product_runtime")
+    assert payload["market_live"] is False
+    assert payload["market_transport"] == "bybit_public_unavailable"
+    assert payload["market_price_basis"] == "closed_bar"
+    assert payload["paper_state_stale"] is True
+
+
+def test_shared_live_terminal_route_is_read_only(product_server, monkeypatch):
+    port, runtime = product_server
+    baseline = runtime.paper_events_path.read_bytes()
+
+    def fake_live(_data_root):
+        return {
+            "available": True,
+            "projection": "nexus.shared-paper-live-display.v1",
+            "market_live": True,
+            "quote_status": "fresh",
+            "paper_state_stale": True,
+            "read_only": True,
+            "live_trading_authority": False,
+            "positions": [],
+            "history": [],
+            "orders": [],
+            "cashflows": [],
+            "strategies": [],
+        }
+
+    monkeypatch.setattr("product_web_server._shared_paper_live_snapshot", fake_live)
+    status, _, raw = _request(port, "GET", "/api/product/paper/shared/live")
+    payload = json.loads(raw)
+    assert status == 200
+    assert payload["projection"] == "nexus.shared-paper-live-display.v1"
+    assert payload["market_live"] is True
+    assert payload["paper_state_stale"] is True
+    assert payload["read_only"] is True
+    assert payload["live_trading_authority"] is False
+    assert runtime.paper_events_path.read_bytes() == baseline
+    assert _request(port, "POST", "/api/product/paper/shared/live", {})[0] in (400, 403, 404, 405)
+
+
+def test_market_probe_requires_explicit_bounded_get_and_never_changes_trading(
+    product_server, monkeypatch
+) -> None:
+    from product_market_diagnostics import MarketProbeInputError
+
+    port, runtime = product_server
+    calls = []
+    def fake_probe(*, symbol, timeframe, registry):
+        assert any(m["canonical_symbol"] == "BTC/USDT" for m in registry["mappings"])
+        if symbol != "BTCUSDT" or timeframe != "4h":
+            raise MarketProbeInputError("unsupported mapping")
+        calls.append((symbol, timeframe))  # Only an actually eligible probe is counted.
+        return {
+            "contract_version": "nexus.product-market-probe.v1",
+            "status": "unavailable", "reason_code": "public_http_403_access_denied",
+            "http_status": 403, "source": "Bybit",
+            "paper_only": True, "read_only": True, "execution_eligible": False,
+            "dataset_written": False, "last_close_price": None,
+        }
+    monkeypatch.setattr("product_web_server.probe_primary_spot", fake_probe)
+    baseline = runtime.paper_events_path.read_bytes()
+    status, _, raw = _request(port, "GET", "/api/product/data/registry")
+    assert status == 200
+    rows = json.loads(raw)["mappings"]
+    assert rows[0]["sources"][0]["status"] == "compatible"  # Mapping, not feed health.
+    assert calls == []  # Registry read never triggers an HTTP probe.
+
+    status, _, raw = _request(
+        port, "GET", "/api/product/data/probe?symbol=BTCUSDT&timeframe=4h"
+    )
+    out = json.loads(raw)
+    assert status == 200
+    assert (out["status"], out["reason_code"], out["last_close_price"]) == (
+        "unavailable", "public_http_403_access_denied", None,
+    )
+    assert calls == [("BTCUSDT", "4h")]
+    for bad_path in (
+        "/api/product/data/probe",
+        "/api/product/data/probe?symbol=BTCUSDT",
+        "/api/product/data/probe?symbol=BTCUSDT&timeframe=4h&extra=1",
+        "/api/product/data/probe?symbol=BTCUSDT&symbol=ETHUSDT&timeframe=4h",
+        "/api/product/data/probe?symbol=BTCUSDT&timeframe=",
+        "/api/product/data/probe?symbol=https://example.com&timeframe=4h",
+    ):
+        status, _, _ = _request(port, "GET", bad_path)
+        assert status == 400, bad_path
+    status, _, raw = _request(
+        port, "HEAD", "/api/product/data/probe?symbol=BTCUSDT&timeframe=4h"
+    )
+    assert status == 405 and raw == b""
+    assert calls == [("BTCUSDT", "4h")]
+    assert runtime.paper_events_path.read_bytes() == baseline
+    assert runtime.live_surface()["orders_allowed"] is False

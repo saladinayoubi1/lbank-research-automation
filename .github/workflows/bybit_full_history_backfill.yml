@@ -44,11 +44,11 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p build
-          gh api --paginate --slurp \
-            "repos/$GITHUB_REPOSITORY/actions/artifacts?per_page=100" \
-            > build/artifact-pages.json
           python scripts/nexus_bybit_replay_chunks.py \
-            --artifact-pages build/artifact-pages.json \
+            --repository "$GITHUB_REPOSITORY" \
+            --token-env GH_TOKEN \
+            --max-source-runs 3 \
+            --max-pages 20 \
             --plan-output build/replay-rehydrate-plan.json \
             --github-output "$GITHUB_OUTPUT"
 
@@ -307,6 +307,55 @@ jobs:
           print("rehydrated_full_history_integrity=PASS")
           PY
 
+      - name: Preserve frozen semantics for unchanged bulk-parsed months
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          import subprocess
+          from nexus_demo_archive_contract import ARCHIVE_SHA256
+          from scripts.build_nexus_bybit_replay_package import build_manifest
+          from scripts.rehydrate_nexus_bybit_chunk import restore_frozen_bulk_semantics
+          from scripts.select_nexus_bybit_replay_artifact import restore_matching_artifact, safe_extract
+
+          root = Path("build/bybit_full_history")
+          reference = Path("build/frozen-replay-reference")
+          selection = {}
+          if build_manifest(root)["semantic_dataset_sha256"] != ARCHIVE_SHA256:
+              repository = os.environ["GITHUB_REPOSITORY"]
+              selection = restore_matching_artifact(
+                  repository, os.environ["GH_TOKEN"], Path("build/frozen-replay-delivery"),
+                  os.environ["V2_FILE"], expected_semantic_sha256=ARCHIVE_SHA256,
+                  delivery_name="NEXUS_BYBIT_replay_v2_delivery.json",
+                  prefix="bybit-full-history-final-rehydrated-", max_candidates=3,
+              )
+              artifact = json.loads(subprocess.check_output([
+                  "gh", "api", f"repos/{repository}/actions/artifacts/{selection['artifact_id']}"
+              ], text=True))
+              assert artifact["expired"] is False
+              assert artifact["workflow_run"]["head_branch"] == "main"
+              run_id = int(artifact["workflow_run"]["id"])
+              run = json.loads(subprocess.check_output([
+                  "gh", "api", f"repos/{repository}/actions/runs/{run_id}"
+              ], text=True))
+              assert run["path"] == ".github/workflows/bybit_full_history_backfill.yml"
+              assert run["head_branch"] == "main"
+              assert run["status"] == "completed" and run["conclusion"] == "success"
+              selection["verified_source_run_id"] = run_id
+              selection["verified_source_sha"] = run["head_sha"]
+              safe_extract(Path(selection["replay_file"]), reference)
+          receipt = restore_frozen_bulk_semantics(root, reference)
+          receipt["reference_artifact"] = selection
+          (root / "_frozen_replay_semantics_receipt.json").write_text(
+              json.dumps(receipt, indent=2, sort_keys=True) + "\n"
+          )
+          assert build_manifest(root)["semantic_dataset_sha256"] == ARCHIVE_SHA256
+          print("frozen_market_content_identity=PASS")
+          print(json.dumps(receipt, sort_keys=True))
+          PY
+
       - name: Rebuild legacy-format replay package for historical digest comparison
         run: |
           set -euo pipefail
@@ -367,9 +416,11 @@ jobs:
           python - <<'PY'
           import json
           from pathlib import Path
+          from nexus_demo_archive_contract import ARCHIVE_SHA256
           delivery = json.loads(Path("build/rehydrated-delivery/NEXUS_BYBIT_replay_v2_delivery.json").read_text())
           assert delivery["schema_version"] == 2
           assert delivery["series_count"] == 6
+          assert delivery["semantic_dataset_sha256"] == ARCHIVE_SHA256
           assert delivery["paper_replay_only"] is True
           assert delivery["live_trading_authority"] is False
           assert delivery["private_credentials_used"] is False
@@ -392,6 +443,7 @@ jobs:
             build/bybit_full_history/_backfill_report.md
             build/bybit_full_history/_backfill_status.csv
             build/bybit_full_history/_source_manifest.json
+            build/bybit_full_history/_frozen_replay_semantics_receipt.json
             build/bybit_full_history/_snapshot_manifest.json
             build/bybit_full_history/SHA256SUMS.txt
           if-no-files-found: error

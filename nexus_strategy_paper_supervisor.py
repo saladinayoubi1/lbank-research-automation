@@ -162,15 +162,32 @@ def verify_ledger(ledger: Mapping[str, Any]) -> dict[str, Any]:
                 and row.get("live_trading_authority") is False
                 and row.get("status") in {
                     "paper_executed", "qualification_killed", "no_open_signal",
-                    "position_exists", "risk_rejected",
+                    "position_exists", "risk_rejected", "independent_qa_required",
                 }
             )
+            paper = row.get("paper_result", {}) if valid else {}
             if row.get("status") == "paper_executed":
-                paper = row.get("paper_result", {})
                 valid = bool(
                     valid and paper.get("accepted") is True
                     and paper.get("risk", {}).get("allowed") is True
                     and isinstance(paper.get("execution"), Mapping)
+                )
+            elif row.get("status") == "independent_qa_required":
+                research = row.get("research_result", {})
+                valid = bool(
+                    valid
+                    and research.get("qualification", {}).get("status") == "paper_candidate"
+                    and research.get("independent_qa", {}).get("status") == "required"
+                    and research.get("independent_qa", {}).get("verified") is False
+                    and paper.get("accepted") is False
+                    and paper.get("paper_only") is True
+                    and paper.get("live_trading_authority") is False
+                    and paper.get("status") == "independent_qa_required"
+                    and paper.get("required_next_gate") == "QA-41"
+                    and paper.get("lifecycle_state") == "CANDIDATE"
+                    and paper.get("paper_events_written") == 0
+                    and paper.get("reason_code") == "INDEPENDENT_QA_RECEIPT_REQUIRED"
+                    and "execution" not in paper
                 )
             checks[f"task_{index}"] = valid
     passed = all(checks.values())

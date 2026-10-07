@@ -1,0 +1,72 @@
+{
+  "schema_version": "nexus.windows-asar-replay.v1",
+  "observed_at_utc": "2026-10-04T00:17:25.225840+00:00",
+  "device": "DESKTOP-F4SA4VL",
+  "asar_version": "3.4.1",
+  "lock_sha256": "e59b5db344bf69b07756ea4dbb016cc6fd282531f45abe4d649e05e024698057",
+  "before_log": "✖ a real ASAR passes the Windows hook with a native SDK manifest path (2392.7156ms)\n✔ the installed pinned SDK client, transport and auth dependencies load without provider calls (9119.5259ms)\n✔ a missing SDK manifest still rejects packaging when both client files exist (887.4868ms)\n✖ an unpinned SDK version still rejects packaging (866.5101ms)\n✔ a missing SDK client still rejects packaging (863.8612ms)\n✔ a missing TradingView connector still rejects packaging (862.1045ms)\nℹ tests 6\nℹ suites 0\nℹ pass 4\nℹ fail 2\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 15483.7418\n\n✖ failing tests:\n\ntest at tests\\test_product_after_pack.cjs:62:1\n✖ a real ASAR passes the Windows hook with a native SDK manifest path (2392.7156ms)\n  Error: \"node_modules/@modelcontextprotocol/sdk/package.json\" was not found in this archive\n      at Filesystem.getFile (C:\\Users\\afaq\\NEXUS-public-audits\\20261004-asar-replay-cb87c90c\\desktop\\nexus-product\\node_modules\\@electron\\asar\\lib\\filesystem.js:187:19)\n      at Object.extractFile (C:\\Users\\afaq\\NEXUS-public-audits\\20261004-asar-replay-cb87c90c\\desktop\\nexus-product\\node_modules\\@electron\\asar\\lib\\asar.js:256:33)\n      at afterPack (C:\\Users\\afaq\\NEXUS-public-audits\\20261004-asar-replay-cb87c90c\\desktop\\nexus-product\\after-pack.js:18:31)\n      at TestContext.<anonymous> (C:\\Users\\afaq\\NEXUS-public-audits\\20261004-asar-replay-cb87c90c\\tests\\test_product_after_pack.cjs:71:9)\n      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n      at async Test.run (node:internal/test_runner/test:1389:7)\n      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3)\n\ntest at tests\\test_product_after_pack.cjs:86:1\n✖ an unpinned SDK version still rejects packaging (866.5101ms)\n  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /MCP SDK version mismatch/. Input:\n  \n  'Error: \"node_modules/@modelcontextprotocol/sdk/package.json\" was not found in this archive'\n  \n      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n      at async TestContext.<anonymous> (C:\\Users\\afaq\\NEXUS-public-audits\\20261004-asar-replay-cb87c90c\\tests\\test_product_after_pack.cjs:88:3)\n      at async Test.run (node:internal/test_runner/test:1389:7)\n      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {\n    generatedMessage: true,\n    code: 'ERR_ASSERTION',\n    actual: Error: \"node_modules/@modelcontextprotocol/sdk/package.json\" was not found in this archive\n        at Filesystem.getFile (C:\\Users\\afaq\\NEXUS-public-audits\\20261004-asar-replay-cb87c90c\\desktop\\nexus-product\\node_modules\\@electron\\asar\\lib\\filesystem.js:187:19)\n        at Object.extractFile (C:\\Users\\afaq\\NEXUS-public-audits\\20261004-asar-replay-cb87c90c\\desktop\\nexus-product\\node_modules\\@electron\\asar\\lib\\asar.js:256:33)\n        at afterPack (C:\\Users\\afaq\\NEXUS-public-audits\\20261004-asar-replay-cb87c90c\\desktop\\nexus-product\\after-pack.js:18:31)\n        at TestContext.<anonymous> (C:\\Users\\afaq\\NEXUS-public-audits\\20261004-asar-replay-cb87c90c\\tests\\test_product_after_pack.cjs:88:24)\n        at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n        at async Test.run (node:internal/test_runner/test:1389:7)\n        at async Test.processPendingSubtests (node:internal/test_runner/test:960:7),\n    expected: /MCP SDK version mismatch/,\n    operator: 'rejects',\n    diff: 'simple'\n  }\n",
+  "before_log_sha256": "43924a569056740fe254ba0fa1a060a5f840ba5a2d7e422d582d100c5a3aed26",
+  "after_log": "\n> nexus-personal-pro-product@5.1.0 test:packaging\n> node --test ../../tests/test_product_after_pack.cjs\n\n✔ a real ASAR passes the Windows hook with a native SDK manifest path (1662.3144ms)\n✔ the installed pinned SDK client, transport and auth dependencies load without provider calls (703.8115ms)\n✔ a missing SDK manifest still rejects packaging when both client files exist (895.3424ms)\n✔ an unpinned SDK version still rejects packaging (914.6788ms)\n✔ a missing SDK client still rejects packaging (933.0803ms)\n✔ a missing TradingView connector still rejects packaging (887.957ms)\nℹ tests 6\nℹ suites 0\nℹ pass 6\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 6286.0285\n",
+  "after_receipt": {
+    "phase": "after",
+    "exit_code": 0,
+    "hook_sha256": "98baa312a30955d31be1268d9a244e53da866075a3cf46efc3cd7af8c4eba7ab",
+    "test_sha256": "6dd96b8719f6a3fd95d44dc80d655c2e9dfa25d19fa414bda4bcaf6b452e9f78",
+    "package_sha256": "3574ded77dd2ccf51a3a0385c79000d2c765b6f7b42858563ff669a69a277d41",
+    "log_sha256": "aa5b93f5411a79e93fb0d223229971121fc946bd30e901975e30e366e4e67faa",
+    "platform": "win32",
+    "node": "v24.19.0",
+    "original_source_sha": "cb87c90cfd3ebd063042560343f483e1fbe30114"
+  },
+  "original_pr": 2318,
+  "original_head": "cb87c90cfd3ebd063042560343f483e1fbe30114",
+  "original_hook_sha256": "5474621540153d853080997dbded1e143b274aa63936dbf3acc03dcff00ed305",
+  "original_failures": [
+    {
+      "run_id": 37162619206,
+      "job_id": 111319015014,
+      "url": "https://github.com/saladinayoubi1/lbank-research-automation/actions/runs/37162619206/job/111319015014"
+    },
+    {
+      "run_id": 37162619244,
+      "job_id": 111319015299,
+      "url": "https://github.com/saladinayoubi1/lbank-research-automation/actions/runs/37162619244/job/111319015299"
+    }
+  ],
+  "before_report": {
+    "tests": 6,
+    "passed": 4,
+    "failed": 2,
+    "process_exit_code": null,
+    "harness_exit_code": 1,
+    "harness_error": "cp1256 stdout could not encode Node reporter; completed UTF-8 test log retained"
+  },
+  "after_report": {
+    "tests": 6,
+    "passed": 6,
+    "failed": 0,
+    "process_exit_code": 0
+  },
+  "attempts": [
+    {
+      "stage": "initial full-dependency ASAR fixture",
+      "result": "timeout",
+      "timeout_seconds": 90,
+      "archive_created": false
+    },
+    {
+      "stage": "bounded native metadata fixture plus separate installed SDK dependency smoke",
+      "result": "reproduced original hook failure, then passed corrected hook"
+    }
+  ],
+  "scope": {
+    "native_asar_fixture": true,
+    "fixture_uses_real_connector_manifest_and_client_files": true,
+    "installed_sdk_dependency_load": true,
+    "full_production_archive_dependency_load": false,
+    "full_setup_portable_build_verified": false,
+    "owner_profile_touched": false,
+    "provider_authentication_or_requests": false,
+    "gates_removed_or_weakened": false
+  }
+}

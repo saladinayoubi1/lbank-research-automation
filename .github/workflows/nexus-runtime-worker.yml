@@ -32,9 +32,13 @@ on:
       - 'scripts/nexus_local_worker.py'
       - 'nexus_autonomous_orchestrator.py'
       - 'agent_transport.py'
+      - 'nexus_strategy_independent_qa.py'
+      - 'tests/test_nexus_strategy_independent_qa.py'
       - 'scripts/agent_task_executor.py'
       - 'scripts/bootstrap_portable_python.cmd'
       - 'tests/test_agent_transport.py'
+      - 'scripts/nexus_research_qa_source_pin.py'
+      - 'tests/test_nexus_research_qa_source_pin.py'
       - 'tests/test_phase3_windows_runtime_contract.py'
       - 'tests/test_nexus_local_runner_bootstrap_policy.py'
       - 'tests/test_nexus_autonomous_orchestrator.py'
@@ -104,6 +108,59 @@ jobs:
         env:
           NEXUS_DEEPSEEK_PAID_ROUTING_ALLOWED: '0'
         run: node scripts/nexus_runtime_worker.js --once
+      - name: Validate and pin original main ancestor for Research QA only
+        id: pin-research-qa
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.payload_b64 != '' && github.event.inputs.transport == 'github-cloud'
+        shell: bash
+        env:
+          NEXUS_TASK_PAYLOAD_B64: ${{ github.event.inputs.payload_b64 }}
+          NEXUS_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          NEXUS_DISPATCH_LEASE: ${{ github.event.inputs.lease_id }}
+          NEXUS_DISPATCH_TRANSPORT: ${{ github.event.inputs.transport }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          source_sha="$(python -m scripts.nexus_research_qa_source_pin)"
+          [[ "$source_sha" =~ ^[0-9a-f]{40}$ ]]
+          if [ "$source_sha" != "$GITHUB_SHA" ]; then
+            test "$GITHUB_REF_NAME" = "main"
+            origin="$(git remote get-url origin)"
+            case "$origin" in
+              "https://github.com/$GITHUB_REPOSITORY"|"https://github.com/$GITHUB_REPOSITORY.git") ;;
+              *) echo "::error::Untrusted Research source origin"; exit 1 ;;
+            esac
+            git fetch --no-tags --deepen=80 origin main
+            git cat-file -e "$source_sha^{commit}"
+            git merge-base --is-ancestor "$source_sha" "$GITHUB_SHA"
+            git checkout --detach "$source_sha"
+            test "$(git rev-parse HEAD)" = "$source_sha"
+            PINNED_ORIGINAL_SHA="$source_sha" python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          core = {
+              "schema": "nexus.original-source-research-qa-ancestry.v1",
+              "repository": os.environ["GITHUB_REPOSITORY"],
+              "run_id": os.environ["GITHUB_RUN_ID"],
+              "trusted_main_event_sha": os.environ["GITHUB_SHA"],
+              "verified_main_ancestor_sha": os.environ["PINNED_ORIGINAL_SHA"],
+              "original_source_checkout_verified": True,
+              "independent_research_qa_only": True,
+              "auto_demo_promotion": False,
+              "live_enabled": False,
+          }
+          raw = json.dumps(core, sort_keys=True, separators=(",", ":")).encode()
+          record = dict(core, attestation_sha256=hashlib.sha256(raw).hexdigest())
+          out = Path("build/pinned-qa-attestation.json")
+          out.parent.mkdir(parents=True, exist_ok=True)
+          out.write_text(json.dumps(record, sort_keys=True) + "\n")
+          print("pinned_ancestor_research_QA=PASS digest=" + record["attestation_sha256"])
+          PY
+            echo "qa_pin_verified=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "qa_pin_verified=not_required" >> "$GITHUB_OUTPUT"
+          fi
       - name: Install locked Python test dependencies for bounded cloud task
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.payload_b64 != '' && github.event.inputs.transport == 'github-cloud'
         shell: bash
@@ -111,6 +168,44 @@ jobs:
           python --version
           python -m pip install -r requirements-dev.lock
           python -m pip check
+      - name: Inspect authorized real Research Agent lease before expensive cache restores
+        id: inspect-research
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.payload_b64 != '' && github.event.inputs.transport == 'github-cloud'
+        shell: bash
+        env:
+          NEXUS_TASK_PAYLOAD_B64: ${{ github.event.inputs.payload_b64 }}
+          NEXUS_EXECUTION_SOURCE_SHA: ${{ steps.pin-research-qa.outputs.execution_source_sha }}
+        run: |
+          test -n "$NEXUS_EXECUTION_SOURCE_SHA"
+          GITHUB_SHA="$NEXUS_EXECUTION_SOURCE_SHA" python -m nexus_agent_research_prepare --mode inspect
+
+      - name: Restore immutable approved Bybit Research input transport
+        id: research-data-cache
+        if: steps.inspect-research.outputs.research_task == 'true'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: build/agent-research-cache
+          key: ${{ steps.inspect-research.outputs.research_cache_key }}
+
+      - name: Restore ONLY the source and original producer-lease-bound numeric proof for QA
+        if: steps.inspect-research.outputs.research_role == 'independent-qa'
+        id: research-producer-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: build/agent-producer-cache
+          key: nexus-composite-producer-v1-${{ steps.inspect-research.outputs.producer_source_sha }}-${{ steps.inspect-research.outputs.producer_lease }}
+
+      - name: Prepare verified cached archive and exact frontier for Research or independent QA
+        id: prepare-research
+        if: steps.inspect-research.outputs.research_task == 'true'
+        continue-on-error: true
+        shell: bash
+        env:
+          NEXUS_TASK_PAYLOAD_B64: ${{ github.event.inputs.payload_b64 }}
+          NEXUS_EXECUTION_SOURCE_SHA: ${{ steps.pin-research-qa.outputs.execution_source_sha }}
+        run: |
+          test -n "$NEXUS_EXECUTION_SOURCE_SHA"
+          GITHUB_SHA="$NEXUS_EXECUTION_SOURCE_SHA" python -m nexus_agent_research_prepare --mode auto --root build/agent-research
       - name: Verify Python runtime for bounded DeepSeek task
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.payload_b64 != '' && github.event.inputs.transport == 'deepseek'
         shell: bash
@@ -122,7 +217,10 @@ jobs:
         env:
           NEXUS_TASK_PAYLOAD_B64: ${{ github.event.inputs.payload_b64 }}
           NEXUS_TASK_TRANSPORT: ${{ github.event.inputs.transport }}
-        run: python scripts/agent_task_executor.py --output "$RESULT_PATH"
+          NEXUS_EXECUTION_SOURCE_SHA: ${{ steps.pin-research-qa.outputs.execution_source_sha }}
+        run: |
+          test -n "$NEXUS_EXECUTION_SOURCE_SHA"
+          GITHUB_SHA="$NEXUS_EXECUTION_SOURCE_SHA" python scripts/agent_task_executor.py --output "$RESULT_PATH"
       - name: Execute bounded DeepSeek task
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.payload_b64 != '' && github.event.inputs.transport == 'deepseek'
         continue-on-error: true
@@ -132,6 +230,24 @@ jobs:
           NEXUS_TASK_PAYLOAD_B64: ${{ github.event.inputs.payload_b64 }}
           NEXUS_TASK_TRANSPORT: ${{ github.event.inputs.transport }}
         run: python scripts/agent_task_executor.py --output "$RESULT_PATH"
+      - name: Stage completed source-bound Research producer result into immutable cache
+        if: steps.prepare-research.outputs.research_role == 'producer'
+        run: |
+          set -euo pipefail
+          test -s build/agent-research/result/agent-receipt.json
+          test -s build/agent-research/result/novelty-ledger.json
+          test -s build/agent-research/result/previous-ledger.json
+          test -s build/agent-research/result/research-report.json
+          mkdir -p build/agent-producer-cache
+          cp -R build/agent-research/result build/agent-producer-cache/
+
+      - name: Bind QA to immutable producer cache without widening workflow permissions
+        if: steps.prepare-research.outputs.research_role == 'producer'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: build/agent-producer-cache
+          key: nexus-composite-producer-v1-${{ github.sha }}-${{ github.event.inputs.lease_id }}
+
       - name: Upload bounded cloud or DeepSeek result
         if: always() && github.event_name == 'workflow_dispatch' && github.event.inputs.payload_b64 != '' && github.event.inputs.transport != 'windows'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -140,6 +256,32 @@ jobs:
           path: ${{ env.RESULT_PATH }}
           if-no-files-found: error
           retention-days: 14
+      - name: Publish real producer numerical evidence for exact independent QA lease
+        if: always() && github.event_name == 'workflow_dispatch' && steps.prepare-research.outputs.research_role == 'producer'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-agent-research-${{ github.event.inputs.lease_id }}
+          path: |
+            build/agent-research/preparation.json
+            build/agent-research/result/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Publish independent numerical QA proof
+        if: always() && github.event_name == 'workflow_dispatch' && steps.prepare-research.outputs.research_role == 'independent-qa'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-agent-research-qa-${{ github.event.inputs.lease_id }}
+          path: build/agent-research/qa-evidence.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Publish independently bounded original-source QA ancestry attestation
+        if: always() && github.event_name == 'workflow_dispatch' && steps.pin-research-qa.outputs.qa_pin_verified == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-agent-qa-source-pin-${{ github.event.inputs.lease_id }}
+          path: build/pinned-qa-attestation.json
+          if-no-files-found: error
+          retention-days: 30
       - name: Checkout exact PR head for Phase 4/5 evidence
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor == github.repository_owner
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1

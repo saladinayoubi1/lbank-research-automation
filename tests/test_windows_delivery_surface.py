@@ -157,7 +157,13 @@ def test_product_uses_real_python_data_research_strategy_paper_risk_agent_state_
     assert "paper-events.jsonl" in runtime
     assert "fetch_bind_bybit_dataset" in research
     assert "run_research_job" in research and "run_canonical_target_exposure_backtest" in research
-    assert "run_automated_signal_pipeline" in research
+    # Product Research may create candidate evidence, but it must not directly
+    # own the Signal -> Risk -> Paper path before independent QA.
+    assert "run_automated_signal_pipeline" not in research
+    assert "INDEPENDENT_QA_RECEIPT_REQUIRED" in research
+    assert '"required_next_gate": "QA-41"' in research
+    assert '"paper_events_written": 0' in research
+    assert "evaluate_risk" in runtime and "execute_paper_command" in runtime
     assert "recovery_snapshot" in controls and "export_csv" in controls
     assert "OfflineDatasetStore" in offline and "CachingProductResearchRuntime" in offline
     assert "StrategyEvidenceStore" in offline
@@ -273,7 +279,8 @@ def test_persistent_installer_bounds_version_retention_after_successful_activati
         "$retentionScript = Join-Path $PSScriptRoot 'cleanup_nexus_desktop_versions.ps1'"
     )
     final_window = installer.index("$script:Evidence.final_launch.visible_window_observed = $true")
-    pass_decision = installer.index("$script:Evidence.decision = 'PASS'")
+    # Stage-only proof exits earlier; this assertion concerns explicit activation.
+    pass_decision = installer.rindex("$script:Evidence.decision = 'PASS'")
     assert final_window < retention_call < pass_decision
 
     for marker in (
@@ -293,3 +300,34 @@ def test_persistent_installer_bounds_version_retention_after_successful_activati
     assert "if ($protected.Contains($candidate.Path)) { continue }" in retention
     assert "if ($candidate.Path -eq $current -or $runningRoots.Contains($candidate.Path)) { continue }" in retention
     assert "Assert-NotReparsePoint $root 'NEXUS program root'" in retention
+
+
+def test_real_research_panel_reads_observed_mission_tasks_without_promoting_to_paper() -> None:
+    index = read(UI / "index.html")
+    product_ui = read(UI / "product.js")
+    mission_ui = read(UI / "product-mission.js")
+    research_ui = read(UI / "research-operations.js")
+    backend = read(ROOT / "product_offline_web_server.py")
+    mission = read(ROOT / "product_mission_runtime.py")
+    # Preserve the installed read-only Research contract while upgrading its UI.
+    assert 'id="researchAgentOverview"' in index
+    assert 'id="agentState"' in index
+    assert '/ui/research-operations.js' in index
+    assert '/ui/research-operations.css' in index
+    assert "window.NexusFullMissionManaged" in product_ui
+    assert "window.NexusResearchOps.render" in mission_ui
+    assert "api('/api/product/mission/full')" in mission_ui
+    # Full Mission evidence, never a synthetic definition-only status.
+    assert "m.source === 'local_runtime'" in research_ui
+    assert "m.snapshot_age_seconds <= 900" in research_ui
+    assert "q.producer_receipt_digest === p.receipt_digest" in research_ui
+    assert "q.source_sha === p.source_sha" in research_ui
+    assert "q.independent_qa_complete === true" in research_ui
+    assert "p.auto_demo_promotion === false" in research_ui
+    assert "q.auto_demo_promotion === false" in research_ui
+    assert "p.live_enabled === false" in research_ui
+    assert "q.live_enabled === false" in research_ui
+    assert "مدرک QA مستقل هنوز تأیید نشده" in research_ui
+    assert '"/api/product/mission/full"' in backend
+    assert '"stale": bool(age is not None and age > 900)' in mission
+    assert "imported_mission_snapshot.json" in mission

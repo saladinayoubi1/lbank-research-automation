@@ -7,7 +7,9 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
+
+from nexus_research_missions import PREDECESSOR, TASKS, ANCESTRY, validate_ancestry
 
 QUEUE_PATH = Path("config/nexus-agent-manager.json")
 STATE_PATH = Path("data/agent_coordination/manager_state.json")
@@ -16,6 +18,7 @@ DEFAULT_LEASE_MINUTES = 5
 TERMINAL = {"DONE", "OWNER_REQUIRED", "QUARANTINED"}
 WAITING_EXTERNAL = "WAITING_EXTERNAL"
 ACTIVE = {"LEASED", "RUNNING", "VERIFYING"}
+RESEARCH_RCA_BLOCK_REASON = "numerical Research RCA requires reviewed source-bound recovery"
 
 
 def utcnow() -> datetime:
@@ -133,6 +136,26 @@ def validate_config(config: dict[str, Any]) -> None:
             _bounded_metric(task["max_cost_units"], "max_cost_units")
         if "min_health_score" in task:
             _bounded_metric(task["min_health_score"], "min_health_score", maximum=1.0)
+        if task.get("qa_verifier_only") is True:
+            required_verifier = task.get("required_verifier")
+            if required_verifier not in worker_ids:
+                raise ValueError(f"unknown required verifier for {task['id']}")
+            verifier_rows = [row for row in workers if row.get("id") == required_verifier]
+            if len(verifier_rows) != 1 or verifier_rows[0].get("verifier") is not True:
+                raise ValueError(f"required verifier is not verifier-capable for {task['id']}")
+            if not isinstance(task.get("qa_dispatch_enabled"), bool):
+                raise ValueError(f"qa_dispatch_enabled must be boolean for {task['id']}")
+            handoff = task.get("qa_handoff_task")
+            if (
+                not isinstance(handoff, dict)
+                or handoff.get("required_verifier") != required_verifier
+                or handoff.get("task_kind") not in {
+                    "strategy_review_independent_qa",
+                    "composite_runtime_independent_qa",
+                }
+                or handoff.get("system_map_node") != "QA-41"
+            ):
+                raise ValueError(f"invalid QA handoff binding for {task['id']}")
 
 
 def workers_from(config: dict[str, Any]) -> list[Worker]:
@@ -387,8 +410,31 @@ def assign_ready_tasks(config: dict[str, Any], now: datetime) -> None:
             emit("owner_required", task_id=task["id"])
             continue
 
-        routing_rows = rank_worker_candidates(task, workers, active_load=active_load)
+        qa_verifier_only = task.get("qa_verifier_only") is True
+        if qa_verifier_only and task.get("qa_dispatch_enabled") is not True:
+            task["routing_decision"] = {
+                "evaluated_at": iso(now),
+                "selected_worker": None,
+                "reason": "independent_strategy_qa_worker_contract_not_enabled",
+                "candidates": [],
+            }
+            task["blocked_reason"] = "independent strategy QA worker contract not enabled"
+            continue
+        routing_rows = rank_worker_candidates(
+            task, workers, verifier_only=qa_verifier_only, active_load=active_load
+        )
         eligible_rows = [row for row in routing_rows if row["eligible"]]
+        if task.get("id") in TASKS:
+            # Actual numerical Research leases are not generic cloud pytest
+            # work: only the dedicated Research Agent can be their producer.
+            eligible_rows = [row for row in eligible_rows
+                             if row["worker_id"] == "research-agent"]
+        if task.get("qa_verifier_only") is True:
+            # Materialized QA-41 replay is verifier work from the outset. It
+            # must never receive a generic producer lease.
+            eligible_rows = [row for row in eligible_rows
+                             if row["worker_id"] == task.get("required_verifier")
+                             and row["worker_id"] == "qa-verifier-agent"]
         if not eligible_rows:
             task["routing_decision"] = {
                 "evaluated_at": iso(now),
@@ -421,8 +467,13 @@ def assign_ready_tasks(config: dict[str, Any], now: datetime) -> None:
             }
 
         task["assigned_worker"] = worker.id
-        task["producer"] = worker.id
-        task["status"] = "LEASED"
+        if qa_verifier_only:
+            task.pop("producer", None)
+            task["verifier"] = worker.id
+            task["status"] = "VERIFYING"
+        else:
+            task["producer"] = worker.id
+            task["status"] = "LEASED"
         task["lease_id"] = str(uuid.uuid4())
         task["leased_at"] = iso(now)
         task["heartbeat_at"] = iso(now)
@@ -430,14 +481,23 @@ def assign_ready_tasks(config: dict[str, Any], now: datetime) -> None:
         task["attempt"] = int(task.get("attempt", 0)) + 1
         active_load[worker.id] = active_load.get(worker.id, 0) + 1
         active_count += 1
-        emit(
-            "task_leased",
-            task_id=task["id"],
-            worker=worker.id,
-            attempt=task["attempt"],
-            routing_score=selected["score"],
-            overlapped_external_waits=[row["task_id"] for row in waiting],
-        )
+        if qa_verifier_only:
+            emit(
+                "verification_assigned",
+                task_id=task["id"],
+                verifier=worker.id,
+                producer=task.get("qa_handoff_task", {}).get("producer_role"),
+                routing_score=selected["score"],
+            )
+        else:
+            emit(
+                "task_leased",
+                task_id=task["id"],
+                worker=worker.id,
+                attempt=task["attempt"],
+                routing_score=selected["score"],
+                overlapped_external_waits=[row["task_id"] for row in waiting],
+            )
 
 
 def route_triage(config: dict[str, Any], now: datetime) -> None:
@@ -458,6 +518,23 @@ def route_triage(config: dict[str, Any], now: datetime) -> None:
             task["status"] = "READY"
             task["ready_at"] = iso(now)
             emit("bounded_transient_retry", task_id=task["id"])
+            continue
+        if task.get("id") in TASKS:
+            # The numerical executor rejects generic RCA workers. Leasing the
+            # same Research ID to an analyst only creates a deterministic loop.
+            # Preserve the failure for reviewed recovery, never numeric success.
+            prior_lease, prior_dispatch = task.get("lease_id"), task.get("dispatch_id")
+            task["status"] = "BLOCKED"
+            task["blocked_reason"] = RESEARCH_RCA_BLOCK_REASON
+            task["triage_mode"] = "root_cause_first"
+            for field in (
+                "assigned_worker", "lease_id", "heartbeat_at", "lease_expires_at",
+                "dispatch_id", "dispatch_transport", "dispatched_at",
+                "external_wait_state", "external_wait_started_at",
+            ):
+                task[field] = None
+            emit("research_rca_review_required", task_id=task["id"],
+                 prior_lease_id=prior_lease, prior_dispatch_id=prior_dispatch)
             continue
         rca_caps = {"root_cause_analysis", "diagnostics"}
         candidates = [
@@ -487,6 +564,8 @@ def route_triage(config: dict[str, Any], now: datetime) -> None:
 
 
 def request_verification(config: dict[str, Any], task: dict[str, Any], now: datetime) -> bool:
+    if task.get("qa_verifier_only") is True:
+        raise ValueError("verifier-only QA task cannot request a second verifier")
     if int(task.get("authority", 0)) >= 4:
         task["status"] = "OWNER_REQUIRED"
         task["blocked_reason"] = "L4 owner approval required"
@@ -499,6 +578,10 @@ def request_verification(config: dict[str, Any], task: dict[str, Any], now: date
         verifier_only=True,
         active_load=active_worker_load(config, exclude_task=task),
     )
+    if task.get("id") in TASKS:
+        # Reject a generic verifier even if its dynamic routing score is
+        # higher: independent numerical replay requires the designated QA.
+        candidates = [w for w in candidates if w.id == "qa-verifier-agent"]
     if not candidates:
         task["status"] = "BLOCKED"
         task["blocked_reason"] = "independent verifier unavailable"
@@ -523,14 +606,105 @@ def record_result(config: dict[str, Any], task_id: str, worker_id: str, outcome:
     evidence = evidence or {}
     if outcome == "success":
         if task.get("status") == "VERIFYING":
+            if task.get("qa_verifier_only") is True:
+                handoff = task.get("qa_handoff_task")
+                if not isinstance(handoff, Mapping):
+                    raise ValueError("independent QA handoff is unavailable")
+                task_kind = handoff.get("task_kind")
+                if task_kind == "strategy_review_independent_qa":
+                    from nexus_strategy_independent_qa import verify_receipt as verify_qa_receipt
+                elif task_kind == "composite_runtime_independent_qa":
+                    from nexus_composite_runtime_independent_qa import verify_receipt as verify_qa_receipt
+                else:
+                    raise ValueError("independent QA task kind is unsupported")
+                if (
+                    worker_id != task.get("required_verifier")
+                    or worker_id != task.get("verifier")
+                    or task.get("producer") is not None
+                    or not verify_qa_receipt(
+                        evidence,
+                        handoff,
+                        lease_id=str(task.get("lease_id", "")),
+                        execution_source_sha=str(handoff.get("source_sha", "")),
+                    )
+                ):
+                    raise ValueError("independent QA receipt does not bind this exact verifier lease")
+            if task_id in TASKS:
+                original = task.get("result_evidence", {})
+                if (
+                    worker_id == task.get("producer")
+                    or not isinstance(original, dict)
+                    or evidence.get("independent_qa_complete") is not True
+                    or evidence.get("auto_demo_promotion") is not False
+                    or evidence.get("live_enabled") is not False
+                    or evidence.get("producer_receipt_digest") != original.get("receipt_digest")
+                    or evidence.get("producer_lease_id") != task.get("research_producer_lease_id")
+                    or evidence.get("source_sha") != original.get("source_sha")
+                    or not isinstance(evidence.get("qa_digest"), str)
+                    or len(evidence["qa_digest"]) != 64
+                ):
+                    raise ValueError("independent Research QA has not verified this exact producer")
+                if task_id in PREDECESSOR:
+                    ancestor = validate_ancestry({k: task[k] for k in ANCESTRY if k in task})
+                    if (
+                        original.get("prior_ledger_digest") != ancestor["research_predecessor_ledger_digest"]
+                        or original.get("mechanism") == ancestor["research_predecessor_mechanism"]
+                    ):
+                        raise ValueError("second Research QA did not prove causal frontier advancement")
             task["status"] = "DONE"
             task["verified_at"] = iso()
             task["verification_evidence"] = evidence
             emit("task_done", task_id=task_id, verifier=worker_id)
         else:
+            # An independent QA lease has its own lease_id. Preserve the
+            # producer's exact identity and digest to prevent QA from
+            # accidentally verifying an unrelated/latest Research artifact.
+            if task_id in TASKS:
+                if (
+                    not isinstance(evidence.get("receipt_digest"), str)
+                    or len(evidence["receipt_digest"]) != 64
+                    or evidence.get("independent_qa_complete") is not False
+                    or evidence.get("auto_demo_promotion") is not False
+                    or evidence.get("live_enabled") is not False
+                ):
+                    raise ValueError("real research producer receipt or authority invalid")
+                if task_id in PREDECESSOR:
+                    ancestor = validate_ancestry({k: task[k] for k in ANCESTRY if k in task})
+                    if (
+                        evidence.get("prior_ledger_digest") != ancestor["research_predecessor_ledger_digest"]
+                        or evidence.get("mechanism") == ancestor["research_predecessor_mechanism"]
+                    ):
+                        raise ValueError("successor Research producer did not execute a different QA-bound mechanism")
+                task["research_producer_lease_id"] = task["lease_id"]
             task["result_evidence"] = evidence
             request_verification(config, task, utcnow())
     elif outcome == "failure":
+        if task.get("qa_verifier_only") is True:
+            handoff = task.get("qa_handoff_task")
+            task_kind = handoff.get("task_kind") if isinstance(handoff, Mapping) else None
+            is_composite = task_kind == "composite_runtime_independent_qa"
+            task["failure_class"] = evidence.get(
+                "failure_class",
+                "independent_composite_runtime_qa_failed" if is_composite
+                else "independent_strategy_qa_failed",
+            )
+            task["failure_evidence"] = evidence
+            task["status"] = "BLOCKED"
+            task["blocked_reason"] = (
+                "independent composite runtime QA failed; reviewed fresh QA lease required"
+                if is_composite
+                else "independent Strategy QA failed; reviewed fresh QA lease required"
+            )
+            task["assigned_worker"] = None
+            task["heartbeat_at"] = None
+            task["lease_expires_at"] = None
+            emit(
+                "composite_runtime_qa_failed_closed" if is_composite else "strategy_qa_failed_closed",
+                task_id=task_id,
+                verifier=worker_id,
+                failure_class=task["failure_class"],
+            )
+            return
         task["failure_class"] = evidence.get("failure_class", "deterministic_or_unknown")
         task["failure_evidence"] = evidence
         task["status"] = "TRIAGE"

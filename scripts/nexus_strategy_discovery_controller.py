@@ -10,6 +10,15 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG_PATH = Path("research/strategy_family_catalog.json")
 SCHEMA = "nexus.strategy-discovery-controller.v1"
+FRONTIER_FINGERPRINT_INPUTS: dict[str, tuple[str, ...]] = {
+    "nexus_multitimeframe_strategy_discovery": (
+        "nexus_composite_strategy_research.py",
+        "nexus_mechanism_factory.py",
+        "nexus_research_missions.py",
+        "config/nexus-agent-manager.json",
+        "research/reviewed_composite_mechanisms_v1.json",
+    ),
+}
 
 # Ordered, bounded research ladder already reviewed in this repository.  This
 # controller inventories and routes the surface; it does not execute trades,
@@ -17,48 +26,56 @@ SCHEMA = "nexus.strategy-discovery-controller.v1"
 SEARCH_STAGES: tuple[dict[str, str], ...] = (
     {
         "stage": "bybit_strategy_search_v2",
+        "lane": "legacy_validation",
         "engine": "bybit_strategy_search_v2.py",
         "experiment": "experiments/bybit_strategy_search_v2.json",
         "workflow": ".github/workflows/bybit_strategy_search_v2.yml",
     },
     {
         "stage": "bybit_portfolio_search_v3",
+        "lane": "legacy_validation",
         "engine": "bybit_portfolio_search_v3_scheduled.py",
         "experiment": "experiments/bybit_portfolio_search_v3.json",
         "workflow": ".github/workflows/bybit_portfolio_search_v3.yml",
     },
     {
         "stage": "bybit_long_short_search_v4",
+        "lane": "legacy_validation",
         "engine": "bybit_long_short_search_v4.py",
         "experiment": "experiments/bybit_long_short_search_v4.json",
         "workflow": ".github/workflows/bybit_long_short_search_v4.yml",
     },
     {
         "stage": "bybit_consensus_search_v5",
+        "lane": "legacy_validation",
         "engine": "bybit_consensus_search_v5.py",
         "experiment": "experiments/bybit_consensus_search_v5.json",
         "workflow": ".github/workflows/bybit_consensus_search_v5.yml",
     },
     {
         "stage": "bybit_regime_search_v6",
+        "lane": "legacy_validation",
         "engine": "bybit_regime_search_v6.py",
         "experiment": "experiments/bybit_regime_search_v6.json",
         "workflow": ".github/workflows/bybit_regime_search_v6.yml",
     },
     {
         "stage": "bybit_neighborhood_validation_v7",
+        "lane": "legacy_validation",
         "engine": "bybit_neighborhood_validation_v7.py",
         "experiment": "experiments/bybit_neighborhood_validation_v7.json",
         "workflow": ".github/workflows/bybit_neighborhood_validation_v7.yml",
     },
     {
         "stage": "nexus_multitimeframe_strategy_discovery",
+        "lane": "frontier",
         "engine": "nexus_multitimeframe_strategy_discovery.py",
         "experiment": "experiments/nexus_multitimeframe_strategy_discovery_v1.json",
         "workflow": ".github/workflows/nexus_multitimeframe_strategy_discovery.yml",
     },
     {
         "stage": "nexus_multipair_strategy_discovery_v2",
+        "lane": "frontier",
         "engine": "nexus_multipair_strategy_discovery.py",
         "experiment": "experiments/nexus_multipair_strategy_discovery_v2.json",
         "workflow": ".github/workflows/nexus_multipair_strategy_discovery_v2.yml",
@@ -76,6 +93,16 @@ def _sha256(path: Path) -> str:
 
 def _load_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _frontier_fingerprint(root: Path, paths: tuple[str, ...]) -> str:
+    rows = []
+    for relative in paths:
+        path = root / relative
+        rows.append({"path": relative, "sha256": _sha256(path)})
+    return hashlib.sha256(
+        json.dumps(rows, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
 
 
 def _atomic_write(path: Path, payload: dict[str, Any]) -> None:
@@ -142,6 +169,7 @@ def _stage_status(root: Path, spec: dict[str, str]) -> tuple[dict[str, Any], lis
     errors: list[str] = [f"{spec['stage']}:missing_{key}" for key in missing]
     experiment_id: str | None = None
     experiment_sha256: str | None = None
+    frontier_sha256: str | None = None
     workflow_dispatch = False
 
     experiment_path = root / spec["experiment"]
@@ -156,6 +184,21 @@ def _stage_status(root: Path, spec: dict[str, str]) -> tuple[dict[str, Any], lis
         except (OSError, json.JSONDecodeError) as exc:
             errors.append(f"{spec['stage']}:invalid_experiment_json:{type(exc).__name__}")
 
+    frontier_inputs = FRONTIER_FINGERPRINT_INPUTS.get(spec["stage"], ())
+    missing_frontier_inputs = [
+        relative for relative in frontier_inputs if not (root / relative).is_file()
+    ]
+    errors.extend(
+        f"{spec['stage']}:missing_frontier_fingerprint_input:{relative}"
+        for relative in missing_frontier_inputs
+    )
+    if experiment_path.is_file() and not missing_frontier_inputs:
+        frontier_sha256 = _frontier_fingerprint(
+            root, (spec["experiment"], *frontier_inputs)
+        )
+    elif experiment_sha256 is not None and not frontier_inputs:
+        frontier_sha256 = experiment_sha256
+
     workflow_path = root / spec["workflow"]
     if workflow_path.is_file():
         try:
@@ -168,11 +211,14 @@ def _stage_status(root: Path, spec: dict[str, str]) -> tuple[dict[str, Any], lis
 
     return {
         "stage": spec["stage"],
+        "lane": spec["lane"],
+        "rotation_eligible": spec["lane"] == "frontier",
         "engine": spec["engine"],
         "experiment": spec["experiment"],
         "workflow": spec["workflow"],
         "experiment_id": experiment_id,
         "experiment_sha256": experiment_sha256,
+        "frontier_sha256": frontier_sha256,
         "dispatch_mode": "reviewed_workflow_dispatch" if workflow_dispatch else "unavailable",
         "status": "READY_FOR_RESEARCH_DISPATCH" if not errors else "BLOCKED",
         "missing": missing,
@@ -189,6 +235,8 @@ def build_status(root: Path = ROOT) -> dict[str, Any]:
         errors.extend(stage_errors)
 
     ready = [row for row in stages if row["status"] == "READY_FOR_RESEARCH_DISPATCH"]
+    ready_frontier = [row for row in ready if row["rotation_eligible"] is True]
+    ready_legacy = [row for row in ready if row["lane"] == "legacy_validation"]
     blocked = [row for row in stages if row["status"] == "BLOCKED"]
     controller_verified = not errors
 
@@ -204,6 +252,8 @@ def build_status(root: Path = ROOT) -> dict[str, Any]:
             "strategy_family_count": catalog.get("family_count", 0),
             "search_stage_count": len(stages),
             "ready_search_stage_count": len(ready),
+            "ready_frontier_stage_count": len(ready_frontier),
+            "ready_legacy_validation_stage_count": len(ready_legacy),
             "blocked_search_stage_count": len(blocked),
         },
         "qualified_candidates": [],
@@ -214,8 +264,8 @@ def build_status(root: Path = ROOT) -> dict[str, Any]:
         ),
         "errors": sorted(set(errors)),
         "next_research_action": (
-            ready[0]["stage"]
-            if controller_verified and ready
+            ready_frontier[0]["stage"]
+            if controller_verified and ready_frontier
             else "repair_discovery_surface_before_dispatch"
         ),
     }

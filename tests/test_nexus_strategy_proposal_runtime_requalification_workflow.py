@@ -89,3 +89,22 @@ def test_contract_job_covers_exhaustion_and_workflow_regression() -> None:
 
     assert "tests/test_nexus_strategy_proposal_runtime_requalification_workflow.py" in text
     assert "tests/test_nexus_multitimeframe_search_exhaustion.py" in text
+
+def test_verified_requalification_publishes_bounded_qa41_handoff() -> None:
+    text = _text()
+
+    assert '"nexus_strategy_review_qa_handoff.py"' in text
+    assert '"tests/test_nexus_strategy_review_qa_handoff.py"' in text
+    assert "tests/test_nexus_strategy_review_qa_handoff.py" in text
+    assert 'verification_path = path.with_name("verification.json")' in text
+    assert "- name: Build source-bound QA-41 handoff" in text
+    assert "python nexus_strategy_review_qa_handoff.py" in text
+    assert '--requalification "$OUTPUT_ROOT/runtime-requalification.json"' in text
+    assert '--verification "$OUTPUT_ROOT/verification.json"' in text
+    assert '--output "$OUTPUT_ROOT/qa-handoff.json"' in text
+    assert (
+        "- name: Build source-bound QA-41 handoff\n"
+        "        if: steps.trigger.outputs.mode == 'proposal_queue'"
+        in text
+    )
+

@@ -38,7 +38,7 @@ def test_owner_health_requires_isolation_exact_sha_and_original_tests():
         "Bootstrap existing locked portable Python",
         "call scripts\\bootstrap_portable_python.cmd",
         "NEXUS_HEALTH_PRIVACY_AND_SHA_PASS=1",
-        "tests/test_nexus_architecture_validator.py tests/test_web_dashboard.py",
+        "tests/test_nexus_architecture_validator.py tests/test_nexus_system_map_validator.py tests/test_web_dashboard.py",
     )
     for marker in required:
         assert marker in source
@@ -47,3 +47,18 @@ def test_owner_health_requires_isolation_exact_sha_and_original_tests():
     assert source.index("Owner source health requires isolated GitHub Actions workspace") < source.index(
         "Remove-Item -Recurse -Force -ErrorAction Stop"
     )
+
+
+def test_every_cmd_health_check_propagates_failure_before_the_next_check():
+    import yaml
+
+    payload = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+    step = payload["jobs"]["exact-source-health"]["steps"][-1]
+    assert step["shell"] == "cmd"
+    lines = [line.strip() for line in step["run"].splitlines() if line.strip()]
+    assert len(lines) == 8
+    for command, guard in zip(lines[::2], lines[1::2]):
+        assert command.startswith("python ")
+        assert guard == "if errorlevel 1 exit /b %errorlevel%"
+    assert "nexus_architecture_validator.py docs/architecture/module-contract-registry.yaml" in lines[2]
+    assert "nexus_system_map_validator.py config/nexus-system-map-v1.yaml" in lines[4]

@@ -45,6 +45,99 @@ def _load(path: Path, name: str):
     return module
 
 
+@pytest.fixture
+def frozen_bulk_dataset(tmp_path, monkeypatch):
+    from scripts import build_nexus_bybit_replay_package as builder
+    from scripts import rehydrate_nexus_bybit_chunk as rehydrator
+    import nexus_demo_archive_contract as contract
+
+    # A compact grid has candles before, inside, and after the permitted months.
+    grid = pd.DatetimeIndex(["2024-03-31", "2024-04-01", "2024-06-01"], tz="UTC").as_unit("ns")
+    monkeypatch.setattr(builder, "expected_index", lambda step: grid)
+    for timeframe, (step, _) in list(builder.TIMEFRAMES.items()):
+        monkeypatch.setitem(builder.TIMEFRAMES, timeframe, (step, len(grid)))
+    reference, output = tmp_path / "reference", tmp_path / "output"
+    for symbol in builder.SYMBOLS:
+        for timeframe in builder.TIMEFRAMES:
+            relative = Path("bybit_market") / symbol / f"{timeframe}.parquet"
+            frame = pd.DataFrame({
+                "timestamp": grid, "open": 100.0, "high": 120.0, "low": 90.0,
+                "close": 105.0, "volume": 10.0, "symbol": symbol, "timeframe": timeframe,
+            })
+            for root in (reference, output):
+                (root / relative).parent.mkdir(parents=True, exist_ok=True)
+            frame.to_parquet(reference / relative, index=False)
+            frame.loc[1, "open"] = 110.0
+            frame.to_parquet(output / relative, index=False)
+    canonical = builder.build_manifest(reference)["semantic_dataset_sha256"]
+    monkeypatch.setattr(contract, "ARCHIVE_SHA256", canonical)
+    sources = []
+    for filename, sha in rehydrator.FROZEN_BULK_SOURCE_SHA256.items():
+        symbol, year, month_file = filename.split("-")
+        period = pd.Period(f"{year}-{month_file[:2]}", freq="M")
+        sources.append({
+            "filename": filename, "symbol": symbol, "sha256": sha,
+            "start_date": period.start_time.strftime("%Y-%m-%d"),
+            "end_date": period.end_time.strftime("%Y-%m-%d"),
+            "url": f"https://public.bybit.com/spot/{symbol}/{filename}",
+            "parser_engine": "c-chunked",
+        })
+    (output / "_source_manifest.json").write_text(json.dumps(sources))
+    return builder, rehydrator, reference, output, sources, canonical
+
+
+def test_frozen_restoration_preserves_exact_reference_and_only_permitted_months(frozen_bulk_dataset):
+    builder, rehydrator, reference, output, _, canonical = frozen_bulk_dataset
+    receipt = rehydrator.restore_frozen_bulk_semantics(output, reference)
+    assert receipt["restored_chunk_ids"] == ["41", "42"]
+    assert receipt["outside_month_candles_unchanged"] is True
+    assert len(receipt["unchanged_official_raw_archives"]) == 4
+    assert receipt["live_trading_authority"] is False
+    assert builder.build_manifest(output)["semantic_dataset_sha256"] == canonical
+    for path in reference.rglob("*.parquet"):
+        pd.testing.assert_frame_equal(pd.read_parquet(path), pd.read_parquet(output / path.relative_to(reference)))
+
+
+@pytest.mark.parametrize("mutation", ["digest", "missing", "duplicate", "venue"])
+def test_frozen_restoration_rejects_changed_or_ambiguous_raw_sources(frozen_bulk_dataset, mutation):
+    _, rehydrator, reference, output, sources, _ = frozen_bulk_dataset
+    if mutation == "digest":
+        sources[0]["sha256"] = "0" * 64
+    elif mutation == "missing":
+        sources.pop()
+    elif mutation == "duplicate":
+        sources.append(dict(sources[0]))
+    else:
+        sources[0]["url"] = "https://example.test/substitute.csv.gz"
+    (output / "_source_manifest.json").write_text(json.dumps(sources))
+    before = {p: hashlib.sha256(p.read_bytes()).hexdigest() for p in output.rglob("*.parquet")}
+    with pytest.raises(rehydrator.FrozenReplaySemanticsError):
+        rehydrator.restore_frozen_bulk_semantics(output, reference)
+    assert before == {p: hashlib.sha256(p.read_bytes()).hexdigest() for p in before}
+
+
+def test_frozen_restoration_rejects_drift_outside_allowed_months_without_writes(frozen_bulk_dataset):
+    _, rehydrator, reference, output, _, _ = frozen_bulk_dataset
+    path = next(output.rglob("*.parquet"))
+    frame = pd.read_parquet(path)
+    frame.loc[2, "close"] += 1
+    frame.to_parquet(path, index=False)
+    before = {p: hashlib.sha256(p.read_bytes()).hexdigest() for p in output.rglob("*.parquet")}
+    with pytest.raises(rehydrator.FrozenReplaySemanticsError, match="outside frozen bulk months"):
+        rehydrator.restore_frozen_bulk_semantics(output, reference)
+    assert before == {p: hashlib.sha256(p.read_bytes()).hexdigest() for p in before}
+
+
+def test_frozen_restoration_rejects_reference_that_is_not_the_frozen_content(frozen_bulk_dataset):
+    _, rehydrator, reference, output, _, _ = frozen_bulk_dataset
+    path = next(reference.rglob("*.parquet"))
+    frame = pd.read_parquet(path)
+    frame.loc[1, "open"] += 1
+    frame.to_parquet(path, index=False)
+    with pytest.raises(rehydrator.FrozenReplaySemanticsError, match="not the frozen canonical"):
+        rehydrator.restore_frozen_bulk_semantics(output, reference)
+
+
 def test_selector_requires_manifest_and_exact_immutable_zip_digest(tmp_path: Path) -> None:
     selector = _load(SELECTOR_PATH, "nexus_replay_selector_test")
     root = tmp_path / "candidate"
@@ -356,11 +449,189 @@ def test_chunk_rehydrator_rejects_noncanonical_dates_before_network_access() -> 
         rehydrator._validate_chunk_request("99", "2024-06-01", "2024-06-30")
 
 
+def test_chunk_artifact_listing_is_bounded_and_stops_when_all_chunks_are_found(monkeypatch) -> None:
+    chunks = _load(CHUNK_MAP_PATH, "nexus_replay_chunks_listing_test")
+    calls = []
+
+    def fake_request(url, token):
+        calls.append((url, token))
+        return {
+            "artifacts": [
+                {
+                    "id": 1000 + index,
+                    "name": f"bybit-rehydrated-chunk-{chunk.id}-99999",
+                    "expired": False,
+                    "created_at": "2026-10-07T00:00:00Z",
+                }
+                for index, chunk in enumerate(chunks.CANONICAL_CHUNKS)
+            ]
+        }
+
+    monkeypatch.setattr(chunks, "_request_json", fake_request)
+    payload = chunks.fetch_artifact_pages("example/repo", "token", max_pages=20, max_source_runs=0)
+    plan = chunks.build_plan(payload)
+
+    assert len(calls) == 1
+    assert "per_page=100" in calls[0][0]
+    assert "page=1" in calls[0][0]
+    assert plan["reusable_chunk_count"] == 42
+    assert plan["missing_chunk_count"] == 0
+
+
+def test_bounded_chunk_listing_treats_unseen_chunks_as_rebuild_required(monkeypatch) -> None:
+    chunks = _load(CHUNK_MAP_PATH, "nexus_replay_chunks_bounded_listing_test")
+
+    def fake_request(_url, _token):
+        return {
+            "artifacts": [
+                {
+                    "id": index + 1,
+                    "name": f"unrelated-artifact-{index}",
+                    "expired": False,
+                    "created_at": "2026-10-07T00:00:00Z",
+                }
+                for index in range(100)
+            ]
+        }
+
+    monkeypatch.setattr(chunks, "_request_json", fake_request)
+    payload = chunks.fetch_artifact_pages("example/repo", "token", max_pages=1, max_source_runs=0)
+    plan = chunks.build_plan(payload)
+
+    assert plan["reusable_chunk_count"] == 0
+    assert plan["missing_chunk_count"] == 42
+
+
+@pytest.fixture
+def chunk_producer():
+    chunks = _load(CHUNK_MAP_PATH, "nexus_replay_source_chunk_test")
+
+    def source(run_id=101):
+        run = {
+            "id": run_id, "status": "completed", "conclusion": "success",
+            "head_branch": "main", "head_sha": "a" * 40, "event": "push",
+            "path": chunks.SOURCE_WORKFLOW_PATH,
+            "repository": {"id": 7, "full_name": "example/repo"},
+            "head_repository": {"id": 7},
+        }
+        artifacts = [{
+            "id": run_id * 100 + index,
+            "name": f"bybit-rehydrated-chunk-{chunk.id}-{run_id}",
+            "expired": False, "created_at": "2026-10-07T00:00:00Z",
+            "workflow_run": {
+                "id": run_id, "head_sha": "a" * 40, "head_branch": "main",
+                "repository_id": 7, "head_repository_id": 7,
+            },
+        } for index, chunk in enumerate(chunks.CANONICAL_CHUNKS)]
+        return run, artifacts
+
+    return chunks, source
+
+
+def test_chunk_planner_reuses_complete_source_run_without_repo_scan(monkeypatch, chunk_producer):
+    chunks, source = chunk_producer
+    run, artifacts = source()
+    calls = []
+
+    def request(url, _token):
+        calls.append(url)
+        if "/actions/workflows/" in url:
+            return {"workflow_runs": [run]}
+        if "/actions/runs/101/artifacts" in url:
+            return {"artifacts": artifacts}
+        raise AssertionError("complete source must not call repository-wide artifact listing")
+
+    monkeypatch.setattr(chunks, "_request_json", request)
+    plan = chunks.build_plan(chunks.fetch_artifact_pages("example/repo", "token"))
+    assert len(calls) == 2
+    assert "branch=main" in calls[0] and "status=success" in calls[0] and "per_page=3" in calls[0]
+    assert plan["reusable_chunk_count"] == 42 and plan["missing_chunk_count"] == 0
+    assert {entry["artifact_id"] for entry in plan["reusable_artifacts"].values()} == {a["id"] for a in artifacts}
+
+
+@pytest.mark.parametrize("mutation", ["expired", "run", "sha", "branch", "repository", "fork"])
+def test_chunk_planner_excludes_expired_or_misbound_source_artifact(monkeypatch, chunk_producer, mutation):
+    chunks, source = chunk_producer
+    run, artifacts = source()
+    rejected = artifacts[0]
+    if mutation == "expired":
+        rejected["expired"] = True
+    else:
+        field, value = {
+            "run": ("id", 102), "sha": ("head_sha", "b" * 40),
+            "branch": ("head_branch", "feature"), "repository": ("repository_id", 8),
+            "fork": ("head_repository_id", 8),
+        }[mutation]
+        rejected["workflow_run"][field] = value
+
+    def request(url, _token):
+        if "/actions/workflows/" in url:
+            return {"workflow_runs": [run]}
+        if "/actions/runs/101/artifacts" in url:
+            return {"artifacts": artifacts}
+        return {"artifacts": []}
+
+    monkeypatch.setattr(chunks, "_request_json", request)
+    plan = chunks.build_plan(chunks.fetch_artifact_pages("example/repo", "token"))
+    assert plan["reusable_chunk_count"] == 41
+    assert plan["missing_ids"] == ["27"]
+
+
+@pytest.mark.parametrize("mutation", ["branch", "failure", "workflow", "fork"])
+def test_chunk_planner_does_not_fetch_untrusted_producer_run(monkeypatch, chunk_producer, mutation):
+    chunks, source = chunk_producer
+    run, _ = source()
+    if mutation == "branch":
+        run["head_branch"] = "feature"
+    elif mutation == "failure":
+        run["conclusion"] = "failure"
+    elif mutation == "workflow":
+        run["path"] = ".github/workflows/other.yml"
+    else:
+        run["head_repository"]["id"] = 8
+
+    def request(url, _token):
+        if "/actions/workflows/" in url:
+            return {"workflow_runs": [run]}
+        assert "/actions/runs/" not in url
+        return {"artifacts": []}
+
+    monkeypatch.setattr(chunks, "_request_json", request)
+    plan = chunks.build_plan(chunks.fetch_artifact_pages("example/repo", "token"))
+    assert plan["missing_chunk_count"] == 42
+
+
+def test_chunk_planner_bounds_source_runs_and_keeps_partial_coverage(monkeypatch, chunk_producer):
+    chunks, source = chunk_producer
+    producers = [source(run_id) for run_id in (101, 102, 103, 104)]
+    calls = []
+
+    def request(url, _token):
+        calls.append(url)
+        if "/actions/workflows/" in url:
+            return {"workflow_runs": [run for run, _ in producers]}
+        for run, artifacts in producers[:3]:
+            if f"/actions/runs/{run['id']}/artifacts" in url:
+                return {"artifacts": artifacts[:1]}
+        assert "/actions/artifacts?" in url
+        return {"artifacts": []}
+
+    monkeypatch.setattr(chunks, "_request_json", request)
+    plan = chunks.build_plan(chunks.fetch_artifact_pages("example/repo", "token", max_source_runs=3))
+    assert len(calls) == 5
+    assert plan["reusable_chunk_count"] == 1 and plan["missing_chunk_count"] == 41
+    assert plan["reusable_artifacts"]["27"]["artifact_id"] == 10300
+
+
 def test_rehydrate_workflow_rebuilds_missing_chunks_fail_closed_and_paper_only() -> None:
     text = REHYDRATE_WORKFLOW.read_text(encoding="utf-8")
     assert "workflow_dispatch:" in text
     assert "cancel-in-progress: false" in text
     assert "scripts/nexus_bybit_replay_chunks.py" in text
+    assert "gh api --paginate --slurp" not in text
+    assert '--max-pages 20' in text
+    assert '--max-source-runs 3' in text
+    assert '--token-env GH_TOKEN' in text
     assert "scripts/rehydrate_nexus_bybit_chunk.py" in text
     assert "missing_matrix" in text
     assert "reusable_artifacts" in text

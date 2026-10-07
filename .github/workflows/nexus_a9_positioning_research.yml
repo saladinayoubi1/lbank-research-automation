@@ -1,0 +1,139 @@
+name: NEXUS A9 source-bound positioning research
+
+on:
+  pull_request:
+    paths:
+      - "nexus_perpetual_positioning_divergence_research.py"
+      - "nexus_verified_perpetual_positioning.py"
+      - "nexus_a9_spot_source.py"
+      - "bybit_spot_backfill.py"
+      - "bybit_spot_archive_audit.py"
+      - "bybit_spot_archive_collector.py"
+      - "tests/test_nexus_perpetual_positioning_divergence_research.py"
+      - "tests/test_nexus_a9_spot_source.py"
+      - "tests/test_nexus_windows_tree_cleanup.py"
+      - "scripts/nexus_windows_tree_cleanup.py"
+      - ".github/workflows/nexus_a9_positioning_research.yml"
+      - "security/workflow-permissions-policy-v1.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nexus-a9-positioning-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  research-backtest:
+    if: >-
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
+       github.actor == github.repository_owner) ||
+      (github.event_name == 'workflow_dispatch' &&
+       github.ref_name == github.event.repository.default_branch)
+    runs-on: [self-hosted, Windows, X64, nexus-research, nexus-worker-2]
+    timeout-minutes: 120
+    env:
+      A9_SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Prepare isolated Python
+        shell: cmd
+        run: |
+          @echo off
+          setlocal
+          set "VENV=%RUNNER_TEMP%\nexus-a9-%GITHUB_RUN_ID%"
+          if exist "%VENV%" rmdir /s /q "%VENV%"
+          python --version
+          if errorlevel 1 exit /b %errorlevel%
+          python -m venv "%VENV%"
+          if errorlevel 1 exit /b %errorlevel%
+          "%VENV%\Scripts\python.exe" -m pip install -r requirements-dev.lock
+          if errorlevel 1 exit /b %errorlevel%
+          >>"%GITHUB_PATH%" echo %VENV%\Scripts
+          >>"%GITHUB_ENV%" echo NEXUS_A9_VENV=%VENV%
+
+      - name: Check dependency consistency
+        shell: cmd
+        run: |
+          @echo off
+          python -m pip check
+          if errorlevel 1 exit /b %errorlevel%
+
+      - name: Run A9 source-bound contract tests
+        shell: cmd
+        run: |
+          @echo off
+          python -m pytest -q tests/test_nexus_perpetual_positioning_divergence_research.py tests/test_nexus_a9_spot_source.py tests/test_nexus_verified_perpetual_positioning.py tests/test_nexus_windows_tree_cleanup.py tests/test_nexus_a9_positioning_workflow.py
+          if errorlevel 1 exit /b %errorlevel%
+
+      - name: Build fresh verified perpetual positioning inputs
+        shell: cmd
+        run: |
+          @echo off
+          python scripts/nexus_windows_tree_cleanup.py build\a9-positioning --attempts 20 --delay-seconds 1
+          if errorlevel 1 exit /b %errorlevel%
+          python nexus_verified_perpetual_positioning.py --start 2026-07-03T00:00:00Z --end-exclusive 2026-08-02T00:00:00Z --output-root build/a9-positioning
+          if errorlevel 1 exit /b %errorlevel%
+
+      - name: Acquire exact BTC ETH official Bybit Spot source
+        shell: cmd
+        run: |
+          @echo off
+          python scripts/nexus_windows_tree_cleanup.py build\a9-spot-state build\a9-spot-cache --attempts 20 --delay-seconds 1
+          if errorlevel 1 exit /b %errorlevel%
+          python nexus_a9_spot_source.py --state-root build/a9-spot-state --cache-root build/a9-spot-cache
+          if errorlevel 1 exit /b %errorlevel%
+
+      - name: Run A9 research-only backtest
+        shell: cmd
+        run: |
+          @echo off
+          python scripts/nexus_windows_tree_cleanup.py build\a9-output --attempts 20 --delay-seconds 1
+          if errorlevel 1 exit /b %errorlevel%
+          python nexus_perpetual_positioning_divergence_research.py --spot-state-root build/a9-spot-state --spot-proof-root build/a9-spot-state --positioning-root build/a9-positioning --output build/a9-output --source-sha %A9_SOURCE_SHA%
+          if errorlevel 1 exit /b %errorlevel%
+
+      - name: Verify A9 report authority and source contract
+        shell: cmd
+        run: |
+          @echo off
+          python -c "import json,os; from pathlib import Path; p=json.loads(Path(r'build/a9-output/perpetual-positioning-divergence-report.json').read_text()); assert p['source_sha']==os.environ['A9_SOURCE_SHA']; assert p['positioning_dataset_semantic_sha256']=='a59405c733ecc6cad5c9270155a22bab52173989cd62c9569cf37b06f844c6e6'; assert p['positioning_oi_interval']=='1h'; assert p['positioning_oi_value_field']=='singleOpenInterest'; assert p['historical_test_pristine'] is False; assert p['automatic_strategy_promotion'] is False; assert p['derivative_execution_authority'] is False; assert p['live_trading_authority'] is False; assert p['qualification']=='NOT_QUALIFIED_NO_PRISTINE_FUTURE_HOLDOUT'; assert all(r['trade_count_limit'] is None and r['execution_instrument']=='spot_long_or_cash_only' for r in p['rows']); print('a9_source_bound_backtest=PASS rows='+str(len(p['rows'])))"
+          if errorlevel 1 exit /b %errorlevel%
+
+      - name: Upload A9 numerical evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-a9-source-bound-${{ env.A9_SOURCE_SHA }}
+          path: |
+            build/a9-output/
+            build/a9-positioning/_perpetual_positioning_proof.json
+            build/a9-spot-state/_a9_spot_source_proof.json
+            build/a9-spot-state/_source_manifest.json
+            build/a9-spot-state/_backfill_report.json
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Remove raw Research state
+        if: always()
+        shell: cmd
+        run: |
+          @echo off
+          python scripts/nexus_windows_tree_cleanup.py build\a9-spot-state build\a9-spot-cache build\a9-positioning --attempts 20 --delay-seconds 1
+          if errorlevel 1 exit /b %errorlevel%
+
+      - name: Clean isolated Python
+        if: always()
+        shell: cmd
+        run: |
+          @echo off
+          if defined NEXUS_A9_VENV if exist "%NEXUS_A9_VENV%" rmdir /s /q "%NEXUS_A9_VENV%"
+          exit /b 0

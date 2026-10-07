@@ -8,6 +8,7 @@
   <title>NEXUS Personal Pro</title>
   <link rel="stylesheet" href="delivery.css">
   <link rel="stylesheet" href="mobile-redesign.css">
+<link rel="stylesheet" href="mobile-shared-terminal.css">
 </head>
 <body>
 <div class="app-shell v4-shell">
@@ -48,12 +49,16 @@
         <div id="proChart" class="pro-chart" aria-label="نمودار قیمت"><div class="chart-empty">نمودار پس از دریافت بازار نمایش داده می‌شود</div></div>
       </section>
 
-      <div class="kpi-strip" aria-label="خلاصه حساب">
-        <article class="kpi-primary"><span>Equity</span><b id="homeEquity">—</b><small>USDT · Paper</small></article>
+      <section class="mobile-shared-connection"><strong>سبد استراتژی‌های لپ‌تاپ</strong><span id="sharedHomeSummary">برای مشاهده، اتصال امن لپ‌تاپ را تنظیم کنید.</span><div class="mobile-shared-actions"><button type="button" data-open-screen="paper">نمایش پوزیشن‌ها و تاریخچه</button></div></section>
+      <details class="home-local-sandbox" id="homeLocalSandbox">
+        <summary>نمایش حساب تمرینی دستی گوشی (مستقل از حساب مشترک لپ‌تاپ)</summary>
+      <div class="kpi-strip" aria-label="خلاصه حساب تمرینی دستی">
+        <article class="kpi-primary"><span>Equity</span><b id="homeEquity">—</b><small>USDT · حساب تمرینی دستی</small></article>
         <article><span>Realized</span><b id="homePnl">—</b><small id="homePnlPct">—</small></article>
         <article><span>Positions</span><b id="homePositions">۰</b><small>open</small></article>
         <article><span>Risk</span><b id="homeRisk">READY</b><small>final gate</small></article>
       </div>
+      </details>
 
       <section class="pulse-card">
         <div class="section-head clean"><div><small>SYSTEM PULSE</small><h2>وضعیت NEXUS</h2></div><span id="systemPulseScore" class="pulse-score">—</span></div>
@@ -83,14 +88,23 @@
         <span class="status ok">NO REAL ORDERS</span>
       </div>
 
-      <div class="portfolio-balance">
-        <div class="balance-main"><span>Paper Equity</span><b><span id="paperEquity">—</span> <small>USDT</small></b><em id="portfolioMove">SIMULATED ACCOUNT</em></div>
+      <section class="mobile-shared-connection" id="sharedConnection" data-state="offline" aria-live="polite">
+        <strong id="sharedConnectionTitle">حساب مشترک لپ‌تاپ · متصل نیست</strong>
+        <span id="sharedConnectionDetail">برای مشاهده سبد چهاراستراتژی، اتصال امن لپ‌تاپ را تنظیم کنید.</span>
+        <div class="mobile-shared-actions"><button id="configureLaptop" type="button">اتصال به لپ‌تاپ</button><button id="refreshSharedPaper" type="button">تازه‌سازی</button></div>
+      </section>
+      <div id="sharedTerminal"></div>
+      <details class="mobile-local-sandbox" id="mobileLocalSandbox">
+        <summary>حساب تمرینی دستی گوشی · جدا از حساب مشترک لپ‌تاپ (نمایش اختیاری)</summary>
+        <p class="mobile-local-disclosure">این حساب فقط روی همین گوشی نگهداری می‌شود و موجودی یا معاملات سبد استراتژی‌های لپ‌تاپ را نشان نمی‌دهد.</p>
+      <div class="portfolio-balance" aria-label="فقط حساب تمرینی محلی گوشی">
+        <div class="balance-main"><span>LOCAL PHONE SANDBOX · NOT LAPTOP PAPER</span><b dir="ltr"><span id="paperEquity">—</span> <small>USDT</small></b><em id="portfolioMove">MANUAL SIMULATED ACCOUNT</em></div>
         <div id="portfolioArc" class="portfolio-arc" aria-hidden="true"><span></span></div>
       </div>
 
       <div class="paper-summary compact-kpis">
-        <article><span>Cash</span><b id="paperCash">—</b></article>
-        <article><span>Realized PnL</span><b id="paperRealized">—</b></article>
+        <article><span>Cash</span><b id="paperCash" dir="ltr">—</b></article>
+        <article><span>Realized PnL</span><b id="paperRealized" dir="ltr">—</b></article>
         <article><span>Ledger events</span><b id="paperEvents">۰</b></article>
       </div>
 
@@ -124,6 +138,7 @@
 
       <section class="panel"><div class="section-head clean"><div><small>OPEN POSITIONS</small><h2>پوزیشن‌ها</h2></div></div><div id="positions" class="cards position-cards"></div></section>
       <details class="panel trace-panel"><summary>آخرین تصمیم Risk</summary><div id="riskTrace" class="trace"></div></details>
+      </details>
     </section>
 
     <section id="screen-mission" class="screen" data-screen="mission">
@@ -182,7 +197,7 @@
         <button type="button" data-go="audit"><span>≣</span><b>Audit Ledger</b><small>Replay · Integrity</small><em>›</em></button>
         <button type="button" data-go="live" class="locked-more"><span>🔒</span><b>Live Authority</b><small>Owner L4 · Locked</small><em>›</em></button>
       </div>
-      <section class="panel about-card"><small>ANDROID 4.0</small><h2>Research · Backtest · Paper</h2><p>Bybit public market · Deterministic Risk final authority · Secure Gateway bounded · Live authority false.</p></section>
+      <section class="panel about-card"><small>ANDROID 4.1.3</small><h2>Research · Backtest · Paper</h2><p>Bybit public market · Deterministic Risk final authority · Secure Gateway bounded · Live authority false.</p></section>
     </section>
   </main>
 
@@ -198,5 +213,8 @@
 <script src="mobile-core.js" defer></script>
 <script src="mobile-runtime.js" defer></script>
 <script src="mobile-redesign.js" defer></script>
+<script src="mobile-shared-terminal.js" defer></script>
+<script src="mobile-canonical-client.js" defer></script>
+<script src="mobile-shared-client.js" defer></script>
 </body>
 </html>

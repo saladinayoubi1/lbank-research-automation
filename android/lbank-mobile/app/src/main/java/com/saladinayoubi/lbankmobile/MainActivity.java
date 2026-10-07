@@ -2,6 +2,11 @@ package com.saladinayoubi1.lbankmobile;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.text.InputType;
+import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.Toast;
 import android.os.Bundle;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
@@ -29,6 +34,10 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.RejectedExecutionException;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -64,7 +73,11 @@ public final class MainActivity extends Activity {
     private static final Set<String> RESEARCH_KEYS = new HashSet<>(Arrays.asList("symbol", "timeframe", "family", "limit"));
 
     private WebView webView;
+    private final Object gatewayLock = new Object();
     private final ExecutorService executor = Executors.newFixedThreadPool(4);
+    // Shared observation must not queue behind unavailable mission/research routes.
+    private final ExecutorService paperReader = new ThreadPoolExecutor(1, 1, 0L,
+            TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(1));
 
     @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
     @Override protected void onCreate(Bundle savedInstanceState) {
@@ -83,14 +96,9 @@ public final class MainActivity extends Activity {
         settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         webView.addJavascriptInterface(new NativeGateway(), "NexusNative");
-        webView.setWebViewClient(new WebViewClient() {
-            @Override public void onPageFinished(WebView view, String url) {
-                super.onPageFinished(view, url);
-                if ("file:///android_asset/index.html".equals(url)) {
-                    view.evaluateJavascript("(function(){var s=document.createElement('script');s.src='mobile-canonical-client.js';document.body.appendChild(s)})()", null);
-                }
-            }
-        });
+        // Canonical client loads in index.html before the shared Paper observer.
+        // Avoid a second late script injection: it can replace pending native callbacks.
+        webView.setWebViewClient(new WebViewClient());
         webView.setWebChromeClient(new WebChromeClient());
         webView.loadUrl("file:///android_asset/index.html");
     }
@@ -126,12 +134,54 @@ public final class MainActivity extends Activity {
     }
 
     private URL gatewayBaseUrl() throws Exception {
-        URL base = new URL(BuildConfig.NEXUS_GATEWAY_URL);
+        URL base = new URL(getPreferences(MODE_PRIVATE).getString("gateway_origin", BuildConfig.NEXUS_GATEWAY_URL));
         if (!"https".equalsIgnoreCase(base.getProtocol())) throw new SecurityException("Android NEXUS gateway must use HTTPS");
         if (base.getUserInfo() != null || base.getQuery() != null || base.getRef() != null || !(base.getPath().isEmpty() || "/".equals(base.getPath()))) {
             throw new SecurityException("Android NEXUS gateway configuration must be an HTTPS origin only");
         }
+        if (base.getHost().isEmpty() || base.getPort() == 0 || base.getPort() > 65535) throw new SecurityException("Invalid gateway host or port");
         return base;
+    }
+
+    // Only a native, owner-confirmed dialog can change the origin. The WebView supplies no URL/token.
+    private void showGatewayDialog() {
+        LinearLayout fields = new LinearLayout(this);
+        fields.setOrientation(LinearLayout.VERTICAL);
+        fields.setPadding(32, 16, 32, 8);
+        EditText origin = new EditText(this);
+        origin.setHint("https://your-laptop-gateway.example");
+        origin.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+        origin.setSingleLine(true);
+        origin.setText(getPreferences(MODE_PRIVATE).getString("gateway_origin", ""));
+        EditText token = new EditText(this);
+        token.setHint("Gateway token — 32+ characters");
+        token.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        token.setSingleLine(true);
+        fields.addView(origin); fields.addView(token);
+        AlertDialog dialog = new AlertDialog.Builder(this).setTitle("اتصال امن به لپ‌تاپ")
+                .setMessage("نشانی HTTPS و توکن Gateway لپ‌تاپ را وارد کنید. توکن قبلی با تغییر اتصال جایگزین می‌شود؛ کلید صرافی وارد نکنید.")
+                .setView(fields).setNegativeButton("لغو", null).setPositiveButton("ذخیره و اتصال", null).create();
+        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> {
+            try {
+                String raw = origin.getText().toString().trim();
+                URI uri = new URI(raw);
+                if (!"https".equalsIgnoreCase(uri.getScheme()) || uri.getHost() == null || uri.getHost().isEmpty()
+                        || uri.getRawUserInfo() != null || uri.getRawQuery() != null || uri.getRawFragment() != null
+                        || !(uri.getRawPath().isEmpty() || "/".equals(uri.getRawPath()))
+                        || uri.getPort() == 0 || uri.getPort() > 65535) throw new IllegalArgumentException();
+                String value = token.getText().toString().trim();
+                if (value.length() < 32 || value.length() > 512 || value.matches(".*[\\r\\n].*")) throw new IllegalArgumentException();
+                synchronized (gatewayLock) {
+                    if (!getPreferences(MODE_PRIVATE).edit().putString("gateway_origin", raw)
+                            .putString("gateway_token", encrypt(value)).commit()) throw new IllegalStateException();
+                }
+                token.setText(""); dialog.dismiss();
+                webView.evaluateJavascript("window.dispatchEvent(new Event('nexus-gateway-configured'))", null);
+            } catch (Exception error) {
+                Toast.makeText(this, "نشانی HTTPS معتبر و توکن ۳۲ تا ۵۱۲ کاراکتری لازم است.", Toast.LENGTH_LONG).show();
+            }
+        }));
+        dialog.show();
     }
 
     private URL gatewayTarget(String relativePath) throws Exception {
@@ -170,12 +220,20 @@ public final class MainActivity extends Activity {
         connection.setInstanceFollowRedirects(false);
         connection.setRequestMethod(method);
         connection.setRequestProperty("Accept", "application/json");
-        String token = gatewayToken();
-        if (!token.isEmpty()) connection.setRequestProperty("Authorization", "Bearer " + token);
+        synchronized (gatewayLock) {
+            URL current = gatewayBaseUrl();
+            int currentPort = current.getPort() == -1 ? current.getDefaultPort() : current.getPort();
+            int targetPort = target.getPort() == -1 ? target.getDefaultPort() : target.getPort();
+            if (!current.getProtocol().equalsIgnoreCase(target.getProtocol()) || !current.getHost().equalsIgnoreCase(target.getHost()) || currentPort != targetPort)
+                throw new SecurityException("Gateway configuration changed; retry request");
+            String token = gatewayToken();
+            if (!token.isEmpty()) connection.setRequestProperty("Authorization", "Bearer " + token);
+        }
         return connection;
     }
 
     private String checkedJson(HttpsURLConnection connection, boolean requireDashboardContract) throws Exception {
+        try {
         int contentLength = connection.getContentLength();
         if (contentLength > MAX_RESPONSE_BYTES) throw new SecurityException("Gateway response exceeds bounded size");
         int code = connection.getResponseCode();
@@ -187,6 +245,7 @@ public final class MainActivity extends Activity {
         if (!requireDashboardContract && !contract.startsWith("nexus.")) throw new SecurityException("Incompatible NEXUS product response");
         if (payload.optBoolean("live_trading_authority", false)) throw new SecurityException("Remote product attempted to widen Live authority");
         return payload.toString();
+        } finally { connection.disconnect(); }
     }
 
     private String validateDashboardPath(String requestJson) throws Exception {
@@ -293,6 +352,10 @@ public final class MainActivity extends Activity {
     private String callProduct(String method, String rawPath, String bodyJson) throws Exception {
         String safePath = validateProductPath(method, rawPath);
         HttpsURLConnection connection = connection(gatewayTarget(safePath), method);
+        if ("GET".equals(method) && "/api/product/paper".equals(safePath)) {
+            connection.setConnectTimeout(5000);
+            connection.setReadTimeout(10000);
+        }
         if ("POST".equals(method)) {
             JSONObject payload = validateProductBody(new URI(safePath).getPath(), bodyJson);
             connection.setDoOutput(true);
@@ -328,10 +391,11 @@ public final class MainActivity extends Activity {
 
     private void deliver(String callback, String id, boolean ok, String payload) {
         final String script = "window." + callback + "(" + JSONObject.quote(id) + "," + ok + "," + JSONObject.quote(payload) + ")";
-        runOnUiThread(() -> webView.evaluateJavascript(script, null));
+        runOnUiThread(() -> { if (webView != null) webView.evaluateJavascript(script, null); });
     }
 
     public final class NativeGateway {
+        @JavascriptInterface public void configureGateway() { runOnUiThread(() -> showGatewayDialog()); }
         @JavascriptInterface public boolean isAvailable() { return true; }
         @JavascriptInterface public String gatewayInfo() {
             try {
@@ -355,10 +419,19 @@ public final class MainActivity extends Activity {
         @JavascriptInterface public void deleteKey(String id) { assertGatewaySecretId(id); getPreferences(MODE_PRIVATE).edit().remove("gateway_token").apply(); }
         @JavascriptInterface public void request(String id, String json) { executor.execute(() -> { try { deliver("NexusNativeResult", id, true, callDashboard(json)); } catch (Exception e) { deliver("NexusNativeResult", id, false, e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage()); } }); }
         @JavascriptInterface public void requestAiRoom(String id, String json) { executor.execute(() -> { try { deliver("NexusAiRoomResult", id, true, callAiRoom(json)); } catch (Exception e) { deliver("NexusAiRoomResult", id, false, e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage()); } }); }
-        @JavascriptInterface public void requestProduct(String id, String method, String path, String bodyJson) { executor.execute(() -> { try { deliver("NexusProductResult", id, true, callProduct(method == null ? "" : method.trim().toUpperCase(), path, bodyJson == null ? "{}" : bodyJson)); } catch (Exception e) { deliver("NexusProductResult", id, false, e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage()); } }); }
+        @JavascriptInterface public void requestProduct(String id, String method, String path, String bodyJson) {
+            String verb = method == null ? "" : method.trim().toUpperCase();
+            ExecutorService target = "GET".equals(verb) && "/api/product/paper".equals(path) ? paperReader : executor;
+            try {
+                target.execute(() -> {
+                    try { deliver("NexusProductResult", id, true, callProduct(verb, path, bodyJson == null ? "{}" : bodyJson)); }
+                    catch (Exception e) { deliver("NexusProductResult", id, false, e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage()); }
+                });
+            } catch (RejectedExecutionException e) { deliver("NexusProductResult", id, false, "Paper reader busy; retry later"); }
+        }
         @JavascriptInterface public void requestPublicMarket(String id, String symbol, String interval) { executor.execute(() -> { try { deliver("NexusPublicMarketResult", id, true, callPublicMarket(symbol, interval)); } catch (Exception e) { deliver("NexusPublicMarketResult", id, false, e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage()); } }); }
     }
 
     @Override public void onBackPressed() { if (webView != null && webView.canGoBack()) webView.goBack(); else super.onBackPressed(); }
-    @Override protected void onDestroy() { executor.shutdownNow(); if (webView != null) { webView.removeJavascriptInterface("NexusNative"); webView.destroy(); webView = null; } super.onDestroy(); }
+    @Override protected void onDestroy() { paperReader.shutdownNow(); executor.shutdownNow(); if (webView != null) { webView.removeJavascriptInterface("NexusNative"); webView.destroy(); webView = null; } super.onDestroy(); }
 }

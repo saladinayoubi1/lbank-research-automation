@@ -1,0 +1,123 @@
+"""Research-only continuation of an independently verified Agent lease.
+
+This proof sequence does not cap strategy count or trade count. A follow-on
+lease MUST inherit its predecessor's exact checked numerical frontier and
+select a different causal mechanism. If no different reviewed mechanism is
+available, it fails closed for Developer Agent review instead of retesting
+the same failed mechanism or promoting anything to Paper.
+"""
+from __future__ import annotations
+
+import re
+from typing import Any
+
+FIRST = "P7-RESEARCH-COMPOSITE-001"
+SECOND = "P7-RESEARCH-COMPOSITE-002"
+THIRD = "P7-RESEARCH-COMPOSITE-003"
+FOURTH = "P7-RESEARCH-COMPOSITE-004"
+FIFTH = "P7-RESEARCH-COMPOSITE-005"
+SIXTH = "P7-RESEARCH-COMPOSITE-006"
+SEVENTH = "P7-RESEARCH-COMPOSITE-007"
+EIGHTH = "P7-RESEARCH-COMPOSITE-008"
+NINTH = "P7-RESEARCH-COMPOSITE-009"
+TENTH = "P7-RESEARCH-COMPOSITE-010"
+ELEVENTH = "P7-RESEARCH-COMPOSITE-011"
+TWELFTH = "P7-RESEARCH-COMPOSITE-012"
+THIRTEENTH = "P7-RESEARCH-COMPOSITE-013"
+FOURTEENTH = "P7-RESEARCH-COMPOSITE-014"
+FIFTEENTH = "P7-RESEARCH-COMPOSITE-015"
+SIXTEENTH = "P7-RESEARCH-COMPOSITE-016"
+SEVENTEENTH = "P7-RESEARCH-COMPOSITE-017"
+EIGHTEENTH = "P7-RESEARCH-COMPOSITE-018"
+NINETEENTH = "P7-RESEARCH-COMPOSITE-019"
+# Future successors are definitions only; each remains inactive until its
+# immediate predecessor has a durable independent-QA DONE receipt.
+PREDECESSOR = {
+    SECOND: FIRST, THIRD: SECOND, FOURTH: THIRD, FIFTH: FOURTH,
+    SIXTH: FIFTH, SEVENTH: SIXTH, EIGHTH: SEVENTH, NINTH: EIGHTH,
+    TENTH: NINTH, ELEVENTH: TENTH, TWELFTH: ELEVENTH, THIRTEENTH: TWELFTH,
+    FOURTEENTH: THIRTEENTH, FIFTEENTH: FOURTEENTH, SIXTEENTH: FIFTEENTH,
+    SEVENTEENTH: SIXTEENTH, EIGHTEENTH: SEVENTEENTH,
+    NINETEENTH: EIGHTEENTH,
+}
+TASKS = frozenset((FIRST, *PREDECESSOR))
+SOURCE_HEX = re.compile(r"^[0-9a-f]{40}$")
+DIGEST_HEX = re.compile(r"^[0-9a-f]{64}$")
+ANCESTRY = (
+    "research_predecessor_source_sha",
+    "research_predecessor_receipt_digest",
+    "research_predecessor_qa_digest",
+    "research_predecessor_ledger_digest",
+    "research_predecessor_mechanism",
+)
+SOURCE_KEY = ANCESTRY[0]
+DIGEST_KEYS = ANCESTRY[1:4]
+MECHANISM_KEY = ANCESTRY[4]
+
+
+def attested_research_task(task: dict[str, Any]) -> dict[str, str]:
+    """Require one completed composite Research task with exact independent QA.
+
+    This validates the proof of the task itself and therefore also applies to a
+    terminal Research mission that has no successor.  It grants no successor,
+    qualification, registry, Paper, or Live authority.
+    """
+    production = task.get("result_evidence")
+    qa = task.get("verification_evidence")
+    if (
+        task.get("id") not in TASKS
+        or task.get("status") != "DONE"
+        or task.get("producer") != "research-agent"
+        or task.get("verifier") != "qa-verifier-agent"
+        or not isinstance(production, dict)
+        or not isinstance(qa, dict)
+        or production.get("executor") != "nexus-real-composite-backtest"
+        or qa.get("executor") != "nexus-independent-composite-numeric-qa"
+        or production.get("independent_qa_complete") is not False
+        or qa.get("independent_qa_complete") is not True
+        or production.get("auto_demo_promotion") is not False
+        or qa.get("auto_demo_promotion") is not False
+        or production.get("live_enabled") is not False
+        or qa.get("live_enabled") is not False
+        or qa.get("producer_lease_id") != task.get("research_producer_lease_id")
+        or qa.get("producer_receipt_digest") != production.get("receipt_digest")
+        or qa.get("source_sha") != production.get("source_sha")
+        or not SOURCE_HEX.fullmatch(str(production.get("source_sha", "")))
+        or not all(DIGEST_HEX.fullmatch(str(production.get(k, "")))
+                   for k in ("receipt_digest", "ledger_digest", "prior_ledger_digest",
+                             "config_fingerprint"))
+        or not DIGEST_HEX.fullmatch(str(qa.get("qa_digest", "")))
+        or not isinstance(production.get("mechanism"), str)
+        or len(production["mechanism"]) > 80
+        or not production["mechanism"]
+    ):
+        raise ValueError("real Research+independent-QA evidence is not exact")
+    return dict(zip(ANCESTRY, (
+        production["source_sha"], production["receipt_digest"], qa["qa_digest"],
+        production["ledger_digest"], production["mechanism"],
+    )))
+
+
+def attested_predecessor(task: dict[str, Any]) -> dict[str, str]:
+    """Require an attested Research task that is also a real DAG predecessor."""
+    if task.get("id") not in PREDECESSOR.values():
+        raise ValueError("previous real Research+independent-QA evidence is not exact")
+    try:
+        return attested_research_task(task)
+    except ValueError as exc:
+        raise ValueError(
+            "previous real Research+independent-QA evidence is not exact"
+        ) from exc
+
+
+def validate_ancestry(data: dict[str, Any]) -> dict[str, str]:
+    if (
+        not isinstance(data, dict)
+        or set(data) != set(ANCESTRY)
+        or not SOURCE_HEX.fullmatch(str(data.get(SOURCE_KEY, "")))
+        or any(not DIGEST_HEX.fullmatch(str(data.get(k, ""))) for k in DIGEST_KEYS)
+        or not isinstance(data.get(MECHANISM_KEY), str)
+        or not re.fullmatch(r"[a-z][a-z0-9_]{2,79}", data[MECHANISM_KEY])
+    ):
+        raise ValueError("successor Research dispatch lacks exact predecessor attestation")
+    return dict(data)

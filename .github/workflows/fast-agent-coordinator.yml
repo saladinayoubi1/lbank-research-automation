@@ -6,16 +6,6 @@ on:
     - cron: '*/5 * * * *'
   push:
     branches: [main]
-    paths:
-      - '.github/workflows/fast-agent-coordinator.yml'
-      - '.github/workflows/nexus-runtime-worker.yml'
-      - 'agent_manager.py'
-      - 'agent_manager_runner.py'
-      - 'agent_transport.py'
-      - 'config/nexus-agent-manager.json'
-      - 'scripts/agent_task_executor.py'
-      - 'paper_schedule_watchdog.py'
-      - 'prospective_paper_schedule_watchdog.py'
 
 permissions:
   contents: read
@@ -66,6 +56,22 @@ jobs:
 
       - name: Ingest completed worker results before stale-lease evaluation
         run: python agent_transport.py --mode poll --runtime data/agent_coordination/agent_manager_runtime.json --summary data/agent_coordination/manager_state.json --ref "${GITHUB_REF_NAME}"
+
+      - name: Sync verified composite VAL-40 candidate evidence
+        run: >-
+          python nexus_composite_validation_candidate_transport.py
+          --runtime data/agent_coordination/agent_manager_runtime.json
+          --store data/agent_coordination/composite_val40_candidates
+
+      - name: Sync verified physical composite QA task evidence
+        run: >-
+          python nexus_composite_runtime_qa_transport.py
+          --store data/agent_coordination/composite_runtime_qa_tasks
+
+      - name: Sync verified Strategy QA handoff evidence
+        run: >-
+          python nexus_strategy_qa_handoff_transport.py
+          --store data/agent_coordination/strategy_qa_handoffs
 
       - name: Advance capability-aware mission DAG and five-minute triage
         run: python agent_manager_runner.py --config config/nexus-agent-manager.json

@@ -16,6 +16,8 @@ on:
       - "nexus_paper_boundary_discovery_feedback.py"
       - "tests/test_nexus_paper_boundary_discovery_feedback.py"
       - "tests/test_nexus_paper_boundary_discovery_feedback_workflow.py"
+      - "tests/test_nexus_paper_boundary_transport.py"
+      - "scripts/nexus_paper_boundary_transport.py"
       - ".github/workflows/nexus_paper_boundary_discovery_feedback.yml"
       - ".nexus/recovery/paper-boundary-feedback-v1.json"
   push:
@@ -24,6 +26,8 @@ on:
       - "nexus_paper_boundary_discovery_feedback.py"
       - "tests/test_nexus_paper_boundary_discovery_feedback.py"
       - "tests/test_nexus_paper_boundary_discovery_feedback_workflow.py"
+      - "tests/test_nexus_paper_boundary_transport.py"
+      - "scripts/nexus_paper_boundary_transport.py"
       - ".github/workflows/nexus_paper_boundary_discovery_feedback.yml"
       - ".nexus/recovery/paper-boundary-feedback-v1.json"
 
@@ -57,6 +61,7 @@ jobs:
           python -m pytest -q
           tests/test_nexus_paper_boundary_discovery_feedback.py
           tests/test_nexus_paper_boundary_discovery_feedback_workflow.py
+          tests/test_nexus_paper_boundary_transport.py
 
   gate-paper-boundary:
     if: >-
@@ -76,7 +81,7 @@ jobs:
       RECOVERY_MANIFEST: .nexus/recovery/paper-boundary-feedback-v1.json
       PAPER_STATE_ARTIFACT: nexus-persistent-paper-trading-state
     outputs:
-      should_dispatch: ${{ steps.health.outputs.should_dispatch }}
+      should_dispatch: ${{ steps.health.outputs.should_dispatch || 'false' }}
       trigger_run_id: ${{ steps.trigger.outputs.trigger_run_id }}
       trigger_source_sha: ${{ steps.trigger.outputs.trigger_source_sha }}
     steps:
@@ -262,8 +267,45 @@ jobs:
         run: python -m pip install -r requirements.lock
       - if: steps.trigger.outputs.eligible == 'true'
         run: python -m pip check
-      - name: Restore exact triggering Paper artifact
+      - name: Resolve exact Paper transport without reading private checkpoint on GitHub
         if: steps.trigger.outputs.eligible == 'true'
+        id: transport
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          gh api -H 'Accept: application/vnd.github+json' \
+            "repos/$GITHUB_REPOSITORY/actions/runs/$TRIGGER_RUN_ID/artifacts?per_page=100" \
+            > build/paper-boundary-transport-artifacts.json
+          gh api -H 'Accept: application/vnd.github+json' \
+            "repos/$GITHUB_REPOSITORY/actions/runs/$TRIGGER_RUN_ID/jobs?per_page=100" \
+            > build/paper-boundary-transport-jobs.json
+          python scripts/nexus_paper_boundary_transport.py \
+            --artifacts build/paper-boundary-transport-artifacts.json \
+            --jobs build/paper-boundary-transport-jobs.json \
+            --run-id "$TRIGGER_RUN_ID" \
+            --source-sha "$TRIGGER_SOURCE_SHA" \
+            --requested-id "${PAPER_STATE_ARTIFACT_ID:-}" \
+            --requested-digest "${PAPER_STATE_ARTIFACT_SHA256:-}" \
+            --output build/paper-boundary-transport.json
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          result = json.loads(Path('build/paper-boundary-transport.json').read_text())
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+              output.write('mode=' + result['mode'] + '\n')
+          if result['mode'] == 'public_artifact':
+              with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as env:
+                  env.write('PAPER_STATE_ARTIFACT_ID=' + result['artifact_id'] + '\n')
+                  env.write('PAPER_STATE_ARTIFACT_SHA256=' + result['artifact_sha256'] + '\n')
+          else:
+              reason = result['reason']
+              print('::notice::Verified owner-primary Paper checkpoint; hosted boundary discovery not dispatched: ' + reason)
+              with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as summary:
+                  summary.write('Paper boundary discovery: NOT DISPATCHED. ' + reason + '\n')
+          PY
+      - name: Restore exact triggering Paper artifact
+        if: steps.transport.outputs.mode == 'public_artifact'
         run: |
           set -euo pipefail
           rm -rf build/paper-boundary-feedback build/trigger-paper.zip
@@ -276,7 +318,13 @@ jobs:
               --jq ".artifacts[] | select(.name == \"$PAPER_STATE_ARTIFACT\") | .id" \
               | head -n 1)"
           fi
-          test -n "$artifact_id"
+          if [ -z "$artifact_id" ]; then
+            echo "state_available=false" >> "$GITHUB_OUTPUT"
+            echo "paper_boundary_state=OWNER_CHECKPOINT_PRIMARY_NO_PUBLIC_ARTIFACT"
+            echo "No public Paper state artifact exists for this exact run; private owner checkpoint remains authoritative and is not exported to GitHub."
+            exit 0
+          fi
+          echo "state_available=true" >> "$GITHUB_OUTPUT"
           gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" \
             > build/trigger-paper.zip
           if [ -n "${PAPER_STATE_ARTIFACT_SHA256:-}" ]; then
@@ -292,7 +340,7 @@ jobs:
           printf '%s\n' "$snapshot" > build/paper-boundary-feedback/snapshot-path.txt
           printf '%s\n' "$matrix" > build/paper-boundary-feedback/matrix-path.txt
       - name: Verify health-driven dispatch requirement
-        if: steps.trigger.outputs.eligible == 'true'
+        if: steps.transport.outputs.mode == 'public_artifact'
         id: health
         run: |
           set -euo pipefail

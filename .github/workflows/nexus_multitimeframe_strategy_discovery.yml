@@ -14,6 +14,21 @@ on:
       - "nexus_multitimeframe_training_refinement.py"
       - "nexus_multitimeframe_search_exhaustion.py"
       - "nexus_multitimeframe_verified_archive_discovery.py"
+      - "nexus_composite_strategy_research.py"
+      - "nexus_monthly_four_pair_composite_pre_demo.py"
+      - "tests/test_nexus_monthly_four_pair_composite_pre_demo.py"
+      - "nexus_research_missions.py"
+      - "config/nexus-agent-manager.json"
+      - "research/reviewed_composite_mechanisms_v1.json"
+      - "nexus_agent_research_prepare.py"
+      - "nexus_agent_composite_runtime.py"
+      - "scripts/agent_task_executor.py"
+      - "tests/test_nexus_research_successor.py"
+      - "tests/test_nexus_agent_composite_runtime.py"
+      - "experiments/nexus_composite_strategy_research_v1.json"
+      - "tests/test_nexus_composite_strategy_research.py"
+      - "scripts/nexus_qa_attested_discovery_frontier.py"
+      - "tests/test_nexus_qa_attested_discovery_frontier.py"
       - "nexus_demo_archive_replay.py"
       - "scripts/select_nexus_bybit_replay_artifact.py"
       - "experiments/nexus_multitimeframe_strategy_discovery_v1.json"
@@ -30,6 +45,21 @@ on:
       - "nexus_multitimeframe_training_refinement.py"
       - "nexus_multitimeframe_search_exhaustion.py"
       - "nexus_multitimeframe_verified_archive_discovery.py"
+      - "nexus_composite_strategy_research.py"
+      - "nexus_monthly_four_pair_composite_pre_demo.py"
+      - "tests/test_nexus_monthly_four_pair_composite_pre_demo.py"
+      - "nexus_research_missions.py"
+      - "config/nexus-agent-manager.json"
+      - "research/reviewed_composite_mechanisms_v1.json"
+      - "nexus_agent_research_prepare.py"
+      - "nexus_agent_composite_runtime.py"
+      - "scripts/agent_task_executor.py"
+      - "tests/test_nexus_research_successor.py"
+      - "tests/test_nexus_agent_composite_runtime.py"
+      - "experiments/nexus_composite_strategy_research_v1.json"
+      - "tests/test_nexus_composite_strategy_research.py"
+      - "scripts/nexus_qa_attested_discovery_frontier.py"
+      - "tests/test_nexus_qa_attested_discovery_frontier.py"
       - "nexus_demo_archive_replay.py"
       - "scripts/select_nexus_bybit_replay_artifact.py"
       - "experiments/nexus_multitimeframe_strategy_discovery_v1.json"
@@ -72,6 +102,11 @@ jobs:
           tests/test_nexus_multitimeframe_verified_archive_discovery.py
           tests/test_nexus_strategy_discovery_controller.py
           tests/test_nexus_bybit_replay_artifact_lifecycle.py
+          tests/test_nexus_composite_strategy_research.py
+          tests/test_nexus_monthly_four_pair_composite_pre_demo.py
+          tests/test_nexus_agent_composite_runtime.py
+          tests/test_nexus_research_successor.py
+          tests/test_nexus_qa_attested_discovery_frontier.py
 
   discover:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
@@ -330,3 +365,178 @@ jobs:
           if-no-files-found: error
           retention-days: 90
           compression-level: 9
+
+      # The bounded composite hypotheses share the verified data/authority of
+      # this pre-existing approved Research workflow. No extra workflow, job
+      # token scope, or protected Phase-3 policy change is required.
+      - name: Restore previous composite mechanism ledger
+        run: |
+          set -euo pipefail
+          mkdir -p build/previous-composite
+          artifact_id="$(gh api             "repos/$GITHUB_REPOSITORY/actions/artifacts?name=nexus-composite-novelty-state&per_page=100"             --jq '[.artifacts[] | select(.expired == false)] | sort_by(.created_at) | reverse | .[0].id // empty')"
+          if [ -n "$artifact_id" ]; then
+            gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip"               > build/previous-composite.zip
+            unzip -q build/previous-composite.zip -d build/previous-composite
+            test -s build/previous-composite/novelty-ledger.json
+            python - <<'PY'
+          from pathlib import Path
+          from nexus_composite_strategy_research import load_ledger
+          prior = load_ledger(Path("build/previous-composite/novelty-ledger.json"))
+          assert prior["research_only"] and prior["auto_demo_promotion"] is False
+          assert prior["live_enabled"] is False
+          print("prior_mechanism_configs=" + str(len(prior["config_fingerprints_evaluated"])))
+          PY
+          else
+            echo "No prior novelty evidence; starting source-bound first mechanism."
+          fi
+
+      - name: Restore immutable archive for composite search if exact static cache skipped discovery
+        if: steps.exhaustion.outputs.reuse == 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p build/final_delivery build/bybit_dataset
+          python scripts/select_nexus_bybit_replay_artifact.py             --repository "$GITHUB_REPOSITORY"             --output-dir build/final_delivery             --expected-file-name "$DATASET_FILE"             --expected-semantic-sha256 "$DATASET_SHA256"             --delivery-name "$DATASET_DELIVERY"             --artifact-prefix "$DATASET_ARTIFACT_PREFIX"
+          test -s "build/final_delivery/$DATASET_FILE"
+          unzip -q "build/final_delivery/$DATASET_FILE" -d build/bybit_dataset
+
+      - name: Research next previously unseen composite mechanism and backtest historical folds
+        run: |
+          set -euo pipefail
+          extra=()
+          if [ -s build/previous-composite/novelty-ledger.json ]; then
+            extra+=(--previous-ledger build/previous-composite/novelty-ledger.json)
+          fi
+          python nexus_composite_strategy_research.py             --archive-root build/bybit_dataset             --output build/composite             --source-sha "$GITHUB_SHA"             "${extra[@]}"
+
+      - name: Independently verify research-only composite evidence
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          from nexus_composite_strategy_research import ARCHIVE_SHA256, digest, load_ledger
+          root = Path("build/composite")
+          report = json.loads((root / "research-report.json").read_text())
+          claimed = report.pop("report_digest")
+          assert claimed == digest(report)
+          assert report["source_sha"] == os.environ["GITHUB_SHA"]
+          assert report["archive_sha256"] == ARCHIVE_SHA256
+          assert report["research_only"] is True
+          assert report["auto_demo_promotion"] is False
+          assert report["live_enabled"] is False
+          assert report["status"] in {"EVALUATED_RESEARCH_ONLY", "EXHAUSTED_REQUIRES_NEW_MECHANISM"}
+          ledger = load_ledger(root / "novelty-ledger.json")
+          if report["status"] == "EVALUATED_RESEARCH_ONLY":
+              assert len(report["rows"]) == 12
+              assert report["qualification"] == "NOT_QUALIFIED_NO_PRISTINE_FUTURE_HOLDOUT"
+              assert report["ledger_digest"] == ledger["ledger_digest"]
+              assert all(row["trade_count_limit"] is None for row in report["rows"])
+          else:
+              assert report["rows"] == []
+          print("composite_research_status=" + report["status"])
+          PY
+
+      # Existing reviewed discovery owns the verified replay source,
+      # signed novelty frontier, and Actions read scope. Export a source-bound
+      # immutable cache for the leased real Research Agent without widening
+      # the protected NEXUS Runtime Worker's permissions.
+      - name: Resolve exact QA-attested Research frontier for cache identity
+        if: github.ref == 'refs/heads/main'
+        id: agent-frontier
+        run: |
+          set -euo pipefail
+          rm -rf build/agent-frontier
+          mkdir -p build/agent-frontier
+          frontier_resolved=false
+          for attempt in 1 2 3; do
+            rm -f build/agent-frontier/previous-ledger.json
+            if python scripts/nexus_qa_attested_discovery_frontier.py \
+              --repository "$GITHUB_REPOSITORY" \
+              --output build/agent-frontier/previous-ledger.json; then
+              frontier_resolved=true
+              break
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              echo "qa_frontier_transport_retry=$attempt"
+              sleep $((attempt * 5))
+            fi
+          done
+          test "$frontier_resolved" = true
+          test -s build/agent-frontier/previous-ledger.json
+          ledger_digest="$(python -c "from pathlib import Path; from nexus_composite_strategy_research import load_ledger; print(load_ledger(Path('build/agent-frontier/previous-ledger.json'))['ledger_digest'])")"
+          test "${#ledger_digest}" -eq 64
+          echo "ledger_digest=$ledger_digest" >> "$GITHUB_OUTPUT"
+
+      - name: Check existing approved Research input transport cache
+        if: github.ref == 'refs/heads/main'
+        id: agent-input-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: build/agent-research-cache
+          key: nexus-composite-inputs-v2-${{ github.sha }}-${{ steps.agent-frontier.outputs.ledger_digest }}
+          lookup-only: true
+
+      - name: Bind canonical archive and novelty frontier as one Research lease input
+        if: github.ref == 'refs/heads/main' && steps.agent-input-cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          test -s "build/final_delivery/$DATASET_FILE"
+          test -s "build/final_delivery/$DATASET_DELIVERY"
+          # Agent must execute the NEXT mechanism against the reviewed prior
+          # frontier, not rebind to the standalone discovery step\x27s freshly
+          # consumed mechanism (which would skip new candidates).
+          test -s build/composite/novelty-ledger.json
+          rm -rf build/agent-research-cache
+          mkdir -p build/agent-research-cache
+          cp "build/final_delivery/$DATASET_FILE" build/agent-research-cache/
+          cp "build/final_delivery/$DATASET_DELIVERY" build/agent-research-cache/
+          # FOURTH and later Agent missions consume ONLY the prior real
+          # producer whose exact receipt a distinct independent QA attested
+          # and which the durable main-branch coordinator marked DONE.
+          # Standalone exploratory novelty artifacts are explicitly forbidden
+          # as a replacement: they may have already consumed the next family.
+          test -s build/agent-frontier/previous-ledger.json
+          cp build/agent-frontier/previous-ledger.json build/agent-research-cache/previous-ledger.json
+          test -s build/agent-research-cache/previous-ledger.json
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          from nexus_composite_strategy_research import ARCHIVE_SHA256, digest, load_ledger, safe_write
+          from scripts.select_nexus_bybit_replay_artifact import validate_candidate, sha256_file
+          root = Path("build/agent-research-cache")
+          archive, _ = validate_candidate(
+              root, expected_file_name=os.environ["DATASET_FILE"],
+              expected_semantic_sha256=ARCHIVE_SHA256, delivery_name=os.environ["DATASET_DELIVERY"],
+          )
+          old = load_ledger(root / "previous-ledger.json")
+          assert old["config_fingerprints_evaluated"], "only non-empty verified research frontier is leasable"
+          core = {
+              "schema": "nexus.real-research-transport.v1",
+              "source_sha": os.environ["GITHUB_SHA"],
+              "archive_sha256": ARCHIVE_SHA256,
+              "replay_zip_sha256": sha256_file(archive),
+              "prior_ledger_digest": old["ledger_digest"],
+              "research_only": True,
+              "auto_demo_promotion": False,
+              "live_enabled": False,
+          }
+          safe_write(root / "manifest.json", {**core, "manifest_digest": digest(core)})
+          print("agent_research_inputs_verified=" + old["ledger_digest"])
+          PY
+
+      - name: Publish immutable approved Research input transport
+        if: github.ref == 'refs/heads/main' && steps.agent-input-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: build/agent-research-cache
+          key: nexus-composite-inputs-v2-${{ github.sha }}-${{ steps.agent-frontier.outputs.ledger_digest }}
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: nexus-composite-novelty-state
+          path: |
+            build/composite/novelty-ledger.json
+            build/composite/research-report.json
+          if-no-files-found: warn
+          retention-days: 90
