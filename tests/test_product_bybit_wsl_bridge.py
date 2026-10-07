@@ -95,6 +95,23 @@ def test_bridge_rejects_unbounded_path_params_and_symbol_before_runner():
     assert direct.calls == []
 
 
+def test_bridge_rejects_malformed_public_payload_without_attribute_errors():
+    direct = _Direct()
+
+    def runner(args, **kwargs):
+        malformed = {"retCode": 0, "time": 1_800_000_000_000, "result": []}
+        return subprocess.CompletedProcess(args, 0, json.dumps(malformed).encode("utf-8"), b"")
+
+    client = BybitPublicDisplayClient(
+        direct, runner=runner, windows=True, wsl_executable="wsl.exe"
+    )
+    with pytest.raises(WSLBybitBridgeError, match="invalid Bybit public ticker result"):
+        client.get(
+            "/v5/market/tickers", {"category": "linear", "symbol": "ETHUSDT"}
+        )
+    assert direct.calls == []
+
+
 def test_missing_wsl_infrastructure_falls_back_only_to_official_direct_client():
     direct = _Direct()
 
