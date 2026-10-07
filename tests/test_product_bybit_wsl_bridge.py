@@ -5,7 +5,7 @@ import subprocess
 
 import pytest
 
-from product_bybit_wsl_bridge import BybitPublicDisplayClient, WSLBybitBridgeError
+from product_bybit_wsl_bridge import BybitPublicDisplayClient, WSLBybitBridgeError, _wsl_ws_script
 
 NOW_MS = 1_800_000_000_000
 
@@ -58,6 +58,13 @@ class _Direct:
 
 def _is_ws(args) -> bool:
     return list(args[:6]) == ["wsl.exe", "-d", "Ubuntu", "--exec", "python3", "-c"]
+
+
+def test_generated_websocket_script_compiles_and_preserves_http_crlf():
+    script = _wsl_ws_script("ETHUSDT")
+    compile(script, "<nexus-wsl-ws>", "exec")
+    assert "HTTP/1.1\\r\\nHost:" in script
+    assert 'b"\\r\\n\\r\\n"' in script
 
 
 def test_windows_bridge_prefers_official_bybit_websocket_without_shell():
