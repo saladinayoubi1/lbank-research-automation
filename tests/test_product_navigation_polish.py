@@ -207,10 +207,13 @@ def test_active_paper_terminal_uses_live_shared_projection_with_explicit_refresh
     assert "window.NexusPaperTerminal?.render(shared);" in js
     assert "activePaperTerminalSnapshot(p,state.events)" not in js[js.index("function renderPaper()"):js.index("function renderMatrix()")]
     assert "MARK زنده" in js
+    assert "MID زنده" in js
     assert "nexus.shared-paper-live-display.v1" in terminal
     assert "market_live" in terminal
     assert "paper_state_stale" in terminal
+    assert "market_price_basis" in terminal
     assert "مارک عمومی تازهٔ Bybit" in terminal
+    assert "قیمت اجرای معامله نیست" in terminal
     assert "موتور Paper از آخرین state عقب است" in terminal
 
 def test_research_candidate_ui_requires_independent_qa_before_auto_paper():

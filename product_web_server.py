@@ -20,6 +20,7 @@ from product_research_runtime import ProductResearchError, ProductResearchRuntim
 from product_market_diagnostics import MarketProbeInputError, probe_primary_spot
 from bybit_derivatives_core_v1 import Client as BybitPublicClient
 from bybit_public_klines import _active_mainnet_base_urls
+from product_bybit_wsl_bridge import BybitPublicDisplayClient
 from product_mission_runtime import ProductMissionError, ProductMissionRuntime
 from product_runtime import ProductRuntime, ProductRuntimeError
 from product_ai_advisory import (AdvisoryError, ProductAIAdvisory, council_roadmap,
@@ -65,7 +66,7 @@ def _safe_asset(ui_root: Path, name: str) -> ByteResponse:
     return ByteResponse(HTTPStatus.OK, target.read_bytes(), content_type)
 
 
-def _demo_public_mark_client() -> tuple[BybitPublicClient, str]:
+def _demo_public_mark_client() -> tuple[BybitPublicDisplayClient, str]:
     """Use only approved Bybit public hosts, prioritizing the reachable global mirror.
 
     The Demo account trades USDT linear symbols. The EEA endpoint can answer
@@ -79,7 +80,8 @@ def _demo_public_mark_client() -> tuple[BybitPublicClient, str]:
     attempts = min(2, len(ordered))
     if attempts < 1:
         raise RuntimeError("no approved Bybit public host available")
-    return BybitPublicClient(list(ordered), 4.0, attempts, 0.0), "bybit_official_linear_public"
+    direct = BybitPublicClient(list(ordered), 4.0, attempts, 0.0)
+    return BybitPublicDisplayClient(direct), "bybit_official_public_bridge"
 
 
 def _shared_paper_live_snapshot(data_root: Path, *, now: datetime | None = None) -> dict[str, Any]:
@@ -104,11 +106,20 @@ def _shared_paper_live_snapshot(data_root: Path, *, now: datetime | None = None)
     paper_state_stale = bool(snapshot.get("stale", True))
     projected = dict(snapshot)
     market_transport = "not_needed_flat"
+    market_price_basis = "not_needed_flat"
     if snapshot.get("positions"):
         market_transport = "bybit_public_unavailable"
+        market_price_basis = "closed_bar"
         try:
-            client, market_transport = _demo_public_mark_client()
+            client, _ = _demo_public_mark_client()
             projected = with_shared_public_marks(snapshot, client, current)
+            if projected.get("quote_status") == "fresh":
+                market_transport = client.last_transport
+                market_price_basis = getattr(client, "last_price_basis", "mark_price")
+                if market_price_basis == "orderbook_mid":
+                    projected["valuation"] = "public_orderbook_mid_snapshot"
+            else:
+                market_transport = "bybit_public_unavailable"
         except Exception:
             projected = dict(snapshot)
             projected["quote_status"] = "unavailable_using_closed_bar"
@@ -123,6 +134,7 @@ def _shared_paper_live_snapshot(data_root: Path, *, now: datetime | None = None)
         "projection": "nexus.shared-paper-live-display.v1",
         "market_live": quote_status in {"fresh", "not_needed_flat"},
         "market_transport": market_transport,
+        "market_price_basis": market_price_basis,
         "paper_state_checked_at": snapshot.get("checked_at"),
         "paper_state_stale": paper_state_stale,
         "display_only_market_overlay": True,
