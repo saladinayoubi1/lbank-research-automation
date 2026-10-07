@@ -47,6 +47,7 @@ jobs:
           python scripts/nexus_bybit_replay_chunks.py \
             --repository "$GITHUB_REPOSITORY" \
             --token-env GH_TOKEN \
+            --max-source-runs 3 \
             --max-pages 20 \
             --plan-output build/replay-rehydrate-plan.json \
             --github-output "$GITHUB_OUTPUT"
