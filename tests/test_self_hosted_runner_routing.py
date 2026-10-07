@@ -16,7 +16,7 @@ EXPECTED_ROUTES = {
     "nexus-local-runner.yml": "nexus-local",
     "nexus-runtime-worker.yml": "nexus-local",
     "nexus-windows-dr-bootstrap.yml": "nexus-local",
-    "nexus-windows-dr-persistence.yml": "nexus-remote-rescue",
+    "nexus-windows-dr-persistence.yml": "nexus-windows-dr",
     "nexus-wsl-virtualization-preflight.yml": "nexus-local",
     "nexus_a9_positioning_research.yml": "nexus-research",
     "nexus_local_autonomy.yml": "nexus-local",
