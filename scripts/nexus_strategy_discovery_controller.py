@@ -10,6 +10,15 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG_PATH = Path("research/strategy_family_catalog.json")
 SCHEMA = "nexus.strategy-discovery-controller.v1"
+FRONTIER_FINGERPRINT_INPUTS: dict[str, tuple[str, ...]] = {
+    "nexus_multitimeframe_strategy_discovery": (
+        "nexus_composite_strategy_research.py",
+        "nexus_mechanism_factory.py",
+        "nexus_research_missions.py",
+        "config/nexus-agent-manager.json",
+        "research/reviewed_composite_mechanisms_v1.json",
+    ),
+}
 
 # Ordered, bounded research ladder already reviewed in this repository.  This
 # controller inventories and routes the surface; it does not execute trades,
@@ -86,6 +95,16 @@ def _load_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _frontier_fingerprint(root: Path, paths: tuple[str, ...]) -> str:
+    rows = []
+    for relative in paths:
+        path = root / relative
+        rows.append({"path": relative, "sha256": _sha256(path)})
+    return hashlib.sha256(
+        json.dumps(rows, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+
+
 def _atomic_write(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(path.suffix + ".tmp")
@@ -150,6 +169,7 @@ def _stage_status(root: Path, spec: dict[str, str]) -> tuple[dict[str, Any], lis
     errors: list[str] = [f"{spec['stage']}:missing_{key}" for key in missing]
     experiment_id: str | None = None
     experiment_sha256: str | None = None
+    frontier_sha256: str | None = None
     workflow_dispatch = False
 
     experiment_path = root / spec["experiment"]
@@ -163,6 +183,21 @@ def _stage_status(root: Path, spec: dict[str, str]) -> tuple[dict[str, Any], lis
                 experiment_id = experiment["experiment_id"]
         except (OSError, json.JSONDecodeError) as exc:
             errors.append(f"{spec['stage']}:invalid_experiment_json:{type(exc).__name__}")
+
+    frontier_inputs = FRONTIER_FINGERPRINT_INPUTS.get(spec["stage"], ())
+    missing_frontier_inputs = [
+        relative for relative in frontier_inputs if not (root / relative).is_file()
+    ]
+    errors.extend(
+        f"{spec['stage']}:missing_frontier_fingerprint_input:{relative}"
+        for relative in missing_frontier_inputs
+    )
+    if experiment_path.is_file() and not missing_frontier_inputs:
+        frontier_sha256 = _frontier_fingerprint(
+            root, (spec["experiment"], *frontier_inputs)
+        )
+    elif experiment_sha256 is not None and not frontier_inputs:
+        frontier_sha256 = experiment_sha256
 
     workflow_path = root / spec["workflow"]
     if workflow_path.is_file():
@@ -183,6 +218,7 @@ def _stage_status(root: Path, spec: dict[str, str]) -> tuple[dict[str, Any], lis
         "workflow": spec["workflow"],
         "experiment_id": experiment_id,
         "experiment_sha256": experiment_sha256,
+        "frontier_sha256": frontier_sha256,
         "dispatch_mode": "reviewed_workflow_dispatch" if workflow_dispatch else "unavailable",
         "status": "READY_FOR_RESEARCH_DISPATCH" if not errors else "BLOCKED",
         "missing": missing,
