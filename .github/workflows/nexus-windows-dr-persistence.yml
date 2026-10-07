@@ -177,7 +177,7 @@ jobs:
 
   persist:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-    runs-on: [self-hosted, Windows, X64, nexus-remote-rescue, nexus-windows-dr]
+    # The dedicated label prevents shared rescue/failover runners from claiming DR persistence.\n    runs-on: [self-hosted, Windows, X64, nexus-remote-rescue, nexus-windows-dr]
     timeout-minutes: 10
     outputs:
       evidence_b64: ${{ steps.evidence_handoff.outputs.evidence_b64 }}
