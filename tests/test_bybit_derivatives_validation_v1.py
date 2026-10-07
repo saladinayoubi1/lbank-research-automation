@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 
 import pandas as pd
+import pytest
 
 from bybit_derivatives_validation_v1 import (
     Client,
@@ -13,6 +14,7 @@ from bybit_derivatives_validation_v1 import (
     apply_trade,
     choose_risk_tier,
     expected_funding_count,
+    fetch_open_interest,
     funding_cashflow,
     margin_requirements,
     minute_vwap,
@@ -140,3 +142,86 @@ def test_client_demotes_blocked_base_and_caches_working_base() -> None:
         "https://working.example/v5/market/time",
         "https://working.example/v5/market/time",
     ]
+
+
+def test_open_interest_uses_cursor_pagination_and_total_oi() -> None:
+    class FakeClient:
+        def __init__(self) -> None:
+            self.calls = []
+
+        def get(self, path, params):
+            self.calls.append((path, dict(params)))
+            if "cursor" not in params:
+                return {
+                    "result": {
+                        "list": [
+                            {"timestamp": "2000", "openInterest": "2.0", "singleOpenInterest": "999"},
+                            {"timestamp": "1000", "openInterest": "1.0", "singleOpenInterest": "999"},
+                        ],
+                        "nextPageCursor": "page2",
+                    }
+                }
+            return {
+                "result": {
+                    "list": [
+                        {"timestamp": "3000", "openInterest": "3.0", "singleOpenInterest": "999"}
+                    ],
+                    "nextPageCursor": "",
+                }
+            }
+
+    client = FakeClient()
+    result = fetch_open_interest(client, "BTCUSDT", 1000, 4000, "15min")
+    assert result["open_interest"].tolist() == [1.0, 2.0, 3.0]
+    assert [int(x.timestamp() * 1000) for x in result["timestamp"]] == [1000, 2000, 3000]
+    assert client.calls[0][0] == "/v5/market/open-interest"
+    assert client.calls[0][1]["category"] == "linear"
+    assert client.calls[0][1]["intervalTime"] == "15min"
+    assert client.calls[1][1]["cursor"] == "page2"
+
+
+def test_open_interest_rejects_pagination_stall_and_malformed_values() -> None:
+    class Stalled:
+        def get(self, _path, _params):
+            return {
+                "result": {
+                    "list": [{"timestamp": "1000", "openInterest": "1"}],
+                    "nextPageCursor": "same",
+                }
+            }
+
+    with pytest.raises(Exception, match="pagination stalled"):
+        fetch_open_interest(Stalled(), "BTCUSDT", 1000, 2000)
+
+    class Invalid:
+        def get(self, _path, _params):
+            return {
+                "result": {
+                    "list": [{"timestamp": "1000", "openInterest": "-1"}],
+                    "nextPageCursor": "",
+                }
+            }
+
+    with pytest.raises(Exception, match="invalid open-interest"):
+        fetch_open_interest(Invalid(), "BTCUSDT", 1000, 2000)
+
+
+def test_open_interest_rejects_conflicting_duplicate_timestamp() -> None:
+    class Conflicting:
+        def get(self, _path, params):
+            if "cursor" not in params:
+                return {
+                    "result": {
+                        "list": [{"timestamp": "1000", "openInterest": "1"}],
+                        "nextPageCursor": "next",
+                    }
+                }
+            return {
+                "result": {
+                    "list": [{"timestamp": "1000", "openInterest": "2"}],
+                    "nextPageCursor": "",
+                }
+            }
+
+    with pytest.raises(Exception, match="conflicting open-interest"):
+        fetch_open_interest(Conflicting(), "BTCUSDT", 1000, 2000)
