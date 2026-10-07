@@ -9,7 +9,7 @@ import pytest
 
 import nexus_composite_strategy_research as research
 from scripts import nexus_qa_attested_discovery_frontier as selector
-from nexus_research_missions import FIFTH, SEVENTEENTH, attested_predecessor
+from nexus_research_missions import FIFTH, NINETEENTH, attested_predecessor
 
 
 SOURCE = "a" * 40
@@ -473,7 +473,7 @@ def test_coordinator_proof_runs_for_every_main_push_to_prevent_source_transition
 
 
 
-def test_terminal_seventeenth_is_valid_discovery_frontier_but_not_successor_authority(monkeypatch):
+def test_terminal_nineteenth_is_valid_discovery_frontier_but_not_successor_authority(monkeypatch):
     ledger = research.empty_ledger()
     ledger_core = {k: v for k, v in ledger.items() if k != "ledger_digest"}
     ledger = {**ledger_core, "ledger_digest": research.digest(ledger_core)}
@@ -496,7 +496,7 @@ def test_terminal_seventeenth_is_valid_discovery_frontier_but_not_successor_auth
     }
     proof = {**qa_core, "qa_digest": research.digest(qa_core)}
     task = {
-        "id": SEVENTEENTH,
+        "id": NINETEENTH,
         "status": "DONE",
         "producer": "research-agent",
         "verifier": "qa-verifier-agent",
@@ -541,7 +541,7 @@ def test_terminal_seventeenth_is_valid_discovery_frontier_but_not_successor_auth
 
     monkeypatch.setattr(selector, "exact_artifact_json", exact)
     selected = selector.verified_frontier(selector.REPO)
-    assert selected["predecessor"] == SEVENTEENTH
+    assert selected["predecessor"] == NINETEENTH
     assert selected["predecessor_ledger_digest"] == ledger["ledger_digest"]
     assert selected["predecessor_qa_digest"] == proof["qa_digest"]
     assert selected["research_only"] is True

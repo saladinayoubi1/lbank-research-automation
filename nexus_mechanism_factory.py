@@ -42,6 +42,8 @@ CONTEXT_FIELDS = frozenset({
     "lagged_drawdown_depth_32", "lagged_recovery_from_low_32",
     "lagged_wick_asymmetry_32", "lagged_abs_return_autocorr_48",
     "lagged_close_location_persistence_16", "lagged_peer_lead_corr_96",
+    "lagged_directional_entropy_64", "lagged_range_compression_ratio_32",
+    "lagged_volume_return_corr_64",
 })
 ENTRY_FIELDS = frozenset({
     "open", "high", "low", "close", "close_location", "body_efficiency",
@@ -326,10 +328,29 @@ GENERATOR_CONTEXTS = (
         {"field":"lagged_peer_lead_corr_96","op":"ge","value":0.15},
         {"field":"lagged_peer_impulse","op":"gt","value":0.0},
     ]),
+    # Generator v4 adds path-information, range-memory and participation
+    # primitives.  They are derived only from bars ending at i-1 or earlier.
+    ("directional_order_trend", [
+        {"field":"h4_up","op":"eq","value":1},
+        {"field":"h1_vol_ok","op":"eq","value":1},
+        {"field":"trend_direction_16","op":"gt","value":0.0},
+        {"field":"lagged_directional_entropy_64","op":"le","value":0.78},
+    ]),
+    ("range_memory_compression", [
+        {"field":"h1_compression","op":"eq","value":1},
+        {"field":"h1_vol_ok","op":"eq","value":1},
+        {"field":"lagged_range_compression_ratio_32","op":"le","value":0.72},
+    ]),
+    ("volume_return_participation", [
+        {"field":"h4_up","op":"eq","value":1},
+        {"field":"h1_vol_ok","op":"eq","value":1},
+        {"field":"lagged_volume_return_corr_64","op":"ge","value":0.20},
+    ]),
 )
 
 GENERATOR_CONTEXTS_V2 = GENERATOR_CONTEXTS[:5]
-GENERATOR_CONTEXTS_V3 = GENERATOR_CONTEXTS[5:]
+GENERATOR_CONTEXTS_V3 = GENERATOR_CONTEXTS[5:13]
+GENERATOR_CONTEXTS_V4 = GENERATOR_CONTEXTS[13:]
 
 GENERATOR_ENTRIES = (
     ("midpoint_reclaim", [
@@ -434,4 +455,15 @@ def generate_factory_contracts_v3(
     """Generate only the materially distinct v3 context topology frontier."""
     return _generate_factory_contracts_from_contexts(
         existing, GENERATOR_CONTEXTS_V3, limit=limit
+    )
+
+
+def generate_factory_contracts_v4(
+    existing: Mapping[str, Mapping[str, Any]],
+    *,
+    limit: int = 15,
+) -> dict[str, dict[str, Any]]:
+    """Generate only the materially distinct v4 causal-context frontier."""
+    return _generate_factory_contracts_from_contexts(
+        existing, GENERATOR_CONTEXTS_V4, limit=limit
     )

@@ -829,6 +829,68 @@
         "zero-activity candidates cannot outrank actually exercised systems and only the deterministic Training winner receives complete two-pair three-partition two-cost replay followed by independent original-source numerical QA",
         "research only with no automatic Paper/Demo promotion, no owner-wallet mutation, no private credentials and no live authority"
       ]
+    },
+    {
+      "phase": 7,
+      "gate": 17,
+      "status": "PENDING",
+      "priority": 74,
+      "required_capabilities": [
+        "data_validation"
+      ],
+      "required_resources": [
+        "github-cloud"
+      ],
+      "preferred_resources": [
+        "github-cloud",
+        "windows-local"
+      ],
+      "authority": 2,
+      "id": "P7-RESEARCH-COMPOSITE-018",
+      "title": "Screen the first Generator v4 causal batch after exact QA-attested 017 and independently verify only its Training winner",
+      "dependencies": [
+        "P7-RESEARCH-COMPOSITE-017"
+      ],
+      "acceptance": [
+        "preceding mission P7-RESEARCH-COMPOSITE-017 producer and independent QA are genuinely DONE with exact source, receipt, QA digest and cumulative novelty ledger",
+        "all Generator v2 and v3 candidate IDs, topology digests and contract digests remain unchanged; only appended Generator v4 causal contexts may create new topologies",
+        "new candidates use materially distinct reviewed lagged directional entropy, range-memory compression or volume-return participation context and the unchanged closed-bar entry grammar",
+        "all already evaluated or frontier-screened mechanisms are excluded and only the naturally unseen Generator v4 topologies enter this Training-only batch",
+        "no validation or historically inspected test data selects the batch winner and no minimum trade-count gate is introduced",
+        "zero-activity candidates cannot outrank actually exercised systems and only the deterministic Training winner receives complete two-pair three-partition two-cost replay followed by independent original-source numerical QA",
+        "research only with no automatic Paper/Demo promotion, no owner-wallet mutation, no private credentials and no live authority"
+      ]
+    },
+    {
+      "phase": 7,
+      "gate": 17,
+      "status": "PENDING",
+      "priority": 73,
+      "required_capabilities": [
+        "data_validation"
+      ],
+      "required_resources": [
+        "github-cloud"
+      ],
+      "preferred_resources": [
+        "github-cloud",
+        "windows-local"
+      ],
+      "authority": 2,
+      "id": "P7-RESEARCH-COMPOSITE-019",
+      "title": "Screen the remaining Generator v4 causal frontier after exact QA-attested 018 and independently verify only its Training winner",
+      "dependencies": [
+        "P7-RESEARCH-COMPOSITE-018"
+      ],
+      "acceptance": [
+        "preceding mission P7-RESEARCH-COMPOSITE-018 producer and independent QA are genuinely DONE with exact source, receipt, QA digest and cumulative novelty ledger",
+        "all Generator v2 and v3 candidate IDs, topology digests and contract digests remain unchanged; only appended Generator v4 causal contexts may create new topologies",
+        "new candidates use materially distinct reviewed lagged directional entropy, range-memory compression or volume-return participation context and the unchanged closed-bar entry grammar",
+        "all already evaluated or frontier-screened mechanisms are excluded and only the naturally remaining unseen Generator v4 topologies enter this Training-only batch",
+        "no validation or historically inspected test data selects the batch winner and no minimum trade-count gate is introduced",
+        "zero-activity candidates cannot outrank actually exercised systems and only the deterministic Training winner receives complete two-pair three-partition two-cost replay followed by independent original-source numerical QA",
+        "research only with no automatic Paper/Demo promotion, no owner-wallet mutation, no private credentials and no live authority"
+      ]
     }
   ]
 }

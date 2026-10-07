@@ -73,8 +73,13 @@ def test_generator_v3_preserves_v2_history_then_advances_three_new_batches():
         for i in range(len(batches)) for j in range(i)
     )
     assert len(set(batches[2] + batches[3] + batches[4])) == 36
-    assert research._frontier_configs_to_screen(ledger) == []
-    assert research.research_mode(ledger) == "exhausted"
+    next_batch = research._frontier_configs_to_screen(ledger)
+    assert len(next_batch) == research.GENERATED_FRONTIER_BATCH_SIZE
+    assert all(
+        item["mechanism"] in research.GENERATED_FACTORY_SPECS_V4
+        for item in next_batch
+    )
+    assert research.research_mode(ledger) == "frontier_tournament"
 
 
 def test_task_013_is_strict_successor_of_012():

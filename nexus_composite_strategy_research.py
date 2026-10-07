@@ -31,6 +31,7 @@ from nexus_mechanism_factory import (
     factory_signal,
     generate_factory_contracts,
     generate_factory_contracts_v3,
+    generate_factory_contracts_v4,
     load_factory_contract,
 )
 from nexus_multitimeframe_verified_archive_discovery import load_verified_archive_frame
@@ -82,9 +83,18 @@ GENERATED_FACTORY_SPECS_V2 = generate_factory_contracts(FIXED_FACTORY_SPECS, lim
 GENERATED_FACTORY_SPECS_V3 = generate_factory_contracts_v3(
     {**FIXED_FACTORY_SPECS, **GENERATED_FACTORY_SPECS_V2}, limit=36
 )
+GENERATED_FACTORY_SPECS_V4 = generate_factory_contracts_v4(
+    {
+        **FIXED_FACTORY_SPECS,
+        **GENERATED_FACTORY_SPECS_V2,
+        **GENERATED_FACTORY_SPECS_V3,
+    },
+    limit=15,
+)
 GENERATED_FACTORY_SPECS = {
     **GENERATED_FACTORY_SPECS_V2,
     **GENERATED_FACTORY_SPECS_V3,
+    **GENERATED_FACTORY_SPECS_V4,
 }
 FACTORY_SPECS = {**FIXED_FACTORY_SPECS, **GENERATED_FACTORY_SPECS}
 FIXED_FACTORY_MECHANISMS = factory_ids(FIXED_FACTORY_SPECS)
@@ -104,7 +114,7 @@ PEER_MECHANISMS = frozenset({
     "volatility_leadership_reversal",
     "peer_beta_residual_reclaim",
 }) | factory_peer_ids(FACTORY_SPECS)
-FRONTIER_SCREEN_VERSION = "nexus.frontier-train-screen.v5"
+FRONTIER_SCREEN_VERSION = "nexus.frontier-train-screen.v6"
 FRONTIER_SHORTLIST_SIZE = 3
 GENERATED_FRONTIER_BATCH_SIZE = 12
 # Distinct entry mechanisms vs risk/feature parameter variations are explicitly
@@ -279,6 +289,26 @@ def build_features(frames: dict[str, pd.DataFrame], *, peer_15m: pd.DataFrame | 
     )
     f["lagged_close_location_persistence_16"] = (
         f["close_location"].shift(1).rolling(16, min_periods=16).mean()
+    )
+
+    # Generator-v4 primitives remain context-only and end at i-1 or earlier.
+    # Directional entropy measures path order rather than a tuned return level.
+    lagged_direction = lagged_return.gt(0.0).astype(float).where(lagged_return.notna())
+    positive_share = lagged_direction.rolling(64, min_periods=64).mean()
+    bounded_share = positive_share.clip(1e-12, 1.0 - 1e-12)
+    f["lagged_directional_entropy_64"] = -(
+        bounded_share * np.log2(bounded_share)
+        + (1.0 - bounded_share) * np.log2(1.0 - bounded_share)
+    )
+
+    normalized_range = bar_range / close.replace(0.0, np.nan)
+    recent_range = normalized_range.shift(1).rolling(8, min_periods=8).mean()
+    prior_range = normalized_range.shift(9).rolling(32, min_periods=32).mean()
+    f["lagged_range_compression_ratio_32"] = (
+        recent_range / prior_range.replace(0.0, np.nan)
+    ).replace([np.inf, -np.inf], np.nan)
+    f["lagged_volume_return_corr_64"] = (
+        volume.shift(1).rolling(64, min_periods=64).corr(abs_return.shift(1))
     )
 
     lower_wick = (

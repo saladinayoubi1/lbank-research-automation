@@ -112,7 +112,7 @@ def _validate_report(report: Mapping[str, Any], receipt: Mapping[str, Any]) -> t
         or selected.get("risk_variant") not in {0, 1}
         or not _HEX64.fullmatch(str(selected.get("factory_contract_digest", "")))
         or not isinstance(screening, Mapping)
-        or screening.get("schema") != "nexus.frontier-train-screen.v5"
+        or screening.get("schema") != "nexus.frontier-train-screen.v6"
         or screening.get("basis") != "training_partition_only_no_validation_or_historical_test_ranking"
         or screening.get("selected_mechanism") != selected.get("mechanism")
         or screening.get("no_minimum_trade_count_gate") is not True

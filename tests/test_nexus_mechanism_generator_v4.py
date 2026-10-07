@@ -9,24 +9,18 @@ import agent_manager
 import nexus_composite_strategy_research as research
 import nexus_mechanism_factory as factory
 from nexus_research_missions import (
-    FOURTEENTH,
-    FIFTEENTH,
-    SIXTEENTH,
-    SEVENTEENTH,
+    EIGHTEENTH,
+    NINETEENTH,
     PREDECESSOR,
+    SEVENTEENTH,
     TASKS,
 )
 
 
-G3_FIELDS = {
-    "lagged_return_skew_64",
-    "lagged_downside_variance_share_64",
-    "lagged_drawdown_depth_32",
-    "lagged_recovery_from_low_32",
-    "lagged_wick_asymmetry_32",
-    "lagged_abs_return_autocorr_48",
-    "lagged_close_location_persistence_16",
-    "lagged_peer_lead_corr_96",
+G4_FIELDS = {
+    "lagged_directional_entropy_64",
+    "lagged_range_compression_ratio_32",
+    "lagged_volume_return_corr_64",
 }
 
 
@@ -59,20 +53,27 @@ def _frames() -> tuple[dict[str, pd.DataFrame], pd.DataFrame]:
     )
 
 
-def test_generator_v3_contexts_use_new_causal_primitives():
-    # Generator v2's first five contexts are historical and immutable.
-    g3_contexts = factory.GENERATOR_CONTEXTS_V3
-    assert len(g3_contexts) == 8
-    for name, conditions in g3_contexts:
+def test_generator_v4_is_distinct_and_preserves_v2_v3_contracts():
+    fixed = factory.load_factory_contract()
+    v2 = factory.generate_factory_contracts(fixed, limit=24)
+    v3 = factory.generate_factory_contracts_v3({**fixed, **v2}, limit=36)
+    v4 = factory.generate_factory_contracts_v4({**fixed, **v2, **v3}, limit=15)
+
+    assert len(v2) == 24
+    assert len(v3) == 36
+    assert len(v4) == 15
+    assert not (set(v4) & (set(v2) | set(v3)))
+    assert tuple(research.GENERATED_FACTORY_SPECS)[:60] == tuple({**v2, **v3})
+    assert set(v4) <= set(research.GENERATED_FACTORY_SPECS)
+    for name, conditions in factory.GENERATOR_CONTEXTS_V4:
         fields = {row["field"] for row in conditions}
         fields |= {row["other"] for row in conditions if "other" in row}
-        assert fields & G3_FIELDS, name
+        assert fields & G4_FIELDS, name
 
 
-def test_generator_v3_features_are_current_bar_invariant():
+def test_generator_v4_features_are_current_bar_invariant():
     frames, peer = _frames()
     baseline = research.build_features(frames, peer_15m=peer)
-
     mutated = {key: value.copy() for key, value in frames.items()}
     i = len(mutated["minute15"]) - 1
     mutated["minute15"].loc[i, "close"] *= 1.09
@@ -87,18 +88,8 @@ def test_generator_v3_features_are_current_bar_invariant():
     ) * 0.99
     mutated["minute15"].loc[i, "volume"] *= 4.0
 
-    peer_mutated = peer.copy()
-    j = len(peer_mutated) - 1
-    peer_mutated.loc[j, "close"] *= 1.12
-    peer_mutated.loc[j, "high"] = max(
-        peer_mutated.loc[j, "open"], peer_mutated.loc[j, "close"]
-    ) * 1.01
-    peer_mutated.loc[j, "low"] = min(
-        peer_mutated.loc[j, "open"], peer_mutated.loc[j, "close"]
-    ) * 0.99
-
-    changed = research.build_features(mutated, peer_15m=peer_mutated)
-    for field in sorted(G3_FIELDS):
+    changed = research.build_features(mutated, peer_15m=peer)
+    for field in sorted(G4_FIELDS):
         left = baseline.iloc[-1][field]
         right = changed.iloc[-1][field]
         assert (pd.isna(left) and pd.isna(right)) or np.isclose(
@@ -106,44 +97,16 @@ def test_generator_v3_features_are_current_bar_invariant():
         ), (field, left, right)
 
 
-def test_generator_v3_adds_exactly_three_unseen_batches_after_v2():
-    fixed = factory.load_factory_contract()
-    v2 = factory.generate_factory_contracts(fixed, limit=24)
-    v3 = factory.generate_factory_contracts_v3({**fixed, **v2}, limit=36)
-    combined = {**v2, **v3}
-    assert len(v2) == 24
-    assert len(v3) == 36
-    assert len(combined) == 60
-    assert tuple(combined)[:24] == tuple(v2)
-    for ident, row in v2.items():
-        assert combined[ident] == row
-    new = list(v3)
-    assert len(new) == 36
-    assert len(set(new)) == 36
-    assert all(any(token in ident for token in (
-        "downside_tail_exhaustion",
-        "positive_tail_trend",
-        "deep_drawdown_recovery",
-        "shallow_drawdown_acceptance",
-        "wick_pressure_range",
-        "wick_pressure_trend",
-        "volatility_cluster_release",
-        "peer_lead_followthrough",
-    )) for ident in new)
-
-
-def test_generator_v3_missions_are_strict_sequential_qa_successors():
-    assert PREDECESSOR[FIFTEENTH] == FOURTEENTH
-    assert PREDECESSOR[SIXTEENTH] == FIFTEENTH
-    assert PREDECESSOR[SEVENTEENTH] == SIXTEENTH
-    assert {FIFTEENTH, SIXTEENTH, SEVENTEENTH} <= TASKS
+def test_generator_v4_missions_are_sequential_qa_successors():
+    assert PREDECESSOR[EIGHTEENTH] == SEVENTEENTH
+    assert PREDECESSOR[NINETEENTH] == EIGHTEENTH
+    assert {EIGHTEENTH, NINETEENTH} <= TASKS
 
     cfg = agent_manager.load_config(Path("config/nexus-agent-manager.json"))
     by_id = {row["id"]: row for row in cfg["tasks"]}
     for task_id, predecessor in (
-        (FIFTEENTH, FOURTEENTH),
-        (SIXTEENTH, FIFTEENTH),
-        (SEVENTEENTH, SIXTEENTH),
+        (EIGHTEENTH, SEVENTEENTH),
+        (NINETEENTH, EIGHTEENTH),
     ):
         task = by_id[task_id]
         assert task["dependencies"] == [predecessor]
