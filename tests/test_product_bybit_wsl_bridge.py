@@ -7,14 +7,38 @@ import pytest
 
 from product_bybit_wsl_bridge import BybitPublicDisplayClient, WSLBybitBridgeError
 
+NOW_MS = 1_800_000_000_000
 
-def _payload(symbol: str = "ETHUSDT", mark: str = "2000.5") -> dict:
+
+def _payload(
+    symbol: str = "ETHUSDT",
+    mark: str = "2000.5",
+    stamp: int = NOW_MS,
+) -> dict:
     return {
         "retCode": 0,
-        "time": 1_800_000_000_000,
+        "time": stamp,
         "result": {
             "category": "linear",
             "list": [{"symbol": symbol, "markPrice": mark}],
+        },
+    }
+
+
+def _orderbook_payload(
+    symbol: str = "ETHUSDT",
+    bid: str = "1999.0",
+    ask: str = "2001.0",
+    stamp: int = NOW_MS,
+) -> dict:
+    return {
+        "retCode": 0,
+        "time": stamp,
+        "result": {
+            "s": symbol,
+            "b": [[bid, "2.0"]],
+            "a": [[ask, "3.0"]],
+            "ts": stamp,
         },
     }
 
@@ -47,7 +71,11 @@ def test_windows_bridge_uses_fixed_official_bybit_hosts_without_shell():
         )
 
     client = BybitPublicDisplayClient(
-        direct, runner=runner, windows=True, wsl_executable="wsl.exe"
+        direct,
+        runner=runner,
+        windows=True,
+        wsl_executable="wsl.exe",
+        clock_ms=lambda: NOW_MS,
     )
     result = client.get(
         "/v5/market/tickers", {"category": "linear", "symbol": "ETHUSDT"}
@@ -55,6 +83,7 @@ def test_windows_bridge_uses_fixed_official_bybit_hosts_without_shell():
 
     assert result["result"]["list"][0]["symbol"] == "ETHUSDT"
     assert client.last_transport == "bybit_official_wsl_public"
+    assert client.last_price_basis == "mark_price"
     assert direct.calls == []
     assert len(calls) == 2
     assert calls[0][0][-1] == "https://api.bytick.com/v5/market/tickers"
@@ -67,6 +96,53 @@ def test_windows_bridge_uses_fixed_official_bybit_hosts_without_shell():
         assert "symbol=ETHUSDT" in args
         assert all("&" not in arg for arg in args)
         assert kwargs["timeout"] == 7.0
+
+
+def test_stale_ticker_uses_fresh_official_bybit_orderbook_midpoint():
+    direct = _Direct()
+    calls = []
+    stale = NOW_MS - 10 * 60 * 1000
+
+    def runner(args, **kwargs):
+        calls.append((list(args), dict(kwargs)))
+        if args[-1].endswith("/v5/market/tickers"):
+            return subprocess.CompletedProcess(
+                args, 0, json.dumps(_payload(stamp=stale)).encode("utf-8"), b""
+            )
+        assert args[-1].endswith("/v5/market/orderbook")
+        return subprocess.CompletedProcess(
+            args, 0, json.dumps(_orderbook_payload()).encode("utf-8"), b""
+        )
+
+    client = BybitPublicDisplayClient(
+        direct,
+        runner=runner,
+        windows=True,
+        wsl_executable="wsl.exe",
+        clock_ms=lambda: NOW_MS,
+    )
+    result = client.get(
+        "/v5/market/tickers", {"category": "linear", "symbol": "ETHUSDT"}
+    )
+
+    assert float(result["result"]["list"][0]["markPrice"]) == pytest.approx(2000.0)
+    assert result["time"] == NOW_MS
+    assert client.last_transport == "bybit_official_wsl_orderbook_mid"
+    assert client.last_price_basis == "orderbook_mid"
+    assert direct.calls == []
+    assert len(calls) == 3
+    assert calls[0][0][-1].endswith("/v5/market/tickers")
+    assert calls[1][0][-1].endswith("/v5/market/tickers")
+    assert calls[2][0][-1].endswith("/v5/market/orderbook")
+    assert "limit=1" in calls[2][0]
+    assert all(
+        call[0][-1].startswith(("https://api.bytick.com/", "https://api.bybit.com/"))
+        for call in calls
+    )
+    assert all(
+        "lbank" not in call[0][-1].lower() and "bitget" not in call[0][-1].lower()
+        for call in calls
+    )
 
 
 def test_bridge_rejects_unbounded_path_params_and_symbol_before_runner():
@@ -99,13 +175,19 @@ def test_bridge_rejects_malformed_public_payload_without_attribute_errors():
     direct = _Direct()
 
     def runner(args, **kwargs):
-        malformed = {"retCode": 0, "time": 1_800_000_000_000, "result": []}
-        return subprocess.CompletedProcess(args, 0, json.dumps(malformed).encode("utf-8"), b"")
+        malformed = {"retCode": 0, "time": NOW_MS, "result": []}
+        return subprocess.CompletedProcess(
+            args, 0, json.dumps(malformed).encode("utf-8"), b""
+        )
 
     client = BybitPublicDisplayClient(
-        direct, runner=runner, windows=True, wsl_executable="wsl.exe"
+        direct,
+        runner=runner,
+        windows=True,
+        wsl_executable="wsl.exe",
+        clock_ms=lambda: NOW_MS,
     )
-    with pytest.raises(WSLBybitBridgeError, match="invalid Bybit public ticker result"):
+    with pytest.raises(WSLBybitBridgeError, match="WSL Bybit public price unavailable"):
         client.get(
             "/v5/market/tickers", {"category": "linear", "symbol": "ETHUSDT"}
         )
@@ -119,7 +201,11 @@ def test_missing_wsl_infrastructure_falls_back_only_to_official_direct_client():
         raise FileNotFoundError("wsl.exe")
 
     client = BybitPublicDisplayClient(
-        direct, runner=runner, windows=True, wsl_executable="wsl.exe"
+        direct,
+        runner=runner,
+        windows=True,
+        wsl_executable="wsl.exe",
+        clock_ms=lambda: NOW_MS,
     )
     result = client.get(
         "/v5/market/tickers", {"category": "linear", "symbol": "ETHUSDT"}
@@ -130,6 +216,7 @@ def test_missing_wsl_infrastructure_falls_back_only_to_official_direct_client():
         ("/v5/market/tickers", {"category": "linear", "symbol": "ETHUSDT"})
     ]
     assert client.last_transport == "bybit_official_windows_public"
+    assert client.last_price_basis == "mark_price"
 
 
 def test_present_wsl_network_failure_fails_closed_without_direct_or_other_venue():
@@ -144,7 +231,11 @@ def test_present_wsl_network_failure_fails_closed_without_direct_or_other_venue(
         return subprocess.CompletedProcess(args, 28, b"", b"timeout")
 
     client = BybitPublicDisplayClient(
-        direct, runner=runner, windows=True, wsl_executable="wsl.exe"
+        direct,
+        runner=runner,
+        windows=True,
+        wsl_executable="wsl.exe",
+        clock_ms=lambda: NOW_MS,
     )
 
     with pytest.raises(WSLBybitBridgeError):
@@ -153,12 +244,40 @@ def test_present_wsl_network_failure_fails_closed_without_direct_or_other_venue(
         )
 
     assert direct.calls == []
-    assert len(urls) == 2
+    assert len(urls) == 4
     assert all(
         url.startswith(("https://api.bytick.com/", "https://api.bybit.com/"))
         for url in urls
     )
     assert all("lbank" not in url.lower() and "bitget" not in url.lower() for url in urls)
+
+
+def test_stale_ticker_and_stale_orderbook_fail_closed():
+    direct = _Direct()
+    stale = NOW_MS - 10 * 60 * 1000
+
+    def runner(args, **kwargs):
+        payload = (
+            _payload(stamp=stale)
+            if args[-1].endswith("/v5/market/tickers")
+            else _orderbook_payload(stamp=stale)
+        )
+        return subprocess.CompletedProcess(
+            args, 0, json.dumps(payload).encode("utf-8"), b""
+        )
+
+    client = BybitPublicDisplayClient(
+        direct,
+        runner=runner,
+        windows=True,
+        wsl_executable="wsl.exe",
+        clock_ms=lambda: NOW_MS,
+    )
+    with pytest.raises(WSLBybitBridgeError):
+        client.get(
+            "/v5/market/tickers", {"category": "linear", "symbol": "ETHUSDT"}
+        )
+    assert direct.calls == []
 
 
 def test_non_windows_keeps_existing_official_direct_bybit_client():
@@ -168,7 +287,11 @@ def test_non_windows_keeps_existing_official_direct_bybit_client():
         raise AssertionError("WSL must not be used off Windows")
 
     client = BybitPublicDisplayClient(
-        direct, runner=runner, windows=False, wsl_executable="wsl.exe"
+        direct,
+        runner=runner,
+        windows=False,
+        wsl_executable="wsl.exe",
+        clock_ms=lambda: NOW_MS,
     )
     result = client.get(
         "/v5/market/tickers", {"category": "linear", "symbol": "BTCUSDT"}
@@ -179,3 +302,4 @@ def test_non_windows_keeps_existing_official_direct_bybit_client():
         ("/v5/market/tickers", {"category": "linear", "symbol": "BTCUSDT"})
     ]
     assert client.last_transport == "bybit_official_public"
+    assert client.last_price_basis == "mark_price"
