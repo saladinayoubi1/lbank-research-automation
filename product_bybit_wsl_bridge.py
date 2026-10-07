@@ -3,7 +3,9 @@
 On the owner Windows laptop the canonical Bybit network lane is WSL. This
 module never accepts arbitrary URLs, credentials, order paths, or private API
 headers. It prefers the official linear ticker mark; if that response is stale,
-it may use a fresh official Bybit order-book midpoint for display-only PnL.
+it first uses the official Bybit public linear WebSocket ticker. If that path
+is unavailable, the bounded REST mark/order-book fallback remains available
+for display-only PnL.
 """
 from __future__ import annotations
 
@@ -24,6 +26,9 @@ _OFFICIAL_HOSTS = ("https://api.bytick.com", "https://api.bybit.com")
 _SYMBOL_RE = re.compile(r"^[A-Z0-9]{3,32}$")
 _MAX_STDOUT_BYTES = 200_000
 _WSL_TIMEOUT_SECONDS = 7.0
+_WSL_WS_TIMEOUT_SECONDS = 18.0
+_WS_HOST = "stream.bybit.com"
+_WS_PATH = "/v5/public/linear"
 _MAX_QUOTE_AGE_SECONDS = 120.0
 _FUTURE_TOLERANCE_SECONDS = 10.0
 
@@ -101,6 +106,111 @@ def _fresh(stamp_ms: float, now_ms: float) -> bool:
     return -_FUTURE_TOLERANCE_SECONDS <= age <= _MAX_QUOTE_AGE_SECONDS
 
 
+def _wsl_ws_script(symbol: str) -> str:
+    symbol_literal = json.dumps(symbol)
+    return f"""import base64, hashlib, json, os, socket, ssl, struct, time
+
+HOST={json.dumps(_WS_HOST)}
+PATH={json.dumps(_WS_PATH)}
+SYMBOL={symbol_literal}
+GUID="258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+
+class Reader:
+    def __init__(self, sock, initial=b""):
+        self.sock=sock
+        self.buf=initial
+    def take(self,n):
+        while len(self.buf)<n:
+            part=self.sock.recv(max(4096,n-len(self.buf)))
+            if not part:
+                raise RuntimeError("socket closed")
+            self.buf+=part
+        out,self.buf=self.buf[:n],self.buf[n:]
+        return out
+
+def send_frame(sock, opcode, payload=b""):
+    if isinstance(payload,str):
+        payload=payload.encode()
+    first=0x80 | opcode
+    n=len(payload)
+    key=os.urandom(4)
+    if n<126:
+        head=bytes([first,0x80|n])
+    elif n<65536:
+        head=bytes([first,0x80|126])+struct.pack("!H",n)
+    else:
+        head=bytes([first,0x80|127])+struct.pack("!Q",n)
+    masked=bytes(v ^ key[i%4] for i,v in enumerate(payload))
+    sock.sendall(head+key+masked)
+
+def recv_frame(reader):
+    b1,b2=reader.take(2)
+    opcode=b1 & 0x0f
+    n=b2 & 0x7f
+    if n==126:
+        n=struct.unpack("!H",reader.take(2))[0]
+    elif n==127:
+        n=struct.unpack("!Q",reader.take(8))[0]
+    mask=reader.take(4) if b2 & 0x80 else None
+    data=reader.take(n)
+    if mask:
+        data=bytes(v ^ mask[i%4] for i,v in enumerate(data))
+    return opcode,data
+
+raw=socket.create_connection((HOST,443),timeout=6)
+ctx=ssl.create_default_context()
+sock=ctx.wrap_socket(raw,server_hostname=HOST)
+sock.settimeout(8)
+key=base64.b64encode(os.urandom(16)).decode()
+req=(f"GET {{PATH}} HTTP/1.1\r\nHost: {{HOST}}\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
+     f"Sec-WebSocket-Key: {{key}}\r\nSec-WebSocket-Version: 13\r\nUser-Agent: NEXUS-WSL-WS/1\r\n\r\n")
+sock.sendall(req.encode())
+buf=b""
+while b"\r\n\r\n" not in buf:
+    part=sock.recv(4096)
+    if not part:
+        raise RuntimeError("handshake closed")
+    buf+=part
+headers,initial=buf.split(b"\r\n\r\n",1)
+if not headers.startswith(b"HTTP/1.1 101"):
+    raise RuntimeError("websocket upgrade rejected")
+accept=None
+for line in headers.split(b"\r\n")[1:]:
+    if line.lower().startswith(b"sec-websocket-accept:"):
+        accept=line.split(b":",1)[1].strip().decode()
+expected=base64.b64encode(hashlib.sha1((key+GUID).encode()).digest()).decode()
+if accept!=expected:
+    raise RuntimeError("invalid websocket accept")
+reader=Reader(sock,initial)
+send_frame(sock,1,json.dumps({{"op":"subscribe","args":[f"tickers.{{SYMBOL}}"]}},separators=(",",":")))
+deadline=time.time()+10
+while time.time()<deadline:
+    opcode,data=recv_frame(reader)
+    if opcode==9:
+        send_frame(sock,10,data)
+        continue
+    if opcode==8:
+        raise RuntimeError("websocket closed")
+    if opcode!=1:
+        continue
+    msg=json.loads(data.decode())
+    if msg.get("topic")!=f"tickers.{{SYMBOL}}":
+        continue
+    row=msg.get("data") or {{}}
+    mark=row.get("markPrice")
+    stamp=msg.get("ts")
+    if mark in (None,"") or stamp in (None,""):
+        continue
+    payload={{"retCode":0,"time":stamp,"result":{{"category":"linear","list":[{{"symbol":SYMBOL,"markPrice":mark}}]}}}}
+    print(json.dumps(payload,separators=(",",":")))
+    send_frame(sock,8,b"")
+    sock.close()
+    break
+else:
+    raise RuntimeError("ticker snapshot timeout")
+"""
+
+
 class BybitPublicDisplayClient:
     """Use the canonical WSL Bybit lane on Windows and direct REST elsewhere."""
 
@@ -123,6 +233,44 @@ class BybitPublicDisplayClient:
         self.bases = direct.bases
         self.attempts = direct.attempts
         self.timeout = direct.timeout
+
+    def _wsl_ws_ticker(self, symbol: str) -> dict[str, Any]:
+        args = [
+            self.wsl_executable,
+            "-d",
+            "Ubuntu",
+            "--exec",
+            "python3",
+            "-",
+        ]
+        try:
+            completed = self.runner(
+                args,
+                input=_wsl_ws_script(symbol).encode("utf-8"),
+                capture_output=True,
+                check=False,
+                timeout=_WSL_WS_TIMEOUT_SECONDS,
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            )
+        except FileNotFoundError as exc:
+            raise WSLBybitInfrastructureUnavailable("wsl.exe unavailable") from exc
+        except subprocess.TimeoutExpired as exc:
+            raise WSLBybitBridgeError("Bybit WSL WebSocket timeout") from exc
+        if completed.returncode != 0:
+            raise WSLBybitBridgeError(f"Bybit WSL WebSocket rc={completed.returncode}")
+        raw = completed.stdout
+        if not isinstance(raw, (bytes, bytearray)) or not 0 < len(raw) <= _MAX_STDOUT_BYTES:
+            raise WSLBybitBridgeError("Bybit WSL WebSocket response_size")
+        try:
+            payload = json.loads(bytes(raw).decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise WSLBybitBridgeError("Bybit WSL WebSocket json") from exc
+        payload = _validate_payload(payload, symbol)
+        if not _fresh(float(payload["time"]), self.clock_ms()):
+            raise WSLBybitBridgeError("Bybit WSL WebSocket ticker stale")
+        self.last_transport = "bybit_official_wsl_websocket"
+        self.last_price_basis = "mark_price"
+        return payload
 
     def _wsl_json(self, host: str, path: str, query: list[str]) -> dict[str, Any]:
         args = [
@@ -174,6 +322,13 @@ class BybitPublicDisplayClient:
 
     def _wsl_get(self, symbol: str) -> dict[str, Any]:
         failures: list[str] = []
+        try:
+            return self._wsl_ws_ticker(symbol)
+        except WSLBybitInfrastructureUnavailable:
+            raise
+        except WSLBybitBridgeError as exc:
+            failures.append(str(exc))
+
         for host in _OFFICIAL_HOSTS:
             try:
                 payload = _validate_payload(
