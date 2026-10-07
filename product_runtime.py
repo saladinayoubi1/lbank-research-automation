@@ -160,12 +160,14 @@ class ProductRuntime:
         *,
         opening_cash: str = "10000",
         clock: Callable[[], str] | None = None,
+        writer_authority: Callable[[], bool] | None = None,
     ) -> None:
         self.root = Path(root)
         self.runtime_dir = self.root / "product_runtime"
         self.paper_events_path = self.runtime_dir / "paper-events.jsonl"
         self.opening_cash = str(Decimal(opening_cash))
         self.clock = clock or _utc_now
+        self._writer_authority = writer_authority
         self._lock = threading.RLock()
         # Establish the journal clock boundary immediately so every downstream
         # automated event is necessarily ordered after account/session bootstrap.
@@ -191,17 +193,31 @@ class ProductRuntime:
     def _write_events(self, events: list[dict[str, Any]]) -> None:
         if len(events) > MAX_PAPER_EVENTS: raise ProductRuntimeError("paper event journal exceeds bounded limit")
         replay(events)
+        self._require_writer_authority()
         self.runtime_dir.mkdir(parents=True, exist_ok=True)
         temporary = self.paper_events_path.with_suffix(".tmp")
         content = "".join(json.dumps(event, sort_keys=True, separators=(",", ":"), ensure_ascii=False) + "\n" for event in events)
         try:
             with temporary.open("w", encoding="utf-8", newline="\n") as handle:
                 handle.write(content); handle.flush(); os.fsync(handle.fileno())
+            # Recheck at commit: authority can expire while the file is flushed.
+            self._require_writer_authority()
             os.replace(temporary, self.paper_events_path)
-        except OSError as exc:
+        except (OSError, ProductRuntimeError) as exc:
             try: temporary.unlink(missing_ok=True)
             except OSError: pass
             raise ProductRuntimeError("failed to persist paper event journal atomically") from exc
+
+    def _require_writer_authority(self) -> None:
+        # Opt-in integration only. Existing owner startup is not reconfigured
+        # until the external arbiter and physical ownership proof exist.
+        if self._writer_authority is None:
+            return
+        try:
+            if self._writer_authority() is not True:
+                raise ValueError("positive writer authority required")
+        except Exception as exc:
+            raise ProductRuntimeError("Paper writer authority unavailable or refused") from exc
 
     def _ensure_account(self) -> list[dict[str, Any]]:
         events = self._read_events()
