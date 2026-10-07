@@ -8,6 +8,7 @@ from strategy_registry import (
     StrategyRegistryError,
     build_qualified_strategy_record,
     build_strategy_record,
+    build_runtime_candidate_view,
     evaluate_strategy_health,
     verify_qualified_strategy_record,
 )
@@ -298,3 +299,55 @@ def test_modern_registry_record_tamper_fails_closed():
     from nexus_strategy_qualification_gate import verify_qualification
     bad_verification = verify_qualification(bad_identity)
     assert bad_verification["decision"] == "reject"
+
+
+
+def _healthy_signals():
+    return {
+        "data_eligible": True,
+        "performance_drop_pct": 0.0,
+        "execution_cost_increase_pct": 0.0,
+        "regime_mismatch": False,
+        "correlation_shift_pct": 0.0,
+    }
+
+
+def test_modern_registry_uses_existing_health_contract_without_activation():
+    qualification, verification = _modern_qualification()
+    record = build_qualified_strategy_record(qualification, verification)
+    health = evaluate_strategy_health(record, _healthy_signals())
+    assert health["health_state"] == "HEALTHY"
+    assert health["strategy_id"] == record["strategy_id"]
+    assert health["record_digest"] == record["record_digest"]
+    assert health["promotion_authority"] is False
+
+    candidate = build_runtime_candidate_view(record, health)
+    assert candidate["lifecycle_state"] == "CANDIDATE"
+    assert candidate["health_state"] == "HEALTHY"
+    assert candidate["paper_only"] is True
+    assert candidate["live_trading_authority"] is False
+
+
+def test_modern_runtime_candidate_rejects_health_or_authority_detachment():
+    qualification, verification = _modern_qualification()
+    record = build_qualified_strategy_record(qualification, verification)
+    health = evaluate_strategy_health(record, _healthy_signals())
+
+    wrong_health = deepcopy(health)
+    wrong_health["record_digest"] = "0" * 64
+    health_core = dict(wrong_health)
+    health_core.pop("health_digest", None)
+    from strategy_registry import _digest
+    wrong_health["health_digest"] = _digest(health_core)
+    with pytest.raises(StrategyRegistryError, match="health binding"):
+        build_runtime_candidate_view(record, wrong_health)
+
+    widened = deepcopy(record)
+    widened["demo_matrix_member"] = True
+    widened_core = dict(widened)
+    widened_core.pop("record_digest", None)
+    widened["record_digest"] = _digest(widened_core)
+    with pytest.raises(StrategyRegistryError, match="registry verification"):
+        build_runtime_candidate_view(widened, health)
+
+# RUNTIME-60 candidate projection intentionally remains non-activating.

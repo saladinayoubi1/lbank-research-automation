@@ -174,13 +174,20 @@ def build_strategy_record(
 
 def evaluate_strategy_health(record: Mapping[str, Any], signals: Mapping[str, Any]) -> dict[str, Any]:
     """Deterministically classify strategy health without granting promotion authority."""
-    if not isinstance(record, Mapping) or record.get("schema_version") != REGISTRY_SCHEMA:
+    if not isinstance(record, Mapping):
         raise StrategyRegistryError("registry record schema mismatch")
-    claimed = record.get("record_digest")
-    core = dict(record)
-    core.pop("record_digest", None)
-    if claimed != _digest(core):
-        raise StrategyRegistryError("registry record digest mismatch")
+    if record.get("schema_version") == REGISTRY_SCHEMA:
+        claimed = record.get("record_digest")
+        core = dict(record)
+        core.pop("record_digest", None)
+        if claimed != _digest(core):
+            raise StrategyRegistryError("registry record digest mismatch")
+    elif record.get("schema_version") == MODERN_REGISTRY_SCHEMA:
+        verification = verify_qualified_strategy_record(record)
+        if verification.get("decision") != "pass":
+            raise StrategyRegistryError("modern registry record verification failed")
+    else:
+        raise StrategyRegistryError("registry record schema mismatch")
     if not isinstance(signals, Mapping) or set(signals) != HEALTH_KEYS:
         raise StrategyRegistryError("health signal schema mismatch")
     if not isinstance(signals["data_eligible"], bool) or not isinstance(signals["regime_mismatch"], bool):
@@ -449,3 +456,58 @@ def verify_qualified_strategy_record(value: Mapping[str, Any]) -> dict[str, Any]
         "record_digest": value.get("record_digest"),
     }
     return {**result, "verification_digest": _digest(result)}
+
+
+
+def build_runtime_candidate_view(
+    record: Mapping[str, Any],
+    health: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Project a verified REG-50 record into the existing selector candidate shape.
+
+    This view is deliberately non-activating. A newly qualified modern record is
+    represented as CANDIDATE, never PAPER. Therefore the existing regime selector
+    preserves cash until a separate reviewed RUNTIME-60 activation contract is
+    introduced. This function grants no Paper execution or Live authority.
+    """
+    if not isinstance(record, Mapping) or record.get("schema_version") != MODERN_REGISTRY_SCHEMA:
+        raise StrategyRegistryError("runtime candidate requires modern REG-50 record")
+    if verify_qualified_strategy_record(record).get("decision") != "pass":
+        raise StrategyRegistryError("runtime candidate registry verification failed")
+    if not isinstance(health, Mapping) or health.get("schema_version") != HEALTH_SCHEMA:
+        raise StrategyRegistryError("runtime candidate health evidence is invalid")
+    health_core = dict(health)
+    claimed_health = health_core.pop("health_digest", None)
+    if (
+        claimed_health != _digest(health_core)
+        or health.get("strategy_id") != record.get("strategy_id")
+        or health.get("strategy_version") != record.get("strategy_version")
+        or health.get("record_digest") != record.get("record_digest")
+        or health.get("paper_only") is not True
+        or health.get("promotion_authority") is not False
+        or health.get("deterministic_risk_final_authority") is not True
+        or health.get("health_state") not in {"HEALTHY", "WATCH", "DEGRADED", "QUARANTINED"}
+    ):
+        raise StrategyRegistryError("runtime candidate health binding failed")
+    if (
+        record.get("lifecycle_state") != "QUALIFIED_CANDIDATE"
+        or record.get("demo_matrix_member") is not False
+        or record.get("runtime_activation_authority") is not False
+        or record.get("paper_execution_authority") is not False
+        or record.get("automatic_strategy_promotion") is not False
+        or record.get("paper_only") is not True
+        or record.get("live_execution_allowed") is not False
+        or record.get("deterministic_risk_final_authority") is not True
+    ):
+        raise StrategyRegistryError("runtime candidate authority boundary widened")
+    return {
+        "family": record["family"],
+        "strategy_id": record["strategy_id"],
+        "strategy_version": record["strategy_version"],
+        "lifecycle_state": "CANDIDATE",
+        "health_state": health["health_state"],
+        "record_digest": record["record_digest"],
+        "health_digest": health["health_digest"],
+        "paper_only": True,
+        "live_trading_authority": False,
+    }
