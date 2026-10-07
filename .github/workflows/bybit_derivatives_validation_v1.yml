@@ -15,7 +15,6 @@ on:
       artifact_id:
         description: "Final immutable Bybit Spot delivery artifact"
         required: false
-        default: "8867026863"
 
 permissions:
   contents: read
@@ -27,7 +26,6 @@ jobs:
     timeout-minutes: 55
     env:
       GH_TOKEN: ${{ github.token }}
-      DEFAULT_ARTIFACT_ID: "8867026863"
       EXPECTED_SHA256: "5f1173467c2296201940c3b7786b7cc3e5442244e07289769ab4867ace41d668"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -43,14 +41,82 @@ jobs:
           DISPATCH_ARTIFACT_ID: ${{ github.event.inputs.artifact_id }}
         run: |
           set -euo pipefail
-          artifact_id="$DISPATCH_ARTIFACT_ID"
-          if [ -z "$artifact_id" ]; then artifact_id="$DEFAULT_ARTIFACT_ID"; fi
           rm -rf build/final_delivery build/bybit_dataset
           mkdir -p build/final_delivery build/bybit_dataset
+
+          artifact_id="$DISPATCH_ARTIFACT_ID"
+          if [ -z "$artifact_id" ]; then
+            gh api --paginate --slurp \
+              "repos/$GITHUB_REPOSITORY/actions/artifacts?per_page=100" \
+              > build/full-history-artifact-pages.json
+            artifact_id="$(python - <<'PY'
+          import json
+          from pathlib import Path
+
+          pages = json.loads(Path("build/full-history-artifact-pages.json").read_text())
+          artifacts = []
+          for page in pages:
+              if isinstance(page, dict):
+                  artifacts.extend(page.get("artifacts", []))
+              elif isinstance(page, list):
+                  artifacts.extend(page)
+          candidates = [
+              item for item in artifacts
+              if isinstance(item, dict)
+              and str(item.get("name", "")).startswith("bybit-full-history-final-rehydrated-")
+              and item.get("expired") is False
+              and isinstance(item.get("workflow_run"), dict)
+              and item["workflow_run"].get("head_branch") == "main"
+          ]
+          candidates.sort(key=lambda item: (str(item.get("created_at", "")), int(item.get("id", 0))), reverse=True)
+          if not candidates:
+              raise SystemExit("no unexpired main full-history rehydration artifact is available")
+          print(int(candidates[0]["id"]))
+          PY
+          )"
+          fi
+          test -n "$artifact_id"
+
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id" > build/full-history-artifact.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          item = json.loads(Path("build/full-history-artifact.json").read_text())
+          assert str(item.get("name", "")).startswith("bybit-full-history-final-rehydrated-")
+          assert item.get("expired") is False
+          run = item.get("workflow_run")
+          assert isinstance(run, dict) and run.get("head_branch") == "main"
+          print(f"selected_full_history_artifact={item['id']}:{item['name']}")
+          PY
+
           gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" > build/final_delivery.zip
           unzip -q build/final_delivery.zip -d build/final_delivery
           archive="build/final_delivery/BYBIT_full_history_2022-12-01_to_2026-07-31.zip"
           test "$(sha256sum "$archive" | awk '{print $1}')" = "$EXPECTED_SHA256"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          delivery = json.loads(
+              Path("build/final_delivery/rehydrated-delivery/BYBIT_full_history_delivery.json").read_text()
+          )
+          expected = os.environ["EXPECTED_SHA256"].lower()
+          assert delivery["schema_version"] == 1
+          assert delivery["file_name"] == "BYBIT_full_history_2022-12-01_to_2026-07-31.zip"
+          assert delivery["sha256"] == expected
+          assert delivery["historical_expected_sha256"] == expected
+          assert delivery["historical_digest_match"] is True
+          assert delivery["range"] == "2022-12-01 through 2026-07-31 UTC"
+          assert delivery["ready_series"] == 6
+          assert delivery["completed_units"] == 44
+          assert delivery["source_archives"] == 88
+          assert delivery["paper_replay_only"] is True
+          assert delivery["live_trading_authority"] is False
+          assert delivery["private_credentials_used"] is False
+          print("full_history_delivery_contract=PASS")
+          PY
           unzip -q "$archive" -d build/bybit_dataset
       - name: Run corrected derivatives validation
         run: |
