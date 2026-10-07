@@ -57,7 +57,7 @@ class _Direct:
 
 
 def _is_ws(args) -> bool:
-    return list(args[:6]) == ["wsl.exe", "-d", "Ubuntu", "--exec", "python3", "-"]
+    return list(args[:6]) == ["wsl.exe", "-d", "Ubuntu", "--exec", "python3", "-c"]
 
 
 def test_windows_bridge_prefers_official_bybit_websocket_without_shell():
@@ -68,12 +68,13 @@ def test_windows_bridge_prefers_official_bybit_websocket_without_shell():
         calls.append((list(args), dict(kwargs)))
         assert _is_ws(args)
         assert "shell" not in kwargs
-        assert kwargs["timeout"] == 18.0
-        script = kwargs["input"]
-        assert isinstance(script, bytes)
-        assert b"stream.bybit.com" in script
-        assert b"ETHUSDT" in script
-        assert b"api_key" not in script.lower()
+        assert kwargs["timeout"] == 12.0
+        assert "input" not in kwargs
+        launcher = args[6]
+        assert launcher.startswith("import base64;exec(base64.b64decode(")
+        assert "stream.bybit.com" not in launcher
+        assert "ETHUSDT" not in launcher
+        assert "api_key" not in launcher.lower()
         return subprocess.CompletedProcess(
             args, 0, json.dumps(_payload()).encode("utf-8"), b""
         )
@@ -137,7 +138,7 @@ def test_websocket_failure_falls_back_to_fixed_official_bybit_rest_hosts():
         assert "category=linear" in args
         assert "symbol=ETHUSDT" in args
         assert all("&" not in arg for arg in args)
-        assert kwargs["timeout"] == 7.0
+        assert kwargs["timeout"] == 5.0
 
 
 def test_websocket_stale_then_rest_stale_uses_fresh_official_bybit_orderbook_midpoint():

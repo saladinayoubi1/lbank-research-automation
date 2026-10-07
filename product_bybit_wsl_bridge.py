@@ -9,6 +9,7 @@ for display-only PnL.
 """
 from __future__ import annotations
 
+import base64
 import json
 import math
 import os
@@ -25,8 +26,8 @@ _ORDERBOOK_PATH = "/v5/market/orderbook"
 _OFFICIAL_HOSTS = ("https://api.bytick.com", "https://api.bybit.com")
 _SYMBOL_RE = re.compile(r"^[A-Z0-9]{3,32}$")
 _MAX_STDOUT_BYTES = 200_000
-_WSL_TIMEOUT_SECONDS = 7.0
-_WSL_WS_TIMEOUT_SECONDS = 18.0
+_WSL_TIMEOUT_SECONDS = 5.0
+_WSL_WS_TIMEOUT_SECONDS = 12.0
 _WS_HOST = "stream.bybit.com"
 _WS_PATH = "/v5/public/linear"
 _MAX_QUOTE_AGE_SECONDS = 120.0
@@ -235,18 +236,20 @@ class BybitPublicDisplayClient:
         self.timeout = direct.timeout
 
     def _wsl_ws_ticker(self, symbol: str) -> dict[str, Any]:
+        encoded = base64.b64encode(_wsl_ws_script(symbol).encode("utf-8")).decode("ascii")
+        launcher = "import base64;exec(base64.b64decode(" + repr(encoded) + "))"
         args = [
             self.wsl_executable,
             "-d",
             "Ubuntu",
             "--exec",
             "python3",
-            "-",
+            "-c",
+            launcher,
         ]
         try:
             completed = self.runner(
                 args,
-                input=_wsl_ws_script(symbol).encode("utf-8"),
                 capture_output=True,
                 check=False,
                 timeout=_WSL_WS_TIMEOUT_SECONDS,
@@ -283,9 +286,9 @@ class BybitPublicDisplayClient:
             "--silent",
             "--show-error",
             "--connect-timeout",
-            "3",
+            "2",
             "--max-time",
-            "6",
+            "4",
             "--max-redirs",
             "0",
             "--proto",

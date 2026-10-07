@@ -184,6 +184,17 @@ jobs:
             --output 'desktop/nexus-product/sidecar/build-evidence.json' `
             --source-sha $env:GITHUB_SHA `
             --source-timestamp $sourceTimestamp
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: nexus-windows-product-sidecar
+          path: |
+            desktop/nexus-product/sidecar/nexus-product-server
+            desktop/nexus-product/sidecar/source-sha.txt
+            desktop/nexus-product/sidecar/build-evidence.json
+            desktop/nexus-product/sidecar/market-data-source-registry.yaml
+            desktop/nexus-product/sidecar/nexus-agent-manager.json
+          if-no-files-found: error
+          compression-level: 0
       - name: Install Electron dependencies
         working-directory: desktop/nexus-product
         run: npm ci --no-audit --no-fund
