@@ -44,11 +44,10 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p build
-          gh api --paginate --slurp \
-            "repos/$GITHUB_REPOSITORY/actions/artifacts?per_page=100" \
-            > build/artifact-pages.json
           python scripts/nexus_bybit_replay_chunks.py \
-            --artifact-pages build/artifact-pages.json \
+            --repository "$GITHUB_REPOSITORY" \
+            --token-env GH_TOKEN \
+            --max-pages 20 \
             --plan-output build/replay-rehydrate-plan.json \
             --github-output "$GITHUB_OUTPUT"
 

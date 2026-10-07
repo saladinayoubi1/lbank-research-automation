@@ -8,7 +8,8 @@ import os
 from pathlib import Path
 import re
 from typing import Any, Iterable
-from urllib.parse import urlsplit
+from urllib.parse import urlencode, urlsplit
+import urllib.error
 import urllib.request
 
 
@@ -101,6 +102,74 @@ def _iter_artifacts(payload: Any) -> Iterable[dict[str, Any]]:
                 yield artifact
 
 
+def _request_json(url: str, token: str) -> dict[str, Any]:
+    if not token:
+        raise RuntimeError("GitHub token is required for replay artifact listing")
+    request = urllib.request.Request(
+        url,
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+            "User-Agent": "nexus-bybit-replay-chunk-planner",
+        },
+    )
+    with urllib.request.urlopen(request, timeout=60) as response:
+        payload = json.load(response)
+    if not isinstance(payload, dict):
+        raise RuntimeError("GitHub artifact response must be a JSON object")
+    return payload
+
+
+def fetch_artifact_pages(
+    repository: str,
+    token: str,
+    *,
+    max_pages: int = 20,
+) -> list[dict[str, Any]]:
+    """Read a bounded recent artifact window without materializing repository history.
+
+    The GitHub artifact endpoint is newest-first. Once one unexpired artifact has
+    been observed for every canonical chunk, later pages cannot improve the
+    selected result. If the bounded window omits an older chunk, the normal plan
+    marks that chunk missing so the official Bybit source is rebuilt instead of
+    trusting stale or ambiguous artifact state.
+    """
+    if "/" not in repository:
+        raise RuntimeError("repository must be owner/name")
+    if max_pages < 1 or max_pages > 100:
+        raise RuntimeError("max_pages must be in [1,100]")
+
+    pages: list[dict[str, Any]] = []
+    observed: set[str] = set()
+    required = set(CANONICAL_CHUNK_MAP)
+    for page in range(1, max_pages + 1):
+        query = urlencode({"per_page": 100, "page": page})
+        payload = _request_json(
+            f"https://api.github.com/repos/{repository}/actions/artifacts?{query}",
+            token,
+        )
+        batch = payload.get("artifacts", [])
+        if not isinstance(batch, list):
+            raise RuntimeError("GitHub artifact response artifacts field is malformed")
+
+        relevant: list[dict[str, Any]] = []
+        for artifact in batch:
+            if not isinstance(artifact, dict):
+                continue
+            chunk_id = _artifact_chunk_id(str(artifact.get("name", "")))
+            if chunk_id is None or chunk_id not in required:
+                continue
+            relevant.append(artifact)
+            if artifact.get("expired") is not True:
+                observed.add(chunk_id)
+        pages.append({"artifacts": relevant})
+
+        if observed == required or len(batch) < 100:
+            break
+    return pages
+
+
 def _artifact_chunk_id(name: str) -> str | None:
     for pattern in (LEGACY_ARTIFACT_PATTERN, REHYDRATED_ARTIFACT_PATTERN):
         match = pattern.match(name)
@@ -171,7 +240,10 @@ def write_github_outputs(path: Path, plan: dict[str, Any]) -> None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--artifact-pages", type=Path, required=True)
+    parser.add_argument("--artifact-pages", type=Path)
+    parser.add_argument("--repository", default=os.environ.get("GITHUB_REPOSITORY", ""))
+    parser.add_argument("--token-env", default="GH_TOKEN")
+    parser.add_argument("--max-pages", type=int, default=20)
     parser.add_argument("--plan-output", type=Path)
     parser.add_argument("--github-output", type=Path)
     return parser.parse_args()
@@ -179,7 +251,15 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    payload = json.loads(args.artifact_pages.read_text(encoding="utf-8"))
+    if args.artifact_pages is not None:
+        payload = json.loads(args.artifact_pages.read_text(encoding="utf-8"))
+    else:
+        token = os.environ.get(args.token_env, "")
+        payload = fetch_artifact_pages(
+            args.repository,
+            token,
+            max_pages=args.max_pages,
+        )
     plan = build_plan(payload)
     rendered = json.dumps(plan, indent=2, sort_keys=True) + "\n"
     if args.plan_output:
