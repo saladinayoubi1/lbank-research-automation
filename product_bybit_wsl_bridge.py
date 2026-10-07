@@ -96,7 +96,7 @@ class BybitPublicDisplayClient:
         infrastructure_seen = False
         failures: list[str] = []
         for host in _OFFICIAL_HOSTS:
-            url = f"{host}{_TICKER_PATH}?category=linear&symbol={symbol}"
+            url = f"{host}{_TICKER_PATH}"
             args = [
                 self.wsl_executable,
                 "-d",
@@ -114,6 +114,11 @@ class BybitPublicDisplayClient:
                 "0",
                 "--proto",
                 "=https",
+                "--get",
+                "--data-urlencode",
+                "category=linear",
+                "--data-urlencode",
+                f"symbol={symbol}",
                 url,
             ]
             try:
