@@ -4,6 +4,7 @@ import argparse
 import json
 import mimetypes
 import os
+from datetime import datetime, timezone
 from http import HTTPStatus
 from http.server import ThreadingHTTPServer
 from pathlib import Path
@@ -12,10 +13,13 @@ from urllib.parse import parse_qs, urlsplit
 
 from phase5_strategy_factory import ALLOWED_FAMILIES
 from product_control_runtime import ProductControlError, ProductControlRuntime
-from product_shared_paper import load_snapshot as load_shared_snapshot, export_csv as shared_export_csv
+from product_shared_paper import (load_snapshot as load_shared_snapshot, export_csv as shared_export_csv,
+                                  with_public_marks as with_shared_public_marks)
 from product_prospective_paper import load_prospective_paper_snapshot
 from product_research_runtime import ProductResearchError, ProductResearchRuntime
 from product_market_diagnostics import MarketProbeInputError, probe_primary_spot
+from bybit_derivatives_core_v1 import Client as BybitPublicClient
+from bybit_public_klines import _active_mainnet_base_urls
 from product_mission_runtime import ProductMissionError, ProductMissionRuntime
 from product_runtime import ProductRuntime, ProductRuntimeError
 from product_ai_advisory import (AdvisoryError, ProductAIAdvisory, council_roadmap,
@@ -59,6 +63,72 @@ def _safe_asset(ui_root: Path, name: str) -> ByteResponse:
     elif target.suffix == ".css": content_type = "text/css; charset=utf-8"
     elif target.suffix == ".html": content_type = "text/html; charset=utf-8"
     return ByteResponse(HTTPStatus.OK, target.read_bytes(), content_type)
+
+
+def _demo_public_mark_client() -> tuple[BybitPublicClient, str]:
+    """Use only approved Bybit public hosts, prioritizing the reachable global mirror.
+
+    The Demo account trades USDT linear symbols. The EEA endpoint can answer
+    successfully while exposing no linear instruments, so this display-only
+    client tries the two approved global Bybit hosts first and fails closed.
+    """
+    _, bases = _active_mainnet_base_urls()
+    priority = ("https://api.bytick.com", "https://api.bybit.com")
+    ordered = tuple(base for preferred in priority for base in bases if base == preferred)
+    ordered += tuple(base for base in bases if base not in priority)
+    attempts = min(2, len(ordered))
+    if attempts < 1:
+        raise RuntimeError("no approved Bybit public host available")
+    return BybitPublicClient(list(ordered), 4.0, attempts, 0.0), "bybit_official_linear_public"
+
+
+def _shared_paper_live_snapshot(data_root: Path, *, now: datetime | None = None) -> dict[str, Any]:
+    """Read-only live market projection over the sealed shared Paper snapshot.
+
+    This never advances strategy state, writes Paper events, changes risk, or
+    grants execution authority. Fresh Bybit public marks are display-only.
+    """
+    current = now or datetime.now(timezone.utc)
+    snapshot = load_shared_snapshot(data_root.parent, now=current)
+    if not snapshot.get("available"):
+        return {
+            **snapshot,
+            "projection": "nexus.shared-paper-live-display.v1",
+            "market_live": False,
+            "market_checked_at": current.isoformat(),
+            "paper_state_stale": True,
+            "display_only_market_overlay": True,
+            "live_trading_authority": False,
+        }
+
+    paper_state_stale = bool(snapshot.get("stale", True))
+    projected = dict(snapshot)
+    market_transport = "not_needed_flat"
+    if snapshot.get("positions"):
+        market_transport = "bybit_public_unavailable"
+        try:
+            client, market_transport = _demo_public_mark_client()
+            projected = with_shared_public_marks(snapshot, client, current)
+        except Exception:
+            projected = dict(snapshot)
+            projected["quote_status"] = "unavailable_using_closed_bar"
+            projected["market_checked_at"] = current.isoformat()
+    else:
+        projected["quote_status"] = "not_needed_flat"
+        projected["market_checked_at"] = current.isoformat()
+
+    quote_status = projected.get("quote_status")
+    return {
+        **projected,
+        "projection": "nexus.shared-paper-live-display.v1",
+        "market_live": quote_status in {"fresh", "not_needed_flat"},
+        "market_transport": market_transport,
+        "paper_state_checked_at": snapshot.get("checked_at"),
+        "paper_state_stale": paper_state_stale,
+        "display_only_market_overlay": True,
+        "read_only": True,
+        "live_trading_authority": False,
+    }
 
 
 def _phase6_checkpoint() -> dict[str, Any]:
@@ -360,6 +430,9 @@ def build_handler(
                 elif parsed.path == "/api/product/paper/shared":
                     if parsed.query: raise ProductRuntimeError("shared Paper snapshot does not accept query")
                     payload = load_shared_snapshot(data_root.parent)
+                elif parsed.path == "/api/product/paper/shared/live":
+                    if parsed.query: raise ProductRuntimeError("live shared Paper projection does not accept query")
+                    payload = _shared_paper_live_snapshot(data_root)
                 elif parsed.path == "/api/product/paper/shared/export.csv":
                     query = parse_qs(parsed.query)
                     if set(query)-{"table"} or len(query.get("table", ["history"])) != 1:

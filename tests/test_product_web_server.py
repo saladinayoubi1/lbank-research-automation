@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 from product_runtime import ProductRuntime
-from product_web_server import PRODUCT_UI_ROOT, _mission_snapshot, build_handler
+from product_web_server import PRODUCT_UI_ROOT, _demo_public_mark_client, _mission_snapshot, build_handler
 from web_dashboard import GatewayConfig
 
 
@@ -336,6 +336,54 @@ def test_shared_terminal_missing_snapshot_is_not_zero_balance(product_server):
         assert _request(port,'GET',path)[0]==200
     assert _request(port,'GET','/api/product/paper/shared/export.csv?table=../../state')[0]==400
     assert _request(port,'POST','/api/product/paper/shared',{})[0] in (400,403,404,405)
+
+
+def test_demo_public_mark_client_prioritizes_approved_linear_host(monkeypatch):
+    monkeypatch.delenv("NEXUS_BYBIT_PUBLIC_REGION", raising=False)
+    monkeypatch.delenv("RUNNER_NAME", raising=False)
+    client, transport = _demo_public_mark_client()
+    assert client.bases[:2] == ["https://api.bytick.com", "https://api.bybit.com"]
+    assert client.attempts == 2
+    assert client.timeout == 4.0
+    assert transport == "bybit_official_linear_public"
+
+    monkeypatch.setenv("NEXUS_BYBIT_PUBLIC_REGION", "EEA")
+    regional, _ = _demo_public_mark_client()
+    assert regional.bases[:2] == ["https://api.bytick.com", "https://api.bybit.com"]
+    assert regional.bases[2:] == ["https://api.bybit.eu"]
+
+
+def test_shared_live_terminal_route_is_read_only(product_server, monkeypatch):
+    port, runtime = product_server
+    baseline = runtime.paper_events_path.read_bytes()
+
+    def fake_live(_data_root):
+        return {
+            "available": True,
+            "projection": "nexus.shared-paper-live-display.v1",
+            "market_live": True,
+            "quote_status": "fresh",
+            "paper_state_stale": True,
+            "read_only": True,
+            "live_trading_authority": False,
+            "positions": [],
+            "history": [],
+            "orders": [],
+            "cashflows": [],
+            "strategies": [],
+        }
+
+    monkeypatch.setattr("product_web_server._shared_paper_live_snapshot", fake_live)
+    status, _, raw = _request(port, "GET", "/api/product/paper/shared/live")
+    payload = json.loads(raw)
+    assert status == 200
+    assert payload["projection"] == "nexus.shared-paper-live-display.v1"
+    assert payload["market_live"] is True
+    assert payload["paper_state_stale"] is True
+    assert payload["read_only"] is True
+    assert payload["live_trading_authority"] is False
+    assert runtime.paper_events_path.read_bytes() == baseline
+    assert _request(port, "POST", "/api/product/paper/shared/live", {})[0] in (400, 403, 404, 405)
 
 
 def test_market_probe_requires_explicit_bounded_get_and_never_changes_trading(

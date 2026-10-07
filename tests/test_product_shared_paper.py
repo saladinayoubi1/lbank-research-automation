@@ -121,6 +121,10 @@ def test_upgrade_preserves_evidence_and_rejects_nonempty_account(initialized,tmp
 
 def test_public_marks_are_display_only_and_stale_quotes_fail_closed(initialized):
     a,s,*_=initialized;s=step(a,s,'2026-09-26T20:00:00Z');x=snapshot(a,s)
+    # Shared-equity Paper intentionally has no fixed per-strategy allocation.
+    # Live display must still update without inventing sub-wallets.
+    for lane in x['strategies']:
+        lane['allocation']=None
     before=deepcopy(s);now=datetime(2026,9,27,0,0,tzinfo=timezone.utc)
     class Quotes:
         stale=False
@@ -132,6 +136,8 @@ def test_public_marks_are_display_only_and_stale_quotes_fail_closed(initialized)
     assert y['valuation']=='public_mark_snapshot'
     assert y['account']['equity']>x['account']['equity']
     assert y['account']['free_margin'] is None
+    assert y['quote_status']=='fresh' and y['market_checked_at']==now.isoformat()
+    assert all(lane['allocation'] is None for lane in y['strategies'])
     assert y['history']==x['history'] and before==s
     client.stale=True;z=terminal.with_public_marks(x,client,now)
     assert z['account']==x['account']

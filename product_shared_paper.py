@@ -315,40 +315,65 @@ def with_public_marks(snapshot, client, now):
 
 Bybit contract: https://bybit-exchange.github.io/docs/v5/market/tickers
 All symbols must have fresh validated marks or the complete booked view remains.
+Shared-equity strategies may intentionally expose allocation=null, so live
+display math preserves booked lane PnL and applies only the fresh unrealized
+PnL delta instead of inventing per-strategy sub-wallet allocation.
 """
     from copy import deepcopy
-    result=deepcopy(snapshot)
+    result = deepcopy(snapshot)
     if not snapshot['positions']:
-        result['quote_status']='not_needed_flat'
+        result['quote_status'] = 'not_needed_flat'
+        result['market_checked_at'] = now.isoformat()
         return seal(result)
     try:
-        quotes={}
+        quotes = {}
         for symbol in sorted({p['symbol'] for p in snapshot['positions']}):
-            payload=client.get('/v5/market/tickers',{'category':'linear','symbol':symbol})
-            quote_time=datetime.fromtimestamp(float(payload['time'])/1000,timezone.utc)
-            age=(now-quote_time).total_seconds()
-            rows=payload['result']['list']
-            if not (-10 <= age <= 120) or payload['result']['category']!='linear' or len(rows)!=1 or rows[0]['symbol']!=symbol:
+            payload = client.get('/v5/market/tickers', {'category': 'linear', 'symbol': symbol})
+            quote_time = datetime.fromtimestamp(float(payload['time']) / 1000, timezone.utc)
+            age = (now - quote_time).total_seconds()
+            rows = payload['result']['list']
+            if not (-10 <= age <= 120) or payload['result']['category'] != 'linear' or len(rows) != 1 or rows[0]['symbol'] != symbol:
                 raise ValueError('stale or mismatched public quote')
-            mark=float(rows[0]['markPrice'])
-            if not math.isfinite(mark) or mark<=0: raise ValueError('invalid public mark')
-            quotes[symbol]=(mark,quote_time.isoformat())
-        result['booked_account']=deepcopy(snapshot['account'])
+            mark = float(rows[0]['markPrice'])
+            if not math.isfinite(mark) or mark <= 0:
+                raise ValueError('invalid public mark')
+            quotes[symbol] = (mark, quote_time.isoformat())
+
+        result['booked_account'] = deepcopy(snapshot['account'])
+        booked_by_strategy = {}
+        fresh_by_strategy = {}
         for p in result['positions']:
-            p['booked_mark_price']=p['mark_price'];p['booked_mark_time']=p['mark_time']
-            p['mark_price'],p['mark_time']=quotes[p['symbol']]
-            p['notional']=p['quantity']*p['mark_price']
-            p['unrealized_pnl']=(1 if p['side']=='long' else -1)*p['quantity']*(p['mark_price']-p['entry_price'])
-            p['net_pnl_to_date']=p['unrealized_pnl']-p['entry_fees']+p['funding']
-        a=result['account']
-        a['unrealized_pnl']=sum(p['unrealized_pnl'] for p in result['positions'])
-        a['equity']=a['balance']+a['unrealized_pnl'];a['net_pnl']=a['equity']-a['initial_balance']
+            p['booked_mark_price'] = p['mark_price']
+            p['booked_mark_time'] = p['mark_time']
+            sign = 1 if p['side'] == 'long' else -1
+            booked = sign * p['quantity'] * (p['booked_mark_price'] - p['entry_price'])
+            booked_by_strategy[p['strategy']] = booked_by_strategy.get(p['strategy'], 0.0) + booked
+            p['mark_price'], p['mark_time'] = quotes[p['symbol']]
+            p['notional'] = p['quantity'] * p['mark_price']
+            p['unrealized_pnl'] = sign * p['quantity'] * (p['mark_price'] - p['entry_price'])
+            p['net_pnl_to_date'] = p['unrealized_pnl'] - p['entry_fees'] + p['funding']
+            fresh_by_strategy[p['strategy']] = fresh_by_strategy.get(p['strategy'], 0.0) + p['unrealized_pnl']
+
+        booked_upnl = float(snapshot['account'].get('unrealized_pnl', 0.0))
+        fresh_upnl = sum(p['unrealized_pnl'] for p in result['positions'])
+        delta = fresh_upnl - booked_upnl
+        a = result['account']
+        a['unrealized_pnl'] = fresh_upnl
+        a['equity'] = float(snapshot['account']['equity']) + delta
+        a['net_pnl'] = float(snapshot['account']['net_pnl']) + delta
         # Exact live margin would require fresh risk tiers; do not approximate it.
-        a['initial_margin']=None;a['free_margin']=None
+        a['initial_margin'] = None
+        a['free_margin'] = None
         for lane in result['strategies']:
-            lane['equity']=lane['balance']+sum(p['unrealized_pnl'] for p in result['positions'] if p['strategy']==lane['strategy'])
-            lane['net_pnl']=lane['equity']-lane['allocation']
-        result['valuation']='public_mark_snapshot';result['quote_status']='fresh'
+            strategy = lane['strategy']
+            lane_delta = fresh_by_strategy.get(strategy, 0.0) - booked_by_strategy.get(strategy, 0.0)
+            lane['equity'] = float(lane['equity']) + lane_delta
+            lane['net_pnl'] = float(lane['net_pnl']) + lane_delta
+        result['valuation'] = 'public_mark_snapshot'
+        result['quote_status'] = 'fresh'
+        result['market_checked_at'] = now.isoformat()
     except Exception:
-        result=deepcopy(snapshot);result['quote_status']='unavailable_using_closed_bar'
+        result = deepcopy(snapshot)
+        result['quote_status'] = 'unavailable_using_closed_bar'
+        result['market_checked_at'] = now.isoformat()
     return seal(result)
