@@ -163,20 +163,20 @@ ctx=ssl.create_default_context()
 sock=ctx.wrap_socket(raw,server_hostname=HOST)
 sock.settimeout(8)
 key=base64.b64encode(os.urandom(16)).decode()
-req=(f"GET {{PATH}} HTTP/1.1\r\nHost: {{HOST}}\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
-     f"Sec-WebSocket-Key: {{key}}\r\nSec-WebSocket-Version: 13\r\nUser-Agent: NEXUS-WSL-WS/1\r\n\r\n")
+req=(f"GET {{PATH}} HTTP/1.1\\r\\nHost: {{HOST}}\\r\\nUpgrade: websocket\\r\\nConnection: Upgrade\\r\\n"
+     f"Sec-WebSocket-Key: {{key}}\\r\\nSec-WebSocket-Version: 13\\r\\nUser-Agent: NEXUS-WSL-WS/1\\r\\n\\r\\n")
 sock.sendall(req.encode())
 buf=b""
-while b"\r\n\r\n" not in buf:
+while b"\\r\\n\\r\\n" not in buf:
     part=sock.recv(4096)
     if not part:
         raise RuntimeError("handshake closed")
     buf+=part
-headers,initial=buf.split(b"\r\n\r\n",1)
+headers,initial=buf.split(b"\\r\\n\\r\\n",1)
 if not headers.startswith(b"HTTP/1.1 101"):
     raise RuntimeError("websocket upgrade rejected")
 accept=None
-for line in headers.split(b"\r\n")[1:]:
+for line in headers.split(b"\\r\\n")[1:]:
     if line.lower().startswith(b"sec-websocket-accept:"):
         accept=line.split(b":",1)[1].strip().decode()
 expected=base64.b64encode(hashlib.sha1((key+GUID).encode()).digest()).decode()
