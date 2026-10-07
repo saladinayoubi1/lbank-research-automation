@@ -43,7 +43,10 @@ def _validate_request(path: str, params: dict[str, Any]) -> str:
         raise WSLBybitBridgeError("WSL Bybit bridge only accepts the public linear ticker")
     if params.get("category") != "linear":
         raise WSLBybitBridgeError("WSL Bybit bridge category must be linear")
-    symbol = str(params.get("symbol", "")).strip().upper()
+    raw_symbol = params.get("symbol")
+    if not isinstance(raw_symbol, str):
+        raise WSLBybitBridgeError("unsupported Bybit symbol")
+    symbol = raw_symbol.strip().upper()
     if not _SYMBOL_RE.fullmatch(symbol):
         raise WSLBybitBridgeError("unsupported Bybit symbol")
     return symbol
@@ -54,7 +57,7 @@ def _validate_payload(payload: Any, symbol: str) -> dict[str, Any]:
         raise WSLBybitBridgeError("invalid Bybit public ticker response")
     result = payload.get("result")
     rows = result.get("list") if isinstance(result, dict) else None
-    if result is None or result.get("category") != "linear" or not isinstance(rows, list) or len(rows) != 1:
+    if not isinstance(result, dict) or result.get("category") != "linear" or not isinstance(rows, list) or len(rows) != 1:
         raise WSLBybitBridgeError("invalid Bybit public ticker result")
     row = rows[0]
     if not isinstance(row, dict) or row.get("symbol") != symbol:
