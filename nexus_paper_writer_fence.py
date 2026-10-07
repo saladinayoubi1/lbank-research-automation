@@ -19,13 +19,15 @@ the external arbiter signature/epoch, not from this file.
 from __future__ import annotations
 
 import base64
+from contextlib import contextmanager
 import hashlib
 import hmac
 import json
 import os
 import re
+import time
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping
 
 PERMIT_SCHEMA = "nexus.paper-writer-fence-permit.v1"
 TRUST_SCHEMA = "nexus.paper-writer-fence-trust-root.v1"
@@ -271,6 +273,8 @@ def verify_writer_permit(
 
 
 def load_fence_state(path: Path) -> dict[str, Any]:
+    if path.is_symlink():
+        raise PaperWriterFenceError("fence state path is unsafe")
     if not path.exists():
         return {
             "schema": STATE_SCHEMA,
@@ -319,28 +323,100 @@ def verify_and_record_writer_permit(
     state_path: Path,
     now_ms: int,
 ) -> dict[str, Any]:
-    state = load_fence_state(state_path)
-    receipt = verify_writer_permit(
-        permit,
-        trust_root,
-        local_writer_id=local_writer_id,
-        local_journal_checkpoint_digest=local_journal_checkpoint_digest,
-        last_accepted_epoch=state["last_accepted_epoch"],
-        now_ms=now_ms,
-    )
-    next_state = {
-        "schema": STATE_SCHEMA,
-        "last_accepted_epoch": receipt["epoch"],
-        "last_permit_digest": receipt["permit_digest"],
-        "last_receipt_digest": receipt["receipt_digest"],
-    }
-    state_path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = state_path.with_name(state_path.name + ".tmp")
-    data = json.dumps(next_state, sort_keys=True, indent=2) + "\n"
+    with _exclusive_fence_state(state_path):
+        state = load_fence_state(state_path)
+        receipt = verify_writer_permit(
+            permit, trust_root, local_writer_id=local_writer_id,
+            local_journal_checkpoint_digest=local_journal_checkpoint_digest,
+            last_accepted_epoch=state["last_accepted_epoch"], now_ms=now_ms,
+        )
+        next_state = {
+            "schema": STATE_SCHEMA, "last_accepted_epoch": receipt["epoch"],
+            "last_permit_digest": receipt["permit_digest"],
+            "last_receipt_digest": receipt["receipt_digest"],
+        }
+        tmp = state_path.with_name(state_path.name + ".tmp")
+        # A prior/crashed/linked temporary file is not ours to overwrite.
+        try:
+            handle = tmp.open("x", encoding="utf-8", newline="\n")
+        except OSError as exc:
+            raise PaperWriterFenceError("fence temporary state requires review") from exc
+        try:
+            with handle:
+                handle.write(json.dumps(next_state, sort_keys=True, indent=2)+"\n")
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(tmp, state_path)
+        finally:
+            if tmp.exists():
+                tmp.unlink()
+        return receipt
+
+
+@contextmanager
+def _exclusive_fence_state(path: Path):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lock = path.with_name(path.name + ".lock")
     try:
-        tmp.write_text(data, encoding="utf-8", newline="\n")
-        os.replace(tmp, state_path)
+        fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+    except FileExistsError as exc:
+        raise PaperWriterFenceError("fence acceptance is active or stale lock requires review") from exc
+    try:
+        os.close(fd)
+        yield
     finally:
-        if tmp.exists():
-            tmp.unlink()
-    return receipt
+        lock.unlink()
+
+
+def acquire_writer_guard(
+    permit_loader: Callable[[], Mapping[str, Any]],
+    trust_loader: Callable[[], Mapping[str, Any]],
+    *,
+    local_writer_id: str,
+    takeover_checkpoint_digest: str,
+    state_path: Path,
+    clock_ms: Callable[[], int] | None = None,
+) -> Callable[[], bool]:
+    """Acquire once, then revalidate current external proof at every write.
+
+    Loaders must obtain the real current arbiter proof/trust root and raise if
+    unavailable. This API does not provision an arbiter or enable failover.
+    The checkpoint is the immutable takeover checkpoint, not a later journal
+    head. Startup/reboot must acquire a NEW epoch; persisted receipts are not
+    accepted as a startup grant. A newer accepted epoch retires this guard.
+    """
+    clock = clock_ms or (lambda: time.time_ns() // 1_000_000)
+
+    def current_proof():
+        try:
+            permit, trust = permit_loader(), trust_loader()
+            if not isinstance(permit, Mapping) or not isinstance(trust, Mapping):
+                raise ValueError("invalid proof")
+            return permit, trust
+        except Exception as exc:
+            raise PaperWriterFenceError("current external arbiter proof is unavailable") from exc
+
+    permit, trust = current_proof()
+    receipt = verify_and_record_writer_permit(
+        permit, trust, local_writer_id=local_writer_id,
+        local_journal_checkpoint_digest=takeover_checkpoint_digest,
+        state_path=state_path, now_ms=clock(),
+    )
+
+    def assert_authority() -> bool:
+        permit, trust = current_proof()
+        state = load_fence_state(state_path)
+        if (state["last_accepted_epoch"] != receipt["epoch"]
+                or state["last_permit_digest"] != receipt["permit_digest"]
+                or state["last_receipt_digest"] != receipt["receipt_digest"]):
+            raise PaperWriterFenceError("active writer ownership has changed")
+        current = verify_writer_permit(
+            permit, trust, local_writer_id=local_writer_id,
+            local_journal_checkpoint_digest=takeover_checkpoint_digest,
+            last_accepted_epoch=receipt["epoch"]-1, now_ms=clock(),
+        )
+        if current != receipt:
+            raise PaperWriterFenceError("active writer permit has changed")
+        return True
+
+    return assert_authority

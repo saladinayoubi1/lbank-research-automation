@@ -18,6 +18,7 @@ from nexus_paper_writer_fence import (
     load_fence_state,
     verify_and_record_writer_permit,
     verify_writer_permit,
+    acquire_writer_guard,
 )
 
 # Test-only RSA private exponent. Production writers receive only the public
@@ -276,3 +277,69 @@ def test_epoch_state_is_persisted_atomically_and_blocks_replay(tmp_path: Path):
             state_path=path,
             now_ms=NOW,
         )
+
+
+def test_concurrent_acceptance_cannot_grant_the_same_epoch_twice(tmp_path):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+
+    start = Barrier(2)
+    path = tmp_path / "state.json"
+    def accept():
+        start.wait(timeout=5)
+        try:
+            return verify_and_record_writer_permit(
+                _permit(), _trust(), local_writer_id=FAILOVER_WRITER,
+                local_journal_checkpoint_digest=CHECKPOINT, state_path=path, now_ms=NOW)
+        except PaperWriterFenceError:
+            return None
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(lambda _: accept(), range(2)))
+    assert sum(x is not None for x in results) == 1
+    assert load_fence_state(path)["last_accepted_epoch"] == 7
+
+
+def test_unreviewed_temporary_state_is_preserved_without_grant(tmp_path):
+    path = tmp_path / "state.json"
+    temporary = tmp_path / "state.json.tmp"
+    temporary.write_text("unreviewed prior state")
+    with pytest.raises(PaperWriterFenceError, match="requires review"):
+        verify_and_record_writer_permit(
+            _permit(), _trust(), local_writer_id=FAILOVER_WRITER,
+            local_journal_checkpoint_digest=CHECKPOINT, state_path=path, now_ms=NOW)
+    assert temporary.read_text() == "unreviewed prior state"
+    assert not path.exists()
+    assert not (tmp_path / "state.json.lock").exists()
+
+
+def test_active_guard_rechecks_expiry_and_requires_new_epoch_after_restart(tmp_path):
+    clock = [NOW]
+    permit = _permit()
+    args = dict(local_writer_id=FAILOVER_WRITER, takeover_checkpoint_digest=CHECKPOINT,
+                state_path=tmp_path / "state.json", clock_ms=lambda: clock[0])
+    guard = acquire_writer_guard(lambda: permit, _trust, **args)
+    assert guard() is True
+    with pytest.raises(PaperWriterFenceError, match="stale or replayed"):
+        acquire_writer_guard(lambda: permit, _trust, **args)
+    clock[0] = NOW+60_001
+    with pytest.raises(PaperWriterFenceError, match="fresh and bounded"):
+        guard()
+
+
+def test_arbiter_loss_and_new_ownership_retire_the_existing_guard(tmp_path):
+    current = [_permit()]
+    def external_proof():
+        if current[0] is None:
+            raise OSError("unreachable arbiter")
+        return current[0]
+    path = tmp_path / "state.json"
+    guard = acquire_writer_guard(external_proof, _trust, local_writer_id=FAILOVER_WRITER,
+        takeover_checkpoint_digest=CHECKPOINT, state_path=path, clock_ms=lambda: NOW)
+    current[0] = None
+    with pytest.raises(PaperWriterFenceError, match="unavailable"):
+        guard()
+    current[0] = _permit(epoch=8)
+    verify_and_record_writer_permit(current[0], _trust(), local_writer_id=FAILOVER_WRITER,
+        local_journal_checkpoint_digest=CHECKPOINT, state_path=path, now_ms=NOW)
+    with pytest.raises(PaperWriterFenceError, match="ownership has changed"):
+        guard()

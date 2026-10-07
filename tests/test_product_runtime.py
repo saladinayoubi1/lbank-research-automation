@@ -101,3 +101,40 @@ def test_product_runtime_rejects_unknown_or_extra_order_fields(tmp_path: Path) -
         runtime.submit_paper_order({**order(), "live": True})
     with pytest.raises(ProductRuntimeError, match="unsupported paper symbol"):
         runtime.submit_paper_order(order(symbol="UNKNOWNUSDT"))
+
+
+@pytest.mark.parametrize("proof", [False, None, 1])
+def test_configured_writer_requires_literal_positive_authority_before_bootstrap(tmp_path, proof):
+    with pytest.raises(ProductRuntimeError, match="writer authority"):
+        ProductRuntime(tmp_path, writer_authority=lambda: proof)
+    assert not (tmp_path / "product_runtime" / "paper-events.jsonl").exists()
+
+
+def test_writer_loss_blocks_mutation_but_preserves_existing_readable_journal(tmp_path):
+    available = [True]
+    def arbiter():
+        if not available[0]:
+            raise OSError("external arbiter unavailable")
+        return True
+    runtime = ProductRuntime(tmp_path, writer_authority=arbiter)
+    before = runtime.paper_events_path.read_bytes()
+    available[0] = False
+    with pytest.raises(ProductRuntimeError, match="writer authority"):
+        runtime.submit_paper_order(order())
+    assert runtime.paper_events_path.read_bytes() == before
+    assert runtime.paper_snapshot()["event_count"] == 2
+
+
+def test_authority_lost_during_flush_refuses_commit_and_cleans_only_temporary_file(tmp_path):
+    allow = [True]
+    calls = [0]
+    def proof():
+        calls[0] += 1
+        return allow[0] or calls[0] % 2 == 1
+    runtime = ProductRuntime(tmp_path, writer_authority=proof)
+    before = runtime.paper_events_path.read_bytes()
+    allow[0] = False
+    with pytest.raises(ProductRuntimeError, match="persist paper event journal"):
+        runtime.submit_paper_order(order())
+    assert runtime.paper_events_path.read_bytes() == before
+    assert not runtime.paper_events_path.with_suffix(".tmp").exists()
