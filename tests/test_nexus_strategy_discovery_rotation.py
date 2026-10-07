@@ -11,6 +11,7 @@ from nexus_strategy_discovery_rotation import (
     commit_dispatch,
     empty_state,
     load_state,
+    _digest,
 )
 
 
@@ -70,6 +71,40 @@ class StrategyDiscoveryRotationTests(unittest.TestCase):
         controller["search_stages"][1]["status"] = "BLOCKED"
         with self.assertRaisesRegex(StrategyDiscoveryRotationError, "legacy validation"):
             build_plan(controller, empty_state())
+
+    def test_changed_frontier_fingerprint_is_new_research_not_legacy_replay(self):
+        controller = _controller()
+        controller["search_stages"] = [controller["search_stages"][0]]
+        controller["search_stages"][0]["frontier_sha256"] = "f" * 64
+        old_manifest = controller["search_stages"][0]["experiment_sha256"]
+        feedback_core = {
+            "schema_version": "nexus.strategy-discovery-feedback.v1",
+            "exhausted_experiment_sha256": [],
+            "outcomes": [{
+                "experiment_sha256": old_manifest,
+                "outcome": "completed_no_qualification",
+                "workflow_conclusion": "success",
+            }],
+            "research_only": True,
+            "paper_only": True,
+            "qualification_authority": False,
+            "automatic_strategy_promotion": False,
+            "live_trading_authority": False,
+        }
+        feedback = {**feedback_core, "state_digest": _digest(feedback_core)}
+
+        plan = build_plan(controller, empty_state(), feedback)
+        self.assertEqual(plan["experiment_sha256"], "f" * 64)
+        self.assertEqual(plan["manifest_sha256"], old_manifest)
+
+        feedback_core["outcomes"].append({
+            "experiment_sha256": "f" * 64,
+            "outcome": "completed_no_qualification",
+            "workflow_conclusion": "success",
+        })
+        feedback = {**feedback_core, "state_digest": _digest(feedback_core)}
+        with self.assertRaisesRegex(StrategyDiscoveryRotationError, "no untested reviewed"):
+            build_plan(controller, empty_state(), feedback)
 
     def test_unverified_controller_fails_closed(self):
         controller = _controller()

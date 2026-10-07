@@ -142,8 +142,8 @@ def build_plan(controller: Mapping[str, Any], state: Mapping[str, Any], feedback
             isinstance(row, Mapping)
             and row.get("status") == "READY_FOR_RESEARCH_DISPATCH"
             and row.get("rotation_eligible") is True
-            and str(row.get("experiment_sha256")) not in exhausted
-            and str(row.get("experiment_sha256")) not in resolved_completed
+            and str(row.get("frontier_sha256") or row.get("experiment_sha256")) not in exhausted
+            and str(row.get("frontier_sha256") or row.get("experiment_sha256")) not in resolved_completed
         )
     ]
     if not stages:
@@ -168,7 +168,8 @@ def build_plan(controller: Mapping[str, Any], state: Mapping[str, Any], feedback
         "stage": selected["stage"],
         "workflow": workflow,
         "experiment_id": selected.get("experiment_id"),
-        "experiment_sha256": selected.get("experiment_sha256"),
+        "experiment_sha256": selected.get("frontier_sha256") or selected.get("experiment_sha256"),
+        "manifest_sha256": selected.get("experiment_sha256"),
         "research_only": True,
         "paper_only": True,
         "live_trading_authority": False,
@@ -206,6 +207,7 @@ def commit_dispatch(
             "workflow": plan["workflow"],
             "experiment_id": plan.get("experiment_id"),
             "experiment_sha256": plan.get("experiment_sha256"),
+            "manifest_sha256": plan.get("manifest_sha256"),
             "source_sha": source_sha,
             "run_id": str(run_id),
             "plan_digest": plan["plan_digest"],
