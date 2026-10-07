@@ -89,10 +89,10 @@ function activePaperTerminalSnapshot(p,eventEnvelope){
 function renderSharedPaperFreshness(){
   const badge=$('#sharedPaperFreshness'),s=state.sharedPaper;if(!badge)return;
   if(!s){badge.className='badge bad';badge.textContent='داده در دسترس نیست';badge.title='Shared Paper projection unavailable';return}
-  const marketLive=s.market_live===true,stateStale=s.paper_state_stale===true;
+  const marketLive=s.market_live===true,stateStale=s.paper_state_stale===true,priceBasis=String(s.market_price_basis||'unknown'),usingOrderbookMid=priceBasis==='orderbook_mid';
   badge.className='badge '+(marketLive?(stateStale?'warn':'good'):'bad');
-  badge.textContent=marketLive?(stateStale?'MARK زنده · STATE قدیمی':'MARK زنده'):'MARK قدیمی';
-  badge.title='Bybit mark: '+String(s.quote_status||'unknown')+' · Paper state: '+(stateStale?'stale':'fresh');
+  badge.textContent=marketLive?(stateStale?(usingOrderbookMid?'MID زنده · STATE قدیمی':'MARK زنده · STATE قدیمی'):(usingOrderbookMid?'MID زنده':'MARK زنده')):'MARK قدیمی';
+  badge.title='Bybit price: '+String(s.quote_status||'unknown')+' · basis: '+priceBasis+' · Paper state: '+(stateStale?'stale':'fresh');
 }
 function renderPaper(){
   const p=state.paper;if(!p)return;
