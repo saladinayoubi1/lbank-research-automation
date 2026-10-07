@@ -8,7 +8,7 @@ on:
       - NEXUS Build Verification
       - NEXUS Local Runner
       - Build NEXUS Desktop Windows
-    types: [requested, in_progress, completed]
+    types: [completed]
   pull_request:
     branches:
       - main
@@ -25,26 +25,21 @@ permissions:
   issues: write
 
 concurrency:
-  group: nexus-failure-triage-${{ github.event_name }}-${{ github.event.pull_request.number || github.event.workflow_run.id || github.sha }}
-  cancel-in-progress: false
+  group: nexus-failure-triage-${{ github.event_name }}-${{ github.event.workflow_run.name || 'direct' }}-${{ github.event.workflow_run.head_sha || github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
 
 jobs:
   triage:
     if: >-
       github.event_name == 'push' ||
       (github.event_name == 'pull_request' && github.event.action == 'closed') ||
-      (github.event_name == 'workflow_run' && (
-        (github.event.action == 'completed' && (
-          github.event.workflow_run.name == 'Test' ||
-          github.event.workflow_run.name == 'NEXUS Cloud Fallback' ||
-          github.event.workflow_run.name == 'NEXUS Build Verification' ||
-          github.event.workflow_run.name == 'NEXUS Local Runner' ||
-          github.event.workflow_run.name == 'Build NEXUS Desktop Windows'
-        )) ||
-        (github.event.workflow_run.name == 'NEXUS Local Runner' && (
-          github.event.action == 'requested' ||
-          github.event.action == 'in_progress'
-        ))
+      (github.event_name == 'workflow_run' &&
+       github.event.action == 'completed' && (
+        github.event.workflow_run.name == 'Test' ||
+        github.event.workflow_run.name == 'NEXUS Cloud Fallback' ||
+        github.event.workflow_run.name == 'NEXUS Build Verification' ||
+        github.event.workflow_run.name == 'NEXUS Local Runner' ||
+        github.event.workflow_run.name == 'Build NEXUS Desktop Windows'
       ))
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -296,24 +291,30 @@ jobs:
                 core.warning('Rejected malformed or non-default-branch zero-touch dispatch metadata; no issue write performed.');
                 return;
               }
-              if (typeof message !== 'string' || !message.includes(installCommitMarker)) {
-                core.info('Repair trigger push has no install marker; zero-touch evidence bridge is a no-op.');
+              const installRequested = typeof message === 'string' && message.includes(installCommitMarker);
+              const ownerProofRequested = typeof message === 'string' && message.includes(ownerProofCommitMarker);
+              if (!installRequested && !ownerProofRequested) {
+                core.info('Repair trigger push has no install or owner-proof marker; evidence bridge is a no-op.');
                 return;
               }
-              await upsertInstallEvidence({
-                sha,
-                state: 'PENDING',
-                lines: [
-                  '- local runner state: `AWAITING_COMPLETION`',
-                  '- evidence source: trusted GitHub-hosted push event on `main`',
-                  '- expected completion workflow: `NEXUS Local Runner`'
-                ]
-              });
+              if (installRequested && ownerProofRequested) {
+                core.warning('Refused ambiguous repair trigger containing both install and owner-proof markers.');
+                return;
+              }
+              const lines = [
+                '- local runner state: `AWAITING_COMPLETION`',
+                '- evidence source: trusted GitHub-hosted push event on `main`',
+                '- expected completion workflow: `NEXUS Local Runner`'
+              ];
+              if (ownerProofRequested) {
+                await upsertOwnerProofEvidence({ sha, state: 'PENDING', lines });
+              } else {
+                await upsertInstallEvidence({ sha, state: 'PENDING', lines });
+              }
               return;
             }
 
             const run = context.payload.workflow_run;
-            const workflowRunAction = context.payload.action;
             const ciWorkflows = new Set([
               'Test',
               'NEXUS Cloud Fallback',
@@ -333,64 +334,6 @@ jobs:
             const validRunId = Number.isSafeInteger(run?.id) && run.id > 0;
             const validRunUrl = typeof run?.html_url === 'string' && /^https:\/\/github\.com\//.test(run.html_url);
             const validAttempt = Number.isInteger(run?.run_attempt) && run.run_attempt >= 1;
-            const earlyLocalRunnerAction = workflowRunAction === 'requested' || workflowRunAction === 'in_progress';
-
-            if (run?.name === installWorkflow && earlyLocalRunnerAction) {
-              if (
-                !validHeadSha ||
-                !validRunId ||
-                !validRunUrl ||
-                !validAttempt ||
-                run.event !== 'push' ||
-                run.head_branch !== defaultBranch
-              ) {
-                core.warning('Rejected malformed or non-main early NEXUS Local Runner metadata; no install/proof evidence write performed.');
-                return;
-              }
-              const expectedRunUrl = `https://github.com/${owner}/${repo}/actions/runs/${run.id}`;
-              if (run.html_url !== expectedRunUrl) {
-                core.warning('Rejected early NEXUS Local Runner event with non-canonical run URL.');
-                return;
-              }
-
-              let commit;
-              try {
-                commit = (await github.rest.repos.getCommit({ owner, repo, ref: run.head_sha })).data;
-              } catch (error) {
-                core.warning(`Could not bind early local runner event to exact commit (${error.message}); preserving fail-closed state.`);
-                return;
-              }
-              const commitMessage = commit?.commit?.message;
-              const installRequested = typeof commitMessage === 'string' && commitMessage.includes(installCommitMarker);
-              const ownerProofRequested = typeof commitMessage === 'string' && commitMessage.includes(ownerProofCommitMarker);
-              if (commit?.sha !== run.head_sha || (!installRequested && !ownerProofRequested)) {
-                core.info('Early local runner event is not bound to an install or owner-autostart proof main commit; no Phase 7 evidence write required.');
-                return;
-              }
-              if (installRequested && ownerProofRequested) {
-                core.warning('Refused ambiguous local runner commit containing both install and owner-proof markers.');
-                return;
-              }
-
-              const localRunnerState = workflowRunAction === 'requested' ? 'REQUESTED' : 'IN_PROGRESS';
-              const expectedArtifactName = ownerProofRequested
-                ? `nexus-owner-autostart-proof-${run.id}`
-                : `nexus-zero-touch-install-${run.id}`;
-              const lines = [
-                `- local runner state: \`${localRunnerState}\``,
-                `- workflow event action: \`${workflowRunAction}\``,
-                `- workflow run: ${run.html_url}`,
-                `- workflow run id: \`${run.id}\``,
-                `- expected artifact: \`${expectedArtifactName}\``
-              ];
-              if (ownerProofRequested) {
-                await upsertOwnerProofEvidence({ sha: run.head_sha, state: 'PENDING', lines });
-              } else {
-                await upsertInstallEvidence({ sha: run.head_sha, state: 'PENDING', lines });
-              }
-              return;
-            }
-
             if (run?.name === packageWorkflow) {
               if (
                 !allowedConclusions.has(run.conclusion) ||
