@@ -345,7 +345,7 @@ def test_demo_public_mark_client_prioritizes_approved_linear_host(monkeypatch):
     assert client.bases[:2] == ["https://api.bytick.com", "https://api.bybit.com"]
     assert client.attempts == 2
     assert client.timeout == 4.0
-    assert transport == "bybit_official_linear_public"
+    assert transport == "bybit_official_public_bridge"
 
     monkeypatch.setenv("NEXUS_BYBIT_PUBLIC_REGION", "EEA")
     regional, _ = _demo_public_mark_client()
