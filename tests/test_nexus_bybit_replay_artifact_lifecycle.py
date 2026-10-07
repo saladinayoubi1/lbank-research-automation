@@ -45,6 +45,99 @@ def _load(path: Path, name: str):
     return module
 
 
+@pytest.fixture
+def frozen_bulk_dataset(tmp_path, monkeypatch):
+    from scripts import build_nexus_bybit_replay_package as builder
+    from scripts import rehydrate_nexus_bybit_chunk as rehydrator
+    import nexus_demo_archive_contract as contract
+
+    # A compact grid has candles before, inside, and after the permitted months.
+    grid = pd.DatetimeIndex(["2024-03-31", "2024-04-01", "2024-06-01"], tz="UTC").as_unit("ns")
+    monkeypatch.setattr(builder, "expected_index", lambda step: grid)
+    for timeframe, (step, _) in list(builder.TIMEFRAMES.items()):
+        monkeypatch.setitem(builder.TIMEFRAMES, timeframe, (step, len(grid)))
+    reference, output = tmp_path / "reference", tmp_path / "output"
+    for symbol in builder.SYMBOLS:
+        for timeframe in builder.TIMEFRAMES:
+            relative = Path("bybit_market") / symbol / f"{timeframe}.parquet"
+            frame = pd.DataFrame({
+                "timestamp": grid, "open": 100.0, "high": 120.0, "low": 90.0,
+                "close": 105.0, "volume": 10.0, "symbol": symbol, "timeframe": timeframe,
+            })
+            for root in (reference, output):
+                (root / relative).parent.mkdir(parents=True, exist_ok=True)
+            frame.to_parquet(reference / relative, index=False)
+            frame.loc[1, "open"] = 110.0
+            frame.to_parquet(output / relative, index=False)
+    canonical = builder.build_manifest(reference)["semantic_dataset_sha256"]
+    monkeypatch.setattr(contract, "ARCHIVE_SHA256", canonical)
+    sources = []
+    for filename, sha in rehydrator.FROZEN_BULK_SOURCE_SHA256.items():
+        symbol, year, month_file = filename.split("-")
+        period = pd.Period(f"{year}-{month_file[:2]}", freq="M")
+        sources.append({
+            "filename": filename, "symbol": symbol, "sha256": sha,
+            "start_date": period.start_time.strftime("%Y-%m-%d"),
+            "end_date": period.end_time.strftime("%Y-%m-%d"),
+            "url": f"https://public.bybit.com/spot/{symbol}/{filename}",
+            "parser_engine": "c-chunked",
+        })
+    (output / "_source_manifest.json").write_text(json.dumps(sources))
+    return builder, rehydrator, reference, output, sources, canonical
+
+
+def test_frozen_restoration_preserves_exact_reference_and_only_permitted_months(frozen_bulk_dataset):
+    builder, rehydrator, reference, output, _, canonical = frozen_bulk_dataset
+    receipt = rehydrator.restore_frozen_bulk_semantics(output, reference)
+    assert receipt["restored_chunk_ids"] == ["41", "42"]
+    assert receipt["outside_month_candles_unchanged"] is True
+    assert len(receipt["unchanged_official_raw_archives"]) == 4
+    assert receipt["live_trading_authority"] is False
+    assert builder.build_manifest(output)["semantic_dataset_sha256"] == canonical
+    for path in reference.rglob("*.parquet"):
+        pd.testing.assert_frame_equal(pd.read_parquet(path), pd.read_parquet(output / path.relative_to(reference)))
+
+
+@pytest.mark.parametrize("mutation", ["digest", "missing", "duplicate", "venue"])
+def test_frozen_restoration_rejects_changed_or_ambiguous_raw_sources(frozen_bulk_dataset, mutation):
+    _, rehydrator, reference, output, sources, _ = frozen_bulk_dataset
+    if mutation == "digest":
+        sources[0]["sha256"] = "0" * 64
+    elif mutation == "missing":
+        sources.pop()
+    elif mutation == "duplicate":
+        sources.append(dict(sources[0]))
+    else:
+        sources[0]["url"] = "https://example.test/substitute.csv.gz"
+    (output / "_source_manifest.json").write_text(json.dumps(sources))
+    before = {p: hashlib.sha256(p.read_bytes()).hexdigest() for p in output.rglob("*.parquet")}
+    with pytest.raises(rehydrator.FrozenReplaySemanticsError):
+        rehydrator.restore_frozen_bulk_semantics(output, reference)
+    assert before == {p: hashlib.sha256(p.read_bytes()).hexdigest() for p in before}
+
+
+def test_frozen_restoration_rejects_drift_outside_allowed_months_without_writes(frozen_bulk_dataset):
+    _, rehydrator, reference, output, _, _ = frozen_bulk_dataset
+    path = next(output.rglob("*.parquet"))
+    frame = pd.read_parquet(path)
+    frame.loc[2, "close"] += 1
+    frame.to_parquet(path, index=False)
+    before = {p: hashlib.sha256(p.read_bytes()).hexdigest() for p in output.rglob("*.parquet")}
+    with pytest.raises(rehydrator.FrozenReplaySemanticsError, match="outside frozen bulk months"):
+        rehydrator.restore_frozen_bulk_semantics(output, reference)
+    assert before == {p: hashlib.sha256(p.read_bytes()).hexdigest() for p in before}
+
+
+def test_frozen_restoration_rejects_reference_that_is_not_the_frozen_content(frozen_bulk_dataset):
+    _, rehydrator, reference, output, _, _ = frozen_bulk_dataset
+    path = next(reference.rglob("*.parquet"))
+    frame = pd.read_parquet(path)
+    frame.loc[1, "open"] += 1
+    frame.to_parquet(path, index=False)
+    with pytest.raises(rehydrator.FrozenReplaySemanticsError, match="not the frozen canonical"):
+        rehydrator.restore_frozen_bulk_semantics(output, reference)
+
+
 def test_selector_requires_manifest_and_exact_immutable_zip_digest(tmp_path: Path) -> None:
     selector = _load(SELECTOR_PATH, "nexus_replay_selector_test")
     root = tmp_path / "candidate"
