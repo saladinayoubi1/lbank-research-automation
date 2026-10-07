@@ -468,7 +468,7 @@ def test_chunk_artifact_listing_is_bounded_and_stops_when_all_chunks_are_found(m
         }
 
     monkeypatch.setattr(chunks, "_request_json", fake_request)
-    payload = chunks.fetch_artifact_pages("example/repo", "token", max_pages=20)
+    payload = chunks.fetch_artifact_pages("example/repo", "token", max_pages=20, max_source_runs=0)
     plan = chunks.build_plan(payload)
 
     assert len(calls) == 1
@@ -495,11 +495,132 @@ def test_bounded_chunk_listing_treats_unseen_chunks_as_rebuild_required(monkeypa
         }
 
     monkeypatch.setattr(chunks, "_request_json", fake_request)
-    payload = chunks.fetch_artifact_pages("example/repo", "token", max_pages=1)
+    payload = chunks.fetch_artifact_pages("example/repo", "token", max_pages=1, max_source_runs=0)
     plan = chunks.build_plan(payload)
 
     assert plan["reusable_chunk_count"] == 0
     assert plan["missing_chunk_count"] == 42
+
+
+@pytest.fixture
+def chunk_producer():
+    chunks = _load(CHUNK_MAP_PATH, "nexus_replay_source_chunk_test")
+
+    def source(run_id=101):
+        run = {
+            "id": run_id, "status": "completed", "conclusion": "success",
+            "head_branch": "main", "head_sha": "a" * 40, "event": "push",
+            "path": chunks.SOURCE_WORKFLOW_PATH,
+            "repository": {"id": 7, "full_name": "example/repo"},
+            "head_repository": {"id": 7},
+        }
+        artifacts = [{
+            "id": run_id * 100 + index,
+            "name": f"bybit-rehydrated-chunk-{chunk.id}-{run_id}",
+            "expired": False, "created_at": "2026-10-07T00:00:00Z",
+            "workflow_run": {
+                "id": run_id, "head_sha": "a" * 40, "head_branch": "main",
+                "repository_id": 7, "head_repository_id": 7,
+            },
+        } for index, chunk in enumerate(chunks.CANONICAL_CHUNKS)]
+        return run, artifacts
+
+    return chunks, source
+
+
+def test_chunk_planner_reuses_complete_source_run_without_repo_scan(monkeypatch, chunk_producer):
+    chunks, source = chunk_producer
+    run, artifacts = source()
+    calls = []
+
+    def request(url, _token):
+        calls.append(url)
+        if "/actions/workflows/" in url:
+            return {"workflow_runs": [run]}
+        if "/actions/runs/101/artifacts" in url:
+            return {"artifacts": artifacts}
+        raise AssertionError("complete source must not call repository-wide artifact listing")
+
+    monkeypatch.setattr(chunks, "_request_json", request)
+    plan = chunks.build_plan(chunks.fetch_artifact_pages("example/repo", "token"))
+    assert len(calls) == 2
+    assert "branch=main" in calls[0] and "status=success" in calls[0] and "per_page=3" in calls[0]
+    assert plan["reusable_chunk_count"] == 42 and plan["missing_chunk_count"] == 0
+    assert {entry["artifact_id"] for entry in plan["reusable_artifacts"].values()} == {a["id"] for a in artifacts}
+
+
+@pytest.mark.parametrize("mutation", ["expired", "run", "sha", "branch", "repository", "fork"])
+def test_chunk_planner_excludes_expired_or_misbound_source_artifact(monkeypatch, chunk_producer, mutation):
+    chunks, source = chunk_producer
+    run, artifacts = source()
+    rejected = artifacts[0]
+    if mutation == "expired":
+        rejected["expired"] = True
+    else:
+        field, value = {
+            "run": ("id", 102), "sha": ("head_sha", "b" * 40),
+            "branch": ("head_branch", "feature"), "repository": ("repository_id", 8),
+            "fork": ("head_repository_id", 8),
+        }[mutation]
+        rejected["workflow_run"][field] = value
+
+    def request(url, _token):
+        if "/actions/workflows/" in url:
+            return {"workflow_runs": [run]}
+        if "/actions/runs/101/artifacts" in url:
+            return {"artifacts": artifacts}
+        return {"artifacts": []}
+
+    monkeypatch.setattr(chunks, "_request_json", request)
+    plan = chunks.build_plan(chunks.fetch_artifact_pages("example/repo", "token"))
+    assert plan["reusable_chunk_count"] == 41
+    assert plan["missing_ids"] == ["27"]
+
+
+@pytest.mark.parametrize("mutation", ["branch", "failure", "workflow", "fork"])
+def test_chunk_planner_does_not_fetch_untrusted_producer_run(monkeypatch, chunk_producer, mutation):
+    chunks, source = chunk_producer
+    run, _ = source()
+    if mutation == "branch":
+        run["head_branch"] = "feature"
+    elif mutation == "failure":
+        run["conclusion"] = "failure"
+    elif mutation == "workflow":
+        run["path"] = ".github/workflows/other.yml"
+    else:
+        run["head_repository"]["id"] = 8
+
+    def request(url, _token):
+        if "/actions/workflows/" in url:
+            return {"workflow_runs": [run]}
+        assert "/actions/runs/" not in url
+        return {"artifacts": []}
+
+    monkeypatch.setattr(chunks, "_request_json", request)
+    plan = chunks.build_plan(chunks.fetch_artifact_pages("example/repo", "token"))
+    assert plan["missing_chunk_count"] == 42
+
+
+def test_chunk_planner_bounds_source_runs_and_keeps_partial_coverage(monkeypatch, chunk_producer):
+    chunks, source = chunk_producer
+    producers = [source(run_id) for run_id in (101, 102, 103, 104)]
+    calls = []
+
+    def request(url, _token):
+        calls.append(url)
+        if "/actions/workflows/" in url:
+            return {"workflow_runs": [run for run, _ in producers]}
+        for run, artifacts in producers[:3]:
+            if f"/actions/runs/{run['id']}/artifacts" in url:
+                return {"artifacts": artifacts[:1]}
+        assert "/actions/artifacts?" in url
+        return {"artifacts": []}
+
+    monkeypatch.setattr(chunks, "_request_json", request)
+    plan = chunks.build_plan(chunks.fetch_artifact_pages("example/repo", "token", max_source_runs=3))
+    assert len(calls) == 5
+    assert plan["reusable_chunk_count"] == 1 and plan["missing_chunk_count"] == 41
+    assert plan["reusable_artifacts"]["27"]["artifact_id"] == 10300
 
 
 def test_rehydrate_workflow_rebuilds_missing_chunks_fail_closed_and_paper_only() -> None:
@@ -509,6 +630,7 @@ def test_rehydrate_workflow_rebuilds_missing_chunks_fail_closed_and_paper_only()
     assert "scripts/nexus_bybit_replay_chunks.py" in text
     assert "gh api --paginate --slurp" not in text
     assert '--max-pages 20' in text
+    assert '--max-source-runs 3' in text
     assert '--token-env GH_TOKEN' in text
     assert "scripts/rehydrate_nexus_bybit_chunk.py" in text
     assert "missing_matrix" in text
