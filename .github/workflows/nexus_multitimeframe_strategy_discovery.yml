@@ -447,9 +447,21 @@ jobs:
           set -euo pipefail
           rm -rf build/agent-frontier
           mkdir -p build/agent-frontier
-          python scripts/nexus_qa_attested_discovery_frontier.py \
-            --repository "$GITHUB_REPOSITORY" \
-            --output build/agent-frontier/previous-ledger.json
+          frontier_resolved=false
+          for attempt in 1 2 3; do
+            rm -f build/agent-frontier/previous-ledger.json
+            if python scripts/nexus_qa_attested_discovery_frontier.py \
+              --repository "$GITHUB_REPOSITORY" \
+              --output build/agent-frontier/previous-ledger.json; then
+              frontier_resolved=true
+              break
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              echo "qa_frontier_transport_retry=$attempt"
+              sleep $((attempt * 5))
+            fi
+          done
+          test "$frontier_resolved" = true
           test -s build/agent-frontier/previous-ledger.json
           ledger_digest="$(python -c "from pathlib import Path; from nexus_composite_strategy_research import load_ledger; print(load_ledger(Path('build/agent-frontier/previous-ledger.json'))['ledger_digest'])")"
           test "${#ledger_digest}" -eq 64
