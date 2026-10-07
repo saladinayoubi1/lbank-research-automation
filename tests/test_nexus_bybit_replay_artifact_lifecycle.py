@@ -356,11 +356,67 @@ def test_chunk_rehydrator_rejects_noncanonical_dates_before_network_access() -> 
         rehydrator._validate_chunk_request("99", "2024-06-01", "2024-06-30")
 
 
+def test_chunk_artifact_listing_is_bounded_and_stops_when_all_chunks_are_found(monkeypatch) -> None:
+    chunks = _load(CHUNK_MAP_PATH, "nexus_replay_chunks_listing_test")
+    calls = []
+
+    def fake_request(url, token):
+        calls.append((url, token))
+        return {
+            "artifacts": [
+                {
+                    "id": 1000 + index,
+                    "name": f"bybit-rehydrated-chunk-{chunk.id}-99999",
+                    "expired": False,
+                    "created_at": "2026-10-07T00:00:00Z",
+                }
+                for index, chunk in enumerate(chunks.CANONICAL_CHUNKS)
+            ]
+        }
+
+    monkeypatch.setattr(chunks, "_request_json", fake_request)
+    payload = chunks.fetch_artifact_pages("example/repo", "token", max_pages=20)
+    plan = chunks.build_plan(payload)
+
+    assert len(calls) == 1
+    assert "per_page=100" in calls[0][0]
+    assert "page=1" in calls[0][0]
+    assert plan["reusable_chunk_count"] == 42
+    assert plan["missing_chunk_count"] == 0
+
+
+def test_bounded_chunk_listing_treats_unseen_chunks_as_rebuild_required(monkeypatch) -> None:
+    chunks = _load(CHUNK_MAP_PATH, "nexus_replay_chunks_bounded_listing_test")
+
+    def fake_request(_url, _token):
+        return {
+            "artifacts": [
+                {
+                    "id": index + 1,
+                    "name": f"unrelated-artifact-{index}",
+                    "expired": False,
+                    "created_at": "2026-10-07T00:00:00Z",
+                }
+                for index in range(100)
+            ]
+        }
+
+    monkeypatch.setattr(chunks, "_request_json", fake_request)
+    payload = chunks.fetch_artifact_pages("example/repo", "token", max_pages=1)
+    plan = chunks.build_plan(payload)
+
+    assert plan["reusable_chunk_count"] == 0
+    assert plan["missing_chunk_count"] == 42
+
+
 def test_rehydrate_workflow_rebuilds_missing_chunks_fail_closed_and_paper_only() -> None:
     text = REHYDRATE_WORKFLOW.read_text(encoding="utf-8")
     assert "workflow_dispatch:" in text
     assert "cancel-in-progress: false" in text
     assert "scripts/nexus_bybit_replay_chunks.py" in text
+    assert "gh api --paginate --slurp" not in text
+    assert '--max-pages 20' in text
+    assert '--token-env GH_TOKEN' in text
     assert "scripts/rehydrate_nexus_bybit_chunk.py" in text
     assert "missing_matrix" in text
     assert "reusable_artifacts" in text

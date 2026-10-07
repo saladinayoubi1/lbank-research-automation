@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       artifact_id:
-        description: "Final immutable Bybit Spot delivery artifact"
+        description: "Optional exact canonical Bybit replay-v2 delivery artifact"
         required: false
 
 permissions:
@@ -26,7 +26,9 @@ jobs:
     timeout-minutes: 55
     env:
       GH_TOKEN: ${{ github.token }}
-      EXPECTED_SHA256: "5f1173467c2296201940c3b7786b7cc3e5442244e07289769ab4867ace41d668"
+      EXPECTED_SEMANTIC_SHA256: "2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422"
+      DATASET_FILE: "NEXUS_BYBIT_replay_v2_2022-12-01_to_2026-07-31.zip"
+      DATASET_DELIVERY: "NEXUS_BYBIT_replay_v2_delivery.json"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
@@ -46,34 +48,23 @@ jobs:
 
           artifact_id="$DISPATCH_ARTIFACT_ID"
           if [ -z "$artifact_id" ]; then
-            gh api --paginate --slurp \
-              "repos/$GITHUB_REPOSITORY/actions/artifacts?per_page=100" \
-              > build/full-history-artifact-pages.json
-            artifact_id="$(python - <<'PY'
-          import json
+            python scripts/select_nexus_bybit_replay_artifact.py \
+              --repository "$GITHUB_REPOSITORY" \
+              --output-dir build/final_delivery \
+              --expected-file-name "$DATASET_FILE" \
+              --expected-semantic-sha256 "$EXPECTED_SEMANTIC_SHA256" \
+              --delivery-name "$DATASET_DELIVERY" \
+              --artifact-prefix bybit-full-history-final-rehydrated- \
+              --max-candidates 3 > build/full-history-selection.json
+            artifact_id="$(python -c 'import json; print(int(json.load(open("build/full-history-selection.json"))["artifact_id"]))')"
+          else
+            test "$artifact_id" -gt 0
+            gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" > build/final_delivery.zip
+            python - <<'PY'
           from pathlib import Path
-
-          pages = json.loads(Path("build/full-history-artifact-pages.json").read_text())
-          artifacts = []
-          for page in pages:
-              if isinstance(page, dict):
-                  artifacts.extend(page.get("artifacts", []))
-              elif isinstance(page, list):
-                  artifacts.extend(page)
-          candidates = [
-              item for item in artifacts
-              if isinstance(item, dict)
-              and str(item.get("name", "")).startswith("bybit-full-history-final-rehydrated-")
-              and item.get("expired") is False
-              and isinstance(item.get("workflow_run"), dict)
-              and item["workflow_run"].get("head_branch") == "main"
-          ]
-          candidates.sort(key=lambda item: (str(item.get("created_at", "")), int(item.get("id", 0))), reverse=True)
-          if not candidates:
-              raise SystemExit("no unexpired main full-history rehydration artifact is available")
-          print(int(candidates[0]["id"]))
+          from scripts.select_nexus_bybit_replay_artifact import safe_extract
+          safe_extract(Path("build/final_delivery.zip"), Path("build/final_delivery"))
           PY
-          )"
           fi
           test -n "$artifact_id"
 
@@ -87,37 +78,49 @@ jobs:
           assert item.get("expired") is False
           run = item.get("workflow_run")
           assert isinstance(run, dict) and run.get("head_branch") == "main"
+          Path("build/full-history-source-run.txt").write_text(str(int(run["id"])))
           print(f"selected_full_history_artifact={item['id']}:{item['name']}")
           PY
 
-          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" > build/final_delivery.zip
-          unzip -q build/final_delivery.zip -d build/final_delivery
-          archive="build/final_delivery/BYBIT_full_history_2022-12-01_to_2026-07-31.zip"
-          test "$(sha256sum "$archive" | awk '{print $1}')" = "$EXPECTED_SHA256"
+          source_run_id="$(cat build/full-history-source-run.txt)"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$source_run_id" > build/full-history-source-run.json
           python - <<'PY'
           import json
           import os
           from pathlib import Path
+          from nexus_demo_archive_contract import ARCHIVE_SHA256
+          from scripts.build_nexus_bybit_replay_package import build_manifest
+          from scripts.select_nexus_bybit_replay_artifact import safe_extract, validate_candidate
 
-          delivery = json.loads(
-              Path("build/final_delivery/rehydrated-delivery/BYBIT_full_history_delivery.json").read_text()
+          run = json.loads(Path("build/full-history-source-run.json").read_text())
+          assert run["path"] == ".github/workflows/bybit_full_history_backfill.yml"
+          assert run["head_branch"] == "main"
+          assert run["event"] in {"push", "workflow_dispatch"}
+          assert run["status"] == "completed" and run["conclusion"] == "success"
+          expected = os.environ["EXPECTED_SEMANTIC_SHA256"].lower()
+          assert expected == ARCHIVE_SHA256
+          archive, delivery_path = validate_candidate(
+              Path("build/final_delivery"), os.environ["DATASET_FILE"],
+              expected_semantic_sha256=expected,
+              delivery_name=os.environ["DATASET_DELIVERY"],
           )
-          expected = os.environ["EXPECTED_SHA256"].lower()
-          assert delivery["schema_version"] == 1
-          assert delivery["file_name"] == "BYBIT_full_history_2022-12-01_to_2026-07-31.zip"
-          assert delivery["sha256"] == expected
-          assert delivery["historical_expected_sha256"] == expected
-          assert delivery["historical_digest_match"] is True
+          delivery = json.loads(delivery_path.read_text())
+          assert delivery["schema_version"] == 2
+          assert delivery["file_name"] == os.environ["DATASET_FILE"]
+          assert delivery["semantic_dataset_sha256"] == expected
           assert delivery["range"] == "2022-12-01 through 2026-07-31 UTC"
-          assert delivery["ready_series"] == 6
-          assert delivery["completed_units"] == 44
-          assert delivery["source_archives"] == 88
+          assert delivery["series_count"] == 6
           assert delivery["paper_replay_only"] is True
           assert delivery["live_trading_authority"] is False
           assert delivery["private_credentials_used"] is False
+          safe_extract(archive, Path("build/bybit_dataset"))
+          manifest = build_manifest(Path("build/bybit_dataset"))
+          assert manifest["semantic_dataset_sha256"] == expected
+          assert manifest["venue"] == "bybit" and manifest["series_count"] == 6
+          assert manifest["source"] == "official_public_spot_trade_archives"
           print("full_history_delivery_contract=PASS")
+          print("full_history_market_content_digest=PASS")
           PY
-          unzip -q "$archive" -d build/bybit_dataset
       - name: Run corrected derivatives validation
         run: |
           python bybit_derivatives_validation_v1.py \

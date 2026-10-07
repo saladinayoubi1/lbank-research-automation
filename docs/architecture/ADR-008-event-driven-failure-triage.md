@@ -1,6 +1,6 @@
 # ADR-008: Event-driven CI failure triage
 
-- Version: 1.1.0
+- Version: 1.2.0
 - Status: Proposed
 - Scope: `.github/workflows/nexus-event-driven-failure-triage.yml`
 - Authority: evidence/triage only; never merge, release, deployment, credential, signing, billing, trading, or production authority.
@@ -11,9 +11,9 @@ NEXUS needs low-latency evidence when selected CI workflows fail. `workflow_run`
 
 ## Decision
 
-Use a narrow `workflow_run` listener for an explicit workflow-name allow-list and failure-like conclusions only. Repeat the workflow-name allow-list at the privileged job gate as defense in depth, then validate required event fields again inside the write-capable script before any API call. Reject malformed or non-allow-listed metadata with no issue write. Sanitize attacker-influenced display fields before Markdown rendering.
+Use a narrow `workflow_run` listener for an explicit workflow-name allow-list and **completed delivery only**; failure-like conclusions are filtered inside the privileged job. `requested` and `in_progress` delivery is intentionally excluded because it multiplies queued privileged workflow runs without adding final failure evidence. Main-branch install and owner-autostart-proof requests use separate exact-SHA push markers for pending evidence, so no requested/in-progress workflow_run delivery is required. Repeat the workflow-name allow-list at the privileged job gate as defense in depth, then validate required event fields again inside the write-capable script before any API call. Reject malformed or non-allow-listed metadata with no issue write. Sanitize attacker-influenced display fields before Markdown rendering.
 
-Grant `contents:read`, `actions:read`, and `issues:write` solely to create/update fail-closed evidence issues. Pin every third-party action to a reviewed full commit SHA. The workflow must not checkout triggering code, execute artifacts, consume caches from the triggering run, evaluate event metadata as code, or infer merge/release authorization from a triage issue.
+Runs for the same source workflow and exact head SHA share one concurrency key with `cancel-in-progress: true`, so a duplicate/retry supersedes stale triage work instead of accumulating a queue. Grant `contents:read`, `actions:read`, and `issues:write` solely to create/update fail-closed evidence issues. Pin every third-party action to a reviewed full commit SHA. The workflow must not checkout triggering code, execute artifacts, consume caches from the triggering run, evaluate event metadata as code, or infer merge/release authorization from a triage issue.
 
 ## Threat model
 
