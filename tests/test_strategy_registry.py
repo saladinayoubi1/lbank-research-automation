@@ -349,3 +349,5 @@ def test_modern_runtime_candidate_rejects_health_or_authority_detachment():
     widened["record_digest"] = _digest(widened_core)
     with pytest.raises(StrategyRegistryError, match="registry verification"):
         build_runtime_candidate_view(widened, health)
+
+# RUNTIME-60 candidate projection intentionally remains non-activating.
