@@ -37,3 +37,4 @@ def test_same_millisecond_trades_keep_source_open_close():
             last_quarter = (index + 1) * per_bar - 1
             assert abs(candle.open - (1000.0 + first + 0.01)) < 1e-10
             assert abs(candle.close - (1000.0 + last_quarter + 0.04)) < 1e-10
+            assert abs(candle.volume - 4.0 * per_bar) < 1e-10
