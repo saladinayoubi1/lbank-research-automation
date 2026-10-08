@@ -9,7 +9,7 @@ def test_owner_health_is_trusted_action_free_and_bounded():
     source = WORKFLOW.read_text(encoding="utf-8")
     assert "workflow_dispatch:" in source
     assert "github.ref == 'refs/heads/main' && github.actor == github.repository_owner" in source
-    assert "runs-on: [self-hosted, Windows, X64, nexus-local]" in source
+    assert "runs-on: [self-hosted, Windows, X64, nexus-local, nexus-owner-health]" in source
     assert "contents: read" in source
     assert "cancel-in-progress: false" in source
     assert "timeout-minutes: 20" in source
@@ -62,3 +62,18 @@ def test_every_cmd_health_check_propagates_failure_before_the_next_check():
         assert guard == "if errorlevel 1 exit /b %errorlevel%"
     assert "nexus_architecture_validator.py docs/architecture/module-contract-registry.yaml" in lines[2]
     assert "nexus_system_map_validator.py config/nexus-system-map-v1.yaml" in lines[4]
+
+
+def test_standby_cannot_receive_owner_health_or_clear_its_workspace():
+    import yaml
+
+    payload = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+    job = payload["jobs"]["exact-source-health"]
+    assert "nexus-owner-health" in job["runs-on"]
+    source = job["steps"][0]["run"]
+    clear_workspace = source.index("Get-ChildItem -LiteralPath $root")
+    for identity, rejection in (
+        ("$env:RUNNER_NAME -ne 'NEXUS-LOCAL-RUNNER'", "Unexpected worker identity"),
+        ("$env:COMPUTERNAME -ne 'DESKTOP-1R1081M'", "Unexpected machine identity"),
+    ):
+        assert source.index(identity) < source.index(rejection) < clear_workspace

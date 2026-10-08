@@ -14,7 +14,8 @@ concurrency:
 jobs:
   exact-source-health:
     if: github.ref == 'refs/heads/main' && github.actor == github.repository_owner
-    runs-on: [self-hosted, Windows, X64, nexus-local]
+    # This label belongs only to NEXUS-LOCAL-RUNNER on Laptop 1.
+    runs-on: [self-hosted, Windows, X64, nexus-local, nexus-owner-health]
     timeout-minutes: 20
     defaults:
       run:
@@ -26,6 +27,9 @@ jobs:
           $ErrorActionPreference = 'Stop'
           if ($env:RUNNER_NAME -ne 'NEXUS-LOCAL-RUNNER') {
             throw 'Unexpected worker identity for owner source health.'
+          }
+          if ($env:COMPUTERNAME -ne 'DESKTOP-1R1081M') {
+            throw 'Unexpected machine identity for owner source health.'
           }
           $root = [IO.Path]::GetFullPath($env:GITHUB_WORKSPACE).TrimEnd('\')
           $repoName = ($env:GITHUB_REPOSITORY -split '/')[-1]
