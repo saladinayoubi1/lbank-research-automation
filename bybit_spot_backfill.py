@@ -329,7 +329,7 @@ def validate_trade_range(
         | outside_range
     )
     valid = frame.loc[~invalid_mask].copy()
-    valid = valid.sort_values("timestamp").reset_index(drop=True)
+    valid = valid.sort_values("timestamp", kind="stable").reset_index(drop=True)
 
     duplicate_trade_id_count = 0
     if "trade_id" in valid.columns:
@@ -373,7 +373,7 @@ def trades_to_range_candles(
 ) -> pd.DataFrame:
     if timeframe not in audit.TIMEFRAME_RULES:
         raise BybitBackfillError(f"Unsupported timeframe: {timeframe}")
-    indexed = trades.set_index("timestamp").sort_index()
+    indexed = trades.set_index("timestamp").sort_index(kind="stable")
     candles = indexed.resample(
         audit.TIMEFRAME_RULES[timeframe],
         origin="start_day",
