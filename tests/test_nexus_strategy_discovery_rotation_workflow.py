@@ -258,3 +258,20 @@ def test_feedback_requires_exact_trigger_run_composite_ledger_before_new_design(
         "Issue one unexecuted NEW mechanism design after verified exhaustion", 1
     )[1].split("- uses: actions/upload-artifact@", 1)[0]
     assert "--evaluated-ledger build/research-feedback/input/evaluated-ledger.json" in feedback
+
+
+def test_terminal_frontier_reports_blocked_without_dispatching_or_moving_cursor():
+    text = _text()
+    decision = text.split("Verify discovery surface and select one stage", 1)[1].split(
+        "Dispatch reviewed Research workflow", 1
+    )[0]
+    assert "id: frontier-selection" in decision
+    assert "--blocked-receipt-on-exhaustion" in decision
+    assert 'echo "ready=false" >> "$GITHUB_OUTPUT"' in decision
+    assert "BLOCKED_NEW_MECHANISM_REQUIRED" in decision
+    for name, next_name in (
+        ("Dispatch reviewed Research workflow", "Commit rotation cursor only after accepted dispatch"),
+        ("Commit rotation cursor only after accepted dispatch", "Obtain only the exact certified prior multi-timeframe outcome"),
+    ):
+        step = text.split(name, 1)[1].split(next_name, 1)[0]
+        assert "steps.frontier-selection.outputs.ready == 'true'" in step
