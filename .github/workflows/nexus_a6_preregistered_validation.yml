@@ -1,0 +1,64 @@
+name: NEXUS A6 preregistered data validation
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "15 4 10 10 *"
+    - cron: "15 4 9 11 *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nexus-a6-preregistered-validation-20261010
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Select only the registered 2026 scheduled task
+        id: window
+        env:
+          EVENT: ${{ github.event_name }}
+          SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          python3 - <<'PY'
+          import os
+          from datetime import datetime, timezone
+          execute = os.environ['EVENT'] == 'workflow_dispatch' or datetime.now(timezone.utc).year == 2026
+          mode = 'both' if os.environ['EVENT'] == 'workflow_dispatch' else ('future' if os.environ['SCHEDULE'] == '15 4 9 11 *' else 'live-side')
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f'execute={str(execute).lower()}\nmode={mode}\n')
+          PY
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        if: steps.window.outputs.execute == 'true'
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        if: steps.window.outputs.execute == 'true'
+        with:
+          ref: d72c92f315abd514fd7210388ce211258a670799
+          path: frozen-model
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        if: steps.window.outputs.execute == 'true'
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r frozen-model/requirements.lock
+        if: steps.window.outputs.execute == 'true'
+      - run: python -m pip check
+        if: steps.window.outputs.execute == 'true'
+      - name: Verify committed live trades and the frozen future window
+        if: steps.window.outputs.execute == 'true'
+        run: >-
+          python scripts/nexus_a6_preregistered_validation.py
+          --mode "${{ steps.window.outputs.mode }}"
+          --output-root build/a6-preregistered-${{ github.run_id }}
+          --model-root frozen-model
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always() && steps.window.outputs.execute == 'true'
+        with:
+          name: nexus-a6-preregistered-validation-${{ github.run_id }}
+          path: build/a6-preregistered-${{ github.run_id }}/preregistered-validation-progress.json
+          if-no-files-found: error
+          retention-days: 90
