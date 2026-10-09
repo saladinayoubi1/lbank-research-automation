@@ -66,7 +66,6 @@
     ".github/workflows/nexus_historical_offline_export.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"archive-export":{"policy_version":1},"exporter-regression":{"policy_version":1}}},
     ".github/workflows/nexus_local_autonomy.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"contract-test":{"policy_version":1},"local-worker":{"policy_version":1},"source-prep":{"policy_version":1}}},
     ".github/workflows/nexus_multitimeframe_strategy_discovery.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"contract-test":{"policy_version":1},"discover":{"policy_version":1}}},
-    ".github/workflows/nexus_a6_preregistered_validation.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"validate":{"policy_version":1}}},
     ".github/workflows/nexus_a9_positioning_research.yml": {"policy_version":1,"workflow_permissions":{"contents":"read"},"jobs":{"research-backtest":{"policy_version":1}}},
     ".github/workflows/nexus_multipair_archive_snapshot.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"a7-research-backtest":{"policy_version":1},"acquire-snapshot":{"policy_version":1},"contract-test":{"policy_version":1}}},
     ".github/workflows/nexus_multipair_paper_boundary_discovery_feedback.yml": {"policy_version":1,"workflow_permissions":{"actions":"read","contents":"read"},"jobs":{"contract-test":{"policy_version":1},"link-exact-boundary-feedback":{"policy_version":1}}},
