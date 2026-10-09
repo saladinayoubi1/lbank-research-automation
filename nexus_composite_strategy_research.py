@@ -941,7 +941,9 @@ def _frontier_configs_to_screen(ledger: dict[str, Any]) -> list[dict[str, Any]]:
     screened = set(ledger.get("frontier_screened_mechanisms", []))
     fixed: list[dict[str, Any]] = []
     generated: list[dict[str, Any]] = []
+    reviewed_extension: list[dict[str, Any]] = []
     generated_ids = set(GENERATED_FACTORY_MECHANISMS)
+    extension_ids = set(REVIEWED_EXTENSION_MECHANISMS)
     for config in FRONTIER_CONFIGS:
         if config["mechanism"] in evaluated or config["mechanism"] in screened:
             continue
@@ -951,12 +953,21 @@ def _frontier_configs_to_screen(ledger: dict[str, Any]) -> list[dict[str, Any]]:
                 "config": config, "dataset": ARCHIVE_SHA256, "contract": SCHEMA,
             }),
         }
-        (generated if config["mechanism"] in generated_ids else fixed).append(row)
-    # Preserve historical reviewed-frontier semantics first.  Once exhausted,
-    # advance through deterministic generated topology batches without code edits.
+        mechanism = config["mechanism"]
+        if mechanism in extension_ids:
+            reviewed_extension.append(row)
+        elif mechanism in generated_ids:
+            generated.append(row)
+        else:
+            fixed.append(row)
+    # Preserve the exact historical frontier ranking/batching. The new v5
+    # contracts are eligible only after all existing v2/v3/v4 generated
+    # mechanisms have received an evaluated or screened novelty receipt.
     if fixed:
         return fixed
-    return generated[:GENERATED_FRONTIER_BATCH_SIZE]
+    if generated:
+        return generated[:GENERATED_FRONTIER_BATCH_SIZE]
+    return reviewed_extension[:GENERATED_FRONTIER_BATCH_SIZE]
 
 
 def research_mode(ledger: dict[str, Any]) -> str:
