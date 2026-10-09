@@ -96,8 +96,28 @@ GENERATED_FACTORY_SPECS = {
     **GENERATED_FACTORY_SPECS_V3,
     **GENERATED_FACTORY_SPECS_V4,
 }
-FACTORY_SPECS = {**FIXED_FACTORY_SPECS, **GENERATED_FACTORY_SPECS}
+# Append reviewed source-bound causal hypotheses without changing the immutable
+# fixed-v1 or generated-v2/v3/v4 contracts, order, IDs or digest history.
+REVIEWED_EXTENSION_SPECS = load_factory_contract(
+    Path(__file__).resolve().parent / "research" / "mechanism_factory_v5.json"
+)
+if (
+    set(REVIEWED_EXTENSION_SPECS) & (set(FIXED_FACTORY_SPECS) | set(GENERATED_FACTORY_SPECS))
+    or {
+        spec["topology_digest"] for spec in REVIEWED_EXTENSION_SPECS.values()
+    } & {
+        spec["topology_digest"]
+        for spec in (*FIXED_FACTORY_SPECS.values(), *GENERATED_FACTORY_SPECS.values())
+    }
+):
+    raise MechanismFactoryError("reviewed extension duplicates existing mechanism ID or topology")
+FACTORY_SPECS = {
+    **FIXED_FACTORY_SPECS,
+    **GENERATED_FACTORY_SPECS,
+    **REVIEWED_EXTENSION_SPECS,
+}
 FIXED_FACTORY_MECHANISMS = factory_ids(FIXED_FACTORY_SPECS)
+REVIEWED_EXTENSION_MECHANISMS = factory_ids(REVIEWED_EXTENSION_SPECS)
 GENERATED_FACTORY_MECHANISMS = factory_ids(GENERATED_FACTORY_SPECS)
 FACTORY_MECHANISMS = factory_ids(FACTORY_SPECS)
 FRONTIER_MECHANISMS = FRONTIER_GENERATION1 + FRONTIER_GENERATION2 + FACTORY_MECHANISMS
@@ -921,7 +941,9 @@ def _frontier_configs_to_screen(ledger: dict[str, Any]) -> list[dict[str, Any]]:
     screened = set(ledger.get("frontier_screened_mechanisms", []))
     fixed: list[dict[str, Any]] = []
     generated: list[dict[str, Any]] = []
+    reviewed_extension: list[dict[str, Any]] = []
     generated_ids = set(GENERATED_FACTORY_MECHANISMS)
+    extension_ids = set(REVIEWED_EXTENSION_MECHANISMS)
     for config in FRONTIER_CONFIGS:
         if config["mechanism"] in evaluated or config["mechanism"] in screened:
             continue
@@ -931,12 +953,21 @@ def _frontier_configs_to_screen(ledger: dict[str, Any]) -> list[dict[str, Any]]:
                 "config": config, "dataset": ARCHIVE_SHA256, "contract": SCHEMA,
             }),
         }
-        (generated if config["mechanism"] in generated_ids else fixed).append(row)
-    # Preserve historical reviewed-frontier semantics first.  Once exhausted,
-    # advance through deterministic generated topology batches without code edits.
+        mechanism = config["mechanism"]
+        if mechanism in extension_ids:
+            reviewed_extension.append(row)
+        elif mechanism in generated_ids:
+            generated.append(row)
+        else:
+            fixed.append(row)
+    # Preserve the exact historical frontier ranking/batching. The new v5
+    # contracts are eligible only after all existing v2/v3/v4 generated
+    # mechanisms have received an evaluated or screened novelty receipt.
     if fixed:
         return fixed
-    return generated[:GENERATED_FRONTIER_BATCH_SIZE]
+    if generated:
+        return generated[:GENERATED_FRONTIER_BATCH_SIZE]
+    return reviewed_extension[:GENERATED_FRONTIER_BATCH_SIZE]
 
 
 def research_mode(ledger: dict[str, Any]) -> str:
