@@ -4,11 +4,13 @@ on:
   pull_request:
     paths:
       - ".github/workflows/bybit_stream_heavy.yml"
-      - "stream_bybit_symbol_month.py"
       - "bybit_spot_backfill.py"
       - "bybit_spot_archive_audit.py"
       - "bybit_spot_archive_collector.py"
       - "requirements.lock"
+      - "stream_bybit_symbol_month.py"
+      - "scripts/combine_bybit_source_bound_month.py"
+      - "scripts/validate_bybit_month_csv_reference.py"
 
 permissions:
   actions: read
@@ -18,7 +20,7 @@ jobs:
   stream-part:
     name: stream-${{ matrix.id }}-${{ matrix.symbol }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       max-parallel: 10
@@ -60,6 +62,9 @@ jobs:
             --end-date "${{ matrix.end }}" \
             --output-root "build/stream-${{ matrix.id }}-${{ matrix.symbol }}" \
             --cache-root "build/cache-${{ matrix.id }}-${{ matrix.symbol }}"
+          python scripts/validate_bybit_month_csv_reference.py \
+            --output-root "build/stream-${{ matrix.id }}-${{ matrix.symbol }}" \
+            --receipt "build/stream-${{ matrix.id }}-${{ matrix.symbol }}/_independent_csv_qa.json"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: bybit-stream-${{ matrix.id }}-${{ matrix.symbol }}
@@ -99,86 +104,14 @@ jobs:
         with:
           pattern: bybit-stream-${{ matrix.id }}-*
           path: build/parts
-      - name: Combine streamed symbol parts
-        env:
-          CHUNK_ID: ${{ matrix.id }}
-          START_DATE: ${{ matrix.start }}
-          END_DATE: ${{ matrix.end }}
-        run: |
-          python - <<'PY'
-          import json, os, shutil
-          from pathlib import Path
-          import pandas as pd
-
-          chunk = os.environ["CHUNK_ID"]
-          roots = sorted(Path("build/parts").glob(f"bybit-stream-{chunk}-*"))
-          if len(roots) != 2:
-              raise SystemExit(f"Expected two streamed parts for {chunk}: {roots}")
-          output = Path(f"build/chunk-{chunk}")
-          if output.exists():
-              shutil.rmtree(output)
-          output.mkdir(parents=True)
-          statuses, sources, runs = [], [], []
-          completed = None
-          for root in roots:
-              report = json.loads((root / "_backfill_report.json").read_text())
-              checkpoint = json.loads((root / "_checkpoint.json").read_text())
-              statuses.extend(report["statuses"])
-              sources.extend(json.loads((root / "_source_manifest.json").read_text()))
-              runs.extend(checkpoint.get("runs", []))
-              unit = checkpoint["completed_units"][0]
-              if completed is None:
-                  completed = unit
-              elif completed["unit_id"] != unit["unit_id"]:
-                  raise SystemExit("Mismatched monthly units")
-              shutil.copytree(root / "bybit_market", output / "bybit_market", dirs_exist_ok=True)
-          if len(statuses) != 6 or len(sources) != 2:
-              raise SystemExit("Incomplete combined snapshot")
-          if not all(item["integrity_ok"] and item["status"] == "ready" for item in statuses):
-              raise SystemExit("Non-ready combined series")
-          completed = dict(completed)
-          completed["filenames"] = {
-              str(item["symbol"]): str(item["filename"]) for item in sources
-          }
-          checkpoint = {
-              "schema_version": 1,
-              "completed_units": [completed],
-              "failed_units": [],
-              "runs": runs,
-          }
-          report = {
-              "generated_at_utc": pd.Timestamp.now(tz="UTC").isoformat(),
-              "configuration": {
-                  "start_date": os.environ["START_DATE"],
-                  "end_date": os.environ["END_DATE"],
-                  "symbols": ["BTCUSDT", "ETHUSDT"],
-                  "max_archives_per_run": 2,
-              },
-              "summary": {
-                  "plan_units": 1,
-                  "plan_archives": 2,
-                  "completed_units": 1,
-                  "remaining_units": 0,
-                  "units_completed_this_run": 1,
-                  "archives_completed_this_run": 2,
-                  "run_failures": 0,
-                  "backfill_complete": True,
-                  "current_dataset_integrity_ok": True,
-              },
-              "completed_this_run": [completed],
-              "sources_this_run": sources,
-              "run_failures": [],
-              "statuses": statuses,
-          }
-          def write_json(name, value):
-              (output / name).write_text(json.dumps(value, indent=2, sort_keys=True, default=str) + "\n")
-          write_json("_checkpoint.json", checkpoint)
-          write_json("_source_manifest.json", sources)
-          write_json("_backfill_report.json", report)
-          pd.DataFrame(sources).to_csv(output / "_source_manifest.csv", index=False)
-          pd.DataFrame(statuses).to_csv(output / "_backfill_status.csv", index=False)
-          print(json.dumps(report["summary"], sort_keys=True))
-          PY
+      - name: Combine independently verified same-model parts
+        run: >-
+          python scripts/combine_bybit_source_bound_month.py
+          --parts-root build/parts
+          --pattern "bybit-stream-${{ matrix.id }}-*"
+          --output-root "build/chunk-${{ matrix.id }}"
+          --start-date "${{ matrix.start }}"
+          --end-date "${{ matrix.end }}"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: bybit-chunk-${{ matrix.id }}-attempt-${{ github.run_attempt }}
