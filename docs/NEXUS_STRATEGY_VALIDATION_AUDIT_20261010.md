@@ -134,3 +134,77 @@ No synthetic fixture is evidence of market profitability.
 
 Undo by reverting this source-only PR after preserving its test report.
 Do not reset the Windows user profile or change the owner-installed app.
+
+
+## Search-adjusted statistical and pristine-future review (2026-10-10)
+
+**Implemented as source-only:** `nexus_composite_statistical_audit.py`,
+with two *deliberately separate* procedures:
+
+1. `historical_review(report, ledger)` consumes a digest-bound,
+   already schema-checked Research Agent report and the immutable novelty
+   ledger. The source Agent writes `statistical-review.json` alongside
+   `research-report.json`; the distinct Research QA worker verifies the
+   **exact same bound statistical review** before accepting its numerical
+   replay. Report/ledger/v1 QA receipt schemas remain unchanged.
+   Positive returns in the 2-symbol x 3-historical-fold x 2-cost grid
+   are **not twelve independent observations**. The test fold has been
+   repeatedly inspected, the same trades were stressed at two fee
+   profiles, and BTC/ETH can be correlated. Therefore it explicitly
+   declares `INSUFFICIENT_PRISTINE_PROSPECTIVE_EVIDENCE` with
+   `statistical_significance_established=false`,
+   `owner_demo_admission_allowed=false`.
+   The audit counts all cumulative prior evaluated configuration fingerprints
+   plus any screened-but-not-evaluated mechanism as search multiplicity,
+   never only the current winning variant.
+2. `prospective_diagnostic(evidence, ledger)` is a bounded, **optional
+   future diagnostic**, not a producer permit or a past-result relabel.
+   It consumes a purported source/config/ledger-frozen candidate and
+   precisely nonoverlapping calendar-week returns with per-week canonical
+   BTC/ETH source identity, benchmark and Paper event evidence references.
+   Using the predeclared paired conservative and stress returns, it
+   evaluates the **exact one-sided weekly excess sign test** against a
+   frozen benchmark. It adjusts each p-value via **Bonferroni** across
+   all prior cumulative search attempts and both cost assumptions.
+   The freeze fixes the **exact weekly observation count** and the **analysis-not-before UTC date**, and refuses optional peeking, shortened follow-up and mismatched preregistered final dates. At least 12 prospective 7-day windows are required for even a diagnostic
+   sign screen. This **is NOT a historical minimum trade-count gate**.
+   Any duplicated/gapped/overlapping pre-freeze week, unbound source,
+   non-finite return, or swapped novelty-ledger digest fails closed.
+   Even the statistically strongest synthetic sequence returns
+   `statistical_edge_established=false`,
+   `pristine_prospective_proof_verified=false`,
+   `owner_demo_admission_allowed=false`. It is intentionally powerless
+   to activate REG-50 or Paper-62.
+
+**Why a purely numerical p-value does not certify an edge:** A local JSON
+checksum is not an independent time anchor; timestamps and paper receipts
+could be retrospectively assembled; contiguous weeks are not necessarily
+independent; the benchmark might be chosen after inspection; a stationary
+sign model does not cover correlated regimes. Therefore a favorable
+p-value **does not clear the future gate**. A later, *separate QA-41 and
+owner-reviewed* step must independently verify real API source availability,
+code freeze before data collection, canonical dataset digests, benchmark
+preregistration, causal feature state, order/fill journal and at least
+five actually closed *prospective* Paper trades before any Demo decision.
+Historical selection evidence stays research-only even when ROI is high.
+
+**Physical status remains unchanged:** The verified public 3,072-bar
+15m snapshots from Bybit BTC/ETH are *historical*; the latest attempted
+multi-timeframe Bybit probe encountered classified 403 restrictions. No
+country restriction bypass or newly fabricated prospective result is
+permitted. PR #2595 strategy hypotheses remain draft and unqualified.
+
+**Regression:** The new module has adversarial unit tests for false
+12-cell independence, ledger multiplicity, Bonferroni false positives,
+bad source SHA, missing ETH, pre-freeze data, overlap, gap, NaN, fake
+`pristine` assertions, partial future horizon, deterministic audit
+digests and independently verified Research Agent sidecar. An actual
+source report with positive historical ROI still returns
+`INSUFFICIENT_PRISTINE_PROSPECTIVE_EVIDENCE`; a synthetic positive
+prospective sequence is *only a diagnostic*, never Demo evidence.
+
+**Failure/rollback:** Missing or tampered `statistical-review.json`
+causes a new Research Agent QA check to fail closed. The patch is additive
+and source-only; revert this PR if needed. No old original source receipts,
+owner profile, production runner, internet configuration, existing Demo
+installation, or 500-USDT Paper journal has been modified.
