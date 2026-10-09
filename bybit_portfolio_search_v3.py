@@ -311,7 +311,7 @@ def exact_backtest(
     fee_bps, slip_bps = float(profile["fee_bps"]), float(profile["slippage_bps"])
     if (
         not np.isfinite(cash) or cash <= 0 or not np.isfinite(fee_bps)
-        or fee_bps < 0 or not np.isfinite(slip_bps) or slip_bps < 0
+        or fee_bps < 0 or fee_bps >= 10_000 or not np.isfinite(slip_bps) or slip_bps < 0 or slip_bps >= 10_000
     ):
         raise PortfolioSearchError("Invalid cash or cost profile")
     fee_rate, slippage = fee_bps / 10_000.0, slip_bps / 10_000.0
