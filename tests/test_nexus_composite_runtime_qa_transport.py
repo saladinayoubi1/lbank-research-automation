@@ -294,3 +294,40 @@ def test_store_is_idempotent_and_collision_fail_closed(tmp_path, monkeypatch):
     tampered["artifact_id"] = 999
     with pytest.raises(tr.CompositeRuntimeQaTransportError, match="collision"):
         tr.store_verified_task(tmp_path, task, tampered)
+
+def test_short_observation_is_no_work_not_broken_transport_or_phantom_qa(monkeypatch, capsys):
+    monkeypatch.setenv("GITHUB_REPOSITORY", "saladinayoubi1/lbank-research-automation")
+    proof = {"decision": "pass", "verification_digest": "f" * 64}
+
+    def api(_method, url, _payload):
+        if "/actions/workflows/" in url:
+            return {"workflow_runs": [{
+                "id": 101, "conclusion": "success", "head_branch": "main",
+                "event": "workflow_dispatch", "head_sha": SOURCE,
+            }]}
+        if "/actions/runs/101/artifacts" in url:
+            return {"artifacts": [{
+                "id": 202, "name": "nexus-composite-runtime-requalification-101",
+                "expired": False, "size_in_bytes": 1000,
+            }]}
+        if "/compare/" in url:
+            return {
+                "status": "ahead", "ahead_by": 1, "behind_by": 0,
+                "merge_base_commit": {"sha": SOURCE},
+            }
+        raise AssertionError(url)
+
+    def inconclusive_builder(_producer, _verification, *, producer_workflow_run_id):
+        assert producer_workflow_run_id == 101
+        raise tr.CompositeRuntimeQaError(
+            "insufficient source-bound observation evidence: "
+            "INSUFFICIENT_OBSERVATION_COVERAGE"
+        )
+
+    assert tr.latest_verified_task(
+        current_sha=CURRENT, api=api,
+        downloader=lambda _: _artifact_blob(verification=proof),
+        verifier=lambda _: proof, builder=inconclusive_builder,
+        validator=lambda *_: pytest.fail("inconclusive cannot issue QA task"),
+    ) is None
+    assert "INSUFFICIENT_OBSERVATION_COVERAGE" in capsys.readouterr().err

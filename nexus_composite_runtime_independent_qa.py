@@ -15,6 +15,7 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, Callable
 
+from nexus_composite_evidence_adequacy import CompositeObservationError, assess
 from nexus_composite_runtime_requalification import (
     CompositeRuntimeRequalificationError,
     build_requalification,
@@ -87,6 +88,19 @@ def build_task(
     ):
         raise CompositeRuntimeQaError(
             "physical composite producer is not eligible for independent QA"
+        )
+    # Historical producer v1 records remain verifiable. Issuing a *new* QA
+    # task requires independently audited chronology and cash arithmetic.
+    try:
+        observation = assess(producer)
+    except CompositeObservationError as exc:
+        raise CompositeRuntimeQaError(
+            "independent composite chronology/accounting audit failed"
+        ) from exc
+    if observation["decision"] != "READY_FOR_INDEPENDENT_QA_ONLY":
+        raise CompositeRuntimeQaError(
+            "insufficient observation coverage for independent QA: "
+            + ",".join(observation["reason_codes"])
         )
     core = {
         "schema_version": TASK_SCHEMA,

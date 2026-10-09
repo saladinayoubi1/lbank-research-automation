@@ -20,6 +20,7 @@ import json
 import os
 import re
 import stat
+import sys
 import urllib.request
 import zipfile
 from collections.abc import Callable, Mapping
@@ -27,7 +28,9 @@ from pathlib import Path
 from typing import Any
 
 from agent_transport import _StripAuthorizationRedirectHandler, _api, _bounded_read
-from nexus_composite_runtime_independent_qa import build_task, validate_task
+from nexus_composite_runtime_independent_qa import (
+    CompositeRuntimeQaError, build_task, validate_task,
+)
 from nexus_composite_runtime_requalification import verify_requalification
 
 WORKFLOW = "nexus_composite_runtime_requalification.yml"
@@ -346,7 +349,16 @@ def latest_verified_task(
 
     if producer.get("decision") != "QUALIFIED_FOR_REVIEW" or producer.get("qualified_for_review") is not True:
         return None
-    task = builder(producer, verification, producer_workflow_run_id=run_id)
+    try:
+        task = builder(producer, verification, producer_workflow_run_id=run_id)
+    except CompositeRuntimeQaError as exc:
+        # Sparse low-turnover strategies do not create endless failing CI
+        # workflows or phantom QA tasks. The producer stays immutable and
+        # eligible for a *later*, genuinely longer observational source.
+        if str(exc).startswith("insufficient source-bound observation evidence:"):
+            print("composite_qa_observation_gate=" + str(exc), file=sys.stderr)
+            return None
+        raise
     validated = validator(task, source_sha)
     if validated != task:
         raise CompositeRuntimeQaTransportError("composite QA task validation is not canonical")
