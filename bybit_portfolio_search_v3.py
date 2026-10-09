@@ -39,6 +39,8 @@ def execution_model_receipt() -> dict[str, Any]:
         "cash_policy": "sell_first_prorate_buys_inclusive_fees_slippage",
         "fees_slippage_persisted": True,
         "historical_report_compatibility": "explicit_replay_required",
+        "arbitrary_minimum_trade_count_gate": False,
+        "trade_count_policy": "diagnostic_only",
         "research_only": True,
         "automatic_paper_promotion": False,
         "live_trading_authority": False,
@@ -462,7 +464,6 @@ def development_checks(summary: dict[str, Any], gate: dict[str, Any]) -> dict[st
         "drawdown": summary["worst_drawdown"] <= gate["maximum_drawdown"],
         "median_sharpe": summary["median_sharpe"] >= gate["minimum_median_sharpe"],
         "minimum_sharpe": summary["minimum_sharpe"] >= gate["minimum_sharpe"],
-        "fills": summary["minimum_fill_count"] >= gate["minimum_fill_count"],
     }
 
 
@@ -471,8 +472,6 @@ def stress_checks(result: dict[str, Any], gate: dict[str, Any]) -> dict[str, boo
         "return": result["total_return"] >= gate["minimum_total_return"],
         "drawdown": result["max_drawdown"] <= gate["maximum_drawdown"],
         "sharpe": result["sharpe"] >= gate["minimum_sharpe"],
-        "fills": result["fill_count"] >= gate["minimum_fill_count"],
-        "both_assets_used": min(result["asset_fill_counts"]) >= gate["minimum_asset_fill_count"],
     }
 
 
