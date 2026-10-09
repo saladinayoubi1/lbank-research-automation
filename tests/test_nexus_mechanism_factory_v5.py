@@ -125,3 +125,68 @@ def test_extension_refuses_tampering_and_remains_research_only(tmp_path: Path):
     copy.write_text(json.dumps(payload), encoding="utf-8")
     with pytest.raises(factory.MechanismFactoryError, match="context field"):
         factory.load_factory_contract(copy)
+
+
+def test_v5_routes_through_existing_numeric_train_validation_and_stress_grid(
+    tmp_path: Path, monkeypatch,
+):
+    # This is a synthetic *wiring and deterministic accounting* regression, not
+    # market evidence or a fresh out-of-sample profitability claim.
+    n = 1536
+    start = pd.Timestamp("2025-01-01T00:00:00Z")
+    frames = {}
+    for symbol, offset in (("BTCUSDT", 0.0), ("ETHUSDT", 10.0)):
+        group = {}
+        for timeframe, divisor, freq in (
+            ("minute15", 1, "15min"),
+            ("hour1", 4, "1h"),
+            ("hour4", 16, "4h"),
+        ):
+            length = n // divisor
+            close = 100.0 + offset + np.arange(length, dtype=float) * 0.03
+            group[timeframe] = pd.DataFrame({
+                "timestamp": pd.date_range(start, periods=length, freq=freq, tz="UTC"),
+                "open": close - 0.05, "high": close + 0.20,
+                "low": close - 0.20, "close": close,
+                "volume": np.full(length, 1000.0),
+                "symbol": symbol, "timeframe": timeframe,
+            })
+        frames[symbol] = group
+
+    monkeypatch.setattr(
+        research, "load_verified_archive_frame",
+        lambda _root, symbol, timeframe: frames[symbol][timeframe],
+    )
+    core = dict(research.empty_ledger())
+    core.pop("ledger_digest")
+    core["mechanisms_evaluated"] = list(research.MECHANISMS)
+    core["frontier_screened_mechanisms"] = [
+        ident for ident in research.FRONTIER_MECHANISMS
+        if ident not in research.REVIEWED_EXTENSION_MECHANISMS
+    ]
+    core["frontier_screening_version"] = research.FRONTIER_SCREEN_VERSION
+    previous = tmp_path / "verified-novelty-ledger.json"
+    previous.write_text(
+        json.dumps({**core, "ledger_digest": research.digest(core)}),
+        encoding="utf-8",
+    )
+    report = research.run(tmp_path, tmp_path / "fresh", "a" * 40, previous)
+    assert report["status"] == "EVALUATED_RESEARCH_ONLY"
+    assert report["selected"]["mechanism"] in research.REVIEWED_EXTENSION_MECHANISMS
+    assert report["frontier_screening"]["candidate_count"] == 2
+    assert report["frontier_screening"]["validation_used_for_selection"] is False
+    assert report["frontier_screening"]["historically_inspected_test_used_for_selection"] is False
+    assert len(report["rows"]) == 12
+    assert {r["symbol"] for r in report["rows"]} == {"BTCUSDT", "ETHUSDT"}
+    assert {r["profile"] for r in report["rows"]} == {"conservative", "stress"}
+    assert {r["part"] for r in report["rows"]} == {
+        "train", "validation", "historically_inspected_test",
+    }
+    assert all(r["trade_count_limit"] is None for r in report["rows"])
+    assert report["historical_test_pristine"] is False
+    assert report["auto_demo_promotion"] is False and report["live_enabled"] is False
+    new_ledger = research.load_ledger(tmp_path / "fresh" / "novelty-ledger.json")
+    assert new_ledger["ledger_digest"] == report["ledger_digest"]
+    assert set(new_ledger["frontier_screened_mechanisms"]) == set(
+        core["frontier_screened_mechanisms"]
+    ) | set(research.REVIEWED_EXTENSION_MECHANISMS)
