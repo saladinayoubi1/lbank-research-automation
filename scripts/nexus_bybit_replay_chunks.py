@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import argparse
 import calendar
+import hashlib
+import io
+import zipfile
 from dataclasses import asdict, dataclass
 import json
 import os
@@ -123,12 +126,52 @@ def _request_json(url: str, token: str) -> dict[str, Any]:
     return payload
 
 
+def frozen_legacy_artifact(artifact: dict[str, Any], repository: str, token: str) -> bool:
+    """Inspect exact producer bytes; v2 candles cannot rehydrate the frozen v1 market."""
+    artifact_id = artifact.get("id")
+    if not isinstance(artifact_id, int) or isinstance(artifact_id, bool) or artifact_id <= 0:
+        raise RuntimeError("invalid frozen replay artifact id")
+    request = urllib.request.Request(
+        f"https://api.github.com/repos/{repository}/actions/artifacts/{artifact_id}/zip",
+        headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"},
+    )
+    with urllib.request.urlopen(request, timeout=30) as response:
+        raw = response.read(8_000_001)
+    if len(raw) > 8_000_000:
+        raise RuntimeError("monthly artifact exceeds frozen replay inspection bound")
+    expected = artifact.get("digest")
+    if expected and expected != "sha256:" + hashlib.sha256(raw).hexdigest():
+        raise RuntimeError("frozen replay artifact provider digest mismatch")
+    with zipfile.ZipFile(io.BytesIO(raw)) as bundle:
+        entries = bundle.infolist()
+        if (len(entries) > 100 or len({e.filename for e in entries}) != len(entries)
+                or sum(e.file_size for e in entries) > 64_000_000):
+            raise RuntimeError("invalid monthly artifact layout or expansion bound")
+        if any(Path(e.filename).name == "_candle_model.json" for e in entries):
+            return False
+        metadata = {}
+        for entry in entries:
+            name = Path(entry.filename).name
+            if name not in {"_source_manifest.json", "_backfill_report.json"}:
+                continue
+            if name in metadata or entry.file_size > 1_000_000:
+                raise RuntimeError("ambiguous or oversized monthly artifact metadata")
+            metadata[name] = json.loads(bundle.read(entry))
+        sources = metadata.get("_source_manifest.json")
+        report = metadata.get("_backfill_report.json")
+        if (not isinstance(sources, list) or len(sources) != 2
+                or any(not isinstance(s, dict) for s in sources) or not isinstance(report, dict)):
+            raise RuntimeError("frozen replay monthly provenance is unavailable")
+        return "candle_model" not in report and all("candle_model" not in s for s in sources)
+
+
 def fetch_artifact_pages(
     repository: str,
     token: str,
     *,
     max_pages: int = 20,
     max_source_runs: int = 3,
+    frozen_legacy: bool = False,
 ) -> list[dict[str, Any]]:
     """Prefer bound successful main producer runs before the bounded repo window.
 
@@ -149,6 +192,20 @@ def fetch_artifact_pages(
     pages: list[dict[str, Any]] = []
     observed: set[str] = set()
     required = set(CANONICAL_CHUNK_MAP)
+    inspected: dict[int, bool] = {}
+    excluded: list[dict[str, Any]] = []
+
+    def compatible(artifact: dict[str, Any]) -> bool:
+        if not frozen_legacy:
+            return True
+        artifact_id = artifact.get("id")
+        if artifact_id not in inspected:
+            inspected[artifact_id] = frozen_legacy_artifact(artifact, repository, token)
+            if not inspected[artifact_id]:
+                excluded.append({"artifact_id": artifact_id, "name": artifact.get("name"),
+                                 "reason": "versioned_candles_cannot_rehydrate_frozen_legacy"})
+        return inspected[artifact_id]
+
     if max_source_runs:
         query = urlencode({"branch": "main", "status": "success", "per_page": max_source_runs})
         payload = _request_json(
@@ -204,9 +261,11 @@ def fetch_artifact_pages(
                     or binding.get("head_repository_id") != source_repo["id"]
                 ):
                     continue
+                if not compatible(artifact):
+                    continue
                 relevant.append(artifact)
                 observed.add(chunk_id)
-            pages.append({"artifacts": relevant})
+            pages.append({"artifacts": relevant, "excluded_versioned_artifacts": list(excluded)})
             if observed == required:
                 return pages
 
@@ -227,10 +286,12 @@ def fetch_artifact_pages(
             chunk_id = _artifact_chunk_id(str(artifact.get("name", "")))
             if chunk_id is None or chunk_id not in required:
                 continue
+            if artifact.get("expired") is not True and not compatible(artifact):
+                continue
             relevant.append(artifact)
             if artifact.get("expired") is not True:
                 observed.add(chunk_id)
-        pages.append({"artifacts": relevant})
+        pages.append({"artifacts": relevant, "excluded_versioned_artifacts": list(excluded)})
 
         if observed == required or len(batch) < 100:
             break
@@ -290,6 +351,11 @@ def build_plan(payload: Any) -> dict[str, Any]:
         "missing_ids": [chunk.id for chunk in missing],
         "missing_matrix": {"include": [asdict(chunk) for chunk in missing]},
         "reusable_artifacts": reusable,
+        "excluded_versioned_artifacts": list({
+            entry["artifact_id"]: entry
+            for page in (payload if isinstance(payload, list) else [payload])
+            for entry in page.get("excluded_versioned_artifacts", [])
+        }.values()),
     }
 
 
@@ -312,6 +378,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--token-env", default="GH_TOKEN")
     parser.add_argument("--max-pages", type=int, default=20)
     parser.add_argument("--max-source-runs", type=int, default=3)
+    parser.add_argument("--frozen-legacy", action="store_true")
     parser.add_argument("--plan-output", type=Path)
     parser.add_argument("--github-output", type=Path)
     return parser.parse_args()
@@ -320,6 +387,8 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     if args.artifact_pages is not None:
+        if args.frozen_legacy:
+            raise SystemExit("frozen legacy planning requires authenticated artifact inspection")
         payload = json.loads(args.artifact_pages.read_text(encoding="utf-8"))
     else:
         token = os.environ.get(args.token_env, "")
@@ -328,6 +397,7 @@ def main() -> int:
             token,
             max_pages=args.max_pages,
             max_source_runs=args.max_source_runs,
+            frozen_legacy=args.frozen_legacy,
         )
     plan = build_plan(payload)
     rendered = json.dumps(plan, indent=2, sort_keys=True) + "\n"
