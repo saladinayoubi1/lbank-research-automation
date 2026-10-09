@@ -226,6 +226,8 @@ def _stage_status(root: Path, spec: dict[str, str]) -> tuple[dict[str, Any], lis
 
 
 def build_status(root: Path = ROOT) -> dict[str, Any]:
+    from nexus_strategy_discovery_feedback import reviewed_local_data_feedback
+
     root = root.resolve()
     catalog, errors = _catalog_status(root)
     stages: list[dict[str, Any]] = []
@@ -257,6 +259,7 @@ def build_status(root: Path = ROOT) -> dict[str, Any]:
             "blocked_search_stage_count": len(blocked),
         },
         "qualified_candidates": [],
+        "verified_local_data_feedback": reviewed_local_data_feedback(root),
         "qualification_claimed": False,
         "qualification_policy": (
             "Configuration, workflow availability, or controller readiness never qualifies a strategy. "
@@ -290,3 +293,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
