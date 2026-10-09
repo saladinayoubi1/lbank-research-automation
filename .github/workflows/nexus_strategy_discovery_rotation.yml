@@ -279,15 +279,23 @@ jobs:
           rm -f "$receipt"
 
       - name: Verify discovery surface and select one stage
+        id: frontier-selection
         if: steps.health-gate.outputs.should_dispatch == 'true' && steps.outcome.outputs.ready == 'true'
         run: |
           set -euo pipefail
           python scripts/nexus_strategy_discovery_controller.py             --root . --output build/discovery/controller-status.json
-          python nexus_strategy_discovery_rotation.py plan             --controller-status build/discovery/controller-status.json             --state build/discovery/rotation-state.json             --feedback-state build/discovery/feedback-state.json             --output build/discovery/dispatch-plan.json
+          python nexus_strategy_discovery_rotation.py plan             --controller-status build/discovery/controller-status.json             --state build/discovery/rotation-state.json             --feedback-state build/discovery/feedback-state.json             --blocked-receipt-on-exhaustion             --output build/discovery/dispatch-plan.json
+          if jq -e '.schema_version == "nexus.strategy-discovery-blocked.v1" and .status == "NEEDS_NEW_REVIEWED_MECHANISM" and .dispatch_allowed == false' build/discovery/dispatch-plan.json > /dev/null; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "NEXUS Strategy Finder: BLOCKED_NEW_MECHANISM_REQUIRED; no dispatch or cursor mutation." >> "$GITHUB_STEP_SUMMARY"
+          else
+            jq -e '.schema_version == "nexus.strategy-discovery-rotation-plan.v1" and .automatic_strategy_promotion == false and .live_trading_authority == false' build/discovery/dispatch-plan.json > /dev/null
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Dispatch reviewed Research workflow
         id: dispatch
-        if: steps.health-gate.outputs.should_dispatch == 'true' && steps.outcome.outputs.ready == 'true'
+        if: steps.health-gate.outputs.should_dispatch == 'true' && steps.outcome.outputs.ready == 'true' && steps.frontier-selection.outputs.ready == 'true'
         run: |
           set -euo pipefail
           workflow="$(python -c 'import json; print(json.load(open("build/discovery/dispatch-plan.json"))["workflow"])')"
@@ -335,7 +343,7 @@ jobs:
           PY
 
       - name: Commit rotation cursor only after accepted dispatch
-        if: steps.health-gate.outputs.should_dispatch == 'true' && steps.outcome.outputs.ready == 'true'
+        if: steps.health-gate.outputs.should_dispatch == 'true' && steps.outcome.outputs.ready == 'true' && steps.frontier-selection.outputs.ready == 'true'
         run: |
           set -euo pipefail
           python nexus_strategy_discovery_rotation.py commit             --state build/discovery/rotation-state.json             --plan build/discovery/dispatch-plan.json             --source-sha "${{ steps.health-gate.outputs.source_sha }}"             --run-id "$GITHUB_RUN_ID"             --output build/discovery/rotation-state.json
