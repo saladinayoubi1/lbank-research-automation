@@ -9,6 +9,11 @@ import re
 from pathlib import Path
 from typing import Any, Mapping
 
+from nexus_strategy_discovery_feedback import (
+    StrategyDiscoveryFeedbackError,
+    load_state as load_feedback_state,
+)
+
 
 STATE_SCHEMA = "nexus.strategy-discovery-rotation-state.v1"
 PLAN_SCHEMA = "nexus.strategy-discovery-rotation-plan.v1"
@@ -241,16 +246,17 @@ def main() -> int:
     state = load_state(args.state)
     if args.command == "plan":
         feedback = None
-        if args.require_feedback_state and (
-            args.feedback_state is None
-            or not args.feedback_state.is_file()
-            or args.feedback_state.is_symlink()
-        ):
-            raise StrategyDiscoveryRotationError(
-                "verified prior feedback required for autonomous dispatch; "
-                "missing feedback must not bootstrap a repeated experiment"
-            )
-        if args.feedback_state and args.feedback_state.exists():
+        if args.require_feedback_state:
+            try:
+                if args.feedback_state is None:
+                    raise StrategyDiscoveryFeedbackError("feedback path is absent")
+                feedback = load_feedback_state(args.feedback_state, require_existing=True)
+            except StrategyDiscoveryFeedbackError as exc:
+                raise StrategyDiscoveryRotationError(
+                    "verified prior feedback required for autonomous dispatch; "
+                    "missing feedback must not bootstrap a repeated experiment"
+                ) from exc
+        elif args.feedback_state and args.feedback_state.exists():
             feedback = load_json(args.feedback_state)
         try:
             value = build_plan(load_json(args.controller_status), state, feedback)

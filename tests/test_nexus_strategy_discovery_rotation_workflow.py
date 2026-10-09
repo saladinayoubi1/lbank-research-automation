@@ -285,3 +285,19 @@ def test_unavailable_feedback_cannot_bootstrap_autonomous_dispatch():
     assert "--require-feedback-state" in stage
     assert "--blocked-receipt-on-exhaustion" in stage
     assert "steps.frontier-selection.outputs.ready == 'true'" in workflow
+
+
+def test_restore_and_reconciliation_require_feedback_before_any_reset():
+    workflow = _text()
+    restore = workflow.split("Restore rotation state", 1)[1].split(
+        "Reconcile previously dispatched Research outcome", 1
+    )[0]
+    assert 'load_feedback(Path("build/discovery/feedback-state.json"), require_existing=True)' in restore
+    reconcile = workflow.split("Reconcile previously dispatched Research outcome", 1)[1].split(
+        "Verify discovery surface and select one stage", 1
+    )[0]
+    assert "set -euo pipefail" in reconcile
+    command = reconcile.split("python nexus_strategy_discovery_feedback.py", 1)[1].split(
+        'rm -f "$receipt"', 1
+    )[0]
+    assert "--require-feedback-state" in command

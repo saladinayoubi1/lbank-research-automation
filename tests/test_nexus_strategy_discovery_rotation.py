@@ -35,7 +35,99 @@ def _controller():
     }
 
 
+def _reconciliation_fixture(root):
+    from nexus_strategy_discovery_feedback import empty_state as empty_feedback, _digest as feedback_digest
+
+    controller = _controller()
+    state = empty_state()
+    for index in range(3):
+        state = commit_dispatch(
+            state, build_plan(controller, state), source_sha="a" * 40,
+            run_id=str(index + 1),
+        )
+    feedback_core = {k: v for k, v in empty_feedback().items() if k != "state_digest"}
+    feedback_core["processed_run_ids"] = ["1", "2"]
+    feedback_core["outcomes"] = [
+        {"run_id": str(index + 1), "stage": f"stage-{index}",
+         "experiment_sha256": controller["search_stages"][index]["experiment_sha256"],
+         "outcome": "no_candidate", "workflow_conclusion": "success"}
+        for index in range(2)
+    ]
+    prior_feedback = {**feedback_core, "state_digest": feedback_digest(feedback_core)}
+    pending = {"research_run_id": "3", "stage": "stage-2", "source_sha": "a" * 40,
+               "experiment_sha256": controller["search_stages"][2]["experiment_sha256"]}
+    # Run IDs and source SHA are synthetic fixtures, never production receipts.
+    for name, value in (
+        ("controller.json", controller), ("rotation-state.json", state),
+        ("feedback-state.json", prior_feedback), ("last-research-run.json", pending),
+        ("run.json", {"databaseId": 3, "status": "completed", "conclusion": "success",
+                      "headSha": "a" * 40}),
+    ):
+        (root / name).write_text(json.dumps(value), encoding="utf-8")
+    artifacts = root / "artifacts"
+    artifacts.mkdir()
+    (artifacts / "outcome.json").write_text(
+        json.dumps({"decision": "continue_research_no_promotion"}), encoding="utf-8",
+    )
+    repo = Path(__file__).resolve().parents[1]
+    workflow = (repo / ".github/workflows/nexus_strategy_discovery_rotation.yml").read_text()
+    reconcile_step = workflow.split("Reconcile previously dispatched Research outcome", 1)[1].split(
+        "Verify discovery surface and select one stage", 1
+    )[0]
+    reconcile = [sys.executable, str(repo / "nexus_strategy_discovery_feedback.py"),
+                 "--state", str(root / "feedback-state.json"),
+                 "--run-json", str(root / "run.json"), "--artifact-root", str(artifacts),
+                 "--stage", pending["stage"], "--experiment-sha256", pending["experiment_sha256"],
+                 "--expected-source-sha", pending["source_sha"],
+                 "--output", str(root / "feedback-state.json")]
+    # Exercise the actual workflow caller's opt-in, including the old unguarded path.
+    if "--require-feedback-state" in reconcile_step:
+        reconcile.append("--require-feedback-state")
+    plan = [sys.executable, str(repo / "nexus_strategy_discovery_rotation.py"), "plan",
+            "--controller-status", str(root / "controller.json"),
+            "--state", str(root / "rotation-state.json"),
+            "--feedback-state", str(root / "feedback-state.json"),
+            "--require-feedback-state", "--blocked-receipt-on-exhaustion",
+            "--output", str(root / "plan.json")]
+    return reconcile, plan
+
+
 class StrategyDiscoveryRotationTests(unittest.TestCase):
+    def test_pending_receipt_cannot_rebuild_lost_feedback_before_guarded_plan(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            reconcile, plan = _reconciliation_fixture(root)
+            (root / "feedback-state.json").unlink()
+            original_state = (root / "rotation-state.json").read_bytes()
+            original_receipt = (root / "last-research-run.json").read_bytes()
+            result = subprocess.run(reconcile, capture_output=True, text=True, timeout=20)
+            self.assertNotEqual(result.returncode, 0, "reconciliation must not bootstrap lost history")
+            self.assertIn("verified prior feedback required", result.stderr)
+            self.assertFalse((root / "feedback-state.json").exists())
+            self.assertEqual((root / "rotation-state.json").read_bytes(), original_state)
+            self.assertEqual((root / "last-research-run.json").read_bytes(), original_receipt)
+            result = subprocess.run(plan, capture_output=True, text=True, timeout=20)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse((root / "plan.json").exists())
+
+    def test_pending_receipt_preserves_prior_terminal_feedback_and_blocks_replay(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            reconcile, plan = _reconciliation_fixture(root)
+            original_state = (root / "rotation-state.json").read_bytes()
+            result = subprocess.run(reconcile, capture_output=True, text=True, timeout=20)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            feedback = json.loads((root / "feedback-state.json").read_text())
+            self.assertEqual(feedback["processed_run_ids"], ["1", "2", "3"])
+            self.assertEqual(len(feedback["outcomes"]), 3)
+            result = subprocess.run(plan, capture_output=True, text=True, timeout=20)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            receipt = json.loads((root / "plan.json").read_text())
+            self.assertEqual(receipt["status"], "NEEDS_NEW_REVIEWED_MECHANISM")
+            self.assertFalse(receipt["dispatch_allowed"])
+            self.assertNotIn("workflow", receipt)
+            self.assertEqual((root / "rotation-state.json").read_bytes(), original_state)
+
     def test_rotation_advances_one_reviewed_stage_per_commit(self):
         state = empty_state()
         seen = []

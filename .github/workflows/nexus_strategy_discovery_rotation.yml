@@ -226,7 +226,7 @@ jobs:
           from nexus_strategy_discovery_rotation import load_state
           from nexus_strategy_discovery_feedback import load_state as load_feedback
           state = load_state(Path("build/discovery/rotation-state.json"))
-          feedback = load_feedback(Path("build/discovery/feedback-state.json"))
+          feedback = load_feedback(Path("build/discovery/feedback-state.json"), require_existing=True)
           print("restored_dispatch_count=" + str(state["dispatch_count"]))
           print("restored_feedback_count=" + str(len(feedback["outcomes"])))
           PY
@@ -275,7 +275,7 @@ jobs:
           expected_sha="$(python -c 'import json; print(json.load(open("build/discovery/last-research-run.json"))["source_sha"])')"
           args=()
           if [ "$artifact_unavailable" = "true" ]; then args+=(--artifact-unavailable); fi
-          python nexus_strategy_discovery_feedback.py             --state build/discovery/feedback-state.json             --run-json build/discovery/research-run-status.json             --artifact-root build/discovery/research-outcome-artifacts             --stage "$stage"             --experiment-sha256 "$experiment_sha256"             --expected-source-sha "$expected_sha"             "${args[@]}"             --output build/discovery/feedback-state.json
+          python nexus_strategy_discovery_feedback.py             --state build/discovery/feedback-state.json             --require-feedback-state             --run-json build/discovery/research-run-status.json             --artifact-root build/discovery/research-outcome-artifacts             --stage "$stage"             --experiment-sha256 "$experiment_sha256"             --expected-source-sha "$expected_sha"             "${args[@]}"             --output build/discovery/feedback-state.json
           rm -f "$receipt"
 
       - name: Verify discovery surface and select one stage

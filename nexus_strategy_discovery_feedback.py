@@ -55,7 +55,12 @@ def empty_state() -> dict[str, Any]:
     return {**core, "state_digest": _digest(core)}
 
 
-def load_state(path: Path) -> dict[str, Any]:
+def load_state(path: Path, *, require_existing: bool = False) -> dict[str, Any]:
+    if require_existing and (path.is_symlink() or not path.is_file()):
+        raise StrategyDiscoveryFeedbackError(
+            "verified prior feedback required for autonomous reconciliation; "
+            "missing feedback must not bootstrap a repeated experiment"
+        )
     if not path.exists():
         return empty_state()
     try:
@@ -195,6 +200,7 @@ def record_outcome(
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--state", type=Path, required=True)
+    parser.add_argument("--require-feedback-state", action="store_true")
     parser.add_argument("--run-json", type=Path, required=True)
     parser.add_argument("--artifact-root", type=Path, required=True)
     parser.add_argument("--stage", required=True)
@@ -203,7 +209,7 @@ def main() -> int:
     parser.add_argument("--artifact-unavailable", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    state = load_state(args.state)
+    state = load_state(args.state, require_existing=args.require_feedback_state)
     run = json.loads(args.run_json.read_text(encoding="utf-8"))
     value = record_outcome(
         state,
