@@ -53,15 +53,35 @@ Legacy signed receipts remain unchanged and verifiable.
 
 ## Deliberate blocking condition, not a hidden workaround
 
-At present the physical canonical runtime API only fetches 1,000 15m bars.
-Consequently **new composite QA tasks cannot satisfy the 30-day coverage
-guard today**. This is an intentional conservative gate, not evidence of
-30 days of successful validation. To unblock scientifically, the next
-change must add a bounded, paginated/locally verified immutable data-window
-builder that obtains at least 2,880 *actual consecutive* completed 15m bars,
-with aligned 1h/4h peer data, distinct exact source/dataset digests,
-canonical freshness and no WMI/Windows runner modification. It must not
-fake a 3,000-row dataset or relax the new gate.
+The legacy physical ProductResearchRuntime single-call API remains capped at
+1,000 bars. This source-only PR now adds an **explicit exact 3,072-bar
+bounded, paged 15m canonical adapter** used by new VAL-40 evaluations
+(1,000+1,000+1,000+72 official primary Bybit public pages), each separately
+validated against the unchanged market registry and source/endpoint semantics.
+The combined rows must cover 32 complete contiguous days, without duplicate,
+missing, stale, forged/rehashed or substituted bars. A new *canonical*
+provenance manifest binds all four physical page SHA256 identities.
+
+The preexisting signed VAL-40 1,000-bar v1 records stay verifiable under the
+legacy marker, but **cannot create new QA tasks** because they lack 30 days.
+New paged 3,072-bar physical producers remain QA-eligible only if the
+separate observation-and-arithmetic gate passes. The v1 schema/old receipt
+digests and the owner app are unchanged. This does not make future
+out-of-sample data pristine or prove profitability.
+
+On 2026-10-10, a **read-only physical public Bybit probe from Laptop 2**
+successfully collected *both* BTCUSDT and ETHUSDT official Spot
+3,072-bar 15m windows, with first open 1788822900000 and last open
+1791586800000, exactly four independently bound pages per symbol.
+Verified combined canonical artifact SHA256 identities:
+- BTCUSDT `40dfe73e86181c67675d72f7dccbd4a1b84b42432d30f381182c82ee4023b073`
+- ETHUSDT `004fe2d018d36db8df6132ce37c4603007c27d48272d6087779943257845dc5f`
+
+This physical source check was **not an Agent Manager strategy backtest**, not
+an independently attested QA receipt, and not promotion evidence. It did not
+read/write Paper or credentials. The approved next gate is exact PR-head tests
+followed by real Agent Manager numerical tasks on the updated reviewed
+mechanism, separate fill oracle, and prospective risk validation.
 
 ## NOT solved by this PR — further separate scientific and owner gates
 

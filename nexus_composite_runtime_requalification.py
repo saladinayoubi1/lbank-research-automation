@@ -33,6 +33,8 @@ TIMEFRAME_STEP_MS = {
 }
 PROFILES = ("conservative", "stress")
 HISTORY_LIMIT = 1000
+# Historical signed v1 producer receipts keep their 1000-bar lineage.
+PAGED_15M_LIMIT = 3072
 _SHA40 = re.compile(r"^[0-9a-f]{40}$")
 _HEX64 = re.compile(r"^[0-9a-f]{64}$")
 
@@ -273,6 +275,7 @@ def _default_evaluator(
     from canonical_backtest import canonical_ohlcv_frame
     import nexus_composite_strategy_research as composite
     from product_research_runtime import ProductResearchRuntime
+    from nexus_canonical_paged_history import fetch_verified_15m_window
 
     runtime = ProductResearchRuntime(
         None,  # type: ignore[arg-type]
@@ -285,11 +288,16 @@ def _default_evaluator(
         artifacts[symbol] = {}
         frames[symbol] = {}
         for timeframe in TIMEFRAMES:
-            dataset = runtime.fetch_dataset(
-                symbol=symbol,
-                timeframe=timeframe,
-                limit=HISTORY_LIMIT,
-            )
+            if timeframe == "minute15":
+                dataset = fetch_verified_15m_window(
+                    runtime, symbol=symbol, limit=PAGED_15M_LIMIT,
+                )
+            else:
+                dataset = runtime.fetch_dataset(
+                    symbol=symbol,
+                    timeframe=timeframe,
+                    limit=HISTORY_LIMIT,
+                )
             artifact, frame = canonical_ohlcv_frame(dataset)
             artifacts[symbol][timeframe] = artifact
             frames[symbol][timeframe] = frame
@@ -503,7 +511,14 @@ def build_requalification(
         "evaluations": evaluations,
         "evaluations_digest": digest(evaluations),
         "total_fresh_runtime_round_trips": total_round_trips,
-        "fresh_history_limit_per_timeframe": HISTORY_LIMIT,
+        # An exact 3072-bar canonical 15m producer declares the v1-compatible
+        # paged observation marker. Historical 1000-bar receipts remain readable.
+        "fresh_history_limit_per_timeframe": (
+            PAGED_15M_LIMIT
+            if all(row["datasets"]["minute15"]["row_count"] == PAGED_15M_LIMIT
+                   for row in evaluations)
+            else HISTORY_LIMIT
+        ),
         "runtime_data_is_fresh_not_historical_archive": True,
         "historical_archive_reused": False,
         "historical_archive_sha256": verified_candidate["archive_sha256"],
@@ -611,7 +626,16 @@ def verify_requalification(value: Mapping[str, Any]) -> dict[str, Any]:
             and {row["symbol"] for row in clean_rows} == set(SYMBOLS)
             and aligned
             and core.get("evaluations_digest") == digest(clean_rows)
-            and core.get("fresh_history_limit_per_timeframe") == HISTORY_LIMIT
+            and (
+                core.get("fresh_history_limit_per_timeframe") == HISTORY_LIMIT
+                or (
+                    core.get("fresh_history_limit_per_timeframe") == PAGED_15M_LIMIT
+                    and all(
+                        row["datasets"]["minute15"]["row_count"] == PAGED_15M_LIMIT
+                        for row in clean_rows
+                    )
+                )
+            )
             and core.get("runtime_data_is_fresh_not_historical_archive") is True
             and core.get("historical_archive_reused") is False
             and core.get("no_minimum_trade_count_gate") is True
