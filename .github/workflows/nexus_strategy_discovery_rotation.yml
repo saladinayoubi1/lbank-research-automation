@@ -284,7 +284,7 @@ jobs:
         run: |
           set -euo pipefail
           python scripts/nexus_strategy_discovery_controller.py             --root . --output build/discovery/controller-status.json
-          python nexus_strategy_discovery_rotation.py plan             --controller-status build/discovery/controller-status.json             --state build/discovery/rotation-state.json             --feedback-state build/discovery/feedback-state.json             --blocked-receipt-on-exhaustion             --output build/discovery/dispatch-plan.json
+          python nexus_strategy_discovery_rotation.py plan             --controller-status build/discovery/controller-status.json             --state build/discovery/rotation-state.json             --feedback-state build/discovery/feedback-state.json             --blocked-receipt-on-exhaustion             --require-feedback-state             --output build/discovery/dispatch-plan.json
           if jq -e '.schema_version == "nexus.strategy-discovery-blocked.v1" and .status == "NEEDS_NEW_REVIEWED_MECHANISM" and .dispatch_allowed == false' build/discovery/dispatch-plan.json > /dev/null; then
             echo "ready=false" >> "$GITHUB_OUTPUT"
             echo "NEXUS Strategy Finder: BLOCKED_NEW_MECHANISM_REQUIRED; no dispatch or cursor mutation." >> "$GITHUB_STEP_SUMMARY"
