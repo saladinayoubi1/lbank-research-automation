@@ -219,9 +219,11 @@ def _trusted_main_ancestor(source_sha: str, current_sha: str, *, api: Api = _api
         raise CompositeRuntimeQaTransportError("source ancestry identity is malformed")
     if source_sha == current_sha:
         return True
+    # Compare metadata is repeated on every page; files/diffs occur only on page 1.
+    # Page 2 keeps the existing bounded API reader and exact ancestry predicate.
     response = api(
         "GET",
-        f"https://api.github.com/repos/{_repo()}/compare/{source_sha}...{current_sha}",
+        f"https://api.github.com/repos/{_repo()}/compare/{source_sha}...{current_sha}?per_page=1&page=2",
         None,
     )
     if not isinstance(response, Mapping):
