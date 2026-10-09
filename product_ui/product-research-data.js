@@ -33,7 +33,7 @@
       byId(prefix + 'MarketPanel')?.setAttribute('data-provider', market.provider);
     }
     panel(byId('view-research'), 'reviewedResearchPanel',
-      '<header><div><span>A7 / A9</span><h2>گزارش‌های بررسی‌شدهٔ پژوهش</h2></div><button id="reviewedReportsRefresh" class="small-btn">بازخوانی گزارش‌ها</button></header>' +
+      '<header><div><span>A6 / A7 / A9</span><h2>گزارش‌های بررسی‌شدهٔ پژوهش</h2></div><button id="reviewedReportsRefresh" class="small-btn">بازخوانی گزارش‌ها</button></header>' +
       '<p>مبنای محاسبات هر پژوهش ۱۰٬۰۰۰ USDT است. سناریوهای هزینه مستقل‌اند و تعداد معاملاتشان با هم جمع نمی‌شود.</p><div id="reviewedResearchReports"></div>');
   }
   function marketRow(d, market) {
@@ -83,9 +83,10 @@
     const report = item.report;
     const rows = [...report.rows].sort((a, b) => (b.symbol + ':' + (b.part || '') + ':' + b.profile).localeCompare(a.symbol + ':' + (a.part || '') + ':' + a.profile));
     const verdict = item.id === 'A7' ? 'رد شد: هیچ سلول اخیر در سناریوی سخت مثبت نبود' : 'تأیید نشد: دادهٔ آیندهٔ مستقل لازم است';
+    const dataNote = item.verified_data ? '<p>دادهٔ تاریخی BTC/ETH: بررسی مستقل ۶۰ آرشیو و ۵٬۷۶۰ کندل موفق. راهبرد A6 در هر شش بخش هزینهٔ تنش منفی و برای ورود به دمو رد شده است. دادهٔ آیندهٔ دست‌نخورده و تطبیق زندهٔ سمت معامله هنوز موجود نیست.</p>' : '';
     return '<section class="reviewed-report"><h3>' + esc(item.id) + ' · Bybit</h3><p class="badge warn">' + esc(verdict) + '</p>' +
       '<p>' + esc(item.original_verdict) + '</p><p>منبع کد: <span class="mono">' + esc(item.source_sha.slice(0, 12)) +
-      '</span> · <a href="' + esc(item.run_url) + '" target="_blank" rel="noopener noreferrer">اجرای ثبت‌شده</a></p>' +
+      '</span> · <a href="' + esc(item.evidence_url || item.run_url) + '" target="_blank" rel="noopener noreferrer">' + (item.evidence_kind === 'physical_local_research' ? 'مدرک اجرای محلی و QA مستقل' : 'اجرای ثبت‌شده') + '</a></p>' + dataNote +
       '<div class="table-wrap"><table><thead><tr><th>نماد</th><th>بازه</th><th>هزینه</th><th>از</th><th>تا</th><th>کندل</th><th>معاملهٔ بسته</th><th>بازده خالص ٪</th><th>افت سرمایه ٪</th></tr></thead><tbody>' +
       rows.map(reportRow).join('') + '</tbody></table></div><details><summary>مدرک و نتیجهٔ اصلی پژوهش</summary><pre>' +
       esc(JSON.stringify(report, null, 2)) + '</pre></details></section>';
@@ -131,3 +132,4 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, {once: true}); else start();
 })();
+

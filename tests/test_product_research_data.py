@@ -108,14 +108,18 @@ def test_polling_pauses_after_two_failures_and_startup_has_no_implicit_network(t
 
 def test_reviewed_report_exact_results_and_original_rejections_are_preserved():
     result = ResearchReportStore(ROOT / "product_ui").snapshot()
-    assert result["report_count"] == 2 and not result["errors"]
-    a7, a9 = result["reports"]
+    assert result["report_count"] == 3 and not result["errors"]
+    a7, a9, a6 = result["reports"]
     assert a7["original_verdict"] == "REJECTED_NO_POSITIVE_RECENT_STRESS_CELL"
     assert a9["original_verdict"] == "NOT_QUALIFIED_NO_PRISTINE_FUTURE_HOLDOUT"
     assert a7["report"]["source"]["window_days"] == 30
     assert len(a7["report"]["rows"]) == 8 and len(a9["report"]["rows"]) == 12
     assert a7["report"]["rows"][0]["net_return_pct"] == -0.52490532
     assert a9["report"]["historical_test_pristine"] is False
+    assert a6["run_url"] is None and a6["evidence_kind"] == "physical_local_research"
+    assert a6["verified_data"]["bars"] == 5760
+    assert a6["verified_data"]["symbols"] == ["BTCUSDT", "ETHUSDT"]
+    assert a6["verified_data"]["strategy_result"] == "rejected_no_promotion"
     assert all(r["reference_capital_usdt"] == 10000 and not r["execution_eligible"] for r in result["reports"])
 
 
@@ -126,9 +130,9 @@ def test_modified_or_duplicated_evidence_is_rejected(tmp_path):
     report["rows"][0]["net_return_pct"] = 100
     file.write_text(json.dumps(report))
     result = ResearchReportStore(tmp_path).snapshot()
-    assert result["report_count"] == 1 and result["errors"][0]["id"] == "A7"
+    assert result["report_count"] == 2 and result["errors"][0]["id"] == "A7"
     file.write_text('{"report_sha256":"a","report_sha256":"b"}')
-    assert ResearchReportStore(tmp_path).snapshot()["report_count"] == 1
+    assert ResearchReportStore(tmp_path).snapshot()["report_count"] == 2
 
 
 def test_http_panels_report_rows_and_mutation_validation(tmp_path):
@@ -150,7 +154,7 @@ def test_http_panels_report_rows_and_mutation_validation(tmp_path):
             html = response.read().decode()
             assert "/ui/product-research-data.js" in html
         with request("/api/product/research/reports") as response:
-            assert json.load(response)["report_count"] == 2
+            assert json.load(response)["report_count"] == 3
         with request("/api/product/alternative-market") as response:
             assert json.load(response)["dataset_count"] == 0
         with pytest.raises(HTTPError) as error:
@@ -168,3 +172,16 @@ def test_http_panels_report_rows_and_mutation_validation(tmp_path):
     finally:
         server.shutdown()
         server.server_close()
+
+
+def test_a6_tampered_numeric_qa_cannot_publish_data_capability(tmp_path):
+    shutil.copytree(ROOT / "product_ui/research-reports", tmp_path / "research-reports")
+    file = tmp_path / "research-reports/a6-full-independent-numeric-qa.json"
+    qa = json.loads(file.read_text())
+    qa["verified_bars"] = 5759
+    file.write_text(json.dumps(qa))
+    result = ResearchReportStore(tmp_path).snapshot()
+    assert result["report_count"] == 2
+    assert {r["id"] for r in result["reports"]} == {"A7", "A9"}
+    assert result["errors"][0]["id"] == "A6"
+

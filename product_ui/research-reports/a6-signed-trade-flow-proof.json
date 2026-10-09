@@ -1,0 +1,565 @@
+{
+  "automatic_strategy_promotion": false,
+  "capability": "verified_signed_trade_flow",
+  "dataset_semantic_sha256": "d34572205966a82cc02c2daa0d1dc494d7d3461997aa73a854ebb217b8b61e3c",
+  "end_date": "2026-08-01",
+  "live_trading_authority": false,
+  "market": "spot",
+  "paper_only": true,
+  "proof_sha256": "348512f0dc1753d9cf56daa8123a137a3992e6e27a4f315861e0d1756f6c195c",
+  "raw_trade_rows_published": false,
+  "research_only": true,
+  "rows": 5760,
+  "schema": "nexus.verified-signed-trade-flow-proof.v1",
+  "side_semantics": "taker_side_buy_sell",
+  "source": "official_public_spot_trade_archive",
+  "sources": [
+    {
+      "audit_date": "2026-07-03",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "5f89c212c199113912dc11fc4b3d72caba409db3311221d916336e8bdd781f0d",
+      "symbol": "BTCUSDT",
+      "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-07-03.csv.gz",
+      "valid_trade_rows": 483256
+    },
+    {
+      "audit_date": "2026-07-04",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "fea65317e6887146d539cf8954e58b7d27e2b23c582cb9f82213407bbab21a40",
+      "symbol": "BTCUSDT",
+      "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-07-04.csv.gz",
+      "valid_trade_rows": 343485
+    },
+    {
+      "audit_date": "2026-07-05",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "a8118e236e2c582e864127c03b9f994750c362eda8f60bafab2e370e6ae246df",
+      "symbol": "BTCUSDT",
+      "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-07-05.csv.gz",
+      "valid_trade_rows": 338784
+    },
+    {
+      "audit_date": "2026-07-06",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "7e1af8a1dd245c41c5dfc05638a9ab93b9c4af75124a1e788f5a48efd96b6e39",
+      "symbol": "BTCUSDT",
+      "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-07-06.csv.gz",
+      "valid_trade_rows": 795426
+    },
+    {
+      "audit_date": "2026-07-07",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "7c13c87d6d030d1ad01c40550dc9c1d02bcba3bf15b43bf1835452dc00c0025e",
+      "symbol": "BTCUSDT",
+      "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-07-07.csv.gz",
+      "valid_trade_rows": 668730
+    },
+    {
+      "audit_date": "2026-07-08",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "bfff2dfc9d9f096539710440483d473db54aca5f0bf0ecb447c115af8332a4b0",
+      "symbol": "BTCUSDT",
+      "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-07-08.csv.gz",
+      "valid_trade_rows": 741298
+    },
+    {
+      "audit_date": "2026-07-09",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "7e9127860fe69988293698d5ea03b927d6710e6860b86739756eaa78b935679f",
+      "symbol": "BTCUSDT",
+      "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-07-09.csv.gz",
+      "valid_trade_rows": 606890
+    },
+    {
+      "audit_date": "2026-07-10",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "ba9bc6db9076c32ada1d1a76f6ca46af6a397557f785e23a0ba840da775a6562",
+      "symbol": "BTCUSDT",
+      "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-07-10.csv.gz",
+      "valid_trade_rows": 524389
+    },
+    {
+      "audit_date": "2026-07-11",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "9a8fd9b5ba011ee50684e9bcc5c820e1c94b8840d10a46249e3f2cc95181a300",
+      "symbol": "BTCUSDT",
+      "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-07-11.csv.gz",
+      "valid_trade_rows": 274279
+    },
+    {
+      "audit_date": "2026-07-12",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "de288480e2c866a7f7b2af0cdf833bf898b19336ab75aafc42eb3b7451f63392",
+      "symbol": "BTCUSDT",
+      "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-07-12.csv.gz",
+      "valid_trade_rows": 341499
+    },
+    {
+      "audit_date": "2026-07-13",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "61fa695dcb7165be0fe72f8d0abb7cc70d16a0da75da89c454ace29cb73765f6",
+      "symbol": "BTCUSDT",
+      "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-07-13.csv.gz",
+      "valid_trade_rows": 653578
+    },
+    {
+      "audit_date": "2026-07-14",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "5b5192d9388109f1bb05e9ed8c019da00211a2c46d3544cc9351ae9298b2c349",
+      "symbol": "BTCUSDT",
+      "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-07-14.csv.gz",
+      "valid_trade_rows": 594537
+    },
+    {
+      "audit_date": "2026-07-15",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "8596f6c72bf9d3ef624adb3a486dd9a7bb3e52e9282b331c43e5cd2ac42daacc",
+      "symbol": "BTCUSDT",
+      "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-07-15.csv.gz",
+      "valid_trade_rows": 515571
+    },
+    {
+      "audit_date": "2026-07-16",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "5bb7dee17c87f4584c408e2506e8fe8cc40202522949162d5e1f612f14a90f9e",
+      "symbol": "BTCUSDT",
+      "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-07-16.csv.gz",
+      "valid_trade_rows": 535823
+    },
+    {
+      "audit_date": "2026-07-17",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "3971481064f1be5b4df1aca8d0b0d49ff788070d32fd1460a251009b48c66596",
+      "symbol": "BTCUSDT",
+      "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-07-17.csv.gz",
+      "valid_trade_rows": 597793
+    },
+    {
+      "audit_date": "2026-07-18",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "c1e43e1dd6ad4683147c96f8a72faeee428d1b84000974775bc2467a4abb654f",
+      "symbol": "BTCUSDT",
+      "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-07-18.csv.gz",
+      "valid_trade_rows": 210557
+    },
+    {
+      "audit_date": "2026-07-19",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "f7d177483f751b4b479fc2048b3a8a080579b6cb8a92f34e0131ad2147f86a6b",
+      "symbol": "BTCUSDT",
+      "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-07-19.csv.gz",
+      "valid_trade_rows": 274388
+    },
+    {
+      "audit_date": "2026-07-20",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "c11cfd20c75f256bb28cb6f28bdd55a549192594ee0f2eb5842875bf47ddb87f",
+      "symbol": "BTCUSDT",
+      "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-07-20.csv.gz",
+      "valid_trade_rows": 689133
+    },
+    {
+      "audit_date": "2026-07-21",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "6499f3a9c8ead88b423335693b0bd482e507359e255134ab63051ecc1469b793",
+      "symbol": "BTCUSDT",
+      "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-07-21.csv.gz",
+      "valid_trade_rows": 466729
+    },
+    {
+      "audit_date": "2026-07-22",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "64198458e70ea8752f58061f9e8c20c218fc15203ae2e78bd732cbcae37a9fb2",
+      "symbol": "BTCUSDT",
+      "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-07-22.csv.gz",
+      "valid_trade_rows": 437710
+    },
+    {
+      "audit_date": "2026-07-23",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "c3d56bf749b85ba2f45aaee00f51cbd43973f9d13d3fd206f89d6e760c1de7ce",
+      "symbol": "BTCUSDT",
+      "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-07-23.csv.gz",
+      "valid_trade_rows": 422585
+    },
+    {
+      "audit_date": "2026-07-24",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "dfc78434b0f5605b36b61d02e40438e519cfd187d2ef6e7f9ee9bb373ed595bb",
+      "symbol": "BTCUSDT",
+      "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-07-24.csv.gz",
+      "valid_trade_rows": 440206
+    },
+    {
+      "audit_date": "2026-07-25",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "994ad4124872a177904ba8ab1f835f1bf89058ada628a48f88c22520352fdf62",
+      "symbol": "BTCUSDT",
+      "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-07-25.csv.gz",
+      "valid_trade_rows": 187683
+    },
+    {
+      "audit_date": "2026-07-26",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "064d32c72070bf2ff486b4ef4136b7ca8c8b5c412f4d282326e13ccfe1da90f3",
+      "symbol": "BTCUSDT",
+      "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-07-26.csv.gz",
+      "valid_trade_rows": 241564
+    },
+    {
+      "audit_date": "2026-07-27",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "1181513e895931a043db3b06a743b2bd934eb51ff58c47e7b40658b99f326d30",
+      "symbol": "BTCUSDT",
+      "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-07-27.csv.gz",
+      "valid_trade_rows": 495534
+    },
+    {
+      "audit_date": "2026-07-28",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "b6c6749256fc4bd48fe25a35b44319d5b726d1e412c29bc6550dd2bfe7deb730",
+      "symbol": "BTCUSDT",
+      "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-07-28.csv.gz",
+      "valid_trade_rows": 499762
+    },
+    {
+      "audit_date": "2026-07-29",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "65270710ebad95a110a0129d460142e95c6cddf1a0129e766e3310ef2ed0d99f",
+      "symbol": "BTCUSDT",
+      "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-07-29.csv.gz",
+      "valid_trade_rows": 624270
+    },
+    {
+      "audit_date": "2026-07-30",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "ff189067ef94ed09e8f31209841e00515aa57b3aa7c2b583cf4ec5ceac08b7a7",
+      "symbol": "BTCUSDT",
+      "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-07-30.csv.gz",
+      "valid_trade_rows": 397847
+    },
+    {
+      "audit_date": "2026-07-31",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "3d2a7d32eed34a28ee90c2861b29fc2d5fbf1461f7f6b0223ae9bc05836aae7a",
+      "symbol": "BTCUSDT",
+      "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-07-31.csv.gz",
+      "valid_trade_rows": 481468
+    },
+    {
+      "audit_date": "2026-08-01",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "be6bf75c371f8cd1afd302bad339e91a17bc6b189343b6712a587b0fba5f7d94",
+      "symbol": "BTCUSDT",
+      "url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-08-01.csv.gz",
+      "valid_trade_rows": 221151
+    },
+    {
+      "audit_date": "2026-07-03",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "01e617cb768aa7d6125dcc55e55505599855fefce5814316481fdf8696b562dd",
+      "symbol": "ETHUSDT",
+      "url": "https://public.bybit.com/spot/ETHUSDT/ETHUSDT_2026-07-03.csv.gz",
+      "valid_trade_rows": 318546
+    },
+    {
+      "audit_date": "2026-07-04",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "5f4b915e8565f20d9aba6365195edccaf3eebcfe18252f952544fa1277480df3",
+      "symbol": "ETHUSDT",
+      "url": "https://public.bybit.com/spot/ETHUSDT/ETHUSDT_2026-07-04.csv.gz",
+      "valid_trade_rows": 224317
+    },
+    {
+      "audit_date": "2026-07-05",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "36e3527abad6446ace8d6d2a75e3864d2c2771e2f53b0f87082d57fcbc1ca7eb",
+      "symbol": "ETHUSDT",
+      "url": "https://public.bybit.com/spot/ETHUSDT/ETHUSDT_2026-07-05.csv.gz",
+      "valid_trade_rows": 232156
+    },
+    {
+      "audit_date": "2026-07-06",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "4ae8404791c06a5d89ccd9f780651ac9eb2e623fa3bb31efb0ba95897f38cfec",
+      "symbol": "ETHUSDT",
+      "url": "https://public.bybit.com/spot/ETHUSDT/ETHUSDT_2026-07-06.csv.gz",
+      "valid_trade_rows": 389819
+    },
+    {
+      "audit_date": "2026-07-07",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "230590217ec0b00827b47da8f1fe9839845331eeb8be08c24701bdf949131d93",
+      "symbol": "ETHUSDT",
+      "url": "https://public.bybit.com/spot/ETHUSDT/ETHUSDT_2026-07-07.csv.gz",
+      "valid_trade_rows": 335566
+    },
+    {
+      "audit_date": "2026-07-08",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "44edf4178148372786f6e74b27b5527bc9914780b2f037203af96a986bab4ce5",
+      "symbol": "ETHUSDT",
+      "url": "https://public.bybit.com/spot/ETHUSDT/ETHUSDT_2026-07-08.csv.gz",
+      "valid_trade_rows": 346276
+    },
+    {
+      "audit_date": "2026-07-09",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "ab492ffc2d9d15631e7a12049be656ecbbfef482c44b1371b67af0bda249649e",
+      "symbol": "ETHUSDT",
+      "url": "https://public.bybit.com/spot/ETHUSDT/ETHUSDT_2026-07-09.csv.gz",
+      "valid_trade_rows": 263102
+    },
+    {
+      "audit_date": "2026-07-10",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "ded2cb29e804bed4d64953fcd29f17f78e35f56c0baffb849c84188197b95603",
+      "symbol": "ETHUSDT",
+      "url": "https://public.bybit.com/spot/ETHUSDT/ETHUSDT_2026-07-10.csv.gz",
+      "valid_trade_rows": 270059
+    },
+    {
+      "audit_date": "2026-07-11",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "4b53c2e5fcf436132431a418275551bfe9e474b2aaf771939420f0ee14cd21c0",
+      "symbol": "ETHUSDT",
+      "url": "https://public.bybit.com/spot/ETHUSDT/ETHUSDT_2026-07-11.csv.gz",
+      "valid_trade_rows": 185387
+    },
+    {
+      "audit_date": "2026-07-12",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "f18c9eaf84e74fe3a478611da9c4364622ef8533d6777918acf3e6919ead1354",
+      "symbol": "ETHUSDT",
+      "url": "https://public.bybit.com/spot/ETHUSDT/ETHUSDT_2026-07-12.csv.gz",
+      "valid_trade_rows": 185884
+    },
+    {
+      "audit_date": "2026-07-13",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "d5cac761bd688a4b698c6cb861f65683403eb20d03e51f9568e40e64e1dd4bce",
+      "symbol": "ETHUSDT",
+      "url": "https://public.bybit.com/spot/ETHUSDT/ETHUSDT_2026-07-13.csv.gz",
+      "valid_trade_rows": 341856
+    },
+    {
+      "audit_date": "2026-07-14",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "966d267d33127c9cb4c25a197719a311fc5db7cc040694a077bd29e6ba655a03",
+      "symbol": "ETHUSDT",
+      "url": "https://public.bybit.com/spot/ETHUSDT/ETHUSDT_2026-07-14.csv.gz",
+      "valid_trade_rows": 419259
+    },
+    {
+      "audit_date": "2026-07-15",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "05154c3108812c3239996a05e8c110a90964d97f33281d08a123f7878d97b80f",
+      "symbol": "ETHUSDT",
+      "url": "https://public.bybit.com/spot/ETHUSDT/ETHUSDT_2026-07-15.csv.gz",
+      "valid_trade_rows": 348962
+    },
+    {
+      "audit_date": "2026-07-16",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "ea261af26d497b21c963d35bca8df555ff84fe1da538ed4515acf7259a0c33bd",
+      "symbol": "ETHUSDT",
+      "url": "https://public.bybit.com/spot/ETHUSDT/ETHUSDT_2026-07-16.csv.gz",
+      "valid_trade_rows": 345900
+    },
+    {
+      "audit_date": "2026-07-17",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "6cc6f43d5bc6c7b912564ff36396474fea3374466fcfd881eb8618304194ed07",
+      "symbol": "ETHUSDT",
+      "url": "https://public.bybit.com/spot/ETHUSDT/ETHUSDT_2026-07-17.csv.gz",
+      "valid_trade_rows": 312676
+    },
+    {
+      "audit_date": "2026-07-18",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "6616d31930f0a03f1bd3f78a372e0fef88954790f4312e9cd981fcc221bbc022",
+      "symbol": "ETHUSDT",
+      "url": "https://public.bybit.com/spot/ETHUSDT/ETHUSDT_2026-07-18.csv.gz",
+      "valid_trade_rows": 109828
+    },
+    {
+      "audit_date": "2026-07-19",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "003a88363ce26a14ecd540ce53e9fefaa7abbbad1a7e01e4c08fea00e866b9c8",
+      "symbol": "ETHUSDT",
+      "url": "https://public.bybit.com/spot/ETHUSDT/ETHUSDT_2026-07-19.csv.gz",
+      "valid_trade_rows": 184815
+    },
+    {
+      "audit_date": "2026-07-20",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "1863aa1ba71c51fe9814fd6034c0e2e1ff557561d1fa477b4fdd82d731f8d5c8",
+      "symbol": "ETHUSDT",
+      "url": "https://public.bybit.com/spot/ETHUSDT/ETHUSDT_2026-07-20.csv.gz",
+      "valid_trade_rows": 478596
+    },
+    {
+      "audit_date": "2026-07-21",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "184d0334f11f489a2313bc621c2a66c2ecc43dc4290ec11c6948a385427f8028",
+      "symbol": "ETHUSDT",
+      "url": "https://public.bybit.com/spot/ETHUSDT/ETHUSDT_2026-07-21.csv.gz",
+      "valid_trade_rows": 249143
+    },
+    {
+      "audit_date": "2026-07-22",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "81ba5f327a389d06603c8abd06446bafa3b042388941152de4001e3bde857003",
+      "symbol": "ETHUSDT",
+      "url": "https://public.bybit.com/spot/ETHUSDT/ETHUSDT_2026-07-22.csv.gz",
+      "valid_trade_rows": 280309
+    },
+    {
+      "audit_date": "2026-07-23",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "2740c1f35800d8e6bee7eae93ca9014ab4d14741d1c25ec4bed4fa49ac0ce918",
+      "symbol": "ETHUSDT",
+      "url": "https://public.bybit.com/spot/ETHUSDT/ETHUSDT_2026-07-23.csv.gz",
+      "valid_trade_rows": 244028
+    },
+    {
+      "audit_date": "2026-07-24",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "2b4eeab2f39f086a1545944cf538ff62e74cb419f299be4bd6770ed19a5f7608",
+      "symbol": "ETHUSDT",
+      "url": "https://public.bybit.com/spot/ETHUSDT/ETHUSDT_2026-07-24.csv.gz",
+      "valid_trade_rows": 178210
+    },
+    {
+      "audit_date": "2026-07-25",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "85fa0caad325f9b037665f40ebdc35505d103dc4b03c76af9bdf72b013ebbf88",
+      "symbol": "ETHUSDT",
+      "url": "https://public.bybit.com/spot/ETHUSDT/ETHUSDT_2026-07-25.csv.gz",
+      "valid_trade_rows": 85931
+    },
+    {
+      "audit_date": "2026-07-26",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "f47178b5544902d75e8254c7e9b3da40671d10d037d9f5aaee82d399d23283ba",
+      "symbol": "ETHUSDT",
+      "url": "https://public.bybit.com/spot/ETHUSDT/ETHUSDT_2026-07-26.csv.gz",
+      "valid_trade_rows": 143290
+    },
+    {
+      "audit_date": "2026-07-27",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "71361291722b7330fb72fb83e20ba0d3850bc9a5e7c9d9168f6c4a7c5b2ce3e2",
+      "symbol": "ETHUSDT",
+      "url": "https://public.bybit.com/spot/ETHUSDT/ETHUSDT_2026-07-27.csv.gz",
+      "valid_trade_rows": 251239
+    },
+    {
+      "audit_date": "2026-07-28",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "6a1686cb4c6be732de348aca7e8053bfe62627f15e879310cecdf800004f78e1",
+      "symbol": "ETHUSDT",
+      "url": "https://public.bybit.com/spot/ETHUSDT/ETHUSDT_2026-07-28.csv.gz",
+      "valid_trade_rows": 208318
+    },
+    {
+      "audit_date": "2026-07-29",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "6090e6a8248da712f77a60bc3cea09198a258bc28bcf51b803b024473d97abaa",
+      "symbol": "ETHUSDT",
+      "url": "https://public.bybit.com/spot/ETHUSDT/ETHUSDT_2026-07-29.csv.gz",
+      "valid_trade_rows": 239926
+    },
+    {
+      "audit_date": "2026-07-30",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "4b511e25d7137daa45324277fbcc3f65aca3dd3740d20793fce3f81578191b3e",
+      "symbol": "ETHUSDT",
+      "url": "https://public.bybit.com/spot/ETHUSDT/ETHUSDT_2026-07-30.csv.gz",
+      "valid_trade_rows": 133449
+    },
+    {
+      "audit_date": "2026-07-31",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "1b81677c2afdaacb9492c01d0a55c5a47ba73d93909405691814f25c9ad8f851",
+      "symbol": "ETHUSDT",
+      "url": "https://public.bybit.com/spot/ETHUSDT/ETHUSDT_2026-07-31.csv.gz",
+      "valid_trade_rows": 160308
+    },
+    {
+      "audit_date": "2026-08-01",
+      "duplicate_trade_id_count": 0,
+      "invalid_side_rows": 0,
+      "sha256": "c70b166659252a288f77ffbf409b90e6896bf6fd2bdc1aba6da14e1f2f7429f5",
+      "symbol": "ETHUSDT",
+      "url": "https://public.bybit.com/spot/ETHUSDT/ETHUSDT_2026-08-01.csv.gz",
+      "valid_trade_rows": 89507
+    }
+  ],
+  "start_date": "2026-07-03",
+  "symbols": [
+    "btc_usdt",
+    "eth_usdt"
+  ],
+  "timeframe": "minute15",
+  "venue": "bybit"
+}

@@ -97,6 +97,40 @@ def _walk_json(value: Any):
             yield from _walk_json(item)
 
 
+def reviewed_local_data_feedback(root: Path) -> dict[str, Any]:
+    """Project pinned physical evidence without inventing a workflow outcome.
+
+    The BTC/ETH signed-flow window is distinct from the frontier's four-pair
+    OHLCV input. This observation must not reset exhaustion, count a new cycle,
+    or globally grant a capability to that unrelated dataset.
+    """
+    from product_research_reports import ResearchReportStore
+
+    snapshot = ResearchReportStore(root / "product_ui").snapshot()
+    observations = []
+    for item in snapshot["reports"]:
+        if item["id"] != "A6" or not item.get("verified_data"):
+            continue
+        core = {
+            "schema": "nexus.scoped-verified-research-feedback.v1",
+            "execution_kind": "physical_local_research",
+            "source_sha": item["source_sha"],
+            "report_sha256": item["report_sha256"],
+            "mechanism": item["report"]["mechanism"],
+            "outcome": "rejected_data_verified_no_promotion",
+            "original_qualification": item["original_verdict"],
+            "data_scope": item["verified_data"],
+            "counts_as_new_research_cycle": False,
+            "global_frontier_capability_granted": False,
+            "research_only": True, "paper_only": True,
+            "qualification_authority": False,
+            "automatic_strategy_promotion": False, "live_trading_authority": False,
+        }
+        observations.append({**core, "feedback_sha256": _digest(core)})
+    return {"observations": observations,
+            "rejected": [r for r in snapshot["errors"] if r["id"] == "A6"]}
+
+
 def _artifact_observations(root: Path) -> dict[str, bool]:
     flags = {
         "exhausted": False,
@@ -227,3 +261,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
