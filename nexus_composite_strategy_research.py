@@ -96,8 +96,28 @@ GENERATED_FACTORY_SPECS = {
     **GENERATED_FACTORY_SPECS_V3,
     **GENERATED_FACTORY_SPECS_V4,
 }
-FACTORY_SPECS = {**FIXED_FACTORY_SPECS, **GENERATED_FACTORY_SPECS}
+# Append reviewed source-bound causal hypotheses without changing the immutable
+# fixed-v1 or generated-v2/v3/v4 contracts, order, IDs or digest history.
+REVIEWED_EXTENSION_SPECS = load_factory_contract(
+    Path(__file__).resolve().parent / "research" / "mechanism_factory_v5.json"
+)
+if (
+    set(REVIEWED_EXTENSION_SPECS) & (set(FIXED_FACTORY_SPECS) | set(GENERATED_FACTORY_SPECS))
+    or {
+        spec["topology_digest"] for spec in REVIEWED_EXTENSION_SPECS.values()
+    } & {
+        spec["topology_digest"]
+        for spec in (*FIXED_FACTORY_SPECS.values(), *GENERATED_FACTORY_SPECS.values())
+    }
+):
+    raise MechanismFactoryError("reviewed extension duplicates existing mechanism ID or topology")
+FACTORY_SPECS = {
+    **FIXED_FACTORY_SPECS,
+    **GENERATED_FACTORY_SPECS,
+    **REVIEWED_EXTENSION_SPECS,
+}
 FIXED_FACTORY_MECHANISMS = factory_ids(FIXED_FACTORY_SPECS)
+REVIEWED_EXTENSION_MECHANISMS = factory_ids(REVIEWED_EXTENSION_SPECS)
 GENERATED_FACTORY_MECHANISMS = factory_ids(GENERATED_FACTORY_SPECS)
 FACTORY_MECHANISMS = factory_ids(FACTORY_SPECS)
 FRONTIER_MECHANISMS = FRONTIER_GENERATION1 + FRONTIER_GENERATION2 + FACTORY_MECHANISMS
