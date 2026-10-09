@@ -4,10 +4,13 @@ import argparse
 import hashlib
 import json
 import os
+import sys
 from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 CATALOG_PATH = Path("research/strategy_family_catalog.json")
 SCHEMA = "nexus.strategy-discovery-controller.v1"
 FRONTIER_FINGERPRINT_INPUTS: dict[str, tuple[str, ...]] = {
