@@ -200,7 +200,7 @@ def test_separate_linux_hostname_can_pass_only_host_precheck(monkeypatch):
     assert_external_host()
 
 
-def test_http_auth_is_scoped_and_no_client_claim_enables_default_fencer(setup):
+def test_http_auth_is_scoped_and_no_client_claim_enables_default_fencer(setup, monkeypatch):
     state, clock, _, _ = setup
     arbiter = ExternalPaperArbiter(state, _trust(), lambda data: _sign(json.loads(data)),
                                    clock_ms=lambda: clock[0])
@@ -228,7 +228,12 @@ def test_http_auth_is_scoped_and_no_client_claim_enables_default_fencer(setup):
         response = client.getresponse()
         assert response.status == 409
         assert json.loads(response.read())["takeover_enabled"] is False
-        state.unlink()
+        # Fault-inject unavailable storage while HTTP workers are running.
+        # Windows cannot unlink a SQLite file still held by another thread;
+        # the separate state-loss test covers actual missing-file rejection.
+        def unavailable_connection():
+            raise ArbiterDenied("simulated durable storage outage")
+        monkeypatch.setattr(arbiter, "connection", unavailable_connection)
         client.request("GET", "/healthz")
         response = client.getresponse()
         assert response.status == 503
