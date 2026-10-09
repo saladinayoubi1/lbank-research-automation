@@ -185,6 +185,42 @@ class StrategyDiscoveryRotationTests(unittest.TestCase):
             )
             self.assertNotEqual(tampered.returncode, 0)
 
+    def test_autonomous_plan_must_not_redispatch_when_feedback_disappears(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "controller.json").write_text(
+                json.dumps(_controller()), encoding="utf-8"
+            )
+            (root / "state.json").write_text(
+                json.dumps(empty_state()), encoding="utf-8"
+            )
+            command = [
+                sys.executable,
+                str(Path(__file__).resolve().parents[1] /
+                    "nexus_strategy_discovery_rotation.py"),
+                "plan",
+                "--controller-status", str(root / "controller.json"),
+                "--state", str(root / "state.json"),
+                "--feedback-state", str(root / "lost-feedback.json"),
+                "--require-feedback-state",
+                "--blocked-receipt-on-exhaustion",
+                "--output", str(root / "plan.json"),
+            ]
+            result = subprocess.run(
+                command, capture_output=True, text=True, timeout=20
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("verified prior feedback required", result.stderr)
+            self.assertFalse((root / "plan.json").exists())
+            (root / "lost-feedback.json").write_text(
+                json.dumps({"state_digest": "f" * 64}), encoding="utf-8"
+            )
+            tampered = subprocess.run(
+                command, capture_output=True, text=True, timeout=20
+            )
+            self.assertNotEqual(tampered.returncode, 0)
+            self.assertFalse((root / "plan.json").exists())
+
     def test_state_tamper_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "state.json"
