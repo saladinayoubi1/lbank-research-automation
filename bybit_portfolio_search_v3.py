@@ -20,6 +20,32 @@ BARS_PER_YEAR = 365.25 * BARS_PER_DAY
 class PortfolioSearchError(RuntimeError):
     pass
 
+EXACT_EXECUTION_MODEL_SCHEMA = "nexus.spot-cash-next-open-scheduled.v2"
+
+
+def execution_model_receipt() -> dict[str, Any]:
+    """Bind new research output to the precise simulator bytes and semantics.
+
+    Older reports without this receipt are historical evidence only; they must
+    not be silently interpreted as results from this execution model.
+    """
+    source_path = Path(__file__).resolve(strict=True)
+    return {
+        "schema": EXACT_EXECUTION_MODEL_SCHEMA,
+        "module_sha256": hashlib.sha256(source_path.read_bytes()).hexdigest(),
+        "decision_time": "prior_closed_4h_bar",
+        "execution_time": "next_4h_open",
+        "rebalance_semantics": "global_index_schedule_or_material_target_change",
+        "cash_policy": "sell_first_prorate_buys_inclusive_fees_slippage",
+        "fees_slippage_persisted": True,
+        "historical_report_compatibility": "explicit_replay_required",
+        "research_only": True,
+        "automatic_paper_promotion": False,
+        "live_trading_authority": False,
+    }
+
+
+
 
 def bars(days: int) -> int:
     return max(1, int(days) * BARS_PER_DAY)
@@ -608,6 +634,8 @@ def run_search(manifest_path: Path, output_root: Path) -> dict[str, Any]:
         and all(stress_gate_results["stress"].values())
     )
     report = {
+        "execution_model": execution_model_receipt(),
+        "experiment_manifest_sha256": hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
         "experiment_id": cfg["experiment_id"],
         "dataset_archive_sha256": cfg["dataset"]["archive_sha256"],
         "methodology_note": (
