@@ -230,6 +230,7 @@ def main() -> int:
     plan.add_argument("--output", type=Path, required=True)
     plan.add_argument("--feedback-state", type=Path)
     plan.add_argument("--blocked-receipt-on-exhaustion", action="store_true")
+    plan.add_argument("--require-feedback-state", action="store_true")
     commit = sub.add_parser("commit")
     commit.add_argument("--state", type=Path, required=True)
     commit.add_argument("--plan", type=Path, required=True)
@@ -240,6 +241,15 @@ def main() -> int:
     state = load_state(args.state)
     if args.command == "plan":
         feedback = None
+        if args.require_feedback_state and (
+            args.feedback_state is None
+            or not args.feedback_state.is_file()
+            or args.feedback_state.is_symlink()
+        ):
+            raise StrategyDiscoveryRotationError(
+                "verified prior feedback required for autonomous dispatch; "
+                "missing feedback must not bootstrap a repeated experiment"
+            )
         if args.feedback_state and args.feedback_state.exists():
             feedback = load_json(args.feedback_state)
         try:
