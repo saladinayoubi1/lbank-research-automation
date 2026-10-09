@@ -88,3 +88,15 @@ def test_folds_pass_same_global_rebalance_schedule():
 def test_global_candidate_cadence_matches_weight_hold_origin():
     m=_candidate_rebalance_mask(40,{"params":{"rebalance_days":2}})
     assert np.flatnonzero(m).tolist()==[0,12,24,36]
+
+@pytest.mark.parametrize(
+    "invalid_field,invalid_value",
+    [("fee_bps", 10000.0), ("fee_bps", 12000.0),
+     ("slippage_bps", 10000.0), ("slippage_bps", 12000.0)],
+)
+def test_reject_costs_that_could_make_sells_have_negative_proceeds(invalid_field, invalid_value):
+    profile = dict(PROFILE)
+    profile[invalid_field] = invalid_value
+    target = np.ones((80, 2)) * 0.5
+    with pytest.raises(PortfolioSearchError, match="Invalid cash or cost profile"):
+        exact_backtest(tape(), target, PERIOD, profile)
