@@ -25,12 +25,58 @@ CHECKPOINT_NAME = "_checkpoint.json"
 PLAN_NAME = "_archive_plan.json"
 REPORT_NAME = "_backfill_report.json"
 SOURCE_MANIFEST_NAME = "_source_manifest.json"
+CANDLE_MODEL_NAME = "_candle_model.json"
+CANDLE_MODEL_SCHEMA = "nexus.bybit-source-row-stable-candles.v2"
 STATUS_NAME = "_backfill_status.csv"
 RETRYABLE_STATUS_CODES = {403, 408, 425, 429, 500, 502, 503, 504}
 
 
 class BybitBackfillError(RuntimeError):
     pass
+
+
+def candle_model_receipt() -> dict[str, Any]:
+    """Describe new candles without relabeling any frozen legacy evidence."""
+    return {
+        "schema": CANDLE_MODEL_SCHEMA,
+        "module_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        "timestamp_tie_order": "original_archive_row_order",
+        "historical_report_compatibility": "explicit_replay_required",
+        "research_only": True,
+        "automatic_strategy_promotion": False,
+        "live_trading_authority": False,
+    }
+
+
+def validate_candle_model_state(state_root: Path) -> None:
+    """Refuse to append v2 candles to an unversioned or mixed dataset root."""
+    if not state_root.exists():
+        return
+    checkpoint = load_checkpoint(state_root)
+    existing_candles = any((state_root / "bybit_market").glob("*/*.parquet"))
+    if not existing_candles and not checkpoint.get("completed_units"):
+        return
+    try:
+        model = json.loads((state_root / CANDLE_MODEL_NAME).read_text(encoding="utf-8"))
+        manifest = json.loads((state_root / SOURCE_MANIFEST_NAME).read_text(encoding="utf-8"))
+        valid = isinstance(manifest, list) and bool(manifest)
+        for receipt in [model] + [entry["candle_model"] for entry in manifest]:
+            valid = valid and (
+                receipt.get("schema") == CANDLE_MODEL_SCHEMA
+                and receipt.get("timestamp_tie_order") == "original_archive_row_order"
+                and receipt.get("research_only") is True
+                and receipt.get("automatic_strategy_promotion") is False
+                and receipt.get("live_trading_authority") is False
+                and isinstance(receipt.get("module_sha256"), str)
+                and re.fullmatch(r"[0-9a-f]{64}", receipt["module_sha256"]) is not None
+            )
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        valid = False
+    if not valid:
+        raise BybitBackfillError(
+            "Legacy or mixed candle semantics: replay unchanged raw archives into "
+            "a fresh versioned state_root; preserve historical evidence"
+        )
 
 
 @dataclass(frozen=True)
@@ -455,6 +501,7 @@ def stage_unit(
                 **source,
                 **schema,
                 **quality,
+                "candle_model": candle_model_receipt(),
                 "unit_id": unit.unit_id,
                 "unit_kind": unit.kind,
                 "start_date": unit.start_date,
@@ -585,7 +632,9 @@ def run_backfill(
         )
     if clean and state_root.exists():
         shutil.rmtree(state_root)
+    validate_candle_model_state(state_root)
     state_root.mkdir(parents=True, exist_ok=True)
+    write_json(state_root / CANDLE_MODEL_NAME, candle_model_receipt())
 
     inventories = {
         symbol: inventory_fetcher(symbol) for symbol in normalized_symbols
@@ -676,6 +725,7 @@ def run_backfill(
 
     report = {
         "generated_at_utc": pd.Timestamp.now(tz="UTC").isoformat(),
+        "candle_model": candle_model_receipt(),
         "configuration": {
             "start_date": start_date,
             "end_date": end_date,
@@ -739,3 +789,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
