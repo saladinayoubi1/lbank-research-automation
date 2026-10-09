@@ -227,3 +227,23 @@ def test_future_ledger_swap_and_double_counted_cost_profiles_fail():
     # 16 calendar observations, NOT 32 stress+conservative observations.
     assert result["weekly_windows_observed"] == 16
     assert result["multiple_comparison_count"] == 2*4
+
+
+
+def test_significant_win_frequency_with_large_tail_losses_is_not_economic_edge():
+    ledger = _ledger(n=10)
+    evidence = _forward(ledger, weeks=32)
+    for row in evidence["weekly_windows"]:
+        row["conservative_net_return_pct"] = 0.1
+        row["stress_net_return_pct"] = 0.1
+    # Two catastrophic weeks swamp thirty tiny positive weeks, even
+    # though one-sided sign frequency is highly significant after Bonferroni.
+    for row in evidence["weekly_windows"][:2]:
+        row["conservative_net_return_pct"] = -30.0
+        row["stress_net_return_pct"] = -30.0
+    result = prospective_diagnostic(evidence, ledger)
+    assert all(p < 0.05 for p in result["bonferroni_familywise_adjusted_p"].values())
+    assert all(v < 0 for v in result["descriptive_mean_weekly_excess_pct"].values())
+    assert result["descriptive_sign_test_supported"] is False
+    assert "NON_POSITIVE_MEAN_BENCHMARK_EXCESS" in result["reason_codes"]
+    assert result["owner_demo_admission_allowed"] is False

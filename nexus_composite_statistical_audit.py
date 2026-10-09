@@ -231,6 +231,7 @@ def prospective_diagnostic(
     if not isinstance(rows, list) or len(rows) != locked_count:
         raise StatisticalReviewError("premature peeking or changed weekly horizon refused")
     success = {profile: 0 for profile in EXPECTED_PROFILES}
+    weekly_excess = {profile: [] for profile in EXPECTED_PROFILES}
     previous = None
     for row in rows:
         if not isinstance(row, Mapping) or set(row) != {
@@ -256,7 +257,9 @@ def prospective_diagnostic(
         benchmark = _finite(row["benchmark_net_return_pct"], "benchmark")
         for profile in EXPECTED_PROFILES:
             observed = _finite(row[f"{profile}_net_return_pct"], f"{profile}_net_return_pct")
-            if observed > benchmark:
+            difference = observed - benchmark
+            weekly_excess[profile].append(difference)
+            if difference > 0:
                 success[profile] += 1
     length = len(rows)
     if previous != preregistered_analysis:
@@ -264,13 +267,24 @@ def prospective_diagnostic(
     multiplicity = 2 * attempt["hypotheses_considered_at_least"]
     raw = {profile: _sign_p_value(length, wins) for profile, wins in success.items()}
     adjusted = {profile: min(1.0, multiplicity * p) for profile, p in raw.items()}
+    mean_excess = {
+        profile: sum(weekly_excess[profile]) / length for profile in EXPECTED_PROFILES
+    }
+    worst_excess = {
+        profile: min(weekly_excess[profile]) for profile in EXPECTED_PROFILES
+    }
+    # A weekly-win sign test measures P(positive), NOT expected economic gain:
+    # many tiny wins and a few huge losses can have a negative mean.
     diagnostic_pass = bool(
         length >= MIN_WEEKLY_WINDOWS and
         all(adjusted[profile] < ALPHA_FAMILYWISE for profile in EXPECTED_PROFILES)
+        and all(mean_excess[profile] > 0 for profile in EXPECTED_PROFILES)
     )
     reasons: list[str] = []
     if length < MIN_WEEKLY_WINDOWS:
         reasons.append("INSUFFICIENT_NONOVERLAPPING_FUTURE_WEEKS")
+    if any(mean_excess[profile] <= 0 for profile in EXPECTED_PROFILES):
+        reasons.append("NON_POSITIVE_MEAN_BENCHMARK_EXCESS")
     if not diagnostic_pass:
         reasons.append("SEARCH_ADJUSTED_SIGN_SCREEN_NOT_SUPPORTED")
     # A JSON digest cannot independently prove source authenticity, first
@@ -294,6 +308,8 @@ def prospective_diagnostic(
         "raw_onesided_sign_p": raw,
         "bonferroni_familywise_adjusted_p": adjusted,
         "weekly_excess_positive_count": success,
+        "descriptive_mean_weekly_excess_pct": mean_excess,
+        "descriptive_worst_weekly_excess_pct": worst_excess,
         "multiple_comparison_count": multiplicity,
         "alpha_familywise": ALPHA_FAMILYWISE,
         "test_assumptions": [

@@ -164,7 +164,7 @@ with two *deliberately separate* procedures:
    BTC/ETH source identity, benchmark and Paper event evidence references.
    Using the predeclared paired conservative and stress returns, it
    evaluates the **exact one-sided weekly excess sign test** against a
-   frozen benchmark. It adjusts each p-value via **Bonferroni** across
+   frozen benchmark. The diagnostic also requires **positive average weekly benchmark excess** for both profiles and discloses worst-week losses: a statistically unusual count of tiny weekly wins may coexist with catastrophic tail losses, so positive sign frequency alone is not an economic edge. It adjusts each p-value via **Bonferroni** across
    all prior cumulative search attempts and both cost assumptions.
    The freeze fixes the **exact weekly observation count** and the **analysis-not-before UTC date**, and refuses optional peeking, shortened follow-up and mismatched preregistered final dates. At least 12 prospective 7-day windows are required for even a diagnostic
    sign screen. This **is NOT a historical minimum trade-count gate**.
