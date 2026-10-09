@@ -275,3 +275,13 @@ def test_terminal_frontier_reports_blocked_without_dispatching_or_moving_cursor(
     ):
         step = text.split(name, 1)[1].split(next_name, 1)[0]
         assert "steps.frontier-selection.outputs.ready == 'true'" in step
+
+
+def test_unavailable_feedback_cannot_bootstrap_autonomous_dispatch():
+    workflow = _text()
+    stage = workflow.split("Verify discovery surface and select one stage", 1)[1].split(
+        "Dispatch reviewed Research workflow", 1
+    )[0]
+    assert "--require-feedback-state" in stage
+    assert "--blocked-receipt-on-exhaustion" in stage
+    assert "steps.frontier-selection.outputs.ready == 'true'" in workflow
