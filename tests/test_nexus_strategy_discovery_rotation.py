@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -122,6 +124,66 @@ class StrategyDiscoveryRotationTests(unittest.TestCase):
         controller["live_trading_authority"] = True
         with self.assertRaises(StrategyDiscoveryRotationError):
             build_plan(controller, state)
+
+    def test_cli_blocked_frontier_receipt_never_authorizes_dispatch(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            controller = _controller()
+            state = empty_state()
+            feedback_core = {
+                "schema_version": "nexus.strategy-discovery-feedback.v1",
+                "exhausted_experiment_sha256": [],
+                "outcomes": [
+                    {
+                        "experiment_sha256": row["experiment_sha256"],
+                        "outcome": "no_candidate",
+                        "workflow_conclusion": "success",
+                    }
+                    for row in controller["search_stages"]
+                ],
+                "research_only": True,
+                "paper_only": True,
+                "qualification_authority": False,
+                "automatic_strategy_promotion": False,
+                "live_trading_authority": False,
+            }
+            feedback = {**feedback_core, "state_digest": _digest(feedback_core)}
+            for name, doc in (
+                ("controller.json", controller),
+                ("state.json", state),
+                ("feedback.json", feedback),
+            ):
+                (root / name).write_text(json.dumps(doc), encoding="utf-8")
+            args = [
+                sys.executable, str(Path(__file__).resolve().parents[1] /
+                                    "nexus_strategy_discovery_rotation.py"),
+                "plan", "--controller-status", str(root / "controller.json"),
+                "--state", str(root / "state.json"),
+                "--feedback-state", str(root / "feedback.json"),
+                "--output", str(root / "plan.json"),
+            ]
+            denied = subprocess.run(args, capture_output=True, text=True, timeout=20)
+            self.assertNotEqual(denied.returncode, 0)
+            self.assertFalse((root / "plan.json").exists())
+            allowed = subprocess.run(
+                [*args, "--blocked-receipt-on-exhaustion"],
+                capture_output=True, text=True, timeout=20,
+            )
+            self.assertEqual(allowed.returncode, 0, allowed.stderr)
+            receipt = json.loads((root / "plan.json").read_text())
+            self.assertEqual(receipt["status"], "NEEDS_NEW_REVIEWED_MECHANISM")
+            self.assertFalse(receipt["dispatch_allowed"])
+            self.assertFalse(receipt["live_trading_authority"])
+            self.assertNotIn("workflow", receipt)
+            with self.assertRaises(StrategyDiscoveryRotationError):
+                commit_dispatch(state, receipt, source_sha="a" * 40, run_id="1")
+            feedback["state_digest"] = "f" * 64
+            (root / "feedback.json").write_text(json.dumps(feedback))
+            tampered = subprocess.run(
+                [*args, "--blocked-receipt-on-exhaustion"],
+                capture_output=True, text=True, timeout=20,
+            )
+            self.assertNotEqual(tampered.returncode, 0)
 
     def test_state_tamper_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
