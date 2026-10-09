@@ -100,3 +100,20 @@ def test_reject_costs_that_could_make_sells_have_negative_proceeds(invalid_field
     target = np.ones((80, 2)) * 0.5
     with pytest.raises(PortfolioSearchError, match="Invalid cash or cost profile"):
         exact_backtest(tape(), target, PERIOD, profile)
+
+
+def test_execution_model_receipt_binds_exact_code_bytes_without_paper_authority():
+    import hashlib
+    from pathlib import Path
+    import bybit_portfolio_search_v3 as engine
+
+    receipt = engine.execution_model_receipt()
+    assert receipt["schema"] == "nexus.spot-cash-next-open-scheduled.v2"
+    assert receipt["module_sha256"] == hashlib.sha256(
+        Path(engine.__file__).resolve().read_bytes()
+    ).hexdigest()
+    assert receipt["decision_time"] == "prior_closed_4h_bar"
+    assert receipt["execution_time"] == "next_4h_open"
+    assert receipt["historical_report_compatibility"] == "explicit_replay_required"
+    assert receipt["automatic_paper_promotion"] is False
+    assert receipt["live_trading_authority"] is False
