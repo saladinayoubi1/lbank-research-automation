@@ -279,54 +279,112 @@ def approximate_backtest(
 
 
 def exact_backtest(
-    market: dict[str, Any], weights: np.ndarray, period: dict[str, str], profile: dict[str, float]
+    market: dict[str, Any], weights: np.ndarray, period: dict[str, str], profile: dict[str, float],
+    *, rebalance_mask: np.ndarray | None = None,
 ) -> dict[str, Any]:
+    """Trade prior-closed-bar targets at the next open; never borrow spot cash.
+
+    An explicit rebalance mask marks bars on which a scheduled allocation review
+    occurred, even when the target weights are unchanged. Without one, execute
+    only on the first eligible bar or an actual target change, not every candle.
+    """
     idx = period_indices(market["timestamps"], period)
     if len(idx) < 3:
         raise PortfolioSearchError("Period has fewer than three bars")
-    opens = market["open"][idx]
-    closes = market["close"][idx]
-    selected = weights[idx]
+    opens = np.asarray(market["open"][idx], dtype=float)
+    closes = np.asarray(market["close"][idx], dtype=float)
+    selected = np.asarray(weights[idx], dtype=float)
+    if (
+        selected.shape != opens.shape or not np.isfinite(opens).all()
+        or not np.isfinite(closes).all() or (opens <= 0).any()
+        or (closes <= 0).any() or not np.isfinite(selected).all()
+        or (selected < 0).any() or (selected.sum(axis=1) > 1.0 + 1e-10).any()
+    ):
+        raise PortfolioSearchError("Invalid Spot prices or long/cash weights")
+    if rebalance_mask is not None:
+        scheduled = np.asarray(rebalance_mask)
+        if scheduled.dtype != np.bool_ or scheduled.shape != (len(weights),):
+            raise PortfolioSearchError("Rebalance mask must match full market bars")
+    else:
+        scheduled = None
     cash = float(profile["initial_cash"])
+    fee_bps, slip_bps = float(profile["fee_bps"]), float(profile["slippage_bps"])
+    if (
+        not np.isfinite(cash) or cash <= 0 or not np.isfinite(fee_bps)
+        or fee_bps < 0 or not np.isfinite(slip_bps) or slip_bps < 0
+    ):
+        raise PortfolioSearchError("Invalid cash or cost profile")
+    fee_rate, slippage = fee_bps / 10_000.0, slip_bps / 10_000.0
     quantity = np.zeros(opens.shape[1], dtype=float)
-    fee_rate = float(profile["fee_bps"]) / 10000.0
-    slippage = float(profile["slippage_bps"]) / 10000.0
     equity_rows: list[float] = []
-    total_fees = 0.0
-    total_notional = 0.0
+    total_fees = total_notional = 0.0
     asset_fills = np.zeros(opens.shape[1], dtype=int)
+    minimum_cash, rebalance_events = cash, 0
 
     for row in range(len(idx)):
-        if row > 0:
+        target_changed = row > 1 and not np.array_equal(
+            selected[row - 1], selected[row - 2]
+        )
+        scheduled_due = scheduled is not None and row > 0 and bool(scheduled[idx[row - 1]])
+        if row > 0 and (row == 1 or target_changed or scheduled_due):
             equity_at_open = cash + float(np.dot(quantity, opens[row]))
-            desired_quantity = equity_at_open * selected[row - 1] / opens[row]
-            changes = desired_quantity - quantity
-            order = list(np.where(changes < -1e-12)[0]) + list(np.where(changes > 1e-12)[0])
-            for asset in order:
-                change = float(changes[asset])
-                fill = opens[row, asset] * (1.0 + slippage if change > 0 else 1.0 - slippage)
-                notional = abs(change * fill)
-                fee = notional * fee_rate
-                cash -= change * fill + fee
-                quantity[asset] += change
-                total_notional += notional
+            desired = equity_at_open * selected[row - 1] / opens[row]
+            changes = desired - quantity
+            traded = False
+            # Release cash from all sells before calculating affordable buys.
+            for asset in np.where(changes < -1e-12)[0]:
+                amount = float(-changes[asset])
+                fill = opens[row, asset] * (1.0 - slippage)
+                gross = amount * fill
+                fee = gross * fee_rate
+                cash += gross - fee
+                quantity[asset] -= amount
+                total_notional += gross
                 total_fees += fee
                 asset_fills[asset] += 1
+                traded = True
+
+            purchases = np.where(changes > 1e-12)[0]
+            desired_spend = sum(
+                float(changes[asset]) * opens[row, asset] *
+                (1.0 + slippage) * (1.0 + fee_rate)
+                for asset in purchases
+            )
+            affordable_ratio = min(1.0, max(cash, 0.0) / desired_spend) if desired_spend > 0 else 0.0
+            for asset in purchases:
+                amount = float(changes[asset]) * affordable_ratio
+                if amount <= 1e-12:
+                    continue
+                fill = opens[row, asset] * (1.0 + slippage)
+                gross = amount * fill
+                fee = gross * fee_rate
+                cash -= gross + fee
+                quantity[asset] += amount
+                total_notional += gross
+                total_fees += fee
+                asset_fills[asset] += 1
+                traded = True
+
+            if cash < -1e-7 or (quantity < -1e-12).any():
+                raise PortfolioSearchError("Spot cash-only execution violated")
+            cash = max(cash, 0.0)  # sub-cent floating-point residue
+            minimum_cash = min(minimum_cash, cash)
+            rebalance_events += int(traded)
         equity_rows.append(cash + float(np.dot(quantity, closes[row])))
 
+    # Research ends flat; liquidation itself pays fees and adverse slippage.
     for asset in range(len(quantity)):
-        if abs(quantity[asset]) > 1e-12:
-            change = -quantity[asset]
-            fill = closes[-1, asset] * (1.0 + slippage if change > 0 else 1.0 - slippage)
-            notional = abs(change * fill)
-            fee = notional * fee_rate
-            cash -= change * fill + fee
-            quantity[asset] = 0.0
-            total_notional += notional
+        if quantity[asset] > 1e-12:
+            fill = closes[-1, asset] * (1.0 - slippage)
+            gross = quantity[asset] * fill
+            fee = gross * fee_rate
+            cash += gross - fee
+            total_notional += gross
             total_fees += fee
             asset_fills[asset] += 1
+            quantity[asset] = 0.0
+    minimum_cash = min(minimum_cash, cash)
     equity_rows[-1] = cash
-
     equity = np.asarray(equity_rows, dtype=float)
     returns = pd.Series(equity).pct_change().replace([np.inf, -np.inf], np.nan).dropna().to_numpy(float)
     drawdown = equity / np.maximum.accumulate(equity) - 1.0
@@ -341,8 +399,9 @@ def exact_backtest(
         "turnover": float(total_notional / profile["initial_cash"]),
         "total_fees": float(total_fees),
         "average_exposure": float(np.mean(selected[:-1].sum(axis=1))),
+        "minimum_cash_usdt": float(minimum_cash),
+        "rebalance_event_count": int(rebalance_events),
     }
-
 
 def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
     returns = [float(x["total_return"]) for x in rows]
@@ -393,11 +452,15 @@ def stress_checks(result: dict[str, Any], gate: dict[str, Any]) -> dict[str, boo
 
 def evaluate_development(
     market: dict[str, Any], weights: np.ndarray, periods: list[dict[str, str]],
-    mode: str, profile: dict[str, float] | None = None, cost_bps: float = 0.0
+    mode: str, profile: dict[str, float] | None = None, cost_bps: float = 0.0,
+    rebalance_mask: np.ndarray | None = None,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     rows = []
     for fold, period in enumerate(periods, 1):
-        metric = exact_backtest(market, weights, period, profile) if mode == "exact" else approximate_backtest(market, weights, period, cost_bps)
+        metric = (
+            exact_backtest(market, weights, period, profile, rebalance_mask=rebalance_mask)
+            if mode == "exact" else approximate_backtest(market, weights, period, cost_bps)
+        )
         rows.append({"fold": fold, "start": period["start"], "end": period["end"], **metric})
     return summarize(rows), rows
 
@@ -407,6 +470,12 @@ def flatten_candidate(row: dict[str, Any]) -> dict[str, Any]:
     output["params"] = json.dumps(output["params"], sort_keys=True)
     output["failed_checks"] = json.dumps(output.get("failed_checks", []))
     return output
+
+
+def _candidate_rebalance_mask(row_count: int, candidate: dict[str, Any]) -> np.ndarray:
+    """Use the same global 4h grid origin as construct_weights()."""
+    interval = bars(int(candidate["params"]["rebalance_days"]))
+    return np.arange(row_count) % interval == 0
 
 
 def run_search(manifest_path: Path, output_root: Path) -> dict[str, Any]:
@@ -450,7 +519,8 @@ def run_search(manifest_path: Path, output_root: Path) -> dict[str, Any]:
         weights = construct_weights(state_cache[key], vol_cache[int(candidate["params"]["vol_days"])], candidate)
         weight_cache[candidate["id"]] = weights
         summary, runs = evaluate_development(
-            market, weights, cfg["development_folds"], "exact", profile=conservative
+            market, weights, cfg["development_folds"], "exact", profile=conservative,
+            rebalance_mask=_candidate_rebalance_mask(len(market["timestamps"]), candidate),
         )
         checks = development_checks(summary, cfg["development_gate"])
         exact_rows.append({
@@ -481,14 +551,19 @@ def run_search(manifest_path: Path, output_root: Path) -> dict[str, Any]:
     ensemble_sums = ensemble_weights.sum(axis=1)
     excessive = ensemble_sums > 1.0
     ensemble_weights[excessive] /= ensemble_sums[excessive, None]
+    ensemble_mask = np.zeros(len(market["timestamps"]), dtype=bool)
+    for component in components:
+        ensemble_mask |= _candidate_rebalance_mask(len(market["timestamps"]), component)
     ensemble_summary, ensemble_runs = evaluate_development(
-        market, ensemble_weights, cfg["development_folds"], "exact", profile=conservative
+        market, ensemble_weights, cfg["development_folds"], "exact", profile=conservative,
+        rebalance_mask=ensemble_mask,
     )
     ensemble_checks = development_checks(ensemble_summary, cfg["development_gate"])
     best = ranked[0]
 
     if ensemble_summary["score"] >= best["score"] and all(ensemble_checks.values()):
         selected_weights = ensemble_weights
+        selected_rebalance_mask = ensemble_mask
         selected = {
             "type": "median_ensemble",
             "components": [
@@ -501,6 +576,7 @@ def run_search(manifest_path: Path, output_root: Path) -> dict[str, Any]:
         selected_development_runs = ensemble_runs
     else:
         selected_weights = weight_cache[best["id"]]
+        selected_rebalance_mask = _candidate_rebalance_mask(len(market["timestamps"]), best)
         selected = {
             "type": "single",
             "id": best["id"], "family": best["family"], "params": best["params"],
@@ -517,7 +593,8 @@ def run_search(manifest_path: Path, output_root: Path) -> dict[str, Any]:
     stress_gate_results: dict[str, Any] = {}
     for profile_name in ["conservative", "stress"]:
         result = exact_backtest(
-            market, selected_weights, cfg["recent_stress_period"], cfg["execution"][profile_name]
+            market, selected_weights, cfg["recent_stress_period"], cfg["execution"][profile_name],
+            rebalance_mask=selected_rebalance_mask,
         )
         stress_results[profile_name] = result
         stress_gate_results[profile_name] = stress_checks(
