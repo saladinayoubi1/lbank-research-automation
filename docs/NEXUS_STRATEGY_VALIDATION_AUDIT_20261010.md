@@ -81,13 +81,30 @@ This physical source check was **not an Agent Manager strategy backtest**, not
 an independently attested QA receipt, and not promotion evidence. It did not
 read/write Paper or credentials. The approved next gate is exact PR-head tests
 followed by real Agent Manager numerical tasks on the updated reviewed
-mechanism, separate fill oracle, and prospective risk validation.
+mechanism, the new separate fill oracle and prospective risk validation.
+A subsequent full multi-timeframe read-only probe encountered official
+Bybit public HTTP 403 (`edge_country_restricted`). No proxy, network
+reroute or exchange substitute was applied; full fresh BTC/ETH 15m+1h+4h
+numeric strategy replay and its physical QA-41 receipt remain unverified.
 
 ## NOT solved by this PR — further separate scientific and owner gates
 
-- Independently coded order/fill accounting oracle (not just the above
-  isolated-cash arithmetic identity). The existing QA replays the same
-  simulator, so a shared stop/target or slippage bug remains possible.
+- **Done as a source-only deterministic execution check**:
+  `nexus_composite_fill_oracle` is a distinct high-precision Decimal
+  trade/fill state machine, not a call to the backtest implementation.
+  It independently prices next-candle OPEN entry, collateral-backed size,
+  same-bar stop-before-target, adverse open gaps, 64-bar forced exit,
+  entry/exit slippage, entry/exit fees, daily-loss pause and 10% drawdown
+  halt. Before a VAL-40 producer can emit its source-bound record, each
+  BTC/ETH conservative/stress result must exactly reconcile to this oracle
+  (bounded numeric tolerances). The same production evaluator plus oracle
+  executes again in the QA-41 default independent replay. Tests inject
+  fraudulent PnL into the actual VAL-40 entrypoint to prove fail-closed
+  rejection. **Limit:** this verifies independent calculation using the
+  same canonical features, not an exchange-provided actual fill history,
+  not distinct raw market observations and not independent signal semantics.
+  A fully independent exchange-execution or event-ledger oracle is still
+  a separate future task.
 - Chronologically purged/embargoed walk-forward, multiple non-overlapping
   regimes, uncertainty intervals and explicit multiple-comparison
   correction. The repeatedly inspected historical test is *not pristine*.
@@ -106,8 +123,14 @@ mechanism, separate fill oracle, and prospective risk validation.
 Tests cover both false-positive 10-day profitable replay and genuine
 30-day+ source-bound *synthetic fixture*, source gap, forged independently
 rehashed PnL, invalid stress costs, duplicate profiles, zero activity,
-separate cost-profile effective sample, and no-work transport semantics.
-Fixture testing does not certify an available live 30-day dataset.
+separate cost-profile effective sample, no-work transport semantics,
+strict official Bybit multi-page provenance, and independent Decimal
+execution of adverse simultaneous stop/target, adverse gaps, both cost
+profiles/risk variants, timeouts, no-trade and hundreds of round trips.
+An injected wrong PnL in the actual default VAL-40 evaluator is rejected.
+The 15m physical API proof succeeded for BTC/ETH at one observation clock,
+but full 1h/4h replay remains blocked by intermittent official HTTP 403.
+No synthetic fixture is evidence of market profitability.
 
 Undo by reverting this source-only PR after preserving its test report.
 Do not reset the Windows user profile or change the owner-installed app.

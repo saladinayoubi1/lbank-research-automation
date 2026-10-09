@@ -276,6 +276,7 @@ def _default_evaluator(
     import nexus_composite_strategy_research as composite
     from product_research_runtime import ProductResearchRuntime
     from nexus_canonical_paged_history import fetch_verified_15m_window
+    from nexus_composite_fill_oracle import CompositeFillOracleError, verify_fills
 
     runtime = ProductResearchRuntime(
         None,  # type: ignore[arg-type]
@@ -352,6 +353,24 @@ def _default_evaluator(
                 raise CompositeRuntimeRequalificationError(
                     f"fresh composite replay is not deterministic for {symbol}/{profile}"
                 )
+            # A distinct, Decimal-based trade/fill state machine independently
+            # reconciles next-open entries, adverse gap/stop priority,
+            # collateral, fees, slippage, PnL and deterministic risk.
+            # This intentionally runs AGAIN during independent QA replay.
+            # It neither alters v1 receipt fields nor grants Paper authority.
+            try:
+                verify_fills(
+                    feature_frame,
+                    signals,
+                    fee_bps=fee_bps,
+                    slip_bps=slip_bps,
+                    risk_variant=int(config["risk_variant"]),
+                    observed=first,
+                )
+            except CompositeFillOracleError as exc:
+                raise CompositeRuntimeRequalificationError(
+                    f"independent fill accounting disagrees for {symbol}/{profile}"
+                ) from exc
             profile_rows.append({"profile": profile, **first})
 
         dataset_rows = {}
