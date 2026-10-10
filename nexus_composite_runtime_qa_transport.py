@@ -355,7 +355,7 @@ def latest_verified_task(
         # Sparse low-turnover strategies do not create endless failing CI
         # workflows or phantom QA tasks. The producer stays immutable and
         # eligible for a *later*, genuinely longer observational source.
-        if str(exc).startswith("insufficient source-bound observation evidence:"):
+        if str(exc).startswith("insufficient observation coverage for independent QA:"):
             print("composite_qa_observation_gate=" + str(exc), file=sys.stderr)
             return None
         raise

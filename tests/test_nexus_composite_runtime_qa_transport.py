@@ -320,7 +320,7 @@ def test_short_observation_is_no_work_not_broken_transport_or_phantom_qa(monkeyp
     def inconclusive_builder(_producer, _verification, *, producer_workflow_run_id):
         assert producer_workflow_run_id == 101
         raise tr.CompositeRuntimeQaError(
-            "insufficient source-bound observation evidence: "
+            "insufficient observation coverage for independent QA: "
             "INSUFFICIENT_OBSERVATION_COVERAGE"
         )
 
