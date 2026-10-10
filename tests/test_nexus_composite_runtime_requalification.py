@@ -302,3 +302,42 @@ def test_redigested_runtime_asof_tamper_is_rejected():
     core.pop("requalification_digest", None)
     tampered["requalification_digest"] = rq.digest(core)
     assert rq.verify_requalification(tampered)["decision"] == "reject"
+
+
+def test_new_3072_bar_source_marker_has_exact_validated_history_and_no_promotion():
+    dataset_rows = [
+        _evaluation("BTCUSDT"),
+        _evaluation("ETHUSDT"),
+    ]
+    for row in dataset_rows:
+        info = row["datasets"]["minute15"]
+        info["row_count"] = rq.PAGED_15M_LIMIT
+        info["first_open_time_ms"] = (
+            info["last_open_time_ms"]
+            - (rq.PAGED_15M_LIMIT - 1) * rq.TIMEFRAME_STEP_MS["minute15"]
+        )
+    result = _run(dataset_rows)
+    assert result["fresh_history_limit_per_timeframe"] == 3072
+    assert result["decision"] == "QUALIFIED_FOR_REVIEW"
+    assert result["automatic_strategy_promotion"] is False
+    assert result["paper_execution_authority"] is False
+    assert rq.verify_requalification(result)["decision"] == "pass"
+
+    # A redigested marker claim without physical 3072-bar data fails closed.
+    bad = deepcopy(result)
+    bad["evaluations"][0]["datasets"]["minute15"]["row_count"] = 1000
+    bad["evaluations"][0]["datasets"]["minute15"]["first_open_time_ms"] = (
+        bad["evaluations"][0]["datasets"]["minute15"]["last_open_time_ms"]
+        - 999 * rq.TIMEFRAME_STEP_MS["minute15"]
+    )
+    bad["evaluations_digest"] = rq.digest(bad["evaluations"])
+    core = dict(bad)
+    core.pop("requalification_digest", None)
+    bad["requalification_digest"] = rq.digest(core)
+    assert rq.verify_requalification(bad)["decision"] == "reject"
+
+
+def test_existing_1000_bar_legacy_evidence_remains_verifiable():
+    result = _run([_evaluation("BTCUSDT"), _evaluation("ETHUSDT")])
+    assert result["fresh_history_limit_per_timeframe"] == rq.HISTORY_LIMIT == 1000
+    assert rq.verify_requalification(result)["decision"] == "pass"

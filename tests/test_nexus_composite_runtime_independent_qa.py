@@ -60,8 +60,12 @@ def _dataset(tf, suffix, asof):
     return {
         "timeframe": tf,
         "binding_sha256": suffix * 64,
-        "row_count": 1000,
-        "first_open_time_ms": last_open - 999 * step,
+        # Synthetic 30-day+ canonical aggregation for QA; live public fetch
+        # remains capped at 1000 and is NOT yet sufficient for QA admission.
+        "row_count": 3000 if tf == "minute15" else 1000,
+        "first_open_time_ms": last_open - (
+            (3000 if tf == "minute15" else 1000) - 1
+        ) * step,
         "last_open_time_ms": last_open,
     }
 
@@ -194,3 +198,41 @@ def test_task_redigest_does_not_widen_authority(monkeypatch):
     tampered["task_digest"]=qa.digest(core)
     with pytest.raises(qa.CompositeRuntimeQaError,match="identity or authority"):
         qa.validate_task(tampered,SOURCE)
+
+
+def _redigest_producer(producer):
+    producer["evaluations_digest"] = rq.digest(producer["evaluations"])
+    core = dict(producer)
+    core.pop("requalification_digest", None)
+    producer["requalification_digest"] = rq.digest(core)
+    return producer
+
+
+def test_ten_day_profitable_replay_cannot_issue_new_qa_task(monkeypatch):
+    producer = _producer(monkeypatch)
+    for row in producer["evaluations"]:
+        info = row["datasets"]["minute15"]
+        info["row_count"] = 1000
+        info["first_open_time_ms"] = info["last_open_time_ms"] - 999 * 900_000
+    _redigest_producer(producer)
+    assert producer["decision"] == "QUALIFIED_FOR_REVIEW"
+    assert rq.verify_requalification(producer)["decision"] == "pass"
+    with pytest.raises(qa.CompositeRuntimeQaError, match="INSUFFICIENT_OBSERVATION_COVERAGE"):
+        qa.build_task(
+            producer, rq.verify_requalification(producer),
+            producer_workflow_run_id=RUN_ID,
+        )
+
+
+def test_physically_redigested_accounting_fraud_is_independently_rejected(monkeypatch):
+    producer = _producer(monkeypatch)
+    # Existing VAL-40 structure verifies types and source/hash but does not
+    # independently reconcile isolated capital versus percentages.
+    producer["evaluations"][0]["profiles"][0]["net_pnl_usdt"] = 900.0
+    _redigest_producer(producer)
+    assert rq.verify_requalification(producer)["decision"] == "pass"
+    with pytest.raises(qa.CompositeRuntimeQaError, match="chronology/accounting"):
+        qa.build_task(
+            producer, rq.verify_requalification(producer),
+            producer_workflow_run_id=RUN_ID,
+        )
