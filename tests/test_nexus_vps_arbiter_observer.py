@@ -25,7 +25,7 @@ def good(command):
 
 def inspect_with(fake_run=good, ssh_status=(True, "local SSH banner"), ntp_status=(True, "per-boot sync")):
     def fake_file(self, *args, **kwargs):
-        if str(self) == "/proc/uptime":
+        if str(self).replace("\\", "/").endswith("/proc/uptime"):
             return "450.4 900.1\n"
         return "MemTotal:    3932160 kB\n"
     with patch.object(module.os, "cpu_count", return_value=2), \
