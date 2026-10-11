@@ -23,7 +23,7 @@ def good(command):
     raise AssertionError(command)
 
 
-def inspect_with(fake_run=good):
+def inspect_with(fake_run=good, ssh_status=(True, "local SSH banner"), ntp_status=(True, "per-boot sync")):
     def fake_file(self, *args, **kwargs):
         if str(self) == "/proc/uptime":
             return "450.4 900.1\n"
@@ -32,7 +32,7 @@ def inspect_with(fake_run=good):
          patch.object(module.shutil, "disk_usage",
                       return_value=SimpleNamespace(total=40*1024**3, free=35*1024**3)), \
          patch.object(Path, "read_text", fake_file):
-        return module.inspect(run=fake_run)
+        return module.inspect(run=fake_run, ssh_probe=lambda: ssh_status, ntp_probe=lambda: ntp_status)
 
 
 class TestObserver(TestCase):
@@ -70,13 +70,7 @@ class TestObserver(TestCase):
         self.assertEqual("PermissionError", data["checks"]["kernel"]["detail"])
 
     def test_no_ssh_or_ntp_denies_preflight(self):
-        def bad(command):
-            if command[0] == "systemctl":
-                return "inactive"
-            if command[0] == "timedatectl":
-                return "no"
-            return good(command)
-        data=inspect_with(bad)
+        data=inspect_with(ssh_status=(False, "ssh offline"), ntp_status=(False, "ntp stale"))
         self.assertEqual("hold", data["host_preflight"])
         self.assertFalse(data["checks"]["ssh"]["ok"])
         self.assertFalse(data["checks"]["ntp"]["ok"])
