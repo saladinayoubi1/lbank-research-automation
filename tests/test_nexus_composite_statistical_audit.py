@@ -101,6 +101,21 @@ def test_twelve_positive_historical_cells_do_not_establish_statistical_edge():
     assert report == historical_review(_report(ledger), ledger)
 
 
+def test_evaluated_mechanisms_cannot_be_undercounted_by_sparse_config_ledger():
+    ledger = _ledger(n=1)
+    core = {key: value for key, value in ledger.items() if key != "ledger_digest"}
+    core["mechanisms_evaluated"] = [f"causal_{i}" for i in range(8)]
+    core["frontier_screened_mechanisms"] = ["causal_0", "new_screened"]
+    ledger = {**core, "ledger_digest": research.digest(core)}
+    historical = historical_review(_report(ledger), ledger)
+    assert historical["search_multiplicity"]["evaluated_parameter_fingerprints"] == 1
+    assert historical["search_multiplicity"]["additional_screened_mechanisms"] == 1
+    assert historical["search_multiplicity"]["hypotheses_considered_at_least"] == 9
+    forward = prospective_diagnostic(_forward(ledger), ledger)
+    assert forward["multiple_comparison_count"] == 18
+    assert forward["owner_demo_admission_allowed"] is False
+
+
 def test_even_negative_historical_cells_have_no_phantom_excess_significance():
     ledger = _ledger()
     report = historical_review(_report(ledger, positive=False), ledger)

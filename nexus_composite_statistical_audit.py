@@ -95,7 +95,10 @@ def _ledger_counter(ledger: Mapping[str, Any]) -> dict[str, int]:
     # A mechanism screened on training but not fully evaluated is a search
     # attempt, and cannot be omitted from the multiple-comparison count.
     unseen_screened = set(screened) - set(tested)
-    attempted = len(history) + len(unseen_screened)
+    # A distinct evaluated causal mechanism is at least one attempted hypothesis,
+    # even if its configuration fingerprint was not separately retained. The
+    # two evaluated inventories can overlap: use the larger lower bound.
+    attempted = max(len(history), len(tested)) + len(unseen_screened)
     if attempted < 1:
         raise StatisticalReviewError("statistical search includes no evaluated hypothesis")
     return {
