@@ -52,8 +52,8 @@ def _report(ledger, *, positive=True):
     return {**base, "report_digest": research.digest(base)}
 
 
-def _forward(ledger, *, weeks=16, positive=True):
-    start = datetime(2026, 11, 1, tzinfo=timezone.utc)
+def _forward(ledger, *, weeks=16, positive=True, start_year=2023):
+    start = datetime(start_year, 11, 1, tzinfo=timezone.utc)
     data = []
     for i in range(weeks):
         a = start + timedelta(days=7*i)
@@ -77,7 +77,7 @@ def _forward(ledger, *, weeks=16, positive=True):
             "candidate_config_digest": "b"*64,
             "candidate_digest": "c"*64,
             "ledger_digest": ledger["ledger_digest"],
-            "frozen_before_utc": "2026-10-10T00:00:00Z",
+            "frozen_before_utc": f"{start_year}-10-10T00:00:00Z",
             "planned_weekly_windows": weeks,
             "analysis_not_before_utc": (
                 start + timedelta(days=7*weeks)
@@ -154,6 +154,12 @@ def test_strong_synthetic_future_pattern_is_only_conditional_diagnostic():
     assert report["live_trading_authority"] is False
     assert "WEEKLY_SIGN_INDEPENDENCE_NOT_PROVEN" in report["reason_codes"]
     assert report == prospective_diagnostic(_forward(ledger), ledger)
+
+
+def test_future_calendar_weeks_cannot_be_reported_as_observed():
+    ledger = _ledger(n=1)
+    with pytest.raises(StatisticalReviewError, match="future"):
+        prospective_diagnostic(_forward(ledger, start_year=2099), ledger)
 
 
 def test_multiple_comparison_correction_blocks_frequent_frontier_false_positive():

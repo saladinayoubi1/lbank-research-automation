@@ -264,6 +264,10 @@ def prospective_diagnostic(
     length = len(rows)
     if previous != preregistered_analysis:
         raise StatisticalReviewError("prospective end differs from preregistered analysis time")
+    # Self-declared future weeks cannot be counted as already observed.
+    # This is a clock sanity check, NOT independent time/source attestation.
+    if preregistered_analysis > datetime.now(timezone.utc):
+        raise StatisticalReviewError("prospective analysis horizon is in the future")
     multiplicity = 2 * attempt["hypotheses_considered_at_least"]
     raw = {profile: _sign_p_value(length, wins) for profile, wins in success.items()}
     adjusted = {profile: min(1.0, multiplicity * p) for profile, p in raw.items()}
