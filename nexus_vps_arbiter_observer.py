@@ -9,7 +9,9 @@ import os
 from pathlib import Path
 import re
 import shutil
+import socket
 import subprocess
+import time
 
 SCHEMA = "nexus.vps-arbiter-observer.v1"
 DANGER = re.compile(r"soft\s+lockup|rcu.{0,80}stall|blocked\s+for\s+more\s+than|(?:buffer\s+)?i/o\s+error|ext4-fs\s+error|xfs.*corrupt", re.I)
@@ -22,7 +24,23 @@ def _run(args):
     return p.stdout
 
 
-def inspect(*, run=_run, mem_path=Path("/proc/meminfo"), disk_path="/"):
+def _ssh_probe():
+    """Read-only local handshake rather than systemd D-Bus from a DynamicUser."""
+    with socket.create_connection(("127.0.0.1", 22), timeout=3) as stream:
+        stream.settimeout(3)
+        banner = stream.recv(80)
+    return banner.startswith(b"SSH-"), "localhost_ssh_banner_valid=" + str(banner.startswith(b"SSH-"))
+
+
+def _ntp_probe():
+    """systemd-timesyncd creates this per-boot marker after a successful sync."""
+    marker = Path("/run/systemd/timesync/synchronized")
+    age = time.time() - marker.stat().st_mtime
+    return 0 <= age <= 24 * 3600, f"last_sync_age_seconds={int(age)}"
+
+
+def inspect(*, run=_run, mem_path=Path("/proc/meminfo"), disk_path="/",
+            ssh_probe=_ssh_probe, ntp_probe=_ntp_probe):
     checks = {}
     def test(name, action):
         try:
@@ -47,8 +65,8 @@ def inspect(*, run=_run, mem_path=Path("/proc/meminfo"), disk_path="/"):
         secs = float(Path("/proc/uptime").read_text().split()[0])
         return secs >= 60, str(int(secs))
     test("uptime", uptime)
-    test("ssh", lambda: ((s := run(["systemctl","is-active","ssh"]).strip()) == "active", s))
-    test("ntp", lambda: ((s := run(["timedatectl","show","-p","NTPSynchronized","--value"]).strip().lower()) == "yes", s))
+    test("ssh", ssh_probe)
+    test("ntp", ntp_probe)
     def kernel():
         log = run(["journalctl","-k","-b","--no-pager","--output=cat"])
         matches = [x for x in log.splitlines() if DANGER.search(x)]
