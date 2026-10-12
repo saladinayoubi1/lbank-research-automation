@@ -1,0 +1,115 @@
+{
+  "schema": "nexus.vps-commissioning-checkpoint.v2",
+  "date": "2026-10-13",
+  "scope": "local VPS host and existing observer continuity",
+  "latest_observed_at_utc": "2026-10-12T23:42:14.942939+00:00",
+  "qualification": "UNQUALIFIED_HOLD",
+  "active_observation_window": null,
+  "historical_checkpoint": "checkpoint_20261012.json",
+  "kernel_maintenance": {
+    "previous": "6.8.0-31-generic",
+    "installed_package_version": "6.8.0-146.146",
+    "running": "6.8.0-146-generic",
+    "simulated": true,
+    "download_complete": true,
+    "download_mb": 192,
+    "install_exit_code": 0,
+    "install_completed_tehran": "2026-10-13T02:46:28+03:30",
+    "controlled_reboot": true,
+    "previous_image_and_initramfs_retained": true,
+    "new_boot_id": "50654191-72f1-4854-840e-f8a21ac6eedc",
+    "post_boot_seven_checks_passed": true,
+    "observer_pid": "707",
+    "observer_restarts": 0,
+    "firewall_policies": {
+      "input": "drop",
+      "forward": "drop",
+      "output": "accept"
+    },
+    "input_rules": 6,
+    "bound_sources_unchanged": true
+  },
+  "windows": [
+    {
+      "directory": "/var/lib/nexus-vps-commissioning/soak-20261012",
+      "terminal_state": {
+        "boot_id": "02cafd9f-c2ac-481b-b449-f834199317b5",
+        "duration_required_seconds": 86400,
+        "elapsed_seconds": 48345.99899574101,
+        "external_fencing_verified": false,
+        "interval_seconds": 60,
+        "last_checked_at_utc": "2026-10-12T22:38:46.374236+00:00",
+        "last_digest": "babbb7f108e83c24fd8879655bae26554e9d0a3231abf2388743c3941302a76a",
+        "live_trading_authority": false,
+        "maximum_allowed_sample_gap_seconds": 90,
+        "paper_writer_grants_enabled": false,
+        "reason": "RuntimeError: kernel log unavailable or danger detected",
+        "sample_count": 805,
+        "schema": "nexus.vps-host-soak.v1",
+        "scope": "local host and existing observer continuity",
+        "started_at_utc": "2026-10-12T09:13:00.375411+00:00",
+        "status": "FAILED",
+        "worker_sha256": "a7aefabf7c51abdc5bc97219a59cc4bdb664d57915a4fd1929e0ca81b02ead17"
+      },
+      "status_file_sha256": "5c8db763d95ba24cbc6687b1779bf447bb1be9ed55a9be9cf57064c1374c46ac",
+      "kernel_archive_sha256": "5b6707cf34c01ca78d32b47908895baec14c8e9e669af3c2f6bde84eca9715a3"
+    },
+    {
+      "directory": "/var/lib/nexus-vps-commissioning/soak-20261013-kernel146",
+      "terminal_state": {
+        "boot_id": "50654191-72f1-4854-840e-f8a21ac6eedc",
+        "duration_required_seconds": 86400,
+        "elapsed_seconds": 728.768302788,
+        "external_fencing_verified": false,
+        "interval_seconds": 60,
+        "last_checked_at_utc": "2026-10-12T23:34:58.269621+00:00",
+        "last_digest": "3810ff40b0bf33b94fe5ae41af5bf84289b8b79f3c017c639b7bc6249217c3c2",
+        "live_trading_authority": false,
+        "maximum_allowed_sample_gap_seconds": 90,
+        "paper_writer_grants_enabled": false,
+        "reason": "HTTPError: HTTP Error 503: Service Unavailable",
+        "sample_count": 4,
+        "schema": "nexus.vps-host-soak.v1",
+        "scope": "local host and existing observer continuity",
+        "started_at_utc": "2026-10-12T23:22:49.501405+00:00",
+        "status": "FAILED",
+        "worker_sha256": "c9230b7e0c1ab90069e7bc096d3b86d2673d8cbbca0ad105ea6ddfeb92c777c7"
+      },
+      "status_file_sha256": "a6ab17a5bc1aa12fb29d44b6971fd4a4d3cc2345bcb243b9d383a24febc8feea",
+      "manifest_sha256": "c3a3e6e89406d92067d2940c5ce51d648e122806b599111b71a9533a16cf5b0f",
+      "kernel_archive_sha256": "18e3ac6bf41f123fda3c0978914806e455cb82bc61248a4ddf88b224c681a348",
+      "collector_change": "output-directory literal only",
+      "prior_duration_inherited": false,
+      "full_chain_replayed": false
+    }
+  ],
+  "latest_kernel_observation": {
+    "danger_matches": 2,
+    "soft_lockup_seconds": 39,
+    "rcu_timer_wakeup_missing_jiffies": 2707,
+    "rcu_thread_starved_jiffies": 2710,
+    "running_kernel": "6.8.0-146-generic"
+  },
+  "vmstat_later_snapshot": {
+    "idle_percent": 99,
+    "steal_percent": 0,
+    "swap_in": 0,
+    "swap_out": 0,
+    "limitation": "A later one-second guest sample does not establish scheduling at the time of the stall."
+  },
+  "authority": {
+    "paper_writer_grants_enabled": false,
+    "live_trading_authority": false,
+    "external_fencing_verified": false
+  },
+  "remaining": [
+    "Investigate recurrent kernel/timer failure; exact cause is unproven.",
+    "Remediate VM/virtualization layer, preserving disk/access/evidence.",
+    "Authorize a distinct fresh 24h observation window and verify its complete chain.",
+    "Qualify real external fencing, writer permits and physical failover/failback separately."
+  ],
+  "provider_message_sent": false,
+  "owner_profile_and_paper_journal_changed": false,
+  "third_window_started": false,
+  "watchdog_or_coverage_weakened": false
+}

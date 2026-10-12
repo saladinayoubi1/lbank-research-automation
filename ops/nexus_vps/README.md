@@ -1,53 +1,56 @@
-# VPS commissioning checkpoint — 12 October 2026
+# VPS commissioning evidence — 13 October 2026
 
-This directory records the configuration and exact diagnostic worker already running on the VPS. It does not install or activate a Paper writer, permit issuer, failover controller, or trading strategy. Issue #2454 remains open.
+## Current state: unqualified / HOLD
 
-## Verified state
+Both finite observation windows have terminated FAILED. Neither projected completion deadline remains active. The observer exposes no Paper grant, Live authority or verified external fencing. Issue #2454 remains open.
 
-- The dedicated SSH key successfully reconnects after firewall apply and reload. Existing SSH remains key-only.
-- nftables is enabled and active. The owned `inet nexus_host` table drops inbound/forward traffic by default, allows inbound TCP 22, loopback, established/related traffic and ICMP, and allows outbound traffic.
-- Six input rules remain after reload. The observer listens on localhost port 8765; Laptop 1 could not establish an external TCP connection to port 8765.
-- The rollback checkpoint was confirmed; its transient timer is inactive.
-- Existing `nexus-arbiter-observer` was reused without changes. All seven health checks passed.
-- At 2026-10-12 13:13 Tehran, the finite soak unit was active, with 31 samples and about 30 minutes of coverage. Its recorded SHA-256 chain was replayed and matched the atomic status checkpoint. Maximum observed gap was 60.402 seconds.
-- Paper grants, Live authority and external fencing verification remain false. Laptop 2 was offline at the latest device query; its current task state has not been verified.
+| Window | Running kernel | Retained samples | Elapsed at failure | Terminal cause |
+| --- | --- | ---: | ---: | --- |
+| soak-20261012 | 6.8.0-31-generic | 805 | 48,345.999 seconds | Current-boot kernel danger |
+| soak-20261013-kernel146 | 6.8.0-146-generic | 4 | 728.768 seconds | Observer health HTTP 503 |
 
-The complete checkpoint is in `checkpoint_20261012.json`. These are observations at stated times, not a completed 24-hour qualification.
+The original dated checkpoint in `checkpoint_20261012.json` is a historical 31-sample observation. The latest terminal states and maintenance evidence are in `checkpoint_20261013.json`. The full four-row replacement chain has not been independently replayed.
 
-## Exact source snapshots
+## Remediation and verification
 
-| File | Deployed path / SHA-256 |
+The exact official Ubuntu GA update was simulated, all 192 MB were downloaded, then installation used the local APT cache. Five related packages were upgraded, seven new kernel packages installed and none removed. The native install service exited zero at 2026-10-13 02:46:28 Tehran. The new image, modules, 65 MB initramfs and GRUB default entry were verified. Both the prior image and initramfs remain available for recovery.
+
+A controlled reboot activated 6.8.0-146-generic. Fresh key-only SSH verified boot `50654191-72f1-4854-840e-f8a21ac6eedc`. All seven preflight checks passed after the required 60-second startup period. nftables was active, its six input rules and drop/drop/accept policies were verified, and all three bound source hashes remained unchanged. The observer was PID 707 with zero restarts.
+
+The replacement window reused the existing collector with only its output-directory literal changed. It started with its own manifest, boot binding and duration clock. The original manifest, failed status, worker and kernel archive were byte-verified before setup and preserved. Prior duration was not inherited. The finite service retained the 5% CPU quota, 96 MiB memory limit, no automatic restart, 25-hour runtime limit and directory-confined write access.
+
+The second run also failed. The new boot journal records CPU soft lockup for 39 seconds, missed RCU timer wakeups and RCU thread starvation. Current health remains HOLD with two kernel danger matches. A later one-second vmstat snapshot was 99% idle, zero steal and no swap activity. That snapshot does not identify the transient cause or establish hypervisor health.
+
+Pinned SSH authentication and a minimal command succeeded, and Laptop 2 received the OpenSSH banner. Windows commands that do not consume input now use explicit null stdin. A transport timeout is never evidence of a stopped owner or permission for takeover.
+
+## Source and forensic bindings
+
+| Artifact | SHA-256 |
 | --- | --- |
-| `soak_20261012.py` | `/var/lib/nexus-vps-commissioning/soak-20261012/worker.py`; `a7aefabf7c51abdc5bc97219a59cc4bdb664d57915a4fd1929e0ca81b02ead17` |
-| `nexus_host.nft` | `/etc/nftables.conf`; `8a396dd278409d3330481094593f5c6fdbc9dbb2c59de20c08d1d0fa75fd6964` |
-| `nftables.service.override.conf` | `/etc/systemd/system/nftables.service.d/90-nexus-owned-table.conf` |
+| Existing observer source | 22a5a33385776befba943d3b2188cfaa23fbf6fb3d9981596f17a6c9a56693c1 |
+| nftables configuration | 8a396dd278409d3330481094593f5c6fdbc9dbb2c59de20c08d1d0fa75fd6964 |
+| Key-only SSH drop-in | 10a3b8543c1eaa63554520f5bcafcf57ea73069d7cf83b27b0515cbe83355ee2 |
+| Original collector | a7aefabf7c51abdc5bc97219a59cc4bdb664d57915a4fd1929e0ca81b02ead17 |
+| Replacement collector | c9230b7e0c1ab90069e7bc096d3b86d2673d8cbbca0ad105ea6ddfeb92c777c7 |
+| Original terminal status | 5c8db763d95ba24cbc6687b1779bf447bb1be9ed55a9be9cf57064c1374c46ac |
+| Replacement terminal status | a6ab17a5bc1aa12fb29d44b6971fd4a4d3cc2345bcb243b9d383a24febc8feea |
+| Original kernel failure archive | 5b6707cf34c01ca78d32b47908895baec14c8e9e669af3c2f6bde84eca9715a3 |
+| Post-update kernel failure archive | 18e3ac6bf41f123fda3c0978914806e455cb82bc61248a4ddf88b224c681a348 |
 
-The observer source is `/opt/nexus-arbiter/current/nexus_vps_arbiter_observer.py`, SHA-256 `22a5a33385776befba943d3b2188cfaa23fbf6fb3d9981596f17a6c9a56693c1`. The SSH drop-in SHA-256 is `10a3b8543c1eaa63554520f5bcafcf57ea73069d7cf83b27b0515cbe83355ee2`.
+`soak_20261012.py` and `soak_20261013_kernel146.py` are exact deployed snapshots. The other configuration snapshots retain their previous identity.
 
-## Durable continuation
+## Continuation
 
-The existing `nexus-vps-soak-20261012` transient systemd service continues independently of the chat and SSH session. It uses a 5% CPU quota, 96 MiB memory limit, no automatic restart, a 25-hour runtime limit, and write access confined to its commissioning directory. Its first sample started at 2026-10-12 09:13:00.375411 UTC. Earliest 24-hour completion is **13 October 2026 at 12:43 Tehran**.
-
-Read the existing state on the VPS; do not restart this one-off worker or append a second run to its sample file:
+Inspect the terminal evidence; preserve both directories and their receipts:
 
 ```sh
-systemctl show nexus-vps-soak-20261012 -p ActiveState -p SubState -p Result -p MainPID
 cat /var/lib/nexus-vps-commissioning/soak-20261012/status.json
-sha256sum /var/lib/nexus-vps-commissioning/soak-20261012/worker.py
+cat /var/lib/nexus-vps-commissioning/soak-20261013-kernel146/status.json
+systemctl show nexus-arbiter-observer -p ActiveState -p MainPID -p NRestarts
 ```
 
-The collector samples once per minute and requires at least 86,400 seconds measured using CLOCK_BOOTTIME and 1,441 samples. A gap over 90 seconds, a changed boot identity or bound source, observer stop/restart, stale or failed health response, changed authority flags, or missing/dangerous current-boot kernel log produces FAILED. Each sample is fsynced, links the previous digest, and is followed by an atomic status update.
+The exact cause remains unproven. Request investigation for service 59152 / 87.107.5.150 at the VM/virtualization layer, including vCPU scheduling or pauses, virtual clock/timer delivery and virtio networking. Repair the underlying cause or migrate the VM while preserving its disk, access and evidence. No provider message has been sent.
 
-A stopped process or reboot does not yield COMPLETE. A future attempt must be a separately approved new observation window, with a separate directory and manifest; it cannot inherit the previous duration.
+After remediation, an authorized new window must use a separate directory and manifest. It requires at least 86,400 seconds using CLOCK_BOOTTIME, 1,441 samples, no gap over 90 seconds, unchanged boot/source/observer identity and a valid full sample chain. No third window or repeated reboot has been launched. Watchdog and coverage checks remain unchanged.
 
-After the window, inspect the terminal unit result, replay the entire sample chain against `status.json`, and verify duration, sample count, maximum gap, boot identity and source hashes. Preserve the final evidence in this issue before advancing commissioning. COMPLETE is only host/observer continuity evidence: it does not prove continuous external network reachability or positive external fencing and does not authorize writer admission.
-
-## Boundaries and remaining work
-
-The owner app, profile, Paper journal and Laptop 1 writer were not changed. This snapshot introduces no workflow, secret, scheduled chat automation or execution hook. Merge or redeployment is not required for the already-running diagnostic collector.
-
-Real fencing, epoch/permit issuance, takeover integration and partition tests remain gated. No failover or Live trading has been enabled. Laptop 2's offline state blocks its fresh local verification only.
-
-## Validation
-
-The exact worker passed Python compilation and its SHA-256 matched the deployed manifest. The running worker produced real host samples; a separate reader replayed all 31 checkpointed samples and matched the last digest. Firewall syntax, reload, fresh SSH reconnect, localhost health, inactive rollback timer and external port 8765 refusal were checked. The full 24-hour result is pending.
+Host/observer continuity is a separate gate from continuous external reachability, positive peer fencing, epoch/permit issuance, writer admission and physical partition/failover/failback tests. No failover or Live authority was enabled. The owner app, profile and Paper journal were preserved. This evidence PR introduces no workflow, execution hook or chat automation.
