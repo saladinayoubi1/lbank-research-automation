@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import argparse
 import base64
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
 import hmac
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
@@ -74,7 +74,8 @@ def bootstrap_state(path: Path, trust_root: Mapping) -> None:
         raise ArbiterDenied("existing or unavailable state cannot be initialized") from exc
     os.close(fd)
     # A failed initialization leaves the file for review; it is never silently reset.
-    with sqlite3.connect(path) as conn:
+    # The transaction context commits/rolls back; closing also releases the file.
+    with closing(sqlite3.connect(path)) as conn, conn:
         conn.execute("PRAGMA synchronous=FULL")
         conn.execute("CREATE TABLE authority (id INTEGER PRIMARY KEY CHECK(id=1), "
                      "schema TEXT NOT NULL, trust_digest TEXT NOT NULL, epoch INTEGER NOT NULL, "

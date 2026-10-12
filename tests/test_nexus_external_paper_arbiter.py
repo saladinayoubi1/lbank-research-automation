@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import closing
 import http.client
 import json
 import shutil
@@ -50,6 +51,44 @@ def setup(tmp_path):
     return state, clock, observations, make
 
 
+@pytest.mark.parametrize("fail_create", [False, True])
+def test_bootstrap_closes_retained_connection_on_success_and_failure(
+        tmp_path, monkeypatch, fail_create):
+    tmp_path.chmod(0o700)
+    state = tmp_path / "authority.sqlite3"
+    real_connect = sqlite3.connect
+    retained = []
+
+    class BootstrapConnection(sqlite3.Connection):
+        def execute(self, sql, parameters=()):
+            if fail_create and sql.startswith("CREATE TABLE authority"):
+                raise sqlite3.OperationalError("injected schema creation failure")
+            return super().execute(sql, parameters)
+
+    def connect(*args, **kwargs):
+        conn = real_connect(*args, factory=BootstrapConnection, **kwargs)
+        retained.append(conn)  # Do not let garbage collection close the handle.
+        return conn
+
+    monkeypatch.setattr(sqlite3, "connect", connect)
+    if fail_create:
+        with pytest.raises(sqlite3.OperationalError, match="injected"):
+            bootstrap_state(state, _trust())
+    else:
+        bootstrap_state(state, _trust())
+        with closing(real_connect(state)) as committed:
+            assert committed.execute(
+                "SELECT epoch, last_clock_ms, permit_json FROM authority"
+            ).fetchone() == (0, 0, None)
+
+    assert len(retained) == 1
+    with pytest.raises(sqlite3.ProgrammingError, match="closed"):
+        retained[0].execute("SELECT 1")
+    assert state.exists()  # Failed initialization still leaves evidence for review.
+    state.unlink()  # Windows must also release its open-file lock immediately.
+    assert not state.exists()
+
+
 def test_signed_permit_is_accepted_by_existing_writer_and_rechecks_fence(setup):
     state, clock, observations, make = setup
     arbiter = make()
@@ -74,7 +113,8 @@ def test_unconfigured_real_controller_cannot_issue_even_with_client_proof(setup)
     fake = {**request(), "previous_writer_fenced": True, "fence_method": "external_stonith"}
     with pytest.raises(ArbiterDenied, match="contract"):
         arbiter.issue(fake)
-    assert sqlite3.connect(state).execute("SELECT epoch FROM authority").fetchone()[0] == 0
+    with closing(sqlite3.connect(state)) as conn:
+        assert conn.execute("SELECT epoch FROM authority").fetchone()[0] == 0
 
 
 def test_two_service_instances_cannot_grant_simultaneous_writers(setup):
@@ -122,7 +162,8 @@ def test_false_stale_or_unbound_fencing_never_advances_epoch(setup, change):
         return {**good(*args), **change}
     with pytest.raises(ArbiterDenied, match="observation"):
         make(fence=bad).issue(request())
-    assert sqlite3.connect(state).execute("SELECT epoch FROM authority").fetchone()[0] == 0
+    with closing(sqlite3.connect(state)) as conn:
+        assert conn.execute("SELECT epoch FROM authority").fetchone()[0] == 0
 
 
 def test_arbiter_or_controller_loss_and_clock_rollback_deny_current_authority(setup):
@@ -150,7 +191,7 @@ def test_arbiter_or_controller_loss_and_clock_rollback_deny_current_authority(se
 def test_corrupt_or_changed_key_state_is_not_a_new_epoch_zero(setup):
     state, _, _, make = setup
     make().issue(request())
-    with sqlite3.connect(state) as conn:
+    with closing(sqlite3.connect(state)) as conn, conn:
         conn.execute("UPDATE authority SET epoch=0")
     with pytest.raises(ArbiterDenied, match="integrity"):
         make()
