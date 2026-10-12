@@ -1,0 +1,39 @@
+{
+  "automatic_strategy_promotion": false,
+  "counts_as_new_research_cycle": false,
+  "data_scope": {
+    "archives": 60,
+    "bars": 5760,
+    "capability": "verified_signed_trade_flow",
+    "dataset_semantic_sha256": "d34572205966a82cc02c2daa0d1dc494d7d3461997aa73a854ebb217b8b61e3c",
+    "end_date": "2026-08-01",
+    "execution_eligible": false,
+    "independent_numeric_qa_sha256": "6839d5bf6966e549d14856a79eeca01614a6392f949aaddcad0b3aa181119182",
+    "market": "spot",
+    "pristine_future_holdout": false,
+    "proof_sha256": "348512f0dc1753d9cf56daa8123a137a3992e6e27a4f315861e0d1756f6c195c",
+    "raw_trade_rows": 21662587,
+    "side_semantics_live_api_crossvalidated": false,
+    "start_date": "2026-07-03",
+    "status": "verified_historical_data",
+    "strategy_result": "rejected_no_promotion",
+    "symbols": [
+      "BTCUSDT",
+      "ETHUSDT"
+    ],
+    "timeframe": "minute15"
+  },
+  "execution_kind": "physical_local_research",
+  "feedback_sha256": "0e3514515a69eaa67c8b5f24878738abd8fb69fc48d9f7be19b5e6eafd2361bf",
+  "global_frontier_capability_granted": false,
+  "live_trading_authority": false,
+  "mechanism": "signed_flow_price_response",
+  "original_qualification": "NOT_QUALIFIED_NO_PRISTINE_FUTURE_HOLDOUT",
+  "outcome": "rejected_data_verified_no_promotion",
+  "paper_only": true,
+  "qualification_authority": false,
+  "report_sha256": "d15e0fdbea439833394d21316022f46f964b6c56dfd88c7aa4c9dee852a8c8b8",
+  "research_only": true,
+  "schema": "nexus.scoped-verified-research-feedback.v1",
+  "source_sha": "b8de92430d236dbc47a05d4b6b6a21dc47398a7c"
+}

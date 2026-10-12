@@ -163,7 +163,7 @@ def _validate_report(report: Mapping[str, Any], receipt: Mapping[str, Any]) -> t
             or isinstance(row.get("max_drawdown_pct"), bool)
             or not isinstance(row.get("max_drawdown_pct"), (int, float))
             or not math.isfinite(float(row.get("max_drawdown_pct")))
-            or row.get("halted_on_drawdown") is not False
+            or not isinstance(row.get("halted_on_drawdown"), bool)
         ):
             raise CompositeValidationCandidateError("validation row is incomplete or authority-invalid")
     validation.sort(key=lambda row: (str(row["symbol"]), str(row["profile"])))
@@ -201,7 +201,11 @@ def build_candidate(
     strategy_config, validation = _validate_report(research_report, receipt)
     total_trades = sum(int(row["closed_round_trips"]) for row in validation)
     all_positive = all(float(row["net_return_pct"]) > 0.0 for row in validation)
-    if total_trades == 0:
+    if any(row["halted_on_drawdown"] for row in validation):
+        decision = "REJECTED_RESEARCH_VALIDATION"
+        reasons = ["DRAWDOWN_RISK_HALT"]
+        eligible = False
+    elif total_trades == 0:
         decision = "REJECTED_RESEARCH_VALIDATION"
         reasons = ["ZERO_ACTIVITY"]
         eligible = False
@@ -349,12 +353,14 @@ def verify_candidate(value: Mapping[str, Any]) -> dict[str, Any]:
                     == ["EXERCISED_AND_POSITIVE_ACROSS_VALIDATION_COST_PROFILES"]
                 and core.get("total_validation_round_trips", 0) > 0
                 and all(float(row["net_return_pct"]) > 0.0 for row in rows)
+                and all(row.get("halted_on_drawdown") is False for row in rows)
             )
             or (
                 core.get("decision") == "REJECTED_RESEARCH_VALIDATION"
                 and eligible is False
                 and core.get("reason_codes") in (
-                    ["ZERO_ACTIVITY"], ["NON_POSITIVE_VALIDATION_CELL"]
+                    ["ZERO_ACTIVITY"], ["NON_POSITIVE_VALIDATION_CELL"],
+                    ["DRAWDOWN_RISK_HALT"]
                 )
             )
         )

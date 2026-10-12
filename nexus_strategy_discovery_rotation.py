@@ -9,6 +9,11 @@ import re
 from pathlib import Path
 from typing import Any, Mapping
 
+from nexus_strategy_discovery_feedback import (
+    StrategyDiscoveryFeedbackError,
+    load_state as load_feedback_state,
+)
+
 
 STATE_SCHEMA = "nexus.strategy-discovery-rotation-state.v1"
 PLAN_SCHEMA = "nexus.strategy-discovery-rotation-plan.v1"
@@ -229,6 +234,8 @@ def main() -> int:
     plan.add_argument("--state", type=Path, required=True)
     plan.add_argument("--output", type=Path, required=True)
     plan.add_argument("--feedback-state", type=Path)
+    plan.add_argument("--blocked-receipt-on-exhaustion", action="store_true")
+    plan.add_argument("--require-feedback-state", action="store_true")
     commit = sub.add_parser("commit")
     commit.add_argument("--state", type=Path, required=True)
     commit.add_argument("--plan", type=Path, required=True)
@@ -239,9 +246,46 @@ def main() -> int:
     state = load_state(args.state)
     if args.command == "plan":
         feedback = None
-        if args.feedback_state and args.feedback_state.exists():
+        if args.require_feedback_state:
+            try:
+                if args.feedback_state is None:
+                    raise StrategyDiscoveryFeedbackError("feedback path is absent")
+                feedback = load_feedback_state(args.feedback_state, require_existing=True)
+            except StrategyDiscoveryFeedbackError as exc:
+                raise StrategyDiscoveryRotationError(
+                    "verified prior feedback required for autonomous dispatch; "
+                    "missing feedback must not bootstrap a repeated experiment"
+                ) from exc
+        elif args.feedback_state and args.feedback_state.exists():
             feedback = load_json(args.feedback_state)
-        value = build_plan(load_json(args.controller_status), state, feedback)
+        try:
+            value = build_plan(load_json(args.controller_status), state, feedback)
+        except StrategyDiscoveryRotationError as exc:
+            # An exhausted, exact-source reviewed frontier is an actionable
+            # BLOCKED research state, not a new dispatch or qualified strategy.
+            # Other failures (invalid evidence, bad source, no controller) stay red.
+            if (
+                not args.blocked_receipt_on_exhaustion
+                or not str(exc).startswith(
+                    "no untested reviewed Strategy Finder frontier remains;"
+                )
+                or feedback is None
+            ):
+                raise
+            core = {
+                "schema_version": "nexus.strategy-discovery-blocked.v1",
+                "status": "NEEDS_NEW_REVIEWED_MECHANISM",
+                "reason": "all_exact_reviewed_frontiers_terminal",
+                "previous_rotation_state_digest": state["state_digest"],
+                "previous_feedback_state_digest": feedback["state_digest"],
+                "dispatch_allowed": False,
+                "research_only": True,
+                "paper_only": True,
+                "qualification_authority": False,
+                "automatic_strategy_promotion": False,
+                "live_trading_authority": False,
+            }
+            value = {**core, "blocked_digest": _digest(core)}
     else:
         value = commit_dispatch(
             state, load_json(args.plan), source_sha=args.source_sha, run_id=args.run_id,

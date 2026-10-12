@@ -340,3 +340,37 @@ def test_generic_research_attestation_still_rejects_wrong_worker_or_receipt():
     manager["verification_evidence"]["producer_receipt_digest"] = "0" * 64
     with pytest.raises(ValueError, match="Research\+independent-QA"):
         attested_research_task(manager)
+
+@pytest.mark.parametrize("values", [(-7.9, -10.05, -7.64, -9.89), (0.2, 0.12, 0.24, 0.03)])
+def test_drawdown_halt_is_valid_rejected_evidence_even_with_positive_returns(values):
+    report = _report(values=values)
+    report["rows"][1]["halted_on_drawdown"] = True
+    report["report_digest"] = digest({k: v for k, v in report.items() if k != "report_digest"})
+    manager, receipt = _bound_inputs(report)
+    candidate = build_candidate(manager, receipt, report)
+    assert candidate["decision"] == "REJECTED_RESEARCH_VALIDATION"
+    assert candidate["reason_codes"] == ["DRAWDOWN_RISK_HALT"]
+    assert candidate["eligible_for_fresh_runtime_requalification"] is False
+    assert candidate["validation_rows"][1]["halted_on_drawdown"] is True
+    assert candidate["qualification_authority"] is False
+    assert candidate["promotion_authority"] is False
+    assert candidate["paper_execution_authority"] is False
+    assert candidate["live_trading_authority"] is False
+    assert verify_candidate(candidate)["decision"] == "pass"
+
+    tampered = deepcopy(candidate)
+    tampered["decision"] = "FORWARD_TO_VAL40"
+    tampered["reason_codes"] = ["EXERCISED_AND_POSITIVE_ACROSS_VALIDATION_COST_PROFILES"]
+    tampered["eligible_for_fresh_runtime_requalification"] = True
+    tampered["candidate_digest"] = digest({k: v for k, v in tampered.items() if k != "candidate_digest"})
+    assert verify_candidate(tampered)["decision"] == "reject"
+
+
+@pytest.mark.parametrize("flag", [None, 0, 1, "false", "true", []])
+def test_drawdown_halt_flag_must_be_a_real_boolean(flag):
+    report = _report()
+    report["rows"][1]["halted_on_drawdown"] = flag
+    report["report_digest"] = digest({k: v for k, v in report.items() if k != "report_digest"})
+    manager, receipt = _bound_inputs(report)
+    with pytest.raises(CompositeValidationCandidateError, match="authority-invalid"):
+        build_candidate(manager, receipt, report)

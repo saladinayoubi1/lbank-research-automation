@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 from typing import Any
@@ -16,6 +17,15 @@ CHUNK_SIZE = 250_000
 
 class StreamMonthError(RuntimeError):
     pass
+
+
+def candle_model_receipt() -> dict[str, Any]:
+    return {
+        **backfill.candle_model_receipt(),
+        "module_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        "builder": "stream_bybit_symbol_month",
+        "backfill_module_sha256": backfill.candle_model_receipt()["module_sha256"],
+    }
 
 
 def _reader(path: Path) -> tuple[Any, dict[str, Any]]:
@@ -136,7 +146,7 @@ def _merge_candles(current: pd.DataFrame | None, incoming: pd.DataFrame) -> pd.D
 
 
 def _resample_from_15m(frame: pd.DataFrame, rule: str) -> pd.DataFrame:
-    indexed = frame.set_index("timestamp").sort_index()
+    indexed = frame.set_index("timestamp").sort_index(kind="stable")
     return (
         indexed.resample(rule, origin="start_day", label="left", closed="left")
         .agg(
@@ -159,6 +169,8 @@ def build_symbol_month(
     cache_root: Path,
 ) -> dict[str, Any]:
     symbol = symbol.upper()
+    if output_root.exists() and any(output_root.iterdir()):
+        raise StreamMonthError("output must be new; preserve legacy and completed evidence")
     start = pd.Timestamp(start_date, tz="UTC")
     end_exclusive = pd.Timestamp(end_date, tz="UTC") + pd.Timedelta(1, unit="D")
     period = pd.Period(pd.Timestamp(start_date), freq="M")
@@ -181,6 +193,7 @@ def build_symbol_month(
     duplicate_trade_ids = 0
     seen_trade_hashes: set[int] = set()
     source_columns: list[str] = []
+    previous_timestamp = None
 
     for raw in reader:
         normalized, timestamp_unit, quality = _normalize_chunk(
@@ -194,6 +207,14 @@ def build_symbol_month(
         source_rows += quality["source_rows"]
         valid_rows += quality["valid_trade_rows"]
         source_columns = [str(column) for column in normalized.columns]
+        if normalized.empty:
+            continue
+        times = normalized["timestamp"]
+        if not times.is_monotonic_increasing or (
+            previous_timestamp is not None and times.iloc[0] < previous_timestamp
+        ):
+            raise StreamMonthError("streaming requires chronological original source rows")
+        previous_timestamp = times.iloc[-1]
         if "trade_id" in normalized.columns:
             ids = normalized["trade_id"].dropna()
             hashes = pd.util.hash_pandas_object(ids, index=False).astype("uint64")
@@ -208,7 +229,7 @@ def build_symbol_month(
                     f"Duplicate trade IDs detected: {duplicate_trade_ids}"
                 )
 
-        indexed = normalized.set_index("timestamp").sort_index()
+        indexed = normalized.set_index("timestamp").sort_index(kind="stable")
         candles = indexed.resample(
             "15min", origin="start_day", label="left", closed="left"
         ).agg(
@@ -283,6 +304,7 @@ def build_symbol_month(
         "unit_kind": "monthly",
         "start_date": start_date,
         "end_date": end_date,
+        "candle_model": candle_model_receipt(),
     }
     checkpoint = {
         "schema_version": 1,
@@ -297,6 +319,7 @@ def build_symbol_month(
         }],
     }
     report = {
+        "candle_model": candle_model_receipt(),
         "generated_at_utc": pd.Timestamp.now(tz="UTC").isoformat(),
         "configuration": {
             "start_date": start_date,
@@ -321,6 +344,7 @@ def build_symbol_month(
         "statuses": statuses,
     }
     output_root.mkdir(parents=True, exist_ok=True)
+    backfill.write_json(output_root / backfill.CANDLE_MODEL_NAME, candle_model_receipt())
     backfill.write_json(output_root / "_checkpoint.json", checkpoint)
     backfill.write_json(output_root / "_source_manifest.json", [source_record])
     backfill.write_json(output_root / "_backfill_report.json", report)

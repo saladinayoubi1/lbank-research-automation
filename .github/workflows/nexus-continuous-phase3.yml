@@ -9,6 +9,8 @@ on:
       - 'scripts/nexus_orchestrator.js'
       - 'scripts/nexus_continuous_worker.py'
       - 'scripts/nexus_phase3_task.py'
+      - 'scripts/nexus_strategy_discovery_controller.py'
+      - 'nexus_strategy_discovery_feedback.py'
       - 'scripts/bootstrap_portable_python.cmd'
       - '.github/workflows/nexus-continuous-phase3.yml'
   schedule:

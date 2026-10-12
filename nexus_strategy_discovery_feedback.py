@@ -55,7 +55,12 @@ def empty_state() -> dict[str, Any]:
     return {**core, "state_digest": _digest(core)}
 
 
-def load_state(path: Path) -> dict[str, Any]:
+def load_state(path: Path, *, require_existing: bool = False) -> dict[str, Any]:
+    if require_existing and (path.is_symlink() or not path.is_file()):
+        raise StrategyDiscoveryFeedbackError(
+            "verified prior feedback required for autonomous reconciliation; "
+            "missing feedback must not bootstrap a repeated experiment"
+        )
     if not path.exists():
         return empty_state()
     try:
@@ -90,6 +95,40 @@ def _walk_json(value: Any):
     elif isinstance(value, list):
         for item in value:
             yield from _walk_json(item)
+
+
+def reviewed_local_data_feedback(root: Path) -> dict[str, Any]:
+    """Project pinned physical evidence without inventing a workflow outcome.
+
+    The BTC/ETH signed-flow window is distinct from the frontier's four-pair
+    OHLCV input. This observation must not reset exhaustion, count a new cycle,
+    or globally grant a capability to that unrelated dataset.
+    """
+    from product_research_reports import ResearchReportStore
+
+    snapshot = ResearchReportStore(root / "product_ui").snapshot()
+    observations = []
+    for item in snapshot["reports"]:
+        if item["id"] != "A6" or not item.get("verified_data"):
+            continue
+        core = {
+            "schema": "nexus.scoped-verified-research-feedback.v1",
+            "execution_kind": "physical_local_research",
+            "source_sha": item["source_sha"],
+            "report_sha256": item["report_sha256"],
+            "mechanism": item["report"]["mechanism"],
+            "outcome": "rejected_data_verified_no_promotion",
+            "original_qualification": item["original_verdict"],
+            "data_scope": item["verified_data"],
+            "counts_as_new_research_cycle": False,
+            "global_frontier_capability_granted": False,
+            "research_only": True, "paper_only": True,
+            "qualification_authority": False,
+            "automatic_strategy_promotion": False, "live_trading_authority": False,
+        }
+        observations.append({**core, "feedback_sha256": _digest(core)})
+    return {"observations": observations,
+            "rejected": [r for r in snapshot["errors"] if r["id"] == "A6"]}
 
 
 def _artifact_observations(root: Path) -> dict[str, bool]:
@@ -195,6 +234,7 @@ def record_outcome(
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--state", type=Path, required=True)
+    parser.add_argument("--require-feedback-state", action="store_true")
     parser.add_argument("--run-json", type=Path, required=True)
     parser.add_argument("--artifact-root", type=Path, required=True)
     parser.add_argument("--stage", required=True)
@@ -203,7 +243,7 @@ def main() -> int:
     parser.add_argument("--artifact-unavailable", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    state = load_state(args.state)
+    state = load_state(args.state, require_existing=args.require_feedback_state)
     run = json.loads(args.run_json.read_text(encoding="utf-8"))
     value = record_outcome(
         state,
@@ -221,3 +261,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

@@ -1,0 +1,40 @@
+{
+  "automatic_strategy_promotion": false,
+  "cost_profiles": {
+    "conservative": [
+      10.0,
+      5.0
+    ],
+    "stress": [
+      25.0,
+      15.0
+    ]
+  },
+  "diagnostic_only": true,
+  "end_date": "2026-11-08",
+  "evaluation_policy": "whole_30_day_window_no_train_validation_split",
+  "historical_proof_sha256": "348512f0dc1753d9cf56daa8123a137a3992e6e27a4f315861e0d1756f6c195c",
+  "historical_report_sha256": "d15e0fdbea439833394d21316022f46f964b6c56dfd88c7aa4c9dee852a8c8b8",
+  "initial_research_cash_usdt": 10000,
+  "live_trading_authority": false,
+  "market": "spot",
+  "model_sha256": "fe0d586cac8269aac21c2fb9e2751051c63758e8f9e0b0fdfd1065d21528ba0e",
+  "model_source_sha": "d72c92f315abd514fd7210388ce211258a670799",
+  "owner_account_usdt": 500,
+  "plan_sha256": "6ecc03c438560b02a1410f07cef7c86df1fb2665749d184b1a4d45248f33c7cb",
+  "registered_at_utc": "2026-10-09T14:37:06.816798+00:00",
+  "schema": "nexus.a6-preregistered-future-holdout.v1",
+  "start_date": "2026-10-10",
+  "symbols": [
+    "btc_usdt",
+    "eth_usdt"
+  ],
+  "threshold_policy": "frozen_full_precision_original_train_only_q80_no_refitting",
+  "thresholds": {
+    "btc_usdt": 0.10945652649859855,
+    "eth_usdt": 0.16623354242827754
+  },
+  "timeframe": "minute15",
+  "venue": "bybit",
+  "warmup_policy": "first_14_bars_inside_future_window_no_preperiod_refit"
+}

@@ -8,6 +8,7 @@ import pytest
 from nexus_strategy_discovery_feedback import (
     StrategyDiscoveryFeedbackError,
     empty_state,
+    load_state,
     record_outcome,
 )
 from nexus_strategy_discovery_rotation import build_plan, empty_state as empty_rotation_state
@@ -43,6 +44,46 @@ def _controller():
             },
         ],
     }
+
+
+@pytest.mark.parametrize("kind", ["missing", "directory", "invalid_json", "bad_digest"])
+def test_required_feedback_refuses_lost_or_invalid_state(tmp_path: Path, kind: str):
+    path = tmp_path / "feedback-state.json"
+    if kind == "directory":
+        path.mkdir()
+    elif kind == "invalid_json":
+        path.write_text("{", encoding="utf-8")
+    elif kind == "bad_digest":
+        value = empty_state()
+        value["state_digest"] = "f" * 64
+        path.write_text(json.dumps(value), encoding="utf-8")
+    before = path.read_bytes() if path.is_file() else None
+    with pytest.raises(StrategyDiscoveryFeedbackError):
+        load_state(path, require_existing=True)
+    if before is not None:
+        assert path.read_bytes() == before
+    elif kind == "missing":
+        assert not path.exists()
+
+
+def test_required_feedback_refuses_symlink_without_touching_target(tmp_path: Path):
+    target = tmp_path / "real-feedback.json"
+    target.write_text(json.dumps(empty_state()), encoding="utf-8")
+    link = tmp_path / "feedback-state.json"
+    try:
+        link.symlink_to(target)
+    except OSError:
+        pytest.skip("symlink creation is unavailable on this platform")
+    original = target.read_bytes()
+    with pytest.raises(StrategyDiscoveryFeedbackError):
+        load_state(link, require_existing=True)
+    assert target.read_bytes() == original
+
+
+def test_manual_feedback_bootstrap_retains_its_explicit_default(tmp_path: Path):
+    path = tmp_path / "new-feedback.json"
+    assert load_state(path) == empty_state()
+    assert not path.exists()
 
 
 def test_exhaustion_is_durable_and_rotation_skips_that_neighborhood(tmp_path: Path):
@@ -212,4 +253,5 @@ def test_completed_no_qualification_fingerprint_is_not_replayed(tmp_path: Path):
     assert feedback["outcomes"][-1]["outcome"] == "completed_no_qualification"
     plan = build_plan(_controller(), empty_rotation_state(), feedback)
     assert plan["stage"] == "second"
+
 
