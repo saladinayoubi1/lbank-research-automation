@@ -1,0 +1,48 @@
+{
+  "schema": "nexus.vps-commissioning-checkpoint.v1",
+  "date": "2026-10-12",
+  "base_commit": "f373743d2b3f5e5111ecb55da9eeda0abe19065e",
+  "scope": "local VPS host and existing observer continuity",
+  "firewall": {
+    "checked_at_utc": "2026-10-12T09:00:34.188623+00:00",
+    "status": "CONFIRMED",
+    "config_sha256": "8a396dd278409d3330481094593f5c6fdbc9dbb2c59de20c08d1d0fa75fd6964",
+    "input_policy": "drop",
+    "forward_policy": "drop",
+    "output_policy": "accept",
+    "tcp_inbound_ports": [
+      22
+    ],
+    "input_rule_count": 6,
+    "fresh_ssh_after_reload": true,
+    "reload_verified": true,
+    "rollback_timer": "inactive",
+    "external_port_8765_connected": false
+  },
+  "soak": {
+    "observed_at_utc": "2026-10-12T09:43:01.575533+00:00",
+    "status": "RUNNING",
+    "started_at_utc": "2026-10-12T09:13:00.375411+00:00",
+    "not_before_tehran": "2026-10-13T12:43:00.375411+03:30",
+    "unit": "nexus-vps-soak-20261012",
+    "worker_sha256": "a7aefabf7c51abdc5bc97219a59cc4bdb664d57915a4fd1929e0ca81b02ead17",
+    "hash_chain_verified_samples": 31,
+    "elapsed_seconds": 1801.200156466999,
+    "maximum_observed_sample_gap_seconds": 60.40197020699998,
+    "last_digest": "6c59b3b6c914b27bbb568d45757f5d555df9db3f37b335678325df43f5c89992",
+    "boot_id": "02cafd9f-c2ac-481b-b449-f834199317b5",
+    "unit_active_state": "active",
+    "unit_sub_state": "running",
+    "main_pid": 6815
+  },
+  "authority": {
+    "paper_writer_grants_enabled": false,
+    "live_trading_authority": false,
+    "external_fencing_verified": false
+  },
+  "remaining": [
+    "24-hour host soak completion and final full chain verification",
+    "Laptop 2 is offline; no fresh Scheduled Task state assertion",
+    "Real external fencing and writer admission remain unimplemented and gated"
+  ]
+}
