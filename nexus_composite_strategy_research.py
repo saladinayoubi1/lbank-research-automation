@@ -806,6 +806,14 @@ def signal_for(frame: pd.DataFrame, config: dict[str, Any]) -> np.ndarray:
     return (ok & s).fillna(False).to_numpy(dtype=bool)
 
 
+def _decision_day_keys(values: pd.Series) -> Any:
+    """Cache timezone calendar days without per-candle scalar floor calls."""
+    if pd.api.types.is_datetime64_any_dtype(values.dtype):
+        return values.dt.floor("D").array
+    # Preserve scalar conversion for noncanonical object/string timestamps.
+    return tuple(pd.Timestamp(value).floor("D") for value in values)
+
+
 def backtest(frame: pd.DataFrame, signals: np.ndarray, *, fee_bps: float,
              slip_bps: float, risk_variant: int) -> dict[str, Any]:
     """Uncapped sequential long-only trades; cash/exposure/daily-loss fail closed.
@@ -824,10 +832,10 @@ def backtest(frame: pd.DataFrame, signals: np.ndarray, *, fee_bps: float,
     day, day_start = None, SIM_CASH
     closed, wins, gross_profit, gross_loss, total_turnover = 0, 0, 0., 0., 0.
     exposure_bars = 0
+    decision_days = _decision_day_keys(frame["decision_at"]) if len(frame) else ()
     for i, row in enumerate(frame.itertuples(index=False)):
-        at = pd.Timestamp(row.decision_at)
-        if day != at.floor("D"):
-            day = at.floor("D")
+        if day != decision_days[i]:
+            day = decision_days[i]
             day_start, day_paused = cash if in_pos is None else cash + in_pos["qty"] * float(row.open), False
         price_open, price_hi, price_lo, price_close = map(float, (row.open, row.high, row.low, row.close))
         just_entered = False

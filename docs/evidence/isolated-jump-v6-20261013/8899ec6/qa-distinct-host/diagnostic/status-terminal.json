@@ -1,0 +1,41 @@
+{
+  "auto_demo_promotion": false,
+  "checked_at_utc": "2026-10-13T11:52:43.709794+00:00",
+  "elapsed_seconds": 120.079,
+  "independent_decimal_accounting_complete": false,
+  "independent_full_numeric_qa_complete": false,
+  "live_enabled": false,
+  "official_coordinator_advanced": false,
+  "reason": "120-second bounded diagnostic deadline",
+  "research_only": true,
+  "schema": "nexus.jump-verification-diagnostic.v1",
+  "source_sha": "8899ec6bec4927fc39795f2867be91e2431178c6",
+  "status": "DIAGNOSTIC_DEADLINE",
+  "steps": [
+    {
+      "cpu_seconds": 9.546875,
+      "phase": "IMPORT_EXISTING_SOURCE",
+      "wall_seconds": 16.313
+    },
+    {
+      "cpu_seconds": 10.5625,
+      "phase": "DECODE_BTC_TIMEFRAMES",
+      "wall_seconds": 12.015
+    },
+    {
+      "cpu_seconds": 6.5,
+      "phase": "DECODE_ETH_PEER_15M",
+      "wall_seconds": 6.734
+    },
+    {
+      "cpu_seconds": 21.625,
+      "phase": "BUILD_BTC_CAUSAL_FEATURES",
+      "wall_seconds": 24.969
+    },
+    {
+      "cpu_seconds": 0.21875,
+      "phase": "BUILD_FROZEN_BTC_SIGNAL",
+      "wall_seconds": 0.234
+    }
+  ]
+}
