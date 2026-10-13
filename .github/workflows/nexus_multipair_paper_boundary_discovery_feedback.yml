@@ -12,16 +12,20 @@ on:
     paths:
       - "nexus_multipair_paper_boundary_discovery_feedback.py"
       - "scripts/nexus_public_paper_boundary_proof.py"
+      - "scripts/nexus_multipair_feedback_run_selection.py"
       - "tests/test_nexus_multipair_paper_boundary_discovery_feedback.py"
       - "tests/test_nexus_multipair_paper_boundary_discovery_feedback_workflow.py"
+      - "tests/test_nexus_multipair_feedback_run_selection.py"
       - ".github/workflows/nexus_multipair_paper_boundary_discovery_feedback.yml"
   push:
     branches: [main]
     paths:
       - "nexus_multipair_paper_boundary_discovery_feedback.py"
       - "scripts/nexus_public_paper_boundary_proof.py"
+      - "scripts/nexus_multipair_feedback_run_selection.py"
       - "tests/test_nexus_multipair_paper_boundary_discovery_feedback.py"
       - "tests/test_nexus_multipair_paper_boundary_discovery_feedback_workflow.py"
+      - "tests/test_nexus_multipair_feedback_run_selection.py"
       - ".github/workflows/nexus_multipair_paper_boundary_discovery_feedback.yml"
 
 permissions:
@@ -51,6 +55,7 @@ jobs:
           python -m pytest -q
           tests/test_nexus_multipair_paper_boundary_discovery_feedback.py
           tests/test_nexus_multipair_paper_boundary_discovery_feedback_workflow.py
+          tests/test_nexus_multipair_feedback_run_selection.py
 
   link-exact-boundary-feedback:
     if: >-
@@ -134,12 +139,21 @@ jobs:
           gh api -H 'Accept: application/vnd.github+json' \
             "repos/$GITHUB_REPOSITORY/actions/workflows/$DISCOVERY_WORKFLOW/runs?branch=main&status=success&head_sha=$source_sha&per_page=100" \
             > build/discovery-runs.json
-          read -r paper_run_id discovery_run_id <<EOF
-          $(SOURCE_SHA="$source_sha" python - <<'PY'
+          pair_ids="$(SOURCE_SHA="$source_sha" python - <<'PY'
           import json
           import os
           from pathlib import Path
           source_sha = os.environ["SOURCE_SHA"]
+          import subprocess
+          import sys
+          from scripts.nexus_multipair_feedback_run_selection import select_discovery_proof_run
+
+          def read_run_page(run_id, resource):
+              return json.loads(subprocess.check_output([
+                  "gh", "api", "-H", "Accept: application/vnd.github+json",
+                  f"repos/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{run_id}/{resource}",
+              ], text=True))
+
           specs = (
               ("build/paper-runs.json", "NEXUS persistent Paper trading loop", ".github/workflows/nexus_persistent_paper_trading_loop.yml"),
               ("build/discovery-runs.json", "NEXUS Multi-Pair Discovery v2 physical proof", ".github/workflows/nexus_multipair_strategy_discovery_v2.yml"),
@@ -156,11 +170,20 @@ jobs:
                   and row.get("status") == "completed"
                   and row.get("conclusion") == "success"
               ]
-              selected.append(str(rows[0]["id"]) if rows else "0")
+              if name == "NEXUS Multi-Pair Discovery v2 physical proof":
+                  selection = select_discovery_proof_run(
+                      rows, source_sha,
+                      lambda run_id: read_run_page(run_id, "jobs?filter=latest&per_page=100"),
+                      lambda run_id: read_run_page(run_id, "artifacts?per_page=100"),
+                  )
+                  print(f"discovery_proof_selection={selection.reason} run_id={selection.run_id}", file=sys.stderr)
+                  selected.append(str(selection.run_id))
+              else:
+                  selected.append(str(rows[0]["id"]) if rows else "0")
           print(*selected)
           PY
-          )
-          EOF
+          )"
+          read -r paper_run_id discovery_run_id <<< "$pair_ids"
           {
             echo "source_sha=$source_sha"
             echo "paper_run_id=$paper_run_id"
