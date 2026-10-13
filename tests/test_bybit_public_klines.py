@@ -382,3 +382,71 @@ def test_classified_403_after_unclassified_round_still_fails_fast(monkeypatch):
     assert len(session.urls) == len(OFFICIAL_MAINNET_BASE_URLS) + 1
     assert sleeps == [UNCLASSIFIED_403_RETRY_DELAYS_SECONDS[0]]
     assert session.closed is True
+
+
+@pytest.mark.parametrize("region", ["GLOBAL", "EEA"])
+def test_all_country_denials_stop_after_one_approved_host_pass(region, monkeypatch, capsys):
+    monkeypatch.setenv("NEXUS_BYBIT_PUBLIC_REGION", region)
+    _, hosts = bybit_klines._active_mainnet_base_urls()
+    body = b"The distribution is configured to block access from your country"
+    session = _Session([
+        _Response(403, content=body, headers={"Server": "CloudFront"})
+        for _ in range(len(hosts) * (len(UNCLASSIFIED_403_RETRY_DELAYS_SECONDS) + 1))
+    ])
+    sleeps = []
+    monkeypatch.setattr(bybit_klines.time, "sleep", sleeps.append)
+    with pytest.raises(BybitKlineError, match="all approved Bybit Mainnet endpoints"):
+        fetch_closed_klines(
+            "SOLUSDT", "15", now_ms=1710002000000,
+            start_time_ms=1710000000000, end_time_ms=1710000900000,
+            limit=2, session=session,
+        )
+    assert session.urls == [host + "/v5/market/kline" for host in hosts]
+    assert sleeps == []
+    assert session.closed is True
+    output = capsys.readouterr().out
+    assert output.count('"classification":"edge_country_restricted"') == len(hosts)
+    assert "block access from your country" not in output.lower()
+
+
+@pytest.mark.parametrize("country_first", [True, False])
+def test_mixed_country_and_unknown_denial_never_retries_the_denied_host(country_first, monkeypatch):
+    monkeypatch.setenv("NEXUS_BYBIT_PUBLIC_REGION", "GLOBAL")
+    body = b"The distribution is configured to block access from your country"
+    pair = [_Response(403, content=body), _Response(403)]
+    if not country_first:
+        pair.reverse()
+    session = _Session(pair * (len(UNCLASSIFIED_403_RETRY_DELAYS_SECONDS) + 1))
+    sleeps = []
+    monkeypatch.setattr(bybit_klines.time, "sleep", sleeps.append)
+    with pytest.raises(BybitKlineError, match="edge_country_restricted"):
+        fetch_closed_klines(
+            "BTCUSDT", "15", now_ms=1710002000000,
+            start_time_ms=1710000000000, end_time_ms=1710000900000,
+            limit=2, session=session,
+        )
+    assert len(session.urls) == len(OFFICIAL_MAINNET_BASE_URLS)
+    assert sleeps == []
+    assert session.closed is True
+
+
+def test_country_denial_after_transient_retry_ends_further_rounds(monkeypatch):
+    monkeypatch.setenv("NEXUS_BYBIT_PUBLIC_REGION", "GLOBAL")
+    body = b"The distribution is configured to block access from your country"
+    host_count = len(OFFICIAL_MAINNET_BASE_URLS)
+    session = _Session([
+        *[_Response(403) for _ in range(host_count)],
+        *[_Response(403, content=body) for _ in range(host_count * len(UNCLASSIFIED_403_RETRY_DELAYS_SECONDS))],
+    ])
+    sleeps = []
+    monkeypatch.setattr(bybit_klines.time, "sleep", sleeps.append)
+    with pytest.raises(BybitKlineError, match="edge_country_restricted"):
+        fetch_closed_klines(
+            "ETHUSDT", "15", now_ms=1710002000000,
+            start_time_ms=1710000000000, end_time_ms=1710000900000,
+            limit=2, session=session,
+        )
+    assert len(session.urls) == 2 * host_count
+    assert sleeps == [UNCLASSIFIED_403_RETRY_DELAYS_SECONDS[0]]
+    assert session.closed is True
+
