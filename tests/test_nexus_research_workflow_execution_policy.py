@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import ast
 import copy
+import re
 import unittest
 from pathlib import Path
 from typing import Any
@@ -14,21 +15,31 @@ ROOT = Path(__file__).resolve().parents[1]
 DISCOVERY = "nexus_multitimeframe_strategy_discovery.yml"
 ROTATION = "nexus_strategy_discovery_rotation.yml"
 REQUALIFICATION = "nexus_strategy_proposal_runtime_requalification.yml"
+MULTIPAIR = "nexus_multipair_strategy_discovery_v2.yml"
 
 
-def _condition(expression: str, github: dict[str, Any]) -> bool:
+def _condition(expression: str, github: dict[str, Any], needs: dict[str, Any] | None = None) -> bool:
     """Evaluate only the boolean/string subset used by these GitHub guards.
 
-    No eval, functions or arbitrary attributes are allowed. Missing event
+    No eval or arbitrary calls are allowed; only always() is supported as a
+    GitHub status primitive. Missing event
     properties resolve to an empty string, as in GitHub Actions expressions.
     """
+    expression = expression.strip()
+    if expression.startswith("${{") and expression.endswith("}}"):
+        expression = expression[3:-2].strip()
+    # GitHub job identifiers permit hyphens in dotted needs references.
+    expression = re.sub(r"\bneeds\.([A-Za-z0-9_-]+)", lambda match: "needs." + match[1].replace("-", "_"), expression)
+    contexts = {"github": github, "needs": {key.replace("-", "_"): value for key, value in (needs or {}).items()}}
     tree = ast.parse("(" + expression.replace("&&", " and ").replace("||", " or ") + ")", mode="eval")
 
     def visit(node: ast.AST) -> Any:
         if isinstance(node, ast.Expression):
             return visit(node.body)
-        if isinstance(node, ast.Name) and node.id == "github":
-            return github
+        if isinstance(node, ast.Name) and node.id in contexts:
+            return contexts[node.id]
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "always" and not node.args and not node.keywords:
+            return True
         if isinstance(node, ast.Attribute):
             parent = visit(node.value)
             return parent.get(node.attr, "") if isinstance(parent, dict) else ""
@@ -76,7 +87,7 @@ class ResearchWorkflowExecutionPolicyTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.workflows = {
             name: load_yaml(ROOT / ".github" / "workflows" / name)
-            for name in (DISCOVERY, ROTATION, REQUALIFICATION)
+            for name in (DISCOVERY, ROTATION, REQUALIFICATION, MULTIPAIR)
         }
 
     def allowed(self, workflow: str, job: str, context: dict[str, Any]) -> bool:
@@ -111,6 +122,40 @@ class ResearchWorkflowExecutionPolicyTests(unittest.TestCase):
                         self.allowed(ROTATION, "dispatch-one-stage", _context(event, ref)),
                         event in {"workflow_dispatch", "schedule"} and ref == "refs/heads/main",
                     )
+
+    def test_multipair_entire_pipeline_requires_main_dispatch(self) -> None:
+        # Deliberately provide successful parents and nonempty old outputs:
+        # even that context cannot turn a code-only push into fresh evidence.
+        needs = {
+            "runtime-snapshot": {"result": "success", "outputs": {"runtime_snapshot_archive_chunk_count": "1"}},
+            "requalify-physical": {"result": "success", "outputs": {"proof_b64": "synthetic-proof"}},
+        }
+        for job, definition in self.workflows[MULTIPAIR]["jobs"].items():
+            if job == "contract-test":
+                continue
+            for event in ("push", "pull_request", "workflow_dispatch", "schedule", "repository_dispatch", "workflow_run"):
+                for ref in ("refs/heads/main", "refs/heads/feature"):
+                    with self.subTest(job=job, event=event, ref=ref):
+                        self.assertEqual(
+                            _condition(definition["if"], _context(event, ref), needs),
+                            event == "workflow_dispatch" and ref == "refs/heads/main",
+                        )
+
+    def test_multipair_publishers_keep_parent_result_and_no_work_gates(self) -> None:
+        cases = (
+            ("persist-runtime-snapshot", "runtime-snapshot", "runtime_snapshot_archive_chunk_count", "1", "0"),
+            ("persist-proof", "requalify-physical", "proof_b64", "synthetic-proof", ""),
+        )
+        for job, parent, field, good_value, no_work in cases:
+            definition = self.workflows[MULTIPAIR]["jobs"][job]
+            self.assertEqual(definition["needs"], parent)
+            for status in ("failure", "cancelled", "skipped"):
+                needs = {parent: {"result": status, "outputs": {field: good_value}}}
+                with self.subTest(job=job, parent_status=status):
+                    self.assertFalse(_condition(definition["if"], _context("workflow_dispatch"), needs))
+            needs = {parent: {"result": "success", "outputs": {field: no_work}}}
+            with self.subTest(job=job, empty_evidence=True):
+                self.assertFalse(_condition(definition["if"], _context("workflow_dispatch"), needs))
 
     def test_contract_only_discovery_results_cannot_activate_consumers(self) -> None:
         for source_event in ("push", "pull_request", "schedule", "repository_dispatch"):

@@ -133,7 +133,7 @@ def test_physical_jobs_are_main_only_exact_source_and_native() -> None:
     runtime = _section(text, "runtime-snapshot", "persist-runtime-snapshot")
     requalify = _section(text, "requalify-physical", "persist-proof")
     for section in (discover, runtime, requalify):
-        assert "github.event_name != 'pull_request' && github.ref == 'refs/heads/main'" in section
+        assert "github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'" in section
         assert "runs-on: nexus-bybit-network" in section
         assert "uses: actions/checkout" not in section
         assert "uses: actions/setup-python" not in section

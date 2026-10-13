@@ -43,6 +43,7 @@ on:
       - "tests/test_nexus_multipair_strategy_discovery_workflow.py"
       - "tests/test_nexus_multipair_search_exhaustion.py"
       - ".github/workflows/nexus_multipair_strategy_discovery_v2.yml"
+      - "tests/test_nexus_research_workflow_execution_policy.py"
   pull_request:
     branches: [main]
     paths:
@@ -84,6 +85,7 @@ on:
       - "tests/test_nexus_multipair_strategy_discovery_workflow.py"
       - "tests/test_nexus_multipair_search_exhaustion.py"
       - ".github/workflows/nexus_multipair_strategy_discovery_v2.yml"
+      - "tests/test_nexus_research_workflow_execution_policy.py"
 
 permissions:
   contents: read
@@ -121,10 +123,12 @@ jobs:
           tests/test_nexus_runtime_snapshot_artifact.py
           tests/test_nexus_multipair_trusted_surface.py
           tests/test_nexus_multipair_strategy_discovery_workflow.py
+          tests/test_nexus_research_workflow_execution_policy.py
           tests/test_nexus_multipair_search_exhaustion.py
 
   runtime-wheelhouse:
-    if: github.event_name != 'pull_request'
+    # Source pushes run contracts only; reviewed dispatch owns archive work.
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
@@ -363,7 +367,7 @@ jobs:
           echo "multipair_search_neighborhood=MISS_REQUIRES_FULL_PHYSICAL_DISCOVERY"
 
   discover-physical:
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     needs: [contract-test, runtime-wheelhouse]
     runs-on: nexus-bybit-network
     timeout-minutes: 55
@@ -820,7 +824,7 @@ jobs:
           esac
 
   runtime-snapshot:
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     needs: discover-physical
     runs-on: nexus-bybit-network
     timeout-minutes: 30
@@ -990,7 +994,7 @@ jobs:
           esac
 
   persist-runtime-snapshot:
-    if: ${{ always() && needs.runtime-snapshot.result == 'success' && needs.runtime-snapshot.outputs.runtime_snapshot_archive_chunk_count != '0' }}
+    if: ${{ always() && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && needs.runtime-snapshot.result == 'success' && needs.runtime-snapshot.outputs.runtime_snapshot_archive_chunk_count != '0' }}
     needs: runtime-snapshot
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -1054,7 +1058,7 @@ jobs:
           compression-level: 0
 
   requalify-physical:
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     needs: [discover-physical, runtime-snapshot, persist-runtime-snapshot]
     runs-on: nexus-bybit-network
     timeout-minutes: 55
@@ -1492,7 +1496,7 @@ jobs:
           esac
 
   persist-proof:
-    if: ${{ always() && needs.requalify-physical.result == 'success' && needs.requalify-physical.outputs.proof_b64 != '' }}
+    if: ${{ always() && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && needs.requalify-physical.result == 'success' && needs.requalify-physical.outputs.proof_b64 != '' }}
     needs: requalify-physical
     runs-on: ubuntu-latest
     timeout-minutes: 10

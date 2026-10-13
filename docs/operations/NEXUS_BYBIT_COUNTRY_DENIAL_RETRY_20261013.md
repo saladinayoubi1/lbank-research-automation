@@ -16,3 +16,13 @@ The added regressions cover all-host denial in GLOBAL and EEA, mixed country/unc
 
 This is a request-suppression fix, not restored feed access. There are no new endpoints, selectors, proxy routes, credentials, fabricated candles, stale-source acceptance, old receipt relabelling, checkpoint writes, owner reinstall, completed numerical replay or writer-authority changes. Permitted official source availability, all twelve exact-source closed-bar cells and physical single-writer commissioning remain separate acceptance gates under #1952 and #2454.
 
+## Contract-only source-push integration
+
+The existing multi-pair discovery workflow watches the shared fetcher on main pushes. Its archive preparer, physical discovery, fresh runtime snapshot and requalification previously allowed these pushes to execute; the two publishers used successful-parent/output conditions without a separate event boundary. A source-only retry fix could therefore lease research workers or regenerate search work when exact-source exhaustion reuse missed.
+
+All six non-contract jobs now require workflow_dispatch on refs/heads/main. This includes hosted archive/wheelhouse preparation and both evidence publishers. Push and pull-request contract CI remain active, including the expanded shared event-policy regression. The standalone workflow retains its reviewed one-shot dispatch surface; central reviewed routing remains available. Existing job/permission inventories, physical lane, exact source artifacts, source-SHA and exhaustion verification, fresh runtime requirements and publisher parent/output conditions are preserved.
+
+Nine event-policy tests pass, covering all non-contract jobs on push, PR, dispatch, schedule, repository_dispatch and workflow_run, including feature refs and successful-parent/stale-output contexts. Failed, cancelled, skipped or explicit no-work parents cannot publish. Twenty existing multi-pair workflow contract checks also pass, including exact job inventory, source transport, archive verification, runtime binding, exhaustion certification and native bootstrap. The existing policy, trust-boundary and immutable-action validators pass for the changed workflow. The retry implementation/test blobs and their 20-case native QA receipt remain unchanged.
+
+No archive acquisition, physical search, fresh market request, producer replay, checkpoint write or new proof publication is performed by this source preparation. Merge still requires the resulting exact-head CI, then verification that the main-push execution jobs are skipped. Reverting the data fix should retain these event guards; reverting the guards restores the source-push replay hazard.
+
