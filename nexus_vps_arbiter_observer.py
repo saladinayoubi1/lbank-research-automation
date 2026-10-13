@@ -12,6 +12,7 @@ import shutil
 import socket
 import subprocess
 import time
+from nexus_laptop_observations import snapshot as laptop_snapshot
 
 SCHEMA = "nexus.vps-arbiter-observer.v1"
 DANGER = re.compile(r"soft\s+lockup|rcu.{0,80}stall|blocked\s+for\s+more\s+than|(?:buffer\s+)?i/o\s+error|ext4-fs\s+error|xfs.*corrupt", re.I)
@@ -96,7 +97,9 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def do_GET(self):
-        if self.path == "/healthz":
+        if self.path == "/nodes":
+            self.reply(200, laptop_snapshot(getattr(self.server, "node_state", None)))
+        elif self.path == "/healthz":
             data = inspect()
             self.reply(200 if data["host_preflight"] == "pass" else 503, data)
         elif self.path in ("/readyz", "/permit", "/writer-permit"):
@@ -120,6 +123,7 @@ def main(argv=None):
     mode.add_argument("--serve",action="store_true")
     p.add_argument("--host",default="127.0.0.1")
     p.add_argument("--port",type=int,default=8765)
+    p.add_argument("--node-state",type=Path,help="Existing private authenticated laptop receipt database")
     args=p.parse_args(argv)
     try:
         ip=ipaddress.ip_address(args.host)
@@ -136,6 +140,7 @@ def main(argv=None):
     if ip.version != 4:
         p.error("IPv4 loopback only")
     with ThreadingHTTPServer((args.host,args.port),Handler) as server:
+        server.node_state = args.node_state
         server.daemon_threads=True
         server.serve_forever()
     return 0
