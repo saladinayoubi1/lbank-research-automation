@@ -1,0 +1,9 @@
+{
+  "config_digest": "7a5a984549301b9e94ee0f1a105002844d9573b1145df832ae2f0174b7f8b907",
+  "pid": 8788,
+  "producer_host": "DESKTOP-F4SA4VL",
+  "qa_host": "DESKTOP-1R1081M",
+  "source_sha": "8899ec6bec4927fc39795f2867be91e2431178c6",
+  "wall_seconds": 600,
+  "worker_sha256": "ba5226d96e52079f192355727543f3b642aad2aab6bbd4dca19beab8adfc53cf"
+}
