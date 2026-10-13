@@ -208,3 +208,15 @@ causes a new Research Agent QA check to fail closed. The patch is additive
 and source-only; revert this PR if needed. No old original source receipts,
 owner profile, production runner, internet configuration, existing Demo
 installation, or 500-USDT Paper journal has been modified.
+
+## Verified accounting checkpoint and merge boundary — 2026-10-13
+
+The completed, source-bound v5 producer was independently reviewed with the distinct Decimal oracle on both existing laptops. Laptop 1's distinct-host receipt records `DECIMAL_ACCOUNTING_MATCHED_RESEARCH_ONLY` for all 12 cells and audit digest `8fe4e0e526a7e0dbec4aa811e3a8768df3be52fdd59b49231f560e3537533805`. The oracle Git blob remains `d583ed655efe64b5c0c5eb73960eb217bc7ded83`; receipt and native proof are retained in [PR #2598's accounting checkpoint](https://github.com/saladinayoubi1/lbank-research-automation/pull/2598#issuecomment-6134173649).
+
+This verifies independent accounting consistency on the same bound inputs, not profitability or exchange-executed fills. All four validation returns were negative, the historical test had already been inspected, and qualification remains `NOT_QUALIFIED_NO_PRISTINE_FUTURE_HOLDOUT`. No strategy promotion, owner Demo admission, official Coordinator/frontier advancement or Live authority followed from the accounting PASS. The completed producer, tournament and numerical replay were not rerun for this alignment.
+
+The source branch is being aligned with main `4aeace91c04b0b568c40172548d64b82e8902964`. Original implementation and test blobs remain intact; this documentation adds the verified result and integration boundary. Old signed receipts, datasets, research records and owner profile/journal are preserved.
+
+**Merge remains gated independently of source CI.** The unchanged discovery workflow has a main-push trigger for `nexus_agent_composite_runtime.py` and its tests. Its exhaustion-neighborhood fingerprint and reuse check bind the source commit SHA. A new main commit can therefore miss the existing certificate even when search-defining implementation files are unchanged, and the workflow can repeat a completed search. Before merging this PR, review or fix the automatic-trigger/no-work path so completed research is preserved without weakening source or certificate verification. PR contract tests may run; the actual discovery job is skipped for pull-request events. No workflow file, credentials or protected contract was changed in this alignment.
+
+Rollback is a source revert of this isolated PR, with legacy verifiers retained. Physical future-source access, prospective freeze/benchmark attestation, statistical robustness and independently audited actual fill evidence remain separate requirements. No historical minimum trade-count selector is introduced.
