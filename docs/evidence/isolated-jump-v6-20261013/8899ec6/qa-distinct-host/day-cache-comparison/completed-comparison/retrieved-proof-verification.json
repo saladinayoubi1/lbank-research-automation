@@ -1,0 +1,19 @@
+{
+  "additional_training_cells_with_all_5_ranking_fields_matched": 4,
+  "all_15_reused_receipts_unchanged": true,
+  "cell_canonical_digests_verified": 16,
+  "checked_at_utc": "2026-10-13T13:49:07.835564+00:00",
+  "full_grid_cells_with_all_14_fields_matched": 12,
+  "independent_decimal_accounting_complete": false,
+  "live_enabled": false,
+  "native_exit_code": 0,
+  "new_backtests_run_by_this_readback_check": 0,
+  "original_source_full_replay_complete": false,
+  "producer_report_identity_verified": true,
+  "qa_digest": "2264571a50b99af12479f733cb9ba2b208038ce4467ddc614578ba82a6bce259",
+  "research_only": true,
+  "schema": "nexus.retrieved-complete-numeric-qa-verification.v1",
+  "training_aggregates_match": true,
+  "training_positive_cells_per_hypothesis": 0,
+  "worker_and_config_digests_verified": true
+}

@@ -32,6 +32,10 @@ Conservative fee/slippage is 10/5 bps per leg; stress is 25/15 bps per leg. Each
 
 The calendar-day cache computes day keys once and retains the study's signals, fills and risk rules. The original producer/report identity and the reviewed computation identity are separate. Verification checkpoints and exact source bindings live under `docs/evidence/isolated-jump-v6-20261013/8899ec6/qa-distinct-host/day-cache-comparison/`.
 
+Distinct-host reviewed-code numerical comparison completed at 2026-10-13T13:45:47.301275Z with native exit 0. All 16 comparison-cell digests and reported metrics matched: 12 selected-candidate partition/cost rows compare 14 report fields, and four additional challenger Training cells compare five ranking fields. Training aggregates and the original ranking matched. QA digest: `2264571a50b99af12479f733cb9ba2b208038ce4467ddc614578ba82a6bce259`.
+
+Completed native regression and backtest receipts were reused with source, input, canonical digest, regenerated signal and original metric checks. The final stage reused 15 cell receipts and ran only the previously unfinished ETH challenger Training stress backtest. The receipt is in `completed-comparison/qa-evidence.json`; native exit, source/reuse bindings and retrieved-proof verification are preserved beside it. Earlier deadline failures remain recorded and are not relabeled as successful runs.
+
 Numerical replay agreement is a correctness result. It does not create positive expectancy, an independent accounting proof, or a pristine prospective test. Independent Decimal accounting and original-source full strict replay must retain their actual unfinished status unless separate receipts complete them.
 
 A new discovery study needs a materially distinct hypothesis and a frozen research contract before outcome inspection. Preserve the terminal novelty ledger, check both evaluated and screened mechanisms for duplicates, and select using Training only. Do not repeat v5 or this frozen producer to seek a favorable scenario. A later qualification claim needs its own unseen prospective data.
