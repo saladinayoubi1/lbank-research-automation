@@ -30,12 +30,16 @@ def test_v5_is_additive_and_reviewed_without_rewriting_prior_generations():
     assert research.PEER_MECHANISMS & set(extension) == {
         "factory_peer_lead_beta_failure_reclaim"
     }
-    assert research.FRONTIER_CONFIGS[-2:] == factory.factory_configs(extension)
+    historical_v5_configs = tuple(
+        config for config in research.FRONTIER_CONFIGS
+        if config["mechanism"] in extension
+    )
+    assert historical_v5_configs == factory.factory_configs(extension)
     assert all(
         config["risk_variant"] == 0
         and config["entry_model"] == "closed_4h_1h_15m_next_open"
         and config["factory_contract_digest"] == extension[config["mechanism"]]["contract_digest"]
-        for config in research.FRONTIER_CONFIGS[-2:]
+        for config in historical_v5_configs
     )
 
 
@@ -190,3 +194,4 @@ def test_v5_routes_through_existing_numeric_train_validation_and_stress_grid(
     assert set(new_ledger["frontier_screened_mechanisms"]) == set(
         core["frontier_screened_mechanisms"]
     ) | set(research.REVIEWED_EXTENSION_MECHANISMS)
+
