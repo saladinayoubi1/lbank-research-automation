@@ -23,4 +23,6 @@ Two file-based PowerShell invocations failed before mutation (execution policy t
 
 ## Next gate
 
-Locate and verify the existing approved Bybit archive root and six raw-file identities, then run one bounded first v7 producer using the terminal v6 ledger. Completed v5/v6 producers, numeric/Decimal jobs and native day-cache units must not be rerun. Distinct-host numeric/Decimal/leakage evidence and unseen prospective data remain separate gates. Live=false; owner state/install/profile/journal preserved.
+The later first frozen native producer completed at 2026-10-13T22:16:22.393075Z with true child exit0 and twelve negative diagnostic cells; its four Training-screen cells were also negative. The archive root and six raw-file identities were verified before execution. See [first-producer/RESULT.md](first-producer/RESULT.md) for exact inputs, immutable receipts, all results and remaining gates. The preceding source-gate paragraphs record the earlier21:40 checkpoint, before that market execution.
+
+Distinct-host numeric/Decimal/leakage evidence and unseen prospective data remain separate gates. Completed v5/v6 producers, audits, source tests and old day-cache units were not rerun. No retuning or Demo promotion; Live=false; owner state/install/profile/journal preserved.

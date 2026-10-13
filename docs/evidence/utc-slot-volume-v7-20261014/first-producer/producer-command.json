@@ -1,0 +1,21 @@
+{
+  "argv": [
+    "E:\\NEXUS-QA\\strategy-frontier-v5-20261010\\.venv\\Scripts\\python.exe",
+    "E:\\NEXUS-QA\\utc-slot-volume-v7-20261014\\source\\nexus_composite_strategy_research.py",
+    "--archive-root",
+    "C:\\NEXUS\\research-cache\\replay-canonical-37681826492\\archive",
+    "--output",
+    "E:\\NEXUS-QA\\utc-slot-volume-v7-20261014\\producer",
+    "--source-sha",
+    "7cab4f0368823ef3dd9dec79f572bd05721e2316",
+    "--previous-ledger",
+    "E:\\NEXUS-QA\\causal-jump-v6-20261013\\producer\\novelty-ledger.json"
+  ],
+  "cwd": "E:\\NEXUS-QA\\utc-slot-volume-v7-20261014\\source",
+  "deadline_seconds": 600,
+  "live_enabled": false,
+  "precheck_sha256": "44bc43bde130fc89bc2ada21d83fac9b03d7455294cf05df1e442f6e3491b34d",
+  "research_only": true,
+  "source_sha": "7cab4f0368823ef3dd9dec79f572bd05721e2316",
+  "wrapper_sha256": "d1de877019a4a939e99851a70571e2ae72130d696fcb1d0701dea05ca0cb33bb"
+}

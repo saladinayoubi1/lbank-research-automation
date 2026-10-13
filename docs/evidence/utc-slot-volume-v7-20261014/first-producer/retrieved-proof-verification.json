@@ -1,0 +1,21 @@
+{
+  "all_diagnostic_cells_negative": true,
+  "byte_digests_and_schema_only": true,
+  "diagnostic_positive_cells": 0,
+  "diagnostic_rows": 12,
+  "independent_numeric_or_decimal_qa": false,
+  "ledger_digest": "33ebdb18e85a4bc2877492b857691d82f49a18e3337237293bde012bf31de3e4",
+  "live_enabled": false,
+  "market_backtests_rerun": 0,
+  "native_exit_code": 0,
+  "native_file_count": 13,
+  "native_receipt_sha256": "f2cc671d50c90db4ffc448db9b399ad65ec070302956c8f27480c9e8aa9c5c14",
+  "owner_demo_admission": false,
+  "passed": true,
+  "report_digest": "5537ab0b0d884d0c380d4ec0ad9c0d02af33d6782ec3c04a053e4de8f11edddb",
+  "research_only": true,
+  "schema": "nexus.v7-first-producer-retrieved-proof-verification.v1",
+  "source_sha": "7cab4f0368823ef3dd9dec79f572bd05721e2316",
+  "training_screen_cells": 4,
+  "unit_tests_rerun": 0
+}
