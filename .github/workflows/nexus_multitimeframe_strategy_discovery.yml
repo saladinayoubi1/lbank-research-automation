@@ -39,6 +39,7 @@ on:
       - "tests/test_nexus_multitimeframe_training_refinement.py"
       - "tests/test_nexus_multitimeframe_verified_archive_discovery.py"
       - ".github/workflows/nexus_multitimeframe_strategy_discovery.yml"
+      - "tests/test_nexus_research_workflow_execution_policy.py"
   pull_request:
     paths:
       - "nexus_multitimeframe_strategy_discovery.py"
@@ -71,6 +72,7 @@ on:
       - "tests/test_nexus_multitimeframe_verified_archive_discovery.py"
       - "scripts/nexus_strategy_discovery_controller.py"
       - ".github/workflows/nexus_multitimeframe_strategy_discovery.yml"
+      - "tests/test_nexus_research_workflow_execution_policy.py"
 
 permissions:
   contents: read
@@ -99,6 +101,7 @@ jobs:
           tests/test_nexus_multitimeframe_training_refinement.py
           tests/test_nexus_multitimeframe_search_exhaustion.py
           tests/test_nexus_multitimeframe_search_exhaustion_workflow.py
+          tests/test_nexus_research_workflow_execution_policy.py
           tests/test_nexus_multitimeframe_verified_archive_discovery.py
           tests/test_nexus_strategy_discovery_controller.py
           tests/test_nexus_bybit_replay_artifact_lifecycle.py
@@ -109,7 +112,9 @@ jobs:
           tests/test_nexus_qa_attested_discovery_frontier.py
 
   discover:
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    # Source/QA pushes run contracts only. The reviewed rotation dispatcher
+    # retains autonomous discovery; a new commit alone is not a new search.
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     needs: contract-test
     runs-on: ubuntu-latest
     timeout-minutes: 45
