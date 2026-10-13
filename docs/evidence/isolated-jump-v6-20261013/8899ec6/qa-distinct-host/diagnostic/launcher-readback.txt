@@ -1,0 +1,7 @@
+[Reading 2 new lines (total: 2 lines)]
+
+{"launched":true,"pid":11164,"root":"E:\\NEXUS-QA\\jump-v6-qa-profile-20261013","worker_sha256":"7e2137d804844ccf0adb07969d779ed97381b247fb5db16d86c441bee2000425","bounded_seconds":120,"full_replay_submitted":false,"original_worker_exists":false,"checked_at_utc":"2026-10-13T11:50:37.2891690Z"}
+
+✅ Process completed with exit code 0 (runtime: 8.44s)
+
+[executed on device: DESKTOP-1R1081M (bbabb808-d554-4db8-bce7-3a453bea8b43)]
