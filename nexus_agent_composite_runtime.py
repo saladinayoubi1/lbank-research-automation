@@ -19,6 +19,9 @@ from pathlib import Path
 from typing import Any
 
 import nexus_composite_strategy_research as research
+from nexus_composite_statistical_audit import (
+    StatisticalReviewError, historical_review,
+)
 
 SCHEMA = "nexus.agent-composite-execution.v1"
 QA_SCHEMA = "nexus.agent-composite-independent-qa.v1"
@@ -156,6 +159,13 @@ def run_lease(
     report = research.run(archive_root, output_dir, source_sha, previous_ledger)
     ledger = _checked_ledger(output_dir / "novelty-ledger.json")
     _validate_report(report, ledger, previous, source_sha)
+    try:
+        statistics = historical_review(report, ledger)
+    except StatisticalReviewError as exc:
+        raise RealResearchError("historical scientific review rejected source evidence") from exc
+    # Statistical insufficiency is positive *provenance disclosure*, never
+    # evidence of profitability, nor a modification to signed receipt v1.
+    research.safe_write(output_dir / "statistical-review.json", statistics)
     # Bind an immutable copy of the exact previous frontier into the producer
     # artifact; QA must never fetch a potentially newer frontier after this run.
     shutil.copyfile(previous_ledger, output_dir / "previous-ledger.json")
@@ -210,6 +220,16 @@ def verify_independently(
     ):
         raise RealResearchError("producer lease receipt or input binding rejected")
     _validate_report(report, ledger, previous, source_sha)
+    # New leased runs include a separate immutable statistical limitation
+    # artifact. Verify its identity and complete digest during independent
+    # replay; never infer positive-edge from historical 12-cell summaries.
+    try:
+        expected_statistics = historical_review(report, ledger)
+        observed_statistics = _read_json(result_dir / "statistical-review.json")
+    except (StatisticalReviewError, OSError, ValueError) as exc:
+        raise RealResearchError("scientific limitation receipt is unavailable") from exc
+    if expected_statistics != observed_statistics:
+        raise RealResearchError("statistical limitation receipt differs from source")
     with tempfile.TemporaryDirectory(prefix="nexus-independent-qa-") as temp:
         independent = research.run(archive_root, Path(temp), source_sha, previous_ledger)
         independent_ledger = _checked_ledger(Path(temp) / "novelty-ledger.json")

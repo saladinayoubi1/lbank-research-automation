@@ -373,3 +373,66 @@ def test_qa_lease_identity_cannot_inject_workflow_outputs_or_cache_key(
     with pytest.raises(prepare.ResearchPreparationError, match="untrusted"):
         prepare.prepare("inspect", tmp_path / "never-created")
     assert not (tmp_path / "never-created").exists()
+
+
+def test_source_bound_statistical_limitation_is_persisted_and_qa_attested(
+    tmp_path, monkeypatch,
+):
+    prior = tmp_path / "prior.json"
+    _previous(prior)
+    _fake_engine(monkeypatch)
+    output = tmp_path / "research"
+    receipt = runtime.run_lease(
+        archive_root=tmp_path, previous_ledger=prior, source_sha=SOURCE,
+        lease_id=LEASE, output_dir=output,
+    )
+    review_file = output / "statistical-review.json"
+    assert review_file.is_file()
+    review = json.loads(review_file.read_text(encoding="utf-8"))
+    assert review["report_digest"] == receipt["report_digest"]
+    assert review["decision"] == "INSUFFICIENT_PRISTINE_PROSPECTIVE_EVIDENCE"
+    assert review["statistical_significance_established"] is False
+    assert review["historical_test_pristine"] is False
+    assert review["owner_demo_admission_allowed"] is False
+    proof = runtime.verify_independently(
+        archive_root=tmp_path, previous_ledger=output/"previous-ledger.json",
+        source_sha=SOURCE, lease_id=LEASE, result_dir=output,
+        output=tmp_path/"independent-qa.json",
+    )
+    assert proof["independent_replay_matches"] is True
+    assert proof["auto_demo_promotion"] is False
+
+
+def test_statistical_report_redigest_or_removal_cannot_fool_research_qa(
+    tmp_path, monkeypatch,
+):
+    from copy import deepcopy
+
+    prior = tmp_path / "prior.json"
+    _previous(prior)
+    _fake_engine(monkeypatch)
+    output = tmp_path / "research"
+    runtime.run_lease(
+        archive_root=tmp_path, previous_ledger=prior, source_sha=SOURCE,
+        lease_id=LEASE, output_dir=output,
+    )
+    report = json.loads((output/"statistical-review.json").read_text(encoding="utf-8"))
+    altered = deepcopy(report)
+    altered["statistical_significance_established"] = True
+    altered["owner_demo_admission_allowed"] = True
+    unsigned = {k:v for k,v in altered.items() if k!="statistical_review_digest"}
+    altered["statistical_review_digest"] = research.digest(unsigned)
+    research.safe_write(output/"statistical-review.json", altered)
+    with pytest.raises(runtime.RealResearchError, match="statistical limitation receipt"):
+        runtime.verify_independently(
+            archive_root=tmp_path, previous_ledger=output/"previous-ledger.json",
+            source_sha=SOURCE, lease_id=LEASE, result_dir=output,
+            output=tmp_path/"qa-fraud.json",
+        )
+    (output/"statistical-review.json").unlink()
+    with pytest.raises(runtime.RealResearchError, match="scientific limitation receipt"):
+        runtime.verify_independently(
+            archive_root=tmp_path, previous_ledger=output/"previous-ledger.json",
+            source_sha=SOURCE, lease_id=LEASE, result_dir=output,
+            output=tmp_path/"qa-missing.json",
+        )
