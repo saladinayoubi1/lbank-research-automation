@@ -141,6 +141,11 @@ def test_all_frontier_mechanisms_emit_bounded_boolean_signals():
         "lagged_directional_entropy_64": [0.70] * n,
         "lagged_range_compression_ratio_32": [0.60] * n,
         "lagged_volume_return_corr_64": [0.30] * n,
+        "previous_close": [99.5] * n,
+        "lagged_standardized_shock_96": [3.5] * n,
+        "lagged_jump_proxy_share_96": [0.2] * n,
+        "lagged_utc_slot_volume_ratio_7d": [1.6] * n,
+        "lagged_utc_slot_volume_cv_7d": [0.2] * n,
     })
     for mechanism in research.FRONTIER_MECHANISMS:
         config = next(row for row in research.FRONTIER_CONFIGS if row["mechanism"] == mechanism)

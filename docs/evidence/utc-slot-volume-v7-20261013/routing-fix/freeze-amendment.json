@@ -1,0 +1,33 @@
+{
+  "amendment_digest": "fed3adebaa2274b05f9f1907f231d723242ca6fe36417be598b0dd2649981ce3",
+  "auto_demo_promotion": false,
+  "candidate_config_fingerprint": "424c0a527aca815448719704c5aa714246e1b1e4c62532dcb782350b1c5090be",
+  "candidate_contract_digest": "dfa3430d170b99011cdff96d7eb48877e7c60473295b4ec7c7c01855bd9fe9b1",
+  "change_scope": "frontier tier placement and regression fixture; no feature, hypothesis, parameter or risk changes",
+  "created_at_utc": "2026-10-13T17:53:45.363408+00:00",
+  "file_sha256": {
+    "nexus_causal_slot_volume_features.py": "2ba569f315504177f92a22e262f1e9488ad31e30cd3b87a6db946c07945dd2b0",
+    "nexus_composite_strategy_research.py": "833633f1a44e7f7115badc00c6712dc8976ad111fab8f472d9535276d3102a38",
+    "nexus_mechanism_factory.py": "5060c647a5a882af81c9d7babfe130109beda4b6e6c3ffa4a94ac3bb97384c40",
+    "research/mechanism_factory_v7.json": "1fc415248dd18335a3824d0020a1bf5bfe36352807725857283becec575ead74",
+    "tests/test_nexus_causal_slot_volume_features.py": "11379615208e34975014587cae8e7cd95dd13aeee4f2370b41b5c087f65513ac",
+    "tests/test_nexus_composite_fast_frontier.py": "5cb4d5807b21e55dc58aa4a4a0478db898e836e1199ea7bc2eaeeee8029d6798"
+  },
+  "independent_strategy_qa_complete": false,
+  "live_enabled": false,
+  "market_outcomes_observed": false,
+  "native_market_research_executed": false,
+  "official_coordinator_advanced": false,
+  "original_freeze_digest": "d5d0e8c4f8f78632afa321bbf23ce84ac988827b03b7890575f7277f05b491d4",
+  "original_freeze_retained": true,
+  "owner_demo_admission": false,
+  "prior_frontier_tiers_preserved": true,
+  "research_only": true,
+  "schema": "nexus.utc-slot-volume-pre-execution-routing-amendment.v1",
+  "source_parent_sha": "a4a296182768e17ca45a0f7d3be9a137a7a96f29",
+  "unchanged_frozen_source_files": [
+    "nexus_causal_slot_volume_features.py",
+    "nexus_mechanism_factory.py",
+    "research/mechanism_factory_v7.json"
+  ]
+}

@@ -982,9 +982,11 @@ def _frontier_configs_to_screen(ledger: dict[str, Any]) -> list[dict[str, Any]]:
     generated: list[dict[str, Any]] = []
     reviewed_extension: list[dict[str, Any]] = []
     jump_extension: list[dict[str, Any]] = []
+    slot_volume_extension: list[dict[str, Any]] = []
     generated_ids = set(GENERATED_FACTORY_MECHANISMS)
     extension_ids = set(REVIEWED_EXTENSION_MECHANISMS)
     jump_ids = set(JUMP_EXTENSION_MECHANISMS)
+    slot_volume_ids = set(SLOT_VOLUME_EXTENSION_MECHANISMS)
     for config in FRONTIER_CONFIGS:
         if config["mechanism"] in evaluated or config["mechanism"] in screened:
             continue
@@ -995,7 +997,9 @@ def _frontier_configs_to_screen(ledger: dict[str, Any]) -> list[dict[str, Any]]:
             }),
         }
         mechanism = config["mechanism"]
-        if mechanism in jump_ids:
+        if mechanism in slot_volume_ids:
+            slot_volume_extension.append(row)
+        elif mechanism in jump_ids:
             jump_extension.append(row)
         elif mechanism in extension_ids:
             reviewed_extension.append(row)
@@ -1012,7 +1016,9 @@ def _frontier_configs_to_screen(ledger: dict[str, Any]) -> list[dict[str, Any]]:
         return generated[:GENERATED_FRONTIER_BATCH_SIZE]
     if reviewed_extension:
         return reviewed_extension[:GENERATED_FRONTIER_BATCH_SIZE]
-    return jump_extension[:GENERATED_FRONTIER_BATCH_SIZE]
+    if jump_extension:
+        return jump_extension[:GENERATED_FRONTIER_BATCH_SIZE]
+    return slot_volume_extension[:GENERATED_FRONTIER_BATCH_SIZE]
 
 
 def research_mode(ledger: dict[str, Any]) -> str:

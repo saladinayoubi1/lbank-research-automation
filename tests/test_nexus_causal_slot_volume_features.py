@@ -132,6 +132,22 @@ class SlotVolumeFactoryTests(unittest.TestCase):
         self.assertNotIn(IDENT, ledger["mechanisms_evaluated"])
         self.assertNotIn(IDENT, ledger["frontier_screened_mechanisms"])
 
+    def test_every_previous_frontier_contract_precedes_the_v7_tier(self):
+        terminal = json.loads((ROOT/"tests/fixtures/utc_slot_v7_terminal_ledger.json").read_text())
+        for mechanism in research.FRONTIER_MECHANISMS:
+            if mechanism == IDENT:
+                continue
+            with self.subTest(mechanism=mechanism):
+                ledger = deepcopy(terminal)
+                ledger["mechanisms_evaluated"] = [
+                    name for name in ledger["mechanisms_evaluated"] if name != mechanism
+                ]
+                ledger["frontier_screened_mechanisms"] = [
+                    name for name in ledger["frontier_screened_mechanisms"] if name != mechanism
+                ]
+                choices = research._frontier_configs_to_screen(ledger)
+                self.assertEqual([row["mechanism"] for row in choices], [mechanism])
+
     def test_confirmed_signal_and_unavailable_history_denial(self):
         specs = research.SLOT_VOLUME_EXTENSION_SPECS
         frame = pd.DataFrame({

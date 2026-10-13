@@ -1,0 +1,14 @@
+2026-10-13T17:43:01.7140477Z E       AssertionError: assert 29 == 28
+2026-10-13T17:43:01.7206834Z E       AssertionError: assert {'factory_eff...catchup', ...} == {'factory_eff...catchup', ...}
+2026-10-13T17:43:01.7207879Z E         'factory_utc_slot_volume_breakout'
+2026-10-13T17:43:01.7211689Z E         +     'factory_utc_slot_volume_breakout',
+2026-10-13T17:43:01.7233974Z E           AssertionError: assert 1 == 12
+2026-10-13T17:43:01.7234882Z E            +  where 1 = len([{'mechanism': 'factory_utc_slot_volume_breakout', 'risk_variant': 0, 'entry_model': 'closed_4h_1h_15m_next_open', 'factory_contract_digest': 'dfa3430d170b99011cdff96d7eb48877e7c60473295b4ec7c7c01855bd9fe9b1', ...}])
+2026-10-13T17:43:01.7255759Z FAILED tests/test_nexus_composite_fast_frontier.py::test_frontier_tournament_preempts_legacy_risk_variant_cycle - AssertionError: assert 29 == 28
+2026-10-13T17:43:01.7260349Z FAILED tests/test_nexus_composite_fast_frontier.py::test_all_frontier_mechanisms_emit_bounded_boolean_signals - nexus_composite_strategy_research.CompositeResearchError: factory mechanism contract invalid
+2026-10-13T17:43:01.7261952Z FAILED tests/test_nexus_composite_fast_frontier.py::test_generation1_exhaustion_opens_only_generation2_frontier - AssertionError: assert {'factory_eff...catchup', ...} == {'factory_eff...catchup', ...}
+2026-10-13T17:43:01.7263201Z   'factory_utc_slot_volume_breakout'
+2026-10-13T17:43:01.7266416Z   +     'factory_utc_slot_volume_breakout',
+2026-10-13T17:43:01.8353154Z FAILED tests/test_nexus_mechanism_generator_v2.py::test_generator_v3_preserves_v2_history_then_advances_three_new_batches - AssertionError: assert 1 == 12
+2026-10-13T17:43:01.8354765Z  +  where 1 = len([{'mechanism': 'factory_utc_slot_volume_breakout', 'risk_variant': 0, 'entry_model': 'closed_4h_1h_15m_next_open', 'factory_contract_digest': 'dfa3430d170b99011cdff96d7eb48877e7c60473295b4ec7c7c01855bd9fe9b1', ...}])
+2026-10-13T17:43:01.8356549Z 4 failed, 3685 passed, 39 skipped, 22 warnings, 155 subtests passed in 295.32s (0:04:55)
