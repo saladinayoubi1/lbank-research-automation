@@ -431,7 +431,8 @@ def fetch_closed_klines(
                         f"Bybit Mainnet access is blocked (HTTP 403 {reason}); "
                         "repeated requests suppressed"
                     )
-                if reason in {"unclassified", "edge_country_restricted"}:
+                # Further rounds are reserved for unclassified transient 403s.
+                if reason == "unclassified":
                     retryable_403_count += 1
                 continue
             if response.status_code != 200:
@@ -468,6 +469,9 @@ def fetch_closed_klines(
             continue
         break
 
+    close = getattr(client, "close", None)
+    if callable(close):
+        close()
     detail = ",".join(rejected_hosts)
     raise BybitKlineError(
         "all approved Bybit Mainnet endpoints were unavailable or geographically rejected"
