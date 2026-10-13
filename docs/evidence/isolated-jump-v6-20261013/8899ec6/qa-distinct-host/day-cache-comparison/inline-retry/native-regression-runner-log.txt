@@ -1,0 +1,11 @@
+[Reading 9 lines from start (total: 9 lines, 0 remaining)]
+
+test_all_metrics_match_frozen_original_scalar_backtest (test_nexus_composite_backtest_day_cache.CalendarDayBacktestRegression.test_all_metrics_match_frozen_original_scalar_backtest) ... ok
+test_canonical_datetime_path_never_calls_scalar_timestamp_floor (test_nexus_composite_backtest_day_cache.CalendarDayBacktestRegression.test_canonical_datetime_path_never_calls_scalar_timestamp_floor) ... ok
+test_empty_frame_retains_zero_trade_result_without_timestamp_column (test_nexus_composite_backtest_day_cache.CalendarDayBacktestRegression.test_empty_frame_retains_zero_trade_result_without_timestamp_column) ... ok
+test_timezone_and_dst_days_equal_scalar_calendar_days (test_nexus_composite_backtest_day_cache.CalendarDayBacktestRegression.test_timezone_and_dst_days_equal_scalar_calendar_days) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 5.274s
+
+OK
