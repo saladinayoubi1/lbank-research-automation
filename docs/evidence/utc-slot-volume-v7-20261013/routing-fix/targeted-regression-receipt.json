@@ -1,0 +1,29 @@
+{
+  "causal_suite_tests": 26,
+  "checked_at_utc": "2026-10-13T17:51:46.400430+00:00",
+  "earlier_frontier_precedence_subcases": 107,
+  "elapsed_seconds": 1.842176,
+  "exit_code": 0,
+  "file_sha256": {
+    "nexus_composite_strategy_research.py": "833633f1a44e7f7115badc00c6712dc8976ad111fab8f472d9535276d3102a38",
+    "tests/test_nexus_causal_jump_features.py": "2fcfd52b1a51bb759a5dbbe4825058fc557bdfb4a3ddb15ab49000457da81dd5",
+    "tests/test_nexus_causal_slot_volume_features.py": "11379615208e34975014587cae8e7cd95dd13aeee4f2370b41b5c087f65513ac",
+    "tests/test_nexus_composite_fast_frontier.py": "5cb4d5807b21e55dc58aa4a4a0478db898e836e1199ea7bc2eaeeee8029d6798",
+    "tests/test_nexus_mechanism_generator_v2.py": "e212133c311ae32fcc75bc1ebf0f0c6265a213d104114d08a619f01e2f47beec"
+  },
+  "full_pytest_suite_executed": false,
+  "independent_strategy_qa": false,
+  "live_enabled": false,
+  "native_market_research_executed": false,
+  "native_windows": false,
+  "research_only": true,
+  "runtime": {
+    "numpy": "2.3.5",
+    "pandas": "2.2.3",
+    "python": "3.12.14"
+  },
+  "schema": "nexus.utc-slot-routing-targeted-regression.v1",
+  "selected_original_ci_test_functions": 4,
+  "source_parent_sha": "a4a296182768e17ca45a0f7d3be9a137a7a96f29",
+  "test_count": 30
+}

@@ -24,6 +24,7 @@ import pandas as pd
 
 from nexus_demo_archive_replay import ARCHIVE_SHA256
 from nexus_causal_jump_features import build_lagged_jump_features
+from nexus_causal_slot_volume_features import build_lagged_utc_slot_volume_features
 from nexus_mechanism_factory import (
     MechanismFactoryError,
     factory_configs,
@@ -127,6 +128,17 @@ if (
 ):
     raise MechanismFactoryError("jump extension duplicates existing mechanism ID or topology")
 FACTORY_SPECS = {**FACTORY_SPECS, **JUMP_EXTENSION_SPECS}
+SLOT_VOLUME_EXTENSION_SPECS = load_factory_contract(
+    Path(__file__).resolve().parent / "research" / "mechanism_factory_v7.json"
+)
+if (
+    set(SLOT_VOLUME_EXTENSION_SPECS) & set(FACTORY_SPECS)
+    or {s["topology_digest"] for s in SLOT_VOLUME_EXTENSION_SPECS.values()}
+    & {s["topology_digest"] for s in FACTORY_SPECS.values()}
+):
+    raise MechanismFactoryError("slot-volume extension duplicates existing ID or topology")
+FACTORY_SPECS = {**FACTORY_SPECS, **SLOT_VOLUME_EXTENSION_SPECS}
+SLOT_VOLUME_EXTENSION_MECHANISMS = factory_ids(SLOT_VOLUME_EXTENSION_SPECS)
 JUMP_EXTENSION_MECHANISMS = factory_ids(JUMP_EXTENSION_SPECS)
 FIXED_FACTORY_MECHANISMS = factory_ids(FIXED_FACTORY_SPECS)
 REVIEWED_EXTENSION_MECHANISMS = factory_ids(REVIEWED_EXTENSION_SPECS)
@@ -146,7 +158,7 @@ PEER_MECHANISMS = frozenset({
     "volatility_leadership_reversal",
     "peer_beta_residual_reclaim",
 }) | factory_peer_ids(FACTORY_SPECS)
-FRONTIER_SCREEN_VERSION = "nexus.frontier-train-screen.v6"
+FRONTIER_SCREEN_VERSION = "nexus.frontier-train-screen.v7"
 FRONTIER_SHORTLIST_SIZE = 3
 GENERATED_FRONTIER_BATCH_SIZE = 12
 # Distinct entry mechanisms vs risk/feature parameter variations are explicitly
@@ -287,6 +299,10 @@ def build_features(frames: dict[str, pd.DataFrame], *, peer_15m: pd.DataFrame | 
     one_bar_return = close.pct_change()
     # New finite-grid shock context; previous generations' features stay intact.
     for column, values in build_lagged_jump_features(close).items():
+        f[column] = values.to_numpy()
+    for column, values in build_lagged_utc_slot_volume_features(
+        f["timestamp"], volume,
+    ).items():
         f[column] = values.to_numpy()
     path_length_16 = one_bar_return.abs().shift(1).rolling(16, min_periods=16).sum()
     displacement_16 = (close.shift(1) / close.shift(17) - 1.0)
@@ -966,9 +982,11 @@ def _frontier_configs_to_screen(ledger: dict[str, Any]) -> list[dict[str, Any]]:
     generated: list[dict[str, Any]] = []
     reviewed_extension: list[dict[str, Any]] = []
     jump_extension: list[dict[str, Any]] = []
+    slot_volume_extension: list[dict[str, Any]] = []
     generated_ids = set(GENERATED_FACTORY_MECHANISMS)
     extension_ids = set(REVIEWED_EXTENSION_MECHANISMS)
     jump_ids = set(JUMP_EXTENSION_MECHANISMS)
+    slot_volume_ids = set(SLOT_VOLUME_EXTENSION_MECHANISMS)
     for config in FRONTIER_CONFIGS:
         if config["mechanism"] in evaluated or config["mechanism"] in screened:
             continue
@@ -979,7 +997,9 @@ def _frontier_configs_to_screen(ledger: dict[str, Any]) -> list[dict[str, Any]]:
             }),
         }
         mechanism = config["mechanism"]
-        if mechanism in jump_ids:
+        if mechanism in slot_volume_ids:
+            slot_volume_extension.append(row)
+        elif mechanism in jump_ids:
             jump_extension.append(row)
         elif mechanism in extension_ids:
             reviewed_extension.append(row)
@@ -996,7 +1016,9 @@ def _frontier_configs_to_screen(ledger: dict[str, Any]) -> list[dict[str, Any]]:
         return generated[:GENERATED_FRONTIER_BATCH_SIZE]
     if reviewed_extension:
         return reviewed_extension[:GENERATED_FRONTIER_BATCH_SIZE]
-    return jump_extension[:GENERATED_FRONTIER_BATCH_SIZE]
+    if jump_extension:
+        return jump_extension[:GENERATED_FRONTIER_BATCH_SIZE]
+    return slot_volume_extension[:GENERATED_FRONTIER_BATCH_SIZE]
 
 
 def research_mode(ledger: dict[str, Any]) -> str:
@@ -1267,4 +1289,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

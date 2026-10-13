@@ -1,0 +1,9 @@
+{
+  "checked_at_utc": "2026-10-13T21:35:04.466833+00:00",
+  "error_type": "ValueError",
+  "live_enabled": false,
+  "market_backtests_executed": 0,
+  "research_only": true,
+  "source_sha": "7cab4f0368823ef3dd9dec79f572bd05721e2316",
+  "status": "NATIVE_SOURCE_STAGE_FAILED"
+}

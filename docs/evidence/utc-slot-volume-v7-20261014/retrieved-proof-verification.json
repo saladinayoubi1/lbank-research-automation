@@ -1,0 +1,89 @@
+{
+  "schema": "nexus.v7-native-proof-readback.v1",
+  "artifacts": [
+    {
+      "group": "native-source-gate",
+      "name": "native-gate-status.json",
+      "native_sha256": "e56820c97c28473cee1331a7e6416ec46ef8525fe0046a040a8154e928fb6702",
+      "retrieved_bytes_verified": true,
+      "transfer": "escaped_json_native_bytes"
+    },
+    {
+      "group": "native-source-gate",
+      "name": "binding-diagnostic.json",
+      "native_sha256": "f2e883eb57d8377ff713fcf361a0e2102abaafd9522b737cdb7288f15f188fae",
+      "retrieved_bytes_verified": true,
+      "transfer": "escaped_json_native_bytes"
+    },
+    {
+      "group": "native-source-gate",
+      "name": "ledger-serialization-proof.json",
+      "native_sha256": "f46912757db57bdb45e46979b82c853c4cf88b9d92154922ca61c7676108d134",
+      "retrieved_bytes_verified": true,
+      "transfer": "escaped_json_native_bytes"
+    },
+    {
+      "group": "native-source-gate",
+      "name": "ledger-serialization-amendment.json",
+      "native_sha256": "2fdaf11f4baabc8d6604707bc1feee56b61e3d679eff038a11a46d27db283b26",
+      "retrieved_bytes_verified": true,
+      "transfer": "escaped_json_native_bytes"
+    },
+    {
+      "group": "native-source-gate",
+      "name": "native-source-binding.json",
+      "native_sha256": "752f74d60060c050f28c81b0ab9e1757211ec7c58ecb19f6995e0297248d9eb4",
+      "retrieved_bytes_verified": true,
+      "transfer": "escaped_json_native_bytes"
+    },
+    {
+      "group": "native-source-gate",
+      "name": "native-gate-receipt.json",
+      "native_sha256": "33ec80b99dc0d224532b8f8719da88273964bff1268dfe94d5a577669e099cf7",
+      "retrieved_bytes_verified": true,
+      "transfer": "escaped_json_native_bytes"
+    },
+    {
+      "group": "native-source-gate",
+      "name": "native-gate-continuation-status.json",
+      "native_sha256": "b1a66f51f0784d0eea9b91958d3ba1ac1643d9190093d860d98a4a17ff1e8ff6",
+      "retrieved_bytes_verified": true,
+      "transfer": "escaped_json_native_bytes"
+    },
+    {
+      "group": "native-source-gate",
+      "name": "native-gate-exit.txt",
+      "native_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+      "retrieved_bytes_verified": true,
+      "transfer": "escaped_json_native_bytes"
+    },
+    {
+      "group": "native-source-gate",
+      "name": "native-gate.stdout.log",
+      "native_sha256": "8ca1f832d9753f8c2b443e33827493f58edbf026ef82ee810d9d01052818da13",
+      "retrieved_bytes_verified": true,
+      "transfer": "escaped_json_native_bytes"
+    },
+    {
+      "group": "l2-role-hold",
+      "name": "before.json",
+      "native_sha256": "ae34593e238e7ea4475beaea20a49634b0422ee8ff47f0d3cb10ae4960a23d34",
+      "retrieved_bytes_verified": true,
+      "transfer": "binary_base64"
+    },
+    {
+      "group": "l2-role-hold",
+      "name": "after.json",
+      "native_sha256": "083d45c123c9aab46c0314814a59791e71b5a5ab703cf548b25fb0466f8c27c8",
+      "retrieved_bytes_verified": true,
+      "transfer": "binary_base64"
+    }
+  ],
+  "actual_native_exit": 0,
+  "test_count": 30,
+  "market_backtests_executed": 0,
+  "backtests_recomputed": false,
+  "independent_strategy_qa": false,
+  "live_enabled": false,
+  "research_only": true
+}

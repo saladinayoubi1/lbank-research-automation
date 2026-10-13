@@ -1,0 +1,80 @@
+{
+  "files": [
+    {
+      "bytes": 4860,
+      "path": "V7_PRODUCER_PRECHECK.md",
+      "sha256": "44bc43bde130fc89bc2ada21d83fac9b03d7455294cf05df1e442f6e3491b34d"
+    },
+    {
+      "bytes": 17655,
+      "path": "run-v7-first-producer.py",
+      "sha256": "d1de877019a4a939e99851a70571e2ae72130d696fcb1d0701dea05ca0cb33bb"
+    },
+    {
+      "bytes": 269,
+      "path": "producer-execution.lock",
+      "sha256": "a423881b330bf2b4ebb682db55ad7f88fdbfd91a85222dca7762aeb651f405d0"
+    },
+    {
+      "bytes": 907,
+      "path": "producer-command.json",
+      "sha256": "db249f5e2ff991f72d5f19184baacc9b713c1d04adf1fdf5437c34e5d8989f4b"
+    },
+    {
+      "bytes": 94456,
+      "path": "producer-input-binding.json",
+      "sha256": "486ddc8e1f2baec75c76dde1fb2f355ca618ae67d0c3b1432eee189fd222b4a0"
+    },
+    {
+      "bytes": 812,
+      "path": "producer-status.json",
+      "sha256": "7ffd64acf4d5c6eded6bc560127d56a7b0f03a4710d4ad779d5fba2d1e9b1a29"
+    },
+    {
+      "bytes": 1791,
+      "path": "producer-receipt.json",
+      "sha256": "f2cc671d50c90db4ffc448db9b399ad65ec070302956c8f27480c9e8aa9c5c14"
+    },
+    {
+      "bytes": 1,
+      "path": "producer-exit.txt",
+      "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+    },
+    {
+      "bytes": 6677,
+      "path": "producer-result-summary.json",
+      "sha256": "88cbe1e18b83dfd63c7b20200da1f4b015612e9cd01302ef5871d1427f1ea0b9"
+    },
+    {
+      "bytes": 2987,
+      "path": "producer.stdout.log",
+      "sha256": "ac8d8432cc95d7559389969a05a96e50453b9da80dd690f7ab37957fa92b87a8"
+    },
+    {
+      "bytes": 0,
+      "path": "producer.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 16212,
+      "path": "producer/research-report.json",
+      "sha256": "e028904b40a038927a6eb30227bb81628a43fbcb79845a521525d53a9527ba81"
+    },
+    {
+      "bytes": 9396,
+      "path": "producer/novelty-ledger.json",
+      "sha256": "8d9f57e275cb172e8c3e9e7500278a8771f96147522ef25190ef36b830cbdf1a"
+    }
+  ],
+  "host": "DESKTOP-F4SA4VL",
+  "native_root": "E:\\NEXUS-QA\\utc-slot-volume-v7-20261014",
+  "observed_utc": "2026-10-13T22:18:06.1078555Z",
+  "reference_terminal_fixture": {
+    "bytes": 9069,
+    "git_blob_sha1": "9d3f376bc4be787db7b0fa0cd5ee793197b55e70",
+    "path": "reference-terminal-ledger.json",
+    "sha256": "061f09f5797c76ab110c99beddb7dab87459bdf08bd9e17b1677c8aeeb1088c1",
+    "source_sha": "7cab4f0368823ef3dd9dec79f572bd05721e2316"
+  },
+  "schema": "nexus.v7-first-producer-native-byte-manifest.v1"
+}

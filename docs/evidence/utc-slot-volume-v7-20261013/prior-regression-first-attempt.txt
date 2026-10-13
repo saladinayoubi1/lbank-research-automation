@@ -1,0 +1,31 @@
+test_constant_magnitude_returns_match_bipower_scale (test_nexus_causal_jump_features.JumpFeatureTests.test_constant_magnitude_returns_match_bipower_scale) ... ok
+test_constant_price_rescaling_cannot_change_shock_context (test_nexus_causal_jump_features.JumpFeatureTests.test_constant_price_rescaling_cannot_change_shock_context) ... ok
+test_event_is_visible_one_bar_later_and_excluded_from_its_baseline (test_nexus_causal_jump_features.JumpFeatureTests.test_event_is_visible_one_bar_later_and_excluded_from_its_baseline) ... ok
+test_hypotheses_bind_new_features_and_research_authority (test_nexus_causal_jump_features.JumpFeatureTests.test_hypotheses_bind_new_features_and_research_authority) ... ok
+test_invalid_prices_fail_closed (test_nexus_causal_jump_features.JumpFeatureTests.test_invalid_prices_fail_closed) ... ok
+test_no_current_or_future_close_enters_context (test_nexus_causal_jump_features.JumpFeatureTests.test_no_current_or_future_close_enters_context) ... ok
+test_signal_denies_nan_history_and_unconfirmed_response (test_nexus_causal_jump_features.JumpFeatureTests.test_signal_denies_nan_history_and_unconfirmed_response) ... ok
+test_warmup_and_flat_prices_cannot_emit_shock_context (test_nexus_causal_jump_features.JumpFeatureTests.test_warmup_and_flat_prices_cannot_emit_shock_context) ... ok
+test_old_contracts_and_order_survive_the_append (test_nexus_causal_jump_features.JumpResearchIntegrationTests.test_old_contracts_and_order_survive_the_append) ... FAIL
+test_pending_v5_stage_precedes_new_jump_stage (test_nexus_causal_jump_features.JumpResearchIntegrationTests.test_pending_v5_stage_precedes_new_jump_stage) ... ok
+test_synthetic_new_stage_uses_existing_train_validation_stress_grid (test_nexus_causal_jump_features.JumpResearchIntegrationTests.test_synthetic_new_stage_uses_existing_train_validation_stress_grid) ... ok
+test_terminal_v5_ledger_routes_only_two_new_hypotheses (test_nexus_causal_jump_features.JumpResearchIntegrationTests.test_terminal_v5_ledger_routes_only_two_new_hypotheses) ... ok
+
+======================================================================
+FAIL: test_old_contracts_and_order_survive_the_append (test_nexus_causal_jump_features.JumpResearchIntegrationTests.test_old_contracts_and_order_survive_the_append)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/1ee9a4d62f74/nexus-slot-volume-v7-20261013/tests/test_nexus_causal_jump_features.py", line 106, in test_old_contracts_and_order_survive_the_append
+    self.assertEqual(research.FRONTIER_CONFIGS[-2:], factory.factory_configs(research.JUMP_EXTENSION_SPECS))
+AssertionError: Tuples differ: ({'me[23 chars]ated_upshock_followthrough', 'risk_variant': 0[347 chars]b1'}) != ({'me[23 chars]ated_downshock_recovery', 'risk_variant': 0, '[350 chars]ce'})
+
+First differing element 0:
+{'mec[22 chars]ated_upshock_followthrough', 'risk_variant': 0[136 chars]dce'}
+{'mec[22 chars]ated_downshock_recovery', 'risk_variant': 0, '[133 chars]9bf'}
+
+Diff is 684 characters long. Set self.maxDiff to None to see it.
+
+----------------------------------------------------------------------
+Ran 12 tests in 4.496s
+
+FAILED (failures=1)

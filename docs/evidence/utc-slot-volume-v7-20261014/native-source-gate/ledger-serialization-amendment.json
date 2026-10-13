@@ -1,0 +1,22 @@
+{
+  "schema": "nexus.v7-pre-execution-ledger-serialization-amendment.v1",
+  "created_at_utc": "2026-10-13T21:40:43.423Z",
+  "source_sha": "7cab4f0368823ef3dd9dec79f572bd05721e2316",
+  "original_freeze_digest": "d5d0e8c4f8f78632afa321bbf23ce84ac988827b03b7890575f7277f05b491d4",
+  "original_routing_amendment_digest": "fed3adebaa2274b05f9f1907f231d723242ca6fe36417be598b0dd2649981ce3",
+  "file": "tests/fixtures/utc_slot_v7_terminal_ledger.json",
+  "original_crlf_sha256": "937741211cfccbbcd2a278f7b501679cb82c1caae10801fd419127dcb10c395f",
+  "exact_github_lf_sha256": "061f09f5797c76ab110c99beddb7dab87459bdf08bd9e17b1677c8aeeb1088c1",
+  "exact_github_blob_sha1": "9d3f376bc4be787db7b0fa0cd5ee793197b55e70",
+  "canonical_ledger_digest": "18675234ad8c981be8f8c5e348c1a39737a9c3fc4ca09ba0ae9532c8a59b567a",
+  "candidate_config_fingerprint": "424c0a527aca815448719704c5aa714246e1b1e4c62532dcb782350b1c5090be",
+  "change_scope": "Serialization binding only. GitHub's exact fixture bytes remain untouched; CRLF rendition reconstructs original frozen hash and canonical ledger digest is unchanged.",
+  "earlier_native_source_stage": "FAILED_BEFORE_MARKET_EXECUTION_RETAINED",
+  "research_code_changed": false,
+  "parameters_changed": false,
+  "market_backtests_executed": 0,
+  "market_outcomes_observed": false,
+  "original_freeze_retained": true,
+  "live_enabled": false,
+  "research_only": true
+}

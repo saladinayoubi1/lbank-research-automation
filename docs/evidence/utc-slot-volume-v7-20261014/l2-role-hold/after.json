@@ -1,0 +1,54 @@
+﻿{
+    "schema":  "nexus.l2-dormant-failover-hold.v1",
+    "checked_at_utc":  "2026-10-13T21:29:04.7310152Z",
+    "verified_dormant_hold":  true,
+    "listeners":  [
+                      {
+                          "ProcessId":  3952,
+                          "ExecutablePath":  "C:\\Users\\afaq\\actions-runner-nexus-research\\bin\\Runner.Listener.exe"
+                      }
+                  ],
+    "tasks":  [
+                  {
+                      "TaskName":  "NEXUS-Bybit-Failover-Autostart",
+                      "state":  "Disabled"
+                  },
+                  {
+                      "TaskName":  "NEXUS-Local-Failover-Autostart",
+                      "state":  "Disabled"
+                  }
+              ],
+    "original_bytes_preserved":  [
+                                     {
+                                         "path":  "C:\\Users\\afaq\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\NEXUS-Failover-Watchdog.cmd.disabled",
+                                         "matches":  true
+                                     },
+                                     {
+                                         "path":  "C:\\Users\\afaq\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\NEXUS-Bybit-Failover-Watchdog.cmd.disabled",
+                                         "matches":  true
+                                     },
+                                     {
+                                         "path":  "C:\\Users\\afaq\\AppData\\Local\\NEXUS-Research\\failover-watchdog.ps1",
+                                         "matches":  true
+                                     },
+                                     {
+                                         "path":  "C:\\Users\\afaq\\AppData\\Local\\NEXUS-Research\\bybit-failover-watchdog.ps1",
+                                         "matches":  true
+                                     }
+                                 ],
+    "stopped_watchdogs":  [
+                              {
+                                  "pid":  8880,
+                                  "script":  "C:\\Users\\afaq\\AppData\\Local\\NEXUS-Research\\bybit-failover-watchdog.ps1"
+                              },
+                              {
+                                  "pid":  7920,
+                                  "script":  "C:\\Users\\afaq\\AppData\\Local\\NEXUS-Research\\failover-watchdog.ps1"
+                              }
+                          ],
+    "stopped_idle_listeners":  null,
+    "live_enabled":  false,
+    "paper_writer_grants_enabled":  false,
+    "research_primary_unchanged":  true,
+    "receipt_root":  "E:\\NEXUS-QA\\role-hold-20261014-0042"
+}

@@ -1,0 +1,18 @@
+{
+  "schema": "nexus.utc-slot-routing-original-ci-failures.v1",
+  "source_sha": "a4a296182768e17ca45a0f7d3be9a137a7a96f29",
+  "run_id": 38440142955,
+  "ubuntu_job": 115444283825,
+  "macos_job": 115444283768,
+  "failed_test_count_per_job": 4,
+  "ubuntu_passed": 3685,
+  "ubuntu_skipped": 39,
+  "macos_passed": 3665,
+  "macos_skipped": 59,
+  "passed_subtests_per_job": 155,
+  "routing_failures": 3,
+  "signal_fixture_missing_feature_failure": 1,
+  "research_only": true,
+  "native_market_research_executed": false,
+  "live_enabled": false
+}

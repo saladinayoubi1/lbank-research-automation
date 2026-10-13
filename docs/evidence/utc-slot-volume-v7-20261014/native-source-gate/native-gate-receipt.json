@@ -1,0 +1,19 @@
+{
+  "checked_at_utc": "2026-10-13T21:40:57.667634+00:00",
+  "elapsed_seconds": 11.140999999995984,
+  "errors": 0,
+  "exit_code": 0,
+  "failures": 0,
+  "frozen_harness_sha256": "3c5b5966cbf28986dda8ce4e59edf0b0740e841fa1cb97f609e554b1d3feb49e",
+  "host": "DESKTOP-F4SA4VL",
+  "independent_strategy_qa": false,
+  "live_enabled": false,
+  "market_backtests_executed": 0,
+  "native_windows": true,
+  "research_only": true,
+  "schema": "nexus.v7-native-source-gate.v1",
+  "source_binding_sha256": "752f74d60060c050f28c81b0ab9e1757211ec7c58ecb19f6995e0297248d9eb4",
+  "source_sha": "7cab4f0368823ef3dd9dec79f572bd05721e2316",
+  "stdout_sha256": "8ca1f832d9753f8c2b443e33827493f58edbf026ef82ee810d9d01052818da13",
+  "test_count": 30
+}

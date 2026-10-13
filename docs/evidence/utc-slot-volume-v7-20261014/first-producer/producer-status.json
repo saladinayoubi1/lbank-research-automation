@@ -1,0 +1,21 @@
+{
+  "auto_demo_promotion": false,
+  "checked_at_utc": "2026-10-13T22:16:22.481113+00:00",
+  "child_exit_code": 0,
+  "child_pid": 1508,
+  "diagnostic_rows": 12,
+  "elapsed_seconds": 54.813,
+  "host": "DESKTOP-F4SA4VL",
+  "independent_strategy_qa_complete": false,
+  "lease_id": "isolated-utc-slot-volume-v7-20261014-7cab4f0",
+  "live_enabled": false,
+  "market_started": true,
+  "official_coordinator_advanced": false,
+  "owner_demo_admission": false,
+  "receipt_sha256": "f2cc671d50c90db4ffc448db9b399ad65ec070302956c8f27480c9e8aa9c5c14",
+  "report_digest": "5537ab0b0d884d0c380d4ec0ad9c0d02af33d6782ec3c04a053e4de8f11edddb",
+  "research_only": true,
+  "schema": "nexus.v7-first-producer-checkpoint.v1",
+  "source_sha": "7cab4f0368823ef3dd9dec79f572bd05721e2316",
+  "status": "COMPLETE_RESEARCH_NOT_QUALIFIED"
+}

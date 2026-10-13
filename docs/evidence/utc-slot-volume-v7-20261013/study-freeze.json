@@ -1,0 +1,41 @@
+{
+  "archive_sha256": "2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422",
+  "auto_demo_promotion": false,
+  "candidate_config": {
+    "entry_model": "closed_4h_1h_15m_next_open",
+    "factory_contract_digest": "dfa3430d170b99011cdff96d7eb48877e7c60473295b4ec7c7c01855bd9fe9b1",
+    "fingerprint": "424c0a527aca815448719704c5aa714246e1b1e4c62532dcb782350b1c5090be",
+    "mechanism": "factory_utc_slot_volume_breakout",
+    "risk_variant": 0
+  },
+  "candidate_config_fingerprint": "424c0a527aca815448719704c5aa714246e1b1e4c62532dcb782350b1c5090be",
+  "candidate_contract_digest": "dfa3430d170b99011cdff96d7eb48877e7c60473295b4ec7c7c01855bd9fe9b1",
+  "candidate_id": "factory_utc_slot_volume_breakout",
+  "candidate_topology_digest": "1c6b9a8b4d8a0c1b02dae038e5800b332af0d5412fa9d5f7db3e2ab00f05b752",
+  "file_sha256": {
+    "nexus_causal_slot_volume_features.py": "2ba569f315504177f92a22e262f1e9488ad31e30cd3b87a6db946c07945dd2b0",
+    "nexus_composite_strategy_research.py": "dff18d86a39d5fb37d82cdc6809e1db64a04f13cd2765df2eb3b1802a77b4566",
+    "nexus_mechanism_factory.py": "5060c647a5a882af81c9d7babfe130109beda4b6e6c3ffa4a94ac3bb97384c40",
+    "research/mechanism_factory_v7.json": "1fc415248dd18335a3824d0020a1bf5bfe36352807725857283becec575ead74",
+    "tests/fixtures/utc_slot_v7_prior_generations.json": "69050370a6fc0229fb3b7a188a3d34d603139482e443bd89562b75e0a2563f09",
+    "tests/fixtures/utc_slot_v7_terminal_ledger.json": "937741211cfccbbcd2a278f7b501679cb82c1caae10801fd419127dcb10c395f",
+    "tests/test_nexus_causal_jump_features.py": "2fcfd52b1a51bb759a5dbbe4825058fc557bdfb4a3ddb15ab49000457da81dd5",
+    "tests/test_nexus_causal_slot_volume_features.py": "1cfe1705bd0878f7d4d9eeb90b8b600fa49c3b20d8773d92f7f61fde5b4c129f"
+  },
+  "freeze_digest": "d5d0e8c4f8f78632afa321bbf23ce84ac988827b03b7890575f7277f05b491d4",
+  "frozen_at_utc": "2026-10-13T17:34:30.420051+00:00",
+  "historical_archive_pristine": false,
+  "independent_qa_complete": false,
+  "live_enabled": false,
+  "market_backtests_executed": 0,
+  "native_runs_executed": 0,
+  "official_coordinator_advanced": false,
+  "owner_demo_admission": false,
+  "parameter_configurations": 1,
+  "previous_ledger_digest": "18675234ad8c981be8f8c5e348c1a39737a9c3fc4ca09ba0ae9532c8a59b567a",
+  "research_only": true,
+  "schema": "nexus.utc-slot-volume-study-freeze.v1",
+  "selection_basis": "training_partition_only",
+  "source_parent_sha": "e089c175364ffc50521d22f0455bb40cda57a0a4",
+  "status": "PREREGISTERED_NOT_EXECUTED"
+}

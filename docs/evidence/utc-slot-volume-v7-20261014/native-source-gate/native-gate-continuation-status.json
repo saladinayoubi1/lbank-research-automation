@@ -1,0 +1,11 @@
+{
+  "checked_at_utc": "2026-10-13T21:40:57.696649+00:00",
+  "exit_code": 0,
+  "live_enabled": false,
+  "market_backtests_executed": 0,
+  "receipt_sha256": "33ec80b99dc0d224532b8f8719da88273964bff1268dfe94d5a577669e099cf7",
+  "research_only": true,
+  "source_sha": "7cab4f0368823ef3dd9dec79f572bd05721e2316",
+  "status": "NATIVE_SOURCE_GATE_PASS",
+  "test_count": 30
+}

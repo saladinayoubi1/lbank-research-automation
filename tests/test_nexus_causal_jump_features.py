@@ -103,7 +103,11 @@ class JumpResearchIntegrationTests(unittest.TestCase):
         import nexus_composite_strategy_research as research
         old = factory.load_factory_contract(ROOT / "research" / "mechanism_factory_v5.json")
         self.assertEqual(research.REVIEWED_EXTENSION_SPECS, old)
-        self.assertEqual(research.FRONTIER_CONFIGS[-2:], factory.factory_configs(research.JUMP_EXTENSION_SPECS))
+        jump_configs = tuple(
+            config for config in research.FRONTIER_CONFIGS
+            if config["mechanism"] in research.JUMP_EXTENSION_MECHANISMS
+        )
+        self.assertEqual(jump_configs, factory.factory_configs(research.JUMP_EXTENSION_SPECS))
         self.assertEqual(len(research.FIXED_FACTORY_SPECS), 12)
         self.assertEqual(len(research.GENERATED_FACTORY_SPECS_V2), 24)
         self.assertEqual(len(research.GENERATED_FACTORY_SPECS_V3), 36)

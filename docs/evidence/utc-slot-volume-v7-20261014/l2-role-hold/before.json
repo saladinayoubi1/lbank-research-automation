@@ -1,0 +1,32 @@
+﻿{
+    "checked_at_utc":  "2026-10-13T21:28:22.3929023Z",
+    "listeners":  [
+                      {
+                          "ProcessId":  3952,
+                          "ExecutablePath":  "C:\\Users\\afaq\\actions-runner-nexus-research\\bin\\Runner.Listener.exe"
+                      }
+                  ],
+    "workers":  0,
+    "running_distros":  [
+
+                        ],
+    "file_hashes":  [
+                        {
+                            "path":  "C:\\Users\\afaq\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\NEXUS-Failover-Watchdog.cmd",
+                            "sha256":  "07c987dc5da34161d892d02c951dd75744c2e3b5433c04a5ad6d1680f2fb7b22"
+                        },
+                        {
+                            "path":  "C:\\Users\\afaq\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\NEXUS-Bybit-Failover-Watchdog.cmd",
+                            "sha256":  "51efa6ed1bdec0f9790d51f0714d32c025cacbfa11843c6f777bc95413165ad0"
+                        },
+                        {
+                            "path":  "C:\\Users\\afaq\\AppData\\Local\\NEXUS-Research\\failover-watchdog.ps1",
+                            "sha256":  "b9f3ae43c896f2e5396972b31c45aaf2819eb572338d9cfc2ffd73c0772e43c0"
+                        },
+                        {
+                            "path":  "C:\\Users\\afaq\\AppData\\Local\\NEXUS-Research\\bybit-failover-watchdog.ps1",
+                            "sha256":  "21e596478ca7b911ab79dfba7d5c55dd28a195fd04eb1c69f693fbfd80fbb2ca"
+                        }
+                    ],
+    "status":  "GUARDED_BACKUP_READY"
+}
