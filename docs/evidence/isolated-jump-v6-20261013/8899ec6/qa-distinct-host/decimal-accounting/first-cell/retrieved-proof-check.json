@@ -1,0 +1,13 @@
+{
+  "first_v6_accounting_cell_digest_verified": true,
+  "identity": [
+    "BTCUSDT",
+    "train",
+    "conservative"
+  ],
+  "closed_round_trips": 38,
+  "evaluated_fills": 76,
+  "source_report_metrics_match": true,
+  "signal_matches_completed_numeric_proof": true,
+  "cell_digest": "9fe840c4572d456ecde6d375ed441d534a57ed3680e0286c34efcee38fbe325a"
+}
