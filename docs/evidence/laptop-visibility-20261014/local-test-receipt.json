@@ -1,0 +1,59 @@
+{
+  "schema": "nexus.laptop-visibility-ci-correction.v1",
+  "recorded_at_utc": "2026-10-13T20:49:51.634Z",
+  "source_parent_head": "00bce6cdbf81e78d1d2e6d563f79974fb1c18c3e",
+  "main_baseline": "ed2f16b6aabe7d0d97562fd64bb4e3609dc51b32",
+  "runtime": {
+    "platform": "Linux scratch; not a physical Windows/VPS result",
+    "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+    "sqlite": "3.53.1"
+  },
+  "tested_files": {
+    "nexus_laptop_observations.py": {
+      "sha256": "50b12b5c45ed35c1f991b596a6cc64b42b10b89ec989268938034a6a5e75690a"
+    },
+    "tests/test_nexus_laptop_observations.py": {
+      "sha256": "de4db07e70fb20d9c14225932aac90ce21232fd4e40c7784794f26ba2f9e3f51"
+    },
+    "docs/operations/LAPTOP_VISIBILITY_PRECHECK.md": {
+      "sha256": "791cbf3e88d54ef586d1d721585cf28bdb0bcb9ed4f8590a8599abb69a983779"
+    }
+  },
+  "baseline_regression": {
+    "source_parent": "00bce6cdbf81e78d1d2e6d563f79974fb1c18c3e",
+    "command": "python -m unittest discover -s tests -p test_nexus_laptop_observations.py -k retained -v",
+    "exit_code": 1,
+    "tests": 1,
+    "failures": 5,
+    "errors": 1,
+    "interpretation": "All six deliberately retained SQLite connections remained open before the production correction."
+  },
+  "corrected_tests": [
+    {
+      "command": "python -m unittest discover -s tests -p 'test_nexus*laptop_observations.py' -v",
+      "tests": 18,
+      "exit_code": 0,
+      "elapsed_seconds": 0.575
+    },
+    {
+      "command": "python -m unittest discover -s tests -p test_nexus_vps_arbiter_observer.py -v",
+      "tests": 6,
+      "exit_code": 0,
+      "elapsed_seconds": 0.589
+    }
+  ],
+  "canonical_pr_precheck": "PASS using unchanged nexus_system_map_validator.py and protected map registry",
+  "compile": "PASS for receipt module, unchanged observer and receipt test module",
+  "known_hosted_failures": {
+    "source_head": "00bce6cdbf81e78d1d2e6d563f79974fb1c18c3e",
+    "windows_job": 115510676359,
+    "windows_failures": 14,
+    "windows_passes": 3812,
+    "precheck_job": 115510937336
+  },
+  "new_exact_head_hosted_ci": "PENDING_AFTER_UPLOAD",
+  "physical_receipts_verified": false,
+  "deployed": false,
+  "paper_writer_grants_enabled": false,
+  "live_trading_authority": false
+}

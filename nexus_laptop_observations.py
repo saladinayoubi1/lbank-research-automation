@@ -6,6 +6,7 @@ This module cannot authenticate an arbitrary caller, fence a writer or run work.
 from __future__ import annotations
 
 import argparse
+from contextlib import contextmanager
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -106,12 +107,19 @@ def validate(payload, authenticated_node):
     return observed
 
 
+@contextmanager
 def _connect(path, writable=False):
     path = Path(path).absolute()
     if any(p.is_symlink() for p in (path, *path.parents)) or not path.is_file():
         raise ValueError("missing or unsafe telemetry state")
-    return sqlite3.connect(path.as_uri() + ("?mode=rw" if writable else "?mode=ro"),
-                           uri=True, timeout=2)
+    db = sqlite3.connect(path.as_uri() + ("?mode=rw" if writable else "?mode=ro"),
+                         uri=True, timeout=2)
+    try:
+        # The SQLite transaction context commits/rolls back but does not close.
+        with db:
+            yield db
+    finally:
+        db.close()
 
 
 def initialize(path):
@@ -287,3 +295,4 @@ def main(argv=None):
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

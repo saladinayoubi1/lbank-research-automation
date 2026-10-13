@@ -1,4 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import closing
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from http.client import HTTPConnection
@@ -109,7 +110,7 @@ class ReceiptTests(unittest.TestCase):
         missing=nodes.snapshot(self.db.parent/"missing.db",now=T)
         self.assertEqual({x["contact"] for x in missing["nodes"].values()},{"STATE_UNAVAILABLE"})
         nodes.receive(self.db,payload(),FIRST,now=T)
-        with sqlite3.connect(self.db) as db:
+        with closing(sqlite3.connect(self.db)) as db, db:
             db.execute("UPDATE receipts SET digest='bad' WHERE node_id=?",(FIRST,))
         self.assertEqual(nodes.snapshot(self.db,now=T)["nodes"][FIRST]["contact"],"STATE_UNAVAILABLE")
         bad=self.db.parent/"bad.db";bad.write_bytes(b"not sqlite")
@@ -142,6 +143,41 @@ class ReceiptTests(unittest.TestCase):
         with ThreadPoolExecutor(max_workers=2) as pool:
             list(pool.map(lambda host:nodes.receive(self.db,payload(host),host,now=T),nodes.NODES))
         self.assertEqual({x["contact"] for x in nodes.snapshot(self.db,now=T)["nodes"].values()},{"FRESH"})
+
+    def test_retained_connections_are_closed_on_all_receipt_paths(self):
+        # Retain real connections so GC cannot hide handles that lock Windows DBs.
+        connect = sqlite3.connect
+        retained = []
+
+        def retain(*args, **kwargs):
+            db = connect(*args, **kwargs)
+            retained.append(db)
+            return db
+
+        db_path = self.db.parent / "retained.db"
+        corrupt_path = self.db.parent / "retained-corrupt.db"
+        try:
+            with patch.object(nodes.sqlite3, "connect", side_effect=retain):
+                nodes.initialize(db_path)
+                nodes.receive(db_path, payload(), FIRST, now=T)
+                duplicate = nodes.receive(db_path, payload(), FIRST, now=T)
+                self.assertEqual(duplicate["status"], "ALREADY_ACCEPTED")
+                replay = payload()
+                replay["runner"]["listener_count"] = 2
+                with self.assertRaises(ValueError):
+                    nodes.receive(db_path, replay, FIRST, now=T)
+                self.assertEqual(nodes.snapshot(db_path, now=T)["nodes"][FIRST]["contact"], "FRESH")
+                corrupt_path.write_bytes(b"not sqlite")
+                self.assertEqual(nodes.snapshot(corrupt_path, now=T)["nodes"][FIRST]["contact"], "STATE_UNAVAILABLE")
+            self.assertEqual(len(retained), 6)
+            for db in retained:
+                with self.subTest(connection=db), self.assertRaises(sqlite3.ProgrammingError):
+                    db.execute("SELECT 1")
+            db_path.unlink()
+            corrupt_path.unlink()
+        finally:
+            for db in retained:
+                db.close()
 
     def test_cli_identity_rejection_is_sanitized(self):
         proc=subprocess.run([sys.executable,nodes.__file__,"receive","--db",str(self.db),
@@ -220,3 +256,4 @@ class ObserverNodeHTTPTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
