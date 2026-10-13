@@ -22,8 +22,9 @@ structure. Both require excess-variation share >= 0.10, the existing completed
 15m open with the existing adverse stop and collateral/cost model.
 
 Use existing verified BTC/ETH 15m/1h/4h Bybit archive and existing train-only
-tournament. Conservative and stress cases share trade paths and are not
-independent economic trades. Historical validation and inspected test are
+tournament. Conservative and stress cases use the same hypothesis and data. Different
+fill prices can change exits and trade counts; these cost scenarios are not
+independent economic trials. Historical validation and inspected test are
 diagnostics; an independently frozen prospective holdout is still required.
 Live=false, automatic Demo admission=false; owner 500-USDT state is not used.
 
