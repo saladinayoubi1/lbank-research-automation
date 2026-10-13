@@ -1,0 +1,74 @@
+{
+  "schema": "nexus.v7-source-binding-diagnostic.v1",
+  "source_sha": "7cab4f0368823ef3dd9dec79f572bd05721e2316",
+  "mismatches": 1,
+  "files": [
+    {
+      "path": "nexus_causal_slot_volume_features.py",
+      "expected": "2ba569f315504177f92a22e262f1e9488ad31e30cd3b87a6db946c07945dd2b0",
+      "actual": "2ba569f315504177f92a22e262f1e9488ad31e30cd3b87a6db946c07945dd2b0",
+      "matches": true,
+      "git_blob_sha1": "98a77e927766d33cbea37548d21cc57364c2aabe"
+    },
+    {
+      "path": "nexus_composite_strategy_research.py",
+      "expected": "833633f1a44e7f7115badc00c6712dc8976ad111fab8f472d9535276d3102a38",
+      "actual": "833633f1a44e7f7115badc00c6712dc8976ad111fab8f472d9535276d3102a38",
+      "matches": true,
+      "git_blob_sha1": "8655bb59d20910f525dedbb1de6746f6c0850a1e"
+    },
+    {
+      "path": "nexus_mechanism_factory.py",
+      "expected": "5060c647a5a882af81c9d7babfe130109beda4b6e6c3ffa4a94ac3bb97384c40",
+      "actual": "5060c647a5a882af81c9d7babfe130109beda4b6e6c3ffa4a94ac3bb97384c40",
+      "matches": true,
+      "git_blob_sha1": "d6b3277716d4aa8f891fbb6e040f281e0f43ad0d"
+    },
+    {
+      "path": "research/mechanism_factory_v7.json",
+      "expected": "1fc415248dd18335a3824d0020a1bf5bfe36352807725857283becec575ead74",
+      "actual": "1fc415248dd18335a3824d0020a1bf5bfe36352807725857283becec575ead74",
+      "matches": true,
+      "git_blob_sha1": "e5ae7a28cc8bf3fa204d28957325fbd9b2287c90"
+    },
+    {
+      "path": "tests/fixtures/utc_slot_v7_prior_generations.json",
+      "expected": "69050370a6fc0229fb3b7a188a3d34d603139482e443bd89562b75e0a2563f09",
+      "actual": "69050370a6fc0229fb3b7a188a3d34d603139482e443bd89562b75e0a2563f09",
+      "matches": true,
+      "git_blob_sha1": "350f62a8dadf8cd55596197bdd9e184834910535"
+    },
+    {
+      "path": "tests/fixtures/utc_slot_v7_terminal_ledger.json",
+      "expected": "937741211cfccbbcd2a278f7b501679cb82c1caae10801fd419127dcb10c395f",
+      "actual": "061f09f5797c76ab110c99beddb7dab87459bdf08bd9e17b1677c8aeeb1088c1",
+      "matches": false,
+      "git_blob_sha1": "9d3f376bc4be787db7b0fa0cd5ee793197b55e70",
+      "lf_sha256": "061f09f5797c76ab110c99beddb7dab87459bdf08bd9e17b1677c8aeeb1088c1",
+      "one_final_newline_sha256": "061f09f5797c76ab110c99beddb7dab87459bdf08bd9e17b1677c8aeeb1088c1",
+      "two_final_newlines_sha256": "47e24fd1186c4a84bb0d91074228db8089db860e2bc683dfcfc6ad2887dcf874"
+    },
+    {
+      "path": "tests/test_nexus_causal_jump_features.py",
+      "expected": "2fcfd52b1a51bb759a5dbbe4825058fc557bdfb4a3ddb15ab49000457da81dd5",
+      "actual": "2fcfd52b1a51bb759a5dbbe4825058fc557bdfb4a3ddb15ab49000457da81dd5",
+      "matches": true,
+      "git_blob_sha1": "6b68fe7edf4cf8be5277d4638820017cc89cbc31"
+    },
+    {
+      "path": "tests/test_nexus_causal_slot_volume_features.py",
+      "expected": "11379615208e34975014587cae8e7cd95dd13aeee4f2370b41b5c087f65513ac",
+      "actual": "11379615208e34975014587cae8e7cd95dd13aeee4f2370b41b5c087f65513ac",
+      "matches": true,
+      "git_blob_sha1": "6f98cac872c7b4673fd8d555fa7f28316bd66f1f"
+    },
+    {
+      "path": "tests/test_nexus_composite_fast_frontier.py",
+      "expected": "5cb4d5807b21e55dc58aa4a4a0478db898e836e1199ea7bc2eaeeee8029d6798",
+      "actual": "5cb4d5807b21e55dc58aa4a4a0478db898e836e1199ea7bc2eaeeee8029d6798",
+      "matches": true,
+      "git_blob_sha1": "b0a8b31c68dcce63988466fabaddb19e750edc63"
+    }
+  ],
+  "market_backtests_executed": 0
+}

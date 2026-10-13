@@ -1,0 +1,37 @@
+{
+  "candidate_config": {
+    "entry_model": "closed_4h_1h_15m_next_open",
+    "factory_contract_digest": "dfa3430d170b99011cdff96d7eb48877e7c60473295b4ec7c7c01855bd9fe9b1",
+    "fingerprint": "424c0a527aca815448719704c5aa714246e1b1e4c62532dcb782350b1c5090be",
+    "mechanism": "factory_utc_slot_volume_breakout",
+    "risk_variant": 0
+  },
+  "host": "DESKTOP-F4SA4VL",
+  "independent_strategy_qa": false,
+  "live_enabled": false,
+  "native_windows": true,
+  "numpy": "2.3.5",
+  "pandas": "2.3.3",
+  "platform": "Windows-10-10.0.19045-SP0",
+  "previous_ledger_digest": "18675234ad8c981be8f8c5e348c1a39737a9c3fc4ca09ba0ae9532c8a59b567a",
+  "previous_ledger_file_sha256": "937741211cfccbbcd2a278f7b501679cb82c1caae10801fd419127dcb10c395f",
+  "previous_ledger_path": "E:\\NEXUS-QA\\causal-jump-v6-20261013\\producer\\novelty-ledger.json",
+  "producer_host_source_gate_only": true,
+  "pyarrow": "23.0.1",
+  "python": "3.12.10 (tags/v3.12.10:0cc8128, Apr  8 2025, 12:21:36) [MSC v.1943 64 bit (AMD64)]",
+  "research_only": true,
+  "serialization_amendment_sha256": "2fdaf11f4baabc8d6604707bc1feee56b61e3d679eff038a11a46d27db283b26",
+  "source_archive_sha256": "4d5ea1ec1dc140881bb89d0a1c8e51ad440557214ea8f5920d54eb7a5b32ee78",
+  "source_file_sha256": {
+    "nexus_causal_slot_volume_features.py": "2ba569f315504177f92a22e262f1e9488ad31e30cd3b87a6db946c07945dd2b0",
+    "nexus_composite_strategy_research.py": "833633f1a44e7f7115badc00c6712dc8976ad111fab8f472d9535276d3102a38",
+    "nexus_mechanism_factory.py": "5060c647a5a882af81c9d7babfe130109beda4b6e6c3ffa4a94ac3bb97384c40",
+    "research/mechanism_factory_v7.json": "1fc415248dd18335a3824d0020a1bf5bfe36352807725857283becec575ead74",
+    "tests/fixtures/utc_slot_v7_prior_generations.json": "69050370a6fc0229fb3b7a188a3d34d603139482e443bd89562b75e0a2563f09",
+    "tests/fixtures/utc_slot_v7_terminal_ledger.json": "061f09f5797c76ab110c99beddb7dab87459bdf08bd9e17b1677c8aeeb1088c1",
+    "tests/test_nexus_causal_jump_features.py": "2fcfd52b1a51bb759a5dbbe4825058fc557bdfb4a3ddb15ab49000457da81dd5",
+    "tests/test_nexus_causal_slot_volume_features.py": "11379615208e34975014587cae8e7cd95dd13aeee4f2370b41b5c087f65513ac",
+    "tests/test_nexus_composite_fast_frontier.py": "5cb4d5807b21e55dc58aa4a4a0478db898e836e1199ea7bc2eaeeee8029d6798"
+  },
+  "source_sha": "7cab4f0368823ef3dd9dec79f572bd05721e2316"
+}
