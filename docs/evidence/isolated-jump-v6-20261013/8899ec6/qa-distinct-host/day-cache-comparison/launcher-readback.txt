@@ -1,0 +1,7 @@
+[Reading 2 new lines (total: 2 lines)]
+
+{"launched":true,"pid":14132,"root":"E:\\NEXUS-QA\\jump-v6-day-cache-qa-20261013","worker_sha256":"8d9d8ad88bf12d4ecfc84657edb889e3debf1ee8ffcdeab2a19e1cb0d5ccbe13","producer_source_sha":"8899ec6bec4927fc39795f2867be91e2431178c6","verification_source_sha":"9144f888306e12a86fb4812896b137c13a6adeb9","bounded_seconds":240,"producer_job_submitted":false,"checked_at_utc":"2026-10-13T12:14:34.6790993Z"}
+
+✅ Process completed with exit code 0 (runtime: 8.64s)
+
+[executed on device: DESKTOP-1R1081M (bbabb808-d554-4db8-bce7-3a453bea8b43)]
