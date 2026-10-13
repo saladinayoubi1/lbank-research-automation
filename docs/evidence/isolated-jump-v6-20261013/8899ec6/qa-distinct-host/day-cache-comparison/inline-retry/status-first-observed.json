@@ -1,0 +1,15 @@
+{
+  "auto_demo_promotion": false,
+  "checked_at_utc": "2026-10-13T12:29:17.036585+00:00",
+  "completed_cells": 0,
+  "elapsed_seconds": 19.422,
+  "independent_decimal_accounting_complete": false,
+  "live_enabled": false,
+  "official_coordinator_advanced": false,
+  "producer_source_sha": "8899ec6bec4927fc39795f2867be91e2431178c6",
+  "research_only": true,
+  "schema": "nexus.day-cache-comparison-status.v1",
+  "status": "RUNNING_NATIVE_DAY_CACHE_TEST",
+  "test_name": "test_all_metrics_match_frozen_original_scalar_backtest (test_nexus_composite_backtest_day_cache.CalendarDayBacktestRegression.test_all_metrics_match_frozen_original_scalar_backtest)",
+  "verification_source_sha": "9144f888306e12a86fb4812896b137c13a6adeb9"
+}
