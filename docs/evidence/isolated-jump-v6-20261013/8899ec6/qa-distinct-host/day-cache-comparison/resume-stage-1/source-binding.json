@@ -1,0 +1,11 @@
+{
+  "engine_blob_sha": "4c4fc599bf5dabe6c67136dcb4d711f6f47d2610",
+  "physical_git_head": "8899ec6bec4927fc39795f2867be91e2431178c6",
+  "producer_source_sha": "8899ec6bec4927fc39795f2867be91e2431178c6",
+  "source_layout": "exact Git blob overlay over unchanged baseline dependencies",
+  "test_file_blobs": {
+    "tests/fixtures/nexus_backtest_scalar_day_floor_v1.json": "3455b55e4a182906504ae76e334ca303fb7975d5",
+    "tests/test_nexus_composite_backtest_day_cache.py": "8965ccec2624b555cea2690d89441b2f0c812403"
+  },
+  "verification_source_sha": "9144f888306e12a86fb4812896b137c13a6adeb9"
+}

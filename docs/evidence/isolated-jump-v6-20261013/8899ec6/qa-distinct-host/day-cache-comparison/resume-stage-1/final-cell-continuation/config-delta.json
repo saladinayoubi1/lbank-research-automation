@@ -1,0 +1,20 @@
+{
+  "computation_ast_unchanged": true,
+  "continuation_worker_sha256": "e2533b0f201228b37ba9bf1cc764412fc0f853c13e62855a44fcdf6c180b01b8",
+  "engine_blob_sha": "4c4fc599bf5dabe6c67136dcb4d711f6f47d2610",
+  "live_enabled": false,
+  "native_units_rerun": false,
+  "new_cells_expected": 1,
+  "only_changes": [
+    "CONFIG roots and expected reuse count",
+    "CONFIG retry explanation and wall bound",
+    "deadline explanation in resume receipt"
+  ],
+  "prior_worker_sha256": "3702999c0c99501414a73398947cb8f2f201408c0746a1194efebcda0871ffb2",
+  "producer_source_sha": "8899ec6bec4927fc39795f2867be91e2431178c6",
+  "research_only": true,
+  "reused_cells_expected": 15,
+  "schema": "nexus.checkpoint-worker-config-delta.v1",
+  "verification_source_sha": "9144f888306e12a86fb4812896b137c13a6adeb9",
+  "wall_seconds": 240
+}
