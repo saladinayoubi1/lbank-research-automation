@@ -1,0 +1,25 @@
+{"prepared":true,"root":"E:\\NEXUS-QA\\economic-oracle-v6-day-cache-20261013","reused_accounting_cells":3,"new_accounting_cells":9,"native_regression_required":true,"worker_sha256":"241bb1d641d318792da6379dff7a62b917ef20cd4c6b7f547fed41747a468654","oracle_source_ref":"b6c6efb3cdf7ceb6e23a117df43c6803604b6187","bounded_seconds":600,"checked_at_utc":"2026-10-13T16:12:04.8928157Z"}
+{"status": "VERIFYING_BOUND_INPUTS", "completed_cells": 0, "elapsed_seconds": 0.329}
+GIT_CHECK rev-parse HEAD
+GIT_CHECK status --porcelain
+{"status": "VERIFYING_NATIVE_DECIMAL_DAY_CACHE", "completed_cells": 0, "elapsed_seconds": 27.344}
+{"status": "BUILDING_EXISTING_CAUSAL_FEATURES", "completed_cells": 0, "elapsed_seconds": 73.813}
+{"status": "REUSED_VERIFIED_DECIMAL_CELL", "completed_cells": 1, "elapsed_seconds": 137.157}
+{"status": "REUSED_VERIFIED_DECIMAL_CELL", "completed_cells": 2, "elapsed_seconds": 139.266}
+{"status": "REUSED_VERIFIED_DECIMAL_CELL", "completed_cells": 3, "elapsed_seconds": 140.141}
+{"status": "AUDITING_DECIMAL_ACCOUNTING", "completed_cells": 4, "elapsed_seconds": 160.438}
+{"status": "AUDITING_DECIMAL_ACCOUNTING", "completed_cells": 5, "elapsed_seconds": 181.047}
+{"status": "AUDITING_DECIMAL_ACCOUNTING", "completed_cells": 6, "elapsed_seconds": 200.485}
+{"status": "AUDITING_DECIMAL_ACCOUNTING", "completed_cells": 7, "elapsed_seconds": 258.969}
+{"status": "AUDITING_DECIMAL_ACCOUNTING", "completed_cells": 8, "elapsed_seconds": 320.188}
+{"status": "AUDITING_DECIMAL_ACCOUNTING", "completed_cells": 9, "elapsed_seconds": 340.5}
+{"status": "AUDITING_DECIMAL_ACCOUNTING", "completed_cells": 10, "elapsed_seconds": 361.469}
+{"status": "AUDITING_DECIMAL_ACCOUNTING", "completed_cells": 11, "elapsed_seconds": 381.172}
+{"status": "AUDITING_DECIMAL_ACCOUNTING", "completed_cells": 12, "elapsed_seconds": 401.36}
+GIT_CHECK status --porcelain
+{"status": "DECIMAL_ACCOUNTING_MATCHED_RESEARCH_ONLY", "completed_cells": 12, "elapsed_seconds": 403.75}
+{"decision": "DECIMAL_ACCOUNTING_MATCHED_RESEARCH_ONLY", "cells": 12, "audit_digest": "13a16e4d308c94ab804706505c95dd1ae59d61ae735a12475b5ed323a488855f"}
+{"native_exit_code":0,"root":"E:\\NEXUS-QA\\economic-oracle-v6-day-cache-20261013","finished_at_utc":"2026-10-13T16:18:56.3322112Z"}
+
+✅ Process completed with exit code 0 (runtime: 432.14s)
+

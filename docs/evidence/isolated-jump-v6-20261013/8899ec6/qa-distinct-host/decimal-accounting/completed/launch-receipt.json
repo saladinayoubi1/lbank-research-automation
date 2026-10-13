@@ -1,0 +1,11 @@
+{
+  "auto_demo_promotion": false,
+  "live_enabled": false,
+  "official_coordinator_advanced": false,
+  "oracle_ref": "b6c6efb3cdf7ceb6e23a117df43c6803604b6187",
+  "pid": 1300,
+  "research_only": true,
+  "source_sha": "8899ec6bec4927fc39795f2867be91e2431178c6",
+  "started_at_utc": "2026-10-13T16:12:11.500808+00:00",
+  "timeout_seconds": 600
+}

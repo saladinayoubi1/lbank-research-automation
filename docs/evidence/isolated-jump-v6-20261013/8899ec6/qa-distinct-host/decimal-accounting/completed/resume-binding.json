@@ -1,0 +1,14 @@
+{
+  "native_regression_sha256": "99fe3893acceccda5f659a7656e39643798941948937630cd0ef95dffa5c82ef",
+  "old_and_cached_oracle_calculation_rules_match": true,
+  "oracle_baseline_blob_sha": "d583ed655efe64b5c0c5eb73960eb217bc7ded83",
+  "oracle_cached_blob_sha": "35488fbf90a987f83dd637db4209703eb201ea0e",
+  "planned_new_cells": 9,
+  "prior_input_sha256": "7df564fc4787f04b2670b92ac2f96d58a28d578bdbf7d6818f4e2caf4aaf2c68",
+  "resume_from": "E:\\NEXUS-QA\\economic-oracle-v6-20261013",
+  "reused_cell_digests": [
+    "9fe840c4572d456ecde6d375ed441d534a57ed3680e0286c34efcee38fbe325a",
+    "505adcf63d04b0d3a05ca70b21dcbebcd9df1972254d73e8b4f65fcdb0ab425b",
+    "446eb05b53b52ac153810ce26864accb14f8a836a6d8cd2748e518194d2b2f85"
+  ]
+}
