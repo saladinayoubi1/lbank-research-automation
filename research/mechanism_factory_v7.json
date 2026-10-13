@@ -1,0 +1,55 @@
+{
+  "schema": "nexus.mechanism-factory.v1",
+  "authority": "research-only-no-auto-promotion",
+  "selection_basis": "training_partition_only",
+  "no_minimum_trade_count_gate": true,
+  "auto_demo_promotion": false,
+  "live_trading_authority": false,
+  "candidates": [
+    {
+      "id": "factory_utc_slot_volume_breakout",
+      "family": "utc_slot_participation_breakout",
+      "hypothesis": "Volume on the preceding closed bar exceeding its seven prior same-UTC-slot observations, with a stable seasonal baseline and completed higher-timeframe uptrend, may identify participation useful for a subsequent confirmed range breakout. This fixed exploratory hypothesis claims neither order flow nor a profitable edge.",
+      "peer_required": false,
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "lagged_utc_slot_volume_ratio_7d",
+          "op": "ge",
+          "value": 1.5
+        },
+        {
+          "field": "lagged_utc_slot_volume_cv_7d",
+          "op": "le",
+          "value": 0.75
+        }
+      ],
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_hi"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open"
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        }
+      ]
+    }
+  ]
+}

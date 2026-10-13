@@ -1,0 +1,18 @@
+test_all_previous_specs_order_and_configs_are_preserved (test_nexus_causal_slot_volume_features.SlotVolumeFactoryTests.test_all_previous_specs_order_and_configs_are_preserved) ... ok
+test_confirmed_signal_and_unavailable_history_denial (test_nexus_causal_slot_volume_features.SlotVolumeFactoryTests.test_confirmed_signal_and_unavailable_history_denial) ... ok
+test_contract_rejects_authority_and_unreviewed_features (test_nexus_causal_slot_volume_features.SlotVolumeFactoryTests.test_contract_rejects_authority_and_unreviewed_features) ... ok
+test_feature_helper_is_wired_into_closed_candle_pipeline (test_nexus_causal_slot_volume_features.SlotVolumeFactoryTests.test_feature_helper_is_wired_into_closed_candle_pipeline) ... ok
+test_terminal_ledger_routes_only_the_new_candidate (test_nexus_causal_slot_volume_features.SlotVolumeFactoryTests.test_terminal_ledger_routes_only_the_new_candidate) ... ok
+test_bad_grids_volumes_and_indices_fail_closed (test_nexus_causal_slot_volume_features.SlotVolumeFeatureTests.test_bad_grids_volumes_and_indices_fail_closed) ... ok
+test_current_and_future_volume_cannot_change_context (test_nexus_causal_slot_volume_features.SlotVolumeFeatureTests.test_current_and_future_volume_cannot_change_context) ... ok
+test_equivalent_timezones_and_dst_map_to_the_same_utc_slots (test_nexus_causal_slot_volume_features.SlotVolumeFeatureTests.test_equivalent_timezones_and_dst_map_to_the_same_utc_slots) ... ok
+test_event_is_lagged_and_excluded_from_its_baseline (test_nexus_causal_slot_volume_features.SlotVolumeFeatureTests.test_event_is_lagged_and_excluded_from_its_baseline) ... ok
+test_same_clock_history_is_distinct_from_contiguous_relative_volume (test_nexus_causal_slot_volume_features.SlotVolumeFeatureTests.test_same_clock_history_is_distinct_from_contiguous_relative_volume) ... ok
+test_time_indexed_scalar_reference_and_warmup (test_nexus_causal_slot_volume_features.SlotVolumeFeatureTests.test_time_indexed_scalar_reference_and_warmup) ... ok
+test_volume_units_do_not_change_ratio_or_dispersion (test_nexus_causal_slot_volume_features.SlotVolumeFeatureTests.test_volume_units_do_not_change_ratio_or_dispersion) ... ok
+test_zero_volume_and_short_history_are_unavailable (test_nexus_causal_slot_volume_features.SlotVolumeFeatureTests.test_zero_volume_and_short_history_are_unavailable) ... ok
+
+----------------------------------------------------------------------
+Ran 13 tests in 0.533s
+
+OK

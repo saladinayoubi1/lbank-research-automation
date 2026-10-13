@@ -45,6 +45,7 @@ CONTEXT_FIELDS = frozenset({
     "lagged_directional_entropy_64", "lagged_range_compression_ratio_32",
     "lagged_volume_return_corr_64",
     "lagged_standardized_shock_96", "lagged_jump_proxy_share_96",
+    "lagged_utc_slot_volume_ratio_7d", "lagged_utc_slot_volume_cv_7d",
 })
 ENTRY_FIELDS = frozenset({
     "open", "high", "low", "close", "close_location", "body_efficiency",
@@ -469,4 +470,3 @@ def generate_factory_contracts_v4(
     return _generate_factory_contracts_from_contexts(
         existing, GENERATOR_CONTEXTS_V4, limit=limit
     )
-
