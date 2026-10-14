@@ -1,6 +1,6 @@
 {
   "schema": "nexus-vps-rescue-checkpoint-v1",
-  "as_of_utc": "2026-10-14T21:02:04.645Z",
+  "as_of_utc": "2026-10-14T21:47:27.2893660Z",
   "scope_nodes": [
     "OBS-80",
     "CTRL-11"
@@ -14,7 +14,14 @@
       "repair_task_installed": false,
       "powershell_parser_pass": true,
       "bundle_hashes_pass": true,
-      "owned_job_cleanup_pass": true
+      "owned_job_cleanup_pass": true,
+      "native_tcp_guard_pass": true,
+      "task_com_query_pass": true,
+      "firewall_com_query_pass": true,
+      "explicit_scm_query_pass": true,
+      "cim_required": false,
+      "native_readiness_child_exit": 0,
+      "desktop_launcher_updated": true
     },
     "LAPTOP2": {
       "id": "61c3307f-e6d4-4edf-860a-3519cfb9df5d",
@@ -24,7 +31,14 @@
       "repair_task_installed": false,
       "powershell_parser_pass": true,
       "bundle_hashes_pass": true,
-      "owned_job_cleanup_pass": true
+      "owned_job_cleanup_pass": true,
+      "native_tcp_guard_pass": true,
+      "task_com_query_pass": true,
+      "firewall_com_query_pass": true,
+      "explicit_scm_query_pass": true,
+      "cim_required": false,
+      "native_readiness_child_exit": 0,
+      "desktop_launcher_updated": true
     }
   },
   "broker": {
@@ -120,11 +134,13 @@
   "laptop2_remains_research_primary": true,
   "private_key_exported": false,
   "windows_bundle": {
-    "bundle-manifest.json": "26ffd6330ba02d5c9d0179f30da57c226123238fda6a7ee37d74aac7816cc355",
-    "Install-NexusRescue.ps1": "6641befad8bc8dd1d21ecb7d315fdb2d79857491d629d53eee19a56fe93d3d43",
-    "NEXUS-Enable-Rescue.cmd": "b949ff531bd770bfd4d865e0da1b76fe7fedb872f51f0aacc698df3e88334e0a",
-    "Admin-SourceLoader.ps1": "fdfd6c3c761d7b4a17d4ec66740fc39ce1c208e68b61906ed89e9c670537914a",
-    "Watch-RescueTunnel.ps1": "aab1a53649e84c35941a6415d28cd336ffccd9a172cbf35685860cd762a5f492"
+    "bundle-manifest.json": "a252f6b11ded9505c00be5aa5c1a83388d6c28168a9bd961f62a4da589a59772",
+    "Install-NexusRescue.ps1": "3b4060007f8c4e6b94020ce7fc22eff7a74ee966a5255002e1512f4a27567f51",
+    "NEXUS-Enable-Rescue.cmd": "ea6e301dc7b2ae5bda5a8470da939f4a4aa802f277a6f61815c28b0a2d833bc2",
+    "Admin-SourceLoader.ps1": "a51aeb37b93e1372863cb0da20ac5fe3f4c792f025ca5c404599b659e5072344",
+    "Watch-RescueTunnel.ps1": "18e3049174a7dec464159fc7b3869677db308a3dc81625464681d882d99a7956",
+    "Rescue-WindowsPlatform.ps1": "ae7701d530ec5770614dfde74a614b46b9e651b98a610d7d3c6b5053635a6eaf",
+    "Validate-RescueBundle.ps1": "e144a6f72e9ca86cfd9de684e6c3832a8da388b02c70c346207c13371633fbd6"
   },
   "source_digests": {
     "vps_broker.py": "04edabcaf92f051a48047884c544d2c0aecbae085dc856b36e842f04fcbbbe3f",
@@ -136,5 +152,50 @@
     "result": "PASS",
     "actual_sshd_config_test": "PASS",
     "private_key_contents_read_or_published": false
+  },
+  "windows_cim_compatibility": {
+    "status": "NATIVE_READINESS_PASS_PENDING_OWNER_UAC",
+    "reported_failure": "Get-NetTCPConnection: Cannot connect to CIM server. Not found",
+    "failure_phase": "Preflight before rescue directory/service/firewall/task creation",
+    "cim_required": false,
+    "evidence": "docs/evidence/nexus-vps-rescue-20261014/cim-free-native-qa.json",
+    "native_results": {
+      "LAPTOP1": {
+        "schema": "nexus-cim-free-native-qa-v1",
+        "hostname": "DESKTOP-1R1081M",
+        "actual_child_exit": 0,
+        "timed_out": false,
+        "started_utc": "2026-10-14T21:46:56.2892589Z",
+        "completed_utc": "2026-10-14T21:47:27.2893660Z",
+        "runtime_seconds": 31.0731017,
+        "child_pid": 12592,
+        "manifest_sha256": "a252f6b11ded9505c00be5aa5c1a83388d6c28168a9bd961f62a4da589a59772",
+        "launcher_sha256": "ea6e301dc7b2ae5bda5a8470da939f4a4aa802f277a6f61815c28b0a2d833bc2",
+        "desktop_launcher_updated": true,
+        "cim_required": false,
+        "windows_ssh_accepted": false,
+        "writer_authority": false,
+        "live_enabled": false
+      },
+      "LAPTOP2": {
+        "schema": "nexus-cim-free-native-qa-v1",
+        "hostname": "DESKTOP-F4SA4VL",
+        "actual_child_exit": 0,
+        "timed_out": false,
+        "started_utc": "2026-10-14T21:47:00.2680384Z",
+        "completed_utc": "2026-10-14T21:47:04.9376142Z",
+        "runtime_seconds": 4.6755740999999995,
+        "child_pid": 10772,
+        "manifest_sha256": "a252f6b11ded9505c00be5aa5c1a83388d6c28168a9bd961f62a4da589a59772",
+        "launcher_sha256": "ea6e301dc7b2ae5bda5a8470da939f4a4aa802f277a6f61815c28b0a2d833bc2",
+        "desktop_launcher_updated": true,
+        "cim_required": false,
+        "windows_ssh_accepted": false,
+        "writer_authority": false,
+        "live_enabled": false
+      }
+    },
+    "wmi_repository_reset": false,
+    "existing_task_changed": false
   }
 }

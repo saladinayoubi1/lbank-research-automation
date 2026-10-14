@@ -5,7 +5,7 @@ import hashlib
 import json
 
 p=Path(__file__).resolve().parent
-names=['Prepare-RescueKey.ps1','Install-NexusRescue.ps1','Watch-RescueTunnel.ps1','Validate-RescueBundle.ps1','vps-known-hosts','operator-authorized-key']
+names=['Prepare-RescueKey.ps1','Install-NexusRescue.ps1','Watch-RescueTunnel.ps1','Rescue-WindowsPlatform.ps1','Validate-RescueBundle.ps1','vps-known-hosts','operator-authorized-key']
 files={name:hashlib.sha256((p/name).read_bytes()).hexdigest() for name in names}
 manifest={'schema':'nexus-rescue-bundle-v1','files':files,'writer_authority':False,'live_enabled':False}
 raw=(json.dumps(manifest,indent=2)+'\n').encode()

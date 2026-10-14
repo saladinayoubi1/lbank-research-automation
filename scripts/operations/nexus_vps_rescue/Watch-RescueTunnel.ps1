@@ -14,6 +14,7 @@ function Read-VerifiedConfiguration {
     return $c
 }
 $config = Read-VerifiedConfiguration
+. (Join-Path $Root 'Rescue-WindowsPlatform.ps1')
 $sshArgs = '-n -N -T -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o ExitOnForwardFailure=yes -o ConnectTimeout=10 -o ConnectionAttempts=1 -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -o HostKeyAlgorithms=rsa-sha2-512,rsa-sha2-256 -o UserKnownHostsFile="'+$Root+'\vps-known-hosts" -i "'+$Root+'\forward_ed25519" -R 127.0.0.1:'+$config.port+':127.0.0.1:22 nexusrescue@87.107.5.150'
 if ($ValidateOnly) { [ordered]@{valid=$true;hostname=$env:COMPUTERNAME;relay_port=$config.port;local_target='127.0.0.1:22';writer_authority=$false;live_enabled=$false} | ConvertTo-Json; exit 0 }
 if ([Security.Principal.WindowsIdentity]::GetCurrent().User.Value -ne 'S-1-5-18') { throw 'Repair task must run as SYSTEM' }
@@ -50,8 +51,7 @@ try {
     while ($true) {
         $config = Read-VerifiedConfiguration
         if ((Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\sshd').ImagePath -ne $config.service_image_path) { throw 'SSH service ownership changed' }
-        $service = Get-Service -Name sshd -ErrorAction Stop
-        if ($service.Status -ne 'Running') { Start-Service -Name sshd }
+        if ((Get-NexusSshdState) -ne 'Running') { Start-Service -Name sshd }
         if ((Test-Path -LiteralPath $log) -and (Get-Item -LiteralPath $log).Length -gt 1048576) { Move-Item -LiteralPath $log -Destination ($log+'.previous') -Force }
         $pi = New-Object Diagnostics.ProcessStartInfo
         $pi.FileName=$config.ssh_client; $pi.Arguments=$sshArgs
