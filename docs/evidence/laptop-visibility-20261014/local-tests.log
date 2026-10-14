@@ -1,0 +1,31 @@
+Parent: 00bce6cdbf81e78d1d2e6d563f79974fb1c18c3e
+
+BEFORE correction, retained-connection regression on the immutable parent source:
+python -m unittest discover -s tests -p test_nexus_laptop_observations.py -k retained -v
+Ran 1 test in 0.006s
+FAILED (failures=5, errors=1)
+Exit 1. Five valid retained connections still executed; the corrupt retained connection raised DatabaseError rather than a closed-connection ProgrammingError.
+
+AFTER correction:
+python -m unittest discover -s tests -p 'test_nexus*laptop_observations.py' -v
+Ran 18 tests in 0.575s
+OK
+Exit 0. Includes success/duplicate/replay-rejection/corrupt-state connection lifecycle regression.
+
+test_all_kernel_risks_force_hold (test_nexus_vps_arbiter_observer.TestObserver.test_all_kernel_risks_force_hold) ... ok
+test_bind_must_be_loopback (test_nexus_vps_arbiter_observer.TestObserver.test_bind_must_be_loopback) ... ok
+test_good_host_still_has_no_writer_authority (test_nexus_vps_arbiter_observer.TestObserver.test_good_host_still_has_no_writer_authority) ... ok
+test_no_ssh_or_ntp_denies_preflight (test_nexus_vps_arbiter_observer.TestObserver.test_no_ssh_or_ntp_denies_preflight) ... ok
+test_read_only_http_always_refuses_permits (test_nexus_vps_arbiter_observer.TestObserver.test_read_only_http_always_refuses_permits) ... ok
+test_unreadable_kernel_journal_denies_preflight (test_nexus_vps_arbiter_observer.TestObserver.test_unreadable_kernel_journal_denies_preflight) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.589s
+
+OK
+
+System Map and canonical PR precheck PASS
+Compile PASS
+
+Local Linux-only evidence; exact-head hosted Windows/Ubuntu/macOS CI still required.
+No laptop/VPS deployment, real authenticated reports or operational DONE claim.
