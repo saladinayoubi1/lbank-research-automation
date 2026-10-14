@@ -1,0 +1,50 @@
+{
+  "schema": "nexus.causal-elliott-wave12-v9-local-source-tests.v1",
+  "checked_at_utc": "2026-10-14T15:35:34.205Z",
+  "preregistration_commit": "f6537760618ac5b8b7878946ff230975e7c5a1e9",
+  "preregistration_digest": "2845fbc71ce1c5ee5ee986a7206bd19a05776fd6185d5f914475f35f57638301",
+  "command": "PYTHONPATH=work/v9-source python -m unittest discover -s work/v9-source/tests -p 'test_nexus_causal_*features.py' -v",
+  "tests_run": 72,
+  "new_elliott_test_methods": 33,
+  "existing_changed_source_regression_methods": 39,
+  "failures": 0,
+  "errors": 0,
+  "actual_tool_process_exit_code": 0,
+  "elapsed_unittest_seconds": 0.898,
+  "source_regression_function": {
+    "name": "test_all_frontier_mechanisms_emit_bounded_boolean_signals",
+    "passed": true,
+    "checked_frontier_mechanisms": 110,
+    "extracted_ast_function": true,
+    "full_pytest_module_executed": false,
+    "actual_process_exit_code": 0
+  },
+  "local_environment": {
+    "python": "3.12.14",
+    "numpy": "2.3.5",
+    "pandas": "2.2.3",
+    "pytest": "unavailable",
+    "pyarrow": "unavailable"
+  },
+  "full_hosted_pytest_complete": false,
+  "native_windows_source_gate_complete": false,
+  "partial_stdout_transcript": true,
+  "market_backtests_submitted": 0,
+  "independent_strategy_qa_complete": false,
+  "research_only": true,
+  "owner_demo_admission": false,
+  "auto_demo_promotion": false,
+  "live_enabled": false,
+  "source_file_sha256": {
+    "nexus_causal_elliott_wave12_features.py": "84cbe6bcc4f3b393e9feecdc644244bf06189dd8d0e438b080d62be85c7cdc17",
+    "nexus_mechanism_factory.py": "0df7c0d50ba23294b8b1cdbbc7fbb147e5e2ac2a65244b0cbcdadc7ee9b7b01d",
+    "nexus_composite_strategy_research.py": "15bece0ef68256a625532651d10e11f6c32444040f9c9d720ffcc5e29685afeb",
+    "research/mechanism_factory_v9.json": "2d7a30862c87bcf805362638068df215f0fc382558550c9b60f641d383920ca9",
+    "tests/test_nexus_causal_elliott_wave12_features.py": "264f4c883515d262a9445031185bd773b2189009e28faaa48775cf5431ed3543",
+    "tests/test_nexus_causal_butterfly_features.py": "788a4a3eec8073dbdb4f637e83ad8bb40be1ff1e383af56da24fd5620d1d0692",
+    "tests/test_nexus_causal_slot_volume_features.py": "b352fe5a1545b0643b93b8d44ec587f728eaa373fc06b0c2082a4d02ead709d1",
+    "tests/test_nexus_composite_fast_frontier.py": "c78743eaaf57f4cecdbc86a91f4df5b91ccba66ac0971c464ce99f2a772ef3d1",
+    "tests/fixtures/elliott_v9_prior_inventory.json": "dfc86894917119d5247dee5e5a403613ebedd4c0c6dc63680ab11be193a93b26",
+    "tests/fixtures/elliott_v9_terminal_ledger.json": "c42ec37a0e7461e5939cb960196e99b6a9e55df954489ffd7d001efe4bd59115"
+  }
+}
