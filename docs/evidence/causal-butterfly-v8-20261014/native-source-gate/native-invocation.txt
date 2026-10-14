@@ -1,0 +1,9 @@
+$ErrorActionPreference='Stop'
+$gate='E:\NEXUS-QA\causal-butterfly-v8-20261014T104229Z\run-source-gate.py'
+$payload='E:\NEXUS-QA\causal-butterfly-v8-20261014T104229Z\stage-files.json'
+if((Get-FileHash -Algorithm SHA256 -LiteralPath $gate).Hash.ToLowerInvariant() -ne '4f16e4a378a9c8ada2d0d6f9aff23c683438b83c9e519cdf3a2c19f6b42d2d45'){throw 'Frozen native source-gate wrapper changed'}
+if((Get-FileHash -Algorithm SHA256 -LiteralPath $payload).Hash.ToLowerInvariant() -ne 'c0d269c251f9925026d25d2e2a7d6f54566ac767ab07482416ceac6bd1e42d61'){throw 'Frozen native payload changed'}
+& 'E:\NEXUS-QA\strategy-frontier-v5-20261010\.venv\Scripts\python.exe' $gate --config $payload --config-sha 'c0d269c251f9925026d25d2e2a7d6f54566ac767ab07482416ceac6bd1e42d61' --source-sha '2b89f6e89abdacc16b3288b9fd9ebcb3bdea7e69'
+$gateExit=$LASTEXITCODE
+Write-Output ('ACTUAL_BUTTERFLY_NATIVE_SOURCE_EXIT='+$gateExit)
+exit $gateExit

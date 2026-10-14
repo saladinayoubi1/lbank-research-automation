@@ -1,0 +1,16 @@
+{
+  "source_sha": "2b89f6e89abdacc16b3288b9fd9ebcb3bdea7e69",
+  "new_file_blob_sha1": {
+    "nexus_causal_butterfly_features.py": "c46bc86b8c12b98f5b62ca67e4b6e4e225b28930",
+    "nexus_mechanism_factory.py": "19e046c0ea32fd675547518989b4d6bafc5d2248",
+    "nexus_composite_strategy_research.py": "05e4d157314ac97432ed6d9a98f3f73db52430a5",
+    "research/mechanism_factory_v8.json": "44a85fa99c1e6c23cf047da8548b9a36a4760d89",
+    "tests/test_nexus_causal_butterfly_features.py": "23931c81db7964fb421b375cb4a00fa93d3955b6",
+    "tests/test_nexus_causal_slot_volume_features.py": "df4a6f482a4d279d20b7098a8cdc778c8f30a731",
+    "tests/test_nexus_composite_fast_frontier.py": "fc7831b1f12bc58b725a5b9e6329327a4924fb8b",
+    "tests/fixtures/butterfly_v8_prior_inventory.json": "75507208fd738c84acf75b054406f5528a590014",
+    "tests/fixtures/butterfly_v8_terminal_ledger.json": "7933f5ff093d88607c7fc372043a625c6ef300c5",
+    "research/causal_bullish_butterfly_v8_preregistration.json": "abe474138242d7b4809092627b5f697d06128889"
+  },
+  "all_match": true
+}
