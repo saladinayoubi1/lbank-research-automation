@@ -13,3 +13,6 @@ data/market/** export-ignore
 
 # Pinned SIWC provenance hashes are byte-exact and must survive Windows checkout.
 desktop/nexus-product/vendor/siwc-local/** text eol=lf
+
+# Preserve the frozen source fixture bytes under Windows checkout conversion.
+tests/fixtures/macro_retest_v10_previous_engine.py text eol=lf

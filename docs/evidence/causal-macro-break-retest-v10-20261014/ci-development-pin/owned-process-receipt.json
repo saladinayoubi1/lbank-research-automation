@@ -1,0 +1,21 @@
+{
+  "schema": "nexus.ci-dev-pin-owned-process.v1",
+  "parent_pid": 5,
+  "owned_child_pid": 6,
+  "actual_owned_child_exit_code": 0,
+  "timed_out": false,
+  "started_at_utc": "2026-10-14T19:24:22.873047+00:00",
+  "completed_at_utc": "2026-10-14T19:24:25.344058+00:00",
+  "elapsed_seconds": 2.471,
+  "command": [
+    "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+    "/workspace/scratch/02cb376cd9b3/work/v10-ci-gate/verify_ci_dev_pin.py",
+    "--fixture-root",
+    "/workspace/scratch/02cb376cd9b3/work/v10-ci-gate",
+    "--source-root",
+    "/workspace/scratch/02cb376cd9b3/work/v10-source",
+    "--evidence-dir",
+    "/workspace/scratch/02cb376cd9b3/work/v10-ci-gate/evidence"
+  ],
+  "market_runs": 0
+}

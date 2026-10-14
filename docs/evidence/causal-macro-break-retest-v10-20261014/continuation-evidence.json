@@ -1,0 +1,103 @@
+{
+  "schema": "nexus.macro-retest-v10-continuation-evidence.v1",
+  "observed_at_utc": "2026-10-14T18:18:22.979Z",
+  "parent_evidence_head": "214ca1864acef609a6061bd0134e881f266c809f",
+  "parent_computational_source": "8c06ca692a06611431730e4aeb822b1d9f47f30d",
+  "parent_ci": [
+    {
+      "id": 116014206634,
+      "name": "discover",
+      "status": "completed",
+      "conclusion": "skipped",
+      "completed_at": "2026-10-14T17:57:31Z"
+    },
+    {
+      "id": 116013959573,
+      "name": "audit",
+      "status": "completed",
+      "conclusion": "success",
+      "completed_at": "2026-10-14T17:57:16Z"
+    },
+    {
+      "id": 116013956708,
+      "name": "validate",
+      "status": "completed",
+      "conclusion": "success",
+      "completed_at": "2026-10-14T17:57:16Z"
+    },
+    {
+      "id": 116013954680,
+      "name": "test (ubuntu-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "completed_at": "2026-10-14T18:02:39Z"
+    },
+    {
+      "id": 116013954642,
+      "name": "test (macos-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "completed_at": "2026-10-14T18:02:47Z"
+    },
+    {
+      "id": 116013954098,
+      "name": "test (windows-latest)",
+      "status": "completed",
+      "conclusion": "failure",
+      "completed_at": "2026-10-14T18:08:09Z"
+    },
+    {
+      "id": 116013953815,
+      "name": "contract-test",
+      "status": "completed",
+      "conclusion": "success",
+      "completed_at": "2026-10-14T17:57:30Z"
+    },
+    {
+      "id": 116013283343,
+      "name": "control-plane trusted guard",
+      "status": "completed",
+      "conclusion": "success",
+      "completed_at": "2026-10-14T17:55:58Z"
+    }
+  ],
+  "laptop2_connectivity": {
+    "content": [
+      {
+        "type": "text",
+        "text": "pong 2026-10-14T18:07:20.728Z"
+      },
+      {
+        "type": "text",
+        "text": "\n[executed on device: DESKTOP-F4SA4VL (61c3307f-e6d4-4edf-860a-3519cfb9df5d)]"
+      }
+    ],
+    "isError": false
+  },
+  "laptop1_connectivity": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Remote tool call 6345b315-2553-41e1-afa2-2d941c8533bd (ping) failed: Timeout - no response from device"
+      }
+    ],
+    "structuredContent": {
+      "call_id": "6345b315-2553-41e1-afa2-2d941c8533bd",
+      "tool_name": "ping",
+      "status": "failed",
+      "device_id": "bbabb808-d554-4db8-bce7-3a453bea8b43",
+      "created_at": "2026-10-14T18:07:20.443613+00:00",
+      "completed_at": "2026-10-14T18:09:20.690779+00:00",
+      "retry_original": false,
+      "error": "Timeout - no response from device",
+      "error_code": "INVALID_ARGUMENT"
+    },
+    "isError": true
+  },
+  "laptop1_timeout_scope": "No response to this ping; power, Paper execution and device health not inferred. No retry, repair or failover in this strategy preregistration step.",
+  "research_executor": "Laptop2",
+  "proposal_only": true,
+  "new_runtime_source": false,
+  "market_backtests_submitted": 0,
+  "live_enabled": false
+}

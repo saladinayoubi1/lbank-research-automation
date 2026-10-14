@@ -1,0 +1,157 @@
+{
+  "actual_child_timeout": false,
+  "actual_owned_child_exit_code": 0,
+  "all_42_computational_file_sha256_match": true,
+  "auto_demo_promotion": false,
+  "changed_dependency": {
+    "new_exact_pin": "26.3",
+    "old_exact_pin": "26.2",
+    "package": "packaging",
+    "scope": "development/test only"
+  },
+  "computational_closure_digest": "33b2ca5e8e02c9a63b68f0510ad58b4a28a776f60078a5aa322ccf2a75e614e1",
+  "computational_source_unchanged_from": "8d81f165ffb2a790146044295bdbc1c531e8954f",
+  "failover_enabled": false,
+  "frozen_tests_workflow_git_blob_sha1": "0cff3be3dddbcec8362d914b4b0572924bbb214d",
+  "frozen_workflow_unchanged": true,
+  "independent_strategy_qa_complete": false,
+  "laptop1_pong": "2026-10-14T19:16:42.052Z",
+  "laptop2_pong": "2026-10-14T19:16:41.786Z",
+  "live_enabled": false,
+  "local_verification_receipt_digest": "7d1282e9145edd9f80cb7732256df8d1d1c4abdabe13e0a8bc7af21299202105",
+  "market_runs": 0,
+  "next_gate": "Read all new exact-head hosted check outcomes once. When all gates pass, run fresh source/data/ledger-bound native source/observer gate with an actual owned child OS exit; market producer admission remains blocked until both gates and producer hook qualification pass.",
+  "old_hosted_head_results": {
+    "failed_count": 1,
+    "head": "8d81f165ffb2a790146044295bdbc1c531e8954f",
+    "macos": "success",
+    "skipped_count": 1,
+    "success_count": 6,
+    "ubuntu": "success",
+    "windows": "failed before compilation/tests at python -m pip check"
+  },
+  "old_hosted_windows_failure": {
+    "architecture_validation_skipped": true,
+    "command": "python -m pip check",
+    "compile_skipped": true,
+    "computational_source": "8d81f165ffb2a790146044295bdbc1c531e8954f",
+    "computational_source_unchanged": true,
+    "conclusion": "failure",
+    "conflict": "pipx 1.17.12 has requirement packaging>=26.3, but you have packaging 26.2.",
+    "exit_code": 1,
+    "failed_step": "Check dependency consistency",
+    "installed_lock_packaging": "26.2",
+    "job_id": 116048434486,
+    "live_enabled": false,
+    "market_runs": 0,
+    "next_gate": "Resolve or qualify the hosted dependency-isolation gate without weakening pinned research dependencies/checks; no producer admission until exact-source full hosted and native gates pass.",
+    "observed_at_utc": "2026-10-14T19:10:42.389Z",
+    "python": "3.12.10",
+    "raw_failure_lines": [
+      "2026-10-14T19:09:01.1674235Z     Found existing installation: packaging 26.3",
+      "2026-10-14T19:09:01.3005700Z       Successfully uninstalled packaging-26.3",
+      "2026-10-14T19:09:15.9200514Z pipx 1.17.12 requires packaging>=26.3, but you have packaging 26.2 which is incompatible.",
+      "2026-10-14T19:09:16.8159936Z pipx 1.17.12 has requirement packaging>=26.3, but you have packaging 26.2.",
+      "2026-10-14T19:09:16.9767062Z ##[error]Process completed with exit code 1."
+    ],
+    "research_only": true,
+    "run_id": 38621075974,
+    "schema": "nexus.macro-retest-v10-hosted-windows-pretest-failure.v1",
+    "scope": "Hosted Windows installed-environment dependency conflict before source compilation or tests. This run supplies no Windows v10 source-test outcome. Not classified as transient; no retry or lock/runner repair submitted.",
+    "steps": [
+      {
+        "conclusion": "success",
+        "name": "Set up job",
+        "number": 1,
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "name": "Check out repository",
+        "number": 2,
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "name": "Set up Python",
+        "number": 3,
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "name": "Install locked test dependencies",
+        "number": 4,
+        "status": "completed"
+      },
+      {
+        "conclusion": "failure",
+        "name": "Check dependency consistency",
+        "number": 5,
+        "status": "completed"
+      },
+      {
+        "conclusion": "skipped",
+        "name": "Compile Python sources",
+        "number": 6,
+        "status": "completed"
+      },
+      {
+        "conclusion": "skipped",
+        "name": "Validate NEXUS architecture contracts",
+        "number": 7,
+        "status": "completed"
+      },
+      {
+        "conclusion": "skipped",
+        "name": "Bind Project Memory validation to PR base SHA",
+        "number": 8,
+        "status": "completed"
+      },
+      {
+        "conclusion": "skipped",
+        "name": "Run tests",
+        "number": 9,
+        "status": "completed"
+      },
+      {
+        "conclusion": "skipped",
+        "name": "Post Set up Python",
+        "number": 17,
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "name": "Post Check out repository",
+        "number": 18,
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "name": "Complete job",
+        "number": 19,
+        "status": "completed"
+      }
+    ],
+    "tests_skipped": true,
+    "url": "https://github.com/saladinayoubi1/lbank-research-automation/actions/runs/38621075974/job/116048434486"
+  },
+  "owner_demo_admission": false,
+  "parent_sha": "8d81f165ffb2a790146044295bdbc1c531e8954f",
+  "primary_package_sources": [
+    "https://pypi.org/project/packaging/26.3/",
+    "https://packaging.pypa.io/en/stable/changelog.html"
+  ],
+  "protected_governance": {
+    "effect": "No protected workflow or policy edit was made. requirements-dev.lock is not on the protected-path list; the exact test dependency was advanced without weakening pip check or required checks.",
+    "instruction": "Frozen Phase 3 Gate 4 protected control-plane path changed; owner-controlled break-glass is required.",
+    "protected_path": ".github/workflows/tests.yml",
+    "sha": "3173896e354c5c979f4295d40b6554db70a96d7f",
+    "source": ".github/workflows/nexus-autopilot-policy.yml"
+  },
+  "recorded_at_utc": "2026-10-14T19:26:14.262456+00:00",
+  "remote_scope": "Pongs establish reachability only. No profile, runner or owner-state mutation.",
+  "research_only": true,
+  "runtime_lock_git_blob_sha1": "56de11c73f2100a33adbe09f58b0f36ac96430d5",
+  "runtime_lock_unchanged": true,
+  "schema": "nexus.macro-retest-v10-ci-pin-binding.v1"
+}

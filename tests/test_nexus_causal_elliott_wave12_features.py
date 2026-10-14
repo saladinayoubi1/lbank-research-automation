@@ -244,12 +244,12 @@ class IntegrationTests(unittest.TestCase):
 
     def test_all_previous_120_mechanisms_contracts_configs_and_risk_are_exact(self):
         prior = json.loads((ROOT/"tests/fixtures/elliott_v9_prior_inventory.json").read_text())
-        current = {k:v for k,v in research.FACTORY_SPECS.items() if k != IDENT}
+        current = {k:v for k,v in research.FACTORY_SPECS.items() if k not in (IDENT, "factory_causal_4h_break_1h_retest_cost_breakout")}
         self.assertEqual(current, prior["factory_specs"])
         self.assertEqual(list(current), prior["factory_ids"])
-        self.assertEqual([m for m in research.ALL_MECHANISMS if m != IDENT], prior["all_mechanisms"])
-        self.assertEqual([c for c in research.FRONTIER_CONFIGS if c["mechanism"] != IDENT], prior["frontier_configs"])
-        self.assertEqual((len(research.FACTORY_SPECS), len(research.ALL_MECHANISMS)), (94, 121))
+        self.assertEqual([m for m in research.ALL_MECHANISMS if m not in (IDENT, "factory_causal_4h_break_1h_retest_cost_breakout")], prior["all_mechanisms"])
+        self.assertEqual([c for c in research.FRONTIER_CONFIGS if c["mechanism"] not in (IDENT, "factory_causal_4h_break_1h_retest_cost_breakout")], prior["frontier_configs"])
+        self.assertEqual((len(research.FACTORY_SPECS), len(research.ALL_MECHANISMS)), (95, 122))
         source = (ROOT/"nexus_composite_strategy_research.py").read_text()
         node = next(n for n in ast.parse(source).body if isinstance(n, ast.FunctionDef) and n.name == "backtest")
         self.assertEqual(hashlib.sha256(ast.get_source_segment(source, node).encode()).hexdigest(), prior["backtest_function_sha256"])
@@ -269,7 +269,7 @@ class IntegrationTests(unittest.TestCase):
     def test_every_prior_frontier_tier_precedes_elliott(self):
         terminal = research.load_ledger(ROOT/"tests/fixtures/elliott_v9_terminal_ledger.json")
         for name in research.FRONTIER_MECHANISMS:
-            if name == IDENT: continue
+            if name in (IDENT, "factory_causal_4h_break_1h_retest_cost_breakout"): continue
             ledger = deepcopy(terminal)
             ledger["mechanisms_evaluated"] = [n for n in ledger["mechanisms_evaluated"] if n != name]
             ledger["frontier_screened_mechanisms"] = [n for n in ledger["frontier_screened_mechanisms"] if n != name]

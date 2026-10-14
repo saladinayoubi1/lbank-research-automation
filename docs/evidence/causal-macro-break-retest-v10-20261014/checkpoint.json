@@ -1,0 +1,30 @@
+{
+  "auto_demo_promotion": false,
+  "candidate_config": {
+    "entry_model": "closed_4h_1h_15m_next_open",
+    "factory_contract_digest": "41585ddb65bde9083aa286c87cdb87aee97eaf6771b7e586b63a2b4ee097378d",
+    "mechanism": "factory_causal_4h_break_1h_retest_cost_breakout",
+    "risk_variant": 0
+  },
+  "candidate_config_fingerprint": "72752d70fa446f871fd0c44fdbf03f61dc99f3d417612226401e62a850a28ea4",
+  "failover_enabled": false,
+  "independent_strategy_qa_complete": false,
+  "laptop1_sole_paper_writer": true,
+  "live_enabled": false,
+  "market_backtests_submitted": 0,
+  "next_step": "Implement one additive helper/proposal and approved-field extension; verify source/causal/compatibility/observational hooks. Only then freeze one fresh source/data/ledger-bound producer. Do not replay v8/v9 or retune observed later folds.",
+  "owner_demo_admission": false,
+  "parent_computational_source": "8c06ca692a06611431730e4aeb822b1d9f47f30d",
+  "parent_evidence_head": "214ca1864acef609a6061bd0134e881f266c809f",
+  "preregistration_digest": "76d6162e5bae2685715287db0b54979e99f26180b5e34a29ea673d41b1708e08",
+  "prior_inventory_semantic_digest": "58d641e9ec8a2b689407fbdf033c415a8e6ff5024e56fc1a1f4cd7f99c6ad2ee",
+  "proposal_only": true,
+  "research_only": true,
+  "runtime_registered": false,
+  "schema": "nexus.macro-retest-v10-preregistration-checkpoint.v1",
+  "source_helper_implemented": false,
+  "source_tests_run": 0,
+  "terminal_predecessor_file_sha256": "14cc329d8acd02fbc3a13268826446f44d05dcf9eb299a6c13738558342f401c",
+  "terminal_predecessor_ledger_digest": "b784b409c16b77fa5d6dd5d65b7f8ed67e13e65aa6d230a74e843f9e63720e8f",
+  "terminal_predecessor_native_path": "E:\\NEXUS-QA\\causal-elliott-wave12-v9-first-producer-20261014T161923Z\\producer\\novelty-ledger.json"
+}

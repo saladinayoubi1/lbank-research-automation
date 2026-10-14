@@ -48,6 +48,7 @@ CONTEXT_FIELDS = frozenset({
     "lagged_utc_slot_volume_ratio_7d", "lagged_utc_slot_volume_cv_7d",
     "lagged_bullish_butterfly_event",
     "lagged_elliott_wave12_active",
+    "lagged_macro_retest_active",
 })
 ENTRY_FIELDS = frozenset({
     "open", "high", "low", "close", "close_location", "body_efficiency",
@@ -56,6 +57,7 @@ ENTRY_FIELDS = frozenset({
     "previous_close",
     "lagged_butterfly_rebound_price",
     "elliott_wave12_close_breakout_event",
+    "macro_retest_close_breakout_event", "macro_retest_stress_cost_feasible",
 })
 PEER_FIELDS = frozenset({
     "cross_pair_relative_z_previous", "lagged_peer_impulse",

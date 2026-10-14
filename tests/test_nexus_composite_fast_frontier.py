@@ -150,6 +150,9 @@ def test_all_frontier_mechanisms_emit_bounded_boolean_signals():
         "lagged_butterfly_rebound_price": [100.] * n,
         "lagged_elliott_wave12_active": [0.] * n,
         "elliott_wave12_close_breakout_event": [0.] * n,
+        "lagged_macro_retest_active": [0.] * n,
+        "macro_retest_close_breakout_event": [0.] * n,
+        "macro_retest_stress_cost_feasible": [0.] * n,
     })
     for mechanism in research.FRONTIER_MECHANISMS:
         config = next(row for row in research.FRONTIER_CONFIGS if row["mechanism"] == mechanism)

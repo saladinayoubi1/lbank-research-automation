@@ -1,0 +1,5723 @@
+{
+  "all_mechanisms": [
+    "structural_pullback",
+    "volatility_compression_expansion",
+    "bar_proxy_vwap_reclaim",
+    "failed_range_break_reversal",
+    "cross_pair_relative_reclaim",
+    "lagged_peer_impulse_confirmation",
+    "peer_shock_noncontagion_rebound",
+    "relative_momentum_reacceleration",
+    "lagged_peer_volatility_release",
+    "cross_pair_volatility_catchup",
+    "regime_conditional_composite",
+    "multi_horizon_trend_reacceleration",
+    "trend_vwap_pullback_reclaim",
+    "volume_dryup_breakout",
+    "range_midpoint_reclaim",
+    "downside_exhaustion_rebound",
+    "volatility_contraction_trend_reentry",
+    "volatility_expansion_pullback_reclaim",
+    "relative_strength_persistence_breakout",
+    "relative_weakness_exhaustion_rebound",
+    "volatility_leadership_reversal",
+    "trend_efficiency_breakout",
+    "serial_dependence_breakout",
+    "range_wick_absorption_rebound",
+    "volatility_of_volatility_release",
+    "peer_beta_residual_reclaim",
+    "prior_day_breakout_continuation",
+    "factory_efficiency_midpoint_reclaim",
+    "factory_efficiency_vwap_reclaim",
+    "factory_negative_serial_range_rebound",
+    "factory_serial_prior_day_continuation",
+    "factory_wick_trend_reentry",
+    "factory_wick_vwap_reclaim",
+    "factory_vov_midpoint_release",
+    "factory_vov_prior_day_release",
+    "factory_peer_residual_vwap_reclaim",
+    "factory_peer_residual_range_break",
+    "factory_peer_volatility_midpoint_catchup",
+    "factory_relative_momentum_vwap_reclaim",
+    "factory_gen_efficiency_up_midpoint_reclaim",
+    "factory_gen_efficiency_up_vwap_reclaim",
+    "factory_gen_efficiency_up_local_breakout",
+    "factory_gen_efficiency_up_failed_downside_reclaim",
+    "factory_gen_efficiency_up_prior_day_breakout",
+    "factory_gen_serial_positive_midpoint_reclaim",
+    "factory_gen_serial_positive_vwap_reclaim",
+    "factory_gen_serial_positive_local_breakout",
+    "factory_gen_serial_positive_failed_downside_reclaim",
+    "factory_gen_serial_positive_prior_day_breakout",
+    "factory_gen_wick_range_midpoint_reclaim",
+    "factory_gen_wick_range_vwap_reclaim",
+    "factory_gen_wick_range_local_breakout",
+    "factory_gen_wick_range_failed_downside_reclaim",
+    "factory_gen_wick_range_prior_day_breakout",
+    "factory_gen_vov_compression_midpoint_reclaim",
+    "factory_gen_vov_compression_vwap_reclaim",
+    "factory_gen_vov_compression_local_breakout",
+    "factory_gen_vov_compression_failed_downside_reclaim",
+    "factory_gen_vov_compression_prior_day_breakout",
+    "factory_gen_peer_residual_negative_midpoint_reclaim",
+    "factory_gen_peer_residual_negative_vwap_reclaim",
+    "factory_gen_peer_residual_negative_local_breakout",
+    "factory_gen_peer_residual_negative_failed_downside_reclaim",
+    "factory_gen_downside_tail_exhaustion_midpoint_reclaim",
+    "factory_gen_downside_tail_exhaustion_vwap_reclaim",
+    "factory_gen_downside_tail_exhaustion_local_breakout",
+    "factory_gen_downside_tail_exhaustion_failed_downside_reclaim",
+    "factory_gen_downside_tail_exhaustion_prior_day_breakout",
+    "factory_gen_positive_tail_trend_midpoint_reclaim",
+    "factory_gen_positive_tail_trend_vwap_reclaim",
+    "factory_gen_positive_tail_trend_local_breakout",
+    "factory_gen_positive_tail_trend_failed_downside_reclaim",
+    "factory_gen_positive_tail_trend_prior_day_breakout",
+    "factory_gen_deep_drawdown_recovery_midpoint_reclaim",
+    "factory_gen_deep_drawdown_recovery_vwap_reclaim",
+    "factory_gen_deep_drawdown_recovery_local_breakout",
+    "factory_gen_deep_drawdown_recovery_failed_downside_reclaim",
+    "factory_gen_deep_drawdown_recovery_prior_day_breakout",
+    "factory_gen_shallow_drawdown_acceptance_midpoint_reclaim",
+    "factory_gen_shallow_drawdown_acceptance_vwap_reclaim",
+    "factory_gen_shallow_drawdown_acceptance_local_breakout",
+    "factory_gen_shallow_drawdown_acceptance_failed_downside_reclaim",
+    "factory_gen_shallow_drawdown_acceptance_prior_day_breakout",
+    "factory_gen_wick_pressure_range_midpoint_reclaim",
+    "factory_gen_wick_pressure_range_vwap_reclaim",
+    "factory_gen_wick_pressure_range_local_breakout",
+    "factory_gen_wick_pressure_range_failed_downside_reclaim",
+    "factory_gen_wick_pressure_range_prior_day_breakout",
+    "factory_gen_wick_pressure_trend_midpoint_reclaim",
+    "factory_gen_wick_pressure_trend_vwap_reclaim",
+    "factory_gen_wick_pressure_trend_local_breakout",
+    "factory_gen_wick_pressure_trend_failed_downside_reclaim",
+    "factory_gen_wick_pressure_trend_prior_day_breakout",
+    "factory_gen_volatility_cluster_release_midpoint_reclaim",
+    "factory_gen_volatility_cluster_release_vwap_reclaim",
+    "factory_gen_volatility_cluster_release_local_breakout",
+    "factory_gen_volatility_cluster_release_failed_downside_reclaim",
+    "factory_gen_volatility_cluster_release_prior_day_breakout",
+    "factory_gen_peer_lead_followthrough_midpoint_reclaim",
+    "factory_gen_directional_order_trend_midpoint_reclaim",
+    "factory_gen_directional_order_trend_vwap_reclaim",
+    "factory_gen_directional_order_trend_local_breakout",
+    "factory_gen_directional_order_trend_failed_downside_reclaim",
+    "factory_gen_directional_order_trend_prior_day_breakout",
+    "factory_gen_range_memory_compression_midpoint_reclaim",
+    "factory_gen_range_memory_compression_vwap_reclaim",
+    "factory_gen_range_memory_compression_local_breakout",
+    "factory_gen_range_memory_compression_failed_downside_reclaim",
+    "factory_gen_range_memory_compression_prior_day_breakout",
+    "factory_gen_volume_return_participation_midpoint_reclaim",
+    "factory_gen_volume_return_participation_vwap_reclaim",
+    "factory_gen_volume_return_participation_local_breakout",
+    "factory_gen_volume_return_participation_failed_downside_reclaim",
+    "factory_gen_volume_return_participation_prior_day_breakout",
+    "factory_peer_lead_beta_failure_reclaim",
+    "factory_entropy_volcluster_break",
+    "factory_isolated_downshock_recovery",
+    "factory_isolated_upshock_followthrough",
+    "factory_utc_slot_volume_breakout",
+    "factory_causal_bullish_butterfly",
+    "factory_causal_elliott_wave12_breakout"
+  ],
+  "factory_specs": {
+    "factory_causal_bullish_butterfly": {
+      "context": [
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_bullish_butterfly_event",
+          "op": "eq",
+          "value": 1.0
+        }
+      ],
+      "contract_digest": "fb52c0ea9c8fdd785f0133c2c216a3b8a9478691492b4a12924452909cf0ebc9",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "previous_close",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "ge",
+          "other": "lagged_butterfly_rebound_price",
+          "scale": 1.0
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "confirmed_harmonic_reversal",
+      "hypothesis": "A fixed bullish five-pivot Butterfly geometry, observed only after strict three-right-bar pivot confirmation and one lagged context bar, may identify a tradable overextension reversal after a separate closed bullish response. Shared ATR risk/cost rules remain fixed; this exploratory hypothesis claims no positive expectancy.",
+      "id": "factory_causal_bullish_butterfly",
+      "peer_required": false,
+      "topology_digest": "f892eef0bdc2c90b1945e745e5464b4ec4456fe9264ce697a2c439849f084425"
+    },
+    "factory_causal_elliott_wave12_breakout": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_elliott_wave12_active",
+          "op": "eq",
+          "value": 1.0
+        }
+      ],
+      "contract_digest": "96c8d7106e88a93f53a789251f76ea00d68c1678235b40575dd982a2e934c976",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "previous_close",
+          "scale": 1.0
+        },
+        {
+          "field": "elliott_wave12_close_breakout_event",
+          "op": "eq",
+          "value": 1.0
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "confirmed_wave12_continuation",
+      "hypothesis": "An Elliott-inspired low-high-higher-low setup, observed only after strict pivot confirmation and a lagged state, may precede continuation when price freshly closes above the proposed wave-one high. Completed 4h structure and 1h volatility gates remain fixed. This is a deterministic early-wave proxy, not a verified complete Elliott count or positive-expectancy claim.",
+      "id": "factory_causal_elliott_wave12_breakout",
+      "peer_required": false,
+      "topology_digest": "9cf9bdfc24e8b5b3d7304f2aaccee1889a2f71b3d7dd85f1748ef6a85a1f286a"
+    },
+    "factory_efficiency_midpoint_reclaim": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "trend_efficiency_16",
+          "op": "ge",
+          "value": 0.45
+        },
+        {
+          "field": "trend_direction_16",
+          "op": "gt",
+          "value": 0.004
+        }
+      ],
+      "contract_digest": "9557ae433f757b072d294fdd210f3ae8cb5cd60e313dd9dddca09e3bceccfa4a",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.62
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.85
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "path_efficiency_reclaim",
+      "hypothesis": "High lagged directional path efficiency may identify persistent auction pressure that survives a later closed pullback-and-reclaim of the prior range midpoint.",
+      "id": "factory_efficiency_midpoint_reclaim",
+      "peer_required": false,
+      "topology_digest": "892daa0cc6bba9ced31bd316bce2e71496289c6bc0e0cb836646baf4748f9b8b"
+    },
+    "factory_efficiency_vwap_reclaim": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "trend_efficiency_16",
+          "op": "ge",
+          "value": 0.5
+        }
+      ],
+      "contract_digest": "2dcdd7db7085b4a1daaecf3facd55607c8d3582045554eb9f2baf2d9657f2fc5",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.6
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.8
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "path_efficiency_vwap_reclaim",
+      "hypothesis": "A causally efficient completed trend may retain directional pressure when a later closed candle reclaims the session bar-volume price proxy after an intrabar dip.",
+      "id": "factory_efficiency_vwap_reclaim",
+      "peer_required": false,
+      "topology_digest": "65e42b924d9d12d9aed92614dd98e46274abfb5a5e19e602764da5762e0dd5c0"
+    },
+    "factory_entropy_volcluster_break": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_directional_entropy_64",
+          "op": "le",
+          "value": 0.58
+        },
+        {
+          "field": "lagged_abs_return_autocorr_48",
+          "op": "ge",
+          "value": 0.12
+        },
+        {
+          "field": "lagged_volume_return_corr_64",
+          "op": "ge",
+          "value": 0.18
+        }
+      ],
+      "contract_digest": "ba3dfb4028df008ce946aa9c53b22f4ef6391e9f798cf17ff38c210ae8f0fd31",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_hi",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 1.1
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "entropy_volatility_cluster_break",
+      "hypothesis": "A low-entropy directional path combined with lagged absolute-return persistence and independently observed lagged volume-to-absolute-return coupling may distinguish a 15-minute structural expansion in completed 4h up-market context from unconditional momentum. No hidden order book or trade-signed volume is inferred; historical results are non-pristine diagnostics only.",
+      "id": "factory_entropy_volcluster_break",
+      "peer_required": false,
+      "topology_digest": "d48445597c7979ad6dbb8def8ef0fefc685af6b4f2dc9b16fbb1f74300294408"
+    },
+    "factory_gen_deep_drawdown_recovery_failed_downside_reclaim": {
+      "context": [
+        {
+          "field": "h4_range",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_drawdown_depth_32",
+          "op": "le",
+          "value": -0.025
+        },
+        {
+          "field": "lagged_recovery_from_low_32",
+          "op": "ge",
+          "value": 0.015
+        }
+      ],
+      "contract_digest": "802de4e9b879e475bf3a81d36f6233382b0ff625942aa1c253bb9468cd0c7d86",
+      "entry": [
+        {
+          "field": "low",
+          "op": "lt",
+          "other": "prior_lo",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_lo",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_deep_drawdown_recovery_failed_downside_reclaim",
+      "hypothesis": "Reviewed causal context deep_drawdown_recovery is combined with later closed-bar confirmation failed_downside_reclaim; selection remains Training-only.",
+      "id": "factory_gen_deep_drawdown_recovery_failed_downside_reclaim",
+      "peer_required": false,
+      "topology_digest": "ce19f36484881aee8428f5d575a25e0ae7559a3d2e73df4279aac5b7242ea0b1"
+    },
+    "factory_gen_deep_drawdown_recovery_local_breakout": {
+      "context": [
+        {
+          "field": "h4_range",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_drawdown_depth_32",
+          "op": "le",
+          "value": -0.025
+        },
+        {
+          "field": "lagged_recovery_from_low_32",
+          "op": "ge",
+          "value": 0.015
+        }
+      ],
+      "contract_digest": "86b0f2a055acf1fd2ac74dfb920786b0276cdf2a42f7ffb4393d2be55367d06e",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_hi",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.95
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_deep_drawdown_recovery_local_breakout",
+      "hypothesis": "Reviewed causal context deep_drawdown_recovery is combined with later closed-bar confirmation local_breakout; selection remains Training-only.",
+      "id": "factory_gen_deep_drawdown_recovery_local_breakout",
+      "peer_required": false,
+      "topology_digest": "312e46c9183a35b2702f296434960bae58befa8805a0c5a84bed2e019cc40b65"
+    },
+    "factory_gen_deep_drawdown_recovery_midpoint_reclaim": {
+      "context": [
+        {
+          "field": "h4_range",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_drawdown_depth_32",
+          "op": "le",
+          "value": -0.025
+        },
+        {
+          "field": "lagged_recovery_from_low_32",
+          "op": "ge",
+          "value": 0.015
+        }
+      ],
+      "contract_digest": "50528284e82e9a494bff5a1e8ecfee27174d59f352b92f0eab8ce2dbff867621",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.9
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_deep_drawdown_recovery_midpoint_reclaim",
+      "hypothesis": "Reviewed causal context deep_drawdown_recovery is combined with later closed-bar confirmation midpoint_reclaim; selection remains Training-only.",
+      "id": "factory_gen_deep_drawdown_recovery_midpoint_reclaim",
+      "peer_required": false,
+      "topology_digest": "af6d855f515f25a730bb618d31e8fe5ca952a3972bf3b0b8f60bc5acfad090d1"
+    },
+    "factory_gen_deep_drawdown_recovery_prior_day_breakout": {
+      "context": [
+        {
+          "field": "h4_range",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_drawdown_depth_32",
+          "op": "le",
+          "value": -0.025
+        },
+        {
+          "field": "lagged_recovery_from_low_32",
+          "op": "ge",
+          "value": 0.015
+        }
+      ],
+      "contract_digest": "d3b7492ca16b41c718f66a14dbad36e983db6b736d0a8f58ffa31d3c38db7791",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_day_high",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.95
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_deep_drawdown_recovery_prior_day_breakout",
+      "hypothesis": "Reviewed causal context deep_drawdown_recovery is combined with later closed-bar confirmation prior_day_breakout; selection remains Training-only.",
+      "id": "factory_gen_deep_drawdown_recovery_prior_day_breakout",
+      "peer_required": false,
+      "topology_digest": "2b95d819e2a1c4babb0b47baab38b5b0ea3d902c61034a293e6b3fb5f5ddfe2e"
+    },
+    "factory_gen_deep_drawdown_recovery_vwap_reclaim": {
+      "context": [
+        {
+          "field": "h4_range",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_drawdown_depth_32",
+          "op": "le",
+          "value": -0.025
+        },
+        {
+          "field": "lagged_recovery_from_low_32",
+          "op": "ge",
+          "value": 0.015
+        }
+      ],
+      "contract_digest": "24461a4812f4e6a7dca2355b3308764b6978e3343bb21591a73e916a9b1f0e70",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.6
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_deep_drawdown_recovery_vwap_reclaim",
+      "hypothesis": "Reviewed causal context deep_drawdown_recovery is combined with later closed-bar confirmation vwap_reclaim; selection remains Training-only.",
+      "id": "factory_gen_deep_drawdown_recovery_vwap_reclaim",
+      "peer_required": false,
+      "topology_digest": "ee3e50706313a7558f09e7a98f7d3616efee90522bf6ab6cc45cb51960d139e4"
+    },
+    "factory_gen_directional_order_trend_failed_downside_reclaim": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "trend_direction_16",
+          "op": "gt",
+          "value": 0.0
+        },
+        {
+          "field": "lagged_directional_entropy_64",
+          "op": "le",
+          "value": 0.78
+        }
+      ],
+      "contract_digest": "84fa423dc80825161ac34baf255c5c1d10f0bf54704cb1ab118ae163393e4897",
+      "entry": [
+        {
+          "field": "low",
+          "op": "lt",
+          "other": "prior_lo",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_lo",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_directional_order_trend_failed_downside_reclaim",
+      "hypothesis": "Reviewed causal context directional_order_trend is combined with later closed-bar confirmation failed_downside_reclaim; selection remains Training-only.",
+      "id": "factory_gen_directional_order_trend_failed_downside_reclaim",
+      "peer_required": false,
+      "topology_digest": "e2ba26c34bf83a8dbcd6c0a29562f642919870c89f5e7207873907d5a0d4eddf"
+    },
+    "factory_gen_directional_order_trend_local_breakout": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "trend_direction_16",
+          "op": "gt",
+          "value": 0.0
+        },
+        {
+          "field": "lagged_directional_entropy_64",
+          "op": "le",
+          "value": 0.78
+        }
+      ],
+      "contract_digest": "930e9620b66b9973589017638e6782a57406b62ea781679a4b25678c5dfeb9d8",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_hi",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.95
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_directional_order_trend_local_breakout",
+      "hypothesis": "Reviewed causal context directional_order_trend is combined with later closed-bar confirmation local_breakout; selection remains Training-only.",
+      "id": "factory_gen_directional_order_trend_local_breakout",
+      "peer_required": false,
+      "topology_digest": "8ec22a2565996336b388bdb5930f7cf969f3e264abddd6359ff7027b3f36c40d"
+    },
+    "factory_gen_directional_order_trend_midpoint_reclaim": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "trend_direction_16",
+          "op": "gt",
+          "value": 0.0
+        },
+        {
+          "field": "lagged_directional_entropy_64",
+          "op": "le",
+          "value": 0.78
+        }
+      ],
+      "contract_digest": "0ea48011a9a28dd3a57ba00cd5b6a8e4b9ac4cc3fa4000d83af26040bf56ae1a",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.9
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_directional_order_trend_midpoint_reclaim",
+      "hypothesis": "Reviewed causal context directional_order_trend is combined with later closed-bar confirmation midpoint_reclaim; selection remains Training-only.",
+      "id": "factory_gen_directional_order_trend_midpoint_reclaim",
+      "peer_required": false,
+      "topology_digest": "8cda7ea5522e40171e9bdf141bf169ec5599c3e17bbed41205ba03685b97aa10"
+    },
+    "factory_gen_directional_order_trend_prior_day_breakout": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "trend_direction_16",
+          "op": "gt",
+          "value": 0.0
+        },
+        {
+          "field": "lagged_directional_entropy_64",
+          "op": "le",
+          "value": 0.78
+        }
+      ],
+      "contract_digest": "9e7b6ce00b2c4fd702b6d8a394448a6e5e8b2a67b52f76c04cf5568b71ec8490",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_day_high",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.95
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_directional_order_trend_prior_day_breakout",
+      "hypothesis": "Reviewed causal context directional_order_trend is combined with later closed-bar confirmation prior_day_breakout; selection remains Training-only.",
+      "id": "factory_gen_directional_order_trend_prior_day_breakout",
+      "peer_required": false,
+      "topology_digest": "6499dfff32d5a2a2df0d85c70d98d08c9bc1c43836ee7024af8b2dec944648c6"
+    },
+    "factory_gen_directional_order_trend_vwap_reclaim": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "trend_direction_16",
+          "op": "gt",
+          "value": 0.0
+        },
+        {
+          "field": "lagged_directional_entropy_64",
+          "op": "le",
+          "value": 0.78
+        }
+      ],
+      "contract_digest": "7150d45d85877b88e62dd15e69ebc6d39f74f82db048939863678aeb5c3d2e8a",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.6
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_directional_order_trend_vwap_reclaim",
+      "hypothesis": "Reviewed causal context directional_order_trend is combined with later closed-bar confirmation vwap_reclaim; selection remains Training-only.",
+      "id": "factory_gen_directional_order_trend_vwap_reclaim",
+      "peer_required": false,
+      "topology_digest": "84fe6eb284971bf55da9cb6e36e8d165999b807090aaca43aef071b205a3ac9f"
+    },
+    "factory_gen_downside_tail_exhaustion_failed_downside_reclaim": {
+      "context": [
+        {
+          "field": "h4_range",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_return_skew_64",
+          "op": "le",
+          "value": -0.75
+        },
+        {
+          "field": "lagged_downside_variance_share_64",
+          "op": "ge",
+          "value": 0.65
+        }
+      ],
+      "contract_digest": "6514231ac1e560d3d1bdbc7516b7a8edc44411f19006be791f931924cfd1327a",
+      "entry": [
+        {
+          "field": "low",
+          "op": "lt",
+          "other": "prior_lo",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_lo",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_downside_tail_exhaustion_failed_downside_reclaim",
+      "hypothesis": "Reviewed causal context downside_tail_exhaustion is combined with later closed-bar confirmation failed_downside_reclaim; selection remains Training-only.",
+      "id": "factory_gen_downside_tail_exhaustion_failed_downside_reclaim",
+      "peer_required": false,
+      "topology_digest": "30117ae7d6ff17d104cc173541de7593ad4d2a88db9c634aafefaa3e40ac9966"
+    },
+    "factory_gen_downside_tail_exhaustion_local_breakout": {
+      "context": [
+        {
+          "field": "h4_range",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_return_skew_64",
+          "op": "le",
+          "value": -0.75
+        },
+        {
+          "field": "lagged_downside_variance_share_64",
+          "op": "ge",
+          "value": 0.65
+        }
+      ],
+      "contract_digest": "3109d549b4df8ec47cf7532a1fa792546179811688268c5ba9d982d2d8378709",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_hi",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.95
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_downside_tail_exhaustion_local_breakout",
+      "hypothesis": "Reviewed causal context downside_tail_exhaustion is combined with later closed-bar confirmation local_breakout; selection remains Training-only.",
+      "id": "factory_gen_downside_tail_exhaustion_local_breakout",
+      "peer_required": false,
+      "topology_digest": "a40eda805096b92c5f8b41f2546f9de78b7fb3ffbca360715ad98da484f9651c"
+    },
+    "factory_gen_downside_tail_exhaustion_midpoint_reclaim": {
+      "context": [
+        {
+          "field": "h4_range",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_return_skew_64",
+          "op": "le",
+          "value": -0.75
+        },
+        {
+          "field": "lagged_downside_variance_share_64",
+          "op": "ge",
+          "value": 0.65
+        }
+      ],
+      "contract_digest": "6dfd064bc2692b50a821775158cf90d4fb263b18ac61393ee7467215fa6ec870",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.9
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_downside_tail_exhaustion_midpoint_reclaim",
+      "hypothesis": "Reviewed causal context downside_tail_exhaustion is combined with later closed-bar confirmation midpoint_reclaim; selection remains Training-only.",
+      "id": "factory_gen_downside_tail_exhaustion_midpoint_reclaim",
+      "peer_required": false,
+      "topology_digest": "8d8fd74820cf32be6070756a1b4708592ebe2db66440efd3608d10680c629b71"
+    },
+    "factory_gen_downside_tail_exhaustion_prior_day_breakout": {
+      "context": [
+        {
+          "field": "h4_range",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_return_skew_64",
+          "op": "le",
+          "value": -0.75
+        },
+        {
+          "field": "lagged_downside_variance_share_64",
+          "op": "ge",
+          "value": 0.65
+        }
+      ],
+      "contract_digest": "32ccdbd527530b7f4545707ee4f181566e7342f2255b46d4c9f3d26fb91bbf8d",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_day_high",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.95
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_downside_tail_exhaustion_prior_day_breakout",
+      "hypothesis": "Reviewed causal context downside_tail_exhaustion is combined with later closed-bar confirmation prior_day_breakout; selection remains Training-only.",
+      "id": "factory_gen_downside_tail_exhaustion_prior_day_breakout",
+      "peer_required": false,
+      "topology_digest": "ec5c9dc37dd02fc96a30ad61bc52a8c6ec9b0dac4610171457a0ecd468966576"
+    },
+    "factory_gen_downside_tail_exhaustion_vwap_reclaim": {
+      "context": [
+        {
+          "field": "h4_range",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_return_skew_64",
+          "op": "le",
+          "value": -0.75
+        },
+        {
+          "field": "lagged_downside_variance_share_64",
+          "op": "ge",
+          "value": 0.65
+        }
+      ],
+      "contract_digest": "94843bb78a2b9948204a8e62b4ea6745725465ce2f32529e97569120d84dad80",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.6
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_downside_tail_exhaustion_vwap_reclaim",
+      "hypothesis": "Reviewed causal context downside_tail_exhaustion is combined with later closed-bar confirmation vwap_reclaim; selection remains Training-only.",
+      "id": "factory_gen_downside_tail_exhaustion_vwap_reclaim",
+      "peer_required": false,
+      "topology_digest": "52f8af37bc868c7546ca1340c1abdbc8f6c5afcd796d23ba9d83235e1f839890"
+    },
+    "factory_gen_efficiency_up_failed_downside_reclaim": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "trend_efficiency_16",
+          "op": "ge",
+          "value": 0.45
+        }
+      ],
+      "contract_digest": "c1ef3d583bbca292db03502f05ce0ae4b11fb1b6b71bb37aecad076379c4a2d0",
+      "entry": [
+        {
+          "field": "low",
+          "op": "lt",
+          "other": "prior_lo",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_lo",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_efficiency_up_failed_downside_reclaim",
+      "hypothesis": "Reviewed causal context efficiency_up is combined with later closed-bar confirmation failed_downside_reclaim; selection remains Training-only.",
+      "id": "factory_gen_efficiency_up_failed_downside_reclaim",
+      "peer_required": false,
+      "topology_digest": "ccbf12ae885b7ff455bc01363952c757ac33f7278e278d7847b4fdf8addd7367"
+    },
+    "factory_gen_efficiency_up_local_breakout": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "trend_efficiency_16",
+          "op": "ge",
+          "value": 0.45
+        }
+      ],
+      "contract_digest": "77dc1f6e590f5b5c04f621db574a6f3a51ae608c5e4323031557b5714da6c015",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_hi",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.95
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_efficiency_up_local_breakout",
+      "hypothesis": "Reviewed causal context efficiency_up is combined with later closed-bar confirmation local_breakout; selection remains Training-only.",
+      "id": "factory_gen_efficiency_up_local_breakout",
+      "peer_required": false,
+      "topology_digest": "2469e5823f5efdc286a85bb02549a0ed6f0992d76837edf52cc88ffbde3b472e"
+    },
+    "factory_gen_efficiency_up_midpoint_reclaim": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "trend_efficiency_16",
+          "op": "ge",
+          "value": 0.45
+        }
+      ],
+      "contract_digest": "ce10e212f7a9949f206ef8c1138d7fc90b97774ad04a2bb1447ab0f5e92b71ab",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.9
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_efficiency_up_midpoint_reclaim",
+      "hypothesis": "Reviewed causal context efficiency_up is combined with later closed-bar confirmation midpoint_reclaim; selection remains Training-only.",
+      "id": "factory_gen_efficiency_up_midpoint_reclaim",
+      "peer_required": false,
+      "topology_digest": "a6d05b5b4d64efe389868ae73b98af3276a491029637945fa8d063e78b6b826e"
+    },
+    "factory_gen_efficiency_up_prior_day_breakout": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "trend_efficiency_16",
+          "op": "ge",
+          "value": 0.45
+        }
+      ],
+      "contract_digest": "f632215690f18e605c9605338e899e8f6ac72cb0faa7bdf6dfb52186536e230a",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_day_high",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.95
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_efficiency_up_prior_day_breakout",
+      "hypothesis": "Reviewed causal context efficiency_up is combined with later closed-bar confirmation prior_day_breakout; selection remains Training-only.",
+      "id": "factory_gen_efficiency_up_prior_day_breakout",
+      "peer_required": false,
+      "topology_digest": "2b366143740035074d08d35259e7025c3f9a53e9bbf876e4dc04a2de33b03766"
+    },
+    "factory_gen_efficiency_up_vwap_reclaim": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "trend_efficiency_16",
+          "op": "ge",
+          "value": 0.45
+        }
+      ],
+      "contract_digest": "cb5d89177f5a568a346b9196b808b96749afbe95ed4bbb5e9f5d1ee1b51a8e60",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.6
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_efficiency_up_vwap_reclaim",
+      "hypothesis": "Reviewed causal context efficiency_up is combined with later closed-bar confirmation vwap_reclaim; selection remains Training-only.",
+      "id": "factory_gen_efficiency_up_vwap_reclaim",
+      "peer_required": false,
+      "topology_digest": "30ea5ad41f4f4e06d113872f017250604e87de0da9a3d61761697735697ef255"
+    },
+    "factory_gen_peer_lead_followthrough_midpoint_reclaim": {
+      "context": [
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_peer_lead_corr_96",
+          "op": "ge",
+          "value": 0.15
+        },
+        {
+          "field": "lagged_peer_impulse",
+          "op": "gt",
+          "value": 0.0
+        }
+      ],
+      "contract_digest": "c7b833a683da9a1c5234c0a7cbf45f8a4c036d095b0df2e2566faa62659bb709",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.9
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_peer_lead_followthrough_midpoint_reclaim",
+      "hypothesis": "Reviewed causal context peer_lead_followthrough is combined with later closed-bar confirmation midpoint_reclaim; selection remains Training-only.",
+      "id": "factory_gen_peer_lead_followthrough_midpoint_reclaim",
+      "peer_required": true,
+      "topology_digest": "8cc945a3c2e1ff9dbd7e9c2577fdd5cbeae8611ec3bb4978e16b5ef68db05a10"
+    },
+    "factory_gen_peer_residual_negative_failed_downside_reclaim": {
+      "context": [
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "peer_beta_lagged",
+          "op": "gt",
+          "value": 0.0
+        },
+        {
+          "field": "lagged_peer_beta_residual",
+          "op": "lt",
+          "other": "peer_beta_residual_scale",
+          "scale": -1.1
+        }
+      ],
+      "contract_digest": "562f0dcbbe769df6c7fc5c481acc249b0936b39d0dd8aa69ff0cb8cc8b419985",
+      "entry": [
+        {
+          "field": "low",
+          "op": "lt",
+          "other": "prior_lo",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_lo",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_peer_residual_negative_failed_downside_reclaim",
+      "hypothesis": "Reviewed causal context peer_residual_negative is combined with later closed-bar confirmation failed_downside_reclaim; selection remains Training-only.",
+      "id": "factory_gen_peer_residual_negative_failed_downside_reclaim",
+      "peer_required": true,
+      "topology_digest": "5a719bd0e74fa6a83c78e679a527410b365e74781198c864ec924c2639722d06"
+    },
+    "factory_gen_peer_residual_negative_local_breakout": {
+      "context": [
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "peer_beta_lagged",
+          "op": "gt",
+          "value": 0.0
+        },
+        {
+          "field": "lagged_peer_beta_residual",
+          "op": "lt",
+          "other": "peer_beta_residual_scale",
+          "scale": -1.1
+        }
+      ],
+      "contract_digest": "2a9cd9ab1bc02eaca4c216c18215ead81b3b45e66f15bf9f43e6492dab32abbc",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_hi",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.95
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_peer_residual_negative_local_breakout",
+      "hypothesis": "Reviewed causal context peer_residual_negative is combined with later closed-bar confirmation local_breakout; selection remains Training-only.",
+      "id": "factory_gen_peer_residual_negative_local_breakout",
+      "peer_required": true,
+      "topology_digest": "91790fc9a8e29c6cf7ffb2752ed91431173c04d3807f706a493b380de0d90ef1"
+    },
+    "factory_gen_peer_residual_negative_midpoint_reclaim": {
+      "context": [
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "peer_beta_lagged",
+          "op": "gt",
+          "value": 0.0
+        },
+        {
+          "field": "lagged_peer_beta_residual",
+          "op": "lt",
+          "other": "peer_beta_residual_scale",
+          "scale": -1.1
+        }
+      ],
+      "contract_digest": "eba8c830b0f110fd5e981cd8a5caf0c973391697070146b36ac9cf724851bf7a",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.9
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_peer_residual_negative_midpoint_reclaim",
+      "hypothesis": "Reviewed causal context peer_residual_negative is combined with later closed-bar confirmation midpoint_reclaim; selection remains Training-only.",
+      "id": "factory_gen_peer_residual_negative_midpoint_reclaim",
+      "peer_required": true,
+      "topology_digest": "144daef1100e0e82a8ec66b4df71e432cd6524b77979f157856f828e88a2c570"
+    },
+    "factory_gen_peer_residual_negative_vwap_reclaim": {
+      "context": [
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "peer_beta_lagged",
+          "op": "gt",
+          "value": 0.0
+        },
+        {
+          "field": "lagged_peer_beta_residual",
+          "op": "lt",
+          "other": "peer_beta_residual_scale",
+          "scale": -1.1
+        }
+      ],
+      "contract_digest": "f0947aa70633e6f7d08c5070855e0df62ab44ac561cd31681081862061732359",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.6
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_peer_residual_negative_vwap_reclaim",
+      "hypothesis": "Reviewed causal context peer_residual_negative is combined with later closed-bar confirmation vwap_reclaim; selection remains Training-only.",
+      "id": "factory_gen_peer_residual_negative_vwap_reclaim",
+      "peer_required": true,
+      "topology_digest": "f7033849777a082d088dd64fffd0fb9178e9aefff5fc8d72e61d46f98f56b612"
+    },
+    "factory_gen_positive_tail_trend_failed_downside_reclaim": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_return_skew_64",
+          "op": "ge",
+          "value": 0.6
+        },
+        {
+          "field": "lagged_downside_variance_share_64",
+          "op": "le",
+          "value": 0.45
+        }
+      ],
+      "contract_digest": "685115b341ea7e79197eaa86bffeb707fe0b4754485d45a29ad5dd632dbd7f1d",
+      "entry": [
+        {
+          "field": "low",
+          "op": "lt",
+          "other": "prior_lo",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_lo",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_positive_tail_trend_failed_downside_reclaim",
+      "hypothesis": "Reviewed causal context positive_tail_trend is combined with later closed-bar confirmation failed_downside_reclaim; selection remains Training-only.",
+      "id": "factory_gen_positive_tail_trend_failed_downside_reclaim",
+      "peer_required": false,
+      "topology_digest": "75071312bfc074055dfca1f807f16c9ae65cf2f2673932dd0e28a3eb27df29ae"
+    },
+    "factory_gen_positive_tail_trend_local_breakout": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_return_skew_64",
+          "op": "ge",
+          "value": 0.6
+        },
+        {
+          "field": "lagged_downside_variance_share_64",
+          "op": "le",
+          "value": 0.45
+        }
+      ],
+      "contract_digest": "38fe95d6a53225ffabeb0514ca81f8510b617f5eb99f27fb654e11bd0dd52117",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_hi",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.95
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_positive_tail_trend_local_breakout",
+      "hypothesis": "Reviewed causal context positive_tail_trend is combined with later closed-bar confirmation local_breakout; selection remains Training-only.",
+      "id": "factory_gen_positive_tail_trend_local_breakout",
+      "peer_required": false,
+      "topology_digest": "bec8ad819fed00bb7d9462d844a249dd68569fb352253e80807e7950996445fe"
+    },
+    "factory_gen_positive_tail_trend_midpoint_reclaim": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_return_skew_64",
+          "op": "ge",
+          "value": 0.6
+        },
+        {
+          "field": "lagged_downside_variance_share_64",
+          "op": "le",
+          "value": 0.45
+        }
+      ],
+      "contract_digest": "d2bf90a7d6db7c3ad223c717fd428788f988e07f952322c744a9656836b59653",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.9
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_positive_tail_trend_midpoint_reclaim",
+      "hypothesis": "Reviewed causal context positive_tail_trend is combined with later closed-bar confirmation midpoint_reclaim; selection remains Training-only.",
+      "id": "factory_gen_positive_tail_trend_midpoint_reclaim",
+      "peer_required": false,
+      "topology_digest": "b2fc6c7186fe9fe1a0a8057f5a833a14ed475ce51e269e7f167daf5a5cf54464"
+    },
+    "factory_gen_positive_tail_trend_prior_day_breakout": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_return_skew_64",
+          "op": "ge",
+          "value": 0.6
+        },
+        {
+          "field": "lagged_downside_variance_share_64",
+          "op": "le",
+          "value": 0.45
+        }
+      ],
+      "contract_digest": "515ea1b46519f469c0623ea6225316f222fb138ca1a84d3e0af702909b124ea7",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_day_high",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.95
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_positive_tail_trend_prior_day_breakout",
+      "hypothesis": "Reviewed causal context positive_tail_trend is combined with later closed-bar confirmation prior_day_breakout; selection remains Training-only.",
+      "id": "factory_gen_positive_tail_trend_prior_day_breakout",
+      "peer_required": false,
+      "topology_digest": "d7d88455554fff05b7814612d9841354dba93f90d43c6c2c1db5a65cfb18800f"
+    },
+    "factory_gen_positive_tail_trend_vwap_reclaim": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_return_skew_64",
+          "op": "ge",
+          "value": 0.6
+        },
+        {
+          "field": "lagged_downside_variance_share_64",
+          "op": "le",
+          "value": 0.45
+        }
+      ],
+      "contract_digest": "3ace37a2aa152de1ff57a5f2a3dcf035a50d7cf9f1dd0bd5c954a468f7538952",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.6
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_positive_tail_trend_vwap_reclaim",
+      "hypothesis": "Reviewed causal context positive_tail_trend is combined with later closed-bar confirmation vwap_reclaim; selection remains Training-only.",
+      "id": "factory_gen_positive_tail_trend_vwap_reclaim",
+      "peer_required": false,
+      "topology_digest": "75b55ec68921dc36538cd3e2dc230e5eef7bf3c6227fed5eede342cd6d4d81f8"
+    },
+    "factory_gen_range_memory_compression_failed_downside_reclaim": {
+      "context": [
+        {
+          "field": "h1_compression",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_range_compression_ratio_32",
+          "op": "le",
+          "value": 0.72
+        }
+      ],
+      "contract_digest": "0b0bdde8c9317859e2c8066aae79165b6ea070ec6e4917f680a9818f0c7741b9",
+      "entry": [
+        {
+          "field": "low",
+          "op": "lt",
+          "other": "prior_lo",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_lo",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_range_memory_compression_failed_downside_reclaim",
+      "hypothesis": "Reviewed causal context range_memory_compression is combined with later closed-bar confirmation failed_downside_reclaim; selection remains Training-only.",
+      "id": "factory_gen_range_memory_compression_failed_downside_reclaim",
+      "peer_required": false,
+      "topology_digest": "67ccdb70911a6299ce245b3089cb8785c4156272b9c956fa53bafd72625a3cf0"
+    },
+    "factory_gen_range_memory_compression_local_breakout": {
+      "context": [
+        {
+          "field": "h1_compression",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_range_compression_ratio_32",
+          "op": "le",
+          "value": 0.72
+        }
+      ],
+      "contract_digest": "4013bf8654fe103d0a0b1c5652ab57e9f8a619675fc8efa8fb73f07422279e01",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_hi",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.95
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_range_memory_compression_local_breakout",
+      "hypothesis": "Reviewed causal context range_memory_compression is combined with later closed-bar confirmation local_breakout; selection remains Training-only.",
+      "id": "factory_gen_range_memory_compression_local_breakout",
+      "peer_required": false,
+      "topology_digest": "180431af6375ee8f025bdf2f7b066bf230f3778228ca5117f71e2ae7dd2c8082"
+    },
+    "factory_gen_range_memory_compression_midpoint_reclaim": {
+      "context": [
+        {
+          "field": "h1_compression",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_range_compression_ratio_32",
+          "op": "le",
+          "value": 0.72
+        }
+      ],
+      "contract_digest": "dbba39b837769a31290152b49a6d2b6faa1fda93f9f3771f7be9ea9bafd460e3",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.9
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_range_memory_compression_midpoint_reclaim",
+      "hypothesis": "Reviewed causal context range_memory_compression is combined with later closed-bar confirmation midpoint_reclaim; selection remains Training-only.",
+      "id": "factory_gen_range_memory_compression_midpoint_reclaim",
+      "peer_required": false,
+      "topology_digest": "c0d7801eb895b00716b4f49f08d65acc0e35ef0542f33ed30cb62032252253e9"
+    },
+    "factory_gen_range_memory_compression_prior_day_breakout": {
+      "context": [
+        {
+          "field": "h1_compression",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_range_compression_ratio_32",
+          "op": "le",
+          "value": 0.72
+        }
+      ],
+      "contract_digest": "8af2daa813eb8dc2403c84f997d7e4243d6cd978dfc32761fde476ead3452209",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_day_high",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.95
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_range_memory_compression_prior_day_breakout",
+      "hypothesis": "Reviewed causal context range_memory_compression is combined with later closed-bar confirmation prior_day_breakout; selection remains Training-only.",
+      "id": "factory_gen_range_memory_compression_prior_day_breakout",
+      "peer_required": false,
+      "topology_digest": "63f539cf527186c8e04c256f889e539e3927d374206651f51de0eeaa3ffd1b3a"
+    },
+    "factory_gen_range_memory_compression_vwap_reclaim": {
+      "context": [
+        {
+          "field": "h1_compression",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_range_compression_ratio_32",
+          "op": "le",
+          "value": 0.72
+        }
+      ],
+      "contract_digest": "2d6b5fb8ad6f1cd0637eef05280e8cc78774f226fa68469bdf4bab834f3a022b",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.6
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_range_memory_compression_vwap_reclaim",
+      "hypothesis": "Reviewed causal context range_memory_compression is combined with later closed-bar confirmation vwap_reclaim; selection remains Training-only.",
+      "id": "factory_gen_range_memory_compression_vwap_reclaim",
+      "peer_required": false,
+      "topology_digest": "e79071c2e49de1d50fd8aebec738e1250bb79a5c0a02092a420e0108276382ab"
+    },
+    "factory_gen_serial_positive_failed_downside_reclaim": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_return_serial_corr",
+          "op": "ge",
+          "value": 0.1
+        }
+      ],
+      "contract_digest": "f8834d02f46e9f3b93d1fada2f07e31c3b73ec67ff918dd445416c9f17b4f87b",
+      "entry": [
+        {
+          "field": "low",
+          "op": "lt",
+          "other": "prior_lo",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_lo",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_serial_positive_failed_downside_reclaim",
+      "hypothesis": "Reviewed causal context serial_positive is combined with later closed-bar confirmation failed_downside_reclaim; selection remains Training-only.",
+      "id": "factory_gen_serial_positive_failed_downside_reclaim",
+      "peer_required": false,
+      "topology_digest": "458fcb42ee16635737b615e495903190ff36d3fb7cf5370db9d87896196b8600"
+    },
+    "factory_gen_serial_positive_local_breakout": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_return_serial_corr",
+          "op": "ge",
+          "value": 0.1
+        }
+      ],
+      "contract_digest": "2971eeb1205847f0461ccc63dcf54417912bb3cbb72c8a19fdddd4e8360f35b7",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_hi",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.95
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_serial_positive_local_breakout",
+      "hypothesis": "Reviewed causal context serial_positive is combined with later closed-bar confirmation local_breakout; selection remains Training-only.",
+      "id": "factory_gen_serial_positive_local_breakout",
+      "peer_required": false,
+      "topology_digest": "b007be8b5f7a60a5c3691e5ff02df663b5ad8a21abe4447f2106f71f0d57059f"
+    },
+    "factory_gen_serial_positive_midpoint_reclaim": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_return_serial_corr",
+          "op": "ge",
+          "value": 0.1
+        }
+      ],
+      "contract_digest": "172981d65c3dfe1a7dc668e963e451f703a056d4c0b71028ab14930efbcc0913",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.9
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_serial_positive_midpoint_reclaim",
+      "hypothesis": "Reviewed causal context serial_positive is combined with later closed-bar confirmation midpoint_reclaim; selection remains Training-only.",
+      "id": "factory_gen_serial_positive_midpoint_reclaim",
+      "peer_required": false,
+      "topology_digest": "f9058c7dc4687de445374f4e8ccd059e457916513e1059dc8c8f894bb2a70d81"
+    },
+    "factory_gen_serial_positive_prior_day_breakout": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_return_serial_corr",
+          "op": "ge",
+          "value": 0.1
+        }
+      ],
+      "contract_digest": "49d78a5cb4b677f94cd55206e34fe22ca981d64ddbafffa5746cbdb9af4becd7",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_day_high",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.95
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_serial_positive_prior_day_breakout",
+      "hypothesis": "Reviewed causal context serial_positive is combined with later closed-bar confirmation prior_day_breakout; selection remains Training-only.",
+      "id": "factory_gen_serial_positive_prior_day_breakout",
+      "peer_required": false,
+      "topology_digest": "40da62d8681eee6cc2bf73959c48ad7890bd03ac560e4a6b98cb70522922176a"
+    },
+    "factory_gen_serial_positive_vwap_reclaim": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_return_serial_corr",
+          "op": "ge",
+          "value": 0.1
+        }
+      ],
+      "contract_digest": "ecbda302e0560a32653cf44d35d489952f68413eee03497a227a821232183a3a",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.6
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_serial_positive_vwap_reclaim",
+      "hypothesis": "Reviewed causal context serial_positive is combined with later closed-bar confirmation vwap_reclaim; selection remains Training-only.",
+      "id": "factory_gen_serial_positive_vwap_reclaim",
+      "peer_required": false,
+      "topology_digest": "fcecd0289516dabae73a01d845690f3719e87644b4d7b9499ad16a94bc74c29d"
+    },
+    "factory_gen_shallow_drawdown_acceptance_failed_downside_reclaim": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_drawdown_depth_32",
+          "op": "ge",
+          "value": -0.0075
+        },
+        {
+          "field": "lagged_close_location_persistence_16",
+          "op": "ge",
+          "value": 0.58
+        }
+      ],
+      "contract_digest": "73d137b09fe5df9cadd6dec449f2cfc14d3cf9cf7ae054887c0af84204d02d15",
+      "entry": [
+        {
+          "field": "low",
+          "op": "lt",
+          "other": "prior_lo",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_lo",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_shallow_drawdown_acceptance_failed_downside_reclaim",
+      "hypothesis": "Reviewed causal context shallow_drawdown_acceptance is combined with later closed-bar confirmation failed_downside_reclaim; selection remains Training-only.",
+      "id": "factory_gen_shallow_drawdown_acceptance_failed_downside_reclaim",
+      "peer_required": false,
+      "topology_digest": "f073c5f5fe669d84f0696d03a3b0d953c89f3169d63134832954748b2a74530b"
+    },
+    "factory_gen_shallow_drawdown_acceptance_local_breakout": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_drawdown_depth_32",
+          "op": "ge",
+          "value": -0.0075
+        },
+        {
+          "field": "lagged_close_location_persistence_16",
+          "op": "ge",
+          "value": 0.58
+        }
+      ],
+      "contract_digest": "b0b5f304779585575e8eb32508c07b0bfc9188b3b36d702b0d3021a664ca009f",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_hi",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.95
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_shallow_drawdown_acceptance_local_breakout",
+      "hypothesis": "Reviewed causal context shallow_drawdown_acceptance is combined with later closed-bar confirmation local_breakout; selection remains Training-only.",
+      "id": "factory_gen_shallow_drawdown_acceptance_local_breakout",
+      "peer_required": false,
+      "topology_digest": "e5380233ce8e5166953bca189a64849a8672820b9ac7242877349478151a01b2"
+    },
+    "factory_gen_shallow_drawdown_acceptance_midpoint_reclaim": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_drawdown_depth_32",
+          "op": "ge",
+          "value": -0.0075
+        },
+        {
+          "field": "lagged_close_location_persistence_16",
+          "op": "ge",
+          "value": 0.58
+        }
+      ],
+      "contract_digest": "9d40e171ab3b73b44be9bfa5b1e11c77472e763d80d4df1b715386a2528b7029",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.9
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_shallow_drawdown_acceptance_midpoint_reclaim",
+      "hypothesis": "Reviewed causal context shallow_drawdown_acceptance is combined with later closed-bar confirmation midpoint_reclaim; selection remains Training-only.",
+      "id": "factory_gen_shallow_drawdown_acceptance_midpoint_reclaim",
+      "peer_required": false,
+      "topology_digest": "a0bf27ddf5bdb984ca3b26da0004f08f64a85545cc2dc107079384963a70d605"
+    },
+    "factory_gen_shallow_drawdown_acceptance_prior_day_breakout": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_drawdown_depth_32",
+          "op": "ge",
+          "value": -0.0075
+        },
+        {
+          "field": "lagged_close_location_persistence_16",
+          "op": "ge",
+          "value": 0.58
+        }
+      ],
+      "contract_digest": "c2109745e7528f9eb2d2baab69a26f6a251c2868dd1173ba4147ff6fa28ac279",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_day_high",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.95
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_shallow_drawdown_acceptance_prior_day_breakout",
+      "hypothesis": "Reviewed causal context shallow_drawdown_acceptance is combined with later closed-bar confirmation prior_day_breakout; selection remains Training-only.",
+      "id": "factory_gen_shallow_drawdown_acceptance_prior_day_breakout",
+      "peer_required": false,
+      "topology_digest": "e58c5d0f0cf969ea56e2149e2711918f9a6693f3820a13207bbaff7632ab6fa4"
+    },
+    "factory_gen_shallow_drawdown_acceptance_vwap_reclaim": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_drawdown_depth_32",
+          "op": "ge",
+          "value": -0.0075
+        },
+        {
+          "field": "lagged_close_location_persistence_16",
+          "op": "ge",
+          "value": 0.58
+        }
+      ],
+      "contract_digest": "efb3304da78ac90a87a949ca30b72b2192aef602a5c8694a59a5a0048829c59a",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.6
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_shallow_drawdown_acceptance_vwap_reclaim",
+      "hypothesis": "Reviewed causal context shallow_drawdown_acceptance is combined with later closed-bar confirmation vwap_reclaim; selection remains Training-only.",
+      "id": "factory_gen_shallow_drawdown_acceptance_vwap_reclaim",
+      "peer_required": false,
+      "topology_digest": "9ed2076cfcdfd8cdbc7151940b7c690f0f48f8fa8d1a07466d53e60f531f8d11"
+    },
+    "factory_gen_volatility_cluster_release_failed_downside_reclaim": {
+      "context": [
+        {
+          "field": "h1_compression",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_abs_return_autocorr_48",
+          "op": "ge",
+          "value": 0.15
+        }
+      ],
+      "contract_digest": "44c0a41c10844305c85fa7a6bd472213da042b80503c4678cd90fdfe0c53ba88",
+      "entry": [
+        {
+          "field": "low",
+          "op": "lt",
+          "other": "prior_lo",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_lo",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_volatility_cluster_release_failed_downside_reclaim",
+      "hypothesis": "Reviewed causal context volatility_cluster_release is combined with later closed-bar confirmation failed_downside_reclaim; selection remains Training-only.",
+      "id": "factory_gen_volatility_cluster_release_failed_downside_reclaim",
+      "peer_required": false,
+      "topology_digest": "986349c5be6608e4d512f62c0fc804cf58d3bff87a74c1b4f4942fb8c011ccab"
+    },
+    "factory_gen_volatility_cluster_release_local_breakout": {
+      "context": [
+        {
+          "field": "h1_compression",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_abs_return_autocorr_48",
+          "op": "ge",
+          "value": 0.15
+        }
+      ],
+      "contract_digest": "5fefe3fd00d1f7f174083a2295b95030790c7cb58ae77e1f319e1f935852d00d",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_hi",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.95
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_volatility_cluster_release_local_breakout",
+      "hypothesis": "Reviewed causal context volatility_cluster_release is combined with later closed-bar confirmation local_breakout; selection remains Training-only.",
+      "id": "factory_gen_volatility_cluster_release_local_breakout",
+      "peer_required": false,
+      "topology_digest": "d351f4e4901fa7da3a3e3b08bd763213972f073afa53c27a4dd87fe116a6feb1"
+    },
+    "factory_gen_volatility_cluster_release_midpoint_reclaim": {
+      "context": [
+        {
+          "field": "h1_compression",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_abs_return_autocorr_48",
+          "op": "ge",
+          "value": 0.15
+        }
+      ],
+      "contract_digest": "2ec0d0ee7d557f673a984cb741abb72da84929e3bce66d65e18306f9c77f1021",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.9
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_volatility_cluster_release_midpoint_reclaim",
+      "hypothesis": "Reviewed causal context volatility_cluster_release is combined with later closed-bar confirmation midpoint_reclaim; selection remains Training-only.",
+      "id": "factory_gen_volatility_cluster_release_midpoint_reclaim",
+      "peer_required": false,
+      "topology_digest": "2e1335c3a129e7e2215d069909fb73fc997245cb71964b063c47dd010e1e0735"
+    },
+    "factory_gen_volatility_cluster_release_prior_day_breakout": {
+      "context": [
+        {
+          "field": "h1_compression",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_abs_return_autocorr_48",
+          "op": "ge",
+          "value": 0.15
+        }
+      ],
+      "contract_digest": "c238542cfce68874ef9704d7c8a05c96213b5d30e2f7f02afc9509770c390ba9",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_day_high",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.95
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_volatility_cluster_release_prior_day_breakout",
+      "hypothesis": "Reviewed causal context volatility_cluster_release is combined with later closed-bar confirmation prior_day_breakout; selection remains Training-only.",
+      "id": "factory_gen_volatility_cluster_release_prior_day_breakout",
+      "peer_required": false,
+      "topology_digest": "a6ac27b6686476472c299ca7bc829f84217e11ee6fee22043bbd8678baade719"
+    },
+    "factory_gen_volatility_cluster_release_vwap_reclaim": {
+      "context": [
+        {
+          "field": "h1_compression",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_abs_return_autocorr_48",
+          "op": "ge",
+          "value": 0.15
+        }
+      ],
+      "contract_digest": "d2c3239a7d7d4ce066a6fe6f35a35092ce8e2ea24f573a027cdd9fa4e446941c",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.6
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_volatility_cluster_release_vwap_reclaim",
+      "hypothesis": "Reviewed causal context volatility_cluster_release is combined with later closed-bar confirmation vwap_reclaim; selection remains Training-only.",
+      "id": "factory_gen_volatility_cluster_release_vwap_reclaim",
+      "peer_required": false,
+      "topology_digest": "784645134360e54272f6a1180811ba15bfd35a4125906f0a0decdd36d854f14c"
+    },
+    "factory_gen_volume_return_participation_failed_downside_reclaim": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_volume_return_corr_64",
+          "op": "ge",
+          "value": 0.2
+        }
+      ],
+      "contract_digest": "0321202f7640c929432156ae015dad34d2acb200d77e164fbc5005a191fec092",
+      "entry": [
+        {
+          "field": "low",
+          "op": "lt",
+          "other": "prior_lo",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_lo",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_volume_return_participation_failed_downside_reclaim",
+      "hypothesis": "Reviewed causal context volume_return_participation is combined with later closed-bar confirmation failed_downside_reclaim; selection remains Training-only.",
+      "id": "factory_gen_volume_return_participation_failed_downside_reclaim",
+      "peer_required": false,
+      "topology_digest": "8992b64faa5ddf7442a14aa13d3551080adaa93f25a96025ea17af62ba4a0208"
+    },
+    "factory_gen_volume_return_participation_local_breakout": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_volume_return_corr_64",
+          "op": "ge",
+          "value": 0.2
+        }
+      ],
+      "contract_digest": "5bc9cae03ef395e4864a2d62681b81bd1d276e37cc04b60629eb1e28057e8255",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_hi",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.95
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_volume_return_participation_local_breakout",
+      "hypothesis": "Reviewed causal context volume_return_participation is combined with later closed-bar confirmation local_breakout; selection remains Training-only.",
+      "id": "factory_gen_volume_return_participation_local_breakout",
+      "peer_required": false,
+      "topology_digest": "0cf1f4371ba47a127c44ad9571aab04aa3e0e22356f97f348bb6e65c69245b3b"
+    },
+    "factory_gen_volume_return_participation_midpoint_reclaim": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_volume_return_corr_64",
+          "op": "ge",
+          "value": 0.2
+        }
+      ],
+      "contract_digest": "54c9fb0b41c30c06d254f553e8db47c45be8ec708b5463bb538feab36baac450",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.9
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_volume_return_participation_midpoint_reclaim",
+      "hypothesis": "Reviewed causal context volume_return_participation is combined with later closed-bar confirmation midpoint_reclaim; selection remains Training-only.",
+      "id": "factory_gen_volume_return_participation_midpoint_reclaim",
+      "peer_required": false,
+      "topology_digest": "a4ee67ff52db63776406ec96e0f505edb489bd15875ddc9c4da42530f3658381"
+    },
+    "factory_gen_volume_return_participation_prior_day_breakout": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_volume_return_corr_64",
+          "op": "ge",
+          "value": 0.2
+        }
+      ],
+      "contract_digest": "5ce9d448bade8934ceca8b249e400b113e8b2b01e5cd80e8204fc1fccb39efcc",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_day_high",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.95
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_volume_return_participation_prior_day_breakout",
+      "hypothesis": "Reviewed causal context volume_return_participation is combined with later closed-bar confirmation prior_day_breakout; selection remains Training-only.",
+      "id": "factory_gen_volume_return_participation_prior_day_breakout",
+      "peer_required": false,
+      "topology_digest": "0c70062b35f9db2c69c7c0d9badd99983fb29ba1b0490326596f9c34d900adcc"
+    },
+    "factory_gen_volume_return_participation_vwap_reclaim": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_volume_return_corr_64",
+          "op": "ge",
+          "value": 0.2
+        }
+      ],
+      "contract_digest": "701625169928290c9b7ed9f83896f7bfc1efa26cee5c573192d4a34a694703bd",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.6
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_volume_return_participation_vwap_reclaim",
+      "hypothesis": "Reviewed causal context volume_return_participation is combined with later closed-bar confirmation vwap_reclaim; selection remains Training-only.",
+      "id": "factory_gen_volume_return_participation_vwap_reclaim",
+      "peer_required": false,
+      "topology_digest": "5607264e1d56aaf21f07b659de97dd0c7ebede64385b61e8c17f50bd13ba93ae"
+    },
+    "factory_gen_vov_compression_failed_downside_reclaim": {
+      "context": [
+        {
+          "field": "h1_compression",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "own_volatility_of_volatility",
+          "op": "lt",
+          "other": "own_volatility_of_volatility_baseline",
+          "scale": 0.75
+        }
+      ],
+      "contract_digest": "5faf17e6a60fd3e47e47dd4c5aa5a6bb0a027c012b66362eca7aa973b3a7c2fa",
+      "entry": [
+        {
+          "field": "low",
+          "op": "lt",
+          "other": "prior_lo",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_lo",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_vov_compression_failed_downside_reclaim",
+      "hypothesis": "Reviewed causal context vov_compression is combined with later closed-bar confirmation failed_downside_reclaim; selection remains Training-only.",
+      "id": "factory_gen_vov_compression_failed_downside_reclaim",
+      "peer_required": false,
+      "topology_digest": "9e24450c30f28f9b9a19a6ff76fc1820a39aad34cafba3a861f7c1c83147ff5b"
+    },
+    "factory_gen_vov_compression_local_breakout": {
+      "context": [
+        {
+          "field": "h1_compression",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "own_volatility_of_volatility",
+          "op": "lt",
+          "other": "own_volatility_of_volatility_baseline",
+          "scale": 0.75
+        }
+      ],
+      "contract_digest": "5c5cb9674a178dc2087030456c3aab2776e6ccef24890235187a9ca4fa6df9cc",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_hi",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.95
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_vov_compression_local_breakout",
+      "hypothesis": "Reviewed causal context vov_compression is combined with later closed-bar confirmation local_breakout; selection remains Training-only.",
+      "id": "factory_gen_vov_compression_local_breakout",
+      "peer_required": false,
+      "topology_digest": "d14a019ec7279867c36e9a4e7a9e22d05e7c6c4cbbde8e8050684cde7a4c0a76"
+    },
+    "factory_gen_vov_compression_midpoint_reclaim": {
+      "context": [
+        {
+          "field": "h1_compression",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "own_volatility_of_volatility",
+          "op": "lt",
+          "other": "own_volatility_of_volatility_baseline",
+          "scale": 0.75
+        }
+      ],
+      "contract_digest": "d7510e58f1d525500d2da5eee81e6d10c24a76e2f02de5b4f541a19763e6a08d",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.9
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_vov_compression_midpoint_reclaim",
+      "hypothesis": "Reviewed causal context vov_compression is combined with later closed-bar confirmation midpoint_reclaim; selection remains Training-only.",
+      "id": "factory_gen_vov_compression_midpoint_reclaim",
+      "peer_required": false,
+      "topology_digest": "a582e55f218c545d1c1f67f1d860f58cd989d13c688d5f6edf6e947639d22582"
+    },
+    "factory_gen_vov_compression_prior_day_breakout": {
+      "context": [
+        {
+          "field": "h1_compression",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "own_volatility_of_volatility",
+          "op": "lt",
+          "other": "own_volatility_of_volatility_baseline",
+          "scale": 0.75
+        }
+      ],
+      "contract_digest": "1fc89425aa167600d11436a323b23e1e78f1a8fb94138e0ffd03fa713dcbad41",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_day_high",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.95
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_vov_compression_prior_day_breakout",
+      "hypothesis": "Reviewed causal context vov_compression is combined with later closed-bar confirmation prior_day_breakout; selection remains Training-only.",
+      "id": "factory_gen_vov_compression_prior_day_breakout",
+      "peer_required": false,
+      "topology_digest": "b20b2eb4686b64bff321f200f4408e820baeb7a0bc718a0276056b229e7a1f9d"
+    },
+    "factory_gen_vov_compression_vwap_reclaim": {
+      "context": [
+        {
+          "field": "h1_compression",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "own_volatility_of_volatility",
+          "op": "lt",
+          "other": "own_volatility_of_volatility_baseline",
+          "scale": 0.75
+        }
+      ],
+      "contract_digest": "0794cf1801c30e5e9de303cbb0cd8734821d5b9a94450bdce7409aff0ad7e241",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.6
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_vov_compression_vwap_reclaim",
+      "hypothesis": "Reviewed causal context vov_compression is combined with later closed-bar confirmation vwap_reclaim; selection remains Training-only.",
+      "id": "factory_gen_vov_compression_vwap_reclaim",
+      "peer_required": false,
+      "topology_digest": "8b5828cb0dbfc3f7c163cd383a541f5e62f33ea2ca60508befd633dc6a4ca4e1"
+    },
+    "factory_gen_wick_pressure_range_failed_downside_reclaim": {
+      "context": [
+        {
+          "field": "h4_range",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_wick_asymmetry_32",
+          "op": "ge",
+          "value": 1.35
+        }
+      ],
+      "contract_digest": "576b7053ff7984068d202bf048324e85d870b8390bd1899cdfd5ad847c5e2ff7",
+      "entry": [
+        {
+          "field": "low",
+          "op": "lt",
+          "other": "prior_lo",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_lo",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_wick_pressure_range_failed_downside_reclaim",
+      "hypothesis": "Reviewed causal context wick_pressure_range is combined with later closed-bar confirmation failed_downside_reclaim; selection remains Training-only.",
+      "id": "factory_gen_wick_pressure_range_failed_downside_reclaim",
+      "peer_required": false,
+      "topology_digest": "0fb01625ee5e444f6550e0b2ab3c7124ee6d977b7b3f4bc4a0b7f69b030e81af"
+    },
+    "factory_gen_wick_pressure_range_local_breakout": {
+      "context": [
+        {
+          "field": "h4_range",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_wick_asymmetry_32",
+          "op": "ge",
+          "value": 1.35
+        }
+      ],
+      "contract_digest": "af55c7b32bea54cb7132e0a1de82a298e2059a74c81356b1856ef3a3a9ce6f6c",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_hi",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.95
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_wick_pressure_range_local_breakout",
+      "hypothesis": "Reviewed causal context wick_pressure_range is combined with later closed-bar confirmation local_breakout; selection remains Training-only.",
+      "id": "factory_gen_wick_pressure_range_local_breakout",
+      "peer_required": false,
+      "topology_digest": "f960f27599184187eba867eda818b99e7d9d7b5f73b0f2c0d6c79a5c49dfdfb6"
+    },
+    "factory_gen_wick_pressure_range_midpoint_reclaim": {
+      "context": [
+        {
+          "field": "h4_range",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_wick_asymmetry_32",
+          "op": "ge",
+          "value": 1.35
+        }
+      ],
+      "contract_digest": "e303e6a60f2105a6b1e089a90b3e6a123c34882d286dbf3750d2f3a6d1ed50c6",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.9
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_wick_pressure_range_midpoint_reclaim",
+      "hypothesis": "Reviewed causal context wick_pressure_range is combined with later closed-bar confirmation midpoint_reclaim; selection remains Training-only.",
+      "id": "factory_gen_wick_pressure_range_midpoint_reclaim",
+      "peer_required": false,
+      "topology_digest": "1fcd8526607ec8542650111bb5e06d868a35dc31ababffb5ce16e1057ff17e42"
+    },
+    "factory_gen_wick_pressure_range_prior_day_breakout": {
+      "context": [
+        {
+          "field": "h4_range",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_wick_asymmetry_32",
+          "op": "ge",
+          "value": 1.35
+        }
+      ],
+      "contract_digest": "ee370b8dd6956ae6dea9a385c615fc263d7c1c6a268537ef227393464705c289",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_day_high",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.95
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_wick_pressure_range_prior_day_breakout",
+      "hypothesis": "Reviewed causal context wick_pressure_range is combined with later closed-bar confirmation prior_day_breakout; selection remains Training-only.",
+      "id": "factory_gen_wick_pressure_range_prior_day_breakout",
+      "peer_required": false,
+      "topology_digest": "cdf9e9dc5fcd2f6588a11e89b46d0c73fe71e3a7b59b2f3dd0a0ff6e673e33b2"
+    },
+    "factory_gen_wick_pressure_range_vwap_reclaim": {
+      "context": [
+        {
+          "field": "h4_range",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_wick_asymmetry_32",
+          "op": "ge",
+          "value": 1.35
+        }
+      ],
+      "contract_digest": "bd56a23cf9ba1d143714a9b5a7b5f1c1ada9bd9661ba167aa8d73825e446cf0b",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.6
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_wick_pressure_range_vwap_reclaim",
+      "hypothesis": "Reviewed causal context wick_pressure_range is combined with later closed-bar confirmation vwap_reclaim; selection remains Training-only.",
+      "id": "factory_gen_wick_pressure_range_vwap_reclaim",
+      "peer_required": false,
+      "topology_digest": "f95a02f00db4e68928b77ca12035156403e42466706c5d3ba985a3c519a71df5"
+    },
+    "factory_gen_wick_pressure_trend_failed_downside_reclaim": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_wick_asymmetry_32",
+          "op": "ge",
+          "value": 1.2
+        }
+      ],
+      "contract_digest": "ea88a22629e5edf899e1523d1bda260fc25f8285f2f511b0c86604638127087e",
+      "entry": [
+        {
+          "field": "low",
+          "op": "lt",
+          "other": "prior_lo",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_lo",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_wick_pressure_trend_failed_downside_reclaim",
+      "hypothesis": "Reviewed causal context wick_pressure_trend is combined with later closed-bar confirmation failed_downside_reclaim; selection remains Training-only.",
+      "id": "factory_gen_wick_pressure_trend_failed_downside_reclaim",
+      "peer_required": false,
+      "topology_digest": "f4e54fdd5b78f54eca32306adb3b103e7ae74ecf246f3e2df0f56d541b412e84"
+    },
+    "factory_gen_wick_pressure_trend_local_breakout": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_wick_asymmetry_32",
+          "op": "ge",
+          "value": 1.2
+        }
+      ],
+      "contract_digest": "0f46f47abe9928716228f5422d71e8e6e6b8f871bdb40b94191db34797f4d57b",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_hi",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.95
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_wick_pressure_trend_local_breakout",
+      "hypothesis": "Reviewed causal context wick_pressure_trend is combined with later closed-bar confirmation local_breakout; selection remains Training-only.",
+      "id": "factory_gen_wick_pressure_trend_local_breakout",
+      "peer_required": false,
+      "topology_digest": "96e08b5a5f11b2a8bfe02cf29f4af58f54c1586560920c7d2ffa31ea7485ee84"
+    },
+    "factory_gen_wick_pressure_trend_midpoint_reclaim": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_wick_asymmetry_32",
+          "op": "ge",
+          "value": 1.2
+        }
+      ],
+      "contract_digest": "691015fad5facacf20a917eeb5e4fc22dcaafb08482b8305e08530183b0fb599",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.9
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_wick_pressure_trend_midpoint_reclaim",
+      "hypothesis": "Reviewed causal context wick_pressure_trend is combined with later closed-bar confirmation midpoint_reclaim; selection remains Training-only.",
+      "id": "factory_gen_wick_pressure_trend_midpoint_reclaim",
+      "peer_required": false,
+      "topology_digest": "54c0a3ea4871a51fd466e30efd1ce5fb6fee34f25a49669a6bddfbe32b1135fb"
+    },
+    "factory_gen_wick_pressure_trend_prior_day_breakout": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_wick_asymmetry_32",
+          "op": "ge",
+          "value": 1.2
+        }
+      ],
+      "contract_digest": "ee91f0e464f42f6cf91b8dfc375408696ab7931641523e59c3af4e40a93feb61",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_day_high",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.95
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_wick_pressure_trend_prior_day_breakout",
+      "hypothesis": "Reviewed causal context wick_pressure_trend is combined with later closed-bar confirmation prior_day_breakout; selection remains Training-only.",
+      "id": "factory_gen_wick_pressure_trend_prior_day_breakout",
+      "peer_required": false,
+      "topology_digest": "b5e1523a7f7d9b62bffe5f93aab56e07554455eea027211ef8bd2602d310a494"
+    },
+    "factory_gen_wick_pressure_trend_vwap_reclaim": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_wick_asymmetry_32",
+          "op": "ge",
+          "value": 1.2
+        }
+      ],
+      "contract_digest": "b82f84925efc9aebe5ff3bb4b7b7b5530f1312d06a32a67d8d74105da3b449e7",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.6
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_wick_pressure_trend_vwap_reclaim",
+      "hypothesis": "Reviewed causal context wick_pressure_trend is combined with later closed-bar confirmation vwap_reclaim; selection remains Training-only.",
+      "id": "factory_gen_wick_pressure_trend_vwap_reclaim",
+      "peer_required": false,
+      "topology_digest": "8b4a459d566de3ee125c7d301f1b31fa349c9c2dbb75f0ce0f2df22f85a8ad60"
+    },
+    "factory_gen_wick_range_failed_downside_reclaim": {
+      "context": [
+        {
+          "field": "h4_range",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_lower_wick_absorption",
+          "op": "gt",
+          "other": "lower_wick_absorption_baseline",
+          "scale": 1.15
+        }
+      ],
+      "contract_digest": "61691f6f36097213db69742611bf1496f45230650a07187bdd12e8c166fd0dea",
+      "entry": [
+        {
+          "field": "low",
+          "op": "lt",
+          "other": "prior_lo",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_lo",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_wick_range_failed_downside_reclaim",
+      "hypothesis": "Reviewed causal context wick_range is combined with later closed-bar confirmation failed_downside_reclaim; selection remains Training-only.",
+      "id": "factory_gen_wick_range_failed_downside_reclaim",
+      "peer_required": false,
+      "topology_digest": "575547f90682fa754370dda9f6a414b01aad3ceeedde62699698d9ae223cb0eb"
+    },
+    "factory_gen_wick_range_local_breakout": {
+      "context": [
+        {
+          "field": "h4_range",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_lower_wick_absorption",
+          "op": "gt",
+          "other": "lower_wick_absorption_baseline",
+          "scale": 1.15
+        }
+      ],
+      "contract_digest": "7b40d2df1c3664b063fd6aa895928a18ce1eb1a658f33e885bd92b51cff261c9",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_hi",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.95
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_wick_range_local_breakout",
+      "hypothesis": "Reviewed causal context wick_range is combined with later closed-bar confirmation local_breakout; selection remains Training-only.",
+      "id": "factory_gen_wick_range_local_breakout",
+      "peer_required": false,
+      "topology_digest": "48fce5374954c03ec9a546337f109a78c5fe065c4a17c1f8d78060d948fbc050"
+    },
+    "factory_gen_wick_range_midpoint_reclaim": {
+      "context": [
+        {
+          "field": "h4_range",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_lower_wick_absorption",
+          "op": "gt",
+          "other": "lower_wick_absorption_baseline",
+          "scale": 1.15
+        }
+      ],
+      "contract_digest": "4804f44c7a32b0f8bc0402883df5b602ebc7388d29f5aa7ba85360f94e2a5713",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.9
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_wick_range_midpoint_reclaim",
+      "hypothesis": "Reviewed causal context wick_range is combined with later closed-bar confirmation midpoint_reclaim; selection remains Training-only.",
+      "id": "factory_gen_wick_range_midpoint_reclaim",
+      "peer_required": false,
+      "topology_digest": "dc24107ae8636d52ec2622727ccd45c5d921287478d117a12e822ff0f7928de1"
+    },
+    "factory_gen_wick_range_prior_day_breakout": {
+      "context": [
+        {
+          "field": "h4_range",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_lower_wick_absorption",
+          "op": "gt",
+          "other": "lower_wick_absorption_baseline",
+          "scale": 1.15
+        }
+      ],
+      "contract_digest": "a88fc2a2291746787c905ad2831f39dc4b6689729dd384c001cc2ae9b00d7a7f",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_day_high",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.95
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_wick_range_prior_day_breakout",
+      "hypothesis": "Reviewed causal context wick_range is combined with later closed-bar confirmation prior_day_breakout; selection remains Training-only.",
+      "id": "factory_gen_wick_range_prior_day_breakout",
+      "peer_required": false,
+      "topology_digest": "8c7ef95ce59b0a880ec0b6920d3df4c3fa2831f62eedca122a10b334b53dc35f"
+    },
+    "factory_gen_wick_range_vwap_reclaim": {
+      "context": [
+        {
+          "field": "h4_range",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_lower_wick_absorption",
+          "op": "gt",
+          "other": "lower_wick_absorption_baseline",
+          "scale": 1.15
+        }
+      ],
+      "contract_digest": "e8aff5cddd99a0653092974975def507b8f0e9da26c444b528d747dec75dcc5f",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.6
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_wick_range_vwap_reclaim",
+      "hypothesis": "Reviewed causal context wick_range is combined with later closed-bar confirmation vwap_reclaim; selection remains Training-only.",
+      "id": "factory_gen_wick_range_vwap_reclaim",
+      "peer_required": false,
+      "topology_digest": "023cde034173944901ec118d6dac12f6d2439208ea132b11741e2ba2519a959b"
+    },
+    "factory_isolated_downshock_recovery": {
+      "context": [
+        {
+          "field": "h4_range",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_standardized_shock_96",
+          "op": "le",
+          "value": -3.0
+        },
+        {
+          "field": "lagged_jump_proxy_share_96",
+          "op": "ge",
+          "value": 0.1
+        }
+      ],
+      "contract_digest": "102d43d017233f30542eeafae77322783fb45330f6a4db41b713f419d67a59bf",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "previous_close",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.6
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "isolated_downshock_recovery",
+      "hypothesis": "A prior closed negative return unusually large relative to pre-event bipower-inspired volatility, with excess realized variation in a completed range regime, may precede an own-price recovery confirmed one bar later. This is a finite-grid shock proxy, not a significant-jump test, hidden liquidity signal or profitable edge.",
+      "id": "factory_isolated_downshock_recovery",
+      "peer_required": false,
+      "topology_digest": "795df442a702c55b67c22114b3646d6c36f46dbe03838b8b819ba53310018049"
+    },
+    "factory_isolated_upshock_followthrough": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_standardized_shock_96",
+          "op": "ge",
+          "value": 3.0
+        },
+        {
+          "field": "lagged_jump_proxy_share_96",
+          "op": "ge",
+          "value": 0.1
+        }
+      ],
+      "contract_digest": "5f5f49ce73f4cbe2a6fc8237408cb7e0824a0e08c05424467ef382314280fdce",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "previous_close",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.6
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "isolated_upshock_followthrough",
+      "hypothesis": "A prior closed positive return unusually large relative to pre-event bipower-inspired volatility, with excess realized variation and completed positive higher-timeframe structure, may have continuation after a separate own-price confirmation. This is a finite-grid shock proxy, not a significant-jump test or profitable edge.",
+      "id": "factory_isolated_upshock_followthrough",
+      "peer_required": false,
+      "topology_digest": "12016406ae9a8382de7370a950b435241aabac20b065231759761e890176cfa2"
+    },
+    "factory_negative_serial_range_rebound": {
+      "context": [
+        {
+          "field": "h4_range",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_return_serial_corr",
+          "op": "le",
+          "value": -0.1
+        }
+      ],
+      "contract_digest": "062adfa2bfef66b197ad4b363a33767ba0997b11ce311dd54e3dbc429fa28d6b",
+      "entry": [
+        {
+          "field": "low",
+          "op": "lt",
+          "other": "prior_lo",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_lo",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.9
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "negative_serial_rebound",
+      "hypothesis": "Negative lagged short-horizon return dependence inside a completed range may favor a later closed downside-failure rebound rather than momentum continuation.",
+      "id": "factory_negative_serial_range_rebound",
+      "peer_required": false,
+      "topology_digest": "dd4034ce141330aa49445eb5f87dc774b81b2ae3185bb57640fddd0516be6b46"
+    },
+    "factory_peer_lead_beta_failure_reclaim": {
+      "context": [
+        {
+          "field": "h4_range",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_peer_lead_corr_96",
+          "op": "ge",
+          "value": 0.25
+        },
+        {
+          "field": "peer_beta_lagged",
+          "op": "gt",
+          "value": 0.05
+        },
+        {
+          "field": "lagged_peer_beta_residual",
+          "op": "lt",
+          "other": "peer_beta_residual_scale",
+          "scale": -1.0
+        },
+        {
+          "field": "lagged_directional_entropy_64",
+          "op": "ge",
+          "value": 0.75
+        }
+      ],
+      "contract_digest": "8b0bef81202384fb9a21ba4d6ea59ef325d0f3179a09f38f865c3c40997665c1",
+      "entry": [
+        {
+          "field": "low",
+          "op": "lt",
+          "other": "prior_lo",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_lo",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.62
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.8
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "peer_lead_beta_failure_reclaim",
+      "hypothesis": "When the peer has statistically led the own asset in strictly completed history, a negative lagged beta residual followed by a closed own failed-low rejection in a completed 4h range may encode delayed response rather than an ordinary standalone mean-reversion entry. The lead relation and residual are historical estimates; no peer trade, executable spread, L2, or profitable edge is asserted.",
+      "id": "factory_peer_lead_beta_failure_reclaim",
+      "peer_required": true,
+      "topology_digest": "6d153510b9fef4b5df2c68ddd32ab82b416c5f72dc8b87877337020765ee8954"
+    },
+    "factory_peer_residual_range_break": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "peer_beta_lagged",
+          "op": "gt",
+          "value": 0.0
+        },
+        {
+          "field": "lagged_peer_beta_residual",
+          "op": "gt",
+          "other": "peer_beta_residual_scale",
+          "scale": 1.15
+        }
+      ],
+      "contract_digest": "82057f59d08d0c59bed764cda9bc1aad68a4883503970a5a844e862ca7e21280",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_hi",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.95
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "peer_residual_range_break",
+      "hypothesis": "A lagged positive residual relative to peer beta may identify own-asset leadership that persists only after a later closed break of prior local resistance.",
+      "id": "factory_peer_residual_range_break",
+      "peer_required": true,
+      "topology_digest": "bc93c3e00057133b1ec1f9d5a1d6a23b1da944b5214aedcb6c293e502829e324"
+    },
+    "factory_peer_residual_vwap_reclaim": {
+      "context": [
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "peer_beta_lagged",
+          "op": "gt",
+          "value": 0.0
+        },
+        {
+          "field": "lagged_peer_beta_residual",
+          "op": "lt",
+          "other": "peer_beta_residual_scale",
+          "scale": -1.15
+        }
+      ],
+      "contract_digest": "282c474c4aab21976ef2e4b9999a67529bbb5de4190249c1541bb4da4212a1f9",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.85
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "peer_residual_vwap_reclaim",
+      "hypothesis": "A lagged negative own return residual relative to a causally estimated peer beta may represent temporary under-response that resolves only after a later own-asset VWAP-proxy reclaim.",
+      "id": "factory_peer_residual_vwap_reclaim",
+      "peer_required": true,
+      "topology_digest": "8307e516763f1e9926b6e449e880e57c485ddb03f359ee9d2186c249b7ff7ea1"
+    },
+    "factory_peer_volatility_midpoint_catchup": {
+      "context": [
+        {
+          "field": "h4_range",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "cross_pair_volatility_ratio",
+          "op": "gt",
+          "other": "cross_pair_volatility_ratio_baseline",
+          "scale": 1.2
+        }
+      ],
+      "contract_digest": "036c35f309da1ead0465be59cd68075da3a6afeb5081197f309cf9d69ae3d3ef",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.85
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "peer_volatility_catchup",
+      "hypothesis": "A lagged own-versus-peer realized-volatility imbalance may identify a delayed own-asset catch-up only after a later closed midpoint reclaim in a non-trending higher-timeframe regime.",
+      "id": "factory_peer_volatility_midpoint_catchup",
+      "peer_required": true,
+      "topology_digest": "f02e12477ab80ad8721d2d55bfb96e2b9094183bd75770c1c88ddb84c3b3198e"
+    },
+    "factory_relative_momentum_vwap_reclaim": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "relative_momentum_previous",
+          "op": "gt",
+          "other": "relative_momentum_baseline",
+          "scale": 1.5
+        }
+      ],
+      "contract_digest": "7c9143ec96553cb4d5712ce7cfb24cf1ba773cef06508d16c6b239519384dbe8",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.85
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "relative_momentum_vwap_reclaim",
+      "hypothesis": "Lagged own-minus-peer relative momentum above its historical baseline may persist only when the target asset later closes back above its session bar-volume price proxy.",
+      "id": "factory_relative_momentum_vwap_reclaim",
+      "peer_required": true,
+      "topology_digest": "a82847e4f4e216d9d0badd472e0a2e699bc560efb3d00c7fddf4e298cfb33444"
+    },
+    "factory_serial_prior_day_continuation": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_return_serial_corr",
+          "op": "ge",
+          "value": 0.12
+        },
+        {
+          "field": "lagged_own_return_1h",
+          "op": "gt",
+          "value": 0.001
+        }
+      ],
+      "contract_digest": "b2550ef8cde613b926826bcbd389c10d867b8d3d3d8d9d6aef4815df330a4c63",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_day_high",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.95
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "serial_calendar_continuation",
+      "hypothesis": "Positive lagged serial dependence combined with completed higher-timeframe strength may support continuation only after a later closed break of the fully completed prior UTC-day high.",
+      "id": "factory_serial_prior_day_continuation",
+      "peer_required": false,
+      "topology_digest": "df0fb0784f31547506fa764832154aeb7b5f9f429b9c75f329e7d4353bdef531"
+    },
+    "factory_utc_slot_volume_breakout": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_utc_slot_volume_ratio_7d",
+          "op": "ge",
+          "value": 1.5
+        },
+        {
+          "field": "lagged_utc_slot_volume_cv_7d",
+          "op": "le",
+          "value": 0.75
+        }
+      ],
+      "contract_digest": "dfa3430d170b99011cdff96d7eb48877e7c60473295b4ec7c7c01855bd9fe9b1",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_hi",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "utc_slot_participation_breakout",
+      "hypothesis": "Volume on the preceding closed bar exceeding its seven prior same-UTC-slot observations, with a stable seasonal baseline and completed higher-timeframe uptrend, may identify participation useful for a subsequent confirmed range breakout. This fixed exploratory hypothesis claims neither order flow nor a profitable edge.",
+      "id": "factory_utc_slot_volume_breakout",
+      "peer_required": false,
+      "topology_digest": "1c6b9a8b4d8a0c1b02dae038e5800b332af0d5412fa9d5f7db3e2ab00f05b752"
+    },
+    "factory_vov_midpoint_release": {
+      "context": [
+        {
+          "field": "h1_compression",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "own_volatility_of_volatility",
+          "op": "lt",
+          "other": "own_volatility_of_volatility_baseline",
+          "scale": 0.7
+        }
+      ],
+      "contract_digest": "5a54a48dbe19fb072addb85653f1e67bbe3ed3a2635f0d41ecdf10591ee06426",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 1.1
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "vol_of_vol_midpoint_release",
+      "hypothesis": "An unusually stable lagged low volatility-of-volatility state may identify compression that releases only after a later closed reclaim of the prior range midpoint with volume expansion.",
+      "id": "factory_vov_midpoint_release",
+      "peer_required": false,
+      "topology_digest": "ce078d1d9cdbc32678471e4bd03a8ef99ee2a07105e3b9f7f3acdd83685edbd4"
+    },
+    "factory_vov_prior_day_release": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_compression",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "own_volatility_of_volatility",
+          "op": "lt",
+          "other": "own_volatility_of_volatility_baseline",
+          "scale": 0.72
+        }
+      ],
+      "contract_digest": "dd3a0322fe09ce5232cd211327f59d26013b174813366858d14c45370d33fb44",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_day_high",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 1.1
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "vol_of_vol_calendar_release",
+      "hypothesis": "A stable lagged volatility-of-volatility compression may resolve directionally only when a later closed candle clears the fully completed prior UTC-day high with strong relative volume.",
+      "id": "factory_vov_prior_day_release",
+      "peer_required": false,
+      "topology_digest": "ee1a30b8203f699473b7179892d888d44eee2657467397ab2c3f52d2b80e6e5f"
+    },
+    "factory_wick_trend_reentry": {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_lower_wick_absorption",
+          "op": "gt",
+          "other": "lower_wick_absorption_baseline",
+          "scale": 1.2
+        }
+      ],
+      "contract_digest": "e4341dcdc9e16bb325be510c83241b088ea0014b4bcfdb719f9981c543d10d50",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "prior_hi",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_hi",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.85
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "wick_absorption_trend_reentry",
+      "hypothesis": "Elevated lagged lower-wick rejection relative to its own baseline may indicate persistent dip absorption before a later closed re-entry above prior local resistance in an up regime.",
+      "id": "factory_wick_trend_reentry",
+      "peer_required": false,
+      "topology_digest": "8acd4c4397217e08bda5c45f48e94593fa5d9dc7b152670d870e5a703169adac"
+    },
+    "factory_wick_vwap_reclaim": {
+      "context": [
+        {
+          "field": "h4_range",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_lower_wick_absorption",
+          "op": "gt",
+          "other": "lower_wick_absorption_baseline",
+          "scale": 1.25
+        }
+      ],
+      "contract_digest": "44c08e96681329a2b20eae9aed4c2ad0ceca0e84299cc37c8435fc9be7c41388",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "bar_proxy_vwap",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close_location",
+          "op": "ge",
+          "value": 0.65
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "wick_absorption_vwap_reclaim",
+      "hypothesis": "Repeated lagged lower-wick rejection inside a completed range may precede a later closed reclaim of the session bar-volume price proxy without assuming hidden order-book absorption.",
+      "id": "factory_wick_vwap_reclaim",
+      "peer_required": false,
+      "topology_digest": "4c0ed3062dcf0662784672395894b4a922573d10bab474b8cf96897fe4b77118"
+    }
+  },
+  "frontier_configs": [
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "mechanism": "multi_horizon_trend_reacceleration",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "mechanism": "trend_vwap_pullback_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "mechanism": "volume_dryup_breakout",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "mechanism": "range_midpoint_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "mechanism": "downside_exhaustion_rebound",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "mechanism": "volatility_contraction_trend_reentry",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "mechanism": "volatility_expansion_pullback_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "mechanism": "relative_strength_persistence_breakout",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "mechanism": "relative_weakness_exhaustion_rebound",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "mechanism": "volatility_leadership_reversal",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "mechanism": "trend_efficiency_breakout",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "mechanism": "serial_dependence_breakout",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "mechanism": "range_wick_absorption_rebound",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "mechanism": "volatility_of_volatility_release",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "mechanism": "peer_beta_residual_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "mechanism": "prior_day_breakout_continuation",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "9557ae433f757b072d294fdd210f3ae8cb5cd60e313dd9dddca09e3bceccfa4a",
+      "mechanism": "factory_efficiency_midpoint_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "2dcdd7db7085b4a1daaecf3facd55607c8d3582045554eb9f2baf2d9657f2fc5",
+      "mechanism": "factory_efficiency_vwap_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "062adfa2bfef66b197ad4b363a33767ba0997b11ce311dd54e3dbc429fa28d6b",
+      "mechanism": "factory_negative_serial_range_rebound",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "b2550ef8cde613b926826bcbd389c10d867b8d3d3d8d9d6aef4815df330a4c63",
+      "mechanism": "factory_serial_prior_day_continuation",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "e4341dcdc9e16bb325be510c83241b088ea0014b4bcfdb719f9981c543d10d50",
+      "mechanism": "factory_wick_trend_reentry",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "44c08e96681329a2b20eae9aed4c2ad0ceca0e84299cc37c8435fc9be7c41388",
+      "mechanism": "factory_wick_vwap_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "5a54a48dbe19fb072addb85653f1e67bbe3ed3a2635f0d41ecdf10591ee06426",
+      "mechanism": "factory_vov_midpoint_release",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "dd3a0322fe09ce5232cd211327f59d26013b174813366858d14c45370d33fb44",
+      "mechanism": "factory_vov_prior_day_release",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "282c474c4aab21976ef2e4b9999a67529bbb5de4190249c1541bb4da4212a1f9",
+      "mechanism": "factory_peer_residual_vwap_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "82057f59d08d0c59bed764cda9bc1aad68a4883503970a5a844e862ca7e21280",
+      "mechanism": "factory_peer_residual_range_break",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "036c35f309da1ead0465be59cd68075da3a6afeb5081197f309cf9d69ae3d3ef",
+      "mechanism": "factory_peer_volatility_midpoint_catchup",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "7c9143ec96553cb4d5712ce7cfb24cf1ba773cef06508d16c6b239519384dbe8",
+      "mechanism": "factory_relative_momentum_vwap_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "ce10e212f7a9949f206ef8c1138d7fc90b97774ad04a2bb1447ab0f5e92b71ab",
+      "mechanism": "factory_gen_efficiency_up_midpoint_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "cb5d89177f5a568a346b9196b808b96749afbe95ed4bbb5e9f5d1ee1b51a8e60",
+      "mechanism": "factory_gen_efficiency_up_vwap_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "77dc1f6e590f5b5c04f621db574a6f3a51ae608c5e4323031557b5714da6c015",
+      "mechanism": "factory_gen_efficiency_up_local_breakout",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "c1ef3d583bbca292db03502f05ce0ae4b11fb1b6b71bb37aecad076379c4a2d0",
+      "mechanism": "factory_gen_efficiency_up_failed_downside_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "f632215690f18e605c9605338e899e8f6ac72cb0faa7bdf6dfb52186536e230a",
+      "mechanism": "factory_gen_efficiency_up_prior_day_breakout",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "172981d65c3dfe1a7dc668e963e451f703a056d4c0b71028ab14930efbcc0913",
+      "mechanism": "factory_gen_serial_positive_midpoint_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "ecbda302e0560a32653cf44d35d489952f68413eee03497a227a821232183a3a",
+      "mechanism": "factory_gen_serial_positive_vwap_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "2971eeb1205847f0461ccc63dcf54417912bb3cbb72c8a19fdddd4e8360f35b7",
+      "mechanism": "factory_gen_serial_positive_local_breakout",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "f8834d02f46e9f3b93d1fada2f07e31c3b73ec67ff918dd445416c9f17b4f87b",
+      "mechanism": "factory_gen_serial_positive_failed_downside_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "49d78a5cb4b677f94cd55206e34fe22ca981d64ddbafffa5746cbdb9af4becd7",
+      "mechanism": "factory_gen_serial_positive_prior_day_breakout",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "4804f44c7a32b0f8bc0402883df5b602ebc7388d29f5aa7ba85360f94e2a5713",
+      "mechanism": "factory_gen_wick_range_midpoint_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "e8aff5cddd99a0653092974975def507b8f0e9da26c444b528d747dec75dcc5f",
+      "mechanism": "factory_gen_wick_range_vwap_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "7b40d2df1c3664b063fd6aa895928a18ce1eb1a658f33e885bd92b51cff261c9",
+      "mechanism": "factory_gen_wick_range_local_breakout",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "61691f6f36097213db69742611bf1496f45230650a07187bdd12e8c166fd0dea",
+      "mechanism": "factory_gen_wick_range_failed_downside_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "a88fc2a2291746787c905ad2831f39dc4b6689729dd384c001cc2ae9b00d7a7f",
+      "mechanism": "factory_gen_wick_range_prior_day_breakout",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "d7510e58f1d525500d2da5eee81e6d10c24a76e2f02de5b4f541a19763e6a08d",
+      "mechanism": "factory_gen_vov_compression_midpoint_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "0794cf1801c30e5e9de303cbb0cd8734821d5b9a94450bdce7409aff0ad7e241",
+      "mechanism": "factory_gen_vov_compression_vwap_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "5c5cb9674a178dc2087030456c3aab2776e6ccef24890235187a9ca4fa6df9cc",
+      "mechanism": "factory_gen_vov_compression_local_breakout",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "5faf17e6a60fd3e47e47dd4c5aa5a6bb0a027c012b66362eca7aa973b3a7c2fa",
+      "mechanism": "factory_gen_vov_compression_failed_downside_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "1fc89425aa167600d11436a323b23e1e78f1a8fb94138e0ffd03fa713dcbad41",
+      "mechanism": "factory_gen_vov_compression_prior_day_breakout",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "eba8c830b0f110fd5e981cd8a5caf0c973391697070146b36ac9cf724851bf7a",
+      "mechanism": "factory_gen_peer_residual_negative_midpoint_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "f0947aa70633e6f7d08c5070855e0df62ab44ac561cd31681081862061732359",
+      "mechanism": "factory_gen_peer_residual_negative_vwap_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "2a9cd9ab1bc02eaca4c216c18215ead81b3b45e66f15bf9f43e6492dab32abbc",
+      "mechanism": "factory_gen_peer_residual_negative_local_breakout",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "562f0dcbbe769df6c7fc5c481acc249b0936b39d0dd8aa69ff0cb8cc8b419985",
+      "mechanism": "factory_gen_peer_residual_negative_failed_downside_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "6dfd064bc2692b50a821775158cf90d4fb263b18ac61393ee7467215fa6ec870",
+      "mechanism": "factory_gen_downside_tail_exhaustion_midpoint_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "94843bb78a2b9948204a8e62b4ea6745725465ce2f32529e97569120d84dad80",
+      "mechanism": "factory_gen_downside_tail_exhaustion_vwap_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "3109d549b4df8ec47cf7532a1fa792546179811688268c5ba9d982d2d8378709",
+      "mechanism": "factory_gen_downside_tail_exhaustion_local_breakout",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "6514231ac1e560d3d1bdbc7516b7a8edc44411f19006be791f931924cfd1327a",
+      "mechanism": "factory_gen_downside_tail_exhaustion_failed_downside_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "32ccdbd527530b7f4545707ee4f181566e7342f2255b46d4c9f3d26fb91bbf8d",
+      "mechanism": "factory_gen_downside_tail_exhaustion_prior_day_breakout",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "d2bf90a7d6db7c3ad223c717fd428788f988e07f952322c744a9656836b59653",
+      "mechanism": "factory_gen_positive_tail_trend_midpoint_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "3ace37a2aa152de1ff57a5f2a3dcf035a50d7cf9f1dd0bd5c954a468f7538952",
+      "mechanism": "factory_gen_positive_tail_trend_vwap_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "38fe95d6a53225ffabeb0514ca81f8510b617f5eb99f27fb654e11bd0dd52117",
+      "mechanism": "factory_gen_positive_tail_trend_local_breakout",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "685115b341ea7e79197eaa86bffeb707fe0b4754485d45a29ad5dd632dbd7f1d",
+      "mechanism": "factory_gen_positive_tail_trend_failed_downside_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "515ea1b46519f469c0623ea6225316f222fb138ca1a84d3e0af702909b124ea7",
+      "mechanism": "factory_gen_positive_tail_trend_prior_day_breakout",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "50528284e82e9a494bff5a1e8ecfee27174d59f352b92f0eab8ce2dbff867621",
+      "mechanism": "factory_gen_deep_drawdown_recovery_midpoint_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "24461a4812f4e6a7dca2355b3308764b6978e3343bb21591a73e916a9b1f0e70",
+      "mechanism": "factory_gen_deep_drawdown_recovery_vwap_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "86b0f2a055acf1fd2ac74dfb920786b0276cdf2a42f7ffb4393d2be55367d06e",
+      "mechanism": "factory_gen_deep_drawdown_recovery_local_breakout",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "802de4e9b879e475bf3a81d36f6233382b0ff625942aa1c253bb9468cd0c7d86",
+      "mechanism": "factory_gen_deep_drawdown_recovery_failed_downside_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "d3b7492ca16b41c718f66a14dbad36e983db6b736d0a8f58ffa31d3c38db7791",
+      "mechanism": "factory_gen_deep_drawdown_recovery_prior_day_breakout",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "9d40e171ab3b73b44be9bfa5b1e11c77472e763d80d4df1b715386a2528b7029",
+      "mechanism": "factory_gen_shallow_drawdown_acceptance_midpoint_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "efb3304da78ac90a87a949ca30b72b2192aef602a5c8694a59a5a0048829c59a",
+      "mechanism": "factory_gen_shallow_drawdown_acceptance_vwap_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "b0b5f304779585575e8eb32508c07b0bfc9188b3b36d702b0d3021a664ca009f",
+      "mechanism": "factory_gen_shallow_drawdown_acceptance_local_breakout",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "73d137b09fe5df9cadd6dec449f2cfc14d3cf9cf7ae054887c0af84204d02d15",
+      "mechanism": "factory_gen_shallow_drawdown_acceptance_failed_downside_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "c2109745e7528f9eb2d2baab69a26f6a251c2868dd1173ba4147ff6fa28ac279",
+      "mechanism": "factory_gen_shallow_drawdown_acceptance_prior_day_breakout",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "e303e6a60f2105a6b1e089a90b3e6a123c34882d286dbf3750d2f3a6d1ed50c6",
+      "mechanism": "factory_gen_wick_pressure_range_midpoint_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "bd56a23cf9ba1d143714a9b5a7b5f1c1ada9bd9661ba167aa8d73825e446cf0b",
+      "mechanism": "factory_gen_wick_pressure_range_vwap_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "af55c7b32bea54cb7132e0a1de82a298e2059a74c81356b1856ef3a3a9ce6f6c",
+      "mechanism": "factory_gen_wick_pressure_range_local_breakout",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "576b7053ff7984068d202bf048324e85d870b8390bd1899cdfd5ad847c5e2ff7",
+      "mechanism": "factory_gen_wick_pressure_range_failed_downside_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "ee370b8dd6956ae6dea9a385c615fc263d7c1c6a268537ef227393464705c289",
+      "mechanism": "factory_gen_wick_pressure_range_prior_day_breakout",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "691015fad5facacf20a917eeb5e4fc22dcaafb08482b8305e08530183b0fb599",
+      "mechanism": "factory_gen_wick_pressure_trend_midpoint_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "b82f84925efc9aebe5ff3bb4b7b7b5530f1312d06a32a67d8d74105da3b449e7",
+      "mechanism": "factory_gen_wick_pressure_trend_vwap_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "0f46f47abe9928716228f5422d71e8e6e6b8f871bdb40b94191db34797f4d57b",
+      "mechanism": "factory_gen_wick_pressure_trend_local_breakout",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "ea88a22629e5edf899e1523d1bda260fc25f8285f2f511b0c86604638127087e",
+      "mechanism": "factory_gen_wick_pressure_trend_failed_downside_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "ee91f0e464f42f6cf91b8dfc375408696ab7931641523e59c3af4e40a93feb61",
+      "mechanism": "factory_gen_wick_pressure_trend_prior_day_breakout",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "2ec0d0ee7d557f673a984cb741abb72da84929e3bce66d65e18306f9c77f1021",
+      "mechanism": "factory_gen_volatility_cluster_release_midpoint_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "d2c3239a7d7d4ce066a6fe6f35a35092ce8e2ea24f573a027cdd9fa4e446941c",
+      "mechanism": "factory_gen_volatility_cluster_release_vwap_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "5fefe3fd00d1f7f174083a2295b95030790c7cb58ae77e1f319e1f935852d00d",
+      "mechanism": "factory_gen_volatility_cluster_release_local_breakout",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "44c0a41c10844305c85fa7a6bd472213da042b80503c4678cd90fdfe0c53ba88",
+      "mechanism": "factory_gen_volatility_cluster_release_failed_downside_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "c238542cfce68874ef9704d7c8a05c96213b5d30e2f7f02afc9509770c390ba9",
+      "mechanism": "factory_gen_volatility_cluster_release_prior_day_breakout",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "c7b833a683da9a1c5234c0a7cbf45f8a4c036d095b0df2e2566faa62659bb709",
+      "mechanism": "factory_gen_peer_lead_followthrough_midpoint_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "0ea48011a9a28dd3a57ba00cd5b6a8e4b9ac4cc3fa4000d83af26040bf56ae1a",
+      "mechanism": "factory_gen_directional_order_trend_midpoint_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "7150d45d85877b88e62dd15e69ebc6d39f74f82db048939863678aeb5c3d2e8a",
+      "mechanism": "factory_gen_directional_order_trend_vwap_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "930e9620b66b9973589017638e6782a57406b62ea781679a4b25678c5dfeb9d8",
+      "mechanism": "factory_gen_directional_order_trend_local_breakout",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "84fa423dc80825161ac34baf255c5c1d10f0bf54704cb1ab118ae163393e4897",
+      "mechanism": "factory_gen_directional_order_trend_failed_downside_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "9e7b6ce00b2c4fd702b6d8a394448a6e5e8b2a67b52f76c04cf5568b71ec8490",
+      "mechanism": "factory_gen_directional_order_trend_prior_day_breakout",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "dbba39b837769a31290152b49a6d2b6faa1fda93f9f3771f7be9ea9bafd460e3",
+      "mechanism": "factory_gen_range_memory_compression_midpoint_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "2d6b5fb8ad6f1cd0637eef05280e8cc78774f226fa68469bdf4bab834f3a022b",
+      "mechanism": "factory_gen_range_memory_compression_vwap_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "4013bf8654fe103d0a0b1c5652ab57e9f8a619675fc8efa8fb73f07422279e01",
+      "mechanism": "factory_gen_range_memory_compression_local_breakout",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "0b0bdde8c9317859e2c8066aae79165b6ea070ec6e4917f680a9818f0c7741b9",
+      "mechanism": "factory_gen_range_memory_compression_failed_downside_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "8af2daa813eb8dc2403c84f997d7e4243d6cd978dfc32761fde476ead3452209",
+      "mechanism": "factory_gen_range_memory_compression_prior_day_breakout",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "54c9fb0b41c30c06d254f553e8db47c45be8ec708b5463bb538feab36baac450",
+      "mechanism": "factory_gen_volume_return_participation_midpoint_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "701625169928290c9b7ed9f83896f7bfc1efa26cee5c573192d4a34a694703bd",
+      "mechanism": "factory_gen_volume_return_participation_vwap_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "5bc9cae03ef395e4864a2d62681b81bd1d276e37cc04b60629eb1e28057e8255",
+      "mechanism": "factory_gen_volume_return_participation_local_breakout",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "0321202f7640c929432156ae015dad34d2acb200d77e164fbc5005a191fec092",
+      "mechanism": "factory_gen_volume_return_participation_failed_downside_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "5ce9d448bade8934ceca8b249e400b113e8b2b01e5cd80e8204fc1fccb39efcc",
+      "mechanism": "factory_gen_volume_return_participation_prior_day_breakout",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "8b0bef81202384fb9a21ba4d6ea59ef325d0f3179a09f38f865c3c40997665c1",
+      "mechanism": "factory_peer_lead_beta_failure_reclaim",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "ba3dfb4028df008ce946aa9c53b22f4ef6391e9f798cf17ff38c210ae8f0fd31",
+      "mechanism": "factory_entropy_volcluster_break",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "102d43d017233f30542eeafae77322783fb45330f6a4db41b713f419d67a59bf",
+      "mechanism": "factory_isolated_downshock_recovery",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "5f5f49ce73f4cbe2a6fc8237408cb7e0824a0e08c05424467ef382314280fdce",
+      "mechanism": "factory_isolated_upshock_followthrough",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "dfa3430d170b99011cdff96d7eb48877e7c60473295b4ec7c7c01855bd9fe9b1",
+      "mechanism": "factory_utc_slot_volume_breakout",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "fb52c0ea9c8fdd785f0133c2c216a3b8a9478691492b4a12924452909cf0ebc9",
+      "mechanism": "factory_causal_bullish_butterfly",
+      "risk_variant": 0
+    },
+    {
+      "entry_model": "closed_4h_1h_15m_next_open",
+      "factory_contract_digest": "96c8d7106e88a93f53a789251f76ea00d68c1678235b40575dd982a2e934c976",
+      "mechanism": "factory_causal_elliott_wave12_breakout",
+      "risk_variant": 0
+    }
+  ]
+}

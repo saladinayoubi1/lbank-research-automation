@@ -1,0 +1,166 @@
+{
+  "archive_semantic_sha256": "2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422",
+  "atr_definition": "Use the unchanged engine atr: preceding 14 closed 15m high-low ranges averaged after shift(1); not Wilder true-range ATR.",
+  "auto_demo_promotion": false,
+  "candidate_config": {
+    "entry_model": "closed_4h_1h_15m_next_open",
+    "factory_contract_digest": "41585ddb65bde9083aa286c87cdb87aee97eaf6771b7e586b63a2b4ee097378d",
+    "mechanism": "factory_causal_4h_break_1h_retest_cost_breakout",
+    "risk_variant": 0
+  },
+  "candidate_config_fingerprint": "72752d70fa446f871fd0c44fdbf03f61dc99f3d417612226401e62a850a28ea4",
+  "closed_entry_filters": "close>open, close>previous_close, price-event=1 and stress-cost-feasible=1; shared ATR validity still applies.",
+  "complete_elliott_or_harmonic_count_claim": false,
+  "cost_gate_uses_stress_profile_for_both_simulation_profiles": true,
+  "costs_per_leg_bps": {
+    "conservative": {
+      "fee": 10,
+      "slippage": 5
+    },
+    "stress": {
+      "fee": 25,
+      "slippage": 15
+    }
+  },
+  "created_at_utc": "2026-10-14T18:18:21.621785+00:00",
+  "decision_time_cost_screen": {
+    "admission": "All finite with C>0,a>0,R>0,STOP>0; require R>Kflat and Ntarget>0. Strict comparisons, no fitted multiplier or relaxed costs.",
+    "boundary": "Decision-time hypothetical next open equals C only for this screen. Actual next-open gaps/fills/stop-target remain the unchanged shared engine; the screen neither predicts a target hit nor guarantees actual profitable fills.",
+    "flat_round_trip_cost_quote_per_unit": "Kflat=C*(1+s)*(1+f)-C*(1-s)*(1-f)=2*C*(f+s)",
+    "inputs": "C=current closed decision close; a=existing lagged engine atr; R=frozen macro H-L. f=25/10000, s=15/10000; no future open.",
+    "projected_entry_quote_per_unit": "E=C*(1+s)",
+    "projected_stop_quote_per_unit": "STOP=E-1.5*a",
+    "projected_target_before_exit_slip": "T=E+3*a",
+    "projected_target_exit_quote_per_unit": "X=T*(1-s)",
+    "projected_target_net_quote_per_unit": "Ntarget=X-E-f*(E+X)"
+  },
+  "decision_timeframe": "15m",
+  "delivery_zip_sha256": "d284a49f1b6e8951763cf225992a52a620289b2baf10815247d8626045763cec",
+  "diagnostic_integration_boundary": "Use a separately source-bound observational hook in the isolated research child to capture the unchanged backtest execution. It must not mutate simulator locals, order or values. Prove identical metrics and retained backtest AST-source hash on hand fixtures before producer admission. No hook capability or full fill-trace coverage is claimed at preregistration; if unavailable, block that producer gate rather than claim an audit.",
+  "eligible_15m_trigger_bars_after_retest_confirmation": [
+    1,
+    8
+  ],
+  "engineering_choices": "6 preceding 4h bars, 6h first-touch window and 8x15m trigger window are frozen engineering horizons before implementation/outcomes; not universal market laws or a guaranteed edge.",
+  "execution": "Unchanged next-open, stop-first on ambiguous stop/target, 1.5 atr/2R/64-bar exits.",
+  "executor": "Isolated Laptop2 research; Laptop1 remains sole Paper writer; failover disabled.",
+  "expiry": "WAIT_RETEST expires strictly after tau+6h so an hour closing exactly at the deadline can qualify; READY expires after retest_confirmation+8 completed 15m steps. Consumed/expired/invalidated identities cannot reopen.",
+  "factory_candidate_contract_digest": "41585ddb65bde9083aa286c87cdb87aee97eaf6771b7e586b63a2b4ee097378d",
+  "factory_candidate_topology_digest": "deed1744dcd440e0037fba08548ac8b3a8a5bcd259a25eb3d8c8ffc033e65c19",
+  "feature_visibility": {
+    "lagged_macro_retest_active": "Equals 1 only for a valid READY retest setup stored after the previous 15m decision; WAIT_RETEST is not entry-active.",
+    "macro_retest_close_breakout_event": "Current closed 15m first eligible fresh price crossing of K; independent of cost/body/context admission and consumes the identity.",
+    "macro_retest_stress_cost_feasible": "Boolean decision-time cost screen using current closed C, previous-bar-derived a and lagged frozen macro R; same stress parameters for both simulation profiles."
+  },
+  "first_retest_deadline_hours_after_macro_close": 6,
+  "first_touch": "First eligible completed 1h with low<=H. If close>H and close>open and low>L, arm K=that 1h high; otherwise consume/disarm this macro identity. Do not wait for a more favorable subsequent touch.",
+  "h4_band_lookback_closed_bars": 6,
+  "higher_timeframe_filters": "Unchanged completed/asof and one-decision-lagged h4_up=1, h1_vol_ok=1.",
+  "hypothesis_count": 1,
+  "independent_strategy_qa_complete": false,
+  "initial_simulated_cash_usdt_per_isolated_cell": 10000,
+  "input_validation": "Complete aligned UTC15m/1h/4h grids with unique ordered timestamps, finite positive OHLC, consistent high/low and nonnegative volume. Missing/partial/overlapping higher-timeframe bars never arm state; malformed canonical input fails closed.",
+  "lifecycle_at_preregistration": "proposal_only_before_implementation",
+  "live_enabled": false,
+  "locked_diagnostic_rows": 12,
+  "macro_event": "At newly closed 4h k, freeze H=max(high[k-6:k]) and L=min(low[k-6:k]); R=H-L>0. Accept a bullish close[k]>open[k] and close[k]>H. The current k bar is excluded from its band.",
+  "macro_identity": "The accepted 4h candle open timestamp/index plus frozen prior-band endpoints; one first retest and one price event per macro identity.",
+  "manifest_sha256": "81ddd82c2bbe42cf6c57dd2a5b6b2776803fa6f155fc433d8968f42354a98cb0",
+  "market": "spot_long_only",
+  "market_runs_before_implementation": 0,
+  "maximum_daily_loss_fraction": 0.05,
+  "maximum_drawdown_fraction": 0.1,
+  "maximum_position_fraction": 0.1,
+  "maximum_trades_per_strategy": null,
+  "minimum_trade_count_gate": null,
+  "monthly_return_claim": false,
+  "name": "closed_4h_break_first_1h_retest_cost_feasible_15m_continuation",
+  "next_gate": "Implement one additive helper/proposal and approved-field extension; verify source/causal/compatibility/observational hooks. Only then freeze one fresh source/data/ledger-bound producer. Do not replay v8/v9 or retune observed later folds.",
+  "official_coordinator_advanced": false,
+  "owner_demo_admission": false,
+  "owner_reference_usdt": 500,
+  "parameter_configurations": 1,
+  "parent_computational_source": "8c06ca692a06611431730e4aeb822b1d9f47f30d",
+  "parent_evidence_head": "214ca1864acef609a6061bd0134e881f266c809f",
+  "preregistration_digest": "76d6162e5bae2685715287db0b54979e99f26180b5e34a29ea673d41b1708e08",
+  "preserve_prior_contracts_ids_order_configs_risk_and_frontier_tiers": true,
+  "previous_ledger_file_sha256": "14cc329d8acd02fbc3a13268826446f44d05dcf9eb299a6c13738558342f401c",
+  "previous_ledger_semantic_digest": "b784b409c16b77fa5d6dd5d65b7f8ed67e13e65aa6d230a74e843f9e63720e8f",
+  "previous_native_ledger_path": "E:\\NEXUS-QA\\causal-elliott-wave12-v9-first-producer-20261014T161923Z\\producer\\novelty-ledger.json",
+  "previously_inspected_archive_not_pristine": true,
+  "price_event_consumption": "Consume the macro identity at its first eligible price event even if separate body, regime, ATR or cost admission gates reject entry; never delay or reactivate it.",
+  "price_trigger": "Using only the setup stored after t-1, emit the first fresh close[t]>K with close[t-1]<=K. Intrabar high is insufficient.",
+  "prior_inventory": {
+    "all_mechanisms": 121,
+    "factory_specs": 94
+  },
+  "prior_inventory_semantic_digest": "58d641e9ec8a2b689407fbdf033c415a8e6ff5024e56fc1a1f4cd7f99c6ad2ee",
+  "prospective_diagnostics_required": [
+    "macro/first-touch/trigger identities and confirmation times",
+    "decision/fill/exit bar indices and UTC",
+    "execution-reference versus slipped entry/exit prices",
+    "quantity and both fees",
+    "stop/target/atr and exit reason",
+    "cost-screen inputs and denial reason"
+  ],
+  "raw_file_sha256": {
+    "bybit_market/btc_usdt/hour1.parquet": "f8f2236785c036fe40808809397d47729b3add4c8f0b9e19c77d3b771f8e6847",
+    "bybit_market/btc_usdt/hour4.parquet": "e0d019a76882a02dc463a34d1d9375841f81d412b9a3310d9e21c2d7b2738dc6",
+    "bybit_market/btc_usdt/minute15.parquet": "c3afe92899dda8fe52937c955323cc8e04bf8f200a68eb8651e55d6020981226",
+    "bybit_market/eth_usdt/hour1.parquet": "ba0743588c5089e6a6b250b4ebb029a43fea57d0a020df5ab1316c34efdcd88a",
+    "bybit_market/eth_usdt/hour4.parquet": "292005e091d914fbb9d108c3d8d65e93785cc32b9c73e07ea02e0d44cf7da65b",
+    "bybit_market/eth_usdt/minute15.parquet": "ce603440650d0022b1a17a7922da743a3b6219ba9afd89ad4362b70fbe3bbfa1"
+  },
+  "raw_timestamp_meaning": "canonical candle open UTC; availability is open + interval",
+  "research_only": true,
+  "retest_eligibility": "Only a completed 1h candle whose OPEN is at/after macro CLOSE tau and whose CLOSE is >tau and <=tau+6h. No candle overlapping the displacement hour counts.",
+  "retest_timeframe": "1h",
+  "reward_risk_multiple": 2,
+  "roundoff_policy": "Representation only; no economic tolerance or optimized margin.",
+  "same_close_processing_order": [
+    "Evaluate previous-decision stored macro/armed setup: expiry and current closed 15m invalidation first, then a fresh current price event.",
+    "Process each newly completed eligible 1h bar for the surviving previous macro; first touch is decisive. The resulting retest setup becomes future state only.",
+    "Process the newly completed 4h breakout last. A newly accepted macro replaces/disarms an old pending macro for future decisions; a nonaccepted 4h bar does not create or replace a macro."
+  ],
+  "schema": "nexus.causal-macro-break-retest.v1",
+  "shared_backtest_function_sha256": "e44e2bada1efbf2427edfee224d75e96067bfcf1e3fa07b79fa39a09782b9bfb",
+  "source_gate_requirements": [
+    "hand 4h band/first 1h touch/lagged 15m trigger examples",
+    "every-prefix and future-tail invariance across all three timeframes",
+    "no partial/overlapping H1/H4 visibility",
+    "boundary invalidation/first-touch denial/expiry/same-close ordering",
+    "cost math at both profiles and invalid/gap/ATR values",
+    "price-event consumption under body/regime/cost denial",
+    "all 94 prior contracts/121 mechanisms/configs/order and exact shared risk source",
+    "source-bound observational trace preserves hand-fixture fills and aggregate outputs",
+    "exact-source full hosted and native source gates with actual owned exit"
+  ],
+  "source_tests_before_implementation": 0,
+  "split_fractions": {
+    "historically_inspected_test": 0.2,
+    "train": 0.6,
+    "validation": 0.2
+  },
+  "stop_atr_multiple": 1.5,
+  "stop_risk_fraction": 0.001,
+  "structure_timeframe": "4h",
+  "symbols": [
+    "BTCUSDT",
+    "ETHUSDT"
+  ],
+  "system_map_nodes": [
+    "DATA-21",
+    "RES-30",
+    "RES-31",
+    "RES-32",
+    "VAL-40",
+    "QA-41"
+  ],
+  "time_exit_bars": 64,
+  "timing_example": "Macro closes 04:00. Earliest fully later retest is 04:00..05:00, known 05:00 after that decision. Earliest price decision is the 05:00..05:15 candle close. Fill is next bar OPEN at 05:15 (later bar index, same boundary UTC); never at an earlier bar. This preserves the shared zero-boundary modeled next-open convention and makes no live latency claim.",
+  "training_economic_diagnosis_receipt_sha256": "dd346d5c6df40c4138519ac382a0b705d1ce767d9e2e9cf8f2414c9db6ed6119",
+  "training_screen_cells": 4,
+  "training_selection_only": true,
+  "venue": "bybit",
+  "whole_interval_invalidation": "From the first fully subsequent closed 15m bar onward, any low<=L or close<=H consumes/disarms the macro before a same-bar entry or retest acceptance. Preserve strict hold behavior through waiting/retest/trigger states."
+}

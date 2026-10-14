@@ -1,0 +1,55 @@
+{
+  "authority": "research-only-no-auto-promotion",
+  "auto_demo_promotion": false,
+  "candidates": [
+    {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "lagged_macro_retest_active",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "previous_close"
+        },
+        {
+          "field": "macro_retest_close_breakout_event",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "macro_retest_stress_cost_feasible",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "family": "closed_macro_break_retest_continuation",
+      "hypothesis": "A closed 4h break of a frozen preceding 24h band, followed by the first fully later closed 1h touch-and-hold and a separate lagged 15m fresh break of that retest high, may encode larger structural continuation. A fixed decision-time stress-cost feasibility gate screens the same candidate under both cost profiles; positive expectancy is unproved.",
+      "id": "factory_causal_4h_break_1h_retest_cost_breakout",
+      "peer_required": false
+    }
+  ],
+  "live_trading_authority": false,
+  "no_minimum_trade_count_gate": true,
+  "schema": "nexus.mechanism-factory.v1",
+  "selection_basis": "training_partition_only"
+}

@@ -1,0 +1,263 @@
+{
+  "schema": "nexus.macro-retest-v10-computational-closure.v1",
+  "preregistration_commit": "e5a0fed7cc327bfbfab5e197219f7da34e7e3ce1",
+  "preregistration_digest": "76d6162e5bae2685715287db0b54979e99f26180b5e34a29ea673d41b1708e08",
+  "file_count": 42,
+  "files": [
+    {
+      "path": "market_data_provenance_manifest.py",
+      "sha256": "eaa465f962009442b0a1b82fd17094308daa9c0f429655261ffe004088581dad",
+      "bytes": 11085,
+      "git_blob_sha1": "aea9ccab387b5a8b4f3f648c852de0f0c2b9745a"
+    },
+    {
+      "path": "market_data_source_validator.py",
+      "sha256": "fb95aafb6ad7ba5b1bad44be2d0b4498ecfc2e947afa29ca0e4771110382d384",
+      "bytes": 14460,
+      "git_blob_sha1": "fd54ee216d7b0e4ffdf4f6e870da451d178fe1e1"
+    },
+    {
+      "path": "nexus_backtest_observer.py",
+      "sha256": "ee7bc94002658178e7d140fd5e1d1745d40c5a5e955b688f509076f87ff74ad3",
+      "bytes": 10103,
+      "git_blob_sha1": "e5b16bffe592d5e744d7af9f1d63c96b00aef2d5"
+    },
+    {
+      "path": "nexus_causal_butterfly_features.py",
+      "sha256": "03e4f37384b3bcc06d21396b46541e2250f1d0e41b5d7c92b4c0bd39b0653b9c",
+      "bytes": 6296,
+      "git_blob_sha1": "c46bc86b8c12b98f5b62ca67e4b6e4e225b28930"
+    },
+    {
+      "path": "nexus_causal_elliott_wave12_features.py",
+      "sha256": "84cbe6bcc4f3b393e9feecdc644244bf06189dd8d0e438b080d62be85c7cdc17",
+      "bytes": 7669,
+      "git_blob_sha1": "c1eb1f26e9f516defaab402983c5c7f72161cc29"
+    },
+    {
+      "path": "nexus_causal_jump_features.py",
+      "sha256": "3cbc2871f69eda417bca1d717374ae8b81fc6b8c286c302bb73caf9bdb04ec54",
+      "bytes": 1560,
+      "git_blob_sha1": "c1333488d03edfe11b7ac860ad848e23f4f9bcaf"
+    },
+    {
+      "path": "nexus_causal_macro_retest_features.py",
+      "sha256": "665657585d1ab470fedc8d9926af4429c8380e677f519f427350a085dab93c57",
+      "bytes": 9965,
+      "git_blob_sha1": "9a76b3f00130cdb7a350f624f8473190a0daf29b"
+    },
+    {
+      "path": "nexus_causal_slot_volume_features.py",
+      "sha256": "2ba569f315504177f92a22e262f1e9488ad31e30cd3b87a6db946c07945dd2b0",
+      "bytes": 2455,
+      "git_blob_sha1": "98a77e927766d33cbea37548d21cc57364c2aabe"
+    },
+    {
+      "path": "nexus_composite_strategy_research.py",
+      "sha256": "9931aaeb51a25fb0fbeb5f3b5384ddc8d15eff5b3ccbfc10dd7161ca4b40d2b7",
+      "bytes": 69150,
+      "git_blob_sha1": "b88ae5347961d20589ce359741f09dfb7ae07f56"
+    },
+    {
+      "path": "nexus_demo_archive_contract.py",
+      "sha256": "a838fe4783299ca6e772d05cfcaf0ddd87878623676eea19c06c9c13d034dcd3",
+      "bytes": 285,
+      "git_blob_sha1": "5372eec380fa4b640724a9629c362b4b149c893c"
+    },
+    {
+      "path": "nexus_demo_archive_replay.py",
+      "sha256": "afb583725ab7fa706ba31b564a0ea5bdb8b3887203d497e9ed9579b80bac7a54",
+      "bytes": 6329,
+      "git_blob_sha1": "3ab63cea17f0d37ab5c3a38bb881b594525820f0"
+    },
+    {
+      "path": "nexus_mechanism_factory.py",
+      "sha256": "fe106fe248b402772ac406324f2bc1a9ee7ce458584aa83a8535f90c3dc47db6",
+      "bytes": 20612,
+      "git_blob_sha1": "0942c1a375994576280964f53442e41bd7e2afe7"
+    },
+    {
+      "path": "nexus_multitimeframe_strategy_discovery.py",
+      "sha256": "ad3dea119cd0914200f2ee607fd8e8cb6609760379cf976d05556a3096dc51d1",
+      "bytes": 30552,
+      "git_blob_sha1": "7b84d72fa42179038efc020f7ab0ca0d5a58a5ec"
+    },
+    {
+      "path": "nexus_multitimeframe_verified_archive_discovery.py",
+      "sha256": "cdd2a182f6f5f34248fb9ab4d0224bf1f692a6e77503af9c971a16744c397e22",
+      "bytes": 5306,
+      "git_blob_sha1": "974d3d5874af7da0e7bcb3a8ffe2a20ea1ff1d52"
+    },
+    {
+      "path": "phase5_data_binding.py",
+      "sha256": "1408e51ec6f561768e3e88f4d0c4ad4b0085212220cf1656bb7d35388eccbf45",
+      "bytes": 8173,
+      "git_blob_sha1": "bf121f1438d6a2fcb1d0408fdc2a29936ce7de72"
+    },
+    {
+      "path": "research/causal_bullish_butterfly_v8_preregistration.json",
+      "sha256": "37b2d821925d890928ac281a81f23c2245c560e2bb1668fe553f2a1db40457c4",
+      "bytes": 2206,
+      "git_blob_sha1": "abe474138242d7b4809092627b5f697d06128889"
+    },
+    {
+      "path": "research/causal_elliott_wave12_v9_candidate_proposal.json",
+      "sha256": "2d7a30862c87bcf805362638068df215f0fc382558550c9b60f641d383920ca9",
+      "bytes": 1489,
+      "git_blob_sha1": "c57330731c8f0b36cd3d52d6826f98ed4e30aa3d"
+    },
+    {
+      "path": "research/causal_elliott_wave12_v9_preregistration.json",
+      "sha256": "532329065d2a9acfff425b2bf4540d9ee245494fae7ccf174f1eb3ba140b54ac",
+      "bytes": 8911,
+      "git_blob_sha1": "3cd7b412d2ed03ed836abc3ec665c904cc844e07"
+    },
+    {
+      "path": "research/causal_macro_break_retest_v10_candidate_proposal.json",
+      "sha256": "9e92c756e8afe5f858d626d88f55b85a247c54c7818b1b77a12576a6d6acafcb",
+      "bytes": 1602,
+      "git_blob_sha1": "fc14b706aa4082fed0ac6d19ba5af75fb7afac1f"
+    },
+    {
+      "path": "research/causal_macro_break_retest_v10_preregistration.json",
+      "sha256": "2234a61ffb4b7b5238b478a51f323e4efea6c4334bc7b44081de46c27c50aad1",
+      "bytes": 11629,
+      "git_blob_sha1": "9a2106db0964eb384be6354ec7e52457bfe8f8be"
+    },
+    {
+      "path": "research/mechanism_factory_v1.json",
+      "sha256": "bc4e7ee86291699081b31fa4178940995fced650693d9a8a27ddae416cb6b7bd",
+      "bytes": 14484,
+      "git_blob_sha1": "fd6ee3f60d2cd50ccb7881991c28810c3e205a96"
+    },
+    {
+      "path": "research/mechanism_factory_v10.json",
+      "sha256": "9e92c756e8afe5f858d626d88f55b85a247c54c7818b1b77a12576a6d6acafcb",
+      "bytes": 1602,
+      "git_blob_sha1": "fc14b706aa4082fed0ac6d19ba5af75fb7afac1f"
+    },
+    {
+      "path": "research/mechanism_factory_v5.json",
+      "sha256": "7914d6964724bebad80ebccb0137278b8b7a020b05d1df3e378bc7615a6300a6",
+      "bytes": 3604,
+      "git_blob_sha1": "bc963ce010ad69cac91c5076c6cfba1b7e42e82d"
+    },
+    {
+      "path": "research/mechanism_factory_v6.json",
+      "sha256": "46df056dc9d66c08a11ca1b4a553760d7e79d0c250413cb07b07285a14f78bbd",
+      "bytes": 2260,
+      "git_blob_sha1": "86fdd3095325f324b284f0907b5ccc30d835f949"
+    },
+    {
+      "path": "research/mechanism_factory_v7.json",
+      "sha256": "1fc415248dd18335a3824d0020a1bf5bfe36352807725857283becec575ead74",
+      "bytes": 1536,
+      "git_blob_sha1": "e5ae7a28cc8bf3fa204d28957325fbd9b2287c90"
+    },
+    {
+      "path": "research/mechanism_factory_v8.json",
+      "sha256": "3268a6853a6b27045da02f3bf407b1e8be724f8e99a41d01bc994e8f4e65fdcb",
+      "bytes": 1350,
+      "git_blob_sha1": "44a85fa99c1e6c23cf047da8548b9a36a4760d89"
+    },
+    {
+      "path": "research/mechanism_factory_v9.json",
+      "sha256": "2d7a30862c87bcf805362638068df215f0fc382558550c9b60f641d383920ca9",
+      "bytes": 1489,
+      "git_blob_sha1": "c57330731c8f0b36cd3d52d6826f98ed4e30aa3d"
+    },
+    {
+      "path": "tests/fixtures/butterfly_v8_prior_inventory.json",
+      "sha256": "9697c5db1eb627e2ca7d44eaf2156bb12a61bd0378f12772b64989b87ccb7934",
+      "bytes": 22794,
+      "git_blob_sha1": "75507208fd738c84acf75b054406f5528a590014"
+    },
+    {
+      "path": "tests/fixtures/butterfly_v8_terminal_ledger.json",
+      "sha256": "1f2d755032a3425a80ac4c09a0227513ed626b68a0c4d1ddfeafcac8c27b07b1",
+      "bytes": 9222,
+      "git_blob_sha1": "7933f5ff093d88607c7fc372043a625c6ef300c5"
+    },
+    {
+      "path": "tests/fixtures/elliott_v9_prior_inventory.json",
+      "sha256": "dfc86894917119d5247dee5e5a403613ebedd4c0c6dc63680ab11be193a93b26",
+      "bytes": 180163,
+      "git_blob_sha1": "ab21f48d9215bb4395c73cfc199d3435db4c1c95"
+    },
+    {
+      "path": "tests/fixtures/elliott_v9_terminal_ledger.json",
+      "sha256": "c42ec37a0e7461e5939cb960196e99b6a9e55df954489ffd7d001efe4bd59115",
+      "bytes": 9551,
+      "git_blob_sha1": "c54f4c48804f57df85860d9a5a7cce4aa818b4b2"
+    },
+    {
+      "path": "tests/fixtures/macro_retest_v10_previous_engine.py",
+      "sha256": "15bece0ef68256a625532651d10e11f6c32444040f9c9d720ffcc5e29685afeb",
+      "bytes": 68070,
+      "git_blob_sha1": "4b2ac6ab09632abab83820247d29f6bef3654bfc"
+    },
+    {
+      "path": "tests/fixtures/macro_retest_v10_prior_approved_fields.json",
+      "sha256": "36b9b0605eedee7651658eecee097de30cfa112288c47cfeb2e058c823a4458f",
+      "bytes": 2048,
+      "git_blob_sha1": "4c332221aae15e908dc4ab6a591cf6a0e307ca3e"
+    },
+    {
+      "path": "tests/fixtures/macro_retest_v10_prior_inventory.json",
+      "sha256": "b7ece27debecb9e9ccb4237cfe6d9bcf4286c063463506db98e7d146b4f967c2",
+      "bytes": 176739,
+      "git_blob_sha1": "2ca99ebac7767f650263e69bc1b299c256cd7c5c"
+    },
+    {
+      "path": "tests/fixtures/macro_retest_v10_terminal_ledger.json",
+      "sha256": "14cc329d8acd02fbc3a13268826446f44d05dcf9eb299a6c13738558342f401c",
+      "bytes": 9718,
+      "git_blob_sha1": "f83143360db15c9b8296ebd4026ed4ff715e0412"
+    },
+    {
+      "path": "tests/fixtures/utc_slot_v7_prior_generations.json",
+      "sha256": "69050370a6fc0229fb3b7a188a3d34d603139482e443bd89562b75e0a2563f09",
+      "bytes": 171419,
+      "git_blob_sha1": "350f62a8dadf8cd55596197bdd9e184834910535"
+    },
+    {
+      "path": "tests/fixtures/utc_slot_v7_terminal_ledger.json",
+      "sha256": "061f09f5797c76ab110c99beddb7dab87459bdf08bd9e17b1677c8aeeb1088c1",
+      "bytes": 9069,
+      "git_blob_sha1": "9d3f376bc4be787db7b0fa0cd5ee793197b55e70"
+    },
+    {
+      "path": "tests/test_nexus_causal_butterfly_features.py",
+      "sha256": "869e83c76ead64339580f33dd100ce8ad8e57e5d468f233a675a9955da46d82b",
+      "bytes": 13203,
+      "git_blob_sha1": "158fdc50e0076b6eb2d48cbdea8a1f29355d869e"
+    },
+    {
+      "path": "tests/test_nexus_causal_elliott_wave12_features.py",
+      "sha256": "1b505bd6fc71091b7ee7cebc0c3c00844763c1fc50583997f9beb3a0f4f875fc",
+      "bytes": 18165,
+      "git_blob_sha1": "c5f017212bde45f55b43b0021b97f50aee5ed4e8"
+    },
+    {
+      "path": "tests/test_nexus_causal_macro_retest_features.py",
+      "sha256": "742ff8007ca623120cb94ff0f6edc317763146031c24466bda93b91d803e8401",
+      "bytes": 25604,
+      "git_blob_sha1": "28e1f287f899b5c9f07f6e11b876c0502650dbbe"
+    },
+    {
+      "path": "tests/test_nexus_causal_slot_volume_features.py",
+      "sha256": "19557c390c96b5bf3212a82608692e76cc804d16fa628aa46b803ad200a6f485",
+      "bytes": 10924,
+      "git_blob_sha1": "4a0a4a9c4c14b8d2d108d5e4c7c3f995e2dcedb6"
+    },
+    {
+      "path": "tests/test_nexus_composite_fast_frontier.py",
+      "sha256": "94daf7b24d8d071e9785427b0c64f4092718b057dc4c11a7c3a806b10df1c383",
+      "bytes": 10430,
+      "git_blob_sha1": "af7b901eee61dd81894d8f4d904c3c32de51aae6"
+    }
+  ],
+  "native_gate_complete": false,
+  "market_runs": 0,
+  "closure_digest": "33b2ca5e8e02c9a63b68f0510ad58b4a28a776f60078a5aa322ccf2a75e614e1"
+}

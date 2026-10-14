@@ -27,6 +27,7 @@ from nexus_causal_jump_features import build_lagged_jump_features
 from nexus_causal_slot_volume_features import build_lagged_utc_slot_volume_features
 from nexus_causal_butterfly_features import build_lagged_butterfly_features
 from nexus_causal_elliott_wave12_features import build_lagged_elliott_wave12_features
+from nexus_causal_macro_retest_features import build_lagged_macro_retest_features
 from nexus_mechanism_factory import (
     MechanismFactoryError,
     factory_configs,
@@ -160,6 +161,17 @@ if (
 ):
     raise MechanismFactoryError("Elliott wave12 extension duplicates existing ID or topology")
 FACTORY_SPECS = {**FACTORY_SPECS, **ELLIOTT_EXTENSION_SPECS}
+MACRO_RETEST_EXTENSION_SPECS = load_factory_contract(
+    Path(__file__).resolve().parent / "research" / "mechanism_factory_v10.json"
+)
+if (
+    set(MACRO_RETEST_EXTENSION_SPECS) & set(FACTORY_SPECS)
+    or {s["topology_digest"] for s in MACRO_RETEST_EXTENSION_SPECS.values()}
+    & {s["topology_digest"] for s in FACTORY_SPECS.values()}
+):
+    raise MechanismFactoryError("macro retest extension duplicates existing ID or topology")
+FACTORY_SPECS = {**FACTORY_SPECS, **MACRO_RETEST_EXTENSION_SPECS}
+MACRO_RETEST_EXTENSION_MECHANISMS = factory_ids(MACRO_RETEST_EXTENSION_SPECS)
 ELLIOTT_EXTENSION_MECHANISMS = factory_ids(ELLIOTT_EXTENSION_SPECS)
 BUTTERFLY_EXTENSION_MECHANISMS = factory_ids(BUTTERFLY_EXTENSION_SPECS)
 SLOT_VOLUME_EXTENSION_MECHANISMS = factory_ids(SLOT_VOLUME_EXTENSION_SPECS)
@@ -182,7 +194,7 @@ PEER_MECHANISMS = frozenset({
     "volatility_leadership_reversal",
     "peer_beta_residual_reclaim",
 }) | factory_peer_ids(FACTORY_SPECS)
-FRONTIER_SCREEN_VERSION = "nexus.frontier-train-screen.v9"
+FRONTIER_SCREEN_VERSION = "nexus.frontier-train-screen.v10"
 FRONTIER_SHORTLIST_SIZE = 3
 GENERATED_FRONTIER_BATCH_SIZE = 12
 # Distinct entry mechanisms vs risk/feature parameter variations are explicitly
@@ -332,6 +344,8 @@ def build_features(frames: dict[str, pd.DataFrame], *, peer_15m: pd.DataFrame | 
     for column, values in build_lagged_butterfly_features(f).items():
         f[column] = values.to_numpy()
     for column, values in build_lagged_elliott_wave12_features(f).items():
+        f[column] = values.to_numpy()
+    for column, values in build_lagged_macro_retest_features(frames).items():
         f[column] = values.to_numpy()
     displacement_16 = (close.shift(1) / close.shift(17) - 1.0)
     f["trend_efficiency_16"] = (
@@ -1013,12 +1027,14 @@ def _frontier_configs_to_screen(ledger: dict[str, Any]) -> list[dict[str, Any]]:
     slot_volume_extension: list[dict[str, Any]] = []
     butterfly_extension: list[dict[str, Any]] = []
     elliott_extension: list[dict[str, Any]] = []
+    macro_retest_extension: list[dict[str, Any]] = []
     generated_ids = set(GENERATED_FACTORY_MECHANISMS)
     extension_ids = set(REVIEWED_EXTENSION_MECHANISMS)
     jump_ids = set(JUMP_EXTENSION_MECHANISMS)
     slot_volume_ids = set(SLOT_VOLUME_EXTENSION_MECHANISMS)
     butterfly_ids = set(BUTTERFLY_EXTENSION_MECHANISMS)
     elliott_ids = set(ELLIOTT_EXTENSION_MECHANISMS)
+    macro_retest_ids = set(MACRO_RETEST_EXTENSION_MECHANISMS)
     for config in FRONTIER_CONFIGS:
         if config["mechanism"] in evaluated or config["mechanism"] in screened:
             continue
@@ -1029,7 +1045,9 @@ def _frontier_configs_to_screen(ledger: dict[str, Any]) -> list[dict[str, Any]]:
             }),
         }
         mechanism = config["mechanism"]
-        if mechanism in elliott_ids:
+        if mechanism in macro_retest_ids:
+            macro_retest_extension.append(row)
+        elif mechanism in elliott_ids:
             elliott_extension.append(row)
         elif mechanism in butterfly_ids:
             butterfly_extension.append(row)
@@ -1058,7 +1076,9 @@ def _frontier_configs_to_screen(ledger: dict[str, Any]) -> list[dict[str, Any]]:
         return slot_volume_extension[:GENERATED_FRONTIER_BATCH_SIZE]
     if butterfly_extension:
         return butterfly_extension[:GENERATED_FRONTIER_BATCH_SIZE]
-    return elliott_extension[:GENERATED_FRONTIER_BATCH_SIZE]
+    if elliott_extension:
+        return elliott_extension[:GENERATED_FRONTIER_BATCH_SIZE]
+    return macro_retest_extension[:GENERATED_FRONTIER_BATCH_SIZE]
 
 
 def research_mode(ledger: dict[str, Any]) -> str:

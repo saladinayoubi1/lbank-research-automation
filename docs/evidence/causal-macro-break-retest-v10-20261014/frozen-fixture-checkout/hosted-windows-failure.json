@@ -1,0 +1,34 @@
+{
+  "schema": "nexus.v10-hosted-frozen-fixture-crlf-failure.v1",
+  "observed_at_utc": "2026-10-14T19:38:45.474Z",
+  "source_head": "d5ce79fa587e69b5a587fdbc04711a2c71200594",
+  "job_id": 116057550743,
+  "run_id": 38623751321,
+  "failed_test": "tests/test_nexus_causal_macro_retest_features.py::IntegrationTests::test_feature_engine_preserves_all_old_columns_on_source_bound_fixture",
+  "failed_step": "Run tests",
+  "dependency_consistency": "success",
+  "compile": "success",
+  "architecture": "success",
+  "project_memory": "success",
+  "test_summary": {
+    "failed": 1,
+    "passed": 3800,
+    "skipped": 20,
+    "subtests_passed": 454,
+    "seconds": 275.04
+  },
+  "expected_frozen_lf_sha256": "15bece0ef68256a625532651d10e11f6c32444040f9c9d720ffcc5e29685afeb",
+  "actual_windows_sha256": "d2a8509bf883a07cb835fe4582afe3f1129a4ebb5ce46af32b339912a91acd4c",
+  "deterministic_crlf_conversion_reproduced": true,
+  "source_excerpt": [
+    "2026-10-14T19:32:35.3472743Z E       AssertionError: 'd2a8509bf883a07cb835fe4582afe3f1129a4ebb5ce46af32b339912a91acd4c' != '15bece0ef68256a625532651d10e11f6c32444040f9c9d720ffcc5e29685afeb'",
+    "2026-10-14T19:32:35.3501071Z FAILED tests/test_nexus_causal_macro_retest_features.py::IntegrationTests::test_feature_engine_preserves_all_old_columns_on_source_bound_fixture - AssertionError: 'd2a8509bf883a07cb835fe4582afe3f1129a4ebb5ce46af32b339912a91acd4c' != '15bece0ef68256a625532651d10e11f6c32444040f9c9d720ffcc5e29685afeb'",
+    "2026-10-14T19:32:35.3504131Z 1 failed, 3800 passed, 20 skipped, 22 warnings, 454 subtests passed in 275.04s (0:04:35)",
+    "2026-10-14T19:32:35.7588607Z ##[error]Process completed with exit code 1."
+  ],
+  "failure_scope": "One frozen fixture's worktree byte hash changed under Windows checkout line-ending conversion. Actual Git reproduction matches the exact failing hash; no transient-failure classification or job rerun.",
+  "fix_scope": "Append one target-specific text eol=lf attribute. No fixture, test/hash assertion, simulator, strategy contract or frozen workflow is modified.",
+  "v10_market_runs": 0,
+  "research_only": true,
+  "live_enabled": false
+}
