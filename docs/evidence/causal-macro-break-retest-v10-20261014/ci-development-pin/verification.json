@@ -1,0 +1,203 @@
+{
+  "schema": "nexus.macro-retest-v10-ci-dev-pin-verification.v1",
+  "started_at_utc": "2026-10-14T19:24:22.923417+00:00",
+  "completed_at_utc": "2026-10-14T19:24:25.310243+00:00",
+  "python": "3.12.14",
+  "packaging_code_and_metadata_version": "26.3",
+  "four_existing_test_functions": [
+    "test_runtime_lock_uses_exact_versions",
+    "test_development_lock_includes_runtime_lock_and_exact_test_versions",
+    "test_declared_runtime_dependencies_are_in_lock",
+    "test_automation_uses_lock_files"
+  ],
+  "test_function_count": 4,
+  "full_pytest_executed": false,
+  "pip_check_before": {
+    "exit_code": 1,
+    "stdout": "pipx 1.17.12 has requirement packaging>=26.3, but you have packaging 26.2."
+  },
+  "pip_check_after": {
+    "exit_code": 0,
+    "stdout": "No broken requirements found."
+  },
+  "fixture_boundary": "Synthetic pipx requirement/old 26.2 metadata; real already installed packaging 26.3 module and metadata. This is an offline compatibility reproduction, not full locked dependency installation or hosted Windows proof.",
+  "unchanged_computational_files": [
+    {
+      "path": "market_data_provenance_manifest.py",
+      "match": true
+    },
+    {
+      "path": "market_data_source_validator.py",
+      "match": true
+    },
+    {
+      "path": "nexus_backtest_observer.py",
+      "match": true
+    },
+    {
+      "path": "nexus_causal_butterfly_features.py",
+      "match": true
+    },
+    {
+      "path": "nexus_causal_elliott_wave12_features.py",
+      "match": true
+    },
+    {
+      "path": "nexus_causal_jump_features.py",
+      "match": true
+    },
+    {
+      "path": "nexus_causal_macro_retest_features.py",
+      "match": true
+    },
+    {
+      "path": "nexus_causal_slot_volume_features.py",
+      "match": true
+    },
+    {
+      "path": "nexus_composite_strategy_research.py",
+      "match": true
+    },
+    {
+      "path": "nexus_demo_archive_contract.py",
+      "match": true
+    },
+    {
+      "path": "nexus_demo_archive_replay.py",
+      "match": true
+    },
+    {
+      "path": "nexus_mechanism_factory.py",
+      "match": true
+    },
+    {
+      "path": "nexus_multitimeframe_strategy_discovery.py",
+      "match": true
+    },
+    {
+      "path": "nexus_multitimeframe_verified_archive_discovery.py",
+      "match": true
+    },
+    {
+      "path": "phase5_data_binding.py",
+      "match": true
+    },
+    {
+      "path": "research/causal_bullish_butterfly_v8_preregistration.json",
+      "match": true
+    },
+    {
+      "path": "research/causal_elliott_wave12_v9_candidate_proposal.json",
+      "match": true
+    },
+    {
+      "path": "research/causal_elliott_wave12_v9_preregistration.json",
+      "match": true
+    },
+    {
+      "path": "research/causal_macro_break_retest_v10_candidate_proposal.json",
+      "match": true
+    },
+    {
+      "path": "research/causal_macro_break_retest_v10_preregistration.json",
+      "match": true
+    },
+    {
+      "path": "research/mechanism_factory_v1.json",
+      "match": true
+    },
+    {
+      "path": "research/mechanism_factory_v10.json",
+      "match": true
+    },
+    {
+      "path": "research/mechanism_factory_v5.json",
+      "match": true
+    },
+    {
+      "path": "research/mechanism_factory_v6.json",
+      "match": true
+    },
+    {
+      "path": "research/mechanism_factory_v7.json",
+      "match": true
+    },
+    {
+      "path": "research/mechanism_factory_v8.json",
+      "match": true
+    },
+    {
+      "path": "research/mechanism_factory_v9.json",
+      "match": true
+    },
+    {
+      "path": "tests/fixtures/butterfly_v8_prior_inventory.json",
+      "match": true
+    },
+    {
+      "path": "tests/fixtures/butterfly_v8_terminal_ledger.json",
+      "match": true
+    },
+    {
+      "path": "tests/fixtures/elliott_v9_prior_inventory.json",
+      "match": true
+    },
+    {
+      "path": "tests/fixtures/elliott_v9_terminal_ledger.json",
+      "match": true
+    },
+    {
+      "path": "tests/fixtures/macro_retest_v10_previous_engine.py",
+      "match": true
+    },
+    {
+      "path": "tests/fixtures/macro_retest_v10_prior_approved_fields.json",
+      "match": true
+    },
+    {
+      "path": "tests/fixtures/macro_retest_v10_prior_inventory.json",
+      "match": true
+    },
+    {
+      "path": "tests/fixtures/macro_retest_v10_terminal_ledger.json",
+      "match": true
+    },
+    {
+      "path": "tests/fixtures/utc_slot_v7_prior_generations.json",
+      "match": true
+    },
+    {
+      "path": "tests/fixtures/utc_slot_v7_terminal_ledger.json",
+      "match": true
+    },
+    {
+      "path": "tests/test_nexus_causal_butterfly_features.py",
+      "match": true
+    },
+    {
+      "path": "tests/test_nexus_causal_elliott_wave12_features.py",
+      "match": true
+    },
+    {
+      "path": "tests/test_nexus_causal_macro_retest_features.py",
+      "match": true
+    },
+    {
+      "path": "tests/test_nexus_causal_slot_volume_features.py",
+      "match": true
+    },
+    {
+      "path": "tests/test_nexus_composite_fast_frontier.py",
+      "match": true
+    }
+  ],
+  "computational_closure_digest": "33b2ca5e8e02c9a63b68f0510ad58b4a28a776f60078a5aa322ccf2a75e614e1",
+  "network_requests": 0,
+  "market_runs": 0,
+  "owner_state_changes": 0,
+  "hosted_gate_complete": false,
+  "native_source_gate_complete": false,
+  "research_only": true,
+  "live_enabled": false,
+  "receipt_digest": "7d1282e9145edd9f80cb7732256df8d1d1c4abdabe13e0a8bc7af21299202105"
+}

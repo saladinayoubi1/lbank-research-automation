@@ -1,0 +1,1 @@
+pipx 1.17.12 has requirement packaging>=26.3, but you have packaging 26.2.
