@@ -1,7 +1,7 @@
 {
   "schema": "nexus.v8-first-producer-continuation-checkpoint.v1",
-  "checked_at_utc": "2026-10-14T14:18:17.868Z",
-  "status": "NATIVE_STAGING_ASYNC_PENDING_MARKET_NOT_SUBMITTED",
+  "checked_at_utc": "2026-10-14T14:41:14.964Z",
+  "status": "FIRST_MARKET_PRODUCER_COMPLETE_RESEARCH_NOT_QUALIFIED",
   "computational_source_sha": "2b89f6e89abdacc16b3288b9fd9ebcb3bdea7e69",
   "invocation_freeze_commit_sha": "2c1ecb6bb46311f8dfbccc9b3c7dbbdfccad6e02",
   "invocation_freeze_sha256": "646630eead5fc62a83d9bf7f9c700637eb8d2ea6fa41ed5ea0d7568e66d988c4",
@@ -15,27 +15,62 @@
   "run_root": "E:\\NEXUS-QA\\causal-butterfly-v8-first-producer-20261014T141155Z",
   "device_id": "61c3307f-e6d4-4edf-860a-3519cfb9df5d",
   "completed_native_operations": [
-    "create_directory"
+    "create_directory",
+    "precheck_write_completed",
+    "hash_bound_remaining_files_staged",
+    "frozen_parent_submitted_once",
+    "market_child_completed",
+    "native_contract_and_before_after_checks_passed",
+    "local_artifact_digests_and_exact_bound_bytes_verified"
   ],
-  "pending_remote_call": {
-    "call_id": "2949f4bd-54e6-4dc7-b552-db4882a7fb86",
-    "tool_name": "write_file",
-    "path": "E:\\NEXUS-QA\\causal-butterfly-v8-first-producer-20261014T141155Z\\V8_PRODUCER_PRECHECK.md",
-    "last_verified_status": "executing",
-    "retry_original": false
-  },
-  "native_files_not_yet_submitted": [
-    "invocation-freeze.json",
-    "invocation.json",
-    "run-v8-first-producer.py"
-  ],
-  "next_action": "Resume pending write with get_tool_result only; once complete stage remaining exact freeze-commit files sequentially, then submit the frozen parent command once. Verify durable status/receipt before any continuation.",
-  "market_producer_submissions": 0,
-  "native_market_child_exit_code": null,
-  "native_market_execution_lock_created": false,
+  "pending_remote_call": null,
+  "native_files_not_yet_submitted": [],
+  "next_action": "Do not replay or retune the completed Butterfly producer. Keep it outside Demo. Any next Elliott research hypothesis requires a separate preregistration and causal source gate; independent numeric/Decimal/market leakage QA remains a distinct uncompleted gate.",
+  "market_producer_submissions": 1,
+  "native_market_child_exit_code": 0,
+  "native_market_execution_lock_created": true,
   "parameters_retuned": false,
   "owner_demo_admission": false,
   "auto_demo_promotion": false,
   "live_enabled": false,
-  "independent_strategy_qa_complete": false
+  "independent_strategy_qa_complete": false,
+  "native_stage_launch_terminal_pid": 9252,
+  "native_bootstrap_python_pid": 8380,
+  "native_market_parent_pid": 3896,
+  "native_market_child_pid": 3100,
+  "native_market_parent_exit_code": 0,
+  "market_producer_elapsed_seconds": 54.657,
+  "report_digest": "21be76c6f276c0d71ed4f87a2a045eee7ee9050d4d789ee1a862be8ad333c4c0",
+  "ledger_digest": "9199c1d27e28bdc2de7f068dd1f99efa7d6315c793265d1c3215a860344b152c",
+  "native_receipt_digest": "b3fdbcffe79390b62331951b1ba4e9184f8ba57aaf9c25e3b9da5ae7bab0279f",
+  "receipt_file_sha256": "cd16d821176754203b9a24ead36950102871b2a6e64cd26636bb047cdf4f326c",
+  "training_screen_cells": 4,
+  "diagnostic_rows": 12,
+  "parameter_configurations": 1,
+  "source_and_raw_inputs_unchanged": true,
+  "previous_ledger_unchanged": true,
+  "native_result_files_exact_byte_identity_verified": [
+    "producer-receipt.json",
+    "producer/research-report.json",
+    "producer/novelty-ledger.json",
+    "producer-result-summary.json"
+  ],
+  "parent_and_status_copies": "RDC JSON text transcriptions; native byte identities not separately attested",
+  "latest_verified_ci_head": "729aa656af699bf806dd8c274f2d7401305b239e",
+  "latest_verified_ci": {
+    "success": 7,
+    "discover": "skipped"
+  },
+  "first_market_result": {
+    "validation_conservative_net_usdt": {
+      "ETHUSDT": -8.86436476,
+      "BTCUSDT": -6.52019211
+    },
+    "validation_stress_net_usdt": {
+      "ETHUSDT": -12.81565421,
+      "BTCUSDT": -10.4831732
+    },
+    "validation_closed_round_trips_per_asset_cost_cell": 1,
+    "historically_inspected_test_closed_round_trips_per_cell": 0
+  }
 }

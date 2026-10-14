@@ -1,0 +1,21 @@
+{
+  "auto_demo_promotion": false,
+  "checked_at_utc": "2026-10-14T14:36:32.140150+00:00",
+  "child_exit_code": 0,
+  "child_pid": 3100,
+  "diagnostic_rows": 12,
+  "elapsed_seconds": 54.813,
+  "host": "DESKTOP-F4SA4VL",
+  "independent_strategy_qa_complete": false,
+  "lease_id": "isolated-butterfly-v8-20261014T141155Z-2b89f6e",
+  "live_enabled": false,
+  "market_started": true,
+  "official_coordinator_advanced": false,
+  "owner_demo_admission": false,
+  "receipt_sha256": "cd16d821176754203b9a24ead36950102871b2a6e64cd26636bb047cdf4f326c",
+  "report_digest": "21be76c6f276c0d71ed4f87a2a045eee7ee9050d4d789ee1a862be8ad333c4c0",
+  "research_only": true,
+  "schema": "nexus.v8-first-producer-checkpoint.v1",
+  "source_sha": "2b89f6e89abdacc16b3288b9fd9ebcb3bdea7e69",
+  "status": "COMPLETE_RESEARCH_NOT_QUALIFIED"
+}

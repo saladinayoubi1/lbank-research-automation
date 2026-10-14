@@ -1,0 +1,21 @@
+{
+  "argv": [
+    "E:\\NEXUS-QA\\strategy-frontier-v5-20261010\\.venv\\Scripts\\python.exe",
+    "E:\\NEXUS-QA\\causal-butterfly-v8-first-producer-20261014T141155Z\\run-v8-first-producer.py",
+    "--freeze",
+    "E:\\NEXUS-QA\\causal-butterfly-v8-first-producer-20261014T141155Z\\invocation-freeze.json",
+    "--freeze-sha",
+    "646630eead5fc62a83d9bf7f9c700637eb8d2ea6fa41ed5ea0d7568e66d988c4"
+  ],
+  "cwd": "E:\\NEXUS-QA\\causal-butterfly-v8-20261014T104229Z\\source",
+  "launcher_pid": 8380,
+  "live_enabled": false,
+  "market_child_deadline_seconds": 600,
+  "parent_deadline_seconds": 660,
+  "parent_pid": 3896,
+  "research_only": true,
+  "schema": "nexus.v8-first-producer-native-parent-submission.v1",
+  "source_sha": "2b89f6e89abdacc16b3288b9fd9ebcb3bdea7e69",
+  "submitted_at_utc": "2026-10-14T14:35:36.928720+00:00",
+  "true_parent_exit_code": null
+}

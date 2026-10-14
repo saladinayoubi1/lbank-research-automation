@@ -1,9 +1,7 @@
-# Butterfly v8 first producer — staging checkpoint
+# Butterfly v8 first producer — terminal checkpoint
 
-Prospective wrapper, precheck, source/data/ledger bindings and one fixed candidate were committed before market execution at 2c1ecb6bb46311f8dfbccc9b3c7dbbdfccad6e02. Computational source remains 2b89f6e89abdacc16b3288b9fd9ebcb3bdea7e69. The completed 39-test native gate and true child exit0 are reused; exact prior evidence head b85 has seven successful hosted checks and one intentionally skipped discover.
+The first market producer completed once on computational source2b89f6e89abdacc16b3288b9fd9ebcb3bdea7e69, true child exit 0 and parent exit 0. Freeze commit2c1ecb6bb46311f8dfbccc9b3c7dbbdfccad6e02 preceded native submission. No asynchronous file write or producer is pending.
 
-The new native run directory was created. Writing V8_PRODUCER_PRECHECK.md is still executing under RDC call_id 2949f4bd-54e6-4dc7-b552-db4882a7fb86. Continue that call with get_tool_result, never resend the original write. Remaining native freeze/invocation/wrapper files have not been submitted. No market parent or child has been launched and no profitability result exists.
+Validation is negative for BTC and ETH in both cost scenarios; historically inspected test has zero trades. See RESULT.md and the exact native report/receipt/ledger/summary copies. One candidate, four Training screening cells and twelve diagnostic rows matched. No Demo qualification or independent numeric/Decimal/market leakage QA completion is claimed.
 
-A read-only preflight had one PowerShell quoting failure; the bounded corrected read-only command completed with actual exit0. Source-gate receipts/hashes and Windows host match, and no producer files existed in the source-gate root. No old market replay, owner runtime modification or remote repair was performed.
-
-Next: finish exact-file staging from the immutable freeze commit, submit its argv once, then read the durable status/true exit/report. Pending current evidence CI does not reidentify computational source. Research-only; Live=false; no Demo admission.
+Permanent native execution locks remain; never resubmit the bootstrap, parent or market child. Continue a separate preregistered hypothesis rather than replaying or retuning this completed study.
