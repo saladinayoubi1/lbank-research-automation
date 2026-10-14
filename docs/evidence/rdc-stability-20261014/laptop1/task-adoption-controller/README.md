@@ -10,6 +10,8 @@ Before old stop intent, partial staging failures restore only known configuratio
 
 Local standard-library unittest: 15 passed, 3 native Windows fixtures skipped on this Linux host. Windows CI must exercise real harmless Python-child handle termination/positive exit, PowerShell5.1 parsing without task calls, and VBScript parsing without running the task. Hosted exact-head checks, a separate native read-only check and an independent post-handoff RDC/task/process audit are required before adoption is declared. No real controller apply or task adoption occurred in this source-preparation stage.
 
+The controller was prospectively frozen at f0960cb118574443d2c2b1ce939c372d8cef725b before one native default/read-only submission. Terminal13884 completed with actual terminal/Python exits0 (59.03s). Separately read source-bound receipt at07:45:04.863316Z is READ_ONLY_PASS, same afaq owner/session1, observer outside every job, stop_intent=false and task_run_requests=0. Separate Task Scheduler validation response is validated=true, registered=false. This exercises native task/SDK/handle/source/security guards and task XML validation, while all mutation branches remain unexecuted. Both RDC pings succeeded at07:47:19Z.
+
 ```mermaid
 flowchart TD
   A["Verify source and identities"] --> B["Stage existing task disabled"]
