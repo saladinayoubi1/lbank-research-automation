@@ -1,0 +1,20 @@
+{
+  "completed_at_utc": "2026-10-14T16:24:08.542914+00:00",
+  "elapsed_seconds": 59.906,
+  "ledger_digest": "b784b409c16b77fa5d6dd5d65b7f8ed67e13e65aa6d230a74e843f9e63720e8f",
+  "live_enabled": false,
+  "market_producer_exit_self_asserted": false,
+  "observed_at_utc": "2026-10-14T16:24:08.542914+00:00",
+  "parent_pid": 9160,
+  "producer_actual_os_exit_code": 0,
+  "producer_child_pid": 6308,
+  "report_digest": "979f39c6848f946deb8765885849c86da2c26702f2789b7b56c62534ed832e0b",
+  "research_only": true,
+  "run_root": "E:\\NEXUS-QA\\causal-elliott-wave12-v9-first-producer-20261014T161923Z",
+  "schema": "nexus.elliott-v9-first-producer-parent-status.v1",
+  "source_sha": "8c06ca692a06611431730e4aeb822b1d9f47f30d",
+  "started_at_utc": "2026-10-14T16:23:08.632632+00:00",
+  "state": "COMPLETE_RESEARCH_NOT_QUALIFIED",
+  "wrapper_actual_os_exit_code": 0,
+  "wrapper_pid": 6604
+}

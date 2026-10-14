@@ -1,0 +1,25 @@
+{
+  "schema": "nexus.elliott-v9-existing-result-reader-observation.v1",
+  "read_only": true,
+  "market_producer_not_restarted": true,
+  "native_collector_shell_pid": 6004,
+  "collector_start": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Process started with PID 6004 (shell: powershell)\nInitial output:\n\n⏳ Process is running. Use read_process_output to get more output."
+      },
+      {
+        "type": "text",
+        "text": "\n[executed on device: DESKTOP-F4SA4VL (61c3307f-e6d4-4edf-860a-3519cfb9df5d)]"
+      }
+    ],
+    "isError": false
+  },
+  "collector_completion_suffix": "✅ Process completed with exit code 0 (runtime: 14.10s)\n\n[executed on device: DESKTOP-F4SA4VL (61c3307f-e6d4-4edf-860a-3519cfb9df5d)]",
+  "producer_exit_proof_basis": "Owned producer and wrapper receipts, not the read-only collector shell exit.",
+  "observed_at_utc": "2026-10-14T16:51:24.890Z",
+  "source_sha": "8c06ca692a06611431730e4aeb822b1d9f47f30d",
+  "research_only": true,
+  "live_enabled": false
+}
