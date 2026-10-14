@@ -1,0 +1,13 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "[Reading last 20 lines (total: 20 lines)]\n\ntest_backup_and_repeat_apply_preserve_original (test_nexus_rdc_batch_return.ReturnRepairTests.test_backup_and_repeat_apply_preserve_original) ... ok\r\ntest_exact_crlf_preservation_and_idempotence (test_nexus_rdc_batch_return.ReturnRepairTests.test_exact_crlf_preservation_and_idempotence) ... ok\r\ntest_native_child_failure_returns_to_two_recovery_iterations (test_nexus_rdc_batch_return.ReturnRepairTests.test_native_child_failure_returns_to_two_recovery_iterations) ... ok\r\ntest_unrelated_or_authentication_content_fails_closed (test_nexus_rdc_batch_return.ReturnRepairTests.test_unrelated_or_authentication_content_fails_closed) ... ok\r\n\r\n----------------------------------------------------------------------\r\nRan 4 tests in 0.290s\r\n\r\nOK\r\nACTUAL_NATIVE_TEST_EXIT=0\r\n[\r\n    {\r\n        \"Path\":  \"E:\\\\NEXUS-QA\\\\rdc-cmd-fixture-20261014T0030Z\\\\scripts\\\\repair_nexus_rdc_batch_return.py\",\r\n        \"Hash\":  \"3F79ACDC3EA2F4140F6BD167B17E0385215945B14C6D552B1FA8A47F0B426B27\"\r\n    },\r\n    {\r\n        \"Path\":  \"E:\\\\NEXUS-QA\\\\rdc-cmd-fixture-20261014T0030Z\\\\tests\\\\test_nexus_rdc_batch_return.py\",\r\n        \"Hash\":  \"35114BFDA50998E3543D0696D0EEAD47C8EC7F8673D02DEE5F31BA53B464326F\"\r\n    }\r\n]\r\n✅ Process completed with exit code 0 (runtime: 2.29s)"
+    },
+    {
+      "type": "text",
+      "text": "\n[executed on device: DESKTOP-F4SA4VL (61c3307f-e6d4-4edf-860a-3519cfb9df5d)]"
+    }
+  ],
+  "isError": false
+}

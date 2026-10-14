@@ -1,0 +1,13 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "[Reading 6 new lines (total: 6 lines)]\n\n{\"host\": \"DESKTOP-F4SA4VL\", \"helper_sha256\": \"3f79acdc3ea2f4140f6bd167b17e0385215945b14c6d552b1fa8a47f0b426b27\", \"source_sha\": \"192bbcfd44c8fa0af2c0fd178de26f23fd1ae243\"}\r\n{\"kind\": \"original_list\", \"fixed\": false, \"returncode\": 1, \"child_runs\": 0, \"recoveries\": 0, \"stdout\": \"\", \"stderr\": \"'\\\\\\\"C:\\\\Users\\\\afaq\\\\AppData\\\\Local\\\\Temp\\\\nexus rdc return pz1ucsnf\\\\original.cmd\\\\\\\"' is not recognized as an internal or external command,\\noperable program or batch file.\\n\"}\r\n{\"kind\": \"direct_cmd_line\", \"fixed\": false, \"returncode\": 7, \"child_runs\": 1, \"recoveries\": 0, \"stdout\": \"CHILD_RUN\\n\", \"stderr\": \"\"}\r\n{\"kind\": \"original_list\", \"fixed\": true, \"returncode\": 1, \"child_runs\": 0, \"recoveries\": 0, \"stdout\": \"\", \"stderr\": \"'\\\\\\\"C:\\\\Users\\\\afaq\\\\AppData\\\\Local\\\\Temp\\\\nexus rdc return pz1ucsnf\\\\fixed.cmd\\\\\\\"' is not recognized as an internal or external command,\\noperable program or batch file.\\n\"}\r\n{\"kind\": \"direct_cmd_line\", \"fixed\": true, \"returncode\": 0, \"child_runs\": 2, \"recoveries\": 2, \"stdout\": \"CHILD_RUN\\nRECOVERED\\nCHILD_RUN\\nRECOVERED\\n\", \"stderr\": \"\"}\r\nACTUAL_DIAGNOSTIC_EXIT=0\r\n✅ Process completed with exit code 0 (runtime: 3.47s)"
+    },
+    {
+      "type": "text",
+      "text": "\n[executed on device: DESKTOP-F4SA4VL (61c3307f-e6d4-4edf-860a-3519cfb9df5d)]"
+    }
+  ],
+  "isError": false
+}

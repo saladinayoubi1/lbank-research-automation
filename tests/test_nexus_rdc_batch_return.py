@@ -47,12 +47,16 @@ class ReturnRepairTests(unittest.TestCase):
                                 b"echo RECOVERED\r\nif %attempts% GEQ 2 exit /b 0")
                 parent=root/("fixed.cmd" if fixed else "original.cmd")
                 parent.write_bytes(raw)
-                result=subprocess.run([os.environ["COMSPEC"],"/d","/c",'call "'+str(parent)+'"'],
-                                      capture_output=True,text=True,timeout=10)
+                # CMD does not parse CRT-style backslash escaping from list2cmdline.
+                # Supply its command line directly so paths with spaces reach CALL.
+                command_line=f'"{os.environ["COMSPEC"]}" /d /c call "{parent}"'
+                result=subprocess.run(command_line, capture_output=True,text=True,timeout=10)
+                detail=f"stdout={result.stdout!r}; stderr={result.stderr!r}"
                 with self.subTest(fixed=fixed):
-                    self.assertEqual(result.returncode,0 if fixed else 7)
-                    self.assertEqual(result.stdout.count("CHILD_RUN"),2 if fixed else 1)
-                    self.assertEqual(result.stdout.count("RECOVERED"),2 if fixed else 0)
+                    self.assertEqual(result.returncode,0 if fixed else 7,detail)
+                    self.assertEqual(result.stdout.count("CHILD_RUN"),2 if fixed else 1,detail)
+                    self.assertEqual(result.stdout.count("RECOVERED"),2 if fixed else 0,detail)
+                    self.assertEqual(result.stderr,"",detail)
 
 if __name__=="__main__":
     unittest.main()
