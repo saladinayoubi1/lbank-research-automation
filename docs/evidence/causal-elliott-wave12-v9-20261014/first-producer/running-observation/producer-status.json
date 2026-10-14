@@ -1,0 +1,19 @@
+{
+  "auto_demo_promotion": false,
+  "checked_at_utc": "2026-10-14T16:23:13.769980+00:00",
+  "child_pid": 6308,
+  "child_timeout_seconds": 600,
+  "elapsed_seconds": 4.656,
+  "host": "DESKTOP-F4SA4VL",
+  "independent_strategy_qa_complete": false,
+  "input_binding_sha256": "288bab458a6fd9c7016aacd5054a2c2ebb79120ae247f953ec8fb9628658aa33",
+  "lease_id": "isolated-elliott-v9-20261014T161923Z-8c06ca6",
+  "live_enabled": false,
+  "market_started": true,
+  "official_coordinator_advanced": false,
+  "owner_demo_admission": false,
+  "research_only": true,
+  "schema": "nexus.elliott-v9-first-producer-checkpoint.v1",
+  "source_sha": "8c06ca692a06611431730e4aeb822b1d9f47f30d",
+  "status": "RUNNING_FIRST_FROZEN_PRODUCER"
+}

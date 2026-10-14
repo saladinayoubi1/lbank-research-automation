@@ -1,0 +1,31 @@
+{
+  "schema": "nexus.elliott-v9-first-producer-connector-submission.v1",
+  "computational_source_sha": "8c06ca692a06611431730e4aeb822b1d9f47f30d",
+  "prospective_invocation_commit": "7841567d81e466b428eafecd35d8d32fd334362e",
+  "run_root": "E:\\NEXUS-QA\\causal-elliott-wave12-v9-first-producer-20261014T161923Z",
+  "device_id": "61c3307f-e6d4-4edf-860a-3519cfb9df5d",
+  "connector_shell_pid": 2960,
+  "freeze_sha256": "481631836b017eb328f0a5ac9b3fb4a4281f8a5d0f58402dd5bbd473f17a0bad",
+  "command_file_sha256": "3ab7bbb8df3b40277d1389e3169da0e7b80c534f49d6df56940a18b625847d6c",
+  "submission_attempts": 1,
+  "connector_result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Process started with PID 2960 (shell: powershell)\nInitial output:\n\n⏳ Process is running. Use read_process_output to get more output."
+      },
+      {
+        "type": "text",
+        "text": "\n[executed on device: DESKTOP-F4SA4VL (61c3307f-e6d4-4edf-860a-3519cfb9df5d)]"
+      }
+    ],
+    "isError": false
+  },
+  "completion_not_yet_observed": true,
+  "automatic_market_retry_authorized": false,
+  "source_tests_not_rerun": true,
+  "old_market_producers_not_rerun": true,
+  "research_only": true,
+  "live_enabled": false,
+  "submission_response_recorded_at_utc": "2026-10-14T16:23:43.404Z"
+}

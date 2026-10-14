@@ -1,0 +1,42 @@
+[
+  {
+    "path": "docs/evidence/causal-elliott-wave12-v9-20261014/first-producer/run-v9-first-producer.py",
+    "blob_sha1": "3f4d40bccd68380a6e422f5b479979b451142f00",
+    "match": true
+  },
+  {
+    "path": "docs/evidence/causal-elliott-wave12-v9-20261014/first-producer/invocation-freeze.json",
+    "blob_sha1": "ad75d82bd99c669572ffee2c5461f7d89682c6a0",
+    "match": true
+  },
+  {
+    "path": "docs/evidence/causal-elliott-wave12-v9-20261014/first-producer/V9_PRODUCER_PRECHECK.md",
+    "blob_sha1": "4bf5b3b70a3aa8916b182e557829d2d6a6d0898d",
+    "match": true
+  },
+  {
+    "path": "docs/evidence/causal-elliott-wave12-v9-20261014/first-producer/invocation.json",
+    "blob_sha1": "35cfbca22e9ed90a9a0d2f754740a1c3f20b3c01",
+    "match": true
+  },
+  {
+    "path": "docs/evidence/causal-elliott-wave12-v9-20261014/first-producer/current-CI-and-connectivity.json",
+    "blob_sha1": "fd46c1c2bb632c1714b20c866ad7fbb46dcd9b7f",
+    "match": true
+  },
+  {
+    "path": "docs/evidence/causal-elliott-wave12-v9-20261014/first-producer/stage-and-own-v9.py",
+    "blob_sha1": "a4fc9d4e6e166522e2c30ed6cf0ffbd01859dc9d",
+    "match": true
+  },
+  {
+    "path": "docs/evidence/causal-elliott-wave12-v9-20261014/first-producer/native-invocation.ps1",
+    "blob_sha1": "3b1ee48fa8c218708b47b2e8850ecc68496a7d2d",
+    "match": true
+  },
+  {
+    "path": "docs/evidence/causal-elliott-wave12-v9-20261014/first-producer/native-invocation.json",
+    "blob_sha1": "4efaa4c7ebe099d951d0321757bc8e752c279eab",
+    "match": true
+  }
+]
