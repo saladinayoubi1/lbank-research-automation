@@ -1,0 +1,72 @@
+{
+  "source_sha": "8c06ca692a06611431730e4aeb822b1d9f47f30d",
+  "endpoint": "https://api.github.com/repos/saladinayoubi1/lbank-research-automation/commits/8c06ca692a06611431730e4aeb822b1d9f47f30d/check-runs",
+  "observed_at_utc": "2026-10-14T16:00:15.219Z",
+  "check_runs": [
+    {
+      "id": 115946944244,
+      "name": "discover",
+      "status": "completed",
+      "conclusion": "skipped",
+      "completed_at": "2026-10-14T15:40:36Z",
+      "details_url": "https://github.com/saladinayoubi1/lbank-research-automation/actions/runs/38591276294/job/115946944244"
+    },
+    {
+      "id": 115946508135,
+      "name": "contract-test",
+      "status": "completed",
+      "conclusion": "success",
+      "completed_at": "2026-10-14T15:40:35Z",
+      "details_url": "https://github.com/saladinayoubi1/lbank-research-automation/actions/runs/38591276294/job/115946508135"
+    },
+    {
+      "id": 115946506954,
+      "name": "audit",
+      "status": "completed",
+      "conclusion": "success",
+      "completed_at": "2026-10-14T15:39:59Z",
+      "details_url": "https://github.com/saladinayoubi1/lbank-research-automation/actions/runs/38591275926/job/115946506954"
+    },
+    {
+      "id": 115946506365,
+      "name": "test (macos-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "completed_at": "2026-10-14T15:46:24Z",
+      "details_url": "https://github.com/saladinayoubi1/lbank-research-automation/actions/runs/38591276037/job/115946506365"
+    },
+    {
+      "id": 115946506133,
+      "name": "test (windows-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "completed_at": "2026-10-14T15:47:53Z",
+      "details_url": "https://github.com/saladinayoubi1/lbank-research-automation/actions/runs/38591276037/job/115946506133"
+    },
+    {
+      "id": 115946505944,
+      "name": "test (ubuntu-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "completed_at": "2026-10-14T15:45:44Z",
+      "details_url": "https://github.com/saladinayoubi1/lbank-research-automation/actions/runs/38591276037/job/115946505944"
+    },
+    {
+      "id": 115946505002,
+      "name": "validate",
+      "status": "completed",
+      "conclusion": "success",
+      "completed_at": "2026-10-14T15:39:56Z",
+      "details_url": "https://github.com/saladinayoubi1/lbank-research-automation/actions/runs/38591275925/job/115946505002"
+    },
+    {
+      "id": 115946482640,
+      "name": "control-plane trusted guard",
+      "status": "completed",
+      "conclusion": "success",
+      "completed_at": "2026-10-14T15:40:10Z",
+      "details_url": "https://github.com/saladinayoubi1/lbank-research-automation/actions/runs/38591268268/job/115946482640"
+    }
+  ],
+  "result": "all seven executed checks success; discover skipped"
+}

@@ -1,0 +1,42 @@
+{
+  "schema": "nexus.elliott-v9-native-connector-observation.v1",
+  "source_sha": "8c06ca692a06611431730e4aeb822b1d9f47f30d",
+  "prospective_native_gate_commit": "c74f8b00136e46744de4149258c8f5f6ff3cb6a9",
+  "launch": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Process started with PID 4564 (shell: powershell)\nInitial output:\n\n⏳ Process is running. Use read_process_output to get more output."
+      },
+      {
+        "type": "text",
+        "text": "\n[executed on device: DESKTOP-F4SA4VL (61c3307f-e6d4-4edf-860a-3519cfb9df5d)]"
+      }
+    ],
+    "isError": false
+  },
+  "completion": {
+    "content": [
+      {
+        "type": "text",
+        "text": "[Reading 1 new lines (total: 1 lines)]\n\n{\"status\": \"NATIVE_SOURCE_GATE_PASS\", \"run_root\": \"E:\\\\NEXUS-QA\\\\causal-elliott-wave12-v9-20261014T155311Z\", \"tests_run\": 72, \"extra_source_regression_functions\": 1, \"actual_child_exit_code\": 0, \"source_sha\": \"8c06ca692a06611431730e4aeb822b1d9f47f30d\", \"market_backtests_submitted\": 0, \"live_enabled\": false}\r\n✅ Process completed with exit code 0 (runtime: 22.07s)"
+      },
+      {
+        "type": "text",
+        "text": "\n[executed on device: DESKTOP-F4SA4VL (61c3307f-e6d4-4edf-860a-3519cfb9df5d)]"
+      }
+    ],
+    "isError": false
+  },
+  "observed_at_utc": "2026-10-14T16:02:24.309Z",
+  "connector_shell_actual_exit_code": 0,
+  "connector_shell_pid": 4564,
+  "native_parent_pid": 8520,
+  "native_parent_os_exit_code": null,
+  "native_parent_os_exit_observed": false,
+  "shell_exit_not_promoted_to_native_python_parent_exit": true,
+  "metadata_child_pid": 976,
+  "test_child_pid": 8200,
+  "market_backtests_submitted": 0,
+  "live_enabled": false
+}

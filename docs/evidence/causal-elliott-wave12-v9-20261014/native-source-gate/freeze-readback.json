@@ -1,0 +1,37 @@
+[
+  {
+    "name": "native-input-binding.json",
+    "blob_sha1": "f1ba10576595bc0bcb14e3838efd27ff8a9d8d56",
+    "match": true
+  },
+  {
+    "name": "derive-parent-inventory.py",
+    "blob_sha1": "09ec92c76fcbede52174f8dbdb8028e93533a02b",
+    "match": true
+  },
+  {
+    "name": "native-source-worker.py",
+    "blob_sha1": "58beab3cb869a763193d15d8af34def7deed94f1",
+    "match": true
+  },
+  {
+    "name": "native-source-parent.py",
+    "blob_sha1": "880e458c991fe21128e9579f2b8d81d2d05da067",
+    "match": true
+  },
+  {
+    "name": "native-invocation.json",
+    "blob_sha1": "43c0f7cf429d86506d9bfc9b5651c7f62bf80fa7",
+    "match": true
+  },
+  {
+    "name": "native-invocation.ps1",
+    "blob_sha1": "48c26519ed3211d43a76028008f838d9691cc402",
+    "match": true
+  },
+  {
+    "name": "local-preparation-verification.json",
+    "blob_sha1": "8c5db135137c235c9bc433b23601e2728efd6de5",
+    "match": true
+  }
+]
