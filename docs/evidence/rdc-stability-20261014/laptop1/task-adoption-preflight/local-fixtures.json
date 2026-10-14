@@ -1,0 +1,19 @@
+{
+  "runner": "standard-library direct fixtures; scratch pytest unavailable",
+  "status": "PASS",
+  "fixtures": [
+    "test_duplicate_remote_arguments_remain_unclassified",
+    "test_mixed_cli_and_sdk_does_not_classify_as_a_launcher",
+    "test_npx_is_classified_only_with_approved_path_package_and_remote",
+    "test_partial_or_multiple_package_argument_has_no_ownership",
+    "test_remote_mode_is_required_for_launcher",
+    "test_same_cli_basename_in_unapproved_directory_has_no_ownership",
+    "test_sdk_dot_segments_resolve_to_exact_public_cache_entry"
+  ],
+  "hashes": {
+    "PRECHECK.md": "ab2de70d720129d49e1c2c0501f91a883f2b21a3de2ff00ab345bd08cb982094",
+    "scripts/probe_nexus_rdc_l1_preflight.py": "c89d7f37e9acc15ac82c93c417869ae32781f00b42488306be43a1dee6104c2a",
+    "scripts/invoke_nexus_rdc_l1_preflight.ps1": "c70a259b709feec2bea8dccc5f031f0fe4d133061b86204bd235ff49a9f35feb",
+    "tests/test_nexus_rdc_l1_preflight.py": "d6fa55e1b2ea64cabafad574299a7967ac7efb8c2b441b6b1f997617b6dfa5b6"
+  }
+}
