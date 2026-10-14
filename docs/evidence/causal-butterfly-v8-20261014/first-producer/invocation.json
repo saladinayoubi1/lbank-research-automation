@@ -1,0 +1,21 @@
+{
+  "argv": [
+    "E:\\NEXUS-QA\\strategy-frontier-v5-20261010\\.venv\\Scripts\\python.exe",
+    "E:\\NEXUS-QA\\causal-butterfly-v8-first-producer-20261014T141155Z\\run-v8-first-producer.py",
+    "--freeze",
+    "E:\\NEXUS-QA\\causal-butterfly-v8-first-producer-20261014T141155Z\\invocation-freeze.json",
+    "--freeze-sha",
+    "646630eead5fc62a83d9bf7f9c700637eb8d2ea6fa41ed5ea0d7568e66d988c4"
+  ],
+  "cwd": "E:\\NEXUS-QA\\causal-butterfly-v8-20261014T104229Z\\source",
+  "deadline_seconds": 600,
+  "freeze_sha256": "646630eead5fc62a83d9bf7f9c700637eb8d2ea6fa41ed5ea0d7568e66d988c4",
+  "live_enabled": false,
+  "market_backtests_submitted_at_freeze": 0,
+  "precheck_sha256": "1b7b7f86ba3ebb8176fc00319f94900786cd63250d2b7704a3504920306786b1",
+  "research_only": true,
+  "run_root": "E:\\NEXUS-QA\\causal-butterfly-v8-first-producer-20261014T141155Z",
+  "schema": "nexus.v8-first-producer-prospective-invocation.v1",
+  "source_sha": "2b89f6e89abdacc16b3288b9fd9ebcb3bdea7e69",
+  "wrapper_sha256": "f1f41c84bb843f2920dad3de34b8363adba537da9cba6900fcfa1858f253f698"
+}
