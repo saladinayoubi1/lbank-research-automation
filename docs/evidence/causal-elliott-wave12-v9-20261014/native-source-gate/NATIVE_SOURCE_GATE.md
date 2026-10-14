@@ -1,0 +1,13 @@
+# Elliott v9 native source gate
+
+The exact computational source `8c06ca692a06611431730e4aeb822b1d9f47f30d` passed the isolated Laptop2 native source gate on 2026-10-14. Its source implementation and economic preregistration are unchanged. Prospective invocation and parent/worker scripts were frozen and all seven Git blob identities read back at `c74f8b00136e46744de4149258c8f5f6ff3cb6a9` before execution.
+
+Native Windows Python 3.12.10, numpy 2.3.5, pandas 2.3.3 and pyarrow 23.0.1 ran 72 unique unittest methods: 33 Elliott and 39 prior-source compatibility tests. One separately extracted bounded-boolean source function passed for all 110 frontier mechanisms. This native gate did not execute the complete pytest module; the complete hosted source jobs independently passed on Windows, macOS and Ubuntu, with four other checks successful and discover skipped.
+
+The owning Python parent PID 8520 waited on the native test child PID 8200 and recorded its actual OS exit 0 in `test-child-exit.json`; it did not time out (7.64 seconds). The metadata-only child PID 976 exited 0 and reconstructed the unchanged 120-mechanism prior inventory to the exact fixture hash. Connector PowerShell PID 4564 completed with reported exit 0. That shell result is not relabeled as direct OS exit proof for Python parent 8520; the owned test-child result is the source gate's exit proof.
+
+All 32 native source/test/fixture hashes matched the committed source before and after testing. The prior 25 source files, three previous native gate artifacts and completed v8 ledger were hash-checked unchanged. Exact worker receipt and stage bytes, the complete 72-test log hash, both canonical receipt digests and zero child exits were verified when importing these raw results. The terminal predecessor remains ledger digest `9199c1d27e28bdc2de7f068dd1f99efa7d6315c793265d1c3215a860344b152c`, file SHA256 `c42ec37a0e7461e5939cb960196e99b6a9e55df954489ffd7d001efe4bd59115`.
+
+Elliott market producer invocations remain 0. Source gates establish source/test compatibility, not profitability or Demo qualification. Next, freeze one fresh exact-source/data/ledger-bound market parent, with exclusive output and actual owned producer OS exit. No v8 rerun, retuning, owner profile or Paper/Live action occurred. Laptop1 remains sole Paper writer; failover, Live and automatic Demo promotion remain disabled. Independent numeric/Decimal/market leakage QA and unseen prospective evidence remain separate gates.
+
+The original preregistration checkpoint is historical. `results/summary.json` and the raw native receipts establish the current source-gate phase.

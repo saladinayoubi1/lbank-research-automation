@@ -1,0 +1,114 @@
+{
+  "schema": "nexus.elliott-v9-first-market-continuation-check.v1",
+  "observed_at_utc": "2026-10-14T16:19:21.889Z",
+  "computational_source_sha": "8c06ca692a06611431730e4aeb822b1d9f47f30d",
+  "verified_evidence_head": "633e62f2423fcfae7f1ed9920166a1f5f2e2a0c8",
+  "checks": [
+    {
+      "id": 115959446137,
+      "name": "discover",
+      "status": "completed",
+      "conclusion": "skipped",
+      "details_url": "https://github.com/saladinayoubi1/lbank-research-automation/actions/runs/38594917069/job/115959446137",
+      "completed_at": "2026-10-14T16:05:14Z"
+    },
+    {
+      "id": 115959044649,
+      "name": "contract-test",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/saladinayoubi1/lbank-research-automation/actions/runs/38594917069/job/115959044649",
+      "completed_at": "2026-10-14T16:05:14Z"
+    },
+    {
+      "id": 115959031500,
+      "name": "test (windows-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/saladinayoubi1/lbank-research-automation/actions/runs/38594917030/job/115959031500",
+      "completed_at": "2026-10-14T16:12:30Z"
+    },
+    {
+      "id": 115959031427,
+      "name": "audit",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/saladinayoubi1/lbank-research-automation/actions/runs/38594917100/job/115959031427",
+      "completed_at": "2026-10-14T16:04:41Z"
+    },
+    {
+      "id": 115959031312,
+      "name": "test (ubuntu-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/saladinayoubi1/lbank-research-automation/actions/runs/38594917030/job/115959031312",
+      "completed_at": "2026-10-14T16:07:50Z"
+    },
+    {
+      "id": 115959030922,
+      "name": "validate",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/saladinayoubi1/lbank-research-automation/actions/runs/38594917023/job/115959030922",
+      "completed_at": "2026-10-14T16:04:38Z"
+    },
+    {
+      "id": 115959030855,
+      "name": "test (macos-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/saladinayoubi1/lbank-research-automation/actions/runs/38594917030/job/115959030855",
+      "completed_at": "2026-10-14T16:09:29Z"
+    },
+    {
+      "id": 115959012642,
+      "name": "control-plane trusted guard",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/saladinayoubi1/lbank-research-automation/actions/runs/38594910773/job/115959012642",
+      "completed_at": "2026-10-14T16:04:48Z"
+    }
+  ],
+  "laptop2_connectivity": {
+    "content": [
+      {
+        "type": "text",
+        "text": "pong 2026-10-14T16:16:40.685Z"
+      },
+      {
+        "type": "text",
+        "text": "\n[executed on device: DESKTOP-F4SA4VL (61c3307f-e6d4-4edf-860a-3519cfb9df5d)]"
+      }
+    ],
+    "isError": false
+  },
+  "laptop1_connectivity": {
+    "content": [
+      {
+        "type": "text",
+        "text": "pong 2026-10-14T16:16:41.053Z"
+      },
+      {
+        "type": "text",
+        "text": "\n[executed on device: DESKTOP-1R1081M (bbabb808-d554-4db8-bce7-3a453bea8b43)]"
+      }
+    ],
+    "isError": false
+  },
+  "laptop2_session_inventory": {
+    "content": [
+      {
+        "type": "text",
+        "text": "No active sessions"
+      },
+      {
+        "type": "text",
+        "text": "\n[executed on device: DESKTOP-F4SA4VL (61c3307f-e6d4-4edf-860a-3519cfb9df5d)]"
+      }
+    ],
+    "isError": false
+  },
+  "pong_not_a_health_or_writer_qualification": true,
+  "market_runs_known_before_submission": 0,
+  "live_enabled": false
+}

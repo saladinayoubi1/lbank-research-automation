@@ -1,0 +1,52 @@
+{
+  "schema": "nexus.causal-elliott-wave12-v9-checkpoint.v1",
+  "checked_at_utc": "2026-10-14T14:59:02.957Z",
+  "status": "PREREGISTERED_NOT_IMPLEMENTED_NOT_EXECUTED",
+  "parent_evidence_head": "2fc8456a309810a48ff29cfe7075377e104d0414",
+  "completed_butterfly_computational_source": "2b89f6e89abdacc16b3288b9fd9ebcb3bdea7e69",
+  "completed_butterfly_report_digest": "21be76c6f276c0d71ed4f87a2a045eee7ee9050d4d789ee1a862be8ad333c4c0",
+  "previous_ledger_digest": "9199c1d27e28bdc2de7f068dd1f99efa7d6315c793265d1c3215a860344b152c",
+  "previous_ledger_file_sha256": "c42ec37a0e7461e5939cb960196e99b6a9e55df954489ffd7d001efe4bd59115",
+  "preregistration_digest": "2845fbc71ce1c5ee5ee986a7206bd19a05776fd6185d5f914475f35f57638301",
+  "candidate_id": "factory_causal_elliott_wave12_breakout",
+  "hypothesis_count": 1,
+  "parameter_configurations": 1,
+  "source_implementation_complete": false,
+  "registered_in_runtime_factory": false,
+  "source_tests_executed": 0,
+  "market_producer_submissions": 0,
+  "independent_strategy_qa_complete": false,
+  "latest_observed_parent_ci": {
+    "checked_head": "2fc8456a309810a48ff29cfe7075377e104d0414",
+    "success": 5,
+    "in_progress": [
+      "test (windows-latest)",
+      "test (ubuntu-latest)"
+    ],
+    "discover": "skipped",
+    "no_polling_or_old_test_market_replay": true
+  },
+  "remote_read_only": {
+    "Laptop2_last_pong_utc": "2026-10-14T14:48:24.032Z",
+    "Laptop1_last_pong_utc": "2026-10-14T14:48:26.430Z",
+    "pong_proves_reachability_only": true,
+    "no_remote_repair": true
+  },
+  "native_market_run_pending": false,
+  "old_butterfly_producer_terminal_do_not_replay": true,
+  "next_action": "Read exact new branch/source state. Implement one additive Elliott-inspired helper and factory contract matching the immutable preregistration and prospective candidate digest, preserve prior 120 mechanisms/contracts/risk/frontier priority, and test causality, ordering, expiry, identity and prior compatibility. Hosted and native source gates precede a separately frozen first market run.",
+  "system_map_nodes": [
+    "DATA-21",
+    "RES-30",
+    "RES-31",
+    "RES-32",
+    "VAL-40",
+    "QA-41"
+  ],
+  "research_only": true,
+  "live_enabled": false,
+  "auto_demo_promotion": false,
+  "owner_demo_admission": false,
+  "official_coordinator_advanced": false,
+  "failover_enabled": false
+}

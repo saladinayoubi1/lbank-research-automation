@@ -1,0 +1,15 @@
+{
+  "elapsed_seconds": 0.235,
+  "live_enabled": false,
+  "market_producer_exit_self_asserted": false,
+  "observed_at_utc": "2026-10-14T16:23:08.863526+00:00",
+  "parent_pid": 9160,
+  "research_only": true,
+  "run_root": "E:\\NEXUS-QA\\causal-elliott-wave12-v9-first-producer-20261014T161923Z",
+  "schema": "nexus.elliott-v9-first-producer-parent-status.v1",
+  "source_sha": "8c06ca692a06611431730e4aeb822b1d9f47f30d",
+  "started_at_utc": "2026-10-14T16:23:08.632632+00:00",
+  "state": "RUNNING_FIRST_FROZEN_WRAPPER",
+  "wrapper_actual_os_exit_code": null,
+  "wrapper_pid": 6604
+}

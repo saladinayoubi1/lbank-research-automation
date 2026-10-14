@@ -1,0 +1,22 @@
+{
+  "argv": [
+    "E:\\NEXUS-QA\\strategy-frontier-v5-20261010\\.venv\\Scripts\\python.exe",
+    "-B",
+    "E:\\NEXUS-QA\\causal-elliott-wave12-v9-20261014T155311Z\\source\\nexus_composite_strategy_research.py",
+    "--archive-root",
+    "C:\\NEXUS\\research-cache\\replay-canonical-37681826492\\archive",
+    "--output",
+    "E:\\NEXUS-QA\\causal-elliott-wave12-v9-first-producer-20261014T161923Z\\producer",
+    "--source-sha",
+    "8c06ca692a06611431730e4aeb822b1d9f47f30d",
+    "--previous-ledger",
+    "E:\\NEXUS-QA\\causal-butterfly-v8-first-producer-20261014T141155Z\\producer\\novelty-ledger.json"
+  ],
+  "cwd": "E:\\NEXUS-QA\\causal-elliott-wave12-v9-20261014T155311Z\\source",
+  "deadline_seconds": 600,
+  "live_enabled": false,
+  "precheck_sha256": "eb06f196546c9be471d1eb371c1e6e596f55fc57a3bc67661792660c48b02816",
+  "research_only": true,
+  "source_sha": "8c06ca692a06611431730e4aeb822b1d9f47f30d",
+  "wrapper_sha256": "7d61a4981fedaf5f6446c893745216c8d04335c75865f303d16defd56993bc24"
+}

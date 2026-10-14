@@ -1,0 +1,50 @@
+{
+  "authority": "research-only-no-auto-promotion",
+  "auto_demo_promotion": false,
+  "candidates": [
+    {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "lagged_elliott_wave12_active",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "previous_close"
+        },
+        {
+          "field": "elliott_wave12_close_breakout_event",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "family": "confirmed_wave12_continuation",
+      "hypothesis": "An Elliott-inspired low-high-higher-low setup, observed only after strict pivot confirmation and a lagged state, may precede continuation when price freshly closes above the proposed wave-one high. Completed 4h structure and 1h volatility gates remain fixed. This is a deterministic early-wave proxy, not a verified complete Elliott count or positive-expectancy claim.",
+      "id": "factory_causal_elliott_wave12_breakout",
+      "peer_required": false
+    }
+  ],
+  "live_trading_authority": false,
+  "no_minimum_trade_count_gate": true,
+  "schema": "nexus.mechanism-factory.v1",
+  "selection_basis": "training_partition_only"
+}

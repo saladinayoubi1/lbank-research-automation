@@ -148,6 +148,8 @@ def test_all_frontier_mechanisms_emit_bounded_boolean_signals():
         "lagged_utc_slot_volume_cv_7d": [0.2] * n,
         "lagged_bullish_butterfly_event": [0.] * n,
         "lagged_butterfly_rebound_price": [100.] * n,
+        "lagged_elliott_wave12_active": [0.] * n,
+        "elliott_wave12_close_breakout_event": [0.] * n,
     })
     for mechanism in research.FRONTIER_MECHANISMS:
         config = next(row for row in research.FRONTIER_CONFIGS if row["mechanism"] == mechanism)

@@ -1,0 +1,18 @@
+{
+  "bundle_sha256": {
+    "derive-parent-inventory.py": "8a60a5e9c23db266ba6fdcb01a33aee9393349ff20dd848d878f08db2e2b376a",
+    "native-input-binding.json": "494856f0ab323a29522ca36f76969257b11b230cf167a216e0936f1d1b3f0cff",
+    "native-source-worker.py": "d4f4691c0315263f575751e6ccf5f1a33636521744f70665eb9bf7d3a80ea2e8"
+  },
+  "command_characters": 26616,
+  "command_file_sha256": "338e0136272c737a19a1d040ad6501c250fff68b5d9aadddf1cb612680d695a3",
+  "device_id": "61c3307f-e6d4-4edf-860a-3519cfb9df5d",
+  "host": "DESKTOP-F4SA4VL",
+  "live_enabled": false,
+  "market_backtests_submitted": 0,
+  "native_parent_sha256": "8e64a1a670375d667701474b19ad1e1795c289213d93f2feb609761629260c4a",
+  "research_only": true,
+  "run_root": "E:\\NEXUS-QA\\causal-elliott-wave12-v9-20261014T155311Z",
+  "schema": "nexus.elliott-v9-native-invocation.v1",
+  "source_sha": "8c06ca692a06611431730e4aeb822b1d9f47f30d"
+}

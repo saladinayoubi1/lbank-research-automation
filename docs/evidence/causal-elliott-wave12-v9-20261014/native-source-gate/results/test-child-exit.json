@@ -1,0 +1,10 @@
+{
+  "actual_os_exit_code": 0,
+  "deadline_seconds": 120,
+  "elapsed_seconds": 7.64,
+  "finished_at_utc": "2026-10-14T16:00:04.664924+00:00",
+  "pid": 8200,
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_sha256": "7f0cf36268a2900e53bfa4f4aaea1c01a08e5fc2aa0732b47095337488680b02",
+  "timed_out": false
+}

@@ -1,0 +1,87 @@
+{
+  "schema": "nexus.elliott-v9-training-diagnosis-continuation.v1",
+  "observed_at_utc": "2026-10-14T17:52:26.419Z",
+  "result_evidence_head": "92f6b4639f5cbc6883683bd184f8d69b52f910eb",
+  "computational_source_sha": "8c06ca692a06611431730e4aeb822b1d9f47f30d",
+  "training_report_git_blob_sha1": "48de0e4cbb3bbb97414deed5c285905e86a5aabc",
+  "checks": [
+    {
+      "id": 115982918474,
+      "name": "discover",
+      "status": "completed",
+      "conclusion": "skipped"
+    },
+    {
+      "id": 115982507976,
+      "name": "validate",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 115982506579,
+      "name": "audit",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 115982506395,
+      "name": "contract-test",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 115982506335,
+      "name": "test (ubuntu-latest)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 115982506120,
+      "name": "test (macos-latest)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 115982505835,
+      "name": "test (windows-latest)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 115982490385,
+      "name": "control-plane trusted guard",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ],
+  "laptop2_pong": {
+    "content": [
+      {
+        "type": "text",
+        "text": "pong 2026-10-14T17:50:17.886Z"
+      },
+      {
+        "type": "text",
+        "text": "\n[executed on device: DESKTOP-F4SA4VL (61c3307f-e6d4-4edf-860a-3519cfb9df5d)]"
+      }
+    ],
+    "isError": false
+  },
+  "laptop1_pong": {
+    "content": [
+      {
+        "type": "text",
+        "text": "pong 2026-10-14T17:50:18.296Z"
+      },
+      {
+        "type": "text",
+        "text": "\n[executed on device: DESKTOP-1R1081M (bbabb808-d554-4db8-bce7-3a453bea8b43)]"
+      }
+    ],
+    "isError": false
+  },
+  "pong_establishes_reachability_only": true,
+  "new_market_runs": 0,
+  "research_only": true,
+  "live_enabled": false
+}
