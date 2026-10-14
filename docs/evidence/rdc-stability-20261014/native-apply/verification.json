@@ -1,0 +1,28 @@
+{
+  "active_client_adopted": false,
+  "all_checks_pass": true,
+  "applies_to_future_launcher_invocations": true,
+  "backup": "E:\\NEXUS-QA\\rdc-return-20261014T004546233872Z\\remote-supervisor.cmd.before",
+  "checks": {
+    "helper_byte_binding": true,
+    "only_call_added": true,
+    "original_backup_sha256": true,
+    "patched_idempotent": true,
+    "patched_launcher_sha256": true,
+    "physical_host": true,
+    "receipt_matches_bytes": true,
+    "source_receipt_binding": true,
+    "startup_unchanged": true
+  },
+  "host": "DESKTOP-F4SA4VL",
+  "launcher_lines": [
+    "@echo off",
+    ":loop",
+    "call \"C:\\Program Files\\nodejs\\npx.cmd\" -y @wonderwhy-er/desktop-commander@latest remote",
+    "timeout /t 15 /nobreak >nul",
+    "goto loop"
+  ],
+  "receipt": "E:\\NEXUS-QA\\rdc-return-20261014T004546233872Z\\receipt.json",
+  "schema": "nexus.rdc-return-native-readback.v1",
+  "source_sha": "98112d355f6de5e2da3ef472a7eb8395e5813019"
+}
