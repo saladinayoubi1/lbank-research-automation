@@ -1,0 +1,18 @@
+{
+  "schema": "nexus.rdc-active-handoff.v1",
+  "source_sha": "a61bfbd48a53e5029854b18d66f049e78699aa63",
+  "operation_sha256": "70d7076431b0926bdaf0ad070492b29ecda136a65b6f74b132aed38c0b990367",
+  "host": "DESKTOP-F4SA4VL",
+  "worker_pid": 6868,
+  "phase": "ACTIVE_PROCESS_SWITCHED",
+  "old_processes_stopped": true,
+  "existing_startup_started": true,
+  "active_process_adopted": true,
+  "live_enabled": false,
+  "worker_parent": "WmiPrvSE.exe",
+  "updated_utc": "2026-10-14T02:09:48.5192628Z",
+  "startup_wrapper_pid": 7068,
+  "new_loop_pid": 7228,
+  "new_remote_pid": 3004,
+  "remote_client_count": 1
+}

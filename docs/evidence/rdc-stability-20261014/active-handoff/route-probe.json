@@ -1,0 +1,13 @@
+{
+  "completed": true,
+  "host": "DESKTOP-F4SA4VL",
+  "observed_utc": "2026-10-14T01:51:09.664960+00:00",
+  "pid": 9328,
+  "ppid": 9992,
+  "process_stopped": false,
+  "remote_started": false,
+  "schema": "nexus.rdc-independent-process-probe.v1",
+  "session_id": 1,
+  "source_sha256": "411c0734ef3a1afdd30d2a96a93632d1d3325ae3db4e8287a7534d1cd6dcdfba",
+  "username": "afaq"
+}

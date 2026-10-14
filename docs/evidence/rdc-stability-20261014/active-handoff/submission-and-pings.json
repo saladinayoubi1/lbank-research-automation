@@ -1,0 +1,53 @@
+{
+  "submission": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Process started with PID 9092 (shell: powershell)\nInitial output:\n{\"submitted_utc\":\"2026-10-14T02:09:25.0291359Z\",\"operation_sha256\":\"70d7076431b0926bdaf0ad070492b29ecda136a65b6f74b132aed38c0b990367\",\"worker_process_id\":6868,\"prospective_source_commit\":\"771e7faef1dbfc05cf1d23cfccf9bd768a794615\",\"return_value\":0,\"single_submission\":true}\r\n\n✅ Process 9092 has finished execution"
+      },
+      {
+        "type": "text",
+        "text": "\n[executed on device: DESKTOP-F4SA4VL (61c3307f-e6d4-4edf-860a-3519cfb9df5d)]"
+      }
+    ],
+    "isError": false
+  },
+  "first_transient_offline": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Device \"DESKTOP-F4SA4VL\" (61c3307f-e6d4-4edf-860a-3519cfb9df5d) is offline (last seen 1s ago). Online devices:\n- DESKTOP-1R1081M (id: bbabb808-d554-4db8-bce7-3a453bea8b43, last seen 38s ago)\n\nManage devices: https://mcp.desktopcommander.app/\nYou can view, add, or revoke devices there."
+      }
+    ],
+    "structuredContent": {
+      "error_code": "INVALID_ARGUMENT"
+    },
+    "isError": true
+  },
+  "reconnected_laptop2": {
+    "content": [
+      {
+        "type": "text",
+        "text": "pong 2026-10-14T02:12:32.069Z"
+      },
+      {
+        "type": "text",
+        "text": "\n[executed on device: DESKTOP-F4SA4VL (61c3307f-e6d4-4edf-860a-3519cfb9df5d)]"
+      }
+    ],
+    "isError": false
+  },
+  "laptop1": {
+    "content": [
+      {
+        "type": "text",
+        "text": "pong 2026-10-14T02:12:32.735Z"
+      },
+      {
+        "type": "text",
+        "text": "\n[executed on device: DESKTOP-1R1081M (bbabb808-d554-4db8-bce7-3a453bea8b43)]"
+      }
+    ],
+    "isError": false
+  }
+}
