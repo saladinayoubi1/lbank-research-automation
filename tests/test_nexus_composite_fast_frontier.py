@@ -146,6 +146,8 @@ def test_all_frontier_mechanisms_emit_bounded_boolean_signals():
         "lagged_jump_proxy_share_96": [0.2] * n,
         "lagged_utc_slot_volume_ratio_7d": [1.6] * n,
         "lagged_utc_slot_volume_cv_7d": [0.2] * n,
+        "lagged_bullish_butterfly_event": [0.] * n,
+        "lagged_butterfly_rebound_price": [100.] * n,
     })
     for mechanism in research.FRONTIER_MECHANISMS:
         config = next(row for row in research.FRONTIER_CONFIGS if row["mechanism"] == mechanism)
@@ -233,3 +235,4 @@ def test_mission_012_is_factory_qa_bound_and_manager_declared():
     assert "independent" in acceptance
     assert "no automatic paper/demo promotion" in acceptance
     assert "no owner-wallet mutation" in acceptance
+

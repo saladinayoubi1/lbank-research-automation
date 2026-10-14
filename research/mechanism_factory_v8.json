@@ -1,0 +1,46 @@
+{
+  "schema": "nexus.mechanism-factory.v1",
+  "authority": "research-only-no-auto-promotion",
+  "selection_basis": "training_partition_only",
+  "no_minimum_trade_count_gate": true,
+  "auto_demo_promotion": false,
+  "live_trading_authority": false,
+  "candidates": [
+    {
+      "id": "factory_causal_bullish_butterfly",
+      "family": "confirmed_harmonic_reversal",
+      "hypothesis": "A fixed bullish five-pivot Butterfly geometry, observed only after strict three-right-bar pivot confirmation and one lagged context bar, may identify a tradable overextension reversal after a separate closed bullish response. Shared ATR risk/cost rules remain fixed; this exploratory hypothesis claims no positive expectancy.",
+      "peer_required": false,
+      "context": [
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "lagged_bullish_butterfly_event",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open"
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "previous_close"
+        },
+        {
+          "field": "close",
+          "op": "ge",
+          "other": "lagged_butterfly_rebound_price"
+        }
+      ]
+    }
+  ]
+}
+

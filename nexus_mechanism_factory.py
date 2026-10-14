@@ -46,12 +46,14 @@ CONTEXT_FIELDS = frozenset({
     "lagged_volume_return_corr_64",
     "lagged_standardized_shock_96", "lagged_jump_proxy_share_96",
     "lagged_utc_slot_volume_ratio_7d", "lagged_utc_slot_volume_cv_7d",
+    "lagged_bullish_butterfly_event",
 })
 ENTRY_FIELDS = frozenset({
     "open", "high", "low", "close", "close_location", "body_efficiency",
     "rel_vol", "bar_proxy_vwap", "prior_hi", "prior_lo", "prior_range_mid",
     "prior_range_width_pct", "prior_day_high", "prior_day_low", "prior_day_close",
     "previous_close",
+    "lagged_butterfly_rebound_price",
 })
 PEER_FIELDS = frozenset({
     "cross_pair_relative_z_previous", "lagged_peer_impulse",
@@ -470,3 +472,4 @@ def generate_factory_contracts_v4(
     return _generate_factory_contracts_from_contexts(
         existing, GENERATOR_CONTEXTS_V4, limit=limit
     )
+
