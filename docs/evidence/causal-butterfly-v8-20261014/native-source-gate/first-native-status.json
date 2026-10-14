@@ -1,0 +1,14 @@
+{
+  "checked_at_utc": "2026-10-14T10:46:40.747185+00:00",
+  "elapsed_seconds": 27.891,
+  "expected_native_exit_code": 0,
+  "host": "DESKTOP-F4SA4VL",
+  "live_enabled": false,
+  "market_backtests_executed": 0,
+  "receipt_sha256": "cd61f544e8c0e5dda583139608aaacd44270234658dede844c07effca5d16dc0",
+  "research_only": true,
+  "schema": "nexus.butterfly-v8-native-source-gate.v1",
+  "source_sha": "2b89f6e89abdacc16b3288b9fd9ebcb3bdea7e69",
+  "status": "NATIVE_SOURCE_GATE_PASS",
+  "tests_run": 39
+}

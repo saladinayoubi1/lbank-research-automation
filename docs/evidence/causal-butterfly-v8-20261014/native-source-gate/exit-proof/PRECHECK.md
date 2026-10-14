@@ -1,0 +1,3 @@
+# One bounded native test-only exit proof
+
+The original39-test native gate completed PASS with source/file/ledger bindings and receiptcd61f544..., but read_process_output1696 returned No session and list_sessions reported none. Its actual OSexit is not independently captured. Perform at most one bounded test-only retry on the exact existing staged source2b89f6e89abdacc16b3288b9fd9ebcb3bdea7e69; no copy/restage and no old market/producer/accounting job. A parent owns the exact test child, captures subprocess true returncode and stores it durably before return. Verify original receipt/all source hashes/prior ledger before and after. Unique exit-proof directory, deadline120s, no further retries. Native source39tests only; Live=false.
