@@ -106,3 +106,14 @@ References: Elliott Wave International, [Motive Waves](https://www.elliottwave.c
 and [Impulse](https://www.elliottwave.com/waveopedia/impulse/), accessed 2026-10-15.
 These explain the classical shapes and distinguish rules from guidelines;
 they are not evidence that this prototype predicts profitable trades.
+
+## Closed-OHLC follow-up
+
+The following additive stage now extracts confirmed pivots from completed bars,
+checks the full observed path, controls invalidation/expiry and consumed fresh
+breakout identity, and reuses the fixed parent stress-cost hypothesis. Its
+26 new tests plus these 16 structural tests pass locally and on LAPTOP2. See
+[the closed-OHLC gate](ELLIOTT_CLOSED_OHLC_20261015.md). The helper described
+above remains unchanged and emits no entry signal; the separate new module
+emits research price events only. Factory registration, recursive count, actual
+next-open fills and market qualification remain incomplete.

@@ -1,0 +1,87 @@
+{
+  "schema": "elliott-five-swing-native-tests/v1",
+  "device": "DESKTOP-F4SA4VL",
+  "device_id": "61c3307f-e6d4-4edf-860a-3519cfb9df5d",
+  "stage": "E:\\NEXUS-QA\\elliott-closed-ohlc-20261015",
+  "python": "E:\\NEXUS-QA\\strategy-frontier-v5-20261010\\.venv\\Scripts\\python.exe",
+  "started_at": "2026-10-14T23:00:49.4291688Z",
+  "completed_at": "2026-10-14T23:01:12.2388264Z",
+  "duration_seconds": 22.8014705,
+  "owned_child_pid": 4028,
+  "actual_exit_code": 0,
+  "timed_out": false,
+  "payload_sha256": "b8a914fe05ca4c4eeec756fc3e48dbda0f1fba9d3e12af6d1bfc181723460d78",
+  "invocation_sha256": "8893ea9566a7c441ca067f1f6e32c30d99ef7a4993f423136e6428ed524aa3fc",
+  "worker_result": {
+    "python": "3.12.10",
+    "numpy": "2.3.5",
+    "pandas": "2.3.3",
+    "tests_run": 42,
+    "failures": 0,
+    "errors": 0
+  },
+  "source_hashes": [
+    {
+      "path": "nexus_elliott_five_swing_review.py",
+      "sha256": "110ca9c05a36d21d3f4fd87e190f3e51d4fa5ce452c6304492da9d196932dd16"
+    },
+    {
+      "path": "test_nexus_elliott_five_swing_review.py",
+      "sha256": "fc7a14ad41b6dd165409be0f9c1b919e97a4b9f0423775c806b3553f1747576a"
+    },
+    {
+      "path": "nexus_causal_elliott_five_swing_features.py",
+      "sha256": "0ae7a6c50ff4ca1f44230baf3bd14731d46c5f2b2d3be456813e0f02e231f21e"
+    },
+    {
+      "path": "test_nexus_causal_elliott_five_swing_features.py",
+      "sha256": "003c898d353a3e9f9a4a401e5065506d3f8a973a55120349c9608af0f7546a64"
+    },
+    {
+      "path": "nexus_causal_macro_retest_features.py",
+      "sha256": "665657585d1ab470fedc8d9926af4429c8380e677f519f427350a085dab93c57"
+    },
+    {
+      "path": "research/causal_macro_break_retest_v10_preregistration.json",
+      "sha256": "2234a61ffb4b7b5238b478a51f323e4efea6c4334bc7b44081de46c27c50aad1"
+    }
+  ],
+  "postrun_source_hashes": [
+    {
+      "path": "nexus_elliott_five_swing_review.py",
+      "sha256": "110ca9c05a36d21d3f4fd87e190f3e51d4fa5ce452c6304492da9d196932dd16",
+      "unchanged": true
+    },
+    {
+      "path": "test_nexus_elliott_five_swing_review.py",
+      "sha256": "fc7a14ad41b6dd165409be0f9c1b919e97a4b9f0423775c806b3553f1747576a",
+      "unchanged": true
+    },
+    {
+      "path": "nexus_causal_elliott_five_swing_features.py",
+      "sha256": "0ae7a6c50ff4ca1f44230baf3bd14731d46c5f2b2d3be456813e0f02e231f21e",
+      "unchanged": true
+    },
+    {
+      "path": "test_nexus_causal_elliott_five_swing_features.py",
+      "sha256": "003c898d353a3e9f9a4a401e5065506d3f8a973a55120349c9608af0f7546a64",
+      "unchanged": true
+    },
+    {
+      "path": "nexus_causal_macro_retest_features.py",
+      "sha256": "665657585d1ab470fedc8d9926af4429c8380e677f519f427350a085dab93c57",
+      "unchanged": true
+    },
+    {
+      "path": "research/causal_macro_break_retest_v10_preregistration.json",
+      "sha256": "2234a61ffb4b7b5238b478a51f323e4efea6c4334bc7b44081de46c27c50aad1",
+      "unchanged": true
+    }
+  ],
+  "stdout_sha256": "fe6d31c3f926e4d7e6f8cb8dd79c3d91835757b5771f4daa4e350e41a0b3b2d5",
+  "stderr_sha256": "ba67f708012c1e0b966c555b9a9cc14a8a6c1e0194381b9e92d69620ba2968a6",
+  "market_replays": 0,
+  "factory_registered": false,
+  "execution_integrated": false,
+  "live": false
+}
