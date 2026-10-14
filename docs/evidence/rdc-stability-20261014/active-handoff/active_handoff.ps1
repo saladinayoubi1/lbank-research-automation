@@ -7,11 +7,12 @@ $state=[ordered]@{schema='nexus.rdc-active-handoff.v1';source_sha=$plan.merged_s
 $statusPath=Join-Path $operationRoot $(if($ValidateOnly){'READ_ONLY_VALIDATION.json'}else{'ACTIVATION_STATUS.json'})
 $heldProcesses=@()
 $mutex=$null
+$stateWritable=[bool]$ValidateOnly
 function Save-State {
   $state.updated_utc=[DateTime]::UtcNow.ToString('o')
   $pending=$statusPath+'.tmp.'+$PID
   [IO.File]::WriteAllText($pending,($state|ConvertTo-Json -Depth 6),[Text.UTF8Encoding]::new($false))
-  if([IO.File]::Exists($statusPath)){[IO.File]::Replace($pending,$statusPath,$null)}else{[IO.File]::Move($pending,$statusPath)}
+  if([IO.File]::Exists($statusPath)){[IO.File]::Replace($pending,$statusPath,($statusPath+'.previous'))}else{[IO.File]::Move($pending,$statusPath)}
 }
 function Hash-Text([string]$value){[BitConverter]::ToString([Security.Cryptography.SHA256]::Create().ComputeHash([Text.Encoding]::UTF8.GetBytes($value))).Replace('-','').ToLowerInvariant()}
 function All-Processes { @(Get-CimInstance Win32_Process) }
@@ -35,7 +36,7 @@ try {
   $taskService.Connect()
   foreach($taskName in @('NEXUS-Local-Failover-Autostart','NEXUS-Bybit-Failover-Autostart')){if($taskService.GetFolder('\').GetTask($taskName).Enabled){throw 'Failover task must stay disabled'}}
   $rows=All-Processes
-  $clients=Remote-Rows $rows
+  $clients=@(Remote-Rows $rows)
   if($clients.Count -ne 1 -or [int]$clients[0].ProcessId -ne 10416){throw 'Active remote changed'}
   if(@($rows|Where-Object {$_.Name -eq 'cmd.exe' -and $_.CommandLine -match '(?i)remote-supervisor\.cmd'}).Count -ne 0){throw 'A launcher loop already exists'}
   foreach($expected in $plan.targets){
@@ -55,13 +56,16 @@ try {
   if([IO.File]::Exists($statusPath)){throw 'Existing handoff receipt forbids repeated execution'}
   $mutex=[Threading.Mutex]::new($false,'Local\NEXUS_RDC_L2_ACTIVE_HANDOFF')
   if(-not $mutex.WaitOne(0)){throw 'Another handoff is active'}
+  $claim=[IO.File]::Open($statusPath,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::None)
+  $claim.Dispose()
+  $stateWritable=$true
   $state.worker_parent=[string]$parent.Name
   $state.phase='PRECONDITIONS_VERIFIED';Save-State
   Start-Sleep -Seconds 5
   foreach($handle in $heldProcesses){if(-not $handle.HasExited){$handle.Kill()}}
   foreach($handle in $heldProcesses){if(-not $handle.WaitForExit(10000)){throw 'Old process exit was not proven'}}
   $rows=All-Processes
-  if((Remote-Rows $rows).Count -ne 0){throw 'A remote remains active; no new client will be started'}
+  if(@(Remote-Rows $rows).Count -ne 0){throw 'A remote remains active; no new client will be started'}
   $state.old_processes_stopped=$true;$state.phase='OLD_PROCESSES_EXITED';Save-State
   foreach($bound in $plan.bound_files){if((Get-FileHash -Algorithm SHA256 -LiteralPath $bound.path).Hash.ToLowerInvariant() -ne $bound.sha256){throw 'Bound file changed before launch'}}
   $start=[Diagnostics.ProcessStartInfo]::new()
@@ -78,7 +82,7 @@ try {
   do {
     $rows=All-Processes
     $loops=@($rows|Where-Object {$_.Name -eq 'cmd.exe' -and $_.CommandLine -match '(?i)remote-supervisor\.cmd'})
-    $clients=Remote-Rows $rows
+    $clients=@(Remote-Rows $rows)
     if($loops.Count -gt 1 -or $clients.Count -gt 1){throw 'Duplicate remote/loop detected; no further launch attempted'}
     if($loops.Count -eq 1 -and $clients.Count -eq 1 -and [int]$clients[0].ProcessId -ne 10416 -and (Ancestor-Is $clients[0] ([int]$loops[0].ProcessId) $rows)){
       $state.new_loop_pid=[int]$loops[0].ProcessId;$state.new_remote_pid=[int]$clients[0].ProcessId
@@ -89,7 +93,7 @@ try {
   $state.phase='STARTED_AWAITING_CLIENT';$state.no_second_launch_attempted=$true;Save-State;exit 2
 } catch {
   $state.phase='FAILED_CLOSED';$state.error=[string]$_.Exception.Message
-  Save-State
+  if($stateWritable -or -not [IO.File]::Exists($statusPath)){Save-State}else{Write-Output 'Existing handoff receipt retained; no repeated operation'}
   exit 1
 } finally {
   foreach($handle in $heldProcesses){$handle.Dispose()}

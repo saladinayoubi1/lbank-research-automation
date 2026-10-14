@@ -1,0 +1,57 @@
+{
+  "scalar_count_failure": {
+    "schema": "nexus.rdc-active-handoff.v1",
+    "source_sha": "a61bfbd48a53e5029854b18d66f049e78699aa63",
+    "operation_sha256": "6fb50d166629eb272ac87a15f240372b35609abfe7ad168f6e66530ac2e6126c",
+    "host": "DESKTOP-F4SA4VL",
+    "worker_pid": 2708,
+    "phase": "FAILED_CLOSED",
+    "old_processes_stopped": false,
+    "existing_startup_started": false,
+    "active_process_adopted": false,
+    "live_enabled": false,
+    "error": "Active remote changed",
+    "updated_utc": "2026-10-14T02:01:30.6720571Z"
+  },
+  "receipt_path_failure_source_sha256": "18370bd782e98a2f46147d3bb61ffbfcbed9630aad84c3b66f8c666704fcd8a2",
+  "receipt_path_failure": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Process started with PID 8200 (shell: powershell)\nInitial output:\nException calling \"Replace\" with \"3\" argument(s): \"The path is not of a legal form.\"\r\nAt line:15 char:38\r\n+ ... ($statusPath)){[IO.File]::Replace($pending,$statusPath,$null)}else{[I ...\r\n+                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\r\n    + CategoryInfo          : NotSpecified: (:) [], ParentContainsErrorRecordException\r\n    + FullyQualifiedErrorId : ArgumentException\r\n \r\n\n✅ Process 8200 has finished execution"
+      },
+      {
+        "type": "text",
+        "text": "\n[executed on device: DESKTOP-F4SA4VL (61c3307f-e6d4-4edf-860a-3519cfb9df5d)]"
+      }
+    ],
+    "isError": false
+  },
+  "final_validation": {
+    "schema": "nexus.rdc-active-handoff.v1",
+    "source_sha": "a61bfbd48a53e5029854b18d66f049e78699aa63",
+    "operation_sha256": "70d7076431b0926bdaf0ad070492b29ecda136a65b6f74b132aed38c0b990367",
+    "host": "DESKTOP-F4SA4VL",
+    "worker_pid": 10812,
+    "phase": "READ_ONLY_PASS",
+    "old_processes_stopped": false,
+    "existing_startup_started": false,
+    "active_process_adopted": false,
+    "live_enabled": false,
+    "preconditions_verified": true,
+    "updated_utc": "2026-10-14T02:06:25.0369700Z"
+  },
+  "final_terminal": {
+    "content": [
+      {
+        "type": "text",
+        "text": "[Reading last 0 lines (total: 0 lines)]\n\n(No output in requested range)\n✅ Process completed with exit code 0 (runtime: 1.64s)"
+      },
+      {
+        "type": "text",
+        "text": "\n[executed on device: DESKTOP-F4SA4VL (61c3307f-e6d4-4edf-860a-3519cfb9df5d)]"
+      }
+    ],
+    "isError": false
+  }
+}
