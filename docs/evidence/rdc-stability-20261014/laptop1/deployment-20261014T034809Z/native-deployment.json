@@ -1,0 +1,296 @@
+{
+  "schema": "nexus.rdc-l1-exit-deployment.v1",
+  "recorded_at_utc": "2026-10-14T03:55:55.761Z",
+  "status": "EXIT_EXPRESSION_DEPLOYED_TASK_MIGRATION_NOT_PERFORMED",
+  "source_sha": "45d881fcede297f91f69069d173d676e98cfb8c0",
+  "merged_main_sha": "db52c90e3e68ff33e905fbd3b6a35101aa5e87ad",
+  "source_pr": 2643,
+  "host": "DESKTOP-1R1081M",
+  "device_id": "bbabb808-d554-4db8-bce7-3a453bea8b43",
+  "helper_blob_sha": "150387b49e70435da4db405ee0eee66fbbd437a3",
+  "exact_head_ci": [
+    {
+      "name": "pr-architecture-precheck",
+      "status": "completed",
+      "conclusion": "success",
+      "completed_at": "2026-10-14T03:16:52Z"
+    },
+    {
+      "name": "fallback-health",
+      "status": "completed",
+      "conclusion": "success",
+      "completed_at": "2026-10-14T03:19:06Z"
+    },
+    {
+      "name": "test (windows-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "completed_at": "2026-10-14T03:24:08Z"
+    },
+    {
+      "name": "control-plane trusted guard",
+      "status": "completed",
+      "conclusion": "success",
+      "completed_at": "2026-10-14T03:16:29Z"
+    },
+    {
+      "name": "test (macos-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "completed_at": "2026-10-14T03:21:14Z"
+    },
+    {
+      "name": "validate-system-map",
+      "status": "completed",
+      "conclusion": "success",
+      "completed_at": "2026-10-14T03:16:27Z"
+    },
+    {
+      "name": "android-apk",
+      "status": "completed",
+      "conclusion": "success",
+      "completed_at": "2026-10-14T03:16:42Z"
+    },
+    {
+      "name": "windows-desktop",
+      "status": "completed",
+      "conclusion": "success",
+      "completed_at": "2026-10-14T03:20:59Z"
+    },
+    {
+      "name": "audit",
+      "status": "completed",
+      "conclusion": "success",
+      "completed_at": "2026-10-14T03:16:15Z"
+    },
+    {
+      "name": "test (ubuntu-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "completed_at": "2026-10-14T03:21:39Z"
+    },
+    {
+      "name": "secure-gateway-verification",
+      "status": "completed",
+      "conclusion": "success",
+      "completed_at": "2026-10-14T03:16:53Z"
+    }
+  ],
+  "source_staging_directory": "E:\\NEXUS-QA\\rdc-l1-exit-source-20261014T0344Z",
+  "task_xml_backup": "E:\\NEXUS-QA\\rdc-l1-exit-source-20261014T0344Z\\task-before.xml",
+  "preinstall": {
+    "observed_utc": "2026-10-14T03:46:07.1442760Z",
+    "host": "DESKTOP-1R1081M",
+    "task_enabled": true,
+    "task_state": 3,
+    "task_last_result": 0,
+    "task_actions": [
+      {
+        "path": "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        "arguments": "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File \"C:\\Users\\afaq\\AppData\\Local\\NEXUS\\RemoteCommander\\nexus-remote-commander-watchdog.ps1\"",
+        "working_directory": null
+      }
+    ],
+    "task_xml_sha256": "284b39bd04f936372d30f42c798bae76382882b8b84cea22b7338a5ebb8e2c74",
+    "startup_sha256": "a8fdc21df5a315308768376cc22f704b316101016e2445abbdd6ccd4b3b29887",
+    "legacy_flag_sha256": "862595a01549b7b44a920a99670fd99d996584bbae3e44d868efc530c5195944",
+    "node_processes": [
+      {
+        "pid": 2032,
+        "path": "C:\\Program Files\\nodejs\\node.exe",
+        "started_utc": "2026-10-13T23:12:30.9084762Z"
+      },
+      {
+        "pid": 5520,
+        "path": "C:\\Program Files\\nodejs\\node.exe",
+        "started_utc": "2026-10-13T23:13:33.5156379Z"
+      },
+      {
+        "pid": 11624,
+        "path": "C:\\Program Files (x86)\\Adobe\\Adobe Creative Cloud\\CCXProcess\\libs\\node.exe",
+        "started_utc": "2026-10-12T20:17:05.3990427Z"
+      },
+      {
+        "pid": 12764,
+        "path": "C:\\Program Files\\nodejs\\node.exe",
+        "started_utc": "2026-10-13T23:13:05.9346874Z"
+      }
+    ],
+    "runner_listener_count": 3,
+    "runner_worker_count": 1,
+    "live_enabled": false
+  },
+  "read_only_preinstall_receipt": {
+    "active_remote_restarted": false,
+    "applies_to_future_invocations": true,
+    "before_sha256": "6518fd61948239a6434a5569a5aaad87fc163cce7596377283e02d0889d05083",
+    "changed": false,
+    "checked_at_utc": "2026-10-14T03:46:20.681022+00:00",
+    "credentials_modified": false,
+    "duplicate_remote_started": false,
+    "fix_needed": true,
+    "helper_sha256": "c8e31dfcb584c23189087c540b966aabc89fabb978498c94df0236ead1a7da6c",
+    "host": "DESKTOP-1R1081M",
+    "legacy_guard_removed": false,
+    "live_enabled": false,
+    "owner_state_modified": false,
+    "schema": "nexus.rdc-l1-exit-repair.v1",
+    "source_sha": "45d881fcede297f91f69069d173d676e98cfb8c0",
+    "status": "READ_ONLY_CHECK",
+    "task_retargeted": false
+  },
+  "read_only_process": {
+    "pid": 10764,
+    "actual_exit_code": 0
+  },
+  "apply_process": {
+    "pid": 5128,
+    "actual_exit_code": 0,
+    "submissions": 1,
+    "command": "$ErrorActionPreference='Stop'\n$helper='E:\\NEXUS-QA\\rdc-l1-exit-source-20261014T0344Z\\repair_nexus_rdc_l1_exit.py'\nif((Get-FileHash -Algorithm SHA256 -LiteralPath $helper).Hash.ToLowerInvariant() -ne 'c8e31dfcb584c23189087c540b966aabc89fabb978498c94df0236ead1a7da6c'){throw 'Helper byte hash mismatch'}\n$result=& 'C:\\Users\\afaq\\AppData\\Local\\Programs\\Python\\Python312\\python.exe' $helper --source-sha 45d881fcede297f91f69069d173d676e98cfb8c0 --apply\n$applyExit=$LASTEXITCODE\nWrite-Output ('APPLY_RESULT='+$result)\nWrite-Output ('ACTUAL_APPLY_EXIT='+$applyExit)\nexit $applyExit"
+  },
+  "native_apply_receipt": {
+    "active_remote_restarted": false,
+    "after_sha256": "d762b259a74aa0b31188dcc02e259bbf9f2c7cd61952bc858297554c2412e35d",
+    "applies_to_future_invocations": true,
+    "backup_byte_verified": true,
+    "backup_path": "E:\\NEXUS-QA\\rdc-l1-exit-20261014T034809153080Z\\remote-supervisor.cjs.before",
+    "before_sha256": "6518fd61948239a6434a5569a5aaad87fc163cce7596377283e02d0889d05083",
+    "changed": true,
+    "checked_at_utc": "2026-10-14T03:48:09.153080+00:00",
+    "credentials_modified": false,
+    "duplicate_remote_started": false,
+    "helper_sha256": "c8e31dfcb584c23189087c540b966aabc89fabb978498c94df0236ead1a7da6c",
+    "host": "DESKTOP-1R1081M",
+    "legacy_guard_removed": false,
+    "live_enabled": false,
+    "owner_state_modified": false,
+    "schema": "nexus.rdc-l1-exit-repair.v1",
+    "source_sha": "45d881fcede297f91f69069d173d676e98cfb8c0",
+    "status": "EXIT_STATUS_FIXED",
+    "task_retargeted": false
+  },
+  "postinstall_snapshot": {
+    "observed_utc": "2026-10-14T03:50:44.8794483Z",
+    "host": "DESKTOP-1R1081M",
+    "supervisor_sha256": "d762b259a74aa0b31188dcc02e259bbf9f2c7cd61952bc858297554c2412e35d",
+    "backup_sha256": "6518fd61948239a6434a5569a5aaad87fc163cce7596377283e02d0889d05083",
+    "only_exit_expression_changed": true,
+    "task_xml_sha256": "284b39bd04f936372d30f42c798bae76382882b8b84cea22b7338a5ebb8e2c74",
+    "startup_sha256": "a8fdc21df5a315308768376cc22f704b316101016e2445abbdd6ccd4b3b29887",
+    "legacy_flag_sha256": "862595a01549b7b44a920a99670fd99d996584bbae3e44d868efc530c5195944",
+    "task_enabled": true,
+    "task_state": 3,
+    "task_last_result": 0,
+    "node_processes": [
+      {
+        "pid": 2032,
+        "path": "C:\\Program Files\\nodejs\\node.exe",
+        "started_utc": "2026-10-13T23:12:30.9084762Z"
+      },
+      {
+        "pid": 5520,
+        "path": "C:\\Program Files\\nodejs\\node.exe",
+        "started_utc": "2026-10-13T23:13:33.5156379Z"
+      },
+      {
+        "pid": 11624,
+        "path": "C:\\Program Files (x86)\\Adobe\\Adobe Creative Cloud\\CCXProcess\\libs\\node.exe",
+        "started_utc": "2026-10-12T20:17:05.3990427Z"
+      },
+      {
+        "pid": 12764,
+        "path": "C:\\Program Files\\nodejs\\node.exe",
+        "started_utc": "2026-10-13T23:13:05.9346874Z"
+      }
+    ],
+    "runner_listener_count": 3,
+    "runner_worker_count": 1,
+    "live_enabled": false
+  },
+  "supplemental_probe_failure": {
+    "pid": 12104,
+    "actual_exit_code": 1,
+    "cause": "Windows PowerShell native Python -c argument quoting removed embedded quotes.",
+    "mutations": false,
+    "original_output": "[Reading last 7 lines (total: 7 lines)]\n\nPOSTINSTALL={\"observed_utc\":\"2026-10-14T03:50:44.8794483Z\",\"host\":\"DESKTOP-1R1081M\",\"supervisor_sha256\":\"d762b259a74aa0b31188dcc02e259bbf9f2c7cd61952bc858297554c2412e35d\",\"backup_sha256\":\"6518fd61948239a6434a5569a5aaad87fc163cce7596377283e02d0889d05083\",\"only_exit_expression_changed\":true,\"task_xml_sha256\":\"284b39bd04f936372d30f42c798bae76382882b8b84cea22b7338a5ebb8e2c74\",\"startup_sha256\":\"a8fdc21df5a315308768376cc22f704b316101016e2445abbdd6ccd4b3b29887\",\"legacy_flag_sha256\":\"862595a01549b7b44a920a99670fd99d996584bbae3e44d868efc530c5195944\",\"task_enabled\":true,\"task_state\":3,\"task_last_result\":0,\"node_processes\":[{\"pid\":2032,\"path\":\"C:\\\\Program Files\\\\nodejs\\\\node.exe\",\"started_utc\":\"2026-10-13T23:12:30.9084762Z\"},{\"pid\":5520,\"path\":\"C:\\\\Program Files\\\\nodejs\\\\node.exe\",\"started_utc\":\"2026-10-13T23:13:33.5156379Z\"},{\"pid\":11624,\"path\":\"C:\\\\Program Files (x86)\\\\Adobe\\\\Adobe Creative Cloud\\\\CCXProcess\\\\libs\\\\node.exe\",\"started_utc\":\"2026-10-12T20:17:05.3990427Z\"},{\"pid\":12764,\"path\":\"C:\\\\Program Files\\\\nodejs\\\\node.exe\",\"started_utc\":\"2026-10-13T23:13:05.9346874Z\"}],\"runner_listener_count\":3,\"runner_worker_count\":1,\"live_enabled\":false}\r\n  File \"<string>\", line 11\r\n    text = \r\n           ^\r\nSyntaxError: invalid syntax\r\nPROCESS_DISCOVERY=\r\nACTUAL_DISCOVERY_EXIT=1\r\n✅ Process completed with exit code 1 (runtime: 57.68s)",
+    "correction": "One retry as a byte-bound standalone Python file, no supervisor reapplication."
+  },
+  "corrected_read_only_audit": {
+    "pid": 10168,
+    "actual_exit_code": 0,
+    "result": {
+      "active_processes_modified": false,
+      "backup_sha256": "6518fd61948239a6434a5569a5aaad87fc163cce7596377283e02d0889d05083",
+      "observed_utc": "2026-10-14T03:53:18.812668+00:00",
+      "processes": [],
+      "psutil_available": false,
+      "schema": "nexus.rdc-l1-readonly-post-audit.v1",
+      "snapshot_observed_utc": "2026-10-14T03:50:44.8794483Z",
+      "snapshot_unchanged_fields": [
+        "task_xml_sha256",
+        "startup_sha256",
+        "legacy_flag_sha256",
+        "node_processes"
+      ],
+      "source_file_sha256": "0f0035b282462428784a749871a5ddb3b2549e501a2e76beb5375c49261d9ecc",
+      "supervisor_sha256": "d762b259a74aa0b31188dcc02e259bbf9f2c7cd61952bc858297554c2412e35d"
+    }
+  },
+  "unchanged_boundary": {
+    "active_rdc_client_restarted": false,
+    "recovery_task_retargeted": false,
+    "legacy_guard_removed": false,
+    "startup_rewritten": false,
+    "credentials_modified": false,
+    "paper_owner_or_journal_modified": false,
+    "live_enabled": false
+  },
+  "remaining": [
+    "Existing recovery task still invokes guarded retired watchdog.",
+    "Current RDC command line/ancestry and independent execution route remain unverified; CIM unavailable in prior check and psutil absent in this interpreter.",
+    "Positive old-client exit and one-client adoption required before retargeting same existing task.",
+    "Native recovery/restart behavior and sustained uptime remain unproven.",
+    "Three existing Runner.Listener processes were observed before/after; lane mapping remains open. They were not assumed to be duplicate RDC or stopped."
+  ],
+  "fresh_pings": [
+    {
+      "device_id": "bbabb808-d554-4db8-bce7-3a453bea8b43",
+      "result": {
+        "status": "fulfilled",
+        "value": {
+          "content": [
+            {
+              "type": "text",
+              "text": "pong 2026-10-14T03:56:15.295Z"
+            },
+            {
+              "type": "text",
+              "text": "\n[executed on device: DESKTOP-1R1081M (bbabb808-d554-4db8-bce7-3a453bea8b43)]"
+            }
+          ],
+          "isError": false
+        }
+      }
+    },
+    {
+      "device_id": "61c3307f-e6d4-4edf-860a-3519cfb9df5d",
+      "result": {
+        "status": "fulfilled",
+        "value": {
+          "content": [
+            {
+              "type": "text",
+              "text": "pong 2026-10-14T03:56:14.983Z"
+            },
+            {
+              "type": "text",
+              "text": "\n[executed on device: DESKTOP-F4SA4VL (61c3307f-e6d4-4edf-860a-3519cfb9df5d)]"
+            }
+          ],
+          "isError": false
+        }
+      }
+    }
+  ]
+}
