@@ -1,0 +1,13 @@
+{
+  "schema": "nexus-rescue-bundle-v1",
+  "files": {
+    "Prepare-RescueKey.ps1": "5851a65a705a87aeb9666ecbe4055991cc261ba54d4a4122790400c36a225a87",
+    "Install-NexusRescue.ps1": "6641befad8bc8dd1d21ecb7d315fdb2d79857491d629d53eee19a56fe93d3d43",
+    "Watch-RescueTunnel.ps1": "aab1a53649e84c35941a6415d28cd336ffccd9a172cbf35685860cd762a5f492",
+    "Validate-RescueBundle.ps1": "eb19ad97363337ffe1752ebe5345e85a4b197560c33c0fee59c3ecf926fb95e2",
+    "vps-known-hosts": "aed5094df5cb3cd8a3fac9bf20bf7263047f3e65d64378c87c5c1d02878ec64f",
+    "operator-authorized-key": "a7fa9bc17460cccb3e7e89709f80b1ab702d82f7adbefc76359e306edcf66492"
+  },
+  "writer_authority": false,
+  "live_enabled": false
+}

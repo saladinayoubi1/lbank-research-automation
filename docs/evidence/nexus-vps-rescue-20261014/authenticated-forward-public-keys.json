@@ -1,0 +1,22 @@
+[
+  {
+    "schema": "nexus-rescue-forward-key-v1",
+    "node": "LAPTOP1",
+    "hostname": "DESKTOP-1R1081M",
+    "user": "afaq",
+    "forward_public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIi16VZdDqz1qMcQT4ot6Uaj41ydb8UU18QxYTWbrZMD NEXUS-RESCUE-LAPTOP1",
+    "private_key_exported": false,
+    "writer_authority": false,
+    "live_enabled": false
+  },
+  {
+    "schema": "nexus-rescue-forward-key-v1",
+    "node": "LAPTOP2",
+    "hostname": "DESKTOP-F4SA4VL",
+    "user": "afaq",
+    "forward_public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ9t7dxIob2PVoyDUejkKoLQDCkDcu+IMFvk0eEQdj11 NEXUS-RESCUE-LAPTOP2",
+    "private_key_exported": false,
+    "writer_authority": false,
+    "live_enabled": false
+  }
+]
