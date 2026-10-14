@@ -1,23 +1,11 @@
 {
   "schema": "nexus.rdc-l1-corrected-apply-precheck.v1",
-  "recorded_at_utc": "2026-10-14T09:10:11.756Z",
+  "recorded_at_utc": "2026-10-14T09:11:02.150Z",
   "merged_main_sha": "0d1a0bf4b68df97fd4c1f225d6f76aefc5fc52cd",
   "reviewed_head_sha": "3a5eb69fabec0938462410111176e6009d0eeb83",
   "controller_source_sha": "ab27ace2df7a967192dd04e87eef749e1c90e410",
   "controller_sha256": "5d310bb776eef3f388bece360c8487ec70a6703261a11b09b60c5295f7aad89b",
-  "device_id": {
-    "content": [
-      {
-        "type": "text",
-        "text": "pong 2026-10-14T09:08:32.372Z"
-      },
-      {
-        "type": "text",
-        "text": "\n[executed on device: DESKTOP-1R1081M (bbabb808-d554-4db8-bce7-3a453bea8b43)]"
-      }
-    ],
-    "isError": false
-  },
+  "device_id": "bbabb808-d554-4db8-bce7-3a453bea8b43",
   "run_directory": "E:\\NEXUS-QA\\rdc-l1-task-active-correction-20261014T084420Z\\apply-retry-20261014T091011Z",
   "command": "$ErrorActionPreference='Stop'\n$helper='E:\\NEXUS-QA\\rdc-l1-task-active-correction-20261014T084420Z\\adopt_nexus_rdc_l1_task.py'\nif((Get-FileHash -Algorithm SHA256 -LiteralPath $helper).Hash.ToLowerInvariant() -ne '5d310bb776eef3f388bece360c8487ec70a6703261a11b09b60c5295f7aad89b'){throw 'Reviewed corrected controller source changed'}\nif(Test-Path -LiteralPath 'E:\\NEXUS-QA\\rdc-l1-task-active-correction-20261014T084420Z\\apply-retry-20261014T091011Z'){throw 'Corrected apply directory already exists; do not replay'}\n& 'C:\\Users\\afaq\\AppData\\Local\\Programs\\Python\\Python312\\python.exe' $helper --source-sha 'ab27ace2df7a967192dd04e87eef749e1c90e410' --code-sha '5d310bb776eef3f388bece360c8487ec70a6703261a11b09b60c5295f7aad89b' --run-dir 'E:\\NEXUS-QA\\rdc-l1-task-active-correction-20261014T084420Z\\apply-retry-20261014T091011Z' --apply\n$launchExit=$LASTEXITCODE\nWrite-Output ('ACTUAL_CORRECTED_DETACHED_LAUNCHER_EXIT='+$launchExit)\nexit $launchExit",
   "ci_checks": [
@@ -270,5 +258,21 @@
   "planned_corrected_apply_submissions": 1,
   "third_apply_forbidden": true,
   "worker_rechecks_exact_guards": true,
-  "live_enabled": false
+  "live_enabled": false,
+  "pre_execution_validation": {
+    "rejected_tool_invocation": {
+      "content": [
+        {
+          "type": "text",
+          "text": "MCP error -32602: Input validation error: Invalid arguments for tool start_process: [\n  {\n    \"code\": \"invalid_type\",\n    \"expected\": \"string\",\n    \"received\": \"object\",\n    \"path\": [\n      \"deviceId\"\n    ],\n    \"message\": \"Expected string, received object\"\n  }\n]"
+        }
+      ],
+      "structuredContent": {
+        "error_code": "INVALID_ARGUMENT"
+      },
+      "isError": true
+    },
+    "reason": "The cache entry holding the device ID was overwritten by the ping result. Input validation rejected the object before any native execution. Corrected to the exact Laptop1 ID; no native apply submitted by this rejected call.",
+    "native_execution_started": false
+  }
 }
