@@ -1,0 +1,76 @@
+{
+  "bound_file_hashes": {
+    "C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npx-cli.js": "a9ca027c18c5bd7da278230edc7a174ff1d8b6b558e0e0a4a2c9c2fae346d66b",
+    "C:\\Program Files\\nodejs\\node_modules\\npm\\package.json": "40c49aec1ef9a0cd1edb50b900d678705319faf9e3117f5336960ba7b3619e47",
+    "C:\\Users\\afaq\\AppData\\Local\\NEXUS\\RemoteCommander\\LEGACY_DISABLED.flag": "862595a01549b7b44a920a99670fd99d996584bbae3e44d868efc530c5195944",
+    "C:\\Users\\afaq\\AppData\\Local\\NEXUS\\RemoteCommander\\nexus-remote-commander-watchdog.ps1": "c5b185ed07e1894b8fb6ce1c373c5cde5dbbadabb12d87581e333fcdee9b25f7",
+    "C:\\Users\\afaq\\AppData\\Local\\NEXUS\\desktop-commander-remote\\remote-supervisor.cjs": "d762b259a74aa0b31188dcc02e259bbf9f2c7cd61952bc858297554c2412e35d",
+    "C:\\Users\\afaq\\AppData\\Local\\npm-cache\\_npx\\4b4c857f6efdfb61\\node_modules\\@wonderwhy-er\\desktop-commander\\dist\\index.js": "7e58b9d5d64732ff8cd77cd477de30751feb6b59bc2353dfaa78825f015b2f2b",
+    "C:\\Users\\afaq\\AppData\\Local\\npm-cache\\_npx\\4b4c857f6efdfb61\\node_modules\\@wonderwhy-er\\desktop-commander\\package.json": "8ba64a033e75730c16f90b09f2749fa5e61c28240104ead151cabe93239ba14a"
+  },
+  "checked_at_utc": "2026-10-14T09:18:41.574596+00:00",
+  "cjs_supervisors": 0,
+  "controller_sha256": "5d310bb776eef3f388bece360c8487ec70a6703261a11b09b60c5295f7aad89b",
+  "controller_source_sha": "ab27ace2df7a967192dd04e87eef749e1c90e410",
+  "live_enabled": false,
+  "npm_remote_launchers": [
+    2032
+  ],
+  "old_exact_sdk_identities_still_verified": true,
+  "phase": "UNCHANGED_AFTER_ACCESS_DENIED",
+  "protected_processes": [
+    {
+      "argv_json_sha256": "f5f6b91e7a6153cd2c7ba0b6ed3c96676245643a6552add8d819121b7cd5b24a",
+      "creation_filetime": "134364067357038294",
+      "exe": "C:\\Windows\\System32\\cmd.exe",
+      "in_job": false,
+      "name": "cmd.exe",
+      "owner": "DESKTOP-1R1081M\\afaq",
+      "pid": 9040,
+      "ppid": 11520,
+      "session_id": 1
+    },
+    {
+      "argv_json_sha256": "66c8d0291186b7d77e450bc691dde7f299286c9b33aa7f1fb810d563c46a7667",
+      "creation_filetime": "134363995178564217",
+      "exe": "C:\\Windows\\explorer.exe",
+      "in_job": false,
+      "name": "explorer.exe",
+      "owner": "DESKTOP-1R1081M\\afaq",
+      "pid": 11520,
+      "ppid": 8892,
+      "session_id": 1
+    }
+  ],
+  "read_only": true,
+  "remaining_blocker": "Windows E_ACCESSDENIED at changing existing task Enabled; no third apply attempted",
+  "schema": "nexus.rdc-l1-adoption-denied-independent-check.v1",
+  "sdk_remote_clients": [
+    {
+      "argv_json_sha256": "dccf2427765dd06d9111a3f94218958b25638bc87f6f66e42ac9e214c0af2a76",
+      "creation_filetime": "134364067859346874",
+      "exe": "C:\\Program Files\\nodejs\\node.exe",
+      "in_job": true,
+      "name": "node.exe",
+      "owner": "DESKTOP-1R1081M\\afaq",
+      "pid": 12764,
+      "ppid": 4000,
+      "session_id": 1
+    }
+  ],
+  "sdk_stop_intent": false,
+  "startup_matches_backup": true,
+  "startup_sha256": "a8fdc21df5a315308768376cc22f704b316101016e2445abbdd6ccd4b3b29887",
+  "task": {
+    "allow_demand": true,
+    "enabled": true,
+    "instances": 1,
+    "owner_sid": "S-1-5-21-29241603-1126111165-4177284829-1001",
+    "sddl": "O:BAG:S-1-5-21-29241603-1126111165-4177284829-513D:(A;ID;0x1f019f;;;BA)(A;ID;0x1f019f;;;SY)(A;ID;FA;;;BA)(A;;FR;;;S-1-5-21-29241603-1126111165-4177284829-1001)",
+    "state": 4,
+    "xml": "<?xml version=\"1.0\" encoding=\"UTF-16\"?>\r\n<Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\">\r\n  <RegistrationInfo>\r\n    <Description>NEXUS Remote Commander user-context recovery watchdog</Description>\r\n    <URI>\\NEXUS-Remote-Commander-Recovery</URI>\r\n  </RegistrationInfo>\r\n  <Principals>\r\n    <Principal id=\"Author\">\r\n      <UserId>S-1-5-21-29241603-1126111165-4177284829-1001</UserId>\r\n      <LogonType>InteractiveToken</LogonType>\r\n    </Principal>\r\n  </Principals>\r\n  <Settings>\r\n    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>\r\n    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>\r\n    <ExecutionTimeLimit>PT0S</ExecutionTimeLimit>\r\n    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>\r\n    <RestartOnFailure>\r\n      <Count>99</Count>\r\n      <Interval>PT1M</Interval>\r\n    </RestartOnFailure>\r\n    <StartWhenAvailable>true</StartWhenAvailable>\r\n    <IdleSettings>\r\n      <Duration>PT10M</Duration>\r\n      <WaitTimeout>PT1H</WaitTimeout>\r\n      <StopOnIdleEnd>true</StopOnIdleEnd>\r\n      <RestartOnIdle>false</RestartOnIdle>\r\n    </IdleSettings>\r\n  </Settings>\r\n  <Triggers>\r\n    <LogonTrigger>\r\n      <Delay>PT1M</Delay>\r\n      <Repetition>\r\n        <Interval>PT5M</Interval>\r\n      </Repetition>\r\n      <UserId>DESKTOP-1R1081M\\afaq</UserId>\r\n    </LogonTrigger>\r\n  </Triggers>\r\n  <Actions Context=\"Author\">\r\n    <Exec>\r\n      <Command>C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe</Command>\r\n      <Arguments>-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File \"C:\\Users\\afaq\\AppData\\Local\\NEXUS\\RemoteCommander\\nexus-remote-commander-watchdog.ps1\"</Arguments>\r\n    </Exec>\r\n  </Actions>\r\n</Task>",
+    "xml_sha256": "284b39bd04f936372d30f42c798bae76382882b8b84cea22b7338a5ebb8e2c74"
+  },
+  "task_run_requests": 0,
+  "worker_os_exit_independently_captured": false
+}

@@ -1,0 +1,8 @@
+$ErrorActionPreference='Stop'
+$helper='E:\NEXUS-QA\rdc-l1-task-active-correction-20261014T084420Z\adopt_nexus_rdc_l1_task.py'
+if((Get-FileHash -Algorithm SHA256 -LiteralPath $helper).Hash.ToLowerInvariant() -ne '5d310bb776eef3f388bece360c8487ec70a6703261a11b09b60c5295f7aad89b'){throw 'Reviewed corrected controller source changed'}
+if(Test-Path -LiteralPath 'E:\NEXUS-QA\rdc-l1-task-active-correction-20261014T084420Z\apply-retry-20261014T091011Z'){throw 'Corrected apply directory already exists; do not replay'}
+& 'C:\Users\afaq\AppData\Local\Programs\Python\Python312\python.exe' $helper --source-sha 'ab27ace2df7a967192dd04e87eef749e1c90e410' --code-sha '5d310bb776eef3f388bece360c8487ec70a6703261a11b09b60c5295f7aad89b' --run-dir 'E:\NEXUS-QA\rdc-l1-task-active-correction-20261014T084420Z\apply-retry-20261014T091011Z' --apply
+$launchExit=$LASTEXITCODE
+Write-Output ('ACTUAL_CORRECTED_DETACHED_LAUNCHER_EXIT='+$launchExit)
+exit $launchExit
