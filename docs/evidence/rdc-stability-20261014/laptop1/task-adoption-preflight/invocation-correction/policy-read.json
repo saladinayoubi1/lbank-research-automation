@@ -1,0 +1,34 @@
+{
+  "terminal_pid": 13816,
+  "actual_exit_code": 0,
+  "runtime_seconds": 39.23,
+  "receipt": {
+    "policies": [
+      {
+        "policy": "Undefined",
+        "scope": "MachinePolicy"
+      },
+      {
+        "policy": "Undefined",
+        "scope": "UserPolicy"
+      },
+      {
+        "policy": "Undefined",
+        "scope": "Process"
+      },
+      {
+        "policy": "Undefined",
+        "scope": "CurrentUser"
+      },
+      {
+        "policy": "Undefined",
+        "scope": "LocalMachine"
+      }
+    ],
+    "host": "DESKTOP-1R1081M",
+    "observed_utc": "2026-10-14T06:45:15.1145656Z",
+    "persistent_policy_changed": false,
+    "preflight_run_present": false,
+    "live_enabled": false
+  }
+}

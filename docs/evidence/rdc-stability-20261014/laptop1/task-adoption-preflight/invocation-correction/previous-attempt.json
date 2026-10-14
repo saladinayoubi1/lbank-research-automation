@@ -1,0 +1,28 @@
+{
+  "schema": "nexus.rdc-l1-preflight-first-attempt-result.v1",
+  "source_sha": "661c36d6a704215afc59980654d6a86497bf5e91",
+  "terminal_pid": 12404,
+  "actual_exit_code": 1,
+  "runtime_seconds": 59.82,
+  "failure": "PowerShell file execution blocked before wrapper body; SecurityError/UnauthorizedAccess",
+  "task_or_startup_changed": false,
+  "probe_started": false,
+  "run_directory_present_on_separate_read": false,
+  "raw_native_result": {
+    "status": "fulfilled",
+    "value": {
+      "content": [
+        {
+          "type": "text",
+          "text": "[Reading last 8 lines (total: 8 lines)]\n\n& : File E:\\NEXUS-QA\\rdc-l1-task-preflight-20261014T062235Z\\invoke_nexus_rdc_l1_preflight.ps1 cannot be loaded because \r\nrunning scripts is disabled on this system. For more information, see about_Execution_Policies at \r\nhttps:/go.microsoft.com/fwlink/?LinkID=135170.\r\nAt line:4 char:3\r\n+ & $wrapper -SourceSha '661c36d6a704215afc59980654d6a86497bf5e91' -Cod ...\r\n+   ~~~~~~~~\r\n    + CategoryInfo          : SecurityError: (:) [], ParentContainsErrorRecordException\r\n    + FullyQualifiedErrorId : UnauthorizedAccess\r\n✅ Process completed with exit code 1 (runtime: 59.82s)"
+        },
+        {
+          "type": "text",
+          "text": "\n[executed on device: DESKTOP-1R1081M (bbabb808-d554-4db8-bce7-3a453bea8b43)]"
+        }
+      ],
+      "isError": false
+    }
+  },
+  "live_enabled": false
+}

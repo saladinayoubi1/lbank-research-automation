@@ -1,0 +1,14 @@
+$ErrorActionPreference='Stop'
+if($env:COMPUTERNAME -ne 'DESKTOP-1R1081M'){throw 'Wrong host'}
+if([string](Get-ExecutionPolicy -Scope MachinePolicy) -ne 'Undefined' -or [string](Get-ExecutionPolicy -Scope UserPolicy) -ne 'Undefined'){throw 'Group policy changed; no override'}
+$wrapper='E:\NEXUS-QA\rdc-l1-task-preflight-20261014T062235Z\invoke_nexus_rdc_l1_preflight.ps1'
+$probe='E:\NEXUS-QA\rdc-l1-task-preflight-20261014T062235Z\probe_nexus_rdc_l1_preflight.py'
+if(Test-Path -LiteralPath 'E:\NEXUS-QA\rdc-l1-task-preflight-20261014T062235Z\run'){throw 'Preflight already started; refuse repetition'}
+if((Get-FileHash -Algorithm SHA256 -LiteralPath $wrapper).Hash.ToLowerInvariant() -ne 'c70a259b709feec2bea8dccc5f031f0fe4d133061b86204bd235ff49a9f35feb'){throw 'Wrapper source changed'}
+if((Get-FileHash -Algorithm SHA256 -LiteralPath $probe).Hash.ToLowerInvariant() -ne 'c89d7f37e9acc15ac82c93c417869ae32781f00b42488306be43a1dee6104c2a'){throw 'Probe source changed'}
+& 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe' -NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -File $wrapper -SourceSha '661c36d6a704215afc59980654d6a86497bf5e91' -CodeSha 'c89d7f37e9acc15ac82c93c417869ae32781f00b42488306be43a1dee6104c2a'
+$queryExit=$LASTEXITCODE
+Write-Output ('ACTUAL_SCOPED_PREFLIGHT_EXIT='+$queryExit)
+$after=@(Get-ExecutionPolicy -List|ForEach-Object{@{scope=[string]$_.Scope;policy=[string]$_.ExecutionPolicy}})
+Write-Output ('PARENT_POLICY_AFTER='+($after|ConvertTo-Json -Compress))
+exit $queryExit
