@@ -1,0 +1,102 @@
+{
+  "schema": "nexus.rdc-l1-task-adoption-controller-preparation.v1",
+  "recorded_at_utc": "2026-10-14T07:49:42.154Z",
+  "status": "SOURCE_PREPARED_NATIVE_READ_ONLY_PASS_APPLY_NOT_PERFORMED",
+  "source_sha": "f0960cb118574443d2c2b1ce939c372d8cef725b",
+  "code_sha256": "12459e912ec643a91afd05dc7b1f929d991c94ecb097fee635aa8e27ce37d539",
+  "baseline_sha": "249fc0edc3a51a8c26f83cf4c79a58bf9f2cb6bf",
+  "host": "DESKTOP-1R1081M",
+  "device_id": "bbabb808-d554-4db8-bce7-3a453bea8b43",
+  "qa_directory": "E:\\NEXUS-QA\\rdc-l1-task-adoption-20261014T074250Z",
+  "read_only_submissions": 1,
+  "terminal_pid": 13884,
+  "actual_terminal_exit_code": 0,
+  "actual_python_query_exit_code": 0,
+  "runtime_seconds": 59.03,
+  "command": "$ErrorActionPreference='Stop'\n$helper='E:\\NEXUS-QA\\rdc-l1-task-adoption-20261014T074250Z\\adopt_nexus_rdc_l1_task.py'\nif((Get-FileHash -Algorithm SHA256 -LiteralPath $helper).Hash.ToLowerInvariant() -ne '12459e912ec643a91afd05dc7b1f929d991c94ecb097fee635aa8e27ce37d539'){throw 'Controller source changed'}\n& 'C:\\Users\\afaq\\AppData\\Local\\Programs\\Python\\Python312\\python.exe' $helper --source-sha 'f0960cb118574443d2c2b1ce939c372d8cef725b' --code-sha '12459e912ec643a91afd05dc7b1f929d991c94ecb097fee635aa8e27ce37d539' --run-dir 'E:\\NEXUS-QA\\rdc-l1-task-adoption-20261014T074250Z\\read-only'\n$nativeExit=$LASTEXITCODE\nWrite-Output ('ACTUAL_CONTROLLER_READ_ONLY_EXIT='+$nativeExit)\nexit $nativeExit",
+  "native_receipt": {
+    "code_sha256": "12459e912ec643a91afd05dc7b1f929d991c94ecb097fee635aa8e27ce37d539",
+    "external_worker_os_exit_independently_captured": false,
+    "live_enabled": false,
+    "observer": {
+      "argv_json_sha256": "81ffbdb7419fb326f4cb3f7746a51bfd7f756ffaf628cf4da0d166452d5f0d15",
+      "creation_filetime": "134364374651437492",
+      "exe": "C:\\Users\\afaq\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "in_job": false,
+      "name": "python.exe",
+      "owner": "DESKTOP-1R1081M\\afaq",
+      "pid": 14232,
+      "ppid": 13884,
+      "session_id": 1
+    },
+    "phase": "READ_ONLY_PASS",
+    "source_sha": "f0960cb118574443d2c2b1ce939c372d8cef725b",
+    "stop_intent": false,
+    "task_run_requests": 0,
+    "updated_utc": "2026-10-14T07:45:04.863316+00:00"
+  },
+  "native_validation": {
+    "registered": false,
+    "validated": true
+  },
+  "raw_native_terminal": {
+    "content": [
+      {
+        "type": "text",
+        "text": "[Reading last 2 lines (total: 2 lines)]\n\n{\"live_enabled\": false, \"phase\": \"READ_ONLY_PASS\", \"stop_intent\": false, \"task_run_requests\": 0}\r\nACTUAL_CONTROLLER_READ_ONLY_EXIT=0\r\n✅ Process completed with exit code 0 (runtime: 59.03s)"
+      },
+      {
+        "type": "text",
+        "text": "\n[executed on device: DESKTOP-1R1081M (bbabb808-d554-4db8-bce7-3a453bea8b43)]"
+      }
+    ],
+    "isError": false
+  },
+  "fresh_pings": [
+    {
+      "status": "fulfilled",
+      "value": {
+        "content": [
+          {
+            "type": "text",
+            "text": "pong 2026-10-14T07:47:19.484Z"
+          },
+          {
+            "type": "text",
+            "text": "\n[executed on device: DESKTOP-1R1081M (bbabb808-d554-4db8-bce7-3a453bea8b43)]"
+          }
+        ],
+        "isError": false
+      }
+    },
+    {
+      "status": "fulfilled",
+      "value": {
+        "content": [
+          {
+            "type": "text",
+            "text": "pong 2026-10-14T07:47:18.962Z"
+          },
+          {
+            "type": "text",
+            "text": "\n[executed on device: DESKTOP-F4SA4VL (61c3307f-e6d4-4edf-860a-3519cfb9df5d)]"
+          }
+        ],
+        "isError": false
+      }
+    }
+  ],
+  "local_test_summary": {
+    "passed": 15,
+    "windows_only_skipped": 3,
+    "total": 18
+  },
+  "apply_submitted": false,
+  "real_sdk_stopped": false,
+  "task_retargeted": false,
+  "startup_changed": false,
+  "credential_values_exported": false,
+  "credential_values_modified": false,
+  "live_enabled": false,
+  "next_gate": "Exact-head hosted checks including all three real Windows fixtures; independent native source-bound read-only PASS already observed. Then explicit source-bound apply may be submitted once; preserve terminal/failure receipts and perform independent post-handoff reconnect/task/process audit."
+}
