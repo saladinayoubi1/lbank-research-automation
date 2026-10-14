@@ -23,6 +23,7 @@ import numpy as np
 import pandas as pd
 
 from nexus_demo_archive_replay import ARCHIVE_SHA256
+from nexus_causal_jump_features import build_lagged_jump_features
 from nexus_mechanism_factory import (
     MechanismFactoryError,
     factory_configs,
@@ -96,8 +97,39 @@ GENERATED_FACTORY_SPECS = {
     **GENERATED_FACTORY_SPECS_V3,
     **GENERATED_FACTORY_SPECS_V4,
 }
-FACTORY_SPECS = {**FIXED_FACTORY_SPECS, **GENERATED_FACTORY_SPECS}
+# Append reviewed source-bound causal hypotheses without changing the immutable
+# fixed-v1 or generated-v2/v3/v4 contracts, order, IDs or digest history.
+REVIEWED_EXTENSION_SPECS = load_factory_contract(
+    Path(__file__).resolve().parent / "research" / "mechanism_factory_v5.json"
+)
+if (
+    set(REVIEWED_EXTENSION_SPECS) & (set(FIXED_FACTORY_SPECS) | set(GENERATED_FACTORY_SPECS))
+    or {
+        spec["topology_digest"] for spec in REVIEWED_EXTENSION_SPECS.values()
+    } & {
+        spec["topology_digest"]
+        for spec in (*FIXED_FACTORY_SPECS.values(), *GENERATED_FACTORY_SPECS.values())
+    }
+):
+    raise MechanismFactoryError("reviewed extension duplicates existing mechanism ID or topology")
+FACTORY_SPECS = {
+    **FIXED_FACTORY_SPECS,
+    **GENERATED_FACTORY_SPECS,
+    **REVIEWED_EXTENSION_SPECS,
+}
+JUMP_EXTENSION_SPECS = load_factory_contract(
+    Path(__file__).resolve().parent / "research" / "mechanism_factory_v6.json"
+)
+if (
+    set(JUMP_EXTENSION_SPECS) & set(FACTORY_SPECS)
+    or {s["topology_digest"] for s in JUMP_EXTENSION_SPECS.values()}
+    & {s["topology_digest"] for s in FACTORY_SPECS.values()}
+):
+    raise MechanismFactoryError("jump extension duplicates existing mechanism ID or topology")
+FACTORY_SPECS = {**FACTORY_SPECS, **JUMP_EXTENSION_SPECS}
+JUMP_EXTENSION_MECHANISMS = factory_ids(JUMP_EXTENSION_SPECS)
 FIXED_FACTORY_MECHANISMS = factory_ids(FIXED_FACTORY_SPECS)
+REVIEWED_EXTENSION_MECHANISMS = factory_ids(REVIEWED_EXTENSION_SPECS)
 GENERATED_FACTORY_MECHANISMS = factory_ids(GENERATED_FACTORY_SPECS)
 FACTORY_MECHANISMS = factory_ids(FACTORY_SPECS)
 FRONTIER_MECHANISMS = FRONTIER_GENERATION1 + FRONTIER_GENERATION2 + FACTORY_MECHANISMS
@@ -253,6 +285,9 @@ def build_features(frames: dict[str, pd.DataFrame], *, peer_15m: pd.DataFrame | 
     # at least one completed 15m bar before the decision bar; current-bar OHLCV
     # is used only for the explicit closed-bar confirmation in signal_for().
     one_bar_return = close.pct_change()
+    # New finite-grid shock context; previous generations' features stay intact.
+    for column, values in build_lagged_jump_features(close).items():
+        f[column] = values.to_numpy()
     path_length_16 = one_bar_return.abs().shift(1).rolling(16, min_periods=16).sum()
     displacement_16 = (close.shift(1) / close.shift(17) - 1.0)
     f["trend_efficiency_16"] = (
@@ -771,6 +806,14 @@ def signal_for(frame: pd.DataFrame, config: dict[str, Any]) -> np.ndarray:
     return (ok & s).fillna(False).to_numpy(dtype=bool)
 
 
+def _decision_day_keys(values: pd.Series) -> Any:
+    """Cache timezone calendar days without per-candle scalar floor calls."""
+    if pd.api.types.is_datetime64_any_dtype(values.dtype):
+        return values.dt.floor("D").array
+    # Preserve scalar conversion for noncanonical object/string timestamps.
+    return tuple(pd.Timestamp(value).floor("D") for value in values)
+
+
 def backtest(frame: pd.DataFrame, signals: np.ndarray, *, fee_bps: float,
              slip_bps: float, risk_variant: int) -> dict[str, Any]:
     """Uncapped sequential long-only trades; cash/exposure/daily-loss fail closed.
@@ -789,10 +832,10 @@ def backtest(frame: pd.DataFrame, signals: np.ndarray, *, fee_bps: float,
     day, day_start = None, SIM_CASH
     closed, wins, gross_profit, gross_loss, total_turnover = 0, 0, 0., 0., 0.
     exposure_bars = 0
+    decision_days = _decision_day_keys(frame["decision_at"]) if len(frame) else ()
     for i, row in enumerate(frame.itertuples(index=False)):
-        at = pd.Timestamp(row.decision_at)
-        if day != at.floor("D"):
-            day = at.floor("D")
+        if day != decision_days[i]:
+            day = decision_days[i]
             day_start, day_paused = cash if in_pos is None else cash + in_pos["qty"] * float(row.open), False
         price_open, price_hi, price_lo, price_close = map(float, (row.open, row.high, row.low, row.close))
         just_entered = False
@@ -921,7 +964,11 @@ def _frontier_configs_to_screen(ledger: dict[str, Any]) -> list[dict[str, Any]]:
     screened = set(ledger.get("frontier_screened_mechanisms", []))
     fixed: list[dict[str, Any]] = []
     generated: list[dict[str, Any]] = []
+    reviewed_extension: list[dict[str, Any]] = []
+    jump_extension: list[dict[str, Any]] = []
     generated_ids = set(GENERATED_FACTORY_MECHANISMS)
+    extension_ids = set(REVIEWED_EXTENSION_MECHANISMS)
+    jump_ids = set(JUMP_EXTENSION_MECHANISMS)
     for config in FRONTIER_CONFIGS:
         if config["mechanism"] in evaluated or config["mechanism"] in screened:
             continue
@@ -931,12 +978,25 @@ def _frontier_configs_to_screen(ledger: dict[str, Any]) -> list[dict[str, Any]]:
                 "config": config, "dataset": ARCHIVE_SHA256, "contract": SCHEMA,
             }),
         }
-        (generated if config["mechanism"] in generated_ids else fixed).append(row)
-    # Preserve historical reviewed-frontier semantics first.  Once exhausted,
-    # advance through deterministic generated topology batches without code edits.
+        mechanism = config["mechanism"]
+        if mechanism in jump_ids:
+            jump_extension.append(row)
+        elif mechanism in extension_ids:
+            reviewed_extension.append(row)
+        elif mechanism in generated_ids:
+            generated.append(row)
+        else:
+            fixed.append(row)
+    # Preserve the exact historical frontier ranking/batching. The new v5
+    # contracts are eligible only after all existing v2/v3/v4 generated
+    # mechanisms have received an evaluated or screened novelty receipt.
     if fixed:
         return fixed
-    return generated[:GENERATED_FRONTIER_BATCH_SIZE]
+    if generated:
+        return generated[:GENERATED_FRONTIER_BATCH_SIZE]
+    if reviewed_extension:
+        return reviewed_extension[:GENERATED_FRONTIER_BATCH_SIZE]
+    return jump_extension[:GENERATED_FRONTIER_BATCH_SIZE]
 
 
 def research_mode(ledger: dict[str, Any]) -> str:
@@ -1207,3 +1267,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

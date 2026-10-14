@@ -1,0 +1,894 @@
+{
+  "baseline_oracle_blob_sha": "d583ed655efe64b5c0c5eb73960eb217bc7ded83",
+  "cases": [
+    {
+      "expected": {
+        "closed_round_trips": 1,
+        "concurrent_risk_model": "one_collateral_backed_net_long_per_symbol;10pct_position_budget",
+        "exposure_bar_ratio": "0.333333333333333333333333333333333333",
+        "fills": [
+          {
+            "bar": 1,
+            "fee": "0.333500000000000000000000000000000000",
+            "price": "100.0500",
+            "quantity": "3.33333333333333333333333333333333333",
+            "side": "BUY"
+          },
+          {
+            "bar": 1,
+            "fee": "0.323338250000000000000000000000000000",
+            "pnl": "-10.8185882500000000000000000000000000",
+            "price": "97.00147500",
+            "quantity": "3.33333333333333333333333333333333333",
+            "reason": "stop",
+            "side": "SELL"
+          }
+        ],
+        "halted_on_drawdown": false,
+        "max_drawdown_pct": "0.10818588250000000000000000000000",
+        "net_pnl_usdt": "-10.81858825000000000000000000000000",
+        "net_return_pct": "-0.10818588250000000000000000000000",
+        "profit_factor": "0E+34",
+        "profit_factor_status": "AVAILABLE",
+        "trade_count_limit": null,
+        "turnover_usdt": "656.838250000000000000000000000000000",
+        "win_rate_pct": "0"
+      },
+      "fee_bps": 10,
+      "kind": "same_bar_stop",
+      "risk_variant": 0,
+      "slip_bps": 5
+    },
+    {
+      "expected": {
+        "closed_round_trips": 1,
+        "concurrent_risk_model": "one_collateral_backed_net_long_per_symbol;10pct_position_budget",
+        "exposure_bar_ratio": "0.333333333333333333333333333333333333",
+        "fills": [
+          {
+            "bar": 1,
+            "fee": "0.834583333333333333333333333333333332",
+            "price": "100.1500",
+            "quantity": "3.33333333333333333333333333333333333",
+            "side": "BUY"
+          },
+          {
+            "bar": 1,
+            "fee": "0.808368958333333333333333333333333332",
+            "pnl": "-12.1287022916666666666666666666666666",
+            "price": "97.00427500",
+            "quantity": "3.33333333333333333333333333333333333",
+            "reason": "stop",
+            "side": "SELL"
+          }
+        ],
+        "halted_on_drawdown": false,
+        "max_drawdown_pct": "0.121287022916666666666666666666666700",
+        "net_pnl_usdt": "-12.12870229166666666666666666666667",
+        "net_return_pct": "-0.121287022916666666666666666666666700",
+        "profit_factor": "0E+34",
+        "profit_factor_status": "AVAILABLE",
+        "trade_count_limit": null,
+        "turnover_usdt": "657.180916666666666666666666666666666",
+        "win_rate_pct": "0"
+      },
+      "fee_bps": 25,
+      "kind": "same_bar_stop",
+      "risk_variant": 0,
+      "slip_bps": 15
+    },
+    {
+      "expected": {
+        "closed_round_trips": 1,
+        "concurrent_risk_model": "one_collateral_backed_net_long_per_symbol;10pct_position_budget",
+        "exposure_bar_ratio": "0.333333333333333333333333333333333333",
+        "fills": [
+          {
+            "bar": 1,
+            "fee": "0.25012500",
+            "price": "100.0500",
+            "quantity": "2.5",
+            "side": "BUY"
+          },
+          {
+            "bar": 1,
+            "fee": "0.240004937500",
+            "pnl": "-10.610192437500",
+            "price": "96.00197500",
+            "quantity": "2.5",
+            "reason": "stop",
+            "side": "SELL"
+          }
+        ],
+        "halted_on_drawdown": false,
+        "max_drawdown_pct": "0.10610192437500",
+        "net_pnl_usdt": "-10.610192437500",
+        "net_return_pct": "-0.10610192437500",
+        "profit_factor": "0E+12",
+        "profit_factor_status": "AVAILABLE",
+        "trade_count_limit": null,
+        "turnover_usdt": "490.129937500",
+        "win_rate_pct": "0"
+      },
+      "fee_bps": 10,
+      "kind": "same_bar_stop",
+      "risk_variant": 1,
+      "slip_bps": 5
+    },
+    {
+      "expected": {
+        "closed_round_trips": 1,
+        "concurrent_risk_model": "one_collateral_backed_net_long_per_symbol;10pct_position_budget",
+        "exposure_bar_ratio": "0.333333333333333333333333333333333333",
+        "fills": [
+          {
+            "bar": 1,
+            "fee": "0.625937500",
+            "price": "100.1500",
+            "quantity": "2.5",
+            "side": "BUY"
+          },
+          {
+            "bar": 1,
+            "fee": "0.6000360937500",
+            "pnl": "-11.5865360937500",
+            "price": "96.00577500",
+            "quantity": "2.5",
+            "reason": "stop",
+            "side": "SELL"
+          }
+        ],
+        "halted_on_drawdown": false,
+        "max_drawdown_pct": "0.115865360937500",
+        "net_pnl_usdt": "-11.5865360937500",
+        "net_return_pct": "-0.115865360937500",
+        "profit_factor": "0E+13",
+        "profit_factor_status": "AVAILABLE",
+        "trade_count_limit": null,
+        "turnover_usdt": "490.389437500",
+        "win_rate_pct": "0"
+      },
+      "fee_bps": 25,
+      "kind": "same_bar_stop",
+      "risk_variant": 1,
+      "slip_bps": 15
+    },
+    {
+      "expected": {
+        "closed_round_trips": 1,
+        "concurrent_risk_model": "one_collateral_backed_net_long_per_symbol;10pct_position_budget",
+        "exposure_bar_ratio": "0.5",
+        "fills": [
+          {
+            "bar": 1,
+            "fee": "0.333500000000000000000000000000000000",
+            "price": "100.0500",
+            "quantity": "3.33333333333333333333333333333333333",
+            "side": "BUY"
+          },
+          {
+            "bar": 2,
+            "fee": "0.299850000000000000000000000000000000",
+            "pnl": "-34.2833500000000000000000000000000000",
+            "price": "89.9550",
+            "quantity": "3.33333333333333333333333333333333333",
+            "reason": "stop",
+            "side": "SELL"
+          }
+        ],
+        "halted_on_drawdown": false,
+        "max_drawdown_pct": "0.34283350000000000000000000000000",
+        "net_pnl_usdt": "-34.28335000000000000000000000000000",
+        "net_return_pct": "-0.34283350000000000000000000000000",
+        "profit_factor": "0E+34",
+        "profit_factor_status": "AVAILABLE",
+        "trade_count_limit": null,
+        "turnover_usdt": "633.350000000000000000000000000000000",
+        "win_rate_pct": "0"
+      },
+      "fee_bps": 10,
+      "kind": "gap_stop",
+      "risk_variant": 0,
+      "slip_bps": 5
+    },
+    {
+      "expected": {
+        "closed_round_trips": 1,
+        "concurrent_risk_model": "one_collateral_backed_net_long_per_symbol;10pct_position_budget",
+        "exposure_bar_ratio": "0.5",
+        "fills": [
+          {
+            "bar": 1,
+            "fee": "0.834583333333333333333333333333333332",
+            "price": "100.1500",
+            "quantity": "3.33333333333333333333333333333333333",
+            "side": "BUY"
+          },
+          {
+            "bar": 2,
+            "fee": "0.748875000000000000000000000000000000",
+            "pnl": "-35.8667916666666666666666666666666666",
+            "price": "89.8650",
+            "quantity": "3.33333333333333333333333333333333333",
+            "reason": "stop",
+            "side": "SELL"
+          }
+        ],
+        "halted_on_drawdown": false,
+        "max_drawdown_pct": "0.358667916666666666666666666666666700",
+        "net_pnl_usdt": "-35.86679166666666666666666666666667",
+        "net_return_pct": "-0.358667916666666666666666666666666700",
+        "profit_factor": "0E+34",
+        "profit_factor_status": "AVAILABLE",
+        "trade_count_limit": null,
+        "turnover_usdt": "633.383333333333333333333333333333333",
+        "win_rate_pct": "0"
+      },
+      "fee_bps": 25,
+      "kind": "gap_stop",
+      "risk_variant": 0,
+      "slip_bps": 15
+    },
+    {
+      "expected": {
+        "closed_round_trips": 1,
+        "concurrent_risk_model": "one_collateral_backed_net_long_per_symbol;10pct_position_budget",
+        "exposure_bar_ratio": "0.5",
+        "fills": [
+          {
+            "bar": 1,
+            "fee": "0.25012500",
+            "price": "100.0500",
+            "quantity": "2.5",
+            "side": "BUY"
+          },
+          {
+            "bar": 2,
+            "fee": "0.22488750",
+            "pnl": "-25.71251250",
+            "price": "89.9550",
+            "quantity": "2.5",
+            "reason": "stop",
+            "side": "SELL"
+          }
+        ],
+        "halted_on_drawdown": false,
+        "max_drawdown_pct": "0.25712512500",
+        "net_pnl_usdt": "-25.71251250",
+        "net_return_pct": "-0.25712512500",
+        "profit_factor": "0E+8",
+        "profit_factor_status": "AVAILABLE",
+        "trade_count_limit": null,
+        "turnover_usdt": "475.01250",
+        "win_rate_pct": "0"
+      },
+      "fee_bps": 10,
+      "kind": "gap_stop",
+      "risk_variant": 1,
+      "slip_bps": 5
+    },
+    {
+      "expected": {
+        "closed_round_trips": 1,
+        "concurrent_risk_model": "one_collateral_backed_net_long_per_symbol;10pct_position_budget",
+        "exposure_bar_ratio": "0.5",
+        "fills": [
+          {
+            "bar": 1,
+            "fee": "0.625937500",
+            "price": "100.1500",
+            "quantity": "2.5",
+            "side": "BUY"
+          },
+          {
+            "bar": 2,
+            "fee": "0.561656250",
+            "pnl": "-26.900093750",
+            "price": "89.8650",
+            "quantity": "2.5",
+            "reason": "stop",
+            "side": "SELL"
+          }
+        ],
+        "halted_on_drawdown": false,
+        "max_drawdown_pct": "0.269000937500",
+        "net_pnl_usdt": "-26.900093750",
+        "net_return_pct": "-0.269000937500",
+        "profit_factor": "0E+9",
+        "profit_factor_status": "AVAILABLE",
+        "trade_count_limit": null,
+        "turnover_usdt": "475.03750",
+        "win_rate_pct": "0"
+      },
+      "fee_bps": 25,
+      "kind": "gap_stop",
+      "risk_variant": 1,
+      "slip_bps": 15
+    },
+    {
+      "expected": {
+        "closed_round_trips": 1,
+        "concurrent_risk_model": "one_collateral_backed_net_long_per_symbol;10pct_position_budget",
+        "exposure_bar_ratio": "0.5",
+        "fills": [
+          {
+            "bar": 1,
+            "fee": "0.0333500000000000000000000000000000000",
+            "price": "100.0500",
+            "quantity": "0.333333333333333333333333333333333333",
+            "side": "BUY"
+          },
+          {
+            "bar": 1,
+            "fee": "0.0334832500000000000000000000000000000",
+            "pnl": "0.0664167500000000000000000000000000000",
+            "price": "100.44975",
+            "quantity": "0.333333333333333333333333333333333333",
+            "reason": "time_or_terminal",
+            "side": "SELL"
+          }
+        ],
+        "halted_on_drawdown": false,
+        "max_drawdown_pct": "0",
+        "net_pnl_usdt": "0.0664167500000000000000000000000",
+        "net_return_pct": "0.0006641675000000000000000000000",
+        "profit_factor": null,
+        "profit_factor_status": "NOT_AVAILABLE_NO_REALIZED_LOSSES",
+        "trade_count_limit": null,
+        "turnover_usdt": "66.8332500000000000000000000000000000",
+        "win_rate_pct": "100"
+      },
+      "fee_bps": 10,
+      "kind": "terminal",
+      "risk_variant": 0,
+      "slip_bps": 5
+    },
+    {
+      "expected": {
+        "closed_round_trips": 1,
+        "concurrent_risk_model": "one_collateral_backed_net_long_per_symbol;10pct_position_budget",
+        "exposure_bar_ratio": "0.5",
+        "fills": [
+          {
+            "bar": 1,
+            "fee": "0.0834583333333333333333333333333333332",
+            "price": "100.1500",
+            "quantity": "0.333333333333333333333333333333333333",
+            "side": "BUY"
+          },
+          {
+            "bar": 1,
+            "fee": "0.0836243750000000000000000000000000000",
+            "pnl": "-0.100666041666666666666666666666666667",
+            "price": "100.34925",
+            "quantity": "0.333333333333333333333333333333333333",
+            "reason": "time_or_terminal",
+            "side": "SELL"
+          }
+        ],
+        "halted_on_drawdown": false,
+        "max_drawdown_pct": "0.001006660416666666666666666666666700",
+        "net_pnl_usdt": "-0.10066604166666666666666666666667",
+        "net_return_pct": "-0.001006660416666666666666666666666700",
+        "profit_factor": "0E+36",
+        "profit_factor_status": "AVAILABLE",
+        "trade_count_limit": null,
+        "turnover_usdt": "66.8330833333333333333333333333333333",
+        "win_rate_pct": "0"
+      },
+      "fee_bps": 25,
+      "kind": "terminal",
+      "risk_variant": 0,
+      "slip_bps": 15
+    },
+    {
+      "expected": {
+        "closed_round_trips": 1,
+        "concurrent_risk_model": "one_collateral_backed_net_long_per_symbol;10pct_position_budget",
+        "exposure_bar_ratio": "0.5",
+        "fills": [
+          {
+            "bar": 1,
+            "fee": "0.025012500",
+            "price": "100.0500",
+            "quantity": "0.25",
+            "side": "BUY"
+          },
+          {
+            "bar": 1,
+            "fee": "0.0251124375",
+            "pnl": "0.0498125625",
+            "price": "100.44975",
+            "quantity": "0.25",
+            "reason": "time_or_terminal",
+            "side": "SELL"
+          }
+        ],
+        "halted_on_drawdown": false,
+        "max_drawdown_pct": "0",
+        "net_pnl_usdt": "0.0498125625",
+        "net_return_pct": "0.00049812562500",
+        "profit_factor": null,
+        "profit_factor_status": "NOT_AVAILABLE_NO_REALIZED_LOSSES",
+        "trade_count_limit": null,
+        "turnover_usdt": "50.1249375",
+        "win_rate_pct": "100"
+      },
+      "fee_bps": 10,
+      "kind": "terminal",
+      "risk_variant": 1,
+      "slip_bps": 5
+    },
+    {
+      "expected": {
+        "closed_round_trips": 1,
+        "concurrent_risk_model": "one_collateral_backed_net_long_per_symbol;10pct_position_budget",
+        "exposure_bar_ratio": "0.5",
+        "fills": [
+          {
+            "bar": 1,
+            "fee": "0.0625937500",
+            "price": "100.1500",
+            "quantity": "0.25",
+            "side": "BUY"
+          },
+          {
+            "bar": 1,
+            "fee": "0.06271828125",
+            "pnl": "-0.07549953125",
+            "price": "100.34925",
+            "quantity": "0.25",
+            "reason": "time_or_terminal",
+            "side": "SELL"
+          }
+        ],
+        "halted_on_drawdown": false,
+        "max_drawdown_pct": "0.000754995312500",
+        "net_pnl_usdt": "-0.07549953125",
+        "net_return_pct": "-0.000754995312500",
+        "profit_factor": "0E+11",
+        "profit_factor_status": "AVAILABLE",
+        "trade_count_limit": null,
+        "turnover_usdt": "50.1248125",
+        "win_rate_pct": "0"
+      },
+      "fee_bps": 25,
+      "kind": "terminal",
+      "risk_variant": 1,
+      "slip_bps": 15
+    },
+    {
+      "expected": {
+        "closed_round_trips": 1,
+        "concurrent_risk_model": "one_collateral_backed_net_long_per_symbol;10pct_position_budget",
+        "exposure_bar_ratio": "0.955223880597014925373134328358208955",
+        "fills": [
+          {
+            "bar": 1,
+            "fee": "0.0667000000000000000000000000000000000",
+            "price": "100.0500",
+            "quantity": "0.666666666666666666666666666666666667",
+            "side": "BUY"
+          },
+          {
+            "bar": 64,
+            "fee": "0.0666333333333333333333333333333333334",
+            "pnl": "-0.200000000000000000000000000000000000",
+            "price": "99.9500",
+            "quantity": "0.666666666666666666666666666666666667",
+            "reason": "time_or_terminal",
+            "side": "SELL"
+          }
+        ],
+        "halted_on_drawdown": false,
+        "max_drawdown_pct": "0.00200000000000000000000000000000",
+        "net_pnl_usdt": "-0.20000000000000000000000000000000",
+        "net_return_pct": "-0.00200000000000000000000000000000",
+        "profit_factor": "0E+36",
+        "profit_factor_status": "AVAILABLE",
+        "trade_count_limit": null,
+        "turnover_usdt": "133.333333333333333333333333333333333",
+        "win_rate_pct": "0"
+      },
+      "fee_bps": 10,
+      "kind": "time_exit",
+      "risk_variant": 0,
+      "slip_bps": 5
+    },
+    {
+      "expected": {
+        "closed_round_trips": 1,
+        "concurrent_risk_model": "one_collateral_backed_net_long_per_symbol;10pct_position_budget",
+        "exposure_bar_ratio": "0.955223880597014925373134328358208955",
+        "fills": [
+          {
+            "bar": 1,
+            "fee": "0.166916666666666666666666666666666667",
+            "price": "100.1500",
+            "quantity": "0.666666666666666666666666666666666667",
+            "side": "BUY"
+          },
+          {
+            "bar": 64,
+            "fee": "0.166416666666666666666666666666666667",
+            "pnl": "-0.533333333333333333333333333333333334",
+            "price": "99.8500",
+            "quantity": "0.666666666666666666666666666666666667",
+            "reason": "time_or_terminal",
+            "side": "SELL"
+          }
+        ],
+        "halted_on_drawdown": false,
+        "max_drawdown_pct": "0.005333333333333333333333333333333300",
+        "net_pnl_usdt": "-0.53333333333333333333333333333333",
+        "net_return_pct": "-0.005333333333333333333333333333333300",
+        "profit_factor": "0E+36",
+        "profit_factor_status": "AVAILABLE",
+        "trade_count_limit": null,
+        "turnover_usdt": "133.333333333333333333333333333333333",
+        "win_rate_pct": "0"
+      },
+      "fee_bps": 25,
+      "kind": "time_exit",
+      "risk_variant": 0,
+      "slip_bps": 15
+    },
+    {
+      "expected": {
+        "closed_round_trips": 1,
+        "concurrent_risk_model": "one_collateral_backed_net_long_per_symbol;10pct_position_budget",
+        "exposure_bar_ratio": "0.955223880597014925373134328358208955",
+        "fills": [
+          {
+            "bar": 1,
+            "fee": "0.05002500",
+            "price": "100.0500",
+            "quantity": "0.5",
+            "side": "BUY"
+          },
+          {
+            "bar": 64,
+            "fee": "0.04997500",
+            "pnl": "-0.15000000",
+            "price": "99.9500",
+            "quantity": "0.5",
+            "reason": "time_or_terminal",
+            "side": "SELL"
+          }
+        ],
+        "halted_on_drawdown": false,
+        "max_drawdown_pct": "0.00150000",
+        "net_pnl_usdt": "-0.15000000",
+        "net_return_pct": "-0.00150000",
+        "profit_factor": "0E+8",
+        "profit_factor_status": "AVAILABLE",
+        "trade_count_limit": null,
+        "turnover_usdt": "100.00000",
+        "win_rate_pct": "0"
+      },
+      "fee_bps": 10,
+      "kind": "time_exit",
+      "risk_variant": 1,
+      "slip_bps": 5
+    },
+    {
+      "expected": {
+        "closed_round_trips": 1,
+        "concurrent_risk_model": "one_collateral_backed_net_long_per_symbol;10pct_position_budget",
+        "exposure_bar_ratio": "0.955223880597014925373134328358208955",
+        "fills": [
+          {
+            "bar": 1,
+            "fee": "0.125187500",
+            "price": "100.1500",
+            "quantity": "0.5",
+            "side": "BUY"
+          },
+          {
+            "bar": 64,
+            "fee": "0.124812500",
+            "pnl": "-0.400000000",
+            "price": "99.8500",
+            "quantity": "0.5",
+            "reason": "time_or_terminal",
+            "side": "SELL"
+          }
+        ],
+        "halted_on_drawdown": false,
+        "max_drawdown_pct": "0.004000000",
+        "net_pnl_usdt": "-0.400000000",
+        "net_return_pct": "-0.004000000",
+        "profit_factor": "0E+9",
+        "profit_factor_status": "AVAILABLE",
+        "trade_count_limit": null,
+        "turnover_usdt": "100.00000",
+        "win_rate_pct": "0"
+      },
+      "fee_bps": 25,
+      "kind": "time_exit",
+      "risk_variant": 1,
+      "slip_bps": 15
+    },
+    {
+      "expected": {
+        "closed_round_trips": 3,
+        "concurrent_risk_model": "one_collateral_backed_net_long_per_symbol;10pct_position_budget",
+        "exposure_bar_ratio": "0.375",
+        "fills": [
+          {
+            "bar": 1,
+            "fee": "0.999000999000999000999000999000999001",
+            "price": "100.05000",
+            "quantity": "9.98501748126935533232384806597700151",
+            "side": "BUY"
+          },
+          {
+            "bar": 1,
+            "fee": "0.998002497252872065465768614194401301",
+            "pnl": "-2.99550524438080659969715441979310045",
+            "price": "99.95000",
+            "quantity": "9.98501748126935533232384806597700151",
+            "reason": "stop",
+            "side": "SELL"
+          },
+          {
+            "bar": 4,
+            "fee": "0.998701747727834085254775509048971719",
+            "price": "100.05000",
+            "quantity": "9.98202646404631769370090463817063187",
+            "side": "BUY"
+          },
+          {
+            "bar": 4,
+            "fee": "0.997703545081429453485405418585154655",
+            "pnl": "-2.99460793921389530811027139145118956",
+            "price": "99.95000",
+            "quantity": "9.98202646404631769370090463817063187",
+            "reason": "stop",
+            "side": "SELL"
+          },
+          {
+            "bar": 7,
+            "fee": "0.998402586095544984824394862556319252",
+            "price": "100.05000",
+            "quantity": "9.97903634278405781933428148482078213",
+            "side": "BUY"
+          },
+          {
+            "bar": 7,
+            "fee": "0.997404682461266579042461434407837174",
+            "pnl": "-2.99371090283521734580028444544623463",
+            "price": "99.95000",
+            "quantity": "9.97903634278405781933428148482078213",
+            "reason": "stop",
+            "side": "SELL"
+          }
+        ],
+        "halted_on_drawdown": false,
+        "max_drawdown_pct": "0.089838240864299192536077102566905200",
+        "net_pnl_usdt": "-8.98382408642991925360771025669052",
+        "net_return_pct": "-0.089838240864299192536077102566905200",
+        "profit_factor": "0E+35",
+        "profit_factor_status": "AVAILABLE",
+        "trade_count_limit": null,
+        "turnover_usdt": "5989.21605761994616907180683779368310",
+        "win_rate_pct": "0"
+      },
+      "fee_bps": 10,
+      "kind": "daily_and_drawdown",
+      "risk_variant": 0,
+      "slip_bps": 5
+    },
+    {
+      "expected": {
+        "closed_round_trips": 3,
+        "concurrent_risk_model": "one_collateral_backed_net_long_per_symbol;10pct_position_budget",
+        "exposure_bar_ratio": "0.375",
+        "fills": [
+          {
+            "bar": 1,
+            "fee": "2.49376558603491271820448877805486284",
+            "price": "100.15000",
+            "quantity": "9.96012216089830341769141798524158899",
+            "side": "BUY"
+          },
+          {
+            "bar": 1,
+            "fee": "2.48629549441423899064122021456593165",
+            "pnl": "-7.96809772871864273415313438819327119",
+            "price": "99.85000",
+            "quantity": "9.96012216089830341769141798524158899",
+            "reason": "stop",
+            "side": "SELL"
+          },
+          {
+            "bar": 4,
+            "fee": "2.49177852924470856789671991661142312",
+            "price": "100.15000",
+            "quantity": "9.95218583822150201855904110478850973",
+            "side": "BUY"
+          },
+          {
+            "bar": 4,
+            "fee": "2.48431438986604244138280063578283174",
+            "pnl": "-7.96174867057720161484723288383080778",
+            "price": "99.85000",
+            "quantity": "9.95218583822150201855904110478850973",
+            "reason": "stop",
+            "side": "SELL"
+          },
+          {
+            "bar": 7,
+            "fee": "2.48979305576077410365361586851071719",
+            "price": "100.15000",
+            "quantity": "9.94425583928417015937540037348264478",
+            "side": "BUY"
+          },
+          {
+            "bar": 7,
+            "fee": "2.48233486388131097603408431823060520",
+            "pnl": "-7.95540467142733612750032029878611582",
+            "price": "99.85000",
+            "quantity": "9.94425583928417015937540037348264478",
+            "reason": "stop",
+            "side": "SELL"
+          }
+        ],
+        "halted_on_drawdown": false,
+        "max_drawdown_pct": "0.238852510707231804765006875708101900",
+        "net_pnl_usdt": "-23.88525107072318047650068757081019",
+        "net_return_pct": "-0.238852510707231804765006875708101900",
+        "profit_factor": "0E+34",
+        "profit_factor_status": "AVAILABLE",
+        "trade_count_limit": null,
+        "turnover_usdt": "5971.31276768079511912517189270254870",
+        "win_rate_pct": "0"
+      },
+      "fee_bps": 25,
+      "kind": "daily_and_drawdown",
+      "risk_variant": 0,
+      "slip_bps": 15
+    },
+    {
+      "expected": {
+        "closed_round_trips": 3,
+        "concurrent_risk_model": "one_collateral_backed_net_long_per_symbol;10pct_position_budget",
+        "exposure_bar_ratio": "0.375",
+        "fills": [
+          {
+            "bar": 1,
+            "fee": "0.999000999000999000999000999000999001",
+            "price": "100.05000",
+            "quantity": "9.98501748126935533232384806597700151",
+            "side": "BUY"
+          },
+          {
+            "bar": 1,
+            "fee": "0.998002497252872065465768614194401301",
+            "pnl": "-2.99550524438080659969715441979310045",
+            "price": "99.95000",
+            "quantity": "9.98501748126935533232384806597700151",
+            "reason": "stop",
+            "side": "SELL"
+          },
+          {
+            "bar": 4,
+            "fee": "0.998701747727834085254775509048971719",
+            "price": "100.05000",
+            "quantity": "9.98202646404631769370090463817063187",
+            "side": "BUY"
+          },
+          {
+            "bar": 4,
+            "fee": "0.997703545081429453485405418585154655",
+            "pnl": "-2.99460793921389530811027139145118956",
+            "price": "99.95000",
+            "quantity": "9.98202646404631769370090463817063187",
+            "reason": "stop",
+            "side": "SELL"
+          },
+          {
+            "bar": 7,
+            "fee": "0.998402586095544984824394862556319252",
+            "price": "100.05000",
+            "quantity": "9.97903634278405781933428148482078213",
+            "side": "BUY"
+          },
+          {
+            "bar": 7,
+            "fee": "0.997404682461266579042461434407837174",
+            "pnl": "-2.99371090283521734580028444544623463",
+            "price": "99.95000",
+            "quantity": "9.97903634278405781933428148482078213",
+            "reason": "stop",
+            "side": "SELL"
+          }
+        ],
+        "halted_on_drawdown": false,
+        "max_drawdown_pct": "0.089838240864299192536077102566905200",
+        "net_pnl_usdt": "-8.98382408642991925360771025669052",
+        "net_return_pct": "-0.089838240864299192536077102566905200",
+        "profit_factor": "0E+35",
+        "profit_factor_status": "AVAILABLE",
+        "trade_count_limit": null,
+        "turnover_usdt": "5989.21605761994616907180683779368310",
+        "win_rate_pct": "0"
+      },
+      "fee_bps": 10,
+      "kind": "daily_and_drawdown",
+      "risk_variant": 1,
+      "slip_bps": 5
+    },
+    {
+      "expected": {
+        "closed_round_trips": 3,
+        "concurrent_risk_model": "one_collateral_backed_net_long_per_symbol;10pct_position_budget",
+        "exposure_bar_ratio": "0.375",
+        "fills": [
+          {
+            "bar": 1,
+            "fee": "2.49376558603491271820448877805486284",
+            "price": "100.15000",
+            "quantity": "9.96012216089830341769141798524158899",
+            "side": "BUY"
+          },
+          {
+            "bar": 1,
+            "fee": "2.48629549441423899064122021456593165",
+            "pnl": "-7.96809772871864273415313438819327119",
+            "price": "99.85000",
+            "quantity": "9.96012216089830341769141798524158899",
+            "reason": "stop",
+            "side": "SELL"
+          },
+          {
+            "bar": 4,
+            "fee": "2.49177852924470856789671991661142312",
+            "price": "100.15000",
+            "quantity": "9.95218583822150201855904110478850973",
+            "side": "BUY"
+          },
+          {
+            "bar": 4,
+            "fee": "2.48431438986604244138280063578283174",
+            "pnl": "-7.96174867057720161484723288383080778",
+            "price": "99.85000",
+            "quantity": "9.95218583822150201855904110478850973",
+            "reason": "stop",
+            "side": "SELL"
+          },
+          {
+            "bar": 7,
+            "fee": "2.48979305576077410365361586851071719",
+            "price": "100.15000",
+            "quantity": "9.94425583928417015937540037348264478",
+            "side": "BUY"
+          },
+          {
+            "bar": 7,
+            "fee": "2.48233486388131097603408431823060520",
+            "pnl": "-7.95540467142733612750032029878611582",
+            "price": "99.85000",
+            "quantity": "9.94425583928417015937540037348264478",
+            "reason": "stop",
+            "side": "SELL"
+          }
+        ],
+        "halted_on_drawdown": false,
+        "max_drawdown_pct": "0.238852510707231804765006875708101900",
+        "net_pnl_usdt": "-23.88525107072318047650068757081019",
+        "net_return_pct": "-0.238852510707231804765006875708101900",
+        "profit_factor": "0E+34",
+        "profit_factor_status": "AVAILABLE",
+        "trade_count_limit": null,
+        "turnover_usdt": "5971.31276768079511912517189270254870",
+        "win_rate_pct": "0"
+      },
+      "fee_bps": 25,
+      "kind": "daily_and_drawdown",
+      "risk_variant": 1,
+      "slip_bps": 15
+    }
+  ],
+  "precision": 36
+}

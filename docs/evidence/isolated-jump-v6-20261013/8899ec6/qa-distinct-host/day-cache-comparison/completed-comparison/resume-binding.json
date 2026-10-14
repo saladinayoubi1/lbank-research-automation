@@ -1,0 +1,27 @@
+{
+  "deadline_basis": "Observed frozen input/import/feature/reuse stage ~141s; one 77k-bar training cell ~38-42s, plus bounded headroom",
+  "planned_new_cells": 1,
+  "prior_native_unit_file_sha256": "18cfcbf6970333350471ce12e1efcf059ba71bcb437c431fc6e7385cfd56299f",
+  "producer_report_digest": "02c7a7b1dd0a78ed13d8dbefcfec7824d11c9eedd22e3d337b5e658eb0e099b3",
+  "resume_from": "E:\\NEXUS-QA\\jump-v6-day-cache-qa-resume-20261013",
+  "reused_cell_digests": [
+    "1f651493f8bc6b71c9f3a13cd2d323728863d4fa60a668fbe40006442553b370",
+    "70880be92f491766eb7b8c7a113a043fa7b27a74519df4366bcce2fea8cc502f",
+    "d902df67de3dcaf8b32a13c94d048a0fbde90cb786d2317829c215f57d9357bf",
+    "87fc914d7a8207f3f9fcb4645a2283330f9487edaf422e1243f9821447ee89aa",
+    "1999f5af963f4fbd752173bd22d0445f1bb5a710255aea2c2459582ae3482103",
+    "173fcf7fbe2bb79be58dd10a493f0849fb37364bf0e914208407fcb4528bb057",
+    "2095e73c8261032616665e37bfdc3c85710cf8c1d6b6af76f1607a56b6b8710f",
+    "3dd1558e021e2f09ed88b965a5ba5328192f3d7cfb95e8906b5099713d281da2",
+    "bbe2b61111bdc208cd5f9cd4974afb059d7649f42bb6c68dbb02004b20cd6ec9",
+    "92077e4023a75a67e967370420e4a849035d09d6d91240d952835bc7e239f302",
+    "2c2d0a95e34ff9f15fa68c3fab4e68b58d543d9eb2756d3f5728e997e9fa880c",
+    "cd4583d86b000b87871b82183d1bcc95f2ed3c9d96f8057fecd3e6a062002d3d",
+    "6268fe22063f74545fe33a3e0158fe07e566db38b99f3030a38cfaa120e02179",
+    "fef727847d424763633534b28ab7f3c26a5a3956d994ce755309510a3ccce5cb",
+    "5dcb0d548571524e00a0d0ac97360452e5ccf7ac9c7c47f619071922fc9353ca"
+  ],
+  "source_and_metrics_revalidated_before_reuse": true,
+  "verification_source_sha": "9144f888306e12a86fb4812896b137c13a6adeb9",
+  "wall_seconds": 240
+}

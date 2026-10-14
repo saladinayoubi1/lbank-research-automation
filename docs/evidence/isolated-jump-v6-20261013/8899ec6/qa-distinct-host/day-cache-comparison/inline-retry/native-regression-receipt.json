@@ -1,0 +1,12 @@
+{
+  "auto_demo_promotion": false,
+  "engine_blob_sha": "4c4fc599bf5dabe6c67136dcb4d711f6f47d2610",
+  "exit_code": 0,
+  "golden_cases": 20,
+  "live_enabled": false,
+  "numpy": "2.3.5",
+  "pandas": "2.3.3",
+  "tests": 4,
+  "timezone_cases": 6,
+  "verification_source_sha": "9144f888306e12a86fb4812896b137c13a6adeb9"
+}

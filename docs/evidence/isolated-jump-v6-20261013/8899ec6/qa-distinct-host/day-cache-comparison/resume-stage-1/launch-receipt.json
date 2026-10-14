@@ -1,0 +1,8 @@
+{
+  "config_digest": "a0f09f63ed38ff24afcbf89e71f6c9119bd86998ad9a9950c162289b16d7b4f2",
+  "pid": 8128,
+  "producer_source_sha": "8899ec6bec4927fc39795f2867be91e2431178c6",
+  "verification_source_sha": "9144f888306e12a86fb4812896b137c13a6adeb9",
+  "wall_seconds": 420,
+  "worker_sha256": "3702999c0c99501414a73398947cb8f2f201408c0746a1194efebcda0871ffb2"
+}

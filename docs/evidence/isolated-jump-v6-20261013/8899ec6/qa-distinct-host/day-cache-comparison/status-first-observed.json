@@ -1,0 +1,15 @@
+{
+  "auto_demo_promotion": false,
+  "checked_at_utc": "2026-10-13T12:14:43.946842+00:00",
+  "completed_cells": 0,
+  "elapsed_seconds": 4.984,
+  "independent_decimal_accounting_complete": false,
+  "live_enabled": false,
+  "official_coordinator_advanced": false,
+  "producer_source_sha": "8899ec6bec4927fc39795f2867be91e2431178c6",
+  "raw_files_verified": 6,
+  "research_only": true,
+  "schema": "nexus.day-cache-comparison-status.v1",
+  "status": "RUNNING_NATIVE_DAY_CACHE_REGRESSION",
+  "verification_source_sha": "9144f888306e12a86fb4812896b137c13a6adeb9"
+}

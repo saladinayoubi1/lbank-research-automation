@@ -44,11 +44,13 @@ CONTEXT_FIELDS = frozenset({
     "lagged_close_location_persistence_16", "lagged_peer_lead_corr_96",
     "lagged_directional_entropy_64", "lagged_range_compression_ratio_32",
     "lagged_volume_return_corr_64",
+    "lagged_standardized_shock_96", "lagged_jump_proxy_share_96",
 })
 ENTRY_FIELDS = frozenset({
     "open", "high", "low", "close", "close_location", "body_efficiency",
     "rel_vol", "bar_proxy_vwap", "prior_hi", "prior_lo", "prior_range_mid",
     "prior_range_width_pct", "prior_day_high", "prior_day_low", "prior_day_close",
+    "previous_close",
 })
 PEER_FIELDS = frozenset({
     "cross_pair_relative_z_previous", "lagged_peer_impulse",
@@ -467,3 +469,4 @@ def generate_factory_contracts_v4(
     return _generate_factory_contracts_from_contexts(
         existing, GENERATOR_CONTEXTS_V4, limit=limit
     )
+

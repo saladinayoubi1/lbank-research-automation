@@ -1,0 +1,15 @@
+[Reading 13 lines from start (total: 13 lines, 0 remaining)]
+
+Current thread 0x00001b90 (most recent call first):
+  File "C:\Users\afaq\AppData\Local\Temp\nexus_profile_jump_v6_20261013.py", line 83 in deadline
+  File "C:\Users\afaq\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 1433 in run
+  File "C:\Users\afaq\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 1075 in _bootstrap_inner
+  File "C:\Users\afaq\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 1032 in _bootstrap
+
+Thread 0x00003314 (most recent call first):
+  File "E:\NEXUS-QA\native-v5-independent-20261012-1604\.venv\Lib\site-packages\numpy\_core\numeric.py", line 2369 in _isclose_dispatcher
+  File "E:\NEXUS-QA\jump-v6-independent-20261013-verify8899\source\nexus_composite_strategy_research.py", line 829 in backtest
+  File "C:\Users\afaq\AppData\Local\Temp\nexus_profile_jump_v6_20261013.py", line 132 in <lambda>
+  File "C:\Users\afaq\AppData\Local\Temp\nexus_profile_jump_v6_20261013.py", line 62 in timed
+  File "C:\Users\afaq\AppData\Local\Temp\nexus_profile_jump_v6_20261013.py", line 132 in main
+  File "C:\Users\afaq\AppData\Local\Temp\nexus_profile_jump_v6_20261013.py", line 161 in <module>

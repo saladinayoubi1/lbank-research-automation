@@ -1,0 +1,14 @@
+{
+  "config_sha256": "094ad00eb0440fd736422585ae77052e6235d392fa2d2070a32121a9d354da2a",
+  "live_enabled": false,
+  "new_accounting_cells": 9,
+  "no_accounting_or_backtest_run_by_this_check": true,
+  "oracle_cached_blob_sha": "35488fbf90a987f83dd637db4209703eb201ea0e",
+  "oracle_cached_ref": "b6c6efb3cdf7ceb6e23a117df43c6803604b6187",
+  "original_numeric_proof_accepted": true,
+  "prefix_cells_verified": 3,
+  "research_only": true,
+  "schema": "nexus.decimal-resume-local-binding-check.v1",
+  "source_sha": "8899ec6bec4927fc39795f2867be91e2431178c6",
+  "worker_sha256": "241bb1d641d318792da6379dff7a62b917ef20cd4c6b7f547fed41747a468654"
+}

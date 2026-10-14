@@ -1,0 +1,13 @@
+{
+  "auto_demo_promotion": false,
+  "checked_at_utc": "2026-10-13T11:28:55.095248+00:00",
+  "elapsed_seconds": 600.125,
+  "lease_id": "isolated-jump-v6-20261013-8899ec6",
+  "live_enabled": false,
+  "official_coordinator_advanced": false,
+  "reason": "600-second verifier deadline",
+  "research_only": true,
+  "schema": "nexus.jump-distinct-host-verification.v1",
+  "source_sha": "8899ec6bec4927fc39795f2867be91e2431178c6",
+  "status": "FAILED_CLOSED"
+}

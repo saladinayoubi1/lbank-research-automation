@@ -1,0 +1,44 @@
+{
+  "schema": "nexus.mechanism-factory.v1",
+  "authority": "research-only-no-auto-promotion",
+  "selection_basis": "training_partition_only",
+  "no_minimum_trade_count_gate": true,
+  "auto_demo_promotion": false,
+  "live_trading_authority": false,
+  "candidates": [
+    {
+      "id": "factory_isolated_downshock_recovery",
+      "family": "isolated_downshock_recovery",
+      "hypothesis": "A prior closed negative return unusually large relative to pre-event bipower-inspired volatility, with excess realized variation in a completed range regime, may precede an own-price recovery confirmed one bar later. This is a finite-grid shock proxy, not a significant-jump test, hidden liquidity signal or profitable edge.",
+      "peer_required": false,
+      "context": [
+        {"field": "h4_range", "op": "eq", "value": 1},
+        {"field": "h1_vol_ok", "op": "eq", "value": 1},
+        {"field": "lagged_standardized_shock_96", "op": "le", "value": -3.0},
+        {"field": "lagged_jump_proxy_share_96", "op": "ge", "value": 0.10}
+      ],
+      "entry": [
+        {"field": "close", "op": "gt", "other": "previous_close"},
+        {"field": "close", "op": "gt", "other": "open"},
+        {"field": "close_location", "op": "ge", "value": 0.60}
+      ]
+    },
+    {
+      "id": "factory_isolated_upshock_followthrough",
+      "family": "isolated_upshock_followthrough",
+      "hypothesis": "A prior closed positive return unusually large relative to pre-event bipower-inspired volatility, with excess realized variation and completed positive higher-timeframe structure, may have continuation after a separate own-price confirmation. This is a finite-grid shock proxy, not a significant-jump test or profitable edge.",
+      "peer_required": false,
+      "context": [
+        {"field": "h4_up", "op": "eq", "value": 1},
+        {"field": "h1_vol_ok", "op": "eq", "value": 1},
+        {"field": "lagged_standardized_shock_96", "op": "ge", "value": 3.0},
+        {"field": "lagged_jump_proxy_share_96", "op": "ge", "value": 0.10}
+      ],
+      "entry": [
+        {"field": "close", "op": "gt", "other": "previous_close"},
+        {"field": "close", "op": "gt", "other": "open"},
+        {"field": "close_location", "op": "ge", "value": 0.60}
+      ]
+    }
+  ]
+}

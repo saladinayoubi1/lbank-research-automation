@@ -1,0 +1,16 @@
+{
+  "config_sha256": "7df564fc4787f04b2670b92ac2f96d58a28d578bdbf7d6818f4e2caf4aaf2c68",
+  "live_enabled": false,
+  "malformed_cell_digest_rejected": true,
+  "numeric_verification_source_sha": "9144f888306e12a86fb4812896b137c13a6adeb9",
+  "oracle_code_changed": false,
+  "oracle_git_blob_matches": true,
+  "producer_or_simulator_called": false,
+  "recomputed_digest_identity_authority_tamper_cases_rejected": 7,
+  "research_only": true,
+  "schema": "nexus.v6-audit-binding-local-check.v1",
+  "source_sha": "8899ec6bec4927fc39795f2867be91e2431178c6",
+  "syntax_passed": true,
+  "valid_complete_numeric_proof_accepted": true,
+  "worker_sha256": "62b37e8ca201d9bc7afd4ef3b94f42d6aaf3f2f38467990eec8bd84c07ea9a7f"
+}
