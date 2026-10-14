@@ -1,0 +1,66 @@
+{
+  "merged_source": "a61bfbd48a53e5029854b18d66f049e78699aa63",
+  "owner_sid": "S-1-5-21-3401598759-1611821388-1547150432-1001",
+  "startup_path": "C:\\Users\\afaq\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\NEXUS-Remote-Autostart.cmd",
+  "targets": [
+    {
+      "pid": 8520,
+      "ppid": 8864,
+      "name": "node.exe",
+      "created": "2026-10-13T20:59:27.2083350Z",
+      "command_sha256": "33d43167438a342cf7fa3c712ff1abadd7c006dcaf9433a8a1f5d0aebe3bac79",
+      "session_id": 1,
+      "current_owner_sid_matches": true,
+      "expected_package": true,
+      "expected_npx": true,
+      "expected_client": false
+    },
+    {
+      "pid": 5520,
+      "ppid": 8520,
+      "name": "cmd.exe",
+      "created": "2026-10-13T21:00:24.4973000Z",
+      "command_sha256": "8ec841fcbc19ed1181574c3f348497f73a5e2c780c870f07a00281267fd3a707",
+      "session_id": 1,
+      "current_owner_sid_matches": true,
+      "expected_package": false,
+      "expected_npx": false,
+      "expected_client": false
+    },
+    {
+      "pid": 10416,
+      "ppid": 5520,
+      "name": "node.exe",
+      "created": "2026-10-13T21:00:24.5899910Z",
+      "command_sha256": "0728c6d038bd54687eab21a34b2c491f8671e0599240c37f82152e21176dfc0f",
+      "session_id": 1,
+      "current_owner_sid_matches": true,
+      "expected_package": false,
+      "expected_npx": false,
+      "expected_client": true
+    },
+    {
+      "pid": 9292,
+      "ppid": 10416,
+      "name": "node.exe",
+      "created": "2026-10-13T21:00:37.7718460Z",
+      "command_sha256": "c934e26b3b71e40a0a91d2575cf4fd44a09b4fe9cf436a78f3b541e8c19334a1",
+      "session_id": 1,
+      "current_owner_sid_matches": true,
+      "expected_package": false,
+      "expected_npx": false,
+      "expected_client": false
+    }
+  ],
+  "bound_files": [
+    {
+      "path": "C:\\Users\\afaq\\AppData\\Local\\NEXUS-Research\\remote-supervisor.cmd",
+      "sha256": "8e09cb51022e86fe672920a4e5c5b960fa83966f37c6872c4685a98acf2bfa12"
+    },
+    {
+      "path": "C:\\Users\\afaq\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\NEXUS-Remote-Autostart.cmd",
+      "sha256": "0a4030bfc1fbbe7e8027850001f9498342278ec796a042d6ce82da3b298bafac"
+    }
+  ],
+  "operation_sha256": "6fb50d166629eb272ac87a15f240372b35609abfe7ad168f6e66530ac2e6126c"
+}
