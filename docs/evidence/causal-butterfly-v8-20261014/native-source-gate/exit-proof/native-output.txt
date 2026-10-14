@@ -1,0 +1,8 @@
+[Reading last 2 lines (total: 2 lines)]
+
+{"schema": "nexus.butterfly-v8-native-true-exit-proof.v1", "source_sha": "2b89f6e89abdacc16b3288b9fd9ebcb3bdea7e69", "checked_at_utc": "2026-10-14T10:52:26.769802+00:00", "true_child_exit_code": 0, "native_source_tests": 39, "bounded_test_only_retry_due_to_lost_first_rdc_session": true, "original_parent_os_exit_independently_captured": false, "deadline_seconds": 120, "source_and_prior_ledger_unchanged": true, "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "stderr_sha256": "ab050a98c3aa7bf944c7fc66686b631a7c9a9a410317ba1334258e9cfede594a", "market_backtests_executed": 0, "research_only": true, "live_enabled": false}
+ACTUAL_BUTTERFLY_EXIT_PROOF_PARENT_EXIT=0
+✅ Process completed with exit code 0 (runtime: 5.54s)
+
+[executed on device: DESKTOP-F4SA4VL (61c3307f-e6d4-4edf-860a-3519cfb9df5d)]
+

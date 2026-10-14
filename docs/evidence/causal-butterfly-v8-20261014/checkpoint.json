@@ -1,0 +1,108 @@
+{
+  "schema": "nexus.butterfly-v8-source-checkpoint.v1",
+  "recorded_at_utc": "2026-10-14T10:56:42.713Z",
+  "status": "SOURCE_NATIVE_GATES_PASS_HOSTED_CI_PENDING_MARKET_NOT_STARTED",
+  "pr_number": 2654,
+  "pr_base": "codex/nexus-utc-slot-volume-v7-20261013",
+  "computational_source_sha": "2b89f6e89abdacc16b3288b9fd9ebcb3bdea7e69",
+  "preregistration_commit": "e8af665b4809b13e77b4dfaff6fd0bd8265ef62a",
+  "native_root": "E:\\NEXUS-QA\\causal-butterfly-v8-20261014T104229Z",
+  "candidate_config": {
+    "entry_model": "closed_4h_1h_15m_next_open",
+    "factory_contract_digest": "fb52c0ea9c8fdd785f0133c2c216a3b8a9478691492b4a12924452909cf0ebc9",
+    "fingerprint": "c451551fdb8bacd867e865eb494a14ba506061cbffd9542aca04e13df3f56f02",
+    "mechanism": "factory_causal_bullish_butterfly",
+    "risk_variant": 0
+  },
+  "local_tests": 39,
+  "first_native_tests": 39,
+  "first_native_expected_exit_code": 0,
+  "first_native_os_exit_independently_captured": false,
+  "first_native_terminal_pid": 1696,
+  "first_native_terminal_read_error": "No session found",
+  "one_bounded_test_only_exit_proof_submitted": true,
+  "proof_terminal_pid": 9968,
+  "proof_parent_actual_exit_code": 0,
+  "proof_parent_runtime_seconds": 5.54,
+  "proof_true_child_exit_code": 0,
+  "proof_tests": 39,
+  "proof": {
+    "schema": "nexus.butterfly-v8-native-true-exit-proof.v1",
+    "source_sha": "2b89f6e89abdacc16b3288b9fd9ebcb3bdea7e69",
+    "checked_at_utc": "2026-10-14T10:52:26.769802+00:00",
+    "true_child_exit_code": 0,
+    "native_source_tests": 39,
+    "bounded_test_only_retry_due_to_lost_first_rdc_session": true,
+    "original_parent_os_exit_independently_captured": false,
+    "deadline_seconds": 120,
+    "source_and_prior_ledger_unchanged": true,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_sha256": "ab050a98c3aa7bf944c7fc66686b631a7c9a9a410317ba1334258e9cfede594a",
+    "market_backtests_executed": 0,
+    "research_only": true,
+    "live_enabled": false
+  },
+  "original39test_suite_not_counted_twice": true,
+  "no_further_test_only_retry": true,
+  "hosted_checked_head_sha": "11d9435b66d6d023d72ae95a18b3376da7eb49f2",
+  "hosted_checks": [
+    {
+      "name": "discover",
+      "status": "completed",
+      "conclusion": "skipped",
+      "id": 115814076474
+    },
+    {
+      "name": "contract-test",
+      "status": "completed",
+      "conclusion": "success",
+      "id": 115813887796
+    },
+    {
+      "name": "test (ubuntu-latest)",
+      "status": "in_progress",
+      "conclusion": null,
+      "id": 115813887230
+    },
+    {
+      "name": "test (macos-latest)",
+      "status": "in_progress",
+      "conclusion": null,
+      "id": 115813887143
+    },
+    {
+      "name": "audit",
+      "status": "completed",
+      "conclusion": "success",
+      "id": 115813887124
+    },
+    {
+      "name": "validate",
+      "status": "completed",
+      "conclusion": "success",
+      "id": 115813886991
+    },
+    {
+      "name": "test (windows-latest)",
+      "status": "in_progress",
+      "conclusion": null,
+      "id": 115813886951
+    },
+    {
+      "name": "control-plane trusted guard",
+      "status": "completed",
+      "conclusion": "success",
+      "id": 115813875286
+    }
+  ],
+  "market_backtest_started": false,
+  "market_backtests_executed": 0,
+  "independent_strategy_qa_complete": false,
+  "owner_demo_admission": false,
+  "auto_demo_promotion": false,
+  "live_enabled": false,
+  "previous_ledger_digest": "33ebdb18e85a4bc2877492b857691d82f49a18e3337237293bde012bf31de3e4",
+  "previous_ledger_file_sha256": "8d9f57e275cb172e8c3e9e7500278a8771f96147522ef25190ef36b830cbdf1a",
+  "resume": "Reread exact PR2654 head/full hosted checks, review results and current native source/previous v7 ledger. If hosted checks pass, freeze a single bounded first-producer invocation on computational source2b89f6e89abdacc16b3288b9fd9ebcb3bdea7e69 using the staged native source and checksum-verified existing6raw Bybit files. Reuse completed39test native gate/true-exit proof; no further source-test or old producer/Decimal replay. Separate no-profit/pristine QA qualification gate remains."
+}
+
