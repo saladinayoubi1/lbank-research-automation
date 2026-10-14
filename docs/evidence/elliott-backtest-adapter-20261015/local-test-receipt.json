@@ -1,0 +1,21 @@
+{
+  "schema": "elliott-five-swing-adapter-local-process/v1",
+  "started_at": "2026-10-14T23:29:16.701190+00:00",
+  "completed_at": "2026-10-14T23:29:21.924683+00:00",
+  "duration_seconds": 5.223494769998069,
+  "actual_exit_code": 0,
+  "timed_out": false,
+  "worker_result": {
+    "tests_run": 163,
+    "failures": 0,
+    "errors": 0,
+    "schema_test_functions": 1,
+    "frontier_mechanisms": 111,
+    "source_unchanged": true,
+    "market_replays": 0
+  },
+  "worker_sha256": "f6c4220aa635f156817136bbe073977096a5339e0c5b0bd1f138bff3be08ec30",
+  "stdout_sha256": "8ba4479c930af241716b71f5c1f34794a83dbc4f4a7653b59ebdeb0487c155d6",
+  "stderr_sha256": "2ffc9a0669795f346d7426ad808ff02cabc2bf26281b79706466063bd0e7c818",
+  "market_replays": 0
+}

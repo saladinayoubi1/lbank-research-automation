@@ -119,3 +119,14 @@ before one fresh candidate evaluation. Preserve the terminal v9 ledger. Do not
 replay v9 or select parameters from its already inspected Validation/final
 folds; those folds are not an unseen holdout. The current work completes the
 synthetic causal-feature boundary, not market or numeric qualification.
+
+## Research adapter follow-up
+
+A separately preregistered explicit candidate now converts canonical OPEN
+timestamps through the unchanged parent decision time, preserves all old
+features and feeds the shared next-open simulator with an explicit Elliott
+fill-observer profile. Its 15 new tests plus the 148 previous research methods
+and the pure 111-frontier schema check pass locally and on LAPTOP2. See the
+[research adapter gate](ELLIOTT_BACKTEST_ADAPTER_20261015.md). The automatic
+factory remains unchanged; market replay and independent market QA remain
+incomplete, with Live=false and the VPS pause preserved.

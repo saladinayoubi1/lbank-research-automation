@@ -1,0 +1,32 @@
+{
+  "schema": "elliott-five-swing-adapter-native-process/v1",
+  "device": "DESKTOP-F4SA4VL",
+  "device_id": "61c3307f-e6d4-4edf-860a-3519cfb9df5d",
+  "stage": "E:\\NEXUS-QA\\elliott-backtest-adapter-20261015",
+  "python": "E:\\NEXUS-QA\\strategy-frontier-v5-20261010\\.venv\\Scripts\\python.exe",
+  "started_at": "2026-10-14T23:30:46.9253251Z",
+  "completed_at": "2026-10-14T23:31:08.2751220Z",
+  "duration_seconds": 21.283157499999998,
+  "owned_child_pid": 628,
+  "actual_exit_code": 0,
+  "timed_out": false,
+  "source_files": 50,
+  "payload_sha256": "796080b32a9240ef5400e804d8e7ce11ced6def048d8dd1935a5a354ba471c2a",
+  "invocation_sha256": "f1415f899b1848c921e7ef5566e587165257615f3994c77feabfd1225d4e4827",
+  "worker_sha256": "f6c4220aa635f156817136bbe073977096a5339e0c5b0bd1f138bff3be08ec30",
+  "source_binding_sha256": "d0511e84a5fcad8de132b1a6e93f853173a14274b69cb43159c164c3503aeced",
+  "worker_receipt_sha256": "39b195c89cc15dccef7b4a382851746b18d9dd2ecf050a2c5c936e221b763381",
+  "worker_result": {
+    "tests_run": 163,
+    "failures": 0,
+    "errors": 0,
+    "schema_test_functions": 1,
+    "frontier_mechanisms": 111,
+    "source_unchanged": true,
+    "market_replays": 0
+  },
+  "stdout_sha256": "e837b7ecb8b4d2f546dbc17a3add4e93655c4974e1fe87a49df49663d77a6ad9",
+  "stderr_sha256": "ba41d9b4ed77a228e29ba30338d056ad2bf2a4154d625d6f6af6969eb483f7c7",
+  "market_replays": 0,
+  "live_enabled": false
+}
