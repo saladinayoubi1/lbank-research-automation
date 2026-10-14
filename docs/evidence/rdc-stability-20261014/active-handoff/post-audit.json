@@ -1,0 +1,71 @@
+{
+  "audit": {
+    "listener_count": 1,
+    "worker_count": 0,
+    "loop_pid": 7228,
+    "loop_count": 1,
+    "new_client_descends_from_loop": true,
+    "launcher_sha256": "8E09CB51022E86FE672920A4E5C5B960FA83966F37C6872C4685A98ACF2BFA12",
+    "controller_still_running": false,
+    "remote_client_count": 1,
+    "schema": "nexus.rdc-active-handoff-post-audit.v1",
+    "node_roles": [
+      {
+        "pid": 4616,
+        "ppid": 7228,
+        "role": "npm_launcher",
+        "created": "2026-10-14T02:09:33.6286420Z",
+        "session": 1
+      },
+      {
+        "pid": 3004,
+        "ppid": 4812,
+        "role": "remote_client",
+        "created": "2026-10-14T02:09:48.1065600Z",
+        "session": 1
+      },
+      {
+        "pid": 9416,
+        "ppid": 3004,
+        "role": "local_mcp_child",
+        "created": "2026-10-14T02:09:52.7975670Z",
+        "session": 1
+      }
+    ],
+    "startup_sha256": "0A4030BFC1FBBE7E8027850001F9498342278EC796A042D6CE82DA3B298BAFAC",
+    "client_ancestor_pids": [
+      3004,
+      4812,
+      4616,
+      7228
+    ],
+    "remote_client_pid": 3004,
+    "host": "DESKTOP-F4SA4VL",
+    "failover_tasks": [
+      {
+        "name": "NEXUS-Local-Failover-Autostart",
+        "enabled": false
+      },
+      {
+        "name": "NEXUS-Bybit-Failover-Autostart",
+        "enabled": false
+      }
+    ],
+    "observed_utc": "2026-10-14T02:15:46.5627574Z",
+    "old_npx_still_running": false,
+    "old_client_still_running": false
+  },
+  "received_terminal": {
+    "content": [
+      {
+        "type": "text",
+        "text": "[Reading last 1 lines (total: 1 lines)]\n\n{\"listener_count\":1,\"worker_count\":0,\"loop_pid\":7228,\"loop_count\":1,\"new_client_descends_from_loop\":true,\"launcher_sha256\":\"8E09CB51022E86FE672920A4E5C5B960FA83966F37C6872C4685A98ACF2BFA12\",\"controller_still_running\":false,\"remote_client_count\":1,\"schema\":\"nexus.rdc-active-handoff-post-audit.v1\",\"node_roles\":[{\"pid\":4616,\"ppid\":7228,\"role\":\"npm_launcher\",\"created\":\"2026-10-14T02:09:33.6286420Z\",\"session\":1},{\"pid\":3004,\"ppid\":4812,\"role\":\"remote_client\",\"created\":\"2026-10-14T02:09:48.1065600Z\",\"session\":1},{\"pid\":9416,\"ppid\":3004,\"role\":\"local_mcp_child\",\"created\":\"2026-10-14T02:09:52.7975670Z\",\"session\":1}],\"startup_sha256\":\"0A4030BFC1FBBE7E8027850001F9498342278EC796A042D6CE82DA3B298BAFAC\",\"client_ancestor_pids\":[3004,4812,4616,7228],\"remote_client_pid\":3004,\"host\":\"DESKTOP-F4SA4VL\",\"failover_tasks\":[{\"name\":\"NEXUS-Local-Failover-Autostart\",\"enabled\":false},{\"name\":\"NEXUS-Bybit-Failover-Autostart\",\"enabled\":false}],\"observed_utc\":\"2026-10-14T02:15:46.5627574Z\",\"old_npx_still_running\":false,\"old_client_still_running\":false}\r\n✅ Process completed with exit code 0 (runtime: 1.53s)"
+      },
+      {
+        "type": "text",
+        "text": "\n[executed on device: DESKTOP-F4SA4VL (61c3307f-e6d4-4edf-860a-3519cfb9df5d)]"
+      }
+    ],
+    "isError": false
+  }
+}
