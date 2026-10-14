@@ -1,0 +1,17 @@
+{
+  "in_job": false,
+  "live_enabled": false,
+  "observed_utc": "2026-10-14T05:03:11.690234+00:00",
+  "owner": "DESKTOP-1R1081M\\afaq",
+  "parent_exit_code": 0,
+  "pid": 11784,
+  "positive_parent_exit": true,
+  "real_rdc_stopped": false,
+  "session_id": 1,
+  "source_sha": "f5088519915856072cd6254d02a7ec79e64ccd9a",
+  "source_sha256": "626e0491e43623a8966994e013b18b95d02f9b710be15c83f4a3f5a7c526de57",
+  "status": "PASS",
+  "survived_private_job_parent_exit": true,
+  "task_retargeted": false,
+  "wait_result": 0
+}

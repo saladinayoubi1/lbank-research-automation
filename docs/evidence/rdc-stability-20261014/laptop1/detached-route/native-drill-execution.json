@@ -1,0 +1,92 @@
+{
+  "schema": "nexus.rdc-l1-detached-drill-execution.v1",
+  "source_sha": "f5088519915856072cd6254d02a7ec79e64ccd9a",
+  "source_sha256": "626e0491e43623a8966994e013b18b95d02f9b710be15c83f4a3f5a7c526de57",
+  "host": "DESKTOP-1R1081M",
+  "device_id": "bbabb808-d554-4db8-bce7-3a453bea8b43",
+  "submission_count": 1,
+  "terminal_process_pid": 15304,
+  "actual_launcher_command_exit": 0,
+  "native_runtime_seconds": 47.26,
+  "diagnostic_parent": {
+    "in_job": true,
+    "job_flags": 10240,
+    "job_layout_bytes": 144,
+    "observed_utc": "2026-10-14T05:03:07.483799+00:00",
+    "owner": "DESKTOP-1R1081M\\afaq",
+    "pid": 13152,
+    "session_id": 1,
+    "source_sha": "f5088519915856072cd6254d02a7ec79e64ccd9a",
+    "source_sha256": "626e0491e43623a8966994e013b18b95d02f9b710be15c83f4a3f5a7c526de57"
+  },
+  "worker_started": {
+    "in_job": false,
+    "observed_utc": "2026-10-14T05:03:11.147268+00:00",
+    "owner": "DESKTOP-1R1081M\\afaq",
+    "parent_pid": 13152,
+    "parent_was_in_private_job": true,
+    "pid": 11784,
+    "session_id": 1,
+    "source_sha": "f5088519915856072cd6254d02a7ec79e64ccd9a",
+    "source_sha256": "626e0491e43623a8966994e013b18b95d02f9b710be15c83f4a3f5a7c526de57"
+  },
+  "terminal": {
+    "in_job": false,
+    "live_enabled": false,
+    "observed_utc": "2026-10-14T05:03:11.690234+00:00",
+    "owner": "DESKTOP-1R1081M\\afaq",
+    "parent_exit_code": 0,
+    "pid": 11784,
+    "positive_parent_exit": true,
+    "real_rdc_stopped": false,
+    "session_id": 1,
+    "source_sha": "f5088519915856072cd6254d02a7ec79e64ccd9a",
+    "source_sha256": "626e0491e43623a8966994e013b18b95d02f9b710be15c83f4a3f5a7c526de57",
+    "status": "PASS",
+    "survived_private_job_parent_exit": true,
+    "task_retargeted": false,
+    "wait_result": 0
+  },
+  "external_worker_os_exit_independently_captured": false,
+  "command": "$ErrorActionPreference='Stop'\n$probe='E:\\NEXUS-QA\\rdc-l1-detached-proof-20261014T0455Z\\detached_route_drill.py'\nif((Get-FileHash -Algorithm SHA256 -LiteralPath $probe).Hash.ToLowerInvariant() -ne '626e0491e43623a8966994e013b18b95d02f9b710be15c83f4a3f5a7c526de57'){throw 'Drill byte hash mismatch'}\n& 'C:\\Users\\afaq\\AppData\\Local\\Programs\\Python\\Python312\\python.exe' $probe --source-sha f5088519915856072cd6254d02a7ec79e64ccd9a\n$parentExit=$LASTEXITCODE\nWrite-Output ('ACTUAL_DIAGNOSTIC_PARENT_EXIT='+$parentExit)\nexit $parentExit",
+  "fresh_pings": [
+    {
+      "status": "fulfilled",
+      "value": {
+        "content": [
+          {
+            "type": "text",
+            "text": "pong 2026-10-14T05:07:42.214Z"
+          },
+          {
+            "type": "text",
+            "text": "\n[executed on device: DESKTOP-1R1081M (bbabb808-d554-4db8-bce7-3a453bea8b43)]"
+          }
+        ],
+        "isError": false
+      }
+    },
+    {
+      "status": "fulfilled",
+      "value": {
+        "content": [
+          {
+            "type": "text",
+            "text": "pong 2026-10-14T05:07:41.839Z"
+          },
+          {
+            "type": "text",
+            "text": "\n[executed on device: DESKTOP-F4SA4VL (61c3307f-e6d4-4edf-860a-3519cfb9df5d)]"
+          }
+        ],
+        "isError": false
+      }
+    }
+  ],
+  "real_sdk_processes_stopped": false,
+  "task_retargeted": false,
+  "source_cjs_changed": false,
+  "startup_changed": false,
+  "credentials_read_or_modified": false,
+  "live_enabled": false
+}
