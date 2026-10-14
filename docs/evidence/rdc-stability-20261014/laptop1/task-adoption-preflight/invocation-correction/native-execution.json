@@ -1,0 +1,137 @@
+{
+  "schema": "nexus.rdc-l1-preflight-completion.v1",
+  "recorded_at_utc": "2026-10-14T06:55:02.681Z",
+  "status": "PREFLIGHT_PASS_TASK_ADOPTION_NOT_PERFORMED",
+  "probe_source_sha": "661c36d6a704215afc59980654d6a86497bf5e91",
+  "invocation_source_sha": "0114a1eed7caa530468ea5dc44613f224f11c76a",
+  "baseline_merged_sha": "2eeb3eb7602c8687dbeeae624997b9e57aa0b774",
+  "host": "DESKTOP-1R1081M",
+  "device_id": "bbabb808-d554-4db8-bce7-3a453bea8b43",
+  "preflight_submissions": 2,
+  "preflight_body_executions": 1,
+  "corrected_retries": 1,
+  "first_attempt": {
+    "terminal_pid": 12404,
+    "actual_exit_code": 1,
+    "wrapper_executed": false,
+    "failure": "Default PowerShell file execution policy; retained in previous-attempt.json"
+  },
+  "policy_query": {
+    "terminal_pid": 13816,
+    "actual_exit_code": 0,
+    "receipt": {
+      "policies": [
+        {
+          "policy": "Undefined",
+          "scope": "MachinePolicy"
+        },
+        {
+          "policy": "Undefined",
+          "scope": "UserPolicy"
+        },
+        {
+          "policy": "Undefined",
+          "scope": "Process"
+        },
+        {
+          "policy": "Undefined",
+          "scope": "CurrentUser"
+        },
+        {
+          "policy": "Undefined",
+          "scope": "LocalMachine"
+        }
+      ],
+      "host": "DESKTOP-1R1081M",
+      "observed_utc": "2026-10-14T06:45:15.1145656Z",
+      "persistent_policy_changed": false,
+      "preflight_run_present": false,
+      "live_enabled": false
+    }
+  },
+  "successful_attempt": {
+    "terminal_pid": 12812,
+    "actual_terminal_exit_code": 0,
+    "actual_scoped_command_exit_code": 0,
+    "actual_query_exit_code": 0,
+    "runtime_seconds": 59.27,
+    "process_policy": "RemoteSigned",
+    "command": "$ErrorActionPreference='Stop'\nif($env:COMPUTERNAME -ne 'DESKTOP-1R1081M'){throw 'Wrong host'}\nif([string](Get-ExecutionPolicy -Scope MachinePolicy) -ne 'Undefined' -or [string](Get-ExecutionPolicy -Scope UserPolicy) -ne 'Undefined'){throw 'Group policy changed; no override'}\n$wrapper='E:\\NEXUS-QA\\rdc-l1-task-preflight-20261014T062235Z\\invoke_nexus_rdc_l1_preflight.ps1'\n$probe='E:\\NEXUS-QA\\rdc-l1-task-preflight-20261014T062235Z\\probe_nexus_rdc_l1_preflight.py'\nif(Test-Path -LiteralPath 'E:\\NEXUS-QA\\rdc-l1-task-preflight-20261014T062235Z\\run'){throw 'Preflight already started; refuse repetition'}\nif((Get-FileHash -Algorithm SHA256 -LiteralPath $wrapper).Hash.ToLowerInvariant() -ne 'c70a259b709feec2bea8dccc5f031f0fe4d133061b86204bd235ff49a9f35feb'){throw 'Wrapper source changed'}\nif((Get-FileHash -Algorithm SHA256 -LiteralPath $probe).Hash.ToLowerInvariant() -ne 'c89d7f37e9acc15ac82c93c417869ae32781f00b42488306be43a1dee6104c2a'){throw 'Probe source changed'}\n& 'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe' -NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -File $wrapper -SourceSha '661c36d6a704215afc59980654d6a86497bf5e91' -CodeSha 'c89d7f37e9acc15ac82c93c417869ae32781f00b42488306be43a1dee6104c2a'\n$queryExit=$LASTEXITCODE\nWrite-Output ('ACTUAL_SCOPED_PREFLIGHT_EXIT='+$queryExit)\n$after=@(Get-ExecutionPolicy -List|ForEach-Object{@{scope=[string]$_.Scope;policy=[string]$_.ExecutionPolicy}})\nWrite-Output ('PARENT_POLICY_AFTER='+($after|ConvertTo-Json -Compress))\nexit $queryExit\n",
+    "raw_native_result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "[Reading last 4 lines (total: 4 lines)]\n\n{\"credential_files_read\": false, \"cutover_authorized_by_snapshot\": false, \"expected_chain_match\": true, \"host\": \"DESKTOP-1R1081M\", \"live_enabled\": false, \"native_module_sha256\": \"0035450801bd7d938e9e146c5ec28e619cb5a5f4a18cdc53ac7e9734c7f94f78\", \"npm_package_matches\": true, \"observed_sdk_remote_count\": 1, \"observed_utc\": \"2026-10-14T06:48:39.105999+00:00\", \"observer\": {\"argv_json_sha256\": \"29c91fe47b4caca46c6d2ca6d26f1c1a332de70f9b8a01b76592745a2b7fc744\", \"creation_filetime\": \"134364341007757919\", \"current_cjs_argument_present\": false, \"exe\": \"C:\\\\Users\\\\afaq\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\", \"in_job\": false, \"name\": \"python.exe\", \"owner\": \"DESKTOP-1R1081M\\\\afaq\", \"parents\": [{\"name\": \"powershell.exe\", \"pid\": 14772}, {\"name\": \"powershell.exe\", \"pid\": 12812}, {\"name\": \"node.exe\", \"pid\": 5520}, {\"name\": \"node.exe\", \"pid\": 12764}, {\"name\": \"cmd.exe\", \"pid\": 4000}, {\"name\": \"node.exe\", \"pid\": 2032}, {\"name\": \"cmd.exe\", \"pid\": 9040}, {\"name\": \"explorer.exe\", \"pid\": 11520}], \"pid\": 10044, \"ppid\": 14772, \"remote_argument_present\": false, \"role\": \"unclassified\", \"sdk_entry\": null, \"session_id\": 1, \"whitelisted_cli_entry\": null, \"whitelisted_package_spec\": null}, \"observer_owner_session_matches\": true, \"old_node_fingerprints_match\": true, \"permission_or_process_gaps\": [{\"error_type\": \"PermissionError\", \"observed_name\": \"Runner.Listener.exe\", \"pid\": 9176}], \"probe_sha256\": \"c89d7f37e9acc15ac82c93c417869ae32781f00b42488306be43a1dee6104c2a\", \"processes\": [{\"argv_json_sha256\": \"21fedff1304ab0a25bf83a85c1844ca8364b8f73e81cd8c36d6708459f5272b1\", \"creation_filetime\": \"134364067509084762\", \"current_cjs_argument_present\": false, \"exe\": \"C:\\\\Program Files\\\\nodejs\\\\node.exe\", \"in_job\": true, \"name\": \"node.exe\", \"owner\": \"DESKTOP-1R1081M\\\\afaq\", \"parents\": [{\"name\": \"cmd.exe\", \"pid\": 9040}, {\"name\": \"explorer.exe\", \"pid\": 11520}], \"pid\": 2032, \"ppid\": 9040, \"remote_argument_present\": true, \"role\": \"approved_npm_rdc_remote_launcher\", \"sdk_entry\": null, \"session_id\": 1, \"whitelisted_cli_entry\": \"C:\\\\Program Files\\\\nodejs\\\\node_modules\\\\npm\\\\bin\\\\npx-cli.js\", \"whitelisted_package_spec\": \"@wonderwhy-er/desktop-commander@latest\"}, {\"argv_json_sha256\": \"ea5688b87b68e44e6906428c9a56f94f585091ea63d627473fbec4d97a7bc225\", \"creation_filetime\": \"134364067854916476\", \"current_cjs_argument_present\": false, \"exe\": \"C:\\\\Windows\\\\System32\\\\cmd.exe\", \"in_job\": true, \"name\": \"cmd.exe\", \"owner\": \"DESKTOP-1R1081M\\\\afaq\", \"parents\": [{\"name\": \"node.exe\", \"pid\": 2032}, {\"name\": \"cmd.exe\", \"pid\": 9040}, {\"name\": \"explorer.exe\", \"pid\": 11520}], \"pid\": 4000, \"ppid\": 2032, \"remote_argument_present\": true, \"role\": \"unclassified\", \"sdk_entry\": null, \"session_id\": 1, \"whitelisted_cli_entry\": null, \"whitelisted_package_spec\": null}, {\"argv_json_sha256\": \"2a926c6300a3e815ac64b7a3a4b511fb26f260f93f91b56f2f1995834c619783\", \"creation_filetime\": \"134364068135156379\", \"current_cjs_argument_present\": false, \"exe\": \"C:\\\\Program Files\\\\nodejs\\\\node.exe\", \"in_job\": true, \"name\": \"node.exe\", \"owner\": \"DESKTOP-1R1081M\\\\afaq\", \"parents\": [{\"name\": \"node.exe\", \"pid\": 12764}, {\"name\": \"cmd.exe\", \"pid\": 4000}, {\"name\": \"node.exe\", \"pid\": 2032}, {\"name\": \"cmd.exe\", \"pid\": 9040}, {\"name\": \"explorer.exe\", \"pid\": 11520}], \"pid\": 5520, \"ppid\": 12764, \"remote_argument_present\": false, \"role\": \"sdk_mcp_candidate\", \"sdk_entry\": \"c:\\\\users\\\\afaq\\\\appdata\\\\local\\\\npm-cache\\\\_npx\\\\4b4c857f6efdfb61\\\\node_modules\\\\@wonderwhy-er\\\\desktop-commander\\\\dist\\\\index.js\", \"session_id\": 1, \"whitelisted_cli_entry\": null, \"whitelisted_package_spec\": null}, {\"argv_json_sha256\": \"f5f6b91e7a6153cd2c7ba0b6ed3c96676245643a6552add8d819121b7cd5b24a\", \"creation_filetime\": \"134364067357038294\", \"current_cjs_argument_present\": false, \"exe\": \"C:\\\\Windows\\\\System32\\\\cmd.exe\", \"in_job\": false, \"name\": \"cmd.exe\", \"owner\": \"DESKTOP-1R1081M\\\\afaq\", \"parents\": [{\"name\": \"explorer.exe\", \"pid\": 11520}], \"pid\": 9040, \"ppid\": 11520, \"remote_argument_present\": false, \"role\": \"unclassified\", \"sdk_entry\": null, \"session_id\": 1, \"whitelisted_cli_entry\": null, \"whitelisted_package_spec\": null}, {\"error_type\": \"PermissionError\", \"observed_name\": \"Runner.Listener.exe\", \"pid\": 9176}, {\"argv_json_sha256\": \"0de58266a5eef7d74368def292cb447573143826f829554d052dd4d6f4e0ba33\", \"creation_filetime\": \"134363102542766508\", \"current_cjs_argument_present\": false, \"exe\": \"C:\\\\Users\\\\afaq\\\\AppData\\\\Local\\\\NEXUS\\\\actions-runner\\\\bin.2.337.0\\\\Runner.Listener.exe\", \"in_job\": true, \"name\": \"Runner.Listener.exe\", \"owner\": \"DESKTOP-1R1081M\\\\afaq\", \"parents\": [{\"name\": \"cmd.exe\", \"pid\": 8288}, {\"name\": \"powershell.exe\", \"pid\": 6452}, {\"name\": \"svchost.exe\", \"pid\": 1428}, {\"name\": \"services.exe\", \"pid\": 896}, {\"name\": \"wininit.exe\", \"pid\": 752}], \"pid\": 9556, \"ppid\": 8288, \"remote_argument_present\": false, \"role\": \"unclassified\", \"sdk_entry\": null, \"session_id\": 1, \"whitelisted_cli_entry\": null, \"whitelisted_package_spec\": null}, {\"argv_json_sha256\": \"66c8d0291186b7d77e450bc691dde7f299286c9b33aa7f1fb810d563c46a7667\", \"creation_filetime\": \"134363995178564217\", \"current_cjs_argument_present\": false, \"exe\": \"C:\\\\Windows\\\\explorer.exe\", \"in_job\": false, \"name\": \"explorer.exe\", \"owner\": \"DESKTOP-1R1081M\\\\afaq\", \"parents\": [], \"pid\": 11520, \"ppid\": 8892, \"remote_argument_present\": false, \"role\": \"unclassified\", \"sdk_entry\": null, \"session_id\": 1, \"whitelisted_cli_entry\": null, \"whitelisted_package_spec\": null}, {\"argv_json_sha256\": null, \"creation_filetime\": \"134363098253990427\", \"current_cjs_argument_present\": false, \"exe\": \"C:\\\\Program Files (x86)\\\\Adobe\\\\Adobe Creative Cloud\\\\CCXProcess\\\\libs\\\\node.exe\", \"in_job\": true, \"name\": \"node.exe\", \"owner\": \"DESKTOP-1R1081M\\\\afaq\", \"parents\": [{\"name\": \"CCXProcess.exe\", \"pid\": 11440}, {\"name\": \"Adobe Desktop Service.exe\", \"pid\": 10408}, {\"name\": \"Creative Cloud.exe\", \"pid\": 9352}], \"pid\": 11624, \"ppid\": 11440, \"remote_argument_present\": false, \"role\": \"unrelated_adobe_protected\", \"sdk_entry\": null, \"session_id\": 1, \"whitelisted_cli_entry\": null, \"whitelisted_package_spec\": null}, {\"argv_json_sha256\": \"dccf2427765dd06d9111a3f94218958b25638bc87f6f66e42ac9e214c0af2a76\", \"creation_filetime\": \"134364067859346874\", \"current_cjs_argument_present\": false, \"exe\": \"C:\\\\Program Files\\\\nodejs\\\\node.exe\", \"in_job\": true, \"name\": \"node.exe\", \"owner\": \"DESKTOP-1R1081M\\\\afaq\", \"parents\": [{\"name\": \"cmd.exe\", \"pid\": 4000}, {\"name\": \"node.exe\", \"pid\": 2032}, {\"name\": \"cmd.exe\", \"pid\": 9040}, {\"name\": \"explorer.exe\", \"pid\": 11520}], \"pid\": 12764, \"ppid\": 4000, \"remote_argument_present\": true, \"role\": \"sdk_remote_candidate\", \"sdk_entry\": \"c:\\\\users\\\\afaq\\\\appdata\\\\local\\\\npm-cache\\\\_npx\\\\4b4c857f6efdfb61\\\\node_modules\\\\@wonderwhy-er\\\\desktop-commander\\\\dist\\\\index.js\", \"session_id\": 1, \"whitelisted_cli_entry\": null, \"whitelisted_package_spec\": null}], \"public_package_files\": [{\"name\": \"npm\", \"package_path\": \"C:\\\\Program Files\\\\nodejs\\\\node_modules\\\\npm\\\\package.json\", \"package_sha256\": \"40c49aec1ef9a0cd1edb50b900d678705319faf9e3117f5336960ba7b3619e47\", \"path\": \"C:\\\\Program Files\\\\nodejs\\\\node_modules\\\\npm\\\\bin\\\\npx-cli.js\", \"sha256\": \"a9ca027c18c5bd7da278230edc7a174ff1d8b6b558e0e0a4a2c9c2fae346d66b\", \"version\": \"11.17.0\"}, {\"name\": \"@wonderwhy-er/desktop-commander\", \"package_path\": \"C:\\\\Users\\\\afaq\\\\AppData\\\\Local\\\\npm-cache\\\\_npx\\\\4b4c857f6efdfb61\\\\node_modules\\\\@wonderwhy-er\\\\desktop-commander\\\\package.json\", \"package_sha256\": \"8ba64a033e75730c16f90b09f2749fa5e61c28240104ead151cabe93239ba14a\", \"path\": \"C:\\\\Users\\\\afaq\\\\AppData\\\\Local\\\\npm-cache\\\\_npx\\\\4b4c857f6efdfb61\\\\node_modules\\\\@wonderwhy-er\\\\desktop-commander\\\\dist\\\\index.js\", \"sha256\": \"7e58b9d5d64732ff8cd77cd477de30751feb6b59bc2353dfaa78825f015b2f2b\", \"version\": \"0.3.0\"}], \"raw_command_lines_exported\": false, \"real_rdc_restarted\": false, \"root_launcher_classified\": true, \"schema\": \"nexus.rdc-l1-task-preflight.v1\", \"sdk_package_matches\": true, \"source_sha\": \"661c36d6a704215afc59980654d6a86497bf5e91\", \"status\": \"PASS\", \"task_retargeted\": false}\r\nACTUAL_PREFLIGHT_QUERY_EXIT=0\r\nACTUAL_SCOPED_PREFLIGHT_EXIT=0\r\nPARENT_POLICY_AFTER=[{\"policy\":\"Undefined\",\"scope\":\"MachinePolicy\"},{\"policy\":\"Undefined\",\"scope\":\"UserPolicy\"},{\"policy\":\"Undefined\",\"scope\":\"Process\"},{\"policy\":\"Undefined\",\"scope\":\"CurrentUser\"},{\"policy\":\"Undefined\",\"scope\":\"LocalMachine\"}]\r\n✅ Process completed with exit code 0 (runtime: 59.27s)"
+        },
+        {
+          "type": "text",
+          "text": "\n[executed on device: DESKTOP-1R1081M (bbabb808-d554-4db8-bce7-3a453bea8b43)]"
+        }
+      ],
+      "isError": false
+    }
+  },
+  "native_stdout_equals_separately_read_receipt": true,
+  "parent_policy_after": [
+    {
+      "scope": "MachinePolicy",
+      "policy": "Undefined"
+    },
+    {
+      "scope": "UserPolicy",
+      "policy": "Undefined"
+    },
+    {
+      "scope": "Process",
+      "policy": "Undefined"
+    },
+    {
+      "scope": "CurrentUser",
+      "policy": "Undefined"
+    },
+    {
+      "scope": "LocalMachine",
+      "policy": "Undefined"
+    }
+  ],
+  "persistent_policy_changed": false,
+  "fresh_pings": [
+    {
+      "status": "fulfilled",
+      "value": {
+        "content": [
+          {
+            "type": "text",
+            "text": "pong 2026-10-14T06:51:22.679Z"
+          },
+          {
+            "type": "text",
+            "text": "\n[executed on device: DESKTOP-1R1081M (bbabb808-d554-4db8-bce7-3a453bea8b43)]"
+          }
+        ],
+        "isError": false
+      }
+    },
+    {
+      "status": "fulfilled",
+      "value": {
+        "content": [
+          {
+            "type": "text",
+            "text": "pong 2026-10-14T06:51:22.038Z"
+          },
+          {
+            "type": "text",
+            "text": "\n[executed on device: DESKTOP-F4SA4VL (61c3307f-e6d4-4edf-860a-3519cfb9df5d)]"
+          }
+        ],
+        "isError": false
+      }
+    }
+  ],
+  "real_rdc_stopped": false,
+  "task_retargeted": false,
+  "startup_changed": false,
+  "credential_files_read": false,
+  "live_enabled": false
+}
