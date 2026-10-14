@@ -1,0 +1,16 @@
+{
+  "completed_at_utc": "2026-10-14T14:35:36.864774+00:00",
+  "file_sha256": {
+    "invocation-freeze.json": "646630eead5fc62a83d9bf7f9c700637eb8d2ea6fa41ed5ea0d7568e66d988c4",
+    "invocation.json": "4fa3d4bbbdd13c1ba18ea6d4ba748f31eff47e412d148d88cab01ceb83321b56",
+    "run-v8-first-producer.py": "f1f41c84bb843f2920dad3de34b8363adba537da9cba6900fcfa1858f253f698"
+  },
+  "freeze_commit": "2c1ecb6bb46311f8dfbccc9b3c7dbbdfccad6e02",
+  "host": "DESKTOP-F4SA4VL",
+  "live_enabled": false,
+  "market_parent_submissions_before": 0,
+  "precheck_sha256": "1b7b7f86ba3ebb8176fc00319f94900786cd63250d2b7704a3504920306786b1",
+  "research_only": true,
+  "schema": "nexus.v8-first-producer-native-staging.v1",
+  "source_sha": "2b89f6e89abdacc16b3288b9fd9ebcb3bdea7e69"
+}

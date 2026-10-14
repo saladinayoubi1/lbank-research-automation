@@ -1,0 +1,13 @@
+{
+  "completed_at_utc": "2026-10-14T14:36:32.361809+00:00",
+  "elapsed_seconds": 55.719,
+  "live_enabled": false,
+  "parent_pid": 3896,
+  "research_only": true,
+  "retry_authorized": false,
+  "schema": "nexus.v8-first-producer-native-parent-exit.v1",
+  "source_sha": "2b89f6e89abdacc16b3288b9fd9ebcb3bdea7e69",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_sha256": "f94fc975dfe7f58669394a7564cf4b2e3e3ae9ea3c81267977fd964f28c429dd",
+  "true_parent_exit_code": 0
+}

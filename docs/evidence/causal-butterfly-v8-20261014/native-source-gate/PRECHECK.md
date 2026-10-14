@@ -1,0 +1,5 @@
+# One native Windows source gate
+
+Source 2b89f6e89abdacc16b3288b9fd9ebcb3bdea7e69; implementation/preregistration tests only, no market job. Stage into new exclusive E:\NEXUS-QA\causal-butterfly-v8-20261014T104229Z\\source from15hash-verified frozen v7 dependency/fixture files plus source-frozen v8 files. Hash-bind the complete staging payload and wrapper; existing Python3.12.10/numpy2.3.5/pandas2.3.3/pyarrow23.0.1 runtime only, no package install. Verify unchanged native terminal v7 ledger file8d9f57e2.../semantic33ebdb18... and single risk0 v8 frontier. Run39source tests (25Butterfly+14modified source regressions) once; raw old producer/accounting cells are not replayed. Preserve parentsource, priorledgers, cache, owner installation/profile/journal, allrunner/remotes and failover roles. Live=false. Source-gate receipt is not independent strategy QA, market result, native OSexit or admission.
+
+Native parent process exit must be separately read. Full exact-head hosted checks and native gate pass precede source-frozen one-producer invocation. No market backtest has been submitted yet.

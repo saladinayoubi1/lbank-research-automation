@@ -117,11 +117,12 @@ class SlotVolumeFactoryTests(unittest.TestCase):
     def test_all_previous_specs_order_and_configs_are_preserved(self):
         prior = json.loads((ROOT/"tests/fixtures/utc_slot_v7_prior_generations.json").read_text())
         self.assertEqual({k:research.FACTORY_SPECS[k] for k in prior["factory_specs"]}, prior["factory_specs"])
-        self.assertEqual(list(research.ALL_MECHANISMS[:-1]), prior["all_mechanisms"])
-        old_configs = [c for c in research.FRONTIER_CONFIGS if c["mechanism"] != IDENT]
+        earlier = [m for m in research.ALL_MECHANISMS if m not in (IDENT, "factory_causal_bullish_butterfly")]
+        self.assertEqual(earlier, prior["all_mechanisms"])
+        old_configs = [c for c in research.FRONTIER_CONFIGS if c["mechanism"] not in (IDENT, "factory_causal_bullish_butterfly")]
         self.assertEqual(old_configs, prior["frontier_configs"])
         self.assertEqual(set(research.SLOT_VOLUME_EXTENSION_SPECS), {IDENT})
-        self.assertEqual(len(research.FACTORY_SPECS), 92)
+        self.assertEqual(len(research.FACTORY_SPECS), 93)
 
     def test_terminal_ledger_routes_only_the_new_candidate(self):
         ledger = json.loads((ROOT/"tests/fixtures/utc_slot_v7_terminal_ledger.json").read_text())
@@ -135,7 +136,7 @@ class SlotVolumeFactoryTests(unittest.TestCase):
     def test_every_previous_frontier_contract_precedes_the_v7_tier(self):
         terminal = json.loads((ROOT/"tests/fixtures/utc_slot_v7_terminal_ledger.json").read_text())
         for mechanism in research.FRONTIER_MECHANISMS:
-            if mechanism == IDENT:
+            if mechanism in (IDENT, "factory_causal_bullish_butterfly"):
                 continue
             with self.subTest(mechanism=mechanism):
                 ledger = deepcopy(terminal)
@@ -198,3 +199,4 @@ class SlotVolumeFactoryTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

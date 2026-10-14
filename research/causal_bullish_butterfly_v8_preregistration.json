@@ -1,0 +1,72 @@
+{
+  "schema": "nexus.causal-bullish-butterfly.v1",
+  "name": "bullish_butterfly_confirmed_next_open",
+  "research_only": true,
+  "live_enabled": false,
+  "auto_demo_promotion": false,
+  "pivot_left_bars": 3,
+  "pivot_right_bars": 3,
+  "ties": "strict extrema; reject tied extremes and simultaneous high/low center",
+  "same_kind": "replace latest pivot only with a later more extreme confirmed pivot; never rewrite emitted past output",
+  "max_pattern_span_bars": 192,
+  "points": [
+    "low_X",
+    "high_A",
+    "low_B",
+    "high_C",
+    "low_D"
+  ],
+  "ab_over_xa": [
+    0.756,
+    0.816
+  ],
+  "bc_over_ab": [
+    0.382,
+    0.886
+  ],
+  "ad_over_xa": [
+    1.24,
+    1.3
+  ],
+  "cd_over_bc": [
+    1.618,
+    2.618
+  ],
+  "cd_over_ab": [
+    1,
+    1.618
+  ],
+  "geometry": "D<X<B<C<A",
+  "context": "only a newly confirmed D emits an event; feature delayed by one completed decision bar",
+  "entry": "completed h1_vol_ok; current closed close>open and close>previous_close; close >= lagged D+0.10*XA",
+  "duplicate_signal": "single event per confirmed five-pivot identity; no persistent/repeated event",
+  "execution": "existing shared long-only spot engine, signal at current close -> next open",
+  "risk_variant": 0,
+  "stop": "existing1.5ATR",
+  "target": "existing2R",
+  "time_exit_bars": 64,
+  "notional_per_isolated_cell_usdt": 10000,
+  "owner_reference_usdt": 500,
+  "costs_per_leg_bps": {
+    "conservative": {
+      "fee": 10,
+      "slippage": 5
+    },
+    "stress": {
+      "fee": 25,
+      "slippage": 15
+    }
+  },
+  "same_bar_stop_target": "existing stop-first conservative ordering",
+  "symbols": [
+    "BTCUSDT",
+    "ETHUSDT"
+  ],
+  "decision_timeframe": "15m_with_completed1h4h",
+  "training_selection_only": true,
+  "previously_inspected_archive_is_not_pristine_holdout": true,
+  "future_pristine_data_and_independent_qa_required": true,
+  "source_geometry_reference": "https://harmonictrader.com/harmonic-patterns/butterfly-pattern/",
+  "research_choices": "finite tolerances, pivot width, C/BC/CD filters and response threshold are preregistered implementation choices, not a claimed exact ideal-pattern definition or profitability proof",
+  "minimum_trade_count_gate": null
+}

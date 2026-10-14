@@ -1,0 +1,27 @@
+{
+  "schema": "nexus.butterfly-v8-local-source-qa.v1",
+  "checked_at_utc": "2026-10-14T10:40:20.630Z",
+  "butterfly_unittest": {
+    "tests": 25,
+    "passed": 25
+  },
+  "changed_slot_volume_regression": {
+    "tests": 14,
+    "passed": 14
+  },
+  "native_source_gate_complete": false,
+  "market_backtest_started": false,
+  "prior_inventory": {
+    "factory_specs": 92,
+    "mechanisms": 119
+  },
+  "new_inventory": {
+    "factory_specs": 93,
+    "mechanisms": 120
+  },
+  "parameters_preregistered_before_implementation": "e8af665b4809b13e77b4dfaff6fd0bd8265ef62a",
+  "independent_strategy_qa_complete": false,
+  "owner_demo_admission": false,
+  "live_enabled": false
+}
+
