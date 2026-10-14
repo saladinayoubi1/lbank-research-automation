@@ -1,0 +1,20 @@
+#!/usr/sbin/nft -f
+add table inet nexus_host
+delete table inet nexus_host
+table inet nexus_host {
+    chain input {
+        type filter hook input priority filter; policy drop;
+        iifname lo counter accept
+        ct state established,related counter accept
+        ct state invalid counter drop
+        meta l4proto { icmp, ipv6-icmp } counter accept
+        tcp dport 22 ct state new counter accept
+        counter drop
+    }
+    chain forward {
+        type filter hook forward priority filter; policy drop;
+    }
+    chain output {
+        type filter hook output priority filter; policy accept;
+    }
+}
