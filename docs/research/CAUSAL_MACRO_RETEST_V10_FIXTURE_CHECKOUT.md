@@ -1,0 +1,13 @@
+# v10 frozen fixture checkout correction
+
+Hosted Windows job116057550743/run38623751321 at d5ce79fa587e69b5a587fdbc04711a2c71200594 passed dependency consistency, compilation, architecture and Project Memory gates. The full suite reported 1 failed, 3800 passed, 20 skipped and 454 subtests passed. The only failure was the original-bytes assertion for tests/fixtures/macro_retest_v10_previous_engine.py in the compatibility comparison test. Ubuntu and macOS full jobs succeeded on that head.
+
+The frozen Git blob contains 68070 LF bytes, SHA25615bece0ef68256a625532651d10e11f6c32444040f9c9d720ffcc5e29685afeb. Changing only LF to CRLF produces 69402 bytes and exactly the observed Windows hash d2a8509bf883a07cb835fe4582afe3f1129a4ebb5ce46af32b339912a91acd4c. An actual local Git checkout with core.autocrlf=true/core.eol=crlf reproduced this hash and the same unchanged failing test.
+
+The change appends one exact-path `text eol=lf` rule to the existing .gitattributes. It fixes the checkout bytes of that frozen test fixture while preserving its Git blob, hash assertion and all 42 computational source files. Existing attribute rules, an unrelated CRLF control and an existing LF-bound PowerShell control remain unchanged. The original compatibility test then passes with the expected frozen hash and exact old-feature-column comparison. No source content, test, cost/risk/strategy parameter or frozen workflow is edited; the previously corrected exact packaging26.3 dev pin remains intact.
+
+The verification parent observed its child exit0 without timeout. Git2.51.1/CPython3.12.14 performed the local reproduction; this is not native Windows or a complete hosted source gate. All 42 source SHA256 checks matched the existing computational closure digest33b2ca5e8e02c9a63b68f0510ad58b4a28a776f60078a5aa322ccf2a75e614e1. Receipt digest6a5747bf0f687b01212756b3b02afced034f0581a995dedc982896ddc344875b. The exact source fixture and original test remain bound to their unchanged Git blobs.
+
+Git's primary attribute semantics are documented at https://git-scm.com/docs/gitattributes. No broad source renormalization or global Git setting is changed. The existing frozen trusted guard and required platform test matrix remain enforced. This change triggers a new exact-head CI evaluation; it does not manually rerun the old failed job or label it transient. Full hosted completion, the fresh native Windows source/observational gate and isolated producer-hook qualification remain required before any v10 market producer.
+
+Both laptop pings returned at19:33:28/29 UTC on2026-10-14. Pongs establish reachability only; no device/profile/runner repair. Laptop1 remains sole Paper writer and failover is disabled. v10 market runs0, owner admissionfalse, Livefalse.

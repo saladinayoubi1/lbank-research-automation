@@ -1,0 +1,160 @@
+[
+  {
+    "arguments": [
+      "init",
+      "-q"
+    ],
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "arguments": [
+      "config",
+      "core.autocrlf",
+      "true"
+    ],
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "arguments": [
+      "config",
+      "core.eol",
+      "crlf"
+    ],
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "arguments": [
+      "add",
+      "--",
+      ".gitattributes",
+      "tests/fixtures/macro_retest_v10_previous_engine.py",
+      "tests/fixtures/untargeted_reference.py",
+      "scripts/provision_nexus_bybit_wsl_runner.ps1"
+    ],
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": "warning: in the working copy of '.gitattributes', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'tests/fixtures/macro_retest_v10_previous_engine.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'tests/fixtures/untargeted_reference.py', LF will be replaced by CRLF the next time Git touches it\n"
+  },
+  {
+    "arguments": [
+      "show",
+      ":tests/fixtures/macro_retest_v10_previous_engine.py"
+    ],
+    "exit_code": 0,
+    "stderr": "",
+    "stdout_bytes": 68070,
+    "stdout_sha256": "15bece0ef68256a625532651d10e11f6c32444040f9c9d720ffcc5e29685afeb"
+  },
+  {
+    "arguments": [
+      "checkout-index",
+      "--force",
+      "--",
+      "tests/fixtures/macro_retest_v10_previous_engine.py"
+    ],
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "arguments": [
+      "checkout-index",
+      "--force",
+      "--",
+      "tests/fixtures/untargeted_reference.py"
+    ],
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "arguments": [
+      "checkout-index",
+      "--force",
+      "--",
+      "scripts/provision_nexus_bybit_wsl_runner.ps1"
+    ],
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "arguments": [
+      "add",
+      "--",
+      ".gitattributes"
+    ],
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": "warning: in the working copy of '.gitattributes', LF will be replaced by CRLF the next time Git touches it\n"
+  },
+  {
+    "arguments": [
+      "checkout-index",
+      "--force",
+      "--",
+      "tests/fixtures/macro_retest_v10_previous_engine.py"
+    ],
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "arguments": [
+      "checkout-index",
+      "--force",
+      "--",
+      "tests/fixtures/untargeted_reference.py"
+    ],
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "arguments": [
+      "checkout-index",
+      "--force",
+      "--",
+      "scripts/provision_nexus_bybit_wsl_runner.ps1"
+    ],
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "arguments": [
+      "show",
+      ":tests/fixtures/macro_retest_v10_previous_engine.py"
+    ],
+    "exit_code": 0,
+    "stderr": "",
+    "stdout_bytes": 68070,
+    "stdout_sha256": "15bece0ef68256a625532651d10e11f6c32444040f9c9d720ffcc5e29685afeb"
+  },
+  {
+    "arguments": [
+      "check-attr",
+      "text",
+      "eol",
+      "--",
+      "tests/fixtures/macro_retest_v10_previous_engine.py"
+    ],
+    "exit_code": 0,
+    "stdout": "tests/fixtures/macro_retest_v10_previous_engine.py: text: set\ntests/fixtures/macro_retest_v10_previous_engine.py: eol: lf\n",
+    "stderr": ""
+  },
+  {
+    "arguments": [
+      "--version"
+    ],
+    "exit_code": 0,
+    "stdout": "git version 2.51.1\n",
+    "stderr": ""
+  }
+]
