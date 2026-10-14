@@ -1,0 +1,161 @@
+{
+  "schema": "nexus.rdc-l1-task-adoption-apply-precheck.v1",
+  "recorded_at_utc": "2026-10-14T08:14:16.357Z",
+  "merged_main_sha": "f4b8e208177cd9f1961d2ea89fbebdb1ff1be8fb",
+  "reviewed_head_sha": "98491fc8ec8bfaada3c35931eb52a9ffd2465ed9",
+  "executed_controller_source_sha": "f0960cb118574443d2c2b1ce939c372d8cef725b",
+  "controller_sha256": "12459e912ec643a91afd05dc7b1f929d991c94ecb097fee635aa8e27ce37d539",
+  "device_id": "bbabb808-d554-4db8-bce7-3a453bea8b43",
+  "run_directory": "E:\\NEXUS-QA\\rdc-l1-task-adoption-20261014T074250Z\\apply-20261014T081416Z",
+  "ci_checks": [
+    {
+      "name": "pr-architecture-precheck",
+      "status": "completed",
+      "conclusion": "success",
+      "id": 115743473720
+    },
+    {
+      "name": "control-plane trusted guard",
+      "status": "completed",
+      "conclusion": "success",
+      "id": 115743308326
+    },
+    {
+      "name": "secure-gateway-verification",
+      "status": "completed",
+      "conclusion": "success",
+      "id": 115743307876
+    },
+    {
+      "name": "android-apk",
+      "status": "completed",
+      "conclusion": "success",
+      "id": 115743307809
+    },
+    {
+      "name": "windows-desktop",
+      "status": "completed",
+      "conclusion": "success",
+      "id": 115743307527
+    },
+    {
+      "name": "test (windows-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "id": 115743307310
+    },
+    {
+      "name": "fallback-health",
+      "status": "completed",
+      "conclusion": "success",
+      "id": 115743307286
+    },
+    {
+      "name": "audit",
+      "status": "completed",
+      "conclusion": "success",
+      "id": 115743307272
+    },
+    {
+      "name": "test (ubuntu-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "id": 115743307193
+    },
+    {
+      "name": "validate-system-map",
+      "status": "completed",
+      "conclusion": "success",
+      "id": 115743306988
+    },
+    {
+      "name": "test (macos-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "id": 115743306984
+    }
+  ],
+  "windows_full_pytest": {
+    "job_id": 115743307310,
+    "passed": 3845,
+    "skipped": 20,
+    "subtests_passed": 277,
+    "seconds": 351.48,
+    "filter": "python -m pytest -q"
+  },
+  "reviews": [],
+  "native_read_only": {
+    "terminal_pid": 13884,
+    "actual_exit_code": 0,
+    "runtime_seconds": 59.03,
+    "phase": "READ_ONLY_PASS",
+    "source_sha": "f0960cb118574443d2c2b1ce939c372d8cef725b",
+    "task_validation_registered": false
+  },
+  "devices": {
+    "status": "fulfilled",
+    "value": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Desktop Commander devices\n\n1. DESKTOP-F4SA4VL\n   Status: Online\n   ID: 61c3307f-e6d4-4edf-860a-3519cfb9df5d\n   Last seen: 4m ago\n   App version: 0.3.0\n\n2. DESKTOP-1R1081M\n   Status: Online\n   ID: bbabb808-d554-4db8-bce7-3a453bea8b43\n   Last seen: 5m ago\n   App version: 0.3.0\n\nManage devices: https://mcp.desktopcommander.app/\nYou can view, add, or revoke devices there."
+        }
+      ],
+      "isError": false
+    }
+  },
+  "active_sessions": {
+    "status": "fulfilled",
+    "value": {
+      "content": [
+        {
+          "type": "text",
+          "text": "No active sessions"
+        },
+        {
+          "type": "text",
+          "text": "\n[executed on device: DESKTOP-1R1081M (bbabb808-d554-4db8-bce7-3a453bea8b43)]"
+        }
+      ],
+      "isError": false
+    }
+  },
+  "fresh_pings": [
+    {
+      "status": "fulfilled",
+      "value": {
+        "content": [
+          {
+            "type": "text",
+            "text": "pong 2026-10-14T08:07:45.101Z"
+          },
+          {
+            "type": "text",
+            "text": "\n[executed on device: DESKTOP-1R1081M (bbabb808-d554-4db8-bce7-3a453bea8b43)]"
+          }
+        ],
+        "isError": false
+      }
+    },
+    {
+      "status": "fulfilled",
+      "value": {
+        "content": [
+          {
+            "type": "text",
+            "text": "pong 2026-10-14T08:07:44.764Z"
+          },
+          {
+            "type": "text",
+            "text": "\n[executed on device: DESKTOP-F4SA4VL (61c3307f-e6d4-4edf-860a-3519cfb9df5d)]"
+          }
+        ],
+        "isError": false
+      }
+    }
+  ],
+  "planned_submissions": 1,
+  "command": "$ErrorActionPreference='Stop'\n$helper='E:\\NEXUS-QA\\rdc-l1-task-adoption-20261014T074250Z\\adopt_nexus_rdc_l1_task.py'\nif((Get-FileHash -Algorithm SHA256 -LiteralPath $helper).Hash.ToLowerInvariant() -ne '12459e912ec643a91afd05dc7b1f929d991c94ecb097fee635aa8e27ce37d539'){throw 'Reviewed controller source changed'}\n& 'C:\\Users\\afaq\\AppData\\Local\\Programs\\Python\\Python312\\python.exe' $helper --source-sha 'f0960cb118574443d2c2b1ce939c372d8cef725b' --code-sha '12459e912ec643a91afd05dc7b1f929d991c94ecb097fee635aa8e27ce37d539' --run-dir 'E:\\NEXUS-QA\\rdc-l1-task-adoption-20261014T074250Z\\apply-20261014T081416Z' --apply\n$launchExit=$LASTEXITCODE\nWrite-Output ('ACTUAL_DETACHED_LAUNCHER_EXIT='+$launchExit)\nexit $launchExit",
+  "live_enabled": false,
+  "preconditions_enforced_again_in_worker": true
+}

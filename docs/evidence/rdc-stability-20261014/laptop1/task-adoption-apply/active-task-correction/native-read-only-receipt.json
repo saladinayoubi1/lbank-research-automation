@@ -1,0 +1,21 @@
+{
+  "code_sha256": "5d310bb776eef3f388bece360c8487ec70a6703261a11b09b60c5295f7aad89b",
+  "external_worker_os_exit_independently_captured": false,
+  "live_enabled": false,
+  "observer": {
+    "argv_json_sha256": "c4c8886236491b1b9cd0ed0b567fc46caaaa22a7bae8bb5c3cc0b935de580713",
+    "creation_filetime": "134364411391213797",
+    "exe": "C:\\Users\\afaq\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+    "in_job": false,
+    "name": "python.exe",
+    "owner": "DESKTOP-1R1081M\\afaq",
+    "pid": 9656,
+    "ppid": 10704,
+    "session_id": 1
+  },
+  "phase": "READ_ONLY_PASS",
+  "source_sha": "ab27ace2df7a967192dd04e87eef749e1c90e410",
+  "stop_intent": false,
+  "task_run_requests": 0,
+  "updated_utc": "2026-10-14T08:46:30.426150+00:00"
+}

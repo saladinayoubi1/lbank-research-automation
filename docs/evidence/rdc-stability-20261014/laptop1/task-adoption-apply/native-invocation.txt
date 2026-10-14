@@ -1,0 +1,7 @@
+$ErrorActionPreference='Stop'
+$helper='E:\NEXUS-QA\rdc-l1-task-adoption-20261014T074250Z\adopt_nexus_rdc_l1_task.py'
+if((Get-FileHash -Algorithm SHA256 -LiteralPath $helper).Hash.ToLowerInvariant() -ne '12459e912ec643a91afd05dc7b1f929d991c94ecb097fee635aa8e27ce37d539'){throw 'Reviewed controller source changed'}
+& 'C:\Users\afaq\AppData\Local\Programs\Python\Python312\python.exe' $helper --source-sha 'f0960cb118574443d2c2b1ce939c372d8cef725b' --code-sha '12459e912ec643a91afd05dc7b1f929d991c94ecb097fee635aa8e27ce37d539' --run-dir 'E:\NEXUS-QA\rdc-l1-task-adoption-20261014T074250Z\apply-20261014T081416Z' --apply
+$launchExit=$LASTEXITCODE
+Write-Output ('ACTUAL_DETACHED_LAUNCHER_EXIT='+$launchExit)
+exit $launchExit

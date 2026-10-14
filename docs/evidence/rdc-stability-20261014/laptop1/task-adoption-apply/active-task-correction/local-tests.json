@@ -1,0 +1,34 @@
+{
+  "status": "PASS",
+  "runner": "standard-library unittest",
+  "tests_run": 23,
+  "passed": 18,
+  "skips": [
+    {
+      "test": "test_real_windows_positive_exit_on_only_our_harmless_python_child (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_real_windows_positive_exit_on_only_our_harmless_python_child)",
+      "reason": "Native Windows handle fixture"
+    },
+    {
+      "test": "test_real_windows_powershell_rpc_parses_without_executing_any_task_call (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_real_windows_powershell_rpc_parses_without_executing_any_task_call)",
+      "reason": "Native PowerShell5.1 parser fixture"
+    },
+    {
+      "test": "test_real_windows_startup_string_parses_without_running_task (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_real_windows_startup_string_parses_without_running_task)",
+      "reason": "Native VBScript parser fixture"
+    },
+    {
+      "test": "test_windows_task_double_disables_before_scoped_stop_and_rejects_unknown_definition (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_windows_task_double_disables_before_scoped_stop_and_rejects_unknown_definition)",
+      "reason": "Native task double; no real task registered or stopped"
+    },
+    {
+      "test": "test_windows_task_double_timeout_keeps_replacement_unregistered (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_windows_task_double_timeout_keeps_replacement_unregistered)",
+      "reason": "Native bounded task timeout double"
+    }
+  ],
+  "log": "test_census_catches_other_installations_and_pending_npx_launchers (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_census_catches_other_installations_and_pending_npx_launchers) ... ok\ntest_default_is_read_only_and_closes_handles (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_default_is_read_only_and_closes_handles) ... ok\ntest_extra_action_or_lookalike_watchdog_command_rejected (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_extra_action_or_lookalike_watchdog_command_rejected) ... ok\ntest_foreign_principal_parallel_policy_or_changed_restart_contract_rejected (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_foreign_principal_parallel_policy_or_changed_restart_contract_rejected) ... ok\ntest_frozen_target_set_excludes_console_explorer_adobe_and_runners (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_frozen_target_set_excludes_console_explorer_adobe_and_runners) ... ok\ntest_known_running_original_task_is_valid_for_read_only_planning (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_known_running_original_task_is_valid_for_read_only_planning) ... ok\ntest_native_identity_check_rejects_pid_reuse_and_wrong_owner (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_native_identity_check_rejects_pid_reuse_and_wrong_owner) ... ok\ntest_partial_stage_or_startup_or_verify_failure_rolls_back_before_stop (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_partial_stage_or_startup_or_verify_failure_rolls_back_before_stop) ... ok\ntest_real_windows_positive_exit_on_only_our_harmless_python_child (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_real_windows_positive_exit_on_only_our_harmless_python_child) ... skipped 'Native Windows handle fixture'\ntest_real_windows_powershell_rpc_parses_without_executing_any_task_call (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_real_windows_powershell_rpc_parses_without_executing_any_task_call) ... skipped 'Native PowerShell5.1 parser fixture'\ntest_real_windows_startup_string_parses_without_running_task (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_real_windows_startup_string_parses_without_running_task) ... skipped 'Native VBScript parser fixture'\ntest_run_or_postcheck_failure_never_retries_or_rolls_back_blindly (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_run_or_postcheck_failure_never_retries_or_rolls_back_blindly) ... ok\ntest_staged_readback_rejects_changed_security_or_non_action_setting (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_staged_readback_rejects_changed_security_or_non_action_setting) ... ok\ntest_stale_preflight_or_invalid_native_xml_cannot_mutate (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_stale_preflight_or_invalid_native_xml_cannot_mutate) ... ok\ntest_startup_requests_only_the_existing_task (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_startup_requests_only_the_existing_task) ... ok\ntest_success_stages_disabled_configuration_before_old_exit_and_one_run (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_success_stages_disabled_configuration_before_old_exit_and_one_run) ... ok\ntest_task_changes_only_action_and_enabled_preserving_all_other_xml (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_task_changes_only_action_and_enabled_preserving_all_other_xml) ... ok\ntest_unknown_definition_state_or_parallel_instances_block_planning (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_unknown_definition_state_or_parallel_instances_block_planning) ... ok\ntest_unknown_node_permission_gap_blocks_zero_client_gate (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_unknown_node_permission_gap_blocks_zero_client_gate) ... ok\ntest_unproven_exit_remaining_client_or_changed_file_prevents_run (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_unproven_exit_remaining_client_or_changed_file_prevents_run) ... ok\ntest_whole_original_definition_identity_ignores_only_enabled_flag (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_whole_original_definition_identity_ignores_only_enabled_flag) ... ok\ntest_windows_task_double_disables_before_scoped_stop_and_rejects_unknown_definition (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_windows_task_double_disables_before_scoped_stop_and_rejects_unknown_definition) ... skipped 'Native task double; no real task registered or stopped'\ntest_windows_task_double_timeout_keeps_replacement_unregistered (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_windows_task_double_timeout_keeps_replacement_unregistered) ... skipped 'Native bounded task timeout double'\n\n----------------------------------------------------------------------\nRan 23 tests in 0.024s\n\nOK (skipped=5)\n",
+  "hashes": {
+    "ACTIVE_TASK_PRECHECK.md": "647169bc29592a6cb0f12061734f4b5c4bca5911bc1a5b34a111361f452baf04",
+    "scripts/adopt_nexus_rdc_l1_task.py": "5d310bb776eef3f388bece360c8487ec70a6703261a11b09b60c5295f7aad89b",
+    "tests/test_nexus_rdc_l1_task_adoption.py": "e13d7e53e1755f18128399968673fcca5bc16e60afb792826632c66ca4a597cd"
+  }
+}

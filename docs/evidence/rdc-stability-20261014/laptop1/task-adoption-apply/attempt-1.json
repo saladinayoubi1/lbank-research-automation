@@ -1,0 +1,144 @@
+{
+  "schema": "nexus.rdc-l1-task-adoption-first-attempt.v1",
+  "status": "FAILED_BEFORE_MUTATION_OR_SDK_STOP",
+  "controller_source_sha": "f0960cb118574443d2c2b1ce939c372d8cef725b",
+  "invocation_source_sha": "315ca75a857def7349e8e35831ee15ee3960198f",
+  "run_directory": "E:\\NEXUS-QA\\rdc-l1-task-adoption-20261014T074250Z\\apply-20261014T081416Z",
+  "terminal_pid": 3712,
+  "actual_launcher_exit_code": 0,
+  "launcher_runtime_seconds": 68.54,
+  "worker_pid": 2456,
+  "worker_os_exit_independently_captured": false,
+  "worker_terminal": {
+    "code_sha256": "12459e912ec643a91afd05dc7b1f929d991c94ecb097fee635aa8e27ce37d539",
+    "error": "Original task changed or running",
+    "error_type": "ValueError",
+    "external_worker_os_exit_independently_captured": false,
+    "live_enabled": false,
+    "observer": {
+      "argv_json_sha256": "9ca68611038e70c8018127d679fcc030028b426aaa83aa94bd9b29486e95a5b6",
+      "creation_filetime": "134364393669279101",
+      "exe": "C:\\Users\\afaq\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "in_job": false,
+      "name": "python.exe",
+      "owner": "DESKTOP-1R1081M\\afaq",
+      "pid": 2456,
+      "ppid": 1792,
+      "session_id": 1
+    },
+    "phase": "FAILED_CLOSED",
+    "source_sha": "f0960cb118574443d2c2b1ce939c372d8cef725b",
+    "stop_intent": false,
+    "task_run_requests": 0,
+    "updated_utc": "2026-10-14T08:16:39.673796+00:00"
+  },
+  "cause": {
+    "task_xml_unchanged": true,
+    "state": 4,
+    "instances": 1,
+    "enabled": true
+  },
+  "task_snapshot": {
+    "state": 4,
+    "xml_sha256": "284b39bd04f936372d30f42c798bae76382882b8b84cea22b7338a5ebb8e2c74",
+    "sddl": "O:BAG:S-1-5-21-29241603-1126111165-4177284829-513D:(A;ID;0x1f019f;;;BA)(A;ID;0x1f019f;;;SY)(A;ID;FA;;;BA)(A;;FR;;;S-1-5-21-29241603-1126111165-4177284829-1001)",
+    "instances": 1,
+    "xml": "<?xml version=\"1.0\" encoding=\"UTF-16\"?>\r\n<Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\">\r\n  <RegistrationInfo>\r\n    <Description>NEXUS Remote Commander user-context recovery watchdog</Description>\r\n    <URI>\\NEXUS-Remote-Commander-Recovery</URI>\r\n  </RegistrationInfo>\r\n  <Principals>\r\n    <Principal id=\"Author\">\r\n      <UserId>S-1-5-21-29241603-1126111165-4177284829-1001</UserId>\r\n      <LogonType>InteractiveToken</LogonType>\r\n    </Principal>\r\n  </Principals>\r\n  <Settings>\r\n    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>\r\n    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>\r\n    <ExecutionTimeLimit>PT0S</ExecutionTimeLimit>\r\n    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>\r\n    <RestartOnFailure>\r\n      <Count>99</Count>\r\n      <Interval>PT1M</Interval>\r\n    </RestartOnFailure>\r\n    <StartWhenAvailable>true</StartWhenAvailable>\r\n    <IdleSettings>\r\n      <Duration>PT10M</Duration>\r\n      <WaitTimeout>PT1H</WaitTimeout>\r\n      <StopOnIdleEnd>true</StopOnIdleEnd>\r\n      <RestartOnIdle>false</RestartOnIdle>\r\n    </IdleSettings>\r\n  </Settings>\r\n  <Triggers>\r\n    <LogonTrigger>\r\n      <Delay>PT1M</Delay>\r\n      <Repetition>\r\n        <Interval>PT5M</Interval>\r\n      </Repetition>\r\n      <UserId>DESKTOP-1R1081M\\afaq</UserId>\r\n    </LogonTrigger>\r\n  </Triggers>\r\n  <Actions Context=\"Author\">\r\n    <Exec>\r\n      <Command>C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe</Command>\r\n      <Arguments>-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File \"C:\\Users\\afaq\\AppData\\Local\\NEXUS\\RemoteCommander\\nexus-remote-commander-watchdog.ps1\"</Arguments>\r\n    </Exec>\r\n  </Actions>\r\n</Task>",
+    "enabled": true,
+    "owner_sid": "S-1-5-21-29241603-1126111165-4177284829-1001",
+    "allow_demand": true
+  },
+  "fresh_task_query": {
+    "terminal_pid": 15144,
+    "actual_exit_code": 0,
+    "runtime_seconds": 38.22,
+    "snapshot": {
+      "live_enabled": false,
+      "enabled": true,
+      "observed_utc": "2026-10-14T08:24:19.7561608Z",
+      "task_xml_sha256": "284b39bd04f936372d30f42c798bae76382882b8b84cea22b7338a5ebb8e2c74",
+      "original_worker_still_active": false,
+      "state": 4,
+      "host": "DESKTOP-1R1081M",
+      "last_result": 267009,
+      "next_run_utc": "1899-12-29T20:30:00.0000000Z",
+      "last_run_utc": "2026-10-14T08:21:33.0000000Z",
+      "instances": 1,
+      "real_rdc_stopped": false
+    }
+  },
+  "raw_launcher": {
+    "status": "fulfilled",
+    "value": {
+      "content": [
+        {
+          "type": "text",
+          "text": "[Reading last 2 lines (total: 2 lines)]\n\n{\"status\": \"DETACHED_WORKER_ACKNOWLEDGED\", \"worker\": {\"pid\": 2456, \"owner\": \"DESKTOP-1R1081M\\\\afaq\", \"session_id\": 1, \"in_job\": false, \"source_sha\": \"f0960cb118574443d2c2b1ce939c372d8cef725b\", \"code_sha256\": \"12459e912ec643a91afd05dc7b1f929d991c94ecb097fee635aa8e27ce37d539\"}, \"worker_os_exit_captured\": false}\r\nACTUAL_DETACHED_LAUNCHER_EXIT=0\r\n✅ Process completed with exit code 0 (runtime: 68.54s)"
+        },
+        {
+          "type": "text",
+          "text": "\n[executed on device: DESKTOP-1R1081M (bbabb808-d554-4db8-bce7-3a453bea8b43)]"
+        }
+      ],
+      "isError": false
+    }
+  },
+  "raw_fresh_query": {
+    "content": [
+      {
+        "type": "text",
+        "text": "[Reading last 1 lines (total: 1 lines)]\n\nFRESH_TASK_STATE={\"live_enabled\":false,\"enabled\":true,\"observed_utc\":\"2026-10-14T08:24:19.7561608Z\",\"task_xml_sha256\":\"284b39bd04f936372d30f42c798bae76382882b8b84cea22b7338a5ebb8e2c74\",\"original_worker_still_active\":false,\"state\":4,\"host\":\"DESKTOP-1R1081M\",\"last_result\":267009,\"next_run_utc\":\"1899-12-29T20:30:00.0000000Z\",\"last_run_utc\":\"2026-10-14T08:21:33.0000000Z\",\"instances\":1,\"real_rdc_stopped\":false}\r\n✅ Process completed with exit code 0 (runtime: 38.22s)"
+      },
+      {
+        "type": "text",
+        "text": "\n[executed on device: DESKTOP-1R1081M (bbabb808-d554-4db8-bce7-3a453bea8b43)]"
+      }
+    ],
+    "isError": false
+  },
+  "fresh_l1_ping": {
+    "status": "fulfilled",
+    "value": {
+      "content": [
+        {
+          "type": "text",
+          "text": "pong 2026-10-14T08:17:04.284Z"
+        }
+      ],
+      "structuredContent": {
+        "async_call": {
+          "call_id": "c65ed4f2-1c09-4279-a606-cb09fea05d25",
+          "tool_name": "ping",
+          "status": "completed",
+          "device_id": "bbabb808-d554-4db8-bce7-3a453bea8b43",
+          "created_at": "2026-10-14T08:16:55.259885+00:00",
+          "completed_at": "2026-10-14T08:17:04.474393+00:00",
+          "retry_original": false
+        }
+      },
+      "isError": false
+    }
+  },
+  "fresh_l2_ping": {
+    "status": "fulfilled",
+    "value": {
+      "content": [
+        {
+          "type": "text",
+          "text": "pong 2026-10-14T08:16:56.572Z"
+        },
+        {
+          "type": "text",
+          "text": "\n[executed on device: DESKTOP-F4SA4VL (61c3307f-e6d4-4edf-860a-3519cfb9df5d)]"
+        }
+      ],
+      "isError": false
+    }
+  },
+  "apply_submissions": 1,
+  "corrected_apply_submitted": false,
+  "task_retargeted": false,
+  "startup_changed": false,
+  "old_sdk_stopped": false,
+  "live_enabled": false
+}
