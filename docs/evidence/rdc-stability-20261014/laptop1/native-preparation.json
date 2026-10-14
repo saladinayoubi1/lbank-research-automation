@@ -1,0 +1,108 @@
+{
+  "schema": "nexus.rdc-l1-recovery-preparation.v1",
+  "captured_at_utc": "2026-10-14T03:14:35.027Z",
+  "base_main_sha": "3546f22f4eae5c1265326b740a80208fc6b7e934",
+  "status": "SOURCE_PREPARED_NATIVE_FIXTURES_PASSED_NOT_DEPLOYED",
+  "laptop1": {
+    "device_id": "bbabb808-d554-4db8-bce7-3a453bea8b43",
+    "native_observed_utc": "2026-10-14T02:43:35.4087958Z",
+    "host": "DESKTOP-1R1081M",
+    "supervisor_path": "C:\\Users\\afaq\\AppData\\Local\\NEXUS\\desktop-commander-remote\\remote-supervisor.cjs",
+    "supervisor_sha256": "6518fd61948239a6434a5569a5aaad87fc163cce7596377283e02d0889d05083",
+    "supervisor_encoding": "UTF-8 ASCII-compatible, LF, no BOM, no final newline",
+    "supervisor_lock_pid": null,
+    "existing_task": {
+      "name": "NEXUS-Remote-Commander-Recovery",
+      "state": 3,
+      "actions": [
+        {
+          "path": "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+          "arguments": "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File \"C:\\Users\\afaq\\AppData\\Local\\NEXUS\\RemoteCommander\\nexus-remote-commander-watchdog.ps1\"",
+          "working_directory": ""
+        }
+      ],
+      "last_result": 0,
+      "execution_time_limit": "PT0S",
+      "restart_interval": "PT1M",
+      "enabled": true,
+      "last_run": "2026-10-14T02:41:33.0000000Z",
+      "restart_count": 99
+    },
+    "legacy_disabled_flag_present": true,
+    "legacy_watchdog_sha256": "c5b185ed07e1894b8fb6ce1c373c5cde5dbbadabb12d87581e333fcdee9b25f7",
+    "cached_runtime_version": "0.3.0",
+    "persisted_session_present": true,
+    "refresh_token_present": true,
+    "credential_values_read_or_exported": false,
+    "cim_process_query": {
+      "status": "CIM_UNAVAILABLE",
+      "error": "Not found",
+      "provider_reset": false
+    },
+    "node_processes": [
+      {
+        "pid": 2032,
+        "started_utc": "2026-10-13T23:12:30.9084762Z",
+        "path": "C:\\Program Files\\nodejs\\node.exe"
+      },
+      {
+        "pid": 5520,
+        "started_utc": "2026-10-13T23:13:33.5156379Z",
+        "path": "C:\\Program Files\\nodejs\\node.exe"
+      },
+      {
+        "pid": 11624,
+        "started_utc": "2026-10-12T20:17:05.3990427Z",
+        "path": "C:\\Program Files (x86)\\Adobe\\Adobe Creative Cloud\\CCXProcess\\libs\\node.exe"
+      },
+      {
+        "pid": 12764,
+        "started_utc": "2026-10-13T23:13:05.9346874Z",
+        "path": "C:\\Program Files\\nodejs\\node.exe"
+      }
+    ],
+    "process_identity_limit": "Get-Process paths/start times only; RDC command-line/ancestry not verified. Adobe CCXProcess Node is unrelated.",
+    "current_task_effect": "Guard exits before retired watchdog body; task success does not establish active 0.3.0 recovery."
+  },
+  "native_fixture_execution": {
+    "host": "DESKTOP-F4SA4VL",
+    "device_id": "61c3307f-e6d4-4edf-860a-3519cfb9df5d",
+    "pid": 9304,
+    "working_directory": "E:\\NEXUS-QA\\rdc-l1-fixtures-20261014T0300Z",
+    "command": "C:\\Users\\afaq\\AppData\\Local\\Programs\\Python\\Python312\\python.exe -m unittest discover -s tests -p test_nexus_rdc_l1_exit.py -v",
+    "actual_process_exit_code": 0,
+    "test_exit_marker": 0,
+    "tests": 7,
+    "result": "PASS",
+    "test_runtime_seconds": 2.19,
+    "helper_sha256": "c8e31dfcb584c23189087c540b966aabc89fabb978498c94df0236ead1a7da6c",
+    "test_sha256": "76adde1ee875634ffa6b730233658ef26934a68bfcab5739b72e7aa605699934",
+    "fixture_source_sha256": "6518fd61948239a6434a5569a5aaad87fc163cce7596377283e02d0889d05083",
+    "scope": "Isolated harmless Node children and fake session in temporary folders, not real RDC SDK/network/auth.",
+    "signal_case": "VM invokes exact child exit callback with (null, SIGTERM); no actual Windows signal claimed.",
+    "output": "test_backup_exact_repeat_and_no_unrelated_overwrite (test_nexus_rdc_l1_exit.ByteTests.test_backup_exact_repeat_and_no_unrelated_overwrite) ... ok\ntest_only_exit_expression_changes_and_is_idempotent (test_nexus_rdc_l1_exit.ByteTests.test_only_exit_expression_changes_and_is_idempotent) ... ok\ntest_unexpected_and_full_source_mismatch_fail_closed (test_nexus_rdc_l1_exit.ByteTests.test_unexpected_and_full_source_mismatch_fail_closed) ... ok\ntest_actual_clean_exit_requests_recovery (test_nexus_rdc_l1_exit.NodeBehaviorTests.test_actual_clean_exit_requests_recovery) ... ok\ntest_actual_failure_code_preserved (test_nexus_rdc_l1_exit.NodeBehaviorTests.test_actual_failure_code_preserved) ... ok\ntest_missing_persisted_auth_still_blocks_any_child (test_nexus_rdc_l1_exit.NodeBehaviorTests.test_missing_persisted_auth_still_blocks_any_child) ... ok\ntest_signal_callback_requests_recovery (test_nexus_rdc_l1_exit.NodeBehaviorTests.test_signal_callback_requests_recovery) ... ok\n\n----------------------------------------------------------------------\nRan 7 tests in 2.190s\n\nOK\nACTUAL_NATIVE_FIXTURE_EXIT=0\n[{\"Path\":\"E:\\\\NEXUS-QA\\\\rdc-l1-fixtures-20261014T0300Z\\\\scripts\\\\repair_nexus_rdc_l1_exit.py\",\"Hash\":\"C8E31DFCB584C23189087C540B966AABC89FABB978498C94DF0236EAD1A7DA6C\"},{\"Path\":\"E:\\\\NEXUS-QA\\\\rdc-l1-fixtures-20261014T0300Z\\\\tests\\\\test_nexus_rdc_l1_exit.py\",\"Hash\":\"76ADDE1EE875634FFA6B730233658EF26934A68BFCAB5739B72E7AA605699934\"},{\"Path\":\"E:\\\\NEXUS-QA\\\\rdc-l1-fixtures-20261014T0300Z\\\\docs\\\\evidence\\\\rdc-stability-20261014\\\\laptop1\\\\current-supervisor.cjs\",\"Hash\":\"6518FD61948239A6434A5569A5AAAD87FC163CCE7596377283E02D0889D05083\"}]\n✅ Process completed with exit code 0 (runtime: 3.53s)"
+  },
+  "actions": {
+    "laptop1_source_applied": false,
+    "task_retargeted": false,
+    "legacy_guard_removed": false,
+    "active_remote_stopped": false,
+    "new_remote_client_started": false,
+    "credentials_modified": false,
+    "paper_owner_or_state_modified": false,
+    "live_enabled": false
+  },
+  "next_rollout_gate": [
+    "Hosted exact-head test matrix passes.",
+    "Apply only the byte-bound future-invocation exit repair, with verified backup/readback.",
+    "Verify independent execution and exact current-client identity/positive exit before any task migration.",
+    "Back up existing task XML; retarget the SAME existing task to current CJS without removing the legacy guard.",
+    "Verify one current client owned by the task, native task exit/restart behavior and fresh ping."
+  ],
+  "limitations": [
+    "No active task migration or recovery demonstrated.",
+    "No hang detection added.",
+    "Existing supervisor PID-only lock/race behavior is unchanged.",
+    "CIM unavailable: Laptop2 WMI activation route must not be assumed available on Laptop1."
+  ]
+}
