@@ -117,12 +117,12 @@ class SlotVolumeFactoryTests(unittest.TestCase):
     def test_all_previous_specs_order_and_configs_are_preserved(self):
         prior = json.loads((ROOT/"tests/fixtures/utc_slot_v7_prior_generations.json").read_text())
         self.assertEqual({k:research.FACTORY_SPECS[k] for k in prior["factory_specs"]}, prior["factory_specs"])
-        earlier = [m for m in research.ALL_MECHANISMS if m not in (IDENT, "factory_causal_bullish_butterfly", "factory_causal_elliott_wave12_breakout")]
+        earlier = [m for m in research.ALL_MECHANISMS if m not in (IDENT, "factory_causal_bullish_butterfly", "factory_causal_elliott_wave12_breakout", "factory_causal_4h_break_1h_retest_cost_breakout")]
         self.assertEqual(earlier, prior["all_mechanisms"])
-        old_configs = [c for c in research.FRONTIER_CONFIGS if c["mechanism"] not in (IDENT, "factory_causal_bullish_butterfly", "factory_causal_elliott_wave12_breakout")]
+        old_configs = [c for c in research.FRONTIER_CONFIGS if c["mechanism"] not in (IDENT, "factory_causal_bullish_butterfly", "factory_causal_elliott_wave12_breakout", "factory_causal_4h_break_1h_retest_cost_breakout")]
         self.assertEqual(old_configs, prior["frontier_configs"])
         self.assertEqual(set(research.SLOT_VOLUME_EXTENSION_SPECS), {IDENT})
-        self.assertEqual(len(research.FACTORY_SPECS), 94)
+        self.assertEqual(len(research.FACTORY_SPECS), 95)
 
     def test_terminal_ledger_routes_only_the_new_candidate(self):
         ledger = json.loads((ROOT/"tests/fixtures/utc_slot_v7_terminal_ledger.json").read_text())
@@ -136,7 +136,7 @@ class SlotVolumeFactoryTests(unittest.TestCase):
     def test_every_previous_frontier_contract_precedes_the_v7_tier(self):
         terminal = json.loads((ROOT/"tests/fixtures/utc_slot_v7_terminal_ledger.json").read_text())
         for mechanism in research.FRONTIER_MECHANISMS:
-            if mechanism in (IDENT, "factory_causal_bullish_butterfly", "factory_causal_elliott_wave12_breakout"):
+            if mechanism in (IDENT, "factory_causal_bullish_butterfly", "factory_causal_elliott_wave12_breakout", "factory_causal_4h_break_1h_retest_cost_breakout"):
                 continue
             with self.subTest(mechanism=mechanism):
                 ledger = deepcopy(terminal)

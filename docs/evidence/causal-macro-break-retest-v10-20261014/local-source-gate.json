@@ -1,0 +1,82 @@
+{
+  "actual_owned_child_exit_code": 0,
+  "bounded_boolean_function": {
+    "frontier_mechanisms": 111,
+    "full_pytest_module_executed": false,
+    "passed": true
+  },
+  "bounded_retry_number": 1,
+  "command": "Owned subprocess in work/v10-source: unittest discover tests/test_nexus_causal_*features.py, then AST-extracted test_all_frontier_mechanisms_emit_bounded_boolean_signals",
+  "completed_at_utc": "2026-10-14T19:03:58.313191+00:00",
+  "elapsed_seconds": 4.132,
+  "errors": 0,
+  "failures": 0,
+  "first_attempt": {
+    "actual_exit_code": 1,
+    "cause": "Reference module contracts resolved relative to fixture directory; observer compiled isolated function instead of full module (CPython module-import-aware opcodes). Both corrected without backtest changes.",
+    "errors": 6,
+    "failures": 0,
+    "tests_run": 105
+  },
+  "fixture_sha256": {
+    "tests/fixtures/macro_retest_v10_previous_engine.py": "15bece0ef68256a625532651d10e11f6c32444040f9c9d720ffcc5e29685afeb",
+    "tests/fixtures/macro_retest_v10_prior_approved_fields.json": "36b9b0605eedee7651658eecee097de30cfa112288c47cfeb2e058c823a4458f",
+    "tests/fixtures/macro_retest_v10_prior_inventory.json": "b7ece27debecb9e9ccb4237cfe6d9bcf4286c063463506db98e7d146b4f967c2",
+    "tests/fixtures/macro_retest_v10_terminal_ledger.json": "14cc329d8acd02fbc3a13268826446f44d05dcf9eb299a6c13738558342f401c"
+  },
+  "full_hosted_gate_complete": false,
+  "live_enabled": false,
+  "local_environment": {
+    "numpy": "2.3.5",
+    "pandas": "2.2.3",
+    "pyarrow": "not used; no archive read",
+    "pytest": "not used; full module not executed",
+    "python": "3.12.14"
+  },
+  "market_runs": 0,
+  "native_windows_gate_complete": false,
+  "new_v10_unittest_methods": 34,
+  "observational_hand_fixtures": {
+    "actual_stop_denial": true,
+    "cost_profiles": [
+      {
+        "fee_bps": 10,
+        "slip_bps": 5
+      },
+      {
+        "fee_bps": 25,
+        "slip_bps": 15
+      }
+    ],
+    "exit_reasons": [
+      "target",
+      "stop_with_adverse_priority",
+      "stop_open_gap",
+      "time_64_bars",
+      "terminal_liquidation"
+    ],
+    "independent_hand_fill_net_and_qty_checks": true,
+    "invalid_source_existing_trace_and_exception_cleanup": true,
+    "metric_comparison": "exact sorted JSON bytes",
+    "multiple_trips_zero_activity": true,
+    "native_capability_verified": false,
+    "producer_hook_integrated": false,
+    "same_boundary_next_open_later_index": true
+  },
+  "owned_child_pid": 6,
+  "parent_pid": 2,
+  "preregistration_commit": "e5a0fed7cc327bfbfab5e197219f7da34e7e3ce1",
+  "preregistration_digest": "76d6162e5bae2685715287db0b54979e99f26180b5e34a29ea673d41b1708e08",
+  "prior_v7_v8_v9_unittest_methods": 72,
+  "receipt_digest": "1aba1a9bcfb4fc5cfc5b5131d4413f8c8aa4b959a5475ed8906d7bf7ac465c47",
+  "research_only": true,
+  "schema": "nexus.macro-retest-v10-owned-local-gate.v1",
+  "shared_backtest_source_sha256": "e44e2bada1efbf2427edfee224d75e96067bfcf1e3fa07b79fa39a09782b9bfb",
+  "skipped": 0,
+  "source_boundary": "34 new + 72 previous unittest methods, one separately AST-extracted boolean schema function. Full hosted/native gates and market producer have not been executed for this computational source.",
+  "started_at_utc": "2026-10-14T19:03:54.181628+00:00",
+  "stderr_sha256": "22e708391a5a2ef645b3984b1ce871564fb18408f7b8907de39c0b3ea70c746e",
+  "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "tests_run": 106,
+  "timed_out": false
+}
