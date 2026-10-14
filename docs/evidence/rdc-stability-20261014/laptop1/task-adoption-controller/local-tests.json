@@ -1,0 +1,27 @@
+{
+  "status": "PASS",
+  "runner": "standard-library unittest",
+  "tests_run": 18,
+  "tests_passed": 15,
+  "skips": [
+    {
+      "test": "test_real_windows_positive_exit_on_only_our_harmless_python_child (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_real_windows_positive_exit_on_only_our_harmless_python_child)",
+      "reason": "Native Windows handle fixture"
+    },
+    {
+      "test": "test_real_windows_powershell_rpc_parses_without_executing_any_task_call (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_real_windows_powershell_rpc_parses_without_executing_any_task_call)",
+      "reason": "Native PowerShell5.1 parser fixture"
+    },
+    {
+      "test": "test_real_windows_startup_string_parses_without_running_task (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_real_windows_startup_string_parses_without_running_task)",
+      "reason": "Native VBScript parser fixture"
+    }
+  ],
+  "log": "test_census_catches_other_installations_and_pending_npx_launchers (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_census_catches_other_installations_and_pending_npx_launchers) ... ok\ntest_default_is_read_only_and_closes_handles (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_default_is_read_only_and_closes_handles) ... ok\ntest_extra_action_or_lookalike_watchdog_command_rejected (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_extra_action_or_lookalike_watchdog_command_rejected) ... ok\ntest_foreign_principal_parallel_policy_or_changed_restart_contract_rejected (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_foreign_principal_parallel_policy_or_changed_restart_contract_rejected) ... ok\ntest_frozen_target_set_excludes_console_explorer_adobe_and_runners (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_frozen_target_set_excludes_console_explorer_adobe_and_runners) ... ok\ntest_native_identity_check_rejects_pid_reuse_and_wrong_owner (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_native_identity_check_rejects_pid_reuse_and_wrong_owner) ... ok\ntest_partial_stage_or_startup_or_verify_failure_rolls_back_before_stop (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_partial_stage_or_startup_or_verify_failure_rolls_back_before_stop) ... ok\ntest_real_windows_positive_exit_on_only_our_harmless_python_child (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_real_windows_positive_exit_on_only_our_harmless_python_child) ... skipped 'Native Windows handle fixture'\ntest_real_windows_powershell_rpc_parses_without_executing_any_task_call (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_real_windows_powershell_rpc_parses_without_executing_any_task_call) ... skipped 'Native PowerShell5.1 parser fixture'\ntest_real_windows_startup_string_parses_without_running_task (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_real_windows_startup_string_parses_without_running_task) ... skipped 'Native VBScript parser fixture'\ntest_run_or_postcheck_failure_never_retries_or_rolls_back_blindly (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_run_or_postcheck_failure_never_retries_or_rolls_back_blindly) ... ok\ntest_staged_readback_rejects_changed_security_or_non_action_setting (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_staged_readback_rejects_changed_security_or_non_action_setting) ... ok\ntest_stale_preflight_or_invalid_native_xml_cannot_mutate (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_stale_preflight_or_invalid_native_xml_cannot_mutate) ... ok\ntest_startup_requests_only_the_existing_task (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_startup_requests_only_the_existing_task) ... ok\ntest_success_stages_disabled_configuration_before_old_exit_and_one_run (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_success_stages_disabled_configuration_before_old_exit_and_one_run) ... ok\ntest_task_changes_only_action_and_enabled_preserving_all_other_xml (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_task_changes_only_action_and_enabled_preserving_all_other_xml) ... ok\ntest_unknown_node_permission_gap_blocks_zero_client_gate (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_unknown_node_permission_gap_blocks_zero_client_gate) ... ok\ntest_unproven_exit_remaining_client_or_changed_file_prevents_run (test_nexus_rdc_l1_task_adoption.TaskAdoptionTests.test_unproven_exit_remaining_client_or_changed_file_prevents_run) ... ok\n\n----------------------------------------------------------------------\nRan 18 tests in 0.020s\n\nOK (skipped=3)\n",
+  "hashes": {
+    "PRECHECK.md": "01d18ba519f2bb1491555f2cc985430305d95a765eebac2955a0ce7debac7072",
+    "scripts/adopt_nexus_rdc_l1_task.py": "12459e912ec643a91afd05dc7b1f929d991c94ecb097fee635aa8e27ce37d539",
+    "tests/test_nexus_rdc_l1_task_adoption.py": "f643afb654ed94afd1b32d8c7497cf961888c1efc0f78883a3fc81156fad75bc",
+    "tests/fixtures/nexus_rdc_l1_task_before.xml": "a2f4932373214e8106cb193b7cf21a76d4a66bae535bba349cabc2c7d0867fc1"
+  }
+}
