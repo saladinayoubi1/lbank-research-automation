@@ -53,6 +53,26 @@ class TaskAdoptionTests(unittest.TestCase):
         self.assertEqual(backend.events, ["preflight", "validate", "close"])
         self.assertFalse(result["stop_intent"])
 
+    def test_known_running_original_task_is_valid_for_read_only_planning(self):
+        original = {"xml_sha256": mod.TASK_SHA, "enabled": True, "state": 4, "instances": 1, "owner_sid": mod.SID, "allow_demand": True}
+        mod.require_original_task(original)
+        backend = BackendFixture()
+        backend.original.update(original)
+        mod.adopt(backend)
+        self.assertEqual(backend.events, ["preflight", "validate", "close"])
+
+    def test_unknown_definition_state_or_parallel_instances_block_planning(self):
+        original = {"xml_sha256": mod.TASK_SHA, "enabled": True, "state": 4, "instances": 1, "owner_sid": mod.SID, "allow_demand": True}
+        for change in ({"xml_sha256": "foreign"}, {"instances": 2}, {"state": 2}, {"enabled": False}, {"owner_sid": "S-1-5-18"}):
+            with self.subTest(change=change), self.assertRaises(ValueError): mod.require_original_task(dict(original, **change))
+
+    def test_whole_original_definition_identity_ignores_only_enabled_flag(self):
+        root = mod.ET.fromstring(XML)
+        mod.ET.SubElement(mod.xml_node(root, "Settings"), "{" + mod.NS + "}Enabled").text = "false"
+        disabled = mod.ET.tostring(root, encoding="unicode")
+        self.assertEqual(mod.xml_contract(disabled), mod.xml_contract(XML))
+        self.assertNotEqual(mod.xml_contract(mod.prepare_task(XML)), mod.xml_contract(XML))
+
     def test_success_stages_disabled_configuration_before_old_exit_and_one_run(self):
         backend = BackendFixture()
         result = mod.adopt(backend, apply=True)
@@ -184,6 +204,32 @@ class TaskAdoptionTests(unittest.TestCase):
             result = subprocess.run([r"C:\Windows\System32\cscript.exe", "//NoLogo", str(file)], capture_output=True, timeout=30, creationflags=subprocess.CREATE_NO_WINDOW)
         self.assertEqual(result.returncode, 0, (result.stdout + result.stderr).decode(errors="replace"))
         self.assertEqual(result.stdout.decode().strip(), '"C:\\Windows\\System32\\schtasks.exe" /Run /TN "\\NEXUS-Remote-Commander-Recovery"')
+
+    def run_task_double(self, never_stops=False):
+        payload = base64.b64encode(XML.encode()).decode()
+        behavior = "$this.StopCount++;" if never_stops else "$this.StopCount++;$this.InstanceCount=0;$this.State=3;"
+        script = "function Hash-Text([string]$s){[BitConverter]::ToString([Security.Cryptography.SHA256]::Create().ComputeHash([Text.Encoding]::UTF8.GetBytes($s))).Replace('-','').ToLowerInvariant()}\n" + mod.QUIESCE_TASK
+        script += "$xml=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('" + payload + "'));"
+        script += "$task=[pscustomobject]@{Name='NEXUS-Remote-Commander-Recovery';Xml=$xml;Enabled=$true;State=4;InstanceCount=1;StopCount=0};"
+        script += "$task|Add-Member ScriptMethod GetInstances {param($f) return [pscustomobject]@{Count=$this.InstanceCount}};"
+        script += "$task|Add-Member ScriptMethod GetSecurityDescriptor {param($f) return 'fixture-sddl'};"
+        script += "$task|Add-Member ScriptMethod Stop {param($f) if($f -ne 0 -or $this.Enabled){throw 'Stopped before disabled'};" + behavior + "};"
+        if never_stops:
+            script += "try{$null=Quiesce-OriginalTask $task {$task} (Hash-Text $xml) 'fixture-sddl';throw 'Expected timeout'}catch{if($_.Exception.Message -notlike '*stop timeout*'){throw}};if($task.Enabled -or $task.StopCount -ne 1 -or $task.InstanceCount -ne 1){throw 'Timeout boundary differs'};exit 0"
+        else:
+            script += "$needed=Quiesce-OriginalTask $task {$task} (Hash-Text $xml) 'fixture-sddl';if(-not $needed -or $task.Enabled -or $task.State -ne 3 -or $task.InstanceCount -ne 0 -or $task.StopCount -ne 1){throw 'Quiesce result differs'};"
+            script += "$task.Enabled=$true;$task.State=4;$task.InstanceCount=1;try{$null=Quiesce-OriginalTask $task {$task} 'wrong-hash' 'fixture-sddl';throw 'Expected guard rejection'}catch{if($_.Exception.Message -notlike '*Original task changed*'){throw}};if(-not $task.Enabled -or $task.StopCount -ne 1){throw 'Unknown definition mutated'};exit 0"
+        encoded = base64.b64encode(script.encode("utf-16le")).decode()
+        result = subprocess.run([mod.PS, "-NoProfile", "-NonInteractive", "-EncodedCommand", encoded], capture_output=True, timeout=45, creationflags=subprocess.CREATE_NO_WINDOW)
+        self.assertEqual(result.returncode, 0, (result.stdout + result.stderr).decode(errors="replace"))
+
+    @unittest.skipUnless(os.name == "nt", "Native task double; no real task registered or stopped")
+    def test_windows_task_double_disables_before_scoped_stop_and_rejects_unknown_definition(self):
+        self.run_task_double()
+
+    @unittest.skipUnless(os.name == "nt", "Native bounded task timeout double")
+    def test_windows_task_double_timeout_keeps_replacement_unregistered(self):
+        self.run_task_double(never_stops=True)
 
     @unittest.skipUnless(os.name == "nt", "Native Windows handle fixture")
     def test_real_windows_positive_exit_on_only_our_harmless_python_child(self):

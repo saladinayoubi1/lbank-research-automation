@@ -1,0 +1,13 @@
+# Active original recovery task blocked first adoption
+
+PR2651 merged after all 11 hosted checks and native read-only PASS. One real apply was prospectively frozen at315ca75a857def7349e8e35831ee15ee3960198f and submitted once using audited controllerf0960cb118574443d2c2b1ce939c372d8cef725b/code12459e912ec643a91afd05dc7b1f929d991c94ecb097fee635aa8e27ce37d539. Launcher3712 returned actualexit0 and acknowledged detached worker2456; that is not worker success.
+
+Worker2456 wrote FAILED_CLOSED at08:16:39Z before any configuration or SDK change: stop_intent=false, task_run_requests=0. Its task snapshot had exact original XML/hash284b39bd04f936372d30f42c798bae76382882b8b84cea22b7338a5ebb8e2c74, enabled=true, state4/one instance. Independent query15144 completed actualexit0 and again observed Running/one instance at08:24:19Z, with original worker absent and unchanged XML. Both RDC pings passed. No real SDK/task/Startup change or duplicate apply occurred.
+
+The existing original watchdog source was read completely. Its migration guard checks LEGACY_DISABLED.flag before all runtime/network/loop code. The flag and source remain intact; no legacy reactivation or WMI reset is proposed. The observed scheduler Running state is the blocker; a precise root cause for the long-running instance is not claimed.
+
+The correction accepts either an exact known idle or single running original definition for read-only planning. Explicit apply disables that same known task, rechecks its full definition/security, requests Stop(0) only if its single original instance is still active, and waits at most 15 seconds for zero instances/idle. It refuses registration if quiescence or exact definition/security preservation fails. Old SDK handles are revalidated after this task-only step. The remaining backup/staging/positive old exits/zero-client/one-run transaction is unchanged. Rollback of a still-running unchanged original definition restores only enabled=true, without registering/changing the active action.
+
+Local corrected-source unittest:18 passed,5 Windows-only fixtures skipped here. Added native PowerShell task doubles use no real task: verify disable-before-stop/unknown-definition guards and a bounded stop timeout. Other native handle/PS parser/VBS fixtures remain. Hosted exact-head/native read-only gates are required before at most one corrected apply; none has been submitted.
+
+Historical source/receipts are retained rather than relabeled. Actual task adoption, reboot/hang/24hour reliability remain open. Bybit Demo/Paper500USDT, Live=false; Laptop1 Paper/Laptop2 Research roles, profiles/journals/checkpoints/research/install and dormant failover unchanged.

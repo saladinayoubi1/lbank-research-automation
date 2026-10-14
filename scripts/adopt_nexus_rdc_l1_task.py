@@ -74,9 +74,9 @@ def xml_node(root, path):
     return root.find("/".join("{" + NS + "}" + part for part in path.split("/")))
 
 
-def preserved_contract(xml):
+def xml_contract(xml, omit_actions=False):
     root = ET.fromstring(xml)
-    for path in ("Actions", "Settings/Enabled"):
+    for path in (("Actions", "Settings/Enabled") if omit_actions else ("Settings/Enabled",)):
         parent_path, _, leaf = path.rpartition("/")
         parent = xml_node(root, parent_path) if parent_path else root
         node = xml_node(root, path)
@@ -85,6 +85,16 @@ def preserved_contract(xml):
     def canonical(node):
         return [node.tag, sorted(node.attrib.items()), (node.text or "").strip(), [canonical(c) for c in node]]
     return canonical(root)
+
+
+def preserved_contract(xml):
+    return xml_contract(xml, omit_actions=True)
+
+
+def require_original_task(original):
+    require(original["xml_sha256"] == TASK_SHA and original["enabled"], "Original task definition or enabled state changed")
+    require((original["state"], original["instances"]) in ((3, 0), (4, 1)), "Original task state or instance count differs")
+    require(original["owner_sid"] == SID and original["allow_demand"], "Task owner or demand start differs")
 
 
 def prepare_task(xml):
@@ -177,6 +187,40 @@ def adopt(backend, apply=False):
         backend.close()
 
 
+QUIESCE_TASK = r'''
+function Definition-Identity([string]$xml){
+ $doc=New-Object Xml.XmlDocument
+ $doc.PreserveWhitespace=$false
+ $doc.LoadXml($xml)
+ $ns=New-Object Xml.XmlNamespaceManager($doc.NameTable)
+ $ns.AddNamespace('t','http://schemas.microsoft.com/windows/2004/02/mit/task')
+ $enabled=$doc.SelectSingleNode('/t:Task/t:Settings/t:Enabled',$ns)
+ if($null -ne $enabled){$null=$enabled.ParentNode.RemoveChild($enabled)}
+ return (Hash-Text $doc.OuterXml)
+}
+function Quiesce-OriginalTask($t,[ScriptBlock]$refresh,[string]$originalSha,[string]$sddl){
+ if($t.Name -ne 'NEXUS-Remote-Commander-Recovery' -or (Hash-Text ([string]$t.Xml)) -ne $originalSha -or -not $t.Enabled){throw 'Original task changed before disable'}
+ $count=[int]$t.GetInstances(0).Count
+ if(-not (($t.State -eq 3 -and $count -eq 0) -or ($t.State -eq 4 -and $count -eq 1))){throw 'Unknown original task state/count'}
+ if([string]$t.GetSecurityDescriptor(7) -ne $sddl){throw 'Original task security changed'}
+ $definition=Definition-Identity ([string]$t.Xml)
+ $t.Enabled=$false
+ $requested=$false
+ $beforeStop=& $refresh
+ if($beforeStop.Enabled -or (Definition-Identity ([string]$beforeStop.Xml)) -ne $definition -or [string]$beforeStop.GetSecurityDescriptor(7) -ne $sddl -or $beforeStop.GetInstances(0).Count -gt 1){throw 'Task changed before scoped stop'}
+ if($beforeStop.GetInstances(0).Count -eq 1){$beforeStop.Stop(0);$requested=$true}
+ $deadline=[DateTime]::UtcNow.AddSeconds(15)
+ do {
+  $current=& $refresh
+  if($current.State -eq 3 -and $current.GetInstances(0).Count -eq 0){break}
+  if([DateTime]::UtcNow -ge $deadline){throw 'Known legacy task stop timeout; no replacement registered'}
+  Start-Sleep -Milliseconds 200
+ } while($true)
+ if($current.Enabled -or (Definition-Identity ([string]$current.Xml)) -ne $definition -or [string]$current.GetSecurityDescriptor(7) -ne $sddl){throw 'Task changed while waiting for idle'}
+ return $requested
+}
+'''
+
 TASK_RPC = r'''
 $ErrorActionPreference='Stop'
 $r=ConvertFrom-Json ([Text.Encoding]::UTF8.GetString($b))
@@ -189,6 +233,7 @@ $folder=$service.GetFolder('\')
 $name='NEXUS-Remote-Commander-Recovery'
 $task=$folder.GetTask($name)
 function Hash-Text([string]$s){[BitConverter]::ToString([Security.Cryptography.SHA256]::Create().ComputeHash([Text.Encoding]::UTF8.GetBytes($s))).Replace('-','').ToLowerInvariant()}
+__QUIESCE_TASK__
 function Read-Task {
  $t=$folder.GetTask($name)
  @{xml=[string]$t.Xml;xml_sha256=(Hash-Text ([string]$t.Xml));enabled=[bool]$t.Enabled;state=[int]$t.State;instances=[int]$t.GetInstances(0).Count;sddl=[string]$t.GetSecurityDescriptor(7);owner_sid=[string]$identity.User.Value;allow_demand=[bool]$t.Definition.Settings.AllowDemandStart}
@@ -202,17 +247,22 @@ switch([string]$r.operation){
   $result=@{validated=$true;registered=$false}
  }
  'stage' {
-  if((Hash-Text ([string]$task.Xml)) -ne $r.original_sha -or $task.State -ne 3 -or $task.GetInstances(0).Count -ne 0){throw 'Task changed or active before stage'}
-  $task.Enabled=$false
+  $stopped=Quiesce-OriginalTask $task {$folder.GetTask($name)} ([string]$r.original_sha) ([string]$r.sddl)
   $def=$service.NewTask(0);$def.XmlText=[string]$r.xml
   $def.Settings.Enabled=$false
   $null=$folder.RegisterTaskDefinition($name,$def,52,'S-1-5-21-29241603-1126111165-4177284829-1001',$null,3,[string]$r.sddl)
   $result=Read-Task
+  $result.legacy_stop_requested=$stopped
  }
  'rollback' {
-  if((Hash-Text ([string]$task.Xml)) -ne $r.expected_sha -or $task.GetInstances(0).Count -ne 0){throw 'Rollback task changed or active'}
-  $def=$service.NewTask(0);$def.XmlText=[string]$r.xml
-  $null=$folder.RegisterTaskDefinition($name,$def,52,'S-1-5-21-29241603-1126111165-4177284829-1001',$null,3,[string]$r.sddl)
+  if((Hash-Text ([string]$task.Xml)) -ne $r.expected_sha -or [string]$task.GetSecurityDescriptor(7) -ne [string]$r.sddl){throw 'Rollback task changed'}
+  if((Definition-Identity ([string]$task.Xml)) -eq (Definition-Identity ([string]$r.xml))){
+   $task.Enabled=$true
+  }else{
+   if($task.GetInstances(0).Count -ne 0){throw 'Changed task still active; rollback registration refused'}
+   $def=$service.NewTask(0);$def.XmlText=[string]$r.xml
+   $null=$folder.RegisterTaskDefinition($name,$def,52,'S-1-5-21-29241603-1126111165-4177284829-1001',$null,3,[string]$r.sddl)
+  }
   $result=Read-Task
  }
  'run' {
@@ -225,7 +275,7 @@ switch([string]$r.operation){
 }
 [IO.File]::WriteAllText([string]$r.response,($result|ConvertTo-Json -Depth 12),[Text.UTF8Encoding]::new($false))
 exit 0
-'''
+'''.replace('__QUIESCE_TASK__', QUIESCE_TASK)
 
 
 class NativeBackend:
@@ -341,8 +391,7 @@ class NativeBackend:
         clients, supervisors, launchers = self.census()
         require([r["pid"] for r in clients] == [12764] and not supervisors and [r["pid"] for r in launchers] == [2032], "Existing SDK ownership changed")
         original = self.rpc("read")
-        require(original["xml_sha256"] == TASK_SHA and original["enabled"] and original["state"] == 3 and original["instances"] == 0, "Original task changed or running")
-        require(original["owner_sid"] == SID and original["allow_demand"], "Task owner or demand start differs")
+        require_original_task(original)
         self.original = original
         return original
 
@@ -366,6 +415,7 @@ class NativeBackend:
     def stage(self, prepared, original):
         self.staged_task = self.rpc("stage", xml=prepared, original_sha=original["xml_sha256"], sddl=original["sddl"])
         verify_task(self.staged_task, original, False)
+        self.revalidate_old()  # Scoped legacy-task stop must not affect the held SDK graph.
 
     def install_startup(self):
         require(sha(Path(STARTUP).read_bytes()) == STARTUP_SHA, "Startup changed before replacement")
