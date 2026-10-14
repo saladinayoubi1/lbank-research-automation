@@ -1,0 +1,22 @@
+{
+  "active_remote_restarted": false,
+  "after_sha256": "8e09cb51022e86fe672920a4e5c5b960fa83966f37c6872c4685a98acf2bfa12",
+  "applies_to_future_launcher_invocations": true,
+  "backup_byte_verified": true,
+  "backup_path": "E:\\NEXUS-QA\\rdc-return-20261014T004546233872Z\\remote-supervisor.cmd.before",
+  "before_sha256": "64ea0262d57f43d2c55ddc995c0d492f0edef8380f8e2c7fbcf5c6d770bf3c03",
+  "changed": true,
+  "checked_at_utc": "2026-10-14T00:45:46.233872+00:00",
+  "credentials_modified": false,
+  "duplicate_remote_started": false,
+  "helper_sha256": "3f79acdc3ea2f4140f6bd167b17e0385215945b14c6d552b1fa8a47f0b426b27",
+  "host": "DESKTOP-F4SA4VL",
+  "live_enabled": false,
+  "owner_state_modified": false,
+  "scheduled_tasks_modified": false,
+  "schema": "nexus.rdc-batch-return-repair.v1",
+  "source_sha": "98112d355f6de5e2da3ef472a7eb8395e5813019",
+  "startup_modified": false,
+  "status": "CALL_RETURN_FIXED",
+  "target": "C:\\Users\\afaq\\AppData\\Local\\NEXUS-Research\\remote-supervisor.cmd"
+}

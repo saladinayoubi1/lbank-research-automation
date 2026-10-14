@@ -1,0 +1,116 @@
+{
+  "schema": "nexus.rdc-process-preservation.v1",
+  "source_sha": "98112d355f6de5e2da3ef472a7eb8395e5813019",
+  "before": {
+    "worker_count": 0,
+    "listener_count": 1,
+    "observed_utc": "2026-10-14T00:44:35.6454985Z",
+    "node_roles": [
+      {
+        "pid": 8520,
+        "ppid": 8864,
+        "role": "npm_launcher"
+      },
+      {
+        "pid": 10416,
+        "ppid": 5520,
+        "role": "remote_client"
+      },
+      {
+        "pid": 9292,
+        "ppid": 10416,
+        "role": "local_mcp_child"
+      }
+    ],
+    "host": "DESKTOP-F4SA4VL",
+    "staged_helper_sha256": "3F79ACDC3EA2F4140F6BD167B17E0385215945B14C6D552B1FA8A47F0B426B27",
+    "failover_tasks": [
+      {
+        "name": "NEXUS-Local-Failover-Autostart",
+        "enabled": false,
+        "state": 1
+      },
+      {
+        "name": "NEXUS-Bybit-Failover-Autostart",
+        "enabled": false,
+        "state": 1
+      }
+    ],
+    "launcher_sha256": "64EA0262D57F43D2C55DDC995C0D492F0EDEF8380F8E2C7FBCF5C6D770BF3C03",
+    "startup_sha256": "0A4030BFC1FBBE7E8027850001F9498342278EC796A042D6CE82DA3B298BAFAC"
+  },
+  "after": {
+    "worker_count": 0,
+    "listener_count": 1,
+    "observed_utc": "2026-10-14T00:47:10.9075696Z",
+    "node_roles": [
+      {
+        "pid": 8520,
+        "ppid": 8864,
+        "role": "npm_launcher"
+      },
+      {
+        "pid": 10416,
+        "ppid": 5520,
+        "role": "remote_client"
+      },
+      {
+        "pid": 9292,
+        "ppid": 10416,
+        "role": "local_mcp_child"
+      }
+    ],
+    "host": "DESKTOP-F4SA4VL",
+    "staged_helper_sha256": "3F79ACDC3EA2F4140F6BD167B17E0385215945B14C6D552B1FA8A47F0B426B27",
+    "failover_tasks": [
+      {
+        "name": "NEXUS-Local-Failover-Autostart",
+        "enabled": false,
+        "state": 1
+      },
+      {
+        "name": "NEXUS-Bybit-Failover-Autostart",
+        "enabled": false,
+        "state": 1
+      }
+    ],
+    "launcher_sha256": "8E09CB51022E86FE672920A4E5C5B960FA83966F37C6872C4685A98ACF2BFA12",
+    "startup_sha256": "0A4030BFC1FBBE7E8027850001F9498342278EC796A042D6CE82DA3B298BAFAC"
+  },
+  "checks": {
+    "same_node_pids_and_roles": true,
+    "startup_hash_unchanged": true,
+    "single_listener_preserved": true,
+    "no_worker_introduced": true,
+    "failover_tasks_disabled": true,
+    "after_hash_matches_receipt": true
+  },
+  "post_pings": {
+    "laptop2": {
+      "content": [
+        {
+          "type": "text",
+          "text": "pong 2026-10-14T00:47:12.112Z"
+        },
+        {
+          "type": "text",
+          "text": "\n[executed on device: DESKTOP-F4SA4VL (61c3307f-e6d4-4edf-860a-3519cfb9df5d)]"
+        }
+      ],
+      "isError": false
+    },
+    "laptop1": {
+      "content": [
+        {
+          "type": "text",
+          "text": "pong 2026-10-14T00:47:12.805Z"
+        },
+        {
+          "type": "text",
+          "text": "\n[executed on device: DESKTOP-1R1081M (bbabb808-d554-4db8-bce7-3a453bea8b43)]"
+        }
+      ],
+      "isError": false
+    }
+  }
+}
