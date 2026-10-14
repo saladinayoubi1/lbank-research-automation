@@ -1,0 +1,22 @@
+{
+  "argv": [
+    "E:\\NEXUS-QA\\strategy-frontier-v5-20261010\\.venv\\Scripts\\python.exe",
+    "-B",
+    "E:\\NEXUS-QA\\causal-elliott-wave12-v9-first-producer-20261014T161923Z\\run-v9-first-producer.py",
+    "--freeze",
+    "E:\\NEXUS-QA\\causal-elliott-wave12-v9-first-producer-20261014T161923Z\\invocation-freeze.json",
+    "--freeze-sha",
+    "481631836b017eb328f0a5ac9b3fb4a4281f8a5d0f58402dd5bbd473f17a0bad"
+  ],
+  "cwd": "E:\\NEXUS-QA\\causal-elliott-wave12-v9-20261014T155311Z\\source",
+  "deadline_seconds": 600,
+  "freeze_sha256": "481631836b017eb328f0a5ac9b3fb4a4281f8a5d0f58402dd5bbd473f17a0bad",
+  "live_enabled": false,
+  "market_backtests_submitted_at_freeze": 0,
+  "precheck_sha256": "eb06f196546c9be471d1eb371c1e6e596f55fc57a3bc67661792660c48b02816",
+  "research_only": true,
+  "run_root": "E:\\NEXUS-QA\\causal-elliott-wave12-v9-first-producer-20261014T161923Z",
+  "schema": "nexus.elliott-v9-first-producer-prospective-invocation.v1",
+  "source_sha": "8c06ca692a06611431730e4aeb822b1d9f47f30d",
+  "wrapper_sha256": "7d61a4981fedaf5f6446c893745216c8d04335c75865f303d16defd56993bc24"
+}
