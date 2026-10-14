@@ -1,0 +1,148 @@
+{
+  "archive_semantic_sha256": "2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422",
+  "auto_demo_promotion": false,
+  "candidate_config": {
+    "entry_model": "closed_4h_1h_15m_next_open",
+    "factory_contract_digest": "96c8d7106e88a93f53a789251f76ea00d68c1678235b40575dd982a2e934c976",
+    "mechanism": "factory_causal_elliott_wave12_breakout",
+    "risk_variant": 0
+  },
+  "candidate_config_fingerprint": "f2bf31b05394380c36aefc85d29344433d22714a392e235d63d4029717bd68b9",
+  "closed_entry_filters": "Current close > open and > previous_close; the current closed price-breakout event equals 1.",
+  "complete_wave_count_claim": false,
+  "completed_context_timeframes": [
+    "1h",
+    "4h"
+  ],
+  "context_lag_completed_decision_bars": 1,
+  "costs_per_leg_bps": {
+    "conservative": {
+      "fee": 10,
+      "slippage": 5
+    },
+    "stress": {
+      "fee": 25,
+      "slippage": 15
+    }
+  },
+  "created_at_utc": "2026-10-14T14:56:32.725509+00:00",
+  "decision_timeframe": "15m",
+  "delivery_zip_sha256": "d284a49f1b6e8951763cf225992a52a620289b2baf10815247d8626045763cec",
+  "eligible_breakout_bars_after_wave2_confirmation": [
+    1,
+    32
+  ],
+  "execution": "Reuse the unchanged shared Spot long-only next-open engine; stop-first on ambiguous same-bar stop/target.",
+  "executor": "Laptop2 DESKTOP-F4SA4VL; isolated research lane; Laptop1 stays sole owner Paper writer; failover disabled.",
+  "factory_candidate_contract_digest": "96c8d7106e88a93f53a789251f76ea00d68c1678235b40575dd982a2e934c976",
+  "future_wave3_shortest_and_wave4_overlap_not_used_for_entry": true,
+  "higher_timeframe_filters": "Existing completed/asof h4_up=1 and h1_vol_ok=1 only; do not modify their formulas, lag/alignment or thresholds.",
+  "hypothesis_count": 1,
+  "identity_deduplication": "One price-breakout event per origin/wave-one pivot pair; a later replacement of B does not reactivate an already consumed origin/wave-one pair. This is setup identity de-duplication, not a global strategy trade-count cap.",
+  "implementation_choices": "3+3 pivots, 0.382..0.786 retracement, 192-bar origin/span, 32-bar eligible window and completed regime filters are fixed exploratory engineering choices, not mandatory universal Elliott rules or a proprietary indicator replica.",
+  "independent_strategy_qa_complete": false,
+  "initial_simulated_cash_usdt_per_isolated_cell": 10000,
+  "invalidation": "All completed lows from O.index+1 through decision t must be strictly greater than O.price. Equality invalidates. A bar that crosses both O and A denies the event.",
+  "lifecycle_at_preregistration": "proposal_only_before_implementation",
+  "live_enabled": false,
+  "locked_diagnostic_rows": 12,
+  "manifest_sha256": "81ddd82c2bbe42cf6c57dd2a5b6b2776803fa6f155fc433d8968f42354a98cb0",
+  "market_runs_before_implementation": 0,
+  "max_origin_to_wave2_span_bars": 192,
+  "maximum_daily_loss_fraction": 0.05,
+  "maximum_drawdown_fraction": 0.1,
+  "maximum_position_fraction": 0.1,
+  "maximum_trades_per_strategy": null,
+  "minimum_trade_count_gate": null,
+  "monthly_return_claim": false,
+  "name": "elliott_inspired_wave12_fresh_close_breakout",
+  "next_gate": "Implement one additive helper/candidate, test causality/invalidation/identity/compatibility on synthetic fixtures, obtain exact-source hosted/native real-exit gates, then freeze and execute one bounded market producer. Do not replay or retune Butterfly.",
+  "official_coordinator_advanced": false,
+  "owner_demo_admission": false,
+  "owner_reference_usdt": 500,
+  "parameter_configurations": 1,
+  "parent_computational_source": "2b89f6e89abdacc16b3288b9fd9ebcb3bdea7e69",
+  "parent_evidence_head": "2fc8456a309810a48ff29cfe7075377e104d0414",
+  "pivot_left_bars": 3,
+  "pivot_right_bars": 3,
+  "pivot_rule": "Strict alternating low O/high A/low B on closed 15m bars; ties and a simultaneously high-and-low center are rejected. A pivot centered at j is confirmed at close j+3.",
+  "post_signal_gap_execution": "The shared engine fills at next open under its existing gap/slippage rules. Origin invalidation governs closed setup/decision bars; no strategy-specific next-open origin gate or wave-based stop is added in this hypothesis.",
+  "preconfirmation_breakout": "No backdated or forced-late entry for a crossing that occurred before the lagged setup was eligible. A distinct fresh later closed re-cross is evaluated by the fixed rule.",
+  "preregistration_digest": "2845fbc71ce1c5ee5ee986a7206bd19a05776fd6185d5f914475f35f57638301",
+  "preserve_prior_factory_contracts_ids_order_frontier_tiers": true,
+  "previous_ledger_file_sha256": "c42ec37a0e7461e5939cb960196e99b6a9e55df954489ffd7d001efe4bd59115",
+  "previous_ledger_semantic_digest": "9199c1d27e28bdc2de7f068dd1f99efa7d6315c793265d1c3215a860344b152c",
+  "previous_native_ledger_path": "E:\\NEXUS-QA\\causal-butterfly-v8-first-producer-20261014T141155Z\\producer\\novelty-ledger.json",
+  "previously_inspected_archive_is_not_pristine_holdout": true,
+  "prior_inventory": {
+    "all_mechanisms": 120,
+    "factory_specs": 93
+  },
+  "proposed_wave_geometry": "O < B < A; proposed wave-one size=A-O; proposed wave-two retracement=(A-B)/(A-O).",
+  "raw_file_sha256": {
+    "bybit_market/btc_usdt/hour1.parquet": "f8f2236785c036fe40808809397d47729b3add4c8f0b9e19c77d3b771f8e6847",
+    "bybit_market/btc_usdt/hour4.parquet": "e0d019a76882a02dc463a34d1d9375841f81d412b9a3310d9e21c2d7b2738dc6",
+    "bybit_market/btc_usdt/minute15.parquet": "c3afe92899dda8fe52937c955323cc8e04bf8f200a68eb8651e55d6020981226",
+    "bybit_market/eth_usdt/hour1.parquet": "ba0743588c5089e6a6b250b4ebb029a43fea57d0a020df5ab1316c34efdcd88a",
+    "bybit_market/eth_usdt/hour4.parquet": "292005e091d914fbb9d108c3d8d65e93785cc32b9c73e07ea02e0d44cf7da65b",
+    "bybit_market/eth_usdt/minute15.parquet": "ce603440650d0022b1a17a7922da743a3b6219ba9afd89ad4362b70fbe3bbfa1"
+  },
+  "research_only": true,
+  "reward_risk_multiple": 2.0,
+  "risk_variant": 0,
+  "roundoff_only_tolerance": 1e-12,
+  "same_kind_rule": "Only a later more-extreme confirmed same-kind pivot replaces the latest future state. Ignore weaker same-kind pivots. Never revise already emitted past output.",
+  "schema": "nexus.causal-elliott-wave12.v1",
+  "shared_backtest_function_hash_method": "SHA256 of UTF8 ast.get_source_segment for the backtest FunctionDef; preserve this exact extraction method.",
+  "shared_backtest_function_sha256": "e44e2bada1efbf2427edfee224d75e96067bfcf1e3fa07b79fa39a09782b9bfb",
+  "source_references": [
+    {
+      "publisher": "Elliott Wave International",
+      "title": "Motive Waves",
+      "url": "https://www.elliottwave.com/waveopedia/motive-waves/",
+      "used_for": "Wave two does not erase all of wave one; wave three progresses beyond wave one. This motivates an early-wave proposal rather than proving a complete count."
+    },
+    {
+      "publisher": "Elliott Wave International",
+      "title": "Impulse",
+      "url": "https://www.elliottwave.com/waveopedia/impulse/",
+      "used_for": "Complete impulse structure and later-wave overlap rules cannot be validated before those future waves exist."
+    }
+  ],
+  "source_tests_before_implementation": 0,
+  "split_fractions": {
+    "historically_inspected_test": 0.2,
+    "train": 0.6,
+    "validation": 0.2
+  },
+  "state_processing_order": [
+    "At closed decision bar t, expose the setup stored after bar t-1 as lagged context.",
+    "Reject an expired setup or one for which any completed low after origin O through t touches or falls below origin price O; this takes priority over a same-bar breakout.",
+    "Emit the first fresh close[t] > A with close[t-1] <= A, only for the lagged active setup and within the fixed eligible window. Intrabar high alone never triggers. Record the pivot indices and confirmation index for this event.",
+    "Consume the origin/wave-one pair (O.index,A.index) when this price event occurs, even if body/4h/1h gates deny strategy entry. Do not delay an already observed crossing to a later favorable gate.",
+    "After processing the current closed-bar event, process a newly confirmed pivot at t for future state. An accepted pivot-state change replaces/disarms the old pending setup; start the latest valid low-high-low candidate only when geometry, historical-low invalidation, span and not-consumed identity pass."
+  ],
+  "stop_atr_multiple": 1.5,
+  "stop_risk_fraction": 0.001,
+  "subwave_degrees_1_and_2_verified": false,
+  "symbols": [
+    "BTCUSDT",
+    "ETHUSDT"
+  ],
+  "system_map_nodes": [
+    "DATA-21",
+    "RES-30",
+    "RES-31",
+    "RES-32",
+    "VAL-40",
+    "QA-41"
+  ],
+  "time_exit_bars": 64,
+  "timing": "If B is centered at j, its confirmation is j+3; earliest lagged setup decision is close j+4, earliest fill is open j+5. Later eligible breakouts fill no earlier than their next open.",
+  "training_screen_cells": 4,
+  "training_selection_only": true,
+  "wave2_retracement_bounds": [
+    0.382,
+    0.786
+  ]
+}
