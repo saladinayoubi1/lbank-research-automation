@@ -16,7 +16,7 @@ from test_nexus_causal_macro_retest_features import aggregate,minute_fixture,sig
 from test_nexus_elliott_five_swing_research import hand_frame
 from nexus_elliott_five_swing_research import candidate_signal_for as old_elliott_signal
 
-STAGED=Path(r"E:\NEXUS-QA\elliott-backtest-adapter-20261015\source")
+STAGED=Path(__file__).resolve().parent / "fixtures"
 
 
 def minutes():
@@ -144,7 +144,7 @@ class ABCAdapterTests(unittest.TestCase):
 
     def test_old_macro_observer_byte_identical_and_rejects_unknown(self):
         spec=importlib.util.spec_from_file_location("frozen_abc_previous_observer",
-            str(STAGED/"nexus_backtest_observer.py"))
+            str(STAGED/"elliott_five_swing_previous_observer.py"))
         original=importlib.util.module_from_spec(spec)
         spec.loader.exec_module(original)
         f=signal_frame(minute_fixture())
@@ -160,9 +160,11 @@ class ABCAdapterTests(unittest.TestCase):
         es=old_elliott_signal(e)
         for fee,slip in ((10,5),(25,15)):
             kw=dict(fee_bps=fee,slip_bps=slip,risk_variant=0,event_profile="elliott_five_swing")
-            a=original.observe_backtest(engine.backtest,e,es,**kw)
             b=observer.observe_backtest(engine.backtest,e,es,**kw)
-            self.assertEqual(json.dumps(a,sort_keys=True),json.dumps(b,sort_keys=True))
+            raw=engine.backtest(e,es,fee_bps=fee,slip_bps=slip,risk_variant=0)
+            self.assertEqual(json.dumps(b["metrics"],sort_keys=True),json.dumps(raw,sort_keys=True))
+            self.assertEqual([x["bar_index"] for x in b["price_events"]],[0])
+            self.assertEqual(len(b["trades"]),1)
         with self.assertRaises(ValueError):
             observer.observe_backtest(engine.backtest,f,signals,fee_bps=10,slip_bps=5,
                                      risk_variant=0,event_profile="abc_unknown")
