@@ -239,6 +239,13 @@ def replay_source_model_status(archive_root: Path) -> dict:
         model.get("timestamp_tie_order")!="original_archive_row_order"
     ):
         raise ValueError("replay source model incompatible with v2 row-stable trades")
+    # Backfill validator deliberately early-returns for a completely new
+    # state_root; that behavior must not be reused as positive proof of a
+    # *populated* replay source model. Require both explicit sidecars first.
+    if not (base/"_candle_model.json").is_file() or not (
+        base/"_source_manifest.json"
+    ).is_file():
+        raise ValueError("replay source model sidecar/manifest validation failed")
     try:
         validate_candle_model_state(base)
     except BybitBackfillError as exc:
