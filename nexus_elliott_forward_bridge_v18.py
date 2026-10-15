@@ -197,6 +197,61 @@ def inspect_latest_closed_decision(
             }}
 
 
+def replay_source_model_status(archive_root: Path) -> dict:
+    """Read-only proof of source *model* compatibility, not market fidelity.
+
+    A replay ZIP schema_version=2 is NOT evidence that its underlying candles
+    follow the independently versioned v2 source-row-stable trade aggregation.
+    Never append a new row-stable candle collection to a legacy unversioned
+    trade-derived series, even when timestamps and OHLCV otherwise validate.
+    """
+    base=Path(archive_root)
+    file=base/"REPLAY_DATASET_MANIFEST.json"
+    if not file.is_file():
+        raise ValueError("frozen replay source manifest required")
+    manifest=json.loads(file.read_text(encoding="utf-8"))
+    if not isinstance(manifest,dict):
+        raise ValueError("frozen replay manifest malformed")
+    digest=manifest.get("manifest_sha256")
+    unsigned={k:v for k,v in manifest.items() if k!="manifest_sha256"}
+    canonical=(json.dumps(unsigned,sort_keys=True,separators=(",",":"))+"\n").encode("utf-8")
+    if not isinstance(digest,str) or digest!=sha256(canonical).hexdigest():
+        raise ValueError("frozen replay manifest SHA256 fails canonical check")
+    if manifest.get("source")!="official_public_spot_trade_archives" or (
+        manifest.get("venue")!="bybit"
+    ):
+        raise ValueError("unexpected historical source category")
+    model=manifest.get("candle_model")
+    if model is None:
+        return {
+            "status":"BLOCKED_LEGACY_UNVERSIONED_TRADE_CANDLE_MODEL",
+            "replay_manifest_sha256":digest,
+            "replay_schema_version":manifest.get("schema_version"),
+            "original_source":"official_public_spot_trade_archives",
+            "actual_candle_model_proven":False,
+            "future_append_allowed":False,
+            "reason":"Replay package schema v2 does not bind the candle-model v2 row-tie ordering. Full separate raw-trade replay required; no mixed-source append.",
+        }
+    from bybit_spot_backfill import (
+        CANDLE_MODEL_SCHEMA, validate_candle_model_state, BybitBackfillError
+    )
+    if not isinstance(model,dict) or model.get("schema")!=CANDLE_MODEL_SCHEMA or (
+        model.get("timestamp_tie_order")!="original_archive_row_order"
+    ):
+        raise ValueError("replay source model incompatible with v2 row-stable trades")
+    try:
+        validate_candle_model_state(base)
+    except BybitBackfillError as exc:
+        raise ValueError("replay source model sidecar/manifest validation failed") from exc
+    return {
+        "status":"VERSIONED_TRADE_CANDLE_MODEL_VALIDATED",
+        "replay_manifest_sha256":digest,
+        "original_source":"official_public_spot_trade_archives",
+        "actual_candle_model_proven":True,
+        "future_append_allowed":True,
+    }
+
+
 def inspect_frozen_archive_and_future_bridge(
     archive_root: Path, continuation_path: Path, *,
     symbol: str, observed_at_utc: datetime,
@@ -212,6 +267,7 @@ def inspect_frozen_archive_and_future_bridge(
         base.timestamp.iloc[-1]!=BASE_LAST_OPEN
     ):
         raise AssertionError("frozen archived 15m window inconsistent")
+    candle_model=replay_source_model_status(archive_root)
     if not Path(continuation_path).is_file():
         return {
             "schema":"nexus.elliott.v18.ingress-gate.v1",
@@ -219,8 +275,20 @@ def inspect_frozen_archive_and_future_bridge(
             "frozen_archive_last_open_utc":BASE_LAST_OPEN.isoformat(),
             "required_bridge_first_open_utc":(BASE_LAST_OPEN+STEP).isoformat(),
             "external_bybit_authenticity_verified":False,
+            "source_model_status":candle_model["status"],
+            "future_append_allowed":False,
             "orders_placed":0,"research_only":True,
             "live_enabled":False,"paper_eligible":False,"auto_demo":False,
+        }
+    if not candle_model["future_append_allowed"]:
+        return {
+            "schema":"nexus.elliott.v18.ingress-gate.v1",
+            "status":"BLOCKED_CANDLE_SEMANTICS_REPLAY_REQUIRED",
+            "source_model_status":candle_model["status"],
+            "research_only":True,"live_enabled":False,
+            "paper_eligible":False,"auto_demo":False,"orders_placed":0,
+            "archive_files_rewritten":False,
+            "required_action":"Replay original untouched trade archives into a new v2 row-order-stable, source-manifest-bound archive; preserve old research.",
         }
     if Path(continuation_path).suffix.lower()!=".parquet":
         raise ValueError("only pinned local parquet continuation supported")
