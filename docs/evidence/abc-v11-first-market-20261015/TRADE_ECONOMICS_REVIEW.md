@@ -23,7 +23,7 @@ All values are **USDT**, sums of three **separately funded 10,000 USDT research 
 | ETH conservative | 40 | −24.75970862 | 78.50857196 | 39.25427979 | 117.76285175 | **−142.52256037** |
 | ETH stress | 40 | −42.47436160 | 195.05547763 | 117.03319101 | 312.08866864 | **−354.56303024** |
 
-Identity checked for every closed fill: `reference_gross = qty × (exit_reference − entry_reference)`; `net = reference_gross − qty × (entry_slipped − entry_reference) − qty × (exit_reference − exit_slipped) − entry_fee − exit_fee`. Recorded native fees and 5/15 bps or 15/40 bps fee+slippage per leg match. Under the actual preregistered fee and slip input, `10+5 bps` per leg for conservative and `25+15 bps` per leg for stress.
+Identity checked for every closed fill: `reference_gross = qty × (exit_reference − entry_reference)`; `net = reference_gross − qty × (entry_slipped − entry_reference) − qty × (exit_reference − exit_slipped) − entry_fee − exit_fee`. The native cost schedule is exactly **10 bps fee + 5 bps slippage per leg** in conservative and **25 bps fee + 15 bps slippage per leg** in stress. Both components reconcile independently with the recorded fills and fees.
 
 **Interpretation:** On BTC the observed pre-friction payoff is only slightly positive, vastly smaller than realistic tested friction; on ETH even this conditional reference payoff is negative. Thus the loss is **not fixable merely by improving execution** while preserving other conditions.
 
