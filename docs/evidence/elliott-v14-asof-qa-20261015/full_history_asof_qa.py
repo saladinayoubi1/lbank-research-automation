@@ -22,15 +22,24 @@ FIELDS = ("h1_vol_ok", "h1_compression", "h4_up", "h4_range")
 def independent_full_values(minute: pd.DataFrame, hour: pd.DataFrame,
                             four: pd.DataFrame) -> dict[str, np.ndarray]:
     """Compute four features from 15m-reaggregated OHLC with a separate as-of."""
-    norm = (hour.high-hour.low)/hour.close
+    # Aggregated pandas nullable Float64 columns propagate <NA> through
+    # comparisons, unlike the actual parent which explicitly casts to
+    # nonnullable float. Convert ONLY dtype; never fill/replace price data.
+    hh=hour["high"].astype(float)
+    hl=hour["low"].astype(float)
+    hc=hour["close"].astype(float)
+    qh=four["high"].astype(float)
+    ql=four["low"].astype(float)
+    qc=four["close"].astype(float)
+    norm = (hh-hl)/hc
     features = {
         "h1_vol_ok": (norm < norm.shift(1).rolling(72, min_periods=72).median()*1.65),
         "h1_compression": (norm.rolling(6,min_periods=6).mean()
                            < norm.shift(1).rolling(48,min_periods=48).median()*.8),
-        "h4_up": (four.close > four.close.shift(1).rolling(12).median()) &
-                 (four.low > four.low.shift(4).rolling(8).min()),
-        "h4_range": (four.close <= four.high.shift(1).rolling(12).max()) &
-                    (four.close >= four.low.shift(1).rolling(12).min()),
+        "h4_up": (qc > qc.shift(1).rolling(12).median()) &
+                 (ql > ql.shift(4).rolling(8).min()),
+        "h4_range": (qc <= qh.shift(1).rolling(12).max()) &
+                    (qc >= ql.shift(1).rolling(12).min()),
     }
     decision_times=(minute.timestamp+pd.Timedelta(minutes=15)).astype("int64").to_numpy()
     out={}
