@@ -70,6 +70,14 @@ class V13ForwardCausalitySyntheticTests(unittest.TestCase):
         self.assertFalse(out["v13_first_close_break_event"].any())
         self.assertFalse(out["v13_eligible"].any())
 
+    def test_after_locked_prospective_window_never_scores(self):
+        m,h=example()
+        m["timestamp"]+=pd.Timedelta(days=61)
+        h["timestamp"]+=pd.Timedelta(days=61)
+        out=features(m,h)
+        self.assertFalse(out["v13_first_close_break_event"].any())
+        self.assertFalse(out["v13_eligible"].any())
+
     def test_no_bar_without_known_previous_close_can_break(self):
         m,h=example()
         only=m.iloc[4:5].reset_index(drop=True)
