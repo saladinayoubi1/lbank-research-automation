@@ -1,0 +1,67 @@
+{
+  "schema": "nexus.elliott-v17-prospective-paperless-preregistration.v1",
+  "protocol_version": "fixed-20261015",
+  "time_source": "UTC candle OPEN timestamps; decision at end of completed 15m candle",
+  "registration_rule": "must be committed before first eligible post-cutoff decision; never edit evaluation settings after observing outcomes",
+  "prospective_decisions_start_inclusive_utc": "2026-10-16T00:00:00+00:00",
+  "prospective_decisions_end_exclusive_utc": "2026-11-16T00:00:00+00:00",
+  "evaluation_note": "Existing 2022-07/2026 Bybit historical archive is already inspected and cannot count as unseen forward market evidence",
+  "symbols": [
+    "BTCUSDT",
+    "ETHUSDT"
+  ],
+  "market": "Bybit research-only 15m completed OHLCV; no broker orders or account balance use",
+  "source_eligibility": {
+    "required_source_bound_seven_pivots": true,
+    "required_closed_first_breakout": true,
+    "required_post_correction_path_valid": true,
+    "recursive_elliott_degree_verified": false,
+    "source_validation_scope": "V14/V15 explicit caller upstream guarantee. V17 does not independently recompute real source pivot evidence; separate future source-binder required.",
+    "no_automatic_signal_discovery": true
+  },
+  "profiles": {
+    "conservative": {
+      "fee_bps_per_leg": 10,
+      "slippage_bps_per_leg": 5
+    },
+    "stress": {
+      "fee_bps_per_leg": 25,
+      "slippage_bps_per_leg": 15
+    }
+  },
+  "hypothetical_execution": {
+    "next_open_only": true,
+    "auto_demo": false,
+    "paper_eligible": false,
+    "live_enabled": false,
+    "structural_stop": "last confirmed post-five-swing correction low, not proxy ATR",
+    "target_R": 2,
+    "max_completed_15m_bars_after_entry": 64,
+    "same_bar_both_levels": "stop-first",
+    "gap_below_stop": "min(open,stop)",
+    "positive_target_gap": "target price only",
+    "pending_outcome": "no P/L until stop, target or bar64 time exit",
+    "research_reference_cash_usdt": 10000,
+    "stop_loss_reference_risk_fraction": 0.001,
+    "max_initial_cash_fraction": 0.1,
+    "exit_fees_and_slippage": "each leg fixed by profile; cash backed; no leverage"
+  },
+  "integrity_constraints": [
+    "Reject bar timestamps lacking timezone/alignment or nonexistent/partial future OHLC",
+    "Only contiguous fully completed bars known at observation timestamp",
+    "Reject omitted, duplicated or shifted bars; hash canonical future bar payload",
+    "Reject historical decisions prior to forward cutoff and decisions at/after end",
+    "Never fit thresholds, wave criteria or profiles on already inspected folds",
+    "Unknown intrabar sequence uses adverse stop-first priority; full-bar MAE/MFE not claimed as executable experience",
+    "No external action to Bybit, no Demo promotion and no LIVE use"
+  ],
+  "acceptance_gates": [
+    "Exact-commit Windows/Linux/macOS GitHub CI success",
+    "Local deterministic adversarial feature/exit unit tests pass",
+    "Independent source hash and V15/V14 event binder for genuinely future observations",
+    "Independent trade-ledger P/L arithmetic reconciliation including next-open gap, fees, stop-first",
+    "Enough uncontaminated future closed candle outcomes to estimate uncertainty: no minimum trade-count hard gate, but low counts cannot prove edge",
+    "Separate user-authorized Demo-only promotion review; NEVER live"
+  ],
+  "caveat": "This is an evaluation protocol, NOT evidence that Elliott is profitable or recursive wave labels are complete. V17 code is not wired to Strategy Finder/Paper/runner."
+}
