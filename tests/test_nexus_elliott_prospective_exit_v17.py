@@ -120,7 +120,7 @@ class ElliottProspectiveV17Tests(unittest.TestCase):
 
     def test_forming_candle_fails_closed(self):
         with self.assertRaisesRegex(ValueError,"forming/unavailable"):
-            audit(asof=DECISION+timedelta(minutes=14))
+            audit(rows=[bar(),bar(1)],asof=DECISION+timedelta(minutes=15))
 
     def test_forever_open_cannot_fake_terminal_exit(self):
         with self.assertRaisesRegex(ValueError,"between 1 and 64"):
