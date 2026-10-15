@@ -20,7 +20,8 @@ def fixture(profile="conservative"):
     hi=[v+1 for v in op]
     lo=[v-1 for v in op]
     cl=[v+.2 for v in op]
-    lo[10]=98.0
+    # Correction anchor predates the 14 completed bars used for mean range.
+    lo[3]=98.0
     frame=pd.DataFrame(dict(timestamp=t,open=op,high=hi,low=lo,close=cl))
     i=20
     fee,slip=PROFILES[profile]
@@ -36,7 +37,7 @@ def fixture(profile="conservative"):
         },"decision":{
             "bar_index":i,
             "decision_at":str(frame.timestamp.iloc[i]+pd.Timedelta(minutes=15)),
-            "setup":{"lagged_elliott5_wave2_index":10.0,
+            "setup":{"lagged_elliott5_wave2_index":3.0,
                      "lagged_elliott5_wave2_low":98.0}
         }
     }
