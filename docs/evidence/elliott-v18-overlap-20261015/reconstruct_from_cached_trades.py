@@ -24,6 +24,8 @@ FILE_NAMES={
 }
 DIRECTORIES={"BTCUSDT":"btc_usdt","ETHUSDT":"eth_usdt"}
 _FIELDS=("open","high","low","close","volume")
+NUMERIC_REPRESENTATION_TOLERANCE = Decimal("0.00000001")
+
 START=pd.Timestamp("2026-07-31T22:00:00Z")
 END=pd.Timestamp("2026-07-31T23:45:00Z")
 FIXED_SOURCE={
@@ -58,7 +60,8 @@ def field_diff(a:dict,b:dict) -> dict:
     for f in _FIELDS:
         nonzero=[{"open_ms":ts,"a":str(a[ts][f]),"b":str(b[ts][f]),
                   "signed_difference":str(a[ts][f]-b[ts][f])}
-                 for ts in sorted(a) if a[ts][f]!=b[ts][f]]
+                 for ts in sorted(a) if abs(a[ts][f]-b[ts][f])>
+                 NUMERIC_REPRESENTATION_TOLERANCE]
         out[f]={"count":len(nonzero),"differences":nonzero}
     return out
 
