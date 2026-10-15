@@ -1,0 +1,40 @@
+{
+  "auto_demo": false,
+  "live_enabled": false,
+  "market_backtests_added": 0,
+  "monthly_csv_sha256": "131e697d99af9939a5db7ad7747fb2c7a03f151aa1694a541cb8ade3224ec1e5",
+  "monthly_rows": 176,
+  "months_per_symbol_cost_profile": 44,
+  "original_cell_reconciliation_passed": true,
+  "research_only": true,
+  "schema": "nexus.spring-v12-monthly-realized-qa/v1",
+  "source_result_sha256": "9f1d95e5e36590eb2ae1b011200e6e0e1b7778198254620a9cafcdaec046231e",
+  "source_trace_sha256": "c856e4744268ada84788ff562e18fdabadbd01fca94f95f3c929c60bc4a0d7b8",
+  "summary": [
+    {
+      "cost_profile": "conservative",
+      "sum_realized_usdt": "-5.944551486017191",
+      "symbol": "BTCUSDT",
+      "trades": 9
+    },
+    {
+      "cost_profile": "stress",
+      "sum_realized_usdt": "-58.2092032711223579",
+      "symbol": "BTCUSDT",
+      "trades": 9
+    },
+    {
+      "cost_profile": "conservative",
+      "sum_realized_usdt": "-31.001877867660236",
+      "symbol": "ETHUSDT",
+      "trades": 8
+    },
+    {
+      "cost_profile": "stress",
+      "sum_realized_usdt": "-62.752620677436577",
+      "symbol": "ETHUSDT",
+      "trades": 8
+    }
+  ],
+  "utc": "2026-10-15T12:29:57.623680+00:00"
+}
