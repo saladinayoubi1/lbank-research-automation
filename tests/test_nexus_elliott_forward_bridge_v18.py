@@ -4,6 +4,10 @@ No public API calls, existing strategy execution, forward market sample,
 broker order or mutation of the frozen historical archive.
 """
 import unittest
+import hashlib
+import json
+import tempfile
+from pathlib import Path
 from datetime import datetime, timedelta, timezone
 
 import numpy as np
@@ -192,6 +196,61 @@ class ResearchBridgeV18Tests(unittest.TestCase):
         self.assertTrue(research["closed_first_breakout"])
         self.assertTrue(research["post_correction_path_valid"])
         self.assertEqual(float(research["correction_low"]),129.8)
+
+    @staticmethod
+    def _manifest_for_synthetic(tmp, *, source_category="official_public_spot_trade_archives",
+                                candle_model_marker=None):
+        p=Path(tmp)/"REPLAY_DATASET_MANIFEST.json"
+        doc={"schema_version":2,"venue":"bybit","source":source_category,
+             "files":[],"timeframes":["minute15"],"symbols":["btc_usdt"]}
+        if candle_model_marker is not None:
+            doc["candle_model"]=candle_model_marker
+        canonical=(json.dumps(doc,sort_keys=True,separators=(",",":"))+"\n").encode()
+        doc["manifest_sha256"]=hashlib.sha256(canonical).hexdigest()
+        p.write_text(json.dumps(doc),encoding="utf-8")
+        return p
+
+    def test_replay_v2_is_not_trade_candle_model_v2(self):
+        with tempfile.TemporaryDirectory() as folder:
+            self._manifest_for_synthetic(folder)
+            result=gate.replay_source_model_status(Path(folder))
+            self.assertEqual(result["status"],
+                             "BLOCKED_LEGACY_UNVERSIONED_TRADE_CANDLE_MODEL")
+            self.assertFalse(result["future_append_allowed"])
+            self.assertEqual(result["replay_schema_version"],2)
+
+    def test_modified_manifest_hash_cannot_fake_model_binding(self):
+        with tempfile.TemporaryDirectory() as folder:
+            p=self._manifest_for_synthetic(folder)
+            doc=json.loads(p.read_text())
+            doc["candle_model"]={"schema":"nexus.bybit-source-row-stable-candles.v2"}
+            p.write_text(json.dumps(doc))
+            with self.assertRaisesRegex(ValueError,"SHA256 fails"):
+                gate.replay_source_model_status(Path(folder))
+
+    def test_rest_kline_source_cannot_masquerade_as_trade_archive(self):
+        with tempfile.TemporaryDirectory() as folder:
+            self._manifest_for_synthetic(folder,source_category="api_bybit_spot_kline")
+            with self.assertRaisesRegex(ValueError,"unexpected historical source"):
+                gate.replay_source_model_status(Path(folder))
+
+    def test_incompatible_new_candle_model_rejected(self):
+        with tempfile.TemporaryDirectory() as folder:
+            self._manifest_for_synthetic(folder,candle_model_marker={
+                "schema":"nexus.bybit-source-row-stable-candles.v2",
+                "timestamp_tie_order":"unstable_timestamp_only",
+            })
+            with self.assertRaisesRegex(ValueError,"incompatible"):
+                gate.replay_source_model_status(Path(folder))
+
+    def test_pretend_v2_binding_without_sidecar_is_blocked(self):
+        with tempfile.TemporaryDirectory() as folder:
+            self._manifest_for_synthetic(folder,candle_model_marker={
+                "schema":"nexus.bybit-source-row-stable-candles.v2",
+                "timestamp_tie_order":"original_archive_row_order",
+            })
+            with self.assertRaisesRegex(ValueError,"sidecar/manifest"):
+                gate.replay_source_model_status(Path(folder))
 
     def test_event_is_never_claimed_recursive_elliott(self):
         r=gate.inspect_latest_closed_decision(
