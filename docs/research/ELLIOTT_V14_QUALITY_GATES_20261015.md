@@ -27,6 +27,14 @@ history cannot be treated as a pristine holdout.
   No newly optimized volume cutoff.
 - **Causality:** require timezone-aware UTC aligned completed decision / 1h /
   4h closes, reject future/expired context and malformed numeric inputs.
+- **Post-correction path:** require every completed 15m low and close from the
+  correction pivot center through the decision, reject gaps, mismatched source
+  closes/lows, *any* subsequent correction-low breach, and a previously consumed
+  close-break. This closes the earlier stateless duplicate/invalidation gaps.
+  It does **not** independently validate the full seven-pivot raw OHLC history,
+  higher-timeframe feature values, prior true-range source hashes or provenance.
+- **Valid zero values:** flat-bar True Range = 0 and zero traded-volume ratio
+  are allowed; the aggregate 14-candle range baseline must remain positive.
 - **Safety:** study_eligible is NOT entry_signal, paper_eligible, Demo or
   Live authority. Factory inventory, original execution engine, Laptop1
   paper journal and VPS are unchanged.
@@ -34,8 +42,9 @@ history cannot be treated as a pristine holdout.
 Files: nexus_elliott_quality_audit_v14.py,
 tests/test_nexus_elliott_quality_audit_v14.py.
 
-Native Laptop2 source tests: 21 unittest methods, 0 errors, 0 failures
+Native Laptop2 source tests: 28 unittest methods, 0 errors, 0 failures
 (2026-10-15), staged at E:\NEXUS-QA\elliott-v14-quality-20261015.
+Parent regression suites: 16 seven-pivot geometry + 26 closed-OHLC methods PASS on Laptop2.
 Hosted exact-head CI must be checked separately.
 
 ## Still open before economic qualification
@@ -58,3 +67,17 @@ assumptions; it does **not** prove a profitable Elliott trading system.
 
 System Map: DATA-20, DATA-21, RES-31, RES-32, VAL-40, QA-41.
 Laptop2 research-primary; Laptop1 sole Paper writer; GitHub is truth.
+
+## Independent re-audit disposition (2026-10-15)
+
+- The initial 21 tests were insufficient: they did not supply the actual
+  correction-to-decision bar sequence; the helper could previously classify
+  a recovered structure despite a prior correction-low breach or first consumed
+  breakout. The 28-test revision now rejects both with synthetic regression.
+- The revised observer remains an *advisory* research diagnostic, not a
+  source-verified market evaluator. The supplied path and claimed higher
+  timeframe flags are caller-originated; independent raw source reconstruction
+  and a fully valid recursive Elliott count remain outstanding.
+- A structurally anchored stop is **not inherently profitable or better**:
+  it may create excessive risk distance (measured in prior mean True Range).
+  Historical optimal risk tuning is prohibited. No qualifying strategy run.
