@@ -58,6 +58,8 @@ class ElliottV24EntryExitIntegrityTests(unittest.TestCase):
         x=run([bar(open="109",high="112",low="108",close="111")])
         self.assertIn("NEXT_OPEN_REENTERED_PRE_BREAKOUT_RANGE",x["warning_codes"])
         self.assertEqual(x["next_open_minus_breakout_high"],"-1")
+        self.assertFalse(x["prospective_price_path_entry_gate_passed"])
+        self.assertTrue(x["model_fill_must_not_be_interpreted_as_authorized_entry"])
         self.assertEqual(x["v17_hypothetical_status_unmodified"],
                          "AWAITING_MORE_CLOSED_BARS")
 
@@ -68,10 +70,13 @@ class ElliottV24EntryExitIntegrityTests(unittest.TestCase):
     def test_valid_next_open_over_breakout_not_falsely_warned(self):
         x=run()
         self.assertNotIn("NEXT_OPEN_REENTERED_PRE_BREAKOUT_RANGE",x["warning_codes"])
+        self.assertTrue(x["prospective_price_path_entry_gate_passed"])
+        self.assertFalse(x["candidate_for_paper_or_live_even_if_gate_passed"])
 
     def test_next_open_below_correction_refuses_entry(self):
         x=run([bar(open="99",high="112",low="98",close="108")])
         self.assertIn("NEXT_OPEN_INVALIDATES_CORRECTION_STOP_NO_ENTRY",x["warning_codes"])
+        self.assertFalse(x["prospective_price_path_entry_gate_passed"])
         self.assertEqual(x["v17_hypothetical_status_unmodified"],
                          "NO_ENTRY_OPEN_AT_OR_BELOW_CORRECTION")
         self.assertIsNone(x["v17_hypothetical_net_pnl_unmodified"])
