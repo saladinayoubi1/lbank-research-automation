@@ -1,0 +1,296 @@
+{
+  "actual_closed_round_trips_both_profiles": 20,
+  "actual_fill_trace_sha256": "c734d9abd0dd8a18fe4269a15b8eceddf91643d8943ddb3bc851311772f2373c",
+  "auto_demo_promotion": false,
+  "checks": [
+    "source and six raw file hashes",
+    "raw closed-candle 15m chronology",
+    "price-event timestamp and raw decision close",
+    "lagged wave pivot/index confirmation",
+    "distinct next-open fill versus raw open",
+    "stop-first exit price and exit reason",
+    "no cross-partition entry/exit",
+    "identical signal geometry across cost profiles",
+    "source/ledger immutable after review"
+  ],
+  "chronology_passed": true,
+  "denial_fields_per_profile": {
+    "conservative": {
+      "elliott5_cost_feasible": 8,
+      "h1_vol_ok": 9,
+      "h4_up": 1
+    }
+  },
+  "event_admissions": [
+    {
+      "admission": "scheduled_next_open",
+      "count": 1,
+      "part": "train",
+      "profile": "conservative",
+      "symbol": "BTCUSDT"
+    },
+    {
+      "admission": "signal_denied",
+      "count": 5,
+      "part": "train",
+      "profile": "conservative",
+      "symbol": "BTCUSDT"
+    },
+    {
+      "admission": "scheduled_next_open",
+      "count": 1,
+      "part": "train",
+      "profile": "stress",
+      "symbol": "BTCUSDT"
+    },
+    {
+      "admission": "signal_denied",
+      "count": 5,
+      "part": "train",
+      "profile": "stress",
+      "symbol": "BTCUSDT"
+    },
+    {
+      "admission": "scheduled_next_open",
+      "count": 1,
+      "part": "validation",
+      "profile": "conservative",
+      "symbol": "BTCUSDT"
+    },
+    {
+      "admission": "signal_denied",
+      "count": 4,
+      "part": "validation",
+      "profile": "conservative",
+      "symbol": "BTCUSDT"
+    },
+    {
+      "admission": "scheduled_next_open",
+      "count": 1,
+      "part": "validation",
+      "profile": "stress",
+      "symbol": "BTCUSDT"
+    },
+    {
+      "admission": "signal_denied",
+      "count": 4,
+      "part": "validation",
+      "profile": "stress",
+      "symbol": "BTCUSDT"
+    },
+    {
+      "admission": "scheduled_next_open",
+      "count": 1,
+      "part": "historically_inspected_test",
+      "profile": "conservative",
+      "symbol": "ETHUSDT"
+    },
+    {
+      "admission": "signal_denied",
+      "count": 2,
+      "part": "historically_inspected_test",
+      "profile": "conservative",
+      "symbol": "ETHUSDT"
+    },
+    {
+      "admission": "scheduled_next_open",
+      "count": 1,
+      "part": "historically_inspected_test",
+      "profile": "stress",
+      "symbol": "ETHUSDT"
+    },
+    {
+      "admission": "signal_denied",
+      "count": 2,
+      "part": "historically_inspected_test",
+      "profile": "stress",
+      "symbol": "ETHUSDT"
+    },
+    {
+      "admission": "scheduled_next_open",
+      "count": 4,
+      "part": "train",
+      "profile": "conservative",
+      "symbol": "ETHUSDT"
+    },
+    {
+      "admission": "signal_denied",
+      "count": 2,
+      "part": "train",
+      "profile": "conservative",
+      "symbol": "ETHUSDT"
+    },
+    {
+      "admission": "scheduled_next_open",
+      "count": 4,
+      "part": "train",
+      "profile": "stress",
+      "symbol": "ETHUSDT"
+    },
+    {
+      "admission": "signal_denied",
+      "count": 2,
+      "part": "train",
+      "profile": "stress",
+      "symbol": "ETHUSDT"
+    },
+    {
+      "admission": "scheduled_next_open",
+      "count": 3,
+      "part": "validation",
+      "profile": "conservative",
+      "symbol": "ETHUSDT"
+    },
+    {
+      "admission": "signal_denied",
+      "count": 1,
+      "part": "validation",
+      "profile": "conservative",
+      "symbol": "ETHUSDT"
+    },
+    {
+      "admission": "scheduled_next_open",
+      "count": 3,
+      "part": "validation",
+      "profile": "stress",
+      "symbol": "ETHUSDT"
+    },
+    {
+      "admission": "signal_denied",
+      "count": 1,
+      "part": "validation",
+      "profile": "stress",
+      "symbol": "ETHUSDT"
+    }
+  ],
+  "event_records_both_profiles": 48,
+  "fee_profile_trace_rows": 12,
+  "independent_bounds_verified": [
+    [
+      "historically_inspected_test",
+      102835,
+      128544
+    ],
+    [
+      "train",
+      0,
+      77126
+    ],
+    [
+      "validation",
+      77126,
+      102835
+    ]
+  ],
+  "limits": [
+    "Not independent line-by-line proof of every feature transform or historical data origin",
+    "Previously inspected history is not pristine prospective holdout",
+    "No full market backtest rerun, no changed parameters or Demo admission"
+  ],
+  "live_enabled": false,
+  "market_results_sha256": "02f96ca942091d882be7ba87547cd0b6f9c2e3e440fe4cc6e98b3e010332d2fc",
+  "partition_event_density": [
+    {
+      "admitted": 0,
+      "events": 0,
+      "fills": 0,
+      "part": "historically_inspected_test",
+      "profile": "conservative",
+      "symbol": "BTCUSDT"
+    },
+    {
+      "admitted": 0,
+      "events": 0,
+      "fills": 0,
+      "part": "historically_inspected_test",
+      "profile": "stress",
+      "symbol": "BTCUSDT"
+    },
+    {
+      "admitted": 1,
+      "events": 6,
+      "fills": 1,
+      "part": "train",
+      "profile": "conservative",
+      "symbol": "BTCUSDT"
+    },
+    {
+      "admitted": 1,
+      "events": 6,
+      "fills": 1,
+      "part": "train",
+      "profile": "stress",
+      "symbol": "BTCUSDT"
+    },
+    {
+      "admitted": 1,
+      "events": 5,
+      "fills": 1,
+      "part": "validation",
+      "profile": "conservative",
+      "symbol": "BTCUSDT"
+    },
+    {
+      "admitted": 1,
+      "events": 5,
+      "fills": 1,
+      "part": "validation",
+      "profile": "stress",
+      "symbol": "BTCUSDT"
+    },
+    {
+      "admitted": 1,
+      "events": 3,
+      "fills": 1,
+      "part": "historically_inspected_test",
+      "profile": "conservative",
+      "symbol": "ETHUSDT"
+    },
+    {
+      "admitted": 1,
+      "events": 3,
+      "fills": 1,
+      "part": "historically_inspected_test",
+      "profile": "stress",
+      "symbol": "ETHUSDT"
+    },
+    {
+      "admitted": 4,
+      "events": 6,
+      "fills": 4,
+      "part": "train",
+      "profile": "conservative",
+      "symbol": "ETHUSDT"
+    },
+    {
+      "admitted": 4,
+      "events": 6,
+      "fills": 4,
+      "part": "train",
+      "profile": "stress",
+      "symbol": "ETHUSDT"
+    },
+    {
+      "admitted": 3,
+      "events": 4,
+      "fills": 3,
+      "part": "validation",
+      "profile": "conservative",
+      "symbol": "ETHUSDT"
+    },
+    {
+      "admitted": 3,
+      "events": 4,
+      "fills": 3,
+      "part": "validation",
+      "profile": "stress",
+      "symbol": "ETHUSDT"
+    }
+  ],
+  "research_only": true,
+  "schema": "nexus.elliott-five-swing-independent-event-chronology.v1",
+  "source_archive": "2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422",
+  "source_sha": "5eed07d9aeb1b425fdacb868ee352b8ff36e3345",
+  "unique_price_events": 24,
+  "verified_at_utc": "2026-10-15T02:48:53.154284+00:00"
+}
