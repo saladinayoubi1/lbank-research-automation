@@ -46,6 +46,17 @@ class FullHigherTimeframeAsOfTests(unittest.TestCase):
         self.assertEqual(sum(x["compared"] for x in report.values()),8192)
         self.assertEqual(sum(x["mismatches"] for x in report.values()),0)
 
+    def test_nullable_aggregated_float_warmup_agrees_with_parent(self):
+        # Reproduce Arrow/parquet nullable Float64 dtype seen on Laptop2.
+        hour=self.h.astype({c:"Float64" for c in ("open","high","low","close","volume")})
+        four=self.q.astype({c:"Float64" for c in ("open","high","low","close","volume")})
+        ind=independent_full_values(self.f,hour,four)
+        parent=original_engine_asof(self.f,self.h,self.q,engine)
+        diff=discrepancies(parent,ind)
+        self.assertEqual(sum(v["mismatches"] for v in diff.values()),0)
+        self.assertEqual(ind["h1_vol_ok"][3],0.0)
+        self.assertEqual(ind["h4_up"][15],0.0)
+
     def test_exact_1h_visibility_boundary(self):
         vals=independent_full_values(self.f,self.h,self.q)
         # First hourly bar OPEN 00:00 -> CLOSE 01:00, 15m decisions
