@@ -1,0 +1,761 @@
+{
+  "api_comparison_status": "QUARANTINED_STDOUT_TRANSCRIPTION_NOT_RAW_HTTP_ATTESTED",
+  "cached_raw_trades_modified": false,
+  "live_enabled": false,
+  "market_api_invoked": false,
+  "orders_placed": 0,
+  "original_parquets_modified": false,
+  "pairs": {
+    "BTCUSDT": {
+      "frozen_parquet_sha256": "c3afe92899dda8fe52937c955323cc8e04bf8f200a68eb8651e55d6020981226",
+      "legacy_accepted_trade_rows": 481468,
+      "legacy_quality": {
+        "duplicate_trade_id_count": 0,
+        "invalid_numeric_rows": 0,
+        "invalid_side_rows": 0,
+        "invalid_symbol_rows": 0,
+        "negative_size_rows": 0,
+        "non_positive_price_rows": 0,
+        "outside_audit_day_rows": 0,
+        "source_rows": 481468,
+        "valid_trade_rows": 481468
+      },
+      "overlap_comparisons": {
+        "legacy_vs_frozen": {
+          "close": {
+            "count": 1,
+            "differences": [
+              {
+                "a": "62946.7",
+                "b": "62945.1",
+                "open_ms": 1785537000000,
+                "signed_difference": "1.6"
+              }
+            ]
+          },
+          "high": {
+            "count": 0,
+            "differences": []
+          },
+          "low": {
+            "count": 0,
+            "differences": []
+          },
+          "open": {
+            "count": 0,
+            "differences": []
+          },
+          "volume": {
+            "count": 0,
+            "differences": []
+          }
+        },
+        "quarantined_api_vs_frozen": {
+          "close": {
+            "count": 0,
+            "differences": []
+          },
+          "high": {
+            "count": 0,
+            "differences": []
+          },
+          "low": {
+            "count": 0,
+            "differences": []
+          },
+          "open": {
+            "count": 6,
+            "differences": [
+              {
+                "a": "62950.6",
+                "b": "62951.8",
+                "open_ms": 1785535200000,
+                "signed_difference": "-1.2"
+              },
+              {
+                "a": "62985.9",
+                "b": "62985.8",
+                "open_ms": 1785537000000,
+                "signed_difference": "0.1"
+              },
+              {
+                "a": "62945.1",
+                "b": "62944.9",
+                "open_ms": 1785537900000,
+                "signed_difference": "0.2"
+              },
+              {
+                "a": "62946.1",
+                "b": "62946.0",
+                "open_ms": 1785538800000,
+                "signed_difference": "0.1"
+              },
+              {
+                "a": "62974.6",
+                "b": "62975.6",
+                "open_ms": 1785539700000,
+                "signed_difference": "-1.0"
+              },
+              {
+                "a": "62948.7",
+                "b": "62948.8",
+                "open_ms": 1785541500000,
+                "signed_difference": "-0.1"
+              }
+            ]
+          },
+          "volume": {
+            "count": 0,
+            "differences": []
+          }
+        },
+        "quarantined_api_vs_legacy": {
+          "close": {
+            "count": 1,
+            "differences": [
+              {
+                "a": "62945.1",
+                "b": "62946.7",
+                "open_ms": 1785537000000,
+                "signed_difference": "-1.6"
+              }
+            ]
+          },
+          "high": {
+            "count": 0,
+            "differences": []
+          },
+          "low": {
+            "count": 0,
+            "differences": []
+          },
+          "open": {
+            "count": 6,
+            "differences": [
+              {
+                "a": "62950.6",
+                "b": "62951.8",
+                "open_ms": 1785535200000,
+                "signed_difference": "-1.2"
+              },
+              {
+                "a": "62985.9",
+                "b": "62985.8",
+                "open_ms": 1785537000000,
+                "signed_difference": "0.1"
+              },
+              {
+                "a": "62945.1",
+                "b": "62944.9",
+                "open_ms": 1785537900000,
+                "signed_difference": "0.2"
+              },
+              {
+                "a": "62946.1",
+                "b": "62946.0",
+                "open_ms": 1785538800000,
+                "signed_difference": "0.1"
+              },
+              {
+                "a": "62974.6",
+                "b": "62975.6",
+                "open_ms": 1785539700000,
+                "signed_difference": "-1.0"
+              },
+              {
+                "a": "62948.7",
+                "b": "62948.8",
+                "open_ms": 1785541500000,
+                "signed_difference": "-0.1"
+              }
+            ]
+          },
+          "volume": {
+            "count": 0,
+            "differences": []
+          }
+        },
+        "quarantined_api_vs_v2": {
+          "close": {
+            "count": 0,
+            "differences": []
+          },
+          "high": {
+            "count": 0,
+            "differences": []
+          },
+          "low": {
+            "count": 0,
+            "differences": []
+          },
+          "open": {
+            "count": 6,
+            "differences": [
+              {
+                "a": "62950.6",
+                "b": "62951.8",
+                "open_ms": 1785535200000,
+                "signed_difference": "-1.2"
+              },
+              {
+                "a": "62985.9",
+                "b": "62985.8",
+                "open_ms": 1785537000000,
+                "signed_difference": "0.1"
+              },
+              {
+                "a": "62945.1",
+                "b": "62944.9",
+                "open_ms": 1785537900000,
+                "signed_difference": "0.2"
+              },
+              {
+                "a": "62946.1",
+                "b": "62946.0",
+                "open_ms": 1785538800000,
+                "signed_difference": "0.1"
+              },
+              {
+                "a": "62974.6",
+                "b": "62975.6",
+                "open_ms": 1785539700000,
+                "signed_difference": "-1.0"
+              },
+              {
+                "a": "62948.7",
+                "b": "62948.8",
+                "open_ms": 1785541500000,
+                "signed_difference": "-0.1"
+              }
+            ]
+          },
+          "volume": {
+            "count": 0,
+            "differences": []
+          }
+        },
+        "row_stable_v2_vs_frozen": {
+          "close": {
+            "count": 0,
+            "differences": []
+          },
+          "high": {
+            "count": 0,
+            "differences": []
+          },
+          "low": {
+            "count": 0,
+            "differences": []
+          },
+          "open": {
+            "count": 0,
+            "differences": []
+          },
+          "volume": {
+            "count": 0,
+            "differences": []
+          }
+        },
+        "row_stable_v2_vs_legacy": {
+          "close": {
+            "count": 1,
+            "differences": [
+              {
+                "a": "62945.1",
+                "b": "62946.7",
+                "open_ms": 1785537000000,
+                "signed_difference": "-1.6"
+              }
+            ]
+          },
+          "high": {
+            "count": 0,
+            "differences": []
+          },
+          "low": {
+            "count": 0,
+            "differences": []
+          },
+          "open": {
+            "count": 0,
+            "differences": []
+          },
+          "volume": {
+            "count": 0,
+            "differences": []
+          }
+        }
+      },
+      "raw_parser_schema": {
+        "extended_named_schema_columns": 0,
+        "malformed_csv_line_samples": [],
+        "malformed_csv_rows": 0,
+        "parser_engine": "c",
+        "source_columns": [
+          "trade_id",
+          "timestamp",
+          "price",
+          "size",
+          "side",
+          "rpi"
+        ],
+        "source_header_columns": [
+          "id",
+          "timestamp",
+          "price",
+          "volume",
+          "side",
+          "rpi"
+        ],
+        "source_rows_parsed": 481468,
+        "source_rows_skipped": 0,
+        "timestamp_unit": "ms",
+        "used_positional_schema": false
+      },
+      "raw_trade_csv_gz_sha256": "3d2a7d32eed34a28ee90c2861b29fc2d5fbf1461f7f6b0223ae9bc05836aae7a",
+      "raw_trade_rows": 481468,
+      "stable_accepted_trade_rows": 481468,
+      "stable_quality": {
+        "duplicate_trade_id_count": 0,
+        "invalid_numeric_rows": 0,
+        "invalid_side_rows": 0,
+        "invalid_symbol_rows": 0,
+        "negative_size_rows": 0,
+        "non_positive_price_rows": 0,
+        "outside_range_rows": 0,
+        "source_rows": 481468,
+        "valid_trade_rows": 481468
+      },
+      "summary_counts": {
+        "legacy_vs_frozen": {
+          "close": 1,
+          "high": 0,
+          "low": 0,
+          "open": 0,
+          "volume": 0
+        },
+        "quarantined_api_vs_frozen": {
+          "close": 0,
+          "high": 0,
+          "low": 0,
+          "open": 6,
+          "volume": 0
+        },
+        "quarantined_api_vs_legacy": {
+          "close": 1,
+          "high": 0,
+          "low": 0,
+          "open": 6,
+          "volume": 0
+        },
+        "quarantined_api_vs_v2": {
+          "close": 0,
+          "high": 0,
+          "low": 0,
+          "open": 6,
+          "volume": 0
+        },
+        "row_stable_v2_vs_frozen": {
+          "close": 0,
+          "high": 0,
+          "low": 0,
+          "open": 0,
+          "volume": 0
+        },
+        "row_stable_v2_vs_legacy": {
+          "close": 1,
+          "high": 0,
+          "low": 0,
+          "open": 0,
+          "volume": 0
+        }
+      }
+    },
+    "ETHUSDT": {
+      "frozen_parquet_sha256": "ce603440650d0022b1a17a7922da743a3b6219ba9afd89ad4362b70fbe3bbfa1",
+      "legacy_accepted_trade_rows": 160308,
+      "legacy_quality": {
+        "duplicate_trade_id_count": 0,
+        "invalid_numeric_rows": 0,
+        "invalid_side_rows": 0,
+        "invalid_symbol_rows": 0,
+        "negative_size_rows": 0,
+        "non_positive_price_rows": 0,
+        "outside_audit_day_rows": 0,
+        "source_rows": 160308,
+        "valid_trade_rows": 160308
+      },
+      "overlap_comparisons": {
+        "legacy_vs_frozen": {
+          "close": {
+            "count": 0,
+            "differences": []
+          },
+          "high": {
+            "count": 0,
+            "differences": []
+          },
+          "low": {
+            "count": 0,
+            "differences": []
+          },
+          "open": {
+            "count": 0,
+            "differences": []
+          },
+          "volume": {
+            "count": 0,
+            "differences": []
+          }
+        },
+        "quarantined_api_vs_frozen": {
+          "close": {
+            "count": 0,
+            "differences": []
+          },
+          "high": {
+            "count": 0,
+            "differences": []
+          },
+          "low": {
+            "count": 1,
+            "differences": [
+              {
+                "a": "1861.35",
+                "b": "1861.36",
+                "open_ms": 1785538800000,
+                "signed_difference": "-0.01"
+              }
+            ]
+          },
+          "open": {
+            "count": 7,
+            "differences": [
+              {
+                "a": "1861.8",
+                "b": "1861.85",
+                "open_ms": 1785535200000,
+                "signed_difference": "-0.05"
+              },
+              {
+                "a": "1863.54",
+                "b": "1863.52",
+                "open_ms": 1785537000000,
+                "signed_difference": "0.02"
+              },
+              {
+                "a": "1863.13",
+                "b": "1863.1",
+                "open_ms": 1785537900000,
+                "signed_difference": "0.03"
+              },
+              {
+                "a": "1861.35",
+                "b": "1861.36",
+                "open_ms": 1785538800000,
+                "signed_difference": "-0.01"
+              },
+              {
+                "a": "1862.51",
+                "b": "1862.5",
+                "open_ms": 1785539700000,
+                "signed_difference": "0.01"
+              },
+              {
+                "a": "1863.99",
+                "b": "1864.09",
+                "open_ms": 1785540600000,
+                "signed_difference": "-0.10"
+              },
+              {
+                "a": "1863.5",
+                "b": "1863.43",
+                "open_ms": 1785541500000,
+                "signed_difference": "0.07"
+              }
+            ]
+          },
+          "volume": {
+            "count": 0,
+            "differences": []
+          }
+        },
+        "quarantined_api_vs_legacy": {
+          "close": {
+            "count": 0,
+            "differences": []
+          },
+          "high": {
+            "count": 0,
+            "differences": []
+          },
+          "low": {
+            "count": 1,
+            "differences": [
+              {
+                "a": "1861.35",
+                "b": "1861.36",
+                "open_ms": 1785538800000,
+                "signed_difference": "-0.01"
+              }
+            ]
+          },
+          "open": {
+            "count": 7,
+            "differences": [
+              {
+                "a": "1861.8",
+                "b": "1861.85",
+                "open_ms": 1785535200000,
+                "signed_difference": "-0.05"
+              },
+              {
+                "a": "1863.54",
+                "b": "1863.52",
+                "open_ms": 1785537000000,
+                "signed_difference": "0.02"
+              },
+              {
+                "a": "1863.13",
+                "b": "1863.1",
+                "open_ms": 1785537900000,
+                "signed_difference": "0.03"
+              },
+              {
+                "a": "1861.35",
+                "b": "1861.36",
+                "open_ms": 1785538800000,
+                "signed_difference": "-0.01"
+              },
+              {
+                "a": "1862.51",
+                "b": "1862.5",
+                "open_ms": 1785539700000,
+                "signed_difference": "0.01"
+              },
+              {
+                "a": "1863.99",
+                "b": "1864.09",
+                "open_ms": 1785540600000,
+                "signed_difference": "-0.10"
+              },
+              {
+                "a": "1863.5",
+                "b": "1863.43",
+                "open_ms": 1785541500000,
+                "signed_difference": "0.07"
+              }
+            ]
+          },
+          "volume": {
+            "count": 0,
+            "differences": []
+          }
+        },
+        "quarantined_api_vs_v2": {
+          "close": {
+            "count": 0,
+            "differences": []
+          },
+          "high": {
+            "count": 0,
+            "differences": []
+          },
+          "low": {
+            "count": 1,
+            "differences": [
+              {
+                "a": "1861.35",
+                "b": "1861.36",
+                "open_ms": 1785538800000,
+                "signed_difference": "-0.01"
+              }
+            ]
+          },
+          "open": {
+            "count": 7,
+            "differences": [
+              {
+                "a": "1861.8",
+                "b": "1861.85",
+                "open_ms": 1785535200000,
+                "signed_difference": "-0.05"
+              },
+              {
+                "a": "1863.54",
+                "b": "1863.52",
+                "open_ms": 1785537000000,
+                "signed_difference": "0.02"
+              },
+              {
+                "a": "1863.13",
+                "b": "1863.1",
+                "open_ms": 1785537900000,
+                "signed_difference": "0.03"
+              },
+              {
+                "a": "1861.35",
+                "b": "1861.36",
+                "open_ms": 1785538800000,
+                "signed_difference": "-0.01"
+              },
+              {
+                "a": "1862.51",
+                "b": "1862.5",
+                "open_ms": 1785539700000,
+                "signed_difference": "0.01"
+              },
+              {
+                "a": "1863.99",
+                "b": "1864.09",
+                "open_ms": 1785540600000,
+                "signed_difference": "-0.10"
+              },
+              {
+                "a": "1863.5",
+                "b": "1863.43",
+                "open_ms": 1785541500000,
+                "signed_difference": "0.07"
+              }
+            ]
+          },
+          "volume": {
+            "count": 0,
+            "differences": []
+          }
+        },
+        "row_stable_v2_vs_frozen": {
+          "close": {
+            "count": 0,
+            "differences": []
+          },
+          "high": {
+            "count": 0,
+            "differences": []
+          },
+          "low": {
+            "count": 0,
+            "differences": []
+          },
+          "open": {
+            "count": 0,
+            "differences": []
+          },
+          "volume": {
+            "count": 0,
+            "differences": []
+          }
+        },
+        "row_stable_v2_vs_legacy": {
+          "close": {
+            "count": 0,
+            "differences": []
+          },
+          "high": {
+            "count": 0,
+            "differences": []
+          },
+          "low": {
+            "count": 0,
+            "differences": []
+          },
+          "open": {
+            "count": 0,
+            "differences": []
+          },
+          "volume": {
+            "count": 0,
+            "differences": []
+          }
+        }
+      },
+      "raw_parser_schema": {
+        "extended_named_schema_columns": 0,
+        "malformed_csv_line_samples": [],
+        "malformed_csv_rows": 0,
+        "parser_engine": "c",
+        "source_columns": [
+          "trade_id",
+          "timestamp",
+          "price",
+          "size",
+          "side",
+          "rpi"
+        ],
+        "source_header_columns": [
+          "id",
+          "timestamp",
+          "price",
+          "volume",
+          "side",
+          "rpi"
+        ],
+        "source_rows_parsed": 160308,
+        "source_rows_skipped": 0,
+        "timestamp_unit": "ms",
+        "used_positional_schema": false
+      },
+      "raw_trade_csv_gz_sha256": "1b81677c2afdaacb9492c01d0a55c5a47ba73d93909405691814f25c9ad8f851",
+      "raw_trade_rows": 160308,
+      "stable_accepted_trade_rows": 160308,
+      "stable_quality": {
+        "duplicate_trade_id_count": 0,
+        "invalid_numeric_rows": 0,
+        "invalid_side_rows": 0,
+        "invalid_symbol_rows": 0,
+        "negative_size_rows": 0,
+        "non_positive_price_rows": 0,
+        "outside_range_rows": 0,
+        "source_rows": 160308,
+        "valid_trade_rows": 160308
+      },
+      "summary_counts": {
+        "legacy_vs_frozen": {
+          "close": 0,
+          "high": 0,
+          "low": 0,
+          "open": 0,
+          "volume": 0
+        },
+        "quarantined_api_vs_frozen": {
+          "close": 0,
+          "high": 0,
+          "low": 1,
+          "open": 7,
+          "volume": 0
+        },
+        "quarantined_api_vs_legacy": {
+          "close": 0,
+          "high": 0,
+          "low": 1,
+          "open": 7,
+          "volume": 0
+        },
+        "quarantined_api_vs_v2": {
+          "close": 0,
+          "high": 0,
+          "low": 1,
+          "open": 7,
+          "volume": 0
+        },
+        "row_stable_v2_vs_frozen": {
+          "close": 0,
+          "high": 0,
+          "low": 0,
+          "open": 0,
+          "volume": 0
+        },
+        "row_stable_v2_vs_legacy": {
+          "close": 0,
+          "high": 0,
+          "low": 0,
+          "open": 0,
+          "volume": 0
+        }
+      }
+    }
+  },
+  "research_only": true,
+  "schema": "nexus.elliott-v18-original-trade-reconstruction.v1",
+  "status": "FORENSIC_EVIDENCE_ONLY_NO_FUTURE_MARKET_EVALUATION"
+}
