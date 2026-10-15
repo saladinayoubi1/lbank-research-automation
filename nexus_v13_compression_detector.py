@@ -19,6 +19,7 @@ FACTORY_REGISTERED=False
 MARKET_EVALUATIONS=0
 
 FUTURE_START=pd.Timestamp("2026-10-16T00:00:00Z")
+FUTURE_END_EXCLUSIVE=pd.Timestamp("2026-12-16T00:00:00Z")
 RECENT_HOURS=6
 REFERENCE_HOURS=48
 REQUIRED_HOURS=55  # 54 complete TR bars and their preceding close
@@ -92,7 +93,8 @@ def build_v13_closed_compression_features(
     used_bands:set[tuple[int,int]]=set()
     for i in range(n):
         decision=t15[i]+pd.Timedelta(minutes=15)
-        if decision<FUTURE_START+pd.Timedelta(minutes=15):
+        if (decision<FUTURE_START+pd.Timedelta(minutes=15)
+                or decision>=FUTURE_END_EXCLUSIVE):
             continue
         count=int(np.searchsorted(hour_done,decision.value,side="right"))
         if count<REQUIRED_HOURS:
