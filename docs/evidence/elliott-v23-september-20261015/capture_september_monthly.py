@@ -18,6 +18,7 @@ import requests
 ROOT_URL="https://public.bybit.com/spot"
 PAIR=("BTCUSDT","ETHUSDT")
 MONTH="2026-09"
+SUCCESS_DISPOSITION="PASS_TWO_SEPTEMBER_ARCHIVES_TRANSPORT_ONLY"
 MAX_COMPRESSED=200_000_000
 MAX_UNCOMPRESSED=5_000_000_000
 CHUNK=1024*1024
@@ -114,7 +115,7 @@ def capture(output:Path)->dict:
         print(f"CAPTURED {symbol} {size} SHA256={digest.hexdigest()} lines={stream['newline_count']}",flush=True)
     result={
         "schema":"nexus.elliott-v23-official-september-gzip-acquisition.v1",
-        "disposition":"PASS_TWO_SEPTEMBER_ARCHIVES_TRANSPORT_ONLY",
+        "disposition":SUCCESS_DISPOSITION,
         "month":MONTH,
         "files":rows,
         "research_only":True,"live_enabled":False,"auto_demo":False,
