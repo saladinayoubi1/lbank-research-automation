@@ -1,0 +1,20 @@
+{
+  "schema": "nexus-elliott-structure-native-review-v1",
+  "hostname": "DESKTOP-F4SA4VL",
+  "actual_child_exit": 0,
+  "timed_out": false,
+  "started_utc": "2026-10-14T22:27:49.0321898Z",
+  "completed_utc": "2026-10-14T22:27:51.2839310Z",
+  "runtime_seconds": 2.2587414,
+  "child_pid": 8580,
+  "source_sha256": {
+    "nexus_elliott_five_swing_review.py": "110ca9c05a36d21d3f4fd87e190f3e51d4fa5ce452c6304492da9d196932dd16",
+    "test_nexus_elliott_five_swing_review.py": "fc7a14ad41b6dd165409be0f9c1b919e97a4b9f0423775c806b3553f1747576a"
+  },
+  "market_replays": 0,
+  "factory_registration_changes": 0,
+  "complete_elliott_count": false,
+  "entry_signal": false,
+  "live_enabled": false,
+  "writer_authority": false
+}

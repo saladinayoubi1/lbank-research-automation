@@ -61,8 +61,28 @@ def _finite(value):
 
 
 def observe_backtest(function, frame, signals, *, fee_bps, slip_bps, risk_variant,
-                     index_offset=0):
+                     index_offset=0, event_profile="macro_retest"):
     """Return unchanged metrics plus actual execution observations, one cell."""
+    if event_profile not in ("macro_retest", "elliott_five_swing"):
+        raise ValueError("Observational gate: unsupported event profile")
+    is_elliott = event_profile == "elliott_five_swing"
+    event_field = "elliott5_close_breakout_event" if is_elliott else "macro_retest_close_breakout_event"
+    if is_elliott and event_field not in frame:
+        raise ValueError("Observational gate: Elliott event field missing")
+    setup_names = (
+        "lagged_elliott5_origin_low", "lagged_elliott5_wave1_high", "lagged_elliott5_wave2_low",
+        "lagged_elliott5_origin_index", "lagged_elliott5_wave1_index", "lagged_elliott5_wave2_index",
+        "lagged_elliott5_confirmed_at", "lagged_elliott5_retracement",
+        "elliott5_trigger_index", "elliott5_decision_atr", "elliott5_flat_cost", "elliott5_target_net",
+    ) if is_elliott else (
+        "lagged_macro_h4_index", "lagged_macro_closed_ms", "lagged_macro_break_high",
+        "lagged_macro_break_low", "lagged_macro_break_span", "lagged_macro_retest_h1_index",
+        "lagged_macro_retest_confirmed_ms", "lagged_macro_retest_trigger_high",
+        "macro_retest_trigger_index", "macro_retest_flat_cost", "macro_retest_target_net",
+    )
+    admission_fields = ("h4_up", "h1_vol_ok", "lagged_elliott5_active", "elliott5_cost_feasible") if is_elliott else (
+        "h4_up", "h1_vol_ok", "lagged_macro_retest_active", "macro_retest_stress_cost_feasible",
+    )
     if sys.implementation.name != "cpython" or sys.gettrace() is not None:
         raise ValueError("Observational gate requires untraced isolated CPython")
     binding = _binding(function)
@@ -71,8 +91,8 @@ def observe_backtest(function, frame, signals, *, fee_bps, slip_bps, risk_varian
     trades, events, attempts = [], [], []
     active_trade = None
     pending_decision = None
-    event_indices = (set(np.flatnonzero(frame["macro_retest_close_breakout_event"].to_numpy() == 1))
-                     if "macro_retest_close_breakout_event" in frame else set())
+    event_indices = (set(np.flatnonzero(frame[event_field].to_numpy() == 1))
+                     if event_field in frame else set())
 
     def stamp(i):
         row = frame.iloc[i]
@@ -83,11 +103,13 @@ def observe_backtest(function, frame, signals, *, fee_bps, slip_bps, risk_varian
 
     def setup(i):
         row = frame.iloc[i]
-        names = ("lagged_macro_h4_index", "lagged_macro_closed_ms", "lagged_macro_break_high",
-                 "lagged_macro_break_low", "lagged_macro_break_span", "lagged_macro_retest_h1_index",
-                 "lagged_macro_retest_confirmed_ms", "lagged_macro_retest_trigger_high",
-                 "macro_retest_trigger_index", "macro_retest_flat_cost", "macro_retest_target_net")
-        return {name: _finite(row[name]) for name in names if name in row}
+        return {name: _finite(row[name]) for name in setup_names if name in row}
+
+    def cost_span(row):
+        if is_elliott:
+            return _finite(row.get("lagged_elliott5_wave1_high", np.nan)
+                           - row.get("lagged_elliott5_origin_low", np.nan))
+        return _finite(row.get("lagged_macro_break_span", np.nan))
 
     def local_trace(current, event, arg):
         nonlocal pending_decision, active_trade
@@ -143,7 +165,7 @@ def observe_backtest(function, frame, signals, *, fee_bps, slip_bps, risk_varian
                 return local_trace
             row = frame.iloc[i]
             denials = []
-            for name in ("h4_up", "h1_vol_ok", "lagged_macro_retest_active", "macro_retest_stress_cost_feasible"):
+            for name in admission_fields:
                 if name not in row or row[name] != 1:
                     denials.append(name)
             if not row["close"] > row["open"]:
@@ -171,7 +193,7 @@ def observe_backtest(function, frame, signals, *, fee_bps, slip_bps, risk_varian
             events.append({**stamp(i), "setup": setup(i), "signal": bool(signals[i]),
                            "admission": admission, "denial_fields": denials,
                            "cost_inputs": {"close": _finite(row["close"]), "atr": _finite(row["atr"]),
-                                           "span": _finite(row.get("lagged_macro_break_span", np.nan)),
+                                           "span": cost_span(row),
                                            "screen_fee_bps": 25, "screen_slip_bps": 15}})
         return local_trace
 

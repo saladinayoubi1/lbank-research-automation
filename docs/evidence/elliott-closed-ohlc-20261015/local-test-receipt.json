@@ -1,0 +1,40 @@
+{
+  "schema": "elliott-five-swing-local-tests/v1",
+  "started_at": "2026-10-14T22:59:24.440965+00:00",
+  "completed_at": "2026-10-14T22:59:24.976165+00:00",
+  "duration_seconds": 0.5352065849983774,
+  "actual_exit_code": 0,
+  "timed_out": false,
+  "python_version": "3.12.14",
+  "numpy_version": "2.3.5",
+  "pandas_version": "2.2.3",
+  "source_hashes": [
+    {
+      "path": "nexus_elliott_five_swing_review.py",
+      "sha256": "110ca9c05a36d21d3f4fd87e190f3e51d4fa5ce452c6304492da9d196932dd16"
+    },
+    {
+      "path": "test_nexus_elliott_five_swing_review.py",
+      "sha256": "fc7a14ad41b6dd165409be0f9c1b919e97a4b9f0423775c806b3553f1747576a"
+    },
+    {
+      "path": "nexus_causal_elliott_five_swing_features.py",
+      "sha256": "0ae7a6c50ff4ca1f44230baf3bd14731d46c5f2b2d3be456813e0f02e231f21e"
+    },
+    {
+      "path": "test_nexus_causal_elliott_five_swing_features.py",
+      "sha256": "003c898d353a3e9f9a4a401e5065506d3f8a973a55120349c9608af0f7546a64"
+    },
+    {
+      "path": "nexus_causal_macro_retest_features.py",
+      "sha256": "665657585d1ab470fedc8d9926af4429c8380e677f519f427350a085dab93c57"
+    },
+    {
+      "path": "research/causal_macro_break_retest_v10_preregistration.json",
+      "sha256": "2234a61ffb4b7b5238b478a51f323e4efea6c4334bc7b44081de46c27c50aad1"
+    }
+  ],
+  "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderr_sha256": "884de5d280ef746070779305bb755f9d8f216933e21035fce70167baf18cc3d6",
+  "market_replays": 0
+}

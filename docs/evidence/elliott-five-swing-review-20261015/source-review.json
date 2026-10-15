@@ -1,0 +1,160 @@
+{
+  "aggregated_factory_inventory_sha256": "c47a42bf6d9fcba239f99a1eaa63d46fcff24b81a1921e0f49b26a9bf6e515fe",
+  "full_recursive_elliott_count": false,
+  "later_fold_rows_used_for_design": 0,
+  "lifecycle": "UNINTEGRATED_STRUCTURAL_PROTOTYPE",
+  "live_enabled": false,
+  "local_structural_tests": 16,
+  "local_structural_tests_result": "PASS",
+  "native_actual_child_exit": 0,
+  "native_runtime_seconds": 2.2587414,
+  "native_stage": "E:\\NEXUS-QA\\elliott-structure-review-20261015",
+  "native_structural_tests_result": "PASS",
+  "new_factory_specs_registered": 0,
+  "new_market_replays": 0,
+  "owner_demo_admission": false,
+  "parent_source_sha": "21b8f03af4bf5dab1f8c0830d81d1d5753cdbedb",
+  "prior_factory_specs": 95,
+  "prior_frontier_configs": 111,
+  "prior_mechanisms": 122,
+  "prototype_source_sha256": {
+    "nexus_elliott_five_swing_review.py": "110ca9c05a36d21d3f4fd87e190f3e51d4fa5ce452c6304492da9d196932dd16",
+    "test_nexus_elliott_five_swing_review.py": "fc7a14ad41b6dd165409be0f9c1b919e97a4b9f0423775c806b3553f1747576a"
+  },
+  "schema": "nexus.elliott-five-swing-source-review.v1",
+  "scope_comparison": "Review only against aggregated normalized factory inventory; no complete strategy/topology fingerprint or global novelty claim before future integration.",
+  "shared_engine_ast_sha256": "e44e2bada1efbf2427edfee224d75e96067bfcf1e3fa07b79fa39a09782b9bfb",
+  "shared_engine_unchanged": true,
+  "similar_existing_factory_specs": [
+    {
+      "context": [
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_peer_lead_corr_96",
+          "op": "ge",
+          "value": 0.15
+        },
+        {
+          "field": "lagged_peer_impulse",
+          "op": "gt",
+          "value": 0.0
+        }
+      ],
+      "contract_digest": "c7b833a683da9a1c5234c0a7cbf45f8a4c036d095b0df2e2566faa62659bb709",
+      "entry": [
+        {
+          "field": "low",
+          "op": "le",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "prior_range_mid",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "rel_vol",
+          "op": "ge",
+          "value": 0.9
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "generated_peer_lead_followthrough_midpoint_reclaim",
+      "hypothesis": "Reviewed causal context peer_lead_followthrough is combined with later closed-bar confirmation midpoint_reclaim; selection remains Training-only.",
+      "id": "factory_gen_peer_lead_followthrough_midpoint_reclaim",
+      "peer_required": true,
+      "topology_digest": "8cc945a3c2e1ff9dbd7e9c2577fdd5cbeae8611ec3bb4978e16b5ef68db05a10"
+    },
+    {
+      "context": [
+        {
+          "field": "h4_up",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "h1_vol_ok",
+          "op": "eq",
+          "value": 1.0
+        },
+        {
+          "field": "lagged_elliott_wave12_active",
+          "op": "eq",
+          "value": 1.0
+        }
+      ],
+      "contract_digest": "96c8d7106e88a93f53a789251f76ea00d68c1678235b40575dd982a2e934c976",
+      "entry": [
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "open",
+          "scale": 1.0
+        },
+        {
+          "field": "close",
+          "op": "gt",
+          "other": "previous_close",
+          "scale": 1.0
+        },
+        {
+          "field": "elliott_wave12_close_breakout_event",
+          "op": "eq",
+          "value": 1.0
+        }
+      ],
+      "factory_schema": "nexus.mechanism-factory.v1",
+      "family": "confirmed_wave12_continuation",
+      "hypothesis": "An Elliott-inspired low-high-higher-low setup, observed only after strict pivot confirmation and a lagged state, may precede continuation when price freshly closes above the proposed wave-one high. Completed 4h structure and 1h volatility gates remain fixed. This is a deterministic early-wave proxy, not a verified complete Elliott count or positive-expectancy claim.",
+      "id": "factory_causal_elliott_wave12_breakout",
+      "peer_required": false,
+      "topology_digest": "9cf9bdfc24e8b5b3d7304f2aaccee1889a2f71b3d7dd85f1748ef6a85a1f286a"
+    }
+  ],
+  "source_gap": "The v9 three-pivot geometry does not verify the five-swing structure inside a proposed parent wave one. The seven-pivot prototype inspects more known structure, but still does not verify recursive degrees or the complete Elliott 5-3-5-3-5 pattern.",
+  "training_rows": [
+    {
+      "closed_round_trips": 257,
+      "net_pnl_usdt": -790.07454184,
+      "net_return_pct": -7.90074542,
+      "profile": "conservative",
+      "symbol": "BTCUSDT"
+    },
+    {
+      "closed_round_trips": 143,
+      "net_pnl_usdt": -1011.24835445,
+      "net_return_pct": -10.11248354,
+      "profile": "stress",
+      "symbol": "BTCUSDT"
+    },
+    {
+      "closed_round_trips": 236,
+      "net_pnl_usdt": -674.1125579,
+      "net_return_pct": -6.74112558,
+      "profile": "conservative",
+      "symbol": "ETHUSDT"
+    },
+    {
+      "closed_round_trips": 129,
+      "net_pnl_usdt": -996.28937383,
+      "net_return_pct": -9.96289374,
+      "profile": "stress",
+      "symbol": "ETHUSDT"
+    }
+  ],
+  "v9_report_hash_verified": true,
+  "v9_report_sha256": "26bd16779f583d43c8407c65f0830fcccd4700c8b09a0f1cd1e00c5fd087f53d",
+  "vps_work_user_paused": true
+}

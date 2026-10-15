@@ -1,0 +1,156 @@
+{
+  "schema": "elliott-five-swing-closed-ohlc-review/v1",
+  "created_at": "2026-10-14T23:03:45.159420+00:00",
+  "parent_head": "301462e6a362080244913b9852733e220cd61747",
+  "parent_tree": "f7538da6c12357bf5c98d4301e17ac81f773e045",
+  "base_head": "21b8f03af4bf5dab1f8c0830d81d1d5753cdbedb",
+  "source_hashes": [
+    {
+      "path": "nexus_elliott_five_swing_review.py",
+      "sha256": "110ca9c05a36d21d3f4fd87e190f3e51d4fa5ce452c6304492da9d196932dd16"
+    },
+    {
+      "path": "test_nexus_elliott_five_swing_review.py",
+      "sha256": "fc7a14ad41b6dd165409be0f9c1b919e97a4b9f0423775c806b3553f1747576a"
+    },
+    {
+      "path": "nexus_causal_elliott_five_swing_features.py",
+      "sha256": "0ae7a6c50ff4ca1f44230baf3bd14731d46c5f2b2d3be456813e0f02e231f21e"
+    },
+    {
+      "path": "test_nexus_causal_elliott_five_swing_features.py",
+      "sha256": "003c898d353a3e9f9a4a401e5065506d3f8a973a55120349c9608af0f7546a64"
+    },
+    {
+      "path": "nexus_causal_macro_retest_features.py",
+      "sha256": "665657585d1ab470fedc8d9926af4429c8380e677f519f427350a085dab93c57"
+    },
+    {
+      "path": "research/causal_macro_break_retest_v10_preregistration.json",
+      "sha256": "2234a61ffb4b7b5238b478a51f323e4efea6c4334bc7b44081de46c27c50aad1"
+    }
+  ],
+  "native_payload_sha256": "b8a914fe05ca4c4eeec756fc3e48dbda0f1fba9d3e12af6d1bfc181723460d78",
+  "native_invocation_sha256": "8893ea9566a7c441ca067f1f6e32c30d99ef7a4993f423136e6428ed524aa3fc",
+  "dependency_readbacks": [
+    {
+      "path": "nexus_causal_macro_retest_features.py",
+      "github_blob_sha": "9a76b3f00130cdb7a350f624f8473190a0daf29b",
+      "matched_local": true
+    },
+    {
+      "path": "research/causal_macro_break_retest_v10_preregistration.json",
+      "github_blob_sha": "9a2106db0964eb384be6354ec7e52457bfe8f8be",
+      "matched_local": true
+    },
+    {
+      "path": "nexus_elliott_five_swing_review.py",
+      "github_blob_sha": "a2166015ea51b9eebdbef6d2f63ff8ae6d0c3b7c",
+      "matched_local": true
+    },
+    {
+      "path": "tests/test_nexus_elliott_five_swing_review.py",
+      "github_blob_sha": "0f80a51b6afb20813a68e6635c94831b32c4178f",
+      "matched_local": true
+    }
+  ],
+  "input_contract": {
+    "timeframe_minutes": 15,
+    "timestamps": "explicitly timezone aware; bar CLOSE; forming bar excluded by caller",
+    "grid": "complete aligned UTC",
+    "validation": "finite positive consistent OHLC; no missing or duplicate bars"
+  },
+  "frozen_scope": {
+    "confirmation_width": 3,
+    "latest_pivots": 7,
+    "max_origin_correction_span_bars": 192,
+    "eligible_age_bars": [
+      1,
+      32
+    ],
+    "correction_retracement": [
+      "0.382",
+      "0.786"
+    ],
+    "fresh_close_cross": true,
+    "new_pivot_affects_next_decision_only": true,
+    "raw_path_checks": true,
+    "lower_correction_low_invalidates_immediately": true,
+    "identity": [
+      "origin_index",
+      "fifth_high_index"
+    ],
+    "consume_before_cost_screen": true,
+    "recursive_complete_elliott_count": false,
+    "diagonals_included": false,
+    "truncated_fifths_included": false
+  },
+  "cost_hypothesis": {
+    "implementation": "unchanged nexus_causal_macro_retest_features.stress_cost_screen",
+    "fee_per_leg": 0.0025,
+    "slippage_per_leg": 0.0015,
+    "price": "current decision close; actual next open unknown",
+    "range": "previous-bar 14-period mean(high-low)",
+    "span": "fifth high minus origin low, not stop risk",
+    "conditions": [
+      "positive projected stop",
+      "span strictly above flat round-trip cost",
+      "positive target proceeds after costs"
+    ],
+    "economic_qualification": false
+  },
+  "validation": {
+    "new_closed_ohlc_methods": 26,
+    "unchanged_geometry_methods": 16,
+    "total_local_and_native_methods": 42,
+    "local_exit_code": 0,
+    "native_exit_code": 0,
+    "native_timeout": false,
+    "native_duration_seconds": 22.8014705,
+    "native_child_pid": 4028,
+    "native_versions": {
+      "python": "3.12.10",
+      "numpy": "2.3.5",
+      "pandas": "2.3.3",
+      "tests_run": 42,
+      "failures": 0,
+      "errors": 0
+    },
+    "source_unchanged_after_native_tests": true,
+    "market_replays": 0,
+    "archive_opened": false,
+    "fill_observer_qualified": false,
+    "new_head_hosted_results_not_claimed_by_this_receipt": true
+  },
+  "inventory": {
+    "factory_contracts": 95,
+    "mechanisms": 122,
+    "frontier_configs": 111,
+    "parent_normalized_sha256": "c47a42bf6d9fcba239f99a1eaa63d46fcff24b81a1921e0f49b26a9bf6e515fe",
+    "evidence": "inherited verified parent inventory; no factory/config/engine modifications"
+  },
+  "authority": {
+    "research_only": true,
+    "execution_integrated": false,
+    "factory_registered": false,
+    "live": false,
+    "auto_demo": false,
+    "failover": false,
+    "sole_paper_writer": "LAPTOP1",
+    "primary_research_executor": "LAPTOP2",
+    "vps_work": "owner-paused; no changes"
+  },
+  "preserved_prior_evidence": {
+    "v9_producer_replayed": false,
+    "v9_report_sha256": "26bd16779f583d43c8407c65f0830fcccd4700c8b09a0f1cd1e00c5fd087f53d",
+    "shared_backtest_ast_sha256": "e44e2bada1efbf2427edfee224d75e96067bfcf1e3fa07b79fa39a09782b9bfb",
+    "later_v9_folds_used_for_design": false
+  },
+  "remaining_gate": [
+    "complete prospective candidate contract and frozen invocation",
+    "engine close-time adapter with approved-field equality",
+    "source-bound actual next-open fill observer qualification",
+    "one fresh candidate evaluation; no v9 replay",
+    "market and independent numeric QA"
+  ]
+}

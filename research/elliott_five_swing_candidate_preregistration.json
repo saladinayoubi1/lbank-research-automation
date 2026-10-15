@@ -1,0 +1,165 @@
+{
+  "archive_semantic_sha256": "2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422",
+  "auto_demo_promotion": false,
+  "before_first_market_producer": [
+    "passed exact-source hosted and native gates",
+    "immutable full source/data/terminal-ledger/invocation bindings",
+    "one candidate-specific exclusive producer lease; no completed v9 replay"
+  ],
+  "candidate_config": {
+    "contract_digest": "40296b16bca82caf849638519732e3a24ce904f72835b572fa65fc2c02b5bb57",
+    "entry_model": "closed_4h_1h_15m_next_open",
+    "mechanism": "research_causal_elliott_five_swing_cost_breakout",
+    "risk_variant": 0
+  },
+  "candidate_config_fingerprint": "a955cede6145d33ab4f24f2c221740a490609955985e3425d4a5f727e62dbd1d",
+  "conditions": {
+    "atr": "finite positive; same shifted mean range as parent",
+    "context": [
+      {
+        "field": "h4_up",
+        "op": "eq",
+        "value": 1
+      },
+      {
+        "field": "h1_vol_ok",
+        "op": "eq",
+        "value": 1
+      },
+      {
+        "field": "lagged_elliott5_active",
+        "op": "eq",
+        "value": 1
+      }
+    ],
+    "entry": [
+      {
+        "field": "close",
+        "op": "gt",
+        "other": "open"
+      },
+      {
+        "field": "close",
+        "op": "gt",
+        "other": "previous_close"
+      },
+      {
+        "field": "elliott5_close_breakout_event",
+        "op": "eq",
+        "value": 1
+      },
+      {
+        "field": "elliott5_cost_feasible",
+        "op": "eq",
+        "value": 1
+      }
+    ],
+    "risk_variant": 0
+  },
+  "cost_screen": "unchanged stress_cost_screen with structural fifth-high minus origin-low span; decision close and previous 14 mean ranges; same stress gate under both simulation profiles",
+  "costs_per_leg_bps": {
+    "conservative": {
+      "fee": 10,
+      "slippage": 5
+    },
+    "stress": {
+      "fee": 25,
+      "slippage": 15
+    }
+  },
+  "created_at_utc": "2026-10-14T23:20:47.965501+00:00",
+  "delivery_zip_sha256": "d284a49f1b6e8951763cf225992a52a620289b2baf10815247d8626045763cec",
+  "diagnostic_splits": {
+    "historically_inspected_test": 0.2,
+    "train": 0.6,
+    "validation": 0.2
+  },
+  "execution": "unchanged shared parent next-open long-only; stop-first ambiguous bars; 1.5 lagged range stop, 2R reward and 64-bar time exit",
+  "failover": false,
+  "feature_sha256": {
+    "nexus_causal_elliott_five_swing_features.py": "0ae7a6c50ff4ca1f44230baf3bd14731d46c5f2b2d3be456813e0f02e231f21e",
+    "nexus_causal_macro_retest_features.py": "665657585d1ab470fedc8d9926af4429c8380e677f519f427350a085dab93c57",
+    "nexus_composite_strategy_research.py": "9931aaeb51a25fb0fbeb5f3b5384ddc8d15eff5b3ccbfc10dd7161ca4b40d2b7",
+    "nexus_elliott_five_swing_review.py": "110ca9c05a36d21d3f4fd87e190f3e51d4fa5ce452c6304492da9d196932dd16"
+  },
+  "fresh_holdout_claim": false,
+  "higher_timeframes": "unchanged causal closed/asof h4_up and h1_vol_ok from parent build_features",
+  "hypothesis_count": 1,
+  "later_v9_folds_used_for_design": false,
+  "live_enabled": false,
+  "manifest_sha256": "81ddd82c2bbe42cf6c57dd2a5b6b2776803fa6f155fc433d8968f42354a98cb0",
+  "new_candidate_market_evaluations_before_this_freeze": 0,
+  "numeric_qa": "unchanged metrics and independently calculated synthetic fills/fees; market numeric QA remains separate",
+  "owner_demo_admission": false,
+  "parameter_configurations": 1,
+  "parent_head": "d78d05b9e5afe47934bf6c8f716ef0dac304bfc7",
+  "preregistration_digest": "ede171e4dc320d72b32e8b8241d0a468c3a85ebdb1e410617b72a5734eabe6ec",
+  "previous_terminal_v9_ledger_digest": "b784b409c16b77fa5d6dd5d65b7f8ed67e13e65aa6d230a74e843f9e63720e8f",
+  "previous_terminal_v9_ledger_file_sha256": "14cc329d8acd02fbc3a13268826446f44d05dcf9eb299a6c13738558342f401c",
+  "previously_inspected_archive": true,
+  "primary_executor": "LAPTOP2",
+  "prior_full_inventory_semantic_digest": "683ca4fa3f373276f7255b5cf5afa797b434e182d264cd4ea18f140739053de2",
+  "raw_file_sha256": {
+    "bybit_market/btc_usdt/hour1.parquet": "f8f2236785c036fe40808809397d47729b3add4c8f0b9e19c77d3b771f8e6847",
+    "bybit_market/btc_usdt/hour4.parquet": "e0d019a76882a02dc463a34d1d9375841f81d412b9a3310d9e21c2d7b2738dc6",
+    "bybit_market/btc_usdt/minute15.parquet": "c3afe92899dda8fe52937c955323cc8e04bf8f200a68eb8651e55d6020981226",
+    "bybit_market/eth_usdt/hour1.parquet": "ba0743588c5089e6a6b250b4ebb029a43fea57d0a020df5ab1316c34efdcd88a",
+    "bybit_market/eth_usdt/hour4.parquet": "292005e091d914fbb9d108c3d8d65e93785cc32b9c73e07ea02e0d44cf7da65b",
+    "bybit_market/eth_usdt/minute15.parquet": "ce603440650d0022b1a17a7922da743a3b6219ba9afd89ad4362b70fbe3bbfa1"
+  },
+  "registered_factory_inventory_unchanged": {
+    "contracts": 95,
+    "frontier_configs": 111,
+    "mechanisms": 122
+  },
+  "registration": "isolated explicit candidate adapter only; not automatic Strategy Finder admission",
+  "research_only": true,
+  "risk": {
+    "initial_simulated_cash_usdt_per_isolated_cell": 10000,
+    "maximum_daily_loss_fraction": 0.05,
+    "maximum_drawdown_fraction": 0.1,
+    "maximum_position_fraction": 0.1,
+    "maximum_trades_per_strategy": null,
+    "minimum_trade_count_gate": null,
+    "reward_risk_multiple": 2,
+    "stop_atr_multiple": 1.5,
+    "stop_risk_fraction": 0.001,
+    "time_exit_bars": 64
+  },
+  "schema": "nexus.elliott-five-swing-research-candidate.v1",
+  "shape": {
+    "confirmation_right_bars": 3,
+    "confirmed_pivots": 7,
+    "consume_identity_before_cost_body_regime_gates": true,
+    "eligible_age_bars": [
+      1,
+      32
+    ],
+    "geometry": "unchanged already source-frozen five-swing helper",
+    "invalidate_before_price_event": true,
+    "origin_to_parent_correction_span_max_bars": 192,
+    "raw_path": "unchanged source-frozen closed-OHLC helper",
+    "recursive_complete_elliott_count": false,
+    "retracement": [
+      "0.382",
+      "0.786"
+    ]
+  },
+  "sole_paper_writer": "LAPTOP1",
+  "source_bound_backtest_ast_sha256": "e44e2bada1efbf2427edfee224d75e96067bfcf1e3fa07b79fa39a09782b9bfb",
+  "symbols": [
+    "BTCUSDT",
+    "ETHUSDT"
+  ],
+  "system_map_nodes": [
+    "DATA-21",
+    "RES-30",
+    "RES-31",
+    "RES-32",
+    "VAL-40",
+    "QA-41"
+  ],
+  "timestamp_adapter": "canonical archive timestamp is OPEN; copy engine decision_at=OPEN+15min into helper timestamp=CLOSE; forming bars excluded by caller",
+  "v9_producer_replayed": false,
+  "vps_work": "owner-paused"
+}

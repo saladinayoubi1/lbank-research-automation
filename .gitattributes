@@ -16,3 +16,10 @@ desktop/nexus-product/vendor/siwc-local/** text eol=lf
 
 # Preserve the frozen source fixture bytes under Windows checkout conversion.
 tests/fixtures/macro_retest_v10_previous_engine.py text eol=lf
+
+# Byte-pinned Elliott research sources and observer compatibility fixture.
+nexus_elliott_five_swing_review.py text eol=lf
+nexus_causal_elliott_five_swing_features.py text eol=lf
+nexus_causal_macro_retest_features.py text eol=lf
+nexus_composite_strategy_research.py text eol=lf
+tests/fixtures/elliott_five_swing_previous_observer.py text eol=lf
