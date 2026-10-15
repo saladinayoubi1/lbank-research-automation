@@ -101,6 +101,11 @@ class ElliottProspectiveV17Tests(unittest.TestCase):
             audit(e=eligible(decision_close_utc=DECISION-timedelta(days=1)),
                   asof=DECISION+timedelta(minutes=15))
 
+    def test_future_window_end_is_fixed_and_enforced(self):
+        with self.assertRaisesRegex(ValueError,"outside preregistered forward month"):
+            audit(e=eligible(decision_close_utc=datetime(2026,11,16,tzinfo=timezone.utc)),
+                  asof=datetime(2026,11,16,0,15,tzinfo=timezone.utc))
+
     def test_unverified_source_and_break_rejected(self):
         for key in ("source_bound_seven_pivot","closed_first_breakout",
                     "post_correction_path_valid"):
