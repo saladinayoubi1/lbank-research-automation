@@ -114,7 +114,7 @@ def capture(output:Path)->dict:
         print(f"CAPTURED {symbol} {size} SHA256={digest.hexdigest()} lines={stream['newline_count']}",flush=True)
     result={
         "schema":"nexus.elliott-v23-official-september-gzip-acquisition.v1",
-        "disposition":"PASS_TWO_AUGUST_ARCHIVES_TRANSPORT_ONLY",
+        "disposition":"PASS_TWO_SEPTEMBER_ARCHIVES_TRANSPORT_ONLY",
         "month":MONTH,
         "files":rows,
         "research_only":True,"live_enabled":False,"auto_demo":False,
