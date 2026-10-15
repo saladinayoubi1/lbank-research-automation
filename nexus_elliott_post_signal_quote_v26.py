@@ -52,6 +52,14 @@ def assess_quote_only(
         raise ValueError("unsupported preregistered cost profile")
     if not isinstance(observation,Mapping) or not isinstance(quote,Mapping):
         raise ValueError("observation and quote must be maps")
+    allowed_quote_keys={
+        "symbol","venue","category","best_bid","best_ask",
+        "market_quoted_at_utc","client_received_at_utc"
+    }
+    if set(quote)!=allowed_quote_keys:
+        raise ValueError("quote missing required fields or contains unapproved future/side-channel data")
+    if quote.get("venue")!="Bybit" or quote.get("category")!="spot":
+        raise ValueError("only Bybit spot quote envelope is permitted")
     symbol=observation.get("symbol")
     event_id=observation.get("event_id")
     if symbol not in ("BTCUSDT","ETHUSDT") or (
@@ -69,7 +77,7 @@ def assess_quote_only(
     signal_close=_decimal(observation.get("decision_close"),"decision close")
     high=_decimal(observation.get("fifth_high"),"fifth pivot high")
     correction=_decimal(observation.get("correction_low"),"correction low")
-    if not before<=high<signal_close or not correction<signal_close:
+    if not before<=high<signal_close or not correction<high:
         raise ValueError("no first-closed breakout or valid correction geometry")
     if quote.get("symbol")!=symbol:
         raise ValueError("quote source symbol mismatches event")
@@ -117,7 +125,7 @@ def assess_quote_only(
         risk=conservative_buy_reference-correction
         if risk<=0:
             state="REJECT_INVALID_QUOTED_STRUCTURAL_RISK"
-        if risk>0:
+        if risk>0 and state=="ADVISORY_QUOTED_PRICE_PATH_ONLY_NOT_EXECUTABLE":
             hypothetical_target=conservative_buy_reference+MAX_REWARD_RISK*risk
             after_cost_target=hypothetical_target*(1-slip)*(1-fee)-conservative_buy_reference*(1+fee)
             after_cost_stop=correction*(1-slip)*(1-fee)-conservative_buy_reference*(1+fee)
@@ -153,7 +161,7 @@ def assess_quote_only(
             "raw_spread_bps":str((ask-bid)/((bid+ask)/2)*Decimal("10000")),
             "cost_profile_fee_bps":str(PROFILES[profile]["fee_bps"]),
             "cost_profile_slippage_bps":str(PROFILES[profile]["slip_bps"]),
-            "quote_ask_plus_fixed_stress_slippage_reference":str(conservative_buy_reference),
+            "quote_ask_plus_frozen_profile_slippage_reference":str(conservative_buy_reference),
             "nominal_risk_per_unit_research_only":str(risk) if risk>0 else None,
             "nominal_target_2r_research_only":str(hypothetical_target) if hypothetical_target is not None else None,
             "conditional_target_net_per_unit_not_observed":str(after_cost_target) if after_cost_target is not None else None,
