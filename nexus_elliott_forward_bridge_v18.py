@@ -65,7 +65,10 @@ def validate_frame(frame: pd.DataFrame) -> pd.DataFrame:
     if any(pd.Timestamp(x).tzinfo is None or pd.Timestamp(x).utcoffset() is None for x in f.timestamp):
         raise ValueError("source timestamps require timezone")
     f["timestamp"] = pd.to_datetime(f.timestamp, utc=True, errors="raise")
-    ns = f.timestamp.astype("int64").to_numpy()
+    # Parquet may preserve datetime64[ms, UTC] or datetime64[us, UTC].
+    # Bare astype(int64) returns *storage-unit* ticks, not always ns.
+    # Normalize explicitly before applying the 15m nanosecond grid.
+    ns = f.timestamp.dt.as_unit("ns").astype("int64").to_numpy()
     if (ns % STEP_NS).any() or (len(ns) > 1 and (np.diff(ns) != STEP_NS).any()):
         raise ValueError("15m source is gapped, duplicated, unsorted or not UTC aligned")
     x = f[list(COLUMNS)].to_numpy(dtype=float)
