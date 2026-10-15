@@ -1,0 +1,458 @@
+{
+  "auto_demo": false,
+  "disposition": "PASS_ISOLATED_V20_30DAY_MODEL_V2_ONLY",
+  "historical_market_segment_only": true,
+  "independent_15m_to_h1_h4_ohlcv": {
+    "BTCUSDT": {
+      "hour1": {
+        "bars": 720,
+        "by_field": {
+          "close": 0,
+          "high": 0,
+          "low": 0,
+          "open": 0,
+          "volume": 0
+        },
+        "field_comparisons": 3600,
+        "material_mismatches": 0
+      },
+      "hour4": {
+        "bars": 180,
+        "by_field": {
+          "close": 0,
+          "high": 0,
+          "low": 0,
+          "open": 0,
+          "volume": 0
+        },
+        "field_comparisons": 900,
+        "material_mismatches": 0
+      }
+    },
+    "ETHUSDT": {
+      "hour1": {
+        "bars": 720,
+        "by_field": {
+          "close": 0,
+          "high": 0,
+          "low": 0,
+          "open": 0,
+          "volume": 0
+        },
+        "field_comparisons": 3600,
+        "material_mismatches": 0
+      },
+      "hour4": {
+        "bars": 180,
+        "by_field": {
+          "close": 0,
+          "high": 0,
+          "low": 0,
+          "open": 0,
+          "volume": 0
+        },
+        "field_comparisons": 900,
+        "material_mismatches": 0
+      }
+    }
+  },
+  "independent_field_comparisons": 9000,
+  "live_enabled": false,
+  "material_aggregate_mismatches": 0,
+  "missing_aug02_to_sep07": true,
+  "missing_oct08_to_oct15": true,
+  "orders_placed": 0,
+  "original_native_receipt_sha256": "bddad30b897fde294f80def90c41a051c1f4ea506a0342bd9199059f70425b66",
+  "pairs": [
+    "BTCUSDT",
+    "ETHUSDT"
+  ],
+  "parquet_sha256_by_pair": {
+    "BTCUSDT": {
+      "hour1": "5236acc2efd2a4a44b5842ea3d8e04636c0c43a03b942a8380076ebcede3e534",
+      "hour4": "26433d1e24ae922b05a8a4cebfef3ab76edfc96ecfd6c90f1059b990419e1b1f",
+      "minute15": "9f1ec2beb78c6a0d8af3382e94f43c34c5411b9b51dcb3a339a21b5fa5aa8c41"
+    },
+    "ETHUSDT": {
+      "hour1": "d744807d2dbfe643b8d4917e54f3d138a8be84968a2c8e207d5a67c4974dabdb",
+      "hour4": "2a0894dd66607b3da3e5affc8420a3a8642474d56db00b7b77c198a14954468c",
+      "minute15": "98f7e2dfe38e1290218a7abefd02d311da2797f1fc957fdd2b02fe8a19a440b9"
+    }
+  },
+  "prospective_v17_eligible": false,
+  "protected_v19_six_parquet_sha256": {
+    "bybit_market/btc_usdt/hour1.parquet": "36e3150528f0c11bf1fecc6cb32ddbdef2b2c1e82733f98e28feea249792838e",
+    "bybit_market/btc_usdt/hour4.parquet": "5c689c538aa3e42e92f455731f5a0f406df0845d8b6af3dc342b99c213aedc9b",
+    "bybit_market/btc_usdt/minute15.parquet": "735089b5df25eb44de36a87cfb1e9e560ee26aff6cf9be8e6a37c52655c98590",
+    "bybit_market/eth_usdt/hour1.parquet": "b614c1afc8a1153fb2d54569e39e80bd3a9a4d1a4df3e8a2c96d9215064042b8",
+    "bybit_market/eth_usdt/hour4.parquet": "fe0da8446839d480e95ce30f0eb22c511dfccc18339e43486f2eb93b9a9ee2be",
+    "bybit_market/eth_usdt/minute15.parquet": "81869ac865b5013f0b4ad9da98cacb8c7691213c2327bcd10eeef886b4a786a7"
+  },
+  "provider_origin_freshly_attested": false,
+  "raw_gzip_sha256": [
+    {
+      "filename": "BTCUSDT_2026-09-08.csv.gz",
+      "sha256": "37cdad98cb8afe982317808d4c7fe5e1c3295ffcd31eccb1e43cff87257f4554",
+      "size_bytes": 3321971,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "filename": "BTCUSDT_2026-09-09.csv.gz",
+      "sha256": "1c5b879ea5801fdf10a89385d675e6f4e98d9ade193193ffeb9aa209856b7c22",
+      "size_bytes": 3607524,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "filename": "BTCUSDT_2026-09-10.csv.gz",
+      "sha256": "d0f5793189bfcfdd67770f647c19c6199c62f8888eec5814c3377e088ac23b52",
+      "size_bytes": 3856575,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "filename": "BTCUSDT_2026-09-11.csv.gz",
+      "sha256": "3c80eb4210a24b336ef00d17de7f33f0f6787a383337feb4f55c19c9afd42e08",
+      "size_bytes": 5001325,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "filename": "BTCUSDT_2026-09-12.csv.gz",
+      "sha256": "e323029717bc5dfe5fe2359c9eee1aeb11301c7d8b1c2c2757bc601999ea376d",
+      "size_bytes": 1023675,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "filename": "BTCUSDT_2026-09-13.csv.gz",
+      "sha256": "5244cf796cc494a1b63898a870dcb0b97dc2f5f7301badf9076c261cffdc4c39",
+      "size_bytes": 1682170,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "filename": "BTCUSDT_2026-09-14.csv.gz",
+      "sha256": "28217d72c6475772707f8ec09184715439ea3cb22d47850ab5ff5dd36a4d4864",
+      "size_bytes": 4034703,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "filename": "BTCUSDT_2026-09-15.csv.gz",
+      "sha256": "0c0365b074495d2ad70ed65c85bdf206b9fb036b12334b11ab1fb71ed40c9c05",
+      "size_bytes": 5565948,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "filename": "BTCUSDT_2026-09-16.csv.gz",
+      "sha256": "147ba59cb866a884439b611621789f8bc0638bcda8d7abf2a6700d5aa97bffdf",
+      "size_bytes": 5028634,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "filename": "BTCUSDT_2026-09-17.csv.gz",
+      "sha256": "cb9ec7f9b1fed86e2652f3a7f7523a633311aac28206cead23fb734494acff52",
+      "size_bytes": 3506134,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "filename": "BTCUSDT_2026-09-18.csv.gz",
+      "sha256": "d1b84bb737dd4ab86527be9985d383885baae70f529b75deccabfd0255127f6f",
+      "size_bytes": 5146404,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "filename": "BTCUSDT_2026-09-19.csv.gz",
+      "sha256": "9cddd2c7b8290b4a953daf1f9397654e734337e397636684d8d0d88715d5bc6a",
+      "size_bytes": 2511285,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "filename": "BTCUSDT_2026-09-20.csv.gz",
+      "sha256": "d91a49dcadf40979c5f595c5d3e5e61647fe1a5ba1da6cad0e1d558a8ff6eca2",
+      "size_bytes": 3007943,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "filename": "BTCUSDT_2026-09-21.csv.gz",
+      "sha256": "c6e310aef8598e4f902e08d9197fe6defaa2864dd0c7ed86e8c36843375332c3",
+      "size_bytes": 7808139,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "filename": "BTCUSDT_2026-09-22.csv.gz",
+      "sha256": "3caddb5967f82f146a7b65e6e53c4b94809dee8cc6cd93958cf190402f4819be",
+      "size_bytes": 6198025,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "filename": "BTCUSDT_2026-09-23.csv.gz",
+      "sha256": "eda8d94bcf6e39b213930fedb5495d96718fbc5676a846ae51b3b8cc6ce80cc2",
+      "size_bytes": 6765539,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "filename": "BTCUSDT_2026-09-24.csv.gz",
+      "sha256": "0c662a21adae9d2ef08339f73177ac414150946fa1ceb8e454b68e2cae78ae24",
+      "size_bytes": 6755923,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "filename": "BTCUSDT_2026-09-25.csv.gz",
+      "sha256": "e968dcb2a34ca8b7f0a286dd3b082d77d1b206fc275d05ab80fd3bf6aafcc0b2",
+      "size_bytes": 5082546,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "filename": "BTCUSDT_2026-09-26.csv.gz",
+      "sha256": "75d173b41c0c0916bb06099dd031ab83b02ea0591df986c7eda0189940b133fd",
+      "size_bytes": 1956538,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "filename": "BTCUSDT_2026-09-27.csv.gz",
+      "sha256": "ff02e8a84e28a8acb0c47a3416cb88b870d3f6d0ea653d43db786565a0fb1251",
+      "size_bytes": 2994919,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "filename": "BTCUSDT_2026-09-28.csv.gz",
+      "sha256": "30a6b8c84518782754ade30495450a761ef11c250ea1aeef6c5542596c9797ba",
+      "size_bytes": 7747381,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "filename": "BTCUSDT_2026-09-29.csv.gz",
+      "sha256": "ae3dd1fc9bd1b2ae5a05ee1b4d2d0312a67c9b7ceb12d940d523bb835b3fd3ee",
+      "size_bytes": 6138316,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "filename": "BTCUSDT_2026-09-30.csv.gz",
+      "sha256": "f30ef19f9153aa6bf8838860dfacd55af0b83df0ab79f024908b119ae821d798",
+      "size_bytes": 6292936,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "filename": "BTCUSDT_2026-10-01.csv.gz",
+      "sha256": "f03bae31d23ef26a99d705ed6a4c2937d2760c41159261f3ed5a6b11be1eab6d",
+      "size_bytes": 6230751,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "filename": "BTCUSDT_2026-10-02.csv.gz",
+      "sha256": "ce3fe446197ff46eed5bb3a1896e3eb5a1bf8753939d783d0d1ceed452ab27ee",
+      "size_bytes": 7101078,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "filename": "BTCUSDT_2026-10-03.csv.gz",
+      "sha256": "dd790b73c17987548880bddee06631249e4389059da864be2c3a62ac1bc63a90",
+      "size_bytes": 1578769,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "filename": "BTCUSDT_2026-10-04.csv.gz",
+      "sha256": "86ffbe3b3c0ac2b891b0b775048cb4cb0bd2c49f27a8c5fc12a542ba93b88353",
+      "size_bytes": 2180113,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "filename": "BTCUSDT_2026-10-05.csv.gz",
+      "sha256": "8b236198e955d2405760336ab04f98cdf335e40deb09e97abeb4a38060c426dc",
+      "size_bytes": 5863824,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "filename": "BTCUSDT_2026-10-06.csv.gz",
+      "sha256": "7938ac27cabe26e091bfcb715632afcffd5185a7706c52dcf1374ff5532c0b25",
+      "size_bytes": 4745532,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "filename": "BTCUSDT_2026-10-07.csv.gz",
+      "sha256": "8442182a093d230d83185c042e46287f2afcf20f2f4be4cfc4116f387b543ce6",
+      "size_bytes": 7092625,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "filename": "ETHUSDT_2026-09-08.csv.gz",
+      "sha256": "ba6da74a43aaddb4a79d325ef4498e2686a77abb9385f223e2aea4312b764119",
+      "size_bytes": 1817664,
+      "symbol": "ETHUSDT"
+    },
+    {
+      "filename": "ETHUSDT_2026-09-09.csv.gz",
+      "sha256": "ca3a4ea90b679286c1a35fb5abd43f8d37c95d6692273b39a32f829168a7540d",
+      "size_bytes": 1888675,
+      "symbol": "ETHUSDT"
+    },
+    {
+      "filename": "ETHUSDT_2026-09-10.csv.gz",
+      "sha256": "1807fee15d61dfa434390d3e89a62228a9da4a0571b8f19c6078ea470cff1a55",
+      "size_bytes": 2102046,
+      "symbol": "ETHUSDT"
+    },
+    {
+      "filename": "ETHUSDT_2026-09-11.csv.gz",
+      "sha256": "a6640abfb211b02c97c40b202bb7ca00c4b36be6f1dc7e075869fcef470c09f2",
+      "size_bytes": 3786744,
+      "symbol": "ETHUSDT"
+    },
+    {
+      "filename": "ETHUSDT_2026-09-12.csv.gz",
+      "sha256": "051fbbeb9a1d3cf715183af3192432ad934d96b72281c27927da684f33fc5817",
+      "size_bytes": 955198,
+      "symbol": "ETHUSDT"
+    },
+    {
+      "filename": "ETHUSDT_2026-09-13.csv.gz",
+      "sha256": "6290e5341ec89ae073dbecf69b60950cb3c8f306702a0314230b0985cfe75c19",
+      "size_bytes": 1445186,
+      "symbol": "ETHUSDT"
+    },
+    {
+      "filename": "ETHUSDT_2026-09-14.csv.gz",
+      "sha256": "41193fd5b76cff3c4fd761421939b7198664de59cea014fc81ea52562824ce0c",
+      "size_bytes": 2623457,
+      "symbol": "ETHUSDT"
+    },
+    {
+      "filename": "ETHUSDT_2026-09-15.csv.gz",
+      "sha256": "adadade4bd3ac390950e64899457dbe59a25fbf17b75ecda4e5f36159ef2abfb",
+      "size_bytes": 3077522,
+      "symbol": "ETHUSDT"
+    },
+    {
+      "filename": "ETHUSDT_2026-09-16.csv.gz",
+      "sha256": "5fb3d7d5b8c4f68fd645214ea2ef63e3650515ed7b92952f8167ad4d93ca4a8c",
+      "size_bytes": 2713900,
+      "symbol": "ETHUSDT"
+    },
+    {
+      "filename": "ETHUSDT_2026-09-17.csv.gz",
+      "sha256": "f51150c828a901bf6c9c1afe416655e082a63e186b309b8b509f854d2183f351",
+      "size_bytes": 1809555,
+      "symbol": "ETHUSDT"
+    },
+    {
+      "filename": "ETHUSDT_2026-09-18.csv.gz",
+      "sha256": "933d7291ffb9bece032432c4524aee309f36ec379f8058fc648d0509ddc4b6d2",
+      "size_bytes": 3000452,
+      "symbol": "ETHUSDT"
+    },
+    {
+      "filename": "ETHUSDT_2026-09-19.csv.gz",
+      "sha256": "c42dc23e4f6bef9464b76d136280f58b2161523f514de66506058a91abc38107",
+      "size_bytes": 2035143,
+      "symbol": "ETHUSDT"
+    },
+    {
+      "filename": "ETHUSDT_2026-09-20.csv.gz",
+      "sha256": "7a85d420e60778d185d680c413bcf3ec8deb23e2dda451f81fc02d9cd918db82",
+      "size_bytes": 1840556,
+      "symbol": "ETHUSDT"
+    },
+    {
+      "filename": "ETHUSDT_2026-09-21.csv.gz",
+      "sha256": "10a6ff2d3ea73b746768cebcf6d962b3db593975352cf149a8501ea737faf199",
+      "size_bytes": 3753027,
+      "symbol": "ETHUSDT"
+    },
+    {
+      "filename": "ETHUSDT_2026-09-22.csv.gz",
+      "sha256": "7e29a94279154491fb90e36e57fc2fe4c222eae2a4e72796a738aeb3b8c4bfe9",
+      "size_bytes": 2399591,
+      "symbol": "ETHUSDT"
+    },
+    {
+      "filename": "ETHUSDT_2026-09-23.csv.gz",
+      "sha256": "f8362166a93e72ca6dd87e00195a397a940d2734c6e5f591bf8938122d931709",
+      "size_bytes": 2543199,
+      "symbol": "ETHUSDT"
+    },
+    {
+      "filename": "ETHUSDT_2026-09-24.csv.gz",
+      "sha256": "4f50c86292441eede8accfe48157e3b24f35376c3759226361e51b100be00583",
+      "size_bytes": 2270134,
+      "symbol": "ETHUSDT"
+    },
+    {
+      "filename": "ETHUSDT_2026-09-25.csv.gz",
+      "sha256": "1dad7dc283d7a1a38acff041af2604663c46b28320705703ab56a93d8723cda8",
+      "size_bytes": 2245908,
+      "symbol": "ETHUSDT"
+    },
+    {
+      "filename": "ETHUSDT_2026-09-26.csv.gz",
+      "sha256": "584708c122f677d628a1c5116ed5d961b2f95f7166229f1f3830a5a3c01931c6",
+      "size_bytes": 756189,
+      "symbol": "ETHUSDT"
+    },
+    {
+      "filename": "ETHUSDT_2026-09-27.csv.gz",
+      "sha256": "675a10cac78f533461fc20e3c20e46cee4b129586e045179da5c9d9e42048a2b",
+      "size_bytes": 1290790,
+      "symbol": "ETHUSDT"
+    },
+    {
+      "filename": "ETHUSDT_2026-09-28.csv.gz",
+      "sha256": "65f17ad7876f15ebf01b4b545fda5eb30ce136d580da77d7e901645b6684ac12",
+      "size_bytes": 2662813,
+      "symbol": "ETHUSDT"
+    },
+    {
+      "filename": "ETHUSDT_2026-09-29.csv.gz",
+      "sha256": "38bfb12f626b9f50b40b270e724b470ac5cf458ae2d6f4b06fadb616b344c179",
+      "size_bytes": 2410693,
+      "symbol": "ETHUSDT"
+    },
+    {
+      "filename": "ETHUSDT_2026-09-30.csv.gz",
+      "sha256": "45d32d756c750c306d1dc1db3fba73aa28aafc88ed306fd2b098071d6839b270",
+      "size_bytes": 2045799,
+      "symbol": "ETHUSDT"
+    },
+    {
+      "filename": "ETHUSDT_2026-10-01.csv.gz",
+      "sha256": "bb2ef48e90367f6e151a6bcf75b92e38c7498b58cd0f1f3d3750ee25d86657a6",
+      "size_bytes": 2253149,
+      "symbol": "ETHUSDT"
+    },
+    {
+      "filename": "ETHUSDT_2026-10-02.csv.gz",
+      "sha256": "fd5cac11992e6b1aaae51f5d1b981a250409bca8258a2994ff14bbdb82c65fb3",
+      "size_bytes": 2954524,
+      "symbol": "ETHUSDT"
+    },
+    {
+      "filename": "ETHUSDT_2026-10-03.csv.gz",
+      "sha256": "b7ec16c6feba23288ae07763fae53bc4c1521188eb9de0c5c079ad5d610d4574",
+      "size_bytes": 809087,
+      "symbol": "ETHUSDT"
+    },
+    {
+      "filename": "ETHUSDT_2026-10-04.csv.gz",
+      "sha256": "50050cea8ab67c279091dd625542ef8736f83a97a3498474f47200741b6c6158",
+      "size_bytes": 1107154,
+      "symbol": "ETHUSDT"
+    },
+    {
+      "filename": "ETHUSDT_2026-10-05.csv.gz",
+      "sha256": "c0843eeeb56adc7835d927d725fb2ce153fc9224376dfaa5225acd2355740051",
+      "size_bytes": 2009831,
+      "symbol": "ETHUSDT"
+    },
+    {
+      "filename": "ETHUSDT_2026-10-06.csv.gz",
+      "sha256": "8b38638bd41f8978215a83f0607a003b58ef589a6360df09cd885af8ace44a9d",
+      "size_bytes": 1274767,
+      "symbol": "ETHUSDT"
+    },
+    {
+      "filename": "ETHUSDT_2026-10-07.csv.gz",
+      "sha256": "b841b30abbf1f69f527e84cf880a37925952317152053308bd9ef428efb59f2a",
+      "size_bytes": 2653036,
+      "symbol": "ETHUSDT"
+    }
+  ],
+  "raw_trade_files": 60,
+  "schema": "nexus.elliott-v20-independent-completed-segment-qa.v1",
+  "source_archives_mutated": false,
+  "source_period_utc": "2026-09-08..2026-10-07"
+}
