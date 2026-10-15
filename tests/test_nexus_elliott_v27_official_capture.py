@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-HERE=Path(__file__).resolve().parents[1]/"docs"/"evidence"/"elliott-v27-public-archive-20261015"
+HERE=Path(__file__).resolve().parents[1]/"docs"/"evidence"/"elliott-v27-oct09-20261016"
 sys.path.insert(0,str(HERE))
 import capture_oct09_raw as gate
 
