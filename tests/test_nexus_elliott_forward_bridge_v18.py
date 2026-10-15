@@ -163,6 +163,36 @@ class ResearchBridgeV18Tests(unittest.TestCase):
         self.assertTrue(
             (q.timestamp+pd.Timedelta(hours=4)<=pd.Timestamp(self.clock)).all())
 
+    def test_synthetic_seven_pivot_event_is_derived_not_claimed(self):
+        # The first 425 bars give complete H1/H4 historical warmup.
+        # Deliberately wide synthetic 15m range means the final closed
+        # breakout is not rejected by the normalized range filter.
+        times=pd.date_range("2026-10-10T20:00:00Z",periods=500,freq="15min")
+        anchors=((0,110),(10,100),(20,120),(30,112),(40,140),
+                 (50,125),(60,160),(70,130),(73,159),(74,161))
+        prices=np.interp(np.arange(75),*[np.asarray(z) for z in zip(*anchors)])
+        frame=pd.DataFrame({
+            "timestamp":times,"open":np.r_[np.full(425,109),prices],
+            "high":np.r_[np.full(425,129),prices+.2],
+            "low":np.r_[np.full(425,90),prices-.2],
+            "close":np.r_[np.full(425,110),prices],
+            "volume":np.full(500,10),
+        })
+        output=gate.inspect_latest_closed_decision(
+            frame,symbol="BTCUSDT",observed_at_utc=close_time(frame),
+            continuation_sha256="c"*64,
+        )
+        self.assertEqual(output["status"],"LIMITED_SOURCE_BOUND_RESEARCH_EVENT")
+        self.assertTrue(output["v15_source_bound"])
+        self.assertFalse(output["external_bybit_authenticity_verified"])
+        self.assertFalse(output["recursive_elliott_proven"])
+        self.assertEqual(output["orders_placed"],0)
+        research=output["research_observation"]
+        self.assertTrue(research["source_bound_seven_pivot"])
+        self.assertTrue(research["closed_first_breakout"])
+        self.assertTrue(research["post_correction_path_valid"])
+        self.assertEqual(float(research["correction_low"]),129.8)
+
     def test_event_is_never_claimed_recursive_elliott(self):
         r=gate.inspect_latest_closed_decision(
             self.candles,symbol="ETHUSDT",observed_at_utc=self.clock,
