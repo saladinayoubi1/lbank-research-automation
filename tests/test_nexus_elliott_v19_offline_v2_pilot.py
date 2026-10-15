@@ -44,8 +44,10 @@ class OfflineTradeV19GuardTests(unittest.TestCase):
             old=Path(folder)/"protected-legacy"
             cache.mkdir()
             old.mkdir()
+            existing=Path(folder)/"already-exists"
+            existing.mkdir()
             with self.assertRaisesRegex(FileExistsError,"fresh unique"):
-                pilot.require_new_isolated_output(cache.parent,(cache,old))
+                pilot.require_new_isolated_output(existing,(cache,old))
             with self.assertRaisesRegex(ValueError,"overlaps"):
                 pilot.require_new_isolated_output(cache/"test",(cache,old))
             with self.assertRaisesRegex(ValueError,"overlaps"):
