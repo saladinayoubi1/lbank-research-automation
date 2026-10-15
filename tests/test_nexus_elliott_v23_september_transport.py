@@ -13,6 +13,7 @@ import capture_september_monthly as v23
 class TestV23SeptemberTransport(unittest.TestCase):
     def test_fixed_market_scope_and_authority(self):
         self.assertEqual(v23.MONTH,"2026-09")
+        self.assertEqual(v23.SUCCESS_DISPOSITION,"PASS_TWO_SEPTEMBER_ARCHIVES_TRANSPORT_ONLY")
         self.assertEqual(v23.PAIR,("BTCUSDT","ETHUSDT"))
         self.assertEqual(v23.ROOT_URL,"https://public.bybit.com/spot")
         self.assertTrue(v23.RESEARCH_ONLY)
