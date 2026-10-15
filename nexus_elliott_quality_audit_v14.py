@@ -205,8 +205,7 @@ def review_quality_observation(
         correction_index=pivots[-1].index,
         correction_confirmed_at=geometry["confirmed_at"],
         decision_index=decision_index,
-        decision_close_utc=times["decision_utc"] and
-        datetime.fromisoformat(times["decision_utc"]),
+        decision_close_utc=datetime.fromisoformat(times["decision_utc"]),
         correction_low=geometry["wave2_low"],
         fifth_high=geometry["wave1_high"],
         previous_close=previous, decision_close=close, decision_low=low,
