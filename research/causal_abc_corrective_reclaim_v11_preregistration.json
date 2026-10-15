@@ -1,0 +1,148 @@
+{
+  "schema": "nexus.research-causal-abc-correction-preregistration.v1",
+  "date_utc": "2026-10-15",
+  "proposed_mechanism_id": "research_causal_abc_corrective_reclaim",
+  "classification": "ABC-like corrective reversal research proxy; not certified recursive Elliott wave theory",
+  "separate_hypothesis": true,
+  "hypothesis_count": 1,
+  "parameter_configurations": 1,
+  "design_state": "PREREGISTERED_SOURCE_NOT_IMPLEMENTED_MARKET_EVALUATIONS_ZERO",
+  "source_parent_head": "e5b8b7a7d6942f8c750a3368e4229496852c2ead",
+  "source_reference_head_of_old_run": "5eed07d9aeb1b425fdacb868ee352b8ff36e3345",
+  "related_previous_first_market_result_sha256": "02f96ca942091d882be7ba87547cd0b6f9c2e3e440fe4cc6e98b3e010332d2fc",
+  "related_previous_funnel_sha256": "d5c58d6f1db3ca4ef5f0c7d6e86cddc80c8e8f9049aeade78fc754b183eaf847",
+  "old_eliott_five_swing_preregistration_digest": "ede171e4dc320d72b32e8b8241d0a468c3a85ebdb1e410617b72a5734eabe6ec",
+  "exploratory_rationale": "Seven-pivot five-swing structures were scarce in a previously inspected historical archive. A nonnested four-pivot H-L-H-L corrective continuation/reclaim is a different, more compact causal topology, not parameter relaxation of the old candidate; its frequency and expectancy are unknown.",
+  "input_contract": {
+    "venue": "Bybit",
+    "market": "historical verified Spot OHLCV",
+    "symbols": [
+      "BTCUSDT",
+      "ETHUSDT"
+    ],
+    "bar_15m_timestamp": "OPEN in raw archive; decision at CLOSE=open+15 minutes",
+    "frames": [
+      "15m",
+      "1h",
+      "4h"
+    ],
+    "data_provenance": "immutable previously inspected Bybit 2022-12-01_to_2026-07-31 archival series",
+    "forming_candles_excluded": true,
+    "causal_closed_asof_higher_timeframes": true,
+    "future_inputs_prohibited": true
+  },
+  "pivot_extraction": {
+    "timeframe": "15m",
+    "right_bars": 3,
+    "left_bars": 3,
+    "strict_high_gt_each_neighbor_high": true,
+    "strict_low_lt_each_neighbor_low": true,
+    "reject_equal_extrema_and_dual_extrema_bars": true,
+    "same_kind_replacement": "retain more extreme latest confirmed pivot; no rescan into future",
+    "latency": "center pivot at candle i can be used no earlier than close of i+3, with setup eligible from subsequent 15m close",
+    "fixed_latest_sequence": [
+      "H0",
+      "LA",
+      "HB",
+      "LC"
+    ],
+    "max_span_bars_H0_to_LC": 192
+  },
+  "geometry": {
+    "H0_gt_HB_gt_LA": true,
+    "HB_gt_LC": true,
+    "LC_lt_LA": true,
+    "B_retracement_formula": "(HB - LA) / (H0 - LA)",
+    "B_retracement_min_inclusive": "0.382",
+    "B_retracement_max_inclusive": "0.786",
+    "C_extension_formula": "(HB - LC) / (H0 - LA)",
+    "C_extension_min_inclusive": "0.618",
+    "C_extension_max_inclusive": "1.618",
+    "require_strictly_positive_denominators": true,
+    "path_validation": "No interim open/close/high/low path may invalidate the fixed ordered H0, LA, HB, LC identity; fail closed on unresolvable intrabar ordering or new lower low below LC",
+    "eligible_age_from_LC_confirmation_close_bars": [
+      1,
+      32
+    ],
+    "not_classifying_nested_elliott_five_wave": true
+  },
+  "trigger": {
+    "event": "First fresh 15m CLOSE crossing strictly above HB after LC has been confirmed and eligible, previous 15m CLOSE at or below HB",
+    "identity_once_per": [
+      "H0 pivot bar index",
+      "LC pivot bar index"
+    ],
+    "consume_on_first_cross_even_if_context_or_cost_denies": true,
+    "invalidate_before_event_if": "current 15m LOW falls below LC or original structural origin predicate fails",
+    "confirmation_conditions": [
+      "close > open",
+      "close > previous_close",
+      "closed-asof h4_up == 1",
+      "closed-asof h1_vol_ok == 1",
+      "finite positive lagged range ATR",
+      "cost screen feasible"
+    ],
+    "no_same_bar_fill": true,
+    "entry": "following candle OPEN only",
+    "unbounded_number_of_independent_historical_patterns": true
+  },
+  "cost_protection": {
+    "reuse_existing_stress_cost_screen": true,
+    "fixed_price_at_decision": "current closed 15m close, never next open",
+    "structural_span": "H0 - LC; reject nonpositive span",
+    "same_stress_gate_under_both_simulation_profiles": true,
+    "conservative_per_leg_bps": {
+      "fee": 10,
+      "slippage": 5
+    },
+    "stress_per_leg_bps": {
+      "fee": 25,
+      "slippage": 15
+    },
+    "cost_gate_cannot_be_relaxed_based_on_seen_market_results": true
+  },
+  "risk_execution_contract": {
+    "shared_existing_next_open_long_flat_engine_unmodified": true,
+    "initial_simulated_cash_usdt_per_isolated_cell": 10000,
+    "stop_range_multiple": 1.5,
+    "target_R_multiple": 2,
+    "stop_risk_fraction": 0.001,
+    "maximum_position_fraction": 0.1,
+    "daily_loss_pause_fraction": 0.05,
+    "drawdown_halt_fraction": 0.1,
+    "time_exit_bars": 64,
+    "same_bar_ambiguous_stop_first": true,
+    "independent_cells_cash_no_compounding": true,
+    "no_minimum_trade_count": true,
+    "no_maximum_trades_per_strategy": true
+  },
+  "validation_plan": {
+    "before_any_market_producer": [
+      "verify preregistrations and source/fixture byte bindings",
+      "unit tests for pivot confirmation latency/geometry/bounded age/invalidation, cost veto consumption and future-tail causality",
+      "exact-head hosted cross-platform CI and native laptop2 child process exit with source invariance",
+      "freeze source data prior terminal ledger and invocation under one exclusive owner lease"
+    ],
+    "single_future_diagnostic_market_evaluation": "BTC/ETH 15m with closed 1h/4h, fixed 60/20/20 history split, conservative/stress fees, actual next-open fill trace and independent numeric chronology QA",
+    "selection_policy": "single preregistered candidate, no retrospective ranking/sweep, no tune from previously inspected historical test",
+    "holdout_disclosure": "Entire historical Bybit archive has informed prior NEXUS research and is NOT pristine. Truly independent forward/paper diagnostic data required for admission."
+  },
+  "authority": {
+    "research_only": true,
+    "live_enabled": false,
+    "automatic_strategy_finder_registration": false,
+    "auto_demo_promotion": false,
+    "owner_demo_admission": false,
+    "failover": false,
+    "sole_paper_writer": "LAPTOP1",
+    "research_executor": "LAPTOP2",
+    "vps_work": "owner-paused",
+    "existing_demo_and_journal_unmodified": true
+  },
+  "reported_outcomes": {
+    "market_runs": 0,
+    "profitability_claim": false,
+    "trade_count_claim": false,
+    "holder": "NONE"
+  }
+}

@@ -63,24 +63,35 @@ def _finite(value):
 def observe_backtest(function, frame, signals, *, fee_bps, slip_bps, risk_variant,
                      index_offset=0, event_profile="macro_retest"):
     """Return unchanged metrics plus actual execution observations, one cell."""
-    if event_profile not in ("macro_retest", "elliott_five_swing"):
+    if event_profile not in ("macro_retest", "elliott_five_swing", "abc_correction"):
         raise ValueError("Observational gate: unsupported event profile")
     is_elliott = event_profile == "elliott_five_swing"
-    event_field = "elliott5_close_breakout_event" if is_elliott else "macro_retest_close_breakout_event"
-    if is_elliott and event_field not in frame:
-        raise ValueError("Observational gate: Elliott event field missing")
+    is_abc = event_profile == "abc_correction"
+    event_field = ("abc_first_close_break_event" if is_abc else
+                   "elliott5_close_breakout_event" if is_elliott else
+                   "macro_retest_close_breakout_event")
+    if (is_elliott or is_abc) and event_field not in frame:
+        raise ValueError("Observational gate: research event field missing")
     setup_names = (
         "lagged_elliott5_origin_low", "lagged_elliott5_wave1_high", "lagged_elliott5_wave2_low",
         "lagged_elliott5_origin_index", "lagged_elliott5_wave1_index", "lagged_elliott5_wave2_index",
         "lagged_elliott5_confirmed_at", "lagged_elliott5_retracement",
         "elliott5_trigger_index", "elliott5_decision_atr", "elliott5_flat_cost", "elliott5_target_net",
     ) if is_elliott else (
+        "lagged_abc_h0", "lagged_abc_la", "lagged_abc_hb", "lagged_abc_lc",
+        "lagged_abc_h0_index", "lagged_abc_la_index", "lagged_abc_hb_index",
+        "lagged_abc_lc_index", "lagged_abc_confirmed_at", "lagged_abc_b_retrace",
+        "lagged_abc_c_extension", "abc_trigger_index", "abc_decision_range",
+        "abc_flat_cost", "abc_target_net",
+    ) if is_abc else (
         "lagged_macro_h4_index", "lagged_macro_closed_ms", "lagged_macro_break_high",
         "lagged_macro_break_low", "lagged_macro_break_span", "lagged_macro_retest_h1_index",
         "lagged_macro_retest_confirmed_ms", "lagged_macro_retest_trigger_high",
         "macro_retest_trigger_index", "macro_retest_flat_cost", "macro_retest_target_net",
     )
     admission_fields = ("h4_up", "h1_vol_ok", "lagged_elliott5_active", "elliott5_cost_feasible") if is_elliott else (
+        "h4_up", "h1_vol_ok", "lagged_abc_active", "abc_stress_cost_feasible"
+    ) if is_abc else (
         "h4_up", "h1_vol_ok", "lagged_macro_retest_active", "macro_retest_stress_cost_feasible",
     )
     if sys.implementation.name != "cpython" or sys.gettrace() is not None:
@@ -109,6 +120,9 @@ def observe_backtest(function, frame, signals, *, fee_bps, slip_bps, risk_varian
         if is_elliott:
             return _finite(row.get("lagged_elliott5_wave1_high", np.nan)
                            - row.get("lagged_elliott5_origin_low", np.nan))
+        if is_abc:
+            return _finite(row.get("lagged_abc_h0", np.nan)
+                           - row.get("lagged_abc_lc", np.nan))
         return _finite(row.get("lagged_macro_break_span", np.nan))
 
     def local_trace(current, event, arg):
