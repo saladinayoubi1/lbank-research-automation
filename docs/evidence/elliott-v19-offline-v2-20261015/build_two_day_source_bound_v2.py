@@ -27,6 +27,18 @@ EXISTING_DAY_SHA={
     "ETHUSDT":"1b81677c2afdaacb9492c01d0a55c5a47ba73d93909405691814f25c9ad8f851",
 }
 TIMEFRAMES={"minute15":(96,192),"hour1":(24,48),"hour4":(6,12)}
+PINNED_LEGACY_SHA={
+    "BTCUSDT":{
+        "minute15":"c3afe92899dda8fe52937c955323cc8e04bf8f200a68eb8651e55d6020981226",
+        "hour1":"f8f2236785c036fe40808809397d47729b3add4c8f0b9e19c77d3b771f8e6847",
+        "hour4":"e0d019a76882a02dc463a34d1d9375841f81d412b9a3310d9e21c2d7b2738dc6",
+    },
+    "ETHUSDT":{
+        "minute15":"ce603440650d0022b1a17a7922da743a3b6219ba9afd89ad4362b70fbe3bbfa1",
+        "hour1":"ba0743588c5089e6a6b250b4ebb029a43fea57d0a020df5ab1316c34efdcd88a",
+        "hour4":"292005e091d914fbb9d108c3d8d65e93785cc32b9c73e07ea02e0d44cf7da65b",
+    },
+}
 FIELDS=("open","high","low","close","volume")
 TOLERANCE=Decimal("0.00000001")
 RESEARCH_ONLY=True
@@ -137,10 +149,13 @@ def source_integrity_summary(root:Path, legacy_root:Path)->dict:
             ):
                 raise AssertionError("source OHLCV grid is not exactly two full days")
             source_digest=file_sha(file)
-            series[tf]={"rows":int(len(src)),"sha256":source_digest}
+            series[tf]={"rows":int(len(src)),"sha256":source_digest,
+                        "frozen_reference_sha256":PINNED_LEGACY_SHA[symbol][tf]}
             legacy_path=legacy_root/"bybit_market"/alias/f"{tf}.parquet"
             if not legacy_path.is_file():
                 raise AssertionError("source frozen overlap missing")
+            if file_sha(legacy_path)!=PINNED_LEGACY_SHA[symbol][tf]:
+                raise AssertionError("original immutable July dataset SHA256 changed")
             historical=pd.read_parquet(legacy_path)
             a=src.iloc[:day]
             b=historical.iloc[-day:]
