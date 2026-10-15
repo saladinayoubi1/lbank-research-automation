@@ -1,0 +1,28 @@
+{
+  "admissions": {
+    "conservative|scheduled_next_open": 17,
+    "conservative|signal_denied": 24,
+    "stress|scheduled_next_open": 17,
+    "stress|signal_denied": 24
+  },
+  "auto_demo": false,
+  "denial_fields_overlapping": {
+    "h1_vol_ok": 12,
+    "h4_up": 30,
+    "spring_stress_cost_feasible": 20
+  },
+  "extra_market_runs": 0,
+  "historical_test_pristine": false,
+  "independent_raw_15m_pivot_reclaim_stress_cost_and_next_open_passed": true,
+  "live_enabled": false,
+  "market_result_sha256": "9f1d95e5e36590eb2ae1b011200e6e0e1b7778198254620a9cafcdaec046231e",
+  "profile_closed_trade_records": 34,
+  "profile_event_records": 82,
+  "research_only": true,
+  "same_bar_stop_first_verified": true,
+  "schema": "nexus.spring-v12-independent-raw-chronology/v1",
+  "source_sha": "d9b179cf2c3b8ed5369c16cb36e17d802e0877b3",
+  "trace_sha256": "c856e4744268ada84788ff562e18fdabadbd01fca94f95f3c929c60bc4a0d7b8",
+  "unique_first_reclaim_events": 41,
+  "utc": "2026-10-15T12:21:16.091019+00:00"
+}
