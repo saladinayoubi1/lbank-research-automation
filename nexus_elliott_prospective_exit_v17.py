@@ -27,6 +27,7 @@ COMPLETE_RECURSIVE_ELLIOTT_COUNT = False
 # Frozen for prospective sampling while the historical v9 / five-swing /
 # ABC folds are already inspected. The cutoff cannot be tuned after seeing P/L.
 FORWARD_START_UTC = datetime(2026, 10, 16, tzinfo=timezone.utc)
+FORWARD_END_UTC = datetime(2026, 11, 16, tzinfo=timezone.utc)
 MAX_HOLD_BARS = 64
 MAX_REWARD_RISK = Decimal("2")
 REFERENCE_CELL_CASH = Decimal("10000")
@@ -121,6 +122,8 @@ def evaluate_prospective_study(
     seen = _utc_aligned(observed_at_utc,"current observation time")
     if decision < FORWARD_START_UTC:
         raise ValueError("historically inspected period excluded from forward evaluator")
+    if decision >= FORWARD_END_UTC:
+        raise ValueError("new observation outside preregistered forward month")
     if seen < decision + timedelta(minutes=CANDLE_MINUTES):
         raise ValueError("no completely observed entry candle yet")
     prev_close=_decimal(observation.get("previous_close"),"previous close")
