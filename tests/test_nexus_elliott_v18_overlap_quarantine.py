@@ -97,7 +97,7 @@ class V18QuarantinedOverlapTests(unittest.TestCase):
 
     def test_single_price_conflict_detected_and_original_unmodified(self):
         changed=copy.deepcopy(SNAPSHOT)
-        changed["symbols"]["BTCUSDT"]["list"][0][1]="62950.9"
+        changed["symbols"]["BTCUSDT"]["list"][0][1]="62948.6"
         with tempfile.TemporaryDirectory() as temp:
             root,hashes=temp_source(SNAPSHOT,temp)
             before={s:digest_file(root/"bybit_market"/PAIR_DIR[s]/"minute15.parquet")
