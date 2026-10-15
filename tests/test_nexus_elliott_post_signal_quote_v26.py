@@ -25,7 +25,8 @@ def event(**kw):
 
 
 def book(**kw):
-    obj={"symbol":"BTCUSDT","best_bid":"112.0","best_ask":"112.2",
+    obj={"symbol":"BTCUSDT","venue":"Bybit","category":"spot",
+         "best_bid":"112.0","best_ask":"112.2",
          "market_quoted_at_utc":START+MS,
          "client_received_at_utc":START+2*MS}
     obj.update(kw)
@@ -148,11 +149,38 @@ class QuoteOnlyV26Tests(unittest.TestCase):
     def test_ohlc_after_signal_not_accepted_or_required(self):
         book_with_future=book()
         book_with_future["future_bars"]=[{"high":"1000000","low":"1","open":"1","close":"1"}]
-        r=evaluate(q=book_with_future)
+        with self.assertRaisesRegex(ValueError,"future/side-channel"):
+            evaluate(q=book_with_future)
         clean=evaluate()
-        self.assertEqual(r["quote_and_decision_sha256"],clean["quote_and_decision_sha256"])
-        self.assertIsNone(r["observed_trade_pnl"])
-        self.assertEqual(r["exit_bars_consulted"],0)
+        self.assertIsNone(clean["observed_trade_pnl"])
+        self.assertEqual(clean["exit_bars_consulted"],0)
+
+    def test_spoofed_non_bybit_or_derivative_quote_envelope_denied(self):
+        for venue,category in (("Bitget","spot"),("Bybit","linear"),
+                               ("LBank","spot"),("bybit","spot")):
+            with self.subTest(venue=venue,category=category):
+                with self.assertRaisesRegex(ValueError,"only Bybit spot"):
+                    evaluate(q=book(venue=venue,category=category))
+
+    def test_missing_envelope_and_unexpected_order_fields_denied(self):
+        quote=book()
+        quote.pop("venue")
+        with self.assertRaisesRegex(ValueError,"missing required"):
+            evaluate(q=quote)
+        quote=book()
+        quote["fill_price"]="999"
+        with self.assertRaisesRegex(ValueError,"side-channel"):
+            evaluate(q=quote)
+
+    def test_invalid_correction_above_fifth_high_rejected(self):
+        with self.assertRaisesRegex(ValueError,"correction geometry"):
+            evaluate(o=event(correction_low="111"))
+
+    def test_rejected_quote_cannot_emit_hypothetical_target_reward(self):
+        x=evaluate(q=book(best_bid="109",best_ask="110"))
+        self.assertIsNone(x["conditional_target_net_per_unit_not_observed"])
+        self.assertIsNone(x["nominal_target_2r_research_only"])
+        self.assertIsNone(x["observed_trade_pnl"])
 
     def test_decision_after_prospective_window_rejected(self):
         with self.assertRaisesRegex(ValueError,"outside fixed future"):
