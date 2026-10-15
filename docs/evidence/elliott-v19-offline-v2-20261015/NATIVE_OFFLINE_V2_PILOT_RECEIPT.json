@@ -1,0 +1,252 @@
+{
+  "auto_demo": false,
+  "cached_trade_files_modified": false,
+  "disposition": "PASS_TWO_DAY_OFFLINE_V2_ARCHIVE_NO_FUTURE_BRIDGE",
+  "external_exchange_origin_attested": false,
+  "july31_field_comparisons": 1260,
+  "july31_material_mismatches": 0,
+  "july31_overlap": {
+    "BTCUSDT": {
+      "hour1": {
+        "close": {
+          "compared": 24,
+          "first_diff": null,
+          "material_mismatches": 0
+        },
+        "high": {
+          "compared": 24,
+          "first_diff": null,
+          "material_mismatches": 0
+        },
+        "low": {
+          "compared": 24,
+          "first_diff": null,
+          "material_mismatches": 0
+        },
+        "open": {
+          "compared": 24,
+          "first_diff": null,
+          "material_mismatches": 0
+        },
+        "volume": {
+          "compared": 24,
+          "first_diff": null,
+          "material_mismatches": 0
+        }
+      },
+      "hour4": {
+        "close": {
+          "compared": 6,
+          "first_diff": null,
+          "material_mismatches": 0
+        },
+        "high": {
+          "compared": 6,
+          "first_diff": null,
+          "material_mismatches": 0
+        },
+        "low": {
+          "compared": 6,
+          "first_diff": null,
+          "material_mismatches": 0
+        },
+        "open": {
+          "compared": 6,
+          "first_diff": null,
+          "material_mismatches": 0
+        },
+        "volume": {
+          "compared": 6,
+          "first_diff": null,
+          "material_mismatches": 0
+        }
+      },
+      "minute15": {
+        "close": {
+          "compared": 96,
+          "first_diff": null,
+          "material_mismatches": 0
+        },
+        "high": {
+          "compared": 96,
+          "first_diff": null,
+          "material_mismatches": 0
+        },
+        "low": {
+          "compared": 96,
+          "first_diff": null,
+          "material_mismatches": 0
+        },
+        "open": {
+          "compared": 96,
+          "first_diff": null,
+          "material_mismatches": 0
+        },
+        "volume": {
+          "compared": 96,
+          "first_diff": null,
+          "material_mismatches": 0
+        }
+      }
+    },
+    "ETHUSDT": {
+      "hour1": {
+        "close": {
+          "compared": 24,
+          "first_diff": null,
+          "material_mismatches": 0
+        },
+        "high": {
+          "compared": 24,
+          "first_diff": null,
+          "material_mismatches": 0
+        },
+        "low": {
+          "compared": 24,
+          "first_diff": null,
+          "material_mismatches": 0
+        },
+        "open": {
+          "compared": 24,
+          "first_diff": null,
+          "material_mismatches": 0
+        },
+        "volume": {
+          "compared": 24,
+          "first_diff": null,
+          "material_mismatches": 0
+        }
+      },
+      "hour4": {
+        "close": {
+          "compared": 6,
+          "first_diff": null,
+          "material_mismatches": 0
+        },
+        "high": {
+          "compared": 6,
+          "first_diff": null,
+          "material_mismatches": 0
+        },
+        "low": {
+          "compared": 6,
+          "first_diff": null,
+          "material_mismatches": 0
+        },
+        "open": {
+          "compared": 6,
+          "first_diff": null,
+          "material_mismatches": 0
+        },
+        "volume": {
+          "compared": 6,
+          "first_diff": null,
+          "material_mismatches": 0
+        }
+      },
+      "minute15": {
+        "close": {
+          "compared": 96,
+          "first_diff": null,
+          "material_mismatches": 0
+        },
+        "high": {
+          "compared": 96,
+          "first_diff": null,
+          "material_mismatches": 0
+        },
+        "low": {
+          "compared": 96,
+          "first_diff": null,
+          "material_mismatches": 0
+        },
+        "open": {
+          "compared": 96,
+          "first_diff": null,
+          "material_mismatches": 0
+        },
+        "volume": {
+          "compared": 96,
+          "first_diff": null,
+          "material_mismatches": 0
+        }
+      }
+    }
+  },
+  "live_enabled": false,
+  "network_requests": 0,
+  "new_v2_candles_end_utc": "2026-08-01T23:45:00+00:00",
+  "new_v2_candles_start_utc": "2026-07-31T00:00:00+00:00",
+  "orders_placed": 0,
+  "original_archive_modified": false,
+  "prospective_bridge_complete": false,
+  "research_only": true,
+  "root": "E:\\NEXUS-QA\\elliott-v19-trades-v2-20261015",
+  "schema": "nexus.elliott-v19.offline-v2-two-day-pilot.v1",
+  "source_archives": [
+    {
+      "filename": "BTCUSDT_2026-07-31.csv.gz",
+      "sha256": "3d2a7d32eed34a28ee90c2861b29fc2d5fbf1461f7f6b0223ae9bc05836aae7a",
+      "size_bytes": 3128914,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "filename": "ETHUSDT_2026-07-31.csv.gz",
+      "sha256": "1b81677c2afdaacb9492c01d0a55c5a47ba73d93909405691814f25c9ad8f851",
+      "size_bytes": 1426166,
+      "symbol": "ETHUSDT"
+    },
+    {
+      "filename": "BTCUSDT_2026-08-01.csv.gz",
+      "sha256": "be6bf75c371f8cd1afd302bad339e91a17bc6b189343b6712a587b0fba5f7d94",
+      "size_bytes": 1416832,
+      "symbol": "BTCUSDT"
+    },
+    {
+      "filename": "ETHUSDT_2026-08-01.csv.gz",
+      "sha256": "c70b166659252a288f77ffbf409b90e6896bf6fd2bdc1aba6da14e1f2f7429f5",
+      "size_bytes": 767275,
+      "symbol": "ETHUSDT"
+    }
+  ],
+  "timeframe_series": {
+    "BTCUSDT": {
+      "hour1": {
+        "rows": 48,
+        "sha256": "36e3150528f0c11bf1fecc6cb32ddbdef2b2c1e82733f98e28feea249792838e"
+      },
+      "hour4": {
+        "rows": 12,
+        "sha256": "5c689c538aa3e42e92f455731f5a0f406df0845d8b6af3dc342b99c213aedc9b"
+      },
+      "minute15": {
+        "rows": 192,
+        "sha256": "735089b5df25eb44de36a87cfb1e9e560ee26aff6cf9be8e6a37c52655c98590"
+      }
+    },
+    "ETHUSDT": {
+      "hour1": {
+        "rows": 48,
+        "sha256": "b614c1afc8a1153fb2d54569e39e80bd3a9a4d1a4df3e8a2c96d9215064042b8"
+      },
+      "hour4": {
+        "rows": 12,
+        "sha256": "fe0da8446839d480e95ce30f0eb22c511dfccc18339e43486f2eb93b9a9ee2be"
+      },
+      "minute15": {
+        "rows": 192,
+        "sha256": "81869ac865b5013f0b4ad9da98cacb8c7691213c2327bcd10eeef886b4a786a7"
+      }
+    }
+  },
+  "v17_future_study_authorized": false,
+  "v2_source_receipt": {
+    "automatic_strategy_promotion": false,
+    "historical_report_compatibility": "explicit_replay_required",
+    "live_trading_authority": false,
+    "module_sha256": "1f50a1a342a4e379a2491eeb5f048a58c5676dd930147b8c7d87352a5040c9d6",
+    "research_only": true,
+    "schema": "nexus.bybit-source-row-stable-candles.v2",
+    "timestamp_tie_order": "original_archive_row_order"
+  }
+}
