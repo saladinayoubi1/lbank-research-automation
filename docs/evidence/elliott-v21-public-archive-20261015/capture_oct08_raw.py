@@ -97,7 +97,7 @@ def fetch_into_fresh_dir(root:Path) -> dict:
         raw,decoder=audit.read_trade_archive(part)
         valid,quality=backfill.validate_trade_range(raw,symbol,DATE,DATE)
         if len(valid)<100 or quality.get("duplicate_trade_id_count",0) or quality.get("invalid_numeric_rows",0) or (
-            quality.get("outside_audit_range_rows",0)
+            quality.get("outside_range_rows",0)
         ):
             raise ValueError("raw market trade source validation rejected")
         capture["rows_validated"]=int(len(valid))
