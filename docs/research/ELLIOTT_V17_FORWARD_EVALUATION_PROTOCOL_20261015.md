@@ -10,7 +10,7 @@
 
 ## Immutable protocol
 
-The authoritative machine-readable [preregistration](../research/elliott_v17_future_evaluation_preregistration_20261015.json) fixes:
+The authoritative machine-readable [preregistration](../../research/elliott_v17_future_evaluation_preregistration_20261015.json) fixes:
 
 | Field | Fixed V17 contract |
 |---|---|
