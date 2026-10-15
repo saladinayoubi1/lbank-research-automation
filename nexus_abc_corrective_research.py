@@ -25,9 +25,12 @@ AUTO_DEMO = False
 ROOT = Path(__file__).resolve().parent
 PREREG_PATH = ROOT / "research" / "causal_abc_corrective_reclaim_v11_preregistration.json"
 EXPECTED_PREREG_SHA256 = "dfcfc9b0d4f46acddb3ee047f78368b7f349d785f7836ec3f9c598eee1e7cbcb"
-if hashlib.sha256(PREREG_PATH.read_bytes()).hexdigest() != EXPECTED_PREREG_SHA256:
+# Git may check out text with CRLF on Windows; compare canonical Git LF bytes.
+# Normalize line endings only; no JSON reserialization or content mutation.
+_PREREG_BYTES = PREREG_PATH.read_bytes().replace(b"\r\n", b"\n")
+if hashlib.sha256(_PREREG_BYTES).hexdigest() != EXPECTED_PREREG_SHA256:
     raise ValueError("ABC preregistration source differs from sealed v11 design")
-PARAMETERS = json.loads(PREREG_PATH.read_text(encoding="utf-8"))
+PARAMETERS = json.loads(_PREREG_BYTES.decode("utf-8"))
 if (PARAMETERS["proposed_mechanism_id"] != "research_causal_abc_corrective_reclaim"
         or PARAMETERS["hypothesis_count"] != 1
         or PARAMETERS["parameter_configurations"] != 1
