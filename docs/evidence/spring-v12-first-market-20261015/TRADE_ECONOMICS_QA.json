@@ -1,0 +1,461 @@
+{
+  "audited_utc": "2026-10-15T12:41:33.410182+00:00",
+  "auto_demo": false,
+  "cell_count": 12,
+  "exit_bar_changed_when_cost_stressed": 8,
+  "friction_identity_verified": true,
+  "historical_test_pristine": false,
+  "live_enabled": false,
+  "no_cost_counterfactual_claim": true,
+  "no_new_backtest": true,
+  "per_partition": [
+    {
+      "average_exposure_bars": 16.0,
+      "entry_slip": "0.49925087406346780980",
+      "exit_reasons": {
+        "stop": 1
+      },
+      "exit_slip": "0.49603475623495916836426217628",
+      "fees": "1.9905744767146057",
+      "friction": "2.985860107013032678164262176",
+      "gross": "-6.43223565709396106479172435256",
+      "gross_positive_but_net_nonpositive": 0,
+      "gross_wins": 0,
+      "mean_net": "-9.418095764106993742955986529",
+      "net": "-9.41809576410699374295598652884",
+      "net_wins": 0,
+      "others": 0,
+      "part": "train",
+      "profile": "conservative",
+      "reason_net": {
+        "stop": "-9.41809576410699374295598652884"
+      },
+      "stops": 1,
+      "symbol": "BTCUSDT",
+      "targets": 0,
+      "trades": 1
+    },
+    {
+      "average_exposure_bars": 13.0,
+      "entry_slip": "1.494018324134860150085188703148",
+      "exit_reasons": {
+        "stop": 1
+      },
+      "exit_slip": "1.485888044900184876376620",
+      "fees": "4.9665309407563046",
+      "friction": "7.946437309791349626461808703",
+      "gross": "-5.42018615637377186892",
+      "gross_positive_but_net_nonpositive": 0,
+      "gross_wins": 0,
+      "mean_net": "-13.36662346616512149538180870",
+      "net": "-13.366623466165121495381808703148",
+      "net_wins": 0,
+      "others": 0,
+      "part": "train",
+      "profile": "stress",
+      "reason_net": {
+        "stop": "-13.366623466165121495381808703148"
+      },
+      "stops": 1,
+      "symbol": "BTCUSDT",
+      "targets": 0,
+      "trades": 1
+    },
+    {
+      "average_exposure_bars": 20.0,
+      "entry_slip": "0.99915613993438572679075",
+      "exit_reasons": {
+        "stop": 1,
+        "target": 1
+      },
+      "exit_slip": "1.00536182359991030742434421498",
+      "fees": "4.0090297213851461",
+      "friction": "6.013547684919442134215094215",
+      "gross": "12.41136733126885197156398060157",
+      "gross_positive_but_net_nonpositive": 0,
+      "gross_wins": 1,
+      "mean_net": "3.198909823174704918674443193",
+      "net": "6.39781964634940983734888638659",
+      "net_wins": 1,
+      "others": 0,
+      "part": "validation",
+      "profile": "conservative",
+      "reason_net": {
+        "stop": "-6.7096548007912711567924002316",
+        "target": "13.10747444714068099414128661819"
+      },
+      "stops": 1,
+      "symbol": "BTCUSDT",
+      "targets": 1,
+      "trades": 2
+    },
+    {
+      "average_exposure_bars": 20.0,
+      "entry_slip": "2.98938822684606000596041053893",
+      "exit_reasons": {
+        "stop": 1,
+        "target": 1
+      },
+      "exit_slip": "3.01095050358781997677612115314",
+      "fees": "10.0005106450313389",
+      "friction": "16.00084937546521888273653169",
+      "gross": "14.37485116134915025027507444536",
+      "gross_positive_but_net_nonpositive": 0,
+      "gross_wins": 1,
+      "mean_net": "-0.8129991070580343162307286234",
+      "net": "-1.62599821411606863246145724671",
+      "net_wins": 1,
+      "others": 0,
+      "part": "validation",
+      "profile": "stress",
+      "reason_net": {
+        "stop": "-10.67259794198154324964368935268",
+        "target": "9.04659972786547461718223210597"
+      },
+      "stops": 1,
+      "symbol": "BTCUSDT",
+      "targets": 1,
+      "trades": 2
+    },
+    {
+      "average_exposure_bars": 23.67,
+      "entry_slip": "2.99470973340775017752323995487",
+      "exit_reasons": {
+        "stop": 3,
+        "target": 2,
+        "time_64_bars": 1
+      },
+      "exit_slip": "3.002243021088475413256056940588",
+      "fees": "11.9938979757063176",
+      "friction": "17.99085073020254319077929689",
+      "gross": "15.066575361942896679523616310028",
+      "gross_positive_but_net_nonpositive": 0,
+      "gross_wins": 3,
+      "mean_net": "-0.4873792280432744185426134309",
+      "net": "-2.924275368259646511255680585430",
+      "net_wins": 3,
+      "others": 1,
+      "part": "historically_inspected_test",
+      "profile": "conservative",
+      "reason_net": {
+        "stop": "-21.76070968216080352377087038008",
+        "target": "12.085132548148125634980789794650",
+        "time_64_bars": "6.7513017657530313775344"
+      },
+      "stops": 3,
+      "symbol": "BTCUSDT",
+      "targets": 2,
+      "trades": 6
+    },
+    {
+      "average_exposure_bars": 20.33,
+      "entry_slip": "8.94055765956944194414155",
+      "exit_reasons": {
+        "stop": 4,
+        "target": 2
+      },
+      "exit_slip": "8.94728412911324086784040093382",
+      "fees": "29.8130528316312953",
+      "friction": "47.70089462031397811198195093",
+      "gross": "4.48431302947271081479759488037",
+      "gross_positive_but_net_nonpositive": 0,
+      "gross_wins": 2,
+      "mean_net": "-7.202763598473544549530726009",
+      "net": "-43.21658159084126729718435605345",
+      "net_wins": 2,
+      "others": 0,
+      "part": "historically_inspected_test",
+      "profile": "stress",
+      "reason_net": {
+        "stop": "-47.24470036790282207671585810837",
+        "target": "4.02811877706155477953150205492"
+      },
+      "stops": 4,
+      "symbol": "BTCUSDT",
+      "targets": 2,
+      "trades": 6
+    },
+    {
+      "average_exposure_bars": 6.25,
+      "entry_slip": "1.99498467151377062318068723916",
+      "exit_reasons": {
+        "stop": 4
+      },
+      "exit_slip": "1.985837835578600245322438110692",
+      "fees": "7.9616541610211170",
+      "friction": "11.94247666811348786850312535",
+      "gross": "-18.293671871151579901748269213665",
+      "gross_positive_but_net_nonpositive": 0,
+      "gross_wins": 0,
+      "mean_net": "-7.559037134816266942562848641",
+      "net": "-30.236148539265067770251394563517",
+      "net_wins": 0,
+      "others": 0,
+      "part": "train",
+      "profile": "conservative",
+      "reason_net": {
+        "stop": "-30.236148539265067770251394563517"
+      },
+      "stops": 4,
+      "symbol": "ETHUSDT",
+      "targets": 0,
+      "trades": 4
+    },
+    {
+      "average_exposure_bars": 6.25,
+      "entry_slip": "5.966484622668573980005470959744",
+      "exit_reasons": {
+        "stop": 4
+      },
+      "exit_slip": "5.945098214586588946386729698020",
+      "fees": "19.8526915281124823",
+      "friction": "31.76427436536764522639220066",
+      "gross": "-14.257605387706799484002017052722",
+      "gross_positive_but_net_nonpositive": 0,
+      "gross_wins": 0,
+      "mean_net": "-11.50546993826861117759855443",
+      "net": "-46.021879753074444710394217710486",
+      "net_wins": 0,
+      "others": 0,
+      "part": "train",
+      "profile": "stress",
+      "reason_net": {
+        "stop": "-46.021879753074444710394217710486"
+      },
+      "stops": 4,
+      "symbol": "ETHUSDT",
+      "targets": 0,
+      "trades": 4
+    },
+    {
+      "average_exposure_bars": 15.0,
+      "entry_slip": "0.4992508740634679166490",
+      "exit_reasons": {
+        "target": 1
+      },
+      "exit_slip": "0.505628276559527638621134132438",
+      "fees": "2.0097519238434251",
+      "friction": "3.014631074466420655270134132",
+      "gross": "12.75480499204947776675412181382",
+      "gross_positive_but_net_nonpositive": 0,
+      "gross_wins": 1,
+      "mean_net": "9.740173917583057111483987681",
+      "net": "9.740173917583057111483987681382",
+      "net_wins": 1,
+      "others": 0,
+      "part": "validation",
+      "profile": "conservative",
+      "reason_net": {
+        "target": "9.740173917583057111483987681382"
+      },
+      "stops": 0,
+      "symbol": "ETHUSDT",
+      "targets": 1,
+      "trades": 1
+    },
+    {
+      "average_exposure_bars": 15.0,
+      "entry_slip": "1.4940183241347453497835",
+      "exit_reasons": {
+        "target": 1
+      },
+      "exit_slip": "1.514596848234206447852047777878",
+      "fees": "5.0143071743048129",
+      "friction": "8.022922346673764697635547778",
+      "gross": "13.719016066364254986772036263939",
+      "gross_positive_but_net_nonpositive": 0,
+      "gross_wins": 1,
+      "mean_net": "5.696093719690490289136488486",
+      "net": "5.696093719690490289136488486061",
+      "net_wins": 1,
+      "others": 0,
+      "part": "validation",
+      "profile": "stress",
+      "reason_net": {
+        "target": "5.696093719690490289136488486061"
+      },
+      "stops": 0,
+      "symbol": "ETHUSDT",
+      "targets": 1,
+      "trades": 1
+    },
+    {
+      "average_exposure_bars": 19.33,
+      "entry_slip": "1.496343575993318757054063603679",
+      "exit_reasons": {
+        "stop": 2,
+        "target": 1
+      },
+      "exit_slip": "1.495578507878880192545889110460",
+      "fees": "5.9838449328132825",
+      "friction": "8.975767016685481449599952714",
+      "gross": "-1.530136229293048414087550933148",
+      "gross_positive_but_net_nonpositive": 0,
+      "gross_wins": 1,
+      "mean_net": "-3.501967748659509954562501216",
+      "net": "-10.505903245978529863687503647287",
+      "net_wins": 1,
+      "others": 0,
+      "part": "historically_inspected_test",
+      "profile": "conservative",
+      "reason_net": {
+        "stop": "-18.940271678961896785147223276947",
+        "target": "8.43436843298336692145971962966"
+      },
+      "stops": 2,
+      "symbol": "ETHUSDT",
+      "targets": 1,
+      "trades": 3
+    },
+    {
+      "average_exposure_bars": 19.33,
+      "entry_slip": "4.476069955579607173367384655994",
+      "exit_reasons": {
+        "stop": 2,
+        "target": 1
+      },
+      "exit_slip": "4.478246963124510724413499612826",
+      "fees": "14.9238560886550826",
+      "friction": "23.87817300735920049778088427",
+      "gross": "1.451338363306814684747990316561",
+      "gross_positive_but_net_nonpositive": 0,
+      "gross_wins": 1,
+      "mean_net": "-7.475611548017461937677631317",
+      "net": "-22.426834644052385813032893952259",
+      "net_wins": 1,
+      "others": 0,
+      "part": "historically_inspected_test",
+      "profile": "stress",
+      "reason_net": {
+        "stop": "-26.827722697316013007412520492559",
+        "target": "4.4008880532636271943796265403"
+      },
+      "stops": 2,
+      "symbol": "ETHUSDT",
+      "targets": 1,
+      "trades": 3
+    }
+  ],
+  "per_symbol_cost": [
+    {
+      "average_exposure_bars": 22.0,
+      "entry_slip": "4.49311674740560371411398995487",
+      "exit_reasons": {
+        "stop": 5,
+        "target": 3,
+        "time_64_bars": 1
+      },
+      "exit_slip": "4.503639600923344889044663331848",
+      "fees": "17.9935021738060694",
+      "friction": "26.99025852213501800315865328",
+      "gross": "21.045707036117787586295872559038",
+      "gross_positive_but_net_nonpositive": 0,
+      "gross_wins": 4,
+      "mean_net": "-0.6605057206685811574291978586",
+      "net": "-5.944551486017230416862780727680",
+      "net_wins": 4,
+      "others": 1,
+      "profile": "conservative",
+      "reason_net": {
+        "stop": "-37.88846024705906842351925714052",
+        "target": "25.192606995288806629122076412840",
+        "time_64_bars": "6.7513017657530313775344"
+      },
+      "stops": 5,
+      "symbol": "BTCUSDT",
+      "targets": 3,
+      "trades": 9
+    },
+    {
+      "average_exposure_bars": 19.44,
+      "entry_slip": "13.423964210550362100187149242078",
+      "exit_reasons": {
+        "stop": 6,
+        "target": 3
+      },
+      "exit_slip": "13.44412267760124572099314208696",
+      "fees": "44.7800944174189388",
+      "friction": "71.64818130557054662118029133",
+      "gross": "13.43897803444808919615266932573",
+      "gross_positive_but_net_nonpositive": 0,
+      "gross_wins": 3,
+      "mean_net": "-6.467689252346939713891958000",
+      "net": "-58.209203271122457425027622003308",
+      "net_wins": 3,
+      "others": 0,
+      "profile": "stress",
+      "reason_net": {
+        "stop": "-71.283921776049486821741356164198",
+        "target": "13.07471850492702939671373416089"
+      },
+      "stops": 6,
+      "symbol": "BTCUSDT",
+      "targets": 3,
+      "trades": 9
+    },
+    {
+      "average_exposure_bars": 12.25,
+      "entry_slip": "3.990579121570557296883750842839",
+      "exit_reasons": {
+        "stop": 6,
+        "target": 2
+      },
+      "exit_slip": "3.987044620017008076489461353590",
+      "fees": "15.9552510176778246",
+      "friction": "23.93287475926538997337321219",
+      "gross": "-7.069003108395150549081698332993",
+      "gross_positive_but_net_nonpositive": 0,
+      "gross_wins": 2,
+      "mean_net": "-3.875234733457567565306863816",
+      "net": "-31.001877867660540522454910529422",
+      "net_wins": 2,
+      "others": 0,
+      "profile": "conservative",
+      "reason_net": {
+        "stop": "-49.176420218226964555398617840464",
+        "target": "18.174542350566424032943707311042"
+      },
+      "stops": 6,
+      "symbol": "ETHUSDT",
+      "targets": 2,
+      "trades": 8
+    },
+    {
+      "average_exposure_bars": 12.25,
+      "entry_slip": "11.936572902382926503156355615738",
+      "exit_reasons": {
+        "stop": 6,
+        "target": 2
+      },
+      "exit_slip": "11.937942025945306118652277088724",
+      "fees": "39.7908547910723778",
+      "friction": "63.66536971940061042180863271",
+      "gross": "0.912749041964270187518009527778",
+      "gross_positive_but_net_nonpositive": 0,
+      "gross_wins": 2,
+      "mean_net": "-7.844077584679542529286327897",
+      "net": "-62.752620677436340234290623176684",
+      "net_wins": 2,
+      "others": 0,
+      "profile": "stress",
+      "reason_net": {
+        "stop": "-72.849602450390457717806738203045",
+        "target": "10.096981772954117483516115026361"
+      },
+      "stops": 6,
+      "symbol": "ETHUSDT",
+      "targets": 2,
+      "trades": 8
+    }
+  ],
+  "profile_trade_records_checked": 34,
+  "reason_transitions": {
+    "time_64_bars->stop": 1
+  },
+  "research_only": true,
+  "result_sha256": "9f1d95e5e36590eb2ae1b011200e6e0e1b7778198254620a9cafcdaec046231e",
+  "schema": "nexus.spring-v12-trade-economics-qa/v1",
+  "source_sha": "d9b179cf2c3b8ed5369c16cb36e17d802e0877b3",
+  "trace_sha256": "c856e4744268ada84788ff562e18fdabadbd01fca94f95f3c929c60bc4a0d7b8",
+  "unique_trade_decisions": 17
+}
