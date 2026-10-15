@@ -53,6 +53,21 @@ class ResearchBridgeV18Tests(unittest.TestCase):
         self.assertEqual(len(clean),500)
         self.assertEqual(clean.timestamp.iloc[0],self.candles.timestamp.iloc[0])
 
+    def test_parquet_millisecond_and_microsecond_utc_resolution(self):
+        # Actual V20 v2 parquet outputs are datetime64[ms, UTC].
+        # The 15m grid must be checked in normalized nanoseconds, not raw ms.
+        for unit in ("ms","us","ns"):
+            with self.subTest(unit=unit):
+                f=self.candles.copy()
+                f["timestamp"]=f.timestamp.dt.as_unit(unit)
+                accepted=gate.validate_frame(f)
+                self.assertEqual(len(accepted),len(f))
+                self.assertEqual(accepted.timestamp.iloc[-1],f.timestamp.iloc[-1])
+                bad=f.copy()
+                bad.loc[33,"timestamp"]=bad.timestamp.iloc[33]+pd.Timedelta(minutes=1)
+                with self.assertRaisesRegex(ValueError,"15m source"):
+                    gate.validate_frame(bad)
+
     def test_missing_august_to_october_bridge_is_rejected(self):
         f=self.candles
         with self.assertRaisesRegex(ValueError,"missing/overlapping"):
