@@ -175,6 +175,38 @@ class ElliottProspectiveV17Tests(unittest.TestCase):
         self.assertEqual(out["reference_cell_usdt"],"10000")
         self.assertFalse(out["paper_eligible"])
 
+    def test_independent_exact_pnl_ledger_reconciliation(self):
+        for profile in ("conservative","stress"):
+            for sample in ([bar(low=99)],[bar(high=145)]):
+                with self.subTest(profile=profile,scenario=sample):
+                    r=audit(sample,profile=profile)
+                    q=Decimal(r["quantity"])
+                    entry=Decimal(r["entry"])
+                    exit_price=Decimal(r["exit_price"])
+                    leg_fee=Decimal(r["fee_bps_per_leg"])/Decimal("10000")
+                    manual_entry_fee=q*entry*leg_fee
+                    manual_exit_fee=q*exit_price*leg_fee
+                    self.assertEqual(Decimal(r["entry_fee"]),manual_entry_fee)
+                    self.assertEqual(Decimal(r["exit_fee"]),manual_exit_fee)
+                    self.assertEqual(
+                        Decimal(r["net_pnl"]),
+                        q*(exit_price-entry)-manual_entry_fee-manual_exit_fee,
+                    )
+
+    def test_adverse_exit_gap_can_exceed_nominal_risk_budget(self):
+        r=audit([bar(),bar(1,open=95,high=110,low=94,close=100)])
+        self.assertEqual(r["exit_reason"],"stop")
+        self.assertLess(Decimal(r["net_pnl"]),Decimal("-10"))
+        self.assertFalse(r["real_broker_fill_verified"])
+
+    def test_adding_closed_bars_after_early_exit_does_not_change_pnl(self):
+        early=audit([bar(high=145)])
+        later=audit([bar(high=145),bar(1)])
+        self.assertEqual(early["exit_reason"],later["exit_reason"])
+        self.assertEqual(early["net_pnl"],later["net_pnl"])
+        self.assertNotEqual(early["future_closed_bar_sha256"],
+                            later["future_closed_bar_sha256"])
+
     def test_boundary_naive_time_rejected(self):
         with self.assertRaisesRegex(ValueError,"aware"):
             audit(asof=DECISION.replace(tzinfo=None)+timedelta(minutes=15))
