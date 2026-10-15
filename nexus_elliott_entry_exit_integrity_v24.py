@@ -188,6 +188,13 @@ def audit_single(
         "warning_codes": sorted(set(problems)),
         "next_open_minus_signal_close": str(first_open - signal_close),
         "next_open_minus_breakout_high": str(first_open - fifth_high),
+        # Fixed price-only gate for a FUTURE strategy design, not an edit
+        # of V17's registered hypothetical fill or historical winner set.
+        "prospective_price_path_entry_gate_passed": (
+            first_open > fifth_high and first_open > correction
+        ),
+        "candidate_for_paper_or_live_even_if_gate_passed": False,
+        "model_fill_must_not_be_interpreted_as_authorized_entry": True,
         "entry_model_validated": True,
         "exit_model_validated": True,
         "friction_reconciled": True,
