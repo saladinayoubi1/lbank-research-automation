@@ -1,0 +1,132 @@
+{
+  "auto_demo": false,
+  "candidate_files_not_contiguous_with_v20": true,
+  "disposition": "PASS_TWO_OFFICIAL_DAILY_RAW_SOURCE_FILES_ONLY",
+  "files": [
+    {
+      "content_length_header": 10914045,
+      "date_utc": "2026-10-08",
+      "decoder": {
+        "extended_named_schema_columns": 0,
+        "malformed_csv_line_samples": [],
+        "malformed_csv_rows": 0,
+        "parser_engine": "c",
+        "source_columns": [
+          "trade_id",
+          "timestamp",
+          "price",
+          "size",
+          "side",
+          "rpi"
+        ],
+        "source_header_columns": [
+          "id",
+          "timestamp",
+          "price",
+          "volume",
+          "side",
+          "rpi"
+        ],
+        "source_rows_parsed": 1808386,
+        "source_rows_skipped": 0,
+        "timestamp_unit": "ms",
+        "used_positional_schema": false
+      },
+      "download_bytes": 10914045,
+      "first_csv_row": [
+        "id",
+        "timestamp",
+        "price",
+        "volume",
+        "side",
+        "rpi"
+      ],
+      "gzip_csv_data_rows": 1808386,
+      "http_status": 200,
+      "quality": {
+        "duplicate_trade_id_count": 0,
+        "invalid_numeric_rows": 0,
+        "invalid_side_rows": 0,
+        "invalid_symbol_rows": 0,
+        "negative_size_rows": 0,
+        "non_positive_price_rows": 0,
+        "outside_range_rows": 0,
+        "source_rows": 1808386,
+        "valid_trade_rows": 1808386
+      },
+      "reported_last_modified": "Fri, 09 Oct 2026 02:00:38 GMT",
+      "retrieved_at_utc": "2026-10-15T18:42:45.826386+00:00",
+      "rows_validated": 1808386,
+      "sha256": "5c59096544af3ac73e9b13c06bd6209bc12c56fc204350b51bfa92d0e0000219",
+      "source_url": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2026-10-08.csv.gz",
+      "symbol": "BTCUSDT"
+    },
+    {
+      "content_length_header": 3689239,
+      "date_utc": "2026-10-08",
+      "decoder": {
+        "extended_named_schema_columns": 0,
+        "malformed_csv_line_samples": [],
+        "malformed_csv_rows": 0,
+        "parser_engine": "c",
+        "source_columns": [
+          "trade_id",
+          "timestamp",
+          "price",
+          "size",
+          "side",
+          "rpi"
+        ],
+        "source_header_columns": [
+          "id",
+          "timestamp",
+          "price",
+          "volume",
+          "side",
+          "rpi"
+        ],
+        "source_rows_parsed": 517584,
+        "source_rows_skipped": 0,
+        "timestamp_unit": "ms",
+        "used_positional_schema": false
+      },
+      "download_bytes": 3689239,
+      "first_csv_row": [
+        "id",
+        "timestamp",
+        "price",
+        "volume",
+        "side",
+        "rpi"
+      ],
+      "gzip_csv_data_rows": 517584,
+      "http_status": 200,
+      "quality": {
+        "duplicate_trade_id_count": 0,
+        "invalid_numeric_rows": 0,
+        "invalid_side_rows": 0,
+        "invalid_symbol_rows": 0,
+        "negative_size_rows": 0,
+        "non_positive_price_rows": 0,
+        "outside_range_rows": 0,
+        "source_rows": 517584,
+        "valid_trade_rows": 517584
+      },
+      "reported_last_modified": "Fri, 09 Oct 2026 02:00:25 GMT",
+      "retrieved_at_utc": "2026-10-15T18:43:09.273473+00:00",
+      "rows_validated": 517584,
+      "sha256": "247090d2327736987bb1651859e5cc3769ec1e596320850c002ec78f2bd7d89d",
+      "source_url": "https://public.bybit.com/spot/ETHUSDT/ETHUSDT_2026-10-08.csv.gz",
+      "symbol": "ETHUSDT"
+    }
+  ],
+  "live_enabled": false,
+  "network_access": "Only direct GET to public.bybit.com/spot, zero retries, no redirects",
+  "no_old_archive_changes": true,
+  "orders_placed": 0,
+  "prospective_v17_eligible": false,
+  "research_only": true,
+  "schema": "nexus.elliott-v21-public-spot-raw-source-capture.v1",
+  "source_date_utc": "2026-10-08",
+  "source_provider": "Bybit public Spot trade archive"
+}
