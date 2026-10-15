@@ -1,0 +1,138 @@
+{
+  "archive_semantic_sha256": "2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422",
+  "audited_utc": "2026-10-15T03:18:59.783796+00:00",
+  "auto_demo_promotion": false,
+  "backtest_simulator_invoked": false,
+  "historically_inspected_data": true,
+  "live_enabled": false,
+  "new_strategy_evaluations": 0,
+  "no_parameter_tuning": true,
+  "observations": {
+    "BTCUSDT": {
+      "action_counts_by_historical_partition": [
+        {
+          "actions": {
+            "invalidated": 15,
+            "path_rejected": 35,
+            "pivot_accepted": 13738,
+            "price_event_consumed": 6,
+            "setup_stored_for_next_bar": 52
+          },
+          "events": 6,
+          "part": "train"
+        },
+        {
+          "actions": {
+            "invalidated": 5,
+            "path_rejected": 13,
+            "pivot_accepted": 4403,
+            "price_event_consumed": 5,
+            "setup_stored_for_next_bar": 17
+          },
+          "events": 5,
+          "part": "validation"
+        },
+        {
+          "actions": {
+            "invalidated": 3,
+            "path_rejected": 14,
+            "pivot_accepted": 4574,
+            "setup_stored_for_next_bar": 9
+          },
+          "events": 0,
+          "part": "historically_inspected_test"
+        }
+      ],
+      "actions": {
+        "invalidated": 23,
+        "path_rejected": 62,
+        "pivot_accepted": 22715,
+        "price_event_consumed": 11,
+        "setup_stored_for_next_bar": 78
+      },
+      "bars": 128544,
+      "distinct_first_close_break_events": 11,
+      "expirations": 0,
+      "invalidations": 23,
+      "path_rejections": {
+        "correction_low_not_path_minimum": 1,
+        "fourth_low_not_path_minimum": 25,
+        "fourth_path_overlap": 11,
+        "origin_path_breach": 2,
+        "second_low_not_path_minimum": 13,
+        "swing_high_not_path_maximum": 10
+      },
+      "pivot_candidate_confirmations": 22715,
+      "prior_unchanged_event_indices": true,
+      "stored_shape_active_bars": 303,
+      "stored_valid_seven_pivot_shapes": 78
+    },
+    "ETHUSDT": {
+      "action_counts_by_historical_partition": [
+        {
+          "actions": {
+            "invalidated": 14,
+            "path_rejected": 29,
+            "pivot_accepted": 13705,
+            "price_event_consumed": 6,
+            "setup_stored_for_next_bar": 47
+          },
+          "events": 6,
+          "part": "train"
+        },
+        {
+          "actions": {
+            "invalidated": 9,
+            "path_rejected": 11,
+            "pivot_accepted": 4568,
+            "price_event_consumed": 4,
+            "setup_stored_for_next_bar": 22
+          },
+          "events": 4,
+          "part": "validation"
+        },
+        {
+          "actions": {
+            "invalidated": 2,
+            "path_rejected": 5,
+            "pivot_accepted": 4687,
+            "price_event_consumed": 3,
+            "setup_stored_for_next_bar": 8
+          },
+          "events": 3,
+          "part": "historically_inspected_test"
+        }
+      ],
+      "actions": {
+        "invalidated": 25,
+        "path_rejected": 45,
+        "pivot_accepted": 22960,
+        "price_event_consumed": 13,
+        "setup_stored_for_next_bar": 77
+      },
+      "bars": 128544,
+      "distinct_first_close_break_events": 13,
+      "expirations": 0,
+      "invalidations": 25,
+      "path_rejections": {
+        "correction_low_not_path_minimum": 4,
+        "fourth_low_not_path_minimum": 21,
+        "fourth_path_overlap": 7,
+        "origin_path_breach": 2,
+        "second_low_not_path_minimum": 6,
+        "swing_high_not_path_maximum": 5
+      },
+      "pivot_candidate_confirmations": 22960,
+      "prior_unchanged_event_indices": true,
+      "stored_shape_active_bars": 360,
+      "stored_valid_seven_pivot_shapes": 77
+    }
+  },
+  "preregistration_digest": "ede171e4dc320d72b32e8b8241d0a468c3a85ebdb1e410617b72a5734eabe6ec",
+  "prior_report_sha256": "02f96ca942091d882be7ba87547cd0b6f9c2e3e440fe4cc6e98b3e010332d2fc",
+  "prior_trace_sha256": "c734d9abd0dd8a18fe4269a15b8eceddf91643d8943ddb3bc851311772f2373c",
+  "research_only": true,
+  "schema": "nexus.elliott-five-swing-frozen-structure-funnel/v1",
+  "source_sha": "5eed07d9aeb1b425fdacb868ee352b8ff36e3345",
+  "vps_paused": true
+}
