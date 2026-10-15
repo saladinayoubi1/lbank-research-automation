@@ -1,7 +1,7 @@
 """Synthetic-only V17 forward exit tests. No historical Bybit bar ingestion."""
 import unittest
 from datetime import datetime, timedelta, timezone
-from decimal import Decimal
+from decimal import Decimal, localcontext
 
 from nexus_elliott_prospective_exit_v17 import (
     AUTO_DEMO,ENTRY_SIGNAL,LIVE_ENABLED,PAPER_ELIGIBLE,RESEARCH_ONLY,
@@ -180,18 +180,25 @@ class ElliottProspectiveV17Tests(unittest.TestCase):
             for sample in ([bar(low=99)],[bar(high=145)]):
                 with self.subTest(profile=profile,scenario=sample):
                     r=audit(sample,profile=profile)
-                    q=Decimal(r["quantity"])
-                    entry=Decimal(r["entry"])
-                    exit_price=Decimal(r["exit_price"])
-                    leg_fee=Decimal(r["fee_bps_per_leg"])/Decimal("10000")
-                    manual_entry_fee=q*entry*leg_fee
-                    manual_exit_fee=q*exit_price*leg_fee
-                    self.assertEqual(Decimal(r["entry_fee"]),manual_entry_fee)
-                    self.assertEqual(Decimal(r["exit_fee"]),manual_exit_fee)
-                    self.assertEqual(
-                        Decimal(r["net_pnl"]),
-                        q*(exit_price-entry)-manual_entry_fee-manual_exit_fee,
-                    )
+                    # The source calculates within a high-precision 46-digit
+                    # Decimal context. Independent report arithmetic must not
+                    # silently fall back to Python's default 28 digits.
+                    with localcontext() as ctx:
+                        ctx.prec=46
+                        q=Decimal(r["quantity"])
+                        entry=Decimal(r["entry"])
+                        exit_price=Decimal(r["exit_price"])
+                        leg_fee=Decimal(r["fee_bps_per_leg"])/Decimal("10000")
+                        manual_entry_fee=q*entry*leg_fee
+                        manual_exit_fee=q*exit_price*leg_fee
+                        tolerance=Decimal("1e-35")
+                        self.assertLessEqual(
+                            abs(Decimal(r["entry_fee"])-manual_entry_fee), tolerance)
+                        self.assertLessEqual(
+                            abs(Decimal(r["exit_fee"])-manual_exit_fee), tolerance)
+                        self.assertLessEqual(
+                            abs(Decimal(r["net_pnl"])-(q*(exit_price-entry)-
+                                manual_entry_fee-manual_exit_fee)), tolerance)
 
     def test_adverse_exit_gap_can_exceed_nominal_risk_budget(self):
         r=audit([bar(),bar(1,open=95,high=110,low=94,close=100)])
