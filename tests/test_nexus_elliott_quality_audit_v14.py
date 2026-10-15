@@ -10,6 +10,14 @@ from nexus_elliott_quality_audit_v14 import (
 )
 
 
+def post_correction_path():
+    # Corrected pivot at bar 70, confirmed at 73; first breakout at 74.
+    timestamps = (datetime(2026, 10, 16, 3, 15, tzinfo=timezone.utc)
+                  + timedelta(minutes=15*i) for i in range(5))
+    return tuple(zip(timestamps, (130, 139, 149, 158, 151),
+                     (132, 140, 150, 159, 161)))
+
+
 def seven_pivots():
     # Already confirmed strictly before decision index=74. (5 nested swings
     # then one parent correction); NOT a certified recursive count.
@@ -28,6 +36,7 @@ class ElliottQualityAuditV14Tests(unittest.TestCase):
             h4_closed_utc=datetime(2026, 10, 16, 4, tzinfo=timezone.utc),
             previous_close_price=159, decision_close_price=161,
             decision_low_price=151,
+            post_correction_closed_path=post_correction_path(),
             prior_14_true_ranges=[2] * 14,
             h4_closed_up=True, h1_normalized_range_ok=True,
             actual_traded_volume_ratio=Decimal("1.05"),
@@ -68,12 +77,16 @@ class ElliottQualityAuditV14Tests(unittest.TestCase):
         self.assertIsNone(r2["actual_traded_volume_ratio"])
 
     def test_breach_at_correction_low_denied(self):
-        r = self.audit(decision_low_price=130)
+        path = list(post_correction_path())
+        path[-1] = (path[-1][0], 130, 161)
+        r = self.audit(decision_low_price=130, post_correction_closed_path=path)
         self.assertFalse(r["study_eligible"])
         self.assertIn("CORRECTION_LOW_TOUCHED_OR_BROKEN", r["reasons"])
 
     def test_first_closed_break_only(self):
-        r = self.audit(previous_close_price=161)
+        path = list(post_correction_path())
+        path[-2] = (path[-2][0], 158, 161)
+        r = self.audit(previous_close_price=161, post_correction_closed_path=path)
         self.assertFalse(r["study_eligible"])
         self.assertIn("NO_FIRST_CLOSED_BREAKOUT", r["reasons"])
 
@@ -127,6 +140,57 @@ class ElliottQualityAuditV14Tests(unittest.TestCase):
     def test_numeric_nan_rejected(self):
         with self.assertRaises(ValueError):
             self.audit(decision_close_price=float("nan"))
+
+    def test_prior_break_is_not_reused(self):
+        extended = list(post_correction_path())
+        initial = self.args["decision_close_utc"]
+        extended.extend([
+            (initial + timedelta(minutes=15), 154, 158),
+            (initial + timedelta(minutes=30), 153, 155),
+            (initial + timedelta(minutes=45), 154, 159),
+            (initial + timedelta(minutes=60), 151, 161),
+        ])
+        r = self.audit(
+            decision_index=78,
+            decision_close_utc=initial + timedelta(hours=1),
+            h1_closed_utc=datetime(2026, 10, 16, 5, tzinfo=timezone.utc),
+            post_correction_closed_path=extended,
+        )
+        self.assertFalse(r["study_eligible"])
+        self.assertIn("FIRST_BREAK_ALREADY_CONSUMED", r["reasons"])
+
+    def test_prior_correction_breach_rejects_recovery(self):
+        path = list(post_correction_path())
+        path[2] = (path[2][0], 129, 150)
+        r = self.audit(post_correction_closed_path=path)
+        self.assertFalse(r["study_eligible"])
+        self.assertIn("POST_CORRECTION_LOW_ALREADY_INVALIDATED", r["reasons"])
+
+    def test_missing_path_fails_closed(self):
+        with self.assertRaisesRegex(ValueError, "complete post-correction"):
+            self.audit(post_correction_closed_path=[])
+
+    def test_gapped_path_fails_closed(self):
+        path = list(post_correction_path())
+        path[1] = (path[1][0] + timedelta(minutes=15), 139, 140)
+        with self.assertRaisesRegex(ValueError, "chronology"):
+            self.audit(post_correction_closed_path=path)
+
+    def test_path_source_close_mismatch_fails_closed(self):
+        path = list(post_correction_path())
+        path[-2] = (path[-2][0], 158, 158)
+        with self.assertRaisesRegex(ValueError, "previous close differs"):
+            self.audit(post_correction_closed_path=path)
+
+    def test_zero_true_range_is_valid_but_baseline_must_not_be_zero(self):
+        r = self.audit(prior_14_true_ranges=[0] + [2] * 13)
+        self.assertTrue(r["study_eligible"])
+        with self.assertRaisesRegex(ValueError, "positive mean"):
+            self.audit(prior_14_true_ranges=[0] * 14)
+
+    def test_zero_traded_volume_ratio_is_valid_diagnostic(self):
+        r = self.audit(actual_traded_volume_ratio=0)
+        self.assertEqual(r["actual_traded_volume_ratio"], "0")
 
     def test_true_range_gap(self):
         self.assertEqual(true_range("102", "99", "110"), Decimal("11"))
