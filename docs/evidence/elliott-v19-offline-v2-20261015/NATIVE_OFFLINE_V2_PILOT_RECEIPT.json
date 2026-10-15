@@ -212,28 +212,34 @@
   "timeframe_series": {
     "BTCUSDT": {
       "hour1": {
+        "frozen_reference_sha256": "f8f2236785c036fe40808809397d47729b3add4c8f0b9e19c77d3b771f8e6847",
         "rows": 48,
         "sha256": "36e3150528f0c11bf1fecc6cb32ddbdef2b2c1e82733f98e28feea249792838e"
       },
       "hour4": {
+        "frozen_reference_sha256": "e0d019a76882a02dc463a34d1d9375841f81d412b9a3310d9e21c2d7b2738dc6",
         "rows": 12,
         "sha256": "5c689c538aa3e42e92f455731f5a0f406df0845d8b6af3dc342b99c213aedc9b"
       },
       "minute15": {
+        "frozen_reference_sha256": "c3afe92899dda8fe52937c955323cc8e04bf8f200a68eb8651e55d6020981226",
         "rows": 192,
         "sha256": "735089b5df25eb44de36a87cfb1e9e560ee26aff6cf9be8e6a37c52655c98590"
       }
     },
     "ETHUSDT": {
       "hour1": {
+        "frozen_reference_sha256": "ba0743588c5089e6a6b250b4ebb029a43fea57d0a020df5ab1316c34efdcd88a",
         "rows": 48,
         "sha256": "b614c1afc8a1153fb2d54569e39e80bd3a9a4d1a4df3e8a2c96d9215064042b8"
       },
       "hour4": {
+        "frozen_reference_sha256": "292005e091d914fbb9d108c3d8d65e93785cc32b9c73e07ea02e0d44cf7da65b",
         "rows": 12,
         "sha256": "fe0da8446839d480e95ce30f0eb22c511dfccc18339e43486f2eb93b9a9ee2be"
       },
       "minute15": {
+        "frozen_reference_sha256": "ce603440650d0022b1a17a7922da743a3b6219ba9afd89ad4362b70fbe3bbfa1",
         "rows": 192,
         "sha256": "81869ac865b5013f0b4ad9da98cacb8c7691213c2327bcd10eeef886b4a786a7"
       }
