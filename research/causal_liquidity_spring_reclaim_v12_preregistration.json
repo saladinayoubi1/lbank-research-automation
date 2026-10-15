@@ -1,0 +1,154 @@
+{
+  "schema": "nexus.preregistered-liquidity-spring-v12/v1",
+  "created_utc": "2026-10-15",
+  "mechanism_id": "research_causal_liquidity_spring_reclaim_v12",
+  "classification": "Wyckoff-style failed-support-break/spring-reclaim structural research proxy; not a certified Elliott-wave or Wyckoff classification",
+  "hypothesis": "A causally confirmed L0-H1-L2 spring (brief lower-low liquidity sweep that returns above prior support L0 before reaching H1) may provide earlier reversal participation than the rejected ABC H0-LA-HB-LC rally above HB. It is a structurally different three-pivot sequence, not an amended ABC v11 trigger.",
+  "preregistered_before_code_and_market": true,
+  "hypothesis_count": 1,
+  "parameter_configurations": 1,
+  "data_seen_before_design": true,
+  "prior_evidence": {
+    "abc_v11_source_head": "c96b2f2a8ba447c14acea1594f6db811163944e6",
+    "abc_v11_market_result_sha256": "2aa967092412ea8edff27793cc190b4b036208ea1c3dc068d99b2a262a77a49d",
+    "abc_v11_actual_fill_trace_sha256": "dedf89ff796b958f1afe1e930414e3f7718ac77924831e2946020face295836d",
+    "abc_v11_economic_qa_sha256": "ffa5b4d9317282cdca71ff63374e445fa118a7f5193c4380186a5e982dd4306c",
+    "abc_v11_research_disposition": "REJECTED_NO_DEMO",
+    "reason_for_separate_topology": "The rejected ABC model waited for the second high to break and frequently hit ATR stops; testing an independent support-sweep/reclaim structure is a new hypothesis rather than fitting cost or gate thresholds to prior losses.",
+    "hypothesis_is_inspired_by_already_reviewed_evidence": true
+  },
+  "feed": {
+    "venue": "Bybit",
+    "market": "verified frozen historical spot OHLCV",
+    "symbols": [
+      "BTCUSDT",
+      "ETHUSDT"
+    ],
+    "timeframes": [
+      "15m",
+      "1h",
+      "4h"
+    ],
+    "decision_timestamp": "15m candle CLOSE; raw archive timestamp means OPEN",
+    "require_closed_asof_htf": true,
+    "source_archive_semantic_sha256": "2455a725886d81adaec9d3478e8f3b2daaba6c0c9645a691e71737eb64f67422",
+    "no_future_or_forming_bars": true,
+    "no_imputation_or_market_data_rewrite": true
+  },
+  "pivot_geometry": {
+    "timeframe": "15m",
+    "left_bars": 3,
+    "right_bars": 3,
+    "strict_unique_high_and_low": true,
+    "reject_ties": true,
+    "reject_dual_extrema": true,
+    "latest_three_confirmed_pivots": [
+      "L0",
+      "H1",
+      "L2"
+    ],
+    "types": [
+      "low",
+      "high",
+      "low"
+    ],
+    "same_kind_replacement": "retain only more extreme newly confirmed pivot within current same-kind run; no hindsight rescans",
+    "strict_order": "L0.index < H1.index < L2.index; L2.confirmed_at=L2.index+3 and decision_index > confirmed_at",
+    "strict_prices": "H1>L0>L2>0",
+    "maximum_span_bars_L0_to_L2": 96,
+    "sweep_depth_ratio": "(L0-L2)/(H1-L0)",
+    "sweep_depth_lower_exclusive": "0",
+    "sweep_depth_upper_inclusive": "0.382",
+    "sweep_ratio_reason": "A small failed penetration relative to the known L0->H1 response is the structural definition of a spring, preregistered once, no retrospective tuning.",
+    "path_validation": "Between L0 and H1 raw lows must not breach L0; between H1 and L2 raw highs must not exceed H1 nor lows breach L2; after L2 and through its three-right-bar confirmation, no raw low may be below L2 and no close may have already reclaimed L0. Intrabar ambiguous dual-pivot and invalidated paths fail closed.",
+    "eligible_decision_age_after_L2_confirmation_closed_bars": [
+      1,
+      16
+    ],
+    "stop_on_new_confirmed_pivot": "invalidate former spring setup before forming a new one; one state identity only",
+    "limits": "This is a proxy for a three-leg spring, not market microstructure order-book proof or an Elliott count."
+  },
+  "trigger": {
+    "event": "First fresh CLOSED 15m close strictly above L0 with previous CLOSED 15m close at or below L0, while low on current bar has not breached L2 and high has not exceeded H1; this is a structural support reclaim, not an HB resistance breakout",
+    "identity_once_per": [
+      "L0.index",
+      "L2.index"
+    ],
+    "consume_first_cross_even_if_context_or_risk_denies": true,
+    "invalidate_before_trigger": "current 15m LOW < L2, or current 15m HIGH > H1; structural setup expire if age > 16, superseding confirmed pivot",
+    "side": "LONG_ONLY",
+    "min_lag": 1,
+    "context": [
+      "h4_up==1 closed-asof",
+      "h1_vol_ok==1 closed-asof",
+      "close>open",
+      "close>previous_close",
+      "lagged finite positive ATR",
+      "unchanged fixed 25+15 bps stress cost gate"
+    ],
+    "context_note": "h1_vol_ok means closed-1h candle-range/volatility normalized versus lagged 72-hour reference, never traded volume",
+    "price_for_cost_screen": "decision-bar closed 15m close",
+    "span_for_cost": "H1-L2 (must be positive)",
+    "entry": "NEXT 15m candle OPEN only; never on decision candle",
+    "no_signal_without_future_next_bar": true
+  },
+  "costs": {
+    "conservative_fee_bps_per_leg": 10,
+    "conservative_slip_bps_per_leg": 5,
+    "stress_fee_bps_per_leg": 25,
+    "stress_slip_bps_per_leg": 15,
+    "single_fixed_stress_gate_used_under_both_profiles": true,
+    "do_not_relax_gate_or_context_to_manufacture_profit": true,
+    "same_backtest_engine_as_abc_v11": true
+  },
+  "risk": {
+    "initial_usdt_per_independently_reset_cell": 10000,
+    "paper_reference_balance_usdt": 500,
+    "existing_stop_atr_multiple": 1.5,
+    "existing_target_r": 2,
+    "existing_max_position_fraction": 0.1,
+    "existing_risk_per_trade_fraction": 0.001,
+    "existing_daily_loss_pause_fraction": 0.05,
+    "existing_drawdown_halt_fraction": 0.1,
+    "existing_age_exit_bars": 64,
+    "same_candle_stop_first": true,
+    "unchanged_long_flat_backtest_ast": true
+  },
+  "verification": {
+    "before_first_market_attempt": [
+      "immutable source prereg and unmodified source bound old parent",
+      "strict pivot right confirmation and no future tail unit tests",
+      "path and simultaneous invalidation tests",
+      "first reclaim consumes even if cost denied",
+      "cost and h4/h1 context gates preserved",
+      "exact-head GitHub CI Windows Ubuntu macOS",
+      "native laptop2 tests exit zero and bytes compared",
+      "archive manifest six data files old v9 terminal journal hashes and exclusive invocation lease frozen"
+    ],
+    "single_market_diagnostic_if_all_gates_pass": "One fixed 2-symbol × 3 chronological parts (train 60%, validation 20%, previously-inspected final 20%) × 2 fixed cost-profile run, 12 cells with next-open actual fills, monthly count/PNL/mean and independent Decimal plus raw OHLC chronology audits",
+    "no_selection_or_parameter_sweep": true,
+    "do_not_inspect_existing_final_part_to_retune": true,
+    "historical_data_not_pristine": true,
+    "prospective_new_unseen_data_required_for_admission": true,
+    "no_minimum_trade_count": true
+  },
+  "architecture": {
+    "GitHub_source_of_truth": true,
+    "worker_research": "LAPTOP2",
+    "paper_sole_writer": "LAPTOP1",
+    "vps_work": "PAUSED_BY_OWNER",
+    "automatic_factory_registration": false,
+    "automatic_demo_promotion": false,
+    "install_or_existing_journal_changes": false,
+    "market_orders": false,
+    "live_trading_enabled": false,
+    "research_only": true
+  },
+  "current_evaluation": {
+    "historical_backtests": 0,
+    "live_orders": 0,
+    "paper_orders": 0,
+    "profit_claims": 0,
+    "source_code_still_unimplemented": true
+  }
+}

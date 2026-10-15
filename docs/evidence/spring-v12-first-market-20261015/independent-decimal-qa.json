@@ -1,0 +1,46 @@
+{
+  "all_fees_fills_pnl_and_next_open_passed": true,
+  "auto_demo": false,
+  "cells_checked": 12,
+  "checked_at_utc": "2026-10-15T12:21:03.579463+00:00",
+  "closed_trades_checked_across_cost_profiles": 34,
+  "groups": [
+    {
+      "closed_trades": 9,
+      "mean_trade_pnl_usdt": -0.6605057206685768,
+      "partition_sum_usdt": -5.944551486017191,
+      "profile": "conservative",
+      "symbol": "BTCUSDT"
+    },
+    {
+      "closed_trades": 9,
+      "mean_trade_pnl_usdt": -6.467689252346928,
+      "partition_sum_usdt": -58.209203271122355,
+      "profile": "stress",
+      "symbol": "BTCUSDT"
+    },
+    {
+      "closed_trades": 8,
+      "mean_trade_pnl_usdt": -3.8752347334575297,
+      "partition_sum_usdt": -31.001877867660237,
+      "profile": "conservative",
+      "symbol": "ETHUSDT"
+    },
+    {
+      "closed_trades": 8,
+      "mean_trade_pnl_usdt": -7.844077584679572,
+      "partition_sum_usdt": -62.752620677436575,
+      "profile": "stress",
+      "symbol": "ETHUSDT"
+    }
+  ],
+  "historical_test_pristine": false,
+  "invocation_sha256": "4a6cce98a58d5dc21cb3632e61a85cc1a6dec42cecb92ecf902a358ee3d4f668",
+  "live_enabled": false,
+  "price_events_checked_for_count": 82,
+  "raw_market_leakage_independent_audit_completed": false,
+  "result_sha256": "9f1d95e5e36590eb2ae1b011200e6e0e1b7778198254620a9cafcdaec046231e",
+  "schema": "spring-v12-independent-decimal-qa/v1",
+  "source_sha": "d9b179cf2c3b8ed5369c16cb36e17d802e0877b3",
+  "trace_sha256": "c856e4744268ada84788ff562e18fdabadbd01fca94f95f3c929c60bc4a0d7b8"
+}
