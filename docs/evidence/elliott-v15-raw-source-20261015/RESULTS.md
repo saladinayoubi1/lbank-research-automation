@@ -23,6 +23,6 @@ The 17 new source-verification synthetic tests ran successfully (17/17) on Lapto
 
 **The remaining Elliott failure is NOT demonstrated to be pivot extraction corruption in these 24 events.** The earlier five-swing candidate remains **unprofitable or unqualified on inspected historical validation**; 24 recorded first-break events and 10 admitted entries are far too few to establish robust expectancy. Proving a profitable alternative requires a separate, preregistered strategy with correctly sourced **fully recursive** structure where supported, independent next-OPEN executed fill and structural-stop order-path QA, realistic friction, MAE/MFE, and truly future **uninspected** Bybit data. Do not select thresholds from the already-seen folds.
 
-Related evidence: [full-archive 1h/4h as-of QA](../elliott-v14-asof-qa-20261015/FULL_ARCHIVE_ASOF_RESULTS.md). Source-only checker: [V15](../../../../nexus_elliott_source_bound_v15.py) and [frozen-event validator](frozen_event_source_qa.py).
+Related evidence: [full-archive 1h/4h as-of QA](../elliott-v14-asof-qa-20261015/FULL_ARCHIVE_ASOF_RESULTS.md). Source-only checker: [V15](../../../nexus_elliott_source_bound_v15.py) and [frozen-event validator](frozen_event_source_qa.py).
 
 **Authority and deployment:** Research only, branch stacked as Draft PR #2673 over Draft #2661, GitHub is truth. Existing on-disk Laptop1 app, sole Paper writer, reference 500 USDT, Bybit-only demo, archived ledger, prior economic loss evidence and paused VPS unchanged. `Live=false`.
