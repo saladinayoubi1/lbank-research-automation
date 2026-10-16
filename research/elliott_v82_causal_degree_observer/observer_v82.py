@@ -73,7 +73,9 @@ def validate_minutes(minutes: list[Minute]) -> None:
             raise ValueError("typed minute source required")
         if m.ms % MINUTE_MS or m.ms != minutes[0].ms + i * MINUTE_MS:
             raise ValueError("minute gap, duplicate, or misaligned timestamp")
-        if m.low <= 0 or m.high < m.low or not m.high.is_finite() or not m.low.is_finite():
+        if (type(m.high) is not Decimal or type(m.low) is not Decimal or
+                not m.high.is_finite() or not m.low.is_finite() or
+                m.low <= 0 or m.high < m.low):
             raise ValueError("invalid 1m high/low")
 
 
