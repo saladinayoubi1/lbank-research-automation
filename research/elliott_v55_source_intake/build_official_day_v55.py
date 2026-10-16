@@ -66,7 +66,10 @@ def build_verified_1m_day(symbol,day_utc,raw_archive,output_directory,
     output=Path(output_directory)
     if archive.name!=name or not archive.is_file() or not archive.stat().st_size:
         raise ProspectiveGateError("raw archive missing or wrong exact date/symbol")
-    if output.exists():raise ProspectiveGateError("refuse existing output directory/overwrite")
+    if output.exists() or output.is_symlink():
+        raise ProspectiveGateError("refuse existing output directory/overwrite")
+    if not output.parent.is_dir() or output.parent.is_symlink():
+        raise ProspectiveGateError("existing real output parent directory required")
     if fixture_mode:
         if not output.resolve().is_relative_to(Path(tempfile.gettempdir()).resolve()):
             raise ProspectiveGateError("synthetic fixture must remain in OS temp")
@@ -106,29 +109,41 @@ def build_verified_1m_day(symbol,day_utc,raw_archive,output_directory,
             "close":float(val[3]),"volume":float(val[4]),"trade_count":int(val[5]),
         })
     frame=pd.DataFrame(fields)
-    output.mkdir(parents=True,exist_ok=False)
-    parquet=output/f"{symbol}_{day.date()}_1m_from_official_raw.parquet"
-    frame.to_parquet(parquet,index=False)
-    minute_sha=_sha(parquet)
-    independent=verify_official_day_source(
-        symbol,day,archive,rawsha,parquet,minute_sha,
-        observed_utc=now if fixture_mode else None,
-    )
-    if independent.source_trades!=trades:
-        raise ProspectiveGateError("producer vs independent trade count differs")
-    receipt={
-        "schema":"nexus.elliott-v55-source-intake-v1",
-        "created_utc":datetime.now(timezone.utc).isoformat(),
-        "declared_source_url":declared_source_url,
-        "source_url_is_proven_by_download":False,
-        "fixture_mode":bool(fixture_mode),
-        "raw_path":str(archive),"raw_sha256":rawsha,
-        "parquet_path":str(parquet),"parquet_sha256":minute_sha,
-        "independent_v52_result":asdict(independent),
-        "research_only":True,"entry_signal":False,
-        "paper_eligible":False,"live_enabled":False,"pnl":None,
-        "status":"SYNTHETIC_TEST_ONLY" if fixture_mode else "PASS_OFFLINE_INDEPENDENT_1M_SOURCE_ONLY",
-    }
-    dest=output/"SOURCE_INTAKE_RECEIPT.json"
-    dest.write_text(json.dumps(receipt,indent=2,ensure_ascii=False)+"\n",encoding="utf8")
-    return receipt
+    # Transactional publication: no final output path exists until full V52
+    # independent verification and durable receipt construction have passed.
+    # A failed audit leaves no source folder that a later scan could mistake
+    # for a verified successful intake; the original gzip is never modified.
+    with tempfile.TemporaryDirectory(prefix=".nexus-elliott-staging-",
+                                     dir=output.parent) as workspace:
+        staging=Path(workspace)
+        fname=f"{symbol}_{day.date()}_1m_from_official_raw.parquet"
+        staged_parquet=staging/fname
+        frame.to_parquet(staged_parquet,index=False)
+        minute_sha=_sha(staged_parquet)
+        independent=verify_official_day_source(
+            symbol,day,archive,rawsha,staged_parquet,minute_sha,
+            observed_utc=now if fixture_mode else None,
+        )
+        if independent.source_trades!=trades:
+            raise ProspectiveGateError("producer vs independent trade count differs")
+        receipt={
+            "schema":"nexus.elliott-v56-transactional-source-intake.v1",
+            "created_utc":datetime.now(timezone.utc).isoformat(),
+            "declared_source_url":declared_source_url,
+            "source_url_is_proven_by_download":False,
+            "fixture_mode":bool(fixture_mode),
+            "raw_path":str(archive),"raw_sha256":rawsha,
+            "parquet_path":str(output/fname),"parquet_sha256":minute_sha,
+            "independent_v52_result":asdict(independent),
+            "research_only":True,"entry_signal":False,
+            "paper_eligible":False,"live_enabled":False,"pnl":None,
+            "status":"SYNTHETIC_TEST_ONLY" if fixture_mode else "PASS_OFFLINE_INDEPENDENT_1M_SOURCE_ONLY",
+        }
+        (staging/"SOURCE_INTAKE_RECEIPT.json").write_text(
+            json.dumps(receipt,indent=2,ensure_ascii=False)+"\n",encoding="utf8")
+        if output.exists() or output.is_symlink():
+            raise ProspectiveGateError("destination created concurrently; refusing overwrite")
+        # On Windows Path.rename refuses replacing an existing directory.
+        # Both directories are under the same physical parent/filesystem.
+        staging.rename(output)
+        return receipt
