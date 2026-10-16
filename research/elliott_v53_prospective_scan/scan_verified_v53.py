@@ -51,6 +51,8 @@ class ProspectiveScan:
     source_bound_parent_candidates:int
     bounded_child_candidates:int
     candidates:tuple[ScanCandidate,...]
+    warmup_geometry_excluded:int=0
+    previously_scored_geometry_excluded:int=0
     status:str="RESEARCH_ONLY_NO_PNL_NO_ORDERS"
     entry_signal:bool=False
     paper_eligible:bool=False
@@ -127,6 +129,7 @@ def scan_verified_complete_days(symbol:str,
         else:accepted.append(pivot)
     seenminute={(p.index,p.kind):p for p in _strict_minute_pivots(minutes)}
     groups=0;geometry=0;bound=0;child=0;events=[]
+    warmup_excluded=0;already_scored_excluded=0
     mh=minutes["high"].to_numpy(float);ml=minutes["low"].to_numpy(float)
     for start in range(max(0,len(accepted)-8)):
         parents=accepted[start:start+9]
@@ -137,10 +140,18 @@ def scan_verified_complete_days(symbol:str,
         if not (_price_geometry_5(prices[:6],1) and
                 prices[6]<prices[7]<prices[5] and prices[8]<prices[6]):
             continue
-        geometry+=1
         confirmed=candles.index[parents[-1].confirmed_at]+pd.Timedelta(minutes=15)
         if confirmed>decision:
             raise ProspectiveGateError("future parent pivot confirmation")
+        # Score by FIRST observable parent completion, not by a later replay.
+        # Prevent warm-up contamination and repeat-counting old candidates.
+        if confirmed<SCORE_START:
+            warmup_excluded+=1
+            continue
+        if confirmed<=decision-pd.Timedelta(days=1):
+            already_scored_excluded+=1
+            continue
+        geometry+=1
         endpoints=[];sourcebound=True
         for pivot in parents:
             first=pivot.index*PARENT_MINUTES
@@ -167,4 +178,5 @@ def scan_verified_complete_days(symbol:str,
         else:ok=False;reason="PARENT_1M_ORIGIN_AMBIGUOUS_OR_UNVERIFIED"
         events.append(ScanCandidate(digest,confirmed.isoformat(),sourcebound,ok,reason))
     return ProspectiveScan(symbol,decision.isoformat(),days,trade_sum,len(accepted),
-                           groups,geometry,bound,child,tuple(events))
+                           groups,geometry,bound,child,tuple(events),
+                           warmup_excluded,already_scored_excluded)
