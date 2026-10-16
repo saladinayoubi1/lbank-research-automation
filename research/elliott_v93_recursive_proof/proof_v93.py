@@ -8,13 +8,14 @@ from __future__ import annotations
 import hashlib
 import json
 import subprocess
+import tempfile
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
 REPO=Path(__file__).resolve().parents[2]
-ROOT=Path(r"E:\NEXUS-QA\elliott-v93-recursive-proof-20261017")
+ROOT=Path(tempfile.gettempdir()) / "nexus-elliott-v93-report"
 V91_REL="docs/evidence/elliott-v91-nested-impulse-gate-20261017/V91_NESTED_ENTRY_EXIT_GATE.json"
 V91_SHA="d4401a5606dee6a0842d1ee3752375dc95de732b9189eb3e65983640ec1715c0"
 V91_COMMIT="1fa94b9432be9d13782f3f76c0bb48737c3bc445"

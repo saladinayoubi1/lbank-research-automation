@@ -8,12 +8,13 @@ from __future__ import annotations
 import hashlib
 import json
 import subprocess
+import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
-ROOT = Path(r"E:\NEXUS-QA\elliott-v92-synthetic-fill-gate-20261017")
+ROOT = Path(tempfile.gettempdir()) / "nexus-elliott-v92-report"
 REPO = Path(__file__).resolve().parents[2]
 V91_REL = "docs/evidence/elliott-v91-nested-impulse-gate-20261017/V91_NESTED_ENTRY_EXIT_GATE.json"
 V91_SHA = "d4401a5606dee6a0842d1ee3752375dc95de732b9189eb3e65983640ec1715c0"
