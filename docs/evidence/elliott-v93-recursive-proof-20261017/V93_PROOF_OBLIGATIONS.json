@@ -1,0 +1,444 @@
+{
+  "experimental_post_confirmation_policy": {
+    "apply_to_prior_inspected_july_samples": false,
+    "cost_gate": "real Bybit Demo spreads, quote age, fees, slippage and stop gap-loss must be observed before any simulation or promotion",
+    "disallow_overlap_and_immediate_reentry": true,
+    "entry": "earliest subsequent 1m OPEN, subject to certified bid/ask/fill constraints",
+    "live_enabled": false,
+    "missing_quote_or_tick_or_contract_spec": "ABSTAIN",
+    "nominal_risk_limit_usdt": "2.50",
+    "one_position_per_symbol": true,
+    "orders_issued": 0,
+    "paper_eligible": false,
+    "paper_reference_balance_usdt": "500",
+    "performance_claim": null,
+    "requires_pattern_position": "prior 15m context and correct leading/ending class independently witnessed",
+    "requires_source_attested_recursive_tree": true,
+    "signals_issued": 0,
+    "simultaneous_stop_target": "STOP_FIRST_CONSERVATIVE",
+    "status": "HYPOTHESIS_DECLARED_NOT_VALIDATED_OR_ENABLED",
+    "stop": "strictly invalidating outer wave-4 extreme; reject if on wrong side of entry",
+    "stop_gap": "WORSE_NEXT_OPEN_NOT_STALE_STOP_PRICE",
+    "target": "2R measured from execution entry to declared stop, hypothetical research heuristic",
+    "timeout": "60 completed 1m bars after actual research entry; close only at first subsequent open",
+    "training_or_optimization_using_v90_or_v91": false,
+    "trigger": "after fully confirmed wave-5, first future completed 1m CLOSE past wave-5 outer extreme in motive direction"
+  },
+  "historical_not_prospective": true,
+  "live_enabled": false,
+  "net_pnl": null,
+  "new_positions": 0,
+  "paper_eligible": false,
+  "prior_case_data_reused_not_retuned": true,
+  "recorded_utc": "2026-10-16T21:41:27.999097+00:00",
+  "research_only": true,
+  "rulebook_applies_future_only": true,
+  "schema": "nexus.elliott-v93-source-proof-obligations.v1",
+  "signals": 0,
+  "symbols": {
+    "BTCUSDT": {
+      "all_admissions_denied": 6,
+      "cases": [
+        {
+          "admission": "DENY",
+          "asof_ms": 1720491300000,
+          "dual_extremum_inside_nested_leg_count": 0,
+          "entry_signal": false,
+          "failed_or_missing_proof_obligations": [
+            "V83_NONDIAGONAL_OUTER_GEOMETRY_FAIL",
+            "INVALID_1M_INNER_ALTERNATION",
+            "FIXED_53535_INNER_COUNT_MISMATCH",
+            "NO_INDEPENDENT_RECURSIVE_CANDLE_BACKED_TREE",
+            "NO_CERTIFIED_15M_PATTERN_POSITION_OR_PRECEDING_CONTEXT",
+            "NO_POST_CONFIRMATION_MARKET_BREAKOUT_WITNESS",
+            "NO_EXTERNALLY_VERIFIED_BYBIT_EXECUTION_FRICTIONS",
+            "NO_REAL_ORDER_OR_POSITION_LIFECYCLE_VALIDATION"
+          ],
+          "hypothesis_is_trade_ready": false,
+          "live_enabled": false,
+          "mismatched_subwave_leg_numbers": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "original_1m_counts": [
+            1,
+            9,
+            2,
+            1,
+            4
+          ],
+          "original_anatomy_state": "ORDINARY_IMPULSE_OUTER_GEOMETRY_FAIL",
+          "paper_eligible": false,
+          "pattern_position_proven": false,
+          "pnl": null,
+          "position_context_seen": false,
+          "precommitted_expected_1m_counts": [
+            4,
+            2,
+            4,
+            2,
+            4
+          ],
+          "recursive_proof_tree_authenticated": false,
+          "week": "B"
+        },
+        {
+          "admission": "DENY",
+          "asof_ms": 1720554300000,
+          "dual_extremum_inside_nested_leg_count": 1,
+          "entry_signal": false,
+          "failed_or_missing_proof_obligations": [
+            "UNORDERED_1M_OHLC_SOURCE_AMBIGUITY",
+            "INVALID_1M_INNER_ALTERNATION",
+            "FIXED_53535_INNER_COUNT_MISMATCH",
+            "NO_INDEPENDENT_RECURSIVE_CANDLE_BACKED_TREE",
+            "NO_CERTIFIED_15M_PATTERN_POSITION_OR_PRECEDING_CONTEXT",
+            "NO_POST_CONFIRMATION_MARKET_BREAKOUT_WITNESS",
+            "NO_EXTERNALLY_VERIFIED_BYBIT_EXECUTION_FRICTIONS",
+            "NO_REAL_ORDER_OR_POSITION_LIFECYCLE_VALIDATION"
+          ],
+          "hypothesis_is_trade_ready": false,
+          "live_enabled": false,
+          "mismatched_subwave_leg_numbers": [
+            1,
+            2,
+            4,
+            5
+          ],
+          "original_1m_counts": [
+            2,
+            0,
+            4,
+            3,
+            3
+          ],
+          "original_anatomy_state": "UNORDERED_OHLC_WITHIN_NESTED_LEG_ABSTAIN",
+          "paper_eligible": false,
+          "pattern_position_proven": false,
+          "pnl": null,
+          "position_context_seen": false,
+          "precommitted_expected_1m_counts": [
+            4,
+            2,
+            4,
+            2,
+            4
+          ],
+          "recursive_proof_tree_authenticated": false,
+          "week": "B"
+        },
+        {
+          "admission": "DENY",
+          "asof_ms": 1720581300000,
+          "dual_extremum_inside_nested_leg_count": 1,
+          "entry_signal": false,
+          "failed_or_missing_proof_obligations": [
+            "V83_NONDIAGONAL_OUTER_GEOMETRY_FAIL",
+            "UNORDERED_1M_OHLC_SOURCE_AMBIGUITY",
+            "INVALID_1M_INNER_ALTERNATION",
+            "FIXED_53535_INNER_COUNT_MISMATCH",
+            "NO_INDEPENDENT_RECURSIVE_CANDLE_BACKED_TREE",
+            "NO_CERTIFIED_15M_PATTERN_POSITION_OR_PRECEDING_CONTEXT",
+            "NO_POST_CONFIRMATION_MARKET_BREAKOUT_WITNESS",
+            "NO_EXTERNALLY_VERIFIED_BYBIT_EXECUTION_FRICTIONS",
+            "NO_REAL_ORDER_OR_POSITION_LIFECYCLE_VALIDATION"
+          ],
+          "hypothesis_is_trade_ready": false,
+          "live_enabled": false,
+          "mismatched_subwave_leg_numbers": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "original_1m_counts": [
+            6,
+            3,
+            5,
+            0,
+            0
+          ],
+          "original_anatomy_state": "ORDINARY_IMPULSE_OUTER_GEOMETRY_FAIL",
+          "paper_eligible": false,
+          "pattern_position_proven": false,
+          "pnl": null,
+          "position_context_seen": false,
+          "precommitted_expected_1m_counts": [
+            4,
+            2,
+            4,
+            2,
+            4
+          ],
+          "recursive_proof_tree_authenticated": false,
+          "week": "B"
+        },
+        {
+          "admission": "DENY",
+          "asof_ms": 1720629900000,
+          "dual_extremum_inside_nested_leg_count": 0,
+          "entry_signal": false,
+          "failed_or_missing_proof_obligations": [
+            "V83_NONDIAGONAL_OUTER_GEOMETRY_FAIL",
+            "INVALID_1M_INNER_ALTERNATION",
+            "FIXED_53535_INNER_COUNT_MISMATCH",
+            "NO_INDEPENDENT_RECURSIVE_CANDLE_BACKED_TREE",
+            "NO_CERTIFIED_15M_PATTERN_POSITION_OR_PRECEDING_CONTEXT",
+            "NO_POST_CONFIRMATION_MARKET_BREAKOUT_WITNESS",
+            "NO_EXTERNALLY_VERIFIED_BYBIT_EXECUTION_FRICTIONS",
+            "NO_REAL_ORDER_OR_POSITION_LIFECYCLE_VALIDATION"
+          ],
+          "hypothesis_is_trade_ready": false,
+          "live_enabled": false,
+          "mismatched_subwave_leg_numbers": [
+            1,
+            2,
+            3,
+            5
+          ],
+          "original_1m_counts": [
+            3,
+            1,
+            2,
+            2,
+            0
+          ],
+          "original_anatomy_state": "ORDINARY_IMPULSE_OUTER_GEOMETRY_FAIL",
+          "paper_eligible": false,
+          "pattern_position_proven": false,
+          "pnl": null,
+          "position_context_seen": false,
+          "precommitted_expected_1m_counts": [
+            4,
+            2,
+            4,
+            2,
+            4
+          ],
+          "recursive_proof_tree_authenticated": false,
+          "week": "B"
+        },
+        {
+          "admission": "DENY",
+          "asof_ms": 1720813500000,
+          "dual_extremum_inside_nested_leg_count": 0,
+          "entry_signal": false,
+          "failed_or_missing_proof_obligations": [
+            "V83_NONDIAGONAL_OUTER_GEOMETRY_FAIL",
+            "INVALID_1M_INNER_ALTERNATION",
+            "FIXED_53535_INNER_COUNT_MISMATCH",
+            "NO_INDEPENDENT_RECURSIVE_CANDLE_BACKED_TREE",
+            "NO_CERTIFIED_15M_PATTERN_POSITION_OR_PRECEDING_CONTEXT",
+            "NO_POST_CONFIRMATION_MARKET_BREAKOUT_WITNESS",
+            "NO_EXTERNALLY_VERIFIED_BYBIT_EXECUTION_FRICTIONS",
+            "NO_REAL_ORDER_OR_POSITION_LIFECYCLE_VALIDATION"
+          ],
+          "hypothesis_is_trade_ready": false,
+          "live_enabled": false,
+          "mismatched_subwave_leg_numbers": [
+            1,
+            3,
+            4,
+            5
+          ],
+          "original_1m_counts": [
+            1,
+            2,
+            2,
+            3,
+            2
+          ],
+          "original_anatomy_state": "ORDINARY_IMPULSE_OUTER_GEOMETRY_FAIL",
+          "paper_eligible": false,
+          "pattern_position_proven": false,
+          "pnl": null,
+          "position_context_seen": false,
+          "precommitted_expected_1m_counts": [
+            4,
+            2,
+            4,
+            2,
+            4
+          ],
+          "recursive_proof_tree_authenticated": false,
+          "week": "B"
+        },
+        {
+          "admission": "DENY",
+          "asof_ms": 1720897200000,
+          "dual_extremum_inside_nested_leg_count": 0,
+          "entry_signal": false,
+          "failed_or_missing_proof_obligations": [
+            "V83_NONDIAGONAL_OUTER_GEOMETRY_FAIL",
+            "INVALID_1M_INNER_ALTERNATION",
+            "FIXED_53535_INNER_COUNT_MISMATCH",
+            "NO_INDEPENDENT_RECURSIVE_CANDLE_BACKED_TREE",
+            "NO_CERTIFIED_15M_PATTERN_POSITION_OR_PRECEDING_CONTEXT",
+            "NO_POST_CONFIRMATION_MARKET_BREAKOUT_WITNESS",
+            "NO_EXTERNALLY_VERIFIED_BYBIT_EXECUTION_FRICTIONS",
+            "NO_REAL_ORDER_OR_POSITION_LIFECYCLE_VALIDATION"
+          ],
+          "hypothesis_is_trade_ready": false,
+          "live_enabled": false,
+          "mismatched_subwave_leg_numbers": [
+            1,
+            3,
+            4,
+            5
+          ],
+          "original_1m_counts": [
+            0,
+            2,
+            0,
+            4,
+            0
+          ],
+          "original_anatomy_state": "ORDINARY_IMPULSE_OUTER_GEOMETRY_FAIL",
+          "paper_eligible": false,
+          "pattern_position_proven": false,
+          "pnl": null,
+          "position_context_seen": false,
+          "precommitted_expected_1m_counts": [
+            4,
+            2,
+            4,
+            2,
+            4
+          ],
+          "recursive_proof_tree_authenticated": false,
+          "week": "B"
+        }
+      ],
+      "pattern_position_certificates": 0,
+      "reason_frequencies": {
+        "FIXED_53535_INNER_COUNT_MISMATCH": 6,
+        "INVALID_1M_INNER_ALTERNATION": 6,
+        "NO_CERTIFIED_15M_PATTERN_POSITION_OR_PRECEDING_CONTEXT": 6,
+        "NO_EXTERNALLY_VERIFIED_BYBIT_EXECUTION_FRICTIONS": 6,
+        "NO_INDEPENDENT_RECURSIVE_CANDLE_BACKED_TREE": 6,
+        "NO_POST_CONFIRMATION_MARKET_BREAKOUT_WITNESS": 6,
+        "NO_REAL_ORDER_OR_POSITION_LIFECYCLE_VALIDATION": 6,
+        "UNORDERED_1M_OHLC_SOURCE_AMBIGUITY": 2,
+        "V83_NONDIAGONAL_OUTER_GEOMETRY_FAIL": 5
+      },
+      "source_bound_recursive_tree_certificates": 0,
+      "v91_cases_seen": 6
+    },
+    "ETHUSDT": {
+      "all_admissions_denied": 2,
+      "cases": [
+        {
+          "admission": "DENY",
+          "asof_ms": 1720426500000,
+          "dual_extremum_inside_nested_leg_count": 0,
+          "entry_signal": false,
+          "failed_or_missing_proof_obligations": [
+            "V83_NONDIAGONAL_OUTER_GEOMETRY_FAIL",
+            "INVALID_1M_INNER_ALTERNATION",
+            "FIXED_53535_INNER_COUNT_MISMATCH",
+            "NO_INDEPENDENT_RECURSIVE_CANDLE_BACKED_TREE",
+            "NO_CERTIFIED_15M_PATTERN_POSITION_OR_PRECEDING_CONTEXT",
+            "NO_POST_CONFIRMATION_MARKET_BREAKOUT_WITNESS",
+            "NO_EXTERNALLY_VERIFIED_BYBIT_EXECUTION_FRICTIONS",
+            "NO_REAL_ORDER_OR_POSITION_LIFECYCLE_VALIDATION"
+          ],
+          "hypothesis_is_trade_ready": false,
+          "live_enabled": false,
+          "mismatched_subwave_leg_numbers": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "original_1m_counts": [
+            7,
+            4,
+            1,
+            0,
+            3
+          ],
+          "original_anatomy_state": "ORDINARY_IMPULSE_OUTER_GEOMETRY_FAIL",
+          "paper_eligible": false,
+          "pattern_position_proven": false,
+          "pnl": null,
+          "position_context_seen": false,
+          "precommitted_expected_1m_counts": [
+            4,
+            2,
+            4,
+            2,
+            4
+          ],
+          "recursive_proof_tree_authenticated": false,
+          "week": "B"
+        },
+        {
+          "admission": "DENY",
+          "asof_ms": 1720899000000,
+          "dual_extremum_inside_nested_leg_count": 0,
+          "entry_signal": false,
+          "failed_or_missing_proof_obligations": [
+            "V83_NONDIAGONAL_OUTER_GEOMETRY_FAIL",
+            "INVALID_1M_INNER_ALTERNATION",
+            "FIXED_53535_INNER_COUNT_MISMATCH",
+            "NO_INDEPENDENT_RECURSIVE_CANDLE_BACKED_TREE",
+            "NO_CERTIFIED_15M_PATTERN_POSITION_OR_PRECEDING_CONTEXT",
+            "NO_POST_CONFIRMATION_MARKET_BREAKOUT_WITNESS",
+            "NO_EXTERNALLY_VERIFIED_BYBIT_EXECUTION_FRICTIONS",
+            "NO_REAL_ORDER_OR_POSITION_LIFECYCLE_VALIDATION"
+          ],
+          "hypothesis_is_trade_ready": false,
+          "live_enabled": false,
+          "mismatched_subwave_leg_numbers": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "original_1m_counts": [
+            0,
+            1,
+            1,
+            0,
+            0
+          ],
+          "original_anatomy_state": "ORDINARY_IMPULSE_OUTER_GEOMETRY_FAIL",
+          "paper_eligible": false,
+          "pattern_position_proven": false,
+          "pnl": null,
+          "position_context_seen": false,
+          "precommitted_expected_1m_counts": [
+            4,
+            2,
+            4,
+            2,
+            4
+          ],
+          "recursive_proof_tree_authenticated": false,
+          "week": "B"
+        }
+      ],
+      "pattern_position_certificates": 0,
+      "reason_frequencies": {
+        "FIXED_53535_INNER_COUNT_MISMATCH": 2,
+        "INVALID_1M_INNER_ALTERNATION": 2,
+        "NO_CERTIFIED_15M_PATTERN_POSITION_OR_PRECEDING_CONTEXT": 2,
+        "NO_EXTERNALLY_VERIFIED_BYBIT_EXECUTION_FRICTIONS": 2,
+        "NO_INDEPENDENT_RECURSIVE_CANDLE_BACKED_TREE": 2,
+        "NO_POST_CONFIRMATION_MARKET_BREAKOUT_WITNESS": 2,
+        "NO_REAL_ORDER_OR_POSITION_LIFECYCLE_VALIDATION": 2,
+        "V83_NONDIAGONAL_OUTER_GEOMETRY_FAIL": 2
+      },
+      "source_bound_recursive_tree_certificates": 0,
+      "v91_cases_seen": 2
+    }
+  },
+  "terminal_physical_source_verifier_available": false,
+  "v91_receipt_sha256": "d4401a5606dee6a0842d1ee3752375dc95de732b9189eb3e65983640ec1715c0",
+  "v92_receipt_sha256": "490b283bbf0cc218eec1e417df49f854fe4e4646e142a4d98b7bb244a097324a"
+}
