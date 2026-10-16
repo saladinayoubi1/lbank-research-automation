@@ -42,12 +42,19 @@ class FakeHTTPSConnection:
     fake_tls=None
     def __init__(self,host,port,timeout,context):
         self.host=host;self.port=port;self.context=context
-        self.sock=FakeHTTPSConnection.fake_tls or FakeTLS()
+        self.sock=None
         self.requested=None
+        self.connected=False
         FakeHTTPSConnection.instances.append(self)
+    def connect(self):
+        self.sock=FakeHTTPSConnection.fake_tls or FakeTLS()
+        self.connected=True
     def request(self,verb,path,headers):
+        if not self.connected:raise AssertionError("handshake must precede request")
         self.requested=(verb,path,headers)
     def getresponse(self):
+        # Simulate real HTTPConnection clearing its socket for Connection: close.
+        self.sock=None
         return FakeHTTPSConnection.response
     def close(self):
         pass
@@ -95,6 +102,8 @@ class V58VerifiedTransportTests(unittest.TestCase):
         conn=FakeHTTPSConnection.instances[0]
         self.assertEqual((conn.host,conn.port),("public.bybit.com",443))
         self.assertEqual(conn.requested[0:2],("GET","/spot/BTCUSDT/BTCUSDT_2026-10-16.csv.gz"))
+        self.assertTrue(conn.connected)
+        self.assertIsNone(conn.sock)
         self.assertTrue(conn.context.check_hostname)
         self.assertEqual(conn.context.verify_mode,mod.ssl.CERT_REQUIRED)
         self.assertTrue((self.target/"SOURCE_TLS_RECEIPT.json").is_file())
@@ -120,6 +129,7 @@ class V58VerifiedTransportTests(unittest.TestCase):
         FakeHTTPSConnection.fake_tls=FakeTLS(valid=False)
         with self.assertRaisesRegex(ProspectiveGateError,"TLS certificate missing"):
             self.build()
+        self.assertIsNone(FakeHTTPSConnection.instances[0].requested)
         self.assertFalse(self.target.exists())
     def test_weak_tls_version_rejected(self):
         FakeHTTPSConnection.fake_tls=FakeTLS(tls="TLSv1.0")
