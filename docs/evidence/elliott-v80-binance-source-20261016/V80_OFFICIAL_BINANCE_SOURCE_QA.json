@@ -1,0 +1,116 @@
+{
+  "stage": "V80",
+  "label": "EXPLORATORY_EXTERNAL_SOURCE_ONLY_NOT_HOLDOUT",
+  "scope": "Binance official Spot 1m, two historical days, source intake and continuity QA",
+  "bybit_execution": false,
+  "demo_eligible": false,
+  "live_trading": false,
+  "start_utc": "2026-10-16T17:29:13.276602+00:00",
+  "files": [
+    {
+      "name": "BTCUSDT-1m-2024-03-01.zip",
+      "sha256": "0e150248774f0b0940a72f74394eed5e7b84ac3ae1c98a88503fc324508e6649",
+      "official_checksum_sha256": "0e150248774f0b0940a72f74394eed5e7b84ac3ae1c98a88503fc324508e6649",
+      "manifest_sha256": "4fff2d5ef8982fae7d0c08294e5d37e8aea3cdb16baabd932c815c6231427004",
+      "csv_member_sha256": "6477f1151c363978e91458de05a24c078bb513a0ab47227e5ae93e3111437621",
+      "rows_1m": 1440,
+      "verified": true,
+      "data_receipt": {
+        "url": "https://data.binance.vision/data/spot/daily/klines/BTCUSDT/1m/BTCUSDT-1m-2024-03-01.zip",
+        "status": 200,
+        "started_utc": "2026-10-16T17:29:17.239434+00:00",
+        "finished_utc": "2026-10-16T17:29:19.206596+00:00"
+      },
+      "checksum_receipt": {
+        "url": "https://data.binance.vision/data/spot/daily/klines/BTCUSDT/1m/BTCUSDT-1m-2024-03-01.zip.CHECKSUM",
+        "status": 200,
+        "started_utc": "2026-10-16T17:29:13.276602+00:00",
+        "finished_utc": "2026-10-16T17:29:17.222109+00:00"
+      }
+    },
+    {
+      "name": "BTCUSDT-1m-2024-03-02.zip",
+      "sha256": "265f1de0768746d10bc564c7d9dc74a8258c7cd8453ffd2800984c8872c103ea",
+      "official_checksum_sha256": "265f1de0768746d10bc564c7d9dc74a8258c7cd8453ffd2800984c8872c103ea",
+      "manifest_sha256": "24032d851ced707f645d3e82cdd9bba50cddb7c27e078fae3779d5c9cd988ab1",
+      "csv_member_sha256": "647070d598f8e198d516722cbc8e999fbbc32c922a94385540d0d3097a5338dd",
+      "rows_1m": 1440,
+      "verified": true,
+      "data_receipt": {
+        "url": "https://data.binance.vision/data/spot/daily/klines/BTCUSDT/1m/BTCUSDT-1m-2024-03-02.zip",
+        "status": 200,
+        "started_utc": "2026-10-16T17:29:19.937738+00:00",
+        "finished_utc": "2026-10-16T17:29:20.909722+00:00"
+      },
+      "checksum_receipt": {
+        "url": "https://data.binance.vision/data/spot/daily/klines/BTCUSDT/1m/BTCUSDT-1m-2024-03-02.zip.CHECKSUM",
+        "status": 200,
+        "started_utc": "2026-10-16T17:29:19.282264+00:00",
+        "finished_utc": "2026-10-16T17:29:19.936771+00:00"
+      }
+    },
+    {
+      "name": "ETHUSDT-1m-2024-03-01.zip",
+      "sha256": "e392f0d5a4dfefb42c702c221b4bf3d4fab1c88fe8ff13eb39c06a605435d0a9",
+      "official_checksum_sha256": "e392f0d5a4dfefb42c702c221b4bf3d4fab1c88fe8ff13eb39c06a605435d0a9",
+      "manifest_sha256": "fa08281a8912853971f80f680ca09dc3a2dd4fb623ec4f7a781f46a0c94a30b9",
+      "csv_member_sha256": "84191c0ccd3e08ae3e4cd0e69f18be1ccebe686f7aa099c7a0802b880860380d",
+      "rows_1m": 1440,
+      "verified": true,
+      "data_receipt": {
+        "url": "https://data.binance.vision/data/spot/daily/klines/ETHUSDT/1m/ETHUSDT-1m-2024-03-01.zip",
+        "status": 200,
+        "started_utc": "2026-10-16T17:29:21.850150+00:00",
+        "finished_utc": "2026-10-16T17:29:23.980275+00:00"
+      },
+      "checksum_receipt": {
+        "url": "https://data.binance.vision/data/spot/daily/klines/ETHUSDT/1m/ETHUSDT-1m-2024-03-01.zip.CHECKSUM",
+        "status": 200,
+        "started_utc": "2026-10-16T17:29:21.028606+00:00",
+        "finished_utc": "2026-10-16T17:29:21.850150+00:00"
+      }
+    },
+    {
+      "name": "ETHUSDT-1m-2024-03-02.zip",
+      "sha256": "d21a2e40e26c826a9c13b4786b3b261f2cac2a3e1df311fb7b545085aa9e376e",
+      "official_checksum_sha256": "d21a2e40e26c826a9c13b4786b3b261f2cac2a3e1df311fb7b545085aa9e376e",
+      "manifest_sha256": "e654e1a217db9564c003acc7ac70adee90c6d1d8b86aaea9dba757de5bdb0330",
+      "csv_member_sha256": "8c07ebe1d5a443640fb6b1a8d2f2d772034a1175134dcaae669bf15de316a63e",
+      "rows_1m": 1440,
+      "verified": true,
+      "data_receipt": {
+        "url": "https://data.binance.vision/data/spot/daily/klines/ETHUSDT/1m/ETHUSDT-1m-2024-03-02.zip",
+        "status": 200,
+        "started_utc": "2026-10-16T17:29:24.886661+00:00",
+        "finished_utc": "2026-10-16T17:29:26.202392+00:00"
+      },
+      "checksum_receipt": {
+        "url": "https://data.binance.vision/data/spot/daily/klines/ETHUSDT/1m/ETHUSDT-1m-2024-03-02.zip.CHECKSUM",
+        "status": 200,
+        "started_utc": "2026-10-16T17:29:23.996320+00:00",
+        "finished_utc": "2026-10-16T17:29:24.885639+00:00"
+      }
+    }
+  ],
+  "symbols": {
+    "BTCUSDT": {
+      "total_1m": 2880,
+      "first_open_ms": 1709251200000,
+      "last_open_ms": 1709423940000,
+      "bars_3m": 960,
+      "aggregated_3m_csv_sha256": "10d8d52e059b9e26f31cb9f7a1577621c8e4af47b7a694fbfdcb93c14c9eb4e0",
+      "bars_15m": 192,
+      "aggregated_15m_csv_sha256": "0dc6d115994194247da04c91fdac9e567b4ce29a025de3eeceba5996364e358a"
+    },
+    "ETHUSDT": {
+      "total_1m": 2880,
+      "first_open_ms": 1709251200000,
+      "last_open_ms": 1709423940000,
+      "bars_3m": 960,
+      "aggregated_3m_csv_sha256": "969de142e4992b0e88b2a78d1847f17d7a43bb66fdab4d16ff22b086943002ef",
+      "bars_15m": 192,
+      "aggregated_15m_csv_sha256": "7f8255e75c1425fe2581d62074c4c9ac6df77dbb3b1cc8b7655f305c48ee9754"
+    }
+  },
+  "end_utc": "2026-10-16T17:29:26.275420+00:00"
+}
