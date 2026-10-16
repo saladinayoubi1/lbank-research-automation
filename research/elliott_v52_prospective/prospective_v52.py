@@ -58,7 +58,7 @@ def _utc(value):
     return dt.tz_convert("UTC")
 
 def read_frozen_protocol():
-    if hashlib.sha256(PROTOCOL_PATH.read_bytes()).hexdigest()!=PROTOCOL_SHA256:
+    if hashlib.sha256(PROTOCOL_PATH.read_bytes().replace(b"\r\n",b"\n")).hexdigest()!=PROTOCOL_SHA256:
         raise ProspectiveGateError("preregistered protocol SHA256 changed")
     spec=json.loads(PROTOCOL_PATH.read_text(encoding="utf8"))
     if (spec.get("schema")!="nexus.elliott.v52.predeclared-prospective-qa.v1" or
