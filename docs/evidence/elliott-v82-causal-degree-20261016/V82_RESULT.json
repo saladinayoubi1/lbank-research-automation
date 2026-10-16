@@ -1,0 +1,45 @@
+{
+  "changed_v52": false,
+  "generated_utc": "2026-10-16T18:08:12.324018+00:00",
+  "live_enabled": false,
+  "new_pnl": null,
+  "paper_eligible": false,
+  "prospective_holdout": false,
+  "research_only": true,
+  "schema": "nexus.elliott-v82-source-bound-competing-skeletons.v1",
+  "source_receipt_sha256": "5c3e77533a2792bb1b76c1e14424fed3b3076ed3f31594fca934dd9e19829b88",
+  "source_stage": "V80",
+  "symbols": {
+    "BTCUSDT": {
+      "day1_child": 182,
+      "day1_parent": 15,
+      "day2_child": 334,
+      "day2_legs": 32,
+      "day2_parent": 33,
+      "day2_summary": {
+        "CHILD_COUNT_NOT_THREE_OR_FIVE_LEGS": 6,
+        "CORRECTION_THREE_LEG_SKELETON": 1,
+        "MOTIVE_FIVE_LEG_SKELETON": 1,
+        "NONALTERNATING_ALL_PRIMITIVES_PRESERVED": 19,
+        "PARENT_SAME_KIND_NOT_A_DIRECTED_LEG": 5,
+        "SKELETON_ONLY_SUBWAVE_GEOMETRY_UNPROVEN": 2
+      },
+      "detailed_witness_file_sha256": "171305fe7e27ac77caac452eb850c29d41abf3bebc8d8f44fa8fee41caf17b40"
+    },
+    "ETHUSDT": {
+      "day1_child": 187,
+      "day1_parent": 17,
+      "day2_child": 352,
+      "day2_legs": 36,
+      "day2_parent": 37,
+      "day2_summary": {
+        "CORRECTION_THREE_LEG_SKELETON": 1,
+        "MOTIVE_FIVE_LEG_SKELETON": 1,
+        "NONALTERNATING_ALL_PRIMITIVES_PRESERVED": 25,
+        "PARENT_SAME_KIND_NOT_A_DIRECTED_LEG": 9,
+        "SKELETON_ONLY_SUBWAVE_GEOMETRY_UNPROVEN": 2
+      },
+      "detailed_witness_file_sha256": "ba1dac4453671ccbde3b0223afb406008d030543056c1726ca2b9a15bbc5c539"
+    }
+  }
+}
