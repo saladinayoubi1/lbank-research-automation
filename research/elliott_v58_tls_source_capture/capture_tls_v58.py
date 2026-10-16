@@ -67,6 +67,15 @@ def capture_completed_spot_day_tls(symbol,day_utc,output_directory,*,fixture_mod
         file=stage/name
         try:
             conn=http.client.HTTPSConnection(HOST,port=443,timeout=40,context=ssl_context)
+            # Handshake before sending HTTP. With Connection: close, CPython
+            # HTTPConnection.getresponse() can close/clear conn.sock first.
+            conn.connect()
+            sock=conn.sock
+            if sock is None or not sock.getpeercert():
+                raise ProspectiveGateError("verified peer TLS certificate missing")
+            tls=str(sock.version())
+            if tls not in ("TLSv1.2","TLSv1.3"):
+                raise ProspectiveGateError("unsupported peer TLS version")
             conn.request("GET",resource,headers={
               "Accept":"application/octet-stream","Accept-Encoding":"identity",
               "User-Agent":"NEXUS-research-source-capture-v58/1","Connection":"close"})
@@ -74,12 +83,6 @@ def capture_completed_spot_day_tls(symbol,day_utc,output_directory,*,fixture_mod
             code=int(response.status)
             if code!=200:
                 raise ProspectiveGateError(f"official HTTPS archive not available: HTTP {code}; no redirects")
-            sock=conn.sock
-            if sock is None or not sock.getpeercert():
-                raise ProspectiveGateError("verified peer TLS certificate missing")
-            tls=str(sock.version())
-            if tls not in ("TLSv1.2","TLSv1.3"):
-                raise ProspectiveGateError("unsupported peer TLS version")
             declared=response.getheader("Content-Length")
             if declared is not None:
                 try:claimed=int(declared)
