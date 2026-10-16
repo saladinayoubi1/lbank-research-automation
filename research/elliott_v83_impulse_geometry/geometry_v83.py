@@ -47,16 +47,23 @@ def check_candidate(
     """Fail-closed geometry of a five-leg skeleton; not a valid full Elliott motive."""
     if type(asof) is not int or asof % MINUTE_MS:
         raise ValueError("decision must be a completed one-minute instant")
-    validate_minutes(minutes)
-    if minutes[0].ms + len(minutes) * MINUTE_MS < asof:
+    if not isinstance(minutes, list) or not minutes or type(minutes[0]) is not Minute:
+        raise ValueError("complete typed 1m source required")
+    if type(minutes[0].ms) is not int:
+        raise ValueError("typed source opening timestamp required")
+    count, remainder = divmod(asof - minutes[0].ms, MINUTE_MS)
+    if remainder or count < 1 or len(minutes) < count:
         raise ValueError("unavailable closed 1m source through as-of")
+    # Never inspect a future tail, including an invalid or unfinished bar.
+    visible_minutes = minutes[:count]
+    validate_minutes(visible_minutes)
     if len(children) != 4:
         return {"state": "NOT_FIVE_LEG_SKELETON", "motive_geometry_pass": False}
     vertices=[left,*children,right]
     if any(x.center_ms >= y.center_ms for x,y in zip(vertices,vertices[1:])):
         raise ValueError("source centers not increasing")
     for v in vertices:
-        _known_witness(v,minutes,asof)
+        _known_witness(v,visible_minutes,asof)
     expected=("low","high","low","high","low","high") if left.kind=="low" else (
         "high","low","high","low","high","low")
     if tuple(v.kind for v in vertices) != expected:
@@ -84,7 +91,7 @@ def check_candidate(
     # extrema envelopes, never pretend intraminute HIGH/LOW order was observed.
     physical_failures=[]
     for i,(a,b) in enumerate(zip(vertices,vertices[1:])):
-        segment=minutes[a.source_minute_index:b.source_minute_index+1]
+        segment=visible_minutes[a.source_minute_index:b.source_minute_index+1]
         if not segment:
             raise ValueError("missing source path")
         up=(i%2==0) if direction==1 else (i%2==1)
