@@ -66,13 +66,13 @@ def build_verified_1m_day(symbol,day_utc,raw_archive,output_directory,
     output=Path(output_directory)
     if archive.name!=name or not archive.is_file() or not archive.stat().st_size:
         raise ProspectiveGateError("raw archive missing or wrong exact date/symbol")
+    if fixture_mode:
+        if not output.resolve().is_relative_to(Path(tempfile.gettempdir()).resolve()):
+            raise ProspectiveGateError("synthetic fixture must remain in OS temp")
     if output.exists() or output.is_symlink():
         raise ProspectiveGateError("refuse existing output directory/overwrite")
     if not output.parent.is_dir() or output.parent.is_symlink():
         raise ProspectiveGateError("existing real output parent directory required")
-    if fixture_mode:
-        if not output.resolve().is_relative_to(Path(tempfile.gettempdir()).resolve()):
-            raise ProspectiveGateError("synthetic fixture must remain in OS temp")
     rawsha=_sha(archive)
     start=int(day.timestamp()*1000)
     prev=-1;trades=0;minutes={}
