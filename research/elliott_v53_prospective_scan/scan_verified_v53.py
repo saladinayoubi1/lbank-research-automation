@@ -119,6 +119,11 @@ def scan_verified_complete_days(symbol:str,
         raise ProspectiveGateError("15m source not complete")
     hi=candles["high"].to_numpy(float);lo=candles["low"].to_numpy(float)
     accepted=[]
+    # Record the FIRST time each distinct eight-anchor parent skeleton becomes
+    # nine-parent geometry. Subsequent stronger same-kind ninth pivots may
+    # replace the mutable last pivot, but must not erase or re-date the original
+    # event, retroactively "discover" it, or count it as a second signal.
+    first_seen={}
     for index in range(len(candles)):
         pivot=_confirmed_pivot(hi,lo,index)
         if pivot is None:continue
@@ -126,23 +131,44 @@ def scan_verified_complete_days(symbol:str,
             prev=accepted[-1]
             if pivot.price>prev.price if pivot.kind=="high" else pivot.price<prev.price:
                 accepted[-1]=pivot
-        else:accepted.append(pivot)
-    seenminute={(p.index,p.kind):p for p in _strict_minute_pivots(minutes)}
-    groups=0;geometry=0;bound=0;child=0;events=[]
-    warmup_excluded=0;already_scored_excluded=0
-    mh=minutes["high"].to_numpy(float);ml=minutes["low"].to_numpy(float)
-    for start in range(max(0,len(accepted)-8)):
-        parents=accepted[start:start+9]
-        if tuple(p.kind for p in parents)!=("low","high","low","high","low","high","low","high","low"):
+            else:
+                continue
+        else:
+            accepted.append(pivot)
+        if len(accepted)<9:
             continue
-        groups+=1
-        prices=[Decimal(str(p.price)) for p in parents]
+        group=tuple(accepted[-9:])
+        if tuple(p.kind for p in group)!=("low","high","low","high","low","high","low","high","low"):
+            continue
+        prices=[Decimal(str(p.price)) for p in group]
         if not (_price_geometry_5(prices[:6],1) and
                 prices[6]<prices[7]<prices[5] and prices[8]<prices[6]):
             continue
-        confirmed=candles.index[parents[-1].confirmed_at]+pd.Timedelta(minutes=15)
-        if confirmed>decision:
-            raise ProspectiveGateError("future parent pivot confirmation")
+        # First eight (not the mutable final same-kind extremum) identify
+        # this candidate. A previously invalid ninth pivot can become valid
+        # after replacement; in that case first_seen is set ONLY once valid.
+        identity=tuple((p.index,p.kind,float(p.price)) for p in group[:8])
+        if identity not in first_seen:
+            # Honor every claimed right-hand pivot confirmation. Real V53
+            # _confirmed_pivot confirms at 'index'; synthetic V54 fixtures
+            # intentionally model a 3-bar wait after the injected event.
+            confirmed_index=max(index,max(x.confirmed_at for x in group))
+            if confirmed_index>=len(candles):
+                raise ProspectiveGateError("future parent pivot confirmation")
+            observable=candles.index[confirmed_index]+pd.Timedelta(minutes=15)
+            if observable>decision:
+                raise ProspectiveGateError("future parent pivot confirmation")
+            first_seen[identity]=(group,observable)
+    seenminute={(p.index,p.kind):p for p in _strict_minute_pivots(minutes)}
+    groups=sum(
+        tuple(p.kind for p in accepted[start:start+9])==
+        ("low","high","low","high","low","high","low","high","low")
+        for start in range(max(0,len(accepted)-8))
+    )
+    geometry=0;bound=0;child=0;events=[]
+    warmup_excluded=0;already_scored_excluded=0
+    mh=minutes["high"].to_numpy(float);ml=minutes["low"].to_numpy(float)
+    for parents,confirmed in first_seen.values():
         # Score by FIRST observable parent completion, not by a later replay.
         # Prevent warm-up contamination and repeat-counting old candidates.
         if confirmed<SCORE_START:
