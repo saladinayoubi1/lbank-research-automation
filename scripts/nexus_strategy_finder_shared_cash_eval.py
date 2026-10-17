@@ -8,6 +8,7 @@ old accounting discrepancy observable for review; it does not manufacture edge.
 """
 from __future__ import annotations
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -26,8 +27,55 @@ from research.strategy_finder_shared_cash_physical import (
 )
 
 
+# Exact original official research-cache representation verified physically on
+# isolated Laptop2. Binding only a caller-supplied semantic ARCHIVE_SHA256
+# is NOT byte-level source authentication: the old archive reader validates
+# chronology/OHLC but does not independently attest these six file blobs.
+PINNED_BYBIT_PARQUET_SHA256 = {
+    "btc_usdt/minute15.parquet": "c3afe92899dda8fe52937c955323cc8e04bf8f200a68eb8651e55d6020981226",
+    "btc_usdt/hour1.parquet": "f8f2236785c036fe40808809397d47729b3add4c8f0b9e19c77d3b771f8e6847",
+    "btc_usdt/hour4.parquet": "e0d019a76882a02dc463a34d1d9375841f81d412b9a3310d9e21c2d7b2738dc6",
+    "eth_usdt/minute15.parquet": "ce603440650d0022b1a17a7922da743a3b6219ba9afd89ad4362b70fbe3bbfa1",
+    "eth_usdt/hour1.parquet": "ba0743588c5089e6a6b250b4ebb029a43fea57d0a020df5ab1316c34efdcd88a",
+    "eth_usdt/hour4.parquet": "292005e091d914fbb9d108c3d8d65e93785cc32b9c73e07ea02e0d44cf7da65b",
+}
+
+
 class CandidateBridgeError(ValueError):
     pass
+
+
+def verify_pinned_market_files(archive_root: Path) -> dict[str, str]:
+    """Attest ALL original peer/timeframe source bytes before feature loading.
+
+    This protects the exact historical representation used for the isolated
+    NEXUS research evidence. No network or mutable manifest accepted. Other
+    semantically equivalent dataset representations need a new review/lock;
+    they must not inherit an old source certificate by naming alone.
+    """
+    if (not isinstance(archive_root, Path)
+        or archive_root.is_symlink() or not archive_root.is_dir()):
+        raise CandidateBridgeError("untrusted research archive root")
+    market=archive_root/"bybit_market"
+    if market.is_symlink() or not market.is_dir():
+        raise CandidateBridgeError("untrusted market archive directory")
+    attested={}
+    for rel,expected in PINNED_BYBIT_PARQUET_SHA256.items():
+        symbol,timeframe=rel.split("/")
+        parent=market/symbol
+        target=parent/timeframe
+        if (parent.is_symlink() or not parent.is_dir()
+            or target.is_symlink() or not target.is_file()
+            or not 0<target.stat().st_size<=20_000_000):
+            raise CandidateBridgeError("missing/linked/oversized original Bybit source: "+rel)
+        digest=hashlib.sha256()
+        with target.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024*1024), b""):
+                digest.update(chunk)
+        if digest.hexdigest()!=expected:
+            raise CandidateBridgeError("physical file SHA256 does not match original Bybit source: "+rel)
+        attested[rel]=expected
+    return attested
 
 
 def reviewed_config(mechanism:str,expected_fingerprint:str)->dict[str,Any]:
@@ -60,6 +108,10 @@ def evaluate_readonly(
         or not archive_root.is_dir() or source_sha256!=ARCHIVE_SHA256):
         raise CandidateBridgeError("immutable verified Bybit research archive required")
     candidate=reviewed_config(mechanism,expected_fingerprint)
+    attested=verify_pinned_market_files(archive_root)
+    # The checked six immutable file hashes now independently bind the source.
+    # The existing reader validates original OHLC/time grids, while the
+    # factory consumes only the review-approved candidate grammar.
     # In the original system this independently hashes and validates all
     # minute15/hour1/hour4 exact archive inputs, then point-in-time merges
     # only completed higher-timeframe and current/lagged peer observations.
@@ -73,7 +125,8 @@ def evaluate_readonly(
         "selected_reviewed_mechanism":mechanism,
         "selected_exact_config_fingerprint":expected_fingerprint,
         "research_source_archive_sha256":source_sha256,
-        "source_authentication":"EXISTING_VERIFIED_ARCHIVE_LOADER_PLUS_EXACT_SHA",
+        "source_authentication":"SIX_PINNED_RAW_SHA256_PLUS_ORIGINAL_VERIFIED_LOADER",
+        "attested_market_file_sha256":attested,
         "source_history_preinspected_not_independent_holdout":True,
         "qualification":"DIAGNOSTIC_ONLY_NO_AUTOMATIC_DEMO_PROMOTION",
         "paper_eligible":False,"live_enabled":False,"orders":0,
