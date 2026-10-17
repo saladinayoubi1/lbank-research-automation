@@ -1,0 +1,222 @@
+{
+  "all_original_windows_in_denominator": 1212,
+  "automatic_demo_promotion": false,
+  "candidate_breakout_intents": 4,
+  "costed_outcomes": {
+    "conservative": {
+      "admitted_round_trips": 4,
+      "all_denials": [],
+      "denied_after_signal_count": 0,
+      "ending_cash_usdt": "491.20770708045791330000000",
+      "live_enabled": false,
+      "mean_pnl_usdt": "-2.19807322988552167500000",
+      "net_pnl_usdt": "-8.79229291954208670000000",
+      "no_minimum_trade_count_gate": true,
+      "original_trade_events": [
+        {
+          "decision_ms": 1720441140000,
+          "entry_cash_cost": "230.61881324731168920000000",
+          "entry_fill": "3064.391430000000",
+          "entry_open_ms": 1720441380000,
+          "exit_fill": "3037.240620000000",
+          "exit_observable_ms": 1720443840000,
+          "exit_open_ms": 1720443780000,
+          "exit_reason": "STRUCTURE_STOP_ONLY",
+          "hard_stop": "3038.76000000",
+          "id": "ETHUSDT-326",
+          "net_pnl_usdt": "-2.49999972927760200000000",
+          "qty": "0.07518244",
+          "signal_closed_ms": 1720441380000,
+          "symbol": "ETHUSDT",
+          "take_profit": "3111.06000000"
+        },
+        {
+          "decision_ms": 1720475400000,
+          "entry_cash_cost": "250.24951529061764280000000",
+          "entry_fill": "56673.682680000000",
+          "entry_open_ms": 1720475580000,
+          "exit_fill": "56329.401210000000",
+          "exit_observable_ms": 1720485060000,
+          "exit_open_ms": 1720485000000,
+          "exit_reason": "STRUCTURE_STOP_ONLY",
+          "hard_stop": "56357.58000000",
+          "id": "BTCUSDT-306",
+          "net_pnl_usdt": "-2.01717819696510690000000",
+          "qty": "0.00441121",
+          "signal_closed_ms": 1720475580000,
+          "symbol": "BTCUSDT",
+          "take_profit": "57220.92000000"
+        },
+        {
+          "decision_ms": 1720611960000,
+          "entry_cash_cost": "250.24998244202811855000000",
+          "entry_fill": "3110.644545000000",
+          "entry_open_ms": 1720613220000,
+          "exit_fill": "3088.145155000000",
+          "exit_observable_ms": 1720614840000,
+          "exit_open_ms": 1720614780000,
+          "exit_reason": "STRUCTURE_STOP_ONLY",
+          "hard_stop": "3089.69000000",
+          "id": "ETHUSDT-404",
+          "net_pnl_usdt": "-2.30644945696344300000000",
+          "qty": "0.08036919",
+          "signal_closed_ms": 1720613220000,
+          "symbol": "ETHUSDT",
+          "take_profit": "3147.89000000"
+        },
+        {
+          "decision_ms": 1720691880000,
+          "entry_cash_cost": "250.24999182057955080000000",
+          "entry_fill": "3147.342885000000",
+          "entry_open_ms": 1720691940000,
+          "exit_fill": "3128.834800000000",
+          "exit_observable_ms": 1720701000000,
+          "exit_open_ms": 1720700940000,
+          "exit_reason": "STRUCTURE_STOP_ONLY",
+          "hard_stop": "3130.40000000",
+          "id": "ETHUSDT-438",
+          "net_pnl_usdt": "-1.96866553633593480000000",
+          "qty": "0.07943208",
+          "signal_closed_ms": 1720691940000,
+          "symbol": "ETHUSDT",
+          "take_profit": "3176.51000000"
+        }
+      ],
+      "paper_eligible": false,
+      "profile": "conservative",
+      "status": "RESEARCH_CLOSED_TRADES_ONLY_NO_QUALIFICATION"
+    },
+    "stress": {
+      "admitted_round_trips": 4,
+      "all_denials": [],
+      "denied_after_signal_count": 0,
+      "ending_cash_usdt": "490.000004214673830000000000",
+      "live_enabled": false,
+      "mean_pnl_usdt": "-2.499998946331542500000000",
+      "net_pnl_usdt": "-9.999995785326170000000000",
+      "no_minimum_trade_count_gate": true,
+      "original_trade_events": [
+        {
+          "decision_ms": 1720441140000,
+          "entry_cash_cost": "158.489990518111065000000000",
+          "entry_fill": "3067.454290000000",
+          "entry_open_ms": 1720441380000,
+          "exit_fill": "3034.201860000000",
+          "exit_observable_ms": 1720443840000,
+          "exit_open_ms": 1720443780000,
+          "exit_reason": "STRUCTURE_STOP_ONLY",
+          "hard_stop": "3038.76000000",
+          "id": "ETHUSDT-326",
+          "net_pnl_usdt": "-2.499999533185275000000000",
+          "qty": "0.05153940",
+          "signal_closed_ms": 1720441380000,
+          "symbol": "ETHUSDT",
+          "take_profit": "3111.06000000"
+        },
+        {
+          "decision_ms": 1720475400000,
+          "entry_cash_cost": "192.189206982513132000000000",
+          "entry_fill": "56730.328040000000",
+          "entry_open_ms": 1720475580000,
+          "exit_fill": "56273.043630000000",
+          "exit_observable_ms": 1720485060000,
+          "exit_open_ms": 1720485000000,
+          "exit_reason": "STRUCTURE_STOP_ONLY",
+          "hard_stop": "56357.58000000",
+          "id": "BTCUSDT-306",
+          "net_pnl_usdt": "-2.499996737280861000000000",
+          "qty": "0.00337932",
+          "signal_closed_ms": 1720475580000,
+          "symbol": "BTCUSDT",
+          "take_profit": "57220.92000000"
+        },
+        {
+          "decision_ms": 1720611960000,
+          "entry_cash_cost": "176.576759079467002625000000",
+          "entry_fill": "3113.753635000000",
+          "entry_open_ms": 1720613220000,
+          "exit_fill": "3085.055465000000",
+          "exit_observable_ms": 1720614840000,
+          "exit_open_ms": 1720614780000,
+          "exit_reason": "STRUCTURE_STOP_ONLY",
+          "hard_stop": "3089.69000000",
+          "id": "ETHUSDT-404",
+          "net_pnl_usdt": "-2.499999633183582500000000",
+          "qty": "0.05656723",
+          "signal_closed_ms": 1720613220000,
+          "symbol": "ETHUSDT",
+          "take_profit": "3147.89000000"
+        },
+        {
+          "decision_ms": 1720691880000,
+          "entry_cash_cost": "195.082470666078331500000000",
+          "entry_fill": "3150.488655000000",
+          "entry_open_ms": 1720691940000,
+          "exit_fill": "3125.704400000000",
+          "exit_observable_ms": 1720701000000,
+          "exit_open_ms": 1720700940000,
+          "exit_reason": "STRUCTURE_STOP_ONLY",
+          "hard_stop": "3130.40000000",
+          "id": "ETHUSDT-438",
+          "net_pnl_usdt": "-2.499999881676451500000000",
+          "qty": "0.06176692",
+          "signal_closed_ms": 1720691940000,
+          "symbol": "ETHUSDT",
+          "take_profit": "3176.51000000"
+        }
+      ],
+      "paper_eligible": false,
+      "profile": "stress",
+      "status": "RESEARCH_CLOSED_TRADES_ONLY_NO_QUALIFICATION"
+    }
+  },
+  "fee_slip_per_side_bps": {
+    "conservative": [
+      "10",
+      "5"
+    ],
+    "stress": [
+      "25",
+      "15"
+    ]
+  },
+  "fixed_entry": "first_closed_1m_cross_above_original_wave1_within_240m_then_next_open",
+  "fixed_exit": "original_wave2_stop_first_2R_target_or_240m_timeout",
+  "fixed_preentry_veto": "any_postconfirmation_intrabar_low_at_or_below_original_wave2",
+  "future_nov2026_v117_source_not_accessed": true,
+  "historical_source_preinspected": true,
+  "independent_wave_certification": false,
+  "initial_shared_cash_usdt": "500",
+  "live_enabled": false,
+  "max_gapless_nominal_stop_risk_usdt": "2.5",
+  "max_notional_per_entry_usdt": "250",
+  "new_trading_order_count": 0,
+  "no_cash_borrowing": true,
+  "no_untouched_heldout_profit_claim": true,
+  "original_by_symbol": {
+    "BTCUSDT": {
+      "original_coarse_sha256": "6fff6946b815e979727340d04023f178c08e23c5e6c240c0ebebd321c5c75367",
+      "original_window_count": 604,
+      "strict_v106_necessary_passes": 4
+    },
+    "ETHUSDT": {
+      "original_coarse_sha256": "37f071aab9d84ab7d2565a19cc13bbadd3fef6830633c48a0f4ba50810c23143",
+      "original_window_count": 608,
+      "strict_v106_necessary_passes": 5
+    }
+  },
+  "paper_eligible": false,
+  "preentry_classifications": {
+    "BEARISH_SPOT_NO_SHORT": 4,
+    "CLOSED_WAVE1_BREAKOUT_NEXT_OPEN": 4,
+    "WAVE2_INVALIDATED_BEFORE_ENTRY": 1
+  },
+  "qualification": "DIAGNOSTIC_ONLY_NO_FUTURE_HOLDOUT",
+  "realized_bybit_pnl": null,
+  "result_digest": "8f3eee2457530a2f4b08df7b7514b7b27f9a0010e6604311d77d22fae1c03983",
+  "schema": "nexus.elliott-v118-preinspected-wave1-breakout-physical-v1",
+  "source_exchange": "BINANCE_SPOT_NOT_BYBIT",
+  "source_period": "2024-07-01_to_2024-07-15_exclusive_UTC",
+  "v106_necessary_passes_not_certified_elliott_waves": 9,
+  "v106_original_strict_geometry_unmodified": true
+}
