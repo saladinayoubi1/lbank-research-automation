@@ -26,7 +26,8 @@ def valid_pivots():
 
 def plan(**overrides):
     p = {"closed_bar_index":34,"closed_open":96.7,"closed_close":97.0,
-         "previous_close":96.4,"independently_closed_h1_vol_ok":True}
+         "previous_close":96.4,"independently_closed_h1_vol_ok":True,
+         "h1_context_last_closed_15m_index":31}
     p.update(overrides)
     return module.close_time_plan(valid_pivots(), **p)
 
@@ -132,3 +133,8 @@ def test_no_false_profit_extrapolation_and_immutable_old_protocol_boundaries():
     assert q["no_automatic_demo_promotion"]
     assert q["contract_digest"] == module.digest({k:v for k,v in q.items() if k!="contract_digest"})
     assert "orders" not in [a for a in dir(module) if a=="submit_orders"]
+
+@pytest.mark.parametrize("future_context",[32,33,34,35,30,-1])
+def test_reject_future_stale_or_partial_h1_regime_context(future_context):
+    with pytest.raises(module.StructuralPlanError,match="one-hour context"):
+        plan(h1_context_last_closed_15m_index=future_context)
