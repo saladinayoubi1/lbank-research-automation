@@ -138,3 +138,13 @@ def test_no_false_profit_extrapolation_and_immutable_old_protocol_boundaries():
 def test_reject_future_stale_or_partial_h1_regime_context(future_context):
     with pytest.raises(module.StructuralPlanError,match="one-hour context"):
         plan(h1_context_last_closed_15m_index=future_context)
+
+
+def test_registered_research_contract_equal_to_immutable_calculated_fields():
+    register = ROOT / "docs/evidence/butterfly-v9-structural-prz-20261017/V9_PREREGISTERED_STRUCTURAL_STOP_TARGET.json"
+    actual = json.loads(register.read_text(encoding="utf-8"))
+    assert actual == module.frozen_rulebook()
+    assert actual["contract_digest"] == module.digest({k:v for k,v in actual.items() if k!="contract_digest"})
+    assert actual["PRZ_stop_XA_projection"] == "1.414"
+    assert actual["CD_first_target_retracement"] == "0.382"
+    assert actual["no_orders"] is True
