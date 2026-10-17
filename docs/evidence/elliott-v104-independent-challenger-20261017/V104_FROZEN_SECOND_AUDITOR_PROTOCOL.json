@@ -1,0 +1,31 @@
+{
+  "all_claimed_tls_fields_challenged": true,
+  "cross_parser_hash_disagreements_block": true,
+  "data_fetched_during_v104": 0,
+  "end_exclusive_utc": "2026-11-30T00:00:00Z",
+  "fixed_source": "BYBIT_PUBLIC_SPOT_ONE_MINUTE",
+  "full_source_minute_count": 40320,
+  "immutable_source_file_count": 84,
+  "independent_second_parser_no_v102_parse_page": true,
+  "live_enabled": false,
+  "offline_second_parser_no_v103_transport_get": true,
+  "orders": 0,
+  "original_byte_hashes_recomputed": true,
+  "previous_v101_sha256": "735d942cdcbf802f6079e5435473e91b7d5b597831087ab4a7439ab04984e221",
+  "previous_v102_sha256": "3e994e02d3ef1af2f7ab9a9067558dfe00accca8d191d547b8fdc951a5e9a3e6",
+  "previous_v103_sha256": "6f4ca9993bb7cf086fba790dedae74ca591a62200fc6973e91e17b8ff9645da6",
+  "profitability_not_established": true,
+  "real_market_patterns_evaluated": 0,
+  "request_page_count": 42,
+  "schema": "nexus.elliott-v104-frozen-independent-source-challenge-plan.v1",
+  "self_reported_tls_does_not_prove_exchange_origin": true,
+  "source_signature_not_available": true,
+  "source_time_and_ohlc_recomputed": true,
+  "start_utc": "2026-11-16T00:00:00Z",
+  "state": "OFFLINE_SECOND_PARSER_NO_MARKET_DATA_OPENED",
+  "symbols": [
+    "BTCUSDT",
+    "ETHUSDT"
+  ],
+  "v52_unchanged": true
+}
