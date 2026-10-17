@@ -81,6 +81,7 @@ def test_causal_integration_with_original_reviewed_identity_only(monkeypatch,tmp
             "mock_symbol":symbol,
         })
     monkeypatch.setattr(cli,"_load_frontier_features",lambda _:sources)
+    monkeypatch.setattr(cli,"verify_pinned_market_files",lambda _root:dict(cli.PINNED_BYBIT_PARQUET_SHA256))
     def known_signal(frame,config):
         assert config["fingerprint"]==sha
         x=np.zeros(len(frame),dtype=bool)
@@ -92,7 +93,8 @@ def test_causal_integration_with_original_reviewed_identity_only(monkeypatch,tmp
     evidence=cli.evaluate_readonly(tmp_path,c["mechanism"],sha,ARCHIVE_SHA256)
     assert evidence["selected_exact_config_fingerprint"]==sha
     assert evidence["research_source_archive_sha256"]==ARCHIVE_SHA256
-    assert evidence["source_authentication"]=="EXISTING_VERIFIED_ARCHIVE_LOADER_PLUS_EXACT_SHA"
+    assert evidence["source_authentication"]=="SIX_PINNED_RAW_SHA256_PLUS_ORIGINAL_VERIFIED_LOADER"
+    assert evidence["attested_market_file_sha256"]==cli.PINNED_BYBIT_PARQUET_SHA256
     assert evidence["not_qualified_for_demo"] is True
     assert evidence["qualified"] is False
     assert evidence["orders"]==0 and evidence["live_enabled"] is False
@@ -102,6 +104,42 @@ def test_causal_integration_with_original_reviewed_identity_only(monkeypatch,tmp
         for partition in evidence["partitions"].values()
         for profile in partition.values()
     )
+
+
+def test_exact_original_six_market_blobs_bound_and_no_symlink(tmp_path,monkeypatch):
+    import hashlib
+    # Adversarial tiny test fixtures: locked expectation is monkeypatched ONLY
+    # for this synthetic unit test, never during real market evaluation.
+    market=tmp_path/"bybit_market"
+    original=dict(cli.PINNED_BYBIT_PARQUET_SHA256)
+    tiny={}
+    for k in original:
+        p=market/k
+        p.parent.mkdir(parents=True,exist_ok=True)
+        value=("original-source-"+k).encode()
+        p.write_bytes(value)
+        tiny[k]=hashlib.sha256(value).hexdigest()
+    monkeypatch.setattr(cli,"PINNED_BYBIT_PARQUET_SHA256",tiny)
+    assert cli.verify_pinned_market_files(tmp_path)==tiny
+    victim=market/"eth_usdt/hour1.parquet"
+    victim.write_bytes(b"tampered_same_filename_source")
+    with pytest.raises(cli.CandidateBridgeError,match="physical file SHA256"):
+        cli.verify_pinned_market_files(tmp_path)
+
+
+def test_missing_or_untrusted_peer_source_fails_closed(tmp_path,monkeypatch):
+    market=tmp_path/"bybit_market"
+    market.mkdir()
+    # Empty source cannot inherit the root semantic archive digest.
+    with pytest.raises(cli.CandidateBridgeError,match="missing/linked"):
+        cli.verify_pinned_market_files(tmp_path)
+
+
+def test_unreviewed_new_representation_needs_new_lock_not_old_semantic_hash(tmp_path):
+    assert len(cli.PINNED_BYBIT_PARQUET_SHA256)==6
+    assert all(len(v)==64 for v in cli.PINNED_BYBIT_PARQUET_SHA256.values())
+    with pytest.raises(cli.CandidateBridgeError):
+        cli.verify_pinned_market_files(tmp_path)
 
 
 def test_evidence_writer_is_exactly_write_once(tmp_path):
